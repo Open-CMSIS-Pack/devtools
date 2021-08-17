@@ -1,0 +1,86 @@
+name: test_libs
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/test_libs.yml'
+      - 'libs/**'
+
+jobs:
+  test_libs:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ macos-10.15, ubuntu-20.04, windows-2019 ]
+        include:
+          - os: macos-10.15
+            target: darwin64
+          - os: ubuntu-20.04
+            target: linux64
+          - os: windows-2019
+            target: windows64
+    steps:
+      - name: Install macos deps
+        if: ${{ startsWith(matrix.os, 'macos') }}
+        run: |
+          brew install \
+            ninja
+
+      - name: Install linux deps
+        if: ${{ startsWith(matrix.os, 'ubuntu') }}
+        run: |
+          sudo apt update
+          sudo apt-get install \
+            bc \
+            build-essential \
+            ninja-build
+
+      - name: Install windows deps
+        if: ${{ startsWith(matrix.os, 'windows') }}
+        run: choco install -y ninja
+
+      - name: Checkout devtools
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+
+      - name: Create build folder
+        run: mkdir build
+
+      - name: Configure windows build for amd64
+        if: ${{ startsWith(matrix.os, 'windows') }}
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: amd64
+
+      - uses: ammaraskar/gcc-problem-matcher@master
+        if: ${{ startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu') }}
+      - uses: ammaraskar/msvc-problem-matcher@master
+        if: ${{ startsWith(matrix.os, 'windows') }}
+
+      - name: Build libs unittest
+        run: |
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DLIBS_ONLY=ON ..
+          cmake --build .
+        working-directory: ./build
+
+      - name: Run libs unittest
+        run: |
+          ctest -C Debug -V
+        working-directory: ./build
+
+      - name: Archive libs unittest reports
+        uses: actions/upload-artifact@v2
+        with:
+          name: libs_unittest_report_${{ matrix.target }}
+          path: build/*_test_report.xml
+          retention-days: 1
+          if-no-files-found: error
+
+      - name: Publish libs unittest reports
+        uses: mikepenz/action-junit-report@v2
+        with:
+          check_name: libs_unittest_report_${{ matrix.target }}
+          report_paths: build/*_test_report.xml

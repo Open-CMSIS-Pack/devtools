@@ -1,0 +1,140 @@
+# CMSIS Build CMakeLists generated on 2021-07-15T11:49:01
+
+cmake_minimum_required(VERSION 3.18)
+
+# Target options
+
+set(TARGET Build)
+set(CPU Cortex-M3)
+set(PRJ_DIR "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Asm")
+set(OUT_DIR "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Asm/OutDir")
+set(INT_DIR "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Asm/IntDir")
+set(FPU NO_FPU)
+set(DSP NO_DSP)
+set(TZ NO_TZ)
+set(SECURE Non-secure)
+set(MVE NO_MVE)
+set(BYTE_ORDER Little-endian)
+set(AS_FLAGS_GLOBAL "-Wa,--gdwarf-2 -mthumb")
+set(CC_FLAGS_GLOBAL "-O -Wall -gdwarf-2 -mapcs-frame -mthumb")
+set(LD_FLAGS_GLOBAL "--entry=Reset_Handler --specs=nosys.specs -mcpu=cortex-m3 -mthumb")
+set(LD_SCRIPT "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Asm/RTE/Device/ARMCM3/gcc_arm.ld")
+
+set(DEFINES
+  ARMCM3
+  _RTE_
+)
+
+set(INC_PATHS
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Asm/RTE/CMSIS"
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Asm/RTE/_Target"
+  "c:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/Core/Include"
+  "c:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/Include"
+  "c:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/RTX/Include"
+  "c:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/Device/ARM/ARMCM3/Include"
+)
+
+set(ASM_SRC_FILES
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Asm/PreProcessed.S"
+  "c:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/RTX/Source/GCC/irq_armv7m.S"
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Asm/RTE/Device/ARMCM3/startup_ARMCM3.S"
+)
+
+set(AS_GNU_SRC_FILES
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Asm/NonPreProcessed.s"
+)
+
+set(AS_LEG_SRC_FILES
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Asm/GAS.s"
+)
+
+set(CC_SRC_FILES
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Asm/Build.c"
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Asm/RTE/CMSIS/RTX_Config.c"
+  "c:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/Source/os_systick.c"
+  "c:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/RTX/Source/rtx_delay.c"
+  "c:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/RTX/Source/rtx_evflags.c"
+  "c:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/RTX/Source/rtx_evr.c"
+  "c:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/RTX/Source/rtx_kernel.c"
+  "c:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/RTX/Source/rtx_lib.c"
+  "c:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/RTX/Source/rtx_memory.c"
+  "c:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/RTX/Source/rtx_mempool.c"
+  "c:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/RTX/Source/rtx_msgqueue.c"
+  "c:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/RTX/Source/rtx_mutex.c"
+  "c:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/RTX/Source/rtx_semaphore.c"
+  "c:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/RTX/Source/rtx_system.c"
+  "c:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/RTX/Source/rtx_thread.c"
+  "c:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/RTX/Source/rtx_timer.c"
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Asm/RTE/Device/ARMCM3/system_ARMCM3.c"
+)
+
+set(AS_FLAGS_C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Asm/PreProcessed.S "-DPRE_PROCESSED_DEF -Wa,--gdwarf-2 -mthumb")
+set(AS_FLAGS_C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Asm/GAS.s "--defsym GAS_DEF=1")
+
+# Toolchain config map
+
+include ("c:/sandbox/devtools/build/TestOutput/cbuild/etc/GCC.10.2.1.cmake")
+
+# Setup project
+
+project(${TARGET} LANGUAGES ASM AS_GNU AS_LEG C)
+
+# Global Flags
+
+set(CMAKE_ASM_FLAGS "${ASM_CPU} ${ASM_BYTE_ORDER} ${ASM_DEFINES} ${ASM_FLAGS}")
+set(CMAKE_AS_GNU_FLAGS "${AS_GNU_CPU} ${AS_GNU_BYTE_ORDER} ${AS_GNU_DEFINES} ${AS_GNU_FLAGS}")
+set(CMAKE_AS_LEG_FLAGS "${AS_LEG_CPU} ${AS_LEG_BYTE_ORDER} ${AS_LEG_DEFINES} ${AS_LEG_FLAGS}")
+set(CMAKE_C_FLAGS "${CC_CPU} ${CC_BYTE_ORDER} ${CC_DEFINES} ${CC_SECURE} ${CC_FLAGS} ${CC_FLAGS_GLOBAL} ${CC_SYS_INC_PATHS}")
+set(CMAKE_C_LINK_FLAGS "${LD_CPU} ${LD_SCRIPT} ${LD_SECURE} ${LD_FLAGS_GLOBAL} ${LD_FLAGS}")
+
+# Local Flags
+
+foreach(SRC ${ASM_SRC_FILES})
+  string(REPLACE " " "?" S ${SRC})
+  if(DEFINED AS_FLAGS_${S})
+    set(AS_FLAGS_LOCAL "${AS_FLAGS_${S}}")
+  else()
+    set(AS_FLAGS_LOCAL "${AS_FLAGS_GLOBAL}")
+  endif()
+  set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS "${AS_FLAGS_LOCAL}")
+  set_source_files_properties(${SRC} PROPERTIES LANGUAGE ASM)
+endforeach()
+
+foreach(SRC ${AS_GNU_SRC_FILES})
+  string(REPLACE " " "?" S ${SRC})
+  if(DEFINED AS_FLAGS_${S})
+    set(AS_FLAGS_LOCAL "${AS_FLAGS_${S}}")
+  else()
+    set(AS_FLAGS_LOCAL "${AS_FLAGS_GLOBAL}")
+  endif()
+  set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS "${AS_FLAGS_LOCAL}")
+  set_source_files_properties(${SRC} PROPERTIES LANGUAGE AS_GNU)
+endforeach()
+
+foreach(SRC ${AS_LEG_SRC_FILES})
+  string(REPLACE " " "?" S ${SRC})
+  if(DEFINED AS_FLAGS_${S})
+    set(AS_FLAGS_LOCAL "${AS_FLAGS_${S}}")
+  else()
+    set(AS_FLAGS_LOCAL "${AS_FLAGS_GLOBAL}")
+  endif()
+  set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS "${AS_FLAGS_LOCAL}")
+  set_source_files_properties(${SRC} PROPERTIES LANGUAGE AS_LEG)
+endforeach()
+
+# Compilation Database
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+add_custom_target(database COMMAND ${CMAKE_COMMAND} -E copy_if_different "${INT_DIR}/compile_commands.json" "${OUT_DIR}")
+
+# Setup Target
+
+add_executable(${TARGET} ${ASM_SRC_FILES} ${AS_GNU_SRC_FILES} ${AS_LEG_SRC_FILES} ${CC_SRC_FILES})
+set(CMAKE_EXECUTABLE_SUFFIX ${EXE_SUFFIX})
+set_target_properties(${TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${OUT_DIR})
+target_include_directories(${TARGET} PUBLIC ${INC_PATHS})
+
+# Bin and Hex Conversion
+
+add_custom_command(TARGET ${TARGET} POST_BUILD COMMAND ${CMAKE_OBJCOPY} ${ELF2HEX})
+add_custom_command(TARGET ${TARGET} POST_BUILD COMMAND ${CMAKE_OBJCOPY} ${ELF2BIN})

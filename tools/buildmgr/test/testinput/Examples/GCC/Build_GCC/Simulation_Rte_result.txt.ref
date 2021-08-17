@@ -1,0 +1,89 @@
+ --- includePaths ---
+  /ARM/CMSIS/5.7.0/CMSIS/Core/Include
+  /ARM/CMSIS/5.7.0/CMSIS/RTOS2/Include
+  /ARM/CMSIS/5.7.0/CMSIS/RTOS2/RTX/Include
+  /ARM/CMSIS/5.7.0/Device/ARM/ARMCM3/Include
+  /Build_GCC/RTE/CMSIS
+  /Build_GCC/RTE/_Simulation
+
+ --- defines ---
+  ARMCM3
+  _RTE_
+
+ --- compiler ---
+  GCC
+
+ --- compilerVersion ---
+  9.2.1
+
+ --- linkerScript ---
+  /Build_GCC/RTE/Device/ARMCM3/gcc_arm.ld
+
+ --- configFiles ---
+  /Build_GCC/RTE/CMSIS/RTX_Config.h : /ARM/CMSIS/5.7.0/CMSIS/RTOS2/RTX/Config/RTX_Config.h
+  /Build_GCC/RTE/Device/ARMCM3/startup_ARMCM3.S : /ARM/CMSIS/5.7.0/Device/ARM/ARMCM3/Source/GCC/startup_ARMCM3.S
+  /Build_GCC/RTE/Device/ARMCM3/system_ARMCM3.c : /ARM/CMSIS/5.7.0/Device/ARM/ARMCM3/Source/system_ARMCM3.c
+
+ --- cSourceFiles ---
+  RTE/CMSIS/RTOS2/Keil RTX5/Source
+    /ARM/CMSIS/5.7.0/CMSIS/RTOS2/RTX/Source/rtx_delay.c
+    /ARM/CMSIS/5.7.0/CMSIS/RTOS2/RTX/Source/rtx_evflags.c
+    /ARM/CMSIS/5.7.0/CMSIS/RTOS2/RTX/Source/rtx_evr.c
+    /ARM/CMSIS/5.7.0/CMSIS/RTOS2/RTX/Source/rtx_kernel.c
+    /ARM/CMSIS/5.7.0/CMSIS/RTOS2/RTX/Source/rtx_lib.c
+    /ARM/CMSIS/5.7.0/CMSIS/RTOS2/RTX/Source/rtx_memory.c
+    /ARM/CMSIS/5.7.0/CMSIS/RTOS2/RTX/Source/rtx_mempool.c
+    /ARM/CMSIS/5.7.0/CMSIS/RTOS2/RTX/Source/rtx_msgqueue.c
+    /ARM/CMSIS/5.7.0/CMSIS/RTOS2/RTX/Source/rtx_mutex.c
+    /ARM/CMSIS/5.7.0/CMSIS/RTOS2/RTX/Source/rtx_semaphore.c
+    /ARM/CMSIS/5.7.0/CMSIS/RTOS2/RTX/Source/rtx_system.c
+    /ARM/CMSIS/5.7.0/CMSIS/RTOS2/RTX/Source/rtx_thread.c
+    /ARM/CMSIS/5.7.0/CMSIS/RTOS2/RTX/Source/rtx_timer.c
+    /ARM/CMSIS/5.7.0/CMSIS/RTOS2/Source/os_systick.c
+    /Build_GCC/RTE/CMSIS/RTX_Config.c
+  RTE/Device/Startup
+    /Build_GCC/RTE/Device/ARMCM3/system_ARMCM3.c
+  Source Files
+    /Build_GCC/Main.c
+
+ --- asmSourceFiles ---
+  RTE/CMSIS/RTOS2/Keil RTX5/Source
+    /ARM/CMSIS/5.7.0/CMSIS/RTOS2/RTX/Source/GCC/irq_cm3.S
+  RTE/Device/Startup
+    /Build_GCC/RTE/Device/ARMCM3/startup_ARMCM3.S
+
+ --- targetCFlags ---
+  -O
+  -Wall
+  -gdwarf-2
+  -mapcs-frame
+  -mthumb
+
+ --- targetAsFlags ---
+  --gdwarf-2
+  -mthumb
+
+ --- targetLdFlags ---
+  --entry=Reset_Handler
+  --specs=nosys.specs
+  -mthumb
+
+ --- outputName ---
+  Build_GCC
+
+ --- outputType ---
+  exe
+
+ --- targetAttributes ---
+  Dcore:Cortex-M3
+  Ddsp:NO_DSP
+  Dendian:Little-endian
+  Dfpu:NO_FPU
+  Dmve:NO_MVE
+  Dname:ARMCM3
+  Dsecure:Non-secure
+  Dtz:NO_TZ
+  Dvendor:ARM:82
+  Pname:
+  Tcompiler:GCC
+

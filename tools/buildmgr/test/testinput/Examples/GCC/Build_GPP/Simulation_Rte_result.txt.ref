@@ -1,0 +1,111 @@
+ --- includePaths ---
+  /ARM/CMSIS/5.7.0/CMSIS/Core/Include
+  /ARM/CMSIS/5.7.0/CMSIS/RTOS2/Include
+  /ARM/CMSIS/5.7.0/CMSIS/RTOS2/RTX/Include
+  /ARM/CMSIS/5.7.0/Device/ARM/ARMCM3/Include
+  /Build_GPP/RTE/CMSIS
+  /Build_GPP/RTE/_Simulation
+
+ --- defines ---
+  ARMCM3
+  _RTE_
+
+ --- compiler ---
+  GCC
+
+ --- compilerVersion ---
+  9.2.1
+
+ --- linkerScript ---
+  /Build_GPP/RTE/Device/ARMCM3/gcc_arm.ld
+
+ --- configFiles ---
+  /Build_GPP/RTE/CMSIS/RTX_Config.h : /ARM/CMSIS/5.7.0/CMSIS/RTOS2/RTX/Config/RTX_Config.h
+  /Build_GPP/RTE/Device/ARMCM3/startup_ARMCM3.S : /ARM/CMSIS/5.7.0/Device/ARM/ARMCM3/Source/GCC/startup_ARMCM3.S
+  /Build_GPP/RTE/Device/ARMCM3/system_ARMCM3.c : /ARM/CMSIS/5.7.0/Device/ARM/ARMCM3/Source/system_ARMCM3.c
+
+ --- cSourceFiles ---
+  RTE/CMSIS/RTOS2/Keil RTX5/Source
+    /ARM/CMSIS/5.7.0/CMSIS/RTOS2/RTX/Source/rtx_delay.c
+    /ARM/CMSIS/5.7.0/CMSIS/RTOS2/RTX/Source/rtx_evflags.c
+    /ARM/CMSIS/5.7.0/CMSIS/RTOS2/RTX/Source/rtx_evr.c
+    /ARM/CMSIS/5.7.0/CMSIS/RTOS2/RTX/Source/rtx_kernel.c
+    /ARM/CMSIS/5.7.0/CMSIS/RTOS2/RTX/Source/rtx_lib.c
+    /ARM/CMSIS/5.7.0/CMSIS/RTOS2/RTX/Source/rtx_memory.c
+    /ARM/CMSIS/5.7.0/CMSIS/RTOS2/RTX/Source/rtx_mempool.c
+    /ARM/CMSIS/5.7.0/CMSIS/RTOS2/RTX/Source/rtx_msgqueue.c
+    /ARM/CMSIS/5.7.0/CMSIS/RTOS2/RTX/Source/rtx_mutex.c
+    /ARM/CMSIS/5.7.0/CMSIS/RTOS2/RTX/Source/rtx_semaphore.c
+    /ARM/CMSIS/5.7.0/CMSIS/RTOS2/RTX/Source/rtx_system.c
+    /ARM/CMSIS/5.7.0/CMSIS/RTOS2/RTX/Source/rtx_thread.c
+    /ARM/CMSIS/5.7.0/CMSIS/RTOS2/RTX/Source/rtx_timer.c
+    /ARM/CMSIS/5.7.0/CMSIS/RTOS2/Source/os_systick.c
+    /Build_GPP/RTE/CMSIS/RTX_Config.c
+  RTE/Device/Startup
+    /Build_GPP/RTE/Device/ARMCM3/system_ARMCM3.c
+
+ --- cxxSourceFiles ---
+  Source Files
+    /Build_GPP/Main.cpp
+
+ --- asmSourceFiles ---
+  RTE/CMSIS/RTOS2/Keil RTX5/Source
+    /ARM/CMSIS/5.7.0/CMSIS/RTOS2/RTX/Source/GCC/irq_cm3.S
+  RTE/Device/Startup
+    /Build_GPP/RTE/Device/ARMCM3/startup_ARMCM3.S
+
+ --- targetCFlags ---
+  -I"C:/Program Files (x86)/GNU Tools ARM Embedded/9 2019-q4-major/arm-none-eabi/include"
+  -I"C:/Program Files (x86)/GNU Tools ARM Embedded/9 2019-q4-major/arm-none-eabi/include/c++/9.2.1"
+  -I"C:/Program Files (x86)/GNU Tools ARM Embedded/9 2019-q4-major/arm-none-eabi/include/c++/9.2.1/arm-none-eabi"
+  -I"C:/Program Files (x86)/GNU Tools ARM Embedded/9 2019-q4-major/lib/gcc/arm-none-eabi/9.2.1/include"
+  -O3
+  -Wall
+  -gdwarf-2
+  -mapcs-frame
+  -mthumb
+
+ --- targetCxxFlags ---
+  -I"C:/Program Files (x86)/GNU Tools ARM Embedded/9 2019-q4-major/arm-none-eabi/include"
+  -I"C:/Program Files (x86)/GNU Tools ARM Embedded/9 2019-q4-major/arm-none-eabi/include/c++/9.2.1"
+  -I"C:/Program Files (x86)/GNU Tools ARM Embedded/9 2019-q4-major/arm-none-eabi/include/c++/9.2.1/arm-none-eabi"
+  -I"C:/Program Files (x86)/GNU Tools ARM Embedded/9 2019-q4-major/lib/gcc/arm-none-eabi/9.2.1/include"
+  -O3
+  -Wall
+  -gdwarf-2
+  -mapcs-frame
+  -mthumb
+
+ --- targetAsFlags ---
+  --gdwarf-2
+  -I"C:/Program Files (x86)/GNU Tools ARM Embedded/9 2019-q4-major/arm-none-eabi/include"
+  -I"C:/Program Files (x86)/GNU Tools ARM Embedded/9 2019-q4-major/arm-none-eabi/include/c++/9.2.1"
+  -I"C:/Program Files (x86)/GNU Tools ARM Embedded/9 2019-q4-major/arm-none-eabi/include/c++/9.2.1/arm-none-eabi"
+  -I"C:/Program Files (x86)/GNU Tools ARM Embedded/9 2019-q4-major/lib/gcc/arm-none-eabi/9.2.1/include"
+  -mthumb
+
+ --- targetLdFlags ---
+  --entry=Reset_Handler
+  --specs=nosys.specs
+  -lstdc++
+  -mthumb
+
+ --- outputName ---
+  Build_GPP
+
+ --- outputType ---
+  exe
+
+ --- targetAttributes ---
+  Dcore:Cortex-M3
+  Ddsp:NO_DSP
+  Dendian:Little-endian
+  Dfpu:NO_FPU
+  Dmve:NO_MVE
+  Dname:ARMCM3
+  Dsecure:Non-secure
+  Dtz:NO_TZ
+  Dvendor:ARM:82
+  Pname:
+  Tcompiler:GCC
+

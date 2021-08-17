@@ -1,0 +1,79 @@
+# CMSIS Build CMakeLists generated on 2021-07-05T13:43:43
+
+cmake_minimum_required(VERSION 3.18)
+
+# Target options
+
+set(TARGET CM33_ns)
+set(CPU Cortex-M33)
+set(PRJ_DIR "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/TrustZone/CM33_ns")
+set(OUT_DIR "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/TrustZone/CM33_ns/OutDir")
+set(INT_DIR "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/TrustZone/CM33_ns/IntDir")
+set(FPU SP_FPU)
+set(DSP DSP)
+set(TZ TZ)
+set(SECURE Non-secure)
+set(MVE NO_MVE)
+set(BYTE_ORDER Little-endian)
+set(CC_FLAGS_GLOBAL "-D__MICROLIB -O1 -Weverything -Wno-documentation -Wno-documentation-unknown-command -Wno-license-management -Wno-packed -Wno-parentheses-equality  -Wno-reserved-id-macro -Wno-unused-macros -fno-function-sections -fno-rtti -fshort-enums -fshort-wchar -funsigned-char -gdwarf-3 -std=c99 -xc")
+set(LD_FLAGS_GLOBAL "--callgraph --entry=Reset_Handler --info sizes --info summarysizes --info totals --info unused --info veneers --library_type=microlib --load_addr_map_info --map --strict --summary_stderr --symbols --xref")
+set(LD_SCRIPT "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/TrustZone/CM33_ns/RTE/Device/ARMCM33_DSP_FP_TZ/ARMCM33_AC6.sct")
+
+set(DEFINES
+  ARMCM33_DSP_FP_TZ
+  _RTE_
+)
+
+set(INC_PATHS
+  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/Core/Include"
+  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/Include"
+  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/RTX/Include"
+  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/Device/ARM/ARMCM33/Include"
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/TrustZone/CM33_ns/RTE/CMSIS"
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/TrustZone/CM33_ns/RTE/_FVP_Simulation_Model"
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/TrustZone/CM33_s"
+)
+
+set(CC_SRC_FILES
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/TrustZone/CM33_ns/main_ns.c"
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/TrustZone/CM33_ns/RTE/CMSIS/RTX_Config.c"
+  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/RTX/Source/rtx_lib.c"
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/TrustZone/CM33_ns/RTE/Device/ARMCM33_DSP_FP_TZ/startup_ARMCM33.c"
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/TrustZone/CM33_ns/RTE/Device/ARMCM33_DSP_FP_TZ/system_ARMCM33.c"
+)
+
+set(LIB_FILES
+  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/RTX/Library/ARM/RTX_V8MMFN.lib"
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/TrustZone/CM33_s/Objects/CM33_s_CMSE_Lib.o"
+)
+
+# Toolchain config map
+
+include ("C:/sandbox/devtools/build/TestOutput/cbuild/etc/AC6.6.16.0.cmake")
+
+# Setup project
+
+project(${TARGET} LANGUAGES C)
+
+# Global Flags
+
+set(CMAKE_C_FLAGS "${CC_CPU} ${CC_BYTE_ORDER} ${CC_DEFINES} ${CC_SECURE} ${CC_FLAGS} ${CC_FLAGS_GLOBAL} ${CC_SYS_INC_PATHS}")
+set(CMAKE_C_LINK_FLAGS "${LD_CPU} ${LD_SCRIPT} ${LD_SECURE} ${LD_FLAGS_GLOBAL} ${LD_FLAGS}")
+
+# Compilation Database
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+add_custom_target(database COMMAND ${CMAKE_COMMAND} -E copy_if_different "${INT_DIR}/compile_commands.json" "${OUT_DIR}")
+
+# Setup Target
+
+add_executable(${TARGET} ${CC_SRC_FILES})
+set(CMAKE_EXECUTABLE_SUFFIX ${EXE_SUFFIX})
+set_target_properties(${TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${OUT_DIR})
+target_include_directories(${TARGET} PUBLIC ${INC_PATHS})
+target_link_libraries(${TARGET} ${LIB_FILES})
+
+# Bin and Hex Conversion
+
+add_custom_command(TARGET ${TARGET} POST_BUILD COMMAND ${CMAKE_OBJCOPY} ${ELF2HEX})
+add_custom_command(TARGET ${TARGET} POST_BUILD COMMAND ${CMAKE_OBJCOPY} ${ELF2BIN})

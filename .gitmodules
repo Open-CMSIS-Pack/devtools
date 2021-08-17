@@ -1,0 +1,9 @@
+[submodule "external/googletest"]
+	path = external/googletest
+	url = https://github.com/google/googletest.git
+[submodule "external/cxxopts"]
+	path = external/cxxopts
+	url = https://github.com/jarro2783/cxxopts
+[submodule "external/yaml-cpp"]
+	path = external/yaml-cpp
+	url = https://github.com/jbeder/yaml-cpp

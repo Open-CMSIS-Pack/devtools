@@ -1,0 +1,30 @@
+# -------------------------------------------------------
+# Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+# -------------------------------------------------------
+
+# Version: 0.10.1
+# Date: 2021-04-08
+# This file configures the settings of the CMSIS Command Line Build environment
+#
+# Pre-requisites:
+# - Bash shell (for Windows: install git for Windows)
+
+############### EDIT BELOW ###############
+
+export CMSIS_PACK_ROOT=
+export CMSIS_COMPILER_ROOT=
+
+############ DO NOT EDIT BELOW ###########
+
+export CMSIS_BUILD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../bin" >/dev/null 2>&1 && pwd)"
+
+# Print exported variables
+echo "Set CMSIS_PACK_ROOT=$CMSIS_PACK_ROOT"
+echo "Set CMSIS_BUILD_ROOT=$CMSIS_BUILD_ROOT"
+echo "Set CMSIS_COMPILER_ROOT=$CMSIS_COMPILER_ROOT"
+
+# Add CMSIS_BUILD_ROOT to the path
+export PATH="$PATH:$CMSIS_BUILD_ROOT"
+echo "Added "${CMSIS_BUILD_ROOT}" into the PATH"

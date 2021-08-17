@@ -1,0 +1,22 @@
+/*
+ * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+// Product Information
+
+static constexpr const char* MAJOR_VERSION = "@PROJECT_VERSION_MAJOR@";
+static constexpr const char* MINOR_VERSION = "@PROJECT_VERSION_MINOR@";
+static constexpr const char* PATCH_VERSION = "@PROJECT_VERSION_PATCH@";
+static constexpr const char* BUILD_VERSION = "0";
+
+static constexpr const char* COMPANY_NAME      = "Arm Ltd.";
+static constexpr const char* FILE_DESCRIPTION  = "CMSIS Pack Generator Assistant";
+static constexpr const char* PRODUCT_NAME      = "CMSIS Pack Generator Assistant";
+static constexpr const char* INTERNAL_NAME     = "packgen";
+static constexpr const char* ORIGINAL_FILENAME = "packgen";
+static constexpr const char* COPYRIGHT_NOTICE  = "(C) @PROJECT_VERSION_YEAR@ ARM";
+
+static constexpr const char* VERSION_STRING    = "@PROJECT_VERSION_FULL@";
+static constexpr const char* VERSION_STRING_RC = "@PROJECT_VERSION_FULL@";
