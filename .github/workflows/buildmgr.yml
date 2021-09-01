@@ -1,0 +1,400 @@
+name: buildmgr
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+     - '.github/workflows/buildmgr.yml'
+     - 'CMakeLists.txt'
+     - 'libs/crossplatform/**'
+     - 'libs/errlog/**'
+     - 'libs/xmlreader/**'
+     - 'libs/xmltree/**'
+     - 'libs/xmltreeslim/**'
+     - 'libs/rteutils/**'
+     - 'libs/rtemodel/**'
+     - 'libs/rtefsutils/**'
+     - 'tools/buildmgr/**'
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ macos-10.15, ubuntu-20.04, windows-2019 ]
+        include:
+          - os: macos-10.15
+            target: darwin64
+            binary_extension: ".mac"
+          - os: ubuntu-20.04
+            target: linux64
+            binary_extension: ".lin"
+          - os: windows-2019
+            target: windows64
+            binary_extension: .exe
+    steps:
+      - name: Install macos deps
+        if: ${{ startsWith(matrix.os, 'macos') }}
+        run: |
+          brew install \
+            ninja
+
+      - name: Install linux deps
+        if: ${{ startsWith(matrix.os, 'ubuntu') }}
+        run: |
+          sudo apt update
+          sudo apt-get install \
+            bc \
+            build-essential \
+            ninja-build
+
+      - name: Install windows deps
+        if: ${{ startsWith(matrix.os, 'windows') }}
+        run: choco install -y ninja
+
+      - name: Checkout devtools
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+
+      - name: Create build folder
+        run: mkdir build
+
+      - name: Configure windows build for amd64
+        if: ${{ startsWith(matrix.os, 'windows') }}
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: amd64
+
+      - uses: ammaraskar/gcc-problem-matcher@master
+        if: ${{ startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu') }}
+      - uses: ammaraskar/msvc-problem-matcher@master
+        if: ${{ startsWith(matrix.os, 'windows') }}
+
+      - name: Build cbuildgen
+        run: |
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=Release ..
+          cmake --build . --target cbuildgen
+        working-directory: ./build
+
+      - name: Rename binary to be integrated to the installer
+        if: ${{ startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu') }}
+        env:
+          target: ${{ matrix.target }}
+          binary_extension: ${{ matrix.binary_extension }}
+        run: mv cbuildgen cbuildgen${binary_extension}
+        working-directory: build/tools/buildmgr/cbuildgen/${{ matrix.target }}/Release
+
+      - name: Archive cbuildgen
+        uses: actions/upload-artifact@v2
+        with:
+          name: cbuildgen-${{ matrix.target }}
+          path: ./build/tools/buildmgr/cbuildgen/${{ matrix.target }}/Release/cbuildgen${{ matrix.binary_extension }}
+          retention-days: 1
+          if-no-files-found: error
+
+  docs:
+    runs-on: ubuntu-20.04
+    timeout-minutes: 5
+    steps:
+
+      - name: Checkout devtools
+        uses: actions/checkout@v2
+
+      - name: Install deps
+        run: |
+          wget -q http://launchpadlibrarian.net/163827726/doxygen_1.8.6-2_amd64.deb
+          sudo dpkg -i doxygen_1.8.6-2_amd64.deb
+
+      - name: Run gendoc.sh
+        run: ./gen_doc.sh --output=docs
+        working-directory: tools/buildmgr/docs/doxygen
+
+      - name: Zip doc folder
+        run: zip -r docs.zip *
+        working-directory: tools/buildmgr/docs/doxygen/docs
+
+      - name: Archive docs.zip
+        uses: actions/upload-artifact@v2
+        with:
+          name: docs
+          path: tools/buildmgr/docs/doxygen/docs/docs.zip
+          retention-days: 1
+          if-no-files-found: error
+
+  create_installer:
+    needs: [ build, docs ]
+    runs-on: ubuntu-20.04
+    timeout-minutes: 15
+    steps:
+      - name: Install deps
+        run: |
+          sudo apt update
+          sudo apt-get install \
+            build-essential \
+            debhelper \
+            devscripts \
+            python
+
+      - name: Checkout devtools
+        uses: actions/checkout@v2
+
+      - name: Create distribution folders
+        run: |
+          mkdir -p tools/buildmgr/cbuildgen/distribution/bin
+          mkdir -p tools/buildmgr/cbuildgen/distribution/doc
+
+      - name: Download cbuildgen linux
+        uses: actions/download-artifact@v2
+        with:
+          name: cbuildgen-linux64
+          path: tools/buildmgr/cbuildgen/distribution/bin/
+
+      - name: Download cbuildgen macos
+        uses: actions/download-artifact@v2
+        with:
+          name: cbuildgen-darwin64
+          path: tools/buildmgr/cbuildgen/distribution/bin/
+
+      - name: Download cbuildgen windows
+        uses: actions/download-artifact@v2
+        with:
+          name: cbuildgen-windows64
+          path: tools/buildmgr/cbuildgen/distribution/bin/
+
+      - name: Adding execution permission to the binaries
+        run: |
+          chmod +x cbuildgen.*
+        working-directory: tools/buildmgr/cbuildgen/distribution/bin
+
+      - name: Download docs
+        uses: actions/download-artifact@v2
+        with:
+          name: docs
+          path: tools/buildmgr/cbuildgen/distribution/doc/
+
+      - name: Unzip docs
+        run: |
+          unzip docs.zip
+          rm docs.zip
+        working-directory: tools/buildmgr/cbuildgen/distribution/doc/
+
+      - name: Create installer
+        run: sudo ./create_installer.sh --input=../distribution --output=.
+        working-directory: tools/buildmgr/cbuildgen/installer
+
+      - name: Create deb package
+        run: yes | sudo ./make_deb.sh --input=../distribution --output=.
+        working-directory: tools/buildmgr/cbuildgen/installer
+
+      - name: Archive cbuild_install.sh
+        uses: actions/upload-artifact@v2
+        with:
+          name: cbuild_install
+          path: tools/buildmgr/cbuildgen/installer/cbuild_install.sh
+          retention-days: 1
+          if-no-files-found: error
+
+      - name: Archive deb package
+        uses: actions/upload-artifact@v2
+        with:
+          name: deb_package
+          path: tools/buildmgr/cbuildgen/installer/cmsis-build*.deb
+          retention-days: 1
+          if-no-files-found: error
+
+  tests:
+    needs: [ create_installer ]
+    timeout-minutes: 15
+    runs-on: ${{ matrix.os }}
+    env:
+      arm_gcc_install_base: https://developer.arm.com/-/media/Files/downloads/gnu-rm/10-2020q4
+      CI_CBUILD_DEB_PKG: ${{ github.workspace }}
+      CI_CBUILD_INSTALLER: ${{ github.workspace }}/cbuild_install.sh
+      CI_PACK_ROOT: ${{ github.workspace }}/packs
+      CI_GCC_TOOLCHAIN_ROOT: ${{ github.workspace }}/gcc-arm-none-eabi-10-2020-q4-major/bin
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ macos-10.15, ubuntu-20.04, windows-2019 ]
+        include:
+          - os: macos-10.15
+            target: darwin64
+            installer_name: gcc-arm-none-eabi-10-2020-q4-major-mac.tar.bz2
+          - os: ubuntu-20.04
+            target: linux64
+            installer_name: gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2
+          - os: windows-2019
+            target: windows64
+            installer_name: gcc-arm-none-eabi-10-2020-q4-major-win32.zip
+    steps:
+      - name: Install macos deps
+        if: ${{ startsWith(matrix.os, 'macos') }}
+        run: |
+          brew install \
+            dos2unix \
+            ninja \
+            wget
+
+      - name: Install linux deps
+        if: ${{ startsWith(matrix.os, 'ubuntu') }}
+        run: |
+          sudo apt update
+          sudo apt-get install \
+            bc \
+            build-essential \
+            dos2unix \
+            ninja-build \
+            libxml2-utils
+
+      - name: Install windows deps
+        if: ${{ startsWith(matrix.os, 'windows') }}
+        run: choco install -y unzip wget ninja
+
+      - name: Checkout devtools
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+
+      - name: Check copyright notice
+        if: ${{ startsWith(matrix.os, 'ubuntu') }}
+        run: |
+          pip install \
+            pre-commit \
+            python-magic==0.4.18 \
+            comment-parser>=1.2.3
+          pre-commit run --all-files
+
+      - name: Setup ARM GCC for Ubuntu and macOS
+        if: ${{ startsWith(matrix.os, 'ubuntu') || startsWith(matrix.os, 'macos') }}
+        env:
+          installer_name: ${{ matrix.installer_name }}
+        run: |
+          wget -q ${arm_gcc_install_base}/${installer_name}
+          tar -xvf ${installer_name}
+          rm -rf ${installer_name}
+
+      - name: Setup ARM GCC for Windows
+        if: ${{ startsWith(matrix.os, 'windows') }}
+        env:
+          installer_name: ${{ matrix.installer_name }}
+        run: |
+          wget -q $Env:arm_gcc_install_base/$Env:installer_name
+          unzip $Env:installer_name
+          del $Env:installer_name
+
+      - name: Cache CMSIS Pack
+        uses: actions/cache@v2
+        env:
+          CACHE_NAME: cmsis_pack
+        with:
+          key: ${{ env.CACHE_NAME }}-${{ matrix.os }}
+          path: ${{ env.CI_PACK_ROOT }}
+
+      - name: Create build folder
+        run: mkdir build
+
+      - name: Configure windows build for amd64
+        if: ${{ startsWith(matrix.os, 'windows') }}
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: amd64
+
+      - uses: ammaraskar/gcc-problem-matcher@master
+        if: ${{ startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu') }}
+      - uses: ammaraskar/msvc-problem-matcher@master
+        if: ${{ startsWith(matrix.os, 'windows') }}
+
+      - name: Download cbuild_install
+        uses: actions/download-artifact@v2
+        with:
+          name: cbuild_install
+          path: ${{ github.workspace }}
+
+      - name: Download deb_package
+        uses: actions/download-artifact@v2
+        with:
+          name: deb_package
+          path: ${{ github.workspace }}
+
+      - name: Set correct cbuild_install file permission
+        if: ${{ startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu') }}
+        run: chmod +x cbuild_install.sh
+
+      - name: Build CbuildUnitTests
+        run: |
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug ..
+          cmake --build . --target CbuildUnitTests
+        working-directory: build
+
+      - name: Run CbuildUnitTests (for macOS and Ubuntu)
+        if: ${{ startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu') }}
+        env:
+          target: ${{ matrix.target }}
+        run: ./tools/buildmgr/test/unittests/${target}/Debug/CbuildUnitTests --gtest_output=xml:unittest_report_${target}.xml
+        working-directory: build
+
+      - name: Run CbuildUnitTests (for Windows)
+        if: ${{ startsWith(matrix.os, 'windows') }}
+        env:
+          target: ${{ matrix.target }}
+        # For some reason, the env variable usage $Env:target does not work properly.
+        run: .\tools\buildmgr\test\unittests\windows64\Debug\CbuildUnitTests.exe --gtest_output=xml:unittest_report_windows64.xml
+        working-directory: build
+
+      - name: Archive unittest
+        uses: actions/upload-artifact@v2
+        with:
+          name: unittest_report_${{ matrix.target }}
+          path: build/unittest_report_${{ matrix.target }}.xml
+          retention-days: 1
+          if-no-files-found: error
+
+      - name: Publish Cbuild Unittest Results
+        uses: mikepenz/action-junit-report@v2
+        with:
+          check_name: "Cbuild Unittests [${{ matrix.target }}]"
+          report_paths: build/unittest_report_${{ matrix.target }}.xml
+
+      - name: Build Cbuild Integration Tests
+        run: |
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug ..
+          cmake --build . --target CbuildIntegTests
+        working-directory: build
+
+      - name: Run Cbuild Integration Tests (excl. AC5, AC6, MultiTargetAC6Tests) for Linux
+        if: ${{ startsWith(matrix.os, 'ubuntu') }}
+        env:
+          target: ${{ matrix.target }}
+        run: ./tools/buildmgr/test/integrationtests/${target}/Debug/CbuildIntegTests --gtest_filter=-*AC5*:*AC6*:*MultiTargetAC6Tests* --gtest_output=xml:integtest_report_${target}.xml
+        working-directory: build
+
+      - name: Run Cbuild Integration Tests (excl. DebPkgTests, AC5, AC6, MultiTargetAC6Tests) for macOS
+        if: ${{ startsWith(matrix.os, 'macos') }}
+        env:
+          target: ${{ matrix.target }}
+        run: ./tools/buildmgr/test/integrationtests/${target}/Debug/CbuildIntegTests --gtest_filter=-*DebPkgTests*:*AC5*:*AC6*:*MultiTargetAC6Tests* --gtest_output=xml:integtest_report_${target}.xml
+        working-directory: build
+
+      - name: Run Cbuild Integration Tests (excl. DebPkgTests, AC5, AC6, MultiTargetAC6Tests) for Windows
+        if: ${{ startsWith(matrix.os, 'windows') }}
+        env:
+          target: ${{ matrix.target }}
+        # For some reason the env variable usage $Env:target does not work properly.
+        run: .\tools\buildmgr\test\integrationtests\windows64\Debug\CbuildIntegTests.exe --gtest_filter=-*DebPkgTests*:*AC5*:*AC6*:*MultiTargetAC6Tests* --gtest_output=xml:integtest_report_$Env:target.xml
+        working-directory: build
+
+      - name: Archive Cbuild Integration Tests
+        uses: actions/upload-artifact@v2
+        with:
+          name: integtest_report_${{ matrix.target }}
+          path: build/integtest_report_${{ matrix.target }}.xml
+          retention-days: 1
+          if-no-files-found: error
+
+      - name: Publish Cbuild Integration Test Results
+        uses: mikepenz/action-junit-report@v2
+        with:
+          check_name: "Cbuild Integration Tests [${{ matrix.target }}]"
+          report_paths: build/integtest_report_${{ matrix.target }}.xml

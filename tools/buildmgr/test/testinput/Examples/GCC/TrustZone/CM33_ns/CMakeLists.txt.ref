@@ -1,0 +1,79 @@
+# CMSIS Build CMakeLists generated on 2021-07-07T17:15:13
+
+cmake_minimum_required(VERSION 3.18)
+
+# Target options
+
+set(TARGET CM33_ns)
+set(CPU Cortex-M33)
+set(PRJ_DIR "C:/reference/devtools/build/TestOutput/TestData/Examples/GCC/TrustZone/CM33_ns")
+set(OUT_DIR "C:/reference/devtools/build/TestOutput/TestData/Examples/GCC/TrustZone/CM33_ns/OutDir")
+set(INT_DIR "C:/reference/devtools/build/TestOutput/TestData/Examples/GCC/TrustZone/CM33_ns/IntDir")
+set(FPU SP_FPU)
+set(DSP DSP)
+set(TZ TZ)
+set(SECURE Non-secure)
+set(MVE NO_MVE)
+set(BYTE_ORDER Little-endian)
+set(CC_FLAGS_GLOBAL "-O -Wall -gdwarf-2 -mapcs-frame -mthumb")
+set(LD_FLAGS_GLOBAL "--entry=Reset_Handler -mthumb --specs=nosys.specs")
+set(LD_SCRIPT "C:/reference/devtools/build/TestOutput/TestData/Examples/GCC/TrustZone/CM33_ns/RTE/Device/ARMCM33_DSP_FP_TZ/gcc_arm.ld")
+
+set(DEFINES
+  ARMCM33_DSP_FP_TZ
+  _RTE_
+)
+
+set(INC_PATHS
+  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/Core/Include"
+  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/Include"
+  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/RTX/Include"
+  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/Device/ARM/ARMCM33/Include"
+  "C:/reference/devtools/build/TestOutput/TestData/Examples/GCC/TrustZone/CM33_ns/RTE/CMSIS"
+  "C:/reference/devtools/build/TestOutput/TestData/Examples/GCC/TrustZone/CM33_ns/RTE/_FVP_Simulation_Model"
+  "C:/reference/devtools/build/TestOutput/TestData/Examples/GCC/TrustZone/CM33_s"
+)
+
+set(CC_SRC_FILES
+  "C:/reference/devtools/build/TestOutput/TestData/Examples/GCC/TrustZone/CM33_ns/main_ns.c"
+  "C:/reference/devtools/build/TestOutput/TestData/Examples/GCC/TrustZone/CM33_ns/RTE/CMSIS/RTX_Config.c"
+  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/RTX/Source/rtx_lib.c"
+  "C:/reference/devtools/build/TestOutput/TestData/Examples/GCC/TrustZone/CM33_ns/RTE/Device/ARMCM33_DSP_FP_TZ/startup_ARMCM33.c"
+  "C:/reference/devtools/build/TestOutput/TestData/Examples/GCC/TrustZone/CM33_ns/RTE/Device/ARMCM33_DSP_FP_TZ/system_ARMCM33.c"
+)
+
+set(LIB_FILES
+  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/RTX/Library/GCC/libRTX_V8MMFN.a"
+  "C:/reference/devtools/build/TestOutput/TestData/Examples/GCC/TrustZone/CM33_s/OutDir/CM33_s_CMSE_Lib.o"
+)
+
+# Toolchain config map
+
+include ("C:/reference/devtools/build/TestOutput/cbuild/etc/GCC.10.2.1.cmake")
+
+# Setup project
+
+project(${TARGET} LANGUAGES C)
+
+# Global Flags
+
+set(CMAKE_C_FLAGS "${CC_CPU} ${CC_BYTE_ORDER} ${CC_DEFINES} ${CC_SECURE} ${CC_FLAGS} ${CC_FLAGS_GLOBAL} ${CC_SYS_INC_PATHS}")
+set(CMAKE_C_LINK_FLAGS "${LD_CPU} ${LD_SCRIPT} ${LD_SECURE} ${LD_FLAGS_GLOBAL} ${LD_FLAGS}")
+
+# Compilation Database
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+add_custom_target(database COMMAND ${CMAKE_COMMAND} -E copy_if_different "${INT_DIR}/compile_commands.json" "${OUT_DIR}")
+
+# Setup Target
+
+add_executable(${TARGET} ${CC_SRC_FILES})
+set(CMAKE_EXECUTABLE_SUFFIX ${EXE_SUFFIX})
+set_target_properties(${TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${OUT_DIR})
+target_include_directories(${TARGET} PUBLIC ${INC_PATHS})
+target_link_libraries(${TARGET} ${LIB_FILES})
+
+# Bin and Hex Conversion
+
+add_custom_command(TARGET ${TARGET} POST_BUILD COMMAND ${CMAKE_OBJCOPY} ${ELF2HEX})
+add_custom_command(TARGET ${TARGET} POST_BUILD COMMAND ${CMAKE_OBJCOPY} ${ELF2BIN})

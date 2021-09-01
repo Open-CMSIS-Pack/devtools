@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# -------------------------------------------------------
+# Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+# -------------------------------------------------------
+
+# Version: 1.0
+# Date: 2020-05-21
+# This script unsets the CMSIS setup env
+#
+# Pre-requisites:
+# - bash shell (for Windows: install git for Windows)
+
+unset CMSIS_PACK_ROOT
+unset CMSIS_COMPILER_ROOT
+unset CMSIS_BUILD_ROOT
+
+echo "unset CMSIS_PACK_ROOT"
+echo "unset CMSIS_COMPILER_ROOT"
+echo "unset CMSIS_BUILD_ROOT"

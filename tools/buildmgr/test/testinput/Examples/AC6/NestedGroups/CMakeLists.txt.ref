@@ -1,0 +1,81 @@
+# CMSIS Build CMakeLists generated on 2021-03-30T08:56:53
+
+cmake_minimum_required(VERSION 3.18)
+
+# Target options
+
+set(TARGET NestedGroups)
+set(CPU Cortex-M0)
+set(PRJ_DIR "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/NestedGroups")
+set(OUT_DIR "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/NestedGroups/OutDir")
+set(INT_DIR "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/NestedGroups/IntDir")
+set(LD_SCRIPT "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/NestedGroups/RTE/Device/ARMCM0/ARMCM0_ac6.sct")
+
+set(DEFINES
+  ARMCM0
+  _RTE_
+)
+
+set(INC_PATHS
+  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.7.0/CMSIS/Core/Include"
+  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.7.0/Device/ARM/ARMCM0/Include"
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/NestedGroups/RTE/_Project"
+)
+
+set(CC_SRC_FILES
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/NestedGroups/File0.c"
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/NestedGroups/File1.c"
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/NestedGroups/File2.c"
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/NestedGroups/File3.c"
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/NestedGroups/File4.c"
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/NestedGroups/RTE/Device/ARMCM0/startup_ARMCM0.c"
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/NestedGroups/RTE/Device/ARMCM0/system_ARMCM0.c"
+)
+
+set(CC_FLAGS_C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/NestedGroups/File0.c "-DGROUP0")
+set(CC_FLAGS_C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/NestedGroups/File1.c "-DGROUP0 -DGROUP1")
+set(CC_FLAGS_C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/NestedGroups/File2.c "-DGROUP0 -DGROUP2")
+set(CC_FLAGS_C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/NestedGroups/File3.c "-DGROUP0 -DGROUP3")
+set(CC_FLAGS_C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/NestedGroups/File4.c "-DGROUP0 -DGROUP3")
+
+# Toolchain config map
+
+include ("C:/sandbox/devtools/build/TestOutput/cbuild/etc/AC6.6.16.0.cmake")
+
+# Setup project
+
+project(${TARGET} LANGUAGES C)
+
+# Global Flags
+
+set(CMAKE_C_FLAGS "${CC_CPU} ${CC_DEFINES} ${CC_FLAGS} ${CC_SYS_INC_PATHS}")
+set(CMAKE_C_LINK_FLAGS "${LD_CPU} ${LD_SCRIPT} ${LD_FLAGS}")
+
+# Local Flags
+
+foreach(SRC ${CC_SRC_FILES})
+  string(REPLACE " " "?" S ${SRC})
+  if(DEFINED CC_FLAGS_${S})
+    set(CC_FLAGS_LOCAL "${CC_FLAGS_${S}}")
+  else()
+    set(CC_FLAGS_LOCAL "${CC_FLAGS_GLOBAL}")
+  endif()
+  set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS "${CC_FLAGS_LOCAL}")
+endforeach()
+
+# Compilation Database
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+add_custom_target(database COMMAND ${CMAKE_COMMAND} -E copy_if_different "${INT_DIR}/compile_commands.json" "${OUT_DIR}")
+
+# Setup Target
+
+add_executable(${TARGET} ${CC_SRC_FILES})
+set(CMAKE_EXECUTABLE_SUFFIX ${EXE_SUFFIX})
+set_target_properties(${TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${OUT_DIR})
+target_include_directories(${TARGET} PUBLIC ${INC_PATHS})
+
+# Bin and Hex Conversion
+
+add_custom_command(TARGET ${TARGET} POST_BUILD COMMAND ${CMAKE_OBJCOPY} ${ELF2HEX})
+add_custom_command(TARGET ${TARGET} POST_BUILD COMMAND ${CMAKE_OBJCOPY} ${ELF2BIN})

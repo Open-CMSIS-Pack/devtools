@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<package schemaVersion="1.7.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="PACK.xsd">
+  <name>TestPack</name>
+
+  <description>TestPack description</description>
+
+  <vendor>ARM</vendor>
+
+  <license>LICENSE</license>
+
+  <url>http://arm.com/</url>
+
+  <requirements>
+    <packages>
+      <package name="ExternalPack" vendor="ARM" version="5.5.5"/>
+    </packages>
+  </requirements>
+
+  <releases>
+    <release date="2021-08-09" version="1.0.0">Initial release</release>
+  </releases>
+
+  <apis>
+    <api Capiversion="1.0.0" Cclass="Cclass1" Cgroup="Group1" Csub="Subgroup1">
+      <description>Api1</description>
+      <files>
+        <file attr="config" category="header" name="lib1/api/interface.h" version="1.0.0"/>
+      </files>
+    </api>
+  </apis>
+
+  <taxonomy>
+    <description Cclass="Class1">Class1 taxonomy</description>
+    <description Cclass="Class2">Class2 taxonomy</description>
+    <description Cclass="Class3">Class3 taxonomy</description>
+  </taxonomy>
+
+  <conditions>
+    <condition id="component2 Condition">
+      <require Cclass="Class3" Cgroup="Group3" Csub="Subgroup3"/>
+      <require Cclass="External Class 1" Cgroup="External Group 1" Csub="External Sub 1"/>
+    </condition>
+    <condition id="lib1/config/config.h Condition">
+      <require Cclass="External Class 2" Cgroup="External Group 2" Csub="External Sub 2"/>
+    </condition>
+  </conditions>
+
+  <components>
+    <component Cclass="Class1" Cgroup="Group1" Csub="Subgroup1" Cversion="1.1.1">
+      <description>Component1</description>
+      <files>
+        <file category="source" name="lib1/src/lib1.cpp"/>
+        <file category="include" name="lib1/inc/"/>
+      </files>
+    </component>
+    <component Cclass="Class2" Cgroup="Group2" Csub="Subgroup2" Cversion="2.2.2" condition="component2 Condition">
+      <description>Component2</description>
+      <files>
+        <file category="source" name="lib2/src/lib2.cpp"/>
+        <file category="source" name="lib3/src/lib3.cpp"/>
+        <file category="include" name="lib2/inc/"/>
+        <file category="include" name="lib3/inc/"/>
+        <file attr="config" category="header" condition="lib1/config/config.h Condition" name="lib1/config/config.h" version="1.0.0"/>
+      </files>
+    </component>
+    <component Cclass="Class3" Cgroup="Group3" Csub="Subgroup3" Cversion="3.3.3">
+      <description>Component3</description>
+      <files>
+        <file category="source" name="lib4/src/lib4.cpp"/>
+        <file category="source" name="lib5/src/lib5.cpp"/>
+        <file category="include" name="lib4/inc/"/>
+        <file category="include" name="lib5/inc/"/>
+      </files>
+    </component>
+  </components>
+</package>
+

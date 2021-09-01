@@ -1,0 +1,162 @@
+name: packgen
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+     - '.github/workflows/packgen.yml'
+     - 'CMakeLists.txt'
+     - 'libs/crossplatform/**'
+     - 'libs/rtefsutils/**'
+     - 'libs/xmlreader/**'
+     - 'libs/xmltree/**'
+     - 'libs/xmltreeslim/**'
+     - 'tools/packgen/**'
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ macos-10.15, ubuntu-20.04, windows-2019 ]
+        include:
+          - os: macos-10.15
+            target: darwin64
+            binary: packgen
+          - os: ubuntu-20.04
+            target: linux64
+            binary: packgen
+          - os: windows-2019
+            target: windows64
+            binary: packgen.exe
+
+    steps:
+      - name: Install macos deps
+        if: ${{ startsWith(matrix.os, 'macos') }}
+        run: |
+          brew install \
+            ninja
+
+      - name: Install linux deps
+        if: ${{ startsWith(matrix.os, 'ubuntu') }}
+        run: |
+          sudo apt update
+          sudo apt-get install \
+            bc \
+            build-essential \
+            ninja-build
+
+      - name: Install windows deps
+        if: ${{ startsWith(matrix.os, 'windows') }}
+        run: choco install -y ninja
+
+      - name: Checkout devtools
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+
+      - name: Create build folder
+        run: mkdir build
+
+      - name: Configure windows build for amd64
+        if: ${{ startsWith(matrix.os, 'windows') }}
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: amd64
+
+      - uses: ammaraskar/gcc-problem-matcher@master
+        if: ${{ startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu') }}
+      - uses: ammaraskar/msvc-problem-matcher@master
+        if: ${{ startsWith(matrix.os, 'windows') }}
+
+      - name: Build packgen
+        run: |
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=Release ..
+          cmake --build . --target packgen
+        working-directory: ./build
+
+      - name: Archive packgen
+        uses: actions/upload-artifact@v2
+        with:
+          name: packgen-${{ matrix.target }}
+          path: ./build/tools/packgen/${{ matrix.target }}/Release/${{ matrix.binary }}
+          retention-days: 1
+          if-no-files-found: error
+
+  unittest:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ macos-10.15, ubuntu-20.04, windows-2019 ]
+        include:
+          - os: macos-10.15
+            target: darwin64
+          - os: ubuntu-20.04
+            target: linux64
+          - os: windows-2019
+            target: windows64
+
+    steps:
+      - name: Install macos deps
+        if: ${{ startsWith(matrix.os, 'macos') }}
+        run: |
+          brew install \
+            ninja
+
+      - name: Install linux deps
+        if: ${{ startsWith(matrix.os, 'ubuntu') }}
+        run: |
+          sudo apt update
+          sudo apt-get install \
+            bc \
+            build-essential \
+            ninja-build
+
+      - name: Install windows deps
+        if: ${{ startsWith(matrix.os, 'windows') }}
+        run: choco install -y ninja
+
+      - name: Checkout devtools
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+
+      - name: Create build folder
+        run: mkdir build
+
+      - name: Configure windows build for amd64
+        if: ${{ startsWith(matrix.os, 'windows') }}
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: amd64
+
+      - uses: ammaraskar/gcc-problem-matcher@master
+        if: ${{ startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu') }}
+      - uses: ammaraskar/msvc-problem-matcher@master
+        if: ${{ startsWith(matrix.os, 'windows') }}
+
+      - name: Build and run packgen unit tests
+        run: |
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug ..
+          cmake --build . --target PackGenUnitTests
+          ctest -C Debug -R PackGenUnitTests
+        working-directory: ./build
+
+      - name: Archive unit tests results
+        uses: actions/upload-artifact@v2
+        with:
+          name: unittest-${{ matrix.target }}
+          path: ./build/packgenunit_test_report.xml
+          retention-days: 1
+          if-no-files-found: error
+        if: ${{ always() }}
+
+      - name: Publish packgen unit test results
+        uses: mikepenz/action-junit-report@v2
+        with:
+          check_name: "Packgen unit tests [${{ matrix.target }}]"
+          report_paths: build/tools/packgen/test/packgenunit_test_report.xml
+

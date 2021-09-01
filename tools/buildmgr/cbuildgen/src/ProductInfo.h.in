@@ -1,0 +1,16 @@
+// Product Information
+
+#define MAJOR_VERSION @PROJECT_VERSION_MAJOR@
+#define MINOR_VERSION @PROJECT_VERSION_MINOR@
+#define PATCH_VERSION @PROJECT_VERSION_PATCH@
+#define BUILD_VERSION 0
+
+#define COMPANY_NAME        "Arm Ltd."
+#define FILE_DESCRIPTION    "Build Process Manager"
+#define PRODUCT_NAME        "Build Process Manager"
+#define INTERNAL_NAME       "cbuildgen"
+#define ORIGINAL_FILENAME   "cbuildgen"
+#define COPYRIGHT_NOTICE    "(C) @PROJECT_VERSION_YEAR@ ARM"
+
+#define VERSION_STRING "@PROJECT_VERSION_FULL@"
+#define VERSION_STRING_RC "@PROJECT_VERSION_FULL@"

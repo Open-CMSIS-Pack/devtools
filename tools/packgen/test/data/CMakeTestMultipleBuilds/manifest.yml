@@ -1,0 +1,53 @@
+### CMSIS Pack manifest file ###
+
+build:
+  - name: build-dev1
+    options: "cmake -G Ninja -DDEVICE=DEV1"
+  - name: build-dev2
+    options: "cmake -G Ninja -DDEVICE=DEV2"
+  - name: build-dev3
+    options: "cmake -G Ninja -DDEVICE=DEV3"
+
+packs:
+  - name: "TestPackMultipleBuilds"
+    description: "TestPackMultipleBuilds description"
+    vendor: "ARM"
+    license: "LICENSE"
+    url: "http://arm.com/"
+
+    releases:
+      - version: "1.0.0"
+        date: "2021-08-12"
+        description: "Initial release"
+
+    components:
+      - name: core
+        target: lib
+        build: ["build-dev1", "build-dev2", "build-dev3"]
+        operation: intersection
+        attributes: {Cclass: "Class", Cgroup: "Group", Csub: "Core", Cversion: "0.0.0"}
+        description: "Core component"
+
+      - name: device1
+        target: lib
+        build: ["build-dev1", "build-dev2", "build-dev3"]
+        operation: difference
+        attributes: {Cclass: "Class", Cgroup: "Group", Csub: "Device1", Cversion: "1.1.1"}
+        dependencies: [core]
+        description: "Device1 component"
+
+      - name: device2
+        target: lib
+        build: ["build-dev2", "build-dev1", "build-dev3"]
+        operation: difference
+        attributes: {Cclass: "Class", Cgroup: "Group", Csub: "Device2", Cversion: "2.2.2"}
+        dependencies: [core]
+        description: "Device2 component"
+
+      - name: device3
+        target: lib
+        build: ["build-dev3", "build-dev1", "build-dev2"]
+        operation: difference
+        attributes: {Cclass: "Class", Cgroup: "Group", Csub: "Device3", Cversion: "3.3.3"}
+        dependencies: [core]
+        description: "Device3 component"

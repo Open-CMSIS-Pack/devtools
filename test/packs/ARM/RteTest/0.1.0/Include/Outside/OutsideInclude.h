@@ -1,0 +1,6 @@
+#ifndef OUTSIDE_INCLUDE_H
+#define OUTSIDE_INCLUDE_H
+
+#define OUTSIDE_INCLUDE
+
+#endif // OUTSIDE_INCLUDE_H

@@ -1,0 +1,7 @@
+This is a test project to validate:
+1) RTE support for pre-include files
+During build warnings caused by #warning preprocessor directives are expected and treated as 'pass'
+Errors are not expected, treated as 'fail'
+
+2) Conditional dependencies: component G_B is NOT required for Cortex-M3 core 
+ 

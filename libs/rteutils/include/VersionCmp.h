@@ -1,0 +1,109 @@
+#ifndef VersionCmp_H
+#define VersionCmp_H
+/******************************************************************************/
+/* RTE - CMSIS Run-Time Environment */
+/******************************************************************************/
+/** @file VersionCmp.h
+* @brief Semantic Version comparison according to http://semver.org/
+*/
+/******************************************************************************/
+/*
+ * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+/******************************************************************************/
+
+#include <string>
+
+class VersionCmp
+{
+
+private:
+  VersionCmp() {}; // protection
+
+public:
+
+  enum MatchMode {
+    ANY_VERSION,   // any installed version is accepted
+    FIXED_VERSION, // fixed version is accepted
+    LATEST_VERSION,// use the latest version
+    EXCLUDED_VERSION  // exclude specified version
+  };
+
+
+public:
+  /**
+   * @brief Split v1 and v2 according to http://semver.org/ and compare individually
+   * @param v1 version to be compared
+   * @param v2 version to be compared
+   * @param cs true in case of case sensitive comparison
+   * @return 0 if both versions are equal, > 0 if v1 is greater than v2, < 0 if v2 is greater than v1
+  */
+  static int Compare(const std::string& v1, const std::string& v2, bool cs = true);
+  /**
+   * @brief compare version with range versions in the form major.minor.release:major.minor.release
+   * @param version version to be compared
+   * @param versionRange range version to be compared
+   * @return 0 if version is between range version, > 0 if greater, < 0 if smaller
+  */
+  static int RangeCompare(const std::string& version, const std::string& versionRange);
+  /**
+   * @brief remove string after plus sign
+   * @param v version string
+   * @return string ahead of plus sign
+  */
+  static std::string RemoveVersionMeta(const std::string& v);
+  /**
+   * @brief compare string to return mode constant
+   * @param mode mode specification: "fixed" | "latest" | "excluded"
+   * @return mode constant
+  */
+  static MatchMode   MatchModeFromString(const std::string& mode);
+  /**
+   * @brief compare mode with constant to return string
+   * @param mode mode constant
+   * @return mode string: "fixed" | "latest" | "excluded"
+  */
+  static std::string MatchModeToString(VersionCmp::MatchMode mode);
+
+
+  // helper compare class for map containers (version compare operators)
+  class Less
+  {
+  public:
+    bool operator()(const std::string& a, const std::string& b) const
+    {
+      return VersionCmp::Compare(a, b) < 0;
+    }
+  };
+
+  class LessNoCase
+  {
+  public:
+    bool operator()(const std::string& a, const std::string& b) const
+    {
+      return VersionCmp::Compare(a, b, false) < 0;
+    }
+  };
+
+  class Greater
+  {
+  public:
+    bool operator()(const std::string& a, const std::string& b) const
+    {
+      return VersionCmp::Compare(a, b) > 0;
+    }
+  };
+
+  class GreaterNoCase
+  {
+  public:
+    bool operator()(const std::string& a, const std::string& b) const
+    {
+      return VersionCmp::Compare(a, b, false) > 0;
+    }
+  };
+};
+
+#endif // VersionCmp_H

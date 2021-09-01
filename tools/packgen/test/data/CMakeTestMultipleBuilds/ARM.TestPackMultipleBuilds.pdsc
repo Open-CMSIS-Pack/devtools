@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<package schemaVersion="1.7.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="PACK.xsd">
+  <name>TestPackMultipleBuilds</name>
+
+  <description>TestPackMultipleBuilds description</description>
+
+  <vendor>ARM</vendor>
+
+  <license>LICENSE</license>
+
+  <url>http://arm.com/</url>
+
+  <releases>
+    <release date="2021-08-12" version="1.0.0">Initial release</release>
+  </releases>
+
+  <conditions>
+    <condition id="device1 Condition">
+      <require Cclass="Class" Cgroup="Group" Csub="Core"/>
+    </condition>
+    <condition id="device2 Condition">
+      <require Cclass="Class" Cgroup="Group" Csub="Core"/>
+    </condition>
+    <condition id="device3 Condition">
+      <require Cclass="Class" Cgroup="Group" Csub="Core"/>
+    </condition>
+  </conditions>
+
+  <components>
+    <component Cclass="Class" Cgroup="Group" Csub="Core" Cversion="0.0.0">
+      <description>Core component</description>
+      <files>
+        <file category="source" name="src/core.cpp"/>
+        <file category="include" name="inc/"/>
+      </files>
+    </component>
+    <component Cclass="Class" Cgroup="Group" Csub="Device1" Cversion="1.1.1" condition="device1 Condition">
+      <description>Device1 component</description>
+      <files>
+        <file category="source" name="src/dev1.cpp"/>
+        <file category="include" name="inc1/"/>
+      </files>
+    </component>
+    <component Cclass="Class" Cgroup="Group" Csub="Device2" Cversion="2.2.2" condition="device2 Condition">
+      <description>Device2 component</description>
+      <files>
+        <file category="source" name="src/dev2.cpp"/>
+        <file category="include" name="inc2/"/>
+      </files>
+    </component>
+    <component Cclass="Class" Cgroup="Group" Csub="Device3" Cversion="3.3.3" condition="device3 Condition">
+      <description>Device3 component</description>
+      <files>
+        <file category="source" name="src/dev3.cpp"/>
+        <file category="include" name="inc3/"/>
+      </files>
+    </component>
+  </components>
+</package>
+

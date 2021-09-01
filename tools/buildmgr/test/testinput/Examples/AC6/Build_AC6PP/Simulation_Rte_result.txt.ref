@@ -1,0 +1,125 @@
+ --- includePaths ---
+  /ARM/CMSIS/5.7.0/CMSIS/Core/Include
+  /ARM/CMSIS/5.7.0/CMSIS/RTOS2/Include
+  /ARM/CMSIS/5.7.0/CMSIS/RTOS2/RTX/Include
+  /ARM/CMSIS/5.7.0/Device/ARM/ARMCM3/Include
+  /Build_AC6PP/RTE/CMSIS
+  /Build_AC6PP/RTE/_Simulation
+
+ --- libraries ---
+  /ARM/CMSIS/5.7.0/CMSIS/RTOS2/RTX/Library/ARM/RTX_CM3.lib
+
+ --- defines ---
+  ARMCM3
+  _RTE_
+
+ --- compiler ---
+  AC6
+
+ --- compilerVersion ---
+  6.0.0:6.99.99
+
+ --- linkerScript ---
+  /Build_AC6PP/RTE/Device/ARMCM3/ARMCM3_ac6.sct
+
+ --- configFiles ---
+  /Build_AC6PP/RTE/CMSIS/RTX_Config.h : /ARM/CMSIS/5.7.0/CMSIS/RTOS2/RTX/Config/RTX_Config.h
+  /Build_AC6PP/RTE/Device/ARMCM3/startup_ARMCM3.c : /ARM/CMSIS/5.7.0/Device/ARM/ARMCM3/Source/startup_ARMCM3.c
+  /Build_AC6PP/RTE/Device/ARMCM3/system_ARMCM3.c : /ARM/CMSIS/5.7.0/Device/ARM/ARMCM3/Source/system_ARMCM3.c
+
+ --- cSourceFiles ---
+  RTE/CMSIS/RTOS2/Keil RTX5/Library
+    /ARM/CMSIS/5.7.0/CMSIS/RTOS2/RTX/Source/rtx_lib.c
+    /Build_AC6PP/RTE/CMSIS/RTX_Config.c
+  RTE/Compiler/IO/STDOUT/ITM
+    /Keil/ARM_Compiler/1.6.3/Source/retarget_io.c
+  RTE/Device/Startup/C Startup
+    /Build_AC6PP/RTE/Device/ARMCM3/startup_ARMCM3.c
+    /Build_AC6PP/RTE/Device/ARMCM3/system_ARMCM3.c
+
+ --- cxxSourceFiles ---
+  Source Files
+    /Build_AC6PP/Main.cpp
+
+ --- targetCFlags ---
+  -Oz
+  -Wno-documentation
+  -Wno-documentation-unknown-command
+  -Wno-license-management
+  -Wno-missing-noreturn
+  -Wno-missing-prototypes
+  -Wno-missing-variable-declarations
+  -Wno-nonportable-include-path
+  -Wno-packed
+  -Wno-parentheses-equality 
+  -Wno-reserved-id-macro
+  -Wno-sign-conversion
+  -Wno-unused-macros
+  -ffunction-sections
+  -fno-rtti
+  -fshort-enums
+  -fshort-wchar
+  -funsigned-char
+  -gdwarf-3
+  -std=c99
+  -xc
+
+ --- targetCxxFlags ---
+  -Oz
+  -Wno-documentation
+  -Wno-documentation-unknown-command
+  -Wno-license-management
+  -Wno-missing-noreturn
+  -Wno-missing-prototypes
+  -Wno-missing-variable-declarations
+  -Wno-nonportable-include-path
+  -Wno-packed
+  -Wno-parentheses-equality 
+  -Wno-reserved-id-macro
+  -Wno-sign-conversion
+  -Wno-unused-macros
+  -ffunction-sections
+  -fno-exceptions
+  -fno-rtti
+  -fshort-enums
+  -fshort-wchar
+  -funsigned-char
+  -gdwarf-3
+  -std=c++14
+  -xc++
+
+ --- targetLdFlags ---
+  --callgraph
+  --entry=Reset_Handler
+  --info sizes
+  --info summarysizes
+  --info totals
+  --info unused
+  --info veneers
+  --load_addr_map_info
+  --map
+  --strict
+  --summary_stderr
+  --symbols
+  --xref
+
+ --- outputName ---
+  Build_AC6PP
+
+ --- outputType ---
+  exe
+
+ --- targetAttributes ---
+  Dcore:Cortex-M3
+  Ddsp:NO_DSP
+  Dendian:Little-endian
+  Dfpu:NO_FPU
+  Dmve:NO_MVE
+  Dname:ARMCM3
+  Dsecure:Non-secure
+  Dtz:NO_TZ
+  Dvendor:ARM:82
+  Pname:
+  Tcompiler:ARMCC
+  Toptions:AC6
+

@@ -1,0 +1,45 @@
+
+TARGET: lib1
+BUILD: build1
+src: lib1/src/lib1.cpp
+inc: lib1/inc
+
+TARGET: lib2
+BUILD: build1
+src: lib2/src/lib2.cpp
+inc: lib2/inc
+inc: lib3/inc
+inc: lib4/inc
+dep: lib3
+dep: lib4
+
+TARGET: lib3
+BUILD: build1
+src: lib3/src/lib3.cpp
+inc: lib3/inc
+
+TARGET: lib4
+BUILD: build1
+src: lib4/src/lib4.cpp
+inc: lib4/inc
+
+TARGET: lib5
+BUILD: build1
+src: lib5/src/lib5.cpp
+inc: lib5/inc
+
+COMPONENT: component1
+src: lib1/src/lib1.cpp
+inc: lib1/inc
+
+COMPONENT: component2
+src: lib2/src/lib2.cpp
+src: lib3/src/lib3.cpp
+inc: lib2/inc
+inc: lib3/inc
+
+COMPONENT: component3
+src: lib4/src/lib4.cpp
+src: lib5/src/lib5.cpp
+inc: lib4/inc
+inc: lib5/inc

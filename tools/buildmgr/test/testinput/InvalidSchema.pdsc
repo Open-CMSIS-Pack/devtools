@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<package schemaVersion="1.3" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="PACK.xsd">
+  <name>CMSIS</name>
+  <description>CMSIS (Cortex Microcontroller Software Interface Standard)</description>
+  <vendor>ARM</vendor>
+  <!-- <license>license.txt</license> -->
+  <url>http://www.keil.com/pack/</url>
+
+  <releases>
+    <release version="5.7.0" date="2020-04-09">
+      CMSIS-Build: 0.9.0 (beta)
+        - Draft for CMSIS Project description (CPRJ)
+      CMSIS-Core(M): 5.4.0 (see revision history for details)
+        - Cortex-M55 cpu support
+        - Enhanced MVE support for Armv8.1-MML
+        - Fixed device config define checks.
+        - L1 Cache functions for Armv7-M and later
+      CMSIS-Core(A): 1.2.0 (see revision history for details)
+        - Fixed GIC_SetPendingIRQ to use GICD_SGIR
+        - Added missing DSP intrinsics
+        - Reworked assembly intrinsics: volatile, barriers and clobber
+    </release>
+  </releases>
+
+  <taxonomy>
+    <description Cclass="Audio">Software components for audio processing</description>
+    <description Cclass="Board Support">Generic Interfaces for Evaluation and Development Boards</description>
+    <description Cclass="Board Part">Drivers that support an external component available on an evaluation board</description>
+    <description Cclass="Compiler">Compiler Software Extensions</description>
+    <description Cclass="CMSIS" doc="CMSIS/Documentation/General/html/index.html">Cortex Microcontroller Software Interface Components</description>
+    <description Cclass="CMSIS Driver" doc="CMSIS/Documentation/Driver/html/index.html">Unified Device Drivers compliant to CMSIS-Driver Specifications</description>
+    <description Cclass="Device" doc="CMSIS/Documentation/Core/html/index.html">Startup, System Setup</description>
+    <description Cclass="Data Exchange">Data exchange or data formatter</description>
+    <description Cclass="Extension Board">Drivers that support an extension board or shield</description>
+    <description Cclass="File System">File Drive Support and File System</description>
+    <description Cclass="IoT Client">IoT cloud client connector</description>
+    <description Cclass="IoT Service">IoT specific services</description>
+    <description Cclass="IoT Utility">IoT specific software utility</description>
+    <description Cclass="Graphics">Graphical User Interface</description>
+    <description Cclass="Network">Network Stack using Internet Protocols</description>
+    <description Cclass="RTOS">Real-time Operating System</description>
+    <description Cclass="Security">Encryption for secure communication or storage</description>
+    <description Cclass="USB">Universal Serial Bus Stack</description>
+    <description Cclass="Utility">Generic software utility components</description>
+  </taxonomy>
+
+  <devices>
+    <!-- ******************************  Cortex-M0  ****************************** -->
+    <family Dfamily="ARM Cortex M0" Dvendor="ARM:82">
+      <book name="http://infocenter.arm.com/help/topic/com.arm.doc.dui0497a/index.html" title="Cortex-M0 Device Generic Users Guide"/>
+      <description>
+The Cortex-M0 processor is an entry-level 32-bit Arm Cortex processor designed for a broad range of embedded applications. It offers significant benefits to developers, including:
+- simple, easy-to-use programmers model
+- highly efficient ultra-low power operation
+- excellent code density
+- deterministic, high-performance interrupt handling
+- upward compatibility with the rest of the Cortex-M processor family.
+      </description>
+      <!-- debug svd="Device/ARM/SVD/ARMCM0.svd"/ SVD files do not contain any peripheral -->
+      <memory id="IROM1"                                start="0x00000000" size="0x00040000" startup="1" default="1"/>
+      <memory id="IRAM1"                                start="0x20000000" size="0x00020000" init   ="0" default="1"/>
+      <!--algorithm name="Device/ARM/Flash/NEW_DEVICE.FLM" start="0x00000000" size="0x00040000"             default="1"/-->
+
+      <device Dname="ARMCM0">
+        <processor Dcore="Cortex-M0" DcoreVersion="r0p0" Dfpu="NO_FPU" Dmpu="NO_MPU" Dendian="Configurable" Dclock="10000000"/>
+        <compile header="Device/ARM/ARMCM0/Include/ARMCM0.h" define="ARMCM0"/>
+      </device>
+    </family>
+  </devices>
+
+  <apis>
+    <api Cclass="Device" Cgroup="IRQ Controller" Capiversion="1.0.0" exclusive="1">
+      <description>Device interrupt controller interface</description>
+      <files>
+        <file category="header" name="CMSIS/Core_A/Include/irq_ctrl.h"/>
+      </files>
+    </api>
+  </apis>
+
+  <conditions>
+    <condition id="ARMCC6">
+      <accept Tcompiler="ARMCC" Toptions="AC6"/>
+      <accept Tcompiler="ARMCC" Toptions="AC6LTO"/>
+  </conditions>
+
+  <examples>
+    <example name="DSP_Lib Bayes example" doc="Abstract.txt" folder="CMSIS/DSP/Examples/ARM/arm_bayes_example">
+      <description>DSP_Lib Bayes example</description>
+      <board name="uVision Simulator" vendor="Keil"/>
+      <project>
+        <environment name="uv" load="arm_bayes_example.uvprojx"/>
+      </project>
+      <attributes>
+        <component Cclass="CMSIS" Cgroup="CORE"/>
+        <component Cclass="CMSIS" Cgroup="DSP"/>
+        <component Cclass="Device" Cgroup="Startup"/>
+        <category>Getting Started</category>
+      </attributes>
+    </example>
+  </examples>
+
+</package>

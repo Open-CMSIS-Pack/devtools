@@ -1,0 +1,6 @@
+#ifndef GLOBAL_LEVEL_H
+#define GLOBAL_LEVEL_H
+
+#define FILE_GLOBAL_LEVEL_H
+
+#endif // GLOBAL_LEVEL_H

@@ -1,0 +1,1 @@
+#define MY_LOCAL_PRE_INCLUDE 1
