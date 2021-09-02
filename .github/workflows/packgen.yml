@@ -11,6 +11,7 @@ on:
      - 'libs/xmltree/**'
      - 'libs/xmltreeslim/**'
      - 'tools/packgen/**'
+     - '!tools/packgen/jenkins/**'
 
 jobs:
   build:
