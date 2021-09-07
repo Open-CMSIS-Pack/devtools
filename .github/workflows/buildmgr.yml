@@ -3,20 +3,23 @@ on:
   pull_request:
     branches: [ main ]
     paths:
-     - '.github/workflows/buildmgr.yml'
-     - 'CMakeLists.txt'
-     - 'libs/crossplatform/**'
-     - 'libs/errlog/**'
-     - 'libs/xmlreader/**'
-     - 'libs/xmltree/**'
-     - 'libs/xmltreeslim/**'
-     - 'libs/rteutils/**'
-     - 'libs/rtemodel/**'
-     - 'libs/rtefsutils/**'
-     - 'tools/buildmgr/**'
+      - '.github/workflows/buildmgr.yml'
+      - 'CMakeLists.txt'
+      - 'libs/crossplatform/**'
+      - 'libs/errlog/**'
+      - 'libs/xmlreader/**'
+      - 'libs/xmltree/**'
+      - 'libs/xmltreeslim/**'
+      - 'libs/rteutils/**'
+      - 'libs/rtemodel/**'
+      - 'libs/rtefsutils/**'
+      - 'tools/buildmgr/**'
+  release:
+    types: [published]
 
 jobs:
   build:
+    if: ${{ github.event_name == 'pull_request' || (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/buildmgr/')) }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     strategy:
@@ -95,6 +98,7 @@ jobs:
           if-no-files-found: error
 
   docs:
+    if: ${{ github.event_name == 'pull_request' || (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/buildmgr/')) }}
     runs-on: ubuntu-20.04
     timeout-minutes: 5
     steps:
@@ -203,6 +207,16 @@ jobs:
           path: tools/buildmgr/cbuildgen/installer/cmsis-build*.deb
           retention-days: 1
           if-no-files-found: error
+
+      - name: Attach installer to release
+        if: ${{ github.event_name == 'release' }}
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: tools/buildmgr/cbuildgen/installer/cbuild_install.sh
+          tag: ${{ github.ref }}
+          overwrite: true
+          asset_name: cbuild_install.sh
 
   tests:
     needs: [ create_installer ]
