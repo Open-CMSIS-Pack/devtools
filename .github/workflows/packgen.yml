@@ -11,6 +11,8 @@ on:
      - 'libs/xmltree/**'
      - 'libs/xmltreeslim/**'
      - 'tools/packgen/**'
+  release:
+    types: [published]
 
 jobs:
   build:
@@ -83,6 +85,16 @@ jobs:
           path: ./build/tools/packgen/${{ matrix.target }}/Release/${{ matrix.binary }}
           retention-days: 1
           if-no-files-found: error
+
+      - name: Attach packgen to release
+        if: ${{ github.event_name == 'release' }}
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ./build/tools/packgen/${{ matrix.target }}/Release/${{ matrix.binary }}
+          tag: ${{ github.ref }}
+          overwrite: true
+          asset_name: packgen-${{ matrix.target }}
 
   unittest:
     runs-on: ${{ matrix.os }}
