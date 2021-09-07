@@ -92,29 +92,33 @@ int PackGen::RunPackGen(int argc, char *argv[]) {
     return 1;
   }
 
-  // Check CMake
-  result = generator.ExecCommand("cmake --version");
-  if (result.second) {
-    cerr << "packgen error: CMake was not found" << endl;
-    return 1;
-  }
+  // Avoid CMake calls when packs to be generated don't contain components and verbose mode is disabled
+  if (!generator.m_noComponents || generator.m_verbose) {
 
-  // Create CMake File API query
-  if (!generator.CreateQuery()) {
-    cerr << "packgen error: query creation failed" << endl;
-    return 1;
-  }
+    // Check CMake
+    result = generator.ExecCommand("cmake --version");
+    if (result.second) {
+      cerr << "packgen error: CMake was not found" << endl;
+      return 1;
+    }
 
-  // Parse CMake File API reply
-  if (!generator.ParseTarget()) {
-    cerr << "packgen error: target parsing failed" << endl;
-    return 1;
-  }
+    // Create CMake File API query
+    if (!generator.CreateQuery()) {
+      cerr << "packgen error: CMake File API query creation failed" << endl;
+      return 1;
+    }
 
-  // Elaborate component contents
-  if (!generator.CreateComponents()) {
-    cerr << "packgen error: component generation failed" << endl;
-    return 1;
+    // Parse CMake File API reply
+    if (!generator.ParseReply()) {
+      cerr << "packgen error: CMake File API reply parsing failed" << endl;
+      return 1;
+    }
+
+    // Elaborate component contents
+    if (!generator.CreateComponents()) {
+      cerr << "packgen error: component generation failed" << endl;
+      return 1;
+    }
   }
 
   // Create PDSC file and copy pack files
@@ -164,6 +168,10 @@ bool PackGen::ParseManifest(void) {
 
     // Pack
     YAML::Node packs = manifest["packs"];
+    if (!packs.IsDefined()) {
+      cerr << "packgen error: mandatory 'packs' key is not defined!" << endl;
+      return false;
+    }
     for (const auto& item : packs) {
       packInfo pack;
 
@@ -277,12 +285,20 @@ void PackGen::ParseManifestApis(const YAML::Node node, packInfo& pack) {
 }
 
 bool PackGen::ParseManifestComponents(const YAML::Node node, packInfo& pack) {
+  uint32_t nodes = CountNodes(node, "components");
+  if (nodes >= 1) {
+    m_noComponents = false;
+  }
+  if (nodes > 1) {
+    cerr << "packgen warning: multiple 'components' keys are defined, data can be lost" << endl;
+  }
+
   YAML::Node components = node["components"];
   for (const auto& item : components) {
     const string& name = item["name"].as<string>();
 
     if (m_components.find(name) != m_components.end()) {
-      cerr << "packgen warning: component '" << name << "' has been defined multiple times" << endl;
+      cerr << "packgen warning: component '" << name << "' is defined multiple times" << endl;
       continue;
     }
     pack.components.push_back(name);
@@ -508,7 +524,7 @@ bool PackGen::CreateComponents(void) {
   return true;
 }
 
-bool PackGen::ParseTarget(void) {
+bool PackGen::ParseReply(void) {
 
   error_code ec;
   fs::current_path(m_repoRoot, ec);
@@ -518,6 +534,10 @@ bool PackGen::ParseTarget(void) {
 
     const string& buildRoot = m_outputRoot + "/" + build.name;
     const string& replyDir = buildRoot + "/.cmake/api/v1/reply";
+
+    if (fs::is_empty(replyDir, ec)) {
+      return false;
+    }
 
     for (const auto& p : fs::recursive_directory_iterator(replyDir, ec)) {
       const string& file = p.path().stem().generic_string();
@@ -532,7 +552,7 @@ bool PackGen::ParseTarget(void) {
             string src = item["path"].as<string>();
             fs::path canonical = fs::canonical(src, ec);
             if (canonical.empty()) {
-              cerr << "packgen warning: file '" << src << "' was not found" << endl;
+              cerr << "packgen warning: file '" << src << "' listed by target '" << name << "' was not found" << endl;
               continue;
             }
             src = canonical.generic_string();
@@ -545,7 +565,7 @@ bool PackGen::ParseTarget(void) {
             string inc = item["path"].as<string>();
             fs::path canonical = fs::canonical(inc, ec);
             if (canonical.empty()) {
-              cerr << "packgen warning: directory '" << inc << "' was not found" << endl;
+              cerr << "packgen warning: directory '" << inc << "' listed by target '" << name << "' was not found" << endl;
               continue;
             }
             inc = canonical.generic_string();
@@ -568,7 +588,7 @@ bool PackGen::ParseTarget(void) {
 
         }
         catch (YAML::Exception& e) {
-          cerr << "packgen warning: target parsing" << endl << e.what() << endl;
+          cerr << "packgen warning: parsing file '" << p.path().generic_string() << "' throws an exception" << endl << e.what() << endl;
         }
       }
     }
@@ -870,8 +890,11 @@ bool PackGen::CheckPack(void) {
     // Packchk
     result = ExecCommand("PackChk \"" + pack.vendor + "." + pack.name + ".pdsc\"");
     if (result.second) {
-      cerr << "packgen error: packchk failed\n" << result.first << endl;
+      cerr << "packgen error: packchk failed" << endl << result.first << endl;
       return false;
+    } else {
+      // Packchk report
+      cout << result.first << endl;
     }
   }
 
@@ -919,6 +942,10 @@ bool PackGen::CreateQuery() {
 
   YAML::Emitter query;
   query << YAML::DoubleQuoted << YAML::Flow << requests;
+
+  if (m_buildOptions.empty()) {
+    return false;
+  }
 
   // Iterate over build options
   for (const auto& build : m_buildOptions) {
@@ -993,4 +1020,14 @@ bool PackGen::CopyItem(const string& src, const string& dst, list<string>& ext) 
     }
   }
   return true;
+}
+
+const uint32_t PackGen::CountNodes(const YAML::Node node, const string& name) {
+  int occurrences = 0;
+  for (const auto& n : node) {
+    if (n.first.as<string>() == name) {
+      occurrences++;
+    }
+  }
+  return occurrences;
 }
