@@ -107,7 +107,7 @@ TEST_F(PackGenUnitTests, RunPackGen) {
   // Empty options
   EXPECT_EQ(0, RunPackGen(1, argv));
 
-  // help options
+  // Help options
   const string& manifest = testinput_folder + "/CMakeTestProject/manifest.yml";
   argv[1] = (char*)manifest.c_str();
   argv[2] = (char*)"--output";
@@ -120,7 +120,12 @@ TEST_F(PackGenUnitTests, RunPackGen) {
   argv[1] = (char*)invalidManifest.c_str();
   EXPECT_EQ(1, RunPackGen(2, argv));
 
-  // manifest file doesn't exist
+  // Invalid manifest file, missing 'packs' section
+  const string& invalidManifest2 = testinput_folder + "/CMakeTestProject/invalid_manifest2.yml";
+  argv[1] = (char*)invalidManifest2.c_str();
+  EXPECT_EQ(1, RunPackGen(2, argv));
+
+  // Manifest file doesn't exist
   const string& unknownManifest = testinput_folder + "/CMakeTestProject/Unknown_manifest.yml";
   argv[1] = (char*)unknownManifest.c_str();
   EXPECT_EQ(1, RunPackGen(2, argv));
