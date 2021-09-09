@@ -153,7 +153,7 @@ TEST_F(PackGenUnitTests, RunPackGenVerbose) {
   EXPECT_EQ(0, RunPackGen(7, argv));
 
   // Write verbose info in file
-  ofstream fileStream(testoutput_folder + "/ARM.TestPack.1.0.0/verbose.info");
+  ofstream fileStream(testoutput_folder + "/verbose.info");
   fileStream << coutBuf.str();
   fileStream << flush;
   fileStream.close();
@@ -167,8 +167,8 @@ TEST_F(PackGenUnitTests, RunPackGenVerbose) {
     testinput_folder + "/CMakeTestProject/ARM.TestPack.pdsc");
 
   // Check verbose info
-  CompareFile(testoutput_folder + "/ARM.TestPack.1.0.0/verbose.info",
-    testinput_folder + "/CMakeTestProject/verbose.info");
+  CompareFile(testoutput_folder + "/verbose.info",
+    testinput_folder + "/verbose.info");
 
   // Restore original buffer before exiting
   std::cout.rdbuf(buffer);

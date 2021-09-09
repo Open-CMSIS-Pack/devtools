@@ -87,15 +87,54 @@ jobs:
           retention-days: 1
           if-no-files-found: error
 
-      - name: Attach packgen to release
-        if: ${{ github.event_name == 'release' }}
+  release:
+    if: ${{ github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/packgen/') }}
+    needs: [ build, unittest ]
+    runs-on: ubuntu-20.04
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout devtools
+        uses: actions/checkout@v2
+
+      - name: Create distribution folders
+        run: |
+          mkdir -p tools/packgen/distribution/bin tools/packgen/distribution/doc/examples
+          cp tools/packgen/docs/LICENSE.txt tools/packgen/distribution/
+          cp tools/packgen/docs/README.md tools/packgen/distribution/doc/
+          cp -r tools/packgen/test/data/CMakeTestProject/ tools/packgen/distribution/doc/examples/
+          cp -r tools/packgen/test/data/CMakeTestMultipleBuilds/ tools/packgen/distribution/doc/examples/
+
+      - name: Download packgen linux
+        uses: actions/download-artifact@v2
+        with:
+          name: packgen-linux64
+          path: tools/packgen/distribution/bin/linux64/
+
+      - name: Download packgen macos
+        uses: actions/download-artifact@v2
+        with:
+          name: packgen-darwin64
+          path: tools/packgen/distribution/bin/darwin64/
+
+      - name: Download packgen windows
+        uses: actions/download-artifact@v2
+        with:
+          name: packgen-windows64
+          path: tools/packgen/distribution/bin/windows64/
+
+      - name: Zip distribution folder
+        run: zip -r packgen.zip *
+        working-directory: tools/packgen/distribution
+
+      - name: Attach zip archive to release assets
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ./build/tools/packgen/${{ matrix.target }}/Release/${{ matrix.binary }}
+          file: tools/packgen/distribution/packgen.zip
           tag: ${{ github.ref }}
           overwrite: true
-          asset_name: packgen-${{ matrix.target }}
+          asset_name: packgen.zip
 
   unittest:
     if: ${{ github.event_name == 'pull_request' || (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/packgen/')) }}
