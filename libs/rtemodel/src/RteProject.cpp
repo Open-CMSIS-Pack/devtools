@@ -908,7 +908,6 @@ string RteProject::GetEffectivePackageID(const string& packId, const string& tar
   return commonId;
 }
 
-// GPDSC
 RteGpdscInfo* RteProject::AddGpdscInfo(const string& gpdscFile, RteGeneratorModel* model)
 {
   string name = gpdscFile;
@@ -1819,7 +1818,6 @@ void RteProject::CollectMissingPacks()
   }
 }
 
-// validates if all required packs, components and APIs are resolved
 bool RteProject::Validate()
 {
   m_bValid = true; // assume valid
@@ -2157,7 +2155,6 @@ void RteProject::CreateXmlTreeElementContent(XMLTreeElement* parentElement) cons
   }
 }
 
-// returns used components for a target
 void RteProject::GetUsedComponents(RteComponentMap & components, const string& targetName) const
 {
   for (auto it = m_components.begin(); it != m_components.end(); it++) {

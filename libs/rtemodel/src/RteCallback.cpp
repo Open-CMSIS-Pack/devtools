@@ -37,7 +37,6 @@ long RteCallback::ShowMessageBox(const string& title, const string& message, uns
   return defaultVal;
 }
 
- // global callback
 RteCallback* RteCallback::GetGlobal()
 {
   if(theGlobalCallback) {
