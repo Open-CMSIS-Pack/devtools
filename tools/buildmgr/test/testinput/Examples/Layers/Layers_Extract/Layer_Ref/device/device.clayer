@@ -51,7 +51,6 @@
 
   <files>
     <group name="Source Files">
-      <cflags add="-DGROUP" compiler="AC6"/>
       <group name="NestedGroup">
         <file category="sourceC" layer="device" name="./FileDevice.c"/>
       </group>

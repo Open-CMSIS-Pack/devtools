@@ -176,10 +176,10 @@ bool CbuildLayer::Extract(const CbuildLayerArgs& args, const string &output) {
     }
 
     // Components
-    CopyMatchedChildren(layerName, rootElement, m_cprj->components);
+    CopyMatchedChildren(m_cprj->components, rootElement, layerName);
 
     // Files
-    CopyMatchedChildren(layerName, rootElement, m_cprj->files);
+    CopyMatchedChildren(m_cprj->files, rootElement, layerName);
 
     // Write Xml file
     const string& layerPath = outputPath + "/" + layerName;
@@ -742,25 +742,40 @@ bool CbuildLayer::Remove(const CbuildLayerArgs& args) {
   return true;
 }
 
-void CbuildLayer::CopyMatchedChildren(const string& layer, XMLTreeElement* destination, const XMLTreeElement* origin) {
+void CbuildLayer::CopyMatchedChildren(const XMLTreeElement* origin, XMLTreeElement* destination, const string& layer, const string& parentLayer) {
   /*
   CopyMatchedChildren:
-  Recursively copy origin element and its children elements into destination parent if the children's layer attribute matches
-  Ignore empty 'files' and 'group' elements
-  Accepts empty layer attribute
+  Recursively copy origin element ('files' or 'components') and its children elements into destination parent if the children's layer attribute matches
   */
   const string& tag = origin->GetTag();
-  if ((!origin->HasChildren()) && ((tag == "files")||(tag == "group")))
-    return;
   const string& originLayer = origin->GetAttribute("layer");
-  if (!originLayer.empty() && (originLayer != layer))
-    return;
+
+  // Element with empty layer attribute inherits the layer assignment from its parent
+  const string& effectiveLayer = originLayer.empty() ? parentLayer : originLayer;
+
+  if (tag == "group") {
+    // Skip group with different layer assignment but process the nested groups further if unassigned
+    if (!effectiveLayer.empty() && (effectiveLayer != layer)) {
+      return;
+    }
+  } else if (!((tag == "files") || (tag == "components"))) {
+    // Skip any other element with different or empty layer assignment (except 'files' and 'components')
+    if (effectiveLayer != layer) {
+      return;
+    }
+  }
+
   XMLTreeElement* copy = destination->CreateElement(origin->GetTag());
   copy->SetText(origin->GetText());
   copy->SetAttributes(origin->GetAttributes());
   const list<XMLTreeElement*> children = origin->GetChildren();
   for (auto child : children) {
-    CopyMatchedChildren(layer, copy, child);
+    CopyMatchedChildren(child, copy, layer, effectiveLayer);
+  }
+
+  // Remove 'files' or 'group' if empty
+  if ((!copy->HasChildren()) && ((tag == "files") || (tag == "group"))) {
+    destination->RemoveChild(copy, true);
   }
 }
 

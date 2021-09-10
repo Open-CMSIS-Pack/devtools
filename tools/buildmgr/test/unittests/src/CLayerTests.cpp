@@ -267,35 +267,35 @@ TEST_F(CbuildLayerTests, CopyMatchedChildren) {
   {
     XMLTreeElement dest, src;
     src.SetTag("files");
-    CopyMatchedChildren("device", &dest, &src);
+    CopyMatchedChildren(&src, &dest, "device");
     EXPECT_TRUE(dest.GetChildren().empty());
   }
 
   {
     XMLTreeElement dest, src;
     src.SetTag("group");
-    CopyMatchedChildren("device", &dest, &src);
+    CopyMatchedChildren(&src, &dest, "device");
     EXPECT_TRUE(dest.GetChildren().empty());
   }
 
   {
     XMLTreeElement dest, src;
     map<string, string> attr{ {"description", "test app"} };
-    src.SetTag("cprj");
+    src.SetTag("files");
     src.SetText("test text");
     src.SetAttributes(attr);
-    auto created = src.CreateElement("created");
-    auto info = created->CreateElement("info");
-    info->AddAttribute("layer", "device");
+    auto group = src.CreateElement("group");
+    auto file = group->CreateElement("file");
+    file->AddAttribute("layer", "device");
 
-    CopyMatchedChildren("device", &dest, &src);
+    CopyMatchedChildren(&src, &dest, "device");
     auto children = dest.GetChildren();
     ASSERT_EQ(children.size(), 1);
-    auto elem = children.front()->GetFirstChild("created");
-    ASSERT_EQ(true, (nullptr == elem) ? false: true);
-    auto infoChild = elem->GetFirstChild("info");
-    ASSERT_EQ(true, (nullptr == infoChild) ? false : true);
-    EXPECT_EQ("device", infoChild->GetAttribute("layer"));
+    auto groupChild = children.front()->GetFirstChild("group");
+    ASSERT_EQ(true, (nullptr == groupChild) ? false: true);
+    auto fileChild = groupChild->GetFirstChild("file");
+    ASSERT_EQ(true, (nullptr == fileChild) ? false : true);
+    EXPECT_EQ("device", fileChild->GetAttribute("layer"));
   }
 }
 

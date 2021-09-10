@@ -38,7 +38,6 @@
   <files>
     <file category="sourceC" layer="application" name="./FileBare.c"/>
     <group name="Source Files">
-      <cflags add="-DGROUP" compiler="AC6"/>
       <file category="sourceC" layer="application" name="./Blinky.c"/>
       <group name="NestedGroup">
         <file category="sourceC" layer="application" name="./FileApplication.c"/>
