@@ -55,6 +55,7 @@
       <file attr="config" category="header" name="Config/EventRecorderConf.h" version="1.1.0"/>
     </component>
     <component Cbundle="ARM Compiler" Cclass="Compiler" Cgroup="I/O" Csub="STDOUT" Cvariant="EVR" Cvendor="Keil" layer="device"/>
+    <component Cbundle="ARM Compiler" Cclass="Compiler" Cgroup="I/O" Csub="STDIN" Cvariant="User" Cvendor="Keil"/>
   </components>
 
   <files>
@@ -65,6 +66,7 @@
       <group name="NestedGroup">
         <file category="sourceC" layer="application" name="./FileApplication.c"/>
         <file category="sourceC" layer="device" name="./FileDevice.c"/>
+        <file category="sourceC" name="./FileUnassigned.c"/>
       </group>
     </group>
   </files>

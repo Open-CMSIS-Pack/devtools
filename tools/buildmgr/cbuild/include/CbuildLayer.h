@@ -124,7 +124,7 @@ public:
 protected:
   static bool GetSections(const XMLTree* tree, xml_elements* elements, std::string* layerName);
   static void CopyElement(XMLTreeElement* destination, const XMLTreeElement* origin, const bool create=true);
-  static void CopyMatchedChildren(const std::string& layer, XMLTreeElement* destination, const XMLTreeElement* origin);
+  static void CopyMatchedChildren(const XMLTreeElement* origin, XMLTreeElement* destination, const std::string& layer, const std::string& parentLayer="");
   static void RemoveMatchedChildren(const std::string& layer, XMLTreeElement* item);
   static void CopyNestedGroups (XMLTreeElement* destination, const XMLTreeElement* origin);
   static void GetArgsFromChild(const XMLTreeElement* element, const std::string& reference, std::set<std::string>& argList);
