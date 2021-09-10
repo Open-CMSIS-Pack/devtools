@@ -104,7 +104,7 @@ const string& RteGenerator::GetCommand() const {
 
   return GetItemValue("command");
 
-} // cmd only
+}
 
 
 string RteGenerator::GetExpandedCommandLine(RteTarget* target) const
@@ -253,8 +253,6 @@ bool RteGenerator::ProcessXmlElement(XMLTreeElement* xmlElement)
 }
 
 
-
-///////////////////////////////////////////////////////
 RteGeneratorContainer::RteGeneratorContainer(RteItem* parent) :
   RteItem(parent)
 {

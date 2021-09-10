@@ -4,7 +4,7 @@
 /* RTE - CMSIS Run-Time Environment */
 /******************************************************************************/
 /** @file RteInstance.h
-* @brief CMSIS RTE Instance in uVision Project
+* @brief CMSIS RTE data model
 */
 /******************************************************************************/
 /*
@@ -27,43 +27,153 @@ class RteFileInstance;
 class RteTarget;
 class RteProject;
 
+/**
+ * @brief class to store settings per project target for an owning item: component, file, pack
+*/
 class RteInstanceTargetInfo : public RteAttributes
 {
 public:
 
-  enum RteOptType { MEMOPT, COPT, ASMOPT, OPTCOUNT };
+  /**
+   * @brief enumerator for option type
+  */
+  enum RteOptType {
+    MEMOPT,  // memory option
+    COPT,    // C/C++ compiler option
+    ASMOPT,  // assembler option
+    OPTCOUNT // number of option types for internal use in loops
+  };
 
+  /**
+   * @brief default constructor
+  */
   RteInstanceTargetInfo();
+  /**
+   * @brief copy constructor
+   * @param info pointer to RteInstanceTargetInfo to copy from
+  */
   RteInstanceTargetInfo(RteInstanceTargetInfo* info);
+
+  /**
+   * @brief constructor from attributes map
+   * @param attributes std::map with name-value pairs
+  */
   RteInstanceTargetInfo(const std::map<std::string, std::string>& attributes);
 
+  /**
+   * @brief check if item is excluded from target
+   * @return true if excluded
+  */
   bool IsExcluded() const { return m_bExcluded; }
+
+  /**
+   * @brief set item to be excluded from target
+   * @param excluded flag to exclude
+   * @return true if the setting has changed
+  */
   bool SetExcluded(bool excluded);
 
+  /**
+   * @brief check if the owning item is included in library build
+   * @return true if included in library build
+  */
   bool IsIncludeInLib() const { return m_bIncludeInLib; }
+
+  /**
+   * @brief set to include the owning item in library build
+   * @param include flag to include in library build
+   * @return true if the setting has changed
+  */
   bool SetIncludeInLib(bool include);
 
 
+  /**
+   * @brief get component instance count
+   * @return number of component instances
+  */
   int GetInstanceCount() const { return m_instanceCount; }
+
+  /**
+   * @brief set component instance count
+   * @param count component instance count to set
+  */
   void SetInstanceCount(int count);
 
+  /**
+   * @brief get version matching mode
+   * @return VersionCmp::MatchMode value
+  */
   VersionCmp::MatchMode GetVersionMatchMode() const { return m_VersionMatchMode; }
+
+  /**
+   * @brief set version matching mode
+   * @param mode VersionCmp::MatchMode value
+   * @return true if the setting has changed
+  */
   bool SetVersionMatchMode(VersionCmp::MatchMode mode);
 
+  /**
+   * @brief copy settings from another RteInstanceTargetInfo
+   * @param other reference to RteInstanceTargetInfo to copy settings from
+  */
   void CopySettings(const RteInstanceTargetInfo& other);
+
+  /**
+   * @brief get memory options
+   * @return memory options as a reference to RteAttributes
+  */
   const RteAttributes& GetMemOpt() const { return m_memOpt; }
+
+  /**
+   * @brief get C/C++ compiler options
+   * @return C/C++ compiler options as a reference to RteAttributes
+  */
   const RteAttributes& GetCOpt() const { return m_cOpt; }
+  /**
+   * @brief get assembler options
+   * @return assembler options as a reference to RteAttributes
+  */
   const RteAttributes& GetAsmOpt() const { return m_asmOpt; }
+
+  /**
+   * @brief get options of specified type (immutable)
+   * @param type options type as RteOptType value
+   * @return pointer to RteAttributes containing options, nullptr if no such options are supported
+  */
   const RteAttributes* GetOpt(RteOptType type) const;
-  bool HasOptions() const;
-  // pointer variant to access directly from Component properties dialog
+
+  /**
+   * @brief get options of specified type (mutable)
+   * @param type options type as RteOptType value
+   * @return pointer to RteAttributes containing options, nullptr if no such options are supported
+  */
   RteAttributes* GetOpt(RteOptType type);
 
+  /**
+   * @brief check if the class contains specific options for compiler, assembler or memory
+   * @return true if has specific options
+  */
+  bool HasOptions() const;
+
+  /**
+   * @brief create XMLTreeElement object to export this item to XML
+   * @param parentElement parent for created XMLTreeElement
+   * @param bCreateContent create XML content out of children
+   * @return created XMLTreeElement
+  */
   XMLTreeElement* CreateXmlTreeElement(XMLTreeElement* parentElement, bool bCreateContent = true) const;
-  // process XML child elements
+
+  /**
+   * @brief process child elements of supplied XMLTreeElement to extract XML data and create RteItem children
+   * @param xmlElement XMLTreeElement whose children to process
+   * @return true if successful
+  */
   bool ProcessXmlChildren(XMLTreeElement* xmlElement);
 
 protected:
+  /**
+   * @brief perform changes in internal data after calls to SetAttributes(), AddAttributes() and ClearAttributes()
+  */
   virtual void ProcessAttributes() override;
 
 private:
@@ -78,162 +188,614 @@ private:
 
 typedef std::map<std::string, RteInstanceTargetInfo*> RteInstanceTargetInfoMap;
 
+/**
+ * @brief class describing an instantiated RteItem (component, file, used pack)
+*/
 class RteItemInstance : public RteItem
 {
 public:
+
+  /**
+   * @brief constructor
+   * @param parent pointer to RteItem parent
+  */
   RteItemInstance(RteItem* parent);
+
+  /**
+   * @brief virtual destructor
+  */
   virtual ~RteItemInstance() override;
 
+  /**
+   * @brief initializes this object from supplied RteItem
+   * @param item pointer to RteItem to initialize from
+  */
   virtual void InitInstance(RteItem* item);
 
-  // uVision targets
+  /**
+   * @brief check if this item instance is used by specified target
+   * @param targetName target name
+   * @return true if used (not excluded)
+  */
   bool IsUsedByTarget(const std::string& targetName) const;
+
+  /**
+   * @brief check if this item is filtered by specified target
+   * @param targetName target name
+   * @return true if the instance has RteInstanceTargetInfo for specified target name
+  */
   bool IsFilteredByTarget(const std::string& targetName) const;
+
+  /**
+   * @brief get collection of all target infos
+   * @return map of target name to RteInstanceTargetInfo pairs
+  */
   const RteInstanceTargetInfoMap& GetTargetInfos() const { return m_targetInfos; }
-  void SetTargets(const RteInstanceTargetInfoMap& infos); // makes deep copy
+
+  /**
+   * @brief set collection of target infos
+   * @param infos map of target name to RteInstanceTargetInfo pairs
+  */
+  void SetTargets(const RteInstanceTargetInfoMap& infos);
+
+  /**
+   * @brief remove all target infos
+  */
   void ClearTargets();
+
+  /**
+   * @brief remove unused target infos (with instance count ==  0)
+  */
   void PurgeTargets();
+
+  /**
+   * @brief get number of target infos
+   * @return number of stored target infos
+  */
   int GetTargetCount() const { return (int)m_targetInfos.size(); }
+
+  /**
+   * @brief get instance count for specified target
+   * @param targetName target name
+   * @return instance count
+  */
   int GetInstanceCount(const std::string& targetName) const;
+
+  /**
+   * @brief get first target name in the collection.
+   * Method is intended for environments where only one target is supported by a project to avoid passing target name
+   * @return first target name in the internal collection
+  */
   const std::string& GetFirstTargetName() const;
 
+  /**
+   * @brief check if this item represents a pack info
+   * @return true if this item is a pack info, default is false
+  */
   virtual bool IsPackageInfo() const { return false; }
 
+  /**
+   * @brief set to use the latest available version when resolving a component or a pack
+   * @param bUseLatest flag to use latest version
+   * @param targetName target name
+   * @return true if the setting has changed
+  */
   bool SetUseLatestVersion(bool bUseLatest, const std::string& targetName);
+
+  /**
+   * @brief set this item to be explicitly excluded from specified target
+   * @param excluded flag to exclude
+   * @param targetName target name
+   * @return true if the setting has changed
+  */
   bool SetExcluded(bool excluded, const std::string& targetName);
+
+  /**
+   * @brief check if this item is explicitly excluded from specified target
+   * @param targetName target name
+   * @return true if excluded
+  */
   bool IsExcluded(const std::string& targetName) const;
 
+  /**
+   * @brief set to include this item in library build for specified target
+   * @param include flag to include to library build
+   * @param targetName target name
+   * @return true if the setting has changed
+  */
   bool SetIncludeInLib(bool include, const std::string& targetName);
+
+  /**
+   * @brief check if the instance is included into library build for the specified target
+   * @param targetName target name
+   * @return true if included into library build
+  */
   bool IsIncludeInLib(const std::string& targetName) const;
 
+  /**
+   * @brief copy target info settings from another target
+   * @param other reference to RteInstanceTargetInfo to copy from
+   * @param targetName destination target name
+  */
   void CopyTargetSettings(const RteInstanceTargetInfo& other, const std::string& targetName);
 
-  virtual bool IsExcludedForAllTargets(); // check if all targets have excluded flag
+  /**
+   * @brief check if the item is excluded from all targets
+   * @return true if all targets have excluded flag
+  */
+  virtual bool IsExcludedForAllTargets();
 
-
+  /**
+   * @brief check if item is removed, e.g. a config file
+   * @return true if removed
+  */
   virtual bool IsRemoved() const { return m_bRemoved; }
+
+  /**
+   * @brief set/reset removed state
+   * @param removed flag to set/reset removed state
+  */
   virtual void SetRemoved(bool removed) { m_bRemoved = removed; }
 
+  /**
+   * @brief get version matching mode for specified target
+   * @param targetName target name
+   * @return VersionCmp::MatchMode value
+  */
   VersionCmp::MatchMode GetVersionMatchMode(const std::string& targetName) const;
-  // next three functions return true if m_target is changes
+
+  /**
+   * @brief create target info for specified target if does not exist
+   * @param targetName target name
+   * @return pointer to RteInstanceTargetInfo, never nullptr
+  */
   virtual RteInstanceTargetInfo* AddTargetInfo(const std::string& targetName);
+
+  /**
+   * @brief create target info for specified target if does not exist and copy settings from another target info
+   * @param targetName target name
+   * @param copyFrom target name to copy from
+   * @return pointer to RteInstanceTargetInfo, never nullptr
+  */
   virtual RteInstanceTargetInfo* AddTargetInfo(const std::string& targetName, const std::string& copyFrom);
+
+  /**
+   * @brief create target info for specified target if does not exist and initializes from supplied attributes
+   * @param targetName target name
+   * @param attributes map with name-value pairs
+   * @return pointer to RteInstanceTargetInfo, never nullptr
+  */
   virtual RteInstanceTargetInfo* AddTargetInfo(const std::string& targetName, const std::map<std::string, std::string>& attributes);
+
+  /**
+   * @brief remove target info for specified target and delete it if requested
+   * @param targetName target name
+   * @param bDelete flag to request deletion
+   * @return true if the info has been removed
+  */
   virtual bool RemoveTargetInfo(const std::string& targetName, bool bDelete = true);
+
+  /**
+   * @brief rename target info for specified target (to reflect target rename)
+   * @param targetName target name
+   * @param newName new target name
+   * @return true if the info has been renamed
+  */
   virtual bool RenameTargetInfo(const std::string& oldName, const std::string& newName);
 
+  /**
+   * @brief return target info for specified target
+   * @param targetName target name
+   * @return pointer to RteInstanceTargetInfo, nullptr if does not exist
+  */
   virtual RteInstanceTargetInfo* GetTargetInfo(const std::string& targetName) const;
+
+  /**
+   * @brief return target info for specified target, create new one if does not exist
+   * @param targetName target name
+   * @return pointer to RteInstanceTargetInfo, never nullptr
+  */
   virtual RteInstanceTargetInfo* EnsureTargetInfo(const std::string& targetName);
 
-  // RteItem overrides
 public:
+  /**
+   * @brief clear internal data
+  */
   virtual void Clear() override;
 
+  /**
+   * @brief get attributes of originating pack
+   * @return pack attributes as RteAttributes reference
+  */
   virtual const RteAttributes& GetPackageAttributes() const { return m_packageAttributes; }
+  /**
+   * @brief set originating pack attributes
+   * @param attr RteAttributes to set
+   * @return true if changed
+  */
   virtual bool SetPackageAttributes(const RteAttributes& attr) { return m_packageAttributes.SetAttributes(attr); }
-  virtual RtePackage* GetPackage() const override; // returns original RtePackage
+
+  /**
+   * @brief get pointer to resolved RtePackage
+   * @return pointer to RtePackage if resolved, nullptr otherwise
+  */
+  virtual RtePackage* GetPackage() const override;
+
+  /**
+   * @brief get pointer to RteComponent
+   * @return pointer to RteComponent, nullptr by default
+  */
   virtual RteComponent* GetComponent() const override { return nullptr;}
-  virtual RteComponent* GetComponent(const std::string& targetName) const; // returns original RteComponent from global collection
-  virtual RteComponent* GetResolvedComponent(const std::string& targetName) const; // returns resolved RteComponent for given target
+
+  /**
+   * @brief get resolved component, even if this item is not filtered by specified target
+   * @param targetName target name
+   * @return pointer to RteComponent if resolved, nullptr otherwise
+  */
+  virtual RteComponent* GetComponent(const std::string& targetName) const;
+
+  /**
+   * @brief get resolved component, only if this item is filtered by specified target
+   * @param targetName target name
+   * @return pointer to RteComponent if resolved, nullptr otherwise
+  */
+  virtual RteComponent* GetResolvedComponent(const std::string& targetName) const;
+
+  /**
+   * @brief get originating pack ID
+   * @param withVersion flag to get full (true) or common (false) pack ID
+   * @return full or common pack ID constructed from underlying pack info
+  */
   virtual std::string GetPackageID(bool withVersion) const override;
+
+  /**
+   * @brief get originating pack URL
+   * @return "url" attribute value from underlying pack info
+  */
   virtual const std::string& GetURL() const override;
+
+  /**
+   * @brief get pack vendor
+   * @return pack vendor from underlying pack info
+  */
   virtual const std::string& GetVendorString() const override;
+
+  /**
+   * @brief get pack vendor
+   * @return pack vendor from underlying pack info
+  */
   virtual const std::string& GetPackageVendorName() const;
+
+  /**
+   * @brief get pointer to specified RteTarget
+   * @param targetName target name
+   * @return pointer to RteTarget if found, nullptr otherwise
+  */
   virtual RteTarget* GetTarget(const std::string& targetName) const;
 
-
 public:
+
+  /**
+   * @brief get pointer to RteComponentInstance for specified target
+   * @param targetName target name
+   * @return pointer to RteComponentInstance if item if found and used in the target, nullptr otherwise
+  */
   virtual RteComponentInstance* GetComponentInstance(const std::string& targetName) const;
+
+  /**
+   * @brief get effectively used resolved pack for specified target
+   * @param targetName target name
+   * @return pointer to RtePackage if found, nullptr otherwise
+  */
   virtual RtePackage* GetEffectivePackage(const std::string& targetName) const;
+
+  /**
+   * @brief get effectively used pack ID for specified target (is available even if pack is not resolved)
+   * @param targetName target name
+   * @return pack ID string
+  */
   virtual std::string GetEffectivePackageID(const std::string& targetName) const;
 
 protected:
+
+  /**
+   * @brief check if this item provides content if stored in XML format
+   * @return true
+  */
   virtual bool HasXmlContent() const override { return true; }
+
+ /**
+   * @brief process a single XMLTreeElement during construction
+   * @param xmlElement pointer to XMLTreeElement to process
+   * @return true if successful
+ */
   virtual bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
+
+  /**
+   * @brief creates child element for supplied XMLTreeElement
+   * @param parentElement XMLTreeElement to generate content for
+  */
   virtual void CreateXmlTreeElementContent(XMLTreeElement* parentElement) const override;
 
-  // uVision project related members
 protected:
   RteAttributes m_packageAttributes;
   RteInstanceTargetInfoMap m_targetInfos;
   bool m_bRemoved;
 };
 
+/**
+ * @brief info about pack used in the project
+*/
 class RtePackageInstanceInfo : public RteItemInstance
 {
 public:
+
+  /**
+   * @brief constructor
+   * @param parent pointer to RteItem parent
+  */
   RtePackageInstanceInfo(RteItem* parent) : RteItemInstance(parent) {};
 
+  /**
+   * @brief get resolved pack
+   * @param targetName target name to resolve pack
+   * @return pointer to RtePackage if resolved, nullptr otherwise
+  */
   virtual RtePackage* GetEffectivePackage(const std::string& targetName) const override;
+
+  /**
+   * @brief construct package ID out of attributes
+   * @return constructed pack ID
+  */
   virtual std::string ConstructID() override;
+
+  /**
+   * @brief get pack ID
+   * @param withVersion flag to include pack version to the ID
+   * @return full or common pack ID
+  */
   virtual std::string GetPackageID(bool withVersion) const override;
+
+  /**
+   * @brief get common (aka family) pack ID
+   * @return pack ID without version
+  */
   virtual const std::string& GetCommonID() const { return m_commonID; }
+
+  /**
+   * @brief get pack attributes
+   * @return reference to this
+  */
   virtual const RteAttributes& GetPackageAttributes() const override { return *this; }
+
+  /**
+   * @brief set pack attributes
+   * @param attr pack attributes to set
+   * @return true if attribute values have changed
+  */
   virtual bool SetPackageAttributes(const RteAttributes& attr) override { return SetAttributes(attr); }
+
+  /**
+   * @brief check if this object represents a pack info
+   * @return true
+  */
   virtual bool IsPackageInfo() const override { return true; }
+
+  /**
+   * @brief get pack URL
+   * @return value of "url" attribute
+  */
   virtual const std::string& GetURL() const override { return GetAttribute("url"); }
 
-  RtePackage* GetResolvedPack(const std::string& targetName) const; // returns resolved RtePackage for given target
+  /**
+    * @brief get resolved pack
+    * @param targetName target name to resolve pack
+    * @return pointer to RtePackage if resolved, nullptr otherwise
+  */
+  RtePackage* GetResolvedPack(const std::string& targetName) const;
+
+  /**
+   * @brief set resolved back
+   * @param pack pointer to resolved RtePackage
+   * @param targetName
+  */
   void SetResolvedPack(RtePackage* pack, const std::string& targetName);
+
+  /**
+   * @brief resolve packs for all targets
+   * @return true if resolved for all targets
+  */
   bool ResolvePack();
+
+  /**
+   * @brief resolve pack for specified target
+   * @param targetName target name
+   * @return true if resolved
+  */
   bool ResolvePack(const std::string& targetName);
+
+  /**
+   * @brief clear pointers to resolved packs for all targets
+  */
   void ClearResolved();
 
 protected:
   virtual void ProcessAttributes() override;
-
 
 protected:
   std::map<std::string, RtePackage*> m_resolvedPacks;
   std::string m_commonID;
 };
 
+/**
+ * @brief class containing information about *.gpdsc file used in project
+*/
 class RteGpdscInfo : public RteItemInstance
 {
 public:
-  RteGpdscInfo(RteItem* parent, RteGeneratorModel* model = 0);
-  ~RteGpdscInfo() override;
+
+  /**
+   * @brief constructor
+   * @param parent pointer to RteItem parent
+   * @param model pointer to RteGenratorModel if available
+  */
+  RteGpdscInfo(RteItem* parent, RteGeneratorModel* model = nullptr);
+
+  /**
+   * @brief virtual destructor
+  */
+  virtual ~RteGpdscInfo() override;
+
+  /**
+   * @brief get absolute path to *.gpdsc
+   * @return absolute path to *.gpdsc file including filename
+  */
   std::string GetAbsolutePath() const;
 
+  /**
+   * @brief get associated generator model
+   * @return pointer to RteGeneratorModel
+  */
   virtual RteGeneratorModel* GetGeneratorModel() const { return m_model; }
+
+  /**
+   * @brief set associated generator model
+   * @param model pointer to RteGeneratorModel
+  */
   void SetGeneratorModel(RteGeneratorModel* model) { m_model = model; }
 
+  /**
+   * @brief get pack attributes
+   * @return reference to this
+  */
   virtual const RteAttributes& GetPackageAttributes() const override { return *this; }
+
+  /**
+   * @brief set pack attributes
+   * @param attr pack attributes
+   * @return true if changed
+  */
   virtual bool SetPackageAttributes(const RteAttributes& attr) override { return SetAttributes(attr); }
-  virtual bool IsPackageInfo() const override { return true; } // still it is a package info
+
+  /**
+   * @brief check if this object represents a pack instance
+   * @return true: *.gpdsc is a also a pack
+  */
+  virtual bool IsPackageInfo() const override { return true; }
 
 
 protected:
-  RteGeneratorModel* m_model; // model produced by gpdsc pack
+  RteGeneratorModel* m_model; // generator model produced by gpdsc pack
 };
 
-// board instance describes board assigned to a target
 class RteBoard;
+/**
+ * @brief info about board assigned to a target
+*/
 class RteBoardInfo : public RteItemInstance
 {
 public:
+
+  /**
+   * @brief constructor
+   * @param parent pointer to RteItem parent
+  */
   RteBoardInfo(RteItem* parent);
 
+  /**
+   * @brief virtual destructor
+  */
   virtual ~RteBoardInfo() override;
+
+  /**
+   * @brief clear internal data
+  */
   virtual void Clear() override;
+
+  /**
+   * @brief clear pointer to resolved board
+  */
   void ClearResolved();
 
+  /**
+   * @brief get actual board description
+   * @return pointer to RteBoard
+  */
   RteBoard* GetBoard() const { return m_board; }
 
+  /**
+   * @brief initialize info
+   * @param board pointer to RteBoard
+  */
   void Init(RteBoard* board);
 
 public:
+  /**
+   * @brief initialize info
+   * @param item pointer to RteItem to initialize from
+  */
   virtual void InitInstance(RteItem* item) override;
-  virtual std::string ConstructID() override;
-  virtual std::string GetDisplayName() const override;
-  virtual const std::string& GetName() const override { return GetAttribute("Bname"); }
-  virtual const std::string& GetVersionString() const override { return GetAttribute("Bversion"); }
-  virtual const std::string& GetVendorString() const override { return GetAttribute("Bvendor"); }
-  void ResolveBoard();
-  RteBoard* ResolveBoard(const std::string& targetName); // resolves component and returns it
 
+  /**
+   * @brief construct board ID
+   * @return constructed board ID by calling GetDisplayName()
+  */
+  virtual std::string ConstructID() override;
+
+  /**
+   * @brief get board display name
+   * @return string in the format "Bname (Bversion)"
+  */
+  virtual std::string GetDisplayName() const override;
+
+  /**
+   * @brief get board name
+   * @return "Bname" attribute value
+  */
+  virtual const std::string& GetName() const override { return GetAttribute("Bname"); }
+
+  /**
+   * @brief get board version (aka revision)
+   * @return "Bversion" attribute value
+  */
+  virtual const std::string& GetVersionString() const override { return GetAttribute("Bversion"); }
+
+  /**
+   * @brief get board vendor string
+   * @return vendor string
+  */
+  virtual const std::string& GetVendorString() const override { return GetAttribute("Bvendor"); }
+
+  /**
+   * @brief resolve board for all targets
+  */
+  void ResolveBoard();
+
+  /**
+   * @brief resolve board for a specified target
+   * @param targetName target name
+   * @return pointer to RteBoard
+  */
+  RteBoard* ResolveBoard(const std::string& targetName);
+
+  /**
+   * @brief get cached result of resolving board
+   * @param targetName target name
+   * @return RteItem::ConditionResult value
+  */
   ConditionResult GetResolveResult(const std::string& targetName) const;
-  virtual RtePackage* GetPackage() const override; // returns original RtePackage
+
+  /**
+   * @brief get the original board's pack
+   * @return pointer to RtePackage if resolved, nullptr otherwise
+  */
+  virtual RtePackage* GetPackage() const override;
+
+  /**
+   * @brief get the original board's pack ID
+   * @param withVersion flag to return full (true) or common (false) pack ID
+   * @return full or common pack ID
+  */
   virtual std::string GetPackageID(bool withVersion) const override;
 
 protected:
@@ -241,68 +803,276 @@ protected:
 };
 
 
-
-// component instance only describes the component, not it files
+/**
+ * @brief info about a component or API instantiated in a project
+*/
 class RteComponentInstance : public RteItemInstance
 {
 public:
+
+  /**
+   * @brief constructor
+   * @param parent pointer to RteItem parent
+  */
   RteComponentInstance(RteItem* parent);
 
+  /**
+   * @brief virtual destructor
+  */
   virtual ~RteComponentInstance() override;
+
+
+  /**
+   * @brief clear internal data
+  */
   virtual void Clear() override;
 
+  /**
+   * @brief initialize info from component
+   * @param c pointer to RteComponent
+  */
   void Init(RteComponent* c);
 
+  /**
+   * @brief check if component version matching mode if FIXED
+   * @return true if component version matching mode if FIXED
+  */
   bool IsVersionMatchFixed() const;
+
+  /**
+   * @brief check if component version matching mode if FIXED
+   * @return true if component version matching mode if FIXED
+  */
   bool IsVersionMatchLatest() const;
 
+  /**
+   * @brief get collection of resolved components per target
+   * @return map  of target name to RteComponent pointer pairs
+  */
   const RteComponentMap& GetResolvedComponents() const { return m_resolvedComponents; }
 
+  /**
+   * @brief check if this component instance equals to another one
+   * @param ci pointer to RteComponentInstance to compare with
+   * @return true if equal
+  */
   bool Equals(RteComponentInstance* ci) const;
+
+  /**
+   * @brief check if this component instance is modified
+   * @return true if the instance has an internal copy that is not equal to this
+  */
   bool IsModified() const;
-  bool HasCopy() const { return m_copy != NULL; }
+  /**
+   * @brief check if the instance has a copy
+   * @return true if im_copy member is not a nullptr
+  */
+  bool HasCopy() const { return m_copy != nullptr; }
+
+  /**
+   * @brief get internal copy
+   * @return pointer to RteComponentInstance (m_copy member)
+  */
   RteComponentInstance* GetCopy() const { return m_copy; }
-  RteComponentInstance* MakeCopy();
+  /**
+   * @brief get internal copy
+   * @return pointer to RteComponentInstance (m_copy member)
+  */
   RteComponentInstance* GetCopyInstance() const { return m_copy; }
+
+  /**
+   * @brief make a copy of this member and assign to m_cpoty member, delete previous if exists
+   * @return pointer to created RteComponentInstance (m_copy member)
+  */
+  RteComponentInstance* MakeCopy();
+
+  /**
+   * @brief get API instance associated with this component instance
+   * @return pointer to RteComponentInstance representing API associated with this component instance
+  */
   RteComponentInstance* GetApiInstance() const;
 
 public:
+
+  /**
+   * @brief construct this item from XML data
+   * @param xmlElement pointer to XMLTreeElement to construct from
+   * @return true if successful
+  */
   virtual bool Construct(XMLTreeElement* xmlElement) override;
+
+  /**
+   * @brief get full component name to display
+   * @return string in the format Cvendor.Cbundle::Cclass:Cgroup[:Csub]:Cvariant:Cversion
+  */
   virtual std::string GetFullDisplayName() const;
+
+  /**
+   * @brief get component aggregate name to display
+   * @return string in the format Cvendor.Cbundle::Cclass:Cgroup[:Csub]
+  */
   virtual std::string GetAggregateDisplayName() const;
+
+  /**
+   * @brief get component name to display
+   * @return string in the format Cvendor.Cbundle::Cclass:Cgroup[:Csub]
+  */
   virtual std::string GetDisplayName() const override;
+  /**
+   * @brief get short component name to display
+   * @return string in the format Cgroup[:Csub]
+  */
   virtual std::string GetShortDisplayName() const;
+
+  /**
+   * @brief get component instance version string (can differ from resolved component)
+   * @return version string
+  */
   virtual const std::string& GetVersionString() const override;
 
+  /**
+   * @brief construct component ID
+   * @return constructed ID string
+  */
   virtual std::string ConstructID() override;
+
+  /**
+   * @brief construct component ID including originating pack or ASPI ID without pack
+   * @param withVersion flag to get component ID with version, for API always evaluates to false
+   * @return component unique ID string in the format Cvendor.Cbundle::Cclass:Cgroup:Csub(conditionID):Cvariant:Cversion[FullPackID]
+  */
   virtual std::string GetComponentUniqueID(bool withVersion) const override;
+
+  /**
+   * @brief check if this component instance has the same aggregate ID as supplied one
+   * @param aggregateId component aggregate ID to compare to
+   * @return true if equal
+  */
   bool HasAggregateID(const std::string& aggregateId) const;
 
+  /**
+   * @brief get vendor
+   * @return component vendor string
+  */
   virtual const std::string& GetVendorString() const override;
-  virtual bool IsRemoved() const override;
-  virtual void SetRemoved(bool removed) override;
-  virtual std::string GetDocFile() const override; // returns absolute path to doc file if any (for active target)
 
+  /**
+   * @brief check if the component is removed and not used by any targetd
+   * @return true if removed
+  */
+  virtual bool IsRemoved() const override;
+
+  /**
+   * @brief set this component as being removed from all project targets
+   * @param removed flag to indicate removed state
+  */
+  virtual void SetRemoved(bool removed) override;
+
+  /**
+   * @brief get path to doc file if any (for active target)
+   * @return absolute path to doc file or URL, empty string if component is not resolved
+  */
+  virtual std::string GetDocFile() const override;
+
+  /**
+   * @brief check if component instance has specific flags for different project targets
+   * @return true if target specific
+  */
   bool IsTargetSpecific() const;
+
+  /**
+   * @brief set/reset target-specific flag
+   * @param bSet flag to indicate if component instance has specific flags for different project targets
+   * @return true if the flag has changed
+  */
   bool SetTargetSpecific(bool bSet);
+
+  /**
+   * @brief set component variant to use
+   * @param variant Cvariant attribute value to set
+   * @return true if Cvariant attribute has changed
+  */
   bool SetVariant(const std::string& variant);
+
+  /**
+   * @brief set component version to use
+   * @param variant Cversion attribute value to set
+   * @return true if Cversion attribute has changed
+  */
   bool SetVersion(const std::string& version);
 
-  RteItem* GetEffectiveItem(const std::string& targetName) const; // returns resolved component or this
+  /**
+   * @brief get actual component if resolved, this otherwise
+   * @param targetName target name to resolve component
+   * @return resolved component if available for specified target, this otherwise
+  */
+  RteItem* GetEffectiveItem(const std::string& targetName) const;
+
+  /**
+   * @brief get actual RtePackage from resolved component, potential component or RteModel via pack ID
+   * @param targetName target name to resolve component
+   * @return pointer to RtePackage of the resolved component, or potential one, or installed pack with instance pack ID
+  */
   virtual RtePackage* GetEffectivePackage(const std::string& targetName) const override;
+
+  /**
+   * @brief get display name of resolved component, otherwise own display name
+   * @param targetName target name to resolve component
+   * @return display name of the component resolved for given target, own name otherwise
+  */
   virtual std::string GetEffectiveDisplayName(const std::string& targetName) const;
 
+  /**
+   * @brief get resolved component for specified target
+   * @param targetName target name to resolve component
+   * @return pointer to RteComponent if resolved, nullptr otherwise
+  */
+  virtual RteComponent* GetResolvedComponent(const std::string& targetName) const override;
 
-  virtual RteComponent* GetResolvedComponent(const std::string& targetName) const override; // returns resolved RteComponent for given target
+  /**
+   * @brief set resolved component for specified target
+   * @param c pointer to resolved RteComponent if any
+   * @param targetName target name to resolve component
+  */
   void SetResolvedComponent(RteComponent*c, const std::string& targetName);
 
-  RteComponent* GetPotentialComponent(const std::string& targetName) const; // returns potentially resolvable RteComponent for given target
+  /**
+   * @brief get a component from a filtered-out pack that could potentially be used a resolved one
+   * @param targetName target name to resolve component
+   * @return pointer to RteComponent if could be potentially resolved, nullptr otherwise
+  */
+  RteComponent* GetPotentialComponent(const std::string& targetName) const;
+
+  /**
+   * @brief set a component from a filtered-out pack that could potentially be used a resolved one
+   * @param c pointer to potentially resolved RteComponent if any
+   * @param targetName target name to resolve component
+  */
   void SetPotentialComponent(RteComponent*c, const std::string& targetName);
+
+  /**
+   * @brief find resolved and potential components for all targets
+  */
   void ResolveComponent();
+
+  /**
+   * @brief clear all resolved and potentially resolved components for all targets
+  */
   void ClearResolved();
 
+  /**
+   * @brief get component resolution result for given target
+   * @param targetName target name to resolve component
+   * @return RteItem::ConditionResult value
+  */
   ConditionResult GetResolveResult(const std::string& targetName) const;
-  RteComponent* ResolveComponent(const std::string& targetName); // resolves component and returns it
+
+  /**
+   * @brief resolve component for specified target
+   * @param targetName target name to resolve component
+   * @return pointer to RteComponent if resolved, nullptr otherwise
+  */
+  RteComponent* ResolveComponent(const std::string& targetName);
 
 
 protected:
@@ -311,129 +1081,495 @@ protected:
   RteComponentInstance* m_copy;
 };
 
-// class that accumulates component instances based on their aggregate ID
+/**
+ * @brief class that aggregates component instances based on their aggregate ID
+*/
 class RteComponentInstanceAggregate : public RteItem
 {
 public:
-  RteComponentInstanceAggregate(RteItem* parent = NULL);
+  /**
+   * @brief default constructor
+   * @param parent pointer to RteItem parent
+  */
+  RteComponentInstanceAggregate(RteItem* parent = nullptr);
+
+  /**
+   * @brief virtual destructor
+  */
   virtual ~RteComponentInstanceAggregate() override;
 
 public:
+
+  /**
+   * @brief clear internal data
+  */
   virtual void Clear() override;
+
+  /**
+   * @brief get instance aggregate display name
+   * @return value of Csub attribute if available, Cgroup otherwise
+  */
   virtual std::string GetDisplayName() const override;
+
+  /**
+   * @brief get cached full display name
+   * @return string in the format Cvendor.Cbundle::Cclass:Cgroup[:Csub]
+  */
   virtual std::string GetFullDisplayName() const { return m_fullDisplayName; }
 
 public:
+
+  /**
+   * @brief check if this aggregate ID matches the supplied one
+   * @param aggregateId aggregate ID to compare to
+   * @return true if equal
+  */
   bool HasAggregateID(const std::string& aggregateId) const;
+
+  /**
+   * @brief check if aggregate contains specified component instance
+   * @param ci pointer to RteComponentInstance
+   * @return true if contains
+  */
   bool HasComponentInstance(RteComponentInstance* ci) const;
+
+  /**
+   * @brief get component instance for specified target
+   * @param targetName target name
+   * @return pointer to RteComponentInstance if used in the target, nullptr otherwise
+  */
   RteComponentInstance* GetComponentInstance(const std::string& targetName) const;
+
+  /**
+   * @brief get component aggregate of resolved component for specified target
+   * @param targetName target name
+   * @return pointer to RteComponentAggregate if resolved, nullptr otherwise
+  */
   RteComponentAggregate* GetComponentAggregate(const std::string& targetName) const;
 
+  /**
+   * @brief check if component instance or its copy is not resolved
+   * @param targetName target name to resolve component
+   * @param bCopy true if the copy must be checked
+   * @return true if component is not resolved for specified target
+  */
   bool IsUnresolved(const std::string& targetName, bool bCopy = false) const;
-  bool IsFilteredByTarget(const std::string& targetName) const; // supported if any of children supports the target
-  bool IsUsedByTarget(const std::string& targetName) const; // supported if any of children is used by
-  bool IsExcluded(const std::string& targetName) const; // is explicitly excluded
-  bool IsTargetSpecific() const; // every (==any) member is target specific
-  bool AllowsCommonSettings() const;// only true all members can support all targets
+
+  /**
+   * @brief check if aggregate is supported by given target
+   * @param targetName target name
+   * @return true if supported
+  */
+  bool IsFilteredByTarget(const std::string& targetName) const;
+
+  /**
+   * @brief check if aggregate is used by target
+   * @param targetName target name
+   * @return true if supported and not excluded
+  */
+  bool IsUsedByTarget(const std::string& targetName) const;
+
+  /**
+   * @brief check if component is explicitly excluded from the target
+   * @param targetName target name
+   * @return true if excluded
+  */
+  bool IsExcluded(const std::string& targetName) const;
+
+  /**
+   * @brief check if aggregate contains only target-specific instances
+   * @return true if all instances are target specific
+  */
+  bool IsTargetSpecific() const;
+
+  /**
+   * @brief check if common setting could be applicable to all instances
+   * @return true if all members can support all targets
+  */
+  bool AllowsCommonSettings() const;
+
+  /**
+   * @brief add component instance to aggregate members
+   * @param ci pointer to RteComponentInstance to add
+  */
   void AddComponentInstance(RteComponentInstance* ci);
 
+  /**
+   * @brief check if the aggregate has a modified instance
+   * @return true if modified
+  */
   bool IsModified() const;
-  RteComponentInstance* GetModifiedInstance() const; // can be only one
 
-  bool HasMaxInstances() const override {return m_bHasMaxInstances; }
+  /**
+   * @brief get the modified component instance
+   * @return pointer to the modified instance if any (can only be one)
+  */
+  RteComponentInstance* GetModifiedInstance() const;
+
+  /**
+   * @brief check if component can have multiple instances
+   * @return cached flag indicating that component can have multiple instances
+  */
+   bool HasMaxInstances() const override {return m_bHasMaxInstances; }
+
 private:
   std::string m_fullDisplayName;
   bool m_bHasMaxInstances;
 };
 
 
-// class-group-subgroup tree - parallel hierarchy
-// category item contains class or group or subgroup name in m_tag member and component racks in m_children
+/**
+ * @brief class to support Cclass-Cgroup-Csub tree hierarchy.
+*/
 class RteComponentInstanceGroup : public RteItem
 {
 public:
-  RteComponentInstanceGroup(RteItem* parent);
-  ~RteComponentInstanceGroup() override;
 
+  /**
+   * @brief constructor
+   * @param parent pointer to RteItem parent
+  */
+  RteComponentInstanceGroup(RteItem* parent);
+
+
+  /**
+   * @brief virtual destructor
+  */
+  virtual ~RteComponentInstanceGroup() override;
+
+  /**
+   * @brief get API instance associated with this group (Cgroup level)
+   * @return pointer to RteComponentInstance if associated and available, nullptr otherwise
+  */
   RteComponentInstance* GetApiInstance() const { return m_apiInstance; }
 
+  /**
+   * @brief check if the group contains one and only one component instance aggregate
+   * @return true if the group contains single RteComponentInstance pointer as a child
+  */
   bool HasSingleAggregate() const;
+
+  /**
+   * @brief check if the group contains instance aggregates or sub-groups with unresolved components
+   * @param targetName target name to resolve components
+   * @param bCopy true if working copies should be checked, not the instance originals
+   * @return true if at leas one component is not resolved
+  */
   bool HasUnresolvedComponents(const std::string& targetName, bool bCopy = false) const;
+
+
+  /**
+   * @brief check if group or its sub-groups contain instance aggregates used by specified target
+   * @param targetName target name
+   * @return true if at least one instance aggregate is used buy the target
+  */
   bool IsUsedByTarget(const std::string& targetName) const;
 
-  RteComponentInstanceAggregate* GetSingleComponentInstanceAggregate() const; // returns a single aggregate if any
+  /**
+   * @brief get the single component instance aggregate (end-leaf level)
+   * @return pointer to the single RteComponentInstanceAggregate if exist, nullptr otherwise
+  */
+  RteComponentInstanceAggregate* GetSingleComponentInstanceAggregate() const;
+
+  /**
+   * @brief find component instance aggregate with given aggregate ID
+   * @param aggregateId component aggregate ID
+   * @return pointer to RteComponentInstanceAggregate if found, nullptr otherwise
+  */
   RteComponentInstanceAggregate* GetComponentInstanceAggregate(const std::string& aggregateId) const;
+
+  /**
+   * @brief find component instance aggregate containing supplied component instance
+   * @param ci RteComponentInstance pointer to search for
+   * @return pointer to RteComponentInstanceAggregate if found, nullptr otherwise
+  */
   RteComponentInstanceAggregate* GetComponentInstanceAggregate(RteComponentInstance* ci) const;
+
+  /**
+   * @brief find component instance group containing supplied component instance
+   * @param ci RteComponentInstance pointer to search for
+   * @return pointer to RteComponentInstanceGroup if found, nullptr otherwise
+  */
   RteComponentInstanceGroup* GetComponentInstanceGroup(RteComponentInstance* ci) const;
 
+  /**
+   * @brief get collection of sub-groups
+   * @return map of name to RteComponentInstanceGroup pointer pairs
+  */
   const std::map<std::string, RteComponentInstanceGroup*>& GetGroups() const { return m_groups; }
+
+  /**
+   * @brief get sub-group for the given name
+   * @param name group name
+   * @return pointer to RteComponentInstanceGroup if found, nullptr otherwise
+  */
   RteComponentInstanceGroup* GetGroup(const std::string& name) const;
-  RteComponentInstanceGroup* EnsureGroup(const std::string& name); // add subgroup if does not exist
+
+  /**
+   * @brief get sub-group for the given name, create one if it does not exists
+   * @param name group name
+   * @return pointer to RteComponentInstanceGroup , never nullptr
+  */
+  RteComponentInstanceGroup* EnsureGroup(const std::string& name);
+
+  /**
+   * @brief add component instance to the tree
+   * @param ci RteComponentInstance pointer to add
+  */
   void AddComponentInstance(RteComponentInstance* ci);
 
+  /**
+   * @brief get collection of instance aggregates in this group
+   * @param aggregates std::set of RteComponentInstanceAggregate pointers to fill
+  */
   void GetInstanceAggregates(std::set<RteComponentInstanceAggregate*>& aggregates) const;
+
+  /**
+   * @brief get collection of modified instance aggregates
+   * @param modifiedAggregates  std::set of RteComponentInstanceAggregate pointers to fill
+  */
   void GetModifiedInstanceAggregates(std::set<RteComponentInstanceAggregate*>& modifiedAggregates) const;
 
 public:
+
+  /**
+   * @brief clear internal data
+  */
   virtual void Clear() override;
+
+  /**
+   * @brief get group display name
+   * @return
+  */
   virtual std::string GetDisplayName() const override;
 
 private:
-  std::map<std::string, RteComponentInstanceGroup*> m_groups;
-  RteComponentInstance* m_apiInstance;
+  std::map<std::string, RteComponentInstanceGroup*> m_groups; // sub-groups
+  RteComponentInstance* m_apiInstance; // api instance for the Cgroup level
 };
 
-
+/**
+ * @brief class to handle files instantiated in the project
+*/
 class RteFileInstance : public RteItemInstance
 {
 public:
+
+  /**
+   * @brief constructor
+   * @param parent pointer to RteItem parent
+  */
+
   RteFileInstance(RteItem* parent);
 
 public:
+  /**
+   * @brief initialize the file instance
+   * @param f pointer to the original RteFile
+   * @param deviceName device name used in the target
+   * @param instanceIndex instance index, can be > 0  for multi-instance components
+  */
   void Init(RteFile* f, const std::string& deviceName, int instanceIndex);
+
+  /**
+   * @brief update file instance
+   * @param f pointer to the original RteFile
+   * @param bUpdateComponent update information about component this file belongs to
+  */
   void Update(RteFile* f, bool bUpdateComponent);
 
+  /**
+   * @brief check if this file is a config one
+   * @return true if "attr" attribute value is "config"
+  */
   bool IsConfig() const;
-  int HasNewVersion(const std::string& targetName) const; // has new version for given target
-  int HasNewVersion() const; // has new version for any target
 
+  /**
+   * @brief check if a new version of a config file is available (for specified target)
+   * @param targetName target name
+   * @return true if newer version of config file is available
+  */
+  int HasNewVersion(const std::string& targetName) const;
+
+  /**
+   * @brief check if a new version of a config file is available (for any target)
+   * @return true if newer version of config file is available
+  */
+  int HasNewVersion() const;
+
+  /**
+   * @brief get file category
+   * @return RteFile::Category value
+  */
   RteFile::Category GetCategory() const;
 
+  /**
+   * @brief get zero-based file instance index
+   * @return instance index
+  */
   int GetInstanceIndex() const { return m_instanceIndex; }
+
+  /**
+   * @brief get file instance name
+   * @return filename as it appears in the project, includes index
+  */
   const std::string& GetInstanceName() const { return m_instanceName; }
+
+  /**
+   * @brief get the original filename as described in the pack
+   * @return the original filename
+  */
   const std::string& GetOriginalFileName() const { return GetName(); }
 
+  /**
+   * @brief get file display name
+   * @return string in the format "filename comment"
+  */
   virtual std::string GetDisplayName() const override;
-  virtual std::string GetFileComment() const; // used in project view
-  virtual std::string GetHeaderComment() const; // used in editor menu
 
-  const std::string& GetFileName() const { return m_fileName; } // returns filename without path
+  /**
+   * @brief get comment to show next to file in a project view
+   * @return file comment containing originating component name
+  */
+  virtual std::string GetFileComment() const;
+
+  /**
+   * @brief get header file comment to show next to file name in an editor's context menu
+   * @return header file comment containing originating component name
+  */
+  virtual std::string GetHeaderComment() const;
+
+  /**
+   * @brief get filename without path
+   * @return filename
+  */
+  const std::string& GetFileName() const { return m_fileName; }
+
+  /**
+   * @brief get absolute path to the file
+   * @return absolute path
+  */
   std::string GetAbsolutePath() const;
+
+  /**
+   * @brief get include path to be added to compiler command line
+   * @return include path for -I compiler option
+  */
   std::string GetIncludePath() const;
+
+  /**
+   * @brief get header filename relative to include path
+   * @return relative filename
+  */
   std::string GetIncludeFileName() const;
 
-
+  /**
+   * @brief get component version
+   * @return component version string
+  */
   const std::string& GetComponentVersionString() const { return m_componentAttributes.GetVersionString(); }
 
+  /**
+   * @brief get the original file resolved to this instance for specified target
+   * @param targetName target name to resolve file
+   * @return pointer to RteFile if resolved, nullptr otherwise
+  */
   RteFile* GetFile(const std::string& targetName) const;
+
+  /**
+   * @brief copy a config file from pack location to the designated project directory
+   * @param f pointer to RteFile to copy
+   * @param bMerge flag indicating to merge it to the existing one (if exists), otherwise overwrite
+   * @return true is successful
+  */
   bool Copy(RteFile* f, bool bMerge);
 
 public:
+
+  /**
+   * @brief create a backup copy of a config file
+   * @param bDeleteExisting delete the source file, i.e. perform move operation
+   * @return unique backup filename if successful, empty string otherwise
+  */
   std::string Backup(bool bDeleteExisting);
-  virtual const std::string& GetID() const override { return m_instanceName; } // TODO: reuse m_ID
+
+  /**
+   * @brief return file instance ID
+   * @return instance name
+  */
+  virtual const std::string& GetID() const override { return m_instanceName; }
+
+  /**
+   * @brief get component instance this file belongs to
+   * @param targetName target name to resolve component
+   * @return pointer to RteComponentInstance
+  */
   virtual RteComponentInstance* GetComponentInstance(const std::string& targetName) const override;
-  virtual std::string GetComponentID(bool withVersion) const override; // to use in filtered list
+
+  /**
+   * @brief get component ID this file belongs to
+   * @param withVersion flag to include component version to ID
+   * @return component ID to use in a filtered list
+  */
+  virtual std::string GetComponentID(bool withVersion) const override;
+
+  /**
+   * @brief get full component ID including originating pack
+   * @param withVersion flag to include component version to ID
+   * @return full  component ID
+  */
   virtual std::string GetComponentUniqueID(bool withVersion) const override;
+
+  /**
+   * @brief get component aggregate ID
+   * @param withVersion
+   * @return
+  */
   virtual std::string GetComponentAggregateID() const override;
+
+  /**
+   * @brief get file version
+   * @return file version string if present, otherwise component's version
+  */
   virtual const std::string& GetVersionString() const override;
+
+  /**
+   * @brief get component vendor
+   * @return component vendor string
+  */
   virtual const std::string& GetVendorString() const override;
+
+  /**
+   * @brief get component bundle name
+   * @return component bundle name
+  */
   virtual const std::string& GetCbundleName() const override;
+
+  /**
+   * @brief get name of a file group this file instance belongs to in the project
+   * @return project group name
+  */
   virtual std::string GetProjectGroupName() const override;
 
+  /**
+   * @brief construct this item from XML data
+   * @param xmlElement pointer to XMLTreeElement to construct from
+   * @return true if successful
+  */
   virtual bool Construct(XMLTreeElement* xmlElement) override;
 
 protected:
+  /**
+   * @brief process a single XMLTreeElement during construction
+   * @param xmlElement pointer to XMLTreeElement to process
+   * @return true if successful
+  */
   virtual bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
+
+  /**
+   * @brief creates child element for supplied XMLTreeElement
+   * @param parentElement XMLTreeElement to generate content for
+  */
   virtual void CreateXmlTreeElementContent(XMLTreeElement* parentElement) const override;
 
 protected:

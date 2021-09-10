@@ -2,7 +2,7 @@
 /* RTE - CMSIS Run-Time Environment */
 /******************************************************************************/
 /** @file RteInstance.cpp
-* @brief CMSIS RTE Instance in uVision Project
+* @brief CMSIS RTE data model
 */
 /******************************************************************************/
 /*
@@ -115,7 +115,6 @@ bool RteInstanceTargetInfo::SetVersionMatchMode(VersionCmp::MatchMode mode)
   return true;
 }
 
-// pointer variant to access directly from Component properties dialog
 RteAttributes* RteInstanceTargetInfo::GetOpt(RteOptType type)
 {
   switch (type) {
@@ -131,7 +130,6 @@ RteAttributes* RteInstanceTargetInfo::GetOpt(RteOptType type)
   return NULL;
 }
 
-// pointer variant to access directly from Component properties dialog
 const RteAttributes* RteInstanceTargetInfo::GetOpt(RteOptType type) const
 {
   switch (type) {
@@ -191,7 +189,7 @@ XMLTreeElement* RteInstanceTargetInfo::CreateXmlTreeElement(XMLTreeElement* pare
   return thisElement;
 }
 
-// process XML child elements
+
 bool RteInstanceTargetInfo::ProcessXmlChildren(XMLTreeElement* xmlElement)
 {
   if (!xmlElement)
@@ -218,7 +216,7 @@ bool RteInstanceTargetInfo::ProcessXmlChildren(XMLTreeElement* xmlElement)
   return true;
 }
 
-////////////////////////////////////////////
+
 RteItemInstance::RteItemInstance(RteItem* parent) :
   RteItem(parent),
   m_bRemoved(false)
@@ -439,7 +437,6 @@ RteInstanceTargetInfo* RteItemInstance::AddTargetInfo(const string& targetName, 
 {
   RteInstanceTargetInfo* info = EnsureTargetInfo(targetName);
   info->AddAttributes(attributes, true);
-  // not efficient, but easy - do not add targets with instance count == 0
   if (info->GetInstanceCount() < 1) {
     RemoveTargetInfo(targetName);
     info = NULL;
@@ -448,7 +445,6 @@ RteInstanceTargetInfo* RteItemInstance::AddTargetInfo(const string& targetName, 
   return info;
 }
 
-// next three functions return true if m_targetInfos is changes
 bool RteItemInstance::RemoveTargetInfo(const string& targetName, bool bDelete)
 {
   auto it = m_targetInfos.find(targetName);
@@ -636,7 +632,7 @@ bool RteItemInstance::ProcessXmlElement(XMLTreeElement* xmlElement)
 }
 
 
-///////////////////////////////////////////////
+
 RteFileInstance::RteFileInstance(RteItem* parent) :
   RteItemInstance(parent),
   m_instanceIndex(-1)
@@ -700,7 +696,7 @@ string RteFileInstance::GetIncludeFileName() const
   string instanceName = GetInstanceName();
 
   if (HasAttribute("path")) {
-    // calculate number of section to substract from instance name
+    // calculate number of section to remove from instance name
     string path = GetAttribute("path") + "/";
     string fileName = GetName();
     if (fileName.find(path) == 0) {
@@ -960,7 +956,7 @@ void RteFileInstance::CreateXmlTreeElementContent(XMLTreeElement* parentElement)
   RteItemInstance::CreateXmlTreeElementContent(parentElement);
 }
 
-void RtePackageInstanceInfo::ProcessAttributes() // called from SetAttributes(), AddAttributes(), ClearAttributes()
+void RtePackageInstanceInfo::ProcessAttributes()
 {
   m_ID = ConstructID();
 };
@@ -1068,9 +1064,6 @@ string RteGpdscInfo::GetAbsolutePath() const
   return name;// absolute
 }
 
-////////////////////////
-// RteBoardInfo
-/////////////////////////
 RteBoardInfo::RteBoardInfo(RteItem* parent) :
   RteItemInstance(parent),
   m_board(nullptr)
@@ -1125,7 +1118,7 @@ string RteBoardInfo::ConstructID()
   return m_ID;
 }
 
-void RteBoardInfo::ResolveBoard() // resolves component for all targets
+void RteBoardInfo::ResolveBoard()
 {
   m_board = nullptr;
   for (auto it = m_targetInfos.begin(); it != m_targetInfos.end(); it++) {
@@ -1189,8 +1182,6 @@ RteItem::ConditionResult RteBoardInfo::GetResolveResult(const string& targetName
 }
 
 
-
-/////////////////////////
 RteComponentInstance::RteComponentInstance(RteItem* parent) :
   RteItemInstance(parent),
   m_copy(NULL)
@@ -1494,7 +1485,7 @@ void RteComponentInstance::SetPotentialComponent(RteComponent*c, const string& t
 }
 
 
-string RteComponentInstance::GetDocFile() const // returns absolute path to doc file if any
+string RteComponentInstance::GetDocFile() const
 {
   RteProject* project = GetProject();
   if (project) {
@@ -1525,7 +1516,7 @@ RteItem::ConditionResult RteComponentInstance::GetResolveResult(const string& ta
 }
 
 
-void RteComponentInstance::ResolveComponent() // resolves component for all targets
+void RteComponentInstance::ResolveComponent()
 {
   ClearResolved();
   for (auto it = m_targetInfos.begin(); it != m_targetInfos.end(); it++) {
@@ -1533,7 +1524,7 @@ void RteComponentInstance::ResolveComponent() // resolves component for all targ
   }
 }
 
-RteComponent* RteComponentInstance::ResolveComponent(const string& targetName) // resolves component and returns it
+RteComponent* RteComponentInstance::ResolveComponent(const string& targetName)
 {
   RteComponent* c = NULL;
   RteComponent* potential = NULL;
@@ -1606,7 +1597,7 @@ const string& RteComponentInstance::GetVersionString() const
 }
 
 
-////////////////////////////
+
 RteComponentInstanceAggregate::RteComponentInstanceAggregate(RteItem* parent) :
   RteItem(parent),
   m_bHasMaxInstances(false)
@@ -1683,7 +1674,7 @@ bool RteComponentInstanceAggregate::IsUnresolved(const string& targetName, bool 
 }
 
 
-bool RteComponentInstanceAggregate::IsFilteredByTarget(const string& targetName) const // supported if any of children supports the target
+bool RteComponentInstanceAggregate::IsFilteredByTarget(const string& targetName) const
 {
   RteComponentInstance* ci = GetComponentInstance(targetName);
   if (ci) {
@@ -1692,7 +1683,7 @@ bool RteComponentInstanceAggregate::IsFilteredByTarget(const string& targetName)
   return false;
 }
 
-bool RteComponentInstanceAggregate::IsUsedByTarget(const string& targetName) const // supported if any of children supports the target
+bool RteComponentInstanceAggregate::IsUsedByTarget(const string& targetName) const
 {
   RteComponentInstance* ci = GetComponentInstance(targetName);
   if (ci) {
@@ -1723,9 +1714,9 @@ bool RteComponentInstanceAggregate::IsTargetSpecific() const
 }
 
 
-bool RteComponentInstanceAggregate::AllowsCommonSettings() const // only true if all members can support all targets
+bool RteComponentInstanceAggregate::AllowsCommonSettings() const
 {
-  // TODO: develop right algorithm
+  // default returns true
   return true;
 }
 
@@ -1782,7 +1773,7 @@ bool RteComponentInstanceAggregate::HasComponentInstance(RteComponentInstance* c
   return false;
 }
 
-///////////////////////////////////////
+
 RteComponentInstanceGroup::RteComponentInstanceGroup(RteItem* parent) :
   RteItem(parent),
   m_apiInstance(0)
@@ -1903,7 +1894,7 @@ RteComponentInstanceGroup* RteComponentInstanceGroup::GetGroup(const string& nam
 
 }
 
-// add subgroup if does not exist
+
 RteComponentInstanceGroup* RteComponentInstanceGroup::EnsureGroup(const string& name)
 {
   map<string, RteComponentInstanceGroup*>::iterator it = m_groups.find(name);
