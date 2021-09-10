@@ -58,8 +58,8 @@ public:
   RteItem* GetArgumentsItem(const std::string& type = EMPTY_STRING) const;
 
   /**
-   * @brief get container with files to add to project
-   * @return pointer to RteFileContainer
+   * @brief get files to add to project when using the generator
+   * @return pointer to RteFileContainer containing file items, nullptr if no files need to be added
   */
   RteFileContainer* GetProjectFiles() const { return m_files; }
 
@@ -180,7 +180,7 @@ protected:
   virtual bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
   /**
    * @brief construct generator ID
-   * @return
+   * @return value of "id" attribute
   */
   virtual std::string ConstructID() override { return GetAttribute("id"); }
 
