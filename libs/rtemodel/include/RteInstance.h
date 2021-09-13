@@ -150,7 +150,7 @@ public:
   RteAttributes* GetOpt(RteOptType type);
 
   /**
-   * @brief check if the class contains specific options for compiler, assembler or memory
+   * @brief check if the instance contains specific options for compiler, assembler or memory
    * @return true if has specific options
   */
   bool HasOptions() const;
@@ -158,7 +158,7 @@ public:
   /**
    * @brief create XMLTreeElement object to export this item to XML
    * @param parentElement parent for created XMLTreeElement
-   * @param bCreateContent create XML content out of children
+   * @param bCreateContent true to create XML content out of children
    * @return created XMLTreeElement
   */
   XMLTreeElement* CreateXmlTreeElement(XMLTreeElement* parentElement, bool bCreateContent = true) const;
@@ -244,7 +244,7 @@ public:
   void ClearTargets();
 
   /**
-   * @brief remove unused target infos (with instance count ==  0)
+   * @brief remove unused target infos (for those with GetInstanceCount(targetName) ==  0)
   */
   void PurgeTargets();
 
@@ -263,13 +263,13 @@ public:
 
   /**
    * @brief get first target name in the collection.
-   * Method is intended for environments where only one target is supported by a project to avoid passing target name
+   * Method is intended for environments where only one target is supported by a project
    * @return first target name in the internal collection
   */
   const std::string& GetFirstTargetName() const;
 
   /**
-   * @brief check if this item represents a pack info
+   * @brief check if this object contains pack attributes directly rather than in a dedicated child
    * @return true if this item is a pack info, default is false
   */
   virtual bool IsPackageInfo() const { return false; }
@@ -345,14 +345,14 @@ public:
   VersionCmp::MatchMode GetVersionMatchMode(const std::string& targetName) const;
 
   /**
-   * @brief create target info for specified target if does not exist
+   * @brief create or reuse existing target info for specified target
    * @param targetName target name
    * @return pointer to RteInstanceTargetInfo, never nullptr
   */
   virtual RteInstanceTargetInfo* AddTargetInfo(const std::string& targetName);
 
   /**
-   * @brief create target info for specified target if does not exist and copy settings from another target info
+   * @brief create or reuse existing target info for specified target, copy settings from another target info
    * @param targetName target name
    * @param copyFrom target name to copy from
    * @return pointer to RteInstanceTargetInfo, never nullptr
@@ -360,9 +360,9 @@ public:
   virtual RteInstanceTargetInfo* AddTargetInfo(const std::string& targetName, const std::string& copyFrom);
 
   /**
-   * @brief create target info for specified target if does not exist and initializes from supplied attributes
+   * @brief create or reuse existing target info for specified target, initialize it from supplied attributes
    * @param targetName target name
-   * @param attributes map with name-value pairs
+   * @param attributes map with name-value pairs to initialize the target info
    * @return pointer to RteInstanceTargetInfo, never nullptr
   */
   virtual RteInstanceTargetInfo* AddTargetInfo(const std::string& targetName, const std::map<std::string, std::string>& attributes);
@@ -404,12 +404,12 @@ public:
   virtual void Clear() override;
 
   /**
-   * @brief get attributes of originating pack
+   * @brief get pack attributes
    * @return pack attributes as RteAttributes reference
   */
   virtual const RteAttributes& GetPackageAttributes() const { return m_packageAttributes; }
   /**
-   * @brief set originating pack attributes
+   * @brief set pack attributes
    * @param attr RteAttributes to set
    * @return true if changed
   */
@@ -430,14 +430,14 @@ public:
   /**
    * @brief get resolved component, even if this item is not filtered by specified target
    * @param targetName target name
-   * @return pointer to RteComponent if resolved, nullptr otherwise
+   * @return pointer to resolved RteComponent, nullptr if not resolved
   */
   virtual RteComponent* GetComponent(const std::string& targetName) const;
 
   /**
    * @brief get resolved component, only if this item is filtered by specified target
    * @param targetName target name
-   * @return pointer to RteComponent if resolved, nullptr otherwise
+   * @return pointer to resolved RteComponent, nullptr if not resolved
   */
   virtual RteComponent* GetResolvedComponent(const std::string& targetName) const;
 
@@ -478,7 +478,7 @@ public:
   /**
    * @brief get pointer to RteComponentInstance for specified target
    * @param targetName target name
-   * @return pointer to RteComponentInstance if item if found and used in the target, nullptr otherwise
+   * @return pointer to RteComponentInstance if item is found and used in the target, nullptr otherwise
   */
   virtual RteComponentInstance* GetComponentInstance(const std::string& targetName) const;
 
@@ -499,7 +499,7 @@ public:
 protected:
 
   /**
-   * @brief check if this item provides content if stored in XML format
+   * @brief check if this item provides content to be stored in XML format
    * @return true
   */
   virtual bool HasXmlContent() const override { return true; }
@@ -537,8 +537,8 @@ public:
   RtePackageInstanceInfo(RteItem* parent) : RteItemInstance(parent) {};
 
   /**
-   * @brief get resolved pack
-   * @param targetName target name to resolve pack
+   * @brief get resolved pack for specified target
+   * @param targetName target name
    * @return pointer to RtePackage if resolved, nullptr otherwise
   */
   virtual RtePackage* GetEffectivePackage(const std::string& targetName) const override;
@@ -557,7 +557,7 @@ public:
   virtual std::string GetPackageID(bool withVersion) const override;
 
   /**
-   * @brief get common (aka family) pack ID
+   * @brief get common (family) pack ID
    * @return pack ID without version
   */
   virtual const std::string& GetCommonID() const { return m_commonID; }
@@ -576,7 +576,7 @@ public:
   virtual bool SetPackageAttributes(const RteAttributes& attr) override { return SetAttributes(attr); }
 
   /**
-   * @brief check if this object represents a pack info
+   * @brief check if this object contains pack attributes directly rather than in a dedicated child
    * @return true
   */
   virtual bool IsPackageInfo() const override { return true; }
@@ -588,16 +588,16 @@ public:
   virtual const std::string& GetURL() const override { return GetAttribute("url"); }
 
   /**
-    * @brief get resolved pack
-    * @param targetName target name to resolve pack
+    * @brief get resolved pack for specified target
+    * @param targetName target name
     * @return pointer to RtePackage if resolved, nullptr otherwise
   */
   RtePackage* GetResolvedPack(const std::string& targetName) const;
 
   /**
-   * @brief set resolved back
+   * @brief set resolved back for specified target
    * @param pack pointer to resolved RtePackage
-   * @param targetName
+   * @param targetName target name
   */
   void SetResolvedPack(RtePackage* pack, const std::string& targetName);
 
@@ -678,8 +678,8 @@ public:
   virtual bool SetPackageAttributes(const RteAttributes& attr) override { return SetAttributes(attr); }
 
   /**
-   * @brief check if this object represents a pack instance
-   * @return true: *.gpdsc is a also a pack
+   * @brief check if this object contains pack attributes directly rather than in a dedicated child
+   * @return true
   */
   virtual bool IsPackageInfo() const override { return true; }
 
@@ -744,7 +744,7 @@ public:
 
   /**
    * @brief get board display name
-   * @return string in the format "Bname (Bversion)"
+   * @return string constructed from attribute values in the format "Bname (Bversion)"
   */
   virtual std::string GetDisplayName() const override;
 
@@ -755,7 +755,7 @@ public:
   virtual const std::string& GetName() const override { return GetAttribute("Bname"); }
 
   /**
-   * @brief get board version (aka revision)
+   * @brief get board version (revision)
    * @return "Bversion" attribute value
   */
   virtual const std::string& GetVersionString() const override { return GetAttribute("Bversion"); }
@@ -834,20 +834,20 @@ public:
   void Init(RteComponent* c);
 
   /**
-   * @brief check if component version matching mode if FIXED
-   * @return true if component version matching mode if FIXED
+   * @brief check if component version matching mode is "fixed"
+   * @return true if component version matching mode is "fixed"
   */
   bool IsVersionMatchFixed() const;
 
   /**
-   * @brief check if component version matching mode if FIXED
-   * @return true if component version matching mode if FIXED
+   * @brief check if component version matching mode is "latest"
+   * @return true if component version matching mode is "latest"
   */
   bool IsVersionMatchLatest() const;
 
   /**
    * @brief get collection of resolved components per target
-   * @return map  of target name to RteComponent pointer pairs
+   * @return map of target name to RteComponent pointer pairs
   */
   const RteComponentMap& GetResolvedComponents() const { return m_resolvedComponents; }
 
@@ -881,7 +881,7 @@ public:
   RteComponentInstance* GetCopyInstance() const { return m_copy; }
 
   /**
-   * @brief make a copy of this member and assign to m_cpoty member, delete previous if exists
+   * @brief make a copy of this member and assign to m_copy member, delete previous if exists
    * @return pointer to created RteComponentInstance (m_copy member)
   */
   RteComponentInstance* MakeCopy();
@@ -937,7 +937,7 @@ public:
   virtual std::string ConstructID() override;
 
   /**
-   * @brief construct component ID including originating pack or ASPI ID without pack
+   * @brief construct component ID (including pack) or API ID (without pack)
    * @param withVersion flag to get component ID with version, for API always evaluates to false
    * @return component unique ID string in the format Cvendor.Cbundle::Cclass:Cgroup:Csub(conditionID):Cvariant:Cversion[FullPackID]
   */
@@ -957,7 +957,7 @@ public:
   virtual const std::string& GetVendorString() const override;
 
   /**
-   * @brief check if the component is removed and not used by any targetd
+   * @brief check if the component is removed and not used by any target
    * @return true if removed
   */
   virtual bool IsRemoved() const override;
@@ -1002,9 +1002,9 @@ public:
   bool SetVersion(const std::string& version);
 
   /**
-   * @brief get actual component if resolved, this otherwise
+   * @brief get actual component if resolved, this pointer otherwise
    * @param targetName target name to resolve component
-   * @return resolved component if available for specified target, this otherwise
+   * @return resolved component if available for specified target, this pointer otherwise
   */
   RteItem* GetEffectiveItem(const std::string& targetName) const;
 
@@ -1037,14 +1037,14 @@ public:
   void SetResolvedComponent(RteComponent*c, const std::string& targetName);
 
   /**
-   * @brief get a component from a filtered-out pack that could potentially be used a resolved one
+   * @brief get a component that can resolve this instance if its pack is not filtered-out
    * @param targetName target name to resolve component
    * @return pointer to RteComponent if could be potentially resolved, nullptr otherwise
   */
   RteComponent* GetPotentialComponent(const std::string& targetName) const;
 
   /**
-   * @brief set a component from a filtered-out pack that could potentially be used a resolved one
+   * @brief set a component that can resolve this instance if its pack is not filtered-out
    * @param c pointer to potentially resolved RteComponent if any
    * @param targetName target name to resolve component
   */
@@ -1253,7 +1253,7 @@ public:
    * @brief check if the group contains instance aggregates or sub-groups with unresolved components
    * @param targetName target name to resolve components
    * @param bCopy true if working copies should be checked, not the instance originals
-   * @return true if at leas one component is not resolved
+   * @return true if at least one component is not resolved
   */
   bool HasUnresolvedComponents(const std::string& targetName, bool bCopy = false) const;
 
