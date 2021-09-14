@@ -114,27 +114,27 @@ TEST_F(RteFsUtilsTest, BackupFile) {
 
   // Test filename with regular separators and multiple backup
   ret = RteUtils::SlashesToOsSlashes(RteFsUtils::BackupFile(filenameRegular));
-  EXPECT_EQ(ret == filenameBackup0, true);
+  EXPECT_EQ(ret, filenameBackup0);
   EXPECT_EQ(RteFsUtils::Exists(filenameBackup0), true);
   ofstream fileStream(filenameRegular);
   fileStream << "bar";
   fileStream.flush();
   fileStream.close();
   ret = RteUtils::SlashesToOsSlashes(RteFsUtils::BackupFile(filenameRegular));
-  EXPECT_EQ(ret == filenameBackup1, true);
+  EXPECT_EQ(ret, filenameBackup1);
   EXPECT_EQ(RteFsUtils::Exists(filenameBackup1), true);
   RteFsUtils::RemoveFile(filenameBackup0);
   RteFsUtils::RemoveFile(filenameBackup1);
 
   // Test filename with backslashes separators
   ret = RteFsUtils::BackupFile(filenameBackslash);
-  EXPECT_EQ(ret == filenameBackup0, true);
+  EXPECT_EQ(ret, filenameBackup0);
   EXPECT_EQ(RteFsUtils::Exists(filenameBackup0), true);
   RteFsUtils::RemoveFile(filenameBackup0);
 
   // Test filename with mixed separators
   ret = RteUtils::SlashesToOsSlashes(RteFsUtils::BackupFile(filenameMixed));
-  EXPECT_EQ(ret == filenameBackup0, true);
+  EXPECT_EQ(ret, filenameBackup0);
   EXPECT_EQ(RteFsUtils::Exists(filenameBackup0), true);
   RteFsUtils::RemoveFile(filenameBackup0);
 
@@ -149,7 +149,7 @@ TEST_F(RteFsUtilsTest, BackupFile) {
 
   // Test deleteExisting argument
   ret = RteUtils::SlashesToOsSlashes(RteFsUtils::BackupFile(filenameRegular, true));
-  EXPECT_EQ(ret == filenameBackup0, true);
+  EXPECT_EQ(ret, filenameBackup0);
   EXPECT_EQ(RteFsUtils::Exists(filenameBackup0), true);
   EXPECT_EQ(RteFsUtils::Exists(filenameRegular), false);
   RteFsUtils::RemoveFile(filenameBackup0);
