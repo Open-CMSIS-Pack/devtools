@@ -550,10 +550,20 @@ cbuildgen <ProjectFile>.cprj <command> [<args>]
     </td>
   </tr>
   <tr>
-    <td rowspan="2"></td>
+    <td rowspan="4"></td>
     <td>&lt;1.clayer> .. &lt;N.clayer></td>
     <td>Layer description file(s).</td>    
     <td>Specifies the layer description file(s) that are used to create the project. Please specify with full path.</td>
+  </tr>
+  <tr>
+    <td>\--name=&lt;ProjectName></td>
+    <td>Set project name.</td>
+    <td>Set <tt>\<ProjectName\></tt> as the info name element in the new <tt>\<ProjectFile\>.cprj</tt> file.</td>
+  </tr>
+  <tr>
+    <td>\--description=&lt;ProjectDescription></td>
+    <td>Set project description.</td>
+    <td>Set <tt>\<ProjectDescription\></tt> as the info description element in the new <tt>\<ProjectFile\>.cprj</tt> file.</td>
   </tr>
   <tr>
     <td>\--quiet</td>

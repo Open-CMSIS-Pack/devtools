@@ -43,6 +43,9 @@ struct CbuildLayerArgs
   const std::string &compilerRoot;
   const std::map<std::string, std::string> &optionAttributes;
   const std::list<std::string> &layerFiles;
+  const std::string& name;
+  const std::string& description;
+  const std::string& output;
 };
 
 /**
@@ -61,9 +64,8 @@ void InitMessageTable ();
  * @brief run layer commands
  * @param cmd layer command to be executed
  * @param args arguments that control the operation of a command
- * @param output directory path to output command results
  * @return true if command runs successfully, otherwise false
 */
-bool RunLayer(const int &cmd, const CbuildLayerArgs& args, const std::string &output);
+bool RunLayer(const int &cmd, const CbuildLayerArgs& args);
 
 #endif // CBUILD_H

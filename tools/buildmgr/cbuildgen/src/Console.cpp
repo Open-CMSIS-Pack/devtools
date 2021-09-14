@@ -121,7 +121,7 @@ int main(int argc, const char *argv[])
 
   // Normal commands
   bool packMode = false, cmakeMode = false, cmdlineErr = false, extractLayer = false, composeLayer = false, addLayer = false, removeLayer = false, quiet = false;
-  string cprjFile, toolchain, intdir, outdir, update;
+  string cprjFile, toolchain, intdir, outdir, name, description, update;
   string packRoot, compilerRoot, buildRoot;
   list<string> layerFiles, layerIDs;
   std::map<string, string> optionAttributes;
@@ -136,6 +136,8 @@ int main(int argc, const char *argv[])
     else if  (arg.compare(0, 9,  "--update=")        == 0)            update = arg.substr(9, arg.length());
     else if  (arg.compare(0, 9,  "--intdir=")        == 0)            intdir = arg.substr(9, arg.length());
     else if  (arg.compare(0, 9,  "--outdir=")        == 0)            outdir = arg.substr(9, arg.length());
+    else if  (arg.compare(0, 7,  "--name=")          == 0)            name = arg.substr(7, arg.length());
+    else if  (arg.compare(0, 14, "--description=")   == 0)            description = arg.substr(14, arg.length());
     else if  (arg.compare(0, 8,  "--layer=")         == 0)            layerIDs.push_back(arg.substr(8, arg.length()));
     else if  (arg.compare("--quiet")                 == 0)            quiet = true;
     else if  (arg.compare(0, 12, "--pack_root=")     == 0)            packRoot = arg.substr(12, arg.length());
@@ -227,7 +229,7 @@ int main(int argc, const char *argv[])
       break;
   }
   if (cmd != 0) {
-    if (RunLayer(cmd, {cprjFile, packRoot, compilerRoot, optionAttributes, *pLayer}, outdir)) {
+    if (RunLayer(cmd, {cprjFile, packRoot, compilerRoot, optionAttributes, *pLayer, name, description, outdir} )) {
       // layer command run successfully
       LogMsg("M650");
       return 0;

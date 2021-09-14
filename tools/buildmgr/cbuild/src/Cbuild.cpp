@@ -15,10 +15,10 @@ bool CreateRte(const CbuildRteArgs& args) {
   return CbuildKernel::Get()->Construct(args);
 }
 
-bool RunLayer(const int &cmd, const CbuildLayerArgs& args, const string &output) {
+bool RunLayer(const int &cmd, const CbuildLayerArgs& args) {
   CbuildLayer clayer;
   switch (cmd) {
-    case L_EXTRACT: return clayer.Extract (args, output);
+    case L_EXTRACT: return clayer.Extract (args);
     case L_COMPOSE: return clayer.Compose (args);
     case L_ADD:     return clayer.Add     (args);
     case L_REMOVE:  return clayer.Remove  (args);

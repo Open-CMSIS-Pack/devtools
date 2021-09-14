@@ -74,7 +74,7 @@ string CbuildLayer::GetTool(void) const {
   return m_tool;
 };
 
-bool CbuildLayer::Extract(const CbuildLayerArgs& args, const string &output) {
+bool CbuildLayer::Extract(const CbuildLayerArgs& args) {
   // Init Cprj
   if (!InitXml(args.file)) {
     return false;
@@ -101,7 +101,7 @@ bool CbuildLayer::Extract(const CbuildLayerArgs& args, const string &output) {
   }
 
   // Set absolute output path
-  const string& outputPath = RteFsUtils::AbsolutePath(RteUtils::BackSlashesToSlashes(output)).generic_string();
+  const string& outputPath = RteFsUtils::AbsolutePath(RteUtils::BackSlashesToSlashes(args.output)).generic_string();
 
   // Iterate over list of layers
   const auto layers = m_cprj->layers->GetChildren();
@@ -136,6 +136,8 @@ bool CbuildLayer::Extract(const CbuildLayerArgs& args, const string &output) {
     // Info
     XMLTreeElement* infoElement = rootElement->CreateElement("info");
     infoElement->AddAttribute("isLayer", "true");
+    XMLTreeElement* nameElement = infoElement->CreateElement("name");
+    nameElement->SetText(layerName);
     for (auto child : layer->GetChildren()) {
       CopyElement(infoElement, child);
     }
@@ -356,13 +358,27 @@ bool CbuildLayer::Compose(const CbuildLayerArgs& args) {
   }
 
   // Add info fields
-  infoElement->CreateElement("description")->SetText("Automatic generated project");
+  if (!args.name.empty()) {
+    infoElement->CreateElement("name")->SetText(args.name);
+  }
+  XMLTreeElement* description = infoElement->CreateElement("description");
+  if (args.description.empty()) {
+    description->SetText("Automatically generated project");
+  } else {
+    description->SetText(args.description);
+  }
   const string& categoryText = MergeArgs(categoryList);
-  if (!categoryText.empty()) infoElement->CreateElement("category")->SetText(categoryText);
+  if (!categoryText.empty()) {
+    infoElement->CreateElement("category")->SetText(categoryText);
+  }
   const string& keywordsText = MergeArgs(keywordsList);
-  if (!keywordsText.empty()) infoElement->CreateElement("keywords")->SetText(keywordsText);
+  if (!keywordsText.empty()) {
+    infoElement->CreateElement("keywords")->SetText(keywordsText);
+  }
   const string& licenseText = MergeArgs(licenseList);
-  if (!licenseText.empty()) infoElement->CreateElement("license")->SetText(licenseText);
+  if (!licenseText.empty()) {
+    infoElement->CreateElement("license")->SetText(licenseText);
+  }
 
   // Copy files recursively
   for (auto layerFile : args.layerFiles) {
@@ -546,13 +562,19 @@ bool CbuildLayer::Add(const CbuildLayerArgs& args) {
 
   // Add info fields
   XMLTreeElement* category = m_cprj->info->GetFirstChild("category");
-  if (!category) category = m_cprj->info->CreateElement("category");
+  if (!category) {
+    category = m_cprj->info->CreateElement("category");
+  }
   category->SetText(MergeArgs(categoryList));
   XMLTreeElement* keywords = m_cprj->info->GetFirstChild("keywords");
-  if (!keywords) keywords = m_cprj->info->CreateElement("keywords");
+  if (!keywords) {
+    keywords = m_cprj->info->CreateElement("keywords");
+  }
   keywords->SetText(MergeArgs(keywordsList));
   XMLTreeElement* license = m_cprj->info->GetFirstChild("license");
-  if (!license) license = m_cprj->info->CreateElement("license");
+  if (!license) {
+    license = m_cprj->info->CreateElement("license");
+  }
   license->SetText(MergeArgs(licenseList));
 
   // Copy files recursively

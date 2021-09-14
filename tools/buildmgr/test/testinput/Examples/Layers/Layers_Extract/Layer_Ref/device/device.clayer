@@ -5,6 +5,7 @@
   </created>
 
   <info isLayer="true">
+    <name>device</name>
     <description>ARMCM3 uVision Simulator</description>
     <category>Simulator</category>
     <keywords>ARMCM3 Sim</keywords>

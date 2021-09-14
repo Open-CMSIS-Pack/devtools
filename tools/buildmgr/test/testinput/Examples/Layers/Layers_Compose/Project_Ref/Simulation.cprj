@@ -3,7 +3,8 @@
   <created timestamp="2020-03-16T13:52:06" tool="cbuildgen 0.1.1"/>
 
   <info isLayer="false">
-    <description>Automatic generated project</description>
+    <name>ProjectName</name>
+    <description>Project Description</description>
     <category>Blinky, Simulator</category>
     <keywords>ARMCM3 Sim, Blinky</keywords>
     <license>BSD-3</license>

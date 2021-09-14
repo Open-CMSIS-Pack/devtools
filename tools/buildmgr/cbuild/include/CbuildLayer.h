@@ -45,10 +45,9 @@ public:
   /**
    * @brief extract layer from project
    * @param args layer arguments for extraction
-   * @param output directory for extracted layers
    * @return true if successfully extracted, otherwise false
   */
-  bool Extract(const CbuildLayerArgs& args, const std::string &output);
+  bool Extract(const CbuildLayerArgs& args);
 
   /**
    * @brief compose new project from layer files
