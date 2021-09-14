@@ -705,26 +705,26 @@ TEST_F(RteFsUtilsTest, SetFileReadOnly) {
   // Test filename with regular separators
   ret = RteFsUtils::SetFileReadOnly(filenameRegular, true);
   EXPECT_EQ(ret, true);
-  EXPECT_EQ((fs::status(filenameRegular, ec).permissions() & write_mask) == fs::perms::none, true);
+  EXPECT_EQ((fs::status(filenameRegular, ec).permissions() & write_mask), fs::perms::none);
   ret = RteFsUtils::SetFileReadOnly(filenameRegular, false);
   EXPECT_EQ(ret, true);
-  EXPECT_EQ(fs::status(filenameRegular, ec).permissions() == fs::perms::all, true);
+  EXPECT_EQ((fs::status(filenameRegular, ec).permissions() & write_mask), write_mask);
 
   // Test filename with backslashes separators
   ret = RteFsUtils::SetFileReadOnly(filenameBackslash, true);
   EXPECT_EQ(ret, true);
-  EXPECT_EQ((fs::status(filenameRegular, ec).permissions() & write_mask) == fs::perms::none, true);
+  EXPECT_EQ((fs::status(filenameRegular, ec).permissions() & write_mask), fs::perms::none);
   ret = RteFsUtils::SetFileReadOnly(filenameBackslash, false);
   EXPECT_EQ(ret, true);
-  EXPECT_EQ(fs::status(filenameRegular, ec).permissions() == fs::perms::all, true);
+  EXPECT_EQ((fs::status(filenameRegular, ec).permissions() & write_mask), write_mask);
 
   // Test filename with mixed separators
   ret = RteFsUtils::SetFileReadOnly(filenameMixed, true);
   EXPECT_EQ(ret, true);
-  EXPECT_EQ((fs::status(filenameRegular, ec).permissions() & write_mask) == fs::perms::none, true);
+  EXPECT_EQ((fs::status(filenameRegular, ec).permissions() & write_mask), fs::perms::none);
   ret = RteFsUtils::SetFileReadOnly(filenameMixed, false);
   EXPECT_EQ(ret, true);
-  EXPECT_EQ(fs::status(filenameRegular, ec).permissions() == fs::perms::all, true);
+  EXPECT_EQ((fs::status(filenameRegular, ec).permissions() & write_mask), write_mask);
 
   // Test filename empty
   ret = RteFsUtils::SetFileReadOnly("", true);
@@ -747,26 +747,26 @@ TEST_F(RteFsUtilsTest, SetTreeReadOnly) {
   // Test dirname with regular separators
   ret = RteFsUtils::SetTreeReadOnly(dirnameSubdir, true);
   EXPECT_EQ(ret, true);
-  EXPECT_EQ((fs::status(dirnameSubdir, ec).permissions() & write_mask) == fs::perms::none, true);
+  EXPECT_EQ((fs::status(dirnameSubdir, ec).permissions() & write_mask), fs::perms::none);
   ret = RteFsUtils::SetTreeReadOnly(dirnameSubdir, false);
   EXPECT_EQ(ret, true);
-  EXPECT_EQ(fs::status(dirnameSubdir, ec).permissions() == fs::perms::all, true);
+  EXPECT_EQ((fs::status(dirnameSubdir, ec).permissions() & write_mask), write_mask);
 
   // Test dirname with backslashes separators
   ret = RteFsUtils::SetTreeReadOnly(dirnameSubdirBackslash, true);
   EXPECT_EQ(ret, true);
-  EXPECT_EQ((fs::status(dirnameSubdir, ec).permissions() & write_mask) == fs::perms::none, true);
+  EXPECT_EQ((fs::status(dirnameSubdir, ec).permissions() & write_mask), fs::perms::none);
   ret = RteFsUtils::SetTreeReadOnly(dirnameSubdirBackslash, false);
   EXPECT_EQ(ret, true);
-  EXPECT_EQ(fs::status(dirnameSubdir, ec).permissions() == fs::perms::all, true);
+  EXPECT_EQ((fs::status(dirnameSubdir, ec).permissions() & write_mask), write_mask);
 
   // Test dirname with mixed separators
   ret = RteFsUtils::SetTreeReadOnly(dirnameSubdirMixed, true);
   EXPECT_EQ(ret, true);
-  EXPECT_EQ((fs::status(dirnameSubdir, ec).permissions() & write_mask) == fs::perms::none, true);
+  EXPECT_EQ((fs::status(dirnameSubdir, ec).permissions() & write_mask), fs::perms::none);
   ret = RteFsUtils::SetTreeReadOnly(dirnameSubdirMixed, false);
   EXPECT_EQ(ret, true);
-  EXPECT_EQ(fs::status(dirnameSubdir, ec).permissions() == fs::perms::all, true);
+  EXPECT_EQ((fs::status(dirnameSubdir, ec).permissions() & write_mask), write_mask);
 
   // Test dirname empty
   ret = RteFsUtils::SetTreeReadOnly("", true);
