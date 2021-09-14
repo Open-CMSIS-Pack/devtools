@@ -127,7 +127,7 @@ int PackGen::RunPackGen(int argc, char *argv[]) {
     return 1;
   }
 
-  // Run PackChk
+  // Run packchk
   if (!nocheck) {
     if (!generator.CheckPack()) {
       return 1;
@@ -887,13 +887,13 @@ bool PackGen::CheckPack(void) {
     // Change working dir
     fs::current_path(pack.outputDir, ec);
 
-    // Packchk
-    result = ExecCommand("PackChk \"" + pack.vendor + "." + pack.name + ".pdsc\"");
+    // packchk
+    result = ExecCommand("packchk \"" + pack.vendor + "." + pack.name + ".pdsc\"");
     if (result.second) {
       cerr << "packgen error: packchk failed" << endl << result.first << endl;
       return false;
     } else {
-      // Packchk report
+      // packchk report
       cout << result.first << endl;
     }
   }
