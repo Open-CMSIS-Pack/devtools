@@ -91,4 +91,4 @@ are linked together. For example
 
 # Building and running
 
-Employ the usual sequence [described here](./README.md) to build and run.
+Employ the usual sequence [described here](../README.md) to build and run.
