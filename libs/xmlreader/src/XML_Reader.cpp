@@ -16,7 +16,6 @@ using namespace XmlTypes;
 
 const string XML_Reader::EMPTYSTR = "";
 
-// XML special chars
 const map<const string, const char> XML_Reader::m_specialChars = {
   { "amp"  , '&'  },
   { "lt"   , '<'  },
@@ -25,7 +24,6 @@ const map<const string, const char> XML_Reader::m_specialChars = {
   { "quot" , '\"' },
 };
 
-// Unicode detection: UTF8, 16LE/BE
 const map<const UTFCode, const string> XML_Reader::m_UTFCodeText = {
   { UTFCode::UTF_NULL,  "No UTF or not detected" },
   { UTFCode::UTF8    ,  "UTF8"                   },
@@ -143,8 +141,6 @@ const string& XML_Reader::GetAttributeTag()
   return m_xmlData.attrTag;
 }
 
-// Attribute-Value Normalization: http://www.w3.org/TR/REC-xml/#AVNormalize
-// delete leading and trailing white spaces
 const string& XML_Reader::GetAttributeData()
 {
   Trim(m_xmlData.attrData);
@@ -506,14 +502,14 @@ bool XML_Reader::ReadNext()
       break;
     }
 
-    if (c == '\r') {      //  CR
+    if (c == '\r') {        // CR
       workBuf += c;
       continue;
     }
     else if (c == '\t') {   // TAB
       continue;             // ignore
     }
-    else if (c == '\n') {     // LF
+    else if (c == '\n') {   // LF
       m_xmlData.lineNo++;
 
       if (workBuf.empty() || workBuf.back() != '\r') {
@@ -776,7 +772,7 @@ bool XML_Reader::NextEntry ()
         LogMsg("M419", GetLineNumber());            // printf("Line %d: Begin Tag follows Text. Missing End Tag?\n", GetLineNumber());
         m_bIsPrevText = false;
         string xmlTag;
-        PopTag(xmlTag);                               // correct stack
+        PopTag(xmlTag);                             // correct stack
         PopTag(xmlTag);
         PushTag(m_xmlData.tagData);
       }
