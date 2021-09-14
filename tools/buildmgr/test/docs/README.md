@@ -6,7 +6,7 @@ of `cbuildgen` and its components
 
 # How to run the tests
 
-Please employ the sequence of the steps mentioned [here](../../../README.md).
+Please employ the sequence of the steps mentioned [here](../../../../README.md).
 
 # Integration Tests with commands & args
 
