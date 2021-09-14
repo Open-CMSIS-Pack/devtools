@@ -3,10 +3,10 @@ repos:
   hooks:
     - id: check-copyright-notice
       name: check-copyright-notice
-      description: Check ARM copyright notice
+      description: Check copyright notice
       entry: python3 scripts/check_copyright_notice.py
       language: system
-      files: ^(libs(?:\/[^\/]+(?<!dsqlib))+\/[^\/]+|tools\/(buildmgr|packgen))
+      files: ^(libs\/|tools\/)
       types_or: [c++, c, shell]
       exclude: |
             (?x)^(
