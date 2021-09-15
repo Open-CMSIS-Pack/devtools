@@ -61,23 +61,36 @@ machine to allow components in this repository to be built and run.
 Note that some of the required tools are platform dependent:
 
 - [Git](https://git-scm.com/)
-- A tool chain for your platform
+- A toolchain for your platform
   - **Windows:**
     - [GIT Bash](https://gitforwindows.org/)
     - Visual Studio 2017 or 2019
     - CMake (minimum recommended version **3.18**)
+    - *optional* make or Ninja
 
     ```
     ☑️ Note:
         Make sure 'git' and 'bash' paths are listed under the PATH environment
         variable and set the git bash priority higher in the path.
     ```
+    
+    ~~~
+    ☑️ GCC/Clang on Windows:
+        Currently GCC and Clang (MSYS2/MinGW distribution) compilers do not work
+        on Windows. The included libc++ has a known issue in std::filesystem,
+        see [MSYS2 GitHub issue #1937](https://github.com/msys2/MSYS2-packages/issues/1937).
+    ~~~
 
-  - **Linux/MacOS:**
+  - **Linux**
     - GNU Bash (minimum recommended version **4.3**)
-    - GNU Compiler (minimum recommended version **5.4**)
+    - GNU Compiler (minimum recommended version **8.1**)
+    - *alternatively* LLVM/Clang Compiler (minimum recommended version **8**)
     - CMake (minimum recommended version **3.18**)
     - make or Ninja
+  - **MacOS**
+    - GNU Bash (minimum recommended version **4.3**)
+    - XCode/AppleClang (minimum recommended version **11**)
+    - CMake (minimum recommended version **3.18**)
   - **General:**
     - [GNU Arm Embedded Toolchain](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-rm/downloads) (version **10-2020-q4-major**)
 
