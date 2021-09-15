@@ -6,11 +6,10 @@
 #include "StreamReader.h"
 
 std::string StreamReader::AsyncRead(file_desc_t fd) {
-  BOOL success;
   DWORD bytesRead;
   char buffer[BUFSIZE] = { 0 };
 
-  success = ReadFile(fd, buffer, BUFSIZE, &bytesRead, nullptr);
+  ReadFile(fd, buffer, BUFSIZE, &bytesRead, nullptr);
 
   return (bytesRead <= 0) ? "" : std::string(buffer, buffer + bytesRead);
 }
