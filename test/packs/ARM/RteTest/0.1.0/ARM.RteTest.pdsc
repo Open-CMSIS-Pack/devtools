@@ -6,7 +6,7 @@
   <url>www.keil.com/pack/</url>
   <description>
     Testing pack reader and RTE model features.
-    Some packchk warnings are expected: missing version of config file
+    Some PackChk warnings are expected: missing version of config file
   </description>
 
   <releases>
