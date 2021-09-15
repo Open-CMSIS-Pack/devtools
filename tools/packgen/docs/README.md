@@ -16,10 +16,10 @@ paths and defines.
  dependencies have been installed. It is a requirement to be able to
  successfully run the CMake generation step in the current environment.
 
-For validating and compressing pack files, the `packchk` and `7z` utilities
+For validating and compressing pack files, the `PackChk` and `7z` utilities
 shall be in the `PATH`:
 
-- packchk: <https://github.com/ARM-software/CMSIS_5/tree/master/CMSIS/Utilities/>
+- PackChk: <https://github.com/ARM-software/CMSIS_5/tree/master/CMSIS/Utilities/>
 - 7z: <https://www.7-zip.org/>
 
 ## Quick Start
