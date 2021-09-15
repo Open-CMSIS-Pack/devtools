@@ -110,8 +110,7 @@ untracked files or folders to be ignored shall be listed in this file.
 
 ## Copyright Notice
 
-It is recommended that you include copyright notice on your work if it is possible
-to deter copyright infringement.
+It is **mandatory** that you include the copyright notice on your work.
 
 The aim of a copyright notice is to:
 
@@ -119,11 +118,39 @@ The aim of a copyright notice is to:
 - Provide a means of identifying the copyright owner.
 - Deter infringement or plagiarism.
 
+The copyright notice should follow the format mentioned below.
+
+```
+/*
+ * Copyright (c) <Copyright_Date> <Copyright_Text>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+Copyright_Date : Year of publication or a range of years.
+Copyright_Text : Copyright author's or company's name. Additionally,
+                 users can specify a "statement of rights". 
+```
+
 for e.g.
 
 ```c++
-/*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ /*
+ * Copyright (c) 1985 John Miller
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+                OR
+ /*
+ * Copyright (c) 2020-2021 ABC Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */

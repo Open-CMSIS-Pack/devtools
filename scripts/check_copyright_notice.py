@@ -12,17 +12,20 @@ from typing import Optional, Sequence
 import argparse
 import os
 import sys
+import re
 import magic
 from comment_parser import comment_parser
 
-COPYRIGHT_TEXT = "Copyright (c) 2020-2021 Arm Limited. All rights reserved."
+COPYRIGHT_TEXT = "Copyright (c) <ValidYear>"
 LICENSE_TEXT = "SPDX-License-Identifier: Apache-2.0"
 
-def check_file(filename: str) -> int:
+def check_file(filename: str, copyright_reg_exp: re.Pattern) -> int:
     """
     Checks a file for the presence of a comment in the form of a copyright
     and license notice.
     @param filename: The name of the file to check.
+    @param copyright_reg_exp  A regular expression giving the format of the
+    copyright notice (exclusing language-specific comment chars).
     @return 0 If the copyright & license notice are found, otherwise 1.
     """
     if os.path.getsize(filename) == 0:
@@ -32,14 +35,28 @@ def check_file(filename: str) -> int:
     if mime_type == "text/plain":
         mime_type = "text/x-c++"
 
+    copyrightfound=False
+    licensefound=False
     comments = ""
-    for comment in comment_parser.extract_comments(filename, mime=mime_type):
+    for comment in comment_parser.extract_comments(filename,
+                                                   mime=mime_type):
         comments += comment.text() + '\n'
 
-    if comments and comments.find(COPYRIGHT_TEXT) != -1 and comments.find(LICENSE_TEXT) != -1:
+    if copyright_reg_exp.search(comments):
+        copyrightfound=True
+    if comments.find(LICENSE_TEXT) != -1:
+        licensefound=True
+
+    if copyrightfound and licensefound:
         return 0
 
-    print(f">> error: Missing or invalid copyright header: {filename}")
+    errstr = ""
+    if not copyrightfound:
+        errstr = "\n\t # Missing or invalid copyright text. Please follow format: " + COPYRIGHT_TEXT
+    if not licensefound:
+        errstr += "\n\t # Missing or invalid license text. Please write : " + LICENSE_TEXT
+
+    print(f"# Copyright check error(s) in : {filename} {errstr}")
     return 1
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
@@ -56,8 +73,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
     print("Checking copyright headers...")
     ret = 0
+    copyright_reg_exp=re.compile(r"(Copyright\s\(c\)\s(19|20)[0-9][0-9][^0-9])")
     for filename in args.filenames:
-        ret |= check_file(filename)
+        ret |= check_file(filename, copyright_reg_exp)
 
     if ret != 0:
         print(">> error: Files are missing a valid copyright header")
