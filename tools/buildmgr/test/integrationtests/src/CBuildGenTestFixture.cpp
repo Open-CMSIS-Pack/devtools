@@ -125,7 +125,8 @@ void CBuildGenTestFixture::RunLayerCommand(int cmdNum, const TestParam& param) {
     break;
   case 2:
     cmdName = "compose";
-    layers = workingDir + "/../Layer_Ref/application/application.clayer " + workingDir + "/../Layer_Ref/device/device.clayer";
+    layers = workingDir + "/../Layer_Ref/application/application.clayer " + workingDir + "/../Layer_Ref/device/device.clayer" +
+      " --name=ProjectName --description=\\\"Project Description\\\"";
     break;
   case 3:
     cmdName = "add";

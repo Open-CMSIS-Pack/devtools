@@ -42,7 +42,15 @@
 "\n" \
 "    <command> : compose     : generate a new <ProjectFile>.cprj from\n" \
 "                              <1.clayer> <2.clayer> ...\n" \
-"              : add         : insert <1.clayer> <2.clayer> ... into\n" \
+"\n" \
+"       <args> : <1.clayer> <2.clayer> ... <N.clayer>\n" \
+"                [--name=<ProjectName> --description=<ProjectDescription>]\n" \
+"\n" \
+"                <N.clayer>           : layer description file\n" \
+"                <ProjectName>        : project name string\n" \
+"                <ProjectDescription> : project description string\n" \
+"\n" \
+"    <command> : add         : insert <1.clayer> <2.clayer> ... into\n" \
 "                              <ProjectFile>.cprj\n" \
 "\n" \
 "       <args> : <1.clayer> <2.clayer> ... <N.clayer>\n" \
@@ -71,7 +79,7 @@
   Message gets printed if level is greater or equal to set message-level (default: -w0, warning)
 
   // --debug
-    MsgLevel::LEVEL_DEBUG     = 0,     // programm debug information
+    MsgLevel::LEVEL_DEBUG     = 0,     // program debug information
   // --verbose2
     MsgLevel::LEVEL_INFO2     = 1,     // all processing infos
   // --verbose

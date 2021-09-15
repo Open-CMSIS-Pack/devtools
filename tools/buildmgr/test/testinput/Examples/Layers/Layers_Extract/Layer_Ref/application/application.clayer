@@ -5,6 +5,7 @@
   </created>
 
   <info isLayer="true">
+    <name>application</name>
     <description>Blinky application</description>
     <category>Blinky</category>
     <keywords>Blinky</keywords>
