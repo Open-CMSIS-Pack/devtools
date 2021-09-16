@@ -306,20 +306,22 @@ bool CbuildLayer::Compose(const CbuildLayerArgs& args) {
     }
 
     // Compilers
-    const auto compilers = element->compilers->GetChildren();
-    for (auto compiler : compilers) {
-      // Copy avoiding duplicates
-      const auto cprjCompilers =compilersElement->GetChildren();
-      bool duplicated = false;
-      for (auto cprjCompiler : cprjCompilers) {
-        if (cprjCompiler->GetAttributes() == compiler->GetAttributes()) {
-          // compiler is already in the cprj compilers list
-          duplicated = true;
-          break;
+    if (element->compilers) {
+      const auto compilers = element->compilers->GetChildren();
+      for (auto compiler : compilers) {
+        // Copy avoiding duplicates
+        const auto cprjCompilers = compilersElement->GetChildren();
+        bool duplicated = false;
+        for (auto cprjCompiler : cprjCompilers) {
+          if (cprjCompiler->GetAttributes() == compiler->GetAttributes()) {
+            // compiler is already in the cprj compilers list
+            duplicated = true;
+            break;
+          }
         }
-      }
-      if (!duplicated) {
-        CopyElement(compilersElement, compiler);
+        if (!duplicated) {
+          CopyElement(compilersElement, compiler);
+        }
       }
     }
 
@@ -1001,12 +1003,6 @@ bool CbuildLayer::GetSections(const XMLTree* tree, xml_elements* elements, strin
     LogMsg("M609", VAL("NAME", "packages"));
     return false;
   }
-  elements->compilers = elements->root->GetFirstChild("compilers");
-  if (!elements->compilers) {
-    // Missing <compilers> element
-    LogMsg("M609", VAL("NAME", "compilers"));
-    return false;
-  }
 
   // Get pointer to layer section and layer name
   elements->layers = elements->root->GetFirstChild("layers");
@@ -1021,6 +1017,14 @@ bool CbuildLayer::GetSections(const XMLTree* tree, xml_elements* elements, strin
       return false;
     }
     *layerName = elements->layer->GetAttribute("name");
+  }
+
+  // Get pointer to compilers section
+  elements->compilers = elements->root->GetFirstChild("compilers");
+  if ((!elements->isLayer) && (!elements->compilers)) {
+    // Missing <compilers> element in cprj
+    LogMsg("M609", VAL("NAME", "compilers"));
+    return false;
   }
 
   // Get pointer to target
