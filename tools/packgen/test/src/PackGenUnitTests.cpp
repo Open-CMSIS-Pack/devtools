@@ -73,7 +73,7 @@ void PackGenUnitTests::CompareFile(const string& file1, const string& file2) {
     }
 
     if (l1 != l2) {
-      FAIL() << file1 << " is different from " << file2;
+      FAIL() << "error: " << file1 << " is different from " << file2;
     }
   }
 
@@ -116,12 +116,12 @@ TEST_F(PackGenUnitTests, RunPackGen) {
   EXPECT_EQ(0, RunPackGen(5, argv));
 
   // Invalid manifest file
-  const string& invalidManifest = testinput_folder + "/CMakeTestProject/invalid_manifest.yml";
+  const string& invalidManifest = testinput_folder + "/invalid_manifest.yml";
   argv[1] = (char*)invalidManifest.c_str();
   EXPECT_EQ(1, RunPackGen(2, argv));
 
   // Invalid manifest file, missing 'packs' section
-  const string& invalidManifest2 = testinput_folder + "/CMakeTestProject/invalid_manifest2.yml";
+  const string& invalidManifest2 = testinput_folder + "/invalid_manifest2.yml";
   argv[1] = (char*)invalidManifest2.c_str();
   EXPECT_EQ(1, RunPackGen(2, argv));
 
@@ -174,6 +174,61 @@ TEST_F(PackGenUnitTests, RunPackGenVerbose) {
   std::cout.rdbuf(buffer);
 }
 
+TEST_F(PackGenUnitTests, RunPackGen_Rel_Output_Path) {
+  char* argv[6];
+
+  const string& relOutPath = fs::relative(fs::path(testoutput_folder), fs::current_path()).generic_string();
+  const string& manifest = testinput_folder + "/CMakeTestProject/manifest.yml";
+  argv[1] = (char*)manifest.c_str();
+  argv[2] = (char*)"--output";
+  argv[3] = (char*)relOutPath.c_str();
+  argv[4] = (char*)"--nocheck";
+  argv[5] = (char*)"--nozip";
+  EXPECT_EQ(0, RunPackGen(6, argv));
+
+  // Check generated pack file tree
+  CompareFiletree(testoutput_folder + "/ARM.TestPack.1.0.0",
+    testinput_folder + "/CMakeTestProject");
+
+  // Check generated PDSC
+  CompareFile(testoutput_folder + "/ARM.TestPack.1.0.0/ARM.TestPack.pdsc",
+    testinput_folder + "/CMakeTestProject/ARM.TestPack.pdsc");
+}
+
+TEST_F(PackGenUnitTests, RunPackGen_With_Defines) {
+  error_code ec;
+  vector<string> vecfile;
+  char* argv[6];
+
+  const string& manifest = testinput_folder + "/TestProject/manifest.yml";
+
+  if (fs::exists(testoutput_folder))
+    fs::remove_all(testoutput_folder);
+
+  argv[1] = (char*)manifest.c_str();
+  argv[2] = (char*)"--output";
+  argv[3] = (char*)testoutput_folder.c_str();
+  argv[4] = (char*)"--nocheck";
+  argv[5] = (char*)"--nozip";
+  EXPECT_EQ(0, RunPackGen(6, argv));
+
+  // Check generated pack file tree
+  string fileName;
+
+  const string& outPackPath = testoutput_folder + "/TestVendor.TestPack.1.0.0";
+  for (const auto& p : fs::recursive_directory_iterator(outPackPath, ec)) {
+    fileName = p.path().filename().generic_string();
+    EXPECT_EQ(fileName.find(".info"), string::npos);
+    EXPECT_EQ(fileName.find(".jpeg"), string::npos);
+    vecfile.push_back(fileName);
+  }
+  EXPECT_EQ(vecfile.size(), 12);
+
+  // Check generated PDSC
+  CompareFile(testoutput_folder + "/TestVendor.TestPack.1.0.0/TestVendor.TestPack.pdsc",
+    testinput_folder + "/TestProject/TestVendor.TestPack.pdsc");
+}
+
 TEST_F(PackGenUnitTests, RunPackGenMultipleBuilds) {
   char* argv[6];
 
@@ -200,11 +255,15 @@ TEST_F(PackGenUnitTests, ParseManifestTest) {
   EXPECT_FALSE(ParseManifest());
 
   // Invalid manifest file
-  m_manifest = testinput_folder + "/CMakeTestProject/invalid_manifest.yml";
+  m_manifest = testinput_folder + "/invalid_manifest.yml";
   EXPECT_FALSE(ParseManifest());
 
   // Non existent manifest
   m_manifest = "non-existent-manifest.yml";
+  EXPECT_FALSE(ParseManifest());
+
+  // Non existent manifest
+  m_manifest = testinput_folder + "/no-target-manifest.yml";
   EXPECT_FALSE(ParseManifest());
 
   // Correct manifest
