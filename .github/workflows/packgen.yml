@@ -210,5 +210,5 @@ jobs:
         uses: mikepenz/action-junit-report@v2
         with:
           check_name: "Packgen unit tests [${{ matrix.target }}]"
-          report_paths: build/tools/packgen/test/packgenunit_test_report.xml
+          report_paths: build/packgenunit_test_report.xml
 
