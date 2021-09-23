@@ -1,0 +1,42 @@
+### CMSIS Pack manifest file ###
+
+build:
+  - name: "build1"
+    options: "cmake -G Ninja"
+
+packs:
+  - name: "TestPack"
+    description: "TestPack description"
+    vendor: "ARM"
+    license: "LICENSE"
+    url: "http://arm.com/"
+
+    requirements:
+      packages:
+        - attributes: {vendor: "ARM", name: "ExternalPack", version: "5.5.5"}
+
+    releases:
+      - version: "1.0.0"
+        date: "2021-08-09"
+        description: "Initial release"
+
+    apis:
+      - name: api1
+        attributes: {Cclass: "Cclass1", Cgroup: "Group1", Csub: "Subgroup1", Capiversion: "1.0.0"}
+        description: "Api1"
+        files:
+          - name: "lib1/api/interface.h"
+            attributes: {category: header, attr: config, version: "1.0.0"}
+
+    taxonomy:
+      - attributes: {Cclass: "Class1"}
+        description: "Class1 taxonomy"
+      - attributes: {Cclass: "Class2"}
+        description: "Class2 taxonomy"
+      - attributes: {Cclass: "Class3"}
+        description: "Class3 taxonomy"
+
+    components:
+      - name: component1
+        attributes: {Cclass: "Class1", Cgroup: "Group1", Csub: "Subgroup1", Cversion: "1.1.1"}
+        description: "Component1"
