@@ -126,7 +126,7 @@ TEST_F(PackGenUnitTests, RunPackGen) {
   EXPECT_EQ(1, RunPackGen(2, argv));
 
   // Manifest file doesn't exist
-  const string& unknownManifest = testinput_folder + "/CMakeTestProject/Unknown_manifest.yml";
+  const string& unknownManifest = testinput_folder + "/Unknown_manifest.yml";
   argv[1] = (char*)unknownManifest.c_str();
   EXPECT_EQ(1, RunPackGen(2, argv));
 
@@ -227,6 +227,25 @@ TEST_F(PackGenUnitTests, RunPackGen_With_Defines) {
   // Check generated PDSC
   CompareFile(testoutput_folder + "/TestVendor.TestPack.1.0.0/TestVendor.TestPack.pdsc",
     testinput_folder + "/TestProject/TestVendor.TestPack.pdsc");
+}
+
+TEST_F(PackGenUnitTests, RunPackGen_OutOfTree) {
+  char* argv[8];
+
+  const string& manifest = testinput_folder + "/TestProject/out-of-root/manifest.yml";
+  const string& sourceRoot = testinput_folder + "/TestProject";
+  argv[1] = (char*)manifest.c_str();
+  argv[2] = (char*)"--output";
+  argv[3] = (char*)testoutput_folder.c_str();
+  argv[4] = (char*)"--nocheck";
+  argv[5] = (char*)"--nozip";
+  argv[6] = (char*)"--source";
+  argv[7] = (char*)sourceRoot.c_str();
+  EXPECT_EQ(0, RunPackGen(8, argv));
+
+  // Check generated PDSC
+  CompareFile(testoutput_folder + "/TestVendor.TestPack.1.0.0/TestVendor.TestPack.pdsc",
+    testinput_folder + "/TestProject/out-of-root/TestVendor.TestPack.pdsc");
 }
 
 TEST_F(PackGenUnitTests, RunPackGenMultipleBuilds) {
