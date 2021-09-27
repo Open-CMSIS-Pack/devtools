@@ -3,6 +3,7 @@ name: "CodeQL"
 on:
   workflow_dispatch:
   pull_request:
+  push:
 
 jobs:
   analyze:
@@ -20,17 +21,22 @@ jobs:
 
       - name: Checkout repository
         uses: actions/checkout@v2
+        with:
+          submodules: true
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v1
         with:
           languages: 'cpp'
 
+      - name: Create build folder
+        run: mkdir build
+
       - name: Build code for analysis
         run: |
-         mkdir build && cd build
-         cmake -G Ninja ..
-         cmake --build . -j 4
+          cmake -G Ninja ..
+          cmake --build . -j 4
+        working-directory: ./build
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v1
