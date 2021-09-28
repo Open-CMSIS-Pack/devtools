@@ -270,11 +270,11 @@ bool RteKernel::LoadRequiredPdscFiles(CprjFile* cprjFile)
 }
 
 
-string RteKernel::GetInstalledPdscFile(const RteAttributes& packAttributes, const string& rtePath, string& packId)
+string RteKernel::GetInstalledPdscFile(const RteAttributes& attributes, const string& rtePath, string& packId)
 {
-  const string& name = packAttributes.GetAttribute("name");
-  const string& vendor = packAttributes.GetAttribute("vendor");
-  const string& versionRange = packAttributes.GetAttribute("version");
+  const string& name = attributes.GetAttribute("name");
+  const string& vendor = attributes.GetAttribute("vendor");
+  const string& versionRange = attributes.GetAttribute("version");
 
   string path(rtePath);
   path += '/' + vendor + '/' + name;
@@ -291,9 +291,64 @@ string RteKernel::GetInstalledPdscFile(const RteAttributes& packAttributes, cons
 
 string RteKernel::GetLocalPdscFile(const RteAttributes& attributes, const string& rtePath, string& packId)
 {
-  // TODO : implement, requires parsing .Local/local_repository.pidx file
-  // Not needed for Web-based version
+  // Parse local repository index file
+  const string& indexPath = string(rtePath) + "/.Local/local_repository.pidx";
+
+  if (!RteFsUtils::Exists(indexPath)) {
+    return RteUtils::EMPTY_STRING;
+  }
+
+  const string& name = attributes.GetAttribute("name");
+  const string& vendor = attributes.GetAttribute("vendor");
+  const string& versionRange = attributes.GetAttribute("version");
+
+  string url, version;
+  if (GetUrlFromIndex(indexPath, name, vendor, versionRange, url, version)) {
+    packId = vendor + '.' + name + '.' + version;
+    static const string&& prefix = "file://localhost/";
+    if (url.find(prefix) == 0) {
+      url.erase(0, prefix.length());
+    }
+    return url + vendor + '.' + name + ".pdsc";
+  }
+
   return RteUtils::EMPTY_STRING;
+}
+
+bool RteKernel::GetUrlFromIndex(const string& indexFile, const string& name, const string& vendor, const string& versionRange, string& indexedUrl, string& indexedVersion)
+{
+  unique_ptr<XMLTree> xmlTree = CreateUniqueXmlTree();
+  if (!xmlTree->AddFileName(indexFile, true) || xmlTree->GetChildren().empty()) {
+    return false;
+  }
+
+  // Parse index file
+  XMLTreeElement* indexChild, * pIndexChild;
+  if (!xmlTree->ParseAll() || ((indexChild = xmlTree->GetFirstChild("index")) == nullptr)
+    || ((pIndexChild = indexChild->GetFirstChild("pindex")) == nullptr)) {
+    return false;
+  }
+
+  list<XMLTreeElement*> indexList = pIndexChild->GetChildren();
+  map<string, string> pdscMap;
+  // Populate map with items matching name, vendor and version range
+  for (const auto& item : indexList) {
+    if ((name == item->GetAttribute("name")) && (vendor == item->GetAttribute("vendor"))) {
+      const string& version = item->GetAttribute("version");
+      if (versionRange.empty() || VersionCmp::RangeCompare(version, versionRange) == 0) {
+        pdscMap[version] = item->GetAttribute("url");
+      }
+    }
+  }
+
+  // Return last element from the map
+  if (!pdscMap.empty()) {
+    indexedVersion = pdscMap.rbegin()->first;
+    indexedUrl = pdscMap.rbegin()->second;
+    return true;
+  }
+
+  return false;
 }
 
 unique_ptr<XMLTree> RteKernel::CreateUniqueXmlTree() const

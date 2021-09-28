@@ -158,14 +158,13 @@ public:
   static std::string GetInstalledPdscFile(const RteAttributes& attributes, const std::string& rtePath, std::string& packId);
 
   /**
-   * @brief getter for pdsc file residing in the '.local' folder and determined by pack attributes, pack path and pack ID.
-   * The function is not yet implemented
+   * @brief getter for pdsc file pointed by the local repository index and determined by pack attributes, pack path and pack ID.
    * @param attributes pack attributes
    * @param rtePath pack path
    * @param packId pack ID
    * @return pdsc file, currently RteUtils::EMPTY_STRING
   */
-  static std::string GetLocalPdscFile(const RteAttributes& attributes, const std::string& rtePath, std::string& packId);
+  std::string GetLocalPdscFile(const RteAttributes& attributes, const std::string& rtePath, std::string& packId);
 
   /**
    * @brief create a smart pointer holding a XMLTree pointer
@@ -184,6 +183,7 @@ protected:
   RteCprjModel* ParseCprj(const std::string& cprjFileName);
   bool LoadRequiredPdscFiles(CprjFile* cprjFile);
   RtePackage* LoadPack( const std::string& pdscFile);
+  bool GetUrlFromIndex(const std::string& indexFile, const std::string& name, const std::string& vendor, const std::string& version, std::string& indexedUrl, std::string& indexedVersion);
 
   virtual XMLTree* CreateXmlTree() const { return nullptr; } // creates new XMLTree implementation
 
