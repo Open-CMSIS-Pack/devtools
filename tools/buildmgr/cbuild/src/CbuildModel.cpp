@@ -620,15 +620,28 @@ const bool CbuildModel::EvalGeneratedSourceFiles() {
 
       // gpdsc <components> section
       RteItem* components = gpdscPack->GetComponents();
-      if (components) for (auto component : components->GetChildren()) {
-        auto files = component->GetGrandChildren("files");
-        for (RteItem* file : files) {
-          string filepath = file->GetName();
-          if (!RteFsUtils::NormalizePath(filepath, gpdscPath)) {
-            LogMsg("M204", PATH(filepath));
-            return false;
+      if (components) {
+        for (const RteItem* item : components->GetChildren()) {
+          std::list<RteItem*> files;
+          if (item->GetTag() == "component") {
+            files = item->GetGrandChildren("files");
+          } else if (item->GetTag() == "bundle") {
+            for (const RteItem* bundledComponent : item->GetChildren()) {
+              const std::list<RteItem*>& bundledComponentFiles = bundledComponent->GetGrandChildren("files");
+              files.insert(files.end(), bundledComponentFiles.begin(), bundledComponentFiles.end());
+            }
           }
-          m_layerFiles[layer].insert(filepath.substr(m_prjFolder.length(), string::npos));
+          for (const RteItem* file : files) {
+            if (file->GetTag() != "file") {
+              continue;
+            }
+            string filepath = file->GetName();
+            if (!RteFsUtils::NormalizePath(filepath, gpdscPath)) {
+              LogMsg("M204", PATH(filepath));
+              return false;
+            }
+            m_layerFiles[layer].insert(filepath.substr(m_prjFolder.length(), string::npos));
+          }
         }
       }
 
@@ -639,8 +652,9 @@ const bool CbuildModel::EvalGeneratedSourceFiles() {
         grpName = "Common Sources";
       }
       for(auto file : genFiles->GetChildren()){
-        if (file->GetTag() != "file")
+        if (file->GetTag() != "file") {
           continue;
+        }
         string filepath;
         if (!EvalFile(file, CbuildUtils::ReplaceColon(grpName), gpdscPath, filepath))
           return false;
