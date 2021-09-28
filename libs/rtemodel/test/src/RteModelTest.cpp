@@ -107,6 +107,24 @@ TEST_F(RteModelPrjTest, LoadCprj) {
   EXPECT_EQ(res, RteItem::FULFILLED);
 }
 
+TEST_F(RteModelPrjTest, GetLocalPdscFile) {
+  RteKernelSlim rteKernel;
+  const string& packRoot = RteModelTestConfig::CMSIS_PACK_ROOT + "/../local";
+
+  RteAttributes attributes;
+  attributes.AddAttribute("name", "LocalPack");
+  attributes.AddAttribute("vendor", "LocalVendor");
+  attributes.AddAttribute("version", "0.1.0");
+  string packId;
+  string pdsc = rteKernel.GetLocalPdscFile(attributes, packRoot, packId);
+
+  // check returned packId
+  EXPECT_EQ(packId, "LocalVendor.LocalPack.0.1.0");
+
+  // check returned pdsc
+  EXPECT_EQ(pdsc, "packs/LocalVendor/LocalPack/LocalVendor.LocalPack.pdsc");
+}
+
 TEST_F(RteModelPrjTest, GenerateHeaderTest)
 {
   // backup header files into buffers

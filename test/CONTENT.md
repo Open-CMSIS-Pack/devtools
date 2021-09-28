@@ -54,3 +54,6 @@ The directory contais to more projects:
  In this project component G_B is selected => condition result is FULFILLED (all dependencies are resolved)   
  
  ```RteTestCM4_CompDev.cprj``` is the same as ```RteTestM3.cprj``` but component G_B is NOT selected => condition result is SELECTABLE 
+
+## `local`
+This directory contains a dummy local repository index file ```.Local/local_repository.pidx``` only for local repository test purposes.

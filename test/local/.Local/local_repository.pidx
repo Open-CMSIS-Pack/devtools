@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<index schemaVersion="1.1.0" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="PackIndex.xsd">
+
+  <vendor>local repository</vendor>
+
+  <url>test/local</url>
+
+  <timestamp>2021-09-24T11:28:35</timestamp>
+
+  <pindex>
+    <pdsc name="LocalPack" url="file://localhost/packs/LocalVendor/LocalPack/" vendor="LocalVendor" version="0.1.0"/>
+  </pindex>
+
+</index>
