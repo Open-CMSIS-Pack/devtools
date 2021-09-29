@@ -45,6 +45,7 @@ int PackGen::RunPackGen(int argc, char *argv[]) {
   try {
     options.add_options()
       ("manifest", "", cxxopts::value<string>())
+      ("s,source", "Source root folder", cxxopts::value<string>())
       ("o,output", "Output folder", cxxopts::value<string>())
       ("r,regenerate", "Regenerate CMake targets", cxxopts::value<bool>()->default_value("false"))
       ("v,verbose", "Verbose mode", cxxopts::value<bool>()->default_value("false"))
@@ -60,6 +61,9 @@ int PackGen::RunPackGen(int argc, char *argv[]) {
     generator.m_regenerate = parseResult["regenerate"].as<bool>();
     nocheck = parseResult["nocheck"].as<bool>();
     nozip = parseResult["nozip"].as<bool>();
+    if (parseResult.count("source")) {
+      generator.m_repoRoot = parseResult["source"].as<string>();
+    }
     if (parseResult.count("output")) {
       generator.m_outputRoot = parseResult["output"].as<string>();
     }
@@ -151,12 +155,19 @@ bool PackGen::ParseManifest(void) {
     // Get repository and output root
     error_code ec;
     m_manifest = fs::canonical(m_manifest, ec).generic_string();
-    m_repoRoot = fs::path(m_manifest).parent_path().generic_string();
+    if (m_repoRoot.empty()) {
+      m_repoRoot = fs::path(m_manifest).parent_path().generic_string();
+    } else {
+      m_repoRoot = fs::canonical(m_repoRoot, ec).generic_string();
+      if (ec) {
+        cerr << "packgen error: source root folder was not found!" << endl;
+        return false;
+      }
+    }
     if (m_outputRoot.empty()) {
       m_outputRoot = m_repoRoot;
-    }
-    else if (fs::path(m_outputRoot).is_relative()) {
-      m_outputRoot = m_repoRoot + "/" + m_outputRoot;
+    } else if (fs::path(m_outputRoot).is_relative()) {
+      m_outputRoot = fs::current_path(ec).append(m_outputRoot).generic_string();
     }
 
     // Build options for CMake File API (generation step)
@@ -525,8 +536,8 @@ bool PackGen::CreateComponents(void) {
 }
 
 bool PackGen::ParseReply(void) {
-
   error_code ec;
+  const auto& workingDir = fs::current_path(ec);
   fs::current_path(m_repoRoot, ec);
 
   // Iterate over build options
@@ -536,6 +547,7 @@ bool PackGen::ParseReply(void) {
     const string& replyDir = buildRoot + "/.cmake/api/v1/reply";
 
     if (fs::is_empty(replyDir, ec)) {
+      fs::current_path(workingDir, ec);
       return false;
     }
 
@@ -556,7 +568,9 @@ bool PackGen::ParseReply(void) {
               continue;
             }
             src = canonical.generic_string();
-            src.erase(0, m_repoRoot.length() + 1);
+            if (src.find(m_repoRoot) == 0) {
+              src.erase(0, m_repoRoot.length() + 1);
+            }
             m_target[name][build.name].build.src.insert(src);
           }
 
@@ -569,7 +583,9 @@ bool PackGen::ParseReply(void) {
               continue;
             }
             inc = canonical.generic_string();
-            inc.erase(0, m_repoRoot.length() + 1);
+            if (inc.find(m_repoRoot) == 0) {
+              inc.erase(0, m_repoRoot.length() + 1);
+            }
             m_target[name][build.name].build.inc.insert(inc);
           }
 
@@ -616,6 +632,7 @@ bool PackGen::ParseReply(void) {
     }
   }
 
+  fs::current_path(workingDir, ec);
   return true;
 }
 
@@ -826,17 +843,35 @@ void PackGen::CreatePackComponentsAndConditions(XMLTreeElement* rootElement, pac
       for (const auto& src : componentInfo.build.src) {
         XMLTreeElement* fileElement = filesElement->CreateElement("file");
         fileElement->AddAttribute("category", "source");
-        fileElement->AddAttribute("name", src);
-        const string dst = pack.outputDir + "/" + src;
-        CopyItem(m_repoRoot + "/" + src, dst, m_extensions[componentName]);
+        string name, origin, destination;
+        if (fs::path(src).is_absolute()) {
+          name = fs::path(src).relative_path().generic_string();
+          origin = src;
+          destination = pack.outputDir + "/" + name;
+        } else {
+          name = src;
+          origin = m_repoRoot + "/" + src;
+          destination = pack.outputDir + "/" + src;
+        }
+        fileElement->AddAttribute("name", name);
+        CopyItem(origin, destination, m_extensions[componentName]);
       }
       // Include paths from CMake targets
       for (const auto& inc : componentInfo.build.inc) {
         XMLTreeElement* fileElement = filesElement->CreateElement("file");
         fileElement->AddAttribute("category", "include");
-        fileElement->AddAttribute("name", inc + "/");
-        const string dst = pack.outputDir + "/" + inc;
-        CopyItem(m_repoRoot + "/" + inc, dst, m_extensions[componentName]);
+        string name, origin, destination;
+        if (fs::path(inc).is_absolute()) {
+          name = fs::path(inc).relative_path().generic_string() + "/";
+          origin = inc;
+          destination = pack.outputDir + "/" + name;
+        } else {
+          name = inc + "/";
+          origin = m_repoRoot + "/" + inc;
+          destination = pack.outputDir + "/" + inc;
+        }
+        fileElement->AddAttribute("name", name);
+        CopyItem(origin, destination, m_extensions[componentName]);
       }
       // Other files described in manifest
       for (const auto& file : componentInfo.files) {
@@ -879,7 +914,7 @@ void PackGen::CreatePackComponentsAndConditions(XMLTreeElement* rootElement, pac
 bool PackGen::CheckPack(void) {
   PackGen::Result result;
   error_code ec;
-  auto workingDir = fs::current_path(ec);
+  const auto& workingDir = fs::current_path(ec);
 
   // Iterate over packs
   for (const auto& pack : m_pack) {
@@ -906,7 +941,7 @@ bool PackGen::CheckPack(void) {
 bool PackGen::CompressPack(void) {
   PackGen::Result result;
   error_code ec;
-  auto workingDir = fs::current_path(ec);
+  const auto& workingDir = fs::current_path(ec);
 
   // Iterate over packs
   for (const auto& pack : m_pack) {
@@ -969,7 +1004,7 @@ bool PackGen::CreateQuery() {
     fileStream.close();
 
     // Run CMake
-    const string cmd = build.options + " -S \"" + m_repoRoot + "\" -B \"" + buildRoot + "\"";
+    const string cmd = build.options + " -S \"" + fs::path(m_manifest).parent_path().generic_string() + "\" -B \"" + buildRoot + "\"";
     PackGen::Result result = ExecCommand(cmd);
     if (result.second) {
       cerr << "packgen error: CMake failed\n" << result.first << endl;

@@ -17,7 +17,7 @@ paths and defines.
  successfully run the CMake generation step in the current environment.
 
 For validating and compressing pack files, the `PackChk` and `7z` utilities
-shall be in the `PATH`:
+shall be in the `PATH` system environment variable:
 
 - PackChk: <https://github.com/ARM-software/CMSIS_5/tree/master/CMSIS/Utilities/>
 - 7z: <https://www.7-zip.org/>
@@ -47,6 +47,7 @@ CMSIS Pack generator assistant 0.9.0
 Usage:
   packgen [OPTION...] manifest.yml
 
+  -s, --source arg  Source root folder
   -o, --output arg  Output folder
   -r, --regenerate  Regenerate CMake targets
   -v, --verbose     Verbose mode
@@ -79,6 +80,11 @@ manifest file in the top level `build` mapping. The set(s) of options to be
 considered in the generation of a given component shall be inserted in the
 `build` field under the `components` mapping, while the `operation` to be
 applied to them can be chosen as `intersection` or `difference`.
+
+- The `manifest.yml` file shall be placed alongside the entry point `CMakeLists.txt`.
+The command line option `--source` shall be used to indicate the root (top-level)
+source folder when the `CMakeLists.txt` and `manifest.yml` are not located at the
+root folder. Paths inside the `manifest.yml` file shall be relative to the root folder.
 
 ## CMSIS manifest file
 

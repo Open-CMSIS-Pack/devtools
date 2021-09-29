@@ -1,0 +1,23 @@
+### CMSIS Pack manifest file ###
+
+build:
+  - name: "build1"
+    options: "cmake -G Ninja"
+
+packs:
+  - name: "TestPack"
+    description: "TestPack description"
+    vendor: "TestVendor"
+    license: "LICENSE"
+    url: "http://test-URL.com/"
+
+    releases:
+      - version: "1.0.0"
+        date: "2021-08-09"
+        description: "Initial release"
+
+    components:
+      - name: comp1
+        target: lib1
+        attributes: {Cclass: "Class", Cgroup: "Group", Csub: "Comp1", Cversion: "1.1.1"}
+        description: "Comp1"
