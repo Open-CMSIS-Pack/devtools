@@ -205,3 +205,9 @@ const CbuildUtils::Result CbuildUtils::ExecCommand(const string& cmd) {
   }
   return make_pair(result, ret_code);
 }
+
+void CbuildUtils::PushBackUniquely(std::vector<std::string>& vec, const std::string& value) {
+  if (find(vec.cbegin(), vec.cend(), value) == vec.cend()) {
+    vec.push_back(value);
+  }
+}

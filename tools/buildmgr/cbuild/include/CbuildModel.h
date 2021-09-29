@@ -116,7 +116,7 @@ public:
    * @brief get list of include paths used in the project
    * @return list of include paths
   */
-  const std::set<std::string>& GetIncludePaths() const
+  const std::vector<std::string>& GetIncludePaths() const
   {
     return m_includePaths;
   }
@@ -125,7 +125,7 @@ public:
    * @brief get list of libraries used in the project
    * @return list of libraries
   */
-  const std::set<std::string>& GetLibraries() const
+  const std::vector<std::string>& GetLibraries() const
   {
     return m_libraries;
   }
@@ -134,7 +134,7 @@ public:
    * @brief get list of defines used in project
    * @return list of defines
   */
-  const std::set<std::string>& GetDefines() const
+  const std::vector<std::string>& GetDefines() const
   {
     return m_defines;
   }
@@ -143,7 +143,7 @@ public:
    * @brief get list of object files
    * @return list of object files used in project
   */
-  const std::set<std::string>& GetObjects() const
+  const std::vector<std::string>& GetObjects() const
   {
     return m_objects;
   }
@@ -188,7 +188,7 @@ public:
    * @brief get compiler flags for C modules used for constructing the compiler command line
    * @return list of C flags
   */
-  const std::set<std::string>& GetTargetCFlags() const
+  const std::vector<std::string>& GetTargetCFlags() const
   {
     return m_targetCFlags;
   }
@@ -197,7 +197,7 @@ public:
    * @brief get compiler flags for C++ modules used for constructing the compiler command line
    * @return list of C++ flags
   */
-  const std::set<std::string>& GetTargetCxxFlags() const
+  const std::vector<std::string>& GetTargetCxxFlags() const
   {
     return m_targetCxxFlags;
   }
@@ -206,7 +206,7 @@ public:
    * @brief get assembler flags for ASM modules used for constructing the assembler command line
    * @return list of assembler flags
   */
-  const std::set<std::string>& GetTargetAsFlags() const
+  const std::vector<std::string>& GetTargetAsFlags() const
   {
     return m_targetAsFlags;
   }
@@ -215,7 +215,7 @@ public:
    * @brief get linker flags used for constructing the linker command line
    * @return list of linker flags
   */
-  const std::list<std::string>& GetTargetLdFlags() const
+  const std::vector<std::string>& GetTargetLdFlags() const
   {
     return m_targetLdFlags;
   }
@@ -226,7 +226,7 @@ public:
    *         key: component name,
    *         value: list of associated compiler flags
   */
-  const std::map<std::string, std::set<std::string>>& GetCFlags() const
+  const std::map<std::string, std::vector<std::string>>& GetCFlags() const
   {
     return m_CFlags;
   }
@@ -237,7 +237,7 @@ public:
    *         key: component name,
    *         value: list of associated compiler flags
   */
-  const std::map<std::string, std::set<std::string>>& GetCxxFlags() const
+  const std::map<std::string, std::vector<std::string>>& GetCxxFlags() const
   {
     return m_CxxFlags;
   }
@@ -248,7 +248,7 @@ public:
    *         key: component name,
    *         value: list of associated assembler flags
   */
-  const std::map<std::string, std::set<std::string>>& GetAsFlags() const
+  const std::map<std::string, std::vector<std::string>>& GetAsFlags() const
   {
     return m_AsFlags;
   }
@@ -307,7 +307,7 @@ public:
    * @brief get list of preinclude files specific to project
    * @return list of preinclude files associated with project
   */
-  const std::set<std::string>& GetPreIncludeFilesGlobal() const
+  const std::vector<std::string>& GetPreIncludeFilesGlobal() const
   {
     return m_preIncludeFilesGlobal;
   }
@@ -318,7 +318,7 @@ public:
    *         key: component name,
    *         value: list of preinclude files associated with component
   */
-  const std::map<std::string, std::set<std::string>>& GetPreIncludeFilesLocal() const
+  const std::map<std::string, std::vector<std::string>>& GetPreIncludeFilesLocal() const
   {
     return m_preIncludeFilesLocal;
   }
@@ -380,30 +380,30 @@ protected:
   std::map<std::string, std::list<std::string>>     m_cSourceFiles;
   std::map<std::string, std::list<std::string>>     m_cxxSourceFiles;
   std::map<std::string, std::list<std::string>>     m_asmSourceFiles;
-  std::set<std::string>                             m_includePaths;
+  std::vector<std::string>                          m_includePaths;
   std::set<std::string>                             m_packs;
   std::string                                       m_linkerScript;
-  std::set<std::string>                             m_libraries;
-  std::set<std::string>                             m_defines;
-  std::set<std::string>                             m_objects;
+  std::vector<std::string>                          m_libraries;
+  std::vector<std::string>                          m_defines;
+  std::vector<std::string>                          m_objects;
   std::set<std::string>                             m_language;
   std::string                                       m_compiler;
   std::string                                       m_compilerVersion;
   std::string                                       m_toolchainConfig;
-  std::set<std::string>                             m_targetCFlags;
-  std::set<std::string>                             m_targetCxxFlags;
-  std::set<std::string>                             m_targetAsFlags;
-  std::list<std::string>                            m_targetLdFlags;
-  std::map<std::string, std::set<std::string>>      m_CFlags;
-  std::map<std::string, std::set<std::string>>      m_CxxFlags;
-  std::map<std::string, std::set<std::string>>      m_AsFlags;
+  std::vector<std::string>                          m_targetCFlags;
+  std::vector<std::string>                          m_targetCxxFlags;
+  std::vector<std::string>                          m_targetAsFlags;
+  std::vector<std::string>                          m_targetLdFlags;
+  std::map<std::string, std::vector<std::string>>   m_CFlags;
+  std::map<std::string, std::vector<std::string>>   m_CxxFlags;
+  std::map<std::string, std::vector<std::string>>   m_AsFlags;
   std::map<std::string, bool>                       m_Asm;
   std::string                                       m_outDir;
   std::string                                       m_intDir;
   std::string                                       m_outputType;
   std::string                                       m_outputName;
-  std::set<std::string>                             m_preIncludeFilesGlobal;
-  std::map<std::string, std::set<std::string>>      m_preIncludeFilesLocal;
+  std::vector<std::string>                          m_preIncludeFilesGlobal;
+  std::map<std::string, std::vector<std::string>>   m_preIncludeFilesLocal;
   std::string                                       m_auditData;
 
   // layers
@@ -428,14 +428,13 @@ protected:
   const bool EvalTargetOutput();
   void SetItemFlags(const RteItem* item, const std::string& name);
   const std::string GetParentName(const RteItem* item);
-  const std::set<std::string>& GetParentFlags(const RteItem* item, std::map<std::string, std::set<std::string>>& flagsMap, const std::set<std::string>& targetFlags);
+  const std::vector<std::string>& GetParentFlags(const RteItem* item, std::map<std::string, std::vector<std::string>>& flagsMap, const std::vector<std::string>& targetFlags);
   const bool GenerateAuditData();
   const bool GenerateFixedCprj(const std::string& update);
   const bool EvaluateToolchainConfig(const std::string& name, const std::string& versionRange, const std::string& localPath, const std::string& compilerRoot, const std::string& ext);
   const bool GetCompatibleToolchain(const std::string& name, const std::string& versionRange, const std::string& dir, const std::string& ext);
-  std::set<std::string> SplitArgs(const std::string& args, const std::string& delim=std::string(" -"), bool relativePath=true);
-  std::list<std::string> SplitArgsList(const std::string& args);
-  static std::set<std::string> MergeArgs(const std::set<std::string>& add, const std::set<std::string>& remove, const std::set<std::string>& reference);
+  std::vector<std::string> SplitArgs(const std::string& args, const std::string& delim=std::string(" -"), bool relativePath=true);
+  static std::vector<std::string> MergeArgs(const std::vector<std::string>& add, const std::vector<std::string>& remove, const std::vector<std::string>& reference);
   static std::string GetExtendedRteGroupName(RteItem* ci);
 };
 

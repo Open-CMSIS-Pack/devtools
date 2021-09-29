@@ -88,10 +88,10 @@ protected:
   std::map<std::string, module> m_ccFilesList;
   std::map<std::string, module> m_cxxFilesList;
   std::map<std::string, flags> m_objGroupsList;
-  std::set<std::string> m_incPathsList;
-  std::set<std::string> m_libFilesList;
-  std::set<std::string> m_definesList;
-  std::set<std::string> m_preincGlobal;
+  std::vector<std::string> m_incPathsList;
+  std::vector<std::string> m_libFilesList;
+  std::vector<std::string> m_definesList;
+  std::vector<std::string> m_preincGlobal;
   std::set<cfg> m_cfgFilesList;
   std::string m_targetName;
   std::string m_projectName;
