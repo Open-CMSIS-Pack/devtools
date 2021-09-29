@@ -45,26 +45,27 @@ std::string CrossPlatformUtils::GetCMSISPackRootDir()
 
 std::string CrossPlatformUtils::GetDefaultCMSISPackRootDir()
 {
-  std::string defaultPackRoot = DEFAULT_PACKROOTDEF; // defined via CMakeLists.txt
-  if (!defaultPackRoot.empty()) {
-    return defaultPackRoot; // build settings overwtite the location
-  }
+  std::string defaultPackRoot = GetEnv(DEFAULT_PACKROOTDEF); // defined via CMakeLists.txt
 
 #ifdef _WIN32
-  defaultPackRoot = GetEnv("LOCALAPPDATA");
+  if (defaultPackRoot.empty()) {
+    defaultPackRoot = GetEnv("LOCALAPPDATA");
+  }
   if (defaultPackRoot.empty()) {
     defaultPackRoot = GetEnv("USERPROFILE");
   }
   if (!defaultPackRoot.empty()) {
-    defaultPackRoot += "Arm\\Packs";
+    defaultPackRoot += "\\Arm\\Packs";
   }
 #else
-  defaultPackRoot = GetEnv("XDG_CACHE_HOME");
+  if (defaultPackRoot.empty()) {
+    defaultPackRoot = GetEnv("XDG_CACHE_HOME");
+  }
   if (defaultPackRoot.empty()) {
     defaultPackRoot = GetEnv("HOME");
   }
   if (!defaultPackRoot.empty()) {
-    defaultPackRoot += "arm/packs";
+    defaultPackRoot += "/arm/packs";
   }
 #endif
   return defaultPackRoot;

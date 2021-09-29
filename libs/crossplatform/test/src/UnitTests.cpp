@@ -57,8 +57,8 @@ TEST(CrossPlatformUnitTests, GetPackRootDir_NoEnvSet) {
 TEST(CrossPlatformUnitTests, GetPackRootDir_Default) {
   EXPECT_TRUE(CrossPlatformUtils::SetEnv("CMSIS_PACK_ROOT", ""));
 #ifdef DEFAULT_PACKROOTDEF
-  EXPECT_EQ(CrossPlatformUtils::GetCMSISPackRootDir(), DEFAULT_PACKROOTDEF);
-  EXPECT_EQ(CrossPlatformUtils::GetDefaultCMSISPackRootDir(), DEFAULT_PACKROOTDEF);
+  EXPECT_EQ(CrossPlatformUtils::GetCMSISPackRootDir().find((CrossPlatformUtils::GetEnv(DEFAULT_PACKROOTDEF))), 0);
+  EXPECT_EQ(CrossPlatformUtils::GetDefaultCMSISPackRootDir().find((CrossPlatformUtils::GetEnv(DEFAULT_PACKROOTDEF))), 0);
 #endif
   EXPECT_EQ(CrossPlatformUtils::GetCMSISPackRootDir(), CrossPlatformUtils::GetDefaultCMSISPackRootDir());
 }
