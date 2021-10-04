@@ -210,6 +210,15 @@ TEST_F(CBuildGCCTests, Flags) {
   CheckCMakeLists         (param);
 }
 
+// Validate project compilation having specific flag order requirements
+TEST_F(CBuildGCCTests, FlagOrder) {
+  TestParam param = { "GCC/FlagOrder", "MyProject" };
+
+  RunCBuildScriptClean    (param);
+  RunCBuildScript         (param);
+  CheckCMakeLists         (param);
+}
+
 // Test project with directory inclusion with relative paths
 TEST_F(CBuildGCCTests, RelativePath) {
   TestParam param = { "GCC/RelativePath", "Project" };
