@@ -28,6 +28,7 @@
     <component Cclass="Class" Cgroup="Group" Csub="Comp1" Cversion="1.1.1">
       <description>Comp1</description>
       <files>
+        <file category="header" name="lib1/inc/lib1.h"/>
         <file category="source" name="lib1/src/lib1.cpp"/>
         <file category="include" name="lib1/inc/"/>
       </files>

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16.3)
 
-SET(SOURCE_FILES src/lib1.cpp )
+SET(SOURCE_FILES src/lib1.cpp inc/lib1.h)
 
 add_library(lib1 STATIC ${SOURCE_FILES})
 
