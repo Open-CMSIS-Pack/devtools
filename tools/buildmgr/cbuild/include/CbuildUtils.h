@@ -129,6 +129,13 @@ public:
   */
   static const std::string StrPathAbsolute(const std::string& path, const std::string& base);
 
+  /**
+   * @brief Add a value into a vector if it does not already exist in the vector
+   * @param vec The vector to add the value into
+   * @param value the value to add
+  */
+  static void PushBackUniquely(std::vector<std::string>& vec, const std::string& value);
+
 };
 
 #endif /* CBUILDUTILS_H */

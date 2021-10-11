@@ -100,12 +100,12 @@ bool BuildSystemGenerator::Collect(const string& inputFile, const CbuildModel *m
 
   for (auto inc : model->GetIncludePaths())
   {
-    m_incPathsList.insert(StrNorm(inc));
+    CbuildUtils::PushBackUniquely(m_incPathsList, StrNorm(inc));
   }
 
   for (auto preinc : model->GetPreIncludeFilesGlobal())
   {
-    m_preincGlobal.insert(StrNorm(preinc));
+    CbuildUtils::PushBackUniquely(m_preincGlobal, StrNorm(preinc));
   }
 
   for (auto group : model->GetPreIncludeFilesLocal())
@@ -119,24 +119,24 @@ bool BuildSystemGenerator::Collect(const string& inputFile, const CbuildModel *m
 
   for (auto lib : model->GetLibraries())
   {
-    m_libFilesList.insert(StrNorm(lib));
+    CbuildUtils::PushBackUniquely(m_libFilesList, StrNorm(lib));
   }
 
   for (auto obj : model->GetObjects())
   {
-    m_libFilesList.insert(StrNorm(obj));
+    CbuildUtils::PushBackUniquely(m_libFilesList, StrNorm(obj));
   }
 
   for (auto def : model->GetDefines())
   {
-    m_definesList.insert(def);
+    CbuildUtils::PushBackUniquely(m_definesList, def);
   }
 
   for (auto list : model->GetCSourceFiles())
   {
     string group = list.first;
     string cGFlags;
-    const map<string, set<string>>& cFlags = model->GetCFlags();
+    const map<string, std::vector<string>>& cFlags = model->GetCFlags();
     string groupName = group;
     do {
       if (cFlags.find(groupName) != cFlags.end()) {
@@ -168,7 +168,7 @@ bool BuildSystemGenerator::Collect(const string& inputFile, const CbuildModel *m
   {
     string group = list.first;
     string cxxGFlags;
-    const map<string, set<string>>& cxxFlags = model->GetCxxFlags();
+    const map<string, std::vector<string>>& cxxFlags = model->GetCxxFlags();
     string groupName = group;
     do {
       if (cxxFlags.find(groupName) != cxxFlags.end()) {
@@ -204,7 +204,7 @@ bool BuildSystemGenerator::Collect(const string& inputFile, const CbuildModel *m
   {
     string group = list.first;
     string asGFlags;
-    const map<string, set<string>>& asFlags = model->GetAsFlags();
+    const map<string, std::vector<string>>& asFlags = model->GetAsFlags();
     string groupName = group;
     do {
       if (asFlags.find(groupName) != asFlags.end()) {

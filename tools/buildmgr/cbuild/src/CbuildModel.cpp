@@ -21,6 +21,7 @@
 #include "RtePackage.h"
 #include "RteProject.h"
 
+#include <algorithm>
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -349,28 +350,28 @@ const bool CbuildModel::EvaluateResult() {
     m_packs.insert(pack.second->GetPackageID());
   }
   for (auto define : m_cprjTarget->GetDefines()) {
-    if (!define.empty()) m_defines.insert(define);
+    if (!define.empty()) m_defines.push_back(define);
   }
   for (auto inc : m_cprjTarget->GetIncludePaths()) {
     if (!RteFsUtils::NormalizePath(inc, m_prjFolder)) {
       LogMsg("M204", PATH(inc));
       return false;
     }
-    if (!inc.empty()) m_includePaths.insert(inc);
+    if (!inc.empty()) m_includePaths.push_back(inc);
   }
   for (auto lib : m_cprjTarget->GetLibraries()) {
     if (!RteFsUtils::NormalizePath(lib, m_prjFolder)) {
       LogMsg("M204", PATH(lib));
       return false;
     }
-    if (!lib.empty()) m_libraries.insert(lib);
+    if (!lib.empty()) m_libraries.push_back(lib);
   }
   for (auto obj : m_cprjTarget->GetObjects()) {
     if (!RteFsUtils::NormalizePath(obj, m_prjFolder)) {
       LogMsg("M204", PATH(obj));
       return false;
     }
-    if (!obj.empty()) m_objects.insert(obj);
+    if (!obj.empty()) m_objects.push_back(obj);
   }
 
   if (!EvalSourceFiles())
@@ -456,7 +457,7 @@ const bool CbuildModel::EvalPreIncludeFiles() {
     RteComponent* ci = it.first;
     if (ci != NULL) {
       string componentName = GetExtendedRteGroupName(ci);
-      m_preIncludeFilesLocal[componentName] = it.second;
+      m_preIncludeFilesLocal[componentName] = vector<string>(it.second.begin(), it.second.end());
     } else {
       const string& rteFolder = m_prjFolder + "RTE/_" + WildCards::ToX(m_cprjTarget->GetName()) + "/";
       for (auto it2 : it.second) {
@@ -465,7 +466,7 @@ const bool CbuildModel::EvalPreIncludeFiles() {
           LogMsg("M204", PATH(file));
           return false;
         }
-        m_preIncludeFilesGlobal.insert(file);
+        m_preIncludeFilesGlobal.push_back(file);
       }
     }
   }
@@ -695,13 +696,13 @@ const bool CbuildModel::EvalFile(RteItem* file, const string& group, const strin
     m_asmSourceFiles[group].push_back(filepath);
     break;
   case RteFile::Category::HEADER:         // header
-    m_includePaths.insert(filepath);
+    m_includePaths.push_back(filepath);
     break;
   case RteFile::Category::LIBRARY:        // library
-    m_libraries.insert(filepath);
+    m_libraries.push_back(filepath);
     break;
   case RteFile::Category::OBJECT:         // object
-    m_objects.insert(filepath);
+    m_objects.push_back(filepath);
     break;
   case RteFile::Category::LINKER_SCRIPT:
     if (m_linkerScript.empty()) {
@@ -735,64 +736,41 @@ const bool CbuildModel::EvalDeviceName() {
   return true;
 }
 
-set<string> CbuildModel::SplitArgs(const string& args, const string& delim, bool relativePath) {
+vector<string> CbuildModel::SplitArgs(const string& args, const string& delim, bool relativePath) {
   /*
   SplitArgs:
   Split arguments from the string 'args' into a set of strings
   If 'relativePath' is true relative paths are normalized
   */
 
-  set<string> s;
+  vector<string> s;
   size_t end = 0, start = 0, len = args.length();
   while (end < len) {
     if ((end = args.find(delim, start)) == string::npos) end = len;
     string flag = args.substr(start, end - start);
     if (relativePath)
       flag = CbuildUtils::StrPathAbsolute(flag, m_prjFolder);
-    s.insert(flag);
-    start = end + 1;
-  }
-  return s;
-}
-
-list<string> CbuildModel::SplitArgsList(const string& args) {
-  /*
-  SplitArgsList:
-  Split arguments from the string 'args' into a list of strings
-  Normalize relative paths
-  */
-
-  list<string> s;
-  size_t end = 0, start = 0, len = args.length();
-  while (end < len) {
-    if ((end = args.find(" -", start)) == string::npos) {
-      end = len;
-    }
-    string flag = args.substr(start, end - start);
-    flag = CbuildUtils::StrPathAbsolute(flag, m_prjFolder);
     s.push_back(flag);
     start = end + 1;
   }
   return s;
 }
 
-set<string> CbuildModel::MergeArgs(const set<string>& add, const set<string>& remove, const set<string>& reference) {
+vector<string> CbuildModel::MergeArgs(const vector<string>& add, const vector<string>& remove, const vector<string>& reference) {
   /*
   MergeArgs:
-   - Merge 'add' arguments from 'reference' avoiding duplicates
+   - Merge 'add' arguments from 'reference'
    - Remove 'remove' items from 'reference'
   */
 
-  set<string> list = reference;
+  vector<string> list = reference;
   for (auto add_item : add) {
-    list.insert(add_item);
+    list.push_back(add_item);
   }
   for (auto rem_item : remove) {
-    for (auto ref_item : list) {
-      if (rem_item.compare(ref_item) == 0) {
-        list.erase(ref_item);
-        break;
-      }
+    auto first_match = std::find(list.cbegin(), list.cend(), rem_item);
+    if (first_match != list.cend()) {
+      list.erase(first_match);
     }
   }
   return list;
@@ -822,7 +800,7 @@ const string CbuildModel::GetParentName(const RteItem* item) {
   return parentName;
 }
 
-const set<string>& CbuildModel::GetParentFlags(const RteItem* item, map<string, set<string>>& flagsMap, const set<string>& targetFlags) {
+const vector<string>& CbuildModel::GetParentFlags(const RteItem* item, map<string, vector<string>>& flagsMap, const vector<string>& targetFlags) {
   /*
   GetParentFlags
   Get next non-empty parent group flags or target flags
@@ -831,7 +809,7 @@ const set<string>& CbuildModel::GetParentFlags(const RteItem* item, map<string, 
   string parentName = GetParentName(item);
   while (!parentName.empty()) {
     if (flagsMap.find(parentName) != flagsMap.end()) {
-      const set<string>& flags = flagsMap.at(parentName);
+      const vector<string>& flags = flagsMap.at(parentName);
       if (!flags.empty()) {
         return flags;
       }
@@ -855,14 +833,14 @@ void CbuildModel::SetItemFlags(const RteItem* item, const string& name) {
   const RteItem* asflags = CbuildUtils::GetItemByTagAndAttribute(item->GetChildren(), "asflags", "compiler", m_compiler);
 
   if (cflags != NULL) {
-    const set<string>& parentFlags = GetParentFlags(item, m_CFlags, m_targetCFlags);
-    const set<string>& flagsSet = MergeArgs(SplitArgs(cflags->GetAttribute("add")), SplitArgs(cflags->GetAttribute("remove")), parentFlags);
-    m_CFlags.insert(pair<string, set<string>>(name, flagsSet));
+    const vector<string>& parentFlags = GetParentFlags(item, m_CFlags, m_targetCFlags);
+    const vector<string>& flagsList = MergeArgs(SplitArgs(cflags->GetAttribute("add")), SplitArgs(cflags->GetAttribute("remove")), parentFlags);
+    m_CFlags.insert(pair<string, vector<string>>(name, flagsList));
   }
   if (cxxflags != NULL) {
-    const set<string>& parentFlags = GetParentFlags(item, m_CxxFlags, m_targetCxxFlags);
-    const set<string>& flagsSet = MergeArgs(SplitArgs(cxxflags->GetAttribute("add")), SplitArgs(cxxflags->GetAttribute("remove")), parentFlags);
-    m_CxxFlags.insert(pair<string, set<string>>(name, flagsSet));
+    const vector<string>& parentFlags = GetParentFlags(item, m_CxxFlags, m_targetCxxFlags);
+    const vector<string>& flagsList = MergeArgs(SplitArgs(cxxflags->GetAttribute("add")), SplitArgs(cxxflags->GetAttribute("remove")), parentFlags);
+    m_CxxFlags.insert(pair<string, vector<string>>(name, flagsList));
   }
   if (asflags != NULL) {
     bool inheritanceBreak = false;
@@ -877,14 +855,14 @@ void CbuildModel::SetItemFlags(const RteItem* item, const string& name) {
         m_Asm.insert(pair<string, bool>(name, assembler));
       }
     }
-    set<string> flagsSet;
+    vector<string> flagsList;
     if (inheritanceBreak) {
-      flagsSet = SplitArgs(asflags->GetAttribute("add"));
+      flagsList = SplitArgs(asflags->GetAttribute("add"));
     } else {
-      const set<string>& parentFlags = GetParentFlags(item, m_AsFlags, m_targetAsFlags);
-      flagsSet = MergeArgs(SplitArgs(asflags->GetAttribute("add")), SplitArgs(asflags->GetAttribute("remove")), parentFlags);
+      const vector<string>& parentFlags = GetParentFlags(item, m_AsFlags, m_targetAsFlags);
+      flagsList = MergeArgs(SplitArgs(asflags->GetAttribute("add")), SplitArgs(asflags->GetAttribute("remove")), parentFlags);
     }
-    m_AsFlags.insert(pair<string, set<string>>(name, flagsSet));
+    m_AsFlags.insert(pair<string, vector<string>>(name, flagsList));
   }
 }
 
@@ -899,19 +877,19 @@ const bool CbuildModel::EvalIncludesDefines() {
   const RteItem* includes = target->GetItemByTag("includes");
   const RteItem* defines = target->GetItemByTag("defines");
   if (includes) {
-    const set<string>& includesList = SplitArgs(includes->GetText(), ";", false);
+    const vector<string>& includesList = SplitArgs(includes->GetText(), ";", false);
     for (auto include : includesList) {
       if (!RteFsUtils::NormalizePath(include, m_prjFolder)) {
         LogMsg("M204", PATH(include));
         return false;
       }
-      if (!include.empty()) m_includePaths.insert(include);
+      if (!include.empty()) m_includePaths.push_back(include);
     }
   }
   if (defines) {
-    const set<string>& definesList = SplitArgs(defines->GetText(), ";", false);
+    const vector<string>& definesList = SplitArgs(defines->GetText(), ";", false);
     for (auto define : definesList) {
-      if (!define.empty()) m_defines.insert(define);
+      if (!define.empty()) m_defines.push_back(define);
     }
   }
   return true;
@@ -937,7 +915,7 @@ const bool CbuildModel::EvalFlags() {
   }
   const RteItem* ldflags = CbuildUtils::GetItemByTagAndAttribute(target->GetChildren(), "ldflags", "compiler", m_compiler);
   if (ldflags != NULL) {
-    m_targetLdFlags = SplitArgsList(ldflags->GetAttribute("add"));
+    m_targetLdFlags = SplitArgs(ldflags->GetAttribute("add"));
     m_linkerScript = ldflags->GetAttribute("file");
     if (!m_linkerScript.empty()) {
       if (!RteFsUtils::NormalizePath(m_linkerScript, m_prjFolder)) {

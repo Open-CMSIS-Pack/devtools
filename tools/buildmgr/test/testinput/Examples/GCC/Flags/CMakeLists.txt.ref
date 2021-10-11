@@ -20,18 +20,18 @@ set(LD_FLAGS_GLOBAL "--entry=Reset_Handler --specs=nosys.specs -mcpu=cortex-m3 -
 set(LD_SCRIPT "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Flags/RTE/Device/ARMCM3/gcc_arm.ld")
 
 set(DEFINES
-  ARMCM3
   DEF_TARGET_CC
+  ARMCM3
   _RTE_
 )
 
 set(INC_PATHS
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Flags/RTE/CMSIS"
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Flags/RTE/_Target"
   "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/Core/Include"
   "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/Include"
   "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/RTX/Include"
   "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/Device/ARM/ARMCM3/Include"
-  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Flags/RTE/CMSIS"
-  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Flags/RTE/_Target"
 )
 
 set(CC_SRC_FILES
