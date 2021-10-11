@@ -115,6 +115,8 @@ struct MessageEntry {
 #define LATESTVER(ver)    VAL("LATESTVER", ver)
 #define LATESTDATE(date)  VAL("LATESTDATE", date)
 #define TODAYDATE(date)   VAL("TODAYDATE", date)
+#define COMPILER(comp)    VAL("COMPILER", comp)
+#define OPTION(opt)       VAL("OPTION", opt)
 
 #define THISLEVEL()       VAL("LEVEL",    this->GetSvdLevelStr(this->GetSvdLevel()))
 
