@@ -20,6 +20,7 @@ using namespace std;
 
 static constexpr const char* SCHEMA_FILE = "PACK.xsd";    // XML schema file name
 static constexpr const char* SCHEMA_VERSION = "1.7.2";    // XML schema version
+static const list<string> HEADER_EXT_DEFAULT = { ".h", ".hpp" };
 
 PackGen::PackGen(void) {
   // Reserved
@@ -842,7 +843,7 @@ void PackGen::CreatePackComponentsAndConditions(XMLTreeElement* rootElement, pac
       // Source files from CMake targets
       for (const auto& src : componentInfo.build.src) {
         XMLTreeElement* fileElement = filesElement->CreateElement("file");
-        fileElement->AddAttribute("category", "source");
+        fileElement->AddAttribute("category", GetFileCategory(src, m_extensions[componentName]));
         string name, origin, destination;
         if (fs::path(src).is_absolute()) {
           name = fs::path(src).relative_path().generic_string();
@@ -1046,7 +1047,7 @@ bool PackGen::CopyItem(const string& src, const string& dst, list<string>& ext) 
   } else {
     // Copy directory recursively filtering extensions
     for (const auto& p : fs::recursive_directory_iterator(srcPath, ec)) {
-      ext = ext.empty() ? list<string>{".h", ".hpp"} : ext;
+      ext = ext.empty() ? HEADER_EXT_DEFAULT : ext;
       if (find(ext.begin(), ext.end(), p.path().extension()) != ext.end()) {
         string filename = dstPath.generic_string() + p.path().generic_string().substr(srcPath.generic_string().length(), string::npos);
         fs::create_directories(fs::path(filename).parent_path(), ec);
@@ -1055,6 +1056,14 @@ bool PackGen::CopyItem(const string& src, const string& dst, list<string>& ext) 
     }
   }
   return true;
+}
+
+const string PackGen::GetFileCategory(const string& file, list<string>& ext) {
+  ext = ext.empty() ? HEADER_EXT_DEFAULT : ext;
+  if (find(ext.begin(), ext.end(), fs::path(file).extension()) != ext.end()) {
+    return "header";
+  }
+  return "source";
 }
 
 const uint32_t PackGen::CountNodes(const YAML::Node node, const string& name) {

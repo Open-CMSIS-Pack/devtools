@@ -86,6 +86,11 @@ The command line option `--source` shall be used to indicate the root (top-level
 source folder when the `CMakeLists.txt` and `manifest.yml` are not located at the
 root folder. Paths inside the `manifest.yml` file shall be relative to the root folder.
 
+- The contents of include paths to be recursively copied into the pack can be
+filtered by setting whitelisted file extensions in the `extensions` tag, the
+default are `.h` and `.hpp`. These extensions are also used for handling file
+categories of source files coming from CMake targets.
+
 ## CMSIS manifest file
 
 The YAML structure is described below.
@@ -201,7 +206,7 @@ packs:
 | description     | API brief description
 | attributes      | List of API [attributes](#attributes)
 | files           | List of API [files](#files)
-| extensions      | List of whitelisted file extensions for recursive copy
+| extensions      | List of header file extensions for recursive copy
 <br />
 
 ### components
@@ -217,7 +222,7 @@ packs:
 | attributes      | List of component [attributes](#attributes)
 | conditions      | List of component [conditions](#conditions)
 | files           | List of component [files](#files)
-| extensions      | List of whitelisted file extensions for recursive copy
+| extensions      | List of header file extensions for categorization and recursive copy
 <br />
 
 ### attributes

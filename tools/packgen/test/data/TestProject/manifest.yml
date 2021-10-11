@@ -31,4 +31,4 @@ packs:
         attributes: {Cclass: "Class", Cgroup: "Group", Csub: "Comp2", Cversion: "2.2.2"}
         description: "Comp2"
         dependencies: lib1
-        extensions: [".h", ".cpp"]
+        extensions: [".h", ".hpp"]
