@@ -189,13 +189,6 @@ class PackGen {
 public:
   typedef std::pair<std::string, int> Result;
 
-  std::string m_manifest;
-  std::string m_repoRoot;
-  std::string m_outputRoot;
-  bool m_verbose = false;
-  bool m_regenerate = false;
-  bool m_noComponents = true;
-
   /**
    * @brief class constructor
   */
@@ -263,14 +256,19 @@ public:
   static const Result ExecCommand(const std::string& cmd);
 
 protected:
+  std::string m_manifest;
+  std::string m_repoRoot;
+  std::string m_outputRoot;
+  std::vector<std::string> m_externalPdsc;
+  bool m_verbose = false;
+  bool m_regenerate = false;
+  bool m_noComponents = true;
+
   XMLTree* m_pdscTree = NULL;
-
   std::list<packInfo> m_pack;
-
   std::map<std::string, std::map<std::string, targetInfo>> m_target;
   std::map<std::string, componentInfo> m_components;
   std::map<std::string, apiInfo> m_apis;
-
   std::list<buildOptionsInfo> m_buildOptions;
   std::map<std::string, std::list<std::string>> m_extensions;
 

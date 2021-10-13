@@ -47,13 +47,14 @@ CMSIS Pack generator assistant 0.9.0
 Usage:
   packgen [OPTION...] manifest.yml
 
-  -s, --source arg  Source root folder
-  -o, --output arg  Output folder
-  -r, --regenerate  Regenerate CMake targets
-  -v, --verbose     Verbose mode
-  -c, --nocheck     Skip pack check
-  -z, --nozip       Skip *.pack file creation
-  -h, --help        Print usage
+  -s, --source arg   Source root folder
+  -o, --output arg   Output folder
+  -i, --include arg  PDSC file(s) for external dependency check
+  -r, --regenerate   Regenerate CMake targets
+  -v, --verbose      Verbose mode
+  -c, --nocheck      Skip pack check
+  -z, --nozip        Skip *.pack file creation
+  -h, --help         Print usage
 ```
 
 ## Brief description
