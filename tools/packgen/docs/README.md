@@ -67,7 +67,9 @@ The build information of other components or CMake targets listed as
 
 - External dependencies of a component can be added to the `conditions` list.
 When an internal component is listed as dependency, a `require` condition is
-automatically inserted.
+automatically inserted. For checking the correctness of external dependencies
+the path of external PDSC files (absolute or relative to the working directory)
+can be specified with the command line option `--include`.
 
 - Files that are not among the build information such as config files can still
 join a component by adding them to the `files` list.
