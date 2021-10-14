@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 3.14)
-
 include(DumpCMakeProjectVersion)
 include(ProjectVersionFromGitTag)
 get_version_from_git_tag("tools/buildmgr/")
