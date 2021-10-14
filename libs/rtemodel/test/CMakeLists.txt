@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 3.14)
-
 SET(TEST_SOURCE_FILES src/RteModelTest.cpp src/RteExampleTest.cpp
  src/RteModelTestConfig.h src/RteModelTestConfig.cpp)
 

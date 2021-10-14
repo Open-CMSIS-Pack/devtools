@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 3.14)
-
 SET(SOURCE_FILES CbuildCallback.cpp CbuildProject.cpp CbuildUtils.cpp
   Cbuild.cpp CbuildLayer.cpp CbuildMsgs.cpp CbuildKernel.cpp CbuildModel.cpp)
 SET(HEADER_FILES CbuildKernel.h CbuildModel.h CbuildCallback.h CbuildProject.h CbuildUtils.h

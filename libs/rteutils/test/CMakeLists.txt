@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 3.14)
-
 SET(TEST_SOURCE_FILES src/RteUtilsTest.cpp)
 
 add_executable(RteUtilsUnitTests ${TEST_SOURCE_FILES})

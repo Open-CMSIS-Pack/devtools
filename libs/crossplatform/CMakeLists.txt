@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 3.14)
-
 project(CrossPlatform VERSION 1.0.0)
 
 message(STATUS "Building for: " ${CMAKE_SYSTEM_NAME})

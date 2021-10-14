@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 3.14)
-
 SET(TEST_SOURCE_FILES src/XmlFormatterTest.cpp src/XmlTreeTest.cpp)
 
 add_executable(XmlTreeUnitTests ${TEST_SOURCE_FILES})

@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 3.14)
-
 SET(SOURCE_FILES CPInitTests.cpp CPInstallTests.cpp InstallerTests.cpp
   CBuildTestFixture.cpp CBuildAC6Tests.cpp CBuildGCCTests.cpp
   CBuildGenTestFixture.cpp CBuildGenTests.cpp SetupTests.cpp CBuildIntegTestEnv.cpp

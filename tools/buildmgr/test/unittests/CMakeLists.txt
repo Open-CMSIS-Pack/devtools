@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 3.14)
-
 set(TEST_SOURCE_FILES CBuildUnitTestEnv.cpp ModelTests.cpp UtilsTests.cpp
     CLayerTests.cpp BuildSystemGeneratorTests.cpp)
 set(TEST_HEADER_FILES CBuildUnitTestEnv.h)

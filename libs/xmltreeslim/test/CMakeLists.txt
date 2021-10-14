@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 3.14)
-
 SET(TEST_SOURCE_FILES XmlTreeSlimTest.cpp)
 
 add_executable(XmlTreeSlimUnitTests ${TEST_SOURCE_FILES} ${TEST_HEADER_FILES})

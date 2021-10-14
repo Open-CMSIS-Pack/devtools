@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 3.14)
-
 # Create the Test target
 add_executable(TestProg src/TestProg.cpp)
 add_definitions(-DTEST_EXE="$<TARGET_FILE:TestProg>")

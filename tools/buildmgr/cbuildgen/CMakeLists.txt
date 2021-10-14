@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 3.14)
-
 SET(LIB_SOURCES BuildSystemGenerator.cpp CMakeListsGenerator.cpp AuxCmd.cpp)
 SET(LIB_HEADER BuildSystemGenerator.h CMakeListsGenerator.h AuxCmd.h)
 SET(SOURCE_FILES Console.cpp)
