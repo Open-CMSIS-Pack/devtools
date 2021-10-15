@@ -14,8 +14,6 @@
     <release date="2021-08-09" version="1.0.0">Initial release</release>
   </releases>
 
-  <conditions/>
-
   <components>
     <component Cclass="Class" Cgroup="Group" Csub="Comp1" Cversion="1.1.1">
       <description>Comp1</description>

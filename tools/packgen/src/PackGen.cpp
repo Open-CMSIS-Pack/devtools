@@ -48,6 +48,7 @@ int PackGen::RunPackGen(int argc, char *argv[]) {
       ("manifest", "", cxxopts::value<string>())
       ("s,source", "Source root folder", cxxopts::value<string>())
       ("o,output", "Output folder", cxxopts::value<string>())
+      ("i,include", "PDSC file(s) for external dependency check", cxxopts::value<vector<string>>())
       ("r,regenerate", "Regenerate CMake targets", cxxopts::value<bool>()->default_value("false"))
       ("v,verbose", "Verbose mode", cxxopts::value<bool>()->default_value("false"))
       ("c,nocheck", "Skip pack check", cxxopts::value<bool>()->default_value("false"))
@@ -62,6 +63,9 @@ int PackGen::RunPackGen(int argc, char *argv[]) {
     generator.m_regenerate = parseResult["regenerate"].as<bool>();
     nocheck = parseResult["nocheck"].as<bool>();
     nozip = parseResult["nozip"].as<bool>();
+    if (parseResult.count("include")) {
+      generator.m_externalPdsc = parseResult["include"].as<vector<string>>();
+    }
     if (parseResult.count("source")) {
       generator.m_repoRoot = parseResult["source"].as<string>();
     }
@@ -910,6 +914,11 @@ void PackGen::CreatePackComponentsAndConditions(XMLTreeElement* rootElement, pac
       definesElement->SetText(defines);
     }
   }
+
+  // Remove empty conditions element
+  if (!conditionsElement->HasChildren()) {
+    rootElement->RemoveChild("conditions", true);
+  }
 }
 
 bool PackGen::CheckPack(void) {
@@ -923,8 +932,23 @@ bool PackGen::CheckPack(void) {
     // Change working dir
     fs::current_path(pack.outputDir, ec);
 
+    // PDSC references generated in this run
+    string pdscList;
+    for (const auto& ref : m_pack) {
+      if ((pack.name != ref.name) || (pack.vendor != ref.vendor)) {
+        pdscList += " -i \"" + ref.outputDir + "/" + ref.vendor + "." + ref.name + ".pdsc\"";
+      }
+    }
+
+    // External PDSC references
+    for (auto& externalPdsc : m_externalPdsc) {
+      if (RteFsUtils::NormalizePath(externalPdsc, workingDir.generic_string() + "/")) {
+        pdscList += " -i \"" + externalPdsc + "\"";
+      }
+    }
+
     // Packchk
-    result = ExecCommand("PackChk \"" + pack.vendor + "." + pack.name + ".pdsc\"");
+    result = ExecCommand("PackChk \"" + pack.vendor + "." + pack.name + ".pdsc\"" + pdscList);
     if (result.second) {
       cerr << "packgen error: packchk failed" << endl << result.first << endl;
       return false;
