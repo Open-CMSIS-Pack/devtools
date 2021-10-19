@@ -21,6 +21,7 @@ set(LD_SCRIPT "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/Flags/
 set(DEFINES
   ARMCM3
   DEF_TARGET_CC
+  DEF_RTE_Components=\"RTE_Components.h\"
   _RTE_
 )
 

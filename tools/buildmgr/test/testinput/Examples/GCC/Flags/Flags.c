@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#include "RTE_Components.h"
+#include DEF_RTE_Components
 #include CMSIS_device_header
 
 int main (void) {

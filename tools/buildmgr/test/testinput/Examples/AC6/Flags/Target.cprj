@@ -23,7 +23,7 @@
     <output name="Flags" type="exe"/>
     <ldflags add="--callgraph --entry=Reset_Handler --info sizes --info summarysizes --info totals --info unused --info veneers --load_addr_map_info --map --strict --summary_stderr --symbols --xref" compiler="AC6" file="./RTE/Device/ARMCM3/ARMCM3_ac6.sct"/>
     <cflags add="-Oz -Wno-documentation -Wno-documentation-unknown-command -Wno-license-management -Wno-missing-noreturn -Wno-missing-prototypes -Wno-missing-variable-declarations -Wno-nonportable-include-path -Wno-packed -Wno-parentheses-equality  -Wno-reserved-id-macro -Wno-sign-conversion -Wno-unused-macros -ffunction-sections -fno-rtti -fshort-enums -fshort-wchar -funsigned-char -gdwarf-3 -std=gnu11 -xc" compiler="AC6"/>
-    <defines>DEF_TARGET_CC</defines>
+    <defines>DEF_TARGET_CC;DEF_RTE_Components=\"RTE_Components.h\"</defines>
   </target>
 
   <components>
