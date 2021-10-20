@@ -21,7 +21,7 @@
   </releases>
 
   <apis>
-    <api Capiversion="1.0.0" Cclass="Cclass1" Cgroup="Group1" Csub="Subgroup1">
+    <api Capiversion="1.0.0" Cclass="Cclass1" Cgroup="Group1">
       <description>Api1</description>
       <files>
         <file attr="config" category="header" name="lib1/api/interface.h" version="1.0.0"/>
