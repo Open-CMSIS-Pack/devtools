@@ -34,7 +34,7 @@ The components listed below are not redistributed with the project but are used 
 
 | Component | Version | License | Origin | Usage |
 | --------- | ------- | ------- | ------ | ----- |
-|Google C++ Testing Framework|1.9.0.20190831|[BSD-3-Clause](https://opensource.org/licenses/BSD-3-Clause)|https://github.com/google/googletest.git| Testing |
+|Google C++ Testing Framework|1.11.0|[BSD-3-Clause](https://opensource.org/licenses/BSD-3-Clause)|https://github.com/google/googletest.git| Testing |
 |cxxopts|2.2.1|[MIT](https://opensource.org/licenses/MIT)|https://github.com/jarro2783/cxxopts.git| packgen |
 |yaml-cpp|0.7.0|[MIT](https://opensource.org/licenses/MIT)|https://github.com/jbeder/yaml-cpp.git| packgen |
 |[GetGitRevisionDescription.cmake](./cmake/GetGitRevisionDescription.cmake)||[Boost Software License, Version 1.0](http://www.boost.org/LICENSE_1_0.txt)||Continuous integration|
