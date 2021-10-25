@@ -1,0 +1,344 @@
+{
+  "$schema": "http://json-schema.org/draft/2020-12/schema#",
+  "id": "manifest.schema.json",
+  "title": "CMSIS Pack generation manifest",
+  "version": "0.9.0",
+  "type": "object",
+  "properties": {
+    "build": { "$ref": "#/$defs/BuildsType" },
+    "packs": { "$ref": "#/$defs/PacksType" }
+  },
+  "$defs": {
+    "VersionType": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(((\\-|\\+)[0-9A-Za-z\\-\\+\\.]+)|())$"
+    },
+    "VersionRangeType": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(((\\-|\\+)[0-9A-Za-z\\-\\+\\.]+)|())(:[0-9]+\\.[0-9]+\\.[0-9]+(((\\-|\\+)[0-9A-Za-z\\-\\+\\.]+)|())|())$"
+    },
+    "ExtensionType": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^(\\.[a-zA-Z]+)$"
+      }
+    },
+    "FilesType": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/FileType" }
+    },
+    "FileType": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "attributes": {
+          "type": "object",
+          "properties": {
+            "category":  { "enum": ["doc", "header", "library", "object", "source", "sourceC", "sourceCpp", "sourceAsm", "linkerScript", "utility", "image", "other", "preIncludeGlobal", "preIncludeLocal"] },
+            "attr":      { "enum": ["config", "template"] },
+            "condition": { "type": "string" },
+            "select":    { "type": "string" },
+            "src":       { "type": "string" },
+            "version":   { "$ref": "#/$defs/VersionType" },
+            "public":    { "type": "boolean" }
+          },
+          "additionalProperties": false,
+          "required": [ "category" ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [ "name", "attributes" ]
+    },
+    "BuildsType": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/BuildType" }
+    },
+    "BuildType":{
+      "type": "object",
+      "properties": {
+        "name":    { "type": "string" },
+        "options": { "type": "string" }
+      },
+      "additionalProperties": false,
+      "required": [ "name", "options" ]
+    },
+    "PacksType": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/PackType" }
+    },
+    "PackType": {
+      "type": "object",
+      "properties": {
+        "name":         { "type": "string" },
+        "description":  { "type": "string" },
+        "vendor":       { "type": "string" },
+        "license":      { "type": "string" },
+        "url":          { "type": "string" },
+        "releases":     { "$ref": "#/$defs/ReleasesType" },
+        "requirements": { "$ref": "#/$defs/RequirementsType" },
+        "repository":   { "type": "string" },
+        "apis":         { "$ref": "#/$defs/ApisType" },
+        "taxonomy":     { "$ref": "#/$defs/TaxonomysType" },
+        "components":   { "$ref": "#/$defs/ComponentsType" }
+      },
+      "additionalProperties": false,
+      "required": [ "name", "description", "vendor", "license", "url", "releases" ]
+    },
+    "ReleasesType": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/ReleaseType" }
+      },
+    "ReleaseType": {
+      "type": "object",
+        "properties": {
+          "version":     { "$ref": "#/$defs/VersionType" },
+          "date":        { "type": "string", "format": "date" },
+          "description": { "type": "string" },
+          "tag":         { "type": "string" },
+          "url":         { "type": "string" },
+          "deprecated":  { "type": "string", "format": "date" },
+          "replacement": { "type": "string" }
+        },
+        "additionalProperties": false,
+        "required": [ "version" ]
+    },
+    "RequirementsType": {
+      "type": "object",
+      "properties": {
+        "packages":  { "$ref": "#/$defs/PackagesType" },
+        "compilers": { "$ref": "#/$defs/CompilersType" },
+        "languages": { "$ref": "#/$defs/LanguagesType" }
+      },
+      "additionalProperties": false
+    },
+    "PackagesType": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { 
+        "type": "object",
+        "properties": {
+          "attributes": {
+            "type": "object",
+            "properties": {
+              "vendor":  { "type": "string" },
+              "name":    { "type": "string" },
+              "version": { "$ref": "#/$defs/VersionRangeType" }
+            },
+            "required": [ "vendor", "name" ],
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "CompilersType": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { 
+        "type": "object",
+        "properties": {
+          "attributes": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "version": { "$ref": "#/$defs/VersionRangeType" }
+            },
+            "required": [ "name", "version" ],
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "LanguagesType": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { 
+        "type": "object",
+        "properties": {
+          "attributes": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "version": {
+                "type": "string",
+                "pattern": "^[0-9]+$"
+              }
+            },
+            "required": [ "name", "version" ],
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "ApisType": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/ApiType"}
+    },
+    "ApiType":{
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "attributes": {
+          "type": "object",
+          "properties": {
+            "Cclass":      { "type": "string" },
+            "Cgroup":      { "type": "string" },
+            "exclusive":   { "type": "boolean" },
+            "condition":   { "type": "string" },
+            "Capiversion": { "$ref": "#/$defs/VersionType" }
+          },
+          "additionalProperties": false,
+          "required": [ "Cclass", "Cgroup" ]
+        },
+        "description": { "type": "string" },
+        "files": { "$ref": "#/$defs/FilesType" },
+        "extensions": { "$ref": "#/$defs/ExtensionType" }
+      },
+      "additionalProperties": false,
+      "required": [ "name", "attributes" ]
+    },
+    "TaxonomysType": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/TaxonomyType" }
+    },
+    "TaxonomyType":{
+      "type": "object",
+      "properties": {
+        "attributes": {
+          "type": "object",
+          "properties": {
+            "Cclass":    { "type": "string" },
+            "Cgroup":    { "type": "string" },
+            "doc":       { "type": "string" },
+            "generator": { "type": "string" },
+            "public":    { "type": "boolean" }
+          },
+          "additionalProperties": false,
+          "required": [ "Cclass" ]
+        },
+        "description": { "type": "string" }
+      },
+      "additionalProperties": false,
+      "required": [ "attributes" ]
+    },
+    "ComponentsType": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/ComponentType" }
+    },
+    "ComponentType": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "target": {
+          "type": ["string", "array"],
+          "items": [ {"type": "string"} ]
+        },
+        "build": {
+          "type": ["string", "array"],
+          "items": [ {"type": "string"} ]
+        },
+        "operation": { "enum": ["intersection", "difference"] },
+        "description": { "type": "string"},
+        "dependencies": {
+          "type": ["string", "array"],
+          "items": [ {"type": "string"} ]
+        },
+        "attributes": {
+          "type": "object",
+          "properties": {
+            "Cvendor":          { "type": "string" },
+            "Cclass":           { "type": "string" },
+            "Cgroup":           { "type": "string" },
+            "Csub":             { "type": "string" },
+            "Cvariant":         { "type": "string" },
+            "Cversion":         { "$ref": "#/$defs/VersionType" },
+            "Capiversion":      { "$ref": "#/$defs/VersionType" },
+            "condition":        { "type": "string" },
+            "custom":           { "type": "boolean", "default": 1 },
+            "isDefaultVariant": { "type": "boolean" },
+            "generator":        { "type": "string" },
+            "description":      { "type": "string" }
+          },
+          "additionalProperties": false,
+          "required": [ "Cclass", "Cversion", "Cgroup" ]
+        },
+        "conditions": { "$ref": "#/$defs/ConditionsType" },
+        "files": {
+          "type": "array",
+          "items": [{
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "attributes": {
+                "type": "object",
+                "properties": {
+                  "category":  { "enum": ["doc", "header", "library", "object", "source", "sourceC", "sourceCpp", "sourceAsm", "linkerScript", "utility", "image", "other", "preIncludeGlobal", "preIncludeLocal"] },
+                  "attr":      { "enum": ["config", "template"] },
+                  "condition": { "type": "string" },
+                  "select":    { "type": "string" },
+                  "src":       { "type": "string" },
+                  "version":   { "$ref": "#/$defs/VersionType" },
+                  "public":    { "type": "boolean" }
+                },
+                "additionalProperties": false,
+                "required": [ "category" ]
+              },
+              "conditions": { "$ref": "#/$defs/ConditionsType" }
+            },
+            "required": [ "name", "attributes", "conditions" ]
+          }]
+        },
+        "extensions": { "$ref": "#/$defs/ExtensionType" }
+      },
+      "additionalProperties": false,
+      "required": [ "name", "target", "attributes" ]
+    },
+    "ConditionAttrType": {
+      "type": "object",
+      "properties": {
+        "propertyNames": { "pattern": "^[A-Za-z_][A-Za-z0-9_]*$" }
+      }
+    },
+    "ConditionsType": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/ConditionType" }
+    },
+    "ConditionType":{
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "require": { "$ref": "#/$defs/ConditionAttrType" }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "accept": { "$ref": "#/$defs/ConditionAttrType" }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "deny": { "$ref": "#/$defs/ConditionAttrType" }
+          },
+          "additionalProperties": false
+        }
+      ]
+    }
+  },
+  "additionalProperties": false,
+  "required": [ "build", "packs" ]
+}

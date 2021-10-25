@@ -1,4 +1,4 @@
-### CMSIS Pack manifest file ###
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/packgen/schema/manifest.schema.json
 
 build:
   - name: "build1"
@@ -22,7 +22,7 @@ packs:
 
     apis:
       - name: api1
-        attributes: {Cclass: "Cclass1", Cgroup: "Group1", Csub: "Subgroup1", Capiversion: "1.0.0"}
+        attributes: {Cclass: "Cclass1", Cgroup: "Group1", Capiversion: "1.0.0"}
         description: "Api1"
         files:
           - name: "lib1/api/interface.h"

@@ -360,8 +360,7 @@ bool PackGen::ParseManifestComponents(const YAML::Node node, packInfo& pack) {
     YAML::Node dependencies = item["dependencies"];
     if (dependencies && dependencies.IsScalar()) {
       m_components[name].dependency.push_back(dependencies.as<string>());
-    }
-    else {
+    } else if (dependencies && dependencies.IsSequence()) {
       for (const auto& dep : dependencies) {
         m_components[name].dependency.push_back(dep.as<string>());
       }
