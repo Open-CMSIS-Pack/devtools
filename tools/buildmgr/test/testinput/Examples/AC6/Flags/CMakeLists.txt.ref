@@ -19,19 +19,19 @@ set(LD_FLAGS_GLOBAL "--callgraph --entry=Reset_Handler --info sizes --info summa
 set(LD_SCRIPT "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/Flags/RTE/Device/ARMCM3/ARMCM3_ac6.sct")
 
 set(DEFINES
-  ARMCM3
   DEF_TARGET_CC
   DEF_RTE_Components=\"RTE_Components.h\"
+  ARMCM3
   _RTE_
 )
 
 set(INC_PATHS
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/Flags/RTE/CMSIS"
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/Flags/RTE/_Target"
   "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/Core/Include"
   "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/Include"
   "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/RTX/Include"
   "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/Device/ARM/ARMCM3/Include"
-  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/Flags/RTE/CMSIS"
-  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/Flags/RTE/_Target"
 )
 
 set(CC_SRC_FILES

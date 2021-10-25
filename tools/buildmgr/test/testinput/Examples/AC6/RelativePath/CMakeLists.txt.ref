@@ -12,18 +12,18 @@ set(INT_DIR "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/Relative
 set(LD_SCRIPT "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/RelativePath/RTE/Device/ARMCM0/ARMCM0_ac6.sct")
 
 set(DEFINES
-  ARMCM0
   DEF1
   DEF2=2
+  ARMCM0
   _RTE_
 )
 
 set(INC_PATHS
-  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.7.0/CMSIS/Core/Include"
-  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.7.0/Device/ARM/ARMCM0/Include"
   "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/RelativePath/RTE/_Project"
   "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/RelativePath/inc"
   "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/RelativePath/inc2"
+  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.7.0/CMSIS/Core/Include"
+  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.7.0/Device/ARM/ARMCM0/Include"
 )
 
 set(CC_SRC_FILES
