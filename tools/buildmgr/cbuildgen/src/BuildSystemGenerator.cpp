@@ -35,7 +35,7 @@ BuildSystemGenerator::~BuildSystemGenerator(void) {
 
 bool BuildSystemGenerator::Collect(const string& inputFile, const CbuildModel *model, const string& outdir, const string& intdir) {
   error_code ec;
-  m_projectDir = StrConv(RteFsUtils::AbsolutePath(inputFile).remove_filename().generic_string() + SS);
+  m_projectDir = StrConv(RteFsUtils::AbsolutePath(inputFile).remove_filename().generic_string());
   m_workingDir = fs::current_path(ec).generic_string() + SS;
 
   // Find toolchain config
