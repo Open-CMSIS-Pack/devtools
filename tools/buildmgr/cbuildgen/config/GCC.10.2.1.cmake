@@ -99,7 +99,8 @@ set(AS_LEG_FLAGS)
 set(AS_GNU_FLAGS "-c")
 set(ASM_FLAGS "-c")
 
-foreach(ENTRY ${DEFINES})
+foreach(DEFINE ${DEFINES})
+  string(REPLACE "\"" "\\\"" ENTRY ${DEFINE})
   string(REGEX REPLACE "=.*" "" KEY ${ENTRY})
   if (KEY STREQUAL ENTRY)
     set(VALUE "1")
@@ -122,14 +123,11 @@ set(AS_GNU_BYTE_ORDER "${AS_BYTE_ORDER}")
 # C Compiler
 
 set(CC_CPU "${GNUASM_CPU}")
-set(CC_FLAGS)
+set(CC_DEFINES ${ASM_DEFINES})
 set(CC_BYTE_ORDER ${ASM_BYTE_ORDER})
+set(CC_FLAGS)
 set(_PI "-include ")
 set(_ISYS "-isystem ")
-
-foreach(ENTRY ${DEFINES})
-  string(APPEND CC_DEFINES "-D${ENTRY} ")
-endforeach()
 
 if(SECURE STREQUAL "Secure")
   set(CC_SECURE "-mcmse")
@@ -175,7 +173,7 @@ if(SECURE STREQUAL "Secure")
   set(LD_SECURE "-Wl,--cmse-implib -Wl,--out-implib=\"${OUT_DIR}/${TARGET}_CMSE_Lib.o\"")
 endif()
 
-set(LD_FLAGS "")
+set(LD_FLAGS)
 
 # Target Output
 
