@@ -87,7 +87,7 @@ source folder when the `CMakeLists.txt` and `manifest.yml` are not located at th
 root folder. Paths inside the `manifest.yml` file shall be relative to the root folder.
 
 - The contents of include paths to be recursively copied into the pack can be
-filtered by setting whitelisted file extensions in the `extensions` tag, the
+filtered by setting allowed file extensions in the `extensions` tag, the
 default are `.h` and `.hpp`. These extensions are also used for handling file
 categories of source files coming from CMake targets.
 
