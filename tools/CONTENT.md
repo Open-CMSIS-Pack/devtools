@@ -6,6 +6,7 @@ executable programs.
 ```
     📂tools
     ┣ 📂buildmgr
+    ┣ 📂packchk
     ┗ 📂packgen
 ```
 
@@ -14,6 +15,11 @@ executable programs.
 The [buildmgr](./buildmgr) directory contains sources for a command line
 utility `cbuildgen` and its components which are used for the build process.
 The directory also consists of tests developed to validate `cbuildgen`.
+
+## packchk
+
+The [packchk](./packchk) directory contains sources for the utility `packchk`
+and its components which are responsible for checking CMSIS-Packs.
 
 ## packgen
 

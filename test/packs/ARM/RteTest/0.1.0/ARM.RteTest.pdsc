@@ -262,7 +262,7 @@
         <component Cclass="RteTest" Cgroup="GlobalLevel"/>
       </attributes>
     </example>
-    <example name="PreIncludeEnvFolder" folder="Examples" version="1.0.0" doc="Abstract.txt">
+    <example name="PreIncludeEnvFolder" folder="Examples" version="1.0.0" doc="PreInclude/Abstract.txt">
       <description>PreInclude Test Application with different folder description</description>
       <board vendor="Keil" name="RteTest Dummy board" Dvendor="ARM:82" Dname="ARMCM0"/>
       <project>

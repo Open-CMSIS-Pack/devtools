@@ -1,0 +1,95 @@
+name: packchk
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/packchk.yml'
+      - 'CMakeLists.txt'
+      - 'tools/packchk/**'
+  release:
+    types: [published]
+
+jobs:
+  build:
+    if: ${{ github.event_name == 'pull_request' || (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/packchk/')) }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ macos-10.15, ubuntu-20.04, windows-2019 ]
+        include:
+          - os: macos-10.15
+            target: darwin64
+          - os: ubuntu-20.04
+            target: linux64
+          - os: windows-2019
+            target: windows64
+    steps:
+      - name: Install macos deps
+        if: ${{ startsWith(matrix.os, 'macos') }}
+        run: |
+          brew install \
+            ninja
+
+      - name: Install linux deps
+        if: ${{ startsWith(matrix.os, 'ubuntu') }}
+        run: |
+          sudo apt update
+          sudo apt-get install \
+            bc \
+            build-essential \
+            ninja-build
+
+      - name: Install windows deps
+        if: ${{ startsWith(matrix.os, 'windows') }}
+        run: choco install -y ninja
+
+      - name: Checkout devtools
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Create build folder
+        run: |
+          mkdir build
+          mkdir build-debug
+
+      - name: Configure windows build for amd64
+        if: ${{ startsWith(matrix.os, 'windows') }}
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: amd64
+
+      - uses: ammaraskar/gcc-problem-matcher@master
+        if: ${{ startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu') }}
+      - uses: ammaraskar/msvc-problem-matcher@master
+        if: ${{ startsWith(matrix.os, 'windows') }}
+
+      - name: Build and run packchk unit tests
+        run: |
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug ..
+          cmake --build . --target PackChkUnitTests
+          ctest -v -R PackChkUnitTests
+        working-directory: ./build-debug
+
+      - name: Build and run packchk integ tests
+        run: |
+          cmake --build . --target PackChkIntegTests
+          ctest -v -R PackChkIntegTests
+        working-directory: ./build-debug
+
+      - name: Build packchk
+        run: |
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=Release ..
+          cmake --build . --target packchkdist
+        working-directory: ./build
+
+      - name: Attach installer to release
+        if: ${{ github.event_name == 'release' }}
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref }}
+          overwrite: true
+          file_glob: true
+          file: build/tools/packchk/packchk-*-${{ matrix.target }}.zip

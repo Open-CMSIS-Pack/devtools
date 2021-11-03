@@ -195,6 +195,10 @@ Follow the respective commands:
     - CrossPlatformUnitTests
     - ErrLog
     - ErrLogUnitTests
+    - packchk
+    - packchklib
+    - PackChkUnitTests
+    - PackChkIntegTests
     - packgen
     - packgenlib
     - PackGenUnitTests
