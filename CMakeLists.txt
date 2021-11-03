@@ -76,6 +76,7 @@ add_subdirectory(libs/xmltreeslim)
 # Tools
 if(NOT LIBS_ONLY)
   add_subdirectory(tools/buildmgr)
+  add_subdirectory(tools/packchk)
   add_subdirectory(tools/packgen)
 endif()
 

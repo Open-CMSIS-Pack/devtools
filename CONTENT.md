@@ -98,6 +98,7 @@ tools) are kept [tools](./tools) folder.
 ```
     ┣ 📂tools
     ┃ ┣ 📂buildmgr
+    ┃ ┣ 📂packchk
     ┃ ┣ 📂packgen
     ┃ ┗ 📜CONTENT.md
 ```
