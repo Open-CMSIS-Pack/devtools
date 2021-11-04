@@ -571,6 +571,10 @@ bool PackGen::ParseReply(void) {
               cerr << "packgen warning: file '" << src << "' listed by target '" << name << "' was not found" << endl;
               continue;
             }
+            if (!fs::is_regular_file(canonical)) {
+              cerr << "packgen warning: source '" << src << "' listed by target '" << name << "' is not a regular file" << endl;
+              continue;
+            }
             src = canonical.generic_string();
             if (src.find(m_repoRoot) == 0) {
               src.erase(0, m_repoRoot.length() + 1);
