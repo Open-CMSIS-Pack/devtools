@@ -2,7 +2,7 @@
 
 ![Overview](./images/Overview.png "Overview")
 
-The CMSIS Project Manager essentially uses **Project Files** and **CMSIS-Packs** to create self-contained
+The **[Open-CMSIS-Pack](https://www.open-cmsis-pack.org/index.html) Project Manager** essentially uses **Project Files** and **CMSIS-Packs** to create self-contained
 CMSIS-Build input files.
 
 The CMSIS-Pack shown on the left side provide device setup (DFP), board configuration, and other reusable software components. It should be investigated if the CMSIS-Zone concept can be integrated into the CMSIS Project Manager.  The files on the left side are typically not touched by an application programmer as they are provided by silicon vendors, board manufacturers, or the software industry.
@@ -168,9 +168,9 @@ solution:
     exclude: ~Virtual
 ```
 
-## YML Syntax
+# YML Syntax
 
-### General Properties
+## General Properties
 
 The keywords below can be used at top-level of `[defaults].csettings.yml`, `*.csolution.yml`, and `*.cproject.yml`. Some of settings can be overwritten on various levels. 
 
@@ -186,10 +186,37 @@ Keyword     | Description
 
 **Note:** `defines:` and `misc:` are additive. Other options overwrite previous settings.
 
-### Target and Build Types
+## Target and Build Types
 
-ToDo
+The section [Project setup for multiple targets and test builds](.\#project-setup-for-multiple-targets-and-test-builds) describes the concept of  `target-types` and `build-types`.  These *types* can be defined in the following files in the folloing order:
+ 1.  `default.csettings.yml`  where it defines global *types*, such as *Debug* and *Release* build.
+ 2. `*.csolution.yml` where it specifies the build and target *types* of the complete system.
+ 3. `*.cproject.yml` where it may add specific *types* for an project (tbd are target types allowed when part of a solution?)
 
+The *`target-type`* and *`build-type`* definitions are additive, but an attempt to redefine an already existing type results in an error.
+
+YML structure:
+```yml
+target-types:          # Start a list of target type declarations
+  - type:              # name of the target type (required)
+    board:             # board specification (optional)
+    device:            # device specificaiton (optional)         
+    compiler:          # toolchain specification (optional) 
+    optimize:          # optimize level for code generation (optional)
+    debug:             # generation of debug information (optional)
+    defines:           # settings for code generation that results in #define (optional)
+    misc:              # Literal tool-specific controls
+
+build-types:           # Start a list of build type declarations
+  - type:              # name of the build type (required)
+    compiler:          # toolchain specification (optional) 
+    optimize:          # optimize level for code generation (optional)
+    debug:             # generation of debug information (optional)
+    defines:           # settings for code generation that results in #define (optional)
+    misc:              # Literal tool-specific controls
+```
+
+**Example:**
 ```yml
 target-types:
   - type: Board
@@ -208,7 +235,7 @@ build-types:
     debug: on
 ```
 
-### Include or Exclude
+## Include or Exclude
 
 Depending on a *`target-type`* or *`build-type`* selection it is also possible to include or exclude *items* in the build process.
 
@@ -221,6 +248,13 @@ It is possible to specify only a `<build-type>`, only a `<target-type>` or a com
 
 `[.<build-type>][~<target-type>] [, [.<build-type>]~[<target-type>]] [, ...]`
 
+**Examples:**
+```yml
+include:  .Test                            # add item for build-type: Test (any target-type)
+exclude:  ~Virtual                         # remove item for target-type: Virtual (any build-type)
+exclude:  .Release~Virtual                 # remove item for build-type: Release with target-type: Virtual
+include:  .Debug, .Release~Production-HW   # add for build-type: Debug and build-type: Release / target-type: Production-HW
+```
 
 The keyword `include:` or `exclude:` can be applied to the following list keywords:
 
@@ -232,10 +266,33 @@ Keyword      | Description
 `layer:`     | At `layer:` level it is possible to control inclusion of a software layer.
 `component:` | At `component:` level it is possible to control inclusion of a software component.
 
-*Examples:*
-Todo
 
-### Groups and Files
+## Groups and Files
+
+YML structure:
+```yml
+groups:                # Start a list of groups
+  - group:             # name of the group
+    include:           # include group for a list of *build* and *target* types.
+    exclude:           # exclude group for a list of *build* and *target* types.
+    optimize:          # optimize level for code generation (optional)
+    debug:             # generation of debug information (optional)
+    defines:           # settings for code generation that results in #define (optional)
+    misc:              # Literal tool-specific controls
+    groups:            # Start a nested list of groups
+      - group:         # name of the group
+         :
+    files:             # Start a nested list of files
+      - file:          # file name along with path
+        include:        # include group for a list of *build* and *target* types.
+        exclude:       # exclude group for a list of *build* and *target* types.
+        optimize:      # optimize level for code generation (optional)
+        debug:         # generation of debug information (optional)
+        defines:       # settings for code generation that results in #define (optional)
+        misc:          # Literal tool-specific controls
+```
+
+**Example:**
 
 ```yml
 groups:
@@ -270,3 +327,39 @@ groups:
           - file: file-sub2-1.c
           - file: file-sub2-2.c
 ```
+
+## Components
+Todo:
+
+## Layers 
+Todo:
+
+## Defines
+Todo:
+
+## Solution: Collection of related Projects
+
+The section [Project setup for related projects](.\#project-setup-for-related-projects) describes the collection of related projects.  The file `*.csolution.yml` describes the relationship of this projects.  This file may also define [Target and Build Types](.\#target-and-build-types) before the section `solution:`.
+
+The YML structure of the section `solution:` is:
+
+```yml
+solution:              # Start a list of projects.
+  - project:           # path to the project file (required).
+    include:           # include project for a list of *build* and *target* types (optional).
+    exclude:           # exclude project for a list of *build* and *target* types (optional).
+    optimize:          # optimize level for code generation (optional)
+    debug:             # generation of debug information (optional)
+    defines:           # settings for code generation that results in #define (optional)
+    misc:              # Literal tool-specific controls
+```
+
+## project
+Todo:
+
+## processor (or platform)
+Todo:
+
+
+# CMSIS-Zone Integration
+Todo:
