@@ -42,14 +42,10 @@ fi
 # Set environment variables
 source ${testoutdir}/cbuild/etc/setup
 
-if [ -e "$CMSIS_PACK_ROOT/.Download/Keil.BulbBoard_BSP.1.1.0.pack" ]
-  then
-    rm -f "$CMSIS_PACK_ROOT/.Download/Keil.BulbBoard_BSP.1.1.0.pack"
-fi
+rm -f "$CMSIS_PACK_ROOT/.Download/Keil.BulbBoard_BSP.1.1.0.pack"
+rm -rf "$CMSIS_PACK_ROOT/Keil/BulbBoard_BSP"
 
-if [ -e "$CMSIS_PACK_ROOT/.Download/Keil.FM0plus_DFP.1.2.0.pack" ]
-  then
-    rm -f "$CMSIS_PACK_ROOT/.Download/Keil.FM0plus_DFP.1.2.0.pack"
-fi
+rm -f "$CMSIS_PACK_ROOT/.Download/Keil.FM0plus_DFP.1.2.0.pack"
+rm -rf "$CMSIS_PACK_ROOT/Keil/FM0plus_DFP"
 
 exit 0
