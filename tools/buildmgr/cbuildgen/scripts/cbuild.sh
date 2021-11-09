@@ -323,7 +323,7 @@ fi
 if [ -e "${abs_intdir}${project}.cpinstall" ]
   then
   dos2unix "${abs_intdir}${project}.cpinstall" >&${out} 2>&${err}
-  cp_install.sh "${abs_intdir}${project}.cpinstall" >&${out} 2>&${err}
+  cpackget pack add -v --agree-embedded-license --packs-list-filename "${abs_intdir}${project}.cpinstall" >&${out} 2>&${err}
   if [ $? -ne 0 ]
     then
     exit 1

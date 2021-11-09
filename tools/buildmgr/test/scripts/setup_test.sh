@@ -130,7 +130,7 @@ if [ -d ${CMSIS_PACK_ROOT} ]; then
   echo "warning: directory "${CMSIS_PACK_ROOT}" already exists."
   echo "skip pack repository creation."
 else
-  ${CMSIS_BUILD_ROOT}/cp_init.sh
+  ${CMSIS_BUILD_ROOT}/cpackget init https://www.keil.com/pack/index.pidx
 fi
 
 

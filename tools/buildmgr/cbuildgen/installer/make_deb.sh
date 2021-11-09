@@ -93,6 +93,12 @@ mkdir -p usr/lib/${PACKAGE_NAME}
 mkdir -p usr/share/doc/${PACKAGE_NAME}
 mkdir -p etc/${PACKAGE_NAME}
 mkdir -p etc/profile.d
+
+# Get cpackget
+cpackget_version="0.2.0"
+cpackget_base=https://github.com/Open-CMSIS-Pack/cpackget/releases/download/v${cpackget_version}/cpackget_${cpackget_version}
+curl --retry 3 -L ${cpackget_base}_linux_amd64.tar.gz  -o - | tar xzfO - --wildcards    '*cpackget'     > ${input}/bin/cpackget.lin
+
 cp -r ${input}/bin usr/lib/${PACKAGE_NAME}  # This should be in /usr/bin but cannot for the time being.
 cp -r ${input}/doc usr/share/doc/${PACKAGE_NAME}
 cp -r ${input}/etc/* etc/${PACKAGE_NAME}
@@ -124,8 +130,6 @@ ScriptWrapper
 }
 export -f write_wrapper
 find usr/lib/${PACKAGE_NAME}/bin -type f -name "*.sh" | xargs -I file basename file | xargs -I util bash -c 'write_wrapper "$@"' _ util ${PACKAGE_NAME}
-#Leave the sh extension as cbuild calls cp_install.sh explicitly
-#find usr/bin -name "*.sh" | sed -e 's/.sh//g' | xargs -I file mv file".sh" file
 chmod -R +x usr/bin
 chmod -R +x usr/lib/${PACKAGE_NAME}/bin
 chmod -R +x etc/profile.d
