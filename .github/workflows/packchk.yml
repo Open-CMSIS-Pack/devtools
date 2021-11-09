@@ -69,13 +69,13 @@ jobs:
         run: |
           cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug ..
           cmake --build . --target PackChkUnitTests
-          ctest -v -R PackChkUnitTests
+          ctest -V -R PackChkUnitTests
         working-directory: ./build-debug
 
       - name: Build and run packchk integ tests
         run: |
           cmake --build . --target PackChkIntegTests
-          ctest -v -R PackChkIntegTests
+          ctest -V -R PackChkIntegTests
         working-directory: ./build-debug
 
       - name: Build packchk
@@ -93,3 +93,51 @@ jobs:
           overwrite: true
           file_glob: true
           file: build/tools/packchk/packchk-*-${{ matrix.target }}.zip
+
+  coverage:
+    if: ${{ github.event_name == 'pull_request' || (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/packchk/')) }}
+    runs-on: ubuntu-20.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: true
+
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt-get install \
+            bc \
+            build-essential \
+            ninja-build \
+            gcovr
+
+      - name: Checkout devtools
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Create build folder
+        run: mkdir build
+
+      - uses: ammaraskar/gcc-problem-matcher@master
+        if: ${{ startsWith(matrix.os, 'ubuntu') }}
+
+      - name: Build and run packchk tests
+        run: |
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCOVERAGE=ON ..
+          cmake --build . --target PackChkUnitTests
+          ctest -V -C Debug -R PackChkUnitTests
+        working-directory: ./build
+
+      - name: Generate coverage report
+        run: |
+          gcovr -r ../tools/packchk/src/ -b --xml -o coverage.xml ./tools/packchk/
+        working-directory: ./build
+
+      - name: Upload Report to Codecov
+        uses: codecov/codecov-action@v1.3.2
+        with:
+          files: ./coverage.xml
+          fail_ci_if_error: true
+          functionalities: fix
+        working-directory: ./build
