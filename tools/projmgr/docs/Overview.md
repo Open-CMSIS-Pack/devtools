@@ -127,13 +127,15 @@ layers:
 components:
   - component: Device:Startup
   - component: CMSIS:RTOS2:FreeRTOS
-  - component: ARM::CMSIS:DSP&Source         # not added for build type: Test
+  - component: ARM::CMSIS:DSP&Source          # not added for build type: Test
     exclude: .Test                           
 ```
 
 ## Project Setup for Related Projects
 
-A solution combines projects that can be generated independently and therefore manages related projects. The picture below shows a system that is composed of:
+A solution is the software view of the complete system. It combines projects that can be generated independently and therefore manages related projects. It may be also deployed to different targets during development as described in the previous section under [Project Setup for Multiple Targets and Test Builds](./Overview.md#project-setup-for-multiple-targets-and-test-builds).
+
+The picture below shows a system that is composed of:
   - Project A: that implements a time-critical control algorithm running on a independent processor #2.
   - Project B: which is a diagram of a cloud connected IoT application with Machine Learning (ML) functionality.
   - Project C: that is the data model of the Machine Learning algorithm and separate to allow independent updates.
@@ -141,7 +143,7 @@ A solution combines projects that can be generated independently and therefore m
 
 In addition such systems may have a boot-loader that can be also viewed as another independent project.
 
- ![Related Projects of an Embedded System](./images/Solution.png "Related Projects of an Embedded System")
+![Related Projects of an Embedded System](./images/Solution.png "Related Projects of an Embedded System")
 
 To manage the complexity of such related a projects, the `*.csolution.yml` file is introduced. At this level the `target-types` and `build-types` may be managed, so that a common set is available across the system. However it should be also possible to add project specific `build-types` at project level.  (tdb: `target-types` might be only possible at solution level).
 
@@ -178,7 +180,7 @@ solution:
 
 Keyword          | Description
 :----------------|:------------------------------------
-`default:`       | Start of the default section with [General Properties](./Overview.md#general-properties); typically used in `[defaults].csettings.yml`. 
+`default:`       | Start of the default section with [General Properties](./Overview.md#general-properties); used in `[defaults].csettings.yml` or `*.csolution.yml`.
 `target-types:`  | Start of the [Target type declaration list](./Overview.md#target-and-build-types) that allow to switch between [different targets](./Overview.md#project-setup-for-multiple-targets-and-test-builds).
 `build-types:`   | Start of the [Build type declaration list](./Overview.md#target-and-build-types) that allow to switch between different build settings such as: Release, Debug, Test.
 `solution:`      | Start of the [Collection of related Projects](./Overview.md#solution-collection-of-related-projects) along with build order; used in `*.csolution.yml`.
@@ -188,18 +190,21 @@ Keyword          | Description
 `layers:`        | Start of a list that adds software layers to a project.
 `components:`    | Start of a list that adds software components to a project or layer.
 
+Todo: 
+  - clearify in which files the various keywords are allowed
+
 ## General Properties
 
 The keywords below can be used at various levels in this file types: `[defaults].csettings.yml`, `*.csolution.yml`, and `*.cproject.yml`. 
 
 Keyword     | Description
 :-----------|:------------------------------------
-`compiler:` | Selection of the toolchain used for the project, i.e. `GCC`, `AC6`, `IAR`.
+`compiler:` | Selection of the toolchain used for the project, i.e. `GCC`, `AC6`, `IAR`, optional with version, i.e AC6@6.16-LTS
 `device:`   | Unique device name, optionally with vendor. Format: `[<vendor>::]<device>`. Examples: `NXP::LPC55S69` or `STM32L552RCT6`. When `device:` is null the device is derived from the `board:` device setting, but `device:` overrules the `board:` device setting. Boards frequently use a superset device and with this method it is possible to use a board layer during development, but target a smaller device variant.
 `board:`    | Unique board name, optionally with vendor. Format: `[<vendor>::]<board>`. Examples: `NXP::LPCxpresso55S69` or `NUCLEO-L552ZE-Q`.
-`optimize:` | Generic optimize levels (max, size, speed, debug, tbd, ...), mapped to the toolchain by CMSIS-Build.
-`debug:`    | Generic control for the generation of debug information (on, off, tbd, ...), mapped to the toolchain by CMSIS-Build.
-`defines:`  | [Settings](./Overview.md#defines) for the code generation tools that are passed via the command line and result in #define.
+`optimize:` | Generic optimize levels (max, size, speed, debug), mapped to the toolchain by CMSIS-Build.
+`debug:`    | Generic control for the generation of debug information (on, off), mapped to the toolchain by CMSIS-Build.
+`defines:`  | [Symbol and path settings](./Overview.md#defines) for the code generation tools that are passed via the command line and result in #define.
 `misc:`     | Literal tool-specific controls (tbd variants `misc-c`, `misc-ar`, ... needed?)
 
 **Notes:**
@@ -214,6 +219,8 @@ The section [Project setup for multiple targets and test builds](./Overview.md#p
 
 The *`target-type`* and *`build-type`* definitions are additive, but an attempt to redefine an already existing type results in an error.
 
+The settings of the *`target-type`* are processed first; then the settings of the *`build-type`* that potentially overwrite the *`target-type`* settings.
+
 YML structure:
 ```yml
 target-types:          # Start a list of target type declarations
@@ -223,7 +230,7 @@ target-types:          # Start a list of target type declarations
     compiler:          # toolchain specification (optional) 
     optimize:          # optimize level for code generation (optional)
     debug:             # generation of debug information (optional)
-    defines:           # settings for code generation that results in #define (optional)
+    defines:           # symbol and path settings for code generation (optional)
     misc:              # Literal tool-specific controls
 
 build-types:           # Start a list of build type declarations
@@ -231,7 +238,7 @@ build-types:           # Start a list of build type declarations
     compiler:          # toolchain specification (optional) 
     optimize:          # optimize level for code generation (optional)
     debug:             # generation of debug information (optional)
-    defines:           # settings for code generation that results in #define (optional)
+    defines:           # symbol and path settings for code generation (optional)
     misc:              # Literal tool-specific controls
 ```
 
@@ -296,7 +303,7 @@ groups:                # Start a list of groups
     exclude:           # exclude group for a list of *build* and *target* types.
     optimize:          # optimize level for code generation (optional)
     debug:             # generation of debug information (optional)
-    defines:           # settings for code generation that results in #define (optional)
+    defines:           # symbol and path settings for code generation (optional)
     misc:              # Literal tool-specific controls
     groups:            # Start a nested list of groups
       - group:         # name of the group
@@ -307,7 +314,7 @@ groups:                # Start a list of groups
         exclude:       # exclude group for a list of *build* and *target* types.
         optimize:      # optimize level for code generation (optional)
         debug:         # generation of debug information (optional)
-        defines:       # settings for code generation that results in #define (optional)
+        defines:       # symbol and path settings for code generation (optional).
         misc:          # Literal tool-specific controls
 ```
 
@@ -361,7 +368,7 @@ layers:                # Start a list of layers
     exclude:           # exclude layer for a list of *build* and *target* types (optional).
     optimize:          # optimize level for code generation (optional).
     debug:             # generation of debug information (optional).
-    defines:           # settings for code generation that results in #define (optional).
+    defines:           # symbol and path settings for code generation (optional).
     misc:              # Literal tool-specific controls.
 ```
 
@@ -377,23 +384,40 @@ components:            # Start a list of layers
     exclude:           # exclude layer for a list of *build* and *target* types (optional).
     optimize:          # optimize level for code generation (optional).
     debug:             # generation of debug information (optional).
-    defines:           # settings for code generation that results in #define (optional).
+    defines:           # symbol and path settings for code generation (optional).
     misc:              # Literal tool-specific controls.
 ```
 
 The proposed component name syntax is:
-`[Cvendor::] Cclass [&Cbundle] :Cgroup [:Csub] [&Cvariant] [@[>=]Cversion ]
+`[Cvendor::] Cclass [&Cbundle] :Cgroup [:Csub] [&Cvariant] [@[>=]Cversion]`
 
 
 ## Defines
 
-Add or remove #define statements at the command line of the development tools.
+Add or remove include paths and/or symbol #define statements at the command line of the development tools.
 
 YML structure:
 ```yml
 defines:                   # Start a list of define and undefine statements
   - define: name[=value]   # add a symbol with optional value.
   - undefine: name         # remove a symbol.
+  - path_remove: {* ! include-path}  # remove all include paths or a specific path;
+  - path: include-path     # add a include path.
+```
+
+## Misc
+
+Add tool specific controls.
+
+YML structure:
+```yml
+misc:                      # Start a list of define and undefine statements
+  compiler:                # the toolchain it applies too (AC6, IAR, GCC).
+  - C: string              # file types that it applies too.
+  - CPP: string
+  - ASM: string
+  - Link: string
+  - Lib: string
 ```
 
 
@@ -408,17 +432,18 @@ solution:              # Start a list of projects.
   - project:           # path to the project file (required).
     include:           # include project for a list of *build* and *target* types (optional).
     exclude:           # exclude project for a list of *build* and *target* types (optional).
+    compiler:          # specify a specific compiler
     optimize:          # optimize level for code generation (optional)
     debug:             # generation of debug information (optional)
-    defines:           # settings for code generation that results in #define (optional)
+    defines:           # symbol and path settings for code generation (optional).
     misc:              # Literal tool-specific controls
 ```
 
 ## Processor or Platform
 
-tbd: this needs discussion.
+tbd: this needs discussion, could be merged with ST's definition of 'context'.
 ```yml
- processor:                  # processor specific settings
+ processor:                   # processor specific settings
     core: 1
     trustzone: secure         # TrustZone mode: secure | non-secure | off
     fpu: off 
@@ -435,8 +460,13 @@ The YML structure of the section `project:` is:
 ```yml
 project:                     # do we need this section at all, perhaps for platform?
   description:
+  compiler:                  # specify a specific compiler
   ....
 ```  
+
+## Misc Control
+
+Todo:
 
 
 ## Layer Definition
@@ -452,7 +482,8 @@ layer:
   ....
 ```  
 
-
+# Pre/Post build steps
+Todo:
 
 # CMSIS-Zone Integration
 Todo:
