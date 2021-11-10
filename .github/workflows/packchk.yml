@@ -132,7 +132,7 @@ jobs:
 
       - name: Generate coverage report
         run: |
-          gcovr -r ../tools/packchk/src/ -b --xml -o coverage.xml ./tools/packchk/
+          gcovr -r ../tools/packchk/src/ --xml -o coverage.xml ./tools/packchk/
         working-directory: ./build
 
       - name: Upload Report to Codecov
