@@ -132,12 +132,13 @@ jobs:
 
       - name: Generate coverage report
         run: |
-          gcovr -r ../tools/packchk/src/ --xml -o coverage.xml ./tools/packchk/
+          lcov -c --directory ./tools/packchk/ --output-file full_coverage.info
+          lcov -e full_coverage.info '/tools/packchk/include/*' '*/tools/packchk/src/*' -o coverage.info
         working-directory: ./build
 
       - name: Upload Report to Codecov
         uses: codecov/codecov-action@v1.3.2
         with:
-          files: ./build/coverage.xml
+          files: ./build/coverage.info
           fail_ci_if_error: true
           functionalities: fix
