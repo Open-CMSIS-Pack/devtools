@@ -35,8 +35,8 @@ BuildSystemGenerator::~BuildSystemGenerator(void) {
 
 bool BuildSystemGenerator::Collect(const string& inputFile, const CbuildModel *model, const string& outdir, const string& intdir) {
   error_code ec;
-  m_projectDir = StrConv(RteFsUtils::AbsolutePath(inputFile).remove_filename().generic_string());
-  m_workingDir = fs::current_path(ec).generic_string() + SS;
+  m_projectDir = CbuildUtils::ensureEndWithSlash(StrConv(RteFsUtils::AbsolutePath(inputFile).remove_filename().generic_string()));
+  m_workingDir = CbuildUtils::ensureEndWithSlash(fs::current_path(ec).generic_string());
 
   // Find toolchain config
   m_toolchainConfig = StrNorm(model->GetToolchainConfig());
@@ -59,7 +59,7 @@ bool BuildSystemGenerator::Collect(const string& inputFile, const CbuildModel *m
   if (!fs::exists(m_outdir, ec)) {
     fs::create_directories(m_outdir, ec);
   }
-  m_outdir = fs::canonical(m_outdir, ec).generic_string() + SS;
+  m_outdir = CbuildUtils::ensureEndWithSlash(fs::canonical(m_outdir, ec).generic_string());
 
   if (!intdir.empty()) {
     m_intdir = StrConv(intdir);
@@ -77,7 +77,7 @@ bool BuildSystemGenerator::Collect(const string& inputFile, const CbuildModel *m
   if (!fs::exists(m_intdir, ec)) {
     fs::create_directories(m_intdir, ec);
   }
-  m_intdir = fs::canonical(m_intdir, ec).generic_string() + SS;
+  m_intdir = CbuildUtils::ensureEndWithSlash(fs::canonical(m_intdir, ec).generic_string());
 
   // Target attributes
   m_projectName = fs::path(inputFile).stem().generic_string();

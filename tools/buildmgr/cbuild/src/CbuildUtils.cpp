@@ -62,6 +62,13 @@ const RteFile::Category CbuildUtils::GetFileType(const RteFile::Category cat, co
   }
 }
 
+const std::string CbuildUtils::ensureEndWithSlash(const std::string& path) {
+  if (path.length() > 0 && path.rfind(SS) < path.length() - 1) {
+    return path + SS;
+  }
+  return path;
+}
+
 const string CbuildUtils::RemoveSlash(const string& path) {
   size_t s = 0;
   string result = path;

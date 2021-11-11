@@ -42,6 +42,13 @@ public:
   static const RteFile::Category GetFileType(const RteFile::Category cat, const std::string& file);
 
   /**
+   * @brief Adds a slash '/' to the end of non-empty strings if missing
+   * @param path string possibly ending with '/'
+   * @return string with ending '/' or empty string
+  */
+  static const std::string ensureEndWithSlash(const std::string& path);
+
+  /**
    * @brief remove slashes from string
    * @param path string containing slashes
    * @return string without slashes
