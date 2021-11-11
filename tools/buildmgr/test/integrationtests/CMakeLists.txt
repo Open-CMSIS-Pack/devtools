@@ -1,4 +1,4 @@
-SET(SOURCE_FILES CPInitTests.cpp CPInstallTests.cpp InstallerTests.cpp
+SET(SOURCE_FILES CPackGetTests.cpp InstallerTests.cpp
   CBuildTestFixture.cpp CBuildAC6Tests.cpp CBuildGCCTests.cpp
   CBuildGenTestFixture.cpp CBuildGenTests.cpp SetupTests.cpp CBuildIntegTestEnv.cpp
   MultiTargetAC6Tests.cpp MultiTargetGCCTests.cpp DebPkgTests.cpp AuxCmdTests.cpp)

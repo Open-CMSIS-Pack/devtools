@@ -13,11 +13,10 @@ For command line build with software packs, the following tools and utilities ar
 | Tool/Script                                 | Description                                                               |
 |:--------------------------------------------|:--------------------------------------------------------------------------|
 | \subpage cbuild_install "cbuild_install.sh" | Setup of the CMSIS command line build environment                         |
-| \subpage cp_init "cp_init.sh"               | Create an empty directory for storing software packs in CMSIS-Pack format |
 | \subpage cbuild "cbuild.sh"                 | Start the overall command line build process                              |
 | \subpage cbuildgen "cbuildgen"              | Create Make or CMakeLists.txt file and manage software layers             |
 | \subpage cmake "CMake"                      | CMake utility to generate binary images                                   |
-| \subpage cp_install "cp_install.sh"         | Download and install software packs                                       |
+| \subpage cpackget "cpackget"                | Download and install software packs in CMSIS-Pack format                  |
 
 \note
 - For the above command line build tools and scripts  a
@@ -142,89 +141,6 @@ xmllint is also provided by the xsltproc package that can be installed via <a hr
 
 /*=======0=========1=========2=========3=========4=========5=========6=========7=========8=========9=========0=========1====*/
 /**
-\page cp_init cp_init.sh: Setup Pack Directory
-
-The \b cp_init.sh script is used to setup a build environment from scratch. It downloads the public
-<a href="https://www.keil.com/pack/index.pidx" target="_blank">CMSIS-Pack index file</a> and stores this catalog file in
-the pack directory under ./Web. This file is used by \ref cbuildgen "cbuildgen" to find the latest version of the public
-software packs.
-
-
-\section cp_init_invocation Invocation
-
-It is called from the \b Bash command line with the following syntax:
-
-\code
-cp_init.sh [<pack-directory>]
-\endcode
-
-\b Where:
-
-\c cp_init.sh is the name of the script.
-
-<\c pack-directory> specifies the directory where software packs should be stored. If not specified, the \c $CMSIS_PACK_ROOT
-directory is used.
-
-\section cp_init_example Usage Example
-
-\verbatim
-$ cp_init.sh ./packrepo
-(cp_init.sh): Setup Pack Directory 0.10.0 (C) 2020 ARM
-info: reading directory: ./packrepo
-downloading package index file from
-######################################################################## 100.0%
-pack repository created successfully
-Please setup environment variable CMSIS_PACK_ROOT to:
-/c/cbuild/packrepo
-\endverbatim
-
-\section cp_init_errors Error Messages
-<table class="cmtable" summary="cp_init messages">
-  <tr>
-    <th>Type</th>
-    <th>Message</th>
-    <th>Action</th>
-  </tr>
-  <tr>
-    <td>ERROR</td>
-    <td>error: no argument passed and CMSIS_PACK_ROOT environment variable not set</td>
-    <td>See usage and correct the argument.</td>
-  </tr>
-  <tr>
-    <td>ERROR</td>
-    <td>error: more than one command line argument passed</td>
-    <td>See usage and correct the argument.</td>
-  </tr>
-  <tr>
-    <td>ERROR</td>
-    <td>error: directory already exists. Cannot create new pack repository</td>
-    <td>See usage and correct the argument.</td>
-  </tr>
-  <tr>
-    <td>ERROR</td>
-    <td>error: index.pidx download failed</td>
-    <td>Check internet connection and server availability.</td>
-  </tr>
-  <tr>
-    <td>ERROR</td>
-    <td>error: downloaded file is not an xml file</td>
-    <td>Check downloaded file.</td>
-  </tr>
-  <tr>
-    <td>INFO</td>
-    <td>info: no argument passed - using CMSIS_PACK_ROOT environment variable</td>
-    <td>For information only.</td>
-  </tr>
-  <tr>
-    <td>INFO</td>
-    <td>pack repository created successfully</td>
-    <td>For information only.</td>
-  </tr>
-</table>
-*/
-
-/*=======0=========1=========2=========3=========4=========5=========6=========7=========8=========9=========0=========1====*/
-/**
 \page cbuild cbuild.sh: Build Invocation
 
 \b cbuild.sh implements the build flow by chaining the utilities \ref cbuildgen "cbuildgen" and
@@ -233,7 +149,7 @@ script can be adopted to project specific requirements or replaced by a custom i
 
 The build flow of the \b cbuild.sh script is:
  - Call \ref cbuildgen "cbuildgen" with command \c packlist to list the URLs of missing software packs.
- - Call \ref cp_install "cp_install.sh" to download and install missing software packs.
+ - Call \ref cpackget "cpackget" to download and install missing software packs.
  - Call \ref cbuildgen "cbuildgen" with command \c cmake to generate a CMakeLists.txt file (if \c \--cmake is specified).
  - Call \ref cmake "cmake" to compile the project source code into the binary image using the specified \c \<BuildSystem>.
  
@@ -735,27 +651,29 @@ M650: Command completed successfully.
 
 /*=======0=========1=========2=========3=========4=========5=========6=========7=========8=========9=========0=========1====*/
 /**
-\page cp_install cp_install.sh: Install Packs
+\page cpackget cpackget: Install Packs
 
-The \c cp_install "cp_install.sh" script gets a list of URLs that refer to software packs in CMSIS-Pack format that should 
+The \c cpackget "cpackget" program gets a list of URLs that refer to software packs in CMSIS-Pack format that should
 be downloaded and installed.
 
 
-\section cp_install_invocation Invocation
+\section cpackget_invocation Invocation
 
-\b cp_install is called from the \b Bash command line with the following syntax:
+\b cpackget is called from the \b Bash command line with the following syntax:
 
 \code
-cp_install.sh <pack-list-file> 
+cpackget pack add -f <pack-list-file>
 \endcode
 
 <b>Where:</b>
 
-\c cp_install is the name of the script.
+\c cpackget is the name of the program.
+
+\c pack add invokes the subcommand that handles pack download and installation.
 
 <\c pack-list-file> is a text file that contains a URL list.
 
-The \c cp_install script reads a text file that contains a URL list of software packs in CMSIS-Pack format. The URL list has
+The \c cpackget program reads a text file that contains a URL list of software packs in CMSIS-Pack format. The URL list has
 the following format: \c \<url>/\<vendor>.\<packname>.\<version>.pack. Below is an example:
 \code
   https://www.keil.com/pack/ARM.CMSIS.5.6.0.pack
@@ -773,91 +691,43 @@ The following directories are used to store software pack.  The naming conventio
 | <b>${CMSIS_PACK_ROOT}/.Download</b>                               | Stores the downloaded software pack                                                |
 | <b>${CMSIS_PACK_ROOT}/&lt;vendor>/&lt;packname>/&lt;version></b>  | Extracted content of the software pack (naming according CMSIS-Pack specification) | 
 
-\note  The environment variable \c $CMSIS_PACK_ROOT must reference an existing directory with at least the file ./Web/index.pidx. The directory structure can be created with \ref cp_init
+\note  The environment variable \c $CMSIS_PACK_ROOT must reference an existing directory with at least the file ./Web/index.pidx. The directory structure can be created with cpackget init
 
 
-\section cp_install_example Usage Example
+\section cpackget_example Usage Example
 
 \verbatim$
-cp_install.sh Simulation.cpinstall
-(cp_install.sh): Install Packs 0.10.0 (C) 2020 ARM
-info: reading file: Simulation.cpinstall
-dos2unix: converting file Simulation.cpinstall to Unix format...
+$ cpackget -v init --pack-root packroot https://www.keil.com/pack/index.pidx
+I: Using pack root: "packroot"
+Downloading index.pidx 100% |███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| (97/97 kB, 189.317 kB/s)
+$ cat Simulation.cpinstall
 http://www.keil.com/pack/ARM.CMSIS.5.6.0.pack
-######################################################################## 100.0%#=#=#
-######################################################################## 100.0%
-info: ARM.CMSIS.5.6.0.pack installing into /c/arm/cbuild/packs/ARM/CMSIS/5.6.0
 http://www.keil.com/pack/Keil.ARM_Compiler.1.6.1.pack
-######################################################################## 100.0%#=#=#
-######################################################################## 100.0%
-info: Keil.ARM_Compiler.1.6.1.pack installing into /c/arm/cbuild/packs/Keil/ARM_Compiler/1.6.1
-pack installation completed successfully
+$ cpackget -v pack add -f Simulation.cpinstall --pack-root packroot
+I: Using pack root: "packroot"
+I: Parsing packs urls via file Simulation.cpinstall
+I: Adding [http://www.keil.com/pack/ARM.CMSIS.5.6.0.pack http://www.keil.com/pack/Keil.ARM_Compiler.1.6.1.pack]
+Downloading ARM.CMSIS.5.6.0.pack 100% |████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| (101/101 MB, 8.141 MB/s)
+Downloading Keil.ARM_Compiler.1.6.1.pack 100% |█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| (3.8/3.8 MB, 2.443 MB/s)
 \endverbatim
 
-\section cp_install_errors Error Messages
+\section cpackget_errors Error Messages
 
-<table class="cmtable" summary="cp_install messages">
-  <tr>
-    <th>Type</th>
-    <th>Message</th>
-    <th>Action</th>
-  </tr>
-  <tr>
-    <td>ERROR</td>
-    <td>error: missing command line argument</td>
-    <td>See usage and correct argument.</td>
-  </tr>
-  <tr>
-    <td>ERROR</td>
-    <td>error: too many command line arguments</td>
-    <td>See usage and correct argument.</td>
-  </tr>
-  <tr>
-    <td>ERROR</td>
-    <td>error: $filename does not exist</td>
-    <td>See usage and correct argument.</td>
-  </tr>
-  <tr>
-    <td>ERROR</td>
-    <td>error: CMSIS_PACK_ROOT environment variable not set</td>
-    <td>Set \ref cbuild_envsetup.</td>
-  </tr>
-  <tr>
-    <td>ERROR</td>
-    <td>error: CMSIS_PACK_ROOT: folder does not contain package index file .Web/index.pidx</td>
-    <td>Check pack repository.</td>
-  </tr>
-  <tr>
-    <td>ERROR</td>
-    <td>error: pack download failed for $pack_url</td>
-    <td>Check internet connection and server availability.</td>
-  </tr>
-  <tr>
-    <td>ERROR</td>
-    <td>error: downloaded file $packfile is not a zip/pack file</td>
-    <td>Check list of missing packages in cpinstall file.</td>
-  </tr>
-  <tr>
-    <td>ERROR</td>
-    <td>error: unzip failed for $packfile</td>
-    <td>Check downloaded package.</td>
-  </tr>
-  <tr>
-    <td>INFO</td>
-    <td>info: pack $packfile is already downloaded</td>
-    <td>For information only.</td>
-  </tr>
-  <tr>
-    <td>INFO</td>
-    <td>info: $packfile is already installed</td>
-    <td>For information only.</td>
-  </tr>
-  <tr>
-    <td>INFO</td>
-    <td>pack installation completed successfully</td>
-    <td>For information only.</td>
-  </tr>
-</table>
+The error messages that the cpackget prints are mostly self explanatory. Here are some examples
+
+\code
+  # Trying to install a pack without specifying a pack root
+  $ cpackget pack add -f Simulation.cpinstall
+  E: pack root not found
+
+  # Trying to install a pack using an invalid pack url
+  $ cpackget pack add not-a-pack-path --pack-root packroot
+  E: bad pack name: pack extension should be "pdsc", "pack" or "zip"
+\endcode
+
+There are a few generic error messages that can be easily debugged by
+passing the verbose flag to cpackget "-vv".
+
 */
 
 
@@ -866,7 +736,7 @@ pack installation completed successfully
 \page cmake CMake
 
 \b CMake is an open-source, cross-platform family of tools designed to build, test and package software. As it is not
-automatically installed by \ref cp_install "cp_install.sh" script, you need to
+automatically installed by \ref cpackget "cpackget" script, you need to
 <a href="https://cmake.org/download/" target="_blank"><b>get the software</b></a> and install it on your machine separately.
 
 \note CMSIS-Build requires CMake 3.15 or above.

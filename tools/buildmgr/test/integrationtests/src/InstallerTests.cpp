@@ -42,11 +42,9 @@ void InstallerTests::RunInstallerScript(const string& arg) {
 void InstallerTests::CheckInstallationDir(const string& path, bool expect) {
   vector<pair<string, vector<string>>> dirVec = {
 #ifdef _WIN32
-    { "bin", vector<string>{ "cbuild.sh", "cbuildgen.exe",
-    "cp_init.sh", "cp_install.sh"} },
+    { "bin", vector<string>{ "cbuild.sh", "cbuildgen.exe", "cpackget.exe"} },
 #else
-    { "bin", vector<string>{ "cbuild.sh", "cbuildgen",
-    "cp_init.sh", "cp_install.sh"} },
+    { "bin", vector<string>{ "cbuild.sh", "cbuildgen", "cpackget"} },
 #endif
     { "doc", vector<string>{ "index.html", "html"} },
     { "etc", vector<string>{"AC5.5.6.7.cmake", "AC6.6.16.0.cmake", "CPRJ.xsd", "GCC.10.2.1.cmake", "setup"} }
@@ -70,7 +68,7 @@ void InstallerTests::CheckInstallationDir(const string& path, bool expect) {
 void InstallerTests::CheckExtractedDir(const string& path, bool expect) {
   vector<pair<string, vector<string>>> dirVec = {
     { "bin", vector<string>{ "cbuild.sh", "cbuildgen.lin", "cbuildgen.exe",
-      "cp_init.sh", "cp_install.sh"} },
+      "cpackget.lin", "cpackget.exe"} },
     { "doc", vector<string>{ "index.html", "html"} },
     { "etc", vector<string>{"AC5.5.6.7.cmake", "AC6.6.16.0.cmake", "CPRJ.xsd",
       "GCC.10.2.1.cmake", "setup"} }

@@ -52,11 +52,12 @@ void DebPkgTests::ValidateExtract(const string& extPath) {
     "./etc/cmsis-build/CPRJ.xsd", "./etc/cmsis-build/GCC.10.2.1.cmake",
     "./etc/cmsis-build/setup",
     "./etc/profile.d/cmsis-build.sh", "./usr/bin/cbuild.sh",
-    "./usr/bin/cp_init.sh",
-    "./usr/bin/cp_install.sh", "./usr/doc/doc-base/cmsis-build",
+    "./usr/bin/cpackget",
+    "./usr/bin/cbuildgen",
+    "./usr/doc/doc-base/cmsis-build",
     "./usr/lib/cmsis-build/bin/cbuild.sh",
     "./usr/lib/cmsis-build/bin/cbuildgen",
-    "./usr/lib/cmsis-build/bin/cp_init.sh", "./usr/lib/cmsis-build/bin/cp_install.sh",
+    "./usr/lib/cmsis-build/bin/cpackget",
     "./usr/lib/cmsis-build/etc/AC5.5.6.7.cmake", "./usr/lib/cmsis-build/etc/AC6.6.16.0.cmake",
     "./usr/lib/cmsis-build/etc/CPRJ.xsd", "./usr/lib/cmsis-build/etc/GCC.10.2.1.cmake",
     "./usr/lib/cmsis-build/etc/setup",
@@ -68,7 +69,7 @@ void DebPkgTests::ValidateExtract(const string& extPath) {
   fs::current_path(extPath, ec);
 
   for_each(pathVec.begin(), pathVec.end(),
-    [&](const string& str) { ASSERT_TRUE(fs::exists(str, ec)) << str << " not found !!!"; });
+    [&](const string& str) { ASSERT_TRUE(fs::exists(str, ec) || fs::is_symlink(str, ec)) << str << " not found !!!"; });
 }
 
 TEST_F(DebPkgTests, CheckMetadata) {
