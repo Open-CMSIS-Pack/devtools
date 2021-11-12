@@ -64,7 +64,7 @@ Note that some of the required tools are platform dependent:
 - A toolchain for your platform
   - **Windows:**
     - [GIT Bash](https://gitforwindows.org/)
-    - Visual Studio 2017 or 2019
+    - Visual Studio 2019
     - CMake (minimum recommended version **3.18**)
     - *optional* make or Ninja
 
