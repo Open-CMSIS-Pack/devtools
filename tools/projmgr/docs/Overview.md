@@ -178,7 +178,7 @@ solution:
 ## Overall Structure
 
 Keyword          | Allowed for following files..                  | Description
-:----------------|:-----------------------------------------------:------------------------------------
+:----------------|:-----------------------------------------------|:------------------------------------
 `default:`       | `[defaults].csettings.yml`, `*.csolution.yml`  | Start of the default section with [General Properties](./Overview.md#general-properties)
 `target-types:`  | `*.csolution.yml`                              | Start of the [Target type declaration list](./Overview.md#target-and-build-types) that allow to switch between [different targets](./Overview.md#project-setup-for-multiple-targets-and-test-builds).
 `build-types:`   | `[defaults].csettings.yml`, `*.csolution.yml`  | Start of the [Build type declaration list](./Overview.md#target-and-build-types) that allow to switch between different build settings such as: Release, Debug, Test.
