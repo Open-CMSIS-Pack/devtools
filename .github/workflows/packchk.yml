@@ -11,11 +11,15 @@ on:
 
 jobs:
   build:
-    if: ${{ github.event_name == 'pull_request' || (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/packchk/')) }}
+    if: |
+      ${{ 
+        github.event_name == 'pull_request' ||
+        (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/packchk/'))
+      }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         os: [ macos-10.15, ubuntu-20.04, windows-2019 ]
         include:
@@ -63,6 +67,7 @@ jobs:
 
       - uses: ammaraskar/gcc-problem-matcher@master
         if: ${{ startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu') }}
+
       - uses: ammaraskar/msvc-problem-matcher@master
         if: ${{ startsWith(matrix.os, 'windows') }}
 
@@ -78,6 +83,22 @@ jobs:
           cmake --build . --target PackChkIntegTests
           ctest -V -R PackChkIntegTests
         working-directory: ./build-debug
+
+      - name: Upload unit test results
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: Unit Test Results ${{ matrix.target }}
+          path: ./build-debug/test_reports/packchkunittest-*.xml
+          if-no-files-found: error
+
+      - name: Upload integration test results
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: Integ Test Results ${{ matrix.target }}
+          path: ./build-debug/test_reports/packchkintegtest-*.xml
+          if-no-files-found: error
 
       - name: Build packchk
         run: |
@@ -95,12 +116,29 @@ jobs:
           file_glob: true
           file: build/tools/packchk/packchk-*-${{ matrix.target }}.zip
 
+      - name: Attach test report to release
+        if: ${{ github.event_name == 'release' }}
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref }}
+          overwrite: true
+          file_glob: true
+          file: ./build-debug/test_reports/packchkintegtest-*.xml
+
   coverage:
-    if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' || (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/packchk/')) }}
-    runs-on: ubuntu-20.04
+    if: |
+      ${{
+        github.event_name == 'pull_request' ||
+        github.event_name == 'push' ||
+        (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/packchk/'))
+      }}
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     strategy:
       fail-fast: true
+      matrix:
+        os: [ ubuntu-20.04 ]
 
     steps:
       - name: Install dependencies
@@ -128,17 +166,59 @@ jobs:
           cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCOVERAGE=ON ..
           cmake --build . --target PackChkIntegTests
           ctest -V -C Debug -R PackChkIntegTests
+          cmake --build . --target PackChkUnitTests
+          ctest -V -C Debug -R PackChkUnitTests
         working-directory: ./build
 
       - name: Generate coverage report
         run: |
           lcov -c --directory ./tools/packchk/ --output-file full_coverage.info
           lcov -e full_coverage.info '/tools/packchk/include/*' '*/tools/packchk/src/*' -o coverage.info
+          genhtml coverage.info --output-directory test_coverage
+          zip -r test_coverage.zip test_coverage/*
         working-directory: ./build
 
       - name: Upload Report to Codecov
+        if: ${{ !github.event.repository.private }}
         uses: codecov/codecov-action@v1.3.2
         with:
           files: ./build/coverage.info
           fail_ci_if_error: true
           functionalities: fix
+
+      - name: Attach coverage report to release
+        if: ${{ github.event_name == 'release' }}
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref }}
+          overwrite: true
+          file_glob: true
+          file: build/test_coverage.zip
+
+  publish-test-results:
+    name: "Publish Tests Results"
+    needs: build
+    runs-on: ${{ matrix.os }}
+    if: ${{ always() }}
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ macos-10.15, ubuntu-20.04, windows-2019 ]
+    steps:
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      - name: Download Artifacts
+        uses: actions/download-artifact@v2
+        with:
+          path: artifacts
+
+      - name: Publish Unit Test Results
+        uses: EnricoMi/publish-unit-test-result-action/composite@v1
+        with:
+          files: artifacts/**/*.xml
+          report_individual_runs: true
+          check_name: "Test Results"
