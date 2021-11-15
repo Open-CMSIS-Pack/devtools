@@ -216,9 +216,9 @@ jobs:
         with:
           path: artifacts
 
-      - name: Publish Unit Test Results
+      - name: Publish Test Results
         uses: EnricoMi/publish-unit-test-result-action/composite@v1
         with:
-          files: artifacts/**/*.xml
+          files: artifacts/**/*.info
           report_individual_runs: true
           check_name: "Test Results"
