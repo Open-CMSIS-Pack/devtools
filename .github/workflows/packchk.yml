@@ -222,3 +222,5 @@ jobs:
           files: artifacts/**/*.xml
           report_individual_runs: true
           check_name: "Test Results"
+          comment_mode: off
+
