@@ -100,6 +100,14 @@ jobs:
           path: ./build-debug/test_reports/packchkintegtest-*.xml
           if-no-files-found: error
 
+      - name: Publish integration Test Results ${{ matrix.target }}
+        if: ${{ always() }}
+        uses: EnricoMi/publish-unit-test-result-action/composite@v1
+        with:
+          files: ./build-debug/testreports/packchkintegtest-*.xml
+          report_individual_runs: true
+          check_name: Integ Test Results ${{ matrix.target }}
+
       - name: Build packchk
         run: |
           cmake -G Ninja -DCMAKE_BUILD_TYPE=Release ..
