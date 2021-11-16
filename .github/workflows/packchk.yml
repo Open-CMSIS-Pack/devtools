@@ -8,6 +8,7 @@ on:
       - 'tools/packchk/**'
   release:
     types: [published]
+  pull_request_target:
 
 jobs:
   build:
@@ -217,10 +218,12 @@ jobs:
           path: artifacts
 
       - name: Publish Test Results
+        if: ${{ github.event_name == 'pull_request_target' }}
         uses: EnricoMi/publish-unit-test-result-action/composite@v1
         with:
           files: artifacts/**/*.xml
           report_individual_runs: true
           check_name: "Test Results"
           comment_mode: off
+          log_level: DEBUG
 
