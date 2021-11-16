@@ -218,7 +218,6 @@ jobs:
           path: artifacts
 
       - name: Publish Test Results
-        if: ${{ github.event_name == 'pull_request_target' }}
         uses: EnricoMi/publish-unit-test-result-action/composite@v1
         with:
           files: artifacts/**/*.xml
