@@ -28,3 +28,4 @@ function(get_targets)
   # write to file
   file(WRITE ${CMAKE_BINARY_DIR}/targets "${all_targets}")
 endfunction()
+
