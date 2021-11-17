@@ -217,6 +217,7 @@ jobs:
           path: artifacts
 
       - name: Publish Test Results
+        if: ${{ false }}
         uses: EnricoMi/publish-unit-test-result-action/composite@v1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
