@@ -109,25 +109,29 @@ TEST_F(CPackGetTests, PackAddFileNotAvailableTest) {
   RunPackAdd(param);
 }
 
-// Verify pack installer with missing input packlist file
+// Verify pack installer with valid arguments
 TEST_F(CPackGetTests, PackAddValidFileArgTest) {
   // Create a directory for this test only
   string localTestingDir = testout_folder + "/packrepo-valid-arg";
   TestParam paramInit = { "", "", " -R " + localTestingDir, "", true };
   RunInit(paramInit);
 
-  TestParam param = { "", "pack.cpinstall", " -R " + localTestingDir, "", true };
+  TestParam param = { "", "Testpack.cpinstall", " -R " + localTestingDir, "", true };
   RunPackAdd(param);
   RemoveDir(localTestingDir);
 }
 
-// Test valid installtion of packs
+// Test valid installation of packs
 TEST_F(CPackGetTests, PackAddPackInstallationTest) {
   TestParam param = { "", "Testpack.cpinstall", "", "", true };
 
   RunScript("prepackinstall.sh", testout_folder);
   RunPackAdd(param);
   RunScript("postpackinstall.sh", testout_folder);
+
+  // Try to re-install already installed pack
+  param = { "", "Testpack.cpinstall", "", "", false };
+  RunPackAdd(param);
 }
 
 // Install pack with missing build environment
@@ -147,13 +151,6 @@ TEST_F(CPackGetTests, PackAddNoEnvInvalidArgTest) {
 // Verify pack installer with invalid packlist file
 TEST_F(CPackGetTests, PackAddInvalidPackFileTest) {
   TestParam param = { "", "Invalid.cpinstall", "", "", false };
-
-  RunPackAdd(param);
-}
-
-// Install already installed pack
-TEST_F(CPackGetTests, PackAddAlreadyInstalledPackTest) {
-  TestParam param = { "", "pack.cpinstall", "", "", false };
 
   RunPackAdd(param);
 }
