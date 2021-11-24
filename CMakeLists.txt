@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.18)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+include(GetCMakeTargets)
 
 cmake_policy(SET CMP0091 NEW)
 
@@ -79,6 +80,9 @@ if(NOT LIBS_ONLY)
   add_subdirectory(tools/packchk)
   add_subdirectory(tools/packgen)
 endif()
+
+# Prepare a list of CMake targets
+get_targets()
 
 # Google Test Framework
 set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)

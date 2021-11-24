@@ -184,37 +184,14 @@ Follow the respective commands:
     cmake --build . --config Debug
     ```
 
-- Users can build specific target of their choice and build:
-  - Select the CMake generated target from the list below:
-    - cbuild
-    - cbuildgen
-    - cbuildgenlib
-    - CbuildUnitTests
-    - CbuildIntegTests
-    - CrossPlatform
-    - CrossPlatformUnitTests
-    - ErrLog
-    - ErrLogUnitTests
-    - packchk
-    - packchklib
-    - PackChkUnitTests
-    - PackChkIntegTests
-    - packgen
-    - packgenlib
-    - PackGenUnitTests
-    - RteFsUtils
-    - RteFsUtilsUnitTests
-    - RteModel
-    - RteModelUnitTests
-    - RteUtils
-    - RteUtilsUnitTests
-    - XmlReader
-    - XmlReaderUnitTests
-    - XmlTree
-    - XmlTreeUnitTests
-    - XmlTreeSlim
-    - XmlTreeSlimUnitTests
+- Users can build specific target of their choice:
+  - Get the list of valid CMake generated targets
 
+    ```bash
+    cat ./targets
+    ```
+
+  - Select the target
   - Build the selected target and run command
     > **cmake --build . --config <Debug/Release> --target \<target_name\>**
 
