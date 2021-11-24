@@ -30,22 +30,23 @@ Simple applications require just one self-contained file.
 
 **Simple Project: `Sample.cproject.yml`**
 ```yml
-default:
+project:
+  compiler: AC6
   device: LPC55S69
   optimize: size
   debug: on
 
-groups:
-  - group: My files
-    files:
-      - file: main.c
+  groups:
+    - group: My files
+      files:
+        - file: main.c
 
-  - group: HAL
-    files:
-      - file: ./hal/driver1.c
+    - group: HAL
+      files:
+        - file: ./hal/driver1.c
 
-components:
-  - component: Device:Startup
+  components:
+    - component: Device:Startup
 ```
 
 ## Project Setup for Multiple Targets and Test Builds
@@ -69,7 +70,7 @@ As the software may share a large set of common files, provisions are required t
 
 It is required to generate reproducible builds that can deployed on independent CI/CD test systems. To achieve that, *.the CMSIS Project Manager generates *.cprj output files with the following naming conventions:
 
-`<projectname>.<build-type>[~target-type].cprj` this would generate for example: `Multi.Debug~Production-HW.cprj`
+`<projectname>.<build-type>[+target-type].cprj` this would generate for example: `Multi.Debug+Production-HW.cprj`
 
 This enables that each target and/or build type can be identified and independently generated which provides the support for test automation. It is however not required to build every possible combination, this should be under user control.
 
@@ -110,24 +111,24 @@ groups:
       - file: file2a.c
 
   - group: Test-Interface
-    include: .Test
+    for-type: .Test
       - file: fileTa.c
 
 layers:
   - layer: NUCLEO-L552ZE-Q/Board.clayer.yml   # tbd find a better way: i.e. $Board$.clayer.yml
-    include: ~Board
+    for-type: +Board
 
   - layer: Production.clayer.yml              # added for target type: Production-HW
-    include: ~Production-HW
+    for-type: +Production-HW
 
   - layer: Corstone-300/Board.clayer.yml      # added for target type: VHT-Corstone-300
-    include: ~VHT-Corstone-300
+    for-type: +VHT-Corstone-300
 
 components:
   - component: Device:Startup
   - component: CMSIS:RTOS2:FreeRTOS
   - component: ARM::CMSIS:DSP&Source          # not added for build type: Test
-    exclude: .Test                           
+    not-for-type: .Test                           
 ```
 
 ## Project Setup for Related Projects
@@ -170,7 +171,7 @@ solution:
     type: .Release
   - project: /application/MQTT_AWS.cproject.yml
   - project: /bootloader/Bootloader.cproject.yml
-    exclude: ~Virtual
+    not-for-type: +Virtual
 ```
 
 # YML Syntax
@@ -203,11 +204,14 @@ Keyword         | Description
 `optimize:`     | Generic optimize levels (max, size, speed, debug), mapped to the toolchain by CMSIS-Build.
 `debug:`        | Generic control for the generation of debug information (on, off), mapped to the toolchain by CMSIS-Build.
 `warnings:`     | Control warnings (could be: no, all, Misra, AC5-like), mapped to the toolchain by CMSIS-Build.
-`defines:`      | [Symbol and path settings](#defines) for the code generation tools that are passed via the command line and result in #define.
+`defines:`      | [#define symbol settings](#defines) for the code generation tools.
+`undefines:`    | [Remove #define symbol settings](#undefines) for the code generation tools.
+`add-paths:`    | [Add include path settings](#add-paths) for the code generation tools.
+`del-paths:`    | [Remove include path settings](#del-paths) for the code generation tools.
 `misc:`         | [Miscellaneous literal tool-specific controls](#misc) that are passed directly to the tools depending on the file type.
 
 **Notes:**
- - `defines:` and `misc:` are additive. All other keywords overwrite previous settings.
+ - `defines:`, `add-paths:`  and `misc:` are additive. All other keywords overwrite previous settings.
  
 ## Target and Build Types
 
@@ -229,7 +233,10 @@ target-types:          # Start a list of target type declarations
     compiler:          # toolchain specification (optional) 
     optimize:          # optimize level for code generation (optional)
     debug:             # generation of debug information (optional)
-    defines:           # symbol and path settings for code generation (optional)
+    defines:           # define symbol settings for code generation (optional).
+    undefines:         # remove define symbol settings for code generation (optional).
+    add-paths:         # additional include file paths (optional).
+    del-paths:         # remove specific include file paths (optional). 
     misc:              # Literal tool-specific controls
 
 build-types:           # Start a list of build type declarations
@@ -237,7 +244,10 @@ build-types:           # Start a list of build type declarations
     compiler:          # toolchain specification (optional) 
     optimize:          # optimize level for code generation (optional)
     debug:             # generation of debug information (optional)
-    defines:           # symbol and path settings for code generation (optional)
+    defines:           # define symbol settings for code generation (optional).
+    undefines:         # remove define symbol settings for code generation (optional).
+    add-paths:         # additional include file paths (optional).
+    del-paths:         # remove specific include file paths (optional). 
     misc:              # Literal tool-specific controls
 ```
 
@@ -260,28 +270,28 @@ build-types:
     debug: on
 ```
 
-## Include or Exclude
+## Build/Target-Type control
 
 Depending on a *`target-type`* or *`build-type`* selection it is possible to include or exclude *items* in the build process.
 
-Keyword      | Description
-:------------|:------------------------------------
-`include:`   | A *type list* that adds an *item* for a specific target or build *type* or a list of *types*.
-`exclude:`   | A *type list* that removes an *item* for a specific target or build *type* or a list of *types*.
+Keyword         | Description
+:---------------|:------------------------------------
+`for-type:`     | A *type list* that adds an *item* for a specific target or build *type* or a list of *types*.
+`not-for-type:` | A *type list* that removes an *item* for a specific target or build *type* or a list of *types*.
 
-It is possible to specify only a `<build-type>`, only a `<target-type>` or a combination of `<build-type>` and `<target-type>`. It is also possible to provide a list of *build* and *target* types. The *type list syntax* for `include:` or `exclude:` is:
+It is possible to specify only a `<build-type>`, only a `<target-type>` or a combination of `<build-type>` and `<target-type>`. It is also possible to provide a list of *build* and *target* types. The *type list syntax* for `for-type:` or `not-for-type:` is:
 
-`[.<build-type>][~<target-type>] [, [.<build-type>]~[<target-type>]] [, ...]`
+`[.<build-type>][+<target-type>] [, [.<build-type>]+[<target-type>]] [, ...]`
 
 **Examples:**
 ```yml
-include:  .Test                            # add item for build-type: Test (any target-type)
-exclude:  ~Virtual                         # remove item for target-type: Virtual (any build-type)
-exclude:  .Release~Virtual                 # remove item for build-type: Release with target-type: Virtual
-include:  .Debug, .Release~Production-HW   # add for build-type: Debug and build-type: Release / target-type: Production-HW
+for-type:      .Test                            # add item for build-type: Test (any target-type)
+not-for-type:  +Virtual                         # remove item for target-type: Virtual (any build-type)
+not-for-type:  .Release+Virtual                 # remove item for build-type: Release with target-type: Virtual
+for-type:      .Debug, .Release+Production-HW   # add for build-type: Debug and build-type: Release / target-type: Production-HW
 ```
 
-The keyword `include:` or `exclude:` can be applied to the following list keywords:
+The keyword `for-type:` or `not-for-type:` can be applied to the following list keywords:
 
 Keyword      | Description
 :------------|:------------------------------------
@@ -298,23 +308,29 @@ YML structure:
 ```yml
 groups:                # Start a list of groups
   - group:             # name of the group
-    include:           # include group for a list of *build* and *target* types.
-    exclude:           # exclude group for a list of *build* and *target* types.
+    for-type:          # include group for a list of *build* and *target* types.
+    not-for-type:      # exclude group for a list of *build* and *target* types.
     optimize:          # optimize level for code generation (optional)
     debug:             # generation of debug information (optional)
-    defines:           # symbol and path settings for code generation (optional)
+    defines:           # define symbol settings for code generation (optional).
+    undefines:         # remove define symbol settings for code generation (optional).
+    add-paths:         # additional include file paths (optional).
+    del-paths:         # remove specific include file paths (optional). 
     misc:              # Literal tool-specific controls
     groups:            # Start a nested list of groups
       - group:         # name of the group
          :
     files:             # Start a nested list of files
       - file:          # file name along with path
-        include:       # include group for a list of *build* and *target* types.
-        exclude:       # exclude group for a list of *build* and *target* types.
+        for-type:      # include group for a list of *build* and *target* types.
+        not-for-type:  # exclude group for a list of *build* and *target* types.
         optimize:      # optimize level for code generation (optional)
         debug:         # generation of debug information (optional)
-        defines:       # symbol and path settings for code generation (optional).
-        misc:          # Literal tool-specific controls
+        defines:       # define symbol settings for code generation (optional).
+        undefines:     # remove define symbol settings for code generation (optional).
+        add-paths:     # additional include file paths (optional).
+        del-paths:     # remove specific include file paths (optional). 
+        misc:          # Literal tool-specific controls.
 ```
 
 **Example:**
@@ -324,23 +340,24 @@ Add source files to a project or a software layer.  Used in `*.cproject.yml` and
 ```yml
 groups:
   - group:  "Main File Group"
-    exclude: .Release~Virtual, .Test-DSP~Virtual, ~Board
+    not-for-type: .Release+Virtual, .Test-DSP+Virtual, +Board
     files: 
       - file: file1a.c
       - file: file1b.c
         defines:
-          - define: a=1
-          - undefine: b
+          - a: 1
+        undefines:
+          - b
         optimize: size
 
   - group: "Other File Group"
     files:
       - file: file2a.c
-        include: ~Virtual
+        for-type: +Virtual
         defines: 
-          - define: test=2
+          - test: 2
       - file: file2a.c
-        exclude: ~Virtual
+        not-for-type: +Virtual
       - file: file2b.c
 
   - group: "Nested Group"
@@ -363,11 +380,14 @@ YML structure:
 ```yml
 layers:                # Start a list of layers
   - layer:             # path to the `*.clayer.yml` file that defines the layer (required).
-    include:           # include layer for a list of *build* and *target* types (optional).
-    exclude:           # exclude layer for a list of *build* and *target* types (optional).
+    for-type:          # include layer for a list of *build* and *target* types (optional).
+    not-for-type:      # exclude layer for a list of *build* and *target* types (optional).
     optimize:          # optimize level for code generation (optional).
     debug:             # generation of debug information (optional).
-    defines:           # symbol and path settings for code generation (optional).
+    defines:           # define symbol settings for code generation (optional).
+    undefines:         # remove define symbol settings for code generation (optional).
+    add-paths:         # additional include file paths (optional).
+    del-paths:         # remove specific include file paths (optional). 
     misc:              # Literal tool-specific controls.
 ```
 
@@ -379,11 +399,14 @@ YML structure:
 ```yml
 components:            # Start a list of layers
   - component:         # name of the software component (see below).
-    include:           # include layer for a list of *build* and *target* types (optional).
-    exclude:           # exclude layer for a list of *build* and *target* types (optional).
+    for-type:          # include layer for a list of *build* and *target* types (optional).
+    not-for-type:      # exclude layer for a list of *build* and *target* types (optional).
     optimize:          # optimize level for code generation (optional).
     debug:             # generation of debug information (optional).
-    defines:           # symbol and path settings for code generation (optional).
+    defines:           # define symbol settings for code generation (optional).
+    undefines:         # remove define symbol settings for code generation (optional).
+    add-paths:         # additional include file paths (optional).
+    del-paths:         # remove specific include file paths (optional). 
     misc:              # Literal tool-specific controls.
 ```
 
@@ -402,16 +425,49 @@ The proposed component name syntax is:
 
 ## Defines
 
-Add or remove include paths and/or symbol #define statements at the command line of the development tools.
+Add symbol #define statements to the command line of the development tools.
 
 YML structure:
 ```yml
-defines:                   # Start a list of define and undefine statements
-  - define: name[=value]   # add a symbol with optional value.
-  - undefine: name         # remove a symbol.
-  - path_remove: {* ! include-path}  # remove all include paths or a specific path;
-  - path: include-path     # add a include path.
+defines:                   # Start a list of define statements
+  - name: value            # add a symbol with optional value.
+  - name:
 ```
+
+## Undefines
+
+Remove symbol #define statements from the command line of the development tools.
+
+YML structure:
+```yml
+undefines:                 # Start a list of undefine statements
+  - name                   # remove symbol from the list of define statements.
+  - name                   # remove a symbol.
+```
+
+## Add-Paths
+
+Add include paths to the command line of the development tools.
+
+YML structure:
+```yml
+add-paths:                 # Start a list path names that should be added to the include file search
+  - path                   # add path name
+  - path
+```
+
+## Del-Paths
+
+Remove include paths (that are defined at the cproject level) from the command line of the development tools.
+
+YML structure:
+```yml
+del-paths:                 # Start a list of path names that should be removed from the include file search
+  - path                   # remove path name
+  - *                      # remove all paths
+```
+
+
 
 ## Misc
 
@@ -439,12 +495,15 @@ The YML structure of the section `solution:` is:
 ```yml
 solution:                  # Start a list of projects.
   - project:               # path to the project file (required).
-    include:               # include project for a list of *build* and *target* types (optional).
-    exclude:               # exclude project for a list of *build* and *target* types (optional).
+    for-type:              # include project for a list of *build* and *target* types (optional).
+    not-for-type:          # exclude project for a list of *build* and *target* types (optional).
     compiler:              # specify a specific compiler
     optimize:              # optimize level for code generation (optional)
     debug:                 # generation of debug information (optional)
-    defines:               # symbol and path settings for code generation (optional).
+    defines:               # define symbol settings for code generation (optional).
+    undefines:             # remove define symbol settings for code generation (optional).
+    add-paths:             # additional include file paths (optional).
+    del-paths:             # remove specific include file paths (optional). 
     misc:                  # Literal tool-specific controls
 ```
 
@@ -455,7 +514,8 @@ Start of a project definition in a `*.cproject.yml` file (optional section)
 The YML structure of the section `project:` is:
 ```yml
 project:                     # do we need this section at all, perhaps for platform?
-  description:
+  compiler: name             # specify compiler (AC6, GCC, IAR)
+  description:               # project description (optional)
   processor:                 # specify processor  ??
   ....
 ```  
