@@ -190,7 +190,7 @@ void RteFile::GetAbsoluteSourcePaths(set<string>& paths) const
 }
 
 
-string RteFile::GetInstancePathName(const string& deviceName, int instanceIndex) const
+string RteFile::GetInstancePathName(const string& deviceName, int instanceIndex, const string& rteFolder) const
 {
   string pathName;
   RteComponent* c = GetComponent();
@@ -200,7 +200,7 @@ string RteFile::GetInstancePathName(const string& deviceName, int instanceIndex)
     bool bForcedCopy = IsForcedCopy();
     if (bConfig || bTemplate || bForcedCopy) {
       if (bConfig || bForcedCopy) {
-        pathName = "RTE/";
+        pathName = rteFolder + "/";
         const string& className = c->GetCclassName();
         pathName += className;
         pathName += "/";

@@ -18,6 +18,7 @@
 #include "RteInstance.h"
 #include "RteModel.h"
 
+#include <optional>
 #include <stdio.h>
 
 class RteModel;
@@ -148,6 +149,10 @@ public:
    * @param name project name to set
   */
   void SetName(const std::string& name) { m_ID = name; }
+
+
+  void SetRteFolder(std::optional<std::string> rteFolder) { m_rteFolder = rteFolder; }
+  const std::string& GetRteFolder() const;
 
   /**
    * @brief get RteCallback object
@@ -685,18 +690,20 @@ public:
    * @brief get file name and path of "RTE_Components.h" determined by the specified target and prefix
    * @param targetName given target name
    * @param prefix given prefix to be added at beginning of the file path
+   * @param rteFolder the "RTE" folder path used for placing files
    * @return string containing file name and path
   */
-  static std::string GetRteComponentsH(const std::string& targetName, const std::string& prefix);
+  static std::string GetRteComponentsH(const std::string& targetName, const std::string& prefix, const std::string& rteFolder);
 
   /**
    * @brief get file name and path locating in folder "RTE" determined by the specified name, target and prefix
    * @param name given file name
    * @param targetName given target name
    * @param prefix given prefix to be added at beginning of the file path
+   * @param rteFolder the "RTE" folder path used for placing files
    * @return string containing file name and path
   */
-  static std::string GetRteHeader(const std::string& name, const std::string & targetName, const std::string& prefix);
+  static std::string GetRteHeader(const std::string& name, const std::string & targetName, const std::string& prefix, const std::string& rteFolder);
 
 protected:
   virtual RteTarget* CreateTarget(RteModel* filteredModel, const std::string& name, const std::map<std::string, std::string>& attributes);
@@ -760,6 +767,7 @@ protected:
   std::map<std::string, RteModel*> m_targetModels; // filtered models for each target
   std::map<int, std::string> m_targetIDs;
   std::string m_sActiveTarget;
+  std::optional<std::string> m_rteFolder;
 };
 
 #endif // RteProject_H

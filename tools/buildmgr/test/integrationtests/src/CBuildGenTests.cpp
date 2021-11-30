@@ -258,7 +258,7 @@ TEST_F(CBuildGenTests, Layer_Extract) {
   TestParam param = { "Layers/Layers_Extract", "Simulation" };
 
   RunLayerCommand       (1/*L_EXTRACT*/, param);
-  CheckLayerFiles       (param);
+  CheckLayerFiles       (param, "RTE");
 }
 
 // Validate creation of new projects from layers
@@ -266,7 +266,7 @@ TEST_F(CBuildGenTests, Layer_Compose) {
   TestParam param = { "Layers/Layers_Compose", "Simulation" };
 
   RunLayerCommand       (2/*L_COMPOSE*/, param);
-  CheckProjectFiles     (param);
+  CheckProjectFiles     (param, "RTE");
 }
 
 // Validate addition of new layers to the project
@@ -274,7 +274,7 @@ TEST_F(CBuildGenTests, Layer_Add) {
   TestParam param = { "Layers/Layers_Add", "Simulation" };
 
   RunLayerCommand       (3/*L_ADD*/, param);
-  CheckProjectFiles     (param);
+  CheckProjectFiles     (param, "RTE");
 }
 
 // Validate removal of layers from project
@@ -282,7 +282,7 @@ TEST_F(CBuildGenTests, Layer_Remove) {
   TestParam param = { "Layers/Layers_Remove", "Simulation" };
 
   RunLayerCommand       (4/*L_REMOVE*/, param);
-  CheckProjectFiles     (param);
+  CheckProjectFiles     (param, "RTE");
 }
 
 // Test creation of new directory(s)
