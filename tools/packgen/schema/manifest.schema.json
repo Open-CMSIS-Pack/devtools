@@ -1,5 +1,5 @@
 {
-  "$schema": "http://json-schema.org/draft/2020-12/schema#",
+  "$schema": "http://json-schema.org/draft-07/schema#",
   "id": "manifest.schema.json",
   "title": "CMSIS Pack generation manifest",
   "version": "0.9.0",
@@ -80,7 +80,7 @@
         "url":          { "type": "string" },
         "releases":     { "$ref": "#/$defs/ReleasesType" },
         "requirements": { "$ref": "#/$defs/RequirementsType" },
-        "repository":   { "type": "string" },
+        "repository":   { "$ref": "#/$defs/RepositoryType" },
         "apis":         { "$ref": "#/$defs/ApisType" },
         "taxonomy":     { "$ref": "#/$defs/TaxonomysType" },
         "components":   { "$ref": "#/$defs/ComponentsType" }
@@ -114,6 +114,15 @@
         "compilers": { "$ref": "#/$defs/CompilersType" },
         "languages": { "$ref": "#/$defs/LanguagesType" }
       },
+      "additionalProperties": false
+    },
+    "RepositoryType": {
+      "type": "object",
+      "properties": {
+        "type": { "type": "string" },
+        "url":  { "type": "string" }
+      },
+      "required": [ "type", "url" ],
       "additionalProperties": false
     },
     "PackagesType": {

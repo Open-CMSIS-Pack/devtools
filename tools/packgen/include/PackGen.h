@@ -132,15 +132,21 @@ struct apiInfo {
 };
 
 /**
+ * @brief repository structure containing
+ *        type of repository
+ *        url of repository
+*/
+struct repositoryInfo {
+  std::string type;
+  std::string url;
+};
+
+/**
  * @brief release structure containing
- *        version string according to semantic versioning,
- *        date string in the format YYYY-MM-DD,
- *        description string
+ *        map of release attributes
 */
 struct releaseInfo {
-  std::string version;
-  std::string date;
-  std::string description;
+  std::map<std::string, std::string> attributes;
 };
 
 /**
@@ -161,8 +167,10 @@ struct packInfo {
   std::string name;
   std::string description;
   std::string vendor;
+  std::string version;
   std::string license;
   std::string url;
+  repositoryInfo repository;
   std::list<releaseInfo> releases;
   requirementInfo requirements;
   std::list<taxonomyInfo> taxonomy;
