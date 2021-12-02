@@ -228,18 +228,24 @@ void PackGen::ParseManifestInfo(const YAML::Node node, packInfo& pack) {
   pack.vendor = node["vendor"].as<string>();
   pack.license = node["license"].as<string>();
   pack.url = node["url"].as<string>();
+
+  YAML::Node repository = node["repository"];
+  if (repository.IsDefined()) {
+    pack.repository.url = repository["url"].as<string>();
+    pack.repository.type = repository["type"].as<string>();
+  }
 }
 
 void PackGen::ParseManifestReleases(const YAML::Node node, packInfo& pack) {
   YAML::Node releases = node["releases"];
   for (const auto& item : releases) {
-    const releaseInfo& release = {
-      item["version"].as<string>(),
-      item["date"].as<string>(),
-      item["description"].as<string>(),
-    };
-    pack.releases.push_back(release);
+    releaseInfo releaseAttributes;
+    for (const auto& attr : item) {
+      releaseAttributes.attributes.insert({ attr.first.as<string>(), attr.second.as<string>() });
+    }
+    pack.releases.push_back(releaseAttributes);
   }
+  pack.version = pack.releases.begin()->attributes["version"];
 }
 
 void PackGen::ParseManifestRequirements(const YAML::Node node, packInfo& pack) {
@@ -650,7 +656,7 @@ bool PackGen::CreatePack() {
   for (auto&& pack : m_pack) {
 
     // Set output path for generated pack
-    pack.outputDir = m_outputRoot + "/" + pack.vendor + "." + pack.name + "." + pack.releases.begin()->version;
+    pack.outputDir = m_outputRoot + "/" + pack.vendor + "." + pack.name + "." + pack.version;
 
     // Clean output
     RteFsUtils::RemoveDir(pack.outputDir);
@@ -729,6 +735,11 @@ void PackGen::CreatePackInfo(XMLTreeElement* rootElement, packInfo& pack) {
   vendorElement->SetText(pack.vendor);
   licenseElement->SetText(pack.license);
   urlElement->SetText(pack.url);
+  if (!pack.repository.url.empty()) {
+    XMLTreeElement* repositoryElement = rootElement->CreateElement("repository");
+    repositoryElement->SetText(pack.repository.url);
+    repositoryElement->AddAttribute("type",pack.repository.type);
+  }
 }
 
 void PackGen::CreatePackRequirements(XMLTreeElement* rootElement, packInfo& pack) {
@@ -753,9 +764,13 @@ void PackGen::CreatePackReleases(XMLTreeElement* rootElement, packInfo& pack) {
   XMLTreeElement* releasesElement = rootElement->CreateElement("releases");
   for (const auto& release : pack.releases) {
     XMLTreeElement* releaseElement = releasesElement->CreateElement("release");
-    releaseElement->AddAttribute("version", release.version);
-    releaseElement->AddAttribute("date", release.date);
-    releaseElement->SetText(release.description);
+    for (const auto& attr : release.attributes) {
+      if (attr.first == "description") {
+        releaseElement->SetText(attr.second);
+      } else {
+        releaseElement->AddAttribute(attr.first, attr.second);
+      }
+    }
   }
 }
 
@@ -978,7 +993,7 @@ bool PackGen::CompressPack(void) {
     fs::current_path(pack.outputDir, ec);
 
     // 7zip
-    result = ExecCommand("7z a \"" + pack.vendor + "." + pack.name + "." + pack.releases.begin()->version + ".pack\" -tzip");
+    result = ExecCommand("7z a \"" + pack.vendor + "." + pack.name + "." + pack.version + ".pack\" -tzip");
     if (result.second) {
       cerr << "packgen error: 7zip failed\n" << result.first << endl;
       return false;

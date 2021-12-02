@@ -20,13 +20,21 @@ static constexpr const char* packDescription = "TestPack description";
 static constexpr const char* packVendor = "ARM";
 static constexpr const char* packLicense = "LICENSE";
 static constexpr const char* packUrl = "http://arm.com/";
+static constexpr const char* packRepositoryUrl = "https://github.com/ARM-software/CMSIS-Driver.git";
+static constexpr const char* packRepositoryType = "git";
 
 static constexpr const char* releaseVersion1 = "1.0.0";
 static constexpr const char* releaseDate1 = "2021-08-01";
 static constexpr const char* releaseDescription1 = "First release";
+static constexpr const char* releaseTag1 = "tag-1.0.0";
+static constexpr const char* releaseUrl1 = "https://github.com/MDK-Packs/releases/download/ARM.Dummy.1.0.0.pack";
+static constexpr const char* releaseDeprecated1 = "2021-12-01";
 static constexpr const char* releaseVersion2 = "2.0.0";
 static constexpr const char* releaseDate2 = "2021-08-02";
 static constexpr const char* releaseDescription2 = "Second release";
+static constexpr const char* releaseTag2 = "tag-2.0.0";
+static constexpr const char* releaseUrl2 = "https://github.com/MDK-Packs/releases/download/ARM.Dummy.2.0.0.pack";
+static constexpr const char* releaseDeprecated2 = "2021-12-02";
 
 static constexpr const char* requirementPackageVendor1 = "Test Vendor 1";
 static constexpr const char* requirementPackageName1 = "Test Name 1";
@@ -244,8 +252,8 @@ TEST_F(PackGenUnitTests, RunPackGen_OutOfTree) {
   EXPECT_EQ(0, RunPackGen(8, argv));
 
   // Check generated PDSC
-  CompareFile(testoutput_folder + "/TestVendor.TestPack.1.0.0/TestVendor.TestPack.pdsc",
-    testinput_folder + "/TestProject/out-of-root/TestVendor.TestPack.pdsc");
+  CompareFile(testoutput_folder + "/TestVendor.TestPackOutOfRoot.1.0.0/TestVendor.TestPackOutOfRoot.pdsc",
+    testinput_folder + "/TestProject/out-of-root/TestVendor.TestPackOutOfRoot.pdsc");
 }
 
 TEST_F(PackGenUnitTests, RunPackGenMultipleBuilds) {
@@ -299,6 +307,8 @@ TEST_F(PackGenUnitTests, ParseManifestInfoTest) {
   item["vendor"] = packVendor;
   item["license"] = packLicense;
   item["url"] = packUrl;
+  item["repository"]["url"] = packRepositoryUrl;
+  item["repository"]["type"] = packRepositoryType;
   m_repoRoot = "TEST_REPO";
 
   ParseManifestInfo(item, pack);
@@ -308,6 +318,8 @@ TEST_F(PackGenUnitTests, ParseManifestInfoTest) {
   EXPECT_EQ(packVendor, pack.vendor);
   EXPECT_EQ(packLicense, pack.license);
   EXPECT_EQ(packUrl, pack.url);
+  EXPECT_EQ(packRepositoryUrl, pack.repository.url);
+  EXPECT_EQ(packRepositoryType, pack.repository.type);
 }
 
 TEST_F(PackGenUnitTests, ParseManifestReleasesTest) {
@@ -316,21 +328,33 @@ TEST_F(PackGenUnitTests, ParseManifestReleasesTest) {
   subitem1["version"] = releaseVersion1;
   subitem1["date"] = releaseDate1;
   subitem1["description"] = releaseDescription1;
+  subitem1["tag"] = releaseTag1;
+  subitem1["url"] = releaseUrl1;
+  subitem1["deprecated"] = releaseDeprecated1;
   subitem2["version"] = releaseVersion2;
   subitem2["date"] = releaseDate2;
   subitem2["description"] = releaseDescription2;
+  subitem2["tag"] = releaseTag2;
+  subitem2["url"] = releaseUrl2;
+  subitem2["deprecated"] = releaseDeprecated2;
   item["releases"].push_back(subitem1);
   item["releases"].push_back(subitem2);
 
   ParseManifestReleases(item, pack);
 
   ASSERT_EQ(pack.releases.size(), 2);
-  EXPECT_EQ(releaseVersion1, pack.releases.front().version);
-  EXPECT_EQ(releaseDate1, pack.releases.front().date);
-  EXPECT_EQ(releaseDescription1, pack.releases.front().description);
-  EXPECT_EQ(releaseVersion2, pack.releases.back().version);
-  EXPECT_EQ(releaseDate2, pack.releases.back().date);
-  EXPECT_EQ(releaseDescription2, pack.releases.back().description);
+  EXPECT_EQ(releaseVersion1, pack.releases.front().attributes["version"]);
+  EXPECT_EQ(releaseDate1, pack.releases.front().attributes["date"]);
+  EXPECT_EQ(releaseDescription1, pack.releases.front().attributes["description"]);
+  EXPECT_EQ(releaseTag1, pack.releases.front().attributes["tag"]);
+  EXPECT_EQ(releaseUrl1, pack.releases.front().attributes["url"]);
+  EXPECT_EQ(releaseDeprecated1, pack.releases.front().attributes["deprecated"]);
+  EXPECT_EQ(releaseVersion2, pack.releases.back().attributes["version"]);
+  EXPECT_EQ(releaseDate2, pack.releases.back().attributes["date"]);
+  EXPECT_EQ(releaseDescription2, pack.releases.back().attributes["description"]);
+  EXPECT_EQ(releaseTag2, pack.releases.back().attributes["tag"]);
+  EXPECT_EQ(releaseUrl2, pack.releases.back().attributes["url"]);
+  EXPECT_EQ(releaseDeprecated2, pack.releases.back().attributes["deprecated"]);
 }
 
 TEST_F(PackGenUnitTests, ParseManifestRequirementsTest) {
@@ -409,13 +433,13 @@ TEST_F(PackGenUnitTests, CreatePackReleasesTest) {
   ASSERT_NE(rootElement, nullptr);
 
   releaseInfo item;
-  item.version = releaseVersion1;
-  item.date = releaseDate1;
-  item.description = releaseDescription1;
+  item.attributes["version"] = releaseVersion1;
+  item.attributes["date"] = releaseDate1;
+  item.attributes["description"] = releaseDescription1;
   pack.releases.push_back(item);
-  item.version = releaseVersion2;
-  item.date = releaseDate2;
-  item.description = releaseDescription2;
+  item.attributes["version"] = releaseVersion2;
+  item.attributes["date"] = releaseDate2;
+  item.attributes["description"] = releaseDescription2;
   pack.releases.push_back(item);
 
   CreatePackReleases(rootElement, pack);

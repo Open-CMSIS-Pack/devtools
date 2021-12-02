@@ -5,7 +5,7 @@ build:
     options: "cmake -G Ninja"
 
 packs:
-  - name: "TestPack"
+  - name: "TestPackOutOfRoot"
     description: "TestPack description"
     vendor: "TestVendor"
     license: "LICENSE"
