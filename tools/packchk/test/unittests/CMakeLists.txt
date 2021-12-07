@@ -12,5 +12,5 @@ set_property(TARGET PackChkUnitTests PROPERTY
 target_link_libraries(PackChkUnitTests PUBLIC packchklib gtest_main)
 
 add_test(NAME PackChkUnitTests
-         COMMAND PackChkUnitTests --gtest_output=xml:packchkunit_test_report.xml
+         COMMAND PackChkUnitTests --gtest_output=xml:test_reports/packchkunittest-${SYSTEM}${ARCH}.xml
          WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
