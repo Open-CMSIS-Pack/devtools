@@ -88,9 +88,16 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         os: [ macos-10.15, ubuntu-20.04, windows-2019 ]
+        include:
+          - os: macos-10.15
+            target: darwin64
+          - os: ubuntu-20.04
+            target: linux64
+          - os: windows-2019
+            target: windows64
     steps:
       - name: Install macos deps
         if: ${{ startsWith(matrix.os, 'macos') }}
@@ -143,6 +150,20 @@ jobs:
           cmake --build . --target PackChkIntegTests
           ctest -V -R PackChkIntegTests
         working-directory: ./build
+
+      - name: Archive unit test results
+        uses: actions/upload-artifact@v2
+        with:
+          name: unit_test_result-${{ matrix.target }}
+          path: ./build/test_reports/packchkunittest-*.xml
+          if-no-files-found: error
+
+      - name: Archive integration test results
+        uses: actions/upload-artifact@v2
+        with:
+          name: integ_test_result-${{ matrix.target }}
+          path: ./build/test_reports/packchkintegtest-*.xml
+          if-no-files-found: error
 
   coverage:
     if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' || (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/packchk/')) }}
@@ -240,3 +261,59 @@ jobs:
           tag: ${{ github.ref }}
           overwrite: true
           asset_name: packchk.zip
+
+  test-results-preparation:
+    name: "Publish Tests Results"
+    needs: test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ ubuntu-20.04 ]
+    steps:
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      - name: Download unit test report windows
+        uses: actions/download-artifact@v2
+        with:
+          name: unit_test_result-windows64
+          path: testreports/
+
+      - name: Download unit test report linux
+        uses: actions/download-artifact@v2
+        with:
+          name: unit_test_result-linux64
+          path: testreports/
+
+      - name: Download unit test report macos
+        uses: actions/download-artifact@v2
+        with:
+          name: unit_test_result-darwin64
+          path: testreports/
+
+      - name: Download integ test report windows
+        uses: actions/download-artifact@v2
+        with:
+          name: integ_test_result-windows64
+          path: testreports/
+
+      - name: Download integ test report linux
+        uses: actions/download-artifact@v2
+        with:
+          name: integ_test_result-linux64
+          path: testreports/
+
+      - name: Download integ test report macos
+        uses: actions/download-artifact@v2
+        with:
+          name: integ_test_result-darwin64
+          path: testreports/
+
+      - name: Event File
+        uses: actions/upload-artifact@v2
+        with:
+          name: Event File
+          path: ${{ github.event_path }}
