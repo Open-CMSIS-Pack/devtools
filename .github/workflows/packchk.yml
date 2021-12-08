@@ -312,10 +312,8 @@ jobs:
           name: integ_test_result-darwin64
           path: testreports/
 
-      - name: Publish Test Results
-        uses: EnricoMi/publish-unit-test-result-action/composite@v1
+      - name: Event File
+        uses: actions/upload-artifact@v2
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          files: testreports/**/*.xml
-          report_individual_runs: true
-          check_name: "Test Results"
+          name: Event File
+          path: ${{ github.event_path }}
