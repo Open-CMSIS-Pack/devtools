@@ -262,7 +262,7 @@ jobs:
           overwrite: true
           asset_name: packchk.zip
 
-  publish-test-results:
+  test-results-preparation:
     name: "Publish Tests Results"
     needs: test
     runs-on: ${{ matrix.os }}
