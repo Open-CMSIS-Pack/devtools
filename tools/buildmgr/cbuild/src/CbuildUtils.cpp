@@ -98,6 +98,13 @@ const string CbuildUtils::ReplaceSpacesByQuestionMarks(const string& path) {
 const string CbuildUtils::EscapeQuotes(const string& path) {
   size_t s = 0;
   string result = path;
+  // escape backslashes
+  while ((s = result.find("\\", s)) != string::npos) {
+    result.replace(s, 1, "\\\\");
+    s += 2;
+  }
+  s = 0;
+  // escape quotes
   while ((s = result.find("\"", s)) != string::npos) {
     result.replace(s, 1, "\\\"");
     s += 2;

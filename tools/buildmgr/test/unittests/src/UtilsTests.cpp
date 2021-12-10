@@ -192,3 +192,10 @@ TEST_F(CbuildUtilsTests, ExecCommand) {
   fs::current_path(CBuildUnitTestEnv::workingDir);
   RemoveDir(testdir);
 }
+
+TEST_F(CbuildUtilsTests, EscapeQuotes) {
+  string result = CbuildUtils::EscapeQuotes("-DFILE=\"config.h\"");
+  EXPECT_EQ(result, "-DFILE=\\\"config.h\\\"");
+  result = CbuildUtils::EscapeQuotes("-DFILE=\\\"config.h\\\"");
+  EXPECT_EQ(result, "-DFILE=\\\\\\\"config.h\\\\\\\"");
+}
