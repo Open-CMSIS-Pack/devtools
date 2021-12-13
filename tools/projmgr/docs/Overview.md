@@ -591,3 +591,63 @@ layer:
 
 # CMSIS-Zone Integration
 Todo:
+
+# Key Sequences
+
+Todo: define ways to access pack content and other project elements. This could be along the lines of key sequences, similar to:
+https://arm-software.github.io/CMSIS_5/Pack/html/pdsc_generators_pg.html#element_generators
+https://www.keil.com/support/man/docs/uv4/uv4_ut_keysequence.htm
+
+
+
+# Project Structure
+
+## Directory Structure
+
+This section describes how files of Software Component are included into the directory structure of the project:
+
+ - Configurable source and header files are copied to the project using the directory structure explained below.
+ - Libraries, source, and header files that are not configurable (and need no modification) are stored in the directory of the Software Component (typically part of CMSIS_Pack_ROOT) and get included directly from this location into the project.
+ - An Include Path to the header files of the Software Component is added to the C/C++ Compiler control string.
+
+The following directory and files are created in the Project Folder:
+
+Directory                         | Content
+:---------------------------------|:---------------
+`./RTE/<target-type>`             | Contains the file `RTE_Components.h` that is specific to a `target-type`. 
+`./RTE/<component class>`         | Configurable files for each component class are stored in sub-folders. The name of this sub-folder is derived from the component class name.
+`./RTE/<component class>/<Dname>` | Configurable files of the component class that are device specific. It is generated when a component has a condition with a `Dname` attribute.
+`./RTE/Device/<Dname>`            | Configurable files of the component class Device. This should have always a condition with a `Dname` attribute.
+
+The directory `.\RTE` is created in the project root directory when using Software Components. You should not modify the content of this folder.
+
+## RTE_Components.h
+
+The file `./RTE/RTE_Components.h` is automatically created by the CMSIS Project Manager (during CONVERT). For each selected Software Component it contains `#define` statements required by the component. These statements are defined in the \*.PDSC file for that component. The following example shows a sample content of a RTE_Components.h file:
+
+```
+/* Auto generated Run-Time-Environment Component Configuration File *** Do not modify ! *** */
+
+#ifndef RTE_COMPONENTS_H
+#define RTE_COMPONENTS_H
+
+/* Define the Device Header File: */
+#define CMSIS_device_header "stm32f10x.h"
+
+#define RTE_Network_Interface_ETH_0     /* Network Interface ETH 0 */
+#define RTE_Network_Socket_BSD          /* Network Socket BSD */
+#define RTE_Network_Socket_TCP          /* Network Socket TCP */
+#define RTE_Network_Socket_UDP          /* Network Socket UDP */
+
+#endif /* RTE_COMPONENTS_H */
+```
+
+The typical usage of the `RTE_Components.h` file is in header files to control the inclusion of files that are related to other components of the same Software Pack.
+```
+#include "RTE_Components.h"
+#include  CMSIS_device_header
+
+#ifdef  RTE_Network_Interface_ETH_0  // if component Network Interface ETH 0 is included
+#include "Net_Config_ETH_0.h"        // add the related configuration file for this component
+#endif
+```
