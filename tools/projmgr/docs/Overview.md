@@ -31,21 +31,21 @@ Simple applications require just one self-contained file.
 **Simple Project: `Sample.cproject.yml`**
 ```yml
 project:
-  compiler: AC6
-  device: LPC55S69
-  optimize: size
-  debug: on
+  compiler: AC6                    # Use Arm Compiler 6 for this project
+  device: LPC55S69                 # Device name
+  optimize: size                   # Code optimization: emphasis code size
+  debug: on                        # Enable debug symbols
 
-  groups:
-    - group: My files
-      files:
+  groups:                          # Define file groups of theproject
+    - group: My files           
+      files:                       # Add source files
         - file: main.c
 
     - group: HAL
       files:
         - file: ./hal/driver1.c
 
-  components:
+  components:                      # Add software components
     - component: Device:Startup
 ```
 
@@ -174,19 +174,92 @@ solution:
     not-for-type: +Virtual
 ```
 
+# Name Conventions
+
+## Component Names
+
+The CMSIS Project Manager uses the following syntax to specify component names:
+
+```
+[Cvendor::] Cclass [&Cbundle] :Cgroup [:Csub] [&Cvariant] [@[>=]Cversion]
+``` 
+
+Element    | Description
+:----------|:---------------------
+`Cvendor`  | is the name of the component vendor defined in <components> element of the software pack (optional).
+`Cclass`   | is the component class name  defined in <components> element of the software pack (required)
+`Cbundle`  | is the bundle name of component class defined in <bundle> element of the software pack (optional).
+`Cgroup`   | is the component group name  defined in <components> element of the software pack (required).
+`Csub`     | is the component sub-group name  defined in <components> element of the software pack (optional).
+`Cvariant` | is the component sub-group name  defined in <components> element of the software pack (optional).
+`Cversion` | is the version number of the component, with @1.2.3 that must exactly match, or @>=1.2.3 that allows any version higher or equal.
+
+**Notes:**
+
+  - The unique separator `::` allows it to omit `Cvendor`
+  - When `Cvariant` is omitted, the default `Cvariant` is selected.
+
+
+**Examples:**
+
+```yml
+ARM::CMSIS:CORE                           # CMSIS Core component from vendor ARM (any version)
+ARM::CMSIS:CORE@5.5.0                     # CMSIS Core component from vendor ARM (with version 5.5.0)
+ARM::CMSIS:CORE@>=5.5.0                   # CMSIS Core component from vendor ARM (with version 5.5.0 or higher)
+
+Device:Startup                            # Device Startup component from any vendor
+
+CMSIS:RTOS2:Keil RTX5                     # CMSIS RTOS2 Keil RTX5 component with default variant (any version)
+ARM::CMSIS:RTOS2:Keil RTX5&Source@5.5.3   # CMSIS RTOS2 Keil RTX5 component with variant 'Source' and version 5.5.3
+
+Keil::USB&MDK-Pro:CORE&Release@6.15.1     # From bundle MDK-Pro, USB CORE component with variant 'Release' and version 6.15.1
+
+```
+
+## Access Sequences
+
+The following **Access Sequences** allow to use arguments from the CMSIS Project Manager in *key* and *value* arguments of the various `*.yml` files.
+
+
+Access Sequence             | Description
+:---------------------------|:--------------------------------------
+`$Bname$`                   | Board name of the selected board.
+`$Bpack$`                   | Path to the pack that defines the selected board (BSP).
+`$Dname$`                   | Device name of the selected device.
+`$Dpack$`                   | Path to the pack that defines the selected device (DFP).
+`$Pack$`                    | Path to the CMSIS Pack Root directory.
+`$Pack(vendor.name)$`       | Path to specific pack with latest version. Example: `$Pack(NXP.K32L3A60_DFP)$`.
+
+
+**Examples:**
+
+```yml
+groups:
+  - group:  "Main File Group"
+    defines:
+      - $Dname$                           # Generate a #define 'device-name' for this file group
+```
+```yml
+  - execute: Generate Image
+    os: Windows                           # on Windows run from
+    run: $DPack$/bin/gen_image.exe        # DFP the get_image tool
+```      
+
+
+
 # YML Syntax
 
 ## Overall Structure
 
 Keyword          | Allowed for following files..                  | Description
 :----------------|:-----------------------------------------------|:------------------------------------
-`default:`       | `[defaults].csettings.yml`, `*.csolution.yml`  | Start of the default section with [General Properties](./Overview.md#general-properties)
-`target-types:`  | `*.csolution.yml`                              | Start of the [Target type declaration list](./Overview.md#target-and-build-types) that allow to switch between [different targets](./Overview.md#project-setup-for-multiple-targets-and-test-builds).
-`build-types:`   | `[defaults].csettings.yml`, `*.csolution.yml`  | Start of the [Build type declaration list](./Overview.md#target-and-build-types) that allow to switch between different build settings such as: Release, Debug, Test.
-`solution:`      | `*.csolution.yml`                              | Start of the [Collection of related Projects](./Overview.md#solution-collection-of-related-projects) along with build order.
+`default:`       | `[defaults].csettings.yml`, `*.csolution.yml`  | Start of the default section with [General Properties](#general-properties)
+`target-types:`  | `*.csolution.yml`                              | Start of the [Target type declaration list](#target-and-build-types) that allow to switch between [different targets](#project-setup-for-multiple-targets-and-test-builds).
+`build-types:`   | `[defaults].csettings.yml`, `*.csolution.yml`  | Start of the [Build type declaration list](#target-and-build-types) that allow to switch between different build settings such as: Release, Debug, Test.
+`solution:`      | `*.csolution.yml`                              | Start of the [Collection of related Projects](#solution-collection-of-related-projects) along with build order.
 `project:`       | `*.cproject.yml`                               | Start of a Project along with properties - tbd; used in `*.cproject.yml`.
 `layer:`         | `*.clayer.yml`                                 | Start of a software layer definition that contains pre-configured software components along with source files.
-`groups:`        | `*.cproject.yml`, `*.clayer.yml`               | Start of a list that adds [source groups and files](./Overview.md#groups-and-files) to a project or layer.
+`groups:`        | `*.cproject.yml`, `*.clayer.yml`               | Start of a list that adds [source groups and files](#groups-and-files) to a project or layer.
 `layers:`        | `*.cproject.yml`                               | Start of a list that adds software layers to a project.
 `components:`    | `*.cproject.yml`, `*.clayer.yml`               | Start of a list that adds software components to a project or layer.
 
@@ -215,7 +288,7 @@ Keyword         | Description
  
 ## Target and Build Types
 
-The section [Project setup for multiple targets and test builds](./Overview.md#project-setup-for-multiple-targets-and-test-builds) describes the concept of  `target-types` and `build-types`.  These *types* can be defined in the following files in the following order:
+The section [Project setup for multiple targets and test builds](#project-setup-for-multiple-targets-and-test-builds) describes the concept of  `target-types` and `build-types`.  These *types* can be defined in the following files in the following order:
  1.  `default.csettings.yml`  where it defines global *types*, such as *Debug* and *Release* build.
  2. `*.csolution.yml` where it specifies the build and target *types* of the complete system.
  3. `*.cproject.yml` where it may add specific *types* for an project (tbd are target types allowed when part of a solution?)
@@ -398,7 +471,7 @@ Add software components to a project or a software layer.  Used in `*.cproject.y
 YML structure:
 ```yml
 components:            # Start a list of layers
-  - component:         # name of the software component (see below).
+  - component:         # name of the software component.
     for-type:          # include layer for a list of *build* and *target* types (optional).
     not-for-type:      # exclude layer for a list of *build* and *target* types (optional).
     optimize:          # optimize level for code generation (optional).
@@ -410,18 +483,10 @@ components:            # Start a list of layers
     misc:              # Literal tool-specific controls.
 ```
 
-The proposed component name syntax is:
-`[Cvendor::] Cclass [&Cbundle] :Cgroup [:Csub] [&Cvariant] [@[>=]Cversion]` 
+**NOTE:**
+ - The name of the software component is specified as described under [Name Conventions - 
+Component Names](#Component_Names)
 
-```
-`Cvendor`  is the name of the component vendor defined in <components> element of the software pack (optional).
-`Cclass`   is the component class name  defined in <components> element of the software pack (required)
-`Cbundle`  is the bundle name of component class defined in <bundle> element of the software pack (optional).
-`Cgroup`   is the component group name  defined in <components> element of the software pack (required).
-`Csub`     is the component sub-group name  defined in <components> element of the software pack (optional).
-`Cvariant` is the component sub-group name  defined in <components> element of the software pack (optional).
-`Cversion` is the version number of the component, with @1.2.3 that must exactly match, or @>=1.2.3 that allows any version higher or equal.
-```
 
 ## Defines
 
@@ -543,7 +608,7 @@ Tbd: potentially map to CMake add_custom_command.
 
 ```yml
 - execute: description      # execute an external command with description
-  os: Linux                 # executed on which operating systems (if omitted on it is OS independent)
+  os: Linux                 # executed on which operating systems (if omitted it is OS independent)
   run:                      # tool name that should be executed, optionally with path to the tool
   args:                     # tool arguments
   stop:                     # stop on exit code
@@ -591,12 +656,6 @@ layer:
 
 # CMSIS-Zone Integration
 Todo:
-
-# Key Sequences
-
-Todo: define ways to access pack content and other project elements. This could be along the lines of key sequences, similar to:
-https://arm-software.github.io/CMSIS_5/Pack/html/pdsc_generators_pg.html#element_generators
-https://www.keil.com/support/man/docs/uv4/uv4_ut_keysequence.htm
 
 
 
