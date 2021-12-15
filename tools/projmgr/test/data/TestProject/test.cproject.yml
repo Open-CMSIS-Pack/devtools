@@ -1,0 +1,17 @@
+### CMSIS Project Description ###
+
+project:
+  name: TestProject
+  description: Project 1
+  target:
+    device: RteTest_ARMCM0
+  toolchain: "AC6@6.16.0"
+  packages:
+    - package: "ARM::CMSIS@5.8.0"
+  components:
+    - component: "Startup"
+    - component: "CORE"
+  groups:
+    - group: Sources
+      files: 
+        - file: "main.c"

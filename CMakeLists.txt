@@ -7,6 +7,7 @@ cmake_policy(SET CMP0091 NEW)
 
 option(COVERAGE "Enable code coverage" OFF)
 option(LIBS_ONLY "Build only libraries" OFF)
+option(SWIG_LIBS "Build SWIG libraries" OFF)
 
 if(LIBS_ONLY)
   message("LIBS_ONLY is active. Build only libraries")
@@ -37,6 +38,10 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR
   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wall")
 endif()
 
+if(SWIG_LIBS)
+  message("SWIG_LIBS is active. Build SWIG libraries")
+  set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+endif(SWIG_LIBS)
 
 if(COVERAGE)
   if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
@@ -79,6 +84,7 @@ if(NOT LIBS_ONLY)
   add_subdirectory(tools/buildmgr)
   add_subdirectory(tools/packchk)
   add_subdirectory(tools/packgen)
+  add_subdirectory(tools/projmgr)
 endif()
 
 # Prepare a list of CMake targets
