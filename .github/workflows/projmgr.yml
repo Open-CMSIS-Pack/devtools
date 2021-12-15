@@ -1,0 +1,434 @@
+name: projmgr
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    paths:
+      - '.github/workflows/projmgr.yml'
+      - 'CMakeLists.txt'
+      - 'libs/crossplatform/**'
+      - 'libs/rtefsutils/**'
+      - 'libs/xmlreader/**'
+      - 'libs/xmltree/**'
+      - 'libs/xmltreeslim/**'
+      - 'tools/projmgr/**'
+  release:
+    types: [published]
+
+jobs:
+  build:
+    if: |
+      ${{
+        github.event_name == 'pull_request' ||
+        (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/projmgr/'))
+      }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ macos-10.15, ubuntu-20.04, windows-2019 ]
+        include:
+          - os: macos-10.15
+            target: darwin64
+            binary: projmgr
+          - os: ubuntu-20.04
+            target: linux64
+            binary: projmgr
+          - os: windows-2019
+            target: windows64
+            binary: projmgr.exe
+
+    steps:
+      - name: Install macos deps
+        if: ${{ startsWith(matrix.os, 'macos') }}
+        run: |
+          brew install \
+            ninja \
+            python \
+            swig
+
+      - name: Install linux deps
+        if: ${{ startsWith(matrix.os, 'ubuntu') }}
+        run: |
+          sudo apt update
+          sudo apt-get install \
+            bc \
+            build-essential \
+            ninja-build \
+            python-dev \
+            swig
+
+      - name: Install windows deps
+        if: ${{ startsWith(matrix.os, 'windows') }}
+        run: choco install -y ninja python swig
+
+      - name: Checkout devtools
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+
+      - name: Create build folders
+        run: |
+          mkdir build
+          mkdir buildswig
+
+      - name: Configure windows build for amd64
+        if: ${{ startsWith(matrix.os, 'windows') }}
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: amd64
+
+      - uses: ammaraskar/gcc-problem-matcher@master
+        if: ${{ startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu') }}
+      - uses: ammaraskar/msvc-problem-matcher@master
+        if: ${{ startsWith(matrix.os, 'windows') }}
+
+      - name: Build projmgr
+        run: |
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=Release ..
+          cmake --build . --target projmgr
+        working-directory: ./build
+
+      - name: Archive projmgr
+        uses: actions/upload-artifact@v2
+        with:
+          name: projmgr-${{ matrix.target }}
+          path: ./build/tools/projmgr/${{ matrix.target }}/Release/${{ matrix.binary }}
+          retention-days: 1
+          if-no-files-found: error
+          
+      - name: Build projmgr swig libs
+        run: |
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DSWIG_LIBS=ON ..
+          cmake --build . --target projmgr --config Release
+        working-directory: ./buildswig
+
+      - name: Archive projmgr swig libs windows
+        if: ${{ startsWith(matrix.os, 'windows') }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: projmgr-swig-${{ matrix.target }}
+          path: |
+             ./buildswig/tools/projmgr/swig/projmgr.py
+             ./buildswig/tools/projmgr/swig/_projmgr.pyd
+          retention-days: 1
+          
+      - name: Archive projmgr swig libs macos ubuntu
+        if: ${{ startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu') }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: projmgr-swig-${{ matrix.target }}
+          path: |
+             ./buildswig/tools/projmgr/swig/projmgr.py
+             ./buildswig/tools/projmgr/swig/_projmgr.so
+          retention-days: 1
+
+  release:
+    if: ${{ github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/projmgr/') }}
+    needs: [ build, unittest, coverage ]
+    runs-on: ubuntu-20.04
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout devtools
+        uses: actions/checkout@v2
+
+      - name: Create distribution folders
+        run: |
+          mkdir -p tools/projmgr/distribution/bin tools/projmgr/distribution/lib tools/projmgr/distribution/doc
+          cp tools/projmgr/docs/LICENSE.txt tools/projmgr/distribution/
+          cp tools/projmgr/docs/README.md tools/projmgr/distribution/doc/
+
+      - name: Download projmgr linux
+        uses: actions/download-artifact@v2
+        with:
+          name: projmgr-linux64
+          path: tools/projmgr/distribution/bin/linux64/
+
+      - name: Download projmgr macos
+        uses: actions/download-artifact@v2
+        with:
+          name: projmgr-darwin64
+          path: tools/projmgr/distribution/bin/darwin64/
+
+      - name: Download projmgr windows
+        uses: actions/download-artifact@v2
+        with:
+          name: projmgr-windows64
+          path: tools/projmgr/distribution/bin/windows64/
+
+      - name: Download projmgr-swig linux
+        uses: actions/download-artifact@v2
+        with:
+          name: projmgr-swig-linux64
+          path: tools/projmgr/distribution/lib/linux64/
+
+      - name: Download projmgr-swig macos
+        uses: actions/download-artifact@v2
+        with:
+          name: projmgr-swig-darwin64
+          path: tools/projmgr/distribution/lib/darwin64/
+
+      - name: Download projmgr-swig windows
+        uses: actions/download-artifact@v2
+        with:
+          name: projmgr-swig-windows64
+          path: tools/projmgr/distribution/lib/windows64/
+
+      - name: Zip distribution folder
+        run: zip -r projmgr.zip *
+        working-directory: tools/projmgr/distribution
+
+      - name: Attach zip archive to release assets
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: tools/projmgr/distribution/projmgr.zip
+          tag: ${{ github.ref }}
+          overwrite: true
+          asset_name: projmgr.zip
+
+      - name: Download test report windows
+        uses: actions/download-artifact@v2
+        with:
+          name: unittest-windows64
+          path: tools/testreport/windows64/
+
+      - name: Download test report linux
+        uses: actions/download-artifact@v2
+        with:
+          name: unittest-linux64
+          path: tools/testreport/linux64/
+
+      - name: Download test report macos
+        uses: actions/download-artifact@v2
+        with:
+          name: unittest-darwin64
+          path: tools/testreport/darwin64/
+
+      - name: Zip test reports
+        run: zip -r testreport.zip *
+        working-directory: tools/testreport
+
+      - name: Attach test report archive to release assets
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: tools/testreport/testreport.zip
+          tag: ${{ github.ref }}
+          overwrite: true
+          asset_name: testreport.zip
+
+      - name: Download coverage report
+        uses: actions/download-artifact@v2
+        with:
+          name: coverage-report
+          path: tools/coverage/
+
+      - name: Zip coverage folder
+        run: zip -r coverage.zip *
+        working-directory: tools/coverage
+
+      - name: Attach coverage archive to release assets
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: tools/coverage/coverage.zip
+          tag: ${{ github.ref }}
+          overwrite: true
+          asset_name: coverage.zip
+
+  unittest:
+    if: |
+      ${{
+        github.event_name == 'pull_request' ||
+        (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/projmgr/'))
+      }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ macos-10.15, ubuntu-20.04, windows-2019 ]
+        include:
+          - os: macos-10.15
+            target: darwin64
+          - os: ubuntu-20.04
+            target: linux64
+          - os: windows-2019
+            target: windows64
+
+    steps:
+      - name: Install macos deps
+        if: ${{ startsWith(matrix.os, 'macos') }}
+        run: |
+          brew install \
+            ninja
+
+      - name: Install linux deps
+        if: ${{ startsWith(matrix.os, 'ubuntu') }}
+        run: |
+          sudo apt update
+          sudo apt-get install \
+            bc \
+            build-essential \
+            ninja-build
+
+      - name: Install windows deps
+        if: ${{ startsWith(matrix.os, 'windows') }}
+        run: choco install -y ninja
+
+      - name: Checkout devtools
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+
+      - name: Create build folder
+        run: mkdir build
+
+      - name: Configure windows build for amd64
+        if: ${{ startsWith(matrix.os, 'windows') }}
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: amd64
+
+      - uses: ammaraskar/gcc-problem-matcher@master
+        if: ${{ startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu') }}
+      - uses: ammaraskar/msvc-problem-matcher@master
+        if: ${{ startsWith(matrix.os, 'windows') }}
+
+      - name: Build and run projmgr unit tests
+        run: |
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug ..
+          cmake --build . --target ProjMgrUnitTests
+          ctest -V -C Debug -R ProjMgrUnitTests
+        working-directory: ./build
+
+      - name: Archive unit tests results
+        uses: actions/upload-artifact@v2
+        with:
+          name: unittest-${{ matrix.target }}
+          path: ./build/Testing/Temporary/LastTest.log
+          retention-days: 1
+          if-no-files-found: error
+        if: ${{ always() }}
+
+      - name: Archive gtest report
+        uses: actions/upload-artifact@v2
+        with:
+          name: unit_gtest-${{ matrix.target }}
+          path: ./build/test_reports/projmgrunittest-*.xml
+          retention-days: 1
+          if-no-files-found: error
+        if: ${{ always() }}
+
+  coverage:
+    needs: unittest
+    if: |
+      ${{
+        github.event_name == 'pull_request' ||
+        github.event_name == 'push' ||
+        (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/projmgr/'))
+      }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ ubuntu-20.04 ]
+
+    steps:
+      - name: Install linux deps
+        if: ${{ startsWith(matrix.os, 'ubuntu') }}
+        run: |
+          sudo apt update
+          sudo apt-get install \
+            bc \
+            build-essential \
+            ninja-build \
+            lcov
+
+      - name: Checkout devtools
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+
+      - name: Create build folder
+        run: mkdir build
+
+      - uses: ammaraskar/gcc-problem-matcher@master
+        if: ${{ startsWith(matrix.os, 'ubuntu') }}
+
+      - name: Build and run projmgr unit tests
+        run: |
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCOVERAGE=ON ..
+          cmake --build . --target ProjMgrUnitTests
+          ctest -V -C Debug -R ProjMgrUnitTests
+        working-directory: ./build
+
+      - name: Generate coverage report
+        if: ${{ startsWith(matrix.os, 'ubuntu') }}
+        run: |
+          lcov -c --directory ./tools/projmgr/ --output-file full_coverage.info
+          lcov -e full_coverage.info '/tools/projmgr/include/*' '*/tools/projmgr/src/*' -o coverage.info
+          genhtml coverage.info --output-directory coverage
+          zip -r coverage.zip coverage/*
+        working-directory: ./build
+
+      - name: Upload Report to Codecov
+        if: ${{ !github.event.repository.private }}
+        uses: codecov/codecov-action@v1.3.2
+        with:
+          files: ./build/coverage.info
+          fail_ci_if_error: true
+          functionalities: fix
+
+      - name: Archive coverage report
+        uses: actions/upload-artifact@v2
+        with:
+          name: coverage-report
+          path: ./build/coverage.zip
+          retention-days: 1
+          if-no-files-found: error
+
+  publish-test-results:
+    name: "Publish Tests Results"
+    needs: unittest
+    runs-on: ${{ matrix.os }}
+    if: ${{ false }}
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ macos-10.15, ubuntu-20.04, windows-2019 ]
+    steps:
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      - name: Download gtest report windows
+        uses: actions/download-artifact@v2
+        with:
+          name: unit_gtest-windows64
+          path: testreport/
+
+      - name: Download gtest report linux
+        uses: actions/download-artifact@v2
+        with:
+          name: unit_gtest-linux64
+          path: testreport/
+
+      - name: Download gtest report macos
+        uses: actions/download-artifact@v2
+        with:
+          name: unit_gtest-darwin64
+          path: testreport/
+
+      - name: Publish Unit Test Results
+        uses: EnricoMi/publish-unit-test-result-action/composite@v1
+        with:
+          files: testreport/*.xml
+          report_individual_runs: true
+          check_name: "Test Results"

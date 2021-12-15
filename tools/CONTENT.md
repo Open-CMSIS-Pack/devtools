@@ -7,7 +7,8 @@ executable programs.
     📂tools
     ┣ 📂buildmgr
     ┣ 📂packchk
-    ┗ 📂packgen
+    ┣ 📂packgen
+    ┗ 📂projmgr
 ```
 
 ## buildmgr
@@ -25,3 +26,9 @@ and its components which are responsible for checking CMSIS-Packs.
 
 The [packgen](./packgen) directory contains sources for the utility `packgen`
 and its components which are responsible for generating CMSIS-Packs.
+
+## projmgr
+
+The [projmgr](./projmgr) directory contains sources for the utility `projmgr`
+and its components which are responsible for handling CMSIS projects and
+generating CPRJ files.

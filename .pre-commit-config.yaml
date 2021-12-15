@@ -13,6 +13,7 @@ repos:
                 tools/buildmgr/test/testinput/|
                 tools/packgen/test/data/|
                 tools/packchk/test/data/|
+                tools/projmgr/test/data/|
                 libs/crossplatform/include/win|
                 tools/buildmgr/cbuildgen/include/Resource.h|
                 tools/packchk/include/Resource.h|

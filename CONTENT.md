@@ -100,6 +100,7 @@ tools) are kept [tools](./tools) folder.
     ┃ ┣ 📂buildmgr
     ┃ ┣ 📂packchk
     ┃ ┣ 📂packgen
+    ┃ ┣ 📂projmgr
     ┃ ┗ 📜CONTENT.md
 ```
 
