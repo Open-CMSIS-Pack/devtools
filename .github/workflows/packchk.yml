@@ -6,6 +6,7 @@ on:
   pull_request:
     paths:
       - '.github/workflows/packchk.yml'
+      - '.github/workflows/unit_test_results.yml'
       - 'CMakeLists.txt'
       - 'tools/packchk/**'
   release:
