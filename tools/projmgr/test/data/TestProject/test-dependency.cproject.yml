@@ -3,14 +3,13 @@
 project:
   name: TestProject
   description: Project 1
-  target:
-    device: RteTest_ARMCM0
-  toolchain: "AC6@6.16.0"
+  device: RteTest_ARMCM0
+  compiler: AC6@6.16.0
   packages:
-    - package: "ARM::CMSIS@5.8.0"
+    - package: ARM::CMSIS@5.8.0
   components:
-    - component: "Startup"
+    - component: Startup
   groups:
     - group: Sources
       files: 
-        - file: "main.c"
+        - file: main.c

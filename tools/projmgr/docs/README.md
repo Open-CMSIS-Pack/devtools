@@ -11,14 +11,12 @@ as well as unresolved component dependencies.
 The CMSIS Pack repository must be present in the environment.
 
 There are several ways to initialize and configure the pack repository, for example using the 
-`cpackget` tool:
-https://github.com/Open-CMSIS-Pack/cpackget
+[cpackget](https://github.com/Open-CMSIS-Pack/cpackget) tool.
 
 ## Quick Start
 
 The `projmgr` binaries as well as python interfaces for all supported platforms can be downloaded
-from the releases page:
-https://github.com/Open-CMSIS-Pack/devtools/releases/tag/tools%2Fprojmgr%2F0.9.0
+from the releases page.
 
 Before running `projmgr` the location of the pack repository shall be set via the environment variable
 `CMSIS_PACK_ROOT` otherwise its default location will be taken.
@@ -35,12 +33,13 @@ Commands:
        devices        Print list of available device names
        components     Print list of available components
        dependencies   Print list of unresolved project dependencies
-  convert             Convert cproject.yml in cprj file
+       contexts       Print list of contexts in a csolution.yml
+  convert             Convert cproject.yml or csolution.yml in cprj files
   help                Print usage
 
 Options:
   -p, --project arg   Input cproject.yml file
-  -s, --solution arg  Input csolution.yml file (TBD)
+  -s, --solution arg  Input csolution.yml file
   -f, --filter arg    Filter words
   -o, --output arg    Output directory
   -h, --help          Print usage
@@ -68,63 +67,25 @@ list components [--project <example.cproject.yml> --filter "<filter words>"]
 list dependencies --project <example.cproject.yml> [--filter "<filter words>"]
 ```
 
-Convert cproject.yml in cprj file:
+- Print list of project contexts. Each combination of cproject.yml, `build-type` and `target-type` given under a `solution` is a different context. The list can be filtered by words provided with the option `--filter`:
+```
+list contexts --solution <example.csolution.yml> [--filter "<filter words>"]
+```
+
+Convert cproject.yml or csolution.yml in cprj files:
 ```
 convert --project <example.cproject.yml>
+convert --solution <example.csolution.yml>
 ```
 
 
 ## Input .cproject.yml file
 
-The YAML structure is described below.
+The YAML structure draft is temporarily described in: [Overview.md](https://github.com/brondani/devtools/blob/mvp-prototype/tools/projmgr/docs/Overview.md)
 
-``` yml
-project:
-  name: <value>
-  description: <value>
-
-  target:
-    device: <vendor>::<device-name>:<processor-name>
-
-  toolchain: <name>@<version>
-
-  packages:
-    - package: <vendor>::<name>@<version>
-
-  components:
-    - component: <identifier TBD>
-
-  groups:
-    - group: <group-name>
-      files: 
-        - file: <file-name>
-      groups: 
-        - group: <nested-group-name>
-          files: 
-            - file: <nested-file-name>
-```
 
 ## Public functions
-```
-  static int RunProjMgr(int argc, char **argv);
-  void PrintUsage(void);
-  ProjMgrParser& GetParser(void);
-  ProjMgrWorker& GetWorker(void);
-  ProjMgrGenerator& GetGenerator(void);
-
-  Parser:
-  bool ParseCproject(const std::string& input, CprojectItem& cproject);
-
-  Worker:
-  bool ProcessProject(ProjMgrProjectItem& project, bool resolveDependencies);
-  bool ListPacks(const string& filter, set<string>& packs);
-  bool ListDevices(ProjMgrProjectItem& project, const string& filter, set<string>& devices);
-  bool ListComponents(ProjMgrProjectItem& project, const string& filter, set<string>& components);
-  bool ListDependencies(ProjMgrProjectItem& project, const string& filter, std::set<string>& dependencies);
-
-  Generator:
-  bool GenerateCprj(ProjMgrProjectItem& project, const string& filename);
-```
+TBD
 
 ## Python interface
 

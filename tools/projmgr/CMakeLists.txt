@@ -12,11 +12,11 @@ set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT projmgr)
 # projmgr library
 SET(PROJMGR_SOURCE_FILES ProjMgr.cpp ProjMgrKernel.cpp ProjMgrCallback.cpp
   ProjMgrParser.cpp ProjMgrWorker.cpp ProjMgrGenerator.cpp ProjMgrXmlParser.cpp
-  ProjMgrYamlParser.cpp
+  ProjMgrYamlParser.cpp ProjMgrLogger.cpp
 )
 SET(PROJMGR_HEADER_FILES ProjMgr.h ProjMgrKernel.h ProjMgrCallback.h
   ProjMgrParser.h ProjMgrWorker.h ProjMgrGenerator.h ProjMgrXmlParser.h
-  ProjMgrYamlParser.h
+  ProjMgrYamlParser.h ProjMgrLogger.h
 )
 
 list(TRANSFORM PROJMGR_SOURCE_FILES PREPEND src/)

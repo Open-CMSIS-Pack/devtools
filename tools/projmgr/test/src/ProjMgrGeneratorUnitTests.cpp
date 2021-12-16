@@ -22,10 +22,10 @@ TEST_F(ProjMgrGeneratorUnitTests, GetStringFromVector) {
   const vector<string> vec = {
    "Word1", "Word2", "Word3",
   };
-  EXPECT_EQ(expected, ProjMgrGenerator().GetStringFromVector(vec));
+  EXPECT_EQ(expected, ProjMgrGenerator().GetStringFromVector(vec, " "));
   
   const vector<string> emptyVec;
-  EXPECT_EQ("", ProjMgrGenerator().GetStringFromVector(emptyVec));
+  EXPECT_EQ("", ProjMgrGenerator().GetStringFromVector(emptyVec, " "));
 }
 
 TEST_F(ProjMgrGeneratorUnitTests, GetLocalTimestamp) {

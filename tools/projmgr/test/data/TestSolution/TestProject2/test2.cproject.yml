@@ -1,0 +1,25 @@
+### CMSIS Project Description ###
+
+project:
+  name: TestProject2
+  description: Project 2
+  compiler: AC6
+  misc:
+  - C: [-C-project]
+    CPP: [-CPP-project]
+    ASM: [-ASM-project]
+    Link: [-Link-project]
+    Lib: [-Lib-project]
+  defines:
+    - DEF-project
+    - DEF-project-to-be-removed
+  add-paths:
+    - /path/project
+    - /path/project/to-be-removed
+  components:
+    - component: Startup
+    - component: CORE
+  groups:
+    - group: Sources
+      files: 
+        - file: main.c

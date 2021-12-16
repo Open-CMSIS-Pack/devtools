@@ -1,0 +1,12 @@
+### CMSIS Project Description ###
+
+project:
+  device: RteTest_ARMCM0
+  compiler: AC6@6.16.0
+
+  layers:
+    - layer: ./Layer1/layer1.clayer.yml
+    - layer: ./Layer2/layer2.clayer.yml
+    - layer: ./Layer3/layer3.clayer.yml
+      for-type: .Release
+

@@ -6,12 +6,12 @@
 
 #include "ProjMgr.h"
 #include "ProjMgrParser.h"
+#include "ProjMgrLogger.h"
 #include "ProductInfo.h"
 #include "RteFsUtils.h"
 
 #include <algorithm>
 #include <cxxopts.hpp>
-#include <iostream>
 #include <functional>
 
 using namespace std;
@@ -24,11 +24,12 @@ Commands:\n\
        devices        Print list of available device names\n\
        components     Print list of available components\n\
        dependencies   Print list of unresolved project dependencies\n\
-  convert             Convert cproject.yml in cprj file\n\
+       contexts       Print list of contexts in a csolution.yml\n\
+  convert             Convert cproject.yml or csolution.yml in cprj files\n\
   help                Print usage\n\n\
 Options:\n\
   -p, --project arg   Input cproject.yml file\n\
-  -s, --solution arg  Input csolution.yml file (TBD)\n\
+  -s, --solution arg  Input csolution.yml file\n\
   -f, --filter arg    Filter words\n\
   -o, --output arg    Output directory\n\
   -h, --help          Print usage\n\
@@ -83,36 +84,37 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
       manager.m_csolutionFile = parseResult["solution"].as<string>();
       error_code ec;
       if (!fs::exists(manager.m_csolutionFile, ec)) {
-        cerr << "projmgr error: csolution file " << manager.m_csolutionFile << " was not found" << endl;
+        ProjMgrLogger::Error(manager.m_csolutionFile, "csolution file was not found");
         return 1;
       }
-      manager.m_csolutionFilename = fs::path(manager.m_csolutionFile).stem().stem().generic_string();
-      manager.m_rootDir = fs::path(fs::canonical(manager.m_csolutionFile, ec)).parent_path().generic_string();
+      manager.m_csolutionFile = fs::canonical(manager.m_csolutionFile, ec).generic_string();
+      manager.m_rootDir = fs::path(manager.m_csolutionFile).parent_path().generic_string();
     }
     if (parseResult.count("project")) {
       manager.m_cprojectFile = parseResult["project"].as<string>();
       error_code ec;
       if (!fs::exists(manager.m_cprojectFile, ec)) {
-        cerr << "projmgr error: cproject file " << manager.m_cprojectFile << " was not found" << endl;
+        ProjMgrLogger::Error(manager.m_cprojectFile, "cproject file was not found");
         return 1;
       }
-      manager.m_cprojectFilename = fs::path(manager.m_cprojectFile).stem().stem().generic_string();
-      manager.m_rootDir = fs::path(fs::canonical(manager.m_cprojectFile, ec)).parent_path().generic_string();
+      manager.m_cprojectFile = fs::canonical(manager.m_cprojectFile, ec).generic_string();
+      manager.m_rootDir = fs::path(manager.m_cprojectFile).parent_path().generic_string();
     }
     if (parseResult.count("filter")) {
       manager.m_filter = parseResult["filter"].as<string>();
     }
     if (parseResult.count("output")) {
       manager.m_outputDir = parseResult["output"].as<string>();
+      manager.m_outputDir = fs::path(manager.m_outputDir).generic_string();
     }
   } catch (cxxopts::OptionException& e) {
-    cerr << "projmgr error: parsing command line failed!" << endl << e.what() << endl;
+    ProjMgrLogger::Error(e.what());
     return 1;
   }
 
   // Unmatched items in the parse result
   if (!parseResult.unmatched().empty()) {
-    cerr << "projmgr error: too many command line arguments!" << endl;
+    ProjMgrLogger::Error("too many command line arguments");
     return 1;
   }
 
@@ -124,7 +126,7 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
   } else if (manager.m_command == "list") {
     // Process 'list' command
     if (manager.m_args.empty()) {
-      cerr << "projmgr error: list <args> was not specified!" << endl;
+      ProjMgrLogger::Error("list <args> was not specified");
       return 1;
     }
     // Process argument
@@ -144,8 +146,12 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
       if (!manager.RunListDependencies()) {
         return 1;
       }
+    } else if (manager.m_args == "contexts") {
+      if (!manager.RunListContexts()) {
+        return 1;
+      }
     } else {
-      cerr << "projmgr error: list <args> was not found!" << endl;
+      ProjMgrLogger::Error("list <args> was not found");
       return 1;
     }
   } else if (manager.m_command == "convert") {
@@ -154,39 +160,98 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
       return 1;
     }
   } else {
-    cerr << "projmgr error: <command> was not found!" << endl;
+    ProjMgrLogger::Error("<command> was not found");
     return 1;
   }
   return 0;
 }
 
 bool ProjMgr::RunConvert(void) {
-  if (m_cprojectFile.empty()) {
-    cerr << "projmgr error: cproject.yml file was not specified!" << endl;
-    return false;
-  }
-  ProjMgrProjectItem project;
-  if (!m_parser.ParseCproject(m_cprojectFile, project.cproject)) {
-    cerr << "projmgr error: parsing '" << m_cprojectFile <<"' failed" << endl;
-    return false;
-  }
-  if (!m_worker.ProcessProject(project, true)) {
-    cerr << "projmgr error: processing '" << m_cprojectFile << "' failed" << endl;
+  if (!m_csolutionFile.empty()) {
+    // Parse csolution
+    if (!m_parser.ParseCsolution(m_csolutionFile)) {
+      return false;
+    }
+    // Parse cprojects
+    for (const auto& cproject : m_parser.GetCsolution().cprojects) {
+      error_code ec;
+      string const& cprojectFile = fs::canonical(m_rootDir + "/" + cproject, ec).generic_string();
+      if (cprojectFile.empty()) {
+        ProjMgrLogger::Error(cproject, "cproject file was not found");
+        return false;
+      }
+      if (!m_parser.ParseCproject(cprojectFile)) {
+        return false;
+      }
+    }
+  } else if (!m_cprojectFile.empty()) {
+    // Parse single cproject
+    if (!m_parser.ParseCproject(m_cprojectFile, true)) {
+      return false;
+    }
+  } else {
+    ProjMgrLogger::Error("input yml files were not specified");
     return false;
   }
 
-  if (m_outputDir.empty()) {
-    m_outputDir = m_rootDir;
-  } else {
-    if (!RteFsUtils::Exists(m_outputDir)) {
-      RteFsUtils::CreateDirectories(m_outputDir);
+  // Parse clayers
+  for (const auto& cproject : m_parser.GetCprojects()) {
+    string const& cprojectFile = cproject.first;
+    for (const auto& clayer : cproject.second.clayers) {
+      error_code ec;
+      string const& clayerFile = fs::canonical(fs::path(cprojectFile).parent_path().append(clayer.layer), ec).generic_string();
+      if (clayerFile.empty()) {
+        ProjMgrLogger::Error(clayer.layer, "clayer file was not found");
+        return false;
+      }
+      if (!m_parser.ParseClayer(clayerFile)) {
+        return false;
+      }
     }
   }
 
-  const string& filename = m_outputDir + "/" + project.name + ".cprj";
-  if (!m_generator.GenerateCprj(project, filename)) {
-    cerr << "projmgr error: " << filename << " file cannot be written!" << endl;
-    return false;
+  // Add contexts
+  for (auto& descriptor : m_parser.GetCsolution().contexts) {
+    error_code ec;
+    const string& cprojectFile = fs::path(descriptor.cproject).is_absolute() ?
+      descriptor.cproject : fs::canonical(m_rootDir + "/" + descriptor.cproject, ec).generic_string();
+    if (!m_worker.AddContexts(m_parser, descriptor, cprojectFile)) {
+      return false;
+    }
+  }
+
+  // Process contexts
+  for (auto& context : m_worker.GetContexts()) {
+    if (!m_worker.ProcessContext(context.second, true)) {
+      ProjMgrLogger::Error("processing context '" + context.first + "' failed");
+      return false;
+    }
+  }
+
+  // Process project dependencies
+  for (auto& context : m_worker.GetContexts()) {
+    if (!m_worker.ProcessProjDeps(context.second, m_outputDir)) {
+      ProjMgrLogger::Error("processing project dependencies for '" + context.first + "' failed");
+      return false;
+    }
+  }
+
+  // Generate Cprjs
+  for (auto& context : m_worker.GetContexts()) {
+    error_code ec;
+    const string& directory = m_outputDir.empty() ? context.second.cprojectDir + "/" + context.second.rteDir : m_outputDir + "/" + context.first;
+    const string& filename = fs::weakly_canonical(directory + "/" + context.first + ".cprj", ec).generic_string();
+    RteFsUtils::CreateDirectories(directory);
+    if (m_generator.GenerateCprj(context.second, filename)) {
+      ProjMgrLogger::Info(filename, "file generated successfully");
+    } else {
+      ProjMgrLogger::Error(filename, "file cannot be written");
+      return false;
+    }
+    if (!m_worker.CopyContextFiles(context.second, directory, m_outputDir.empty())) {
+      ProjMgrLogger::Error("files cannot be copied into output directory '" + directory + "'");
+      return false;
+    }
   }
   return true;
 }
@@ -194,7 +259,7 @@ bool ProjMgr::RunConvert(void) {
 bool ProjMgr::RunListPacks(void) {
   set<string> packs;
   if (!m_worker.ListPacks(m_filter, packs)) {
-    cerr << "projmgr error: processing pack list failed" << endl;
+    ProjMgrLogger::Error("processing pack list failed");
     return false;
   }
   for (const auto& pack : packs) {
@@ -204,16 +269,20 @@ bool ProjMgr::RunListPacks(void) {
 }
 
 bool ProjMgr::RunListDevices(void) {
-  ProjMgrProjectItem project;
   if (!m_cprojectFile.empty()) {
-    if (!m_parser.ParseCproject(m_cprojectFile, project.cproject)) {
-      cerr << "projmgr error: parsing '" << m_cprojectFile << "' failed" << endl;
+    if (!m_parser.ParseCproject(m_cprojectFile, true)) {
+      return false;
+    }
+    ContextItem context;
+    ContextDesc descriptor;
+    if (!m_worker.AddContexts(m_parser, descriptor, m_cprojectFile)) {
+      ProjMgrLogger::Error(m_cprojectFile, "adding project context failed");
       return false;
     }
   }
   set<string> devices;
-  if (!m_worker.ListDevices(project, m_filter, devices)) {
-    cerr << "projmgr error: processing devices list failed" << endl;
+  if (!m_worker.ListDevices(m_filter, devices)) {
+    ProjMgrLogger::Error("processing devices list failed");
     return false;
   }
   for (const auto& device : devices) {
@@ -223,16 +292,18 @@ bool ProjMgr::RunListDevices(void) {
 }
 
 bool ProjMgr::RunListComponents(void) {
-  ProjMgrProjectItem project;
   if (!m_cprojectFile.empty()) {
-    if (!m_parser.ParseCproject(m_cprojectFile, project.cproject)) {
-      cerr << "projmgr error: parsing '" << m_cprojectFile << "' failed" << endl;
+    if (!m_parser.ParseCproject(m_cprojectFile, true)) {
+      return false;
+    }
+    ContextDesc descriptor;
+    if (!m_worker.AddContexts(m_parser, descriptor, m_cprojectFile)) {
       return false;
     }
   }
   set<string> components;
-  if (!m_worker.ListComponents(project, m_filter, components)) {
-    cerr << "projmgr error: processing components list failed" << endl;
+  if (!m_worker.ListComponents(m_filter, components)) {
+    ProjMgrLogger::Error("processing components list failed");
     return false;
   }
   for (const auto& component : components) {
@@ -243,21 +314,58 @@ bool ProjMgr::RunListComponents(void) {
 
 bool ProjMgr::RunListDependencies(void) {
   if (m_cprojectFile.empty()) {
-    cerr << "projmgr error: cproject.yml file was not specified!" << endl;
+    ProjMgrLogger::Error("cproject.yml file was not specified");
     return false;
   }
-  ProjMgrProjectItem project;
-  if (!m_parser.ParseCproject(m_cprojectFile, project.cproject)) {
-    cerr << "projmgr error: parsing '" << m_cprojectFile << "' failed" << endl;
+  if (!m_parser.ParseCproject(m_cprojectFile, true)) {
     return false;
   }
+  ContextDesc descriptor;
+  if (!m_worker.AddContexts(m_parser, descriptor, m_cprojectFile)) {
+    return false;
+  }
+  ContextItem context = m_worker.GetContexts().begin()->second;
   set<string> dependencies;
-  if (!m_worker.ListDependencies(project, m_filter, dependencies)) {
-    cerr << "projmgr error: processing dependencies list failed" << endl;
+  if (!m_worker.ListDependencies(m_filter, dependencies)) {
+    ProjMgrLogger::Error("processing dependencies list failed");
     return false;
   }
   for (const auto& dependency : dependencies) {
     cout << dependency << endl;
+  }
+  return true;
+}
+
+bool ProjMgr::RunListContexts(void) {
+  if (m_csolutionFile.empty()) {
+    ProjMgrLogger::Error("csolution.yml file was not specified");
+    return false;
+  }
+  if (!m_parser.ParseCsolution(m_csolutionFile)) {
+    return false;
+  }
+  for (const auto& cproject : m_parser.GetCsolution().cprojects) {
+    error_code ec;
+    string const& cprojectFile = fs::canonical(m_rootDir + "/" + cproject, ec).generic_string();
+    if (!m_parser.ParseCproject(cprojectFile)) {
+      return false;
+    }
+  }
+  for (auto& descriptor : m_parser.GetCsolution().contexts) {
+    error_code ec;
+    const string& cprojectFile = fs::path(descriptor.cproject).is_absolute() ?
+      descriptor.cproject : fs::canonical(m_rootDir + "/" + descriptor.cproject, ec).generic_string();
+    if (!m_worker.AddContexts(m_parser, descriptor, cprojectFile)) {
+      return false;
+    }
+  }
+  set<string> contexts;
+  if (!m_worker.ListContexts(m_filter, contexts)) {
+    ProjMgrLogger::Error("processing contexts list failed");
+    return false;
+  }
+  for (const auto& context : contexts) {
+    cout << context << endl;
   }
   return true;
 }

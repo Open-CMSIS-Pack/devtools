@@ -1,0 +1,7 @@
+layer:
+  compiler: AC6
+  misc:
+    - compiler: AC6
+      C:
+        - -O1
+        - -g
