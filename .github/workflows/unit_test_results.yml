@@ -3,6 +3,8 @@ name: Publish Test Results
 on:
   workflow_run:
     workflows: ["packchk"]
+    # avoid running once merged on main branch, this should be run only on PRs     
+    branches-ignore: ["main"]
     types:
       - completed
 
