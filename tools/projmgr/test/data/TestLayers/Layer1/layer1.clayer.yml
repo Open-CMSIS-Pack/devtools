@@ -1,0 +1,20 @@
+### CMSIS Layer Description ###
+
+layer:
+  name: Layer1
+  description: Layer 1
+  device: RteTest_ARMCM0
+  defines:
+    - DEF_LAYER1
+  add-paths:
+    - path/to/layer1
+  compiler: AC6@6.16.0
+  misc:
+    - C:
+      - --layer1-flag
+  components:
+    - component: CORE
+  groups:
+    - group: Sources Layer 1
+      files: 
+        - file: layer1.c

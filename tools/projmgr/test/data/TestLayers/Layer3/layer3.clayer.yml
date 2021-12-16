@@ -1,0 +1,18 @@
+### CMSIS Layer Description ###
+
+layer:
+  name: Layer3
+  description: Layer 3
+  defines:
+    - DEF_LAYER3
+  add-paths:
+    - path/to/layer3
+  misc:
+    - C:
+      - --layer3-flag
+  components:
+    - component: ComponentLevel
+  groups:
+    - group: Sources Layer 3
+      files: 
+        - file: layer3.c

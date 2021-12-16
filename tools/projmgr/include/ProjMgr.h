@@ -67,11 +67,7 @@ protected:
   std::string m_filter;
   std::string m_command;
   std::string m_args;
-
   std::string m_rootDir;
-  std::string m_cprojectFilename;
-  std::string m_csolutionFilename;
-
   std::string m_outputDir;
   std::string m_outputType;
   GroupNode m_files;
@@ -81,6 +77,7 @@ protected:
   bool RunListDevices(void);
   bool RunListComponents(void);
   bool RunListDependencies(void);
+  bool RunListContexts(void);
 };
 
 #endif  // PROJMGR_H

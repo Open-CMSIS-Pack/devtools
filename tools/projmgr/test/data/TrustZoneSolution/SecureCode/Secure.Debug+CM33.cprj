@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<cprj schemaVersion="1.7.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="PACK.xsd">
+  <created timestamp="2021-12-16T09:51:26" tool="projmgr 0.0.0+g35cbdb6"/>
+
+  <info isLayer="false">
+    <description>Automatically generated project</description>
+  </info>
+
+  <packages>
+    <package name="CMSIS" vendor="ARM" version="5.8.0"/>
+  </packages>
+
+  <compilers>
+    <compiler name="AC6" version="6.16.0"/>
+  </compilers>
+
+  <target Ddsp="DSP" Dfpu="SP_FPU" Dname="ARMCM33_DSP_FP_TZ" Dsecure="Secure" Dtz="TZ" Dvendor="ARM:82">
+    <output intdir="Secure.Debug+CM33_IntDir/" name="Secure.Debug+CM33" outdir="Secure.Debug+CM33_OutDir/" type="exe"/>
+    <cflags add="-O1 -g" compiler="AC6"/>
+    <ldflags compiler="AC6" file="RTE/Device/ARMCM33_DSP_FP_TZ/ARMCM33_ac6_s.sct"/>
+  </target>
+
+  <components>
+    <component Cclass="CMSIS" Cgroup="CORE" Cvendor="ARM" Cversion="5.5.0"/>
+    <component Cclass="Device" Cgroup="Startup" Cvariant="C Startup" Cvendor="ARM" Cversion="2.1.0">
+      <file attr="config" category="header" name="Device/ARM/ARMCM33/Include/Template/partition_ARMCM33.h" version="1.1.1"/>
+      <file attr="config" category="linkerScript" name="Device/ARM/ARMCM33/Source/ARM/ARMCM33_ac6_s.sct" version="1.1.0"/>
+      <file attr="config" category="sourceC" name="Device/ARM/ARMCM33/Source/startup_ARMCM33.c" version="2.1.0"/>
+      <file attr="config" category="sourceC" name="Device/ARM/ARMCM33/Source/system_ARMCM33.c" version="1.0.1"/>
+    </component>
+  </components>
+
+  <files>
+    <group name="Secure Code">
+      <file category="sourceC" name="main_s.c"/>
+    </group>
+    <group name="CMSE">
+      <file category="sourceC" name="interface.c"/>
+      <file category="header" name="interface.h"/>
+      <file category="sourceC" name="tz_context.c"/>
+    </group>
+  </files>
+</cprj>
+

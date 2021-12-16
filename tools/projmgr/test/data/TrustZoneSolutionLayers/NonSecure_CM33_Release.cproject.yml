@@ -1,0 +1,5 @@
+project:
+  layers:
+    - layer: ./layers/target/CM33.clayer.yml
+    - layer: ./layers/config/Release.clayer.yml
+    - layer: ./layers/app/NonSecureCode/NonSecure.clayer.yml

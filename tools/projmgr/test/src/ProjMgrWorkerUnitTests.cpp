@@ -20,12 +20,16 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessToolchain) {
   ToolchainItem expected;
   expected.name = "AC6";
   expected.version = "6.16.0";
-  ProjMgrProjectItem project;
+  ProjMgrParser parser;
+  ContextDesc descriptor;
   const string& filename = testinput_folder + "/TestProject/test.cproject.yml";
-  EXPECT_EQ(true, ProjMgrParser().ParseCproject(filename, project.cproject));
-  EXPECT_EQ(true, ProcessToolchain(project));
-  EXPECT_EQ(expected.name, project.toolchain.name);
-  EXPECT_EQ(expected.version, project.toolchain.version);
+  EXPECT_EQ(true, parser.ParseCproject(filename, true));
+  EXPECT_EQ(true, AddContexts(parser, descriptor, filename));
+  ContextItem context = GetContexts().begin()->second;
+  EXPECT_EQ(true, ProcessPrecedences(context));
+  EXPECT_EQ(true, ProcessToolchain(context));
+  EXPECT_EQ(expected.name, context.toolchain.name);
+  EXPECT_EQ(expected.version, context.toolchain.version);
 }
 
 TEST_F(ProjMgrWorkerUnitTests, ProcessDevice) {
@@ -39,30 +43,38 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDevice) {
     {"Dname", "RteTest_ARMCM0"},
     {"Dvendor", "ARM:82"},
   };
-  ProjMgrProjectItem project;
+  ProjMgrParser parser;
+  ContextDesc descriptor;
   const string& filename = testinput_folder + "/TestProject/test.cproject.yml";
-  EXPECT_EQ(true, ProjMgrParser().ParseCproject(filename, project.cproject));
+  EXPECT_EQ(true, parser.ParseCproject(filename, true));
+  EXPECT_EQ(true, AddContexts(parser, descriptor, filename));
+  ContextItem context = GetContexts().begin()->second;
   EXPECT_EQ(true, LoadPacks());
-  EXPECT_EQ(true, ProcessDevice(project));
+  EXPECT_EQ(true, ProcessPrecedences(context));
+  EXPECT_EQ(true, ProcessDevice(context));
   for (const auto& expectedAttribute : expected) {
-    EXPECT_EQ(expectedAttribute.second, project.targetAttributes[expectedAttribute.first]);
+    EXPECT_EQ(expectedAttribute.second, context.targetAttributes[expectedAttribute.first]);
   }
 }
 
 TEST_F(ProjMgrWorkerUnitTests, ProcessComponents) {
   set<string> expected = {
-    "ARM::Device.Startup(ARMCM0 RteTest):RteTest Startup:2.0.3[ARM.RteTest_DFP]",
-    "ARM::RteTest.CORE(Cortex-M Device):0.1.1[ARM.RteTest_DFP]",
+    "ARM::Device:Startup&RteTest Startup@2.0.3",
+    "ARM::RteTest:CORE@0.1.1",
   };
-  ProjMgrProjectItem project;
+  ProjMgrParser parser;
+  ContextDesc descriptor;
   const string& filename = testinput_folder + "/TestProject/test.cproject.yml";
-  EXPECT_EQ(true, ProjMgrParser().ParseCproject(filename, project.cproject));
+  EXPECT_EQ(true, parser.ParseCproject(filename, true));
+  EXPECT_EQ(true, AddContexts(parser, descriptor, filename));
+  ContextItem context = GetContexts().begin()->second;
   EXPECT_EQ(true, LoadPacks());
-  EXPECT_EQ(true, ProcessDevice(project));
-  EXPECT_EQ(true, SetTargetAttributes(project, project.targetAttributes));
-  EXPECT_EQ(true, ProcessComponents(project));
-  ASSERT_EQ(expected.size(), project.components.size());
-  auto it = project.components.begin();
+  EXPECT_EQ(true, ProcessPrecedences(context));
+  EXPECT_EQ(true, ProcessDevice(context));
+  EXPECT_EQ(true, SetTargetAttributes(context, context.targetAttributes));
+  EXPECT_EQ(true, ProcessComponents(context));
+  ASSERT_EQ(expected.size(), context.components.size());
+  auto it = context.components.begin();
   for (const auto& expectedComponent : expected) {
     EXPECT_EQ(expectedComponent, (*it++).first);
   }
@@ -70,18 +82,22 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessComponents) {
 
 TEST_F(ProjMgrWorkerUnitTests, ProcessDependencies) {
   set<string> expected = {
-     "ARM::RteTest.CORE",
+     "ARM::RteTest:CORE",
   };
-  ProjMgrProjectItem project;
+  ProjMgrParser parser;
+  ContextDesc descriptor;
   const string& filename = testinput_folder + "/TestProject/test-dependency.cproject.yml";
-  EXPECT_EQ(true, ProjMgrParser().ParseCproject(filename, project.cproject));
+  EXPECT_EQ(true, parser.ParseCproject(filename, true));
+  EXPECT_EQ(true, AddContexts(parser, descriptor, filename));
+  ContextItem context = GetContexts().begin()->second;
   EXPECT_EQ(true, LoadPacks());
-  EXPECT_EQ(true, ProcessDevice(project));
-  EXPECT_EQ(true, SetTargetAttributes(project, project.targetAttributes));
-  EXPECT_EQ(true, ProcessComponents(project));
-  EXPECT_EQ(true, ProcessDependencies(project));
-  ASSERT_EQ(expected.size(), project.dependencies.size());
-  auto it = project.dependencies.begin();
+  EXPECT_EQ(true, ProcessPrecedences(context));
+  EXPECT_EQ(true, ProcessDevice(context));
+  EXPECT_EQ(true, SetTargetAttributes(context, context.targetAttributes));
+  EXPECT_EQ(true, ProcessComponents(context));
+  EXPECT_EQ(true, ProcessDependencies(context));
+  ASSERT_EQ(expected.size(), context.dependencies.size());
+  auto it = context.dependencies.begin();
   for (const auto& expectedDependency : expected) {
     EXPECT_EQ(expectedDependency, (*it++).first);
   }

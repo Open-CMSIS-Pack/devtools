@@ -1,0 +1,15 @@
+### CMSIS Project Description ###
+
+project:
+  misc:
+    - compiler: AC6
+      C: [-fshort-enums, -fshort-wchar]
+  components:
+    - component: Startup
+    - component: CMSIS CORE
+    - component: Keil RTX5 Library_NS
+  groups:
+    - group: Non-secure Code
+      files: 
+        - file: main_ns.c 
+        - file: ../SecureCode/interface.h

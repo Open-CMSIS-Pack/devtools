@@ -1,0 +1,8 @@
+### CMSIS Solution Description ###
+
+build-types:
+  - type: Debug
+  - type: Release
+
+solution:
+  - project: testlayers.cproject.yml

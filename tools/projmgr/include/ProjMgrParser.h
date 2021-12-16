@@ -7,137 +7,244 @@
 #ifndef PROJMGRPARSER_H
 #define PROJMGRPARSER_H
 
+#include <map>
 #include <string>
 #include <vector>
 
  /**
-  * @brief compiler misc controls structure at components/groups/files level containing
-  *        options for all tools,
+  * @brief compiler misc controls
+  *        compiler name,
   *        options for assembler,
   *        options for c compiler,
-  *        options for c++ compiler
+  *        options for c++ compiler,
+  *        options for c and c++ compiler,
+  *        options for linker,
+  *        options for archiver
  */
 struct MiscItem {
-  std::vector<std::string> all;
+  std::string compiler;
   std::vector<std::string> as;
   std::vector<std::string> c;
   std::vector<std::string> cpp;
+  std::vector<std::string> c_cpp;
+  std::vector<std::string> link;
+  std::vector<std::string> lib;
 };
 
 /**
- * @brief compiler misc controls structure at target level containing
- *        options for all tools,
- *        options for assembler,
- *        options for c compiler,
- *        options for c++ compiler,
- *        options for linker,
- *        options for archiver
+ * @brief processor item containing
+ *        processor fpu,
+ *        processor trustzone,
+ *        processor endianess
 */
-struct MiscTargetItem {
-  std::vector<std::string> all;
-  std::vector<std::string> as;
-  std::vector<std::string> c;
-  std::vector<std::string> cpp;
-  std::vector<std::string> ld;
-  std::vector<std::string> ar;
+struct ProcessorItem {
+  std::string fpu;
+  std::string trustzone;
+  std::string endian;
+};
+
+/**
+ * @brief build types containing
+ *        toolchain,
+ *        optimization level,
+ *        debug information,
+ *        preprocessor defines,
+ *        include paths,
+ *        misc compiler controls
+*/
+struct BuildType {
+  std::string compiler;
+  std::string optimize;
+  std::string debug;
+  std::string warnings;
+  std::vector<std::string> defines;
+  std::vector<std::string> undefines;
+  std::vector<std::string> addpaths;
+  std::vector<std::string> delpaths;
+  std::vector<MiscItem> misc;
+  ProcessorItem processor;
+};
+
+/**
+ * @brief target types containing
+ *        platform board,
+ *        platform device,
+ *        platform processor
+*/
+struct TargetType {
+  std::string board;
+  std::string device;
+  BuildType build;
+};
+
+/**
+ * @brief type pair containg
+ *        build-type,
+ *        target-type
+*/
+struct TypePair {
+  std::string build;
+  std::string target;
+};
+
+/**
+ * @brief include/exclude types
+ *        for-type (include)
+ *        not-for-type (exclude)
+*/
+struct TypeFilter {
+  std::vector<TypePair> include;
+  std::vector<TypePair> exclude;
+};
+
+/**
+ * @brief rte directory item containing
+ *        rte directory path,
+ *        type inclusion
+*/
+struct RteDirItem {
+  std::string dir;
+  TypeFilter type;
 };
 
 /**
  * @brief component item containing
  *        component identifier,
- *        component toolchain settings
+ *        component build settings,
+ *        type inclusion
 */
 struct ComponentItem {
   std::string component;
-  // TODO: Add toolchain settings;
+  BuildType build;
+  TypeFilter type;
 };
 
 /**
- * @brief processor item containing
- *        processor endianess,
- *        processor fpu,
- *        processor mpu,
- *        processor dsp,
- *        processor mve,
- *        processor trustzone,
- *        processor secure,
+ * @brief layer item containing
+ *        layer name,
+ *        layer build settings,
+ *        type inclusion
 */
-struct ProcessorItem {
-  std::string endian;
-  std::string fpu;
-  std::string mpu;
-  std::string dsp;
-  std::string mve;
-  std::string trustzone;
-  std::string secure;
-};
-
-/**
- * @brief target item containing
- *        device identifier,
- *        board identifier,
- *        processor attributes
-*/
-struct TargetItem {
-  std::string device;
-  std::string board;
-  ProcessorItem processor;
+struct LayerItem {
+  std::string layer;
+  BuildType build;
+  TypeFilter type;
 };
 
 /**
  * @brief file node containing
  *        file path,
  *        file category,
- *        file toolchain settings
+ *        file build settings,
+ *        type filter
 */
 struct FileNode {
   std::string file;
   std::string category;
-  // TODO: Add toolchain settings;
+  BuildType build;
+  TypeFilter type;
 };
 
 /**
  * @brief group node containing
  *        group name,
  *        children files,
- *        children groups
- *        group toolchain settings
+ *        children groups,
+ *        group build settings,
+ *        type filter
 */
 struct GroupNode {
   std::string group;
   std::vector<FileNode> files;
   std::vector<GroupNode> groups;
-  // TODO: Add toolchain settings;
+  BuildType build;
+  TypeFilter type;
+};
+
+/**
+ * @brief context descriptor containing
+ *        cproject filename,
+ *        project context dependencies,
+ *        rte directory,
+ *        target properties,
+ *        type filter
+*/
+struct ContextDesc {
+  std::string cproject;
+  std::vector<std::string> depends;
+  RteDirItem dir;
+  TargetType target;
+  TypeFilter type;
 };
 
 /**
  * @brief solution item containing
- *        TBD
+ *        build types,
+ *        target types,
+ *        list of cprojects,
+ *        list of contexts descriptors
 */
 struct CsolutionItem {
-   // TBD
+  std::map<std::string, BuildType> buildTypes;
+  std::map<std::string, TargetType> targetTypes;
+  std::vector<std::string> cprojects;
+  std::vector<ContextDesc> contexts;
 };
 
 /**
  * @brief cproject item containing
  *        project name,
  *        project description,
- *        project toolchain,
  *        project output type,
- *        target elements (board, device, processor),
+ *        project target properties,
  *        list of required packages,
  *        list of required components,
- *        list of user groups
+ *        list of user groups,
+ *        list of layers
 */
 struct CprojectItem {
   std::string name;
   std::string description;
-  std::string toolchain;
   std::string outputType;
-  TargetItem target;
+  TargetType target;
+  std::vector<RteDirItem> rteDirs;
   std::vector<std::string> packages;
   std::vector<ComponentItem> components;
   std::vector<GroupNode> groups;
+  std::vector<LayerItem> clayers;
+};
+
+/**
+ * @brief interface item containing
+ *        map of provided interfaces,
+ *        map of consumed interfaces
+*/
+struct InterfaceItem {
+  std::map<std::string, std::string> provides;
+  std::map<std::string, std::string> consumes;
+};
+
+/**
+ * @brief clayer item containing
+ *        layer name,
+ *        layer description,
+ *        layer output type,
+ *        layer target properties,
+ *        list of required packages,
+ *        list of required components,
+ *        list of user groups,
+ *        list of interfaces
+*/
+struct ClayerItem {
+  std::string name;
+  std::string description;
+  std::string outputType;
+  TargetType target;
+  std::vector<RteDirItem> rteDirs;
+  std::vector<std::string> packages;
+  std::vector<ComponentItem> components;
+  std::vector<GroupNode> groups;
+  std::vector<InterfaceItem> interfaces;
 };
 
 /**
@@ -158,16 +265,44 @@ public:
   /**
    * @brief parse cproject
    * @param input cproject.yml file
-   * @param cproject reference to cproject struct
+   * @param boolean parse single project, default false
   */
-  bool ParseCproject(const std::string& input, CprojectItem& cproject);
+  bool ParseCproject(const std::string& input, bool single = false);
 
   /**
    * @brief parse csolution
    * @param input csolution.yml file
-   * @param csolution reference to csolution struct
   */
-  bool ParseCsolution(const std::string& input, CsolutionItem& csolution);
+  bool ParseCsolution(const std::string& input);
+
+  /**
+   * @brief parse clayer
+   * @param input clayer.yml file
+  */
+  bool ParseClayer(const std::string& input);
+
+  /**
+   * @brief get csolution
+   * @return csolution item
+  */
+  CsolutionItem& GetCsolution(void);
+
+  /**
+   * @brief get cprojects
+   * @return cprojects vector
+  */
+  std::map<std::string, CprojectItem>& GetCprojects(void);
+
+  /**
+   * @brief get clayers
+   * @return clayers vector
+  */
+  std::map<std::string, ClayerItem>& GetClayers(void);
+
+protected:
+  CsolutionItem m_csolution;
+  std::map<std::string, CprojectItem> m_cprojects;
+  std::map<std::string, ClayerItem> m_clayers;
 };
 
 #endif  // PROJMGRPARSER_H

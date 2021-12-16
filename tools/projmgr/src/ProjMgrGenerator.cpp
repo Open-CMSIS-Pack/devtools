@@ -11,6 +11,7 @@
 #include "XmlFormatter.h"
 #include "XMLTreeSlim.h"
 
+#include <algorithm>
 #include <iterator>
 #include <fstream>
 
@@ -28,7 +29,7 @@ ProjMgrGenerator::~ProjMgrGenerator(void) {
   // Reserved
 }
 
-bool ProjMgrGenerator::GenerateCprj(ProjMgrProjectItem& project, const string& filename) {
+bool ProjMgrGenerator::GenerateCprj(ContextItem& context, const string& filename) {
   // Root
   XMLTreeSlim cprjTree = XMLTreeSlim();
   XMLTreeElement* rootElement;
@@ -41,7 +42,7 @@ bool ProjMgrGenerator::GenerateCprj(ProjMgrProjectItem& project, const string& f
   GenerateCprjCreated(rootElement);
 
   // Info
-  GenerateCprjInfo(rootElement, project.description);
+  GenerateCprjInfo(rootElement, context.description);
 
   // Create first level elements
   XMLTreeElement* packagesElement = rootElement->CreateElement("packages");
@@ -52,27 +53,33 @@ bool ProjMgrGenerator::GenerateCprj(ProjMgrProjectItem& project, const string& f
 
   // Packages
   if (packagesElement) {
-    GenerateCprjPackages(packagesElement, project.packages);
+    GenerateCprjPackages(packagesElement, context.packages);
   }
 
   // Compilers
   if (compilersElement) {
-    GenerateCprjCompilers(compilersElement, project.toolchain);
+    GenerateCprjCompilers(compilersElement, context.toolchain);
   }
 
   // Target
   if (targetElement) {
-    GenerateCprjTarget(targetElement, project);
+    GenerateCprjTarget(targetElement, context);
   }
 
   // Components
   if (componentsElement) {
-    GenerateCprjComponents(componentsElement, project);
+    GenerateCprjComponents(componentsElement, context);
   }
 
   // Files
   if (filesElement) {
-    GenerateCprjGroups(filesElement, project.groups);
+    GenerateCprjGroups(filesElement, context.groups, context.toolchain.name);
+    GenerateCprjPrjDeps(filesElement, context);
+  }
+
+  // Remove empty files element
+  if (!filesElement->HasChildren()) {
+    rootElement->RemoveChild("files", true);
   }
 
   // Save CPRJ
@@ -126,9 +133,9 @@ void ProjMgrGenerator::GenerateCprjCompilers(XMLTreeElement* element, const Tool
   }
 }
 
-void ProjMgrGenerator::GenerateCprjTarget(XMLTreeElement* element, const ProjMgrProjectItem& project) {
+void ProjMgrGenerator::GenerateCprjTarget(XMLTreeElement* element, const ContextItem& context) {
   static constexpr const char* DEVICE_ATTRIBUTES[] = { "Ddsp", "Dendian", "Dfpu", "Dmve", "Dname", "Dsecure", "Dtz", "Dvendor" };
-  map<string, string> attributes = project.targetAttributes;
+  map<string, string> attributes = context.targetAttributes;
   if (attributes["Dendian"] == "Configurable") {
     attributes["Dendian"].erase();
   }
@@ -139,63 +146,102 @@ void ProjMgrGenerator::GenerateCprjTarget(XMLTreeElement* element, const ProjMgr
 
   XMLTreeElement* targetOutputElement = element->CreateElement("output");
   if (targetOutputElement) {
-    targetOutputElement->AddAttribute("name", project.name);
-    targetOutputElement->AddAttribute("type", project.outputType);
+    targetOutputElement->AddAttribute("name", context.name);
+    targetOutputElement->AddAttribute("type", context.outputType);
+    targetOutputElement->AddAttribute("intdir", context.name + "_IntDir/");
+    targetOutputElement->AddAttribute("outdir", context.name + "_OutDir/");
   }
+
+  // TODO Generate toolchain settings (warnings, debug, includes)
+  GenerateCprjMisc(element, context.misc, context.toolchain.name);
+  GenerateCprjLinkerScript(element, context.toolchain.name, context.linkerScript);
+  GenerateCprjVector(element, context.defines, "defines");
+  GenerateCprjVector(element, context.includes, "includes");
 }
 
-void ProjMgrGenerator::GenerateCprjComponents(XMLTreeElement* element, const ProjMgrProjectItem& project) {
+void ProjMgrGenerator::GenerateCprjComponents(XMLTreeElement* element, const ContextItem& context) {
   static constexpr const char* COMPONENT_ATTRIBUTES[] = { "Cbundle", "Cclass", "Cgroup", "Csub", "Cvariant", "Cvendor", "Cversion" };
-  for (const auto& component : project.components) {
+  for (const auto& component : context.components) {
     XMLTreeElement* componentElement = element->CreateElement("component");
     if (componentElement) {
       for (const auto& name : COMPONENT_ATTRIBUTES) {
-        const string& value = component.second->GetAttribute(name);
+        const string& value = component.second.first->GetAttribute(name);
         SetAttribute(componentElement, name, value);
       }
-      // TODO Generate toolchain settings (warnings, debug, misc, includes, defines)
-      // GenerateCprjMisc(componentElement, project.componentsMisc.at(componentId));
+
+      // Config files
+      for (const auto& configFileMap : context.configFiles) {
+        if (configFileMap.first == component.first) {
+          for (const auto& configFile : configFileMap.second) {
+            XMLTreeElement* fileElement = componentElement->CreateElement("file");
+            if (fileElement) {
+              //fileElement->SetAttributes(configFile.second->GetAttributes());
+              SetAttribute(fileElement, "attr", "config");
+              SetAttribute(fileElement, "name", configFile.first);
+              SetAttribute(fileElement, "category", configFile.second->GetAttribute("category"));
+              SetAttribute(fileElement, "version", configFile.second->GetVersionString());
+            }
+          }
+        }
+      }
+
+      // TODO Generate toolchain settings (warnings, debug, includes, defines)
+      GenerateCprjMisc(componentElement, component.second.second->build.misc, context.toolchain.name);
+    }
+
+  }
+}
+
+void ProjMgrGenerator::GenerateCprjVector(XMLTreeElement* element, const vector<string>& vec, string tag) {
+  if (!vec.empty()) {
+    XMLTreeElement* childElement = element->CreateElement(tag);
+    childElement->SetText(GetStringFromVector(vec, ";"));
+  }
+}
+
+void ProjMgrGenerator::GenerateCprjMisc(XMLTreeElement* element, const vector<MiscItem>& misc, const std::string& compiler) {
+  for (const auto& miscIt : misc) {
+    const map<string, vector<string>>& FLAGS_MATRIX = {
+      {"asflags", miscIt.as},
+      {"cflags", miscIt.c},
+      {"cxxflags", miscIt.cpp},
+      {"ldflags", miscIt.link},
+      {"arflags", miscIt.lib}
+    };
+    if (miscIt.compiler.empty() || (miscIt.compiler == compiler)) {
+      for (const auto& flags : FLAGS_MATRIX) {
+        if (!flags.second.empty()) {
+          XMLTreeElement* flagsElement = element->CreateElement(flags.first);
+          if (flagsElement) {
+            flagsElement->AddAttribute("add", GetStringFromVector(flags.second, " "));
+            flagsElement->AddAttribute("compiler", miscIt.compiler.empty() ? compiler : miscIt.compiler);
+          }
+        }
+      }
     }
   }
 }
 
-void ProjMgrGenerator::GenerateCprjMisc(XMLTreeElement* element, const MiscItem& misc) {
-  if (!misc.all.empty()) {
-    XMLTreeElement* asflagsElement = element->CreateElement("asflags");
-    if (asflagsElement) {
-      asflagsElement->AddAttribute("add", GetStringFromVector(misc.all));
-    }
-    XMLTreeElement* cflagsElement = element->CreateElement("cflags");
-    if (cflagsElement) {
-      cflagsElement->AddAttribute("add", GetStringFromVector(misc.all));
-    }
-    XMLTreeElement* cxxflagsElement = element->CreateElement("cxxflags");
-    if (cxxflagsElement) {
-      cxxflagsElement->AddAttribute("add", GetStringFromVector(misc.all));
-    }
-  } else {
-    if (!misc.as.empty()) {
-      XMLTreeElement* asflagsElement = element->CreateElement("asflags");
-      if (asflagsElement) {
-        asflagsElement->AddAttribute("add", GetStringFromVector(misc.as));
+void ProjMgrGenerator::GenerateCprjLinkerScript(XMLTreeElement* element, const string& compiler, const string& linkerScript) {
+  if (!linkerScript.empty()) {
+    XMLTreeElement* ldflagsElement = nullptr;
+    for (auto& child : element->GetChildren()) {
+      if (child->GetTag() == "ldflags") {
+        ldflagsElement = child;
+        break;
       }
     }
-    if (!misc.c.empty()) {
-      XMLTreeElement* cflagsElement = element->CreateElement("cflags");
-      if (cflagsElement) {
-        cflagsElement->AddAttribute("add", GetStringFromVector(misc.c));
-      }
+    if (!ldflagsElement) {
+      ldflagsElement = element->CreateElement("ldflags");
+      ldflagsElement->AddAttribute("compiler", compiler);
     }
-    if (!misc.cpp.empty()) {
-      XMLTreeElement* cxxflagsElement = element->CreateElement("cxxflags");
-      if (cxxflagsElement) {
-        cxxflagsElement->AddAttribute("add", GetStringFromVector(misc.cpp));
-      }
+    if (ldflagsElement) {
+      ldflagsElement->AddAttribute("file", linkerScript);
     }
   }
 }
 
-void ProjMgrGenerator::GenerateCprjGroups(XMLTreeElement* element, const vector<GroupNode>& groups) {
+void ProjMgrGenerator::GenerateCprjGroups(XMLTreeElement* element, const vector<GroupNode>& groups, const string& compiler) {
   for (const auto& groupNode : groups) {
     XMLTreeElement* groupElement = element->CreateElement("group");
     if (groupElement) {
@@ -203,24 +249,41 @@ void ProjMgrGenerator::GenerateCprjGroups(XMLTreeElement* element, const vector<
         groupElement->AddAttribute("name", groupNode.group);
       }
 
-
-      // TODO Generate toolchain settings (warnings, debug, misc, includes, defines)
-      // GenerateCprjMisc(groupElement, groupNode.misc);
+      // TODO Generate toolchain settings (warnings, debug, includes, defines)
+      GenerateCprjMisc(groupElement, groupNode.build.misc, compiler);
 
       for (const auto& fileNode : groupNode.files) {
         XMLTreeElement* fileElement = groupElement->CreateElement("file");
         fileElement->AddAttribute("name", fileNode.file);
         if (fileElement) {
-          if (!fileNode.category.empty()) {
-            fileElement->AddAttribute("category", fileNode.category);
-          }
+          const string& category = fileNode.category.empty() ? GetCategory(fileNode.file) : fileNode.category;
+          fileElement->AddAttribute("category", category);
 
-          // TODO Generate toolchain settings (warnings, debug, misc, includes, defines)
-          //GenerateCprjMisc(fileElement, fileNode.misc);
+          // TODO Generate toolchain settings (warnings, debug, includes, defines)
+          GenerateCprjMisc(fileElement, fileNode.build.misc, compiler);
         }
 
       }
-      GenerateCprjGroups(groupElement, groupNode.groups);
+      GenerateCprjGroups(groupElement, groupNode.groups, compiler);
+    }
+  }
+}
+
+void ProjMgrGenerator::GenerateCprjPrjDeps(XMLTreeElement* element, const ContextItem& context) {
+  if (!context.prjDeps.empty()) {
+    XMLTreeElement* groupElement = element->CreateElement("group");
+    if (groupElement) {
+      groupElement->AddAttribute("name", "Project Dependencies");
+      for (const auto& dep : context.prjDeps) {
+        for (const auto& file : dep.second) {
+          XMLTreeElement* fileElement = groupElement->CreateElement("file");
+          fileElement->AddAttribute("name", file);
+          if (fileElement) {
+            const string& category = GetCategory(file);
+            fileElement->AddAttribute("category", category);
+          }
+        }
+      }
     }
   }
 }
@@ -231,12 +294,12 @@ void ProjMgrGenerator::SetAttribute(XMLTreeElement* element, const string& name,
   }
 }
 
-const string ProjMgrGenerator::GetStringFromVector(const vector<string>& vector) {
+const string ProjMgrGenerator::GetStringFromVector(const vector<string>& vector, const char* delimiter) {
   if (!vector.size()) {
     return RteUtils::EMPTY_STRING;
   }
   ostringstream stream;
-  copy(vector.begin(), vector.end(), ostream_iterator<string>(stream, " "));
+  copy(vector.begin(), vector.end(), ostream_iterator<string>(stream, delimiter));
   string s = stream.str();
   // Remove last delimiter
   s.pop_back();
@@ -271,4 +334,24 @@ bool ProjMgrGenerator::WriteXmlFile(const string& file, XMLTree* tree) {
   xmlFile.close();
 
   return true;
+}
+
+const string ProjMgrGenerator::GetCategory(const string& file) {
+  static const map<string, vector<string>> CATEGORIES = {
+    {"sourceC", {".c", ".C"}},
+    {"sourceCpp", {".cpp", ".c++", ".C++", ".cxx"}},
+    {"sourceAsm", {".asm", ".s", ".S"}},
+    {"header", {".h", ".hpp"}},
+    {"library", {".a", ".lib"}},
+    {"object", {".o"}},
+    {"linkerScript", {".sct", ".scf", ".ld"}},
+    {"doc", {".txt", ".md", ".pdf", ".htm", ".html"}},
+  };
+  fs::path ext((fs::path(file)).extension());
+  for (const auto& category : CATEGORIES) {
+    if (find(category.second.begin(), category.second.end(), ext) != category.second.end()) {
+      return category.first;
+    }
+  }
+  return "other";
 }
