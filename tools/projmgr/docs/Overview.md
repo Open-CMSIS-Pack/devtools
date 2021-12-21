@@ -70,7 +70,7 @@ As the software may share a large set of common files, provisions are required t
 
 It is required to generate reproducible builds that can deployed on independent CI/CD test systems. To achieve that, *.the CMSIS Project Manager generates *.cprj output files with the following naming conventions:
 
-`<projectname>.<build-type>[+target-type].cprj` this would generate for example: `Multi.Debug+Production-HW.cprj`
+`<projectname>[.<build-type>][+target-type].cprj` this would generate for example: `Multi.Debug+Production-HW.cprj`
 
 This enables that each target and/or build type can be identified and independently generated which provides the support for test automation. It is however not required to build every possible combination, this should be under user control.
 
@@ -229,7 +229,9 @@ Access Sequence             | Description
 `$Dpack$`                   | Path to the pack that defines the selected device (DFP).
 `$Pack$`                    | Path to the CMSIS Pack Root directory.
 `$Pack(vendor.name)$`       | Path to specific pack with latest version. Example: `$Pack(NXP.K32L3A60_DFP)$`.
+`$Output(project)$`         | Output file of a related project that is defined in the `*.csolution.yml` file.
 
+ToDo: define directory structure; should we use `$Output(project[.build-type][+target-type])$`
 
 **Examples:**
 
@@ -272,7 +274,7 @@ The keywords below can be used at various levels in this file types: `[defaults]
 Keyword         | Description
 :---------------|:------------------------------------
 `compiler:`     | Selection of the toolchain used for the project, i.e. `GCC`, `AC6`, `IAR`, optional with version, i.e AC6@6.16-LTS
-`device:`       | Unique device name, optionally with vendor. Format: `[<vendor>::]<device>`. Examples: `NXP::LPC55S69` or `STM32L552RCT6`. When `device:` is null the device is derived from the `board:` device setting, but `device:` overrules the `board:` device setting. Boards frequently use a superset device and with this method it is possible to use a board layer during development, but target a smaller device variant.
+`device:`       | Unique device name, optionally with vendor and core. Format: `[<vendor>::]<device>[:<core>]`.  When `device:` is null the device is derived from the `board:` device setting, but `device:` overrules the `board:` device setting.
 `board:`        | Unique board name, optionally with vendor. Format: `[<vendor>::]<board>`. Examples: `NXP::LPCxpresso55S69` or `NUCLEO-L552ZE-Q`.
 `optimize:`     | Generic optimize levels (max, size, speed, debug), mapped to the toolchain by CMSIS-Build.
 `debug:`        | Generic control for the generation of debug information (on, off), mapped to the toolchain by CMSIS-Build.
@@ -285,7 +287,7 @@ Keyword         | Description
 
 **Notes:**
  - `defines:`, `add-paths:`  and `misc:` are additive. All other keywords overwrite previous settings.
- 
+
 ## Target and Build Types
 
 The section [Project setup for multiple targets and test builds](#project-setup-for-multiple-targets-and-test-builds) describes the concept of  `target-types` and `build-types`.  These *types* can be defined in the following files in the following order:
@@ -297,12 +299,14 @@ The *`target-type`* and *`build-type`* definitions are additive, but an attempt 
 
 The settings of the *`target-type`* are processed first; then the settings of the *`build-type`* that potentially overwrite the *`target-type`* settings.
 
+
 YML structure:
 ```yml
 target-types:          # Start a list of target type declarations
   - type:              # name of the target type (required)
     board:             # board specification (optional)
     device:            # device specification (optional)         
+    processor:         # processor specific settings (optional)
     compiler:          # toolchain specification (optional) 
     optimize:          # optimize level for code generation (optional)
     debug:             # generation of debug information (optional)
@@ -314,6 +318,7 @@ target-types:          # Start a list of target type declarations
 
 build-types:           # Start a list of build type declarations
   - type:              # name of the build type (required)
+    processor:         # processor specific settings (optional)
     compiler:          # toolchain specification (optional) 
     optimize:          # optimize level for code generation (optional)
     debug:             # generation of debug information (optional)
@@ -323,6 +328,7 @@ build-types:           # Start a list of build type declarations
     del-paths:         # remove specific include file paths (optional). 
     misc:              # Literal tool-specific controls
 ```
+
 
 **Example:**
 ```yml
@@ -342,6 +348,31 @@ build-types:
     optimize: max
     debug: on
 ```
+
+The `board:`, `device:`, and `processor:` settings are used to configure the code translation for the toolchain.  These settings are processed in the following order:
+
+1. `board:` relates to a BSP software pack that defines board parameters, including the [mounted device](https://arm-software.github.io/CMSIS_5/Pack/html/pdsc_boards_pg.html#element_board_mountedDevice).  If `board:` is not specified, a `device:` most be specified.
+2. `device:` defines the target device.  If `board:` is specified, the `device:` setting can be used to overwrite the device or specify the processor core used.
+3. `processor:` overwrites default settings for code generation, such as endianess, TrustZone mode, or disable Floating Point code generation.
+
+**Examples:**
+```yml
+target-types:
+  - type: Production-HW
+    board: NUCLEO-L552ZE-Q    # hardware is similar to a board
+    device: STM32L552RC       # but uses a slightly different device
+    processor: 
+      trustzone: off          # TrustZone disabled for this project
+```
+
+```yml 
+target-types:
+  - type: Production-HW
+    board: FRDM-K32L3A6       # NXP board with K32L3A6 device
+    device: :cm0plus          # use the Cortex-M0+ processor
+```
+
+
 
 ## Build/Target-Type control
 
@@ -594,9 +625,9 @@ The `processor:` keyword defines:
 
 ```yml
  processor:                # processor specific settings
-    name: CM4              # processor name as defined it the DFP with `<processor Pname= >` attribute
     trustzone: secure      # TrustZone mode: secure | non-secure | off
     fpu: off               # control usage of FPU registers (S-Registers that are used for Helium and FPU hardware): on | off
+    endian: little | big   # select endianess 
 ```
 
 todo - where can `processor:` used?
