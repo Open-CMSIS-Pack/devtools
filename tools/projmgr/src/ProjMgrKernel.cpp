@@ -52,6 +52,18 @@ XMLTree* ProjMgrKernel::CreateXmlTree() const
 bool ProjMgrKernel::GetInstalledPacks(list<RtePackage*>& packs) {
   list<string> pdscFiles;
   RteFsUtils::GetPackageDescriptionFiles(pdscFiles, theProjMgrKernel->GetCmsisPackRoot(), 3);
+
+  // Find pdsc files from local repository
+  list<string> localPdscUrls;
+  if (!GetLocalPacksUrls(theProjMgrKernel->GetCmsisPackRoot(), localPdscUrls)) {
+    return false;
+  }
+  for (const auto& localPdscUrl : localPdscUrls) {
+    list<string> localPdscFiles;
+    RteFsUtils::GetPackageDescriptionFiles(localPdscFiles, localPdscUrl, 1);
+    pdscFiles.insert(pdscFiles.end(), localPdscFiles.begin(), localPdscFiles.end());
+  }
+
   for (const auto& pdscFile : pdscFiles) {
     RtePackage* pack = theProjMgrKernel->LoadPack(pdscFile);
     if (!pack) {

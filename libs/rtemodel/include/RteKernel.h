@@ -184,6 +184,8 @@ protected:
   bool LoadRequiredPdscFiles(CprjFile* cprjFile);
   RtePackage* LoadPack( const std::string& pdscFile);
   bool GetUrlFromIndex(const std::string& indexFile, const std::string& name, const std::string& vendor, const std::string& version, std::string& indexedUrl, std::string& indexedVersion);
+  bool GetLocalPacks(const std::string& rtePath, std::unique_ptr<XMLTree>& xmlTree, std::list<XMLTreeElement*>& packs);
+  bool GetLocalPacksUrls(const std::string& rtePath, std::list<std::string>& urls);
 
   virtual XMLTree* CreateXmlTree() const { return nullptr; } // creates new XMLTree implementation
 
