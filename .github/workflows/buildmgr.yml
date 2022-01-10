@@ -14,7 +14,7 @@ on:
       - 'libs/rtefsutils/**'
       - 'tools/buildmgr/**'
   release:
-    types: [published]
+    types: [ published ]
 
 jobs:
   build:
@@ -216,6 +216,16 @@ jobs:
           tag: ${{ github.ref }}
           overwrite: true
           asset_name: cbuild_install.sh
+
+      - name: Attach debian installer to release
+        if: ${{ github.event_name == 'release' }}
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: tools/buildmgr/cbuildgen/installer/cmsis-build*.deb
+          tag: ${{ github.ref }}
+          overwrite: true
+          asset_name: cbuild_debian_install.deb
 
   tests:
     needs: [ create_installer ]
