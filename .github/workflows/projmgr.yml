@@ -18,11 +18,7 @@ on:
 
 jobs:
   build:
-    if: |
-      ${{
-        github.event_name == 'pull_request' ||
-        (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/projmgr/'))
-      }}
+    if: ${{ github.event_name == 'pull_request' || (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/projmgr/')) }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     strategy:
@@ -98,7 +94,7 @@ jobs:
           path: ./build/tools/projmgr/${{ matrix.target }}/Release/${{ matrix.binary }}
           retention-days: 1
           if-no-files-found: error
-          
+
       - name: Build projmgr swig libs
         run: |
           cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DSWIG_LIBS=ON ..
@@ -114,7 +110,7 @@ jobs:
              ./buildswig/tools/projmgr/swig/projmgr.py
              ./buildswig/tools/projmgr/swig/_projmgr.pyd
           retention-days: 1
-          
+
       - name: Archive projmgr swig libs macos ubuntu
         if: ${{ startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu') }}
         uses: actions/upload-artifact@v2
