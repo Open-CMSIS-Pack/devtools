@@ -68,23 +68,26 @@ The CMSIS Pack repository must be present in the development environment.
 
 ## Usage
 
-```
-CMSIS Project Manager 0.9.0 (C) 2021 ARM
+```text
+CMSIS Project Manager 0.0.0+gdd33bca (C) 2021 ARM
 Usage:
   projmgr <command> [<args>] [OPTIONS...]
 
 Commands:
-  list packs        Print list of installed packs
-       devices      Print list of available device names
-       components   Print list of available components
-       dependencies Print list of unresolved project dependencies
-  convert           Convert cproject.yml in cprj file
-  help              Print usage
+  list packs          Print list of installed packs
+       devices        Print list of available device names
+       components     Print list of available components
+       dependencies   Print list of unresolved project dependencies
+       contexts       Print list of contexts in a csolution.yml
+  convert             Convert cproject.yml or csolution.yml in cprj files
+  help                Print usage
 
 Options:
-  -i, --input arg   Input YAML file
-  -f, --filter arg  Filter words
-  -h, --help        Print usage
+  -p, --project arg   Input cproject.yml file
+  -s, --solution arg  Input csolution.yml file
+  -f, --filter arg    Filter words
+  -o, --output arg    Output directory
+  -h, --help          Print usage
 ```
 
 ### Commands
@@ -104,7 +107,7 @@ list devices [--filter "<filter words>"]
 Print list of available components. The list can be filtered by a selected device in the `cproject.yml` file with the option `--input` and/or by words provided with the option `--filter`:
 
 ```text
-list components [--input <example.cproject.yml> --filter "<filter words>"]
+list components [--p <example.cproject.yml> --filter "<filter words>"]
 ```
 todo: this does not work anymore
 
@@ -117,12 +120,12 @@ list dependencies --input <example.cproject.yml> [--filter "<filter words>"]
 Convert cproject.yml in cprj file:
 
 ```text
-convert --input <example.cproject.yml>
+convert --p <example.cproject.yml>
 ```
 
-## Project Examples
+# Project Examples
 
-### Minimal Project Setup
+## Minimal Project Setup
 
 Simple applications require just one self-contained file.
 
@@ -149,7 +152,106 @@ project:
     - component: Device:Startup
 ```
 
-### Project Setup for Multiple Targets and Builds
+## Software Layers
+
+Software layers collect source files and software components along with configuration files for re-use in different projects.
+The following diagram shows the various layers that are used to compose the IoT Cloud examples.
+
+![Software Layers](./images/Layer.png "Target and Build Types")
+
+The following example is a `Blinky` application that uses a `App`, `Board`, and `RTOS` layer to compose the application for a NUCELO-G474RE board.  Note, that the `device:` definition is is the `Board` layer.
+
+**Example Project: `Blinky.cproject.yml`**
+
+```yml
+project:
+  compiler: AC6
+
+  layers:
+    - layer: .\Layer\App\Blinky.clayer.yml
+    - layer: .\Layer\RTOS\RTX.clayer.yml
+    - layer: .\Layer\Board\Nucleo-G474RE.clayer.yml
+```
+
+**App Layer: `.\Layer\App\Blinky.clayer.yml`**
+
+```yml
+layer:
+# type: RTOS
+  name: RTX
+  description: Keil RTX5 open-source real-time operating system with CMSIS-RTOS v2 API
+
+  interfaces:
+    - provides:
+        - RTOS2:
+
+  components:
+    - component: CMSIS:RTOS2:Keil RTX5&Source
+```
+
+**RTOS Layer: `.\Layer\RTOS\RTX.clayer.yml`**
+
+```yml
+layer:
+# type: RTOS
+  name: RTX
+  description: Keil RTX5 open-source real-time operating system with CMSIS-RTOS v2 API
+
+  interfaces:
+    - provides:
+        - RTOS2:
+
+  components:
+    - component: CMSIS:RTOS2:Keil RTX5&Source
+```
+
+**Board Layer: `.\Layer+NUCELO-G474RE\Board\Nucleo-G474RE.clayer.yml`**
+
+```yml
+layer:
+  name: NUCLEO-G474RE
+# type: Board
+  description: Board setup with interfaces
+  device: STM32G474CBTx
+
+  interfaces:
+    - consumes:
+        - RTOS2:
+    - provides:
+        - C_VIO:
+        - A_IO9_I:
+        - A_IO10_O:
+        - C_VIO:
+        - STDOUT:
+        - STDIN:
+        - STDERR:
+        - Heap: 65536
+  
+  components:
+    - component: CMSIS:CORE
+    - component: CMSIS Driver:USART:Custom
+    - component: CMSIS Driver:VIO:Board&NUCLEO-G474RE
+    - component: Compiler&ARM Compiler:Event Recorder&DAP
+    - component: Compiler&ARM Compiler:I/O:STDERR&User
+    - component: Compiler&ARM Compiler:I/O:STDIN&User
+    - component: Compiler&ARM Compiler:I/O:STDOUT&User
+    - component: Board Support&NUCLEO-G474RE:Drivers:Basic I/O
+    - component: Device&STM32CubeMX:STM32Cube Framework:STM32CubeMX
+    - component: Device&STM32CubeMX:STM32Cube HAL
+    - component: Device&STM32CubeMX:Startup
+  
+  groups:
+    - group: Board IO
+      files:
+        - file: ./Board_IO/arduino.c
+        - file: ./Board_IO/arduino.h
+        - file: ./Board_IO/retarget_stdio.c
+    - group: STM32CubeMX
+      files:
+        - file: ./RTE/Device/STM32G474RETx/STCubeGenerated/STCubeGenerated.ioc
+```
+
+## Project Setup for Multiple Targets and Builds
 
 Complex examples require frequently slightly different targets and/or modifications during build, i.e. for testing. The picture below shows a setup during software development that supports:
 
@@ -157,7 +259,7 @@ Complex examples require frequently slightly different targets and/or modificati
 - Unit/Integration Testing the same software setup on a physical board where Hardware Drivers implement the interface to physical I/O.
 - System Testing where the software is combined with more software components that compose the final application.
 
- ![Target and Build Types](./images/TargetBuild-Types.png "Target and Build Types")
+![Target and Build Types](./images/TargetBuild-Types.png "Target and Build Types")
 
 As the software may share a large set of common files, provisions are required to manage such projects.  The common way in other IDE's is to add:
 
@@ -233,7 +335,7 @@ components:
     not-for-type: .Test                           
 ```
 
-## Project Setup for Related Projects
+# Project Setup for Related Projects
 
 A solution is the software view of the complete system. It combines projects that can be generated independently and therefore manages related projects. It may be also deployed to different targets during development as described in the previous section under [Project Setup for Multiple Targets and Test Builds](#project-setup-for-multiple-targets-and-test-builds).
 
@@ -281,9 +383,9 @@ solution:
     not-for-type: +Virtual
 ```
 
-## Project Structure
+# Project Structure
 
-### Directory Structure  (old)
+## Directory Structure  (old)
 
 This section describes how the files of `*.csolution.yml` should be organized to allow the scenarios described above:
 
@@ -296,8 +398,10 @@ Source Directory                  | Content
 `./<project>/Layer+<target>/<name>` | `*.clayer.yml` and related source files of a layers that are specific to a target have a specific directory.
 `./<project>/Layer/<name>`          | `*.clayer.yml` and related source files of a layers that are common to all targets may have a common directory.
 
-**Note:**
+**Notes:**
+
 - `./<project>/RTE+<target>` contains the *.cprj file that is generated by `projmgr`
+- Directory names `RTE` and `Layer` should become configurable.  ToDo: analyze impact.
 
 The `./RTE` directory structure is maintained by tools and has the following structure. You should not modify the structure of this directory.
 
@@ -308,29 +412,78 @@ The `./RTE` directory structure is maintained by tools and has the following str
 `.../<component class>/<Dname>`   | Configurable files of the component class that are device specific. It is generated when a component has a condition with a `Dname` attribute. (strictly speaking no longer needed, backward compatiblity to MDK?)
 `.../Device/<Dname>`              | Configurable files of the component class Device. This should have always a condition with a `Dname` attribute.
 
-Output Directory                            | Content
-:-------------------------------------------|:---------------
-`./<project>/Output+<target>`               | Contains the final binary and symbol files of a project. Each `build-type` shares the same output directory.
-`./<project>/Output+<target>/.<build-type>` | Contains interim files (`*.o`, `*.lst`) fore each `build-type`
+Output Directory                             | Content
+:--------------------------------------------|:---------------
+`./<project>/Output+<target>`                | Contains the final binary and symbol files of a project. Each `build-type` shares the same output directory.
+`./<project>/.Intrim+<target>/.<build-type>` | Contains interim files (`*.o`, `*.lst`) fore each `build-type`
 
 **Note:**
-- The content of the `Output` directory is generated by `CBuild`.
+- The content of the `Output` directory is generated by the `CBuild` step.
 
-**Software Components** have:
+## Software Components
 
- - Configurable source and header files are copied to the project using the directory structure explained below.
- - Libraries, source, and header files that are not configurable (and need no modification) are stored in the directory of the Software Component (typically part of CMSIS_Pack_ROOT) and get included directly from this location into the project.
- - An Include Path to the header files of the Software Component is added to the C/C++ Compiler control string.
+Software components are re-usable library or source files that require no modification in the user application. Optionally, configurable source and header files are provided that allow to set parameters for the software component. 
 
+- Configurable source and header files are copied to the project using the directory structure explained above.
+- Libraries, source, and header files that are not configurable (and need no modification) are stored in the directory of the Software Component (typically part of CMSIS_Pack_ROOT) and get included directly from this location into the project.
+- An Include Path to the header files of the Software Component is added to the C/C++ Compiler control string.
 
+### PLM of configuration files
 
-### Directory Structure  (old)
+Configurable source and header files have a version information that is required during Project Lifetime Management (PLM) of a project. The version number is important when the underlying software pack changes and provides a newer configuration file version.
 
-This section describes how files of Software Component are included into the directory structure of the project:
+Depending on the PLM status of the application, the `projmgr` performs for configuration files the following operation:
 
- - Configurable source and header files are copied to the project using the directory structure explained below.
- - Libraries, source, and header files that are not configurable (and need no modification) are stored in the directory of the Software Component (typically part of CMSIS_Pack_ROOT) and get included directly from this location into the project.
- - An Include Path to the header files of the Software Component is added to the C/C++ Compiler control string.
+1. **Add** a software component for the first time: the related config file is copied twice into the related `RTE` project directory.  The first copy can be modified by the user with the parameters for the user application. The second copy is an unmodified hidden backup file that is appended with the version information.
+
+    **Example:** A configuration file `ConfigFile.h` at version `1.2.0` is copied:
+
+    ```c
+    ./RTE/component_class/ConfigFile.h           // user editable configuration file
+    ./RTE/component_class/.ConfigFile.h-1.2.0    // hidden backup used for version comparison
+    ```
+    
+    The `projmgr` outputs a user notification to indicate that files are added:
+
+    ```text
+    ./RTE/component_class/ConfigFile.h -  info: component 'name' added configuration file version '1.2.0'
+    ```
+
+2. **Upgrade** (or downgrade) a software component: if the version of the hidden backup is identical, no operation is performed. If the version differs, the new configuration file is copied with appended version information.
+
+    **Example:** after configuration file `ConfigFile.h` to version `1.3.0` the directory contains these files:
+
+    ```c
+    ./RTE/component_class/ConfigFile.h           // user editable configuration file
+    ./RTE/component_class/ConfigFile.h-1.3.0     // user editable configuration file
+    ./RTE/component_class/.ConfigFile.h-1.2.0    // hidden backup used for version comparison
+    ```
+
+    The `projmgr` outputs a user notification to indicate that configuration files have changed:
+
+    ```text
+    ./RTE/component_class/ConfigFile.h - warning: component 'name' upgrade for configuration file version '1.3.0' added, but file inactive
+    ```
+
+3. **User action to complete upgrade**: The user has now several options (outside of `projmgr`) to merge the configuration file information.  A potential way could be to use a 3-way merge utility. After merging the configuration file, the hidden backup should be deleted and the unmodified new version should become the hidden backup.  The previous configuration file may be stored as backup as shown below.
+
+    ```c
+    ./RTE/component_class/ConfigFile.h           // new configuration file with merge configuration
+    ./RTE/component_class/ConfigFile.h.bak       // previous configuration file stored as backup
+    ./RTE/component_class/.ConfigFile.h-1.3.0    // hidden backup of unmodified config file, used for version comparison
+    ```
+
+## Directory Structure  (old)
+
+ToDo: Impact analysis to legacy products that include CMSIS-Pack management.
+
+This section describes how Keil MDK and the CMSIS-Eclipse currently organizes the `RTE` directory.
+
+Software Component are included into the directory structure of the project:
+
+- Configurable source and header files are copied to the project using the directory structure explained below.
+- Libraries, source, and header files that are not configurable (and need no modification) are stored in the directory of the Software Component (typically part of CMSIS_Pack_ROOT) and get included directly from this location into the project.
+- An Include Path to the header files of the Software Component is added to the C/C++ Compiler control string.
 
 The following directory and files are created in the Project Folder:
 
@@ -343,11 +496,11 @@ Directory                         | Content
 
 The directory `.\RTE` is created in the project root directory when using Software Components. You should not modify the content of this folder.
 
-### RTE_Components.h
+## RTE_Components.h
 
 The file `./RTE/RTE_Components.h` is automatically created by the CMSIS Project Manager (during CONVERT). For each selected Software Component it contains `#define` statements required by the component. These statements are defined in the \*.PDSC file for that component. The following example shows a sample content of a RTE_Components.h file:
 
-```
+```c
 /* Auto generated Run-Time-Environment Component Configuration File *** Do not modify ! *** */
 
 #ifndef RTE_COMPONENTS_H
@@ -365,7 +518,7 @@ The file `./RTE/RTE_Components.h` is automatically created by the CMSIS Project 
 ```
 
 The typical usage of the `RTE_Components.h` file is in header files to control the inclusion of files that are related to other components of the same Software Pack.
-```
+```c
 #include "RTE_Components.h"
 #include  CMSIS_device_header
 
@@ -869,16 +1022,17 @@ The YML structure of the section `project:` is:
 project:                     # do we need this section at all, perhaps for platform?
   compiler: name             # specify compiler (AC6, GCC, IAR)
   description:               # project description (optional)
-  processor:                 # specify processor  ??
-  ....
+  output-type: lib | exe     # generate executable (default) or library
+  processor:                 # specify processor attributes 
+  groups:                    # source files organized in groups
+  layers:                    # software layers of pre-configured software components
+  components:                # software components
 ```  
 
 
-## Processor
+## Processor Attributes
 
-The `processor:` keyword defines:
-  - for multi-processor systems: the core that is used to execute the program part.
-  - attributes such as trustzone and fpu register usage.
+The `processor:` keyword defines attributes such as TrustZone and FPU register usage.
 
 ```yml
  processor:                # processor specific settings
@@ -926,14 +1080,14 @@ groups:
       - file: file1a.c
 ```
 
-
-
-# Layer Definition
+# Layer
 
 Start of a layer definition in a `*.clayer.yml` file.
 
 
-Example:
+**Example:**
+
+
 
 ```yml
 project:
@@ -967,8 +1121,8 @@ layer: App
 ```
 
 ```yml
-layer: RTOS
-  name: RTX
+layer:
+  type: RTOS
   description: Keil RTX5 open-source real-time operating system with CMSIS-RTOS v2 API
   
 interface:
@@ -1058,6 +1212,10 @@ if `RTE/MyComponentClass/MyConfigFile.h` does not exist `MyConfigFile.h` will be
          - (a) print a user notification about the config file not being up-to-date
          - (b) run a 3-way merge utility attempting to merge the files if it fails revert back.
 
+
+## Output versions to *.cprj
+
+The ProjMgr should always generate *.cprj files that contain version information about the used software packs.
 
 ## CMSIS-Zone Integration
 
