@@ -253,3 +253,17 @@ TEST_F(ProjMgrUnitTests, GenerateCprj) {
   CompareFile(testoutput_folder + "/GenerateCprjTest.cprj",
     testinput_folder + "/TestProject/test.cprj");
 }
+
+TEST_F(ProjMgrUnitTests, GetInstalledPacks) {
+  auto kernel = ProjMgrKernel::Get();
+  const auto& cmsisPackRoot = kernel->GetCmsisPackRoot();
+  list<RtePackage*> installedPacks;
+
+  kernel->SetCmsisPackRoot(string(CMAKE_SOURCE_DIR) + "test/local");
+  EXPECT_EQ(true, kernel->GetInstalledPacks(installedPacks));
+
+  kernel->SetCmsisPackRoot(string(CMAKE_SOURCE_DIR) + "test/local-malformed");
+  EXPECT_EQ(false, kernel->GetInstalledPacks(installedPacks));
+
+  kernel->SetCmsisPackRoot(cmsisPackRoot);
+}
