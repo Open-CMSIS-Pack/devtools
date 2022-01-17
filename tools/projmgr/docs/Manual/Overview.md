@@ -657,19 +657,68 @@ groups:
 
 ## Overall Structure
 
+
+The table below explains the top-level elements in each of the different `*.yml` input files.
+
 Keyword          | Allowed for following files..                  | Description
 :----------------|:-----------------------------------------------|:------------------------------------
 `default:`       | `[defaults].csettings.yml`, `*.csolution.yml`  | Start of the default section with [General Properties](#general-properties)
-`target-types:`  | `*.csolution.yml`                              | Start of the [Target type declaration list](#target-and-build-types) that allow to switch between [different targets](#project-setup-for-multiple-targets-and-test-builds).
-`build-types:`   | `[defaults].csettings.yml`, `*.csolution.yml`  | Start of the [Build type declaration list](#target-and-build-types) that allow to switch between different build settings such as: Release, Debug, Test.
 `solution:`      | `*.csolution.yml`                              | Start of the [Collection of related Projects](#solution-collection-of-related-projects) along with build order.
 `project:`       | `*.cproject.yml`                               | Start of a Project along with properties - tbd; used in `*.cproject.yml`.
 `layer:`         | `*.clayer.yml`                                 | Start of a software layer definition that contains pre-configured software components along with source files.
+
+
+YML structure of a `*.cdefaults.yml` file
+
+```yml
+defaults:              # Start of default settings
+  build-types:         # Default list of build-types (i.e. Release, Debug)
+  compiler:            # Default selection of the compiler
+```
+
+YML structure of a `*.csolution.yml` file
+
+```yml
+target-types:          # List of build-types
+build-types:           # List of build-types
+
+compiler:              # Default selection of the compiler
+
+solution:              # Start of a project list that are related
+  - project:           # Reference to a project file
+```
+
+YML structure of a `*.cproject.yml` file
+```yml
+project:
+  compiler: AC6
+
+  groups:              # List of source file groups along with source files
+  components:          # List of software components used
+  layers:              # List of software layers that belong to the project
+```
+
+YML structure of a `*.clayer.yml` file
+
+```yml
+layer:                 # Start of a layer
+  interfaces:          # List of consumed and provided interfaces
+  groups:              # List of source file groups along with source files
+  components:          # List of software components used
+```
+
+
+
+## Source Code Content 
+
+Keyword          | Allowed for following files..                  | Description
+:----------------|:-----------------------------------------------|:------------------------------------
+`target-types:`  | `*.csolution.yml`                              | Start of the [Target type declaration list](#target-and-build-types) that allow to switch between [different targets](#project-setup-for-multiple-targets-and-test-builds).
+`build-types:`   | `[defaults].csettings.yml`, `*.csolution.yml`  | Start of the [Build type declaration list](#target-and-build-types) that allow to switch between different build settings such as: Release, Debug, Test.
 `groups:`        | `*.cproject.yml`, `*.clayer.yml`               | Start of a list that adds [source groups and files](#groups-and-files) to a project or layer.
 `layers:`        | `*.cproject.yml`                               | Start of a list that adds software layers to a project.
 `components:`    | `*.cproject.yml`, `*.clayer.yml`               | Start of a list that adds software components to a project or layer.
 
-**Note:** For stand-alone `*.cproject.yml` files that do not required a `*.csolution.yml` it is possible to use the *Keywords* that are allowed at `*.csolution.yml` file level.
 
 ## General Properties
 
@@ -692,6 +741,8 @@ Keyword         | Description
 **Notes:**
 
 - `defines:`, `add-paths:`  and `misc:` are additive. All other keywords overwrite previous settings.
+
+
 
 ## Target and Build Types
 
@@ -1037,12 +1088,15 @@ The `processor:` keyword defines attributes such as TrustZone and FPU register u
 ```yml
  processor:                # processor specific settings
     trustzone: secure      # TrustZone mode: secure | non-secure | off
-    fpu: off               # control usage of FPU registers (S-Registers that are used for Helium and FPU hardware): on | off
-    endian: little | big   # select endianess 
+    fpu: on | off          # control usage of FPU registers (S-Register for Helium/FPU) (default: on for devices with FPU registers)
+    endian: little | big   # select endianess (only available when devices are configureable)
 ```
 
-todo - where can `processor:` used?
-
+**Note:**
+- Default for `trustzone:` 
+   - `off` for devices that support this option.
+   - `non-secure` for devices that have TrustZone enabled.
+   
 
 # Pre/Post build steps
 
