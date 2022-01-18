@@ -13,8 +13,8 @@ protected:
   void RunCBuildGenAux           (const std::string& cmd, bool expect);
   void CheckCMakeLists           (const TestParam& param);
   void CheckDescriptionFiles     (const std::string& filename1, const std::string& filename2);
-  void CheckLayerFiles           (const TestParam& param);
-  void CheckProjectFiles         (const TestParam& param);
+  void CheckLayerFiles           (const TestParam& param, const std::string& rteFolder);
+  void CheckProjectFiles         (const TestParam& param, const std::string& rteFolder);
   void CheckOutputDir            (const TestParam& param, const std::string& outdir);
   void CheckCMakeIntermediateDir (const TestParam& param, const std::string& intdir);
   void CheckCPInstallFile        (const TestParam& param);

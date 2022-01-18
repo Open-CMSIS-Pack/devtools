@@ -1368,8 +1368,9 @@ public:
    * @param f pointer to the original RteFile
    * @param deviceName device name used in the target
    * @param instanceIndex instance index, can be > 0  for multi-instance components
+   * @param rteFolder the "RTE" folder path used for placing files
   */
-  void Init(RteFile* f, const std::string& deviceName, int instanceIndex);
+  void Init(RteFile* f, const std::string& deviceName, int instanceIndex, const std::string& rteFolder);
 
   /**
    * @brief update file instance
@@ -1387,15 +1388,17 @@ public:
   /**
    * @brief check if a new version of a config file is available (for specified target)
    * @param targetName target name
+   * @param rteFolder the "RTE" folder path used for placing files
    * @return true if newer version of config file is available
   */
-  int HasNewVersion(const std::string& targetName) const;
+  int HasNewVersion(const std::string& targetName, const std::string& rteFolder) const;
 
   /**
    * @brief check if a new version of a config file is available (for any target)
+   * @param rteFolder the "RTE" folder path used for placing files
    * @return true if newer version of config file is available
   */
-  int HasNewVersion() const;
+  int HasNewVersion(const std::string& rteFolder) const;
 
   /**
    * @brief get file category
@@ -1472,9 +1475,10 @@ public:
   /**
    * @brief get the original file resolved to this instance for specified target
    * @param targetName target name to resolve file
+   * @param rteFolder the "RTE" folder path used for placing files
    * @return pointer to RteFile if resolved, nullptr otherwise
   */
-  RteFile* GetFile(const std::string& targetName) const;
+  RteFile* GetFile(const std::string& targetName, const std::string& rteFolder) const;
 
   /**
    * @brief copy a config file from pack location to the designated project directory

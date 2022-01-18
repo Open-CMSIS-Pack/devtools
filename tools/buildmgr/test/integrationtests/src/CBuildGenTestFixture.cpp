@@ -203,14 +203,14 @@ void CBuildGenTestFixture::GetDirectoryItems(const string& inPath, set<string> &
   }
 }
 
-void CBuildGenTestFixture::CheckLayerFiles(const TestParam& param) {
+void CBuildGenTestFixture::CheckLayerFiles(const TestParam& param, const string& rteFolder) {
   string layerDir = testout_folder + "/" + param.name + "/Project/Layer";
   string layerRef = testout_folder + "/" + param.name + "/Layer_Ref";
   error_code ec;
   set<string> dir, ref, clayers, clayers_ref;
 
-  GetDirectoryItems(layerDir, dir, "RTE");
-  GetDirectoryItems(layerRef, ref, "RTE");
+  GetDirectoryItems(layerDir, dir, rteFolder);
+  GetDirectoryItems(layerRef, ref, rteFolder);
 
   for (auto& p : fs::recursive_directory_iterator(layerDir, ec)) {
     if (p.path().extension() == ".clayer") {
@@ -235,14 +235,14 @@ void CBuildGenTestFixture::CheckLayerFiles(const TestParam& param) {
   }
 }
 
-void CBuildGenTestFixture::CheckProjectFiles(const TestParam& param) {
+void CBuildGenTestFixture::CheckProjectFiles(const TestParam& param, const string& rteFolder) {
   string projectDir = testout_folder + "/" + param.name + "/Project";
   string projectRef = testout_folder + "/" + param.name + "/Project_Ref";
   error_code ec;
   set<string> dir, ref;
 
-  GetDirectoryItems(projectDir, dir, "RTE");
-  GetDirectoryItems(projectRef, ref, "RTE");
+  GetDirectoryItems(projectDir, dir, rteFolder);
+  GetDirectoryItems(projectRef, ref, rteFolder);
 
   ASSERT_EQ(dir == ref, true) << "Project directory '" << projectDir
     << "' filetree is different from '" << projectRef << "' reference";

@@ -149,9 +149,10 @@ public:
    * @param instanceIndex file index for components with multiple instantiation.
    * Gets appended as a string to the base filename before extension it its value >=0.
    * Value of < 0 indicates that parent component can have only one instance
+   * @param rteFolder the "RTE" folder path used for placing files
    * @return full project-relative path including filename and extension
   */
-  std::string GetInstancePathName(const std::string& deviceName, int instanceIndex) const;
+  std::string GetInstancePathName(const std::string& deviceName, int instanceIndex, const std::string& rteFolder) const;
 
   /**
    * @brief construct absolute include path string that can be used in'-I' compiler option.

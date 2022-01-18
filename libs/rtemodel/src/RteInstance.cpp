@@ -640,9 +640,9 @@ RteFileInstance::RteFileInstance(RteItem* parent) :
   m_tag = "file";
 }
 
-void RteFileInstance::Init(RteFile* f, const string& deviceName, int instanceIndex)
+void RteFileInstance::Init(RteFile* f, const string& deviceName, int instanceIndex, const string& rteFolder)
 {
-  m_instanceName = f->GetInstancePathName(deviceName, instanceIndex);
+  m_instanceName = f->GetInstancePathName(deviceName, instanceIndex, rteFolder);
   m_instanceIndex = instanceIndex;
   m_fileName = RteUtils::ExtractFileName(m_instanceName);
   m_bRemoved = false;
@@ -719,20 +719,20 @@ RteFile::Category RteFileInstance::GetCategory() const
   return RteFile::CategoryFromString(GetAttribute("category"));
 }
 
-int RteFileInstance::HasNewVersion(const string& targetName) const
+int RteFileInstance::HasNewVersion(const string& targetName, const string& rteFolder) const
 {
-  RteFile* f = GetFile(targetName);
+  RteFile* f = GetFile(targetName, rteFolder);
   if (!f)
     return 0;
   int res = VersionCmp::Compare(f->GetVersionString(), GetVersionString());
   return res;
 }
 
-int RteFileInstance::HasNewVersion() const
+int RteFileInstance::HasNewVersion(const string& rteFolder) const
 {
   int newVersion = 0;
   for (auto it = m_targetInfos.begin(); it != m_targetInfos.end(); it++) {
-    int newVer = HasNewVersion(it->first);
+    int newVer = HasNewVersion(it->first, rteFolder);
     if (newVer > newVersion) {
       newVersion = newVer;
       if (newVersion > 2)
@@ -838,12 +838,12 @@ string RteFileInstance::GetAbsolutePath() const
   return s;
 }
 
-RteFile* RteFileInstance::GetFile(const string& targetName) const
+RteFile* RteFileInstance::GetFile(const string& targetName, const string& rteFolder) const
 {
   RteTarget* t = GetTarget(targetName);
   if (t) {
     RteComponent* c = GetComponent(targetName);
-    return t->GetFile(this, c);
+    return t->GetFile(this, c, rteFolder);
   }
   return NULL;
 }

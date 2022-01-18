@@ -15,6 +15,7 @@
 #include "RteProject.h"
 
 #include "RteComponent.h"
+#include "RteFile.h"
 #include "RteGenerator.h"
 #include "RteModel.h"
 #include "CprjFile.h"
@@ -23,6 +24,8 @@
 #include "XMLTree.h"
 
 using namespace std;
+
+const std::string DEFAULT_RTE_FOLDER = "RTE";
 
 ////////////////////////////
 RteProject::RteProject() :
@@ -101,6 +104,13 @@ void RteProject::SetModel(RteModel* model)
 RteProject* RteProject::GetProject() const
 {
   return const_cast<RteProject*>(this);
+}
+
+const std::string& RteProject::GetRteFolder() const {
+  if (m_rteFolder.has_value()) {
+    return m_rteFolder.value();
+  }
+  return DEFAULT_RTE_FOLDER;
 }
 
 void RteProject::ClearClasses()
@@ -398,7 +408,7 @@ RteFileInstance* RteProject::AddFileInstance(RteComponentInstance* ci, RteFile* 
     return NULL;
 
   string deviceName = target->GetFullDeviceName();
-  string id = f->GetInstancePathName(deviceName, index);
+  string id = f->GetInstancePathName(deviceName, index, GetRteFolder());
   string absPath = GetProjectPath() + id;
   target->AddComponentInstanceForFile(id, ci);
 
@@ -425,13 +435,12 @@ bool RteProject::UpdateFileToNewVersion(RteFileInstance* fi, RteFile* f, bool bM
   return UpdateFileInstance(fi, f, bMerge, true);
 }
 
-
 void RteProject::InitFileInstance(RteFileInstance* fi, RteFile* f, int index, RteTarget* target, const string& oldVersion, bool bCopy)
 {
   string deviceName = target->GetFullDeviceName();
   const string& targetName = target->GetName();
 
-  fi->Init(f, deviceName, index);
+  fi->Init(f, deviceName, index, GetRteFolder());
   fi->Update(f, false);
   fi->AddTargetInfo(targetName); // set/update supported targets
   fi->SetRemoved(false);
@@ -791,7 +800,7 @@ void RteProject::Update()
                 continue; // leave available until missing is resolved
 
                 // check if component has the file for given target (resolved component can have another set of files, even config ones)
-              RteFile *f = target->GetFile(fi, c);
+              RteFile *f = target->GetFile(fi, c, GetRteFolder());
               if (f) {
                 continue;
               }
@@ -822,7 +831,7 @@ void RteProject::Update()
   // add forced copy files
   for (auto itf = forcedFiles.begin(); itf != forcedFiles.end(); itf++) {
     RteFile* f = *itf;
-    string dst = GetProjectPath() + f->GetInstancePathName(EMPTY_STRING, 0);
+    string dst = GetProjectPath() + f->GetInstancePathName(EMPTY_STRING, 0, GetRteFolder());
 
     error_code ec;
     if (fs::exists(dst, ec))
@@ -1081,15 +1090,15 @@ void RteProject::CollectSettings()
 }
 
 
-string RteProject::GetRteComponentsH(const string & targetName, const string & prefix)
+string RteProject::GetRteComponentsH(const string & targetName, const string & prefix, const string& rteFolder)
 {
-  return GetRteHeader(string("/RTE_Components.h"), targetName, prefix);
+  return GetRteHeader(string("/RTE_Components.h"), targetName, prefix, rteFolder);
 }
 
-string RteProject::GetRteHeader(const string& name, const string & targetName, const string & prefix)
+string RteProject::GetRteHeader(const string& name, const string & targetName, const string & prefix, const string& rteFolder)
 {
   string rteHeader = prefix;
-  rteHeader += "RTE/_";
+  rteHeader += rteFolder + "/_";
   rteHeader += WildCards::ToX(targetName);
   rteHeader += "/";
   rteHeader += name;
@@ -1107,7 +1116,7 @@ void RteProject::CollectSettings(const string& targetName)
   // collect includes, libs and RTE_Components_h defines for active target
   for (auto itc = m_components.begin(); itc != m_components.end(); itc++) {
     RteComponentInstance* ci = itc->second;
-    t->CollectComponentSettings(ci);
+    t->CollectComponentSettings(ci, GetRteFolder());
   }
   t->CollectClassDocs();
 
@@ -1155,7 +1164,7 @@ void RteProject::CollectSettings(const string& targetName)
   // check if RTE components are used before setting RTE_Components.h include path and adding to target as well as setting -D_RTE_ at the command line.
   // add .\RTE\_TargetName\RTE_Components.h filePath
   if (GetComponentCount() > 0) {
-    string rteComponentsH = GetRteComponentsH(targetName, "./");
+    string rteComponentsH = GetRteComponentsH(targetName, "./", GetRteFolder());
     t->AddIncludePath(RteUtils::ExtractFilePath(rteComponentsH, false));
     t->AddFile("RTE_Components.h", RteFile::HEADER, "Component selection"); // add ".\RTE\_TargetName\RTE_Components.h" folder to all target includes
     t->InsertDefine("_RTE_");
