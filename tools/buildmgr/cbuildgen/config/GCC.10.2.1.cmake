@@ -1,5 +1,5 @@
-# Version: 0.10.1
-# Date: 2021-04-08
+# Version: 0.10.4
+# Date: 2022-01-18
 # This file maps the CMSIS project options to toolchain settings.
 #
 #   - Applies to toolchain: GNU Arm Embedded Toolchain 10-2020-q4-major 10.2.1
