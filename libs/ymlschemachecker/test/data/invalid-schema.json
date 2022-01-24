@@ -1,0 +1,39 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "properties": {
+    "layer": { "$ref": "#/$defs/LayerType" }
+  },
+  "additionalProperties": false
+  "required": [ "layer" ]
+ 
+  "$defs": {
+    "LayerType": {
+      "type": "object",
+      "properties": {
+        "name":        { "type": "string" },
+        "description": { "type": "string" },
+        "device":      { "$ref": "./csettings.schema.json#/$defs/DeviceType" },
+        "defines":     { "$ref": "./csettings.schema.json#/$defs/DefinesType" },
+        "add-paths":   { "$ref": "./csettings.schema.json#/$defs/AddpathsType" },
+        "compiler":    { "$ref": "./csettings.schema.json#/$defs/CompilerType" },
+        "misc":        { "$ref": "./csettings.schema.json#/$defs/MiscTypes" },
+        "groups":      { "$ref": "./csettings.schema.json#/$defs/GroupsType" },
+        "components":  { "$ref": "./csettings.schema.json#/$defs/ComponentsType" },
+        "packages":    { "$ref": "#/$defs/PackagesType" }
+      },
+      "additionalProperties": false,
+      "required": [ "name", "add-paths", "groups", "components" ]
+    },
+    "PackagesType": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/PackageType" }
+    },
+    "PackageType": {
+      "type": "object",
+      "properties": { "package": { "type": "string" } },
+      "additionalProperties": false,
+      "required": [ "package" ]
+    }
+  }
+}

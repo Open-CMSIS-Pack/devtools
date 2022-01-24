@@ -1,0 +1,47 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "properties": {
+    "project": { "$ref": "#/$defs/ProjectType" }
+  },
+  "additionalProperties": false,
+  "required": [ "project" ],
+  "$defs": {
+    "ProjectType": {
+      "type": "object",
+      "properties": {
+        "name":        { "type": "string" },
+        "description": { "type": "string" },
+        "device":      { "$ref": "./csettings.schema.json#/$defs/DeviceType" },
+        "compiler":    { "$ref": "./csettings.schema.json#/$defs/CompilerType" },
+        "optimize":    { "$ref": "./csettings.schema.json#/$defs/OptimizeType" },
+        "debug":       { "$ref": "./csettings.schema.json#/$defs/DebugType" },
+        "processor":   { "$ref": "./csettings.schema.json#/$defs/ProcessorType" },
+        "misc":        { "$ref": "./csettings.schema.json#/$defs/MiscTypes" },
+        "groups":      { "$ref": "./csettings.schema.json#/$defs/GroupsType" },
+        "components":  { "$ref": "./csettings.schema.json#/$defs/ComponentsType" },
+        "layers:":     { "$ref": "#/$defs/LayersType" }
+      },
+      "additionalProperties": false
+    },
+    "LayersType": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/LayerType" }
+    },
+    "LayerType": {
+      "type": "object",
+      "properties": {
+        "for-type":     { "$ref": "./csettings.schema.json#/$defs/ForType" },
+        "not-for-type": { "$ref": "./csettings.schema.json#/$defs/NotForType" },
+        "optimize":     { "$ref": "./csettings.schema.json#/$defs/OptimizeType" },
+        "debug":        { "$ref": "./csettings.schema.json#/$defs/DebugType" },
+        "defines":      { "$ref": "./csettings.schema.json#/$defs/DefinesType" },
+        "undefines":    { "$ref": "./csettings.schema.json#/$defs/UndefinesType" },
+        "add-paths":    { "$ref": "./csettings.schema.json#/$defs/AddpathsType" },
+        "del-paths":    { "$ref": "./csettings.schema.json#/$defs/DelpathsType" },
+        "misc":         { "$ref": "./csettings.schema.json#/$defs/MiscType" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

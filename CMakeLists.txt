@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.18)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(GetCMakeTargets)
+include(ApplyPatch)
 
 cmake_policy(SET CMP0091 NEW)
 
@@ -78,6 +79,7 @@ add_subdirectory(libs/rteutils)
 add_subdirectory(libs/xmlreader)
 add_subdirectory(libs/xmltree)
 add_subdirectory(libs/xmltreeslim)
+add_subdirectory(libs/ymlschemachecker)
 
 # Tools
 if(NOT LIBS_ONLY)
@@ -89,6 +91,9 @@ endif()
 
 # Prepare a list of CMake targets
 get_targets()
+
+# Apply patch on submodule
+apply_patch(${CMAKE_SOURCE_DIR}/external/json-schema-validator)
 
 # Google Test Framework
 set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
@@ -108,3 +113,9 @@ add_subdirectory(external/yaml-cpp)
 
 # cxxopts
 add_subdirectory(external/cxxopts)
+
+# Json
+add_subdirectory(external/json)
+
+# json-schema-validator
+add_subdirectory(external/json-schema-validator)

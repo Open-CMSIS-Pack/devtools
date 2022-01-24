@@ -1,0 +1,74 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index e6aff61..fa90bc0 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -132,9 +132,9 @@ set(INSTALL_CMAKE_DIR "lib/cmake/${PROJECT_NAME}")
+ set(INSTALL_CMAKEDIR_ROOT share/cmake)
+ 
+ # Install Targets
+-install(EXPORT ${PROJECT_NAME}Targets
+-        FILE ${PROJECT_NAME}Targets.cmake
+-        DESTINATION "${INSTALL_CMAKE_DIR}")
++# install(EXPORT ${PROJECT_NAME}Targets
++        # FILE ${PROJECT_NAME}Targets.cmake
++        # DESTINATION "${INSTALL_CMAKE_DIR}")
+ 
+ include(CMakePackageConfigHelpers)
+ write_basic_package_version_file(
+diff --git a/src/json-validator.cpp b/src/json-validator.cpp
+index 0beb613..fc808c3 100644
+--- a/src/json-validator.cpp
++++ b/src/json-validator.cpp
+@@ -576,6 +576,32 @@ public:
+ 		attr = sch.find("enum");
+ 		if (attr != sch.end()) {
+ 			enum_ = {true, attr.value()};
++
++      // Adding corresponding YAML translated values
++      auto enumEx = enum_;
++      struct {
++        std::string truename, falsename;
++      } names[] = {
++        {"y", "n"},
++        {"yes", "no"},
++        {"true", "false"},
++        {"on", "off"},
++      };
++
++      auto enumValues = enum_;
++      for (auto &v : enum_.second) {
++        for (const auto &name : names) {
++          if (name.truename == v) {
++            enumEx.second.push_back(true);
++          }
++
++          if (name.falsename == v) {
++            enumEx.second.push_back(false);
++          }
++        }
++      }
++
++      enum_ = enumEx;
+ 			sch.erase(attr);
+ 		}
+ 
+@@ -1263,10 +1289,17 @@ std::shared_ptr<schema> schema::make(json &schema,
+ 			schema.erase(attr);
+ 		}
+ 
+-		attr = schema.find("definitions");
++    // Consider $defs as a valid keyword
++    std::string defStr = "definitions";
++    attr = schema.find(defStr);
++    if (attr == schema.end()) {
++      defStr = "$defs";
++      attr = schema.find(defStr);
++    }
++
+ 		if (attr != schema.end()) {
+ 			for (auto &def : attr.value().items())
+-				schema::make(def.value(), root, {"definitions", def.key()}, uris);
++				schema::make(def.value(), root, {defStr, def.key()}, uris);
+ 			schema.erase(attr);
+ 		}
+ 
