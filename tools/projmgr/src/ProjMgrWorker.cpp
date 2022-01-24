@@ -17,13 +17,13 @@
 using namespace std;
 
 static constexpr const char* COMPONENT_DELIMITERS = ":&@";
-static constexpr const char* PREFIX_CCLASS = "::";
+static constexpr const char* SUFFIX_CVENDOR = "::";
 static constexpr const char* PREFIX_CBUNDLE = "&";
 static constexpr const char* PREFIX_CGROUP = ":";
 static constexpr const char* PREFIX_CSUB = ":";
 static constexpr const char* PREFIX_CVARIANT = "&";
 static constexpr const char* PREFIX_CVERSION = "@";
-static constexpr const char* PREFIX_PACK_NAME = "::";
+static constexpr const char* SUFFIX_PACK_VENDOR = "::";
 static constexpr const char* PREFIX_PACK_VERSION = "@";
 
 ProjMgrWorker::ProjMgrWorker(void) {
@@ -499,22 +499,20 @@ bool ProjMgrWorker::ProcessConfigFiles(ContextItem& context) {
 }
 
 bool ProjMgrWorker::ProcessDependencies(ContextItem& context) {
-  context.rteActiveProject->ResolveDependencies(context.rteActiveTarget);
-  const auto& selected = context.rteActiveTarget->GetSelectedComponentAggregates();
-  for (const auto& component : selected) {
-    RteComponentContainer* c = component.first;
-    string componentAggregate = GetComponentAggregateID(c);
-    const auto& match = find_if(context.components.begin(), context.components.end(),
-      [this, componentAggregate](auto component) {
-        return GetComponentAggregateID(component.second.first) == componentAggregate;
-      });
-    if (match == context.components.end()) {
-      context.dependencies.insert({ GetComponentAggregateID(c->GetComponent()), c });
+  map<const RteItem*, RteDependencyResult> results;
+  context.rteActiveTarget->GetSelectedDepsResult(results, context.rteActiveTarget);
+  for (const auto& [component, result] : results) {
+    const auto& deps = result.GetResults();
+    RteItem::ConditionResult r = result.GetResult();
+    if ((r == RteItem::MISSING) || (r == RteItem::SELECTABLE)) {
+      set<string> dependenciesSet;
+      for (const auto& dep : deps) {
+        dependenciesSet.insert(GetConditionID(dep.first));
+      }
+      if (!dependenciesSet.empty()) {
+        context.dependencies.insert({ GetComponentID(component), dependenciesSet });
+      }
     }
-  }
-  if (selected.size() != (context.components.size() + context.dependencies.size())) {
-    ProjMgrLogger::Error("resolving dependencies failed");
-    return false;
   }
   return CheckRteErrors();
 }
@@ -830,11 +828,13 @@ bool ProjMgrWorker::ProcessContext(ContextItem& context, bool resolveDependencie
     // TODO: Add uniquely identified missing dependencies to RTE Model
 
     if (!context.dependencies.empty()) {
-      string msg = "missing dependencies:";
-      for (const auto& dependency : context.dependencies) {
-        msg += "\n" + dependency.first;
+      for (const auto& [component, dependencies] : context.dependencies) {
+        string msg = "component '" + component + "' has unresolved dependencies:";
+        for (const auto& dependency : dependencies) {
+          msg += "\n  " + dependency;
+        }
+        ProjMgrLogger::Warn(msg);
       }
-      ProjMgrLogger::Warn(msg);
     }
   }
   return true;
@@ -1028,8 +1028,10 @@ bool ProjMgrWorker::ListDependencies(const string& filter, set<string>& dependen
   if (!ProcessContext(context)) {
     return false;
   }
-  for (const auto& dependency : context.dependencies) {
-    dependencies.insert(dependency.first);
+  for (const auto& [component, deps] : context.dependencies) {
+    for (const auto& dep : deps) {
+      dependencies.insert(component + " " + dep);
+    }
   }
   if (!filter.empty()) {
     set<string> filteredDependencies;
@@ -1193,10 +1195,11 @@ bool ProjMgrWorker::ProcessProjDeps(ContextItem& context, const string& outputDi
   return true;
 }
 
-string ProjMgrWorker::GetComponentID(RteItem* component) const {
+string ProjMgrWorker::GetComponentID(const RteItem* component) const {
+  const auto& vendor = component->GetVendorString().empty() ? "" : component->GetVendorString() + SUFFIX_CVENDOR;
   const vector<pair<const char*, const string&>> elements = {
-    {"",              component->GetVendorString()},
-    {PREFIX_CCLASS,   component->GetCclassName()},
+    {"",              vendor},
+    {"",              component->GetCclassName()},
     {PREFIX_CBUNDLE,  component->GetCbundleName()},
     {PREFIX_CGROUP,   component->GetCgroupName()},
     {PREFIX_CSUB,     component->GetCsubName()},
@@ -1206,10 +1209,15 @@ string ProjMgrWorker::GetComponentID(RteItem* component) const {
   return ConstructID(elements);
 }
 
-string ProjMgrWorker::GetComponentAggregateID(RteItem* component) const {
+string ProjMgrWorker::GetConditionID(const RteItem* condition) const {
+  return condition->GetTag() + " " + GetComponentID(condition);
+}
+
+string ProjMgrWorker::GetComponentAggregateID(const RteItem* component) const {
+  const auto& vendor = component->GetVendorString().empty() ? "" : component->GetVendorString() + SUFFIX_CVENDOR;
   const vector<pair<const char*, const string&>> elements = {
-    {"",              component->GetVendorString()},
-    {PREFIX_CCLASS,   component->GetCclassName()},
+    {"",              vendor},
+    {"",              component->GetCclassName()},
     {PREFIX_CBUNDLE,  component->GetCbundleName()},
     {PREFIX_CGROUP,   component->GetCgroupName()},
     {PREFIX_CSUB,     component->GetCsubName()},
@@ -1217,10 +1225,11 @@ string ProjMgrWorker::GetComponentAggregateID(RteItem* component) const {
   return ConstructID(elements);
 }
 
-string ProjMgrWorker::GetPackageID(RteItem* pack) const {
+string ProjMgrWorker::GetPackageID(const RteItem* pack) const {
+  const auto& vendor = pack->GetVendorString().empty() ? "" : pack->GetVendorString() + SUFFIX_PACK_VENDOR;
   const vector<pair<const char*, const string&>> elements = {
-    {"",                  pack->GetVendorString()},
-    {PREFIX_PACK_NAME,    pack->GetName()},
+    {"",                  vendor},
+    {"",                  pack->GetName()},
     {PREFIX_PACK_VERSION, pack->GetVersionString()},
   };
   return ConstructID(elements);

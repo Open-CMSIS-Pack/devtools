@@ -81,9 +81,7 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessComponents) {
 }
 
 TEST_F(ProjMgrWorkerUnitTests, ProcessDependencies) {
-  set<string> expected = {
-     "ARM::RteTest:CORE",
-  };
+  map<string, set<string>> expected = {{ "ARM::Device:Startup&RteTest Startup@2.0.3" , {"require RteTest:CORE"} }};
   ProjMgrParser parser;
   ContextDesc descriptor;
   const string& filename = testinput_folder + "/TestProject/test-dependency.cproject.yml";
@@ -97,8 +95,11 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDependencies) {
   EXPECT_EQ(true, ProcessComponents(context));
   EXPECT_EQ(true, ProcessDependencies(context));
   ASSERT_EQ(expected.size(), context.dependencies.size());
-  auto it = context.dependencies.begin();
-  for (const auto& expectedDependency : expected) {
-    EXPECT_EQ(expectedDependency, (*it++).first);
+  for (const auto& [expectedComponent, expectedDependencies] : expected) {
+    EXPECT_TRUE(context.dependencies.find(expectedComponent) != context.dependencies.end());
+    const auto& dependencies = context.dependencies[expectedComponent];
+    for (const auto& expectedDependency : expectedDependencies) {
+      EXPECT_TRUE(dependencies.find(expectedDependency) != dependencies.end());
+    }
   }
 }
