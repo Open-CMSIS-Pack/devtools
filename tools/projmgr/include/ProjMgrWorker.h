@@ -99,7 +99,7 @@ struct ContextItem {
   std::map<std::string, std::string> targetAttributes;
   std::map<std::string, RtePackage*> packages;
   std::map<std::string, std::pair<RteComponent*, ComponentItem*>> components;
-  std::map<std::string, RteComponentContainer*> dependencies;
+  std::map<std::string, std::set<std::string>> dependencies;
   std::map<std::string, std::map<std::string, RteFileInstance*>> configFiles;
   std::vector<GroupNode> groups;
   std::map<std::string, std::string> filePaths;
@@ -264,9 +264,10 @@ protected:
   static std::set<std::string> SplitArgs(const std::string& args, const std::string& delimiter = " ");
   static void ApplyFilter(const std::set<std::string>& origin, const std::set<std::string>& filter, std::set<std::string>& result);
   static bool FullMatch(const std::set<std::string>& installed, const std::set<std::string>& required);
-  std::string GetComponentID(RteItem* component) const;
-  std::string GetComponentAggregateID(RteItem* component) const;
-  std::string GetPackageID(RteItem* pack) const;
+  std::string GetComponentID(const RteItem* component) const;
+  std::string GetConditionID(const RteItem* condition) const;
+  std::string GetComponentAggregateID(const RteItem* component) const;
+  std::string GetPackageID(const RteItem* pack) const;
   std::string ConstructID(const std::vector<std::pair<const char*, const std::string&>>& elements) const;
 };
 

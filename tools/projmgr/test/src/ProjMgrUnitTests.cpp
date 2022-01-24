@@ -206,7 +206,7 @@ TEST_F(ProjMgrUnitTests, ListComponentsDeviceFiltered) {
 
 TEST_F(ProjMgrUnitTests, ListDependencies) {
   set<string> expected = {
-     "ARM::RteTest:CORE",
+     "ARM::Device:Startup&RteTest Startup@2.0.3 require RteTest:CORE",
   };
   set<string> dependencies;
   ContextDesc descriptor;
