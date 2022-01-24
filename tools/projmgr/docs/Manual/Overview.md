@@ -8,13 +8,14 @@ The **CMSIS Project Manager** supports the user with the following features:
   - Setup the tool chain based on a *Device* or *Board* that is defined in the CMSIS-Packs.
   - Add software components that are provided in the various software packs to the application.
 - Organize applications (with a `*.csolution.yml` file) into projects that are independently managed (using `*.cproject.yml` files).
-- Manage the resources (memory, peripherals, and user defined) accross the entire application to:
+- Manage the resources (memory, peripherals, and user defined) across the entire application to:
   - Partition the resources of the system and create related system and linker configuration.
   - Support in the configuration of software stacks (such as RTOS threads).
-  - Hint the user for inclusion of software layers are pre-configured for typical use cases.
-- Organize pre-configured software layers (with a `*.clayer.yml` file) for code reuse across similar applications.
+  - Hint the user for inclusion of software layers that are pre-configured for typical use cases.
+- Organize software layers (with a `*.clayer.yml` file) that enable code reuse across similar applications.
 - Manage multiple hardware targets to allow application deployment to different hardware (test board, production hardware, etc.).
-- Manage multiple built types to support software verification (debug build, test build, release build, ect.)
+- Manage multiple build types to support software verification (debug build, test build, release build, ect.)
+- Support multiple compiler toolchains (GCC, LLVM, Arm Compiler 6, IAR, etc.) for project deployment.
 
 Manual Chapters    | Content
 :------------------|:-------------------------
@@ -281,58 +282,62 @@ This enables that each target and/or build type can be identified and independen
 **Flexible Builds: `Multi.cproject.yml`**
 
 ```yml
-target-types:
-  - type: Board
-    board: NUCLEO-L552ZE-Q
+project:
 
-  - type: Production-HW
-    device: STM32L552XY         # specifies device
+  target-types:                   # todo move target-types and build-types to csolution.yml
+    - type: Board
+      board: NUCLEO-L552ZE-Q
 
-  - type: Virtual
-    board: VHT-Corstone-300     # Virtual Hardware platform (appears as board)
+    - type: Production-HW
+      device: STM32L552XY         # specifies device
+
+    - type: Virtual
+      board: VHT-Corstone-300     # Virtual Hardware platform (appears as board)
       
-build-types:
-  - type: Debug
-    optimize: debug
-    debug: on
+  build-types:
+    - type: Debug
+      optimize: debug
+      debug: on
 
-  - type: Test
-    optimize: max
-    debug: on
+    - type: Test
+      optimize: max
+      debug: on
 
-  - type: Release
-    optimize: max
-    debug: off
+    - type: Release
+      optimize: max
+      debug: off
 
-groups:
-  - group: My group1
-    files:
-      - file: file1a.c
-      - file: file1b.c
-      - file: file1c.c
+  groups:
+    - group: My group1
+      files:
+        - file: file1a.c
+        - file: file1b.c
+        - file: file1c.c
 
-  - group: My group2
-      - file: file2a.c
+    - group: My group2
+      files:
+        - file: file2a.c
 
-  - group: Test-Interface
-    for-type: .Test
-      - file: fileTa.c
+    - group: Test-Interface
+      for-type: .Test
+      files:
+        - file: fileTa.c
 
-layers:
-  - layer: NUCLEO-L552ZE-Q/Board.clayer.yml   # tbd find a better way: i.e. $Board$.clayer.yml
-    for-type: +Board
+  layers:
+    - layer: NUCLEO-L552ZE-Q/Board.clayer.yml   # tbd find a better way: i.e. $Board$.clayer.yml
+      for-type: +Board
 
-  - layer: Production.clayer.yml              # added for target type: Production-HW
-    for-type: +Production-HW
+    - layer: Production.clayer.yml              # added for target type: Production-HW
+      for-type: +Production-HW
 
-  - layer: Corstone-300/Board.clayer.yml      # added for target type: VHT-Corstone-300
-    for-type: +VHT-Corstone-300
+    - layer: Corstone-300/Board.clayer.yml      # added for target type: VHT-Corstone-300
+      for-type: +VHT-Corstone-300
 
-components:
-  - component: Device:Startup
-  - component: CMSIS:RTOS2:FreeRTOS
-  - component: ARM::CMSIS:DSP&Source          # not added for build type: Test
-    not-for-type: .Test                           
+  components:
+    - component: Device:Startup
+    - component: CMSIS:RTOS2:FreeRTOS
+    - component: ARM::CMSIS:DSP&Source          # not added for build type: Test
+      not-for-type: .Test                           
 ```
 
 # Project Setup for Related Projects
@@ -359,33 +364,34 @@ To manage the complexity of such related a projects, the `*.csolution.yml` file 
 **Related Projects `iot-product.csolution.yml`**
 
 ```yml
-target-types:
-  - type: Board
-    board: NUCLEO-L552ZE-Q
-
-  - type: Production-HW
-    device: STM32U5X          # specifies device
-      
-build-types:
-  - type: Debug
-    optimize: debug
-    debug: on
-
-  - type: Test
-    optimize: max
-    debug: on
-    
 solution:
-  - project: /security/TFM.cproject.yml
-    type: .Release
-  - project: /application/MQTT_AWS.cproject.yml
-  - project: /bootloader/Bootloader.cproject.yml
-    not-for-type: +Virtual
+  target-types:
+    - type: Board
+      board: NUCLEO-L552ZE-Q
+
+    - type: Production-HW
+      device: STM32U5X          # specifies device
+      
+  build-types:
+    - type: Debug
+      optimize: debug
+      debug: on
+
+    - type: Test
+      optimize: max
+      debug: on
+    
+  projects:
+    - project: /security/TFM.cproject.yml
+      type: .Release
+    - project: /application/MQTT_AWS.cproject.yml
+    - project: /bootloader/Bootloader.cproject.yml
+      not-for-type: +Virtual
 ```
 
 # Project Structure
 
-## Directory Structure  (old)
+## Directory Structure
 
 This section describes how the files of `*.csolution.yml` should be organized to allow the scenarios described above:
 
@@ -1249,22 +1255,6 @@ layer:
 
 
 # Proposals
-
-## PLM of configuration file
-
-Configuration files require Project Lifetime Management (PLM).  This is a proposal how to manage different versions:
-
-Let’s assume a configuration file named “MyConfigFile.h” with version 1.2.0 which is part of component “MyComponent” and the destination directory is RTE/MyComponentClass/
-
-1. “MyComponent” is selected by the project/layer
-if `RTE/MyComponentClass/MyConfigFile.h` does not exist `MyConfigFile.h` will be copied from the pack where the component version of MyComponent is present `RTE/MyComponentClass/MyConfigFile.h` in addition a copy of this file will be created `RTE/MyComponentClass/.MyConfigFile.h-1.2.0`. The user will only see and edit the `MyConfigFile.h`.
-
-2. If a new version of the component with a new version `1.3.0` of the config file becomes available the tools are able to:
-    - read from the filename `.MyConfigFile.h-1.2.0` that the current file is based on version 1.2.0 
-    - that the new configfile `1.3.0` is greater in the minimum version only -> new feature
-    - if the tools run a simple diff on `MyConfigFile.h` and `.MyConfigFile.h-1.2.0` “local” modifications can be identified with
-         - (a) print a user notification about the config file not being up-to-date
-         - (b) run a 3-way merge utility attempting to merge the files if it fails revert back.
 
 
 ## Output versions to *.cprj
