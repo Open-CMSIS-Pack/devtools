@@ -541,7 +541,7 @@ The typical usage of the `RTE_Components.h` file is in header files to control t
 
 ### Component Name Conventions
 
-The CMSIS Project Manager uses the following syntax to specify component names:
+The CMSIS Project Manager uses the following syntax to specify the `component:` names in the `*.yml` files.
 
 ```text
 [Cvendor::] Cclass [&Cbundle] :Cgroup [:Csub] [&Cvariant] [@[>=]Cversion]
@@ -559,7 +559,7 @@ Element    | Description
 
 **Notes:**
 
-- The unique separator `::` allows it to omit `Cvendor`
+- The unique separator `::` allows to omit `Cvendor`
 - When `Cvariant` is omitted, the default `Cvariant` is selected.
 
 **Examples:**
@@ -579,7 +579,8 @@ component: Keil::USB&MDK-Pro:CORE&Release@6.15.1     # From bundle MDK-Pro, USB 
 
 ### Device Name Conventions
 
-The device specifies multiple attributes about the target that ranges from the processor architecture to Flash algorithms used for device programming. The following syntax is used to specify a device.
+The device specifies multiple attributes about the target that ranges from the processor architecture to Flash algorithms used for device programming. The following syntax is used to specify a `device:` value in the `*.yml` files.
+
 
 ```text
 [Dvendor:: [device_name] ] [:Pname]
@@ -588,8 +589,8 @@ The device specifies multiple attributes about the target that ranges from the p
 Element       | Description
 :-------------|:---------------------
 `Dvendor`     | is the name (without enum field) of the device vendor defined in `<devices><family>` element of the software pack (optional).
-`device_name` | is the device name (Dname) or when used the variant name (Dvariant) as defined in the \<devices\> element.
-`Pname`       | is the processor identifier (Pname) as defined in the `<devices>` element.
+`device_name` | is the device name (Dname attribute) or when used the variant name (Dvariant attribute) as defined in the \<devices\> element.
+`Pname`       | is the processor identifier (Pname attribute) as defined in the `<devices>` element.
 
 **Notes:**
 
@@ -608,8 +609,7 @@ device: :cm33_core0                                 # Pname added to a previousl
 
 ### Board Name Conventions
 
-Evaluation Boards define indirectly  
-The device specifies multiple attributes about the target that ranges from the processor architecture to Flash algorithms used for device programming. The following syntax is used to specify a device.
+Evaluation Boards define indirectly a device via the related BSP.   The following syntax is used to specify a `board:` value in the `*.yml` files.
 
 ```text
 [vendor::] board_name
@@ -617,9 +617,12 @@ The device specifies multiple attributes about the target that ranges from the p
 
 Element      | Description
 :------------|:---------------------
-`vendor`     | is the name of the board vendor defined in `<boards><board>` element of the software pack (optional).
-`board_name` | is the device name (Dname) or when used the variant name (Dvariant) as defined in the \<devices\> element.
+`vendor`     | is the name of the board vendor defined in `<boards><board>` element of the board support pack (BSP) (optional).
+`board_name` | is the board name (name attribute) of the as defined in the \<board\> element of the BSP.
 
+**Note:**
+
+- When a `board:` is specified, the `device:` specification can be omitted, however it is possible to overwrite the device setting in the BSP with an explicit `device:` setting.
 
 **Examples:**
 
@@ -627,8 +630,6 @@ Element      | Description
 board: Keil::MCB54110                             # The Keil MCB54110 board (with device NXP::LPC54114J256BD64) 
 board: LPCXpresso55S28                            # The LPCXpresso55S28 board
 ```
-
-
 
 ## Access Sequences
 
