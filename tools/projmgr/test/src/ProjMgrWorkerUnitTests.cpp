@@ -32,16 +32,41 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessToolchain) {
   EXPECT_EQ(expected.version, context.toolchain.version);
 }
 
+TEST_F(ProjMgrWorkerUnitTests, ProcessToolchainOptions) {
+  struct expectedOutput {
+    bool result;
+    string options, compiler, version;
+  };
+
+  std::map<std::string, expectedOutput> testInput =
+  {
+    { "", {false, "", "", ""}},
+    { "TEST", {true, "", "TEST", "0.0.0"}},
+    { "AC6", {true, "AC6", "ARMCC", "6.16.0"}}
+  };
+
+  for (auto input : testInput) {
+    ContextItem context;
+    context.compiler = input.first;
+
+    EXPECT_EQ(input.second.result, ProcessToolchain(context));
+    EXPECT_EQ(input.second.options, context.targetAttributes["Toptions"]);
+    EXPECT_EQ(input.second.compiler, context.targetAttributes["Tcompiler"]);
+    EXPECT_EQ(input.second.version, context.toolchain.version);
+  }
+}
+
 TEST_F(ProjMgrWorkerUnitTests, ProcessDevice) {
   map<string, string> expected = {
     {"Dclock", "10000000"},
     {"Dcore", "Cortex-M0"},
     {"DcoreVersion", "r0p0"},
-    {"Dendian", "Configurable"},
+    {"Dendian", "Little-endian"},
     {"Dfpu", "NO_FPU"},
     {"Dmpu", "NO_MPU"},
     {"Dname", "RteTest_ARMCM0"},
     {"Dvendor", "ARM:82"},
+    {"Dsecure", "Non-secure"}
   };
   ProjMgrParser parser;
   ContextDesc descriptor;
@@ -103,3 +128,16 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDependencies) {
     }
   }
 }
+
+TEST_F(ProjMgrWorkerUnitTests, ProcessDeviceFailed) {
+  ProjMgrParser parser;
+  ContextDesc descriptor;
+  const string& filename = testinput_folder + "/TestProject/test-unavailable-processor.cproject.yml";
+  EXPECT_EQ(true, parser.ParseCproject(filename, true));
+  EXPECT_EQ(true, AddContexts(parser, descriptor, filename));
+  ContextItem context = GetContexts().begin()->second;
+  EXPECT_EQ(true, LoadPacks());
+  EXPECT_EQ(true, ProcessPrecedences(context));
+  EXPECT_EQ(false, ProcessDevice(context));
+}
+

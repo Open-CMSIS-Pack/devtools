@@ -14,6 +14,20 @@ string testinput_folder;
 string testoutput_folder;
 string testcmsispack_folder;
 
+CoutRedirect::CoutRedirect() :
+  m_buffer(""), m_oldStreamBuf(std::cout.rdbuf(m_buffer.rdbuf()))
+{
+}
+
+std::string CoutRedirect::GetString() {
+  return m_buffer.str();
+}
+
+CoutRedirect::~CoutRedirect() {
+  // reverse redirect
+  std::cout.rdbuf(m_oldStreamBuf);
+}
+
 void ProjMgrTestEnv::SetUp() {
   testinput_folder = string(TEST_FOLDER) + "data";
   testoutput_folder = RteFsUtils::GetCurrentFolder() + "output";
