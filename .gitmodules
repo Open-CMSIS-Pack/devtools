@@ -2,9 +2,20 @@
 	path = external/googletest
 	url = https://github.com/google/googletest.git
 	branch = main
+	ignore = dirty
 [submodule "external/cxxopts"]
 	path = external/cxxopts
 	url = https://github.com/jarro2783/cxxopts
+	ignore = dirty
 [submodule "external/yaml-cpp"]
 	path = external/yaml-cpp
 	url = https://github.com/jbeder/yaml-cpp
+	ignore = dirty
+[submodule "external/json"]
+	path = external/json
+	url = https://github.com/nlohmann/json.git
+	ignore = dirty
+[submodule "external/json-schema-validator"]
+	path = external/json-schema-validator
+	url = https://github.com/pboettch/json-schema-validator.git
+	ignore = dirty

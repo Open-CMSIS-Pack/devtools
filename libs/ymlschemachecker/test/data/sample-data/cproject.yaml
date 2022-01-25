@@ -1,0 +1,46 @@
+### CMSIS Project Description ###
+
+project:
+  name: TestProject1
+  description: Project 1
+  device: RteTest_ARMCM0
+  components:
+    - component: ARM::CMSIS:RTOS2:Keil RTX5&Source@5.5.3
+    - component: Keil::USB&MDK-Pro:CORE&Release@6.15.1
+    - component: ARM::CMSIS:CORE@>=5.5.0
+      not-for-type:
+        - .Debug
+        - .Release
+  groups:
+    - group: Sources
+      misc:
+        - C: [-C-group]
+          CPP: [-CPP-group]
+          ASM: [-ASM-group]
+          Link: [-Link-group]
+          Lib: [-Lib-group]
+      files: 
+        - file: main.c
+          misc:
+            - compiler: AC6
+              C: [-C-file-AC6]
+              CPP: [-CPP-file-AC6]
+              ASM: [-ASM-file-AC6]
+              Link: [-Link-file-AC6]
+              Lib: [-Lib-file-AC6]
+            - compiler: GCC
+              C: [-C-file-GCC]
+              CPP: [-CPP-file-GCC]
+              ASM: [-ASM-file-GCC]
+              Link: [-Link-file-GCC]
+              Lib: [-Lib-file-GCC]
+    - group: Debug Group
+      for-type: [.Debug]
+      files:
+        - file: debug.c
+    - group: Release Group
+      for-type: [.Release]
+      files:
+        - file: release.c
+        - file: excluded.c
+          not-for-type: [.Release]

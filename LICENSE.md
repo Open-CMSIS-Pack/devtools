@@ -39,3 +39,5 @@ The components listed below are not redistributed with the project but are used 
 |yaml-cpp|0.7.0|[MIT](https://opensource.org/licenses/MIT)|https://github.com/jbeder/yaml-cpp.git| packgen |
 |[GetGitRevisionDescription.cmake](./cmake/GetGitRevisionDescription.cmake)||[Boost Software License, Version 1.0](http://www.boost.org/LICENSE_1_0.txt)||Continuous integration|
 |[GetGitRevisionDescription.cmake.in](./cmake/GetGitRevisionDescription.cmake.in)||[Boost Software License, Version 1.0](http://www.boost.org/LICENSE_1_0.txt)||Continuous integration|
+|json|3.10.5|[MIT](https://opensource.org/licenses/MIT)|https://github.com/nlohmann/json| yml-schema-checker |
+|json-schema-validator|2.1.0|[MIT](https://opensource.org/licenses/MIT)|https://github.com/pboettch/json-schema-validator| yml-schema-checker |
