@@ -4,9 +4,8 @@
 
 The following \b Bash scripts and command line tools can be used for managing the build of CMSIS Projects from the command line.
 These scripts can be easily adopted to specific environments and are intended as a minimal reference.
-CMSIS-Build tools are available for download as an asset of the respective 
-<a href="https://github.com/ARM-software/CMSIS_5/releases/" target="_blank"><b>CMSIS Release Version</b></a> 
-(starting with 5.7.0).
+CMSIS-Build tools are available for download among 
+<a href="https://github.com/Open-CMSIS-Pack/devtools/releases" target="_blank"><b>Open-CMSIS-Pack devtools releases</b></a>.
 
 For command line build with software packs, the following tools and utilities are provided.
 
@@ -45,9 +44,8 @@ With most Linux distributions these tools are already available.  The installati
 
 \section cbuild_install2 Invocation
 
-CMSIS-Build tools are available for download as an asset of the respective 
-<a href="https://github.com/ARM-software/CMSIS_5/releases/" target="_blank"><b>CMSIS Release Version</b></a> 
-(starting with 5.7.0).
+CMSIS-Build tools are available for download among 
+<a href="https://github.com/Open-CMSIS-Pack/devtools/releases" target="_blank"><b>Open-CMSIS-Pack devtools releases</b></a>.
 
 To install the command line build environment start from the Bash prompt:
 \code
@@ -96,8 +94,8 @@ product variant). The user is required to update the these settings after instal
 <b>Example file: ./cbuild/etc/AC6.6.16.0.cmake</b>
 
 \code
-# Version: 0.10.0
-# Date: 2020-09-30
+# Version: 0.10.4
+# Date: 2022-01-18
 # This file maps the CMSIS project options to toolchain settings.
 #
 #   - Applies to toolchain: Arm Compiler 6.16.0
@@ -381,7 +379,6 @@ cbuildgen <ProjectFile>.cprj <command> [<args>]
   </tr>
   <tr>
     <td>cmake</td>
-    <td></td>
     <td>Generate CMakeLists.txt file.</td>    
     <td>Generates <tt>CMakeLists.txt</tt> file for \ref cmake "CMake" required to build the project. 
         This command also generates a ASCII log file <tt>\<ProjectFile\>.clog</tt> recording location and version of the selected toolchain,

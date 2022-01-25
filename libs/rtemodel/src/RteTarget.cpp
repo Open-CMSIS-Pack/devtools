@@ -45,17 +45,17 @@ RteFileInfo::RteFileInfo(RteFile::Category cat, RteComponentInstance* ci, RteFil
 {
 };
 
-int RteFileInfo::HasNewVersion(const string& targetName) const
+int RteFileInfo::HasNewVersion(const string& targetName, const string& rteFolder) const
 {
   if (m_fi)
-    return m_fi->HasNewVersion(targetName);
+    return m_fi->HasNewVersion(targetName, rteFolder);
   return 0;
 }
 
-int RteFileInfo::HasNewVersion() const
+int RteFileInfo::HasNewVersion(const string& rteFolder) const
 {
   if (m_fi)
-    return m_fi->HasNewVersion();
+    return m_fi->HasNewVersion(rteFolder);
   return 0;
 }
 
@@ -657,7 +657,7 @@ void RteTarget::AddAlgorithm(RteItem* algo, RteItem* holder)
   m_algos.insert(pathName);
 }
 
-void RteTarget::CollectComponentSettings(RteComponentInstance* ci)
+void RteTarget::CollectComponentSettings(RteComponentInstance* ci, const std::string& rteFolder)
 {
   int count = ci->GetInstanceCount(GetName());
   if (count <= 0)
@@ -689,7 +689,7 @@ void RteTarget::CollectComponentSettings(RteComponentInstance* ci)
       continue;
     if (f->IsConfig()) {
       for (int i = 0; i < count; i++) {
-        string id = f->GetInstancePathName(deviceName, i);
+        string id = f->GetInstancePathName(deviceName, i, rteFolder);
         AddComponentInstanceForFile(id, ci);
       }
       continue;
@@ -1263,7 +1263,7 @@ RteFile* RteTarget::FindFile(const string& fileName, RteComponent* c) const
 }
 
 
-RteFile* RteTarget::GetFile(const RteFileInstance* fi, RteComponent* c) const
+RteFile* RteTarget::GetFile(const RteFileInstance* fi, RteComponent* c, const std::string& rteFolder) const
 {
   if (!fi)
     return NULL;
@@ -1273,7 +1273,7 @@ RteFile* RteTarget::GetFile(const RteFileInstance* fi, RteComponent* c) const
   const string& instanceName = fi->GetInstanceName();
   for (auto itf = filteredFiles.begin(); itf != filteredFiles.end(); itf++) {
     RteFile* f = *itf;
-    if (f && f->GetInstancePathName(deviceName, index) == instanceName) {
+    if (f && f->GetInstancePathName(deviceName, index, rteFolder) == instanceName) {
       return f;
     }
   }
@@ -1574,7 +1574,7 @@ const bool RteTarget::GenerateRteHeaderFile(const string& headerName, const stri
   if (!project)
     return false;
 
-  string rteCompH = RteProject::GetRteHeader(headerName, GetName(), project->GetProjectPath());
+  string rteCompH = RteProject::GetRteHeader(headerName, GetName(), project->GetProjectPath(), project->GetRteFolder());
 
   if (!RteFsUtils::MakeSureFilePath(rteCompH))
     return false;

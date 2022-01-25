@@ -243,7 +243,7 @@ const bool CbuildModel::GenerateFixedCprj(const string& update) {
 
             for (auto configFile : configFiles) {
               if (configFile.second->GetComponent(m_targetName)->Compare(component)) {
-                map<string, string> fileAttributes = configFile.second->GetFile(m_targetName)->GetAttributes();
+                map<string, string> fileAttributes = configFile.second->GetFile(m_targetName, m_cprjProject->GetRteFolder())->GetAttributes();
                 fileAttributes["name"] = RteUtils::BackSlashesToSlashes(fileAttributes["name"]);
 
                 // Iterate over component files
@@ -311,7 +311,7 @@ const bool CbuildModel::GenerateAuditData() {
               string instanceName = configFile.second->GetInstanceName();
               RteFsUtils::NormalizePath(instanceName, m_prjFolder);
               auditData << EOL << "    - ConfigFile: " << instanceName << ":" << configFile.second->GetVersionString();
-              if (configFile.second->HasNewVersion(m_targetName) > 0) auditData << " [" << configFile.second->GetFile(m_targetName)->GetVersionString() << "]";
+              if (configFile.second->HasNewVersion(m_targetName) > 0) auditData << " [" << configFile.second->GetFile(m_targetName, m_cprjProject->GetRteFolder())->GetVersionString() << "]";
             }
           }
         }
@@ -456,10 +456,10 @@ const bool CbuildModel::EvalPreIncludeFiles() {
   for (auto it : preincludeFiles) {
     RteComponent* ci = it.first;
     if (ci != NULL) {
-      string componentName = GetExtendedRteGroupName(ci);
+      string componentName = GetExtendedRteGroupName(ci, m_cprjProject->GetRteFolder());
       m_preIncludeFilesLocal[componentName] = vector<string>(it.second.begin(), it.second.end());
     } else {
-      const string& rteFolder = m_prjFolder + "RTE/_" + WildCards::ToX(m_cprjTarget->GetName()) + "/";
+      const string& rteFolder = m_prjFolder + m_cprjProject->GetRteFolder() + "/_" + WildCards::ToX(m_cprjTarget->GetName()) + "/";
       for (auto it2 : it.second) {
         string file = it2;
         if (!RteFsUtils::NormalizePath(file, rteFolder)) {
@@ -498,7 +498,7 @@ const bool CbuildModel::EvalConfigFiles() {
     for (auto fi : compConfigFiles) {
       const string& prjFile = RteUtils::BackSlashesToSlashes(fi.second->GetInstanceName().c_str());
       const string& absPrjFile = m_cprjProject->GetProjectPath() + prjFile;
-      const string& pkgFile = RteUtils::BackSlashesToSlashes(fi.second->GetFile(m_targetName)->GetOriginalAbsolutePath());
+      const string& pkgFile = RteUtils::BackSlashesToSlashes(fi.second->GetFile(m_targetName, m_cprjProject->GetRteFolder())->GetOriginalAbsolutePath());
       error_code ec;
       if (!fs::exists(absPrjFile, ec)) {
         // Copy config file from pack if it's missing
@@ -935,7 +935,7 @@ const bool CbuildModel::EvalFlags() {
   const RteItem* components = m_cprjPack->GetItemByTag("components");
   if (components) {
     for (auto ci : components->GetChildren()) {
-      const string& componentName = GetExtendedRteGroupName(ci);
+      const string& componentName = GetExtendedRteGroupName(ci, m_cprjProject->GetRteFolder());
       SetItemFlags(ci, componentName);
     }
   }
@@ -1022,7 +1022,7 @@ const bool CbuildModel::EvalRteSourceFiles(map<string, list<string>> &cSourceFil
         return false;
       }
       // Use extended RTE group name instead of string obtained by RteAttributes::GetProjectGroupName() implementation("::" + Cclass)
-      const string& componentName = GetExtendedRteGroupName(m_cprjTarget->GetComponentInstanceForFile(file.first.c_str()));
+      const string& componentName = GetExtendedRteGroupName(m_cprjTarget->GetComponentInstanceForFile(file.first.c_str()), m_cprjProject->GetRteFolder());
       switch (CbuildUtils::GetFileType(cat, file.first)) {
         case RteFile::Category::SOURCE_C:
           cSourceFiles[componentName].push_back(filepath);
@@ -1046,7 +1046,7 @@ const bool CbuildModel::EvalRteSourceFiles(map<string, list<string>> &cSourceFil
   return true;
 }
 
-string CbuildModel::GetExtendedRteGroupName(RteItem* ci) {
+string CbuildModel::GetExtendedRteGroupName(RteItem* ci, const string& rteFolder) {
   /*
   GetExtendedRteGroupName:
     Returns Cclass + Cgroup + Csub + Cvariant names
@@ -1056,7 +1056,7 @@ string CbuildModel::GetExtendedRteGroupName(RteItem* ci) {
   const string& cGroupName = ci->GetCgroupName();
   const string& cSubName = ci->GetCsubName();
   const string& cVariantName = ci->GetCvariantName();
-  string rteGroupName = "RTE";
+  string rteGroupName = rteFolder;
   if (!cClassName.empty())   rteGroupName += "/" + CbuildUtils::RemoveSlash(cClassName);
   if (!cGroupName.empty())   rteGroupName += "/" + CbuildUtils::RemoveSlash(cGroupName);
   if (!cSubName.empty())     rteGroupName += "/" + CbuildUtils::RemoveSlash(cSubName);

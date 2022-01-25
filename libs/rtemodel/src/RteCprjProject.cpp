@@ -29,6 +29,7 @@ RteCprjProject::RteCprjProject(RteCprjModel* cprjModel) :
   // set project name based on filename
   SetName(RteUtils::ExtractFileBaseName(GetCprjFile()->GetPackageFileName()));
   SetProjectPath(RteUtils::ExtractFilePath(GetCprjFile()->GetPackageFileName(), true));
+  SetRteFolder(GetCprjFile()->GetRteFolder());
 }
 
 RteCprjProject::~RteCprjProject()

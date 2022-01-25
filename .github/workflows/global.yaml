@@ -2,7 +2,7 @@ name: global
 on:
   pull_request:
   release:
-    types: [published]
+    types: [ published ]
 jobs:
   copyright:
     runs-on: ubuntu-20.04

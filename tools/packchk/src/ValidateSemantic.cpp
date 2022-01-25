@@ -409,20 +409,21 @@ bool ValidateSemantic::CheckDependencyResult(RteTarget* target, RteComponent* co
 /**
  * @brief skip directories
  * @param systemHeader string name to test
+ * @param rteFolder the "RTE" folder path used for placing files
  * @return true / false
  */
-bool ValidateSemantic::ExcludeSysHeaderDirectories(const string& systemHeader)
+bool ValidateSemantic::ExcludeSysHeaderDirectories(const string& systemHeader, const string& rteFolder)
 {
   if(systemHeader.empty()) {
     return true;
   }
-  if(systemHeader == "RTE") {
+  if(systemHeader == rteFolder) {
     return true;
   }
-  if(systemHeader == "./RTE") {
+  if(systemHeader == "./" + rteFolder) {
     return true;
   }
-  if(systemHeader == "./RTE/_Test") {
+  if(systemHeader == "./" + rteFolder + "/_Test") {
     return true;
   }
 
@@ -566,7 +567,7 @@ bool ValidateSemantic::CheckDeviceDependencies(RteDeviceItem *device, RteProject
                     int    incPathsCnt = 0;
                     for(auto& incPath : incPaths) {
                       systemHeader = RteUtils::BackSlashesToSlashes(incPath);
-                      if(ExcludeSysHeaderDirectories(systemHeader)) {
+                      if(ExcludeSysHeaderDirectories(systemHeader, rteProject->GetRteFolder())) {
                         continue;
                       }
 

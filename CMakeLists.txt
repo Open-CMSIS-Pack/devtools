@@ -110,9 +110,13 @@ set_property(TARGET gmock_main PROPERTY
 
 # YAML
 add_subdirectory(external/yaml-cpp)
+# suppress warnings on external/yaml-cpp
+target_compile_options(yaml-cpp PRIVATE -w)
 
 # cxxopts
 add_subdirectory(external/cxxopts)
+# suppress warnings on external/cxxopts
+target_compile_options(cxxopts INTERFACE -w)
 
 # Json
 add_subdirectory(external/json)

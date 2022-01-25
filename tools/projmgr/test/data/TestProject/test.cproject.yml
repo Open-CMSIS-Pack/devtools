@@ -1,7 +1,6 @@
-### CMSIS Project Description ###
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schema/cproject.schema.json
 
 project:
-  name: TestProject
   description: Project 1
   device: RteTest_ARMCM0
   compiler: AC6@6.16.0

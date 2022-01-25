@@ -46,15 +46,17 @@ struct RteFileInfo
   /**
    * @brief compare file version of the given target and the instance
    * @param targetName target name
+   * @param rteFolder the "RTE" folder path used for placing files
    * @return 0 if both file versions are same, > 0 if file version of the given target is newer, otherwise < 0
   */
-  int HasNewVersion(const std::string& targetName) const;
+  int HasNewVersion(const std::string& targetName, const std::string& rteFolder) const;
 
   /**
    * @brief compare file version of this instance with the ones of other targets
+   * @param rteFolder the "RTE" folder path used for placing files
    * @return 0 if equal to all others target, > 0 if file version of any other target is newer, otherwise < 0
   */
-  int HasNewVersion() const;
+  int HasNewVersion(const std::string& rteFolder) const;
 
   RteFile::Category m_cat;    //file category
   RteComponentInstance* m_ci; // pointer to an object of type RteComponentInstance
@@ -219,9 +221,10 @@ public:
    * @brief determine file given by instances of type RteFileInstance and RteComponent
    * @param fi given pointer of type RteFileInstance
    * @param c given pointer of type RteComponent
+   * @param rteFolder the "RTE" folder path used for placing files
    * @return pointer of type RteFile
   */
-  RteFile* GetFile(const RteFileInstance* fi, RteComponent* c) const;
+  RteFile* GetFile(const RteFileInstance* fi, RteComponent* c, const std::string& rteFolder) const;
 
   /**
    * @brief evaluate dependencies of selected components of the target
@@ -540,9 +543,10 @@ public:
 
   /**
    * @brief collect settings of given component instance
+   * @param rteFolder the "RTE" folder path used for placing files
    * @param ci pointer to RteComponentInstance object
   */
-  void CollectComponentSettings(RteComponentInstance* ci);
+  void CollectComponentSettings(RteComponentInstance* ci, const std::string& rteFolder);
 
   /**
    * @brief collect documentation files from component groups

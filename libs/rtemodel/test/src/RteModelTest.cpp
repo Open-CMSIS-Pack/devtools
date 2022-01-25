@@ -53,9 +53,10 @@ const string prjsDir = "RteModelTestProjects";
 const string RteTestM3 = "/RteTestM3";
 const string RteTestM3_cprj = prjsDir + RteTestM3 + "/RteTestM3.cprj";
 
-const string preIncComp = prjsDir + RteTestM3 + "/RTE/_RteTestM3/Pre_Include__RteTest_ComponentLevel.h";
-const string preIncGlob = prjsDir + RteTestM3 + "/RTE/_RteTestM3/Pre_Include_Global.h";
-const string rteComp = prjsDir + RteTestM3 + "/RTE/_RteTestM3/RTE_Components.h";
+const string RTE_FOLDER = "CONFIG_FOLDER";
+const string preIncComp = prjsDir + RteTestM3 + "/" + RTE_FOLDER + "/_RteTestM3/Pre_Include__RteTest_ComponentLevel.h";
+const string preIncGlob = prjsDir + RteTestM3 + "/" + RTE_FOLDER + "/_RteTestM3/Pre_Include_Global.h";
+const string rteComp = prjsDir + RteTestM3 +    "/" + RTE_FOLDER + "/_RteTestM3/RTE_Components.h";
 
 const string RteTestM4 = "/RteTestM4";
 const string RteTestM4_cprj = prjsDir + RteTestM4 + "/RteTestM4.cprj";
