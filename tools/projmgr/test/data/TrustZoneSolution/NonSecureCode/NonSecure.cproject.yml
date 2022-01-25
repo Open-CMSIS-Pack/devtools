@@ -1,4 +1,4 @@
-### CMSIS Project Description ###
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schema/cproject.schema.json
 
 project:
   misc:

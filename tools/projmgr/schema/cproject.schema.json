@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "id": "cproject.schema.json",
+  "title": "CMSIS Project Manager cproject",
+  "version": "0.9.0",
+  "properties": {
+    "project": {
+      "$ref": "./common.schema.json#/definitions/ProjectDescType"
+    }
+  },
+  "additionalProperties": false,
+  "required": [ "project" ]
+}
