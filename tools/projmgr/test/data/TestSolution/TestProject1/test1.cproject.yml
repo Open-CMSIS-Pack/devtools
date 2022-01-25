@@ -3,6 +3,9 @@
 project:
   description: Project 1
   device: RteTest_ARMCM0
+  processor:
+    fpu: off
+    endian: little
   components:
     - component: Startup
     - component: CORE
