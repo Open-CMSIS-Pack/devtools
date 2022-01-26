@@ -1,28 +1,29 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schema/csolution.schema.json
 
-target-types:
-  - type: CM33
-    device: ARMCM33_DSP_FP_TZ
-  - type: CM35P
-    device: ARMCM35P_DSP_FP_TZ
- 
-build-types:
-  - type: Debug
-    compiler: AC6
-    misc:
-      - compiler: AC6
-        C:
-          - -O1
-          - -g
-  - type: Release
-    compiler: AC6
-    misc:
-      - compiler: AC6
-        C:
-          - -O3
-
 solution:
-  - project: ./SecureCode/Secure.cproject.yml
-  - project: ./NonSecureCode/NonSecure.cproject.yml
-    depends:
-      - Secure
+  target-types:
+    - type: CM33
+      device: ARMCM33_DSP_FP_TZ
+    - type: CM35P
+      device: ARMCM35P_DSP_FP_TZ
+
+  build-types:
+    - type: Debug
+      compiler: AC6
+      misc:
+        - compiler: AC6
+          C:
+            - -O1
+            - -g
+    - type: Release
+      compiler: AC6
+      misc:
+        - compiler: AC6
+          C:
+            - -O3
+
+  projects:
+    - project: ./SecureCode/Secure.cproject.yml
+    - project: ./NonSecureCode/NonSecure.cproject.yml
+      depends:
+        - Secure

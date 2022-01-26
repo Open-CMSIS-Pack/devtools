@@ -55,6 +55,7 @@ static constexpr const char* YAML_PACKAGE = "package";
 static constexpr const char* YAML_PACKAGES = "packages";
 static constexpr const char* YAML_PROCESSOR = "processor";
 static constexpr const char* YAML_PROJECT = "project";
+static constexpr const char* YAML_PROJECTS = "projects";
 static constexpr const char* YAML_PROVIDES = "provides";
 static constexpr const char* YAML_SOLUTION = "solution";
 static constexpr const char* YAML_TARGETTYPES = "target-types";
