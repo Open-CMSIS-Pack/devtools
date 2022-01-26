@@ -11,6 +11,21 @@ extern std::string testinput_folder;
 extern std::string testcmsispack_folder;
 
 /**
+ * @brief direct console output to string
+*/
+class CoutRedirect {
+public:
+  CoutRedirect();
+  ~CoutRedirect();
+
+  std::string GetString();
+
+private:
+  std::stringstream m_buffer;
+  std::streambuf* m_oldStreamBuf;
+};
+
+/**
  * @brief global test environment for all the test suites
 */
 class ProjMgrTestEnv : public ::testing::Environment {

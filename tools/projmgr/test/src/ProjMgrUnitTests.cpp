@@ -72,31 +72,78 @@ void ProjMgrUnitTests::CompareFileTree(const string& dir1, const string& dir2) {
   EXPECT_EQ(tree1, tree2);
 }
 
-TEST_F(ProjMgrUnitTests, RunProjMgr) {
-  char *argv[7];
-
+TEST_F(ProjMgrUnitTests, RunProjMgr_EmptyOptions) {
+  char* argv[1];
   // Empty options
   EXPECT_EQ(0, RunProjMgr(1, argv));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_Help) {
+  char* argv[2];
 
   // help
   argv[1] = (char*)"help";
   EXPECT_EQ(0, RunProjMgr(2, argv));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks) {
+  char* argv[5];
+  CoutRedirect coutRedirect;
 
   // list packs
   argv[1] = (char*)"list";
   argv[2] = (char*)"packs";
-  EXPECT_EQ(0, RunProjMgr(3, argv));
+  argv[3] = (char*)"--filter";
+  argv[4] = (char*)"ARM::RteTest_DFP";
+  EXPECT_EQ(0, RunProjMgr(5, argv));
+
+  auto outStr = coutRedirect.GetString();
+  EXPECT_STREQ(outStr.c_str(), "ARM::RteTest_DFP@0.1.1\n");
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_ListDevices) {
+  char* argv[5];
+  CoutRedirect coutRedirect;
 
   // list devices
   argv[1] = (char*)"list";
   argv[2] = (char*)"devices";
-  EXPECT_EQ(0, RunProjMgr(3, argv));
+  argv[3] = (char*)"--filter";
+  argv[4] = (char*)"RteTest_ARMCM4";
+  EXPECT_EQ(0, RunProjMgr(5, argv));
+  
+  auto outStr = coutRedirect.GetString();
+  EXPECT_STREQ(outStr.c_str(), "RteTest_ARMCM4_FP\nRteTest_ARMCM4_NOFP\n");
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_ListComponents) {
+  char* argv[3];
 
   // list components
   argv[1] = (char*)"list";
   argv[2] = (char*)"components";
   EXPECT_EQ(0, RunProjMgr(3, argv));
+}
 
+TEST_F(ProjMgrUnitTests, RunProjMgr_ListDependenciess) {
+  char* argv[5];
+  const std::string expected = "ARM::Device:Startup&RteTest Startup@2.0.3 require RteTest:CORE\n";
+  CoutRedirect coutRedirect;
+
+  // list dependencies
+  const string& cproject = testinput_folder + "/TestProject/test-dependency.cproject.yml";
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"dependencies";
+  argv[3] = (char*)"-p";
+  argv[4] = (char*)cproject.c_str();
+  EXPECT_EQ(0, RunProjMgr(5, argv));
+
+  auto outStr = coutRedirect.GetString();
+  EXPECT_STREQ(outStr.c_str(), expected.c_str());
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_ConvertProject) {
+  char* argv[6];
   // convert -p cproject.yml
   const string& cproject = testinput_folder + "/TestProject/test.cproject.yml";
   argv[1] = (char*)"convert";
@@ -109,6 +156,79 @@ TEST_F(ProjMgrUnitTests, RunProjMgr) {
   // Check generated CPRJ
   CompareFile(testoutput_folder + "/test/test.cprj",
     testinput_folder + "/TestProject/test.cprj");
+}
+
+TEST_F(ProjMgrUnitTests, ListDeviceRunProjMgr) {
+  char* argv[7];
+  CoutRedirect coutRedirect;
+
+  // list devices
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"devices";
+  argv[3] = (char*)"--filter";
+  argv[4] = (char*)"RteTest_ARMCM4";
+  EXPECT_EQ(0, RunProjMgr(5, argv));
+  auto outStr = coutRedirect.GetString();
+
+  EXPECT_STREQ(outStr.c_str(), "RteTest_ARMCM4_FP\nRteTest_ARMCM4_NOFP\n");
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgrContextSolution) {
+  char* argv[7];
+  CoutRedirect coutRedirect;
+
+  // convert -s solution.yml
+  const string& csolution = testinput_folder + "/TestSolution/test.csolution.yml";
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"contexts";
+  argv[3] = (char*)"--solution";
+  argv[4] = (char*)csolution.c_str();
+  argv[5] = (char*)"--filter";
+  argv[6] = (char*)"test1";
+  EXPECT_EQ(0, RunProjMgr(7, argv));
+
+  auto outStr = coutRedirect.GetString();
+  EXPECT_STREQ(outStr.c_str(), "test1.Debug+CM0\ntest1.Release+CM0\n");
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_MissingSolutionFile) {
+  char* argv[5];
+  const string& csolution = testinput_folder + "/TestSolution/unknown.csolution.yml";
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"contexts";
+  argv[3] = (char*)"--solution";
+  argv[4] = (char*)csolution.c_str();
+
+  // Missing Solution File
+  EXPECT_EQ(1, RunProjMgr(5, argv));
+
+  // list empty arguments
+  EXPECT_EQ(1, RunProjMgr(2, argv));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_MissingProjectFile) {
+  char* argv[6];
+  // convert -p cproject.yml
+  const string& cproject = testinput_folder + "/TestProject/unknown.cproject.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-p";
+  argv[3] = (char*)cproject.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(1, RunProjMgr(6, argv));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_InvalidArgs) {
+  char* argv[7];
+  const string& csolution = testinput_folder + "/TestSolution/test.csolution.yml";
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"pack";
+  argv[3] = (char*)"devices";
+  argv[4] = (char*)"contexts";
+  argv[5] = (char*)"--solution";
+  argv[6] = (char*)csolution.c_str();
+
+  EXPECT_EQ(1, RunProjMgr(7, argv));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution) {
@@ -239,6 +359,38 @@ TEST_F(ProjMgrUnitTests, RunListContexts) {
   set<string> contexts;
   EXPECT_EQ(true, m_worker.ListContexts("", contexts));
   EXPECT_EQ(expected, contexts);
+}
+
+TEST_F(ProjMgrUnitTests, RunListContexts_Without_BuildTypes) {
+  set<string> expected = {
+    "test1+CM0",
+    "test2+CM0",
+    "test2+CM3",
+    "test2+Debug",
+    "test2+Release"
+  };
+  const string& dirInput = testinput_folder + "/TestSolution/";
+  const string& filenameInput = dirInput + "test.csolution_no_buildtypes.yml";
+  error_code ec;
+  EXPECT_EQ(true, m_parser.ParseCsolution(filenameInput));
+  for (const auto& cproject : m_parser.GetCsolution().cprojects) {
+    string const& cprojectFile = fs::canonical(dirInput + cproject, ec).generic_string();
+    EXPECT_EQ(true, m_parser.ParseCproject(cprojectFile));
+  }
+  for (auto& descriptor : m_parser.GetCsolution().contexts) {
+    const string& cprojectFile = fs::canonical(dirInput + descriptor.cproject, ec).generic_string();
+    EXPECT_EQ(true, m_worker.AddContexts(m_parser, descriptor, cprojectFile));
+  }
+  set<string> contexts;
+  EXPECT_EQ(true, m_worker.ListContexts("", contexts));
+  EXPECT_EQ(expected, contexts);
+}
+
+TEST_F(ProjMgrUnitTests, AddContextFailed) {
+  ContextDesc descriptor;
+  const string& filenameInput = testinput_folder + "/TestSolution/test.csolution_missing_project.yml";
+  EXPECT_EQ(true, m_parser.ParseCsolution(filenameInput));
+  EXPECT_FALSE(m_worker.AddContexts(m_parser, descriptor, filenameInput));
 }
 
 TEST_F(ProjMgrUnitTests, GenerateCprj) {
