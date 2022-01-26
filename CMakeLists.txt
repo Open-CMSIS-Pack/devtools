@@ -111,12 +111,13 @@ set_property(TARGET gmock_main PROPERTY
 # YAML
 add_subdirectory(external/yaml-cpp)
 # suppress warnings on external/yaml-cpp
-target_compile_options(yaml-cpp PRIVATE -w)
+set(not-msvc $<NOT:$<CXX_COMPILER_ID:MSVC>>)
+target_compile_options(yaml-cpp
+  PRIVATE
+  $<${not-msvc}: -Wno-effc++ -Wno-shadow>)
 
 # cxxopts
 add_subdirectory(external/cxxopts)
-# suppress warnings on external/cxxopts
-target_compile_options(cxxopts INTERFACE -w)
 
 # Json
 add_subdirectory(external/json)
