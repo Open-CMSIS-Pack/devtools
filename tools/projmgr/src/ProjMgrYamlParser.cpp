@@ -31,8 +31,8 @@ bool ProjMgrYamlParser::ParseCsolution(const string& input, CsolutionItem& csolu
       return false;
     }
 
-    ParseTargetTypes(root, csolution.targetTypes);
-    ParseBuildTypes(root, csolution.buildTypes);
+    ParseTargetTypes(solutionNode, csolution.targetTypes);
+    ParseBuildTypes(solutionNode, csolution.buildTypes);
 
   } catch (YAML::Exception& e) {
     ProjMgrLogger::Error(input, e.mark.line + 1, e.mark.column + 1, e.msg);
@@ -328,16 +328,19 @@ bool ProjMgrYamlParser::ParseLayers(const YAML::Node& parent, vector<LayerItem>&
 }
 
 bool ProjMgrYamlParser::ParseContexts(const YAML::Node& parent, CsolutionItem& csolution) {
-  for (const auto& projectsEntry : parent) {
-    ContextDesc descriptor;
-    if (!ParseTypeFilter(projectsEntry, descriptor.type)) {
-      return false;
+  if (parent[YAML_PROJECTS].IsDefined()) {
+    const YAML::Node& projectsNode = parent[YAML_PROJECTS];
+    for (const auto& projectsEntry : projectsNode) {
+      ContextDesc descriptor;
+      if (!ParseTypeFilter(projectsEntry, descriptor.type)) {
+        return false;
+      }
+      ParseString(projectsEntry, YAML_PROJECT, descriptor.cproject);
+      ParseVectorOrString(projectsEntry, YAML_DEPENDS, descriptor.depends);
+      ParseTargetType(projectsEntry, descriptor.target);
+      csolution.contexts.push_back(descriptor);
+      PushBackUniquely(csolution.cprojects, descriptor.cproject);
     }
-    ParseString(projectsEntry, YAML_PROJECT, descriptor.cproject);
-    ParseVectorOrString(projectsEntry, YAML_DEPENDS, descriptor.depends);
-    ParseTargetType(projectsEntry, descriptor.target);
-    csolution.contexts.push_back(descriptor);
-    PushBackUniquely(csolution.cprojects, descriptor.cproject);
   }
   return true;
 }
@@ -405,6 +408,12 @@ void ProjMgrYamlParser::PushBackUniquely(vector<string>& vec, const string& valu
 
 // Validation Maps
 const set<string> solutionKeys = {
+  YAML_PROJECTS,
+  YAML_TARGETTYPES,
+  YAML_BUILDTYPES,
+};
+
+const set<string> projectsKeys = {
   YAML_PROJECT,
   YAML_FORTYPE,
   YAML_NOTFORTYPE,
@@ -589,7 +598,7 @@ const set<string> filesKeys = {
 };
 
 const map<string, set<string>> sequences = {
-  {YAML_SOLUTION, solutionKeys},
+  {YAML_PROJECTS, projectsKeys},
   {YAML_TARGETTYPES, targetTypeKeys},
   {YAML_BUILDTYPES, buildTypeKeys},
   {YAML_MISC, miscKeys},
@@ -608,10 +617,15 @@ const map<string, set<string>> mappings = {
 bool ProjMgrYamlParser::ValidateCsolution(const string& input, const YAML::Node& root) {
   const set<string> rootKeys = {
     YAML_SOLUTION,
-    YAML_TARGETTYPES,
-    YAML_BUILDTYPES,
   };
-  return ValidateKeys(input, root, rootKeys);
+  if (!ValidateKeys(input, root, rootKeys)) {
+    return false;
+  }
+  const YAML::Node& solutionNode = root[YAML_SOLUTION];
+  if (!ValidateKeys(input, solutionNode, solutionKeys)) {
+    return false;
+  }
+  return true;
 }
 
 bool ProjMgrYamlParser::ValidateCproject(const string& input, const YAML::Node& root) {
