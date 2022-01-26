@@ -1,4 +1,4 @@
-# CMSIS Project Manager
+# CMSIS Project Manager (Users Manual - Draft)
 
 The **[Open-CMSIS-Pack](https://www.open-cmsis-pack.org/index.html) Project Manager** processes **User Input Files** (in YML format) and **Software Packs** (in Open-CMSIS-Pack format) to create self-contained CMSIS-Build input files that allow to generate  independent projects which may be a part of a more complex application.
 
@@ -279,12 +279,17 @@ It is required to generate reproducible builds that can deployed on independent 
 
 This enables that each target and/or build type can be identified and independently generated which provides the support for test automation. It is however not required to build every possible combination, this should be under user control.
 
-**Flexible Builds: `Multi.cproject.yml`**
+**Flexible Builds for multi-target projects.
+
+Currently multi-target projects require the setup of a `*.csolution.yml` file to define `target-types` and `build-types`. Note, that this is currently under review, but this documents the current status.
+
+**File: MultiTarget.csolution.yml**
 
 ```yml
-project:
+solution:
+  compiler: AC6
 
-  target-types:                   # todo move target-types and build-types to csolution.yml
+  target-types:
     - type: Board
       board: NUCLEO-L552ZE-Q
 
@@ -307,6 +312,14 @@ project:
       optimize: max
       debug: off
 
+projects:
+  - project: .\MyProject.cproject.yml
+```
+
+**File: MyProject.csolution.yml**
+
+```yml
+project:
   groups:
     - group: My group1
       files:
@@ -340,7 +353,7 @@ project:
       not-for-type: .Test                           
 ```
 
-# Project Setup for Related Projects
+## Project Setup for Related Projects
 
 A solution is the software view of the complete system. It combines projects that can be generated independently and therefore manages related projects. It may be also deployed to different targets during development as described in the previous section under [Project Setup for Multiple Targets and Test Builds](#project-setup-for-multiple-targets-and-test-builds).
 
@@ -393,9 +406,11 @@ solution:
 
 ## Directory Structure
 
+ToDo: Impact analysis to legacy products that include CMSIS-Pack management.
+
 This section describes how the files of `*.csolution.yml` should be organized to allow the scenarios described above:
 
-Source Directory                  | Content
+Source Directory                    | Content
 :-----------------------------------|:---------------
 `.`                                 | Contains one or more `*.csolution.yml` files that describes an overall application.
 `./<project>`                       | Each project has its own directory
@@ -479,29 +494,6 @@ Depending on the PLM status of the application, the `projmgr` performs for confi
     ./RTE/component_class/.ConfigFile.h-1.3.0    // hidden backup of unmodified config file, used for version comparison
     ```
 
-## Directory Structure  (old)
-
-ToDo: Impact analysis to legacy products that include CMSIS-Pack management.
-
-This section describes how Keil MDK and the CMSIS-Eclipse currently organizes the `RTE` directory.
-
-Software Component are included into the directory structure of the project:
-
-- Configurable source and header files are copied to the project using the directory structure explained below.
-- Libraries, source, and header files that are not configurable (and need no modification) are stored in the directory of the Software Component (typically part of CMSIS_Pack_ROOT) and get included directly from this location into the project.
-- An Include Path to the header files of the Software Component is added to the C/C++ Compiler control string.
-
-The following directory and files are created in the Project Folder:
-
-Directory                         | Content
-:---------------------------------|:---------------
-`./RTE/<target-type>`             | Contains the file `RTE_Components.h` that is specific to a `target-type`. 
-`./RTE/<component class>`         | Configurable files for each component class are stored in sub-folders. The name of this sub-folder is derived from the component class name.
-`./RTE/<component class>/<Dname>` | Configurable files of the component class that are device specific. It is generated when a component has a condition with a `Dname` attribute.
-`./RTE/Device/<Dname>`            | Configurable files of the component class Device. This should have always a condition with a `Dname` attribute.
-
-The directory `.\RTE` is created in the project root directory when using Software Components. You should not modify the content of this folder.
-
 ## RTE_Components.h
 
 The file `./RTE/RTE_Components.h` is automatically created by the CMSIS Project Manager (during CONVERT). For each selected Software Component it contains `#define` statements required by the component. These statements are defined in the \*.PDSC file for that component. The following example shows a sample content of a RTE_Components.h file:
@@ -565,16 +557,16 @@ Element    | Description
 **Examples:**
 
 ```yml
-component: ARM::CMSIS:CORE                           # CMSIS Core component from vendor ARM (any version)
-component: ARM::CMSIS:CORE@5.5.0                     # CMSIS Core component from vendor ARM (with version 5.5.0)
-component: ARM::CMSIS:CORE@>=5.5.0                   # CMSIS Core component from vendor ARM (with version 5.5.0 or higher)
+- component: ARM::CMSIS:CORE                           # CMSIS Core component from vendor ARM (any version)
+- component: ARM::CMSIS:CORE@5.5.0                     # CMSIS Core component from vendor ARM (with version 5.5.0)
+- component: ARM::CMSIS:CORE@>=5.5.0                   # CMSIS Core component from vendor ARM (with version 5.5.0 or higher)
 
-component: Device:Startup                            # Device Startup component from any vendor
+- component: Device:Startup                            # Device Startup component from any vendor
 
-component: CMSIS:RTOS2:Keil RTX5                     # CMSIS RTOS2 Keil RTX5 component with default variant (any version)
-component: ARM::CMSIS:RTOS2:Keil RTX5&Source@5.5.3   # CMSIS RTOS2 Keil RTX5 component with variant 'Source' and version 5.5.3
+- component: CMSIS:RTOS2:Keil RTX5                     # CMSIS RTOS2 Keil RTX5 component with default variant (any version)
+- component: ARM::CMSIS:RTOS2:Keil RTX5&Source@5.5.3   # CMSIS RTOS2 Keil RTX5 component with variant 'Source' and version 5.5.3
 
-component: Keil::USB&MDK-Pro:CORE&Release@6.15.1     # From bundle MDK-Pro, USB CORE component with variant 'Release' and version 6.15.1
+- component: Keil::USB&MDK-Pro:CORE&Release@6.15.1     # From bundle MDK-Pro, USB CORE component with variant 'Release' and version 6.15.1
 ```
 
 ### Device Name Conventions
@@ -664,8 +656,7 @@ groups:
 
 ## Overall Structure
 
-
-The table below explains the top-level elements in each of the different `*.yml` input files.
+The **ProjMgr** uses The table below explains the top-level elements in each of the different `*.yml` input files.
 
 Keyword          | Allowed for following files..                  | Description
 :----------------|:-----------------------------------------------|:------------------------------------
@@ -674,49 +665,70 @@ Keyword          | Allowed for following files..                  | Description
 `project:`       | `*.cproject.yml`                               | Start of a Project along with properties - tbd; used in `*.cproject.yml`.
 `layer:`         | `*.clayer.yml`                                 | Start of a software layer definition that contains pre-configured software components along with source files.
 
+### Structure of *.cdefaults.yml 
 
-YML structure of a `*.cdefaults.yml` file
-
-```yml
-defaults:              # Start of default settings
-  build-types:         # Default list of build-types (i.e. Release, Debug)
-  compiler:            # Default selection of the compiler
-```
-
-YML structure of a `*.csolution.yml` file
+The following top-level *key values* are supported in a *.cdefaults.yml file.
 
 ```yml
-target-types:          # List of build-types
-build-types:           # List of build-types
-
-compiler:              # Default selection of the compiler
-
-solution:              # Start of a project list that are related
-  - project:           # Reference to a project file
+default:                 # Start of default settings
+  packs:                 # Defines local packs and/or scope of packs that are used (ToDo)
+  build-types:           # Default list of build-types (i.e. Release, Debug)
+  compiler:              # Default selection of the compiler
 ```
 
-YML structure of a `*.cproject.yml` file
+### Structure of *.csolution.yml 
+
+The following top-level *key values* are supported in a `*.csolution.yml` file.
+
+```yml
+solution:
+  target-types:          # List of build-types
+  build-types:           # List of build-types
+
+  compiler:              # Default selection of the compiler
+
+  projects:              # Start of a project list that are related
+```
+
+### Structure of *.cproject.yml 
+
+The following top-level *key values* are supported in a `*.cproject.yml` file.
 ```yml
 project:
-  compiler: AC6
+  description:           # project description (optional)
+  compiler:              # toolchain specification (optional) 
+  output-type: lib | exe # generate executable (default) or library
 
-  groups:              # List of source file groups along with source files
-  components:          # List of software components used
-  layers:              # List of software layers that belong to the project
+  optimize:              # optimize level for code generation (optional)
+  debug:                 # generation of debug information (optional)
+  defines:               # define symbol settings for code generation (optional).
+  undefines:             # remove define symbol settings for code generation (optional).
+  add-paths:             # additional include file paths (optional).
+  del-paths:             # remove specific include file paths (optional). 
+  misc:                  # Literal tool-specific controls
+
+  board:                 # board specification (optional)
+  device:                # device specification (optional)         
+  processor:             # processor specific settings (optional)
+
+  groups:                # List of source file groups along with source files
+  components:            # List of software components used
+  layers:                # List of software layers that belong to the project
 ```
 
-YML structure of a `*.clayer.yml` file
+### Structure of *.clayer.yml 
+
+The following top-level *key values* are supported in a `*.clayer.yml` file.
 
 ```yml
-layer:                 # Start of a layer
-  interfaces:          # List of consumed and provided interfaces
-  groups:              # List of source file groups along with source files
-  components:          # List of software components used
+layer:                   # Start of a layer
+  description:           # layer description (optional)
+  interfaces:            # List of consumed and provided interfaces
+  groups:                # List of source file groups along with source files
+  components:            # List of software components used
 ```
 
-
-
-## Source Code Content 
+## Source Code Management 
 
 Keyword          | Allowed for following files..                  | Description
 :----------------|:-----------------------------------------------|:------------------------------------
@@ -1093,7 +1105,7 @@ project:                     # do we need this section at all, perhaps for platf
 The `processor:` keyword defines attributes such as TrustZone and FPU register usage.
 
 ```yml
- processor:                # processor specific settings
+  processor:               # processor specific settings
     trustzone: secure      # TrustZone mode: secure | non-secure | off
     fpu: on | off          # control usage of FPU registers (S-Register for Helium/FPU) (default: on for devices with FPU registers)
     endian: little | big   # select endianess (only available when devices are configureable)

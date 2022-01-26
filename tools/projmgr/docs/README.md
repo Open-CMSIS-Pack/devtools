@@ -6,6 +6,11 @@ according to the standard
 and provides commands to search packs, devices and components from installed packs
 as well as unresolved component dependencies.
 
+## Users Manual
+
+The [users manual](./Manual/Overview.md) describes the operation of the CMSIS Project Manager and explains the input files that are processed to generate the CMSIS project along with the *.CPRJ files.
+
+
 ## Requirements
 
 The CMSIS Pack repository must be present in the environment.
@@ -79,9 +84,10 @@ convert --solution <example.csolution.yml>
 ```
 
 
-## Input files
+## Input .cproject.yml file
 
-The YAML structure draft is described in: [Overview.md](Manual/Overview.md)
+The YAML structure draft is temporarily described in: [Overview.md](https://github.com/brondani/devtools/blob/mvp-prototype/tools/projmgr/docs/Overview.md)
+
 
 ## Public functions
 TBD
