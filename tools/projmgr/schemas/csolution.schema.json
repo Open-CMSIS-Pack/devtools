@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "id": "csolution.schema.json",
+  "$id": "https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/0.9.0/tools/projmgr/schemas/csolution.schema.json",
   "title": "CMSIS Project Manager csolution",
   "version": "0.9.0",
   "properties": {
