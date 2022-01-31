@@ -238,6 +238,7 @@ protected:
   std::map<std::string, ContextItem> m_contexts;
 
   bool LoadPacks(void);
+  bool GetRequiredPdscFiles(const std::string& packRoot, std::set<std::string>& pdscFiles);
   bool CheckRteErrors(void);
   bool CheckType(TypeFilter typeFilter, TypePair type);
   bool GetTypeContent(ContextItem& context);

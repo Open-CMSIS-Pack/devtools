@@ -120,6 +120,39 @@ map<string, ContextItem>& ProjMgrWorker::GetContexts(void) {
   return m_contexts;
 }
 
+bool ProjMgrWorker::GetRequiredPdscFiles(const std::string& packRoot, std::set<std::string>& pdscFiles) {
+  for (auto context : m_contexts) {
+    if (!ProcessPackages(context.second)) {
+      return false;
+    }
+
+    for (auto& packAttr : context.second.packRequirements) {
+      string packId, pdscFile;
+      RteAttributes attributes({
+        {"name", packAttr.name},
+        {"vendor", packAttr.vendor},
+        {"version", packAttr.version},
+      });
+
+      pdscFile = m_kernel->GetLocalPdscFile(attributes, packRoot, packId);
+      if (pdscFile.empty()) {
+        pdscFile = m_kernel->GetInstalledPdscFile(attributes, packRoot, packId);
+      }
+
+      if (pdscFile.empty()) {
+        std::string packageName = 
+          (packAttr.vendor.empty() ? "" : packAttr.vendor + "::") +
+          packAttr.name +
+          (packAttr.version == "0.0.0" ? "" : "@" + packAttr.version);
+        ProjMgrLogger::Error("Required pack: " + packageName + " not found");
+        return false;
+      }
+      pdscFiles.insert(pdscFile);
+    }
+  }
+  return true;
+}
+
 bool ProjMgrWorker::LoadPacks(void) {
   string packRoot = CrossPlatformUtils::GetEnv("CMSIS_PACK_ROOT");
   if (packRoot.empty()) {
@@ -128,14 +161,25 @@ bool ProjMgrWorker::LoadPacks(void) {
   m_kernel = ProjMgrKernel::Get();
   m_kernel->SetCmsisPackRoot(packRoot);
 
-  // TODO: Handle subset of package requirements
+  std::set<std::string> pdscFiles;
+  if (!GetRequiredPdscFiles(packRoot, pdscFiles)) {
+    return false;
+  }
 
-  // Get installed packs
-  if (m_installedPacks.empty()) {
-    if (!m_kernel->GetInstalledPacks(m_installedPacks)) {
+  if (pdscFiles.empty()) {
+    // Get installed packs
+    if (!m_kernel->GetInstalledPacks(pdscFiles)) {
       ProjMgrLogger::Error("parsing installed packs failed");
     }
   }
+
+  if (m_installedPacks.empty()) {
+    if (!m_kernel->LoadAndInsertPacks(m_installedPacks, pdscFiles)) {
+      ProjMgrLogger::Error("failed to load and insert packs");
+      return false;
+    }
+  }
+
   return CheckRteErrors();
 }
 
