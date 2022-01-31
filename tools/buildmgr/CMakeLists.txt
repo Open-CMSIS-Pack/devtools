@@ -11,6 +11,7 @@ set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT cbuildgen)
 
 add_subdirectory(cbuild)
 add_subdirectory(cbuildgen)
+add_subdirectory(docs)
 
 add_subdirectory(test/unittests)
 add_subdirectory(test/integrationtests)

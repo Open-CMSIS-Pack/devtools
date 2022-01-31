@@ -10,7 +10,7 @@
 <link href="$relpath$cmsis.css" rel="stylesheet" type="text/css" />
 <script type="text/javascript" src="$relpath$jquery.js"></script>
 <script type="text/javascript" src="$relpath$dynsections.js"></script>
-<script type="text/javascript" src="$relpath$cmsis_footer.js"></script>
+<script type="text/javascript" src="$relpath$cmsis.js"></script>
 $treeview
 $search
 $mathjax
@@ -28,7 +28,13 @@ $mathjax
   <!--BEGIN PROJECT_NAME-->
   <td style="padding-left: 0.5em;">
    <div id="projectname">$projectname
-   <!--BEGIN PROJECT_NUMBER-->&#160;<span id="projectnumber">$projectnumber</span><!--END PROJECT_NUMBER-->
+    <!--BEGIN PROJECT_NUMBER-->&#160;<span id="projectnumber">
+     <script type="text/javascript">
+      <!--
+      writeHeader.call(this);
+      //-->
+     </script>  
+    </span><!--END PROJECT_NUMBER-->
    </div>
    <!--BEGIN PROJECT_BRIEF--><div id="projectbrief">$projectbrief</div><!--END PROJECT_BRIEF-->
   </td>
