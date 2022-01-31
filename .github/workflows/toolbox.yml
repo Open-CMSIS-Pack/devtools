@@ -26,6 +26,7 @@ jobs:
           mkdir -p tools/toolbox/distribution/doc/cbuild
           mkdir -p tools/toolbox/distribution/doc/cpackget
           mkdir -p tools/toolbox/distribution/doc/projmgr
+          mkdir -p tools/toolbox/distribution/doc/toolbox
 
       - name: Download cbuild release asset
         uses: dsaltares/fetch-gh-release-asset@master
@@ -56,6 +57,7 @@ jobs:
           cp projmgr/bin/windows64/csolution.exe distribution/bin/csolution.exe
           cp -r projmgr/etc/* distribution/etc
           cp -r projmgr/doc/* distribution/doc/projmgr
+          cp -r docs/* distribution/doc/toolbox
         working-directory: tools/toolbox
 
       - name: Create installer
