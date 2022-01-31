@@ -119,7 +119,7 @@ $(document).ready(function(){initNavTree('cbuild_install.html','');});
 </ul>
 <h1><a class="anchor" id="cbuild_install2"></a>
 Invocation</h1>
-<p>CMSIS-Build tools are available for download as an asset of the respective <a href="https://github.com/ARM-software/CMSIS_5/releases/" target="_blank"><b>CMSIS Release Version</b></a> (starting with 5.7.0).</p>
+<p>CMSIS-Build tools are available for download among <a href="https://github.com/Open-CMSIS-Pack/devtools/releases" target="_blank"><b>Open-CMSIS-Pack devtools releases</b></a>.</p>
 <p>To install the command line build environment start from the Bash prompt: </p>
 <div class="fragment"><div class="line">$ ./cbuild_install.sh</div>
 </div><!-- fragment --><p>This install script queries for:</p>
@@ -153,8 +153,8 @@ Environment Variables</h1>
 Compiler Configuration</h1>
 <p><a class="el" href="cbuildgen.html">cbuildgen</a> uses toolchain specific <b>.cmake files</b> that map the CMSIS project settings to the toolchain. For each supported toolchain a <b>.cmake file</b> is provided in the directory <b>./cbuild/etc</b> and specifies the base directory of the toolchain installation(<code>TOOLCHAIN_ROOT</code>). In addition other toolchain specific environment variables may be setup here (e.g. license file and product variant). The user is required to update the these settings after installation to reflect the actual installation.</p>
 <p><b>Example file: ./cbuild/etc/AC6.6.16.0.cmake</b></p>
-<div class="fragment"><div class="line"><span class="preprocessor"># Version: 0.10.0</span></div>
-<div class="line"><span class="preprocessor"></span><span class="preprocessor"># Date: 2020-09-30</span></div>
+<div class="fragment"><div class="line"><span class="preprocessor"># Version: 0.10.4</span></div>
+<div class="line"><span class="preprocessor"></span><span class="preprocessor"># Date: 2022-01-18</span></div>
 <div class="line"><span class="preprocessor"></span><span class="preprocessor"># This file maps the CMSIS project options to toolchain settings.</span></div>
 <div class="line"><span class="preprocessor"></span><span class="preprocessor">#</span></div>
 <div class="line"><span class="preprocessor"></span><span class="preprocessor">#   - Applies to toolchain: Arm Compiler 6.16.0</span></div>
