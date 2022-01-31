@@ -64,7 +64,7 @@ The CMSIS Pack repository must be present in the development environment.
 
 - There are several ways to initialize and configure the pack repository, for example using the 
 `cpackget` tool available from https://github.com/Open-CMSIS-Pack/cpackget
-- Before running `projmgr` the location of the pack repository shall be set via the environment variable
+- Before running `csolution` the location of the pack repository shall be set via the environment variable
 `CMSIS_PACK_ROOT` otherwise its default location (todo what is the default?) will be taken.
 
 ## Usage
@@ -72,7 +72,7 @@ The CMSIS Pack repository must be present in the development environment.
 ```text
 CMSIS Project Manager 0.0.0+gdd33bca (C) 2021 ARM
 Usage:
-  projmgr <command> [<args>] [OPTIONS...]
+  csolution <command> [<args>] [OPTIONS...]
 
 Commands:
   list packs          Print list of installed packs
@@ -453,7 +453,7 @@ Software components are re-usable library or source files that require no modifi
 
 Configurable source and header files have a version information that is required during Project Lifetime Management (PLM) of a project. The version number is important when the underlying software pack changes and provides a newer configuration file version.
 
-Depending on the PLM status of the application, the `projmgr` performs for configuration files the following operation:
+Depending on the PLM status of the application, the `csolution` performs for configuration files the following operation:
 
 1. **Add** a software component for the first time: the related config file is copied twice into the related `RTE` project directory.  The first copy can be modified by the user with the parameters for the user application. The second copy is an unmodified hidden backup file that is appended with the version information.
 
@@ -464,7 +464,7 @@ Depending on the PLM status of the application, the `projmgr` performs for confi
     ./RTE/component_class/.ConfigFile.h-1.2.0    // hidden backup used for version comparison
     ```
     
-    The `projmgr` outputs a user notification to indicate that files are added:
+    The `csolution` outputs a user notification to indicate that files are added:
 
     ```text
     ./RTE/component_class/ConfigFile.h -  info: component 'name' added configuration file version '1.2.0'
@@ -480,13 +480,13 @@ Depending on the PLM status of the application, the `projmgr` performs for confi
     ./RTE/component_class/.ConfigFile.h-1.2.0    // hidden backup used for version comparison
     ```
 
-    The `projmgr` outputs a user notification to indicate that configuration files have changed:
+    The `csolution` outputs a user notification to indicate that configuration files have changed:
 
     ```text
     ./RTE/component_class/ConfigFile.h - warning: component 'name' upgrade for configuration file version '1.3.0' added, but file inactive
     ```
 
-3. **User action to complete upgrade**: The user has now several options (outside of `projmgr`) to merge the configuration file information.  A potential way could be to use a 3-way merge utility. After merging the configuration file, the hidden backup should be deleted and the unmodified new version should become the hidden backup.  The previous configuration file may be stored as backup as shown below.
+3. **User action to complete upgrade**: The user has now several options (outside of `csolution`) to merge the configuration file information.  A potential way could be to use a 3-way merge utility. After merging the configuration file, the hidden backup should be deleted and the unmodified new version should become the hidden backup.  The previous configuration file may be stored as backup as shown below.
 
     ```c
     ./RTE/component_class/ConfigFile.h           // new configuration file with merge configuration

@@ -32,6 +32,7 @@ if(SWIG_LIBS)
 else()
   # projmgr target
   add_executable(projmgr src/ProjMgrMain.cpp)
+  set_target_properties(projmgr PROPERTIES OUTPUT_NAME "csolution")
   if(MSVC)
     target_link_options(projmgr PUBLIC "$<$<CONFIG:Debug>:/SAFESEH:NO>")
   endif(MSVC)
