@@ -133,9 +133,10 @@ jobs:
 
       - name: Create distribution folders
         run: |
-          mkdir -p tools/projmgr/distribution/bin tools/projmgr/distribution/lib tools/projmgr/distribution/doc
+          mkdir -p tools/projmgr/distribution/bin tools/projmgr/distribution/lib tools/projmgr/distribution/doc tools/projmgr/distribution/etc
           cp tools/projmgr/docs/LICENSE.txt tools/projmgr/distribution/
-          cp tools/projmgr/docs/README.md tools/projmgr/distribution/doc/
+          cp -r tools/projmgr/docs/Manual/* tools/projmgr/distribution/doc/
+          cp -r tools/projmgr/schema/* tools/projmgr/distribution/etc/
 
       - name: Download projmgr linux
         uses: actions/download-artifact@v2
