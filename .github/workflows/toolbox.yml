@@ -51,9 +51,9 @@ jobs:
           cp -r cbuild/bin/* distribution/bin
           cp -r cbuild/etc/* distribution/etc
           cp -r cbuild/doc/* distribution/doc/cbuild
-          cp projmgr/bin/darwin64/projmgr distribution/bin/projmgr.mac
-          cp projmgr/bin/linux64/projmgr distribution/bin/projmgr.lin
-          cp projmgr/bin/windows64/projmgr.exe distribution/bin/projmgr.exe
+          cp projmgr/bin/darwin64/csolution distribution/bin/csolution.mac
+          cp projmgr/bin/linux64/csolution distribution/bin/csolution.lin
+          cp projmgr/bin/windows64/csolution.exe distribution/bin/csolution.exe
           cp -r projmgr/etc/* distribution/etc
           cp -r projmgr/doc/* distribution/doc/projmgr
         working-directory: tools/toolbox

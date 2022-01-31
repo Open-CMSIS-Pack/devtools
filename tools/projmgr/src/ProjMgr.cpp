@@ -18,7 +18,7 @@ using namespace std;
 
 static constexpr const char* USAGE = "\
 Usage:\n\
-  projmgr <command> [<args>] [OPTIONS...]\n\n\
+  csolution <command> [<args>] [OPTIONS...]\n\n\
 Commands:\n\
   list packs          Print list of installed packs\n\
        devices        Print list of available device names\n\
