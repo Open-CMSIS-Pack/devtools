@@ -23,11 +23,11 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessToolchain) {
   ProjMgrParser parser;
   ContextDesc descriptor;
   const string& filename = testinput_folder + "/TestProject/test.cproject.yml";
-  EXPECT_EQ(true, parser.ParseCproject(filename, true));
-  EXPECT_EQ(true, AddContexts(parser, descriptor, filename));
+  EXPECT_TRUE(parser.ParseCproject(filename, true));
+  EXPECT_TRUE(AddContexts(parser, descriptor, filename));
   ContextItem context = GetContexts().begin()->second;
-  EXPECT_EQ(true, ProcessPrecedences(context));
-  EXPECT_EQ(true, ProcessToolchain(context));
+  EXPECT_TRUE(ProcessPrecedences(context));
+  EXPECT_TRUE(ProcessToolchain(context));
   EXPECT_EQ(expected.name, context.toolchain.name);
   EXPECT_EQ(expected.version, context.toolchain.version);
 }
@@ -71,12 +71,12 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDevice) {
   ProjMgrParser parser;
   ContextDesc descriptor;
   const string& filename = testinput_folder + "/TestProject/test.cproject.yml";
-  EXPECT_EQ(true, parser.ParseCproject(filename, true));
-  EXPECT_EQ(true, AddContexts(parser, descriptor, filename));
+  EXPECT_TRUE(parser.ParseCproject(filename, true));
+  EXPECT_TRUE(AddContexts(parser, descriptor, filename));
   ContextItem context = GetContexts().begin()->second;
-  EXPECT_EQ(true, LoadPacks());
-  EXPECT_EQ(true, ProcessPrecedences(context));
-  EXPECT_EQ(true, ProcessDevice(context));
+  EXPECT_TRUE(LoadPacks());
+  EXPECT_TRUE(ProcessPrecedences(context));
+  EXPECT_TRUE(ProcessDevice(context));
   for (const auto& expectedAttribute : expected) {
     EXPECT_EQ(expectedAttribute.second, context.targetAttributes[expectedAttribute.first]);
   }
@@ -90,14 +90,14 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessComponents) {
   ProjMgrParser parser;
   ContextDesc descriptor;
   const string& filename = testinput_folder + "/TestProject/test.cproject.yml";
-  EXPECT_EQ(true, parser.ParseCproject(filename, true));
-  EXPECT_EQ(true, AddContexts(parser, descriptor, filename));
+  EXPECT_TRUE(parser.ParseCproject(filename, true));
+  EXPECT_TRUE(AddContexts(parser, descriptor, filename));
   ContextItem context = GetContexts().begin()->second;
-  EXPECT_EQ(true, LoadPacks());
-  EXPECT_EQ(true, ProcessPrecedences(context));
-  EXPECT_EQ(true, ProcessDevice(context));
-  EXPECT_EQ(true, SetTargetAttributes(context, context.targetAttributes));
-  EXPECT_EQ(true, ProcessComponents(context));
+  EXPECT_TRUE(LoadPacks());
+  EXPECT_TRUE(ProcessPrecedences(context));
+  EXPECT_TRUE(ProcessDevice(context));
+  EXPECT_TRUE(SetTargetAttributes(context, context.targetAttributes));
+  EXPECT_TRUE(ProcessComponents(context));
   ASSERT_EQ(expected.size(), context.components.size());
   auto it = context.components.begin();
   for (const auto& expectedComponent : expected) {
@@ -110,15 +110,15 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDependencies) {
   ProjMgrParser parser;
   ContextDesc descriptor;
   const string& filename = testinput_folder + "/TestProject/test-dependency.cproject.yml";
-  EXPECT_EQ(true, parser.ParseCproject(filename, true));
-  EXPECT_EQ(true, AddContexts(parser, descriptor, filename));
+  EXPECT_TRUE(parser.ParseCproject(filename, true));
+  EXPECT_TRUE(AddContexts(parser, descriptor, filename));
   ContextItem context = GetContexts().begin()->second;
-  EXPECT_EQ(true, LoadPacks());
-  EXPECT_EQ(true, ProcessPrecedences(context));
-  EXPECT_EQ(true, ProcessDevice(context));
-  EXPECT_EQ(true, SetTargetAttributes(context, context.targetAttributes));
-  EXPECT_EQ(true, ProcessComponents(context));
-  EXPECT_EQ(true, ProcessDependencies(context));
+  EXPECT_TRUE(LoadPacks());
+  EXPECT_TRUE(ProcessPrecedences(context));
+  EXPECT_TRUE(ProcessDevice(context));
+  EXPECT_TRUE(SetTargetAttributes(context, context.targetAttributes));
+  EXPECT_TRUE(ProcessComponents(context));
+  EXPECT_TRUE(ProcessDependencies(context));
   ASSERT_EQ(expected.size(), context.dependencies.size());
   for (const auto& [expectedComponent, expectedDependencies] : expected) {
     EXPECT_TRUE(context.dependencies.find(expectedComponent) != context.dependencies.end());
@@ -133,11 +133,69 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDeviceFailed) {
   ProjMgrParser parser;
   ContextDesc descriptor;
   const string& filename = testinput_folder + "/TestProject/test-unavailable-processor.cproject.yml";
-  EXPECT_EQ(true, parser.ParseCproject(filename, true));
-  EXPECT_EQ(true, AddContexts(parser, descriptor, filename));
+  EXPECT_TRUE(parser.ParseCproject(filename, true));
+  EXPECT_TRUE(AddContexts(parser, descriptor, filename));
   ContextItem context = GetContexts().begin()->second;
-  EXPECT_EQ(true, LoadPacks());
-  EXPECT_EQ(true, ProcessPrecedences(context));
-  EXPECT_EQ(false, ProcessDevice(context));
+  EXPECT_TRUE(LoadPacks());
+  EXPECT_TRUE(ProcessPrecedences(context));
+  EXPECT_FALSE(ProcessDevice(context));
+}
+
+TEST_F(ProjMgrWorkerUnitTests, LoadUnknownPacks) {
+  ProjMgrParser parser;
+  ContextDesc descriptor;
+
+  string filename = testinput_folder + "/TestProject/test.cproject_unknown_package.yml";
+  EXPECT_TRUE(parser.ParseCproject(filename, true));
+  EXPECT_TRUE(AddContexts(parser, descriptor, filename));
+  EXPECT_FALSE(LoadPacks());
+
+  // No pack is loaded
+  EXPECT_EQ(0, m_installedPacks.size());
+}
+
+TEST_F(ProjMgrWorkerUnitTests, LoadDuplicatePacks) {
+  ProjMgrParser parser;
+  ContextDesc descriptor;
+
+  string filename = testinput_folder + "/TestProject/test.cproject_duplicate_package.yml";
+  EXPECT_TRUE(parser.ParseCproject(filename, true));
+  EXPECT_TRUE(AddContexts(parser, descriptor, filename));
+  EXPECT_TRUE(LoadPacks());
+
+  // Check if only one pack is loaded
+  ASSERT_EQ(1, m_installedPacks.size());
+  EXPECT_EQ("ARM.RteTest_DFP", (*m_installedPacks.begin())->GetCommonID());
+}
+
+TEST_F(ProjMgrWorkerUnitTests, LoadRequiredPacks) {
+  ProjMgrParser parser;
+  ContextDesc descriptor;
+
+  string filename = testinput_folder + "/TestProject/test.cproject.yml";
+  EXPECT_TRUE(parser.ParseCproject(filename, true));
+  EXPECT_TRUE(AddContexts(parser, descriptor, filename));
+  EXPECT_TRUE(LoadPacks());
+
+  // Check if only one pack is loaded
+  ASSERT_EQ(1, m_installedPacks.size());
+  EXPECT_EQ("ARM.RteTest_DFP", (*m_installedPacks.begin())->GetCommonID());
+}
+
+TEST_F(ProjMgrWorkerUnitTests, LoadPacksNoPackage) {
+  ProjMgrParser parser;
+  ContextDesc descriptor;
+
+  string filename = testinput_folder + "/TestProject/test.cproject_no_packages.yml";
+  EXPECT_TRUE(parser.ParseCproject(filename, true));
+  EXPECT_TRUE(AddContexts(parser, descriptor, filename));
+  EXPECT_TRUE(LoadPacks());
+
+  // get list of available packs
+  set<string> availablePacks;
+  EXPECT_TRUE(ListPacks("", availablePacks));
+
+  // by default all packs available should be loaded
+  EXPECT_EQ(availablePacks.size(), m_installedPacks.size());
 }
 

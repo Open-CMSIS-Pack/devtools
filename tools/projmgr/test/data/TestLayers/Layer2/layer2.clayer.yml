@@ -10,7 +10,7 @@ layer:
     - C:
       - --layer2-flag
   packages:
-    - package: ARM::CMSIS@5.8.0
+    - package: ARM::RteTest_DFP@0.1.1
   components:
     - component: Startup
   groups:

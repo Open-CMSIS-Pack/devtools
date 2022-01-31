@@ -286,7 +286,7 @@ TEST_F(ProjMgrUnitTests, ListPacks) {
     "ARM::RteTest_DFP@0.1.1"
   };
   set<string> packs;
-  EXPECT_EQ(true, m_worker.ListPacks("RteTest", packs));
+  EXPECT_TRUE(m_worker.ListPacks("RteTest", packs));
   EXPECT_EQ(expected, packs);
 }
 
@@ -298,7 +298,7 @@ TEST_F(ProjMgrUnitTests, ListDevices) {
     "RteTest_ARMCM4_NOFP"
   };
   set<string> devices;
-  EXPECT_EQ(true, m_worker.ListDevices("CM4", devices));
+  EXPECT_TRUE(m_worker.ListDevices("CM4", devices));
   EXPECT_EQ(expected, devices);
 }
 
@@ -307,7 +307,7 @@ TEST_F(ProjMgrUnitTests, ListComponents) {
     "ARM::Device:Startup&RteTest Startup@2.0.3 (ARM::RteTest_DFP@0.1.1)",
   };
   set<string> components;
-  EXPECT_EQ(true, m_worker.ListComponents("Startup", components));
+  EXPECT_TRUE(m_worker.ListComponents("Startup", components));
   EXPECT_EQ(expected, components);
 }
 
@@ -318,9 +318,9 @@ TEST_F(ProjMgrUnitTests, ListComponentsDeviceFiltered) {
   set<string> components;
   ContextDesc descriptor;
   const string& filenameInput = testinput_folder + "/TestProject/test.cproject.yml";
-  EXPECT_EQ(true, m_parser.ParseCproject(filenameInput, true));
-  EXPECT_EQ(true, m_worker.AddContexts(m_parser, descriptor, filenameInput));
-  EXPECT_EQ(true, m_worker.ListComponents("Startup", components));
+  EXPECT_TRUE(m_parser.ParseCproject(filenameInput, true));
+  EXPECT_TRUE(m_worker.AddContexts(m_parser, descriptor, filenameInput));
+  EXPECT_TRUE(m_worker.ListComponents("Startup", components));
   EXPECT_EQ(expected, components);
 }
 
@@ -331,9 +331,9 @@ TEST_F(ProjMgrUnitTests, ListDependencies) {
   set<string> dependencies;
   ContextDesc descriptor;
   const string& filenameInput = testinput_folder + "/TestProject/test-dependency.cproject.yml";
-  EXPECT_EQ(true, m_parser.ParseCproject(filenameInput, true));
-  EXPECT_EQ(true, m_worker.AddContexts(m_parser, descriptor, filenameInput));
-  EXPECT_EQ(true, m_worker.ListDependencies("CORE", dependencies));
+  EXPECT_TRUE(m_parser.ParseCproject(filenameInput, true));
+  EXPECT_TRUE(m_worker.AddContexts(m_parser, descriptor, filenameInput));
+  EXPECT_TRUE(m_worker.ListDependencies("CORE", dependencies));
   EXPECT_EQ(expected, dependencies);
 }
 
@@ -347,17 +347,17 @@ TEST_F(ProjMgrUnitTests, RunListContexts) {
   const string& dirInput = testinput_folder + "/TestSolution/";
   const string& filenameInput = dirInput + "test.csolution.yml";
   error_code ec;
-  EXPECT_EQ(true, m_parser.ParseCsolution(filenameInput));
+  EXPECT_TRUE(m_parser.ParseCsolution(filenameInput));
   for (const auto& cproject : m_parser.GetCsolution().cprojects) {
     string const& cprojectFile = fs::canonical(dirInput + cproject, ec).generic_string();
-    EXPECT_EQ(true, m_parser.ParseCproject(cprojectFile));
+    EXPECT_TRUE(m_parser.ParseCproject(cprojectFile));
   }
   for (auto& descriptor : m_parser.GetCsolution().contexts) {
     const string& cprojectFile = fs::canonical(dirInput + descriptor.cproject, ec).generic_string();
-    EXPECT_EQ(true, m_worker.AddContexts(m_parser, descriptor, cprojectFile));
+    EXPECT_TRUE(m_worker.AddContexts(m_parser, descriptor, cprojectFile));
   }
   set<string> contexts;
-  EXPECT_EQ(true, m_worker.ListContexts("", contexts));
+  EXPECT_TRUE(m_worker.ListContexts("", contexts));
   EXPECT_EQ(expected, contexts);
 }
 
@@ -372,24 +372,24 @@ TEST_F(ProjMgrUnitTests, RunListContexts_Without_BuildTypes) {
   const string& dirInput = testinput_folder + "/TestSolution/";
   const string& filenameInput = dirInput + "test.csolution_no_buildtypes.yml";
   error_code ec;
-  EXPECT_EQ(true, m_parser.ParseCsolution(filenameInput));
+  EXPECT_TRUE(m_parser.ParseCsolution(filenameInput));
   for (const auto& cproject : m_parser.GetCsolution().cprojects) {
     string const& cprojectFile = fs::canonical(dirInput + cproject, ec).generic_string();
-    EXPECT_EQ(true, m_parser.ParseCproject(cprojectFile));
+    EXPECT_TRUE(m_parser.ParseCproject(cprojectFile));
   }
   for (auto& descriptor : m_parser.GetCsolution().contexts) {
     const string& cprojectFile = fs::canonical(dirInput + descriptor.cproject, ec).generic_string();
-    EXPECT_EQ(true, m_worker.AddContexts(m_parser, descriptor, cprojectFile));
+    EXPECT_TRUE(m_worker.AddContexts(m_parser, descriptor, cprojectFile));
   }
   set<string> contexts;
-  EXPECT_EQ(true, m_worker.ListContexts("", contexts));
+  EXPECT_TRUE(m_worker.ListContexts("", contexts));
   EXPECT_EQ(expected, contexts);
 }
 
 TEST_F(ProjMgrUnitTests, AddContextFailed) {
   ContextDesc descriptor;
   const string& filenameInput = testinput_folder + "/TestSolution/test.csolution_missing_project.yml";
-  EXPECT_EQ(true, m_parser.ParseCsolution(filenameInput));
+  EXPECT_TRUE(m_parser.ParseCsolution(filenameInput));
   EXPECT_FALSE(m_worker.AddContexts(m_parser, descriptor, filenameInput));
 }
 
@@ -397,10 +397,10 @@ TEST_F(ProjMgrUnitTests, GenerateCprj) {
   const string& filenameInput = testinput_folder + "/TestProject/test.cproject.yml";
   const string& filenameOutput = testoutput_folder + "/GenerateCprjTest.cprj";
   ContextDesc descriptor;
-  EXPECT_EQ(true, m_parser.ParseCproject(filenameInput, true));
-  EXPECT_EQ(true, m_worker.AddContexts(m_parser, descriptor, filenameInput));
-  EXPECT_EQ(true, m_worker.ProcessContext(m_worker.GetContexts().begin()->second, true));
-  EXPECT_EQ(true, m_generator.GenerateCprj(m_worker.GetContexts().begin()->second, filenameOutput));
+  EXPECT_TRUE(m_parser.ParseCproject(filenameInput, true));
+  EXPECT_TRUE(m_worker.AddContexts(m_parser, descriptor, filenameInput));
+  EXPECT_TRUE(m_worker.ProcessContext(m_worker.GetContexts().begin()->second, true));
+  EXPECT_TRUE(m_generator.GenerateCprj(m_worker.GetContexts().begin()->second, filenameOutput));
 
   CompareFile(testoutput_folder + "/GenerateCprjTest.cprj",
     testinput_folder + "/TestProject/test.cprj");
@@ -409,13 +409,13 @@ TEST_F(ProjMgrUnitTests, GenerateCprj) {
 TEST_F(ProjMgrUnitTests, GetInstalledPacks) {
   auto kernel = ProjMgrKernel::Get();
   const auto& cmsisPackRoot = kernel->GetCmsisPackRoot();
-  list<RtePackage*> installedPacks;
+  std::set<std::string> pdscFiles;
 
   kernel->SetCmsisPackRoot(string(CMAKE_SOURCE_DIR) + "test/local");
-  EXPECT_EQ(true, kernel->GetInstalledPacks(installedPacks));
+  EXPECT_TRUE(kernel->GetInstalledPacks(pdscFiles));
 
   kernel->SetCmsisPackRoot(string(CMAKE_SOURCE_DIR) + "test/local-malformed");
-  EXPECT_EQ(false, kernel->GetInstalledPacks(installedPacks));
+  EXPECT_FALSE(kernel->GetInstalledPacks(pdscFiles));
 
   kernel->SetCmsisPackRoot(cmsisPackRoot);
 }

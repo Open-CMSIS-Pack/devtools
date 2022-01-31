@@ -324,7 +324,6 @@ bool ProjMgr::RunListDependencies(void) {
   if (!m_worker.AddContexts(m_parser, descriptor, m_cprojectFile)) {
     return false;
   }
-  ContextItem context = m_worker.GetContexts().begin()->second;
   set<string> dependencies;
   if (!m_worker.ListDependencies(m_filter, dependencies)) {
     ProjMgrLogger::Error("processing dependencies list failed");

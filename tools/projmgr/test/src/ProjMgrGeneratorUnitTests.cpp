@@ -30,6 +30,6 @@ TEST_F(ProjMgrGeneratorUnitTests, GetStringFromVector) {
 
 TEST_F(ProjMgrGeneratorUnitTests, GetLocalTimestamp) {
   string timestamp = ProjMgrGenerator().GetLocalTimestamp();
-  EXPECT_EQ(true, regex_match(timestamp,
+  EXPECT_TRUE(regex_match(timestamp,
   std::regex("^([0-9]){4}(-([0-9]){2}){2}T([0-9]){2}(:([0-9]){2}){2}$")));
 }

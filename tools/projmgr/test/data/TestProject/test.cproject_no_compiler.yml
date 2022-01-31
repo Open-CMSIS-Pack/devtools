@@ -6,7 +6,7 @@ project:
   device: RteTest_ARMCM0
   # No compilercompiler: AC6@6.16.0
   packages:
-    - package: ARM::CMSIS@5.8.0
+    - package: ARM::RteTest@0.1.0
   components:
     - component: Startup
     - component: CORE
