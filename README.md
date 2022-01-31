@@ -243,7 +243,7 @@ Set below mentioned environment variables:
     ./tools/buildmgr/test/integrationtests/windows64/Debug/CbuildIntegTests.exe
     ```
 
-## Note
+### Note
 
 By default, few special tests are skipped from execution as they are dependent on specific environment configuration or other dependencies.
 
@@ -267,6 +267,29 @@ By default, few special tests are skipped from execution as they are dependent o
     ~~~
 
     Make sure you have the proper **[Arm Compilers licenses](https://developer.arm.com/tools-and-software/software-development-tools/license-management/resources/product-and-toolkit-configuration)**.
+    
+## Build Documentation
+
+Some components provide Doxygen-based documentation which needs to be generated before
+it can be viewed and published. There are specific build targets for these generated
+documentations, see build target suffix `-docs`.
+
+```
+☑️ Note:
+   The *-docs build targets require doxygen to be available. If CMake fails to
+   detect the correct version of doxygen a warning message appears and the build 
+   targets are skipped.
+```
+
+To build the documentation for a specific component run the following in the
+CMake build directory:
+
+```bash
+cmake --build . --target buildmgr-docs
+```
+
+The documentation is generated into the CMake binary directory of the enclosing
+component.
 
 ## License
 

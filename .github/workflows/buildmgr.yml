@@ -13,6 +13,12 @@ on:
       - 'libs/rtemodel/**'
       - 'libs/rtefsutils/**'
       - 'tools/buildmgr/**'
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/buildmgr.yml'
+      - 'tools/buildmgr/docs/**'
   release:
     types: [ published ]
 
@@ -97,34 +103,76 @@ jobs:
           if-no-files-found: error
 
   docs:
-    if: ${{ github.event_name == 'pull_request' || (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/buildmgr/')) }}
+    if: ${{ github.event_name == 'pull_request'  || github.event_name == 'push' || (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/buildmgr/')) }}
     runs-on: ubuntu-20.04
     timeout-minutes: 5
     steps:
 
       - name: Checkout devtools
         uses: actions/checkout@v2
+        with:
+          submodules: true
 
       - name: Install deps
         run: |
+          sudo apt update
+          sudo apt-get install ninja-build
           wget -q http://launchpadlibrarian.net/163827726/doxygen_1.8.6-2_amd64.deb
           sudo dpkg -i doxygen_1.8.6-2_amd64.deb
 
-      - name: Run gendoc.sh
-        run: ./gen_doc.sh --output=docs
-        working-directory: tools/buildmgr/docs/doxygen
+      - name: Create build folder
+        run: mkdir build
 
-      - name: Zip doc folder
-        run: zip -r docs.zip *
-        working-directory: tools/buildmgr/docs/doxygen/docs
+      - name: Build documentation
+        run: |
+          cmake -G Ninja ..
+          cmake --build . --target buildmgr-docs
+        working-directory: ./build
 
-      - name: Archive docs.zip
+      - name: Upload documentation
         uses: actions/upload-artifact@v2
         with:
-          name: docs
-          path: tools/buildmgr/docs/doxygen/docs/docs.zip
+          name: documentation
+          path: ./build/tools/buildmgr/docs/doxygen/output/
           retention-days: 1
           if-no-files-found: error
+
+      - name: Archive documentation
+        if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/buildmgr/')) }}
+        run: tar -cvjf /tmp/doc.tbz2 .
+        working-directory: ./build/tools/buildmgr/docs/doxygen/output/html/
+       
+      - uses: actions/checkout@v2
+        if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/buildmgr/')) }}
+        with:
+          ref: gh-pages
+
+      - name: Publish main branch documentation
+        if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
+        run: |
+          rm -rf buildmgr/main
+          mkdir -p buildmgr/main
+          cd buildmgr/main
+          tar -xvjf /tmp/doc.tbz2
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add .
+          git commit -m "Update buildmgr main branch documentation"
+          git push
+          
+      - name: Publish release documentation
+        if: ${{ (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/buildmgr/')) }}
+        run: |
+          VERSION=$(git show-ref ${{ github.ref }} | awk -F/ '{print $NF}')
+          rm -rf buildmgr/${VERSION}
+          mkdir -p buildmgr/${VERSION}
+          cd buildmgr/${VERSION}
+          tar -xvjf /tmp/doc.tbz2
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add .
+          git commit -m "Update buildmgr documentation for release ${VERSION}"
+          git push
 
   create_installer:
     needs: [ build, docs ]
@@ -171,17 +219,11 @@ jobs:
           chmod +x cbuildgen.*
         working-directory: tools/buildmgr/cbuildgen/distribution/bin
 
-      - name: Download docs
+      - name: Download documentation
         uses: actions/download-artifact@v2
         with:
-          name: docs
+          name: documentation
           path: tools/buildmgr/cbuildgen/distribution/doc/
-
-      - name: Unzip docs
-        run: |
-          unzip docs.zip
-          rm docs.zip
-        working-directory: tools/buildmgr/cbuildgen/distribution/doc/
 
       - name: Create installer
         run: sudo ./create_installer.sh --input=../distribution --output=.

@@ -1,0 +1,7 @@
+function writeHeader() {
+    document.write('Version @PROJECT_VERSION@');
+};
+
+function writeFooter()  {
+    document.write('Generated on @PROJECT_TIMESTAMP@ for CMSIS-Build @PROJECT_VERSION_FULL@ by Arm Ltd. All rights reserved.');
+};
