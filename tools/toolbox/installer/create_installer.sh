@@ -55,7 +55,12 @@ done
 
 archive_name=cmsis-toolbox.tar.gz
 script_name=install.sh
-installer_name=cmsis-toolbox_${version}.sh
+
+if [ ! -z "$version" ];then
+  version=_${version}
+fi
+
+installer_name=cmsis-toolbox${version}.sh
 
 # get cpackget
 cpackget_version="0.2.0"

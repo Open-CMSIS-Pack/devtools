@@ -1,5 +1,10 @@
 name: toolbox
 on:
+  pull_request:
+    paths:
+      - '.github/workflows/toolbox.yml'
+      - 'CMakeLists.txt'
+      - 'tools/toolbox/**'
   push:
     branches:
       - main
@@ -7,9 +12,12 @@ on:
     types: [published]
 
 jobs:
-
-  release:
-    if: ${{ github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/toolbox/') }}
+  create_installer:
+    if: |
+      ${{
+        github.event_name == 'pull_request' ||
+        (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/toolbox/'))
+      }}
     runs-on: ubuntu-20.04
     timeout-minutes: 15
 
@@ -31,6 +39,7 @@ jobs:
       - name: Download cbuild release asset
         uses: dsaltares/fetch-gh-release-asset@master
         with:
+          repo: "Open-CMSIS-Pack/devtools"
           version: tags/tools/buildmgr/0.10.4
           file: cbuild_install.sh
           target: tools/toolbox/cbuild/cbuild_install.sh
@@ -39,6 +48,7 @@ jobs:
       - name: Download projmgr release asset
         uses: dsaltares/fetch-gh-release-asset@master
         with:
+          repo: "Open-CMSIS-Pack/devtools"
           version: tags/tools/projmgr/0.9.0
           file: projmgr.zip
           target: tools/toolbox/projmgr/projmgr.zip
@@ -62,18 +72,147 @@ jobs:
         working-directory: tools/toolbox
 
       - name: Create installer
-        id: installer
         run: |
+          ./create_installer.sh --input=../distribution --output=.
+        working-directory: tools/toolbox/installer
+     
+      - name: Archive cmsis-toolbox installer
+        uses: actions/upload-artifact@v2
+        with:
+          name: cmsis-toolbox
+          path: tools/toolbox/installer/cmsis-toolbox.sh
+          retention-days: 1
+          if-no-files-found: error
+  
+  release:
+    if: ${{ github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/toolbox/') }}
+    needs: [ create_installer ]
+    runs-on: ubuntu-20.04
+    timeout-minutes: 15
+
+    steps:
+      - name: Download cmsis-toolbox installer
+        uses: actions/download-artifact@v2
+        with:
+          name: cmsis-toolbox
+          path: ${{ github.workspace }}
+
+      - name: Rename installer
+        id: rename_installer
+        run: |
+          sudo chmod +x ./cmsis-toolbox.sh
           export VERSION=$(echo ${{ github.ref }} | cut -d/ -f5)
           echo "::set-output name=VERSION::$VERSION"
-          ./create_installer.sh --input=../distribution --output=. --version=$VERSION
+          mv cmsis-toolbox.sh cmsis-toolbox_$VERSION.sh
         working-directory: tools/toolbox/installer
 
       - name: Attach installer to release assets
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: tools/toolbox/installer/cmsis-toolbox_${{ steps.installer.outputs.VERSION }}.sh
+          file: tools/toolbox/installer/cmsis-toolbox_${{ steps.rename_installer.outputs.VERSION }}.sh
           tag: ${{ github.ref }}
           overwrite: true
-          asset_name: cmsis-toolbox_${{ steps.installer.outputs.VERSION }}.sh
+          asset_name: cmsis-toolbox_${{ steps.rename_installer.outputs.VERSION }}.sh
+
+  tests:
+    if: |
+      ${{
+        github.event_name == 'pull_request' ||
+        (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/toolbox/'))
+      }}
+    needs: [ create_installer ]
+    timeout-minutes: 15
+    runs-on: ${{ matrix.os }}
+    env:
+      CI_TOOLBOX_INSTALLER: ${{ github.workspace }}/cmsis-toolbox.sh
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ macos-10.15, ubuntu-20.04, windows-2019 ]
+        include:
+          - os: macos-10.15
+            target: darwin64
+          - os: ubuntu-20.04
+            target: linux64
+          - os: windows-2019
+            target: windows64
+
+    steps:
+      - name: Install macos deps
+        if: ${{ startsWith(matrix.os, 'macos') }}
+        run: |
+          brew install \
+            dos2unix \
+            ninja \
+            wget
+
+      - name: Install linux deps
+        if: ${{ startsWith(matrix.os, 'ubuntu') }}
+        run: |
+          sudo apt update
+          sudo apt-get install \
+            bc \
+            build-essential \
+            dos2unix \
+            ninja-build \
+            libxml2-utils
+
+      - name: Install windows deps
+        if: ${{ startsWith(matrix.os, 'windows') }}
+        run: choco install -y unzip wget ninja
+
+      - name: Checkout devtools
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+
+      - name: Create build folder
+        run: mkdir build
+
+      - uses: ammaraskar/gcc-problem-matcher@master
+        if: ${{ startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu') }}
+
+      - uses: ammaraskar/msvc-problem-matcher@master
+        if: ${{ startsWith(matrix.os, 'windows') }}
+
+      - name: Download cmsis-toolbox installer
+        uses: actions/download-artifact@v2
+        with:
+          name: cmsis-toolbox
+          path: ${{ github.workspace }}
+
+      - name: Set correct cmsis-toolbox file permission
+        if: ${{ startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu') }}
+        run: chmod +x cmsis-toolbox.sh
+
+      - name: Build and run Toolbox tests
+        run: |
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug ..
+          cmake --build . --target ToolboxTests
+          ctest -V -C Debug -R ToolboxTests
+        working-directory: ./build
+
+      - name: Archive tests results
+        uses: actions/upload-artifact@v2
+        with:
+          name: toolboxtest-${{ matrix.target }}
+          path: ./build/Testing/Temporary/LastTest.log
+          retention-days: 1
+          if-no-files-found: error
+        if: ${{ always() }}
+
+      - name: Archive gtest report
+        uses: actions/upload-artifact@v2
+        with:
+          name: toolbox_gtest-${{ matrix.target }}
+          path: ./build/test_reports/toolboxtests-*.xml
+          retention-days: 1
+          if-no-files-found: error
+        if: ${{ always() }}
+
+      - name: Publish Toolbox Test Results
+        uses: mikepenz/action-junit-report@v2
+        with:
+          check_name: "CMSIS-Toolbox Tests [${{ matrix.target }}]"
+          report_paths: build/test_reports/toolboxtests-${{ matrix.target }}.xml
