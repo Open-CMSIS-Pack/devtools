@@ -18,7 +18,7 @@ void ToolboxTestEnv::SetUp() {
   error_code ec;
   fs::create_directories(testout_folder, ec);
 
-  scripts_folder   = fs::canonical(scripts_folder, ec).generic_string();
+  scripts_folder = fs::canonical(scripts_folder, ec).generic_string();
   testout_folder = fs::canonical(testout_folder, ec).generic_string();
 
   ci_toolbox_installer_path = CrossPlatformUtils::GetEnv("CI_TOOLBOX_INSTALLER");

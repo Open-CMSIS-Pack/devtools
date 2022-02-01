@@ -7,15 +7,12 @@ set_property(TARGET ToolboxTests PROPERTY
 target_link_libraries(ToolboxTests PUBLIC CrossPlatform RteFsUtils gtest_main)
 target_include_directories(ToolboxTests PUBLIC ./src)
 
-add_definitions(-DTEST_FOLDER="${CMAKE_CURRENT_SOURCE_DIR}/../")
-
 add_definitions(-DEXTN="")
 if(WIN32)
   add_definitions(-DEXTN=".exe")
 endif()
 
 add_definitions(-DTEST_FOLDER="${CMAKE_CURRENT_SOURCE_DIR}/")
-add_definitions(-DCMAKE_SOURCE_DIR="${CMAKE_SOURCE_DIR}/")
 
 add_test(NAME ToolboxTests
          COMMAND ToolboxTests --gtest_output=xml:test_reports/toolboxtests-${SYSTEM}${ARCH}.xml

@@ -54,7 +54,7 @@ void ToolBoxInstallerTests::CheckInstallationDir(
               string("csolution") + EXTN }},
     { "doc", vector<string>{
               "cbuild/html", "cbuild/index.html",
-              "cpackget/READMe.md", "projmgr/images",
+              "cpackget/README.md", "projmgr/images",
               "projmgr/Overview.md", "toolbox/CMSIS-Toolbox.md"}},
 
     { "etc", vector<string>{
@@ -64,8 +64,7 @@ void ToolBoxInstallerTests::CheckInstallationDir(
                 "{{SolutionName}}.csolution.yml",
                 "clayer.schema.json", "common.schema.json",
                 "cproject.schema.json", "cproject.schema.json",
-                "CMakeASM"
-              } }
+                "CMakeASM"}}
   };
 
   error_code ec;
@@ -91,7 +90,7 @@ void ToolBoxInstallerTests::CheckExtractedDir(const string& path, bool expect) {
               "csolution.exe", "csolution.lin", "csolution.mac" }},
     { "doc", vector<string>{
               "cbuild/html", "cbuild/index.html",
-              "cpackget/READMe.md", "projmgr/images",
+              "cpackget/README.md", "projmgr/images",
               "projmgr/Overview.md", "toolbox/CMSIS-Toolbox.md"}},
 
     { "etc", vector<string>{
@@ -101,8 +100,7 @@ void ToolBoxInstallerTests::CheckExtractedDir(const string& path, bool expect) {
                 "{{SolutionName}}.csolution.yml",
                 "clayer.schema.json", "common.schema.json",
                 "cproject.schema.json", "cproject.schema.json",
-                "CMakeASM"
-              } }
+                "CMakeASM" }}
   };
 
   error_code ec;

@@ -143,9 +143,7 @@ jobs:
         if: ${{ startsWith(matrix.os, 'macos') }}
         run: |
           brew install \
-            dos2unix \
-            ninja \
-            wget
+            ninja
 
       - name: Install linux deps
         if: ${{ startsWith(matrix.os, 'ubuntu') }}
@@ -154,14 +152,12 @@ jobs:
           sudo apt-get install \
             bc \
             build-essential \
-            dos2unix \
-            ninja-build \
-            libxml2-utils
+            ninja-build
 
       - name: Install windows deps
         if: ${{ startsWith(matrix.os, 'windows') }}
-        run: choco install -y unzip wget ninja
-
+        run: choco install -y ninja
+       
       - name: Checkout devtools
         uses: actions/checkout@v2
         with:
@@ -169,6 +165,12 @@ jobs:
 
       - name: Create build folder
         run: mkdir build
+
+      - name: Configure windows build for amd64
+        if: ${{ startsWith(matrix.os, 'windows') }}
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: amd64
 
       - uses: ammaraskar/gcc-problem-matcher@master
         if: ${{ startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu') }}
