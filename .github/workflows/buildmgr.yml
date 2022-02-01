@@ -117,9 +117,10 @@ jobs:
       - name: Install deps
         run: |
           sudo apt update
-          sudo apt-get install ninja-build
+          sudo apt-get install ninja-build python
           wget -q http://launchpadlibrarian.net/163827726/doxygen_1.8.6-2_amd64.deb
           sudo dpkg -i doxygen_1.8.6-2_amd64.deb
+          sudo pip install LinkChecker
 
       - name: Create build folder
         run: mkdir build
@@ -127,8 +128,16 @@ jobs:
       - name: Build documentation
         run: |
           cmake -G Ninja ..
+          echo "::add-matcher::.github/doxygen.json"
           cmake --build . --target buildmgr-docs
+          echo "::remove-matcher owner=doxygen::"
         working-directory: ./build
+
+      - name: Run linkchecker
+        run: |
+          echo "::add-matcher::.github/linkchecker.json"
+          scripts/check_links.sh build/tools/buildmgr/docs/doxygen/output/html/index.html
+          echo "::remove-matcher owner=linkchecker::"
 
       - name: Upload documentation
         uses: actions/upload-artifact@v2
