@@ -57,7 +57,8 @@ jobs:
           cp projmgr/bin/windows64/csolution.exe distribution/bin/csolution.exe
           cp -r projmgr/etc/* distribution/etc
           cp -r projmgr/doc/* distribution/doc/projmgr
-          cp -r docs/* distribution/doc/toolbox
+          cp docs/LICENSE.txt distribution
+          cp docs/CMSIS-Toolbox.md distribution/doc/toolbox
         working-directory: tools/toolbox
 
       - name: Create installer
