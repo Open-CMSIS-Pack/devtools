@@ -112,6 +112,7 @@ jobs:
         uses: actions/checkout@v2
         with:
           submodules: true
+          fetch-depth: ${{ github.event_name == 'push' && '0' || '1' }}
 
       - name: Install deps
         run: |
@@ -165,7 +166,9 @@ jobs:
         run: |
           VERSION=$(git show-ref ${{ github.ref }} | awk -F/ '{print $NF}')
           rm -rf buildmgr/${VERSION}
+          rm -f buildmgr/latest
           mkdir -p buildmgr/${VERSION}
+          ln -s ${VERSION}/ buildmgr/latest
           cd buildmgr/${VERSION}
           tar -xvjf /tmp/doc.tbz2
           git config user.name github-actions
