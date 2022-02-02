@@ -40,7 +40,10 @@ for line in $(grep -E '^[^#]' linkchecker-out.csv | tail -n +2); do
     for o in $origin; do
         ofile=$(echo $o | cut -d':' -f 1)
         oline=$(echo $o | cut -d':' -f 2)
-        echo "$(readlink -f -n $ofile):${oline};${link};${msg}" >&2
+        match=$(echo $o | cut -d':' -f 3-)
+        rest="${match#*$link}"
+        ocolumn=$((${#match} - ${#rest} - ${#link}))
+        echo "$(readlink -f -n $ofile):${oline}:${ocolumn};${link};${msg};URL '${link}' results to '${msg}'" >&2
     done
 done
 
