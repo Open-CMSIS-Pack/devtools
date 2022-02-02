@@ -117,9 +117,10 @@ jobs:
       - name: Install deps
         run: |
           sudo apt update
-          sudo apt-get install ninja-build
+          sudo apt-get install ninja-build python
           wget -q http://launchpadlibrarian.net/163827726/doxygen_1.8.6-2_amd64.deb
           sudo dpkg -i doxygen_1.8.6-2_amd64.deb
+          sudo pip install LinkChecker
 
       - name: Create build folder
         run: mkdir build
@@ -127,7 +128,16 @@ jobs:
       - name: Build documentation
         run: |
           cmake -G Ninja ..
+          echo "::add-matcher::.github/doxygen.json"
           cmake --build . --target buildmgr-docs
+          echo "::remove-matcher owner=doxygen::"
+        working-directory: ./build
+
+      - name: Run linkchecker
+        run: |
+          echo "::add-matcher::.github/linkchecker.json"
+          ../scripts/check_links.sh tools/buildmgr/docs/doxygen/output/html/index.html ../tools/buildmgr/docs/doxygen/Build/src/
+          echo "::remove-matcher owner=linkchecker::"
         working-directory: ./build
 
       - name: Upload documentation
@@ -142,7 +152,7 @@ jobs:
         if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/buildmgr/')) }}
         run: tar -cvjf /tmp/doc.tbz2 .
         working-directory: ./build/tools/buildmgr/docs/doxygen/output/html/
-       
+
       - uses: actions/checkout@v2
         if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/buildmgr/')) }}
         with:
@@ -160,7 +170,7 @@ jobs:
           git add .
           git commit -m "Update buildmgr main branch documentation"
           git push
-          
+
       - name: Publish release documentation
         if: ${{ (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/buildmgr/')) }}
         run: |
