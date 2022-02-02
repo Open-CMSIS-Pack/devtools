@@ -136,8 +136,9 @@ jobs:
       - name: Run linkchecker
         run: |
           echo "::add-matcher::.github/linkchecker.json"
-          scripts/check_links.sh build/tools/buildmgr/docs/doxygen/output/html/index.html
+          ../scripts/check_links.sh tools/buildmgr/docs/doxygen/output/html/index.html ../tools/buildmgr/docs/doxygen/Build/src/
           echo "::remove-matcher owner=linkchecker::"
+        working-directory: ./build
 
       - name: Upload documentation
         uses: actions/upload-artifact@v2
@@ -151,7 +152,7 @@ jobs:
         if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/buildmgr/')) }}
         run: tar -cvjf /tmp/doc.tbz2 .
         working-directory: ./build/tools/buildmgr/docs/doxygen/output/html/
-       
+
       - uses: actions/checkout@v2
         if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/buildmgr/')) }}
         with:
@@ -169,7 +170,7 @@ jobs:
           git add .
           git commit -m "Update buildmgr main branch documentation"
           git push
-          
+
       - name: Publish release documentation
         if: ${{ (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/buildmgr/')) }}
         run: |

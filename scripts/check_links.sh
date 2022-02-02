@@ -1,26 +1,47 @@
 #!/bin/bash
 
+usage() {
+    echo ""
+    echo "Usage: $(basename $0) <index> <src>"
+    echo " <index>  Index.html file to start link scanning at."
+    echo " <src>    Directory with doxygen source files."
+    echo ""
+}
+
+if [ ! -f "$1" ]; then
+    if [ -z "$1" ]; then
+        echo "No index file provided!" >&2
+    else
+        echo "Index file not found: '$1'" >&2
+    fi
+    usage
+    exit 1
+fi
+
+if [ ! -d "$2" ]; then
+    if [ -z "$2" ]; then
+        echo "No source directory provided!" >&2
+    else
+        echo "Source dir not found: '$2'" >&2
+    fi
+    usage
+    exit 1
+fi
+
 linkchecker -F csv --timeout 3 --check-extern $1
 
 OFS=$IFS
 IFS=$'\n'
 
-echo "# converted output from linkchecker" > linkchecker-in.csv
-echo "link;file;msg;src" >> linkchecker-in.csv
 for line in $(grep -E '^[^#]' linkchecker-out.csv | tail -n +2); do
-  link=$(echo $line | cut -d';' -f 1)
-  file=$(echo $line | cut -d';' -f 2)
-  msg=$(echo $line | cut -d';' -f 4)
-  src=$(echo $file | sed -E 's/file:\/\/(.*)\/doc\/.*/\1\/doxygen\/src/')
-  echo "${link};${file};${msg};${src}" >> linkchecker-in.csv
-  if [ -d $src ]; then
-    origin=$(grep -Ern "href=['\"]${link}['\"]" $src)
+    link=$(echo $line | cut -d';' -f 1)
+    msg=$(echo $line | cut -d';' -f 4)
+    origin=$(grep -Ern "href=['\"]${link}['\"]" $2)
     for o in $origin; do
-      ofile=$(echo $o | cut -d':' -f 1)
-      oline=$(echo $o | cut -d':' -f 2)
-      echo "${ofile}:${oline};${link};${msg}" >&2
+        ofile=$(echo $o | cut -d':' -f 1)
+        oline=$(echo $o | cut -d':' -f 2)
+        echo "$(readlink -f -n $ofile):${oline};${link};${msg}" >&2
     done
-  fi
 done
 
 IFS=$OFS
