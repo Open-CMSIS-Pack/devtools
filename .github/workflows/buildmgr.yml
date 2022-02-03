@@ -467,3 +467,82 @@ jobs:
         with:
           check_name: "Cbuild Integration Tests [${{ matrix.target }}]"
           report_paths: build/integtest_report_${{ matrix.target }}.xml
+
+  sanity-check-native:
+    needs: [ create_installer ]
+    timeout-minutes: 15
+    runs-on: ${{ matrix.os }}
+    env:
+      CI_PACK_ROOT: ${{ github.workspace }}/packs
+      CI_ARMCC6_TOOLCHAIN_ROOT: ""
+      CI_ARMCC5_TOOLCHAIN_ROOT: ""
+      CI_GCC_TOOLCHAIN_ROOT: ""
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ macos-11, ubuntu-18.04, windows-2016, windows-2022 ]
+    steps:
+      - name: Download cbuild_install
+        uses: actions/download-artifact@v2
+        with:
+          name: cbuild_install
+          path: ${{ github.workspace }}
+
+      - name: Set correct cbuild_install file permission
+        if: ${{ startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu') }}
+        run: chmod +x cbuild_install.sh
+
+      - name: Run cbuild_install.sh
+        shell: bash
+        run: |
+          echo "${{ github.workspace }}/cbuild" > config
+          echo "$CI_PACK_ROOT" >> config
+          echo "$CI_ARMCC6_TOOLCHAIN_ROOT" >> config
+          echo "$CI_ARMCC5_TOOLCHAIN_ROOT" >> config
+          echo "$CI_GCC_TOOLCHAIN_ROOT" >> config
+          ./cbuild_install.sh < config
+
+      - name: Test cbuildgen
+        shell: bash
+        run: |
+          ${{ github.workspace }}/cbuild/bin/cbuildgen | grep "(cbuildgen): Build Process Manager"
+
+  sanity-check-docker:
+    needs: [ create_installer ]
+    timeout-minutes: 15
+    runs-on: ubuntu-20.04
+    container:
+      image: ${{ matrix.image }}
+    env:
+      CI_PACK_ROOT: ${{ github.workspace }}/packs
+      CI_ARMCC6_TOOLCHAIN_ROOT: ""
+      CI_ARMCC5_TOOLCHAIN_ROOT: ""
+      CI_GCC_TOOLCHAIN_ROOT: ""
+    strategy:
+      fail-fast: true
+      matrix:
+        image: [ "debian:buster" ]
+    steps:
+      - name: Download cbuild_install
+        uses: actions/download-artifact@v2
+        with:
+          name: cbuild_install
+          path: ${{ github.workspace }}
+
+      - name: Set correct cbuild_install file permission
+        run: chmod +x cbuild_install.sh
+
+      - name: Run cbuild_install.sh
+        shell: bash
+        run: |
+          echo "${{ github.workspace }}/cbuild" > config
+          echo "$CI_PACK_ROOT" >> config
+          echo "$CI_ARMCC6_TOOLCHAIN_ROOT" >> config
+          echo "$CI_ARMCC5_TOOLCHAIN_ROOT" >> config
+          echo "$CI_GCC_TOOLCHAIN_ROOT" >> config
+          ./cbuild_install.sh < config
+
+      - name: Test cbuildgen
+        shell: bash
+        run: |
+          ${{ github.workspace }}/cbuild/bin/cbuildgen | grep "(cbuildgen): Build Process Manager"
