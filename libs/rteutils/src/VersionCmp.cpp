@@ -151,6 +151,9 @@ public:
 
 
 int VersionCmp::Compare(const string& v1, const string& v2, bool cs) {
+  if (v1 == v2) {
+    return 0;
+  }
   // Split v1 and v2 according to http://semver.org/ and compare individually
   Version ver1(v1);
   Version ver2(v2);
@@ -160,6 +163,10 @@ int VersionCmp::Compare(const string& v1, const string& v2, bool cs) {
 
 int VersionCmp::RangeCompare(const string& version, const string& versionRange)
 {
+  if (version == versionRange) {
+    return 0;
+  }
+
   string verMin = RteUtils::GetPrefix(versionRange);
   string verMax = RteUtils::GetSuffix(versionRange);
   if (!verMin.empty()) {

@@ -52,11 +52,7 @@ TEST(RteModelTest, LoadPacks) {
 const string prjsDir = "RteModelTestProjects";
 const string RteTestM3 = "/RteTestM3";
 const string RteTestM3_cprj = prjsDir + RteTestM3 + "/RteTestM3.cprj";
-
-const string RTE_FOLDER = "CONFIG_FOLDER";
-const string preIncComp = prjsDir + RteTestM3 + "/" + RTE_FOLDER + "/_RteTestM3/Pre_Include__RteTest_ComponentLevel.h";
-const string preIncGlob = prjsDir + RteTestM3 + "/" + RTE_FOLDER + "/_RteTestM3/Pre_Include_Global.h";
-const string rteComp = prjsDir + RteTestM3 +    "/" + RTE_FOLDER + "/_RteTestM3/RTE_Components.h";
+const string RteTestM3_ConfigFolder_cprj = prjsDir + RteTestM3 + "/RteTestM3_ConfigFolder.cprj";
 
 const string RteTestM4 = "/RteTestM4";
 const string RteTestM4_cprj = prjsDir + RteTestM4 + "/RteTestM4.cprj";
@@ -81,6 +77,69 @@ protected:
 
   void compareFile(const string &newFile, const string &refFile,
     const std::unordered_map<string, string> &expectedChangedFlags, const string &toolchain) const;
+
+
+  void GenerateHeadersTest(const string& project, const string& rteFolder) {
+
+    const string projectDir = RteUtils::ExtractFilePath(project, true);
+    const string targetFolder = "/_" + RteUtils::ExtractFileBaseName(project) + "/";
+    const string preIncComp = projectDir + rteFolder + targetFolder + "Pre_Include__RteTest_ComponentLevel.h";
+    const string preIncGlob = projectDir + rteFolder + targetFolder + "Pre_Include_Global.h";
+    const string rteComp = projectDir + rteFolder + targetFolder + "RTE_Components.h";
+
+    // backup header files into buffers
+    string preIncCompBuf;
+    string preIncGlobBuf;
+    string rteCompBuf;
+    RteFsUtils::ReadFile(preIncComp, preIncCompBuf);
+    RteFsUtils::ReadFile(preIncGlob, preIncGlobBuf);
+    RteFsUtils::ReadFile(rteComp, rteCompBuf);
+
+    // remove header files
+    RteFsUtils::DeleteFileAutoRetry(preIncComp);
+    RteFsUtils::DeleteFileAutoRetry(preIncGlob);
+    RteFsUtils::DeleteFileAutoRetry(rteComp);
+
+    // load cprj test project
+    RteKernelSlim rteKernel;
+    rteKernel.SetCmsisPackRoot(RteModelTestConfig::CMSIS_PACK_ROOT);
+    RteCprjProject* loadedCprjProject = rteKernel.LoadCprj(project);
+    ASSERT_NE(loadedCprjProject, nullptr);
+
+    // check if active project is set
+    RteCprjProject* activeCprjProject = rteKernel.GetActiveCprjProject();
+    ASSERT_NE(activeCprjProject, nullptr);
+
+    // check if it is the loaded project
+    EXPECT_EQ(activeCprjProject, loadedCprjProject);
+
+    // check if device name is set
+    RteDeviceItem* device = rteKernel.GetActiveDevice();
+    string deviceName = device ? device->GetName() : RteUtils::ERROR_STRING;
+    EXPECT_EQ(deviceName, "RteTest_ARMCM3");
+
+    // check if header files are generated
+    error_code ec;
+    EXPECT_TRUE(fs::exists(preIncComp, ec));
+    EXPECT_TRUE(fs::exists(preIncGlob, ec));
+    EXPECT_TRUE(fs::exists(rteComp, ec));
+
+    // check if contents of header files are identical
+    EXPECT_TRUE(RteFsUtils::CmpFileMem(preIncComp, preIncCompBuf));
+    EXPECT_TRUE(RteFsUtils::CmpFileMem(preIncGlob, preIncGlobBuf));
+    EXPECT_TRUE(RteFsUtils::CmpFileMem(rteComp, rteCompBuf));
+
+    // reload project and check if timestamps are preserved
+    auto timestampPreIncComp = fs::last_write_time(preIncComp, ec);
+    auto timestamppreIncGlob = fs::last_write_time(preIncGlob, ec);
+    auto timestamprteComp = fs::last_write_time(rteComp, ec);
+    loadedCprjProject = rteKernel.LoadCprj(RteTestM3_cprj);
+    EXPECT_TRUE(loadedCprjProject != nullptr);
+    EXPECT_TRUE(timestampPreIncComp == fs::last_write_time(preIncComp, ec));
+    EXPECT_TRUE(timestamppreIncGlob == fs::last_write_time(preIncGlob, ec));
+    EXPECT_TRUE(timestamprteComp == fs::last_write_time(rteComp, ec));
+  }
+
 };
 
 TEST_F(RteModelPrjTest, LoadCprj) {
@@ -126,60 +185,16 @@ TEST_F(RteModelPrjTest, GetLocalPdscFile) {
   EXPECT_EQ(pdsc, "packs/LocalVendor/LocalPack/LocalVendor.LocalPack.pdsc");
 }
 
-TEST_F(RteModelPrjTest, GenerateHeaderTest)
+TEST_F(RteModelPrjTest, GenerateHeadersTestDefault)
 {
-  // backup header files into buffers
-  string preIncCompBuf;
-  string preIncGlobBuf;
-  string rteCompBuf;
-  RteFsUtils::ReadFile(preIncComp, preIncCompBuf);
-  RteFsUtils::ReadFile(preIncGlob, preIncGlobBuf);
-  RteFsUtils::ReadFile(rteComp, rteCompBuf);
-
-  // remove header files
-  RteFsUtils::DeleteFileAutoRetry(preIncComp);
-  RteFsUtils::DeleteFileAutoRetry(preIncGlob);
-  RteFsUtils::DeleteFileAutoRetry(rteComp);
-
-  // load cprj test project
-  RteKernelSlim rteKernel;
-  rteKernel.SetCmsisPackRoot(RteModelTestConfig::CMSIS_PACK_ROOT);
-  RteCprjProject* loadedCprjProject = rteKernel.LoadCprj(RteTestM3_cprj);
-  ASSERT_NE(loadedCprjProject, nullptr);
-
-  // check if active project is set
-  RteCprjProject* activeCprjProject = rteKernel.GetActiveCprjProject();
-  ASSERT_NE(activeCprjProject, nullptr);
-
-  // check if it is the loaded project
-  EXPECT_EQ(activeCprjProject, loadedCprjProject);
-
-  // check if device name is set
-  RteDeviceItem* device = rteKernel.GetActiveDevice();
-  string deviceName = device ? device->GetName() : RteUtils::ERROR_STRING;
-  EXPECT_EQ(deviceName, "RteTest_ARMCM3");
-
-  // check if header files are generated
-  error_code ec;
-  EXPECT_TRUE(fs::exists(preIncComp, ec));
-  EXPECT_TRUE(fs::exists(preIncGlob, ec));
-  EXPECT_TRUE(fs::exists(rteComp, ec));
-
-  // check if contents of header files are identical
-  EXPECT_TRUE(RteFsUtils::CmpFileMem(preIncComp, preIncCompBuf));
-  EXPECT_TRUE(RteFsUtils::CmpFileMem(preIncGlob, preIncGlobBuf));
-  EXPECT_TRUE(RteFsUtils::CmpFileMem(rteComp, rteCompBuf));
-
-  // reload project and check if timestamps are preserved
-  auto timestampPreIncComp = fs::last_write_time(preIncComp, ec);
-  auto timestamppreIncGlob = fs::last_write_time(preIncGlob, ec);
-  auto timestamprteComp = fs::last_write_time(rteComp, ec);
-  loadedCprjProject = rteKernel.LoadCprj(RteTestM3_cprj);
-  EXPECT_TRUE(loadedCprjProject != nullptr);
-  EXPECT_TRUE(timestampPreIncComp == fs::last_write_time(preIncComp, ec));
-  EXPECT_TRUE(timestamppreIncGlob == fs::last_write_time(preIncGlob, ec));
-  EXPECT_TRUE(timestamprteComp == fs::last_write_time(rteComp, ec));
+  GenerateHeadersTest(RteTestM3_cprj, "RTE");
 }
+
+TEST_F(RteModelPrjTest, GenerateHeadersTest_ConfigFolder)
+{
+  GenerateHeadersTest(RteTestM3_ConfigFolder_cprj, "CONFIG_FOLDER");
+}
+
 
 TEST_F(RteModelPrjTest, LoadCprjCompDep) {
 

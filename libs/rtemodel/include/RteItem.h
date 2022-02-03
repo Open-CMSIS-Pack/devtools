@@ -23,6 +23,7 @@
 
 #include <set>
 #include <ostream>
+#include <functional>
 
 /**
  * @brief state of a pack
@@ -82,6 +83,7 @@ class RteItem : public RteAttributes
 {
 
 public:
+  typedef std::function<bool(RteItem* c0, RteItem* c1)> CompareRteItemType;
 
   /**
    * @brief result of evaluating conditions and condition expressions
@@ -251,6 +253,20 @@ public:
    * @return vendor string
   */
   virtual const std::string& GetVendorString() const override;
+
+  /**
+   * @brief sort children of an RteItem instance
+   * @param cmp compare function which will be called by std::list::sort
+  */
+  void SortChildren(CompareRteItemType cmp);
+
+  /**
+   * @brief compare two components in ascending order
+   * @param c0 component to be compared
+   * @param c1 component to be compared
+   * @return true if c0 smaller than c1
+  */
+  static bool CompareComponents(RteItem* c0, RteItem* c1);
 
 public:
   /**
