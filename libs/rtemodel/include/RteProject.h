@@ -495,7 +495,7 @@ protected:
   void CategorizeComponentInstance(RteComponentInstance* ci);
   void CollectMissingPacks();
   void CollectMissingPacks(RteItemInstance* inst);
-  RteComponentInstance* AddCprjComponent(RteItem* item, RteTarget* target);
+  virtual RteComponentInstance* AddCprjComponent(RteItem* item, RteTarget* target);
 
 public:
   /**

@@ -54,7 +54,19 @@ public:
   */
   RteItem*  GetCprjInfo() const;
 
-public:
+  /**
+   * @brief get internal map of component ID to cprj component element
+   * @return map of component ID string to RteItem pointer
+  */
+  const std::map<std::string, RteItem*>& GetCprjComponentMap() const { return m_idToCprjComponents; }
+
+  /**
+   * @brief get cprj component element for supplied component
+   * @param id component ID
+   * @return pointer RteItem* representing cprj component, nullptr if not found
+  */
+  RteItem* GetCprjComponent(const std::string& id) const;
+
   /**
    * @brief clean up the project
   */
@@ -71,7 +83,7 @@ public:
    * @param toolchain name of the toolchain
    * @return true if toolchain is supported
   */
-  bool SetToolchain(const std::string& toolchain);
+  bool SetToolchain(const std::string& toolchain, const std::string& toolChainVersion = RteUtils::EMPTY_STRING);
 
   /**
    * @brief getter for the selected toolchain
@@ -85,15 +97,24 @@ public:
   */
   std::string GetToolchainVersion() { return m_toolchainVersion; }
 
+  /**
+   * @brief apply selected components to CPRJ project
+  */
+  void ApplySelectedComponents();
+
 protected:
   void FillToolchainAttributes(RteAttributes &attributes) const;
   virtual RteTarget* CreateTarget(RteModel* filteredModel, const std::string& name, const std::map<std::string, std::string>& attributes) override;
   virtual void PropagateFilteredPackagesToTargetModel(const std::string& targetName) override;
+  virtual RteComponentInstance* AddCprjComponent(RteItem* item, RteTarget* target) override;
+  void ApplySelectedComponentsToCprjFile();
+  void ApplyComponentFilesToCprjFile(RteComponentInstance* ci, RteItem* cprjComponent);
 
 protected:
   RteCprjModel* m_cprjModel; // model read from .cprj file
   std::string m_toolchain;        // toolchain to use: AC6, AC5, ARMCC, GCC
   std::string m_toolchainVersion; // toolchain version
+  std::map<std::string, RteItem*> m_idToCprjComponents; // component ID mapped to RteItem in CPRJ project
 
 };
 
