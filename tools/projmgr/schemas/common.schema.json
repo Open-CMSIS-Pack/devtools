@@ -328,13 +328,13 @@
       "type": "object",
       "properties": {
         "target-types": {
-          "$ref": "./common.schema.json#/definitions/TargetTypes"
+          "$ref": "#/definitions/TargetTypes"
         },
         "build-types": {
-          "$ref": "./common.schema.json#/definitions/BuildTypes"
+          "$ref": "#/definitions/BuildTypes"
         },
         "projects": {
-          "$ref": "./common.schema.json#/definitions/ProjectsType"
+          "$ref": "#/definitions/ProjectsType"
         }
       },
       "additionalProperties": false
