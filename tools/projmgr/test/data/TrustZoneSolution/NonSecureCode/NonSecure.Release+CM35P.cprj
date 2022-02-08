@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no" ?>
 <cprj schemaVersion="1.7.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="PACK.xsd">
-  <created timestamp="2021-12-16T09:51:26" tool="projmgr 0.0.0+g35cbdb6"/>
+  <created timestamp="2022-02-04T18:55:52" tool="csolution 0.0.0+gfcd63a0"/>
 
   <info isLayer="false">
     <description>Automatically generated project</description>
@@ -38,9 +38,6 @@
     <group name="Non-secure Code">
       <file category="sourceC" name="main_ns.c"/>
       <file category="header" name="../SecureCode/interface.h"/>
-    </group>
-    <group name="Project Dependencies">
-      <file category="other" name="../SecureCode/Secure.Release+CM35P_OutDir/Secure.Release+CM35P.bin"/>
       <file category="object" name="../SecureCode/Secure.Release+CM35P_OutDir/Secure.Release+CM35P_CMSE_Lib.o"/>
     </group>
   </files>

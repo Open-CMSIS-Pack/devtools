@@ -33,6 +33,18 @@ struct PackageItem {
 };
 
 /**
+ * @brief directories item containing
+ *        cproject directory,
+ *        intdir directory,
+ *        outdir directory,
+*/
+struct DirectoriesItem {
+  std::string cproject;
+  std::string intdir;
+  std::string outdir;
+};
+
+/**
  * @brief project context item containing
  *        pointer to csolution,
  *        pointer to cproject,
@@ -43,13 +55,13 @@ struct PackageItem {
  *        build-type properties,
  *        target-type properties,
  *        parent csolution target properties,
- *        project name,
- *        project directory,
- *        rte directory,
+ *        directories,
  *        build-type/target-type pair,
+ *        project name,
  *        project description,
  *        output type,
  *        device selection,
+ *        board selection,
  *        trustzone selection,
  *        fpu selection,
  *        endianess selection,
@@ -75,17 +87,16 @@ struct ContextItem {
   std::map<std::string, ClayerItem*> clayers;
   RteProject* rteActiveProject = nullptr;
   RteTarget* rteActiveTarget = nullptr;
-  std::map<std::string, std::vector<std::string>> prjDeps;
   BuildType buildType;
   TargetType targetType;
   TargetType csolutionTarget;
-  std::string name;
-  std::string cprojectDir;
-  std::string rteDir;
+  DirectoriesItem directories;
   TypePair type;
+  std::string name;
   std::string description;
   std::string outputType;
   std::string device;
+  std::string board;
   std::string trustzone;
   std::string fpu;
   std::string endian;
@@ -160,14 +171,6 @@ public:
   bool ProcessContext(ContextItem& context, bool resolveDependencies = false);
 
   /**
-   * @brief process project dependencies
-   * @param reference to context
-   * @param reference to output directory
-   * @return true if executed successfully
-  */
-  bool ProcessProjDeps(ContextItem& context, const std::string& outputDir);
-
-  /**
    * @brief list available packs
    * @param filter words to filter results
    * @param packs reference to list of packs
@@ -231,11 +234,18 @@ public:
   */
   bool CopyContextFiles(ContextItem& context, const std::string& outputDir, bool outputEmpty);
 
+  /**
+   * @brief set output directory
+   * @param reference to output directory
+  */
+  void SetOutputDir(const std::string& outputDir);
+
 protected:
   ProjMgrKernel* m_kernel = nullptr;
   RteGlobalModel* m_model = nullptr;
   std::list<RtePackage*> m_installedPacks;
   std::map<std::string, ContextItem> m_contexts;
+  std::string m_outputDir;
 
   bool LoadPacks(void);
   bool GetRequiredPdscFiles(const std::string& packRoot, std::set<std::string>& pdscFiles);
@@ -252,10 +262,14 @@ protected:
   bool ProcessDependencies(ContextItem& context);
   bool ProcessConfigFiles(ContextItem& context);
   bool ProcessGroups(ContextItem& context);
+  bool ProcessAccessSequences(ContextItem& context);
   bool AddContext(ProjMgrParser& parser, ContextDesc& descriptor, const TypePair& type, const std::string& cprojectFile, ContextItem& parentContext);
   void AddMiscUniquely(std::vector<MiscItem>& dst, std::vector<std::vector<MiscItem>*>& srcVec);
   void AddStringItemsUniquely(std::vector<std::string>& dst, const std::vector<std::string>& src);
   void RemoveStringItems(std::vector<std::string>& dst, std::vector<std::string>& src);
+  bool GetAccessSequence(size_t& offset, std::string& src, std::string& sequence, const char start, const char end);
+  void InsertVectorPointers(std::vector<std::string*>& dst, std::vector<std::string>& src);
+  void InsertFilesPointers(std::vector<std::string*>& dst, std::vector<GroupNode>& groups);
   void PushBackUniquely(std::vector<std::string>& vec, const std::string& value);
   void MergeStringVector(StringVectorCollection& item);
   void MergeMiscCPP(std::vector<MiscItem>& vec);
