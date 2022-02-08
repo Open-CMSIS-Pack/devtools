@@ -210,6 +210,9 @@ bool ProjMgr::RunConvert(void) {
     }
   }
 
+  // Set output directory
+  m_worker.SetOutputDir(m_outputDir);
+
   // Add contexts
   for (auto& descriptor : m_parser.GetCsolution().contexts) {
     error_code ec;
@@ -228,18 +231,10 @@ bool ProjMgr::RunConvert(void) {
     }
   }
 
-  // Process project dependencies
-  for (auto& context : m_worker.GetContexts()) {
-    if (!m_worker.ProcessProjDeps(context.second, m_outputDir)) {
-      ProjMgrLogger::Error("processing project dependencies for '" + context.first + "' failed");
-      return false;
-    }
-  }
-
   // Generate Cprjs
   for (auto& context : m_worker.GetContexts()) {
     error_code ec;
-    const string& directory = m_outputDir.empty() ? context.second.cprojectDir + "/" + context.second.rteDir : m_outputDir + "/" + context.first;
+    const string& directory = m_outputDir.empty() ? context.second.directories.cproject : m_outputDir + "/" + context.first;
     const string& filename = fs::weakly_canonical(directory + "/" + context.first + ".cprj", ec).generic_string();
     RteFsUtils::CreateDirectories(directory);
     if (m_generator.GenerateCprj(context.second, filename)) {

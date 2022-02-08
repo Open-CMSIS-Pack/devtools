@@ -61,9 +61,6 @@ bool ProjMgrYamlParser::ParseCproject(const string& input, CsolutionItem& csolut
     ParseTargetType(projectNode, cproject.target);
     ParsePackages(projectNode, cproject.packages);
 
-    if (!ParseRteDirs(projectNode, cproject.rteDirs)) {
-      return false;
-    }
     if (!ParseComponents(projectNode, cproject.components)) {
       return false;
     }
@@ -108,9 +105,6 @@ bool ProjMgrYamlParser::ParseClayer(const string& input, map<string, ClayerItem>
     ParseTargetType(layerNode, clayer.target);
     ParsePackages(layerNode, clayer.packages);
 
-    if (!ParseRteDirs(layerNode, clayer.rteDirs)) {
-      return false;
-    }
     if (!ParseComponents(layerNode, clayer.components)) {
       return false;
     }
@@ -125,21 +119,6 @@ bool ProjMgrYamlParser::ParseClayer(const string& input, map<string, ClayerItem>
     return false;
   }
   clayers[input] = clayer;
-  return true;
-}
-
-bool ProjMgrYamlParser::ParseRteDirs(const YAML::Node& parent, std::vector<RteDirItem>& dirs) {
-  if (parent[YAML_RTEDIRS].IsDefined()) {
-    const YAML::Node& dirsNode = parent[YAML_RTEDIRS];
-    for (const auto& dirEntry : dirsNode) {
-      RteDirItem dirItem;
-      if (!ParseTypeFilter(dirEntry, dirItem.type)) {
-        return false;
-      }
-      ParseString(dirEntry, YAML_RTEDIR, dirItem.dir);
-      dirs.push_back(dirItem);
-    }
-  }
   return true;
 }
 
@@ -336,7 +315,6 @@ bool ProjMgrYamlParser::ParseContexts(const YAML::Node& parent, CsolutionItem& c
         return false;
       }
       ParseString(projectsEntry, YAML_PROJECT, descriptor.cproject);
-      ParseVectorOrString(projectsEntry, YAML_DEPENDS, descriptor.depends);
       ParseTargetType(projectsEntry, descriptor.target);
       csolution.contexts.push_back(descriptor);
       PushBackUniquely(csolution.cprojects, descriptor.cproject);
@@ -426,7 +404,6 @@ const set<string> projectsKeys = {
   YAML_ADDPATHS,
   YAML_DELPATHS,
   YAML_MISC,
-  YAML_DEPENDS,
 };
 
 const set<string> projectKeys = {
@@ -437,7 +414,6 @@ const set<string> projectKeys = {
   YAML_BOARD,
   YAML_PROCESSOR,
   YAML_COMPILER,
-  YAML_RTEDIRS,
   YAML_OPTIMIZE,
   YAML_DEBUG,
   YAML_WARNINGS,
@@ -460,7 +436,6 @@ const set<string> layerKeys = {
   YAML_BOARD,
   YAML_PROCESSOR,
   YAML_COMPILER,
-  YAML_RTEDIRS,
   YAML_OPTIMIZE,
   YAML_DEBUG,
   YAML_WARNINGS,
@@ -508,11 +483,6 @@ const set<string> processorKeys = {
   YAML_TRUSTZONE,
   YAML_FPU,
   YAML_ENDIAN,
-};
-
-const set<string> dirsKeys = {
-  YAML_RTEDIR,
-  YAML_FORTYPE,
 };
 
 const set<string> miscKeys = {

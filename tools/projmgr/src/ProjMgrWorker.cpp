@@ -13,6 +13,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <regex>
 
 using namespace std;
 
@@ -44,11 +45,8 @@ bool ProjMgrWorker::AddContexts(ProjMgrParser& parser, ContextDesc& descriptor, 
   }
   context.cproject = &cprojects.at(cprojectFile);
   context.csolution = &parser.GetCsolution();
-  for (const auto& dep : descriptor.depends) {
-    context.prjDeps[dep];
-  }
   context.csolutionTarget = descriptor.target;
-  context.cprojectDir = fs::path(cprojectFile).parent_path().generic_string();
+  context.directories.cproject = fs::path(cprojectFile).parent_path().generic_string();
 
   // No build/target-types
   if (context.csolution->buildTypes.empty() && context.csolution->targetTypes.empty()) {
@@ -92,11 +90,8 @@ bool ProjMgrWorker::AddContext(ProjMgrParser& parser, ContextDesc& descriptor, c
     const string& contextName = projectName + buildType + targetType;
     context.name = contextName;
 
-    for (const auto& rteDirsEntry : context.cproject->rteDirs) {
-      if (CheckType(rteDirsEntry.type, type)) {
-        context.rteDir = rteDirsEntry.dir;
-      }
-    }
+    context.directories.intdir = context.name + "_IntDir/";
+    context.directories.outdir = context.name + "_OutDir/";
 
     for (const auto& clayer : context.cproject->clayers) {
       if (CheckType(clayer.type, type)) {
@@ -118,6 +113,10 @@ bool ProjMgrWorker::AddContext(ProjMgrParser& parser, ContextDesc& descriptor, c
 
 map<string, ContextItem>& ProjMgrWorker::GetContexts(void) {
   return m_contexts;
+}
+
+void ProjMgrWorker::SetOutputDir(const std::string& outputDir) {
+  m_outputDir = outputDir;
 }
 
 bool ProjMgrWorker::GetRequiredPdscFiles(const std::string& packRoot, std::set<std::string>& pdscFiles) {
@@ -727,10 +726,93 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
   return true;
 }
 
+bool ProjMgrWorker::ProcessAccessSequences(ContextItem& context) {
+  // Collect pointers to fields that accept access sequences
+  vector<string*> fields;
+  InsertVectorPointers(fields, context.defines);
+  InsertVectorPointers(fields, context.includes);
+  for (auto& misc : context.misc) {
+    InsertVectorPointers(fields, misc.as);
+    InsertVectorPointers(fields, misc.c);
+    InsertVectorPointers(fields, misc.cpp);
+    InsertVectorPointers(fields, misc.c_cpp);
+    InsertVectorPointers(fields, misc.lib);
+    InsertVectorPointers(fields, misc.link);
+  }
+  // Files
+  InsertFilesPointers(fields, context.groups);
+
+  // Iterate over fields and expand access sequences
+  for (auto& item : fields) {
+    if (item) {
+      size_t offset = 0;
+      while (offset != string::npos) {
+        string sequence;
+        if (!GetAccessSequence(offset, *item, sequence, '$', '$')) {
+          return false;
+        }
+        if (offset != string::npos) {
+          string replacement;
+          regex regEx;
+          if (sequence == "Dname") {
+            regEx = regex("\\$Dname\\$");
+            replacement = context.device;
+          } else if (sequence == "Bname") {
+            regEx = regex("\\$Bname\\$");
+            replacement = context.board;
+          } else if (regex_match(sequence, regex("(Output|OutDir|Source)\\(.*"))) {
+            string contextName;
+            size_t offsetContext = 0;
+            if (!GetAccessSequence(offsetContext, sequence, contextName, '(', ')')) {
+              return false;
+            }
+            if (contextName.find('+') == string::npos) {
+              if (!context.type.target.empty()) {
+                contextName.append('+' + context.type.target);
+              }
+            }
+            if (contextName.find('.') == string::npos) {
+              if (!context.type.build.empty()) {
+                const size_t targetDelim = contextName.find('+');
+                contextName.insert(targetDelim == string::npos ? contextName.length() : targetDelim, '.' + context.type.build);
+              }
+            }
+            if (m_contexts.find(contextName) != m_contexts.end()) {
+              error_code ec;
+              const auto& depContext = m_contexts.at(contextName);
+              const string& depContextCprjDir = m_outputDir.empty() ? depContext.directories.cproject : m_outputDir + "/" + contextName;
+              const string& contextCprjDir = m_outputDir.empty() ? context.directories.cproject : m_outputDir + "/" + context.name;
+              const string& relSrcDir = fs::relative(depContextCprjDir, contextCprjDir, ec).generic_string() + "/";
+              const string& relOutDir = relSrcDir + depContext.directories.outdir;
+              if (regex_match(sequence, regex("^OutDir\\(.*"))) {
+                regEx = regex("\\$OutDir\\(.*\\$");
+                replacement = relOutDir;
+              } else if (regex_match(sequence, regex("^Output\\(.*"))) {
+                regEx = regex("\\$Output\\(.*\\$");
+                replacement = relOutDir + contextName;
+              } else if (regex_match(sequence, regex("^Source\\(.*"))) {
+                regEx = regex("\\$Source\\(.*\\$");
+                replacement = relSrcDir;
+              }
+            } else {
+              ProjMgrLogger::Error("context '" + contextName + "' referenced by access sequence '" + sequence + "' does not exist");
+              return false;
+            }
+          } else {
+            ProjMgrLogger::Warn("unknown access sequence: '" + sequence + "'");
+          }
+          *item = regex_replace(*item, regEx, replacement);
+        }
+      }
+    }
+  }
+  return true;
+}
+
 bool ProjMgrWorker::ProcessGroups(ContextItem& context) {
   // Add cproject groups
   for (const auto& group : context.cproject->groups) {
-    if (!AddGroup(group, context.groups, context, context.cprojectDir)) {
+    if (!AddGroup(group, context.groups, context, context.directories.cproject)) {
       return false;
     }
   }
@@ -856,6 +938,9 @@ bool ProjMgrWorker::ProcessContext(ContextItem& context, bool resolveDependencie
     return false;
   }
   if (!ProcessGroups(context)) {
+    return false;
+  }
+  if (!ProcessAccessSequences(context)) {
     return false;
   }
   if (!ProcessComponents(context)) {
@@ -1169,6 +1254,38 @@ void ProjMgrWorker::RemoveStringItems(vector<string>& dst, vector<string>& src) 
   }
 }
 
+bool ProjMgrWorker::GetAccessSequence(size_t& offset, string& src, string& sequence, const char start, const char end) {
+  size_t delimStart = src.find_first_of(start, offset);
+  if (delimStart != string::npos) {
+    size_t delimEnd = src.find_first_of(end, ++delimStart);
+    if (delimEnd != string::npos) {
+      sequence = src.substr(delimStart, delimEnd - delimStart);
+      offset = ++delimEnd;
+      return true;
+    } else {
+      ProjMgrLogger::Error("missing access sequence delimiter: " + src);
+      return false;
+    }
+  }
+  offset = string::npos;
+  return true;
+}
+
+void ProjMgrWorker::InsertVectorPointers(vector<string*>& dst, vector<string>& src) {
+  for (auto& item : src) {
+    dst.push_back(&item);
+  }
+}
+
+void ProjMgrWorker::InsertFilesPointers(vector<string*>& dst, vector<GroupNode>& groups) {
+    for (auto& groupNode : groups) {
+      for (auto& fileNode : groupNode.files) {
+        dst.push_back(&(fileNode.file));
+      }
+      InsertFilesPointers(dst, groupNode.groups);
+    }
+}
+
 void ProjMgrWorker::PushBackUniquely(vector<string>& vec, const string& value) {
   if (find(vec.cbegin(), vec.cend(), value) == vec.cend()) {
     vec.push_back(value);
@@ -1179,7 +1296,7 @@ bool ProjMgrWorker::CopyContextFiles(ContextItem& context, const string& outputD
   if (!outputEmpty) {
     // Copy RTE folder content
     error_code ec;
-    const string& cprojectDir = fs::weakly_canonical(context.cprojectDir + "/" + context.rteDir, ec).generic_string();
+    const string& cprojectDir = fs::weakly_canonical(context.directories.cproject, ec).generic_string();
     vector<string> rteDirs;
     static constexpr const char* RTE_FOLDER = "/RTE";
     rteDirs.push_back(cprojectDir + RTE_FOLDER);
@@ -1207,34 +1324,6 @@ bool ProjMgrWorker::CopyContextFiles(ContextItem& context, const string& outputD
     }
   } else if (!context.clayers.empty()) {
     ProjMgrLogger::Warn("output option was not specified, files won't be copied for context '" + context.name + "'");
-  }
-  return true;
-}
-
-//TODO: Rework project dependencies discovering once the dependencies description YAML nodes will be defined
-bool ProjMgrWorker::ProcessProjDeps(ContextItem& context, const string& outputDir) {
-  for (auto& dep : context.prjDeps) {
-    const string& buildType = (!context.type.build.empty() ? "." : "") + context.type.build;
-    const string& targetType = (!context.type.target.empty() ? "+" : "") + context.type.target;
-    const string& depContextName = dep.first + buildType + targetType;
-    if (m_contexts.find(depContextName) == m_contexts.end()) {
-      ProjMgrLogger::Warn("dependent context was not found:'" + depContextName + "'");
-      continue;
-    }
-    error_code ec;
-    const auto& depContext = m_contexts[depContextName];
-    const string& depContextCprjDir = outputDir.empty() ? depContext.cprojectDir + "/" + depContext.rteDir : outputDir + "/" + depContextName;
-    const string& contextCprjDir = outputDir.empty() ? context.cprojectDir + "/" + context.rteDir : outputDir + "/" + context.name;
-    const string& relDir = fs::relative(depContextCprjDir, contextCprjDir, ec).generic_string() + "/" + depContextName + "_OutDir/";
-    context.includes.push_back(relDir);
-    if (depContext.outputType == "lib") {
-      dep.second.push_back(relDir + depContextName + m_contexts[depContextName].toolchain.name == "AC6" ? ".lib" : ".a");
-    } else {
-      dep.second.push_back(relDir + depContextName + ".bin");
-      if (depContext.trustzone == "secure") {
-        dep.second.push_back(relDir + depContextName + "_CMSE_Lib.o");
-      }
-    }
   }
   return true;
 }

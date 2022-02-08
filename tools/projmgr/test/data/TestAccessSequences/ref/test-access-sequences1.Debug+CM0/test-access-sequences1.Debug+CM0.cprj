@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<cprj schemaVersion="1.7.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="PACK.xsd">
+  <created timestamp="2022-02-04T18:53:04" tool="csolution 0.0.0+gfcd63a0"/>
+
+  <info isLayer="false">
+    <description>Automatically generated project</description>
+  </info>
+
+  <packages>
+    <package name="RteTest_DFP" vendor="ARM" version="0.1.1"/>
+  </packages>
+
+  <compilers>
+    <compiler name="AC6" version="6.16.0"/>
+  </compilers>
+
+  <target Dfpu="NO_FPU" Dname="RteTest_ARMCM0" Dsecure="Non-secure" Dvendor="ARM:82">
+    <output intdir="test-access-sequences1.Debug+CM0_IntDir/" name="test-access-sequences1.Debug+CM0" outdir="test-access-sequences1.Debug+CM0_OutDir/" type="exe"/>
+    <cflags add="-O1 -g -C-CPP-RteTest_ARMCM0" compiler="AC6"/>
+    <cxxflags add="-O1 -g -C-CPP-RteTest_ARMCM0" compiler="AC6"/>
+    <defines>DEF1-PROJ1-../test-access-sequences2.Debug+CM0/test-access-sequences2.Debug+CM0_OutDir/test-access-sequences2.Debug+CM0;DEF2-PROJ1-../test-access-sequences2.Debug+CM3/test-access-sequences2.Debug+CM3_OutDir/test-access-sequences2.Debug+CM3;DEF3-PROJ1-../test-access-sequences2.Release+CM0/test-access-sequences2.Release+CM0_OutDir/test-access-sequences2.Release+CM0;DEF-CM0-RteTest_ARMCM0-</defines>
+    <includes>/path/CM0/RteTest_ARMCM0</includes>
+  </target>
+
+  <components>
+    <component Cclass="RteTest" Cgroup="CORE" Cvendor="ARM" Cversion="0.1.1"/>
+  </components>
+
+  <files>
+    <group name="CMSE">
+      <file category="object" name="../test-access-sequences2.Debug+CM0/test-access-sequences2.Debug+CM0_OutDir/test-access-sequences2.Debug+CM0_CMSE_Lib.o"/>
+    </group>
+  </files>
+</cprj>
+

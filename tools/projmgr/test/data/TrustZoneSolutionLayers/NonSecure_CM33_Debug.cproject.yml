@@ -5,3 +5,7 @@ project:
     - layer: ./layers/target/CM33.clayer.yml
     - layer: ./layers/config/Debug.clayer.yml
     - layer: ./layers/app/NonSecureCode/NonSecure.clayer.yml
+  groups:
+    - group: CMSE
+      files:
+        - file: $Output(Secure_CM33_Debug)$_CMSE_Lib.o

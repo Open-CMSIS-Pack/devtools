@@ -1,0 +1,18 @@
+### CMSIS Project Description ###
+solution:
+
+  build-types:
+    - type: Debug
+      compiler: AC6
+      misc:
+        - C*:
+            - -O1
+            - -g
+    - type: Release
+      compiler: AC6
+      misc:
+        - C*:
+            - -O3
+  
+  projects:
+    - project: ./test-access-sequences3.cproject.yml

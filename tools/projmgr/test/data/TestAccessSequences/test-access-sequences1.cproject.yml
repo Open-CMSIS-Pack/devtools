@@ -1,0 +1,13 @@
+### CMSIS Project Description ###
+
+project:
+  defines:
+    - DEF1-PROJ1-$Output(test-access-sequences2.Debug)$
+    - DEF2-PROJ1-$Output(test-access-sequences2+CM3)$
+    - DEF3-PROJ1-$Output(test-access-sequences2.Release+CM0)$
+  components:
+    - component: CORE
+  groups:
+    - group: CMSE
+      files: 
+        - file: $Output(test-access-sequences2)$_CMSE_Lib.o

@@ -1,0 +1,15 @@
+### CMSIS Project Description ###
+
+project:
+  device: RteTest_ARMCM0
+  compiler: AC6
+  defines:
+    - DEF1-$OutDir(malformed-access-sequences2)$
+    - DEF2-$OutDirs(malformed-access-sequences2)$
+    - DEF3-$OutDir(malformed-access-sequences2$)
+  components:
+    - component: CORE
+  groups:
+    - group: Sources
+      files: 
+        - file: main.c

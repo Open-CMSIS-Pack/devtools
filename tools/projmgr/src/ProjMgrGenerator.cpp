@@ -74,7 +74,6 @@ bool ProjMgrGenerator::GenerateCprj(ContextItem& context, const string& filename
   // Files
   if (filesElement) {
     GenerateCprjGroups(filesElement, context.groups, context.toolchain.name);
-    GenerateCprjPrjDeps(filesElement, context);
   }
 
   // Remove empty files element
@@ -148,8 +147,8 @@ void ProjMgrGenerator::GenerateCprjTarget(XMLTreeElement* element, const Context
   if (targetOutputElement) {
     targetOutputElement->AddAttribute("name", context.name);
     targetOutputElement->AddAttribute("type", context.outputType);
-    targetOutputElement->AddAttribute("intdir", context.name + "_IntDir/");
-    targetOutputElement->AddAttribute("outdir", context.name + "_OutDir/");
+    targetOutputElement->AddAttribute("intdir", context.directories.intdir);
+    targetOutputElement->AddAttribute("outdir", context.directories.outdir);
   }
 
   // TODO Generate toolchain settings (warnings, debug, includes)
@@ -265,25 +264,6 @@ void ProjMgrGenerator::GenerateCprjGroups(XMLTreeElement* element, const vector<
 
       }
       GenerateCprjGroups(groupElement, groupNode.groups, compiler);
-    }
-  }
-}
-
-void ProjMgrGenerator::GenerateCprjPrjDeps(XMLTreeElement* element, const ContextItem& context) {
-  if (!context.prjDeps.empty()) {
-    XMLTreeElement* groupElement = element->CreateElement("group");
-    if (groupElement) {
-      groupElement->AddAttribute("name", "Project Dependencies");
-      for (const auto& dep : context.prjDeps) {
-        for (const auto& file : dep.second) {
-          XMLTreeElement* fileElement = groupElement->CreateElement("file");
-          fileElement->AddAttribute("name", file);
-          if (fileElement) {
-            const string& category = GetCategory(file);
-            fileElement->AddAttribute("category", category);
-          }
-        }
-      }
     }
   }
 }

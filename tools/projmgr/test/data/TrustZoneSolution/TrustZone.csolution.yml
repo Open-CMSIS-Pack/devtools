@@ -25,5 +25,3 @@ solution:
   projects:
     - project: ./SecureCode/Secure.cproject.yml
     - project: ./NonSecureCode/NonSecure.cproject.yml
-      depends:
-        - Secure

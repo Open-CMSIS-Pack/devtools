@@ -5,17 +5,9 @@ solution:
     - project: ./Secure_CM33_Debug.cproject.yml
     - project: ./Secure_CM33_Release.cproject.yml
     - project: ./NonSecure_CM33_Debug.cproject.yml
-      depends:
-        - Secure_CM33_Debug
     - project: ./NonSecure_CM33_Release.cproject.yml
-      depends:
-        - Secure_CM33_Release
     
     - project: ./Secure_CM35P_Debug.cproject.yml
     - project: ./Secure_CM35P_Release.cproject.yml
     - project: ./NonSecure_CM35P_Debug.cproject.yml
-      depends:
-        - Secure_CM35P_Debug
     - project: ./NonSecure_CM35P_Release.cproject.yml
-      depends:
-        - Secure_CM35P_Release

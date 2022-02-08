@@ -280,6 +280,80 @@ TEST_F(ProjMgrUnitTests, RunProjMgrLayers) {
     testinput_folder + "/TestLayers/ref/testlayers.Debug");
 }
 
+TEST_F(ProjMgrUnitTests, AccessSequences) {
+  char* argv[7];
+
+  // convert -s solution.yml
+  const string& csolution = testinput_folder + "/TestAccessSequences/test-access-sequences.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv));
+
+  // Check generated CPRJs
+  CompareFile(testoutput_folder + "/test-access-sequences1.Debug+CM0/test-access-sequences1.Debug+CM0.cprj",
+    testinput_folder + "/TestAccessSequences/ref/test-access-sequences1.Debug+CM0/test-access-sequences1.Debug+CM0.cprj");
+  CompareFile(testoutput_folder + "/test-access-sequences1.Release+CM0/test-access-sequences1.Release+CM0.cprj",
+    testinput_folder + "/TestAccessSequences/ref/test-access-sequences1.Release+CM0/test-access-sequences1.Release+CM0.cprj");
+  CompareFile(testoutput_folder + "/test-access-sequences2.Debug+CM0/test-access-sequences2.Debug+CM0.cprj",
+    testinput_folder + "/TestAccessSequences/ref/test-access-sequences2.Debug+CM0/test-access-sequences2.Debug+CM0.cprj");
+  CompareFile(testoutput_folder + "/test-access-sequences2.Release+CM0/test-access-sequences2.Release+CM0.cprj",
+    testinput_folder + "/TestAccessSequences/ref/test-access-sequences2.Release+CM0/test-access-sequences2.Release+CM0.cprj");
+  CompareFile(testoutput_folder + "/test-access-sequences1.Debug+CM3/test-access-sequences1.Debug+CM3.cprj",
+    testinput_folder + "/TestAccessSequences/ref/test-access-sequences1.Debug+CM3/test-access-sequences1.Debug+CM3.cprj");
+  CompareFile(testoutput_folder + "/test-access-sequences1.Release+CM3/test-access-sequences1.Release+CM3.cprj",
+    testinput_folder + "/TestAccessSequences/ref/test-access-sequences1.Release+CM3/test-access-sequences1.Release+CM3.cprj");
+  CompareFile(testoutput_folder + "/test-access-sequences2.Debug+CM3/test-access-sequences2.Debug+CM3.cprj",
+    testinput_folder + "/TestAccessSequences/ref/test-access-sequences2.Debug+CM3/test-access-sequences2.Debug+CM3.cprj");
+  CompareFile(testoutput_folder + "/test-access-sequences2.Release+CM3/test-access-sequences2.Release+CM3.cprj",
+    testinput_folder + "/TestAccessSequences/ref/test-access-sequences2.Release+CM3/test-access-sequences2.Release+CM3.cprj");
+}
+
+TEST_F(ProjMgrUnitTests, AccessSequences2) {
+  char* argv[7];
+
+  // convert -s solution.yml
+  const string& csolution = testinput_folder + "/TestAccessSequences/test-access-sequences2.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv));
+
+  // Check generated CPRJs
+  CompareFile(testoutput_folder + "/test-access-sequences3.Debug/test-access-sequences3.Debug.cprj",
+    testinput_folder + "/TestAccessSequences/ref/test-access-sequences3.Debug/test-access-sequences3.Debug.cprj");
+  CompareFile(testoutput_folder + "/test-access-sequences3.Release/test-access-sequences3.Release.cprj",
+    testinput_folder + "/TestAccessSequences/ref/test-access-sequences3.Release/test-access-sequences3.Release.cprj");
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_MalformedAccessSequences1) {
+  char* argv[6];
+  // convert -p cproject.yml
+  const string& cproject = testinput_folder + "/TestAccessSequences/malformed-access-sequences1.cproject.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-p";
+  argv[3] = (char*)cproject.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(1, RunProjMgr(6, argv));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_MalformedAccessSequences2) {
+  char* argv[6];
+  // convert -p cproject.yml
+  const string& cproject = testinput_folder + "/TestAccessSequences/malformed-access-sequences2.cproject.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-p";
+  argv[3] = (char*)cproject.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(1, RunProjMgr(6, argv));
+}
+
 TEST_F(ProjMgrUnitTests, ListPacks) {
   set<string> expected = {
     "ARM::RteTest@0.1.0",

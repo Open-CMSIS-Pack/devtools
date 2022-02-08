@@ -183,8 +183,7 @@
         "undefines":    { "$ref": "#/definitions/UndefinesType" },
         "add-paths":    { "$ref": "#/definitions/AddpathsType" },
         "del-paths":    { "$ref": "#/definitions/DelpathsType" },
-        "misc":         { "$ref": "#/definitions/MiscTypes" },
-        "depends":      { "$ref": "#/definitions/ArrayOfStrings" }
+        "misc":         { "$ref": "#/definitions/MiscTypes" }
       },
       "additionalProperties": false,
       "required": [ "project" ]
