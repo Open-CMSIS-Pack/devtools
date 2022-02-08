@@ -39,13 +39,24 @@ TEST(RteModelTest, LoadPacks) {
   EXPECT_TRUE(pdscParseResult);
 
   RteModel rteModel;
-  bool rteModelConstructResult = rteModel.Construct(xmlTree.get());
   rteModel.SetUseDeviceTree(true);
+  bool rteModelConstructResult = rteModel.Construct(xmlTree.get());
   EXPECT_TRUE(rteModelConstructResult);
 
   bool rteModelValidateResult = rteModel.Validate();
   EXPECT_TRUE(rteModelValidateResult);
 
+  RteDeviceItemAggregate* da = rteModel.GetDeviceAggregate("RteTest_ARMCM3", "ARM:82");
+  ASSERT_NE(da, nullptr);
+  // test deprecated memory attributes: IROM and IRAM
+  string summary = da->GetSummaryString();
+  EXPECT_EQ(summary, "ARM Cortex-M3, 10 MHz, 128 kB RAM, 256 kB ROM");
+
+  da = rteModel.GetDeviceAggregate("RteTest_ARMCM4", "ARM:82");
+  ASSERT_NE(da, nullptr);
+  // test recommended memory attributes: name and access
+  summary = da->GetSummaryString();
+  EXPECT_EQ(summary, "ARM Cortex-M4, 10 MHz, 128 kB RAM, 256 kB ROM");
 }
 
 // define project and header file names with relative paths
@@ -157,7 +168,7 @@ TEST_F(RteModelPrjTest, LoadCprj) {
 
   RteDeviceItem* device = rteKernel.GetActiveDevice();
   string deviceName = device ? device->GetName() : RteUtils::ERROR_STRING;
-
+  string deviceVendor = device ? device->GetVendorString() : RteUtils::ERROR_STRING;
   EXPECT_EQ(deviceName, "RteTest_ARMCM3");
 
   RteTarget* activeTarget = activeCprjProject->GetActiveTarget();
