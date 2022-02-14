@@ -202,23 +202,23 @@ jobs:
           cmake --build . --target PackChkIntegTests
           ctest -V -C Debug -R PackChkIntegTests
           cmake --build . --target PackChkUnitTests
-          ctest -V -R PackChkUnitTests
+          ctest -V -C Debug -R PackChkUnitTests
         working-directory: ./build
 
       - name: Generate coverage report
         if: ${{ startsWith(matrix.os, 'ubuntu') }}
         run: |
-          lcov -c --directory ./tools/packchk/ --output-file full_coverage.info
+          lcov -c --directory . --output-file full_coverage.info
           lcov -e full_coverage.info '/tools/packchk/include/*' '*/tools/packchk/src/*' -o coverage.info
           genhtml coverage.info --output-directory coverage
           zip -r coverage.zip coverage/*
-        working-directory: ./build
+        working-directory: ./build/tools/packchk
 
       - name: Upload Report to Codecov
         if: ${{ !github.event.repository.private }}
         uses: codecov/codecov-action@v1.3.2
         with:
-          files: ./build/coverage.info
+          files: ./build/tools/packchk/coverage.info
           fail_ci_if_error: true
           functionalities: fix
 
@@ -226,7 +226,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: coverage-report
-          path: ./build/coverage.zip
+          path: ./build/tools/packchk/coverage.zip
           retention-days: 1
           if-no-files-found: error
 
