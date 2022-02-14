@@ -365,17 +365,17 @@ jobs:
       - name: Generate coverage report
         if: ${{ startsWith(matrix.os, 'ubuntu') }}
         run: |
-          lcov -c --directory ./tools/projmgr/ --output-file full_coverage.info
+          lcov -c --directory . --output-file full_coverage.info
           lcov -e full_coverage.info '/tools/projmgr/include/*' '*/tools/projmgr/src/*' -o coverage.info
           genhtml coverage.info --output-directory coverage
           zip -r coverage.zip coverage/*
-        working-directory: ./build
+        working-directory: ./build/tools/projmgr/
 
       - name: Upload Report to Codecov
         if: ${{ !github.event.repository.private }}
         uses: codecov/codecov-action@v1.3.2
         with:
-          files: ./build/coverage.info
+          files: ./build/tools/projmgr/coverage.info
           fail_ci_if_error: true
           functionalities: fix
 
@@ -383,7 +383,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: coverage-report
-          path: ./build/coverage.zip
+          path: ./build/tools/projmgr/coverage.zip
           retention-days: 1
           if-no-files-found: error
 
