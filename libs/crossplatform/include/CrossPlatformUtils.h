@@ -7,8 +7,9 @@
 #define CROSSPLATFORM_UTILS_H
 
 #include <string>
+#include <system_error>
 
- /**
+/**
  * @brief CrossPlatformUtils utility class provides proxy methods to call platform-specific functions
 */
 class CrossPlatformUtils
@@ -55,6 +56,11 @@ public:
   */
   static unsigned long ClockInMsec();
 
+  /**
+   * @brief Gets path of running executable
+   * @return path to running executable
+  */
+  static std::string GetExecutablePath(std::error_code& ec);
 };
 
-#endif  /* #ifndef CROSSPLATFORM_UTILS_H */
+#endif  /* CROSSPLATFORM_UTILS_H */

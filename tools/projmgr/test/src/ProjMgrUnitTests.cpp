@@ -16,6 +16,28 @@ class ProjMgrUnitTests : public ProjMgr, public ::testing::Test {
 protected:
   ProjMgrUnitTests() {}
   virtual ~ProjMgrUnitTests() {}
+
+  static void SetUpTestSuite() {
+    error_code ec;
+    std::string schemaSrcDir, schemaDestDir;
+    schemaSrcDir = string(TEST_FOLDER) + "../schemas";
+    schemaDestDir = string(PROJMGRUNITTESTS_BIN_PATH) + "/../etc";
+
+    if (!RteFsUtils::Exists(schemaSrcDir)) {
+      GTEST_SKIP();
+    }
+
+    if (RteFsUtils::Exists(schemaDestDir)) {
+      RteFsUtils::RemoveDir(schemaDestDir);
+    }
+    RteFsUtils::CreateDirectories(schemaDestDir);
+
+    fs::copy(fs::path(schemaSrcDir), fs::path(schemaDestDir), fs::copy_options::recursive, ec);
+    if (ec) {
+      GTEST_SKIP();
+    }
+  }
+
   void CompareFile(const string& file1, const string& file2);
   void CompareFileTree(const string& dir1, const string& dir2);
 };
@@ -125,7 +147,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListComponents) {
   EXPECT_EQ(0, RunProjMgr(3, argv));
 }
 
-TEST_F(ProjMgrUnitTests, RunProjMgr_ListDependenciess) {
+TEST_F(ProjMgrUnitTests, RunProjMgr_ListDependencies) {
   char* argv[5];
   const std::string expected = "ARM::Device:Startup&RteTest Startup@2.0.3 require RteTest:CORE\n";
   CoutRedirect coutRedirect;
@@ -158,19 +180,33 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ConvertProject) {
     testinput_folder + "/TestProject/test.cprj");
 }
 
-TEST_F(ProjMgrUnitTests, ListDeviceRunProjMgr) {
+TEST_F(ProjMgrUnitTests, RunProjMgr_With_Schema_Check) {
+  char* argv[6];
+  // convert -p cproject.yml
+  const string& cproject = testinput_folder + "/TestProject/test.cproject_invalid_schema.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-p";
+  argv[3] = (char*)cproject.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(1, RunProjMgr(6, argv));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_Skip_Schema_Check) {
   char* argv[7];
-  CoutRedirect coutRedirect;
+  // convert -p cproject.yml
+  const string& cproject = testinput_folder + "/TestProject/test.cproject_invalid_schema.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-p";
+  argv[3] = (char*)cproject.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  argv[6] = (char*)"-n";
+  EXPECT_EQ(0, RunProjMgr(7, argv));
 
-  // list devices
-  argv[1] = (char*)"list";
-  argv[2] = (char*)"devices";
-  argv[3] = (char*)"--filter";
-  argv[4] = (char*)"RteTest_ARMCM4";
-  EXPECT_EQ(0, RunProjMgr(5, argv));
-  auto outStr = coutRedirect.GetString();
-
-  EXPECT_STREQ(outStr.c_str(), "RteTest_ARMCM4_FP\nRteTest_ARMCM4_NOFP\n");
+  // Check generated CPRJ
+  CompareFile(testoutput_folder + "/test/test.cprj",
+    testinput_folder + "/TestProject/test.cprj");
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgrContextSolution) {
@@ -392,7 +428,7 @@ TEST_F(ProjMgrUnitTests, ListComponentsDeviceFiltered) {
   set<string> components;
   ContextDesc descriptor;
   const string& filenameInput = testinput_folder + "/TestProject/test.cproject.yml";
-  EXPECT_TRUE(m_parser.ParseCproject(filenameInput, true));
+  EXPECT_TRUE(m_parser.ParseCproject(filenameInput, false, true));
   EXPECT_TRUE(m_worker.AddContexts(m_parser, descriptor, filenameInput));
   EXPECT_TRUE(m_worker.ListComponents("Startup", components));
   EXPECT_EQ(expected, components);
@@ -405,7 +441,7 @@ TEST_F(ProjMgrUnitTests, ListDependencies) {
   set<string> dependencies;
   ContextDesc descriptor;
   const string& filenameInput = testinput_folder + "/TestProject/test-dependency.cproject.yml";
-  EXPECT_TRUE(m_parser.ParseCproject(filenameInput, true));
+  EXPECT_TRUE(m_parser.ParseCproject(filenameInput, false, true));
   EXPECT_TRUE(m_worker.AddContexts(m_parser, descriptor, filenameInput));
   EXPECT_TRUE(m_worker.ListDependencies("CORE", dependencies));
   EXPECT_EQ(expected, dependencies);
@@ -421,10 +457,10 @@ TEST_F(ProjMgrUnitTests, RunListContexts) {
   const string& dirInput = testinput_folder + "/TestSolution/";
   const string& filenameInput = dirInput + "test.csolution.yml";
   error_code ec;
-  EXPECT_TRUE(m_parser.ParseCsolution(filenameInput));
+  EXPECT_TRUE(m_parser.ParseCsolution(filenameInput, false));
   for (const auto& cproject : m_parser.GetCsolution().cprojects) {
     string const& cprojectFile = fs::canonical(dirInput + cproject, ec).generic_string();
-    EXPECT_TRUE(m_parser.ParseCproject(cprojectFile));
+    EXPECT_TRUE(m_parser.ParseCproject(cprojectFile, false, false));
   }
   for (auto& descriptor : m_parser.GetCsolution().contexts) {
     const string& cprojectFile = fs::canonical(dirInput + descriptor.cproject, ec).generic_string();
@@ -446,10 +482,10 @@ TEST_F(ProjMgrUnitTests, RunListContexts_Without_BuildTypes) {
   const string& dirInput = testinput_folder + "/TestSolution/";
   const string& filenameInput = dirInput + "test.csolution_no_buildtypes.yml";
   error_code ec;
-  EXPECT_TRUE(m_parser.ParseCsolution(filenameInput));
+  EXPECT_TRUE(m_parser.ParseCsolution(filenameInput, false));
   for (const auto& cproject : m_parser.GetCsolution().cprojects) {
     string const& cprojectFile = fs::canonical(dirInput + cproject, ec).generic_string();
-    EXPECT_TRUE(m_parser.ParseCproject(cprojectFile));
+    EXPECT_TRUE(m_parser.ParseCproject(cprojectFile, false, false));
   }
   for (auto& descriptor : m_parser.GetCsolution().contexts) {
     const string& cprojectFile = fs::canonical(dirInput + descriptor.cproject, ec).generic_string();
@@ -463,7 +499,7 @@ TEST_F(ProjMgrUnitTests, RunListContexts_Without_BuildTypes) {
 TEST_F(ProjMgrUnitTests, AddContextFailed) {
   ContextDesc descriptor;
   const string& filenameInput = testinput_folder + "/TestSolution/test.csolution_missing_project.yml";
-  EXPECT_TRUE(m_parser.ParseCsolution(filenameInput));
+  EXPECT_TRUE(m_parser.ParseCsolution(filenameInput, false));
   EXPECT_FALSE(m_worker.AddContexts(m_parser, descriptor, filenameInput));
 }
 
@@ -471,7 +507,7 @@ TEST_F(ProjMgrUnitTests, GenerateCprj) {
   const string& filenameInput = testinput_folder + "/TestProject/test.cproject.yml";
   const string& filenameOutput = testoutput_folder + "/GenerateCprjTest.cprj";
   ContextDesc descriptor;
-  EXPECT_TRUE(m_parser.ParseCproject(filenameInput, true));
+  EXPECT_TRUE(m_parser.ParseCproject(filenameInput, false, true));
   EXPECT_TRUE(m_worker.AddContexts(m_parser, descriptor, filenameInput));
   EXPECT_TRUE(m_worker.ProcessContext(m_worker.GetContexts().begin()->second, true));
   EXPECT_TRUE(m_generator.GenerateCprj(m_worker.GetContexts().begin()->second, filenameOutput));

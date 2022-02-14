@@ -12,18 +12,21 @@ set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT projmgr)
 # projmgr library
 SET(PROJMGR_SOURCE_FILES ProjMgr.cpp ProjMgrKernel.cpp ProjMgrCallback.cpp
   ProjMgrParser.cpp ProjMgrWorker.cpp ProjMgrGenerator.cpp ProjMgrXmlParser.cpp
-  ProjMgrYamlParser.cpp ProjMgrLogger.cpp
+  ProjMgrYamlParser.cpp ProjMgrLogger.cpp ProjMgrYamlSchemaChecker.cpp
 )
 SET(PROJMGR_HEADER_FILES ProjMgr.h ProjMgrKernel.h ProjMgrCallback.h
   ProjMgrParser.h ProjMgrWorker.h ProjMgrGenerator.h ProjMgrXmlParser.h
-  ProjMgrYamlParser.h ProjMgrLogger.h
+  ProjMgrYamlParser.h ProjMgrLogger.h ProjMgrYamlSchemaChecker.h
 )
 
 list(TRANSFORM PROJMGR_SOURCE_FILES PREPEND src/)
 list(TRANSFORM PROJMGR_HEADER_FILES PREPEND include/)
 
 add_library(projmgrlib OBJECT ${PROJMGR_SOURCE_FILES} ${PROJMGR_HEADER_FILES})
-target_link_libraries(projmgrlib PUBLIC CrossPlatform RteFsUtils RteUtils XmlTree XmlTreeSlim XmlReader RteModel cxxopts yaml-cpp)
+target_link_libraries(projmgrlib
+  PUBLIC
+  CrossPlatform RteFsUtils RteUtils XmlTree XmlTreeSlim XmlReader
+  RteModel cxxopts yaml-cpp YmlSchemaChecker)
 target_include_directories(projmgrlib PRIVATE include ${PROJECT_BINARY_DIR})
 
 if(SWIG_LIBS)

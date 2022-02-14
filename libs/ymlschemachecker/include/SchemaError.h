@@ -12,12 +12,13 @@
 
 struct SchemaError
 {
-  SchemaError(const std::string& errMsg, int line, int column) :
-    m_line(line), m_col(column), m_Msg(errMsg) { }
+  SchemaError(const std::string& filePath, const std::string& errMsg, int line, int column) :
+    m_line(line), m_col(column), m_msg(errMsg), m_file(filePath) { }
 
   int         m_line;
   int         m_col;
-  std::string m_Msg;
+  std::string m_msg;
+  std::string m_file;
 };
 
 typedef std::list<SchemaError> SchemaErrors;

@@ -267,19 +267,19 @@ public:
    * @param input cproject.yml file
    * @param boolean parse single project, default false
   */
-  bool ParseCproject(const std::string& input, bool single = false);
+  bool ParseCproject(const std::string& input, bool checkSchema, bool single = false);
 
   /**
    * @brief parse csolution
    * @param input csolution.yml file
   */
-  bool ParseCsolution(const std::string& input);
+  bool ParseCsolution(const std::string& input, bool checkSchema);
 
   /**
    * @brief parse clayer
    * @param input clayer.yml file
   */
-  bool ParseClayer(const std::string& input);
+  bool ParseClayer(const std::string& input, bool checkSchema);
 
   /**
    * @brief get csolution
