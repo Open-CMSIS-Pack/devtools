@@ -111,8 +111,8 @@ bool ProjMgrWorker::AddContext(ProjMgrParser& parser, ContextDesc& descriptor, c
   return true;
 }
 
-map<string, ContextItem>& ProjMgrWorker::GetContexts(void) {
-  return m_contexts;
+void ProjMgrWorker::GetContexts(map<string, ContextItem>& contexts) {
+  contexts = m_contexts;
 }
 
 void ProjMgrWorker::SetOutputDir(const std::string& outputDir) {
@@ -1028,7 +1028,7 @@ set<string> ProjMgrWorker::SplitArgs(const string& args, const string& delimiter
   return s;
 }
 
-bool ProjMgrWorker::ListPacks(const string& filter, set<string>&packs) {
+bool ProjMgrWorker::ListPacks(const string& filter, vector<string>&packs) {
   if (!LoadPacks()) {
     return false;
   }
@@ -1036,22 +1036,24 @@ bool ProjMgrWorker::ListPacks(const string& filter, set<string>&packs) {
     ProjMgrLogger::Error("no installed pack was found");
     return false;
   }
+  set<string> packsSet;
   for (const auto& pack : m_installedPacks) {
-    packs.insert(GetPackageID(pack));
+    packsSet.insert(GetPackageID(pack));
   }
   if (!filter.empty()) {
     set<string> filteredPacks;
-    ApplyFilter(packs, SplitArgs(filter), filteredPacks);
+    ApplyFilter(packsSet, SplitArgs(filter), filteredPacks);
     if (filteredPacks.empty()) {
       ProjMgrLogger::Error("no pack was found with filter '" + filter + "'");
       return false;
     }
-    packs = filteredPacks;
+    packsSet = filteredPacks;
   }
+  packs.assign(packsSet.begin(), packsSet.end());
   return true;
 }
 
-bool ProjMgrWorker::ListDevices(const string & filter, set<string>& devices) {
+bool ProjMgrWorker::ListDevices(const string & filter, vector<string>& devices) {
   if (!m_contexts.empty()) {
     ContextItem context = m_contexts.begin()->second;
     if (!context.cproject->packages.empty()) {
@@ -1063,6 +1065,7 @@ bool ProjMgrWorker::ListDevices(const string & filter, set<string>& devices) {
   if (!LoadPacks()) {
     return false;
   }
+  set<string> devicesSet;
   for (const auto& pack : m_installedPacks) {
     list<RteDeviceItem*> deviceItems;
     pack->GetEffectiveDeviceItems(deviceItems);
@@ -1071,30 +1074,31 @@ bool ProjMgrWorker::ListDevices(const string & filter, set<string>& devices) {
       if (deviceItem->GetProcessorCount() > 1) {
         const auto& processors = deviceItem->GetProcessors();
         for (const auto& processor : processors) {
-          devices.insert(deviceName + ":" + processor.first);
+          devicesSet.insert(deviceName + ":" + processor.first);
         }
       } else {
-        devices.insert(deviceName);
+        devicesSet.insert(deviceName);
       }
     }
   }
-  if (devices.empty()) {
+  if (devicesSet.empty()) {
     ProjMgrLogger::Error("no installed device was found");
     return false;
   }
   if (!filter.empty()) {
     set<string> matchedDevices;
-    ApplyFilter(devices, SplitArgs(filter), matchedDevices);
+    ApplyFilter(devicesSet, SplitArgs(filter), matchedDevices);
     if (matchedDevices.empty()) {
       ProjMgrLogger::Error("no device was found with filter '" + filter + "'");
       return false;
     }
-    devices = matchedDevices;
+    devicesSet = matchedDevices;
   }
+  devices.assign(devicesSet.begin(), devicesSet.end());
   return true;
 }
 
-bool ProjMgrWorker::ListComponents(const string & filter, set<string>& components) {
+bool ProjMgrWorker::ListComponents(const string& filter, vector<string>& components) {
   ContextItem context;
   if (!LoadPacks()) {
     return false;
@@ -1144,12 +1148,12 @@ bool ProjMgrWorker::ListComponents(const string & filter, set<string>& component
     componentIds = filteredIds;
   }
   for (const auto& componentId : componentIds) {
-    components.insert(componentId + " (" + GetPackageID(componentMap[componentId]->GetPackage()) + ")");
+    components.push_back(componentId + " (" + GetPackageID(componentMap[componentId]->GetPackage()) + ")");
   }
   return true;
 }
 
-bool ProjMgrWorker::ListDependencies(const string& filter, set<string>& dependencies) {
+bool ProjMgrWorker::ListDependencies(const string& filter, vector<string>& dependencies) {
   if (m_contexts.empty()) {
     return false;
   }
@@ -1157,39 +1161,43 @@ bool ProjMgrWorker::ListDependencies(const string& filter, set<string>& dependen
   if (!ProcessContext(context)) {
     return false;
   }
+  set<string>dependenciesSet;
   for (const auto& [component, deps] : context.dependencies) {
     for (const auto& dep : deps) {
-      dependencies.insert(component + " " + dep);
+      dependenciesSet.insert(component + " " + dep);
     }
   }
   if (!filter.empty()) {
     set<string> filteredDependencies;
-    ApplyFilter(dependencies, SplitArgs(filter), filteredDependencies);
+    ApplyFilter(dependenciesSet, SplitArgs(filter), filteredDependencies);
     if (filteredDependencies.empty()) {
       ProjMgrLogger::Error("no unresolved dependency was found with filter '" + filter + "'");
       return false;
     }
-    dependencies = filteredDependencies;
+    dependenciesSet = filteredDependencies;
   }
+  dependencies.assign(dependenciesSet.begin(), dependenciesSet.end());
   return true;
 }
 
-bool ProjMgrWorker::ListContexts(const string& filter, set<string>& contexts) {
+bool ProjMgrWorker::ListContexts(const string& filter, vector<string>& contexts) {
   if (m_contexts.empty()) {
     return false;
   }
+  set<string>contextsSet;
   for (auto& context : m_contexts) {
-    contexts.insert(context.first);
+    contextsSet.insert(context.first);
   }
   if (!filter.empty()) {
     set<string> filteredContexts;
-    ApplyFilter(contexts, SplitArgs(filter), filteredContexts);
+    ApplyFilter(contextsSet, SplitArgs(filter), filteredContexts);
     if (filteredContexts.empty()) {
       ProjMgrLogger::Error("no context was found with filter '" + filter + "'");
       return false;
     }
-    contexts = filteredContexts;
+    contextsSet = filteredContexts;
   }
+  contexts.assign(contextsSet.begin(), contextsSet.end());
   return true;
 }
 

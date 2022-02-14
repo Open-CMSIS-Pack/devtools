@@ -359,9 +359,9 @@ TEST_F(ProjMgrUnitTests, ListPacks) {
     "ARM::RteTest@0.1.0",
     "ARM::RteTest_DFP@0.1.1"
   };
-  set<string> packs;
+  vector<string> packs;
   EXPECT_TRUE(m_worker.ListPacks("RteTest", packs));
-  EXPECT_EQ(expected, packs);
+  EXPECT_EQ(expected, set<string>(packs.begin(), packs.end()));
 }
 
 TEST_F(ProjMgrUnitTests, ListDevices) {
@@ -371,44 +371,44 @@ TEST_F(ProjMgrUnitTests, ListDevices) {
     "RteTest_ARMCM4_FP",
     "RteTest_ARMCM4_NOFP"
   };
-  set<string> devices;
+  vector<string> devices;
   EXPECT_TRUE(m_worker.ListDevices("CM4", devices));
-  EXPECT_EQ(expected, devices);
+  EXPECT_EQ(expected, set<string>(devices.begin(), devices.end()));
 }
 
 TEST_F(ProjMgrUnitTests, ListComponents) {
   set<string> expected = {
     "ARM::Device:Startup&RteTest Startup@2.0.3 (ARM::RteTest_DFP@0.1.1)",
   };
-  set<string> components;
+  vector<string> components;
   EXPECT_TRUE(m_worker.ListComponents("Startup", components));
-  EXPECT_EQ(expected, components);
+  EXPECT_EQ(expected, set<string>(components.begin(), components.end()));
 }
 
 TEST_F(ProjMgrUnitTests, ListComponentsDeviceFiltered) {
   set<string> expected = {
     "ARM::Device:Startup&RteTest Startup@2.0.3 (ARM::RteTest_DFP@0.1.1)"
   };
-  set<string> components;
+  vector<string> components;
   ContextDesc descriptor;
   const string& filenameInput = testinput_folder + "/TestProject/test.cproject.yml";
   EXPECT_TRUE(m_parser.ParseCproject(filenameInput, true));
   EXPECT_TRUE(m_worker.AddContexts(m_parser, descriptor, filenameInput));
   EXPECT_TRUE(m_worker.ListComponents("Startup", components));
-  EXPECT_EQ(expected, components);
+  EXPECT_EQ(expected, set<string>(components.begin(), components.end()));
 }
 
 TEST_F(ProjMgrUnitTests, ListDependencies) {
   set<string> expected = {
      "ARM::Device:Startup&RteTest Startup@2.0.3 require RteTest:CORE",
   };
-  set<string> dependencies;
+  vector<string> dependencies;
   ContextDesc descriptor;
   const string& filenameInput = testinput_folder + "/TestProject/test-dependency.cproject.yml";
   EXPECT_TRUE(m_parser.ParseCproject(filenameInput, true));
   EXPECT_TRUE(m_worker.AddContexts(m_parser, descriptor, filenameInput));
   EXPECT_TRUE(m_worker.ListDependencies("CORE", dependencies));
-  EXPECT_EQ(expected, dependencies);
+  EXPECT_EQ(expected, set<string>(dependencies.begin(), dependencies.end()));
 }
 
 TEST_F(ProjMgrUnitTests, RunListContexts) {
@@ -430,9 +430,9 @@ TEST_F(ProjMgrUnitTests, RunListContexts) {
     const string& cprojectFile = fs::canonical(dirInput + descriptor.cproject, ec).generic_string();
     EXPECT_TRUE(m_worker.AddContexts(m_parser, descriptor, cprojectFile));
   }
-  set<string> contexts;
+  vector<string> contexts;
   EXPECT_TRUE(m_worker.ListContexts("", contexts));
-  EXPECT_EQ(expected, contexts);
+  EXPECT_EQ(expected, set<string>(contexts.begin(), contexts.end()));
 }
 
 TEST_F(ProjMgrUnitTests, RunListContexts_Without_BuildTypes) {
@@ -455,9 +455,9 @@ TEST_F(ProjMgrUnitTests, RunListContexts_Without_BuildTypes) {
     const string& cprojectFile = fs::canonical(dirInput + descriptor.cproject, ec).generic_string();
     EXPECT_TRUE(m_worker.AddContexts(m_parser, descriptor, cprojectFile));
   }
-  set<string> contexts;
+  vector<string> contexts;
   EXPECT_TRUE(m_worker.ListContexts("", contexts));
-  EXPECT_EQ(expected, contexts);
+  EXPECT_EQ(expected, set<string>(contexts.begin(), contexts.end()));
 }
 
 TEST_F(ProjMgrUnitTests, AddContextFailed) {
@@ -473,8 +473,10 @@ TEST_F(ProjMgrUnitTests, GenerateCprj) {
   ContextDesc descriptor;
   EXPECT_TRUE(m_parser.ParseCproject(filenameInput, true));
   EXPECT_TRUE(m_worker.AddContexts(m_parser, descriptor, filenameInput));
-  EXPECT_TRUE(m_worker.ProcessContext(m_worker.GetContexts().begin()->second, true));
-  EXPECT_TRUE(m_generator.GenerateCprj(m_worker.GetContexts().begin()->second, filenameOutput));
+  std::map<std::string, ContextItem> contexts;
+  m_worker.GetContexts(contexts);
+  EXPECT_TRUE(m_worker.ProcessContext(contexts.begin()->second, true));
+  EXPECT_TRUE(m_generator.GenerateCprj(contexts.begin()->second, filenameOutput));
 
   CompareFile(testoutput_folder + "/GenerateCprjTest.cprj",
     testinput_folder + "/TestProject/test.cprj");
