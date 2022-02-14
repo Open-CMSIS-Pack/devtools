@@ -563,6 +563,29 @@ The typical usage of the `RTE_Components.h` file is in header files to control t
 
 ## Name Conventions
 
+### Pack Name Conventions
+
+The CMSIS Project Manager uses the following syntax to specify the `pack:` names in the `*.yml` files.
+
+```text
+[vendor::] pack-name [@[>=] version]
+```
+
+Element      | Description
+:------------|:---------------------
+`vendor`     | is the vendor name of the software pack (optional).
+`pack-name`  | is the name of the software pack, for the key `filter:` wildcards (*, ?) can be used.
+`version`    | is the version number of the software pack, with `@1.2.3` that must exactly match, or `@>=1.2.3` that allows any version higher or equal.
+
+**Examples:**
+
+```yml
+- pack:   CMSIS@>5.5.0                                 # 'CMSIS' Pack (with version 5.5.0)
+- pack:   Keil::MDK-Middleware@>=7.13.0                # 'MDK-Middleware' Software Pack from vendor Keil (with version 7.13.0 or higher)
+- filter: AWS::*                                       # All Software Packs from vendor 'AWS'
+- filter: Keil::STM*                                   # All Software Packs that start with 'STM' from vendor 'Keil'
+```
+
 ### Component Name Conventions
 
 The CMSIS Project Manager uses the following syntax to specify the `component:` names in the `*.yml` files.
@@ -703,7 +726,7 @@ The following top-level *key values* are supported in a *.cdefaults.yml file.
 
 ```yml
 default:                 # Start of default settings
-  packs:                 # Defines local packs and/or scope of packs that are used (ToDo)
+  packs:                 # Defines local packs and/or scope of packs that are used
   build-types:           # Default list of build-types (i.e. Release, Debug)
   compiler:              # Default selection of the compiler
 ```
@@ -714,6 +737,7 @@ The following top-level *key values* are supported in a `*.csolution.yml` file.
 
 ```yml
 solution:
+  packs:                 # Defines local packs and/or scope of packs that are used
   target-types:          # List of build-types
   build-types:           # List of build-types
 
@@ -793,7 +817,47 @@ Keyword         | Description
 
 - `defines:`, `add-paths:`, `del-paths:`  and `misc:` are additive. All other keywords overwrite previous settings.
 
+## Pack selection
 
+The `packs:` section that can be specified in the `*.csolution.yml` and `*.cdefault.yml` file allows you to:
+  
+  - reduce the scope of software packs that are available for a project.
+  - specify a specific software pack optional with a version specification.
+  - provide a paths to a local installation of a software pack that is for example project specific or under development.
+
+The pack names use the [Pack Name Conventions](#pack-name-conventions) to specify the name of the software packs.
+The `pack` definition can be specific to [target and build types](#target-and-build-types) and may provide a local path to a development repository of a software pack.
+
+
+**YML structure:**
+
+```yml
+packs:                 # Start a list for section of software packs
+  - filter:            # pack filter, optional with wildcards (additive)
+    
+  - pack:              # explicit pack specification, overrules a pack filter
+    path:              # a explicit path name that stores the software pack
+    for-type:          # include pack for a list of *build* and *target* types.
+    not-for-type:      # exclude pack for a list of *build* and *target* types.
+```
+
+**Example:**
+```yml
+packs:                                  # start section that specifics software packs
+  - filter: AWS::                       # use packs from AWS
+  - filter: NXP::*K32L*                 # use packs from NXP that relate to K32L series (would match K32L3A60_DFP + FRDM-K32L3A6_BSP)
+  - filter: ARM::                       # use packs from Arm
+
+  - pack: Keil::Arm_Compiler            # add always Keil::Arm_Compiler pack (bypasses filter)
+  - pack: Keil::MDK-Middleware@7.13.0   # add Keil::MDK-Middleware pack at version 7.13.0
+
+  - pack: NXP::K32L3A60_DFP             # add pack for NXP device 
+    path: ./local/NXP/K32L3A60_DFP      # with path to the pack (local copy, repo, etc.)
+
+  - path: AWS::coreHTTP                 # add pack
+    path: ./development/AWS/coreHTTP    # with path to development source directory
+    for-type: +DevTest                  # pack is only used for target-type "DevTest"
+```
 
 ## Target and Build Types
 
@@ -807,7 +871,7 @@ The *`target-type`* and *`build-type`* definitions are additive, but an attempt 
 
 The settings of the *`target-type`* are processed first; then the settings of the *`build-type`* that potentially overwrite the *`target-type`* settings.
 
-YML structure:
+**YML structure:**
 
 ```yml
 target-types:          # Start a list of target type declarations
@@ -915,7 +979,7 @@ Keyword      | Description
 
 ## Groups and Files
 
-YML structure:
+**YML structure:**
 
 ```yml
 groups:                # Start a list of groups
@@ -988,7 +1052,7 @@ groups:
 
 Add a software layer to a project.  Used in `*.cproject.yml` files.
 
-YML structure:
+**YML structure:**
 
 ```yml
 layers:                # Start a list of layers
@@ -1008,7 +1072,7 @@ layers:                # Start a list of layers
 
 Add software components to a project or a software layer.  Used in `*.cproject.yml` and `*.clayer.yml` files.
 
-YML structure:
+**YML structure:**
 
 ```yml
 components:            # Start a list of layers
@@ -1033,7 +1097,7 @@ Component Names](#Component_Names)
 
 Add symbol #define statements to the command line of the development tools.
 
-YML structure:
+**YML structure:**
 
 ```yml
 defines:                   # Start a list of define statements
@@ -1045,7 +1109,7 @@ defines:                   # Start a list of define statements
 
 Remove symbol #define statements from the command line of the development tools.
 
-YML structure:
+**YML structure:**
 
 ```yml
 undefines:                 # Start a list of undefine statements
@@ -1057,7 +1121,7 @@ undefines:                 # Start a list of undefine statements
 
 Add include paths to the command line of the development tools.
 
-YML structure:
+**YML structure:**
 ```yml
 add-paths:                 # Start a list path names that should be added to the include file search
   - path                   # add path name
@@ -1068,7 +1132,7 @@ add-paths:                 # Start a list path names that should be added to the
 
 Remove include paths (that are defined at the cproject level) from the command line of the development tools.
 
-YML structure:
+**YML structure:**
 ```yml
 del-paths:                 # Start a list of path names that should be removed from the include file search
   - path                   # remove path name
@@ -1081,7 +1145,7 @@ del-paths:                 # Start a list of path names that should be removed f
 
 Add tool specific controls as literal strings that are directly passed to the individual tools.
 
-YML structure:
+**YML structure:**
 ```yml
 misc:                      # Start a list of literal control strings that are directly passed to the tools.
   - compiler:              # select the toolchain that the literal control string applies too (AC6, IAR, GCC).
@@ -1311,12 +1375,20 @@ The ProjMgr should always generate *.cprj files that contain version information
 Add to the project the possiblity to specify.  The issue might be that the project files become overwhelming, alternative is to keep partitioning in separate files.
 
 ```yml
+phases:    # define the life-time of a resource definition
+  - phase: Boot
+  - phase: OTA
+  - phase: Run
+
 memories:              # specifies the required memory
   - split: SRAM_NS
     into:
       - region: DATA_NS
         size: 128k
         permission: n
+      - region: DATA_BOOT
+        phase: Boot
+        size: 128k
     
 peripherals:           # specifies the requried peripherals
   - peripheral: I2C0
@@ -1350,3 +1422,5 @@ It should be possible to use conditions to filter against a selected board name.
 ### Layers in packs
 
 A layer is a set of pre-configured software components. It should be possible to store a layer in a pack and apply filter conditions to it.  In combination with interfaces specifications, an interactive IDE should be able to display suitable layers that could be added to an application.
+
+
