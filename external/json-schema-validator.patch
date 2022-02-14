@@ -16,7 +16,7 @@ index e6aff61..fa90bc0 100644
  include(CMakePackageConfigHelpers)
  write_basic_package_version_file(
 diff --git a/src/json-validator.cpp b/src/json-validator.cpp
-index 0beb613..fc808c3 100644
+index 0beb613..7f3a077 100644
 --- a/src/json-validator.cpp
 +++ b/src/json-validator.cpp
 @@ -576,6 +576,32 @@ public:
@@ -52,7 +52,18 @@ index 0beb613..fc808c3 100644
  			sch.erase(attr);
  		}
  
-@@ -1263,10 +1289,17 @@ std::shared_ptr<schema> schema::make(json &schema,
+@@ -1256,17 +1282,24 @@ std::shared_ptr<schema> schema::make(json &schema,
+ 		auto attr = schema.find("$id"); // if $id is present, this schema can be referenced by this ID
+ 		                                // as an additional URI
+ 		if (attr != schema.end()) {
+-			if (std::find(uris.begin(),
+-			              uris.end(),
+-			              attr.value().get<std::string>()) == uris.end())
+-				uris.push_back(uris.back().derive(attr.value().get<std::string>())); // so add it to the list if it is not there already
++			//if (std::find(uris.begin(),
++			//              uris.end(),
++			//              attr.value().get<std::string>()) == uris.end())
++			//	uris.push_back(uris.back().derive(attr.value().get<std::string>())); // so add it to the list if it is not there already
  			schema.erase(attr);
  		}
  

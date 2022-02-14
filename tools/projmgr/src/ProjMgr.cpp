@@ -20,22 +20,23 @@ static constexpr const char* USAGE = "\
 Usage:\n\
   csolution <command> [<args>] [OPTIONS...]\n\n\
 Commands:\n\
-  list packs          Print list of installed packs\n\
-       devices        Print list of available device names\n\
-       components     Print list of available components\n\
-       dependencies   Print list of unresolved project dependencies\n\
-       contexts       Print list of contexts in a csolution.yml\n\
-  convert             Convert cproject.yml or csolution.yml in cprj files\n\
-  help                Print usage\n\n\
+  list packs            Print list of installed packs\n\
+       devices          Print list of available device names\n\
+       components       Print list of available components\n\
+       dependencies     Print list of unresolved project dependencies\n\
+       contexts         Print list of contexts in a csolution.yml\n\
+  convert               Convert cproject.yml or csolution.yml in cprj files\n\
+  help                  Print usage\n\n\
 Options:\n\
-  -p, --project arg   Input cproject.yml file\n\
-  -s, --solution arg  Input csolution.yml file\n\
-  -f, --filter arg    Filter words\n\
-  -o, --output arg    Output directory\n\
-  -h, --help          Print usage\n\
+  -p, --project arg     Input cproject.yml file\n\
+  -s, --solution arg    Input csolution.yml file\n\
+  -f, --filter arg      Filter words\n\
+  -o, --output arg      Output directory\n\
+  -h, --help            Print usage\n\
+  -n, --no-check-schema Skip schema check\n\
 ";
 
-ProjMgr::ProjMgr(void) {
+ProjMgr::ProjMgr(void) : m_checkSchema(false) {
   // Reserved
 }
 
@@ -49,7 +50,6 @@ void ProjMgr::PrintUsage(void) {
 }
 
 int ProjMgr::RunProjMgr(int argc, char **argv) {
-
   ProjMgr manager;
 
   // Command line options
@@ -64,11 +64,13 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
       ("s,solution", "", cxxopts::value<string>())
       ("f,filter", "", cxxopts::value<string>())
       ("o,output", "", cxxopts::value<string>())
+      ("n,no-check-schema", "", cxxopts::value<bool>()->default_value("false"))
       ("h,help", "")
       ;
     options.parse_positional({ "command", "args"});
 
     parseResult = options.parse(argc, argv);
+    manager.m_checkSchema = !parseResult.count("n");
 
     if (parseResult.count("command")) {
       manager.m_command = parseResult["command"].as<string>();
@@ -169,7 +171,7 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
 bool ProjMgr::RunConvert(void) {
   if (!m_csolutionFile.empty()) {
     // Parse csolution
-    if (!m_parser.ParseCsolution(m_csolutionFile)) {
+    if (!m_parser.ParseCsolution(m_csolutionFile, m_checkSchema)) {
       return false;
     }
     // Parse cprojects
@@ -180,13 +182,13 @@ bool ProjMgr::RunConvert(void) {
         ProjMgrLogger::Error(cproject, "cproject file was not found");
         return false;
       }
-      if (!m_parser.ParseCproject(cprojectFile)) {
+      if (!m_parser.ParseCproject(cprojectFile, m_checkSchema)) {
         return false;
       }
     }
   } else if (!m_cprojectFile.empty()) {
     // Parse single cproject
-    if (!m_parser.ParseCproject(m_cprojectFile, true)) {
+    if (!m_parser.ParseCproject(m_cprojectFile, m_checkSchema, true)) {
       return false;
     }
   } else {
@@ -204,7 +206,7 @@ bool ProjMgr::RunConvert(void) {
         ProjMgrLogger::Error(clayer.layer, "clayer file was not found");
         return false;
       }
-      if (!m_parser.ParseClayer(clayerFile)) {
+      if (!m_parser.ParseClayer(clayerFile, m_checkSchema)) {
         return false;
       }
     }
@@ -265,7 +267,7 @@ bool ProjMgr::RunListPacks(void) {
 
 bool ProjMgr::RunListDevices(void) {
   if (!m_cprojectFile.empty()) {
-    if (!m_parser.ParseCproject(m_cprojectFile, true)) {
+    if (!m_parser.ParseCproject(m_cprojectFile, m_checkSchema, true)) {
       return false;
     }
     ContextItem context;
@@ -288,7 +290,7 @@ bool ProjMgr::RunListDevices(void) {
 
 bool ProjMgr::RunListComponents(void) {
   if (!m_cprojectFile.empty()) {
-    if (!m_parser.ParseCproject(m_cprojectFile, true)) {
+    if (!m_parser.ParseCproject(m_cprojectFile, m_checkSchema, true)) {
       return false;
     }
     ContextDesc descriptor;
@@ -312,7 +314,7 @@ bool ProjMgr::RunListDependencies(void) {
     ProjMgrLogger::Error("cproject.yml file was not specified");
     return false;
   }
-  if (!m_parser.ParseCproject(m_cprojectFile, true)) {
+  if (!m_parser.ParseCproject(m_cprojectFile, m_checkSchema, true)) {
     return false;
   }
   ContextDesc descriptor;
@@ -335,13 +337,13 @@ bool ProjMgr::RunListContexts(void) {
     ProjMgrLogger::Error("csolution.yml file was not specified");
     return false;
   }
-  if (!m_parser.ParseCsolution(m_csolutionFile)) {
+  if (!m_parser.ParseCsolution(m_csolutionFile, m_checkSchema)) {
     return false;
   }
   for (const auto& cproject : m_parser.GetCsolution().cprojects) {
     error_code ec;
     string const& cprojectFile = fs::canonical(m_rootDir + "/" + cproject, ec).generic_string();
-    if (!m_parser.ParseCproject(cprojectFile)) {
+    if (!m_parser.ParseCproject(cprojectFile, m_checkSchema)) {
       return false;
     }
   }

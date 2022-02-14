@@ -178,12 +178,9 @@ bool SchemaValidator::Validate(SchemaErrors& errList) {
 
   // 3) do the actual validation of the data
   CustomErrorHandler handler(m_dataFile);
-  //SchemaErrorHandlerInterface* m_schmaErrorImpl = new SchemaErrorHandlerInterface(&handler);
   validator.validate(data, handler);
 
   errList = handler.GetAllErrors();
-  //delete m_schmaErrorImpl;
-
   return (errList.size() == 0) ? true : false;
 }
 

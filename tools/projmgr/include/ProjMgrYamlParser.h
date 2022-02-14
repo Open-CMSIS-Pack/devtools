@@ -80,22 +80,28 @@ public:
    * @brief parse csolution
    * @param input csolution.yml file
    * @param reference to store parsed csolution item
+   * @param checkSchema false to skip schema validation
   */
-  bool ParseCsolution(const std::string& input, CsolutionItem& csolution);
+  bool ParseCsolution(const std::string& input, CsolutionItem& csolution,
+    bool checkSchema);
 
   /**
    * @brief parse cproject
    * @param input cproject.yml file
    * @param reference to store parsed cproject item
+   * @param checkSchema false to skip schema validation
   */
-  bool ParseCproject(const std::string& input, CsolutionItem& csolution, std::map<std::string, CprojectItem>& cprojects, bool single);
+  bool ParseCproject(const std::string& input, CsolutionItem& csolution,
+    std::map<std::string, CprojectItem>& cprojects, bool single, bool checkSchema);
 
   /**
    * @brief parse clayer
    * @param input clayer.yml file
    * @param reference to store parsed clayer item
+   * @param checkSchema false to skip schema validation
   */
-  bool ParseClayer(const std::string& input, std::map<std::string, ClayerItem>& clayers);
+  bool ParseClayer(const std::string& input, std::map<std::string,
+    ClayerItem>& clayers, bool checkSchema);
 
 protected:
   void ParseMisc(const YAML::Node& parent, std::vector<MiscItem>& misc);

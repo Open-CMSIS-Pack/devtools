@@ -6,6 +6,8 @@
 
 #include "ProjMgrYamlParser.h"
 #include "ProjMgrLogger.h"
+#include "ProjMgrYamlSchemaChecker.h"
+
 #include "RteFsUtils.h"
 #include <string>
 
@@ -19,8 +21,16 @@ ProjMgrYamlParser::~ProjMgrYamlParser(void) {
   // Reserved
 }
 
-bool ProjMgrYamlParser::ParseCsolution(const string& input, CsolutionItem& csolution) {
+bool ProjMgrYamlParser::ParseCsolution(const string& input,
+  CsolutionItem& csolution, bool checkSchema) {
   try {
+    // Validate file schema
+    if (checkSchema &&
+      !ProjMgrYamlSchemaChecker().Validate(
+        input, ProjMgrYamlSchemaChecker::FileType::SOLUTION)) {
+      return false;
+    }
+
     const YAML::Node& root = YAML::LoadFile(input);
     if (!ValidateCsolution(input, root)) {
       return false;
@@ -41,9 +51,18 @@ bool ProjMgrYamlParser::ParseCsolution(const string& input, CsolutionItem& csolu
   return true;
 }
 
-bool ProjMgrYamlParser::ParseCproject(const string& input, CsolutionItem& csolution, map<string, CprojectItem>& cprojects, bool single) {
+bool ProjMgrYamlParser::ParseCproject(const string& input,
+  CsolutionItem& csolution, map<string, CprojectItem>& cprojects,
+  bool single, bool checkSchema) {
   CprojectItem cproject;
   try {
+    // Validate file schema
+    if (checkSchema &&
+      !ProjMgrYamlSchemaChecker().Validate(
+        input, ProjMgrYamlSchemaChecker::FileType::PROJECT)) {
+      return false;
+    }
+
     const YAML::Node& root = YAML::LoadFile(input);
     if (!ValidateCproject(input, root)) {
       return false;
@@ -84,9 +103,17 @@ bool ProjMgrYamlParser::ParseCproject(const string& input, CsolutionItem& csolut
   return true;
 }
 
-bool ProjMgrYamlParser::ParseClayer(const string& input, map<string, ClayerItem>& clayers) {
+bool ProjMgrYamlParser::ParseClayer(const string& input,
+  map<string, ClayerItem>& clayers, bool checkSchema) {
   ClayerItem clayer;
   try {
+    // Validate file schema
+    if (checkSchema &&
+      !ProjMgrYamlSchemaChecker().Validate(
+        input, ProjMgrYamlSchemaChecker::FileType::LAYER)) {
+      return false;
+    }
+
     const YAML::Node& root = YAML::LoadFile(input);
     if (!ValidateClayer(input, root)) {
       return false;

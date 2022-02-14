@@ -25,7 +25,7 @@ void CustomErrorHandler::error(const nlohmann::json::json_pointer& ptr,
     itrNode = itrNode[segment];
   }
   auto mark = itrNode.Mark();
-  m_errList.push_back(SchemaError(message, mark.line + 1, mark.column + 1));
+  m_errList.push_back(SchemaError(m_yamlFile, message, mark.line + 1, mark.column + 1));
 }
 
 SchemaErrors& CustomErrorHandler::GetAllErrors() {
