@@ -176,7 +176,7 @@ public:
    * @param packs reference to list of packs
    * @return true if executed successfully
   */
-  bool ListPacks(const std::string& filter, std::set<std::string>& packs);
+  bool ListPacks(const std::string& filter, std::vector<std::string>& packs);
 
   /**
    * @brief list available devices
@@ -184,7 +184,7 @@ public:
    * @param packs reference to list of packs
    * @return true if executed successfully
   */
-  bool ListDevices(const std::string& filter, std::set<std::string>& devices);
+  bool ListDevices(const std::string& filter, std::vector<std::string>& devices);
 
   /**
    * @brief list available components
@@ -192,7 +192,7 @@ public:
    * @param packs reference to list of packs
    * @return true if executed successfully
   */
-  bool ListComponents(const std::string& filter, std::set<std::string>& components);
+  bool ListComponents(const std::string& filter, std::vector<std::string>& components);
 
   /**
    * @brief list available dependencies
@@ -200,7 +200,7 @@ public:
    * @param packs reference to list of packs
    * @return true if executed successfully
   */
-  bool ListDependencies(const std::string& filter, std::set<std::string>& dependencies);
+  bool ListDependencies(const std::string& filter, std::vector<std::string>& dependencies);
 
   /**
    * @brief list contexts
@@ -208,7 +208,7 @@ public:
    * @param reference list of contexts
    * @return true if executed successfully
   */
-  bool ListContexts(const std::string& filter, std::set<std::string>& contexts);
+  bool ListContexts(const std::string& filter, std::vector<std::string>& contexts);
 
   /**
    * @brief add contexts for a given descriptor
@@ -221,9 +221,9 @@ public:
 
   /**
    * @brief get context map
-   * @return context map
+   * @param reference to context map
   */
-  std::map<std::string, ContextItem>& GetContexts(void);
+  void GetContexts(std::map<std::string, ContextItem>& contexts);
 
   /**
    * @brief copy context files into output directory

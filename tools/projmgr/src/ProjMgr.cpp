@@ -226,7 +226,9 @@ bool ProjMgr::RunConvert(void) {
   }
 
   // Process contexts
-  for (auto& context : m_worker.GetContexts()) {
+  map<string, ContextItem> contexts;
+  m_worker.GetContexts(contexts);
+  for (auto& context : contexts) {
     if (!m_worker.ProcessContext(context.second, true)) {
       ProjMgrLogger::Error("processing context '" + context.first + "' failed");
       return false;
@@ -234,7 +236,7 @@ bool ProjMgr::RunConvert(void) {
   }
 
   // Generate Cprjs
-  for (auto& context : m_worker.GetContexts()) {
+  for (auto& context : contexts) {
     error_code ec;
     const string& directory = m_outputDir.empty() ? context.second.directories.cproject : m_outputDir + "/" + context.first;
     const string& filename = fs::weakly_canonical(directory + "/" + context.first + ".cprj", ec).generic_string();
@@ -254,7 +256,7 @@ bool ProjMgr::RunConvert(void) {
 }
 
 bool ProjMgr::RunListPacks(void) {
-  set<string> packs;
+  vector<string> packs;
   if (!m_worker.ListPacks(m_filter, packs)) {
     ProjMgrLogger::Error("processing pack list failed");
     return false;
@@ -277,7 +279,7 @@ bool ProjMgr::RunListDevices(void) {
       return false;
     }
   }
-  set<string> devices;
+  vector<string> devices;
   if (!m_worker.ListDevices(m_filter, devices)) {
     ProjMgrLogger::Error("processing devices list failed");
     return false;
@@ -298,7 +300,7 @@ bool ProjMgr::RunListComponents(void) {
       return false;
     }
   }
-  set<string> components;
+  vector<string> components;
   if (!m_worker.ListComponents(m_filter, components)) {
     ProjMgrLogger::Error("processing components list failed");
     return false;
@@ -321,7 +323,7 @@ bool ProjMgr::RunListDependencies(void) {
   if (!m_worker.AddContexts(m_parser, descriptor, m_cprojectFile)) {
     return false;
   }
-  set<string> dependencies;
+  vector<string> dependencies;
   if (!m_worker.ListDependencies(m_filter, dependencies)) {
     ProjMgrLogger::Error("processing dependencies list failed");
     return false;
@@ -355,7 +357,7 @@ bool ProjMgr::RunListContexts(void) {
       return false;
     }
   }
-  set<string> contexts;
+  vector<string> contexts;
   if (!m_worker.ListContexts(m_filter, contexts)) {
     ProjMgrLogger::Error("processing contexts list failed");
     return false;
