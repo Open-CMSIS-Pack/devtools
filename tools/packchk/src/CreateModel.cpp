@@ -56,6 +56,8 @@ bool CreateModel::CheckForOtherPdscFiles(const string& pdscFullPath)
     return false;
   }
 
+  LogMsg("M010");
+
   return true;
 }
 
@@ -96,6 +98,7 @@ bool CreateModel::AddPdsc(const string& pdscFile, bool bSkipCheckForOtherPdsc /*
   }
 
   LogMsg("M051", PATH(pdscFile));
+
   if(!RteFsUtils::Exists(pdscFile)) {
     LogMsg("M204", PATH(pdscFile));
     return false;
@@ -113,8 +116,11 @@ bool CreateModel::AddPdsc(const string& pdscFile, bool bSkipCheckForOtherPdsc /*
   }
 
   if(!m_reader.AddFile(pdscFile)) {
+    LogMsg("M201", PATH(pdscFile));
     return false;
   }
+
+  LogMsg("M010");
 
   return true;
 }
@@ -127,18 +133,7 @@ bool CreateModel::AddPdsc(const string& pdscFile, bool bSkipCheckForOtherPdsc /*
 bool CreateModel::AddRefPdsc(const std::set<std::string>& pdscRefFiles)
 {
   for(auto& refPdsc : pdscRefFiles) {
-    LogMsg("M051", PATH(refPdsc));
-    if(!RteFsUtils::Exists(refPdsc)) {
-      LogMsg("M204", PATH(refPdsc));
-      return false;
-    }
-
-    if(RteFsUtils::IsDirectory(refPdsc)) {
-      LogMsg("M202", PATH(refPdsc));
-      return false;
-    }
-
-    if(AddPdsc(refPdsc, true)) {
+    if(!AddPdsc(refPdsc, true)) {
       return false;
     }
   }
