@@ -657,7 +657,7 @@ board: LPCXpresso55S28                            # The LPCXpresso55S28 board
 
 ## Access Sequences
 
-The following **Access Sequences** allow to use arguments from the CMSIS Project Manager in *key* and *value* arguments of the various `*.yml` files.
+The following **Access Sequences** allow to use arguments from the CMSIS Project Manager under `defines`, `add-paths`, `misc` and `files` values of the various `*.yml` files.
 
 Access Sequence             | Description
 :---------------------------|:--------------------------------------
@@ -667,9 +667,13 @@ Access Sequence             | Description
 `$Dpack$`                   | Path to the pack that defines the selected device (DFP).
 `$PackRoot$`                | Path to the CMSIS Pack Root directory.
 `$Pack(vendor.name)$`       | Path to specific pack [with latest version ToDo: revise wording]. Example: `$Pack(NXP.K32L3A60_DFP)$`.
-`$Output(project)$`         | Output file of a related project that is defined in the `*.csolution.yml` file.
+`$Output(project[.build-type][+target-type])$` | Path to a related project's output file without extension
+`$OutDir(project[.build-type][+target-type])$` | Path to a related project's output directory
+`$Source(project[.build-type][+target-type])$` | Path to a related project's source directory
 
-ToDo: define directory structure; should we use `$Output(project[.build-type][+target-type])$`
+If `build-type` and/or `target-type` are omitted the access sequence will lead to the project context's `build-type` and `target-type` being processed.
+
+ToDo: define directory structure
 
 **Examples:**
 
