@@ -719,20 +719,20 @@ RteFile::Category RteFileInstance::GetCategory() const
   return RteFile::CategoryFromString(GetAttribute("category"));
 }
 
-int RteFileInstance::HasNewVersion(const string& targetName, const string& rteFolder) const
+int RteFileInstance::HasNewVersion(const string& targetName) const
 {
-  RteFile* f = GetFile(targetName, rteFolder);
+  RteFile* f = GetFile(targetName);
   if (!f)
     return 0;
   int res = VersionCmp::Compare(f->GetVersionString(), GetVersionString());
   return res;
 }
 
-int RteFileInstance::HasNewVersion(const string& rteFolder) const
+int RteFileInstance::HasNewVersion() const
 {
   int newVersion = 0;
   for (auto it = m_targetInfos.begin(); it != m_targetInfos.end(); it++) {
-    int newVer = HasNewVersion(it->first, rteFolder);
+    int newVer = HasNewVersion(it->first);
     if (newVer > newVersion) {
       newVersion = newVer;
       if (newVersion > 2)
@@ -838,12 +838,12 @@ string RteFileInstance::GetAbsolutePath() const
   return s;
 }
 
-RteFile* RteFileInstance::GetFile(const string& targetName, const string& rteFolder) const
+RteFile* RteFileInstance::GetFile(const string& targetName) const
 {
   RteTarget* t = GetTarget(targetName);
   if (t) {
     RteComponent* c = GetComponent(targetName);
-    return t->GetFile(this, c, rteFolder);
+    return t->GetFile(this, c);
   }
   return NULL;
 }
