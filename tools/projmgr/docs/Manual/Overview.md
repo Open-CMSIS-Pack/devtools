@@ -498,9 +498,10 @@ Depending on the PLM status of the application, the `csolution` performs for con
     **Example:** after configuration file `ConfigFile.h` to version `1.3.0` the directory contains these files:
 
     ```c
-    ./RTE/component_class/ConfigFile.h           // user editable configuration file
-    ./RTE/component_class/ConfigFile.h@1.3.0     // user editable configuration file
-    ./RTE/component_class/.ConfigFile.h@1.2.0    // hidden backup used for version comparison
+   ./RTE/component_class/ConfigFile_0.h
+   ./RTE/component_class/.ConfigFile_0.h@1.2.0
+   ./RTE/component_class/ConfigFile_1.h
+   ./RTE/component_class/.ConfigFile_1.h@1.2.0
     ```
 
     The `csolution` outputs a user notification to indicate that configuration files have changed:
@@ -680,37 +681,84 @@ board: LPCXpresso55S28                            # The LPCXpresso55S28 board
 
 ## Access Sequences
 
-The following **Access Sequences** allow to use arguments from the CMSIS Project Manager under `defines`, `add-paths`, `misc` and `files` values of the various `*.yml` files.
+The following **Access Sequences** allow to use arguments from the CMSIS Project Manager as arguments of the various `*.yml` files in the key values for `defines:`, `add-paths:`, `misc:`, `files:`, and `execute:`. The **Access Sequences** can refer in a different project and provide therefore a method to describe project dependencies.
 
-Access Sequence             | Description
-:---------------------------|:--------------------------------------
-`$Bname$`                   | Board name of the selected board.
-`$Bpack$`                   | Path to the pack that defines the selected board (BSP).
-`$Dname$`                   | Device name of the selected device.
-`$Dpack$`                   | Path to the pack that defines the selected device (DFP).
-`$PackRoot$`                | Path to the CMSIS Pack Root directory.
-`$Pack(vendor.name)$`       | Path to specific pack [with latest version ToDo: revise wording]. Example: `$Pack(NXP.K32L3A60_DFP)$`.
-`$Output(project[.build-type][+target-type])$` | Path to a related project's output file without extension
-`$OutDir(project[.build-type][+target-type])$` | Path to a related project's output directory
-`$Source(project[.build-type][+target-type])$` | Path to a related project's source directory
+Access Sequence                                    | Description
+:--------------------------------------------------|:--------------------------------------
+`$Bname$`                                          | Board name of the selected board.
+`$Dname$`                                          | Device name of the selected device.
+`$Output(project[.build-type][+target-type])$`     | Path to the output file of a related project that is defined in the `*.csolution.yml` file.
+`$OutDir(project[.build-type][+target-type])$`     | Path to the output directory of a related project that is defined in the `*.csolution.yml` file.
+`$Source(project[.build-type][+target-type])$`     | Path to the source directory of a related project that is defined in the `*.csolution.yml` file.
 
-If `build-type` and/or `target-type` are omitted the access sequence will lead to the project context's `build-type` and `target-type` being processed.
+The `.build-type` and `+target-type` can be explicitly specified.  When ommited the `.build-type` and/or `+target-type` of the current processed context is used.
 
-ToDo: define directory structure
+**Note:** The Access Sequences below are not completed yet, as they require a change to CMSIS-Build.
 
-**Examples:**
+Access Sequence                                | Description
+:----------------------------------------------|:--------------------------------------
+`$Bpack$`                                      | Path to the pack that defines the selected board (BSP).
+`$Dpack$`                                      | Path to the pack that defines the selected device (DFP).
+`$PackRoot$`                                   | Path to the CMSIS Pack Root directory.
+`$Pack(vendor.name)$`                          | Path to specific pack [with latest version ToDo: revise wording]. Example: `$Pack(NXP.K32L3A60_DFP)$`.
+
+**Example:**
+
+For the example below we assume the following `build-type`, `target-type`, and `projects` definitions.
+
+```yml
+solution:
+  target-types:
+    - type: Board
+      board: NUCLEO-L552ZE-Q
+    - type: Production-HW
+      device: STM32U5X          # specifies device
+      
+  build-types:
+    - type: Debug
+      optimize: debug
+      debug: on
+    - type: Release
+      optimize: max
+    
+  projects:
+    - project: /bootloader/Bootloader.cproject.yml
+    - project: /security/TFM.cproject.yml
+    - project: /application/MQTT_AWS.cproject.yml
+```
+
+The `project: /application/MQTT_AWS.cproject.yml` can now use **Access Sequences** to reference files or directories in other projects that belong to a solution. For example, these references are possible in the file `MQTT_AWS.cproject.yml`.
+
+The example below uses the `build-type` and `target-type` of the current processed context. In partice this means that the same `build-type` and `target-type` is used as for the `MQTT_AWS.cproject.yml` project.
+
+```yml
+    files:
+    - file: `$Output(TFM)$`.o                             # use the symbol output file of the TFM Project
+```
+
+The example below uses from the TFM project always `build-type: Debug` and the `target-type: Production-HW`.
+
+```yml
+    files:
+    - file: `$Output(TFM.Release+Production-HW)$`.o       # use the symbol output file of the TFM Project
+```
+
+The example below uses the `build-type: Debug`. The `target-type` of the current processed context is used.
+
+```yml
+  - execute: Generate Image
+    os: Windows                           # on Windows run from
+    run: $DPack$/bin/gen_image.exe        # DFP the get_image tool
+    arg: -input $Output(TFM.Debug).axf -output $Output(TFM.Debug)
+```
+
+The example below creates a `define` that uses the device name.
 
 ```yml
 groups:
   - group:  "Main File Group"
     defines:
       - $Dname$                           # Generate a #define 'device-name' for this file group
-```
-
-```yml
-  - execute: Generate Image
-    os: Windows                           # on Windows run from
-    run: $DPack$/bin/gen_image.exe        # DFP the get_image tool
 ```
 
 ## Overall Structure
@@ -1334,12 +1382,10 @@ components:
   component: CMSIS Driver:USART:Custom
   component: CMSIS Driver:VIO:Board&NUCLEO-G474RE
   component: Compiler&ARM Compiler:Event Recorder&DAP
-    # Config/EventRecorderConf.h version="1.1.0"
   component: Compiler&ARM Compiler:I/O:STDERR&User
   component: Compiler&ARM Compiler:I/O:STDIN&User
   component: Compiler&ARM Compiler:I/O:STDOUT&User
   component: Board Support&NUCLEO-G474RE:Drivers:Basic I/O
-    # Drivers/Config/stm32g4xx_nucleo_conf.h version="1.0.0"
   component: Device&STM32CubeMX:STM32Cube Framework:STM32CubeMX
   component: Device&STM32CubeMX:STM32Cube HAL
   component: Device&STM32CubeMX:Startup
@@ -1376,27 +1422,32 @@ The ProjMgr should always generate *.cprj files that contain version information
 
 ## CMSIS-Zone Integration
 
-Add to the project the possiblity to specify.  The issue might be that the project files become overwhelming, alternative is to keep partitioning in separate files.
+Suggest to split this into two sections:
+ - `resources:` to define the execution phases, memory regions and region splits, and peripherals.  This section would be in the `csolution.yml` file. 
+
+ - `requirements:` to define project requirements - effectively the partitioning of a system. It should be possible to assign to the application all remaining resources.
+ 
+ Add to the project the possiblity to specify.  The issue might be that the project files become overwhelming, alternative is to keep partitioning in separate files.
 
 ```yml
-phases:    # define the life-time of a resource definition
-  - phase: Boot
-  - phase: OTA
-  - phase: Run
-
-memories:              # specifies the required memory
-  - split: SRAM_NS
-    into:
+resources:
+  phases:    # define the life-time of a resource definition
+    - phase: Boot
+    - phase: OTA
+    - phase: Run
+  memories:              # specifies the required memory
+    - split: SRAM_NS
+      into:
       - region: DATA_NS
         size: 128k
         permission: n
       - region: DATA_BOOT
-        phase: Boot
+        phase: Boot      # region life-time (should allow to specify multiple phases)
         size: 128k
     
-peripherals:           # specifies the requried peripherals
-  - peripheral: I2C0
-    permission: rw, s
+  peripherals:           # specifies the requried peripherals
+    - peripheral: I2C0
+      permission: rw, s
 ```
 
 ## Layer Interface Defintions
