@@ -150,8 +150,16 @@ public:
   */
   void SetName(const std::string& name) { m_ID = name; }
 
-
+  /**
+   * @brief set custom RTE folder name to store config files,
+   * @param rteFolder RTE folder name, default "RTE"
+  */
   void SetRteFolder(std::optional<std::string> rteFolder) { m_rteFolder = rteFolder; }
+
+  /**
+   * @brief get project's RTE folder where config and generated files are stored
+   * @return RTE folder name, default "RTE"
+  */
   const std::string& GetRteFolder() const;
 
   /**
@@ -690,20 +698,18 @@ public:
    * @brief get file name and path of "RTE_Components.h" determined by the specified target and prefix
    * @param targetName given target name
    * @param prefix given prefix to be added at beginning of the file path
-   * @param rteFolder the "RTE" folder path used for placing files
    * @return string containing file name and path
   */
-  static std::string GetRteComponentsH(const std::string& targetName, const std::string& prefix, const std::string& rteFolder);
+  std::string GetRteComponentsH(const std::string& targetName, const std::string& prefix) const;
 
   /**
    * @brief get file name and path locating in folder "RTE" determined by the specified name, target and prefix
    * @param name given file name
    * @param targetName given target name
    * @param prefix given prefix to be added at beginning of the file path
-   * @param rteFolder the "RTE" folder path used for placing files
    * @return string containing file name and path
   */
-  static std::string GetRteHeader(const std::string& name, const std::string & targetName, const std::string& prefix, const std::string& rteFolder);
+  std::string GetRteHeader(const std::string& name, const std::string & targetName, const std::string& prefix) const;
 
 protected:
   virtual RteTarget* CreateTarget(RteModel* filteredModel, const std::string& name, const std::map<std::string, std::string>& attributes);
@@ -768,6 +774,10 @@ protected:
   std::map<int, std::string> m_targetIDs;
   std::string m_sActiveTarget;
   std::optional<std::string> m_rteFolder;
+
+public:
+  static const std::string DEFAULT_RTE_FOLDER;
+
 };
 
 #endif // RteProject_H

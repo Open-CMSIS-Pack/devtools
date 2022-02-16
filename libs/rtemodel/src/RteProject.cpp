@@ -25,7 +25,7 @@
 
 using namespace std;
 
-const std::string DEFAULT_RTE_FOLDER = "RTE";
+const std::string RteProject::DEFAULT_RTE_FOLDER = "RTE";
 
 ////////////////////////////
 RteProject::RteProject() :
@@ -1090,15 +1090,15 @@ void RteProject::CollectSettings()
 }
 
 
-string RteProject::GetRteComponentsH(const string & targetName, const string & prefix, const string& rteFolder)
+string RteProject::GetRteComponentsH(const string & targetName, const string & prefix) const
 {
-  return GetRteHeader(string("/RTE_Components.h"), targetName, prefix, rteFolder);
+  return GetRteHeader(string("/RTE_Components.h"), targetName, prefix);
 }
 
-string RteProject::GetRteHeader(const string& name, const string & targetName, const string & prefix, const string& rteFolder)
+string RteProject::GetRteHeader(const string& name, const string & targetName, const string & prefix) const
 {
   string rteHeader = prefix;
-  rteHeader += rteFolder + "/_";
+  rteHeader += GetRteFolder() + "/_";
   rteHeader += WildCards::ToX(targetName);
   rteHeader += "/";
   rteHeader += name;
@@ -1116,7 +1116,7 @@ void RteProject::CollectSettings(const string& targetName)
   // collect includes, libs and RTE_Components_h defines for active target
   for (auto itc = m_components.begin(); itc != m_components.end(); itc++) {
     RteComponentInstance* ci = itc->second;
-    t->CollectComponentSettings(ci, GetRteFolder());
+    t->CollectComponentSettings(ci);
   }
   t->CollectClassDocs();
 
@@ -1164,7 +1164,7 @@ void RteProject::CollectSettings(const string& targetName)
   // check if RTE components are used before setting RTE_Components.h include path and adding to target as well as setting -D_RTE_ at the command line.
   // add .\RTE\_TargetName\RTE_Components.h filePath
   if (GetComponentCount() > 0) {
-    string rteComponentsH = GetRteComponentsH(targetName, "./", GetRteFolder());
+    string rteComponentsH = GetRteComponentsH(targetName, "./");
     t->AddIncludePath(RteUtils::ExtractFilePath(rteComponentsH, false));
     t->AddFile("RTE_Components.h", RteFile::HEADER, "Component selection"); // add ".\RTE\_TargetName\RTE_Components.h" folder to all target includes
     t->InsertDefine("_RTE_");

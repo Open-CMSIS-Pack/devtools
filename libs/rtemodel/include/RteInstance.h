@@ -1387,18 +1387,18 @@ public:
 
   /**
    * @brief check if a new version of a config file is available (for specified target)
+     RTE folder path used for placing files is taken from target's parent project
    * @param targetName target name
-   * @param rteFolder the "RTE" folder path used for placing files
    * @return true if newer version of config file is available
   */
-  int HasNewVersion(const std::string& targetName, const std::string& rteFolder) const;
+  int HasNewVersion(const std::string& targetName) const;
 
   /**
    * @brief check if a new version of a config file is available (for any target)
-   * @param rteFolder the "RTE" folder path used for placing files
+     RTE folder path used for placing files is taken from target's parent project
    * @return true if newer version of config file is available
   */
-  int HasNewVersion(const std::string& rteFolder) const;
+  int HasNewVersion() const;
 
   /**
    * @brief get file category
@@ -1474,11 +1474,12 @@ public:
 
   /**
    * @brief get the original file resolved to this instance for specified target
+   * rteFolder is taken from target's parent project
    * @param targetName target name to resolve file
-   * @param rteFolder the "RTE" folder path used for placing files
+   * @param
    * @return pointer to RteFile if resolved, nullptr otherwise
   */
-  RteFile* GetFile(const std::string& targetName, const std::string& rteFolder) const;
+  RteFile* GetFile(const std::string& targetName) const;
 
   /**
    * @brief copy a config file from pack location to the designated project directory

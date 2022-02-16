@@ -243,7 +243,7 @@ const bool CbuildModel::GenerateFixedCprj(const string& update) {
 
             for (auto configFile : configFiles) {
               if (configFile.second->GetComponent(m_targetName)->Compare(component)) {
-                map<string, string> fileAttributes = configFile.second->GetFile(m_targetName, m_cprjProject->GetRteFolder())->GetAttributes();
+                map<string, string> fileAttributes = configFile.second->GetFile(m_targetName)->GetAttributes();
                 fileAttributes["name"] = RteUtils::BackSlashesToSlashes(fileAttributes["name"]);
 
                 // Iterate over component files
@@ -311,7 +311,7 @@ const bool CbuildModel::GenerateAuditData() {
               string instanceName = configFile.second->GetInstanceName();
               RteFsUtils::NormalizePath(instanceName, m_prjFolder);
               auditData << EOL << "    - ConfigFile: " << instanceName << ":" << configFile.second->GetVersionString();
-              if (configFile.second->HasNewVersion(m_targetName) > 0) auditData << " [" << configFile.second->GetFile(m_targetName, m_cprjProject->GetRteFolder())->GetVersionString() << "]";
+              if (configFile.second->HasNewVersion(m_targetName) > 0) auditData << " [" << configFile.second->GetFile(m_targetName)->GetVersionString() << "]";
             }
           }
         }
@@ -498,7 +498,7 @@ const bool CbuildModel::EvalConfigFiles() {
     for (auto fi : compConfigFiles) {
       const string& prjFile = RteUtils::BackSlashesToSlashes(fi.second->GetInstanceName().c_str());
       const string& absPrjFile = m_cprjProject->GetProjectPath() + prjFile;
-      const string& pkgFile = RteUtils::BackSlashesToSlashes(fi.second->GetFile(m_targetName, m_cprjProject->GetRteFolder())->GetOriginalAbsolutePath());
+      const string& pkgFile = RteUtils::BackSlashesToSlashes(fi.second->GetFile(m_targetName)->GetOriginalAbsolutePath());
       error_code ec;
       if (!fs::exists(absPrjFile, ec)) {
         // Copy config file from pack if it's missing
