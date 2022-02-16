@@ -906,7 +906,7 @@ packs:                                  # start section that specifics software 
   - pack: NXP::K32L3A60_DFP             # add pack for NXP device 
     path: ./local/NXP/K32L3A60_DFP      # with path to the pack (local copy, repo, etc.)
 
-  - path: AWS::coreHTTP                 # add pack
+  - pack: AWS::coreHTTP                 # add pack
     path: ./development/AWS/coreHTTP    # with path to development source directory
     for-type: +DevTest                  # pack is only used for target-type "DevTest"
 ```
