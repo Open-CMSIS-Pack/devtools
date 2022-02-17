@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.18)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(GetCMakeTargets)
+include(ApplyPatch)
 
 cmake_policy(SET CMP0091 NEW)
 
@@ -36,6 +37,7 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR
    "${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
   set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -MD -Wall")
   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wall")
+  add_link_options("-static-libstdc++")
 endif()
 
 if(SWIG_LIBS)
@@ -78,6 +80,7 @@ add_subdirectory(libs/rteutils)
 add_subdirectory(libs/xmlreader)
 add_subdirectory(libs/xmltree)
 add_subdirectory(libs/xmltreeslim)
+add_subdirectory(libs/ymlschemachecker)
 
 # Tools
 if(NOT LIBS_ONLY)
@@ -85,10 +88,14 @@ if(NOT LIBS_ONLY)
   add_subdirectory(tools/packchk)
   add_subdirectory(tools/packgen)
   add_subdirectory(tools/projmgr)
+  add_subdirectory(tools/toolbox)
 endif()
 
 # Prepare a list of CMake targets
 get_targets()
+
+# Apply patch on submodule
+apply_patch(${CMAKE_CURRENT_SOURCE_DIR}/external/json-schema-validator)
 
 # Google Test Framework
 set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
@@ -105,6 +112,17 @@ set_property(TARGET gmock_main PROPERTY
 
 # YAML
 add_subdirectory(external/yaml-cpp)
+# suppress warnings on external/yaml-cpp
+set(not-msvc $<NOT:$<CXX_COMPILER_ID:MSVC>>)
+target_compile_options(yaml-cpp
+  PRIVATE
+  $<${not-msvc}: -Wno-effc++ -Wno-shadow>)
 
 # cxxopts
 add_subdirectory(external/cxxopts)
+
+# Json
+add_subdirectory(external/json)
+
+# json-schema-validator
+add_subdirectory(external/json-schema-validator)

@@ -174,9 +174,9 @@ TEST(RteUtilsTest, VersionRangeCompare) {
 
 TEST(RteUtilsTest, WildCardsTo) {
 
-  string test_input = "This?? is a *test1* _string-!#";
-  string regex = "This.. is a .*test1.* _string-!#";
-  string replaced = "Thisxx_is_a_xtest1x__string-__";
+  string test_input = "This?? is a *test1* _string-!#.";
+  string regex = "This.. is a .*test1.* _string-!#\\.";
+  string replaced = "Thisxx_is_a_xtest1x__string-__.";
 
   string converted = WildCards::ToRegEx(test_input);
   EXPECT_EQ(converted, regex);
@@ -186,49 +186,58 @@ TEST(RteUtilsTest, WildCardsTo) {
 }
 
 TEST(RteUtilsTest, WildCardMatch) {
-  EXPECT_EQ(true , WildCards::Match("a*", "a*d"));
-  EXPECT_EQ(true , WildCards::Match("a*", "*d"));
-  EXPECT_EQ(true , WildCards::Match("a*", "abcd"));
+  EXPECT_EQ(true, WildCards::Match("a", "a"));
+  EXPECT_EQ(false, WildCards::Match("a", ""));
+  EXPECT_EQ(false, WildCards::Match("", "d"));
+  EXPECT_EQ(false, WildCards::Match("", "*"));
+  EXPECT_EQ(true, WildCards::Match("a*", "a*d"));
+  EXPECT_EQ(false, WildCards::Match("a*", "*d"));
+  EXPECT_EQ(true, WildCards::Match("a*", "abcd"));
   EXPECT_EQ(false, WildCards::Match("a*", "xycd"));
-  EXPECT_EQ(true , WildCards::Match("a*d", "*d"));
-  EXPECT_EQ(true , WildCards::Match("a*d", "abcd"));
+  EXPECT_EQ(true, WildCards::Match("a*d", "*d"));
+  EXPECT_EQ(true, WildCards::Match("a*d", "abcd"));
   EXPECT_EQ(false, WildCards::Match("a*d", "abxx"));
   EXPECT_EQ(false, WildCards::Match("a*d", "abxyz"));
   EXPECT_EQ(false, WildCards::Match("a*d", "xycd"));
-  EXPECT_EQ(true , WildCards::Match("*d", "abcd"));
-  EXPECT_EQ(true , WildCards::Match("*d", "d"));
-  EXPECT_EQ(true , WildCards::Match("abcd", "a**d"));
-  EXPECT_EQ(true , WildCards::Match("ab?d", "?bcd"));
-  EXPECT_EQ(true , WildCards::Match("ab?d", "abc?"));
-  EXPECT_EQ(true , WildCards::Match("ab?d", "ab??"));
+  EXPECT_EQ(true, WildCards::Match("*d", "abcd"));
+  EXPECT_EQ(true, WildCards::Match("*d", "d"));
+  EXPECT_EQ(true, WildCards::Match("*c*", "abcd"));
+  EXPECT_EQ(true, WildCards::Match("abcd", "a**d"));
+  EXPECT_EQ(true, WildCards::Match("abcd", "a??d"));
+  EXPECT_EQ(true, WildCards::Match("abcd", "?bc?"));
+  EXPECT_EQ(true, WildCards::Match("abc?", "abc*"));
+  EXPECT_EQ(true, WildCards::Match("ab?d", "ab??"));
   EXPECT_EQ(false, WildCards::Match("ab?d", "abc??"));
   EXPECT_EQ(false, WildCards::Match("?bcd", "abc??"));
-  EXPECT_EQ(true , WildCards::Match("?bcd", "ab??"));
+  EXPECT_EQ(true, WildCards::Match("?bcd", "*bcd"));
   EXPECT_EQ(false, WildCards::Match("?bcd", "abc???"));
-  EXPECT_EQ(true , WildCards::Match("abc?", "ab??"));
+  EXPECT_EQ(true, WildCards::Match("abc?", "ab??"));
   EXPECT_EQ(false, WildCards::Match("abc?", "abc??"));
   EXPECT_EQ(false, WildCards::Match("ab??", "abc??"));
-  EXPECT_EQ(true , WildCards::Match("a*?d", "?*cd"));
-  EXPECT_EQ(true , WildCards::Match("a*?d", "abc*"));
-  EXPECT_EQ(true , WildCards::Match("a*?d", "ab*?"));
-  EXPECT_EQ(true , WildCards::Match("a*?d", "abc?*"));
-  EXPECT_EQ(true , WildCards::Match("?*cd", "abc*"));
-  EXPECT_EQ(true , WildCards::Match("?*cd", "abc*?"));
-  EXPECT_EQ(true , WildCards::Match("?*cd", "abc?*"));
-  EXPECT_EQ(true , WildCards::Match("abc*", "ab*?"));
-  EXPECT_EQ(true , WildCards::Match("abc*", "abc?*"));
-  EXPECT_EQ(true , WildCards::Match("ab*?", "abc?*"));
+  EXPECT_EQ(true, WildCards::Match("abc*", "ab*?"));
+  EXPECT_EQ(true, WildCards::Match("abc*", "abc?*"));
+  EXPECT_EQ(true, WildCards::Match("ab*?", "abc?*"));
   EXPECT_EQ(false, WildCards::Match("abcX-1", "abcX-2"));
   EXPECT_EQ(false, WildCards::Match("abcX-1", "abcX-3"));
   EXPECT_EQ(false, WildCards::Match("abcX-1", "abcY-1"));
   EXPECT_EQ(false, WildCards::Match("abcX-1", "abcY-2"));
-  EXPECT_EQ(true , WildCards::Match("abcX-1", "abc[XY]-[12]"));
+  EXPECT_EQ(true, WildCards::Match("abcX-1", "abc[XY]-[12]"));
   EXPECT_EQ(false, WildCards::Match("abcZ-1", "abc[XY]-[12]"));
-  EXPECT_EQ(true , WildCards::Match("abcY-2", "abc[XY]-[12]"));
+  EXPECT_EQ(true, WildCards::Match("abcY-2", "abc[XY]-[12]"));
+
+  EXPECT_EQ(true, WildCards::Match("Prefix_*_Suffix", "Prefix_Mid_Suffix"));
+  EXPECT_EQ(true, WildCards::Match("Prefix_*_Suffix", "Prefix_Mid_V_Suffix"));
+  EXPECT_EQ(true, WildCards::Match("Prefix_*_Suffix", "Prefix_Mid_Suffix_Suffix"));
+  EXPECT_EQ(true, WildCards::Match("Prefix*_Suffix", "Prefix_Mid_Suffix"));
+  EXPECT_EQ(true, WildCards::Match("Prefix*Suffix", "Prefix_Mid_Suffix"));
+  EXPECT_EQ(true, WildCards::Match("Prefix*Suffix", "Prefix_Mid_Suffix_Suffix"));
+  EXPECT_EQ(true, WildCards::Match("Prefix_*Suffix", "Prefix_Mid_Suffix"));
+
+  EXPECT_EQ(true, WildCards::Match("Prefix.*.Suffix", "Prefix.Mid.Suffix"));
 
   std::vector<string> inputStr{ "STM32F10[123]?[CDE]", "STM32F103ZE", "*", "*?", "?*", "?*?", "*?*", "**", "**?" };
   for (auto iter = inputStr.cbegin(); iter != inputStr.cend() - 1; iter++) {
-    EXPECT_TRUE( WildCards::Match(*iter, *(iter + 1))) << "Failed for " << (*iter) << " & " << *(iter + 1);
+    EXPECT_TRUE(WildCards::Match(*iter, *(iter + 1))) << "Failed for " << (*iter) << " & " << *(iter + 1);
   }
 }
 

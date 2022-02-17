@@ -57,6 +57,22 @@ Software layers and Virtual I/O simplify these use cases:
     <th>Description</th>
   </tr>
   <tr>
+    <td>0.10.4 (beta)</td>
+    <td>Release for beta review:
+      - new cpackget utility replacing cp_init.sh and cp_install.sh.
+      - new layer compose command line options: --name , --description (see usage for more information).
+      - added handling of multiple quotation marks inside defines and compiler flags.
+    </td>
+  </tr>
+  <tr>
+    <td>0.10.3 (beta)</td>
+    <td>Release for beta review:
+      - new CMake support replacing GNU Makefile generation with CMakelists.txt generation.
+      - removed MDK specific scripts.
+      - added macOS support.
+    </td>
+  </tr>
+  <tr>
     <td>0.10.0 (beta)</td>
     <td>Release for beta review:
       - new command line options: --update, --quiet, --log, --intdir, --outdir (see usage for more information).

@@ -683,13 +683,14 @@ void RteTarget::CollectComponentSettings(RteComponentInstance* ci)
   if (files.empty())
     return;
   string deviceName = GetFullDeviceName();
+  const string& rteFolder = GetRteFolder();
   for (auto itf = files.begin(); itf != files.end(); itf++) {
     RteFile* f = *itf;
     if (!f)
       continue;
     if (f->IsConfig()) {
       for (int i = 0; i < count; i++) {
-        string id = f->GetInstancePathName(deviceName, i);
+        string id = f->GetInstancePathName(deviceName, i, rteFolder);
         AddComponentInstanceForFile(id, ci);
       }
       continue;
@@ -1262,22 +1263,37 @@ RteFile* RteTarget::FindFile(const string& fileName, RteComponent* c) const
   return NULL;
 }
 
+const std::string& RteTarget::GetRteFolder() const {
+  RteProject* rteProject = GetProject();
+  if (rteProject) {
+    return rteProject->GetRteFolder();
+  }
+  return RteProject::DEFAULT_RTE_FOLDER;
+}
+
 
 RteFile* RteTarget::GetFile(const RteFileInstance* fi, RteComponent* c) const
 {
-  if (!fi)
-    return NULL;
+  return GetFile(fi, c, GetRteFolder());
+}
+
+
+RteFile* RteTarget::GetFile(const RteFileInstance* fi, RteComponent* c, const std::string& rteFolder) const
+{
+  if (!fi) {
+    return nullptr;
+  }
   const set<RteFile*>& filteredFiles = GetFilteredFiles(c);
   const string& deviceName = GetFullDeviceName();
   int index = fi->GetInstanceIndex();
   const string& instanceName = fi->GetInstanceName();
   for (auto itf = filteredFiles.begin(); itf != filteredFiles.end(); itf++) {
     RteFile* f = *itf;
-    if (f && f->GetInstancePathName(deviceName, index) == instanceName) {
+    if (f && f->GetInstancePathName(deviceName, index, rteFolder) == instanceName) {
       return f;
     }
   }
-  return NULL;
+  return nullptr;
 }
 
 void RteTarget::EvaluateComponentDependencies()
@@ -1574,7 +1590,7 @@ const bool RteTarget::GenerateRteHeaderFile(const string& headerName, const stri
   if (!project)
     return false;
 
-  string rteCompH = RteProject::GetRteHeader(headerName, GetName(), project->GetProjectPath());
+  string rteCompH = project->GetRteHeader(headerName, GetName(), project->GetProjectPath());
 
   if (!RteFsUtils::MakeSureFilePath(rteCompH))
     return false;

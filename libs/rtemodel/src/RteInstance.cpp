@@ -640,9 +640,9 @@ RteFileInstance::RteFileInstance(RteItem* parent) :
   m_tag = "file";
 }
 
-void RteFileInstance::Init(RteFile* f, const string& deviceName, int instanceIndex)
+void RteFileInstance::Init(RteFile* f, const string& deviceName, int instanceIndex, const string& rteFolder)
 {
-  m_instanceName = f->GetInstancePathName(deviceName, instanceIndex);
+  m_instanceName = f->GetInstancePathName(deviceName, instanceIndex, rteFolder);
   m_instanceIndex = instanceIndex;
   m_fileName = RteUtils::ExtractFileName(m_instanceName);
   m_bRemoved = false;

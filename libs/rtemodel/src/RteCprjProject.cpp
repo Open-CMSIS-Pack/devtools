@@ -29,6 +29,7 @@ RteCprjProject::RteCprjProject(RteCprjModel* cprjModel) :
   // set project name based on filename
   SetName(RteUtils::ExtractFileBaseName(GetCprjFile()->GetPackageFileName()));
   SetProjectPath(RteUtils::ExtractFilePath(GetCprjFile()->GetPackageFileName(), true));
+  SetRteFolder(GetCprjFile()->GetRteFolder());
 }
 
 RteCprjProject::~RteCprjProject()
@@ -59,7 +60,16 @@ RteItem* RteCprjProject::GetCprjInfo() const
 }
 
 
-bool RteCprjProject::SetToolchain(const string& toolchain)
+RteItem* RteCprjProject::GetCprjComponent(const std::string& id) const
+{
+  auto it = m_idToCprjComponents.find(id);
+  if (it != m_idToCprjComponents.end()) {
+    return it->second;
+  }
+  return nullptr;
+}
+
+bool RteCprjProject::SetToolchain(const string& toolchain, const std::string& toolChainVersion)
 {
   CprjFile* cprjFile = GetCprjFile();
 
@@ -70,10 +80,15 @@ bool RteCprjProject::SetToolchain(const string& toolchain)
   }
 
   for (auto compiler : compilersList) {
+
     const string& name = compiler->GetAttribute("name");
-    if (toolchain.empty() || toolchain == name) {
+    const string& version = compiler->GetAttribute("version");
+
+    if ((toolchain.empty() || toolchain == name) &&
+        (toolChainVersion.empty() || version.empty() || VersionCmp::RangeCompare(toolChainVersion, version)))
+    {
       m_toolchain = name;
-      m_toolchainVersion = compiler->GetAttribute("version");
+      m_toolchainVersion = version;
       return true;
     }
   }
@@ -138,7 +153,7 @@ void RteCprjProject::PropagateFilteredPackagesToTargetModel(const string& target
   RteModel *globalModel = GetModel();
 
   for (auto item : GetCprjFile()->GetPackRequirements()) {
-    RteAttributes a = item->GetAttributes(); // make copy of atributes
+    RteAttributes a = item->GetAttributes(); // make copy of attributes
     const string& versionRange = a.GetVersionString();
     if (versionRange.empty()) {
       string commonId = RteAttributes::GetPackageIDfromAttributes(*item, false);
@@ -161,4 +176,84 @@ void RteCprjProject::PropagateFilteredPackagesToTargetModel(const string& target
   targetModel->FilterModel(globalModel, NULL);
 }
 
+RteComponentInstance* RteCprjProject::AddCprjComponent(RteItem* item, RteTarget* target) {
+  RteComponentInstance* ci = RteProject::AddCprjComponent(item, target);
+  m_idToCprjComponents[ci->GetID()] = item;
+  return ci;
+}
+
+void RteCprjProject::ApplySelectedComponents() {
+  Apply();
+  CollectSettings();
+  Validate();
+  GenerateRteHeaders();
+
+  // Apply selected components to CprjFile
+  ApplySelectedComponentsToCprjFile();
+}
+
+void RteCprjProject::ApplySelectedComponentsToCprjFile() {
+  CprjFile* cprjFile = GetCprjFile();
+  if (!cprjFile)
+    return;
+  RteItem* cprjComponents = cprjFile->GetItemByTag("components");
+
+  // remove component from cprj
+  for (auto iter = m_idToCprjComponents.begin(); iter != m_idToCprjComponents.end();) {
+    if (m_components.find(iter->first) == m_components.end()) {
+      cprjComponents->RemoveItem(iter->second);
+      iter = m_idToCprjComponents.erase(iter);
+    } else {
+      iter++;
+    }
+  }
+
+  // add component to cprj
+  for (auto [id, ci] : m_components) {
+    if (ci->IsApi())
+      continue;
+    RteItem* item = nullptr;
+    auto it = m_idToCprjComponents.find(id);
+    if (it != m_idToCprjComponents.end()) {
+      item = it->second;
+    }
+    if (item == nullptr) {                                    // component not existent in cprj
+      item = new RteItem(cprjComponents);
+      item->SetTag("component");
+      item->AddAttributes(ci->GetAttributes(), true);         // take over attributes
+      if (ci->GetVersionMatchMode(GetActiveTargetName()) != VersionCmp::FIXED_VERSION) {
+        item->RemoveAttribute("Cversion");                    // specify version only if fixed
+      }
+      item->RemoveAttribute("condition");                     // remove generally attribute "condition"
+      // TODO: add build flags to component
+      ApplyComponentFilesToCprjFile(ci, item);                // add files to component
+      cprjComponents->AddItem(item);                          // add component to cprj file
+      m_idToCprjComponents[id] = item;
+    }
+    if (ci->HasMaxInstances()) {
+      RteInstanceTargetInfo* info = ci->GetTargetInfo(GetActiveTargetName());
+      const string& count = info->GetAttribute("instances");
+      if (!count.empty())
+        item->AddAttribute("instances", count);
+      else
+        item->AddAttribute("instances", "1");
+    }
+  }
+
+  cprjComponents->SortChildren(&RteItem::CompareComponents);
+}
+
+void RteCprjProject::ApplyComponentFilesToCprjFile(RteComponentInstance* ci, RteItem* cprjComponent) {
+  map<string, RteFileInstance*> files;
+  GetFileInstances(ci, GetActiveTargetName(), files);
+  for (auto [id, fi] : files) {
+    if (fi->GetAttribute("attr") == "config") {
+      RteItem* item = new RteItem(cprjComponent);
+      item->SetTag("file");
+      item->SetAttributes(fi->GetAttributes());
+      item->RemoveAttribute("condition");
+      cprjComponent->AddItem(item);
+    }
+  }
+}
 // End of RteProject.cpp

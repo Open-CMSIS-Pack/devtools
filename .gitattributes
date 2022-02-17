@@ -31,6 +31,7 @@
 *.sh text eol=lf
 *.robot text eol=lf
 *.svd text eol=lf
+*.patch text eol=lf
 
 # Declare files that will always have CRLF line endings on checkout.
 *.bat text eol=crlf

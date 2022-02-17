@@ -38,7 +38,7 @@ public:
   bool FindName(const std::string& name, const std::string& searchName, const std::string& searchExt);
   bool UpdateRte(RteTarget* target, RteProject* rteProject, RteComponent* component);
   bool CheckDependencyResult(RteTarget* target, RteComponent* component, std::string mcuVendor, std::string mcuDispName, compiler_s compiler);
-  bool ExcludeSysHeaderDirectories(const std::string& systemHeader);
+  bool ExcludeSysHeaderDirectories(const std::string& systemHeader, const std::string& rteFolder);
   bool FindFileFromList(const std::string& systemHeader, const std::set<RteFile*>& targFiles);
   bool CheckDeviceDependencies(RteDeviceItem* device, RteProject* rteProject);
 

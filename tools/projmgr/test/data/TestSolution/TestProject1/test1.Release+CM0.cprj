@@ -14,7 +14,7 @@
     <compiler name="GCC" version="10.2.1"/>
   </compilers>
 
-  <target Dfpu="NO_FPU" Dname="RteTest_ARMCM0" Dsecure="Non-secure" Dvendor="ARM:82">
+  <target Dendian="Little-endian" Dfpu="NO_FPU" Dname="RteTest_ARMCM0" Dsecure="Non-secure" Dvendor="ARM:82">
     <output intdir="test1.Release+CM0_IntDir/" name="test1.Release+CM0" outdir="test1.Release+CM0_OutDir/" type="exe"/>
     <ldflags compiler="GCC" file="RTE/Device/RteTest_ARMCM0/gcc_arm.ld"/>
     <defines>DEF-CM0;DEF-Release</defines>

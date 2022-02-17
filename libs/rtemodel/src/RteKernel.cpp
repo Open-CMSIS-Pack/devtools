@@ -148,7 +148,7 @@ bool RteKernel::SaveActiveCprjFile(const string& file/* = RteUtils::EMPTY_STRING
   return false;
 }
 
-RteCprjProject* RteKernel::LoadCprj(const string& cprjFileName, const string& toolchain)
+RteCprjProject* RteKernel::LoadCprj(const string& cprjFileName, const string& toolchain, bool initialize)
 {
   RteCprjModel* cprjModel = ParseCprj(cprjFileName);
   if (!cprjModel)  {
@@ -161,17 +161,11 @@ RteCprjProject* RteKernel::LoadCprj(const string& cprjFileName, const string& to
   // ensure project is set active
   m_globalModel->SetActiveProjectId(cprjProject->GetProjectId());
 
-  if (!cprjProject->SetToolchain(toolchain)) {
-    cprjProject->Invalidate();
-    return cprjProject;
+  if (initialize) {
+    if (!InitializeCprj(cprjProject, toolchain)) {
+      cprjProject->Invalidate();
+    }
   }
-  // load required packs
-  if(!LoadRequiredPdscFiles(cprjModel->GetCprjFile())){
-    cprjProject->Invalidate();
-    return cprjProject;
-  }
-  cprjProject->Initialize();
-  cprjProject->GenerateRteHeaders();
   return cprjProject;
 }
 
@@ -197,6 +191,24 @@ RteCprjModel* RteKernel::ParseCprj(const string& cprjFile)
   }
   return cprjModel;
 }
+
+bool RteKernel::InitializeCprj(RteCprjProject* cprjProject, const string& toolchain, const string& toolChainVersion)
+{
+  if (!cprjProject) {
+    return false;
+  }
+  if (!cprjProject->SetToolchain(toolchain)) {
+    return false;
+  }
+  // load required packs
+  if (!LoadRequiredPdscFiles(cprjProject->GetCprjFile())) {
+    return false;
+  }
+  cprjProject->Initialize();
+  cprjProject->GenerateRteHeaders();
+  return true;
+}
+
 
 RtePackage* RteKernel::LoadPack(const string& pdscFile)
 {

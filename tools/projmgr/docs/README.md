@@ -1,10 +1,15 @@
 # CMSIS Project Manager [Draft]
 
-The utility `projmgr` assists the generation of a CMSIS Project Description file
+The utility `csolution` assists the generation of a CMSIS Project Description file
 according to the standard
 [CPRJ format](https://arm-software.github.io/CMSIS_5/Build/html/cprjFormat_pg.html)
 and provides commands to search packs, devices and components from installed packs
 as well as unresolved component dependencies.
+
+## Users Manual
+
+The [users manual](./Manual/Overview.md) describes the operation of the CMSIS Project Manager and explains the input files that are processed to generate the CMSIS project along with the *.CPRJ files.
+
 
 ## Requirements
 
@@ -15,10 +20,10 @@ There are several ways to initialize and configure the pack repository, for exam
 
 ## Quick Start
 
-The `projmgr` binaries as well as python interfaces for all supported platforms can be downloaded
+The `csolution` binaries as well as python interfaces for all supported platforms can be downloaded
 from the releases page.
 
-Before running `projmgr` the location of the pack repository shall be set via the environment variable
+Before running `csolution` the location of the pack repository shall be set via the environment variable
 `CMSIS_PACK_ROOT` otherwise its default location will be taken.
 
 ## Usage
@@ -26,7 +31,7 @@ Before running `projmgr` the location of the pack repository shall be set via th
 ```
 CMSIS Project Manager 0.9.0 (C) 2021 ARM
 Usage:
-  projmgr <command> [<args>] [OPTIONS...]
+  csolution <command> [<args>] [OPTIONS...]
 
 Commands:
   list packs          Print list of installed packs
@@ -81,7 +86,7 @@ convert --solution <example.csolution.yml>
 
 ## Input .cproject.yml file
 
-The YAML structure draft is temporarily described in: [Overview.md](https://github.com/brondani/devtools/blob/mvp-prototype/tools/projmgr/docs/Overview.md)
+The YAML structure draft is described in: [Overview.md](https://github.com/Open-CMSIS-Pack/devtools/blob/main/tools/projmgr/docs/Manual/Overview.md)
 
 
 ## Public functions

@@ -1,8 +1,10 @@
-### CMSIS Solution Description ###
-
-build-types:
-  - type: Debug
-  - type: Release
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/0.9.0/tools/projmgr/schemas/csolution.schema.json
 
 solution:
-  - project: testlayers.cproject.yml
+
+  build-types:
+    - type: Debug
+    - type: Release
+
+  projects:
+    - project: testlayers.cproject.yml

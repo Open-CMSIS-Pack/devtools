@@ -1234,22 +1234,17 @@ string RteDeviceItemAggregate::GetSummaryString() const
   }
 
   // Memory (RAM/ROM)
-  string memName;
   unsigned int ramSize = 0, romSize = 0;
 
   for (auto memsIt = mems.begin(); memsIt != mems.end(); memsIt++) {
     RteDeviceMemory* mem = dynamic_cast<RteDeviceMemory*>(*memsIt);
-    if (mem == 0) {
+    if (!mem) {
       continue;
     }
-    memName = (*memsIt)->GetName();
-    if (memName.length() < 4) {
-      continue;
-    }
-    if (memName.substr(0, 4) == "IRAM") {
-      ramSize += (*memsIt)->GetAttributeAsUnsigned("size");
-    } else if (memName.substr(0, 4) == "IROM") {
-      romSize += (*memsIt)->GetAttributeAsUnsigned("size");
+    if (mem->IsWriteAccess()) {
+      ramSize += mem->GetAttributeAsUnsigned("size");
+    } else if (mem->IsReadAccess()) {
+      romSize += mem->GetAttributeAsUnsigned("size");
     }
   }
 

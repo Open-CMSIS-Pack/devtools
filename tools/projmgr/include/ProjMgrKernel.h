@@ -38,9 +38,18 @@ public:
 
   /**
    * @brief get installed packs
+   * @param pdscFiles list of installed packs
    * @return true if executed successfully
   */
-  bool GetInstalledPacks(std::list<RtePackage*>& packs);
+  bool GetInstalledPacks(std::set<std::string>& pdscFiles);
+
+  /**
+   * @brief load and insert pack into global model
+   * @param packs list of loaded packages
+   * @param pdscFiles list of packs to be loaded
+   * @return true if executed successfully
+  */
+  bool LoadAndInsertPacks(std::list<RtePackage*>& packs, std::set<std::string>& pdscFiles);
 
   /**
    * @brief get callback

@@ -81,7 +81,7 @@ const MsgTable PackChk::msgTable = {
 
 // 200... Invocation Errors
   { "M200", { MsgLevel::LEVEL_ERROR,    CRLF_BE, "" } },
-  { "M201", { MsgLevel::LEVEL_ERROR,    CRLF_BE, "" } },
+  { "M201", { MsgLevel::LEVEL_ERROR,    CRLF_BE, "Error adding PDSC input file '%PATH%'!" } },
   { "M202", { MsgLevel::LEVEL_ERROR,    CRLF_BE, "No PDSC input file specified" } },
   { "M203", { MsgLevel::LEVEL_ERROR,    CRLF_B, "Error reading PDSC file(s) '%PATH%'!" } },
   { "M204", { MsgLevel::LEVEL_ERROR,    CRLF_B, "File not found: '%PATH%'!" } },

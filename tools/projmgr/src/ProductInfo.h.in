@@ -14,8 +14,8 @@ static constexpr const char* BUILD_VERSION = "0";
 static constexpr const char* COMPANY_NAME      = "Arm Ltd.";
 static constexpr const char* FILE_DESCRIPTION  = "CMSIS Project Manager";
 static constexpr const char* PRODUCT_NAME      = "CMSIS Project Manager";
-static constexpr const char* INTERNAL_NAME     = "projmgr";
-static constexpr const char* ORIGINAL_FILENAME = "projmgr";
+static constexpr const char* INTERNAL_NAME     = "csolution";
+static constexpr const char* ORIGINAL_FILENAME = "csolution";
 static constexpr const char* COPYRIGHT_NOTICE  = "(C) @PROJECT_VERSION_YEAR@ ARM";
 
 static constexpr const char* VERSION_STRING    = "@PROJECT_VERSION_FULL@";

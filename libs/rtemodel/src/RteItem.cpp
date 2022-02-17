@@ -576,6 +576,28 @@ bool RteItem::HasXmlContent() const
   return GetChildCount() > 0;
 }
 
+bool RteItem::CompareComponents(RteItem* c0, RteItem* c1)
+{
+  int res = AlnumCmp::Compare(c0->GetCbundleName(), c1->GetCbundleName());
+  if (!res)
+    res = AlnumCmp::Compare(c0->GetCclassName(), c1->GetCclassName());
+  if (!res)
+    res = AlnumCmp::Compare(c0->GetCgroupName(), c1->GetCgroupName());
+  if (!res)
+    res = AlnumCmp::Compare(c0->GetCsubName(), c1->GetCsubName());
+  if (!res)
+    res = AlnumCmp::Compare(c0->GetCvariantName(), c1->GetCvariantName());
+  if (!res)
+    res = AlnumCmp::Compare(c0->GetVendorString(), c1->GetVendorString());
+  if (!res)
+    res = AlnumCmp::Compare(c0->GetComponentUniqueID(true), c1->GetComponentUniqueID(true));
+  return res < 0;
+}
+
+void RteItem::SortChildren(CompareRteItemType cmp)
+{
+  m_children.sort(cmp);
+}
 
 RteItemContainer::RteItemContainer(RteItem* parent) :
   RteItem(parent)

@@ -22,11 +22,7 @@ The following control characters are supported:
 ?  - any single character
 [] - any character in the set
 
-Note that the processing of '*' differs from standard implementations (e.g. in Visual Studio):
-patterns "MK50DX*x7" and "MK50DX*???7" will NOT find string "MK50DX256xxx7"
-instead "MK50DX*xxx7" or "MK50DX*x??7" pattern should be used
-
-That is done to ensure symmetry in comparison two strings with wild cards (s1 == s2) == (s2 == s1)
+Note that the comparison is symmetrical, both supplied strings can contain wild cards
 */
 
 #include <string>
@@ -39,10 +35,10 @@ private:
 
 public:
   /**
-   * @brief compare two strings containing wild card characters
-   * @param s1 string to be compared
-   * @param s2 string to be compared
-   * @return true if strings matched, otherwise false
+   * @brief match two strings containing wild card characters
+   * @param s1 string to be matched, can be a wild card pattern
+   * @param s2 string to be matched, can be a wild card pattern
+   * @return true if strings matching, otherwise false
   */
   static bool Match(const std::string& s1, const std::string& s2);
 
@@ -58,6 +54,21 @@ public:
    * @return converted string
   */
   static std::string ToX(const std::string& s);
+
+  /**
+   * @brief checks if the supplied string contains any of wild-card matching symbols:
+   * @param s string to be checked
+   * @return true if the supplied string contains any of  '*', '?', '[', ']' characters
+  */
+  static bool IsWildcardPattern(const std::string& s);
+
+  /**
+   * @brief matches supplied string against a wild card pattern
+   * @param s string to be matched, wild cards are considered as normal characters
+   * @param pattern wild card expression to match against
+   * @return true if match is successful
+  */
+  static bool MatchToPattern(const std::string& s, const std::string& pattern);
 };
 
 #endif // WildCards_H

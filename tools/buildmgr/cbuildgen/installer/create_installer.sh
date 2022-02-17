@@ -6,8 +6,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # -------------------------------------------------------
 
-# Version: 0.10.0
-#
 # This scripts creates the self-extracting CMSIS Build Installer
 #
 # Pre-requisites:

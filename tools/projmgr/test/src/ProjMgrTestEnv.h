@@ -9,6 +9,22 @@
 extern std::string testoutput_folder;
 extern std::string testinput_folder;
 extern std::string testcmsispack_folder;
+extern std::string schema_folder;
+
+/**
+ * @brief direct console output to string
+*/
+class CoutRedirect {
+public:
+  CoutRedirect();
+  ~CoutRedirect();
+
+  std::string GetString();
+
+private:
+  std::stringstream m_buffer;
+  std::streambuf* m_oldStreamBuf;
+};
 
 /**
  * @brief global test environment for all the test suites

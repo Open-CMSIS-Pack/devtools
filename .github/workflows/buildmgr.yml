@@ -13,8 +13,14 @@ on:
       - 'libs/rtemodel/**'
       - 'libs/rtefsutils/**'
       - 'tools/buildmgr/**'
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/buildmgr.yml'
+      - 'tools/buildmgr/docs/**'
   release:
-    types: [published]
+    types: [ published ]
 
 jobs:
   build:
@@ -97,34 +103,89 @@ jobs:
           if-no-files-found: error
 
   docs:
-    if: ${{ github.event_name == 'pull_request' || (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/buildmgr/')) }}
+    if: ${{ github.event_name == 'pull_request'  || github.event_name == 'push' || (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/buildmgr/')) }}
     runs-on: ubuntu-20.04
     timeout-minutes: 5
     steps:
 
       - name: Checkout devtools
         uses: actions/checkout@v2
+        with:
+          submodules: true
+          fetch-depth: ${{ github.event_name == 'push' && '0' || '1' }}
 
       - name: Install deps
         run: |
+          sudo apt update
+          sudo apt-get install ninja-build python
           wget -q http://launchpadlibrarian.net/163827726/doxygen_1.8.6-2_amd64.deb
           sudo dpkg -i doxygen_1.8.6-2_amd64.deb
+          sudo pip install LinkChecker
 
-      - name: Run gendoc.sh
-        run: ./gen_doc.sh --output=docs
-        working-directory: tools/buildmgr/docs/doxygen
+      - name: Create build folder
+        run: mkdir build
 
-      - name: Zip doc folder
-        run: zip -r docs.zip *
-        working-directory: tools/buildmgr/docs/doxygen/docs
+      - name: Build documentation
+        run: |
+          cmake -G Ninja ..
+          echo "::add-matcher::.github/doxygen.json"
+          cmake --build . --target buildmgr-docs
+          echo "::remove-matcher owner=doxygen::"
+        working-directory: ./build
 
-      - name: Archive docs.zip
+      - name: Run linkchecker
+        run: |
+          echo "::add-matcher::.github/linkchecker.json"
+          ../scripts/check_links.sh tools/buildmgr/docs/doxygen/output/html/index.html ../tools/buildmgr/docs/doxygen/Build/src/
+          echo "::remove-matcher owner=linkchecker::"
+        working-directory: ./build
+
+      - name: Upload documentation
         uses: actions/upload-artifact@v2
         with:
-          name: docs
-          path: tools/buildmgr/docs/doxygen/docs/docs.zip
+          name: documentation
+          path: ./build/tools/buildmgr/docs/doxygen/output/
           retention-days: 1
           if-no-files-found: error
+
+      - name: Archive documentation
+        if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/buildmgr/')) }}
+        run: tar -cvjf /tmp/doc.tbz2 .
+        working-directory: ./build/tools/buildmgr/docs/doxygen/output/html/
+
+      - uses: actions/checkout@v2
+        if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/buildmgr/')) }}
+        with:
+          ref: gh-pages
+
+      - name: Publish main branch documentation
+        if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
+        run: |
+          rm -rf buildmgr/main
+          mkdir -p buildmgr/main
+          cd buildmgr/main
+          tar -xvjf /tmp/doc.tbz2
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add .
+          git commit -m "Update buildmgr main branch documentation"
+          git push
+
+      - name: Publish release documentation
+        if: ${{ (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/buildmgr/')) }}
+        run: |
+          VERSION=$(git show-ref ${{ github.ref }} | awk -F/ '{print $NF}')
+          rm -rf buildmgr/${VERSION}
+          rm -f buildmgr/latest
+          mkdir -p buildmgr/${VERSION}
+          ln -s ${VERSION}/ buildmgr/latest
+          cd buildmgr/${VERSION}
+          tar -xvjf /tmp/doc.tbz2
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add .
+          git commit -m "Update buildmgr documentation for release ${VERSION}"
+          git push
 
   create_installer:
     needs: [ build, docs ]
@@ -171,17 +232,11 @@ jobs:
           chmod +x cbuildgen.*
         working-directory: tools/buildmgr/cbuildgen/distribution/bin
 
-      - name: Download docs
+      - name: Download documentation
         uses: actions/download-artifact@v2
         with:
-          name: docs
+          name: documentation
           path: tools/buildmgr/cbuildgen/distribution/doc/
-
-      - name: Unzip docs
-        run: |
-          unzip docs.zip
-          rm docs.zip
-        working-directory: tools/buildmgr/cbuildgen/distribution/doc/
 
       - name: Create installer
         run: sudo ./create_installer.sh --input=../distribution --output=.
@@ -216,6 +271,16 @@ jobs:
           tag: ${{ github.ref }}
           overwrite: true
           asset_name: cbuild_install.sh
+
+      - name: Attach debian installer to release
+        if: ${{ github.event_name == 'release' }}
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: tools/buildmgr/cbuildgen/installer/cmsis-build*.deb
+          file_glob: true
+          tag: ${{ github.ref }}
+          overwrite: true
 
   tests:
     needs: [ create_installer ]
@@ -402,3 +467,82 @@ jobs:
         with:
           check_name: "Cbuild Integration Tests [${{ matrix.target }}]"
           report_paths: build/integtest_report_${{ matrix.target }}.xml
+
+  sanity-check-native:
+    needs: [ create_installer ]
+    timeout-minutes: 15
+    runs-on: ${{ matrix.os }}
+    env:
+      CI_PACK_ROOT: ${{ github.workspace }}/packs
+      CI_ARMCC6_TOOLCHAIN_ROOT: ""
+      CI_ARMCC5_TOOLCHAIN_ROOT: ""
+      CI_GCC_TOOLCHAIN_ROOT: ""
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ macos-11, ubuntu-18.04, windows-2016, windows-2022 ]
+    steps:
+      - name: Download cbuild_install
+        uses: actions/download-artifact@v2
+        with:
+          name: cbuild_install
+          path: ${{ github.workspace }}
+
+      - name: Set correct cbuild_install file permission
+        if: ${{ startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu') }}
+        run: chmod +x cbuild_install.sh
+
+      - name: Run cbuild_install.sh
+        shell: bash
+        run: |
+          echo "${{ github.workspace }}/cbuild" > config
+          echo "$CI_PACK_ROOT" >> config
+          echo "$CI_ARMCC6_TOOLCHAIN_ROOT" >> config
+          echo "$CI_ARMCC5_TOOLCHAIN_ROOT" >> config
+          echo "$CI_GCC_TOOLCHAIN_ROOT" >> config
+          ./cbuild_install.sh < config
+
+      - name: Test cbuildgen
+        shell: bash
+        run: |
+          ${{ github.workspace }}/cbuild/bin/cbuildgen | grep "(cbuildgen): Build Process Manager"
+
+  sanity-check-docker:
+    needs: [ create_installer ]
+    timeout-minutes: 15
+    runs-on: ubuntu-20.04
+    container:
+      image: ${{ matrix.image }}
+    env:
+      CI_PACK_ROOT: ${{ github.workspace }}/packs
+      CI_ARMCC6_TOOLCHAIN_ROOT: ""
+      CI_ARMCC5_TOOLCHAIN_ROOT: ""
+      CI_GCC_TOOLCHAIN_ROOT: ""
+    strategy:
+      fail-fast: true
+      matrix:
+        image: [ "debian:buster" ]
+    steps:
+      - name: Download cbuild_install
+        uses: actions/download-artifact@v2
+        with:
+          name: cbuild_install
+          path: ${{ github.workspace }}
+
+      - name: Set correct cbuild_install file permission
+        run: chmod +x cbuild_install.sh
+
+      - name: Run cbuild_install.sh
+        shell: bash
+        run: |
+          echo "${{ github.workspace }}/cbuild" > config
+          echo "$CI_PACK_ROOT" >> config
+          echo "$CI_ARMCC6_TOOLCHAIN_ROOT" >> config
+          echo "$CI_ARMCC5_TOOLCHAIN_ROOT" >> config
+          echo "$CI_GCC_TOOLCHAIN_ROOT" >> config
+          ./cbuild_install.sh < config
+
+      - name: Test cbuildgen
+        shell: bash
+        run: |
+          ${{ github.workspace }}/cbuild/bin/cbuildgen | grep "(cbuildgen): Build Process Manager"

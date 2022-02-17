@@ -20,7 +20,7 @@ public:
 };
 
 
-TEST(PackChkUnitTests, IsURL) {
+TEST(TestValidateSyntax, IsURL) {
   EXPECT_TRUE(ValidateSyntaxExposed::IsURL("http://mysite.com"));
   EXPECT_TRUE(ValidateSyntaxExposed::IsURL("https://mysite.com"));
   EXPECT_TRUE(ValidateSyntaxExposed::IsURL("ftp://mysite.com"));

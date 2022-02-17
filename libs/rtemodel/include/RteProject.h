@@ -18,6 +18,7 @@
 #include "RteInstance.h"
 #include "RteModel.h"
 
+#include <optional>
 #include <stdio.h>
 
 class RteModel;
@@ -148,6 +149,18 @@ public:
    * @param name project name to set
   */
   void SetName(const std::string& name) { m_ID = name; }
+
+  /**
+   * @brief set custom RTE folder name to store config files,
+   * @param rteFolder RTE folder name, default "RTE"
+  */
+  void SetRteFolder(std::optional<std::string> rteFolder) { m_rteFolder = rteFolder; }
+
+  /**
+   * @brief get project's RTE folder where config and generated files are stored
+   * @return RTE folder name, default "RTE"
+  */
+  const std::string& GetRteFolder() const;
 
   /**
    * @brief get RteCallback object
@@ -490,7 +503,7 @@ protected:
   void CategorizeComponentInstance(RteComponentInstance* ci);
   void CollectMissingPacks();
   void CollectMissingPacks(RteItemInstance* inst);
-  RteComponentInstance* AddCprjComponent(RteItem* item, RteTarget* target);
+  virtual RteComponentInstance* AddCprjComponent(RteItem* item, RteTarget* target);
 
 public:
   /**
@@ -687,7 +700,7 @@ public:
    * @param prefix given prefix to be added at beginning of the file path
    * @return string containing file name and path
   */
-  static std::string GetRteComponentsH(const std::string& targetName, const std::string& prefix);
+  std::string GetRteComponentsH(const std::string& targetName, const std::string& prefix) const;
 
   /**
    * @brief get file name and path locating in folder "RTE" determined by the specified name, target and prefix
@@ -696,7 +709,7 @@ public:
    * @param prefix given prefix to be added at beginning of the file path
    * @return string containing file name and path
   */
-  static std::string GetRteHeader(const std::string& name, const std::string & targetName, const std::string& prefix);
+  std::string GetRteHeader(const std::string& name, const std::string & targetName, const std::string& prefix) const;
 
 protected:
   virtual RteTarget* CreateTarget(RteModel* filteredModel, const std::string& name, const std::map<std::string, std::string>& attributes);
@@ -760,6 +773,11 @@ protected:
   std::map<std::string, RteModel*> m_targetModels; // filtered models for each target
   std::map<int, std::string> m_targetIDs;
   std::string m_sActiveTarget;
+  std::optional<std::string> m_rteFolder;
+
+public:
+  static const std::string DEFAULT_RTE_FOLDER;
+
 };
 
 #endif // RteProject_H

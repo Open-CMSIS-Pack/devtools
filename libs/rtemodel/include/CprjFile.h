@@ -13,6 +13,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 /******************************************************************************/
+#include <optional>
 #include "RteGenerator.h"
 
 #include "RtePackage.h"
@@ -319,6 +320,7 @@ public:
   */
   RteItem* GetProjectInfo() const;
 
+  const std::optional<std::string> GetRteFolder() const;
   /**
    * @brief getter for list of components specified for the project
    * @return list of RteItem pointer

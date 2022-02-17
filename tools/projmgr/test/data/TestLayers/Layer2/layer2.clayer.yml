@@ -1,7 +1,6 @@
-### CMSIS Layer Description ###
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/0.9.0/tools/projmgr/schemas/clayer.schema.json
 
 layer:
-  name: Layer2
   description: Layer 2
   defines:
     - DEF_LAYER2
@@ -11,7 +10,7 @@ layer:
     - C:
       - --layer2-flag
   packages:
-    - package: ARM::CMSIS@5.8.0
+    - package: ARM::RteTest_DFP@0.1.1
   components:
     - component: Startup
   groups:

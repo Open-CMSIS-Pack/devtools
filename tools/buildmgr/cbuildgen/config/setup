@@ -4,8 +4,8 @@
 # SPDX-License-Identifier: Apache-2.0
 # -------------------------------------------------------
 
-# Version: 0.10.1
-# Date: 2021-04-08
+# Version: 0.10.4
+# Date: 2022-01-18
 # This file configures the settings of the CMSIS Command Line Build environment
 #
 # Pre-requisites:

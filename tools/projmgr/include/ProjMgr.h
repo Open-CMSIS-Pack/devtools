@@ -70,6 +70,7 @@ protected:
   std::string m_rootDir;
   std::string m_outputDir;
   std::string m_outputType;
+  bool m_checkSchema;
   GroupNode m_files;
 
   bool RunConvert(void);

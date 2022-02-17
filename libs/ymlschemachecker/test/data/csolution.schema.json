@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "properties": {
+    "target-types": {
+      "$ref": "./csettings.schema.json#/$defs/TargetTypes",
+      "description": "This section allows to declare different Target types in order to switch between them."
+    },
+    "build-types": {
+      "$ref": "./csettings.schema.json#/$defs/BuildTypes",
+      "description": "This section adds the flexibility to configure each target build towards a specific build configuration such as: Release, Debug, Test."
+    },
+    "solution": { 
+      "$ref": "./csettings.schema.json#/$defs/SolutionsType",
+      "description": "This section describes the collection of related projects."
+    }
+  },
+  "additionalProperties": false
+}

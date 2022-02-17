@@ -15,6 +15,12 @@ namespace std {
 
 %{
   #include "../include/ProjMgr.h"
+  #include "../include/ProjMgrWorker.h"
+  #include "../include/ProjMgrParser.h"
+  #include "../include/ProjMgrGenerator.h"
 %}
 
 %include "../include/ProjMgr.h"
+%include "../include/ProjMgrWorker.h"
+%include "../include/ProjMgrParser.h"
+%include "../include/ProjMgrGenerator.h"

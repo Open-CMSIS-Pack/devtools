@@ -435,7 +435,7 @@ protected:
   const bool GetCompatibleToolchain(const std::string& name, const std::string& versionRange, const std::string& dir, const std::string& ext);
   std::vector<std::string> SplitArgs(const std::string& args, const std::string& delim=std::string(" -"), bool relativePath=true);
   static std::vector<std::string> MergeArgs(const std::vector<std::string>& add, const std::vector<std::string>& remove, const std::vector<std::string>& reference);
-  static std::string GetExtendedRteGroupName(RteItem* ci);
+  static std::string GetExtendedRteGroupName(RteItem* ci, const std::string& rteFolder);
 };
 
 #endif /* CBUILDMODEL_H */

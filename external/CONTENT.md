@@ -26,3 +26,14 @@ framework used to develop tests and is fetched from
 
 The [yaml-cpp](./yaml-cpp) directory contains sources of YAML parser
 library fetched from [here](https://github.com/jbeder/yaml-cpp).
+
+## json
+
+The [json](./json) directory contains sources of JSON parser
+library fetched from [here](https://github.com/nlohmann/json).
+
+## json-schema-validator
+
+The [son-schema-validator](./son-schema-validator) directory contains sources
+of json-schema-validator library fetched from
+[here](https://github.com/pboettch/json-schema-validator).

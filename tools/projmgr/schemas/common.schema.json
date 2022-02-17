@@ -1,0 +1,388 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/0.9.0/tools/projmgr/schemas/common.schema.json",
+  "title": "CMSIS Project Manager common",
+  "version": "0.9.0",
+  "definitions": {
+    "ArrayOfStrings": {
+      "type": "array",
+      "uniqueItems": true,
+      "minItems": 1,
+      "items": { "type": "string" }
+    },
+    "ForType": {
+      "oneOf": [
+        {"$ref": "#/definitions/ArrayOfStrings" },
+        {"type": "string" }
+      ],
+      "description": "Include project for a list of [.<build-type>][+<target-type>]"
+    },
+    "NotForType": {
+      "oneOf": [
+        {"$ref": "#/definitions/ArrayOfStrings" },
+        {"type": "string" }
+      ],
+      "description": "Exclude project for a list of [.<build-type>][+<target-type>]"
+    },
+    "CompilerType": {
+      "type": "string",
+      "pattern": "^(GCC|AC6|IAR)(@(\\d+\\.\\d+\\.\\d+((\\+|\\-)[\\w.+-]+)?))?$",
+      "description": "Selection of the toolchain used in the project (GCC, AC6, IAR), optionally with version, for example AC6@6.16.0"
+    },
+    "DeviceType": {
+      "type": "string",
+      "pattern": "^([\\w .-]+::)?([\\w .-]+)(:[\\w .-]+)?$",
+      "description": "Unique device name, optionally with vendor and core, in the format [<vendor>::]<device>[:<core>]. The <device> can be implicitly inferred from the <board>, but if both fields are present the given <device> overrules the <board> setting."
+    },
+    "BoardType": {
+      "type": "string",
+      "pattern": "^([\\w .-]+::)?([\\w .-]+)$",
+      "description": "Unique board name, optionally with vendor. Format: [<vendor>::]<board>."
+    },
+    "OptimizeType": {
+      "enum": [ "max", "size", "speed", "debug" ],
+      "description": "Generic optimize levels (max, size, speed, debug) for code generation."
+    },
+    "DebugType": {
+      "enum": [ "on", "off" ],
+      "description": "Generic control for the generation of debug information (on, off)."
+    },
+    "WarningsType": {
+      "enum": [ "no", "all", "Misra", "AC5-like" ],
+      "description": "Control warnings (no, all, Misra, AC5-like)."
+    },
+    "OutputType": {
+      "enum": [ "exe", "lib" ],
+      "description": "Generate executable (default) or library (exe, lib)."
+    },
+    "DefinesType": {
+      "type": "array",
+      "description": "List of #define symbol settings for the code generation.",
+      "uniqueItems": true,
+      "minItems": 1,
+      "prefixItems": [
+        { "type": "string" },
+        { "type": "object", "patternProperties": { "^(.*)$": { "type": "string" } } }
+      ]
+    },
+    "UndefinesType": {
+      "type": "array",
+      "description": "List of #define symbol settings to be removed for the code generation.",
+      "uniqueItems": true,
+      "minItems": 1,
+      "items": { "type": "string" }
+    },
+    "AddpathsType": {
+      "type": "array",
+      "description": "List of include path settings for the code generation.",
+      "uniqueItems": true,
+      "minItems": 1,
+      "items": { "type": "string" }
+    },
+    "DelpathsType": {
+      "type": "array",
+      "description": "List of include path settings to be removed for the code generation.",
+      "uniqueItems": true,
+      "minItems": 1,
+      "items": { "type": "string" }
+    },
+    "MiscTypes": {
+      "type": "array",
+      "description": "List of miscellaneous literal tool-specific controls that are passed directly to the tools depending on the file type",
+      "uniqueItems": true,
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/MiscType" }
+    },
+    "MiscType": {
+      "type": "object",
+      "properties": {
+        "compiler":   { "$ref": "#/definitions/CompilerType" },
+        "C":          { "$ref": "#/definitions/ArrayOfStrings", "description": "List of C flags" },
+        "CPP":        { "$ref": "#/definitions/ArrayOfStrings", "description": "List of CPP flags" },
+        "C*":         { "$ref": "#/definitions/ArrayOfStrings", "description": "List of C & CPP flags" },
+        "ASM":        { "$ref": "#/definitions/ArrayOfStrings", "description": "List of ASM flags"  },
+        "Link":       { "$ref": "#/definitions/ArrayOfStrings", "description": "List of Linker flags" },
+        "Lib":        { "$ref": "#/definitions/ArrayOfStrings", "description": "List of Library Manager or Archiver flags" }
+      },
+      "additionalProperties": false
+    },
+    "TargetTypes": {
+      "type": "array",
+      "description": "Target type declaration list that allow to switch among different targets.",
+      "uniqueItems": true,
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/TargetType" }
+    },
+    "TargetType": {
+      "type": "object",
+      "properties": {
+        "type":       { "type": "string", "description": "Name of the target type." },
+        "board":      { "$ref": "#/definitions/BoardType" },
+        "device":     { "$ref": "#/definitions/DeviceType" },
+        "processor":  { "$ref": "#/definitions/ProcessorType" },
+        "compiler":   { "$ref": "#/definitions/CompilerType" },
+        "optimize":   { "$ref": "#/definitions/OptimizeType" },
+        "debug":      { "$ref": "#/definitions/DebugType" },
+        "defines":    { "$ref": "#/definitions/DefinesType" },
+        "undefines":  { "$ref": "#/definitions/UndefinesType" },
+        "add-paths":  { "$ref": "#/definitions/AddpathsType" },
+        "del-paths":  { "$ref": "#/definitions/DelpathsType" },
+        "misc":       { "$ref": "#/definitions/MiscTypes" }
+      },
+      "additionalProperties": false,
+      "required" : [ "type"]
+    },
+    "BuildTypes": {
+      "type": "array",
+      "description": "Build type declaration list that allow to switch among different build settings such as: Release, Debug, Test.",
+      "uniqueItems": true,
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/BuildType" }
+    },
+    "BuildType": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Name of build configuration type. (Debug | Test | Release)"
+        },
+        "processor":  { "$ref": "#/definitions/ProcessorType" },
+        "compiler":   { "$ref": "#/definitions/CompilerType" },
+        "optimize":   { "$ref": "#/definitions/OptimizeType" },
+        "debug":      { "$ref": "#/definitions/DebugType" },
+        "defines":    { "$ref": "#/definitions/DefinesType" },
+        "undefines":  { "$ref": "#/definitions/UndefinesType" },
+        "add-paths":  { "$ref": "#/definitions/AddpathsType" },
+        "del-paths":  { "$ref": "#/definitions/DelpathsType" },
+        "misc":       { "$ref": "#/definitions/MiscTypes" }
+      },
+      "additionalProperties": false,
+      "required" : [ "type"]
+    },
+    "ProjectsType": {
+      "type": "array",
+      "description": "This section defines the collection of related projects",
+      "uniqueItems": true,
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/ProjectType" }
+    },
+    "ProjectType": {
+      "type": "object",
+      "properties": {
+        "project": {
+          "type": "string",
+          "description": "Path to the valid project file"
+        },
+        "for-type":     { "$ref": "#/definitions/ForType" },
+        "not-for-type": { "$ref": "#/definitions/NotForType" },
+        "processor":    { "$ref": "#/definitions/ProcessorType" },
+        "compiler":     { "$ref": "#/definitions/CompilerType" },
+        "optimize":     { "$ref": "#/definitions/OptimizeType" },
+        "debug":        { "$ref": "#/definitions/DebugType" },
+        "defines":      { "$ref": "#/definitions/DefinesType" },
+        "undefines":    { "$ref": "#/definitions/UndefinesType" },
+        "add-paths":    { "$ref": "#/definitions/AddpathsType" },
+        "del-paths":    { "$ref": "#/definitions/DelpathsType" },
+        "misc":         { "$ref": "#/definitions/MiscTypes" }
+      },
+      "additionalProperties": false,
+      "required": [ "project" ]
+    },
+    "ProcessorType": {
+      "type": "object",
+      "description": "Processor specific settings",
+      "properties": {
+        "trustzone": {
+          "enum": [ "secure", "non-secure", "off" ],
+          "description": "Select TrustZone mode: secure | non-secure | off"
+        },
+        "fpu": {
+          "enum": [ "on", "off" ],
+          "description": "Controls usage of FPU registers (S-Registers that are used for Helium and FPU hardware): on | off"
+        },
+        "endian": {
+          "enum": [ "little", "big" ],
+          "description": "Select endianess."
+        }
+      }
+    },
+    "GroupsType": {
+      "type": "array",
+      "description": "List of source groups to be added to a project or layer.",
+      "uniqueItems": true,
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/GroupType" }
+    },
+    "GroupType": {
+      "type": "object",
+      "properties": {
+        "group":        { "type": "string", "description": "Name of the group." },
+        "for-type":     { "$ref": "#/definitions/ForType" },
+        "not-for-type": { "$ref": "#/definitions/NotForType" },
+        "optimize":     { "$ref": "#/definitions/OptimizeType" },
+        "debug":        { "$ref": "#/definitions/DebugType" },
+        "defines":      { "$ref": "#/definitions/DefinesType" },
+        "undefines":    { "$ref": "#/definitions/UndefinesType" },
+        "add-paths":    { "$ref": "#/definitions/AddpathsType" },
+        "del-paths":    { "$ref": "#/definitions/DelpathsType" },
+        "misc":         { "$ref": "#/definitions/MiscTypes" },
+        "groups":       { "$ref": "#/definitions/GroupsType" },
+        "files":        { "$ref": "#/definitions/FilesType" }
+      },
+      "additionalProperties": false
+    },
+    "FilesType": {
+      "type": "array",
+      "description": "List of source files to be added to a project or layer.",
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/FileType" }
+    },
+    "FileType": {
+      "type": "object",
+      "properties": {
+        "file":         { "type": "string", "description": "File name along with the path." },
+        "for-type":     { "$ref": "#/definitions/ForType" },
+        "not-for-type": { "$ref": "#/definitions/NotForType" },
+        "optimize":     { "$ref": "#/definitions/OptimizeType" },
+        "debug":        { "$ref": "#/definitions/DebugType" },
+        "defines":      { "$ref": "#/definitions/DefinesType" },
+        "undefines":    { "$ref": "#/definitions/UndefinesType" },
+        "add-paths":    { "$ref": "#/definitions/AddpathsType" },
+        "del-paths":    { "$ref": "#/definitions/DelpathsType" },
+        "misc":         { "$ref": "#/definitions/MiscTypes" }
+      },
+      "additionalProperties": false
+    },
+    "ComponentsType": {
+      "type": "array",
+      "description": "List of software components to be added in a project or layer.",
+      "uniqueItems": true,
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/ComponentType" }
+    },
+    "ComponentType": {
+      "type": "object",
+      "properties": {
+        "component": {
+          "type": "string",
+          "pattern": "(^[\\w .+-]+$)|(^([\\w .-]+::)?([\\w .-]+)(&[\\w .-]+)?(:[\\w .-]+)(:[\\w .-]+)?(&[\\w .-]+)?(@(>=)?(\\d+\\.\\d+\\.\\d+((\\+|\\-)[\\w.+-]+)?))?$)",
+          "description": "Name of the software component. It can be a free text or a component identifier in the format [Cvendor::] Cclass [&Cbundle] :Cgroup [:Csub] [&Cvariant] [@[>=]Cversion]"
+        },
+        "for-type":     { "$ref": "#/definitions/ForType" },
+        "not-for-type": { "$ref": "#/definitions/NotForType" },
+        "optimize":     { "$ref": "#/definitions/OptimizeType" },
+        "debug":        { "$ref": "#/definitions/DebugType" },
+        "defines":      { "$ref": "#/definitions/DefinesType" },
+        "undefines":    { "$ref": "#/definitions/UndefinesType" },
+        "add-paths":    { "$ref": "#/definitions/AddpathsType" },
+        "del-paths":    { "$ref": "#/definitions/DelpathsType" },
+        "misc":         { "$ref": "#/definitions/MiscTypes" }
+      },
+      "required": [ "component" ],
+      "additionalProperties": false
+    },
+    "PackagesType": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/PackageType" }
+    },
+    "PackageType":{
+      "type": "object",
+      "properties": {
+        "package": {
+          "type": "string",
+          "pattern": "^([\\w .-]+::)?([\\w .-]+)(@(>=)?(\\d+\\.\\d+\\.\\d+((\\+|\\-)[\\w.+-]+)?))?$",
+          "description": "Name of a required Software Pack in the format [Vendor::] Pack [@[>=]Version]"
+        }
+      },
+      "required": [ "package" ],
+      "additionalProperties": false
+    },
+    "LayersType": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/LayerType" }
+    },
+    "LayerType": {
+      "type": "object",
+      "properties": {
+        "layer": {
+          "type": "string",
+          "description": "Path to the '*.clayer.yml' file that defines the layer"
+        },
+        "for-type":     { "$ref": "#/definitions/ForType" },
+        "not-for-type": { "$ref": "#/definitions/NotForType" },
+        "optimize":     { "$ref": "#/definitions/OptimizeType" },
+        "debug":        { "$ref": "#/definitions/DebugType" },
+        "defines":      { "$ref": "#/definitions/DefinesType" },
+        "undefines":    { "$ref": "#/definitions/UndefinesType" },
+        "add-paths":    { "$ref": "#/definitions/AddpathsType" },
+        "del-paths":    { "$ref": "#/definitions/DelpathsType" },
+        "misc":         { "$ref": "#/definitions/MiscType" }
+      },
+      "required": [ "layer" ],
+      "additionalProperties": false
+    },
+    "SolutionDescType": {
+      "type": "object",
+      "properties": {
+        "target-types": {
+          "$ref": "#/definitions/TargetTypes"
+        },
+        "build-types": {
+          "$ref": "#/definitions/BuildTypes"
+        },
+        "projects": {
+          "$ref": "#/definitions/ProjectsType"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ProjectDescType": {
+      "type": "object",
+      "properties": {
+        "description": { "type": "string" },
+        "output-type": { "$ref": "#/definitions/OutputType" },
+        "board":       { "$ref": "#/definitions/BoardType" },
+        "device":      { "$ref": "#/definitions/DeviceType" },
+        "compiler":    { "$ref": "#/definitions/CompilerType" },
+        "optimize":    { "$ref": "#/definitions/OptimizeType" },
+        "debug":       { "$ref": "#/definitions/DebugType" },
+        "processor":   { "$ref": "#/definitions/ProcessorType" },
+        "defines":     { "$ref": "#/definitions/DefinesType" },
+        "undefines":   { "$ref": "#/definitions/UndefinesType" },
+        "add-paths":   { "$ref": "#/definitions/AddpathsType" },
+        "del-paths":   { "$ref": "#/definitions/DelpathsType" },
+        "misc":        { "$ref": "#/definitions/MiscTypes" },
+        "groups":      { "$ref": "#/definitions/GroupsType" },
+        "components":  { "$ref": "#/definitions/ComponentsType" },
+        "packages":    { "$ref": "#/definitions/PackagesType" },
+        "layers":      { "$ref": "#/definitions/LayersType" }
+      },
+      "additionalProperties": false
+    },
+    "LayerDescType": {
+      "type": "object",
+      "description": "This section describes layer contents.",
+      "properties": {
+        "description": { "type": "string" },
+        "output-type": { "$ref": "#/definitions/OutputType" },
+        "board":       { "$ref": "#/definitions/BoardType" },
+        "device":      { "$ref": "#/definitions/DeviceType" },
+        "compiler":    { "$ref": "#/definitions/CompilerType" },
+        "optimize":    { "$ref": "#/definitions/OptimizeType" },
+        "debug":       { "$ref": "#/definitions/DebugType" },
+        "processor":   { "$ref": "#/definitions/ProcessorType" },
+        "defines":     { "$ref": "#/definitions/DefinesType" },
+        "undefines":   { "$ref": "#/definitions/UndefinesType" },
+        "add-paths":   { "$ref": "#/definitions/AddpathsType" },
+        "del-paths":   { "$ref": "#/definitions/DelpathsType" },
+        "misc":        { "$ref": "#/definitions/MiscTypes" },
+        "groups":      { "$ref": "#/definitions/GroupsType" },
+        "components":  { "$ref": "#/definitions/ComponentsType" },
+        "packages":    { "$ref": "#/definitions/PackagesType" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

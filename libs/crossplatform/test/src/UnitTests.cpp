@@ -3,8 +3,9 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-#include "gtest/gtest.h"
 #include "CrossPlatformUtils.h"
+#include "RteFsUtils.h"
+#include "gtest/gtest.h"
 
 using namespace std;
 
@@ -28,7 +29,6 @@ TEST(CrossPlatformUnitTests, SetEnv_EmptyVar) {
   EXPECT_FALSE(CrossPlatformUtils::SetEnv("", "DUMMY_ENV_VAR_VALUE"));
 }
 
-
 TEST(CrossPlatformUnitTests, SetGetEnv_NonEmpty) {
   string value = "non_empty";
   EXPECT_TRUE(CrossPlatformUtils::SetEnv("DUMMY_ENV_VAR", value));
@@ -40,7 +40,6 @@ TEST(CrossPlatformUnitTests, SetGetEnv_Empty) {
   EXPECT_TRUE(CrossPlatformUtils::SetEnv("DUMMY_ENV_VAR", value));
   EXPECT_TRUE(CrossPlatformUtils::GetEnv("DUMMY_ENV_VAR").empty());
 }
-
 
 TEST(CrossPlatformUnitTests, GetPackRootDir_ValidEnvSet) {
   string value = "packrootpath";
@@ -61,6 +60,13 @@ TEST(CrossPlatformUnitTests, GetPackRootDir_Default) {
   EXPECT_EQ(CrossPlatformUtils::GetDefaultCMSISPackRootDir().find((CrossPlatformUtils::GetEnv(DEFAULT_PACKROOTDEF))), 0);
 #endif
   EXPECT_EQ(CrossPlatformUtils::GetCMSISPackRootDir(), CrossPlatformUtils::GetDefaultCMSISPackRootDir());
+}
+
+TEST(CrossPlatformUnitTests, GetExecutablePath) {
+  std::error_code ec;
+  std::string exePath = fs::canonical(CrossPlatformUtils::GetExecutablePath(ec)).generic_string();
+  EXPECT_STREQ(TEST_BIN_PATH, exePath.c_str());
+  EXPECT_EQ(ec.value(), 0);
 }
 
 // end of UnitTests.cpp

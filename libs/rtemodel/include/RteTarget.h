@@ -216,12 +216,28 @@ public:
   RteFile* FindFile(const std::string& fileName, RteComponent* c) const;
 
   /**
+   * @brief get parent project's RTE folder where config and generated files are stored
+   * @return RTE folder name, default "RTE"
+  */
+  const std::string& GetRteFolder() const;
+
+  /**
    * @brief determine file given by instances of type RteFileInstance and RteComponent
+   * RTE folder is taken from parent project
    * @param fi given pointer of type RteFileInstance
    * @param c given pointer of type RteComponent
    * @return pointer of type RteFile
   */
   RteFile* GetFile(const RteFileInstance* fi, RteComponent* c) const;
+
+  /**
+ * @brief determine file given by instances of type RteFileInstance and RteComponent
+ * @param fi given pointer of type RteFileInstance
+ * @param c given pointer of type RteComponent
+ * @param rteFolder the "RTE" folder path used for placing files
+ * @return pointer of type RteFile
+*/
+  RteFile* GetFile(const RteFileInstance* fi, RteComponent* c, const std::string& rteFolder) const;
 
   /**
    * @brief evaluate dependencies of selected components of the target
