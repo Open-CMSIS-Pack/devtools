@@ -40,7 +40,7 @@ TEST_F(ProjMgrSchemaCheckerUnitTests, SchemaCheck_Fail) {
   };
 
   const string& filename = testinput_folder +
-    "/TestProject/test.cproject_invalid_schema.yml";
+    "/TestProject/test.cproject_schema_validation_failed.yml";
   EXPECT_FALSE(Validate(filename, FileType::PROJECT));
 
   // Check errors
