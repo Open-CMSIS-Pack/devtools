@@ -42,7 +42,7 @@ jobs:
             target: windows64
             binary_extension: .exe
         exclude:
-          - os: ${{ 'macos-10.15' && contains(github.repository, 'devtools-external') || '' }}
+          - os: ${{ 'macos-10.15' && contains(github.repository, 'devtools') || '' }}
     steps:
       - name: Install macos deps
         if: ${{ startsWith(matrix.os, 'macos') }}
