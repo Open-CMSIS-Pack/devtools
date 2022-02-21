@@ -295,11 +295,8 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        os: [ macos-10.15, ubuntu-20.04, windows-2019 ]
+        os: [ ubuntu-20.04, windows-2019 ]
         include:
-          - os: macos-10.15
-            target: darwin64
-            installer_name: gcc-arm-none-eabi-10-2020-q4-major-mac.tar.bz2
           - os: ubuntu-20.04
             target: linux64
             installer_name: gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2
@@ -480,7 +477,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        os: [ macos-11, ubuntu-18.04, windows-2016, windows-2022 ]
+        os: [ ubuntu-18.04, windows-2016, windows-2022 ]
     steps:
       - name: Download cbuild_install
         uses: actions/download-artifact@v2

@@ -81,7 +81,7 @@ jobs:
           echo "::set-output name=VERSION::$([ "$VERSION" == "" ] && echo "" || echo "_$VERSION")"
           ./create_installer.sh --input=../distribution --output=. --version=$VERSION
         working-directory: tools/toolbox/installer
-     
+
       - name: Archive cmsis-toolbox installer
         uses: actions/upload-artifact@v2
         with:
@@ -89,7 +89,7 @@ jobs:
           path: tools/toolbox/installer/cmsis-toolbox${{ steps.installer.outputs.VERSION }}.sh
           retention-days: 1
           if-no-files-found: error
-  
+
   release:
     if: ${{ github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/toolbox/') }}
     needs: [ create_installer ]
@@ -126,10 +126,8 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        os: [ macos-10.15, ubuntu-20.04, windows-2019 ]
+        os: [ ubuntu-20.04, windows-2019 ]
         include:
-          - os: macos-10.15
-            target: darwin64
           - os: ubuntu-20.04
             target: linux64
           - os: windows-2019
@@ -154,7 +152,7 @@ jobs:
       - name: Install windows deps
         if: ${{ startsWith(matrix.os, 'windows') }}
         run: choco install -y ninja
-       
+
       - name: Checkout devtools
         uses: actions/checkout@v2
         with:
