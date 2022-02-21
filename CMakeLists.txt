@@ -95,6 +95,7 @@ endif()
 get_targets()
 
 # Apply patch on submodule
+apply_patch(${CMAKE_CURRENT_SOURCE_DIR}/external/json)
 apply_patch(${CMAKE_CURRENT_SOURCE_DIR}/external/json-schema-validator)
 
 # Google Test Framework

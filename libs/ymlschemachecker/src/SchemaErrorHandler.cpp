@@ -8,6 +8,15 @@
 #include "RteUtils.h"
 #include "yaml-cpp/yaml.h"
 
+CustomErrorHandler::CustomErrorHandler(const std::string& filePath) {
+  m_yamlFile = filePath;
+  m_errList.clear();
+}
+
+CustomErrorHandler::~CustomErrorHandler() {
+  // Reserved
+}
+
 void CustomErrorHandler::error(const nlohmann::json::json_pointer& ptr,
   const json& instance, const std::string& message)
 {
