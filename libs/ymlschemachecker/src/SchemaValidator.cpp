@@ -158,7 +158,7 @@ bool SchemaValidator::Validate(SchemaErrors& errList) {
 
   // 1) Read the data and schema for the document you want to validate
   try {
-    data   = ReadData();
+    data = ReadData();
     schema = ReadSchema();
   }
   catch (const SchemaError& err) {
