@@ -17,7 +17,7 @@ public:
   virtual ~SchemaChkTests() {}
 };
 
-TEST_F(SchemaChkTests, YML_CLAYER_SCHEMA_VALIDATE) {
+TEST_F(SchemaChkTests, validate_clayer_yml_schema) {
   string datafile = testinput_folder + "/sample-data/clayer.yaml";
   string schemafile = testinput_folder + "/clayer.schema.json";
 
@@ -41,7 +41,7 @@ TEST_F(SchemaChkTests, YML_CLAYER_SCHEMA_VALIDATE) {
   }
 }
 
-TEST_F(SchemaChkTests, YML_CPROJECT_SCHEMA_VALIDATE) {
+TEST_F(SchemaChkTests, validate_cproject_yml_schema) {
   string datafile = testinput_folder + "/sample-data/cproject.yaml";
   string schemafile = testinput_folder + "/cproject.schema.json";
 
@@ -50,7 +50,7 @@ TEST_F(SchemaChkTests, YML_CPROJECT_SCHEMA_VALIDATE) {
   EXPECT_EQ(errList.size(), 0);
 }
 
-TEST_F(SchemaChkTests, YML_CSOLUTION_SCHEMA_VALIDATE) {
+TEST_F(SchemaChkTests, validate_csolution_yml_schema) {
   string datafile = testinput_folder + "/sample-data/csolution.yaml";
   string schemafile = testinput_folder + "/csolution.schema.json";
 
@@ -59,18 +59,46 @@ TEST_F(SchemaChkTests, YML_CSOLUTION_SCHEMA_VALIDATE) {
   EXPECT_EQ(errList.size(), 0);
 }
 
-TEST_F(SchemaChkTests, INVALID_SCHEMA) {
+TEST_F(SchemaChkTests, Invalid_schema) {
   string datafile = testinput_folder + "/sample-data/clayer.yaml";
   string schemafile = testinput_folder + "/invalid-schema.json";
 
   SchemaErrors errList;
   EXPECT_FALSE(SchemaChecker::Validate(datafile, schemafile, errList));
+  ASSERT_EQ(errList.size(), 1);
+  EXPECT_EQ(errList.begin()->m_file, schemafile);
+  EXPECT_EQ(errList.begin()->m_line, 7);
+  EXPECT_EQ(errList.begin()->m_col, 12);
 }
 
-TEST_F(SchemaChkTests, INVALID_YAML_FILE) {
+TEST_F(SchemaChkTests, Invalid_yml_file) {
   string datafile = testinput_folder + "/sample-data/invalid.yaml";
   string schemafile = testinput_folder + "/clayer.schema.json";
 
   SchemaErrors errList;
   EXPECT_FALSE(SchemaChecker::Validate(datafile, schemafile, errList));
+  ASSERT_EQ(errList.size(), 1);
+  EXPECT_EQ(errList.begin()->m_file, datafile);
+  EXPECT_EQ(errList.begin()->m_line, 2);
+  EXPECT_EQ(errList.begin()->m_col, 3);
+}
+
+TEST_F(SchemaChkTests, Schema_Unavailable) {
+  string datafile = testinput_folder + "/sample-data/clayer.yaml";
+  string schemafile = testinput_folder + "/unavailable.json";
+
+  SchemaErrors errList;
+  EXPECT_FALSE(SchemaChecker::Validate(datafile, schemafile, errList));
+  ASSERT_EQ(errList.size(), 1);
+  EXPECT_EQ(errList.begin()->m_file, schemafile);
+}
+
+TEST_F(SchemaChkTests, Data_Unavailable) {
+  string datafile = testinput_folder + "/sample-data/unavailable.yaml";
+  string schemafile = testinput_folder + "/clayer.schema.json";
+
+  SchemaErrors errList;
+  EXPECT_FALSE(SchemaChecker::Validate(datafile, schemafile, errList));
+  ASSERT_EQ(errList.size(), 1);
+  EXPECT_EQ(errList.begin()->m_file, datafile);
 }
