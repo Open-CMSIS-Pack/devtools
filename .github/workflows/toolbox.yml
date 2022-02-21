@@ -12,6 +12,19 @@ on:
     types: [published]
 
 jobs:
+  matrix_prep:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+    - name: Check out repo
+      uses: actions/checkout@v2
+    - id: set-matrix
+      run: |
+        publicRepo=$(echo '${{ !github.event.repository.private }}')
+        matrix=$(jq --arg publicRepo "$publicRepo" 'map(. | select((.runOn==$publicRepo) or (.runOn=="always")) )' matrix_includes_toolbox.json)
+        echo ::set-output name=matrix::{\"include\":$(echo $matrix)}\"
+      working-directory: .github/
   create_installer:
     if: |
       ${{
@@ -118,30 +131,24 @@ jobs:
         github.event_name == 'pull_request' ||
         (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/toolbox/'))
       }}
-    needs: [ create_installer ]
+    needs: [ create_installer, matrix_prep ]
     timeout-minutes: 15
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.runs_on }}
     env:
       CI_TOOLBOX_INSTALLER: ${{ github.workspace }}/cmsis-toolbox${{ needs.create_installer.outputs.VERSION }}.sh
     strategy:
       fail-fast: true
-      matrix:
-        os: [ ubuntu-20.04, windows-2019 ]
-        include:
-          - os: ubuntu-20.04
-            target: linux64
-          - os: windows-2019
-            target: windows64
+      matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
 
     steps:
       - name: Install macos deps
-        if: ${{ startsWith(matrix.os, 'macos') }}
+        if: ${{ startsWith(matrix.runs_on, 'macos') }}
         run: |
           brew install \
             ninja
 
       - name: Install linux deps
-        if: ${{ startsWith(matrix.os, 'ubuntu') }}
+        if: ${{ startsWith(matrix.runs_on, 'ubuntu') }}
         run: |
           sudo apt update
           sudo apt-get install \
@@ -150,7 +157,7 @@ jobs:
             ninja-build
 
       - name: Install windows deps
-        if: ${{ startsWith(matrix.os, 'windows') }}
+        if: ${{ startsWith(matrix.runs_on, 'windows') }}
         run: choco install -y ninja
 
       - name: Checkout devtools
@@ -162,16 +169,16 @@ jobs:
         run: mkdir build
 
       - name: Configure windows build for amd64
-        if: ${{ startsWith(matrix.os, 'windows') }}
+        if: ${{ startsWith(matrix.runs_on, 'windows') }}
         uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: amd64
 
       - uses: ammaraskar/gcc-problem-matcher@master
-        if: ${{ startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu') }}
+        if: ${{ startsWith(matrix.runs_on, 'macos') || startsWith(matrix.runs_on, 'ubuntu') }}
 
       - uses: ammaraskar/msvc-problem-matcher@master
-        if: ${{ startsWith(matrix.os, 'windows') }}
+        if: ${{ startsWith(matrix.runs_on, 'windows') }}
 
       - name: Download cmsis-toolbox installer
         uses: actions/download-artifact@v2
@@ -180,7 +187,7 @@ jobs:
           path: ${{ github.workspace }}
 
       - name: Set correct cmsis-toolbox file permission
-        if: ${{ startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu') }}
+        if: ${{ startsWith(matrix.runs_on, 'macos') || startsWith(matrix.runs_on, 'ubuntu') }}
         run: chmod +x cmsis-toolbox${{ needs.create_installer.outputs.VERSION }}.sh
 
       - name: Build and run Toolbox tests
