@@ -22,7 +22,22 @@ on:
   release:
     types: [ published ]
 
+env:
+  set_up_matrix: Placeholder
+
 jobs:
+  set_up_matrix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Matrix Runners when it is a private repo
+        if: ${{ github.event.repository.private }}
+        run: |
+          echo "{set_up_matrix}={ubuntu-20.04, windows-2019}" >> $GITHUB_ENV
+      - name: Setup Matrix Runners when is not a private repo
+        if: ${{ github.event.repository.private }}
+        run: |
+          echo "{set_up_matrix}={macos-10.15, ubuntu-20.04, windows-2019}" >> $GITHUB_ENV
+
   build:
     if: ${{ github.event_name == 'pull_request' || (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/buildmgr/')) }}
     runs-on: ${{ matrix.os }}
@@ -30,11 +45,11 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        os: [ macos-10.15, ubuntu-20.04, windows-2019 ]
+        os: [ "${{ env.set_up_matrix }}" ]
         include:
-          - os: macos-10.15
-            target: darwin64
-            binary_extension: ".mac"
+          # - os: macos-10.15
+          #   target: darwin64
+          #   binary_extension: ".mac"
           - os: ubuntu-20.04
             target: linux64
             binary_extension: ".lin"
@@ -42,6 +57,12 @@ jobs:
             target: windows64
             binary_extension: .exe
     steps:
+      - name: Setup macos envs
+        if: ${{ startsWith(matrix.os, 'macos') }}
+        run: |
+          echo "{os.target}={darwin64}" >> $GITHUB_ENV
+          echo "{os.binary_extension}={.mac}" >> $GITHUB_ENV
+
       - name: Install macos deps
         if: ${{ startsWith(matrix.os, 'macos') }}
         run: |
@@ -216,6 +237,7 @@ jobs:
           path: tools/buildmgr/cbuildgen/distribution/bin/
 
       - name: Download cbuildgen macos
+        if: ${{ !github.event.repository.private }}
         uses: actions/download-artifact@v2
         with:
           name: cbuildgen-darwin64
@@ -295,8 +317,11 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        os: [ ubuntu-20.04, windows-2019 ]
+        os: [ "${{ env.set_up_matrix }}" ]
         include:
+          # - os: macos-10.15
+          #   target: darwin64
+          #   installer_name: gcc-arm-none-eabi-10-2020-q4-major-mac.tar.bz2
           - os: ubuntu-20.04
             target: linux64
             installer_name: gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2
@@ -304,6 +329,12 @@ jobs:
             target: windows64
             installer_name: gcc-arm-none-eabi-10-2020-q4-major-win32.zip
     steps:
+      - name: Setup macos envs
+        if: ${{ startsWith(matrix.os, 'macos') }}
+        run: |
+          echo "{os.target}={darwin64}" >> $GITHUB_ENV
+          echo "{os.installer_name}={gcc-arm-none-eabi-10-2020-q4-major-mac.tar.bz2}" >> $GITHUB_ENV
+
       - name: Install macos deps
         if: ${{ startsWith(matrix.os, 'macos') }}
         run: |
