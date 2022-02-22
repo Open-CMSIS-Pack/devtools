@@ -229,6 +229,10 @@
         "groups":       { "$ref": "#/definitions/GroupsType" },
         "files":        { "$ref": "#/definitions/FilesType" }
       },
+      "anyOf": [
+        {"required" : ["files"]},
+        {"required" : ["groups"]}
+      ],
       "additionalProperties": false
     },
     "FilesType": {
@@ -251,6 +255,7 @@
         "del-paths":    { "$ref": "#/definitions/DelpathsType" },
         "misc":         { "$ref": "#/definitions/MiscTypes" }
       },
+      "required": [ "file" ],
       "additionalProperties": false
     },
     "ComponentsType": {
