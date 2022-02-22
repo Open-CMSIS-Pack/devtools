@@ -2,7 +2,7 @@
 
 The **CSolution Project Manager** processes **User Input Files** (in YML format) and **Software Packs** (in Open-CMSIS-Pack format) to create self-contained CMSIS-Build input files that allow to generate  independent projects which may be a part of a more complex application.
 
-The **CMSIS Project Manager** supports the user with the following features:
+The **CSolution Project Manager** supports the user with the following features:
 
 - Access to the content of software packs in Open-CMSIS-Pack format to:
   - Setup the tool chain based on a *Device* or *Board* that is defined in the CMSIS-Packs.
@@ -19,14 +19,14 @@ The **CMSIS Project Manager** supports the user with the following features:
 
 **Note:**
 
-- The CSolution Project Manager is developed as part of the **[Open-CMSIS-Pack](https://www.open-cmsis-pack.org/index.html)** open source project.
+- The **CSolution Project Manager** is currently under development and part of the **[Open-CMSIS-Pack](https://www.open-cmsis-pack.org/index.html)** open source project.
 
 Manual Chapters                          | Content
 :----------------------------------------|:-------------------------
 [Usage](#usage)                          | Overall Concept, tool setup, and invocation commands
 [Project Examples](#project-examples)    | Various example projects to get started
 [Project Structure](#project-structure)  | Directory structure of the projects
-[YML Input Format](YML-Format.md)     | Format of the various YML input files.
+[YML Input Format](YML-Format.md)        | Format of the various YML input files.
 
 **Table of Contents**
 
@@ -105,25 +105,30 @@ The CMSIS Pack repository must be present in the development environment.
 ## Invocation
 
 ```text
-CMSIS Project Manager 0.0.0+gdd33bca (C) 2021 ARM
+CMSIS Project Manager 0.0.0+g23b6f99 (C) 2022 ARM 
 Usage:
   csolution <command> [<args>] [OPTIONS...]
 
 Commands:
-  list packs          Print list of installed packs
-       devices        Print list of available device names
-       components     Print list of available components
-       dependencies   Print list of unresolved project dependencies
-       contexts       Print list of contexts in a csolution.yml
-  convert             Convert cproject.yml or csolution.yml in cprj files
-  help                Print usage
+  list packs            Print list of installed packs
+       devices          Print list of available device names
+       components       Print list of available components
+       dependencies     Print list of unresolved project dependencies
+       contexts         Print list of contexts in a csolution.yml
+       generators       Print list of code generators of a given context
+  convert               Convert cproject.yml or csolution.yml in cprj files
+  run                   Run code generator
+  help                  Print usage
 
 Options:
-  -p, --project arg   Input cproject.yml file
-  -s, --solution arg  Input csolution.yml file
-  -f, --filter arg    Filter words
-  -o, --output arg    Output directory
-  -h, --help          Print usage
+  -s, --solution arg    Input csolution.yml file
+  -p, --project arg     Input cproject.yml file
+  -c, --context arg     Input context name <cproject>[.<build-type>][+<target-type>]
+  -f, --filter arg      Filter words
+  -g, --generator arg   Code generator identifier
+  -n, --no-check-schema Skip schema check
+  -o, --output arg      Output directory
+  -h, --help            Print usage
 ```
 
 ### Commands
@@ -131,32 +136,44 @@ Options:
 Print list of installed packs. The list can be filtered by words provided with the option `--filter`:
 
 ```text
-list packs [--filter "<filter words>"]
+csolution list packs [--filter "<filter words>"]
 ```
 
 Print list of available device names. The list can be filtered by words provided with the option `--filter`:
 
 ```text
-list devices [--filter "<filter words>"]
+csolution list devices [--filter "<filter words>"]
 ```
 
 Print list of available components. The list can be filtered by a selected device in the `cproject.yml` file with the option `--input` and/or by words provided with the option `--filter`:
 
 ```text
-list components [--p <example.cproject.yml> --filter "<filter words>"]
+csolution list components [-p <example.cproject.yml> -f "<filter words>"]
 ```
 todo: this does not work anymore
 
-Print list of unresolved project dependencies. The device and components selection must be provided in the `cproject.yml` file with the option `--input`. The list can be filtered by words provided with the option `--filter`:
+Print list of unresolved project dependencies. Device, board, and software components are specified as part of the `*.csolution.yml` and `*.cproject.yml` files. The list may be filtered by words provided with the option `--filter`:
 
 ```text
-list dependencies --input <example.cproject.yml> [--filter "<filter words>"]
+csolution list dependencies -s mysolution.csolution.yml [-f "<filter words>"]
 ```
 
-Convert cproject.yml in cprj file:
+Convert `example.cproject.yml` into *.cprj file(s):
 
 ```text
-convert --p <example.cproject.yml>
+csolution convert -p example.cproject.yml
+```
+
+List external code generators that are used to create software components in *.gpdsc format.  It outputs the generator ID that is required for the `run` command.
+
+```text
+csolution list generators -s mysolution.csolution.yml
+```
+
+Run a generator (in this case STCubeMX) for a specific project context.
+
+```text
+csolution run -g STCubeMX -s mysolution.csolution.yml -c Blinky.Debug+STM32L4
 ```
 
 # Project Examples
@@ -610,8 +627,8 @@ Suggest to split this into two sections:
  - `resources:` to define the execution phases, memory regions and region splits, and peripherals.  This section would be in the `csolution.yml` file. 
 
  - `requirements:` to define project requirements - effectively the partitioning of a system. It should be possible to assign to the application all remaining resources.
- 
- Add to the project the possiblity to specify.  The issue might be that the project files become overwhelming, alternative is to keep partitioning in separate files.
+
+Add to the project the possibility to specify .  The issue might be that the project files become overwhelming, alternative is to keep partitioning in separate files.
 
 ```yml
 resources:
