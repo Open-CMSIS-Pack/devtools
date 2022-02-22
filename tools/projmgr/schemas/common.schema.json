@@ -31,8 +31,8 @@
     },
     "DeviceType": {
       "type": "string",
-      "pattern": "^([\\w .-]+::)?([\\w .-]+)(:[\\w .-]+)?$",
-      "description": "Unique device name, optionally with vendor and core, in the format [<vendor>::]<device>[:<core>]. The <device> can be implicitly inferred from the <board>, but if both fields are present the given <device> overrules the <board> setting."
+      "pattern": "^(([\\w .-]+::)?([\\w .-]+))?(:[\\w .-]+)?$",
+      "description": "Unique device name and/or processor name, optionally preceded by device vendor, in the format [<vendor>::][<device>][:<processor>]. The <device> can be implicitly inferred from the <board>, but if both fields are present the given <device> overrules the <board> setting."
     },
     "BoardType": {
       "type": "string",

@@ -45,6 +45,28 @@ struct DirectoriesItem {
 };
 
 /**
+ * @brief device item containing
+ *        device name,
+ *        device vendor,
+ *        device processor name,
+*/
+struct DeviceItem {
+  std::string vendor;
+  std::string name;
+  std::string pname;
+};
+
+/**
+ * @brief board item containing
+ *        board vendor,
+ *        board name,
+*/
+struct BoardItem {
+  std::string vendor;
+  std::string name;
+};
+
+/**
  * @brief project context item containing
  *        pointer to csolution,
  *        pointer to cproject,
@@ -256,6 +278,8 @@ protected:
   bool ProcessPrecedences(ContextItem& context);
   bool ProcessPrecedence(StringCollection& item);
   bool ProcessDevice(ContextItem& context);
+  bool ProcessDevicePrecedence(StringCollection& item);
+  bool ProcessBoardPrecedence(StringCollection& item);
   bool ProcessToolchain(ContextItem& context);
   bool ProcessPackages(ContextItem& context);
   bool ProcessComponents(ContextItem& context);
@@ -284,6 +308,10 @@ protected:
   std::string GetComponentAggregateID(const RteItem* component) const;
   std::string GetPackageID(const RteItem* pack) const;
   std::string ConstructID(const std::vector<std::pair<const char*, const std::string&>>& elements) const;
+  void GetDeviceItem(const std::string& element, DeviceItem& device) const;
+  void GetBoardItem (const std::string& element, BoardItem& board) const;
+  bool GetPrecedentValue(std::string& outValue, const std::string& element) const;
+  std::string GetDeviceInfoString(const std::string& vendor, const std::string& name, const std::string& processor) const;
 };
 
 #endif  // PROJMGRWORKER_H

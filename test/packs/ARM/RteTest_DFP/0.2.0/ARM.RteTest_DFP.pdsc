@@ -1,0 +1,371 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<package schemaVersion="1.3" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="PACK.xsd">
+  <name>RteTest_DFP</name>
+  <description>RTE test of DFP pack, extraction from ARM.CMSIS</description>
+  <vendor>ARM</vendor>
+  <!-- <license>license.txt</license> -->
+  <url>http://www.keil.com/pack/</url>
+
+  <releases>
+    <release version="0.1.0" date="2021-02-16">
+      Tag to check that the latest release item version is picked up even if it is below
+    </release>
+    <release version="0.1.1" date="2021-02-17">
+      Initial copy from ARM.CMSIS pack
+    </release>
+    <release version="0.2.0" date="2022-02-19">
+      Added a new device 'RteTest_ARMCM0_Dual'
+    </release>
+  </releases>
+
+  <taxonomy>
+    <description Cclass="RteTest">Software components for testing of RTE Library</description>
+    <description Cclass="CMSIS" doc="CMSIS/Documentation/General/html/index.html">Cortex Microcontroller Software Interface Components</description>
+  </taxonomy>
+
+  <devices>
+    <family Dfamily="RteTest ARM Cortex M" Dvendor="ARM:82">
+      <description>
+        RteTest ARM M Device Family
+      </description>
+      <algorithm name="Device/ARM/Flash/FAMILY.FLM" start="0x00000000" size="0x00040000"  default="1"/>
+
+      <sequences>
+        <!-- Override for Pre-Defined Sequences -->
+        <sequence name="DebugDeviceUnlock">
+          <block>
+            Sequence("CheckID");
+          </block>
+        </sequence>
+
+        <sequence name="DebugCoreStart">
+          <block>
+            // Replication of Standard Functionality
+            Write32(0xE000EDF0, 0xA05F0001);                                        // Enable Core Debug via DHCSR
+          </block>
+
+          <block info="DbgMCU registers">
+            // Device Specific Debug Setup
+            Write32(0x40021018, Read32(0x40021018) | 0x00400000);                   // Set RCC_APB2ENR.DBGMCUEN
+          </block>
+        </sequence>
+
+        <!-- User-Defined Sequences -->
+        <sequence name="CheckID">
+          <block>
+            __var pidr1 = 0;
+            __var pidr2 = 0;
+            __var jep106id = 0;
+            __var ROMTableBase = 0;
+
+            __ap = 0;      // AHB-AP
+
+            ROMTableBase = ReadAP(0xF8) &amp; ~0x3;
+
+            pidr1 = Read32(ROMTableBase + 0x0FE4);
+            pidr2 = Read32(ROMTableBase + 0x0FE8);
+            jep106id = ((pidr2 &amp; 0x7) &lt;&lt; 4 ) | ((pidr1 &gt;&gt; 4) &amp; 0xF);
+          </block>
+
+          <control if="jep106id != 0x20">
+            <block>
+              Query(0, "Incorrect ID! Abort connection", 1);
+              Message(2, "Incorrect ID! Abort connection.");
+            </block>
+          </control>
+        </sequence>
+
+        <!-- default DebugPortStop extended with Option Byte Loading capability -->
+        <sequence name="DebugPortStop">
+          <block>
+            __var connectionFlash = ( __connection &amp; 0xF ) == 2 ;
+            __var FLASH_BASE = 0x40022000 ;
+            __var FLASH_CR = FLASH_BASE + 0x10 ;
+            __var OBL_LAUNCH_BIT = ( 1 &lt;&lt; 13 ) ;
+            __var FLASH_CR_Value = 0 ;
+            __var DoDebugPortStop = 1 ;
+            __var DP_CTRL_STAT = 0x4 ;
+            __var DP_SELECT = 0x8 ;
+          </block>
+
+          <control if="connectionFlash &amp;&amp; DoDebugPortStop">
+            <block>
+              DoDebugPortStop = 0 ;
+              FLASH_CR_Value = Read32( FLASH_CR ) ;
+              __errorcontrol = 1 ;
+              // write OBL_LAUNCH bit (causes a reset)
+              Write32( FLASH_CR, FLASH_CR_Value | ( OBL_LAUNCH_BIT ) ) ;
+              __errorcontrol = 0 ;
+            </block>
+          </control>
+          <control if="DoDebugPortStop">
+            <block>
+              // Switch to DP Register Bank 0
+              WriteDP(DP_SELECT, 0x00000000);
+              // Power Down Debug port
+              WriteDP(DP_CTRL_STAT, 0x00000000);
+            </block>
+          </control>
+        </sequence>
+      </sequences>
+
+    <!-- ******************************  Cortex-M0  ****************************** -->
+    <subFamily DsubFamily="RteTest ARM Cortex M0">
+      <book name="http://infocenter.arm.com/help/topic/com.arm.doc.dui0497a/index.html" title="Cortex-M0 Device Generic Users Guide"/>
+      <description>
+        RteTest ARM Cortex M0 is a clone description from ARM.CMSIS pack.
+      </description>
+      <debug svd="Device/ARM/SVD/ARMCM0.svd"/>  <!-- SVD files do not contain any peripheral -->
+      <memory id="IROM1" start="0x00000000" size="0x00040000" startup="1" default="1"/>
+      <memory id="IRAM1" start="0x20000000" size="0x00020000" init   ="0" default="1"/>
+
+      <device Dname="RteTest_ARMCM0">
+        <processor Dcore="Cortex-M0" DcoreVersion="r0p0" Dfpu="NO_FPU" Dmpu="NO_MPU" Dendian="Configurable" Dclock="10000000"/>
+        <compile header="Device/ARM/ARMCM0/Include/ARMCM0.h" define="ARMCM0"/>
+      </device>
+      
+      <device Dname="RteTest_ARMCM0_Dual">
+        <processor Pname="cm0_core0" Dcore="Cortex-M0" DcoreVersion="r0p0" Dfpu="NO_FPU" Dmpu="NO_MPU" Dendian="Configurable" Dclock="10000000" />
+        <processor Pname="cm0_core1" Dcore="Cortex-M0" DcoreVersion="r0p0" Dfpu="NO_FPU" Dmpu="NO_MPU" Dendian="Configurable" Dclock="10000000"/>
+        <compile header="Device/ARM/ARMCM0/Include/ARMCM0.h" define="ARMCM0"/>
+      </device>
+      <device Dname="RteTest_ARMCM0_Single">
+        <processor Pname="cm0_core1" Dcore="Cortex-M0" DcoreVersion="r0p0" Dfpu="NO_FPU" Dmpu="NO_MPU" Dendian="Configurable" Dclock="10000000"/>
+        <compile header="Device/ARM/ARMCM0/Include/ARMCM0.h" define="ARMCM0"/>
+      </device>
+      <device Dname="RteTest_ARMCM0_Test">
+        <processor Pname="cm0_core2" Dcore="Cortex-M0" DcoreVersion="r0p0" Dfpu="NO_FPU" Dmpu="NO_MPU" Dendian="Configurable" Dclock="10000000"/>
+        <compile header="Device/ARM/ARMCM0/Include/ARMCM0.h" define="ARMCM0"/>
+      </device>
+    </subFamily>
+
+    <!-- ******************************  Cortex-M3  ****************************** -->
+    <subFamily DsubFamily="RteTest ARM Cortex M3">
+      <book name="http://infocenter.arm.com/help/topic/com.arm.doc.dui0552a/index.html" title="Cortex-M3 Device Generic Users Guide"/>
+      <description>
+        RteTest ARM Cortex M3 is a clone description from ARM.CMSIS pack.
+      </description>
+      <debug svd="Device/ARM/SVD/ARMCM3.svd"/>  <!-- SVD files do not contain any peripheral -->
+      <memory id="IROM1" start="0x00000000" size="0x00040000" startup="1" default="1"/>
+      <memory id="IRAM1" start="0x20000000" size="0x00020000" init   ="0" default="1"/>
+
+      <device Dname="RteTest_ARMCM3">
+        <processor Dcore="Cortex-M3" DcoreVersion="r2p1" Dfpu="NO_FPU" Dmpu="MPU" Dendian="Configurable" Dclock="10000000"/>
+        <compile header="Device/ARM/ARMCM3/Include/ARMCM3.h" define="ARMCM3"/>
+      </device>
+    </subFamily>
+
+    <!-- ******************************  Cortex-M4  ****************************** -->
+    <subFamily DsubFamily="RteTest ARM Cortex M4">
+      <book name="http://infocenter.arm.com/help/topic/com.arm.doc.dui0553a/index.html" title="Cortex-M4 Device Generic Users Guide"/>
+      <description>
+        RteTest ARM Cortex M4 is a clone description from ARM.CMSIS pack.
+      </description>
+      <debug svd="Device/ARM/SVD/ARMCM4.svd"/>  <!-- SVD files do not contain any peripheral -->
+      <memory name="FLASH" access="rx" start="0x00000000" size="0x00040000" startup="1" default="1"/>
+      <memory name="SRAM"  access="rwx" start="0x20000000" size="0x00020000" init   ="0" default="1"/>
+      <algorithm name="Device/ARM/Flash/CortexM4SubFamily.FLM" start="0x00000000" size="0x00040000" default="1"/>
+
+      <device Dname="RteTest_ARMCM4">
+        <processor Dcore="Cortex-M4" DcoreVersion="r0p1" Dmpu="MPU" Dendian="Configurable" Dclock="10000000"/>
+        <compile header="Device/ARM/ARMCM4/Include/ARMCM4.h" define="ARMCM4"/>
+        <algorithm name="Device/ARM/Flash/CortexM4Device.FLM" start="0x00000000" size="0x00040000" default="1"/>
+
+      <variant Dvariant="RteTest_ARMCM4_NOFP">
+        <processor Dfpu="NO_FPU"/>
+        <algorithm name="Device/ARM/Flash/CortexM4Device.FLM" start="0x00000000" size="0x00020000" default="0"/>
+      </variant>
+
+      <variant Dvariant="RteTest_ARMCM4_FP">
+        <processor Dfpu="SP_FPU"/>
+        <compile header="Device/ARM/ARMCM4/Include/ARMCM4_FP.h" define="ARMCM4_FP"/>
+      </variant>
+	 </device>
+    </subFamily>
+	</family>
+  </devices>
+
+  <!-- conditions are dependency rules that can apply to a component or an individual file -->
+  <conditions>
+    <!-- compiler -->
+    <condition id="ARMCC6">
+      <accept Tcompiler="ARMCC" Toptions="AC6"/>
+      <accept Tcompiler="ARMCC" Toptions="AC6LTO"/>
+    </condition>
+    <condition id="ARMCC5">
+      <require Tcompiler="ARMCC" Toptions="AC5"/>
+    </condition>
+    <condition id="ARMCC">
+      <require Tcompiler="ARMCC"/>
+    </condition>
+    <condition id="GCC">
+      <require Tcompiler="GCC"/>
+    </condition>
+
+     <!-- ARM core -->
+    <condition id="CM0">
+      <description>Cortex-M0 processor based device</description>
+      <accept Dcore="Cortex-M0"/>
+    </condition>
+    <condition id="CM3">
+      <description>Cortex-M3 processor based device</description>
+      <accept Dcore="Cortex-M3"/>
+    </condition>
+    <condition id="CM4">
+      <description>Cortex-M4 processor based device</description>
+      <require Dcore="Cortex-M4" Dfpu="NO_FPU"/>
+    </condition>
+    <condition id="CM4_FP">
+      <description>Cortex-M4 processor based device using Floating Point Unit</description>
+      <accept Dcore="Cortex-M4" Dfpu="FPU"/>
+      <accept Dcore="Cortex-M4" Dfpu="SP_FPU"/>
+      <accept Dcore="Cortex-M4" Dfpu="DP_FPU"/>
+    </condition>
+
+    <condition id="Cortex-M Device">
+      <description>Armv7-M architecture based device</description>
+      <accept condition="CM0"/>
+      <accept condition="CM3"/>
+      <accept condition="CM4"/>
+      <accept condition="CM4_FP"/>
+    </condition>
+
+   <!-- conditions selecting single devices and CMSIS Core -->
+    <condition id="ARMCM0 RteTest">
+      <description>Generic Arm Cortex-M0 device startup and depends on CMSIS Core</description>
+      <require Dvendor="ARM:82" Dname="*ARMCM0*"/>
+      <require Cclass="RteTest" Cgroup="CORE"/>
+    </condition>
+
+    <condition id="ARMCM3 RteTest">
+      <description>Generic Arm Cortex-M3 device startup and depends on CMSIS Core</description>
+      <require Dvendor="ARM:82" Dname="*ARMCM3"/>
+      <require Cclass="RteTest" Cgroup="CORE"/>
+    </condition>
+
+     <condition id="ARMCM4 RteTest">
+      <description>Generic Arm Cortex-M4 device startup and depends on CMSIS Core</description>
+      <require Dvendor="ARM:82" Dname="*ARMCM4*"/>
+      <require Cclass="RteTest" Cgroup="CORE"/>
+    </condition>
+
+  </conditions>
+
+  <apis>
+    <api Cclass="RteTest" Cgroup="CORE" Capiversion="1.1.1" exclusive="1">
+      <description>RteTest CORE API</description>
+      <files>
+        <!-- CPU independent -->
+        <file category="doc"  name="https://arm-software.github.io/CMSIS_5/Pack/html/pdsc_apis_pg.html"/>
+      </files>
+    </api>
+  </apis>
+
+  <components>
+   <!-- CMSIS-Core component -->
+    <component Cclass="RteTest" Cgroup="CORE" Cversion="0.1.1" Capiversion="1.1.1" condition="Cortex-M Device" >
+      <description>RteTest CORE component for Cortex-M</description>
+      <files>
+        <!-- CPU independent -->
+        <file category="doc"     name="Doc/html/index.html"/>
+      </files>
+    </component>
+
+    <!-- CMSIS-Startup components -->
+    <!-- Cortex-M0 -->
+    <component Cclass="Device" Cgroup="Startup" Cvariant="RteTest Startup" Cversion="2.0.3" condition="ARMCM0 RteTest">
+      <description>System and Startup for Generic Arm Cortex-M0 device</description>
+      <files>
+        <!-- include folder / device header file -->
+        <file category="header"  name="Device/ARM/ARMCM0/Include/ARMCM0.h"/>
+		<file category="doc" name="https://arm-software.github.io/CMSIS_5/Core_A/html/startup_c_pg.html"/>
+        <!-- startup / system file -->
+        <file category="sourceC"      name="Device/ARM/ARMCM0/Source/startup_ARMCM0.c"     version="2.0.3" attr="config"/>
+        <file category="linkerScript" name="Device/ARM/ARMCM0/Source/ARM/ARMCM0_ac5.sct"   version="1.0.0" attr="config" condition="ARMCC5"/>
+        <file category="linkerScript" name="Device/ARM/ARMCM0/Source/ARM/ARMCM0_ac6.sct"   version="1.0.0" attr="config" condition="ARMCC6"/>
+        <file category="linkerScript" name="Device/ARM/ARMCM0/Source/GCC/gcc_arm.ld"       version="2.0.0" attr="config" condition="GCC"/>
+        <file category="sourceC"      name="Device/ARM/ARMCM0/Source/system_ARMCM0.c"      version="1.0.0" attr="config"/>
+      </files>
+    </component>
+
+
+    <!-- Cortex-M3 -->
+    <component Cclass="Device" Cgroup="Startup" Cvariant="RteTest Startup" Cversion="2.0.3" condition="ARMCM3 RteTest">
+      <description>System and Startup for Generic Arm Cortex-M3 device</description>
+      <files>
+        <!-- include folder / device header file -->
+        <file category="header"  name="Device/ARM/ARMCM3/Include/ARMCM3.h"/>
+		<file category="doc" name="https://arm-software.github.io/CMSIS_5/Core_A/html/startup_c_pg.html"/>
+        <!-- startup / system file -->
+        <file category="sourceC"      name="Device/ARM/ARMCM3/Source/startup_ARMCM3.c"     version="2.0.3" attr="config"/>
+        <file category="linkerScript" name="Device/ARM/ARMCM3/Source/ARM/ARMCM3_ac5.sct"   version="1.0.0" attr="config" condition="ARMCC5"/>
+        <file category="linkerScript" name="Device/ARM/ARMCM3/Source/ARM/ARMCM3_ac6.sct"   version="1.0.0" attr="config" condition="ARMCC6"/>
+        <file category="linkerScript" name="Device/ARM/ARMCM3/Source/GCC/gcc_arm.ld"       version="2.0.0" attr="config" condition="GCC"/>
+        <file category="sourceC"      name="Device/ARM/ARMCM3/Source/system_ARMCM3.c"      version="1.0.1" attr="config"/>
+      </files>
+    </component>
+
+    <!-- Cortex-M4 -->
+    <component Cclass="Device" Cgroup="Startup" Cvariant="RteTest Startup" Cversion="2.0.3" condition="ARMCM4 RteTest">
+      <description>System and Startup for Generic Arm Cortex-M4 device</description>
+      <files>
+        <!-- include folder / device header file -->
+        <file category="include" name="Device/ARM/ARMCM4/Include/"/>
+		<file category="doc" name="https://arm-software.github.io/CMSIS_5/Core_A/html/startup_c_pg.html"/>
+        <!-- startup / system file -->
+        <file category="sourceC"      name="Device/ARM/ARMCM4/Source/startup_ARMCM4.c"     version="2.0.3" attr="config"/>
+        <file category="linkerScript" name="Device/ARM/ARMCM4/Source/ARM/ARMCM4_ac5.sct"   version="1.0.0" attr="config" condition="ARMCC5"/>
+        <file category="linkerScript" name="Device/ARM/ARMCM4/Source/ARM/ARMCM4_ac6.sct"   version="1.0.0" attr="config" condition="ARMCC6"/>
+        <file category="linkerScript" name="Device/ARM/ARMCM4/Source/GCC/gcc_arm.ld"       version="2.0.0" attr="config" condition="GCC"/>
+       <file category="sourceC"       name="Device/ARM/ARMCM4/Source/system_ARMCM4.c"      version="1.0.1" attr="config"/>
+      </files>
+    </component>
+  </components>
+
+  <boards>
+    <board name="RteTest Dummy board" vendor="Keil" revision="1.2.3">
+      <description>uVision Simulator</description>
+      <mountedDevice    deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM0_Dual"/>
+      <compatibleDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM3"/>
+      <compatibleDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM4_NOFP"/>
+      <compatibleDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM4_FP"/>
+    </board>
+    <board name="RteTest Test board" vendor="Keil" revision="1.1.1">
+      <description>uVision Simulator</description>
+      <mountedDevice    deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM0"/>
+      <mountedDevice    deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM0_Dual"/>
+      <compatibleDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM3"/>
+      <compatibleDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM4_NOFP"/>
+      <compatibleDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM4_FP"/>
+    </board>
+    <board name="RteTest Test board no mounted device" vendor="Keil" revision="2.2.2">
+      <description>uVision Simulator</description>
+      <compatibleDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM3"/>
+      <compatibleDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM4_NOFP"/>
+      <compatibleDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM4_FP"/>
+    </board>
+    <board name="RteTest Test board-2" vendor="Keil" revision="2.2.2">
+      <description>uVision Simulator</description>
+      <mountedDevice    deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM0_Single"/>
+      <compatibleDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM3"/>
+      <compatibleDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM4_NOFP"/>
+      <compatibleDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM4_FP"/>
+    </board>
+    <board name="RteTest Test mounted device unavailable" vendor="Keil" revision="2.2.2">
+      <description>uVision Simulator</description>
+      <mountedDevice    deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM0_Test"/>
+      <compatibleDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM3"/>
+      <compatibleDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM4_NOFP"/>
+      <compatibleDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM4_FP"/>
+    </board>
+    <board name="RteTest Test board-3" vendor="Keil" revision="1.1.1">
+      <description>uVision Simulator</description>
+      <mountedDevice    deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM0"/>
+      <compatibleDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM3"/>
+      <compatibleDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM4_NOFP"/>
+      <compatibleDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM4_FP"/>
+    </board>
+  </boards>
+
+</package>
