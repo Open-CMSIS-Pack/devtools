@@ -52,6 +52,18 @@ The following chapter explains the YML format that is used to describe the YML i
 - [Pre/Post build steps](#prepost-build-steps)
   - [`execute:`](#execute)
 - [Layer todo](#layer-todo)
+- [Resource Management](#resource-management)
+  - [`resources:`](#resources)
+    - [`- import:`](#--import)
+    - [`- split:`](#--split)
+    - [`- combine`](#--combine)
+  - [`phases:`](#phases)
+  - [`project-zones:`](#project-zones)
+    - [`- memory:`](#--memory)
+    - [`- peripheral:`](#--peripheral)
+  - [`requires:`](#requires)
+    - [`- memory:`](#--memory-1)
+    - [`- peripheral:`](#--peripheral-1)
 
 # Name Conventions
 
@@ -1019,3 +1031,118 @@ layer:
   ....
 ```  
 
+# Resource Management
+
+The **CSolution Project Manager** integrates an extended version of the Project Zone functionality of [CMSIS-Zone](https://arm-software.github.io/CMSIS_5/Zone/html/index.html) with this nodes:
+
+ - [`resources:`](#resources) imports resource files (in [CMSIS-Zone RZone format](https://arm-software.github.io/CMSIS_5/Zone/html/xml_rzone_pg.html) or a compatible yml format tbd) and allows to split or combine memory regions.
+ - [`phases:`](#phases) defines the execution phases may be used to assign a life-time to memory or peripheral resources in the project zones.
+
+ - [`project-zones:`](#project-zones) collect and configure the memory or peripheral resources that are available to individual projects. These zones are assigned to the [`projects:`](#projects) of a `*.csolution.yml` file.
+
+ - [`requires:`](#requires) allows to specify additional resources at the level of a `*.cproject.yml` or `*.clayer.yml` file that are added to the related zone of the project.
+
+The **CSolution Project Manager** generates for each project context (with build and/or target-type) a data file (similar to the current [CMSIS FZone format](https://arm-software.github.io/CMSIS_5/Zone/html/GenDataModel.html), exact format tbd could be also JSON) for post-processing with a template engine (Handlebars?).
+
+## `resources:`
+
+### `- import:`
+
+### `- split:`
+
+### `- combine`
+
+**Example:**
+
+Added to `*.csolution.yml` file
+
+```yml
+resources:
+# depending on the device: and/or board: settings these resources may get added automatically
+  - import: .\LPC55S69.rzone             # resource definitions of the device
+  - import: .\MyEvalBoard.rzone          # add resource definitions of the Eval board
+
+  - split: SRAM_NS                       # split a memory resource into two regions
+    into:
+    - region: DATA_NS
+      size: 128k
+    - region: DATA_BOOT
+      size: 45k
+
+  - combine: SRAM                        # combine two memory regions (contiguous, same permissions) 
+    from:
+      - region: SRAM1
+      - region: SRAM2
+```
+
+**Note:**
+
+- exact behaviour for devices that have no RZone file is tbd.  It could be that the memory resources are derived from device definitions
+
+## `phases:`
+
+**Example:**
+
+Added to `*.csolution.yml` file
+
+```yml
+phases:    # define the life-time for resources in the project-zone definition
+  - phase: Boot
+  - phase: OTA
+  - phase: Run
+```
+## `project-zones:`
+
+### `- memory:`
+
+### `- peripheral:`
+
+**Example:**
+
+Added to `*.csolution.yml` file
+
+```yml
+project-zones:   
+  - zone: BootLoader
+    requires:
+    - memory: Code_Boot
+      permission: rx, s
+    - memory: Ram_Boot
+      phase: Boot
+      permission: rw, s
+    - peripheral: UART1
+    - peripheral: Watchdog
+      phase: Boot      # only for phase Boot
+
+  - zone: Application
+    - memory: *        # all remaining memory
+      permission: ns   # with permission ns
+      phase: ~Boot     # for every phase except Boot
+
+projects:
+  - project: ./bootloader/Bootloader.cproject.yml           # relative path
+    zone: Bootloader
+
+  - project: ./application/MyApp1.yml                       # Application 1
+    zone: Application
+
+  - project: ./application/MyApp2.yml                       # relative path
+    zone: Application
+```
+
+
+## `requires:`
+
+### `- memory:`
+
+### `- peripheral:`
+
+Added to `*.cproject.yml` or `*.clayer.yml` file
+
+```yml
+requires:
+ - memory: Ram2
+   permission: rx, s
+ - peripheral: SPI2
+   permission: ns, p
+```
