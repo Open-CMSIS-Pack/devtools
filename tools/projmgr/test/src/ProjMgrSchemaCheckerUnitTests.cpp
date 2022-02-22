@@ -61,12 +61,12 @@ TEST_F(ProjMgrSchemaCheckerUnitTests, SchemaCheck_Yaml_File_Not_Found) {
 
 TEST_F(ProjMgrSchemaCheckerUnitTests, Schemas_Not_Available) {
   m_schemaPath = "INVALID_PATH";
-  CoutRedirect coutRedirect;
+  StdStreamRedirect streamRedirect;
   const string& expected = "yaml schemas were not found, file cannot be validated";
 
   const string& filename = testinput_folder + "/TestProject/test.cproject.yml";
   EXPECT_TRUE(Validate(filename, FileType::PROJECT));
 
-  auto outStr = coutRedirect.GetString();
+  auto outStr = streamRedirect.GetOutString();
   EXPECT_NE(0, outStr.find(expected));
 }

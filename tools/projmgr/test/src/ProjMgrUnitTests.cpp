@@ -110,7 +110,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Help) {
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks) {
   char* argv[5];
-  CoutRedirect coutRedirect;
+  StdStreamRedirect streamRedirect;
 
   // list packs
   argv[1] = (char*)"list";
@@ -119,13 +119,13 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks) {
   argv[4] = (char*)"ARM::RteTest_DFP";
   EXPECT_EQ(0, RunProjMgr(5, argv));
 
-  auto outStr = coutRedirect.GetString();
-  EXPECT_STREQ(outStr.c_str(), "ARM::RteTest_DFP@0.1.1\n");
+  auto outStr = streamRedirect.GetOutString();
+  EXPECT_STREQ(outStr.c_str(), "ARM::RteTest_DFP@0.1.1\nARM::RteTest_DFP@0.2.0\n");
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListDevices) {
   char* argv[5];
-  CoutRedirect coutRedirect;
+  StdStreamRedirect streamRedirect;
 
   // list devices
   argv[1] = (char*)"list";
@@ -134,7 +134,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListDevices) {
   argv[4] = (char*)"RteTest_ARMCM4";
   EXPECT_EQ(0, RunProjMgr(5, argv));
   
-  auto outStr = coutRedirect.GetString();
+  auto outStr = streamRedirect.GetOutString();
   EXPECT_STREQ(outStr.c_str(), "RteTest_ARMCM4_FP\nRteTest_ARMCM4_NOFP\n");
 }
 
@@ -150,7 +150,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListComponents) {
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListDependencies) {
   char* argv[5];
   const std::string expected = "ARM::Device:Startup&RteTest Startup@2.0.3 require RteTest:CORE\n";
-  CoutRedirect coutRedirect;
+  StdStreamRedirect streamRedirect;
 
   // list dependencies
   const string& cproject = testinput_folder + "/TestProject/test-dependency.cproject.yml";
@@ -160,7 +160,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListDependencies) {
   argv[4] = (char*)cproject.c_str();
   EXPECT_EQ(0, RunProjMgr(5, argv));
 
-  auto outStr = coutRedirect.GetString();
+  auto outStr = streamRedirect.GetOutString();
   EXPECT_STREQ(outStr.c_str(), expected.c_str());
 }
 
@@ -211,7 +211,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Skip_Schema_Check) {
 
 TEST_F(ProjMgrUnitTests, RunProjMgrContextSolution) {
   char* argv[7];
-  CoutRedirect coutRedirect;
+  StdStreamRedirect streamRedirect;
 
   // convert -s solution.yml
   const string& csolution = testinput_folder + "/TestSolution/test.csolution.yml";
@@ -223,7 +223,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgrContextSolution) {
   argv[6] = (char*)"test1";
   EXPECT_EQ(0, RunProjMgr(7, argv));
 
-  auto outStr = coutRedirect.GetString();
+  auto outStr = streamRedirect.GetOutString();
   EXPECT_STREQ(outStr.c_str(), "test1.Debug+CM0\ntest1.Release+CM0\n");
 }
 
@@ -393,7 +393,8 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_MalformedAccessSequences2) {
 TEST_F(ProjMgrUnitTests, ListPacks) {
   set<string> expected = {
     "ARM::RteTest@0.1.0",
-    "ARM::RteTest_DFP@0.1.1"
+    "ARM::RteTest_DFP@0.1.1",
+    "ARM::RteTest_DFP@0.2.0"
   };
   vector<string> packs;
   EXPECT_TRUE(m_worker.ListPacks("RteTest", packs));
@@ -414,7 +415,7 @@ TEST_F(ProjMgrUnitTests, ListDevices) {
 
 TEST_F(ProjMgrUnitTests, ListComponents) {
   set<string> expected = {
-    "ARM::Device:Startup&RteTest Startup@2.0.3 (ARM::RteTest_DFP@0.1.1)",
+    "ARM::Device:Startup&RteTest Startup@2.0.3 (ARM::RteTest_DFP@0.2.0)",
   };
   vector<string> components;
   EXPECT_TRUE(m_worker.ListComponents("Startup", components));
@@ -423,7 +424,7 @@ TEST_F(ProjMgrUnitTests, ListComponents) {
 
 TEST_F(ProjMgrUnitTests, ListComponentsDeviceFiltered) {
   set<string> expected = {
-    "ARM::Device:Startup&RteTest Startup@2.0.3 (ARM::RteTest_DFP@0.1.1)"
+    "ARM::Device:Startup&RteTest Startup@2.0.3 (ARM::RteTest_DFP@0.2.0)"
   };
   vector<string> components;
   ContextDesc descriptor;
@@ -531,3 +532,336 @@ TEST_F(ProjMgrUnitTests, GetInstalledPacks) {
 
   kernel->SetCmsisPackRoot(cmsisPackRoot);
 }
+
+TEST_F(ProjMgrUnitTests, RunProjMgrSolution_processor) {
+  char* argv[7];
+
+  // convert -s solution.yml
+  const string& csolution = testinput_folder + "/TestSolution/test.csolution_pname.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv));
+
+  // Check generated CPRJs
+  CompareFile(testoutput_folder + "/test2.Debug+CM0/test2.Debug+CM0.cprj",
+    testinput_folder + "/TestSolution/TestProject2/test2.Debug+CM0_pname.cprj");
+  CompareFile(testoutput_folder + "/test2.Debug+CM3/test2.Debug+CM3.cprj",
+    testinput_folder + "/TestSolution/TestProject2/test2.Debug+CM3_pname.cprj");
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgrLayers_pname) {
+  char* argv[6];
+  const string& cproject = testinput_folder + "/TestLayers/testlayers.cproject_pname.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-p";
+  argv[3] = (char*)cproject.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgrLayers_no_device_found) {
+  char* argv[6];
+  const string& cproject = testinput_folder + "/TestLayers/testlayers.cproject_no_device_name.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-p";
+  argv[3] = (char*)cproject.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(1, RunProjMgr(6, argv));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgrSolution_No_Device_Name) {
+  char* argv[4];
+  const string& csolution = testinput_folder + "/TestSolution/test.csolution_no_device_name.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolution.c_str();
+  EXPECT_EQ(1, RunProjMgr(4, argv));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_No_Board_No_Device) {
+  // Test with no board no device info
+  char* argv[6];
+  const string& cproject = testinput_folder +
+    "/TestProject/test.cproject_no_board_no_device.yml";
+  const string& expected = "missing device and/or board info";
+  StdStreamRedirect streamRedirect;
+
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-p";
+  argv[3] = (char*)cproject.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(1, RunProjMgr(6, argv));
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find(expected));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_Invalid_Board_Name) {
+  // Test project with invalid board name
+  char* argv[6];
+  const string& cproject = testinput_folder + "/TestProject/test.cproject_board_name_invalid.yml";
+  const string& expected = "board 'Keil::RteTest_unknown' was not found";
+  StdStreamRedirect streamRedirect;
+
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-p";
+  argv[3] = (char*)cproject.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(1, RunProjMgr(6, argv));
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find(expected));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_Invalid_Board_Vendor) {
+  // Test project with invalid vendor name
+  char* argv[6];
+  const string& cproject = testinput_folder + "/TestProject/test.cproject_board_vendor_invalid.yml";
+  const string& expected = "board 'UNKNOWN::RteTest Dummy board' was not found";
+  StdStreamRedirect streamRedirect;
+
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-p";
+  argv[3] = (char*)cproject.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(1, RunProjMgr(6, argv));
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find(expected));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_Only_Board_Info) {
+  // Test project with only board info and missing device info
+  char* argv[6];
+  const string& cproject = testinput_folder + "/TestProject/test.cproject_only_board.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-p";
+  argv[3] = (char*)cproject.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_Only_Board_No_Pname) {
+  // Test project with only board info and no pname
+  char* argv[6];
+  const string& cproject = testinput_folder + "/TestProject/test.cproject_only_board_no_pname.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-p";
+  argv[3] = (char*)cproject.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(1, RunProjMgr(6, argv));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_Device_Unknown) {
+  // Test project with unknown device
+  char* argv[6];
+  const string& cproject = testinput_folder +
+    "/TestProject/test.cproject_device_unknown.yml";
+  const string& expected = "processor device 'RteTest_ARM_UNKNOWN' was not found";
+  StdStreamRedirect streamRedirect;
+
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-p";
+  argv[3] = (char*)cproject.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(1, RunProjMgr(6, argv));
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find(expected));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_Device_Unknown_Vendor) {
+  // Test project with unknown device vendor
+  char* argv[6];
+  const string& cproject = testinput_folder +
+    "/TestProject/test.cproject_device_unknown_vendor.yml";
+
+  const string& expected = "processor device 'RteTest_ARMCM0' was not found";
+  StdStreamRedirect streamRedirect;
+
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-p";
+  argv[3] = (char*)cproject.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(1, RunProjMgr(6, argv));
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find(expected));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_Device_Unknown_Processor) {
+  // Test project with unknown processor
+  char* argv[6];
+  const string& cproject = testinput_folder +
+    "/TestProject/test.cproject_device_unknown_processor.yml";
+  const string& expected = "processor name 'NOT_AVAILABLE' was not found";
+  StdStreamRedirect streamRedirect;
+
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-p";
+  argv[3] = (char*)cproject.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(1, RunProjMgr(6, argv));
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find(expected));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_Device_Unavailable_In_Board) {
+  // Test project with device different from the board's mounted device
+  char* argv[6];
+  const string& cproject = testinput_folder +
+    "/TestProject/test.cproject_device_unavailable_in_board.yml";
+  const string& expected = "processor device 'RteTest_ARMCM7' was not found";
+  StdStreamRedirect streamRedirect;
+
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-p";
+  argv[3] = (char*)cproject.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(1, RunProjMgr(6, argv));
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find(expected));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_Device_Pname_Unavailable_In_Board) {
+  // Test project with device processor name different from the board's mounted device's processors
+  char* argv[6];
+  const string& cproject = testinput_folder +
+    "/TestProject/test.cproject_device_pname_unavailable_in_board.yml";
+  const string& expected = "processor name 'cm0_core7' was not found";
+  StdStreamRedirect streamRedirect;
+
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-p";
+  argv[3] = (char*)cproject.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(1, RunProjMgr(6, argv));
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find(expected));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_Only_Device_Info) {
+  // Test project with only device info
+  char* argv[6];
+  const string& cproject = testinput_folder + "/TestProject/test.cproject.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-p";
+  argv[3] = (char*)cproject.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_Board_And_Device_Info) {
+  // Test project with valid board and device info
+  char* argv[6];
+  const string& cproject = testinput_folder +
+    "/TestProject/test.cproject_board_and_device.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-p";
+  argv[3] = (char*)cproject.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_Correct_Board_Wrong_Device_Info) {
+  // Test project with correct board info but wrong device info
+  char* argv[6];
+  const string& cproject = testinput_folder +
+    "/TestProject/test.cproject_correct_board_wrong_device.yml";
+  const string& expected = "processor device 'RteTest_ARMCM_Unknown' was not found";
+  StdStreamRedirect streamRedirect;
+
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-p";
+  argv[3] = (char*)cproject.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(1, RunProjMgr(6, argv));
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find(expected));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_Correct_Device_Wrong_Board_Info) {
+  // Test project with correct device info but wrong board info
+  char* argv[6];
+  const string& cproject = testinput_folder +
+    "/TestProject/test.cproject_correct_device_wrong_board.yml";
+  const string& expected = "board 'Keil::RteTest unknown board' was not found";
+  StdStreamRedirect streamRedirect;
+
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-p";
+  argv[3] = (char*)cproject.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(1, RunProjMgr(6, argv));
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find(expected));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_Board_Multi_Mounted_Devices) {
+  // Test Project with only board info and multiple mounted devices
+  char* argv[6];
+  const string& cproject = testinput_folder +
+    "/TestProject/test.cproject_board_multi_mounted_device.yml";
+  const string& expected = "found multiple mounted devices";
+  StdStreamRedirect streamRedirect;
+
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-p";
+  argv[3] = (char*)cproject.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(1, RunProjMgr(6, argv));
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find(expected));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_Board_No_Mounted_Devices) {
+  // Test Project with only board info and no mounted devices
+  char* argv[6];
+  const string& cproject = testinput_folder +
+    "/TestProject/test.cproject_board_no_mounted_device.yml";
+  const string& expected = "found no mounted device";
+  StdStreamRedirect streamRedirect;
+
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-p";
+  argv[3] = (char*)cproject.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(1, RunProjMgr(6, argv));
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find(expected));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_Board_Device_Info) {
+  // Test Project with board mounted device different than available devices
+  char* argv[6];
+  const string& cproject = testinput_folder +
+    "/TestProject/test.cproject_mounted_device_differs_avaialble_device.yml";
+  const string& expected = "specified device 'RteTest_ARMCM0_Dual' and board mounted device 'RteTest_ARMCM0_Test' are different";
+  StdStreamRedirect streamRedirect;
+
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-p";
+  argv[3] = (char*)cproject.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(1, RunProjMgr(6, argv));
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find(expected));
+}
+

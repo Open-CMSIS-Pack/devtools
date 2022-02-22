@@ -15,18 +15,25 @@ string testoutput_folder;
 string testcmsispack_folder;
 string schema_folder;
 
-CoutRedirect::CoutRedirect() :
-  m_buffer(""), m_oldStreamBuf(std::cout.rdbuf(m_buffer.rdbuf()))
+StdStreamRedirect::StdStreamRedirect() :
+  m_outbuffer(""), m_cerrbuffer(""),
+  m_stdoutStreamBuf(std::cout.rdbuf(m_outbuffer.rdbuf())),
+  m_stdcerrStreamBuf(std::cerr.rdbuf(m_cerrbuffer.rdbuf()))
 {
 }
 
-std::string CoutRedirect::GetString() {
-  return m_buffer.str();
+std::string StdStreamRedirect::GetOutString() {
+  return m_outbuffer.str();
 }
 
-CoutRedirect::~CoutRedirect() {
+std::string StdStreamRedirect::GetErrorString() {
+  return m_cerrbuffer.str();
+}
+
+StdStreamRedirect::~StdStreamRedirect() {
   // reverse redirect
-  std::cout.rdbuf(m_oldStreamBuf);
+  std::cout.rdbuf(m_stdoutStreamBuf);
+  std::cerr.rdbuf(m_stdcerrStreamBuf);
 }
 
 void ProjMgrTestEnv::SetUp() {

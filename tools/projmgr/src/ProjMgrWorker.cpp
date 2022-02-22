@@ -212,51 +212,152 @@ bool ProjMgrWorker::SetTargetAttributes(ContextItem& context, map<string, string
   return CheckRteErrors();
 }
 
-bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
+void ProjMgrWorker::GetDeviceItem(const std::string& element, DeviceItem& device) const {
+  string deviceInfoStr = element;
+  if (!element.empty()) {
+    device.vendor = RteUtils::RemoveSuffixByString(deviceInfoStr, "::");
+    deviceInfoStr = RteUtils::RemovePrefixByString(deviceInfoStr, "::");
+    device.name  = RteUtils::GetPrefix(deviceInfoStr);
+    device.pname = RteUtils::GetSuffix(deviceInfoStr);
+  }
+}
 
-  if (context.device.empty()) {
-    ProjMgrLogger::Error("device: value not set");
+void ProjMgrWorker::GetBoardItem(const std::string& element, BoardItem& board) const {
+  if (!element.empty()) {
+    const size_t vendorDelimiter = element.find("::");
+    if (vendorDelimiter != string::npos) {
+      board.vendor = element.substr(0, vendorDelimiter);
+      board.name = element.substr(vendorDelimiter + 2, string::npos);
+    }
+    else {
+      board.name = element;
+    }
+  }
+}
+
+bool ProjMgrWorker::GetPrecedentValue(std::string& outValue, const std::string& element) const {
+  if (!element.empty()) {
+    if (!outValue.empty() && (outValue != element)) {
+      ProjMgrLogger::Error("redefinition from '" + outValue + "' into '" + element + "' is not allowed");
+      return false;
+    }
+    outValue = element;
+  }
+  return true;
+}
+
+bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
+  DeviceItem deviceItem;
+  GetDeviceItem(context.device, deviceItem);
+  if (context.board.empty() && deviceItem.name.empty()) {
+    ProjMgrLogger::Error("missing device and/or board info");
     return false;
   }
 
-  const size_t deviceDelimiter = context.device.find("::");
-  const size_t processorDelimiter = context.device.find(':', (deviceDelimiter != string::npos ? deviceDelimiter + 2 : 0));
-  string deviceVendor, deviceName, processorName;
-  if (deviceDelimiter != string::npos) {
-    deviceVendor = context.device.substr(0, deviceDelimiter);
-    deviceName = context.device.substr(deviceDelimiter + 2, (processorDelimiter != string::npos ? processorDelimiter - deviceDelimiter - 2 : string::npos));
-  } else {
-    deviceName = context.device.substr(0, processorDelimiter);
-  }
-  if (processorDelimiter != string::npos) {
-    processorName = context.device.substr(processorDelimiter + 1, string::npos);
+  RteDeviceItem* matchedBoardDevice = nullptr;
+  if(!context.board.empty()) {
+    m_model = m_kernel->GetGlobalModel();
+    if (!m_model) {
+      return false;
+    }
+
+    BoardItem boardItem;
+    GetBoardItem(context.board, boardItem);
+    // find board
+    RteBoard* matchedBoard = nullptr;
+    for (const auto& pack : m_installedPacks) {
+      RteItem* boards = pack->GetBoards();
+      if (boards) {
+        const list<RteItem*>& children = boards->GetChildren();
+        for (const auto& child : children) {
+          RteBoard* board = dynamic_cast<RteBoard*>(child);
+          if (board && (board->GetName() == boardItem.name)) {
+            if (boardItem.vendor.empty() || (boardItem.vendor == DeviceVendor::GetCanonicalVendorName(board->GetVendorName()))) {
+              matchedBoard = board;
+              break;
+            }
+          }
+        }
+      }
+      if (matchedBoard) {
+        break;
+      }
+    }
+    if (!matchedBoard) {
+      ProjMgrLogger::Error("board '" + context.board + "' was not found");
+      return false;
+    }
+
+    // find device from the matched board
+    list<RteItem*> mountedDevices;
+    matchedBoard->GetMountedDevices(mountedDevices);
+    if (mountedDevices.size() > 1) {
+      ProjMgrLogger::Error("found multiple mounted devices");
+      string msg = "one of the following devices must be specified:";
+      for (const auto& device : mountedDevices) {
+        msg += "\n" + device->GetDeviceName();
+      }
+      ProjMgrLogger::Error(msg);
+      return false;
+    }
+    else if (mountedDevices.size() == 0) {
+      ProjMgrLogger::Error("found no mounted device");
+      return false;
+    }
+
+    auto mountedDevice = *(mountedDevices.begin());
+    auto device = m_model->GetDevice(mountedDevice->GetDeviceName(), mountedDevice->GetDeviceVendor());
+    if (!device) {
+      ProjMgrLogger::Error("device " + mountedDevice->GetDeviceVendor() +
+        "::" + mountedDevice->GetDeviceName() + " not found");
+      return false;
+    }
+    matchedBoardDevice = device;
   }
 
-  list<RteDeviceItem*> devices;
-  for (const auto& pack : m_installedPacks) {
-    list<RteDeviceItem*> deviceItems;
-    pack->GetEffectiveDeviceItems(deviceItems);
-    devices.insert(devices.end(), deviceItems.begin(), deviceItems.end());
-  }
-  list<RteDeviceItem*> matchedDevices;
-  for (const auto& device : devices) {
-    if (device->GetFullDeviceName() == deviceName) {
-      if (deviceVendor.empty() || (deviceVendor == DeviceVendor::GetCanonicalVendorName(device->GetEffectiveAttribute("Dvendor")))) {
-        matchedDevices.push_back(device);
+  string processorName;
+  RteDeviceItem* matchedDevice = nullptr;
+  if (deviceItem.name.empty()) {
+    matchedDevice = matchedBoardDevice;
+  } else {
+    list<RteDeviceItem*> devices;
+    for (const auto& pack : m_installedPacks) {
+      list<RteDeviceItem*> deviceItems;
+      pack->GetEffectiveDeviceItems(deviceItems);
+      devices.insert(devices.end(), deviceItems.begin(), deviceItems.end());
+    }
+
+    list<RteDeviceItem*> matchedDevices;
+    for (const auto& device : devices) {
+      if (device->GetFullDeviceName() == deviceItem.name) {
+        if (deviceItem.vendor.empty() || (deviceItem.vendor == DeviceVendor::GetCanonicalVendorName(device->GetEffectiveAttribute("Dvendor")))) {
+          matchedDevices.push_back(device);
+        }
+      }
+    }
+    for (const auto& item : matchedDevices) {
+      if ((!matchedDevice) || (VersionCmp::Compare(matchedDevice->GetPackage()->GetVersionString(), item->GetPackage()->GetVersionString()) < 0)) {
+        matchedDevice = item;
+      }
+    }
+    if (!matchedDevice) {
+      ProjMgrLogger::Error("processor device '" + deviceItem.name + "' was not found");
+      return false;
+    }
+    if (matchedBoardDevice) {
+      const string DeviceInfoString = GetDeviceInfoString(matchedDevice->GetVendorName(),
+        matchedDevice->GetDeviceName(), "");
+      const string BoardDeviceInfoString = GetDeviceInfoString(matchedBoardDevice->GetVendorName(),
+        matchedBoardDevice->GetDeviceName(), "");
+      if(DeviceInfoString != BoardDeviceInfoString) {
+        ProjMgrLogger::Error("specified device '" + deviceItem.name + "' and board mounted device '" +
+          matchedBoardDevice->GetDeviceName() + "' are different");
+        return false;
       }
     }
   }
-  RteDeviceItem* matchedDevice = nullptr;
-  for (const auto& item : matchedDevices) {
-    if ((!matchedDevice) || (VersionCmp::Compare(matchedDevice->GetPackage()->GetVersionString(), item->GetPackage()->GetVersionString()) < 0)) {
-      matchedDevice = item;
-    }
-  }
-  if (!matchedDevice) {
-    ProjMgrLogger::Error("processor device '" + deviceName + "' was not found");
-    return false;
-  }
 
+  processorName = deviceItem.pname;
   const auto& processor = matchedDevice->GetProcessor(processorName);
   if (!processor) {
     if (!processorName.empty()) {
@@ -265,16 +366,19 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
     string msg = "one of the following processors must be specified:";
     const auto& processors = matchedDevice->GetProcessors();
     for (const auto& processor : processors) {
-      msg += "\n" + deviceName + ":" + processor.first;
+      msg += "\n" + matchedDevice->GetDeviceName() + ":" + processor.first;
     }
     ProjMgrLogger::Error(msg);
     return false;
   }
 
+  context.device = GetDeviceInfoString(
+    matchedDevice->GetDeviceVendor(), matchedDevice->GetDeviceName(), processorName);
+
   const auto& processorAttributes = processor->GetAttributes();
   context.targetAttributes.insert(processorAttributes.begin(), processorAttributes.end());
   context.targetAttributes["Dvendor"] = matchedDevice->GetEffectiveAttribute("Dvendor");
-  context.targetAttributes["Dname"] = deviceName;
+  context.targetAttributes["Dname"] = matchedDevice->GetDeviceName();
 
   if (!context.fpu.empty()) {
     if (context.fpu == "on") {
@@ -303,7 +407,40 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
   }
 
   context.packages.insert({ GetPackageID(matchedDevice->GetPackage()), matchedDevice->GetPackage() });
+  return true;
+}
 
+bool ProjMgrWorker::ProcessBoardPrecedence(StringCollection& item) {
+  BoardItem board;
+  string boardVendor, boardName;
+
+  for (const auto& element : item.elements) {
+    GetBoardItem(*element, board);
+    if (!(GetPrecedentValue(boardVendor, board.vendor) &&
+      GetPrecedentValue(boardName, board.name))) {
+      return false;
+    }
+  }
+  *item.assign = (boardVendor.empty() ? "" : boardVendor) +
+    (boardVendor.empty() ? "" : "::") + boardName;
+  return true;
+}
+
+bool ProjMgrWorker::ProcessDevicePrecedence(StringCollection& item) {
+  DeviceItem device;
+  string deviceVendor, deviceName, processorName;
+
+  for (const auto& element : item.elements) {
+    GetDeviceItem(*element, device);
+
+    if (!(GetPrecedentValue(deviceVendor, device.vendor) &&
+      GetPrecedentValue(deviceName, device.name) &&
+      GetPrecedentValue(processorName, device.pname))) {
+      return false;
+    }
+  }
+
+  *item.assign = GetDeviceInfoString(deviceVendor, deviceName, processorName);
   return true;
 }
 
@@ -562,12 +699,8 @@ bool ProjMgrWorker::ProcessDependencies(ContextItem& context) {
 
 bool ProjMgrWorker::ProcessPrecedence(StringCollection& item) {
   for (const auto& element : item.elements) {
-    if (!element->empty()) {
-      if (!item.assign->empty() && (*item.assign != *element)) {
-        ProjMgrLogger::Error("redefinition from '" + *item.assign + "' into '" + *element + "' is not allowed");
-        return false;
-      }
-      *item.assign = *element;
+    if (!GetPrecedentValue(*item.assign, *element)) {
+      return false;
     }
   }
   return true;
@@ -663,6 +796,21 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
     return false;
   }
 
+  StringCollection board = {
+  &context.board,
+    {
+      &context.cproject->target.board,
+      &context.csolutionTarget.board,
+      &context.targetType.board,
+    },
+  };
+  for (const auto& clayer : context.clayers) {
+    board.elements.push_back(&clayer.second->target.board);
+  }
+  if (!ProcessBoardPrecedence(board)) {
+    return false;
+  }
+
   StringCollection device = {
     &context.device,
     {
@@ -674,7 +822,7 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
   for (const auto& clayer : context.clayers) {
     device.elements.push_back(&clayer.second->target.device);
   }
-  if (!ProcessPrecedence(device)) {
+  if (!ProcessDevicePrecedence(device)) {
     return false;
   }
 
@@ -1384,4 +1532,10 @@ string ProjMgrWorker::ConstructID(const std::vector<std::pair<const char*, const
     }
   }
   return id;
+}
+
+std::string ProjMgrWorker::GetDeviceInfoString(const std::string& vendor,
+  const std::string& name, const std::string& processor) const {
+  return vendor + (vendor.empty() ? "" : "::") +
+    name + (processor.empty() ? "" : ":" + processor);
 }
