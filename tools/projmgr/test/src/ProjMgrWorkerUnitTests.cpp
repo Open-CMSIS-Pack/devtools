@@ -176,7 +176,7 @@ TEST_F(ProjMgrWorkerUnitTests, LoadDuplicatePacks) {
 
   // Check if only one pack is loaded
   ASSERT_EQ(1, m_installedPacks.size());
-  EXPECT_EQ("ARM.RteTest_DFP", (*m_installedPacks.begin())->GetCommonID());
+  EXPECT_EQ("ARM.RteTest_DFP.0.2.0", (*m_installedPacks.begin())->GetPackageID());
 }
 
 TEST_F(ProjMgrWorkerUnitTests, LoadRequiredPacks) {
@@ -190,7 +190,21 @@ TEST_F(ProjMgrWorkerUnitTests, LoadRequiredPacks) {
 
   // Check if only one pack is loaded
   ASSERT_EQ(1, m_installedPacks.size());
-  EXPECT_EQ("ARM.RteTest_DFP", (*m_installedPacks.begin())->GetCommonID());
+  EXPECT_EQ("ARM.RteTest_DFP.0.2.0", (*m_installedPacks.begin())->GetPackageID());
+}
+
+TEST_F(ProjMgrWorkerUnitTests, LoadExactPackVersion) {
+  ProjMgrParser parser;
+  ContextDesc descriptor;
+
+  string filename = testinput_folder + "/TestProject/test.cproject_exact_package.yml";
+  EXPECT_TRUE(parser.ParseCproject(filename, true));
+  EXPECT_TRUE(AddContexts(parser, descriptor, filename));
+  EXPECT_TRUE(LoadPacks());
+
+  // Check if only one pack is loaded
+  ASSERT_EQ(1, m_installedPacks.size());
+  EXPECT_EQ("ARM.RteTest_DFP.0.1.1", (*m_installedPacks.begin())->GetPackageID());
 }
 
 TEST_F(ProjMgrWorkerUnitTests, LoadPacksNoPackage) {
