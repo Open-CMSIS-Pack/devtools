@@ -1,0 +1,23 @@
+[
+    {
+        "runs_on":"macos-10.15",
+        "target":"darwin64",
+        "binary_extension":".mac",
+        "installer_name": "gcc-arm-none-eabi-10-2020-q4-major-mac.tar.bz2",
+        "runOn": "publicRepo"
+    },
+    {
+        "runs_on":"ubuntu-20.04",
+        "target":"linux64",
+        "binary_extension":".lin",
+        "installer_name": "gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2",
+        "runOn": "always"
+    },
+    {
+        "runs_on":"windows-2019",
+        "target":"windows64",
+        "binary_extension":".exe",
+        "installer_name": "gcc-arm-none-eabi-10-2020-q4-major-win32.zip",
+        "runOn": "always"
+    }
+]
