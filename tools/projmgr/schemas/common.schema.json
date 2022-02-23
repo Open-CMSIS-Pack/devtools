@@ -296,7 +296,7 @@
       "properties": {
         "package": {
           "type": "string",
-          "pattern": "^([\\w .-]+::)?([\\w .-]+)(@(>=)?(\\d+\\.\\d+\\.\\d+((\\+|\\-)[\\w.+-]+)?))?$",
+          "pattern": "^([\\w .-]+::)([\\w .-]+)(@(>=)?(\\d+\\.\\d+\\.\\d+((\\+|\\-)[\\w.+-]+)?))?$",
           "description": "Name of a required Software Pack in the format [Vendor::] Pack [@[>=]Version]"
         }
       },

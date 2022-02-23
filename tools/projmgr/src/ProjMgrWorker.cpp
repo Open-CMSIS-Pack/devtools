@@ -126,11 +126,15 @@ bool ProjMgrWorker::GetRequiredPdscFiles(const std::string& packRoot, std::set<s
     }
 
     for (auto& packAttr : context.second.packRequirements) {
-      string packId, pdscFile;
+      string packId, pdscFile, packversion;
+      if (!packAttr.version.empty()) {
+        packversion = packAttr.version + ":" + packAttr.version;
+      }
+
       RteAttributes attributes({
-        {"name", packAttr.name},
-        {"vendor", packAttr.vendor},
-        {"version", packAttr.version},
+        {"name",    packAttr.name},
+        {"vendor",  packAttr.vendor},
+        {"version", packversion},
       });
 
       pdscFile = m_kernel->GetLocalPdscFile(attributes, packRoot, packId);
@@ -142,7 +146,7 @@ bool ProjMgrWorker::GetRequiredPdscFiles(const std::string& packRoot, std::set<s
         std::string packageName = 
           (packAttr.vendor.empty() ? "" : packAttr.vendor + "::") +
           packAttr.name +
-          (packAttr.version == "0.0.0" ? "" : "@" + packAttr.version);
+          (packAttr.version.empty() ? "" : "@" + packAttr.version);
         ProjMgrLogger::Error("Required pack: " + packageName + " not found");
         return false;
       }
@@ -458,20 +462,18 @@ bool ProjMgrWorker::ProcessPackages(ContextItem& context) {
   }
   // Process packages
   for (const auto& packageEntry : packages) {
-    const size_t nameDelimiter = packageEntry.find("::");
-    const size_t versionDelimiter = packageEntry.find('@');
-    if (nameDelimiter == string::npos) {
+    if (packageEntry.find("::") == string::npos) {
       ProjMgrLogger::Error("package '" + packageEntry + "': delimiter not set");
       return false;
     }
+
     PackageItem package;
-    package.vendor = packageEntry.substr(0, nameDelimiter);
-    if (versionDelimiter != string::npos) {
-      package.name = packageEntry.substr(nameDelimiter + 2, versionDelimiter - nameDelimiter -2);
-    } else {
-      package.name = packageEntry.substr(nameDelimiter + 2, string::npos);
-    }
-    package.version = versionDelimiter == string::npos ? "0.0.0" : packageEntry.substr(versionDelimiter + 1, string::npos);
+    string packInfoStr = packageEntry;
+    package.vendor  = RteUtils::RemoveSuffixByString(packInfoStr, "::");
+    packInfoStr     = RteUtils::RemovePrefixByString(packInfoStr, "::");
+    package.name    = RteUtils::GetPrefix(packInfoStr, '@');
+    package.version = RteUtils::GetSuffix(packInfoStr, '@');
+
     context.packRequirements.push_back(package);
   }
   return true;
