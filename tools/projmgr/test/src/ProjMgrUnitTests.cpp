@@ -390,14 +390,31 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_MalformedAccessSequences2) {
   EXPECT_EQ(1, RunProjMgr(6, argv));
 }
 
+TEST_F(ProjMgrUnitTests, RunProjMgr_Generator) {
+  char* argv[7];
+  // convert -s solution.yml
+  const string& csolution = testinput_folder + "/TestGenerator/test-gpdsc.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv));
+
+  // Check generated CPRJs
+  CompareFile(testoutput_folder + "/test-gpdsc.Debug+CM0/test-gpdsc.Debug+CM0.cprj",
+    testinput_folder + "/TestGenerator/ref/test-gpdsc.Debug+CM0.cprj");
+}
+
 TEST_F(ProjMgrUnitTests, ListPacks) {
   set<string> expected = {
     "ARM::RteTest@0.1.0",
+    "ARM::RteTestGenerator@0.1.0",
     "ARM::RteTest_DFP@0.1.1",
     "ARM::RteTest_DFP@0.2.0"
   };
   vector<string> packs;
-  EXPECT_TRUE(m_worker.ListPacks("RteTest", packs));
+  EXPECT_TRUE(m_worker.ListPacks(packs, "RteTest"));
   EXPECT_EQ(expected, set<string>(packs.begin(), packs.end()));
 }
 
@@ -409,7 +426,7 @@ TEST_F(ProjMgrUnitTests, ListDevices) {
     "RteTest_ARMCM4_NOFP"
   };
   vector<string> devices;
-  EXPECT_TRUE(m_worker.ListDevices("CM4", devices));
+  EXPECT_TRUE(m_worker.ListDevices(devices, "CM4"));
   EXPECT_EQ(expected, set<string>(devices.begin(), devices.end()));
 }
 
@@ -418,7 +435,7 @@ TEST_F(ProjMgrUnitTests, ListComponents) {
     "ARM::Device:Startup&RteTest Startup@2.0.3 (ARM::RteTest_DFP@0.2.0)",
   };
   vector<string> components;
-  EXPECT_TRUE(m_worker.ListComponents("Startup", components));
+  EXPECT_TRUE(m_worker.ListComponents(components, "Startup"));
   EXPECT_EQ(expected, set<string>(components.begin(), components.end()));
 }
 
@@ -431,7 +448,7 @@ TEST_F(ProjMgrUnitTests, ListComponentsDeviceFiltered) {
   const string& filenameInput = testinput_folder + "/TestProject/test.cproject.yml";
   EXPECT_TRUE(m_parser.ParseCproject(filenameInput, false, true));
   EXPECT_TRUE(m_worker.AddContexts(m_parser, descriptor, filenameInput));
-  EXPECT_TRUE(m_worker.ListComponents("Startup", components));
+  EXPECT_TRUE(m_worker.ListComponents(components, "Startup"));
   EXPECT_EQ(expected, set<string>(components.begin(), components.end()));
 }
 
@@ -444,7 +461,7 @@ TEST_F(ProjMgrUnitTests, ListDependencies) {
   const string& filenameInput = testinput_folder + "/TestProject/test-dependency.cproject.yml";
   EXPECT_TRUE(m_parser.ParseCproject(filenameInput, false, true));
   EXPECT_TRUE(m_worker.AddContexts(m_parser, descriptor, filenameInput));
-  EXPECT_TRUE(m_worker.ListDependencies("CORE", dependencies));
+  EXPECT_TRUE(m_worker.ListDependencies(dependencies, "CORE"));
   EXPECT_EQ(expected, set<string>(dependencies.begin(), dependencies.end()));
 }
 
@@ -468,7 +485,7 @@ TEST_F(ProjMgrUnitTests, RunListContexts) {
     EXPECT_TRUE(m_worker.AddContexts(m_parser, descriptor, cprojectFile));
   }
   vector<string> contexts;
-  EXPECT_TRUE(m_worker.ListContexts("", contexts));
+  EXPECT_TRUE(m_worker.ListContexts(contexts));
   EXPECT_EQ(expected, set<string>(contexts.begin(), contexts.end()));
 }
 
@@ -493,7 +510,7 @@ TEST_F(ProjMgrUnitTests, RunListContexts_Without_BuildTypes) {
     EXPECT_TRUE(m_worker.AddContexts(m_parser, descriptor, cprojectFile));
   }
   vector<string> contexts;
-  EXPECT_TRUE(m_worker.ListContexts("", contexts));
+  EXPECT_TRUE(m_worker.ListContexts(contexts));
   EXPECT_EQ(expected, set<string>(contexts.begin(), contexts.end()));
 }
 
@@ -510,10 +527,10 @@ TEST_F(ProjMgrUnitTests, GenerateCprj) {
   ContextDesc descriptor;
   EXPECT_TRUE(m_parser.ParseCproject(filenameInput, false, true));
   EXPECT_TRUE(m_worker.AddContexts(m_parser, descriptor, filenameInput));
-  std::map<std::string, ContextItem> contexts;
+  map<string, ContextItem>* contexts = nullptr;
   m_worker.GetContexts(contexts);
-  EXPECT_TRUE(m_worker.ProcessContext(contexts.begin()->second, true));
-  EXPECT_TRUE(m_generator.GenerateCprj(contexts.begin()->second, filenameOutput));
+  EXPECT_TRUE(m_worker.ProcessContext(contexts->begin()->second, true));
+  EXPECT_TRUE(m_generator.GenerateCprj(contexts->begin()->second, filenameOutput));
 
   CompareFile(testoutput_folder + "/GenerateCprjTest.cprj",
     testinput_folder + "/TestProject/test.cprj");
@@ -865,3 +882,29 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Board_Device_Info) {
   EXPECT_NE(string::npos, errStr.find(expected));
 }
 
+TEST_F(ProjMgrUnitTests, ListGenerators) {
+  set<string> expected = {
+     "RteTestGeneratorIdentifier (RteTest Generator Description)",
+  };
+  vector<string> generators;
+  m_csolutionFile = testinput_folder + "/TestGenerator/test-gpdsc.csolution.yml";
+  error_code ec;
+  m_rootDir = fs::path(m_csolutionFile).parent_path().generic_string();
+  m_context = "test-gpdsc.Debug+CM0";
+  EXPECT_TRUE(PopulateContexts());
+  EXPECT_TRUE(m_worker.ListGenerators(m_context, generators));
+  EXPECT_EQ(expected, set<string>(generators.begin(), generators.end()));
+}
+
+//TODO: Enable ExecuteGenerator tests for all platforms once it is implemented
+#ifdef _WIN32
+TEST_F(ProjMgrUnitTests, ExecuteGenerator) {
+  m_csolutionFile = testinput_folder + "/TestGenerator/test-gpdsc.csolution.yml";
+  error_code ec;
+  m_rootDir = fs::path(m_csolutionFile).parent_path().generic_string();
+  m_context = "test-gpdsc.Debug+CM0";
+  m_codeGenerator = "RteTestGeneratorIdentifier";
+  EXPECT_TRUE(PopulateContexts());
+  EXPECT_TRUE(m_worker.ExecuteGenerator(m_context, m_codeGenerator));
+}
+#endif

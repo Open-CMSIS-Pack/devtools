@@ -25,15 +25,19 @@ Commands:\n\
        components       Print list of available components\n\
        dependencies     Print list of unresolved project dependencies\n\
        contexts         Print list of contexts in a csolution.yml\n\
+       generators       Print list of code generators of a given context\n\
   convert               Convert cproject.yml or csolution.yml in cprj files\n\
+  run                   Run code generator\n\
   help                  Print usage\n\n\
 Options:\n\
-  -p, --project arg     Input cproject.yml file\n\
   -s, --solution arg    Input csolution.yml file\n\
+  -p, --project arg     Input cproject.yml file\n\
+  -c, --context arg     Input context name <cproject>[.<build-type>][+<target-type>]\n\
   -f, --filter arg      Filter words\n\
+  -g, --generator arg   Code generator identifier\n\
+  -n, --no-check-schema Skip schema check\n\
   -o, --output arg      Output directory\n\
   -h, --help            Print usage\n\
-  -n, --no-check-schema Skip schema check\n\
 ";
 
 ProjMgr::ProjMgr(void) : m_checkSchema(false) {
@@ -60,11 +64,13 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
     options.add_options()
       ("command", "", cxxopts::value<string>())
       ("args", "", cxxopts::value<string>())
-      ("p,project", "", cxxopts::value<string>())
       ("s,solution", "", cxxopts::value<string>())
+      ("p,project", "", cxxopts::value<string>())
+      ("c,context", "", cxxopts::value<string>())
       ("f,filter", "", cxxopts::value<string>())
-      ("o,output", "", cxxopts::value<string>())
+      ("g,generator", "", cxxopts::value<string>())
       ("n,no-check-schema", "", cxxopts::value<bool>()->default_value("false"))
+      ("o,output", "", cxxopts::value<string>())
       ("h,help", "")
       ;
     options.parse_positional({ "command", "args"});
@@ -102,8 +108,14 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
       manager.m_cprojectFile = fs::canonical(manager.m_cprojectFile, ec).generic_string();
       manager.m_rootDir = fs::path(manager.m_cprojectFile).parent_path().generic_string();
     }
+    if (parseResult.count("context")) {
+      manager.m_context = parseResult["context"].as<string>();
+    }
     if (parseResult.count("filter")) {
       manager.m_filter = parseResult["filter"].as<string>();
+    }
+    if (parseResult.count("generator")) {
+      manager.m_codeGenerator = parseResult["generator"].as<string>();
     }
     if (parseResult.count("output")) {
       manager.m_outputDir = parseResult["output"].as<string>();
@@ -152,13 +164,23 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
       if (!manager.RunListContexts()) {
         return 1;
       }
-    } else {
+    } else if (manager.m_args == "generators") {
+      if (!manager.RunListGenerators()) {
+        return 1;
+      }
+    }
+    else {
       ProjMgrLogger::Error("list <args> was not found");
       return 1;
     }
   } else if (manager.m_command == "convert") {
     // Process 'convert' command
     if (!manager.RunConvert()) {
+      return 1;
+    }
+  } else if (manager.m_command == "run") {
+    // Process 'run' command
+    if (!manager.RunCodeGenerator()) {
       return 1;
     }
   } else {
@@ -168,7 +190,7 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
   return 0;
 }
 
-bool ProjMgr::RunConvert(void) {
+bool ProjMgr::PopulateContexts(void) {
   if (!m_csolutionFile.empty()) {
     // Parse csolution
     if (!m_parser.ParseCsolution(m_csolutionFile, m_checkSchema)) {
@@ -225,29 +247,38 @@ bool ProjMgr::RunConvert(void) {
     }
   }
 
+  return true;
+}
+
+bool ProjMgr::RunConvert(void) {
+  // Parse all input files and populate contexts inputs
+  if (!PopulateContexts()) {
+    return false;
+  }
+
   // Process contexts
-  map<string, ContextItem> contexts;
+  map<string, ContextItem>* contexts = nullptr;
   m_worker.GetContexts(contexts);
-  for (auto& context : contexts) {
-    if (!m_worker.ProcessContext(context.second, true)) {
-      ProjMgrLogger::Error("processing context '" + context.first + "' failed");
+  for (auto& [contextName, contextItem] : *contexts) {
+    if (!m_worker.ProcessContext(contextItem, true)) {
+      ProjMgrLogger::Error("processing context '" + contextName + "' failed");
       return false;
     }
   }
 
   // Generate Cprjs
-  for (auto& context : contexts) {
+  for (auto& [contextName, contextItem] : *contexts) {
     error_code ec;
-    const string& directory = m_outputDir.empty() ? context.second.directories.cproject : m_outputDir + "/" + context.first;
-    const string& filename = fs::weakly_canonical(directory + "/" + context.first + ".cprj", ec).generic_string();
+    const string& directory = m_outputDir.empty() ? contextItem.directories.cproject : m_outputDir + "/" + contextName;
+    const string& filename = fs::weakly_canonical(directory + "/" + contextName + ".cprj", ec).generic_string();
     RteFsUtils::CreateDirectories(directory);
-    if (m_generator.GenerateCprj(context.second, filename)) {
+    if (m_generator.GenerateCprj(contextItem, filename)) {
       ProjMgrLogger::Info(filename, "file generated successfully");
     } else {
       ProjMgrLogger::Error(filename, "file cannot be written");
       return false;
     }
-    if (!m_worker.CopyContextFiles(context.second, directory, m_outputDir.empty())) {
+    if (!m_worker.CopyContextFiles(contextItem, directory, m_outputDir.empty())) {
       ProjMgrLogger::Error("files cannot be copied into output directory '" + directory + "'");
       return false;
     }
@@ -257,7 +288,7 @@ bool ProjMgr::RunConvert(void) {
 
 bool ProjMgr::RunListPacks(void) {
   vector<string> packs;
-  if (!m_worker.ListPacks(m_filter, packs)) {
+  if (!m_worker.ListPacks(packs, m_filter)) {
     ProjMgrLogger::Error("processing pack list failed");
     return false;
   }
@@ -280,7 +311,7 @@ bool ProjMgr::RunListDevices(void) {
     }
   }
   vector<string> devices;
-  if (!m_worker.ListDevices(m_filter, devices)) {
+  if (!m_worker.ListDevices(devices, m_filter)) {
     ProjMgrLogger::Error("processing devices list failed");
     return false;
   }
@@ -301,7 +332,7 @@ bool ProjMgr::RunListComponents(void) {
     }
   }
   vector<string> components;
-  if (!m_worker.ListComponents(m_filter, components)) {
+  if (!m_worker.ListComponents(components, m_filter)) {
     ProjMgrLogger::Error("processing components list failed");
     return false;
   }
@@ -324,7 +355,7 @@ bool ProjMgr::RunListDependencies(void) {
     return false;
   }
   vector<string> dependencies;
-  if (!m_worker.ListDependencies(m_filter, dependencies)) {
+  if (!m_worker.ListDependencies(dependencies, m_filter)) {
     ProjMgrLogger::Error("processing dependencies list failed");
     return false;
   }
@@ -358,12 +389,83 @@ bool ProjMgr::RunListContexts(void) {
     }
   }
   vector<string> contexts;
-  if (!m_worker.ListContexts(m_filter, contexts)) {
+  if (!m_worker.ListContexts(contexts, m_filter)) {
     ProjMgrLogger::Error("processing contexts list failed");
     return false;
   }
   for (const auto& context : contexts) {
     cout << context << endl;
   }
+  return true;
+}
+
+bool ProjMgr::RunListGenerators(void) {
+  // Parse all input files and create contexts
+  if (!PopulateContexts()) {
+    return false;
+  }
+
+  // Process context
+  vector<string> contexts;
+  m_worker.ListContexts(contexts);
+  if (m_context.empty()) {
+    if (contexts.size() == 1) {
+      m_context = contexts.front();
+    } else {
+      ProjMgrLogger::Error("context was not specified");
+      return false;
+    }
+  } else {
+    if (find(contexts.begin(), contexts.end(), m_context) == contexts.end()) {
+      ProjMgrLogger::Error("context '" + m_context + "' was not found");
+      return false;
+    }
+  }
+
+  // Get generators
+  vector<string> generators;
+  if (!m_worker.ListGenerators(m_context, generators)) {
+    return false;
+  }
+  for (const auto& generator : generators) {
+    cout << generator << endl;
+  }
+  return true;
+}
+
+bool ProjMgr::RunCodeGenerator(void) {
+  // Parse all input files and create contexts
+  if (!PopulateContexts()) {
+    return false;
+  }
+
+  // Check input options
+  if (m_codeGenerator.empty()) {
+    ProjMgrLogger::Error("generator identifier was not specified");
+    return false;
+  }
+
+  // Process context
+  vector<string> contexts;
+  m_worker.ListContexts(contexts);
+  if (m_context.empty()) {
+    if (contexts.size() == 1) {
+      m_context = contexts.front();
+    } else {
+      ProjMgrLogger::Error("context was not specified");
+      return false;
+    }
+  } else {
+    if (find(contexts.begin(), contexts.end(), m_context) != contexts.end()) {
+      ProjMgrLogger::Error("context '" + m_context + "' was not found");
+      return false;
+    }
+  }
+
+  // Run code generator
+  if (!m_worker.ExecuteGenerator(m_context, m_codeGenerator)) {
+    return false;
+  }
+
   return true;
 }
