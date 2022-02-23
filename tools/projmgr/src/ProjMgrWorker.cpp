@@ -468,7 +468,12 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
       auto matchedComponent = filteredComponents.begin()->second;
       const auto& componentId = GetComponentID(matchedComponent);
       context.components.insert({ componentId, { matchedComponent, &item }});
-      context.packages.insert({ GetPackageID(matchedComponent->GetPackage()), matchedComponent->GetPackage() });
+      const auto& componentPackage = matchedComponent->GetPackage();
+      context.packages.insert({ GetPackageID(componentPackage), componentPackage });
+      if (matchedComponent->HasApi(context.rteActiveTarget)) {
+        const auto& apiPackage = matchedComponent->GetApi(context.rteActiveTarget, false)->GetPackage();
+        context.packages.insert({ GetPackageID(apiPackage), apiPackage });
+      }
     } else if (filteredComponents.empty()) {
       // No match
       ProjMgrLogger::Error("no component was found with identifier '" + item.component + "'");
