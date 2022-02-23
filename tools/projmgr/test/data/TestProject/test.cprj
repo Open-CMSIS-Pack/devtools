@@ -3,11 +3,11 @@
   <created timestamp="2021-12-01T14:10:33" tool="projmgr 0.0.0+g08c6e2a"/>
 
   <info isLayer="false">
-    <description>Project 1</description>
+    <description>Automatically generated project</description>
   </info>
 
   <packages>
-    <package name="RteTest_DFP" vendor="ARM" version="0.1.1"/>
+    <package name="RteTest_DFP" vendor="ARM" version="0.2.0"/>
   </packages>
 
   <compilers>

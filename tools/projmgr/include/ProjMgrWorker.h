@@ -42,6 +42,29 @@ struct DirectoriesItem {
   std::string cproject;
   std::string intdir;
   std::string outdir;
+  std::string cprj;
+};
+
+/**
+ * @brief device item containing
+ *        device name,
+ *        device vendor,
+ *        device processor name,
+*/
+struct DeviceItem {
+  std::string vendor;
+  std::string name;
+  std::string pname;
+};
+
+/**
+ * @brief board item containing
+ *        board vendor,
+ *        board name,
+*/
+struct BoardItem {
+  std::string vendor;
+  std::string name;
 };
 
 /**
@@ -79,6 +102,7 @@ struct DirectoriesItem {
  *        map of config files,
  *        list of user groups,
  *        map of absolute file paths,
+ *        map of generators,
  *        linker script,
 */
 struct ContextItem {
@@ -114,6 +138,8 @@ struct ContextItem {
   std::map<std::string, std::map<std::string, RteFileInstance*>> configFiles;
   std::vector<GroupNode> groups;
   std::map<std::string, std::string> filePaths;
+  std::map<std::string, RteGenerator*> generators;
+  std::map<std::string, std::pair<std::string, std::string>> gpdscs;
   std::string linkerScript;
 };
 
@@ -172,43 +198,51 @@ public:
 
   /**
    * @brief list available packs
+   * @param reference to list of packs
    * @param filter words to filter results
-   * @param packs reference to list of packs
    * @return true if executed successfully
   */
-  bool ListPacks(const std::string& filter, std::vector<std::string>& packs);
+  bool ListPacks(std::vector<std::string>& packs, const std::string& filter = RteUtils::EMPTY_STRING);
 
   /**
    * @brief list available devices
+   * @param reference to list of devices
    * @param filter words to filter results
-   * @param packs reference to list of packs
    * @return true if executed successfully
   */
-  bool ListDevices(const std::string& filter, std::vector<std::string>& devices);
+  bool ListDevices(std::vector<std::string>& devices, const std::string& filter = RteUtils::EMPTY_STRING);
 
   /**
    * @brief list available components
+   * @param reference to list of components
    * @param filter words to filter results
-   * @param packs reference to list of packs
    * @return true if executed successfully
   */
-  bool ListComponents(const std::string& filter, std::vector<std::string>& components);
+  bool ListComponents(std::vector<std::string>& components, const std::string& filter = RteUtils::EMPTY_STRING);
 
   /**
    * @brief list available dependencies
+   * @param reference to list of dependencies
    * @param filter words to filter results
-   * @param packs reference to list of packs
    * @return true if executed successfully
   */
-  bool ListDependencies(const std::string& filter, std::vector<std::string>& dependencies);
+  bool ListDependencies(std::vector<std::string>& dependencies, const std::string& filter = RteUtils::EMPTY_STRING);
 
   /**
    * @brief list contexts
+   * @param reference to list of contexts
    * @param filter words to filter results
-   * @param reference list of contexts
    * @return true if executed successfully
   */
-  bool ListContexts(const std::string& filter, std::vector<std::string>& contexts);
+  bool ListContexts(std::vector<std::string>& contexts, const std::string& filter = RteUtils::EMPTY_STRING);
+
+  /**
+ * @brief list generators of a given context
+ * @param context name
+ * @param reference to list of generators
+ * @return true if executed successfully
+*/
+  bool ListGenerators(const std::string& context, std::vector<std::string>& generators);
 
   /**
    * @brief add contexts for a given descriptor
@@ -221,9 +255,9 @@ public:
 
   /**
    * @brief get context map
-   * @param reference to context map
+   * @param pointer to context map
   */
-  void GetContexts(std::map<std::string, ContextItem>& contexts);
+  void GetContexts(std::map<std::string, ContextItem>* &contexts);
 
   /**
    * @brief copy context files into output directory
@@ -239,6 +273,14 @@ public:
    * @param reference to output directory
   */
   void SetOutputDir(const std::string& outputDir);
+
+  /**
+   * @brief execute generator of a given context
+   * @param context name
+   * @param generator identifier
+   * @return true if executed successfully
+  */
+  bool ExecuteGenerator(const std::string& context, std::string& generatorId);
 
 protected:
   ProjMgrKernel* m_kernel = nullptr;
@@ -256,6 +298,8 @@ protected:
   bool ProcessPrecedences(ContextItem& context);
   bool ProcessPrecedence(StringCollection& item);
   bool ProcessDevice(ContextItem& context);
+  bool ProcessDevicePrecedence(StringCollection& item);
+  bool ProcessBoardPrecedence(StringCollection& item);
   bool ProcessToolchain(ContextItem& context);
   bool ProcessPackages(ContextItem& context);
   bool ProcessComponents(ContextItem& context);
@@ -279,11 +323,11 @@ protected:
   static std::set<std::string> SplitArgs(const std::string& args, const std::string& delimiter = " ");
   static void ApplyFilter(const std::set<std::string>& origin, const std::set<std::string>& filter, std::set<std::string>& result);
   static bool FullMatch(const std::set<std::string>& installed, const std::set<std::string>& required);
-  std::string GetComponentID(const RteItem* component) const;
-  std::string GetConditionID(const RteItem* condition) const;
-  std::string GetComponentAggregateID(const RteItem* component) const;
-  std::string GetPackageID(const RteItem* pack) const;
-  std::string ConstructID(const std::vector<std::pair<const char*, const std::string&>>& elements) const;
+  bool AddRequiredComponents(ContextItem& context);
+  void GetDeviceItem(const std::string& element, DeviceItem& device) const;
+  void GetBoardItem (const std::string& element, BoardItem& board) const;
+  bool GetPrecedentValue(std::string& outValue, const std::string& element) const;
+  std::string GetDeviceInfoString(const std::string& vendor, const std::string& name, const std::string& processor) const;
 };
 
 #endif  // PROJMGRWORKER_H

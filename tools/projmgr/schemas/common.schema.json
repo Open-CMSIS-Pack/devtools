@@ -31,8 +31,8 @@
     },
     "DeviceType": {
       "type": "string",
-      "pattern": "^([\\w .-]+::)?([\\w .-]+)(:[\\w .-]+)?$",
-      "description": "Unique device name, optionally with vendor and core, in the format [<vendor>::]<device>[:<core>]. The <device> can be implicitly inferred from the <board>, but if both fields are present the given <device> overrules the <board> setting."
+      "pattern": "^(([\\w .-]+::)?([\\w .-]+))?(:[\\w .-]+)?$",
+      "description": "Unique device name and/or processor name, optionally preceded by device vendor, in the format [<vendor>::][<device>][:<processor>]. The <device> can be implicitly inferred from the <board>, but if both fields are present the given <device> overrules the <board> setting."
     },
     "BoardType": {
       "type": "string",
@@ -229,6 +229,10 @@
         "groups":       { "$ref": "#/definitions/GroupsType" },
         "files":        { "$ref": "#/definitions/FilesType" }
       },
+      "anyOf": [
+        {"required" : ["files"]},
+        {"required" : ["groups"]}
+      ],
       "additionalProperties": false
     },
     "FilesType": {
@@ -251,6 +255,7 @@
         "del-paths":    { "$ref": "#/definitions/DelpathsType" },
         "misc":         { "$ref": "#/definitions/MiscTypes" }
       },
+      "required": [ "file" ],
       "additionalProperties": false
     },
     "ComponentsType": {
@@ -291,7 +296,7 @@
       "properties": {
         "package": {
           "type": "string",
-          "pattern": "^([\\w .-]+::)?([\\w .-]+)(@(>=)?(\\d+\\.\\d+\\.\\d+((\\+|\\-)[\\w.+-]+)?))?$",
+          "pattern": "^([\\w .-]+::)([\\w .-]+)(@(>=)?(\\d+\\.\\d+\\.\\d+((\\+|\\-)[\\w.+-]+)?))?$",
           "description": "Name of a required Software Pack in the format [Vendor::] Pack [@[>=]Version]"
         }
       },
