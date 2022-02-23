@@ -75,7 +75,7 @@ private:
     void InitMessageTable() { ASSERT_TRUE(PackChk::InitMessageTable()); }
   } packChk;
 };
-/*
+
 TEST_F(TestCheckFiles, CheckFileExtension_Include) {
   // GIVEN an existing directory
   const string checkPath = "CheckFileExtension/TheIncludeDir/";
@@ -134,7 +134,7 @@ TEST_F(TestCheckFiles, CheckFileExtension_IncludeNotADir) {
   EXPECT_THAT(errLog.GetLogMessages(), Contains(HasSubstr(checkFile)));
   EXPECT_THAT(errLog.GetLogMessages(), Contains(HasSubstr("4711")));
 }
-*/
+
 TEST_F(TestCheckFiles, CheckFileExtension_NullItem) {
   // GIVEN a nullptr
   RteItem* item = nullptr;
