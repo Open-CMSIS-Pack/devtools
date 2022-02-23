@@ -1,0 +1,29 @@
+# Coverage configuration
+# ----------------------
+coverage:
+  status:
+    patch:
+      packchk1:
+        target: 50%
+        flags:
+          - packchk1
+      projmgr1:
+        target: 50%
+        flags:
+          - projmgr1
+flags:
+  packchk1:
+    carryforward: true
+    paths:
+      - tools/packchk
+  projmgr1:
+    carryforward: true
+    paths:
+      - tools/projmgr
+
+ignore:
+  - /test/.*
+  - /docs/*
+
+comment:
+  layout: "reach, diff, flags, files"
