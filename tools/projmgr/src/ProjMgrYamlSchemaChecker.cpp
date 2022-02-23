@@ -83,3 +83,17 @@ bool ProjMgrYamlSchemaChecker::Validate(const string& input,
 SchemaErrors& ProjMgrYamlSchemaChecker::GetErrors() {
   return m_errList;
 }
+
+int ProjMgrYamlSchemaChecker::add(int a, int b) {
+  return a + b;
+}
+
+int ProjMgrYamlSchemaChecker::sub(int a, int b) {
+  return b - a;
+}
+int ProjMgrYamlSchemaChecker::mul(int a, int b) {
+  return a*b;
+}
+int ProjMgrYamlSchemaChecker::div(int a, int b) {
+  return b/a;
+}
