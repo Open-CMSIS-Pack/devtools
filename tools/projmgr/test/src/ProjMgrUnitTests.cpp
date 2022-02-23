@@ -390,6 +390,22 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_MalformedAccessSequences2) {
   EXPECT_EQ(1, RunProjMgr(6, argv));
 }
 
+TEST_F(ProjMgrUnitTests, RunProjMgr_Multicore) {
+  char* argv[7];
+  // convert -s solution.yml
+  const string& csolution = testinput_folder + "/TestSolution/multicore.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv));
+
+  // Check generated CPRJs
+  CompareFile(testoutput_folder + "/multicore+CM0/multicore+CM0.cprj",
+    testinput_folder + "/TestSolution/ref/multicore+CM0.cprj");
+}
+
 TEST_F(ProjMgrUnitTests, ListPacks) {
   set<string> expected = {
     "ARM::RteTest@0.1.0",
