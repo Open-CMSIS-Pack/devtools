@@ -55,9 +55,7 @@ public:
    * @brief get callback
    * @return pointer to callback
   */
-  const ProjMgrCallback* GetCallback() {
-    return m_callback.get();
-  }
+  ProjMgrCallback* GetCallback();
 
 protected:
   XMLTree* CreateXmlTree() const;

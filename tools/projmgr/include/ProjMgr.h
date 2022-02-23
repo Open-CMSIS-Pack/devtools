@@ -64,7 +64,9 @@ protected:
   std::list<RtePackage*> m_installedPacks;
   std::string m_cprojectFile;
   std::string m_csolutionFile;
+  std::string m_context;
   std::string m_filter;
+  std::string m_codeGenerator;
   std::string m_command;
   std::string m_args;
   std::string m_rootDir;
@@ -74,11 +76,14 @@ protected:
   GroupNode m_files;
 
   bool RunConvert(void);
+  bool RunCodeGenerator(void);
   bool RunListPacks(void);
   bool RunListDevices(void);
   bool RunListComponents(void);
   bool RunListDependencies(void);
   bool RunListContexts(void);
+  bool RunListGenerators(void);
+  bool PopulateContexts(void);
 };
 
 #endif  // PROJMGR_H
