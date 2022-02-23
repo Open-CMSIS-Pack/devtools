@@ -138,6 +138,7 @@ The errors in this category are issued because of an incorrect command-line inpu
 | M210               | ERROR               | Only one input file to be checked is allowed. | You can only check one PDSC file at a time.
 <br/>
 
+
 ### Validation Messages
 
 The messages in this category are issued by PackChk during package validation.
