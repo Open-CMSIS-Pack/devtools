@@ -1,6 +1,7 @@
 add_executable(ProjMgrUnitTests src/ProjMgrUnitTests.cpp src/ProjMgrTestEnv.cpp
   src/ProjMgrWorkerUnitTests.cpp src/ProjMgrGeneratorUnitTests.cpp
-  src/ProjMgrSchemaCheckerUnitTests.cpp src/ProjMgrTestEnv.h)
+  src/ProjMgrSchemaCheckerUnitTests.cpp src/ProjMgrUtilsUnitTests.cpp
+  src/ProjMgrTestEnv.h)
 
 set_property(TARGET ProjMgrUnitTests PROPERTY
   MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")

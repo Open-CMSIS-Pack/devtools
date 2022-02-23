@@ -25,9 +25,9 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessToolchain) {
   const string& filename = testinput_folder + "/TestProject/test.cproject.yml";
   EXPECT_TRUE(parser.ParseCproject(filename, true));
   EXPECT_TRUE(AddContexts(parser, descriptor, filename));
-  map<string, ContextItem> contexts;
+  map<string, ContextItem>* contexts;
   GetContexts(contexts);
-  ContextItem context = contexts.begin()->second;
+  ContextItem context = contexts->begin()->second;
   EXPECT_TRUE(ProcessPrecedences(context));
   EXPECT_TRUE(ProcessToolchain(context));
   EXPECT_EQ(expected.name, context.toolchain.name);
@@ -75,9 +75,9 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDevice) {
   const string& filename = testinput_folder + "/TestProject/test.cproject.yml";
   EXPECT_TRUE(parser.ParseCproject(filename, true));
   EXPECT_TRUE(AddContexts(parser, descriptor, filename));
-  map<string, ContextItem> contexts;
+  map<string, ContextItem>* contexts;
   GetContexts(contexts);
-  ContextItem context = contexts.begin()->second;
+  ContextItem context = contexts->begin()->second;
   EXPECT_TRUE(LoadPacks());
   EXPECT_TRUE(ProcessPrecedences(context));
   EXPECT_TRUE(ProcessDevice(context));
@@ -96,9 +96,9 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessComponents) {
   const string& filename = testinput_folder + "/TestProject/test.cproject.yml";
   EXPECT_TRUE(parser.ParseCproject(filename, true));
   EXPECT_TRUE(AddContexts(parser, descriptor, filename));
-  map<string, ContextItem> contexts;
+  map<string, ContextItem>* contexts;
   GetContexts(contexts);
-  ContextItem context = contexts.begin()->second;
+  ContextItem context = contexts->begin()->second;
   EXPECT_TRUE(LoadPacks());
   EXPECT_TRUE(ProcessPrecedences(context));
   EXPECT_TRUE(ProcessDevice(context));
@@ -118,9 +118,9 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDependencies) {
   const string& filename = testinput_folder + "/TestProject/test-dependency.cproject.yml";
   EXPECT_TRUE(parser.ParseCproject(filename, true));
   EXPECT_TRUE(AddContexts(parser, descriptor, filename));
-  map<string, ContextItem> contexts;
+  map<string, ContextItem>* contexts;
   GetContexts(contexts);
-  ContextItem context = contexts.begin()->second;
+  ContextItem context = contexts->begin()->second;
   EXPECT_TRUE(LoadPacks());
   EXPECT_TRUE(ProcessPrecedences(context));
   EXPECT_TRUE(ProcessDevice(context));
@@ -144,9 +144,9 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDeviceFailed) {
     "/TestProject/test.cproject_device_pname_unavailable_in_board.yml";
   EXPECT_TRUE(parser.ParseCproject(filename, true));
   EXPECT_TRUE(AddContexts(parser, descriptor, filename));
-  map<string, ContextItem> contexts;
+  map<string, ContextItem>* contexts;
   GetContexts(contexts);
-  ContextItem context = contexts.begin()->second;
+  ContextItem context = contexts->begin()->second;
   EXPECT_TRUE(LoadPacks());
   EXPECT_TRUE(ProcessPrecedences(context));
   EXPECT_FALSE(ProcessDevice(context));
@@ -176,7 +176,7 @@ TEST_F(ProjMgrWorkerUnitTests, LoadDuplicatePacks) {
 
   // Check if only one pack is loaded
   ASSERT_EQ(1, m_installedPacks.size());
-  EXPECT_EQ("ARM.RteTest_DFP", (*m_installedPacks.begin())->GetCommonID());
+  EXPECT_EQ("ARM.RteTest_DFP.0.2.0", (*m_installedPacks.begin())->GetPackageID());
 }
 
 TEST_F(ProjMgrWorkerUnitTests, LoadRequiredPacks) {
@@ -190,7 +190,21 @@ TEST_F(ProjMgrWorkerUnitTests, LoadRequiredPacks) {
 
   // Check if only one pack is loaded
   ASSERT_EQ(1, m_installedPacks.size());
-  EXPECT_EQ("ARM.RteTest_DFP", (*m_installedPacks.begin())->GetCommonID());
+  EXPECT_EQ("ARM.RteTest_DFP.0.2.0", (*m_installedPacks.begin())->GetPackageID());
+}
+
+TEST_F(ProjMgrWorkerUnitTests, LoadExactPackVersion) {
+  ProjMgrParser parser;
+  ContextDesc descriptor;
+
+  string filename = testinput_folder + "/TestProject/test.cproject_exact_package.yml";
+  EXPECT_TRUE(parser.ParseCproject(filename, true));
+  EXPECT_TRUE(AddContexts(parser, descriptor, filename));
+  EXPECT_TRUE(LoadPacks());
+
+  // Check if only one pack is loaded
+  ASSERT_EQ(1, m_installedPacks.size());
+  EXPECT_EQ("ARM.RteTest_DFP.0.1.1", (*m_installedPacks.begin())->GetPackageID());
 }
 
 TEST_F(ProjMgrWorkerUnitTests, LoadPacksNoPackage) {
@@ -204,7 +218,7 @@ TEST_F(ProjMgrWorkerUnitTests, LoadPacksNoPackage) {
 
   // get list of available packs
   vector<string> availablePacks;
-  EXPECT_TRUE(ListPacks("", availablePacks));
+  EXPECT_TRUE(ListPacks(availablePacks));
 
   // by default all packs available should be loaded
   EXPECT_EQ(availablePacks.size(), m_installedPacks.size());
@@ -248,9 +262,9 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDevice_Invalid_Device_Name) {
 
   EXPECT_TRUE(parser.ParseCproject(filename, true));
   EXPECT_TRUE(AddContexts(parser, descriptor, filename));
-  map<string, ContextItem> contexts;
+  map<string, ContextItem>* contexts;
   GetContexts(contexts);
-  ContextItem context = contexts.begin()->second;
+  ContextItem context = contexts->begin()->second;
   EXPECT_TRUE(LoadPacks());
   EXPECT_TRUE(ProcessPrecedences(context));
   EXPECT_FALSE(ProcessDevice(context));
@@ -268,9 +282,9 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDevice_Invalid_Device_Vendor) {
 
   EXPECT_TRUE(parser.ParseCproject(filename, true));
   EXPECT_TRUE(AddContexts(parser, descriptor, filename));
-  map<string, ContextItem> contexts;
+  map<string, ContextItem>* contexts;
   GetContexts(contexts);
-  ContextItem context = contexts.begin()->second;
+  ContextItem context = contexts->begin()->second;
   EXPECT_TRUE(LoadPacks());
   EXPECT_TRUE(ProcessPrecedences(context));
   EXPECT_FALSE(ProcessDevice(context));
@@ -288,9 +302,9 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDevice_PName) {
 
   EXPECT_TRUE(parser.ParseCproject(filename, true));
   EXPECT_TRUE(AddContexts(parser, descriptor, filename));
-  map<string, ContextItem> contexts;
+  map<string, ContextItem>* contexts;
   GetContexts(contexts);
-  ContextItem context = contexts.begin()->second;
+  ContextItem context = contexts->begin()->second;
   EXPECT_TRUE(LoadPacks());
   EXPECT_TRUE(ProcessPrecedences(context));
   EXPECT_FALSE(ProcessDevice(context));
@@ -306,9 +320,9 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDevice_With_Board_And_Device_Info) {
 
   EXPECT_TRUE(parser.ParseCproject(filename, true));
   EXPECT_TRUE(AddContexts(parser, descriptor, filename));
-  map<string, ContextItem> contexts;
+  map<string, ContextItem>* contexts;
   GetContexts(contexts);
-  ContextItem context = contexts.begin()->second;
+  ContextItem context = contexts->begin()->second;
   EXPECT_TRUE(LoadPacks());
   EXPECT_TRUE(ProcessPrecedences(context));
   EXPECT_TRUE(ProcessDevice(context));
@@ -320,10 +334,9 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessPrecedences_With_Only_Board) {
   const string& filename = testinput_folder + "/TestProject/test.cproject_only_board.yml";
   EXPECT_TRUE(parser.ParseCproject(filename, true));
   EXPECT_TRUE(AddContexts(parser, descriptor, filename));
-
-  map<string, ContextItem> contexts;
+  map<string, ContextItem>* contexts;
   GetContexts(contexts);
-  ContextItem context = contexts.begin()->second;
+  ContextItem context = contexts->begin()->second;
   EXPECT_TRUE(LoadPacks());
   EXPECT_TRUE(ProcessPrecedences(context));
   EXPECT_TRUE(ProcessDevice(context));
@@ -339,9 +352,9 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDevice_Invalid_Board_Vendor) {
 
   EXPECT_TRUE(parser.ParseCproject(filename, true));
   EXPECT_TRUE(AddContexts(parser, descriptor, filename));
-  map<string, ContextItem> contexts;
+  map<string, ContextItem>* contexts;
   GetContexts(contexts);
-  ContextItem context = contexts.begin()->second;
+  ContextItem context = contexts->begin()->second;
   EXPECT_TRUE(LoadPacks());
   EXPECT_TRUE(ProcessPrecedences(context));
   EXPECT_FALSE(ProcessDevice(context));
@@ -359,9 +372,9 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDevice_Invalid_Board_Name) {
 
   EXPECT_TRUE(parser.ParseCproject(filename, true));
   EXPECT_TRUE(AddContexts(parser, descriptor, filename));
-  map<string, ContextItem> contexts;
+  map<string, ContextItem>* contexts;
   GetContexts(contexts);
-  ContextItem context = contexts.begin()->second;
+  ContextItem context = contexts->begin()->second;
   EXPECT_TRUE(LoadPacks());
   EXPECT_TRUE(ProcessPrecedences(context));
   EXPECT_FALSE(ProcessDevice(context));

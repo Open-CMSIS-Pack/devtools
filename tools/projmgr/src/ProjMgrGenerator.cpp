@@ -174,11 +174,12 @@ void ProjMgrGenerator::GenerateCprjComponents(XMLTreeElement* element, const Con
           for (const auto& configFile : configFileMap.second) {
             XMLTreeElement* fileElement = componentElement->CreateElement("file");
             if (fileElement) {
-              //fileElement->SetAttributes(configFile.second->GetAttributes());
               SetAttribute(fileElement, "attr", "config");
               SetAttribute(fileElement, "name", configFile.first);
               SetAttribute(fileElement, "category", configFile.second->GetAttribute("category"));
-              SetAttribute(fileElement, "version", configFile.second->GetVersionString());
+              // TODO: Set config file version according to new PLM
+              const auto originalFile = configFile.second->GetFile(context.rteActiveTarget->GetName());
+              SetAttribute(fileElement, "version", originalFile->GetVersionString());
             }
           }
         }

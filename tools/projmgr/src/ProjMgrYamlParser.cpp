@@ -31,6 +31,9 @@ bool ProjMgrYamlParser::ParseCsolution(const string& input,
       return false;
     }
 
+    error_code ec;
+    csolution.path = fs::absolute(input, ec).generic_string();
+
     const YAML::Node& root = YAML::LoadFile(input);
     if (!ValidateCsolution(input, root)) {
       return false;
@@ -68,10 +71,12 @@ bool ProjMgrYamlParser::ParseCproject(const string& input,
       return false;
     }
 
+    error_code ec;
+    cproject.path = fs::absolute(input, ec).generic_string();
+
     const YAML::Node& projectNode = root[YAML_PROJECT];
     map<const string, string&> projectChildren = {
       {YAML_NAME, cproject.name},
-      {YAML_DESCRIPTION, cproject.description},
       {YAML_OUTPUTTYPE, cproject.outputType},
     };
     for (const auto& item : projectChildren) {
@@ -119,10 +124,12 @@ bool ProjMgrYamlParser::ParseClayer(const string& input,
       return false;
     }
 
+    error_code ec;
+    clayer.path = fs::absolute(input, ec).generic_string();
+
     const YAML::Node& layerNode = root[YAML_LAYER];
     map<const string, string&> projectChildren = {
       {YAML_NAME, clayer.name},
-      {YAML_DESCRIPTION, clayer.description},
       {YAML_OUTPUTTYPE, clayer.outputType},
     };
     for (const auto& item : projectChildren) {
