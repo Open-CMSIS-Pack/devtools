@@ -4,11 +4,13 @@ coverage:
   status:
     patch:
       packchk1:
-        target: 50%
+        target: auto
+        threshold: 0.01%
         flags:
           - packchk1
       projmgr1:
-        target: 50%
+        target: auto
+        threshold: 0.01%
         flags:
           - projmgr1
 flags:
