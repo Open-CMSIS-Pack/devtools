@@ -111,6 +111,41 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessComponents) {
   }
 }
 
+TEST_F(ProjMgrWorkerUnitTests, ProcessComponentsApi) {
+  set<string> expectedComponents = {
+    "ARM::Device:Startup&RteTest Startup@2.0.3",
+    "ARM::RteTest:ApiExclusive:S1@0.9.9",
+    "ARM::RteTest:CORE@0.1.1",
+  };
+  set<string> expectedPackages = {
+    "ARM::RteTest@0.1.0",
+    "ARM::RteTest_DFP@0.2.0",
+  };
+  ProjMgrParser parser;
+  ContextDesc descriptor;
+  const string& filename = testinput_folder + "/TestProject/test-api.cproject.yml";
+  EXPECT_TRUE(parser.ParseCproject(filename, true));
+  EXPECT_TRUE(AddContexts(parser, descriptor, filename));
+  map<string, ContextItem>* contexts;
+  GetContexts(contexts);
+  ContextItem context = contexts->begin()->second;
+  EXPECT_TRUE(LoadPacks());
+  EXPECT_TRUE(ProcessPrecedences(context));
+  EXPECT_TRUE(ProcessDevice(context));
+  EXPECT_TRUE(SetTargetAttributes(context, context.targetAttributes));
+  EXPECT_TRUE(ProcessComponents(context));
+  ASSERT_EQ(expectedComponents.size(), context.components.size());
+  auto componentIt = context.components.begin();
+  for (const auto& expectedComponent : expectedComponents) {
+    EXPECT_EQ(expectedComponent, (*componentIt++).first);
+  }
+  ASSERT_EQ(expectedPackages.size(), context.packages.size());
+  auto packageIt = context.packages.begin();
+  for (const auto& expectedPackage : expectedPackages) {
+    EXPECT_EQ(expectedPackage, (*packageIt++).first);
+  }
+}
+
 TEST_F(ProjMgrWorkerUnitTests, ProcessDependencies) {
   map<string, set<string>> expected = {{ "ARM::Device:Startup&RteTest Startup@2.0.3" , {"require RteTest:CORE"} }};
   ProjMgrParser parser;
