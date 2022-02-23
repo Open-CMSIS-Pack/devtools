@@ -882,6 +882,132 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Board_Device_Info) {
   EXPECT_NE(string::npos, errStr.find(expected));
 }
 
+TEST_F(ProjMgrUnitTests, RunProjMgr_ListGenerators) {
+  char* argv[7];
+  const string& csolution = testinput_folder + "/TestGenerator/test-gpdsc.csolution.yml";
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"generators";
+  argv[3] = (char*)"-s";
+  argv[4] = (char*)csolution.c_str();
+  argv[5] = (char*)"-c";
+  argv[6] = (char*)"test-gpdsc.Debug+CM0";
+  EXPECT_EQ(0, RunProjMgr(7, argv));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_ListGeneratorsEmptyContext) {
+  char* argv[5];
+  const string& csolution = testinput_folder + "/TestGenerator/test-gpdsc.csolution.yml";
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"generators";
+  argv[3] = (char*)"-s";
+  argv[4] = (char*)csolution.c_str();
+  EXPECT_EQ(0, RunProjMgr(5, argv));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_ListGeneratorsEmptyContextMultipleTypes) {
+  char* argv[5];
+  const string& csolution = testinput_folder + "/TestGenerator/test-gpdsc-multiple-types.csolution.yml";
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"generators";
+  argv[3] = (char*)"-s";
+  argv[4] = (char*)csolution.c_str();
+  EXPECT_EQ(1, RunProjMgr(5, argv));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_ListGeneratorsNonExistentContext) {
+  char* argv[7];
+  const string& csolution = testinput_folder + "/TestGenerator/test-gpdsc.csolution.yml";
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"generators";
+  argv[3] = (char*)"-s";
+  argv[4] = (char*)csolution.c_str();
+  argv[5] = (char*)"-c";
+  argv[6] = (char*)"NON-EXISTENT-CONTEXT";
+  EXPECT_EQ(1, RunProjMgr(7, argv));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_ListGeneratorsNonExistentSolution) {
+  char* argv[5];
+  const string& csolution = testinput_folder + "/TestGenerator/NON-EXISTENT.csolution.yml";
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"generators";
+  argv[3] = (char*)"-s";
+  argv[4] = (char*)csolution.c_str();
+  EXPECT_EQ(1, RunProjMgr(5, argv));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_ExecuteGenerator) {
+  char* argv[8];
+  const string& csolution = testinput_folder + "/TestGenerator/test-gpdsc.csolution.yml";
+  argv[1] = (char*)"run";
+  argv[2] = (char*)"-g";
+  argv[3] = (char*)"RteTestGeneratorIdentifier";
+  argv[4] = (char*)"-s";
+  argv[5] = (char*)csolution.c_str();
+  argv[6] = (char*)"-c";
+  argv[7] = (char*)"test-gpdsc.Debug+CM0";
+
+  //TODO: Enable ExecuteGenerator tests for all platforms once it is implemented
+#ifdef _WIN32
+  EXPECT_EQ(0, RunProjMgr(8, argv));
+#else
+  EXPECT_EQ(1, RunProjMgr(8, argv));
+#endif
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_ExecuteGeneratorEmptyContext) {
+  char* argv[6];
+  const string& csolution = testinput_folder + "/TestGenerator/test-gpdsc.csolution.yml";
+  argv[1] = (char*)"run";
+  argv[2] = (char*)"-g";
+  argv[3] = (char*)"RteTestGeneratorIdentifier";
+  argv[4] = (char*)"-s";
+  argv[5] = (char*)csolution.c_str();
+
+  //TODO: Enable ExecuteGenerator tests for all platforms once it is implemented
+#ifdef _WIN32
+  EXPECT_EQ(0, RunProjMgr(6, argv));
+#else
+  EXPECT_EQ(1, RunProjMgr(6, argv));
+#endif
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_ExecuteGeneratorEmptyContextMultipleTypes) {
+  char* argv[6];
+  const string& csolution = testinput_folder + "/TestGenerator/test-gpdsc-multiple-types.csolution.yml";
+  argv[1] = (char*)"run";
+  argv[2] = (char*)"-g";
+  argv[3] = (char*)"RteTestGeneratorIdentifier";
+  argv[4] = (char*)"-s";
+  argv[5] = (char*)csolution.c_str();
+
+  EXPECT_EQ(1, RunProjMgr(6, argv));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_ExecuteGeneratorNonExistentContext) {
+  char* argv[8];
+  const string& csolution = testinput_folder + "/TestGenerator/test-gpdsc.csolution.yml";
+  argv[1] = (char*)"run";
+  argv[2] = (char*)"-g";
+  argv[3] = (char*)"RteTestGeneratorIdentifier";
+  argv[4] = (char*)"-s";
+  argv[5] = (char*)csolution.c_str();
+  argv[6] = (char*)"-c";
+  argv[7] = (char*)"NON-EXISTENT-CONTEXT";
+  EXPECT_EQ(1, RunProjMgr(8, argv));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_ExecuteGeneratorNonExistentSolution) {
+  char* argv[6];
+  const string& csolution = testinput_folder + "/TestGenerator/NON-EXISTENT.csolution.yml";
+  argv[1] = (char*)"run";
+  argv[2] = (char*)"-g";
+  argv[3] = (char*)"RteTestGeneratorIdentifier";
+  argv[4] = (char*)"-s";
+  argv[5] = (char*)csolution.c_str();
+  EXPECT_EQ(1, RunProjMgr(6, argv));
+}
+
 TEST_F(ProjMgrUnitTests, ListGenerators) {
   set<string> expected = {
      "RteTestGeneratorIdentifier (RteTest Generator Description)",
@@ -896,8 +1022,6 @@ TEST_F(ProjMgrUnitTests, ListGenerators) {
   EXPECT_EQ(expected, set<string>(generators.begin(), generators.end()));
 }
 
-//TODO: Enable ExecuteGenerator tests for all platforms once it is implemented
-#ifdef _WIN32
 TEST_F(ProjMgrUnitTests, ExecuteGenerator) {
   m_csolutionFile = testinput_folder + "/TestGenerator/test-gpdsc.csolution.yml";
   error_code ec;
@@ -905,6 +1029,12 @@ TEST_F(ProjMgrUnitTests, ExecuteGenerator) {
   m_context = "test-gpdsc.Debug+CM0";
   m_codeGenerator = "RteTestGeneratorIdentifier";
   EXPECT_TRUE(PopulateContexts());
+
+  //TODO: Enable ExecuteGenerator tests for all platforms once it is implemented
+#ifdef _WIN32
   EXPECT_TRUE(m_worker.ExecuteGenerator(m_context, m_codeGenerator));
-}
+#else
+  EXPECT_FALSE(m_worker.ExecuteGenerator(m_context, m_codeGenerator));
 #endif
+}
+

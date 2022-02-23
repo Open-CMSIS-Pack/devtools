@@ -456,7 +456,7 @@ bool ProjMgr::RunCodeGenerator(void) {
       return false;
     }
   } else {
-    if (find(contexts.begin(), contexts.end(), m_context) != contexts.end()) {
+    if (find(contexts.begin(), contexts.end(), m_context) == contexts.end()) {
       ProjMgrLogger::Error("context '" + m_context + "' was not found");
       return false;
     }
