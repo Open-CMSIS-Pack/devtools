@@ -602,8 +602,11 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
       const auto& componentPackage = matchedComponent->GetPackage();
       context.packages.insert({ ProjMgrUtils::GetPackageID(componentPackage), componentPackage });
       if (matchedComponent->HasApi(context.rteActiveTarget)) {
-        const auto& apiPackage = matchedComponent->GetApi(context.rteActiveTarget, false)->GetPackage();
-        context.packages.insert({ ProjMgrUtils::GetPackageID(apiPackage), apiPackage });
+        const auto& api = matchedComponent->GetApi(context.rteActiveTarget, false);
+        if (api) {
+          const auto& apiPackage = api->GetPackage();
+          context.packages.insert({ ProjMgrUtils::GetPackageID(apiPackage), apiPackage });
+        }
       }
     } else if (filteredComponents.empty()) {
       // No match

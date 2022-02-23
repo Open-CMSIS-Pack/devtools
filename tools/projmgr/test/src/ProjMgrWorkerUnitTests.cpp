@@ -119,16 +119,16 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessComponentsApi) {
   };
   set<string> expectedPackages = {
     "ARM::RteTest@0.1.0",
-    "ARM::RteTest_DFP@0.1.1",
+    "ARM::RteTest_DFP@0.2.0",
   };
   ProjMgrParser parser;
   ContextDesc descriptor;
   const string& filename = testinput_folder + "/TestProject/test-api.cproject.yml";
   EXPECT_TRUE(parser.ParseCproject(filename, true));
   EXPECT_TRUE(AddContexts(parser, descriptor, filename));
-  map<string, ContextItem> contexts;
+  map<string, ContextItem>* contexts;
   GetContexts(contexts);
-  ContextItem context = contexts.begin()->second;
+  ContextItem context = contexts->begin()->second;
   EXPECT_TRUE(LoadPacks());
   EXPECT_TRUE(ProcessPrecedences(context));
   EXPECT_TRUE(ProcessDevice(context));
