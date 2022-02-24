@@ -10,8 +10,8 @@
 #include "SchemaError.h"
 
 #include <nlohmann/json-schema.hpp>
-
 #include <string>
+#include "yaml-cpp/yaml.h"
 
 using nlohmann::json;
 
@@ -39,6 +39,7 @@ public:
 private:
   std::string  m_yamlFile;
   SchemaErrors m_errList;
+  YAML::Node m_yamlData;
 };
 
 #endif // SCHEMACHECKERERROR_H
