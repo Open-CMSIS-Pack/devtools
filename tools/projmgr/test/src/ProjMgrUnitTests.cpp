@@ -291,6 +291,34 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution) {
     testinput_folder + "/TestSolution/TestProject2/test2.Debug+CM3.cprj");
 }
 
+TEST_F(ProjMgrUnitTests, RunProjMgrSolutionContext) {
+  char* argv[8];
+  // convert -s solution.yml
+  const string& csolution = testinput_folder + "/TestSolution/test.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  argv[6] = (char*)"-c";
+  argv[7] = (char*)"test2.Debug+CM0";
+  EXPECT_EQ(0, RunProjMgr(8, argv));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgrSolutionNonExistentContext) {
+  char* argv[8];
+  // convert -s solution.yml
+  const string& csolution = testinput_folder + "/TestSolution/test.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  argv[6] = (char*)"-c";
+  argv[7] = (char*)"NON-EXISTENT-CONTEXT";
+  EXPECT_EQ(1, RunProjMgr(8, argv));
+}
+
 TEST_F(ProjMgrUnitTests, RunProjMgrLayers) {
   char* argv[7];
 
@@ -430,19 +458,47 @@ TEST_F(ProjMgrUnitTests, ListPacks) {
     "ARM::RteTest_DFP@0.2.0"
   };
   vector<string> packs;
-  EXPECT_TRUE(m_worker.ListPacks(packs, "RteTest"));
+  EXPECT_TRUE(m_worker.ListPacks(packs, "", "RteTest"));
+  EXPECT_EQ(expected, set<string>(packs.begin(), packs.end()));
+}
+
+TEST_F(ProjMgrUnitTests, ListPacksPackageFiltered) {
+  set<string> expected = {
+    "ARM::RteTest_DFP@0.1.1"
+  };
+  vector<string> packs;
+  ContextDesc descriptor;
+  const string& filenameInput = testinput_folder + "/TestProject/test.cproject_exact_package.yml";
+  EXPECT_TRUE(m_parser.ParseCproject(filenameInput, false, true));
+  EXPECT_TRUE(m_worker.AddContexts(m_parser, descriptor, filenameInput));
+  EXPECT_TRUE(m_worker.ListPacks(packs, "test", "RteTest"));
   EXPECT_EQ(expected, set<string>(packs.begin(), packs.end()));
 }
 
 TEST_F(ProjMgrUnitTests, ListDevices) {
   set<string> expected = {
-    "RteTest_ARMCM4_FP",
-    "RteTest_ARMCM4_NOFP",
-    "RteTest_ARMCM4_FP",
-    "RteTest_ARMCM4_NOFP"
+    "RteTestGen_ARMCM0",
+    "RteTest_ARMCM0",
+    "RteTest_ARMCM0_Dual:cm0_core0",
+    "RteTest_ARMCM0_Dual:cm0_core1",
+    "RteTest_ARMCM0_Single",
+    "RteTest_ARMCM0_Test"
   };
   vector<string> devices;
-  EXPECT_TRUE(m_worker.ListDevices(devices, "CM4"));
+  EXPECT_TRUE(m_worker.ListDevices(devices, "", "CM0"));
+  EXPECT_EQ(expected, set<string>(devices.begin(), devices.end()));
+}
+
+TEST_F(ProjMgrUnitTests, ListDevicesPackageFiltered) {
+  set<string> expected = {
+    "RteTest_ARMCM0"
+  };
+  vector<string> devices;
+  ContextDesc descriptor;
+  const string& filenameInput = testinput_folder + "/TestProject/test.cproject_exact_package.yml";
+  EXPECT_TRUE(m_parser.ParseCproject(filenameInput, false, true));
+  EXPECT_TRUE(m_worker.AddContexts(m_parser, descriptor, filenameInput));
+  EXPECT_TRUE(m_worker.ListDevices(devices, "test", "CM0"));
   EXPECT_EQ(expected, set<string>(devices.begin(), devices.end()));
 }
 
@@ -451,7 +507,7 @@ TEST_F(ProjMgrUnitTests, ListComponents) {
     "ARM::Device:Startup&RteTest Startup@2.0.3 (ARM::RteTest_DFP@0.2.0)",
   };
   vector<string> components;
-  EXPECT_TRUE(m_worker.ListComponents(components, "Startup"));
+  EXPECT_TRUE(m_worker.ListComponents(components, "", "Startup"));
   EXPECT_EQ(expected, set<string>(components.begin(), components.end()));
 }
 
@@ -464,7 +520,7 @@ TEST_F(ProjMgrUnitTests, ListComponentsDeviceFiltered) {
   const string& filenameInput = testinput_folder + "/TestProject/test.cproject.yml";
   EXPECT_TRUE(m_parser.ParseCproject(filenameInput, false, true));
   EXPECT_TRUE(m_worker.AddContexts(m_parser, descriptor, filenameInput));
-  EXPECT_TRUE(m_worker.ListComponents(components, "Startup"));
+  EXPECT_TRUE(m_worker.ListComponents(components, "test", "Startup"));
   EXPECT_EQ(expected, set<string>(components.begin(), components.end()));
 }
 
@@ -477,7 +533,7 @@ TEST_F(ProjMgrUnitTests, ListDependencies) {
   const string& filenameInput = testinput_folder + "/TestProject/test-dependency.cproject.yml";
   EXPECT_TRUE(m_parser.ParseCproject(filenameInput, false, true));
   EXPECT_TRUE(m_worker.AddContexts(m_parser, descriptor, filenameInput));
-  EXPECT_TRUE(m_worker.ListDependencies(dependencies, "CORE"));
+  EXPECT_TRUE(m_worker.ListDependencies(dependencies, "test-dependency", "CORE"));
   EXPECT_EQ(expected, set<string>(dependencies.begin(), dependencies.end()));
 }
 

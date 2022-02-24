@@ -1110,9 +1110,6 @@ bool ProjMgrWorker::CheckType(TypeFilter typeFilter, TypePair type) {
 bool ProjMgrWorker::ProcessContext(ContextItem& context, bool resolveDependencies) {
   context.outputType = context.cproject->outputType.empty() ? "exe" : context.cproject->outputType;
 
-  if (!ProcessPackages(context)) {
-    return false;
-  }
   if (!LoadPacks()) {
     return false;
   }
@@ -1218,7 +1215,14 @@ set<string> ProjMgrWorker::SplitArgs(const string& args, const string& delimiter
   return s;
 }
 
-bool ProjMgrWorker::ListPacks(vector<string>&packs, const string& filter) {
+bool ProjMgrWorker::ListPacks(vector<string>&packs, const string& contextName, const string& filter) {
+  if (!contextName.empty()) {
+    // Get selected context
+    if (m_contexts.empty() || (m_contexts.find(contextName) == m_contexts.end())) {
+      ProjMgrLogger::Error("context '" + contextName + "' was not found");
+      return false;
+    }
+  }
   if (!LoadPacks()) {
     return false;
   }
@@ -1243,13 +1247,12 @@ bool ProjMgrWorker::ListPacks(vector<string>&packs, const string& filter) {
   return true;
 }
 
-bool ProjMgrWorker::ListDevices(vector<string>& devices, const string& filter) {
-  if (!m_contexts.empty()) {
-    ContextItem context = m_contexts.begin()->second;
-    if (!context.cproject->packages.empty()) {
-      if (!ProcessPackages(context)) {
-        return false;
-      }
+bool ProjMgrWorker::ListDevices(vector<string>& devices, const string& contextName, const string& filter) {
+  if (!contextName.empty()) {
+    // Get selected context
+    if (m_contexts.empty() || (m_contexts.find(contextName) == m_contexts.end())) {
+      ProjMgrLogger::Error("context '" + contextName + "' was not found");
+      return false;
     }
   }
   if (!LoadPacks()) {
@@ -1288,17 +1291,17 @@ bool ProjMgrWorker::ListDevices(vector<string>& devices, const string& filter) {
   return true;
 }
 
-bool ProjMgrWorker::ListComponents(vector<string>& components, const string& filter) {
-  ContextItem context;
-  if (!LoadPacks()) {
-    return false;
-  }
-  if (!m_contexts.empty()) {
-    context = m_contexts.begin()->second;
-    if (!context.cproject->packages.empty()) {
-      if (!ProcessPackages(context)) {
-        return false;
-      }
+bool ProjMgrWorker::ListComponents(vector<string>& components, const string& contextName, const string& filter) {
+  RteComponentMap installedComponents;
+  if (!contextName.empty()) {
+    // Get selected context
+    if (m_contexts.empty() || (m_contexts.find(contextName) == m_contexts.end())) {
+      ProjMgrLogger::Error("context '" + contextName + "' was not found");
+      return false;
+    }
+    ContextItem& context = m_contexts.at(contextName);
+    if (!LoadPacks()) {
+      return false;
     }
     if (!ProcessPrecedences(context)) {
       return false;
@@ -1309,18 +1312,28 @@ bool ProjMgrWorker::ListComponents(vector<string>& components, const string& fil
     if (!ProcessDevice(context)) {
       return false;
     }
-  }
-  if (!SetTargetAttributes(context, context.targetAttributes)) {
-    return false;
-  }
-  RteComponentMap installedComponents = context.rteActiveTarget->GetFilteredComponents();
-  if (installedComponents.empty()) {
-    if (m_contexts.empty()) {
-      ProjMgrLogger::Error("no installed component was found");
-    } else {
-      ProjMgrLogger::Error("no component was found for device '" + context.cproject->target.device + "'");
+    if (!SetTargetAttributes(context, context.targetAttributes)) {
+      return false;
     }
-    return false;
+    installedComponents = context.rteActiveTarget->GetFilteredComponents();
+    if (installedComponents.empty()) {
+      ProjMgrLogger::Error("no component was found for device '" + context.device + "'");
+      return false;
+    }
+  } else {
+    // No context is given
+    ContextItem context;
+    if (!LoadPacks()) {
+      return false;
+    }
+    if (!SetTargetAttributes(context, context.targetAttributes)) {
+      return false;
+    }
+    installedComponents = context.rteActiveTarget->GetFilteredComponents();
+    if (installedComponents.empty()) {
+      ProjMgrLogger::Error("no installed component was found");
+      return false;
+    }
   }
   RteComponentMap componentMap;
   set<string> componentIds, filteredIds;
@@ -1343,11 +1356,12 @@ bool ProjMgrWorker::ListComponents(vector<string>& components, const string& fil
   return true;
 }
 
-bool ProjMgrWorker::ListDependencies(vector<string>& dependencies, const string& filter) {
-  if (m_contexts.empty()) {
+bool ProjMgrWorker::ListDependencies(vector<string>& dependencies, const string& contextName, const string& filter) {
+  if (m_contexts.empty() || (m_contexts.find(contextName) == m_contexts.end())) {
+    ProjMgrLogger::Error("context '" + contextName + "' was not found");
     return false;
   }
-  ContextItem context = m_contexts.begin()->second;
+  ContextItem& context = m_contexts.at(contextName);
   if (!ProcessContext(context)) {
     return false;
   }

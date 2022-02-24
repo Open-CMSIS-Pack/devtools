@@ -202,31 +202,34 @@ public:
    * @param filter words to filter results
    * @return true if executed successfully
   */
-  bool ListPacks(std::vector<std::string>& packs, const std::string& filter = RteUtils::EMPTY_STRING);
+  bool ListPacks(std::vector<std::string>& packs, const std::string& contextName, const std::string& filter = RteUtils::EMPTY_STRING);
 
   /**
    * @brief list available devices
    * @param reference to list of devices
+   * @param reference to context name
    * @param filter words to filter results
    * @return true if executed successfully
   */
-  bool ListDevices(std::vector<std::string>& devices, const std::string& filter = RteUtils::EMPTY_STRING);
+  bool ListDevices(std::vector<std::string>& devices, const std::string& contextName, const std::string& filter = RteUtils::EMPTY_STRING);
 
   /**
    * @brief list available components
    * @param reference to list of components
+   * @param reference to context name
    * @param filter words to filter results
    * @return true if executed successfully
   */
-  bool ListComponents(std::vector<std::string>& components, const std::string& filter = RteUtils::EMPTY_STRING);
+  bool ListComponents(std::vector<std::string>& components, const std::string& contextName, const std::string& filter = RteUtils::EMPTY_STRING);
 
   /**
    * @brief list available dependencies
    * @param reference to list of dependencies
+   * @param reference to context name
    * @param filter words to filter results
    * @return true if executed successfully
   */
-  bool ListDependencies(std::vector<std::string>& dependencies, const std::string& filter = RteUtils::EMPTY_STRING);
+  bool ListDependencies(std::vector<std::string>& dependencies, const std::string& contextName, const std::string& filter = RteUtils::EMPTY_STRING);
 
   /**
    * @brief list contexts
