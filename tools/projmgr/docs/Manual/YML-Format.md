@@ -361,7 +361,7 @@ The `project:` node is the start of a `*.cproject.yml` file and contain the foll
 :-----------------------------------------------------|:------------------------------------
 &nbsp;&nbsp; [`description:`](#description)           | Project description (optional)
 &nbsp;&nbsp; [`compiler:`](#compiler)                 | Toolchain selection (optional)
-&nbsp;&nbsp; `output-type: lib \| exe`                | Generate executable (default) or library
+&nbsp;&nbsp; [`output-type:'](#output-type)           | Generate executable (default) or library
 &nbsp;&nbsp; [`optimize:`](#optimize)                 | Optimize level for code generation (optional)
 &nbsp;&nbsp; [`debug:`](#debug)                       | Generation of debug information (optional)
 &nbsp;&nbsp; [`defines:`](#defines)                   | Preprocessor (#define) symbols for code generation (optional)
@@ -427,15 +427,52 @@ The following toolchain options may be used at various places such as:
 
 ## `compiler:`
 
-Selection of the compiler toolchain used for the project, i.e. `GCC`, `AC6`, 
+Selects the compiler toolchain used for code generation.
+
+Value                                                 | Supported Compiler
+:-----------------------------------------------------|:------------------------------------
+`AC6`                                                 | Arm Compiler version 6
+`GCC`                                                 | GCC Compiler
+`IAR`                                                 | IAR Compiler
+
+**Example:**
+
+```yml
+compiler: AC6              # Select Arm Compiler version 6
+```
 
 ## `output-type:`
 
-Generate executable (default) or library: `lib` or `exe`.
+Selects the output type for code generation.
+
+Value                                                 | Generated Output
+:-----------------------------------------------------|:------------------------------------
+`exe`                                                 | Executable in ELF format
+`lib`                                                 | Library or archive
+
+**Example:**
+
+```yml
+output-type: lib            # Generate a library
+```
 
 ## `optimize:`
 
-Generic optimize levels (max, size, speed, debug), mapped to the toolchain by CMSIS-Build.
+Generic optimize levels that are mapped to the toolchain by CMSIS-Build.
+
+Value                                                 | Code Generation
+:-----------------------------------------------------|:------------------------------------
+`balanced`                                            | Balanced optimization (default)
+`size`                                                | Optimized for code size
+`speed`                                               | Optimized for execution speed
+`debug`                                               | Optimized for debug illusion (generates typical slower and larger code)
+`max`                                                 | Maximum optimization (may use link-time optimizations)
+
+**Example:**
+
+```yml
+output-type: lib            # Generate a library
+```
 
 ## `debug:`
 
@@ -447,14 +484,19 @@ Control warnings (could be: no, all, Misra, AC5-like), mapped to the toolchain b
 
 ## `defines:`
 
-Add symbol #define statements to the command line of the development tools.
+Contains a list of symbol #define statements that are passed via the command line to the development tools.
 
-**YML structure:**
+`defines:`                                            | Content
+:-----------------------------------------------------|:------------------------------------
+&nbsp;&nbsp; `- <symbol-name>:`                       | #define symbol passed via command line
+&nbsp;&nbsp; `- <symbol-name>: <value>`               | #define symbol with value passed via command line
+
+**Example:**
 
 ```yml
 defines:                   # Start a list of define statements
-  - name: value            # add a symbol with optional value.
-  - name:
+  - TestValue: 12          # add symbol 'TestValue' with value 12
+  - TestMode:              # add symbol 'TestMode'
 ```
 
 ## `undefines:`
@@ -465,8 +507,8 @@ Remove symbol #define statements from the command line of the development tools.
 
 ```yml
 undefines:                 # Start a list of undefine statements
-  - name                   # remove symbol from the list of define statements.
-  - name                   # remove a symbol.
+  - TestValue              # remove symbol from the list of define statements.
+  - TestMode               # remove a symbol.
 ```
 
 ## `add-paths:`
@@ -555,7 +597,7 @@ packs:                                  # start section that specifics software 
   - pack: NXP::K32L3A60_DFP             # add pack for NXP device 
     path: ./local/NXP/K32L3A60_DFP      # with path to the pack (local copy, repo, etc.)
 
-  - path: AWS::coreHTTP                 # add pack
+  - pack: AWS::coreHTTP                 # add pack
     path: ./development/AWS/coreHTTP    # with path to development source directory
     for-type: +DevTest                  # pack is only used for target-type "DevTest"
 ```

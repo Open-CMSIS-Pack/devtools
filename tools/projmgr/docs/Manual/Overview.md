@@ -613,10 +613,7 @@ The typical usage of the `RTE_Components.h` file is in header files to control t
 
 Is described in [here](YML-Format.md).
 
-
-
 # Proposals
-
 
 ## Output versions to *.cprj
 
@@ -625,6 +622,7 @@ The ProjMgr should always generate *.cprj files that contain version information
 ## CMSIS-Zone Integration
 
 Suggest to split this into two sections:
+
  - `resources:` to define the execution phases, memory regions and region splits, and peripherals.  This section would be in the `csolution.yml` file. 
 
  - `requirements:` to define project requirements - effectively the partitioning of a system. It should be possible to assign to the application all remaining resources.
