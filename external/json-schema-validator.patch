@@ -16,10 +16,33 @@ index e6aff61..fa90bc0 100644
  include(CMakePackageConfigHelpers)
  write_basic_package_version_file(
 diff --git a/src/json-validator.cpp b/src/json-validator.cpp
-index 0beb613..7f3a077 100644
+index 0beb613..7a344a3 100644
 --- a/src/json-validator.cpp
 +++ b/src/json-validator.cpp
-@@ -576,6 +576,32 @@ public:
+@@ -218,12 +218,16 @@ public:
+ 		// not by a plain name fragment
+ 		if (uri.pointer() != "") {
+ 			try {
+-				auto &subschema = file.unknown_keywords.at(uri.pointer()); // null is returned if not existing
+-				auto s = schema::make(subschema, this, {}, {{uri}});       //  A JSON Schema MUST be an object or a boolean.
+-				if (s) {                                                   // nullptr if invalid schema, e.g. null
+-					file.unknown_keywords.erase(uri.fragment());
+-					return s;
+-				}
++        if (!file.unknown_keywords.empty()) {
++          if (file.unknown_keywords.find(uri.pointer()) != file.unknown_keywords.end()) {
++            auto &subschema = file.unknown_keywords.at(uri.pointer()); // null is returned if not existing
++            auto s = schema::make(subschema, this, {}, {{uri}});       //  A JSON Schema MUST be an object or a boolean.
++            if (s) {                                                   // nullptr if invalid schema, e.g. null
++              file.unknown_keywords.erase(uri.fragment());
++              return s;
++            }
++          }
++        }
+ 			} catch (nlohmann::detail::out_of_range &) { // at() did not find it
+ 			}
+ 		}
+@@ -576,6 +580,32 @@ public:
  		attr = sch.find("enum");
  		if (attr != sch.end()) {
  			enum_ = {true, attr.value()};
@@ -52,7 +75,7 @@ index 0beb613..7f3a077 100644
  			sch.erase(attr);
  		}
  
-@@ -1256,17 +1282,24 @@ std::shared_ptr<schema> schema::make(json &schema,
+@@ -1256,17 +1286,24 @@ std::shared_ptr<schema> schema::make(json &schema,
  		auto attr = schema.find("$id"); // if $id is present, this schema can be referenced by this ID
  		                                // as an additional URI
  		if (attr != schema.end()) {

@@ -38,7 +38,7 @@
     <!-- This generator is launched if any component referencing this generator by 'id' is selected and the specified <gpdsc> file does not exist -->
     <generator id="RteTestGeneratorIdentifier">
       <description>RteTest Generator Description</description>
-      <command host="win">Generator/script.bat</command>
+      <command>Generator/script.bat</command>
       <!-- path is specified either absolute or relative to PDSC or GPDSC file -->
       <workingDir>$PRTE/Device</workingDir>
       <!-- path is specified either absolute or relative to PDSC or GPDSC file. If not specified it is the project directory configured by the environment -->
@@ -56,7 +56,7 @@
   </generators>
 
   <components>
-    <component generator="RteTestGeneratorIdentifier" Cclass="Device" Cgroup="RteTest Generated Component" Csub="RteTest" Cversion="1.1.0" Capiversion="1.1.0" condition="RteTest">
+    <component generator="RteTestGeneratorIdentifier" Cclass="Device" Cgroup="RteTest Generated Component" Csub="RteTest" Cversion="1.1.0" Capiversion="1.1.0" condition="RteDevice">
       <description>Configuration via RteTest script</description>
       <RTE_Components_h>
         #define RTE_TEST_GENERATOR
