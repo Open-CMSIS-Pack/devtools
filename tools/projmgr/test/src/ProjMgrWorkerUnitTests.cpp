@@ -253,7 +253,7 @@ TEST_F(ProjMgrWorkerUnitTests, LoadPacksNoPackage) {
 
   // get list of available packs
   vector<string> availablePacks;
-  EXPECT_TRUE(ListPacks(availablePacks));
+  EXPECT_TRUE(ListPacks(availablePacks, "test"));
 
   // by default all packs available should be loaded
   EXPECT_EQ(availablePacks.size(), m_installedPacks.size());
