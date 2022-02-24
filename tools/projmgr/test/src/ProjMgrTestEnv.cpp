@@ -46,15 +46,19 @@ void ProjMgrTestEnv::SetUp() {
     RteFsUtils::RemoveDir(testoutput_folder);
   }
   RteFsUtils::CreateDirectories(testoutput_folder);
-  fs::copy(fs::path(schema_folder), fs::path(testoutput_folder + "/schemas"), fs::copy_options::recursive, ec);
-  schema_folder     = testoutput_folder + "/schemas";
   testinput_folder  = fs::canonical(testinput_folder).generic_string();
-  testoutput_folder = fs::canonical(testoutput_folder).generic_string();
   testoutput_folder = fs::canonical(testoutput_folder).generic_string();
   schema_folder     = fs::canonical(schema_folder).generic_string();
   ASSERT_FALSE(testinput_folder.empty());
   ASSERT_FALSE(testoutput_folder.empty());
   ASSERT_FALSE(schema_folder.empty());
+
+  std::string schemaDestDir = string(PROJMGRUNITTESTS_BIN_PATH) + "/../etc";
+  if (RteFsUtils::Exists(schemaDestDir)) {
+    RteFsUtils::RemoveDir(schemaDestDir);
+  }
+  RteFsUtils::CreateDirectories(schemaDestDir);
+  fs::copy(fs::path(schema_folder), fs::path(schemaDestDir), fs::copy_options::recursive, ec);
   CrossPlatformUtils::SetEnv("CMSIS_PACK_ROOT", testcmsispack_folder);
 }
 

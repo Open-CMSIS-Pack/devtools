@@ -17,27 +17,6 @@ protected:
   ProjMgrUnitTests() {}
   virtual ~ProjMgrUnitTests() {}
 
-  static void SetUpTestSuite() {
-    error_code ec;
-    std::string schemaSrcDir, schemaDestDir;
-    schemaSrcDir = string(TEST_FOLDER) + "../schemas";
-    schemaDestDir = string(PROJMGRUNITTESTS_BIN_PATH) + "/../etc";
-
-    if (!RteFsUtils::Exists(schemaSrcDir)) {
-      GTEST_SKIP();
-    }
-
-    if (RteFsUtils::Exists(schemaDestDir)) {
-      RteFsUtils::RemoveDir(schemaDestDir);
-    }
-    RteFsUtils::CreateDirectories(schemaDestDir);
-
-    fs::copy(fs::path(schemaSrcDir), fs::path(schemaDestDir), fs::copy_options::recursive, ec);
-    if (ec) {
-      GTEST_SKIP();
-    }
-  }
-
   void CompareFile(const string& file1, const string& file2);
   void CompareFileTree(const string& dir1, const string& dir2);
 };

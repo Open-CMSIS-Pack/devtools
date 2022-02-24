@@ -46,7 +46,7 @@ public:
 
 protected:
   SchemaErrors m_errList;
-  std::string m_schemaPath;
+  bool GetSchemaFile(std::string& schemaFile, const ProjMgrYamlSchemaChecker::FileType& type);
 };
 
 #endif  // PROJMGRYAMLSCHEMACHECKER_H
