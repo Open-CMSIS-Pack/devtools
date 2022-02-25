@@ -4,10 +4,14 @@
   "title": "CMSIS Project Manager cproject",
   "version": "0.9.1",
   "properties": {
-    "project": {
-      "$ref": "./common.schema.json#/definitions/ProjectDescType"
+    "open-cmsis": {
+      "properties": {
+        "project": {
+          "$ref": "./common.schema.json#/definitions/ProjectDescType"
+        }
+      },
+      "additionalProperties": false
     }
   },
-  "additionalProperties": false,
-  "required": [ "project" ]
+  "required": ["open-cmsis", "project"]
 }

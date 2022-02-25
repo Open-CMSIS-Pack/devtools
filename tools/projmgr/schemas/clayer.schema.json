@@ -4,10 +4,15 @@
   "title": "CMSIS Project Manager clayer",
   "version": "0.9.1",
   "properties": {
-    "layer": {
-      "$ref": "./common.schema.json#/definitions/LayerDescType"
+    "open-cmsis": {
+      "properties": {
+        "layer": {
+          "$ref": "./common.schema.json#/definitions/LayerDescType"
+        },
+        "additionalProperties": false
+      },
+      "required": ["layer"]
     }
   },
-  "additionalProperties": false,
-  "required": [ "layer" ]
+  "required": ["open-cmsis"]
 }

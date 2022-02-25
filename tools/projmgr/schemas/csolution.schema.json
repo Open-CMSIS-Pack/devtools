@@ -4,10 +4,15 @@
   "title": "CMSIS Project Manager csolution",
   "version": "0.9.1",
   "properties": {
-    "solution": {
-      "$ref": "./common.schema.json#/definitions/SolutionDescType"
+    "open-cmsis": {
+      "properties": {
+        "solution": {
+          "$ref": "./common.schema.json#/definitions/SolutionDescType"
+        },
+        "additionalProperties": false
+      },
+      "required": ["solution"]
     }
   },
-  "additionalProperties": false,
-  "required": [ "solution" ]
+  "required": ["open-cmsis"]
 }
