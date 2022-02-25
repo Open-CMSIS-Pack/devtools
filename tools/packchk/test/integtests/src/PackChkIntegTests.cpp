@@ -272,3 +272,18 @@ TEST_F(PackChkIntegTests, AddRefPacks) {
   }
 
 }
+
+// Validate software pack with directory starting by .
+TEST_F(PackChkIntegTests, CheckPackWithDot) {
+  const char* argv[2];
+
+  const string& pdscFile = PackChkIntegTestEnv::localtestdata_dir +
+    "/TestPackDot/TestVendor.TestPackDot.pdsc";
+  ASSERT_TRUE(RteFsUtils::Exists(pdscFile));
+
+  argv[0] = (char*)"";
+  argv[1] = (char*)pdscFile.c_str();
+
+  PackChk packChk;
+  EXPECT_EQ(0, packChk.Check(2, argv, nullptr));
+}
