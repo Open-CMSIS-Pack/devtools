@@ -308,8 +308,7 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
     auto mountedDevice = *(mountedDevices.begin());
     auto device = m_model->GetDevice(mountedDevice->GetDeviceName(), mountedDevice->GetDeviceVendor());
     if (!device) {
-      ProjMgrLogger::Error("device " + mountedDevice->GetDeviceVendor() +
-        "::" + mountedDevice->GetDeviceName() + " not found");
+      ProjMgrLogger::Error("board mounted device " + mountedDevice->GetFullDeviceName() + " not found");
       return false;
     }
     matchedBoardDevice = device;
@@ -341,22 +340,32 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
       }
     }
     if (!matchedDevice) {
-      ProjMgrLogger::Error("processor device '" + deviceItem.name + "' was not found");
+      ProjMgrLogger::Error("specified device '" + deviceItem.name + "' was not found");
       return false;
     }
     if (matchedBoardDevice) {
-      const string DeviceInfoString = GetDeviceInfoString(matchedDevice->GetVendorName(),
-        matchedDevice->GetDeviceName(), "");
-      const string BoardDeviceInfoString = GetDeviceInfoString(matchedBoardDevice->GetVendorName(),
-        matchedBoardDevice->GetDeviceName(), "");
-      if(DeviceInfoString != BoardDeviceInfoString) {
-        ProjMgrLogger::Error("specified device '" + deviceItem.name + "' and board mounted device '" +
-          matchedBoardDevice->GetDeviceName() + "' are different");
+      const string DeviceInfoString = matchedDevice->GetFullDeviceName();
+      const string BoardDeviceInfoString = matchedBoardDevice->GetFullDeviceName();
+      if(DeviceInfoString.find(BoardDeviceInfoString) == string::npos) {
+        ProjMgrLogger::Error("specified device '" + DeviceInfoString + "' and board mounted device '" +
+          BoardDeviceInfoString + "' are different");
         return false;
       }
     }
   }
 
+  // check device variants
+  if (matchedDevice->GetDeviceItemCount() > 0) {
+    ProjMgrLogger::Error("found multiple device variants");
+    string msg = "one of the following device variants must be specified:";
+    for (const auto& variant : matchedDevice->GetDeviceItems()) {
+      msg += "\n" + variant->GetFullDeviceName();
+    }
+    ProjMgrLogger::Error(msg);
+    return false;
+  }
+
+  // check device processors
   const auto& processor = matchedDevice->GetProcessor(deviceItem.pname);
   if (!processor) {
     if (!deviceItem.pname.empty()) {
@@ -374,7 +383,7 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
   const auto& processorAttributes = processor->GetAttributes();
   context.targetAttributes.insert(processorAttributes.begin(), processorAttributes.end());
   context.targetAttributes["Dvendor"] = matchedDevice->GetEffectiveAttribute("Dvendor");
-  context.targetAttributes["Dname"] = matchedDevice->GetEffectiveAttribute("Dname");
+  context.targetAttributes["Dname"] = matchedDevice->GetFullDeviceName();
 
   if (!context.fpu.empty()) {
     if (context.fpu == "on") {

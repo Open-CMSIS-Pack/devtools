@@ -732,7 +732,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Device_Unknown) {
   char* argv[6];
   const string& cproject = testinput_folder +
     "/TestProject/test.cproject_device_unknown.yml";
-  const string& expected = "processor device 'RteTest_ARM_UNKNOWN' was not found";
+  const string& expected = "specified device 'RteTest_ARM_UNKNOWN' was not found";
   StdStreamRedirect streamRedirect;
 
   argv[1] = (char*)"convert";
@@ -751,7 +751,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Device_Unknown_Vendor) {
   const string& cproject = testinput_folder +
     "/TestProject/test.cproject_device_unknown_vendor.yml";
 
-  const string& expected = "processor device 'RteTest_ARMCM0' was not found";
+  const string& expected = "specified device 'RteTest_ARMCM0' was not found";
   StdStreamRedirect streamRedirect;
 
   argv[1] = (char*)"convert";
@@ -787,7 +787,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Device_Unavailable_In_Board) {
   char* argv[6];
   const string& cproject = testinput_folder +
     "/TestProject/test.cproject_device_unavailable_in_board.yml";
-  const string& expected = "processor device 'RteTest_ARMCM7' was not found";
+  const string& expected = "specified device 'RteTest_ARMCM7' was not found";
   StdStreamRedirect streamRedirect;
 
   argv[1] = (char*)"convert";
@@ -848,7 +848,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Correct_Board_Wrong_Device_Info) {
   char* argv[6];
   const string& cproject = testinput_folder +
     "/TestProject/test.cproject_correct_board_wrong_device.yml";
-  const string& expected = "processor device 'RteTest_ARMCM_Unknown' was not found";
+  const string& expected = "specified device 'RteTest_ARMCM_Unknown' was not found";
   StdStreamRedirect streamRedirect;
 
   argv[1] = (char*)"convert";
@@ -885,6 +885,24 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Board_Multi_Mounted_Devices) {
   const string& cproject = testinput_folder +
     "/TestProject/test.cproject_board_multi_mounted_device.yml";
   const string& expected = "found multiple mounted devices";
+  StdStreamRedirect streamRedirect;
+
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-p";
+  argv[3] = (char*)cproject.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(1, RunProjMgr(6, argv));
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find(expected));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_Board_Multi_Variants) {
+  // Test Project with only board info and mounted device with multiple variants
+  char* argv[6];
+  const string& cproject = testinput_folder +
+    "/TestProject/test.cproject_board_multi_variant.yml";
+  const string& expected = "found multiple device variants";
   StdStreamRedirect streamRedirect;
 
   argv[1] = (char*)"convert";

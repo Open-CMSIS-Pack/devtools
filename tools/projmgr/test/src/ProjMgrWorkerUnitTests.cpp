@@ -292,7 +292,7 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDevice_Invalid_Device_Name) {
   ProjMgrParser parser;
   ContextDesc descriptor;
   const string& filename = testinput_folder + "/TestProject/test.cproject_device_unknown.yml";
-  const string& expected = "processor device 'RteTest_ARM_UNKNOWN' was not found";
+  const string& expected = "specified device 'RteTest_ARM_UNKNOWN' was not found";
   StdStreamRedirect streamRedirect;
 
   EXPECT_TRUE(parser.ParseCproject(filename, true));
@@ -312,7 +312,7 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDevice_Invalid_Device_Vendor) {
   ContextDesc descriptor;
   const string& filename = testinput_folder +
     "/TestProject/test.cproject_device_unknown_vendor.yml";
-  const string& expected = "processor device 'RteTest_ARMCM0' was not found";
+  const string& expected = "specified device 'RteTest_ARMCM0' was not found";
   StdStreamRedirect streamRedirect;
 
   EXPECT_TRUE(parser.ParseCproject(filename, true));
