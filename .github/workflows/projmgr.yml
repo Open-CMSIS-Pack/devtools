@@ -348,7 +348,6 @@ jobs:
         if: ${{ always() }}
 
   coverage:
-    needs: unittest
     if: |
       ${{
         github.event_name == 'pull_request' ||
@@ -394,10 +393,11 @@ jobs:
 
       - name: Upload Report to Codecov
         if: ${{ !github.event.repository.private }}
-        uses: codecov/codecov-action@v1.3.2
+        uses: codecov/codecov-action@v2
         with:
           files: ./build/tools/projmgr/coverage.info
           fail_ci_if_error: true
+          flags: projmgr-cov
           functionalities: fix
 
       - name: Archive coverage report
