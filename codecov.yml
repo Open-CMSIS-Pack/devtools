@@ -1,0 +1,33 @@
+# Coverage configuration
+# ----------------------
+coverage:
+  status:
+    patch: false
+    project:
+      default: false
+      packchk-cov:
+        target: auto
+        flags:
+          - packchk-cov
+      projmgr-cov:
+        target: auto
+        flags:
+          - projmgr-cov
+
+comment:
+  layout: "diff, flags, files"
+  behavior: new
+
+ignore:
+  - /test/.*
+  - /docs/*
+  
+flags:
+  packchk-cov:
+    paths:
+      - tools/packchk
+    carryforward: true
+  projmgr-cov:
+    paths:
+      - tools/projmgr
+    carryforward: true
