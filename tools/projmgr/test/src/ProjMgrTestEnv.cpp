@@ -39,26 +39,36 @@ StdStreamRedirect::~StdStreamRedirect() {
 void ProjMgrTestEnv::SetUp() {
   error_code ec;
   schema_folder        = string(TEST_FOLDER) + "../schemas";
-  testinput_folder     = string(TEST_FOLDER) + "data";
+  testinput_folder     = RteFsUtils::GetCurrentFolder() + "data";
   testoutput_folder    = RteFsUtils::GetCurrentFolder() + "output";
   testcmsispack_folder = string(CMAKE_SOURCE_DIR) + "test/packs";
   if (RteFsUtils::Exists(testoutput_folder)) {
     RteFsUtils::RemoveDir(testoutput_folder);
   }
   RteFsUtils::CreateDirectories(testoutput_folder);
-  testinput_folder  = fs::canonical(testinput_folder).generic_string();
+  std::string testdata_folder = string(TEST_FOLDER) + "data";
+  testdata_folder   = fs::canonical(testdata_folder).generic_string();
   testoutput_folder = fs::canonical(testoutput_folder).generic_string();
   schema_folder     = fs::canonical(schema_folder).generic_string();
-  ASSERT_FALSE(testinput_folder.empty());
+  ASSERT_FALSE(testdata_folder.empty());
   ASSERT_FALSE(testoutput_folder.empty());
   ASSERT_FALSE(schema_folder.empty());
 
+  // copy schemas
   std::string schemaDestDir = string(PROJMGRUNITTESTS_BIN_PATH) + "/../etc";
   if (RteFsUtils::Exists(schemaDestDir)) {
     RteFsUtils::RemoveDir(schemaDestDir);
   }
   RteFsUtils::CreateDirectories(schemaDestDir);
   fs::copy(fs::path(schema_folder), fs::path(schemaDestDir), fs::copy_options::recursive, ec);
+
+  //copy test input data
+  if (RteFsUtils::Exists(testinput_folder)) {
+    RteFsUtils::RemoveDir(testinput_folder);
+  }
+  RteFsUtils::CreateDirectories(testinput_folder);
+  fs::copy(fs::path(testdata_folder), fs::path(testinput_folder), fs::copy_options::recursive, ec);
+
   CrossPlatformUtils::SetEnv("CMSIS_PACK_ROOT", testcmsispack_folder);
 }
 
