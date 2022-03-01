@@ -473,6 +473,7 @@
       <xs:element name="description" type="xs:string" minOccurs="1" />
       <xs:element name="doc"         type="xs:string" minOccurs="0" />
       <xs:element name="category"    type="xs:string" minOccurs="0" />
+      <xs:element name="mcprj"       type="xs:string" minOccurs="0" />
       <!-- deprecated: url -->
       <xs:element name="url"         type="UrlType"   minOccurs="0" />
       <!-- deprecated: keywords -->
