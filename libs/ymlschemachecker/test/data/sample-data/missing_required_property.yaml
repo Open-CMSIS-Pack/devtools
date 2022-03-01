@@ -1,25 +1,20 @@
 layer:
-  name: 2
+  name: test
   defines:
     - DEF_LAYER2
     - DEF: oxff
   add-paths:
     - add/path/to2
   misc:
-    - compiler: GCC4@asd
+    - compiler: GCC
       C: [--layer2-flag]
-      Link: [ "link1" ]
   packages:
     - package: ARM::CMSIS@5.8.0
-  components:
-    - component: Device:Startup
   groups:
     - group: Sources Layer 2
       files: 
-        - file_INVALID: layer2.c
+        - file: layer2.c
       groups:
         - group: sub Layer 1
           files: 
-            - fileXXXX: sublayer1.c
-
-temp: test
+            - file: sublayer1.c

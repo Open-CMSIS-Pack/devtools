@@ -1,0 +1,8 @@
+solution:
+  - abc
+project:
+  device: STM32L475VGTx
+  compiler: AC6
+  components:
+    - component: Device:STM32Cube Framework:STM32CubeMX
+    - component: Device:STM32Cube HAL:Common

@@ -31,7 +31,7 @@ TEST_F(ProjMgrSchemaCheckerUnitTests, SchemaCheck_Pass) {
 TEST_F(ProjMgrSchemaCheckerUnitTests, SchemaCheck_Fail) {
   vector<std::pair<int, int>> expectedErrPos = {
     // line, col
-    {  5  ,  3 }
+    {  5  ,  0 }
   };
 
   const string& filename = testinput_folder +

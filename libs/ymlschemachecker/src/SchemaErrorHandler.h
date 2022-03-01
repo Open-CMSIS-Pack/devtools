@@ -40,6 +40,15 @@ private:
   std::string  m_yamlFile;
   SchemaErrors m_errList;
   YAML::Node m_yamlData;
+
+  /**
+   * @brief get error location string
+   * @param pointer to json erroneous schema
+   * @param error message
+  */
+  std::pair<std::string, bool> GetSearchString(
+    const nlohmann::json::json_pointer& ptr,
+    const std::string& message) noexcept;
 };
 
 #endif // SCHEMACHECKERERROR_H
