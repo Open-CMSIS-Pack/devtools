@@ -161,6 +161,20 @@ public:
   virtual void MergeFiles(const std::string& curFile, const std::string& newFile) { };
 
   /**
+ * @brief merge source file specified by curFile into destination one specified by newFile.
+   Initial copy of the new file can be used if available.
+   Default calls 2-way MergeFiles()
+ * @param curFile source file to merge
+ * @param newFile destination file
+ * @param originFile a copy of the file used to instantiate the new file initially
+*/
+  virtual void MergeFiles3Way(const std::string& curFile, const std::string& newFile, const std::string& originFile)
+  {
+    MergeFiles(curFile, newFile);
+  };
+
+
+  /**
    * @brief get RteCallback object
    * @return return RteCallback pointer or default one, never NULL
   */

@@ -176,7 +176,42 @@ TEST_F(RteModelPrjTest, LoadCprj) {
   map<const RteItem*, RteDependencyResult> depResults;
   RteItem::ConditionResult res = activeTarget->GetDepsResult(depResults, activeTarget);
   EXPECT_EQ(res, RteItem::FULFILLED);
+
+  const string rteDir = RteUtils::ExtractFilePath(RteTestM3_cprj, true) + "RTE/";
+  const string CompConfig_0_Cur_Version = rteDir + "RteTest/" + ".ComponentLevelConfig_0.h@0.0.1";
+  const string CompConfig_1_Cur_Version = rteDir + "RteTest/" + ".ComponentLevelConfig_1.h@0.0.1";
+  EXPECT_TRUE(RteFsUtils::Exists(CompConfig_0_Cur_Version));
+  EXPECT_TRUE(RteFsUtils::Exists(CompConfig_1_Cur_Version));
+
+  const string deviceDir = rteDir + "Device/RteTest_ARMCM3/";
+  EXPECT_TRUE(RteFsUtils::Exists(deviceDir + ".ARMCM3_ac6.sct@1.0.0"));
+  EXPECT_TRUE(RteFsUtils::Exists(deviceDir + ".startup_ARMCM3.c@2.0.3"));
+  EXPECT_FALSE(RteFsUtils::Exists(deviceDir + ".system_ARMCM3.c@1.0.1"));
+  EXPECT_FALSE(RteFsUtils::Exists(deviceDir + ".system_ARMCM3.c@1.0.2"));
+  EXPECT_TRUE(RteFsUtils::Exists(deviceDir + "system_ARMCM3.c@1.0.2"));
+  }
+
+TEST_F(RteModelPrjTest, LoadCprjConfigVer) {
+
+  RteKernelSlim rteKernel;
+  rteKernel.SetCmsisPackRoot(RteModelTestConfig::CMSIS_PACK_ROOT);
+  RteCprjProject* loadedCprjProject = rteKernel.LoadCprj(RteTestM3_ConfigFolder_cprj);
+  ASSERT_NE(loadedCprjProject, nullptr);
+
+  const string rteDir = RteUtils::ExtractFilePath(RteTestM3_cprj, true) + loadedCprjProject->GetRteFolder() + "/";
+  const string CompConfig_0_Cur_Version = rteDir + "RteTest/" + ".ComponentLevelConfig_0.h@0.0.1";
+  const string CompConfig_1_Cur_Version = rteDir + "RteTest/" + ".ComponentLevelConfig_1.h@0.0.1";
+  EXPECT_TRUE(RteFsUtils::Exists(CompConfig_0_Cur_Version));
+  EXPECT_TRUE(RteFsUtils::Exists(CompConfig_1_Cur_Version));
+
+  const string deviceDir = rteDir + "Device/RteTest_ARMCM3/";
+  EXPECT_TRUE(RteFsUtils::Exists(deviceDir + ".ARMCM3_ac6.sct@1.0.0"));
+  EXPECT_TRUE(RteFsUtils::Exists(deviceDir + ".startup_ARMCM3.c@2.0.3"));
+  EXPECT_TRUE(RteFsUtils::Exists(deviceDir + ".system_ARMCM3.c@1.0.1"));
+  EXPECT_FALSE(RteFsUtils::Exists(deviceDir + ".system_ARMCM3.c@1.0.2"));
+  EXPECT_TRUE(RteFsUtils::Exists(deviceDir + "system_ARMCM3.c@1.0.2"));
 }
+
 
 TEST_F(RteModelPrjTest, GetLocalPdscFile) {
   RteKernelSlim rteKernel;

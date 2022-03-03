@@ -872,21 +872,25 @@ bool RteFileInstance::Copy(RteFile* f, bool bMerge)
 
   string src = f->GetOriginalAbsolutePath();
   string dst = GetAbsolutePath();
-  if (src == dst)
+  if (src == dst) {
     return false; // should never happen!
+  }
 
   string bak = Backup(false); // before copy
-  if (bak == RteUtils::ERROR_STRING)
+  if (bak == RteUtils::ERROR_STRING) {
     return false;
+  }
 
-  if (!RteFsUtils::CopyMergeFile(src, dst, GetInstanceIndex(), false))
+  if (!RteFsUtils::CopyMergeFile(src, dst, GetInstanceIndex(), false)) {
     return false;
+  }
 
   if (bMerge) {
     RteProject* project = GetProject();
-    if (project)
-      project->MergeFiles(bak, dst);
-
+    if (project) {
+      string savedFile = RteUtils::AppendFileVersion(dst, GetVersionString(), true);
+      project->MergeFiles(bak, dst, savedFile);
+    }
   }
 
   return true;

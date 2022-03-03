@@ -122,8 +122,9 @@ public:
    * @brief merge file specified by curFile into the one specified by newFile
    * @param curFile source file to merge
    * @param newFile destination file to merge
+   * @param originFile a copy of the file used to instantiate the new file initially (optional)
   */
-  void MergeFiles(const std::string& curFile, const std::string& newFile);
+  void MergeFiles(const std::string& curFile, const std::string& newFile, const std::string& originFile = RteUtils::EMPTY_STRING);
 
 public:
   /**
@@ -736,8 +737,10 @@ protected:
   bool RemoveFileInstance(const std::string& id);
   void DeleteFileInstance(RteFileInstance* fi);
   // initializes or updates (newer version is used) existing file instance
-  void InitFileInstance(RteFileInstance* fi, RteFile* f, int index, RteTarget* target, const std::string& oldVersion, bool bCopy);
+  void InitFileInstance(RteFileInstance* fi, RteFile* f, int index, RteTarget* target, const std::string& savedVersion);
   bool UpdateFileInstance(RteFileInstance* fi, RteFile* f, bool bMerge, bool bUpdateComponent);
+  void UpdateConfigFileBackups(RteFileInstance* fi, RteFile* f);
+
   void CollectSettings(const std::string& targetName);
 
   void ClearClasses();
