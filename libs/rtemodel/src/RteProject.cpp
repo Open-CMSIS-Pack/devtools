@@ -311,6 +311,7 @@ void RteProject::AddCprjComponents(const list<RteItem*>& selItems, RteTarget* ta
     if (itver == configFileVersions.end())
       continue;
     fi->AddAttribute("version", itver->second);
+    UpdateConfigFileBackups(fi, fi->GetFile(target->GetName()));
   }
 }
 
@@ -409,33 +410,35 @@ RteFileInstance* RteProject::AddFileInstance(RteComponentInstance* ci, RteFile* 
 
   string deviceName = target->GetFullDeviceName();
   string id = f->GetInstancePathName(deviceName, index, GetRteFolder());
-  string absPath = GetProjectPath() + id;
   target->AddComponentInstanceForFile(id, ci);
 
-  string oldVersion = "0.0.0"; // unknown version
-  error_code ec;
-  bool exists = fs::exists(absPath, ec);
+  string savedVersion = "0.0.0"; // unknown version
 
   RteFileInstance* fi = GetFileInstance(id);
   if (fi) {
-    oldVersion = fi->GetVersionString();
+    savedVersion = fi->GetVersionString();
   } else {
     fi = new RteFileInstance(this);
     AddItem(fi);
     m_files[id] = fi;
   }
-  InitFileInstance(fi, f, index, target, oldVersion, !exists);
+  InitFileInstance(fi, f, index, target, savedVersion);
   return fi;
 }
 
 bool RteProject::UpdateFileToNewVersion(RteFileInstance* fi, RteFile* f, bool bMerge)
 {
-  if (!fi || !f)
+  if (!fi || !f) {
     return false;
-  return UpdateFileInstance(fi, f, bMerge, true);
+  }
+  if (UpdateFileInstance(fi, f, bMerge, true)) {
+    UpdateConfigFileBackups(fi, f);
+    return true;
+  }
+  return false;
 }
 
-void RteProject::InitFileInstance(RteFileInstance* fi, RteFile* f, int index, RteTarget* target, const string& oldVersion, bool bCopy)
+void RteProject::InitFileInstance(RteFileInstance* fi, RteFile* f, int index, RteTarget* target, const string& savedVersion)
 {
   string deviceName = target->GetFullDeviceName();
   const string& targetName = target->GetName();
@@ -444,11 +447,14 @@ void RteProject::InitFileInstance(RteFileInstance* fi, RteFile* f, int index, Rt
   fi->Update(f, false);
   fi->AddTargetInfo(targetName); // set/update supported targets
   fi->SetRemoved(false);
-  if (bCopy)
+  string absPath = fi->GetAbsolutePath();
+  bool bExists = RteFsUtils::Exists(absPath);
+  if (!bExists) {
     UpdateFileInstance(fi, f, false, false);
-  else
-    fi->AddAttribute("version", oldVersion, false);
-
+  } else {
+    fi->AddAttribute("version", savedVersion, false);
+  }
+  UpdateConfigFileBackups(fi, f);
 }
 
 
@@ -472,9 +478,56 @@ bool RteProject::UpdateFileInstance(RteFileInstance* fi, RteFile* f, bool bMerge
   return true;
 }
 
-void RteProject::MergeFiles(const string& curFile, const string& newFile)
+void RteProject::UpdateConfigFileBackups(RteFileInstance* fi, RteFile* f)
 {
+  string src = f->GetOriginalAbsolutePath();
+  string absPath = RteFsUtils::AbsolutePath(fi->GetAbsolutePath()).generic_string();
+  const string& originVersion = fi->GetVersionString();
+  const string& curVersion = f->GetVersionString();
+  string originFile = RteUtils::AppendFileVersion(absPath, originVersion, true);
+  if (!RteFsUtils::Exists(originFile)) {
+    // create saved file if possible
+    if (originVersion == curVersion) {
+      // we can use current version as backup one
+      RteFsUtils::CopyCheckFile(src, originFile, false);
+    } else {
+      originFile.clear(); //no such file
+    }
+  }
+  // copy current file if version differs
+  string curFile = RteUtils::AppendFileVersion(absPath, curVersion, false);
+  if (originVersion != curVersion) {
+    RteFsUtils::CopyCheckFile(src, curFile, false);
+  } else {
+    curFile.clear(); // no need in that
+  }
+
+  // remove redundant current and origin files
+  string name = RteUtils::ExtractFileName(absPath);
+  string dotName = "." + name;
+  string dir = RteUtils::ExtractFilePath(absPath, false);
+
+  list<string> backupFileNames;
+  RteFsUtils::GrepFileNames(backupFileNames, dir, name + "@*");
+  if (!originFile.empty()) {
+    RteFsUtils::GrepFileNames(backupFileNames, dir, dotName + "@*");
+  }
+  for (string fileName : backupFileNames) {
+    if (fileName != originFile && fileName != curFile) {
+      RteFsUtils::DeleteFileAutoRetry(fileName);
+    }
+  }
+}
+
+
+
+void RteProject::MergeFiles(const string& curFile, const string& newFile, const string& originFile)
+{
+  if (!originFile.empty() && RteFsUtils::Exists(originFile)) {
+    GetCallback()->MergeFiles3Way(curFile, newFile, originFile);
+  } else {
     GetCallback()->MergeFiles(curFile, newFile);
+  }
 }
 
 
