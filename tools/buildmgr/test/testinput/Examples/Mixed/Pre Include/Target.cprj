@@ -13,7 +13,7 @@
   <packages>
     <package name="CMSIS" vendor="ARM"/>
     <package name="ARM_Compiler" vendor="Keil"/>
-    <package name="PreIncludeTestPack" vendor="Keil" version="0.0.1"/>
+    <package name="PreIncludeTestPack" vendor="Keil" version="0.0.2"/>
   </packages>
 
   <compilers>

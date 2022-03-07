@@ -41,7 +41,7 @@ fi
 
 # Set environment variables
 source ${testoutdir}/cbuild/etc/setup
-packfile="${PWD}/../integrationtests/pack/Keil.PreIncludeTestPack.0.0.1.pack"
+packfile="${PWD}/../integrationtests/pack/Keil.PreIncludeTestPack.0.0.2.pack"
 
 # construct pack folder name
 remainder=($(basename $packfile))
