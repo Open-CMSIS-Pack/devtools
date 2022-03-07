@@ -448,7 +448,7 @@ solution:
     
   projects:
     - project: /security/TFM.cproject.yml
-      type: .Release
+      for-type: .Release
     - project: /application/MQTT_AWS.cproject.yml
     - project: /bootloader/Bootloader.cproject.yml
       not-for-type: +Virtual
@@ -548,10 +548,9 @@ Depending on the PLM status of the application, the `csolution` performs for con
     **Example:** after configuration file `ConfigFile.h` to version `1.3.0` the directory contains these files:
 
     ```c
-   ./RTE/component_class/ConfigFile_0.h
-   ./RTE/component_class/.ConfigFile_0.h@1.2.0
-   ./RTE/component_class/ConfigFile_1.h
-   ./RTE/component_class/.ConfigFile_1.h@1.2.0
+    ./RTE/component_class/ConfigFile.h           // user editable configuration file
+    ./RTE/component_class/ConfigFile.h@1.3.0     // user editable configuration file
+    ./RTE/component_class/.ConfigFile.h@1.2.0    // hidden backup used for version comparison
     ```
 
     The `csolution` outputs a user notification to indicate that configuration files have changed:
@@ -573,8 +572,10 @@ Depending on the PLM status of the application, the `csolution` performs for con
    The system is also capable of handling multiple instances of configuration files as explained in the CMSIS-Pack specification under [Component Instances](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_components_pg.html#Component_Instances). In this case the instance %placeholder% is expanded as shown below:
 
    ```c
-   . /RTE/component_class/.ConfigFile_0.h@1.2.0
-   . /RTE/component_class/.ConfigFile_1.h@1.2.0
+   ./RTE/component_class/ConfigFile_0.h
+   ./RTE/component_class/.ConfigFile_0.h@1.2.0
+   ./RTE/component_class/ConfigFile_1.h
+   ./RTE/component_class/.ConfigFile_1.h@1.2.0
    ```
 
 ## RTE_Components.h
@@ -612,10 +613,7 @@ The typical usage of the `RTE_Components.h` file is in header files to control t
 
 Is described in [here](YML-Format.md).
 
-
-
 # Proposals
-
 
 ## Output versions to *.cprj
 
@@ -624,6 +622,7 @@ The ProjMgr should always generate *.cprj files that contain version information
 ## CMSIS-Zone Integration
 
 Suggest to split this into two sections:
+
  - `resources:` to define the execution phases, memory regions and region splits, and peripherals.  This section would be in the `csolution.yml` file. 
 
  - `requirements:` to define project requirements - effectively the partitioning of a system. It should be possible to assign to the application all remaining resources.
@@ -636,6 +635,7 @@ resources:
     - phase: Boot
     - phase: OTA
     - phase: Run
+
   memories:              # specifies the required memory
     - split: SRAM_NS
       into:
