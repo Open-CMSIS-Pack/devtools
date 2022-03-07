@@ -114,7 +114,7 @@ bool BuildSystemGenerator::Collect(const string& inputFile, const CbuildModel *m
     for (auto preinc : group.second) {
       preincSet.insert(StrNorm(preinc));
     }
-    m_objGroupsList[StrNorm(group.first)].preinc = preincSet;
+    m_groupsList[StrNorm(group.first)].preinc = preincSet;
   }
 
   for (auto lib : model->GetLibraries())
@@ -145,22 +145,14 @@ bool BuildSystemGenerator::Collect(const string& inputFile, const CbuildModel *m
       }
       groupName = fs::path(groupName).parent_path().generic_string();
     } while (!groupName.empty());
-    m_objGroupsList[StrNorm(group)].ccMsc = cGFlags;
+    m_groupsList[StrNorm(group)].ccMsc = cGFlags;
 
     for (auto src : list.second) {
       string cFFlags;
       if (cFlags.find(src) != cFlags.end()) cFFlags = GetString(cFlags.at(src));
-      string fname = fs::path(StrConv(src)).stem().generic_string();
-      string obj = StrNorm(group + (group.empty() ? "" : SS) + fname + ".o");
-
-      if (m_ccFilesList.find(obj) != m_ccFilesList.end()) {
-        // Error: object filename was already inserted in a list
-        LogMsg("M612", VAL("NAME", fname), VAL("GROUP", group));
-        return false;
-      }
-
-      m_ccFilesList[obj].src = StrNorm(src);
-      m_ccFilesList[obj].flags = cFFlags;
+      src = StrNorm(src);
+      m_ccFilesList[src].group = StrNorm(group + (group.empty() ? "" : SS));
+      m_ccFilesList[src].flags = cFFlags;
     }
   }
 
@@ -177,23 +169,14 @@ bool BuildSystemGenerator::Collect(const string& inputFile, const CbuildModel *m
       }
       groupName = fs::path(groupName).parent_path().generic_string();
     } while (!groupName.empty());
-    m_objGroupsList[StrNorm(group)].cxxMsc = cxxGFlags;
+    m_groupsList[StrNorm(group)].cxxMsc = cxxGFlags;
 
     for (auto src : list.second) {
       string cxxFFlags;
       if (cxxFlags.find(src) != cxxFlags.end()) cxxFFlags = GetString(cxxFlags.at(src));
-      string fname = fs::path(StrConv(src)).stem().generic_string();
-      string obj = StrNorm(group + SS + fname + ".o");
-
-      if ((m_cxxFilesList.find(obj) != m_cxxFilesList.end()) ||
-          (m_ccFilesList.find(obj) != m_ccFilesList.end())) {
-        // Error: object filename was already inserted in a list
-        LogMsg("M612", VAL("NAME", fname), VAL("GROUP", group));
-        return false;
-      }
-
-      m_cxxFilesList[obj].src = StrNorm(src);
-      m_cxxFilesList[obj].flags = cxxFFlags;
+      src = StrNorm(src);
+      m_cxxFilesList[src].group = StrNorm(group + (group.empty() ? "" : SS));
+      m_cxxFilesList[src].flags = cxxFFlags;
     }
   }
 
@@ -213,15 +196,13 @@ bool BuildSystemGenerator::Collect(const string& inputFile, const CbuildModel *m
       }
       groupName = fs::path(groupName).parent_path().generic_string();
     } while (!groupName.empty());
-    m_objGroupsList[StrNorm(group)].asMsc = asGFlags;
+    m_groupsList[StrNorm(group)].asMsc = asGFlags;
 
     bool group_asm = (assembler.find(group) != assembler.end()) ? assembler.at(group) : m_asTargetAsm;
 
     for (auto src : list.second) {
       string asFFlags;
       if (asFlags.find(src) != asFlags.end()) asFFlags = GetString(asFlags.at(src));
-      string fname = fs::path(StrConv(src)).stem().generic_string();
-      string obj = StrNorm(group + SS + fname + ".o");
 
       // Default assembler: armclang or gcc with gnu syntax and preprocessing
       map<string, module>* pList = &m_asFilesList;
@@ -245,16 +226,9 @@ bool BuildSystemGenerator::Collect(const string& inputFile, const CbuildModel *m
         }
       }
 
-      if (((*pList).find(obj) != (*pList).end()) ||
-          (m_cxxFilesList.find(obj) != m_cxxFilesList.end()) ||
-          (m_ccFilesList.find(obj) != m_ccFilesList.end())) {
-        // Error: object filename was already inserted in a list
-        LogMsg("M612", VAL("NAME", fname), VAL("GROUP", group));
-        return false;
-      }
-
-      (*pList)[obj].src = StrNorm(src);
-      (*pList)[obj].flags = asFFlags;
+      src = StrNorm(src);
+      (*pList)[src].group = StrNorm(group + (group.empty() ? "" : SS));
+      (*pList)[src].flags = asFFlags;
     }
   }
 

@@ -139,7 +139,6 @@ void InitMessageTable()
   table["M609"] = MessageEntry(MsgLevel::LEVEL_ERROR,    CRLF_B,   "Missing '%NAME%' element in CPRJ file!"                                      );
   table["M610"] = MessageEntry(MsgLevel::LEVEL_ERROR,    CRLF_B,   "Project supports multiple toolchains. Select one with the option --toolchain");
   table["M611"] = MessageEntry(MsgLevel::LEVEL_ERROR,    CRLF_B,   "Selected toolchain is not supported by the project!"                         );
-  table["M612"] = MessageEntry(MsgLevel::LEVEL_ERROR,    CRLF_B,   "Multiple files '%NAME%' in the group '%GROUP%', please move or rename them." );
   table["M613"] = MessageEntry(MsgLevel::LEVEL_ERROR,    CRLF_B,   "File '%PATH%' has unexpected format!"                                        );
 
   table["M630"] = MessageEntry(MsgLevel::LEVEL_WARNING,  CRLF_B,   "Device '%DEV%' is substituted with variant '%VAR%'."                         );

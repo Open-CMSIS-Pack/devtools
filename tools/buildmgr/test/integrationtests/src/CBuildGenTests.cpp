@@ -247,7 +247,7 @@ TEST_F(CBuildGenTests, GeneratePackListDirTest) {
 TEST_F(CBuildGenTests, GenCMake_DuplicatedSourceFilename) {
   TestParam param = {
     "Mixed/Minimal_DupSrc", "MyProject",
-    "", "cmake", false
+    "", "cmake", true
   };
 
   RunCBuildGen          (param);
