@@ -1,0 +1,15 @@
+### CMSIS Project Description ###
+
+project:
+  misc:
+    - C*: [PROJ2-D($Dname$)-B($Bname$)]
+  defines:
+    - $Output(test-access-sequences1)$
+  add-paths:
+    - $Output(test-access-sequences1)$
+  components:
+    - component: CORE
+  groups:
+    - group: Sources
+      files: 
+        - file: main.c

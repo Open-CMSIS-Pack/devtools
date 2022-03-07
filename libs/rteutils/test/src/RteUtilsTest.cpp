@@ -134,6 +134,7 @@ TEST(RteUtilsTest, VersionCompare) {
   EXPECT_EQ(  1, VersionCmp::Compare("6.5.9", "6.5.1"));
   EXPECT_EQ(  2, VersionCmp::Compare("6.6.0", "6.5.0"));
   EXPECT_EQ(  3, VersionCmp::Compare("7.5.0", "6.5.0"));
+  EXPECT_EQ(-1, VersionCmp::Compare("6.5.0-", "6.5.0-a", true));
 
   /*Ideally It should fail as the input
   given is not compliant to Semantic versioning*/
@@ -143,11 +144,24 @@ TEST(RteUtilsTest, VersionCompare) {
 }
 
 TEST(RteUtilsTest, VersionRangeCompare) {
-  EXPECT_EQ(  0, VersionCmp::RangeCompare("3.2.0", "3.1.0:3.8.0"));
-  EXPECT_EQ(  0, VersionCmp::RangeCompare("3.2.0", "3.1.0"));
-  EXPECT_EQ(  0, VersionCmp::RangeCompare("3.2.0", ":3.8.0"));
-  EXPECT_EQ(  0, VersionCmp::RangeCompare("3.2.0", "3.2.0"));
-  EXPECT_EQ(  1, VersionCmp::RangeCompare("3.2.0", ":3.2.0-"));
+  EXPECT_EQ(0, VersionCmp::RangeCompare("3.2.0", "3.1.0:3.8.0"));
+  EXPECT_EQ(0, VersionCmp::RangeCompare("3.2.0", "3.1.0"));
+  EXPECT_EQ(0, VersionCmp::RangeCompare("3.2.0", ":3.8.0"));
+  EXPECT_EQ(0, VersionCmp::RangeCompare("3.2.0", "3.2.0"));
+  EXPECT_EQ(1, VersionCmp::RangeCompare("3.2.0", ":3.2.0-"));
+
+  EXPECT_EQ(0, VersionCmp::RangeCompare("1.0.0", "1.0.0:2.0.0"));
+  EXPECT_EQ(0, VersionCmp::RangeCompare("2.0.0", "1.0.0:2.0.0"));
+  EXPECT_EQ(0, VersionCmp::RangeCompare("1.99.99", "1.0.0:2.0.0"));
+  EXPECT_EQ(1, VersionCmp::RangeCompare("1.99.99", "1.0.0:1.99.9"));
+  EXPECT_EQ(0, VersionCmp::RangeCompare("1.0.0", "1.0.0:2.0.0-"));
+  EXPECT_EQ(1, VersionCmp::RangeCompare("2.0.0", "1.0.0:2.0.0-"));
+  EXPECT_EQ(1, VersionCmp::RangeCompare("2.0.0-a", "1.0.0:2.0.0-"));
+  EXPECT_EQ(0, VersionCmp::RangeCompare("2.0.0-a", "2.0.0-:2.0.0"));
+  EXPECT_EQ(0, VersionCmp::RangeCompare("1.99.99", "1.0.0:2.0.0-"));
+
+  EXPECT_EQ( 3,  VersionCmp::RangeCompare("9.0.0", "1.0.0:2.0.0"));
+  EXPECT_EQ(-3, VersionCmp::RangeCompare("0.9.0", "1.0.0:2.0.0"));
 
   /* Greater than max version : Patch version out of range */
   EXPECT_EQ(  1, VersionCmp::RangeCompare("3.8.2", "3.1.0:3.8.0"));

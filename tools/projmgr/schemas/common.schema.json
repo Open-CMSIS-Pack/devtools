@@ -1,8 +1,8 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/0.9.0/tools/projmgr/schemas/common.schema.json",
+  "$id": "https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/0.9.1/tools/projmgr/schemas/common.schema.json",
   "title": "CMSIS Project Manager common",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "definitions": {
     "ArrayOfStrings": {
       "type": "array",
@@ -31,8 +31,8 @@
     },
     "DeviceType": {
       "type": "string",
-      "pattern": "^([\\w .-]+::)?([\\w .-]+)(:[\\w .-]+)?$",
-      "description": "Unique device name, optionally with vendor and core, in the format [<vendor>::]<device>[:<core>]. The <device> can be implicitly inferred from the <board>, but if both fields are present the given <device> overrules the <board> setting."
+      "pattern": "^(([\\w .-]+::)?([\\w .-]+))?(:[\\w .-]+)?$",
+      "description": "Unique device name and/or processor name, optionally preceded by device vendor, in the format [<vendor>::][<device>][:<processor>]. The <device> can be implicitly inferred from the <board>, but if both fields are present the given <device> overrules the <board> setting."
     },
     "BoardType": {
       "type": "string",
@@ -183,8 +183,7 @@
         "undefines":    { "$ref": "#/definitions/UndefinesType" },
         "add-paths":    { "$ref": "#/definitions/AddpathsType" },
         "del-paths":    { "$ref": "#/definitions/DelpathsType" },
-        "misc":         { "$ref": "#/definitions/MiscTypes" },
-        "depends":      { "$ref": "#/definitions/ArrayOfStrings" }
+        "misc":         { "$ref": "#/definitions/MiscTypes" }
       },
       "additionalProperties": false,
       "required": [ "project" ]
@@ -230,6 +229,10 @@
         "groups":       { "$ref": "#/definitions/GroupsType" },
         "files":        { "$ref": "#/definitions/FilesType" }
       },
+      "anyOf": [
+        {"required" : ["files"]},
+        {"required" : ["groups"]}
+      ],
       "additionalProperties": false
     },
     "FilesType": {
@@ -252,6 +255,7 @@
         "del-paths":    { "$ref": "#/definitions/DelpathsType" },
         "misc":         { "$ref": "#/definitions/MiscTypes" }
       },
+      "required": [ "file" ],
       "additionalProperties": false
     },
     "ComponentsType": {
@@ -266,7 +270,7 @@
       "properties": {
         "component": {
           "type": "string",
-          "pattern": "(^[\\w .+-]+$)|(^([\\w .-]+::)?([\\w .-]+)(&[\\w .-]+)?(:[\\w .-]+)(:[\\w .-]+)?(&[\\w .-]+)?(@(>=)?(\\d+\\.\\d+\\.\\d+((\\+|\\-)[\\w.+-]+)?))?$)",
+          "pattern": "(^[\\w \\/.+-]+$)|(^([\\w \\/.-]+::)?([\\w \\/.-]+)(&[\\w \\/.-]+)?(:[\\w \\/.-]+)(:[\\w \\/.-]+)?(&[\\w \\/.-]+)?(@(>=)?(\\d+\\.\\d+\\.\\d+((\\+|\\-)[\\w.\\/+-]+)?))?$)",
           "description": "Name of the software component. It can be a free text or a component identifier in the format [Cvendor::] Cclass [&Cbundle] :Cgroup [:Csub] [&Cvariant] [@[>=]Cversion]"
         },
         "for-type":     { "$ref": "#/definitions/ForType" },
@@ -292,7 +296,7 @@
       "properties": {
         "package": {
           "type": "string",
-          "pattern": "^([\\w .-]+::)?([\\w .-]+)(@(>=)?(\\d+\\.\\d+\\.\\d+((\\+|\\-)[\\w.+-]+)?))?$",
+          "pattern": "^([\\w .-]+::)([\\w .-]+)(@(>=)?(\\d+\\.\\d+\\.\\d+((\\+|\\-)[\\w.+-]+)?))?$",
           "description": "Name of a required Software Pack in the format [Vendor::] Pack [@[>=]Version]"
         }
       },
@@ -328,13 +332,13 @@
       "type": "object",
       "properties": {
         "target-types": {
-          "$ref": "./common.schema.json#/definitions/TargetTypes"
+          "$ref": "#/definitions/TargetTypes"
         },
         "build-types": {
-          "$ref": "./common.schema.json#/definitions/BuildTypes"
+          "$ref": "#/definitions/BuildTypes"
         },
         "projects": {
-          "$ref": "./common.schema.json#/definitions/ProjectsType"
+          "$ref": "#/definitions/ProjectsType"
         }
       },
       "additionalProperties": false

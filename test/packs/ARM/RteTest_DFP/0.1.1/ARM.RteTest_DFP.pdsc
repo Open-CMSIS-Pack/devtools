@@ -146,8 +146,8 @@
     RteTest ARM Cortex M4 is a clone description from ARM.CMSIS pack.
       </description>
       <debug svd="Device/ARM/SVD/ARMCM4.svd"/>  <!-- SVD files do not contain any peripheral -->
-      <memory id="IROM1"                                start="0x00000000" size="0x00040000" startup="1" default="1"/>
-      <memory id="IRAM1"                                start="0x20000000" size="0x00020000" init   ="0" default="1"/>
+      <memory name="FLASH" access="rx"                   start="0x00000000" size="0x00040000" startup="1" default="1"/>
+      <memory name="SRAM"  access="rwx"                  start="0x20000000" size="0x00020000" init   ="0" default="1"/>
       <algorithm name="Device/ARM/Flash/CortexM4SubFamily.FLM" start="0x00000000" size="0x00040000" default="1"/>
 
       <device Dname="RteTest_ARMCM4">

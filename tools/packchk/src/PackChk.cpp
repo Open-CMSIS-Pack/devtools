@@ -93,7 +93,6 @@ bool PackChk::CheckPackage()
   const set<string>& pdscRefFiles = m_packOptions.GetPdscRefFullpath();
   createModel.AddRefPdsc(pdscRefFiles);
 
-  LogMsg("M010");
   LogMsg("M015");
   LogMsg("M023", VAL("CHECK", "1: Read PDSC files"));
 

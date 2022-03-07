@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<package schemaVersion="1.4" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="PACK.xsd">
+  <vendor>ARM</vendor>
+  <name>RteTestGenerator</name>
+  <url>www.keil.com/pack/</url>
+  <description>
+    Testing pack gpdsc capabilities
+  </description>
+
+  <releases>
+    <release version="0.1.0" date="2022-02-17">
+      initial version
+    </release>
+  </releases>
+
+  <conditions>
+    <condition id="RteDevice">
+      <description>Condition requiring RteTest device</description>
+      <require Dname="RteTestGen_ARMCM*"/>
+    </condition>
+  </conditions>
+
+  <devices>
+    <family Dfamily="RteTestGen ARM Cortex M" Dvendor="ARM:82">
+      <description>
+  RteTest ARM M Device Family
+      </description>
+      <subFamily DsubFamily="RteTestGen ARM Cortex M0">
+        <device Dname="RteTestGen_ARMCM0">
+          <processor Dcore="Cortex-M0" DcoreVersion="r0p1" Dmpu="MPU" Dendian="Configurable" Dclock="10000000"/>
+        </device>
+      </subFamily>
+    </family>
+  </devices>
+
+  <generators>
+    <!-- This generator is launched if any component referencing this generator by 'id' is selected and the specified <gpdsc> file does not exist -->
+    <generator id="RteTestGeneratorIdentifier">
+      <description>RteTest Generator Description</description>
+      <command>Generator/script.bat</command>
+      <!-- path is specified either absolute or relative to PDSC or GPDSC file -->
+      <workingDir>$PRTE/Device</workingDir>
+      <!-- path is specified either absolute or relative to PDSC or GPDSC file. If not specified it is the project directory configured by the environment -->
+      <arguments>
+        <!-- D = Device (Dname/Dvariant as configured by environment) -->
+        <argument>$D</argument>
+        <!-- Project path and project name (as configured by environment) -->
+        <argument>#P</argument>
+        <!-- absolute or relative to workingDir. $S = Device Family Pack base folder -->
+        <argument>$S</argument>
+      </arguments>
+      <!-- path is either absolute or relative to working directory -->
+      <gpdsc name="$PRTE/Device/$D/RteTest.gpdsc"/>
+    </generator>
+  </generators>
+
+  <components>
+    <component generator="RteTestGeneratorIdentifier" Cclass="Device" Cgroup="RteTest Generated Component" Csub="RteTest" Cversion="1.1.0" Capiversion="1.1.0" condition="RteDevice">
+      <description>Configuration via RteTest script</description>
+      <RTE_Components_h>
+        #define RTE_TEST_GENERATOR
+      </RTE_Components_h>
+      <files>
+        <file category="other" name="Templates/RteTest.gpdsc.template" version ="1.0.0"/>
+      </files>
+    </component>
+  </components>
+
+</package>

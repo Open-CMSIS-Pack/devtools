@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/0.9.1/tools/projmgr/schemas/cproject.schema.json
+
+project:
+  layers:
+    - layer: ./layers/app/SecureCode/Secure.clayer.yml
+
+    - layer: ./layers/target/CM33.clayer.yml
+      for-type: +CM33
+    - layer: ./layers/target/CM35P.clayer.yml
+      for-type: +CM35P
+    - layer: ./layers/config/Debug.clayer.yml
+      for-type: .Debug
+    - layer: ./layers/config/Release.clayer.yml
+      for-type: .Release

@@ -45,17 +45,17 @@ RteFileInfo::RteFileInfo(RteFile::Category cat, RteComponentInstance* ci, RteFil
 {
 };
 
-int RteFileInfo::HasNewVersion(const string& targetName, const string& rteFolder) const
+int RteFileInfo::HasNewVersion(const string& targetName) const
 {
   if (m_fi)
-    return m_fi->HasNewVersion(targetName, rteFolder);
+    return m_fi->HasNewVersion(targetName);
   return 0;
 }
 
-int RteFileInfo::HasNewVersion(const string& rteFolder) const
+int RteFileInfo::HasNewVersion() const
 {
   if (m_fi)
-    return m_fi->HasNewVersion(rteFolder);
+    return m_fi->HasNewVersion();
   return 0;
 }
 
@@ -657,7 +657,7 @@ void RteTarget::AddAlgorithm(RteItem* algo, RteItem* holder)
   m_algos.insert(pathName);
 }
 
-void RteTarget::CollectComponentSettings(RteComponentInstance* ci, const std::string& rteFolder)
+void RteTarget::CollectComponentSettings(RteComponentInstance* ci)
 {
   int count = ci->GetInstanceCount(GetName());
   if (count <= 0)
@@ -683,6 +683,7 @@ void RteTarget::CollectComponentSettings(RteComponentInstance* ci, const std::st
   if (files.empty())
     return;
   string deviceName = GetFullDeviceName();
+  const string& rteFolder = GetRteFolder();
   for (auto itf = files.begin(); itf != files.end(); itf++) {
     RteFile* f = *itf;
     if (!f)
@@ -1262,11 +1263,26 @@ RteFile* RteTarget::FindFile(const string& fileName, RteComponent* c) const
   return NULL;
 }
 
+const std::string& RteTarget::GetRteFolder() const {
+  RteProject* rteProject = GetProject();
+  if (rteProject) {
+    return rteProject->GetRteFolder();
+  }
+  return RteProject::DEFAULT_RTE_FOLDER;
+}
+
+
+RteFile* RteTarget::GetFile(const RteFileInstance* fi, RteComponent* c) const
+{
+  return GetFile(fi, c, GetRteFolder());
+}
+
 
 RteFile* RteTarget::GetFile(const RteFileInstance* fi, RteComponent* c, const std::string& rteFolder) const
 {
-  if (!fi)
-    return NULL;
+  if (!fi) {
+    return nullptr;
+  }
   const set<RteFile*>& filteredFiles = GetFilteredFiles(c);
   const string& deviceName = GetFullDeviceName();
   int index = fi->GetInstanceIndex();
@@ -1277,7 +1293,7 @@ RteFile* RteTarget::GetFile(const RteFileInstance* fi, RteComponent* c, const st
       return f;
     }
   }
-  return NULL;
+  return nullptr;
 }
 
 void RteTarget::EvaluateComponentDependencies()
@@ -1574,7 +1590,7 @@ const bool RteTarget::GenerateRteHeaderFile(const string& headerName, const stri
   if (!project)
     return false;
 
-  string rteCompH = RteProject::GetRteHeader(headerName, GetName(), project->GetProjectPath(), project->GetRteFolder());
+  string rteCompH = project->GetRteHeader(headerName, GetName(), project->GetProjectPath());
 
   if (!RteFsUtils::MakeSureFilePath(rteCompH))
     return false;

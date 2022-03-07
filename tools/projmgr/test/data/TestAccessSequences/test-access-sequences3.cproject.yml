@@ -1,0 +1,13 @@
+### CMSIS Project Description ###
+
+project:
+  device: RteTest_ARMCM0
+  defines:
+    - DEF1-PROJ1-$Output(test-access-sequences3.Debug)$
+    - DEF2-PROJ1-$Output(test-access-sequences3.Release)$
+  components:
+    - component: CORE
+  groups:
+    - group: CMSE
+      files: 
+        - file: $Output(test-access-sequences3)$_CMSE_Lib.o

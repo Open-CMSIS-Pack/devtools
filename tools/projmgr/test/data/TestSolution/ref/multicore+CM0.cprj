@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<cprj schemaVersion="1.7.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="PACK.xsd">
+  <created timestamp="2022-02-22T15:37:25" tool="csolution 0.9.0+p26-ge394639"/>
+
+  <info isLayer="false">
+    <description>Automatically generated project</description>
+  </info>
+
+  <packages>
+    <package name="RteTest_DFP" vendor="ARM" version="0.2.0"/>
+  </packages>
+
+  <compilers>
+    <compiler name="AC6" version="6.16.0"/>
+  </compilers>
+
+  <target Dfpu="NO_FPU" Dname="RteTest_ARMCM0_Dual" Dsecure="Non-secure" Dvendor="ARM:82" Pname="cm0_core1">
+    <output intdir="multicore+CM0_IntDir/" name="multicore+CM0" outdir="multicore+CM0_OutDir/" type="exe"/>
+    <ldflags compiler="AC6" file="RTE/Device/RteTest_ARMCM0_Dual_cm0_core1/ARMCM0_ac6.sct"/>
+  </target>
+
+  <components>
+    <component Cclass="Device" Cgroup="Startup" Cvariant="RteTest Startup" Cvendor="ARM" Cversion="2.0.3">
+      <file attr="config" category="linkerScript" name="Device/ARM/ARMCM0/Source/ARM/ARMCM0_ac6.sct" version="1.0.0"/>
+      <file attr="config" category="sourceC" name="Device/ARM/ARMCM0/Source/startup_ARMCM0.c" version="2.0.3"/>
+      <file attr="config" category="sourceC" name="Device/ARM/ARMCM0/Source/system_ARMCM0.c" version="1.0.0"/>
+    </component>
+    <component Cclass="RteTest" Cgroup="CORE" Cvendor="ARM" Cversion="0.1.1"/>
+  </components>
+</cprj>
+

@@ -58,6 +58,17 @@ public:
   */
   virtual void Err(const std::string& id, const std::string& message, const std::string& object = RteUtils::EMPTY_STRING) override;
 
+  /**
+   * @brief expand string components:
+            $P  PATH to current project
+            #P  PATH and name of the current project
+            $S  PATH to Pack folder containing the Device description used by the current project
+            $D  Name of the device configured in the current project
+   * @param str string to be expanded
+   * @return expanded string
+  */
+  virtual std::string ExpandString(const std::string& str) override;
+
 protected:
   std::list<std::string> m_errorMessages;
 

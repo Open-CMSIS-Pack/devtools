@@ -1,7 +1,6 @@
 ### CMSIS Project Description ###
 
 project:
-  name: TestProject
   description: Project 1
   device: RteTest_ARMCM0:NOT_AVAILABLE
   compiler: AC6@6.16.0

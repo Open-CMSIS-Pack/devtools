@@ -684,7 +684,8 @@ bool CheckFiles::CheckFileExtension(RteItem* item)
 
   bool ok = true;
   if(category == "include") {
-    if(RteFsUtils::IsDirectory(name)) {
+    string checkPath = GetFullFilename(name);
+    if(!RteFsUtils::IsDirectory(checkPath)) {
       LogMsg("M339", PATH(name), lineNo);
       ok = false;
     }

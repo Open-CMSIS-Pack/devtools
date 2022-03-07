@@ -6,6 +6,8 @@
 
 #include "ProjMgrYamlParser.h"
 #include "ProjMgrLogger.h"
+#include "ProjMgrYamlSchemaChecker.h"
+
 #include "RteFsUtils.h"
 #include <string>
 
@@ -19,8 +21,19 @@ ProjMgrYamlParser::~ProjMgrYamlParser(void) {
   // Reserved
 }
 
-bool ProjMgrYamlParser::ParseCsolution(const string& input, CsolutionItem& csolution) {
+bool ProjMgrYamlParser::ParseCsolution(const string& input,
+  CsolutionItem& csolution, bool checkSchema) {
   try {
+    // Validate file schema
+    if (checkSchema &&
+      !ProjMgrYamlSchemaChecker().Validate(
+        input, ProjMgrYamlSchemaChecker::FileType::SOLUTION)) {
+      return false;
+    }
+
+    error_code ec;
+    csolution.path = fs::absolute(input, ec).generic_string();
+
     const YAML::Node& root = YAML::LoadFile(input);
     if (!ValidateCsolution(input, root)) {
       return false;
@@ -41,18 +54,29 @@ bool ProjMgrYamlParser::ParseCsolution(const string& input, CsolutionItem& csolu
   return true;
 }
 
-bool ProjMgrYamlParser::ParseCproject(const string& input, CsolutionItem& csolution, map<string, CprojectItem>& cprojects, bool single) {
+bool ProjMgrYamlParser::ParseCproject(const string& input,
+  CsolutionItem& csolution, map<string, CprojectItem>& cprojects,
+  bool single, bool checkSchema) {
   CprojectItem cproject;
   try {
+    // Validate file schema
+    if (checkSchema &&
+      !ProjMgrYamlSchemaChecker().Validate(
+        input, ProjMgrYamlSchemaChecker::FileType::PROJECT)) {
+      return false;
+    }
+
     const YAML::Node& root = YAML::LoadFile(input);
     if (!ValidateCproject(input, root)) {
       return false;
     }
 
+    error_code ec;
+    cproject.path = fs::absolute(input, ec).generic_string();
+
     const YAML::Node& projectNode = root[YAML_PROJECT];
     map<const string, string&> projectChildren = {
       {YAML_NAME, cproject.name},
-      {YAML_DESCRIPTION, cproject.description},
       {YAML_OUTPUTTYPE, cproject.outputType},
     };
     for (const auto& item : projectChildren) {
@@ -61,9 +85,6 @@ bool ProjMgrYamlParser::ParseCproject(const string& input, CsolutionItem& csolut
     ParseTargetType(projectNode, cproject.target);
     ParsePackages(projectNode, cproject.packages);
 
-    if (!ParseRteDirs(projectNode, cproject.rteDirs)) {
-      return false;
-    }
     if (!ParseComponents(projectNode, cproject.components)) {
       return false;
     }
@@ -87,18 +108,28 @@ bool ProjMgrYamlParser::ParseCproject(const string& input, CsolutionItem& csolut
   return true;
 }
 
-bool ProjMgrYamlParser::ParseClayer(const string& input, map<string, ClayerItem>& clayers) {
+bool ProjMgrYamlParser::ParseClayer(const string& input,
+  map<string, ClayerItem>& clayers, bool checkSchema) {
   ClayerItem clayer;
   try {
+    // Validate file schema
+    if (checkSchema &&
+      !ProjMgrYamlSchemaChecker().Validate(
+        input, ProjMgrYamlSchemaChecker::FileType::LAYER)) {
+      return false;
+    }
+
     const YAML::Node& root = YAML::LoadFile(input);
     if (!ValidateClayer(input, root)) {
       return false;
     }
 
+    error_code ec;
+    clayer.path = fs::absolute(input, ec).generic_string();
+
     const YAML::Node& layerNode = root[YAML_LAYER];
     map<const string, string&> projectChildren = {
       {YAML_NAME, clayer.name},
-      {YAML_DESCRIPTION, clayer.description},
       {YAML_OUTPUTTYPE, clayer.outputType},
     };
     for (const auto& item : projectChildren) {
@@ -108,9 +139,6 @@ bool ProjMgrYamlParser::ParseClayer(const string& input, map<string, ClayerItem>
     ParseTargetType(layerNode, clayer.target);
     ParsePackages(layerNode, clayer.packages);
 
-    if (!ParseRteDirs(layerNode, clayer.rteDirs)) {
-      return false;
-    }
     if (!ParseComponents(layerNode, clayer.components)) {
       return false;
     }
@@ -125,21 +153,6 @@ bool ProjMgrYamlParser::ParseClayer(const string& input, map<string, ClayerItem>
     return false;
   }
   clayers[input] = clayer;
-  return true;
-}
-
-bool ProjMgrYamlParser::ParseRteDirs(const YAML::Node& parent, std::vector<RteDirItem>& dirs) {
-  if (parent[YAML_RTEDIRS].IsDefined()) {
-    const YAML::Node& dirsNode = parent[YAML_RTEDIRS];
-    for (const auto& dirEntry : dirsNode) {
-      RteDirItem dirItem;
-      if (!ParseTypeFilter(dirEntry, dirItem.type)) {
-        return false;
-      }
-      ParseString(dirEntry, YAML_RTEDIR, dirItem.dir);
-      dirs.push_back(dirItem);
-    }
-  }
   return true;
 }
 
@@ -336,7 +349,6 @@ bool ProjMgrYamlParser::ParseContexts(const YAML::Node& parent, CsolutionItem& c
         return false;
       }
       ParseString(projectsEntry, YAML_PROJECT, descriptor.cproject);
-      ParseVectorOrString(projectsEntry, YAML_DEPENDS, descriptor.depends);
       ParseTargetType(projectsEntry, descriptor.target);
       csolution.contexts.push_back(descriptor);
       PushBackUniquely(csolution.cprojects, descriptor.cproject);
@@ -426,7 +438,6 @@ const set<string> projectsKeys = {
   YAML_ADDPATHS,
   YAML_DELPATHS,
   YAML_MISC,
-  YAML_DEPENDS,
 };
 
 const set<string> projectKeys = {
@@ -437,7 +448,6 @@ const set<string> projectKeys = {
   YAML_BOARD,
   YAML_PROCESSOR,
   YAML_COMPILER,
-  YAML_RTEDIRS,
   YAML_OPTIMIZE,
   YAML_DEBUG,
   YAML_WARNINGS,
@@ -460,7 +470,6 @@ const set<string> layerKeys = {
   YAML_BOARD,
   YAML_PROCESSOR,
   YAML_COMPILER,
-  YAML_RTEDIRS,
   YAML_OPTIMIZE,
   YAML_DEBUG,
   YAML_WARNINGS,
@@ -508,11 +517,6 @@ const set<string> processorKeys = {
   YAML_TRUSTZONE,
   YAML_FPU,
   YAML_ENDIAN,
-};
-
-const set<string> dirsKeys = {
-  YAML_RTEDIR,
-  YAML_FORTYPE,
 };
 
 const set<string> miscKeys = {

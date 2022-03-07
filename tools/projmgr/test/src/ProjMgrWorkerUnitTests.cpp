@@ -25,7 +25,9 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessToolchain) {
   const string& filename = testinput_folder + "/TestProject/test.cproject.yml";
   EXPECT_TRUE(parser.ParseCproject(filename, true));
   EXPECT_TRUE(AddContexts(parser, descriptor, filename));
-  ContextItem context = GetContexts().begin()->second;
+  map<string, ContextItem>* contexts;
+  GetContexts(contexts);
+  ContextItem context = contexts->begin()->second;
   EXPECT_TRUE(ProcessPrecedences(context));
   EXPECT_TRUE(ProcessToolchain(context));
   EXPECT_EQ(expected.name, context.toolchain.name);
@@ -73,7 +75,9 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDevice) {
   const string& filename = testinput_folder + "/TestProject/test.cproject.yml";
   EXPECT_TRUE(parser.ParseCproject(filename, true));
   EXPECT_TRUE(AddContexts(parser, descriptor, filename));
-  ContextItem context = GetContexts().begin()->second;
+  map<string, ContextItem>* contexts;
+  GetContexts(contexts);
+  ContextItem context = contexts->begin()->second;
   EXPECT_TRUE(LoadPacks());
   EXPECT_TRUE(ProcessPrecedences(context));
   EXPECT_TRUE(ProcessDevice(context));
@@ -92,7 +96,9 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessComponents) {
   const string& filename = testinput_folder + "/TestProject/test.cproject.yml";
   EXPECT_TRUE(parser.ParseCproject(filename, true));
   EXPECT_TRUE(AddContexts(parser, descriptor, filename));
-  ContextItem context = GetContexts().begin()->second;
+  map<string, ContextItem>* contexts;
+  GetContexts(contexts);
+  ContextItem context = contexts->begin()->second;
   EXPECT_TRUE(LoadPacks());
   EXPECT_TRUE(ProcessPrecedences(context));
   EXPECT_TRUE(ProcessDevice(context));
@@ -105,6 +111,41 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessComponents) {
   }
 }
 
+TEST_F(ProjMgrWorkerUnitTests, ProcessComponentsApi) {
+  set<string> expectedComponents = {
+    "ARM::Device:Startup&RteTest Startup@2.0.3",
+    "ARM::RteTest:ApiExclusive:S1@0.9.9",
+    "ARM::RteTest:CORE@0.1.1",
+  };
+  set<string> expectedPackages = {
+    "ARM::RteTest@0.1.0",
+    "ARM::RteTest_DFP@0.2.0",
+  };
+  ProjMgrParser parser;
+  ContextDesc descriptor;
+  const string& filename = testinput_folder + "/TestProject/test-api.cproject.yml";
+  EXPECT_TRUE(parser.ParseCproject(filename, true));
+  EXPECT_TRUE(AddContexts(parser, descriptor, filename));
+  map<string, ContextItem>* contexts;
+  GetContexts(contexts);
+  ContextItem context = contexts->begin()->second;
+  EXPECT_TRUE(LoadPacks());
+  EXPECT_TRUE(ProcessPrecedences(context));
+  EXPECT_TRUE(ProcessDevice(context));
+  EXPECT_TRUE(SetTargetAttributes(context, context.targetAttributes));
+  EXPECT_TRUE(ProcessComponents(context));
+  ASSERT_EQ(expectedComponents.size(), context.components.size());
+  auto componentIt = context.components.begin();
+  for (const auto& expectedComponent : expectedComponents) {
+    EXPECT_EQ(expectedComponent, (*componentIt++).first);
+  }
+  ASSERT_EQ(expectedPackages.size(), context.packages.size());
+  auto packageIt = context.packages.begin();
+  for (const auto& expectedPackage : expectedPackages) {
+    EXPECT_EQ(expectedPackage, (*packageIt++).first);
+  }
+}
+
 TEST_F(ProjMgrWorkerUnitTests, ProcessDependencies) {
   map<string, set<string>> expected = {{ "ARM::Device:Startup&RteTest Startup@2.0.3" , {"require RteTest:CORE"} }};
   ProjMgrParser parser;
@@ -112,7 +153,9 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDependencies) {
   const string& filename = testinput_folder + "/TestProject/test-dependency.cproject.yml";
   EXPECT_TRUE(parser.ParseCproject(filename, true));
   EXPECT_TRUE(AddContexts(parser, descriptor, filename));
-  ContextItem context = GetContexts().begin()->second;
+  map<string, ContextItem>* contexts;
+  GetContexts(contexts);
+  ContextItem context = contexts->begin()->second;
   EXPECT_TRUE(LoadPacks());
   EXPECT_TRUE(ProcessPrecedences(context));
   EXPECT_TRUE(ProcessDevice(context));
@@ -132,10 +175,13 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDependencies) {
 TEST_F(ProjMgrWorkerUnitTests, ProcessDeviceFailed) {
   ProjMgrParser parser;
   ContextDesc descriptor;
-  const string& filename = testinput_folder + "/TestProject/test-unavailable-processor.cproject.yml";
+  const string& filename = testinput_folder +
+    "/TestProject/test.cproject_device_pname_unavailable_in_board.yml";
   EXPECT_TRUE(parser.ParseCproject(filename, true));
   EXPECT_TRUE(AddContexts(parser, descriptor, filename));
-  ContextItem context = GetContexts().begin()->second;
+  map<string, ContextItem>* contexts;
+  GetContexts(contexts);
+  ContextItem context = contexts->begin()->second;
   EXPECT_TRUE(LoadPacks());
   EXPECT_TRUE(ProcessPrecedences(context));
   EXPECT_FALSE(ProcessDevice(context));
@@ -165,7 +211,7 @@ TEST_F(ProjMgrWorkerUnitTests, LoadDuplicatePacks) {
 
   // Check if only one pack is loaded
   ASSERT_EQ(1, m_installedPacks.size());
-  EXPECT_EQ("ARM.RteTest_DFP", (*m_installedPacks.begin())->GetCommonID());
+  EXPECT_EQ("ARM.RteTest_DFP.0.2.0", (*m_installedPacks.begin())->GetPackageID());
 }
 
 TEST_F(ProjMgrWorkerUnitTests, LoadRequiredPacks) {
@@ -179,7 +225,21 @@ TEST_F(ProjMgrWorkerUnitTests, LoadRequiredPacks) {
 
   // Check if only one pack is loaded
   ASSERT_EQ(1, m_installedPacks.size());
-  EXPECT_EQ("ARM.RteTest_DFP", (*m_installedPacks.begin())->GetCommonID());
+  EXPECT_EQ("ARM.RteTest_DFP.0.2.0", (*m_installedPacks.begin())->GetPackageID());
+}
+
+TEST_F(ProjMgrWorkerUnitTests, LoadExactPackVersion) {
+  ProjMgrParser parser;
+  ContextDesc descriptor;
+
+  string filename = testinput_folder + "/TestProject/test.cproject_exact_package.yml";
+  EXPECT_TRUE(parser.ParseCproject(filename, true));
+  EXPECT_TRUE(AddContexts(parser, descriptor, filename));
+  EXPECT_TRUE(LoadPacks());
+
+  // Check if only one pack is loaded
+  ASSERT_EQ(1, m_installedPacks.size());
+  EXPECT_EQ("ARM.RteTest_DFP.0.1.1", (*m_installedPacks.begin())->GetPackageID());
 }
 
 TEST_F(ProjMgrWorkerUnitTests, LoadPacksNoPackage) {
@@ -192,10 +252,245 @@ TEST_F(ProjMgrWorkerUnitTests, LoadPacksNoPackage) {
   EXPECT_TRUE(LoadPacks());
 
   // get list of available packs
-  set<string> availablePacks;
-  EXPECT_TRUE(ListPacks("", availablePacks));
+  vector<string> availablePacks;
+  EXPECT_TRUE(ListPacks(availablePacks, "test"));
 
   // by default all packs available should be loaded
   EXPECT_EQ(availablePacks.size(), m_installedPacks.size());
 }
 
+TEST_F(ProjMgrWorkerUnitTests, GetAccessSequence) {
+  string src, sequence;
+  size_t offset = 0;
+
+  src = "Option=$Dname$ - $Dboard$";
+  EXPECT_TRUE(GetAccessSequence(offset, src, sequence, '$', '$'));
+  EXPECT_EQ(offset, 14);
+  EXPECT_EQ(sequence, "Dname");
+  EXPECT_TRUE(GetAccessSequence(offset, src, sequence, '$', '$'));
+  EXPECT_EQ(offset, 25);
+  EXPECT_EQ(sequence, "Dboard");
+  EXPECT_TRUE(GetAccessSequence(offset, src, sequence, '$', '$'));
+  EXPECT_EQ(offset, string::npos);
+
+  src = "DEF=$Output(project)$";
+  offset = 0;
+  EXPECT_TRUE(GetAccessSequence(offset, src, sequence, '$', '$'));
+  EXPECT_EQ(offset, 21);
+  EXPECT_EQ(sequence, "Output(project)");
+  offset = 0;
+  EXPECT_TRUE(GetAccessSequence(offset, sequence, sequence, '(', ')'));
+  EXPECT_EQ(offset, 15);
+  EXPECT_EQ(sequence, "project");
+
+  src = "Option=$Dname";
+  offset = 0;
+  EXPECT_FALSE(GetAccessSequence(offset, src, sequence, '$', '$'));
+}
+
+TEST_F(ProjMgrWorkerUnitTests, ProcessDevice_Invalid_Device_Name) {
+  ProjMgrParser parser;
+  ContextDesc descriptor;
+  const string& filename = testinput_folder + "/TestProject/test.cproject_device_unknown.yml";
+  const string& expected = "specified device 'RteTest_ARM_UNKNOWN' was not found";
+  StdStreamRedirect streamRedirect;
+
+  EXPECT_TRUE(parser.ParseCproject(filename, true));
+  EXPECT_TRUE(AddContexts(parser, descriptor, filename));
+  map<string, ContextItem>* contexts;
+  GetContexts(contexts);
+  ContextItem context = contexts->begin()->second;
+  EXPECT_TRUE(LoadPacks());
+  EXPECT_TRUE(ProcessPrecedences(context));
+  EXPECT_FALSE(ProcessDevice(context));
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find(expected));
+}
+
+TEST_F(ProjMgrWorkerUnitTests, ProcessDevice_Invalid_Device_Vendor) {
+  ProjMgrParser parser;
+  ContextDesc descriptor;
+  const string& filename = testinput_folder +
+    "/TestProject/test.cproject_device_unknown_vendor.yml";
+  const string& expected = "specified device 'RteTest_ARMCM0' was not found";
+  StdStreamRedirect streamRedirect;
+
+  EXPECT_TRUE(parser.ParseCproject(filename, true));
+  EXPECT_TRUE(AddContexts(parser, descriptor, filename));
+  map<string, ContextItem>* contexts;
+  GetContexts(contexts);
+  ContextItem context = contexts->begin()->second;
+  EXPECT_TRUE(LoadPacks());
+  EXPECT_TRUE(ProcessPrecedences(context));
+  EXPECT_FALSE(ProcessDevice(context));
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find(expected));
+}
+
+TEST_F(ProjMgrWorkerUnitTests, ProcessDevice_PName) {
+  ProjMgrParser parser;
+  ContextDesc descriptor;
+  const string& filename = testinput_folder +
+    "/TestProject/test.cproject_device_unknown_processor.yml";
+  const string& expected = "processor name 'NOT_AVAILABLE' was not found";
+  StdStreamRedirect streamRedirect;
+
+  EXPECT_TRUE(parser.ParseCproject(filename, true));
+  EXPECT_TRUE(AddContexts(parser, descriptor, filename));
+  map<string, ContextItem>* contexts;
+  GetContexts(contexts);
+  ContextItem context = contexts->begin()->second;
+  EXPECT_TRUE(LoadPacks());
+  EXPECT_TRUE(ProcessPrecedences(context));
+  EXPECT_FALSE(ProcessDevice(context));
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find(expected));
+}
+
+TEST_F(ProjMgrWorkerUnitTests, ProcessDevice_With_Board_And_Device_Info) {
+  ProjMgrParser parser;
+  ContextDesc descriptor;
+  const string& filename = testinput_folder +
+    "/TestProject/test.cproject_board_and_device.yml";
+
+  EXPECT_TRUE(parser.ParseCproject(filename, true));
+  EXPECT_TRUE(AddContexts(parser, descriptor, filename));
+  map<string, ContextItem>* contexts;
+  GetContexts(contexts);
+  ContextItem context = contexts->begin()->second;
+  EXPECT_TRUE(LoadPacks());
+  EXPECT_TRUE(ProcessPrecedences(context));
+  EXPECT_TRUE(ProcessDevice(context));
+}
+
+TEST_F(ProjMgrWorkerUnitTests, ProcessPrecedences_With_Only_Board) {
+  ProjMgrParser parser;
+  ContextDesc descriptor;
+  const string& filename = testinput_folder + "/TestProject/test.cproject_only_board.yml";
+  EXPECT_TRUE(parser.ParseCproject(filename, true));
+  EXPECT_TRUE(AddContexts(parser, descriptor, filename));
+  map<string, ContextItem>* contexts;
+  GetContexts(contexts);
+  ContextItem context = contexts->begin()->second;
+  EXPECT_TRUE(LoadPacks());
+  EXPECT_TRUE(ProcessPrecedences(context));
+  EXPECT_TRUE(ProcessDevice(context));
+}
+
+TEST_F(ProjMgrWorkerUnitTests, ProcessDevice_Invalid_Board_Vendor) {
+  ProjMgrParser parser;
+  ContextDesc descriptor;
+  const string& filename = testinput_folder +
+    "/TestProject/test.cproject_board_vendor_invalid.yml";
+  const string& expected = "board 'UNKNOWN::RteTest Dummy board' was not found";
+  StdStreamRedirect streamRedirect;
+
+  EXPECT_TRUE(parser.ParseCproject(filename, true));
+  EXPECT_TRUE(AddContexts(parser, descriptor, filename));
+  map<string, ContextItem>* contexts;
+  GetContexts(contexts);
+  ContextItem context = contexts->begin()->second;
+  EXPECT_TRUE(LoadPacks());
+  EXPECT_TRUE(ProcessPrecedences(context));
+  EXPECT_FALSE(ProcessDevice(context));
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find(expected));
+}
+
+TEST_F(ProjMgrWorkerUnitTests, ProcessDevice_Invalid_Board_Name) {
+  ProjMgrParser parser;
+  ContextDesc descriptor;
+  const string& filename = testinput_folder +
+    "/TestProject/test.cproject_board_name_invalid.yml";
+  const string& expected = "board 'Keil::RteTest_unknown' was not found";
+  StdStreamRedirect streamRedirect;
+
+  EXPECT_TRUE(parser.ParseCproject(filename, true));
+  EXPECT_TRUE(AddContexts(parser, descriptor, filename));
+  map<string, ContextItem>* contexts;
+  GetContexts(contexts);
+  ContextItem context = contexts->begin()->second;
+  EXPECT_TRUE(LoadPacks());
+  EXPECT_TRUE(ProcessPrecedences(context));
+  EXPECT_FALSE(ProcessDevice(context));
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find(expected));
+}
+
+TEST_F(ProjMgrWorkerUnitTests, GetDeviceItem) {
+  std::map<std::string, DeviceItem> input = {
+    // {input, expected output}
+    {"Vendor::Name:Processor", {"Vendor", "Name", "Processor"}},
+    {"Name:Processor",         {"", "Name", "Processor"}},
+    {"::Name:Processor",       {"", "Name", "Processor"}},
+    {":Processor",             {"", "", "Processor"}},
+    {"Vendor::Name:",          {"Vendor", "Name", ""}},
+    {"::Name:",                {"", "Name", ""}},
+    {"::Name",                 {"", "Name", ""}},
+    {"Name",                   {"", "Name", ""}},
+  };
+
+  for (const auto& in : input) {
+    DeviceItem item;
+    GetDeviceItem(in.first, item);
+    EXPECT_EQ(in.second.name, item.name);
+    EXPECT_EQ(in.second.vendor, item.vendor);
+    EXPECT_EQ(in.second.pname, item.pname);
+  }
+}
+
+TEST_F(ProjMgrWorkerUnitTests, ProcessDevicePrecedence) {
+  struct TestInfo {
+    std::string elem1;
+    std::string elem2;
+    std::string elem3;
+    bool expectedReturnVal;
+    std::string expectedOutput;
+  };
+
+  std::vector<TestInfo> inputs = {
+    // input1, input2, input3, expectedreturnVal, expectedOutput
+    // positive tests
+    { "name", "", "",                                 true, "name"},
+    { "", "::name", "name",                           true, "name"},
+    { "name:processor", "", "",                       true, "name:processor"},
+    { ":processor", "vendor::name", "",               true, "vendor::name:processor"},
+    { ":processor", "::name:processor", "::name",     true, "name:processor"},
+    { "vendor::name", ":processor", "name",           true, "vendor::name:processor"},
+    { ":processor", "vendor::name:processor", "name", true, "vendor::name:processor"},
+    { "", "", "",                                     true, ""},
+    { ":processor", "", "",                           true, ":processor"},
+    // negative tests
+    { "name:processor", "", "name:processor1",        false, ""},
+    { ":processor", "vendor::name:processor1", "name",false, ""},
+    { ":processor", "vendor::name:processor", "vendor::name:processor2", false, ""},
+  };
+
+  for (auto& in : inputs) {
+    std::string out   = "";
+    std::string elem1 = in.elem1;
+    std::string elem2 = in.elem2;
+    std::string elem3 = in.elem3;
+
+    StringCollection item = { &out, { &elem1, &elem2, &elem3 } };
+    EXPECT_EQ(in.expectedReturnVal, ProcessDevicePrecedence(item));
+    EXPECT_STREQ(item.assign->c_str(), in.expectedOutput.c_str());
+  }
+}
+
+TEST_F(ProjMgrWorkerUnitTests, GetBoardItem) {
+  std::map<std::string, BoardItem> input = {
+    // {input, expected output}
+    {"Vendor::Name", {"Vendor", "Name"}},
+    {"Name",         {"", "Name"}},
+    {"::Name",       {"", "Name"}},
+    {"",             {"", ""}},
+  };
+
+  for (const auto& in : input) {
+    BoardItem item;
+    GetBoardItem(in.first, item);
+    EXPECT_EQ(in.second.name, item.name);
+    EXPECT_EQ(in.second.vendor, item.vendor);
+  }
+}

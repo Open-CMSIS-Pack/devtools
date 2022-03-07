@@ -1,0 +1,19 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/0.9.1/tools/projmgr/schemas/cproject.schema.json
+
+project:
+  description: Project 1
+  board: Keil::RteTest Test board
+  compiler: AC6@6.16.0
+  processor:
+    fpu: off
+    endian: little
+    trustzone: non-secure
+  packages:
+    - package: ARM::RteTest_DFP
+  components:
+    - component: Startup
+    - component: CORE
+  groups:
+    - group: Sources
+      files: 
+        - file: main.c

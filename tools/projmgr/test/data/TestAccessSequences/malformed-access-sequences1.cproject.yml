@@ -1,0 +1,15 @@
+### CMSIS Project Description ###
+
+project:
+  device: RteTest_ARMCM0
+  compiler: AC6
+  defines:
+    - DEF1-$Dname$
+    - DEF2-$Dnamelong$
+    - DEF3-$Dname
+  components:
+    - component: CORE
+  groups:
+    - group: Sources
+      files: 
+        - file: main.c

@@ -8,6 +8,7 @@ layer:
   misc:
     - compiler: GCC4@asd
       C: [--layer2-flag]
+      Link: [ "link1" ]
   packages:
     - package: ARM::CMSIS@5.8.0
   components:
@@ -20,3 +21,5 @@ layer:
         - group: sub Layer 1
           files: 
             - fileXXXX: sublayer1.c
+
+temp: test

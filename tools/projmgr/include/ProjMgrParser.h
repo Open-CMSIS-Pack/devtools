@@ -164,27 +164,25 @@ struct GroupNode {
 /**
  * @brief context descriptor containing
  *        cproject filename,
- *        project context dependencies,
- *        rte directory,
  *        target properties,
  *        type filter
 */
 struct ContextDesc {
   std::string cproject;
-  std::vector<std::string> depends;
-  RteDirItem dir;
   TargetType target;
   TypeFilter type;
 };
 
 /**
  * @brief solution item containing
+ *        csolution path
  *        build types,
  *        target types,
  *        list of cprojects,
  *        list of contexts descriptors
 */
 struct CsolutionItem {
+  std::string path;
   std::map<std::string, BuildType> buildTypes;
   std::map<std::string, TargetType> targetTypes;
   std::vector<std::string> cprojects;
@@ -194,7 +192,7 @@ struct CsolutionItem {
 /**
  * @brief cproject item containing
  *        project name,
- *        project description,
+ *        project path,
  *        project output type,
  *        project target properties,
  *        list of required packages,
@@ -204,7 +202,7 @@ struct CsolutionItem {
 */
 struct CprojectItem {
   std::string name;
-  std::string description;
+  std::string path;
   std::string outputType;
   TargetType target;
   std::vector<RteDirItem> rteDirs;
@@ -227,7 +225,7 @@ struct InterfaceItem {
 /**
  * @brief clayer item containing
  *        layer name,
- *        layer description,
+ *        layer path,
  *        layer output type,
  *        layer target properties,
  *        list of required packages,
@@ -237,7 +235,7 @@ struct InterfaceItem {
 */
 struct ClayerItem {
   std::string name;
-  std::string description;
+  std::string path;
   std::string outputType;
   TargetType target;
   std::vector<RteDirItem> rteDirs;
@@ -267,19 +265,19 @@ public:
    * @param input cproject.yml file
    * @param boolean parse single project, default false
   */
-  bool ParseCproject(const std::string& input, bool single = false);
+  bool ParseCproject(const std::string& input, bool checkSchema, bool single = false);
 
   /**
    * @brief parse csolution
    * @param input csolution.yml file
   */
-  bool ParseCsolution(const std::string& input);
+  bool ParseCsolution(const std::string& input, bool checkSchema);
 
   /**
    * @brief parse clayer
    * @param input clayer.yml file
   */
-  bool ParseClayer(const std::string& input);
+  bool ParseClayer(const std::string& input, bool checkSchema);
 
   /**
    * @brief get csolution
