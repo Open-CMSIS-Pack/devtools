@@ -453,19 +453,20 @@ const bool CbuildModel::EvalPreIncludeFiles() {
   */
   const map<RteComponent*, set<string> >& preincludeFiles = m_cprjTarget->GetPreIncludeFiles();
 
-  for (auto it : preincludeFiles) {
-    RteComponent* ci = it.first;
-    if (ci != NULL) {
-      string componentName = GetExtendedRteGroupName(ci, m_cprjProject->GetRteFolder());
-      m_preIncludeFilesLocal[componentName] = vector<string>(it.second.begin(), it.second.end());
-    } else {
-      const string& rteFolder = m_prjFolder + m_cprjProject->GetRteFolder() + "/_" + WildCards::ToX(m_cprjTarget->GetName()) + "/";
-      for (auto it2 : it.second) {
-        string file = it2;
-        if (!RteFsUtils::NormalizePath(file, rteFolder)) {
-          LogMsg("M204", PATH(file));
-          return false;
-        }
+  for (const auto& [component, files] : preincludeFiles) {
+    for (string file : files) {
+      const string& preIncludeLocal = component ? component->ConstructComponentPreIncludeFileName() : "";
+      const string& baseFolder = (file == "Pre_Include_Global.h" || file == preIncludeLocal) ?
+        m_prjFolder + m_cprjProject->GetRteFolder() + "/_" + WildCards::ToX(m_cprjTarget->GetName()) + "/" :
+        m_prjFolder;
+      if (!RteFsUtils::NormalizePath(file, baseFolder)) {
+        LogMsg("M204", PATH(file));
+        return false;
+      }
+      if (component) {
+        const string& componentName = GetExtendedRteGroupName(component, m_cprjProject->GetRteFolder());
+        m_preIncludeFilesLocal[componentName].push_back(file);
+      } else {
         m_preIncludeFilesGlobal.push_back(file);
       }
     }
