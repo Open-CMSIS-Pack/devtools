@@ -448,7 +448,7 @@ solution:
     
   projects:
     - project: /security/TFM.cproject.yml
-      type: .Release
+      for-type: .Release
     - project: /application/MQTT_AWS.cproject.yml
     - project: /bootloader/Bootloader.cproject.yml
       not-for-type: +Virtual

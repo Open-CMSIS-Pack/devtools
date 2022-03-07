@@ -18,6 +18,8 @@ The following chapter explains the YML format that is used to describe the YML i
 - [Toolchain Options](#toolchain-options)
   - [`compiler:`](#compiler)
   - [`output-type:`](#output-type)
+  - [`linker:`](#linker)
+- [Translation Control Options](#translation-control-options)
   - [`optimize:`](#optimize)
   - [`debug:`](#debug)
   - [`warnings:`](#warnings)
@@ -72,7 +74,7 @@ The following chapter explains the YML format that is used to describe the YML i
 The CMSIS Project Manager uses the following syntax to specify the `pack:` names in the `*.yml` files.
 
 ```text
-[vendor::] pack-name [@[>=] version]
+vendor [:: pack-name [@[>=] version] ]
 ```
 
 Element      | Description
@@ -84,9 +86,9 @@ Element      | Description
 **Examples:**
 
 ```yml
-- pack:   CMSIS@>5.5.0                                 # 'CMSIS' Pack (with version 5.5.0)
+- pack:   ARM::CMSIS@5.5.0                             # 'CMSIS' Pack (with version 5.5.0)
 - pack:   Keil::MDK-Middleware@>=7.13.0                # 'MDK-Middleware' Software Pack from vendor Keil (with version 7.13.0 or higher)
-- filter: AWS::*                                       # All Software Packs from vendor 'AWS'
+- filter: AWS                                          # All Software Packs from vendor 'AWS'
 - filter: Keil::STM*                                   # All Software Packs that start with 'STM' from vendor 'Keil'
 ```
 
@@ -233,7 +235,7 @@ solution:
 
 The `project: /application/MQTT_AWS.cproject.yml` can now use **Access Sequences** to reference files or directories in other projects that belong to a solution. For example, these references are possible in the file `MQTT_AWS.cproject.yml`.
 
-The example below uses the `build-type` and `target-type` of the current processed context. In partice this means that the same `build-type` and `target-type` is used as for the `MQTT_AWS.cproject.yml` project.
+The example below uses the `build-type` and `target-type` of the current processed context. In practice this means that the same `build-type` and `target-type` is used as for the `MQTT_AWS.cproject.yml` project.
 
 ```yml
     files:
@@ -293,8 +295,8 @@ default:
   compiler: AC6                   # use Arm Compiler 6 as default
 
   packs:
-    - filter: ARM::               # use all packs from Arm
-    - filter: AWS::               # use all packs from AWS
+    - filter: ARM                 # use all packs from Arm
+    - filter: AWS                 # use all packs from AWS
     - filter: NXP::*LPC*          # use all packs from NXP that contain LPC
 
     - pack: ARM::CMSIS            # use local path for the CMSIS pack
@@ -330,7 +332,7 @@ solution:
   compiler: GCC                 # overwrite compiler definition in 'cdefaults.yml'
 
   packs: 
-    - filter: ST::              # add ST packs to existing filter in 'cdefaults.yml'
+    - filter: ST                # add ST packs to existing filter in 'cdefaults.yml'
 
   build-types:                  # additional build types
     - type: Test
@@ -363,6 +365,7 @@ The `project:` node is the start of a `*.cproject.yml` file and contain the foll
 &nbsp;&nbsp; [`compiler:`](#compiler)                 | Toolchain selection (optional)
 &nbsp;&nbsp; [`output-type:'](#output-type)           | Generate executable (default) or library
 &nbsp;&nbsp; [`optimize:`](#optimize)                 | Optimize level for code generation (optional)
+&nbsp;&nbsp; [`linker:`](#linker)                     | Instructions for the linker
 &nbsp;&nbsp; [`debug:`](#debug)                       | Generation of debug information (optional)
 &nbsp;&nbsp; [`defines:`](#defines)                   | Preprocessor (#define) symbols for code generation (optional)
 &nbsp;&nbsp; [`undefines:`](#undefines)               | Remove preprocessor (#define) symbols (optional)
@@ -383,6 +386,7 @@ project:
   description:           # project description (optional)
   compiler:              # toolchain specification (optional) 
   output-type: lib | exe # generate executable (default) or library
+  linker:                # instructions for the link step
 
   optimize:              # optimize level for code generation (optional)
   debug:                 # generation of debug information (optional)
@@ -401,7 +405,7 @@ project:
   layers:                # List of software layers that belong to the project
 ```
 
-## `layer:` 
+## `layer:`
 
 The following top-level *key values* are supported in a `*.clayer.yml` file.
 
@@ -415,15 +419,9 @@ layer:                   # Start of a layer
 
 # Toolchain Options
 
-The following toolchain options may be used at various places such as:
+The following code translation  options may be used at various places such as:
   - [`solution:`](#solution) level to specify options for a collection of related projects
   - [`project:`](#projects) level to specify options for a project
-  - [`groups:`](#groups) level to specify options for a specify source file group
-  - [`files:`](#files) level to specify options for a specify source file
-
-**Notes:**
-
-- `defines:`, `add-paths:`, `del-paths:`  and `misc:` are additive. All other keywords overwrite previous settings.
 
 ## `compiler:`
 
@@ -456,9 +454,36 @@ Value                                                 | Generated Output
 output-type: lib            # Generate a library
 ```
 
+## `linker:`
+
+The `linker:` node controls the linker operation.
+
+`linker:`                                             | Content
+:-----------------------------------------------------|:------------------------------------
+&nbsp;&nbsp; `script:`                                | Explicit file name of the linker script
+
+**Example:**
+
+```yml
+linker:                    # Control linker operation
+  script: .\MyProject.sct  # Explicit scatter file
+```
+
+# Translation Control Options
+
+The following translation control options may be used at various places such as:
+  - [`solution:`](#solution) level to specify options for a collection of related projects
+  - [`project:`](#projects) level to specify options for a project
+  - [`groups:`](#groups) level to specify options for a specify source file group
+  - [`files:`](#files) level to specify options for a specify source file
+
+**Notes:**
+
+- `defines:`, `add-paths:`, `del-paths:`  and `misc:` are additive. All other keywords overwrite previous settings.
+
 ## `optimize:`
 
-Generic optimize levels that are mapped to the toolchain by CMSIS-Build.
+Generic optimize levels for code generation; mapped to the compiler toolchain by CMSIS-Build.
 
 Value                                                 | Code Generation
 :-----------------------------------------------------|:------------------------------------
@@ -471,12 +496,31 @@ Value                                                 | Code Generation
 **Example:**
 
 ```yml
-output-type: lib            # Generate a library
+groups:
+  - group:  "Main File Group"
+    optimize: debug         # optimize this file group for debug illusion
+    files: 
+      - file: file1a.c
+      - file: file1b.c
 ```
 
 ## `debug:`
 
-Generic control for the generation of debug information (on, off), mapped to the compiler toolchain by CMSIS-Build.
+Control the generation of debug information; mapped to the compiler toolchain by CMSIS-Build.
+
+Value                                                 | Code Generation
+:-----------------------------------------------------|:------------------------------------
+`on`                                                  | Generate debug information (default)
+`off`                                                 | Generate no debug information
+
+**Example:**
+
+```yml
+ build-types:
+    - type: Release
+      optimize: size        
+      debug: off            # generate no debug information for the release build
+```
 
 ## `warnings:`
 
@@ -506,9 +550,15 @@ Remove symbol #define statements from the command line of the development tools.
 **YML structure:**
 
 ```yml
-undefines:                 # Start a list of undefine statements
-  - TestValue              # remove symbol from the list of define statements.
-  - TestMode               # remove a symbol.
+groups:
+  - group:  "Main File Group"
+    undefines:
+      - TestValue           # remove define symbol `TestValue` for this file group
+    files: 
+      - file: file1a.c
+        undefines:
+         - TestMode         # remove define symbol `TestMode` for this file
+      - file: file1b.c
 ```
 
 ## `add-paths:`
@@ -587,7 +637,7 @@ The `pack:` list allows to add specific software packs, optional with a version 
 
 ```yml
 packs:                                  # start section that specifics software packs
-  - filter: AWS::                       # use packs from AWS
+  - filter: AWS                         # use packs from AWS
   - filter: NXP::*K32L*                 # use packs from NXP that relate to K32L series (would match K32L3A60_DFP + FRDM-K32L3A6_BSP)
   - filter: ARM::                       # use packs from Arm
 
