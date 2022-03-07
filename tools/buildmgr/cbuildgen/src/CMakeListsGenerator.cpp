@@ -81,8 +81,8 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
     if (!list.second.empty()) {
       string prefix = list.first;
       cmakelists << "set(" << prefix << "_SRC_FILES";
-      for (auto n : list.second) {
-        cmakelists << EOL << "  \"" << n.second.src << "\"";
+      for (auto [src, _] : list.second) {
+        cmakelists << EOL << "  \"" << src << "\"";
       }
       cmakelists << EOL << ")" << EOL << EOL;
     }
@@ -90,16 +90,16 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
 
   if (!m_ccFilesList.empty()) {
     cmakelists << "set(CC_SRC_FILES";
-    for (auto n : m_ccFilesList) {
-      cmakelists << EOL << "  \"" << n.second.src << "\"";
+    for (auto [src, _] : m_ccFilesList) {
+      cmakelists << EOL << "  \"" << src << "\"";
     }
     cmakelists << EOL << ")" << EOL << EOL;
   }
 
   if (!m_cxxFilesList.empty()) {
     cmakelists << "set(CXX_SRC_FILES";
-    for (auto n : m_cxxFilesList) {
-      cmakelists << EOL << "  \"" << n.second.src << "\"";
+    for (auto [src, _] : m_cxxFilesList) {
+      cmakelists << EOL << "  \"" << src << "\"";
     }
     cmakelists << EOL << ")" << EOL << EOL;
   }
@@ -124,15 +124,15 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
 
   // Pre-Include Local
   bool preinc_local = false;
-  for (auto n : m_objGroupsList) {
-    if (!n.second.preinc.empty()) {
+  for (auto [group, flags] : m_groupsList) {
+    if (!flags.preinc.empty()) {
       preinc_local = true;
       auto lists = {&m_ccFilesList, &m_cxxFilesList};
       for (auto list: lists) {
-        for (auto f : *list) {
-          if (fs::path(f.first).parent_path().generic_string() == n.first) {
-            cmakelists << "set(PRE_INC_LOCAL_" << CbuildUtils::ReplaceSpacesByQuestionMarks(f.second.src);
-            for (auto it : n.second.preinc) {
+        for (auto [src, file] : *list) {
+          if (fs::path(file.group).generic_string() == group) {
+            cmakelists << "set(PRE_INC_LOCAL_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src);
+            for (auto it : flags.preinc) {
               cmakelists << EOL << "  \"" << it << "\"";
             }
             cmakelists << EOL << ")" << EOL << EOL;
@@ -145,24 +145,24 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
   // File specific flags
   bool as_file_specific_flags = false;
   for (auto list : asFilesLists) {
-    for (auto n : list.second) {
-      if (!n.second.flags.empty()) {
-        cmakelists << "set(AS_FLAGS_" << CbuildUtils::ReplaceSpacesByQuestionMarks(n.second.src) << " \"" << CbuildUtils::EscapeQuotes(n.second.flags) << "\")"<< EOL;
+    for (auto [src, file] : list.second) {
+      if (!file.flags.empty()) {
+        cmakelists << "set(AS_FLAGS_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(file.flags) << "\")"<< EOL;
         as_file_specific_flags = true;
       }
     }
   }
   bool cc_file_specific_flags = false;
-  for (auto n : m_ccFilesList) {
-    if (!n.second.flags.empty()) {
-      cmakelists << "set(CC_FLAGS_" << CbuildUtils::ReplaceSpacesByQuestionMarks(n.second.src) << " \"" << CbuildUtils::EscapeQuotes(n.second.flags) << "\")"<< EOL;
+  for (auto [src, file] : m_ccFilesList) {
+    if (!file.flags.empty()) {
+      cmakelists << "set(CC_FLAGS_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(file.flags) << "\")"<< EOL;
       cc_file_specific_flags = true;
     }
   }
   bool cxx_file_specific_flags = false;
-  for (auto n : m_cxxFilesList) {
-    if (!n.second.flags.empty()) {
-      cmakelists << "set(CXX_FLAGS_" << CbuildUtils::ReplaceSpacesByQuestionMarks(n.second.src) << " \"" << CbuildUtils::EscapeQuotes(n.second.flags) << "\")"<< EOL;
+  for (auto [src, file] : m_cxxFilesList) {
+    if (!file.flags.empty()) {
+      cmakelists << "set(CXX_FLAGS_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(file.flags) << "\")"<< EOL;
       cxx_file_specific_flags = true;
     }
   }
@@ -171,30 +171,29 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
   bool as_group_specific_flags = false;
   bool cc_group_specific_flags = false;
   bool cxx_group_specific_flags = false;
-  for (auto n : m_objGroupsList) {
-    if (!n.second.asMsc.empty()) {
+  for (auto [group, flags] : m_groupsList) {
+    if (!flags.asMsc.empty()) {
        for (auto list : asFilesLists) {
-         for (auto f : list.second) {
-           if ((fs::path(f.first).parent_path().generic_string() == n.first) && (f.second.flags.empty())) {
-            cmakelists << "set(AS_FLAGS_" << CbuildUtils::ReplaceSpacesByQuestionMarks(f.second.src) << " \"" << CbuildUtils::EscapeQuotes(n.second.asMsc) << "\")"<< EOL;
+         for (auto [src, file] : list.second) {
+           if ((fs::path(file.group).generic_string() == group) && (file.flags.empty())) {
+            cmakelists << "set(AS_FLAGS_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(flags.asMsc) << "\")"<< EOL;
             as_group_specific_flags = true;
           }
         }
       }
     }
-    if (!n.second.ccMsc.empty()) {
-      for (auto f : m_ccFilesList) {
-        string file = fs::path(f.first).parent_path().generic_string();
-        if ((fs::path(f.first).parent_path().generic_string() == n.first) && (f.second.flags.empty())) {
-          cmakelists << "set(CC_FLAGS_" << CbuildUtils::ReplaceSpacesByQuestionMarks(f.second.src) << " \"" << CbuildUtils::EscapeQuotes(n.second.ccMsc) << "\")"<< EOL;
+    if (!flags.ccMsc.empty()) {
+      for (auto [src, file] : m_ccFilesList) {
+        if ((fs::path(file.group).generic_string() == group) && (file.flags.empty())) {
+          cmakelists << "set(CC_FLAGS_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(flags.ccMsc) << "\")"<< EOL;
           cc_group_specific_flags = true;
         }
       }
     }
-    if (!n.second.cxxMsc.empty()) {
-      for (auto f : m_cxxFilesList) {
-        if ((fs::path(f.first).parent_path().generic_string() == n.first) && (f.second.flags.empty())) {
-          cmakelists << "set(CXX_FLAGS_" << CbuildUtils::ReplaceSpacesByQuestionMarks(f.second.src) << " \"" << CbuildUtils::EscapeQuotes(n.second.cxxMsc) << "\")"<< EOL;
+    if (!flags.cxxMsc.empty()) {
+      for (auto [src, file] : m_cxxFilesList) {
+        if ((fs::path(file.group).generic_string() == group) && (file.flags.empty())) {
+          cmakelists << "set(CXX_FLAGS_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(flags.cxxMsc) << "\")"<< EOL;
           cxx_group_specific_flags = true;
         }
       }
