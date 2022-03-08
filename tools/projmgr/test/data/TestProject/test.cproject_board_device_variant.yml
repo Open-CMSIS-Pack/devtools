@@ -2,15 +2,12 @@
 
 project:
   description: Project 1
-  board: Keil::RteTest Test mounted device unavailable
-  device: ARM::RteTest_ARMCM0_Dual
+  board: Keil::RteTest Test device variant
   compiler: AC6@6.16.0
   processor:
     fpu: off
     endian: little
     trustzone: non-secure
-  packages:
-    - package: ARM::RteTest_DFP
   components:
     - component: Startup
     - component: CORE
