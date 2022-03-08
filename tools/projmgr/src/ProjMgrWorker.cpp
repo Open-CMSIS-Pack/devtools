@@ -317,7 +317,9 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
   RteDeviceItem* matchedDevice = nullptr;
   if (deviceItem.name.empty()) {
     matchedDevice = matchedBoardDevice;
-    context.device = GetDeviceInfoString(matchedBoardDevice->GetVendorName(), matchedBoardDevice->GetDeviceName(), deviceItem.pname);
+    const string& variantName = matchedBoardDevice->GetDeviceVariantName();
+    const string& selectableDevice = variantName.empty() ? matchedBoardDevice->GetDeviceName() : variantName;
+    context.device = GetDeviceInfoString("", selectableDevice, deviceItem.pname);
   } else {
     list<RteDeviceItem*> devices;
     for (const auto& pack : m_installedPacks) {
@@ -325,7 +327,6 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
       pack->GetEffectiveDeviceItems(deviceItems);
       devices.insert(devices.end(), deviceItems.begin(), deviceItems.end());
     }
-
     list<RteDeviceItem*> matchedDevices;
     for (const auto& device : devices) {
       if (device->GetFullDeviceName() == deviceItem.name) {
@@ -343,15 +344,6 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
       ProjMgrLogger::Error("specified device '" + deviceItem.name + "' was not found");
       return false;
     }
-    if (matchedBoardDevice) {
-      const string DeviceInfoString = matchedDevice->GetFullDeviceName();
-      const string BoardDeviceInfoString = matchedBoardDevice->GetFullDeviceName();
-      if(DeviceInfoString.find(BoardDeviceInfoString) == string::npos) {
-        ProjMgrLogger::Error("specified device '" + DeviceInfoString + "' and board mounted device '" +
-          BoardDeviceInfoString + "' are different");
-        return false;
-      }
-    }
   }
 
   // check device variants
@@ -363,6 +355,16 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
     }
     ProjMgrLogger::Error(msg);
     return false;
+  }
+
+  if (matchedBoardDevice && (matchedBoardDevice != matchedDevice)) {
+    const string DeviceInfoString = matchedDevice->GetFullDeviceName();
+    const string BoardDeviceInfoString = matchedBoardDevice->GetFullDeviceName();
+    if (DeviceInfoString.find(BoardDeviceInfoString) == string::npos) {
+      ProjMgrLogger::Error("specified device '" + DeviceInfoString + "' and board mounted device '" +
+        BoardDeviceInfoString + "' are different");
+      return false;
+    }
   }
 
   // check device processors

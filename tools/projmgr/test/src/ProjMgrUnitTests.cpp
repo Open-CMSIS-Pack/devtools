@@ -897,6 +897,34 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Board_Multi_Mounted_Devices) {
   EXPECT_NE(string::npos, errStr.find(expected));
 }
 
+TEST_F(ProjMgrUnitTests, RunProjMgr_Board_Device_Variant) {
+  // Test Project with only board info and single mounted device with single variant
+  char* argv[6];
+  const string& cproject = testinput_folder +
+    "/TestProject/test.cproject_board_device_variant.yml";
+
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-p";
+  argv[3] = (char*)cproject.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_Board_Multi_Variants_And_Device) {
+  // Test Project with device variant and board info and mounted device with multiple variants
+  char* argv[6];
+  const string& cproject = testinput_folder +
+    "/TestProject/test.cproject_board_multi_variant_and_device.yml";
+
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-p";
+  argv[3] = (char*)cproject.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv));
+}
+
 TEST_F(ProjMgrUnitTests, RunProjMgr_Board_Multi_Variants) {
   // Test Project with only board info and mounted device with multiple variants
   char* argv[6];
@@ -937,7 +965,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Board_Device_Info) {
   // Test Project with board mounted device different than available devices
   char* argv[6];
   const string& cproject = testinput_folder +
-    "/TestProject/test.cproject_mounted_device_differs_avaialble_device.yml";
+    "/TestProject/test.cproject_mounted_device_differs_available_device.yml";
   const string& expected = "specified device 'RteTest_ARMCM0_Dual' and board mounted device 'RteTest_ARMCM0_Test' are different";
   StdStreamRedirect streamRedirect;
 

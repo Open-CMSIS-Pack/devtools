@@ -372,6 +372,11 @@
       <compatibleDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM4_NOFP"/>
       <compatibleDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM4_FP"/>
     </board>
+    <board name="RteTest Test device variant" vendor="Keil" revision="1.1.1">
+      <description>uVision Simulator</description>
+      <mountedDevice    deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM4_NOFP"/>
+      <compatibleDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM4_FP"/>
+    </board>
   </boards>
 
 </package>
