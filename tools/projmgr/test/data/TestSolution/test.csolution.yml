@@ -20,6 +20,10 @@ solution:
         - /path/CM0/to-be-removed
       del-paths:
         - /path/solution/to-be-removed
+      processor:
+        fpu: off
+        endian: little
+        trustzone: non-secure
     - type: CM3
       device: RteTest_ARMCM3
       misc:
@@ -54,6 +58,10 @@ solution:
       del-paths:
         - /path/CM0/to-be-removed
         - /path/CM3/to-be-removed
+      processor:
+        fpu: off
+        endian: little
+        trustzone: non-secure
 
     - type: Release
       compiler: GCC
