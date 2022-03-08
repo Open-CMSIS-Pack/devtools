@@ -921,6 +921,7 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
       &context.cproject->target.build.processor.trustzone,
       &context.csolutionTarget.build.processor.trustzone,
       &context.targetType.build.processor.trustzone,
+      &context.buildType.processor.trustzone,
     },
   };
   for (const auto& clayer : context.clayers) {
@@ -936,6 +937,7 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
       &context.cproject->target.build.processor.fpu,
       &context.csolutionTarget.build.processor.fpu,
       &context.targetType.build.processor.fpu,
+      &context.buildType.processor.fpu,
     },
   };
   for (const auto& clayer : context.clayers) {
@@ -951,6 +953,7 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
       &context.cproject->target.build.processor.endian,
       &context.csolutionTarget.build.processor.endian,
       &context.targetType.build.processor.endian,
+      &context.buildType.processor.endian,
     },
   };
   for (const auto& clayer : context.clayers) {

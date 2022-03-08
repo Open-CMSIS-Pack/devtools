@@ -14,7 +14,7 @@
     <compiler name="AC6" version="6.16.0"/>
   </compilers>
 
-  <target Dfpu="NO_FPU" Dname="RteTest_ARMCM3" Dsecure="Non-secure" Dvendor="ARM:82">
+  <target Dendian="Little-endian" Dfpu="NO_FPU" Dname="RteTest_ARMCM3" Dsecure="Non-secure" Dvendor="ARM:82">
     <output intdir="test2.Debug+CM3_IntDir/" name="test2.Debug+CM3" outdir="test2.Debug+CM3_OutDir/" type="exe"/>
     <arflags add="-Lib-project -Lib-type-CM3" compiler="AC6"/>
     <asflags add="-ASM-project -ASM-type-CM3" compiler="AC6"/>
