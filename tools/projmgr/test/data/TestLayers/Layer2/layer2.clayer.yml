@@ -9,8 +9,6 @@ layer:
   misc:
     - C:
       - --layer2-flag
-  packages:
-    - package: ARM::RteTest_DFP@0.1.1
   components:
     - component: Startup
   groups:

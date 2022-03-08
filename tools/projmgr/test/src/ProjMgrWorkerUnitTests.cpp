@@ -14,7 +14,19 @@ class ProjMgrWorkerUnitTests : public ProjMgrWorker, public ::testing::Test {
 protected:
   ProjMgrWorkerUnitTests() {}
   virtual ~ProjMgrWorkerUnitTests() {}
+
+  void SetCsolutionPacks(CsolutionItem* csolution, std::vector<std::string> packs, std::string targetType);
 };
+
+void ProjMgrWorkerUnitTests::SetCsolutionPacks(CsolutionItem* csolution, std::vector<std::string> packs, std::string targetType) {
+  ContextItem context;
+  for (auto& pack : packs) {
+    csolution->packs.push_back(PackItem{pack, {}});
+  }
+  context.csolution = csolution;
+  context.type.target = targetType;
+  m_contexts.insert(std::pair<string, ContextItem>(string(targetType), context));
+}
 
 TEST_F(ProjMgrWorkerUnitTests, ProcessToolchain) {
   ToolchainItem expected;
@@ -188,75 +200,115 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDeviceFailed) {
 }
 
 TEST_F(ProjMgrWorkerUnitTests, LoadUnknownPacks) {
-  ProjMgrParser parser;
-  ContextDesc descriptor;
+  CsolutionItem csolution;
+  SetCsolutionPacks(&csolution, {"ARM::RteTest_Unknown@2.0.1"}, "Test");
 
-  string filename = testinput_folder + "/TestProject/test.cproject_unknown_package.yml";
-  EXPECT_TRUE(parser.ParseCproject(filename, true));
-  EXPECT_TRUE(AddContexts(parser, descriptor, filename));
   EXPECT_FALSE(LoadPacks());
-
-  // No pack is loaded
   EXPECT_EQ(0, m_installedPacks.size());
 }
 
 TEST_F(ProjMgrWorkerUnitTests, LoadDuplicatePacks) {
-  ProjMgrParser parser;
-  ContextDesc descriptor;
+  CsolutionItem csolution;
+  SetCsolutionPacks(&csolution, {"ARM::RteTest_DFP@0.2.0", "ARM::RteTest_DFP"}, "Test");
 
-  string filename = testinput_folder + "/TestProject/test.cproject_duplicate_package.yml";
-  EXPECT_TRUE(parser.ParseCproject(filename, true));
-  EXPECT_TRUE(AddContexts(parser, descriptor, filename));
   EXPECT_TRUE(LoadPacks());
-
   // Check if only one pack is loaded
   ASSERT_EQ(1, m_installedPacks.size());
   EXPECT_EQ("ARM.RteTest_DFP.0.2.0", (*m_installedPacks.begin())->GetPackageID());
 }
 
 TEST_F(ProjMgrWorkerUnitTests, LoadRequiredPacks) {
-  ProjMgrParser parser;
-  ContextDesc descriptor;
+  CsolutionItem csolution;
+  SetCsolutionPacks(&csolution, { "ARM::RteTest_DFP@0.2.0"}, "Test");
 
-  string filename = testinput_folder + "/TestProject/test.cproject.yml";
-  EXPECT_TRUE(parser.ParseCproject(filename, true));
-  EXPECT_TRUE(AddContexts(parser, descriptor, filename));
   EXPECT_TRUE(LoadPacks());
-
   // Check if only one pack is loaded
   ASSERT_EQ(1, m_installedPacks.size());
   EXPECT_EQ("ARM.RteTest_DFP.0.2.0", (*m_installedPacks.begin())->GetPackageID());
 }
 
 TEST_F(ProjMgrWorkerUnitTests, LoadExactPackVersion) {
-  ProjMgrParser parser;
-  ContextDesc descriptor;
+  CsolutionItem csolution;
+  SetCsolutionPacks(&csolution, { "ARM::RteTest_DFP@0.1.1" }, "Test");
 
-  string filename = testinput_folder + "/TestProject/test.cproject_exact_package.yml";
-  EXPECT_TRUE(parser.ParseCproject(filename, true));
-  EXPECT_TRUE(AddContexts(parser, descriptor, filename));
   EXPECT_TRUE(LoadPacks());
-
   // Check if only one pack is loaded
   ASSERT_EQ(1, m_installedPacks.size());
   EXPECT_EQ("ARM.RteTest_DFP.0.1.1", (*m_installedPacks.begin())->GetPackageID());
 }
 
 TEST_F(ProjMgrWorkerUnitTests, LoadPacksNoPackage) {
-  ProjMgrParser parser;
-  ContextDesc descriptor;
+  CsolutionItem csolution;
+  SetCsolutionPacks(&csolution, {}, "Test");
 
-  string filename = testinput_folder + "/TestProject/test.cproject_no_packages.yml";
-  EXPECT_TRUE(parser.ParseCproject(filename, true));
-  EXPECT_TRUE(AddContexts(parser, descriptor, filename));
   EXPECT_TRUE(LoadPacks());
+  // get list of available packs
+  vector<string> availablePacks;
+  EXPECT_TRUE(ListPacks(availablePacks, "Test"));
+  // by default all packs available should be loaded
+  EXPECT_EQ(availablePacks.size(), m_installedPacks.size());
+}
+
+TEST_F(ProjMgrWorkerUnitTests, LoadFilteredPack_1) {
+  CsolutionItem csolution;
+  SetCsolutionPacks(&csolution, { "ARM::*Gen*" }, "Test");
+
+  EXPECT_TRUE(LoadPacks());
+  // Check if only one pack is loaded
+  ASSERT_EQ(1, m_installedPacks.size());
+  EXPECT_EQ("ARM.RteTestGenerator.0.1.0", (*m_installedPacks.begin())->GetPackageID());
+}
+
+TEST_F(ProjMgrWorkerUnitTests, LoadFilteredPack_2) {
+  CsolutionItem csolution;
+  SetCsolutionPacks(&csolution, { "ARM" }, "Test");
 
   // get list of available packs
   vector<string> availablePacks;
-  EXPECT_TRUE(ListPacks(availablePacks, "test"));
+  EXPECT_TRUE(ListPacks(availablePacks, "Test"));
+  EXPECT_TRUE(LoadPacks());
+  ASSERT_EQ(availablePacks.size(), m_installedPacks.size());
+}
 
-  // by default all packs available should be loaded
-  EXPECT_EQ(availablePacks.size(), m_installedPacks.size());
+TEST_F(ProjMgrWorkerUnitTests, LoadFilteredPack_3) {
+  CsolutionItem csolution;
+  SetCsolutionPacks(&csolution, { "ARM::RteTest_D*" }, "Test");
+
+  EXPECT_TRUE(LoadPacks());
+  ASSERT_EQ(1, m_installedPacks.size());
+  EXPECT_EQ("ARM.RteTest_DFP.0.2.0", (*m_installedPacks.begin())->GetPackageID());
+}
+
+TEST_F(ProjMgrWorkerUnitTests, LoadFilteredPack_4) {
+  CsolutionItem csolution;
+  SetCsolutionPacks(&csolution, { "ARM::*" }, "Test");
+
+  // get list of available packs
+  vector<string> availablePacks;
+  EXPECT_TRUE(ListPacks(availablePacks, "Test"));
+  EXPECT_TRUE(LoadPacks());
+  ASSERT_EQ(availablePacks.size(), m_installedPacks.size());
+}
+
+TEST_F(ProjMgrWorkerUnitTests, LoadFilteredPack_5) {
+  CsolutionItem csolution;
+  SetCsolutionPacks(&csolution, { "ARM::RteTest_DFP@0.2.0" }, "Test");
+
+  EXPECT_TRUE(LoadPacks());
+  ASSERT_EQ(1, m_installedPacks.size());
+  EXPECT_EQ("ARM.RteTest_DFP.0.2.0", (*m_installedPacks.begin())->GetPackageID());
+}
+
+TEST_F(ProjMgrWorkerUnitTests, LoadPack_Filter_Unknown) {
+  CsolutionItem csolution;
+  StdStreamRedirect streamRedirect;
+  string expected = "No match found for pack filter: keil::*";
+  SetCsolutionPacks(&csolution, { "keil::*" }, "Test");
+
+  EXPECT_FALSE(LoadPacks());
+  ASSERT_EQ(0, m_installedPacks.size());
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find(expected));
 }
 
 TEST_F(ProjMgrWorkerUnitTests, GetAccessSequence) {
