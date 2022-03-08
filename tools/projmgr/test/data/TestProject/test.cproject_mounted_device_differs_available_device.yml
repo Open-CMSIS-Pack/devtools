@@ -2,8 +2,8 @@
 
 project:
   description: Project 1
-  board: Keil::RteTest_unknown
-  device: ARM::RteTest_ARMCM0
+  board: Keil::RteTest Test mounted device unavailable
+  device: ARM::RteTest_ARMCM0_Dual
   compiler: AC6@6.16.0
   processor:
     fpu: off

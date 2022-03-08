@@ -48,8 +48,8 @@ static constexpr const char* YAML_NAME = "name";
 static constexpr const char* YAML_NOTFORTYPE = "not-for-type";
 static constexpr const char* YAML_OPTIMIZE = "optimize";
 static constexpr const char* YAML_OUTPUTTYPE = "output-type";
-static constexpr const char* YAML_PACKAGE = "package";
-static constexpr const char* YAML_PACKAGES = "packages";
+static constexpr const char* YAML_PACK = "pack";
+static constexpr const char* YAML_PACKS = "packs";
 static constexpr const char* YAML_PROCESSOR = "processor";
 static constexpr const char* YAML_PROJECT = "project";
 static constexpr const char* YAML_PROJECTS = "projects";
@@ -105,7 +105,7 @@ public:
 
 protected:
   void ParseMisc(const YAML::Node& parent, std::vector<MiscItem>& misc);
-  void ParsePackages(const YAML::Node& parent, std::vector<std::string>& packages);
+  void ParsePacks(const YAML::Node& parent, std::vector<PackItem>& packs);
   void ParseProcessor(const YAML::Node& parent, ProcessorItem& processor);
   void ParseString(const YAML::Node& parent, const std::string& key, std::string& value);
   void ParseString(YAML::Node node, std::string& value);

@@ -443,14 +443,15 @@ TEST_F(ProjMgrUnitTests, ListPacks) {
 
 TEST_F(ProjMgrUnitTests, ListPacksPackageFiltered) {
   set<string> expected = {
-    "ARM::RteTest_DFP@0.1.1"
+    "ARM::RteTest_DFP@0.1.1",
+    "ARM::RteTest_DFP@0.2.0"
   };
   vector<string> packs;
   ContextDesc descriptor;
-  const string& filenameInput = testinput_folder + "/TestProject/test.cproject_exact_package.yml";
+  const string& filenameInput = testinput_folder + "/TestProject/test.cproject.yml";
   EXPECT_TRUE(m_parser.ParseCproject(filenameInput, false, true));
   EXPECT_TRUE(m_worker.AddContexts(m_parser, descriptor, filenameInput));
-  EXPECT_TRUE(m_worker.ListPacks(packs, "test", "RteTest"));
+  EXPECT_TRUE(m_worker.ListPacks(packs, "test", "RteTest_DFP"));
   EXPECT_EQ(expected, set<string>(packs.begin(), packs.end()));
 }
 
@@ -470,14 +471,14 @@ TEST_F(ProjMgrUnitTests, ListDevices) {
 
 TEST_F(ProjMgrUnitTests, ListDevicesPackageFiltered) {
   set<string> expected = {
-    "RteTest_ARMCM0"
+    "RteTest_ARMCM3"
   };
   vector<string> devices;
   ContextDesc descriptor;
-  const string& filenameInput = testinput_folder + "/TestProject/test.cproject_exact_package.yml";
+  const string& filenameInput = testinput_folder + "/TestProject/test.cproject.yml";
   EXPECT_TRUE(m_parser.ParseCproject(filenameInput, false, true));
   EXPECT_TRUE(m_worker.AddContexts(m_parser, descriptor, filenameInput));
-  EXPECT_TRUE(m_worker.ListDevices(devices, "test", "CM0"));
+  EXPECT_TRUE(m_worker.ListDevices(devices, "test", "CM3"));
   EXPECT_EQ(expected, set<string>(devices.begin(), devices.end()));
 }
 
@@ -937,7 +938,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Board_Device_Info) {
   // Test Project with board mounted device different than available devices
   char* argv[6];
   const string& cproject = testinput_folder +
-    "/TestProject/test.cproject_mounted_device_differs_avaialble_device.yml";
+    "/TestProject/test.cproject_mounted_device_differs_available_device.yml";
   const string& expected = "specified device 'RteTest_ARMCM0_Dual' and board mounted device 'RteTest_ARMCM0_Test' are different";
   StdStreamRedirect streamRedirect;
 
@@ -1105,4 +1106,67 @@ TEST_F(ProjMgrUnitTests, ExecuteGenerator) {
 #else
   EXPECT_FALSE(m_worker.ExecuteGenerator(m_context, m_codeGenerator));
 #endif
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Filtered_Pack_Selection) {
+  char* argv[7];
+
+  // convert -s solution.yml
+  const string& csolution = testinput_folder + "/TestSolution/test.csolution_filtered_pack_selection.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Pack_Selection) {
+  char* argv[7];
+
+  // convert -s solution.yml
+  const string& csolution = testinput_folder + "/TestSolution/test.csolution_pack_selection.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv));
+
+  // Check generated CPRJs
+  CompareFile(testoutput_folder + "/test2.Debug+CM0/test2.Debug+CM0.cprj",
+    testinput_folder + "/TestSolution/TestProject2/test2.Debug+CM0_pack_selection.cprj");
+  CompareFile(testoutput_folder + "/test2.Debug+TestGen/test2.Debug+TestGen.cprj",
+    testinput_folder + "/TestSolution/TestProject2/test2.Debug+TestGen_pack_selection.cprj");
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgrSolution_No_Packs) {
+  char* argv[7];
+
+  // convert -s solution.yml
+  const string& csolution = testinput_folder + "/TestSolution/test.csolution_no_packs.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Invalid_Packs) {
+  char* argv[7];
+  StdStreamRedirect streamRedirect;
+  std::string errExpected = "Required pack: ARM::RteTest_INVALID@0.2.0 not found";
+
+  // convert -s solution.yml
+  const string& csolution = testinput_folder + "/TestSolution/test.csolution_invalid_pack.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(1, RunProjMgr(6, argv));
+
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find(errExpected));
 }

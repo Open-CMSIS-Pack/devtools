@@ -46,6 +46,7 @@ bool ProjMgrYamlParser::ParseCsolution(const string& input,
 
     ParseTargetTypes(solutionNode, csolution.targetTypes);
     ParseBuildTypes(solutionNode, csolution.buildTypes);
+    ParsePacks(solutionNode, csolution.packs);
 
   } catch (YAML::Exception& e) {
     ProjMgrLogger::Error(input, e.mark.line + 1, e.mark.column + 1, e.msg);
@@ -83,7 +84,6 @@ bool ProjMgrYamlParser::ParseCproject(const string& input,
       ParseString(projectNode, item.first, item.second);
     }
     ParseTargetType(projectNode, cproject.target);
-    ParsePackages(projectNode, cproject.packages);
 
     if (!ParseComponents(projectNode, cproject.components)) {
       return false;
@@ -137,7 +137,6 @@ bool ProjMgrYamlParser::ParseClayer(const string& input,
     }
 
     ParseTargetType(layerNode, clayer.target);
-    ParsePackages(layerNode, clayer.packages);
 
     if (!ParseComponents(layerNode, clayer.components)) {
       return false;
@@ -154,17 +153,6 @@ bool ProjMgrYamlParser::ParseClayer(const string& input,
   }
   clayers[input] = clayer;
   return true;
-}
-
-void ProjMgrYamlParser::ParsePackages(const YAML::Node& parent, vector<string>& packages) {
-  if (parent[YAML_PACKAGES].IsDefined()) {
-    const YAML::Node& packagesNode = parent[YAML_PACKAGES];
-    for (const auto& packagesEntry : packagesNode) {
-      string packageItem;
-      ParseString(packagesEntry, YAML_PACKAGE, packageItem);
-      packages.push_back(packageItem);
-    }
-  }
 }
 
 void ProjMgrYamlParser::ParseString(const YAML::Node& parent, const string& key, string& value) {
@@ -283,6 +271,18 @@ void ProjMgrYamlParser::ParseMisc(const YAML::Node& parent, vector<MiscItem>& mi
       ParseVector(miscEntry, YAML_MISC_LINK, miscItem.link);
       ParseVector(miscEntry, YAML_MISC_LIB, miscItem.lib);
       misc.push_back(miscItem);
+    }
+  }
+}
+
+void ProjMgrYamlParser::ParsePacks(const YAML::Node& parent, vector<PackItem>& packs) {
+  if (parent[YAML_PACKS].IsDefined()) {
+    const YAML::Node& packNode = parent[YAML_PACKS];
+    for (const auto& packEntry : packNode) {
+      PackItem packItem;
+      ParseString(packEntry, YAML_PACK, packItem.pack);
+      ParseTypeFilter(packEntry, packItem.type);
+      packs.push_back(packItem);
     }
   }
 }
@@ -423,6 +423,7 @@ const set<string> solutionKeys = {
   YAML_PROJECTS,
   YAML_TARGETTYPES,
   YAML_BUILDTYPES,
+  YAML_PACKS,
 };
 
 const set<string> projectsKeys = {
@@ -456,7 +457,6 @@ const set<string> projectKeys = {
   YAML_ADDPATHS,
   YAML_DELPATHS,
   YAML_MISC,
-  YAML_PACKAGES,
   YAML_COMPONENTS,
   YAML_GROUPS,
   YAML_LAYERS,
@@ -478,7 +478,6 @@ const set<string> layerKeys = {
   YAML_ADDPATHS,
   YAML_DELPATHS,
   YAML_MISC,
-  YAML_PACKAGES,
   YAML_COMPONENTS,
   YAML_GROUPS,
   YAML_INTERFACES,
@@ -529,8 +528,10 @@ const set<string> miscKeys = {
   YAML_MISC_LIB,
 };
 
-const set<string> packagesKeys = {
-  YAML_PACKAGE,
+const set<string> packsKeys = {
+  YAML_PACK,
+  YAML_FORTYPE,
+  YAML_NOTFORTYPE,
 };
 
 const set<string> componentsKeys = {
@@ -606,7 +607,7 @@ const map<string, set<string>> sequences = {
   {YAML_TARGETTYPES, targetTypeKeys},
   {YAML_BUILDTYPES, buildTypeKeys},
   {YAML_MISC, miscKeys},
-  {YAML_PACKAGES, packagesKeys},
+  {YAML_PACKS, packsKeys},
   {YAML_COMPONENTS, componentsKeys},
   {YAML_LAYERS, layersKeys},
   {YAML_GROUPS, groupsKeys},

@@ -20,6 +20,7 @@ solution:
         - /path/CM0/to-be-removed
       del-paths:
         - /path/solution/to-be-removed
+
     - type: CM3
       device: RteTest_ARMCM3
       misc:
@@ -71,7 +72,7 @@ solution:
         - /path/CM3/to-be-removed
 
   packs:
-    - pack: ARM::RteTest_DFP@0.2.0
+    - pack: ARM
 
   projects:
     - project: ./TestProject1/test1.cproject.yml

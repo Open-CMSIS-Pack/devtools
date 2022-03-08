@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no" ?>
 <cprj schemaVersion="1.7.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="PACK.xsd">
-  <created timestamp="2021-12-13T14:22:51" tool="projmgr 0.0.0+gb0841ae"/>
+  <created timestamp="2022-03-03T17:50:52" tool="csolution 0.0.0+gbcc9e7a"/>
 
   <info isLayer="false">
     <description>Automatically generated project</description>
@@ -14,12 +14,15 @@
     <compiler name="AC6" version="6.16.0"/>
   </compilers>
 
-  <target Dfpu="NO_FPU" Dname="RteTest_ARMCM0" Dsecure="Non-secure" Dvendor="ARM:82">
-    <output intdir="testlayers.Debug_IntDir/" name="testlayers.Debug" outdir="testlayers.Debug_OutDir/" type="exe"/>
-    <cflags add="--layer1-flag --layer2-flag" compiler="AC6"/>
-    <ldflags compiler="AC6" file="RTE/Device/RteTest_ARMCM0/ARMCM0_ac6.sct"/>
-    <defines>DEF_LAYER1;DEF_LAYER2</defines>
-    <includes>path/to/layer1;path/to/layer2</includes>
+  <target Dfpu="NO_FPU" Dname="RteTest_ARMCM0_Dual" Dsecure="Non-secure" Dvendor="ARM:82" Pname="cm0_core1">
+    <output intdir="test2.Debug+CM0_IntDir/" name="test2.Debug+CM0" outdir="test2.Debug+CM0_OutDir/" type="exe"/>
+    <arflags add="-Lib-project -Lib-type-CM0" compiler="AC6"/>
+    <asflags add="-ASM-project -ASM-type-CM0" compiler="AC6"/>
+    <cflags add="-C-project -C-CPP-type-CM0" compiler="AC6"/>
+    <cxxflags add="-CPP-project -C-CPP-type-CM0" compiler="AC6"/>
+    <ldflags add="-Link-project -Link-type-CM0" compiler="AC6" file="RTE/Device/RteTest_ARMCM0_Dual_cm0_core1/ARMCM0_ac6.sct"/>
+    <defines>DEF-project;DEF-solution;DEF-CM0;DEF-Debug</defines>
+    <includes>/path/project;/path/solution/;/path/CM0;/path/Debug</includes>
   </target>
 
   <components>
@@ -32,11 +35,8 @@
   </components>
 
   <files>
-    <group name="Sources Layer 1">
-      <file category="sourceC" name="layer1.c"/>
-    </group>
-    <group name="Sources Layer 2">
-      <file category="sourceC" name="layer2.c"/>
+    <group name="Sources">
+      <file category="sourceC" name="main.c"/>
     </group>
   </files>
 </cprj>
