@@ -9,8 +9,6 @@ project:
     fpu: off
     endian: little
     trustzone: non-secure
-  packages:
-    - package: ARM::RteTest_DFP
   components:
     - component: Startup
     - component: CORE

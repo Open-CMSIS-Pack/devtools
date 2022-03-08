@@ -331,6 +331,7 @@ protected:
   void GetBoardItem (const std::string& element, BoardItem& board) const;
   bool GetPrecedentValue(std::string& outValue, const std::string& element) const;
   std::string GetDeviceInfoString(const std::string& vendor, const std::string& name, const std::string& processor) const;
+  std::vector<PackageItem> GetFilteredPacks(const PackageItem& packItem, const std::string& rtePath) const;
 };
 
 #endif  // PROJMGRWORKER_H

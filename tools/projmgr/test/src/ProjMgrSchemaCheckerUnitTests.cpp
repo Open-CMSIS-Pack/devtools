@@ -108,3 +108,9 @@ TEST_F(ProjMgrSchemaCheckerUnitTests, Schema_Search_Path_2) {
   RteFsUtils::RemoveDir(schemaDestDir);
 }
 
+TEST_F(ProjMgrSchemaCheckerUnitTests, SchemaCheck_Pack_Selection) {
+  const string& filename = testinput_folder + "/TestSolution/test.csolution_pack_selection.yml";
+
+  EXPECT_TRUE(Validate(filename, FileType::SOLUTION));
+  EXPECT_TRUE(GetErrors().empty());
+}

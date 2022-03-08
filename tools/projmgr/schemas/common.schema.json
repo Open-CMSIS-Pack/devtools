@@ -286,23 +286,6 @@
       "required": [ "component" ],
       "additionalProperties": false
     },
-    "PackagesType": {
-      "type": "array",
-      "uniqueItems": true,
-      "items": { "$ref": "#/definitions/PackageType" }
-    },
-    "PackageType":{
-      "type": "object",
-      "properties": {
-        "package": {
-          "type": "string",
-          "pattern": "^([\\w .-]+::)([\\w .-]+)(@(>=)?(\\d+\\.\\d+\\.\\d+((\\+|\\-)[\\w.+-]+)?))?$",
-          "description": "Name of a required Software Pack in the format [Vendor::] Pack [@[>=]Version]"
-        }
-      },
-      "required": [ "package" ],
-      "additionalProperties": false
-    },
     "LayersType": {
       "type": "array",
       "uniqueItems": true,
@@ -337,6 +320,9 @@
         "build-types": {
           "$ref": "#/definitions/BuildTypes"
         },
+        "packs": {
+           "$ref": "#/definitions/PacksType"
+        },
         "projects": {
           "$ref": "#/definitions/ProjectsType"
         }
@@ -361,7 +347,6 @@
         "misc":        { "$ref": "#/definitions/MiscTypes" },
         "groups":      { "$ref": "#/definitions/GroupsType" },
         "components":  { "$ref": "#/definitions/ComponentsType" },
-        "packages":    { "$ref": "#/definitions/PackagesType" },
         "layers":      { "$ref": "#/definitions/LayersType" }
       },
       "additionalProperties": false
@@ -384,9 +369,31 @@
         "del-paths":   { "$ref": "#/definitions/DelpathsType" },
         "misc":        { "$ref": "#/definitions/MiscTypes" },
         "groups":      { "$ref": "#/definitions/GroupsType" },
-        "components":  { "$ref": "#/definitions/ComponentsType" },
-        "packages":    { "$ref": "#/definitions/PackagesType" }
+        "components":  { "$ref": "#/definitions/ComponentsType" }
       },
+      "additionalProperties": false
+    },
+    "PacksType": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/PackType" }
+    },
+    "PackType": {
+      "type": "object",
+      "properties": {
+        "pack": {
+          "type": "string",
+          "pattern": "^([\\w .-]+)((::[\\w .*-]+)(@(>=)?(\\d+\\.\\d+\\.\\d+((\\+|\\-)[\\w.+-]+)?))?)?$",
+          "description": "Name of a required Software Pack in the format Vendor [:: Pack [@[>=] version]]"
+        },
+        "path": {
+          "type": "string",
+          "description": "Path to software pack"
+        },
+        "for-type":     { "$ref": "#/definitions/ForType" },
+        "not-for-type": { "$ref": "#/definitions/NotForType" }
+      },
+      "required": [ "pack" ],
       "additionalProperties": false
     }
   }

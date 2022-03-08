@@ -114,40 +114,56 @@ void ProjMgrWorker::SetOutputDir(const std::string& outputDir) {
 }
 
 bool ProjMgrWorker::GetRequiredPdscFiles(const std::string& packRoot, std::set<std::string>& pdscFiles) {
+  std::vector<std::string> errMsgs;
   for (auto context : m_contexts) {
     if (!ProcessPackages(context.second)) {
       return false;
     }
+    for (auto packItem : context.second.packRequirements) {
+      bool bPackFilter = (packItem.name.empty() || WildCards::IsWildcardPattern(packItem.name));
+      auto filteredPacks = GetFilteredPacks(packItem, packRoot);
+      for (const auto& pack : filteredPacks) {
+        string packId, pdscFile, packversion;
+        if (!pack.version.empty()) {
+          packversion = pack.version + ":" + pack.version;
+        }
 
-    for (auto& packAttr : context.second.packRequirements) {
-      string packId, pdscFile, packversion;
-      if (!packAttr.version.empty()) {
-        packversion = packAttr.version + ":" + packAttr.version;
+        RteAttributes attributes({
+          {"name",    pack.name},
+          {"vendor",  pack.vendor},
+          {"version", packversion},
+          });
+
+        pdscFile = m_kernel->GetLocalPdscFile(attributes, packRoot, packId);
+        if (pdscFile.empty()) {
+          pdscFile = m_kernel->GetInstalledPdscFile(attributes, packRoot, packId);
+        }
+
+        if (pdscFile.empty()) {
+          if (!bPackFilter) {
+            std::string packageName =
+              (pack.vendor.empty() ? "" : pack.vendor + "::") +
+              pack.name +
+              (pack.version.empty() ? "" : "@" + pack.version);
+            errMsgs.push_back("Required pack: " + packageName + " not found");
+          }
+          continue;
+        }
+        pdscFiles.insert(pdscFile);
       }
-
-      RteAttributes attributes({
-        {"name",    packAttr.name},
-        {"vendor",  packAttr.vendor},
-        {"version", packversion},
-      });
-
-      pdscFile = m_kernel->GetLocalPdscFile(attributes, packRoot, packId);
-      if (pdscFile.empty()) {
-        pdscFile = m_kernel->GetInstalledPdscFile(attributes, packRoot, packId);
+      if (bPackFilter && pdscFiles.empty()) {
+        std::string filterStr = packItem.vendor +
+          (packItem.name.empty() ? "" : "::" + packItem.name) +
+          (packItem.version.empty() ? "" : "@" + packItem.version);
+        errMsgs.push_back("No match found for pack filter: " + filterStr);
       }
-
-      if (pdscFile.empty()) {
-        std::string packageName = 
-          (packAttr.vendor.empty() ? "" : packAttr.vendor + "::") +
-          packAttr.name +
-          (packAttr.version.empty() ? "" : "@" + packAttr.version);
-        ProjMgrLogger::Error("Required pack: " + packageName + " not found");
-        return false;
-      }
-      pdscFiles.insert(pdscFile);
+    }
+    if (errMsgs.size() > 0) {
+      break;
     }
   }
-  return true;
+  std::for_each(errMsgs.begin(), errMsgs.end(), [](const auto& errMsg) {ProjMgrLogger::Error(errMsg); });
+  return (0 == errMsgs.size());
 }
 
 bool ProjMgrWorker::LoadPacks(void) {
@@ -178,6 +194,28 @@ bool ProjMgrWorker::LoadPacks(void) {
   }
 
   return CheckRteErrors();
+}
+
+std::vector<PackageItem> ProjMgrWorker::GetFilteredPacks(const PackageItem& packItem, const string& rtePath) const
+{
+  std::vector<PackageItem> filteredPacks;
+  if (!packItem.name.empty() && !WildCards::IsWildcardPattern(packItem.name)) {
+    filteredPacks.push_back({ packItem.name, packItem.vendor, packItem.version });
+  }
+  else {
+    error_code ec;
+    string dirName, path;
+    path = rtePath + '/' + packItem.vendor;
+    for (const auto& entry : fs::directory_iterator(path, ec)) {
+      if (entry.is_directory()) {
+        dirName = entry.path().filename().generic_string();
+        if (packItem.name.empty() || WildCards::Match(packItem.name, dirName)) {
+          filteredPacks.push_back({ dirName, packItem.vendor, packItem.version });
+        }
+      }
+    }
+  }
+  return filteredPacks;
 }
 
 bool ProjMgrWorker::CheckRteErrors(void) {
@@ -453,30 +491,26 @@ bool ProjMgrWorker::ProcessDevicePrecedence(StringCollection& item) {
 
 bool ProjMgrWorker::ProcessPackages(ContextItem& context) {
   std::vector<std::string> packages;
-  // Add cproject package requirements
-  for (const auto& package : context.cproject->packages) {
-    packages.push_back(package);
-  }
-  // Add clayers package requirements
-  for (const auto& clayer : context.clayers) {
-    for (const auto& package : clayer.second->packages) {
-      packages.push_back(package);
+
+  // Add package requirements
+  for (const auto& packItem : context.csolution->packs) {
+    if (CheckType(packItem.type, context.type)) {
+      packages.push_back(packItem.pack);
     }
   }
   // Process packages
   for (const auto& packageEntry : packages) {
-    if (packageEntry.find("::") == string::npos) {
-      ProjMgrLogger::Error("package '" + packageEntry + "': delimiter not set");
-      return false;
-    }
-
     PackageItem package;
     string packInfoStr = packageEntry;
-    package.vendor  = RteUtils::RemoveSuffixByString(packInfoStr, "::");
-    packInfoStr     = RteUtils::RemovePrefixByString(packInfoStr, "::");
-    package.name    = RteUtils::GetPrefix(packInfoStr, '@');
+    if (packageEntry.find("::") != string::npos) {
+      package.vendor = RteUtils::RemoveSuffixByString(packInfoStr, "::");
+      packInfoStr    = RteUtils::RemovePrefixByString(packInfoStr, "::");
+      package.name   = RteUtils::GetPrefix(packInfoStr, '@');
+    }
+    else {
+      package.vendor = RteUtils::GetPrefix(packInfoStr, '@');
+    }
     package.version = RteUtils::GetSuffix(packInfoStr, '@');
-
     context.packRequirements.push_back(package);
   }
   return true;

@@ -11,16 +11,36 @@
 #include <string>
 #include <vector>
 
- /**
-  * @brief compiler misc controls
-  *        compiler name,
-  *        options for assembler,
-  *        options for c compiler,
-  *        options for c++ compiler,
-  *        options for c and c++ compiler,
-  *        options for linker,
-  *        options for archiver
- */
+/**
+* @brief type pair containing
+*        build-type,
+*        target-type
+*/
+struct TypePair {
+  std::string build;
+  std::string target;
+};
+
+/**
+ * @brief include/exclude types
+ *        for-type (include)
+ *        not-for-type (exclude)
+*/
+struct TypeFilter {
+  std::vector<TypePair> include;
+  std::vector<TypePair> exclude;
+};
+
+/**
+ * @brief compiler misc controls
+ *        compiler name,
+ *        options for assembler,
+ *        options for c compiler,
+ *        options for c++ compiler,
+ *        options for c and c++ compiler,
+ *        options for linker,
+ *        options for archiver
+*/
 struct MiscItem {
   std::string compiler;
   std::vector<std::string> as;
@@ -29,6 +49,16 @@ struct MiscItem {
   std::vector<std::string> c_cpp;
   std::vector<std::string> link;
   std::vector<std::string> lib;
+};
+
+/**
+ * @brief pack item containing
+ *        pack name
+ *        type filter
+*/
+struct PackItem {
+  std::string pack;
+  TypeFilter type;
 };
 
 /**
@@ -75,26 +105,6 @@ struct TargetType {
   std::string board;
   std::string device;
   BuildType build;
-};
-
-/**
- * @brief type pair containg
- *        build-type,
- *        target-type
-*/
-struct TypePair {
-  std::string build;
-  std::string target;
-};
-
-/**
- * @brief include/exclude types
- *        for-type (include)
- *        not-for-type (exclude)
-*/
-struct TypeFilter {
-  std::vector<TypePair> include;
-  std::vector<TypePair> exclude;
 };
 
 /**
@@ -179,7 +189,8 @@ struct ContextDesc {
  *        build types,
  *        target types,
  *        list of cprojects,
- *        list of contexts descriptors
+ *        list of contexts descriptors,
+ *        list of packs
 */
 struct CsolutionItem {
   std::string path;
@@ -187,6 +198,7 @@ struct CsolutionItem {
   std::map<std::string, TargetType> targetTypes;
   std::vector<std::string> cprojects;
   std::vector<ContextDesc> contexts;
+  std::vector<PackItem> packs;
 };
 
 /**
@@ -195,7 +207,6 @@ struct CsolutionItem {
  *        project path,
  *        project output type,
  *        project target properties,
- *        list of required packages,
  *        list of required components,
  *        list of user groups,
  *        list of layers
@@ -206,7 +217,6 @@ struct CprojectItem {
   std::string outputType;
   TargetType target;
   std::vector<RteDirItem> rteDirs;
-  std::vector<std::string> packages;
   std::vector<ComponentItem> components;
   std::vector<GroupNode> groups;
   std::vector<LayerItem> clayers;
@@ -228,7 +238,6 @@ struct InterfaceItem {
  *        layer path,
  *        layer output type,
  *        layer target properties,
- *        list of required packages,
  *        list of required components,
  *        list of user groups,
  *        list of interfaces
@@ -239,7 +248,6 @@ struct ClayerItem {
   std::string outputType;
   TargetType target;
   std::vector<RteDirItem> rteDirs;
-  std::vector<std::string> packages;
   std::vector<ComponentItem> components;
   std::vector<GroupNode> groups;
   std::vector<InterfaceItem> interfaces;
