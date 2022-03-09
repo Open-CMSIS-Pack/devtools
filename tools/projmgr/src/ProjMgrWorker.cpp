@@ -736,6 +736,7 @@ bool ProjMgrWorker::ProcessConfigFiles(ContextItem& context) {
       for (auto file : group.second) {
         if (file.second.m_cat == RteFile::Category::LINKER_SCRIPT) {
           context.linkerScript = file.first;
+          break;
         }
       }
     }
@@ -1101,12 +1102,24 @@ bool ProjMgrWorker::AddFile(const FileNode& src, vector<FileNode>& dst, ContextI
         return false;
       }
     }
-    dst.push_back(src);
+
+    // Set file category
+    FileNode srcNode = src;
+    if (srcNode.category.empty()) {
+      srcNode.category = ProjMgrUtils::GetCategory(srcNode.file);
+    }
+
+    dst.push_back(srcNode);
+
+    // Set linker script
+    if ((srcNode.category == "linkerScript") && (context.linkerScript.empty())) {
+      context.linkerScript = srcNode.file;
+    }
 
     // Store absolute file path
     error_code ec;
-    const string& filePath = fs::weakly_canonical(root + "/" + src.file, ec).generic_string();
-    context.filePaths.insert({ src.file, filePath });
+    const string& filePath = fs::weakly_canonical(root + "/" + srcNode.file, ec).generic_string();
+    context.filePaths.insert({ srcNode.file, filePath });
   }
   return true;
 }

@@ -79,6 +79,13 @@ public:
   */
   static const Result ExecCommand(const std::string& cmd);
 
+  /**
+   * @brief get file category according to file extension
+   * @param filename with extension
+   * @return string category
+  */
+  static const std::string GetCategory(const std::string& file);
+
 protected:
   static std::string ConstructID(const std::vector<std::pair<const char*, const std::string&>>& elements);
 };

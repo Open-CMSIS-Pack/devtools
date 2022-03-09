@@ -256,8 +256,7 @@ void ProjMgrGenerator::GenerateCprjGroups(XMLTreeElement* element, const vector<
         XMLTreeElement* fileElement = groupElement->CreateElement("file");
         fileElement->AddAttribute("name", fileNode.file);
         if (fileElement) {
-          const string& category = fileNode.category.empty() ? GetCategory(fileNode.file) : fileNode.category;
-          fileElement->AddAttribute("category", category);
+          fileElement->AddAttribute("category", fileNode.category);
 
           // TODO Generate toolchain settings (warnings, debug, includes, defines)
           GenerateCprjMisc(fileElement, fileNode.build.misc, compiler);
@@ -315,24 +314,4 @@ bool ProjMgrGenerator::WriteXmlFile(const string& file, XMLTree* tree) {
   xmlFile.close();
 
   return true;
-}
-
-const string ProjMgrGenerator::GetCategory(const string& file) {
-  static const map<string, vector<string>> CATEGORIES = {
-    {"sourceC", {".c", ".C"}},
-    {"sourceCpp", {".cpp", ".c++", ".C++", ".cxx"}},
-    {"sourceAsm", {".asm", ".s", ".S"}},
-    {"header", {".h", ".hpp"}},
-    {"library", {".a", ".lib"}},
-    {"object", {".o"}},
-    {"linkerScript", {".sct", ".scf", ".ld"}},
-    {"doc", {".txt", ".md", ".pdf", ".htm", ".html"}},
-  };
-  fs::path ext((fs::path(file)).extension());
-  for (const auto& category : CATEGORIES) {
-    if (find(category.second.begin(), category.second.end(), ext) != category.second.end()) {
-      return category.first;
-    }
-  }
-  return "other";
 }

@@ -159,6 +159,22 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ConvertProject) {
     testinput_folder + "/TestProject/test.cprj");
 }
 
+TEST_F(ProjMgrUnitTests, RunProjMgr_LinkerScript) {
+  char* argv[6];
+  // convert -p cproject.yml
+  const string& cproject = testinput_folder + "/TestProject/test_linker_script.cproject.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-p";
+  argv[3] = (char*)cproject.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv));
+
+  // Check generated CPRJ
+  CompareFile(testoutput_folder + "/test_linker_script/test_linker_script.cprj",
+    testinput_folder + "/TestProject/test_linker_script.cprj");
+}
+
 TEST_F(ProjMgrUnitTests, RunProjMgr_With_Schema_Check) {
   char* argv[6];
   // convert -p cproject.yml

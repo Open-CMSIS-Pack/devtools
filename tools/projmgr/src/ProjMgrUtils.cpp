@@ -122,3 +122,23 @@ const ProjMgrUtils::Result ProjMgrUtils::ExecCommand(const string& cmd) {
   }
   return make_pair(result, ret_code);
 }
+
+const string ProjMgrUtils::GetCategory(const string& file) {
+  static const map<string, vector<string>> CATEGORIES = {
+    {"sourceC", {".c", ".C"}},
+    {"sourceCpp", {".cpp", ".c++", ".C++", ".cxx"}},
+    {"sourceAsm", {".asm", ".s", ".S"}},
+    {"header", {".h", ".hpp"}},
+    {"library", {".a", ".lib"}},
+    {"object", {".o"}},
+    {"linkerScript", {".sct", ".scf", ".ld"}},
+    {"doc", {".txt", ".md", ".pdf", ".htm", ".html"}},
+  };
+  fs::path ext((fs::path(file)).extension());
+  for (const auto& category : CATEGORIES) {
+    if (find(category.second.begin(), category.second.end(), ext) != category.second.end()) {
+      return category.first;
+    }
+  }
+  return "other";
+}
