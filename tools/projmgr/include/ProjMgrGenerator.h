@@ -48,7 +48,6 @@ protected:
   static void SetAttribute(XMLTreeElement* element, const std::string& name, const std::string& value);
   static const std::string GetStringFromVector(const std::vector<std::string>& vector, const char* delimiter);
   static const std::string GetLocalTimestamp();
-  static const std::string GetCategory(const std::string& file);
   static bool WriteXmlFile(const std::string& file, XMLTree* tree);
 };
 
