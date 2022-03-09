@@ -1,8 +1,8 @@
-# CMSIS Project Manager (Users Manual - Draft)
+# csolution: CMSIS Project Manager (Users Manual - Draft)
 
-The **CSolution Project Manager** processes **User Input Files** (in YML format) and **Software Packs** (in Open-CMSIS-Pack format) to create self-contained CMSIS-Build input files that allow to generate  independent projects which may be a part of a more complex application.
+The **csolution - CMSIS Project Manager** processes **User Input Files** (in YML format) and **Software Packs** (in Open-CMSIS-Pack format) to create self-contained CMSIS-Build input files that allow to generate independent projects which may be a part of a more complex application.
 
-The **CSolution Project Manager** supports the user with the following features:
+The **csolution - CMSIS Project Manager** supports the user with the following features:
 
 - Access to the content of software packs in Open-CMSIS-Pack format to:
   - Setup the tool chain based on a *Device* or *Board* that is defined in the CMSIS-Packs.
@@ -19,7 +19,7 @@ The **CSolution Project Manager** supports the user with the following features:
 
 **Note:**
 
-- The **CSolution Project Manager** is currently under development and part of the **[Open-CMSIS-Pack](https://www.open-cmsis-pack.org/index.html)** open source project.
+- The **csolution - CMSIS Project Manager** is currently under development and part of the **[Open-CMSIS-Pack](https://www.open-cmsis-pack.org/index.html)** open source project.
 
 Manual Chapters                          | Content
 :----------------------------------------|:-------------------------
@@ -30,12 +30,12 @@ Manual Chapters                          | Content
 
 **Table of Contents**
 
-- [CMSIS Project Manager (Users Manual - Draft)](#cmsis-project-manager-users-manual---draft)
+- [csolution: CMSIS Project Manager (Users Manual - Draft)](#csolution-cmsis-project-manager-users-manual---draft)
   - [Revision History](#revision-history)
-- [Usage](#usage)
-  - [Overview of Operation](#overview-of-operation)
-  - [Requirements](#requirements)
-  - [Invocation](#invocation)
+- [Overview of Operation](#overview-of-operation)
+  - [Usage](#usage)
+    - [Requirements](#requirements)
+    - [Invocation](#invocation)
     - [Commands](#commands)
 - [Project Examples](#project-examples)
   - [Minimal Project Setup](#minimal-project-setup)
@@ -52,7 +52,7 @@ Manual Chapters                          | Content
 - [Proposals](#proposals)
   - [Output versions to *.cprj](#output-versions-to-cprj)
   - [CMSIS-Zone Integration](#cmsis-zone-integration)
-  - [Layer Interface Defintions](#layer-interface-defintions)
+  - [Layer Interface Definitions](#layer-interface-definitions)
   - [CMSIS-Pack extensions](#cmsis-pack-extensions)
     - [Board condition](#board-condition)
     - [Layers in packs](#layers-in-packs)
@@ -64,11 +64,7 @@ Version            | Description
 :------------------|:-------------------------
 Draft              | Work in progress
 
-# Usage
-
-The  **CMSIS Project Manager** is a command line utility that is available for different operating systems.  
-
-## Overview of Operation
+# Overview of Operation
 
 ![Overview](./images/Overview.png "Overview")
 
@@ -93,7 +89,11 @@ Output Files             | Used for....
 Run-Time Environment (RTE)  | ... contains the user configured files of a project along with RTE_Components.h inventory file.
 [Project Resource Files *.fzone](https://arm-software.github.io/CMSIS_5/Zone/html/GenDataModel.html)     | ... resource and partition data structure for template based code generators.
 
-## Requirements
+
+
+## Usage
+
+### Requirements
 
 The CMSIS Pack repository must be present in the development environment.
 
@@ -102,7 +102,7 @@ The CMSIS Pack repository must be present in the development environment.
 - Before running `csolution` the location of the pack repository shall be set via the environment variable
 `CMSIS_PACK_ROOT` otherwise its default location (todo what is the default?) will be taken.
 
-## Invocation
+### Invocation
 
 ```text
 CMSIS Project Manager 0.0.0+g23b6f99 (C) 2022 ARM 
@@ -600,6 +600,7 @@ The file `./RTE/RTE_Components.h` is automatically created by the CMSIS Project 
 ```
 
 The typical usage of the `RTE_Components.h` file is in header files to control the inclusion of files that are related to other components of the same Software Pack.
+
 ```c
 #include "RTE_Components.h"
 #include  CMSIS_device_header
@@ -623,9 +624,9 @@ The ProjMgr should always generate *.cprj files that contain version information
 
 Suggest to split this into two sections:
 
- - `resources:` to define the execution phases, memory regions and region splits, and peripherals.  This section would be in the `csolution.yml` file. 
+- `resources:` to define the execution phases, memory regions and region splits, and peripherals.  This section would be in the `csolution.yml` file.
 
- - `requirements:` to define project requirements - effectively the partitioning of a system. It should be possible to assign to the application all remaining resources.
+- `requirements:` to define project requirements - effectively the partitioning of a system. It should be possible to assign to the application all remaining resources.
 
 Add to the project the possibility to specify .  The issue might be that the project files become overwhelming, alternative is to keep partitioning in separate files.
 
@@ -646,12 +647,12 @@ resources:
         phase: Boot      # region life-time (should allow to specify multiple phases)
         size: 128k
     
-  peripherals:           # specifies the requried peripherals
+  peripherals:           # specifies the required peripherals
     - peripheral: I2C0
       permission: rw, s
 ```
 
-## Layer Interface Defintions
+## Layer Interface Definitions
 
 A software layer could specify the interfaces that it provides.  The interface specification indicates also the configuration of the layer.  Issue might be that a standardization across the industry is required.
 

@@ -19,7 +19,7 @@ The following chapter explains the YML format that is used to describe the YML i
   - [`compiler:`](#compiler)
   - [`output-type:`](#output-type)
   - [`linker:`](#linker)
-- [Translation Control Options](#translation-control-options)
+- [Translation Control](#translation-control)
   - [`optimize:`](#optimize)
   - [`debug:`](#debug)
   - [`warnings:`](#warnings)
@@ -363,7 +363,7 @@ The `project:` node is the start of a `*.cproject.yml` file and contain the foll
 :-----------------------------------------------------|:------------------------------------
 &nbsp;&nbsp; [`description:`](#description)           | Project description (optional)
 &nbsp;&nbsp; [`compiler:`](#compiler)                 | Toolchain selection (optional)
-&nbsp;&nbsp; [`output-type:'](#output-type)           | Generate executable (default) or library
+&nbsp;&nbsp; [`output-type:`](#output-type)           | Generate executable (default) or library
 &nbsp;&nbsp; [`optimize:`](#optimize)                 | Optimize level for code generation (optional)
 &nbsp;&nbsp; [`linker:`](#linker)                     | Instructions for the linker
 &nbsp;&nbsp; [`debug:`](#debug)                       | Generation of debug information (optional)
@@ -465,11 +465,12 @@ The `linker:` node controls the linker operation.
 **Example:**
 
 ```yml
-linker:                    # Control linker operation
-  script: .\MyProject.sct  # Explicit scatter file
+linker:                      # Control linker operation
+  - script: .\MyProject.sct  # Explicit scatter file
+    for-type: .Debug  
 ```
 
-# Translation Control Options
+# Translation Control
 
 The following translation control options may be used at various places such as:
   - [`solution:`](#solution) level to specify options for a collection of related projects
@@ -639,7 +640,7 @@ The `pack:` list allows to add specific software packs, optional with a version 
 packs:                                  # start section that specifics software packs
   - filter: AWS                         # use packs from AWS
   - filter: NXP::*K32L*                 # use packs from NXP that relate to K32L series (would match K32L3A60_DFP + FRDM-K32L3A6_BSP)
-  - filter: ARM::                       # use packs from Arm
+  - filter: ARM                         # use packs from Arm
 
   - pack: Keil::Arm_Compiler            # add always Keil::Arm_Compiler pack (bypasses filter)
   - pack: Keil::MDK-Middleware@7.13.0   # add Keil::MDK-Middleware pack at version 7.13.0
