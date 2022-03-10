@@ -617,24 +617,29 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
       }
     }
 
-    // Multiple matches, remove non-default variants
+    // Multiple matches, select component without variant name if it's unique
     if (filteredComponents.size() > 1) {
-      RteComponentMap defaultVariants;
-      for (const auto& component : filteredComponents) {
-        if (component.second->IsDefaultVariant()) {
-          defaultVariants.insert(component);
+      string previousAggregateComponentId, uniqueVariantId;
+      for (const auto& [id, component] : filteredComponents) {
+        // check uniqueness of component aggregates
+        const string aggregateComponentId = ProjMgrUtils::GetComponentAggregateID(component);
+        if (!previousAggregateComponentId.empty() && (previousAggregateComponentId != aggregateComponentId)) {
+          uniqueVariantId.clear();
+          break;
         }
-      }
-      for (const auto& variant : defaultVariants) {
-        const string componentId = ProjMgrUtils::GetComponentAggregateID(variant.second);
-        RteComponentMap components = filteredComponents;
-        for (RteComponentMap::iterator cmpIt = components.begin(); cmpIt != components.end(); cmpIt++) {
-          if (cmpIt->first.compare(0, componentId.size(), componentId) == 0) {
-            if (!cmpIt->second->IsDefaultVariant()) {
-              filteredComponents.erase(cmpIt->first);
-            }
+        previousAggregateComponentId = aggregateComponentId;
+        // check uniqueness of component without variant name
+        if (component->GetCvariantName().empty()) {
+          if (uniqueVariantId.empty()) {
+            uniqueVariantId = id;
+          } else {
+            uniqueVariantId.clear();
+            break;
           }
         }
+      }
+      if (!uniqueVariantId.empty()) {
+        filteredComponents = {{ uniqueVariantId, filteredComponents[uniqueVariantId] }};
       }
     }
 
