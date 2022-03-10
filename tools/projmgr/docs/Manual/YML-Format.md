@@ -110,10 +110,9 @@ Element    | Description
 `Cvariant` | is the component sub-group name  defined in `<components>` element of the software pack (optional).
 `Cversion` | is the version number of the component, with `@1.2.3` that must exactly match, or `@>=1.2.3` that allows any version higher or equal.
 
-**Notes:**
-
-- The unique separator `::` allows to omit `Cvendor`
-- When `Cvariant` is omitted, the default `Cvariant` is selected.
+> Notes:
+> - The unique separator `::` allows to omit `Cvendor`
+> - When `Cvariant` is omitted, the default `Cvariant` is selected.
 
 **Examples:**
 
@@ -964,9 +963,7 @@ components:            # Start a list of layers
     misc:              # Literal tool-specific controls.
 ```
 
-**NOTE:**
-
-- The name of the software component is specified as described under [Name Conventions - 
+> NOTE: The name format for a software component is described under [Name Conventions - 
 Component Names](#Component_Names)
 
 # Pre/Post build steps
@@ -1168,9 +1165,7 @@ resources:
       - region: SRAM2
 ```
 
-**Note:**
-
-- exact behaviour for devices that have no RZone file is tbd.  It could be that the memory resources are derived from device definitions
+> Note: Exact behavior for devices that have no RZone file is tbd.  It could be that the memory resources are derived from device definitions
 
 ## `phases:`
 
