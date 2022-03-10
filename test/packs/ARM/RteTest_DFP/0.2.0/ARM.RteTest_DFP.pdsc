@@ -279,7 +279,7 @@
       <files>
         <!-- include folder / device header file -->
         <file category="header"  name="Device/ARM/ARMCM0/Include/ARMCM0.h"/>
-		<file category="doc" name="https://arm-software.github.io/CMSIS_5/Core_A/html/startup_c_pg.html"/>
+        <file category="doc" name="https://arm-software.github.io/CMSIS_5/Core_A/html/startup_c_pg.html"/>
         <!-- startup / system file -->
         <file category="sourceC"      name="Device/ARM/ARMCM0/Source/startup_ARMCM0.c"     version="2.0.3" attr="config"/>
         <file category="linkerScript" name="Device/ARM/ARMCM0/Source/ARM/ARMCM0_ac5.sct"   version="1.0.0" attr="config" condition="ARMCC5"/>
@@ -289,14 +289,13 @@
       </files>
     </component>
 
-
     <!-- Cortex-M3 -->
     <component Cclass="Device" Cgroup="Startup" Cvariant="RteTest Startup" Cversion="2.0.3" condition="ARMCM3 RteTest">
       <description>System and Startup for Generic Arm Cortex-M3 device</description>
       <files>
         <!-- include folder / device header file -->
         <file category="header"  name="Device/ARM/ARMCM3/Include/ARMCM3.h"/>
-		<file category="doc" name="https://arm-software.github.io/CMSIS_5/Core_A/html/startup_c_pg.html"/>
+        <file category="doc" name="https://arm-software.github.io/CMSIS_5/Core_A/html/startup_c_pg.html"/>
         <!-- startup / system file -->
         <file category="sourceC"      name="Device/ARM/ARMCM3/Source/startup_ARMCM3.c"     version="2.0.3" attr="config"/>
         <file category="linkerScript" name="Device/ARM/ARMCM3/Source/ARM/ARMCM3_ac5.sct"   version="1.0.0" attr="config" condition="ARMCC5"/>
@@ -312,7 +311,7 @@
       <files>
         <!-- include folder / device header file -->
         <file category="include" name="Device/ARM/ARMCM4/Include/"/>
-		<file category="doc" name="https://arm-software.github.io/CMSIS_5/Core_A/html/startup_c_pg.html"/>
+        <file category="doc" name="https://arm-software.github.io/CMSIS_5/Core_A/html/startup_c_pg.html"/>
         <!-- startup / system file -->
         <file category="sourceC"      name="Device/ARM/ARMCM4/Source/startup_ARMCM4.c"     version="2.0.3" attr="config"/>
         <file category="linkerScript" name="Device/ARM/ARMCM4/Source/ARM/ARMCM4_ac5.sct"   version="1.0.0" attr="config" condition="ARMCC5"/>
@@ -321,6 +320,36 @@
        <file category="sourceC"       name="Device/ARM/ARMCM4/Source/system_ARMCM4.c"      version="1.0.1" attr="config"/>
       </files>
     </component>
+
+    <!-- Component variants -->
+    <component Cclass="Device" Cgroup="Test variant" Cvariant="" Cversion="1.1.1" condition="ARMCM0 RteTest">
+      <description>Test variant without variant name</description>
+      <files>
+        <file category="header"  name="Device/ARM/ARMCM0/Include/ARMCM0.h"/>
+      </files>
+    </component>
+   
+    <component Cclass="Device" Cgroup="Test variant" Cvariant="Variant name" Cversion="1.1.1" condition="ARMCM0 RteTest">
+      <description>Test variant with variant name</description>
+      <files>
+        <file category="header"  name="Device/ARM/ARMCM0/Include/ARMCM0.h"/>
+      </files>
+    </component>
+
+    <component Cclass="Device" Cgroup="Test variant 2" Cvariant="" Cversion="2.2.2" condition="ARMCM0 RteTest">
+      <description>Test variant 2 without variant name, version 2.2.2</description>
+      <files>
+        <file category="header"  name="Device/ARM/ARMCM0/Include/ARMCM0.h"/>
+      </files>
+    </component>
+
+    <component Cclass="Device" Cgroup="Test variant 2" Cvariant="" Cversion="3.3.3" condition="ARMCM0 RteTest">
+      <description>Test variant 2 without variant name, version 3.3.3</description>
+      <files>
+        <file category="header"  name="Device/ARM/ARMCM0/Include/ARMCM0.h"/>
+      </files>
+    </component>
+
   </components>
 
   <boards>
