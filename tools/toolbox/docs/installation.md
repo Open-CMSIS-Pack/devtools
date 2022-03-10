@@ -1,6 +1,6 @@
 # CMSIS-Toolbox: Installation
 
-Content:
+**Table of Contents**
 
 - [CMSIS-Toolbox: Installation](#cmsis-toolbox-installation)
   - [Introduction](#introduction)
@@ -8,21 +8,21 @@ Content:
   - [Requirements](#requirements)
     - [Toolchain Options](#toolchain-options)
   - [Configuration](#configuration)
-    - [Work with VS Code](#work-with-vs-code)
+  - [Work with VS Code](#work-with-vs-code)
   
 ## Introduction
 
 To install the CMSIS-Toolbox a bash environment is required. install for example [git for Windows](https://gitforwindows.org). Call from the bash prompt:
 
-```
+```txt
 ./cmsis-toolbox_0.9.0.sh
 ```
 
 ## Usage
 
-The `cmsis-toolbox.sh` provides an interactive mode when invoked without parameters, but aso the following options:
+The `cmsis-toolbox.sh` provides an interactive mode when invoked without parameters, but also the following options:
 
-```
+```txt
 Usage:
   cmsis-toolbox_0.9.0.sh [<option>]
 
@@ -32,7 +32,7 @@ Usage:
 ```
 
 Below the manual setup of the CMSIS-Toolbox is explained. The command below installs the tools into the directory `./ctools`.
-```
+```txt
 ./cmsis-toolbox.sh -x ./ctools
 ```
 
@@ -71,9 +71,45 @@ The CMSIS-Toolbox works with the following toolchains. Install one or more toolc
 
 For the manual installation described above the configuration setup is as follows:
 
+**./etc/setup**
 
+In file `<cmsis-toolbox-installation-dir>/etc/setup` the paths to the central pack directory (`CMSIS_PACK_ROOT`), the compiler definition files (`CMSIS_COMPILER_ROOT`), and the binaries (`CMSIS_BUILD_ROOT`) are defined.
 
-### Work with VS Code
+```txt
+export CMSIS_PACK_ROOT=/C/Keil/ARM/PACK
+export CMSIS_COMPILER_ROOT=/c/ctools/etc
+export CMSIS_BUILD_ROOT=/c/ctools/bin
+```
+
+> Note: For Windows add the path specified under `CMSIS_BUILD_ROOT` to the `PATH` environment variable.
+
+**./etc/setup/\*.cmake**
+
+The supported of the various toolchains is defined by `*.cmake` files in the directory `<cmsis-toolbox-installation-dir>/etc/setup`. The filenames have the following format:
+
+```txt
+<compiler-name>.<version-major>.<version-minor>.<version-patch>.cmake
+```
+
+The following files show definitions for Arm Compiler v5 (AC5), Arm Compiler v6 (AC6), and GCC:
+```c
+AC5.5.6.7.cmake              // ArmCC Compiler (AC5) v5.6.7
+AC6.6.16.0.cmake             // ArmClang Compiler (AC6) v6.16.0
+GCC.10.2.1.cmake             // GCC Compiler v10.2.1
+```
+
+> Note: The filenames reflect the available compiler versions on the host system.  There may be multiple files for each compiler to support different versions, for example `AC6.6.16.0.cmake` and `AC6.6.18.0.cmake`.
+
+Each of this `*.cmake` files define the path (`TOOLCHAIN_ROOT`) to the toolchain binaries, the file extension (`EXT`) of the executable binaries, and other compiler related parameters for the invocation. Edit the files to reflect the path as shown in the example (for `AC6`) below:
+
+```txt
+############### EDIT BELOW ###############
+# Set base directory of toolchain
+set(TOOLCHAIN_ROOT "C:/Keil/ARM/ARMCLANG/bin")
+set(EXT .exe)
+```
+
+## Work with VS Code
 
 VS Code is an effective environment to create CMSIS-based projects.  As [**csolution**](../../projmgr/docs/Manual/Overview.md) files are in YAML format, it is recommended to install:
 
@@ -83,13 +119,14 @@ To work with the **CMSIS-Toolbox** in VS Code use:
 
 - **Terminal - New Terminal** to open a terminal window
 - In the **Terminal** window enter the following command:
-```
+
+```txt
 source <cmsis-toolbox-installation-dir>/etc/setup
 ```
 
-To create a new [**csolution**](projmgr/docs/Manual/Overview.md) based CMSIS project in VS Code:
+To create a new [**csolution**](../../projmgr/docs/Manual/Overview.md) based CMSIS project in VS Code:
 
-- Copy the `{{SolutionName}}.csolution.yml` and `{{ProjectName}}.cproject.yml` templates from the `<cmsis-toolbox-installation-dir/etc/` into your project directory and choose filenames at your discretion.
+- Copy the `{{SolutionName}}.csolution.yml` and `{{ProjectName}}.cproject.yml` templates from the `<cmsis-toolbox-installation-dir>/etc/` into your project directory and choose filenames at your discretion.
 
 - Edit the YAML files to select a device, add files and components. The template files have references to the YAML schemas in the first comment `#yaml-language-server`.
 
