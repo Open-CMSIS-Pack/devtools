@@ -21,6 +21,7 @@ usage() {
   echo ""
   echo "  <DistDir>      : CMSIS-Toolbox Distribution directory"
   echo "  <InstallerDir> : Installer output directory"
+  echo "  <Version>      : CMSIS-Toolbox version"
 }
 
 # arguments
@@ -56,22 +57,7 @@ done
 archive_name=cmsis-toolbox.tar.gz
 script_name=install.sh
 
-installer_version=""
-if [ ! -z "$version" ];then
-  installer_version=_${version}
-fi
-
-installer_name=cmsis-toolbox${installer_version}.sh
-
-# get cpackget
-cpackget_version="0.2.0"
-cpackget_base=https://github.com/Open-CMSIS-Pack/cpackget/releases/download/v${cpackget_version}/cpackget_${cpackget_version}
-curl --retry 3 -L ${cpackget_base}_windows_amd64.zip -o temp.zip &&\
-  unzip -p temp.zip '*/cpackget.exe' > ${distdir}/bin/cpackget.exe &&\
-  unzip -p temp.zip '*/README.md' > ${distdir}/doc/cpackget/README.md
-rm temp.zip
-curl --retry 3 -L ${cpackget_base}_linux_amd64.tar.gz  -o - | tar xzfO - --wildcards '*cpackget' > ${distdir}/bin/cpackget.lin
-curl --retry 3 -L ${cpackget_base}_darwin_amd64.tar.gz -o - | tar xzfO - --wildcards '*cpackget' > ${distdir}/bin/cpackget.mac
+installer_name=cmsis-toolbox.sh
 
 # compress
 tar czf ${archive_name} -C ${distdir} .

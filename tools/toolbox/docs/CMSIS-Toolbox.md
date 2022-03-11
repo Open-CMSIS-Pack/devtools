@@ -13,7 +13,7 @@ Build Manager      | cbuildgen      | Generate CMakeLists and invoke CMake/Ninja
 
 ### 1) Download CMSIS Toolbox installer
 
-- [Linux/Windows 64/macOS](https://github.com/Open-CMSIS-Pack/devtools/releases/download/tools/toolbox/0.9.1/cmsis-toolbox_0.9.1.sh)
+- [Linux/Windows 64/macOS](https://github.com/Open-CMSIS-Pack/devtools/releases/download/tools/toolbox/0.9.2/cmsis-toolbox.sh)
 
 ### 2) Toolchain download options
 
@@ -57,7 +57,7 @@ Build Manager      | cbuildgen      | Generate CMakeLists and invoke CMake/Ninja
 
 To install the CMSIS Toolbox a bash environment is required. For Windows, install for example [git for Windows](https://gitforwindows.org). Call from the bash prompt:
 ```
-./cmsis-toolbox_0.9.1.sh
+./cmsis-toolbox.sh
 ```
 The interactive self-extracting bash installer will query the destination directory for the installation, the CMSIS Pack repository directory and the location of the toolchain binaries. For further information refer to the [CMSIS Build documentation](https://open-cmsis-pack.github.io/devtools/buildmgr/0.10.4/cbuild_install.html)
 
