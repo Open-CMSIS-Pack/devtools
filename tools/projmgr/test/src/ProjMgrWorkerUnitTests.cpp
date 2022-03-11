@@ -302,7 +302,7 @@ TEST_F(ProjMgrWorkerUnitTests, LoadFilteredPack_5) {
 TEST_F(ProjMgrWorkerUnitTests, LoadPack_Filter_Unknown) {
   CsolutionItem csolution;
   StdStreamRedirect streamRedirect;
-  string expected = "No match found for pack filter: keil::*";
+  string expected = "no match found for pack filter: keil::*";
   SetCsolutionPacks(&csolution, { "keil::*" }, "Test");
 
   EXPECT_FALSE(LoadPacks());

@@ -69,6 +69,16 @@ void ProjMgrTestEnv::SetUp() {
   RteFsUtils::CreateDirectories(testinput_folder);
   fs::copy(fs::path(testdata_folder), fs::path(testinput_folder), fs::copy_options::recursive, ec);
 
+  // copy local pack
+  string srcPackPath, destPackPath;
+  srcPackPath  = testcmsispack_folder + "/ARM/RteTest_DFP/0.2.0";
+  destPackPath = testinput_folder + "/LocalPack";
+  if (RteFsUtils::Exists(destPackPath)) {
+    RteFsUtils::RemoveDir(destPackPath);
+  }
+  RteFsUtils::CreateDirectories(destPackPath);
+  fs::copy(fs::path(srcPackPath), fs::path(destPackPath), fs::copy_options::recursive, ec);
+
   CrossPlatformUtils::SetEnv("CMSIS_PACK_ROOT", testcmsispack_folder);
 }
 

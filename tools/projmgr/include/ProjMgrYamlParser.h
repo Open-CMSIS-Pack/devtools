@@ -50,6 +50,7 @@ static constexpr const char* YAML_OPTIMIZE = "optimize";
 static constexpr const char* YAML_OUTPUTTYPE = "output-type";
 static constexpr const char* YAML_PACK = "pack";
 static constexpr const char* YAML_PACKS = "packs";
+static constexpr const char* YAML_PATH = "path";
 static constexpr const char* YAML_PROCESSOR = "processor";
 static constexpr const char* YAML_PROJECT = "project";
 static constexpr const char* YAML_PROJECTS = "projects";

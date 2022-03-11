@@ -281,6 +281,7 @@ void ProjMgrYamlParser::ParsePacks(const YAML::Node& parent, vector<PackItem>& p
     for (const auto& packEntry : packNode) {
       PackItem packItem;
       ParseString(packEntry, YAML_PACK, packItem.pack);
+      ParseString(packEntry, YAML_PATH, packItem.path);
       ParseTypeFilter(packEntry, packItem.type);
       packs.push_back(packItem);
     }
@@ -532,6 +533,7 @@ const set<string> miscKeys = {
 
 const set<string> packsKeys = {
   YAML_PACK,
+  YAML_PATH,
   YAML_FORTYPE,
   YAML_NOTFORTYPE,
 };
