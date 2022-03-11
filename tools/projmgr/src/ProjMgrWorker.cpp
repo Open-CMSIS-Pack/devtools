@@ -337,6 +337,11 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
           if (board && (board->GetName() == boardItem.name)) {
             if (boardItem.vendor.empty() || (boardItem.vendor == DeviceVendor::GetCanonicalVendorName(board->GetVendorName()))) {
               matchedBoard = board;
+              const auto& boardPackage = matchedBoard->GetPackage();
+              context.packages.insert({ ProjMgrUtils::GetPackageID(boardPackage), boardPackage });
+              context.targetAttributes["Bname"]    = matchedBoard->GetName();
+              context.targetAttributes["Bvendor"]  = matchedBoard->GetVendorName();
+              context.targetAttributes["Bversion"] = matchedBoard->GetAttribute("revision");
               break;
             }
           }

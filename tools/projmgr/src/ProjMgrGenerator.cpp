@@ -133,12 +133,19 @@ void ProjMgrGenerator::GenerateCprjCompilers(XMLTreeElement* element, const Tool
 }
 
 void ProjMgrGenerator::GenerateCprjTarget(XMLTreeElement* element, const ContextItem& context) {
-  static constexpr const char* DEVICE_ATTRIBUTES[] = { "Ddsp", "Dendian", "Dfpu", "Dmve", "Dname", "Pname", "Dsecure", "Dtz", "Dvendor" };
+  constexpr const char* DEVICE_ATTRIBUTES[] = { "Ddsp", "Dendian", "Dfpu", "Dmve", "Dname", "Pname", "Dsecure", "Dtz", "Dvendor" };
   map<string, string> attributes = context.targetAttributes;
   if (attributes["Dendian"] == "Configurable") {
     attributes["Dendian"].erase();
   }
   for (const auto& name : DEVICE_ATTRIBUTES) {
+    const string& value = attributes[name];
+    SetAttribute(element, name, value);
+  }
+
+  // board attributes
+  constexpr const char* BOARD_ATTRIBUTES[] = { "Bvendor", "Bname", "Bversion" };
+  for (const auto& name : BOARD_ATTRIBUTES) {
     const string& value = attributes[name];
     SetAttribute(element, name, value);
   }

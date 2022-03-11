@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<cprj schemaVersion="1.7.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="PACK.xsd">
+  <created timestamp="2022-03-11T11:55:01" tool="csolution 0.0.0+ga1d985c"/>
+
+  <info isLayer="false">
+    <description>Automatically generated project</description>
+  </info>
+
+  <packages>
+    <package name="RteTestBoard" vendor="ARM" version="0.1.0"/>
+    <package name="RteTest_DFP" vendor="ARM" version="0.2.0"/>
+  </packages>
+
+  <compilers>
+    <compiler name="GCC" version="10.2.1"/>
+  </compilers>
+
+  <target Bname="RteTest board listing" Bvendor="Keil" Bversion="Rev.C" Dendian="Little-endian" Dfpu="NO_FPU" Dname="RteTest_ARMCM0" Dsecure="Non-secure" Dvendor="ARM:82">
+    <output intdir="test1.Release+CM0_IntDir/" name="test1.Release+CM0" outdir="test1.Release+CM0_OutDir/" type="exe"/>
+    <ldflags compiler="GCC" file="RTE/Device/RteTest_ARMCM0/gcc_arm.ld"/>
+  </target>
+
+  <components>
+    <component Cclass="Device" Cgroup="Startup" Cvariant="RteTest Startup" Cvendor="ARM" Cversion="2.0.3">
+      <file attr="config" category="linkerScript" name="Device/ARM/ARMCM0/Source/GCC/gcc_arm.ld" version="2.0.0"/>
+      <file attr="config" category="sourceC" name="Device/ARM/ARMCM0/Source/startup_ARMCM0.c" version="2.0.3"/>
+      <file attr="config" category="sourceC" name="Device/ARM/ARMCM0/Source/system_ARMCM0.c" version="1.0.0"/>
+    </component>
+    <component Cclass="RteTest" Cgroup="CORE" Cvendor="ARM" Cversion="0.1.1"/>
+  </components>
+
+  <files>
+    <group name="Sources">
+      <arflags add="-Lib-group" compiler="GCC"/>
+      <asflags add="-ASM-group" compiler="GCC"/>
+      <cflags add="-C-group" compiler="GCC"/>
+      <cxxflags add="-CPP-group" compiler="GCC"/>
+      <ldflags add="-Link-group" compiler="GCC"/>
+      <file category="sourceC" name="main.c">
+        <arflags add="-Lib-file-GCC" compiler="GCC"/>
+        <asflags add="-ASM-file-GCC" compiler="GCC"/>
+        <cflags add="-C-file-GCC" compiler="GCC"/>
+        <cxxflags add="-CPP-file-GCC" compiler="GCC"/>
+        <ldflags add="-Link-file-GCC" compiler="GCC"/>
+      </file>
+    </group>
+    <group name="Release Group">
+      <file category="sourceC" name="release.c"/>
+    </group>
+  </files>
+</cprj>
+

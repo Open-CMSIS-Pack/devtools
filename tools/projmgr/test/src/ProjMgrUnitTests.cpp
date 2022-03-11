@@ -448,6 +448,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Generator) {
 TEST_F(ProjMgrUnitTests, ListPacks) {
   set<string> expected = {
     "ARM::RteTest@0.1.0",
+    "ARM::RteTestBoard@0.1.0",
     "ARM::RteTestGenerator@0.1.0",
     "ARM::RteTest_DFP@0.1.1",
     "ARM::RteTest_DFP@0.2.0"
@@ -730,6 +731,10 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Only_Board_Info) {
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
   EXPECT_EQ(0, RunProjMgr(6, argv));
+
+  // Check generated CPRJ
+  CompareFile(testoutput_folder + "/test/test.cprj",
+    testinput_folder + "/TestProject/test_only_board.cprj");
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_Only_Board_No_Pname) {
@@ -1292,4 +1297,23 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Local_Pack_File_Not_Found) {
 
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_NE(string::npos, errStr.find(errExpected));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgrSolution_List_Board_Pack) {
+  char* argv[7];
+  const string& csolution = testinput_folder + "/TestSolution/test.csolution_list_board_package.yml";
+
+  // convert -s solution.yml
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv));
+
+  // Check generated CPRJs
+  CompareFile(testoutput_folder + "/test1.Debug+CM0/test1.Debug+CM0.cprj",
+    testinput_folder + "/TestSolution/TestProject1/test1.Debug+CM0_board_package.cprj");
+  CompareFile(testoutput_folder + "/test1.Release+CM0/test1.Release+CM0.cprj",
+    testinput_folder + "/TestSolution/TestProject1/test1.Release+CM0_board_package.cprj");
 }
