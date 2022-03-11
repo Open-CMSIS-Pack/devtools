@@ -1,5 +1,3 @@
-# Version: 0.10.1
-# Date: 2021-07-26
 # This file maps the CMSIS project options to toolchain settings.
 #
 #   - Applies to toolchain: ARM Compiler 6.16

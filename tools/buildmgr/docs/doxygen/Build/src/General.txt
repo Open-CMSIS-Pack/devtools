@@ -59,9 +59,10 @@ Software layers and Virtual I/O simplify these use cases:
   <tr>
     <td>0.10.5 (beta)</td>
     <td>Release for beta review:
-      - removed source file naming limitations​
-      - fixed: base path of pre-include files with config attribute
-      - fixed: AC6/GCC cpu compiler option for Cortex-M33 with FPU and no DSP
+      - added support for IAR compiler.
+      - removed source file naming limitations​.
+      - fixed: base path of pre-include files with config attribute.
+      - fixed: AC6/GCC cpu compiler option for Cortex-M33 with FPU and no DSP.
     </td>
   </tr>
   <tr>
