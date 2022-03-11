@@ -1,28 +1,29 @@
 # CMSIS-Toolbox: Installation
 
-**Table of Contents**
+Content:
 
 - [CMSIS-Toolbox: Installation](#cmsis-toolbox-installation)
-  - [Introduction](#introduction)
-  - [Usage](#usage)
   - [Requirements](#requirements)
     - [Toolchain Options](#toolchain-options)
+  - [Installation](#installation)
+  - [Usage](#usage)
   - [Configuration](#configuration)
-  - [Work with VS Code](#work-with-vs-code)
+<<<<<<< Updated upstream
+    - [Work with VS Code](#work-with-vs-code)
   
 ## Introduction
 
 To install the CMSIS-Toolbox a bash environment is required. install for example [git for Windows](https://gitforwindows.org). Call from the bash prompt:
 
-```txt
+```
 ./cmsis-toolbox_0.9.0.sh
 ```
 
 ## Usage
 
-The `cmsis-toolbox.sh` provides an interactive mode when invoked without parameters, but also the following options:
+The `cmsis-toolbox.sh` provides an interactive mode when invoked without parameters, but aso the following options:
 
-```txt
+```
 Usage:
   cmsis-toolbox_0.9.0.sh [<option>]
 
@@ -32,11 +33,22 @@ Usage:
 ```
 
 Below the manual setup of the CMSIS-Toolbox is explained. The command below installs the tools into the directory `./ctools`.
-```txt
+```
 ./cmsis-toolbox.sh -x ./ctools
 ```
 
+=======
+    - [./etc/setup](#etcsetup)
+      - [Git Bash Setup](#git-bash-setup)
+      - [Windows Command Line Setup](#windows-command-line-setup)
+    - [./etc/setup/\*.cmake](#etcsetupcmake)
+    - [Using VS Code](#using-vs-code)
+    - [Get Started](#get-started)
+  
+>>>>>>> Stashed changes
 ## Requirements
+
+The CMSIS-Toolbox uses the CMake build system with a Ninja backend.
 
 - [**CMake**](https://cmake.org/download) version 3.18.0 or higher.
 - [**Ninja**](https://github.com/ninja-build/ninja/releases) version 1.10.0 or higher.
@@ -67,11 +79,41 @@ The CMSIS-Toolbox works with the following toolchains. Install one or more toolc
     - Extract the archive tar -xzf DS500-BN-00026-r5p0-18rel0.tgz
     - Run install_x86_64.sh
 
+## Installation
+
+>Note: Before installation, ensure that the required tools listed above are installed.
+
+To install the CMSIS-Toolbox a bash environment is required. install for example [git for Windows](https://gitforwindows.org). Call from the bash prompt:
+
+```txt
+./cmsis-toolbox.sh
+```
+
+## Usage
+
+The `cmsis-toolbox.sh` provides an interactive mode when invoked without parameters, but also the following options:
+
+```txt
+Usage:
+  cmsis-toolbox.sh [<option>]
+
+  -h           : Print out version and usage
+  -v           : Print out version, timestamp and git hash
+  -x [<dir>]   : Extract full content into optional directory
+```
+
+Below the manual setup of the CMSIS-Toolbox is explained. The command below installs the tools into the directory `./ctools`.
+```txt
+./cmsis-toolbox.sh -x ./ctools
+```
+
 ## Configuration
 
 For the manual installation described above the configuration setup is as follows:
 
-**./etc/setup**
+<<<<<<< Updated upstream
+=======
+### ./etc/setup
 
 In file `<cmsis-toolbox-installation-dir>/etc/setup` the paths to the central pack directory (`CMSIS_PACK_ROOT`), the compiler definition files (`CMSIS_COMPILER_ROOT`), and the binaries (`CMSIS_BUILD_ROOT`) are defined.
 
@@ -81,23 +123,35 @@ export CMSIS_COMPILER_ROOT=/c/ctools/etc
 export CMSIS_BUILD_ROOT=/c/ctools/bin
 ```
 
-> Note: For Windows add the path specified under `CMSIS_BUILD_ROOT` to the `PATH` environment variable.
+#### Git Bash Setup
 
-**./etc/setup/\*.cmake**
-
-The supported of the various toolchains is defined by `*.cmake` files in the directory `<cmsis-toolbox-installation-dir>/etc/setup`. The filenames have the following format:
+In a bash environment the following command configures the environment:
 
 ```txt
-<compiler-name>.<version-major>.<version-minor>.<version-patch>.cmake
+source <cmsis-toolbox-installation-dir>/etc/setup
 ```
 
-The following files show definitions for Arm Compiler v5 (AC5), Arm Compiler v6 (AC6), and GCC:
-```c
-AC5.5.6.7.cmake              // ArmCC Compiler (AC5) v5.6.7
-AC6.6.16.0.cmake             // ArmClang Compiler (AC6) v6.16.0
-GCC.10.2.1.cmake             // GCC Compiler v10.2.1
-```
 
+
+#### Windows Command Line Setup
+
+For Windows use the **System Properties** dialog and add the following **Environment Variables**:
+
+Variable             | Value
+:--------------------|:---------------
+CMSIS_PACK_ROOT      | Path to the central CMSIS-Pack folder (i.e. C:\Keil\ARM\PACK)
+CMSIS_COMPILER_ROOT  | Path to the CMSIS-Toolbox 'etc' directory (i.e. C:\ctools\etc)
+Path                 | Add the path to the CMSIS-Toolbox 'bin' directory (i.e. C:\ctools\bin)
+
+### ./etc/setup/\*.cmake
+
+The supported of the various toolchains is defined by `*.cmake` files in the directory `<cmsis-toolbox-installation-dir>/etc/setup`. The filenames have the following format:
+>>>>>>> Stashed changes
+
+
+<<<<<<< Updated upstream
+### Work with VS Code
+=======
 > Note: The filenames reflect the available compiler versions on the host system.  There may be multiple files for each compiler to support different versions, for example `AC6.6.16.0.cmake` and `AC6.6.18.0.cmake`.
 
 Each of this `*.cmake` files define the path (`TOOLCHAIN_ROOT`) to the toolchain binaries, the file extension (`EXT`) of the executable binaries, and other compiler related parameters for the invocation. Edit the files to reflect the path as shown in the example (for `AC6`) below:
@@ -109,7 +163,8 @@ set(TOOLCHAIN_ROOT "C:/Keil/ARM/ARMCLANG/bin")
 set(EXT .exe)
 ```
 
-## Work with VS Code
+### Using VS Code 
+>>>>>>> Stashed changes
 
 VS Code is an effective environment to create CMSIS-based projects.  As [**csolution**](../../projmgr/docs/Manual/Overview.md) files are in YAML format, it is recommended to install:
 
@@ -117,16 +172,21 @@ VS Code is an effective environment to create CMSIS-based projects.  As [**csolu
 
 To work with the **CMSIS-Toolbox** in VS Code use:
 
-- **Terminal - New Terminal** to open a terminal window
-- In the **Terminal** window enter the following command:
+- **Terminal - New Terminal** to open a terminal window, you may chose as profile `bash`, `powershell`, or `Command prompt`.
 
-```txt
+- In the **Terminal** window enter the following command:
+<<<<<<< Updated upstream
+```
 source <cmsis-toolbox-installation-dir>/etc/setup
 ```
+=======
 
-To create a new [**csolution**](../../projmgr/docs/Manual/Overview.md) based CMSIS project in VS Code:
+### Get Started
+>>>>>>> Stashed changes
 
-- Copy the `{{SolutionName}}.csolution.yml` and `{{ProjectName}}.cproject.yml` templates from the `<cmsis-toolbox-installation-dir>/etc/` into your project directory and choose filenames at your discretion.
+To create a new [**csolution**](projmgr/docs/Manual/Overview.md) based CMSIS project in VS Code:
+
+- Copy the `{{SolutionName}}.csolution.yml` and `{{ProjectName}}.cproject.yml` templates from the `<cmsis-toolbox-installation-dir/etc/` into your project directory and choose filenames at your discretion.
 
 - Edit the YAML files to select a device, add files and components. The template files have references to the YAML schemas in the first comment `#yaml-language-server`.
 
