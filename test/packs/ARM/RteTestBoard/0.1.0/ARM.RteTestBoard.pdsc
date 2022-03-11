@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<package schemaVersion="1.3" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="PACK.xsd">
+  <name>RteTestBoard</name>
+  <description>Testing packages listing</description>
+  <vendor>ARM</vendor>
+
+  <releases>
+    <release version="0.1.0" date="2022-03-11">
+      Initial version
+    </release>
+  </releases>
+
+  <requirements>
+    <packages>
+      <package vendor="ARM" name="RteTest_DFP" version="0.1.1:0.2.0"/>
+    </packages>
+  </requirements>
+  
+  <boards>
+    <board name="RteTest board listing" vendor="Keil" revision="Rev.C">
+      <description>uVision Simulator</description>
+      <mountedDevice    deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM0"/>
+      <compatibleDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM3"/>
+      <compatibleDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM4_NOFP"/>
+      <compatibleDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM4_FP"/>
+    </board>
+  </boards>
+
+</package>
