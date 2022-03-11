@@ -59,7 +59,8 @@ Software layers and Virtual I/O simplify these use cases:
   <tr>
     <td>0.10.5 (beta)</td>
     <td>Release for beta review:
-      - added support for IAR compiler.
+      - new support for IAR compiler.
+      - updated cpackget utility v0.3.0.
       - removed source file naming limitations​.
       - fixed: base path of pre-include files with config attribute.
       - fixed: AC6/GCC cpu compiler option for Cortex-M33 with FPU and no DSP.
