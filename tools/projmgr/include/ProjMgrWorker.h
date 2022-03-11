@@ -21,15 +21,25 @@ struct ToolchainItem {
 };
 
 /**
- * @brief package item containing
- *        package name,
- *        package vendor,
- *        package version
+ * @brief pack info containing
+ *        pack name,
+ *        pack vendor,
+ *        pack version
 */
-struct PackageItem {
+struct PackInfo {
   std::string name;
   std::string vendor;
   std::string version;
+};
+
+/**
+ * @brief package item containing
+ *        pack information pack,
+ *        path to pack     path
+*/
+struct PackageItem {
+  PackInfo    pack;
+  std::string path;
 };
 
 /**
