@@ -30,12 +30,12 @@ struct flags
 
 /**
  * @brief module struct:
- *        src: Source filename
+ *        group: Group name
  *        flags: Assembler or C or C++ Compiler miscellaneous options and defines
 */
 struct module
 {
-  std::string src;
+  std::string group;
   std::string flags;
 };
 
@@ -87,7 +87,7 @@ protected:
   std::map<std::string, module> m_asFilesList;
   std::map<std::string, module> m_ccFilesList;
   std::map<std::string, module> m_cxxFilesList;
-  std::map<std::string, flags> m_objGroupsList;
+  std::map<std::string, flags> m_groupsList;
   std::vector<std::string> m_incPathsList;
   std::vector<std::string> m_libFilesList;
   std::vector<std::string> m_definesList;

@@ -1,7 +1,7 @@
 SET(TEST_SOURCE_FILES src/RteModelTest.cpp src/RteExampleTest.cpp
  src/RteModelTestConfig.h src/RteModelTestConfig.cpp)
 
-add_definitions(-DGLOBAL_TEST_DIR="${CMAKE_SOURCE_DIR}/test")
+add_definitions(-DGLOBAL_TEST_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../../../test")
 
 add_executable(RteModelUnitTests ${TEST_SOURCE_FILES})
 

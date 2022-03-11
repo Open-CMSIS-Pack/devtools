@@ -9,20 +9,24 @@
 extern std::string testoutput_folder;
 extern std::string testinput_folder;
 extern std::string testcmsispack_folder;
+extern std::string schema_folder;
 
 /**
  * @brief direct console output to string
 */
-class CoutRedirect {
+class StdStreamRedirect {
 public:
-  CoutRedirect();
-  ~CoutRedirect();
+  StdStreamRedirect();
+  ~StdStreamRedirect();
 
-  std::string GetString();
+  std::string GetOutString();
+  std::string GetErrorString();
 
 private:
-  std::stringstream m_buffer;
-  std::streambuf* m_oldStreamBuf;
+  std::stringstream m_outbuffer;
+  std::stringstream m_cerrbuffer;
+  std::streambuf*   m_stdoutStreamBuf;
+  std::streambuf*   m_stdcerrStreamBuf;
 };
 
 /**

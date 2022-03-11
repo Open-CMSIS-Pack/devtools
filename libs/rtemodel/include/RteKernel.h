@@ -126,9 +126,35 @@ public:
    * @brief load a cprj project for the given toolchain
    * @param cprjFile project to load
    * @param toolchain toolchain to set
+   * @param initialize flag to call InitializeCprj()
    * @return RteCprjProject pointer
   */
-  RteCprjProject* LoadCprj(const std::string& cprjFile, const std::string& toolchain = RteUtils::EMPTY_STRING);
+  RteCprjProject* LoadCprj(const std::string& cprjFile, const std::string& toolchain = RteUtils::EMPTY_STRING, bool initialize = true);
+
+  /**
+   * @brief initializes loaded Rte
+   * @param cprjProject pointer to RteCprjProject
+   * @param toolchain compiler toolchain to select, if empty non-ambiguous default is used
+   * @param toolChainVersion, use default if non-ambiguous
+   * @return true if successful
+  */
+  bool InitializeCprj(RteCprjProject* cprjProject, const std::string& toolchain = RteUtils::EMPTY_STRING, const std::string& toolChainVersion = RteUtils::EMPTY_STRING);
+
+  /**
+   * @brief load required CMSIS packs
+   * @param cprjFile pointer to CprjFile
+   * @return true if successful
+  */
+  bool LoadRequiredPdscFiles(CprjFile* cprjFile);
+
+  /**
+   * @brief Parse *.cprj file
+   * @param cprjFileName absolute filename
+   * @return pointer to RteCprjModel is successful, nullptr otherwise
+  */
+  RteCprjModel* ParseCprj(const std::string& cprjFileName);
+
+
 
   /**
    * @brief getter for active project
@@ -180,8 +206,7 @@ public:
   bool SaveActiveCprjFile(const std::string& file = RteUtils::EMPTY_STRING) const;
 
 protected:
-  RteCprjModel* ParseCprj(const std::string& cprjFileName);
-  bool LoadRequiredPdscFiles(CprjFile* cprjFile);
+
   RtePackage* LoadPack( const std::string& pdscFile);
   bool GetUrlFromIndex(const std::string& indexFile, const std::string& name, const std::string& vendor, const std::string& version, std::string& indexedUrl, std::string& indexedVersion);
   bool GetLocalPacks(const std::string& rtePath, std::unique_ptr<XMLTree>& xmlTree, std::list<XMLTreeElement*>& packs);

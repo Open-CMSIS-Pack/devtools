@@ -1,5 +1,3 @@
-# Version: 0.10.1
-# Date: 2021-07-26
 # This file maps the CMSIS project options to toolchain settings.
 #
 #   - Applies to toolchain: ARM Compiler 6.16
@@ -179,11 +177,17 @@ elseif(CPU STREQUAL "Cortex-M23")
   set(ARMCLANG_CPU "-mcpu=Cortex-M23 -mfpu=none")
 elseif(CPU STREQUAL "Cortex-M33")
   if(FPU STREQUAL "SP_FPU")
-    set(ARMCLANG_CPU "-mcpu=Cortex-M33 -mfpu=fpv5-sp-d16 -mfloat-abi=hard")
-  elseif(DSP STREQUAL "DSP")
-    set(ARMCLANG_CPU "-mcpu=Cortex-M33 -mfpu=none")
+    if(DSP STREQUAL "DSP")
+      set(ARMCLANG_CPU "-mcpu=Cortex-M33 -mfpu=fpv5-sp-d16 -mfloat-abi=hard")
+    else()
+      set(ARMCLANG_CPU "-mcpu=Cortex-M33+nodsp -mfpu=fpv5-sp-d16 -mfloat-abi=hard")
+    endif()
   else()
-    set(ARMCLANG_CPU "-mcpu=Cortex-M33+nodsp -mfpu=none")
+    if(DSP STREQUAL "DSP")
+      set(ARMCLANG_CPU "-mcpu=Cortex-M33 -mfpu=none")
+    else()
+      set(ARMCLANG_CPU "-mcpu=Cortex-M33+nodsp -mfpu=none")
+    endif()
   endif()
 elseif(CPU STREQUAL "Cortex-M35P")
   if(FPU STREQUAL "SP_FPU")

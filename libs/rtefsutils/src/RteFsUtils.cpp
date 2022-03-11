@@ -15,6 +15,7 @@
 #include "RteFsUtils.h"
 
 #include "RteUtils.h"
+#include "WildCards.h"
 
 #include <chrono>
 #include <sstream>
@@ -519,7 +520,7 @@ fs::path RteFsUtils::AbsolutePath(const std::string& path) {
       std::cout << "runtime_error: " << e.what() << std::endl;
     }
     catch (...) {
-      std::cout << "non-standard exception occured" << std::endl;
+      std::cout << "non-standard exception occurred" << std::endl;
     }
   }
   return fs::path();
@@ -610,19 +611,44 @@ string RteFsUtils::GetInstalledPackVersion(const string &path, const string &ver
 }
 
 
-/*
-Scan input dir for all specified type of files
-*/
 RteFsUtils::PathVec RteFsUtils::FindFiles(const string& path, const string& typeExt) {
   RteFsUtils::PathVec result;
   error_code ec;
   for (auto& item : fs::recursive_directory_iterator(path, ec)) {
     if (!fs::is_regular_file(item.path()) || item.path().extension() != typeExt)
       continue;
-    result.push_back(item.path().generic_string());
+    result.push_back(item.path());
   }
   return result;
 }
+
+RteFsUtils::PathVec RteFsUtils::GrepFiles(const string& dir, const string& wildCardPattern) {
+  RteFsUtils::PathVec result;
+  error_code ec;
+  for (auto& item : fs::directory_iterator(dir, ec)) {
+    auto& path = item.path();
+    string name = item.path().filename().generic_string();
+    if (fs::is_regular_file(path) &&
+      WildCards::Match(wildCardPattern, path.generic_string())) {
+      result.push_back(path);
+    }
+  }
+  return result;
+}
+
+void RteFsUtils::GrepFileNames(list<std::string>& fileNames, const string& dir, const string& wildCardPattern) {
+  error_code ec;
+  for (auto& item : fs::directory_iterator(dir, ec)) {
+    if (fs::is_regular_file(item.path())) {
+      string name = item.path().filename().generic_string();
+        if (WildCards::Match(wildCardPattern, name)) {
+            NormalizePath(name, dir + '/');
+            fileNames.push_back(name);
+        }
+    }
+  }
+}
+
 
 int RteFsUtils::CountFilesInFolder(const string& folder)
 {

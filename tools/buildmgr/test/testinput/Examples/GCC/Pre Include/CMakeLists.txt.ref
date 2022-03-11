@@ -40,8 +40,8 @@ set(CC_SRC_FILES
   "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/RTX/Source/rtx_lib.c"
   "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Pre Include/RTE/Device/ARMCM3/startup_ARMCM3.c"
   "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Pre Include/RTE/Device/ARMCM3/system_ARMCM3.c"
-  "C:/Users/Test/AppData/Local/Arm/Packs/Keil/PreIncludeTestPack/0.0.1/Files/test1.c"
-  "C:/Users/Test/AppData/Local/Arm/Packs/Keil/PreIncludeTestPack/0.0.1/Files/test2.c"
+  "C:/Users/Test/AppData/Local/Arm/Packs/Keil/PreIncludeTestPack/0.0.2/Files/test1.c"
+  "C:/Users/Test/AppData/Local/Arm/Packs/Keil/PreIncludeTestPack/0.0.2/Files/test2.c"
 )
 
 set(LIB_FILES
@@ -49,13 +49,15 @@ set(LIB_FILES
 )
 
 set(PRE_INC_GLOBAL
-  "C:/Users/Test/AppData/Local/Arm/Packs/Keil/PreIncludeTestPack/0.0.1/Files/header1.h"
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Pre Include/RTE/TestClass/config-header1.h"
+  "C:/Users/Test/AppData/Local/Arm/Packs/Keil/PreIncludeTestPack/0.0.2/Files/header1.h"
   "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Pre Include/RTE/_Target/Pre_Include_Global.h"
 )
 
-set(PRE_INC_LOCAL_C:/Users/Test/AppData/Local/Arm/Packs/Keil/PreIncludeTestPack/0.0.1/Files/test2.c
-  "C:/Users/Test/AppData/Local/Arm/Packs/Keil/PreIncludeTestPack/0.0.1/Files/header2.h"
-  "Pre_Include__TestClass_TestLocal.h"
+set(PRE_INC_LOCAL_C:/Users/Test/AppData/Local/Arm/Packs/Keil/PreIncludeTestPack/0.0.2/Files/test2.c
+  "C:/Users/Test/AppData/Local/Arm/Packs/Keil/PreIncludeTestPack/0.0.2/Files/header2.h"
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Pre Include/RTE/TestClass/config-header2.h"
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Pre Include/RTE/_Target/Pre_Include__TestClass_TestLocal.h"
 )
 
 # Toolchain config map

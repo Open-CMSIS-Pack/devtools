@@ -270,6 +270,17 @@ string RteUtils::ExtractFileExtension(const string& fileName, bool withDot)
   return GetSuffix(fileName, '.', withDot);
 }
 
+std::string RteUtils::AppendFileVersion(const std::string& fileName, const string& version, bool bHidden)
+{
+  if (!bHidden) {
+    return fileName + '@' + version;
+  }
+  string path = ExtractFilePath(fileName, true);
+  string name = ExtractFileName(fileName);
+  return path + '.' + name + '@' + version;
+}
+
+
 string RteUtils::ExtractFirstFileSegments(const string& fileName, int nSegments)
 {
   if (nSegments <= 0) {

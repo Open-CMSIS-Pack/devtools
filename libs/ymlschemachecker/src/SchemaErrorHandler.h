@@ -10,18 +10,16 @@
 #include "SchemaError.h"
 
 #include <nlohmann/json-schema.hpp>
-
 #include <string>
+#include "yaml-cpp/yaml.h"
 
 using nlohmann::json;
 
 class CustomErrorHandler : public nlohmann::json_schema::basic_error_handler
 {
 public:
-  CustomErrorHandler(const std::string& filePath) {
-    m_yamlFile = filePath;
-    m_errList.clear();
-  }
+  CustomErrorHandler(const std::string& filePath);
+  ~CustomErrorHandler();
 
   /**
    * @brief callback to process error data
@@ -39,8 +37,18 @@ public:
   SchemaErrors& GetAllErrors();
 
 private:
-  std::string m_yamlFile;
+  std::string  m_yamlFile;
   SchemaErrors m_errList;
+  YAML::Node m_yamlData;
+
+  /**
+   * @brief get error location string
+   * @param pointer to json erroneous schema
+   * @param error message
+  */
+  std::pair<std::string, bool> GetSearchString(
+    const nlohmann::json::json_pointer& ptr,
+    const std::string& message) noexcept;
 };
 
 #endif // SCHEMACHECKERERROR_H

@@ -193,6 +193,16 @@ public:
    * @return file extension
   */
   static std::string ExtractFileExtension(const std::string& fileName, bool withDot = false);
+
+  /**
+   * @brief construct filename with appended version string
+   * @param fileName path to config file to use, can be absolute or relative
+   * @param version string to append
+   * @param bHidden insert dot in front of base name
+   * @return constructed filename in the format: path/name.ext@version or path/.name.ext@version
+  */
+  static std::string AppendFileVersion(const std::string& fileName, const std::string& version, bool bHidden);
+
   /**
    * @brief extract first file segments
    * @param fileName fully qualified file name
@@ -200,6 +210,7 @@ public:
    * @return first segments of fully qualified file name
   */
   static std::string ExtractFirstFileSegments(const std::string& fileName, int nSegments);
+
   /**
    * @brief extract last file segments
    * @param fileName fully qualified file name
@@ -207,6 +218,7 @@ public:
    * @return last segments of fully qualified file name
   */
   static std::string ExtractLastFileSegments(const std::string& fileName, int nSegments);
+
   /**
    * @brief determine number of file segments separated by forward slash
    * @param fileName fully qualified file name

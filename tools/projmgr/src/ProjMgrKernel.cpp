@@ -29,6 +29,10 @@ ProjMgrKernel::~ProjMgrKernel() {
   }
 }
 
+ProjMgrCallback* ProjMgrKernel::GetCallback() {
+  return m_callback.get();
+}
+
 ProjMgrKernel *ProjMgrKernel::Get() {
   if (!theProjMgrKernel) {
     theProjMgrKernel = make_unique<ProjMgrKernel>();

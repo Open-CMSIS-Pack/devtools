@@ -160,7 +160,7 @@ RteDevice *CbuildProject::GetDeviceLeaf(const string& fullDeviceName, const stri
     if (!device)
       return device; // should never happen as RteDevice can only have children of type RteDeviceVariant derived from RteDevice
 
-    LogMsg("M630", VAL("DEV", deviceName), VAL("VENDOR", device->GetName()));
+    LogMsg("M630", VAL("DEV", deviceName), VAL("VAR", device->GetName()));
   }
   return device;
 }

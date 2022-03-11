@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<cprj schemaVersion="1.7.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="PACK.xsd">
+  <created timestamp="2022-03-03T17:36:07" tool="csolution 0.0.0+gbcc9e7a"/>
+
+  <info isLayer="false">
+    <description>Automatically generated project</description>
+  </info>
+
+  <packages>
+    <package name="RteTestGenerator" vendor="ARM" version="0.1.0"/>
+    <package name="RteTest_DFP" vendor="ARM" version="0.2.0"/>
+  </packages>
+
+  <compilers>
+    <compiler name="AC6" version="6.16.0"/>
+  </compilers>
+
+  <target Dname="RteTestGen_ARMCM0" Dsecure="Non-secure" Dvendor="ARM:82">
+    <output intdir="test2.Debug+TestGen_IntDir/" name="test2.Debug+TestGen" outdir="test2.Debug+TestGen_OutDir/" type="exe"/>
+    <arflags add="-Lib-project -Lib-type-CM3" compiler="AC6"/>
+    <asflags add="-ASM-project -ASM-type-CM3" compiler="AC6"/>
+    <cflags add="-C-project -C-CPP-type-CM3" compiler="AC6"/>
+    <cxxflags add="-CPP-project -C-CPP-type-CM3" compiler="AC6"/>
+    <ldflags add="-Link-project -Link-type-CM3" compiler="AC6" file="RTE/Device/RteTestGen_ARMCM0/ARMCM0_ac6.sct"/>
+    <defines>DEF-project;DEF-solution;DEF-CM3;DEF-Debug</defines>
+    <includes>/path/project;/path/solution/;/path/CM3;/path/Debug</includes>
+  </target>
+
+  <components>
+    <component Cclass="Device" Cgroup="Startup" Cvariant="RteTest Startup" Cvendor="ARM" Cversion="2.0.3">
+      <file attr="config" category="linkerScript" name="Device/ARM/ARMCM0/Source/ARM/ARMCM0_ac6.sct" version="1.0.0"/>
+      <file attr="config" category="sourceC" name="Device/ARM/ARMCM0/Source/startup_ARMCM0.c" version="2.0.3"/>
+      <file attr="config" category="sourceC" name="Device/ARM/ARMCM0/Source/system_ARMCM0.c" version="1.0.0"/>
+    </component>
+    <component Cclass="RteTest" Cgroup="CORE" Cvendor="ARM" Cversion="0.1.1"/>
+  </components>
+
+  <files>
+    <group name="Sources">
+      <file category="sourceC" name="main.c"/>
+    </group>
+  </files>
+</cprj>
+

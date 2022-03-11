@@ -122,8 +122,9 @@ public:
    * @brief merge file specified by curFile into the one specified by newFile
    * @param curFile source file to merge
    * @param newFile destination file to merge
+   * @param originFile a copy of the file used to instantiate the new file initially (optional)
   */
-  void MergeFiles(const std::string& curFile, const std::string& newFile);
+  void MergeFiles(const std::string& curFile, const std::string& newFile, const std::string& originFile = RteUtils::EMPTY_STRING);
 
 public:
   /**
@@ -150,8 +151,16 @@ public:
   */
   void SetName(const std::string& name) { m_ID = name; }
 
-
+  /**
+   * @brief set custom RTE folder name to store config files,
+   * @param rteFolder RTE folder name, default "RTE"
+  */
   void SetRteFolder(std::optional<std::string> rteFolder) { m_rteFolder = rteFolder; }
+
+  /**
+   * @brief get project's RTE folder where config and generated files are stored
+   * @return RTE folder name, default "RTE"
+  */
   const std::string& GetRteFolder() const;
 
   /**
@@ -495,7 +504,7 @@ protected:
   void CategorizeComponentInstance(RteComponentInstance* ci);
   void CollectMissingPacks();
   void CollectMissingPacks(RteItemInstance* inst);
-  RteComponentInstance* AddCprjComponent(RteItem* item, RteTarget* target);
+  virtual RteComponentInstance* AddCprjComponent(RteItem* item, RteTarget* target);
 
 public:
   /**
@@ -690,20 +699,18 @@ public:
    * @brief get file name and path of "RTE_Components.h" determined by the specified target and prefix
    * @param targetName given target name
    * @param prefix given prefix to be added at beginning of the file path
-   * @param rteFolder the "RTE" folder path used for placing files
    * @return string containing file name and path
   */
-  static std::string GetRteComponentsH(const std::string& targetName, const std::string& prefix, const std::string& rteFolder);
+  std::string GetRteComponentsH(const std::string& targetName, const std::string& prefix) const;
 
   /**
    * @brief get file name and path locating in folder "RTE" determined by the specified name, target and prefix
    * @param name given file name
    * @param targetName given target name
    * @param prefix given prefix to be added at beginning of the file path
-   * @param rteFolder the "RTE" folder path used for placing files
    * @return string containing file name and path
   */
-  static std::string GetRteHeader(const std::string& name, const std::string & targetName, const std::string& prefix, const std::string& rteFolder);
+  std::string GetRteHeader(const std::string& name, const std::string & targetName, const std::string& prefix) const;
 
 protected:
   virtual RteTarget* CreateTarget(RteModel* filteredModel, const std::string& name, const std::map<std::string, std::string>& attributes);
@@ -730,8 +737,10 @@ protected:
   bool RemoveFileInstance(const std::string& id);
   void DeleteFileInstance(RteFileInstance* fi);
   // initializes or updates (newer version is used) existing file instance
-  void InitFileInstance(RteFileInstance* fi, RteFile* f, int index, RteTarget* target, const std::string& oldVersion, bool bCopy);
+  void InitFileInstance(RteFileInstance* fi, RteFile* f, int index, RteTarget* target, const std::string& savedVersion);
   bool UpdateFileInstance(RteFileInstance* fi, RteFile* f, bool bMerge, bool bUpdateComponent);
+  void UpdateConfigFileBackups(RteFileInstance* fi, RteFile* f);
+
   void CollectSettings(const std::string& targetName);
 
   void ClearClasses();
@@ -768,6 +777,10 @@ protected:
   std::map<int, std::string> m_targetIDs;
   std::string m_sActiveTarget;
   std::optional<std::string> m_rteFolder;
+
+public:
+  static const std::string DEFAULT_RTE_FOLDER;
+
 };
 
 #endif // RteProject_H

@@ -37,6 +37,7 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR
    "${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
   set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -MD -Wall")
   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wall")
+  add_link_options("-static-libstdc++")
 endif()
 
 if(SWIG_LIBS)
@@ -87,13 +88,15 @@ if(NOT LIBS_ONLY)
   add_subdirectory(tools/packchk)
   add_subdirectory(tools/packgen)
   add_subdirectory(tools/projmgr)
+  add_subdirectory(tools/toolbox)
 endif()
 
 # Prepare a list of CMake targets
 get_targets()
 
 # Apply patch on submodule
-apply_patch(${CMAKE_SOURCE_DIR}/external/json-schema-validator)
+apply_patch(${CMAKE_CURRENT_SOURCE_DIR}/external/json)
+apply_patch(${CMAKE_CURRENT_SOURCE_DIR}/external/json-schema-validator)
 
 # Google Test Framework
 set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)

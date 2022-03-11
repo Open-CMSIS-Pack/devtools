@@ -88,6 +88,7 @@
         "Link":       { "$ref": "#/$defs/ArrayOfStrings", "description": "List of Linker flags" },
         "Lib":        { "$ref": "#/$defs/ArrayOfStrings", "description": "List of lib manager or archiver flags" }
       },
+      "required": [ "Link" ],
       "additionalProperties": false
     },
     "TargetTypes": {

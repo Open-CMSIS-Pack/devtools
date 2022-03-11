@@ -1,10 +1,11 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "properties": {
-    "layer": { "$ref": "#/$defs/LayerType" }
+    "layer": { "$ref": "#/$defs/LayerType" },
+    "temp":  { "type":  "string" }
   },
   "additionalProperties": false,
-  "required": [ "layer" ],
+  "required": [ "layer", "temp" ],
   "$defs": {
     "LayerType": {
       "type": "object",

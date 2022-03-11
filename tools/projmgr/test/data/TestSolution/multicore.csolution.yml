@@ -1,0 +1,9 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/0.9.2/tools/projmgr/schemas/csolution.schema.json
+
+solution:
+  target-types:
+    - type: CM0
+      device: RteTest_ARMCM0_Dual:cm0_core1
+
+  projects:
+    - project: ./multicore.cproject.yml

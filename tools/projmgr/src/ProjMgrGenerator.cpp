@@ -74,7 +74,6 @@ bool ProjMgrGenerator::GenerateCprj(ContextItem& context, const string& filename
   // Files
   if (filesElement) {
     GenerateCprjGroups(filesElement, context.groups, context.toolchain.name);
-    GenerateCprjPrjDeps(filesElement, context);
   }
 
   // Remove empty files element
@@ -134,7 +133,7 @@ void ProjMgrGenerator::GenerateCprjCompilers(XMLTreeElement* element, const Tool
 }
 
 void ProjMgrGenerator::GenerateCprjTarget(XMLTreeElement* element, const ContextItem& context) {
-  static constexpr const char* DEVICE_ATTRIBUTES[] = { "Ddsp", "Dendian", "Dfpu", "Dmve", "Dname", "Dsecure", "Dtz", "Dvendor" };
+  constexpr const char* DEVICE_ATTRIBUTES[] = { "Ddsp", "Dendian", "Dfpu", "Dmve", "Dname", "Pname", "Dsecure", "Dtz", "Dvendor" };
   map<string, string> attributes = context.targetAttributes;
   if (attributes["Dendian"] == "Configurable") {
     attributes["Dendian"].erase();
@@ -144,12 +143,19 @@ void ProjMgrGenerator::GenerateCprjTarget(XMLTreeElement* element, const Context
     SetAttribute(element, name, value);
   }
 
+  // board attributes
+  constexpr const char* BOARD_ATTRIBUTES[] = { "Bvendor", "Bname", "Bversion" };
+  for (const auto& name : BOARD_ATTRIBUTES) {
+    const string& value = attributes[name];
+    SetAttribute(element, name, value);
+  }
+
   XMLTreeElement* targetOutputElement = element->CreateElement("output");
   if (targetOutputElement) {
     targetOutputElement->AddAttribute("name", context.name);
     targetOutputElement->AddAttribute("type", context.outputType);
-    targetOutputElement->AddAttribute("intdir", context.name + "_IntDir/");
-    targetOutputElement->AddAttribute("outdir", context.name + "_OutDir/");
+    targetOutputElement->AddAttribute("intdir", context.directories.intdir);
+    targetOutputElement->AddAttribute("outdir", context.directories.outdir);
   }
 
   // TODO Generate toolchain settings (warnings, debug, includes)
@@ -175,11 +181,12 @@ void ProjMgrGenerator::GenerateCprjComponents(XMLTreeElement* element, const Con
           for (const auto& configFile : configFileMap.second) {
             XMLTreeElement* fileElement = componentElement->CreateElement("file");
             if (fileElement) {
-              //fileElement->SetAttributes(configFile.second->GetAttributes());
               SetAttribute(fileElement, "attr", "config");
               SetAttribute(fileElement, "name", configFile.first);
               SetAttribute(fileElement, "category", configFile.second->GetAttribute("category"));
-              SetAttribute(fileElement, "version", configFile.second->GetVersionString());
+              // TODO: Set config file version according to new PLM
+              const auto originalFile = configFile.second->GetFile(context.rteActiveTarget->GetName());
+              SetAttribute(fileElement, "version", originalFile->GetVersionString());
             }
           }
         }
@@ -256,8 +263,7 @@ void ProjMgrGenerator::GenerateCprjGroups(XMLTreeElement* element, const vector<
         XMLTreeElement* fileElement = groupElement->CreateElement("file");
         fileElement->AddAttribute("name", fileNode.file);
         if (fileElement) {
-          const string& category = fileNode.category.empty() ? GetCategory(fileNode.file) : fileNode.category;
-          fileElement->AddAttribute("category", category);
+          fileElement->AddAttribute("category", fileNode.category);
 
           // TODO Generate toolchain settings (warnings, debug, includes, defines)
           GenerateCprjMisc(fileElement, fileNode.build.misc, compiler);
@@ -265,25 +271,6 @@ void ProjMgrGenerator::GenerateCprjGroups(XMLTreeElement* element, const vector<
 
       }
       GenerateCprjGroups(groupElement, groupNode.groups, compiler);
-    }
-  }
-}
-
-void ProjMgrGenerator::GenerateCprjPrjDeps(XMLTreeElement* element, const ContextItem& context) {
-  if (!context.prjDeps.empty()) {
-    XMLTreeElement* groupElement = element->CreateElement("group");
-    if (groupElement) {
-      groupElement->AddAttribute("name", "Project Dependencies");
-      for (const auto& dep : context.prjDeps) {
-        for (const auto& file : dep.second) {
-          XMLTreeElement* fileElement = groupElement->CreateElement("file");
-          fileElement->AddAttribute("name", file);
-          if (fileElement) {
-            const string& category = GetCategory(file);
-            fileElement->AddAttribute("category", category);
-          }
-        }
-      }
     }
   }
 }
@@ -334,24 +321,4 @@ bool ProjMgrGenerator::WriteXmlFile(const string& file, XMLTree* tree) {
   xmlFile.close();
 
   return true;
-}
-
-const string ProjMgrGenerator::GetCategory(const string& file) {
-  static const map<string, vector<string>> CATEGORIES = {
-    {"sourceC", {".c", ".C"}},
-    {"sourceCpp", {".cpp", ".c++", ".C++", ".cxx"}},
-    {"sourceAsm", {".asm", ".s", ".S"}},
-    {"header", {".h", ".hpp"}},
-    {"library", {".a", ".lib"}},
-    {"object", {".o"}},
-    {"linkerScript", {".sct", ".scf", ".ld"}},
-    {"doc", {".txt", ".md", ".pdf", ".htm", ".html"}},
-  };
-  fs::path ext((fs::path(file)).extension());
-  for (const auto& category : CATEGORIES) {
-    if (find(category.second.begin(), category.second.end(), ext) != category.second.end()) {
-      return category.first;
-    }
-  }
-  return "other";
 }

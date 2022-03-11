@@ -1,5 +1,3 @@
-# Version: 0.10.4
-# Date: 2022-01-18
 # This file maps the CMSIS project options to toolchain settings.
 #
 #   - Applies to toolchain: GNU Arm Embedded Toolchain 10-2020-q4-major 10.2.1
@@ -45,11 +43,17 @@ elseif(CPU STREQUAL "Cortex-M23")
   set(GNUASM_CPU "-mcpu=cortex-m23")
 elseif(CPU STREQUAL "Cortex-M33")
   if(FPU STREQUAL "SP_FPU")
-    set(GNUASM_CPU "-mcpu=cortex-m33 -mfpu=fpv5-sp-d16 -mfloat-abi=hard")
-  elseif(DSP STREQUAL "DSP")
-    set(GNUASM_CPU "-mcpu=cortex-m33")
+    if(DSP STREQUAL "DSP")
+      set(GNUASM_CPU "-mcpu=cortex-m33 -mfpu=fpv5-sp-d16 -mfloat-abi=hard")
+    else()
+      set(GNUASM_CPU "-mcpu=cortex-m33+nodsp -mfpu=fpv5-sp-d16 -mfloat-abi=hard")
+    endif()
   else()
-    set(GNUASM_CPU "-mcpu=cortex-m33+nodsp")
+    if(DSP STREQUAL "DSP")
+      set(GNUASM_CPU "-mcpu=cortex-m33")
+    else()
+      set(GNUASM_CPU "-mcpu=cortex-m33+nodsp")
+    endif()
   endif()
 elseif(CPU STREQUAL "Cortex-M35P")
   if(FPU STREQUAL "SP_FPU")

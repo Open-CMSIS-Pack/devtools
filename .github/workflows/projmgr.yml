@@ -17,28 +17,31 @@ on:
     types: [published]
 
 jobs:
+  matrix_prep:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+    - name: Check out repo
+      uses: actions/checkout@v2
+    - id: set-matrix
+      run: |
+        publicRepo=$(echo '${{ github.event.repository.private && 'privateRepo' || 'publicRepo' }}')
+        matrix=$(jq --arg publicRepo "$publicRepo" 'map(. | select((.runOn==$publicRepo) or (.runOn=="always")) )' matrix_includes_projmgr.json)
+        echo ::set-output name=matrix::{\"include\":$(echo $matrix)}\"
+      working-directory: .github/
   build:
     if: ${{ github.event_name == 'pull_request' || (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/projmgr/')) }}
-    runs-on: ${{ matrix.os }}
+    needs: matrix_prep
+    runs-on: ${{ matrix.runs_on }}
     timeout-minutes: 15
     strategy:
       fail-fast: true
-      matrix:
-        os: [ macos-10.15, ubuntu-20.04, windows-2019 ]
-        include:
-          - os: macos-10.15
-            target: darwin64
-            binary: csolution
-          - os: ubuntu-20.04
-            target: linux64
-            binary: csolution
-          - os: windows-2019
-            target: windows64
-            binary: csolution.exe
+      matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
 
     steps:
       - name: Install macos deps
-        if: ${{ startsWith(matrix.os, 'macos') }}
+        if: ${{ startsWith(matrix.runs_on, 'macos') }}
         run: |
           brew install \
             ninja \
@@ -46,7 +49,7 @@ jobs:
             swig
 
       - name: Install linux deps
-        if: ${{ startsWith(matrix.os, 'ubuntu') }}
+        if: ${{ startsWith(matrix.runs_on, 'ubuntu') }}
         run: |
           sudo apt update
           sudo apt-get install \
@@ -57,7 +60,7 @@ jobs:
             swig
 
       - name: Install windows deps
-        if: ${{ startsWith(matrix.os, 'windows') }}
+        if: ${{ startsWith(matrix.runs_on, 'windows') }}
         run: choco install -y ninja python swig
 
       - name: Checkout devtools
@@ -71,15 +74,15 @@ jobs:
           mkdir buildswig
 
       - name: Configure windows build for amd64
-        if: ${{ startsWith(matrix.os, 'windows') }}
+        if: ${{ startsWith(matrix.runs_on, 'windows') }}
         uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: amd64
 
       - uses: ammaraskar/gcc-problem-matcher@master
-        if: ${{ startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu') }}
+        if: ${{ startsWith(matrix.runs_on, 'macos') || startsWith(matrix.runs_on, 'ubuntu') }}
       - uses: ammaraskar/msvc-problem-matcher@master
-        if: ${{ startsWith(matrix.os, 'windows') }}
+        if: ${{ startsWith(matrix.runs_on, 'windows') }}
 
       - name: Build projmgr
         run: |
@@ -95,30 +98,48 @@ jobs:
           retention-days: 1
           if-no-files-found: error
 
-      - name: Build projmgr swig libs
+      - name: Build projmgr swig libs windows
+        if: ${{ startsWith(matrix.runs_on, 'windows') }}
         run: |
           cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DSWIG_LIBS=ON ..
-          cmake --build . --target projmgr --config Release
+          cmake --build . --target projmgr-python --config Release
         working-directory: ./buildswig
 
-      - name: Archive projmgr swig libs windows
-        if: ${{ startsWith(matrix.os, 'windows') }}
+      - name: Build projmgr swig libs macos ubuntu
+        if: ${{ startsWith(matrix.runs_on, 'macos') || startsWith(matrix.runs_on, 'ubuntu') }}
+        run: |
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DSWIG_LIBS=ON ..
+          cmake --build . --target projmgr-python projmgr-go --config Release
+        working-directory: ./buildswig
+
+      - name: Archive projmgr swig python libs windows
+        if: ${{ startsWith(matrix.runs_on, 'windows') }}
         uses: actions/upload-artifact@v2
         with:
-          name: projmgr-swig-${{ matrix.target }}
+          name: projmgr-swig-python-${{ matrix.target }}
           path: |
-             ./buildswig/tools/projmgr/swig/projmgr.py
-             ./buildswig/tools/projmgr/swig/_projmgr.pyd
+             ./buildswig/tools/projmgr/swig/python/projmgr.py
+             ./buildswig/tools/projmgr/swig/python/_projmgr.pyd
           retention-days: 1
 
-      - name: Archive projmgr swig libs macos ubuntu
-        if: ${{ startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu') }}
+      - name: Archive projmgr swig python libs macos ubuntu
+        if: ${{ startsWith(matrix.runs_on, 'macos') || startsWith(matrix.runs_on, 'ubuntu') }}
         uses: actions/upload-artifact@v2
         with:
-          name: projmgr-swig-${{ matrix.target }}
+          name: projmgr-swig-python-${{ matrix.target }}
           path: |
-             ./buildswig/tools/projmgr/swig/projmgr.py
-             ./buildswig/tools/projmgr/swig/_projmgr.so
+             ./buildswig/tools/projmgr/swig/python/projmgr.py
+             ./buildswig/tools/projmgr/swig/python/_projmgr.so
+          retention-days: 1
+
+      - name: Archive projmgr swig go libs macos ubuntu
+        if: ${{ startsWith(matrix.runs_on, 'macos') || startsWith(matrix.runs_on, 'ubuntu') }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: projmgr-swig-go-${{ matrix.target }}
+          path: |
+             ./buildswig/tools/projmgr/swig/go/projmgr.go
+             ./buildswig/tools/projmgr/swig/go/projmgr.so
           retention-days: 1
 
   release:
@@ -157,23 +178,37 @@ jobs:
           name: projmgr-windows64
           path: tools/projmgr/distribution/bin/windows64/
 
-      - name: Download projmgr-swig linux
+      - name: Download projmgr-swig-python linux
         uses: actions/download-artifact@v2
         with:
-          name: projmgr-swig-linux64
-          path: tools/projmgr/distribution/lib/linux64/
+          name: projmgr-swig-python-linux64
+          path: tools/projmgr/distribution/lib/linux64/python/
 
-      - name: Download projmgr-swig macos
+      - name: Download projmgr-swig-python macos
+        if: ${{ !github.event.repository.private }}
         uses: actions/download-artifact@v2
         with:
-          name: projmgr-swig-darwin64
-          path: tools/projmgr/distribution/lib/darwin64/
+          name: projmgr-swig-python-darwin64
+          path: tools/projmgr/distribution/lib/darwin64/python/
 
-      - name: Download projmgr-swig windows
+      - name: Download projmgr-swig-python windows
         uses: actions/download-artifact@v2
         with:
-          name: projmgr-swig-windows64
-          path: tools/projmgr/distribution/lib/windows64/
+          name: projmgr-swig-python-windows64
+          path: tools/projmgr/distribution/lib/windows64/python/
+
+      - name: Download projmgr-swig-go linux
+        uses: actions/download-artifact@v2
+        with:
+          name: projmgr-swig-go-linux64
+          path: tools/projmgr/distribution/lib/linux64/go/
+
+      - name: Download projmgr-swig-go macos
+        if: ${{ !github.event.repository.private }}
+        uses: actions/download-artifact@v2
+        with:
+          name: projmgr-swig-go-darwin64
+          path: tools/projmgr/distribution/lib/darwin64/go/
 
       - name: Zip distribution folder
         run: zip -r projmgr.zip *
@@ -201,6 +236,7 @@ jobs:
           path: tools/testreport/linux64/
 
       - name: Download test report macos
+        if: ${{ !github.event.repository.private }}
         uses: actions/download-artifact@v2
         with:
           name: unittest-darwin64
@@ -225,10 +261,6 @@ jobs:
           name: coverage-report
           path: tools/coverage/
 
-      - name: Zip coverage folder
-        run: zip -r coverage.zip *
-        working-directory: tools/coverage
-
       - name: Attach coverage archive to release assets
         uses: svenstaro/upload-release-action@v2
         with:
@@ -244,29 +276,22 @@ jobs:
         github.event_name == 'pull_request' ||
         (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/projmgr/'))
       }}
-    runs-on: ${{ matrix.os }}
+    needs: matrix_prep
+    runs-on: ${{ matrix.runs_on }}
     timeout-minutes: 15
     strategy:
       fail-fast: false
-      matrix:
-        os: [ macos-10.15, ubuntu-20.04, windows-2019 ]
-        include:
-          - os: macos-10.15
-            target: darwin64
-          - os: ubuntu-20.04
-            target: linux64
-          - os: windows-2019
-            target: windows64
+      matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
 
     steps:
       - name: Install macos deps
-        if: ${{ startsWith(matrix.os, 'macos') }}
+        if: ${{ startsWith(matrix.runs_on, 'macos') }}
         run: |
           brew install \
             ninja
 
       - name: Install linux deps
-        if: ${{ startsWith(matrix.os, 'ubuntu') }}
+        if: ${{ startsWith(matrix.runs_on, 'ubuntu') }}
         run: |
           sudo apt update
           sudo apt-get install \
@@ -275,7 +300,7 @@ jobs:
             ninja-build
 
       - name: Install windows deps
-        if: ${{ startsWith(matrix.os, 'windows') }}
+        if: ${{ startsWith(matrix.runs_on, 'windows') }}
         run: choco install -y ninja
 
       - name: Checkout devtools
@@ -287,15 +312,15 @@ jobs:
         run: mkdir build
 
       - name: Configure windows build for amd64
-        if: ${{ startsWith(matrix.os, 'windows') }}
+        if: ${{ startsWith(matrix.runs_on, 'windows') }}
         uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: amd64
 
       - uses: ammaraskar/gcc-problem-matcher@master
-        if: ${{ startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu') }}
+        if: ${{ startsWith(matrix.runs_on, 'macos') || startsWith(matrix.runs_on, 'ubuntu') }}
       - uses: ammaraskar/msvc-problem-matcher@master
-        if: ${{ startsWith(matrix.os, 'windows') }}
+        if: ${{ startsWith(matrix.runs_on, 'windows') }}
 
       - name: Build and run projmgr unit tests
         run: |
@@ -323,23 +348,16 @@ jobs:
         if: ${{ always() }}
 
   coverage:
-    needs: unittest
     if: |
       ${{
         github.event_name == 'pull_request' ||
         github.event_name == 'push' ||
         (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/projmgr/'))
       }}
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-20.04
     timeout-minutes: 15
-    strategy:
-      fail-fast: true
-      matrix:
-        os: [ ubuntu-20.04 ]
-
     steps:
       - name: Install linux deps
-        if: ${{ startsWith(matrix.os, 'ubuntu') }}
         run: |
           sudo apt update
           sudo apt-get install \
@@ -357,7 +375,6 @@ jobs:
         run: mkdir build
 
       - uses: ammaraskar/gcc-problem-matcher@master
-        if: ${{ startsWith(matrix.os, 'ubuntu') }}
 
       - name: Build and run projmgr unit tests
         run: |
@@ -367,39 +384,38 @@ jobs:
         working-directory: ./build
 
       - name: Generate coverage report
-        if: ${{ startsWith(matrix.os, 'ubuntu') }}
         run: |
-          lcov -c --directory ./tools/projmgr/ --output-file full_coverage.info
+          lcov -c --directory . --output-file full_coverage.info
           lcov -e full_coverage.info '/tools/projmgr/include/*' '*/tools/projmgr/src/*' -o coverage.info
           genhtml coverage.info --output-directory coverage
           zip -r coverage.zip coverage/*
-        working-directory: ./build
+        working-directory: ./build/tools/projmgr/
 
       - name: Upload Report to Codecov
         if: ${{ !github.event.repository.private }}
-        uses: codecov/codecov-action@v1.3.2
+        uses: codecov/codecov-action@v2
         with:
-          files: ./build/coverage.info
+          files: ./build/tools/projmgr/coverage.info
           fail_ci_if_error: true
+          flags: projmgr-cov
           functionalities: fix
 
       - name: Archive coverage report
         uses: actions/upload-artifact@v2
         with:
           name: coverage-report
-          path: ./build/coverage.zip
+          path: ./build/tools/projmgr/coverage.zip
           retention-days: 1
           if-no-files-found: error
 
   publish-test-results:
     name: "Publish Tests Results"
-    needs: unittest
-    runs-on: ${{ matrix.os }}
+    needs: [ matrix_prep, unittest ]
+    runs-on: ${{ matrix.runs_on }}
     if: ${{ false }}
     strategy:
       fail-fast: true
-      matrix:
-        os: [ macos-10.15, ubuntu-20.04, windows-2019 ]
+      matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
     steps:
       - name: Setup Python
         uses: actions/setup-python@v2

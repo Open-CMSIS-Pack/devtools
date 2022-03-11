@@ -1,12 +1,9 @@
 ### CMSIS Project Description ###
 
 project:
-  name: TestProject
   description: Project 1
   device: RteTest_ARMCM0
   compiler: AC6@6.16.0
-  packages:
-    - package: ARM::RteTest_DFP@0.1.1
   components:
     - component: Startup
   groups:

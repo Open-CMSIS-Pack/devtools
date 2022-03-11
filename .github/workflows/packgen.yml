@@ -14,34 +14,37 @@ on:
     types: [published]
 
 jobs:
+  matrix_prep:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+    - name: Check out repo
+      uses: actions/checkout@v2
+    - id: set-matrix
+      run: |
+        publicRepo=$(echo '${{ github.event.repository.private && 'privateRepo' || 'publicRepo' }}')
+        matrix=$(jq --arg publicRepo "$publicRepo" 'map(. | select((.runOn==$publicRepo) or (.runOn=="always")) )' matrix_includes_packgen.json)
+        echo ::set-output name=matrix::{\"include\":$(echo $matrix)}\"
+      working-directory: .github/
+
   build:
     if: ${{ github.event_name == 'pull_request' || (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/packgen/')) }}
-    runs-on: ${{ matrix.os }}
+    needs: matrix_prep
+    runs-on: ${{ matrix.runs_on }}
     timeout-minutes: 15
     strategy:
       fail-fast: true
-      matrix:
-        os: [ macos-10.15, ubuntu-20.04, windows-2019 ]
-        include:
-          - os: macos-10.15
-            target: darwin64
-            binary: packgen
-          - os: ubuntu-20.04
-            target: linux64
-            binary: packgen
-          - os: windows-2019
-            target: windows64
-            binary: packgen.exe
-
+      matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
     steps:
       - name: Install macos deps
-        if: ${{ startsWith(matrix.os, 'macos') }}
+        if: ${{ startsWith(matrix.runs_on, 'macos') }}
         run: |
           brew install \
             ninja
 
       - name: Install linux deps
-        if: ${{ startsWith(matrix.os, 'ubuntu') }}
+        if: ${{ startsWith(matrix.runs_on, 'ubuntu') }}
         run: |
           sudo apt update
           sudo apt-get install \
@@ -50,7 +53,7 @@ jobs:
             ninja-build
 
       - name: Install windows deps
-        if: ${{ startsWith(matrix.os, 'windows') }}
+        if: ${{ startsWith(matrix.runs_on, 'windows') }}
         run: choco install -y ninja
 
       - name: Checkout devtools
@@ -62,15 +65,15 @@ jobs:
         run: mkdir build
 
       - name: Configure windows build for amd64
-        if: ${{ startsWith(matrix.os, 'windows') }}
+        if: ${{ startsWith(matrix.runs_on, 'windows') }}
         uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: amd64
 
       - uses: ammaraskar/gcc-problem-matcher@master
-        if: ${{ startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu') }}
+        if: ${{ startsWith(matrix.runs_on, 'macos') || startsWith(matrix.runs_on, 'ubuntu') }}
       - uses: ammaraskar/msvc-problem-matcher@master
-        if: ${{ startsWith(matrix.os, 'windows') }}
+        if: ${{ startsWith(matrix.runs_on, 'windows') }}
 
       - name: Build packgen
         run: |
@@ -137,29 +140,21 @@ jobs:
 
   unittest:
     if: ${{ github.event_name == 'pull_request' || (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/packgen/')) }}
-    runs-on: ${{ matrix.os }}
+    needs: matrix_prep
+    runs-on: ${{ matrix.runs_on }}
     timeout-minutes: 15
     strategy:
       fail-fast: true
-      matrix:
-        os: [ macos-10.15, ubuntu-20.04, windows-2019 ]
-        include:
-          - os: macos-10.15
-            target: darwin64
-          - os: ubuntu-20.04
-            target: linux64
-          - os: windows-2019
-            target: windows64
-
+      matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
     steps:
       - name: Install macos deps
-        if: ${{ startsWith(matrix.os, 'macos') }}
+        if: ${{ startsWith(matrix.runs_on, 'macos') }}
         run: |
           brew install \
             ninja
 
       - name: Install linux deps
-        if: ${{ startsWith(matrix.os, 'ubuntu') }}
+        if: ${{ startsWith(matrix.runs_on, 'ubuntu') }}
         run: |
           sudo apt update
           sudo apt-get install \
@@ -168,7 +163,7 @@ jobs:
             ninja-build
 
       - name: Install windows deps
-        if: ${{ startsWith(matrix.os, 'windows') }}
+        if: ${{ startsWith(matrix.runs_on, 'windows') }}
         run: choco install -y ninja
 
       - name: Checkout devtools
@@ -180,15 +175,15 @@ jobs:
         run: mkdir build
 
       - name: Configure windows build for amd64
-        if: ${{ startsWith(matrix.os, 'windows') }}
+        if: ${{ startsWith(matrix.runs_on, 'windows') }}
         uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: amd64
 
       - uses: ammaraskar/gcc-problem-matcher@master
-        if: ${{ startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu') }}
+        if: ${{ startsWith(matrix.runs_on, 'macos') || startsWith(matrix.runs_on, 'ubuntu') }}
       - uses: ammaraskar/msvc-problem-matcher@master
-        if: ${{ startsWith(matrix.os, 'windows') }}
+        if: ${{ startsWith(matrix.runs_on, 'windows') }}
 
       - name: Build and run packgen unit tests
         run: |
@@ -211,4 +206,3 @@ jobs:
         with:
           check_name: "Packgen unit tests [${{ matrix.target }}]"
           report_paths: build/packgenunit_test_report.xml
-

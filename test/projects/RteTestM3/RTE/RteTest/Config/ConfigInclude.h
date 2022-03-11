@@ -1,0 +1,6 @@
+#ifndef CONFIG_INCLUDE_H
+#define CONFIG_INCLUDE_H
+
+#define CONFIG_INCLUDE
+
+#endif // CONFIG_INCLUDE_H

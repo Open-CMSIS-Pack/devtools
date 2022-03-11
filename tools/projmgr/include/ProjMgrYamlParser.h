@@ -24,11 +24,8 @@ static constexpr const char* YAML_COMPONENTS = "components";
 static constexpr const char* YAML_DEBUG = "debug";
 static constexpr const char* YAML_DEFINES = "defines";
 static constexpr const char* YAML_DELPATHS = "del-paths";
-static constexpr const char* YAML_DEPENDS = "depends";
 static constexpr const char* YAML_DESCRIPTION = "description";
 static constexpr const char* YAML_DEVICE = "device";
-static constexpr const char* YAML_RTEDIRS = "rtedirs";
-static constexpr const char* YAML_RTEDIR = "rtedir";
 static constexpr const char* YAML_ENDIAN = "endian";
 static constexpr const char* YAML_FILE = "file";
 static constexpr const char* YAML_FILES = "files";
@@ -51,8 +48,9 @@ static constexpr const char* YAML_NAME = "name";
 static constexpr const char* YAML_NOTFORTYPE = "not-for-type";
 static constexpr const char* YAML_OPTIMIZE = "optimize";
 static constexpr const char* YAML_OUTPUTTYPE = "output-type";
-static constexpr const char* YAML_PACKAGE = "package";
-static constexpr const char* YAML_PACKAGES = "packages";
+static constexpr const char* YAML_PACK = "pack";
+static constexpr const char* YAML_PACKS = "packs";
+static constexpr const char* YAML_PATH = "path";
 static constexpr const char* YAML_PROCESSOR = "processor";
 static constexpr const char* YAML_PROJECT = "project";
 static constexpr const char* YAML_PROJECTS = "projects";
@@ -83,26 +81,32 @@ public:
    * @brief parse csolution
    * @param input csolution.yml file
    * @param reference to store parsed csolution item
+   * @param checkSchema false to skip schema validation
   */
-  bool ParseCsolution(const std::string& input, CsolutionItem& csolution);
+  bool ParseCsolution(const std::string& input, CsolutionItem& csolution,
+    bool checkSchema);
 
   /**
    * @brief parse cproject
    * @param input cproject.yml file
    * @param reference to store parsed cproject item
+   * @param checkSchema false to skip schema validation
   */
-  bool ParseCproject(const std::string& input, CsolutionItem& csolution, std::map<std::string, CprojectItem>& cprojects, bool single);
+  bool ParseCproject(const std::string& input, CsolutionItem& csolution,
+    std::map<std::string, CprojectItem>& cprojects, bool single, bool checkSchema);
 
   /**
    * @brief parse clayer
    * @param input clayer.yml file
    * @param reference to store parsed clayer item
+   * @param checkSchema false to skip schema validation
   */
-  bool ParseClayer(const std::string& input, std::map<std::string, ClayerItem>& clayers);
+  bool ParseClayer(const std::string& input, std::map<std::string,
+    ClayerItem>& clayers, bool checkSchema);
 
 protected:
   void ParseMisc(const YAML::Node& parent, std::vector<MiscItem>& misc);
-  void ParsePackages(const YAML::Node& parent, std::vector<std::string>& packages);
+  void ParsePacks(const YAML::Node& parent, std::vector<PackItem>& packs);
   void ParseProcessor(const YAML::Node& parent, ProcessorItem& processor);
   void ParseString(const YAML::Node& parent, const std::string& key, std::string& value);
   void ParseString(YAML::Node node, std::string& value);
@@ -114,7 +118,6 @@ protected:
   void ParseBuildTypes(const YAML::Node& parent, std::map<std::string, BuildType>& buildTypes);
   void ParseTargetTypes(const YAML::Node& parent, std::map<std::string, TargetType>& targetTypes);
   bool ParseContexts(const YAML::Node& parent, CsolutionItem& contexts);
-  bool ParseRteDirs(const YAML::Node& parent, std::vector<RteDirItem>& dirs);
   bool ParseComponents(const YAML::Node& parent, std::vector<ComponentItem>& components);
   bool ParseFiles(const YAML::Node& parent, std::vector<FileNode>& files);
   bool ParseGroups(const YAML::Node& parent, std::vector<GroupNode>& groups);

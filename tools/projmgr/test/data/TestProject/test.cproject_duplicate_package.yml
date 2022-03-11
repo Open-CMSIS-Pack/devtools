@@ -9,7 +9,7 @@ project:
     endian: little
     trustzone: non-secure
   packages:
-    - package: ARM::RteTest_DFP@0.1.1
+    - package: ARM::RteTest_DFP@0.2.0
     - package: ARM::RteTest_DFP
   components:
     - component: Startup
