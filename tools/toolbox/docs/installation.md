@@ -8,44 +8,13 @@ Content:
   - [Installation](#installation)
   - [Usage](#usage)
   - [Configuration](#configuration)
-<<<<<<< Updated upstream
-    - [Work with VS Code](#work-with-vs-code)
-  
-## Introduction
-
-To install the CMSIS-Toolbox a bash environment is required. install for example [git for Windows](https://gitforwindows.org). Call from the bash prompt:
-
-```
-./cmsis-toolbox_0.9.0.sh
-```
-
-## Usage
-
-The `cmsis-toolbox.sh` provides an interactive mode when invoked without parameters, but aso the following options:
-
-```
-Usage:
-  cmsis-toolbox_0.9.0.sh [<option>]
-
-  -h           : Print out version and usage
-  -v           : Print out version, timestamp and git hash
-  -x [<dir>]   : Extract full content into optional directory
-```
-
-Below the manual setup of the CMSIS-Toolbox is explained. The command below installs the tools into the directory `./ctools`.
-```
-./cmsis-toolbox.sh -x ./ctools
-```
-
-=======
     - [./etc/setup](#etcsetup)
       - [Git Bash Setup](#git-bash-setup)
       - [Windows Command Line Setup](#windows-command-line-setup)
     - [./etc/setup/\*.cmake](#etcsetupcmake)
-    - [Using VS Code](#using-vs-code)
-    - [Get Started](#get-started)
+  - [Using VS Code](#using-vs-code)
+  - [Get Started](#get-started)
   
->>>>>>> Stashed changes
 ## Requirements
 
 The CMSIS-Toolbox uses the CMake build system with a Ninja backend.
@@ -111,8 +80,6 @@ Below the manual setup of the CMSIS-Toolbox is explained. The command below inst
 
 For the manual installation described above the configuration setup is as follows:
 
-<<<<<<< Updated upstream
-=======
 ### ./etc/setup
 
 In file `<cmsis-toolbox-installation-dir>/etc/setup` the paths to the central pack directory (`CMSIS_PACK_ROOT`), the compiler definition files (`CMSIS_COMPILER_ROOT`), and the binaries (`CMSIS_BUILD_ROOT`) are defined.
@@ -131,8 +98,6 @@ In a bash environment the following command configures the environment:
 source <cmsis-toolbox-installation-dir>/etc/setup
 ```
 
-
-
 #### Windows Command Line Setup
 
 For Windows use the **System Properties** dialog and add the following **Environment Variables**:
@@ -146,12 +111,8 @@ Path                 | Add the path to the CMSIS-Toolbox 'bin' directory (i.e. C
 ### ./etc/setup/\*.cmake
 
 The supported of the various toolchains is defined by `*.cmake` files in the directory `<cmsis-toolbox-installation-dir>/etc/setup`. The filenames have the following format:
->>>>>>> Stashed changes
 
 
-<<<<<<< Updated upstream
-### Work with VS Code
-=======
 > Note: The filenames reflect the available compiler versions on the host system.  There may be multiple files for each compiler to support different versions, for example `AC6.6.16.0.cmake` and `AC6.6.18.0.cmake`.
 
 Each of this `*.cmake` files define the path (`TOOLCHAIN_ROOT`) to the toolchain binaries, the file extension (`EXT`) of the executable binaries, and other compiler related parameters for the invocation. Edit the files to reflect the path as shown in the example (for `AC6`) below:
@@ -163,8 +124,7 @@ set(TOOLCHAIN_ROOT "C:/Keil/ARM/ARMCLANG/bin")
 set(EXT .exe)
 ```
 
-### Using VS Code 
->>>>>>> Stashed changes
+## Using VS Code 
 
 VS Code is an effective environment to create CMSIS-based projects.  As [**csolution**](../../projmgr/docs/Manual/Overview.md) files are in YAML format, it is recommended to install:
 
@@ -175,14 +135,8 @@ To work with the **CMSIS-Toolbox** in VS Code use:
 - **Terminal - New Terminal** to open a terminal window, you may chose as profile `bash`, `powershell`, or `Command prompt`.
 
 - In the **Terminal** window enter the following command:
-<<<<<<< Updated upstream
-```
-source <cmsis-toolbox-installation-dir>/etc/setup
-```
-=======
 
-### Get Started
->>>>>>> Stashed changes
+## Get Started
 
 To create a new [**csolution**](projmgr/docs/Manual/Overview.md) based CMSIS project in VS Code:
 
