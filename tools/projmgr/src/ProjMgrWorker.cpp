@@ -644,29 +644,20 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
       }
     }
 
-    // Multiple matches, select component without variant name if it's unique
+    // Multiple matches, check exact partial identifier
     if (filteredComponents.size() > 1) {
-      string previousAggregateComponentId, uniqueVariantId;
+      RteComponentMap matchedComponents;
       for (const auto& [id, component] : filteredComponents) {
-        // check uniqueness of component aggregates
-        const string aggregateComponentId = ProjMgrUtils::GetComponentAggregateID(component);
-        if (!previousAggregateComponentId.empty() && (previousAggregateComponentId != aggregateComponentId)) {
-          uniqueVariantId.clear();
-          break;
-        }
-        previousAggregateComponentId = aggregateComponentId;
-        // check uniqueness of component without variant name
-        if (component->GetCvariantName().empty()) {
-          if (uniqueVariantId.empty()) {
-            uniqueVariantId = id;
-          } else {
-            uniqueVariantId.clear();
-            break;
-          }
+        // Get component id without vendor and version
+        const string& componentId = ProjMgrUtils::GetPartialComponentID(component);
+        const string& requiredComponentId = RteUtils::RemovePrefixByString(item.component, ProjMgrUtils::SUFFIX_CVENDOR);
+        if (requiredComponentId.compare(componentId) == 0) {
+          matchedComponents[id] = component;
         }
       }
-      if (!uniqueVariantId.empty()) {
-        filteredComponents = {{ uniqueVariantId, filteredComponents[uniqueVariantId] }};
+      // Select unique exact match
+      if (matchedComponents.size() == 1) {
+        filteredComponents = matchedComponents;
       }
     }
 

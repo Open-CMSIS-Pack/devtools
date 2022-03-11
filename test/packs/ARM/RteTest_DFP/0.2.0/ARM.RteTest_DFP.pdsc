@@ -328,9 +328,16 @@
         <file category="header"  name="Device/ARM/ARMCM0/Include/ARMCM0.h"/>
       </files>
     </component>
-   
+
     <component Cclass="Device" Cgroup="Test variant" Cvariant="Variant name" Cversion="1.1.1" condition="ARMCM0 RteTest">
       <description>Test variant with variant name</description>
+      <files>
+        <file category="header"  name="Device/ARM/ARMCM0/Include/ARMCM0.h"/>
+      </files>
+    </component>
+
+    <component Cclass="Device" Cgroup="Test variant" Csub="Sub" Cvariant="" Cversion="1.1.1" condition="ARMCM0 RteTest">
+      <description>Test variant with Csub</description>
       <files>
         <file category="header"  name="Device/ARM/ARMCM0/Include/ARMCM0.h"/>
       </files>
