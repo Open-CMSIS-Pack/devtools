@@ -58,6 +58,13 @@ public:
   static std::string GetComponentAggregateID(const RteItem* component);
 
   /**
+   * @brief get partial component identifier (without vendor and version)
+   * @param rte component
+   * @return string partial component identifier
+  */
+  static std::string GetPartialComponentID(const RteItem* component);
+
+  /**
    * @brief get fully specified package identifier
    * @param rte package
    * @return string package identifier

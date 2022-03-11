@@ -4,7 +4,7 @@ project:
   device: RteTest_ARMCM0
   compiler: AC6@6.16.0
   components:
-    - component: ARM::Device:Test variant
+    - component: Device:Test variant 2
     - component: CORE
   groups:
     - group: Sources

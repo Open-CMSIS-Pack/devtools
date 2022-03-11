@@ -130,6 +130,7 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessComponents_Cvariant1) {
   };
   ProjMgrParser parser;
   ContextDesc descriptor;
+  // Test exact partial component identifier match without Cvendor
   const string& filename = testinput_folder + "/TestProject/test_component_variant1.cproject.yml";
   EXPECT_TRUE(parser.ParseCproject(filename, true));
   EXPECT_TRUE(AddContexts(parser, descriptor, filename));
@@ -149,9 +150,36 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessComponents_Cvariant1) {
 }
 
 TEST_F(ProjMgrWorkerUnitTests, ProcessComponents_Cvariant2) {
+  set<string> expected = {
+    "ARM::Device:Test variant@1.1.1",
+    "ARM::RteTest:CORE@0.1.1",
+  };
   ProjMgrParser parser;
   ContextDesc descriptor;
+  // Test exact partial component identifier match with Cvendor
   const string& filename = testinput_folder + "/TestProject/test_component_variant2.cproject.yml";
+  EXPECT_TRUE(parser.ParseCproject(filename, true));
+  EXPECT_TRUE(AddContexts(parser, descriptor, filename));
+  map<string, ContextItem>* contexts;
+  GetContexts(contexts);
+  ContextItem context = contexts->begin()->second;
+  EXPECT_TRUE(LoadPacks());
+  EXPECT_TRUE(ProcessPrecedences(context));
+  EXPECT_TRUE(ProcessDevice(context));
+  EXPECT_TRUE(SetTargetAttributes(context, context.targetAttributes));
+  EXPECT_TRUE(ProcessComponents(context));
+  ASSERT_EQ(expected.size(), context.components.size());
+  auto it = context.components.begin();
+  for (const auto& expectedComponent : expected) {
+    EXPECT_EQ(expectedComponent, (*it++).first);
+  }
+}
+
+TEST_F(ProjMgrWorkerUnitTests, ProcessComponents_MultipleMatches1) {
+  ProjMgrParser parser;
+  ContextDesc descriptor;
+  // Test multiple component identifier matches, different versions
+  const string& filename = testinput_folder + "/TestProject/test_component_multiple_matches1.cproject.yml";
   EXPECT_TRUE(parser.ParseCproject(filename, true));
   EXPECT_TRUE(AddContexts(parser, descriptor, filename));
   map<string, ContextItem>* contexts;
@@ -164,10 +192,11 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessComponents_Cvariant2) {
   EXPECT_FALSE(ProcessComponents(context));
 }
 
-TEST_F(ProjMgrWorkerUnitTests, ProcessComponents_Cvariant3) {
+TEST_F(ProjMgrWorkerUnitTests, ProcessComponents_MultipleMatches2) {
   ProjMgrParser parser;
   ContextDesc descriptor;
-  const string& filename = testinput_folder + "/TestProject/test_component_variant3.cproject.yml";
+  // Test multiple component identifier matches
+  const string& filename = testinput_folder + "/TestProject/test_component_multiple_matches2.cproject.yml";
   EXPECT_TRUE(parser.ParseCproject(filename, true));
   EXPECT_TRUE(AddContexts(parser, descriptor, filename));
   map<string, ContextItem>* contexts;

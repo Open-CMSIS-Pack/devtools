@@ -63,6 +63,20 @@ string ProjMgrUtils::GetComponentAggregateID(const RteItem* component) {
   return ConstructID(elements);
 }
 
+string ProjMgrUtils::GetPartialComponentID(const RteItem* component) {
+  if (!component) {
+    return RteUtils::EMPTY_STRING;
+  }
+  const vector<pair<const char*, const string&>> elements = {
+    {"",              component->GetCclassName()},
+    {PREFIX_CBUNDLE,  component->GetCbundleName()},
+    {PREFIX_CGROUP,   component->GetCgroupName()},
+    {PREFIX_CSUB,     component->GetCsubName()},
+    {PREFIX_CVARIANT, component->GetCvariantName()},
+  };
+  return ConstructID(elements);
+}
+
 string ProjMgrUtils::GetPackageID(const RteItem* pack) {
   if (!pack) {
     return RteUtils::EMPTY_STRING;
