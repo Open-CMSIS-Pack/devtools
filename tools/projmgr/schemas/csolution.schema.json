@@ -6,8 +6,8 @@
   "properties": {
     "solution": {
       "$ref": "./common.schema.json#/definitions/SolutionDescType"
-    }
+    },
+    "additionalProperties": false
   },
-  "additionalProperties": false,
   "required": [ "solution" ]
 }

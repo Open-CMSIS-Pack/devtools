@@ -6,8 +6,8 @@
   "properties": {
     "project": {
       "$ref": "./common.schema.json#/definitions/ProjectDescType"
-    }
+    },
+    "additionalProperties": false
   },
-  "additionalProperties": false,
   "required": [ "project" ]
 }
