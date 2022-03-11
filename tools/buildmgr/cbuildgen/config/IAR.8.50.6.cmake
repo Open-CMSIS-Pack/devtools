@@ -1,5 +1,3 @@
-# Version: 0.10.4
-# Date: 2022-01-21
 # This file maps the CMSIS project options to toolchain settings.
 #
 #   - Applies to toolchain: IAR ARM C/C++ Compiler V8.50.6

@@ -94,8 +94,6 @@ product variant). The user is required to update the these settings after instal
 <b>Example file: ./cbuild/etc/AC6.6.16.0.cmake</b>
 
 \code
-# Version: 0.10.5
-# Date: 2022-03-10
 # This file maps the CMSIS project options to toolchain settings.
 #
 #   - Applies to toolchain: Arm Compiler 6.16.0
