@@ -24,6 +24,9 @@ on:
 
 jobs:
   matrix_prep:
+    if: |
+        (github.event_name == 'pull_request') ||
+        (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/buildmgr/'))
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
@@ -38,7 +41,6 @@ jobs:
       working-directory: .github/
 
   build:
-    if: ${{ github.event_name == 'pull_request' || (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/buildmgr/')) }}
     needs: matrix_prep
     runs-on: ${{ matrix.runs_on }}
     timeout-minutes: 15
@@ -107,7 +109,10 @@ jobs:
           if-no-files-found: error
 
   docs:
-    if: ${{ github.event_name == 'pull_request'  || github.event_name == 'push' || (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/buildmgr/')) }}
+    if: |
+        (github.event_name == 'pull_request') ||
+        (github.event_name == 'push') ||
+        (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/buildmgr/'))
     runs-on: ubuntu-20.04
     timeout-minutes: 5
     steps:
