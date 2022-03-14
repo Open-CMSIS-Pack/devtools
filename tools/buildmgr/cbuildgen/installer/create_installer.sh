@@ -69,7 +69,7 @@ cp -R ../config/. ${distdir}/etc
 cp ../../docs/LICENSE.txt ${distdir}
 
 # Get cpackget
-cpackget_version="0.3.0"
+cpackget_version="0.3.1"
 cpackget_base=https://github.com/Open-CMSIS-Pack/cpackget/releases/download/v${cpackget_version}/cpackget_${cpackget_version}
 curl --retry 3 -L ${cpackget_base}_windows_amd64.zip   -o temp.zip && unzip -p temp.zip '*/cpackget.exe' > ${distdir}/bin/cpackget.exe && rm temp.zip
 curl --retry 3 -L ${cpackget_base}_linux_amd64.tar.gz  -o - | tar xzfO - --wildcards    '*cpackget'     > ${distdir}/bin/cpackget.lin
