@@ -1,41 +1,13 @@
-# CMSIS Project Manager (Users Manual - Draft)
-
-The **CSolution Project Manager** processes **User Input Files** (in YML format) and **Software Packs** (in Open-CMSIS-Pack format) to create self-contained CMSIS-Build input files that allow to generate  independent projects which may be a part of a more complex application.
-
-The **CSolution Project Manager** supports the user with the following features:
-
-- Access to the content of software packs in Open-CMSIS-Pack format to:
-  - Setup the tool chain based on a *Device* or *Board* that is defined in the CMSIS-Packs.
-  - Add software components that are provided in the various software packs to the application.
-- Organize applications (with a `*.csolution.yml` file) into projects that are independently managed (using `*.cproject.yml` files).
-- Manage the resources (memory, peripherals, and user defined) across the entire application to:
-  - Partition the resources of the system and create related system and linker configuration.
-  - Support in the configuration of software stacks (such as RTOS threads).
-  - Hint the user for inclusion of software layers that are pre-configured for typical use cases.
-- Organize software layers (with a `*.clayer.yml` file) that enable code reuse across similar applications.
-- Manage multiple hardware targets to allow application deployment to different hardware (test board, production hardware, etc.).
-- Manage multiple build types to support software verification (debug build, test build, release build, ect.)
-- Support multiple compiler toolchains (GCC, LLVM, Arm Compiler 6, IAR, etc.) for project deployment.
-
-**Note:**
-
-- The **CSolution Project Manager** is currently under development and part of the **[Open-CMSIS-Pack](https://www.open-cmsis-pack.org/index.html)** open source project.
-
-Manual Chapters                          | Content
-:----------------------------------------|:-------------------------
-[Usage](#usage)                          | Overall Concept, tool setup, and invocation commands
-[Project Examples](#project-examples)    | Various example projects to get started
-[Project Structure](#project-structure)  | Directory structure of the projects
-[YML Input Format](YML-Format.md)        | Format of the various YML input files.
+# csolution: CMSIS Project Manager (Users Manual - Draft)
 
 **Table of Contents**
 
-- [CMSIS Project Manager (Users Manual - Draft)](#cmsis-project-manager-users-manual---draft)
+- [csolution: CMSIS Project Manager (Users Manual - Draft)](#csolution-cmsis-project-manager-users-manual---draft)
   - [Revision History](#revision-history)
-- [Usage](#usage)
-  - [Overview of Operation](#overview-of-operation)
-  - [Requirements](#requirements)
-  - [Invocation](#invocation)
+- [Overview of Operation](#overview-of-operation)
+  - [Usage](#usage)
+    - [Requirements](#requirements)
+    - [Invocation](#invocation)
     - [Commands](#commands)
 - [Project Examples](#project-examples)
   - [Minimal Project Setup](#minimal-project-setup)
@@ -52,11 +24,18 @@ Manual Chapters                          | Content
 - [Proposals](#proposals)
   - [Output versions to *.cprj](#output-versions-to-cprj)
   - [CMSIS-Zone Integration](#cmsis-zone-integration)
-  - [Layer Interface Defintions](#layer-interface-defintions)
+  - [Layer Interface Definitions](#layer-interface-definitions)
   - [CMSIS-Pack extensions](#cmsis-pack-extensions)
     - [Board condition](#board-condition)
     - [Layers in packs](#layers-in-packs)
 - [Schema](#schema)
+
+Manual Chapters                          | Content
+:----------------------------------------|:-------------------------
+[Usage](#usage)                          | Overall Concept, tool setup, and invocation commands
+[Project Examples](#project-examples)    | Various example projects to get started
+[Project Structure](#project-structure)  | Directory structure of the projects
+[YML Input Format](YML-Format.md)        | Format of the various YML input files.
 
 ## Revision History
 
@@ -64,11 +43,28 @@ Version            | Description
 :------------------|:-------------------------
 Draft              | Work in progress
 
-# Usage
+# Overview of Operation
 
-The  **CMSIS Project Manager** is a command line utility that is available for different operating systems.  
+The **csolution - CMSIS Project Manager** processes **User Input Files** (in YML format) and **Software Packs** (in Open-CMSIS-Pack format) to create self-contained CMSIS-Build input files that allow to generate independent projects which may be a part of a more complex application.
 
-## Overview of Operation
+The **csolution - CMSIS Project Manager** supports the user with the following features:
+
+
+- Access to the content of software packs in Open-CMSIS-Pack format to:
+  - Setup the tool chain based on a *Device* or *Board* that is defined in the CMSIS-Packs.
+  - Add software components that are provided in the various software packs to the application.
+- Organize applications (with a `*.csolution.yml` file) into projects that are independently managed (using `*.cproject.yml` files).
+- Manage the resources (memory, peripherals, and user defined) across the entire application to:
+  - Partition the resources of the system and create related system and linker configuration.
+  - Support in the configuration of software stacks (such as RTOS threads).
+  - Hint the user for inclusion of software layers that are pre-configured for typical use cases.
+- Organize software layers (with a `*.clayer.yml` file) that enable code reuse across similar applications.
+- Manage multiple hardware targets to allow application deployment to different hardware (test board, production hardware, etc.).
+- Manage multiple build types to support software verification (debug build, test build, release build, ect.)
+- Support multiple compiler toolchains (GCC, LLVM, Arm Compiler 6, IAR, etc.) for project deployment.
+
+> Note: The **csolution - CMSIS Project Manager** is currently under development and part of the **[Open-CMSIS-Pack](https://www.open-cmsis-pack.org/index.html)** open source project.
+
 
 ![Overview](./images/Overview.png "Overview")
 
@@ -85,7 +81,7 @@ Input Files              | Used for....
 *.cproject.yml           | ... \[step 3\] content of an independent build (linker run) - directly relates to a *.cprj file.
 *.clayer.yml             | ... \[step 4\] set of source files along with pre-configured components for reuse in different applications.
 
-**Note**: The values \[*step n*\] indicate the order of processing of the user input files.
+> Note: The values \[*step n*\] indicate the order of processing of the user input files.
 
 Output Files             | Used for....
 :------------------------|:---------------------------------
@@ -93,7 +89,11 @@ Output Files             | Used for....
 Run-Time Environment (RTE)  | ... contains the user configured files of a project along with RTE_Components.h inventory file.
 [Project Resource Files *.fzone](https://arm-software.github.io/CMSIS_5/Zone/html/GenDataModel.html)     | ... resource and partition data structure for template based code generators.
 
-## Requirements
+
+
+## Usage
+
+### Requirements
 
 The CMSIS Pack repository must be present in the development environment.
 
@@ -102,7 +102,7 @@ The CMSIS Pack repository must be present in the development environment.
 - Before running `csolution` the location of the pack repository shall be set via the environment variable
 `CMSIS_PACK_ROOT` otherwise its default location (todo what is the default?) will be taken.
 
-## Invocation
+### Invocation
 
 ```text
 CMSIS Project Manager 0.0.0+g23b6f99 (C) 2022 ARM 
@@ -471,10 +471,9 @@ Source Directory                    | Content
 `./<project>/Layer+<target>/<name>` | `*.clayer.yml` and related source files of a layers that are specific to a target have a specific directory.
 `./<project>/Layer/<name>`          | `*.clayer.yml` and related source files of a layers that are common to all targets may have a common directory.
 
-**Notes:**
-
-- `./<project>/RTE+<target>` contains the *.cprj file that is generated by `CSolution`
-- Directory names `RTE` and `Layer` should become configurable.  ToDo: analyze impact.
+> Notes:
+> - `./<project>/RTE+<target>` contains the *.cprj file that is generated by `CSolution`
+> - Directory names `RTE` and `Layer` should become configurable.  ToDo: analyze impact.
 
 The `./RTE` directory structure is maintained by tools and has the following structure. You should not modify the structure of this directory.
 
@@ -490,8 +489,28 @@ Output Directory                              | Content
 `./<project>/Output+<target>`                 | Contains the final binary and symbol files of a project. Each `build-type` shares the same output directory.
 `./<project>/.Interim+<target>/.<build-type>` | Contains interim files (`*.o`, `*.lst`) fore each `build-type`
 
-**Note:**
-- The content of the `Output` directory is generated by the `CBuild` step.
+> Note: The content of the `Output` directory is generated by the `CBuild` step.
+
+## Support for unnamed *.yml files
+
+It is possible to use named and unnamed `*.csolution.yml` and `*.cproject.yml` files. If an explicit name is omitted, the name of the directory is used. However it is possible to overwrite the directory name with an explicit filename.
+
+**Example:**
+```c
+./blinky/cproject.yml                     // project name: "blinky"
+./blinky/blinky-test.cproject.yml         // project name: "blinky-test"
+```
+
+A solution template skeleton may be provided as shown below. The benefit is that renaming of the directory names changes also the project and solution names.
+
+```c
+./                                        // root directory of a workspace
+./cdefaults.yml                           // contains the "cdefaults.yml" file
+./MySolution                              // the current directory used for invoking "CSolution"
+./MySolution/csolution.yml                // unnamed "csolution.yml" file is the default input file
+./MySolution/blinky                       // project directory for project "blinky"
+./MySolution/blinky/cproject.yml          // unnamed "cproject.yml" that obtains the project name from directory name
+```
 
 ## Support for unnamed *.yml files
 
@@ -600,6 +619,7 @@ The file `./RTE/RTE_Components.h` is automatically created by the CMSIS Project 
 ```
 
 The typical usage of the `RTE_Components.h` file is in header files to control the inclusion of files that are related to other components of the same Software Pack.
+
 ```c
 #include "RTE_Components.h"
 #include  CMSIS_device_header
@@ -623,9 +643,9 @@ The ProjMgr should always generate *.cprj files that contain version information
 
 Suggest to split this into two sections:
 
- - `resources:` to define the execution phases, memory regions and region splits, and peripherals.  This section would be in the `csolution.yml` file. 
+- `resources:` to define the execution phases, memory regions and region splits, and peripherals.  This section would be in the `csolution.yml` file.
 
- - `requirements:` to define project requirements - effectively the partitioning of a system. It should be possible to assign to the application all remaining resources.
+- `requirements:` to define project requirements - effectively the partitioning of a system. It should be possible to assign to the application all remaining resources.
 
 Add to the project the possibility to specify .  The issue might be that the project files become overwhelming, alternative is to keep partitioning in separate files.
 
@@ -646,12 +666,12 @@ resources:
         phase: Boot      # region life-time (should allow to specify multiple phases)
         size: 128k
     
-  peripherals:           # specifies the requried peripherals
+  peripherals:           # specifies the required peripherals
     - peripheral: I2C0
       permission: rw, s
 ```
 
-## Layer Interface Defintions
+## Layer Interface Definitions
 
 A software layer could specify the interfaces that it provides.  The interface specification indicates also the configuration of the layer.  Issue might be that a standardization across the industry is required.
 
