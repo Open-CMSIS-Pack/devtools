@@ -149,31 +149,32 @@ jobs:
           if-no-files-found: error
 
       - name: Archive documentation
-        if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/buildmgr/')) }}
+        if: ${{ github.event_name == 'push' || github.event_name == 'release' }}
         run: tar -cvjf /tmp/doc.tbz2 .
         working-directory: ./build/tools/buildmgr/docs/doxygen/output/html/
 
       - uses: actions/checkout@v2
-        if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/buildmgr/')) }}
+        if: ${{ github.event_name == 'push' || github.event_name == 'release' }}
         with:
           ref: gh-pages
 
       - name: Publish main branch documentation
-        if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
+        if: ${{ !github.event.repository.private && github.event_name == 'push' }}
         run: |
-          rm -rf buildmgr/main
-          mkdir -p buildmgr/main
-          pushd buildmgr/main
+          BRANCH=${GITHUB_REF##refs/heads/}
+          rm -rf buildmgr/${BRANCH}
+          mkdir -p buildmgr/${BRANCH}
+          pushd buildmgr/${BRANCH}
           tar -xvjf /tmp/doc.tbz2
           popd
           git config user.name github-actions
           git config user.email github-actions@github.com
-          git add buildmgr/main
+          git add buildmgr/${BRANCH}
           git commit -m "Update buildmgr main branch documentation"
           git push
 
       - name: Publish release documentation
-        if: ${{ (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/buildmgr/')) }}
+        if: ${{ !github.event.repository.private && github.event_name == 'release' }}
         run: |
           VERSION=$(git show-ref ${{ github.ref }} | awk -F/ '{print $NF}')
           rm -rf buildmgr/${VERSION}
