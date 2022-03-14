@@ -3,5 +3,5 @@ function writeHeader() {
 };
 
 function writeFooter()  {
-    document.write('Generated on 2022-03-11T14:44:54Z for CMSIS-Build 0.10.5 by Arm Ltd. All rights reserved.');
+    document.write('Generated on 2022-03-14T12:14:46Z for CMSIS-Build 0.10.5 by Arm Ltd. All rights reserved.');
 };
