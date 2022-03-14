@@ -4,7 +4,7 @@ The **CMSIS-Toolbox** provides command-line tools that provide the foundation fo
 
 **Package creation** and validation:
 
-- [**packgen**](packgen/docs/packgen.md): create a software pack from a `Cmake` based software repository
+- [**packgen**](packgen/docs/packgen.md): create a software pack from a `CMake` based software repository
 - [**packchk**](packchk/docs/packchk.md): semantic validation of a software pack description and the archive content
 
 **Package management** including discovery of components, devices, boards and examples:

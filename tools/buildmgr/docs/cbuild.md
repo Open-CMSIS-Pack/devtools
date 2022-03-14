@@ -1,35 +1,43 @@
-# Build invocation with cbuild
+# cbuild: Build invocation
 
-The cbuild.sh shell script implements the build flow by chaining the utilities [cbuildgen](https://github.com/Open-CMSIS-Pack/devtools/tree/main/tools/buildmgr/cbuildgen) and CMake. It replicates the build steps of CMSIS-Pack aware IDEs and also copies configuration files from packs if necessary. The script can be adopted to project specific requirements or replaced by a custom implementation (for example a Python script).
+**cbuild.sh** implements the build flow by chaining the utilities cbuildgen and CMake. It replicates the build steps of CMSIS-Pack aware IDEs and also copies configuration files from packs if necessary. The script can be adopted to project specific requirements or replaced by a custom implementation (for example a Python script).
 
-The build flow of the `cbuild`:
+The build flow of the cbuild.sh script is:
 
-1. Call [cbuildgen](https://github.com/Open-CMSIS-Pack/devtools/tree/main/tools/buildmgr/cbuildgen) with command `packlist` to list the URLs of missing software packs.
-1. Call [cpackget](https://github.com/Open-CMSIS-Pack/cpackget) to download and install missing software packs.
-1. Call [cbuildgen](https://github.com/Open-CMSIS-Pack/devtools/tree/main/tools/buildmgr/cbuildgen) with command `cmake` to generate a CMakeLists.txt file (if `--cmake` is specified).
-1. Call `cmake` to compile the project source code into the binary image using the specified `<BuildSystem>`.
+- Call cbuildgen with command packlist to list the URLs of missing software packs.
+- Call cgetpack to download and install missing software packs.
+- Call cbuildgen with command CMake to generate a CMakeLists.txt file.
+- Call cmake to compile the project source code into the binary image using the specified <BuildSystem>.
 
 ## Usage
 
-```
-(cbuild.sh): Build Invocation 0.10.4 (C) 2021 ARM
-Usage:
-  cbuild.sh <ProjectFile>.cprj
-  [--toolchain=<Toolchain> --outdir=<OutDir> --intdir=<IntDir> <CMakeTarget>]
+**cbuild.sh** is called from the Bash command line with the following syntax:
 
-  <ProjectFile>.cprj      : CMSIS Project Description input file
-  --toolchain=<Toolchain> : select the toolchain
-  --intdir=<IntDir>       : set intermediate directory
-  --outdir=<OutDir>       : set output directory
-  --quiet                 : suppress output messages except build invocations
-  --clean                 : remove intermediate and output directories
-  --update=<CprjFile>     : generate <CprjFile> for reproducing current build
-  --help                  : launch documentation and exit
-  --log=<LogFile>         : save output messages in a log file
-  --jobs=<N>              : number of job slots for parallel execution
-  --cmake[=<BuildSystem>] : select build system, default <BuildSystem>=Ninja
-  <CMakeTarget>           : optional CMake target name
 ```
+$ cbuild.sh <ProjectFile>.cprj [--toolchain=<Toolchain> --outdir=<OutDir> --intdir=<IntDir> --update=<CprjFile> --jobs=<N> --log=<LogFile> --quiet <CMakeTarget>]
+```
+
+Where:
+
+cbuild.sh is the name of the script.
+
+<ProjectFile> specifies the project file in CMSIS project format.
+
+**Operation**
+
+| Option | Description |
+|--------|-------------|
+| --toolchain=<Toolchain> | Specifies the selected toolchain for projects that support multiple compilers. |
+| --outdir=<OutDir> | Specifies the output directory (for log files, binaries, and map files). |
+| --intdir=<IntDir> | Specifies the directory for intermediate files (such as generated CMake files, list of missing packs, command files, object files, and dependency files). |
+| --quiet | Suppresses output messages except build invocations. |
+| --clean | Removes intermediate and output directories. |
+| --update=<CprjFile> | Generates <CprjFile> with fixed versions for reproducing the current build. |
+| --help | Opens this documentation. |
+| --log=<LogFile> | Saves output messages in a log file. |
+| --jobs=<N> | Specifies the number of job slots for the underlying build system parallel execution (minimum 1). |
+| [–cmake=<BuildSystem>] | Selects the build system, default Ninja. |
+| \<CMakeTarget\> | Specifies the <target> option for CMake. |
 
 ## Example
 
@@ -68,7 +76,3 @@ cbuild.sh finished successfully!
 | ERROR | cmake `${output}${project}.cprj` failed!               | Check CMake error messages.         |
 | INFO  | cbuild.sh finished successfully!                       | For information only.               |
 
-## Revision History
-| Version  | Description
-|:---------|:----------------------------------------
-| 0.10.4   | Release for alpha review

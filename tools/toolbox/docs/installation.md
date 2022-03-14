@@ -52,7 +52,7 @@ The CMSIS-Toolbox works with the following toolchains. Install one or more toolc
 
 >Note: Before installation, ensure that the required tools listed above are installed.
 
-To install the CMSIS-Toolbox a bash environment is required. install for example [git for Windows](https://gitforwindows.org). Call from the bash prompt:
+To install the CMSIS-Toolbox a bash environment is required. Install for example [git for Windows](https://gitforwindows.org). Call from the bash prompt:
 
 ```txt
 ./cmsis-toolbox.sh
@@ -106,16 +106,16 @@ Variable             | Value
 :--------------------|:---------------
 CMSIS_PACK_ROOT      | Path to the central CMSIS-Pack folder (i.e. C:\Keil\ARM\PACK)
 CMSIS_COMPILER_ROOT  | Path to the CMSIS-Toolbox 'etc' directory (i.e. C:\ctools\etc)
-Path                 | Add the path to the CMSIS-Toolbox 'bin' directory (i.e. C:\ctools\bin)
+Path                 | Add to the system path to the CMSIS-Toolbox 'bin' directory (i.e. C:\ctools\bin)
 
 ### ./etc/setup/\*.cmake
 
-The supported of the various toolchains is defined by `*.cmake` files in the directory `<cmsis-toolbox-installation-dir>/etc/setup`. The filenames have the following format:
+The support of the various toolchains is defined by `*.cmake` files in the directory `<cmsis-toolbox-installation-dir>/etc/setup`. The filenames have the following format:
 
 
 > Note: The filenames reflect the available compiler versions on the host system.  There may be multiple files for each compiler to support different versions, for example `AC6.6.16.0.cmake` and `AC6.6.18.0.cmake`.
 
-Each of this `*.cmake` files define the path (`TOOLCHAIN_ROOT`) to the toolchain binaries, the file extension (`EXT`) of the executable binaries, and other compiler related parameters for the invocation. Edit the files to reflect the path as shown in the example (for `AC6`) below:
+Each of these `*.cmake` files defines the path (`TOOLCHAIN_ROOT`) to the toolchain binaries, the file extension (`EXT`) of the executable binaries, and other compiler related parameters for the invocation. Edit the files to reflect the path as shown in the example (for `AC6`) below:
 
 ```txt
 ############### EDIT BELOW ###############
@@ -132,7 +132,7 @@ VS Code is an effective environment to create CMSIS-based projects.  As [**csolu
 
 To work with the **CMSIS-Toolbox** in VS Code use:
 
-- **Terminal - New Terminal** to open a terminal window, you may chose as profile `bash`, `powershell`, or `Command prompt`.
+- **Terminal - New Terminal** to open a terminal window, you may choose as profile `bash`, `powershell`, or `Command prompt`.
 
 - In the **Terminal** window enter the following command:
 
