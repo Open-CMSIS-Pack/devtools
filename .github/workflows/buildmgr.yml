@@ -163,11 +163,12 @@ jobs:
         run: |
           rm -rf buildmgr/main
           mkdir -p buildmgr/main
-          cd buildmgr/main
+          pushd buildmgr/main
           tar -xvjf /tmp/doc.tbz2
+          popd
           git config user.name github-actions
           git config user.email github-actions@github.com
-          git add .
+          git add buildmgr/main
           git commit -m "Update buildmgr main branch documentation"
           git push
 
@@ -179,11 +180,13 @@ jobs:
           rm -f buildmgr/latest
           mkdir -p buildmgr/${VERSION}
           ln -s ${VERSION}/ buildmgr/latest
-          cd buildmgr/${VERSION}
+          pushd buildmgr/${VERSION}
           tar -xvjf /tmp/doc.tbz2
+          popd
           git config user.name github-actions
           git config user.email github-actions@github.com
-          git add .
+          git add buildmgr/${VERSION}
+          git add buildmgr/latest
           git commit -m "Update buildmgr documentation for release ${VERSION}"
           git push
 
