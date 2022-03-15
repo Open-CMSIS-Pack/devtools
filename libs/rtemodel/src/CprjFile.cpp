@@ -114,10 +114,12 @@ RteDevice* CprjTargetElement::ResolveDeviceAndBoard(RteModel* targetModel)
   }
   m_device = ResolveDevice(targetModel);
 
-  // first resolve board since it can ovewrite some device properties (algorithm and debugProbe)
+  // first resolve board since it can overwrite some device properties (algorithm and debugProbe)
   string boardName = GetBoardDisplayName();
-  m_board = targetModel->FindCompatibleBoard(boardName, m_device);
-
+  m_board = targetModel->FindBoard(boardName);
+  if (!m_board) {
+    m_board = targetModel->FindCompatibleBoard(boardName, m_device);
+  }
   CollectEffectiveProperties(GetProcessorName());
 
   return m_device;

@@ -94,10 +94,22 @@ string RteBoard::GetDeviceVendorName(const string& devName) const
 // returns true if mounted or compatible devices match supplied device attributes
 bool RteBoard::HasCompatibleDevice(const map<string, string>& deviceAttributes) const
 {
+  RteAttributes da(deviceAttributes);
+  const string& dname = da.GetAttribute("Dname");
+  const string& dvariant = da.GetAttribute("Dvariant");
+
   for (auto it = m_children.begin(); it != m_children.end(); it++) {
-    const string& tag = (*it)->GetTag();
+    RteItem* rteItem = (*it);
+
+    const string& tag = rteItem->GetTag();
     if (tag == "mountedDevice" || tag == "compatibleDevice") {
-      if ((*it)->MatchDeviceAttributes(deviceAttributes))
+      if (!dname.empty() && (dname == rteItem->GetAttribute("Dname") || dname == rteItem->GetAttribute("Dvariant"))) {
+        return true;
+      }
+      if (!dvariant.empty() && (dvariant == rteItem->GetAttribute("Dname") || dvariant == rteItem->GetAttribute("Dvariant"))) {
+        return true;
+      }
+      if (rteItem->MatchDeviceAttributes(deviceAttributes))
         return true;
     }
   }
