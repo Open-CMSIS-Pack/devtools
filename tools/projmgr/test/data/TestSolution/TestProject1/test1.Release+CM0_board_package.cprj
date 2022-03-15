@@ -26,7 +26,12 @@
       <file attr="config" category="sourceC" name="Device/ARM/ARMCM0/Source/startup_ARMCM0.c" version="2.0.3"/>
       <file attr="config" category="sourceC" name="Device/ARM/ARMCM0/Source/system_ARMCM0.c" version="1.0.0"/>
     </component>
-    <component Cclass="RteTest" Cgroup="CORE" Cvendor="ARM" Cversion="0.1.1"/>
+    <component Cclass="RteTest" Cgroup="CORE" Cvendor="ARM" Cversion="0.1.1">
+      <defines>DEF1-COMPONENT</defines>
+      <undefines>DEF2-COMPONENT</undefines>
+      <includes>/path/1/component</includes>
+      <excludes>/path/2/component</excludes>
+    </component>
   </components>
 
   <files>
@@ -36,16 +41,29 @@
       <cflags add="-C-group" compiler="GCC"/>
       <cxxflags add="-CPP-group" compiler="GCC"/>
       <ldflags add="-Link-group" compiler="GCC"/>
+      <defines>DEF1-GROUP-PROJECT;DEF2-GROUP-PROJECT</defines>
+      <undefines>DEF3-GROUP-PROJECT;DEF4-GROUP-PROJECT</undefines>
+      <includes>/path/sources/1/group;/path/sources/2/group</includes>
+      <excludes>/path/sources/3/group;/path/sources/4/group</excludes>
       <file category="sourceC" name="main.c">
         <arflags add="-Lib-file-GCC" compiler="GCC"/>
         <asflags add="-ASM-file-GCC" compiler="GCC"/>
         <cflags add="-C-file-GCC" compiler="GCC"/>
         <cxxflags add="-CPP-file-GCC" compiler="GCC"/>
         <ldflags add="-Link-file-GCC" compiler="GCC"/>
+        <defines>DEF1-FILE-PROJECT;DEF2-FILE-PROJECT</defines>
+        <undefines>DEF3-FILE-PROJECT;DEF4-FILE-PROJECT</undefines>
+        <includes>/path/main/1/file;/path/main/2/file</includes>
+        <excludes>/path/main/3/file;/path/main/4/file</excludes>
       </file>
     </group>
     <group name="Release Group">
-      <file category="sourceC" name="release.c"/>
+      <file category="sourceC" name="release.c">
+        <defines>DEF1-REL-FILE</defines>
+        <undefines>DEF2-REL-FILE</undefines>
+        <includes>/path/1/release/file</includes>
+        <excludes>/path/2/release/file</excludes>
+      </file>
     </group>
   </files>
 </cprj>

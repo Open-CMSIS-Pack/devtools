@@ -81,8 +81,11 @@ struct ProcessorItem {
  *        optimization level,
  *        debug information,
  *        preprocessor defines,
+ *        preprocessor undefines,
  *        include paths,
- *        misc compiler controls
+ *        exclude paths,
+ *        misc compiler controls,
+ *        platform processor
 */
 struct BuildType {
   std::string compiler;
@@ -101,7 +104,7 @@ struct BuildType {
  * @brief target types containing
  *        platform board,
  *        platform device,
- *        platform processor
+ *        target build settings
 */
 struct TargetType {
   std::string board;

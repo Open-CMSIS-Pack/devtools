@@ -225,7 +225,7 @@ std::vector<PackageItem> ProjMgrWorker::GetFilteredPacks(const PackageItem& pack
   std::vector<PackageItem> filteredPacks;
   auto& pack = packItem.pack;
   if (!pack.name.empty() && !WildCards::IsWildcardPattern(pack.name)) {
-    filteredPacks.push_back({ pack.name, pack.vendor, pack.version });
+    filteredPacks.push_back({{ pack.name, pack.vendor, pack.version }});
   }
   else {
     error_code ec;
@@ -235,7 +235,7 @@ std::vector<PackageItem> ProjMgrWorker::GetFilteredPacks(const PackageItem& pack
       if (entry.is_directory()) {
         dirName = entry.path().filename().generic_string();
         if (pack.name.empty() || WildCards::Match(pack.name, dirName)) {
-          filteredPacks.push_back({ dirName, pack.vendor, packItem.pack.version });
+          filteredPacks.push_back({{ dirName, pack.vendor, packItem.pack.version }});
         }
       }
     }
