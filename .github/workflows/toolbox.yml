@@ -5,9 +5,6 @@ on:
       - '.github/workflows/toolbox.yml'
       - 'CMakeLists.txt'
       - 'tools/toolbox/**'
-  push:
-    branches:
-      - main
   release:
     types: [published]
 
