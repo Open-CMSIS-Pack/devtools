@@ -218,3 +218,18 @@ void CbuildUtils::PushBackUniquely(std::vector<std::string>& vec, const std::str
     vec.push_back(value);
   }
 }
+
+string CbuildUtils::GenerateJsonPackList(const std::vector<CbuildPackItem>& packList) {
+  string json;
+  if (!packList.empty()) {
+    json += "[";
+    for (const auto& [vendor, name, version, _] : packList) {
+      json += "\n{\"vendor\": \"" + vendor + "\", ";
+      json += "\"name\": \"" + name + "\", ";
+      json += "\"version\": \"" + version + "\"},";
+    }
+    json.pop_back();
+    json += "\n]\n";
+  }
+  return json;
+}
