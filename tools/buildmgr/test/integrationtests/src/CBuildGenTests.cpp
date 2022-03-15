@@ -222,7 +222,8 @@ TEST_F(CBuildGenTests, GeneratePackListTest) {
   }
 
   RunCBuildGen          (param, testdata_folder);
-  CheckCPInstallFile    (param);
+  CheckCPInstallFile    (param, false); // .cpinstall
+  CheckCPInstallFile    (param, true);  // .cpinstall.json
 }
 
 // Validate listing of missing packs in a packlist file
@@ -240,7 +241,8 @@ TEST_F(CBuildGenTests, GeneratePackListDirTest) {
   }
 
   RunCBuildGen          (param, testdata_folder);
-  CheckCPInstallFile    (param);
+  CheckCPInstallFile(param, false); // .cpinstall
+  CheckCPInstallFile(param, true);  // .cpinstall.json
 }
 
 // Validate CMakelists generation for project with duplicated source filenames

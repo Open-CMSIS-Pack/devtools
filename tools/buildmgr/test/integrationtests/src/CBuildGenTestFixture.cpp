@@ -262,17 +262,17 @@ void CBuildGenTestFixture::CheckCMakeIntermediateDir(const TestParam& param, con
     << "File CMakeLists.txt does " << (param.expect ? "not " : "") << "exist!";
 }
 
-void CBuildGenTestFixture::CheckCPInstallFile(const TestParam& param) {
+void CBuildGenTestFixture::CheckCPInstallFile(const TestParam& param, bool json) {
   int ret_val;
   ifstream f1, f2;
   string l1, l2;
 
-  string filename1 = testdata_folder + "/" + param.name + "/" + param.targetArg + ".cpinstall";
+  string filename1 = testdata_folder + "/" + param.name + "/" + param.targetArg + ".cpinstall" + (json ? ".json" : "");
   f1.open(filename1);
   ret_val = f1.is_open();
   ASSERT_EQ(ret_val, true) << "Failed to open " << filename1;
 
-  string filename2 = testdata_folder + "/" + param.name + "/" + param.targetArg + ".cpinstall.ref";
+  string filename2 = filename1 + ".ref";
   f2.open(filename2);
   ret_val = f2.is_open();
   ASSERT_EQ(ret_val, true) << "Failed to open " << filename2;
