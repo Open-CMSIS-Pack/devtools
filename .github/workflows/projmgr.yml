@@ -3,6 +3,15 @@ on:
   push:
     branches:
       - main
+    paths:
+      - '.github/workflows/projmgr.yml'
+      - 'CMakeLists.txt'
+      - 'libs/crossplatform/**'
+      - 'libs/rtefsutils/**'
+      - 'libs/xmlreader/**'
+      - 'libs/xmltree/**'
+      - 'libs/xmltreeslim/**'
+      - 'tools/projmgr/**'
   pull_request:
     paths:
       - '.github/workflows/projmgr.yml'
