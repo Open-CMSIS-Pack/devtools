@@ -170,8 +170,9 @@ public:
    * @brief getter for compatible boards given by device
    * @param boards collection of boards to fill
    * @param device given RteDeviceItem pointer
-  */
-  void GetCompatibleBoards(std::vector<RteBoard*>& boards, RteDeviceItem* device) const;
+   * @param bOnlyMounted flag to check only mounted devices
+   */
+  void GetCompatibleBoards(std::vector<RteBoard*>& boards, RteDeviceItem* device, bool bOnlyMounted = false) const;
 
   /**
    * @brief find board given by the display name
@@ -184,9 +185,10 @@ public:
    * @brief find compatible board given by display name and device
    * @param displayName given display name
    * @param device given RteDeviceItem object
+   * @param bOnlyMounted flag to check only mounted devices
    * @return RteBoard pointer
   */
-  RteBoard* FindCompatibleBoard(const std::string& displayName, RteDeviceItem* device) const;
+  RteBoard* FindCompatibleBoard(const std::string& displayName, RteDeviceItem* device, bool bOnlyMounted = false) const;
 
   /**
    * @brief check if this object has no children

@@ -79,12 +79,29 @@ public:
   */
   std::string GetDeviceVendorName(const std::string& devName) const;
 
+
   /**
-   * @brief check if
-   * @param deviceAttributes if attributes mounted or a compatible device match supplied device attributes
+ * @brief check if board has mounted device for given attributes
+ * @param deviceAttributes device attributes to match
+ * @return true if at least one mounted device matches supplied attributes
+*/
+  bool HasMountedDevice(const RteAttributes& deviceAttributes) const;
+
+  /**
+   * @brief check if board has mounted or compatible device for given attributes
+   * @param deviceAttributes device attributes to match
+   * @param bOnlyMounted flag to check only mounted devices
    * @return true if at least one mounted or compatible device matches supplied attributes
   */
-  bool HasCompatibleDevice(const std::map<std::string, std::string>& deviceAttributes) const;
+  bool HasCompatibleDevice(const RteAttributes& deviceAttributes, bool bOnlyMounted = false) const;
+
+  /**
+   * @brief check if supplied device attributes match supplied attributes describing mounted or compatible device
+   * @param deviceAttributes device attributes to match
+   * @param boardDeviceAttributes mounted or compatible device attributes
+   * @return true if attributes match
+  */
+  static bool IsDeviceCompatible(const RteAttributes& deviceAttributes, const RteAttributes& boardDeviceAttributes);
 
   /**
    * @brief collect board books
