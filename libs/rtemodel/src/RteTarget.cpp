@@ -119,7 +119,7 @@ void RteTarget::ClearMissingPacks()
 RteBoard* RteTarget::FindBoard(const string& displayName) const
 {
   if (m_filteredModel) {
-    return m_filteredModel->FindCompatibleBoard(displayName, GetDevice());
+    return m_filteredModel->FindCompatibleBoard(displayName, GetDevice(), true);
   }
   return nullptr;
 }

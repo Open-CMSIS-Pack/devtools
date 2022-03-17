@@ -91,29 +91,39 @@ string RteBoard::GetDeviceVendorName(const string& devName) const
   return (EMPTY_STRING);
 }
 
-// returns true if mounted or compatible devices match supplied device attributes
-bool RteBoard::HasCompatibleDevice(const map<string, string>& deviceAttributes) const
+bool RteBoard::HasMountedDevice(const RteAttributes& deviceAttributes) const
 {
-  RteAttributes da(deviceAttributes);
-  const string& dname = da.GetAttribute("Dname");
-  const string& dvariant = da.GetAttribute("Dvariant");
+  return HasCompatibleDevice(deviceAttributes, true);
+}
 
+
+bool RteBoard::HasCompatibleDevice(const RteAttributes& deviceAttributes, bool bOnlyMounted) const
+{
   for (auto it = m_children.begin(); it != m_children.end(); it++) {
     RteItem* rteItem = (*it);
 
     const string& tag = rteItem->GetTag();
-    if (tag == "mountedDevice" || tag == "compatibleDevice") {
-      if (!dname.empty() && (dname == rteItem->GetAttribute("Dname") || dname == rteItem->GetAttribute("Dvariant"))) {
+    if (tag == "mountedDevice" || (!bOnlyMounted && tag == "compatibleDevice")) {
+      if (IsDeviceCompatible(deviceAttributes, *rteItem)) {
         return true;
       }
-      if (!dvariant.empty() && (dvariant == rteItem->GetAttribute("Dname") || dvariant == rteItem->GetAttribute("Dvariant"))) {
-        return true;
-      }
-      if (rteItem->MatchDeviceAttributes(deviceAttributes))
-        return true;
     }
   }
   return false;
+}
+
+bool RteBoard::IsDeviceCompatible(const RteAttributes& deviceAttributes, const RteAttributes& boardDeviceAttributes)
+{
+  const string& dname = deviceAttributes.GetAttribute("Dname");
+  const string& dvariant = deviceAttributes.GetAttribute("Dvariant");
+  if (!dname.empty() && (dname == boardDeviceAttributes.GetAttribute("Dname") || dname == boardDeviceAttributes.GetAttribute("Dvariant"))) {
+    return true;
+  }
+  if (!dvariant.empty() && (dvariant == boardDeviceAttributes.GetAttribute("Dname") || dvariant == boardDeviceAttributes.GetAttribute("Dvariant"))) {
+    return true;
+  }
+
+  return boardDeviceAttributes.MatchDeviceAttributes(deviceAttributes.GetAttributes());
 }
 
 // collects board books as name-title collection
