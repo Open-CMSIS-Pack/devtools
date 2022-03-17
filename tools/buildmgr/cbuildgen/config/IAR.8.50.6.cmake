@@ -135,10 +135,10 @@ set (LIB_SUFFIX ".a")
 set (EXE_SUFFIX ".out")
 
 # ELF to HEX conversion
-set (ELF2HEX --silent --ihex "${OUT_DIR}${TARGET}${EXE_SUFFIX}" "${OUT_DIR}${TARGET}.hex")
+set (ELF2HEX --silent --ihex "${OUT_DIR}/${TARGET}${EXE_SUFFIX}" "${OUT_DIR}/${TARGET}.hex")
 
 # ELF to BIN conversion
-set (ELF2BIN --silent --bin "${OUT_DIR}${TARGET}${EXE_SUFFIX}" "${OUT_DIR}${TARGET}.bin")
+set (ELF2BIN --silent --bin "${OUT_DIR}/${TARGET}${EXE_SUFFIX}" "${OUT_DIR}/${TARGET}.bin")
 
 # Set CMake variables for toolchain initialization
 set(CMAKE_SYSTEM_NAME Generic)
@@ -151,9 +151,6 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/CMakeASM")
 
 # Set CMake variables for skipping compiler identification
 set(CMAKE_ASM_COMPILER_FORCED TRUE)
-set(CMAKE_C_COMPILER_ID "IAR")
-set(CMAKE_C_COMPILER_ID_RUN TRUE)
-set(CMAKE_C_COMPILER_VERSION "8.50.0")
 set(CMAKE_C_COMPILER_FORCED TRUE)
 set(CMAKE_C_COMPILER_WORKS TRUE)
 set(CMAKE_CXX_COMPILER_ID "${CMAKE_C_COMPILER_ID}")
