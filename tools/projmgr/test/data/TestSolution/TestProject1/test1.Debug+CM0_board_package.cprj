@@ -26,7 +26,12 @@
       <file attr="config" category="sourceC" name="Device/ARM/ARMCM0/Source/startup_ARMCM0.c" version="2.0.3"/>
       <file attr="config" category="sourceC" name="Device/ARM/ARMCM0/Source/system_ARMCM0.c" version="1.0.0"/>
     </component>
-    <component Cclass="RteTest" Cgroup="CORE" Cvendor="ARM" Cversion="0.1.1"/>
+    <component Cclass="RteTest" Cgroup="CORE" Cvendor="ARM" Cversion="0.1.1">
+      <defines>DEF1-COMPONENT</defines>
+      <undefines>DEF2-COMPONENT</undefines>
+      <includes>/path/1/component</includes>
+      <excludes>/path/2/component</excludes>
+    </component>
   </components>
 
   <files>
@@ -36,12 +41,20 @@
       <cflags add="-C-group" compiler="AC6"/>
       <cxxflags add="-CPP-group" compiler="AC6"/>
       <ldflags add="-Link-group" compiler="AC6"/>
+      <defines>DEF1-GROUP-PROJECT;DEF2-GROUP-PROJECT</defines>
+      <undefines>DEF3-GROUP-PROJECT;DEF4-GROUP-PROJECT</undefines>
+      <includes>/path/sources/1/group;/path/sources/2/group</includes>
+      <excludes>/path/sources/3/group;/path/sources/4/group</excludes>
       <file category="sourceC" name="main.c">
         <arflags add="-Lib-file-AC6" compiler="AC6"/>
         <asflags add="-ASM-file-AC6" compiler="AC6"/>
         <cflags add="-C-file-AC6" compiler="AC6"/>
         <cxxflags add="-CPP-file-AC6" compiler="AC6"/>
         <ldflags add="-Link-file-AC6" compiler="AC6"/>
+        <defines>DEF1-FILE-PROJECT;DEF2-FILE-PROJECT</defines>
+        <undefines>DEF3-FILE-PROJECT;DEF4-FILE-PROJECT</undefines>
+        <includes>/path/main/1/file;/path/main/2/file</includes>
+        <excludes>/path/main/3/file;/path/main/4/file</excludes>
       </file>
     </group>
     <group name="Debug Group">

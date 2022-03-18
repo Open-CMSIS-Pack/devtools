@@ -3,6 +3,15 @@ on:
   push:
     branches:
       - main
+    paths:
+      - '.github/workflows/projmgr.yml'
+      - 'CMakeLists.txt'
+      - 'libs/crossplatform/**'
+      - 'libs/rtefsutils/**'
+      - 'libs/xmlreader/**'
+      - 'libs/xmltree/**'
+      - 'libs/xmltreeslim/**'
+      - 'tools/projmgr/**'
   pull_request:
     paths:
       - '.github/workflows/projmgr.yml'
@@ -18,6 +27,9 @@ on:
 
 jobs:
   matrix_prep:
+    if: |
+        (github.event_name == 'pull_request') ||
+        (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/projmgr/'))
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
@@ -31,7 +43,6 @@ jobs:
         echo ::set-output name=matrix::{\"include\":$(echo $matrix)}\"
       working-directory: .github/
   build:
-    if: ${{ github.event_name == 'pull_request' || (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/projmgr/')) }}
     needs: matrix_prep
     runs-on: ${{ matrix.runs_on }}
     timeout-minutes: 15
@@ -143,7 +154,9 @@ jobs:
           retention-days: 1
 
   release:
-    if: ${{ github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/projmgr/') }}
+    if: |
+        github.event_name == 'release' &&
+        startsWith(github.ref, 'refs/tags/tools/projmgr/')
     needs: [ build, unittest, coverage ]
     runs-on: ubuntu-20.04
     timeout-minutes: 15
@@ -271,11 +284,6 @@ jobs:
           asset_name: coverage.zip
 
   unittest:
-    if: |
-      ${{
-        github.event_name == 'pull_request' ||
-        (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/projmgr/'))
-      }}
     needs: matrix_prep
     runs-on: ${{ matrix.runs_on }}
     timeout-minutes: 15
@@ -349,11 +357,9 @@ jobs:
 
   coverage:
     if: |
-      ${{
-        github.event_name == 'pull_request' ||
-        github.event_name == 'push' ||
+        (github.event_name == 'pull_request') ||
+        (github.event_name == 'push') ||
         (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/projmgr/'))
-      }}
     runs-on: ubuntu-20.04
     timeout-minutes: 15
     steps:

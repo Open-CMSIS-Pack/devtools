@@ -7,7 +7,6 @@
 #include "CbuildProject.h"
 
 #include "CbuildModel.h"
-#include "CbuildUtils.h"
 
 #include "ErrLog.h"
 #include "RteCprjProject.h"
@@ -193,7 +192,7 @@ const bool CbuildProject::AddAdditionalAttributes(map<string, string> &attribute
   return true;
 }
 
-const bool CbuildProject::CheckPackRequirements(const RtePackage *cprjPack, const string& rtePath, list<string> &urlList) {
+const bool CbuildProject::CheckPackRequirements(const RtePackage *cprjPack, const string& rtePath, vector<CbuildPackItem>& packList) {
   const auto packages = cprjPack->GetItemByTag("packages");
 
   if (!packages) {
@@ -221,7 +220,9 @@ const bool CbuildProject::CheckPackRequirements(const RtePackage *cprjPack, cons
       // pack is neither in pack folder nor in local repo index
       if (GetUrlFromIndex(string(rtePath), name, vendor, version, url)) {
         // if it's in the index, add it to the missing packs' list
-        urlList.push_back(url);
+        string maxVersion = RteUtils::GetSuffix(version);
+        const CbuildPackItem& pack = { vendor, name, (maxVersion.empty() ? version : maxVersion), url };
+        packList.push_back(pack);
       } else {
         return false;
       }

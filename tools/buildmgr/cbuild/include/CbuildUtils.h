@@ -26,6 +26,17 @@
 #define ETCDIR "etc/"   // etc folder
 #define BINDIR "bin/"   // bin folder
 
+ /**
+  * @brief pack item
+ */
+struct CbuildPackItem
+{
+  const std::string vendor;
+  const std::string name;
+  const std::string version;
+  const std::string url;
+};
+
 class CbuildUtils {
 public:
   typedef std::pair<std::string, int> Result;
@@ -135,6 +146,13 @@ public:
    * @param value the value to add
   */
   static void PushBackUniquely(std::vector<std::string>& vec, const std::string& value);
+
+  /**
+   * @brief generate json packlist file
+   * @param packList vector with missing packs
+   * @return string with json file content
+  */
+  static std::string GenerateJsonPackList(const std::vector<CbuildPackItem>& packList);
 
 };
 

@@ -7,6 +7,7 @@
 #ifndef CBUILDPROJECT_H
 #define CBUILDPROJECT_H
 
+#include "CbuildUtils.h"
 #include "RteGenerator.h"
 #include "RteCprjProject.h"
 
@@ -35,7 +36,7 @@ public:
    * @param urlList output list of pack url(s) to be needed by project
    * @return true if the pack requirements are resolved, otherwise false
   */
-  static const bool CheckPackRequirements(const RtePackage *cprjPack, const std::string& rtePath, std::list<std::string> &urlList);
+  static const bool CheckPackRequirements(const RtePackage *cprjPack, const std::string& rtePath, std::vector<CbuildPackItem> &packList);
 
 protected:
   RteDevice* GetDeviceLeaf(const std::string& fullDeviceName, const std::string& deviceVendor, const std::string& targetName);

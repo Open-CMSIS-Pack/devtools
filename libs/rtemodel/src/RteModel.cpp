@@ -168,27 +168,27 @@ RteBoard* RteModel::FindBoard(const string& displayName) const
   return nullptr;
 }
 
-void RteModel::GetCompatibleBoards(vector<RteBoard*>& boards, RteDeviceItem* device) const
+void RteModel::GetCompatibleBoards(vector<RteBoard*>& boards, RteDeviceItem* device, bool bOnlyMounted) const
 {
   if (!device) {
     return;
   }
   RteAttributes ea;
   device->GetEffectiveAttributes(ea);
-  auto& da = ea.GetAttributes();
   const RteBoardMap& availableBoards = GetBoards();
   for (auto it = availableBoards.begin(); it != availableBoards.end(); it++) {
     RteBoard* b = it->second;
-    if (b->HasCompatibleDevice(da)) {
+    if (b->HasCompatibleDevice(ea, bOnlyMounted)) {
       boards.push_back(b);
     }
   }
 }
 
-RteBoard* RteModel::FindCompatibleBoard(const string& displayName, RteDeviceItem* device) const
+
+RteBoard* RteModel::FindCompatibleBoard(const string& displayName, RteDeviceItem* device, bool bOnlyMounted) const
 {
   vector<RteBoard*> boards;
-  GetCompatibleBoards(boards, device);
+  GetCompatibleBoards(boards, device, bOnlyMounted);
   for (auto b : boards) {
     if (b->GetDisplayName() == displayName) {
       return b;

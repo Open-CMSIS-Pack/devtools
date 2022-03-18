@@ -17,7 +17,7 @@ protected:
   void CheckProjectFiles         (const TestParam& param, const std::string& rteFolder);
   void CheckOutputDir            (const TestParam& param, const std::string& outdir);
   void CheckCMakeIntermediateDir (const TestParam& param, const std::string& intdir);
-  void CheckCPInstallFile        (const TestParam& param);
+  void CheckCPInstallFile        (const TestParam& param, bool json=false);
 
   void GetDirectoryItems         (const std::string& inPath, std::set<std::string> &Result, const std::string& ignoreDir);
 };

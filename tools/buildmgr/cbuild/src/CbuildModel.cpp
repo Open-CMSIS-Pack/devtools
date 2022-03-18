@@ -54,11 +54,11 @@ bool CbuildModel::Create(const CbuildRteArgs& args) {
 
   // check pack requirements (packlist command)
   if (args.checkPack) {
-    list<string>urlList;
-    if (!CbuildProject::CheckPackRequirements(m_cprjPack, args.rtePath, urlList))
+    vector<CbuildPackItem> packList;
+    if (!CbuildProject::CheckPackRequirements(m_cprjPack, args.rtePath, packList))
       return false;
 
-    if (!urlList.empty()) {
+    if (!packList.empty()) {
       string intdir = CbuildUtils::StrPathConv(args.intDir);
       if (!intdir.empty()) {
         // command line intdir option
@@ -81,11 +81,17 @@ bool CbuildModel::Create(const CbuildRteArgs& args) {
       if (!fs::exists(intdir, ec)) {
         fs::create_directories(intdir, ec);
       }
+      // generate cpinstall file
       string filename = intdir + (intdir.back() == '/' ? "" : "/") + m_targetName + ".cpinstall";
       ofstream missingPacks(filename);
-      for (auto url : urlList) {
-        missingPacks << url << std::endl;
+      for (const auto& pack : packList) {
+        missingPacks << pack.url << std::endl;
       }
+      missingPacks.close();
+      // generate cpinstall.json file
+      filename += ".json";
+      missingPacks.open(filename);
+      missingPacks << CbuildUtils::GenerateJsonPackList(packList);
       missingPacks.close();
     }
     return true;

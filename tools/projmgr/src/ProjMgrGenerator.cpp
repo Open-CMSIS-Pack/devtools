@@ -192,8 +192,12 @@ void ProjMgrGenerator::GenerateCprjComponents(XMLTreeElement* element, const Con
         }
       }
 
-      // TODO Generate toolchain settings (warnings, debug, includes, defines)
+      // TODO Generate toolchain settings (warnings, debug)
       GenerateCprjMisc(componentElement, component.second.second->build.misc, context.toolchain.name);
+      GenerateCprjVector(componentElement, component.second.second->build.defines, "defines");
+      GenerateCprjVector(componentElement, component.second.second->build.undefines, "undefines");
+      GenerateCprjVector(componentElement, component.second.second->build.addpaths, "includes");
+      GenerateCprjVector(componentElement, component.second.second->build.delpaths, "excludes");
     }
 
   }
@@ -256,8 +260,12 @@ void ProjMgrGenerator::GenerateCprjGroups(XMLTreeElement* element, const vector<
         groupElement->AddAttribute("name", groupNode.group);
       }
 
-      // TODO Generate toolchain settings (warnings, debug, includes, defines)
+      // TODO Generate toolchain settings (warnings, debug)
       GenerateCprjMisc(groupElement, groupNode.build.misc, compiler);
+      GenerateCprjVector(groupElement, groupNode.build.defines, "defines");
+      GenerateCprjVector(groupElement, groupNode.build.undefines, "undefines");
+      GenerateCprjVector(groupElement, groupNode.build.addpaths, "includes");
+      GenerateCprjVector(groupElement, groupNode.build.delpaths, "excludes");
 
       for (const auto& fileNode : groupNode.files) {
         XMLTreeElement* fileElement = groupElement->CreateElement("file");
@@ -265,8 +273,12 @@ void ProjMgrGenerator::GenerateCprjGroups(XMLTreeElement* element, const vector<
         if (fileElement) {
           fileElement->AddAttribute("category", fileNode.category);
 
-          // TODO Generate toolchain settings (warnings, debug, includes, defines)
+          // TODO Generate toolchain settings (warnings, debug)
           GenerateCprjMisc(fileElement, fileNode.build.misc, compiler);
+          GenerateCprjVector(fileElement, fileNode.build.defines, "defines");
+          GenerateCprjVector(fileElement, fileNode.build.undefines, "undefines");
+          GenerateCprjVector(fileElement, fileNode.build.addpaths, "includes");
+          GenerateCprjVector(fileElement, fileNode.build.delpaths, "excludes");
         }
 
       }
