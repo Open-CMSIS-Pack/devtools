@@ -10,6 +10,8 @@
 #include <mach-o/dyld.h>
 #include <unistd.h>
 
+ // mac specific methods
+
 bool CrossPlatformUtils::SetEnv(const std::string& name, const std::string& value)
 {
   if (name.empty()) {
@@ -49,3 +51,10 @@ std::string CrossPlatformUtils::GetExecutablePath(std::error_code& ec) {
 
   return path;
 }
+
+std::string CrossPlatformUtils::GetRegistryString(const std::string& key)
+{
+  return GetEnv(key); // non-Windows implementation returns environment variable value
+}
+
+// end of Utils.cpp

@@ -3,6 +3,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
+
 #include "CrossPlatformUtils.h"
 #include "constants.h"
 
@@ -10,6 +11,8 @@
 #include <limits.h>
 #include <memory>
 #include <unistd.h>
+
+// linux-specific methods
 
 bool CrossPlatformUtils::SetEnv(const std::string& name, const std::string& value)
 {
@@ -56,3 +59,10 @@ std::string CrossPlatformUtils::GetExecutablePath(std::error_code& ec) {
 
   return std::string(exePath.get(), bytesRead);
 }
+
+std::string CrossPlatformUtils::GetRegistryString(const std::string& key)
+{
+  return GetEnv(key); // non-Windows implementation returns environment variable value
+}
+
+// end of Utils.cpp

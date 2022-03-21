@@ -21,4 +21,4 @@ set_property(TARGET RteModel PROPERTY
 
 target_include_directories(RteModel PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-target_link_libraries(RteModel RteFsUtils RteUtils XmlTree)
+target_link_libraries(RteModel RteFsUtils RteUtils XmlTree CrossPlatform)

@@ -69,4 +69,22 @@ TEST(CrossPlatformUnitTests, GetExecutablePath) {
   EXPECT_EQ(ec.value(), 0);
 }
 
+TEST(CrossPlatformUnitTests, GetRegistryString) {
+
+  if (CrossPlatformUtils::GetHostType() == "win") {
+    EXPECT_TRUE(CrossPlatformUtils::GetRegistryString("HKEY_CURRENT_USER\\DUMMY_KEY_\\DUMMY_VAL").empty());
+    EXPECT_TRUE(CrossPlatformUtils::GetRegistryString("DUMMY_KEY_\\DUMMY_VAL").empty());
+
+    EXPECT_TRUE(!CrossPlatformUtils::GetRegistryString("HKEY_CURRENT_USER\\Environment\\Temp").empty());
+    EXPECT_TRUE(!CrossPlatformUtils::GetRegistryString("Environment\\Temp").empty());
+
+    EXPECT_EQ(CrossPlatformUtils::GetRegistryString("HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\CommonFilesDir"), "C:\\Program Files\\Common Files");
+    EXPECT_EQ(CrossPlatformUtils::GetRegistryString("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\CommonFilesDir"), "C:\\Program Files\\Common Files");
+
+  } else {
+    EXPECT_EQ(CrossPlatformUtils::GetRegistryString("PATH"), CrossPlatformUtils::GetEnv("PATH"));
+  }
+}
+
+
 // end of UnitTests.cpp
