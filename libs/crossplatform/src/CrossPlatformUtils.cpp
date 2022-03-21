@@ -55,3 +55,12 @@ unsigned long CrossPlatformUtils::ClockInMsec() {
     return t;
   return (t / CLOCK_PER_MSEC);
 }
+
+const std::string& CrossPlatformUtils::GetHostType()
+{
+  // OS name is defined at compile time
+  static const std::string os_name = HOST_TYPE;
+  return os_name;
+}
+
+// end of CrossplatformUtils.cpp

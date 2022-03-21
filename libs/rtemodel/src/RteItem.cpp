@@ -21,6 +21,7 @@
 
 #include "RteFsUtils.h"
 #include "XMLTree.h"
+#include "CrossPlatformUtils.h"
 
 using namespace std;
 
@@ -313,7 +314,7 @@ const string& RteItem::GetPackageFileName() const
 bool RteItem::MatchesHost() const
 {
   const string& host = GetAttribute("host");
-  if (host.empty() || host == "win" || host == "all")
+  if (host.empty() || host == "all" || host == CrossPlatformUtils::GetHostType())
     return true;
   return false;
 }
