@@ -7,8 +7,11 @@
 #include "ProjMgr.h"
 #include "ProjMgrParser.h"
 #include "ProjMgrLogger.h"
+#include "ProjMgrUtils.h"
 #include "ProductInfo.h"
 #include "RteFsUtils.h"
+
+#include "CrossPlatformUtils.h"
 
 #include <algorithm>
 #include <cxxopts.hpp>
@@ -191,6 +194,12 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
 }
 
 bool ProjMgr::PopulateContexts(void) {
+  // Parse cdefault
+  if (GetCdefaultFile()) {
+    if (!m_parser.ParseCdefault(m_cdefaultFile, m_checkSchema)) {
+      return false;
+    }
+  }
   if (!m_csolutionFile.empty()) {
     // Parse csolution
     if (!m_parser.ParseCsolution(m_csolutionFile, m_checkSchema)) {
@@ -453,5 +462,23 @@ bool ProjMgr::RunCodeGenerator(void) {
   if (!m_worker.ExecuteGenerator(m_context, m_codeGenerator)) {
     return false;
   }
+  return true;
+}
+
+bool ProjMgr::GetCdefaultFile(void) {
+  error_code ec;
+  string exePath = RteUtils::ExtractFilePath(CrossPlatformUtils::GetExecutablePath(ec), true);
+  if (ec) {
+    return false;
+  }
+  vector<string> searchPaths = { m_rootDir, exePath + "/../etc/", exePath + "/../../etc/" };
+  string cdefaultFile;
+  if (!RteFsUtils::FindFileRegEx(searchPaths, ".*\\.cdefault\\.yml", cdefaultFile)) {
+    if (!cdefaultFile.empty()) {
+      ProjMgrLogger::Error(cdefaultFile, "multiple cdefault.yml files were found");
+    }
+    return false;
+  }
+  m_cdefaultFile = cdefaultFile;
   return true;
 }

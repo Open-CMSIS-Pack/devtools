@@ -59,6 +59,9 @@ bool ProjMgrYamlSchemaChecker::GetSchemaFile(string& schemaFile, const ProjMgrYa
   string schemaFileName;
   switch (type)
   {
+  case ProjMgrYamlSchemaChecker::FileType::DEFAULT:
+    schemaFileName = "cdefault.schema.json";
+    break;
   case ProjMgrYamlSchemaChecker::FileType::SOLUTION:
     schemaFileName = "csolution.schema.json";
     break;

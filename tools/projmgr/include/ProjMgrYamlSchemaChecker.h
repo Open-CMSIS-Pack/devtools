@@ -16,7 +16,8 @@ class ProjMgrYamlSchemaChecker {
 public:
   enum class FileType
   {
-    SOLUTION = 0,
+    DEFAULT = 0,
+    SOLUTION,
     PROJECT,
     LAYER
   };

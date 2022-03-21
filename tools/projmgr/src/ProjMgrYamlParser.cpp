@@ -21,6 +21,35 @@ ProjMgrYamlParser::~ProjMgrYamlParser(void) {
   // Reserved
 }
 
+bool ProjMgrYamlParser::ParseCdefault(const string& input,
+  CdefaultItem& cdefault, bool checkSchema) {
+  try {
+    // Validate file schema
+    if (checkSchema &&
+      !ProjMgrYamlSchemaChecker().Validate(
+        input, ProjMgrYamlSchemaChecker::FileType::DEFAULT)) {
+      return false;
+    }
+
+    cdefault.path = RteFsUtils::MakePathCanonical(input);
+
+    const YAML::Node& root = YAML::LoadFile(input);
+    if (!ValidateCdefault(input, root)) {
+      return false;
+    }
+
+    const YAML::Node& defaultNode = root[YAML_DEFAULT];
+    ParseBuildTypes(defaultNode, cdefault.buildTypes);
+    ParseString(defaultNode, YAML_COMPILER, cdefault.compiler);
+    ParsePacks(defaultNode, cdefault.packs);
+  }
+  catch (YAML::Exception& e) {
+    ProjMgrLogger::Error(input, e.mark.line + 1, e.mark.column + 1, e.msg);
+    return false;
+  }
+  return true;
+}
+
 bool ProjMgrYamlParser::ParseCsolution(const string& input,
   CsolutionItem& csolution, bool checkSchema) {
   try {
@@ -31,8 +60,7 @@ bool ProjMgrYamlParser::ParseCsolution(const string& input,
       return false;
     }
 
-    error_code ec;
-    csolution.path = fs::absolute(input, ec).generic_string();
+    csolution.path = RteFsUtils::MakePathCanonical(input);
 
     const YAML::Node& root = YAML::LoadFile(input);
     if (!ValidateCsolution(input, root)) {
@@ -72,8 +100,7 @@ bool ProjMgrYamlParser::ParseCproject(const string& input,
       return false;
     }
 
-    error_code ec;
-    cproject.path = fs::absolute(input, ec).generic_string();
+    cproject.path = RteFsUtils::MakePathCanonical(input);
 
     const YAML::Node& projectNode = root[YAML_PROJECT];
     map<const string, string&> projectChildren = {
@@ -124,8 +151,7 @@ bool ProjMgrYamlParser::ParseClayer(const string& input,
       return false;
     }
 
-    error_code ec;
-    clayer.path = fs::absolute(input, ec).generic_string();
+    clayer.path = RteFsUtils::MakePathCanonical(input);
 
     const YAML::Node& layerNode = root[YAML_LAYER];
     map<const string, string&> projectChildren = {
@@ -420,6 +446,12 @@ void ProjMgrYamlParser::PushBackUniquely(vector<string>& vec, const string& valu
 }
 
 // Validation Maps
+const set<string> defaultKeys = {
+  YAML_BUILDTYPES,
+  YAML_COMPILER,
+  YAML_PACKS,
+};
+
 const set<string> solutionKeys = {
   YAML_PROJECTS,
   YAML_TARGETTYPES,
@@ -622,6 +654,20 @@ const map<string, set<string>> sequences = {
 const map<string, set<string>> mappings = {
   {YAML_PROCESSOR, processorKeys},
 };
+
+bool ProjMgrYamlParser::ValidateCdefault(const string& input, const YAML::Node& root) {
+  const set<string> rootKeys = {
+    YAML_DEFAULT,
+  };
+  if (!ValidateKeys(input, root, rootKeys)) {
+    return false;
+  }
+  const YAML::Node& defaultNode = root[YAML_DEFAULT];
+  if (!ValidateKeys(input, defaultNode, defaultKeys)) {
+    return false;
+  }
+  return true;
+}
 
 bool ProjMgrYamlParser::ValidateCsolution(const string& input, const YAML::Node& root) {
   const set<string> rootKeys = {

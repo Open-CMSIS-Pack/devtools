@@ -56,6 +56,12 @@ public:
   */
   ProjMgrGenerator& GetGenerator(void) { return m_generator; };
 
+  /**
+   * @brief get cdefault file in solution/project or in installation directory
+   * @return true if file is found successfully, false otherwise
+  */
+  bool GetCdefaultFile(void);
+
 protected:
   ProjMgrParser m_parser;
   ProjMgrWorker m_worker;
@@ -64,6 +70,7 @@ protected:
   std::list<RtePackage*> m_installedPacks;
   std::string m_cprojectFile;
   std::string m_csolutionFile;
+  std::string m_cdefaultFile;
   std::string m_context;
   std::string m_filter;
   std::string m_codeGenerator;

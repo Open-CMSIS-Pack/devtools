@@ -1,0 +1,11 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/0.9.2/tools/projmgr/schemas/cdefault.schema.json
+
+default:
+  build-types:
+    - type: Debug
+    - type: Release
+  
+  compiler: GCC
+
+  packs:
+    - pack: ARM::RteTest_DFP@0.1.1

@@ -35,9 +35,19 @@ bool ProjMgrWorker::AddContexts(ProjMgrParser& parser, ContextDesc& descriptor, 
     return false;
   }
   context.cproject = &cprojects.at(cprojectFile);
+  context.cdefault = &parser.GetCdefault();
   context.csolution = &parser.GetCsolution();
   context.csolutionTarget = descriptor.target;
   context.directories.cproject = fs::path(cprojectFile).parent_path().generic_string();
+
+  // Default build-types
+  if (context.cdefault) {
+    for (const auto& defaultBuildType : context.cdefault->buildTypes) {
+      if (context.csolution->buildTypes.find(defaultBuildType.first) == context.csolution->buildTypes.end()) {
+        context.csolution->buildTypes.insert(defaultBuildType);
+      }
+    }
+  }
 
   // No build/target-types
   if (context.csolution->buildTypes.empty() && context.csolution->targetTypes.empty()) {
@@ -522,6 +532,14 @@ bool ProjMgrWorker::ProcessDevicePrecedence(StringCollection& item) {
 bool ProjMgrWorker::ProcessPackages(ContextItem& context) {
   std::vector<PackItem> packages;
 
+  // Default package requirements
+  if (context.cdefault) {
+    for (const auto& packItem : context.cdefault->packs) {
+      if (CheckType(packItem.type, context.type)) {
+        packages.push_back(packItem);
+      }
+    }
+  }
   // Add package requirements
   for (const auto& packItem : context.csolution->packs) {
     if (CheckType(packItem.type, context.type)) {
@@ -551,8 +569,12 @@ bool ProjMgrWorker::ProcessPackages(ContextItem& context) {
 bool ProjMgrWorker::ProcessToolchain(ContextItem& context) {
 
   if (context.compiler.empty()) {
-    ProjMgrLogger::Error("compiler: value not set");
-    return false;
+    if (!context.cdefault || context.cdefault->compiler.empty()) {
+      ProjMgrLogger::Error("compiler: value not set");
+      return false;
+    } else {
+      context.compiler = context.cdefault->compiler;
+    }
   }
 
   const size_t delimiter = context.compiler.find('@');

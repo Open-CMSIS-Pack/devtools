@@ -1025,3 +1025,37 @@ TEST_F(RteFsUtilsTest, AbsolutePath) {
   path = RteFsUtils::AbsolutePath("./" + filenameRegular);
   EXPECT_TRUE(path.is_absolute());
 }
+
+TEST_F(RteFsUtilsTest, FindFileRegEx) {
+  const string& testdir = dirnameBase + "/FindFileRegEx";
+  const string& fileName = testdir + "/test.cdefault.yml";
+  RteFsUtils::CreateDirectories(testdir);
+  RteFsUtils::CreateFile(fileName, "");
+  string discoveredFile;
+  vector<string> searchPaths = { testdir };
+  EXPECT_EQ(true, RteFsUtils::FindFileRegEx(searchPaths, ".*\\.cdefault\\.yml", discoveredFile));
+  EXPECT_EQ(fileName, discoveredFile);
+  RteFsUtils::RemoveDir(testdir);
+}
+
+TEST_F(RteFsUtilsTest, FindFileRegEx_MultipleMatches) {
+  const string& testdir = dirnameBase + "/FindFileRegEx";
+  const string& fileName1 = testdir + "/test1.cdefault.yml";
+  const string& fileName2 = testdir + "/test2.cdefault.yml";
+  RteFsUtils::CreateDirectories(testdir);
+  RteFsUtils::CreateFile(fileName1, "");
+  RteFsUtils::CreateFile(fileName2, "");
+  string finding;
+  vector<string> searchPaths = { testdir };
+  EXPECT_EQ(false, RteFsUtils::FindFileRegEx(searchPaths, ".*\\.cdefault\\.yml", finding));
+  RteFsUtils::RemoveDir(testdir);
+}
+
+TEST_F(RteFsUtilsTest, FindFileRegEx_NoMatch) {
+  const string& testdir = dirnameBase + "/FindFileRegEx";
+  RteFsUtils::CreateDirectories(testdir);
+  string finding;
+  vector<string> searchPaths = { testdir };
+  EXPECT_EQ(false, RteFsUtils::FindFileRegEx(searchPaths, ".*\\.cdefault\\.yml", finding));
+  RteFsUtils::RemoveDir(testdir);
+}

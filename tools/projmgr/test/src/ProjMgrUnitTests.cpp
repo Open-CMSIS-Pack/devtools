@@ -19,7 +19,18 @@ protected:
 
   void CompareFile(const string& file1, const string& file2);
   void CompareFileTree(const string& dir1, const string& dir2);
+
+  void SetUp() override;
+  void TearDown() override;
 };
+
+void ProjMgrUnitTests::SetUp() {
+  ProjMgrKernel::Get();
+}
+
+void ProjMgrUnitTests::TearDown() {
+  ProjMgrKernel::Destroy();
+}
 
 void ProjMgrUnitTests::CompareFile(const string& file1, const string& file2) {
   ifstream f1, f2;
@@ -1316,4 +1327,115 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_List_Board_Pack) {
     testinput_folder + "/TestSolution/TestProject1/test1.Debug+CM0_board_package.cprj");
   CompareFile(testoutput_folder + "/test1.Release+CM0/test1.Release+CM0.cprj",
     testinput_folder + "/TestSolution/TestProject1/test1.Release+CM0_board_package.cprj");
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgrSolution_GetCdefaultFile1) {
+  // Valid file search
+  const string& testdir = testoutput_folder + "/FindFileRegEx";
+  const string& fileName = testdir + "/test.cdefault.yml";
+  RteFsUtils::CreateDirectories(testdir);
+  RteFsUtils::CreateFile(fileName, "");
+  m_rootDir = testdir;
+  m_cdefaultFile.clear();
+  EXPECT_TRUE(GetCdefaultFile());
+  EXPECT_EQ(fileName, m_cdefaultFile);
+  RteFsUtils::RemoveDir(testdir);
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgrSolution_GetCdefaultFile2) {
+  // Multiple files in the search path
+  const string& testdir = testinput_folder + "/TestDefault/multiple";
+  m_rootDir = testdir;
+  m_cdefaultFile.clear();
+  EXPECT_FALSE(GetCdefaultFile());
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgrSolution_GetCdefaultFile3) {
+  // No cdefault file in the search path
+  const string& testdir = testinput_folder + "/TestDefault/empty";
+  m_rootDir = testdir;
+  m_cdefaultFile.clear();
+  EXPECT_FALSE(GetCdefaultFile());
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgrSolution_ParseCdefault1) {
+  // Valid cdefault file
+  const string& validCdefaultFile = testinput_folder + "/TestDefault/.cdefault.yml";
+  EXPECT_TRUE(m_parser.ParseCdefault(validCdefaultFile, true));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgrSolution_ParseCdefault2) {
+  // Wrong cdefault file and schema check enabled
+  const string& wrongCdefaultFile = testinput_folder + "/TestDefault/wrong/.cdefault.yml";
+  EXPECT_FALSE(m_parser.ParseCdefault(wrongCdefaultFile, true));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgrSolution_ParseCdefault3) {
+  // Wrong cdefault file and schema check disabled
+  const string& wrongCdefaultFile = testinput_folder + "/TestDefault/wrong/.cdefault.yml";
+  EXPECT_TRUE(m_parser.ParseCdefault(wrongCdefaultFile, false));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgrSolution_DefaultFile1) {
+  char* argv[6];
+  // convert -s solution.yml
+  // csolution is empty, all information from cdefault.yml is taken
+  const string& csolution = testinput_folder + "/TestDefault/empty.csolution.yml";
+  const string& output = testoutput_folder + "/empty";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)output.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv));
+
+  // Check generated CPRJs
+  CompareFile(testoutput_folder + "/empty/project.Debug/project.Debug.cprj",
+    testinput_folder + "/TestDefault/ref/empty/project.Debug/project.Debug.cprj");
+  CompareFile(testoutput_folder + "/empty/project.Release/project.Release.cprj",
+    testinput_folder + "/TestDefault/ref/empty/project.Release/project.Release.cprj");
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgrSolution_DefaultFile2) {
+  char* argv[6];
+  // convert -s solution.yml
+  // csolution.yml is complete, no information from cdefault.yml is taken
+  const string& csolution = testinput_folder + "/TestDefault/full.csolution.yml";
+  const string& output = testoutput_folder + "/full";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)output.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv));
+
+  // Check generated CPRJs
+  CompareFile(testoutput_folder + "/full/project.Debug/project.Debug.cprj",
+    testinput_folder + "/TestDefault/ref/full/project.Debug/project.Debug.cprj");
+  CompareFile(testoutput_folder + "/full/project.Release/project.Release.cprj",
+    testinput_folder + "/TestDefault/ref/full/project.Release/project.Release.cprj");
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgrSolution_DefaultFile3) {
+  char* argv[6];
+  // convert -s solution.yml
+  // default build-types and default compiler are taken when applicable
+  const string& csolution = testinput_folder + "/TestDefault/build-types.csolution.yml";
+  const string& output = testoutput_folder + "/build-types";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)output.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv));
+
+  // Check generated CPRJs
+  CompareFile(testoutput_folder + "/build-types/project.Debug/project.Debug.cprj",
+    testinput_folder + "/TestDefault/ref/build-types/project.Debug/project.Debug.cprj");
+  CompareFile(testoutput_folder + "/build-types/project.Release/project.Release.cprj",
+    testinput_folder + "/TestDefault/ref/build-types/project.Release/project.Release.cprj");
+  CompareFile(testoutput_folder + "/build-types/project.AC6/project.AC6.cprj",
+    testinput_folder + "/TestDefault/ref/build-types/project.AC6/project.AC6.cprj");
+  CompareFile(testoutput_folder + "/build-types/project.IAR/project.IAR.cprj",
+    testinput_folder + "/TestDefault/ref/build-types/project.IAR/project.IAR.cprj");
 }

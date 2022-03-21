@@ -306,6 +306,14 @@ public:
   */
   static std::string CreateExtendedName(const std::string& path, const std::string& extPrefix);  // creates a name "<path>_<extPrefix>_<index>
 
+  /**
+   * @brief find file using regular expression
+   * @param search paths
+   * @param regular expression
+   * @param path to the file found
+   * @return true if file is found successfully, false otherwise
+  */
+  static bool FindFileRegEx(const std::vector<std::string>& searchPaths, const std::string& regEx, std::string& file);
 };
 
 #endif // RteFsUtils_H
