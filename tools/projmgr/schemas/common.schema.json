@@ -270,7 +270,7 @@
       "properties": {
         "component": {
           "type": "string",
-          "pattern": "(^[\\w \\/.+-]+$)|(^([\\w \\/.-]+::)?([\\w \\/.-]+)(&[\\w \\/.-]+)?(:[\\w \\/.-]+)(:[\\w \\/.-]+)?(&[\\w \\/.-]+)?(@(>=)?(\\d+\\.\\d+\\.\\d+((\\+|\\-)[\\w.\\/+-]+)?))?$)",
+          "pattern": "(^[\\w \\/.+-]+$)|(^([\\w \\/.+-]+::)?([\\w \\/.+-]+)(&[\\w \\/.+-]+)?(:[\\w \\/.+-]+)(:[\\w \\/.+-]+)?(&[\\w \\/.+-]+)?(@(>=)?(\\d+\\.\\d+\\.\\d+((\\+|\\-)[\\w.\\/+-]+)?))?$)",
           "description": "Name of the software component. It can be a free text or a component identifier in the format [Cvendor::] Cclass [&Cbundle] :Cgroup [:Csub] [&Cvariant] [@[>=]Cversion]"
         },
         "for-type":     { "$ref": "#/definitions/ForType" },
