@@ -22,6 +22,7 @@ static constexpr const char* YAML_COMPILER = "compiler";
 static constexpr const char* YAML_COMPONENT = "component";
 static constexpr const char* YAML_COMPONENTS = "components";
 static constexpr const char* YAML_DEBUG = "debug";
+static constexpr const char* YAML_DEFAULT = "default";
 static constexpr const char* YAML_DEFINES = "defines";
 static constexpr const char* YAML_DELPATHS = "del-paths";
 static constexpr const char* YAML_DESCRIPTION = "description";
@@ -78,6 +79,15 @@ public:
   ~ProjMgrYamlParser(void);
 
   /**
+ * @brief parse cdefault
+ * @param input cdefault.yml file
+ * @param reference to store parsed cdefault item
+ * @param checkSchema false to skip schema validation
+*/
+  bool ParseCdefault(const std::string& input, CdefaultItem& cdefault,
+    bool checkSchema);
+
+  /**
    * @brief parse csolution
    * @param input csolution.yml file
    * @param reference to store parsed csolution item
@@ -126,6 +136,7 @@ protected:
   bool ParseTypePair(std::vector<std::string>& vec, std::vector<TypePair>& typeVec);
   bool GetTypes(const std::string& type, std::string& buildType, std::string& targetType);
   void PushBackUniquely(std::vector<std::string>& vec, const std::string& value);
+  bool ValidateCdefault(const std::string& input, const YAML::Node& root);
   bool ValidateCsolution(const std::string& input, const YAML::Node& root);
   bool ValidateCproject(const std::string& input, const YAML::Node& root);
   bool ValidateClayer(const std::string& input, const YAML::Node& root);

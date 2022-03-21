@@ -116,6 +116,7 @@ struct BoardItem {
  *        linker script,
 */
 struct ContextItem {
+  CdefaultItem* cdefault = nullptr;
   CsolutionItem* csolution = nullptr;
   CprojectItem* cproject = nullptr;
   std::map<std::string, ClayerItem*> clayers;

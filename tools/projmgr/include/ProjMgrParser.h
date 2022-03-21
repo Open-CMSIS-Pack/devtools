@@ -189,6 +189,20 @@ struct ContextDesc {
 };
 
 /**
+ * @brief default item containing
+ *        cdefault path
+ *        build types,
+ *        compiler,
+ *        list of packs
+*/
+struct CdefaultItem {
+  std::string path;
+  std::map<std::string, BuildType> buildTypes;
+  std::string compiler;
+  std::vector<PackItem> packs;
+};
+
+/**
  * @brief solution item containing
  *        csolution path
  *        build types,
@@ -274,6 +288,12 @@ public:
   ~ProjMgrParser(void);
 
   /**
+   * @brief parse cdefault
+   * @param input cdefault.yml file
+  */
+  bool ParseCdefault(const std::string& input, bool checkSchema);
+
+  /**
    * @brief parse cproject
    * @param input cproject.yml file
    * @param boolean parse single project, default false
@@ -291,6 +311,12 @@ public:
    * @param input clayer.yml file
   */
   bool ParseClayer(const std::string& input, bool checkSchema);
+
+  /**
+   * @brief get cdefault
+   * @return cdefault item
+  */
+  CdefaultItem& GetCdefault(void);
 
   /**
    * @brief get csolution
@@ -311,6 +337,7 @@ public:
   std::map<std::string, ClayerItem>& GetClayers(void);
 
 protected:
+  CdefaultItem m_cdefault;
   CsolutionItem m_csolution;
   std::map<std::string, CprojectItem> m_cprojects;
   std::map<std::string, ClayerItem> m_clayers;

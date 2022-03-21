@@ -23,6 +23,11 @@ ProjMgrParser::~ProjMgrParser(void) {
   // Reserved
 }
 
+bool ProjMgrParser::ParseCdefault(const string& input, bool checkSchema) {
+  // Parse solution file
+  return ProjMgrYamlParser().ParseCdefault(input, m_cdefault, checkSchema);
+}
+
 bool ProjMgrParser::ParseCsolution(const string& input, bool checkSchema) {
   // Parse solution file
   return ProjMgrYamlParser().ParseCsolution(input, m_csolution, checkSchema);
@@ -37,6 +42,10 @@ bool ProjMgrParser::ParseCproject(const string& input, bool checkSchema, bool si
 bool ProjMgrParser::ParseClayer(const string& input, bool checkSchema) {
   // Parse layer file
   return ProjMgrYamlParser().ParseClayer(input, m_clayers, checkSchema);
+}
+
+CdefaultItem& ProjMgrParser::GetCdefault(void) {
+  return m_cdefault;
 }
 
 CsolutionItem& ProjMgrParser::GetCsolution(void) {

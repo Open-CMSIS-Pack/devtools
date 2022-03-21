@@ -10,9 +10,11 @@
 #include "RteItem.h"
 #include "XMLTreeSlim.h"
 #include "CrossPlatform.h"
+#include "CrossPlatformUtils.h"
 
 #include <array>
 #include <functional>
+#include <regex>
 
 using namespace std;
 

@@ -22,6 +22,7 @@
 #include <fstream>
 #include <iostream>
 #include <iomanip>
+#include <regex>
 #include <thread>
 
 using namespace std;
@@ -722,6 +723,33 @@ string RteFsUtils::CreateExtendedName(const string& path, const string& extPrefi
     }
   }
   return backup;
+}
+
+bool RteFsUtils::FindFileRegEx(const vector<string>& searchPaths, const string& regEx, string& file) {
+  error_code ec;
+  for (const auto& searchPath : searchPaths) {
+    const auto& files = fs::directory_iterator(searchPath, ec);
+    vector<string> findings;
+    for (const auto& p : files) {
+      const string& path = p.path().generic_string();
+      try {
+        if (regex_match(path, regex(regEx))) {
+          findings.push_back(path);
+        }
+      } catch (regex_error const&) {
+        return false;
+      }
+    }
+    if (findings.size() == 1) {
+      file = findings[0];
+      return true;
+    }
+    if (findings.size() > 1) {
+      file = searchPath;
+      return false;
+    }
+  }
+  return false;
 }
 
 // End of RteFsUtils.cpp

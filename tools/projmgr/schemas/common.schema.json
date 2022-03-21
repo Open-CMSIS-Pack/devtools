@@ -311,6 +311,21 @@
       "required": [ "layer" ],
       "additionalProperties": false
     },
+    "DefaultDescType": {
+      "type": "object",
+      "properties": {
+        "packs": {
+          "$ref": "#/definitions/PacksType"
+        },
+        "compiler": {
+          "$ref": "#/definitions/CompilerType"
+        },
+        "build-types": {
+          "$ref": "#/definitions/BuildTypes"
+        }
+      },
+      "additionalProperties": false
+    },
     "SolutionDescType": {
       "type": "object",
       "properties": {
