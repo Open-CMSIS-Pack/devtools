@@ -174,16 +174,7 @@
           "description": "Path to the valid project file"
         },
         "for-type":     { "$ref": "#/definitions/ForType" },
-        "not-for-type": { "$ref": "#/definitions/NotForType" },
-        "processor":    { "$ref": "#/definitions/ProcessorType" },
-        "compiler":     { "$ref": "#/definitions/CompilerType" },
-        "optimize":     { "$ref": "#/definitions/OptimizeType" },
-        "debug":        { "$ref": "#/definitions/DebugType" },
-        "defines":      { "$ref": "#/definitions/DefinesType" },
-        "undefines":    { "$ref": "#/definitions/UndefinesType" },
-        "add-paths":    { "$ref": "#/definitions/AddpathsType" },
-        "del-paths":    { "$ref": "#/definitions/DelpathsType" },
-        "misc":         { "$ref": "#/definitions/MiscTypes" }
+        "not-for-type": { "$ref": "#/definitions/NotForType" }
       },
       "additionalProperties": false,
       "required": [ "project" ]
@@ -340,7 +331,16 @@
         },
         "projects": {
           "$ref": "#/definitions/ProjectsType"
-        }
+        },
+        "processor":    { "$ref": "#/definitions/ProcessorType" },
+        "compiler":     { "$ref": "#/definitions/CompilerType" },
+        "optimize":     { "$ref": "#/definitions/OptimizeType" },
+        "debug":        { "$ref": "#/definitions/DebugType" },
+        "defines":      { "$ref": "#/definitions/DefinesType" },
+        "undefines":    { "$ref": "#/definitions/UndefinesType" },
+        "add-paths":    { "$ref": "#/definitions/AddpathsType" },
+        "del-paths":    { "$ref": "#/definitions/DelpathsType" },
+        "misc":         { "$ref": "#/definitions/MiscTypes" }
       },
       "additionalProperties": false
     },

@@ -21,8 +21,8 @@
     <cflags add="-C-CPP-type-CM0" compiler="AC6"/>
     <cxxflags add="-C-CPP-type-CM0" compiler="AC6"/>
     <ldflags add="-Link-type-CM0" compiler="AC6" file="RTE/Device/RteTest_ARMCM0/ARMCM0_ac6.sct"/>
-    <defines>DEF-CM0;DEF-Debug</defines>
-    <includes>/path/CM0;/path/Debug</includes>
+    <defines>DEF-solution;DEF-CM0;DEF-Debug</defines>
+    <includes>/path/solution/;/path/CM0;/path/Debug</includes>
   </target>
 
   <components>

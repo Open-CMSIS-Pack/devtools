@@ -124,7 +124,6 @@ struct ContextItem {
   RteTarget* rteActiveTarget = nullptr;
   BuildType buildType;
   TargetType targetType;
-  TargetType csolutionTarget;
   DirectoriesItem directories;
   TypePair type;
   std::string name;

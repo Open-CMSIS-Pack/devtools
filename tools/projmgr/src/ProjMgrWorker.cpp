@@ -37,7 +37,6 @@ bool ProjMgrWorker::AddContexts(ProjMgrParser& parser, ContextDesc& descriptor, 
   context.cproject = &cprojects.at(cprojectFile);
   context.cdefault = &parser.GetCdefault();
   context.csolution = &parser.GetCsolution();
-  context.csolutionTarget = descriptor.target;
   context.directories.cproject = fs::path(cprojectFile).parent_path().generic_string();
 
   // Default build-types
@@ -870,7 +869,7 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
   // Misc
   vector<vector<MiscItem>*> miscVec = {
     &context.cproject->target.build.misc,
-    &context.csolutionTarget.build.misc,
+    &context.csolution->target.build.misc,
     &context.buildType.misc,
     &context.targetType.build.misc,
   };
@@ -894,7 +893,7 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
     &context.defines,
     {
       {&projectDefines, &projectUndefines},
-      {&context.csolutionTarget.build.defines, &context.csolutionTarget.build.undefines},
+      {&context.csolution->target.build.defines, &context.csolution->target.build.undefines},
       {&context.targetType.build.defines, &context.targetType.build.undefines},
       {&context.buildType.defines, &context.buildType.undefines},
     }
@@ -915,7 +914,7 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
     &context.includes,
     {
       {&projectAddPaths, &projectDelPaths},
-      {&context.csolutionTarget.build.addpaths, &context.csolutionTarget.build.delpaths},
+      {&context.csolution->target.build.addpaths, &context.csolution->target.build.delpaths},
       {&context.targetType.build.addpaths, &context.targetType.build.delpaths},
       {&context.buildType.addpaths, &context.buildType.delpaths},
     }
@@ -926,7 +925,7 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
     &context.compiler,
     {
       &context.cproject->target.build.compiler,
-      &context.csolutionTarget.build.compiler,
+      &context.csolution->target.build.compiler,
       &context.targetType.build.compiler,
       &context.buildType.compiler,
     },
@@ -942,7 +941,7 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
   &context.board,
     {
       &context.cproject->target.board,
-      &context.csolutionTarget.board,
+      &context.csolution->target.board,
       &context.targetType.board,
     },
   };
@@ -957,7 +956,7 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
     &context.device,
     {
       &context.cproject->target.device,
-      &context.csolutionTarget.device,
+      &context.csolution->target.device,
       &context.targetType.device,
     },
   };
@@ -972,7 +971,7 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
     &context.trustzone,
     {
       &context.cproject->target.build.processor.trustzone,
-      &context.csolutionTarget.build.processor.trustzone,
+      &context.csolution->target.build.processor.trustzone,
       &context.targetType.build.processor.trustzone,
       &context.buildType.processor.trustzone,
     },
@@ -988,7 +987,7 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
     &context.fpu,
     {
       &context.cproject->target.build.processor.fpu,
-      &context.csolutionTarget.build.processor.fpu,
+      &context.csolution->target.build.processor.fpu,
       &context.targetType.build.processor.fpu,
       &context.buildType.processor.fpu,
     },
@@ -1004,7 +1003,7 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
     &context.endian,
     {
       &context.cproject->target.build.processor.endian,
-      &context.csolutionTarget.build.processor.endian,
+      &context.csolution->target.build.processor.endian,
       &context.targetType.build.processor.endian,
       &context.buildType.processor.endian,
     },
