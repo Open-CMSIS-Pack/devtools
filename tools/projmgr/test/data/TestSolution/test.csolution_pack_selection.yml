@@ -82,13 +82,14 @@ solution:
   projects:
     - project: ./TestProject2/test2.cproject.yml
       not-for-type: .Release
-      defines:
-        - DEF-solution
-        - DEF-solution-to-be-removed
-      undefines:
-        - DEF-project-to-be-removed
-      add-paths:
-        - /path/solution/
-        - /path/solution/to-be-removed
-      del-paths:
-        - /path/project/to-be-removed
+
+  defines:
+    - DEF-solution
+    - DEF-solution-to-be-removed
+  undefines:
+    - DEF-project-to-be-removed
+  add-paths:
+    - /path/solution/
+    - /path/solution/to-be-removed
+  del-paths:
+    - /path/project/to-be-removed

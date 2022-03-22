@@ -179,12 +179,10 @@ struct GroupNode {
 /**
  * @brief context descriptor containing
  *        cproject filename,
- *        target properties,
  *        type filter
 */
 struct ContextDesc {
   std::string cproject;
-  TargetType target;
   TypeFilter type;
 };
 
@@ -207,6 +205,7 @@ struct CdefaultItem {
  *        csolution path
  *        build types,
  *        target types,
+ *        target properties,
  *        list of cprojects,
  *        list of contexts descriptors,
  *        list of packs
@@ -215,6 +214,7 @@ struct CsolutionItem {
   std::string path;
   std::map<std::string, BuildType> buildTypes;
   std::map<std::string, TargetType> targetTypes;
+  TargetType target;
   std::vector<std::string> cprojects;
   std::vector<ContextDesc> contexts;
   std::vector<PackItem> packs;

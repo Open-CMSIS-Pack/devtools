@@ -74,6 +74,7 @@ bool ProjMgrYamlParser::ParseCsolution(const string& input,
 
     ParseTargetTypes(solutionNode, csolution.targetTypes);
     ParseBuildTypes(solutionNode, csolution.buildTypes);
+    ParseTargetType(solutionNode, csolution.target);
     ParsePacks(solutionNode, csolution.packs);
 
   } catch (YAML::Exception& e) {
@@ -376,7 +377,6 @@ bool ProjMgrYamlParser::ParseContexts(const YAML::Node& parent, CsolutionItem& c
         return false;
       }
       ParseString(projectsEntry, YAML_PROJECT, descriptor.cproject);
-      ParseTargetType(projectsEntry, descriptor.target);
       csolution.contexts.push_back(descriptor);
       PushBackUniquely(csolution.cprojects, descriptor.cproject);
     }
@@ -457,12 +457,6 @@ const set<string> solutionKeys = {
   YAML_TARGETTYPES,
   YAML_BUILDTYPES,
   YAML_PACKS,
-};
-
-const set<string> projectsKeys = {
-  YAML_PROJECT,
-  YAML_FORTYPE,
-  YAML_NOTFORTYPE,
   YAML_PROCESSOR,
   YAML_COMPILER,
   YAML_OPTIMIZE,
@@ -473,6 +467,12 @@ const set<string> projectsKeys = {
   YAML_ADDPATHS,
   YAML_DELPATHS,
   YAML_MISC,
+};
+
+const set<string> projectsKeys = {
+  YAML_PROJECT,
+  YAML_FORTYPE,
+  YAML_NOTFORTYPE,
 };
 
 const set<string> projectKeys = {
