@@ -6,7 +6,11 @@
 
 #include "ProjMgr.h"
 #include "ProjMgrTestEnv.h"
+
 #include "RteFsUtils.h"
+
+#include "CrossPlatformUtils.h"
+
 #include "gtest/gtest.h"
 #include <fstream>
 
@@ -123,7 +127,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListDevices) {
   argv[3] = (char*)"--filter";
   argv[4] = (char*)"RteTest_ARMCM4";
   EXPECT_EQ(0, RunProjMgr(5, argv));
-  
+
   auto outStr = streamRedirect.GetOutString();
   EXPECT_STREQ(outStr.c_str(), "RteTest_ARMCM4_FP\nRteTest_ARMCM4_NOFP\n");
 }
@@ -1077,12 +1081,12 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ExecuteGenerator) {
   argv[6] = (char*)"-c";
   argv[7] = (char*)"test-gpdsc.Debug+CM0";
 
-  //TODO: Enable ExecuteGenerator tests for all platforms once it is implemented
-#ifdef _WIN32
-  EXPECT_EQ(0, RunProjMgr(8, argv));
-#else
-  EXPECT_EQ(1, RunProjMgr(8, argv));
-#endif
+  const string& hostType = CrossPlatformUtils::GetHostType();
+  if (hostType == "linux" || hostType == "win") {
+    EXPECT_EQ(0, RunProjMgr(8, argv));
+  } else {
+    EXPECT_EQ(1, RunProjMgr(8, argv));
+  }
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ExecuteGeneratorEmptyContext) {
@@ -1094,12 +1098,12 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ExecuteGeneratorEmptyContext) {
   argv[4] = (char*)"-s";
   argv[5] = (char*)csolution.c_str();
 
-  //TODO: Enable ExecuteGenerator tests for all platforms once it is implemented
-#ifdef _WIN32
-  EXPECT_EQ(0, RunProjMgr(6, argv));
-#else
-  EXPECT_EQ(1, RunProjMgr(6, argv));
-#endif
+  const string& hostType = CrossPlatformUtils::GetHostType();
+  if (hostType == "linux" || hostType == "win") {
+    EXPECT_EQ(0, RunProjMgr(6, argv));
+  } else {
+    EXPECT_EQ(1, RunProjMgr(6, argv));
+  }
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ExecuteGeneratorEmptyContextMultipleTypes) {
@@ -1160,12 +1164,12 @@ TEST_F(ProjMgrUnitTests, ExecuteGenerator) {
   m_codeGenerator = "RteTestGeneratorIdentifier";
   EXPECT_TRUE(PopulateContexts());
 
-  //TODO: Enable ExecuteGenerator tests for all platforms once it is implemented
-#ifdef _WIN32
-  EXPECT_TRUE(m_worker.ExecuteGenerator(m_context, m_codeGenerator));
-#else
-  EXPECT_FALSE(m_worker.ExecuteGenerator(m_context, m_codeGenerator));
-#endif
+  const string& hostType = CrossPlatformUtils::GetHostType();
+  if (hostType == "linux" || hostType == "win") {
+    EXPECT_TRUE(m_worker.ExecuteGenerator(m_context, m_codeGenerator));
+  } else {
+    EXPECT_FALSE(m_worker.ExecuteGenerator(m_context, m_codeGenerator));
+  }
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Filtered_Pack_Selection) {

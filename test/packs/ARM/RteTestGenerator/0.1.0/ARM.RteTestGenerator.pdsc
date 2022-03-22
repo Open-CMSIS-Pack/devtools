@@ -38,18 +38,19 @@
     <!-- This generator is launched if any component referencing this generator by 'id' is selected and the specified <gpdsc> file does not exist -->
     <generator id="RteTestGeneratorIdentifier">
       <description>RteTest Generator Description</description>
-      <command>Generator/script.bat</command>
       <!-- path is specified either absolute or relative to PDSC or GPDSC file -->
       <workingDir>$PRTE/Device</workingDir>
-      <!-- path is specified either absolute or relative to PDSC or GPDSC file. If not specified it is the project directory configured by the environment -->
-      <arguments>
+      <exe>
+      <command host="win">Generator/script.bat</command>
+      <command host="linux">Generator/script.sh</command>
+        <!-- path is specified either absolute or relative to PDSC or GPDSC file. If not specified it is the project directory configured by the environment -->
         <!-- D = Device (Dname/Dvariant as configured by environment) -->
         <argument>$D</argument>
         <!-- Project path and project name (as configured by environment) -->
         <argument>#P</argument>
         <!-- absolute or relative to workingDir. $S = Device Family Pack base folder -->
         <argument>$S</argument>
-      </arguments>
+      </exe>
       <!-- path is either absolute or relative to working directory -->
       <gpdsc name="$PRTE/Device/$D/RteTest.gpdsc"/>
     </generator>
