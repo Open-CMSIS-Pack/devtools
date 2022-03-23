@@ -694,7 +694,7 @@ The `processor:` keyword defines attributes such as TrustZone and FPU register u
 
 # Target and Build Types
 
-The section [Project setup for multiple targets and test builds](#project-setup-for-multiple-targets-and-test-builds) describes the concept of  `target-types` and `build-types`.  These *types* can be defined in the following files in the following order:
+The section [Project setup for multiple targets and test builds](Overview.md#project-setup-for-multiple-targets-and-builds) describes the concept of  `target-types` and `build-types`.  These *types* can be defined in the following files in the following order:
 
 - `default.csettings.yml`  where it defines global *types*, such as *Debug* and *Release* build.
 - `*.csolution.yml` where it specifies the build and target *types* of the complete system.
