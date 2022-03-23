@@ -108,17 +108,18 @@ The CMSIS Project Manager uses the following syntax to specify the `component:` 
 [Cvendor::] Cclass [&Cbundle] :Cgroup [:Csub] [&Cvariant] [@[~ | >=]Cversion]
 ```
 
-Element    |          | Description
-:----------|----------|:---------------------
-`Cvendor`  | Optional | Name of the component vendor defined in `<components>` element of the software pack.
-`Cclass`   | Required | Component class name  defined in `<components>` element of the software pack.
-`Cbundle`  | Optional | Bundle name of the component class defined in `<bundle>` element of the software pack.
-`Cgroup`   | Required | Component group name  defined in `<components>` element of the software pack.
-`Csub`     | Optional | Component sub-group name  defined in `<components>` element of the software pack.
-`Cvariant` | Optional | Component sub-group name  defined in `<components>` element of the software pack.
-`Cversion` | Optional | Version number of the component, with `@1.2.3` that must exactly match, `@~1.2`/`@~1` that matches with sematic versioning, or `@>=1.2.3` that allows any version higher or equal.
+Element    |              | Description
+:----------|--------------|:---------------------
+`Cvendor`  | Optional     | Name of the component vendor defined in `<components>` element of the software pack.
+`Cclass`   | **Required** | Component class name  defined in `<components>` element of the software pack.
+`Cbundle`  | Optional     | Bundle name of the component class defined in `<bundle>` element of the software pack.
+`Cgroup`   | **Required** | Component group name  defined in `<components>` element of the software pack.
+`Csub`     | Optional     | Component sub-group name  defined in `<components>` element of the software pack.
+`Cvariant` | Optional     | Component sub-group name  defined in `<components>` element of the software pack.
+`Cversion` | Optional     | Version number of the component, with `@1.2.3` that must exactly match, `@~1.2`/`@~1` that matches with sematic versioning, or `@>=1.2.3` that allows any version higher or equal.
 
 > Notes:
+
 > - When `Cvariant` is omitted, the default `Cvariant` is selected.
 
 **Examples:**
@@ -150,10 +151,10 @@ Element       |          | Description
 `device_name` | Optional | Device name (Dname attribute) or when used the variant name (Dvariant attribute) as defined in the \<devices\> element.
 `Pname`       | Optional | Processor identifier (Pname attribute) as defined in the `<devices>` element.
 
-**Notes:**
+> **Notes:**
 
-- All elements of a device name are optional which allows to supply additional information, such as the `:Pname` at different stages of the project. However the `device_name` itself is a mandatory element and must be specified in context of the various project files.
-- `Dvendor::` must be used in combination with the `device_name`.  
+> - All elements of a device name are optional which allows to supply additional information, such as the `:Pname` at different stages of the project. However the `device_name` itself is a mandatory element and must be specified in context of the various project files.
+> - `Dvendor::` must be used in combination with the `device_name`.  
 
 **Examples:**
 
@@ -173,14 +174,13 @@ Evaluation Boards define indirectly a device via the related BSP.   The followin
 [vendor::] board_name
 ```
 
-Element      |          | Description
-:------------|----------|:---------------------
-`vendor`     | Optional | Name of the board vendor defined in `<boards><board>` element of the board support pack (BSP).
-`board_name` | Required | Board name (name attribute) as defined in the \<board\> element of the BSP.
+Element      |              | Description
+:------------|--------------|:---------------------
+`vendor`     | Optional     | Name of the board vendor defined in `<boards><board>` element of the board support pack (BSP).
+`board_name` | **Required** | Board name (name attribute) as defined in the \<board\> element of the BSP.
 
-**Note:**
-
-- When a `board:` is specified, the `device:` specification can be omitted, however it is possible to overwrite the device setting in the BSP with an explicit `device:` setting.
+> **Note:**
+> - When a `board:` is specified, the `device:` specification can be omitted, however it is possible to overwrite the device setting in the BSP with an explicit `device:` setting.
 
 **Examples:**
 
@@ -191,7 +191,7 @@ board: LPCXpresso55S28                            # The LPCXpresso55S28 board
 
 # Access Sequences
 
-The following **Access Sequences** allow to use arguments from the CMSIS Project Manager as arguments of the various `*.yml` files in the key values for `defines:`, `add-paths:`, `misc:`, `files:`, and `execute:`. The **Access Sequences** can refer in a different project and provide therefore a method to describe project dependencies.
+The following **access sequences** allow to use arguments from the CMSIS Project Manager as arguments of the various `*.yml` files in the key values for `defines:`, `add-paths:`, `misc:`, `files:`, and `execute:`. The **access sequences** can refer in a different project and provide therefore a method to describe project dependencies.
 
 Access Sequence                                | Description
 :----------------------------------------------|:--------------------------------------
