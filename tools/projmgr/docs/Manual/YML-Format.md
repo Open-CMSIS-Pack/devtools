@@ -82,22 +82,22 @@ The following chapter explains the YML format that is used to describe the YML i
 The CMSIS Project Manager uses the following syntax to specify the `pack:` names in the `*.yml` files.
 
 ```text
-vendor [:: pack-name [@[~ | >=] version] ]
+[vendor][:: pack-name [@[~ | >=] version] ]
 ```
 
-Element      | Description
-:------------|:---------------------
-`vendor`     | is the vendor name of the software pack (optional).
-`pack-name`  | is the name of the software pack, for the key `filter:` wildcards (*, ?) can be used.
-`version`    | is the version number of the software pack, with `@1.2.3` that must exactly match, `@~1.2`/`@~1` that matches with sematic versioning, or `@>=1.2.3` that allows any version higher or equal.
+Element      |          | Description
+:------------|----------|:---------------------
+`vendor`     | Optional | Vendor name of the software pack.
+`pack-name`  | Optional | Name of the software pack; wildcards (*, ?) can be used.
+`version`    | Optional | Version number of the software pack, with `@1.2.3` that must exactly match, `@~1.2`/`@~1` that matches with sematic versioning, or `@>=1.2.3` that allows any version higher or equal.
 
 **Examples:**
 
 ```yml
 - pack:   ARM::CMSIS@5.5.0                             # 'CMSIS' Pack (with version 5.5.0)
 - pack:   Keil::MDK-Middleware@>=7.13.0                # 'MDK-Middleware' Software Pack from vendor Keil (with version 7.13.0 or higher)
-- filter: AWS                                          # All Software Packs from vendor 'AWS'
-- filter: Keil::STM*                                   # All Software Packs that start with 'STM' from vendor 'Keil'
+- pack:   AWS                                          # All Software Packs from vendor 'AWS'
+- pack:   Keil::STM*                                   # All Software Packs that start with 'STM' from vendor 'Keil'
 ```
 
 ## Component Name Conventions
@@ -108,18 +108,17 @@ The CMSIS Project Manager uses the following syntax to specify the `component:` 
 [Cvendor::] Cclass [&Cbundle] :Cgroup [:Csub] [&Cvariant] [@[~ | >=]Cversion]
 ```
 
-Element    | Description
-:----------|:---------------------
-`Cvendor`  | is the name of the component vendor defined in `<components>` element of the software pack (optional).
-`Cclass`   | is the component class name  defined in `<components>` element of the software pack (required)
-`Cbundle`  | is the bundle name of component class defined in `<bundle>` element of the software pack (optional).
-`Cgroup`   | is the component group name  defined in `<components>` element of the software pack (required).
-`Csub`     | is the component sub-group name  defined in `<components>` element of the software pack (optional).
-`Cvariant` | is the component sub-group name  defined in `<components>` element of the software pack (optional).
-`Cversion` | is the version number of the component, with `@1.2.3` that must exactly match, `@~1.2`/`@~1` that matches with sematic versioning, or `@>=1.2.3` that allows any version higher or equal.
+Element    |          | Description
+:----------|----------|:---------------------
+`Cvendor`  | Optional | Name of the component vendor defined in `<components>` element of the software pack.
+`Cclass`   | Required | Component class name  defined in `<components>` element of the software pack.
+`Cbundle`  | Optional | Bundle name of the component class defined in `<bundle>` element of the software pack.
+`Cgroup`   | Required | Component group name  defined in `<components>` element of the software pack.
+`Csub`     | Optional | Component sub-group name  defined in `<components>` element of the software pack.
+`Cvariant` | Optional | Component sub-group name  defined in `<components>` element of the software pack.
+`Cversion` | Optional | Version number of the component, with `@1.2.3` that must exactly match, `@~1.2`/`@~1` that matches with sematic versioning, or `@>=1.2.3` that allows any version higher or equal.
 
 > Notes:
-> - The unique separator `::` allows to omit `Cvendor`
 > - When `Cvariant` is omitted, the default `Cvariant` is selected.
 
 **Examples:**
@@ -145,11 +144,11 @@ The device specifies multiple attributes about the target that ranges from the p
 [Dvendor:: [device_name] ] [:Pname]
 ```
 
-Element       | Description
-:-------------|:---------------------
-`Dvendor`     | is the name (without enum field) of the device vendor defined in `<devices><family>` element of the software pack (optional).
-`device_name` | is the device name (Dname attribute) or when used the variant name (Dvariant attribute) as defined in the \<devices\> element.
-`Pname`       | is the processor identifier (Pname attribute) as defined in the `<devices>` element.
+Element       |          | Description
+:-------------|----------|:---------------------
+`Dvendor`     | Optional | Name (without enum field) of the device vendor defined in `<devices><family>` element of the software pack.
+`device_name` | Optional | Device name (Dname attribute) or when used the variant name (Dvariant attribute) as defined in the \<devices\> element.
+`Pname`       | Optional | Processor identifier (Pname attribute) as defined in the `<devices>` element.
 
 **Notes:**
 
@@ -174,10 +173,10 @@ Evaluation Boards define indirectly a device via the related BSP.   The followin
 [vendor::] board_name
 ```
 
-Element      | Description
-:------------|:---------------------
-`vendor`     | is the name of the board vendor defined in `<boards><board>` element of the board support pack (BSP) (optional).
-`board_name` | is the board name (name attribute) of the as defined in the \<board\> element of the BSP.
+Element      |          | Description
+:------------|----------|:---------------------
+`vendor`     | Optional | Name of the board vendor defined in `<boards><board>` element of the board support pack (BSP).
+`board_name` | Required | Board name (name attribute) as defined in the \<board\> element of the BSP.
 
 **Note:**
 
@@ -282,7 +281,7 @@ Keyword                          | Description
 :--------------------------------|:------------------------------------
 [`default:`](#default)           | Start of `*.cdefault.yml` file that provides global settings
 [`solution:`](#solution)         | Start of `*.csolution.yml` file that [collects related projects](Overview.md#solution-collection-of-related-projects) along with build order.
-[`project:`](#project)           | Start of `*.cproject.yml` file that that defines a project that can be indepentantly generated.
+[`project:`](#project)           | Start of `*.cproject.yml` file that that defines a project that can be independently generated.
 [`layer:`](#layer)               | Start of `*.clayer.yml` file that contains pre-configured software components along with source files.
 
 ## `default:`
@@ -302,9 +301,9 @@ default:
   compiler: AC6                   # use Arm Compiler 6 as default
 
   packs:
-    - filter: ARM                 # use all packs from Arm
-    - filter: AWS                 # use all packs from AWS
-    - filter: NXP::*LPC*          # use all packs from NXP that contain LPC
+    - pack: ARM                   # use all packs from Arm
+    - pack: AWS                   # use all packs from AWS
+    - pack: NXP::*LPC*            # use all packs from NXP that contain LPC
 
     - pack: ARM::CMSIS            # use local path for the CMSIS pack
       path: .\dev\CMSIS
@@ -339,7 +338,7 @@ solution:
   compiler: GCC                 # overwrite compiler definition in 'cdefaults.yml'
 
   packs: 
-    - filter: ST                # add ST packs to existing filter in 'cdefaults.yml'
+    - pack: ST                  # add ST packs in 'cdefaults.yml'
 
   build-types:                  # additional build types
     - type: Test
@@ -540,22 +539,26 @@ Contains a list of symbol #define statements that are passed via the command lin
 
 `defines:`                                            | Content
 :-----------------------------------------------------|:------------------------------------
-&nbsp;&nbsp; `- <symbol-name>:`                       | #define symbol passed via command line
-&nbsp;&nbsp; `- <symbol-name>: <value>`               | #define symbol with value passed via command line
+&nbsp;&nbsp; `- <symbol-name>`                        | #define symbol passed via command line
+&nbsp;&nbsp; `- <symbol-name> = <value>`              | #define symbol with value passed via command line
 
 **Example:**
 
 ```yml
 defines:                   # Start a list of define statements
-  - TestValue: 12          # add symbol 'TestValue' with value 12
-  - TestMode:              # add symbol 'TestMode'
+  - TestValue = 12         # add symbol 'TestValue' with value 12
+  - TestMode               # add symbol 'TestMode'
 ```
 
 ## `undefines:`
 
 Remove symbol #define statements from the command line of the development tools.
 
-**YML structure:**
+`undefines:`                                         | Content
+:----------------------------------------------------|:------------------------------------
+&nbsp;&nbsp; `- <symbol-name>`                       | Remove #define symbol
+
+**Example:**
 
 ```yml
 groups:
@@ -573,38 +576,65 @@ groups:
 
 Add include paths to the command line of the development tools.
 
-**YML structure:**
+`add-paths:`                                         | Content
+:----------------------------------------------------|:------------------------------------
+&nbsp;&nbsp; `- <path-name>`                         | Named path to be added
+
+**Example:**
 ```yml
-add-paths:                 # Start a list path names that should be added to the include file search
-  - path:                  # add path name
-  - path:
+  target-types:
+    - type: CM3
+      device: ARMCM3
+      add-paths:
+        - /path/CM3
 ```
 
 ## `del-paths:`
 
 Remove include paths (that are defined at the cproject level) from the command line of the development tools.
 
-**YML structure:**
+`del-paths:`                                         | Content
+:----------------------------------------------------|:------------------------------------
+&nbsp;&nbsp; `- <path-name>`                         | Named path to be removed; `*` for all
+
+**Example:**
 ```yml
-del-paths:                 # Start a list of path names that should be removed from the include file search
-  - path:                  # remove path name
-  - *                      # remove all paths
+  target-types:
+    - type: CM3
+      device: ARMCM3
+      del-paths:
+        - /path/solution/to-be-removed
 ```
 
 ## `misc:`
 
 Add miscellaneous literal tool-specific controls that are directly passed to the individual tools depending on the file type.
 
-**YML structure:**
-```yml
-misc:                      # Start a list of literal control strings that are directly passed to the tools.
-  - compiler:              # select the toolchain that the literal control string applies too (AC6, IAR, GCC).
-    C: string              # applies to *.c files only.
-    CPP: string            # applies to *.cpp files only.
-    C*: string             # applies to *.c and *.cpp files.
-    ASM: string            # applies to assembler source files
-    Link: string           # applies to the linker
-    Lib: string            # applies to the library manager or archiver
+`misc:`                      |          | Content
+:----------------------------|----------|:------------------------------------
+[`- compiler:`](#compiler)   | Required | Name of the toolchain that the literal control string applies to.
+&nbsp;&nbsp; `C:`            | Optional | Applies to *.c files only.
+&nbsp;&nbsp; `CPP:`          | Optional | Applies to *.cpp files only.
+&nbsp;&nbsp; `C*:`           | Optional | Applies to *.c and *.cpp files.
+&nbsp;&nbsp; `ASM:`          | Optional | Applies to assembler source files only.
+&nbsp;&nbsp; `Link:`         | Optional | Applies to the linker.
+&nbsp;&nbsp; `Lib:`          | Optional | Applies to the library manager or archiver.
+
+**Example:**
+  build-types:
+    - type: Debug
+      compiler: AC6
+      misc:
+        - compiler: AC6
+          C:
+            - -O1
+            - -g
+    - type: Release
+      compiler: AC6
+      misc:
+        - compiler: AC6
+          C:
+            - -O3
 ```
 
 # Pack Selection
@@ -624,11 +654,7 @@ The `packs:` node is the start of a pack selection.
 
 `packs:`                                              | Content
 :-----------------------------------------------------|:------------------------------------
-&nbsp;&nbsp; `-filter:`                               | Lists a selection for software packs (additive) with wildcards
-&nbsp;&nbsp; [`-pack:`](#pack)                        | Explicit pack specification (additive), overrules `filter:` settings
-
-**Note:**
-  - `filter:` is not allowed when `packs:` are specified as part of [`target-types:`](#target-types) or [`build-types:`](#build-types).
+&nbsp;&nbsp; [`-pack:`](#pack)                        | Explicit pack specification (additive)
 
 
 ## `pack:`
@@ -645,11 +671,11 @@ The `pack:` list allows to add specific software packs, optional with a version 
 
 ```yml
 packs:                                  # start section that specifics software packs
-  - filter: AWS                         # use packs from AWS
-  - filter: NXP::*K32L*                 # use packs from NXP that relate to K32L series (would match K32L3A60_DFP + FRDM-K32L3A6_BSP)
-  - filter: ARM                         # use packs from Arm
+  - pack: AWS                           # use packs from AWS
+  - pack: NXP::*K32L*                   # use packs from NXP relating to K32L series (would match K32L3A60_DFP + FRDM-K32L3A6_BSP)
+  - pack: ARM                           # use packs from Arm
 
-  - pack: Keil::Arm_Compiler            # add always Keil::Arm_Compiler pack (bypasses filter)
+  - pack: Keil::Arm_Compiler            # add always Keil::Arm_Compiler pack
   - pack: Keil::MDK-Middleware@7.13.0   # add Keil::MDK-Middleware pack at version 7.13.0
   - pack: ARM::CMSIS-FreeRTOS@~10.4     # add CMSIS-FreeRTOS with version 10.4.x
 
@@ -829,25 +855,34 @@ List Node                                  | Description
 
 # Related Projects
 
-The section [Project setup for related projects](Overview.md#project-setup-for-related-projects) describes the collection of related projects.  The file `*.csolution.yml` describes the relationship of this projects.  This file may also define [Target and Build Types](#target-and-build-types) before the section `solution:`.
+The section [Project setup for related projects](Overview.md#project-setup-for-related-projects) describes the collection of related projects. The file `*.csolution.yml` describes the relationship of this projects. This file may also define [Target and Build Types](#target-and-build-types) before the section `solution:`.
 
 ## `projects:`
 
 The YML structure of the section `projects:` is:
 
+`projects:`                                           | Content
+:-----------------------------------------------------|:------------------------------------
+[`- project:`](#project)                              | Path to the project file (required).
+&nbsp;&nbsp; [`for-type:`](#for-type)                 | Include project for a list of *build* and *target* types (optional).
+&nbsp;&nbsp; [`not-for-type:`](#not-for-type)         | Exclude project for a list of *build* and *target* types (optional).
+&nbsp;&nbsp; [`compiler:`](#compiler)                 | Specify a specific compiler.
+&nbsp;&nbsp; [`optimize:`](#optimize)                 | Optimize level for code generation (optional)
+&nbsp;&nbsp; [`debug:`](#debug)                       | Generation of debug information (optional).
+&nbsp;&nbsp; [`defines:`](#defines)                   | Define symbol settings for code generation (optional).
+&nbsp;&nbsp; [`undefines:`](#undefines)               | Remove define symbol settings for code generation (optional).
+&nbsp;&nbsp; [`add-paths:`](#add-paths)               | Additional include file paths (optional).
+&nbsp;&nbsp; [`del-paths:`](#del-paths)               | Remove specific include file paths (optional). 
+&nbsp;&nbsp; [`misc:`](#misc)                         | Literal tool-specific controls (optional).
+
+**Example:**
+
 ```yml
-projects:                  # Start a list of projects.
-  - project:               # path to the project file (required).
-    for-type:              # include project for a list of *build* and *target* types (optional).
-    not-for-type:          # exclude project for a list of *build* and *target* types (optional).
-    compiler:              # specify a specific compiler
-    optimize:              # optimize level for code generation (optional)
-    debug:                 # generation of debug information (optional)
-    defines:               # define symbol settings for code generation (optional).
-    undefines:             # remove define symbol settings for code generation (optional).
-    add-paths:             # additional include file paths (optional).
-    del-paths:             # remove specific include file paths (optional). 
-    misc:                  # Literal tool-specific controls
+  projects:
+    - project: ./CM0/CM0.cproject.yml
+      for-type: +CM0
+    - project: ./Debug/Debug.cproject.yml
+      not-for-type: .Release
 ```
 
 
@@ -932,7 +967,7 @@ groups:
           - file: file-sub2-2.c
 ```
 
-## `layers:` 
+## `layers:`
 
 Add a software layer to a project.  Used in `*.cproject.yml` files.
 
