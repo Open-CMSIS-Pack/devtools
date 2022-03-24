@@ -20,10 +20,10 @@ set(LD_FLAGS_GLOBAL "--entry=Reset_Handler --specs=nosys.specs -mcpu=cortex-m3 -
 set(LD_SCRIPT "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Flags/RTE/Device/ARMCM3/gcc_arm.ld")
 
 set(DEFINES
-  DEF_TARGET_CC
-  DEF_RTE_Components=\"RTE_Components.h\"
   ARMCM3
   _RTE_
+  DEF_TARGET_CC
+  DEF_RTE_Components=\"RTE_Components.h\"
 )
 
 set(INC_PATHS
@@ -36,8 +36,8 @@ set(INC_PATHS
 )
 
 set(CC_SRC_FILES
-  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Flags/New File.c"
   "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Flags/Flags.c"
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Flags/New File.c"
   "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Flags/RTE/CMSIS/RTX_Config.c"
   "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/RTX/Source/rtx_lib.c"
   "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Flags/RTE/Device/ARMCM3/startup_ARMCM3.c"
@@ -48,10 +48,10 @@ set(LIB_FILES
   "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/RTX/Library/GCC/libRTX_CM3.a"
 )
 
-set(CC_FLAGS_C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Flags/Flags.c "-DDEF_CC=\"9999\" -O0 -Wall -gdwarf-2 -mapcs-frame -mthumb")
-set(CC_FLAGS_C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Flags/New?File.c "-DDEF_GROUP_CC -Ofast -Wall -gdwarf-2 -mapcs-frame -mthumb")
-set(CC_FLAGS_C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Flags/RTE/CMSIS/RTX_Config.c "-DDEF_RTE_CC -Os -Wall -gdwarf-2 -mapcs-frame -mthumb")
-set(CC_FLAGS_C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/RTX/Source/rtx_lib.c "-DDEF_RTE_CC -Os -Wall -gdwarf-2 -mapcs-frame -mthumb")
+set(CC_FLAGS_C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Flags/Flags.c "-Wall -gdwarf-2 -mapcs-frame -mthumb -DDEF_CC=\"9999\" -O0")
+set(CC_FLAGS_C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Flags/New?File.c "-Wall -gdwarf-2 -mapcs-frame -mthumb -DDEF_GROUP_CC -Ofast")
+set(CC_FLAGS_C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Flags/RTE/CMSIS/RTX_Config.c "-Wall -gdwarf-2 -mapcs-frame -mthumb -DDEF_RTE_CC -Os")
+set(CC_FLAGS_C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/RTX/Source/rtx_lib.c "-Wall -gdwarf-2 -mapcs-frame -mthumb -DDEF_RTE_CC -Os")
 
 # Toolchain config map
 
