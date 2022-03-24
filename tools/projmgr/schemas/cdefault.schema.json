@@ -6,8 +6,7 @@
   "properties": {
     "default": {
       "$ref": "./common.schema.json#/definitions/DefaultDescType"
-    },
-    "additionalProperties": false
+    }
   },
   "required": [ "default" ]
 }

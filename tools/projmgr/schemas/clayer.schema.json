@@ -6,8 +6,7 @@
   "properties": {
     "layer": {
       "$ref": "./common.schema.json#/definitions/LayerDescType"
-    },
-    "additionalProperties": false
+    }
   },
   "required": [ "layer" ]
 }
