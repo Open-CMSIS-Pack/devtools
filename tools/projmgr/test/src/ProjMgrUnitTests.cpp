@@ -113,6 +113,21 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks) {
   EXPECT_STREQ(outStr.c_str(), "ARM::RteTest_DFP@0.1.1\nARM::RteTest_DFP@0.2.0\n");
 }
 
+TEST_F(ProjMgrUnitTests, RunProjMgr_ListBoards) {
+  char* argv[5];
+  StdStreamRedirect streamRedirect;
+
+  // list devices
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"boards";
+  argv[3] = (char*)"--filter";
+  argv[4] = (char*)"Dummy";
+  EXPECT_EQ(0, RunProjMgr(5, argv));
+
+  auto outStr = streamRedirect.GetOutString();
+  EXPECT_STREQ(outStr.c_str(), "RteTest Dummy board\n");
+}
+
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListDevices) {
   char* argv[5];
   StdStreamRedirect streamRedirect;
@@ -481,6 +496,15 @@ TEST_F(ProjMgrUnitTests, ListPacksPackageFiltered) {
   EXPECT_TRUE(m_worker.AddContexts(m_parser, descriptor, filenameInput));
   EXPECT_TRUE(m_worker.ListPacks(packs, "test", "RteTest_DFP"));
   EXPECT_EQ(expected, set<string>(packs.begin(), packs.end()));
+}
+
+TEST_F(ProjMgrUnitTests, ListBoards) {
+  set<string> expected = {
+    "RteTest Dummy board"
+  };
+  vector<string> devices;
+  EXPECT_TRUE(m_worker.ListBoards(devices, "", "Dummy"));
+  EXPECT_EQ(expected, set<string>(devices.begin(), devices.end()));
 }
 
 TEST_F(ProjMgrUnitTests, ListDevices) {

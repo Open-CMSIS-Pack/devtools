@@ -24,6 +24,7 @@ Usage:\n\
   csolution <command> [<args>] [OPTIONS...]\n\n\
 Commands:\n\
   list packs            Print list of installed packs\n\
+       boards           Print list of available board names\n\
        devices          Print list of available device names\n\
        components       Print list of available components\n\
        dependencies     Print list of unresolved project dependencies\n\
@@ -149,6 +150,10 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
     // Process argument
     if (manager.m_args == "packs") {
       if (!manager.RunListPacks()) {
+        return 1;
+      }
+    } else if (manager.m_args == "boards") {
+      if (!manager.RunListBoards()) {
         return 1;
       }
     } else if (manager.m_args == "devices") {
@@ -340,6 +345,28 @@ bool ProjMgr::RunListPacks(void) {
   }
   for (const auto& pack : packs) {
     cout << pack << endl;
+  }
+  return true;
+}
+
+bool ProjMgr::RunListBoards(void) {
+  if (!m_csolutionFile.empty() || !m_cprojectFile.empty()) {
+    // Parse all input files and create contexts
+    if (!PopulateContexts()) {
+      return false;
+    }
+    // Check context
+    if (!CheckContext()) {
+      return false;
+    }
+  }
+  vector<string> boards;
+  if (!m_worker.ListBoards(boards, m_context, m_filter)) {
+    ProjMgrLogger::Error("processing boards list failed");
+    return false;
+  }
+  for (const auto& device : boards) {
+    cout << device << endl;
   }
   return true;
 }
