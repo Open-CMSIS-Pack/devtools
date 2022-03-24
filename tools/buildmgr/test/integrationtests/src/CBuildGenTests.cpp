@@ -49,9 +49,31 @@ TEST_F(CBuildGenTests, InvalidCommandTest) {
 }
 
 // Validate generation of CMakeLists file required to build the project
-TEST_F(CBuildGenTests, GenCMakeTest) {
+TEST_F(CBuildGenTests, GenCMakeTest_1) {
   TestParam param = {
     "AC6/Build_AC6", "Simulation",
+    "", "cmake", true
+  };
+
+  RunCBuildGen           (param);
+  CheckCMakeLists        (param);
+}
+
+// Validate generation of CMakeLists file required to build the project
+TEST_F(CBuildGenTests, GenCMakeTest_2) {
+  TestParam param = {
+    "GCC/TranslationControl/Project1", "Project",
+    "", "cmake", true
+  };
+
+  RunCBuildGen           (param);
+  CheckCMakeLists        (param);
+}
+
+// Validate generation of CMakeLists file required to build the project
+TEST_F(CBuildGenTests, GenCMakeTest_3) {
+  TestParam param = {
+    "GCC/TranslationControl/Project2", "Project",
     "", "cmake", true
   };
 
