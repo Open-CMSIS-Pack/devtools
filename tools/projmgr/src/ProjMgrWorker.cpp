@@ -205,6 +205,15 @@ bool ProjMgrWorker::LoadPacks(void) {
     packRoot = CrossPlatformUtils::GetDefaultCMSISPackRootDir();
   }
   m_kernel = ProjMgrKernel::Get();
+  if (!m_kernel) {
+    ProjMgrLogger::Error("initializing RTE Kernel failed");
+    return false;
+  }
+  m_model = m_kernel->GetGlobalModel();
+  if (!m_model) {
+    ProjMgrLogger::Error("initializing RTE Model failed");
+    return false;
+  }
   m_kernel->SetCmsisPackRoot(packRoot);
 
   std::set<std::string> pdscFiles;
@@ -265,7 +274,6 @@ bool ProjMgrWorker::CheckRteErrors(void) {
 
 bool ProjMgrWorker::SetTargetAttributes(ContextItem& context, map<string, string>& attributes) {
   if (context.rteActiveProject == nullptr) {
-    m_model = m_kernel->GetGlobalModel();
     m_model->SetCallback(m_kernel->GetCallback());
     // RteGlobalModel has the RteProject pointer ownership
     RteProject* rteProject = make_unique<RteProject>().release();
@@ -328,36 +336,22 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
 
   RteDeviceItem* matchedBoardDevice = nullptr;
   if(!context.board.empty()) {
-    m_model = m_kernel->GetGlobalModel();
-    if (!m_model) {
-      return false;
-    }
-
     BoardItem boardItem;
     GetBoardItem(context.board, boardItem);
     // find board
     RteBoard* matchedBoard = nullptr;
-    for (const auto& pack : m_installedPacks) {
-      RteItem* boards = pack->GetBoards();
-      if (boards) {
-        const list<RteItem*>& children = boards->GetChildren();
-        for (const auto& child : children) {
-          RteBoard* board = dynamic_cast<RteBoard*>(child);
-          if (board && (board->GetName() == boardItem.name)) {
-            if (boardItem.vendor.empty() || (boardItem.vendor == DeviceVendor::GetCanonicalVendorName(board->GetVendorName()))) {
-              matchedBoard = board;
-              const auto& boardPackage = matchedBoard->GetPackage();
-              context.packages.insert({ ProjMgrUtils::GetPackageID(boardPackage), boardPackage });
-              context.targetAttributes["Bname"]    = matchedBoard->GetName();
-              context.targetAttributes["Bvendor"]  = matchedBoard->GetVendorName();
-              context.targetAttributes["Bversion"] = matchedBoard->GetAttribute("revision");
-              break;
-            }
-          }
+    const RteBoardMap& availableBoards = m_model->GetBoards();
+    for (const auto& [_, board] : availableBoards) {
+      if (board->GetName() == boardItem.name) {
+        if (boardItem.vendor.empty() || (boardItem.vendor == DeviceVendor::GetCanonicalVendorName(board->GetVendorName()))) {
+          matchedBoard = board;
+          const auto& boardPackage = matchedBoard->GetPackage();
+          context.packages.insert({ ProjMgrUtils::GetPackageID(boardPackage), boardPackage });
+          context.targetAttributes["Bname"]    = matchedBoard->GetName();
+          context.targetAttributes["Bvendor"]  = matchedBoard->GetVendorName();
+          context.targetAttributes["Bversion"] = matchedBoard->GetAttribute("revision");
+          break;
         }
-      }
-      if (matchedBoard) {
-        break;
       }
     }
     if (!matchedBoard) {
@@ -1354,6 +1348,39 @@ bool ProjMgrWorker::ListPacks(vector<string>&packs, const string& contextName, c
     packsSet = filteredPacks;
   }
   packs.assign(packsSet.begin(), packsSet.end());
+  return true;
+}
+
+bool ProjMgrWorker::ListBoards(vector<string>& boards, const string& contextName, const string& filter) {
+  if (!contextName.empty()) {
+    // Get selected context
+    if (m_contexts.empty() || (m_contexts.find(contextName) == m_contexts.end())) {
+      ProjMgrLogger::Error("context '" + contextName + "' was not found");
+      return false;
+    }
+  }
+  if (!LoadPacks()) {
+    return false;
+  }
+  set<string> boardsSet;
+  const RteBoardMap& availableBoards = m_model->GetBoards();
+  for (const auto& [_, board] : availableBoards) {
+    boardsSet.insert(board->GetName());
+  }
+  if (boardsSet.empty()) {
+    ProjMgrLogger::Error("no installed board was found");
+    return false;
+  }
+  if (!filter.empty()) {
+    set<string> matchedBoards;
+    ApplyFilter(boardsSet, SplitArgs(filter), matchedBoards);
+    if (matchedBoards.empty()) {
+      ProjMgrLogger::Error("no board was found with filter '" + filter + "'");
+      return false;
+    }
+    boardsSet = matchedBoards;
+  }
+  boards.assign(boardsSet.begin(), boardsSet.end());
   return true;
 }
 

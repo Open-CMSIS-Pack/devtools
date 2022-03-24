@@ -215,6 +215,15 @@ public:
   bool ListPacks(std::vector<std::string>& packs, const std::string& contextName, const std::string& filter = RteUtils::EMPTY_STRING);
 
   /**
+   * @brief list available boards
+   * @param reference to list of boards
+   * @param reference to context name
+   * @param filter words to filter results
+   * @return true if executed successfully
+  */
+  bool ListBoards(std::vector<std::string>& boards, const std::string& contextName, const std::string& filter = RteUtils::EMPTY_STRING);
+
+  /**
    * @brief list available devices
    * @param reference to list of devices
    * @param reference to context name
