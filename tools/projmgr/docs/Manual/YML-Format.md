@@ -94,10 +94,10 @@ Element      |          | Description
 **Examples:**
 
 ```yml
-- pack:   ARM::CMSIS@5.5.0                             # 'CMSIS' Pack (with version 5.5.0)
-- pack:   Keil::MDK-Middleware@>=7.13.0                # 'MDK-Middleware' Software Pack from vendor Keil (with version 7.13.0 or higher)
-- pack:   AWS                                          # All Software Packs from vendor 'AWS'
-- pack:   Keil::STM*                                   # All Software Packs that start with 'STM' from vendor 'Keil'
+- pack:   ARM::CMSIS@5.5.0                  # 'CMSIS' Pack (with version 5.5.0)
+- pack:   Keil::MDK-Middleware@>=7.13.0     # 'MDK-Middleware' Software Pack from vendor Keil (with version 7.13.0 or higher)
+- pack:   AWS                               # All Software Packs from vendor 'AWS'
+- pack:   Keil::STM*                        # All Software Packs that start with 'STM' from vendor 'Keil'
 ```
 
 ## Component Name Conventions
@@ -118,22 +118,21 @@ Element    |              | Description
 `Cvariant` | Optional     | Component sub-group name  defined in `<components>` element of the software pack.
 `Cversion` | Optional     | Version number of the component, with `@1.2.3` that must exactly match, `@~1.2`/`@~1` that matches with sematic versioning, or `@>=1.2.3` that allows any version higher or equal.
 
-> Notes:
-> - When `Cvariant` is omitted, the default `Cvariant` is selected.
+> **Note:** When `Cvariant` is omitted, the default `Cvariant` is selected.
 
 **Examples:**
 
 ```yml
-- component: ARM::CMSIS:CORE                           # CMSIS Core component from vendor ARM (any version)
-- component: ARM::CMSIS:CORE@5.5.0                     # CMSIS Core component from vendor ARM (with version 5.5.0)
-- component: ARM::CMSIS:CORE@>=5.5.0                   # CMSIS Core component from vendor ARM (with version 5.5.0 or higher)
+- component: ARM::CMSIS:CORE                          # CMSIS Core component from vendor ARM (any version)
+- component: ARM::CMSIS:CORE@5.5.0                    # CMSIS Core component from vendor ARM (with version 5.5.0)
+- component: ARM::CMSIS:CORE@>=5.5.0                  # CMSIS Core component from vendor ARM (with version 5.5.0 or higher)
 
-- component: Device:Startup                            # Device Startup component from any vendor
+- component: Device:Startup                           # Device Startup component from any vendor
 
-- component: CMSIS:RTOS2:Keil RTX5                     # CMSIS RTOS2 Keil RTX5 component with default variant (any version)
-- component: ARM::CMSIS:RTOS2:Keil RTX5&Source@5.5.3   # CMSIS RTOS2 Keil RTX5 component with variant 'Source' and version 5.5.3
+- component: CMSIS:RTOS2:Keil RTX5                    # CMSIS RTOS2 Keil RTX5 component with default variant (any version)
+- component: ARM::CMSIS:RTOS2:Keil RTX5&Source@5.5.3  # CMSIS RTOS2 Keil RTX5 component with variant 'Source' and version 5.5.3
 
-- component: Keil::USB&MDK-Pro:CORE&Release@6.15.1     # From bundle MDK-Pro, USB CORE component with variant 'Release' and version 6.15.1
+- component: Keil::USB&MDK-Pro:CORE&Release@6.15.1    # USB CORE component from bundle MDK-Pro in variant 'Release' and version 6.15.1
 ```
 
 ## Device Name Conventions
@@ -150,23 +149,23 @@ Element       |          | Description
 `device_name` | Optional | Device name (Dname attribute) or when used the variant name (Dvariant attribute) as defined in the \<devices\> element.
 `Pname`       | Optional | Processor identifier (Pname attribute) as defined in the `<devices>` element.
 
-> **Notes:**
+> **Note:**
 > - All elements of a device name are optional which allows to supply additional information, such as the `:Pname` at different stages of the project. However the `device_name` itself is a mandatory element and must be specified in context of the various project files.
-> - `Dvendor::` must be used in combination with the `device_name`.  
+> - `Dvendor::` must be used in combination with the `device_name`. 
 
 **Examples:**
 
 ```yml
-device: NXP::LPC1768                                # The LPC1788 device from NXP
-device: LPC1788                                     # The LPC1788 device (vendor is evaluated from DFP)
-device: LPC55S69JEV98                               # Device name (exact name as defined in the DFP)
-device: LPC55S69JEV98:cm33_core0                    # Device name (exact name as defined in the DFP) with Pname specified
-device: :cm33_core0                                 # Pname added to a previously defined device name (or a device derived from a board)
+device: NXP::LPC1768                       # The LPC1788 device from NXP
+device: LPC1788                            # The LPC1788 device (vendor is evaluated from DFP)
+device: LPC55S69JEV98                      # Device name (exact name as defined in the DFP)
+device: LPC55S69JEV98:cm33_core0           # Device name (exact name as defined in the DFP) with Pname specified
+device: :cm33_core0                        # Pname added to a previously defined device name (or a device derived from a board)
 ```
 
 ## Board Name Conventions
 
-Evaluation Boards define indirectly a device via the related BSP.   The following syntax is used to specify a `board:` value in the `*.yml` files.
+Evaluation Boards define indirectly a device via the related BSP. The following syntax is used to specify a `board:` value in the `*.yml` files.
 
 ```text
 [vendor::] board_name
@@ -177,8 +176,7 @@ Element      |              | Description
 `vendor`     | Optional     | Name of the board vendor defined in `<boards><board>` element of the board support pack (BSP).
 `board_name` | **Required** | Board name (name attribute) as defined in the \<board\> element of the BSP.
 
-> **Note:**
-> - When a `board:` is specified, the `device:` specification can be omitted, however it is possible to overwrite the device setting in the BSP with an explicit `device:` setting.
+> **Note:** When a `board:` is specified, the `device:` specification can be omitted, however it is possible to overwrite the device setting in the BSP with an explicit `device:` setting.
 
 **Examples:**
 
@@ -199,7 +197,7 @@ Access Sequence                                | Description
 `$OutDir(project[.build-type][+target-type])$` | Path to the output directory of a related project that is defined in the `*.csolution.yml` file.
 `$Source(project[.build-type][+target-type])$` | Path to the source directory of a related project that is defined in the `*.csolution.yml` file.
 
-The `.build-type` and `+target-type` can be explicitly specified.  When ommited the `.build-type` and/or `+target-type` of the current processed context is used.
+The `.build-type` and `+target-type` can be explicitly specified. When omitted the `.build-type` and/or `+target-type` of the current processed context is used.
 
 > **Note:** The access sequences below are not completed yet, as they require a change to CMSIS-Build.
 
@@ -498,8 +496,7 @@ The following translation control options may be used at various places such as:
   - [`groups:`](#groups) level to specify options for a specify source file group
   - [`files:`](#files) level to specify options for a specify source file
 
-> **Notes:**
-> - `defines:`, `add-paths:`, `del-paths:`  and `misc:` are additive. All other keywords overwrite previous settings.
+> **Note:** `defines:`, `add-paths:`, `del-paths:`  and `misc:` are additive. All other keywords overwrite previous settings.
 
 ## `optimize:`
 
@@ -740,7 +737,7 @@ project:
 
 # Target and Build Types
 
-The section [Project setup for multiple targets and test builds](Overview.md#project-setup-for-multiple-targets-and-builds) describes the concept of  `target-types` and `build-types`.  These *types* can be defined in the following files in the following order:
+The section [Project setup for multiple targets and test builds](Overview.md#project-setup-for-multiple-targets-and-builds) describes the concept of  `target-types` and `build-types`. These *types* can be defined in the following files in the following order:
 
 - `default.csettings.yml`  where it defines global *types*, such as *Debug* and *Release* build.
 - `*.csolution.yml` where it specifies the build and target *types* of the complete system.
@@ -811,10 +808,10 @@ build-types:
         path: .\local-packs\cmsis
 ```
 
-The `board:`, `device:`, and `processor:` settings are used to configure the code translation for the toolchain.  These settings are processed in the following order:
+The `board:`, `device:`, and `processor:` settings are used to configure the code translation for the toolchain. These settings are processed in the following order:
 
-1. `board:` relates to a BSP software pack that defines board parameters, including the [mounted device](https://arm-software.github.io/CMSIS_5/Pack/html/pdsc_boards_pg.html#element_board_mountedDevice).  If `board:` is not specified, a `device:` most be specified.
-2. `device:` defines the target device.  If `board:` is specified, the `device:` setting can be used to overwrite the device or specify the processor core used.
+1. `board:` relates to a BSP software pack that defines board parameters, including the [mounted device](https://arm-software.github.io/CMSIS_5/Pack/html/pdsc_boards_pg.html#element_board_mountedDevice). If `board:` is not specified, a `device:` most be specified.
+2. `device:` defines the target device. If `board:` is specified, the `device:` setting can be used to overwrite the device or specify the processor core used.
 3. `processor:` overwrites default settings for code generation, such as endianess, TrustZone mode, or disable Floating Point code generation.
 
 **Examples:**
@@ -908,11 +905,11 @@ The YML structure of the section `projects:` is:
 
 # Source File Management
 
-Keyword          | Allowed for following files.                   | Description
-:----------------|:-----------------------------------------------|:------------------------------------
-`groups:`        | `*.cproject.yml`, `*.clayer.yml`               | Start of a list that adds [source groups and files](#source-file-management) to a project or layer.
-`layers:`        | `*.cproject.yml`                               | Start of a list that adds software layers to a project.
-`components:`    | `*.cproject.yml`, `*.clayer.yml`               | Start of a list that adds software components to a project or layer.
+Keyword          | Used in files                    | Description
+:----------------|:---------------------------------|:------------------------------------
+`groups:`        | `*.cproject.yml`, `*.clayer.yml` | Start of a list that adds [source groups and files](#source-file-management) to a project or layer.
+`layers:`        | `*.cproject.yml`                 | Start of a list that adds software layers to a project.
+`components:`    | `*.cproject.yml`, `*.clayer.yml` | Start of a list that adds software components to a project or layer.
 
 ## `groups:`
 
@@ -954,7 +951,7 @@ See [`files:`](#files) section.
 
 **Example:**
 
-Add source files to a project or a software layer.  Used in `*.cproject.yml` and `*.clayer.yml` files.
+Add source files to a project or a software layer. Used in `*.cproject.yml` and `*.clayer.yml` files.
 
 ```yml
 groups:
@@ -993,7 +990,7 @@ groups:
 
 ## `layers:`
 
-Add a software layer to a project.  Used in `*.cproject.yml` files.
+Add a software layer to a project. Used in `*.cproject.yml` files.
 
 `layers:`                                      |              | Content
 :----------------------------------------------|--------------|:------------------------------------
@@ -1062,13 +1059,13 @@ layer:
         - file: ../SecureCode/interface.h
 ```
 
-> **Note:** The name format for a software component is described under [Name Conventions - Component Names](#Component_Names)
+> **Note:** The name format for a software component is described under [Name Conventions - Component Names](#Component_Names).
 
 ## `instances:`
 
 This is a proposal for component instances.
 
-Modern microcontrollers often have multiple instances of the same peripheral interface (for example UART, SPI, USB, etc.). To be able to have separate configuration files for each of these instances, Software Components can have multiple instances as well. To cope with multiple configurations, the `instances:` list allows to assign peripherals to a usage and provide configuration parameters.
+Modern microcontrollers often have multiple instances of the same peripheral interface (for example UART, SPI, USB, etc.). To be able to have separate configuration files for each of these instances, software components can have multiple instances as well. To cope with multiple configurations, the `instances:` list allows to assign peripherals to a usage and provide configuration parameters.
 
 `instances:`                         |              | Content
 :------------------------------------|--------------|:------------------------------------
@@ -1092,11 +1089,11 @@ components:
 
 - Existing definitions in the *.PDSC for [Component Instances](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_components_pg.html#Component_Instances) remain unchanged:
   - The instance *value* must be within the range of the attribute `maxInstances`. Hence there is currently no change in the *.PDSC format required.
-  - The instance *values* can be non-contiguous, for example it is possible to specify instance value 1 and 4 for a component.  This requires a tool modification.
+  - The instance *values* can be non-contiguous, for example it is possible to specify instance value 1 and 4 for a component. This requires a tool modification.
 
-If the user selects multiple instances of the same component, all files with  attribute `config` in the `*.PDSC` file will be copied multiple times to the project. The name of the component (for example config_mylib.h) will get a postfix `_value`.  The instance `name:` specifies this `value`:
+If the user selects multiple instances of the same component, all files with  attribute `config` in the `*.PDSC` file will be copied multiple times to the project. The name of the component (for example config_mylib.h) will get a postfix `_value`. The instance `name:` specifies this `value`:
 
-Instance 0: config_uart_0.h
+Instance 0: config_uart_0.h  
 Instance 2: config_uart_2.h
 
 The availability of instances in a project can be made public in the `RTE_Components.h` file. The existing way to extend the `%Instance%` with the instance `value` is extended with `%Instance_Name%` to access the instance `name:`.
@@ -1125,13 +1122,15 @@ Tbd: potentially map to CMake add_custom_command.
 
 ## `execute:`
 
-```yml
-- execute: description      # execute an external command with description
-  os: Linux                 # executed on which operating systems (if omitted it is OS independent)
-  run:                      # tool name that should be executed, optionally with path to the tool
-  args:                     # tool arguments
-  stop:                     # stop on exit code
-```
+Execute and external command for pre- or post-build steps (such as code signing).
+
+`- execute:`                         |              | Content
+:------------------------------------|--------------|:------------------------------------
+[`- execute:`](#execute) description | **Required** | Execute an external command with description
+&nbsp;&nbsp; [`os:`](#os) name       |   Optional   | Executable on named operating systems (if omitted it is OS independent).
+&nbsp;&nbsp; [`run:`](#run) name     |   Optional   | Executable name, optionally with path to the tool.
+&nbsp;&nbsp; [`args:`](#args) name   |   Optional   | Execuatble arguments.
+&nbsp;&nbsp; [`stop:`](#stop) name   |   Optional   | Stop on exit code.
 
 Potential usage before/after build:
 
@@ -1167,7 +1166,6 @@ project:
 # Layer todo
 
 Start of a layer definition in a `*.clayer.yml` file.
-
 
 **Example:**
 
@@ -1263,8 +1261,6 @@ groups:
       - file: ./RTE/Device/STM32G474RETx/STCubeGenerated/STCubeGenerated.ioc
 ```
 
-
-
 Todo: work on this
 
 The YML structure of the section `layer:` is:
@@ -1284,10 +1280,10 @@ The composition of a solution of a solution should have the following steps:
 - Select `device:` or `board:` (optionally by using `target-types:`)
 - Add `components:` or `layers:` to the `*.cproject.yml` file
 - For components that have configuration, run the generator in configuration mode
-   - change pinout, clock, resources, etc.
-   - reflect configuration in *.gpdsc file (and related settings files)
+  - change pinout, clock, resources, etc.
+  - reflect configuration in *.gpdsc file (and related settings files)
 
-> Note: Components can have multiple [instances](#instances).
+> **Note:** Components can have multiple [instances](#instances).
 
 ## Steps for component selection and configuration
 
@@ -1328,13 +1324,13 @@ Add Run Generator buttons to Cclass descriptions.
     - When this file is missing, it is required to use the command `csolution run genid` to start the generator.
     - When this file exists, the `csolution` manager checks if the list of components with `genid` has changed. If this is the case it is required to use the command `csolution run genid` to reconfigure generated components.
 
-2. The command `csolution run genid` creates the file `./<project>/RTE+<target>/<genid>.cgen.json` and starts the generator.  The generator creates a *.GDPSC file along with other source files that are required [as specified](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_generators_pg.html#element_generators).
+2. The command `csolution run genid` creates the file `./<project>/RTE+<target>/<genid>.cgen.json` and starts the generator. The generator creates a *.GDPSC file along with other source files that are required [as specified](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_generators_pg.html#element_generators).
 
 **Example Content of \*.cgen.json (in this case STM32CubeMX.cgen.json)**
 
 The `*.cgen.json` file is passed to generator as argument.
 
-**NOTE:** Shown is still a YML file, but the equivalent data would be formatted in *.JSON format
+> **Note:** Shown is still a YML file, but the equivalent data would be formatted in *.JSON format
 
 ```yml
 cgenerator:
@@ -1365,13 +1361,13 @@ cgenerator:
 
 ## Changes to the *.GPDSC file
 
-To indicate that a component was generated due to a user selection in `*.cproject.yml`, the `component` element is extended with `User` attribute.  When set to `1` it indicates that a component is included due to the selection in `*.cproject.yml`.
+To indicate that a component was generated due to a user selection in `*.cproject.yml`, the `component` element is extended with `User` attribute. When set to `1` it indicates that a component is included due to the selection in `*.cproject.yml`.
 
 When a user removes this component in the `*.cproject.yml`, the CSolution could detect that a Run command should be executed.
 
 ## Changes to the *.PDSC file
 
-- Add `<key>` to `<generator>` element.  The `key` is used to invoke the generator and pass the `<genid>.cgen.json` file.
+- Add `<key>` to `<generator>` element. The `key` is used to invoke the generator and pass the `<genid>.cgen.json` file.
   - on Windows to a registry key to invoke the generator tool
   - on Linux and MacOS to an environment variable that specifies how to invoke the generator tool
   - todo: Web based tools?
@@ -1527,23 +1523,45 @@ When a user removes this component in the `*.cproject.yml`, the CSolution could 
 # Resource Management
 
 The **CSolution Project Manager** integrates an extended version of the Project Zone functionality of [CMSIS-Zone](https://arm-software.github.io/CMSIS_5/Zone/html/index.html) with this nodes:
-
- - [`resources:`](#resources) imports resource files (in [CMSIS-Zone RZone format](https://arm-software.github.io/CMSIS_5/Zone/html/xml_rzone_pg.html) or a compatible yml format tbd) and allows to split or combine memory regions.
- - [`phases:`](#phases) defines the execution phases may be used to assign a life-time to memory or peripheral resources in the project zones.
-
- - [`project-zones:`](#project-zones) collect and configure the memory or peripheral resources that are available to individual projects. These zones are assigned to the [`projects:`](#projects) of a `*.csolution.yml` file.
-
- - [`requires:`](#requires) allows to specify additional resources at the level of a `*.cproject.yml` or `*.clayer.yml` file that are added to the related zone of the project.
+- [`resources:`](#resources) imports resource files (in [CMSIS-Zone RZone format](https://arm-software.github.io/CMSIS_5/Zone/html/xml_rzone_pg.html) or a compatible yml format tbd) and allows to split or combine memory regions.
+- [`phases:`](#phases) defines the execution phases may be used to assign a life-time to memory or peripheral resources in the project zones.
+- [`project-zones:`](#project-zones) collect and configure the memory or peripheral resources that are available to individual projects. These zones are assigned to the [`projects:`](#projects) of a `*.csolution.yml` file.
+- [`requires:`](#requires) allows to specify additional resources at the level of a `*.cproject.yml` or `*.clayer.yml` file that are added to the related zone of the project.
 
 The **CSolution Project Manager** generates for each project context (with build and/or target-type) a data file (similar to the current [CMSIS FZone format](https://arm-software.github.io/CMSIS_5/Zone/html/GenDataModel.html), exact format tbd could be also JSON) for post-processing with a template engine (Handlebars?).
 
 ## `resources:`
 
+`resources:`                                   |              | Content
+:----------------------------------------------|--------------|:------------------------------------
+[`- import:`](#import)                         | **Required** | File/resource to be used.
+[`- split:`](#split)                           |   Optional   | Split a resource/memory region.
+[`- combine:`](#combine)                       |   Optional   | Combine a resource/memory region.
+
 ### `- import:`
+
+`-import:`                                     |              | Content
+:----------------------------------------------|--------------|:------------------------------------
+[`- import:`](#import) path_to_resource        | **Required** | Path to the resource file.
 
 ### `- split:`
 
+Split a resource into subresources.
+
+`- split:`                    |              | Content
+:-----------------------------|--------------|:------------------------------------
+[`into:`](#into)              | **Required** |
+&nbsp;&nbsp; `- region:` name | **Required** | Name of the new resource.
+&nbsp;&nbsp; `- size:` value  | **Required** | Size of the new resource.
+
 ### `- combine`
+
+Combine/merge resources into a new resource.
+
+`- combine:` name             |              | Content
+:-----------------------------|--------------|:------------------------------------
+[`from:`](#from)              | **Required** |
+&nbsp;&nbsp; `- region:` name | **Required** | Name of the resource to be combined.
 
 **Example:**
 
@@ -1568,7 +1586,7 @@ resources:
       - region: SRAM2
 ```
 
-> Note: Exact behavior for devices that have no RZone file is tbd.  It could be that the memory resources are derived from device definitions
+> **Note:** Exact behavior for devices that have no RZone file is tbd. It could be that the memory resources are derived from device definitions
 
 ## `phases:`
 
@@ -1582,6 +1600,7 @@ phases:    # define the life-time for resources in the project-zone definition
   - phase: OTA
   - phase: Run
 ```
+
 ## `project-zones:`
 
 ### `- memory:`
@@ -1620,7 +1639,6 @@ projects:
   - project: ./application/MyApp2.yml                       # relative path
     zone: Application
 ```
-
 
 ## `requires:`
 

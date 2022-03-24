@@ -45,10 +45,9 @@ Draft              | Work in progress
 
 # Overview of Operation
 
-The **csolution - CMSIS Project Manager** processes **User Input Files** (in YML format) and **Software Packs** (in Open-CMSIS-Pack format) to create self-contained CMSIS-Build input files that allow to generate independent projects which may be a part of a more complex application.
+The **csolution - CMSIS Project Manager** processes **user input files** (in YML format) and **software packs** (in Open-CMSIS-Pack format) to create self-contained CMSIS-Build input files that allow to generate independent projects which may be a part of a more complex application.
 
 The **csolution - CMSIS Project Manager** supports the user with the following features:
-
 
 - Access to the content of software packs in Open-CMSIS-Pack format to:
   - Setup the tool chain based on a *Device* or *Board* that is defined in the CMSIS-Packs.
@@ -63,39 +62,37 @@ The **csolution - CMSIS Project Manager** supports the user with the following f
 - Manage multiple build types to support software verification (debug build, test build, release build, ect.)
 - Support multiple compiler toolchains (GCC, LLVM, Arm Compiler 6, IAR, etc.) for project deployment.
 
-> Note: The **csolution - CMSIS Project Manager** is currently under development and part of the **[Open-CMSIS-Pack](https://www.open-cmsis-pack.org/index.html)** open source project.
+> **Note:** The **csolution - CMSIS Project Manager** is currently under development and part of the **[Open-CMSIS-Pack](https://www.open-cmsis-pack.org/index.html)** open source project.
 
 
 ![Overview](./images/Overview.png "Overview")
 
 This picture above outlines the operation. The **CMSIS Project Manager** uses the following files.
 
-Input Files              | Used for....
+Input Files              | Description
 :------------------------|:---------------------------------
-[Generic Software Packs](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/cp_PackTutorial.html#cp_SWComponents) | ... provide re-usable software components that are typically configurable  towards a user application.
-[DFP Software Packs](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/cp_PackTutorial.html#createPack_DFP)     | ... device related information on the tool configuration. May refer an *.rzone file.
-[BSP Software Packs](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/cp_PackTutorial.html#createPackBoard)    | ... board specific configuration (i.e. memory). May refer to an *.rzone file that defines board components.
-[*.rzone files](https://arm-software.github.io/CMSIS_5/Zone/html/xml_rzone_pg.html)                 | ... definition of memory and peripheral resources. If it does not exist, content is created from DFP.
-*.csettings.yml          | ... \[step 1\] setup of an environment (could be an IDE) to pre-define a toolchain or built-types (Debug, Release).
-*.csolution.yml          | ... \[step 2\] complete scope of the application and the build order of sub-projects.
-*.cproject.yml           | ... \[step 3\] content of an independent build (linker run) - directly relates to a *.cprj file.
-*.clayer.yml             | ... \[step 4\] set of source files along with pre-configured components for reuse in different applications.
+[Generic Software Packs](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/cp_PackTutorial.html#cp_SWComponents) | Provide re-usable software components that are typically configurable  towards a user application.
+[DFP Software Packs](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/cp_PackTutorial.html#createPack_DFP)     | Device related information on the tool configuration. May refer an *.rzone file.
+[BSP Software Packs](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/cp_PackTutorial.html#createPackBoard)    | Board specific configuration (i.e. memory). May refer to an *.rzone file that defines board components.
+[*.rzone files](https://arm-software.github.io/CMSIS_5/Zone/html/xml_rzone_pg.html)                 | Definition of memory and peripheral resources. If it does not exist, content is created from DFP.
+*.csettings.yml          | **Step 1:** setup of an environment (could be an IDE) to pre-define a toolchain or build-types (Debug, Release).
+*.csolution.yml          | **Step 2:** complete scope of the application and the build order of sub-projects.
+*.cproject.yml           | **Step 3:** content of an independent build (linker run) - directly relates to a *.cprj file.
+*.clayer.yml             | **Step 4:** set of source files along with pre-configured components for reuse in different applications.
 
-> Note: The values \[*step n*\] indicate the order of processing of the user input files.
+> **Note:** **Steps 1 - 4** indicate the order of processing of the user input files.
 
-Output Files             | Used for....
+Output Files             | Description
 :------------------------|:---------------------------------
-[Project Build Files](https://arm-software.github.io/CMSIS_5/Build/html/cprjFormat_pg.html) | ... project build information for a Open-CMSIS-Pack based tool environment.
-Run-Time Environment (RTE)  | ... contains the user configured files of a project along with RTE_Components.h inventory file.
-[Project Resource Files *.fzone](https://arm-software.github.io/CMSIS_5/Zone/html/GenDataModel.html)     | ... resource and partition data structure for template based code generators.
-
-
+[Project Build Files](https://arm-software.github.io/CMSIS_5/Build/html/cprjFormat_pg.html) | Project build information for a Open-CMSIS-Pack based tool environment.
+Run-Time Environment (RTE)  | Contains the user configured files of a project along with RTE_Components.h inventory file.
+[Project Resource Files *.fzone](https://arm-software.github.io/CMSIS_5/Zone/html/GenDataModel.html)     | Resource and partition data structure for template based code generators.
 
 ## Usage
 
 ### Requirements
 
-The CMSIS Pack repository must be present in the development environment.
+The CMSIS-Pack repository must be present in the development environment.
 
 - There are several ways to initialize and configure the pack repository, for example using the 
 `cpackget` tool available from https://github.com/Open-CMSIS-Pack/cpackget
@@ -164,7 +161,7 @@ Convert `example.cproject.yml` into *.cprj file(s):
 csolution convert -p example.cproject.yml
 ```
 
-List external code generators that are used to create software components in *.gpdsc format.  It outputs the generator ID that is required for the `run` command.
+List external code generators that are used to create software components in *.gpdsc format. It outputs the generator ID that is required for the `run` command.
 
 ```text
 csolution list generators -s mysolution.csolution.yml
@@ -212,7 +209,7 @@ The following diagram shows the various layers that are used to compose the IoT 
 
 ![Software Layers](./images/Layer.png "Target and Build Types")
 
-The following example is a `Blinky` application that uses a `App`, `Board`, and `RTOS` layer to compose the application for a NUCELO-G474RE board.  Note, that the `device:` definition is is the `Board` layer.
+The following example is a `Blinky` application that uses a `App`, `Board`, and `RTOS` layer to compose the application for a NUCELO-G474RE board. Note, that the `device:` definition is is the `Board` layer.
 
 **Example Project: `Blinky.cproject.yml`**
 
@@ -314,13 +311,13 @@ Complex examples require frequently slightly different targets and/or modificati
 
 ![Target and Build Types](./images/TargetBuild-Types.png "Target and Build Types")
 
-As the software may share a large set of common files, provisions are required to manage such projects.  The common way in other IDE's is to add:
+As the software may share a large set of common files, provisions are required to manage such projects. The common way in other IDE's is to add:
 
 - **target-types** that select a target system. In the example this would be:
   - `Virtual`: for Simulation Models.
   - `Board`: for a physical evaluation board.
   - `Production-HW`: for system integration test and the final product delivery.
-- **build-types** add the flexibility to configure each target build towards a specific testing.  It might be:
+- **build-types** add the flexibility to configure each target build towards a specific testing. It might be:
   - `Debug`: for a full debug build of the software for interactive debug.
   - `Test`: for a specific timing test using a test interface with code maximal optimization.
   - `Release`: for the final code deployment to the systems.
@@ -331,7 +328,7 @@ It is required to generate reproducible builds that can deployed on independent 
 
 This enables that each target and/or build type can be identified and independently generated which provides the support for test automation. It is however not required to build every possible combination, this should be under user control.
 
-**Flexible Builds for multi-target projects.
+**Flexible Builds for multi-target projects**
 
 Currently multi-target projects require the setup of a `*.csolution.yml` file to define `target-types` and `build-types`. Note, that this is currently under review, but this documents the current status.
 
@@ -420,13 +417,13 @@ In addition such systems may have a boot-loader that can be also viewed as anoth
 
 ![Related Projects of an Embedded System](./images/Solution.png "Related Projects of an Embedded System")
 
-To manage the complexity of such related a projects, the `*.csolution.yml` file is introduced. At this level the `target-types` and `build-types` may be managed, so that a common set is available across the system. However it should be also possible to add project specific `build-types` at project level.  (tdb: `target-types` might be only possible at solution level).
+To manage the complexity of such related a projects, the `*.csolution.yml` file is introduced. At this level the `target-types` and `build-types` may be managed, so that a common set is available across the system. However it should be also possible to add project specific `build-types` at project level. (tdb: `target-types` might be only possible at solution level).
 
 - `target-types` describe a different hardware target system and have therefore different API files for peripherals or a different hardware configuration.
 
 - `build-types` describe a build variant of the same hardware target. All `build-types` share the same API files for peripherals and the same hardware configuration, but may compile a different variant (i.e. with test I/O enabled) of an application.
 
-**Related Projects `iot-product.csolution.yml`**
+**Related Projects: `iot-product.csolution.yml`**
 
 ```yml
 solution:
@@ -471,9 +468,9 @@ Source Directory                    | Content
 `./<project>/Layer+<target>/<name>` | `*.clayer.yml` and related source files of a layers that are specific to a target have a specific directory.
 `./<project>/Layer/<name>`          | `*.clayer.yml` and related source files of a layers that are common to all targets may have a common directory.
 
-> Notes:
+> **Note:**
 > - `./<project>/RTE+<target>` contains the *.cprj file that is generated by `CSolution`
-> - Directory names `RTE` and `Layer` should become configurable.  ToDo: analyze impact.
+> - Directory names `RTE` and `Layer` should become configurable. ToDo: analyze impact.
 
 The `./RTE` directory structure is maintained by tools and has the following structure. You should not modify the structure of this directory.
 
@@ -489,7 +486,7 @@ Output Directory                              | Content
 `./<project>/Output+<target>`                 | Contains the final binary and symbol files of a project. Each `build-type` shares the same output directory.
 `./<project>/.Interim+<target>/.<build-type>` | Contains interim files (`*.o`, `*.lst`) fore each `build-type`
 
-> Note: The content of the `Output` directory is generated by the `CBuild` step.
+> **Note:** The content of the `Output` directory is generated by the `CBuild` step.
 
 ## Support for unnamed *.yml files
 
@@ -538,8 +535,8 @@ A solution template skeleton may be provided as shown below. The benefit is that
 Software components are re-usable library or source files that require no modification in the user application. Optionally, configurable source and header files are provided that allow to set parameters for the software component. 
 
 - Configurable source and header files are copied to the project using the directory structure explained above.
-- Libraries, source, and header files that are not configurable (and need no modification) are stored in the directory of the Software Component (typically part of CMSIS_Pack_ROOT) and get included directly from this location into the project.
-- An Include Path to the header files of the Software Component is added to the C/C++ Compiler control string.
+- Libraries, source, and header files that are not configurable (and need no modification) are stored in the directory of the software component (typically part of CMSIS_Pack_ROOT) and get included directly from this location into the project.
+- An Include Path to the header files of the software component is added to the C/C++ Compiler control string.
 
 ### PLM of configuration files
 
@@ -547,7 +544,7 @@ Configurable source and header files have a version information that is required
 
 Depending on the PLM status of the application, the `csolution` performs for configuration files the following operation:
 
-1. **Add** a software component for the first time: the related config file is copied twice into the related `RTE` project directory.  The first copy can be modified by the user with the parameters for the user application. The second copy is an unmodified hidden backup file that is appended with the version information.
+1. **Add** a software component for the first time: the related config file is copied twice into the related `RTE` project directory. The first copy can be modified by the user with the parameters for the user application. The second copy is an unmodified hidden backup file that is appended with the version information.
 
     **Example:** A configuration file `ConfigFile.h` at version `1.2.0` is copied:
 
@@ -578,7 +575,7 @@ Depending on the PLM status of the application, the `csolution` performs for con
     ./RTE/component_class/ConfigFile.h - warning: component 'name' upgrade for configuration file version '1.3.0' added, but file inactive
     ```
 
-3. **User action to complete upgrade**: The user has now several options (outside of `csolution`) to merge the configuration file information.  A potential way could be to use a 3-way merge utility. After merging the configuration file, the hidden backup should be deleted and the unmodified new version should become the hidden backup.  The previous configuration file may be stored as backup as shown below.
+3. **User action to complete upgrade**: The user has now several options (outside of `csolution`) to merge the configuration file information. A potential way could be to use a 3-way merge utility. After merging the configuration file, the hidden backup should be deleted and the unmodified new version should become the hidden backup. The previous configuration file may be stored as backup as shown below.
 
     ```c
     ./RTE/component_class/ConfigFile.h           // new configuration file with merge configuration
@@ -599,7 +596,7 @@ Depending on the PLM status of the application, the `csolution` performs for con
 
 ## RTE_Components.h
 
-The file `./RTE/RTE_Components.h` is automatically created by the CMSIS Project Manager (during CONVERT). For each selected Software Component it contains `#define` statements required by the component. These statements are defined in the \*.PDSC file for that component. The following example shows a sample content of a RTE_Components.h file:
+The file `./RTE/RTE_Components.h` is automatically created by the CMSIS Project Manager (during CONVERT). For each selected software component it contains `#define` statements required by the component. These statements are defined in the \*.PDSC file for that component. The following example shows a sample content of a RTE_Components.h file:
 
 ```c
 /* Auto generated Run-Time-Environment Component Configuration File *** Do not modify ! *** */
@@ -618,7 +615,7 @@ The file `./RTE/RTE_Components.h` is automatically created by the CMSIS Project 
 #endif /* RTE_COMPONENTS_H */
 ```
 
-The typical usage of the `RTE_Components.h` file is in header files to control the inclusion of files that are related to other components of the same Software Pack.
+The typical usage of the `RTE_Components.h` file is in header files to control the inclusion of files that are related to other components of the same software pack.
 
 ```c
 #include "RTE_Components.h"
@@ -643,11 +640,11 @@ The ProjMgr should always generate *.cprj files that contain version information
 
 Suggest to split this into two sections:
 
-- `resources:` to define the execution phases, memory regions and region splits, and peripherals.  This section would be in the `csolution.yml` file.
+- `resources:` to define the execution phases, memory regions and region splits, and peripherals. This section would be in the `csolution.yml` file.
 
 - `requirements:` to define project requirements - effectively the partitioning of a system. It should be possible to assign to the application all remaining resources.
 
-Add to the project the possibility to specify .  The issue might be that the project files become overwhelming, alternative is to keep partitioning in separate files.
+Add to the project the possibility to specify . The issue might be that the project files become overwhelming, alternative is to keep partitioning in separate files.
 
 ```yml
 resources:
@@ -673,7 +670,7 @@ resources:
 
 ## Layer Interface Definitions
 
-A software layer could specify the interfaces that it provides.  The interface specification indicates also the configuration of the layer.  Issue might be that a standardization across the industry is required.
+A software layer could specify the interfaces that it provides. The interface specification indicates also the configuration of the layer. Issue might be that a standardization across the industry is required.
 
 ```yml
 interfaces:
@@ -697,7 +694,7 @@ It should be possible to use conditions to filter against a selected board name.
 
 ### Layers in packs
 
-A layer is a set of pre-configured software components. It should be possible to store a layer in a pack and apply filter conditions to it.  In combination with interfaces specifications, an interactive IDE should be able to display suitable layers that could be added to an application.
+A layer is a set of pre-configured software components. It should be possible to store a layer in a pack and apply filter conditions to it. In combination with interfaces specifications, an interactive IDE should be able to display suitable layers that could be added to an application.
 
 
 
