@@ -84,7 +84,7 @@ Input Files              | Description
 
 Output Files             | Description
 :------------------------|:---------------------------------
-[Project Build Files](https://arm-software.github.io/CMSIS_5/Build/html/cprjFormat_pg.html) | Project build information for a Open-CMSIS-Pack based tool environment.
+[Project Build Files *.cprj](https://arm-software.github.io/CMSIS_5/Build/html/cprjFormat_pg.html) | Project build information for a Open-CMSIS-Pack based tool environment.
 Run-Time Environment (RTE)  | Contains the user configured files of a project along with RTE_Components.h inventory file.
 [Project Resource Files *.fzone](https://arm-software.github.io/CMSIS_5/Zone/html/GenDataModel.html)     | Resource and partition data structure for template based code generators.
 
