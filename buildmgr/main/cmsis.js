@@ -1,7 +1,7 @@
 function writeHeader() {
-    document.write('Version 0.10.5.1');
+    document.write('Version 0.10.5.18');
 };
 
 function writeFooter()  {
-    document.write('Generated on 2022-03-15T08:11:57Z for CMSIS-Build 0.10.5+p1-g8bb1af9 by Arm Ltd. All rights reserved.');
+    document.write('Generated on 2022-03-25T15:36:48Z for CMSIS-Build 0.10.5+p18-g3b5f789 by Arm Ltd. All rights reserved.');
 };
