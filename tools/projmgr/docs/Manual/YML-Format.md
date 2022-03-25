@@ -748,7 +748,7 @@ The settings of the *`target-type`* are processed first; then the settings of th
 
 ## `target-types:`
 
-The `target-types:` node may include [toolchain options](#toolchain-options), [target selection](#target-selection), [processor attributes](#processor-attributes), and explicit selection of [software packs](`pack:`).
+The `target-types:` node may include [toolchain options](#toolchain-options), [target selection](#target-selection), and [processor attributes](#processor-attributes):
 
 `target-types:`                                    |              | Content
 :--------------------------------------------------|--------------|:------------------------------------
@@ -765,13 +765,12 @@ The `target-types:` node may include [toolchain options](#toolchain-options), [t
 &nbsp;&nbsp;&nbsp; [`board:`](#board)              |   Optional   | Board specification.
 &nbsp;&nbsp;&nbsp; [`device:`](#device)            |   Optional   | Device specification.
 &nbsp;&nbsp;&nbsp; [`processor:`](#processor)      |   Optional   | Processor specific settings.
-&nbsp;&nbsp;&nbsp; [`packs:`](#packs)              |   Optional   | Explicit selection of software packs.
 
 ## `build-types:`
 
-The `build-types:` node may include [toolchain options](#toolchain-options) and explicit selection of [software packs](`pack:`).
+The `build-types:` node may include [toolchain options](#toolchain-options):
 
-`target-types:`                                       |              | Content
+`build-types:`                                        |              | Content
 :-----------------------------------------------------|--------------|:------------------------------------
 `- type:`                                             | **Required** | Name of the target-type.
 &nbsp;&nbsp;&nbsp; [`compiler:`](#compiler)           |   Optional   | Toolchain selection.
@@ -783,7 +782,6 @@ The `build-types:` node may include [toolchain options](#toolchain-options) and 
 &nbsp;&nbsp;&nbsp; [`add-paths:`](#add-paths)         |   Optional   | Additional include file paths.
 &nbsp;&nbsp;&nbsp; [`del-paths:`](#del-paths)         |   Optional   | Remove specific include file paths.
 &nbsp;&nbsp;&nbsp; [`misc:`](#misc)                   |   Optional   | Literal tool-specific controls.
-&nbsp;&nbsp;&nbsp; [`packs:`](#packs)                 |   Optional   | Explicit selection of software packs.
 
 **Example:**
 
@@ -797,15 +795,12 @@ target-types:
       
 build-types:
   - type: Debug
-    optimize: debug
-    debug: on
+    optimize: debug              # specifies code optimization level
+    debug: on                    # generates debug information
 
   - type: Test
     optimize: max
     debug: on
-    packs:
-      - pack: ARM::CMSIS
-        path: .\local-packs\cmsis
 ```
 
 The `board:`, `device:`, and `processor:` settings are used to configure the code translation for the toolchain. These settings are processed in the following order:
