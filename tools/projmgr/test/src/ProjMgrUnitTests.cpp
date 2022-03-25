@@ -121,12 +121,30 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListBoards) {
   char* argv[5];
   StdStreamRedirect streamRedirect;
 
-  // list devices
+  // list boards
   argv[1] = (char*)"list";
   argv[2] = (char*)"boards";
   argv[3] = (char*)"--filter";
   argv[4] = (char*)"Dummy";
   EXPECT_EQ(0, RunProjMgr(5, argv));
+
+  auto outStr = streamRedirect.GetOutString();
+  EXPECT_STREQ(outStr.c_str(), "RteTest Dummy board\n");
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_ListBoardsProjectFiltered) {
+  char* argv[7];
+  StdStreamRedirect streamRedirect;
+
+  // list boards
+  const string& cproject = testinput_folder + "/TestProject/test.cproject_board_and_device.yml";
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"boards";
+  argv[3] = (char*)"--filter";
+  argv[4] = (char*)"Dummy";
+  argv[5] = (char*)"-p";
+  argv[6] = (char*)cproject.c_str();
+  EXPECT_EQ(0, RunProjMgr(7, argv));
 
   auto outStr = streamRedirect.GetOutString();
   EXPECT_STREQ(outStr.c_str(), "RteTest Dummy board\n");
