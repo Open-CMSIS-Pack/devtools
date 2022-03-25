@@ -144,7 +144,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListDevices) {
   EXPECT_EQ(0, RunProjMgr(5, argv));
 
   auto outStr = streamRedirect.GetOutString();
-  EXPECT_STREQ(outStr.c_str(), "RteTest_ARMCM4_FP\nRteTest_ARMCM4_NOFP\n");
+  EXPECT_STREQ(outStr.c_str(), "RteTest_ARMCM4\nRteTest_ARMCM4_FP\nRteTest_ARMCM4_NOFP\n");
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListComponents) {
@@ -1466,4 +1466,55 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_DefaultFile3) {
     testinput_folder + "/TestDefault/ref/build-types/project.AC6/project.AC6.cprj");
   CompareFile(testoutput_folder + "/build-types/project.IAR/project.IAR.cprj",
     testinput_folder + "/TestDefault/ref/build-types/project.IAR/project.IAR.cprj");
+}
+
+TEST_F(ProjMgrUnitTests, LoadPacks_MultiplePackSelection) {
+  m_csolutionFile = testinput_folder + "/TestSolution/pack_contexts.csolution.yml";
+  m_rootDir = fs::path(m_csolutionFile).parent_path().generic_string();
+  EXPECT_TRUE(PopulateContexts());
+  map<string, ContextItem>* contexts = nullptr;
+  m_worker.GetContexts(contexts);
+  for (auto& [contextName, contextItem] : *contexts) {
+    EXPECT_TRUE(m_worker.ProcessContext(contextItem));
+  }
+}
+
+TEST_F(ProjMgrUnitTests, ListDevices_MultiplePackSelection) {
+  set<string> expected_CM0 = {
+    "RteTest_ARMCM0",
+    "RteTest_ARMCM0_Dual:cm0_core0",
+    "RteTest_ARMCM0_Dual:cm0_core1",
+    "RteTest_ARMCM0_Single",
+    "RteTest_ARMCM0_Test"
+  };
+  set<string> expected_Gen = {
+    "RteTestGen_ARMCM0"
+  };
+  vector<string> devices;
+  m_csolutionFile = testinput_folder + "/TestSolution/pack_contexts.csolution.yml";
+  m_rootDir = fs::path(m_csolutionFile).parent_path().generic_string();
+  EXPECT_TRUE(PopulateContexts());
+  EXPECT_TRUE(m_worker.ListDevices(devices, "pack_contexts+CM0", "CM0"));
+  EXPECT_EQ(expected_CM0, set<string>(devices.begin(), devices.end()));
+  devices.clear();
+  EXPECT_TRUE(m_worker.ListDevices(devices, "pack_contexts+Gen", "CM0"));
+  EXPECT_EQ(expected_Gen, set<string>(devices.begin(), devices.end()));
+}
+
+TEST_F(ProjMgrUnitTests, ListComponents_MultiplePackSelection) {
+  set<string> expected_CM0 = {
+    "ARM::Device:Startup&RteTest Startup@2.0.3 (ARM::RteTest_DFP@0.2.0)"
+  };
+  set<string> expected_Gen = {
+    "ARM::Device:RteTest Generated Component:RteTest@1.1.0 (ARM::RteTestGenerator@0.1.0)"
+  };
+  vector<string> components;
+  m_csolutionFile = testinput_folder + "/TestSolution/pack_contexts.csolution.yml";
+  m_rootDir = fs::path(m_csolutionFile).parent_path().generic_string();
+  EXPECT_TRUE(PopulateContexts());
+  EXPECT_TRUE(m_worker.ListComponents(components, "pack_contexts+CM0", "Startup"));
+  EXPECT_EQ(expected_CM0, set<string>(components.begin(), components.end()));
+  components.clear();
+  EXPECT_TRUE(m_worker.ListComponents(components, "pack_contexts+Gen"));
+  EXPECT_EQ(expected_Gen, set<string>(components.begin(), components.end()));
 }
