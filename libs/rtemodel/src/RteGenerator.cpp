@@ -21,6 +21,8 @@
 #include "RteFsUtils.h"
 #include "XMLTree.h"
 
+#include "CrossPlatformUtils.h"
+
 using namespace std;
 
 RteGenerator::RteGenerator(RteItem* parent) :
@@ -86,24 +88,36 @@ RteItem* RteGenerator::GetArgumentsItem(const string& type) const
   return args;
 }
 
-const string& RteGenerator::GetCommand() const {
+const string RteGenerator::GetCommand() const {
 
   RteItem* exe = GetItemByTag("exe");
   if (exe != NULL) {
     const list<RteItem*>& children = exe->GetChildren();
     for (auto it = children.begin(); it != children.end(); it++) {
       RteItem* cmd = *it;
-      if (cmd->GetTag() != "command")
+      if (cmd->GetTag() != "command" || !cmd->MatchesHost()) {
         continue;
-      if (!cmd->MatchesHost())
-        continue;
-      return cmd->GetText();
+      }
+      const string& key = cmd->GetAttribute("key");
+      string keyValue;
+      if (!key.empty()) {
+        keyValue = RteUtils::BackSlashesToSlashes(CrossPlatformUtils::GetRegistryString(key));
+        if (RteUtils::ExtractFileName(keyValue) == cmd->GetText()) {
+          return keyValue; // key already contains full path to the executable
+        }
+      }
+      if (!keyValue.empty()) {
+        // treat as a path, append '/' if needed
+        if (keyValue.back() != '/') {
+          keyValue += '/';
+        }
+      }
+      return keyValue + cmd->GetText();
     }
     return EMPTY_STRING;
   }
 
   return GetItemValue("command");
-
 }
 
 

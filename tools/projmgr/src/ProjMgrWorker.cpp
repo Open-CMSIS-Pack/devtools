@@ -856,7 +856,7 @@ void ProjMgrWorker::MergeStringVector(StringVectorCollection& item) {
 
 bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
   // Notes: defines, includes and misc are additive. All other keywords overwrite previous settings.
-  // The target-type and build-type definitions are additive, but an attempt to 
+  // The target-type and build-type definitions are additive, but an attempt to
   // redefine an already existing type results in an error.
   // The settings of the target-type are processed first; then the settings of the
   // build-type that potentially overwrite the target-type settings.
@@ -1681,20 +1681,18 @@ bool ProjMgrWorker::ExecuteGenerator(const std::string& context, std::string& ge
     return false;
   }
   RteGenerator* generator = generators.at(generatorId);
-
-  if (generator->GetCommand().empty()) {
-    ProjMgrLogger::Error("generator command for'" + generatorId + "' was not found");
-    return false;
-  }
-
   // TODO: review RteGenerator::GetExpandedCommandLine and variables
   //const string generatorCommand = m_kernel->GetCmsisPackRoot() + "/" + generator->GetPackagePath() + generator->GetCommand();
   const string generatorCommand = generator->GetExpandedCommandLine(m_contexts.at(context).rteActiveTarget);
+  if (generatorCommand.empty()) {
+    ProjMgrLogger::Error("generator command for'" + generatorId + "' was not found");
+    return false;
+  }
   const string generatorWorkingDir = generator->GetExpandedWorkingDir(m_contexts.at(context).rteActiveTarget);
 
   // Create generate.yml file with context info and destination
   ProjMgrYamlEmitter::EmitContextInfo(m_contexts.at(context), generatorWorkingDir);
- 
+
   error_code ec;
   const auto& workingDir = fs::current_path(ec);
   fs::current_path(generatorWorkingDir, ec);

@@ -55,7 +55,14 @@ static std::string GetRegValue(HKEY regKey, const std::string& keyName)
   char       szBuf[MAX_PATH];
   szBuf[0] = 0;                          // invalidate
   if (RegQueryValueEx(hRegKey, valueName.c_str(), NULL, &dwType, (BYTE*)szBuf, &dwLength) == ERROR_SUCCESS) {
-    value = szBuf;
+    // expand environment variables if needed
+    char szExpanded[0x8000]; // 32 K buffer
+    DWORD res = ExpandEnvironmentStrings(szBuf, szExpanded, 0x8000);
+    if(res > 0 && res < 0x8000) {
+      value = szExpanded;
+    } else {
+      value = szBuf;
+    }
   }
   RegCloseKey(hRegKey);
   return value;
@@ -72,14 +79,17 @@ std::string CrossPlatformUtils::GetRegistryString(const std::string& key)
   // check if a specific key is requested, otherwise try both
   bool bCurUser = true; // by default try first current user
   bool bLocalMachine = true;
-  pos = key.find("HKEY_CURRENT_USER\\");
+  bool bEnvVar = true; // last resort
+  pos = name.find("HKEY_CURRENT_USER\\");
   if (pos == 0) {
     bLocalMachine = false; // only current user is requested
+    bEnvVar = false;
     name = name.substr(strlen("HKEY_CURRENT_USER\\"));
   }
   pos = key.find("HKEY_LOCAL_MACHINE\\");
   if (pos == 0) {
     bCurUser = false; // only local machine is requested
+    bEnvVar = false;
     name = name.substr(strlen("HKEY_LOCAL_MACHINE\\"));
   }
   std::string value;
@@ -89,6 +99,10 @@ std::string CrossPlatformUtils::GetRegistryString(const std::string& key)
   if (bLocalMachine && value.empty()) {
     value = GetRegValue(HKEY_LOCAL_MACHINE, name);
   }
+  if (bEnvVar && value.empty()) {
+    value = GetEnv(key);
+  }
+
   return value;
 }
 // end of Utils.cpp

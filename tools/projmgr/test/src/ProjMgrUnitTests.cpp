@@ -1172,6 +1172,27 @@ TEST_F(ProjMgrUnitTests, ExecuteGenerator) {
   }
 }
 
+
+TEST_F(ProjMgrUnitTests, ExecuteGeneratorWithKey) {
+  m_csolutionFile = testinput_folder + "/TestGenerator/test-gpdsc_with_key.csolution.yml";
+  error_code ec;
+  m_rootDir = fs::path(m_csolutionFile).parent_path().generic_string();
+  m_context = "test-gpdsc_with_key.Debug+CM0";
+  m_codeGenerator = "RteTestGeneratorWithKey";
+  EXPECT_TRUE(PopulateContexts());
+
+  const string& hostType = CrossPlatformUtils::GetHostType();
+  string genFolder = testcmsispack_folder + "/ARM/RteTestGenerator/0.1.0/Generator";
+  // we use environment variable to test on all pl since it is reliable
+  CrossPlatformUtils::SetEnv("RTE_GENERATOR_WITH_KEY", genFolder);
+  if (hostType == "linux" || hostType == "win") {
+    EXPECT_TRUE(m_worker.ExecuteGenerator(m_context, m_codeGenerator));
+  } else {
+    EXPECT_FALSE(m_worker.ExecuteGenerator(m_context, m_codeGenerator));
+  }
+}
+
+
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Filtered_Pack_Selection) {
   char* argv[7];
 

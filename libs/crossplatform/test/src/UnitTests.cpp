@@ -81,6 +81,9 @@ TEST(CrossPlatformUnitTests, GetRegistryString) {
     EXPECT_EQ(CrossPlatformUtils::GetRegistryString("HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\CommonFilesDir"), "C:\\Program Files\\Common Files");
     EXPECT_EQ(CrossPlatformUtils::GetRegistryString("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\CommonFilesDir"), "C:\\Program Files\\Common Files");
 
+    // fall-back to environment variable
+    EXPECT_EQ(CrossPlatformUtils::GetRegistryString("PATH"), CrossPlatformUtils::GetEnv("PATH"));
+
   } else {
     EXPECT_EQ(CrossPlatformUtils::GetRegistryString("PATH"), CrossPlatformUtils::GetEnv("PATH"));
   }
