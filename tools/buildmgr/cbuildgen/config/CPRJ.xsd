@@ -111,6 +111,34 @@
     </xs:restriction>
   </xs:simpleType>
 
+  <!-- Optimize enumeration type -->
+  <xs:simpleType name="OptimizeEnum">
+    <xs:restriction base="xs:token">
+      <xs:enumeration value="max" />
+      <xs:enumeration value="size" />
+      <xs:enumeration value="speed" />
+      <xs:enumeration value="debug" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Debug enumeration type -->
+  <xs:simpleType name="DebugEnum">
+    <xs:restriction base="xs:token">
+      <xs:enumeration value="on" />
+      <xs:enumeration value="off" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Warnings enumeration type -->
+  <xs:simpleType name="WarningsEnum">
+    <xs:restriction base="xs:token">
+      <xs:enumeration value="no" />
+      <xs:enumeration value="all" />
+      <xs:enumeration value="Misra" />
+      <xs:enumeration value="AC5-like" />
+    </xs:restriction>
+  </xs:simpleType>
+
   <!-- Ddsp DSP extensions enumeration type -->
   <xs:simpleType name="DdspEnum">
     <xs:restriction base="xs:token">
@@ -192,6 +220,8 @@
     <xs:attribute name="name"    type="xs:string" use="required" />
     <!-- version of the package -->
     <xs:attribute name="version" type="VersionRangeType" use="optional" />
+    <!-- relative path of the package -->
+    <xs:attribute name="path" type="xs:string" use="optional" />
   </xs:complexType>
 
   <!-- Package section type -->
@@ -271,9 +301,11 @@
       <!-- C++ Compiler command-line -->
       <xs:element name="cxxflags"  type="ToolOptionType" />
       <!-- Archiver command-line -->
-      <xs:element name="arflags"  type="ToolOptionType" />
+      <xs:element name="arflags"   type="ToolOptionType" />
       <!-- Assembler command-line -->
       <xs:element name="asflags"   type="AsmOptionType" />
+      <!-- Abstract options -->
+      <xs:element name="options"   type="AbstractOptionsType" minOccurs="0" maxOccurs="1"/>
       <!-- Include paths -->
       <xs:element name="includes"  type="xs:string" minOccurs="0" />
       <!-- Preprocessing definitions -->
@@ -334,6 +366,12 @@
     <xs:attribute name="remove"   type="xs:string" />
   </xs:complexType>
 
+  <xs:complexType name="AbstractOptionsType">
+    <xs:attribute name="optimize" type="OptimizeEnum" use="optional" />
+    <xs:attribute name="debug"    type="DebugEnum"    use="optional" />
+    <xs:attribute name="warnings" type="WarningsEnum" use="optional" />
+  </xs:complexType>
+
   <xs:complexType name="UsedType">
     <xs:attribute name="file"      type="xs:string" />
     <xs:attribute name="path"      type="xs:string" />
@@ -346,6 +384,11 @@
       <xs:element name="cflags"    type="ToolOptionType" />
       <xs:element name="cxxflags"  type="ToolOptionType" />
       <xs:element name="asflags"   type="AsmOptionType" />
+      <xs:element name="options"   type="AbstractOptionsType" />
+      <xs:element name="includes"  type="xs:string" />
+      <xs:element name="excludes"  type="xs:string" />
+      <xs:element name="defines"   type="xs:string" />
+      <xs:element name="undefines" type="xs:string" />
       <xs:element name="file"      type="FileType" />
       <xs:element name="group"     type="GroupType" >
         <xs:unique name="unique-group-levelN">
@@ -361,11 +404,14 @@
 
   <!-- file type definition -->
   <xs:complexType name="FileType">
-    <xs:choice minOccurs="0">
-      <xs:element name="cflags"   type="ToolOptionType" />
-      <xs:element name="cxxflags" type="ToolOptionType" />
-      <xs:element name="asflags"  type="AsmOptionType" />
-    </xs:choice>
+    <xs:all>
+      <xs:element ref="FileFlags" minOccurs="0" />
+      <xs:element name="options" type="AbstractOptionsType" minOccurs="0" maxOccurs="1" />
+      <xs:element name="includes"  type="xs:string"  minOccurs="0" maxOccurs="1" />
+      <xs:element name="excludes"  type="xs:string"  minOccurs="0" maxOccurs="1" />
+      <xs:element name="defines"   type="xs:string"  minOccurs="0" maxOccurs="1" />
+      <xs:element name="undefines" type="xs:string"  minOccurs="0" maxOccurs="1" />
+    </xs:all>
     <!-- path + filename + extension -->
     <xs:attribute name="name"     type="xs:string"        use="required" />
     <!-- file item category: source, header, include path, etc.  -->
@@ -379,6 +425,11 @@
     <xs:attribute name="layer"    type="RestrictedString"        use="optional" />
   </xs:complexType>
 
+  <xs:element name="FileFlags" abstract="true"/> 
+  <xs:element name="cflags"   substitutionGroup="FileFlags" type="ToolOptionType" />
+  <xs:element name="cxxflags" substitutionGroup="FileFlags" type="ToolOptionType" />
+  <xs:element name="asflags"  substitutionGroup="FileFlags" type="AsmOptionType" />
+
   <!-- Files section within the project section -->
   <xs:complexType name="FilesType">
     <xs:choice maxOccurs="unbounded">
@@ -388,6 +439,11 @@
       <xs:element name="cxxflags"  type="ToolOptionType" />
       <!-- Assembler command-line -->
       <xs:element name="asflags"   type="AsmOptionType" />
+      <xs:element name="options"   type="AbstractOptionsType" />
+      <xs:element name="includes"  type="xs:string" />
+      <xs:element name="excludes"  type="xs:string" />
+      <xs:element name="defines"   type="xs:string" />
+      <xs:element name="undefines" type="xs:string" />
       <xs:element name="file"      type="FileType" >
       </xs:element>
       <xs:element name="group"     type="GroupType" >
@@ -418,9 +474,14 @@
                 <xs:attribute name="version"   type="ComponentVersionType" use="required" />
               </xs:complexType>
             </xs:element>
-            <xs:element name="cflags"   type="ToolOptionType" minOccurs="0"/>
-            <xs:element name="cxxflags" type="ToolOptionType" minOccurs="0"/>
-            <xs:element name="asflags"  type="AsmOptionType" minOccurs="0"/>
+            <xs:element name="cflags"    type="ToolOptionType" />
+            <xs:element name="cxxflags"  type="ToolOptionType" />
+            <xs:element name="asflags"   type="AsmOptionType" />
+            <xs:element name="options"   type="AbstractOptionsType" />
+            <xs:element name="includes"  type="xs:string" />
+            <xs:element name="excludes"  type="xs:string" />
+            <xs:element name="defines"   type="xs:string" />
+            <xs:element name="undefines" type="xs:string" />
           </xs:choice>
           <xs:attribute name="Cvendor"     type="xs:string"            use="optional" />
           <xs:attribute name="Cbundle"     type="xs:string"            use="optional" />
