@@ -122,6 +122,7 @@ struct ContextItem {
   std::map<std::string, ClayerItem*> clayers;
   RteProject* rteActiveProject = nullptr;
   RteTarget* rteActiveTarget = nullptr;
+  RteModel* rteFilteredModel = nullptr;
   BuildType buildType;
   TargetType targetType;
   DirectoriesItem directories;
@@ -135,6 +136,7 @@ struct ContextItem {
   std::string fpu;
   std::string endian;
   std::vector<PackageItem> packRequirements;
+  std::set<std::string> pdscFiles;
   std::vector<ComponentItem> componentRequirements;
   std::string compiler;
   ToolchainItem toolchain;
@@ -311,11 +313,13 @@ protected:
   std::map<std::string, ContextItem> m_contexts;
   std::string m_outputDir;
 
-  bool LoadPacks(void);
-  bool GetRequiredPdscFiles(const std::string& packRoot, std::set<std::string>& pdscFiles);
+  bool LoadPacks(ContextItem& context);
+  bool GetRequiredPdscFiles(ContextItem& context, const std::string& packRoot, std::set<std::string>& pdscFiles);
   bool CheckRteErrors(void);
   bool CheckType(TypeFilter typeFilter, TypePair type);
   bool GetTypeContent(ContextItem& context);
+  bool InitializeModel(void);
+  bool InitializeTarget(ContextItem& context);
   bool SetTargetAttributes(ContextItem& context, std::map<std::string, std::string>& attributes);
   bool ProcessPrecedences(ContextItem& context);
   bool ProcessPrecedence(StringCollection& item);

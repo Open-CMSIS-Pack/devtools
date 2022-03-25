@@ -90,7 +90,7 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDevice) {
   map<string, ContextItem>* contexts;
   GetContexts(contexts);
   ContextItem context = contexts->begin()->second;
-  EXPECT_TRUE(LoadPacks());
+  EXPECT_TRUE(LoadPacks(context));
   EXPECT_TRUE(ProcessPrecedences(context));
   EXPECT_TRUE(ProcessDevice(context));
   for (const auto& expectedAttribute : expected) {
@@ -111,7 +111,7 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessComponents) {
   map<string, ContextItem>* contexts;
   GetContexts(contexts);
   ContextItem context = contexts->begin()->second;
-  EXPECT_TRUE(LoadPacks());
+  EXPECT_TRUE(LoadPacks(context));
   EXPECT_TRUE(ProcessPrecedences(context));
   EXPECT_TRUE(ProcessDevice(context));
   EXPECT_TRUE(SetTargetAttributes(context, context.targetAttributes));
@@ -137,7 +137,7 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessComponents_Cvariant1) {
   map<string, ContextItem>* contexts;
   GetContexts(contexts);
   ContextItem context = contexts->begin()->second;
-  EXPECT_TRUE(LoadPacks());
+  EXPECT_TRUE(LoadPacks(context));
   EXPECT_TRUE(ProcessPrecedences(context));
   EXPECT_TRUE(ProcessDevice(context));
   EXPECT_TRUE(SetTargetAttributes(context, context.targetAttributes));
@@ -163,7 +163,7 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessComponents_Cvariant2) {
   map<string, ContextItem>* contexts;
   GetContexts(contexts);
   ContextItem context = contexts->begin()->second;
-  EXPECT_TRUE(LoadPacks());
+  EXPECT_TRUE(LoadPacks(context));
   EXPECT_TRUE(ProcessPrecedences(context));
   EXPECT_TRUE(ProcessDevice(context));
   EXPECT_TRUE(SetTargetAttributes(context, context.targetAttributes));
@@ -185,7 +185,7 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessComponents_MultipleMatches1) {
   map<string, ContextItem>* contexts;
   GetContexts(contexts);
   ContextItem context = contexts->begin()->second;
-  EXPECT_TRUE(LoadPacks());
+  EXPECT_TRUE(LoadPacks(context));
   EXPECT_TRUE(ProcessPrecedences(context));
   EXPECT_TRUE(ProcessDevice(context));
   EXPECT_TRUE(SetTargetAttributes(context, context.targetAttributes));
@@ -202,7 +202,7 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessComponents_MultipleMatches2) {
   map<string, ContextItem>* contexts;
   GetContexts(contexts);
   ContextItem context = contexts->begin()->second;
-  EXPECT_TRUE(LoadPacks());
+  EXPECT_TRUE(LoadPacks(context));
   EXPECT_TRUE(ProcessPrecedences(context));
   EXPECT_TRUE(ProcessDevice(context));
   EXPECT_TRUE(SetTargetAttributes(context, context.targetAttributes));
@@ -227,7 +227,7 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessComponentsApi) {
   map<string, ContextItem>* contexts;
   GetContexts(contexts);
   ContextItem context = contexts->begin()->second;
-  EXPECT_TRUE(LoadPacks());
+  EXPECT_TRUE(LoadPacks(context));
   EXPECT_TRUE(ProcessPrecedences(context));
   EXPECT_TRUE(ProcessDevice(context));
   EXPECT_TRUE(SetTargetAttributes(context, context.targetAttributes));
@@ -254,7 +254,7 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDependencies) {
   map<string, ContextItem>* contexts;
   GetContexts(contexts);
   ContextItem context = contexts->begin()->second;
-  EXPECT_TRUE(LoadPacks());
+  EXPECT_TRUE(LoadPacks(context));
   EXPECT_TRUE(ProcessPrecedences(context));
   EXPECT_TRUE(ProcessDevice(context));
   EXPECT_TRUE(SetTargetAttributes(context, context.targetAttributes));
@@ -280,7 +280,7 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDeviceFailed) {
   map<string, ContextItem>* contexts;
   GetContexts(contexts);
   ContextItem context = contexts->begin()->second;
-  EXPECT_TRUE(LoadPacks());
+  EXPECT_TRUE(LoadPacks(context));
   EXPECT_TRUE(ProcessPrecedences(context));
   EXPECT_FALSE(ProcessDevice(context));
 }
@@ -288,16 +288,16 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDeviceFailed) {
 TEST_F(ProjMgrWorkerUnitTests, LoadUnknownPacks) {
   CsolutionItem csolution;
   SetCsolutionPacks(&csolution, {"ARM::RteTest_Unknown@2.0.1"}, "Test");
-
-  EXPECT_FALSE(LoadPacks());
+  ContextItem context;
+  EXPECT_FALSE(LoadPacks(context));
   EXPECT_EQ(0, m_installedPacks.size());
 }
 
 TEST_F(ProjMgrWorkerUnitTests, LoadDuplicatePacks) {
   CsolutionItem csolution;
   SetCsolutionPacks(&csolution, {"ARM::RteTest_DFP@0.2.0", "ARM::RteTest_DFP"}, "Test");
-
-  EXPECT_TRUE(LoadPacks());
+  ContextItem context;
+  EXPECT_TRUE(LoadPacks(context));
   // Check if only one pack is loaded
   ASSERT_EQ(1, m_installedPacks.size());
   EXPECT_EQ("ARM.RteTest_DFP.0.2.0", (*m_installedPacks.begin())->GetPackageID());
@@ -306,8 +306,8 @@ TEST_F(ProjMgrWorkerUnitTests, LoadDuplicatePacks) {
 TEST_F(ProjMgrWorkerUnitTests, LoadRequiredPacks) {
   CsolutionItem csolution;
   SetCsolutionPacks(&csolution, { "ARM::RteTest_DFP@0.2.0"}, "Test");
-
-  EXPECT_TRUE(LoadPacks());
+  ContextItem context;
+  EXPECT_TRUE(LoadPacks(context));
   // Check if only one pack is loaded
   ASSERT_EQ(1, m_installedPacks.size());
   EXPECT_EQ("ARM.RteTest_DFP.0.2.0", (*m_installedPacks.begin())->GetPackageID());
@@ -316,8 +316,8 @@ TEST_F(ProjMgrWorkerUnitTests, LoadRequiredPacks) {
 TEST_F(ProjMgrWorkerUnitTests, LoadExactPackVersion) {
   CsolutionItem csolution;
   SetCsolutionPacks(&csolution, { "ARM::RteTest_DFP@0.1.1" }, "Test");
-
-  EXPECT_TRUE(LoadPacks());
+  ContextItem context;
+  EXPECT_TRUE(LoadPacks(context));
   // Check if only one pack is loaded
   ASSERT_EQ(1, m_installedPacks.size());
   EXPECT_EQ("ARM.RteTest_DFP.0.1.1", (*m_installedPacks.begin())->GetPackageID());
@@ -326,8 +326,8 @@ TEST_F(ProjMgrWorkerUnitTests, LoadExactPackVersion) {
 TEST_F(ProjMgrWorkerUnitTests, LoadPacksNoPackage) {
   CsolutionItem csolution;
   SetCsolutionPacks(&csolution, {}, "Test");
-
-  EXPECT_TRUE(LoadPacks());
+  ContextItem context;
+  EXPECT_TRUE(LoadPacks(context));
   // get list of available packs
   vector<string> availablePacks;
   EXPECT_TRUE(ListPacks(availablePacks, "Test"));
@@ -338,8 +338,8 @@ TEST_F(ProjMgrWorkerUnitTests, LoadPacksNoPackage) {
 TEST_F(ProjMgrWorkerUnitTests, LoadFilteredPack_1) {
   CsolutionItem csolution;
   SetCsolutionPacks(&csolution, { "ARM::*Gen*" }, "Test");
-
-  EXPECT_TRUE(LoadPacks());
+  ContextItem context;
+  EXPECT_TRUE(LoadPacks(context));
   // Check if only one pack is loaded
   ASSERT_EQ(1, m_installedPacks.size());
   EXPECT_EQ("ARM.RteTestGenerator.0.1.0", (*m_installedPacks.begin())->GetPackageID());
@@ -352,15 +352,16 @@ TEST_F(ProjMgrWorkerUnitTests, LoadFilteredPack_2) {
   // get list of available packs
   vector<string> availablePacks;
   EXPECT_TRUE(ListPacks(availablePacks, "Test"));
-  EXPECT_TRUE(LoadPacks());
+  ContextItem context;
+  EXPECT_TRUE(LoadPacks(context));
   ASSERT_EQ(availablePacks.size(), m_installedPacks.size());
 }
 
 TEST_F(ProjMgrWorkerUnitTests, LoadFilteredPack_3) {
   CsolutionItem csolution;
   SetCsolutionPacks(&csolution, { "ARM::RteTest_D*" }, "Test");
-
-  EXPECT_TRUE(LoadPacks());
+  ContextItem context;
+  EXPECT_TRUE(LoadPacks(context));
   ASSERT_EQ(1, m_installedPacks.size());
   EXPECT_EQ("ARM.RteTest_DFP.0.2.0", (*m_installedPacks.begin())->GetPackageID());
 }
@@ -372,15 +373,16 @@ TEST_F(ProjMgrWorkerUnitTests, LoadFilteredPack_4) {
   // get list of available packs
   vector<string> availablePacks;
   EXPECT_TRUE(ListPacks(availablePacks, "Test"));
-  EXPECT_TRUE(LoadPacks());
+  ContextItem context;
+  EXPECT_TRUE(LoadPacks(context));
   ASSERT_EQ(availablePacks.size(), m_installedPacks.size());
 }
 
 TEST_F(ProjMgrWorkerUnitTests, LoadFilteredPack_5) {
   CsolutionItem csolution;
   SetCsolutionPacks(&csolution, { "ARM::RteTest_DFP@0.2.0" }, "Test");
-
-  EXPECT_TRUE(LoadPacks());
+  ContextItem context;
+  EXPECT_TRUE(LoadPacks(context));
   ASSERT_EQ(1, m_installedPacks.size());
   EXPECT_EQ("ARM.RteTest_DFP.0.2.0", (*m_installedPacks.begin())->GetPackageID());
 }
@@ -390,8 +392,8 @@ TEST_F(ProjMgrWorkerUnitTests, LoadPack_Filter_Unknown) {
   StdStreamRedirect streamRedirect;
   string expected = "no match found for pack filter: keil::*";
   SetCsolutionPacks(&csolution, { "keil::*" }, "Test");
-
-  EXPECT_FALSE(LoadPacks());
+  ContextItem context;
+  EXPECT_FALSE(LoadPacks(context));
   ASSERT_EQ(0, m_installedPacks.size());
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_NE(string::npos, errStr.find(expected));
@@ -438,7 +440,7 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDevice_Invalid_Device_Name) {
   map<string, ContextItem>* contexts;
   GetContexts(contexts);
   ContextItem context = contexts->begin()->second;
-  EXPECT_TRUE(LoadPacks());
+  EXPECT_TRUE(LoadPacks(context));
   EXPECT_TRUE(ProcessPrecedences(context));
   EXPECT_FALSE(ProcessDevice(context));
   auto errStr = streamRedirect.GetErrorString();
@@ -458,7 +460,7 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDevice_Invalid_Device_Vendor) {
   map<string, ContextItem>* contexts;
   GetContexts(contexts);
   ContextItem context = contexts->begin()->second;
-  EXPECT_TRUE(LoadPacks());
+  EXPECT_TRUE(LoadPacks(context));
   EXPECT_TRUE(ProcessPrecedences(context));
   EXPECT_FALSE(ProcessDevice(context));
   auto errStr = streamRedirect.GetErrorString();
@@ -478,7 +480,7 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDevice_PName) {
   map<string, ContextItem>* contexts;
   GetContexts(contexts);
   ContextItem context = contexts->begin()->second;
-  EXPECT_TRUE(LoadPacks());
+  EXPECT_TRUE(LoadPacks(context));
   EXPECT_TRUE(ProcessPrecedences(context));
   EXPECT_FALSE(ProcessDevice(context));
   auto errStr = streamRedirect.GetErrorString();
@@ -496,7 +498,7 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDevice_With_Board_And_Device_Info) {
   map<string, ContextItem>* contexts;
   GetContexts(contexts);
   ContextItem context = contexts->begin()->second;
-  EXPECT_TRUE(LoadPacks());
+  EXPECT_TRUE(LoadPacks(context));
   EXPECT_TRUE(ProcessPrecedences(context));
   EXPECT_TRUE(ProcessDevice(context));
 }
@@ -510,7 +512,7 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessPrecedences_With_Only_Board) {
   map<string, ContextItem>* contexts;
   GetContexts(contexts);
   ContextItem context = contexts->begin()->second;
-  EXPECT_TRUE(LoadPacks());
+  EXPECT_TRUE(LoadPacks(context));
   EXPECT_TRUE(ProcessPrecedences(context));
   EXPECT_TRUE(ProcessDevice(context));
 }
@@ -528,7 +530,7 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDevice_Invalid_Board_Vendor) {
   map<string, ContextItem>* contexts;
   GetContexts(contexts);
   ContextItem context = contexts->begin()->second;
-  EXPECT_TRUE(LoadPacks());
+  EXPECT_TRUE(LoadPacks(context));
   EXPECT_TRUE(ProcessPrecedences(context));
   EXPECT_FALSE(ProcessDevice(context));
   auto errStr = streamRedirect.GetErrorString();
@@ -548,7 +550,7 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDevice_Invalid_Board_Name) {
   map<string, ContextItem>* contexts;
   GetContexts(contexts);
   ContextItem context = contexts->begin()->second;
-  EXPECT_TRUE(LoadPacks());
+  EXPECT_TRUE(LoadPacks(context));
   EXPECT_TRUE(ProcessPrecedences(context));
   EXPECT_FALSE(ProcessDevice(context));
   auto errStr = streamRedirect.GetErrorString();
