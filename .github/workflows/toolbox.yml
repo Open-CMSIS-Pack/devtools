@@ -123,47 +123,13 @@ jobs:
     strategy:
       fail-fast: true
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
-
     steps:
-      - name: Install macos deps
-        if: ${{ startsWith(matrix.runs_on, 'macos') }}
-        run: |
-          brew install \
-            ninja
-
-      - name: Install linux deps
-        if: ${{ startsWith(matrix.runs_on, 'ubuntu') }}
-        run: |
-          sudo apt update
-          sudo apt-get install \
-            bc \
-            build-essential \
-            ninja-build
-
-      - name: Install windows deps
-        if: ${{ startsWith(matrix.runs_on, 'windows') }}
-        run: choco install -y ninja
-
       - name: Checkout devtools
         uses: actions/checkout@v2
         with:
           submodules: true
 
-      - name: Create build folder
-        run: mkdir build
-
-      - name: Configure windows build for amd64
-        if: ${{ startsWith(matrix.runs_on, 'windows') }}
-        uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: amd64
-
-      - uses: ammaraskar/gcc-problem-matcher@master
-        if: ${{ startsWith(matrix.runs_on, 'macos') || startsWith(matrix.runs_on, 'ubuntu') }}
-
-      - uses: ammaraskar/msvc-problem-matcher@master
-        if: ${{ startsWith(matrix.runs_on, 'windows') }}
-
+      # https://github.com/Arm-Debug/mcu-build-action
       - name: Download cmsis-toolbox installer
         uses: actions/download-artifact@v2
         with:
@@ -174,33 +140,38 @@ jobs:
         if: ${{ startsWith(matrix.runs_on, 'macos') || startsWith(matrix.runs_on, 'ubuntu') }}
         run: chmod +x cmsis-toolbox.sh
 
-      - name: Build and run Toolbox tests
+      - name: Build ToolboxTests
+        uses: Arm-Debug/mcu-build-action@v1.1
+        with:
+          arch: ${{ matrix.arch }}
+          build_type: Debug
+          target: ToolboxTests
+
+      - name: Run Toolbox tests
         run: |
-          cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug ..
-          cmake --build . --target ToolboxTests
           ctest -V -C Debug -R ToolboxTests
         working-directory: ./build
 
       - name: Archive tests results
+        if: ${{ always() }}
         uses: actions/upload-artifact@v2
         with:
-          name: toolboxtest-${{ matrix.target }}
+          name: toolboxtest-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/Testing/Temporary/LastTest.log
           retention-days: 1
           if-no-files-found: error
-        if: ${{ always() }}
 
       - name: Archive gtest report
+        if: ${{ always() }}
         uses: actions/upload-artifact@v2
         with:
-          name: toolbox_test-${{ matrix.target }}
+          name: toolbox_test-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/toolboxtests-*.xml
           retention-days: 1
           if-no-files-found: error
-        if: ${{ always() }}
 
       - name: Publish Toolbox Test Results
         uses: mikepenz/action-junit-report@v2
         with:
-          check_name: toolbox_test-${{ matrix.target }}
+          check_name: toolbox_test-${{ matrix.target }}-${{ matrix.arch }}
           report_paths: build/test_reports/toolboxtests-${{ matrix.target }}.xml

@@ -48,49 +48,18 @@ jobs:
       fail-fast: true
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
     steps:
-      - name: Install macos deps
-        if: ${{ startsWith(matrix.runs_on, 'macos') }}
-        run: |
-          brew install \
-            ninja
-
-      - name: Install linux deps
-        if: ${{ startsWith(matrix.runs_on, 'ubuntu') }}
-        run: |
-          sudo apt update
-          sudo apt-get install \
-            bc \
-            build-essential \
-            ninja-build
-
-      - name: Install windows deps
-        if: ${{ startsWith(matrix.runs_on, 'windows') }}
-        run: choco install -y ninja
-
       - name: Checkout devtools
         uses: actions/checkout@v2
         with:
           submodules: true
 
-      - name: Create build folder
-        run: mkdir build
-
-      - name: Configure windows build for amd64
-        if: ${{ startsWith(matrix.runs_on, 'windows') }}
-        uses: ilammy/msvc-dev-cmd@v1
+      # https://github.com/Arm-Debug/mcu-build-action
+      - name: Build
+        uses: Arm-Debug/mcu-build-action@v1.1
+        id: mcu-build
         with:
-          arch: amd64
-
-      - uses: ammaraskar/gcc-problem-matcher@master
-        if: ${{ startsWith(matrix.runs_on, 'macos') || startsWith(matrix.runs_on, 'ubuntu') }}
-      - uses: ammaraskar/msvc-problem-matcher@master
-        if: ${{ startsWith(matrix.runs_on, 'windows') }}
-
-      - name: Build cbuildgen
-        run: |
-          cmake -G Ninja -DCMAKE_BUILD_TYPE=Release ..
-          cmake --build . --target cbuildgen
-        working-directory: ./build
+          target: cbuildgen
+          arch: ${{ matrix.arch }}
 
       - name: Rename binary to be integrated to the installer
         if: ${{ startsWith(matrix.runs_on, 'macos') || startsWith(matrix.runs_on, 'ubuntu') }}
@@ -103,7 +72,7 @@ jobs:
       - name: Archive cbuildgen
         uses: actions/upload-artifact@v2
         with:
-          name: cbuildgen-${{ matrix.target }}
+          name: cbuildgen-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/tools/buildmgr/cbuildgen/${{ matrix.target }}/Release/cbuildgen${{ matrix.binary_extension }}
           retention-days: 1
           if-no-files-found: error
@@ -224,20 +193,20 @@ jobs:
       - name: Download cbuildgen linux
         uses: actions/download-artifact@v2
         with:
-          name: cbuildgen-linux64
+          name: cbuildgen-linux64-amd64
           path: tools/buildmgr/cbuildgen/distribution/bin/
 
       - name: Download cbuildgen macos
         if: ${{ !github.event.repository.private }}
         uses: actions/download-artifact@v2
         with:
-          name: cbuildgen-darwin64
+          name: cbuildgen-darwin64-amd64
           path: tools/buildmgr/cbuildgen/distribution/bin/
 
       - name: Download cbuildgen windows
         uses: actions/download-artifact@v2
         with:
-          name: cbuildgen-windows64
+          name: cbuildgen-windows64-amd64
           path: tools/buildmgr/cbuildgen/distribution/bin/
 
       - name: Adding execution permission to the binaries
@@ -322,8 +291,6 @@ jobs:
         run: |
           sudo apt update
           sudo apt-get install \
-            bc \
-            build-essential \
             dos2unix \
             ninja-build \
             libxml2-utils
@@ -338,7 +305,7 @@ jobs:
           submodules: true
 
       - name: Setup ARM GCC for Ubuntu and macOS
-        if: ${{ startsWith(matrix.runs_on, 'ubuntu') || startsWith(matrix.runs_on, 'macos') }}
+        if: ${{ startsWith(matrix.runs_on, 'macos') || ( startsWith(matrix.runs_on, 'ubuntu') && matrix.arch == 'amd64' ) }}
         env:
           installer_name: ${{ matrix.installer_name }}
         run: |
@@ -363,20 +330,6 @@ jobs:
           key: ${{ env.CACHE_NAME }}-${{ matrix.runs_on }}
           path: ${{ env.CI_PACK_ROOT }}
 
-      - name: Create build folder
-        run: mkdir build
-
-      - name: Configure windows build for amd64
-        if: ${{ startsWith(matrix.runs_on, 'windows') }}
-        uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: amd64
-
-      - uses: ammaraskar/gcc-problem-matcher@master
-        if: ${{ startsWith(matrix.runs_on, 'macos') || startsWith(matrix.runs_on, 'ubuntu') }}
-      - uses: ammaraskar/msvc-problem-matcher@master
-        if: ${{ startsWith(matrix.runs_on, 'windows') }}
-
       - name: Download cbuild_install
         uses: actions/download-artifact@v2
         with:
@@ -393,49 +346,42 @@ jobs:
         if: ${{ startsWith(matrix.runs_on, 'macos') || startsWith(matrix.runs_on, 'ubuntu') }}
         run: chmod +x cbuild_install.sh
 
+      # https://github.com/Arm-Debug/mcu-build-action
       - name: Build CbuildUnitTests
-        run: |
-          cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug ..
-          cmake --build . --target CbuildUnitTests
-        working-directory: build
+        uses: Arm-Debug/mcu-build-action@v1.1
+        with:
+          target: CbuildUnitTests
+          build_type: Debug
+          arch: ${{ matrix.arch }}
 
-      - name: Run CbuildUnitTests (for macOS and Ubuntu)
-        if: ${{ startsWith(matrix.runs_on, 'macos') || startsWith(matrix.runs_on, 'ubuntu') }}
-        env:
-          target: ${{ matrix.target }}
-        run: ./tools/buildmgr/test/unittests/${target}/Debug/CbuildUnitTests --gtest_output=xml:unittest_report_${target}.xml
-        working-directory: build
-
-      - name: Run CbuildUnitTests (for Windows)
-        if: ${{ startsWith(matrix.runs_on, 'windows') }}
-        env:
-          target: ${{ matrix.target }}
-        # For some reason, the env variable usage $Env:target does not work properly.
-        run: .\tools\buildmgr\test\unittests\windows64\Debug\CbuildUnitTests.exe --gtest_output=xml:unittest_report_windows64.xml
+      - name: Run CbuildUnitTests
+        run: ctest -V -R CbuildUnitTests
         working-directory: build
 
       - name: Archive unittest
         uses: actions/upload-artifact@v2
         with:
-          name: unittest_report_${{ matrix.target }}
-          path: build/unittest_report_${{ matrix.target }}.xml
+          name: unittest_report_${{ matrix.target }}_${{ matrix.arch }}
+          path: build/cbuildunit_test_report.xml
           retention-days: 1
           if-no-files-found: error
 
       - name: Publish Cbuild Unittest Results
         uses: mikepenz/action-junit-report@v2
         with:
-          check_name: "Cbuild Unittests [${{ matrix.target }}]"
-          report_paths: build/unittest_report_${{ matrix.target }}.xml
+          check_name: "Cbuild Unittests [${{ matrix.target }}_${{ matrix.arch }}]"
+          report_paths: build/cbuildunit_test_report.xml
 
-      - name: Build Cbuild Integration Tests
-        run: |
-          cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug ..
-          cmake --build . --target CbuildIntegTests
-        working-directory: build
+      # https://github.com/Arm-Debug/mcu-build-action
+      - name: Build CbuildIntegTests
+        uses: Arm-Debug/mcu-build-action@v1.1
+        with:
+          target: CbuildIntegTests
+          build_type: Debug
+          arch: ${{ matrix.arch }}
 
-      - name: Run Cbuild Integration Tests (excl. AC5, AC6, MultiTargetAC6Tests) for Linux
-        if: ${{ startsWith(matrix.runs_on, 'ubuntu') }}
+      - name: Run Cbuild Integration Tests (excl. AC5, AC6, MultiTargetAC6Tests) for Linux amd64
+        if: ${{ startsWith(matrix.runs_on, 'ubuntu') && matrix.arch == 'amd64' }}
         env:
           target: ${{ matrix.target }}
         run: ./tools/buildmgr/test/integrationtests/${target}/Debug/CbuildIntegTests --gtest_filter=-*AC5*:*AC6*:*MultiTargetAC6Tests* --gtest_output=xml:integtest_report_${target}.xml
@@ -457,17 +403,19 @@ jobs:
         working-directory: build
 
       - name: Archive Cbuild Integration Tests
+        if: ${{ matrix.arch == 'amd64' }}
         uses: actions/upload-artifact@v2
         with:
-          name: integtest_report_${{ matrix.target }}
+          name: integtest_report_${{ matrix.target }}_${{ matrix.arch }}
           path: build/integtest_report_${{ matrix.target }}.xml
           retention-days: 1
           if-no-files-found: error
 
       - name: Publish Cbuild Integration Test Results
+        if: ${{ matrix.arch == 'amd64' }}
         uses: mikepenz/action-junit-report@v2
         with:
-          check_name: "Cbuild Integration Tests [${{ matrix.target }}]"
+          check_name: "Cbuild Integration Tests [${{ matrix.target }}-${{ matrix.arch }}]"
           report_paths: build/integtest_report_${{ matrix.target }}.xml
 
   sanity-check-native:
@@ -494,6 +442,7 @@ jobs:
         run: chmod +x cbuild_install.sh
 
       - name: Run cbuild_install.sh
+        if: ${{ matrix.arch == 'amd64' }}
         shell: bash
         run: |
           echo "${{ github.workspace }}/cbuild" > config
@@ -504,6 +453,7 @@ jobs:
           ./cbuild_install.sh < config
 
       - name: Test cbuildgen
+        if: ${{ matrix.arch == 'amd64' }}
         shell: bash
         run: |
           ${{ github.workspace }}/cbuild/bin/cbuildgen | grep "(cbuildgen): Build Process Manager"

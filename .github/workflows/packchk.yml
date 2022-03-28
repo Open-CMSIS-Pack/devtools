@@ -43,53 +43,20 @@ jobs:
       fail-fast: true
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
     steps:
-      - name: Install macos deps
-        if: ${{ startsWith(matrix.runs_on, 'macos') }}
-        run: |
-          brew install \
-            ninja
-
-      - name: Install linux deps
-        if: ${{ startsWith(matrix.runs_on, 'ubuntu') }}
-        run: |
-          sudo apt update
-          sudo apt-get install \
-            bc \
-            build-essential \
-            ninja-build
-
-      - name: Install windows deps
-        if: ${{ startsWith(matrix.runs_on, 'windows') }}
-        run: choco install -y ninja
-
       - name: Checkout devtools
         uses: actions/checkout@v2
         with:
           submodules: recursive
 
-      - name: Create build folder
-        run: |
-          mkdir build
-
-      - name: Configure windows build for amd64
-        if: ${{ startsWith(matrix.runs_on, 'windows') }}
-        uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: amd64
-
-      - uses: ammaraskar/gcc-problem-matcher@master
-        if: ${{ startsWith(matrix.runs_on, 'macos') || startsWith(matrix.runs_on, 'ubuntu') }}
-      - uses: ammaraskar/msvc-problem-matcher@master
-        if: ${{ startsWith(matrix.runs_on, 'windows') }}
-
+      # https://github.com/Arm-Debug/mcu-build-action
       - name: Build packchk
-        run: |
-          cmake -G Ninja -DCMAKE_BUILD_TYPE=Release ..
-          cmake --build . --target packchkdist
-        working-directory: ./build
+        uses: Arm-Debug/mcu-build-action@v1.1
+        with:
+          target: packchkdist
+          arch: ${{ matrix.arch }}
 
-      - name: Attach installer to release
-        if: ${{ github.event_name == 'release' }}
+      - name: Attach installer to amd64 binaries release
+        if: ${{ github.event_name == 'release' && matrix.arch == 'amd64' }}
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
@@ -106,69 +73,48 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
     steps:
-      - name: Install macos deps
-        if: ${{ startsWith(matrix.runs_on, 'macos') }}
-        run: |
-          brew install \
-            ninja
-
-      - name: Install linux deps
-        if: ${{ startsWith(matrix.runs_on, 'ubuntu') }}
-        run: |
-          sudo apt update
-          sudo apt-get install \
-            bc \
-            build-essential \
-            ninja-build
-
-      - name: Install windows deps
-        if: ${{ startsWith(matrix.runs_on, 'windows') }}
-        run: choco install -y ninja
-
       - name: Checkout devtools
         uses: actions/checkout@v2
         with:
           submodules: recursive
 
-      - name: Create build folder
-        run: |
-          mkdir build
-
-      - name: Configure windows build for amd64
-        if: ${{ startsWith(matrix.runs_on, 'windows') }}
-        uses: ilammy/msvc-dev-cmd@v1
+      # https://github.com/Arm-Debug/mcu-build-action
+      - name: Build PackChkUnitTests
+        uses: Arm-Debug/mcu-build-action@v1.1
         with:
-          arch: amd64
+          arch: ${{ matrix.arch }}
+          build_type: Debug
+          target: PackChkUnitTests
 
-      - uses: ammaraskar/gcc-problem-matcher@master
-        if: ${{ startsWith(matrix.runs_on, 'macos') || startsWith(matrix.runs_on, 'ubuntu') }}
-      - uses: ammaraskar/msvc-problem-matcher@master
-        if: ${{ startsWith(matrix.runs_on, 'windows') }}
-
-      - name: Build and run packchk unit tests
+      - name: Run packchk unit tests
         run: |
-          cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug ..
-          cmake --build . --target PackChkUnitTests
           ctest -V -R PackChkUnitTests
         working-directory: ./build
 
-      - name: Build and run packchk integ tests
+      # https://github.com/Arm-Debug/mcu-build-action
+      - name: Build PackChkIntegTests
+        uses: Arm-Debug/mcu-build-action@v1.1
+        with:
+          arch: ${{ matrix.arch }}
+          build_type: Debug
+          target: PackChkIntegTests
+
+      - name: Run packchk integ tests
         run: |
-          cmake --build . --target PackChkIntegTests
           ctest -V -R PackChkIntegTests
         working-directory: ./build
 
       - name: Archive unit test results
         uses: actions/upload-artifact@v2
         with:
-          name: unit_test_result-${{ matrix.target }}
+          name: unit_test_result-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/packchkunittest-*.xml
           if-no-files-found: error
 
       - name: Archive integration test results
         uses: actions/upload-artifact@v2
         with:
-          name: integ_test_result-${{ matrix.target }}
+          name: integ_test_result-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/packchkintegtest-*.xml
           if-no-files-found: error
 
@@ -184,9 +130,6 @@ jobs:
         run: |
           sudo apt update
           sudo apt-get install \
-            bc \
-            build-essential \
-            ninja-build \
             lcov
 
       - name: Checkout devtools
@@ -194,16 +137,28 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Create build folder
-        run: mkdir build
+      # https://github.com/Arm-Debug/mcu-build-action
+      - name: Build PackChkIntegTests
+        uses: Arm-Debug/mcu-build-action@v1.1
+        with:
+          add_cmake_variables: -DCOVERAGE=ON
+          arch: amd64
+          build_type: Debug
+          target: PackChkIntegTests
 
-      - name: Build and run packchk tests
+      # https://github.com/Arm-Debug/mcu-build-action
+      - name: Build PackChkUnitTests
+        uses: Arm-Debug/mcu-build-action@v1.1
+        with:
+          add_cmake_variables: -DCOVERAGE=ON
+          arch: amd64
+          build_type: Debug
+          target: PackChkUnitTests
+
+      - name: Run packchk tests
         run: |
-          cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCOVERAGE=ON ..
-          cmake --build . --target PackChkIntegTests
-          ctest -V -C Debug -R PackChkIntegTests
-          cmake --build . --target PackChkUnitTests
           ctest -V -C Debug -R PackChkUnitTests
+          ctest -V -C Debug -R PackChkIntegTests
         working-directory: ./build
 
       - name: Generate coverage report
@@ -279,39 +234,39 @@ jobs:
       - name: Download unit test report windows
         uses: actions/download-artifact@v2
         with:
-          name: unit_test_result-windows64
+          name: unit_test_result-windows64-amd64
           path: testreports/
 
-      - name: Download unit test report linux
+      - name: Download unit test report linux amd64
         uses: actions/download-artifact@v2
         with:
-          name: unit_test_result-linux64
+          name: unit_test_result-linux64-amd64
           path: testreports/
 
       - name: Download unit test report macos
         if: ${{ !github.event.repository.private }}
         uses: actions/download-artifact@v2
         with:
-          name: unit_test_result-darwin64
+          name: unit_test_result-darwin64-amd64
           path: testreports/
 
       - name: Download integ test report windows
         uses: actions/download-artifact@v2
         with:
-          name: integ_test_result-windows64
+          name: integ_test_result-windows64-amd64
           path: testreports/
 
-      - name: Download integ test report linux
+      - name: Download integ test report linux amd64
         uses: actions/download-artifact@v2
         with:
-          name: integ_test_result-linux64
+          name: integ_test_result-linux64-amd64
           path: testreports/
 
       - name: Download integ test report macos
         if: ${{ !github.event.repository.private }}
         uses: actions/download-artifact@v2
         with:
-          name: integ_test_result-darwin64
+          name: integ_test_result-darwin64-amd64
           path: testreports/
 
       - name: Event File

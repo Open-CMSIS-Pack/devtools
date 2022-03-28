@@ -51,103 +51,73 @@ jobs:
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
 
     steps:
-      - name: Install macos deps
-        if: ${{ startsWith(matrix.runs_on, 'macos') }}
-        run: |
-          brew install \
-            ninja \
-            python \
-            swig
-
-      - name: Install linux deps
-        if: ${{ startsWith(matrix.runs_on, 'ubuntu') }}
-        run: |
-          sudo apt update
-          sudo apt-get install \
-            bc \
-            build-essential \
-            ninja-build \
-            python-dev \
-            swig
-
-      - name: Install windows deps
-        if: ${{ startsWith(matrix.runs_on, 'windows') }}
-        run: choco install -y ninja python swig
-
       - name: Checkout devtools
         uses: actions/checkout@v2
         with:
           submodules: true
 
-      - name: Create build folders
-        run: |
-          mkdir build
-          mkdir buildswig
-
-      - name: Configure windows build for amd64
-        if: ${{ startsWith(matrix.runs_on, 'windows') }}
-        uses: ilammy/msvc-dev-cmd@v1
+      # https://github.com/Arm-Debug/mcu-build-action
+      - name: Build
+        uses: Arm-Debug/mcu-build-action@v1.1
         with:
-          arch: amd64
-
-      - uses: ammaraskar/gcc-problem-matcher@master
-        if: ${{ startsWith(matrix.runs_on, 'macos') || startsWith(matrix.runs_on, 'ubuntu') }}
-      - uses: ammaraskar/msvc-problem-matcher@master
-        if: ${{ startsWith(matrix.runs_on, 'windows') }}
-
-      - name: Build projmgr
-        run: |
-          cmake -G Ninja -DCMAKE_BUILD_TYPE=Release ..
-          cmake --build . --target projmgr
-        working-directory: ./build
+          target: projmgr
+          arch: ${{ matrix.arch }}
 
       - name: Archive projmgr
         uses: actions/upload-artifact@v2
         with:
-          name: projmgr-${{ matrix.target }}
+          name: projmgr-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/tools/projmgr/${{ matrix.target }}/Release/${{ matrix.binary }}
           retention-days: 1
           if-no-files-found: error
 
-      - name: Build projmgr swig libs windows
+      # https://github.com/Arm-Debug/mcu-build-action
+      - name: Build swig libs windows
         if: ${{ startsWith(matrix.runs_on, 'windows') }}
-        run: |
-          cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DSWIG_LIBS=ON ..
-          cmake --build . --target projmgr-python --config Release
-        working-directory: ./buildswig
+        uses: Arm-Debug/mcu-build-action@v1.1
+        with:
+          add_cmake_variables: -DSWIG_LIBS=ON
+          add_cmake_build_args: --config Release
+          arch: ${{ matrix.arch }}
+          build_folder: buildswig
+          target: projmgr-python
 
-      - name: Build projmgr swig libs macos ubuntu
-        if: ${{ startsWith(matrix.runs_on, 'macos') || startsWith(matrix.runs_on, 'ubuntu') }}
-        run: |
-          cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DSWIG_LIBS=ON ..
-          cmake --build . --target projmgr-python projmgr-go --config Release
-        working-directory: ./buildswig
+      # https://github.com/Arm-Debug/mcu-build-action
+      - name: Build swig libs macos and ubuntu amd64
+        if: ${{ startsWith(matrix.runs_on, 'macos') || ( startsWith(matrix.runs_on, 'ubuntu') && matrix.arch == 'amd64' ) }}
+        uses: Arm-Debug/mcu-build-action@v1.1
+        with:
+          add_cmake_variables: -DSWIG_LIBS=ON
+          add_cmake_build_args: --config Release
+          arch: ${{ matrix.arch }}
+          build_folder: buildswig
+          target: projmgr-python projmgr-go
 
       - name: Archive projmgr swig python libs windows
         if: ${{ startsWith(matrix.runs_on, 'windows') }}
         uses: actions/upload-artifact@v2
         with:
-          name: projmgr-swig-python-${{ matrix.target }}
+          name: projmgr-swig-python-${{ matrix.target }}-${{ matrix.arch }}
           path: |
              ./buildswig/tools/projmgr/swig/python/projmgr.py
              ./buildswig/tools/projmgr/swig/python/_projmgr.pyd
           retention-days: 1
 
-      - name: Archive projmgr swig python libs macos ubuntu
-        if: ${{ startsWith(matrix.runs_on, 'macos') || startsWith(matrix.runs_on, 'ubuntu') }}
+      - name: Archive projmgr swig python libs macos ubuntu amd64
+        if: ${{ startsWith(matrix.runs_on, 'macos') || ( startsWith(matrix.runs_on, 'ubuntu') && matrix.arch == 'amd64' ) }}
         uses: actions/upload-artifact@v2
         with:
-          name: projmgr-swig-python-${{ matrix.target }}
+          name: projmgr-swig-python-${{ matrix.target }}-${{ matrix.arch }}
           path: |
              ./buildswig/tools/projmgr/swig/python/projmgr.py
              ./buildswig/tools/projmgr/swig/python/_projmgr.so
           retention-days: 1
 
-      - name: Archive projmgr swig go libs macos ubuntu
-        if: ${{ startsWith(matrix.runs_on, 'macos') || startsWith(matrix.runs_on, 'ubuntu') }}
+      - name: Archive projmgr swig go libs macos ubuntu amd64
+        if: ${{ startsWith(matrix.runs_on, 'macos') || ( startsWith(matrix.runs_on, 'ubuntu') && matrix.arch == 'amd64' ) }}
         uses: actions/upload-artifact@v2
         with:
-          name: projmgr-swig-go-${{ matrix.target }}
+          name: projmgr-swig-go-${{ matrix.target }}-${{ matrix.arch }}
           path: |
              ./buildswig/tools/projmgr/swig/go/projmgr.go
              ./buildswig/tools/projmgr/swig/go/projmgr.so
@@ -173,54 +143,54 @@ jobs:
           cp -r tools/projmgr/schemas/* tools/projmgr/distribution/etc/
           cp -r tools/projmgr/templates/* tools/projmgr/distribution/etc/
 
-      - name: Download projmgr linux
+      - name: Download projmgr linux amd64
         uses: actions/download-artifact@v2
         with:
-          name: projmgr-linux64
+          name: projmgr-linux64-amd64
           path: tools/projmgr/distribution/bin/linux64/
 
-      - name: Download projmgr macos
+      - name: Download projmgr macos amd64
         uses: actions/download-artifact@v2
         with:
-          name: projmgr-darwin64
+          name: projmgr-darwin64-amd64
           path: tools/projmgr/distribution/bin/darwin64/
 
-      - name: Download projmgr windows
+      - name: Download projmgr windows amd64
         uses: actions/download-artifact@v2
         with:
-          name: projmgr-windows64
+          name: projmgr-windows64-amd64
           path: tools/projmgr/distribution/bin/windows64/
 
       - name: Download projmgr-swig-python linux
         uses: actions/download-artifact@v2
         with:
-          name: projmgr-swig-python-linux64
+          name: projmgr-swig-python-linux64-amd64
           path: tools/projmgr/distribution/lib/linux64/python/
 
       - name: Download projmgr-swig-python macos
         if: ${{ !github.event.repository.private }}
         uses: actions/download-artifact@v2
         with:
-          name: projmgr-swig-python-darwin64
+          name: projmgr-swig-python-darwin64-amd64
           path: tools/projmgr/distribution/lib/darwin64/python/
 
       - name: Download projmgr-swig-python windows
         uses: actions/download-artifact@v2
         with:
-          name: projmgr-swig-python-windows64
+          name: projmgr-swig-python-windows64-amd64
           path: tools/projmgr/distribution/lib/windows64/python/
 
       - name: Download projmgr-swig-go linux
         uses: actions/download-artifact@v2
         with:
-          name: projmgr-swig-go-linux64
+          name: projmgr-swig-go-linux64-amd64
           path: tools/projmgr/distribution/lib/linux64/go/
 
       - name: Download projmgr-swig-go macos
         if: ${{ !github.event.repository.private }}
         uses: actions/download-artifact@v2
         with:
-          name: projmgr-swig-go-darwin64
+          name: projmgr-swig-go-darwin64-amd64
           path: tools/projmgr/distribution/lib/darwin64/go/
 
       - name: Zip distribution folder
@@ -292,68 +262,41 @@ jobs:
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
 
     steps:
-      - name: Install macos deps
-        if: ${{ startsWith(matrix.runs_on, 'macos') }}
-        run: |
-          brew install \
-            ninja
-
-      - name: Install linux deps
-        if: ${{ startsWith(matrix.runs_on, 'ubuntu') }}
-        run: |
-          sudo apt update
-          sudo apt-get install \
-            bc \
-            build-essential \
-            ninja-build
-
-      - name: Install windows deps
-        if: ${{ startsWith(matrix.runs_on, 'windows') }}
-        run: choco install -y ninja
-
       - name: Checkout devtools
         uses: actions/checkout@v2
         with:
           submodules: true
 
-      - name: Create build folder
-        run: mkdir build
-
-      - name: Configure windows build for amd64
-        if: ${{ startsWith(matrix.runs_on, 'windows') }}
-        uses: ilammy/msvc-dev-cmd@v1
+      # https://github.com/Arm-Debug/mcu-build-action
+      - name: Build ProjMgrUnitTests
+        uses: Arm-Debug/mcu-build-action@v1.1
         with:
-          arch: amd64
+          arch: ${{ matrix.arch }}
+          build_type: Debug
+          target: ProjMgrUnitTests
 
-      - uses: ammaraskar/gcc-problem-matcher@master
-        if: ${{ startsWith(matrix.runs_on, 'macos') || startsWith(matrix.runs_on, 'ubuntu') }}
-      - uses: ammaraskar/msvc-problem-matcher@master
-        if: ${{ startsWith(matrix.runs_on, 'windows') }}
-
-      - name: Build and run projmgr unit tests
+      - name: Run projmgr unit tests
         run: |
-          cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug ..
-          cmake --build . --target ProjMgrUnitTests
           ctest -V -C Debug -R ProjMgrUnitTests
         working-directory: ./build
 
       - name: Archive unit tests results
+        if: ${{ always() }}
         uses: actions/upload-artifact@v2
         with:
-          name: unittest-${{ matrix.target }}
+          name: unittest-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/Testing/Temporary/LastTest.log
           retention-days: 1
           if-no-files-found: error
-        if: ${{ always() }}
 
       - name: Archive gtest report
+        if: ${{ always() }}
         uses: actions/upload-artifact@v2
         with:
-          name: unit_gtest-${{ matrix.target }}
+          name: unit_gtest-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/projmgrunittest-*.xml
           retention-days: 1
           if-no-files-found: error
-        if: ${{ always() }}
 
   coverage:
     if: |
@@ -367,9 +310,6 @@ jobs:
         run: |
           sudo apt update
           sudo apt-get install \
-            bc \
-            build-essential \
-            ninja-build \
             lcov
 
       - name: Checkout devtools
@@ -377,15 +317,17 @@ jobs:
         with:
           submodules: true
 
-      - name: Create build folder
-        run: mkdir build
+      # https://github.com/Arm-Debug/mcu-build-action
+      - name: Build ProjMgrUnitTests
+        uses: Arm-Debug/mcu-build-action@v1.1
+        with:
+          add_cmake_variables: -DCOVERAGE=ON
+          arch: amd64
+          build_type: Debug
+          target: ProjMgrUnitTests
 
-      - uses: ammaraskar/gcc-problem-matcher@master
-
-      - name: Build and run projmgr unit tests
+      - name: Run ProjMgrUnitTests
         run: |
-          cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCOVERAGE=ON ..
-          cmake --build . --target ProjMgrUnitTests
           ctest -V -C Debug -R ProjMgrUnitTests
         working-directory: ./build
 
@@ -431,19 +373,19 @@ jobs:
       - name: Download gtest report windows
         uses: actions/download-artifact@v2
         with:
-          name: unit_gtest-windows64
+          name: unit_gtest-windows64-amd64
           path: testreport/
 
       - name: Download gtest report linux
         uses: actions/download-artifact@v2
         with:
-          name: unit_gtest-linux64
+          name: unit_gtest-linux64-amd64
           path: testreport/
 
       - name: Download gtest report macos
         uses: actions/download-artifact@v2
         with:
-          name: unit_gtest-darwin64
+          name: unit_gtest-darwin64-amd64
           path: testreport/
 
       - name: Publish Unit Test Results
