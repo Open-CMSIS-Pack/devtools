@@ -527,6 +527,9 @@ fs::path RteFsUtils::AbsolutePath(const std::string& path) {
   return fs::path();
 }
 
+string RteFsUtils::ParentPath(const string& path) {
+  return fs::path(path).parent_path().generic_string();
+}
 
 string RteFsUtils::GetCurrentFolder(bool withTrailingSlash) {
   error_code ec;

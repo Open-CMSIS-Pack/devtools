@@ -201,6 +201,12 @@ public:
   */
   static fs::path AbsolutePath(const std::string& path);
   /**
+   * @brief get parent path
+   * @param path path to be processed
+   * @return string containing the parent path
+  */
+  static std::string ParentPath(const std::string& path);
+  /**
    * @brief determine absolute path of the current working directory
    * @param withTrailingSlash true if returned value should contain trailing slash '/'
    * @return absolute path of the current working directory
