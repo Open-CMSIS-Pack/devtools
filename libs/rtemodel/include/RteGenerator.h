@@ -47,7 +47,7 @@ public:
    * @brief get generator command without expansion
    * @return generator command
   */
-  const std::string& GetCommand() const;
+  const std::string GetCommand() const;
 
   /**
    * @brief get item containing command line arguments
