@@ -122,110 +122,137 @@ void ProjMgrWorker::SetOutputDir(const std::string& outputDir) {
   m_outputDir = outputDir;
 }
 
-bool ProjMgrWorker::GetRequiredPdscFiles(const std::string& packRoot, std::set<std::string>& pdscFiles) {
+bool ProjMgrWorker::GetRequiredPdscFiles(ContextItem& context, const std::string& packRoot, std::set<std::string>& pdscFiles) {
   std::vector<std::string> errMsgs;
-  for (auto context : m_contexts) {
-    if (!ProcessPackages(context.second)) {
-      return false;
+  if (!ProcessPackages(context)) {
+    return false;
+  }
+  for (auto packItem : context.packRequirements) {
+    if (packItem.path.empty()) {
+      auto pack = packItem.pack;
+      bool bPackFilter = (pack.name.empty() || WildCards::IsWildcardPattern(pack.name));
+      auto filteredPackItems = GetFilteredPacks(packItem, packRoot);
+      for (const auto& filteredPackItem : filteredPackItems) {
+        auto filteredPack = filteredPackItem.pack;
+        string packId, pdscFile, packversion;
+        if (!filteredPack.version.empty()) {
+          packversion = filteredPack.version + ":" + filteredPack.version;
+        }
+
+        RteAttributes attributes({
+          {"name",    filteredPack.name},
+          {"vendor",  filteredPack.vendor},
+          {"version", packversion},
+          });
+
+        pdscFile = m_kernel->GetLocalPdscFile(attributes, packRoot, packId);
+        if (pdscFile.empty()) {
+          pdscFile = m_kernel->GetInstalledPdscFile(attributes, packRoot, packId);
+        }
+        if (pdscFile.empty()) {
+          if (!bPackFilter) {
+            std::string packageName =
+              (filteredPack.vendor.empty() ? "" : filteredPack.vendor + "::") +
+              filteredPack.name +
+              (filteredPack.version.empty() ? "" : "@" + filteredPack.version);
+            errMsgs.push_back("required pack: " + packageName + " not found");
+          }
+          continue;
+        }
+        pdscFiles.insert(pdscFile);
+      }
+      if (bPackFilter && pdscFiles.empty()) {
+        std::string filterStr = pack.vendor +
+          (pack.name.empty() ? "" : "::" + pack.name) +
+          (pack.version.empty() ? "" : "@" + pack.version);
+        errMsgs.push_back("no match found for pack filter: " + filterStr);
+      }
     }
-    for (auto packItem : context.second.packRequirements) {
-      if (packItem.path.empty()) {
-        auto pack = packItem.pack;
-        bool bPackFilter = (pack.name.empty() || WildCards::IsWildcardPattern(pack.name));
-        auto filteredPackItems = GetFilteredPacks(packItem, packRoot);
-        for (const auto& filteredPackItem : filteredPackItems) {
-          auto filteredPack = filteredPackItem.pack;
-          string packId, pdscFile, packversion;
-          if (!filteredPack.version.empty()) {
-            packversion = filteredPack.version + ":" + filteredPack.version;
-          }
+    else {
+      error_code ec;
+      std::string packPath = fs::path(context.csolution->path).parent_path().generic_string() + "/" + packItem.path;
+      if (!fs::exists(packPath)) {
+        errMsgs.push_back("pack path: " + packItem.path + " does not exist");
+        break;
+      }
+      packPath = fs::canonical(packPath, ec).generic_string();
+      auto pdscFilesList = RteFsUtils::FindFiles(packPath, ".pdsc");
+      if (pdscFilesList.empty()) {
+        errMsgs.push_back("no pdsc file found under: " + packItem.path);
+        break;
+      }
 
-          RteAttributes attributes({
-            {"name",    filteredPack.name},
-            {"vendor",  filteredPack.vendor},
-            {"version", packversion},
-            });
-
-          pdscFile = m_kernel->GetLocalPdscFile(attributes, packRoot, packId);
-          if (pdscFile.empty()) {
-            pdscFile = m_kernel->GetInstalledPdscFile(attributes, packRoot, packId);
-          }
-          if (pdscFile.empty()) {
-            if (!bPackFilter) {
-              std::string packageName =
-                (filteredPack.vendor.empty() ? "" : filteredPack.vendor + "::") +
-                filteredPack.name +
-                (filteredPack.version.empty() ? "" : "@" + filteredPack.version);
-              errMsgs.push_back("required pack: " + packageName + " not found");
-            }
-            continue;
-          }
-          pdscFiles.insert(pdscFile);
-        }
-        if (bPackFilter && pdscFiles.empty()) {
-          std::string filterStr = pack.vendor +
-            (pack.name.empty() ? "" : "::" + pack.name) +
-            (pack.version.empty() ? "" : "@" + pack.version);
-          errMsgs.push_back("no match found for pack filter: " + filterStr);
-        }
+      if (pdscFilesList.size() > 1) {
+        ProjMgrLogger::Warn("no pack loaded as multiple pdsc files found under: " + packItem.path);
       }
       else {
-        error_code ec;
-        std::string packPath = fs::path(context.second.csolution->path).parent_path().generic_string() + "/" + packItem.path;
-        if (!fs::exists(packPath)) {
-          errMsgs.push_back("pack path: " + packItem.path + " does not exist");
-          break;
-        }
-        packPath = fs::canonical(packPath, ec).generic_string();
-        auto pdscFilesList = RteFsUtils::FindFiles(packPath, ".pdsc");
-        if (pdscFilesList.empty()) {
-          errMsgs.push_back("no pdsc file found under: " + packItem.path);
-          break;
-        }
-
-        if (pdscFilesList.size() > 1) {
-          ProjMgrLogger::Warn("no pack loaded as multiple pdsc files found under: " + packItem.path);
-        }
-        else {
-          pdscFiles.insert(pdscFilesList[0].generic_string());
-        }
+        pdscFiles.insert(pdscFilesList[0].generic_string());
       }
-    }
-    if (errMsgs.size() > 0) {
-      break;
     }
   }
   std::for_each(errMsgs.begin(), errMsgs.end(), [](const auto& errMsg) {ProjMgrLogger::Error(errMsg); });
   return (0 == errMsgs.size());
 }
 
-bool ProjMgrWorker::LoadPacks(void) {
+bool ProjMgrWorker::InitializeModel() {
   string packRoot = CrossPlatformUtils::GetEnv("CMSIS_PACK_ROOT");
   if (packRoot.empty()) {
     packRoot = CrossPlatformUtils::GetDefaultCMSISPackRootDir();
   }
   m_kernel = ProjMgrKernel::Get();
-  m_kernel->SetCmsisPackRoot(packRoot);
-
-  std::set<std::string> pdscFiles;
-  if (!GetRequiredPdscFiles(packRoot, pdscFiles)) {
+  if (!m_kernel) {
+    ProjMgrLogger::Error("initializing RTE Kernel failed");
     return false;
   }
+  m_model = m_kernel->GetGlobalModel();
+  if (!m_model) {
+    ProjMgrLogger::Error("initializing RTE Model failed");
+    return false;
+  }
+  m_kernel->SetCmsisPackRoot(packRoot);
+  m_model->SetCallback(m_kernel->GetCallback());
 
+  // Get pack selection for each context
+  std::set<std::string> pdscFiles;
+  for (auto& [_, contextItem] : m_contexts) {
+    if (!GetRequiredPdscFiles(contextItem, packRoot, contextItem.pdscFiles)) {
+      return false;
+    }
+    pdscFiles.insert(contextItem.pdscFiles.begin(), contextItem.pdscFiles.end());
+  }
   if (pdscFiles.empty()) {
     // Get installed packs
     if (!m_kernel->GetInstalledPacks(pdscFiles)) {
       ProjMgrLogger::Error("parsing installed packs failed");
-    }
-  }
-
-  if (m_installedPacks.empty()) {
-    if (!m_kernel->LoadAndInsertPacks(m_installedPacks, pdscFiles)) {
-      ProjMgrLogger::Error("failed to load and insert packs");
       return false;
     }
   }
+  if (!m_kernel->LoadAndInsertPacks(m_installedPacks, pdscFiles)) {
+    ProjMgrLogger::Error("failed to load and insert packs");
+    return false;
+  }
+  return true;
+}
 
+bool ProjMgrWorker::LoadPacks(ContextItem& context) {
+  if (m_installedPacks.empty() && !InitializeModel()) {
+    return false;
+  }
+  if (!InitializeTarget(context)) {
+    return false;
+  }
+  if (!context.pdscFiles.empty()) {
+    RteAttributesMap selectedPacks;
+    for (const auto& pack : m_installedPacks) {
+      if (context.pdscFiles.find(pack->GetPackageFileName()) != context.pdscFiles.end()) {
+        selectedPacks.insert({ pack->GetPackageID(), pack->GetAttributes() });
+      }
+    }
+    RtePackageFilter filter;
+    filter.SetSelectedPackages(selectedPacks);
+    context.rteActiveTarget->SetPackageFilter(filter);
+    context.rteActiveTarget->UpdateFilterModel();
+  }
   return CheckRteErrors();
 }
 
@@ -263,24 +290,29 @@ bool ProjMgrWorker::CheckRteErrors(void) {
   return true;
 }
 
-bool ProjMgrWorker::SetTargetAttributes(ContextItem& context, map<string, string>& attributes) {
-  if (context.rteActiveProject == nullptr) {
-    m_model = m_kernel->GetGlobalModel();
-    m_model->SetCallback(m_kernel->GetCallback());
+bool ProjMgrWorker::InitializeTarget(ContextItem& context) {
+  if (context.rteActiveTarget == nullptr) {
     // RteGlobalModel has the RteProject pointer ownership
     RteProject* rteProject = make_unique<RteProject>().release();
     m_model->AddProject(0, rteProject);
     m_model->SetActiveProjectId(rteProject->GetProjectId());
     context.rteActiveProject = m_model->GetActiveProject();
-    context.rteActiveProject->AddTarget("CMSIS", attributes, true, true);
+    context.rteActiveProject->AddTarget("CMSIS", map<string, string>(), true, true);
     context.rteActiveProject->SetActiveTarget("CMSIS");
     context.rteActiveProject->SetName(context.name);
     context.rteActiveProject->SetProjectPath(context.directories.cprj + "/");
     context.rteActiveTarget = context.rteActiveProject->GetActiveTarget();
-  } else {
-    context.rteActiveTarget->SetAttributes(attributes);
-    context.rteActiveTarget->UpdateFilterModel();
+    context.rteFilteredModel = context.rteActiveTarget->GetFilteredModel();
   }
+  return CheckRteErrors();
+}
+
+bool ProjMgrWorker::SetTargetAttributes(ContextItem& context, map<string, string>& attributes) {
+  if (context.rteActiveTarget == nullptr) {
+    InitializeTarget(context);
+  }
+  context.rteActiveTarget->SetAttributes(attributes);
+  context.rteActiveTarget->UpdateFilterModel();
   return CheckRteErrors();
 }
 
@@ -328,36 +360,22 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
 
   RteDeviceItem* matchedBoardDevice = nullptr;
   if(!context.board.empty()) {
-    m_model = m_kernel->GetGlobalModel();
-    if (!m_model) {
-      return false;
-    }
-
     BoardItem boardItem;
     GetBoardItem(context.board, boardItem);
     // find board
     RteBoard* matchedBoard = nullptr;
-    for (const auto& pack : m_installedPacks) {
-      RteItem* boards = pack->GetBoards();
-      if (boards) {
-        const list<RteItem*>& children = boards->GetChildren();
-        for (const auto& child : children) {
-          RteBoard* board = dynamic_cast<RteBoard*>(child);
-          if (board && (board->GetName() == boardItem.name)) {
-            if (boardItem.vendor.empty() || (boardItem.vendor == DeviceVendor::GetCanonicalVendorName(board->GetVendorName()))) {
-              matchedBoard = board;
-              const auto& boardPackage = matchedBoard->GetPackage();
-              context.packages.insert({ ProjMgrUtils::GetPackageID(boardPackage), boardPackage });
-              context.targetAttributes["Bname"]    = matchedBoard->GetName();
-              context.targetAttributes["Bvendor"]  = matchedBoard->GetVendorName();
-              context.targetAttributes["Bversion"] = matchedBoard->GetAttribute("revision");
-              break;
-            }
-          }
+    const RteBoardMap& availableBoards = context.rteFilteredModel->GetBoards();
+    for (const auto& [_, board] : availableBoards) {
+      if (board->GetName() == boardItem.name) {
+        if (boardItem.vendor.empty() || (boardItem.vendor == DeviceVendor::GetCanonicalVendorName(board->GetVendorName()))) {
+          matchedBoard = board;
+          const auto& boardPackage = matchedBoard->GetPackage();
+          context.packages.insert({ ProjMgrUtils::GetPackageID(boardPackage), boardPackage });
+          context.targetAttributes["Bname"]    = matchedBoard->GetName();
+          context.targetAttributes["Bvendor"]  = matchedBoard->GetVendorName();
+          context.targetAttributes["Bversion"] = matchedBoard->GetAttribute("revision");
+          break;
         }
-      }
-      if (matchedBoard) {
-        break;
       }
     }
     if (!matchedBoard) {
@@ -383,7 +401,7 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
     }
 
     auto mountedDevice = *(mountedDevices.begin());
-    auto device = m_model->GetDevice(mountedDevice->GetDeviceName(), mountedDevice->GetDeviceVendor());
+    auto device = context.rteFilteredModel->GetDevice(mountedDevice->GetDeviceName(), mountedDevice->GetDeviceVendor());
     if (!device) {
       ProjMgrLogger::Error("board mounted device " + mountedDevice->GetFullDeviceName() + " not found");
       return false;
@@ -398,12 +416,8 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
     const string& selectableDevice = variantName.empty() ? matchedBoardDevice->GetDeviceName() : variantName;
     context.device = GetDeviceInfoString("", selectableDevice, deviceItem.pname);
   } else {
-    list<RteDeviceItem*> devices;
-    for (const auto& pack : m_installedPacks) {
-      list<RteDeviceItem*> deviceItems;
-      pack->GetEffectiveDeviceItems(deviceItems);
-      devices.insert(devices.end(), deviceItems.begin(), deviceItems.end());
-    }
+    list<RteDevice*> devices;
+    context.rteFilteredModel->GetDevices(devices, "", "", RteDeviceItem::VARIANT);
     list<RteDeviceItem*> matchedDevices;
     for (const auto& device : devices) {
       if (device->GetFullDeviceName() == deviceItem.name) {
@@ -540,9 +554,11 @@ bool ProjMgrWorker::ProcessPackages(ContextItem& context) {
     }
   }
   // Add package requirements
-  for (const auto& packItem : context.csolution->packs) {
-    if (CheckType(packItem.type, context.type)) {
-      packages.push_back(packItem);
+  if (context.csolution) {
+    for (const auto& packItem : context.csolution->packs) {
+      if (CheckType(packItem.type, context.type)) {
+        packages.push_back(packItem);
+      }
     }
   }
   // Process packages
@@ -1220,7 +1236,7 @@ bool ProjMgrWorker::CheckType(TypeFilter typeFilter, TypePair type) {
 bool ProjMgrWorker::ProcessContext(ContextItem& context, bool resolveDependencies) {
   context.outputType = context.cproject->outputType.empty() ? "exe" : context.cproject->outputType;
 
-  if (!LoadPacks()) {
+  if (!LoadPacks(context)) {
     return false;
   }
   if (!ProcessPrecedences(context)) {
@@ -1333,7 +1349,8 @@ bool ProjMgrWorker::ListPacks(vector<string>&packs, const string& contextName, c
       return false;
     }
   }
-  if (!LoadPacks()) {
+  ContextItem& context = m_contexts[contextName];
+  if (!LoadPacks(context)) {
     return false;
   }
   if (m_installedPacks.empty()) {
@@ -1357,6 +1374,40 @@ bool ProjMgrWorker::ListPacks(vector<string>&packs, const string& contextName, c
   return true;
 }
 
+bool ProjMgrWorker::ListBoards(vector<string>& boards, const string& contextName, const string& filter) {
+  if (!contextName.empty()) {
+    // Get selected context
+    if (m_contexts.empty() || (m_contexts.find(contextName) == m_contexts.end())) {
+      ProjMgrLogger::Error("context '" + contextName + "' was not found");
+      return false;
+    }
+  }
+  ContextItem& context = m_contexts[contextName];
+  if (!LoadPacks(context)) {
+    return false;
+  }
+  set<string> boardsSet;
+  const RteBoardMap& availableBoards = context.rteFilteredModel->GetBoards();
+  for (const auto& [_, board] : availableBoards) {
+    boardsSet.insert(board->GetName());
+  }
+  if (boardsSet.empty()) {
+    ProjMgrLogger::Error("no installed board was found");
+    return false;
+  }
+  if (!filter.empty()) {
+    set<string> matchedBoards;
+    ApplyFilter(boardsSet, SplitArgs(filter), matchedBoards);
+    if (matchedBoards.empty()) {
+      ProjMgrLogger::Error("no board was found with filter '" + filter + "'");
+      return false;
+    }
+    boardsSet = matchedBoards;
+  }
+  boards.assign(boardsSet.begin(), boardsSet.end());
+  return true;
+}
+
 bool ProjMgrWorker::ListDevices(vector<string>& devices, const string& contextName, const string& filter) {
   if (!contextName.empty()) {
     // Get selected context
@@ -1365,23 +1416,23 @@ bool ProjMgrWorker::ListDevices(vector<string>& devices, const string& contextNa
       return false;
     }
   }
-  if (!LoadPacks()) {
+  ContextItem& context = m_contexts[contextName];
+  if (!LoadPacks(context)) {
     return false;
   }
   set<string> devicesSet;
-  for (const auto& pack : m_installedPacks) {
-    list<RteDeviceItem*> deviceItems;
-    pack->GetEffectiveDeviceItems(deviceItems);
-    for (const auto& deviceItem : deviceItems) {
-      const string& deviceName = deviceItem->GetFullDeviceName();
-      if (deviceItem->GetProcessorCount() > 1) {
-        const auto& processors = deviceItem->GetProcessors();
-        for (const auto& processor : processors) {
-          devicesSet.insert(deviceName + ":" + processor.first);
-        }
-      } else {
-        devicesSet.insert(deviceName);
+
+  list<RteDevice*> filteredModelDevices;
+  context.rteFilteredModel->GetDevices(filteredModelDevices, "", "", RteDeviceItem::VARIANT);
+  for (const auto& deviceItem : filteredModelDevices) {
+    const string& deviceName = deviceItem->GetFullDeviceName();
+    if (deviceItem->GetProcessorCount() > 1) {
+      const auto& processors = deviceItem->GetProcessors();
+      for (const auto& processor : processors) {
+        devicesSet.insert(deviceName + ":" + processor.first);
       }
+    } else {
+      devicesSet.insert(deviceName);
     }
   }
   if (devicesSet.empty()) {
@@ -1409,10 +1460,12 @@ bool ProjMgrWorker::ListComponents(vector<string>& components, const string& con
       ProjMgrLogger::Error("context '" + contextName + "' was not found");
       return false;
     }
-    ContextItem& context = m_contexts.at(contextName);
-    if (!LoadPacks()) {
-      return false;
-    }
+  }
+  ContextItem& context = m_contexts[contextName];
+  if (!LoadPacks(context)) {
+    return false;
+  }
+  if (!contextName.empty()) {
     if (!ProcessPrecedences(context)) {
       return false;
     }
@@ -1422,28 +1475,18 @@ bool ProjMgrWorker::ListComponents(vector<string>& components, const string& con
     if (!ProcessDevice(context)) {
       return false;
     }
-    if (!SetTargetAttributes(context, context.targetAttributes)) {
-      return false;
-    }
-    installedComponents = context.rteActiveTarget->GetFilteredComponents();
-    if (installedComponents.empty()) {
+  }
+  if (!SetTargetAttributes(context, context.targetAttributes)) {
+    return false;
+  }
+  installedComponents = context.rteActiveTarget->GetFilteredComponents();
+  if (installedComponents.empty()) {
+    if (!contextName.empty()) {
       ProjMgrLogger::Error("no component was found for device '" + context.device + "'");
-      return false;
-    }
-  } else {
-    // No context is given
-    ContextItem context;
-    if (!LoadPacks()) {
-      return false;
-    }
-    if (!SetTargetAttributes(context, context.targetAttributes)) {
-      return false;
-    }
-    installedComponents = context.rteActiveTarget->GetFilteredComponents();
-    if (installedComponents.empty()) {
+    } else {
       ProjMgrLogger::Error("no installed component was found");
-      return false;
     }
+    return false;
   }
   RteComponentMap componentMap;
   set<string> componentIds, filteredIds;

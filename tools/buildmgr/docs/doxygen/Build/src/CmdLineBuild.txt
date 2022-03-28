@@ -202,7 +202,7 @@ $ cbuild.sh <ProjectFile>.cprj [--toolchain=<Toolchain> --outdir=<OutDir> --intd
   </tr>
   <tr>
     <td>\--help</td>
-    <td>Opens this documentation.</td>
+    <td>Prints the usage.</td>
   </tr>
   <tr>
     <td>\--log=\<LogFile></td>

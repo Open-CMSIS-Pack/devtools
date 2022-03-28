@@ -122,6 +122,7 @@ struct ContextItem {
   std::map<std::string, ClayerItem*> clayers;
   RteProject* rteActiveProject = nullptr;
   RteTarget* rteActiveTarget = nullptr;
+  RteModel* rteFilteredModel = nullptr;
   BuildType buildType;
   TargetType targetType;
   DirectoriesItem directories;
@@ -135,6 +136,7 @@ struct ContextItem {
   std::string fpu;
   std::string endian;
   std::vector<PackageItem> packRequirements;
+  std::set<std::string> pdscFiles;
   std::vector<ComponentItem> componentRequirements;
   std::string compiler;
   ToolchainItem toolchain;
@@ -213,6 +215,15 @@ public:
    * @return true if executed successfully
   */
   bool ListPacks(std::vector<std::string>& packs, const std::string& contextName, const std::string& filter = RteUtils::EMPTY_STRING);
+
+  /**
+   * @brief list available boards
+   * @param reference to list of boards
+   * @param reference to context name
+   * @param filter words to filter results
+   * @return true if executed successfully
+  */
+  bool ListBoards(std::vector<std::string>& boards, const std::string& contextName, const std::string& filter = RteUtils::EMPTY_STRING);
 
   /**
    * @brief list available devices
@@ -302,11 +313,13 @@ protected:
   std::map<std::string, ContextItem> m_contexts;
   std::string m_outputDir;
 
-  bool LoadPacks(void);
-  bool GetRequiredPdscFiles(const std::string& packRoot, std::set<std::string>& pdscFiles);
+  bool LoadPacks(ContextItem& context);
+  bool GetRequiredPdscFiles(ContextItem& context, const std::string& packRoot, std::set<std::string>& pdscFiles);
   bool CheckRteErrors(void);
   bool CheckType(TypeFilter typeFilter, TypePair type);
   bool GetTypeContent(ContextItem& context);
+  bool InitializeModel(void);
+  bool InitializeTarget(ContextItem& context);
   bool SetTargetAttributes(ContextItem& context, std::map<std::string, std::string>& attributes);
   bool ProcessPrecedences(ContextItem& context);
   bool ProcessPrecedence(StringCollection& item);

@@ -98,7 +98,7 @@ bool BuildSystemGenerator::Collect(const string& inputFile, const CbuildModel *m
   m_asMscGlobal = GetString(model->GetTargetAsFlags());
   m_linkerMscGlobal = GetString(model->GetTargetLdFlags());
 
-  for (auto inc : model->GetIncludePaths())
+  for (auto inc : model->GetTargetIncludePaths())
   {
     CbuildUtils::PushBackUniquely(m_incPathsList, StrNorm(inc));
   }
@@ -127,17 +127,21 @@ bool BuildSystemGenerator::Collect(const string& inputFile, const CbuildModel *m
     CbuildUtils::PushBackUniquely(m_libFilesList, StrNorm(obj));
   }
 
-  for (auto def : model->GetDefines())
+  for (auto def : model->GetTargetDefines())
   {
     CbuildUtils::PushBackUniquely(m_definesList, def);
   }
 
+  const map<string, std::vector<string>>& defines = model->GetDefines();
+  const map<string, std::vector<string>>& incPaths = model->GetIncludePaths();
   for (auto list : model->GetCSourceFiles())
   {
     string group = list.first;
-    string cGFlags;
+    string cGFlags, cGDefines, cGIncludes;
     const map<string, std::vector<string>>& cFlags = model->GetCFlags();
     string groupName = group;
+
+    // flags
     do {
       if (cFlags.find(groupName) != cFlags.end()) {
         cGFlags = GetString(cFlags.at(groupName));
@@ -146,6 +150,7 @@ bool BuildSystemGenerator::Collect(const string& inputFile, const CbuildModel *m
       groupName = fs::path(groupName).parent_path().generic_string();
     } while (!groupName.empty());
     m_groupsList[StrNorm(group)].ccMsc = cGFlags;
+    CollectGroupDefinesIncludes(defines, incPaths, group);
 
     for (auto src : list.second) {
       string cFFlags;
@@ -153,15 +158,17 @@ bool BuildSystemGenerator::Collect(const string& inputFile, const CbuildModel *m
       src = StrNorm(src);
       m_ccFilesList[src].group = StrNorm(group + (group.empty() ? "" : SS));
       m_ccFilesList[src].flags = cFFlags;
+      CollectFileDefinesIncludes(defines, incPaths, src, group, m_ccFilesList);
     }
   }
 
   for (auto list : model->GetCxxSourceFiles())
   {
     string group = list.first;
-    string cxxGFlags;
+    string cxxGFlags, cxxGDefines, cxxGIncludes;
     const map<string, std::vector<string>>& cxxFlags = model->GetCxxFlags();
     string groupName = group;
+
     do {
       if (cxxFlags.find(groupName) != cxxFlags.end()) {
         cxxGFlags = GetString(cxxFlags.at(groupName));
@@ -170,6 +177,7 @@ bool BuildSystemGenerator::Collect(const string& inputFile, const CbuildModel *m
       groupName = fs::path(groupName).parent_path().generic_string();
     } while (!groupName.empty());
     m_groupsList[StrNorm(group)].cxxMsc = cxxGFlags;
+    CollectGroupDefinesIncludes(defines, incPaths, group);
 
     for (auto src : list.second) {
       string cxxFFlags;
@@ -177,6 +185,7 @@ bool BuildSystemGenerator::Collect(const string& inputFile, const CbuildModel *m
       src = StrNorm(src);
       m_cxxFilesList[src].group = StrNorm(group + (group.empty() ? "" : SS));
       m_cxxFilesList[src].flags = cxxFFlags;
+      CollectFileDefinesIncludes(defines, incPaths, src, group, m_cxxFilesList);
     }
   }
 
@@ -186,7 +195,7 @@ bool BuildSystemGenerator::Collect(const string& inputFile, const CbuildModel *m
   for (auto list : model->GetAsmSourceFiles())
   {
     string group = list.first;
-    string asGFlags;
+    string asGFlags, asGDefines, asGIncludes;
     const map<string, std::vector<string>>& asFlags = model->GetAsFlags();
     string groupName = group;
     do {
@@ -197,9 +206,9 @@ bool BuildSystemGenerator::Collect(const string& inputFile, const CbuildModel *m
       groupName = fs::path(groupName).parent_path().generic_string();
     } while (!groupName.empty());
     m_groupsList[StrNorm(group)].asMsc = asGFlags;
+    CollectGroupDefinesIncludes(defines, incPaths, group);
 
     bool group_asm = (assembler.find(group) != assembler.end()) ? assembler.at(group) : m_asTargetAsm;
-
     for (auto src : list.second) {
       string asFFlags;
       if (asFlags.find(src) != asFlags.end()) asFFlags = GetString(asFlags.at(src));
@@ -229,6 +238,7 @@ bool BuildSystemGenerator::Collect(const string& inputFile, const CbuildModel *m
       src = StrNorm(src);
       (*pList)[src].group = StrNorm(group + (group.empty() ? "" : SS));
       (*pList)[src].flags = asFFlags;
+      CollectFileDefinesIncludes(defines, incPaths, src, group, (*pList));
     }
   }
 
@@ -356,3 +366,54 @@ bool BuildSystemGenerator::CompareFile(const string& filename, stringstream& buf
   fileStream.close();
   return done;
 }
+
+void BuildSystemGenerator::CollectGroupDefinesIncludes(
+  const map<string, vector<string>>& defines,
+  const map<string, vector<string>>& includes, const string& group)
+{
+  string groupDefines, groupIncludes;
+
+  // define
+  string groupName = group;
+  do {
+    if (defines.find(groupName) != defines.end()) {
+      groupDefines = GetString(defines.at(groupName));
+      break;
+    }
+    groupName = fs::path(groupName).parent_path().generic_string();
+  } while (!groupName.empty());
+  m_groupsList[StrNorm(group)].defines = groupDefines;
+
+  // include
+  groupName = group;
+  do {
+    if (includes.find(groupName) != includes.end()) {
+      groupIncludes = GetString(includes.at(groupName));
+      break;
+    }
+    groupName = fs::path(groupName).parent_path().generic_string();
+  } while (!groupName.empty());
+  m_groupsList[StrNorm(group)].includes = groupIncludes;
+}
+
+void BuildSystemGenerator::CollectFileDefinesIncludes(
+  const map<string, vector<string>>& defines, const map<string, vector<string>>& includes,
+  string& src, const string& group, map<string, module>& FilesList)
+{
+  // defines
+  string fileDefine, incPath;
+  if (defines.find(src) != defines.end()) {
+    fileDefine = GetString(defines.at(src));
+  }
+  src = StrNorm(src);
+  FilesList[src].group = StrNorm(group + (group.empty() ? "" : SS));
+  FilesList[src].defines = fileDefine;
+
+  // includes
+  if (includes.find(src) != includes.end()) {
+    incPath = GetString(includes.at(src));
+  }
+  src = StrNorm(src);
+  FilesList[src].group = StrNorm(group + (group.empty() ? "" : SS));
+  FilesList[src].includes = incPath;
+ }

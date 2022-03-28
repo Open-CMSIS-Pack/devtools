@@ -67,7 +67,6 @@ protected:
   ProjMgrWorker m_worker;
   ProjMgrGenerator m_generator;
 
-  std::list<RtePackage*> m_installedPacks;
   std::string m_cprojectFile;
   std::string m_csolutionFile;
   std::string m_cdefaultFile;
@@ -85,6 +84,7 @@ protected:
   bool RunConvert(void);
   bool RunCodeGenerator(void);
   bool RunListPacks(void);
+  bool RunListBoards(void);
   bool RunListDevices(void);
   bool RunListComponents(void);
   bool RunListDependencies(void);

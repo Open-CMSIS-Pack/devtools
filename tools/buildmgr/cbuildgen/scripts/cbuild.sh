@@ -32,7 +32,7 @@ usage() {
   echo "  --quiet                 : suppress output messages except build invocations"
   echo "  --clean                 : remove intermediate and output directories"
   echo "  --update=<CprjFile>     : generate <CprjFile> for reproducing current build"
-  echo "  --help                  : launch documentation and exit"
+  echo "  --help                  : print usage"
   echo "  --log=<LogFile>         : save output messages in a log file"
   echo "  --jobs=<N>              : number of job slots for parallel execution"
   echo "  --cmake[=<BuildSystem>] : select build system, default <BuildSystem>=Ninja"
@@ -69,27 +69,6 @@ expand_user() {
   else
     echo "$@"
   fi
-}
-
-launch_doc () {
-  scriptdir="$(dirname "$0")"
-  pushd "$scriptdir/../doc/html"
-  OS=$(uname -s)
-  case $OS in
-    'Linux')
-      xdg-open ./cbuild.html
-      ;;
-    'WindowsNT'|MINGW*|CYGWIN*)
-      start cbuild.html
-      ;;
-    'Darwin')
-      echo "Docs unavailable for Mac at present"
-      ;;
-    *)
-      echo "Docs unavailable: unrecognised OS $OS"
-      ;;
-  esac
-  popd
 }
 
 get_proc () {
@@ -175,7 +154,7 @@ do
     ;;
     --help)
       header
-      launch_doc
+      usage
       exit 0
     ;;
     ?|-*|--*)

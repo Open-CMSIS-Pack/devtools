@@ -33,7 +33,7 @@ cbuild.sh is the name of the script.
 | --quiet | Suppresses output messages except build invocations. |
 | --clean | Removes intermediate and output directories. |
 | --update=<CprjFile> | Generates <CprjFile> with fixed versions for reproducing the current build. |
-| --help | Opens this documentation. |
+| --help | Prints the usage. |
 | --log=<LogFile> | Saves output messages in a log file. |
 | --jobs=<N> | Specifies the number of job slots for the underlying build system parallel execution (minimum 1). |
 | [–cmake=<BuildSystem>] | Selects the build system, default Ninja. |

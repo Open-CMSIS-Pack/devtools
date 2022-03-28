@@ -14,29 +14,41 @@
 #include <string>
 
 /**
- * @brief flags struct:
+ * @brief TranslationControls struct:
  *        as_msc: Assembler miscellaneous options and defines
  *        cc_msc: C Compiler miscellaneous options and defines
  *        cxx_msc: C++ Compiler miscellaneous options and defines
  *        preinc: Local preincludes
+ *        defines: group defines
+ *        includes: group includes
 */
-struct flags
+struct TranslationControls
 {
   std::string asMsc;
   std::string ccMsc;
   std::string cxxMsc;
   std::set<std::string> preinc;
+  std::string defines;
+  std::string includes;
 };
 
 /**
  * @brief module struct:
  *        group: Group name
  *        flags: Assembler or C or C++ Compiler miscellaneous options and defines
-*/
+ *        defines: module defines
+ *        undefines: module undefines
+ *        includes: module include paths
+ *        excludes: module exclude paths
+ */
 struct module
 {
   std::string group;
   std::string flags;
+  std::string defines;
+  std::string undefines;
+  std::string includes;
+  std::string excludes;
 };
 
 /**
@@ -87,7 +99,7 @@ protected:
   std::map<std::string, module> m_asFilesList;
   std::map<std::string, module> m_ccFilesList;
   std::map<std::string, module> m_cxxFilesList;
-  std::map<std::string, flags> m_groupsList;
+  std::map<std::string, TranslationControls> m_groupsList;
   std::vector<std::string> m_incPathsList;
   std::vector<std::string> m_libFilesList;
   std::vector<std::string> m_definesList;
@@ -119,6 +131,13 @@ protected:
   std::string StrConv(std::string path);
   template<typename T> std::string GetString(T data);
   bool CompareFile(const std::string& filename, std::stringstream& buffer) const;
+  void CollectGroupDefinesIncludes(
+    const std::map<std::string, std::vector<std::string>>& defines,
+    const std::map<std::string, std::vector<std::string>>& includes, const std::string& group);
+  void CollectFileDefinesIncludes(
+    const std::map<std::string, std::vector<std::string>>& defines,
+    const std::map<std::string, std::vector<std::string>>& includes,
+    std::string& src, const std::string& group, std::map<std::string, module>& FilesList);
 };
 
 #endif  // BUILDSYSTEMGENERATOR_H
