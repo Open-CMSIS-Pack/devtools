@@ -188,9 +188,18 @@ public:
    * @param attributes pack attributes
    * @param rtePath pack path
    * @param packId pack ID
-   * @return pdsc file, currently RteUtils::EMPTY_STRING
+   * @return pdsc file
   */
   std::string GetLocalPdscFile(const RteAttributes& attributes, const std::string& rtePath, std::string& packId);
+
+  /**
+   * @brief getter for pdsc file pointed by the pack 'path' attribute
+   * @param attributes pack attributes
+   * @param cprjPath cprj path
+   * @param packId pack ID
+   * @return pdsc file
+  */
+  std::string GetPdscFileFromPath(const RteAttributes& attributes, const std::string& cprjPath, std::string& packId);
 
   /**
    * @brief create a smart pointer holding a XMLTree pointer

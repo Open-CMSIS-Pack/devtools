@@ -853,6 +853,16 @@ TEST_F(RteFsUtilsTest, MakeSureFilePath) {
   EXPECT_TRUE(result);
 }
 
+TEST_F(RteFsUtilsTest, ParentPath) {
+  string filePath, dirPath;
+
+  dirPath = RteFsUtils::ParentPath(dirnameSubdir);
+  EXPECT_EQ(dirPath, dirnameDir);
+
+  filePath = RteFsUtils::ParentPath(filenameRegular);
+  EXPECT_EQ(filePath, dirnameSubdir);
+}
+
 TEST_F(RteFsUtilsTest, CreateDirectories) {
   error_code ec;
   bool result;

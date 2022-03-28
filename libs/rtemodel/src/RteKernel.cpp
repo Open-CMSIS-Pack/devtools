@@ -27,6 +27,16 @@ using namespace std;
 static string schemaFile = "CPRJ.xsd";
 static string schemaVer = "0.0.9";
 
+static constexpr const char* R801 = "CMSIS_PACK_ROOT directory is not set";
+static constexpr const char* R802 = "Error parsing XML file";
+static constexpr const char* R811 = "Error parsing cprj file";
+static constexpr const char* R812 = "Error reading project file";
+static constexpr const char* R820 = "Malformed or incomplete file";
+static constexpr const char* R821 = "Required pack not installed: ";
+static constexpr const char* R822 = "Pack 'path' was not found";
+static constexpr const char* R823 = "No PDSC file was found";
+static constexpr const char* R824 = "Multiple PDSC files were found";
+
 RteKernel RteKernel::NULL_RTE_KERNEL;
 
 RteKernel::RteKernel(RteCallback* rteCallback, RteGlobalModel* globalModel):
@@ -176,14 +186,14 @@ RteCprjModel* RteKernel::ParseCprj(const string& cprjFile)
   GetRteCallback()->OutputInfoMessage(msg);
   unique_ptr<XMLTree> xmlTree = CreateUniqueXmlTree();
   if (!xmlTree->AddFileName(cprjFile, true)) {
-    GetRteCallback()->Err("R811", "Error parsing cprj file", cprjFile);
+    GetRteCallback()->Err("R811", R811, cprjFile);
     GetRteCallback()->OutputMessages(xmlTree->GetErrorStrings());
     return nullptr;
   }
 
   RteCprjModel* cprjModel = new RteCprjModel();
   if (!cprjModel->Construct(xmlTree.get()) || !cprjModel->Validate())  {
-    GetRteCallback()->Err("R812", "Error reading project file", cprjFile);
+    GetRteCallback()->Err("R812", R812, cprjFile);
     RtePrintErrorVistior visitor(m_rteCallback);
     cprjModel->AcceptVisitor(&visitor);
     delete cprjModel;
@@ -218,7 +228,7 @@ RtePackage* RteKernel::LoadPack(const string& pdscFile)
 
   unique_ptr<XMLTree> xmlTree = CreateUniqueXmlTree();
   if (!xmlTree->AddFileName(pdscFile, true) || xmlTree->GetChildren().empty()) {
-    GetRteCallback()->Err("R802", "Error parsing XML file", pdscFile);
+    GetRteCallback()->Err("R802", R802, pdscFile);
     GetRteCallback()->OutputMessages(xmlTree->GetErrorStrings());
     return nullptr;
   }
@@ -230,27 +240,33 @@ RtePackage* RteKernel::LoadPack(const string& pdscFile)
 bool RteKernel::LoadRequiredPdscFiles(CprjFile* cprjFile)
 {
   if(GetCmsisPackRoot().empty()) {
-    GetRteCallback()->Err("R801", "CMSIS_PACK_ROOT directory is not set");
+    GetRteCallback()->Err("R801", R801);
     return false;
   }
 
   const list<RteItem*>& packRequirements =  cprjFile->GetPackRequirements();
   if (packRequirements.empty()) {
-    GetRteCallback()->Err("R820", "Malformed or incomplete file", cprjFile->GetPackageFileName());
+    GetRteCallback()->Err("R820", R820, cprjFile->GetPackageFileName());
     return false; // it is an error: malformed cprj file
   }
 
   list<RtePackage*> packs;
   set<string> processedFiles;
   for (RteItem *packRequirement : packRequirements) {
-    string packId;
+    string packId, pdscFile;
+    // Get pdsc from pack 'path' attribute
+    if (packRequirement->HasAttribute("path")) {
+      pdscFile = GetPdscFileFromPath(*packRequirement, RteFsUtils::ParentPath(cprjFile->GetPackageFileName()), packId);
+    }
     // Get local repo version
-    string pdscFile = GetLocalPdscFile(*packRequirement, GetCmsisPackRoot(), packId);
+    if (pdscFile.empty()) {
+      pdscFile = GetLocalPdscFile(*packRequirement, GetCmsisPackRoot(), packId);
+    }
     if(pdscFile.empty()) {
       pdscFile = GetInstalledPdscFile(*packRequirement, GetCmsisPackRoot(), packId);
     }
     if(pdscFile.empty()) {
-      string msg= "Required pack not installed: ";
+      string msg= R821;
 
       msg += packRequirement->GetPackageID(true);
 
@@ -315,6 +331,30 @@ string RteKernel::GetLocalPdscFile(const RteAttributes& attributes, const string
       url.erase(0, prefix.length());
     }
     return url + vendor + '.' + name + ".pdsc";
+  }
+
+  return RteUtils::EMPTY_STRING;
+}
+
+string RteKernel::GetPdscFileFromPath(const RteAttributes& attributes, const string& cprjPath, string& packId)
+{
+  const string& name = attributes.GetAttribute("name");
+  const string& vendor = attributes.GetAttribute("vendor");
+  const string& version = attributes.GetAttribute("version");
+
+  string packPath = attributes.GetAttribute("path");
+  if (!RteFsUtils::NormalizePath(packPath, cprjPath + '/')) {
+    GetRteCallback()->Err("R822", R822, packPath);
+  } else {
+    const auto& pdscFilesList = RteFsUtils::FindFiles(packPath, ".pdsc");
+    if (pdscFilesList.empty()) {
+      GetRteCallback()->Err("R823", R823, packPath);
+    } else if (pdscFilesList.size() > 1) {
+      GetRteCallback()->Err("R824", R824, packPath);
+    } else {
+      packId = vendor + '.' + name + (version.empty() ? "" : '.' + version);
+      return pdscFilesList.front().generic_string();
+    }
   }
 
   return RteUtils::EMPTY_STRING;
