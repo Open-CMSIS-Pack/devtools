@@ -6,6 +6,6 @@ project:
     - component: Startup
       for-type:
         - +CM0
-    - component: Device:RteTest Generated Component
+    - component: Device:RteTest Generated Component:RteTest
       for-type:
         - +Gen
