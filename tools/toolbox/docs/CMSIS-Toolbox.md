@@ -13,7 +13,7 @@ Build Manager      | cbuildgen      | Generate CMakeLists and invoke CMake/Ninja
 
 ### 1) Download CMSIS Toolbox installer
 
-- [Linux/Windows 64/macOS](https://github.com/Open-CMSIS-Pack/devtools/releases/download/tools/toolbox/0.9.2/cmsis-toolbox.sh)
+- [Linux/Windows 64/macOS](https://github.com/Open-CMSIS-Pack/devtools/releases/download/tools/toolbox/0.9.3/cmsis-toolbox.sh)
 
 ### 2) Toolchain download options
 

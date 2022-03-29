@@ -46,7 +46,7 @@ jobs:
         uses: dsaltares/fetch-gh-release-asset@master
         with:
           repo: "Open-CMSIS-Pack/devtools"
-          version: tags/tools/buildmgr/0.10.5
+          version: tags/tools/buildmgr/0.10.6
           file: cbuild_install.sh
           target: tools/toolbox/cbuild/cbuild_install.sh
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -55,7 +55,7 @@ jobs:
         uses: dsaltares/fetch-gh-release-asset@master
         with:
           repo: "Open-CMSIS-Pack/devtools"
-          version: tags/tools/projmgr/0.9.2
+          version: tags/tools/projmgr/0.9.3
           file: projmgr.zip
           target: tools/toolbox/projmgr/projmgr.zip
           token: ${{ secrets.GITHUB_TOKEN }}
