@@ -710,6 +710,7 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
       // Single match
       auto matchedComponent = filteredComponents.begin()->second;
       const auto& componentId = ProjMgrUtils::GetComponentID(matchedComponent);
+      MergeMiscCPP(item.build.misc);
       context.components.insert({ componentId, { matchedComponent, &item }});
       const auto& componentPackage = matchedComponent->GetPackage();
       context.packages.insert({ ProjMgrUtils::GetPackageID(componentPackage), componentPackage });
