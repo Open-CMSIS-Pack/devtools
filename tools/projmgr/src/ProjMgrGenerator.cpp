@@ -53,7 +53,7 @@ bool ProjMgrGenerator::GenerateCprj(ContextItem& context, const string& filename
 
   // Packages
   if (packagesElement) {
-    GenerateCprjPackages(packagesElement, context.packages);
+    GenerateCprjPackages(packagesElement, context);
   }
 
   // Compilers
@@ -111,13 +111,20 @@ void ProjMgrGenerator::GenerateCprjInfo(XMLTreeElement* element, const string& d
   }
 }
 
-void ProjMgrGenerator::GenerateCprjPackages(XMLTreeElement* element, const std::map<string, RtePackage*>& packages) {
-  for (const auto& package : packages) {
+void ProjMgrGenerator::GenerateCprjPackages(XMLTreeElement* element, const ContextItem& context) {
+  for (const auto& package : context.packages) {
     XMLTreeElement* packageElement = element->CreateElement("package");
     if (packageElement) {
       packageElement->AddAttribute("name", package.second->GetName());
       packageElement->AddAttribute("vendor", package.second->GetVendorName());
       packageElement->AddAttribute("version", package.second->GetVersionString());
+      const string& pdscFile = package.second->GetPackageFileName();
+      if (context.pdscFiles.find(pdscFile) != context.pdscFiles.end()) {
+        const string& packPath = context.pdscFiles.at(pdscFile);
+        if (!packPath.empty()) {
+          packageElement->AddAttribute("path", packPath);
+        }
+      }
     }
   }
 }

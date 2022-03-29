@@ -72,7 +72,7 @@ solution:
 
   packs:
     - pack: ARM::RteTest_DFP@0.2.0
-      path: ../LocalPack/Device
+      path: ../SolutionSpecificPack/Device
 
   projects:
     - project: ./TestProject1/test1.cproject.yml

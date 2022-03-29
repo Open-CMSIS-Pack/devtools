@@ -36,7 +36,7 @@ public:
 protected:
   void GenerateCprjCreated(XMLTreeElement* element);
   void GenerateCprjInfo(XMLTreeElement* element, const std::string& description);
-  void GenerateCprjPackages(XMLTreeElement* element, const std::map<std::string, RtePackage*>& packages);
+  void GenerateCprjPackages(XMLTreeElement* element, const ContextItem& context);
   void GenerateCprjCompilers(XMLTreeElement* element, const ToolchainItem& toolchain);
   void GenerateCprjTarget(XMLTreeElement* element, const ContextItem& context);
   void GenerateCprjComponents(XMLTreeElement* element, const ContextItem& context);

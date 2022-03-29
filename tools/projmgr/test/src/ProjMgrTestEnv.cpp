@@ -72,7 +72,7 @@ void ProjMgrTestEnv::SetUp() {
   // copy local pack
   string srcPackPath, destPackPath;
   srcPackPath  = testcmsispack_folder + "/ARM/RteTest_DFP/0.2.0";
-  destPackPath = testinput_folder + "/LocalPack";
+  destPackPath = testinput_folder + "/SolutionSpecificPack";
   if (RteFsUtils::Exists(destPackPath)) {
     RteFsUtils::RemoveDir(destPackPath);
   }
