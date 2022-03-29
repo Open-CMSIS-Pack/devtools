@@ -99,7 +99,6 @@ set(CXX_SRC_FILES
   "C:/Sandbox/devtools-external/build/testoutput/GCC/TranslationControl/Project1/File2.cpp"
 )
 
-set(CC_FLAGS_C:/Sandbox/devtools-external/build/testoutput/GCC/TranslationControl/Project1/File.c "-O -Wall -gdwarf-2 -mapcs-frame -mthumb")
 set(CXX_FLAGS_C:/Sandbox/devtools-external/build/testoutput/GCC/TranslationControl/Project1/File2.cpp "-O3 -Wall -gdwarf-2 -mapcs-frame -mthumb")
 
 # Toolchain config map
@@ -112,29 +111,15 @@ project(${TARGET} LANGUAGES C CXX)
 
 # Global Flags
 
-set(CMAKE_C_FLAGS "${CC_CPU} ${CC_BYTE_ORDER} ${CC_DEFINES} ${CC_SECURE} ${CC_FLAGS} ${CC_SYS_INC_PATHS}")
+set(CMAKE_C_FLAGS "${CC_CPU} ${CC_BYTE_ORDER} ${CC_DEFINES} ${CC_SECURE} ${CC_FLAGS} ${CC_FLAGS_GLOBAL} ${CC_SYS_INC_PATHS}")
 set(CMAKE_CXX_FLAGS "${CXX_CPU} ${CXX_BYTE_ORDER} ${CXX_DEFINES} ${CXX_SECURE} ${CXX_FLAGS} ${CXX_SYS_INC_PATHS}")
 set(CMAKE_CXX_LINK_FLAGS "${LD_CPU} ${LD_SCRIPT} ${LD_SECURE} ${LD_FLAGS_GLOBAL} ${LD_FLAGS}")
 
 # Local Flags
 
-foreach(SRC ${CC_SRC_FILES})
-  string(REPLACE " " "?" S ${SRC})
-  if(DEFINED CC_FLAGS_${S})
-    set(CC_FLAGS_LOCAL "${CC_FLAGS_${S}}")
-  else()
-    set(CC_FLAGS_LOCAL "${CC_FLAGS_GLOBAL}")
-  endif()
-  set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS "${CC_FLAGS_LOCAL}")
-endforeach()
-
 foreach(SRC ${CXX_SRC_FILES})
   string(REPLACE " " "?" S ${SRC})
-  if(DEFINED CXX_FLAGS_${S})
-    set(CXX_FLAGS_LOCAL "${CXX_FLAGS_${S}}")
-  else()
-    set(CXX_FLAGS_LOCAL "${CXX_FLAGS_GLOBAL}")
-  endif()
+  set(CXX_FLAGS_LOCAL "${CXX_FLAGS_GLOBAL}")
   set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS "${CXX_FLAGS_LOCAL}")
 endforeach()
 
