@@ -82,14 +82,14 @@ The following chapter explains the YML format that is used to describe the YML i
 The CMSIS Project Manager uses the following syntax to specify the `pack:` names in the `*.yml` files.
 
 ```text
-[vendor][:: pack-name [@[~ | >=] version] ]
+vendor [:: pack-name [@[~ | >=] version] ]
 ```
 
-Element      |          | Description
-:------------|----------|:---------------------
-`vendor`     | Optional | Vendor name of the software pack.
-`pack-name`  | Optional | Name of the software pack; wildcards (*, ?) can be used.
-`version`    | Optional | Version number of the software pack, with `@1.2.3` that must exactly match, `@~1.2`/`@~1` that matches with sematic versioning, or `@>=1.2.3` that allows any version higher or equal.
+Element      |              | Description
+:------------|--------------|:---------------------
+`vendor`     | **Required** | Vendor name of the software pack.
+`pack-name`  | Optional     | Name of the software pack; wildcards (\*, ?) can be used.
+`version`    | Optional     | Version number of the software pack, with `@1.2.3` that must exactly match, `@~1.2`/`@~1` that matches with sematic versioning, or `@>=1.2.3` that allows any version higher or equal.
 
 **Examples:**
 
