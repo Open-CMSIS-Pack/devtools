@@ -7,30 +7,23 @@
 #error "HEADER1 is not defined!"
 #endif
 
-#include "file2.h"
-#ifndef header2
-#error "header2 is not defined!"
+#include "File2.h"
+#ifndef HEADER2
+#error "HEADER2 is not defined!"
 #endif
 
 #ifndef DEF1
 #error "DEF1 is not defined!"
 #endif
 
-#ifdef DEF2
-#error "DEF2 is defined!"
+#ifndef DEF2
+#error "DEF2 is not defined!"
 #endif
 
 #ifndef DEF3
 #error "DEF3 is not defined!"
 #endif
 
-#ifndef DEF3-FILE
-#error "DEF3-FILE is not defined!"
+#ifndef DEF3FILE
+#error "DEF3FILE is not defined!"
 #endif
-
-
-int main (void) {
-  return 1;
-}
-
-

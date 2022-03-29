@@ -15,7 +15,7 @@ set(TZ NO_TZ)
 set(SECURE Non-secure)
 set(MVE NO_MVE)
 set(BYTE_ORDER Little-endian)
-set(CC_FLAGS_GLOBAL "-O -Wall -gdwarf-2 -mapcs-frame -mthumb")
+set(CC_FLAGS_GLOBAL "-O -Wall -gdwarf-2 -mapcs-frame")
 set(LD_FLAGS_GLOBAL "--entry=Reset_Handler --specs=nosys.specs -mcpu=cortex-m3 -mthumb")
 set(LD_SCRIPT "C:/Sandbox/devtools-external/build/testoutput/GCC/TranslationControl/Project2/RTE/Device/ARMCM3/gcc_arm.ld")
 
@@ -32,9 +32,9 @@ set(DEFINES_C:/Sandbox/devtools-external/build/testoutput/GCC/TranslationControl
   _RTE_
   DEF1
   DEF2=2
-  DEF1-GROUP
-  DEF1-FILE
-  DEF2-FILE
+  DEF1GROUP
+  DEF1FILE
+  DEF2FILE
 )
 
 set(DEFINES_C:/Sandbox/devtools-external/build/testoutput/GCC/TranslationControl/Project2/File2.cpp
@@ -42,7 +42,7 @@ set(DEFINES_C:/Sandbox/devtools-external/build/testoutput/GCC/TranslationControl
   _RTE_
   DEF1
   DEF3
-  DEF3-FILE
+  DEF3FILE
 )
 
 set(DEFINES_C:/Sandbox/devtools-external/build/testoutput/GCC/TranslationControl/Project2/File1.c
@@ -51,10 +51,10 @@ set(DEFINES_C:/Sandbox/devtools-external/build/testoutput/GCC/TranslationControl
   DEF1
   DEF2=2
   DEF3
-  DEF1-GROUP
-  DEF2-GROUP
-  DEF1-FILE
-  DEF2-FILE
+  DEF1GROUP
+  DEF2GROUP
+  DEF1FILE
+  DEF2FILE
 )
 
 set(DEFINES_C:/Sandbox/devtools-external/build/testoutput/GCC/TranslationControl/Project2/RTE/Device/ARMCM3/startup_ARMCM3.c
@@ -62,8 +62,8 @@ set(DEFINES_C:/Sandbox/devtools-external/build/testoutput/GCC/TranslationControl
   _RTE_
   DEF1
   DEF2=2
-  DEF1-COMP
-  DEF2-COMP
+  DEF1COMP
+  DEF2COMP
 )
 
 set(DEFINES_C:/Sandbox/devtools-external/build/testoutput/GCC/TranslationControl/Project2/RTE/Device/ARMCM3/system_ARMCM3.c
@@ -71,8 +71,8 @@ set(DEFINES_C:/Sandbox/devtools-external/build/testoutput/GCC/TranslationControl
   _RTE_
   DEF1
   DEF2=2
-  DEF1-COMP
-  DEF2-COMP
+  DEF1COMP
+  DEF2COMP
 )
 
 set(INC_PATHS
@@ -119,7 +119,7 @@ set(CXX_SRC_FILES
   "C:/Sandbox/devtools-external/build/testoutput/GCC/TranslationControl/Project2/File2.cpp"
 )
 
-set(CC_FLAGS_C:/Sandbox/devtools-external/build/testoutput/GCC/TranslationControl/Project2/File.c "-O -Wall -gdwarf-2 -mapcs-frame -mthumb -C-File")
+set(CC_FLAGS_C:/Sandbox/devtools-external/build/testoutput/GCC/TranslationControl/Project2/File.c "-O -Wall -gdwarf-2 -mapcs-frame -mthumb")
 set(CXX_FLAGS_C:/Sandbox/devtools-external/build/testoutput/GCC/TranslationControl/Project2/File2.cpp "-O3 -Wall -gdwarf-2 -mapcs-frame -mthumb")
 
 # Toolchain config map
@@ -156,6 +156,42 @@ foreach(SRC ${CXX_SRC_FILES})
     set(CXX_FLAGS_LOCAL "${CXX_FLAGS_GLOBAL}")
   endif()
   set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS "${CXX_FLAGS_LOCAL}")
+endforeach()
+
+# File Includes and Defines
+
+foreach(SRC ${CC_SRC_FILES})
+  string(REPLACE " " "?" S ${SRC})
+  if(DEFINED INC_PATHS_${S})
+    set(INC_PATHS_LOCAL "${INC_PATHS_${S}}")
+    set_source_files_properties(${SRC} PROPERTIES INCLUDE_DIRECTORIES "${INC_PATHS_LOCAL}")
+  endif()
+  if(DEFINED DEFINES_${S})
+    cbuild_set_defines(CC DEFINES_${S})
+    get_source_file_property(FILE_FLAGS ${SRC} COMPILE_FLAGS)
+    if(FILE_FLAGS STREQUAL "NOTFOUND")
+      set(FILE_FLAGS)
+    endif()
+    string(APPEND FILE_FLAGS " ${DEFINES_${S}}")
+    set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS "${FILE_FLAGS}")
+  endif()
+endforeach()
+
+foreach(SRC ${CXX_SRC_FILES})
+  string(REPLACE " " "?" S ${SRC})
+  if(DEFINED INC_PATHS_${S})
+    set(INC_PATHS_LOCAL "${INC_PATHS_${S}}")
+    set_source_files_properties(${SRC} PROPERTIES INCLUDE_DIRECTORIES "${INC_PATHS_LOCAL}")
+  endif()
+  if(DEFINED DEFINES_${S})
+    cbuild_set_defines(CXX DEFINES_${S})
+    get_source_file_property(FILE_FLAGS ${SRC} COMPILE_FLAGS)
+    if(FILE_FLAGS STREQUAL "NOTFOUND")
+      set(FILE_FLAGS)
+    endif()
+    string(APPEND FILE_FLAGS " ${DEFINES_${S}}")
+    set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS "${FILE_FLAGS}")
+  endif()
 endforeach()
 
 # Compilation Database

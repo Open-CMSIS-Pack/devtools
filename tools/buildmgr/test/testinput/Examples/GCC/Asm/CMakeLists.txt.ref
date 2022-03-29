@@ -25,6 +25,18 @@ set(DEFINES
   _RTE_
 )
 
+set(DEFINES_C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Asm/PreProcessed.S
+  ARMCM3
+  _RTE_
+  DEF2
+)
+
+set(DEFINES_C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Asm/GAS.s
+  ARMCM3
+  _RTE_
+  DEF1
+)
+
 set(INC_PATHS
   "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Asm/RTE/CMSIS"
   "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Asm/RTE/_Target"
@@ -34,10 +46,50 @@ set(INC_PATHS
   "c:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/Device/ARM/ARMCM3/Include"
 )
 
+set(INC_PATHS_C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Asm/Build.c
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Asm/RTE/CMSIS"
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Asm/RTE/_Target"
+  "c:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/Core/Include"
+  "c:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/Include"
+  "c:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/RTX/Include"
+  "c:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/Device/ARM/ARMCM3/Include"
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Asm"
+)
+
+set(INC_PATHS_C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Asm/PreProcessed.S
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Asm/RTE/CMSIS"
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Asm/RTE/_Target"
+  "c:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/Core/Include"
+  "c:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/Include"
+  "c:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/RTX/Include"
+  "c:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/Device/ARM/ARMCM3/Include"
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Asm"
+)
+
+set(INC_PATHS_C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Asm/NonPreProcessed.s
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Asm/RTE/CMSIS"
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Asm/RTE/_Target"
+  "c:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/Core/Include"
+  "c:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/Include"
+  "c:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/RTX/Include"
+  "c:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/Device/ARM/ARMCM3/Include"
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Asm"
+)
+
+set(INC_PATHS_C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Asm/GAS.s
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Asm/RTE/CMSIS"
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Asm/RTE/_Target"
+  "c:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/Core/Include"
+  "c:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/Include"
+  "c:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/RTX/Include"
+  "c:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/Device/ARM/ARMCM3/Include"
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Asm"
+)
+
 set(ASM_SRC_FILES
   "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Asm/PreProcessed.S"
-  "c:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/RTX/Source/GCC/irq_armv7m.S"
   "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Asm/RTE/Device/ARMCM3/startup_ARMCM3.S"
+  "c:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/RTX/Source/GCC/irq_armv7m.S"
 )
 
 set(AS_GNU_SRC_FILES
@@ -51,7 +103,7 @@ set(AS_LEG_SRC_FILES
 set(CC_SRC_FILES
   "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Asm/Build.c"
   "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Asm/RTE/CMSIS/RTX_Config.c"
-  "c:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/Source/os_systick.c"
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Asm/RTE/Device/ARMCM3/system_ARMCM3.c"
   "c:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/RTX/Source/rtx_delay.c"
   "c:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/RTX/Source/rtx_evflags.c"
   "c:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/RTX/Source/rtx_evr.c"
@@ -65,10 +117,10 @@ set(CC_SRC_FILES
   "c:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/RTX/Source/rtx_system.c"
   "c:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/RTX/Source/rtx_thread.c"
   "c:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/RTX/Source/rtx_timer.c"
-  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Asm/RTE/Device/ARMCM3/system_ARMCM3.c"
+  "c:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/Source/os_systick.c"
 )
 
-set(AS_FLAGS_C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Asm/PreProcessed.S "-DPRE_PROCESSED_DEF -Wa,--gdwarf-2 -mthumb")
+set(AS_FLAGS_C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Asm/PreProcessed.S "-Wa,--gdwarf-2 -mthumb -DPRE_PROCESSED_DEF")
 set(AS_FLAGS_C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Asm/GAS.s "--defsym GAS_DEF=1")
 
 # Toolchain config map
@@ -120,6 +172,76 @@ foreach(SRC ${AS_LEG_SRC_FILES})
   endif()
   set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS "${AS_FLAGS_LOCAL}")
   set_source_files_properties(${SRC} PROPERTIES LANGUAGE AS_LEG)
+endforeach()
+
+# File Includes and Defines
+
+foreach(SRC ${ASM_SRC_FILES})
+  string(REPLACE " " "?" S ${SRC})
+  if(DEFINED INC_PATHS_${S})
+    set(INC_PATHS_LOCAL "${INC_PATHS_${S}}")
+    set_source_files_properties(${SRC} PROPERTIES INCLUDE_DIRECTORIES "${INC_PATHS_LOCAL}")
+  endif()
+  if(DEFINED DEFINES_${S})
+    cbuild_set_defines(ASM DEFINES_${S})
+    get_source_file_property(FILE_FLAGS ${SRC} COMPILE_FLAGS)
+    if(FILE_FLAGS STREQUAL "NOTFOUND")
+      set(FILE_FLAGS)
+    endif()
+    string(APPEND FILE_FLAGS " ${DEFINES_${S}}")
+    set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS "${FILE_FLAGS}")
+  endif()
+endforeach()
+
+foreach(SRC ${AS_GNU_SRC_FILES})
+  string(REPLACE " " "?" S ${SRC})
+  if(DEFINED INC_PATHS_${S})
+    set(INC_PATHS_LOCAL "${INC_PATHS_${S}}")
+    set_source_files_properties(${SRC} PROPERTIES INCLUDE_DIRECTORIES "${INC_PATHS_LOCAL}")
+  endif()
+  if(DEFINED DEFINES_${S})
+    cbuild_set_defines(AS_GNU DEFINES_${S})
+    get_source_file_property(FILE_FLAGS ${SRC} COMPILE_FLAGS)
+    if(FILE_FLAGS STREQUAL "NOTFOUND")
+      set(FILE_FLAGS)
+    endif()
+    string(APPEND FILE_FLAGS " ${DEFINES_${S}}")
+    set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS "${FILE_FLAGS}")
+  endif()
+endforeach()
+
+foreach(SRC ${AS_LEG_SRC_FILES})
+  string(REPLACE " " "?" S ${SRC})
+  if(DEFINED INC_PATHS_${S})
+    set(INC_PATHS_LOCAL "${INC_PATHS_${S}}")
+    set_source_files_properties(${SRC} PROPERTIES INCLUDE_DIRECTORIES "${INC_PATHS_LOCAL}")
+  endif()
+  if(DEFINED DEFINES_${S})
+    cbuild_set_defines(AS_LEG DEFINES_${S})
+    get_source_file_property(FILE_FLAGS ${SRC} COMPILE_FLAGS)
+    if(FILE_FLAGS STREQUAL "NOTFOUND")
+      set(FILE_FLAGS)
+    endif()
+    string(APPEND FILE_FLAGS " ${DEFINES_${S}}")
+    set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS "${FILE_FLAGS}")
+  endif()
+endforeach()
+
+foreach(SRC ${CC_SRC_FILES})
+  string(REPLACE " " "?" S ${SRC})
+  if(DEFINED INC_PATHS_${S})
+    set(INC_PATHS_LOCAL "${INC_PATHS_${S}}")
+    set_source_files_properties(${SRC} PROPERTIES INCLUDE_DIRECTORIES "${INC_PATHS_LOCAL}")
+  endif()
+  if(DEFINED DEFINES_${S})
+    cbuild_set_defines(CC DEFINES_${S})
+    get_source_file_property(FILE_FLAGS ${SRC} COMPILE_FLAGS)
+    if(FILE_FLAGS STREQUAL "NOTFOUND")
+      set(FILE_FLAGS)
+    endif()
+    string(APPEND FILE_FLAGS " ${DEFINES_${S}}")
+    set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS "${FILE_FLAGS}")
+  endif()
 endforeach()
 
 # Compilation Database

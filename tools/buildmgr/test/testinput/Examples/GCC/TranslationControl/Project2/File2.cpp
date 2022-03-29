@@ -24,13 +24,6 @@
 #error "DEF3 is not defined!"
 #endif
 
-#ifndef DEF3-FILE
-#error "DEF3-FILE is not defined!"
+#ifndef DEF3FILE
+#error "DEF3FILE is not defined!"
 #endif
-
-
-int main (void) {
-  return 1;
-}
-
-

@@ -63,6 +63,7 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
   };
 
   // file specific defines
+  bool file_specific_defines = false;
   for (auto& filesList : filesLists) {
     for (const auto& [src, file] : *filesList) {
       if (!file.defines.empty()) {
@@ -73,11 +74,13 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
           cmakelists << EOL << "  " << n;
         }
         cmakelists << EOL << ")" << EOL << EOL;
+        file_specific_defines = true;
       }
     }
   }
 
   // group specific defines
+  bool group_specific_defines = false;
   for (auto [group, controls] : m_groupsList) {
     if (!controls.defines.empty()) {
       for (auto& filesList : filesLists) {
@@ -90,6 +93,7 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
               cmakelists << EOL << "  " << n;
             }
             cmakelists << EOL << ")" << EOL << EOL;
+            group_specific_defines = true;
           }
         }
       }
@@ -106,6 +110,7 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
   }
 
   // file specific includes
+  bool file_specific_includes = false;
   for (auto& filesList : filesLists) {
     for (const auto& [src, file] : *filesList) {
       if (!file.includes.empty()) {
@@ -116,11 +121,13 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
           cmakelists << EOL << "  \"" << n << "\"";
         }
         cmakelists << EOL << ")" << EOL << EOL;
+        file_specific_includes = true;
       }
     }
   }
 
   // group specific includes
+  bool group_specific_includes = false;
   for (auto [group, controls] : m_groupsList) {
     if (!controls.includes.empty()) {
       for (auto& filesList : filesLists) {
@@ -133,6 +140,7 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
               cmakelists << EOL << "  \"" << n << "\"";
             }
             cmakelists << EOL << ")" << EOL << EOL;
+            group_specific_includes = true;
           }
         }
       }
@@ -348,6 +356,8 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
   }
 
   bool as_special_lang = (!m_asLegacyFilesList.empty() || !m_asArmclangFilesList.empty() || !m_asGnuFilesList.empty());
+  bool specific_defines = file_specific_defines || group_specific_defines;
+  bool specific_includes = file_specific_includes || group_specific_includes;
 
   if (asflags || ccflags || cxxflags || as_special_lang || preinc_local) {
     // Set local flags
@@ -398,6 +408,43 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
           cmakelists << "  endif()" << EOL;
         }
         cmakelists << "  set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS \"${" << lang << "_FLAGS_LOCAL}\")" << EOL;
+        cmakelists << "endforeach()" << EOL << EOL;
+      }
+    }
+  }
+
+  // Includes and Defines
+  if (specific_includes || specific_defines) {
+    map <string, bool> languages = {
+      {"ASM",    !m_asFilesList.empty()         },
+      {"AS_LEG", !m_asLegacyFilesList.empty()   },
+      {"AS_ARM", !m_asArmclangFilesList.empty() },
+      {"AS_GNU", !m_asGnuFilesList.empty()      },
+      {"CC",     !m_ccFilesList.empty()         },
+      {"CXX",    !m_cxxFilesList.empty()        }
+    };
+    cmakelists << "# File Includes and Defines" << EOL << EOL;
+    for (const auto [lang, present] : languages) {
+      if (present) {
+        cmakelists << "foreach(SRC ${" << lang << "_SRC_FILES})" << EOL;
+        cmakelists << "  string(REPLACE \" \" \"?\" S ${SRC})" << EOL;
+        if (specific_includes) {
+          cmakelists << "  if(DEFINED INC_PATHS_${S})" << EOL;
+          cmakelists << "    set(INC_PATHS_LOCAL \"${INC_PATHS_${S}}\")" << EOL;
+          cmakelists << "    set_source_files_properties(${SRC} PROPERTIES INCLUDE_DIRECTORIES \"${INC_PATHS_LOCAL}\")" << EOL;
+          cmakelists << "  endif()" << EOL;
+        }
+        if (specific_defines) {
+          cmakelists << "  if(DEFINED DEFINES_${S})" << EOL;
+          cmakelists << "    cbuild_set_defines(" << lang << " DEFINES_${S})" << EOL;
+          cmakelists << "    get_source_file_property(FILE_FLAGS ${SRC} COMPILE_FLAGS)" << EOL;
+          cmakelists << "    if(FILE_FLAGS STREQUAL \"NOTFOUND\")" << EOL;
+          cmakelists << "      set(FILE_FLAGS)" << EOL;
+          cmakelists << "    endif()" << EOL;
+          cmakelists << "    string(APPEND FILE_FLAGS \" ${DEFINES_${S}}\")" << EOL;
+          cmakelists << "    set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS \"${FILE_FLAGS}\")" << EOL;
+          cmakelists << "  endif()" << EOL;
+        }
         cmakelists << "endforeach()" << EOL << EOL;
       }
     }

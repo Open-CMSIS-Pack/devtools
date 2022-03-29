@@ -10,4 +10,8 @@
    .error "PRE_PROCESSED_DEF is not defined!"
 #endif
 
+#ifndef DEF2
+   .error "DEF2 is not defined!"
+#endif
+
    .end
