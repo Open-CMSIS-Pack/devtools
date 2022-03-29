@@ -136,6 +136,13 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
     return 1;
   }
 
+  // Parse cdefault
+  if (manager.GetCdefaultFile()) {
+    if (!manager.m_parser.ParseCdefault(manager.m_cdefaultFile, manager.m_checkSchema)) {
+      return false;
+    }
+  }
+
   // Parse commands
   if ((manager.m_command == "help") || parseResult.count("help")) {
     // Print usage
@@ -199,12 +206,6 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
 }
 
 bool ProjMgr::PopulateContexts(void) {
-  // Parse cdefault
-  if (GetCdefaultFile()) {
-    if (!m_parser.ParseCdefault(m_cdefaultFile, m_checkSchema)) {
-      return false;
-    }
-  }
   if (!m_csolutionFile.empty()) {
     // Parse csolution
     if (!m_parser.ParseCsolution(m_csolutionFile, m_checkSchema)) {
