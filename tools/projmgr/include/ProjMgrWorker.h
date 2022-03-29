@@ -84,6 +84,7 @@ struct BoardItem {
  *        map of pointers to clayers,
  *        pointer to rte project,
  *        pointer to rte target,
+ *        pointer to rte filtered model,
  *        map of project dependencies
  *        build-type properties,
  *        target-type properties,
@@ -99,6 +100,7 @@ struct BoardItem {
  *        fpu selection,
  *        endianess selection,
  *        list of package requirements,
+ *        map of required pdsc files and optionally its local path
  *        list of component requirements,
  *        compiler string in short syntax,
  *        toolchain with parsed name and version,
@@ -136,7 +138,7 @@ struct ContextItem {
   std::string fpu;
   std::string endian;
   std::vector<PackageItem> packRequirements;
-  std::set<std::string> pdscFiles;
+  std::map<std::string, std::string> pdscFiles;
   std::vector<ComponentItem> componentRequirements;
   std::string compiler;
   ToolchainItem toolchain;
@@ -314,7 +316,7 @@ protected:
   std::string m_outputDir;
 
   bool LoadPacks(ContextItem& context);
-  bool GetRequiredPdscFiles(ContextItem& context, const std::string& packRoot, std::set<std::string>& pdscFiles);
+  bool GetRequiredPdscFiles(ContextItem& context, const std::string& packRoot);
   bool CheckRteErrors(void);
   bool CheckType(TypeFilter typeFilter, TypePair type);
   bool GetTypeContent(ContextItem& context);

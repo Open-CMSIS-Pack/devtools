@@ -122,7 +122,7 @@ void ProjMgrWorker::SetOutputDir(const std::string& outputDir) {
   m_outputDir = outputDir;
 }
 
-bool ProjMgrWorker::GetRequiredPdscFiles(ContextItem& context, const std::string& packRoot, std::set<std::string>& pdscFiles) {
+bool ProjMgrWorker::GetRequiredPdscFiles(ContextItem& context, const std::string& packRoot) {
   std::vector<std::string> errMsgs;
   if (!ProcessPackages(context)) {
     return false;
@@ -159,9 +159,9 @@ bool ProjMgrWorker::GetRequiredPdscFiles(ContextItem& context, const std::string
           }
           continue;
         }
-        pdscFiles.insert(pdscFile);
+        context.pdscFiles.insert({ pdscFile, "" });
       }
-      if (bPackFilter && pdscFiles.empty()) {
+      if (bPackFilter && context.pdscFiles.empty()) {
         std::string filterStr = pack.vendor +
           (pack.name.empty() ? "" : "::" + pack.name) +
           (pack.version.empty() ? "" : "@" + pack.version);
@@ -186,7 +186,7 @@ bool ProjMgrWorker::GetRequiredPdscFiles(ContextItem& context, const std::string
         ProjMgrLogger::Warn("no pack loaded as multiple pdsc files found under: " + packItem.path);
       }
       else {
-        pdscFiles.insert(pdscFilesList[0].generic_string());
+        context.pdscFiles.insert({ pdscFilesList[0].generic_string(), fs::path(packItem.path).generic_string() });
       }
     }
   }
@@ -215,10 +215,12 @@ bool ProjMgrWorker::InitializeModel() {
   // Get pack selection for each context
   std::set<std::string> pdscFiles;
   for (auto& [_, contextItem] : m_contexts) {
-    if (!GetRequiredPdscFiles(contextItem, packRoot, contextItem.pdscFiles)) {
+    if (!GetRequiredPdscFiles(contextItem, packRoot)) {
       return false;
     }
-    pdscFiles.insert(contextItem.pdscFiles.begin(), contextItem.pdscFiles.end());
+    for (const auto& [pdscFile, _] : contextItem.pdscFiles) {
+      pdscFiles.insert(pdscFile);
+    }
   }
   if (pdscFiles.empty()) {
     // Get installed packs

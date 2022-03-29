@@ -1300,7 +1300,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Invalid_Packs) {
 
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Local_Pack) {
   char* argv[7];
-  const string& csolution = testinput_folder + "/TestSolution/test.csolution_local_pack_path.yml";
+  const string& csolution = testinput_folder + "/TestSolution/pack_path.csolution.yml";
 
   // convert -s solution.yml
   argv[1] = (char*)"convert";
@@ -1309,18 +1309,23 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Local_Pack) {
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
   EXPECT_EQ(0, RunProjMgr(6, argv));
+
+  // Check generated CPRJ
+  CompareFile(testoutput_folder + "/pack_path+CM0/pack_path+CM0.cprj",
+    testinput_folder + "/TestSolution/ref/pack_path+CM0.cprj");
+
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Local_Multiple_Pack_Files) {
   char* argv[7];
   StdStreamRedirect streamRedirect;
-  const string warnExpected = "no pack loaded as multiple pdsc files found under: ../LocalPack";
+  const string warnExpected = "no pack loaded as multiple pdsc files found under: ../SolutionSpecificPack";
   const string& csolution = testinput_folder + "/TestSolution/test.csolution_local_pack_path.yml";
 
   // copy an additional pack file
   string srcPackFile, destPackFile;
-  srcPackFile = testinput_folder + "/LocalPack/ARM.RteTest_DFP.pdsc";
-  destPackFile = testinput_folder + "/LocalPack/ARM.RteTest_DFP_2.pdsc";
+  srcPackFile = testinput_folder + "/SolutionSpecificPack/ARM.RteTest_DFP.pdsc";
+  destPackFile = testinput_folder + "/SolutionSpecificPack/ARM.RteTest_DFP_2.pdsc";
   if (RteFsUtils::Exists(destPackFile)) {
     RteFsUtils::RemoveFile(destPackFile);
   }
@@ -1362,7 +1367,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Local_Pack_Path_Not_Found) {
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Local_Pack_File_Not_Found) {
   char* argv[7];
   StdStreamRedirect streamRedirect;
-  const string errExpected = "no pdsc file found under: ../LocalPack/Device";
+  const string errExpected = "no pdsc file found under: ../SolutionSpecificPack/Device";
   const string& csolution = testinput_folder + "/TestSolution/test.csolution_local_pack_file_not_found.yml";
 
   // convert -s solution.yml
