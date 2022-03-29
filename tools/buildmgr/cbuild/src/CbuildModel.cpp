@@ -769,6 +769,9 @@ vector<string> CbuildModel::MergeArgs(const vector<string>& add, const vector<st
    - Merge 'add' arguments from 'reference'
    - Remove 'remove' items from 'reference'
   */
+  if (add.empty() && remove.empty()) {
+    return {};
+  }
 
   vector<string> list = reference;
   for (auto add_item : add) {

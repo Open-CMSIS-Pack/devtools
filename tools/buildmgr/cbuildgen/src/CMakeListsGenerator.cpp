@@ -415,7 +415,7 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
 
   // Includes and Defines
   if (specific_includes || specific_defines) {
-    map <string, bool> languages = {
+    map<string, bool> languages = {
       {"ASM",    !m_asFilesList.empty()         },
       {"AS_LEG", !m_asLegacyFilesList.empty()   },
       {"AS_ARM", !m_asArmclangFilesList.empty() },
@@ -424,7 +424,7 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
       {"CXX",    !m_cxxFilesList.empty()        }
     };
     cmakelists << "# File Includes and Defines" << EOL << EOL;
-    for (const auto [lang, present] : languages) {
+    for (const auto& [lang, present] : languages) {
       if (present) {
         cmakelists << "foreach(SRC ${" << lang << "_SRC_FILES})" << EOL;
         cmakelists << "  string(REPLACE \" \" \"?\" S ${SRC})" << EOL;
