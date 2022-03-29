@@ -110,7 +110,7 @@ $(document).ready(function(){initNavTree('projectDescriptionSchema.html','');});
 <div class="textblock"><pre class="fragment">&lt;?xml version="1.0" encoding="UTF-8"?&gt;
 &lt;!--
 
-  Copyright (c) 2020 ARM Limited. All rights reserved.
+  Copyright (c) 2020-2022 ARM Limited. All rights reserved.
 
   SPDX-License-Identifier: Apache-2.0
 
@@ -126,12 +126,14 @@ $(document).ready(function(){initNavTree('projectDescriptionSchema.html','');});
   See the License for the specific language governing permissions and
   limitations under the License.
 
-  $Date:        23. September 2020
-  $Revision:    1.0.0
+  $Date:        29. March 2022
+  $Revision:    1.0.1
 
   $Project: Schema File for CMSIS Project Description File Format Specification
 
-  SchemaVersion=1.0.0
+  SchemaVersion=1.0.1
+
+  1.0.1: Extended translation controls
 
   1.0.0: Specification of CMSIS Project Format:
   - adding layer interface description
@@ -220,6 +222,34 @@ $(document).ready(function(){initNavTree('projectDescriptionSchema.html','');});
     &lt;/xs:restriction&gt;
   &lt;/xs:simpleType&gt;
 
+  &lt;!-- Optimize enumeration type --&gt;
+  &lt;xs:simpleType name="OptimizeEnum"&gt;
+    &lt;xs:restriction base="xs:token"&gt;
+      &lt;xs:enumeration value="max" /&gt;
+      &lt;xs:enumeration value="size" /&gt;
+      &lt;xs:enumeration value="speed" /&gt;
+      &lt;xs:enumeration value="debug" /&gt;
+    &lt;/xs:restriction&gt;
+  &lt;/xs:simpleType&gt;
+
+  &lt;!-- Debug enumeration type --&gt;
+  &lt;xs:simpleType name="DebugEnum"&gt;
+    &lt;xs:restriction base="xs:token"&gt;
+      &lt;xs:enumeration value="on" /&gt;
+      &lt;xs:enumeration value="off" /&gt;
+    &lt;/xs:restriction&gt;
+  &lt;/xs:simpleType&gt;
+
+  &lt;!-- Warnings enumeration type --&gt;
+  &lt;xs:simpleType name="WarningsEnum"&gt;
+    &lt;xs:restriction base="xs:token"&gt;
+      &lt;xs:enumeration value="no" /&gt;
+      &lt;xs:enumeration value="all" /&gt;
+      &lt;xs:enumeration value="Misra" /&gt;
+      &lt;xs:enumeration value="AC5-like" /&gt;
+    &lt;/xs:restriction&gt;
+  &lt;/xs:simpleType&gt;
+
   &lt;!-- Ddsp DSP extensions enumeration type --&gt;
   &lt;xs:simpleType name="DdspEnum"&gt;
     &lt;xs:restriction base="xs:token"&gt;
@@ -301,6 +331,8 @@ $(document).ready(function(){initNavTree('projectDescriptionSchema.html','');});
     &lt;xs:attribute name="name"    type="xs:string" use="required" /&gt;
     &lt;!-- version of the package --&gt;
     &lt;xs:attribute name="version" type="VersionRangeType" use="optional" /&gt;
+    &lt;!-- relative path of the package --&gt;
+    &lt;xs:attribute name="path" type="xs:string" use="optional" /&gt;
   &lt;/xs:complexType&gt;
 
   &lt;!-- Package section type --&gt;
@@ -380,9 +412,11 @@ $(document).ready(function(){initNavTree('projectDescriptionSchema.html','');});
       &lt;!-- C++ Compiler command-line --&gt;
       &lt;xs:element name="cxxflags"  type="ToolOptionType" /&gt;
       &lt;!-- Archiver command-line --&gt;
-      &lt;xs:element name="arflags"  type="ToolOptionType" /&gt;
+      &lt;xs:element name="arflags"   type="ToolOptionType" /&gt;
       &lt;!-- Assembler command-line --&gt;
       &lt;xs:element name="asflags"   type="AsmOptionType" /&gt;
+      &lt;!-- Abstract options --&gt;
+      &lt;xs:element name="options"   type="AbstractOptionsType" minOccurs="0" maxOccurs="1"/&gt;
       &lt;!-- Include paths --&gt;
       &lt;xs:element name="includes"  type="xs:string" minOccurs="0" /&gt;
       &lt;!-- Preprocessing definitions --&gt;
@@ -443,6 +477,12 @@ $(document).ready(function(){initNavTree('projectDescriptionSchema.html','');});
     &lt;xs:attribute name="remove"   type="xs:string" /&gt;
   &lt;/xs:complexType&gt;
 
+  &lt;xs:complexType name="AbstractOptionsType"&gt;
+    &lt;xs:attribute name="optimize" type="OptimizeEnum" use="optional" /&gt;
+    &lt;xs:attribute name="debug"    type="DebugEnum"    use="optional" /&gt;
+    &lt;xs:attribute name="warnings" type="WarningsEnum" use="optional" /&gt;
+  &lt;/xs:complexType&gt;
+
   &lt;xs:complexType name="UsedType"&gt;
     &lt;xs:attribute name="file"      type="xs:string" /&gt;
     &lt;xs:attribute name="path"      type="xs:string" /&gt;
@@ -455,6 +495,11 @@ $(document).ready(function(){initNavTree('projectDescriptionSchema.html','');});
       &lt;xs:element name="cflags"    type="ToolOptionType" /&gt;
       &lt;xs:element name="cxxflags"  type="ToolOptionType" /&gt;
       &lt;xs:element name="asflags"   type="AsmOptionType" /&gt;
+      &lt;xs:element name="options"   type="AbstractOptionsType" /&gt;
+      &lt;xs:element name="includes"  type="xs:string" /&gt;
+      &lt;xs:element name="excludes"  type="xs:string" /&gt;
+      &lt;xs:element name="defines"   type="xs:string" /&gt;
+      &lt;xs:element name="undefines" type="xs:string" /&gt;
       &lt;xs:element name="file"      type="FileType" /&gt;
       &lt;xs:element name="group"     type="GroupType" &gt;
         &lt;xs:unique name="unique-group-levelN"&gt;
@@ -470,11 +515,14 @@ $(document).ready(function(){initNavTree('projectDescriptionSchema.html','');});
 
   &lt;!-- file type definition --&gt;
   &lt;xs:complexType name="FileType"&gt;
-    &lt;xs:choice minOccurs="0"&gt;
-      &lt;xs:element name="cflags"   type="ToolOptionType" /&gt;
-      &lt;xs:element name="cxxflags" type="ToolOptionType" /&gt;
-      &lt;xs:element name="asflags"  type="AsmOptionType" /&gt;
-    &lt;/xs:choice&gt;
+    &lt;xs:all&gt;
+      &lt;xs:element ref="FileFlags" minOccurs="0" /&gt;
+      &lt;xs:element name="options" type="AbstractOptionsType" minOccurs="0" maxOccurs="1" /&gt;
+      &lt;xs:element name="includes"  type="xs:string"  minOccurs="0" maxOccurs="1" /&gt;
+      &lt;xs:element name="excludes"  type="xs:string"  minOccurs="0" maxOccurs="1" /&gt;
+      &lt;xs:element name="defines"   type="xs:string"  minOccurs="0" maxOccurs="1" /&gt;
+      &lt;xs:element name="undefines" type="xs:string"  minOccurs="0" maxOccurs="1" /&gt;
+    &lt;/xs:all&gt;
     &lt;!-- path + filename + extension --&gt;
     &lt;xs:attribute name="name"     type="xs:string"        use="required" /&gt;
     &lt;!-- file item category: source, header, include path, etc.  --&gt;
@@ -488,6 +536,11 @@ $(document).ready(function(){initNavTree('projectDescriptionSchema.html','');});
     &lt;xs:attribute name="layer"    type="RestrictedString"        use="optional" /&gt;
   &lt;/xs:complexType&gt;
 
+  &lt;xs:element name="FileFlags" abstract="true"/&gt; 
+  &lt;xs:element name="cflags"   substitutionGroup="FileFlags" type="ToolOptionType" /&gt;
+  &lt;xs:element name="cxxflags" substitutionGroup="FileFlags" type="ToolOptionType" /&gt;
+  &lt;xs:element name="asflags"  substitutionGroup="FileFlags" type="AsmOptionType" /&gt;
+
   &lt;!-- Files section within the project section --&gt;
   &lt;xs:complexType name="FilesType"&gt;
     &lt;xs:choice maxOccurs="unbounded"&gt;
@@ -497,6 +550,11 @@ $(document).ready(function(){initNavTree('projectDescriptionSchema.html','');});
       &lt;xs:element name="cxxflags"  type="ToolOptionType" /&gt;
       &lt;!-- Assembler command-line --&gt;
       &lt;xs:element name="asflags"   type="AsmOptionType" /&gt;
+      &lt;xs:element name="options"   type="AbstractOptionsType" /&gt;
+      &lt;xs:element name="includes"  type="xs:string" /&gt;
+      &lt;xs:element name="excludes"  type="xs:string" /&gt;
+      &lt;xs:element name="defines"   type="xs:string" /&gt;
+      &lt;xs:element name="undefines" type="xs:string" /&gt;
       &lt;xs:element name="file"      type="FileType" &gt;
       &lt;/xs:element&gt;
       &lt;xs:element name="group"     type="GroupType" &gt;
@@ -527,9 +585,14 @@ $(document).ready(function(){initNavTree('projectDescriptionSchema.html','');});
                 &lt;xs:attribute name="version"   type="ComponentVersionType" use="required" /&gt;
               &lt;/xs:complexType&gt;
             &lt;/xs:element&gt;
-            &lt;xs:element name="cflags"   type="ToolOptionType" minOccurs="0"/&gt;
-            &lt;xs:element name="cxxflags" type="ToolOptionType" minOccurs="0"/&gt;
-            &lt;xs:element name="asflags"  type="AsmOptionType" minOccurs="0"/&gt;
+            &lt;xs:element name="cflags"    type="ToolOptionType" /&gt;
+            &lt;xs:element name="cxxflags"  type="ToolOptionType" /&gt;
+            &lt;xs:element name="asflags"   type="AsmOptionType" /&gt;
+            &lt;xs:element name="options"   type="AbstractOptionsType" /&gt;
+            &lt;xs:element name="includes"  type="xs:string" /&gt;
+            &lt;xs:element name="excludes"  type="xs:string" /&gt;
+            &lt;xs:element name="defines"   type="xs:string" /&gt;
+            &lt;xs:element name="undefines" type="xs:string" /&gt;
           &lt;/xs:choice&gt;
           &lt;xs:attribute name="Cvendor"     type="xs:string"            use="optional" /&gt;
           &lt;xs:attribute name="Cbundle"     type="xs:string"            use="optional" /&gt;
