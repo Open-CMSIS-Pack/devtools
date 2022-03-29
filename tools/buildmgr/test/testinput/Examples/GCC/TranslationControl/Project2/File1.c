@@ -48,7 +48,3 @@
 #ifndef DEF2-FILE
 #error "DEF2-FILE is not defined!"
 #endif
-
-int main (void) {
-  return 1;
-}

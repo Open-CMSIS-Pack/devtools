@@ -9,5 +9,9 @@
    .ifndef GAS_DEF
    .error "GAS_DEF is not defined!"
    .endif
+   
+   .ifndef DEF1
+   .error "DEF1 is not defined!"
+   .endif
 
    .end
