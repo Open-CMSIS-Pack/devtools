@@ -57,6 +57,16 @@ Software layers and Virtual I/O simplify these use cases:
     <th>Description</th>
   </tr>
   <tr>
+    <td>0.10.6 (beta)</td>
+    <td>Release for beta review:
+      - updated cpackget utility v0.3.2.
+      - updated help menu.
+      - extended support for defines/undefines/includes/excludes at component/group/file level.
+      - added support for 'path' attribute in package requirement.
+      - added generation of list of missing packs in json format.
+    </td>
+  </tr>
+  <tr>
     <td>0.10.5 (beta)</td>
     <td>Release for beta review:
       - new support for IAR compiler.
