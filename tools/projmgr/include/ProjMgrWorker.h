@@ -311,7 +311,7 @@ public:
 protected:
   ProjMgrKernel* m_kernel = nullptr;
   RteGlobalModel* m_model = nullptr;
-  std::list<RtePackage*> m_installedPacks;
+  std::list<RtePackage*> m_loadedPacks;
   std::map<std::string, ContextItem> m_contexts;
   std::string m_outputDir;
 
