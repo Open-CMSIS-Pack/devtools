@@ -229,7 +229,7 @@ bool ProjMgrWorker::InitializeModel() {
       return false;
     }
   }
-  if (!m_kernel->LoadAndInsertPacks(m_installedPacks, pdscFiles)) {
+  if (!m_kernel->LoadAndInsertPacks(m_loadedPacks, pdscFiles)) {
     ProjMgrLogger::Error("failed to load and insert packs");
     return false;
   }
@@ -237,7 +237,7 @@ bool ProjMgrWorker::InitializeModel() {
 }
 
 bool ProjMgrWorker::LoadPacks(ContextItem& context) {
-  if (m_installedPacks.empty() && !InitializeModel()) {
+  if (m_loadedPacks.empty() && !InitializeModel()) {
     return false;
   }
   if (!InitializeTarget(context)) {
@@ -245,7 +245,7 @@ bool ProjMgrWorker::LoadPacks(ContextItem& context) {
   }
   if (!context.pdscFiles.empty()) {
     RteAttributesMap selectedPacks;
-    for (const auto& pack : m_installedPacks) {
+    for (const auto& pack : m_loadedPacks) {
       if (context.pdscFiles.find(pack->GetPackageFileName()) != context.pdscFiles.end()) {
         selectedPacks.insert({ pack->GetPackageID(), pack->GetAttributes() });
       }
@@ -1356,12 +1356,12 @@ bool ProjMgrWorker::ListPacks(vector<string>&packs, const string& contextName, c
   if (!LoadPacks(context)) {
     return false;
   }
-  if (m_installedPacks.empty()) {
+  if (m_loadedPacks.empty()) {
     ProjMgrLogger::Error("no installed pack was found");
     return false;
   }
   set<string> packsSet;
-  for (const auto& pack : m_installedPacks) {
+  for (const auto& pack : m_loadedPacks) {
     packsSet.insert(ProjMgrUtils::GetPackageID(pack));
   }
   if (!filter.empty()) {
