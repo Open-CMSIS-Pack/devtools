@@ -18,7 +18,7 @@
     <output intdir="test-access-sequences1.Debug+CM0_IntDir/" name="test-access-sequences1.Debug+CM0" outdir="test-access-sequences1.Debug+CM0_OutDir/" type="exe"/>
     <cflags add="-O1 -g -C-CPP-RteTest_ARMCM0" compiler="AC6"/>
     <cxxflags add="-O1 -g -C-CPP-RteTest_ARMCM0" compiler="AC6"/>
-    <defines>DEF1-PROJ1-../test-access-sequences2.Debug+CM0/test-access-sequences2.Debug+CM0_OutDir/test-access-sequences2.Debug+CM0;DEF2-PROJ1-../test-access-sequences2.Debug+CM3/test-access-sequences2.Debug+CM3_OutDir/test-access-sequences2.Debug+CM3;DEF3-PROJ1-../test-access-sequences2.Release+CM0/test-access-sequences2.Release+CM0_OutDir/test-access-sequences2.Release+CM0;DEF-CM0-RteTest_ARMCM0-</defines>
+    <defines>DEF1-PROJ1-../test-access-sequences2.Debug+CM0/test-access-sequences2.Debug+CM0_OutDir/test-access-sequences2.Debug+CM0;DEF2-PROJ1-../test-access-sequences2.Debug+CM3/test-access-sequences2.Debug+CM3_OutDir/test-access-sequences2.Debug+CM3;DEF3-PROJ1-../test-access-sequences2.Release+CM0/test-access-sequences2.Release+CM0_OutDir/test-access-sequences2.Release+CM0;DEF4-PROJ1-../test-access-sequences2.Debug+CM0/test-access-sequences2.Debug+CM0_OutDir;DEF5-PROJ1-../test-access-sequences2.Debug+CM0;DEF-CM0-RteTest_ARMCM0-</defines>
     <includes>/path/CM0/RteTest_ARMCM0</includes>
   </target>
 

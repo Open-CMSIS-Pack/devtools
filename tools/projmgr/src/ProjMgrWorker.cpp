@@ -1091,11 +1091,11 @@ bool ProjMgrWorker::ProcessAccessSequences(ContextItem& context) {
             if (m_contexts.find(contextName) != m_contexts.end()) {
               error_code ec;
               const auto& depContext = m_contexts.at(contextName);
-              const string& relSrcDir = fs::relative(depContext.directories.cprj, context.directories.cprj, ec).generic_string() + "/";
-              const string& relOutDir = relSrcDir + depContext.directories.outdir;
+              const string& relSrcDir = fs::relative(depContext.directories.cprj, context.directories.cprj, ec).generic_string();
+              const string& relOutDir = relSrcDir + "/" + depContext.directories.outdir;
               if (regex_match(sequence, regex("^OutDir\\(.*"))) {
                 regEx = regex("\\$OutDir\\(.*\\$");
-                replacement = relOutDir;
+                replacement = RteUtils::RemoveTrailingBackslash(relOutDir);
               } else if (regex_match(sequence, regex("^Output\\(.*"))) {
                 regEx = regex("\\$Output\\(.*\\$");
                 replacement = relOutDir + contextName;
