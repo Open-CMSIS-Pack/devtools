@@ -61,7 +61,7 @@ void CBuildGenTestFixture::RunCBuildGen(const TestParam& param, string projpath,
     workingDir = testout_folder + "/" + param.name;
 
     if (fs::exists(workingDir, ec)) {
-      RemoveDir(workingDir);
+      RteFsUtils::RemoveDir(workingDir);
     }
 
     fs::create_directories(workingDir, ec);
@@ -98,7 +98,7 @@ void CBuildGenTestFixture::RunLayerCommand(int cmdNum, const TestParam& param) {
 
   string workingDir = testout_folder + "/" + param.name;
   if (fs::exists(workingDir, ec)) {
-    RemoveDir(workingDir);
+    RteFsUtils::RemoveDir(workingDir);
   }
 
   fs::create_directories(workingDir, ec);

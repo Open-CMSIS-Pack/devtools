@@ -17,8 +17,8 @@ set_property(TARGET CbuildUnitTests PROPERTY
 set_property(TARGET CbuildUnitTests PROPERTY
   VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 
-file(RELATIVE_PATH TEST_FOLDER ${CMAKE_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/..)
-add_definitions(-DTEST_FOLDER="${TEST_FOLDER}/")
+add_definitions(-DTEST_BUILD_FOLDER="${CMAKE_CURRENT_BINARY_DIR}/")
+add_definitions(-DTEST_SRC_FOLDER="${CMAKE_CURRENT_SOURCE_DIR}/../")
 
 target_link_libraries(CbuildUnitTests PUBLIC cbuildgenlib gtest_main)
 

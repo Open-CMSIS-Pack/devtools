@@ -137,7 +137,7 @@ TEST_F(DebPkgTests, Extract_Completion) {
   extPath = testout_folder + "/debextract";
 
   if (fs::exists(extPath, ec)) {
-    RemoveDir(extPath);
+    RteFsUtils::RemoveDir(extPath);
   }
 
   ExtractPackage(package, extPath);

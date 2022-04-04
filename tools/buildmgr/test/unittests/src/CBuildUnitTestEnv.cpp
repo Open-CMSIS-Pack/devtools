@@ -10,9 +10,10 @@
 
 using namespace std;
 
-string testinput_folder = string(TEST_FOLDER) + "testinput";
-string examples_folder  = string(TEST_FOLDER) + "testinput/Examples";
-string testout_folder   = fs::current_path().append("testoutput").generic_string();
+string testdata_folder;
+string testinput_folder;
+string examples_folder;
+string testout_folder;
 
 void RemoveDir(fs::path path)
 {
@@ -40,11 +41,32 @@ void CBuildUnitTestEnv::SetUp() {
     ErrLog::Get()->SetOutputter(new ErrOutputterSaveToStdoutOrFile());
   }
 
+  testdata_folder  = string(TEST_SRC_FOLDER) + "testinput";
+  testinput_folder = string(TEST_BUILD_FOLDER) + "testinput";
+  examples_folder  = testinput_folder + "/Examples";
+  testout_folder   = string(TEST_BUILD_FOLDER) + "testoutput";
+  testdata_folder = fs::canonical(testdata_folder).generic_string();
+  ASSERT_TRUE(RteFsUtils::Exists(testdata_folder));
+
+  if (RteFsUtils::Exists(testout_folder)) {
+    RteFsUtils::RemoveDir(testout_folder);
+  }
   error_code ec;
   fs::create_directories(testout_folder, ec);
+  testout_folder = fs::canonical(testout_folder).generic_string();
+  ASSERT_FALSE(testout_folder.empty());
 
-  testinput_folder = fs::canonical(testinput_folder, ec).generic_string();
-  examples_folder  = fs::canonical(examples_folder, ec).generic_string();
+  if (RteFsUtils::Exists(testinput_folder)) {
+    RteFsUtils::RemoveDir(testinput_folder);
+  }
+  fs::create_directories(testinput_folder, ec);
+  testinput_folder = fs::canonical(testinput_folder).generic_string();
+  ASSERT_FALSE(testinput_folder.empty());
+  // Copy test data from input test folder
+  fs::copy(fs::path(testdata_folder), fs::path(testinput_folder), fs::copy_options::recursive, ec);
+
+  examples_folder = fs::canonical(examples_folder).generic_string();
+  ASSERT_FALSE(examples_folder.empty());
 
   // set quiet mode
   InitMessageTable();

@@ -94,7 +94,7 @@ TEST_F(CBuildGenTests, Gen_Output_In_SameDir) {
     auto outPath = fs::current_path(ec).append(*outdir);
 
     if (fs::exists(outPath, ec)) {
-      RemoveDir(outPath);
+      RteFsUtils::RemoveDir(outPath.generic_string());
     }
 
     RunCBuildGen        (param);
@@ -116,11 +116,11 @@ TEST_F(CBuildGenTests, GenCMake_Under_multipleLevel_OutDir_Test) {
   auto intPath = fs::current_path(ec).append(intDir);
 
   if (fs::exists(outPath, ec)) {
-    RemoveDir(outPath);
+    RteFsUtils::RemoveDir(outPath.generic_string());
   }
 
   if (fs::exists(intPath, ec)) {
-    RemoveDir(intPath);
+    RteFsUtils::RemoveDir(intPath.generic_string());
   }
 
   RunCBuildGen             (param);
@@ -142,11 +142,11 @@ TEST_F(CBuildGenTests, GenCMake_Output_At_Absolute_path) {
   auto intPath = fs::path(testout_folder + "/" + intDir);
 
   if (fs::exists(outPath, ec)) {
-    RemoveDir(outPath);
+    RteFsUtils::RemoveDir(outPath.generic_string());
   }
 
   if (fs::exists(intPath, ec)) {
-    RemoveDir(intPath);
+    RteFsUtils::RemoveDir(intPath.generic_string());
   }
 
   RunCBuildGen             (param);
@@ -174,11 +174,11 @@ TEST_F(CBuildGenTests, GenCMake_Output_At_Relative_path) {
   auto intPath = fs::current_path(ec).append(intDir);
 
   if (fs::exists(outPath, ec)) {
-    RemoveDir(outPath);
+    RteFsUtils::RemoveDir(outPath.generic_string());
   }
 
   if (fs::exists(intPath, ec)) {
-    RemoveDir(intPath);
+    RteFsUtils::RemoveDir(intPath.generic_string());
   }
 
   RunCBuildGen             (param);
