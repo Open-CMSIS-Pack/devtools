@@ -360,56 +360,56 @@ bool CheckFiles::FindGetExactFileSystemName(const std::string& path, const std::
 */
 bool CheckFiles::CheckCaseSense(const string& fileName, int lineNo)
 {
-  if(fileName.empty()) {
+  if (fileName.empty()) {
     return true;
   }
 
   LogMsg("M058", PATH(fileName));
 
-  string filePath = RteUtils::BackSlashesToSlashes(RteUtils::RemoveTrailingBackslash(fileName));
-  string path = filePath;
-  string actualPath, testPath, outPath, checkPath, packPath;
-  vector<string> pathSegments;
+  string filePath, testPath, outPath, packPath;
+  vector<string> sysPathSegments;
+  std::list<std::string> filePathSegments;
 
   packPath = GetPackagePath();
-  do {
-    actualPath = path;
-    path = RteUtils::ExtractFilePath(actualPath, 0);
-    checkPath = RteUtils::ExtractFileName(actualPath);
-    testPath = packPath;
-    testPath += "/" + path;
-    if (checkPath == ".." || checkPath == ".") {
-      pathSegments.push_back(checkPath);
+  filePath = RteUtils::BackSlashesToSlashes(RteUtils::RemoveTrailingBackslash(fileName));
+  RteUtils::SplitString(filePathSegments, filePath, '/');
+  testPath = packPath;
+
+  for (const auto& seg : filePathSegments) {
+    if (seg == ".." || seg == ".") {
+      sysPathSegments.push_back(seg);
+      testPath += "/" + seg;
       continue;
     }
-    if(FindGetExactFileSystemName(testPath, checkPath, outPath)) {
-      pathSegments.push_back(outPath);
+
+    if (FindGetExactFileSystemName(testPath, seg, outPath)) {
+      sysPathSegments.push_back(outPath);
+      testPath += "/" + outPath;
     }
     else {
-      string errMsg = string("file/folder \"") + checkPath + "\" not found";
+      string errMsg = string("file/folder \"") + seg + "\" not found";
       LogMsg("M103", VAL("REF", errMsg));
       return false;
     }
-  } while(!path.empty());
+  }
 
   string systemPath;
-  for(auto itrSeg = pathSegments.rbegin(); itrSeg != pathSegments.rend(); ++itrSeg) {
-    if(!systemPath.empty()) {
+  for (const auto& itrSeg : sysPathSegments) {
+    if (!systemPath.empty()) {
       systemPath += "/";
     }
-    systemPath += *itrSeg;
+    systemPath += itrSeg;
   }
 
   bool ok = true;
-  if(filePath.compare(systemPath)) {
+  if (filePath.compare(systemPath)) {
     LogMsg("M310", VAL("PDSC", filePath), VAL("SYSTEM", systemPath), lineNo);
     ok = false;
   }
 
-  if(ok) {
+  if (ok) {
     LogMsg("M010");
   }
-
   return ok;
 }
 
