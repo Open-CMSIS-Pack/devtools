@@ -356,7 +356,7 @@ bool CheckFiles::FindGetExactFileSystemName(const std::string& path, const std::
  * @brief check name as written in PDSC against it's counterpart on the filesystem, for case sensitivity
  * @param fileName filename as written in PDSC
  * @param lineNo line number for error reporting
- * @return
+ * @return true/false
 */
 bool CheckFiles::CheckCaseSense(const string& fileName, int lineNo)
 {
@@ -366,43 +366,43 @@ bool CheckFiles::CheckCaseSense(const string& fileName, int lineNo)
 
   LogMsg("M058", PATH(fileName));
 
-  string pdscPath = RteUtils::BackSlashesToSlashes(RteUtils::RemoveTrailingBackslash(fileName));
-  string path = pdscPath;
-  string systemPath;
-  vector<string> pathVect;
+  string filePath = RteUtils::BackSlashesToSlashes(RteUtils::RemoveTrailingBackslash(fileName));
+  string path = filePath;
+  string actualPath, testPath, outPath, checkPath, packPath;
+  vector<string> pathSegments;
 
+  packPath = GetPackagePath();
   do {
-    string actualPath = path;
+    actualPath = path;
     path = RteUtils::ExtractFilePath(actualPath, 0);
-    string checkPath = RteUtils::ExtractFileName(actualPath);
-    string testPath = GetPackagePath();
-    testPath += "/";
-    testPath += path;
-    string outPath;
-
-    if(FindGetExactFileSystemName(testPath, checkPath, outPath)) {
-      pathVect.push_back(outPath);
+    checkPath = RteUtils::ExtractFileName(actualPath);
+    testPath = packPath;
+    testPath += "/" + path;
+    if (checkPath == ".." || checkPath == ".") {
+      pathSegments.push_back(checkPath);
+      continue;
     }
-  } while(!path.empty() && path != ".");
+    if(FindGetExactFileSystemName(testPath, checkPath, outPath)) {
+      pathSegments.push_back(outPath);
+    }
+    else {
+      string errMsg = string("file/folder \"") + checkPath + "\" not found";
+      LogMsg("M103", VAL("REF", errMsg));
+      return false;
+    }
+  } while(!path.empty());
 
-  for(auto it2 = pathVect.rbegin(); it2 != pathVect.rend(); it2++) {
+  string systemPath;
+  for(auto itrSeg = pathSegments.rbegin(); itrSeg != pathSegments.rend(); ++itrSeg) {
     if(!systemPath.empty()) {
       systemPath += "/";
     }
-    systemPath += *it2;
+    systemPath += *itrSeg;
   }
 
-  string::size_type pos;
-  string::size_type endPos = pdscPath.find_first_not_of("./");
-  do {
-    pos = pdscPath.find_first_of("./");
-    if(pos < endPos && pos != string::npos)
-      pdscPath.erase(pos, 1);
-  } while(pos < endPos && pos != string::npos);
-
   bool ok = true;
-  if(pdscPath.compare(systemPath)) {
-    LogMsg("M310", VAL("PDSC", pdscPath), VAL("SYSTEM", systemPath), lineNo);
+  if(filePath.compare(systemPath)) {
+    LogMsg("M310", VAL("PDSC", filePath), VAL("SYSTEM", systemPath), lineNo);
     ok = false;
   }
 
