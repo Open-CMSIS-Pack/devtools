@@ -13,6 +13,10 @@ coverage:
         target: auto
         flags:
           - projmgr-cov
+      buildmgr-cov:
+        target: auto
+        flags:
+          - buildmgr-cov
 
 comment:
   layout: "diff, flags, files"
@@ -30,4 +34,8 @@ flags:
   projmgr-cov:
     paths:
       - tools/projmgr
+    carryforward: true
+  buildmgr-cov:
+    paths:
+      - tools/buildmgr
     carryforward: true
