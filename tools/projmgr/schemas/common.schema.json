@@ -55,6 +55,16 @@
       "enum": [ "exe", "lib" ],
       "description": "Generate executable (default) or library (exe, lib)."
     },
+    "OutputDirectoriesType": {
+      "type": "object",
+      "properties": {
+        "rtedir":   { "type": "string" },
+        "intdir":   { "type": "string" },
+        "outdir":   { "type": "string" },
+        "cprjdir":  { "type": "string" }
+      },
+      "additionalProperties": false
+    },
     "DefinesType": {
       "type": "array",
       "description": "List of #define symbol settings for the code generation.",
@@ -313,6 +323,9 @@
         },
         "build-types": {
           "$ref": "#/definitions/BuildTypes"
+        },
+        "output-dirs": {
+          "$ref": "#/definitions/OutputDirectoriesType"
         }
       },
       "additionalProperties": false
@@ -325,6 +338,9 @@
         },
         "build-types": {
           "$ref": "#/definitions/BuildTypes"
+        },
+        "output-dirs": {
+          "$ref": "#/definitions/OutputDirectoriesType"
         },
         "packs": {
            "$ref": "#/definitions/PacksType"
@@ -349,6 +365,7 @@
       "properties": {
         "description": { "type": "string" },
         "output-type": { "$ref": "#/definitions/OutputType" },
+        "output-dirs": { "$ref": "#/definitions/OutputDirectoriesType" },
         "board":       { "$ref": "#/definitions/BoardType" },
         "device":      { "$ref": "#/definitions/DeviceType" },
         "compiler":    { "$ref": "#/definitions/CompilerType" },
