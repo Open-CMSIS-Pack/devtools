@@ -129,47 +129,49 @@ TEST_F(CbuildUtilsTests, StrPathConv) {
 }
 
 TEST_F(CbuildUtilsTests, StrPathAbsolute) {
-  string path, base, expected;
+  string path, base, expected, cwd;
   error_code ec;
-  string cwd = fs::current_path(ec).generic_string() + "/";
-  fs::create_directories(cwd + "/UtilsTest/relative/path", ec);
+
+  cwd = fs::current_path(ec).generic_string();
+  string testDir = string(TEST_BUILD_FOLDER);
+  fs::create_directories(testDir + "/UtilsTest/relative/path", ec);
 
   path     = "./UtilsTest/relative/path";
-  base     = cwd;
-  expected = "\"" + cwd + "UtilsTest/relative/path\"";
+  base     = testDir;
+  expected = "\"" + testDir + "UtilsTest/relative/path\"";
   path     = CbuildUtils::StrPathAbsolute(path, base);
   EXPECT_EQ(expected, path);
 
   path     = ".\\UtilsTest\\relative\\path";
-  base     = cwd;
-  expected = "\"" +cwd + "UtilsTest/relative/path\"";
+  base     = testDir;
+  expected = "\"" + testDir + "UtilsTest/relative/path\"";
   path     = CbuildUtils::StrPathAbsolute(path, base);
   EXPECT_EQ(expected, path);
 
   path     = "--relpath_flag=./UtilsTest/relative/path";
-  base     = cwd;
-  expected = "--relpath_flag=\"" + cwd + "UtilsTest/relative/path\"";
+  base     = testDir;
+  expected = "--relpath_flag=\"" + testDir + "UtilsTest/relative/path\"";
   path     = CbuildUtils::StrPathAbsolute(path, base);
   EXPECT_EQ(expected, path);
 
   path     = "--relpath_flag=.\\UtilsTest\\relative\\path";
-  base     = cwd;
-  expected = "--relpath_flag=\"" + cwd + "UtilsTest/relative/path\"";
+  base     = testDir;
+  expected = "--relpath_flag=\"" + testDir + "UtilsTest/relative/path\"";
   path     = CbuildUtils::StrPathAbsolute(path, base);
   EXPECT_EQ(expected, path);
 
   // Move CWD
-  fs::current_path(cwd + "/UtilsTest", ec);
+  fs::current_path(testDir + "/UtilsTest", ec);
 
   path     = "../UtilsTest/relative/path";
   base     = fs::current_path(ec).generic_string() + "/";
-  expected = "\"" + cwd + "UtilsTest/relative/path\"";
+  expected = "\"" + testDir + "UtilsTest/relative/path\"";
   path     = CbuildUtils::StrPathAbsolute(path, base);
   EXPECT_EQ(expected, path);
 
   path     = "..\\UtilsTest\\relative\\path";
   base     = fs::current_path(ec).generic_string() + "/";
-  expected = "\"" + cwd + "UtilsTest/relative/path\"";
+  expected = "\"" + testDir + "UtilsTest/relative/path\"";
   path     = CbuildUtils::StrPathAbsolute(path, base);
   EXPECT_EQ(expected, path);
 

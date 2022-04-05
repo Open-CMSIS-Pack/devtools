@@ -155,11 +155,11 @@ TEST_F(CBuildAC6Tests, MultiToolChainAC6Test) {
   error_code ec;
 
   if (fs::exists(absOutDir, ec)) {
-    RemoveDir(absOutDir);
+    RteFsUtils::RemoveDir(absOutDir);
   }
 
   if (fs::exists(absIntDir, ec)) {
-    RemoveDir(absIntDir);
+    RteFsUtils::RemoveDir(absIntDir);
   }
 
   RunCBuildScriptWithArgs   (param);

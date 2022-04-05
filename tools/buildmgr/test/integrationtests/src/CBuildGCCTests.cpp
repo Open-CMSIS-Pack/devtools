@@ -131,11 +131,11 @@ TEST_F(CBuildGCCTests, OutDirGenTest) {
   error_code ec;
 
   if (fs::exists(absOutDir, ec)) {
-    RemoveDir(absOutDir);
+    RteFsUtils::RemoveDir(absOutDir);
   }
 
   if (fs::exists(absIntDir, ec)) {
-    RemoveDir(absIntDir);
+    RteFsUtils::RemoveDir(absIntDir);
   }
 
   RunCBuildScriptWithArgs    (param);
@@ -154,11 +154,11 @@ TEST_F(CBuildGCCTests, OutDirGenTestWhitespace) {
   error_code ec;
 
   if (fs::exists(absOutDir, ec)) {
-    RemoveDir(absOutDir);
+    RteFsUtils::RemoveDir(absOutDir);
   }
 
   if (fs::exists(absIntDir, ec)) {
-    RemoveDir(absIntDir);
+    RteFsUtils::RemoveDir(absIntDir);
   }
 
   RunCBuildScriptWithArgs    (param);
@@ -178,11 +178,11 @@ TEST_F(CBuildGCCTests, MultiToolChainGCCTest) {
   error_code ec;
 
   if (fs::exists(absOutDir, ec)) {
-    RemoveDir(absOutDir);
+    RteFsUtils::RemoveDir(absOutDir);
   }
 
   if (fs::exists(absIntDir, ec)) {
-    RemoveDir(absIntDir);
+    RteFsUtils::RemoveDir(absIntDir);
   }
 
   RunCBuildScriptWithArgs    (param);

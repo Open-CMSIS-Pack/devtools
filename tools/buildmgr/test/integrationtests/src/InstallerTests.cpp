@@ -94,9 +94,9 @@ TEST_F(InstallerTests, InvalidArgTest) {
   string installDir = testout_folder + "/Installation";
   string arg = "--testoutput=" + testout_folder + " -Invalid";
 
-  RemoveDir           (installDir);
-  RunInstallerScript  (arg);
-  CheckInstallationDir(installDir, true);
+  RteFsUtils::RemoveDir(installDir);
+  RunInstallerScript   (arg);
+  CheckInstallationDir (installDir, true);
 }
 
 // Run installer with help command
@@ -104,9 +104,9 @@ TEST_F(InstallerTests, InstallerHelpTest) {
   string installDir = testout_folder + "/Installation";
   string arg = "--testoutput=" + testout_folder + " -h";
 
-  RemoveDir           (installDir);
-  RunInstallerScript  (arg);
-  CheckInstallationDir(installDir, false);
+  RteFsUtils::RemoveDir(installDir);
+  RunInstallerScript   (arg);
+  CheckInstallationDir (installDir, false);
 }
 
 // Run installer with version command
@@ -114,9 +114,9 @@ TEST_F(InstallerTests, InstallerVersionTest) {
   string installDir = testout_folder + "/Installation";
   string arg = "--testoutput=" + testout_folder + " -v";
 
-  RemoveDir           (installDir);
-  RunInstallerScript  (arg);
-  CheckInstallationDir(installDir, false);
+  RteFsUtils::RemoveDir(installDir);
+  RunInstallerScript   (arg);
+  CheckInstallationDir (installDir, false);
 }
 
 // Validate installer extract option
@@ -125,9 +125,9 @@ TEST_F(InstallerTests, InstallerExtractTest) {
     testout_folder + "/Installation/ExtractOut";
   string extractDir = testout_folder + "/Installation/ExtractOut";
 
-  RemoveDir           (extractDir);
-  RunInstallerScript  (arg);
-  CheckExtractedDir   (extractDir, true);
+  RteFsUtils::RemoveDir(extractDir);
+  RunInstallerScript   (arg);
+  CheckExtractedDir    (extractDir, true);
 }
 
 // Validate installation and post installation content
@@ -135,7 +135,7 @@ TEST_F(InstallerTests, ValidInstallationTest) {
   string installDir = testout_folder + "/Installation";
   string arg = "--testoutput=" + testout_folder;
 
-  RemoveDir           (installDir);
-  RunInstallerScript  (arg);
-  CheckInstallationDir(installDir, true);
+  RteFsUtils::RemoveDir(installDir);
+  RunInstallerScript   (arg);
+  CheckInstallationDir (installDir, true);
 }
