@@ -37,6 +37,7 @@ protected:
 
   void TearDown() override {
     errLog.ClearLogMessages();
+    RteFsUtils::RemoveDir(string(BUILD_FOLDER) + "/testdata");
   }
 
 private:
@@ -144,4 +145,47 @@ TEST_F(TestCheckFiles, CheckFileExtension_NullItem) {
 
   // THEN the check is expected to pass
   EXPECT_TRUE(res);
+}
+
+TEST_F(TestCheckFiles, CheckCaseSense)
+{
+  // test setup
+  string packPath = checkFiles.GetPackagePath();
+  string testDataFolder = packPath + "/testdata";
+  const string& testApiFolder = testDataFolder + "/Api";
+  if (RteFsUtils::Exists(testDataFolder)) {
+    RteFsUtils::RemoveDir(testDataFolder);
+  }
+  ASSERT_TRUE(RteFsUtils::CreateDirectories(testApiFolder));
+  ASSERT_TRUE(RteFsUtils::CreateFile(
+    testApiFolder + "/Exclusive.h", RteUtils::EMPTY_STRING));
+  ASSERT_TRUE(RteFsUtils::CreateDirectories(testDataFolder + "/.test1"));
+  ASSERT_TRUE(RteFsUtils::CreateFile(
+    testDataFolder + "/.test1/NonExclusive.h", RteUtils::EMPTY_STRING));
+  checkFiles.SetPackagePath(testDataFolder);
+
+  // test
+  map<string, bool> testInputs = {
+    // FilePath, expectedResults
+    { RteUtils::EMPTY_STRING,        true},
+    { "Api\\Exclusive.h",            true},
+    { "Api/Exclusive.h",             true},
+    { "./Api/Exclusive.h",           true},
+    { "././././Api/Exclusive.h",     true},
+    { ".test1/NonExclusive.h",       true},
+    { ".test1/../Api/Exclusive.h",   true},
+    { "../testdata/Api/Exclusive.h", true},
+    { "../Invalid/Path/Exclusive.h", false},
+    { "api\\exclusive.h",            false},
+    { "api/exclusive.h",             false}
+  };
+
+  for (const auto& [filePath, result] : testInputs) {
+    EXPECT_EQ(result, checkFiles.CheckCaseSense(filePath, 1)) <<
+      "error: failed for input \"" << filePath << "\"" << endl;
+  }
+
+  // cleanup
+  RteFsUtils::RemoveDir(testDataFolder);
+  checkFiles.SetPackagePath(packPath);
 }
