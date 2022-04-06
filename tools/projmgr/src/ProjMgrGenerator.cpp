@@ -17,8 +17,8 @@
 
 using namespace std;
 
-static constexpr const char* SCHEMA_FILE = "PACK.xsd";    // XML schema file name
-static constexpr const char* SCHEMA_VERSION = "1.7.2";    // XML schema version
+static constexpr const char* SCHEMA_FILE = "CPRJ.xsd";    // XML schema file name
+static constexpr const char* SCHEMA_VERSION = "1.0.1";    // XML schema version
 
 
 ProjMgrGenerator::ProjMgrGenerator(void) {
