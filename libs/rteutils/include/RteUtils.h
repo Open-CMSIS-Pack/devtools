@@ -24,6 +24,7 @@
 #include <map>
 #include <set>
 #include <vector>
+#include <algorithm>
 
 
 class RteUtils
@@ -262,6 +263,18 @@ public:
    * @return XML specification of attributes
   */
   static std::string ToXmlString(const std::map<std::string, std::string>& attributes);
+  /**
+   * @brief remove duplicate elements from vector without changing the order of elements
+   * @param input vector to be processed
+  */
+  template <typename T>
+  static void RemoveVectorDuplicates(std::vector<T>& elemVec) {
+    auto end = elemVec.end();
+    for (auto itr = elemVec.begin(); itr != end; ++itr) {
+      end = std::remove(itr + 1, end, *itr);
+    }
+    elemVec.erase(end, elemVec.end());
+  }
 
   static const std::string EMPTY_STRING;
   static const std::string ERROR_STRING;

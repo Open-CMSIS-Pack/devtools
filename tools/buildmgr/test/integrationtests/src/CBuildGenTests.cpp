@@ -20,6 +20,36 @@ class CBuildGenTests : public CBuildGenTestFixture {
 
 };
 
+TEST_F(CBuildGenTests, GenCMake_AccessSequence) {
+  TestParam param = { "GCC/AccessSequence", "Project", "", "cmake", true };
+
+  RunCBuildGen           (param);
+  CheckCMakeLists        (param);
+}
+
+TEST_F(CBuildGenTests, GenCMake_AccessSequence_Missing_Bname) {
+  TestParam param = {
+    "GCC/AccessSequence", "Project_Missing_BoardName", "", "cmake", true
+  };
+
+  RunCBuildGen(param);
+}
+
+TEST_F(CBuildGenTests, GenCMake_AccessSequence_Invalid_Access_Sequence) {
+  TestParam param = {
+    "GCC/AccessSequence", "Project_Invalid_Access_Sequence", "", "cmake", false
+  };
+
+  RunCBuildGen(param);
+}
+
+TEST_F(CBuildGenTests, GenCMake_AccessSequence_Unknown_Board_Name) {
+  TestParam param = {
+    "GCC/AccessSequence", "Project_Unknown_Board_Name", "", "cmake", false
+  };
+
+  RunCBuildGen(param);
+}
 
 TEST_F(CBuildGenTests, GenCMake_Fixed_Cprj) {
   TestParam param = { "AC6/Build_AC6", "Simulation", "--update=Simulation.fixed.cprj", "cmake", true };
@@ -99,6 +129,8 @@ TEST_F(CBuildGenTests, Gen_Output_In_SameDir) {
 
     RunCBuildGen        (param);
     CheckOutputDir      (param, outPath.string());
+
+    RteFsUtils::RemoveDir(outPath.string());
   }
 }
 
@@ -126,6 +158,9 @@ TEST_F(CBuildGenTests, GenCMake_Under_multipleLevel_OutDir_Test) {
   RunCBuildGen             (param);
   CheckOutputDir           (param, outPath.string());
   CheckCMakeIntermediateDir(param, intPath.string());
+
+  RteFsUtils::RemoveDir(outPath.parent_path().generic_string());
+  RteFsUtils::RemoveDir(outPath.parent_path().generic_string());
 }
 
 // Validate generation of output files under absolute

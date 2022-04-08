@@ -1,5 +1,5 @@
 set(TEST_SOURCE_FILES CBuildUnitTestEnv.cpp ModelTests.cpp UtilsTests.cpp
-    CLayerTests.cpp BuildSystemGeneratorTests.cpp)
+    CLayerTests.cpp BuildSystemGeneratorTests.cpp CbuildModelTests.cpp)
 set(TEST_HEADER_FILES CBuildUnitTestEnv.h)
 
 list(TRANSFORM TEST_SOURCE_FILES PREPEND src/)
@@ -25,4 +25,3 @@ target_link_libraries(CbuildUnitTests PUBLIC cbuildgenlib gtest_main)
 add_test(NAME CbuildUnitTests
          COMMAND CbuildUnitTests --gtest_output=xml:cbuildunit_test_report.xml
          WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
-

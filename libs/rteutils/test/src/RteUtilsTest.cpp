@@ -363,3 +363,26 @@ TEST(RteUtilsTest, NameFromPackageId)
   name = RteUtils::NameFromPackageId(packageId);
   EXPECT_EQ(false, (0 == name.compare("Name")) ? true : false);
 }
+
+TEST(RteUtilsTest, RemoveVectorDuplicates)
+{
+  vector<int> testInput = { 1,2,3,2,4,5,3,6 };
+  vector<int> expected  = { 1,2,3,4,5,6 };
+  RteUtils::RemoveVectorDuplicates<int>(testInput);
+  EXPECT_EQ(testInput, expected);
+
+  testInput = { 1,1,3,3,1,2,2 };
+  expected = { 1,3,2 };
+  RteUtils::RemoveVectorDuplicates<int>(testInput);
+  EXPECT_EQ(testInput, expected);
+
+  testInput = { 1,1,1,1,1,1,1,1,1 };
+  expected = { 1 };
+  RteUtils::RemoveVectorDuplicates<int>(testInput);
+  EXPECT_EQ(testInput, expected);
+
+  testInput = { };
+  expected = { };
+  RteUtils::RemoveVectorDuplicates<int>(testInput);
+  EXPECT_EQ(testInput, expected);
+}
