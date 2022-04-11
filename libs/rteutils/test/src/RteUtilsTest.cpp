@@ -297,6 +297,8 @@ TEST(RteUtilsTest, AlnumLenCmp) {
 TEST(RteUtilsTest, VendorCompare)
 {
   CheckVendorMatch({ "ARM", "ARM CMSIS" }, false);
+  CheckVendorMatch({ "ARM", "arm" }, false);
+  CheckVendorMatch({ "ONSemiconductor", "onsemi" }, true);
   CheckVendorMatch({ "Cypress", "Cypress:114", "Cypress:100" }, true);
   CheckVendorMatch({ "Atmel", "Atmel:3", "Microchip", "Microchip:3"}, true);
   CheckVendorMatch({ "Milandr", "Milandr:99", "milandr", "milandr:99"}, true);
