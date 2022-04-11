@@ -2,8 +2,8 @@ project(XmlTree VERSION 1.0.0)
 
 add_subdirectory("test")
 
-SET(SOURCE_FILES XmlFormatter.cpp XmlItem.cpp XMLTree.cpp)
-SET(HEADER_FILES XmlFormatter.h XMLTree.h XmlTreeItem.h XmlTreeItemBuilder.h
+SET(SOURCE_FILES AbstractFormatter.cpp JsonFormatter.cpp XmlFormatter.cpp XmlItem.cpp XMLTree.cpp)
+SET(HEADER_FILES AbstractFormatter.h JsonFormatter.h XmlFormatter.h XMLTree.h XmlTreeItem.h XmlTreeItemBuilder.h
   IXmlItemBuilder.h XmlItem.h)
 
 list(TRANSFORM SOURCE_FILES PREPEND src/)

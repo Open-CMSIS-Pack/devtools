@@ -318,6 +318,11 @@ TEST(RteUtilsTest, VendorCompare)
                        "Silicon Laboratories, Inc.", "Silicon Laboratories, Inc.:21", "Test:97" }, true);
 
   CheckVendorMatch({ "MyVendor", "MyVendor", "MyVendor:9999" }, true);
+
+  CheckVendorMatch({ "MyVendor", "ThatVendor"}, false);
+  CheckVendorMatch({ "MyVendor:9999", "ThatVendor:9998" }, false);
+  CheckVendorMatch({ "MyVendor:9999", "MyVendor:9998" }, true);
+  CheckVendorMatch({ "MyVendor:9999", "ThatVendor:9999" }, true);
 }
 
 TEST(RteUtilsTest, GetFullVendorString)
