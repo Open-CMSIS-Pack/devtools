@@ -1115,11 +1115,11 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Board_No_Mounted_Devices) {
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_Board_Device_Info) {
-  // Test Project with board mounted device different than available devices
+  // Test Project with board mounted device different than selected devices
   char* argv[6];
   const string& cproject = testinput_folder +
-    "/TestProject/test.cproject_mounted_device_differs_available_device.yml";
-  const string& expected = "specified device 'RteTest_ARMCM0_Dual' and board mounted device 'RteTest_ARMCM0_Test' are different";
+    "/TestProject/test.cproject_mounted_device_differs_selected_device.yml";
+  const string& expected = "warning csolution: specified device 'RteTest_ARMCM0' and board mounted device 'RteTest_ARMCM0_Dual' are different";
   StdStreamRedirect streamRedirect;
 
   argv[1] = (char*)"convert";
@@ -1127,9 +1127,9 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Board_Device_Info) {
   argv[3] = (char*)cproject.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(1, RunProjMgr(6, argv));
-  auto errStr = streamRedirect.GetErrorString();
-  EXPECT_NE(string::npos, errStr.find(expected));
+  EXPECT_EQ(0, RunProjMgr(6, argv));
+  auto warnStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, warnStr.find(expected));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListGenerators) {
