@@ -150,6 +150,8 @@ const map<string, string>& DeviceVendor::GetVendorNameToIdMap()
     m_vendorNameToId["NXP"] = "11";
     m_vendorNameToId["NXP (founded by Philips)"] = "11";
     m_vendorNameToId["OKI SEMICONDUCTOR CO.,LTD."] = "108";
+    m_vendorNameToId["onsemi"] = "141";
+    m_vendorNameToId["ONSemiconductor"] = "141";
     m_vendorNameToId["Oregano Systems"] = "44";
     m_vendorNameToId["PalmChip"] = "105";
     m_vendorNameToId["Philips"] = "79";
@@ -295,6 +297,7 @@ const map<string, string>& DeviceVendor::GetVendorIdToNameMap()
     m_vendorIdToName["18"] = "Nuvoton";
     m_vendorIdToName["11"] = "NXP";
     m_vendorIdToName["108"] = "OKI SEMICONDUCTOR CO.,LTD.";
+    m_vendorIdToName["141"] = "onsemi";
     m_vendorIdToName["44"] = "Oregano Systems";
     m_vendorIdToName["105"] = "PalmChip";
     m_vendorIdToName["79"] = "Philips";
