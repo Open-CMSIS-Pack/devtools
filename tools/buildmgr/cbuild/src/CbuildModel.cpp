@@ -20,12 +20,14 @@
 #include "RteGenerator.h"
 #include "RtePackage.h"
 #include "RteProject.h"
+#include "RteUtils.h"
 
 #include <algorithm>
 #include <fstream>
 #include <iostream>
 #include <string>
 #include <sstream>
+#include <regex>
 
 #define EOL "\n"        // End of line
 
@@ -378,10 +380,15 @@ const bool CbuildModel::EvaluateResult() {
     if (!obj.empty()) m_objects.push_back(obj);
   }
 
-  if (!EvalIncludesDefines())
+  if (!EvalIncludesDefines()) {
     return false;
-  if (!EvalSourceFiles())
+  }
+  if (!EvalSourceFiles()) {
     return false;
+  }
+  if (!EvalAccessSequence()) {
+    return false;
+  }
 
   return true;
 }
@@ -904,18 +911,30 @@ bool CbuildModel::SetItemIncludesDefines(const RteItem* item, const string& name
   if (excludes != nullptr || includes != nullptr) {
     auto excludesList = (excludes ? SplitArgs(excludes->GetText(), ";", false) : vector<string>{});
     for (auto& exclude : excludesList) {
-      if (!RteFsUtils::NormalizePath(exclude, m_prjFolder)) {
-        LogMsg("M204", PATH(exclude));
-        return false;
+      if (RteFsUtils::Exists(m_prjFolder + exclude)) {
+        RteFsUtils::NormalizePath(exclude, m_prjFolder);
+        continue;
       }
+      regex regEx{ "^\\$.*\\$$" };
+      if (regex_search(exclude, regEx)) {
+        continue;
+      }
+      LogMsg("M204", PATH(exclude));
+      return false;
     }
     const auto& parentIncludes = GetParentTranslationControls(item, m_includePaths, m_targetIncludePaths);
     auto includesList = (includes ? SplitArgs(includes->GetText(), ";", false) : vector<string>{});
     for (auto& include : includesList) {
-      if (!RteFsUtils::NormalizePath(include, m_prjFolder)) {
-        LogMsg("M204", PATH(include));
-        return false;
+      if (RteFsUtils::Exists(m_prjFolder + include)) {
+        RteFsUtils::NormalizePath(include, m_prjFolder);
+        continue;
       }
+      regex regEx{ "^\\$.*\\$$" };
+      if (regex_search(include, regEx)) {
+        continue;
+      }
+      LogMsg("M204", PATH(include));
+      return false;
     }
     const auto& resIncludesList = MergeArgs(includesList, excludesList, parentIncludes);
     m_includePaths.insert(pair<string, vector<string>>(name, resIncludesList));
@@ -936,13 +955,18 @@ const bool CbuildModel::EvalIncludesDefines() {
   if (includes) {
     const vector<string>& includesList = SplitArgs(includes->GetText(), ";", false);
     for (auto include : includesList) {
-      if (!RteFsUtils::NormalizePath(include, m_prjFolder)) {
-        LogMsg("M204", PATH(include));
-        return false;
-      }
-      if (!include.empty()) {
+      if (RteFsUtils::Exists(m_prjFolder + include)) {
+        RteFsUtils::NormalizePath(include, m_prjFolder);
         m_targetIncludePaths.push_back(include);
+        continue;
       }
+      regex regEx{ "^\\$.*\\$$" };
+      if (regex_search(include, regEx)) {
+        m_targetIncludePaths.push_back(include);
+        continue;
+      }
+      LogMsg("M204", PATH(include));
+      return false;
     }
   }
   if (defines) {
@@ -1151,4 +1175,138 @@ string CbuildModel::GetExtendedRteGroupName(RteItem* ci, const string& rteFolder
   if (!cSubName.empty())     rteGroupName += "/" + CbuildUtils::RemoveSlash(cSubName);
   if (!cVariantName.empty()) rteGroupName += "/" + CbuildUtils::RemoveSlash(cVariantName);
   return rteGroupName;
+}
+
+bool CbuildModel::GetAccessSequence(size_t& offset, string& src, string& sequence, const char start, const char end) {
+  size_t delimStart = src.find_first_of(start, offset);
+  if (delimStart != string::npos) {
+    size_t delimEnd = src.find_first_of(end, ++delimStart);
+    if (delimEnd != string::npos) {
+      sequence = src.substr(delimStart, delimEnd - delimStart);
+      offset = ++delimEnd;
+      return true;
+    }
+    else {
+      LogMsg("M614", VAL("ACCSEQDELIM", src));
+      return false;
+    }
+  }
+  offset = string::npos;
+  return true;
+}
+
+void CbuildModel::InsertVectorPointers(vector<string*>& dst, vector<string>& src) {
+  for (auto& item : src) {
+    dst.push_back(&item);
+  }
+}
+
+const bool CbuildModel::EvalAccessSequence() {
+  vector<string*> fields;
+  vector<std::map<std::string, std::vector<std::string>>*> fieldList = {
+    &m_defines , &m_includePaths, &m_CFlags, &m_CxxFlags, &m_AsFlags
+  };
+
+  for (auto& itemList : fieldList) {
+    for (auto& [_, item] : *itemList) {
+      InsertVectorPointers(fields, item);
+    }
+  }
+  InsertVectorPointers(fields, m_targetDefines);
+  InsertVectorPointers(fields, m_targetIncludePaths);
+  InsertVectorPointers(fields, m_targetCFlags);
+  InsertVectorPointers(fields, m_targetCxxFlags);
+  InsertVectorPointers(fields, m_targetAsFlags);
+  InsertVectorPointers(fields, m_targetLdFlags);
+
+  for (auto& item : fields) {
+    if (item) {
+      size_t offset = 0;
+      while (offset != string::npos) {
+        string sequence;
+        if (!GetAccessSequence(offset, *item, sequence, '$', '$')) {
+          return false;
+        }
+        if (offset != string::npos) {
+          string replacement;
+          regex regEx;
+          if (sequence == "Bpack") {
+            regEx = regex("\\$Bpack\\$");
+            auto boardName = m_cprjTarget->GetAttribute("Bname");
+            if (boardName.empty()) {
+              LogMsg("M632", VAL("ATTR", "Bname"), VAL("ACCSEQ", sequence));
+              break;
+            }
+            auto selectedBoard = m_cprjTarget->GetFilteredModel()->FindBoard(boardName);
+            if (!selectedBoard) {
+              LogMsg("M615", VAL("PROP", "board name"), VAL("VAL", boardName));
+              return false;
+            }
+            replacement = RteUtils::RemoveTrailingBackslash(selectedBoard->GetPackage()->GetAbsolutePackagePath());
+          }
+          else if (sequence == "Dpack")
+          {
+            regEx = regex("\\$Dpack\\$");
+            auto deviceName = m_cprjTarget->GetAttribute("Dname");
+            auto deviceVendor = m_cprjTarget->GetAttribute("Dvendor");
+            const auto device = m_cprjTarget->GetModel()->GetDevice(deviceName, deviceVendor);
+            replacement = RteUtils::RemoveTrailingBackslash(device->GetPackage()->GetAbsolutePackagePath());
+          }
+          else if (sequence == "PackRoot") {
+            regEx = regex("\\$PackRoot\\$");
+            replacement = RteUtils::RemoveTrailingBackslash(CbuildKernel::Get()->GetCmsisPackRoot());
+          }
+          else if (regex_match(sequence, regex("Pack\\(.*"))) {
+            string packStr, vendor, name, version;
+            size_t offsetContext = 0;
+            regEx = regex("\\$Pack\\(.*");
+            if (!GetAccessSequence(offsetContext, sequence, packStr, '(', ')')) {
+              return false;
+            }
+            string packInfoStr = packStr;
+            if (packInfoStr.find("::") != string::npos) {
+              vendor = RteUtils::RemoveSuffixByString(packInfoStr, "::");
+              packInfoStr = RteUtils::RemovePrefixByString(packInfoStr, "::");
+              name = RteUtils::GetPrefix(packInfoStr, '@');
+            }
+            else {
+              vendor = RteUtils::GetPrefix(packInfoStr, '@');
+            }
+            version = RteUtils::GetSuffix(packInfoStr, '@');
+
+            string packId = vendor + "." + name + (version.empty() ? "" : "." + version);
+            auto packages = m_cprjTarget->GetModel()->GetPackages();
+            for (const auto& pack : packages) {
+              if (pack.second->GetPackageID(false) == packId || pack.second->GetPackageID() == packId) {
+                replacement = RteUtils::RemoveTrailingBackslash(pack.second->GetAbsolutePackagePath());
+                break;
+              }
+            }
+            if (replacement.empty()) {
+              LogMsg("M632", VAL("ATTR", packStr), VAL("ACCSEQ", sequence));
+            }
+          }
+          else {
+            LogMsg("M633", VAL("ACCSEQ", sequence));
+          }
+          *item = regex_replace(*item, regEx, replacement);
+        }
+      }
+    }
+  }
+
+  // remove duplicates
+  for (auto& itemList : fieldList) {
+    for (auto& [_, item] : *itemList) {
+      RteUtils::RemoveVectorDuplicates<string>(item);
+    }
+  }
+  RteUtils::RemoveVectorDuplicates<string>(m_targetDefines);
+  RteUtils::RemoveVectorDuplicates<string>(m_targetIncludePaths);
+  RteUtils::RemoveVectorDuplicates<string>(m_targetCFlags);
+  RteUtils::RemoveVectorDuplicates<string>(m_targetCxxFlags);
+  RteUtils::RemoveVectorDuplicates<string>(m_targetAsFlags);
+  RteUtils::RemoveVectorDuplicates<string>(m_targetLdFlags);
+
+  return true;
 }

@@ -450,6 +450,7 @@ protected:
   const bool EvalFlags();
   const bool EvalIncludesDefines();
   const bool EvalTargetOutput();
+  const bool EvalAccessSequence();
   bool SetItemFlags(const RteItem* item, const std::string& name);
   bool SetItemIncludesDefines(const RteItem* item, const std::string& name);
   const std::string GetParentName(const RteItem* item);
@@ -461,6 +462,8 @@ protected:
   std::vector<std::string> SplitArgs(const std::string& args, const std::string& delim=std::string(" -"), bool relativePath=true);
   static std::vector<std::string> MergeArgs(const std::vector<std::string>& add, const std::vector<std::string>& remove, const std::vector<std::string>& reference);
   static std::string GetExtendedRteGroupName(RteItem* ci, const std::string& rteFolder);
+  bool GetAccessSequence(size_t& offset, std::string& src, std::string& sequence, const char start, const char end);
+  void InsertVectorPointers(std::vector<std::string*>& dst, std::vector<std::string>& src);
 };
 
 #endif /* CBUILDMODEL_H */
