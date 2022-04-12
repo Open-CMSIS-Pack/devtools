@@ -454,9 +454,8 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
     const string DeviceInfoString = matchedDevice->GetFullDeviceName();
     const string BoardDeviceInfoString = matchedBoardDevice->GetFullDeviceName();
     if (DeviceInfoString.find(BoardDeviceInfoString) == string::npos) {
-      ProjMgrLogger::Error("specified device '" + DeviceInfoString + "' and board mounted device '" +
+      ProjMgrLogger::Warn("specified device '" + DeviceInfoString + "' and board mounted device '" +
         BoardDeviceInfoString + "' are different");
-      return false;
     }
   }
 
