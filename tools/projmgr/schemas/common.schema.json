@@ -94,7 +94,7 @@
       "items": { "$ref": "#/definitions/MiscType" }
     },
     "MiscType": {
-      "type": "object",
+      "type": ["object", "null"],
       "properties": {
         "compiler":   { "$ref": "#/definitions/CompilerType" },
         "C":          { "$ref": "#/definitions/ArrayOfStrings", "description": "List of C flags" },
@@ -180,7 +180,7 @@
       "required": [ "project" ]
     },
     "ProcessorType": {
-      "type": "object",
+      "type": ["object", "null"],
       "description": "Processor specific settings",
       "properties": {
         "trustzone": {
@@ -318,7 +318,7 @@
       "additionalProperties": false
     },
     "SolutionDescType": {
-      "type": "object",
+      "type": ["object", "null"],
       "properties": {
         "target-types": {
           "$ref": "#/definitions/TargetTypes"
@@ -345,7 +345,7 @@
       "additionalProperties": false
     },
     "ProjectDescType": {
-      "type": "object",
+      "type": ["object", "null"],
       "properties": {
         "description": { "type": "string" },
         "output-type": { "$ref": "#/definitions/OutputType" },

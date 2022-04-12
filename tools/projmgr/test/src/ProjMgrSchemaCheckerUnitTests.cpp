@@ -28,6 +28,13 @@ TEST_F(ProjMgrSchemaCheckerUnitTests, SchemaCheck_Pass) {
   EXPECT_TRUE(GetErrors().empty());
 }
 
+TEST_F(ProjMgrSchemaCheckerUnitTests, SchemaCheck_Empty_Object) {
+  const string& filename = testinput_folder + "/TestProject/test.cproject_empty_object.yml";
+
+  EXPECT_TRUE(Validate(filename, FileType::PROJECT));
+  EXPECT_TRUE(GetErrors().empty());
+}
+
 TEST_F(ProjMgrSchemaCheckerUnitTests, SchemaCheck_Fail) {
   vector<std::pair<int, int>> expectedErrPos = {
     // line, col
