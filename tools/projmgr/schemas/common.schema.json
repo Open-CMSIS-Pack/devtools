@@ -36,7 +36,7 @@
     },
     "BoardType": {
       "type": "string",
-      "pattern": "^([\\w .-]+::)?([\\w .-]+)$",
+      "pattern": "^([\\w .-]+::)?([\\w .\\-\\(\\)]+)$",
       "description": "Unique board name, optionally with vendor. Format: [<vendor>::]<board>."
     },
     "OptimizeType": {
