@@ -24,7 +24,7 @@
 
   <files>
     <group name="Sources">
-      <file category="sourceC" name="main.c"/>
+      <file category="sourceC" name="../../../data/TestDefault/main.c"/>
     </group>
   </files>
 </cprj>

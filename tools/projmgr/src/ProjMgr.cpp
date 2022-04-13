@@ -311,17 +311,16 @@ bool ProjMgr::RunConvert(void) {
       continue;
     }
     error_code ec;
-    const string& directory = m_outputDir.empty() ? contextItem.directories.cproject : m_outputDir + "/" + contextName;
-    const string& filename = fs::weakly_canonical(directory + "/" + contextName + ".cprj", ec).generic_string();
-    RteFsUtils::CreateDirectories(directory);
+    const string& filename = fs::weakly_canonical(contextItem.directories.cprj + "/" + contextName + ".cprj", ec).generic_string();
+    RteFsUtils::CreateDirectories(contextItem.directories.cprj);
     if (m_generator.GenerateCprj(contextItem, filename)) {
       ProjMgrLogger::Info(filename, "file generated successfully");
     } else {
       ProjMgrLogger::Error(filename, "file cannot be written");
       return false;
     }
-    if (!m_worker.CopyContextFiles(contextItem, directory, m_outputDir.empty())) {
-      ProjMgrLogger::Error("files cannot be copied into output directory '" + directory + "'");
+    if (!m_worker.CopyRTEFiles(contextItem)) {
+      ProjMgrLogger::Error("RTE files cannot be copied into directory '" + contextItem.directories.cprj + "'");
       return false;
     }
   }

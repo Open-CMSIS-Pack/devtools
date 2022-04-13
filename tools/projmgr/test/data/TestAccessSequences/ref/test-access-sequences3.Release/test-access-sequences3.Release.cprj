@@ -18,7 +18,7 @@
     <output intdir="test-access-sequences3.Release_IntDir/" name="test-access-sequences3.Release" outdir="test-access-sequences3.Release_OutDir/" type="exe"/>
     <cflags add="-O3" compiler="AC6"/>
     <cxxflags add="-O3" compiler="AC6"/>
-    <defines>DEF1-PROJ1-../test-access-sequences3.Debug/test-access-sequences3.Debug_OutDir/test-access-sequences3.Debug;DEF2-PROJ1-./test-access-sequences3.Release_OutDir/test-access-sequences3.Release</defines>
+    <defines>DEF1-PROJ1-../test-access-sequences3.Debug/test-access-sequences3.Debug_OutDir/test-access-sequences3.Debug;DEF2-PROJ1-test-access-sequences3.Release_OutDir/test-access-sequences3.Release</defines>
   </target>
 
   <components>
@@ -27,7 +27,7 @@
 
   <files>
     <group name="CMSE">
-      <file category="object" name="./test-access-sequences3.Release_OutDir/test-access-sequences3.Release_CMSE_Lib.o"/>
+      <file category="object" name="test-access-sequences3.Release_OutDir/test-access-sequences3.Release_CMSE_Lib.o"/>
     </group>
   </files>
 </cprj>

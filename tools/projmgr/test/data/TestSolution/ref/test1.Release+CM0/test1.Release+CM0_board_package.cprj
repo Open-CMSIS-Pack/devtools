@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no" ?>
 <cprj schemaVersion="1.7.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="PACK.xsd">
-  <created timestamp="2022-02-16T19:55:42" tool="csolution 0.9.0+p18-g47fb9e1"/>
+  <created timestamp="2022-03-11T11:55:01" tool="csolution 0.0.0+ga1d985c"/>
 
   <info isLayer="false">
     <description>Automatically generated project</description>
   </info>
 
   <packages>
+    <package name="RteTestBoard" vendor="ARM" version="0.1.0"/>
     <package name="RteTest_DFP" vendor="ARM" version="0.2.0"/>
   </packages>
 
@@ -14,11 +15,9 @@
     <compiler name="GCC" version="10.2.1"/>
   </compilers>
 
-  <target Dendian="Little-endian" Dfpu="NO_FPU" Dname="RteTest_ARMCM0" Dsecure="Non-secure" Dvendor="ARM:82">
+  <target Bname="RteTest board listing" Bvendor="Keil" Bversion="Rev.C" Dendian="Little-endian" Dfpu="NO_FPU" Dname="RteTest_ARMCM0" Dsecure="Non-secure" Dvendor="ARM:82">
     <output intdir="test1.Release+CM0_IntDir/" name="test1.Release+CM0" outdir="test1.Release+CM0_OutDir/" type="exe"/>
     <ldflags compiler="GCC" file="RTE/Device/RteTest_ARMCM0/gcc_arm.ld"/>
-    <defines>DEF-solution;DEF-CM0;DEF-Release</defines>
-    <includes>/path/solution/;/path/CM0;/path/Release</includes>
   </target>
 
   <components>
@@ -46,7 +45,7 @@
       <undefines>DEF3-GROUP-PROJECT;DEF4-GROUP-PROJECT</undefines>
       <includes>/path/sources/1/group;/path/sources/2/group</includes>
       <excludes>/path/sources/3/group;/path/sources/4/group</excludes>
-      <file category="sourceC" name="main.c">
+      <file category="sourceC" name="../../data/TestSolution/TestProject1/main.c">
         <arflags add="-Lib-file-GCC" compiler="GCC"/>
         <asflags add="-ASM-file-GCC" compiler="GCC"/>
         <cflags add="-C-file-GCC" compiler="GCC"/>
@@ -59,7 +58,7 @@
       </file>
     </group>
     <group name="Release Group">
-      <file category="sourceC" name="release.c">
+      <file category="sourceC" name="../../data/TestSolution/TestProject1/release.c">
         <defines>DEF1-REL-FILE</defines>
         <undefines>DEF2-REL-FILE</undefines>
         <includes>/path/1/release/file</includes>

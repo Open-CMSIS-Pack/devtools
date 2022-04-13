@@ -16,7 +16,7 @@
 
   <target Dendian="Little-endian" Dfpu="NO_FPU" Dname="RteTest_ARMCM0" Dsecure="Non-secure" Dvendor="ARM:82">
     <output intdir="test_linker_script_IntDir/" name="test_linker_script" outdir="test_linker_script_OutDir/" type="exe"/>
-    <ldflags compiler="AC6" file="linker.sct"/>
+    <ldflags compiler="AC6" file="../../data/TestProject/linker.sct"/>
   </target>
 
   <components>
@@ -30,8 +30,8 @@
 
   <files>
     <group name="Sources">
-      <file category="sourceC" name="main.c"/>
-      <file category="linkerScript" name="linker.sct"/>
+      <file category="sourceC" name="../../data/TestProject/main.c"/>
+      <file category="linkerScript" name="../../data/TestProject/linker.sct"/>
     </group>
   </files>
 </cprj>

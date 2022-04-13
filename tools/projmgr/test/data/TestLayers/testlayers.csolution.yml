@@ -8,3 +8,7 @@ solution:
 
   projects:
     - project: testlayers.cproject.yml
+
+  packs:
+    - pack: ARM::RteTest
+    - pack: ARM::RteTest_DFP

@@ -45,7 +45,7 @@
       <undefines>DEF3-GROUP-PROJECT;DEF4-GROUP-PROJECT</undefines>
       <includes>/path/sources/1/group;/path/sources/2/group</includes>
       <excludes>/path/sources/3/group;/path/sources/4/group</excludes>
-      <file category="sourceC" name="main.c">
+      <file category="sourceC" name="../../data/TestSolution/TestProject1/main.c">
         <arflags add="-Lib-file-AC6" compiler="AC6"/>
         <asflags add="-ASM-file-AC6" compiler="AC6"/>
         <cflags add="-C-file-AC6" compiler="AC6"/>
@@ -58,7 +58,7 @@
       </file>
     </group>
     <group name="Debug Group">
-      <file category="sourceC" name="debug.c"/>
+      <file category="sourceC" name="../../data/TestSolution/TestProject1/debug.c"/>
     </group>
   </files>
 </cprj>

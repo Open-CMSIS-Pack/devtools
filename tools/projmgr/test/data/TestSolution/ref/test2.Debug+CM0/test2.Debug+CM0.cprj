@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no" ?>
 <cprj schemaVersion="1.7.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="PACK.xsd">
-  <created timestamp="2022-03-11T12:20:40" tool="csolution 0.0.0+ga1d985c"/>
+  <created timestamp="2022-04-08T10:56:58" tool="csolution 0.9.0+p104-g1caabeb"/>
 
   <info isLayer="false">
     <description>Automatically generated project</description>
@@ -14,9 +14,15 @@
     <compiler name="AC6" version="6.16.0"/>
   </compilers>
 
-  <target Bname="RteTest Test board-3" Bvendor="Keil" Bversion="1.1.1" Dendian="Little-endian" Dfpu="NO_FPU" Dname="RteTest_ARMCM0" Dsecure="Non-secure" Dvendor="ARM:82">
-    <output intdir="test_IntDir/" name="test" outdir="test_OutDir/" type="exe"/>
-    <ldflags compiler="AC6" file="RTE/Device/RteTest_ARMCM0/ARMCM0_ac6.sct"/>
+  <target Dendian="Little-endian" Dfpu="NO_FPU" Dname="RteTest_ARMCM0" Dsecure="Non-secure" Dvendor="ARM:82">
+    <output intdir="test2.Debug+CM0_IntDir/" name="test2.Debug+CM0" outdir="test2.Debug+CM0_OutDir/" type="exe"/>
+    <arflags add="-Lib-project -Lib-type-CM0" compiler="AC6"/>
+    <asflags add="-ASM-project -ASM-type-CM0" compiler="AC6"/>
+    <cflags add="-C-project -C-CPP-type-CM0" compiler="AC6"/>
+    <cxxflags add="-CPP-project -C-CPP-type-CM0" compiler="AC6"/>
+    <ldflags add="-Link-project -Link-type-CM0" compiler="AC6" file="RTE/Device/RteTest_ARMCM0/ARMCM0_ac6.sct"/>
+    <defines>DEF-project;DEF-solution;DEF-CM0;DEF-Debug</defines>
+    <includes>/path/project;/path/solution/;/path/CM0;/path/Debug</includes>
   </target>
 
   <components>
@@ -30,7 +36,7 @@
 
   <files>
     <group name="Sources">
-      <file category="sourceC" name="../../data/TestProject/main.c"/>
+      <file category="sourceC" name="../../data/TestSolution/TestProject2/main.c"/>
     </group>
   </files>
 </cprj>
