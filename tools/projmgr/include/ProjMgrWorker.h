@@ -286,13 +286,11 @@ public:
   void GetContexts(std::map<std::string, ContextItem>* &contexts);
 
   /**
-   * @brief copy context files into output directory
+   * @brief copy RTE files into cprj directory
    * @param reference to context
-   * @param reference to output directory
-   * @param boolean output empty
    * @return true if executed successfully
   */
-  bool CopyContextFiles(ContextItem& context, const std::string& outputDir, bool outputEmpty);
+  bool CopyRTEFiles(ContextItem& context);
 
   /**
    * @brief set output directory
@@ -339,7 +337,8 @@ protected:
   void AddMiscUniquely(std::vector<MiscItem>& dst, std::vector<std::vector<MiscItem>*>& srcVec);
   void AddStringItemsUniquely(std::vector<std::string>& dst, const std::vector<std::string>& src);
   void RemoveStringItems(std::vector<std::string>& dst, std::vector<std::string>& src);
-  bool GetAccessSequence(size_t& offset, std::string& src, std::string& sequence, const char start, const char end);
+  bool GetAccessSequence(size_t& offset, const std::string& src, std::string& sequence, const char start, const char end);
+  bool HasSpecialAccessSequence(const std::string& item);
   void InsertVectorPointers(std::vector<std::string*>& dst, std::vector<std::string>& src);
   void InsertFilesPointers(std::vector<std::string*>& dst, std::vector<GroupNode>& groups);
   void PushBackUniquely(std::vector<std::string>& vec, const std::string& value);
