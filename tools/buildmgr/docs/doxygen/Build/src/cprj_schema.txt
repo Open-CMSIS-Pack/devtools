@@ -1160,6 +1160,35 @@ Identify a software component.
     <td>ComponentFileType</td>
     <td>0..*</td>
   </tr>
+  <tr>
+    <td>includes</td>
+    <td>Specify a semicolon separated list of include paths that are valid for the compilation 
+        of the modules in this component.</td>
+    <td>xs:string</td>
+    <td>optional</td>
+  </tr>
+  <tr>
+    <td>excludes</td>
+    <td>Specify a semicolon separated list of include paths to be removed from the compilation 
+        of the modules in this component.</td>
+    <td>xs:string</td>
+    <td>optional</td>
+  </tr>
+  <tr>
+    <td>defines</td>
+    <td>Specify a semicolon separated list of preprocessor defines that are valid for 
+        modules undergoing preprocessing in this component. Key/value pairs are separated 
+        by the equal sign.</td>
+    <td>xs:string</td>
+    <td>optional</td>
+  </tr>
+  <tr>
+  <td>undefines</td>
+    <td>Specify a semicolon separated list of preprocessor undefines that are valid for 
+        modules undergoing preprocessing in this component.</td>
+    <td>xs:string</td>
+    <td>optional</td>
+  </tr>
 </table>
 
 \delim
@@ -1462,6 +1491,53 @@ commandline flags can also be applied on a group level.
     <td>GroupType</td>
     <td>0..*</td>
   </tr>
+  <tr>
+    <td>\ref element_group_cflags "cflags"</td>
+    <td>Specify compiler flags for C-modules contained in this group.</td>
+    <td>ToolOptionType</td>
+    <td>0..1</td>
+  </tr>
+  <tr>
+    <td>\ref element_group_cxxflags "cxxflags"</td>
+    <td>Specify compiler flags for C++-modules contained in this group.</td>
+    <td>ToolOptionType</td>
+    <td>0..1</td>
+  </tr>
+  <tr>
+    <td>\ref element_group_asflags "asflags"</td>
+    <td>Specify assembler flags for Assembler-modules contained in this group.</td>
+    <td>ToolOptionType</td>
+    <td>0..1</td>
+  </tr>
+  <tr>
+    <td>includes</td>
+    <td>Specify a semicolon separated list of include paths that are valid for the compilation 
+        of the modules in this group.</td>
+    <td>xs:string</td>
+    <td>optional</td>
+  </tr>
+  <tr>
+    <td>excludes</td>
+    <td>Specify a semicolon separated list of include paths to be removed from the compilation 
+        of the modules in this group.</td>
+    <td>xs:string</td>
+    <td>optional</td>
+  </tr>
+  <tr>
+    <td>defines</td>
+    <td>Specify a semicolon separated list of preprocessor defines that are valid for 
+        modules undergoing preprocessing in this group. Key/value pairs are separated 
+        by the equal sign.</td>
+    <td>xs:string</td>
+    <td>optional</td>
+  </tr>
+  <tr>
+    <td>undefines</td>
+    <td>Specify a semicolon separated list of preprocessor undefines that are valid for 
+        modules undergoing preprocessing in this group.</td>
+    <td>xs:string</td>
+    <td>optional</td>
+  </tr>
 </table>
 
 \delim
@@ -1602,6 +1678,50 @@ Specify files that are not included through software components.
   <tr>
     <td>src</td>
     <td>Folder specifying the source code location for a library if included in a subdirectory.</td>
+    <td>xs:string</td>
+    <td>optional</td>
+  </tr>
+    <tr>
+    <td>\ref element_file_cflags "cflags"</td>
+    <td>Specify compiler flags this file.</td>
+    <td>ToolOptionType</td>
+    <td>0..1</td>
+  </tr>
+  <tr>
+    <td>\ref element_file_cxxflags "cxxflags"</td>
+    <td>Specify compiler flags this file.</td>
+    <td>ToolOptionType</td>
+    <td>0..1</td>
+  </tr>
+  <tr>
+    <td>\ref element_file_asflags "asflags"</td>
+    <td>Specify assembler flags for this file.</td>
+    <td>ToolOptionType</td>
+    <td>0..1</td>
+  </tr>
+  <tr>
+    <td>includes</td>
+    <td>Specify a semicolon separated list of include paths that are valid for the compilation 
+        of this file.</td>
+    <td>xs:string</td>
+    <td>optional</td>
+  </tr>
+  <tr>
+    <td>excludes</td>
+    <td>Specify a semicolon separated list of include paths to be removed from the compilation of this file.</td>
+    <td>xs:string</td>
+    <td>optional</td>
+  </tr>
+  <tr>
+    <td>defines</td>
+    <td>Specify a semicolon separated list of preprocessor defines that are valid for this file. 
+        Key/value pairs are separated by the equal sign.</td>
+    <td>xs:string</td>
+    <td>optional</td>
+  </tr>
+  <tr>
+    <td>undefines</td>
+    <td>Specify a semicolon separated list of preprocessor undefines that are valid for this file.</td>
     <td>xs:string</td>
     <td>optional</td>
   </tr>
@@ -1855,8 +1975,14 @@ See: \ref element_asflags
        - Version range specified with <em>min_version</em><b>:</b><em>max_version</em>. <em>min_version</em> must be lower or
          equal than <em>max_version</em>. If <em>min_version</em> and <em>max_version</em> are equal, the version must match.
        - If no version is specified, the latest available version is assumed.
-    </td>	 
+    </td>
    <td>\ref VersionType</td>
+    <td>optional</td>
+  </tr>
+  <tr>
+    <td>path</td>
+    <td>Explicit path name to the software pack folder containing a single PDSC file.</td>
+    <td>xs:string</td>
     <td>optional</td>
   </tr>
 </table>
