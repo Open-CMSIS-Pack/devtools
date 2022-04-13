@@ -97,7 +97,12 @@ mkdir -p etc/profile.d
 # Get cpackget
 cpackget_version="0.3.2"
 cpackget_base=https://github.com/Open-CMSIS-Pack/cpackget/releases/download/v${cpackget_version}/cpackget_${cpackget_version}
-curl --retry 3 -L ${cpackget_base}_linux_amd64.tar.gz  -o - | tar xzfO - --wildcards    '*cpackget'     > ${input}/bin/cpackget.lin
+curl --retry 3 -L ${cpackget_base}_linux_amd64.tar.gz -o - | tar xzfO - --wildcards '*cpackget' > ${input}/bin/cpackget.lin
+
+# Get cbuild
+cbuild_version="0.9.0"
+cbuild_base=https://github.com/Open-CMSIS-Pack/cbuild/releases/download/v${cbuild_version}/cbuild_${cbuild_version}
+curl --retry 3 -L ${cbuild_base}_linux_amd64.tar.gz  -o - | tar xzfO - --wildcards '*cbuild' > ${input}/bin/cbuild.lin
 
 cp -r ${input}/bin usr/lib/${PACKAGE_NAME}  # This should be in /usr/bin but cannot for the time being.
 cp -r ${input}/doc usr/share/doc/${PACKAGE_NAME}

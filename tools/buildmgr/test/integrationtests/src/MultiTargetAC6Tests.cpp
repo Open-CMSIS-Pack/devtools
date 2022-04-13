@@ -18,7 +18,6 @@ class MultiTargetAC6Tests : public ::testing::TestWithParam<fs::path> {
 public:
   void SetUp                ();
   void RunCBuildScript      (const TestParam& param);
-  void RunCBuildScriptCMake (const TestParam& param);
 };
 
 void MultiTargetAC6Tests::SetUp() {
@@ -36,32 +35,13 @@ void MultiTargetAC6Tests::RunCBuildScript(const TestParam& param) {
 
   const string clean = "cd " + testdata_folder + "/" + param.name + " && " +
     SH + " \"source " + testout_folder + "/cbuild/etc/setup && cbuild.sh " +
-    param.targetArg + " clean\"";
+    param.targetArg + " --clean\"";
   ret_val = system(clean.c_str());
   ASSERT_EQ(ret_val, 0);
 
   const string cmd = "cd " + testdata_folder + "/" + param.name + " && " +
     SH + " \"source " + testout_folder + "/cbuild/etc/setup && cbuild.sh " +
     param.targetArg + "\"";
-  ret_val = system(cmd.c_str());
-  ASSERT_EQ(ret_val, 0);
-}
-
-void MultiTargetAC6Tests::RunCBuildScriptCMake(const TestParam& param) {
-  int ret_val;
-  error_code ec;
-  ASSERT_EQ(true, fs::exists(testout_folder + "/cbuild/bin/cbuild.sh", ec))
-    << "error: cbuild.sh not found";
-
-  const string clean = "cd " + testdata_folder + "/" + param.name + " && " +
-    SH + " \"source " + testout_folder + "/cbuild/etc/setup && cbuild.sh " +
-    param.targetArg + " --cmake clean\"";
-  ret_val = system(clean.c_str());
-  ASSERT_EQ(ret_val, 0);
-
-  const string cmd = "cd " + testdata_folder + "/" + param.name + " && " +
-    SH + " \"source " + testout_folder + "/cbuild/etc/setup && cbuild.sh " +
-    param.targetArg + " --cmake\"";
   ret_val = system(cmd.c_str());
   ASSERT_EQ(ret_val, 0);
 }
@@ -73,13 +53,6 @@ TEST_P(MultiTargetAC6Tests, MultipleTarget) {
   TestParam param = { "MultiTargetAC6", GetParam().filename().generic_string() };
 
   RunCBuildScript(param);
-}
-
-// Validate building multiple target AC6 projects with CMakelists
-TEST_P(MultiTargetAC6Tests, CMake) {
-  TestParam param = { "MultiTargetAC6", GetParam().filename().generic_string() };
-
-  RunCBuildScriptCMake(param);
 }
 
 INSTANTIATE_TEST_SUITE_P(

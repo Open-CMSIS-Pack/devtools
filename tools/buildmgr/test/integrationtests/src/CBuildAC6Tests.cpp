@@ -143,30 +143,6 @@ TEST_F(CBuildAC6Tests, TrustZone_AC6) {
   CheckCMakeLists            (param);
 }
 
-// Test building of multitoolchain project with AC6 compiler
-// and defined output and intermediate directory paths
-TEST_F(CBuildAC6Tests, MultiToolChainAC6Test) {
-  const string outDir = "OutDir";
-  const string intDir = "IntDir";
-  const string toolchain = "AC6";
-  TestParam param = { "Mixed/Build_AC6_GCC", "Build.Simulation", "--toolchain=" + toolchain + " --outdir=" + outDir + " --intdir=" + intDir, "", true };
-  const string absOutDir = examples_folder + "/" + param.name + "/" + outDir;
-  const string absIntDir = examples_folder + "/" + param.name + "/" + intDir;
-  error_code ec;
-
-  if (fs::exists(absOutDir, ec)) {
-    RteFsUtils::RemoveDir(absOutDir);
-  }
-
-  if (fs::exists(absIntDir, ec)) {
-    RteFsUtils::RemoveDir(absIntDir);
-  }
-
-  RunCBuildScriptWithArgs   (param);
-  CheckOutputDir            (param, absOutDir);
-  CheckCMakeIntermediateDir (param, absIntDir);
-}
-
 // Validate project with preincluded header paths and their usage
 TEST_F(CBuildAC6Tests, PreInclude) {
   TestParam param = { "Mixed/Pre Include", "Target", "", "", true };
