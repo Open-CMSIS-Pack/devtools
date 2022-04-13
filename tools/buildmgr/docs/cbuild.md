@@ -1,78 +1,84 @@
-# cbuild: Build invocation
+# cbuild - Build Invocation
 
-**cbuild.sh** implements the build flow by chaining the utilities cbuildgen and CMake. It replicates the build steps of CMSIS-Pack aware IDEs and also copies configuration files from packs if necessary. The script can be adopted to project specific requirements or replaced by a custom implementation (for example a Python script).
+The **cbuild** utility implements the build flow by chaining the utilities *cbuildgen*, *CMake*, and a *CMake generator*. It replicates the build steps of Pack-aware IDEs with the following build flow:
 
-The build flow of the cbuild.sh script is:
+- Call *cbuildgen* to generate a packlist with URLs of missing software packs, if packs are missing:
+- Call [**cpackget**](../../cpackget/docs/cpackget.md) to download and install missing software packs.
+- Call *cbuildgen* to generate a CMakeLists.txt file.
+- Call [**CMake**](https://cmake.org/documentation/) to compile the project source code into the binary image using the specified *CMake generator*.
 
-- Call cbuildgen with command packlist to list the URLs of missing software packs.
-- Call cgetpack to download and install missing software packs.
-- Call cbuildgen with command CMake to generate a CMakeLists.txt file.
-- Call cmake to compile the project source code into the binary image using the specified <BuildSystem>.
+## Invocation
 
-## Usage
-
-**cbuild.sh** is called from the Bash command line with the following syntax:
-
+The **cbuild** utility has the following command line invocation and uses `*.cprj` project file that is generate by various tools, for example the [**csolution**](../../projmgr/docs/Manual/Overview.md) project manager.
 ```
-$ cbuild.sh <ProjectFile>.cprj [--toolchain=<Toolchain> --outdir=<OutDir> --intdir=<IntDir> --update=<CprjFile> --jobs=<N> --log=<LogFile> --quiet <CMakeTarget>]
-```
+Usage:
+  cbuild <project.cprj> [flags]
 
-Where:
-
-cbuild.sh is the name of the script.
-
-<ProjectFile> specifies the project file in CMSIS project format.
-
-**Operation**
-
-| Option | Description |
-|--------|-------------|
-| --toolchain=<Toolchain> | Specifies the selected toolchain for projects that support multiple compilers. |
-| --outdir=<OutDir> | Specifies the output directory (for log files, binaries, and map files). |
-| --intdir=<IntDir> | Specifies the directory for intermediate files (such as generated CMake files, list of missing packs, command files, object files, and dependency files). |
-| --quiet | Suppresses output messages except build invocations. |
-| --clean | Removes intermediate and output directories. |
-| --update=<CprjFile> | Generates <CprjFile> with fixed versions for reproducing the current build. |
-| --help | Prints the usage. |
-| --log=<LogFile> | Saves output messages in a log file. |
-| --jobs=<N> | Specifies the number of job slots for the underlying build system parallel execution (minimum 1). |
-| [–cmake=<BuildSystem>] | Selects the build system, default Ninja. |
-| \<CMakeTarget\> | Specifies the <target> option for CMake. |
-
-## Example
-
-**Cmake based build**
-
-```
-$ cbuild.sh Blinky.B-L475E-IOT01A.cprj --cmake
-(cbuild.sh): Build Invocation 0.10.0 (C) 2020 ARM
-Blinky.B-L475E-IOT01A.cprj validates
-(cbuildgen): Build Process Manager 0.10.1-nightly+343 (C) 2020 ARM
-M650: Command completed successfully.
-(cbuildgen): Build Process Manager 0.10.1-nightly+343 (C) 2020 ARM
-M652: Generated makefile for project build: 'C:/Blinky/B-L475E-IOT01A/Objects/CMakeLists.txt'
--- The C compiler identification is ARMClang 6.15.2
--- Configuring done
--- Generating done
--- Build files have been written to: C:/Blinky/B-L475E-IOT01A/Objects
-[1/49] Building C object CMakeFiles\image.dir\C_\Users\user\AppData\Local\Arm\Packs\Keil\B-L475E-IOT01A_BSP\1.0.0\Drivers\B-L475E-IOT01\stm32l475e_iot01.o
-[2/49] Building C object CMakeFiles\image.dir\C_\Users\user\AppData\Local\Arm\Packs\Keil\B-L475E-IOT01A_BSP\1.0.0\Drivers\Components\lsm6dsl\lsm6dsl.o
-[3/49] Building C object CMakeFiles\image.dir\C_\Users\user\AppData\Local\Arm\Packs\Keil\B-L475E-IOT01A_BSP\1.0.0\Drivers\B-L475E-IOT01\stm32l475e_iot01_gyro.o
-...
-[47/49] Building C object CMakeFiles\image.dir\C_\Blinky\B-L475E-IOT01A\RTE\Device\STM32L475VGTx\system_stm32l4xx.o
-[48/49] Building C object CMakeFiles\image.dir\C_\Blinky\B-L475E-IOT01A\RTE\Device\STM32L475VGTx\STCubeGenerated\Src\stm32l4xx_it.o
-[49/49] Linking C executable image.axf
-Program Size: Code=20968 RO-data=784 RW-data=328 ZI-data=37412
-cbuild.sh finished successfully!
+Flags:
+  -c, --clean              Remove intermediate and output directories
+  -d, --debug              Enable debug messages
+  -g, --generator string   Select build CMake generator (default "Ninja")
+  -h, --help               Print usage
+  -i, --intdir path        Set directory for intermediate files
+  -j, --jobs number        Number of job slots for parallel execution (default: use all cores)
+  -l, --log file           Save output messages in a log file
+  -o, --outdir path        Set directory for output files
+  -q, --quiet              Suppress output messages except build invocations
+  -s, --schema             Check *.cprj file against CPRJ.xsd schema
+  -t, --target string      Optional CMake target name
+  -u, --update string      Generate *.cprj file for reproducing current build
+  -v, --version            Print version
 ```
 
-## Error messages
+## Command Line Examples
 
-| Type  | Message                                                | Action                              |
-|-------|--------------------------------------------------------|-------------------------------------|
-| ERROR | error: missing required argument `<project>.cprj`      | See usage and correct the argument. |
-| ERROR | error: project file `<project>.cprj` does not exist    | Check project file.                 |
-| ERROR | error: CMSIS_BUILD_ROOT environment variable not set   | Set Environment Variables.          |
-| ERROR | cmake `${output}${project}.cprj` failed!               | Check CMake error messages.         |
-| INFO  | cbuild.sh finished successfully!                       | For information only.               |
+The following examples show typical invocations of the **cbuild** utility.
+
+---
+
+*Simple Build:* Translate the application that is defined with the project file `MyProgram.cprj`
+
+```txt
+cbuild MyProgram.cprj 
+```
+
+---
+
+*Protocol Output:* Translate with using the directory `./IntDir/Debug` to store intermediate files and `./OutDir` for the final output image along with build information.  Store the build output information the file `MyProgram.log`.
+
+```txt
+cbuild MyProgram.cprj -i ./IntDir/Debug -o ./OutDir -l MyProgram.log
+```
+
+---
+
+*Clean Project:* Remove the build output and intermediate files of the previous build command.
+
+```txt
+cbuild MyProgram.cprj -i ./IntDir/Debug -o ./OutDir -c
+```
+
+---
+
+*Quite Mode:* Build the application, but suppress details about the build process.
+
+```txt
+cbuild MyProgram.cprj -q
+```
+
+---
+
+*Restrict Cores:* Build the application, but only use 2 processor cores during build process.
+
+```txt
+cbuild MyProgram.cprj -j2
+```
+
+## Example Build Process
+
+The following command shows the output of a **cbuild** command that also downloads a missing software pack.
+
+```
+cbuild Blinky.test.cprj
+```
 

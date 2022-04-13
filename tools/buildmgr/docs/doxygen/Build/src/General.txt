@@ -57,8 +57,14 @@ Software layers and Virtual I/O simplify these use cases:
     <th>Description</th>
   </tr>
   <tr>
-    <td>0.10.6 (beta)</td>
-    <td>Release for beta review:
+    <td>0.11.0</td>
+    <td>Release for review of initial development:
+      - new cbuild utility v0.9.0 replacing cbuild.sh
+    </td>
+  </tr>
+  <tr>
+    <td>0.10.6</td>
+    <td>Release for review of initial development:
       - updated cpackget utility v0.3.2.
       - updated help menu.
       - extended support for defines/undefines/includes/excludes at component/group/file level.
@@ -67,8 +73,8 @@ Software layers and Virtual I/O simplify these use cases:
     </td>
   </tr>
   <tr>
-    <td>0.10.5 (beta)</td>
-    <td>Release for beta review:
+    <td>0.10.5</td>
+    <td>Release for review of initial development:
       - new support for IAR compiler.
       - updated cpackget utility v0.3.1.
       - removed source file naming limitations​.
@@ -77,24 +83,24 @@ Software layers and Virtual I/O simplify these use cases:
     </td>
   </tr>
   <tr>
-    <td>0.10.4 (beta)</td>
-    <td>Release for beta review:
+    <td>0.10.4</td>
+    <td>Release for review of initial development:
       - new cpackget utility replacing cp_init.sh and cp_install.sh.
       - new layer compose command line options: --name , --description (see usage for more information).
       - added handling of multiple quotation marks inside defines and compiler flags.
     </td>
   </tr>
   <tr>
-    <td>0.10.3 (beta)</td>
-    <td>Release for beta review:
+    <td>0.10.3</td>
+    <td>Release for review of initial development:
       - new CMake support replacing GNU Makefile generation with CMakelists.txt generation.
       - removed MDK specific scripts.
       - added macOS support.
     </td>
   </tr>
   <tr>
-    <td>0.10.0 (beta)</td>
-    <td>Release for beta review:
+    <td>0.10.0</td>
+    <td>Release for review of initial development:
       - new command line options: --update, --quiet, --log, --intdir, --outdir (see usage for more information).
       - building an executable always creates binaries in ELF, HEX and BIN format in output directory.
       - added build progress information to build output.
@@ -108,8 +114,8 @@ Software layers and Virtual I/O simplify these use cases:
     </td>
   </tr>
   <tr>
-    <td>0.9.0 (beta)</td>
-    <td>Release for beta review:
+    <td>0.9.0</td>
+    <td>Release for review of initial development:
       - added layer description to project format specification.
       - added support for multiple compilers.
       - added commands for layer operations to cbuildgen.

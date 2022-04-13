@@ -26,7 +26,7 @@ void CBuildTestFixture::RunCBuildScriptClean(const TestParam& param) {
   error_code ec;
   string cmd = "cd \"" + examples_folder + "/" + param.name + "\" && " +
     SH + " \"source " + testout_folder + "/cbuild/etc/setup && cbuild.sh " +
-    param.targetArg + ".cprj clean\"";
+    param.targetArg + ".cprj --clean\"";
   ret_val = system(cmd.c_str());
   ASSERT_EQ(ret_val, 0);
 
