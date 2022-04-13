@@ -1090,8 +1090,9 @@ bool ProjMgrWorker::ProcessAccessSequences(ContextItem& context) {
             if (m_contexts.find(contextName) != m_contexts.end()) {
               error_code ec;
               const auto& depContext = m_contexts.at(contextName);
-              const string& relSrcDir = fs::relative(depContext.directories.cprj, context.directories.cprj, ec).generic_string();
-              const string& relOutDir = relSrcDir + "/" + depContext.directories.outdir;
+              const string& depContextOutDir = depContext.directories.cprj + "/" + depContext.directories.outdir;
+              const string& relOutDir = fs::relative(depContextOutDir, context.directories.cprj, ec).generic_string();
+              const string& relSrcDir = fs::relative(depContext.directories.cproject, context.directories.cprj, ec).generic_string();
               if (regex_match(sequence, regex("^OutDir\\(.*"))) {
                 regEx = regex("\\$OutDir\\(.*\\$");
                 replacement = RteUtils::RemoveTrailingBackslash(relOutDir);
@@ -1116,6 +1117,23 @@ bool ProjMgrWorker::ProcessAccessSequences(ContextItem& context) {
   }
   return true;
 }
+
+bool ProjMgrWorker::HasSpecialAccessSequence(const string& item) {
+  size_t offset = 0;
+  while (offset != string::npos) {
+    string sequence;
+    if (!GetAccessSequence(offset, item, sequence, '$', '$')) {
+      return false;
+    }
+    if (offset != string::npos) {
+      if (regex_match(sequence, regex("(Output|OutDir|Source)\\(.*"))) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 
 bool ProjMgrWorker::ProcessGroups(ContextItem& context) {
   // Add cproject groups
@@ -1176,6 +1194,13 @@ bool ProjMgrWorker::AddFile(const FileNode& src, vector<FileNode>& dst, ContextI
       srcNode.category = ProjMgrUtils::GetCategory(srcNode.file);
     }
 
+    // Adjust file relative paths
+    error_code ec;
+    const string& filePath = fs::weakly_canonical(root + "/" + srcNode.file, ec).generic_string();
+    if (!HasSpecialAccessSequence(srcNode.file) && !fs::equivalent(context.directories.cprj, root, ec)) {
+      srcNode.file = fs::relative(filePath, context.directories.cprj, ec).generic_string();
+    }
+
     dst.push_back(srcNode);
 
     // Set linker script
@@ -1184,8 +1209,6 @@ bool ProjMgrWorker::AddFile(const FileNode& src, vector<FileNode>& dst, ContextI
     }
 
     // Store absolute file path
-    error_code ec;
-    const string& filePath = fs::weakly_canonical(root + "/" + srcNode.file, ec).generic_string();
     context.filePaths.insert({ srcNode.file, filePath });
   }
   return true;
@@ -1638,7 +1661,7 @@ void ProjMgrWorker::RemoveStringItems(vector<string>& dst, vector<string>& src) 
   }
 }
 
-bool ProjMgrWorker::GetAccessSequence(size_t& offset, string& src, string& sequence, const char start, const char end) {
+bool ProjMgrWorker::GetAccessSequence(size_t& offset, const string& src, string& sequence, const char start, const char end) {
   size_t delimStart = src.find_first_of(start, offset);
   if (delimStart != string::npos) {
     size_t delimEnd = src.find_first_of(end, ++delimStart);
@@ -1676,38 +1699,29 @@ void ProjMgrWorker::PushBackUniquely(vector<string>& vec, const string& value) {
   }
 }
 
-bool ProjMgrWorker::CopyContextFiles(ContextItem& context, const string& outputDir, bool outputEmpty) {
-  if (!outputEmpty) {
-    // Copy RTE folder content
-    error_code ec;
-    const string& cprojectDir = fs::absolute(context.directories.cproject, ec).generic_string();
-    vector<string> rteDirs;
-    static constexpr const char* RTE_FOLDER = "/RTE";
-    rteDirs.push_back(cprojectDir + RTE_FOLDER);
-    for (auto const& clayer : context.clayers) {
-      const string& clayerDir = fs::path(clayer.first).parent_path().generic_string();
-      rteDirs.push_back(clayerDir + RTE_FOLDER);
+bool ProjMgrWorker::CopyRTEFiles(ContextItem& context) {
+  error_code ec;
+  vector<string> rteDirs;
+  static constexpr const char* RTE_FOLDER = "/RTE";
+
+  // clayers RTE folders
+  for (auto const& clayer : context.clayers) {
+
+    const string& clayerDir = fs::path(clayer.first).parent_path().generic_string();
+    rteDirs.push_back(clayerDir + RTE_FOLDER);
+  }
+
+  // cproject RTE folder
+  if (!fs::equivalent(context.directories.cprj, context.directories.cproject, ec)) {
+    rteDirs.push_back(context.directories.cproject + RTE_FOLDER);
+  }
+
+  const string& destDir = context.directories.cprj + RTE_FOLDER;
+  RteFsUtils::CreateDirectories(destDir);
+  for (auto const& rteDir : rteDirs) {
+    if (RteFsUtils::Exists(rteDir)) {
+      fs::copy(rteDir, destDir, fs::copy_options::recursive | fs::copy_options::overwrite_existing, ec);
     }
-    for (auto const& rteDir : rteDirs) {
-      if (RteFsUtils::Exists(rteDir)) {
-        RteFsUtils::CreateDirectories(outputDir + RTE_FOLDER);
-        fs::copy(rteDir, outputDir + RTE_FOLDER, fs::copy_options::recursive | fs::copy_options::overwrite_existing, ec);
-      }
-    }
-    // Copy files described in cproject and clayers
-    if (!context.filePaths.empty()) {
-      for (auto const& filePath : context.filePaths) {
-        const string& output = fs::path(outputDir + "/" + filePath.first).parent_path().generic_string();
-        if (RteFsUtils::Exists(filePath.second)) {
-          if (!RteFsUtils::Exists(output)) {
-            RteFsUtils::CreateDirectories(output);
-          }
-          fs::copy(filePath.second, output, fs::copy_options::recursive | fs::copy_options::overwrite_existing, ec);
-        }
-      }
-    }
-  } else if (!context.clayers.empty()) {
-    ProjMgrLogger::Warn("output option was not specified, files won't be copied for context '" + context.name + "'");
   }
   return true;
 }
