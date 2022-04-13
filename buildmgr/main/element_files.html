@@ -137,6 +137,20 @@ $(document).ready(function(){initNavTree('element_files.html','');});
 <td><a class="el" href="element_files.html#element_project_file">file</a> </td><td>Specify a file. </td><td>FileType </td><td>0..*  </td></tr>
 <tr>
 <td><a class="el" href="element_files.html#element_group">group</a> </td><td>Specify a group name and list member files in subelements. </td><td>GroupType </td><td>0..*  </td></tr>
+<tr>
+<td><a class="el" href="element_files.html#element_group_cflags">cflags</a> </td><td>Specify compiler flags for C-modules contained in this group. </td><td>ToolOptionType </td><td>0..1  </td></tr>
+<tr>
+<td><a class="el" href="element_files.html#element_group_cxxflags">cxxflags</a> </td><td>Specify compiler flags for C++-modules contained in this group. </td><td>ToolOptionType </td><td>0..1  </td></tr>
+<tr>
+<td><a class="el" href="element_files.html#element_group_asflags">asflags</a> </td><td>Specify assembler flags for Assembler-modules contained in this group. </td><td>ToolOptionType </td><td>0..1  </td></tr>
+<tr>
+<td>includes </td><td>Specify a semicolon separated list of include paths that are valid for the compilation of the modules in this group. </td><td>xs:string </td><td>optional  </td></tr>
+<tr>
+<td>excludes </td><td>Specify a semicolon separated list of include paths to be removed from the compilation of the modules in this group. </td><td>xs:string </td><td>optional  </td></tr>
+<tr>
+<td>defines </td><td>Specify a semicolon separated list of preprocessor defines that are valid for modules undergoing preprocessing in this group. Key/value pairs are separated by the equal sign. </td><td>xs:string </td><td>optional  </td></tr>
+<tr>
+<td>undefines </td><td>Specify a semicolon separated list of preprocessor undefines that are valid for modules undergoing preprocessing in this group. </td><td>xs:string </td><td>optional  </td></tr>
 </table>
 <p>&#160;</p>
 <hr/>
@@ -218,6 +232,20 @@ $(document).ready(function(){initNavTree('element_files.html','');});
 <td>category </td><td>Type of file, for example, whether the file is a C or assembler file. Use the predefined values from the table <a class="el" href="cprj_types.html#FileCategoryEnum">File Categories</a>. </td><td>FileCategoryType </td><td>required  </td></tr>
 <tr>
 <td>src </td><td>Folder specifying the source code location for a library if included in a subdirectory. </td><td>xs:string </td><td>optional  </td></tr>
+<tr>
+<td><a class="el" href="element_files.html#element_file_cflags">cflags</a> </td><td>Specify compiler flags this file. </td><td>ToolOptionType </td><td>0..1  </td></tr>
+<tr>
+<td><a class="el" href="element_files.html#element_file_cxxflags">cxxflags</a> </td><td>Specify compiler flags this file. </td><td>ToolOptionType </td><td>0..1  </td></tr>
+<tr>
+<td><a class="el" href="element_files.html#element_file_asflags">asflags</a> </td><td>Specify assembler flags for this file. </td><td>ToolOptionType </td><td>0..1  </td></tr>
+<tr>
+<td>includes </td><td>Specify a semicolon separated list of include paths that are valid for the compilation of this file. </td><td>xs:string </td><td>optional  </td></tr>
+<tr>
+<td>excludes </td><td>Specify a semicolon separated list of include paths to be removed from the compilation of this file. </td><td>xs:string </td><td>optional  </td></tr>
+<tr>
+<td>defines </td><td>Specify a semicolon separated list of preprocessor defines that are valid for this file. Key/value pairs are separated by the equal sign. </td><td>xs:string </td><td>optional  </td></tr>
+<tr>
+<td>undefines </td><td>Specify a semicolon separated list of preprocessor undefines that are valid for this file. </td><td>xs:string </td><td>optional  </td></tr>
 </table>
 <p>&#160;</p>
 <hr/>

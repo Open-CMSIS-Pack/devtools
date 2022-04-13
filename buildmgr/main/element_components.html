@@ -188,6 +188,14 @@ $(document).ready(function(){initNavTree('element_components.html','');});
 <td><a class="el" href="element_components.html#element_asflags">asflags</a> </td><td>Specify assembler flags for Assembler-modules contained in this component </td><td>ToolOptionType </td><td>0..1  </td></tr>
 <tr>
 <td><a class="el" href="element_components.html#element_component_file">file</a> </td><td>Specify configuration files from the selected component including version information. The ID for a configuration file is the relative path in the pack it originates from. </td><td>ComponentFileType </td><td>0..*  </td></tr>
+<tr>
+<td>includes </td><td>Specify a semicolon separated list of include paths that are valid for the compilation of the modules in this component. </td><td>xs:string </td><td>optional  </td></tr>
+<tr>
+<td>excludes </td><td>Specify a semicolon separated list of include paths to be removed from the compilation of the modules in this component. </td><td>xs:string </td><td>optional  </td></tr>
+<tr>
+<td>defines </td><td>Specify a semicolon separated list of preprocessor defines that are valid for modules undergoing preprocessing in this component. Key/value pairs are separated by the equal sign. </td><td>xs:string </td><td>optional  </td></tr>
+<tr>
+<td>undefines </td><td>Specify a semicolon separated list of preprocessor undefines that are valid for modules undergoing preprocessing in this component. </td><td>xs:string </td><td>optional  </td></tr>
 </table>
 <p>&#160;</p>
 <hr/>
