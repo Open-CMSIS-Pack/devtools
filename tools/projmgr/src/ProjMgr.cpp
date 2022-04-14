@@ -289,27 +289,32 @@ bool ProjMgr::RunConvert(void) {
   if (!PopulateContexts()) {
     return false;
   }
-  // Process contexts
+  // Check selected context
   map<string, ContextItem>* contexts = nullptr;
   m_worker.GetContexts(contexts);
-  for (auto& [contextName, contextItem] : *contexts) {
-    if (!m_worker.ProcessContext(contextItem, true)) {
-      ProjMgrLogger::Error("processing context '" + contextName + "' failed");
-      return false;
-    }
-  }
-  // Check selected context
   if (!m_context.empty()) {
     if (contexts->find(m_context) == contexts->end()) {
       ProjMgrLogger::Error("context '" + m_context + "' was not found");
       return false;
     }
   }
-  // Generate Cprjs
+  // Process contexts
+  bool error = false;
+  vector<string> processedContexts;
   for (auto& [contextName, contextItem] : *contexts) {
     if (!m_context.empty() && m_context != contextName) {
       continue;
     }
+    if (!m_worker.ProcessContext(contextItem, true)) {
+      ProjMgrLogger::Error("processing context '" + contextName + "' failed");
+      error = true;
+    } else {
+      processedContexts.push_back(contextName);
+    }
+  }
+  // Generate Cprjs
+  for (auto& contextName : processedContexts) {
+    ContextItem& contextItem = (*contexts)[contextName];
     error_code ec;
     const string& filename = fs::weakly_canonical(contextItem.directories.cprj + "/" + contextName + ".cprj", ec).generic_string();
     RteFsUtils::CreateDirectories(contextItem.directories.cprj);
@@ -323,6 +328,9 @@ bool ProjMgr::RunConvert(void) {
       ProjMgrLogger::Error("RTE files cannot be copied into directory '" + contextItem.directories.cprj + "'");
       return false;
     }
+  }
+  if (error) {
+    return false;
   }
   return true;
 }
