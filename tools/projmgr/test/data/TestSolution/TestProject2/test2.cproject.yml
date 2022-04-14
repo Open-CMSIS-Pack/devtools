@@ -13,8 +13,8 @@ project:
     - DEF-project
     - DEF-project-to-be-removed
   add-paths:
-    - /path/project
-    - /path/project/to-be-removed
+    - ./path/project
+    - ../path/project/to-be-removed
   components:
     - component: Startup
     - component: CORE

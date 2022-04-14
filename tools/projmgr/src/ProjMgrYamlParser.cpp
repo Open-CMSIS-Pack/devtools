@@ -61,6 +61,7 @@ bool ProjMgrYamlParser::ParseCsolution(const string& input,
     }
 
     csolution.path = RteFsUtils::MakePathCanonical(input);
+    csolution.directory = RteFsUtils::ParentPath(csolution.path);
 
     const YAML::Node& root = YAML::LoadFile(input);
     if (!ValidateCsolution(input, root)) {
@@ -102,6 +103,7 @@ bool ProjMgrYamlParser::ParseCproject(const string& input,
     }
 
     cproject.path = RteFsUtils::MakePathCanonical(input);
+    cproject.directory = RteFsUtils::ParentPath(cproject.path);
 
     const YAML::Node& projectNode = root[YAML_PROJECT];
     map<const string, string&> projectChildren = {
@@ -153,6 +155,7 @@ bool ProjMgrYamlParser::ParseClayer(const string& input,
     }
 
     clayer.path = RteFsUtils::MakePathCanonical(input);
+    clayer.directory = RteFsUtils::ParentPath(clayer.path);
 
     const YAML::Node& layerNode = root[YAML_LAYER];
     map<const string, string&> projectChildren = {

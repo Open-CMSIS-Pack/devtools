@@ -5,14 +5,15 @@ layer:
     - compiler: AC6
       C: [-fshort-enums, -fshort-wchar]
   components:
-    - component: Startup
+    - component: Device:Startup
     - component: CMSIS CORE
     - component: Keil RTX5 Library_NS
   groups:
     - group: Non-secure Code
       files: 
         - file: main_ns.c
-        - file: $Source(Secure)$interface.h
+          add-paths:
+            - ../Interface
     - group: CMSE
       files:
         - file: $Output(Secure)$_CMSE_Lib.o

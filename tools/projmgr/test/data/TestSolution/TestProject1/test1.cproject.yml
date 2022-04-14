@@ -14,9 +14,9 @@ project:
       undefines:
         - DEF2-COMPONENT
       add-paths:
-        - /path/1/component
+        - ./path/1/component
       del-paths:
-        - /path/2/component
+        - ./path/2/component
     - component: RteTest.Check.Missing
       not-for-type:
         - .Debug
@@ -30,11 +30,11 @@ project:
         - DEF3-GROUP-PROJECT
         - DEF4-GROUP-PROJECT
       add-paths:
-        - /path/sources/1/group
-        - /path/sources/2/group
+        - ./path/sources/1/group
+        - ./path/sources/2/group
       del-paths:
-        - /path/sources/3/group
-        - /path/sources/4/group
+        - ./path/sources/3/group
+        - ./path/sources/4/group
       misc:
         - C: [-C-group]
           CPP: [-CPP-group]
@@ -50,11 +50,11 @@ project:
             - DEF3-FILE-PROJECT
             - DEF4-FILE-PROJECT
           add-paths:
-            - /path/main/1/file
-            - /path/main/2/file
+            - ./path/main/1/file
+            - ./path/main/2/file
           del-paths:
-            - /path/main/3/file
-            - /path/main/4/file
+            - ./path/main/3/file
+            - ./path/main/4/file
           misc:
             - compiler: AC6
               C: [-C-file-AC6]
@@ -81,8 +81,8 @@ project:
           undefines:
             - DEF2-REL-FILE
           add-paths:
-            - /path/1/release/file
+            - ./path/1/release/file
           del-paths:
-            - /path/2/release/file
+            - ./path/2/release/file
         - file: excluded.c
           not-for-type: .Release

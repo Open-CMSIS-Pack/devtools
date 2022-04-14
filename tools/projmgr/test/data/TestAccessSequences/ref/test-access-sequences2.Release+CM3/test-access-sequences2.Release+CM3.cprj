@@ -19,7 +19,7 @@
     <cflags add="PROJ2-D(RteTest_ARMCM3)-B() -O3 -C-CPP-RteTest_ARMCM3" compiler="AC6"/>
     <cxxflags add="PROJ2-D(RteTest_ARMCM3)-B() -O3 -C-CPP-RteTest_ARMCM3" compiler="AC6"/>
     <defines>../test-access-sequences1.Release+CM3/test-access-sequences1.Release+CM3_OutDir/test-access-sequences1.Release+CM3;DEF-CM3-RteTest_ARMCM3</defines>
-    <includes>../test-access-sequences1.Release+CM3/test-access-sequences1.Release+CM3_OutDir/test-access-sequences1.Release+CM3;/path/CM3/RteTest_ARMCM3</includes>
+    <includes>../test-access-sequences1.Release+CM3/test-access-sequences1.Release+CM3_OutDir/test-access-sequences1.Release+CM3;../../data/TestAccessSequences/path/CM3/RteTest_ARMCM3</includes>
   </target>
 
   <components>

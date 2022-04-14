@@ -104,7 +104,6 @@ struct BuildType {
  * @brief target types containing
  *        platform board,
  *        platform device,
- *        target build settings
 */
 struct TargetType {
   std::string board;
@@ -203,6 +202,7 @@ struct CdefaultItem {
 /**
  * @brief solution item containing
  *        csolution path
+ *        csolution directory
  *        build types,
  *        target types,
  *        target properties,
@@ -212,6 +212,7 @@ struct CdefaultItem {
 */
 struct CsolutionItem {
   std::string path;
+  std::string directory;
   std::map<std::string, BuildType> buildTypes;
   std::map<std::string, TargetType> targetTypes;
   TargetType target;
@@ -224,6 +225,7 @@ struct CsolutionItem {
  * @brief cproject item containing
  *        project name,
  *        project path,
+ *        project directory,
  *        project output type,
  *        project target properties,
  *        list of required components,
@@ -233,6 +235,7 @@ struct CsolutionItem {
 struct CprojectItem {
   std::string name;
   std::string path;
+  std::string directory;
   std::string outputType;
   TargetType target;
   std::vector<RteDirItem> rteDirs;
@@ -255,6 +258,7 @@ struct InterfaceItem {
  * @brief clayer item containing
  *        layer name,
  *        layer path,
+ *        layer directory,
  *        layer output type,
  *        layer target properties,
  *        list of required components,
@@ -264,6 +268,7 @@ struct InterfaceItem {
 struct ClayerItem {
   std::string name;
   std::string path;
+  std::string directory;
   std::string outputType;
   TargetType target;
   std::vector<RteDirItem> rteDirs;

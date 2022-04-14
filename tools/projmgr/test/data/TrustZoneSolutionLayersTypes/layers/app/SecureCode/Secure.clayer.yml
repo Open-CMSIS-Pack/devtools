@@ -4,7 +4,7 @@ layer:
   processor:
     trustzone: secure
   components:
-    - component: Startup
+    - component: Device:Startup
     - component: CMSIS CORE
   groups:
     - group: Secure Code
@@ -13,5 +13,6 @@ layer:
     - group: CMSE
       files: 
         - file: interface.c
-        - file: interface.h
+          add-paths:
+            - ../Interface
         - file: tz_context.c

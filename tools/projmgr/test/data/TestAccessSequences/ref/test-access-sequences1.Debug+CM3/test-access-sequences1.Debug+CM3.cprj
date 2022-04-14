@@ -19,7 +19,7 @@
     <cflags add="-O1 -g -C-CPP-RteTest_ARMCM3" compiler="AC6"/>
     <cxxflags add="-O1 -g -C-CPP-RteTest_ARMCM3" compiler="AC6"/>
     <defines>DEF1-PROJ1-../test-access-sequences2.Debug+CM3/test-access-sequences2.Debug+CM3_OutDir/test-access-sequences2.Debug+CM3;DEF2-PROJ1-../test-access-sequences2.Debug+CM3/test-access-sequences2.Debug+CM3_OutDir/test-access-sequences2.Debug+CM3;DEF3-PROJ1-../test-access-sequences2.Release+CM0/test-access-sequences2.Release+CM0_OutDir/test-access-sequences2.Release+CM0;DEF4-PROJ1-../test-access-sequences2.Debug+CM3/test-access-sequences2.Debug+CM3_OutDir;DEF5-PROJ1-../../data/TestAccessSequences;DEF-CM3-RteTest_ARMCM3</defines>
-    <includes>/path/CM3/RteTest_ARMCM3</includes>
+    <includes>../../data/TestAccessSequences/path/CM3/RteTest_ARMCM3</includes>
   </target>
 
   <components>
