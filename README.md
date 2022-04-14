@@ -252,16 +252,17 @@ Set below mentioned environment variables:
 
 ### Note
 
-By default, few special tests are skipped from execution as they are dependent on specific environment configuration or other dependencies.
+- On running the tests all required packs shall get downloaded automatically under configured pack repository.
+- By default, few special tests are skipped from execution as they are dependent on specific environment configuration or other dependencies.
 
-1. **CI dependent tests :**\
-    These tests are designed to work only in CI (Continuous Integration) environment
-    - [InstallerTests](./tools/buildmgr/test/integrationtests/src/InstallerTests.cpp)
-    - [DebPkgTests](./tools/buildmgr/test/integrationtests/src/DebPkgTests.cpp)
-2. **AC6 toolchain test :**\
-    The below listed tests depend on a valid AC6 toolchain installed and can be run in the local environment on the installation of valid [Arm Compiler 6](https://developer.arm.com/tools-and-software/embedded/arm-compiler/downloads/version-6).
-    - [CBuildAC6Tests](./tools/buildmgr/test/integrationtests/src/CBuildAC6Tests.cpp)
-    - [MultiTargetAC6Tests](./tools/buildmgr/test/integrationtests/src/MultiTargetAC6Tests.cpp)
+    1. **CI dependent tests :**\
+        These tests are designed to work only in CI (Continuous Integration) environment
+        - [InstallerTests](./tools/buildmgr/test/integrationtests/src/InstallerTests.cpp)
+        - [DebPkgTests](./tools/buildmgr/test/integrationtests/src/DebPkgTests.cpp)
+    2. **AC6 toolchain test :**\
+        The below listed tests depend on a valid AC6 toolchain installed and can be run in the local environment on the installation of valid [Arm Compiler 6](https://developer.arm.com/tools-and-software/embedded/arm-compiler/downloads/version-6).
+        - [CBuildAC6Tests](./tools/buildmgr/test/integrationtests/src/CBuildAC6Tests.cpp)
+        - [MultiTargetAC6Tests](./tools/buildmgr/test/integrationtests/src/MultiTargetAC6Tests.cpp)
 
     ~~~
     ☑️ Required only when the installed AC6 toolchain resides in places different from the default values.
