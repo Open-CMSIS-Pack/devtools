@@ -37,7 +37,6 @@ bool ProjMgrWorker::AddContexts(ProjMgrParser& parser, ContextDesc& descriptor, 
   context.cproject = &cprojects.at(cprojectFile);
   context.cdefault = &parser.GetCdefault();
   context.csolution = &parser.GetCsolution();
-  context.directories.cproject = fs::path(cprojectFile).parent_path().generic_string();
 
   // Default build-types
   if (context.cdefault) {
@@ -93,7 +92,7 @@ bool ProjMgrWorker::AddContext(ProjMgrParser& parser, ContextDesc& descriptor, c
     context.directories.intdir = context.name + "_IntDir/";
     context.directories.outdir = context.name + "_OutDir/";
     error_code ec;
-    const string& cprjDir = m_outputDir.empty() ? context.directories.cproject : m_outputDir + "/" + context.name;
+    const string& cprjDir = m_outputDir.empty() ? context.cproject->directory : m_outputDir + "/" + context.name;
     context.directories.cprj = fs::absolute(cprjDir, ec).generic_string();
 
     for (const auto& clayer : context.cproject->clayers) {
@@ -627,20 +626,7 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
     ProjMgrLogger::Error("missing RTE target");
     return false;
   }
-  // Add cproject component requirements
-  for (const auto& component : context.cproject->components) {
-    if (!AddComponent(component, context.componentRequirements, context.type)) {
-      return false;
-    }
-  }
-  // Add clayers component requirements
-  for (const auto& clayer : context.clayers) {
-    for (const auto& component : clayer.second->components) {
-      if (!AddComponent(component, context.componentRequirements, context.type)) {
-        return false;
-      }
-    }
-  }
+
   // Get installed components map
   RteComponentMap installedComponents = context.rteActiveTarget->GetFilteredComponents();
   RteComponentMap componentMap;
@@ -884,84 +870,13 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
     return false;
   }
 
-  // Misc
-  vector<vector<MiscItem>*> miscVec = {
-    &context.cproject->target.build.misc,
-    &context.csolution->target.build.misc,
-    &context.buildType.misc,
-    &context.targetType.build.misc,
-  };
-  for (const auto& clayer : context.clayers) {
-    miscVec.push_back(&clayer.second->target.build.misc);
-  }
-  AddMiscUniquely(context.misc, miscVec);
-  MergeMiscCPP(context.misc);
-
-  // Defines
-  vector<string> projectDefines, projectUndefines;
-  AddStringItemsUniquely(projectDefines, context.cproject->target.build.defines);
-  for (const auto& clayer : context.clayers) {
-    AddStringItemsUniquely(projectDefines, clayer.second->target.build.defines);
-  }
-  AddStringItemsUniquely(projectUndefines, context.cproject->target.build.undefines);
-  for (const auto& clayer : context.clayers) {
-    AddStringItemsUniquely(projectUndefines, clayer.second->target.build.undefines);
-  }
-  StringVectorCollection defines = {
-    &context.defines,
-    {
-      {&projectDefines, &projectUndefines},
-      {&context.csolution->target.build.defines, &context.csolution->target.build.undefines},
-      {&context.targetType.build.defines, &context.targetType.build.undefines},
-      {&context.buildType.defines, &context.buildType.undefines},
-    }
-  };
-  MergeStringVector(defines);
-
-  // Includes
-  vector<string> projectAddPaths, projectDelPaths;
-  AddStringItemsUniquely(projectAddPaths, context.cproject->target.build.addpaths);
-  for (const auto& clayer : context.clayers) {
-    AddStringItemsUniquely(projectAddPaths, clayer.second->target.build.addpaths);
-  }
-  AddStringItemsUniquely(projectDelPaths, context.cproject->target.build.delpaths);
-  for (const auto& clayer : context.clayers) {
-    AddStringItemsUniquely(projectDelPaths, clayer.second->target.build.delpaths);
-  }
-  StringVectorCollection includes = {
-    &context.includes,
-    {
-      {&projectAddPaths, &projectDelPaths},
-      {&context.csolution->target.build.addpaths, &context.csolution->target.build.delpaths},
-      {&context.targetType.build.addpaths, &context.targetType.build.delpaths},
-      {&context.buildType.addpaths, &context.buildType.delpaths},
-    }
-  };
-  MergeStringVector(includes);
-
-  StringCollection compiler = {
-    &context.compiler,
-    {
-      &context.cproject->target.build.compiler,
-      &context.csolution->target.build.compiler,
-      &context.targetType.build.compiler,
-      &context.buildType.compiler,
-    },
-  };
-  for (const auto& clayer : context.clayers) {
-    compiler.elements.push_back(&clayer.second->target.build.compiler);
-  }
-  if (!ProcessPrecedence(compiler)) {
-    return false;
-  }
-
   StringCollection board = {
   &context.board,
-    {
-      &context.cproject->target.board,
-      &context.csolution->target.board,
-      &context.targetType.board,
-    },
+  {
+    &context.cproject->target.board,
+    &context.csolution->target.board,
+    &context.targetItem.board,
+  },
   };
   for (const auto& clayer : context.clayers) {
     board.elements.push_back(&clayer.second->target.board);
@@ -975,7 +890,7 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
     {
       &context.cproject->target.device,
       &context.csolution->target.device,
-      &context.targetType.device,
+      &context.targetItem.device,
     },
   };
   for (const auto& clayer : context.clayers) {
@@ -985,17 +900,40 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
     return false;
   }
 
+  // Access sequences and relative path references must be processed
+  // after board and device precedences (due to $Bname$ and $Dname$)
+  // but before processing misc, defines and includes precedences
+  if (!ProcessSequencesRelatives(context)) {
+    return false;
+  }
+
+  StringCollection compiler = {
+   &context.compiler,
+   {
+     &context.controls.cproject.compiler,
+     &context.controls.csolution.compiler,
+     &context.controls.target.compiler,
+     &context.controls.build.compiler,
+   },
+  };
+  for (auto& [_, clayer] : context.controls.clayers) {
+    compiler.elements.push_back(&clayer.compiler);
+  }
+  if (!ProcessPrecedence(compiler)) {
+    return false;
+  }
+
   StringCollection trustzone = {
     &context.trustzone,
     {
-      &context.cproject->target.build.processor.trustzone,
-      &context.csolution->target.build.processor.trustzone,
-      &context.targetType.build.processor.trustzone,
-      &context.buildType.processor.trustzone,
+      &context.controls.cproject.processor.trustzone,
+      &context.controls.csolution.processor.trustzone,
+      &context.controls.target.processor.trustzone,
+      &context.controls.build.processor.trustzone,
     },
   };
-  for (const auto& clayer : context.clayers) {
-    trustzone.elements.push_back(&clayer.second->target.build.processor.trustzone);
+  for (auto& [_, clayer] : context.controls.clayers) {
+    trustzone.elements.push_back(&clayer.processor.trustzone);
   }
   if (!ProcessPrecedence(trustzone)) {
     return false;
@@ -1004,14 +942,14 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
   StringCollection fpu = {
     &context.fpu,
     {
-      &context.cproject->target.build.processor.fpu,
-      &context.csolution->target.build.processor.fpu,
-      &context.targetType.build.processor.fpu,
-      &context.buildType.processor.fpu,
+      &context.controls.cproject.processor.fpu,
+      &context.controls.csolution.processor.fpu,
+      &context.controls.target.processor.fpu,
+      &context.controls.build.processor.fpu,
     },
   };
-  for (const auto& clayer : context.clayers) {
-    fpu.elements.push_back(&clayer.second->target.build.processor.fpu);
+  for (auto& [_, clayer] : context.controls.clayers) {
+    fpu.elements.push_back(&clayer.processor.fpu);
   }
   if (!ProcessPrecedence(fpu)) {
     return false;
@@ -1020,133 +958,203 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
   StringCollection endian = {
     &context.endian,
     {
-      &context.cproject->target.build.processor.endian,
-      &context.csolution->target.build.processor.endian,
-      &context.targetType.build.processor.endian,
-      &context.buildType.processor.endian,
+      &context.controls.cproject.processor.endian,
+      &context.controls.csolution.processor.endian,
+      &context.controls.target.processor.endian,
+      &context.controls.build.processor.endian,
     },
   };
-  for (const auto& clayer : context.clayers) {
-    endian.elements.push_back(&clayer.second->target.build.processor.endian);
+  for (auto& [_, clayer] : context.controls.clayers) {
+    endian.elements.push_back(&clayer.processor.endian);
   }
   if (!ProcessPrecedence(endian)) {
     return false;
   }
 
+  // Misc
+  vector<vector<MiscItem>*> miscVec = {
+    &context.controls.cproject.misc,
+    &context.controls.csolution.misc,
+    &context.controls.build.misc,
+    &context.controls.target.misc,
+  };
+  for (auto& [_, clayer] : context.controls.clayers) {
+    miscVec.push_back(&clayer.misc);
+  }
+  AddMiscUniquely(context.misc, miscVec);
+  MergeMiscCPP(context.misc);
+
+  // Defines
+  vector<string> projectDefines, projectUndefines;
+  AddStringItemsUniquely(projectDefines, context.controls.cproject.defines);
+  for (auto& [_, clayer] : context.controls.clayers) {
+    AddStringItemsUniquely(projectDefines, clayer.defines);
+  }
+  AddStringItemsUniquely(projectUndefines, context.controls.cproject.undefines);
+  for (auto& [_, clayer] : context.controls.clayers) {
+    AddStringItemsUniquely(projectUndefines, clayer.undefines);
+  }
+  StringVectorCollection defines = {
+    &context.defines,
+    {
+      {&projectDefines, &projectUndefines},
+      {&context.controls.csolution.defines, &context.controls.csolution.undefines},
+      {&context.controls.target.defines, &context.controls.target.undefines},
+      {&context.controls.build.defines, &context.controls.build.undefines},
+    }
+  };
+  MergeStringVector(defines);
+
+  // Includes
+  vector<string> projectAddPaths, projectDelPaths;
+  AddStringItemsUniquely(projectAddPaths, context.controls.cproject.addpaths);
+  for (auto& [_, clayer] : context.controls.clayers) {
+    AddStringItemsUniquely(projectAddPaths, clayer.addpaths);
+  }
+  AddStringItemsUniquely(projectDelPaths, context.controls.cproject.delpaths);
+  for (auto& [_, clayer] : context.controls.clayers) {
+    AddStringItemsUniquely(projectDelPaths, clayer.delpaths);
+  }
+  StringVectorCollection includes = {
+    &context.includes,
+    {
+      {&projectAddPaths, &projectDelPaths},
+      {&context.controls.csolution.addpaths, &context.controls.csolution.delpaths},
+      {&context.controls.target.addpaths, &context.controls.target.delpaths},
+      {&context.controls.build.addpaths, &context.controls.build.delpaths},
+    }
+  };
+  MergeStringVector(includes);
+
   return true;
 }
 
-bool ProjMgrWorker::ProcessAccessSequences(ContextItem& context) {
-  // Collect pointers to fields that accept access sequences
-  vector<string*> fields;
-  InsertVectorPointers(fields, context.defines);
-  InsertVectorPointers(fields, context.includes);
-  for (auto& misc : context.misc) {
-    InsertVectorPointers(fields, misc.as);
-    InsertVectorPointers(fields, misc.c);
-    InsertVectorPointers(fields, misc.cpp);
-    InsertVectorPointers(fields, misc.c_cpp);
-    InsertVectorPointers(fields, misc.lib);
-    InsertVectorPointers(fields, misc.link);
-  }
-  // Files
-  InsertFilesPointers(fields, context.groups);
+bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem& context) {
 
-  // Iterate over fields and expand access sequences
-  for (auto& item : fields) {
-    if (item) {
-      size_t offset = 0;
-      while (offset != string::npos) {
-        string sequence;
-        if (!GetAccessSequence(offset, *item, sequence, '$', '$')) {
-          return false;
-        }
-        if (offset != string::npos) {
-          string replacement;
-          regex regEx;
-          if (sequence == "Dname") {
-            regEx = regex("\\$Dname\\$");
-            replacement = context.device;
-          } else if (sequence == "Bname") {
-            regEx = regex("\\$Bname\\$");
-            replacement = context.board;
-          } else if (regex_match(sequence, regex("(Output|OutDir|Source)\\(.*"))) {
-            string contextName;
-            size_t offsetContext = 0;
-            if (!GetAccessSequence(offsetContext, sequence, contextName, '(', ')')) {
-              return false;
-            }
-            if (contextName.find('+') == string::npos) {
-              if (!context.type.target.empty()) {
-                contextName.append('+' + context.type.target);
-              }
-            }
-            if (contextName.find('.') == string::npos) {
-              if (!context.type.build.empty()) {
-                const size_t targetDelim = contextName.find('+');
-                contextName.insert(targetDelim == string::npos ? contextName.length() : targetDelim, '.' + context.type.build);
-              }
-            }
-            if (m_contexts.find(contextName) != m_contexts.end()) {
-              error_code ec;
-              const auto& depContext = m_contexts.at(contextName);
-              const string& depContextOutDir = depContext.directories.cprj + "/" + depContext.directories.outdir;
-              const string& relOutDir = fs::relative(depContextOutDir, context.directories.cprj, ec).generic_string();
-              const string& relSrcDir = fs::relative(depContext.directories.cproject, context.directories.cprj, ec).generic_string();
-              if (regex_match(sequence, regex("^OutDir\\(.*"))) {
-                regEx = regex("\\$OutDir\\(.*\\$");
-                replacement = RteUtils::RemoveTrailingBackslash(relOutDir);
-              } else if (regex_match(sequence, regex("^Output\\(.*"))) {
-                regEx = regex("\\$Output\\(.*\\$");
-                replacement = relOutDir + contextName;
-              } else if (regex_match(sequence, regex("^Source\\(.*"))) {
-                regEx = regex("\\$Source\\(.*\\$");
-                replacement = relSrcDir;
-              }
-            } else {
-              ProjMgrLogger::Error("context '" + contextName + "' referenced by access sequence '" + sequence + "' does not exist");
-              return false;
-            }
-          } else {
-            ProjMgrLogger::Warn("unknown access sequence: '" + sequence + "'");
-          }
-          *item = regex_replace(*item, regEx, replacement);
-        }
+  // project, solution, target-type and build-type translation controls
+  if (!ProcessSequencesRelatives(context, context.controls.cproject, context.cproject->directory) ||
+      !ProcessSequencesRelatives(context, context.controls.csolution, context.csolution->directory) ||
+      !ProcessSequencesRelatives(context, context.controls.target, context.csolution->directory) ||
+      !ProcessSequencesRelatives(context, context.controls.build, context.csolution->directory)) {
+    return false;
+  }
+
+  // components translation controls
+  for (ComponentItem component : context.cproject->components) {
+    if (!ProcessSequencesRelatives(context, component.build, context.cproject->directory)) {
+      return false;
+    }
+    if (!AddComponent(component, context.componentRequirements, context.type)) {
+      return false;
+    }
+  }
+
+  // layers translation controls
+  for (const auto& [name, clayer] : context.clayers) {
+    context.controls.clayers[name] = clayer->target.build;
+    if (!ProcessSequencesRelatives(context, context.controls.clayers[name], clayer->directory)) {
+      return false;
+    }
+    for (ComponentItem component : clayer->components) {
+      if (!ProcessSequencesRelatives(context, component.build, clayer->directory)) {
+        return false;
+      }
+      if (!AddComponent(component, context.componentRequirements, context.type)) {
+        return false;
       }
     }
   }
   return true;
 }
 
-bool ProjMgrWorker::HasSpecialAccessSequence(const string& item) {
+bool ProjMgrWorker::ProcessSequenceRelative(ContextItem & context, string& item, const string& ref) {
   size_t offset = 0;
+  bool pathReplace = false;
   while (offset != string::npos) {
     string sequence;
     if (!GetAccessSequence(offset, item, sequence, '$', '$')) {
       return false;
     }
     if (offset != string::npos) {
-      if (regex_match(sequence, regex("(Output|OutDir|Source)\\(.*"))) {
-        return true;
+      string replacement;
+      regex regEx;
+      if (sequence == "Dname") {
+        regEx = regex("\\$Dname\\$");
+        replacement = context.device;
       }
+      else if (sequence == "Bname") {
+        regEx = regex("\\$Bname\\$");
+        replacement = context.board;
+      }
+      else if (regex_match(sequence, regex("(Output|OutDir|Source)\\(.*"))) {
+        pathReplace = true;
+        string contextName;
+        size_t offsetContext = 0;
+        if (!GetAccessSequence(offsetContext, sequence, contextName, '(', ')')) {
+          return false;
+        }
+        if (contextName.find('+') == string::npos) {
+          if (!context.type.target.empty()) {
+            contextName.append('+' + context.type.target);
+          }
+        }
+        if (contextName.find('.') == string::npos) {
+          if (!context.type.build.empty()) {
+            const size_t targetDelim = contextName.find('+');
+            contextName.insert(targetDelim == string::npos ? contextName.length() : targetDelim, '.' + context.type.build);
+          }
+        }
+        if (m_contexts.find(contextName) != m_contexts.end()) {
+          error_code ec;
+          const auto& depContext = m_contexts.at(contextName);
+          const string& depContextOutDir = depContext.directories.cprj + "/" + depContext.directories.outdir;
+          const string& relOutDir = fs::relative(depContextOutDir, context.directories.cprj, ec).generic_string();
+          const string& relSrcDir = fs::relative(depContext.cproject->directory, context.directories.cprj, ec).generic_string();
+          if (regex_match(sequence, regex("^OutDir\\(.*"))) {
+            regEx = regex("\\$OutDir\\(.*\\$");
+            replacement = RteUtils::RemoveTrailingBackslash(relOutDir);
+          }
+          else if (regex_match(sequence, regex("^Output\\(.*"))) {
+            regEx = regex("\\$Output\\(.*\\$");
+            replacement = relOutDir + contextName;
+          }
+          else if (regex_match(sequence, regex("^Source\\(.*"))) {
+            regEx = regex("\\$Source\\(.*\\$");
+            replacement = relSrcDir;
+          }
+        }
+        else {
+          ProjMgrLogger::Error("context '" + contextName + "' referenced by access sequence '" + sequence + "' does not exist");
+          return false;
+        }
+      }
+      else {
+        ProjMgrLogger::Warn("unknown access sequence: '" + sequence + "'");
+      }
+      item = regex_replace(item, regEx, replacement);
     }
   }
-  return false;
+  if (!pathReplace && !ref.empty()) {
+    error_code ec;
+    if (!fs::equivalent(context.directories.cprj, ref, ec)) {
+      const string& absPath = fs::weakly_canonical(fs::path(item).is_relative() ? ref + "/" + item : item, ec).generic_string();
+      item = fs::relative(absPath, context.directories.cprj, ec).generic_string();
+    }
+  }
+  return true;
 }
-
 
 bool ProjMgrWorker::ProcessGroups(ContextItem& context) {
   // Add cproject groups
   for (const auto& group : context.cproject->groups) {
-    if (!AddGroup(group, context.groups, context, context.directories.cproject)) {
+    if (!AddGroup(group, context.groups, context, context.cproject->directory)) {
       return false;
     }
   }
   // Add clayers groups
-  for (const auto& clayer : context.clayers) {
-    for (const auto& group : clayer.second->groups) {
-      const string& layerRoot = fs::path(clayer.first).parent_path().generic_string();
-      if (!AddGroup(group, context.groups, context, layerRoot)) {
+  for (const auto& [_, clayer] : context.clayers) {
+    for (const auto& group : clayer->groups) {
+      if (!AddGroup(group, context.groups, context, clayer->directory)) {
         return false;
       }
     }
@@ -1174,7 +1182,12 @@ bool ProjMgrWorker::AddGroup(const GroupNode& src, vector<GroupNode>& dst, Conte
         return false;
       }
     }
-    dst.push_back({ src.group, files, groups, src.build, src.type });
+
+    // Replace sequences and/or adjust file relative paths
+    BuildType srcNodeBuild = src.build;
+    ProcessSequencesRelatives(context, srcNodeBuild, root);
+
+    dst.push_back({ src.group, files, groups, srcNodeBuild, src.type });
   }
   return true;
 }
@@ -1194,12 +1207,9 @@ bool ProjMgrWorker::AddFile(const FileNode& src, vector<FileNode>& dst, ContextI
       srcNode.category = ProjMgrUtils::GetCategory(srcNode.file);
     }
 
-    // Adjust file relative paths
-    error_code ec;
-    const string& filePath = fs::weakly_canonical(root + "/" + srcNode.file, ec).generic_string();
-    if (!HasSpecialAccessSequence(srcNode.file) && !fs::equivalent(context.directories.cprj, root, ec)) {
-      srcNode.file = fs::relative(filePath, context.directories.cprj, ec).generic_string();
-    }
+    // Replace sequences and/or adjust file relative paths
+    ProcessSequenceRelative(context, srcNode.file, root);
+    ProcessSequencesRelatives(context, srcNode.build, root);
 
     dst.push_back(srcNode);
 
@@ -1209,6 +1219,8 @@ bool ProjMgrWorker::AddFile(const FileNode& src, vector<FileNode>& dst, ContextI
     }
 
     // Store absolute file path
+    error_code ec;
+    const string& filePath = fs::weakly_canonical(root + "/" + srcNode.file, ec).generic_string();
     context.filePaths.insert({ srcNode.file, filePath });
   }
   return true;
@@ -1277,9 +1289,6 @@ bool ProjMgrWorker::ProcessContext(ContextItem& context, bool resolveDependencie
     return false;
   }
   if (!ProcessGroups(context)) {
-    return false;
-  }
-  if (!ProcessAccessSequences(context)) {
     return false;
   }
   if (!ProcessComponents(context)) {
@@ -1602,10 +1611,14 @@ bool ProjMgrWorker::ListGenerators(const string& context, vector<string>& genera
 
 bool ProjMgrWorker::GetTypeContent(ContextItem& context) {
   if (!context.type.build.empty() || !context.type.target.empty()) {
-    string buildType, targetType;
-    context.buildType = context.csolution->buildTypes[context.type.build];
-    context.targetType = context.csolution->targetTypes[context.type.target];
+    context.controls.build = context.csolution->buildTypes[context.type.build];
+    TargetType targetType = context.csolution->targetTypes[context.type.target];
+    context.controls.target = targetType.build;
+    context.targetItem.board = targetType.board;
+    context.targetItem.device = targetType.device;
   }
+  context.controls.cproject = context.cproject->target.build;
+  context.controls.csolution = context.csolution->target.build;
   return true;
 }
 
@@ -1678,21 +1691,6 @@ bool ProjMgrWorker::GetAccessSequence(size_t& offset, const string& src, string&
   return true;
 }
 
-void ProjMgrWorker::InsertVectorPointers(vector<string*>& dst, vector<string>& src) {
-  for (auto& item : src) {
-    dst.push_back(&item);
-  }
-}
-
-void ProjMgrWorker::InsertFilesPointers(vector<string*>& dst, vector<GroupNode>& groups) {
-    for (auto& groupNode : groups) {
-      for (auto& fileNode : groupNode.files) {
-        dst.push_back(&(fileNode.file));
-      }
-      InsertFilesPointers(dst, groupNode.groups);
-    }
-}
-
 void ProjMgrWorker::PushBackUniquely(vector<string>& vec, const string& value) {
   if (find(vec.cbegin(), vec.cend(), value) == vec.cend()) {
     vec.push_back(value);
@@ -1712,8 +1710,8 @@ bool ProjMgrWorker::CopyRTEFiles(ContextItem& context) {
   }
 
   // cproject RTE folder
-  if (!fs::equivalent(context.directories.cprj, context.directories.cproject, ec)) {
-    rteDirs.push_back(context.directories.cproject + RTE_FOLDER);
+  if (!fs::equivalent(context.directories.cprj, context.cproject->directory, ec)) {
+    rteDirs.push_back(context.cproject->directory + RTE_FOLDER);
   }
 
   const string& destDir = context.directories.cprj + RTE_FOLDER;
@@ -1772,4 +1770,34 @@ std::string ProjMgrWorker::GetDeviceInfoString(const std::string& vendor,
   const std::string& name, const std::string& processor) const {
   return vendor + (vendor.empty() ? "" : "::") +
     name + (processor.empty() ? "" : ":" + processor);
+}
+
+bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem& context, vector<string>& src, const string& ref) {
+  for (auto& item : src) {
+    if (!ProcessSequenceRelative(context, item, ref)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem& context, BuildType& build, const string& ref) {
+  if (!ProcessSequencesRelatives(context, build.addpaths, ref) ||
+      !ProcessSequencesRelatives(context, build.delpaths, ref) ||
+      !ProcessSequencesRelatives(context, build.defines)       ||
+      !ProcessSequencesRelatives(context, build.undefines))    {
+    return false;
+  }
+  for (auto& misc : build.misc) {
+    if (!ProcessSequencesRelatives(context, misc.as)    ||
+        !ProcessSequencesRelatives(context, misc.as)    ||
+        !ProcessSequencesRelatives(context, misc.c)     ||
+        !ProcessSequencesRelatives(context, misc.cpp)   ||
+        !ProcessSequencesRelatives(context, misc.c_cpp) ||
+        !ProcessSequencesRelatives(context, misc.lib)   ||
+        !ProcessSequencesRelatives(context, misc.link)) {
+      return false;
+    }
+  }
+  return true;
 }

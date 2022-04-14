@@ -7,12 +7,12 @@ project:
   add-paths:
     - $OutDir(Secure)$
   components:
-    - component: Startup
+    - component: C Startup
     - component: CMSIS CORE
     - component: Keil RTX5 Library_NS
   groups:
     - group: Non-secure Code
       files: 
         - file: main_ns.c 
-        - file: $Source(Secure)$interface.h
+        - file: $Source(Secure)$/interface.h
         - file: $Output(Secure)$_CMSE_Lib.o

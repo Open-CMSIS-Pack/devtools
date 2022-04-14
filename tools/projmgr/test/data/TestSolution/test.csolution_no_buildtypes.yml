@@ -16,10 +16,10 @@ solution:
       undefines:
         - DEF-solution-to-be-removed
       add-paths:
-        - /path/CM0
-        - /path/CM0/to-be-removed
+        - ./path/CM0
+        - ./path/CM0/to-be-removed
       del-paths:
-        - /path/solution/to-be-removed
+        - ./path/solution/to-be-removed
     - type: CM3
       device: RteTest_ARMCM3
       misc:
@@ -34,10 +34,10 @@ solution:
       undefines:
         - DEF-solution-to-be-removed
       add-paths:
-        - /path/CM3
-        - /path/CM3/to-be-removed
+        - ./path/CM3
+        - ./path/CM3/to-be-removed
       del-paths:
-        - /path/solution/to-be-removed
+        - ./path/solution/to-be-removed
 
     - type: Debug
       compiler: AC6
@@ -49,10 +49,10 @@ solution:
         - DEF-CM0-to-be-removed
         - DEF-CM3-to-be-removed
       add-paths:
-        - /path/Debug
+        - ./path/Debug
       del-paths:
-        - /path/CM0/to-be-removed
-        - /path/CM3/to-be-removed
+        - ./path/CM0/to-be-removed
+        - ./path/CM3/to-be-removed
 
     - type: Release
       compiler: GCC
@@ -64,10 +64,10 @@ solution:
         - DEF-CM0-to-be-removed
         - DEF-CM3-to-be-removed
       add-paths:
-        - /path/Release
+        - ./path/Release
       del-paths:
-        - /path/CM0/to-be-removed
-        - /path/CM3/to-be-removed
+        - ./path/CM0/to-be-removed
+        - ./path/CM3/to-be-removed
 
   projects:
     - project: ./TestProject1/test1.cproject.yml
@@ -81,7 +81,7 @@ solution:
   undefines:
     - DEF-project-to-be-removed
   add-paths:
-    - /path/solution/
-    - /path/solution/to-be-removed
+    - ./path/solution/
+    - ./path/solution/to-be-removed
   del-paths:
-    - /path/project/to-be-removed
+    - ./path/project/to-be-removed

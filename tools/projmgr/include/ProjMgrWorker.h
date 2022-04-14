@@ -44,12 +44,11 @@ struct PackageItem {
 
 /**
  * @brief directories item containing
- *        cproject directory,
  *        intdir directory,
  *        outdir directory,
+ *        cprj directory,
 */
 struct DirectoriesItem {
-  std::string cproject;
   std::string intdir;
   std::string outdir;
   std::string cprj;
@@ -78,6 +77,32 @@ struct BoardItem {
 };
 
 /**
+ * @brief target item containing
+ *        target-type board,
+ *        target-type device name,
+*/
+struct TargetItem {
+  std::string board;
+  std::string device;
+};
+
+/**
+ * @brief translation control item containing
+ *        csolution controls,
+ *        cproject controls,
+ *        target-type controls,
+ *        build-type controls,
+ *        layers translation controls,
+*/
+struct TranslationControl {
+  BuildType csolution;
+  BuildType cproject;
+  BuildType target;
+  BuildType build;
+  std::map<std::string, BuildType> clayers;
+};
+
+/**
  * @brief project context item containing
  *        pointer to csolution,
  *        pointer to cproject,
@@ -85,9 +110,9 @@ struct BoardItem {
  *        pointer to rte project,
  *        pointer to rte target,
  *        pointer to rte filtered model,
- *        map of project dependencies
- *        build-type properties,
- *        target-type properties,
+ *        map of project dependencies,
+ *        translation controls,
+ *        target-type item,
  *        parent csolution target properties,
  *        directories,
  *        build-type/target-type pair,
@@ -125,8 +150,8 @@ struct ContextItem {
   RteProject* rteActiveProject = nullptr;
   RteTarget* rteActiveTarget = nullptr;
   RteModel* rteFilteredModel = nullptr;
-  BuildType buildType;
-  TargetType targetType;
+  TranslationControl controls;
+  TargetItem targetItem;
   DirectoriesItem directories;
   TypePair type;
   std::string name;
@@ -332,15 +357,15 @@ protected:
   bool ProcessDependencies(ContextItem& context);
   bool ProcessConfigFiles(ContextItem& context);
   bool ProcessGroups(ContextItem& context);
-  bool ProcessAccessSequences(ContextItem& context);
+  bool ProcessSequencesRelatives(ContextItem& context);
+  bool ProcessSequencesRelatives(ContextItem& context, std::vector<std::string>& src, const std::string& ref = std::string());
+  bool ProcessSequencesRelatives(ContextItem& context, BuildType& build, const std::string& ref = std::string());
+  bool ProcessSequenceRelative(ContextItem& context, std::string& item, const std::string& ref = std::string());
   bool AddContext(ProjMgrParser& parser, ContextDesc& descriptor, const TypePair& type, const std::string& cprojectFile, ContextItem& parentContext);
   void AddMiscUniquely(std::vector<MiscItem>& dst, std::vector<std::vector<MiscItem>*>& srcVec);
   void AddStringItemsUniquely(std::vector<std::string>& dst, const std::vector<std::string>& src);
   void RemoveStringItems(std::vector<std::string>& dst, std::vector<std::string>& src);
   bool GetAccessSequence(size_t& offset, const std::string& src, std::string& sequence, const char start, const char end);
-  bool HasSpecialAccessSequence(const std::string& item);
-  void InsertVectorPointers(std::vector<std::string*>& dst, std::vector<std::string>& src);
-  void InsertFilesPointers(std::vector<std::string*>& dst, std::vector<GroupNode>& groups);
   void PushBackUniquely(std::vector<std::string>& vec, const std::string& value);
   void MergeStringVector(StringVectorCollection& item);
   void MergeMiscCPP(std::vector<MiscItem>& vec);
