@@ -15,7 +15,7 @@ compiler `misc` options                                                         
 `optimize`, `debug`, `warnings` in csolution                                             | :x:                      |
 `optimize`, `debug`, `warnings` in cbuild                                                | :x:                      |
 access sequences handling in csolution                                                   | :heavy_check_mark:       | csolution 0.9.1
-access sequences handling in cbuild                                                      | :x:                      |
+access sequences handling in cbuild                                                      | :heavy_check_mark:       | cbuild 0.11.0
 list commands at csolution and context level                                             | :heavy_check_mark:       | csolution 0.9.1
 csolution `context` input parameter                                                      | :heavy_check_mark:       | csolution 0.9.1
 generator commands: `list generators` and `run --generator <id>`                         | :heavy_check_mark:       | csolution 0.9.1
@@ -31,8 +31,9 @@ schema for flexible vendor specific additions                                   
 user provided linker script selection                                                    | :heavy_check_mark:       | csolution 0.9.2
 support for IAR compiler                                                                 | :heavy_check_mark:       | cbuild 0.10.5
 minimum/range component version handling                                                 | :x:                      |
-replacement of cbuild bash scripts                                                       | :heavy_multiplication_x: | in progress
-multi-project solution handling in cbuild                                                | :heavy_multiplication_x: | in progress
+replacement of cbuild bash scripts                                                       | :heavy_check_mark:       | cbuild 0.11.0
+multi-project solution handling in cbuild                                                | :x:                      |
+layered solutions in-source conversion                                                   | :heavy_check_mark:       | csolution 0.9.4
 layer `interface` definitions                                                            | :x:                      |
 distribution of layers                                                                   | :x:                      |
 resources management                                                                     | :x:                      |
