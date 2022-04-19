@@ -1,19 +1,20 @@
 # CMSIS Toolbox
 
-The CMSIS Toolbox encapsulates CMSIS Package Installer, CMSIS Build tools and CMSIS Project Manager binaries for all supported platforms as well as documents, schemas and templates to assist the creation and compilation of multiproject solutions based on CMSIS Packs.
+The CMSIS Toolbox encapsulates CMSIS Package Installer, CMSIS Pack Check, CMSIS Build tools and CMSIS Project Manager binaries for all supported platforms as well as documents, schemas and templates to assist the creation and compilation of multiproject solutions based on CMSIS Packs.
 
 Tool               | Binary         | Description
 :------------------|:---------------|:-------------------------------------------------
 Package Installer  | cpackget       | Install packs into local environment
+Pack Check         | packchk        | Validate CMSIS packs
 Project Manager    | csolution      | Validate multiproject solutions and generate CPRJs
 Build Manager      | cbuildgen      | Generate CMakeLists and invoke CMake/Ninja
 
 
 ## Getting Started
 
-### 1) Download CMSIS Toolbox installer
+### 1) Download CMSIS Toolbox archive
 
-- [Linux/Windows 64/macOS](https://github.com/Open-CMSIS-Pack/devtools/releases/download/tools/toolbox/0.9.3/cmsis-toolbox.sh)
+- [Linux/Windows 64/macOS](https://github.com/Open-CMSIS-Pack/devtools/releases/download/tools/toolbox/0.10.0)
 
 ### 2) Toolchain download options
 
