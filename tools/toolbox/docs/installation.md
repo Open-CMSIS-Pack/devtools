@@ -50,35 +50,17 @@ The CMSIS-Toolbox works with the following toolchains. Install one or more toolc
 
 ## Installation
 
->Note: Before installation, ensure that the required tools listed above are installed.
+The [**CMSIS-Toolbox**](https://github.com/Open-CMSIS-Pack/devtools/releases) is now provided as download for Win64, Linux, and macOS in an archive file.
 
-To install the CMSIS-Toolbox a bash environment is required. Install for example [git for Windows](https://gitforwindows.org). Call from the bash prompt:
+To setup the **CMSIS-Toolbox** on a local computer, install the content of the archive file to `<cmsis-toolbox-installation-dir>`, for example to `/c/ctools`.
 
-```txt
-./cmsis-toolbox.sh
-```
-
-## Usage
-
-The `cmsis-toolbox.sh` provides an interactive mode when invoked without parameters, but also the following options:
-
-```txt
-Usage:
-  cmsis-toolbox.sh [<option>]
-
-  -h           : Print out version and usage
-  -v           : Print out version, timestamp and git hash
-  -x [<dir>]   : Extract full content into optional directory
-```
-
-Below the manual setup of the CMSIS-Toolbox is explained. The command below installs the tools into the directory `./ctools`.
-```txt
-./cmsis-toolbox.sh -x ./ctools
-```
+> **Note:**
+> 
+> `cmsis-toolbox.sh` is provided for legacy reasons, but may be depreciated in future versions.
 
 ## Configuration
 
-For the manual installation described above the configuration setup is as follows:
+It is required to customize the installation for the actual setup of your development enviornment as described in the following:
 
 ### ./etc/setup
 
@@ -148,4 +130,4 @@ To create a new [**csolution**](projmgr/docs/Manual/Overview.md) based CMSIS pro
 
 - Use the Project Manager [**csolution**](../../projmgr/docs/Manual/Overview.md) to get information from the installed packs such as device names and component identifiers, to validate the solution and to generate the `*.CPRJ` files for compilation.
 
-- Use the Build Manager [**cbuild**](../../projmgr/docs/cbuild.md) to generate CMakeLists, invoking CMake to generate artifacts and compilation database for enabling Intellisense.
+- Use the Build Manager [**cbuild**](../../buildmgr/docs/cbuild.md) to generate CMakeLists, invoking CMake to generate artifacts and compilation database for enabling Intellisense.

@@ -13,4 +13,7 @@ Tool               | Binary         | Description
 :------------------|:---------------|:-------------------------------------------------
 Package Installer  | cpackget       | Install packs into local environment
 Project Manager    | csolution      | Validate multiproject solutions and generate CPRJs
-Build Manager      | cbuildgen      | Generate CMakeLists and invoke CMake/Ninja
+Build Invocation   | cbuild         | Start the build process via Build Generator
+Build Generator    | cbuildgen      | Generate CMakeLists and start CMake/
+Ninja
+Pack Verification  | packchk        | Sematic validation of a software pack
