@@ -130,7 +130,7 @@ TEST_F(CPackGetTests, PackAddPackInstallationTest) {
   RunScript("postpackinstall.sh", testout_folder);
 
   // Try to re-install already installed pack
-  param = { "", "Testpack.cpinstall", "", "", false };
+  // Since cpackget 0.4.0 re-installing an already installed pack does not raise error
   RunPackAdd(param);
 }
 

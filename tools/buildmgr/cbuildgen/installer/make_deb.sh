@@ -95,7 +95,7 @@ mkdir -p etc/${PACKAGE_NAME}
 mkdir -p etc/profile.d
 
 # Get cpackget
-cpackget_version="0.3.2"
+cpackget_version="0.4.0"
 cpackget_base=https://github.com/Open-CMSIS-Pack/cpackget/releases/download/v${cpackget_version}/cpackget_${cpackget_version}
 curl --retry 3 -L ${cpackget_base}_linux_amd64.tar.gz -o - | tar xzfO - --wildcards '*cpackget' > ${input}/bin/cpackget.lin
 

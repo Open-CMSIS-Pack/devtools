@@ -59,7 +59,9 @@ Software layers and Virtual I/O simplify these use cases:
   <tr>
     <td>0.11.0</td>
     <td>Release for review of initial development:
-      - new cbuild utility v0.9.0 replacing cbuild.sh
+      - new cbuild utility v0.9.0 replacing cbuild.sh.
+      - updated cpackget utility v0.4.0.
+      - added access sequences handling.
     </td>
   </tr>
   <tr>
