@@ -16,4 +16,4 @@ Project Manager    | csolution      | Validate multiproject solutions and genera
 Build Invocation   | cbuild         | Start the build process via Build Generator
 Build Generator    | cbuildgen      | Generate CMakeLists and start CMake/
 Ninja
-Pack Verification  | packchk        | Sematic validation of a software pack
+Pack Verification  | packchk        | Semantic validation of a software pack
