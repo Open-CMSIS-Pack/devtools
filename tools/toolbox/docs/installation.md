@@ -60,7 +60,7 @@ To setup the **CMSIS-Toolbox** on a local computer, install the content of the a
 
 ## Configuration
 
-It is required to customize the installation for the actual setup of your development enviornment as described in the following:
+It is required to customize the installation for the actual setup of your development environment as described in the following:
 
 ### ./etc/setup
 
