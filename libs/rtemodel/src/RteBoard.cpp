@@ -149,10 +149,11 @@ RteItem* RteBoard::GetDebugProbe(const string& pname, int deviceIndex)
 {
   for (auto it = m_children.begin(); it != m_children.end(); it++) {
     RteItem* item = *it;
-    if (item->GetTag() == "debugProbe" &&
-      item->GetProcessorName() == pname &&
-      item->GetAttributeAsInt("deviceIndex") == deviceIndex) {
-      return item;
+    if (item->GetTag() == "debugProbe" && item->GetAttributeAsInt("deviceIndex", -1) == deviceIndex) {
+      const string& procName = item->GetProcessorName();
+      if (pname.empty() || procName.empty() || procName == pname) {
+        return item;
+      }
     }
   }
   return nullptr;
