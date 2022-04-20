@@ -32,9 +32,9 @@ jobs:
         with:
           submodules: true
 
-      # https://github.com/Arm-Debug/mcu-build-action
+      # https://github.com/Arm-Examples/mcu-build-action
       - name: Build all libs
-        uses: Arm-Debug/mcu-build-action@v1.1
+        uses: Arm-Examples/mcu-build-action@v1.1
         id: mcu-build
         with:
           add_cmake_variables: '-DLIBS_ONLY=ON'

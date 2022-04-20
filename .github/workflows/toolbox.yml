@@ -213,7 +213,7 @@ jobs:
         with:
           submodules: true
 
-      # https://github.com/Arm-Debug/mcu-build-action
+      # https://github.com/Arm-Examples/mcu-build-action
       - name: Download cmsis-toolbox installer
         uses: actions/download-artifact@v2
         with:
@@ -225,7 +225,7 @@ jobs:
         run: chmod +x cmsis-toolbox.sh
 
       - name: Build ToolboxTests
-        uses: Arm-Debug/mcu-build-action@v1.1
+        uses: Arm-Examples/mcu-build-action@v1.1
         with:
           arch: ${{ matrix.arch }}
           build_type: Debug

@@ -48,9 +48,9 @@ jobs:
         with:
           submodules: recursive
 
-      # https://github.com/Arm-Debug/mcu-build-action
+      # https://github.com/Arm-Examples/mcu-build-action
       - name: Build packchk
-        uses: Arm-Debug/mcu-build-action@v1.1
+        uses: Arm-Examples/mcu-build-action@v1.1
         with:
           target: packchkdist
           arch: ${{ matrix.arch }}
@@ -78,9 +78,9 @@ jobs:
         with:
           submodules: recursive
 
-      # https://github.com/Arm-Debug/mcu-build-action
+      # https://github.com/Arm-Examples/mcu-build-action
       - name: Build PackChkUnitTests
-        uses: Arm-Debug/mcu-build-action@v1.1
+        uses: Arm-Examples/mcu-build-action@v1.1
         with:
           arch: ${{ matrix.arch }}
           build_type: Debug
@@ -91,9 +91,9 @@ jobs:
           ctest -V -R PackChkUnitTests
         working-directory: ./build
 
-      # https://github.com/Arm-Debug/mcu-build-action
+      # https://github.com/Arm-Examples/mcu-build-action
       - name: Build PackChkIntegTests
-        uses: Arm-Debug/mcu-build-action@v1.1
+        uses: Arm-Examples/mcu-build-action@v1.1
         with:
           arch: ${{ matrix.arch }}
           build_type: Debug
@@ -137,18 +137,18 @@ jobs:
         with:
           submodules: recursive
 
-      # https://github.com/Arm-Debug/mcu-build-action
+      # https://github.com/Arm-Examples/mcu-build-action
       - name: Build PackChkIntegTests
-        uses: Arm-Debug/mcu-build-action@v1.1
+        uses: Arm-Examples/mcu-build-action@v1.1
         with:
           add_cmake_variables: -DCOVERAGE=ON
           arch: amd64
           build_type: Debug
           target: PackChkIntegTests
 
-      # https://github.com/Arm-Debug/mcu-build-action
+      # https://github.com/Arm-Examples/mcu-build-action
       - name: Build PackChkUnitTests
-        uses: Arm-Debug/mcu-build-action@v1.1
+        uses: Arm-Examples/mcu-build-action@v1.1
         with:
           add_cmake_variables: -DCOVERAGE=ON
           arch: amd64
