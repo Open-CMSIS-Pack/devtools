@@ -56,7 +56,7 @@ To setup the **CMSIS-Toolbox** on a local computer, install the content of the a
 
 > **Note:**
 > 
-> `cmsis-toolbox.sh` is provided for legacy reasons, but may be depreciated in future versions.
+> `cmsis-toolbox.sh` is provided for legacy reasons, but may be deprecated in future versions.
 
 ## Configuration
 
