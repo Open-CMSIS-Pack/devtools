@@ -7,7 +7,7 @@
   </info>
 
   <packages>
-    <package name="RteTest_DFP" vendor="ARM" version="0.2.0"/>
+    <package name="RteTest_DFP" vendor="ARM" version="0.2.0:0.2.0"/>
   </packages>
 
   <compilers>
