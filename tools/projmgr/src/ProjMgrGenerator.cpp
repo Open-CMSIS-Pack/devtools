@@ -117,12 +117,14 @@ void ProjMgrGenerator::GenerateCprjPackages(XMLTreeElement* element, const Conte
     if (packageElement) {
       packageElement->AddAttribute("name", package.second->GetName());
       packageElement->AddAttribute("vendor", package.second->GetVendorName());
-      packageElement->AddAttribute("version", package.second->GetVersionString());
+      const auto& version = package.second->GetVersionString();
+      packageElement->AddAttribute("version", version + ":" + version);
       const string& pdscFile = package.second->GetPackageFileName();
       if (context.pdscFiles.find(pdscFile) != context.pdscFiles.end()) {
         const string& packPath = context.pdscFiles.at(pdscFile);
         if (!packPath.empty()) {
-          packageElement->AddAttribute("path", packPath);
+          error_code ec;
+          packageElement->AddAttribute("path", fs::relative(packPath, context.directories.cprj, ec).generic_string());
         }
       }
     }

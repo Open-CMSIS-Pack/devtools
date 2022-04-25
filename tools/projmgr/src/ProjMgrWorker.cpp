@@ -185,7 +185,7 @@ bool ProjMgrWorker::GetRequiredPdscFiles(ContextItem& context, const std::string
         ProjMgrLogger::Warn("no pack loaded as multiple pdsc files found under: " + packItem.path);
       }
       else {
-        context.pdscFiles.insert({ pdscFilesList[0].generic_string(), fs::path(packItem.path).generic_string() });
+        context.pdscFiles.insert({ pdscFilesList[0].generic_string(), packPath });
       }
     }
   }
