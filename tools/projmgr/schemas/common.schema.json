@@ -31,13 +31,13 @@
     },
     "DeviceType": {
       "type": "string",
-      "pattern": "^(([\\w .-]+::)?([\\w .-]+))?(:[\\w .-]+)?$",
-      "description": "Unique device name and/or processor name, optionally preceded by device vendor, in the format [<vendor>::][<device>][:<processor>]. The <device> can be implicitly inferred from the <board>, but if both fields are present the given <device> overrules the <board> setting."
+      "pattern": "^(([ -9;-~]+::)?[ -9;-~]+)?(:[ -9;-~]+)?$",
+      "description": "Unique device name optionally preceded by device vendor in the format [[vendor::]device][:processor]. A unique processor identifier is required in case of devices with multiple processors, even if the device is implicitly inferred from the board. If both board and device fields are present the given device overrules the device inferred from the board setting."
     },
     "BoardType": {
       "type": "string",
-      "pattern": "^([\\w .-]+::)?([\\w .\\-\\(\\)]+)$",
-      "description": "Unique board name, optionally with vendor. Format: [<vendor>::]<board>."
+      "pattern": "^([ -9;-~]+::)?[ -9;-~]+(:[ -9;-~]+)?$",
+      "description": "Unique board name, optionally preceded by board vendor and succeeded by board revision string, in the format [vendor::]board[:revision]"
     },
     "OptimizeType": {
       "enum": [ "max", "size", "speed", "debug" ],
