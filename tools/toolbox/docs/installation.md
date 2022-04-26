@@ -9,8 +9,8 @@ Content:
   - [Configuration](#configuration)
     - [./etc/setup/\*.cmake](#etcsetupcmake)
     - [Setup Win64](#setup-win64)
-    - [Setup Linux](#setup-linux)
-    - [Setup macOS](#setup-macos)
+    - [Setup Linux or Bash](#setup-linux-or-bash)
+    - [Setup MacOS](#setup-macos)
   - [Using VS Code](#using-vs-code)
   - [Get Started](#get-started)
   
@@ -75,13 +75,39 @@ Variable                 | Value
 
 >Note: At the Windows command prompt using `set` should shown the above environment variable settings.
 
-### Setup Linux
+### Setup Linux or Bash
 
-todo
+The following instructions work on Linux or a Bash enviornment (such as Git Bash).
 
-### Setup macOS
+In file `<cmsis-toolbox-installation-dir>/etc/setup` the paths to the central pack directory (CMSIS_PACK_ROOT), the compiler definition files (CMSIS_COMPILER_ROOT), and the binaries (CMSIS_BUILD_ROOT) are defined.
+This settings should reflect the configuration of your system. 
 
-todo
+**Example:**
+```txt
+export CMSIS_PACK_ROOT=/c/open-cmsis/pack
+export CMSIS_COMPILER_ROOT=/c/ctools/etc
+export CMSIS_BUILD_ROOT=/c/ctools/bin
+```
+
+In a bash environment the following command configures the environment:
+```txt
+source <cmsis-toolbox-installation-dir>/etc/setup
+```
+
+### Setup MacOS
+
+MacOS protects by default execution of files that are downloaded and/or not signed. As the CMSIS-Toolbox is currently no signed, it is required to execute the following commands after installation:
+
+- Remove the flags that prevent execution for downloaded executables
+```txt
+xattr -dr com.apple.quarantine <cmsis-toolbox-installation-dir>/bin/
+```
+  - Add execution permissions for all executables in ./bin
+```txt
+chmod +x <cmsis-toolbox-installation-dir>/bin/cbuildgen
+chmod +x <cmsis-toolbox-installation-dir>/bin/cbuild
+...
+```
 
 ## Using VS Code
 
