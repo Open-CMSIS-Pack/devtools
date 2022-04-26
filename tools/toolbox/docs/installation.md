@@ -7,6 +7,7 @@ Content:
     - [Requirements](#requirements)
     - [Toolchain Options](#toolchain-options)
   - [Configuration](#configuration)
+    - [Environment Variables](#environment-variables)
     - [./etc/setup/\*.cmake](#etcsetupcmake)
     - [Setup Win64](#setup-win64)
     - [Setup Linux or Bash](#setup-linux-or-bash)
@@ -48,6 +49,16 @@ The CMSIS-Toolbox works with the following toolchains. Install one or more toolc
 
 It is required to customize the installation for the actual setup of your development environment as described in the following.
 
+### Environment Variables
+
+The various tools use the following environment variables.
+
+Environment Variable     | Description
+:------------------------|:------------
+**CMSIS_PACK_ROOT**      | Path to the central CMSIS-Pack folder (i.e. /open-cmsis/pack)
+**CMSIS_COMPILER_ROOT**  | Path to the CMSIS-Toolbox 'etc' directory (i.e. /ctools/etc)
+**Path**                 | Add to the system path to the CMSIS-Toolbox 'bin' directory (i.e. /ctools/bin)
+
 ### ./etc/setup/\*.cmake
 
 The support of the various toolchains is defined by `*.cmake` files in the directory `<cmsis-toolbox-installation-dir>/etc/setup`.
@@ -65,38 +76,35 @@ set(EXT .exe)
 
 ### Setup Win64
 
-For Windows use the **System Properties** dialog and add the following **Environment Variables**:
+For Windows use the **System Properties** dialog and add the **Environment Variables** listed above.
 
-Variable                 | Value
-:------------------------|:---------------
-**CMSIS_PACK_ROOT**      | Path to the central CMSIS-Pack folder (i.e. C:\Keil_v5\ARM\PACK)
-**CMSIS_COMPILER_ROOT**  | Path to the CMSIS-Toolbox 'etc' directory (i.e. C:\Keil_v5\ARM\ctools\etc)
-**Path**                 | Add to the system path to the CMSIS-Toolbox 'bin' directory (i.e. C:\Keil_v5\ARM\ctools\bin)
+Below is a typical setup for users of Keil MDK
 
->Note: At the Windows command prompt using `set` should shown the above environment variable settings.
+Environment Variable     | Description
+:------------------------|:------------
+**CMSIS_PACK_ROOT**      | C:\Keil_v5\ARM\Pack
+**CMSIS_COMPILER_ROOT**  | C:\Keil_v5\ARM\ctools\etc
+**Path**                 | C:\Keil_v5\ARM\ctools\bin
+
+>Note: At the Windows command prompt using `set` should list these environment variables.
 
 ### Setup Linux or Bash
 
-The following instructions work on Linux or a Bash enviornment (such as Git Bash).
-
-In file `<cmsis-toolbox-installation-dir>/etc/setup` the paths to the central pack directory (CMSIS_PACK_ROOT), the compiler definition files (CMSIS_COMPILER_ROOT), and the binaries (CMSIS_BUILD_ROOT) are defined.
-This settings should reflect the configuration of your system. 
+For Linux the **Environment Variables**, there are multiple ways to configure the environment. In a Bash environment, for example by adding the following content to the file `.bashrc`
 
 **Example:**
+
 ```txt
-export CMSIS_PACK_ROOT=/c/open-cmsis/pack
-export CMSIS_COMPILER_ROOT=/c/ctools/etc
-export CMSIS_BUILD_ROOT=/c/ctools/bin
+export CMSIS_PACK_ROOT=/home/ubuntu/packs
+export CMSIS_COMPILER_ROOT=/opt/ctools/etc
+export PATH=/opt/ctools/bin:$PATH
 ```
 
-In a bash environment the following command configures the environment:
-```txt
-source <cmsis-toolbox-installation-dir>/etc/setup
-```
+>Note: The command `printenv` should list these environment variables.
 
 ### Setup MacOS
 
-MacOS protects by default execution of files that are downloaded and/or not signed. As the CMSIS-Toolbox is currently no signed, it is required to execute the following commands after installation:
+MacOS protects by default execution of files that are downloaded and/or not signed. As the CMSIS-Toolbox is currently not signed, it is required to execute the following commands after installation:
 
 - Remove the flags that prevent execution for downloaded executables
 ```txt

@@ -168,13 +168,14 @@ device: :cm33_core0                        # Pname added to a previously defined
 Evaluation Boards define indirectly a device via the related BSP. The following syntax is used to specify a `board:` value in the `*.yml` files.
 
 ```text
-[vendor::] board_name
+[vendor::] board_name [:revision] 
 ```
 
 Element      |              | Description
 :------------|--------------|:---------------------
 `vendor`     | Optional     | Name of the board vendor defined in `<boards><board>` element of the board support pack (BSP).
 `board_name` | **Required** | Board name (name attribute) as defined in the \<board\> element of the BSP.
+`revision`   | Optional     | Board revision (revision attribute) as defined in the \<board\> element of the BSP.
 
 > **Note:** When a `board:` is specified, the `device:` specification can be omitted, however it is possible to overwrite the device setting in the BSP with an explicit `device:` setting.
 
@@ -183,6 +184,7 @@ Element      |              | Description
 ```yml
 board: Keil::MCB54110                             # The Keil MCB54110 board (with device NXP::LPC54114J256BD64) 
 board: LPCXpresso55S28                            # The LPCXpresso55S28 board
+board: STMicroelectronics::NUCLEO-L476RG:Rev.C    # A board with revision specification
 ```
 
 # Access Sequences
