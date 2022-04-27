@@ -331,6 +331,12 @@ public:
   */
   bool ExecuteGenerator(const std::string& context, std::string& generatorId);
 
+  /**
+   * @brief initialize model
+   * @return true if executed successfully
+  */
+  bool InitializeModel(void);
+
 protected:
   ProjMgrKernel* m_kernel = nullptr;
   RteGlobalModel* m_model = nullptr;
@@ -343,7 +349,6 @@ protected:
   bool CheckRteErrors(void);
   bool CheckType(TypeFilter typeFilter, TypePair type);
   bool GetTypeContent(ContextItem& context);
-  bool InitializeModel(void);
   bool InitializeTarget(ContextItem& context);
   bool SetTargetAttributes(ContextItem& context, std::map<std::string, std::string>& attributes);
   bool ProcessPrecedences(ContextItem& context);
