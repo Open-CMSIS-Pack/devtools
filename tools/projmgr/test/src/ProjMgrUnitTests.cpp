@@ -1614,6 +1614,17 @@ TEST_F(ProjMgrUnitTests, LoadPacks_MultiplePackSelection) {
   }
 }
 
+TEST_F(ProjMgrUnitTests, LoadPacks_MissingPackSelection) {
+  m_csolutionFile = testinput_folder + "/TestSolution/test.csolution_local_pack_path_not_found.yml";
+  m_rootDir = fs::path(m_csolutionFile).parent_path().generic_string();
+  EXPECT_TRUE(PopulateContexts());
+  map<string, ContextItem>* contexts = nullptr;
+  m_worker.GetContexts(contexts);
+  for (auto& [contextName, contextItem] : *contexts) {
+    EXPECT_FALSE(m_worker.ProcessContext(contextItem));
+  }
+}
+
 TEST_F(ProjMgrUnitTests, ListDevices_MultiplePackSelection) {
   set<string> expected_CM0 = {
     "RteTest_ARMCM0",
