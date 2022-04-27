@@ -298,6 +298,10 @@ bool ProjMgr::RunConvert(void) {
       return false;
     }
   }
+  // Initialize model
+  if (!m_worker.InitializeModel()) {
+    return false;
+  }
   // Process contexts
   bool error = false;
   vector<string> processedContexts;
