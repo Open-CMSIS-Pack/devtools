@@ -4,7 +4,7 @@ This is the installer for the CMSIS-Toolbox.
 
 **Refer to:**
 - [README.md](../README.md) for an overview of the CMSIS-Toolbox
-- [Installation](./docs/Installation.md) for details on how to setup the CMSIS-Toolbox
+- [Installation](./docs/installation.md) for details on how to setup the CMSIS-Toolbox
   
 
 This installer provides:
