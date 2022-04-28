@@ -101,7 +101,9 @@
         "CPP":        { "$ref": "#/definitions/ArrayOfStrings", "description": "List of CPP flags" },
         "C*":         { "$ref": "#/definitions/ArrayOfStrings", "description": "List of C & CPP flags" },
         "ASM":        { "$ref": "#/definitions/ArrayOfStrings", "description": "List of ASM flags"  },
-        "Link":       { "$ref": "#/definitions/ArrayOfStrings", "description": "List of Linker flags" },
+        "LinkC":      { "$ref": "#/definitions/ArrayOfStrings", "description": "List of C Linker flags" },
+        "LinkCPP":    { "$ref": "#/definitions/ArrayOfStrings", "description": "List of CPP Linker flags" },
+        "Link*":      { "$ref": "#/definitions/ArrayOfStrings", "description": "List of C & CPP Linker flags" },
         "Lib":        { "$ref": "#/definitions/ArrayOfStrings", "description": "List of Library Manager or Archiver flags" }
       },
       "additionalProperties": false

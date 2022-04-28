@@ -296,9 +296,11 @@
     <xs:choice maxOccurs="unbounded">
       <!-- Build options -->
       <xs:element name="output"    type="OutputType" />
-      <!-- Linker command-line -->
+      <!-- C Linker command-line -->
       <xs:element name="ldflags"   type="LinkerFlagsType" />
-      <!-- C-Compiler command-line -->
+      <!-- C++ Linker command-line -->
+      <xs:element name="ldxxflags"   type="LinkerFlagsType" />
+      <!-- C Compiler command-line -->
       <xs:element name="cflags"    type="ToolOptionType" />
       <!-- C++ Compiler command-line -->
       <xs:element name="cxxflags"  type="ToolOptionType" />
