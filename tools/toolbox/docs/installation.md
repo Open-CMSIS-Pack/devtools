@@ -65,13 +65,15 @@ The support of the various toolchains is defined by `*.cmake` files in the direc
 
 > Note: The filenames reflect the available compiler versions on the host system.  There may be multiple files for each compiler to support different versions, for example `AC6.6.16.0.cmake` and `AC6.6.18.0.cmake`.
 
-Each of these `*.cmake` files defines the path (`TOOLCHAIN_ROOT`) to the toolchain binaries, the file extension (`EXT`) of the executable binaries, and other compiler related parameters for the invocation. Edit the files to reflect the path as shown in the example (for `AC6`) below:
+Each of these `*.cmake` files defines the path (`TOOLCHAIN_ROOT`) to the toolchain binaries, the file extension (`EXT`) of the executable binaries, the version (`CMAKE_C_COMPILER_VERSION`) and other compiler related parameters for the invocation. Edit the files to reflect the path as shown in the example (for `AC6`) below:
 
 ```txt
 ############### EDIT BELOW ###############
 # Set base directory of toolchain
 set(TOOLCHAIN_ROOT "C:/Keil_v5/ARM/ARMCLANG/bin")
 set(EXT .exe)
+...
+set(CMAKE_C_COMPILER_VERSION "6.16.0")
 ```
 
 ### Setup Win64
