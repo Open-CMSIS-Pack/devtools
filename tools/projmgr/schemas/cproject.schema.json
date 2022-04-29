@@ -1,8 +1,8 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/0.9.4/tools/projmgr/schemas/cproject.schema.json",
+  "$id": "https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/0.9.5/tools/projmgr/schemas/cproject.schema.json",
   "title": "CMSIS Project Manager cproject",
-  "version": "0.9.4",
+  "version": "0.9.5",
   "properties": {
     "project": {
       "$ref": "./common.schema.json#/definitions/ProjectDescType"
