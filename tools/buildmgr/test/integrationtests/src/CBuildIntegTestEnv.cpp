@@ -52,7 +52,7 @@ void CBuildIntegTestEnv::SetUp() {
   ci_installer_path = CrossPlatformUtils::GetEnv("CI_CBUILD_INSTALLER");
 
   // Read AC6 toolchain path
-  string ac6ToolchainFilePath = testout_folder + "/cbuild/etc/AC6.6.16.0.cmake";
+  string ac6ToolchainFilePath = testout_folder + "/cbuild/etc/AC6.6.18.0.cmake";
   ASSERT_TRUE(fs::exists(ac6ToolchainFilePath));
 
   ifstream file(ac6ToolchainFilePath);

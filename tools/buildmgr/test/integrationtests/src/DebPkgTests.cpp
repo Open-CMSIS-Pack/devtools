@@ -48,7 +48,7 @@ void DebPkgTests::ExtractPackage(const string& pkg, const string& extPath) {
 
 void DebPkgTests::ValidateExtract(const string& extPath) {
   vector<string> pathVec = {
-    "./etc/cmsis-build/AC5.5.6.7.cmake", "./etc/cmsis-build/AC6.6.16.0.cmake",
+    "./etc/cmsis-build/AC5.5.6.7.cmake", "./etc/cmsis-build/AC6.6.18.0.cmake",
     "./etc/cmsis-build/CPRJ.xsd", "./etc/cmsis-build/GCC.10.2.1.cmake",
     "./etc/cmsis-build/setup",
     "./etc/profile.d/cmsis-build.sh", "./usr/bin/cbuild.sh",
@@ -58,7 +58,7 @@ void DebPkgTests::ValidateExtract(const string& extPath) {
     "./usr/lib/cmsis-build/bin/cbuild.sh",
     "./usr/lib/cmsis-build/bin/cbuildgen",
     "./usr/lib/cmsis-build/bin/cpackget",
-    "./usr/lib/cmsis-build/etc/AC5.5.6.7.cmake", "./usr/lib/cmsis-build/etc/AC6.6.16.0.cmake",
+    "./usr/lib/cmsis-build/etc/AC5.5.6.7.cmake", "./usr/lib/cmsis-build/etc/AC6.6.18.0.cmake",
     "./usr/lib/cmsis-build/etc/CPRJ.xsd", "./usr/lib/cmsis-build/etc/GCC.10.2.1.cmake",
     "./usr/lib/cmsis-build/etc/setup",
     "./usr/share/doc/cmsis-build/copyright",
