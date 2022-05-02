@@ -634,3 +634,12 @@ TEST_F(ProjMgrWorkerUnitTests, GetBoardItem) {
     EXPECT_EQ(in.second.vendor, item.vendor);
   }
 }
+
+TEST_F(ProjMgrWorkerUnitTests, ApplyFilter) {
+  std::set<std::string> input = { "TestString1", "FilteredString", "TestString2" };
+  std::set<std::string> filter = { "String", "Filtered", "" };
+  std::set<std::string> expected = { "FilteredString" };
+  std::set<std::string> result;
+  ApplyFilter(input, filter, result);
+  EXPECT_EQ(expected, result);
+}
