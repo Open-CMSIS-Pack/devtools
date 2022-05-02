@@ -53,10 +53,10 @@ jobs:
         with:
           submodules: true
 
-      # https://github.com/Arm-Examples/mcu-build-action
+      # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build
-        uses: Arm-Examples/mcu-build-action@v1.1
-        id: mcu-build
+        uses: Open-CMSIS-Pack/devtools-build-action@v1.1
+        id: devtools-build
         with:
           target: cbuildgen
           arch: ${{ matrix.arch }}
@@ -346,9 +346,9 @@ jobs:
         if: ${{ startsWith(matrix.runs_on, 'macos') || startsWith(matrix.runs_on, 'ubuntu') }}
         run: chmod +x cbuild_install.sh
 
-      # https://github.com/Arm-Examples/mcu-build-action
+      # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build CbuildUnitTests
-        uses: Arm-Examples/mcu-build-action@v1.1
+        uses: Open-CMSIS-Pack/devtools-build-action@v1.1
         with:
           target: CbuildUnitTests
           build_type: Debug
@@ -372,9 +372,9 @@ jobs:
           check_name: "Cbuild Unittests [${{ matrix.target }}_${{ matrix.arch }}]"
           report_paths: build/cbuildunit_test_report.xml
 
-      # https://github.com/Arm-Examples/mcu-build-action
+      # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build CbuildIntegTests
-        uses: Arm-Examples/mcu-build-action@v1.1
+        uses: Open-CMSIS-Pack/devtools-build-action@v1.1
         with:
           target: CbuildIntegTests
           build_type: Debug
