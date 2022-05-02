@@ -1318,26 +1318,19 @@ bool ProjMgrWorker::ProcessContext(ContextItem& context, bool resolveDependencie
 
 void ProjMgrWorker::ApplyFilter(const set<string>& origin, const set<string>& filter, set<string>& result) {
   result.clear();
-  for (const auto& word : filter) {
-    if (word.empty()) {
-      continue;
+  for (const auto& item : origin) {
+    bool match = true;
+    for (const auto& word : filter) {
+      if (word.empty()) {
+        continue;
+      }
+      if (item.find(word) == string::npos) {
+        match = false;
+        break;
+      }
     }
-    if (result.empty()) {
-      for (const auto& item : origin) {
-        if (item.find(word) != string::npos) {
-          result.insert(item);
-        }
-      }
-    } else {
-      const auto temp = result;
-      for (const auto& item : temp) {
-        if (item.find(word) == string::npos) {
-          result.erase(result.find(item));
-        }
-        if (result.empty()) {
-          return;
-        }
-      }
+    if (match) {
+      result.insert(item);
     }
   }
 }
