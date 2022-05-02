@@ -418,6 +418,86 @@ jobs:
           check_name: "Cbuild Integration Tests [${{ matrix.target }}-${{ matrix.arch }}]"
           report_paths: build/integtest_report_${{ matrix.target }}.xml
 
+  coverage:
+    if: |
+        (github.event_name == 'pull_request') ||
+        (github.event_name == 'push') ||
+        (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/buildmgr/'))
+    env:
+        installer_name: "gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2"
+        arm_gcc_install_base: https://developer.arm.com/-/media/Files/downloads/gnu-rm/10-2020q4
+        CI_PACK_ROOT: ${{ github.workspace }}/packs
+        CI_GCC_TOOLCHAIN_ROOT: ${{ github.workspace }}/gcc-arm-none-eabi-10-2020-q4-major/bin
+    runs-on: ubuntu-20.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: true
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt-get install \
+            bc \
+            build-essential \
+            ninja-build \
+            lcov
+
+      - name: Checkout devtools
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Create build folder
+        run: mkdir build
+
+      - name: Setup ARM GCC for Ubuntu
+        run: |
+          wget -q ${{ env.arm_gcc_install_base }}/${{ env.installer_name }}
+          tar -xvf ${{ env.installer_name }}
+          rm -rf ${{ env.installer_name }}
+
+      - name: Cache CMSIS Pack
+        uses: actions/cache@v2
+        env:
+          CACHE_NAME: cmsis_pack
+        with:
+          key: ${{ env.CACHE_NAME }}-${{ runner.os }}
+          path: ${{ env.CI_PACK_ROOT }}
+
+      - name: Build and run buildmgr tests
+        run: |
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCOVERAGE=ON ..
+          cmake --build . --target CbuildUnitTests
+          ./tools/buildmgr/test/unittests/linux64/Debug/CbuildUnitTests --gtest_output=xml:cbuildunittests-linux64.xml
+          cmake --build . --target CbuildIntegTests
+          ./tools/buildmgr/test/integrationtests/linux64/Debug/CbuildIntegTests --gtest_filter=-*AC5*:*AC6*:*MultiTargetAC6Tests*:*DebPkgTests*:*InstallerTests* --gtest_output=xml:cbuildintegtests-linux64.xml
+        working-directory: build
+
+      - name: Generate coverage report
+        run: |
+          lcov -c --directory . --output-file full_coverage.info
+          lcov -e full_coverage.info '/tools/buildmgr/cbuild/*' '*/tools/buildmgr/cbuildgen/*' '*/tools/buildmgr/cbuild/*' -o coverage.info
+          genhtml coverage.info --output-directory coverage
+          zip -r coverage.zip coverage/*
+        working-directory: ./build/tools/buildmgr
+
+      - name: Upload Report to Codecov
+        if: ${{ !github.event.repository.private }}
+        uses: codecov/codecov-action@v2
+        with:
+          files: ./build/tools/buildmgr/coverage.info
+          fail_ci_if_error: true
+          flags: buildmgr-cov
+          functionalities: fix
+
+      - name: Archive coverage report
+        uses: actions/upload-artifact@v2
+        with:
+          name: coverage-report
+          path: ./build/tools/buildmgr/coverage.zip
+          retention-days: 1
+          if-no-files-found: error
+
   sanity-check-native:
     needs: [ create_installer, matrix_prep ]
     timeout-minutes: 15
