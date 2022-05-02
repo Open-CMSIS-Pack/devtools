@@ -56,9 +56,9 @@ jobs:
         with:
           submodules: true
 
-      # https://github.com/Arm-Examples/mcu-build-action
+      # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build
-        uses: Arm-Examples/mcu-build-action@v1.1
+        uses: Open-CMSIS-Pack/devtools-build-action@v1.1
         with:
           target: projmgr
           arch: ${{ matrix.arch }}
@@ -71,10 +71,10 @@ jobs:
           retention-days: 1
           if-no-files-found: error
 
-      # https://github.com/Arm-Examples/mcu-build-action
+      # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build swig libs windows
         if: ${{ startsWith(matrix.runs_on, 'windows') }}
-        uses: Arm-Examples/mcu-build-action@v1.1
+        uses: Open-CMSIS-Pack/devtools-build-action@v1.1
         with:
           add_cmake_variables: -DSWIG_LIBS=ON
           add_cmake_build_args: --config Release
@@ -82,10 +82,10 @@ jobs:
           build_folder: buildswig
           target: projmgr-python
 
-      # https://github.com/Arm-Examples/mcu-build-action
+      # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build swig libs macos and ubuntu amd64
         if: ${{ startsWith(matrix.runs_on, 'macos') || ( startsWith(matrix.runs_on, 'ubuntu') && matrix.arch == 'amd64' ) }}
-        uses: Arm-Examples/mcu-build-action@v1.1
+        uses: Open-CMSIS-Pack/devtools-build-action@v1.1
         with:
           add_cmake_variables: -DSWIG_LIBS=ON
           add_cmake_build_args: --config Release
@@ -267,9 +267,9 @@ jobs:
         with:
           submodules: true
 
-      # https://github.com/Arm-Examples/mcu-build-action
+      # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build ProjMgrUnitTests
-        uses: Arm-Examples/mcu-build-action@v1.1
+        uses: Open-CMSIS-Pack/devtools-build-action@v1.1
         with:
           arch: ${{ matrix.arch }}
           build_type: Debug
@@ -317,9 +317,9 @@ jobs:
         with:
           submodules: true
 
-      # https://github.com/Arm-Examples/mcu-build-action
+      # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build ProjMgrUnitTests
-        uses: Arm-Examples/mcu-build-action@v1.1
+        uses: Open-CMSIS-Pack/devtools-build-action@v1.1
         with:
           add_cmake_variables: -DCOVERAGE=ON
           arch: amd64
