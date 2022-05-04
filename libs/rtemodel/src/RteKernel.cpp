@@ -326,10 +326,7 @@ string RteKernel::GetLocalPdscFile(const RteAttributes& attributes, const string
   string url, version;
   if (GetUrlFromIndex(rtePath, name, vendor, versionRange, url, version)) {
     packId = vendor + '.' + name + '.' + version;
-    static const string&& prefix = "file://localhost/";
-    if (url.find(prefix) == 0) {
-      url.erase(0, prefix.length());
-    }
+    url = RteFsUtils::GetAbsPathFromLocalUrl(url);
     return url + vendor + '.' + name + ".pdsc";
   }
 
@@ -420,11 +417,7 @@ bool RteKernel::GetLocalPacksUrls(const string& rtePath, list<string>& urls)
     return false;
   }
   for (const auto& item : indexList) {
-    static const string&& prefix = "file://localhost/";
-    string url = item->GetAttribute("url");
-    if (url.find(prefix) == 0) {
-      url.erase(0, prefix.length());
-    }
+    const string& url = RteFsUtils::GetAbsPathFromLocalUrl(item->GetAttribute("url"));
     urls.push_back(url);
   }
   return true;

@@ -1069,3 +1069,25 @@ TEST_F(RteFsUtilsTest, FindFileRegEx_NoMatch) {
   EXPECT_EQ(false, RteFsUtils::FindFileRegEx(searchPaths, ".*\\.cdefault\\.yml", finding));
   RteFsUtils::RemoveDir(testdir);
 }
+
+TEST_F(RteFsUtilsTest, GetAbsPathFromLocalUrl) {
+  const string& absoluteFilenameRegular = RteFsUtils::AbsolutePath(filenameRegular).generic_string();
+  // Local host
+  const string& testUrlLocalHost = "file://localhost/" + absoluteFilenameRegular;
+  EXPECT_EQ(absoluteFilenameRegular, RteFsUtils::GetAbsPathFromLocalUrl(testUrlLocalHost));
+
+  // Empty host
+  const string& testUrlEmptyHost = "file:///" + absoluteFilenameRegular;
+  EXPECT_EQ(absoluteFilenameRegular, RteFsUtils::GetAbsPathFromLocalUrl(testUrlEmptyHost));
+
+  // Omitted host
+  const string& testUrlOmittedHost = "file:/" + absoluteFilenameRegular;
+  EXPECT_EQ(absoluteFilenameRegular, RteFsUtils::GetAbsPathFromLocalUrl(testUrlOmittedHost));
+
+  // File path without root path
+  const string& rootPath = fs::path(absoluteFilenameRegular).root_path().generic_string();
+  string filenameWithoutRoot = absoluteFilenameRegular;
+  filenameWithoutRoot.erase(0, rootPath.length());
+  const string& testUrlWithoutRoot = "file://localhost/" + filenameWithoutRoot;
+  EXPECT_EQ(absoluteFilenameRegular, RteFsUtils::GetAbsPathFromLocalUrl(testUrlWithoutRoot));
+}

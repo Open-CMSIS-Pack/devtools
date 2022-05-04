@@ -320,6 +320,13 @@ public:
    * @return true if file is found successfully, false otherwise
   */
   static bool FindFileRegEx(const std::vector<std::string>& searchPaths, const std::string& regEx, std::string& file);
+
+  /**
+   * @brief get absolute file path from local url
+   * @param url starting with the pattern 'file://localhost/' or 'file:///' or 'file:/'
+   * @return string containing the absolute path
+  */
+  static std::string GetAbsPathFromLocalUrl(const std::string& url);
 };
 
 #endif // RteFsUtils_H

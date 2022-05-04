@@ -274,8 +274,6 @@ bool CbuildProject::GetUrlFromLocalRepository(const string&rtePath, const string
   Get the PDSC URL from the .Local/local_repository.pidx file
   */
   string indexPath = string(rtePath) + "/.Local/local_repository.pidx";
-  const string prefix = "file://localhost/";
-
   fs::path path(indexPath);
   error_code ec;
   if (!fs::exists(path, ec)) {
@@ -284,9 +282,7 @@ bool CbuildProject::GetUrlFromLocalRepository(const string&rtePath, const string
 
   // get the url root
   if (GetUrl(path.generic_string(), name, vendor, versionRange, url)) {
-    if (url.find(prefix) != string::npos) {
-      url.erase(0,prefix.length());
-    }
+    url = RteFsUtils::GetAbsPathFromLocalUrl(url);
     return true;
   }
 
