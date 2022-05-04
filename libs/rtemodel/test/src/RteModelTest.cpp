@@ -291,7 +291,10 @@ TEST_F(RteModelPrjTest, GetLocalPdscFile) {
   EXPECT_EQ(packId, "LocalVendor.LocalPack.0.1.0");
 
   // check returned pdsc
-  EXPECT_EQ(pdsc, "packs/LocalVendor/LocalPack/LocalVendor.LocalPack.pdsc");
+  error_code ec;
+  string expectedPdsc = "packs/LocalVendor/LocalPack/LocalVendor.LocalPack.pdsc";
+  expectedPdsc = fs::current_path(ec).root_path().append(expectedPdsc).generic_string();
+  EXPECT_EQ(pdsc, expectedPdsc);
 }
 
 TEST_F(RteModelPrjTest, GenerateHeadersTestDefault)
