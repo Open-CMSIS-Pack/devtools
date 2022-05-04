@@ -211,7 +211,7 @@ jobs:
 
       - name: Adding execution permission to the binaries
         run: |
-          chmod +x cbuildgen.*
+          chmod +x *
         working-directory: tools/buildmgr/cbuildgen/distribution/bin
 
       - name: Download documentation

@@ -59,8 +59,9 @@ Software layers and Virtual I/O simplify these use cases:
   <tr>
     <td>0.11.1</td>
     <td>Release for review of initial development:
-      - updated cbuild utility v0.9.1
-      - updated AC6 compiler support v6.18.0
+      - updated cbuild utility v0.9.1.
+      - updated cpackget utility v0.4.1.
+      - updated AC6 compiler support v6.18.0.
     </td>
     <td>0.11.0</td>
     <td>Release for review of initial development:
