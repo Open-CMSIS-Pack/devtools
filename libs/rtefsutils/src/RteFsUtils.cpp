@@ -14,6 +14,7 @@
 
 #include "RteFsUtils.h"
 
+#include "CrossPlatformUtils.h"
 #include "RteUtils.h"
 #include "WildCards.h"
 
@@ -762,16 +763,15 @@ string RteFsUtils::GetAbsPathFromLocalUrl(const string& url) {
   static const string&& fileScheme = "file:/";
   if (filepath.find(fileScheme) == 0) {
     filepath.erase(0, fileScheme.length());
-    static const string&& host = "/localhost/";
-    if (filepath.find(host) == 0) {
-      filepath.erase(0, host.length());
+    static const string&& localhost = "/localhost/";
+    if (filepath.find(localhost) == 0) {
+      filepath.erase(0, localhost.length());
     } else if (filepath.find("//") == 0) {
       filepath.erase(0, 2);
     }
-    if (!fs::path(filepath).has_root_path()) {
-      // File paths in the url may not have the root path
-      error_code ec;
-      filepath = fs::current_path(ec).root_path().append(filepath).generic_string();
+    const string& host = CrossPlatformUtils::GetHostType();
+    if ((host == "linux") || (host == "mac")) {
+      filepath = fs::path("/").append(filepath).generic_string();
     }
   }
   return filepath;
