@@ -11,7 +11,7 @@
   </packages>
 
   <compilers>
-    <compiler name="AC6" version="6.16.0"/>
+    <compiler name="AC6" version="6.18.0"/>
   </compilers>
 
   <target Bname="RteTest Test board-3" Bvendor="Keil" Bversion="1.1.1" Dendian="Little-endian" Dfpu="NO_FPU" Dname="RteTest_ARMCM0" Dsecure="Non-secure" Dvendor="ARM:82">

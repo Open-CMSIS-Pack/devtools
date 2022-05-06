@@ -3,7 +3,7 @@
 project:
   description: Project 1
   device: RteTest_ARMCM0
-  # No compilercompiler: AC6@6.16.0
+  # No compilercompiler: AC6@6.18.0
   packages:
     - package: ARM::RteTest@0.1.0
   components:

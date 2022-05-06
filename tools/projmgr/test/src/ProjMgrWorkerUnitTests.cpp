@@ -31,7 +31,7 @@ void ProjMgrWorkerUnitTests::SetCsolutionPacks(CsolutionItem* csolution, std::ve
 TEST_F(ProjMgrWorkerUnitTests, ProcessToolchain) {
   ToolchainItem expected;
   expected.name = "AC6";
-  expected.version = "6.16.0";
+  expected.version = "6.18.0";
   ProjMgrParser parser;
   ContextDesc descriptor;
   const string& filename = testinput_folder + "/TestProject/test.cproject.yml";
@@ -56,7 +56,7 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessToolchainOptions) {
   {
     { "", {false, "", "", ""}},
     { "TEST", {true, "", "TEST", "0.0.0"}},
-    { "AC6", {true, "AC6", "ARMCC", "6.16.0"}}
+    { "AC6", {true, "AC6", "ARMCC", "6.18.0"}}
   };
 
   for (auto input : testInput) {

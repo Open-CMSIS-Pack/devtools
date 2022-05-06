@@ -11,7 +11,7 @@
   </packages>
 
   <compilers>
-    <compiler name="AC6" version="6.16.0"/>
+    <compiler name="AC6" version="6.18.0"/>
   </compilers>
 
   <target Ddsp="DSP" Dfpu="SP_FPU" Dname="ARMCM33_DSP_FP_TZ" Dsecure="Secure" Dtz="TZ" Dvendor="ARM:82">

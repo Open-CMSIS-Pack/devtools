@@ -56,7 +56,7 @@ void ToolBoxInstallerTests::CheckInstallationDir(
               "index.html"}},
 
     { "etc", vector<string>{
-                "AC5.5.6.7.cmake", "AC6.6.16.0.cmake",
+                "AC5.5.6.7.cmake", "AC6.6.18.0.cmake",
                 "CPRJ.xsd", "GCC.10.2.1.cmake",
                 "IAR.8.50.6.cmake", "setup",
                 "{{ProjectName}}.cproject.yml",
@@ -91,7 +91,7 @@ void ToolBoxInstallerTests::CheckExtractedDir(const string& path, bool expect) {
               "index.html"}},
 
     { "etc", vector<string>{
-                "AC5.5.6.7.cmake", "AC6.6.16.0.cmake",
+                "AC5.5.6.7.cmake", "AC6.6.18.0.cmake",
                 "CPRJ.xsd", "GCC.10.2.1.cmake",
                 "IAR.8.50.6.cmake", "setup",
                 "{{ProjectName}}.cproject.yml",

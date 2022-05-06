@@ -4,7 +4,7 @@ project:
   description: Project 1
   board: Keil::RteTest Test board-4
   device: RteTest_ARMCM4_FP
-  compiler: AC6@6.16.0
+  compiler: AC6@6.18.0
   processor:
     fpu: off
     endian: little

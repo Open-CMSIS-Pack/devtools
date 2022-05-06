@@ -134,7 +134,7 @@ case $OS in
     install_dir_default_path=./cmsis-toolbox
     cmsis_pack_root_default_path=$(unixpath "${LOCALAPPDATA}/Arm/Packs")
     cmsis_compiler_root_default_path=$(unixpath "${LOCALAPPDATA}/Arm/Compilers")
-    compiler6_default_path=$(unixpath "${PROGRAMFILES}/ARMCompiler6.16/bin")
+    compiler6_default_path=$(unixpath "${PROGRAMFILES}/ArmCompilerforEmbedded6.18/bin")
     compiler5_default_path=$(unixpath "${PROGRAMFILES} (x86)/ARM_Compiler_5.06u7/bin")
     gcc_default_path=$(unixpath "${PROGRAMFILES} (x86)/GNU Arm Embedded Toolchain/10 2020-q4-major/bin")
     iar_default_path=$(unixpath "${PROGRAMFILES} (x86)/IAR Systems/Embedded Workbench 8.4/arm/bin")
@@ -148,7 +148,7 @@ case $OS in
     programfiles=$(cmd.exe /c "echo|set /p=%PROGRAMFILES%")
     cmsis_pack_root_default_path=$(wslpath "${localappdata}\Arm\Packs")
     cmsis_compiler_root_default_path=$(wslpath "${localappdata}\Arm\Compilers")
-    compiler6_default_path=$(wslpath "${programfiles}/ARMCompiler6.16/bin")
+    compiler6_default_path=$(wslpath "${programfiles}/ArmCompilerforEmbedded6.18/bin")
     compiler5_default_path=$(wslpath "${programfiles} (x86)/ARM_Compiler_5.06u7/bin")
     gcc_default_path=$(wslpath "${programfiles} (x86)/GNU Arm Embedded Toolchain/10 2020-q4-major/bin")
     iar_default_path=$(wslpath "${programfiles} (x86)/IAR Systems/Embedded Workbench 8.4/arm/bin")
@@ -159,7 +159,7 @@ case $OS in
     install_dir_default_path=./cmsis-toolbox
     cmsis_pack_root_default_path=${HOME}/.cache/arm/packs
     cmsis_compiler_root_default_path=${HOME}/.cache/arm/compilers
-    compiler6_default_path=${HOME}/ARMCompiler6.16/bin
+    compiler6_default_path=${HOME}/ArmCompilerforEmbedded6.18/bin
     compiler5_default_path=${HOME}/ARM_Compiler_5.06u7/bin
     gcc_default_path=${HOME}/gcc-arm-none-eabi-10-2020-q4-major/bin
     iar_default_path=/opt/iarsystems/bxarm/arm/bin
@@ -182,7 +182,7 @@ else
 fi
 
 # ask for AC6 compiler installation path
-read -e -p "Enter the installed Arm Compiler 6.16 directory [${compiler6_default_path}]: " compiler6_root
+read -e -p "Enter the installed Arm Compiler 6.18 directory [${compiler6_default_path}]: " compiler6_root
 compiler6_root=${compiler6_root:-${compiler6_default_path}}
 if [[ -d "${compiler6_root}" ]]
   then
@@ -313,7 +313,7 @@ if [[ $OS == "Windows" ]]
 fi
 
 # update toolchain config files
-script="${cmsis_compiler_root}/AC6.6.16.0.cmake"
+script="${cmsis_compiler_root}/AC6.6.18.0.cmake"
 sed -e "s|set(TOOLCHAIN_ROOT.*|set(TOOLCHAIN_ROOT \"${compiler6_root}\")|" "${script}" > temp.$$ && mv temp.$$ "${script}"
 sed -e "s|set(EXT.*|set(EXT ${extension})|" "${script}" > temp.$$ && mv temp.$$ "${script}"
 
