@@ -850,10 +850,11 @@ It is possible to specify only a `<build-type>`, only a `<target-type>` or a com
 
 ```yml
 for-type:      .Test                            # add item for build-type: Test (any target-type)
+for-type:      .Debug, .Release+Production-HW   # add for build-type: Debug and build-type: Release / target-type: Production-HW
 not-for-type:  +Virtual                         # remove item for target-type: Virtual (any build-type)
 not-for-type:  .Release+Virtual                 # remove item for build-type: Release with target-type: Virtual
-for-type:      .Debug, .Release+Production-HW   # add for build-type: Debug and build-type: Release / target-type: Production-HW
 ```
+> **Note:** `for-type` and `not-for-type` are mutually exclusive, only one occurrence can be specified for a *list node*. 
 
 ### *list nodes*
 
@@ -862,10 +863,15 @@ The keyword `for-type:` or `not-for-type:` can be applied to the following list 
 List Node                                  | Description
 :------------------------------------------|:------------------------------------
 [`- project:`](#projects)                  | At `projects:` level it is possible to control inclusion of project.
+[`- layer:`](#layers)                      | At `layers:` level it is possible to control inclusion of a software layer.
+[`- component:`](#components)              | At `components:` level it is possible to control inclusion of a software component.
 [`- group:`](#groups)                      | At `groups:` level it is possible to control inclusion of a file group.
 [`- file:`](#files)                        | At `files:` level it is possible to control inclusion of a file.
-[`- layer:`](#layers)                      | At `projects:` level it is possible to control inclusion of a software layer.
-[`- component:`](#components)              | At `components:` level it is possible to control inclusion of a software component.
+
+The inclusion of a *list node* is processed for a given *project context* respecting its hierarchy from top to bottom: `project` > `layer` > `component`/`group` > `file`
+
+In other words, the restrictions specified by a *type list* for a *list node* are automatically applied to its children nodes.
+Children *list nodes* inherit the restrictions from their parent and consequently it must be considered when processing their *type lists*.
 
 # Related Projects
 

@@ -24,6 +24,22 @@
       ],
       "description": "Exclude project for a list of [.<build-type>][+<target-type>]"
     },
+    "TypeListMutualExclusion": {
+      "oneOf": [
+        { "required": ["for-type"],
+          "not": {"required": ["not-for-type"]}
+        },
+        { "required": ["not-for-type"],
+          "not": {"required": ["for-type"]}
+        },
+        { 
+          "allOf": [
+            { "not": {"required": ["for-type"] }},
+            { "not": {"required": ["not-for-type"]}}
+          ]
+        }
+      ]
+    },
     "CompilerType": {
       "type": "string",
       "pattern": "^(GCC|AC6|IAR)(@(\\d+\\.\\d+\\.\\d+((\\+|\\-)[\\w.+-]+)?))?$",
@@ -175,8 +191,9 @@
         },
         "for-type":     { "$ref": "#/definitions/ForType" },
         "not-for-type": { "$ref": "#/definitions/NotForType" }
-      },
+      },      
       "additionalProperties": false,
+      "$ref": "#/definitions/TypeListMutualExclusion",
       "required": [ "project" ]
     },
     "ProcessorType": {
@@ -220,6 +237,7 @@
         "groups":       { "$ref": "#/definitions/GroupsType" },
         "files":        { "$ref": "#/definitions/FilesType" }
       },
+      "$ref": "#/definitions/TypeListMutualExclusion",
       "anyOf": [
         {"required" : ["files"]},
         {"required" : ["groups"]}
@@ -246,6 +264,7 @@
         "del-paths":    { "$ref": "#/definitions/DelpathsType" },
         "misc":         { "$ref": "#/definitions/MiscTypes" }
       },
+      "$ref": "#/definitions/TypeListMutualExclusion",
       "required": [ "file" ],
       "additionalProperties": false
     },
@@ -274,6 +293,7 @@
         "del-paths":    { "$ref": "#/definitions/DelpathsType" },
         "misc":         { "$ref": "#/definitions/MiscTypes" }
       },
+      "$ref": "#/definitions/TypeListMutualExclusion",
       "required": [ "component" ],
       "additionalProperties": false
     },
@@ -299,6 +319,7 @@
         "del-paths":    { "$ref": "#/definitions/DelpathsType" },
         "misc":         { "$ref": "#/definitions/MiscType" }
       },
+      "$ref": "#/definitions/TypeListMutualExclusion",
       "required": [ "layer" ],
       "additionalProperties": false
     },
@@ -408,6 +429,7 @@
         "for-type":     { "$ref": "#/definitions/ForType" },
         "not-for-type": { "$ref": "#/definitions/NotForType" }
       },
+      "$ref": "#/definitions/TypeListMutualExclusion",
       "required": [ "pack" ],
       "additionalProperties": false
     }
