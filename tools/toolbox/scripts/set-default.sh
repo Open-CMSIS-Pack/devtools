@@ -17,7 +17,7 @@ case $1 in
     ;;
   'Linux' | 'Darwin')
     # linux/macos
-    compiler6_default_path=~/ARMCompiler6.16/bin
+    compiler6_default_path=~/ArmCompilerforEmbedded6.18/bin
     compiler5_default_path=~/ARM_Compiler_5.06u7/bin
     gcc_default_path=~/gcc-arm-none-eabi-10-2020-q4-major/bin
     iar_default_path=/opt/iarsystems/bxarm/arm/bin
@@ -26,7 +26,7 @@ case $1 in
 esac
 
 # update toolchain config files
-script="$2/AC6.6.16.0.cmake"
+script="$2/AC6.6.18.0.cmake"
 sed -e "s|set(TOOLCHAIN_ROOT.*|set(TOOLCHAIN_ROOT \"${compiler6_default_path}\")|" "${script}" > temp.$$ && mv temp.$$ "${script}"
 sed -e "s|set(EXT.*|set(EXT ${extension})|" "${script}" > temp.$$ && mv temp.$$ "${script}"
 

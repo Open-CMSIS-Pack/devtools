@@ -7,7 +7,7 @@ layer:
     - DEF_LAYER1
   add-paths:
     - path/to/layer1
-  compiler: AC6@6.16.0
+  compiler: AC6@6.18.0
   misc:
     - C:
       - --layer1-flag

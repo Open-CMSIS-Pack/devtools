@@ -2,7 +2,7 @@
 
 project:
   description: Project 1
-  compiler: AC6@6.16.0
+  compiler: AC6@6.18.0
   processor:
     fpu: off
     endian: little

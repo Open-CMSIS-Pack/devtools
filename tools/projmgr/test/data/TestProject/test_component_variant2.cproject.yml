@@ -2,7 +2,7 @@
 
 project:
   device: RteTest_ARMCM0
-  compiler: AC6@6.16.0
+  compiler: AC6@6.18.0
   components:
     - component: ARM::Device:Test variant
     - component: CORE
