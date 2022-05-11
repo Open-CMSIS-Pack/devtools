@@ -167,7 +167,7 @@ void ProjMgrGenerator::GenerateCprjTarget(XMLTreeElement* element, const Context
     targetOutputElement->AddAttribute("outdir", context.directories.outdir);
   }
 
-  // TODO Generate toolchain settings (warnings, debug, includes)
+  GenerateCprjOptions(element, context.cproject->target.build);
   GenerateCprjMisc(element, context.misc, context.toolchain.name);
   GenerateCprjLinkerScript(element, context.toolchain.name, context.linkerScript);
   GenerateCprjVector(element, context.defines, "defines");
@@ -201,7 +201,7 @@ void ProjMgrGenerator::GenerateCprjComponents(XMLTreeElement* element, const Con
         }
       }
 
-      // TODO Generate toolchain settings (warnings, debug)
+      GenerateCprjOptions(componentElement, component.second.second->build);
       GenerateCprjMisc(componentElement, component.second.second->build.misc, context.toolchain.name);
       GenerateCprjVector(componentElement, component.second.second->build.defines, "defines");
       GenerateCprjVector(componentElement, component.second.second->build.undefines, "undefines");
@@ -216,6 +216,21 @@ void ProjMgrGenerator::GenerateCprjVector(XMLTreeElement* element, const vector<
   if (!vec.empty()) {
     XMLTreeElement* childElement = element->CreateElement(tag);
     childElement->SetText(GetStringFromVector(vec, ";"));
+  }
+}
+
+void ProjMgrGenerator::GenerateCprjOptions(XMLTreeElement* element, const BuildType& buildType) {
+
+  if (buildType.optimize.empty() && buildType.debug.empty() && buildType.warnings.empty()) {
+    return;
+  }
+
+  XMLTreeElement *optionsElement = element->CreateElement("options");
+  if (optionsElement)
+  {
+    SetAttribute(optionsElement, "optimize", buildType.optimize);
+    SetAttribute(optionsElement, "debug", buildType.debug);
+    SetAttribute(optionsElement, "warnings", buildType.warnings);
   }
 }
 
@@ -269,7 +284,7 @@ void ProjMgrGenerator::GenerateCprjGroups(XMLTreeElement* element, const vector<
         groupElement->AddAttribute("name", groupNode.group);
       }
 
-      // TODO Generate toolchain settings (warnings, debug)
+      GenerateCprjOptions(groupElement, groupNode.build);
       GenerateCprjMisc(groupElement, groupNode.build.misc, compiler);
       GenerateCprjVector(groupElement, groupNode.build.defines, "defines");
       GenerateCprjVector(groupElement, groupNode.build.undefines, "undefines");
@@ -282,7 +297,7 @@ void ProjMgrGenerator::GenerateCprjGroups(XMLTreeElement* element, const vector<
         if (fileElement) {
           fileElement->AddAttribute("category", fileNode.category);
 
-          // TODO Generate toolchain settings (warnings, debug)
+          GenerateCprjOptions(fileElement, fileNode.build);
           GenerateCprjMisc(fileElement, fileNode.build.misc, compiler);
           GenerateCprjVector(fileElement, fileNode.build.defines, "defines");
           GenerateCprjVector(fileElement, fileNode.build.undefines, "undefines");
