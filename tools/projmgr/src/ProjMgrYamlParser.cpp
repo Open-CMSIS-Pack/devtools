@@ -503,7 +503,7 @@ void ProjMgrYamlParser::ParseBuildType(const YAML::Node& parent, BuildType& buil
     {YAML_COMPILER, buildType.compiler},
     {YAML_OPTIMIZE, buildType.optimize},
     {YAML_DEBUG, buildType.debug},
-    {YAML_WARNINGS, buildType.debug},
+    {YAML_WARNINGS, buildType.warnings},
   };
   for (const auto& item : buildChildren) {
     ParseString(parent, item.first, item.second);
