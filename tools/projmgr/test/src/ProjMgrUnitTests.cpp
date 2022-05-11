@@ -649,6 +649,23 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Generator) {
     testinput_folder + "/TestGenerator/ref/test-gpdsc.Debug+CM0.cprj");
 }
 
+TEST_F(ProjMgrUnitTests, RunProjMgr_TargetOptions)
+{
+  char *argv[7];
+  // convert -s solution.yml
+  const string &csolution = testinput_folder + "/TestSolution/test.target_options.csolution.yml";
+  argv[1] = (char *)"convert";
+  argv[2] = (char *)"-s";
+  argv[3] = (char *)csolution.c_str();
+  argv[4] = (char *)"-o";
+  argv[5] = (char *)testoutput_folder.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv));
+
+  // Check generated CPRJs
+  CompareFile(testoutput_folder + "/test.target_options+CM0.cprj",
+              testinput_folder + "/TestSolution/ref/test.target_options+CM0.cprj");
+}
+
 TEST_F(ProjMgrUnitTests, ListPacks) {
   set<string> expectedPacks = {
     "ARM::RteTest@0.1.0 \\(.*\\)",
