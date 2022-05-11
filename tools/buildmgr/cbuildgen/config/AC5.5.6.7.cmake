@@ -90,9 +90,8 @@ set(CC_FLAGS)
 set(CC_BYTE_ORDER ${ASM_BYTE_ORDER})
 set(_PI "--preinclude=")
 
-foreach(ENTRY ${DEFINES})
-  string(APPEND CC_DEFINES "-D${ENTRY} ")
-endforeach()
+set(CC_DEFINES ${DEFINES})
+cbuild_set_defines(C CC_DEFINES)
 
 # C++ Compiler
 
