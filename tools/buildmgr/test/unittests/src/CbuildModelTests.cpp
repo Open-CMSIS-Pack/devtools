@@ -38,3 +38,14 @@ TEST_F(CbuildModelTests, GetAccessSequence) {
   offset = 0;
   EXPECT_FALSE(GetAccessSequence(offset, src, sequence, '$', '$'));
 }
+
+TEST_F(CbuildModelTests, EvalItemTranslationControls) {
+  RteItem groupItem(nullptr);
+  groupItem.SetTag("group");
+  groupItem.SetAttribute("name", "engine");
+  RteItem* optionsItem = groupItem.CreateChild("options");
+  optionsItem->SetAttribute("optimize", "speed");
+
+  EvalItemTranslationControls(&groupItem, OPTIONS);
+  EXPECT_EQ("speed", m_optimize["/engine"]);
+}

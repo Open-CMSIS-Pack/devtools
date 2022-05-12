@@ -348,6 +348,8 @@ const bool CbuildModel::EvaluateResult() {
     return false;
   if (!EvalFlags())
     return false;
+  if (!EvalOptions())
+    return false;
   if (!EvalPreIncludeFiles())
     return false;
 
@@ -884,6 +886,24 @@ bool CbuildModel::SetItemFlags(const RteItem* item, const string& name) {
   return true;
 }
 
+bool CbuildModel::SetItemOptions(const RteItem* item, const string& name) {
+  const RteItem *options = item->GetItemByTag("options");
+  if (!options) {
+    return true; // options are optional
+  }
+
+  string optimize = options->GetAttribute("optimize");
+  m_optimize.insert(pair<string, string>(name, optimize));
+
+  string debug = options->GetAttribute("debug");
+  m_debug.insert(pair<string, string>(name, debug));
+
+  string warnings = options->GetAttribute("warnings");
+  m_warnings.insert(pair<string, string>(name, warnings));
+
+  return true;
+}
+
 bool CbuildModel::SetItemIncludesDefines(const RteItem* item, const string& name) {
   /*
   SetItemIncludesDefines:
@@ -948,7 +968,7 @@ const bool CbuildModel::EvalIncludesDefines() {
   Evaluate User Includes and Defines
   */
 
-  // Target flags
+  // Target includes and defines
   const RteItem* target = m_cprjPack->GetItemByTag("target");
   const RteItem* includes = target->GetItemByTag("includes");
   const RteItem* defines = target->GetItemByTag("defines");
@@ -992,7 +1012,7 @@ const bool CbuildModel::EvalIncludesDefines() {
   // files defines/includes
   const RteItem* files = m_cprjPack->GetItemByTag("files");
   if (files) {
-    if (!EvalItemTranslationControls(files, false)) {
+    if (!EvalItemTranslationControls(files, DEFINES)) {
       return false;
     }
   }
@@ -1048,7 +1068,7 @@ const bool CbuildModel::EvalFlags() {
   // User groups/files flags
   const RteItem* files = m_cprjPack->GetItemByTag("files");
   if (files) {
-    if (!EvalItemTranslationControls(files, true)) {
+    if (!EvalItemTranslationControls(files, FLAGS)) {
       return false;
     }
   }
@@ -1056,15 +1076,59 @@ const bool CbuildModel::EvalFlags() {
   return true;
 }
 
-const bool CbuildModel::EvalItemTranslationControls(const RteItem* item, bool isFlag, const string& groupName) {
+const bool CbuildModel::EvalOptions() {
+  /*
+  EvalOptions:
+  Evaluate compile options (optimize, debug, warnnings ...)
+  */
+
+  // Target flags
+  const RteItem* target = m_cprjPack->GetItemByTag("target");
+  m_targetOptimize = target->GetChildAttribute("options", "optimize");
+  m_targetDebug = target->GetChildAttribute("options", "debug");
+  m_targetWarnings = target->GetChildAttribute("options", "warnings");
+
+  // RTE group flags
+  const RteItem* components = m_cprjPack->GetItemByTag("components");
+  if (components) {
+    for (auto ci : components->GetChildren()) {
+      const string& componentName = GetExtendedRteGroupName(ci, m_cprjProject->GetRteFolder());
+      SetItemOptions(ci, componentName);
+    }
+  }
+
+  // User groups/files flags
+  const RteItem* files = m_cprjPack->GetItemByTag("files");
+  if (files) {
+    if (!EvalItemTranslationControls(files, OPTIONS)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+const bool CbuildModel::EvalItemTranslationControls(const RteItem* item, TranslationControlsKind kind, const string& groupName) {
   /*
   EvalItemTranslationControls:
   Evaluate User Groups/Files Flags/defines/includes
   */
 
-  std::function<bool(const RteItem* item, const string& name)> setItem = isFlag ?
-    std::bind(&CbuildModel::SetItemFlags, this, std::placeholders::_1, std::placeholders::_2) :
-    std::bind(&CbuildModel::SetItemIncludesDefines, this, std::placeholders::_1, std::placeholders::_2);
+  std::function<bool(const RteItem *item, const string &name)> setItem;
+
+  switch (kind){
+    case FLAGS :
+      setItem = std::bind(&CbuildModel::SetItemFlags, this, std::placeholders::_1, std::placeholders::_2);
+      break;
+    case DEFINES:
+      setItem = std::bind(&CbuildModel::SetItemIncludesDefines, this, std::placeholders::_1, std::placeholders::_2);
+      break;
+    case OPTIONS:
+      setItem = std::bind(&CbuildModel::SetItemOptions, this, std::placeholders::_1, std::placeholders::_2);
+      break;
+    default:
+      return false;
+  }
 
   const string& tag = item->GetTag();
   if (tag == "file") {
@@ -1087,7 +1151,7 @@ const bool CbuildModel::EvalItemTranslationControls(const RteItem* item, bool is
 
   setItem(item, subGroupName);
   for (auto subItem : item->GetChildren()) {
-    if (!EvalItemTranslationControls(subItem, isFlag, subGroupName)) {
+    if (!EvalItemTranslationControls(subItem, kind, subGroupName)) {
       return false;
     }
   }

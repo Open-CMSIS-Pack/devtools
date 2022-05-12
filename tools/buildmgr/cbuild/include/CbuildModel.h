@@ -243,6 +243,33 @@ public:
   }
 
   /**
+   * @brief get optimize option
+   * @return optimize option
+  */
+  const std::string& GetTargetOptimize() const
+  {
+    return m_targetOptimize;
+  }
+
+  /**
+   * @brief get debug option
+   * @return debug option
+  */
+  const std::string& GetTargetDebug() const
+  {
+    return m_targetDebug;
+  }
+
+  /**
+   * @brief get warnings option
+   * @return warnings option
+  */
+  const std::string& GetTargetWarnings() const
+  {
+    return m_targetWarnings;
+  }
+
+  /**
    * @brief get compiler flags for C modules contained in the component
    * @return list of key, value pair where
    *         key: component name,
@@ -386,6 +413,16 @@ public:
   }
 
 protected:
+  /**
+   * @brief Kind of Translation Controls
+  */
+  enum TranslationControlsKind {
+    FLAGS,            // flags: asflags, cflags, ldflags ...
+    DEFINES,          // defines
+    OPTIONS,          // options: optimize, debug, warnings
+  };
+
+protected:
   RtePackage        *m_cprjPack = 0;
   RteCprjProject    *m_cprjProject = 0;
   RteTarget         *m_cprjTarget = 0;
@@ -422,6 +459,12 @@ protected:
   std::map<std::string, std::vector<std::string>>   m_CxxFlags;
   std::map<std::string, std::vector<std::string>>   m_AsFlags;
   std::map<std::string, bool>                       m_Asm;
+  std::string                                       m_targetOptimize;
+  std::string                                       m_targetDebug;
+  std::string                                       m_targetWarnings;
+  std::map<std::string, std::string>                m_optimize;
+  std::map<std::string, std::string>                m_debug;
+  std::map<std::string, std::string>                m_warnings;
   std::string                                       m_outDir;
   std::string                                       m_intDir;
   std::string                                       m_outputType;
@@ -444,14 +487,16 @@ protected:
   const bool EvalRteSourceFiles(std::map<std::string, std::list<std::string>> &cSourceFiles, std::map<std::string, std::list<std::string>> &cxxSourceFiles, std::map<std::string, std::list<std::string>> &asmSourceFiles, std::string &linkerScript);
   const bool EvalFile(RteItem* file, const std::string& group, const std::string& base, std::string& filepath);
   const bool EvalItem(RteItem* item, const std::string& groupName = std::string(), const std::string& groupLayer = std::string());
-  const bool EvalItemTranslationControls(const RteItem* item, bool isFlag, const std::string& groupName = std::string());
+  const bool EvalItemTranslationControls(const RteItem* item, TranslationControlsKind kind, const std::string& groupName = std::string());
   const bool GenerateRteHeaders();
   const bool EvalDeviceName();
   const bool EvalFlags();
+  const bool EvalOptions();
   const bool EvalIncludesDefines();
   const bool EvalTargetOutput();
   const bool EvalAccessSequence();
   bool SetItemFlags(const RteItem* item, const std::string& name);
+  bool SetItemOptions(const RteItem* item, const std::string& name);
   bool SetItemIncludesDefines(const RteItem* item, const std::string& name);
   const std::string GetParentName(const RteItem* item);
   const std::vector<std::string>& GetParentTranslationControls(const RteItem* item, std::map<std::string, std::vector<std::string>>& transCtrlMap, const std::vector<std::string>& targetTransCtrls);
@@ -467,4 +512,3 @@ protected:
 };
 
 #endif /* CBUILDMODEL_H */
-
