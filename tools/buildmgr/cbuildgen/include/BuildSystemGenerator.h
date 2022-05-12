@@ -24,6 +24,9 @@
 */
 struct TranslationControls
 {
+  std::string optimize;
+  std::string debug;
+  std::string warnings;
   std::string asMsc;
   std::string ccMsc;
   std::string cxxMsc;
@@ -44,6 +47,9 @@ struct TranslationControls
 struct module
 {
   std::string group;
+  std::string optimize;
+  std::string debug;
+  std::string warnings;
   std::string flags;
   std::string defines;
   std::string undefines;
@@ -117,6 +123,9 @@ protected:
   std::string m_targetMve;
   std::string m_byteOrder;
   std::string m_outputType;
+  std::string m_optimize;
+  std::string m_debug;
+  std::string m_warnings;
   std::string m_ccMscGlobal;
   std::string m_cxxMscGlobal;
   std::string m_asMscGlobal;

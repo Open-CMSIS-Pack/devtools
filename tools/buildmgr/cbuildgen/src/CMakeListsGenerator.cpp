@@ -40,10 +40,13 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
   if (!m_targetSecure.empty())       cmakelists << EOL << "set(SECURE " << m_targetSecure << ")";
   if (!m_targetMve.empty())          cmakelists << EOL << "set(MVE " << m_targetMve << ")";
   if (!m_byteOrder.empty())          cmakelists << EOL << "set(BYTE_ORDER " << m_byteOrder << ")";
-  if (!m_asMscGlobal.empty())       cmakelists << EOL << "set(AS_FLAGS_GLOBAL \"" << CbuildUtils::EscapeQuotes(m_asMscGlobal) << "\")";
-  if (!m_ccMscGlobal.empty())       cmakelists << EOL << "set(CC_FLAGS_GLOBAL \"" << CbuildUtils::EscapeQuotes(m_ccMscGlobal) << "\")";
-  if (!m_cxxMscGlobal.empty())      cmakelists << EOL << "set(CXX_FLAGS_GLOBAL \"" << CbuildUtils::EscapeQuotes(m_cxxMscGlobal) << "\")";
-  if (!m_linkerMscGlobal.empty())   cmakelists << EOL << "set(LD_FLAGS_GLOBAL \"" <<CbuildUtils::EscapeQuotes( m_linkerMscGlobal) << "\")";
+  if (!m_optimize.empty())           cmakelists << EOL << "set(OPT_OPTIMIZE " << m_optimize << ")";
+  if (!m_debug.empty())              cmakelists << EOL << "set(OPT_DEBUG " << m_debug << ")";
+  if (!m_warnings.empty())           cmakelists << EOL << "set(OPT_WARNINGS " << m_warnings << ")";
+  if (!m_asMscGlobal.empty())        cmakelists << EOL << "set(AS_FLAGS_GLOBAL \"" << CbuildUtils::EscapeQuotes(m_asMscGlobal) << "\")";
+  if (!m_ccMscGlobal.empty())        cmakelists << EOL << "set(CC_FLAGS_GLOBAL \"" << CbuildUtils::EscapeQuotes(m_ccMscGlobal) << "\")";
+  if (!m_cxxMscGlobal.empty())       cmakelists << EOL << "set(CXX_FLAGS_GLOBAL \"" << CbuildUtils::EscapeQuotes(m_cxxMscGlobal) << "\")";
+  if (!m_linkerMscGlobal.empty())    cmakelists << EOL << "set(LD_FLAGS_GLOBAL \"" << CbuildUtils::EscapeQuotes(m_linkerMscGlobal) << "\")";
   if (!m_linkerScript.empty())       cmakelists << EOL << "set(LD_SCRIPT \"" << m_linkerScript << "\")";
 
   cmakelists << EOL << EOL;
@@ -225,57 +228,155 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
 
   // File specific flags
   bool as_file_specific_flags = false;
+  bool as_file_specific_optimize = false;
+  bool as_file_specific_debug = false;
+  bool as_file_specific_warnings = false;
   for (auto list : asFilesLists) {
     for (auto [src, file] : list.second) {
       if (!file.flags.empty()) {
         cmakelists << "set(AS_FLAGS_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(file.flags) << "\")"<< EOL;
         as_file_specific_flags = true;
       }
+      if (!file.optimize.empty()) {
+        cmakelists << "set(AS_OPTIMIZE_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(file.optimize) << "\")"<< EOL;
+        as_file_specific_optimize = true;
+      }
+      if (!file.debug.empty()) {
+        cmakelists << "set(AS_DEBUG_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(file.debug) << "\")"<< EOL;
+        as_file_specific_debug = true;
+      }
+      if (!file.warnings.empty()) {
+        cmakelists << "set(AS_WARNINGS_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(file.warnings) << "\")"<< EOL;
+        as_file_specific_warnings = true;
+      }
     }
   }
+
   bool cc_file_specific_flags = false;
+  bool cc_file_specific_optimize = false;
+  bool cc_file_specific_debug = false;
+  bool cc_file_specific_warnings = false;
   for (auto [src, file] : m_ccFilesList) {
     if (!file.flags.empty()) {
       cmakelists << "set(CC_FLAGS_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(file.flags) << "\")"<< EOL;
       cc_file_specific_flags = true;
     }
+    if (!file.optimize.empty()) {
+      cmakelists << "set(CC_OPTIMIZE_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(file.optimize) << "\")"<< EOL;
+      cc_file_specific_optimize = true;
+    }
+    if (!file.debug.empty()) {
+      cmakelists << "set(CC_DEBUG_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(file.debug) << "\")"<< EOL;
+      cc_file_specific_debug = true;
+    }
+    if (!file.warnings.empty()) {
+      cmakelists << "set(CC_WARNINGS_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(file.warnings) << "\")"<< EOL;
+      cc_file_specific_warnings = true;
+    }
   }
+
   bool cxx_file_specific_flags = false;
+  bool cxx_file_specific_optimize = false;
+  bool cxx_file_specific_debug = false;
+  bool cxx_file_specific_warnings = false;
   for (auto [src, file] : m_cxxFilesList) {
     if (!file.flags.empty()) {
       cmakelists << "set(CXX_FLAGS_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(file.flags) << "\")"<< EOL;
       cxx_file_specific_flags = true;
     }
+    if (!file.optimize.empty()) {
+      cmakelists << "set(CXX_OPTIMIZE_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(file.optimize) << "\")"<< EOL;
+      cxx_file_specific_optimize = true;
+    }
+    if (!file.debug.empty()) {
+      cmakelists << "set(CXX_DEBUG_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(file.debug) << "\")"<< EOL;
+      cxx_file_specific_debug = true;
+    }
+    if (!file.warnings.empty()) {
+      cmakelists << "set(CXX_WARNINGS_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(file.warnings) << "\")"<< EOL;
+      cxx_file_specific_warnings = true;
+    }
   }
 
   // Group specific flags
   bool as_group_specific_flags = false;
+  bool as_group_specific_optimize = false;
+  bool as_group_specific_debug = false;
+  bool as_group_specific_warnings = false;
   bool cc_group_specific_flags = false;
+  bool cc_group_specific_optimize = false;
+  bool cc_group_specific_debug = false;
+  bool cc_group_specific_warnings = false;
   bool cxx_group_specific_flags = false;
+  bool cxx_group_specific_optimize = false;
+  bool cxx_group_specific_debug = false;
+  bool cxx_group_specific_warnings = false;
   for (auto [group, controls] : m_groupsList) {
     if (!controls.asMsc.empty()) {
-       for (auto list : asFilesLists) {
-         for (auto [src, file] : list.second) {
-           if ((fs::path(file.group).generic_string() == group) && (file.flags.empty())) {
-            cmakelists << "set(AS_FLAGS_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(controls.asMsc) << "\")"<< EOL;
-            as_group_specific_flags = true;
+      for (auto list : asFilesLists) {
+        for (auto [src, file] : list.second) {
+          if (fs::path(file.group).generic_string() == group) {
+            if (file.flags.empty()) {
+              cmakelists << "set(AS_FLAGS_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(controls.asMsc) << "\")"<< EOL;
+              as_group_specific_flags = true;
+            }
+            if (file.optimize.empty()) {
+              cmakelists << "set(AS_OPTIMIZE_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(controls.optimize) << "\")"<< EOL;
+              as_group_specific_optimize = true;
+            }
+            if (file.debug.empty()) {
+              cmakelists << "set(AS_DEBUG_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(controls.debug) << "\")"<< EOL;
+              as_group_specific_debug = true;
+            }
+            if (file.warnings.empty()) {
+              cmakelists << "set(AS_WARNINGS_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(controls.warnings) << "\")"<< EOL;
+              as_group_specific_warnings = true;
+            }
           }
         }
       }
     }
     if (!controls.ccMsc.empty()) {
       for (auto [src, file] : m_ccFilesList) {
-        if ((fs::path(file.group).generic_string() == group) && (file.flags.empty())) {
-          cmakelists << "set(CC_FLAGS_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(controls.ccMsc) << "\")"<< EOL;
-          cc_group_specific_flags = true;
+        if (fs::path(file.group).generic_string() == group) {
+          if (file.flags.empty()) {
+            cmakelists << "set(CC_FLAGS_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(controls.ccMsc) << "\")"<< EOL;
+            cc_group_specific_flags = true;
+          }
+          if (file.optimize.empty()) {
+            cmakelists << "set(CC_OPTIMIZE_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(controls.optimize) << "\")"<< EOL;
+            as_group_specific_optimize = true;
+          }
+          if (file.debug.empty()) {
+            cmakelists << "set(CC_DEBUG_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(controls.debug) << "\")"<< EOL;
+            as_group_specific_debug = true;
+          }
+          if (file.warnings.empty()) {
+            cmakelists << "set(CC_WARNINGS_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(controls.warnings) << "\")"<< EOL;
+            as_group_specific_warnings = true;
+          }
         }
       }
     }
     if (!controls.cxxMsc.empty()) {
       for (auto [src, file] : m_cxxFilesList) {
-        if ((fs::path(file.group).generic_string() == group) && (file.flags.empty())) {
-          cmakelists << "set(CXX_FLAGS_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(controls.cxxMsc) << "\")"<< EOL;
-          cxx_group_specific_flags = true;
+        if (fs::path(file.group).generic_string() == group) {
+          if (file.flags.empty()) {
+            cmakelists << "set(CXX_FLAGS_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(controls.cxxMsc) << "\")"<< EOL;
+            cxx_group_specific_flags = true;
+          }
+          if (file.optimize.empty()) {
+            cmakelists << "set(CXX_OPTIMIZE_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(controls.optimize) << "\")"<< EOL;
+            as_group_specific_optimize = true;
+          }
+          if (file.debug.empty()) {
+            cmakelists << "set(CXX_DEBUG_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(controls.debug) << "\")"<< EOL;
+            as_group_specific_debug = true;
+          }
+          if (file.warnings.empty()) {
+            cmakelists << "set(CXX_WARNINGS_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(controls.warnings) << "\")"<< EOL;
+            as_group_specific_warnings = true;
+          }
         }
       }
     }

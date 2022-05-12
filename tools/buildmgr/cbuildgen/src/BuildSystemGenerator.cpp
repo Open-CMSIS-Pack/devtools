@@ -93,6 +93,10 @@ bool BuildSystemGenerator::Collect(const string& inputFile, const CbuildModel *m
   m_linkerScript = StrNorm(model->GetLinkerScript());
   m_outputType = model->GetOutputType();
 
+  m_optimize = model->GetTargetOptimize();
+  m_debug = model->GetTargetDebug();
+  m_warnings = model->GetTargetWarnings();
+
   m_ccMscGlobal = GetString(model->GetTargetCFlags());
   m_cxxMscGlobal = GetString(model->GetTargetCxxFlags());
   m_asMscGlobal = GetString(model->GetTargetAsFlags());
@@ -239,6 +243,70 @@ bool BuildSystemGenerator::Collect(const string& inputFile, const CbuildModel *m
       (*pList)[src].group = StrNorm(group + (group.empty() ? "" : SS));
       (*pList)[src].flags = asFFlags;
       CollectFileDefinesIncludes(defines, incPaths, src, group, (*pList));
+    }
+  }
+
+  // optmize, debug and warnings options
+  vector<std::map<std::string, std::list<std::string>>> sourceFilesList = {
+    model->GetCSourceFiles() , model->GetCxxSourceFiles(), model->GetAsmSourceFiles()
+  };
+
+  for (auto sourceFiles : sourceFilesList)
+  {
+    const map<string, string>& optmizeOpt = model->GetOptimizeOption();
+    const map<string, string>& debugOpt = model->GetDebugOption();
+    const map<string, string>& warningsOpt = model->GetWarningsOption();
+
+    for (auto list : model->GetCSourceFiles())
+    {
+
+      string group = list.first, groupName;
+      string cGOptimizeOpt, cGDebugOpt, cGWarningsOpt;
+
+      // optimize option
+      groupName = group;
+      do {
+        if (optmizeOpt.find(groupName) != optmizeOpt.end()) {
+          cGOptimizeOpt = optmizeOpt.at(groupName);
+          break;
+        }
+        groupName = fs::path(groupName).parent_path().generic_string();
+      } while (!groupName.empty());
+      m_groupsList[StrNorm(group)].optimize = cGOptimizeOpt;
+
+      // debug option
+      groupName = group;
+      do {
+        if (debugOpt.find(groupName) != debugOpt.end()) {
+          cGDebugOpt = debugOpt.at(groupName);
+          break;
+        }
+        groupName = fs::path(groupName).parent_path().generic_string();
+      } while (!groupName.empty());
+      m_groupsList[StrNorm(group)].optimize = cGDebugOpt;
+
+      // warnings option
+      groupName = group;
+      do {
+        if (warningsOpt.find(groupName) != warningsOpt.end()) {
+          cGWarningsOpt = warningsOpt.at(groupName);
+          break;
+        }
+        groupName = fs::path(groupName).parent_path().generic_string();
+      } while (!groupName.empty());
+      m_groupsList[StrNorm(group)].optimize = cGWarningsOpt;
+
+      for (auto src : list.second) {
+        string cFOptimizeOpt, cFDebugOpt, cFWarningsOpt;
+        src = StrNorm(src);
+        m_ccFilesList[src].group = StrNorm(group + (group.empty() ? "" : SS));
+        if (optmizeOpt.find(src) != optmizeOpt.end()) cFOptimizeOpt = optmizeOpt.at(src);
+        m_ccFilesList[src].optimize = cFOptimizeOpt;
+        if (debugOpt.find(src) != debugOpt.end()) cFDebugOpt = debugOpt.at(src);
+        m_ccFilesList[src].debug = cFDebugOpt;
+        if (debugOpt.find(src) != debugOpt.end()) cFWarningsOpt = debugOpt.at(src);
+        m_ccFilesList[src].warnings = cFWarningsOpt;
+      }
     }
   }
 
