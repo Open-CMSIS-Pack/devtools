@@ -600,3 +600,19 @@ void RteModelPrjTest::compareFile(const string &newFile, const string &refFile,
     FAIL() << newFile << " is different from " << refFile;
   }
 }
+
+TEST_F(RteModelPrjTest, GetChildAttribute) {
+  RteItem fileItem(nullptr);
+  fileItem.SetTag("file");
+  RteItem* optionsItem = fileItem.CreateChild("options");
+  optionsItem->SetTag("options");
+  optionsItem->SetAttribute("optimize", "size");
+
+  string valid = fileItem.GetChildAttribute("options", "optimize");;
+  string attr_invalid = fileItem.GetChildAttribute("options", "invalid");
+  string tag_invalid = fileItem.GetChildAttribute("invalid", "whatever");
+
+  EXPECT_EQ("size", valid);
+  EXPECT_EQ("", attr_invalid);
+  EXPECT_EQ("", tag_invalid);
+}
