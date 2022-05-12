@@ -117,6 +117,9 @@ protected:
   std::string m_targetMve;
   std::string m_byteOrder;
   std::string m_outputType;
+  std::string m_optimize;
+  std::string m_debug;
+  std::string m_warnings;
   std::string m_ccMscGlobal;
   std::string m_cxxMscGlobal;
   std::string m_asMscGlobal;
