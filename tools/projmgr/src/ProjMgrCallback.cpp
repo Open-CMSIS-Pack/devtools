@@ -42,6 +42,13 @@ void ProjMgrCallback::OutputErrMessage(const string& message)
   }
 }
 
+void ProjMgrCallback::OutputMessage(const string& message)
+{
+  if (!message.empty()) {
+    m_warningMessages.push_back(message);
+  }
+}
+
 string ProjMgrCallback::ExpandString(const string& str) {
 
   const auto kernel = ProjMgrKernel::Get();

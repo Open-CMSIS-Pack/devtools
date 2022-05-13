@@ -173,7 +173,7 @@ struct ContextItem {
   std::map<std::string, std::string> targetAttributes;
   std::map<std::string, RtePackage*> packages;
   std::map<std::string, std::pair<RteComponent*, ComponentItem*>> components;
-  std::map<std::string, std::set<std::string>> dependencies;
+  std::vector<std::tuple<RteItem::ConditionResult, std::string, std::set<std::string>, std::set<std::string>>> validationResults;
   std::map<std::string, std::map<std::string, RteFileInstance*>> configFiles;
   std::vector<GroupNode> groups;
   std::map<std::string, std::string> filePaths;
@@ -367,6 +367,8 @@ protected:
   bool ProcessSequencesRelatives(ContextItem& context, BuildType& build, const std::string& ref = std::string());
   bool ProcessSequenceRelative(ContextItem& context, std::string& item, const std::string& ref = std::string());
   bool AddContext(ProjMgrParser& parser, ContextDesc& descriptor, const TypePair& type, const std::string& cprojectFile, ContextItem& parentContext);
+  bool ValidateContext(ContextItem& context);
+  bool FormatValidationResults(std::set<std::string>& results, const ContextItem& context);
   void AddMiscUniquely(std::vector<MiscItem>& dst, std::vector<std::vector<MiscItem>*>& srcVec);
   void AddStringItemsUniquely(std::vector<std::string>& dst, const std::vector<std::string>& src);
   void RemoveStringItems(std::vector<std::string>& dst, std::vector<std::string>& src);

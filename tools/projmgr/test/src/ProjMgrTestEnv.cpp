@@ -79,6 +79,16 @@ void ProjMgrTestEnv::SetUp() {
   RteFsUtils::CreateDirectories(destPackPath);
   fs::copy(fs::path(srcPackPath), fs::path(destPackPath), fs::copy_options::recursive, ec);
 
+  // copy invalid packs
+  string srcInvalidPacks, destInvalidPacks;
+  srcInvalidPacks = testcmsispack_folder + "-invalid";
+  destInvalidPacks = testinput_folder + "/InvalidPacks";
+  if (RteFsUtils::Exists(destInvalidPacks)) {
+    RteFsUtils::RemoveDir(destInvalidPacks);
+  }
+  RteFsUtils::CreateDirectories(destInvalidPacks);
+  fs::copy(fs::path(srcInvalidPacks), fs::path(destInvalidPacks), fs::copy_options::recursive, ec);
+
   CrossPlatformUtils::SetEnv("CMSIS_PACK_ROOT", testcmsispack_folder);
 }
 
