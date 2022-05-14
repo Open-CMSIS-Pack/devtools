@@ -42,7 +42,7 @@
         { "required": ["not-for-type"],
           "not": {"required": ["for-type"]}
         },
-        { 
+        {
           "allOf": [
             { "not": {"required": ["for-type"] }},
             { "not": {"required": ["not-for-type"]}}
@@ -172,6 +172,7 @@
         "compiler":   { "$ref": "#/definitions/CompilerType" },
         "optimize":   { "$ref": "#/definitions/OptimizeType" },
         "debug":      { "$ref": "#/definitions/DebugType" },
+        "warnings":   { "$ref": "#/definitions/WarningsType" },
         "defines":    { "$ref": "#/definitions/DefinesType", "description": "DEPRECATED use: define" },
         "define":     { "$ref": "#/definitions/DefinesType" },
         "undefines":  { "$ref": "#/definitions/UndefinesType", "description": "DEPRECATED use: undefine" },
@@ -203,6 +204,7 @@
         "compiler":   { "$ref": "#/definitions/CompilerType" },
         "optimize":   { "$ref": "#/definitions/OptimizeType" },
         "debug":      { "$ref": "#/definitions/DebugType" },
+        "warnings":   { "$ref": "#/definitions/WarningsType" },
         "defines":    { "$ref": "#/definitions/DefinesType", "description": "DEPRECATED use: define" },
         "define":     { "$ref": "#/definitions/DefinesType" },
         "undefines":  { "$ref": "#/definitions/UndefinesType", "description": "DEPRECATED use: undefine" },
@@ -232,7 +234,7 @@
         },
         "for-type":     { "$ref": "#/definitions/ForType" },
         "not-for-type": { "$ref": "#/definitions/NotForType" }
-      },      
+      },
       "additionalProperties": false,
       "$ref": "#/definitions/TypeListMutualExclusion",
       "required": [ "project" ]
@@ -271,6 +273,7 @@
         "for-compiler": { "$ref": "#/definitions/CompilersType" },
         "optimize":     { "$ref": "#/definitions/OptimizeType" },
         "debug":        { "$ref": "#/definitions/DebugType" },
+        "warnings":     { "$ref": "#/definitions/WarningsType" },
         "defines":      { "$ref": "#/definitions/DefinesType", "description": "DEPRECATED use: define" },
         "define":       { "$ref": "#/definitions/DefinesType" },
         "undefines":    { "$ref": "#/definitions/UndefinesType", "description": "DEPRECATED use: undefine" },
@@ -305,6 +308,7 @@
         "for-compiler": { "$ref": "#/definitions/CompilersType" },
         "optimize":     { "$ref": "#/definitions/OptimizeType" },
         "debug":        { "$ref": "#/definitions/DebugType" },
+        "warnings":     { "$ref": "#/definitions/WarningsType" },
         "defines":      { "$ref": "#/definitions/DefinesType", "description": "DEPRECATED use: define" },
         "define":       { "$ref": "#/definitions/DefinesType" },
         "undefines":    { "$ref": "#/definitions/UndefinesType", "description": "DEPRECATED use: undefine" },
@@ -338,6 +342,7 @@
         "not-for-type": { "$ref": "#/definitions/NotForType" },
         "optimize":     { "$ref": "#/definitions/OptimizeType" },
         "debug":        { "$ref": "#/definitions/DebugType" },
+        "warnings":     { "$ref": "#/definitions/WarningsType" },
         "defines":      { "$ref": "#/definitions/DefinesType", "description": "DEPRECATED use: define" },
         "define":       { "$ref": "#/definitions/DefinesType" },
         "undefines":    { "$ref": "#/definitions/UndefinesType", "description": "DEPRECATED use: undefine" },
@@ -368,6 +373,7 @@
         "not-for-type": { "$ref": "#/definitions/NotForType" },
         "optimize":     { "$ref": "#/definitions/OptimizeType" },
         "debug":        { "$ref": "#/definitions/DebugType" },
+        "warnings":     { "$ref": "#/definitions/WarningsType" },
         "defines":      { "$ref": "#/definitions/DefinesType", "description": "DEPRECATED use: define" },
         "define":       { "$ref": "#/definitions/DefinesType" },
         "undefines":    { "$ref": "#/definitions/UndefinesType", "description": "DEPRECATED use: undefine" },
@@ -422,6 +428,7 @@
         "compiler":     { "$ref": "#/definitions/CompilerType" },
         "optimize":     { "$ref": "#/definitions/OptimizeType" },
         "debug":        { "$ref": "#/definitions/DebugType" },
+        "warnings":     { "$ref": "#/definitions/WarningsType" },
         "defines":      { "$ref": "#/definitions/DefinesType", "description": "DEPRECATED use: define" },
         "define":       { "$ref": "#/definitions/DefinesType" },
         "undefines":    { "$ref": "#/definitions/UndefinesType", "description": "DEPRECATED use: undefine" },
@@ -445,6 +452,7 @@
         "compiler":    { "$ref": "#/definitions/CompilerType" },
         "optimize":    { "$ref": "#/definitions/OptimizeType" },
         "debug":       { "$ref": "#/definitions/DebugType" },
+        "warnings":    { "$ref": "#/definitions/WarningsType" },
         "processor":   { "$ref": "#/definitions/ProcessorType" },
         "defines":     { "$ref": "#/definitions/DefinesType", "description": "DEPRECATED use: define" },
         "define":      { "$ref": "#/definitions/DefinesType" },
@@ -474,6 +482,7 @@
         "compiler":    { "$ref": "#/definitions/CompilerType" },
         "optimize":    { "$ref": "#/definitions/OptimizeType" },
         "debug":       { "$ref": "#/definitions/DebugType" },
+        "warnings":    { "$ref": "#/definitions/WarningsType" },
         "processor":   { "$ref": "#/definitions/ProcessorType" },
         "defines":     { "$ref": "#/definitions/DefinesType", "description": "DEPRECATED use: define" },
         "define":      { "$ref": "#/definitions/DefinesType" },
@@ -549,7 +558,7 @@
         "consumes": {
           "type": "array",
           "description": "Consumed interfaces",
-          "items": { 
+          "items": {
             "oneOf": [
               {"type": "string" },
               {"type": "object" }
@@ -559,7 +568,7 @@
         "provides": {
           "type": "array",
           "description": "Provided interfaces",
-          "items": { 
+          "items": {
             "oneOf": [
               {"type": "string" },
               {"type": "object" }
