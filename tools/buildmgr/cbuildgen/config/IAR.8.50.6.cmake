@@ -70,10 +70,40 @@ if(NOT DEFINED IAR_CPU)
   message(FATAL_ERROR "Error: CPU is not supported!")
 endif()
 
-# Assembler
+# Options (optimize, debug, warnings)
+set (CC_OPT "")
+set (LD_OPT "")
 
-set(ASM_CPU "--cpu ${IAR_CPU}")
-set(ASM_FLAGS)
+if(OPT_OPTIMIZE STREQUAL "none")
+  set(CC_OPT "-On")
+elseif(OPT_OPTIMIZE STREQUAL "balanced")
+  set(CC_OPT "-Oh")
+elseif(OPT_OPTIMIZE STREQUAL "size")
+  set(CC_OPT "-Ohz")
+elseif(OPT_OPTIMIZE STREQUAL "speed")
+  set(CC_OPT "-Ohs")
+elseif(DEFINED OPT_OPTIMIZE)
+  message(FATAL_ERROR "unkown OPT_OPTIMIZE = '${OPT_OPTIMIZE}' !")
+endif()
+
+if(OPT_DEBUG STREQUAL "on")
+  set(CC_OPT "${CC_OPT} --debug")
+elseif(OPT_DEBUG STREQUAL "off")
+  # nothing to do
+elseif(DEFINED OPT_DEBUG)
+  message(FATAL_ERROR "unkown OPT_DEBUG = '${OPT_DEBUG}' !")
+endif()
+
+if(OPT_WARNINGS STREQUAL "off")
+  set(CC_OPT "${CC_OPT} --no_warnings")
+  set(LD_OPT "${LD_OPT} --no_warnings")
+elseif(OPT_WARNINGS STREQUAL "on")
+  # nothing to do
+elseif(DEFINED OPT_WARNINGS)
+  message(FATAL_ERROR "unkown OPT_WARNINGS = '${OPT_WARNINGS}' !")
+endif()
+
+# Helpers
 
 function(cbuild_set_defines lang defines)
   set(TMP_DEFINES)
@@ -95,6 +125,11 @@ function(cbuild_set_defines lang defines)
   set(${defines} ${TMP_DEFINES} PARENT_SCOPE)
 endfunction()
 
+# Assembler
+
+set(ASM_CPU "--cpu ${IAR_CPU}")
+set(ASM_FLAGS)
+
 set(ASM_DEFINES ${DEFINES})
 cbuild_set_defines(ASM ASM_DEFINES)
 
@@ -112,7 +147,7 @@ set(ASM_BYTE_ORDER "--endian ${IAR_BYTE_ORDER}")
 # C Compiler
 
 set(CC_CPU "--cpu=${IAR_CPU}")
-set(CC_FLAGS "--silent")
+set(CC_FLAGS "--silent ${CC_OPT}")
 set(CC_BYTE_ORDER "--endian=${IAR_BYTE_ORDER}")
 set(_PI "-include ")
 
@@ -137,7 +172,7 @@ if(SECURE STREQUAL "Secure")
   set(LD_SECURE "--import_cmse_lib_out \"${OUT_DIR}/${TARGET}_CMSE_Lib.o\"")
 endif()
 
-set(LD_FLAGS "--silent")
+set(LD_FLAGS "--silent ${LD_OPT}")
 
 # Target Output
 
