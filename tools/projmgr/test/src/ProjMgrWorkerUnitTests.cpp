@@ -260,10 +260,15 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDependencies) {
   EXPECT_TRUE(SetTargetAttributes(context, context.targetAttributes));
   EXPECT_TRUE(ProcessComponents(context));
   EXPECT_TRUE(ProcessDependencies(context));
-  ASSERT_EQ(expected.size(), context.dependencies.size());
+  EXPECT_FALSE(ValidateContext(context));
+  ASSERT_EQ(expected.size(), context.validationResults.size());
+  map<string, set<string>> dependenciesMap;
+  for (const auto& [result, component, dependencies, _] : context.validationResults) {
+    dependenciesMap[component] = dependencies;
+  }
   for (const auto& [expectedComponent, expectedDependencies] : expected) {
-    EXPECT_TRUE(context.dependencies.find(expectedComponent) != context.dependencies.end());
-    const auto& dependencies = context.dependencies[expectedComponent];
+    EXPECT_TRUE(dependenciesMap.find(expectedComponent) != dependenciesMap.end());
+    const auto& dependencies = dependenciesMap[expectedComponent];
     for (const auto& expectedDependency : expectedDependencies) {
       EXPECT_TRUE(dependencies.find(expectedDependency) != dependencies.end());
     }

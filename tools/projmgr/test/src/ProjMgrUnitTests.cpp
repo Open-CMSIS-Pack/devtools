@@ -23,18 +23,7 @@ protected:
 
   void CompareFile(const string& file1, const string& file2);
   void CompareFileTree(const string& dir1, const string& dir2);
-
-  void SetUp() override;
-  void TearDown() override;
 };
-
-void ProjMgrUnitTests::SetUp() {
-  ProjMgrKernel::Get();
-}
-
-void ProjMgrUnitTests::TearDown() {
-  ProjMgrKernel::Destroy();
-}
 
 void ProjMgrUnitTests::CompareFile(const string& file1, const string& file2) {
   ifstream f1, f2;
@@ -1664,4 +1653,56 @@ TEST_F(ProjMgrUnitTests, ListComponents_MultiplePackSelection) {
   components.clear();
   EXPECT_TRUE(m_worker.ListComponents(components, "pack_contexts+Gen"));
   EXPECT_EQ(expected_Gen, set<string>(components.begin(), components.end()));
+}
+
+TEST_F(ProjMgrUnitTests, Convert_ValidationResults_Dependencies) {
+  char* argv[6];
+  const string& csolution = testinput_folder + "/Validation/dependencies.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-c";
+
+  map<string, string> testData = {
+    {"selectable+CM0",           "warning csolution: dependency validation failed:\nSELECTABLE ARM::Device:Startup&RteTest Startup@2.0.3\n  require RteTest:CORE" },
+    {"missing+CM0",              "warning csolution: dependency validation failed:\nMISSING ARM::RteTest:Check:Missing@0.9.9\n  require RteTest:Dependency:Missing" },
+    {"conflict+CM0",             "warning csolution: dependency validation failed:\nCONFLICT RteTest:ApiExclusive@1.0.0\n  ARM::RteTest:ApiExclusive:S1\n  ARM::RteTest:ApiExclusive:S2" },
+    {"incompatible+CM0",         "warning csolution: dependency validation failed:\nINCOMPATIBLE ARM::RteTest:Check:Incompatible@0.9.9\n  deny RteTest:Dependency:Incompatible_component" },
+    {"incompatible-variant+CM0", "warning csolution: dependency validation failed:\nINCOMPATIBLE_VARIANT ARM::RteTest:Check:IncompatibleVariant@0.9.9\n  require RteTest:Dependency:Variant&Compatible" },
+  };
+
+  for (const auto& [context, expected] : testData) {
+    StdStreamRedirect streamRedirect;
+    argv[5] = (char*)context.c_str();
+    EXPECT_EQ(0, RunProjMgr(6, argv));
+    auto errorStr = streamRedirect.GetErrorString();
+    EXPECT_EQ(0, errorStr.find(expected));
+  }
+}
+
+TEST_F(ProjMgrUnitTests, Convert_ValidationResults_Filtering) {
+  char* argv[6];
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-s";
+  argv[4] = (char*)"-c";
+
+  vector<tuple<string, int, string>> testData = {
+    {"recursive", 1, "\
+warning csolution: ARM.RteTestRecursive.0.1.0: condition 'Recursive': error #503: direct or indirect recursion detected\n\
+error csolution: no component was found with identifier 'RteTest:Check:Recursive'\n"},
+    {"missing-condition", 0, "\
+warning csolution: ARM.RteTestMissingCondition.0.1.0: component 'ARM::RteTest.Check.MissingCondition(MissingCondition):0.9.9[]': error #501: error(s) in component definition:\n\
+warning csolution:  condition 'MissingCondition' not found\n"},
+  };
+
+  for (const auto& [project, expectedReturn, expectedMessage] : testData) {
+    StdStreamRedirect streamRedirect;
+    const string& csolution = testinput_folder + "/Validation/" + project + ".csolution.yml";
+    const string& context = project + "+CM0";
+    argv[3] = (char*)csolution.c_str();
+    argv[5] = (char*)context.c_str();
+    EXPECT_EQ(expectedReturn, RunProjMgr(6, argv));
+    auto errorStr = streamRedirect.GetErrorString();
+    EXPECT_EQ(0, errorStr.find(expectedMessage));
+  }
 }

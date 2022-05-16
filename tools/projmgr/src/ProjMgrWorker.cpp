@@ -23,7 +23,7 @@ ProjMgrWorker::ProjMgrWorker(void) {
 }
 
 ProjMgrWorker::~ProjMgrWorker(void) {
-  // Reserved
+  ProjMgrKernel::Destroy();
 }
 
 bool ProjMgrWorker::AddContexts(ProjMgrParser& parser, ContextDesc& descriptor, const string& cprojectFile) {
@@ -230,7 +230,12 @@ bool ProjMgrWorker::InitializeModel() {
   }
   if (!m_kernel->LoadAndInsertPacks(m_loadedPacks, pdscFiles)) {
     ProjMgrLogger::Error("failed to load and insert packs");
-    return false;
+    return CheckRteErrors();
+  }
+  if (!m_model->Validate()) {
+    RtePrintErrorVistior visitor(m_kernel->GetCallback());
+    m_model->AcceptVisitor(&visitor);
+    return CheckRteErrors();
   }
   return true;
 }
@@ -281,7 +286,15 @@ std::vector<PackageItem> ProjMgrWorker::GetFilteredPacks(const PackageItem& pack
 }
 
 bool ProjMgrWorker::CheckRteErrors(void) {
-  const list<string>& rteErrorMessages = m_kernel->GetCallback()->GetErrorMessages();
+  const auto& callback = m_kernel->GetCallback();
+  const list<string>& rteWarningMessages = callback->GetWarningMessages();
+  if (!rteWarningMessages.empty()) {
+    for (const auto& rteWarningMessage : rteWarningMessages) {
+      ProjMgrLogger::Warn(rteWarningMessage);
+    }
+    callback->ClearWarningMessages();
+  }
+  const list<string>& rteErrorMessages = callback->GetErrorMessages();
   if (!rteErrorMessages.empty()) {
     for (const auto& rteErrorMessage : rteErrorMessages) {
       ProjMgrLogger::Error(rteErrorMessage);
@@ -798,6 +811,34 @@ bool ProjMgrWorker::ProcessConfigFiles(ContextItem& context) {
   return true;
 }
 
+bool ProjMgrWorker::ValidateContext(ContextItem& context) {
+  context.validationResults.clear();
+  map<const RteItem*, RteDependencyResult> results;
+  context.rteActiveTarget->GetDepsResult(results, context.rteActiveTarget);
+
+  for (const auto& [component, result] : results) {
+    RteItem::ConditionResult validationResult = result.GetResult();
+    const auto& componentID = ProjMgrUtils::GetComponentID(component);
+    const auto& conditions = result.GetResults();
+    const auto& aggregates = result.GetComponentAggregates();
+
+    set<string> aggregatesSet;
+    for (const auto& aggregate : aggregates) {
+      aggregatesSet.insert(ProjMgrUtils::GetComponentAggregateID(aggregate));
+    }
+    set<string> expressionsSet;
+    for (const auto& [condition, _] : conditions) {
+      expressionsSet.insert(ProjMgrUtils::GetConditionID(condition));
+    }
+    context.validationResults.push_back({ validationResult, componentID, expressionsSet, aggregatesSet });
+  }
+
+  if (context.validationResults.empty()) {
+    return true;
+  }
+  return false;
+}
+
 bool ProjMgrWorker::ProcessDependencies(ContextItem& context) {
   // Read gpdsc
   const map<string, RteGpdscInfo*>& gpdscInfos = context.rteActiveProject->GetGpdscInfos();
@@ -821,23 +862,6 @@ bool ProjMgrWorker::ProcessDependencies(ContextItem& context) {
     // Re-add required components into RTE
     if (!AddRequiredComponents(context)) {
       return false;
-    }
-  }
-
-  // Get dependency results
-  map<const RteItem*, RteDependencyResult> results;
-  context.rteActiveTarget->GetSelectedDepsResult(results, context.rteActiveTarget);
-  for (const auto& [component, result] : results) {
-    const auto& deps = result.GetResults();
-    RteItem::ConditionResult r = result.GetResult();
-    if ((r == RteItem::MISSING) || (r == RteItem::SELECTABLE)) {
-      set<string> dependenciesSet;
-      for (const auto& dep : deps) {
-        dependenciesSet.insert(ProjMgrUtils::GetConditionID(dep.first));
-      }
-      if (!dependenciesSet.empty()) {
-        context.dependencies.insert({ ProjMgrUtils::GetComponentID(component), dependenciesSet });
-      }
     }
   }
   return CheckRteErrors();
@@ -1298,20 +1322,21 @@ bool ProjMgrWorker::ProcessContext(ContextItem& context, bool resolveDependencie
   if (!ProcessConfigFiles(context)) {
     return false;
   }
+  if (!ProcessDependencies(context)) {
+    return false;
+  }
   if (resolveDependencies) {
-    if (!ProcessDependencies(context)) {
-      return false;
-    }
     // TODO: Add uniquely identified missing dependencies to RTE Model
 
-    if (!context.dependencies.empty()) {
-      for (const auto& [component, dependencies] : context.dependencies) {
-        string msg = "component '" + component + "' has unresolved dependencies:";
-        for (const auto& dependency : dependencies) {
-          msg += "\n  " + dependency;
-        }
-        ProjMgrLogger::Warn(msg);
+    // Get dependency validation results
+    if (!ValidateContext(context)) {
+      string msg = "dependency validation failed:";
+      set<string> results;
+      FormatValidationResults(results, context);
+      for (const auto& result : results) {
+        msg += "\n" + result;
       }
+      ProjMgrLogger::Warn(msg);
     }
   }
   return true;
@@ -1546,13 +1571,14 @@ bool ProjMgrWorker::ListDependencies(vector<string>& dependencies, const string&
   if (!ProcessContext(context)) {
     return false;
   }
-  if (!ProcessDependencies(context)) {
-    return false;
-  }
   set<string>dependenciesSet;
-  for (const auto& [component, deps] : context.dependencies) {
-    for (const auto& dep : deps) {
-      dependenciesSet.insert(component + " " + dep);
+  if (!ValidateContext(context)) {
+    for (const auto& [result, component, expressions, _] : context.validationResults) {
+      if ((result == RteItem::MISSING) || (result == RteItem::SELECTABLE)) {
+        for (const auto& expression : expressions) {
+          dependenciesSet.insert(component + " " + expression);
+        }
+      }
     }
   }
   if (!filter.empty()) {
@@ -1565,6 +1591,38 @@ bool ProjMgrWorker::ListDependencies(vector<string>& dependencies, const string&
     dependenciesSet = filteredDependencies;
   }
   dependencies.assign(dependenciesSet.begin(), dependenciesSet.end());
+  return true;
+}
+
+bool ProjMgrWorker::FormatValidationResults(set<string>& results, const ContextItem& context) {
+  for (const auto& [result, component, expressions, aggregates] : context.validationResults) {
+    static const map<RteItem::ConditionResult, string> RESULTS = {
+      { RteItem::UNDEFINED             , "UNDEFINED"            },
+      { RteItem::R_ERROR               , "R_ERROR"              },
+      { RteItem::FAILED                , "FAILED"               },
+      { RteItem::MISSING               , "MISSING"              },
+      { RteItem::MISSING_API           , "MISSING_API"          },
+      { RteItem::MISSING_API_VERSION   , "MISSING_API_VERSION"  },
+      { RteItem::UNAVAILABLE           , "UNAVAILABLE"          },
+      { RteItem::UNAVAILABLE_PACK      , "UNAVAILABLE_PACK"     },
+      { RteItem::INCOMPATIBLE          , "INCOMPATIBLE"         },
+      { RteItem::INCOMPATIBLE_VERSION  , "INCOMPATIBLE_VERSION" },
+      { RteItem::INCOMPATIBLE_VARIANT  , "INCOMPATIBLE_VARIANT" },
+      { RteItem::CONFLICT              , "CONFLICT"             },
+      { RteItem::INSTALLED             , "INSTALLED"            },
+      { RteItem::SELECTABLE            , "SELECTABLE"           },
+      { RteItem::FULFILLED             , "FULFILLED"            },
+      { RteItem::IGNORED               , "IGNORED"              },
+    };
+    string resultStr = (RESULTS.find(result) == RESULTS.end() ? RESULTS.at(RteItem::UNDEFINED) : RESULTS.at(result)) + " " + component;
+    for (const auto& expression : expressions) {
+      resultStr += "\n  " + expression;
+    }
+    for (const auto& aggregate : aggregates) {
+      resultStr += "\n  " + aggregate;
+    }
+    results.insert(resultStr);
+  }
   return true;
 }
 
