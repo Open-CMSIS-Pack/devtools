@@ -56,8 +56,7 @@ string CbuildCallback::ExpandString(const string& str) {
   }
 
   const RteTarget* activeTarget = model->GetTarget();
-  RteBoard* board = activeTarget ? activeTarget->GetBoard() : nullptr;
-  const string& boardName = board ? board->GetName() : RteUtils::EMPTY_STRING;
+  const string& boardName = activeTarget ? activeTarget->GetAttribute("Bname") : RteUtils::EMPTY_STRING;
 
   string res(str);
   RteUtils::ReplaceAll(res, "$P", prjPath);

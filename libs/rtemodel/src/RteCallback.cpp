@@ -89,8 +89,7 @@ string RteCallback::ExpandString(const string& str) {
     return RteUtils::EMPTY_STRING;
   }
 
-  RteBoard* board = activeTarget->GetBoard();
-  const string& boardName = board ? board->GetName() : RteUtils::EMPTY_STRING;
+  const string& boardName = activeTarget->GetAttribute("Bname");
 
   string res(str);
   RteUtils::ReplaceAll(res, "$P", prjPath);

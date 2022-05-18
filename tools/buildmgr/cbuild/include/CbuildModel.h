@@ -380,10 +380,7 @@ public:
    * @brief get target component
    * @return pointer to cprj target
   */
-  const RteTarget* GetTarget() const
-  {
-    return m_cprjTarget;
-  }
+  const RteTarget* GetTarget() const;
 
 protected:
   RtePackage        *m_cprjPack = 0;
