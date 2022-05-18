@@ -10,17 +10,27 @@
       "minItems": 1,
       "items": { "type": "string" }
     },
+    "BuildContext": {
+      "type": "string",
+      "pattern": "^(((^[.][\\w]+)|(^[+][\\w]+))|((^[.][\\w]+)[+][\\w]+|(^[+][\\w]+)[.][\\w]+))$"
+    },
+    "ArrayOfBuildContext": {
+      "type": "array",
+      "uniqueItems": true,
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/BuildContext" }
+    },
     "ForType": {
       "oneOf": [
-        {"$ref": "#/definitions/ArrayOfStrings" },
-        {"type": "string" }
+        {"$ref": "#/definitions/ArrayOfBuildContext" },
+        {"$ref": "#/definitions/BuildContext" }
       ],
       "description": "Include project for a list of [.<build-type>][+<target-type>]"
     },
     "NotForType": {
       "oneOf": [
-        {"$ref": "#/definitions/ArrayOfStrings" },
-        {"type": "string" }
+        {"$ref": "#/definitions/ArrayOfBuildContext" },
+        {"$ref": "#/definitions/BuildContext" }
       ],
       "description": "Exclude project for a list of [.<build-type>][+<target-type>]"
     },
