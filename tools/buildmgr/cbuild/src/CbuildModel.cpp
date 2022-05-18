@@ -1310,3 +1310,13 @@ const bool CbuildModel::EvalAccessSequence() {
 
   return true;
 }
+
+const RteTarget* CbuildModel::GetTarget() const
+{
+  if (m_cprjTarget) {
+    return m_cprjTarget;
+  } else if (m_cprjProject) {
+    return m_cprjProject->GetTarget(m_targetName);
+  }
+  return nullptr;
+}
