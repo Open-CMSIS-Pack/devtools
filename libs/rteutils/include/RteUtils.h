@@ -131,6 +131,16 @@ public:
    * @return true if name is CMSIS-conformed
   */
   static bool CheckCMSISName(const std::string& s);
+
+  /**
+   * @brief replace all substring occurrences in the supplied string
+   * @param str reference to string to be manipulated
+   * @param toReplace substring to replace
+   * @param with substitute string
+   * @return reference supplied string
+   */
+  static std::string& ReplaceAll(std::string& str, const std::string& toReplace, const std::string& with);
+
   /**
    * @brief replace blank(s) with underscore(s)
    * @param s string to be manipulated

@@ -20,6 +20,9 @@ static CbuildKernel *theCbuildKernel = 0;
 CbuildKernel::CbuildKernel(RteCallback* callback) : RteKernel(callback) {
   m_model = new CbuildModel();
   m_callback = dynamic_cast<CbuildCallback*>(callback);
+  if (m_callback) {
+    m_callback->SetRteKernel(this);
+  }
 }
 
 CbuildKernel::~CbuildKernel() {

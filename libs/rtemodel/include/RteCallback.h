@@ -38,12 +38,18 @@ static const unsigned int RTE_MB_ICONQUESTION    = 0x00000020;
 static const unsigned int RTE_MB_ICONEXCLAMATION = 0x00000030;
 static const unsigned int RTE_MB_ICONASTERISK    = 0x00000040;
 
+class RteKernel;
 /**
  * @brief Class to allow RTE to call application or API functions, defaults do nothing
 */
 class RteCallback : public XMLTreeCallback
 {
 public:
+
+  /**
+   * @brief default constructor
+  */
+  RteCallback();
 
   /**
    * @brief clear output buffer or console
@@ -112,7 +118,7 @@ public:
    * @param str string to expand
    * @return expanded string
   */
-  virtual std::string ExpandString(const std::string& str) { return str; } // default simply returns the input string
+  virtual std::string ExpandString(const std::string& str);
 
   /**
    * @brief send message to the application main window by calling a function specific to OS
@@ -175,7 +181,7 @@ public:
 
 
   /**
-   * @brief get RteCallback object
+   * @brief get global RteCallback object
    * @return return RteCallback pointer or default one, never NULL
   */
   static RteCallback* GetGlobal();
@@ -185,7 +191,21 @@ public:
    * @param callback given RteCallback object
   */
   static void SetGlobal(RteCallback* callback);
+
+  /**
+   * @brief set RteKernel to use
+   * @param rteKernel pointer to RteKernel object
+  */
+  void SetRteKernel(RteKernel* rteKernel) { m_rteKernel = rteKernel;}
+
+  /**
+   * @brief get RteKernel object
+   * @return pointer RteKernel  object or nullptr;
+  */
+  const RteKernel* GetRteKernel() const { return m_rteKernel; };
+
 protected:
+  RteKernel* m_rteKernel;
   static RteCallback* theGlobalCallback;
 };
 
