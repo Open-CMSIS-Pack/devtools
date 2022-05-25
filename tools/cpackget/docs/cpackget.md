@@ -46,7 +46,7 @@ If cpackget is going to work on an existing pack root folder, there are two ways
 To create a new pack root folder with an up-to-date index file of publicly available Open-CMSIS-Pack packs run:
 
 ```
-$ cpackget init --pack-root path/to/new/pack-root https://keil.com/pack/index.pidx
+$ cpackget init --pack-root path/to/new/pack-root https://www.keil.com/pack/index.pidx
 ```
 
 The command will create a folder called `path/to/new/pack-root` and the following subfolders: `.Download`, `.Local`, `.Web`.
