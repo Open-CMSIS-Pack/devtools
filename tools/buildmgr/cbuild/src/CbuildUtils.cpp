@@ -223,7 +223,7 @@ string CbuildUtils::GenerateJsonPackList(const std::vector<CbuildPackItem>& pack
   string json;
   if (!packList.empty()) {
     json += "[";
-    for (const auto& [vendor, name, version, _] : packList) {
+    for (const auto& [vendor, name, version] : packList) {
       json += "\n{\"vendor\": \"" + vendor + "\", ";
       json += "\"name\": \"" + name + "\", ";
       json += "\"version\": \"" + version + "\"},";

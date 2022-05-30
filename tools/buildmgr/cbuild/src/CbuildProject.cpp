@@ -203,6 +203,12 @@ const bool CbuildProject::CheckPackRequirements(const RtePackage *cprjPack, cons
 
   for (RteItem *it : packages->GetChildren()) {
     RteAttributes a = it->GetAttributes();
+
+    // Skip project specific packs
+    if (it->HasAttribute("path")) {
+      continue;
+    }
+
     const string& name = a.GetAttribute("name");
     const string& vendor = a.GetAttribute("vendor");
     const string& version = it->GetAttribute("version");
@@ -218,14 +224,10 @@ const bool CbuildProject::CheckPackRequirements(const RtePackage *cprjPack, cons
         continue;
       }
       // pack is neither in pack folder nor in local repo index
-      if (GetUrlFromIndex(string(rtePath), name, vendor, version, url)) {
-        // if it's in the index, add it to the missing packs' list
-        string maxVersion = RteUtils::GetSuffix(version);
-        const CbuildPackItem& pack = { vendor, name, (maxVersion.empty() ? version : maxVersion), url };
-        packList.push_back(pack);
-      } else {
-        return false;
-      }
+      // add the pack identifier to the missing packs' list
+      string maxVersion = RteUtils::GetSuffix(version);
+      const CbuildPackItem& pack = { vendor, name, (maxVersion.empty() ? version : maxVersion) };
+      packList.push_back(pack);
     }
   }
 

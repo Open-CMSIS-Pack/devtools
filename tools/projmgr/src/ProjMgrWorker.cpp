@@ -166,26 +166,18 @@ bool ProjMgrWorker::GetRequiredPdscFiles(ContextItem& context, const std::string
           (pack.version.empty() ? "" : "@" + pack.version);
         errMsgs.push_back("no match found for pack filter: " + filterStr);
       }
-    }
-    else {
-      error_code ec;
-      std::string packPath = fs::path(context.csolution->path).parent_path().generic_string() + "/" + packItem.path;
-      if (!fs::exists(packPath)) {
+    } else {
+      string packPath = packItem.path;
+      if (!RteFsUtils::NormalizePath(packPath, context.csolution->directory + "/")) {
         errMsgs.push_back("pack path: " + packItem.path + " does not exist");
         break;
       }
-      packPath = fs::canonical(packPath, ec).generic_string();
-      auto pdscFilesList = RteFsUtils::FindFiles(packPath, ".pdsc");
-      if (pdscFilesList.empty()) {
-        errMsgs.push_back("no pdsc file found under: " + packItem.path);
+      string pdscFile = packItem.pack.vendor + '.' + packItem.pack.name + ".pdsc";
+      if (!RteFsUtils::NormalizePath(pdscFile, packPath + "/")) {
+        errMsgs.push_back("pdsc file was not found under: " + packItem.path);
         break;
-      }
-
-      if (pdscFilesList.size() > 1) {
-        ProjMgrLogger::Warn("no pack loaded as multiple pdsc files found under: " + packItem.path);
-      }
-      else {
-        context.pdscFiles.insert({ pdscFilesList[0].generic_string(), packPath });
+      } else {
+        context.pdscFiles.insert({ pdscFile, packPath });
       }
     }
   }
