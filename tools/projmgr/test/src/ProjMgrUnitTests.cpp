@@ -128,7 +128,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks) {
     {{"TestSolution/test.csolution_local_pack_path_not_found.yml", "test1.Debug+CM0"},
       "error csolution: pack path: ./SolutionSpecificPack/ARM does not exist\nerror csolution: processing pack list failed\n"},
     {{"TestSolution/test.csolution_local_pack_file_not_found.yml", "test1.Debug+CM0"},
-      "error csolution: no pdsc file found under: ../SolutionSpecificPack/Device\nerror csolution: processing pack list failed\n"},
+      "error csolution: pdsc file was not found under: ../SolutionSpecificPack/Device\nerror csolution: processing pack list failed\n"},
     {{"TestSolution/test.csolution_invalid_pack.yml", "test1.Debug+CM0"},
       "error csolution: required pack: ARM::RteTest_INVALID@0.2.0 not found\nerror csolution: processing pack list failed\n"},
     {{"TestSolution/test.csolution_unknown_file.yml", "test1.Debug+CM0"},
@@ -1398,8 +1398,6 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Local_Pack) {
 
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Local_Multiple_Pack_Files) {
   char* argv[7];
-  StdStreamRedirect streamRedirect;
-  const string warnExpected = "no pack loaded as multiple pdsc files found under: ../SolutionSpecificPack";
   const string& csolution = testinput_folder + "/TestSolution/test.csolution_local_pack_path.yml";
 
   // copy an additional pack file
@@ -1418,9 +1416,6 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Local_Multiple_Pack_Files) {
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
   EXPECT_EQ(0, RunProjMgr(6, argv));
-
-  auto errStr = streamRedirect.GetErrorString();
-  EXPECT_NE(string::npos, errStr.find(warnExpected));
 
   // remove additionally added file
   RteFsUtils::RemoveFile(destPackFile);
@@ -1447,7 +1442,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Local_Pack_Path_Not_Found) {
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Local_Pack_File_Not_Found) {
   char* argv[7];
   StdStreamRedirect streamRedirect;
-  const string errExpected = "no pdsc file found under: ../SolutionSpecificPack/Device";
+  const string errExpected = "pdsc file was not found under: ../SolutionSpecificPack/Device";
   const string& csolution = testinput_folder + "/TestSolution/test.csolution_local_pack_file_not_found.yml";
 
   // convert -s solution.yml

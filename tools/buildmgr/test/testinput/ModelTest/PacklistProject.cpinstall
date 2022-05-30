@@ -1,2 +1,2 @@
-http://www.keil.com/pack/lwIP.lwIP.2.1.2.pack
-http://www.keil.com/pack/Keil.STM32L5xx_DFP.1.2.0.pack
+lwIP::lwIP@2.1.2
+Keil::STM32L5xx_DFP@1.2.0

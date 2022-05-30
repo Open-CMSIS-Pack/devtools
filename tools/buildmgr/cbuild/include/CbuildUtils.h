@@ -34,7 +34,6 @@ struct CbuildPackItem
   const std::string vendor;
   const std::string name;
   const std::string version;
-  const std::string url;
 };
 
 class CbuildUtils {

@@ -45,7 +45,6 @@ protected:
 
   static void SetToolchain(const std::string& toolchain, std::map<std::string, std::string> &attributes);
   static const std::string GetLocalRepoVersion(const std::string& rtePath, const std::string& name, const std::string& vendor, const std::string& versionRange, std::string& url);
-  static bool GetUrlFromIndex(const std::string& rtePath, const std::string& name, const std::string& vendor, const std::string& versionRange, std::string& url);
   static bool GetUrlFromLocalRepository(const std::string& rtePath, const std::string& name, const std::string& vendor, std::string& versionRange, std::string& url);
   static bool GetUrl(const std::string& path, const std::string& name, const std::string& vendor, std::string& version, std::string& url);
   static RteGeneratorModel* ReadGpdscFile(const std::string& gpdsc);

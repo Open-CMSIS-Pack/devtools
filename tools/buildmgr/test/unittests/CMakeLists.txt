@@ -19,6 +19,7 @@ set_property(TARGET CbuildUnitTests PROPERTY
 
 add_definitions(-DTEST_BUILD_FOLDER="${CMAKE_CURRENT_BINARY_DIR}/")
 add_definitions(-DTEST_SRC_FOLDER="${CMAKE_CURRENT_SOURCE_DIR}/../")
+add_definitions(-DCMAKE_SOURCE_DIR="${CMAKE_SOURCE_DIR}/")
 
 target_link_libraries(CbuildUnitTests PUBLIC cbuildgenlib gtest_main)
 

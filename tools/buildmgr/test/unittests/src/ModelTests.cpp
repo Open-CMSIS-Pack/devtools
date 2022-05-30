@@ -112,3 +112,10 @@ TEST_F(ModelTests, CreateRte_MissingDeviceName) {
   CheckCreateRte    (param, testinput_folder);
 }
 
+TEST_F(ModelTests, CheckPackListLocalRepo) {
+  std::map<string, string> optionAttributes;
+    string const toolchain = "", ext = CMEXT, novalue = "";
+    string const filename = testinput_folder + "/PacklistLocal.cprj";
+    string const rtePath = string(CMAKE_SOURCE_DIR) + "/test/local";
+    EXPECT_TRUE(CreateRte({ filename, rtePath, novalue, optionAttributes, toolchain, ext, novalue, novalue, true }));
+}
