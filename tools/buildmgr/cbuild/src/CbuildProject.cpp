@@ -234,41 +234,6 @@ const bool CbuildProject::CheckPackRequirements(const RtePackage *cprjPack, cons
   return true;
 }
 
-
-bool CbuildProject::GetUrlFromIndex(const string& rtePath, const string& name, const string& vendor,
-                              const string& versionRange, string& url)
-{
-  /*
-    Get the PDSC URL from the .Web/index.pidx file
-  */
-
-  string indexPath = string(rtePath) + "/.Web/index.pidx";
-
-  fs::path path(indexPath);
-  error_code ec;
-  if (!fs::exists(path, ec)) {
-    LogMsg("M600", PATH(rtePath.c_str()));
-    return false;
-  }
-
-  // get the url root and indexed version
-  string version = "";
-  if (GetUrl(path.generic_string(), name, vendor, version, url)) {
-    if (VersionCmp::RangeCompare(version, versionRange) != 0) {
-      // indexed version is not in the required version range
-      version = RteUtils::GetSuffix(versionRange);
-      if (version.empty()) version = versionRange;
-    }
-    // add vendor, name, version and extension
-    url += vendor + '.' + name + '.' + version + ".pack";
-    LogMsg("M654", VAL("URL", url));
-    return true;
-  }
-
-  LogMsg("M601", VAL("VENDOR", vendor), VAL("NAME", name));
-  return false;
-}
-
 bool CbuildProject::GetUrlFromLocalRepository(const string&rtePath, const string&name,
   const string& vendor, string& versionRange, string& url)
 {

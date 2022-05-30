@@ -65,13 +65,13 @@ bool CbuildKernel::Construct(const CbuildRteArgs& args) {
   if (m_model->Create(args))
     return true;
 
-  for(auto msg : CbuildKernel::Get()->GetCallback()->GetErrorMessages()) {
-    LogMsg("M800", MSG(msg));
-  }
-
   if (ErrLog::Get()->GetErrCnt() == 0) {
     // Construct RTE Model failed
     LogMsg("M607");
+  }
+
+  for(auto msg : CbuildKernel::Get()->GetCallback()->GetErrorMessages()) {
+    LogMsg("M800", MSG(msg));
   }
 
   return false;
