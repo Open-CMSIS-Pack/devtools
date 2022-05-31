@@ -75,7 +75,7 @@ Input Files              | Description
 [DFP Software Packs](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/cp_PackTutorial.html#createPack_DFP)     | Device related information on the tool configuration. May refer an *.rzone file.
 [BSP Software Packs](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/cp_PackTutorial.html#createPackBoard)    | Board specific configuration (i.e. memory). May refer to an *.rzone file that defines board components.
 [*.rzone files](https://arm-software.github.io/CMSIS_5/Zone/html/xml_rzone_pg.html)                 | Definition of memory and peripheral resources. If it does not exist, content is created from DFP.
-*.csettings.yml          | **Step 1:** setup of an environment (could be an IDE) to pre-define a toolchain or build-types (Debug, Release).
+*.cdefault.yml          | **Step 1:** setup of an environment (could be an IDE) to pre-define a toolchain or build-types (Debug, Release).
 *.csolution.yml          | **Step 2:** complete scope of the application and the build order of sub-projects.
 *.cproject.yml           | **Step 3:** content of an independent build (linker run) - directly relates to a *.cprj file.
 *.clayer.yml             | **Step 4:** set of source files along with pre-configured components for reuse in different applications.
