@@ -10,4 +10,10 @@
 # This bash script wraps the cbuild binary for backward
 # compatibility. It will be removed in future versions.
 
-cbuild "$@"
+for cmdline in "$@"
+do
+  arg="${cmdline/--cmake/-g=Ninja}"
+  arg="${arg/database/-t=database}"
+  args+=("${arg}")
+done
+cbuild "${args[@]}"
