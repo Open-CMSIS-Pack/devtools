@@ -287,12 +287,12 @@ solution:
       
   build-types:
     - type: Debug
-      optimize: debug
+      optimize: none
       debug: on
 
     - type: Release
-      optimize: max
-    
+      optimize: size
+
   projects:
     - project: ./bootloader/Bootloader.cproject.yml           # relative path
     - project: /MyDevelopmentTree/security/TFM.cproject.yml   # absolute path
@@ -396,8 +396,8 @@ solution:
 
   build-types:                  # additional build types
     - type: Test
-      optimize: debug
-      debug: on      
+      optimize: none
+      debug: on
       packs:                    # with explicit pack specification
         - pack: ST::TestSW
           path: .\MyDev\TestSW    
@@ -726,8 +726,8 @@ Value                                                 | Code Generation
 ```yml
 groups:
   - group:  "Main File Group"
-    optimize: debug         # optimize this file group for debug illusion
-    files: 
+    optimize: none          # optimize this file group for debug illusion
+    files:
       - file: file1a.c
       - file: file1b.c
 ```
@@ -1103,11 +1103,11 @@ target-types:
       
 build-types:
   - type: Debug
-    optimize: debug              # specifies code optimization level
+    optimize: none               # specifies code optimization level
     debug: on                    # generates debug information
 
   - type: Test
-    optimize: max
+    optimize: size
     debug: on
 ```
 

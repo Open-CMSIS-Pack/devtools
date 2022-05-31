@@ -30,7 +30,7 @@ solution:
 
   build-types:
     - type: Debug
-#     optimize: debug                              # Code optimization: emphasis optimization for debug illusion
+#     optimize: none                               # Code optimization: emphasis optimization for debug illusion
 #     debug: on                                    # Enable debug symbols
  
     - type: Release

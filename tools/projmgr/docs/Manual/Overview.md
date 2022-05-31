@@ -413,15 +413,15 @@ solution:
       
   build-types:
     - type: Debug
-      optimize: debug
+      optimize: none
       debug: on
 
     - type: Test
-      optimize: max
+      optimize: size
       debug: on
 
     - type: Release
-      optimize: max
+      optimize: size
       debug: off
 
 projects:
@@ -507,11 +507,11 @@ solution:
       
   build-types:
     - type: Debug
-      optimize: debug
+      optimize: none
       debug: on
 
     - type: Test
-      optimize: max
+      optimize: size
       debug: on
     
   projects:

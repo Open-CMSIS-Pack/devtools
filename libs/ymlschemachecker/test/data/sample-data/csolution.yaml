@@ -46,7 +46,7 @@ target-types:
 build-types:
   - type: Debug
     compiler: AC6
-    optimize: debug
+    optimize: none
     debug: on
     defines:
       - DEF-Debug
@@ -61,7 +61,7 @@ build-types:
 
   - type: Release
     compiler: GCC
-    optimize: max
+    optimize: size
     debug: off
     defines:
       - DEF-Release

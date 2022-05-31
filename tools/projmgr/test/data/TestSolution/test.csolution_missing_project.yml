@@ -41,7 +41,7 @@ solution:
 
     - type: Debug
       compiler: AC6
-      optimize: debug
+      optimize: none
       debug: on
       define:
         - DEF-Debug
@@ -56,7 +56,7 @@ solution:
 
     - type: Release
       compiler: GCC
-      optimize: max
+      optimize: size
       debug: off
       define:
         - DEF-Release

@@ -79,16 +79,16 @@
       "description": "Unique board name, optionally preceded by board vendor and succeeded by board revision string, in the format [vendor::]board[:revision]"
     },
     "OptimizeType": {
-      "enum": [ "max", "size", "speed", "debug" ],
-      "description": "Generic optimize levels (max, size, speed, debug) for code generation."
+      "enum": [ "size", "speed", "balanced", "none" ],
+      "description": "Generic optimize levels (size, speed, balanced, none) for code generation."
     },
     "DebugType": {
       "enum": [ "on", "off" ],
       "description": "Generic control for the generation of debug information (on, off)."
     },
     "WarningsType": {
-      "enum": [ "no", "all", "Misra", "AC5-like" ],
-      "description": "Control warnings (no, all, Misra, AC5-like)."
+      "enum": [ "on", "off" ],
+      "description": "Control warnings (on, off)."
     },
     "OutputType": {
       "enum": [ "exe", "lib" ],

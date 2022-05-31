@@ -120,10 +120,10 @@
   <!-- Optimize enumeration type -->
   <xs:simpleType name="OptimizeEnum">
     <xs:restriction base="xs:token">
-      <xs:enumeration value="max" />
       <xs:enumeration value="size" />
       <xs:enumeration value="speed" />
-      <xs:enumeration value="debug" />
+      <xs:enumeration value="balanced" />
+      <xs:enumeration value="none" />
     </xs:restriction>
   </xs:simpleType>
 
@@ -138,10 +138,8 @@
   <!-- Warnings enumeration type -->
   <xs:simpleType name="WarningsEnum">
     <xs:restriction base="xs:token">
-      <xs:enumeration value="no" />
-      <xs:enumeration value="all" />
-      <xs:enumeration value="Misra" />
-      <xs:enumeration value="AC5-like" />
+      <xs:enumeration value="on" />
+      <xs:enumeration value="off" />
     </xs:restriction>
   </xs:simpleType>
 
@@ -434,7 +432,7 @@
     <xs:attribute name="layer"    type="RestrictedString"        use="optional" />
   </xs:complexType>
 
-  <xs:element name="FileFlags" abstract="true"/> 
+  <xs:element name="FileFlags" abstract="true"/>
   <xs:element name="cflags"   substitutionGroup="FileFlags" type="ToolOptionType" />
   <xs:element name="cxxflags" substitutionGroup="FileFlags" type="ToolOptionType" />
   <xs:element name="asflags"  substitutionGroup="FileFlags" type="AsmOptionType" />

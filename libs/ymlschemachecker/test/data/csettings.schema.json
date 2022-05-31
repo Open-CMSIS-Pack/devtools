@@ -31,14 +31,14 @@
       "description": "Unique board name, optionally with vendor. Format: [<vendor>::]<board>. Examples: NXP::LPCxpresso55S69 or NUCLEO-L552ZE-Q."
     },
     "OptimizeType": {
-      "enum": [ "max", "size", "speed", "debug" ],
-      "description": "Generic optimize levels (max, size, speed, debug) for code generation, mapped to the toolchain by CMSIS-Build."
+      "enum": [ "size", "speed", "balanced", "none" ],
+      "description": "Generic optimize levels (size, speed, balanced, none) for code generation, mapped to the toolchain by CMSIS-Build."
     },
     "DebugType": {
 	  "enum": [ "on", "off" ],
       "description": "Generic control for the generation of debug information (on, off), mapped to the toolchain by CMSIS-Build."
     },
-    "WarningsType": { "enum": [ "no", "all", "Misra", "AC5" ] },
+    "WarningsType": { "enum": [ "on", "off" ] },
     "DefinesType": {
       "type": "array",
       "description": "list of #define symbol settings for the code generation tools.",
