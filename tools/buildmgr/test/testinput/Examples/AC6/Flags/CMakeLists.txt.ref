@@ -19,10 +19,10 @@ set(LD_FLAGS_GLOBAL "--callgraph --entry=Reset_Handler --info sizes --info summa
 set(LD_SCRIPT "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/Flags/RTE/Device/ARMCM3/ARMCM3_ac6.sct")
 
 set(DEFINES
-  DEF_TARGET_CC
-  DEF_RTE_Components=\"RTE_Components.h\"
   ARMCM3
   _RTE_
+  DEF_TARGET_CC
+  DEF_RTE_Components=\"RTE_Components.h\"
 )
 
 set(INC_PATHS
