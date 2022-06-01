@@ -12,10 +12,10 @@ set(INT_DIR "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/Relative
 set(LD_SCRIPT "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/RelativePath/RTE/Device/ARMCM0/ARMCM0_ac6.sct")
 
 set(DEFINES
-  DEF1
-  DEF2=2
   ARMCM0
   _RTE_
+  DEF1
+  DEF2=2
 )
 
 set(INC_PATHS
