@@ -225,8 +225,8 @@ string CbuildUtils::GenerateJsonPackList(const std::vector<CbuildPackItem>& pack
     json += "[";
     for (const auto& [vendor, name, version] : packList) {
       json += "\n{\"vendor\": \"" + vendor + "\", ";
-      json += "\"name\": \"" + name + "\", ";
-      json += "\"version\": \"" + version + "\"},";
+      json += "\"name\": \"" + name + "\"";
+      json += (version.empty()? "" : ", \"version\": \"" + version + "\"") + "},";
     }
     json.pop_back();
     json += "\n]\n";
