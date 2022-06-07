@@ -54,7 +54,7 @@ Usage help for a specific command available, with for example: `cpackget rm --he
 2. with the option `--pack-root <path>`, for example:
 
    ```yml
-   $ cpackget add Vendor.PackName -path-root /MyLocal/Packs
+   $ cpackget add Vendor.PackName --pack-root ./MyLocal/Packs
    ```
 
 >NOTE: As the various tools of the CMSIS-Toolbox rely all on the CMSIS-Pack root directory, it is recommended to use the `CMSIS_PACK_ROOT` environment variable. 
@@ -73,7 +73,7 @@ Sub-Directory   | Content
 :---------------|:------------------------
 `.Web`          | [**Pack Index File**](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/packIndexFile.html) of a public web service and `*.PDSC` files.
 `.Download`     | Packs that are installed from a web service. Stores `*.PDSC` pack description file, `*.pack` content file, and related license information.
-`.Local`        | Index file `local_repository.pidx` that points to local installations for development of a software pack.
+`.Local`        | Index file `local_repository.pidx` that points to local installations for development of a software pack. Contains also the `*.PDSC` files from private software packs.
 
 ## Update Pack Index File
 
