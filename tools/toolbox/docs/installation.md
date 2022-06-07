@@ -55,7 +55,7 @@ The various tools use the following environment variables.
 
 Environment Variable     | Description
 :------------------------|:------------
-**CMSIS_PACK_ROOT**      | Path to the central CMSIS-Pack directory (i.e. /open-cmsis/pack)
+**CMSIS_PACK_ROOT**      | Path to the CMSIS-Pack root directory (i.e. /open-cmsis/pack) that stores software packs
 **CMSIS_COMPILER_ROOT**  | Path to the CMSIS-Toolbox 'etc' directory (i.e. /ctools/etc)
 **Path**                 | Add to the system path to the CMSIS-Toolbox 'bin' directory (i.e. /ctools/bin)
 
