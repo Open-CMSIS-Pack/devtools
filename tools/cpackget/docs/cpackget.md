@@ -3,8 +3,8 @@
 **Table of Contents**
 - [cpackget: Pack Installer](#cpackget-pack-installer)
   - [Usage Overview](#usage-overview)
-  - [Specify central CMSIS-PACK directory](#specify-central-cmsis-pack-directory)
-  - [Initialize central CMSIS-Pack directory](#initialize-central-cmsis-pack-directory)
+  - [Specify CMSIS-Pack root directory](#specify-cmsis-pack-root-directory)
+  - [Initialize CMSIS-Pack root directory](#initialize-cmsis-pack-root-directory)
   - [Update Pack Index File](#update-pack-index-file)
   - [Add packs](#add-packs)
     - [Install public packs](#install-public-packs)
@@ -35,7 +35,7 @@ Available Commands:
 
 Flags:
   -h, --help               help for cpackget
-  -R, --pack-root path     Specifies path of the central CMSIS-Pack root directory, default: CMSIS_PACK_ROOT environment variable
+  -R, --pack-root path     Specifies path of the CMSIS-Pack root directory, default: CMSIS_PACK_ROOT environment variable
   -q, --quiet              Run cpackget silently, printing only error messages
   -v, --verbose            Sets verboseness level: None (Errors + Info + Warnings), -v (all + Debugging). Specify "-q" for no messages
   -V, --version            Prints the version number of cpackget and exit
@@ -45,9 +45,9 @@ Use "cpackget [command] --help" for more information about a command.
 
 Usage help for a specific command available, with for example: `cpackget rm --help`.
 
-## Specify central CMSIS-PACK directory
+## Specify CMSIS-Pack root directory
 
-`cpackget` is compatible with other CMSIS-Pack management tools, such as the Pack Installer available in MDK or Eclipse variants. There are two ways to specify the central CMSIS-PACK root directory:
+`cpackget` is compatible with other CMSIS-Pack management tools, such as the Pack Installer available in MDK or Eclipse variants. There are two ways to specify the CMSIS-PACK root directory:
 
 1. With the `CMSIS_PACK_ROOT` environment variable. Refer to [Installation - Environment Variables](Installation.md#environment-variables).
 
@@ -57,17 +57,17 @@ Usage help for a specific command available, with for example: `cpackget rm --he
    $ cpackget add Vendor.PackName -path-root /MyLocal/Packs
    ```
 
->NOTE: As the various tools of the CMSIS-Toolbox rely all on this central CMSIS-Pack directory, it is recommended to use the `CMSIS_PACK_ROOT` environment variable. 
+>NOTE: As the various tools of the CMSIS-Toolbox rely all on the CMSIS-Pack root directory, it is recommended to use the `CMSIS_PACK_ROOT` environment variable. 
 
-## Initialize central CMSIS-Pack directory
+## Initialize CMSIS-Pack root directory
 
-CMSIS-Packs are typically distributed via a public web service, that offers a [**Pack Index File**](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/packIndexFile.html) of available software packs. To initialize the central CMSIS-Pack directory run the command:
+CMSIS-Packs are typically distributed via a public web service, that offers a [**Pack Index File**](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/packIndexFile.html) of available software packs. To initialize the CMSIS-Pack root directory run the command:
 
 ```yml
 $ cpackget init https://www.keil.com/pack/index.pidx
 ```
 
-This command creates in the central CMSIS-PACK directory the following sub-directories.
+This command creates in the CMSIS-PACK root directory the following sub-directories.
 
 Sub-Directory   | Content
 :---------------|:------------------------
@@ -194,7 +194,7 @@ $ cpackget add /work/IoT_Socket/MDK-Packs.IoT_Socket.pdsc
 
 ## List software packs
 
-List of all installed packs that are available in the central CMSIS-PACK root directory.
+List of all installed packs that are available in the CMSIS-Pack root directory.
 ```yml
 $ cpackget list
 ```
