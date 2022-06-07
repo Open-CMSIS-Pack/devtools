@@ -55,7 +55,7 @@ The various tools use the following environment variables.
 
 Environment Variable     | Description
 :------------------------|:------------
-**CMSIS_PACK_ROOT**      | Path to the central CMSIS-Pack folder (i.e. /open-cmsis/pack)
+**CMSIS_PACK_ROOT**      | Path to the central CMSIS-Pack directory (i.e. /open-cmsis/pack)
 **CMSIS_COMPILER_ROOT**  | Path to the CMSIS-Toolbox 'etc' directory (i.e. /ctools/etc)
 **Path**                 | Add to the system path to the CMSIS-Toolbox 'bin' directory (i.e. /ctools/bin)
 
@@ -78,13 +78,13 @@ set(CMAKE_C_COMPILER_VERSION "6.16.0")
 
 ### Setup Win64
 
-For Windows use the **System Properties** dialog and add the **Environment Variables** listed above.
+For Windows use the dialog **System Properties - Advanced** and add the **Environment Variables** listed above.
 
 Below is a typical setup for users of Keil MDK
 
 Environment Variable     | Description
 :------------------------|:------------
-**CMSIS_PACK_ROOT**      | C:\Keil_v5\ARM\Pack
+**CMSIS_PACK_ROOT**      | %localappdata%\Arm\Packs
 **CMSIS_COMPILER_ROOT**  | C:\Keil_v5\ARM\ctools\etc
 **Path**                 | C:\Keil_v5\ARM\ctools\bin
 
