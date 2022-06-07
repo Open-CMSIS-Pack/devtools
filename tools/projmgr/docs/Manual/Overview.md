@@ -509,27 +509,6 @@ A solution template skeleton may be provided as shown below. The benefit is that
 ./MySolution/blinky/cproject.yml          // unnamed "cproject.yml" that obtains the project name from directory name
 ```
 
-## Support for unnamed *.yml files
-
-It is possible to use named and unnamed `*.csolution.yml` and `*.cproject.yml` files. If an explicit name is omitted, the name of the directory is used. However it is possible to overwrite the directory name with an explicit filename.
-
-**Example:**
-```c
-./blinky/cproject.yml                     // project name: "blinky"
-./blinky/blinky-test.cproject.yml         // project name: "blinky-test"
-```
-
-A solution template skeleton may be provided as shown below. The benefit is that renaming of the directory names changes also the project and solution names.
-
-```c
-./                                        // root directory of a workspace
-./cdefaults.yml                           // contains the "cdefaults.yml" file
-./MySolution                              // the current directory used for invoking "CSolution"
-./MySolution/csolution.yml                // unnamed "csolution.yml" file is the default input file
-./MySolution/blinky                       // project directory for project "blinky"
-./MySolution/blinky/cproject.yml          // unnamed "cproject.yml" that obtains the project name from directory name
-```
-
 ## Software Components
 
 Software components are re-usable library or source files that require no modification in the user application. Optionally, configurable source and header files are provided that allow to set parameters for the software component.
