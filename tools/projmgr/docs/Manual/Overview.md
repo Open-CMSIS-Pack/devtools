@@ -94,7 +94,7 @@ Run-Time Environment (RTE)  | Contains the user configured files of a project al
 
 The CMSIS-Pack repository must be present in the development environment.
 
-- There are several ways to initialize and configure the pack repository, for example using the 
+- There are several ways to initialize and configure the pack repository, for example using the
 `cpackget` tool available from https://github.com/Open-CMSIS-Pack/cpackget
 - Before running `csolution` the location of the pack repository shall be set via the environment variable
 `CMSIS_PACK_ROOT` otherwise its default location (todo what is the default?) will be taken.
@@ -102,7 +102,7 @@ The CMSIS-Pack repository must be present in the development environment.
 ### Invocation
 
 ```text
-CMSIS Project Manager 0.0.0+g23b6f99 (C) 2022 ARM 
+CMSIS Project Manager 0.0.0+g23b6f99 (C) 2022 ARM
 Usage:
   csolution <command> [<args>] [OPTIONS...]
 
@@ -185,12 +185,12 @@ Simple applications require just one self-contained file.
 project:
   compiler: AC6                    # Use Arm Compiler 6 for this project
   device: LPC55S69JEV98:cm33_core0 # Device name (exact name as defined in the DFP) optional with Pname for core selection
-  
+
   optimize: size                   # Code optimization: emphasis code size
   debug: on                        # Enable debug symbols
 
   groups:                          # Define file groups of the project
-    - group: My files           
+    - group: My files
       files:                       # Add source files
         - file: main.c
 
@@ -276,7 +276,7 @@ layer:
         - STDIN:
         - STDERR:
         - Heap: 65536
-  
+
   components:
     - component: CMSIS:CORE
     - component: CMSIS Driver:USART:Custom
@@ -289,7 +289,7 @@ layer:
     - component: Device&STM32CubeMX:STM32Cube Framework:STM32CubeMX
     - component: Device&STM32CubeMX:STM32Cube HAL
     - component: Device&STM32CubeMX:Startup
-  
+
   groups:
     - group: Board IO
       files:
@@ -347,7 +347,7 @@ solution:
 
     - type: Virtual
       board: VHT-Corstone-300     # Virtual Hardware platform (appears as board)
-      
+
   build-types:
     - type: Debug
       optimize: debug
@@ -399,7 +399,7 @@ project:
     - component: Device:Startup
     - component: CMSIS:RTOS2:FreeRTOS
     - component: ARM::CMSIS:DSP&Source          # not added for build type: Test
-      not-for-type: .Test                           
+      not-for-type: .Test
 ```
 
 ## Project Setup for Related Projects
@@ -433,7 +433,7 @@ solution:
 
     - type: Production-HW
       device: STM32U5X          # specifies device
-      
+
   build-types:
     - type: Debug
       optimize: debug
@@ -442,7 +442,7 @@ solution:
     - type: Test
       optimize: max
       debug: on
-    
+
   projects:
     - project: /security/TFM.cproject.yml
       for-type: .Release
@@ -509,30 +509,9 @@ A solution template skeleton may be provided as shown below. The benefit is that
 ./MySolution/blinky/cproject.yml          // unnamed "cproject.yml" that obtains the project name from directory name
 ```
 
-## Support for unnamed *.yml files
-
-It is possible to use named and unnamed `*.csolution.yml` and `*.cproject.yml` files. If an explicit name is omitted, the name of the directory is used. However it is possible to overwrite the directory name with an explicit filename.
-
-**Example:**
-```c
-./blinky/cproject.yml                     // project name: "blinky"
-./blinky/blinky-test.cproject.yml         // project name: "blinky-test"
-```
-
-A solution template skeleton may be provided as shown below. The benefit is that renaming of the directory names changes also the project and solution names.
-
-```c
-./                                        // root directory of a workspace
-./cdefaults.yml                           // contains the "cdefaults.yml" file
-./MySolution                              // the current directory used for invoking "CSolution"
-./MySolution/csolution.yml                // unnamed "csolution.yml" file is the default input file
-./MySolution/blinky                       // project directory for project "blinky"
-./MySolution/blinky/cproject.yml          // unnamed "cproject.yml" that obtains the project name from directory name
-```
-
 ## Software Components
 
-Software components are re-usable library or source files that require no modification in the user application. Optionally, configurable source and header files are provided that allow to set parameters for the software component. 
+Software components are re-usable library or source files that require no modification in the user application. Optionally, configurable source and header files are provided that allow to set parameters for the software component.
 
 - Configurable source and header files are copied to the project using the directory structure explained above.
 - Libraries, source, and header files that are not configurable (and need no modification) are stored in the directory of the software component (typically part of CMSIS_Pack_ROOT) and get included directly from this location into the project.
@@ -552,7 +531,7 @@ Depending on the PLM status of the application, the `csolution` performs for con
     ./RTE/component_class/ConfigFile.h           // user editable configuration file
     ./RTE/component_class/.ConfigFile.h@1.2.0    // hidden backup used for version comparison
     ```
-    
+
     The `csolution` outputs a user notification to indicate that files are added:
 
     ```text
@@ -662,7 +641,7 @@ resources:
       - region: DATA_BOOT
         phase: Boot      # region life-time (should allow to specify multiple phases)
         size: 128k
-    
+
   peripherals:           # specifies the required peripherals
     - peripheral: I2C0
       permission: rw, s
