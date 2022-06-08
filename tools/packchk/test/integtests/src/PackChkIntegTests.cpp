@@ -287,3 +287,48 @@ TEST_F(PackChkIntegTests, CheckPackWithDot) {
   PackChk packChk;
   EXPECT_EQ(0, packChk.Check(2, argv, nullptr));
 }
+
+
+// Validate software pack with SemVer semantic versioning
+TEST_F(PackChkIntegTests, CheckSemVer) {
+  const char* argv[2];
+
+  const string& pdscFile = PackChkIntegTestEnv::localtestdata_dir +
+    "/SemVerTest/Arm.SemVerTest_DFP.pdsc";
+  ASSERT_TRUE(RteFsUtils::Exists(pdscFile));
+
+  argv[0] = (char*)"";
+  argv[1] = (char*)pdscFile.c_str();
+
+  PackChk packChk;
+  EXPECT_EQ(1, packChk.Check(2, argv, nullptr));
+
+  struct {
+    int M329 = 0;
+    int M394 = 0;
+    int M393 = 0;
+    int M396 = 0;
+  } cnt;
+
+  auto errMsgs = ErrLog::Get()->GetLogMessages();
+  for (const string& msg : errMsgs) {
+    size_t s;
+
+    if ((s = msg.find("M329", 0)) != string::npos) {
+      cnt.M329++;
+    }
+    if ((s = msg.find("M393", 0)) != string::npos) {
+      cnt.M393++;
+    }
+    if ((s = msg.find("M394", 0)) != string::npos) {
+      cnt.M394++;
+    }
+    if ((s = msg.find("M396", 0)) != string::npos) {
+      cnt.M396++;
+    }
+  }
+
+  if(cnt.M329 != 2 || cnt.M393 != 3 || cnt.M394 != 4 || cnt.M396 != 3) {
+    FAIL() << "Occurrences of M329, M393, M394, M396 are wrong.";
+  }
+}
