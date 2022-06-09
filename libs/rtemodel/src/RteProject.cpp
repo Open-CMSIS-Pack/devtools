@@ -967,6 +967,9 @@ void RteProject::Update()
 }
 
 void RteProject::GenerateRteHeaders() {
+  if (!ShouldUpdateRte())
+    return;
+
   // generate header files for all targets
   for (auto itt : m_targets) {
     RteTarget* target = itt.second;

@@ -158,7 +158,7 @@ bool RteKernel::SaveActiveCprjFile(const string& file/* = RteUtils::EMPTY_STRING
   return false;
 }
 
-RteCprjProject* RteKernel::LoadCprj(const string& cprjFileName, const string& toolchain, bool initialize)
+RteCprjProject* RteKernel::LoadCprj(const string& cprjFileName, const string& toolchain, bool initialize, bool updateRteFiles)
 {
   RteCprjModel* cprjModel = ParseCprj(cprjFileName);
   if (!cprjModel)  {
@@ -167,6 +167,7 @@ RteCprjProject* RteKernel::LoadCprj(const string& cprjFileName, const string& to
 
   RteCprjProject* cprjProject = new RteCprjProject(cprjModel);
   cprjProject->SetCallback(GetRteCallback());
+  cprjProject->SetAttribute("update-rte-files", updateRteFiles ? "1" : "0");
   m_globalModel->AddProject(0, cprjProject);
   // ensure project is set active
   m_globalModel->SetActiveProjectId(cprjProject->GetProjectId());

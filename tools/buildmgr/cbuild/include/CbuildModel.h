@@ -473,6 +473,8 @@ protected:
   RteCprjProject    *m_cprjProject = 0;
   RteTarget         *m_cprjTarget = 0;
 
+  bool                   m_updateRteFiles;
+
   std::string            m_rtePath;
   std::string            m_prjFolder;
   std::string            m_cprjFile;

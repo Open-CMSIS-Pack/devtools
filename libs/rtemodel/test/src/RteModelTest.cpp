@@ -231,6 +231,25 @@ TEST_F(RteModelPrjTest, LoadCprj) {
   EXPECT_EQ((fs::status(deviceDir + "system_ARMCM3.c.update@1.2.2", ec).permissions() & write_mask), fs::perms::none);
 }
 
+TEST_F(RteModelPrjTest, LoadCprj_NoRTEFileCreation) {
+
+  RteKernelSlim rteKernel;
+  rteKernel.SetCmsisPackRoot(RteModelTestConfig::CMSIS_PACK_ROOT);
+  RteCprjProject* loadedCprjProject = rteKernel.LoadCprj(RteTestM3_cprj, RteUtils::EMPTY_STRING, true, false);
+  ASSERT_NE(loadedCprjProject, nullptr);
+
+  const string rteDir = RteUtils::ExtractFilePath(RteTestM3_cprj, true) + "RTE/";
+  const string CompConfig_0_Base_Version = rteDir + "RteTest/" + "ComponentLevelConfig_0.h.base@0.0.1";
+  const string CompConfig_1_Base_Version = rteDir + "RteTest/" + "ComponentLevelConfig_1.h.base@0.0.1";
+  EXPECT_FALSE(RteFsUtils::Exists(CompConfig_0_Base_Version));
+  EXPECT_FALSE(RteFsUtils::Exists(CompConfig_1_Base_Version));
+
+  const string deviceDir = rteDir + "Device/RteTest_ARMCM3/";
+  EXPECT_FALSE(RteFsUtils::Exists(deviceDir + "ARMCM3_ac6.sct.update@1.2.0"));
+  EXPECT_FALSE(RteFsUtils::Exists(deviceDir + "startup_ARMCM3.c.base@2.0.3"));
+  EXPECT_FALSE(RteFsUtils::Exists(deviceDir + "system_ARMCM3.c.update@1.2.2"));
+}
+
 TEST_F(RteModelPrjTest, LoadCprj_PackPath) {
 
   RteFsUtils::CopyTree(RteModelTestConfig::CMSIS_PACK_ROOT, RteTestM3_PrjPackPath);

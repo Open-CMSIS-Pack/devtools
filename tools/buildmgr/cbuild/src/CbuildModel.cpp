@@ -43,9 +43,11 @@ CbuildModel::~CbuildModel() {
 bool CbuildModel::Create(const CbuildRteArgs& args) {
   // load cprj file
   CbuildKernel::Get()->SetCmsisPackRoot(args.rtePath);
-  m_cprjProject = CbuildKernel::Get()->LoadCprj(args.file, args.toolchain);
+  m_cprjProject = CbuildKernel::Get()->LoadCprj(args.file, args.toolchain, true, args.updateRteFiles);
   if (!m_cprjProject)
     return false;
+
+  m_updateRteFiles = args.updateRteFiles;
 
   // init paths
   Init(args.file, args.rtePath);
@@ -329,7 +331,7 @@ bool CbuildModel::EvaluateResult() {
   EvaluateResult:
   Extract result info
   */
-  if (!GenerateRteHeaders())
+  if (m_updateRteFiles && !GenerateRteHeaders())
     return false;
   if (!EvalTargetOutput())
     return false;
@@ -351,7 +353,7 @@ bool CbuildModel::EvaluateResult() {
   }
   for (auto inc : m_cprjTarget->GetIncludePaths()) {
     RteFsUtils::NormalizePath(inc, m_prjFolder);
-    if (!RteFsUtils::Exists(inc)) {
+    if (m_updateRteFiles && !RteFsUtils::Exists(inc)) {
       LogMsg("M204", PATH(inc));
       return false;
     }
@@ -359,7 +361,7 @@ bool CbuildModel::EvaluateResult() {
   }
   for (auto lib : m_cprjTarget->GetLibraries()) {
     RteFsUtils::NormalizePath(lib, m_prjFolder);
-    if (!RteFsUtils::Exists(lib)) {
+    if (m_updateRteFiles && !RteFsUtils::Exists(lib)) {
       LogMsg("M204", PATH(lib));
       return false;
     }
@@ -367,7 +369,7 @@ bool CbuildModel::EvaluateResult() {
   }
   for (auto obj : m_cprjTarget->GetObjects()) {
     RteFsUtils::NormalizePath(obj, m_prjFolder);
-    if (!RteFsUtils::Exists(obj)) {
+    if (m_updateRteFiles && !RteFsUtils::Exists(obj)) {
       LogMsg("M204", PATH(obj));
       return false;
     }
@@ -472,7 +474,7 @@ bool CbuildModel::EvalPreIncludeFiles() {
         m_prjFolder + m_cprjProject->GetRteFolder() + "/_" + WildCards::ToX(m_cprjTarget->GetName()) + "/" :
         m_prjFolder;
       RteFsUtils::NormalizePath(file, baseFolder);
-      if (!RteFsUtils::Exists(file)) {
+      if (m_updateRteFiles && !RteFsUtils::Exists(file)) {
         LogMsg("M204", PATH(file));
         return false;
       }
@@ -514,7 +516,7 @@ bool CbuildModel::EvalConfigFiles() {
       const string& absPrjFile = m_cprjProject->GetProjectPath() + prjFile;
       const string& pkgFile = RteUtils::BackSlashesToSlashes(fi.second->GetFile(m_targetName)->GetOriginalAbsolutePath());
       error_code ec;
-      if (!fs::exists(absPrjFile, ec)) {
+      if (m_updateRteFiles && !fs::exists(absPrjFile, ec)) {
         // Copy config file from pack if it's missing
         LogMsg("M653", VAL("NAME", prjFile));
         string dir = fs::path(absPrjFile).remove_filename().generic_string();
@@ -697,7 +699,7 @@ bool CbuildModel::EvalFile(RteItem* file, const string& group, const string& bas
     filepath = (path.empty() ? fs::path(filepath).remove_filename().generic_string() : path);
   }
   RteFsUtils::NormalizePath(filepath, base);
-  if (!RteFsUtils::Exists(filepath)) {
+  if (m_updateRteFiles && !RteFsUtils::Exists(filepath)) {
     LogMsg("M204", PATH(filepath));
     return false;
   }
@@ -1046,7 +1048,7 @@ bool CbuildModel::EvalFlags() {
       m_linkerScript = ldflags->GetAttribute("file");
       if (!m_linkerScript.empty()) {
         RteFsUtils::NormalizePath(m_linkerScript, m_prjFolder);
-        if (!RteFsUtils::Exists(m_linkerScript)) {
+        if (m_updateRteFiles && !RteFsUtils::Exists(m_linkerScript)) {
           LogMsg("M204", PATH(m_linkerScript));
           return false;
         }
@@ -1209,7 +1211,7 @@ bool CbuildModel::EvalRteSourceFiles(map<string, list<string>> &cSourceFiles, ma
       const RteFile::Category& cat = file.second.m_cat;
       string filepath = file.first;
       RteFsUtils::NormalizePath(filepath, m_cprjProject->GetProjectPath());
-      if (!RteFsUtils::Exists(filepath)) {
+      if (m_updateRteFiles && !RteFsUtils::Exists(filepath)) {
         LogMsg("M204", PATH(filepath));
         return false;
       }
