@@ -17,6 +17,7 @@
 - [Project Structure](#project-structure)
   - [Directory Structure](#directory-structure)
   - [Support for unnamed *.yml files](#support-for-unnamed-yml-files)
+  - [Support for unnamed *.yml files](#support-for-unnamed-yml-files-1)
   - [Software Components](#software-components)
     - [PLM of configuration files](#plm-of-configuration-files)
   - [RTE_Components.h](#rte_componentsh)
@@ -26,7 +27,6 @@
   - [CMSIS-Zone Integration](#cmsis-zone-integration)
   - [Layer Interface Definitions](#layer-interface-definitions)
   - [CMSIS-Pack extensions](#cmsis-pack-extensions)
-    - [Board condition](#board-condition)
     - [Layers in packs](#layers-in-packs)
 - [Schema](#schema)
 
@@ -75,8 +75,8 @@ Input Files              | Description
 [DFP Software Packs](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/cp_PackTutorial.html#createPack_DFP)     | Device related information on the tool configuration. May refer an *.rzone file.
 [BSP Software Packs](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/cp_PackTutorial.html#createPackBoard)    | Board specific configuration (i.e. memory). May refer to an *.rzone file that defines board components.
 [*.rzone files](https://arm-software.github.io/CMSIS_5/Zone/html/xml_rzone_pg.html)                 | Definition of memory and peripheral resources. If it does not exist, content is created from DFP.
-*.cdefault.yml          | **Step 1:** setup of an environment (could be an IDE) to pre-define a toolchain or build-types (Debug, Release).
-*.csolution.yml          | **Step 2:** complete scope of the application and the build order of sub-projects.
+*.cdefault.yml          | **Step 1:** setup of an environment (could be an IDE) to pre-define a toolchain.
+*.csolution.yml          | **Step 2:** complete scope of the application with build order of sub-projects. Defines target and build types.
 *.cproject.yml           | **Step 3:** content of an independent build (linker run) - directly relates to a *.cprj file.
 *.clayer.yml             | **Step 4:** set of source files along with pre-configured components for reuse in different applications.
 
@@ -94,7 +94,7 @@ Run-Time Environment (RTE)  | Contains the user configured files of a project al
 
 The CMSIS-Pack repository must be present in the development environment.
 
-- There are several ways to initialize and configure the pack repository, for example using the
+- There are several ways to initialize and configure the pack repository, for example using the 
 `cpackget` tool available from https://github.com/Open-CMSIS-Pack/cpackget
 - Before running `csolution` the location of the pack repository shall be set via the environment variable
 `CMSIS_PACK_ROOT` otherwise its default location (todo what is the default?) will be taken.
@@ -102,7 +102,7 @@ The CMSIS-Pack repository must be present in the development environment.
 ### Invocation
 
 ```text
-CMSIS Project Manager 0.0.0+g23b6f99 (C) 2022 ARM
+CMSIS Project Manager 0.0.0+g23b6f99 (C) 2022 ARM 
 Usage:
   csolution <command> [<args>] [OPTIONS...]
 
@@ -155,10 +155,10 @@ Print list of unresolved project dependencies. Device, board, and software compo
 csolution list dependencies -s mysolution.csolution.yml [-f "<filter words>"]
 ```
 
-Convert `example.cproject.yml` into *.cprj file(s):
+Convert `example.csolution.yml` into *.cprj file(s):
 
 ```text
-csolution convert -p example.cproject.yml
+csolution convert -s example.csolution.yml
 ```
 
 List external code generators that are used to create software components in *.gpdsc format. It outputs the generator ID that is required for the `run` command.
@@ -177,28 +177,48 @@ csolution run -g STCubeMX -s mysolution.csolution.yml -c Blinky.Debug+STM32L4
 
 ## Minimal Project Setup
 
+A minimal application requires two files:
+ - `Sample.csolution.yml` that defines the device and selects the compiler.
+ - `Sample.cproject.yml` that defines the files and software components that belong to the device.
+
 Simple applications require just one self-contained file.
+
+**Simple Project: `Sample.csolution.yml`**
+
+```yml
+solution:
+  compiler: AC6
+  misc:
+    - C:
+      - -std=c99
+    - ASM:
+      - -masm=auto
+    - Link:
+      - --info summarysizes
+
+  packs:
+    - pack: ARM::CMSIS
+    - pack: Keil::LPC1700_DFP
+
+  target-types:
+    - type: MyHardware
+      device: NXP::LPC1768
+
+  projects:
+    - project: ./Sample.cproject.yml
+```
 
 **Simple Project: `Sample.cproject.yml`**
 
 ```yml
 project:
-  compiler: AC6                    # Use Arm Compiler 6 for this project
-  device: LPC55S69JEV98:cm33_core0 # Device name (exact name as defined in the DFP) optional with Pname for core selection
-
-  optimize: size                   # Code optimization: emphasis code size
-  debug: on                        # Enable debug symbols
-
-  groups:                          # Define file groups of the project
-    - group: My files
-      files:                       # Add source files
-        - file: main.c
-
-    - group: HAL
+  groups:
+    - group: App
       files:
-        - file: ./hal/driver1.c
+        - file: ./main.c
 
-  components:                      # Add software components
+  components:
+    - component: ARM::CMSIS:CORE
     - component: Device:Startup
 ```
 
@@ -276,7 +296,7 @@ layer:
         - STDIN:
         - STDERR:
         - Heap: 65536
-
+  
   components:
     - component: CMSIS:CORE
     - component: CMSIS Driver:USART:Custom
@@ -289,7 +309,7 @@ layer:
     - component: Device&STM32CubeMX:STM32Cube Framework:STM32CubeMX
     - component: Device&STM32CubeMX:STM32Cube HAL
     - component: Device&STM32CubeMX:Startup
-
+  
   groups:
     - group: Board IO
       files:
@@ -347,7 +367,7 @@ solution:
 
     - type: Virtual
       board: VHT-Corstone-300     # Virtual Hardware platform (appears as board)
-
+      
   build-types:
     - type: Debug
       optimize: debug
@@ -399,7 +419,7 @@ project:
     - component: Device:Startup
     - component: CMSIS:RTOS2:FreeRTOS
     - component: ARM::CMSIS:DSP&Source          # not added for build type: Test
-      not-for-type: .Test
+      not-for-type: .Test                           
 ```
 
 ## Project Setup for Related Projects
@@ -433,7 +453,7 @@ solution:
 
     - type: Production-HW
       device: STM32U5X          # specifies device
-
+      
   build-types:
     - type: Debug
       optimize: debug
@@ -442,7 +462,7 @@ solution:
     - type: Test
       optimize: max
       debug: on
-
+    
   projects:
     - project: /security/TFM.cproject.yml
       for-type: .Release
@@ -509,9 +529,30 @@ A solution template skeleton may be provided as shown below. The benefit is that
 ./MySolution/blinky/cproject.yml          // unnamed "cproject.yml" that obtains the project name from directory name
 ```
 
+## Support for unnamed *.yml files
+
+It is possible to use named and unnamed `*.csolution.yml` and `*.cproject.yml` files. If an explicit name is omitted, the name of the directory is used. However it is possible to overwrite the directory name with an explicit filename.
+
+**Example:**
+```c
+./blinky/cproject.yml                     // project name: "blinky"
+./blinky/blinky-test.cproject.yml         // project name: "blinky-test"
+```
+
+A solution template skeleton may be provided as shown below. The benefit is that renaming of the directory names changes also the project and solution names.
+
+```c
+./                                        // root directory of a workspace
+./cdefaults.yml                           // contains the "cdefaults.yml" file
+./MySolution                              // the current directory used for invoking "CSolution"
+./MySolution/csolution.yml                // unnamed "csolution.yml" file is the default input file
+./MySolution/blinky                       // project directory for project "blinky"
+./MySolution/blinky/cproject.yml          // unnamed "cproject.yml" that obtains the project name from directory name
+```
+
 ## Software Components
 
-Software components are re-usable library or source files that require no modification in the user application. Optionally, configurable source and header files are provided that allow to set parameters for the software component.
+Software components are re-usable library or source files that require no modification in the user application. Optionally, configurable source and header files are provided that allow to set parameters for the software component. 
 
 - Configurable source and header files are copied to the project using the directory structure explained above.
 - Libraries, source, and header files that are not configurable (and need no modification) are stored in the directory of the software component (typically part of CMSIS_Pack_ROOT) and get included directly from this location into the project.
@@ -523,29 +564,29 @@ Configurable source and header files have a version information that is required
 
 Depending on the PLM status of the application, the `csolution` performs for configuration files the following operation:
 
-1. **Add** a software component for the first time: the related config file is copied twice into the related `RTE` project directory. The first copy can be modified by the user with the parameters for the user application. The second copy is an unmodified hidden backup file that is appended with the version information.
+1. **Add** a software component for the first time: the related config file is copied twice into the related `RTE` project directory. The first copy can be modified by the user with the parameters for the user application. The second copy is an unmodified  backup file with the format `<configfile>.<ext>.current@version`.
 
     **Example:** A configuration file `ConfigFile.h` at version `1.2.0` is copied:
 
     ```c
-    ./RTE/component_class/ConfigFile.h           // user editable configuration file
-    ./RTE/component_class/.ConfigFile.h@1.2.0    // hidden backup used for version comparison
+    ./RTE/component_class/ConfigFile.h                  // user editable configuration file
+    ./RTE/component_class/ConfigFile.h.current@1.2.0    // current unmodified configuration file with version information; used for version comparison
     ```
-
+    
     The `csolution` outputs a user notification to indicate that files are added:
 
     ```text
     ./RTE/component_class/ConfigFile.h -  info: component 'name' added configuration file version '1.2.0'
     ```
 
-2. **Upgrade** (or downgrade) a software component: if the version of the hidden backup is identical, no operation is performed. If the version differs, the new configuration file is copied with appended version information.
+2. **Upgrade** (or downgrade) a software component: if the version of the unmodified backup file is identical, no operation is performed. If the version differs, the new configuration file is copied with the format `<configfile>.<ext>.update@version`.
 
     **Example:** after configuration file `ConfigFile.h` to version `1.3.0` the directory contains these files:
 
     ```c
-    ./RTE/component_class/ConfigFile.h           // user editable configuration file
-    ./RTE/component_class/ConfigFile.h@1.3.0     // user editable configuration file
-    ./RTE/component_class/.ConfigFile.h@1.2.0    // hidden backup used for version comparison
+    ./RTE/component_class/ConfigFile.h                  // user editable configuration file (based on current version)
+    ./RTE/component_class/ConfigFile.h.update@1.3.0     // new configuration file; used to start a 3-way merge
+    ./RTE/component_class/ConfigFile.h.current@1.2.0    // current unmodified configuration file with version information; used for version comparison
     ```
 
     The `csolution` outputs a user notification to indicate that configuration files have changed:
@@ -557,9 +598,9 @@ Depending on the PLM status of the application, the `csolution` performs for con
 3. **User action to complete upgrade**: The user has now several options (outside of `csolution`) to merge the configuration file information. A potential way could be to use a 3-way merge utility. After merging the configuration file, the hidden backup should be deleted and the unmodified new version should become the hidden backup. The previous configuration file may be stored as backup as shown below.
 
     ```c
-    ./RTE/component_class/ConfigFile.h           // new configuration file with merge configuration
-    ./RTE/component_class/ConfigFile.h.bak       // previous configuration file stored as backup
-    ./RTE/component_class/.ConfigFile.h@1.3.0    // hidden backup of unmodified config file, used for version comparison
+    ./RTE/component_class/ConfigFile.h                  // new configuration file with merge configuration
+    ./RTE/component_class/ConfigFile.h.bak              // previous configuration file stored as backup
+    ./RTE/component_class/ConfigFile.h.current@1.3.0    // current unmodified configuration file with version information; used for version comparison
     ```
 
 - **Note: Multiple Instances of Configuration files**
@@ -568,9 +609,9 @@ Depending on the PLM status of the application, the `csolution` performs for con
 
    ```c
    ./RTE/component_class/ConfigFile_0.h
-   ./RTE/component_class/.ConfigFile_0.h@1.2.0
+   ./RTE/component_class/ConfigFile_0.h.current@1.2.0
    ./RTE/component_class/ConfigFile_1.h
-   ./RTE/component_class/.ConfigFile_1.h@1.2.0
+   ./RTE/component_class/ConfigFile_1.h.current@1.2.0
    ```
 
 ## RTE_Components.h
@@ -641,7 +682,7 @@ resources:
       - region: DATA_BOOT
         phase: Boot      # region life-time (should allow to specify multiple phases)
         size: 128k
-
+    
   peripherals:           # specifies the required peripherals
     - peripheral: I2C0
       permission: rw, s
@@ -667,9 +708,6 @@ interfaces:
 
 ## CMSIS-Pack extensions
 
-### Board condition
-
-It should be possible to use conditions to filter against a selected board name.
 
 ### Layers in packs
 

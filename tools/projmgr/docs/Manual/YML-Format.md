@@ -288,32 +288,14 @@ The `default:` node is the start of a `*.cdefaults.yml` file and contain the fol
 
 `default:`                                            | Content
 :-----------------------------------------------------|:------------------------------------
-&nbsp;&nbsp; [`packs:`](#packs)                       | Defines local packs and/or scope of packs that are used.
 &nbsp;&nbsp; [`compiler:`](#compiler)                 | Default toolchain selection.
-&nbsp;&nbsp; [`build-types:`](#build-types)           | Default list of build-types (i.e. Release, Debug).
+&nbsp;&nbsp; [`build-types:`](#build-types)           | List of build-types (i.e. Release, Debug, Test).
 
 **Example:**
 
 ```yml
 default:
   compiler: AC6                   # use Arm Compiler 6 as default
-
-  packs:
-    - pack: ARM                   # use all packs from Arm
-    - pack: AWS                   # use all packs from AWS
-    - pack: NXP::*LPC*            # use all packs from NXP that contain LPC
-
-    - pack: ARM::CMSIS            # use local path for the CMSIS pack
-      path: .\dev\CMSIS
-    - pack: Keil::MDK-Middleware  # use MDK-Middleware pack from Keil
-      
-  build-types:                
-    - type: Debug
-      optimize: debug
-      debug: on
-
-    - type: Release
-      optimize: max
 ```
 
 
@@ -366,7 +348,6 @@ The `project:` node is the start of a `*.cproject.yml` file and can contain the 
 `project:`                                     |              | Content
 :----------------------------------------------|--------------|:------------------------------------
 &nbsp;&nbsp; [`description:`](#description)    |  Optional    | Project description.
-&nbsp;&nbsp; [`compiler:`](#compiler)          |  Optional    | Toolchain selection.
 &nbsp;&nbsp; [`output-type:`](#output-type)    | **Required** | Generate executable (default) or library.
 &nbsp;&nbsp; [`optimize:`](#optimize)          |  Optional    | Optimize level for code generation.
 &nbsp;&nbsp; [`linker:`](#linker)              | **Required** | Instructions for the linker.
@@ -842,17 +823,27 @@ A [*type list*](#type-list) that removes an [*list-node*](#list-nodes) for a spe
 
 ### *type list*
 
-It is possible to specify only a `<build-type>`, only a `<target-type>` or a combination of `<build-type>` and `<target-type>`. It is also possible to provide a list of *build* and *target* types. The *type list syntax* for `for-type:` or `not-for-type:` is:
+It is possible to specify only a `<build-type>`, only a `<target-type>` or a combination of `<build-type>` and `<target-type>`. 
 
-`[.<build-type>][+<target-type>] [, [.<build-type>]+[<target-type>]] [, ...]`
+It is also possible to provide a list of *build* and *target* types. The *type list syntax* for `for-type:` or `not-for-type:` is:
+
+```
+  - [.<build-type>][+<target-type>]
+  - [.<build-type>][+<target-type>]
+```
 
 **Examples:**
 
 ```yml
-for-type:      .Test                            # add item for build-type: Test (any target-type)
-for-type:      .Debug, .Release+Production-HW   # add for build-type: Debug and build-type: Release / target-type: Production-HW
-not-for-type:  +Virtual                         # remove item for target-type: Virtual (any build-type)
-not-for-type:  .Release+Virtual                 # remove item for build-type: Release with target-type: Virtual
+for-type:      
+  - .Test                            # add item for build-type: Test (any target-type)
+
+for-type:                            # add item
+  - .Debug                           # for build-type: Debug and 
+  - .Release+Production-HW           # build-type: Release / target-type: Production-HW
+
+not-for-type:  +Virtual              # remove item for target-type: Virtual (any build-type)
+not-for-type:  .Release+Virtual      # remove item for build-type: Release with target-type: Virtual
 ```
 > **Note:** `for-type` and `not-for-type` are mutually exclusive, only one occurrence can be specified for a *list node*. 
 
@@ -1011,19 +1002,20 @@ Add a software layer to a project. Used in `*.cproject.yml` files.
 **Example:**
 
 ```yml
-layer:
-  misc:
-    - compiler: AC6
-      C: [-fshort-enums, -fshort-wchar]
-  components:
-    - component: Startup
-    - component: CMSIS CORE
-    - component: Keil RTX5 Library_NS
-  groups:
-    - group: Non-secure Code
-      files: 
-        - file: main_ns.c 
-        - file: ../SecureCode/interface.h
+  layers:
+    - layer: ./Socket/VSocket/Socket.clayer.yml
+      for-type: 
+        - +AVH
+
+    - layer: ./Interface/AWS/FreeRTOS+TCP/Interface.clayer.yml
+      for-type:
+        - +IP-Stack
+    - layer: ./Interface/AWS/WiFi/Interface.clayer.yml
+      for-type:
+        - +WiFi
+    - layer: ./Interface/AWS/Socket/Interface.clayer.yml
+      for-type:
+        - +AVH
 ```
 
 ## `components:`
@@ -1047,19 +1039,25 @@ Add software components to a project or a software layer. Used in `*.cproject.ym
 **Example:**
 
 ```yml
-layer:
-  misc:
-    - compiler: AC6
-      C: [-fshort-enums, -fshort-wchar]
-  components:
-    - component: Startup
-    - component: CMSIS CORE
-    - component: Keil RTX5 Library_NS
-  groups:
-    - group: Non-secure Code
-      files: 
-        - file: main_ns.c 
-        - file: ../SecureCode/interface.h
+components:
+    - component: ARM::CMSIS:RTOS2:FreeRTOS&Cortex-M
+
+    - component: ARM::RTOS&FreeRTOS:Config&CMSIS RTOS2
+    - component: ARM::RTOS&FreeRTOS:Core&Cortex-M
+    - component: ARM::RTOS&FreeRTOS:Event Groups
+    - component: ARM::RTOS&FreeRTOS:Heap&Heap_5
+    - component: ARM::RTOS&FreeRTOS:Stream Buffer
+    - component: ARM::RTOS&FreeRTOS:Timers
+
+    - component: ARM::Security:mbed TLS
+      defines:
+        - MBEDTLS_CONFIG_FILE="aws_mbedtls_config.h"
+    - component: AWS::FreeRTOS:backoffAlgorithm
+    - component: AWS::FreeRTOS:coreMQTT
+    - component: AWS::FreeRTOS:coreMQTT Agent
+    - component: AWS::FreeRTOS:corePKCS11&Custom
+      defines:
+        - MBEDTLS_CONFIG_FILE="aws_mbedtls_config.h"
 ```
 
 > **Note:** The name format for a software component is described under [Name Conventions - Component Names](#Component_Names).
@@ -1171,7 +1169,6 @@ project:
 Start of a layer definition in a `*.clayer.yml` file.
 
 **Example:**
-
 
 
 ```yml
