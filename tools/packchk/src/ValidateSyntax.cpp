@@ -165,6 +165,18 @@ bool ValidateSyntax::CheckLicense(RtePackage* pKg, CheckFilesVisitor& fileVisito
     return true;
   }
 
+  if(XmlValueAdjuster::IsAbsolute(licPath)) {
+    LogMsg("M326", PATH(licPath));   // error : absolute paths are not permitted
+  }
+  else if(licPath.find('\\') != string::npos) {
+    if(XmlValueAdjuster::IsURL(licPath)) {
+      LogMsg("M370", URL(licPath));  // error : backslash are non permitted in URL
+    }
+    else {
+      LogMsg("M327", PATH(licPath)); // error : backslash are not recommended
+    }
+  }
+
   CheckFiles& checkFiles = fileVisitor.GetCheckFiles();
   if(!checkFiles.CheckFileExists(licPath, -1)) {
     return false;
