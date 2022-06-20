@@ -332,3 +332,34 @@ TEST_F(PackChkIntegTests, CheckSemVer) {
     FAIL() << "Occurrences of M329, M393, M394, M396 are wrong.";
   }
 }
+
+
+// Validate license path
+TEST_F(PackChkIntegTests, CheckPackLicense) {
+  const char* argv[2];
+
+  const string& pdscFile = PackChkIntegTestEnv::localtestdata_dir +
+    "/TestLicense/TestVendor.TestPackLicense.pdsc";
+  ASSERT_TRUE(RteFsUtils::Exists(pdscFile));
+
+  argv[0] = (char*)"";
+  argv[1] = (char*)pdscFile.c_str();
+
+  PackChk packChk;
+  EXPECT_EQ(0, packChk.Check(2, argv, nullptr));
+
+  auto errMsgs = ErrLog::Get()->GetLogMessages();
+  bool bFound = false;
+  for (const string& msg : errMsgs) {
+    size_t s;
+    if ((s = msg.find("M327")) != string::npos) {
+      bFound = true;
+      break;
+    }
+  }
+
+  if (!bFound) {
+    FAIL() << "error: missing warning M327";
+  }
+
+}
