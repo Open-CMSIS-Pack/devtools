@@ -155,6 +155,7 @@ bool ProjMgrWorker::GetRequiredPdscFiles(ContextItem& context, const std::string
               filteredPack.name +
               (filteredPack.version.empty() ? "" : "@" + filteredPack.version);
             errMsgs.push_back("required pack: " + packageName + " not found");
+            context.missingPacks.push_back(filteredPack);
           }
           continue;
         }
@@ -186,9 +187,9 @@ bool ProjMgrWorker::GetRequiredPdscFiles(ContextItem& context, const std::string
 }
 
 bool ProjMgrWorker::InitializeModel() {
-  string packRoot = CrossPlatformUtils::GetEnv("CMSIS_PACK_ROOT");
-  if (packRoot.empty()) {
-    packRoot = CrossPlatformUtils::GetDefaultCMSISPackRootDir();
+  m_packRoot = CrossPlatformUtils::GetEnv("CMSIS_PACK_ROOT");
+  if (m_packRoot.empty()) {
+    m_packRoot = CrossPlatformUtils::GetDefaultCMSISPackRootDir();
   }
   m_kernel = ProjMgrKernel::Get();
   if (!m_kernel) {
@@ -200,13 +201,16 @@ bool ProjMgrWorker::InitializeModel() {
     ProjMgrLogger::Error("initializing RTE Model failed");
     return false;
   }
-  m_kernel->SetCmsisPackRoot(packRoot);
+  m_kernel->SetCmsisPackRoot(m_packRoot);
   m_model->SetCallback(m_kernel->GetCallback());
+  return true;
+}
 
+bool ProjMgrWorker::LoadAllRelevantPacks() {
   // Get pack selection for each context
   std::set<std::string> pdscFiles;
   for (auto& [_, contextItem] : m_contexts) {
-    if (!GetRequiredPdscFiles(contextItem, packRoot)) {
+    if (!GetRequiredPdscFiles(contextItem, m_packRoot)) {
       return false;
     }
     for (const auto& [pdscFile, _] : contextItem.pdscFiles) {
@@ -233,12 +237,16 @@ bool ProjMgrWorker::InitializeModel() {
 }
 
 bool ProjMgrWorker::LoadPacks(ContextItem& context) {
-  if (m_loadedPacks.empty() && !InitializeModel()) {
+  if (!InitializeModel()) {
+    return false;
+  }
+  if (m_loadedPacks.empty() && !LoadAllRelevantPacks()) {
     return false;
   }
   if (!InitializeTarget(context)) {
     return false;
   }
+  // Filter context specific packs
   if (!context.pdscFiles.empty()) {
     RteAttributesMap selectedPacks;
     for (const auto& pack : m_loadedPacks) {
@@ -1386,7 +1394,7 @@ set<string> ProjMgrWorker::SplitArgs(const string& args, const string& delimiter
   return s;
 }
 
-bool ProjMgrWorker::ListPacks(vector<string>&packs, const string& contextName, const string& filter) {
+bool ProjMgrWorker::ListPacks(vector<string>&packs, bool missingPacks, const string& contextName, const string& filter) {
   if (!contextName.empty()) {
     // Get selected context
     if (m_contexts.empty() || (m_contexts.find(contextName) == m_contexts.end())) {
@@ -1395,16 +1403,31 @@ bool ProjMgrWorker::ListPacks(vector<string>&packs, const string& contextName, c
     }
   }
   ContextItem& context = m_contexts[contextName];
-  if (!LoadPacks(context)) {
-    return false;
-  }
-  if (m_loadedPacks.empty()) {
-    ProjMgrLogger::Error("no installed pack was found");
-    return false;
-  }
   set<string> packsSet;
-  for (const auto& pack : m_loadedPacks) {
-    packsSet.insert(ProjMgrUtils::GetPackageID(pack));
+  if (missingPacks) {
+    // Get only missing packs identifiers
+    if (!InitializeModel()) {
+      return false;
+    }
+    if (!GetRequiredPdscFiles(context, m_packRoot)) {
+      if (context.missingPacks.size() > 0) {
+        for (const auto& pack : context.missingPacks) {
+          packsSet.insert(ProjMgrUtils::GetPackageID(pack.vendor, pack.name, pack.version));
+        }
+      }
+    }
+  } else {
+    // Load all relevant packs
+    if (!LoadPacks(context)) {
+      return false;
+    }
+    if (m_loadedPacks.empty()) {
+      ProjMgrLogger::Error("no installed pack was found");
+      return false;
+    }
+    for (const auto& pack : m_loadedPacks) {
+      packsSet.insert(ProjMgrUtils::GetPackageID(pack));
+    }
   }
   if (!filter.empty()) {
     set<string> filteredPacks;

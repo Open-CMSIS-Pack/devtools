@@ -126,11 +126,11 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks) {
 
   map<std::pair<string, string>, string> testFalseInputs = {
     {{"TestSolution/test.csolution_local_pack_path_not_found.yml", "test1.Debug+CM0"},
-      "error csolution: pack path: ./SolutionSpecificPack/ARM does not exist\nerror csolution: processing pack list failed\n"},
+      "error csolution: pack path: ./SolutionSpecificPack/ARM does not exist\nerror csolution: processing list of packs failed\n"},
     {{"TestSolution/test.csolution_local_pack_file_not_found.yml", "test1.Debug+CM0"},
-      "error csolution: pdsc file was not found under: ../SolutionSpecificPack/Device\nerror csolution: processing pack list failed\n"},
+      "error csolution: pdsc file was not found under: ../SolutionSpecificPack/Device\nerror csolution: processing list of packs failed\n"},
     {{"TestSolution/test.csolution_invalid_pack.yml", "test1.Debug+CM0"},
-      "error csolution: required pack: ARM::RteTest_INVALID@0.2.0 not found\nerror csolution: processing pack list failed\n"},
+      "error csolution: required pack: ARM::RteTest_INVALID@0.2.0 not found\nerror csolution: processing list of packs failed\n"},
     {{"TestSolution/test.csolution_unknown_file.yml", "test1.Debug+CM0"},
       "error csolution: csolution file was not found"},
     {{"TestSolution/test.csolution.yml", "invalid.context"},
@@ -178,6 +178,24 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks_project) {
 
   auto outStr = streamRedirect.GetOutString();
   EXPECT_STREQ(outStr.c_str(), "ARM::RteTest_DFP@0.1.1\n");
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacksMissing) {
+  char* argv[8];
+  StdStreamRedirect streamRedirect;
+  const string& csolution = testinput_folder + "/TestSolution/pack_missing.csolution.yml";
+  // list packs
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"packs";
+  argv[3] = (char*)"-s";
+  argv[4] = (char*)csolution.c_str();
+  argv[5] = (char*)"-c";
+  argv[6] = (char*)"test1+CM0";
+  argv[7] = (char*)"-m";
+  EXPECT_EQ(0, RunProjMgr(8, argv));
+
+  auto outStr = streamRedirect.GetOutString();
+  EXPECT_STREQ(outStr.c_str(), "ARM::Missing_DFP@0.0.9\n");
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListBoards) {
@@ -582,7 +600,7 @@ TEST_F(ProjMgrUnitTests, ListPacks) {
     "ARM::RteTest_DFP@0.2.0"
   };
   vector<string> packs;
-  EXPECT_TRUE(m_worker.ListPacks(packs, "", "RteTest"));
+  EXPECT_TRUE(m_worker.ListPacks(packs, false, "", "RteTest"));
   EXPECT_EQ(expected, set<string>(packs.begin(), packs.end()));
 }
 
@@ -596,7 +614,7 @@ TEST_F(ProjMgrUnitTests, ListPacksPackageFiltered) {
   const string& filenameInput = testinput_folder + "/TestProject/test.cproject.yml";
   EXPECT_TRUE(m_parser.ParseCproject(filenameInput, false, true));
   EXPECT_TRUE(m_worker.AddContexts(m_parser, descriptor, filenameInput));
-  EXPECT_TRUE(m_worker.ListPacks(packs, "test", "RteTest_DFP"));
+  EXPECT_TRUE(m_worker.ListPacks(packs, false, "test", "RteTest_DFP"));
   EXPECT_EQ(expected, set<string>(packs.begin(), packs.end()));
 }
 

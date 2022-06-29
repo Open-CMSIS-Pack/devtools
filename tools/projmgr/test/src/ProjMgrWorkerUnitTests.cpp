@@ -335,7 +335,7 @@ TEST_F(ProjMgrWorkerUnitTests, LoadPacksNoPackage) {
   EXPECT_TRUE(LoadPacks(context));
   // get list of available packs
   vector<string> availablePacks;
-  EXPECT_TRUE(ListPacks(availablePacks, "Test"));
+  EXPECT_TRUE(ListPacks(availablePacks, false, "Test"));
   // by default all packs available should be loaded
   EXPECT_EQ(availablePacks.size(), m_loadedPacks.size());
 }
@@ -356,7 +356,7 @@ TEST_F(ProjMgrWorkerUnitTests, LoadFilteredPack_2) {
 
   // get list of available packs
   vector<string> availablePacks;
-  EXPECT_TRUE(ListPacks(availablePacks, "Test"));
+  EXPECT_TRUE(ListPacks(availablePacks, false, "Test"));
   ContextItem context;
   EXPECT_TRUE(LoadPacks(context));
   ASSERT_EQ(availablePacks.size(), m_loadedPacks.size());
@@ -377,7 +377,7 @@ TEST_F(ProjMgrWorkerUnitTests, LoadFilteredPack_4) {
 
   // get list of available packs
   vector<string> availablePacks;
-  EXPECT_TRUE(ListPacks(availablePacks, "Test"));
+  EXPECT_TRUE(ListPacks(availablePacks, false, "Test"));
   ContextItem context;
   EXPECT_TRUE(LoadPacks(context));
   ASSERT_EQ(availablePacks.size(), m_loadedPacks.size());

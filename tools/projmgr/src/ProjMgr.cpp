@@ -39,6 +39,7 @@ Options:\n\
   -c, --context arg     Input context name <cproject>[.<build-type>][+<target-type>]\n\
   -f, --filter arg      Filter words\n\
   -g, --generator arg   Code generator identifier\n\
+  -m, --missing         List only required packs that are missing\n\
   -n, --no-check-schema Skip schema check\n\
   -o, --output arg      Output directory\n\
   -h, --help            Print usage\n\
@@ -73,6 +74,7 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
       ("c,context", "", cxxopts::value<string>())
       ("f,filter", "", cxxopts::value<string>())
       ("g,generator", "", cxxopts::value<string>())
+      ("m,missing", "", cxxopts::value<bool>()->default_value("false"))
       ("n,no-check-schema", "", cxxopts::value<bool>()->default_value("false"))
       ("o,output", "", cxxopts::value<string>())
       ("h,help", "")
@@ -81,6 +83,7 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
 
     parseResult = options.parse(argc, argv);
     manager.m_checkSchema = !parseResult.count("n");
+    manager.m_missingPacks = parseResult.count("m");
 
     if (parseResult.count("command")) {
       manager.m_command = parseResult["command"].as<string>();
@@ -351,8 +354,8 @@ bool ProjMgr::RunListPacks(void) {
     }
   }
   vector<string> packs;
-  if (!m_worker.ListPacks(packs, m_context, m_filter)) {
-    ProjMgrLogger::Error("processing pack list failed");
+  if (!m_worker.ListPacks(packs, m_missingPacks, m_context, m_filter)) {
+    ProjMgrLogger::Error("processing list of packs failed");
     return false;
   }
   for (const auto& pack : packs) {

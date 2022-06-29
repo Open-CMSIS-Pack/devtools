@@ -70,6 +70,7 @@ public:
    * @return string package identifier
   */
   static std::string GetPackageID(const RteItem* pack);
+  static std::string GetPackageID(const std::string& vendor, const std::string& name, const std::string& version);
 
   /**
    * @brief read gpdsc file

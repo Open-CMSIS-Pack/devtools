@@ -92,6 +92,16 @@ string ProjMgrUtils::GetPackageID(const RteItem* pack) {
   return ConstructID(elements);
 }
 
+string ProjMgrUtils::GetPackageID(const string& packVendor, const string& packName, const string& packVersion) {
+  const auto& vendor = packVendor + SUFFIX_PACK_VENDOR;
+  const vector<pair<const char*, const string&>> elements = {
+    {"",                  vendor},
+    {"",                  packName},
+    {PREFIX_PACK_VERSION, packVersion},
+  };
+  return ConstructID(elements);
+}
+
 string ProjMgrUtils::ConstructID(const std::vector<std::pair<const char*, const std::string&>>& elements) {
   string id;
   for (const auto& element : elements) {
