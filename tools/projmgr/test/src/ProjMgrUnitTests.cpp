@@ -101,9 +101,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks) {
     {{"TestSolution/test.csolution_no_packs.yml", "test1.Debug+CM0"},
       "ARM::RteTest@0.1.0\nARM::RteTestBoard@0.1.0\nARM::RteTestGenerator@0.1.0\nARM::RteTest_DFP@0.1.1\nARM::RteTest_DFP@0.2.0\n"},
     {{"TestSolution/test.csolution_pack_selection.yml", "test2.Debug+CM0"},
-      "ARM::RteTestGenerator@0.1.0\nARM::RteTest_DFP@0.2.0\n"},
-    {{"TestSolution/multicore.csolution.yml", "multicore+CM0"},
-      "ARM::RteTest@0.1.0\nARM::RteTestBoard@0.1.0\nARM::RteTestGenerator@0.1.0\nARM::RteTest_DFP@0.1.1\nARM::RteTest_DFP@0.2.0\n"},
+      "ARM::RteTest_DFP@0.2.0\n"},
     {{"TestDefault/build-types.csolution.yml", "project.Debug"},
       "ARM::RteTest_DFP@0.1.1\n" }
   };
@@ -125,12 +123,6 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks) {
   }
 
   map<std::pair<string, string>, string> testFalseInputs = {
-    {{"TestSolution/test.csolution_local_pack_path_not_found.yml", "test1.Debug+CM0"},
-      "error csolution: pack path: ./SolutionSpecificPack/ARM does not exist\nerror csolution: processing list of packs failed\n"},
-    {{"TestSolution/test.csolution_local_pack_file_not_found.yml", "test1.Debug+CM0"},
-      "error csolution: pdsc file was not found under: ../SolutionSpecificPack/Device\nerror csolution: processing list of packs failed\n"},
-    {{"TestSolution/test.csolution_invalid_pack.yml", "test1.Debug+CM0"},
-      "error csolution: required pack: ARM::RteTest_INVALID@0.2.0 not found\nerror csolution: processing list of packs failed\n"},
     {{"TestSolution/test.csolution_unknown_file.yml", "test1.Debug+CM0"},
       "error csolution: csolution file was not found"},
     {{"TestSolution/test.csolution.yml", "invalid.context"},
@@ -601,20 +593,6 @@ TEST_F(ProjMgrUnitTests, ListPacks) {
   };
   vector<string> packs;
   EXPECT_TRUE(m_worker.ListPacks(packs, false, "", "RteTest"));
-  EXPECT_EQ(expected, set<string>(packs.begin(), packs.end()));
-}
-
-TEST_F(ProjMgrUnitTests, ListPacksPackageFiltered) {
-  set<string> expected = {
-    "ARM::RteTest_DFP@0.1.1",
-    "ARM::RteTest_DFP@0.2.0"
-  };
-  vector<string> packs;
-  ContextDesc descriptor;
-  const string& filenameInput = testinput_folder + "/TestProject/test.cproject.yml";
-  EXPECT_TRUE(m_parser.ParseCproject(filenameInput, false, true));
-  EXPECT_TRUE(m_worker.AddContexts(m_parser, descriptor, filenameInput));
-  EXPECT_TRUE(m_worker.ListPacks(packs, false, "test", "RteTest_DFP"));
   EXPECT_EQ(expected, set<string>(packs.begin(), packs.end()));
 }
 
@@ -1381,7 +1359,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_No_Packs) {
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Invalid_Packs) {
   char* argv[7];
   StdStreamRedirect streamRedirect;
-  std::string errExpected = "required pack: ARM::RteTest_INVALID@0.2.0 not found";
+  std::string errExpected = "required pack: ARM::RteTest_INVALID@0.2.0 not installed";
 
   // convert -s solution.yml
   const string& csolution = testinput_folder + "/TestSolution/test.csolution_invalid_pack.yml";
@@ -1460,7 +1438,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Local_Pack_Path_Not_Found) {
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Local_Pack_File_Not_Found) {
   char* argv[7];
   StdStreamRedirect streamRedirect;
-  const string errExpected = "pdsc file was not found under: ../SolutionSpecificPack/Device";
+  const string errExpected = "pdsc file was not found in: ../SolutionSpecificPack/Device";
   const string& csolution = testinput_folder + "/TestSolution/test.csolution_local_pack_file_not_found.yml";
 
   // convert -s solution.yml

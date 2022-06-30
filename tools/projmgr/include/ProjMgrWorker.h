@@ -354,7 +354,7 @@ protected:
   std::string m_packRoot;
 
   bool LoadPacks(ContextItem& context);
-  bool GetRequiredPdscFiles(ContextItem& context, const std::string& packRoot);
+  bool GetRequiredPdscFiles(ContextItem& context, const std::string& packRoot, std::set<std::string>& errMsgs);
   bool CheckRteErrors(void);
   bool CheckType(TypeFilter typeFilter, TypePair type);
   bool GetTypeContent(ContextItem& context);

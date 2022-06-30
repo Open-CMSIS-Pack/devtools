@@ -23,7 +23,7 @@ static constexpr const char* USAGE = "\
 Usage:\n\
   csolution <command> [<args>] [OPTIONS...]\n\n\
 Commands:\n\
-  list packs            Print list of installed packs\n\
+  list packs            Print list of used packs from the pack repository\n\
        boards           Print list of available board names\n\
        devices          Print list of available device names\n\
        components       Print list of available components\n\
@@ -39,7 +39,7 @@ Options:\n\
   -c, --context arg     Input context name <cproject>[.<build-type>][+<target-type>]\n\
   -f, --filter arg      Filter words\n\
   -g, --generator arg   Code generator identifier\n\
-  -m, --missing         List only required packs that are missing\n\
+  -m, --missing         List only required packs that are missing in the pack repository\n\
   -n, --no-check-schema Skip schema check\n\
   -o, --output arg      Output directory\n\
   -h, --help            Print usage\n\
@@ -354,14 +354,11 @@ bool ProjMgr::RunListPacks(void) {
     }
   }
   vector<string> packs;
-  if (!m_worker.ListPacks(packs, m_missingPacks, m_context, m_filter)) {
-    ProjMgrLogger::Error("processing list of packs failed");
-    return false;
-  }
+  bool ret = m_worker.ListPacks(packs, m_missingPacks, m_context, m_filter);
   for (const auto& pack : packs) {
     cout << pack << endl;
   }
-  return true;
+  return ret;
 }
 
 bool ProjMgr::RunListBoards(void) {
