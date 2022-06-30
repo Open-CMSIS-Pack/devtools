@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<package schemaVersion="1.4" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="PACK.xsd">
+  <vendor>TestVendor</vendor>
+  <url>http://www.testurl.com/pack/</url>
+  <name>TestPackLicense</name>
+  <description>TestPackLicense</description>
+  <license>licenses\license.dat</license>
+
+  <releases>
+    <release version="0.0.1" date="2022-06-20">>
+      Initial release of TestPackLicense.
+    </release>
+  </releases>
+
+  <keywords>
+    <keyword>TestPackLicense</keyword>
+  </keywords>
+
+  <conditions>
+    <condition id="Test_Condition">
+      <description>Test Device</description>
+      <require Dvendor="ARM:82"/>
+    </condition>
+  </conditions>
+
+  <components>
+    <component Cclass="TestClass" Cgroup="TestGlobal" Cversion="1.0.0" condition="Test_Condition">
+      <description>TestGlobal</description>
+    </component>
+  </components>
+  
+  <devices>
+    <family Dfamily="STM32F1 Series" Dvendor="STMicroelectronics:13">
+      <processor Dcore="Cortex-M3" DcoreVersion="r1p1"/>
+
+      <!-- ************************  Subfamily 'STM32F100'  **************************** -->
+      <subFamily DsubFamily="STM32F100">
+
+        <!-- *************************  Device 'STM32F100C4'  ***************************** -->
+        <device Dname="STM32F100C4">
+          <processor Dfpu="0" Dmpu="0" Dendian="Little-endian" Dclock="24000000"/>
+          <feature type="SON"           n="16"/>
+          <feature type="SOX"           n="16"/>
+        </device>
+      </subFamily>
+    </family>
+  </devices>
+      
+</package>
