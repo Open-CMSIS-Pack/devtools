@@ -333,11 +333,8 @@ TEST_F(ProjMgrWorkerUnitTests, LoadPacksNoPackage) {
   SetCsolutionPacks(&csolution, {}, "Test");
   ContextItem context;
   EXPECT_TRUE(LoadPacks(context));
-  // get list of available packs
-  vector<string> availablePacks;
-  EXPECT_TRUE(ListPacks(availablePacks, false, "Test"));
   // by default all packs available should be loaded
-  EXPECT_EQ(availablePacks.size(), m_loadedPacks.size());
+  EXPECT_EQ(5, m_loadedPacks.size());
 }
 
 TEST_F(ProjMgrWorkerUnitTests, LoadFilteredPack_1) {
