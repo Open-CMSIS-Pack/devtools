@@ -164,6 +164,7 @@ struct ContextItem {
   std::string endian;
   std::vector<PackageItem> packRequirements;
   std::map<std::string, std::string> pdscFiles;
+  std::vector<PackInfo>missingPacks;
   std::vector<ComponentItem> componentRequirements;
   std::string compiler;
   ToolchainItem toolchain;
@@ -238,10 +239,11 @@ public:
   /**
    * @brief list available packs
    * @param reference to list of packs
+   * @param list only missing packs
    * @param filter words to filter results
    * @return true if executed successfully
   */
-  bool ListPacks(std::vector<std::string>& packs, const std::string& contextName, const std::string& filter = RteUtils::EMPTY_STRING);
+  bool ListPacks(std::vector<std::string>& packs, bool missingPacks, const std::string& contextName, const std::string& filter = RteUtils::EMPTY_STRING);
 
   /**
    * @brief list available boards
@@ -337,12 +339,19 @@ public:
   */
   bool InitializeModel(void);
 
+  /**
+   * @brief load all relevant packs
+   * @return true if executed successfully
+  */
+  bool LoadAllRelevantPacks(void);
+
 protected:
   ProjMgrKernel* m_kernel = nullptr;
   RteGlobalModel* m_model = nullptr;
   std::list<RtePackage*> m_loadedPacks;
   std::map<std::string, ContextItem> m_contexts;
   std::string m_outputDir;
+  std::string m_packRoot;
 
   bool LoadPacks(ContextItem& context);
   bool GetRequiredPdscFiles(ContextItem& context, const std::string& packRoot);

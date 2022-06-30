@@ -79,6 +79,7 @@ protected:
   std::string m_outputDir;
   std::string m_outputType;
   bool m_checkSchema;
+  bool m_missingPacks;
   GroupNode m_files;
 
   bool RunConvert(void);
