@@ -116,7 +116,7 @@ void ProjMgrGenerator::GenerateCprjPackages(XMLTreeElement* element, const Conte
     XMLTreeElement* packageElement = element->CreateElement("package");
     if (packageElement) {
       packageElement->AddAttribute("name", package.second->GetName());
-      packageElement->AddAttribute("vendor", package.second->GetVendorName());
+      packageElement->AddAttribute("vendor", package.second->GetVendorString());
       const auto& version = package.second->GetVersionString();
       packageElement->AddAttribute("version", version + ":" + version);
       const string& pdscFile = package.second->GetPackageFileName();
