@@ -961,7 +961,8 @@ bool PackGen::CheckPack(void) {
 
     // External PDSC references
     for (auto& externalPdsc : m_externalPdsc) {
-      if (RteFsUtils::NormalizePath(externalPdsc, workingDir.generic_string() + "/")) {
+      RteFsUtils::NormalizePath(externalPdsc, workingDir.generic_string() + "/");
+      if (RteFsUtils::Exists(externalPdsc)) {
         pdscList += " -i \"" + externalPdsc + "\"";
       }
     }

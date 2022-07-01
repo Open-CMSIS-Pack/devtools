@@ -561,18 +561,10 @@ bool RteFsUtils::CreateDirectories(const string &_path) {
   return fs::exists(path, ec);
 }
 
-bool RteFsUtils::NormalizePath(string& path, string base) {
-  // [fs::canonical] make sure there are no backslashes and path must exist
-  path = fs::path(path).is_absolute() ? path : base + path;
-  error_code ec;
-  if (!fs::exists(path, ec)) {
-    return false;
-  }
-  path = fs::canonical(path, ec).generic_string();
-  if (ec) {
-    return false;
-  }
-  return true;
+void RteFsUtils::NormalizePath(string& path, const string& base) {
+  path = (fs::path(base) / fs::path(path)).lexically_normal().generic_string();
+  if (path.size() > 1 && path.back() == '/')
+    path.erase(path.size() - 1);
 }
 
 string RteFsUtils::FindFirstFileWithExt(const std::string &folder, const char *extension) {
