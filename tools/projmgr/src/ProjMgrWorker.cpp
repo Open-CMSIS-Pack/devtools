@@ -744,7 +744,8 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
     if (generator) {
       const string generatorId = generator->GetID();
       context.generators.insert({ generatorId, generator });
-      const string gpdsc = generator->GetExpandedGpdsc(context.rteActiveTarget);
+      error_code ec;
+      const string gpdsc = fs::weakly_canonical(generator->GetExpandedGpdsc(context.rteActiveTarget), ec).generic_string();
       context.gpdscs.insert({ gpdsc, {componentId, generatorId} });
     }
   }
@@ -842,9 +843,10 @@ bool ProjMgrWorker::ValidateContext(ContextItem& context) {
 bool ProjMgrWorker::ProcessDependencies(ContextItem& context) {
   // Read gpdsc
   const map<string, RteGpdscInfo*>& gpdscInfos = context.rteActiveProject->GetGpdscInfos();
-  for (const auto& [_, info] : gpdscInfos) {
+  for (const auto& [file, info] : gpdscInfos) {
     unique_ptr<RteGeneratorModel> gpdscModel = make_unique<RteGeneratorModel>();
-    const string& gpdscFile = info->GetAbsolutePath();
+    error_code ec;
+    const string gpdscFile = fs::weakly_canonical(file, ec).generic_string();
     if (!ProjMgrUtils::ReadGpdscFile(gpdscFile, gpdscModel.get())) {
       ProjMgrLogger::Warn(gpdscFile, "generator '" + context.gpdscs.at(gpdscFile).second +
         "' from component '" + context.gpdscs.at(gpdscFile).first + "': reading gpdsc failed");
@@ -1322,10 +1324,10 @@ bool ProjMgrWorker::ProcessContext(ContextItem& context, bool resolveDependencie
   if (!ProcessConfigFiles(context)) {
     return false;
   }
-  if (!ProcessDependencies(context)) {
-    return false;
-  }
   if (resolveDependencies) {
+    if (!ProcessDependencies(context)) {
+      return false;
+    }
     // TODO: Add uniquely identified missing dependencies to RTE Model
 
     // Get dependency validation results
@@ -1592,7 +1594,7 @@ bool ProjMgrWorker::ListDependencies(vector<string>& dependencies, const string&
     return false;
   }
   ContextItem& context = m_contexts.at(contextName);
-  if (!ProcessContext(context)) {
+  if (!ProcessContext(context, true)) {
     return false;
   }
   set<string>dependenciesSet;
