@@ -152,7 +152,7 @@ const ProjMgrUtils::Result ProjMgrUtils::ExecCommand(const string& cmd) {
 const string ProjMgrUtils::GetCategory(const string& file) {
   static const map<string, vector<string>> CATEGORIES = {
     {"sourceC", {".c", ".C"}},
-    {"sourceCpp", {".cpp", ".c++", ".C++", ".cxx"}},
+    {"sourceCpp", {".cpp", ".c++", ".C++", ".cxx", ".cc"}},
     {"sourceAsm", {".asm", ".s", ".S"}},
     {"header", {".h", ".hpp"}},
     {"library", {".a", ".lib"}},
