@@ -122,6 +122,20 @@ struct RteDirItem {
 };
 
 /**
+ * @brief directories item containing
+ *        intdir directory,
+ *        outdir directory,
+ *        cprj directory,
+ *        rte directory,
+*/
+struct DirectoriesItem {
+  std::string intdir;
+  std::string outdir;
+  std::string cprj;
+  std::string rte;
+};
+
+/**
  * @brief component item containing
  *        component identifier,
  *        component build settings,
@@ -201,8 +215,9 @@ struct CdefaultItem {
 
 /**
  * @brief solution item containing
- *        csolution path
- *        csolution directory
+ *        csolution path,
+ *        csolution directory,
+ *        output directories,
  *        build types,
  *        target types,
  *        target properties,
@@ -213,6 +228,7 @@ struct CdefaultItem {
 struct CsolutionItem {
   std::string path;
   std::string directory;
+  DirectoriesItem directories;
   std::map<std::string, BuildType> buildTypes;
   std::map<std::string, TargetType> targetTypes;
   TargetType target;

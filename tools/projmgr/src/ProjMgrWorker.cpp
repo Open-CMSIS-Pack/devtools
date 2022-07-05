@@ -85,19 +85,39 @@ bool ProjMgrWorker::AddContext(ProjMgrParser& parser, ContextDesc& descriptor, c
     context.type.target = type.target;
     const string& buildType = (!type.build.empty() ? "." : "") + type.build;
     const string& targetType = (!type.target.empty() ? "+" : "") + type.target;
-    const string& projectName = fs::path(cprojectFile).stem().stem().generic_string();
-    const string& contextName = projectName + buildType + targetType;
-    context.name = contextName;
+    context.name = context.cproject->name + buildType + targetType;
 
-    context.directories.intdir = context.name + "_IntDir/";
-    context.directories.outdir = context.name + "_OutDir/";
+    // default directories
+    const string& output = m_outputDir.empty() ? context.csolution->directory : m_outputDir;
+    context.directories.cprj = m_outputDir.empty() ? context.cproject->directory : m_outputDir;
+    context.directories.intdir = output + "/tmp/" + context.cproject->name + (type.target.empty() ? "" : "/" + type.target) + (type.build.empty() ? "" : "/" + type.build);
+    context.directories.outdir = output + "/out/" + context.cproject->name + (type.target.empty() ? "" : "/" + type.target) + (type.build.empty() ? "" : "/" + type.build);
+    context.directories.rte = context.cproject->directory + "/RTE";
+
+    if (m_outputDir.empty()) {
+      // customized directories
+      if (!context.csolution->directories.cprj.empty()) {
+        context.directories.cprj = output + "/" + context.csolution->directories.cprj;
+      }
+      if (!context.csolution->directories.intdir.empty()) {
+        context.directories.intdir = output + "/" + context.csolution->directories.intdir;
+      }
+      if (!context.csolution->directories.outdir.empty()) {
+        context.directories.outdir = output + "/" + context.csolution->directories.outdir;
+      }
+      if (!context.csolution->directories.rte.empty()) {
+        context.directories.rte = output + "/" + context.csolution->directories.rte;
+      }
+    }
+
     error_code ec;
-    const string& cprjDir = m_outputDir.empty() ? context.cproject->directory : m_outputDir + "/" + context.name;
-    context.directories.cprj = fs::absolute(cprjDir, ec).generic_string();
+    context.directories.cprj = fs::weakly_canonical(context.directories.cprj, ec).generic_string();
+    context.directories.rte = fs::weakly_canonical(context.directories.rte, ec).generic_string();
+    context.directories.intdir = fs::relative(context.directories.intdir, context.directories.cprj, ec).generic_string();
+    context.directories.outdir = fs::relative(context.directories.outdir, context.directories.cprj, ec).generic_string();
 
     for (const auto& clayer : context.cproject->clayers) {
       if (CheckType(clayer.type, type)) {
-        error_code ec;
         string const& clayerFile = fs::canonical(fs::path(cprojectFile).parent_path().append(clayer.layer), ec).generic_string();
         std::map<std::string, ClayerItem>& clayers = parser.GetClayers();
         if (clayers.find(clayerFile) == clayers.end()) {
@@ -108,7 +128,7 @@ bool ProjMgrWorker::AddContext(ProjMgrParser& parser, ContextDesc& descriptor, c
       }
     }
 
-    m_contexts[contextName] = context;
+    m_contexts[context.name] = context;
   }
   return true;
 }
@@ -314,7 +334,6 @@ bool ProjMgrWorker::InitializeTarget(ContextItem& context) {
     context.rteActiveProject->AddTarget("CMSIS", map<string, string>(), true, true);
     context.rteActiveProject->SetActiveTarget("CMSIS");
     context.rteActiveProject->SetName(context.name);
-    context.rteActiveProject->SetProjectPath(context.directories.cprj + "/");
     context.rteActiveTarget = context.rteActiveProject->GetActiveTarget();
     context.rteFilteredModel = context.rteActiveTarget->GetFilteredModel();
   }
@@ -324,6 +343,16 @@ bool ProjMgrWorker::InitializeTarget(ContextItem& context) {
 bool ProjMgrWorker::SetTargetAttributes(ContextItem& context, map<string, string>& attributes) {
   if (context.rteActiveTarget == nullptr) {
     InitializeTarget(context);
+  }
+  if (context.cproject) {
+    if (!context.cproject->directory.empty()) {
+      context.rteActiveProject->SetProjectPath(context.cproject->directory + "/");
+    }
+    if (!context.directories.rte.empty()) {
+      error_code ec;
+      const string& relativeRteFolder = fs::relative(context.directories.rte, context.cproject->directory, ec).generic_string();
+      context.rteActiveProject->SetRteFolder(relativeRteFolder);
+    }
   }
   context.rteActiveTarget->SetAttributes(attributes);
   context.rteActiveTarget->UpdateFilterModel();
@@ -803,7 +832,8 @@ bool ProjMgrWorker::ProcessConfigFiles(ContextItem& context) {
     for (auto group : groups) {
       for (auto file : group.second) {
         if (file.second.m_cat == RteFile::Category::LINKER_SCRIPT) {
-          context.linkerScript = file.first;
+          error_code ec;
+          context.linkerScript = fs::relative(context.cproject->directory + "/" + file.first, context.directories.cprj, ec).generic_string();
           break;
         }
       }
@@ -927,13 +957,6 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
     return false;
   }
 
-  // Access sequences and relative path references must be processed
-  // after board and device precedences (due to $Bname$ and $Dname$)
-  // but before processing misc, defines and includes precedences
-  if (!ProcessSequencesRelatives(context)) {
-    return false;
-  }
-
   StringCollection compiler = {
    &context.compiler,
    {
@@ -947,6 +970,13 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
     compiler.elements.push_back(&clayer.compiler);
   }
   if (!ProcessPrecedence(compiler)) {
+    return false;
+  }
+
+  // Access sequences and relative path references must be processed
+  // after board, device and compiler precedences (due to $Bname$, $Dname$ and $Compiler$)
+  // but before processing misc, defines and includes precedences
+  if (!ProcessSequencesRelatives(context)) {
     return false;
   }
 
@@ -1058,6 +1088,14 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
 
 bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem& context) {
 
+  // directories
+  if (!ProcessSequenceRelative(context, context.directories.cprj) ||
+      !ProcessSequenceRelative(context, context.directories.intdir) ||
+      !ProcessSequenceRelative(context, context.directories.outdir) ||
+      !ProcessSequenceRelative(context, context.directories.rte)) {
+    return false;
+  }
+
   // project, solution, target-type and build-type translation controls
   if (!ProcessSequencesRelatives(context, context.controls.cproject, context.cproject->directory) ||
       !ProcessSequencesRelatives(context, context.controls.csolution, context.csolution->directory) ||
@@ -1097,9 +1135,10 @@ bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem& context) {
 bool ProjMgrWorker::ProcessSequenceRelative(ContextItem & context, string& item, const string& ref) {
   size_t offset = 0;
   bool pathReplace = false;
+  const string input = item;
   while (offset != string::npos) {
     string sequence;
-    if (!GetAccessSequence(offset, item, sequence, '$', '$')) {
+    if (!GetAccessSequence(offset, input, sequence, '$', '$')) {
       return false;
     }
     if (offset != string::npos) {
@@ -1112,6 +1151,22 @@ bool ProjMgrWorker::ProcessSequenceRelative(ContextItem & context, string& item,
       else if (sequence == "Bname") {
         regEx = regex("\\$Bname\\$");
         replacement = context.board;
+      }
+      else if (sequence == "Project") {
+        regEx = regex("\\$Project\\$");
+        replacement = context.cproject->name;
+      }
+      else if (sequence == "BuildType") {
+        regEx = regex("\\$BuildType\\$");
+        replacement = context.type.build;
+      }
+      else if (sequence == "TargetType") {
+        regEx = regex("\\$TargetType\\$");
+        replacement = context.type.target;
+      }
+      else if (sequence == "Compiler") {
+        regEx = regex("\\$Compiler\\$");
+        replacement = context.compiler;
       }
       else if (regex_match(sequence, regex("(Output|OutDir|Source)\\(.*"))) {
         pathReplace = true;
@@ -1157,6 +1212,7 @@ bool ProjMgrWorker::ProcessSequenceRelative(ContextItem & context, string& item,
       }
       else {
         ProjMgrLogger::Warn("unknown access sequence: '" + sequence + "'");
+        continue;
       }
       item = regex_replace(item, regEx, replacement);
     }

@@ -75,6 +75,7 @@ bool ProjMgrYamlParser::ParseCsolution(const string& input,
 
     ParseTargetTypes(solutionNode, csolution.targetTypes);
     ParseBuildTypes(solutionNode, csolution.buildTypes);
+    ParseOutputDirs(solutionNode, csolution.directories);
     ParseTargetType(solutionNode, csolution.target);
     ParsePacks(solutionNode, csolution.packs);
 
@@ -104,10 +105,10 @@ bool ProjMgrYamlParser::ParseCproject(const string& input,
 
     cproject.path = RteFsUtils::MakePathCanonical(input);
     cproject.directory = RteFsUtils::ParentPath(cproject.path);
+    cproject.name = fs::path(input).stem().stem().generic_string();
 
     const YAML::Node& projectNode = root[YAML_PROJECT];
     map<const string, string&> projectChildren = {
-      {YAML_NAME, cproject.name},
       {YAML_OUTPUTTYPE, cproject.outputType},
     };
     for (const auto& item : projectChildren) {
@@ -156,10 +157,10 @@ bool ProjMgrYamlParser::ParseClayer(const string& input,
 
     clayer.path = RteFsUtils::MakePathCanonical(input);
     clayer.directory = RteFsUtils::ParentPath(clayer.path);
+    clayer.name = fs::path(input).stem().stem().generic_string();
 
     const YAML::Node& layerNode = root[YAML_LAYER];
     map<const string, string&> projectChildren = {
-      {YAML_NAME, clayer.name},
       {YAML_OUTPUTTYPE, clayer.outputType},
     };
     for (const auto& item : projectChildren) {
@@ -400,6 +401,21 @@ void ProjMgrYamlParser::ParseBuildTypes(const YAML::Node& parent, map<string, Bu
   }
 }
 
+void ProjMgrYamlParser::ParseOutputDirs(const YAML::Node& parent, struct DirectoriesItem& directories) {
+  if (parent[YAML_OUTPUTDIRS].IsDefined()) {
+    const YAML::Node& outputDirsNode = parent[YAML_OUTPUTDIRS];
+    map<const string, string&> outputDirsChildren = {
+      {YAML_OUTPUT_CPRJDIR, directories.cprj},
+      {YAML_OUTPUT_INTDIR, directories.intdir},
+      {YAML_OUTPUT_OUTDIR, directories.outdir},
+      {YAML_OUTPUT_RTEDIR, directories.rte},
+    };
+    for (const auto& item : outputDirsChildren) {
+      ParseString(outputDirsNode, item.first, item.second);
+    }
+  }
+}
+
 void ProjMgrYamlParser::ParseTargetTypes(const YAML::Node& parent, map<string, TargetType>& targetTypes) {
   if (parent[YAML_TARGETTYPES].IsDefined()) {
     const YAML::Node& targetTypesNode = parent[YAML_TARGETTYPES];
@@ -459,6 +475,7 @@ const set<string> solutionKeys = {
   YAML_PROJECTS,
   YAML_TARGETTYPES,
   YAML_BUILDTYPES,
+  YAML_OUTPUTDIRS,
   YAML_PACKS,
   YAML_PROCESSOR,
   YAML_COMPILER,
@@ -479,7 +496,6 @@ const set<string> projectsKeys = {
 };
 
 const set<string> projectKeys = {
-  YAML_NAME,
   YAML_DESCRIPTION,
   YAML_OUTPUTTYPE,
   YAML_DEVICE,
@@ -500,7 +516,6 @@ const set<string> projectKeys = {
 };
 
 const set<string> layerKeys = {
-  YAML_NAME,
   YAML_DESCRIPTION,
   YAML_OUTPUTTYPE,
   YAML_DEVICE,
@@ -548,6 +563,13 @@ const set<string> buildTypeKeys = {
   YAML_ADDPATHS,
   YAML_DELPATHS,
   YAML_MISC,
+};
+
+const set<string> outputDirsKeys = {
+  YAML_OUTPUT_CPRJDIR,
+  YAML_OUTPUT_INTDIR,
+  YAML_OUTPUT_OUTDIR,
+  YAML_OUTPUT_RTEDIR,
 };
 
 const set<string> processorKeys = {
@@ -656,6 +678,7 @@ const map<string, set<string>> sequences = {
 
 const map<string, set<string>> mappings = {
   {YAML_PROCESSOR, processorKeys},
+  {YAML_OUTPUTDIRS, outputDirsKeys},
 };
 
 bool ProjMgrYamlParser::ValidateCdefault(const string& input, const YAML::Node& root) {
