@@ -43,18 +43,6 @@ struct PackageItem {
 };
 
 /**
- * @brief directories item containing
- *        intdir directory,
- *        outdir directory,
- *        cprj directory,
-*/
-struct DirectoriesItem {
-  std::string intdir;
-  std::string outdir;
-  std::string cprj;
-};
-
-/**
  * @brief device item containing
  *        device name,
  *        device vendor,

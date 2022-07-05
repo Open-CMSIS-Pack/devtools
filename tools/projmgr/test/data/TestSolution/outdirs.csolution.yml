@@ -1,0 +1,23 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/0.9.6/tools/projmgr/schemas/csolution.schema.json
+
+solution:
+  target-types:
+    - type: TypeA
+
+    - type: TypeB
+
+  build-types:
+    - type: Debug
+      compiler: AC6
+
+    - type: Release
+      compiler: GCC
+
+  projects:
+    - project: ./TestProject1/test1.cproject.yml
+
+  output-dirs:
+    cprjdir: $Compiler$
+    intdir: $Project$/$TargetType$
+    outdir: $Project$/$BuildType$
+    rtedir: ./TestProject1/RTE
