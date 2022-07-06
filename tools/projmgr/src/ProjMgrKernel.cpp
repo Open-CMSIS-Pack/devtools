@@ -12,6 +12,7 @@
 #include "RteKernel.h"
 
 #include <iostream>
+#include <iterator>
 
 using namespace std;
 
