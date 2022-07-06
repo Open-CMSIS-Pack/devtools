@@ -17,8 +17,8 @@
 
 using namespace std;
 
-static constexpr const char* SCHEMA_FILE = "PACK.xsd";    // XML schema file name
-static constexpr const char* SCHEMA_VERSION = "1.7.2";    // XML schema version
+static constexpr const char* SCHEMA_FILE = "CPRJ.xsd";    // XML schema file name
+static constexpr const char* SCHEMA_VERSION = "1.0.1";    // XML schema version
 
 
 ProjMgrGenerator::ProjMgrGenerator(void) {
@@ -53,7 +53,7 @@ bool ProjMgrGenerator::GenerateCprj(ContextItem& context, const string& filename
 
   // Packages
   if (packagesElement) {
-    GenerateCprjPackages(packagesElement, context.packages);
+    GenerateCprjPackages(packagesElement, context);
   }
 
   // Compilers
@@ -111,13 +111,22 @@ void ProjMgrGenerator::GenerateCprjInfo(XMLTreeElement* element, const string& d
   }
 }
 
-void ProjMgrGenerator::GenerateCprjPackages(XMLTreeElement* element, const std::map<string, RtePackage*>& packages) {
-  for (const auto& package : packages) {
+void ProjMgrGenerator::GenerateCprjPackages(XMLTreeElement* element, const ContextItem& context) {
+  for (const auto& package : context.packages) {
     XMLTreeElement* packageElement = element->CreateElement("package");
     if (packageElement) {
       packageElement->AddAttribute("name", package.second->GetName());
-      packageElement->AddAttribute("vendor", package.second->GetVendorName());
-      packageElement->AddAttribute("version", package.second->GetVersionString());
+      packageElement->AddAttribute("vendor", package.second->GetVendorString());
+      const auto& version = package.second->GetVersionString();
+      packageElement->AddAttribute("version", version + ":" + version);
+      const string& pdscFile = package.second->GetPackageFileName();
+      if (context.pdscFiles.find(pdscFile) != context.pdscFiles.end()) {
+        const string& packPath = context.pdscFiles.at(pdscFile);
+        if (!packPath.empty()) {
+          error_code ec;
+          packageElement->AddAttribute("path", fs::relative(packPath, context.directories.cprj, ec).generic_string());
+        }
+      }
     }
   }
 }
@@ -133,12 +142,19 @@ void ProjMgrGenerator::GenerateCprjCompilers(XMLTreeElement* element, const Tool
 }
 
 void ProjMgrGenerator::GenerateCprjTarget(XMLTreeElement* element, const ContextItem& context) {
-  static constexpr const char* DEVICE_ATTRIBUTES[] = { "Ddsp", "Dendian", "Dfpu", "Dmve", "Dname", "Dsecure", "Dtz", "Dvendor" };
+  constexpr const char* DEVICE_ATTRIBUTES[] = { "Ddsp", "Dendian", "Dfpu", "Dmve", "Dname", "Pname", "Dsecure", "Dtz", "Dvendor" };
   map<string, string> attributes = context.targetAttributes;
   if (attributes["Dendian"] == "Configurable") {
     attributes["Dendian"].erase();
   }
   for (const auto& name : DEVICE_ATTRIBUTES) {
+    const string& value = attributes[name];
+    SetAttribute(element, name, value);
+  }
+
+  // board attributes
+  constexpr const char* BOARD_ATTRIBUTES[] = { "Bvendor", "Bname", "Bversion" };
+  for (const auto& name : BOARD_ATTRIBUTES) {
     const string& value = attributes[name];
     SetAttribute(element, name, value);
   }
@@ -174,18 +190,23 @@ void ProjMgrGenerator::GenerateCprjComponents(XMLTreeElement* element, const Con
           for (const auto& configFile : configFileMap.second) {
             XMLTreeElement* fileElement = componentElement->CreateElement("file");
             if (fileElement) {
-              //fileElement->SetAttributes(configFile.second->GetAttributes());
               SetAttribute(fileElement, "attr", "config");
               SetAttribute(fileElement, "name", configFile.first);
               SetAttribute(fileElement, "category", configFile.second->GetAttribute("category"));
-              SetAttribute(fileElement, "version", configFile.second->GetVersionString());
+              // TODO: Set config file version according to new PLM
+              const auto originalFile = configFile.second->GetFile(context.rteActiveTarget->GetName());
+              SetAttribute(fileElement, "version", originalFile->GetVersionString());
             }
           }
         }
       }
 
-      // TODO Generate toolchain settings (warnings, debug, includes, defines)
+      // TODO Generate toolchain settings (warnings, debug)
       GenerateCprjMisc(componentElement, component.second.second->build.misc, context.toolchain.name);
+      GenerateCprjVector(componentElement, component.second.second->build.defines, "defines");
+      GenerateCprjVector(componentElement, component.second.second->build.undefines, "undefines");
+      GenerateCprjVector(componentElement, component.second.second->build.addpaths, "includes");
+      GenerateCprjVector(componentElement, component.second.second->build.delpaths, "excludes");
     }
 
   }
@@ -248,18 +269,25 @@ void ProjMgrGenerator::GenerateCprjGroups(XMLTreeElement* element, const vector<
         groupElement->AddAttribute("name", groupNode.group);
       }
 
-      // TODO Generate toolchain settings (warnings, debug, includes, defines)
+      // TODO Generate toolchain settings (warnings, debug)
       GenerateCprjMisc(groupElement, groupNode.build.misc, compiler);
+      GenerateCprjVector(groupElement, groupNode.build.defines, "defines");
+      GenerateCprjVector(groupElement, groupNode.build.undefines, "undefines");
+      GenerateCprjVector(groupElement, groupNode.build.addpaths, "includes");
+      GenerateCprjVector(groupElement, groupNode.build.delpaths, "excludes");
 
       for (const auto& fileNode : groupNode.files) {
         XMLTreeElement* fileElement = groupElement->CreateElement("file");
         fileElement->AddAttribute("name", fileNode.file);
         if (fileElement) {
-          const string& category = fileNode.category.empty() ? GetCategory(fileNode.file) : fileNode.category;
-          fileElement->AddAttribute("category", category);
+          fileElement->AddAttribute("category", fileNode.category);
 
-          // TODO Generate toolchain settings (warnings, debug, includes, defines)
+          // TODO Generate toolchain settings (warnings, debug)
           GenerateCprjMisc(fileElement, fileNode.build.misc, compiler);
+          GenerateCprjVector(fileElement, fileNode.build.defines, "defines");
+          GenerateCprjVector(fileElement, fileNode.build.undefines, "undefines");
+          GenerateCprjVector(fileElement, fileNode.build.addpaths, "includes");
+          GenerateCprjVector(fileElement, fileNode.build.delpaths, "excludes");
         }
 
       }
@@ -314,24 +342,4 @@ bool ProjMgrGenerator::WriteXmlFile(const string& file, XMLTree* tree) {
   xmlFile.close();
 
   return true;
-}
-
-const string ProjMgrGenerator::GetCategory(const string& file) {
-  static const map<string, vector<string>> CATEGORIES = {
-    {"sourceC", {".c", ".C"}},
-    {"sourceCpp", {".cpp", ".c++", ".C++", ".cxx"}},
-    {"sourceAsm", {".asm", ".s", ".S"}},
-    {"header", {".h", ".hpp"}},
-    {"library", {".a", ".lib"}},
-    {"object", {".o"}},
-    {"linkerScript", {".sct", ".scf", ".ld"}},
-    {"doc", {".txt", ".md", ".pdf", ".htm", ".html"}},
-  };
-  fs::path ext((fs::path(file)).extension());
-  for (const auto& category : CATEGORIES) {
-    if (find(category.second.begin(), category.second.end(), ext) != category.second.end()) {
-      return category.first;
-    }
-  }
-  return "other";
 }

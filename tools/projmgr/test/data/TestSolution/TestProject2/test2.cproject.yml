@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/0.9.0/tools/projmgr/schemas/cproject.schema.json
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/0.9.6/tools/projmgr/schemas/cproject.schema.json
 
 project:
   description: Project 2
@@ -13,8 +13,8 @@ project:
     - DEF-project
     - DEF-project-to-be-removed
   add-paths:
-    - /path/project
-    - /path/project/to-be-removed
+    - ./path/project
+    - ../path/project/to-be-removed
   components:
     - component: Startup
     - component: CORE

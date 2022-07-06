@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/0.9.6/tools/projmgr/schemas/csolution.schema.json
+
+solution:
+#------ BEGIN: AC6 compiler specific settings -------
+  compiler: AC6
+  misc:
+    - compiler: AC6
+      C*:    # AC5-like warnings
+        - -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality
+      Link:
+        - --info summarysizes
+      ASM:
+        - -masm=auto
+      
+# warnings: AC5-like      { off, all, AC5-like, MISRA-compatible }  -> replaced with misc for now (see above)
+       
+#------ END: AC6 compiler specific settings ---------
+
+
+#------ BEGIN: GCC compiler specific settings -------
+# ...
+#------ END: GCC compiler specific settings ---------
+
+
+  packs:
+    - pack: ARM::CMSIS
+    - pack: NXP::FRDM-K32L3A6_BSP                  # should be filled out by the KSC project management
+    - pack: NXP::K32L3A60_DFP                      # should be filled out by the KSC project management
+    - pack: Keil::LPC1700_DFP                      # should be filled out by the KSC project management
+
+  build-types:
+    - type: Debug
+#     optimize: debug                              # Code optimization: emphasis optimization for debug illusion
+#     debug: on                                    # Enable debug symbols
+ 
+    - type: Release
+#     optimize: size                               # Code optimization: emphasis code size
+#     debug: on                                    # Enable debug symbols
+  
+  target-types:
+    - type:  FRDM-K32L3A6                          # should be filled out by the KSC project management
+#     board: FRDM-K32L3A6
+      device: K32L3A60VPJ1A:cm4                    # do we need way to specify a default device
+#     packs:
+#       - pack: NXP::FRDM-K32L3A6_BSP              # should be filled out by the KSC project management
+#       - pack: NXP::K32L3A60_DFP                  # should be filled out by the KSC project management
+
+    - type:   LPC1768                              # should be filled out by the KSC project management
+      device: LPC1768
+#     packs:
+#       - pack: Keil::LPC1700_DFP                  # should be filled out by the KSC project management
+    
+  projects:
+    - project: ./MyProject/MyProject.cproject.yml

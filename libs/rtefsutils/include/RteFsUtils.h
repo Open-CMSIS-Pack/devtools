@@ -201,6 +201,12 @@ public:
   */
   static fs::path AbsolutePath(const std::string& path);
   /**
+   * @brief get parent path
+   * @param path path to be processed
+   * @return string containing the parent path
+  */
+  static std::string ParentPath(const std::string& path);
+  /**
    * @brief determine absolute path of the current working directory
    * @param withTrailingSlash true if returned value should contain trailing slash '/'
    * @return absolute path of the current working directory
@@ -247,11 +253,28 @@ public:
   static bool NormalizePath(std::string& path, std::string base = "");
   /**
    * @brief scan given directory for regular files with given extension
-   * @param path directory to look for
+   * @param path directory to look in
    * @param typeExt file extension to look for
    * @return a vector of filesystem::path representing files with given extension
   */
   static PathVec FindFiles(const std::string& path, const std::string& typeExt);
+
+  /**
+   * @brief scan given directory for regular files matching given pattern
+   * @param dir directory to look in
+   * @param wildCardPattern wild card pattern to match
+   * @return a vector of filesystem::path representing files with given extension
+  */
+  static PathVec GrepFiles(const std::string& dir, const std::string& wildCardPattern);
+
+  /**
+  * @brief scan given directory for regular files matching given pattern
+  * @param fileNames list of strings to receive filenames
+  * @param dir directory to look in
+  * @param wildCardPattern wild card pattern to match
+  */
+  static void GrepFileNames(std::list<std::string>& fileNames, const std::string& dir, const std::string& wildCardPattern);
+
   /**
    * @brief determine number of regular files found in given folder
    * @param folder directory to look for
@@ -289,6 +312,21 @@ public:
   */
   static std::string CreateExtendedName(const std::string& path, const std::string& extPrefix);  // creates a name "<path>_<extPrefix>_<index>
 
+  /**
+   * @brief find file using regular expression
+   * @param search paths
+   * @param regular expression
+   * @param path to the file found
+   * @return true if file is found successfully, false otherwise
+  */
+  static bool FindFileRegEx(const std::vector<std::string>& searchPaths, const std::string& regEx, std::string& file);
+
+  /**
+   * @brief get absolute file path from local url
+   * @param url starting with the pattern 'file://localhost/' or 'file:///' or 'file:/'
+   * @return string containing the absolute path
+  */
+  static std::string GetAbsPathFromLocalUrl(const std::string& url);
 };
 
 #endif // RteFsUtils_H

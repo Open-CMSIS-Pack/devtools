@@ -139,11 +139,14 @@ void InitMessageTable()
   table["M609"] = MessageEntry(MsgLevel::LEVEL_ERROR,    CRLF_B,   "Missing '%NAME%' element in CPRJ file!"                                      );
   table["M610"] = MessageEntry(MsgLevel::LEVEL_ERROR,    CRLF_B,   "Project supports multiple toolchains. Select one with the option --toolchain");
   table["M611"] = MessageEntry(MsgLevel::LEVEL_ERROR,    CRLF_B,   "Selected toolchain is not supported by the project!"                         );
-  table["M612"] = MessageEntry(MsgLevel::LEVEL_ERROR,    CRLF_B,   "Multiple files '%NAME%' in the group '%GROUP%', please move or rename them." );
   table["M613"] = MessageEntry(MsgLevel::LEVEL_ERROR,    CRLF_B,   "File '%PATH%' has unexpected format!"                                        );
+  table["M614"] = MessageEntry(MsgLevel::LEVEL_ERROR,    CRLF_B,   "Missing access sequence delimiter: '%ACCSEQDELIM%'!"                         );
+  table["M615"] = MessageEntry(MsgLevel::LEVEL_ERROR,    CRLF_B,   "%PROP% '%VAL%' was not found in the loaded packs!"                           );
 
   table["M630"] = MessageEntry(MsgLevel::LEVEL_WARNING,  CRLF_B,   "Device '%DEV%' is substituted with variant '%VAR%'."                         );
   table["M631"] = MessageEntry(MsgLevel::LEVEL_WARNING,  CRLF_B,   "Project must have exactly one target element!"                               );
+  table["M632"] = MessageEntry(MsgLevel::LEVEL_WARNING,  CRLF_B,   "Attribute '%ATTR%' required by access sequence '%ACCSEQ%' was not found!"    );
+  table["M633"] = MessageEntry(MsgLevel::LEVEL_WARNING,  CRLF_B,   "Unknown access sequence: '%ACCSEQ%'."                                        );
 
   table["M650"] = MessageEntry(MsgLevel::LEVEL_INFO,     CRLF_B,   "Command completed successfully."                                             );
   table["M652"] = MessageEntry(MsgLevel::LEVEL_INFO,     CRLF_B,   "Generated file for project build: '%NAME%'"                                  );

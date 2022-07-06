@@ -10,7 +10,7 @@ solution:
       defines: 
         - DEF-CM0-$Dname$-$Bname$
       add-paths:
-        - /path/CM0/$Dname$
+        - ./path/CM0/$Dname$
     - type: CM3
       device: RteTest_ARMCM3
       misc:
@@ -19,7 +19,7 @@ solution:
       defines:
         - DEF-CM3-$Dname$
       add-paths:
-        - /path/CM3/$Dname$
+        - ./path/CM3/$Dname$
 
   build-types:
     - type: Debug

@@ -55,19 +55,15 @@ string CbuildCallback::ExpandString(const string& str) {
     return RteUtils::EMPTY_STRING;
   }
 
-  auto replace = [](string &str, const string &toReplace, const string &with) {
-    size_t pos = str.find(toReplace);
-    while (pos != string::npos) {
-      str.replace(pos, 2, with);
-      pos = str.find(toReplace, pos + toReplace.size());
-    }
-  };
+  const RteTarget* activeTarget = model->GetTarget();
+  const string& boardName = activeTarget ? activeTarget->GetAttribute("Bname") : RteUtils::EMPTY_STRING;
 
   string res(str);
-  replace(res, "$P", prjPath);
-  replace(res, "#P", prjPathFile);
-  replace(res, "$S", rtePath);
-  replace(res, "$D", deviceName);
+  RteUtils::ReplaceAll(res, "$P", prjPath);
+  RteUtils::ReplaceAll(res, "#P", prjPathFile);
+  RteUtils::ReplaceAll(res, "$S", rtePath);
+  RteUtils::ReplaceAll(res, "$D", deviceName);
+  RteUtils::ReplaceAll(res, "$B", boardName);
 
   return res;
 }

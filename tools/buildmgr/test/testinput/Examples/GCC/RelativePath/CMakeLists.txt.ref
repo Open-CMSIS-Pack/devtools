@@ -20,18 +20,18 @@ set(LD_FLAGS_GLOBAL "--entry=Reset_Handler --specs=nosys.specs -mcpu=cortex-m3 -
 set(LD_SCRIPT "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/RelativePath/RTE/Device/ARMCM3/gcc_arm.ld")
 
 set(DEFINES
-  DEF1
-  DEF2=2
   ARMCM3
   _RTE_
+  DEF1
+  DEF2=2
 )
 
 set(INC_PATHS
-  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/RelativePath/inc"
-  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/RelativePath/inc2"
   "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/RelativePath/RTE/_Project"
   "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/Core/Include"
   "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/Device/ARM/ARMCM3/Include"
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/RelativePath/inc"
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/RelativePath/inc2"
 )
 
 set(CC_SRC_FILES
@@ -39,8 +39,6 @@ set(CC_SRC_FILES
   "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/RelativePath/RTE/Device/ARMCM3/startup_ARMCM3.c"
   "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/RelativePath/RTE/Device/ARMCM3/system_ARMCM3.c"
 )
-
-set(CC_FLAGS_C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/RelativePath/File.c "-O -Wall -gdwarf-2 -mapcs-frame -mthumb")
 
 # Toolchain config map
 
@@ -52,20 +50,8 @@ project(${TARGET} LANGUAGES C)
 
 # Global Flags
 
-set(CMAKE_C_FLAGS "${CC_CPU} ${CC_BYTE_ORDER} ${CC_DEFINES} ${CC_SECURE} ${CC_FLAGS} ${CC_SYS_INC_PATHS}")
+set(CMAKE_C_FLAGS "${CC_CPU} ${CC_BYTE_ORDER} ${CC_DEFINES} ${CC_SECURE} ${CC_FLAGS} ${CC_FLAGS_GLOBAL} ${CC_SYS_INC_PATHS}")
 set(CMAKE_C_LINK_FLAGS "${LD_CPU} ${LD_SCRIPT} ${LD_SECURE} ${LD_FLAGS_GLOBAL} ${LD_FLAGS}")
-
-# Local Flags
-
-foreach(SRC ${CC_SRC_FILES})
-  string(REPLACE " " "?" S ${SRC})
-  if(DEFINED CC_FLAGS_${S})
-    set(CC_FLAGS_LOCAL "${CC_FLAGS_${S}}")
-  else()
-    set(CC_FLAGS_LOCAL "${CC_FLAGS_GLOBAL}")
-  endif()
-  set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS "${CC_FLAGS_LOCAL}")
-endforeach()
 
 # Compilation Database
 

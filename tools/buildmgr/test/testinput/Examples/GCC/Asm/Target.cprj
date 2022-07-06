@@ -34,14 +34,17 @@
 
   <files>
     <group name="Source Files">
-      <file category="sourceC" name="./Build.c"/>
-      <file category="sourceAsm" name="./GAS.s">
+      <includes>./</includes>
+      <file category="sourceC" name="Build.c"/>
+      <file category="sourceAsm" name="GAS.s">
         <asflags add="--defsym GAS_DEF=1" compiler="GCC" use="gas"/>
+        <defines>DEF1</defines>
       </file>
-      <file category="sourceAsm" name="./PreProcessed.S">
+      <file category="sourceAsm" name="PreProcessed.S">
         <asflags add="-DPRE_PROCESSED_DEF" compiler="GCC"/>
+        <defines>DEF2</defines>
       </file>
-      <file category="sourceAsm" name="./NonPreProcessed.s"/>
+      <file category="sourceAsm" name="NonPreProcessed.s"/>
     </group>
   </files>
 

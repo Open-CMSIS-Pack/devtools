@@ -118,7 +118,7 @@ TEST_F(CPackGetTests, PackAddValidFileArgTest) {
 
   TestParam param = { "", "Testpack.cpinstall", " -R " + localTestingDir, "", true };
   RunPackAdd(param);
-  RemoveDir(localTestingDir);
+  RteFsUtils::RemoveDir(localTestingDir);
 }
 
 // Test valid installation of packs
@@ -130,7 +130,7 @@ TEST_F(CPackGetTests, PackAddPackInstallationTest) {
   RunScript("postpackinstall.sh", testout_folder);
 
   // Try to re-install already installed pack
-  param = { "", "Testpack.cpinstall", "", "", false };
+  // Since cpackget 0.4.0 re-installing an already installed pack does not raise error
   RunPackAdd(param);
 }
 
@@ -182,7 +182,7 @@ TEST_F(CPackGetTests, InitNoArgTest) {
 TEST_F(CPackGetTests, InitRepoExistTest) {
   error_code ec;
   TestParam param = { "", testout_folder + "/InstallRepo", "", "", false };
-  RemoveDir(param.targetArg);
+  RteFsUtils::RemoveDir(param.targetArg);
   fs::create_directories(param.targetArg, ec);
 
   RunInit(param);
@@ -193,7 +193,7 @@ TEST_F(CPackGetTests, InitValidInstallTest) {
   string localTestingDir = testout_folder + "/packrepo";
   TestParam param = { "", "", " -R " + localTestingDir, "", true };
 
-  RemoveDir(localTestingDir);
+  RteFsUtils::RemoveDir(localTestingDir);
   RunInit(param);
   CheckPackDir(localTestingDir);
 }
@@ -218,6 +218,6 @@ TEST_F(CPackGetTests, InitNoEnvRepoExistTest) {
 TEST_F(CPackGetTests, InitNoEnvValidArgTest) {
   TestParam param = { "", "", " -R " + testout_folder + "/packrepo", "", true };
 
-  RemoveDir(param.targetArg);
+  RteFsUtils::RemoveDir(param.targetArg);
   RunInit(param, false);
 }

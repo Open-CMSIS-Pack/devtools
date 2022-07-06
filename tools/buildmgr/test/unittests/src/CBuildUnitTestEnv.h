@@ -26,11 +26,6 @@
 #include <fstream>
 #include <algorithm>
 
-
-#ifndef TEST_FOLDER
-#define TEST_FOLDER "../../../../"
-#endif
-
 #ifndef PATH_MAX
 #define PATH_MAX _MAX_PATH
 #endif

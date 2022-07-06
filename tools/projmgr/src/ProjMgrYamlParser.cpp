@@ -6,6 +6,8 @@
 
 #include "ProjMgrYamlParser.h"
 #include "ProjMgrLogger.h"
+#include "ProjMgrYamlSchemaChecker.h"
+
 #include "RteFsUtils.h"
 #include <string>
 
@@ -19,8 +21,48 @@ ProjMgrYamlParser::~ProjMgrYamlParser(void) {
   // Reserved
 }
 
-bool ProjMgrYamlParser::ParseCsolution(const string& input, CsolutionItem& csolution) {
+bool ProjMgrYamlParser::ParseCdefault(const string& input,
+  CdefaultItem& cdefault, bool checkSchema) {
   try {
+    // Validate file schema
+    if (checkSchema &&
+      !ProjMgrYamlSchemaChecker().Validate(
+        input, ProjMgrYamlSchemaChecker::FileType::DEFAULT)) {
+      return false;
+    }
+
+    cdefault.path = RteFsUtils::MakePathCanonical(input);
+
+    const YAML::Node& root = YAML::LoadFile(input);
+    if (!ValidateCdefault(input, root)) {
+      return false;
+    }
+
+    const YAML::Node& defaultNode = root[YAML_DEFAULT];
+    ParseBuildTypes(defaultNode, cdefault.buildTypes);
+    ParseString(defaultNode, YAML_COMPILER, cdefault.compiler);
+    ParsePacks(defaultNode, cdefault.packs);
+  }
+  catch (YAML::Exception& e) {
+    ProjMgrLogger::Error(input, e.mark.line + 1, e.mark.column + 1, e.msg);
+    return false;
+  }
+  return true;
+}
+
+bool ProjMgrYamlParser::ParseCsolution(const string& input,
+  CsolutionItem& csolution, bool checkSchema) {
+  try {
+    // Validate file schema
+    if (checkSchema &&
+      !ProjMgrYamlSchemaChecker().Validate(
+        input, ProjMgrYamlSchemaChecker::FileType::SOLUTION)) {
+      return false;
+    }
+
+    csolution.path = RteFsUtils::MakePathCanonical(input);
+    csolution.directory = RteFsUtils::ParentPath(csolution.path);
+
     const YAML::Node& root = YAML::LoadFile(input);
     if (!ValidateCsolution(input, root)) {
       return false;
@@ -33,6 +75,9 @@ bool ProjMgrYamlParser::ParseCsolution(const string& input, CsolutionItem& csolu
 
     ParseTargetTypes(solutionNode, csolution.targetTypes);
     ParseBuildTypes(solutionNode, csolution.buildTypes);
+    ParseOutputDirs(solutionNode, csolution.directories);
+    ParseTargetType(solutionNode, csolution.target);
+    ParsePacks(solutionNode, csolution.packs);
 
   } catch (YAML::Exception& e) {
     ProjMgrLogger::Error(input, e.mark.line + 1, e.mark.column + 1, e.msg);
@@ -41,25 +86,35 @@ bool ProjMgrYamlParser::ParseCsolution(const string& input, CsolutionItem& csolu
   return true;
 }
 
-bool ProjMgrYamlParser::ParseCproject(const string& input, CsolutionItem& csolution, map<string, CprojectItem>& cprojects, bool single) {
+bool ProjMgrYamlParser::ParseCproject(const string& input,
+  CsolutionItem& csolution, map<string, CprojectItem>& cprojects,
+  bool single, bool checkSchema) {
   CprojectItem cproject;
   try {
+    // Validate file schema
+    if (checkSchema &&
+      !ProjMgrYamlSchemaChecker().Validate(
+        input, ProjMgrYamlSchemaChecker::FileType::PROJECT)) {
+      return false;
+    }
+
     const YAML::Node& root = YAML::LoadFile(input);
     if (!ValidateCproject(input, root)) {
       return false;
     }
 
+    cproject.path = RteFsUtils::MakePathCanonical(input);
+    cproject.directory = RteFsUtils::ParentPath(cproject.path);
+    cproject.name = fs::path(input).stem().stem().generic_string();
+
     const YAML::Node& projectNode = root[YAML_PROJECT];
     map<const string, string&> projectChildren = {
-      {YAML_NAME, cproject.name},
-      {YAML_DESCRIPTION, cproject.description},
       {YAML_OUTPUTTYPE, cproject.outputType},
     };
     for (const auto& item : projectChildren) {
       ParseString(projectNode, item.first, item.second);
     }
     ParseTargetType(projectNode, cproject.target);
-    ParsePackages(projectNode, cproject.packages);
 
     if (!ParseComponents(projectNode, cproject.components)) {
       return false;
@@ -84,18 +139,28 @@ bool ProjMgrYamlParser::ParseCproject(const string& input, CsolutionItem& csolut
   return true;
 }
 
-bool ProjMgrYamlParser::ParseClayer(const string& input, map<string, ClayerItem>& clayers) {
+bool ProjMgrYamlParser::ParseClayer(const string& input,
+  map<string, ClayerItem>& clayers, bool checkSchema) {
   ClayerItem clayer;
   try {
+    // Validate file schema
+    if (checkSchema &&
+      !ProjMgrYamlSchemaChecker().Validate(
+        input, ProjMgrYamlSchemaChecker::FileType::LAYER)) {
+      return false;
+    }
+
     const YAML::Node& root = YAML::LoadFile(input);
     if (!ValidateClayer(input, root)) {
       return false;
     }
 
+    clayer.path = RteFsUtils::MakePathCanonical(input);
+    clayer.directory = RteFsUtils::ParentPath(clayer.path);
+    clayer.name = fs::path(input).stem().stem().generic_string();
+
     const YAML::Node& layerNode = root[YAML_LAYER];
     map<const string, string&> projectChildren = {
-      {YAML_NAME, clayer.name},
-      {YAML_DESCRIPTION, clayer.description},
       {YAML_OUTPUTTYPE, clayer.outputType},
     };
     for (const auto& item : projectChildren) {
@@ -103,7 +168,6 @@ bool ProjMgrYamlParser::ParseClayer(const string& input, map<string, ClayerItem>
     }
 
     ParseTargetType(layerNode, clayer.target);
-    ParsePackages(layerNode, clayer.packages);
 
     if (!ParseComponents(layerNode, clayer.components)) {
       return false;
@@ -120,17 +184,6 @@ bool ProjMgrYamlParser::ParseClayer(const string& input, map<string, ClayerItem>
   }
   clayers[input] = clayer;
   return true;
-}
-
-void ProjMgrYamlParser::ParsePackages(const YAML::Node& parent, vector<string>& packages) {
-  if (parent[YAML_PACKAGES].IsDefined()) {
-    const YAML::Node& packagesNode = parent[YAML_PACKAGES];
-    for (const auto& packagesEntry : packagesNode) {
-      string packageItem;
-      ParseString(packagesEntry, YAML_PACKAGE, packageItem);
-      packages.push_back(packageItem);
-    }
-  }
 }
 
 void ProjMgrYamlParser::ParseString(const YAML::Node& parent, const string& key, string& value) {
@@ -253,6 +306,19 @@ void ProjMgrYamlParser::ParseMisc(const YAML::Node& parent, vector<MiscItem>& mi
   }
 }
 
+void ProjMgrYamlParser::ParsePacks(const YAML::Node& parent, vector<PackItem>& packs) {
+  if (parent[YAML_PACKS].IsDefined()) {
+    const YAML::Node& packNode = parent[YAML_PACKS];
+    for (const auto& packEntry : packNode) {
+      PackItem packItem;
+      ParseString(packEntry, YAML_PACK, packItem.pack);
+      ParseString(packEntry, YAML_PATH, packItem.path);
+      ParseTypeFilter(packEntry, packItem.type);
+      packs.push_back(packItem);
+    }
+  }
+}
+
 bool ProjMgrYamlParser::ParseFiles(const YAML::Node& parent, vector<FileNode>& files) {
   if (parent[YAML_FILES].IsDefined()) {
     const YAML::Node& filesNode = parent[YAML_FILES];
@@ -315,7 +381,6 @@ bool ProjMgrYamlParser::ParseContexts(const YAML::Node& parent, CsolutionItem& c
         return false;
       }
       ParseString(projectsEntry, YAML_PROJECT, descriptor.cproject);
-      ParseTargetType(projectsEntry, descriptor.target);
       csolution.contexts.push_back(descriptor);
       PushBackUniquely(csolution.cprojects, descriptor.cproject);
     }
@@ -332,6 +397,21 @@ void ProjMgrYamlParser::ParseBuildTypes(const YAML::Node& parent, map<string, Bu
       ParseString(typeEntry, YAML_TYPE, typeItem);
       ParseBuildType(typeEntry, build);
       buildTypes[typeItem] = build;
+    }
+  }
+}
+
+void ProjMgrYamlParser::ParseOutputDirs(const YAML::Node& parent, struct DirectoriesItem& directories) {
+  if (parent[YAML_OUTPUTDIRS].IsDefined()) {
+    const YAML::Node& outputDirsNode = parent[YAML_OUTPUTDIRS];
+    map<const string, string&> outputDirsChildren = {
+      {YAML_OUTPUT_CPRJDIR, directories.cprj},
+      {YAML_OUTPUT_INTDIR, directories.intdir},
+      {YAML_OUTPUT_OUTDIR, directories.outdir},
+      {YAML_OUTPUT_RTEDIR, directories.rte},
+    };
+    for (const auto& item : outputDirsChildren) {
+      ParseString(outputDirsNode, item.first, item.second);
     }
   }
 }
@@ -385,29 +465,37 @@ void ProjMgrYamlParser::PushBackUniquely(vector<string>& vec, const string& valu
 }
 
 // Validation Maps
+const set<string> defaultKeys = {
+  YAML_BUILDTYPES,
+  YAML_COMPILER,
+  YAML_PACKS,
+};
+
 const set<string> solutionKeys = {
   YAML_PROJECTS,
   YAML_TARGETTYPES,
   YAML_BUILDTYPES,
+  YAML_OUTPUTDIRS,
+  YAML_PACKS,
+  YAML_PROCESSOR,
+  YAML_COMPILER,
+  YAML_OPTIMIZE,
+  YAML_DEBUG,
+  YAML_WARNINGS,
+  YAML_DEFINES,
+  YAML_UNDEFINES,
+  YAML_ADDPATHS,
+  YAML_DELPATHS,
+  YAML_MISC,
 };
 
 const set<string> projectsKeys = {
   YAML_PROJECT,
   YAML_FORTYPE,
   YAML_NOTFORTYPE,
-  YAML_COMPILER,
-  YAML_OPTIMIZE,
-  YAML_DEBUG,
-  YAML_WARNINGS,
-  YAML_DEFINES,
-  YAML_UNDEFINES,
-  YAML_ADDPATHS,
-  YAML_DELPATHS,
-  YAML_MISC,
 };
 
 const set<string> projectKeys = {
-  YAML_NAME,
   YAML_DESCRIPTION,
   YAML_OUTPUTTYPE,
   YAML_DEVICE,
@@ -422,14 +510,12 @@ const set<string> projectKeys = {
   YAML_ADDPATHS,
   YAML_DELPATHS,
   YAML_MISC,
-  YAML_PACKAGES,
   YAML_COMPONENTS,
   YAML_GROUPS,
   YAML_LAYERS,
 };
 
 const set<string> layerKeys = {
-  YAML_NAME,
   YAML_DESCRIPTION,
   YAML_OUTPUTTYPE,
   YAML_DEVICE,
@@ -444,7 +530,6 @@ const set<string> layerKeys = {
   YAML_ADDPATHS,
   YAML_DELPATHS,
   YAML_MISC,
-  YAML_PACKAGES,
   YAML_COMPONENTS,
   YAML_GROUPS,
   YAML_INTERFACES,
@@ -454,6 +539,7 @@ const set<string> targetTypeKeys = {
   YAML_TYPE,
   YAML_DEVICE,
   YAML_BOARD,
+  YAML_PROCESSOR,
   YAML_COMPILER,
   YAML_OPTIMIZE,
   YAML_DEBUG,
@@ -479,6 +565,13 @@ const set<string> buildTypeKeys = {
   YAML_MISC,
 };
 
+const set<string> outputDirsKeys = {
+  YAML_OUTPUT_CPRJDIR,
+  YAML_OUTPUT_INTDIR,
+  YAML_OUTPUT_OUTDIR,
+  YAML_OUTPUT_RTEDIR,
+};
+
 const set<string> processorKeys = {
   YAML_TRUSTZONE,
   YAML_FPU,
@@ -495,8 +588,11 @@ const set<string> miscKeys = {
   YAML_MISC_LIB,
 };
 
-const set<string> packagesKeys = {
-  YAML_PACKAGE,
+const set<string> packsKeys = {
+  YAML_PACK,
+  YAML_PATH,
+  YAML_FORTYPE,
+  YAML_NOTFORTYPE,
 };
 
 const set<string> componentsKeys = {
@@ -572,7 +668,7 @@ const map<string, set<string>> sequences = {
   {YAML_TARGETTYPES, targetTypeKeys},
   {YAML_BUILDTYPES, buildTypeKeys},
   {YAML_MISC, miscKeys},
-  {YAML_PACKAGES, packagesKeys},
+  {YAML_PACKS, packsKeys},
   {YAML_COMPONENTS, componentsKeys},
   {YAML_LAYERS, layersKeys},
   {YAML_GROUPS, groupsKeys},
@@ -582,7 +678,22 @@ const map<string, set<string>> sequences = {
 
 const map<string, set<string>> mappings = {
   {YAML_PROCESSOR, processorKeys},
+  {YAML_OUTPUTDIRS, outputDirsKeys},
 };
+
+bool ProjMgrYamlParser::ValidateCdefault(const string& input, const YAML::Node& root) {
+  const set<string> rootKeys = {
+    YAML_DEFAULT,
+  };
+  if (!ValidateKeys(input, root, rootKeys)) {
+    return false;
+  }
+  const YAML::Node& defaultNode = root[YAML_DEFAULT];
+  if (!ValidateKeys(input, defaultNode, defaultKeys)) {
+    return false;
+  }
+  return true;
+}
 
 bool ProjMgrYamlParser::ValidateCsolution(const string& input, const YAML::Node& root) {
   const set<string> rootKeys = {

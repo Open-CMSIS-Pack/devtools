@@ -7,8 +7,9 @@
 #define CROSSPLATFORM_UTILS_H
 
 #include <string>
+#include <system_error>
 
- /**
+/**
  * @brief CrossPlatformUtils utility class provides proxy methods to call platform-specific functions
 */
 class CrossPlatformUtils
@@ -50,11 +51,31 @@ public:
   static std::string GetDefaultCMSISPackRootDir();
 
   /**
-   * @brief calculate the wall-clock time used by the calling process
+   * @brief Calculates the wall-clock time used by the calling process
    * @return The elapsed time since the start of the process, measured in milliseconds
   */
   static unsigned long ClockInMsec();
 
+  /**
+   * @brief Gets path of running executable
+   * @param ec reference to std::error_code object to recieve error information if any
+   * @return path to running executable
+  */
+  static std::string GetExecutablePath(std::error_code& ec);
+
+  /**
+   * @brief Gets host type in the form required by RTE libraries
+   * @return std::string containing one of : "win", "linux", "mac"
+  */
+  static const std::string& GetHostType();
+
+  /**
+   * @brief Get registry key value for Windows (environment variable value on Linux and Mac)
+   * @param key registry key value to obtain (environment variable on Linux and Mac)
+   * @return value as std::string if found, empty otherwise
+  */
+  static std::string GetRegistryString(const std::string& key);
+
 };
 
-#endif  /* #ifndef CROSSPLATFORM_UTILS_H */
+#endif  /* CROSSPLATFORM_UTILS_H */

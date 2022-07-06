@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/0.9.0/tools/projmgr/schemas/cproject.schema.json
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/0.9.6/tools/projmgr/schemas/cproject.schema.json
 
 project:
   misc:
@@ -7,12 +7,12 @@ project:
   add-paths:
     - $OutDir(Secure)$
   components:
-    - component: Startup
+    - component: C Startup
     - component: CMSIS CORE
     - component: Keil RTX5 Library_NS
   groups:
     - group: Non-secure Code
       files: 
         - file: main_ns.c 
-        - file: $Source(Secure)$interface.h
+        - file: $Source(Secure)$/interface.h
         - file: $Output(Secure)$_CMSE_Lib.o

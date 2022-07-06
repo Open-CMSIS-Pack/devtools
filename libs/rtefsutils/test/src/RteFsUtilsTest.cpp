@@ -853,6 +853,16 @@ TEST_F(RteFsUtilsTest, MakeSureFilePath) {
   EXPECT_TRUE(result);
 }
 
+TEST_F(RteFsUtilsTest, ParentPath) {
+  string filePath, dirPath;
+
+  dirPath = RteFsUtils::ParentPath(dirnameSubdir);
+  EXPECT_EQ(dirPath, dirnameDir);
+
+  filePath = RteFsUtils::ParentPath(filenameRegular);
+  EXPECT_EQ(filePath, dirnameSubdir);
+}
+
 TEST_F(RteFsUtilsTest, CreateDirectories) {
   error_code ec;
   bool result;
@@ -1024,4 +1034,73 @@ TEST_F(RteFsUtilsTest, AbsolutePath) {
   // Test relative file path
   path = RteFsUtils::AbsolutePath("./" + filenameRegular);
   EXPECT_TRUE(path.is_absolute());
+}
+
+TEST_F(RteFsUtilsTest, FindFileRegEx) {
+  const string& testdir = dirnameBase + "/FindFileRegEx";
+  const string& fileName = testdir + "/test.cdefault.yml";
+  RteFsUtils::CreateDirectories(testdir);
+  RteFsUtils::CreateFile(fileName, "");
+  string discoveredFile;
+  vector<string> searchPaths = { testdir };
+  EXPECT_EQ(true, RteFsUtils::FindFileRegEx(searchPaths, ".*\\.cdefault\\.yml", discoveredFile));
+  EXPECT_EQ(fileName, discoveredFile);
+  RteFsUtils::RemoveDir(testdir);
+}
+
+TEST_F(RteFsUtilsTest, FindFileRegEx_MultipleMatches) {
+  const string& testdir = dirnameBase + "/FindFileRegEx";
+  const string& fileName1 = testdir + "/test1.cdefault.yml";
+  const string& fileName2 = testdir + "/test2.cdefault.yml";
+  RteFsUtils::CreateDirectories(testdir);
+  RteFsUtils::CreateFile(fileName1, "");
+  RteFsUtils::CreateFile(fileName2, "");
+  string finding;
+  vector<string> searchPaths = { testdir };
+  EXPECT_EQ(false, RteFsUtils::FindFileRegEx(searchPaths, ".*\\.cdefault\\.yml", finding));
+  RteFsUtils::RemoveDir(testdir);
+}
+
+TEST_F(RteFsUtilsTest, FindFileRegEx_NoMatch) {
+  const string& testdir = dirnameBase + "/FindFileRegEx";
+  RteFsUtils::CreateDirectories(testdir);
+  string finding;
+  vector<string> searchPaths = { testdir };
+  EXPECT_EQ(false, RteFsUtils::FindFileRegEx(searchPaths, ".*\\.cdefault\\.yml", finding));
+  RteFsUtils::RemoveDir(testdir);
+}
+
+TEST_F(RteFsUtilsTest, GetAbsPathFromLocalUrl) {
+#ifdef _WIN32
+  // Absolute dummy path
+  const string& absoluteFilename = "C:/path/to/file.txt";
+
+  // Local host
+  const string& testUrlLocalHost = "file://localhost/" + absoluteFilename;
+  EXPECT_EQ(absoluteFilename, RteFsUtils::GetAbsPathFromLocalUrl(testUrlLocalHost));
+
+  // Empty host
+  const string& testUrlEmptyHost = "file:///" + absoluteFilename;
+  EXPECT_EQ(absoluteFilename, RteFsUtils::GetAbsPathFromLocalUrl(testUrlEmptyHost));
+
+  // Omitted host
+  const string& testUrlOmittedHost = "file:/" + absoluteFilename;
+  EXPECT_EQ(absoluteFilename, RteFsUtils::GetAbsPathFromLocalUrl(testUrlOmittedHost));
+
+#else
+  // Absolute dummy path
+  const string& absoluteFilename = "/path/to/file.txt";
+
+  // Local host
+  const string& testUrlLocalHost = "file://localhost" + absoluteFilename;
+  EXPECT_EQ(absoluteFilename, RteFsUtils::GetAbsPathFromLocalUrl(testUrlLocalHost));
+
+  // Empty host
+  const string& testUrlEmptyHost = "file://" + absoluteFilename;
+  EXPECT_EQ(absoluteFilename, RteFsUtils::GetAbsPathFromLocalUrl(testUrlEmptyHost));
+
+  // Omitted host
+  const string& testUrlOmittedHost = "file:" + absoluteFilename;
+  EXPECT_EQ(absoluteFilename, RteFsUtils::GetAbsPathFromLocalUrl(testUrlOmittedHost));
+#endif
 }

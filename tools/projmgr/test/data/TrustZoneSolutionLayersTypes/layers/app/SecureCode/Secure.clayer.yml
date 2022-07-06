@@ -1,10 +1,10 @@
-# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/0.9.0/tools/projmgr/schemas/clayer.schema.json
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/0.9.6/tools/projmgr/schemas/clayer.schema.json
 
 layer:
   processor:
     trustzone: secure
   components:
-    - component: Startup
+    - component: Device:Startup
     - component: CMSIS CORE
   groups:
     - group: Secure Code
@@ -13,5 +13,6 @@ layer:
     - group: CMSE
       files: 
         - file: interface.c
-        - file: interface.h
+          add-paths:
+            - ../Interface
         - file: tz_context.c

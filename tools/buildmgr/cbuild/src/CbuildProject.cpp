@@ -7,7 +7,6 @@
 #include "CbuildProject.h"
 
 #include "CbuildModel.h"
-#include "CbuildUtils.h"
 
 #include "ErrLog.h"
 #include "RteCprjProject.h"
@@ -160,7 +159,7 @@ RteDevice *CbuildProject::GetDeviceLeaf(const string& fullDeviceName, const stri
     if (!device)
       return device; // should never happen as RteDevice can only have children of type RteDeviceVariant derived from RteDevice
 
-    LogMsg("M630", VAL("DEV", deviceName), VAL("VENDOR", device->GetName()));
+    LogMsg("M630", VAL("DEV", deviceName), VAL("VAR", device->GetName()));
   }
   return device;
 }
@@ -193,7 +192,7 @@ const bool CbuildProject::AddAdditionalAttributes(map<string, string> &attribute
   return true;
 }
 
-const bool CbuildProject::CheckPackRequirements(const RtePackage *cprjPack, const string& rtePath, list<string> &urlList) {
+const bool CbuildProject::CheckPackRequirements(const RtePackage *cprjPack, const string& rtePath, vector<CbuildPackItem>& packList) {
   const auto packages = cprjPack->GetItemByTag("packages");
 
   if (!packages) {
@@ -204,6 +203,12 @@ const bool CbuildProject::CheckPackRequirements(const RtePackage *cprjPack, cons
 
   for (RteItem *it : packages->GetChildren()) {
     RteAttributes a = it->GetAttributes();
+
+    // Skip project specific packs
+    if (it->HasAttribute("path")) {
+      continue;
+    }
+
     const string& name = a.GetAttribute("name");
     const string& vendor = a.GetAttribute("vendor");
     const string& version = it->GetAttribute("version");
@@ -219,51 +224,14 @@ const bool CbuildProject::CheckPackRequirements(const RtePackage *cprjPack, cons
         continue;
       }
       // pack is neither in pack folder nor in local repo index
-      if (GetUrlFromIndex(string(rtePath), name, vendor, version, url)) {
-        // if it's in the index, add it to the missing packs' list
-        urlList.push_back(url);
-      } else {
-        return false;
-      }
+      // add the pack identifier to the missing packs' list
+      string maxVersion = RteUtils::GetSuffix(version);
+      const CbuildPackItem& pack = { vendor, name, (maxVersion.empty() ? version : maxVersion) };
+      packList.push_back(pack);
     }
   }
 
   return true;
-}
-
-
-bool CbuildProject::GetUrlFromIndex(const string& rtePath, const string& name, const string& vendor,
-                              const string& versionRange, string& url)
-{
-  /*
-    Get the PDSC URL from the .Web/index.pidx file
-  */
-
-  string indexPath = string(rtePath) + "/.Web/index.pidx";
-
-  fs::path path(indexPath);
-  error_code ec;
-  if (!fs::exists(path, ec)) {
-    LogMsg("M600", PATH(rtePath.c_str()));
-    return false;
-  }
-
-  // get the url root and indexed version
-  string version = "";
-  if (GetUrl(path.generic_string(), name, vendor, version, url)) {
-    if (VersionCmp::RangeCompare(version, versionRange) != 0) {
-      // indexed version is not in the required version range
-      version = RteUtils::GetSuffix(versionRange);
-      if (version.empty()) version = versionRange;
-    }
-    // add vendor, name, version and extension
-    url += vendor + '.' + name + '.' + version + ".pack";
-    LogMsg("M654", VAL("URL", url));
-    return true;
-  }
-
-  LogMsg("M601", VAL("VENDOR", vendor), VAL("NAME", name));
-  return false;
 }
 
 bool CbuildProject::GetUrlFromLocalRepository(const string&rtePath, const string&name,
@@ -273,8 +241,6 @@ bool CbuildProject::GetUrlFromLocalRepository(const string&rtePath, const string
   Get the PDSC URL from the .Local/local_repository.pidx file
   */
   string indexPath = string(rtePath) + "/.Local/local_repository.pidx";
-  const string prefix = "file://localhost/";
-
   fs::path path(indexPath);
   error_code ec;
   if (!fs::exists(path, ec)) {
@@ -283,9 +249,7 @@ bool CbuildProject::GetUrlFromLocalRepository(const string&rtePath, const string
 
   // get the url root
   if (GetUrl(path.generic_string(), name, vendor, versionRange, url)) {
-    if (url.find(prefix) != string::npos) {
-      url.erase(0,prefix.length());
-    }
+    url = RteFsUtils::GetAbsPathFromLocalUrl(url);
     return true;
   }
 

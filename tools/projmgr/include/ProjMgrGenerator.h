@@ -36,7 +36,7 @@ public:
 protected:
   void GenerateCprjCreated(XMLTreeElement* element);
   void GenerateCprjInfo(XMLTreeElement* element, const std::string& description);
-  void GenerateCprjPackages(XMLTreeElement* element, const std::map<std::string, RtePackage*>& packages);
+  void GenerateCprjPackages(XMLTreeElement* element, const ContextItem& context);
   void GenerateCprjCompilers(XMLTreeElement* element, const ToolchainItem& toolchain);
   void GenerateCprjTarget(XMLTreeElement* element, const ContextItem& context);
   void GenerateCprjComponents(XMLTreeElement* element, const ContextItem& context);
@@ -48,7 +48,6 @@ protected:
   static void SetAttribute(XMLTreeElement* element, const std::string& name, const std::string& value);
   static const std::string GetStringFromVector(const std::vector<std::string>& vector, const char* delimiter);
   static const std::string GetLocalTimestamp();
-  static const std::string GetCategory(const std::string& file);
   static bool WriteXmlFile(const std::string& file, XMLTree* tree);
 };
 

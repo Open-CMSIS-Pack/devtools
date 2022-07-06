@@ -41,3 +41,12 @@ void ProjMgrCallback::OutputErrMessage(const string& message)
     m_errorMessages.push_back(message);
   }
 }
+
+void ProjMgrCallback::OutputMessage(const string& message)
+{
+  if (!message.empty()) {
+    m_warningMessages.push_back(message);
+  }
+}
+
+// end of ProjMgrCallback.cpp

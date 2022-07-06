@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 #include "CrossPlatformUtils.h"
+#include "constants.h"
 
 #include <time.h>
 
@@ -21,19 +22,6 @@ std::string CrossPlatformUtils::GetEnv(const std::string& name)
   return val;
 }
 
-bool CrossPlatformUtils::SetEnv(const std::string& name, const std::string& value)
-{
-  if (name.empty()) {
-    return false;
-  }
-#ifdef _WIN32
-  return _putenv_s(name.c_str(), value.c_str()) == 0;
-#else
-  return setenv(name.c_str(), value.c_str(), 1) == 0;
-#endif
-}
-
-
 std::string CrossPlatformUtils::GetCMSISPackRootDir()
 {
   std::string pack_root = CrossPlatformUtils::GetEnv("CMSIS_PACK_ROOT");
@@ -47,27 +35,16 @@ std::string CrossPlatformUtils::GetDefaultCMSISPackRootDir()
 {
   std::string defaultPackRoot = GetEnv(DEFAULT_PACKROOTDEF); // defined via CMakeLists.txt
 
-#ifdef _WIN32
   if (defaultPackRoot.empty()) {
-    defaultPackRoot = GetEnv("LOCALAPPDATA");
+    defaultPackRoot = GetEnv(LOCAL_APP_DATA);
   }
   if (defaultPackRoot.empty()) {
-    defaultPackRoot = GetEnv("USERPROFILE");
+    defaultPackRoot = GetEnv(USER_PROFILE);
   }
   if (!defaultPackRoot.empty()) {
-    defaultPackRoot += "\\Arm\\Packs";
+    defaultPackRoot += PACK_ROOT_DIR;
   }
-#else
-  if (defaultPackRoot.empty()) {
-    defaultPackRoot = GetEnv("XDG_CACHE_HOME");
-  }
-  if (defaultPackRoot.empty()) {
-    defaultPackRoot = GetEnv("HOME");
-  }
-  if (!defaultPackRoot.empty()) {
-    defaultPackRoot += "/arm/packs";
-  }
-#endif
+
   return defaultPackRoot;
 }
 
@@ -79,4 +56,11 @@ unsigned long CrossPlatformUtils::ClockInMsec() {
   return (t / CLOCK_PER_MSEC);
 }
 
-// end of CrossPlatformUtils.cpp
+const std::string& CrossPlatformUtils::GetHostType()
+{
+  // OS name is defined at compile time
+  static const std::string os_name = HOST_TYPE;
+  return os_name;
+}
+
+// end of CrossplatformUtils.cpp

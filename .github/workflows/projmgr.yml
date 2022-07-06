@@ -3,6 +3,15 @@ on:
   push:
     branches:
       - main
+    paths:
+      - '.github/workflows/projmgr.yml'
+      - 'CMakeLists.txt'
+      - 'libs/crossplatform/**'
+      - 'libs/rtefsutils/**'
+      - 'libs/xmlreader/**'
+      - 'libs/xmltree/**'
+      - 'libs/xmltreeslim/**'
+      - 'tools/projmgr/**'
   pull_request:
     paths:
       - '.github/workflows/projmgr.yml'
@@ -17,112 +26,107 @@ on:
     types: [published]
 
 jobs:
+  matrix_prep:
+    if: |
+        (github.event_name == 'pull_request') ||
+        (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/projmgr/'))
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+    - name: Check out repo
+      uses: actions/checkout@v2
+    - id: set-matrix
+      run: |
+        publicRepo=$(echo '${{ github.event.repository.private && 'privateRepo' || 'publicRepo' }}')
+        matrix=$(jq --arg publicRepo "$publicRepo" 'map(. | select((.runOn==$publicRepo) or (.runOn=="always")) )' matrix_includes_projmgr.json)
+        echo ::set-output name=matrix::{\"include\":$(echo $matrix)}\"
+      working-directory: .github/
   build:
-    if: ${{ github.event_name == 'pull_request' || (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/projmgr/')) }}
-    runs-on: ${{ matrix.os }}
+    needs: matrix_prep
+    runs-on: ${{ matrix.runs_on }}
     timeout-minutes: 15
     strategy:
       fail-fast: true
-      matrix:
-        os: [ macos-10.15, ubuntu-20.04, windows-2019 ]
-        include:
-          - os: macos-10.15
-            target: darwin64
-            binary: csolution
-          - os: ubuntu-20.04
-            target: linux64
-            binary: csolution
-          - os: windows-2019
-            target: windows64
-            binary: csolution.exe
+      matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
 
     steps:
-      - name: Install macos deps
-        if: ${{ startsWith(matrix.os, 'macos') }}
-        run: |
-          brew install \
-            ninja \
-            python \
-            swig
-
-      - name: Install linux deps
-        if: ${{ startsWith(matrix.os, 'ubuntu') }}
-        run: |
-          sudo apt update
-          sudo apt-get install \
-            bc \
-            build-essential \
-            ninja-build \
-            python-dev \
-            swig
-
-      - name: Install windows deps
-        if: ${{ startsWith(matrix.os, 'windows') }}
-        run: choco install -y ninja python swig
-
       - name: Checkout devtools
         uses: actions/checkout@v2
         with:
           submodules: true
 
-      - name: Create build folders
-        run: |
-          mkdir build
-          mkdir buildswig
-
-      - name: Configure windows build for amd64
-        if: ${{ startsWith(matrix.os, 'windows') }}
-        uses: ilammy/msvc-dev-cmd@v1
+      # https://github.com/Open-CMSIS-Pack/devtools-build-action
+      - name: Build
+        uses: Open-CMSIS-Pack/devtools-build-action@v1.1
         with:
-          arch: amd64
-
-      - uses: ammaraskar/gcc-problem-matcher@master
-        if: ${{ startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu') }}
-      - uses: ammaraskar/msvc-problem-matcher@master
-        if: ${{ startsWith(matrix.os, 'windows') }}
-
-      - name: Build projmgr
-        run: |
-          cmake -G Ninja -DCMAKE_BUILD_TYPE=Release ..
-          cmake --build . --target projmgr
-        working-directory: ./build
+          target: projmgr
+          arch: ${{ matrix.arch }}
 
       - name: Archive projmgr
         uses: actions/upload-artifact@v2
         with:
-          name: projmgr-${{ matrix.target }}
+          name: projmgr-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/tools/projmgr/${{ matrix.target }}/Release/${{ matrix.binary }}
           retention-days: 1
           if-no-files-found: error
 
-      - name: Build projmgr swig libs
-        run: |
-          cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DSWIG_LIBS=ON ..
-          cmake --build . --target projmgr --config Release
-        working-directory: ./buildswig
+      # https://github.com/Open-CMSIS-Pack/devtools-build-action
+      - name: Build swig libs windows
+        if: ${{ startsWith(matrix.runs_on, 'windows') }}
+        uses: Open-CMSIS-Pack/devtools-build-action@v1.1
+        with:
+          add_cmake_variables: -DSWIG_LIBS=ON
+          add_cmake_build_args: --config Release
+          arch: ${{ matrix.arch }}
+          build_folder: buildswig
+          target: projmgr-python
 
-      - name: Archive projmgr swig libs windows
-        if: ${{ startsWith(matrix.os, 'windows') }}
+      # https://github.com/Open-CMSIS-Pack/devtools-build-action
+      - name: Build swig libs macos and ubuntu amd64
+        if: ${{ startsWith(matrix.runs_on, 'macos') || ( startsWith(matrix.runs_on, 'ubuntu') && matrix.arch == 'amd64' ) }}
+        uses: Open-CMSIS-Pack/devtools-build-action@v1.1
+        with:
+          add_cmake_variables: -DSWIG_LIBS=ON
+          add_cmake_build_args: --config Release
+          arch: ${{ matrix.arch }}
+          build_folder: buildswig
+          target: projmgr-python projmgr-go
+
+      - name: Archive projmgr swig python libs windows
+        if: ${{ startsWith(matrix.runs_on, 'windows') }}
         uses: actions/upload-artifact@v2
         with:
-          name: projmgr-swig-${{ matrix.target }}
+          name: projmgr-swig-python-${{ matrix.target }}-${{ matrix.arch }}
           path: |
-             ./buildswig/tools/projmgr/swig/projmgr.py
-             ./buildswig/tools/projmgr/swig/_projmgr.pyd
+             ./buildswig/tools/projmgr/swig/python/projmgr.py
+             ./buildswig/tools/projmgr/swig/python/_projmgr.pyd
           retention-days: 1
 
-      - name: Archive projmgr swig libs macos ubuntu
-        if: ${{ startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu') }}
+      - name: Archive projmgr swig python libs macos ubuntu amd64
+        if: ${{ startsWith(matrix.runs_on, 'macos') || ( startsWith(matrix.runs_on, 'ubuntu') && matrix.arch == 'amd64' ) }}
         uses: actions/upload-artifact@v2
         with:
-          name: projmgr-swig-${{ matrix.target }}
+          name: projmgr-swig-python-${{ matrix.target }}-${{ matrix.arch }}
           path: |
-             ./buildswig/tools/projmgr/swig/projmgr.py
-             ./buildswig/tools/projmgr/swig/_projmgr.so
+             ./buildswig/tools/projmgr/swig/python/projmgr.py
+             ./buildswig/tools/projmgr/swig/python/_projmgr.so
+          retention-days: 1
+
+      - name: Archive projmgr swig go libs macos ubuntu amd64
+        if: ${{ startsWith(matrix.runs_on, 'macos') || ( startsWith(matrix.runs_on, 'ubuntu') && matrix.arch == 'amd64' ) }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: projmgr-swig-go-${{ matrix.target }}-${{ matrix.arch }}
+          path: |
+             ./buildswig/tools/projmgr/swig/go/projmgr.go
+             ./buildswig/tools/projmgr/swig/go/projmgr.so
           retention-days: 1
 
   release:
-    if: ${{ github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/projmgr/') }}
+    if: |
+        github.event_name == 'release' &&
+        startsWith(github.ref, 'refs/tags/tools/projmgr/')
     needs: [ build, unittest, coverage ]
     runs-on: ubuntu-20.04
     timeout-minutes: 15
@@ -139,41 +143,55 @@ jobs:
           cp -r tools/projmgr/schemas/* tools/projmgr/distribution/etc/
           cp -r tools/projmgr/templates/* tools/projmgr/distribution/etc/
 
-      - name: Download projmgr linux
+      - name: Download projmgr linux amd64
         uses: actions/download-artifact@v2
         with:
-          name: projmgr-linux64
+          name: projmgr-linux64-amd64
           path: tools/projmgr/distribution/bin/linux64/
 
-      - name: Download projmgr macos
+      - name: Download projmgr macos amd64
         uses: actions/download-artifact@v2
         with:
-          name: projmgr-darwin64
+          name: projmgr-darwin64-amd64
           path: tools/projmgr/distribution/bin/darwin64/
 
-      - name: Download projmgr windows
+      - name: Download projmgr windows amd64
         uses: actions/download-artifact@v2
         with:
-          name: projmgr-windows64
+          name: projmgr-windows64-amd64
           path: tools/projmgr/distribution/bin/windows64/
 
-      - name: Download projmgr-swig linux
+      - name: Download projmgr-swig-python linux
         uses: actions/download-artifact@v2
         with:
-          name: projmgr-swig-linux64
-          path: tools/projmgr/distribution/lib/linux64/
+          name: projmgr-swig-python-linux64-amd64
+          path: tools/projmgr/distribution/lib/linux64/python/
 
-      - name: Download projmgr-swig macos
+      - name: Download projmgr-swig-python macos
+        if: ${{ !github.event.repository.private }}
         uses: actions/download-artifact@v2
         with:
-          name: projmgr-swig-darwin64
-          path: tools/projmgr/distribution/lib/darwin64/
+          name: projmgr-swig-python-darwin64-amd64
+          path: tools/projmgr/distribution/lib/darwin64/python/
 
-      - name: Download projmgr-swig windows
+      - name: Download projmgr-swig-python windows
         uses: actions/download-artifact@v2
         with:
-          name: projmgr-swig-windows64
-          path: tools/projmgr/distribution/lib/windows64/
+          name: projmgr-swig-python-windows64-amd64
+          path: tools/projmgr/distribution/lib/windows64/python/
+
+      - name: Download projmgr-swig-go linux
+        uses: actions/download-artifact@v2
+        with:
+          name: projmgr-swig-go-linux64-amd64
+          path: tools/projmgr/distribution/lib/linux64/go/
+
+      - name: Download projmgr-swig-go macos
+        if: ${{ !github.event.repository.private }}
+        uses: actions/download-artifact@v2
+        with:
+          name: projmgr-swig-go-darwin64-amd64
+          path: tools/projmgr/distribution/lib/darwin64/go/
 
       - name: Zip distribution folder
         run: zip -r projmgr.zip *
@@ -191,19 +209,20 @@ jobs:
       - name: Download test report windows
         uses: actions/download-artifact@v2
         with:
-          name: unittest-windows64
+          name: unit_gtest-windows64-amd64
           path: tools/testreport/windows64/
 
       - name: Download test report linux
         uses: actions/download-artifact@v2
         with:
-          name: unittest-linux64
+          name: unit_gtest-linux64-amd64
           path: tools/testreport/linux64/
 
       - name: Download test report macos
+        if: ${{ !github.event.repository.private }}
         uses: actions/download-artifact@v2
         with:
-          name: unittest-darwin64
+          name: unit_gtest-darwin64-amd64
           path: tools/testreport/darwin64/
 
       - name: Zip test reports
@@ -235,113 +254,62 @@ jobs:
           asset_name: coverage.zip
 
   unittest:
-    if: |
-      ${{
-        github.event_name == 'pull_request' ||
-        (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/projmgr/'))
-      }}
-    runs-on: ${{ matrix.os }}
+    needs: matrix_prep
+    runs-on: ${{ matrix.runs_on }}
     timeout-minutes: 15
     strategy:
       fail-fast: false
-      matrix:
-        os: [ macos-10.15, ubuntu-20.04, windows-2019 ]
-        include:
-          - os: macos-10.15
-            target: darwin64
-          - os: ubuntu-20.04
-            target: linux64
-          - os: windows-2019
-            target: windows64
+      matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
 
     steps:
-      - name: Install macos deps
-        if: ${{ startsWith(matrix.os, 'macos') }}
-        run: |
-          brew install \
-            ninja
-
-      - name: Install linux deps
-        if: ${{ startsWith(matrix.os, 'ubuntu') }}
-        run: |
-          sudo apt update
-          sudo apt-get install \
-            bc \
-            build-essential \
-            ninja-build
-
-      - name: Install windows deps
-        if: ${{ startsWith(matrix.os, 'windows') }}
-        run: choco install -y ninja
-
       - name: Checkout devtools
         uses: actions/checkout@v2
         with:
           submodules: true
 
-      - name: Create build folder
-        run: mkdir build
-
-      - name: Configure windows build for amd64
-        if: ${{ startsWith(matrix.os, 'windows') }}
-        uses: ilammy/msvc-dev-cmd@v1
+      # https://github.com/Open-CMSIS-Pack/devtools-build-action
+      - name: Build ProjMgrUnitTests
+        uses: Open-CMSIS-Pack/devtools-build-action@v1.1
         with:
-          arch: amd64
+          arch: ${{ matrix.arch }}
+          build_type: Debug
+          target: ProjMgrUnitTests
 
-      - uses: ammaraskar/gcc-problem-matcher@master
-        if: ${{ startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu') }}
-      - uses: ammaraskar/msvc-problem-matcher@master
-        if: ${{ startsWith(matrix.os, 'windows') }}
-
-      - name: Build and run projmgr unit tests
+      - name: Run projmgr unit tests
         run: |
-          cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug ..
-          cmake --build . --target ProjMgrUnitTests
           ctest -V -C Debug -R ProjMgrUnitTests
         working-directory: ./build
 
       - name: Archive unit tests results
+        if: ${{ always() }}
         uses: actions/upload-artifact@v2
         with:
-          name: unittest-${{ matrix.target }}
+          name: unittest-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/Testing/Temporary/LastTest.log
           retention-days: 1
           if-no-files-found: error
-        if: ${{ always() }}
 
       - name: Archive gtest report
+        if: ${{ always() }}
         uses: actions/upload-artifact@v2
         with:
-          name: unit_gtest-${{ matrix.target }}
+          name: unit_gtest-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/projmgrunittest-*.xml
           retention-days: 1
           if-no-files-found: error
-        if: ${{ always() }}
 
   coverage:
-    needs: unittest
     if: |
-      ${{
-        github.event_name == 'pull_request' ||
-        github.event_name == 'push' ||
+        (github.event_name == 'pull_request') ||
+        (github.event_name == 'push') ||
         (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/projmgr/'))
-      }}
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-20.04
     timeout-minutes: 15
-    strategy:
-      fail-fast: true
-      matrix:
-        os: [ ubuntu-20.04 ]
-
     steps:
       - name: Install linux deps
-        if: ${{ startsWith(matrix.os, 'ubuntu') }}
         run: |
           sudo apt update
           sudo apt-get install \
-            bc \
-            build-essential \
-            ninja-build \
             lcov
 
       - name: Checkout devtools
@@ -349,53 +317,53 @@ jobs:
         with:
           submodules: true
 
-      - name: Create build folder
-        run: mkdir build
+      # https://github.com/Open-CMSIS-Pack/devtools-build-action
+      - name: Build ProjMgrUnitTests
+        uses: Open-CMSIS-Pack/devtools-build-action@v1.1
+        with:
+          add_cmake_variables: -DCOVERAGE=ON
+          arch: amd64
+          build_type: Debug
+          target: ProjMgrUnitTests
 
-      - uses: ammaraskar/gcc-problem-matcher@master
-        if: ${{ startsWith(matrix.os, 'ubuntu') }}
-
-      - name: Build and run projmgr unit tests
+      - name: Run ProjMgrUnitTests
         run: |
-          cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCOVERAGE=ON ..
-          cmake --build . --target ProjMgrUnitTests
           ctest -V -C Debug -R ProjMgrUnitTests
         working-directory: ./build
 
       - name: Generate coverage report
-        if: ${{ startsWith(matrix.os, 'ubuntu') }}
         run: |
-          lcov -c --directory ./tools/projmgr/ --output-file full_coverage.info
+          lcov -c --directory . --output-file full_coverage.info
           lcov -e full_coverage.info '/tools/projmgr/include/*' '*/tools/projmgr/src/*' -o coverage.info
           genhtml coverage.info --output-directory coverage
           zip -r coverage.zip coverage/*
-        working-directory: ./build
+        working-directory: ./build/tools/projmgr/
 
       - name: Upload Report to Codecov
         if: ${{ !github.event.repository.private }}
-        uses: codecov/codecov-action@v1.3.2
+        uses: codecov/codecov-action@v2
         with:
-          files: ./build/coverage.info
+          files: ./build/tools/projmgr/coverage.info
           fail_ci_if_error: true
+          flags: projmgr-cov
           functionalities: fix
 
       - name: Archive coverage report
         uses: actions/upload-artifact@v2
         with:
           name: coverage-report
-          path: ./build/coverage.zip
+          path: ./build/tools/projmgr/coverage.zip
           retention-days: 1
           if-no-files-found: error
 
   publish-test-results:
     name: "Publish Tests Results"
-    needs: unittest
-    runs-on: ${{ matrix.os }}
+    needs: [ matrix_prep, unittest ]
+    runs-on: ${{ matrix.runs_on }}
     if: ${{ false }}
     strategy:
       fail-fast: true
-      matrix:
-        os: [ macos-10.15, ubuntu-20.04, windows-2019 ]
+      matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
     steps:
       - name: Setup Python
         uses: actions/setup-python@v2
@@ -405,19 +373,25 @@ jobs:
       - name: Download gtest report windows
         uses: actions/download-artifact@v2
         with:
-          name: unit_gtest-windows64
+          name: unit_gtest-windows64-amd64
           path: testreport/
 
-      - name: Download gtest report linux
+      - name: Download gtest report linux amd64
         uses: actions/download-artifact@v2
         with:
-          name: unit_gtest-linux64
+          name: unit_gtest-linux64-amd64
+          path: testreport/
+
+      - name: Download gtest report linux aarch64
+        uses: actions/download-artifact@v2
+        with:
+          name: unit_gtest-linux64-aarch64
           path: testreport/
 
       - name: Download gtest report macos
         uses: actions/download-artifact@v2
         with:
-          name: unit_gtest-darwin64
+          name: unit_gtest-darwin64-amd64
           path: testreport/
 
       - name: Publish Unit Test Results

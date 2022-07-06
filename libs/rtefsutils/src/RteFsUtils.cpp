@@ -14,13 +14,16 @@
 
 #include "RteFsUtils.h"
 
+#include "CrossPlatformUtils.h"
 #include "RteUtils.h"
+#include "WildCards.h"
 
 #include <chrono>
 #include <sstream>
 #include <fstream>
 #include <iostream>
 #include <iomanip>
+#include <regex>
 #include <thread>
 
 using namespace std;
@@ -519,12 +522,15 @@ fs::path RteFsUtils::AbsolutePath(const std::string& path) {
       std::cout << "runtime_error: " << e.what() << std::endl;
     }
     catch (...) {
-      std::cout << "non-standard exception occured" << std::endl;
+      std::cout << "non-standard exception occurred" << std::endl;
     }
   }
   return fs::path();
 }
 
+string RteFsUtils::ParentPath(const string& path) {
+  return fs::path(path).parent_path().generic_string();
+}
 
 string RteFsUtils::GetCurrentFolder(bool withTrailingSlash) {
   error_code ec;
@@ -610,19 +616,44 @@ string RteFsUtils::GetInstalledPackVersion(const string &path, const string &ver
 }
 
 
-/*
-Scan input dir for all specified type of files
-*/
 RteFsUtils::PathVec RteFsUtils::FindFiles(const string& path, const string& typeExt) {
   RteFsUtils::PathVec result;
   error_code ec;
   for (auto& item : fs::recursive_directory_iterator(path, ec)) {
     if (!fs::is_regular_file(item.path()) || item.path().extension() != typeExt)
       continue;
-    result.push_back(item.path().generic_string());
+    result.push_back(item.path());
   }
   return result;
 }
+
+RteFsUtils::PathVec RteFsUtils::GrepFiles(const string& dir, const string& wildCardPattern) {
+  RteFsUtils::PathVec result;
+  error_code ec;
+  for (auto& item : fs::directory_iterator(dir, ec)) {
+    auto& path = item.path();
+    string name = item.path().filename().generic_string();
+    if (fs::is_regular_file(path) &&
+      WildCards::Match(wildCardPattern, path.generic_string())) {
+      result.push_back(path);
+    }
+  }
+  return result;
+}
+
+void RteFsUtils::GrepFileNames(list<std::string>& fileNames, const string& dir, const string& wildCardPattern) {
+  error_code ec;
+  for (auto& item : fs::directory_iterator(dir, ec)) {
+    if (fs::is_regular_file(item.path())) {
+      string name = item.path().filename().generic_string();
+        if (WildCards::Match(wildCardPattern, name)) {
+            NormalizePath(name, dir + '/');
+            fileNames.push_back(name);
+        }
+    }
+  }
+}
+
 
 int RteFsUtils::CountFilesInFolder(const string& folder)
 {
@@ -696,6 +727,54 @@ string RteFsUtils::CreateExtendedName(const string& path, const string& extPrefi
     }
   }
   return backup;
+}
+
+bool RteFsUtils::FindFileRegEx(const vector<string>& searchPaths, const string& regEx, string& file) {
+  error_code ec;
+  for (const auto& searchPath : searchPaths) {
+    const auto& files = fs::directory_iterator(searchPath, ec);
+    vector<string> findings;
+    for (const auto& p : files) {
+      const string& path = p.path().generic_string();
+      try {
+        if (regex_match(path, regex(regEx))) {
+          findings.push_back(path);
+        }
+      } catch (regex_error const&) {
+        return false;
+      }
+    }
+    if (findings.size() == 1) {
+      file = findings[0];
+      return true;
+    }
+    if (findings.size() > 1) {
+      file = searchPath;
+      return false;
+    }
+  }
+  return false;
+}
+
+string RteFsUtils::GetAbsPathFromLocalUrl(const string& url) {
+  string filepath = url;
+  // File URI scheme allows the literal 'localhost' to be omitted entirely
+  // or may contain an empty hostname
+  static const string&& fileScheme = "file:/";
+  if (filepath.find(fileScheme) == 0) {
+    filepath.erase(0, fileScheme.length());
+    static const string&& localhost = "/localhost/";
+    if (filepath.find(localhost) == 0) {
+      filepath.erase(0, localhost.length());
+    } else if (filepath.find("//") == 0) {
+      filepath.erase(0, 2);
+    }
+    const string& host = CrossPlatformUtils::GetHostType();
+    if ((host == "linux") || (host == "mac")) {
+      filepath = fs::path("/").append(filepath).generic_string();
+    }
+  }
+  return filepath;
 }
 
 // End of RteFsUtils.cpp

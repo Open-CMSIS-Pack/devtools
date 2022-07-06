@@ -356,60 +356,60 @@ bool CheckFiles::FindGetExactFileSystemName(const std::string& path, const std::
  * @brief check name as written in PDSC against it's counterpart on the filesystem, for case sensitivity
  * @param fileName filename as written in PDSC
  * @param lineNo line number for error reporting
- * @return
+ * @return true/false
 */
 bool CheckFiles::CheckCaseSense(const string& fileName, int lineNo)
 {
-  if(fileName.empty()) {
+  if (fileName.empty()) {
     return true;
   }
 
   LogMsg("M058", PATH(fileName));
 
-  string pdscPath = RteUtils::BackSlashesToSlashes(RteUtils::RemoveTrailingBackslash(fileName));
-  string path = pdscPath;
-  string systemPath;
-  vector<string> pathVect;
+  string filePath, testPath, outPath, packPath;
+  vector<string> sysPathSegments;
+  std::list<std::string> filePathSegments;
 
-  do {
-    string actualPath = path;
-    path = RteUtils::ExtractFilePath(actualPath, 0);
-    string checkPath = RteUtils::ExtractFileName(actualPath);
-    string testPath = GetPackagePath();
-    testPath += "/";
-    testPath += path;
-    string outPath;
+  packPath = GetPackagePath();
+  filePath = RteUtils::BackSlashesToSlashes(RteUtils::RemoveTrailingBackslash(fileName));
+  RteUtils::SplitString(filePathSegments, filePath, '/');
+  testPath = packPath;
 
-    if(FindGetExactFileSystemName(testPath, checkPath, outPath)) {
-      pathVect.push_back(outPath);
+  for (const auto& seg : filePathSegments) {
+    if (seg == ".." || seg == ".") {
+      sysPathSegments.push_back(seg);
+      testPath += "/" + seg;
+      continue;
     }
-  } while(!path.empty() && path != ".");
 
-  for(auto it2 = pathVect.rbegin(); it2 != pathVect.rend(); it2++) {
-    if(!systemPath.empty()) {
-      systemPath += "/";
+    if (FindGetExactFileSystemName(testPath, seg, outPath)) {
+      sysPathSegments.push_back(outPath);
+      testPath += "/" + outPath;
     }
-    systemPath += *it2;
+    else {
+      string errMsg = string("file/folder \"") + seg + "\" not found";
+      LogMsg("M103", VAL("REF", errMsg));
+      return false;
+    }
   }
 
-  string::size_type pos;
-  string::size_type endPos = pdscPath.find_first_not_of("./");
-  do {
-    pos = pdscPath.find_first_of("./");
-    if(pos < endPos && pos != string::npos)
-      pdscPath.erase(pos, 1);
-  } while(pos < endPos && pos != string::npos);
+  string systemPath;
+  for (const auto& itrSeg : sysPathSegments) {
+    if (!systemPath.empty()) {
+      systemPath += "/";
+    }
+    systemPath += itrSeg;
+  }
 
   bool ok = true;
-  if(pdscPath.compare(systemPath)) {
-    LogMsg("M310", VAL("PDSC", pdscPath), VAL("SYSTEM", systemPath), lineNo);
+  if (filePath.compare(systemPath)) {
+    LogMsg("M310", VAL("PDSC", filePath), VAL("SYSTEM", systemPath), lineNo);
     ok = false;
   }
 
-  if(ok) {
+  if (ok) {
     LogMsg("M010");
   }
-
   return ok;
 }
 
@@ -684,7 +684,8 @@ bool CheckFiles::CheckFileExtension(RteItem* item)
 
   bool ok = true;
   if(category == "include") {
-    if(RteFsUtils::IsDirectory(name)) {
+    string checkPath = GetFullFilename(name);
+    if(!RteFsUtils::IsDirectory(checkPath)) {
       LogMsg("M339", PATH(name), lineNo);
       ok = false;
     }

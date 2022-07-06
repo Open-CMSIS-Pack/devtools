@@ -1,0 +1,30 @@
+[
+    {
+        "runs_on":"macos-10.15",
+        "target":"darwin64",
+        "arch": "amd64",
+        "binary": "packgen",
+        "runOn": "publicRepo"
+    },
+    {
+        "runs_on":"ubuntu-20.04",
+        "target":"linux64",
+        "arch": "amd64",
+        "binary": "packgen",
+        "runOn": "always"
+    },
+    {
+        "runs_on":"ubuntu-20.04",
+        "target":"linux64",
+        "arch": "aarch64",
+        "binary": "packgen",
+        "runOn": "always"
+    },
+    {
+        "runs_on":"windows-2019",
+        "target":"windows64",
+        "arch": "amd64",
+        "binary": "packgen.exe",
+        "runOn": "always"
+    }
+]

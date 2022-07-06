@@ -12,7 +12,10 @@
 #include "CrossPlatform.h"
 #include "ErrLog.h"
 #include "RteGenerator.h"
+#include "RteUtils.h"
 #include "RteFsUtils.h"
+
+#include <regex>
 
 #include <time.h>
 #include <algorithm>
@@ -162,6 +165,18 @@ bool ValidateSyntax::CheckLicense(RtePackage* pKg, CheckFilesVisitor& fileVisito
     return true;
   }
 
+  if(XmlValueAdjuster::IsAbsolute(licPath)) {
+    LogMsg("M326", PATH(licPath));   // error : absolute paths are not permitted
+  }
+  else if(licPath.find('\\') != string::npos) {
+    if(XmlValueAdjuster::IsURL(licPath)) {
+      LogMsg("M370", URL(licPath));  // error : backslash are non permitted in URL
+    }
+    else {
+      LogMsg("M327", PATH(licPath)); // error : backslash are not recommended
+    }
+  }
+
   CheckFiles& checkFiles = fileVisitor.GetCheckFiles();
   if(!checkFiles.CheckFileExists(licPath, -1)) {
     return false;
@@ -208,13 +223,14 @@ bool ValidateSyntax::CheckInfo(RtePackage* pKg)
   for(auto release : releases) {
     const string& rVer = release->GetVersionString();
     const string& rDescr = release->GetDescription();
+    int lineNo = release->GetLineNumber();
 
     if(rVer.empty() && !rDescr.empty()) {
-      LogMsg("M328", VAL("DESCR", rDescr));
+      LogMsg("M328", VAL("DESCR", rDescr), lineNo);
     }
 
     if(!rVer.empty() && rDescr.empty()) {
-      LogMsg("M329", VAL("VER", rVer));
+      LogMsg("M329", VAL("VER", rVer), lineNo);
     }
   }
 
@@ -329,7 +345,7 @@ bool ValidateSyntax::CheckPackageReleaseDate(RtePackage* pKg)
   string latestVersion;
   string latestDate;
   int latestLineNo = 0;
-
+  
   for(auto child : childs) {
     string releaseDate = child->GetAttribute("date");
     string releaseVersion = child->GetAttribute("version");
@@ -337,16 +353,31 @@ bool ValidateSyntax::CheckPackageReleaseDate(RtePackage* pKg)
 
     LogMsg("M098", RELEASEDATE(releaseDate), lineNo);
 
-    if(releaseDate.empty()) {
-      LogMsg("M385", RELEASEDATE(releaseDate), lineNo);    // Release date is empty
+    // Check Semantic Version with "PackVersionType" from PACK.XSD
+    LogMsg("M066", RELEASEVER(releaseVersion), lineNo);
+    static regex re("[0-9]+.[0-9]+.[0-9]+((\\-[0-9A-Za-z_\\-\\.]+)|([_A-Za-z][0-9A-Za-z_\\-\\.]*)|())((\\+[\\-\\._A-Za-z0-9]+)|())");
+    if(!regex_match(releaseVersion, re)) {
+      LogMsg("M394", RELEASEVER(releaseVersion), lineNo);
+      continue;
     }
-    else {
+
+    // search for BUILD version from SemVer string
+    string releaseVersionCheckPre = VersionCmp::RemoveVersionMeta(releaseVersion);
+
+    // search for PRE-RELEASE version from SemVer string
+    size_t minusPos = releaseVersionCheckPre.find_first_of("-");
+    if(minusPos != string::npos) {
+      string preReleaseVersion = releaseVersionCheckPre.substr(minusPos);
+      LogMsg("M393", VAL("DEVVERSION", preReleaseVersion),  RELEASEVER(releaseVersion), lineNo);
+    }
+    else if(releaseDate.empty()) {    // no Pre-Release
+      LogMsg("M395", RELEASEVER(releaseVersion), lineNo);
+    }
+
+    if(!releaseDate.empty()) {
       bool ok = AlnumCmp::Compare(today, releaseDate) >= 0;
       if(!ok) {
         LogMsg("M386", RELEASEDATE(releaseDate), TODAYDATE(today), lineNo);    // Release date is in future
-      }
-      else {
-        LogMsg("M010");
       }
     }
 
@@ -354,15 +385,15 @@ bool ValidateSyntax::CheckPackageReleaseDate(RtePackage* pKg)
     LogMsg("M067", RELEASEVER(releaseVersion), RELEASEDATE(releaseDate), lineNo);
 
     if(!latestVersion.empty() && !releaseVersion.empty()) {
-      bool ok = VersionCmp::Compare(latestVersion, releaseVersion) > 0;
-      if(!ok) {
+      int res = VersionCmp::Compare(latestVersion, releaseVersion);
+      if(res <= 0) {
         LogMsg("M396", TAG("Version"), RELEASEVER(releaseVersion), RELEASEDATE(releaseDate), LATESTVER(latestVersion), LATESTDATE(latestDate), LINE(latestLineNo), lineNo);
       }
     }
 
     if(!latestDate.empty() && !releaseDate.empty()) {
-      bool ok = AlnumCmp::Compare(latestDate, releaseDate) > 0;     // sorting of release version is fixed. The latest version is at the top the earliest release tag is at the bottom
-      if(!ok) {
+      int res = AlnumCmp::Compare(latestDate, releaseDate);     // sorting of release version is fixed. The latest version is at the top the earliest release tag is at the bottom
+      if(res < 0) {   // allow same date
         LogMsg("M396", TAG("Date"), RELEASEVER(releaseVersion), RELEASEDATE(releaseDate), LATESTVER(latestVersion), LATESTDATE(latestDate), LINE(latestLineNo), lineNo);
       }
     }
@@ -371,65 +402,7 @@ bool ValidateSyntax::CheckPackageReleaseDate(RtePackage* pKg)
     latestDate = releaseDate;
     latestLineNo = lineNo;
 
-    // Check Semantic Version
-    LogMsg("M066", RELEASEVER(releaseVersion), lineNo);
-
-    bool semVerOk = true;
-    string semVer[4];
-    size_t pos = 0, prevPos = 0;
-    int semVerIdx = 0;
-
-    do {
-      pos = releaseVersion.find_first_of('.', prevPos);
-      if(pos == string::npos) {
-        semVer[semVerIdx] = releaseVersion.substr(prevPos);
-        break;
-      }
-
-      semVer[semVerIdx] = releaseVersion.substr(prevPos, pos - prevPos);
-      prevPos = pos + 1;
-
-      pos = semVer[semVerIdx].find_first_not_of("0123456789.");
-      if(pos != string::npos) {
-        semVerOk = false;
-        break;
-      }
-
-      semVerIdx++;
-      if(semVerIdx > 3) {
-        semVerOk = false;
-        break;
-      }
-    } while(prevPos < releaseVersion.length());
-
-    if(semVerIdx < 2) {
-      semVerOk = false;
-    }
-    else {
-      pos = semVer[2].find_first_not_of("0123456789.");
-      if(pos != string::npos) {
-        semVer[3] = semVer[2].substr(pos);
-        semVer[2].erase(pos);
-      }
-    }
-
-    if(!semVerOk) {
-      LogMsg("M394", RELEASEVER(releaseVersion), lineNo);
-    }
-    else {
-      LogMsg("M010");
-    }
-
-    if(semVerOk) {
-      if(semVer[3].length()) {
-        LogMsg("M393", RELEASEVER(releaseVersion), lineNo);
-      }
-      else {
-        if(releaseDate.empty()) {
-          LogMsg("M395", RELEASEVER(releaseVersion), lineNo);
-        }
-      }
-    }
+    LogMsg("M010");
   }
 
   return true;

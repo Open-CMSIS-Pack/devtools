@@ -45,7 +45,6 @@ extern std::string testinput_folder;
 extern std::string testdata_folder;
 
 void RunScript(const std::string& script, std::string arg = "");
-void RemoveDir(fs::path path);
 
 /**
  * @brief global test environment for all the test suites

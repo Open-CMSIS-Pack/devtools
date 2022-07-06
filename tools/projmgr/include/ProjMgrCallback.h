@@ -33,10 +33,25 @@ public:
   }
 
   /**
-   * @brief clear all messages
+ * @brief obtain warning messages
+ * @return list of all warning messages
+*/
+  const std::list<std::string>& GetWarningMessages() const {
+    return m_warningMessages;
+  }
+
+  /**
+   * @brief clear all error messages
   */
   void ClearErrorMessages() {
     m_errorMessages.clear();
+  }
+
+  /**
+   * @brief clear all warning messages
+  */
+  void ClearWarningMessages() {
+    m_warningMessages.clear();
   }
 
   /**
@@ -51,6 +66,12 @@ public:
   virtual void OutputErrMessage(const std::string& message) override;
 
   /**
+   * @brief output specified message
+   * @param message string to output specified message
+  */
+  virtual void OutputMessage(const std::string& message) override;
+
+  /**
    * @brief create error message string and add it to message list
    * @param id error Id
    * @param message error message
@@ -60,6 +81,7 @@ public:
 
 protected:
   std::list<std::string> m_errorMessages;
+  std::list<std::string> m_warningMessages;
 
 };
 #endif // PROJMGRCALLBACK_H

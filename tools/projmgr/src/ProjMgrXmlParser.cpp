@@ -9,7 +9,7 @@
 using namespace std;
 
 ProjMgrXmlParser::ProjMgrXmlParser() : XMLTreeSlim(0, true) {
-  m_adjuster = make_unique<XmlValueAdjuster>();
+  m_adjuster = make_unique<RteValueAdjuster>(false);
   SetXmlValueAdjuster(m_adjuster.get());
 }
 

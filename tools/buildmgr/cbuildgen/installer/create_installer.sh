@@ -23,14 +23,6 @@ usage() {
   echo "  <InstallerDir> : Installer output directory"
 }
 
-# update version field
-update_version() {
-  filepath=$1
-  version=$2
-  sed -e "s|version=.*|version=${version}|"\
-    ${filepath} > temp.$$ && mv temp.$$ ${filepath}
-}
-
 # arguments
 if [ $# -eq 0 ]
 then
@@ -69,11 +61,18 @@ cp -R ../config/. ${distdir}/etc
 cp ../../docs/LICENSE.txt ${distdir}
 
 # Get cpackget
-cpackget_version="0.2.0"
+cpackget_version="0.5.0"
 cpackget_base=https://github.com/Open-CMSIS-Pack/cpackget/releases/download/v${cpackget_version}/cpackget_${cpackget_version}
 curl --retry 3 -L ${cpackget_base}_windows_amd64.zip   -o temp.zip && unzip -p temp.zip '*/cpackget.exe' > ${distdir}/bin/cpackget.exe && rm temp.zip
 curl --retry 3 -L ${cpackget_base}_linux_amd64.tar.gz  -o - | tar xzfO - --wildcards    '*cpackget'     > ${distdir}/bin/cpackget.lin
 curl --retry 3 -L ${cpackget_base}_darwin_amd64.tar.gz -o - | tar xzfO - --wildcards    '*cpackget'     > ${distdir}/bin/cpackget.mac
+
+# Get cbuild
+cbuild_version="0.9.1"
+cbuild_base=https://github.com/Open-CMSIS-Pack/cbuild/releases/download/v${cbuild_version}/cbuild_${cbuild_version}
+curl --retry 3 -L ${cbuild_base}_windows_amd64.zip   -o temp.zip && unzip -p temp.zip '*/cbuild.exe' > ${distdir}/bin/cbuild.exe && rm temp.zip
+curl --retry 3 -L ${cbuild_base}_linux_amd64.tar.gz  -o - | tar xzfO - --wildcards    '*cbuild'     > ${distdir}/bin/cbuild.lin
+curl --retry 3 -L ${cbuild_base}_darwin_amd64.tar.gz -o - | tar xzfO - --wildcards    '*cbuild'     > ${distdir}/bin/cbuild.mac
 
 OS=$(uname -s)
 case $OS in
@@ -93,11 +92,6 @@ case $OS in
 esac
 
 PKG_VERSION=$(echo $(${distdir}/bin/cbuildgen.${extn}) | cut -f5 -d ' ')
-files=$(echo $(find ${distdir}/bin -name "*.sh"))
-for file in ${files[@]}
-  do
-    update_version ${file} $PKG_VERSION
-done
 
 tar czf ${archive_name} -C ${distdir} .
 if [ $? -ne 0 ]

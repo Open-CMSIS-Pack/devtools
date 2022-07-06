@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/0.9.0/tools/projmgr/schemas/cproject.schema.json
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/0.9.6/tools/projmgr/schemas/cproject.schema.json
 
 project:
   description: Project 1
@@ -9,12 +9,32 @@ project:
   components:
     - component: Startup
     - component: CORE
+      defines:
+        - DEF1-COMPONENT
+      undefines:
+        - DEF2-COMPONENT
+      add-paths:
+        - ./path/1/component
+      del-paths:
+        - ./path/2/component
     - component: RteTest.Check.Missing
       not-for-type:
         - .Debug
         - .Release
   groups:
     - group: Sources
+      defines:
+        - DEF1-GROUP-PROJECT
+        - DEF2-GROUP-PROJECT
+      undefines:
+        - DEF3-GROUP-PROJECT
+        - DEF4-GROUP-PROJECT
+      add-paths:
+        - ./path/sources/1/group
+        - ./path/sources/2/group
+      del-paths:
+        - ./path/sources/3/group
+        - ./path/sources/4/group
       misc:
         - C: [-C-group]
           CPP: [-CPP-group]
@@ -23,6 +43,18 @@ project:
           Lib: [-Lib-group]
       files: 
         - file: main.c
+          defines:
+            - DEF1-FILE-PROJECT
+            - DEF2-FILE-PROJECT
+          undefines:
+            - DEF3-FILE-PROJECT
+            - DEF4-FILE-PROJECT
+          add-paths:
+            - ./path/main/1/file
+            - ./path/main/2/file
+          del-paths:
+            - ./path/main/3/file
+            - ./path/main/4/file
           misc:
             - compiler: AC6
               C: [-C-file-AC6]
@@ -44,5 +76,13 @@ project:
       for-type: .Release
       files:
         - file: release.c
+          defines:
+            - DEF1-REL-FILE
+          undefines:
+            - DEF2-REL-FILE
+          add-paths:
+            - ./path/1/release/file
+          del-paths:
+            - ./path/2/release/file
         - file: excluded.c
           not-for-type: .Release

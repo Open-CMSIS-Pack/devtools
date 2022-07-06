@@ -136,6 +136,14 @@ bool RteUtils::CheckCMSISName(const string& s)
   return true;
 }
 
+std::string& RteUtils::ReplaceAll(std::string& str, const string& toReplace, const string& with)
+{
+  for (size_t pos = str.find(toReplace); pos != string::npos; pos = str.find(toReplace, pos + toReplace.size())) {
+    str.replace(pos, toReplace.size(), with);
+  }
+  return str;
+}
+
 
 string RteUtils::SpacesToUnderscore(const string& s)
 {
@@ -269,6 +277,17 @@ string RteUtils::ExtractFileExtension(const string& fileName, bool withDot)
 {
   return GetSuffix(fileName, '.', withDot);
 }
+
+std::string RteUtils::AppendFileVersion(const std::string& fileName, const string& version, bool bHidden)
+{
+  if (!bHidden) {
+    return fileName + '@' + version;
+  }
+  string path = ExtractFilePath(fileName, true);
+  string name = ExtractFileName(fileName);
+  return path + '.' + name + '@' + version;
+}
+
 
 string RteUtils::ExtractFirstFileSegments(const string& fileName, int nSegments)
 {

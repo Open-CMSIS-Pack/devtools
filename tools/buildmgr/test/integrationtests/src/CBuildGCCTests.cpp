@@ -19,6 +19,15 @@ using namespace std;
 class CBuildGCCTests : public CBuildTestFixture {
 };
 
+// Validate successful build of C example
+// using latest pack versions available
+TEST_F(CBuildGCCTests, Build_GCC_Translation_Control) {
+  TestParam param = { "GCC/TranslationControl/Project1", "Project" };
+
+  RunCBuildScriptClean       (param);
+  RunCBuildScript            (param);
+  CheckCMakeLists            (param);
+}
 
 // Validate successful build of C example
 // using latest pack versions available
@@ -122,11 +131,11 @@ TEST_F(CBuildGCCTests, OutDirGenTest) {
   error_code ec;
 
   if (fs::exists(absOutDir, ec)) {
-    RemoveDir(absOutDir);
+    RteFsUtils::RemoveDir(absOutDir);
   }
 
   if (fs::exists(absIntDir, ec)) {
-    RemoveDir(absIntDir);
+    RteFsUtils::RemoveDir(absIntDir);
   }
 
   RunCBuildScriptWithArgs    (param);
@@ -145,35 +154,11 @@ TEST_F(CBuildGCCTests, OutDirGenTestWhitespace) {
   error_code ec;
 
   if (fs::exists(absOutDir, ec)) {
-    RemoveDir(absOutDir);
+    RteFsUtils::RemoveDir(absOutDir);
   }
 
   if (fs::exists(absIntDir, ec)) {
-    RemoveDir(absIntDir);
-  }
-
-  RunCBuildScriptWithArgs    (param);
-  CheckOutputDir             (param, absOutDir);
-  CheckCMakeIntermediateDir  (param, absIntDir);
-}
-
-// Test building of multitoolchain project with GCC compiler
-// and defined output and intermediate directory paths
-TEST_F(CBuildGCCTests, MultiToolChainGCCTest) {
-  const string outDir = "OutDir";
-  const string intDir = "IntDir";
-  const string toolchain = "GCC";
-  TestParam param = { "Mixed/Build_AC6_GCC", "Build.Simulation", "--toolchain=" + toolchain + " --outdir=" + outDir + " --intdir=" + intDir, "", true };
-  const string absOutDir = examples_folder + "/" + param.name + "/" + outDir;
-  const string absIntDir = examples_folder + "/" + param.name + "/" + intDir;
-  error_code ec;
-
-  if (fs::exists(absOutDir, ec)) {
-    RemoveDir(absOutDir);
-  }
-
-  if (fs::exists(absIntDir, ec)) {
-    RemoveDir(absIntDir);
+    RteFsUtils::RemoveDir(absIntDir);
   }
 
   RunCBuildScriptWithArgs    (param);

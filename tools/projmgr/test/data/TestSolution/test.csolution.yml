@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/0.9.0/tools/projmgr/schemas/csolution.schema.json
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/0.9.6/tools/projmgr/schemas/csolution.schema.json
 
 solution:
   target-types:
@@ -16,10 +16,14 @@ solution:
       undefines:
         - DEF-solution-to-be-removed
       add-paths:
-        - /path/CM0
-        - /path/CM0/to-be-removed
+        - ./path/CM0
+        - ./path/CM0/to-be-removed
       del-paths:
-        - /path/solution/to-be-removed
+        - ./path/solution/to-be-removed
+      processor:
+        fpu: off
+        endian: little
+        trustzone: non-secure
     - type: CM3
       device: RteTest_ARMCM3
       misc:
@@ -34,10 +38,10 @@ solution:
       undefines:
         - DEF-solution-to-be-removed
       add-paths:
-        - /path/CM3
-        - /path/CM3/to-be-removed
+        - ./path/CM3
+        - ./path/CM3/to-be-removed
       del-paths:
-        - /path/solution/to-be-removed
+        - ./path/solution/to-be-removed
 
   build-types:
     - type: Debug
@@ -50,10 +54,14 @@ solution:
         - DEF-CM0-to-be-removed
         - DEF-CM3-to-be-removed
       add-paths:
-        - /path/Debug
+        - ./path/Debug
       del-paths:
-        - /path/CM0/to-be-removed
-        - /path/CM3/to-be-removed
+        - ./path/CM0/to-be-removed
+        - ./path/CM3/to-be-removed
+      processor:
+        fpu: off
+        endian: little
+        trustzone: non-secure
 
     - type: Release
       compiler: GCC
@@ -65,23 +73,27 @@ solution:
         - DEF-CM0-to-be-removed
         - DEF-CM3-to-be-removed
       add-paths:
-        - /path/Release
+        - ./path/Release
       del-paths:
-        - /path/CM0/to-be-removed
-        - /path/CM3/to-be-removed
+        - ./path/CM0/to-be-removed
+        - ./path/CM3/to-be-removed
+
+  packs:
+    - pack: ARM::RteTest_DFP@0.2.0
 
   projects:
     - project: ./TestProject1/test1.cproject.yml
       for-type: +CM0
     - project: ./TestProject2/test2.cproject.yml
       not-for-type: .Release
-      defines:
-        - DEF-solution
-        - DEF-solution-to-be-removed
-      undefines:
-        - DEF-project-to-be-removed
-      add-paths:
-        - /path/solution/
-        - /path/solution/to-be-removed
-      del-paths:
-        - /path/project/to-be-removed
+
+  defines:
+    - DEF-solution
+    - DEF-solution-to-be-removed
+  undefines:
+    - DEF-project-to-be-removed
+  add-paths:
+    - ./path/solution/
+    - ./path/solution/to-be-removed
+  del-paths:
+    - ./path/project/to-be-removed

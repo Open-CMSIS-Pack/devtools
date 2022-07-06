@@ -22,12 +22,17 @@ static unique_ptr<ProjMgrKernel> theProjMgrKernel = 0;
 ProjMgrKernel::ProjMgrKernel() {
   m_callback = make_unique<ProjMgrCallback>();
   SetRteCallback(m_callback.get());
+  m_callback.get()->SetRteKernel(this);
 }
 
 ProjMgrKernel::~ProjMgrKernel() {
   if (m_callback) {
     m_callback.reset();
   }
+}
+
+ProjMgrCallback* ProjMgrKernel::GetCallback() {
+  return m_callback.get();
 }
 
 ProjMgrKernel *ProjMgrKernel::Get() {

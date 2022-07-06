@@ -64,6 +64,11 @@ const string prjsDir = "RteModelTestProjects";
 const string RteTestM3 = "/RteTestM3";
 const string RteTestM3_cprj = prjsDir + RteTestM3 + "/RteTestM3.cprj";
 const string RteTestM3_ConfigFolder_cprj = prjsDir + RteTestM3 + "/RteTestM3_ConfigFolder.cprj";
+const string RteTestM3_PackPath_cprj = prjsDir + RteTestM3 + "/RteTestM3_PackPath.cprj";
+const string RteTestM3_PackPath_MultiplePdscs_cprj = prjsDir + RteTestM3 + "/RteTestM3_PackPath_MultiplePdscs.cprj";
+const string RteTestM3_PackPath_NoPdsc_cprj = prjsDir + RteTestM3 + "/RteTestM3_PackPath_NoPdsc.cprj";
+const string RteTestM3_PackPath_Invalid_cprj = prjsDir + RteTestM3 + "/RteTestM3_PackPath_Invalid.cprj";
+const string RteTestM3_PrjPackPath = prjsDir + RteTestM3 + "/packs";
 
 const string RteTestM4 = "/RteTestM4";
 const string RteTestM4_cprj = prjsDir + RteTestM4 + "/RteTestM4.cprj";
@@ -176,7 +181,100 @@ TEST_F(RteModelPrjTest, LoadCprj) {
   map<const RteItem*, RteDependencyResult> depResults;
   RteItem::ConditionResult res = activeTarget->GetDepsResult(depResults, activeTarget);
   EXPECT_EQ(res, RteItem::FULFILLED);
+
+  const string rteDir = RteUtils::ExtractFilePath(RteTestM3_cprj, true) + "RTE/";
+  const string CompConfig_0_Cur_Version = rteDir + "RteTest/" + ".ComponentLevelConfig_0.h@0.0.1";
+  const string CompConfig_1_Cur_Version = rteDir + "RteTest/" + ".ComponentLevelConfig_1.h@0.0.1";
+  EXPECT_TRUE(RteFsUtils::Exists(CompConfig_0_Cur_Version));
+  EXPECT_TRUE(RteFsUtils::Exists(CompConfig_1_Cur_Version));
+
+  const string deviceDir = rteDir + "Device/RteTest_ARMCM3/";
+  EXPECT_TRUE(RteFsUtils::Exists(deviceDir + ".ARMCM3_ac6.sct@1.0.0"));
+  EXPECT_TRUE(RteFsUtils::Exists(deviceDir + ".startup_ARMCM3.c@2.0.3"));
+  EXPECT_FALSE(RteFsUtils::Exists(deviceDir + ".system_ARMCM3.c@1.0.1"));
+  EXPECT_FALSE(RteFsUtils::Exists(deviceDir + ".system_ARMCM3.c@1.0.2"));
+  EXPECT_TRUE(RteFsUtils::Exists(deviceDir + "system_ARMCM3.c@1.0.2"));
 }
+
+TEST_F(RteModelPrjTest, LoadCprj_PackPath) {
+
+  RteFsUtils::CopyTree(RteModelTestConfig::CMSIS_PACK_ROOT, RteTestM3_PrjPackPath);
+
+  RteKernelSlim rteKernel;
+  rteKernel.SetCmsisPackRoot("dummy");
+  RteCprjProject* loadedCprjProject = rteKernel.LoadCprj(RteTestM3_PackPath_cprj);
+  ASSERT_NE(loadedCprjProject, nullptr);
+
+  // check if active project is set
+  RteCprjProject* activeCprjProject = rteKernel.GetActiveCprjProject();
+  ASSERT_NE(activeCprjProject, nullptr);
+  // check if it is the loaded project
+  EXPECT_EQ(activeCprjProject, loadedCprjProject);
+
+  RteDeviceItem* device = rteKernel.GetActiveDevice();
+  string deviceName = device ? device->GetName() : RteUtils::ERROR_STRING;
+  string deviceVendor = device ? device->GetVendorString() : RteUtils::ERROR_STRING;
+  EXPECT_EQ(deviceName, "RteTest_ARMCM3");
+
+  RteTarget* activeTarget = activeCprjProject->GetActiveTarget();
+  ASSERT_NE(activeTarget, nullptr);
+  map<const RteItem*, RteDependencyResult> depResults;
+  RteItem::ConditionResult res = activeTarget->GetDepsResult(depResults, activeTarget);
+  EXPECT_EQ(res, RteItem::FULFILLED);
+
+  RteFsUtils::DeleteTree(RteTestM3_PrjPackPath);
+}
+
+TEST_F(RteModelPrjTest, LoadCprj_PackPath_MultiplePdscs) {
+
+  RteFsUtils::CopyTree(RteModelTestConfig::CMSIS_PACK_ROOT, RteTestM3_PrjPackPath);
+
+  RteKernelSlim rteKernel;
+  rteKernel.SetCmsisPackRoot("dummy");
+  RteCprjProject* loadedCprjProject = rteKernel.LoadCprj(RteTestM3_PackPath_MultiplePdscs_cprj);
+  ASSERT_NE(loadedCprjProject, nullptr);
+  EXPECT_EQ(loadedCprjProject->GetFilteredPacks().size(), 0);
+
+  RteFsUtils::DeleteTree(RteTestM3_PrjPackPath);
+}
+
+TEST_F(RteModelPrjTest, LoadCprj_PackPath_NoPdsc) {
+  RteKernelSlim rteKernel;
+  rteKernel.SetCmsisPackRoot("dummy");
+  RteCprjProject* loadedCprjProject = rteKernel.LoadCprj(RteTestM3_PackPath_NoPdsc_cprj);
+  ASSERT_NE(loadedCprjProject, nullptr);
+  EXPECT_EQ(loadedCprjProject->GetFilteredPacks().size(), 0);
+}
+
+TEST_F(RteModelPrjTest, LoadCprj_PackPath_Invalid) {
+  RteKernelSlim rteKernel;
+  rteKernel.SetCmsisPackRoot("dummy");
+  RteCprjProject* loadedCprjProject = rteKernel.LoadCprj(RteTestM3_PackPath_Invalid_cprj);
+  ASSERT_NE(loadedCprjProject, nullptr);
+  EXPECT_EQ(loadedCprjProject->GetFilteredPacks().size(), 0);
+}
+
+TEST_F(RteModelPrjTest, LoadCprjConfigVer) {
+
+  RteKernelSlim rteKernel;
+  rteKernel.SetCmsisPackRoot(RteModelTestConfig::CMSIS_PACK_ROOT);
+  RteCprjProject* loadedCprjProject = rteKernel.LoadCprj(RteTestM3_ConfigFolder_cprj);
+  ASSERT_NE(loadedCprjProject, nullptr);
+
+  const string rteDir = RteUtils::ExtractFilePath(RteTestM3_cprj, true) + loadedCprjProject->GetRteFolder() + "/";
+  const string CompConfig_0_Cur_Version = rteDir + "RteTest/" + ".ComponentLevelConfig_0.h@0.0.1";
+  const string CompConfig_1_Cur_Version = rteDir + "RteTest/" + ".ComponentLevelConfig_1.h@0.0.1";
+  EXPECT_TRUE(RteFsUtils::Exists(CompConfig_0_Cur_Version));
+  EXPECT_TRUE(RteFsUtils::Exists(CompConfig_1_Cur_Version));
+
+  const string deviceDir = rteDir + "Device/RteTest_ARMCM3/";
+  EXPECT_TRUE(RteFsUtils::Exists(deviceDir + ".ARMCM3_ac6.sct@1.0.0"));
+  EXPECT_TRUE(RteFsUtils::Exists(deviceDir + ".startup_ARMCM3.c@2.0.3"));
+  EXPECT_TRUE(RteFsUtils::Exists(deviceDir + ".system_ARMCM3.c@1.0.1"));
+  EXPECT_FALSE(RteFsUtils::Exists(deviceDir + ".system_ARMCM3.c@1.0.2"));
+  EXPECT_TRUE(RteFsUtils::Exists(deviceDir + "system_ARMCM3.c@1.0.2"));
+}
+
 
 TEST_F(RteModelPrjTest, GetLocalPdscFile) {
   RteKernelSlim rteKernel;
@@ -193,7 +291,14 @@ TEST_F(RteModelPrjTest, GetLocalPdscFile) {
   EXPECT_EQ(packId, "LocalVendor.LocalPack.0.1.0");
 
   // check returned pdsc
-  EXPECT_EQ(pdsc, "packs/LocalVendor/LocalPack/LocalVendor.LocalPack.pdsc");
+  error_code ec;
+#ifdef _WIN32
+  const string&& expectedPdsc = "packs/LocalVendor/LocalPack/LocalVendor.LocalPack.pdsc";
+  EXPECT_EQ(pdsc, expectedPdsc);
+#else
+  const string&& expectedPdsc = "/packs/LocalVendor/LocalPack/LocalVendor.LocalPack.pdsc";
+  EXPECT_EQ(pdsc, expectedPdsc);
+#endif
 }
 
 TEST_F(RteModelPrjTest, GenerateHeadersTestDefault)

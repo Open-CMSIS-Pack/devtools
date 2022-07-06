@@ -11,16 +11,36 @@
 #include <string>
 #include <vector>
 
- /**
-  * @brief compiler misc controls
-  *        compiler name,
-  *        options for assembler,
-  *        options for c compiler,
-  *        options for c++ compiler,
-  *        options for c and c++ compiler,
-  *        options for linker,
-  *        options for archiver
- */
+/**
+* @brief type pair containing
+*        build-type,
+*        target-type
+*/
+struct TypePair {
+  std::string build;
+  std::string target;
+};
+
+/**
+ * @brief include/exclude types
+ *        for-type (include)
+ *        not-for-type (exclude)
+*/
+struct TypeFilter {
+  std::vector<TypePair> include;
+  std::vector<TypePair> exclude;
+};
+
+/**
+ * @brief compiler misc controls
+ *        compiler name,
+ *        options for assembler,
+ *        options for c compiler,
+ *        options for c++ compiler,
+ *        options for c and c++ compiler,
+ *        options for linker,
+ *        options for archiver
+*/
 struct MiscItem {
   std::string compiler;
   std::vector<std::string> as;
@@ -29,6 +49,18 @@ struct MiscItem {
   std::vector<std::string> c_cpp;
   std::vector<std::string> link;
   std::vector<std::string> lib;
+};
+
+/**
+ * @brief pack item containing
+ *        pack name
+ *        pack path
+ *        type filter
+*/
+struct PackItem {
+  std::string pack;
+  std::string path;
+  TypeFilter type;
 };
 
 /**
@@ -49,8 +81,11 @@ struct ProcessorItem {
  *        optimization level,
  *        debug information,
  *        preprocessor defines,
+ *        preprocessor undefines,
  *        include paths,
- *        misc compiler controls
+ *        exclude paths,
+ *        misc compiler controls,
+ *        platform processor
 */
 struct BuildType {
   std::string compiler;
@@ -69,32 +104,11 @@ struct BuildType {
  * @brief target types containing
  *        platform board,
  *        platform device,
- *        platform processor
 */
 struct TargetType {
   std::string board;
   std::string device;
   BuildType build;
-};
-
-/**
- * @brief type pair containg
- *        build-type,
- *        target-type
-*/
-struct TypePair {
-  std::string build;
-  std::string target;
-};
-
-/**
- * @brief include/exclude types
- *        for-type (include)
- *        not-for-type (exclude)
-*/
-struct TypeFilter {
-  std::vector<TypePair> include;
-  std::vector<TypePair> exclude;
 };
 
 /**
@@ -105,6 +119,20 @@ struct TypeFilter {
 struct RteDirItem {
   std::string dir;
   TypeFilter type;
+};
+
+/**
+ * @brief directories item containing
+ *        intdir directory,
+ *        outdir directory,
+ *        cprj directory,
+ *        rte directory,
+*/
+struct DirectoriesItem {
+  std::string intdir;
+  std::string outdir;
+  std::string cprj;
+  std::string rte;
 };
 
 /**
@@ -164,51 +192,69 @@ struct GroupNode {
 /**
  * @brief context descriptor containing
  *        cproject filename,
- *        project context dependencies,
- *        rte directory,
- *        target properties,
  *        type filter
 */
 struct ContextDesc {
   std::string cproject;
-  std::vector<std::string> depends;
-  RteDirItem dir;
-  TargetType target;
   TypeFilter type;
 };
 
 /**
+ * @brief default item containing
+ *        cdefault path
+ *        build types,
+ *        compiler,
+ *        list of packs
+*/
+struct CdefaultItem {
+  std::string path;
+  std::map<std::string, BuildType> buildTypes;
+  std::string compiler;
+  std::vector<PackItem> packs;
+};
+
+/**
  * @brief solution item containing
+ *        csolution path,
+ *        csolution directory,
+ *        output directories,
  *        build types,
  *        target types,
+ *        target properties,
  *        list of cprojects,
- *        list of contexts descriptors
+ *        list of contexts descriptors,
+ *        list of packs
 */
 struct CsolutionItem {
+  std::string path;
+  std::string directory;
+  DirectoriesItem directories;
   std::map<std::string, BuildType> buildTypes;
   std::map<std::string, TargetType> targetTypes;
+  TargetType target;
   std::vector<std::string> cprojects;
   std::vector<ContextDesc> contexts;
+  std::vector<PackItem> packs;
 };
 
 /**
  * @brief cproject item containing
  *        project name,
- *        project description,
+ *        project path,
+ *        project directory,
  *        project output type,
  *        project target properties,
- *        list of required packages,
  *        list of required components,
  *        list of user groups,
  *        list of layers
 */
 struct CprojectItem {
   std::string name;
-  std::string description;
+  std::string path;
+  std::string directory;
   std::string outputType;
   TargetType target;
   std::vector<RteDirItem> rteDirs;
-  std::vector<std::string> packages;
   std::vector<ComponentItem> components;
   std::vector<GroupNode> groups;
   std::vector<LayerItem> clayers;
@@ -227,21 +273,21 @@ struct InterfaceItem {
 /**
  * @brief clayer item containing
  *        layer name,
- *        layer description,
+ *        layer path,
+ *        layer directory,
  *        layer output type,
  *        layer target properties,
- *        list of required packages,
  *        list of required components,
  *        list of user groups,
  *        list of interfaces
 */
 struct ClayerItem {
   std::string name;
-  std::string description;
+  std::string path;
+  std::string directory;
   std::string outputType;
   TargetType target;
   std::vector<RteDirItem> rteDirs;
-  std::vector<std::string> packages;
   std::vector<ComponentItem> components;
   std::vector<GroupNode> groups;
   std::vector<InterfaceItem> interfaces;
@@ -263,23 +309,35 @@ public:
   ~ProjMgrParser(void);
 
   /**
+   * @brief parse cdefault
+   * @param input cdefault.yml file
+  */
+  bool ParseCdefault(const std::string& input, bool checkSchema);
+
+  /**
    * @brief parse cproject
    * @param input cproject.yml file
    * @param boolean parse single project, default false
   */
-  bool ParseCproject(const std::string& input, bool single = false);
+  bool ParseCproject(const std::string& input, bool checkSchema, bool single = false);
 
   /**
    * @brief parse csolution
    * @param input csolution.yml file
   */
-  bool ParseCsolution(const std::string& input);
+  bool ParseCsolution(const std::string& input, bool checkSchema);
 
   /**
    * @brief parse clayer
    * @param input clayer.yml file
   */
-  bool ParseClayer(const std::string& input);
+  bool ParseClayer(const std::string& input, bool checkSchema);
+
+  /**
+   * @brief get cdefault
+   * @return cdefault item
+  */
+  CdefaultItem& GetCdefault(void);
 
   /**
    * @brief get csolution
@@ -300,6 +358,7 @@ public:
   std::map<std::string, ClayerItem>& GetClayers(void);
 
 protected:
+  CdefaultItem m_cdefault;
   CsolutionItem m_csolution;
   std::map<std::string, CprojectItem> m_cprojects;
   std::map<std::string, ClayerItem> m_clayers;

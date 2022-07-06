@@ -17,6 +17,9 @@ ELSE()
                     src/${CMAKE_SYSTEM_NAME}_StreamReader.cpp)
 ENDIF()
 
+list(APPEND SOURCE_FILES src/${CMAKE_SYSTEM_NAME}/Utils.cpp
+                         src/${CMAKE_SYSTEM_NAME}/constants.h)
+
 SET(HEADER_FILES    include/CrossPlatform.h
                     include/CrossPlatformUtils.h
                     include/ProcessRunner.h
@@ -37,7 +40,9 @@ add_library(CrossPlatform STATIC ${SOURCE_FILES} ${HEADER_FILES})
 set_property(TARGET CrossPlatform PROPERTY
   MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
-target_include_directories(CrossPlatform PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(CrossPlatform
+  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
+  PRIVATE ./src/${CMAKE_SYSTEM_NAME})
 
 if(NOT EMSCRIPTEN AND
    ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR

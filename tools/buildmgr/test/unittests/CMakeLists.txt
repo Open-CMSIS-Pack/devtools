@@ -1,5 +1,5 @@
 set(TEST_SOURCE_FILES CBuildUnitTestEnv.cpp ModelTests.cpp UtilsTests.cpp
-    CLayerTests.cpp BuildSystemGeneratorTests.cpp)
+    CLayerTests.cpp BuildSystemGeneratorTests.cpp CbuildModelTests.cpp)
 set(TEST_HEADER_FILES CBuildUnitTestEnv.h)
 
 list(TRANSFORM TEST_SOURCE_FILES PREPEND src/)
@@ -17,12 +17,12 @@ set_property(TARGET CbuildUnitTests PROPERTY
 set_property(TARGET CbuildUnitTests PROPERTY
   VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 
-file(RELATIVE_PATH TEST_FOLDER ${CMAKE_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/..)
-add_definitions(-DTEST_FOLDER="${TEST_FOLDER}/")
+add_definitions(-DTEST_BUILD_FOLDER="${CMAKE_CURRENT_BINARY_DIR}/")
+add_definitions(-DTEST_SRC_FOLDER="${CMAKE_CURRENT_SOURCE_DIR}/../")
+add_definitions(-DCMAKE_SOURCE_DIR="${CMAKE_SOURCE_DIR}/")
 
 target_link_libraries(CbuildUnitTests PUBLIC cbuildgenlib gtest_main)
 
 add_test(NAME CbuildUnitTests
          COMMAND CbuildUnitTests --gtest_output=xml:cbuildunit_test_report.xml
          WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
-

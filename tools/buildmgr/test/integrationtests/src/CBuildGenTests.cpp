@@ -20,6 +20,36 @@ class CBuildGenTests : public CBuildGenTestFixture {
 
 };
 
+TEST_F(CBuildGenTests, GenCMake_AccessSequence) {
+  TestParam param = { "GCC/AccessSequence", "Project", "", "cmake", true };
+
+  RunCBuildGen           (param);
+  CheckCMakeLists        (param);
+}
+
+TEST_F(CBuildGenTests, GenCMake_AccessSequence_Missing_Bname) {
+  TestParam param = {
+    "GCC/AccessSequence", "Project_Missing_BoardName", "", "cmake", true
+  };
+
+  RunCBuildGen(param);
+}
+
+TEST_F(CBuildGenTests, GenCMake_AccessSequence_Invalid_Access_Sequence) {
+  TestParam param = {
+    "GCC/AccessSequence", "Project_Invalid_Access_Sequence", "", "cmake", false
+  };
+
+  RunCBuildGen(param);
+}
+
+TEST_F(CBuildGenTests, GenCMake_AccessSequence_Unknown_Board_Name) {
+  TestParam param = {
+    "GCC/AccessSequence", "Project_Unknown_Board_Name", "", "cmake", false
+  };
+
+  RunCBuildGen(param);
+}
 
 TEST_F(CBuildGenTests, GenCMake_Fixed_Cprj) {
   TestParam param = { "AC6/Build_AC6", "Simulation", "--update=Simulation.fixed.cprj", "cmake", true };
@@ -49,9 +79,31 @@ TEST_F(CBuildGenTests, InvalidCommandTest) {
 }
 
 // Validate generation of CMakeLists file required to build the project
-TEST_F(CBuildGenTests, GenCMakeTest) {
+TEST_F(CBuildGenTests, GenCMakeTest_1) {
   TestParam param = {
     "AC6/Build_AC6", "Simulation",
+    "", "cmake", true
+  };
+
+  RunCBuildGen           (param);
+  CheckCMakeLists        (param);
+}
+
+// Validate generation of CMakeLists file required to build the project
+TEST_F(CBuildGenTests, GenCMakeTest_2) {
+  TestParam param = {
+    "GCC/TranslationControl/Project1", "Project",
+    "", "cmake", true
+  };
+
+  RunCBuildGen           (param);
+  CheckCMakeLists        (param);
+}
+
+// Validate generation of CMakeLists file required to build the project
+TEST_F(CBuildGenTests, GenCMakeTest_3) {
+  TestParam param = {
+    "GCC/TranslationControl/Project2", "Project",
     "", "cmake", true
   };
 
@@ -72,11 +124,13 @@ TEST_F(CBuildGenTests, Gen_Output_In_SameDir) {
     auto outPath = fs::current_path(ec).append(*outdir);
 
     if (fs::exists(outPath, ec)) {
-      RemoveDir(outPath);
+      RteFsUtils::RemoveDir(outPath.generic_string());
     }
 
     RunCBuildGen        (param);
     CheckOutputDir      (param, outPath.string());
+
+    RteFsUtils::RemoveDir(outPath.string());
   }
 }
 
@@ -94,16 +148,19 @@ TEST_F(CBuildGenTests, GenCMake_Under_multipleLevel_OutDir_Test) {
   auto intPath = fs::current_path(ec).append(intDir);
 
   if (fs::exists(outPath, ec)) {
-    RemoveDir(outPath);
+    RteFsUtils::RemoveDir(outPath.generic_string());
   }
 
   if (fs::exists(intPath, ec)) {
-    RemoveDir(intPath);
+    RteFsUtils::RemoveDir(intPath.generic_string());
   }
 
   RunCBuildGen             (param);
   CheckOutputDir           (param, outPath.string());
   CheckCMakeIntermediateDir(param, intPath.string());
+
+  RteFsUtils::RemoveDir(outPath.parent_path().generic_string());
+  RteFsUtils::RemoveDir(outPath.parent_path().generic_string());
 }
 
 // Validate generation of output files under absolute
@@ -120,11 +177,11 @@ TEST_F(CBuildGenTests, GenCMake_Output_At_Absolute_path) {
   auto intPath = fs::path(testout_folder + "/" + intDir);
 
   if (fs::exists(outPath, ec)) {
-    RemoveDir(outPath);
+    RteFsUtils::RemoveDir(outPath.generic_string());
   }
 
   if (fs::exists(intPath, ec)) {
-    RemoveDir(intPath);
+    RteFsUtils::RemoveDir(intPath.generic_string());
   }
 
   RunCBuildGen             (param);
@@ -152,11 +209,11 @@ TEST_F(CBuildGenTests, GenCMake_Output_At_Relative_path) {
   auto intPath = fs::current_path(ec).append(intDir);
 
   if (fs::exists(outPath, ec)) {
-    RemoveDir(outPath);
+    RteFsUtils::RemoveDir(outPath.generic_string());
   }
 
   if (fs::exists(intPath, ec)) {
-    RemoveDir(intPath);
+    RteFsUtils::RemoveDir(intPath.generic_string());
   }
 
   RunCBuildGen             (param);
@@ -222,7 +279,8 @@ TEST_F(CBuildGenTests, GeneratePackListTest) {
   }
 
   RunCBuildGen          (param, testdata_folder);
-  CheckCPInstallFile    (param);
+  CheckCPInstallFile    (param, false); // .cpinstall
+  CheckCPInstallFile    (param, true);  // .cpinstall.json
 }
 
 // Validate listing of missing packs in a packlist file
@@ -240,14 +298,15 @@ TEST_F(CBuildGenTests, GeneratePackListDirTest) {
   }
 
   RunCBuildGen          (param, testdata_folder);
-  CheckCPInstallFile    (param);
+  CheckCPInstallFile(param, false); // .cpinstall
+  CheckCPInstallFile(param, true);  // .cpinstall.json
 }
 
 // Validate CMakelists generation for project with duplicated source filenames
 TEST_F(CBuildGenTests, GenCMake_DuplicatedSourceFilename) {
   TestParam param = {
     "Mixed/Minimal_DupSrc", "MyProject",
-    "", "cmake", false
+    "", "cmake", true
   };
 
   RunCBuildGen          (param);

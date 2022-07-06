@@ -3,6 +3,11 @@ on:
   push:
     branches:
       - main
+    paths:
+      - '.github/workflows/packchk.yml'
+      - '.github/workflows/unit_test_results.yml'
+      - 'CMakeLists.txt'
+      - 'tools/packchk/**'
   pull_request:
     paths:
       - '.github/workflows/packchk.yml'
@@ -13,69 +18,45 @@ on:
     types: [published]
 
 jobs:
+  matrix_prep:
+    if: |
+        (github.event_name == 'pull_request') ||
+        (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/packchk/'))
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+    - name: Check out repo
+      uses: actions/checkout@v2
+    - id: set-matrix
+      run: |
+        publicRepo=$(echo '${{ github.event.repository.private && 'privateRepo' || 'publicRepo' }}')
+        matrix=$(jq --arg publicRepo "$publicRepo" 'map(. | select((.runOn==$publicRepo) or (.runOn=="always")) )' matrix_includes_packchk.json)
+        echo ::set-output name=matrix::{\"include\":$(echo $matrix)}\"
+      working-directory: .github/
+
   build:
-    if: ${{ github.event_name == 'pull_request' || (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/packchk/')) }}
-    runs-on: ${{ matrix.os }}
+    needs: matrix_prep
+    runs-on: ${{ matrix.runs_on }}
     timeout-minutes: 15
     strategy:
       fail-fast: true
-      matrix:
-        os: [ macos-10.15, ubuntu-20.04, windows-2019 ]
-        include:
-          - os: macos-10.15
-            target: darwin64
-          - os: ubuntu-20.04
-            target: linux64
-          - os: windows-2019
-            target: windows64
+      matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
     steps:
-      - name: Install macos deps
-        if: ${{ startsWith(matrix.os, 'macos') }}
-        run: |
-          brew install \
-            ninja
-
-      - name: Install linux deps
-        if: ${{ startsWith(matrix.os, 'ubuntu') }}
-        run: |
-          sudo apt update
-          sudo apt-get install \
-            bc \
-            build-essential \
-            ninja-build
-
-      - name: Install windows deps
-        if: ${{ startsWith(matrix.os, 'windows') }}
-        run: choco install -y ninja
-
       - name: Checkout devtools
         uses: actions/checkout@v2
         with:
           submodules: recursive
 
-      - name: Create build folder
-        run: |
-          mkdir build
-
-      - name: Configure windows build for amd64
-        if: ${{ startsWith(matrix.os, 'windows') }}
-        uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: amd64
-
-      - uses: ammaraskar/gcc-problem-matcher@master
-        if: ${{ startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu') }}
-      - uses: ammaraskar/msvc-problem-matcher@master
-        if: ${{ startsWith(matrix.os, 'windows') }}
-
+      # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build packchk
-        run: |
-          cmake -G Ninja -DCMAKE_BUILD_TYPE=Release ..
-          cmake --build . --target packchkdist
-        working-directory: ./build
+        uses: Open-CMSIS-Pack/devtools-build-action@v1.1
+        with:
+          target: packchkdist
+          arch: ${{ matrix.arch }}
 
-      - name: Attach installer to release
-        if: ${{ github.event_name == 'release' }}
+      - name: Attach installer to amd64 binaries release
+        if: ${{ github.event_name == 'release' && matrix.arch == 'amd64' }}
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
@@ -83,106 +64,72 @@ jobs:
           overwrite: true
           file_glob: true
           file: build/tools/packchk/packchk-*-${{ matrix.target }}.zip
-  
+
   test:
-    if: ${{ github.event_name == 'pull_request' || (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/packchk/')) }}
-    runs-on: ${{ matrix.os }}
+    needs: matrix_prep
+    runs-on: ${{ matrix.runs_on }}
     timeout-minutes: 15
     strategy:
       fail-fast: false
-      matrix:
-        os: [ macos-10.15, ubuntu-20.04, windows-2019 ]
-        include:
-          - os: macos-10.15
-            target: darwin64
-          - os: ubuntu-20.04
-            target: linux64
-          - os: windows-2019
-            target: windows64
+      matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
     steps:
-      - name: Install macos deps
-        if: ${{ startsWith(matrix.os, 'macos') }}
-        run: |
-          brew install \
-            ninja
-
-      - name: Install linux deps
-        if: ${{ startsWith(matrix.os, 'ubuntu') }}
-        run: |
-          sudo apt update
-          sudo apt-get install \
-            bc \
-            build-essential \
-            ninja-build
-
-      - name: Install windows deps
-        if: ${{ startsWith(matrix.os, 'windows') }}
-        run: choco install -y ninja
-
       - name: Checkout devtools
         uses: actions/checkout@v2
         with:
           submodules: recursive
 
-      - name: Create build folder
-        run: |
-          mkdir build
-
-      - name: Configure windows build for amd64
-        if: ${{ startsWith(matrix.os, 'windows') }}
-        uses: ilammy/msvc-dev-cmd@v1
+      # https://github.com/Open-CMSIS-Pack/devtools-build-action
+      - name: Build PackChkUnitTests
+        uses: Open-CMSIS-Pack/devtools-build-action@v1.1
         with:
-          arch: amd64
+          arch: ${{ matrix.arch }}
+          build_type: Debug
+          target: PackChkUnitTests
 
-      - uses: ammaraskar/gcc-problem-matcher@master
-        if: ${{ startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu') }}
-      - uses: ammaraskar/msvc-problem-matcher@master
-        if: ${{ startsWith(matrix.os, 'windows') }}
-
-      - name: Build and run packchk unit tests
+      - name: Run packchk unit tests
         run: |
-          cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug ..
-          cmake --build . --target PackChkUnitTests
           ctest -V -R PackChkUnitTests
         working-directory: ./build
 
-      - name: Build and run packchk integ tests
+      # https://github.com/Open-CMSIS-Pack/devtools-build-action
+      - name: Build PackChkIntegTests
+        uses: Open-CMSIS-Pack/devtools-build-action@v1.1
+        with:
+          arch: ${{ matrix.arch }}
+          build_type: Debug
+          target: PackChkIntegTests
+
+      - name: Run packchk integ tests
         run: |
-          cmake --build . --target PackChkIntegTests
           ctest -V -R PackChkIntegTests
         working-directory: ./build
 
       - name: Archive unit test results
         uses: actions/upload-artifact@v2
         with:
-          name: unit_test_result-${{ matrix.target }}
+          name: unit_test_result-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/packchkunittest-*.xml
           if-no-files-found: error
 
       - name: Archive integration test results
         uses: actions/upload-artifact@v2
         with:
-          name: integ_test_result-${{ matrix.target }}
+          name: integ_test_result-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/packchkintegtest-*.xml
           if-no-files-found: error
 
   coverage:
-    if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' || (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/packchk/')) }}
-    runs-on: ${{ matrix.os }}
+    if: |
+        (github.event_name == 'pull_request') ||
+        (github.event_name == 'push') ||
+        (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/packchk/'))
+    runs-on: ubuntu-20.04
     timeout-minutes: 15
-    strategy:
-      matrix:
-        os: [ ubuntu-20.04 ]
-      fail-fast: true
-
     steps:
       - name: Install dependencies
         run: |
           sudo apt update
           sudo apt-get install \
-            bc \
-            build-essential \
-            ninja-build \
             lcov
 
       - name: Checkout devtools
@@ -190,48 +137,59 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Create build folder
-        run: mkdir build
+      # https://github.com/Open-CMSIS-Pack/devtools-build-action
+      - name: Build PackChkIntegTests
+        uses: Open-CMSIS-Pack/devtools-build-action@v1.1
+        with:
+          add_cmake_variables: -DCOVERAGE=ON
+          arch: amd64
+          build_type: Debug
+          target: PackChkIntegTests
 
-      - uses: ammaraskar/gcc-problem-matcher@master
-        if: ${{ startsWith(matrix.os, 'ubuntu') }}
+      # https://github.com/Open-CMSIS-Pack/devtools-build-action
+      - name: Build PackChkUnitTests
+        uses: Open-CMSIS-Pack/devtools-build-action@v1.1
+        with:
+          add_cmake_variables: -DCOVERAGE=ON
+          arch: amd64
+          build_type: Debug
+          target: PackChkUnitTests
 
-      - name: Build and run packchk tests
+      - name: Run packchk tests
         run: |
-          cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCOVERAGE=ON ..
-          cmake --build . --target PackChkIntegTests
+          ctest -V -C Debug -R PackChkUnitTests
           ctest -V -C Debug -R PackChkIntegTests
-          cmake --build . --target PackChkUnitTests
-          ctest -V -R PackChkUnitTests
         working-directory: ./build
 
       - name: Generate coverage report
-        if: ${{ startsWith(matrix.os, 'ubuntu') }}
         run: |
-          lcov -c --directory ./tools/packchk/ --output-file full_coverage.info
+          lcov -c --directory . --output-file full_coverage.info
           lcov -e full_coverage.info '/tools/packchk/include/*' '*/tools/packchk/src/*' -o coverage.info
           genhtml coverage.info --output-directory coverage
           zip -r coverage.zip coverage/*
-        working-directory: ./build
+        working-directory: ./build/tools/packchk
 
       - name: Upload Report to Codecov
         if: ${{ !github.event.repository.private }}
-        uses: codecov/codecov-action@v1.3.2
+        uses: codecov/codecov-action@v2
         with:
-          files: ./build/coverage.info
+          files: ./build/tools/packchk/coverage.info
           fail_ci_if_error: true
+          flags: packchk-cov
           functionalities: fix
 
       - name: Archive coverage report
         uses: actions/upload-artifact@v2
         with:
           name: coverage-report
-          path: ./build/coverage.zip
+          path: ./build/tools/packchk/coverage.zip
           retention-days: 1
           if-no-files-found: error
 
   release:
-    if: ${{ github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/packchk/') }}
+    if: |
+        github.event_name == 'release' &&
+        startsWith(github.ref, 'refs/tags/tools/packchk/')
     needs: [ build, test, coverage ]
     runs-on: ubuntu-20.04
     timeout-minutes: 15
@@ -265,12 +223,8 @@ jobs:
 
   test-results-preparation:
     name: "Publish Tests Results"
-    needs: test
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: true
-      matrix:
-        os: [ ubuntu-20.04 ]
+    needs: [ test ]
+    runs-on: ubuntu-20.04
     steps:
       - name: Setup Python
         uses: actions/setup-python@v2
@@ -280,37 +234,39 @@ jobs:
       - name: Download unit test report windows
         uses: actions/download-artifact@v2
         with:
-          name: unit_test_result-windows64
+          name: unit_test_result-windows64-amd64
           path: testreports/
 
-      - name: Download unit test report linux
+      - name: Download unit test report linux amd64
         uses: actions/download-artifact@v2
         with:
-          name: unit_test_result-linux64
+          name: unit_test_result-linux64-amd64
           path: testreports/
 
       - name: Download unit test report macos
+        if: ${{ !github.event.repository.private }}
         uses: actions/download-artifact@v2
         with:
-          name: unit_test_result-darwin64
+          name: unit_test_result-darwin64-amd64
           path: testreports/
 
       - name: Download integ test report windows
         uses: actions/download-artifact@v2
         with:
-          name: integ_test_result-windows64
+          name: integ_test_result-windows64-amd64
           path: testreports/
 
-      - name: Download integ test report linux
+      - name: Download integ test report linux amd64
         uses: actions/download-artifact@v2
         with:
-          name: integ_test_result-linux64
+          name: integ_test_result-linux64-amd64
           path: testreports/
 
       - name: Download integ test report macos
+        if: ${{ !github.event.repository.private }}
         uses: actions/download-artifact@v2
         with:
-          name: integ_test_result-darwin64
+          name: integ_test_result-darwin64-amd64
           path: testreports/
 
       - name: Event File

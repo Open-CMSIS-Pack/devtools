@@ -24,6 +24,7 @@
 #include <map>
 #include <set>
 #include <vector>
+#include <algorithm>
 
 
 class RteUtils
@@ -130,6 +131,16 @@ public:
    * @return true if name is CMSIS-conformed
   */
   static bool CheckCMSISName(const std::string& s);
+
+  /**
+   * @brief replace all substring occurrences in the supplied string
+   * @param str reference to string to be manipulated
+   * @param toReplace substring to replace
+   * @param with substitute string
+   * @return reference supplied string
+   */
+  static std::string& ReplaceAll(std::string& str, const std::string& toReplace, const std::string& with);
+
   /**
    * @brief replace blank(s) with underscore(s)
    * @param s string to be manipulated
@@ -193,6 +204,16 @@ public:
    * @return file extension
   */
   static std::string ExtractFileExtension(const std::string& fileName, bool withDot = false);
+
+  /**
+   * @brief construct filename with appended version string
+   * @param fileName path to config file to use, can be absolute or relative
+   * @param version string to append
+   * @param bHidden insert dot in front of base name
+   * @return constructed filename in the format: path/name.ext@version or path/.name.ext@version
+  */
+  static std::string AppendFileVersion(const std::string& fileName, const std::string& version, bool bHidden);
+
   /**
    * @brief extract first file segments
    * @param fileName fully qualified file name
@@ -200,6 +221,7 @@ public:
    * @return first segments of fully qualified file name
   */
   static std::string ExtractFirstFileSegments(const std::string& fileName, int nSegments);
+
   /**
    * @brief extract last file segments
    * @param fileName fully qualified file name
@@ -207,6 +229,7 @@ public:
    * @return last segments of fully qualified file name
   */
   static std::string ExtractLastFileSegments(const std::string& fileName, int nSegments);
+
   /**
    * @brief determine number of file segments separated by forward slash
    * @param fileName fully qualified file name
@@ -250,6 +273,18 @@ public:
    * @return XML specification of attributes
   */
   static std::string ToXmlString(const std::map<std::string, std::string>& attributes);
+  /**
+   * @brief remove duplicate elements from vector without changing the order of elements
+   * @param input vector to be processed
+  */
+  template <typename T>
+  static void RemoveVectorDuplicates(std::vector<T>& elemVec) {
+    auto end = elemVec.end();
+    for (auto itr = elemVec.begin(); itr != end; ++itr) {
+      end = std::remove(itr + 1, end, *itr);
+    }
+    elemVec.erase(end, elemVec.end());
+  }
 
   static const std::string EMPTY_STRING;
   static const std::string ERROR_STRING;

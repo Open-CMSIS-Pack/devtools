@@ -6,80 +6,75 @@ on:
       - 'libs/**'
 
 jobs:
+  matrix_prep:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+    - name: Check out repo
+      uses: actions/checkout@v2
+    - id: set-matrix
+      run: |
+        publicRepo=$(echo '${{ github.event.repository.private && 'privateRepo' || 'publicRepo' }}')
+        matrix=$(jq --arg publicRepo "$publicRepo" 'map(. | select((.runOn==$publicRepo) or (.runOn=="always")) )' matrix_includes_test_libs.json)
+        echo ::set-output name=matrix::{\"include\":$(echo $matrix)}\"
+      working-directory: .github/
   test_libs:
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.runs_on }}
+    needs: matrix_prep
     timeout-minutes: 15
     strategy:
       fail-fast: false
-      matrix:
-        os: [ macos-10.15, ubuntu-20.04, windows-2019 ]
-        include:
-          - os: macos-10.15
-            target: darwin64
-          - os: ubuntu-20.04
-            target: linux64
-          - os: windows-2019
-            target: windows64
+      matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
     steps:
-      - name: Install macos deps
-        if: ${{ startsWith(matrix.os, 'macos') }}
-        run: |
-          brew install \
-            ninja
-
-      - name: Install linux deps
-        if: ${{ startsWith(matrix.os, 'ubuntu') }}
-        run: |
-          sudo apt update
-          sudo apt-get install \
-            bc \
-            build-essential \
-            ninja-build
-
-      - name: Install windows deps
-        if: ${{ startsWith(matrix.os, 'windows') }}
-        run: choco install -y ninja
-
       - name: Checkout devtools
         uses: actions/checkout@v2
         with:
           submodules: true
 
-      - name: Create build folder
-        run: mkdir build
-
-      - name: Configure windows build for amd64
-        if: ${{ startsWith(matrix.os, 'windows') }}
-        uses: ilammy/msvc-dev-cmd@v1
+      # https://github.com/Open-CMSIS-Pack/devtools-build-action
+      - name: Build all libs
+        uses: Open-CMSIS-Pack/devtools-build-action@v1.1
+        id: devtools-build
         with:
-          arch: amd64
+          add_cmake_variables: '-DLIBS_ONLY=ON'
+          arch: ${{ matrix.arch }}
+          target: all
 
-      - uses: ammaraskar/gcc-problem-matcher@master
-        if: ${{ startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu') }}
-      - uses: ammaraskar/msvc-problem-matcher@master
-        if: ${{ startsWith(matrix.os, 'windows') }}
-
-      - name: Build libs unittest
+      - name: Install macos deps
+        if: ${{ startsWith(matrix.runs_on, 'macos') }}
         run: |
-          cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DLIBS_ONLY=ON ..
-          cmake --build .
-        working-directory: ./build
+          brew install \
+            dos2unix \
+            wget
 
+      - name: Install linux deps
+        if: ${{ startsWith(matrix.runs_on, 'ubuntu') }}
+        run: |
+          sudo apt update
+          sudo apt-get install \
+            dos2unix \
+            libxml2-utils
+
+      # CrossPlatformUnitTests failing for aarch64
       - name: Run libs unittest
+        if: ${{ matrix.arch != 'aarch64' }}
         run: |
           ctest -C Debug -V
         working-directory: ./build
 
       - name: Archive libs unittest reports
+        if: ${{ matrix.arch != 'aarch64' }}
         uses: actions/upload-artifact@v2
         with:
-          name: libs_unittest_report_${{ matrix.target }}
+          name: libs_unittest_report_${{ matrix.target }}_${{ matrix.arch }}
           path: build/*_test_report.xml
           retention-days: 1
           if-no-files-found: error
 
       - name: Publish libs unittest reports
+        if: ${{ matrix.arch != 'aarch64' }}
         uses: mikepenz/action-junit-report@v2
         with:
-          check_name: libs_unittest_report_${{ matrix.target }}
+          check_name: libs_unittest_report_${{ matrix.target }}_${{ matrix.arch }}
           report_paths: build/*_test_report.xml

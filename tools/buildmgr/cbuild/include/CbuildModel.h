@@ -113,10 +113,21 @@ public:
   }
 
   /**
-   * @brief get list of include paths used in the project
+   * @brief get list of target include paths used in the project
    * @return list of include paths
   */
-  const std::vector<std::string>& GetIncludePaths() const
+  const std::vector<std::string>& GetTargetIncludePaths() const
+  {
+    return m_targetIncludePaths;
+  }
+
+  /**
+   * @brief get include paths for components & project source files
+   * @return list of key, value pair where
+   *         key: component/file name,
+   *         value: list of include paths
+  */
+  const std::map<std::string, std::vector<std::string>>& GetIncludePaths() const
   {
     return m_includePaths;
   }
@@ -131,10 +142,21 @@ public:
   }
 
   /**
-   * @brief get list of defines used in project
+   * @brief get list of target defines used in project
    * @return list of defines
   */
-  const std::vector<std::string>& GetDefines() const
+  const std::vector<std::string>& GetTargetDefines() const
+  {
+    return m_targetDefines;
+  }
+
+  /**
+   * @brief get defines for components & project source files
+   * @return list of key, value pair where
+   *         key: component/file name,
+   *         value: list of associated defines
+  */
+  const std::map<std::string, std::vector<std::string>>& GetDefines() const
   {
     return m_defines;
   }
@@ -358,10 +380,7 @@ public:
    * @brief get target component
    * @return pointer to cprj target
   */
-  const RteTarget* GetTarget() const
-  {
-    return m_cprjTarget;
-  }
+  const RteTarget* GetTarget() const;
 
 protected:
   RtePackage        *m_cprjPack = 0;
@@ -380,11 +399,9 @@ protected:
   std::map<std::string, std::list<std::string>>     m_cSourceFiles;
   std::map<std::string, std::list<std::string>>     m_cxxSourceFiles;
   std::map<std::string, std::list<std::string>>     m_asmSourceFiles;
-  std::vector<std::string>                          m_includePaths;
   std::set<std::string>                             m_packs;
   std::string                                       m_linkerScript;
   std::vector<std::string>                          m_libraries;
-  std::vector<std::string>                          m_defines;
   std::vector<std::string>                          m_objects;
   std::set<std::string>                             m_language;
   std::string                                       m_compiler;
@@ -394,6 +411,10 @@ protected:
   std::vector<std::string>                          m_targetCxxFlags;
   std::vector<std::string>                          m_targetAsFlags;
   std::vector<std::string>                          m_targetLdFlags;
+  std::vector<std::string>                          m_targetIncludePaths;
+  std::vector<std::string>                          m_targetDefines;
+  std::map<std::string, std::vector<std::string>>   m_includePaths;
+  std::map<std::string, std::vector<std::string>>   m_defines;
   std::map<std::string, std::vector<std::string>>   m_CFlags;
   std::map<std::string, std::vector<std::string>>   m_CxxFlags;
   std::map<std::string, std::vector<std::string>>   m_AsFlags;
@@ -420,15 +441,17 @@ protected:
   const bool EvalRteSourceFiles(std::map<std::string, std::list<std::string>> &cSourceFiles, std::map<std::string, std::list<std::string>> &cxxSourceFiles, std::map<std::string, std::list<std::string>> &asmSourceFiles, std::string &linkerScript);
   const bool EvalFile(RteItem* file, const std::string& group, const std::string& base, std::string& filepath);
   const bool EvalItem(RteItem* item, const std::string& groupName = std::string(), const std::string& groupLayer = std::string());
-  const bool EvalItemFlags(const RteItem* item, const std::string& groupName = std::string());
+  const bool EvalItemTranslationControls(const RteItem* item, bool isFlag, const std::string& groupName = std::string());
   const bool GenerateRteHeaders();
   const bool EvalDeviceName();
   const bool EvalFlags();
   const bool EvalIncludesDefines();
   const bool EvalTargetOutput();
-  void SetItemFlags(const RteItem* item, const std::string& name);
+  const bool EvalAccessSequence();
+  bool SetItemFlags(const RteItem* item, const std::string& name);
+  bool SetItemIncludesDefines(const RteItem* item, const std::string& name);
   const std::string GetParentName(const RteItem* item);
-  const std::vector<std::string>& GetParentFlags(const RteItem* item, std::map<std::string, std::vector<std::string>>& flagsMap, const std::vector<std::string>& targetFlags);
+  const std::vector<std::string>& GetParentTranslationControls(const RteItem* item, std::map<std::string, std::vector<std::string>>& transCtrlMap, const std::vector<std::string>& targetTransCtrls);
   const bool GenerateAuditData();
   const bool GenerateFixedCprj(const std::string& update);
   const bool EvaluateToolchainConfig(const std::string& name, const std::string& versionRange, const std::string& localPath, const std::string& compilerRoot, const std::string& ext);
@@ -436,6 +459,8 @@ protected:
   std::vector<std::string> SplitArgs(const std::string& args, const std::string& delim=std::string(" -"), bool relativePath=true);
   static std::vector<std::string> MergeArgs(const std::vector<std::string>& add, const std::vector<std::string>& remove, const std::vector<std::string>& reference);
   static std::string GetExtendedRteGroupName(RteItem* ci, const std::string& rteFolder);
+  bool GetAccessSequence(size_t& offset, std::string& src, std::string& sequence, const char start, const char end);
+  void InsertVectorPointers(std::vector<std::string*>& dst, std::vector<std::string>& src);
 };
 
 #endif /* CBUILDMODEL_H */

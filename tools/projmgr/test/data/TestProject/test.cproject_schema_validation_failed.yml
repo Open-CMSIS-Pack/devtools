@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/0.9.6/tools/projmgr/schemas/cproject.schema.json
+
+project:
+  #invalid name field
+  name: Project 1
+  board: Keil::RteTest (Test) Dummy board
+  description: Project 1
+  device: RteTest_ARMCM0
+  compiler: AC6@6.18.0
+  processor:
+    fpu: off
+    endian: little
+    trustzone: non-secure
+  components:
+    - component: Startup
+    - component: CORE
+    - component: Keil::Compiler&ARM Compiler:I/O:STDERR&User
+    - component: ARM::CMSIS:RTOS2:Keil RTX5&Source@5.5.3
+    - component: Keil::USB&MDK-Pro:CORE&Release@6.15.1
+    - component: ARM::CMSIS:CORE@>=5.5.0
+    - component: ARM W/O Test::CMSIS&Temp I/O Test:CORE/Dummy:Temp&Temp2I/P@>=5.5.0
+    - component: ARM-Temp W/O Test::CMSIS&Temp-1 I/O Test:CORE/Dummy:Temp-1&Temp-2I/P@>=5.5.0
+  groups:
+    - group: Sources
+      files: 
+        - file: main.c

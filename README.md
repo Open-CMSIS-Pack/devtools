@@ -73,7 +73,7 @@ Note that some of the required tools are platform dependent:
         Make sure 'git' and 'bash' paths are listed under the PATH environment
         variable and set the git bash priority higher in the path.
     ```
-    
+
     ~~~
     ☑️ GCC/Clang on Windows:
         Currently GCC and Clang (MSYS2/MinGW distribution) compilers do not work
@@ -141,7 +141,7 @@ This is a three step process:
 
 As usual, the actual build steps vary by platform.
 
-- **Linux/MacOS**:\
+- **Linux/MacOS amd64**:\
     On Linux or MacOS use the following commands.\
 
     **Note:** If `DCMAKE_BUILD_TYPE` is not selected, the binaries shall build
@@ -153,6 +153,13 @@ As usual, the actual build steps vary by platform.
 
     ```bash
     cmake -DCMAKE_BUILD_TYPE=Debug ..
+    ```
+
+- **Linux cross-compiling aarch64:**\
+    For cross-compiling aarch64 you need to generate with `-DCMAKE_TOOLCHAIN_FILE=../cmake/TC-linux-aarch64.cmake`:
+
+    ```bash
+    cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=../cmake/TC-linux-aarch64.cmake ..
     ```
 
 - **Windows:**\
@@ -245,16 +252,17 @@ Set below mentioned environment variables:
 
 ### Note
 
-By default, few special tests are skipped from execution as they are dependent on specific environment configuration or other dependencies.
+- On running the tests all required packs shall get downloaded automatically under configured pack repository.
+- By default, few special tests are skipped from execution as they are dependent on specific environment configuration or other dependencies.
 
-1. **CI dependent tests :**\
-    These tests are designed to work only in CI (Continuous Integration) environment
-    - [InstallerTests](./tools/buildmgr/test/integrationtests/src/InstallerTests.cpp)
-    - [DebPkgTests](./tools/buildmgr/test/integrationtests/src/DebPkgTests.cpp)
-2. **AC6 toolchain test :**\
-    The below listed tests depend on a valid AC6 toolchain installed and can be run in the local environment on the installation of valid [Arm Compiler 6](https://developer.arm.com/tools-and-software/embedded/arm-compiler/downloads/version-6).
-    - [CBuildAC6Tests](./tools/buildmgr/test/integrationtests/src/CBuildAC6Tests.cpp)
-    - [MultiTargetAC6Tests](./tools/buildmgr/test/integrationtests/src/MultiTargetAC6Tests.cpp)
+    1. **CI dependent tests :**\
+        These tests are designed to work only in CI (Continuous Integration) environment
+        - [InstallerTests](./tools/buildmgr/test/integrationtests/src/InstallerTests.cpp)
+        - [DebPkgTests](./tools/buildmgr/test/integrationtests/src/DebPkgTests.cpp)
+    2. **AC6 toolchain test :**\
+        The below listed tests depend on a valid AC6 toolchain installed and can be run in the local environment on the installation of valid [Arm Compiler 6](https://developer.arm.com/tools-and-software/embedded/arm-compiler/downloads/version-6).
+        - [CBuildAC6Tests](./tools/buildmgr/test/integrationtests/src/CBuildAC6Tests.cpp)
+        - [MultiTargetAC6Tests](./tools/buildmgr/test/integrationtests/src/MultiTargetAC6Tests.cpp)
 
     ~~~
     ☑️ Required only when the installed AC6 toolchain resides in places different from the default values.
@@ -267,7 +275,7 @@ By default, few special tests are skipped from execution as they are dependent o
     ~~~
 
     Make sure you have the proper **[Arm Compilers licenses](https://developer.arm.com/tools-and-software/software-development-tools/license-management/resources/product-and-toolkit-configuration)**.
-    
+
 ## Build Documentation
 
 Some components provide Doxygen-based documentation which needs to be generated before
@@ -277,7 +285,7 @@ documentations, see build target suffix `-docs`.
 ```
 ☑️ Note:
    The *-docs build targets require doxygen to be available. If CMake fails to
-   detect the correct version of doxygen a warning message appears and the build 
+   detect the correct version of doxygen a warning message appears and the build
    targets are skipped.
 ```
 

@@ -56,28 +56,43 @@ public:
   */
   ProjMgrGenerator& GetGenerator(void) { return m_generator; };
 
+  /**
+   * @brief get cdefault file in solution/project or in installation directory
+   * @return true if file is found successfully, false otherwise
+  */
+  bool GetCdefaultFile(void);
+
 protected:
   ProjMgrParser m_parser;
   ProjMgrWorker m_worker;
   ProjMgrGenerator m_generator;
 
-  std::list<RtePackage*> m_installedPacks;
   std::string m_cprojectFile;
   std::string m_csolutionFile;
+  std::string m_cdefaultFile;
+  std::string m_context;
   std::string m_filter;
+  std::string m_codeGenerator;
   std::string m_command;
   std::string m_args;
   std::string m_rootDir;
   std::string m_outputDir;
   std::string m_outputType;
+  bool m_checkSchema;
+  bool m_missingPacks;
   GroupNode m_files;
 
   bool RunConvert(void);
+  bool RunCodeGenerator(void);
   bool RunListPacks(void);
+  bool RunListBoards(void);
   bool RunListDevices(void);
   bool RunListComponents(void);
   bool RunListDependencies(void);
   bool RunListContexts(void);
+  bool RunListGenerators(void);
+  bool PopulateContexts(void);
+  bool CheckContext(void);
 };
 
 #endif  // PROJMGR_H

@@ -134,9 +134,10 @@ case $OS in
     install_dir_default_path=./cmsis-toolbox
     cmsis_pack_root_default_path=$(unixpath "${LOCALAPPDATA}/Arm/Packs")
     cmsis_compiler_root_default_path=$(unixpath "${LOCALAPPDATA}/Arm/Compilers")
-    compiler6_default_path=$(unixpath "${PROGRAMFILES}/ARMCompiler6.16/bin")
+    compiler6_default_path=$(unixpath "${PROGRAMFILES}/ArmCompilerforEmbedded6.18/bin")
     compiler5_default_path=$(unixpath "${PROGRAMFILES} (x86)/ARM_Compiler_5.06u7/bin")
     gcc_default_path=$(unixpath "${PROGRAMFILES} (x86)/GNU Arm Embedded Toolchain/10 2020-q4-major/bin")
+    iar_default_path=$(unixpath "${PROGRAMFILES} (x86)/IAR Systems/Embedded Workbench 8.4/arm/bin")
     extension=".exe"
     ;;
   'WSL_Windows')
@@ -147,9 +148,10 @@ case $OS in
     programfiles=$(cmd.exe /c "echo|set /p=%PROGRAMFILES%")
     cmsis_pack_root_default_path=$(wslpath "${localappdata}\Arm\Packs")
     cmsis_compiler_root_default_path=$(wslpath "${localappdata}\Arm\Compilers")
-    compiler6_default_path=$(wslpath "${programfiles}/ARMCompiler6.16/bin")
+    compiler6_default_path=$(wslpath "${programfiles}/ArmCompilerforEmbedded6.18/bin")
     compiler5_default_path=$(wslpath "${programfiles} (x86)/ARM_Compiler_5.06u7/bin")
     gcc_default_path=$(wslpath "${programfiles} (x86)/GNU Arm Embedded Toolchain/10 2020-q4-major/bin")
+    iar_default_path=$(wslpath "${programfiles} (x86)/IAR Systems/Embedded Workbench 8.4/arm/bin")
     extension=".exe"
     ;;
   'Linux' | 'Darwin' | WSL_Linux)
@@ -157,9 +159,10 @@ case $OS in
     install_dir_default_path=./cmsis-toolbox
     cmsis_pack_root_default_path=${HOME}/.cache/arm/packs
     cmsis_compiler_root_default_path=${HOME}/.cache/arm/compilers
-    compiler6_default_path=${HOME}/ARMCompiler6.16/bin
+    compiler6_default_path=${HOME}/ArmCompilerforEmbedded6.18/bin
     compiler5_default_path=${HOME}/ARM_Compiler_5.06u7/bin
     gcc_default_path=${HOME}/gcc-arm-none-eabi-10-2020-q4-major/bin
+    iar_default_path=/opt/iarsystems/bxarm/arm/bin
     extension=""
     ;;
 esac
@@ -179,7 +182,7 @@ else
 fi
 
 # ask for AC6 compiler installation path
-read -e -p "Enter the installed Arm Compiler 6.16 directory [${compiler6_default_path}]: " compiler6_root
+read -e -p "Enter the installed Arm Compiler 6.18 directory [${compiler6_default_path}]: " compiler6_root
 compiler6_root=${compiler6_root:-${compiler6_default_path}}
 if [[ -d "${compiler6_root}" ]]
   then
@@ -206,6 +209,16 @@ if [[ -d "${gcc_root}" ]]
   gcc_root=$(get_abs_filename "${gcc_root}")
 else
   echo "Warning: ${gcc_root} does not exist!"
+fi
+
+# ask for IAR installation path
+read -e -p "Enter the installed IAR C/C++ Compiler V8.50.6.265/W32 for ARM directory [${iar_default_path}]: " iar_root
+iar_root=${iar_root:-${iar_default_path}}
+if [[ -d "${iar_root}" ]]
+  then
+  iar_root=$(get_abs_filename "${iar_root}")
+else
+  echo "Warning: ${iar_root} does not exist!"
 fi
 
 # create install folder
@@ -288,6 +301,7 @@ if [[ $OS == "WSL_Windows" ]]
   compiler6_root=$(wslpath -m "${compiler6_root}")
   compiler5_root=$(wslpath -m "${compiler5_root}")
   gcc_root=$(wslpath -m "${gcc_root}")
+  iar_root=$(wslpath -m "${iar_root}")
 fi
 
 if [[ $OS == "Windows" ]]
@@ -295,10 +309,11 @@ if [[ $OS == "Windows" ]]
   compiler6_root=$(winpath "${compiler6_root}")
   compiler5_root=$(winpath "${compiler5_root}")
   gcc_root=$(winpath "${gcc_root}")
+  iar_root=$(winpath "${iar_root}")
 fi
 
 # update toolchain config files
-script="${cmsis_compiler_root}/AC6.6.16.0.cmake"
+script="${cmsis_compiler_root}/AC6.6.18.0.cmake"
 sed -e "s|set(TOOLCHAIN_ROOT.*|set(TOOLCHAIN_ROOT \"${compiler6_root}\")|" "${script}" > temp.$$ && mv temp.$$ "${script}"
 sed -e "s|set(EXT.*|set(EXT ${extension})|" "${script}" > temp.$$ && mv temp.$$ "${script}"
 
@@ -308,6 +323,10 @@ sed -e "s|set(EXT.*|set(EXT ${extension})|" "${script}" > temp.$$ && mv temp.$$ 
 
 script="${cmsis_compiler_root}/GCC.10.2.1.cmake"
 sed -e "s|set(TOOLCHAIN_ROOT.*|set(TOOLCHAIN_ROOT \"${gcc_root}\")|" "${script}" > temp.$$ && mv temp.$$ "${script}"
+sed -e "s|set(EXT.*|set(EXT ${extension})|" "${script}" > temp.$$ && mv temp.$$ "${script}"
+
+script="${cmsis_compiler_root}/IAR.8.50.6.cmake"
+sed -e "s|set(TOOLCHAIN_ROOT.*|set(TOOLCHAIN_ROOT \"${iar_root}\")|" "${script}" > temp.$$ && mv temp.$$ "${script}"
 sed -e "s|set(EXT.*|set(EXT ${extension})|" "${script}" > temp.$$ && mv temp.$$ "${script}"
 
 echo "CMSIS Toolbox installation completed!"

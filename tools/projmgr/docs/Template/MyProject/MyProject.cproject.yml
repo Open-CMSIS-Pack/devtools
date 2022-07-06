@@ -1,0 +1,16 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/0.9.6/tools/projmgr/schemas/cproject.schema.json
+
+project:
+  groups:
+    - group:  "My File Group"
+      files: 
+        - file: main.c
+
+  components:
+    - component: CMSIS:CORE
+    - component: Device:Startup
+    - component: Device:CMSIS:K32L3A60_system
+      for-type: +FRDM-K32L3A6
+    - component: Device:CMSIS:K32L3A60_header
+      for-type: +FRDM-K32L3A6
+    

@@ -20,6 +20,9 @@ static CbuildKernel *theCbuildKernel = 0;
 CbuildKernel::CbuildKernel(RteCallback* callback) : RteKernel(callback) {
   m_model = new CbuildModel();
   m_callback = dynamic_cast<CbuildCallback*>(callback);
+  if (m_callback) {
+    m_callback->SetRteKernel(this);
+  }
 }
 
 CbuildKernel::~CbuildKernel() {
@@ -62,13 +65,13 @@ bool CbuildKernel::Construct(const CbuildRteArgs& args) {
   if (m_model->Create(args))
     return true;
 
-  for(auto msg : CbuildKernel::Get()->GetCallback()->GetErrorMessages()) {
-    LogMsg("M800", MSG(msg));
-  }
-
   if (ErrLog::Get()->GetErrCnt() == 0) {
     // Construct RTE Model failed
     LogMsg("M607");
+  }
+
+  for(auto msg : CbuildKernel::Get()->GetCallback()->GetErrorMessages()) {
+    LogMsg("M800", MSG(msg));
   }
 
   return false;

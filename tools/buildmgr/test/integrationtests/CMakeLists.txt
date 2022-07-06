@@ -14,7 +14,8 @@ set_property(TARGET CbuildIntegTests PROPERTY
 set_property(TARGET CbuildIntegTests PROPERTY
   VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 
-add_definitions(-DTEST_FOLDER="${CMAKE_CURRENT_SOURCE_DIR}/../")
+add_definitions(-DTEST_SRC_FOLDER="${CMAKE_CURRENT_SOURCE_DIR}/../")
+add_definitions(-DTEST_BUILD_FOLDER="${CMAKE_CURRENT_BINARY_DIR}/")
 add_definitions(-DCBUILDGEN_BIN="$<TARGET_FILE:cbuildgen>")
 
 add_dependencies(CbuildIntegTests cbuildgen)

@@ -47,7 +47,8 @@ void InstallerTests::CheckInstallationDir(const string& path, bool expect) {
     { "bin", vector<string>{ "cbuild.sh", "cbuildgen", "cpackget"} },
 #endif
     { "doc", vector<string>{ "index.html", "html"} },
-    { "etc", vector<string>{"AC5.5.6.7.cmake", "AC6.6.16.0.cmake", "CPRJ.xsd", "GCC.10.2.1.cmake", "setup"} }
+    { "etc", vector<string>{ "AC5.5.6.7.cmake", "AC6.6.18.0.cmake", "CPRJ.xsd",
+      "GCC.10.2.1.cmake", "IAR.8.50.6.cmake", "setup"} }
   };
 
   error_code ec;
@@ -70,8 +71,8 @@ void InstallerTests::CheckExtractedDir(const string& path, bool expect) {
     { "bin", vector<string>{ "cbuild.sh", "cbuildgen.lin", "cbuildgen.exe",
       "cpackget.lin", "cpackget.exe"} },
     { "doc", vector<string>{ "index.html", "html"} },
-    { "etc", vector<string>{"AC5.5.6.7.cmake", "AC6.6.16.0.cmake", "CPRJ.xsd",
-      "GCC.10.2.1.cmake", "setup"} }
+    { "etc", vector<string>{"AC5.5.6.7.cmake", "AC6.6.18.0.cmake", "CPRJ.xsd",
+      "GCC.10.2.1.cmake", "IAR.8.50.6.cmake", "setup"} }
   };
 
   error_code ec;
@@ -93,9 +94,9 @@ TEST_F(InstallerTests, InvalidArgTest) {
   string installDir = testout_folder + "/Installation";
   string arg = "--testoutput=" + testout_folder + " -Invalid";
 
-  RemoveDir           (installDir);
-  RunInstallerScript  (arg);
-  CheckInstallationDir(installDir, true);
+  RteFsUtils::RemoveDir(installDir);
+  RunInstallerScript   (arg);
+  CheckInstallationDir (installDir, true);
 }
 
 // Run installer with help command
@@ -103,9 +104,9 @@ TEST_F(InstallerTests, InstallerHelpTest) {
   string installDir = testout_folder + "/Installation";
   string arg = "--testoutput=" + testout_folder + " -h";
 
-  RemoveDir           (installDir);
-  RunInstallerScript  (arg);
-  CheckInstallationDir(installDir, false);
+  RteFsUtils::RemoveDir(installDir);
+  RunInstallerScript   (arg);
+  CheckInstallationDir (installDir, false);
 }
 
 // Run installer with version command
@@ -113,9 +114,9 @@ TEST_F(InstallerTests, InstallerVersionTest) {
   string installDir = testout_folder + "/Installation";
   string arg = "--testoutput=" + testout_folder + " -v";
 
-  RemoveDir           (installDir);
-  RunInstallerScript  (arg);
-  CheckInstallationDir(installDir, false);
+  RteFsUtils::RemoveDir(installDir);
+  RunInstallerScript   (arg);
+  CheckInstallationDir (installDir, false);
 }
 
 // Validate installer extract option
@@ -124,9 +125,9 @@ TEST_F(InstallerTests, InstallerExtractTest) {
     testout_folder + "/Installation/ExtractOut";
   string extractDir = testout_folder + "/Installation/ExtractOut";
 
-  RemoveDir           (extractDir);
-  RunInstallerScript  (arg);
-  CheckExtractedDir   (extractDir, true);
+  RteFsUtils::RemoveDir(extractDir);
+  RunInstallerScript   (arg);
+  CheckExtractedDir    (extractDir, true);
 }
 
 // Validate installation and post installation content
@@ -134,7 +135,7 @@ TEST_F(InstallerTests, ValidInstallationTest) {
   string installDir = testout_folder + "/Installation";
   string arg = "--testoutput=" + testout_folder;
 
-  RemoveDir           (installDir);
-  RunInstallerScript  (arg);
-  CheckInstallationDir(installDir, true);
+  RteFsUtils::RemoveDir(installDir);
+  RunInstallerScript   (arg);
+  CheckInstallationDir (installDir, true);
 }

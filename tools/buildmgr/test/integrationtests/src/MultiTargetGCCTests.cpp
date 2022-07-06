@@ -17,7 +17,6 @@ vector<fs::path> GCCProjects = RteFsUtils::FindFiles(testinput_folder + "/MultiT
 class MultiTargetGCCTests : public ::testing::TestWithParam<fs::path> {
 public:
   void RunCBuildScript      (const TestParam& param);
-  void RunCBuildScriptCMake (const TestParam& param);
 };
 
 void MultiTargetGCCTests::RunCBuildScript(const TestParam& param) {
@@ -28,32 +27,13 @@ void MultiTargetGCCTests::RunCBuildScript(const TestParam& param) {
 
   const string clean = "cd " + testdata_folder + "/" + param.name + " && " +
     SH + " \"source " + testout_folder + "/cbuild/etc/setup && cbuild.sh " +
-    param.targetArg + " clean\"";
+    param.targetArg + " --clean\"";
   ret_val = system(clean.c_str());
   ASSERT_EQ(ret_val, 0);
 
   const string cmd = "cd " + testdata_folder + "/" + param.name + " && " +
     SH + " \"source " + testout_folder + "/cbuild/etc/setup && cbuild.sh " +
     param.targetArg + "\"";
-  ret_val = system(cmd.c_str());
-  ASSERT_EQ(ret_val, 0);
-}
-
-void MultiTargetGCCTests::RunCBuildScriptCMake(const TestParam& param) {
-  int ret_val;
-  error_code ec;
-  ASSERT_EQ(true, fs::exists(testout_folder + "/cbuild/bin/cbuild.sh", ec))
-    << "error: cbuild.sh not found";
-
-  const string clean = "cd " + testdata_folder + "/" + param.name + " && " +
-    SH + " \"source " + testout_folder + "/cbuild/etc/setup && cbuild.sh " +
-    param.targetArg + " --cmake clean\"";
-  ret_val = system(clean.c_str());
-  ASSERT_EQ(ret_val, 0);
-
-  const string cmd = "cd " + testdata_folder + "/" + param.name + " && " +
-    SH + " \"source " + testout_folder + "/cbuild/etc/setup && cbuild.sh " +
-    param.targetArg + " --cmake\"";
   ret_val = system(cmd.c_str());
   ASSERT_EQ(ret_val, 0);
 }
@@ -65,13 +45,6 @@ TEST_P(MultiTargetGCCTests, MultipleTarget) {
   TestParam param = { "MultiTargetGCC", GetParam().filename().generic_string() };
 
   RunCBuildScript(param);
-}
-
-// Validate building multiple GCC target projects with CMakelists
-TEST_P(MultiTargetGCCTests, CMake) {
-  TestParam param = { "MultiTargetGCC", GetParam().filename().generic_string() };
-
-  RunCBuildScriptCMake(param);
 }
 
 INSTANTIATE_TEST_SUITE_P(

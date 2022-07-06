@@ -31,7 +31,7 @@ json SchemaValidator::ReadData() {
   if (extn == "json") {
     std::ifstream file(m_dataFile);
     if (!file.good()) {
-      std::cerr << "error: Could not open " << m_dataFile << " for reading\n";
+      throw SchemaError(m_dataFile, "could not open file", 0, 0 );
     }
 
     try {
@@ -39,7 +39,7 @@ json SchemaValidator::ReadData() {
     }
     catch (const std::exception& e) {
       file.close();
-      throw std::runtime_error("Error: " + std::string(e.what()) + " - while reading " + m_dataFile + "\n");
+      throw SchemaError(m_dataFile, e.what(), 0, 0);
     }
     file.close();
   }
@@ -49,7 +49,7 @@ json SchemaValidator::ReadData() {
       yamldata = YAML::LoadFile(m_dataFile);
     }
     catch (YAML::Exception& e) {
-      throw std::runtime_error("Error: Opening " + m_dataFile + " YAML file - " + std::string(e.what()) + "\n");
+      throw SchemaError(m_dataFile, e.what(), e.mark.line + 1, e.mark.column + 1);
     }
 
     data = YamlToJson(yamldata);
@@ -62,14 +62,19 @@ json SchemaValidator::ReadSchema() {
   json schema;
   std::ifstream file(m_schemaFile);
   if (!file.good()) {
-    throw std::runtime_error("Error: Could not open " + m_schemaFile + "\n");
+    throw SchemaError(m_schemaFile, "could not open file", 0, 0);
   }
 
   try {
     file >> schema;
   }
+  catch (const nlohmann::detail::parse_error& e) {
+    file.close();
+    throw SchemaError(m_schemaFile, e.what(), e.pos.lines_read, e.pos.chars_read_current_line);
+  }
   catch (const std::exception& e) {
-    throw std::runtime_error("Error: " + std::string(e.what()) + " - while parsing " + m_schemaFile + "\n");
+    file.close();
+    throw SchemaError(m_schemaFile, e.what(), 0, 0);
   }
 
   file.close();
@@ -156,8 +161,8 @@ bool SchemaValidator::Validate(SchemaErrors& errList) {
     data = ReadData();
     schema = ReadSchema();
   }
-  catch (const std::exception& e) {
-    std::cerr << e.what();
+  catch (const SchemaError& err) {
+    errList.push_back(err);
     return false;
   }
   // 2) create the validator
@@ -171,19 +176,15 @@ bool SchemaValidator::Validate(SchemaErrors& errList) {
     validator.set_root_schema(schema);
   }
   catch (const std::exception& e) {
-    std::cerr << "setting root schema failed\n";
-    std::cerr << e.what() << "\n";
+    errList.push_back(SchemaError(m_schemaFile, e.what(), 0, 0));
     return false;
   }
 
   // 3) do the actual validation of the data
   CustomErrorHandler handler(m_dataFile);
-  //SchemaErrorHandlerInterface* m_schmaErrorImpl = new SchemaErrorHandlerInterface(&handler);
   validator.validate(data, handler);
 
   errList = handler.GetAllErrors();
-  //delete m_schmaErrorImpl;
-
   return (errList.size() == 0) ? true : false;
 }
 
@@ -192,14 +193,15 @@ void SchemaValidator::Loader(const json_uri& uri, json& schema)
   std::string filename = RteUtils::ExtractFilePath(m_schemaFile, true) + uri.path();
   std::ifstream lf(filename);
   if (!lf.good()) {
-    throw std::invalid_argument("could not open " + uri.url() + " tried with " + filename);
+    throw SchemaError(filename, "could not open " + uri.url(), 0, 0);
   }
 
   try {
     lf >> schema;
   }
   catch (const std::exception& e) {
-    std::cerr << e.what() << " while reading " << filename << "\n";
-    throw e;
+    lf.close();
+    throw SchemaError(filename, e.what(), 0, 0);
   }
+  lf.close();
 }

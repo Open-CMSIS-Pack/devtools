@@ -23,7 +23,7 @@ public:
 };
 
 
-TEST(PackOptionsTests, TestSetUrlRef) {
+TEST(TestPackOptions, SetUrlRef) {
   CPackOptions packOptions;
 
   EXPECT_TRUE(packOptions.SetUrlRef("\"http://keil.com/packs\""));

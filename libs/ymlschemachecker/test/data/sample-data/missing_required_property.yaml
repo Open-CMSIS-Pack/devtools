@@ -1,0 +1,20 @@
+layer:
+  name: test
+  defines:
+    - DEF_LAYER2
+    - DEF: oxff
+  add-paths:
+    - add/path/to2
+  misc:
+    - compiler: GCC
+      C: [--layer2-flag]
+  packages:
+    - package: ARM::CMSIS@5.8.0
+  groups:
+    - group: Sources Layer 2
+      files: 
+        - file: layer2.c
+      groups:
+        - group: sub Layer 1
+          files: 
+            - file: sublayer1.c

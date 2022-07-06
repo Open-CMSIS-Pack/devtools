@@ -19,8 +19,8 @@ if(NOT EMSCRIPTEN AND
    ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR
     "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang"))
 # Add library to support std::filesystem
-  target_link_libraries(RteFsUtils PUBLIC RteUtils stdc++fs)
+  target_link_libraries(RteFsUtils PUBLIC RteUtils CrossPlatform stdc++fs)
 else()
-  target_link_libraries(RteFsUtils PUBLIC RteUtils)
+  target_link_libraries(RteFsUtils PUBLIC RteUtils CrossPlatform)
 endif()
 

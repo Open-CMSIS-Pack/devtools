@@ -1,0 +1,13 @@
+### CMSIS Project Description ###
+
+project:
+  description: Project 1
+  device: RteTest_ARMCM0:NOT_AVAILABLE
+  compiler: AC6@6.18.0
+  components:
+    - component: Startup
+    - component: CORE
+  groups:
+    - group: Sources
+      files: 
+        - file: main.c

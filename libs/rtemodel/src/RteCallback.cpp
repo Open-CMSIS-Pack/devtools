@@ -13,9 +13,22 @@
 /******************************************************************************/
 #include "RteCallback.h"
 
+#include "RteKernel.h"
+#include "RteProject.h"
+#include "RteTarget.h"
+#include "RteBoard.h"
+
+#include "RteUtils.h"
+
 using namespace std;
 
 RteCallback* RteCallback::theGlobalCallback = nullptr;
+
+RteCallback::RteCallback():
+m_rteKernel(nullptr)
+{
+
+}
 
 
 void RteCallback::OutputMessages(const std::list<string>& messages)
@@ -50,4 +63,42 @@ void RteCallback::SetGlobal(RteCallback* callback)
 {
   theGlobalCallback = callback;
 }
+
+string RteCallback::ExpandString(const string& str) {
+
+  const RteKernel* kernel = GetRteKernel();
+  if (!kernel) {
+    return RteUtils::EMPTY_STRING;
+  }
+
+  const auto activeProject = kernel->GetActiveProject();
+  if (!activeProject) {
+    return RteUtils::EMPTY_STRING;
+  }
+  const auto activeTarget = kernel->GetActiveTarget();
+  if (!activeTarget) {
+    return RteUtils::EMPTY_STRING;
+  }
+
+  const string& prjPath(activeProject->GetProjectPath());
+  const string& prjPathFile(prjPath + activeProject->GetName() + ".cprj");
+  const string& packPath(activeTarget->GetDevicePackage()->GetAbsolutePackagePath());
+  const string& deviceName(activeTarget->GetDeviceName());
+
+  if (prjPath.empty() || prjPathFile.empty() || packPath.empty() || deviceName.empty()) {
+    return RteUtils::EMPTY_STRING;
+  }
+
+  const string& boardName = activeTarget->GetAttribute("Bname");
+
+  string res(str);
+  RteUtils::ReplaceAll(res, "$P", prjPath);
+  RteUtils::ReplaceAll(res, "#P", prjPathFile);
+  RteUtils::ReplaceAll(res, "$S", packPath);
+  RteUtils::ReplaceAll(res, "$D", deviceName);
+  RteUtils::ReplaceAll(res, "$B", boardName);
+
+  return res;
+}
+
 // end of RteCallback.cpp

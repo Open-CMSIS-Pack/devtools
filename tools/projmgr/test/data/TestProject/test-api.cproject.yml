@@ -1,0 +1,17 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/0.9.6/tools/projmgr/schemas/cproject.schema.json
+
+project:
+  device: RteTest_ARMCM0
+  compiler: AC6@6.18.0
+  processor:
+    fpu: off
+    endian: little
+    trustzone: non-secure
+  components:
+    - component: Startup
+    - component: CORE
+    - component: ApiExclusive S1
+  groups:
+    - group: Sources
+      files: 
+        - file: main.c

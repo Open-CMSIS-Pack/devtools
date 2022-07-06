@@ -9,11 +9,11 @@
 using namespace std;
 
 error_code ec;
-string scripts_folder   = string(TEST_FOLDER) + "scripts";
-string testinput_folder = string(TEST_FOLDER) + "testinput";
+string scripts_folder   = string(TEST_SRC_FOLDER) + "scripts";
+string testinput_folder = string(TEST_SRC_FOLDER) + "testinput";
 string cbuildgen_bin    = string(CBUILDGEN_BIN);
-string testout_folder   = fs::current_path(ec).append("testoutput").generic_string();
-string testdata_folder  = testout_folder + "/testdata";
+string testout_folder   = string(TEST_BUILD_FOLDER) + "testoutput";
+string testdata_folder  = string(TEST_BUILD_FOLDER) + "/testdata";
 string examples_folder  = testdata_folder + "/Examples";
 
 std::string CBuildIntegTestEnv::ci_installer_path;
@@ -27,22 +27,6 @@ void RunScript(const string& script, string arg) {
 
   string cmd = "cd " + scripts_folder + " && " + SH + " \"./"
     + script + (arg.empty() ? "" : " " + arg) + "\"";
-  ret_val = system(cmd.c_str());
-  ASSERT_EQ(ret_val, 0);
-}
-
-// Workaround for fs::remove_all
-// Old gcc has a bug with remove_all
-void RemoveDir(fs::path path) {
-  string cmd, rmPath = path.string();
-  int ret_val;
-  size_t s = 0;
-
-  while ((s = rmPath.find("\\", s)) != string::npos) {
-    rmPath.replace(s, 1, "/");
-  }
-
-  cmd = "bash -c \"rm -rf \\\"" + rmPath + "\\\"\"";
   ret_val = system(cmd.c_str());
   ASSERT_EQ(ret_val, 0);
 }
@@ -68,7 +52,7 @@ void CBuildIntegTestEnv::SetUp() {
   ci_installer_path = CrossPlatformUtils::GetEnv("CI_CBUILD_INSTALLER");
 
   // Read AC6 toolchain path
-  string ac6ToolchainFilePath = testout_folder + "/cbuild/etc/AC6.6.16.0.cmake";
+  string ac6ToolchainFilePath = testout_folder + "/cbuild/etc/AC6.6.18.0.cmake";
   ASSERT_TRUE(fs::exists(ac6ToolchainFilePath));
 
   ifstream file(ac6ToolchainFilePath);
