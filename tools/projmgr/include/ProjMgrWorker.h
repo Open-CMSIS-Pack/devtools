@@ -301,11 +301,11 @@ public:
   void GetContexts(std::map<std::string, ContextItem>* &contexts);
 
   /**
-   * @brief copy RTE files into cprj directory
+   * @brief copy layer RTE files into project RTE directory
    * @param reference to context
    * @return true if executed successfully
   */
-  bool CopyRTEFiles(ContextItem& context);
+  bool CopyLayerRTEFiles(ContextItem& context);
 
   /**
    * @brief set output directory

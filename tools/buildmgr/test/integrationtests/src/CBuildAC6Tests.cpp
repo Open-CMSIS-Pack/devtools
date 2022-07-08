@@ -152,3 +152,11 @@ TEST_F(CBuildAC6Tests, PreInclude) {
   RunCBuildScriptWithArgs   (param);
   CheckCMakeLists           (param);
 }
+
+// Validate RTE custom folder
+TEST_F(CBuildAC6Tests, Build_AC6_CustomRTE) {
+  TestParam param = { "AC6/Build_AC6", "CustomRTE" };
+  RunCBuildScriptClean(param);
+  RunCBuildScript(param);
+  CheckRteDir(param, "Custom/RTEDIR");
+}

@@ -232,3 +232,10 @@ TEST_F(CBuildGCCTests, PreInclude) {
   CheckCMakeLists         (param);
 }
 
+// Validate RTE custom folder
+TEST_F(CBuildGCCTests, Build_GCC_CustomRTE) {
+  TestParam param = { "GCC/Build_GCC", "CustomRTE" };
+  RunCBuildScriptClean(param);
+  RunCBuildScript(param);
+  CheckRteDir(param, "Custom/RTEDIR");
+}

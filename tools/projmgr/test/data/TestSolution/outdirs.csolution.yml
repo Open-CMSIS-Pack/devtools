@@ -18,6 +18,6 @@ solution:
 
   output-dirs:
     cprjdir: $Compiler$
-    intdir: $Project$/$TargetType$
+    intdir: $OutDir(test1)$/$TargetType$
     outdir: $Project$/$BuildType$
-    rtedir: ./TestProject1/RTE
+    rtedir: $Source()$/Custom/RTEDIR

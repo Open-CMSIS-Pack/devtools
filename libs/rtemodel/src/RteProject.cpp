@@ -513,7 +513,8 @@ void RteProject::UpdateConfigFileBackups(RteFileInstance* fi, RteFile* f)
     RteFsUtils::GrepFileNames(backupFileNames, dir, dotName + "@*");
   }
   for (string fileName : backupFileNames) {
-    if (fileName != originFile && fileName != curFile) {
+    error_code ec;
+    if (!fs::equivalent(fileName, originFile, ec) && !fs::equivalent(fileName, curFile, ec)) {
       RteFsUtils::DeleteFileAutoRetry(fileName);
     }
   }

@@ -17,12 +17,14 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 
-  $Date:        29. March 2022
-  $Revision:    1.0.1
+  $Date:        06. July 2022
+  $Revision:    1.0.2
 
   $Project: Schema File for CMSIS Project Description File Format Specification
 
-  SchemaVersion=1.0.1
+  SchemaVersion=1.0.2
+
+  1.0.2: Added custom RTE attribute
 
   1.0.1: Extended translation controls
 
@@ -345,6 +347,7 @@
     <xs:attribute name="list"   type="xs:string"          use="optional" /> <!-- Deprecated -->
     <xs:attribute name="outdir" type="xs:string"          use="optional" />
     <xs:attribute name="intdir" type="xs:string"          use="optional" />
+    <xs:attribute name="rtedir" type="xs:string"          use="optional" />
     <xs:attribute name="type"   type="CompilerOutputType" use="required" />
   </xs:complexType>
 
