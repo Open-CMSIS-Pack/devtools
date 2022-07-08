@@ -117,6 +117,13 @@ void CBuildTestFixture::CheckOutputDir(const TestParam& param, const string& out
     << "File " << param.targetArg << ".clog does " << (param.expect ? "not " : "") << "exist!";
 }
 
+void CBuildTestFixture::CheckRteDir(const TestParam& param, const string& rtedir) {
+  error_code ec;
+  string rteDir = examples_folder + "/" + param.name + rtedir;
+  EXPECT_EQ(param.expect, fs::exists(rteDir, ec))
+    << "Folder " << rteDir << ".does " << (param.expect ? "not " : "") << "exist!";
+}
+
 void CBuildTestFixture::CheckCMakeIntermediateDir(const TestParam& param, const string& intdir) {
   error_code ec;
   EXPECT_EQ(param.expect, fs::exists(intdir + "/CMakeLists.txt", ec))

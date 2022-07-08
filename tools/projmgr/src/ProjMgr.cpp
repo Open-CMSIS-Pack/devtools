@@ -331,10 +331,6 @@ bool ProjMgr::RunConvert(void) {
       ProjMgrLogger::Error(filename, "file cannot be written");
       return false;
     }
-    if (!m_worker.CopyRTEFiles(contextItem)) {
-      ProjMgrLogger::Error("RTE files cannot be copied into directory '" + contextItem.directories.cprj + "'");
-      return false;
-    }
   }
   if (error) {
     return false;
