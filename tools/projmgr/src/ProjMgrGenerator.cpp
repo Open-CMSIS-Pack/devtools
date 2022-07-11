@@ -165,6 +165,7 @@ void ProjMgrGenerator::GenerateCprjTarget(XMLTreeElement* element, const Context
     targetOutputElement->AddAttribute("type", context.outputType);
     targetOutputElement->AddAttribute("intdir", context.directories.intdir);
     targetOutputElement->AddAttribute("outdir", context.directories.outdir);
+    targetOutputElement->AddAttribute("rtedir", context.directories.rte);
   }
 
   // TODO Generate toolchain settings (warnings, debug, includes)

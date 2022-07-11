@@ -15,5 +15,6 @@ protected:
   void CheckMapFile             (const TestParam& param);
   void CheckOutputDir           (const TestParam& param, const std::string& outdir);
   void CheckCMakeIntermediateDir(const TestParam& param, const std::string& intdir);
+  void CheckRteDir              (const TestParam& param, const std::string& rtedir);
   void CleanOutputDir           (const TestParam& param);
 };

@@ -12,3 +12,6 @@ solution:
   packs:
     - pack: ARM::RteTest
     - pack: ARM::RteTest_DFP
+
+  output-dirs:
+    rtedir: RTE

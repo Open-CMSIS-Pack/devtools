@@ -88,33 +88,30 @@ bool ProjMgrWorker::AddContext(ProjMgrParser& parser, ContextDesc& descriptor, c
     context.name = context.cproject->name + buildType + targetType;
 
     // default directories
-    const string& output = m_outputDir.empty() ? context.csolution->directory : m_outputDir;
     context.directories.cprj = m_outputDir.empty() ? context.cproject->directory : m_outputDir;
-    context.directories.intdir = output + "/tmp/" + context.cproject->name + (type.target.empty() ? "" : "/" + type.target) + (type.build.empty() ? "" : "/" + type.build);
-    context.directories.outdir = output + "/out/" + context.cproject->name + (type.target.empty() ? "" : "/" + type.target) + (type.build.empty() ? "" : "/" + type.build);
+    context.directories.intdir = "tmp/" + context.cproject->name + (type.target.empty() ? "" : "/" + type.target) + (type.build.empty() ? "" : "/" + type.build);
+    context.directories.outdir = "out/" + context.cproject->name + (type.target.empty() ? "" : "/" + type.target) + (type.build.empty() ? "" : "/" + type.build);
     context.directories.rte = context.cproject->directory + "/RTE";
 
-    if (m_outputDir.empty()) {
-      // customized directories
-      if (!context.csolution->directories.cprj.empty()) {
-        context.directories.cprj = output + "/" + context.csolution->directories.cprj;
-      }
-      if (!context.csolution->directories.intdir.empty()) {
-        context.directories.intdir = output + "/" + context.csolution->directories.intdir;
-      }
-      if (!context.csolution->directories.outdir.empty()) {
-        context.directories.outdir = output + "/" + context.csolution->directories.outdir;
-      }
-      if (!context.csolution->directories.rte.empty()) {
-        context.directories.rte = output + "/" + context.csolution->directories.rte;
-      }
+    // customized directories
+    if (!context.csolution->directories.cprj.empty()) {
+      context.directories.cprj = context.csolution->directory + "/" + context.csolution->directories.cprj;
+    }
+    if (!context.csolution->directories.intdir.empty()) {
+      context.directories.intdir = context.csolution->directories.intdir;
+    }
+    if (!context.csolution->directories.outdir.empty()) {
+      context.directories.outdir = context.csolution->directories.outdir;
+    }
+    if (!context.csolution->directories.rte.empty()) {
+      context.directories.rte = context.csolution->directories.rte;
     }
 
     error_code ec;
     context.directories.cprj = fs::weakly_canonical(context.directories.cprj, ec).generic_string();
-    context.directories.rte = fs::weakly_canonical(context.directories.rte, ec).generic_string();
-    context.directories.intdir = fs::relative(context.directories.intdir, context.directories.cprj, ec).generic_string();
-    context.directories.outdir = fs::relative(context.directories.outdir, context.directories.cprj, ec).generic_string();
+    if (fs::path(context.directories.rte).is_absolute()) {
+      context.directories.rte = fs::relative(context.directories.rte, context.directories.cprj, ec).generic_string();
+    }
 
     for (const auto& clayer : context.cproject->clayers) {
       if (CheckType(clayer.type, type)) {
@@ -226,7 +223,7 @@ bool ProjMgrWorker::InitializeModel() {
 
 bool ProjMgrWorker::LoadAllRelevantPacks() {
   // Get required pdsc files
-  std::set<std::string> pdscFiles;
+  std::list<std::string> pdscFiles;
   std::set<std::string> errMsgs;
   for (auto& [_, contextItem] : m_contexts) {
     if (!GetRequiredPdscFiles(contextItem, m_packRoot, errMsgs)) {
@@ -234,7 +231,7 @@ bool ProjMgrWorker::LoadAllRelevantPacks() {
       return false;
     }
     for (const auto& [pdscFile, _] : contextItem.pdscFiles) {
-      pdscFiles.insert(pdscFile);
+      pdscFiles.push_back(pdscFile);
     }
   }
   if (pdscFiles.empty()) {
@@ -350,8 +347,8 @@ bool ProjMgrWorker::SetTargetAttributes(ContextItem& context, map<string, string
     }
     if (!context.directories.rte.empty()) {
       error_code ec;
-      const string& relativeRteFolder = fs::relative(context.directories.rte, context.cproject->directory, ec).generic_string();
-      context.rteActiveProject->SetRteFolder(relativeRteFolder);
+      const string& rteFolder = fs::relative(context.directories.cprj + "/"+ context.directories.rte, context.cproject->directory, ec).generic_string();
+      context.rteActiveProject->SetRteFolder(rteFolder);
     }
   }
   context.rteActiveTarget->SetAttributes(attributes);
@@ -1089,10 +1086,11 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
 bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem& context) {
 
   // directories
+  const string ref = m_outputDir.empty() ? context.csolution->directory : m_outputDir;
   if (!ProcessSequenceRelative(context, context.directories.cprj) ||
-      !ProcessSequenceRelative(context, context.directories.intdir) ||
-      !ProcessSequenceRelative(context, context.directories.outdir) ||
-      !ProcessSequenceRelative(context, context.directories.rte)) {
+      !ProcessSequenceRelative(context, context.directories.rte, ref) ||
+      !ProcessSequenceRelative(context, context.directories.outdir, ref) ||
+      !ProcessSequenceRelative(context, context.directories.intdir, ref)) {
     return false;
   }
 
@@ -1186,6 +1184,9 @@ bool ProjMgrWorker::ProcessSequenceRelative(ContextItem & context, string& item,
             contextName.insert(targetDelim == string::npos ? contextName.length() : targetDelim, '.' + context.type.build);
           }
         }
+        if (contextName.empty() || (contextName.front() == '.') || (contextName.front() == '+')) {
+           contextName.insert(0, context.cproject->name);
+        }
         if (m_contexts.find(contextName) != m_contexts.end()) {
           error_code ec;
           const auto& depContext = m_contexts.at(contextName);
@@ -1193,15 +1194,15 @@ bool ProjMgrWorker::ProcessSequenceRelative(ContextItem & context, string& item,
           const string& relOutDir = fs::relative(depContextOutDir, context.directories.cprj, ec).generic_string();
           const string& relSrcDir = fs::relative(depContext.cproject->directory, context.directories.cprj, ec).generic_string();
           if (regex_match(sequence, regex("^OutDir\\(.*"))) {
-            regEx = regex("\\$OutDir\\(.*\\$");
+            regEx = regex("\\$OutDir\\(.*\\)\\$");
             replacement = RteUtils::RemoveTrailingBackslash(relOutDir);
           }
           else if (regex_match(sequence, regex("^Output\\(.*"))) {
-            regEx = regex("\\$Output\\(.*\\$");
+            regEx = regex("\\$Output\\(.*\\)\\$");
             replacement = relOutDir + contextName;
           }
           else if (regex_match(sequence, regex("^Source\\(.*"))) {
-            regEx = regex("\\$Source\\(.*\\$");
+            regEx = regex("\\$Source\\(.*\\)\\$");
             replacement = relSrcDir;
           }
         }
@@ -1368,6 +1369,9 @@ bool ProjMgrWorker::ProcessContext(ContextItem& context, bool resolveDependencie
   if (!ProcessDevice(context)) {
     return false;
   }
+  if (!CopyLayerRTEFiles(context)) {
+    return false;
+  }
   if (!SetTargetAttributes(context, context.targetAttributes)) {
     return false;
   }
@@ -1475,11 +1479,11 @@ bool ProjMgrWorker::ListPacks(vector<string>&packs, bool missingPacks, const str
   if (missingPacks) {
     ret = true;
   } else {
-    set<string> pdscFiles;
+    list<string> pdscFiles;
     if (context.packRequirements.size() > 0) {
       // Get context required packs
       for (const auto& [pdscFile, _] : context.pdscFiles) {
-        pdscFiles.insert(pdscFile);
+        pdscFiles.push_back(pdscFile);
       }
     } else {
       // Get all installed packs
@@ -1831,24 +1835,18 @@ void ProjMgrWorker::PushBackUniquely(vector<string>& vec, const string& value) {
   }
 }
 
-bool ProjMgrWorker::CopyRTEFiles(ContextItem& context) {
+bool ProjMgrWorker::CopyLayerRTEFiles(ContextItem& context) {
   error_code ec;
   vector<string> rteDirs;
-  static constexpr const char* RTE_FOLDER = "/RTE";
+  static constexpr const char* LAYER_RTE_FOLDER = "/RTE";
 
   // clayers RTE folders
   for (auto const& clayer : context.clayers) {
-
     const string& clayerDir = fs::path(clayer.first).parent_path().generic_string();
-    rteDirs.push_back(clayerDir + RTE_FOLDER);
+    rteDirs.push_back(clayerDir + LAYER_RTE_FOLDER);
   }
 
-  // cproject RTE folder
-  if (!fs::equivalent(context.directories.cprj, context.cproject->directory, ec)) {
-    rteDirs.push_back(context.cproject->directory + RTE_FOLDER);
-  }
-
-  const string& destDir = context.directories.cprj + RTE_FOLDER;
+  const string& destDir = context.directories.cprj + "/" + context.directories.rte;
   RteFsUtils::CreateDirectories(destDir);
   for (auto const& rteDir : rteDirs) {
     if (RteFsUtils::Exists(rteDir)) {
