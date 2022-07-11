@@ -223,7 +223,7 @@ bool ProjMgrWorker::InitializeModel() {
 
 bool ProjMgrWorker::LoadAllRelevantPacks() {
   // Get required pdsc files
-  std::set<std::string> pdscFiles;
+  std::list<std::string> pdscFiles;
   std::set<std::string> errMsgs;
   for (auto& [_, contextItem] : m_contexts) {
     if (!GetRequiredPdscFiles(contextItem, m_packRoot, errMsgs)) {
@@ -231,7 +231,7 @@ bool ProjMgrWorker::LoadAllRelevantPacks() {
       return false;
     }
     for (const auto& [pdscFile, _] : contextItem.pdscFiles) {
-      pdscFiles.insert(pdscFile);
+      pdscFiles.push_back(pdscFile);
     }
   }
   if (pdscFiles.empty()) {
@@ -1479,11 +1479,11 @@ bool ProjMgrWorker::ListPacks(vector<string>&packs, bool missingPacks, const str
   if (missingPacks) {
     ret = true;
   } else {
-    set<string> pdscFiles;
+    list<string> pdscFiles;
     if (context.packRequirements.size() > 0) {
       // Get context required packs
       for (const auto& [pdscFile, _] : context.pdscFiles) {
-        pdscFiles.insert(pdscFile);
+        pdscFiles.push_back(pdscFile);
       }
     } else {
       // Get all installed packs
