@@ -326,8 +326,7 @@ string RteKernel::GetLocalPdscFile(const RteAttributes& attributes, const string
   string url, version;
   if (GetUrlFromIndex(rtePath, name, vendor, versionRange, url, version)) {
     packId = vendor + '.' + name + '.' + version;
-    url = RteFsUtils::GetAbsPathFromLocalUrl(url);
-    return url + vendor + '.' + name + ".pdsc";
+    return url;
   }
 
   return RteUtils::EMPTY_STRING;
@@ -368,9 +367,17 @@ bool RteKernel::GetUrlFromIndex(const string& rtePath, const string& name, const
   // Populate map with items matching name, vendor and version range
   for (const auto& item : indexList) {
     if ((name == item->GetAttribute("name")) && (vendor == item->GetAttribute("vendor"))) {
-      const string& version = item->GetAttribute("version");
-      if (versionRange.empty() || VersionCmp::RangeCompare(version, versionRange) == 0) {
-        pdscMap[version] = item->GetAttribute("url");
+      // Load the local pack to get its version. The 'version' attribute in the local repository index is ignored.
+      list<string> localPdscFiles;
+      RteFsUtils::GetPackageDescriptionFiles(localPdscFiles, RteFsUtils::GetAbsPathFromLocalUrl(item->GetAttribute("url")), 1);
+      for (const auto& localPdscFile : localPdscFiles) {
+        RtePackage* pack = LoadPack(localPdscFile);
+        if (pack) {
+          const string& version = pack->GetVersionString();
+          if (versionRange.empty() || VersionCmp::RangeCompare(version, versionRange) == 0) {
+            pdscMap[version] = localPdscFile;
+          }
+        }
       }
     }
   }
