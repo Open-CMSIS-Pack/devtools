@@ -725,7 +725,7 @@ TEST_F(ProjMgrUnitTests, AddContextFailed) {
 TEST_F(ProjMgrUnitTests, GetInstalledPacks) {
   auto kernel = ProjMgrKernel::Get();
   const auto& cmsisPackRoot = kernel->GetCmsisPackRoot();
-  std::set<std::string> pdscFiles;
+  std::list<std::string> pdscFiles;
 
   kernel->SetCmsisPackRoot(string(CMAKE_SOURCE_DIR) + "test/local");
   EXPECT_TRUE(kernel->GetInstalledPacks(pdscFiles));

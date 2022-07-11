@@ -54,10 +54,9 @@ XMLTree* ProjMgrKernel::CreateXmlTree() const
   return xmlParser.release();
 }
 
-bool ProjMgrKernel::GetInstalledPacks(std::set<std::string>& pdscFiles) {
-  list<string> pdscFileList;
-
-  RteFsUtils::GetPackageDescriptionFiles(pdscFileList, theProjMgrKernel->GetCmsisPackRoot(), 3);
+bool ProjMgrKernel::GetInstalledPacks(std::list<std::string>& pdscFiles) {
+  // Find pdsc files from the CMSIS_PACK_ROOT
+  RteFsUtils::GetPackageDescriptionFiles(pdscFiles, theProjMgrKernel->GetCmsisPackRoot(), 3);
 
   // Find pdsc files from local repository
   list<string> localPdscUrls;
@@ -67,22 +66,29 @@ bool ProjMgrKernel::GetInstalledPacks(std::set<std::string>& pdscFiles) {
   for (const auto& localPdscUrl : localPdscUrls) {
     list<string> localPdscFiles;
     RteFsUtils::GetPackageDescriptionFiles(localPdscFiles, localPdscUrl, 1);
-    pdscFileList.insert(pdscFileList.end(), localPdscFiles.begin(), localPdscFiles.end());
+    // Insert local pdsc files first
+    pdscFiles.insert(pdscFiles.begin(), localPdscFiles.begin(), localPdscFiles.end());
   }
-
-  std::copy(pdscFileList.begin(), pdscFileList.end(),
-    std::inserter(pdscFiles, pdscFiles.begin()));
 
   return true;
 }
 
-bool ProjMgrKernel::LoadAndInsertPacks(std::list<RtePackage*>& packs, std::set<std::string>& pdscFiles) {
+bool ProjMgrKernel::LoadAndInsertPacks(std::list<RtePackage*>& packs, std::list<std::string>& pdscFiles) {
   for (const auto& pdscFile : pdscFiles) {
     RtePackage* pack = theProjMgrKernel->LoadPack(pdscFile);
     if (!pack) {
       return false;
     }
-    packs.push_back(pack);
+    bool loaded = false;
+    for (const auto& loadedPack : packs) {
+      if (pack->GetPackageID() == loadedPack->GetPackageID()) {
+        loaded = true;
+        break;
+      }
+    }
+    if (!loaded) {
+      packs.push_back(pack);
+    }
   }
 
   RteGlobalModel* globalModel = theProjMgrKernel->GetGlobalModel();
