@@ -61,6 +61,7 @@ TEST(RteModelTest, LoadPacks) {
 
 // define project and header file names with relative paths
 const string prjsDir = "RteModelTestProjects";
+const string localRepoDir = "RteModelLocalRepo";
 const string RteTestM3 = "/RteTestM3";
 const string RteTestM3_cprj = prjsDir + RteTestM3 + "/RteTestM3.cprj";
 const string RteTestM3_ConfigFolder_cprj = prjsDir + RteTestM3 + "/RteTestM3_ConfigFolder.cprj";
@@ -84,6 +85,7 @@ protected:
   {
     RteFsUtils::DeleteTree(prjsDir);
     RteFsUtils::CopyTree(RteModelTestConfig::PROJECTS_DIR, prjsDir);
+    RteFsUtils::CopyTree(RteModelTestConfig::LOCAL_REPO_DIR, localRepoDir);
   }
 
   void TearDown() override
@@ -94,6 +96,30 @@ protected:
   void compareFile(const string &newFile, const string &refFile,
     const std::unordered_map<string, string> &expectedChangedFlags, const string &toolchain) const;
 
+  string UpdateLocalIndex() {
+    const string index = localRepoDir + "/.Local/local_repository.pidx";
+    const string pdsc = RteModelTestConfig::CMSIS_PACK_ROOT + "/ARM/RteTest/0.1.0/ARM.RteTest.pdsc";
+    const string original = "file://localhost/packs/LocalVendor/LocalPack/";
+    const string replace = "file://localhost/" + RteModelTestConfig::CMSIS_PACK_ROOT + "/ARM/RteTest/0.1.0/";
+    string line;
+    vector<string> buffer;
+
+    ifstream in(index);
+    while (getline(in, line)) {
+      size_t pos = line.find(original);
+      if (pos != string::npos) {
+        line.replace(pos, original.length(), replace);
+      }
+      buffer.push_back(line);
+    }
+    in.close();
+
+    ofstream out(index);
+    for (vector<string>::iterator it = buffer.begin(); it != buffer.end(); it++) {
+      out << *it << endl;
+    }
+    return pdsc;
+  }
 
   void GenerateHeadersTest(const string& project, const string& rteFolder) {
 
@@ -278,27 +304,21 @@ TEST_F(RteModelPrjTest, LoadCprjConfigVer) {
 
 TEST_F(RteModelPrjTest, GetLocalPdscFile) {
   RteKernelSlim rteKernel;
-  const string& packRoot = RteModelTestConfig::CMSIS_PACK_ROOT + "/../local";
+  const string& expectedPdsc = UpdateLocalIndex();
 
   RteAttributes attributes;
   attributes.AddAttribute("name", "LocalPack");
   attributes.AddAttribute("vendor", "LocalVendor");
   attributes.AddAttribute("version", "0.1.0");
   string packId;
-  string pdsc = rteKernel.GetLocalPdscFile(attributes, packRoot, packId);
+  string pdsc = rteKernel.GetLocalPdscFile(attributes, localRepoDir, packId);
 
   // check returned packId
   EXPECT_EQ(packId, "LocalVendor.LocalPack.0.1.0");
 
   // check returned pdsc
   error_code ec;
-#ifdef _WIN32
-  const string&& expectedPdsc = "packs/LocalVendor/LocalPack/LocalVendor.LocalPack.pdsc";
-  EXPECT_EQ(pdsc, expectedPdsc);
-#else
-  const string&& expectedPdsc = "/packs/LocalVendor/LocalPack/LocalVendor.LocalPack.pdsc";
-  EXPECT_EQ(pdsc, expectedPdsc);
-#endif
+  EXPECT_TRUE(fs::equivalent(pdsc, expectedPdsc, ec));
 }
 
 TEST_F(RteModelPrjTest, GenerateHeadersTestDefault)

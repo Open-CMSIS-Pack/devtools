@@ -23,6 +23,7 @@ private:
 
 public:
   static const std::string CMSIS_PACK_ROOT;
+  static const std::string LOCAL_REPO_DIR;
   static const std::string PROJECTS_DIR;
   static const std::string M3_CPRJ;
 };
