@@ -12,7 +12,7 @@
   </packages>
 
   <compilers>
-    <compiler name="GCC" version="10.2.1"/>
+    <compiler name="GCC" version="11.2.1"/>
   </compilers>
 
   <target Bname="RteTest board listing" Bvendor="Keil" Bversion="Rev.C" Dendian="Little-endian" Dfpu="NO_FPU" Dname="RteTest_ARMCM0" Dsecure="Non-secure" Dvendor="ARM:82">

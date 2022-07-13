@@ -637,7 +637,7 @@ bool ProjMgrWorker::ProcessToolchain(ContextItem& context) {
     static const map<string, string> DEF_MIN_VERSIONS = {
       {"AC5","5.6.7"},
       {"AC6","6.18.0"},
-      {"GCC","10.2.1"},
+      {"GCC","11.2.1"},
       {"IAR","8.50.6"},
     };
     for (const auto& defMinVersion: DEF_MIN_VERSIONS) {
