@@ -184,9 +184,7 @@ endforeach()
 # Linker
 
 set(LD_CPU ${GNUASM_CPU})
-if(LD_SCRIPT)
-  set(LD_SCRIPT "-T \"${LD_SCRIPT}\"")
-endif()
+set(_LS "-T ")
 
 if(SECURE STREQUAL "Secure")
   set(LD_SECURE "-Wl,--cmse-implib -Wl,--out-implib=\"${OUT_DIR}/${TARGET}_CMSE_Lib.o\"")

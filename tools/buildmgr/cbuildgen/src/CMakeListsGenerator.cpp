@@ -339,10 +339,12 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
   }
 
   // Linker flags
+  bool lib_output = (m_outputType.compare("lib") == 0) ? true : false;
   cmakelists << "set(CMAKE_";
   if (!m_cxxFilesList.empty()) cmakelists << "CXX";
   else cmakelists << "C";
-  cmakelists << "_LINK_FLAGS \"${LD_CPU} ${LD_SCRIPT}";
+  cmakelists << "_LINK_FLAGS \"${LD_CPU}";
+  if (!m_linkerScript.empty() && !lib_output) cmakelists << " ${_LS}\\\"${LD_SCRIPT}\\\"";
   if (!m_targetSecure.empty()) cmakelists << " ${LD_SECURE}";
   if (!m_linkerMscGlobal.empty()) cmakelists << " ${LD_FLAGS_GLOBAL}";
   cmakelists << " ${LD_FLAGS}\")" << EOL << EOL;
@@ -458,7 +460,6 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
   // Setup Target
   cmakelists << "# Setup Target" << EOL << EOL;
 
-  bool lib_output = (m_outputType.compare("lib") == 0) ? true : false;
   if (lib_output) {
     cmakelists << "add_library(${TARGET}";
   } else {
@@ -483,7 +484,11 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
     cmakelists << "set_target_properties(${TARGET} PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${OUT_DIR})" << EOL;
   } else {
     cmakelists << "set(CMAKE_EXECUTABLE_SUFFIX ${EXE_SUFFIX})" << EOL;
-    cmakelists << "set_target_properties(${TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${OUT_DIR})" << EOL;
+    cmakelists << "set_target_properties(${TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${OUT_DIR}";
+    if (!m_linkerScript.empty()) {
+      cmakelists << " LINK_DEPENDS ${LD_SCRIPT}";
+    }
+    cmakelists << ")" << EOL;
   }
   if (!m_incPathsList.empty()) {
     cmakelists << "target_include_directories(${TARGET} PUBLIC ${INC_PATHS})" << EOL;

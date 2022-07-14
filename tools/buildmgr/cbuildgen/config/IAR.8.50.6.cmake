@@ -131,9 +131,7 @@ set(CXX_FLAGS "${CC_FLAGS}")
 # Linker
 
 set(LD_CPU "--cpu=${IAR_CPU}")
-if(LD_SCRIPT)
-  set(LD_SCRIPT "--config \"${LD_SCRIPT}\"")
-endif()
+set(_LS "--config ")
 
 if(SECURE STREQUAL "Secure")
   set(LD_SECURE "--import_cmse_lib_out \"${OUT_DIR}/${TARGET}_CMSE_Lib.o\"")

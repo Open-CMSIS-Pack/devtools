@@ -438,9 +438,7 @@ endforeach()
 # Linker
 
 set(LD_CPU ${ARMASM_CPU})
-if(LD_SCRIPT)
-  set(LD_SCRIPT "--scatter=\"${LD_SCRIPT}\"")
-endif()
+set(_LS "--scatter=")
 
 if(SECURE STREQUAL "Secure")
   set(LD_SECURE "--import-cmse-lib-out \"${OUT_DIR}/${TARGET}_CMSE_Lib.o\"")
