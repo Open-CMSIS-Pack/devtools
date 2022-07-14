@@ -43,7 +43,7 @@ project(${TARGET} LANGUAGES C)
 # Global Flags
 
 set(CMAKE_C_FLAGS "${CC_CPU} ${CC_DEFINES} ${CC_FLAGS} ${CC_SYS_INC_PATHS}")
-set(CMAKE_C_LINK_FLAGS "${LD_CPU} ${LD_SCRIPT} ${LD_FLAGS}")
+set(CMAKE_C_LINK_FLAGS "${LD_CPU} ${_LS}\"${LD_SCRIPT}\" ${LD_FLAGS}")
 
 # Compilation Database
 
@@ -54,7 +54,7 @@ add_custom_target(database COMMAND ${CMAKE_COMMAND} -E copy_if_different "${INT_
 
 add_executable(${TARGET} ${CC_SRC_FILES})
 set(CMAKE_EXECUTABLE_SUFFIX ${EXE_SUFFIX})
-set_target_properties(${TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${OUT_DIR})
+set_target_properties(${TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${OUT_DIR} LINK_DEPENDS ${LD_SCRIPT})
 target_include_directories(${TARGET} PUBLIC ${INC_PATHS})
 
 # Bin and Hex Conversion
