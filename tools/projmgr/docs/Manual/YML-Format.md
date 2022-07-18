@@ -430,7 +430,9 @@ layer:
 
 # Directory Control
 
-The following node allows to control the directories used to generate the output files.
+The following node allows to control the directories used to generate the output files.  
+
+>**Note:** This control is only possible at `csolution.yml` level.
 
 ## `output-dirs:`
 
@@ -446,9 +448,19 @@ The default setting for the `output-dirs:` are:
 ```yml
 cprjdir: <cproject.yml base directory>
 rtedir:  <cproject.yml base directory>/RTE
-intdir:  <cproject.yml base directory>/tmp/$Project$/$TargetType$/$BuildType$
-outdir:  <cproject.yml base directory>/out/$Project$/$TargetType$/$BuildType$
+intdir:  <csolution.yml base directory>/tmp/$Project$/$TargetType$/$BuildType$
+outdir:  <csolution.yml base directory>/out/$Project$/$TargetType$/$BuildType$
 ```
+
+**Example:**
+
+```yml
+output-dirs:
+  cprjdir: ./cprj                        # relative path to csolution.yml file
+  rtedir: ./$Project$/RTE2               # alternative path for RTE files
+  outdir: ./out/$Project$/$TargetType$   # $BuildType$ no longer part of the outdir    
+```
+
 
 
 # Toolchain Options
@@ -588,8 +600,7 @@ Control warnings (could be: no, all, Misra, AC5-like), mapped to the toolchain b
 
 ## `define:`
 
-\note: 
-For a transition period `defines:` is also accepted.  However this will be deprecated.
+>**Note:** For a transition period `defines:` is also accepted.  However this will be deprecated.
 
 Contains a list of symbol #define statements that are passed via the command line to the development tools.
 
@@ -608,8 +619,7 @@ define:                    # Start a list of define statements
 
 ## `undefine:`
 
-\note: 
-For a transition period `undefines:` is also accepted.  However this will be deprecated.
+>**Note:** For a transition period `undefines:` is also accepted.  However this will be deprecated.
 
 Remove symbol #define statements from the command line of the development tools.
 
@@ -633,8 +643,7 @@ groups:
 
 ## `add-path:`
 
-\note: 
-For a transition period `add-paths:` is also accepted.  However this will be deprecated.
+>**Note:** For a transition period `add-paths:` is also accepted.  However this will be deprecated.
 
 Add include paths to the command line of the development tools.
 
@@ -657,8 +666,7 @@ project:
 
 ## `del-path:`
 
-\note: 
-For a transition period `del-paths:` is also accepted.  However this will be deprecated.
+>**Note:** For a transition period `del-paths:` is also accepted.  However this will be deprecated.
 
 Remove include paths (that are defined at the cproject level) from the command line of the development tools.
 
