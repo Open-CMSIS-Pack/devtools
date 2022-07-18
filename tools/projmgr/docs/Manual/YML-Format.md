@@ -15,19 +15,24 @@ The following chapter explains the YML format that is used to describe the YML i
   - [`solution:`](#solution)
   - [`project:`](#project)
   - [`layer:`](#layer)
+- [Directory Control](#directory-control)
+  - [`output-dirs:`](#output-dirs)
 - [Toolchain Options](#toolchain-options)
   - [`compiler:`](#compiler)
   - [`output-type:`](#output-type)
   - [`linker:`](#linker)
+  - [`for-compiler:`](#for-compiler)
 - [Translation Control](#translation-control)
   - [`optimize:`](#optimize)
   - [`debug:`](#debug)
   - [`warnings:`](#warnings)
-  - [`defines:`](#defines)
-  - [`undefines:`](#undefines)
-  - [`add-paths:`](#add-paths)
-  - [`del-paths:`](#del-paths)
+  - [`define:`](#define)
+  - [`undefine:`](#undefine)
+  - [`add-path:`](#add-path)
+  - [`del-path:`](#del-path)
   - [`misc:`](#misc)
+- [Project Setups](#project-setups)
+  - [`setups:`](#setups)
 - [Pack Selection](#pack-selection)
   - [`packs:`](#packs)
   - [`pack:`](#pack)
@@ -189,12 +194,16 @@ board: STMicroelectronics::NUCLEO-L476RG:Rev.C    # A board with revision specif
 
 # Access Sequences
 
-The following **access sequences** allow to use arguments from the CMSIS Project Manager as arguments of the various `*.yml` files in the key values for `defines:`, `add-paths:`, `misc:`, `files:`, and `execute:`. The **access sequences** can refer in a different project and provide therefore a method to describe project dependencies.
+The following **access sequences** allow to use arguments from the CMSIS Project Manager as arguments of the various `*.yml` files in the key values for `define:`, `add-path:`, `misc:`, `files:`, and `execute:`. The **access sequences** can refer in a different project and provide therefore a method to describe project dependencies.
 
 Access Sequence                                | Description
 :----------------------------------------------|:--------------------------------------
 `$Bname$`                                      | Board name of the selected board.
 `$Dname$`                                      | Device name of the selected device.
+`$Project$`                                    | Project name of the currently process project.
+`$BuildType$`                                  | [Build-type](#build-types) name of the currently process project.
+`$TargetType$`                                 | [Target-type](#target-types) name of the currently process project.
+`$Compiler$`                                   | [Compiler](#compiler) name of the currently process project.
 `$Output(project[.build-type][+target-type])$` | Path to the output file of a related project that is defined in the `*.csolution.yml` file.
 `$OutDir(project[.build-type][+target-type])$` | Path to the output directory of a related project that is defined in the `*.csolution.yml` file.
 `$Source(project[.build-type][+target-type])$` | Path to the source directory of a related project that is defined in the `*.csolution.yml` file.
@@ -267,7 +276,7 @@ The example below creates a `define` that uses the device name.
 ```yml
 groups:
   - group:  "Main File Group"
-    defines:
+    define:
       - $Dname$                           # Generate a #define 'device-name' for this file group
 ```
 
@@ -306,6 +315,7 @@ The `solution:` node is the start of a `*.csolution.yml` file that collects rela
 `solution:`                                           | Content
 :-----------------------------------------------------|:------------------------------------
 &nbsp;&nbsp; [`packs:`](#packs)                       | Defines local packs and/or scope of packs that are used.
+&nbsp;&nbsp; [`outdirs:`](#outdirs)                   | Control the output directories for generating the csolution.
 &nbsp;&nbsp; [`compiler:`](#compiler)                 | Overall toolchain selection for the solution.
 &nbsp;&nbsp; [`target-types:`](#target-types)         | List of target-types that define the target system (device or board).
 &nbsp;&nbsp; [`build-types:`](#build-types)           | List of build-types (i.e. Release, Debug, Test).
@@ -352,10 +362,10 @@ The `project:` node is the start of a `*.cproject.yml` file and can contain the 
 &nbsp;&nbsp; [`optimize:`](#optimize)          |  Optional    | Optimize level for code generation.
 &nbsp;&nbsp; [`linker:`](#linker)              | **Required** | Instructions for the linker.
 &nbsp;&nbsp; [`debug:`](#debug)                |  Optional    | Generation of debug information.
-&nbsp;&nbsp; [`defines:`](#defines)            |  Optional    | Preprocessor (#define) symbols for code generation.
-&nbsp;&nbsp; [`undefines:`](#undefines)        |  Optional    | Remove preprocessor (#define) symbols.
-&nbsp;&nbsp; [`add-paths:`](#add-paths)        |  Optional    | Additional include file paths.
-&nbsp;&nbsp; [`del-paths:`](#del-paths)        |  Optional    | Remove specific include file paths.
+&nbsp;&nbsp; [`define:`](#define)              |  Optional    | Preprocessor (#define) symbols for code generation.
+&nbsp;&nbsp; [`undefine:`](#undefine)          |  Optional    | Remove preprocessor (#define) symbols.
+&nbsp;&nbsp; [`add-path:`](#add-path)          |  Optional    | Additional include file paths.
+&nbsp;&nbsp; [`del-path:`](#del-path)          |  Optional    | Remove specific include file paths.
 &nbsp;&nbsp; [`misc:`](#misc)                  |  Optional    | Literal tool-specific controls.
 &nbsp;&nbsp; [`board:`](#board)                |  Optional    | Board specification.
 &nbsp;&nbsp; [`device:`](#device)              |  Optional    | Device specification.
@@ -371,7 +381,7 @@ project:
   misc:
     - compiler: AC6                          # specify misc controls for Arm Compiler 6
       C: [-fshort-enums, -fshort-wchar]      # set options for C files
-  add-paths:
+  add-path:
     - $OutDir(Secure)$                       # add the path to the secure project's output directory
   components:
     - component: Startup                     # Add startup component
@@ -418,6 +428,29 @@ layer:
         - file: tz_context.c
 ```
 
+# Directory Control
+
+The following node allows to control the directories used to generate the output files.
+
+## `output-dirs:`
+
+`output-dirs:`               |              | Content
+:----------------------------|--------------|:------------------------------------
+&nbsp;&nbsp; [`cprjdir:`]    |  Optional    | Specifies the directory for the *.CPRJ files.
+&nbsp;&nbsp; [`rtedir:`]     |  Optional    | Specifies the directory for the RTE files.
+&nbsp;&nbsp; [`intdir:`]     |  Optional    | Specifies the directory for the interim files.
+&nbsp;&nbsp; [`outdir:`]     |  Optional    | Specifies the directory for the build output files.
+
+The default setting for the `output-dirs:` are:
+
+```yml
+cprjdir: <cproject.yml base directory>
+rtedir:  <cproject.yml base directory>/RTE
+intdir:  <cproject.yml base directory>/tmp/$Project$/$TargetType$/$BuildType$
+outdir:  <cproject.yml base directory>/out/$Project$/$TargetType$/$BuildType$
+```
+
+
 # Toolchain Options
 
 The following code translation options may be used at various places such as:
@@ -459,9 +492,11 @@ output-type: lib            # Generate a library
 
 The `linker:` node controls the linker operation.
 
-`linker:`                                             | Content
-:-----------------------------------------------------|:------------------------------------
-&nbsp;&nbsp; `script:`                                | Explicit file name of the linker script
+`linker:`                                             |              |  Content
+:-----------------------------------------------------|:-------------|:--------------------------------
+`- script:`                                           |              | Explicit file name of the linker script
+&nbsp;&nbsp; [`for-type:`](#for-type)                 |   Optional   | Include script for a list of *build* and *target* types.
+&nbsp;&nbsp; [`not-for-type:`](#not-for-type)         |   Optional   | Exclude script for a list of *build* and *target* types.
 
 **Example:**
 
@@ -471,6 +506,31 @@ linker:                      # Control linker operation
     for-type: .Debug  
 ```
 
+## `for-compiler:`
+Depending on a compiler toolchain it is possible to include *compiler-specific nodes* in the build process.
+
+**Examples:**
+
+```yml
+for-compiler: AC6@6.16               # add item for Arm Compiler version 6.16 only      
+
+for-compiler:                        # add item
+  - AC6                              # for Arm Compiler (any version)
+  - GCC                              # for GCC Compiler
+```
+
+The keyword `for-compiler:` can be applied to the following nodes:
+
+List Node                                  | Description
+:------------------------------------------|:------------------------------------
+[`- group:`](#groups)                      | At `group:` node it is possible to control inclusion of a file group.
+[`- file:`](#files)                        | At `file:` node it is possible to control inclusion of a file.
+[`- setup:`](#setups)                      | At `setup:` node to define compiler-specific toolchain settings.
+[`- misc:`](#misc)                         | At `misc:` node that allows to add miscellaneous compiler-specific 
+
+The inclusion of a *compiler-specific node* is processed when the specified compiler(s) matches.
+
+
 # Translation Control
 
 The following translation control options may be used at various places such as:
@@ -479,7 +539,7 @@ The following translation control options may be used at various places such as:
   - [`groups:`](#groups) level to specify options for a specify source file group
   - [`files:`](#files) level to specify options for a specify source file
 
-> **Note:** `defines:`, `add-paths:`, `del-paths:`  and `misc:` are additive. All other keywords overwrite previous settings.
+> **Note:** `define:`, `add-path:`, `del-path:`  and `misc:` are additive. All other keywords overwrite previous settings.
 
 ## `optimize:`
 
@@ -526,11 +586,14 @@ Value                                                 | Code Generation
 
 Control warnings (could be: no, all, Misra, AC5-like), mapped to the toolchain by CMSIS-Build.
 
-## `defines:`
+## `define:`
+
+\note: 
+For a transition period `defines:` is also accepted.  However this will be deprecated.
 
 Contains a list of symbol #define statements that are passed via the command line to the development tools.
 
-`defines:`                                            | Content
+`define:`                                             | Content
 :-----------------------------------------------------|:------------------------------------
 &nbsp;&nbsp; `- <symbol-name>`                        | #define symbol passed via command line
 &nbsp;&nbsp; `- <symbol-name> = <value>`              | #define symbol with value passed via command line
@@ -538,34 +601,40 @@ Contains a list of symbol #define statements that are passed via the command lin
 **Example:**
 
 ```yml
-defines:                   # Start a list of define statements
+define:                    # Start a list of define statements
   - TestValue = 12         # add symbol 'TestValue' with value 12
   - TestMode               # add symbol 'TestMode'
 ```
 
-## `undefines:`
+## `undefine:`
+
+\note: 
+For a transition period `undefines:` is also accepted.  However this will be deprecated.
 
 Remove symbol #define statements from the command line of the development tools.
 
-`undefines:`                                         | Content
+`undefine:`                                          | Content
 :----------------------------------------------------|:------------------------------------
 &nbsp;&nbsp; `- <symbol-name>`                       | Remove #define symbol
 
-**Example:**
+**Examples:**
 
 ```yml
 groups:
   - group:  "Main File Group"
-    undefines:
+    undefine:
       - TestValue           # remove define symbol `TestValue` for this file group
     files: 
       - file: file1a.c
-        undefines:
+        undefine:
          - TestMode         # remove define symbol `TestMode` for this file
       - file: file1b.c
 ```
 
-## `add-paths:`
+## `add-path:`
+
+\note: 
+For a transition period `add-paths:` is also accepted.  However this will be deprecated.
 
 Add include paths to the command line of the development tools.
 
@@ -577,13 +646,19 @@ Add include paths to the command line of the development tools.
 ```yml
 project:
   misc:
-    - compiler: AC6
+    - for-compiler: AC6
       C: [-fshort-enums, -fshort-wchar]
-  add-paths:
+    - for-compiler: GCC
+      C: [-fshort-enums, -fshort-wchar]
+
+  add-path:
     - $OutDir(Secure)$                   # add path to secure project's output directory
 ```
 
-## `del-paths:`
+## `del-path:`
+
+\note: 
+For a transition period `del-paths:` is also accepted.  However this will be deprecated.
 
 Remove include paths (that are defined at the cproject level) from the command line of the development tools.
 
@@ -604,32 +679,78 @@ Remove include paths (that are defined at the cproject level) from the command l
 
 Add miscellaneous literal tool-specific controls that are directly passed to the individual tools depending on the file type.
 
-`misc:`                      |              | Content
-:----------------------------|--------------|:------------------------------------
-[`- compiler:`](#compiler)   | **Required** | Name of the toolchain that the literal control string applies to.
-&nbsp;&nbsp; `C:`            |   Optional   | Applies to *.c files only.
-&nbsp;&nbsp; `CPP:`          |   Optional   | Applies to *.cpp files only.
-&nbsp;&nbsp; `C*:`           |   Optional   | Applies to *.c and *.cpp files.
-&nbsp;&nbsp; `ASM:`          |   Optional   | Applies to assembler source files only.
-&nbsp;&nbsp; `Link:`         |   Optional   | Applies to the linker.
-&nbsp;&nbsp; `Lib:`          |   Optional   | Applies to the library manager or archiver.
+`misc:`                              |              | Content
+:------------------------------------|--------------|:------------------------------------
+[`- for-compiler:`](#for-compiler)   |   Optional   | Name of the toolchain that the literal control string applies to.
+&nbsp;&nbsp; `C:`                    |   Optional   | Applies to *.c files only.
+&nbsp;&nbsp; `CPP:`                  |   Optional   | Applies to *.cpp files only.
+&nbsp;&nbsp; `C-CPP:`                |   Optional   | Applies to *.c and *.cpp files.
+&nbsp;&nbsp; `ASM:`                  |   Optional   | Applies to assembler source files only.
+&nbsp;&nbsp; `Link:`                 |   Optional   | Applies to the linker.
+&nbsp;&nbsp; `Lib:`                  |   Optional   | Applies to the library manager or archiver.
 
 **Example:**
 ```yml
   build-types:
     - type: Debug
-      compiler: AC6
       misc:
-        - compiler: AC6
+        - for-compiler: AC6
           C:
             - -O1
             - -g
+        - for-compiler: GCC
+          C:
+            - -Og
+
     - type: Release
       compiler: AC6
       misc:
-        - compiler: AC6
-          C:
-            - -O3
+        C:
+          - -O3
+```
+
+# Project Setups
+
+The `setups:` node can be used to create setups that are specific to a compiler, target-type, and/or built-type.
+
+## `setups:`
+
+The `setups:` node collects a list of `setup:` notes.  For each context, only one setup will be selected.
+
+The result is a `setup:` that collects various toolchain options and that is valid for all files and components in the project.
+It is however possible to change that `setup:` settings on a [`group:`](#groups) or [`file:`](#files) level.
+
+`setups:`                                      |              | Content
+:----------------------------------------------|--------------|:------------------------------------
+[`- setup:`](#group)                           | **Required** | Description of the setup
+&nbsp;&nbsp;&nbsp; [`for-type:`](#for-type)          |   Optional   | Include group for a list of *build* and *target* types.
+&nbsp;&nbsp;&nbsp; [`not-for-type:`](#not-for-type)  |   Optional   | Exclude group for a list of *build* and *target* types.
+&nbsp;&nbsp;&nbsp; [`for-compiler:`](#for-compiler)  |   Optional   | Include group for a list of compilers.
+&nbsp;&nbsp;&nbsp; [`optimize:`](#optimize)          |   Optional   | Optimize level for code generation.
+&nbsp;&nbsp;&nbsp; [`debug:`](#debug)                |   Optional   | Generation of debug information.
+&nbsp;&nbsp;&nbsp; [`define:`](#define)              |   Optional   | Define symbol settings for code generation.
+&nbsp;&nbsp;&nbsp; [`undefine:`](#undefine)          |   Optional   | Remove define symbol settings for code generation.
+&nbsp;&nbsp;&nbsp; [`add-path:`](#add-path)          |   Optional   | Additional include file paths.
+&nbsp;&nbsp;&nbsp; [`del-path:`](#del-path)          |   Optional   | Remove specific include file paths.
+&nbsp;&nbsp;&nbsp; [`linker:`](#linker)              |   Optional   | Remove specific include file paths.
+&nbsp;&nbsp;&nbsp; [`misc:`](#misc)                  |   Optional   | Literal tool-specific controls.
+
+```yml
+project:
+  setups:
+    - setup: Arm Compiler 6 project setup
+      for-compiler: AC6
+      linker:
+        - script: my-project.sct
+      define:
+        - test: 12
+
+   - setup: GCC project setup
+     for-compiler: GCC
+      linker:
+        - script: my-project.inc
+      define:
+        - test: 11
 ```
 
 # Pack Selection
@@ -649,7 +770,7 @@ The `packs:` node is the start of a pack selection.
 
 `packs:`                                              | Content
 :-----------------------------------------------------|:------------------------------------
-&nbsp;&nbsp; [`-pack:`](#pack)                        | Explicit pack specification (additive)
+&nbsp;&nbsp; [`- pack:`](#pack)                       | Explicit pack specification (additive)
 
 ## `pack:`
 
@@ -740,10 +861,10 @@ The `target-types:` node may include [toolchain options](#toolchain-options), [t
 &nbsp;&nbsp;&nbsp; [`output-type:`](#output-type)  |   Optional   | Generate executable (default) or library.
 &nbsp;&nbsp;&nbsp; [`optimize:`](#optimize)        |   Optional   | Optimize level for code generation.
 &nbsp;&nbsp;&nbsp; [`debug:`](#debug)              |   Optional   | Generation of debug information.
-&nbsp;&nbsp;&nbsp; [`defines:`](#defines)          |   Optional   | Preprocessor (#define) symbols for code generation.
-&nbsp;&nbsp;&nbsp; [`undefines:`](#undefines)      |   Optional   | Remove preprocessor (#define) symbols.
-&nbsp;&nbsp;&nbsp; [`add-paths:`](#add-paths)      |   Optional   | Additional include file paths.
-&nbsp;&nbsp;&nbsp; [`del-paths:`](#del-paths)      |   Optional   | Remove specific include file paths.
+&nbsp;&nbsp;&nbsp; [`define:`](#define)            |   Optional   | Preprocessor (#define) symbols for code generation.
+&nbsp;&nbsp;&nbsp; [`undefine:`](#undefine)        |   Optional   | Remove preprocessor (#define) symbols.
+&nbsp;&nbsp;&nbsp; [`add-path:`](#add-path)        |   Optional   | Additional include file paths.
+&nbsp;&nbsp;&nbsp; [`del-path:`](#del-path)        |   Optional   | Remove specific include file paths.
 &nbsp;&nbsp;&nbsp; [`misc:`](#misc)                |   Optional   | Literal tool-specific controls.
 &nbsp;&nbsp;&nbsp; [`board:`](#board)              |   Optional   | Board specification.
 &nbsp;&nbsp;&nbsp; [`device:`](#device)            |   Optional   | Device specification.
@@ -760,10 +881,10 @@ The `build-types:` node may include [toolchain options](#toolchain-options):
 &nbsp;&nbsp;&nbsp; [`output-type:`](#output-type)     |   Optional   | Generate executable (default) or library.
 &nbsp;&nbsp;&nbsp; [`optimize:`](#optimize)           |   Optional   | Optimize level for code generation.
 &nbsp;&nbsp;&nbsp; [`debug:`](#debug)                 |   Optional   | Generation of debug information.
-&nbsp;&nbsp;&nbsp; [`defines:`](#defines)             |   Optional   | Preprocessor (#define) symbols for code generation.
-&nbsp;&nbsp;&nbsp; [`undefines:`](#undefines)         |   Optional   | Remove preprocessor (#define) symbols.
-&nbsp;&nbsp;&nbsp; [`add-paths:`](#add-paths)         |   Optional   | Additional include file paths.
-&nbsp;&nbsp;&nbsp; [`del-paths:`](#del-paths)         |   Optional   | Remove specific include file paths.
+&nbsp;&nbsp;&nbsp; [`define:`](#define)               |   Optional   | Preprocessor (#define) symbols for code generation.
+&nbsp;&nbsp;&nbsp; [`undefine:`](#undefine)           |   Optional   | Remove preprocessor (#define) symbols.
+&nbsp;&nbsp;&nbsp; [`add-path:`](#add-path)           |   Optional   | Additional include file paths.
+&nbsp;&nbsp;&nbsp; [`del-path:`](#del-path)           |   Optional   | Remove specific include file paths.
 &nbsp;&nbsp;&nbsp; [`misc:`](#misc)                   |   Optional   | Literal tool-specific controls.
 
 **Example:**
@@ -857,12 +978,15 @@ List Node                                  | Description
 [`- layer:`](#layers)                      | At `layers:` level it is possible to control inclusion of a software layer.
 [`- component:`](#components)              | At `components:` level it is possible to control inclusion of a software component.
 [`- group:`](#groups)                      | At `groups:` level it is possible to control inclusion of a file group.
+[`- setup:`](#groups)                      | At `setups:` level it is define toolchain specific options that apply to the whole project.
 [`- file:`](#files)                        | At `files:` level it is possible to control inclusion of a file.
 
 The inclusion of a *list node* is processed for a given *project context* respecting its hierarchy from top to bottom: `project` > `layer` > `component`/`group` > `file`
 
 In other words, the restrictions specified by a *type list* for a *list node* are automatically applied to its children nodes.
 Children *list nodes* inherit the restrictions from their parent and consequently it must be considered when processing their *type lists*.
+
+
 
 # Related Projects
 
@@ -880,10 +1004,10 @@ The YML structure of the section `projects:` is:
 &nbsp;&nbsp; [`compiler:`](#compiler)          |   Optional   | Specify a specific compiler.
 &nbsp;&nbsp; [`optimize:`](#optimize)          |   Optional   | Optimize level for code generation.
 &nbsp;&nbsp; [`debug:`](#debug)                |   Optional   | Generation of debug information.
-&nbsp;&nbsp; [`defines:`](#defines)            |   Optional   | Define symbol settings for code generation.
-&nbsp;&nbsp; [`undefines:`](#undefines)        |   Optional   | Remove define symbol settings for code generation.
-&nbsp;&nbsp; [`add-paths:`](#add-paths)        |   Optional   | Additional include file paths.
-&nbsp;&nbsp; [`del-paths:`](#del-paths)        |   Optional   | Remove specific include file paths.
+&nbsp;&nbsp; [`define:`](#define)              |   Optional   | Define symbol settings for code generation.
+&nbsp;&nbsp; [`undefine:`](#undefine)          |   Optional   | Remove define symbol settings for code generation.
+&nbsp;&nbsp; [`add-path:`](#add-path)          |   Optional   | Additional include file paths.
+&nbsp;&nbsp; [`del-path:`](#del-path)          |   Optional   | Remove specific include file paths.
 &nbsp;&nbsp; [`misc:`](#misc)                  |   Optional   | Literal tool-specific controls.
 
 **Example:**
@@ -892,6 +1016,16 @@ The YML structure of the section `projects:` is:
   projects:
     - project: ./CM0/CM0.cproject.yml      # specify cproject.yml file
       for-type: +CM0                       # specify use case
+      for-compiiler: GCC
+      define:
+        - test: 12
+
+    - project: ./CM0/CM0.cproject.yml      # specify cproject.yml file
+      for-type: +CM0                       # specify use case
+      for-compiiler: AC6
+      define:
+        - test: 9
+
     - project: ./Debug/Debug.cproject.yml  # specify cproject.yml file
       not-for-type: .Release               # specify not to use case
 ```
@@ -914,12 +1048,13 @@ The `groups:` keyword specifies a list that adds [source groups and files](#sour
 [`- group:`](#group)                           | **Required** | Name of the group.
 &nbsp;&nbsp; [`for-type:`](#for-type)          |   Optional   | Include group for a list of *build* and *target* types.
 &nbsp;&nbsp; [`not-for-type:`](#not-for-type)  |   Optional   | Exclude group for a list of *build* and *target* types.
+&nbsp;&nbsp; [`for-compiler:`](#for-compiler)  |   Optional   | Include group for a list of compilers.
 &nbsp;&nbsp; [`optimize:`](#optimize)          |   Optional   | Optimize level for code generation.
 &nbsp;&nbsp; [`debug:`](#debug)                |   Optional   | Generation of debug information.
-&nbsp;&nbsp; [`defines:`](#defines)            |   Optional   | Define symbol settings for code generation.
-&nbsp;&nbsp; [`undefines:`](#undefines)        |   Optional   | Remove define symbol settings for code generation.
-&nbsp;&nbsp; [`add-paths:`](#add-paths)        |   Optional   | Additional include file paths.
-&nbsp;&nbsp; [`del-paths:`](#del-paths)        |   Optional   | Remove specific include file paths.
+&nbsp;&nbsp; [`define:`](#define)              |   Optional   | Define symbol settings for code generation.
+&nbsp;&nbsp; [`undefine:`](#undefine)          |   Optional   | Remove define symbol settings for code generation.
+&nbsp;&nbsp; [`add-path:`](#add-path)          |   Optional   | Additional include file paths.
+&nbsp;&nbsp; [`del-path:`](#del-path)          |   Optional   | Remove specific include file paths.
 &nbsp;&nbsp; [`misc:`](#misc)                  |   Optional   | Literal tool-specific controls.
 &nbsp;&nbsp; [`groups:`](#groups)              |   Optional   | Start a nested list of groups.
 &nbsp;&nbsp; [`files:`](#files)                |   Optional   | Start a nested list of files.
@@ -930,18 +1065,19 @@ See [`files:`](#files) section.
 
 ## `files:`
 
-`files:`                                       |              | Content
-:----------------------------------------------|--------------|:------------------------------------
-[`- file:`](#file)                             | **Required** | Name of the file.
-&nbsp;&nbsp; [`for-type:`](#for-type)          |   Optional   | Include file for a list of *build* and *target* types.
-&nbsp;&nbsp; [`not-for-type:`](#not-for-type)  |   Optional   | Exclude file for a list of *build* and *target* types.
-&nbsp;&nbsp; [`optimize:`](#optimize)          |   Optional   | Optimize level for code generation.
-&nbsp;&nbsp; [`debug:`](#debug)                |   Optional   | Generation of debug information.
-&nbsp;&nbsp; [`defines:`](#defines)            |   Optional   | Define symbol settings for code generation.
-&nbsp;&nbsp; [`undefines:`](#undefines)        |   Optional   | Remove define symbol settings for code generation.
-&nbsp;&nbsp; [`add-paths:`](#add-paths)        |   Optional   | Additional include file paths.
-&nbsp;&nbsp; [`del-paths:`](#del-paths)        |   Optional   | Remove specific include file paths.
-&nbsp;&nbsp; [`misc:`](#misc)                  |   Optional   | Literal tool-specific controls.
+`files:`                                             |              | Content
+:----------------------------------------------------|--------------|:------------------------------------
+[`- file:`](#file)                                   | **Required** | Name of the file.
+&nbsp;&nbsp;&nbsp; [`for-type:`](#for-type)          |   Optional   | Include file for a list of *build* and *target* types.
+&nbsp;&nbsp;&nbsp; [`not-for-type:`](#not-for-type)  |   Optional   | Exclude file for a list of *build* and *target* types.
+&nbsp;&nbsp;&nbsp; [`for-compiler:`](#for-compiler)  |   Optional   | Include file for a list of compilers.
+&nbsp;&nbsp;&nbsp; [`optimize:`](#optimize)          |   Optional   | Optimize level for code generation.
+&nbsp;&nbsp;&nbsp; [`debug:`](#debug)                |   Optional   | Generation of debug information.
+&nbsp;&nbsp;&nbsp; [`define:`](#define)              |   Optional   | Define symbol settings for code generation.
+&nbsp;&nbsp;&nbsp; [`undefine:`](#undefine)          |   Optional   | Remove define symbol settings for code generation.
+&nbsp;&nbsp;&nbsp; [`add-path:`](#add-path)          |   Optional   | Additional include file paths.
+&nbsp;&nbsp;&nbsp; [`del-path:`](#del-path)          |   Optional   | Remove specific include file paths.
+&nbsp;&nbsp;&nbsp; [`misc:`](#misc)                  |   Optional   | Literal tool-specific controls.
 
 **Example:**
 
@@ -950,24 +1086,27 @@ Add source files to a project or a software layer. Used in `*.cproject.yml` and 
 ```yml
 groups:
   - group:  "Main File Group"
-    not-for-type: .Release+Virtual, .Test-DSP+Virtual, +Board
+    not-for-type:                        # includes this group not for the following: 
+      - .Release+Virtual                 # build-type "Release" and target-type "Virtual"
+      - .Test-DSP+Virtual                # build-type "Test-DSP" and target-type "Virtual"
+      - +Board                           # target-type "Board"
     files: 
       - file: file1a.c
       - file: file1b.c
-        defines:
+        define:
           - a: 1
-        undefines:
+        undefine:
           - b
         optimize: size
 
   - group: "Other File Group"
     files:
       - file: file2a.c
-        for-type: +Virtual
-        defines: 
+        for-type: +Virtual               # includes this file only for target-type "Virtual"
+        define: 
           - test: 2
       - file: file2a.c
-        not-for-type: +Virtual
+        not-for-type: +Virtual           # includes this file not for target-type "Virtual"
       - file: file2b.c
 
   - group: "Nested Group"
@@ -982,6 +1121,22 @@ groups:
           - file: file-sub2-2.c
 ```
 
+It is also possible to include a file group for a specify compiler using [`for-compiler:`](#for-compiler) or a specify target-type and/or build-type using [`for-type:`](#for-type) or [`not-for-type:`](#not-for-type).
+```yml
+groups:
+  - group:  "Main File Group"
+    for-compiler: AC6                    # includes this group only for Arm Compiler 6
+    files: 
+      - file: file1a.c
+      - file: file2a.c
+
+  - group:  "Main File Group"
+    for-compiler: GCC                    # includes this group only for GCC Compiler
+    files: 
+      - file: file1b.c
+      - file: file2b.c
+```
+
 ## `layers:`
 
 Add a software layer to a project. Used in `*.cproject.yml` files.
@@ -993,10 +1148,10 @@ Add a software layer to a project. Used in `*.cproject.yml` files.
 &nbsp;&nbsp; [`not-for-type:`](#not-for-type)  |   Optional   | Exclude layer for a list of *build* and *target* types.
 &nbsp;&nbsp; [`optimize:`](#optimize)          |   Optional   | Optimize level for code generation.
 &nbsp;&nbsp; [`debug:`](#debug)                |   Optional   | Generation of debug information.
-&nbsp;&nbsp; [`defines:`](#defines)            |   Optional   | Define symbol settings for code generation.
-&nbsp;&nbsp; [`undefines:`](#undefines)        |   Optional   | Remove define symbol settings for code generation.
-&nbsp;&nbsp; [`add-paths:`](#add-paths)        |   Optional   | Additional include file paths.
-&nbsp;&nbsp; [`del-paths:`](#del-paths)        |   Optional   | Remove specific include file paths.
+&nbsp;&nbsp; [`define:`](#define)              |   Optional   | Define symbol settings for code generation.
+&nbsp;&nbsp; [`undefine:`](#undefine)          |   Optional   | Remove define symbol settings for code generation.
+&nbsp;&nbsp; [`add-path:`](#add-path)          |   Optional   | Additional include file paths.
+&nbsp;&nbsp; [`del-path:`](#del-path)          |   Optional   | Remove specific include file paths.
 &nbsp;&nbsp; [`misc:`](#misc)                  |   Optional   | Literal tool-specific controls.
 
 **Example:**
@@ -1029,10 +1184,10 @@ Add software components to a project or a software layer. Used in `*.cproject.ym
 &nbsp;&nbsp; [`not-for-type:`](#not-for-type)  |   Optional   | Exclude component for a list of *build* and *target* types.
 &nbsp;&nbsp; [`optimize:`](#optimize)          |   Optional   | Optimize level for code generation.
 &nbsp;&nbsp; [`debug:`](#debug)                |   Optional   | Generation of debug information.
-&nbsp;&nbsp; [`defines:`](#defines)            |   Optional   | Define symbol settings for code generation.
-&nbsp;&nbsp; [`undefines:`](#undefines)        |   Optional   | Remove define symbol settings for code generation.
-&nbsp;&nbsp; [`add-paths:`](#add-paths)        |   Optional   | Additional include file paths.
-&nbsp;&nbsp; [`del-paths:`](#del-paths)        |   Optional   | Remove specific include file paths.
+&nbsp;&nbsp; [`define:`](#define)              |   Optional   | Define symbol settings for code generation.
+&nbsp;&nbsp; [`undefine:`](#undefine)          |   Optional   | Remove define symbol settings for code generation.
+&nbsp;&nbsp; [`add-path:`](#add-path)          |   Optional   | Additional include file paths.
+&nbsp;&nbsp; [`del-path:`](#del-path)          |   Optional   | Remove specific include file paths.
 &nbsp;&nbsp; [`misc:`](#misc)                  |   Optional   | Literal tool-specific controls.
 &nbsp;&nbsp; [`instances:`](#instances)        |   Optional   | Configure component instances.
 
@@ -1050,13 +1205,13 @@ components:
     - component: ARM::RTOS&FreeRTOS:Timers
 
     - component: ARM::Security:mbed TLS
-      defines:
+      define:
         - MBEDTLS_CONFIG_FILE="aws_mbedtls_config.h"
     - component: AWS::FreeRTOS:backoffAlgorithm
     - component: AWS::FreeRTOS:coreMQTT
     - component: AWS::FreeRTOS:coreMQTT Agent
     - component: AWS::FreeRTOS:corePKCS11&Custom
-      defines:
+      define:
         - MBEDTLS_CONFIG_FILE="aws_mbedtls_config.h"
 ```
 
