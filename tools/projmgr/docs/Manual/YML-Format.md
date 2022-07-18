@@ -20,6 +20,7 @@ The following chapter explains the YML format that is used to describe the YML i
 - [Toolchain Options](#toolchain-options)
   - [`compiler:`](#compiler)
   - [`output-type:`](#output-type)
+  - [`linker:`](#linker)
   - [`for-compiler:`](#for-compiler)
 - [Translation Control](#translation-control)
   - [`optimize:`](#optimize)
@@ -92,7 +93,7 @@ vendor [:: pack-name [@[~ | >=] version] ]
 Element      |              | Description
 :------------|--------------|:---------------------
 `vendor`     | **Required** | Vendor name of the software pack.
-`pack-name`  | Optional     | Name of the software pack; wildcards (`*`, `?`, `[abc]`) can be used.<br/>- `*` matches any substring.<br/>- `?` matches any single character.<br/>- `[abc]` matches any character in the set (`a`,`b`,`c`).
+`pack-name`  | Optional     | Name of the software pack; wildcards (\*, ?) can be used.
 `version`    | Optional     | Version number of the software pack, with `@1.2.3` that must exactly match, `@~1.2`/`@~1` that matches with sematic versioning, or `@>=1.2.3` that allows any version higher or equal.
 
 **Examples:**
@@ -314,7 +315,7 @@ The `solution:` node is the start of a `*.csolution.yml` file that collects rela
 `solution:`                                           | Content
 :-----------------------------------------------------|:------------------------------------
 &nbsp;&nbsp; [`packs:`](#packs)                       | Defines local packs and/or scope of packs that are used.
-&nbsp;&nbsp; [`output-dirs:`](#output-dirs)           | Control the output directories for generating the csolution.
+&nbsp;&nbsp; [`outdirs:`](#outdirs)                   | Control the output directories for generating the csolution.
 &nbsp;&nbsp; [`compiler:`](#compiler)                 | Overall toolchain selection for the solution.
 &nbsp;&nbsp; [`target-types:`](#target-types)         | List of target-types that define the target system (device or board).
 &nbsp;&nbsp; [`build-types:`](#build-types)           | List of build-types (i.e. Release, Debug, Test).
@@ -359,6 +360,7 @@ The `project:` node is the start of a `*.cproject.yml` file and can contain the 
 &nbsp;&nbsp; [`description:`](#description)    |  Optional    | Project description.
 &nbsp;&nbsp; [`output-type:`](#output-type)    | **Required** | Generate executable (default) or library.
 &nbsp;&nbsp; [`optimize:`](#optimize)          |  Optional    | Optimize level for code generation.
+&nbsp;&nbsp; [`linker:`](#linker)              | **Required** | Instructions for the linker.
 &nbsp;&nbsp; [`debug:`](#debug)                |  Optional    | Generation of debug information.
 &nbsp;&nbsp; [`define:`](#define)              |  Optional    | Preprocessor (#define) symbols for code generation.
 &nbsp;&nbsp; [`undefine:`](#undefine)          |  Optional    | Remove preprocessor (#define) symbols.
@@ -428,9 +430,7 @@ layer:
 
 # Directory Control
 
-The following node allows to control the directories used to generate the output files.  
-
->**Note:** This control is only possible at `csolution.yml` level.
+The following node allows to control the directories used to generate the output files.
 
 ## `output-dirs:`
 
@@ -446,19 +446,9 @@ The default setting for the `output-dirs:` are:
 ```yml
 cprjdir: <cproject.yml base directory>
 rtedir:  <cproject.yml base directory>/RTE
-intdir:  <csolution.yml base directory>/tmp/$Project$/$TargetType$/$BuildType$
-outdir:  <csolution.yml base directory>/out/$Project$/$TargetType$/$BuildType$
+intdir:  <cproject.yml base directory>/tmp/$Project$/$TargetType$/$BuildType$
+outdir:  <cproject.yml base directory>/out/$Project$/$TargetType$/$BuildType$
 ```
-
-**Example:**
-
-```yml
-output-dirs:
-  cprjdir: ./cprj                        # relative path to csolution.yml file
-  rtedir: ./$Project$/RTE2               # alternative path for RTE files
-  outdir: ./out/$Project$/$TargetType$   # $BuildType$ no longer part of the outdir    
-```
-
 
 
 # Toolchain Options
@@ -496,6 +486,24 @@ Value                                                 | Generated Output
 
 ```yml
 output-type: lib            # Generate a library
+```
+
+## `linker:`
+
+The `linker:` node controls the linker operation.
+
+`linker:`                                             |              |  Content
+:-----------------------------------------------------|:-------------|:--------------------------------
+`- script:`                                           |              | Explicit file name of the linker script
+&nbsp;&nbsp; [`for-type:`](#for-type)                 |   Optional   | Include script for a list of *build* and *target* types.
+&nbsp;&nbsp; [`not-for-type:`](#not-for-type)         |   Optional   | Exclude script for a list of *build* and *target* types.
+
+**Example:**
+
+```yml
+linker:                      # Control linker operation
+  - script: .\MyProject.sct  # Explicit scatter file
+    for-type: .Debug  
 ```
 
 ## `for-compiler:`
@@ -580,7 +588,8 @@ Control warnings (could be: no, all, Misra, AC5-like), mapped to the toolchain b
 
 ## `define:`
 
->**Note:** For a transition period `defines:` is also accepted.  However this will be deprecated.
+\note: 
+For a transition period `defines:` is also accepted.  However this will be deprecated.
 
 Contains a list of symbol #define statements that are passed via the command line to the development tools.
 
@@ -599,7 +608,8 @@ define:                    # Start a list of define statements
 
 ## `undefine:`
 
->**Note:** For a transition period `undefines:` is also accepted.  However this will be deprecated.
+\note: 
+For a transition period `undefines:` is also accepted.  However this will be deprecated.
 
 Remove symbol #define statements from the command line of the development tools.
 
@@ -623,7 +633,8 @@ groups:
 
 ## `add-path:`
 
->**Note:** For a transition period `add-paths:` is also accepted.  However this will be deprecated.
+\note: 
+For a transition period `add-paths:` is also accepted.  However this will be deprecated.
 
 Add include paths to the command line of the development tools.
 
@@ -646,7 +657,8 @@ project:
 
 ## `del-path:`
 
->**Note:** For a transition period `del-paths:` is also accepted.  However this will be deprecated.
+\note: 
+For a transition period `del-paths:` is also accepted.  However this will be deprecated.
 
 Remove include paths (that are defined at the cproject level) from the command line of the development tools.
 
@@ -720,6 +732,7 @@ It is however possible to change that `setup:` settings on a [`group:`](#groups)
 &nbsp;&nbsp;&nbsp; [`undefine:`](#undefine)          |   Optional   | Remove define symbol settings for code generation.
 &nbsp;&nbsp;&nbsp; [`add-path:`](#add-path)          |   Optional   | Additional include file paths.
 &nbsp;&nbsp;&nbsp; [`del-path:`](#del-path)          |   Optional   | Remove specific include file paths.
+&nbsp;&nbsp;&nbsp; [`linker:`](#linker)              |   Optional   | Remove specific include file paths.
 &nbsp;&nbsp;&nbsp; [`misc:`](#misc)                  |   Optional   | Literal tool-specific controls.
 
 ```yml
@@ -727,11 +740,15 @@ project:
   setups:
     - setup: Arm Compiler 6 project setup
       for-compiler: AC6
+      linker:
+        - script: my-project.sct
       define:
         - test: 12
 
-    - setup: GCC project setup
-      for-compiler: GCC
+   - setup: GCC project setup
+     for-compiler: GCC
+      linker:
+        - script: my-project.inc
       define:
         - test: 11
 ```
@@ -1104,7 +1121,7 @@ groups:
           - file: file-sub2-2.c
 ```
 
-It is also possible to include a file group for a specific compiler using [`for-compiler:`](#for-compiler) or a specific target-type and/or build-type using [`for-type:`](#for-type) or [`not-for-type:`](#not-for-type).
+It is also possible to include a file group for a specify compiler using [`for-compiler:`](#for-compiler) or a specify target-type and/or build-type using [`for-type:`](#for-type) or [`not-for-type:`](#not-for-type).
 ```yml
 groups:
   - group:  "Main File Group"
