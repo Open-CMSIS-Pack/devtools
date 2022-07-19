@@ -875,9 +875,10 @@ bool ProjMgrWorker::ProcessDependencies(ContextItem& context) {
     error_code ec;
     const string gpdscFile = fs::weakly_canonical(file, ec).generic_string();
     if (!ProjMgrUtils::ReadGpdscFile(gpdscFile, gpdscModel.get())) {
-      ProjMgrLogger::Warn(gpdscFile, "generator '" + context.gpdscs.at(gpdscFile).second +
+      ProjMgrLogger::Error(gpdscFile, "generator '" + context.gpdscs.at(gpdscFile).second +
         "' from component '" + context.gpdscs.at(gpdscFile).first + "': reading gpdsc failed");
       gpdscModel.reset();
+      return false;
     } else {
       // Release pointer ownership
       info->SetGeneratorModel(gpdscModel.release());
