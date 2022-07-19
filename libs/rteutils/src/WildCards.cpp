@@ -41,13 +41,13 @@ bool WildCards::Match(const std::string& s1, const std::string& s2)
 std::string WildCards::ToRegEx(const std::string& s)
 {
   // Char translations:
-  // 1) escape '.' if any
+  // 1) escape '.', '{', '}', and '$' if any
   // 2) replace '?' with '.'
   // 3) replace '*' with ".*"
-  static const std::string from[] = {".", "?", "*" };
-  static const std::string to[] = { "\\.", ".", ".*" };
+  static const std::string from[] = {".", "$", "{", "}", "?", "*" };
+  static const std::string to[] = { "\\.", "\\$", "\\{", "\\}", ".", ".*" };
   std::string str = s;
-  for (int i = 0; i < 3; i++) {
+  for (int i = 0; i < 6; i++) {
     size_t start_pos = 0;
     while ((start_pos = str.find(from[i], start_pos)) != std::string::npos) {
       str.replace(start_pos, from[i].length(), to[i]);
@@ -74,15 +74,19 @@ std::string WildCards::ToX(const std::string& s)
 
 bool WildCards::IsWildcardPattern(const std::string& s)
 {
-  return s.find_first_of(".?*[]") != std::string::npos;
+  return s.find_first_of("?*[]") != std::string::npos;
 }
 
 
 bool WildCards::MatchToPattern(const std::string& s, const std::string& pattern)
 {
-  std::regex e(ToRegEx(pattern));
-  return std::regex_match(s, e);
+  try {
+    std::regex e(ToRegEx(pattern));
+    return std::regex_match(s, e);
+  } catch (const std::regex_error&) {
+    // fall through, return false if regex has an error
+  }
+  return false;
 }
-
 
 // End of WildCards.cpp
