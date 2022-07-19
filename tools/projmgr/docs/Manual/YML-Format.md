@@ -315,7 +315,7 @@ The `solution:` node is the start of a `*.csolution.yml` file that collects rela
 `solution:`                                           | Content
 :-----------------------------------------------------|:------------------------------------
 &nbsp;&nbsp; [`packs:`](#packs)                       | Defines local packs and/or scope of packs that are used.
-&nbsp;&nbsp; [`outdirs:`](#outdirs)                   | Control the output directories for generating the csolution.
+&nbsp;&nbsp; [`output-dirs:`](#output-dirs)           | Control the output directories for generating the csolution.
 &nbsp;&nbsp; [`compiler:`](#compiler)                 | Overall toolchain selection for the solution.
 &nbsp;&nbsp; [`target-types:`](#target-types)         | List of target-types that define the target system (device or board).
 &nbsp;&nbsp; [`build-types:`](#build-types)           | List of build-types (i.e. Release, Debug, Test).
