@@ -1129,7 +1129,7 @@ groups:
           - file: file-sub2-2.c
 ```
 
-It is also possible to include a file group for a specify compiler using [`for-compiler:`](#for-compiler) or a specify target-type and/or build-type using [`for-type:`](#for-type) or [`not-for-type:`](#not-for-type).
+It is also possible to include a file group for a specific compiler using [`for-compiler:`](#for-compiler) or a specific target-type and/or build-type using [`for-type:`](#for-type) or [`not-for-type:`](#not-for-type).
 ```yml
 groups:
   - group:  "Main File Group"
