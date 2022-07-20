@@ -48,6 +48,10 @@ const RteFile::Category CbuildUtils::GetFileType(const RteFile::Category cat, co
         return RteFile::Category::SOURCE_CPP;
       if (ext.compare(".C++") == 0)
         return RteFile::Category::SOURCE_CPP;
+      if (ext.compare(".cc") == 0)
+        return RteFile::Category::SOURCE_CPP;
+      if (ext.compare(".CC") == 0)
+        return RteFile::Category::SOURCE_CPP;
       if (ext.compare(".cxx") == 0)
         return RteFile::Category::SOURCE_CPP;
       if (ext.compare(".asm") == 0)

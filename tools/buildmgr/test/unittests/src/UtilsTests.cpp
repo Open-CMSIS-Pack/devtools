@@ -32,6 +32,7 @@ TEST_F(CbuildUtilsTests, GetFileType)
   { {"Test.c", RteFile::Category::SOURCE_C }, {"Test.C",RteFile::Category::SOURCE_C},
   {"Test.cpp", RteFile::Category::SOURCE_CPP}, {"Test.c++", RteFile::Category::SOURCE_CPP},
   {"Test.C++", RteFile::Category::SOURCE_CPP}, {"Test.cxx",RteFile::Category::SOURCE_CPP},
+  {"Test.cc",  RteFile::Category::SOURCE_CPP}, {"Test.CC", RteFile::Category::SOURCE_CPP},
   {"Test.asm", RteFile::Category::SOURCE_ASM}, {"Test.s", RteFile::Category::SOURCE_ASM },
   {"Test.S",RteFile::Category::SOURCE_ASM }, {"Test.txt",RteFile::Category::OTHER} };
 
