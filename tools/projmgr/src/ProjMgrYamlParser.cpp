@@ -125,6 +125,9 @@ bool ProjMgrYamlParser::ParseCproject(const string& input,
     if (!ParseLayers(projectNode, cproject.clayers)) {
       return false;
     }
+    if (!ParseSetups(projectNode, cproject.setups)) {
+      return false;
+    }
 
   } catch (YAML::Exception& e) {
     ProjMgrLogger::Error(input, e.mark.line + 1, e.mark.column + 1, e.msg);
@@ -294,7 +297,11 @@ void ProjMgrYamlParser::ParseMisc(const YAML::Node& parent, vector<MiscItem>& mi
     const YAML::Node& miscNode = parent[YAML_MISC];
     for (const auto& miscEntry : miscNode) {
       MiscItem miscItem;
-      ParseString(miscEntry, YAML_MISC_COMPILER, miscItem.compiler);
+      ParseString(miscEntry, YAML_FORCOMPILER, miscItem.compiler);
+      if (miscItem.compiler.empty()) {
+        // TODO: after deprecation remove 'compiler' keyword parsing in benefit of 'for-compiler'
+        ParseString(miscEntry, YAML_COMPILER, miscItem.compiler);
+      }
       ParseVector(miscEntry, YAML_MISC_C, miscItem.c);
       ParseVector(miscEntry, YAML_MISC_CPP, miscItem.cpp);
       ParseVector(miscEntry, YAML_MISC_C_CPP, miscItem.c_cpp);
@@ -328,6 +335,7 @@ bool ProjMgrYamlParser::ParseFiles(const YAML::Node& parent, vector<FileNode>& f
         return false;
       }
       ParseString(fileEntry, YAML_FILE, fileItem.file);
+      ParseVectorOrString(fileEntry, YAML_FORCOMPILER, fileItem.forCompiler);
       ParseString(fileEntry, YAML_CATEGORY, fileItem.category);
       ParseBuildType(fileEntry, fileItem.build);
       files.push_back(fileItem);
@@ -348,6 +356,7 @@ bool ProjMgrYamlParser::ParseGroups(const YAML::Node& parent, vector<GroupNode>&
         return false;
       }
       ParseString(groupEntry, YAML_GROUP, groupItem.group);
+      ParseVectorOrString(groupEntry, YAML_FORCOMPILER, groupItem.forCompiler);
       ParseBuildType(groupEntry, groupItem.build);
       ParseGroups(groupEntry, groupItem.groups);
       groups.push_back(groupItem);
@@ -367,6 +376,23 @@ bool ProjMgrYamlParser::ParseLayers(const YAML::Node& parent, vector<LayerItem>&
       ParseString(layerEntry, YAML_LAYER, layerItem.layer);
       ParseBuildType(layerEntry, layerItem.build);
       layers.push_back(layerItem);
+    }
+  }
+  return true;
+}
+
+bool ProjMgrYamlParser::ParseSetups(const YAML::Node& parent, vector<SetupItem>& setups) {
+  if (parent[YAML_SETUPS].IsDefined()) {
+    const YAML::Node& setupsNode = parent[YAML_SETUPS];
+    for (const auto& setupEntry : setupsNode) {
+      SetupItem setupItem;
+      if (!ParseTypeFilter(setupEntry, setupItem.type)) {
+        return false;
+      }
+      ParseString(setupEntry, YAML_SETUP, setupItem.description);
+      ParseVectorOrString(setupEntry, YAML_FORCOMPILER, setupItem.forCompiler);
+      ParseBuildType(setupEntry, setupItem.build);
+      setups.push_back(setupItem);
     }
   }
   return true;
@@ -513,6 +539,7 @@ const set<string> projectKeys = {
   YAML_COMPONENTS,
   YAML_GROUPS,
   YAML_LAYERS,
+  YAML_SETUPS,
 };
 
 const set<string> layerKeys = {
@@ -579,7 +606,8 @@ const set<string> processorKeys = {
 };
 
 const set<string> miscKeys = {
-  YAML_MISC_COMPILER,
+  YAML_COMPILER,
+  YAML_FORCOMPILER,
   YAML_MISC_C,
   YAML_MISC_CPP,
   YAML_MISC_C_CPP,
@@ -634,6 +662,7 @@ const set<string> groupsKeys = {
   YAML_GROUP,
   YAML_FORTYPE,
   YAML_NOTFORTYPE,
+  YAML_FORCOMPILER,
   YAML_GROUPS,
   YAML_FILES,
   YAML_COMPILER,
@@ -651,6 +680,7 @@ const set<string> filesKeys = {
   YAML_FILE,
   YAML_FORTYPE,
   YAML_NOTFORTYPE,
+  YAML_FORCOMPILER,
   YAML_CATEGORY,
   YAML_COMPILER,
   YAML_OPTIMIZE,

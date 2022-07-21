@@ -1705,3 +1705,22 @@ TEST_F(ProjMgrUnitTests, OutputDirs) {
   CompareFile(testinput_folder + "/TestSolution/GCC/test1.Release+TypeB.cprj",
     testinput_folder + "/TestSolution/ref/GCC/test1.Release+TypeB.cprj");
 }
+
+TEST_F(ProjMgrUnitTests, ProjectSetup) {
+  char* argv[6];
+  // convert -s solution.yml
+  const string& csolution = testinput_folder + "/TestProjectSetup/setup-test.csolution.yml";
+  const string& output = testoutput_folder;
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)output.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv));
+
+  // Check generated CPRJs
+  CompareFile(testoutput_folder + "/setup-test.Build AC6.cprj",
+    testinput_folder + "/TestProjectSetup/ref/setup-test.Build AC6.cprj");
+  CompareFile(testoutput_folder + "/setup-test.Build GCC.cprj",
+    testinput_folder + "/TestProjectSetup/ref/setup-test.Build GCC.cprj");
+}
