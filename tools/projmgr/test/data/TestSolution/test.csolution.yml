@@ -6,7 +6,7 @@ solution:
       device: RteTest_ARMCM0
       misc:
         - compiler: AC6
-          C*: [-C-CPP-type-CM0]
+          C-CPP: [-C-CPP-type-CM0]
           ASM: [-ASM-type-CM0]
           Link: [-Link-type-CM0]
           Lib: [-Lib-type-CM0]
@@ -28,7 +28,7 @@ solution:
       device: RteTest_ARMCM3
       misc:
         - compiler: AC6
-          C*: [-C-CPP-type-CM3]
+          C-CPP: [-C-CPP-type-CM3]
           ASM: [-ASM-type-CM3]
           Link: [-Link-type-CM3]
           Lib: [-Lib-type-CM3]
