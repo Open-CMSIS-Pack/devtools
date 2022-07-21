@@ -1,6 +1,6 @@
 [
     {
-        "runs_on":"macos-10.15",
+        "runs_on":"macos-12",
         "target":"darwin64",
         "arch": "amd64",
         "runOn": "publicRepo"
