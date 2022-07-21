@@ -1,0 +1,12 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/0.9.6/tools/projmgr/schemas/csolution.schema.json
+
+solution:
+
+  projects:
+    - project: ./setup-test.cproject.yml
+  
+  build-types:
+    - type: Build AC6
+      compiler: "AC6@6.18.0"
+    - type: Build GCC
+      compiler: "GCC@11.2.1"

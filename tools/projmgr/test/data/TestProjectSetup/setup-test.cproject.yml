@@ -1,0 +1,36 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/0.9.6/tools/projmgr/schemas/cproject.schema.json
+
+project:
+
+  device: RteTest_ARMCM0
+
+  components:
+    - component: CORE
+
+  setups:
+    - setup: Setup for AC6
+      for-compiler: AC6
+      defines:
+        - SETUP_AC6
+    - setup: Setup for GCC
+      for-compiler: GCC
+      defines:
+        - SETUP_GCC
+
+  groups:
+    - group: Group for AC6
+      for-compiler: AC6
+      files: 
+        - file: ac6.c
+    - group: Generic Group
+      files: 
+        - file: gcc.c
+          for-compiler: GCC
+        - file: generic.c
+          misc:
+            - for-compiler: AC6
+              C: 
+                - -DMISC-FILE-AC6
+            - for-compiler: GCC
+              C: 
+                - -DMISC-FILE-GCC

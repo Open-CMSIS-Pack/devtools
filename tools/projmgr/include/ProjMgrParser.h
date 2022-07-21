@@ -33,7 +33,8 @@ struct TypeFilter {
 
 /**
  * @brief compiler misc controls
- *        compiler name,
+ *        compiler name (to be deprecated)
+ *        for compiler control,
  *        options for assembler,
  *        options for c compiler,
  *        options for c++ compiler,
@@ -43,6 +44,7 @@ struct TypeFilter {
 */
 struct MiscItem {
   std::string compiler;
+  std::string forCompiler;
   std::vector<std::string> as;
   std::vector<std::string> c;
   std::vector<std::string> cpp;
@@ -160,14 +162,30 @@ struct LayerItem {
 };
 
 /**
+ * @brief setup item containing
+ *        setup description name,
+ *        for compiler control,
+ *        setup build settings,
+ *        type inclusion
+*/
+struct SetupItem {
+  std::string description;
+  std::vector<std::string> forCompiler;
+  BuildType build;
+  TypeFilter type;
+};
+
+/**
  * @brief file node containing
  *        file path,
+ *        for compiler control,
  *        file category,
  *        file build settings,
  *        type filter
 */
 struct FileNode {
   std::string file;
+  std::vector<std::string> forCompiler;
   std::string category;
   BuildType build;
   TypeFilter type;
@@ -176,6 +194,7 @@ struct FileNode {
 /**
  * @brief group node containing
  *        group name,
+ *        for compiler control,
  *        children files,
  *        children groups,
  *        group build settings,
@@ -183,6 +202,7 @@ struct FileNode {
 */
 struct GroupNode {
   std::string group;
+  std::vector<std::string> forCompiler;
   std::vector<FileNode> files;
   std::vector<GroupNode> groups;
   BuildType build;
@@ -246,7 +266,8 @@ struct CsolutionItem {
  *        project target properties,
  *        list of required components,
  *        list of user groups,
- *        list of layers
+ *        list of layers,
+ *        list of setups
 */
 struct CprojectItem {
   std::string name;
@@ -258,6 +279,7 @@ struct CprojectItem {
   std::vector<ComponentItem> components;
   std::vector<GroupNode> groups;
   std::vector<LayerItem> clayers;
+  std::vector<SetupItem> setups;
 };
 
 /**
