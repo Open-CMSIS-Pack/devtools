@@ -1,7 +1,7 @@
 ### CMSIS Project Description ###
 
 project:
-  defines:
+  define:
     - DEF1-PROJ1-$Output(test-access-sequences2.Debug)$
     - DEF2-PROJ1-$Output(test-access-sequences2+CM3)$
     - DEF3-PROJ1-$Output(test-access-sequences2.Release+CM0)$

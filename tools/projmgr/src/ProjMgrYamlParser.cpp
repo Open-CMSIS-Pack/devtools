@@ -441,10 +441,26 @@ void ProjMgrYamlParser::ParseBuildType(const YAML::Node& parent, BuildType& buil
   }
   ParseProcessor(parent, buildType.processor);
   ParseMisc(parent, buildType.misc);
-  ParseVector(parent, YAML_DEFINES, buildType.defines);
-  ParseVector(parent, YAML_UNDEFINES, buildType.undefines);
-  ParseVector(parent, YAML_ADDPATHS, buildType.addpaths);
-  ParseVector(parent, YAML_DELPATHS, buildType.delpaths);
+  ParseVector(parent, YAML_DEFINE, buildType.defines);
+  if (buildType.defines.empty()) {
+    // TODO: after deprecation remove 'defines' keyword parsing in benefit of 'define'
+    ParseVector(parent, YAML_DEFINES, buildType.defines);
+  }
+  ParseVector(parent, YAML_UNDEFINE, buildType.undefines);
+  if (buildType.undefines.empty()) {
+    // TODO: after deprecation remove 'undefines' keyword parsing in benefit of 'undefine'
+    ParseVector(parent, YAML_UNDEFINES, buildType.undefines);
+  }
+  ParseVector(parent, YAML_ADDPATH, buildType.addpaths);
+  if (buildType.addpaths.empty()) {
+    // TODO: after deprecation remove 'add-paths' keyword parsing in benefit of 'add-path'
+    ParseVector(parent, YAML_ADDPATHS, buildType.addpaths);
+  }
+  ParseVector(parent, YAML_DELPATH, buildType.delpaths);
+  if (buildType.delpaths.empty()) {
+    // TODO: after deprecation remove 'del-paths' keyword parsing in benefit of 'del-path'
+    ParseVector(parent, YAML_DELPATHS, buildType.delpaths);
+  }
 }
 
 void ProjMgrYamlParser::ParseTargetType(const YAML::Node& parent, TargetType& targetType) {
@@ -483,9 +499,13 @@ const set<string> solutionKeys = {
   YAML_DEBUG,
   YAML_WARNINGS,
   YAML_DEFINES,
+  YAML_DEFINE,
   YAML_UNDEFINES,
+  YAML_UNDEFINE,
   YAML_ADDPATHS,
+  YAML_ADDPATH,
   YAML_DELPATHS,
+  YAML_DELPATH,
   YAML_MISC,
 };
 
@@ -506,9 +526,13 @@ const set<string> projectKeys = {
   YAML_DEBUG,
   YAML_WARNINGS,
   YAML_DEFINES,
+  YAML_DEFINE,
   YAML_UNDEFINES,
+  YAML_UNDEFINE,
   YAML_ADDPATHS,
+  YAML_ADDPATH,
   YAML_DELPATHS,
+  YAML_DELPATH,
   YAML_MISC,
   YAML_COMPONENTS,
   YAML_GROUPS,
@@ -526,9 +550,13 @@ const set<string> layerKeys = {
   YAML_DEBUG,
   YAML_WARNINGS,
   YAML_DEFINES,
+  YAML_DEFINE,
   YAML_UNDEFINES,
+  YAML_UNDEFINE,
   YAML_ADDPATHS,
+  YAML_ADDPATH,
   YAML_DELPATHS,
+  YAML_DELPATH,
   YAML_MISC,
   YAML_COMPONENTS,
   YAML_GROUPS,
@@ -545,9 +573,13 @@ const set<string> targetTypeKeys = {
   YAML_DEBUG,
   YAML_WARNINGS,
   YAML_DEFINES,
+  YAML_DEFINE,
   YAML_UNDEFINES,
+  YAML_UNDEFINE,
   YAML_ADDPATHS,
+  YAML_ADDPATH,
   YAML_DELPATHS,
+  YAML_DELPATH,
   YAML_MISC,
 };
 
@@ -559,9 +591,13 @@ const set<string> buildTypeKeys = {
   YAML_DEBUG,
   YAML_WARNINGS,
   YAML_DEFINES,
+  YAML_DEFINE,
   YAML_UNDEFINES,
+  YAML_UNDEFINE,
   YAML_ADDPATHS,
+  YAML_ADDPATH,
   YAML_DELPATHS,
+  YAML_DELPATH,
   YAML_MISC,
 };
 
@@ -604,9 +640,13 @@ const set<string> componentsKeys = {
   YAML_DEBUG,
   YAML_WARNINGS,
   YAML_DEFINES,
+  YAML_DEFINE,
   YAML_UNDEFINES,
+  YAML_UNDEFINE,
   YAML_ADDPATHS,
+  YAML_ADDPATH,
   YAML_DELPATHS,
+  YAML_DELPATH,
   YAML_MISC,
 };
 
@@ -619,9 +659,13 @@ const set<string> layersKeys = {
   YAML_DEBUG,
   YAML_WARNINGS,
   YAML_DEFINES,
+  YAML_DEFINE,
   YAML_UNDEFINES,
+  YAML_UNDEFINE,
   YAML_ADDPATHS,
+  YAML_ADDPATH,
   YAML_DELPATHS,
+  YAML_DELPATH,
   YAML_MISC,
 };
 
@@ -641,9 +685,13 @@ const set<string> groupsKeys = {
   YAML_DEBUG,
   YAML_WARNINGS,
   YAML_DEFINES,
+  YAML_DEFINE,
   YAML_UNDEFINES,
+  YAML_UNDEFINE,
   YAML_ADDPATHS,
+  YAML_ADDPATH,
   YAML_DELPATHS,
+  YAML_DELPATH,
   YAML_MISC,
 };
 
@@ -657,9 +705,13 @@ const set<string> filesKeys = {
   YAML_DEBUG,
   YAML_WARNINGS,
   YAML_DEFINES,
+  YAML_DEFINE,
   YAML_UNDEFINES,
+  YAML_UNDEFINE,
   YAML_ADDPATHS,
+  YAML_ADDPATH,
   YAML_DELPATHS,
+  YAML_DELPATH,
   YAML_MISC,
 };
 

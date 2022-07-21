@@ -9,10 +9,10 @@ project:
     ASM: [-ASM-project]
     Link: [-Link-project]
     Lib: [-Lib-project]
-  defines:
+  define:
     - DEF-project
     - DEF-project-to-be-removed
-  add-paths:
+  add-path:
     - ./path/project
     - ../path/project/to-be-removed
   components:

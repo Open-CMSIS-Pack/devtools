@@ -9,13 +9,13 @@ project:
   components:
     - component: Startup
     - component: CORE
-      defines:
+      define:
         - DEF1-COMPONENT
-      undefines:
+      undefine:
         - DEF2-COMPONENT
-      add-paths:
+      add-path:
         - ./path/1/component
-      del-paths:
+      del-path:
         - ./path/2/component
     - component: RteTest.Check.Missing
       not-for-type:
@@ -23,16 +23,16 @@ project:
         - .Release
   groups:
     - group: Sources
-      defines:
+      define:
         - DEF1-GROUP-PROJECT
         - DEF2-GROUP-PROJECT
-      undefines:
+      undefine:
         - DEF3-GROUP-PROJECT
         - DEF4-GROUP-PROJECT
-      add-paths:
+      add-path:
         - ./path/sources/1/group
         - ./path/sources/2/group
-      del-paths:
+      del-path:
         - ./path/sources/3/group
         - ./path/sources/4/group
       misc:
@@ -43,16 +43,16 @@ project:
           Lib: [-Lib-group]
       files: 
         - file: main.c
-          defines:
+          define:
             - DEF1-FILE-PROJECT
             - DEF2-FILE-PROJECT
-          undefines:
+          undefine:
             - DEF3-FILE-PROJECT
             - DEF4-FILE-PROJECT
-          add-paths:
+          add-path:
             - ./path/main/1/file
             - ./path/main/2/file
-          del-paths:
+          del-path:
             - ./path/main/3/file
             - ./path/main/4/file
           misc:
@@ -76,13 +76,13 @@ project:
       for-type: .Release
       files:
         - file: release.c
-          defines:
+          define:
             - DEF1-REL-FILE
-          undefines:
+          undefine:
             - DEF2-REL-FILE
-          add-paths:
+          add-path:
             - ./path/1/release/file
-          del-paths:
+          del-path:
             - ./path/2/release/file
         - file: excluded.c
           not-for-type: .Release

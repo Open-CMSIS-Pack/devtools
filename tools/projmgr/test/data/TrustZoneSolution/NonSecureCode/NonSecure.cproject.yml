@@ -4,7 +4,7 @@ project:
   misc:
     - compiler: AC6
       C: [-fshort-enums, -fshort-wchar]
-  add-paths:
+  add-path:
     - $OutDir(Secure)$
   components:
     - component: C Startup

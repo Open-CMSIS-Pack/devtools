@@ -14,6 +14,7 @@
   * @brief YAML key definitions
 */
 static constexpr const char* YAML_ADDPATHS = "add-paths";
+static constexpr const char* YAML_ADDPATH = "add-path";
 static constexpr const char* YAML_BOARD = "board";
 static constexpr const char* YAML_BUILDTYPES = "build-types";
 static constexpr const char* YAML_CATEGORY = "category";
@@ -24,7 +25,9 @@ static constexpr const char* YAML_COMPONENTS = "components";
 static constexpr const char* YAML_DEBUG = "debug";
 static constexpr const char* YAML_DEFAULT = "default";
 static constexpr const char* YAML_DEFINES = "defines";
+static constexpr const char* YAML_DEFINE = "define";
 static constexpr const char* YAML_DELPATHS = "del-paths";
+static constexpr const char* YAML_DELPATH = "del-path";
 static constexpr const char* YAML_DESCRIPTION = "description";
 static constexpr const char* YAML_DEVICE = "device";
 static constexpr const char* YAML_ENDIAN = "endian";
@@ -65,6 +68,7 @@ static constexpr const char* YAML_TARGETTYPES = "target-types";
 static constexpr const char* YAML_TRUSTZONE = "trustzone";
 static constexpr const char* YAML_TYPE = "type";
 static constexpr const char* YAML_UNDEFINES = "undefines";
+static constexpr const char* YAML_UNDEFINE = "undefine";
 static constexpr const char* YAML_WARNINGS = "warnings";
 
 /**

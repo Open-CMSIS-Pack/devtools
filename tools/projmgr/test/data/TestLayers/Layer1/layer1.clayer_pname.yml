@@ -3,9 +3,9 @@
 layer:
   description: Layer 1
   device: RteTest_ARMCM0_Dual
-  defines:
+  define:
     - DEF_LAYER1
-  add-paths:
+  add-path:
     - path/to/layer1
   compiler: AC6@6.18.0
   misc:
