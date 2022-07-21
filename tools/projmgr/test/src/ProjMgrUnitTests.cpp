@@ -202,7 +202,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListBoards) {
   EXPECT_EQ(0, RunProjMgr(5, argv));
 
   auto outStr = streamRedirect.GetOutString();
-  EXPECT_STREQ(outStr.c_str(), "RteTest Dummy board\n");
+  EXPECT_STREQ(outStr.c_str(), "Keil::RteTest Dummy board:1.2.3 (ARM::RteTest_DFP@0.2.0)\n");
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListBoardsProjectFiltered) {
@@ -220,7 +220,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListBoardsProjectFiltered) {
   EXPECT_EQ(0, RunProjMgr(7, argv));
 
   auto outStr = streamRedirect.GetOutString();
-  EXPECT_STREQ(outStr.c_str(), "RteTest Dummy board\n");
+  EXPECT_STREQ(outStr.c_str(), "Keil::RteTest Dummy board:1.2.3 (ARM::RteTest_DFP@0.2.0)\n");
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListDevices) {
@@ -235,7 +235,11 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListDevices) {
   EXPECT_EQ(0, RunProjMgr(5, argv));
 
   auto outStr = streamRedirect.GetOutString();
-  EXPECT_STREQ(outStr.c_str(), "RteTest_ARMCM4\nRteTest_ARMCM4_FP\nRteTest_ARMCM4_NOFP\n");
+  EXPECT_STREQ(outStr.c_str(),"\
+ARM::RteTest_ARMCM4 (ARM::RteTest_DFP@0.2.0)\n\
+ARM::RteTest_ARMCM4_FP (ARM::RteTest_DFP@0.2.0)\n\
+ARM::RteTest_ARMCM4_NOFP (ARM::RteTest_DFP@0.2.0)\n"
+  );
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListComponents) {
@@ -597,7 +601,7 @@ TEST_F(ProjMgrUnitTests, ListPacks) {
 
 TEST_F(ProjMgrUnitTests, ListBoards) {
   set<string> expected = {
-    "RteTest Dummy board"
+    "Keil::RteTest Dummy board:1.2.3 (ARM::RteTest_DFP@0.2.0)"
   };
   vector<string> devices;
   EXPECT_TRUE(m_worker.ListBoards(devices, "", "Dummy"));
@@ -606,12 +610,12 @@ TEST_F(ProjMgrUnitTests, ListBoards) {
 
 TEST_F(ProjMgrUnitTests, ListDevices) {
   set<string> expected = {
-    "RteTestGen_ARMCM0",
-    "RteTest_ARMCM0",
-    "RteTest_ARMCM0_Dual:cm0_core0",
-    "RteTest_ARMCM0_Dual:cm0_core1",
-    "RteTest_ARMCM0_Single",
-    "RteTest_ARMCM0_Test"
+    "ARM::RteTestGen_ARMCM0 (ARM::RteTestGenerator@0.1.0)",
+    "ARM::RteTest_ARMCM0 (ARM::RteTest_DFP@0.2.0)",
+    "ARM::RteTest_ARMCM0_Dual:cm0_core0 (ARM::RteTest_DFP@0.2.0)",
+    "ARM::RteTest_ARMCM0_Dual:cm0_core1 (ARM::RteTest_DFP@0.2.0)",
+    "ARM::RteTest_ARMCM0_Single (ARM::RteTest_DFP@0.2.0)",
+    "ARM::RteTest_ARMCM0_Test (ARM::RteTest_DFP@0.2.0)"
   };
   vector<string> devices;
   EXPECT_TRUE(m_worker.ListDevices(devices, "", "CM0"));
@@ -620,7 +624,7 @@ TEST_F(ProjMgrUnitTests, ListDevices) {
 
 TEST_F(ProjMgrUnitTests, ListDevicesPackageFiltered) {
   set<string> expected = {
-    "RteTest_ARMCM3"
+    "ARM::RteTest_ARMCM3 (ARM::RteTest_DFP@0.2.0)"
   };
   vector<string> devices;
   ContextDesc descriptor;
@@ -1591,14 +1595,14 @@ TEST_F(ProjMgrUnitTests, LoadPacks_MissingPackSelection) {
 
 TEST_F(ProjMgrUnitTests, ListDevices_MultiplePackSelection) {
   set<string> expected_CM0 = {
-    "RteTest_ARMCM0",
-    "RteTest_ARMCM0_Dual:cm0_core0",
-    "RteTest_ARMCM0_Dual:cm0_core1",
-    "RteTest_ARMCM0_Single",
-    "RteTest_ARMCM0_Test"
+    "ARM::RteTest_ARMCM0 (ARM::RteTest_DFP@0.2.0)",
+    "ARM::RteTest_ARMCM0_Dual:cm0_core0 (ARM::RteTest_DFP@0.2.0)",
+    "ARM::RteTest_ARMCM0_Dual:cm0_core1 (ARM::RteTest_DFP@0.2.0)",
+    "ARM::RteTest_ARMCM0_Single (ARM::RteTest_DFP@0.2.0)",
+    "ARM::RteTest_ARMCM0_Test (ARM::RteTest_DFP@0.2.0)"
   };
   set<string> expected_Gen = {
-    "RteTestGen_ARMCM0"
+    "ARM::RteTestGen_ARMCM0 (ARM::RteTestGenerator@0.1.0)"
   };
   vector<string> devices;
   m_csolutionFile = testinput_folder + "/TestSolution/pack_contexts.csolution.yml";

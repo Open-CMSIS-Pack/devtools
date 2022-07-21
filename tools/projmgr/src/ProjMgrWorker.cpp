@@ -1529,7 +1529,11 @@ bool ProjMgrWorker::ListBoards(vector<string>& boards, const string& contextName
   set<string> boardsSet;
   const RteBoardMap& availableBoards = context.rteFilteredModel->GetBoards();
   for (const auto& [_, board] : availableBoards) {
-    boardsSet.insert(board->GetName());
+    const string& boardVendor = board->GetVendorName();
+    const string& boardName = board->GetName();
+    const string& boardRevision = board->GetAttribute("revision");
+    const string& boardPack = ProjMgrUtils::GetPackageID(board->GetPackage());
+    boardsSet.insert(boardVendor + "::" + boardName + (!boardRevision.empty() ? ":" + boardRevision : "") + " (" + boardPack + ")");
   }
   if (boardsSet.empty()) {
     ProjMgrLogger::Error("no installed board was found");
@@ -1565,14 +1569,16 @@ bool ProjMgrWorker::ListDevices(vector<string>& devices, const string& contextNa
   list<RteDevice*> filteredModelDevices;
   context.rteFilteredModel->GetDevices(filteredModelDevices, "", "", RteDeviceItem::VARIANT);
   for (const auto& deviceItem : filteredModelDevices) {
+    const string& deviceVendor = deviceItem->GetVendorName();
     const string& deviceName = deviceItem->GetFullDeviceName();
+    const string& devicePack = ProjMgrUtils::GetPackageID(deviceItem->GetPackage());
     if (deviceItem->GetProcessorCount() > 1) {
       const auto& processors = deviceItem->GetProcessors();
       for (const auto& processor : processors) {
-        devicesSet.insert(deviceName + ":" + processor.first);
+        devicesSet.insert(deviceVendor + "::" + deviceName + ":" + processor.first + " (" + devicePack +")");
       }
     } else {
-      devicesSet.insert(deviceName);
+      devicesSet.insert(deviceVendor + "::" + deviceName + " (" + devicePack + ")");
     }
   }
   if (devicesSet.empty()) {
