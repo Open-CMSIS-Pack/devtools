@@ -98,6 +98,10 @@ bool BuildSystemGenerator::Collect(const string& inputFile, const CbuildModel *m
   m_asMscGlobal = GetString(model->GetTargetAsFlags());
   m_linkerMscGlobal = GetString(model->GetTargetLdFlags());
 
+  m_optimize = model->GetTargetOptimize();
+  m_debug = model->GetTargetDebug();
+  m_warnings = model->GetTargetWarnings();
+
   for (auto inc : model->GetTargetIncludePaths())
   {
     CbuildUtils::PushBackUniquely(m_incPathsList, StrNorm(inc));

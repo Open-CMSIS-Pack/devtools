@@ -121,6 +121,9 @@ protected:
   std::string m_cxxMscGlobal;
   std::string m_asMscGlobal;
   std::string m_linkerMscGlobal;
+  std::string m_optimize;
+  std::string m_debug;
+  std::string m_warnings;
   std::string m_linkerScript;
   std::string m_toolchain;
   std::string m_toolchainConfig;
