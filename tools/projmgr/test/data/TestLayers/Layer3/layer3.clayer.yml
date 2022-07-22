@@ -2,9 +2,9 @@
 
 layer:
   description: Layer 3
-  defines:
+  define:
     - DEF_LAYER3
-  add-paths:
+  add-path:
     - path/to/layer3
   misc:
     - C:

@@ -10,15 +10,15 @@ solution:
           ASM: [-ASM-type-CM0]
           Link: [-Link-type-CM0]
           Lib: [-Lib-type-CM0]
-      defines: 
+      define: 
         - DEF-CM0
         - DEF-CM0-to-be-removed
-      undefines:
+      undefine:
         - DEF-solution-to-be-removed
-      add-paths:
+      add-path:
         - ./path/CM0
         - ./path/CM0/to-be-removed
-      del-paths:
+      del-path:
         - ./path/solution/to-be-removed
       processor:
         fpu: off
@@ -32,15 +32,15 @@ solution:
           ASM: [-ASM-type-CM3]
           Link: [-Link-type-CM3]
           Lib: [-Lib-type-CM3]
-      defines:
+      define:
         - DEF-CM3
         - DEF-CM3-to-be-removed
-      undefines:
+      undefine:
         - DEF-solution-to-be-removed
-      add-paths:
+      add-path:
         - ./path/CM3
         - ./path/CM3/to-be-removed
-      del-paths:
+      del-path:
         - ./path/solution/to-be-removed
 
   build-types:
@@ -48,14 +48,14 @@ solution:
       compiler: AC6
       optimize: debug
       debug: on
-      defines:
+      define:
         - DEF-Debug
-      undefines:
+      undefine:
         - DEF-CM0-to-be-removed
         - DEF-CM3-to-be-removed
-      add-paths:
+      add-path:
         - ./path/Debug
-      del-paths:
+      del-path:
         - ./path/CM0/to-be-removed
         - ./path/CM3/to-be-removed
       processor:
@@ -67,14 +67,14 @@ solution:
       compiler: GCC
       optimize: max
       debug: off
-      defines:
+      define:
         - DEF-Release
-      undefines:
+      undefine:
         - DEF-CM0-to-be-removed
         - DEF-CM3-to-be-removed
-      add-paths:
+      add-path:
         - ./path/Release
-      del-paths:
+      del-path:
         - ./path/CM0/to-be-removed
         - ./path/CM3/to-be-removed
 
@@ -87,13 +87,13 @@ solution:
     - project: ./TestProject2/test2.cproject.yml
       not-for-type: .Release
 
-  defines:
+  define:
     - DEF-solution
     - DEF-solution-to-be-removed
-  undefines:
+  undefine:
     - DEF-project-to-be-removed
-  add-paths:
+  add-path:
     - ./path/solution/
     - ./path/solution/to-be-removed
-  del-paths:
+  del-path:
     - ./path/project/to-be-removed

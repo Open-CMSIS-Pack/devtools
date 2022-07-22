@@ -2,9 +2,9 @@
 
 layer:
   description: Layer 2
-  defines:
+  define:
     - DEF_LAYER2
-  add-paths:
+  add-path:
     - path/to/layer2
   misc:
     - C:

@@ -3,7 +3,7 @@
 project:
   device: RteTest_ARMCM0
   compiler: AC6
-  defines:
+  define:
     - DEF1-$OutDir(malformed-access-sequences2)$
     - DEF2-$OutDirs(malformed-access-sequences2)$
     - DEF3-$OutDir(malformed-access-sequences2$)

@@ -7,18 +7,18 @@ solution:
       misc:
         - compiler: AC6
           C-CPP: [-C-CPP-$Dname$]
-      defines: 
+      define: 
         - DEF-CM0-$Dname$-$Bname$
-      add-paths:
+      add-path:
         - ./path/CM0/$Dname$
     - type: CM3
       device: RteTest_ARMCM3
       misc:
         - compiler: AC6
           C-CPP: [-C-CPP-$Dname$]
-      defines:
+      define:
         - DEF-CM3-$Dname$
-      add-paths:
+      add-path:
         - ./path/CM3/$Dname$
 
   build-types:

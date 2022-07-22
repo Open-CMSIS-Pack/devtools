@@ -12,7 +12,7 @@ layer:
     - group: Non-secure Code
       files: 
         - file: main_ns.c
-          add-paths:
+          add-path:
             - ../Interface
     - group: CMSE
       files:
