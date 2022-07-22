@@ -13,6 +13,6 @@ layer:
     - group: CMSE
       files: 
         - file: interface.c
-          add-paths:
+          add-path:
             - ../Interface
         - file: tz_context.c

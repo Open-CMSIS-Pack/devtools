@@ -1,6 +1,6 @@
 # This file maps the CMSIS project options to toolchain settings.
 #
-#   - Applies to toolchain: GNU Arm Embedded Toolchain 10-2020-q4-major 10.2.1
+#   - Applies to toolchain: GNU Toolchain for the Arm Architecture 11.2.1 (11.2-2022.02)
 
 ############### EDIT BELOW ###############
 # Set base directory of toolchain
@@ -155,8 +155,8 @@ else()
 endif()
 
 set (CC_SYS_INC_PATHS_LIST
-  "${TOOLCHAIN_ROOT}/../lib/gcc/arm-none-eabi/10.2.1/include"
-  "${TOOLCHAIN_ROOT}/../lib/gcc/arm-none-eabi/10.2.1/include-fixed"
+  "${TOOLCHAIN_ROOT}/../lib/gcc/arm-none-eabi/11.2.1/include"
+  "${TOOLCHAIN_ROOT}/../lib/gcc/arm-none-eabi/11.2.1/include-fixed"
   "${TOOLCHAIN_ROOT}/../arm-none-eabi/include"
 )
 foreach(ENTRY ${CC_SYS_INC_PATHS_LIST})
@@ -172,9 +172,9 @@ set(CXX_SECURE "${CC_SECURE}")
 set(CXX_FLAGS "${CC_FLAGS}")
 
 set (CXX_SYS_INC_PATHS_LIST
-  "${TOOLCHAIN_ROOT}/../arm-none-eabi/include/c++/10.2.1"
-  "${TOOLCHAIN_ROOT}/../arm-none-eabi/include/c++/10.2.1/arm-none-eabi"
-  "${TOOLCHAIN_ROOT}/../arm-none-eabi/include/c++/10.2.1/backward"
+  "${TOOLCHAIN_ROOT}/../arm-none-eabi/include/c++/11.2.1"
+  "${TOOLCHAIN_ROOT}/../arm-none-eabi/include/c++/11.2.1/arm-none-eabi"
+  "${TOOLCHAIN_ROOT}/../arm-none-eabi/include/c++/11.2.1/backward"
   "${CC_SYS_INC_PATHS_LIST}"
 )
 foreach(ENTRY ${CXX_SYS_INC_PATHS_LIST})
@@ -184,9 +184,7 @@ endforeach()
 # Linker
 
 set(LD_CPU ${GNUASM_CPU})
-if(LD_SCRIPT)
-  set(LD_SCRIPT "-T \"${LD_SCRIPT}\"")
-endif()
+set(_LS "-T ")
 
 if(SECURE STREQUAL "Secure")
   set(LD_SECURE "-Wl,--cmse-implib -Wl,--out-implib=\"${OUT_DIR}/${TARGET}_CMSE_Lib.o\"")
@@ -221,7 +219,7 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/CMakeASM")
 set(CMAKE_ASM_COMPILER_FORCED TRUE)
 set(CMAKE_C_COMPILER_ID "GNU")
 set(CMAKE_C_COMPILER_ID_RUN TRUE)
-set(CMAKE_C_COMPILER_VERSION "10.2.1")
+set(CMAKE_C_COMPILER_VERSION "11.2.1")
 set(CMAKE_C_COMPILER_FORCED TRUE)
 set(CMAKE_C_COMPILER_WORKS TRUE)
 set(CMAKE_CXX_COMPILER_ID "${CMAKE_C_COMPILER_ID}")

@@ -2,10 +2,10 @@
 
 project:
   misc:
-    - C*: [PROJ2-D($Dname$)-B($Bname$)]
-  defines:
+    - C-CPP: [PROJ2-D($Dname$)-B($Bname$)]
+  define:
     - $Output(test-access-sequences1)$
-  add-paths:
+  add-path:
     - $Output(test-access-sequences1)$
   components:
     - component: CORE

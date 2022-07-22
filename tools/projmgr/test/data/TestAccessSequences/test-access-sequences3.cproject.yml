@@ -2,7 +2,7 @@
 
 project:
   device: RteTest_ARMCM0
-  defines:
+  define:
     - DEF1-PROJ1-$Output(test-access-sequences3.Debug)$
     - DEF2-PROJ1-$Output(test-access-sequences3.Release)$
   components:

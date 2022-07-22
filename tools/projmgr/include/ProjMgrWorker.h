@@ -78,6 +78,7 @@ struct TargetItem {
  * @brief translation control item containing
  *        csolution controls,
  *        cproject controls,
+ *        project setup controls,
  *        target-type controls,
  *        build-type controls,
  *        layers translation controls,
@@ -85,6 +86,7 @@ struct TargetItem {
 struct TranslationControl {
   BuildType csolution;
   BuildType cproject;
+  BuildType setup;
   BuildType target;
   BuildType build;
   std::map<std::string, BuildType> clayers;
@@ -344,8 +346,10 @@ protected:
   bool LoadPacks(ContextItem& context);
   bool GetRequiredPdscFiles(ContextItem& context, const std::string& packRoot, std::set<std::string>& errMsgs);
   bool CheckRteErrors(void);
-  bool CheckType(TypeFilter typeFilter, TypePair type);
+  bool CheckCompiler(const std::vector<std::string>& forCompiler, const std::string& selectedCompiler);
+  bool CheckType(const TypeFilter& typeFilter, const TypePair& type);
   bool GetTypeContent(ContextItem& context);
+  bool GetProjectSetup(ContextItem& context);
   bool InitializeTarget(ContextItem& context);
   bool SetTargetAttributes(ContextItem& context, std::map<std::string, std::string>& attributes);
   bool ProcessPrecedences(ContextItem& context);
@@ -385,6 +389,7 @@ protected:
   bool GetPrecedentValue(std::string& outValue, const std::string& element) const;
   std::string GetDeviceInfoString(const std::string& vendor, const std::string& name, const std::string& processor) const;
   std::vector<PackageItem> GetFilteredPacks(const PackageItem& packItem, const std::string& rtePath) const;
+  ToolchainItem GetToolchain(const std::string& compiler);
 };
 
 #endif  // PROJMGRWORKER_H

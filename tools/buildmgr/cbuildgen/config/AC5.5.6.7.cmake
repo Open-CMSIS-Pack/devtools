@@ -104,9 +104,7 @@ set(CXX_FLAGS "${CC_FLAGS}")
 # Linker
 
 set(LD_CPU ${ARMASM_CPU})
-if(LD_SCRIPT)
-  set(LD_SCRIPT "--scatter=\"${LD_SCRIPT}\"")
-endif()
+set(_LS "--scatter=")
 
 set(LD_FLAGS "")
 

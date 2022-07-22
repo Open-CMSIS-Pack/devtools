@@ -14,6 +14,7 @@
   * @brief YAML key definitions
 */
 static constexpr const char* YAML_ADDPATHS = "add-paths";
+static constexpr const char* YAML_ADDPATH = "add-path";
 static constexpr const char* YAML_BOARD = "board";
 static constexpr const char* YAML_BUILDTYPES = "build-types";
 static constexpr const char* YAML_CATEGORY = "category";
@@ -24,12 +25,15 @@ static constexpr const char* YAML_COMPONENTS = "components";
 static constexpr const char* YAML_DEBUG = "debug";
 static constexpr const char* YAML_DEFAULT = "default";
 static constexpr const char* YAML_DEFINES = "defines";
+static constexpr const char* YAML_DEFINE = "define";
 static constexpr const char* YAML_DELPATHS = "del-paths";
+static constexpr const char* YAML_DELPATH = "del-path";
 static constexpr const char* YAML_DESCRIPTION = "description";
 static constexpr const char* YAML_DEVICE = "device";
 static constexpr const char* YAML_ENDIAN = "endian";
 static constexpr const char* YAML_FILE = "file";
 static constexpr const char* YAML_FILES = "files";
+static constexpr const char* YAML_FORCOMPILER = "for-compiler";
 static constexpr const char* YAML_FORTYPE = "for-type";
 static constexpr const char* YAML_FPU = "fpu";
 static constexpr const char* YAML_GROUP = "group";
@@ -40,9 +44,8 @@ static constexpr const char* YAML_LAYERS = "layers";
 static constexpr const char* YAML_MISC = "misc";
 static constexpr const char* YAML_MISC_ASM = "ASM";
 static constexpr const char* YAML_MISC_C = "C";
-static constexpr const char* YAML_MISC_COMPILER = "compiler";
 static constexpr const char* YAML_MISC_CPP = "CPP";
-static constexpr const char* YAML_MISC_C_CPP = "C*";
+static constexpr const char* YAML_MISC_C_CPP = "C-CPP";
 static constexpr const char* YAML_MISC_LIB = "Lib";
 static constexpr const char* YAML_MISC_LINK = "Link";
 static constexpr const char* YAML_NOTFORTYPE = "not-for-type";
@@ -61,10 +64,13 @@ static constexpr const char* YAML_PROJECT = "project";
 static constexpr const char* YAML_PROJECTS = "projects";
 static constexpr const char* YAML_PROVIDES = "provides";
 static constexpr const char* YAML_SOLUTION = "solution";
+static constexpr const char* YAML_SETUPS = "setups";
+static constexpr const char* YAML_SETUP = "setup";
 static constexpr const char* YAML_TARGETTYPES = "target-types";
 static constexpr const char* YAML_TRUSTZONE = "trustzone";
 static constexpr const char* YAML_TYPE = "type";
 static constexpr const char* YAML_UNDEFINES = "undefines";
+static constexpr const char* YAML_UNDEFINE = "undefine";
 static constexpr const char* YAML_WARNINGS = "warnings";
 
 /**
@@ -135,6 +141,7 @@ protected:
   bool ParseFiles(const YAML::Node& parent, std::vector<FileNode>& files);
   bool ParseGroups(const YAML::Node& parent, std::vector<GroupNode>& groups);
   bool ParseLayers(const YAML::Node& parent, std::vector<LayerItem>& layers);
+  bool ParseSetups(const YAML::Node& parent, std::vector<SetupItem>& setups);
   bool ParseTypeFilter(const YAML::Node& parent, TypeFilter& type);
   bool ParseTypePair(std::vector<std::string>& vec, std::vector<TypePair>& typeVec);
   bool GetTypes(const std::string& type, std::string& buildType, std::string& targetType);

@@ -136,7 +136,7 @@ case $OS in
     cmsis_compiler_root_default_path=$(unixpath "${LOCALAPPDATA}/Arm/Compilers")
     compiler6_default_path=$(unixpath "${PROGRAMFILES}/ArmCompilerforEmbedded6.18/bin")
     compiler5_default_path=$(unixpath "${PROGRAMFILES} (x86)/ARM_Compiler_5.06u7/bin")
-    gcc_default_path=$(unixpath "${PROGRAMFILES} (x86)/GNU Arm Embedded Toolchain/10 2020-q4-major/bin")
+    gcc_default_path=$(unixpath "${PROGRAMFILES} (x86)/Arm GNU Toolchain arm-none-eabi/11.2 2022.02/bin")
     iar_default_path=$(unixpath "${PROGRAMFILES} (x86)/IAR Systems/Embedded Workbench 8.4/arm/bin")
     extension=".exe"
     ;;
@@ -150,7 +150,7 @@ case $OS in
     cmsis_compiler_root_default_path=$(wslpath "${localappdata}\Arm\Compilers")
     compiler6_default_path=$(wslpath "${programfiles}/ArmCompilerforEmbedded6.18/bin")
     compiler5_default_path=$(wslpath "${programfiles} (x86)/ARM_Compiler_5.06u7/bin")
-    gcc_default_path=$(wslpath "${programfiles} (x86)/GNU Arm Embedded Toolchain/10 2020-q4-major/bin")
+    gcc_default_path=$(wslpath "${programfiles} (x86)/Arm GNU Toolchain arm-none-eabi/11.2 2022.02/bin")
     iar_default_path=$(wslpath "${programfiles} (x86)/IAR Systems/Embedded Workbench 8.4/arm/bin")
     extension=".exe"
     ;;
@@ -161,7 +161,7 @@ case $OS in
     cmsis_compiler_root_default_path=${HOME}/.cache/arm/compilers
     compiler6_default_path=${HOME}/ArmCompilerforEmbedded6.18/bin
     compiler5_default_path=${HOME}/ARM_Compiler_5.06u7/bin
-    gcc_default_path=${HOME}/gcc-arm-none-eabi-10-2020-q4-major/bin
+    gcc_default_path=${HOME}/gcc-arm-11.2-2022.02-x86_64-arm-none-eabi/bin
     iar_default_path=/opt/iarsystems/bxarm/arm/bin
     extension=""
     ;;
@@ -202,7 +202,7 @@ else
 fi
 
 # ask for gcc installation path
-read -e -p "Enter the installed GNU Arm Embedded Toolchain Version 10.2.1 (10-2020-q4-major) directory [${gcc_default_path}]: " gcc_root
+read -e -p "Enter the installed GNU Arm Embedded Toolchain Version 11.2.1 (11.2-2022.02) directory [${gcc_default_path}]: " gcc_root
 gcc_root=${gcc_root:-${gcc_default_path}}
 if [[ -d "${gcc_root}" ]]
   then
@@ -321,7 +321,7 @@ script="${cmsis_compiler_root}/AC5.5.6.7.cmake"
 sed -e "s|set(TOOLCHAIN_ROOT.*|set(TOOLCHAIN_ROOT \"${compiler5_root}\")|" "${script}" > temp.$$ && mv temp.$$ "${script}"
 sed -e "s|set(EXT.*|set(EXT ${extension})|" "${script}" > temp.$$ && mv temp.$$ "${script}"
 
-script="${cmsis_compiler_root}/GCC.10.2.1.cmake"
+script="${cmsis_compiler_root}/GCC.11.2.1.cmake"
 sed -e "s|set(TOOLCHAIN_ROOT.*|set(TOOLCHAIN_ROOT \"${gcc_root}\")|" "${script}" > temp.$$ && mv temp.$$ "${script}"
 sed -e "s|set(EXT.*|set(EXT ${extension})|" "${script}" > temp.$$ && mv temp.$$ "${script}"
 

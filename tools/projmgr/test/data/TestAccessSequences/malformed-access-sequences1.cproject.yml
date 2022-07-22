@@ -3,7 +3,7 @@
 project:
   device: RteTest_ARMCM0
   compiler: AC6
-  defines:
+  define:
     - DEF1-$Dname$
     - DEF2-$Dnamelong$
     - DEF3-$Dname

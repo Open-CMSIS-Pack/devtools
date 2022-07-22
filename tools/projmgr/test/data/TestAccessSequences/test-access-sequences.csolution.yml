@@ -6,32 +6,32 @@ solution:
       device: RteTest_ARMCM0
       misc:
         - compiler: AC6
-          C*: [-C-CPP-$Dname$]
-      defines: 
+          C-CPP: [-C-CPP-$Dname$]
+      define: 
         - DEF-CM0-$Dname$-$Bname$
-      add-paths:
+      add-path:
         - ./path/CM0/$Dname$
     - type: CM3
       device: RteTest_ARMCM3
       misc:
         - compiler: AC6
-          C*: [-C-CPP-$Dname$]
-      defines:
+          C-CPP: [-C-CPP-$Dname$]
+      define:
         - DEF-CM3-$Dname$
-      add-paths:
+      add-path:
         - ./path/CM3/$Dname$
 
   build-types:
     - type: Debug
       compiler: AC6
       misc:
-        - C*:
+        - C-CPP:
             - -O1
             - -g
     - type: Release
       compiler: AC6
       misc:
-        - C*:
+        - C-CPP:
             - -O3
   
   projects:

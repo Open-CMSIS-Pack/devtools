@@ -631,13 +631,12 @@ bool ProjMgrWorker::ProcessToolchain(ContextItem& context) {
     }
   }
 
-  const size_t delimiter = context.compiler.find('@');
-  context.toolchain.name = context.compiler.substr(0, delimiter);
-  if (delimiter == string::npos) {
+  context.toolchain = GetToolchain(context.compiler);
+  if (context.toolchain.version.empty()) {
     static const map<string, string> DEF_MIN_VERSIONS = {
       {"AC5","5.6.7"},
       {"AC6","6.18.0"},
-      {"GCC","10.2.1"},
+      {"GCC","11.2.1"},
       {"IAR","8.50.6"},
     };
     for (const auto& defMinVersion: DEF_MIN_VERSIONS) {
@@ -649,8 +648,6 @@ bool ProjMgrWorker::ProcessToolchain(ContextItem& context) {
     if (context.toolchain.version.empty()) {
       context.toolchain.version = "0.0.0";
     }
-  } else {
-    context.toolchain.version = context.compiler.substr(delimiter + 1, string::npos);
   }
   if (context.toolchain.name == "AC6" || context.toolchain.name == "AC5") {
     context.targetAttributes["Tcompiler"] = "ARMCC";
@@ -875,9 +872,10 @@ bool ProjMgrWorker::ProcessDependencies(ContextItem& context) {
     error_code ec;
     const string gpdscFile = fs::weakly_canonical(file, ec).generic_string();
     if (!ProjMgrUtils::ReadGpdscFile(gpdscFile, gpdscModel.get())) {
-      ProjMgrLogger::Warn(gpdscFile, "generator '" + context.gpdscs.at(gpdscFile).second +
+      ProjMgrLogger::Error(gpdscFile, "generator '" + context.gpdscs.at(gpdscFile).second +
         "' from component '" + context.gpdscs.at(gpdscFile).first + "': reading gpdsc failed");
       gpdscModel.reset();
+      return false;
     } else {
       // Release pointer ownership
       info->SetGeneratorModel(gpdscModel.release());
@@ -977,6 +975,11 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
     return false;
   }
 
+  // Get content of project setup
+  if (!GetProjectSetup(context)) {
+    return false;
+  }
+
   StringCollection trustzone = {
     &context.trustzone,
     {
@@ -1028,6 +1031,7 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
   // Misc
   vector<vector<MiscItem>*> miscVec = {
     &context.controls.cproject.misc,
+    &context.controls.setup.misc,
     &context.controls.csolution.misc,
     &context.controls.build.misc,
     &context.controls.target.misc,
@@ -1052,6 +1056,7 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
     &context.defines,
     {
       {&projectDefines, &projectUndefines},
+      {&context.controls.setup.defines, &context.controls.setup.undefines},
       {&context.controls.csolution.defines, &context.controls.csolution.undefines},
       {&context.controls.target.defines, &context.controls.target.undefines},
       {&context.controls.build.defines, &context.controls.build.undefines},
@@ -1073,6 +1078,7 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
     &context.includes,
     {
       {&projectAddPaths, &projectDelPaths},
+      {&context.controls.setup.addpaths, &context.controls.setup.delpaths},
       {&context.controls.csolution.addpaths, &context.controls.csolution.delpaths},
       {&context.controls.target.addpaths, &context.controls.target.delpaths},
       {&context.controls.build.addpaths, &context.controls.build.delpaths},
@@ -1096,6 +1102,7 @@ bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem& context) {
 
   // project, solution, target-type and build-type translation controls
   if (!ProcessSequencesRelatives(context, context.controls.cproject, context.cproject->directory) ||
+      !ProcessSequencesRelatives(context, context.controls.setup, context.cproject->directory) ||
       !ProcessSequencesRelatives(context, context.controls.csolution, context.csolution->directory) ||
       !ProcessSequencesRelatives(context, context.controls.target, context.csolution->directory) ||
       !ProcessSequencesRelatives(context, context.controls.build, context.csolution->directory)) {
@@ -1247,7 +1254,7 @@ bool ProjMgrWorker::ProcessGroups(ContextItem& context) {
 }
 
 bool ProjMgrWorker::AddGroup(const GroupNode& src, vector<GroupNode>& dst, ContextItem& context, const string root) {
-  if (CheckType(src.type, context.type)) {
+  if (CheckType(src.type, context.type) && CheckCompiler(src.forCompiler, context.compiler)) {
     std::vector<GroupNode> groups;
     for (const auto& group : src.groups) {
       if (!AddGroup(group, groups, context, root)) {
@@ -1271,13 +1278,13 @@ bool ProjMgrWorker::AddGroup(const GroupNode& src, vector<GroupNode>& dst, Conte
     BuildType srcNodeBuild = src.build;
     ProcessSequencesRelatives(context, srcNodeBuild, root);
 
-    dst.push_back({ src.group, files, groups, srcNodeBuild, src.type });
+    dst.push_back({ src.group, src.forCompiler, files, groups, srcNodeBuild, src.type });
   }
   return true;
 }
 
 bool ProjMgrWorker::AddFile(const FileNode& src, vector<FileNode>& dst, ContextItem& context, const string root) {
-  if (CheckType(src.type, context.type)) {
+  if (CheckType(src.type, context.type) && CheckCompiler(src.forCompiler, context.compiler)) {
     for (auto& dstNode : dst) {
       if (dstNode.file == src.file) {
         ProjMgrLogger::Error("conflict: file '" + dstNode.file + "' is declared multiple times");
@@ -1323,7 +1330,22 @@ bool ProjMgrWorker::AddComponent(const ComponentItem& src, vector<ComponentItem>
   return true;
 }
 
-bool ProjMgrWorker::CheckType(TypeFilter typeFilter, TypePair type) {
+bool ProjMgrWorker::CheckCompiler(const vector<string>& forCompiler, const string& selectedCompiler) {
+  if (forCompiler.empty()) {
+    return true;
+  }
+  const ToolchainItem& selectedToolchain = GetToolchain(selectedCompiler);
+  for (const auto& compiler : forCompiler) {
+    const ToolchainItem& toolchain = GetToolchain(compiler);
+    if (toolchain.name == selectedToolchain.name &&
+       (toolchain.version.empty() || toolchain.version == selectedToolchain.version)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool ProjMgrWorker::CheckType(const TypeFilter& typeFilter, const TypePair& type) {
   const auto& exclude = typeFilter.exclude;
   const auto& include = typeFilter.include;
 
@@ -1528,7 +1550,11 @@ bool ProjMgrWorker::ListBoards(vector<string>& boards, const string& contextName
   set<string> boardsSet;
   const RteBoardMap& availableBoards = context.rteFilteredModel->GetBoards();
   for (const auto& [_, board] : availableBoards) {
-    boardsSet.insert(board->GetName());
+    const string& boardVendor = board->GetVendorName();
+    const string& boardName = board->GetName();
+    const string& boardRevision = board->GetAttribute("revision");
+    const string& boardPack = ProjMgrUtils::GetPackageID(board->GetPackage());
+    boardsSet.insert(boardVendor + "::" + boardName + (!boardRevision.empty() ? ":" + boardRevision : "") + " (" + boardPack + ")");
   }
   if (boardsSet.empty()) {
     ProjMgrLogger::Error("no installed board was found");
@@ -1564,14 +1590,16 @@ bool ProjMgrWorker::ListDevices(vector<string>& devices, const string& contextNa
   list<RteDevice*> filteredModelDevices;
   context.rteFilteredModel->GetDevices(filteredModelDevices, "", "", RteDeviceItem::VARIANT);
   for (const auto& deviceItem : filteredModelDevices) {
+    const string& deviceVendor = deviceItem->GetVendorName();
     const string& deviceName = deviceItem->GetFullDeviceName();
+    const string& devicePack = ProjMgrUtils::GetPackageID(deviceItem->GetPackage());
     if (deviceItem->GetProcessorCount() > 1) {
       const auto& processors = deviceItem->GetProcessors();
       for (const auto& processor : processors) {
-        devicesSet.insert(deviceName + ":" + processor.first);
+        devicesSet.insert(deviceVendor + "::" + deviceName + ":" + processor.first + " (" + devicePack +")");
       }
     } else {
-      devicesSet.insert(deviceName);
+      devicesSet.insert(deviceVendor + "::" + deviceName + " (" + devicePack + ")");
     }
   }
   if (devicesSet.empty()) {
@@ -1747,6 +1775,18 @@ bool ProjMgrWorker::ListGenerators(const string& context, vector<string>& genera
   return true;
 }
 
+ToolchainItem ProjMgrWorker::GetToolchain(const string& compiler) {
+  ToolchainItem toolchain;
+  if (compiler.find("@") != string::npos) {
+    toolchain.name = RteUtils::RemoveSuffixByString(compiler, "@");
+    toolchain.version = RteUtils::RemovePrefixByString(compiler, "@");
+  }
+  else {
+    toolchain.name = compiler;
+  }
+  return toolchain;
+}
+
 bool ProjMgrWorker::GetTypeContent(ContextItem& context) {
   if (!context.type.build.empty() || !context.type.target.empty()) {
     context.controls.build = context.csolution->buildTypes[context.type.build];
@@ -1757,6 +1797,16 @@ bool ProjMgrWorker::GetTypeContent(ContextItem& context) {
   }
   context.controls.cproject = context.cproject->target.build;
   context.controls.csolution = context.csolution->target.build;
+  return true;
+}
+
+bool ProjMgrWorker::GetProjectSetup(ContextItem& context) {
+  for (const auto& setup : context.cproject->setups) {
+    if (CheckType(setup.type, context.type) && CheckCompiler(setup.forCompiler, context.compiler)) {
+      context.controls.setup = setup.build;
+      break;
+    }
+  }
   return true;
 }
 
