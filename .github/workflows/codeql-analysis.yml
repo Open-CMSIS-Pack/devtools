@@ -3,7 +3,9 @@ name: "CodeQL"
 on:
   workflow_dispatch:
   pull_request:
+    branches: [ main ]
   push:
+    branches: [ main ]
 
 jobs:
   analyze:
@@ -25,10 +27,11 @@ jobs:
           submodules: true
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v1
+        uses: github/codeql-action/init@v2
         with:
-          languages: 'cpp'
-
+          languages: cpp
+          queries: security-and-quality
+          
       - name: Create build folder
         run: mkdir build
 
@@ -39,4 +42,4 @@ jobs:
         working-directory: ./build
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v1
+        uses: github/codeql-action/analyze@v2
