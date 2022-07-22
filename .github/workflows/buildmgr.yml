@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - '.github/workflows/buildmgr.yml'
+      - '.github/matrix_includes_buildmgr.json'
       - 'CMakeLists.txt'
       - 'libs/crossplatform/**'
       - 'libs/errlog/**'
@@ -18,7 +19,17 @@ on:
       - main
     paths:
       - '.github/workflows/buildmgr.yml'
-      - 'tools/buildmgr/docs/**'
+      - '.github/matrix_includes_buildmgr.json'
+      - 'CMakeLists.txt'
+      - 'libs/crossplatform/**'
+      - 'libs/errlog/**'
+      - 'libs/xmlreader/**'
+      - 'libs/xmltree/**'
+      - 'libs/xmltreeslim/**'
+      - 'libs/rteutils/**'
+      - 'libs/rtemodel/**'
+      - 'libs/rtefsutils/**'
+      - 'tools/buildmgr/**'
   release:
     types: [ published ]
 

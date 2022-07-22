@@ -6,12 +6,14 @@ on:
     paths:
       - '.github/workflows/packchk.yml'
       - '.github/workflows/unit_test_results.yml'
+      - '.github/matrix_includes_packchk.json'
       - 'CMakeLists.txt'
       - 'tools/packchk/**'
   pull_request:
     paths:
       - '.github/workflows/packchk.yml'
       - '.github/workflows/unit_test_results.yml'
+      - '.github/matrix_includes_packchk.json'
       - 'CMakeLists.txt'
       - 'tools/packchk/**'
   release:

@@ -1,8 +1,22 @@
 name: packgen
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/packgen.yml'
+      - '.github/matrix_includes_packgen.json'
+      - 'CMakeLists.txt'
+      - 'libs/crossplatform/**'
+      - 'libs/rtefsutils/**'
+      - 'libs/xmlreader/**'
+      - 'libs/xmltree/**'
+      - 'libs/xmltreeslim/**'
+      - 'tools/packgen/**'
   pull_request:
     paths:
       - '.github/workflows/packgen.yml'
+      - '.github/matrix_includes_packgen.json'
       - 'CMakeLists.txt'
       - 'libs/crossplatform/**'
       - 'libs/rtefsutils/**'

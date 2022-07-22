@@ -5,6 +5,7 @@ on:
       - main
     paths:
       - '.github/workflows/projmgr.yml'
+      - '.github/matrix_includes_projmgr.json'
       - 'CMakeLists.txt'
       - 'libs/crossplatform/**'
       - 'libs/rtefsutils/**'
@@ -15,6 +16,7 @@ on:
   pull_request:
     paths:
       - '.github/workflows/projmgr.yml'
+      - '.github/matrix_includes_projmgr.json'
       - 'CMakeLists.txt'
       - 'libs/crossplatform/**'
       - 'libs/rtefsutils/**'

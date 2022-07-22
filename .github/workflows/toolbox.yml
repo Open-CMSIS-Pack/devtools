@@ -1,8 +1,17 @@
 name: toolbox
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/toolbox.yml'
+      - '.github/matrix_includes_toolbox.json'
+      - 'CMakeLists.txt'
+      - 'tools/toolbox/**'
   pull_request:
     paths:
       - '.github/workflows/toolbox.yml'
+      - '.github/matrix_includes_toolbox.json'
       - 'CMakeLists.txt'
       - 'tools/toolbox/**'
   release:
