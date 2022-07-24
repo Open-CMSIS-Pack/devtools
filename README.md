@@ -24,7 +24,7 @@ archive using the file extension `*.pack`.
 CMSIS-Build defines an XML project file format that allows building projects
 based on hardware descriptions, software components, source modules and linker
 scripts distributed as software packs. The build manager (cbuildgen) is reading
-the project (`*.cprj) and generates the build instructions as CMake
+the project (`*.cprj`) and generates the build instructions as CMake
 configuration files.
 
 The end goal of this project is to provide a consistent and compliant set of command-line tools
@@ -64,7 +64,7 @@ Note that some of the required tools are platform dependent:
 - A toolchain for your platform
   - **Windows:**
     - [GIT Bash](https://gitforwindows.org/)
-    - Visual Studio 2019
+    - Visual Studio 2019 with "Desktop development with C++"
     - CMake (minimum recommended version **3.18**)
     - *optional* make or Ninja
 
@@ -81,13 +81,13 @@ Note that some of the required tools are platform dependent:
         see [MSYS2 GitHub issue #1937](https://github.com/msys2/MSYS2-packages/issues/1937).
     ~~~
 
-  - **Linux**
+  - **Linux:**
     - GNU Bash (minimum recommended version **4.3**)
     - GNU Compiler (minimum recommended version **8.1**)
     - *alternatively* LLVM/Clang Compiler (minimum recommended version **8**)
     - CMake (minimum recommended version **3.18**)
     - make or Ninja
-  - **MacOS**
+  - **MacOS:**
     - GNU Bash (minimum recommended version **4.3**)
     - XCode/AppleClang (minimum recommended version **11**)
     - CMake (minimum recommended version **3.18**)
@@ -142,7 +142,7 @@ This is a three step process:
 As usual, the actual build steps vary by platform.
 
 - **Linux/MacOS amd64**:\
-    On Linux or MacOS use the following commands.\
+    On Linux or MacOS use the following commands：
 
     **Note:** If `DCMAKE_BUILD_TYPE` is not selected, the binaries shall build
     with `Release` configuration:
