@@ -105,7 +105,7 @@ bool ProcessRunner::Terminate(ProcInfo pinfo) {
 
 bool ProcessRunner::IsRunning(ProcInfo pinfo, unsigned int waitTimeSec) {
   int status;
-  waitpid(pinfo.pid, &status, WNOHANG);
+  int w = waitpid(pinfo.pid, &status, WNOHANG);
 
-  return !(WIFEXITED(status) || WIFSTOPPED(status));
+  return (w == 0) || !(WIFEXITED(status) || WIFSTOPPED(status));
 }
