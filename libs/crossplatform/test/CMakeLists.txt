@@ -9,7 +9,7 @@ else()
 endif()
 
 SET(HEADER_FILES ../include/CrossPlatform.h)
-SET(TEST_SOURCE_FILES src/UnitTests.cpp src/ProcessTests.cpp)
+SET(TEST_SOURCE_FILES src/UnitTests.cpp)
 SET(TEST_HEADER_FILES)
 
 add_executable(CrossPlatformUnitTests ${TEST_SOURCE_FILES} ${TEST_HEADER_FILES})
