@@ -546,6 +546,7 @@ void ValidateSyntax::InitFeatures()
   m_featureTableDevice["QFN"] = FeatureEntry("QFN", "<feature type=\"QFN\" n=\"33\" name=\"QFN Package\"/>", "33-pad QFN Package");
   m_featureTableDevice["QFP"] = FeatureEntry("QFP", "<feature type=\"QFP\" n=\"128\" name=\"Low-Profile QFP Package\"/>", "128-lead Low-Profile QFP Package");
   m_featureTableDevice["SOP"] = FeatureEntry("SOP", "<feature type=\"SOP\" n=\"16\" name=\"SSOP Package\"/>", "16-lead SSOP Package");
+  m_featureTableDevice["SON"] = FeatureEntry("SON", "<feature type=\"SON\" n=\"16\" name=\"SSON Package\"/>", "16-no-lead SSON Package");
   m_featureTableDevice["DIP"] = FeatureEntry("DIP", "<feature type=\"DIP\" n=\"16\" name=\"Dual In-Line Package\"/>", "16-lead Dual In-Line Package");
   m_featureTableDevice["PackageOther"] = FeatureEntry("Other Package Type", "<feature type=\"PackageOther\" n=\"44\" name=\"My other Package\"/>", "44-contacts My other Package");
   m_featureTableDevice["IOs"] = FeatureEntry("Inputs/Outputs", "<feature type=\"IOs\" n=\"112\" name=\"General Purpose I/Os, 5V tolerant\"/>", "112 General Purpose I/Os, 5V tolerant");

@@ -361,5 +361,34 @@ TEST_F(PackChkIntegTests, CheckPackLicense) {
   if (!bFound) {
     FAIL() << "error: missing warning M327";
   }
-
 }
+
+// Validate license path
+TEST_F(PackChkIntegTests, CheckFeatureSON) {
+  const char* argv[2];
+
+  const string& pdscFile = PackChkIntegTestEnv::localtestdata_dir +
+    "/TestSON/TestVendor.TestSON.pdsc";
+  ASSERT_TRUE(RteFsUtils::Exists(pdscFile));
+
+  argv[0] = (char*)"";
+  argv[1] = (char*)pdscFile.c_str();
+
+  PackChk packChk;
+  EXPECT_EQ(1, packChk.Check(2, argv, nullptr));
+
+  auto errMsgs = ErrLog::Get()->GetLogMessages();
+  bool bFound = false;
+  for (const string& msg : errMsgs) {
+    size_t s;
+    if ((s = msg.find("M371")) != string::npos) {
+      bFound = true;
+      break;
+    }
+  }
+
+  if (!bFound) {
+    FAIL() << "error: missing error M371";
+  }
+}
+
