@@ -279,7 +279,8 @@
         "del-path":     { "$ref": "#/definitions/DelpathsType" },
         "misc":         { "$ref": "#/definitions/MiscTypes" },
         "groups":       { "$ref": "#/definitions/GroupsType" },
-        "files":        { "$ref": "#/definitions/FilesType" }
+        "files":        { "$ref": "#/definitions/FilesType" },
+        "excludes":     { "$ref": "#/definitions/ExcludedFilesType" }
       },
       "$ref": "#/definitions/TypeListMutualExclusion",
       "anyOf": [
@@ -297,7 +298,7 @@
     "FileType": {
       "type": "object",
       "properties": {
-        "file":         { "type": "string", "description": "File name along with the path." },
+        "file":         { "type": "string", "description": "File name along with the path or pattern." },
         "for-type":     { "$ref": "#/definitions/ForType" },
         "not-for-type": { "$ref": "#/definitions/NotForType" },
         "for-compiler": { "$ref": "#/definitions/CompilersType" },
@@ -314,6 +315,22 @@
         "misc":         { "$ref": "#/definitions/MiscTypes" }
       },
       "$ref": "#/definitions/TypeListMutualExclusion",
+      "required": [ "file" ],
+      "additionalProperties": false
+    },
+    "ExcludedFilesType": {
+      "type": "array",
+      "description": "List of source files to be excluded from a project or layer.",
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/FileType" }
+    },
+    "ExcludedFileType": {
+      "type": "object",
+      "properties": {
+        "file":         { "type": "string", "description": "File name along with the path or pattern." },
+        "for-type":     { "$ref": "#/definitions/ForType" },
+        "not-for-type": { "$ref": "#/definitions/NotForType" }
+      },
       "required": [ "file" ],
       "additionalProperties": false
     },
