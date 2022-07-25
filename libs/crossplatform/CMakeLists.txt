@@ -3,27 +3,14 @@ project(CrossPlatform VERSION 1.0.0)
 message(STATUS "Building for: " ${CMAKE_SYSTEM_NAME})
 
 add_subdirectory("test")
-if((${CMAKE_SYSTEM_NAME} STREQUAL "Linux") OR (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin"))
-  SET(SOURCE_FILES  src/CrossPlatformUtils.cpp
-                    src/ProcessRunner.cpp
-                    src/StreamReader.cpp
-                    src/LinuxDarwin_Process.cpp
-                    src/LinuxDarwin_StreamReader.cpp)
-ELSE()
-  SET(SOURCE_FILES  src/CrossPlatformUtils.cpp
-                    src/ProcessRunner.cpp
-                    src/StreamReader.cpp
-                    src/${CMAKE_SYSTEM_NAME}_Process.cpp
-                    src/${CMAKE_SYSTEM_NAME}_StreamReader.cpp)
-ENDIF()
+
+SET(SOURCE_FILES  src/CrossPlatformUtils.cpp)
 
 list(APPEND SOURCE_FILES src/${CMAKE_SYSTEM_NAME}/Utils.cpp
                          src/${CMAKE_SYSTEM_NAME}/constants.h)
 
 SET(HEADER_FILES    include/CrossPlatform.h
-                    include/CrossPlatformUtils.h
-                    include/ProcessRunner.h
-                    include/StreamReader.h)
+                    include/CrossPlatformUtils.h)
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
   add_definitions(-DDEFAULT_PACKROOTDEF=\"XDG_CACHE_HOME\")
