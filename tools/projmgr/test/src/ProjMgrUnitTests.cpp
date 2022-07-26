@@ -13,6 +13,7 @@
 
 #include "gtest/gtest.h"
 #include <fstream>
+#include <regex>
 
 using namespace std;
 
@@ -95,15 +96,15 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks) {
   char* argv[7];
   map<std::pair<string, string>, string> testInputs = {
     {{"TestSolution/test.csolution.yml", "test1.Debug+CM0"},
-      "ARM::RteTest_DFP@0.2.0\n" },
+      "ARM::RteTest_DFP@0.2.0 \\(.*\\)\n" },
     {{"TestSolution/test.csolution_filtered_pack_selection.yml", "test1.Debug+CM0"},
-      "ARM::RteTest@0.1.0\nARM::RteTestBoard@0.1.0\nARM::RteTestGenerator@0.1.0\nARM::RteTest_DFP@0.2.0\n"},
+      "ARM::RteTest@0.1.0 \\(.*\\)\nARM::RteTestBoard@0.1.0 \\(.*\\)\nARM::RteTestGenerator@0.1.0 \\(.*\\)\nARM::RteTest_DFP@0.2.0 \\(.*\\)\n"},
     {{"TestSolution/test.csolution_no_packs.yml", "test1.Debug+CM0"},
-      "ARM::RteTest@0.1.0\nARM::RteTestBoard@0.1.0\nARM::RteTestGenerator@0.1.0\nARM::RteTest_DFP@0.1.1\nARM::RteTest_DFP@0.2.0\n"},
+      "ARM::RteTest@0.1.0 \\(.*\\)\nARM::RteTestBoard@0.1.0 \\(.*\\)\nARM::RteTestGenerator@0.1.0 \\(.*\\)\nARM::RteTest_DFP@0.1.1 \\(.*\\)\nARM::RteTest_DFP@0.2.0 \\(.*\\)\n"},
     {{"TestSolution/test.csolution_pack_selection.yml", "test2.Debug+CM0"},
-      "ARM::RteTest_DFP@0.2.0\n"},
+      "ARM::RteTest_DFP@0.2.0 \\(.*\\)\n"},
     {{"TestDefault/build-types.csolution.yml", "project.Debug"},
-      "ARM::RteTest_DFP@0.1.1\n" }
+      "ARM::RteTest_DFP@0.1.1 \\(.*\\)\n" }
   };
 
   // positive tests
@@ -119,7 +120,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks) {
     EXPECT_EQ(0, RunProjMgr(7, argv));
 
     auto outStr = streamRedirect.GetOutString();
-    EXPECT_STREQ(outStr.c_str(), expected.c_str()) << "error listing pack for " << csolution << endl;
+    EXPECT_TRUE(regex_match(outStr, regex(expected.c_str()))) << "error listing pack for " << csolution << endl;
   }
 
   map<std::pair<string, string>, string> testFalseInputs = {
@@ -145,14 +146,14 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks) {
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks_1) {
   char* argv[3];
   StdStreamRedirect streamRedirect;
-  const string& expected = "ARM::RteTest@0.1.0\nARM::RteTestBoard@0.1.0\nARM::RteTestGenerator@0.1.0\nARM::RteTest_DFP@0.1.1\nARM::RteTest_DFP@0.2.0\n";
+  const string& expected = "ARM::RteTest@0.1.0 \\(.*\\)\nARM::RteTestBoard@0.1.0 \\(.*\\)\nARM::RteTestGenerator@0.1.0 \\(.*\\)\nARM::RteTest_DFP@0.1.1 \\(.*\\)\nARM::RteTest_DFP@0.2.0 \\(.*\\)\n";
   // list packs
   argv[1] = (char*)"list";
   argv[2] = (char*)"packs";
   EXPECT_EQ(0, RunProjMgr(3, argv));
 
   auto outStr = streamRedirect.GetOutString();
-  EXPECT_STREQ(outStr.c_str(), expected.c_str());
+  EXPECT_TRUE(regex_match(outStr, regex(expected.c_str())));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks_project) {
@@ -169,7 +170,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks_project) {
   EXPECT_EQ(0, RunProjMgr(7, argv));
 
   auto outStr = streamRedirect.GetOutString();
-  EXPECT_STREQ(outStr.c_str(), "ARM::RteTest_DFP@0.1.1\n");
+  EXPECT_TRUE(regex_match(outStr, regex("ARM::RteTest_DFP@0.1.1 \\(.*\\)\n")));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacksMissing) {
@@ -587,16 +588,19 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Generator) {
 }
 
 TEST_F(ProjMgrUnitTests, ListPacks) {
-  set<string> expected = {
-    "ARM::RteTest@0.1.0",
-    "ARM::RteTestBoard@0.1.0",
-    "ARM::RteTestGenerator@0.1.0",
-    "ARM::RteTest_DFP@0.1.1",
-    "ARM::RteTest_DFP@0.2.0"
+  set<string> expectedPacks = {
+    "ARM::RteTest@0.1.0 \\(.*\\)",
+    "ARM::RteTestBoard@0.1.0 \\(.*\\)",
+    "ARM::RteTestGenerator@0.1.0 \\(.*\\)",
+    "ARM::RteTest_DFP@0.1.1 \\(.*\\)",
+    "ARM::RteTest_DFP@0.2.0 \\(.*\\)"
   };
   vector<string> packs;
   EXPECT_TRUE(m_worker.ListPacks(packs, false, "", "RteTest"));
-  EXPECT_EQ(expected, set<string>(packs.begin(), packs.end()));
+  auto packIt = packs.begin();
+  for (const auto& expected : expectedPacks) {
+    EXPECT_TRUE(regex_match(*packIt++, regex(expected)));
+  }
 }
 
 TEST_F(ProjMgrUnitTests, ListBoards) {

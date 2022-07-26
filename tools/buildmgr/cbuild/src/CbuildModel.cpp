@@ -87,7 +87,9 @@ bool CbuildModel::Create(const CbuildRteArgs& args) {
       string filename = intdir + (intdir.back() == '/' ? "" : "/") + m_targetName + ".cpinstall";
       ofstream missingPacks(filename);
       for (const auto& pack : packList) {
-        missingPacks << pack.vendor << "::" << pack.name << (pack.version.empty()? "" : "@" + pack.version) << std::endl;
+        const string& packID = pack.vendor + "::" + pack.name + (pack.version.empty() ? "" : "@" + pack.version);
+        missingPacks << packID << std::endl;
+        LogMsg("M654", VAL("PACK", packID));
       }
       missingPacks.close();
       // generate cpinstall.json file

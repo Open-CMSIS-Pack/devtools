@@ -151,7 +151,7 @@ void InitMessageTable()
   table["M650"] = MessageEntry(MsgLevel::LEVEL_INFO,     CRLF_B,   "Command completed successfully."                                             );
   table["M652"] = MessageEntry(MsgLevel::LEVEL_INFO,     CRLF_B,   "Generated file for project build: '%NAME%'"                                  );
   table["M653"] = MessageEntry(MsgLevel::LEVEL_INFO,     CRLF_B,   "Local config file %NAME% was not found. Copying default file from package."  );
-  table["M654"] = MessageEntry(MsgLevel::LEVEL_INFO,     CRLF_B,   "URL '%URL%' was added to the list of missing packages."                      );
+  table["M654"] = MessageEntry(MsgLevel::LEVEL_INFO,     CRLF_B,   "Package '%PACK%' was added to the list of missing packages."                 );
   table["M655"] = MessageEntry(MsgLevel::LEVEL_INFO,     CRLF_B,   "'%VAR%' environment variable was not set!"                                   );
   table["M656"] = MessageEntry(MsgLevel::LEVEL_INFO,     CRLF_B,   "Package '%VENDOR%.%NAME%.%VER%' was found in local repository '%PATH%'!"     );
   table["M657"] = MessageEntry(MsgLevel::LEVEL_INFO,     CRLF_B,   "Generated updated project description file: '%NAME%'"                        );
