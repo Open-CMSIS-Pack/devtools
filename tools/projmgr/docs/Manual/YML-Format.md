@@ -93,7 +93,7 @@ vendor [:: pack-name [@[~ | >=] version] ]
 Element      |              | Description
 :------------|--------------|:---------------------
 `vendor`     | **Required** | Vendor name of the software pack.
-`pack-name`  | Optional     | Name of the software pack; wildcards (\*, ?) can be used.
+`pack-name`  | Optional     | Name of the software pack; wildcards (`*`, `?`, `[abc]`) can be used.<br/>- `*` matches any substring.<br/>- `?` matches any single character.<br/>- `[abc]` matches any character in the set (`a`,`b`,`c`).
 `version`    | Optional     | Version number of the software pack, with `@1.2.3` that must exactly match, `@~1.2`/`@~1` that matches with sematic versioning, or `@>=1.2.3` that allows any version higher or equal.
 
 **Examples:**
