@@ -340,6 +340,7 @@ protected:
   RteGlobalModel* m_model = nullptr;
   std::list<RtePackage*> m_loadedPacks;
   std::map<std::string, ContextItem> m_contexts;
+  std::map<std::string, ContextItem>* m_contextsPtr;
   std::string m_outputDir;
   std::string m_packRoot;
 

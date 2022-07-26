@@ -283,7 +283,7 @@ protected:
   static void SetAttribute(XMLTreeElement* element, const std::string& name, const std::string& value);
   static bool CopyItem(const std::string& src, const std::string& dst, std::list<std::string>& ext);
   static const std::string GetFileCategory(const std::string& file, std::list<std::string>& ext);
-  static const uint32_t CountNodes(const YAML::Node node, const std::string& name);
+  static uint32_t CountNodes(const YAML::Node node, const std::string& name);
   void AddComponentBuildInfo(const std::string& componentName, buildInfo& reference);
   void InsertBuildInfo(buildInfo& build, const std::string& targetName, const std::string& buildName);
   void GetBuildInfo(buildInfo& reference, const std::list<std::string>& targetNames, const std::list<std::string>& buildNames, const std::string& operation);

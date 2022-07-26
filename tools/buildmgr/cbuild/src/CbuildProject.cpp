@@ -25,8 +25,8 @@ CbuildProject::CbuildProject(RteCprjProject* project) {
 CbuildProject::~CbuildProject() {
 }
 
-const bool CbuildProject::CreateTarget(const string& targetName, const RtePackage *cprjPack,
-                           const string& rtePath, const map<string, string> &optionAttributes, const string& toolchain) {
+bool CbuildProject::CreateTarget(const string& targetName, const RtePackage *cprjPack,
+  const string& rtePath, const map<string, string> &optionAttributes, const string& toolchain) {
   RteItem* target = cprjPack->GetItemByTag("target");
   if (!target)
     return false;
@@ -84,7 +84,7 @@ const bool CbuildProject::CreateTarget(const string& targetName, const RtePackag
   return true;
 }
 
-const bool CbuildProject::UpdateTarget(const RteItem* components, const map<string, string> &attributes, const string& targetName) {
+bool CbuildProject::UpdateTarget(const RteItem* components, const map<string, string> &attributes, const string& targetName) {
   if (!m_project)
     return false;
 
@@ -164,7 +164,7 @@ RteDevice *CbuildProject::GetDeviceLeaf(const string& fullDeviceName, const stri
   return device;
 }
 
-const bool CbuildProject::AddAdditionalAttributes(map<string, string> &attributes, const string& targetName) {
+bool CbuildProject::AddAdditionalAttributes(map<string, string> &attributes, const string& targetName) {
   RteDeviceItem *d = GetDeviceLeaf(attributes["Dname"], attributes["Dvendor"], targetName);
   string procName = attributes["Pname"];
   RteDeviceProperty* processorProperty = NULL;
@@ -175,7 +175,7 @@ const bool CbuildProject::AddAdditionalAttributes(map<string, string> &attribute
   if (propMap.empty())
     return false;
 
-  RteDevicePropertyMap::const_iterator itpm;              // iterate through properties:
+  // iterate through properties:
   for (auto itpm : propMap) {
     const string& propType = itpm.first;                 // processor, feature, memory, etc.
     const list<RteDeviceProperty*>& props = itpm.second;
@@ -192,7 +192,7 @@ const bool CbuildProject::AddAdditionalAttributes(map<string, string> &attribute
   return true;
 }
 
-const bool CbuildProject::CheckPackRequirements(const RtePackage *cprjPack, const string& rtePath, vector<CbuildPackItem>& packList) {
+bool CbuildProject::CheckPackRequirements(const RtePackage *cprjPack, const string& rtePath, vector<CbuildPackItem>& packList) {
   const auto packages = cprjPack->GetItemByTag("packages");
 
   if (!packages) {

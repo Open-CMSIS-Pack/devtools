@@ -564,6 +564,7 @@ bool PackGen::ParseReply(void) {
     for (const auto& p : fs::recursive_directory_iterator(replyDir, ec)) {
       const string& file = p.path().stem().generic_string();
       if (file.compare(0, 6, "target") == 0) {
+        // Parse generated target file information
         try {
           YAML::Node target = YAML::LoadFile(p.path().generic_string());
 
@@ -1108,7 +1109,7 @@ const string PackGen::GetFileCategory(const string& file, list<string>& ext) {
   return "source";
 }
 
-const uint32_t PackGen::CountNodes(const YAML::Node node, const string& name) {
+uint32_t PackGen::CountNodes(const YAML::Node node, const string& name) {
   int occurrences = 0;
   for (const auto& n : node) {
     if (n.first.as<string>() == name) {
