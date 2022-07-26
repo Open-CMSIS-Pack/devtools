@@ -108,7 +108,7 @@ bool ProjMgrWorker::AddContext(ProjMgrParser& parser, ContextDesc& descriptor, c
     }
 
     error_code ec;
-    context.directories.cprj = fs::weakly_canonical(context.directories.cprj, ec).generic_string();
+    context.directories.cprj = fs::weakly_canonical(RteFsUtils::AbsolutePath(context.directories.cprj), ec).generic_string();
     if (fs::path(context.directories.rte).is_absolute()) {
       context.directories.rte = fs::relative(context.directories.rte, context.directories.cprj, ec).generic_string();
     }
@@ -1516,7 +1516,7 @@ bool ProjMgrWorker::ListPacks(vector<string>&packs, bool missingPacks, const str
       // Load packs and get loaded packs identifiers
       m_kernel->LoadAndInsertPacks(m_loadedPacks, pdscFiles);
       for (const auto& pack : m_loadedPacks) {
-        packsSet.insert(ProjMgrUtils::GetPackageID(pack));
+        packsSet.insert(ProjMgrUtils::GetPackageID(pack) + " (" + pack->GetPackageFileName() + ")");
       }
     }
     if (!ret) {
