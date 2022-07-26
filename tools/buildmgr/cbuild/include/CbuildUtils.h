@@ -49,7 +49,7 @@ public:
    * @param file std::string path to file
    * @return the type of file
   */
-  static const RteFile::Category GetFileType(const RteFile::Category cat, const std::string& file);
+  static RteFile::Category GetFileType(const RteFile::Category cat, const std::string& file);
 
   /**
    * @brief remove slashes from string

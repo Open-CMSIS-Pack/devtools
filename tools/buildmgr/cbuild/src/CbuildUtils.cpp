@@ -28,7 +28,7 @@ CbuildUtils::CbuildUtils() {
 CbuildUtils::~CbuildUtils() {
 }
 
-const RteFile::Category CbuildUtils::GetFileType(const RteFile::Category cat, const string& file) {
+RteFile::Category CbuildUtils::GetFileType(const RteFile::Category cat, const string& file) {
   switch (cat) {
     case RteFile::Category::SOURCE_C:
       return RteFile::Category::SOURCE_C;

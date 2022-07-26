@@ -8,9 +8,9 @@
 
 using namespace std;
 
-error_code ec;
+error_code errorCode;
 string scripts_folder = string(TEST_FOLDER) + "scripts";
-string testout_folder = fs::current_path(ec).append("testoutput").generic_string();
+string testout_folder = fs::current_path(errorCode).append("testoutput").generic_string();
 
 std::string ToolboxTestEnv::ci_toolbox_installer_path;
 

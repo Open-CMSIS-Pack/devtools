@@ -8,7 +8,6 @@
 
 using namespace std;
 
-error_code ec;
 string scripts_folder   = string(TEST_SRC_FOLDER) + "scripts";
 string testinput_folder = string(TEST_SRC_FOLDER) + "testinput";
 string cbuildgen_bin    = string(CBUILDGEN_BIN);
@@ -21,6 +20,7 @@ std::string CBuildIntegTestEnv::ac6_toolchain_path;
 
 void RunScript(const string& script, string arg) {
   int ret_val;
+  error_code ec;
 
   ASSERT_EQ(true, fs::exists(scripts_folder + "/" + script, ec))
     << "error: " << script << " not found";

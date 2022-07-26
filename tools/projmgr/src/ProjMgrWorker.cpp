@@ -131,7 +131,8 @@ bool ProjMgrWorker::AddContext(ProjMgrParser& parser, ContextDesc& descriptor, c
 }
 
 void ProjMgrWorker::GetContexts(map<string, ContextItem>* &contexts) {
-  contexts = &m_contexts;
+  m_contextsPtr = &m_contexts;
+  contexts = m_contextsPtr;
 }
 
 void ProjMgrWorker::SetOutputDir(const std::string& outputDir) {
@@ -505,8 +506,8 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
     }
     string msg = "one of the following processors must be specified:";
     const auto& processors = matchedDevice->GetProcessors();
-    for (const auto& processor : processors) {
-      msg += "\n" + matchedDevice->GetDeviceName() + ":" + processor.first;
+    for (const auto& p : processors) {
+      msg += "\n" + matchedDevice->GetDeviceName() + ":" + p.first;
     }
     ProjMgrLogger::Error(msg);
     return false;

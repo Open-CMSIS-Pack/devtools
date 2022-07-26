@@ -162,7 +162,7 @@ void CbuildModel::Init(const string &file, const string &rtePath) {
   m_targetName = m_prjName;   // project and target have same name
 }
 
-const bool CbuildModel::GenerateFixedCprj(const string& update) {
+bool CbuildModel::GenerateFixedCprj(const string& update) {
   /*
   GenerateFixedCprj:
   Create project description file with fixed/updated versions
@@ -290,7 +290,7 @@ const bool CbuildModel::GenerateFixedCprj(const string& update) {
   return false;
 }
 
-const bool CbuildModel::GenerateAuditData() {
+bool CbuildModel::GenerateAuditData() {
   /*
   GenerateAuditData:
   Create list of used packs, components, APIs and config files
@@ -335,7 +335,7 @@ const bool CbuildModel::GenerateAuditData() {
   return true;
 }
 
-const bool CbuildModel::EvaluateResult() {
+bool CbuildModel::EvaluateResult() {
   /*
   EvaluateResult:
   Extract result info
@@ -393,7 +393,7 @@ const bool CbuildModel::EvaluateResult() {
   return true;
 }
 
-const bool CbuildModel::GenerateRteHeaders() {
+bool CbuildModel::GenerateRteHeaders() {
   /*
   GenerateRteHeaders
   Generate Rte Headers Files
@@ -401,7 +401,7 @@ const bool CbuildModel::GenerateRteHeaders() {
   return m_cprjTarget ? m_cprjTarget->GenerateRteHeaders() : false;
 }
 
-const bool CbuildModel::EvaluateToolchainConfig(const string& name, const string& versionRange, const string& localPath, const string& compilerRoot, const string& ext) {
+bool CbuildModel::EvaluateToolchainConfig(const string& name, const string& versionRange, const string& localPath, const string& compilerRoot, const string& ext) {
   /*
   EvaluateToolchain:
   Search for compatible toolchain configuration file
@@ -420,7 +420,7 @@ const bool CbuildModel::EvaluateToolchainConfig(const string& name, const string
   return false;
 }
 
-const bool CbuildModel::GetCompatibleToolchain(const string& name, const string& versionRange, const string& dir, const string& ext) {
+bool CbuildModel::GetCompatibleToolchain(const string& name, const string& versionRange, const string& dir, const string& ext) {
   /*
   GetCompatibleToolchain:
   Returns compatible toolchain configuration file in a given directory
@@ -459,7 +459,7 @@ const bool CbuildModel::GetCompatibleToolchain(const string& name, const string&
   return false;
 }
 
-const bool CbuildModel::EvalPreIncludeFiles() {
+bool CbuildModel::EvalPreIncludeFiles() {
   /*
   EvalPreIncludeFiles:
   Evaluate PreInclude Files
@@ -487,7 +487,7 @@ const bool CbuildModel::EvalPreIncludeFiles() {
   return true;
 }
 
-const bool CbuildModel::EvalConfigFiles() {
+bool CbuildModel::EvalConfigFiles() {
   /*
   EvalConfigFiles:
   Evaluate Configuration Files
@@ -538,7 +538,7 @@ const bool CbuildModel::EvalConfigFiles() {
   return true;
 }
 
-const bool CbuildModel::EvalSourceFiles() {
+bool CbuildModel::EvalSourceFiles() {
   /*
   EvalSourceFiles:
   Evaluate Source Files
@@ -562,7 +562,7 @@ const bool CbuildModel::EvalSourceFiles() {
   return true;
 }
 
-const bool CbuildModel::EvalNonRteSourceFiles() {
+bool CbuildModel::EvalNonRteSourceFiles() {
   /*
   EvalNonRteSourceFiles:
   Evaluate User Source Files
@@ -577,7 +577,7 @@ const bool CbuildModel::EvalNonRteSourceFiles() {
   return true;
 }
 
-const bool CbuildModel::EvalItem(RteItem* item, const string& groupName, const string& groupLayer) {
+bool CbuildModel::EvalItem(RteItem* item, const string& groupName, const string& groupLayer) {
   /*
   EvalItem:
   Evaluate User Source Files
@@ -612,7 +612,7 @@ const bool CbuildModel::EvalItem(RteItem* item, const string& groupName, const s
   return true;
 }
 
-const bool CbuildModel::EvalGeneratedSourceFiles() {
+bool CbuildModel::EvalGeneratedSourceFiles() {
   /*
   EvalGeneratedSourceFiles:
   Evaluate Generated Source Files
@@ -680,7 +680,7 @@ const bool CbuildModel::EvalGeneratedSourceFiles() {
   return true;
 }
 
-const bool CbuildModel::EvalFile(RteItem* file, const string& group, const string& base, string& filepath) {
+bool CbuildModel::EvalFile(RteItem* file, const string& group, const string& base, string& filepath) {
   /*
   EvalFile:
   Evaluate File
@@ -729,7 +729,7 @@ const bool CbuildModel::EvalFile(RteItem* file, const string& group, const strin
   return true;
 }
 
-const bool CbuildModel::EvalDeviceName() {
+bool CbuildModel::EvalDeviceName() {
   /*
   EvalDeviceName:
   Evaluate Device Name
@@ -942,7 +942,7 @@ bool CbuildModel::SetItemIncludesDefines(const RteItem* item, const string& name
   return true;
 }
 
-const bool CbuildModel::EvalIncludesDefines() {
+bool CbuildModel::EvalIncludesDefines() {
   /*
   EvalIncludesDefines:
   Evaluate User Includes and Defines
@@ -950,30 +950,32 @@ const bool CbuildModel::EvalIncludesDefines() {
 
   // Target flags
   const RteItem* target = m_cprjPack->GetItemByTag("target");
-  const RteItem* includes = target->GetItemByTag("includes");
-  const RteItem* defines = target->GetItemByTag("defines");
-  if (includes) {
-    const vector<string>& includesList = SplitArgs(includes->GetText(), ";", false);
-    for (auto include : includesList) {
-      if (RteFsUtils::Exists(m_prjFolder + include)) {
-        RteFsUtils::NormalizePath(include, m_prjFolder);
-        m_targetIncludePaths.push_back(include);
-        continue;
+  if (target) {
+    const RteItem* includes = target->GetItemByTag("includes");
+    const RteItem* defines = target->GetItemByTag("defines");
+    if (includes) {
+      const vector<string>& includesList = SplitArgs(includes->GetText(), ";", false);
+      for (auto include : includesList) {
+        if (RteFsUtils::Exists(m_prjFolder + include)) {
+          RteFsUtils::NormalizePath(include, m_prjFolder);
+          m_targetIncludePaths.push_back(include);
+          continue;
+        }
+        regex regEx{ "^\\$.*\\$$" };
+        if (regex_search(include, regEx)) {
+          m_targetIncludePaths.push_back(include);
+          continue;
+        }
+        LogMsg("M204", PATH(include));
+        return false;
       }
-      regex regEx{ "^\\$.*\\$$" };
-      if (regex_search(include, regEx)) {
-        m_targetIncludePaths.push_back(include);
-        continue;
-      }
-      LogMsg("M204", PATH(include));
-      return false;
     }
-  }
-  if (defines) {
-    const vector<string>& definesList = SplitArgs(defines->GetText(), ";", false);
-    for (auto define : definesList) {
-      if (!define.empty()) {
-        m_targetDefines.push_back(define);
+    if (defines) {
+      const vector<string>& definesList = SplitArgs(defines->GetText(), ";", false);
+      for (auto define : definesList) {
+        if (!define.empty()) {
+          m_targetDefines.push_back(define);
+        }
       }
     }
   }
@@ -1000,7 +1002,7 @@ const bool CbuildModel::EvalIncludesDefines() {
   return true;
 }
 
-const bool CbuildModel::EvalFlags() {
+bool CbuildModel::EvalFlags() {
   /*
   EvalFlags:
   Evaluate Flags
@@ -1008,29 +1010,31 @@ const bool CbuildModel::EvalFlags() {
 
   // Target flags
   const RteItem* target = m_cprjPack->GetItemByTag("target");
-  const RteItem* cflags = CbuildUtils::GetItemByTagAndAttribute(target->GetChildren(), "cflags", "compiler", m_compiler);
-  const RteItem* cxxflags = CbuildUtils::GetItemByTagAndAttribute(target->GetChildren(), "cxxflags", "compiler", m_compiler);
-  const RteItem* asflags = CbuildUtils::GetItemByTagAndAttribute(target->GetChildren(), "asflags", "compiler", m_compiler);
-  if (cflags != NULL) m_targetCFlags = SplitArgs(cflags->GetAttribute("add"));
-  if (cxxflags != NULL) m_targetCxxFlags = SplitArgs(cxxflags->GetAttribute("add"));
-  if (asflags != NULL) {
-    m_targetAsFlags = SplitArgs(asflags->GetAttribute("add"));
-    string use = asflags->GetAttribute("use");
-    if (!use.empty()) m_Asm.insert(pair<string, bool>("", use == "armasm" || use == "gas"));
-  }
-  const RteItem* ldflags = CbuildUtils::GetItemByTagAndAttribute(target->GetChildren(), "ldflags", "compiler", m_compiler);
-  if (ldflags != NULL) {
-    m_targetLdFlags = SplitArgs(ldflags->GetAttribute("add"));
-    m_linkerScript = ldflags->GetAttribute("file");
-    if (!m_linkerScript.empty()) {
-      if (!RteFsUtils::NormalizePath(m_linkerScript, m_prjFolder)) {
-        LogMsg("M204", PATH(m_linkerScript));
-        return false;
-      }
-      const RteItem* layers = m_cprjPack->GetItemByTag("layers");
-      if (layers) for (auto layer : layers->GetChildren()) {
-        if (layer->GetAttributeAsBool("hasTarget")) {
-          m_layerFiles[layer->GetAttribute("name")].insert(m_linkerScript.substr(m_prjFolder.length(), string::npos));
+  if (target) {
+    const RteItem* cflags = CbuildUtils::GetItemByTagAndAttribute(target->GetChildren(), "cflags", "compiler", m_compiler);
+    const RteItem* cxxflags = CbuildUtils::GetItemByTagAndAttribute(target->GetChildren(), "cxxflags", "compiler", m_compiler);
+    const RteItem* asflags = CbuildUtils::GetItemByTagAndAttribute(target->GetChildren(), "asflags", "compiler", m_compiler);
+    if (cflags != NULL) m_targetCFlags = SplitArgs(cflags->GetAttribute("add"));
+    if (cxxflags != NULL) m_targetCxxFlags = SplitArgs(cxxflags->GetAttribute("add"));
+    if (asflags != NULL) {
+      m_targetAsFlags = SplitArgs(asflags->GetAttribute("add"));
+      string use = asflags->GetAttribute("use");
+      if (!use.empty()) m_Asm.insert(pair<string, bool>("", use == "armasm" || use == "gas"));
+    }
+    const RteItem* ldflags = CbuildUtils::GetItemByTagAndAttribute(target->GetChildren(), "ldflags", "compiler", m_compiler);
+    if (ldflags != NULL) {
+      m_targetLdFlags = SplitArgs(ldflags->GetAttribute("add"));
+      m_linkerScript = ldflags->GetAttribute("file");
+      if (!m_linkerScript.empty()) {
+        if (!RteFsUtils::NormalizePath(m_linkerScript, m_prjFolder)) {
+          LogMsg("M204", PATH(m_linkerScript));
+          return false;
+        }
+        const RteItem* layers = m_cprjPack->GetItemByTag("layers");
+        if (layers) for (auto layer : layers->GetChildren()) {
+          if (layer->GetAttributeAsBool("hasTarget")) {
+            m_layerFiles[layer->GetAttribute("name")].insert(m_linkerScript.substr(m_prjFolder.length(), string::npos));
+          }
         }
       }
     }
@@ -1056,7 +1060,7 @@ const bool CbuildModel::EvalFlags() {
   return true;
 }
 
-const bool CbuildModel::EvalItemTranslationControls(const RteItem* item, bool isFlag, const string& groupName) {
+bool CbuildModel::EvalItemTranslationControls(const RteItem* item, bool isFlag, const string& groupName) {
   /*
   EvalItemTranslationControls:
   Evaluate User Groups/Files Flags/defines/includes
@@ -1094,7 +1098,7 @@ const bool CbuildModel::EvalItemTranslationControls(const RteItem* item, bool is
   return true;
 }
 
-const bool CbuildModel::EvalTargetOutput() {
+bool CbuildModel::EvalTargetOutput() {
   /*
   EvalTargetOutput:
   Evaluate Target Output
@@ -1119,7 +1123,7 @@ const bool CbuildModel::EvalTargetOutput() {
   return true;
 }
 
-const bool CbuildModel::EvalRteSourceFiles(map<string, list<string>> &cSourceFiles, map<string, list<string>> &cxxSourceFiles, map<string, list<string>> &asmSourceFiles, string &linkerScript) {
+bool CbuildModel::EvalRteSourceFiles(map<string, list<string>> &cSourceFiles, map<string, list<string>> &cxxSourceFiles, map<string, list<string>> &asmSourceFiles, string &linkerScript) {
   /*
   EvalRteSourceFiles:
   Evaluate RTE Source Files
@@ -1201,12 +1205,13 @@ void CbuildModel::InsertVectorPointers(vector<string*>& dst, vector<string>& src
   }
 }
 
-const bool CbuildModel::EvalAccessSequence() {
+bool CbuildModel::EvalAccessSequence() {
   vector<string*> fields;
   vector<std::map<std::string, std::vector<std::string>>*> fieldList = {
     &m_defines , &m_includePaths, &m_CFlags, &m_CxxFlags, &m_AsFlags
   };
 
+  // collect pointers to defines, includes and toolchain flags
   for (auto& itemList : fieldList) {
     for (auto& [_, item] : *itemList) {
       InsertVectorPointers(fields, item);
@@ -1219,6 +1224,7 @@ const bool CbuildModel::EvalAccessSequence() {
   InsertVectorPointers(fields, m_targetAsFlags);
   InsertVectorPointers(fields, m_targetLdFlags);
 
+  // iterate over every field and evaluate access sequences
   for (auto& item : fields) {
     if (item) {
       size_t offset = 0;
@@ -1250,7 +1256,9 @@ const bool CbuildModel::EvalAccessSequence() {
             auto deviceName = m_cprjTarget->GetAttribute("Dname");
             auto deviceVendor = m_cprjTarget->GetAttribute("Dvendor");
             const auto device = m_cprjTarget->GetModel()->GetDevice(deviceName, deviceVendor);
-            replacement = RteUtils::RemoveTrailingBackslash(device->GetPackage()->GetAbsolutePackagePath());
+            if (device) {
+              replacement = RteUtils::RemoveTrailingBackslash(device->GetPackage()->GetAbsolutePackagePath());
+            }
           }
           else if (sequence == "PackRoot") {
             regEx = regex("\\$PackRoot\\$");

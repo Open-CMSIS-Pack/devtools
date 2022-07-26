@@ -25,7 +25,7 @@ public:
    * @param toolchain name of the build toolchain
    * @return
   */
-  const bool CreateTarget(const std::string& targetName, const RtePackage *cprjPack,
+  bool CreateTarget(const std::string& targetName, const RtePackage *cprjPack,
                     const std::string& rtePath, const std::map<std::string, std::string> &optionAttributes,
                     const std::string&  toolchain);
 
@@ -36,12 +36,12 @@ public:
    * @param urlList output list of pack url(s) to be needed by project
    * @return true if the pack requirements are resolved, otherwise false
   */
-  static const bool CheckPackRequirements(const RtePackage *cprjPack, const std::string& rtePath, std::vector<CbuildPackItem> &packList);
+  static bool CheckPackRequirements(const RtePackage *cprjPack, const std::string& rtePath, std::vector<CbuildPackItem> &packList);
 
 protected:
   RteDevice* GetDeviceLeaf(const std::string& fullDeviceName, const std::string& deviceVendor, const std::string& targetName);
-  const bool AddAdditionalAttributes(std::map<std::string, std::string> &attributes, const std::string& targetName);
-  const bool UpdateTarget(const RteItem* components, const std::map<std::string, std::string> &attributes, const std::string& targetName);
+  bool AddAdditionalAttributes(std::map<std::string, std::string> &attributes, const std::string& targetName);
+  bool UpdateTarget(const RteItem* components, const std::map<std::string, std::string> &attributes, const std::string& targetName);
 
   static void SetToolchain(const std::string& toolchain, std::map<std::string, std::string> &attributes);
   static const std::string GetLocalRepoVersion(const std::string& rtePath, const std::string& name, const std::string& vendor, const std::string& versionRange, std::string& url);
