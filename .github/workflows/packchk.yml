@@ -165,10 +165,9 @@ jobs:
 
       - name: Generate coverage report
         run: |
-          lcov -c --directory . --output-file full_coverage.info
-          lcov -e full_coverage.info '/tools/packchk/include/*' '*/tools/packchk/src/*' -o coverage.info
+          lcov --rc lcov_branch_coverage=1 -c --directory . --output-file full_coverage.info
+          lcov --rc lcov_branch_coverage=1 -e full_coverage.info '*/tools/packchk/include/*' '*/tools/packchk/src/*' -o coverage.info
           genhtml coverage.info --output-directory coverage
-          zip -r coverage.zip coverage/*
         working-directory: ./build/tools/packchk
 
       - name: Upload Report to Codecov
@@ -184,7 +183,9 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: coverage-report
-          path: ./build/tools/packchk/coverage.zip
+          path: |
+            ./build/tools/packchk/coverage/
+            ./build/tools/packchk/coverage.info
           retention-days: 1
           if-no-files-found: error
 
