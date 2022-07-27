@@ -46,6 +46,7 @@ static constexpr const char* YAML_MISC_ASM = "ASM";
 static constexpr const char* YAML_MISC_C = "C";
 static constexpr const char* YAML_MISC_CPP = "CPP";
 static constexpr const char* YAML_MISC_C_CPP = "C-CPP";
+static constexpr const char* YAML_MISC_C_STAR = "C*";
 static constexpr const char* YAML_MISC_LIB = "Lib";
 static constexpr const char* YAML_MISC_LINK = "Link";
 static constexpr const char* YAML_NOTFORTYPE = "not-for-type";

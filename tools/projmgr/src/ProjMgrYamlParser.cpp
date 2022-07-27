@@ -305,6 +305,10 @@ void ProjMgrYamlParser::ParseMisc(const YAML::Node& parent, vector<MiscItem>& mi
       ParseVector(miscEntry, YAML_MISC_C, miscItem.c);
       ParseVector(miscEntry, YAML_MISC_CPP, miscItem.cpp);
       ParseVector(miscEntry, YAML_MISC_C_CPP, miscItem.c_cpp);
+      if (miscItem.c_cpp.empty()) {
+        // TODO: after deprecation remove 'C*' keyword parsing in benefit of 'C-CPP'
+        ParseVector(parent, YAML_MISC_C_STAR, miscItem.c_cpp);
+      }
       ParseVector(miscEntry, YAML_MISC_ASM, miscItem.as);
       ParseVector(miscEntry, YAML_MISC_LINK, miscItem.link);
       ParseVector(miscEntry, YAML_MISC_LIB, miscItem.lib);
@@ -646,6 +650,7 @@ const set<string> miscKeys = {
   YAML_FORCOMPILER,
   YAML_MISC_C,
   YAML_MISC_CPP,
+  YAML_MISC_C_STAR,
   YAML_MISC_C_CPP,
   YAML_MISC_ASM,
   YAML_MISC_LINK,
