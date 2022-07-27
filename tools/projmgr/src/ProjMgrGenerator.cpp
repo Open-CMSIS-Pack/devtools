@@ -153,7 +153,7 @@ void ProjMgrGenerator::GenerateCprjTarget(XMLTreeElement* element, const Context
   }
 
   // board attributes
-  constexpr const char* BOARD_ATTRIBUTES[] = { "Bvendor", "Bname", "Bversion" };
+  constexpr const char* BOARD_ATTRIBUTES[] = { "Bvendor", "Bname", "Brevision" };
   for (const auto& name : BOARD_ATTRIBUTES) {
     const string& value = attributes[name];
     SetAttribute(element, name, value);

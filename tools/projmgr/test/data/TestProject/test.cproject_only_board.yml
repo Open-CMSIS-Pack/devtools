@@ -11,6 +11,7 @@ project:
   components:
     - component: Startup
     - component: CORE
+    - component: Board:Test:Rev1
   groups:
     - group: Sources
       files: 

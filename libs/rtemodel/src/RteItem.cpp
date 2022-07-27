@@ -404,6 +404,12 @@ bool RteItem::IsDeviceDependent() const
   return condition && condition->IsDeviceDependent();
 }
 
+bool RteItem::IsBoardDependent() const
+{
+  RteCondition* condition = GetCondition();
+  return condition && condition->IsBoardDependent();
+}
+
 
 RteItem::ConditionResult RteItem::Evaluate(RteConditionContext* context)
 {
