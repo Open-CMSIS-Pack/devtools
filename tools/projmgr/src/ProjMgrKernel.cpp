@@ -74,6 +74,7 @@ bool ProjMgrKernel::GetInstalledPacks(std::list<std::string>& pdscFiles) {
 }
 
 bool ProjMgrKernel::LoadAndInsertPacks(std::list<RtePackage*>& packs, std::list<std::string>& pdscFiles) {
+  std::list<RtePackage*> newPacks;
   for (const auto& pdscFile : pdscFiles) {
     RtePackage* pack = theProjMgrKernel->LoadPack(pdscFile);
     if (!pack) {
@@ -87,7 +88,7 @@ bool ProjMgrKernel::LoadAndInsertPacks(std::list<RtePackage*>& packs, std::list<
       }
     }
     if (!loaded) {
-      packs.push_back(pack);
+      newPacks.push_back(pack);
     }
   }
 
@@ -96,6 +97,7 @@ bool ProjMgrKernel::LoadAndInsertPacks(std::list<RtePackage*>& packs, std::list<
     return false;
   }
 
-  globalModel->InsertPacks(packs);
+  globalModel->InsertPacks(newPacks);
+  packs.insert(packs.end(), newPacks.begin(), newPacks.end());
   return true;
 }

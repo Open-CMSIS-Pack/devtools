@@ -173,6 +173,23 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks_project) {
   EXPECT_TRUE(regex_match(outStr, regex("ARM::RteTest_DFP@0.1.1 \\(.*\\)\n")));
 }
 
+TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks_MultiContext) {
+  char* argv[7];
+  StdStreamRedirect streamRedirect;
+  const string& csolution = testinput_folder + "/TestSolution/test.csolution_pack_selection.yml";
+  // list packs
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"packs";
+  argv[3] = (char*)"-s";
+  argv[4] = (char*)csolution.c_str();
+  argv[5] = (char*)"-c";
+  argv[6] = (char*)"test2.*";
+  EXPECT_EQ(0, RunProjMgr(7, argv));
+
+  auto outStr = streamRedirect.GetOutString();
+  EXPECT_TRUE(regex_match(outStr.c_str(), regex("ARM::RteTestGenerator@0.1.0 \\(.*\\)\nARM::RteTest_DFP@0.2.0 \\(.*\\)\n")));
+}
+
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacksMissing) {
   char* argv[8];
   StdStreamRedirect streamRedirect;
@@ -596,7 +613,8 @@ TEST_F(ProjMgrUnitTests, ListPacks) {
     "ARM::RteTest_DFP@0.2.0 \\(.*\\)"
   };
   vector<string> packs;
-  EXPECT_TRUE(m_worker.ListPacks(packs, false, "", "RteTest"));
+  EXPECT_TRUE(m_worker.ParseContextSelection(""));
+  EXPECT_TRUE(m_worker.ListPacks(packs, false, "RteTest"));
   auto packIt = packs.begin();
   for (const auto& expected : expectedPacks) {
     EXPECT_TRUE(regex_match(*packIt++, regex(expected)));
@@ -608,7 +626,8 @@ TEST_F(ProjMgrUnitTests, ListBoards) {
     "Keil::RteTest Dummy board:1.2.3 (ARM::RteTest_DFP@0.2.0)"
   };
   vector<string> devices;
-  EXPECT_TRUE(m_worker.ListBoards(devices, "", "Dummy"));
+  EXPECT_TRUE(m_worker.ParseContextSelection(""));
+  EXPECT_TRUE(m_worker.ListBoards(devices, "Dummy"));
   EXPECT_EQ(expected, set<string>(devices.begin(), devices.end()));
 }
 
@@ -622,7 +641,8 @@ TEST_F(ProjMgrUnitTests, ListDevices) {
     "ARM::RteTest_ARMCM0_Test (ARM::RteTest_DFP@0.2.0)"
   };
   vector<string> devices;
-  EXPECT_TRUE(m_worker.ListDevices(devices, "", "CM0"));
+  EXPECT_TRUE(m_worker.ParseContextSelection(""));
+  EXPECT_TRUE(m_worker.ListDevices(devices, "CM0"));
   EXPECT_EQ(expected, set<string>(devices.begin(), devices.end()));
 }
 
@@ -635,7 +655,8 @@ TEST_F(ProjMgrUnitTests, ListDevicesPackageFiltered) {
   const string& filenameInput = testinput_folder + "/TestProject/test.cproject.yml";
   EXPECT_TRUE(m_parser.ParseCproject(filenameInput, false, true));
   EXPECT_TRUE(m_worker.AddContexts(m_parser, descriptor, filenameInput));
-  EXPECT_TRUE(m_worker.ListDevices(devices, "test", "CM3"));
+  EXPECT_TRUE(m_worker.ParseContextSelection("test"));
+  EXPECT_TRUE(m_worker.ListDevices(devices, "CM3"));
   EXPECT_EQ(expected, set<string>(devices.begin(), devices.end()));
 }
 
@@ -644,7 +665,8 @@ TEST_F(ProjMgrUnitTests, ListComponents) {
     "ARM::Device:Startup&RteTest Startup@2.0.3 (ARM::RteTest_DFP@0.2.0)",
   };
   vector<string> components;
-  EXPECT_TRUE(m_worker.ListComponents(components, "", "Startup"));
+  EXPECT_TRUE(m_worker.ParseContextSelection(""));
+  EXPECT_TRUE(m_worker.ListComponents(components, "Startup"));
   EXPECT_EQ(expected, set<string>(components.begin(), components.end()));
 }
 
@@ -657,7 +679,8 @@ TEST_F(ProjMgrUnitTests, ListComponentsDeviceFiltered) {
   const string& filenameInput = testinput_folder + "/TestProject/test.cproject.yml";
   EXPECT_TRUE(m_parser.ParseCproject(filenameInput, false, true));
   EXPECT_TRUE(m_worker.AddContexts(m_parser, descriptor, filenameInput));
-  EXPECT_TRUE(m_worker.ListComponents(components, "test", "Startup"));
+  EXPECT_TRUE(m_worker.ParseContextSelection("test"));
+  EXPECT_TRUE(m_worker.ListComponents(components, "Startup"));
   EXPECT_EQ(expected, set<string>(components.begin(), components.end()));
 }
 
@@ -670,7 +693,8 @@ TEST_F(ProjMgrUnitTests, ListDependencies) {
   const string& filenameInput = testinput_folder + "/TestProject/test-dependency.cproject.yml";
   EXPECT_TRUE(m_parser.ParseCproject(filenameInput, false, true));
   EXPECT_TRUE(m_worker.AddContexts(m_parser, descriptor, filenameInput));
-  EXPECT_TRUE(m_worker.ListDependencies(dependencies, "test-dependency", "CORE"));
+  EXPECT_TRUE(m_worker.ParseContextSelection("test-dependency"));
+  EXPECT_TRUE(m_worker.ListDependencies(dependencies, "CORE"));
   EXPECT_EQ(expected, set<string>(dependencies.begin(), dependencies.end()));
 }
 
@@ -1155,7 +1179,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListGeneratorsEmptyContextMultipleTypes) {
   argv[2] = (char*)"generators";
   argv[3] = (char*)"-s";
   argv[4] = (char*)csolution.c_str();
-  EXPECT_EQ(1, RunProjMgr(5, argv));
+  EXPECT_EQ(0, RunProjMgr(5, argv));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListGeneratorsNonExistentContext) {
@@ -1225,7 +1249,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ExecuteGeneratorEmptyContextMultipleTypes) {
   argv[4] = (char*)"-s";
   argv[5] = (char*)csolution.c_str();
 
-  EXPECT_EQ(1, RunProjMgr(6, argv));
+  EXPECT_EQ(0, RunProjMgr(6, argv));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ExecuteGeneratorNonExistentContext) {
@@ -1262,7 +1286,8 @@ TEST_F(ProjMgrUnitTests, ListGenerators) {
   m_rootDir = fs::path(m_csolutionFile).parent_path().generic_string();
   m_context = "test-gpdsc.Debug+CM0";
   EXPECT_TRUE(PopulateContexts());
-  EXPECT_TRUE(m_worker.ListGenerators(m_context, generators));
+  EXPECT_TRUE(m_worker.ParseContextSelection(m_context));
+  EXPECT_TRUE(m_worker.ListGenerators(generators));
   EXPECT_EQ(expected, set<string>(generators.begin(), generators.end()));
 }
 
@@ -1273,12 +1298,12 @@ TEST_F(ProjMgrUnitTests, ExecuteGenerator) {
   m_context = "test-gpdsc.Debug+CM0";
   m_codeGenerator = "RteTestGeneratorIdentifier";
   EXPECT_TRUE(PopulateContexts());
-
+  EXPECT_TRUE(m_worker.ParseContextSelection(m_context));
   const string& hostType = CrossPlatformUtils::GetHostType();
   if (hostType == "linux" || hostType == "win") {
-    EXPECT_TRUE(m_worker.ExecuteGenerator(m_context, m_codeGenerator));
+    EXPECT_TRUE(m_worker.ExecuteGenerator(m_codeGenerator));
   } else {
-    EXPECT_FALSE(m_worker.ExecuteGenerator(m_context, m_codeGenerator));
+    EXPECT_FALSE(m_worker.ExecuteGenerator(m_codeGenerator));
   }
 }
 
@@ -1290,15 +1315,16 @@ TEST_F(ProjMgrUnitTests, ExecuteGeneratorWithKey) {
   m_context = "test-gpdsc_with_key.Debug+CM0";
   m_codeGenerator = "RteTestGeneratorWithKey";
   EXPECT_TRUE(PopulateContexts());
+  EXPECT_TRUE(m_worker.ParseContextSelection(m_context));
 
   const string& hostType = CrossPlatformUtils::GetHostType();
   string genFolder = testcmsispack_folder + "/ARM/RteTestGenerator/0.1.0/Generator";
   // we use environment variable to test on all pl since it is reliable
   CrossPlatformUtils::SetEnv("RTE_GENERATOR_WITH_KEY", genFolder);
   if (hostType == "linux" || hostType == "win") {
-    EXPECT_TRUE(m_worker.ExecuteGenerator(m_context, m_codeGenerator));
+    EXPECT_TRUE(m_worker.ExecuteGenerator(m_codeGenerator));
   } else {
-    EXPECT_FALSE(m_worker.ExecuteGenerator(m_context, m_codeGenerator));
+    EXPECT_FALSE(m_worker.ExecuteGenerator(m_codeGenerator));
   }
 }
 
@@ -1582,7 +1608,7 @@ TEST_F(ProjMgrUnitTests, LoadPacks_MultiplePackSelection) {
   map<string, ContextItem>* contexts = nullptr;
   m_worker.GetContexts(contexts);
   for (auto& [contextName, contextItem] : *contexts) {
-    EXPECT_TRUE(m_worker.ProcessContext(contextItem));
+    EXPECT_TRUE(m_worker.ProcessContext(contextItem, false));
   }
 }
 
@@ -1612,10 +1638,14 @@ TEST_F(ProjMgrUnitTests, ListDevices_MultiplePackSelection) {
   m_csolutionFile = testinput_folder + "/TestSolution/pack_contexts.csolution.yml";
   m_rootDir = fs::path(m_csolutionFile).parent_path().generic_string();
   EXPECT_TRUE(PopulateContexts());
-  EXPECT_TRUE(m_worker.ListDevices(devices, "pack_contexts+CM0", "CM0"));
+  EXPECT_TRUE(m_worker.InitializeModel());
+  EXPECT_TRUE(m_worker.LoadAllRelevantPacks());
+  EXPECT_TRUE(m_worker.ParseContextSelection("pack_contexts+CM0"));
+  EXPECT_TRUE(m_worker.ListDevices(devices, "CM0"));
   EXPECT_EQ(expected_CM0, set<string>(devices.begin(), devices.end()));
   devices.clear();
-  EXPECT_TRUE(m_worker.ListDevices(devices, "pack_contexts+Gen", "CM0"));
+  EXPECT_TRUE(m_worker.ParseContextSelection("pack_contexts+Gen"));
+  EXPECT_TRUE(m_worker.ListDevices(devices, "CM0"));
   EXPECT_EQ(expected_Gen, set<string>(devices.begin(), devices.end()));
 }
 
@@ -1631,10 +1661,14 @@ TEST_F(ProjMgrUnitTests, ListComponents_MultiplePackSelection) {
   m_csolutionFile = testinput_folder + "/TestSolution/pack_contexts.csolution.yml";
   m_rootDir = fs::path(m_csolutionFile).parent_path().generic_string();
   EXPECT_TRUE(PopulateContexts());
-  EXPECT_TRUE(m_worker.ListComponents(components, "pack_contexts+CM0", "Startup"));
+  EXPECT_TRUE(m_worker.InitializeModel());
+  EXPECT_TRUE(m_worker.LoadAllRelevantPacks());
+  EXPECT_TRUE(m_worker.ParseContextSelection("pack_contexts+CM0"));
+  EXPECT_TRUE(m_worker.ListComponents(components, "Startup"));
   EXPECT_EQ(expected_CM0, set<string>(components.begin(), components.end()));
   components.clear();
-  EXPECT_TRUE(m_worker.ListComponents(components, "pack_contexts+Gen"));
+  EXPECT_TRUE(m_worker.ParseContextSelection("pack_contexts+Gen"));
+  EXPECT_TRUE(m_worker.ListComponents(components));
   EXPECT_EQ(expected_Gen, set<string>(components.begin(), components.end()));
 }
 
@@ -1647,11 +1681,11 @@ TEST_F(ProjMgrUnitTests, Convert_ValidationResults_Dependencies) {
   argv[4] = (char*)"-c";
 
   map<string, string> testData = {
-    {"selectable+CM0",           "warning csolution: dependency validation failed:\nSELECTABLE ARM::Device:Startup&RteTest Startup@2.0.3\n  require RteTest:CORE" },
-    {"missing+CM0",              "warning csolution: dependency validation failed:\nMISSING ARM::RteTest:Check:Missing@0.9.9\n  require RteTest:Dependency:Missing" },
-    {"conflict+CM0",             "warning csolution: dependency validation failed:\nCONFLICT RteTest:ApiExclusive@1.0.0\n  ARM::RteTest:ApiExclusive:S1\n  ARM::RteTest:ApiExclusive:S2" },
-    {"incompatible+CM0",         "warning csolution: dependency validation failed:\nINCOMPATIBLE ARM::RteTest:Check:Incompatible@0.9.9\n  deny RteTest:Dependency:Incompatible_component" },
-    {"incompatible-variant+CM0", "warning csolution: dependency validation failed:\nINCOMPATIBLE_VARIANT ARM::RteTest:Check:IncompatibleVariant@0.9.9\n  require RteTest:Dependency:Variant&Compatible" },
+    {"selectable+CM0",           "warning csolution: dependency validation for context 'selectable+CM0' failed:\nSELECTABLE ARM::Device:Startup&RteTest Startup@2.0.3\n  require RteTest:CORE" },
+    {"missing+CM0",              "warning csolution: dependency validation for context 'missing+CM0' failed:\nMISSING ARM::RteTest:Check:Missing@0.9.9\n  require RteTest:Dependency:Missing" },
+    {"conflict+CM0",             "warning csolution: dependency validation for context 'conflict+CM0' failed:\nCONFLICT RteTest:ApiExclusive@1.0.0\n  ARM::RteTest:ApiExclusive:S1\n  ARM::RteTest:ApiExclusive:S2" },
+    {"incompatible+CM0",         "warning csolution: dependency validation for context 'incompatible+CM0' failed:\nINCOMPATIBLE ARM::RteTest:Check:Incompatible@0.9.9\n  deny RteTest:Dependency:Incompatible_component" },
+    {"incompatible-variant+CM0", "warning csolution: dependency validation for context 'incompatible-variant+CM0' failed:\nINCOMPATIBLE_VARIANT ARM::RteTest:Check:IncompatibleVariant@0.9.9\n  require RteTest:Dependency:Variant&Compatible" },
   };
 
   for (const auto& [context, expected] : testData) {
