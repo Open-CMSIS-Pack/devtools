@@ -250,6 +250,19 @@
       <require Cclass="RteTest" Cgroup="CORE"/>
     </condition>
 
+
+     <condition id="BoardTest1">
+      <description>Generic Arm Cortex-M4 device startup and depends on CMSIS Core</description>
+      <require Dvendor="ARM:82" Dname="*ARMCM*"/>
+      <require Bname="RteTest Test board*" Bvendor="Keil" Brevision="1.1.1"/>
+    </condition>
+
+    <condition id="BoardTest2">
+      <description>Generic Arm Cortex-M4 device startup and depends on CMSIS Core</description>
+      <require Dvendor="ARM:82" Dname="*ARMCM*"/>
+      <require Bname="RteTest Test board*" Bvendor="Keil" Brevision="2.2.2"/>
+    </condition>
+
   </conditions>
 
   <apis>
@@ -356,6 +369,21 @@
         <file category="header"  name="Device/ARM/ARMCM0/Include/ARMCM0.h"/>
       </files>
     </component>
+
+    <component Cclass="Board" Cgroup="Test" Csub="Rev1" Cversion="1.1.1" condition="BoardTest1">
+      <description>Board test1, version 1.1.1</description>
+      <files>
+        <file category="header"  name="Device/ARM/ARMCM0/Include/ARMCM0.h"/>
+      </files>
+    </component>
+
+    <component Cclass="Board" Cgroup="Test" Csub="Rev2" Cversion="2.2.2" condition="BoardTest2">
+      <description>Board Test 2  version 2.2.2</description>
+      <files>
+        <file category="header"  name="Device/ARM/ARMCM0/Include/ARMCM0.h"/>
+      </files>
+    </component>
+
 
   </components>
 

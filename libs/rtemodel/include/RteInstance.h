@@ -755,16 +755,23 @@ public:
   virtual const std::string& GetName() const override { return GetAttribute("Bname"); }
 
   /**
-   * @brief get board version (revision)
-   * @return "Bversion" attribute value
+   * @brief get board version from its revision
+   * @return board revision
   */
-  virtual const std::string& GetVersionString() const override { return GetAttribute("Bversion"); }
+  virtual const std::string& GetVersionString() const override { return GetRevision(); }
+
+  /**
+   * @brief get board revision
+   * @return revision string
+  */
+  const std::string& GetRevision() const;
 
   /**
    * @brief get board vendor string
    * @return vendor string
   */
   virtual const std::string& GetVendorString() const override { return GetAttribute("Bvendor"); }
+
 
   /**
    * @brief resolve board for all targets

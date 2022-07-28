@@ -1097,8 +1097,9 @@ void RteBoardInfo::Init(RteBoard* board)
     return;
   m_board = board;
   AddAttribute("Bname", board->GetName());
-  AddAttribute("Bversion", board->GetAttribute("revision"));
-  AddAttribute("Bvendor", board->GetAttribute("vendor"));
+  AddAttribute("Bversion", board->GetVersionString()); // for backward compatibility
+  AddAttribute("Brevision", board->GetRevision());
+  AddAttribute("Bvendor", board->GetVendorString());
   m_ID = GetDisplayName();
 
   // get package info
@@ -1110,9 +1111,10 @@ void RteBoardInfo::InitInstance(RteItem* item) {
   if (!item)
     return;
   SetTag(item->GetTag());
-  AddAttribute("Bname", item->GetAttribute("Bname"));
-  AddAttribute("Bversion", item->GetAttribute("Bversion"));
-  AddAttribute("Bvendor", item->GetAttribute("Bvendor"));
+  AddAttribute("Bname", item->GetName());
+  AddAttribute("Bversion", item->GetAttribute("Bversion")); // for backward compatibility
+  AddAttribute("Brevision", item->GetVersionString());
+  AddAttribute("Bvendor", item->GetVendorString());
   m_ID = GetDisplayName();
 }
 
@@ -1145,6 +1147,14 @@ RteBoard* RteBoardInfo::ResolveBoard(const string& targetName)
   }
   return nullptr;
 }
+
+const string& RteBoardInfo::GetRevision() const {
+  if (HasAttribute("Brevision")) {
+    return GetAttribute("Brevision");
+  }
+  return GetAttribute("Bversion");
+}
+
 
 string RteBoardInfo::GetDisplayName() const
 {

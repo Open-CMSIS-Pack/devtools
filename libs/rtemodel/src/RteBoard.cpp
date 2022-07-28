@@ -31,11 +31,36 @@ RteBoard::~RteBoard()
 
 string RteBoard::GetDisplayName() const {
   string name = GetName();
-  const string& rev = GetAttribute("revision");
+  const string& rev = GetRevision();
   if (!rev.empty()) {
     name += " (" + rev + ")";
   }
   return name;
+}
+
+const string& RteBoard::GetName() const
+{
+  if (HasAttribute("Bname")) {
+    return GetAttribute("Bname");
+  }
+  return GetAttribute("name");
+}
+
+const string& RteBoard::GetVendorString() const {
+  if (HasAttribute("Bvendor")) {
+    return GetAttribute("Bvendor");
+  }
+  return GetAttribute("vendor");
+}
+
+const string& RteBoard::GetRevision() const {
+  if (HasAttribute("Brevision")) {
+    return GetAttribute("Brevision");
+  }
+  if (HasAttribute("Bversion")) {
+    return GetAttribute("Bversion");
+  }
+  return GetAttribute("revision");
 }
 
 void RteBoard::GetDevices(list<RteItem*>& devices) const {

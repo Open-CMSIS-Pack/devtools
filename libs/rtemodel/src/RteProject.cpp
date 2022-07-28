@@ -1394,7 +1394,13 @@ bool RteProject::AddTarget(const string& name, const map<string, string>& attrib
 
   if (target) {
     target->SetTargetSupported(supported);
-    bool changed = target->SetAttributes(attributes);
+    RteAttributes targetAttributes(attributes);
+    RteBoardInfo* boardInfo = target->GetBoardInfo();
+    if (boardInfo) {
+      targetAttributes.AddAttributes(boardInfo->GetAttributes(), false);
+    }
+
+    bool changed = target->SetAttributes(targetAttributes);
     if (supported) {
       if (bNewTarget) {
         AddTargetInfo(name);

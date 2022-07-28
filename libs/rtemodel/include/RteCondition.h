@@ -26,6 +26,7 @@ class RteConditionContext;
 // constants for expression domain
 
 #define DEVICE_EXPRESSION 'D'
+#define BOARD_EXPRESSION 'B'
 #define TOOLCHAIN_EXPRESSION 'T'
 #define COMPONENT_EXPRESSION 'C'
 #define CONDITION_EXPRESSION 'c'
@@ -70,11 +71,19 @@ public:
    * @return true if this expression contain only attributes with 'C' prefix
   */
   bool IsDependencyExpression() const;
+
   /**
    * @brief check if this expression contains device attributes
    * @return true if this expression contain attributes with 'D' prefix
   */
   bool IsDeviceExpression() const;
+
+  /**
+   * @brief check if this expression contains board attributes
+   * @return true if this expression contain attributes with 'B' prefix
+  */
+  bool IsBoardExpression() const;
+
   /**
    * @brief check if this expression is a <deny> one
    * @return true if deny expression
@@ -86,6 +95,13 @@ public:
    * @return true if this is a device expression that contains non-empty "Dname" attribute
   */
   virtual bool IsDeviceDependent() const override;
+
+  /**
+   * @brief check if this expression is dependent on selected board
+   * @return true if this is a device expression that contains non-empty "Bname" attribute
+  */
+  virtual bool IsBoardDependent() const override;
+
 
   /**
    * @brief get expression domain : Device, Toolchain, Component dependency or a reference to a condition
@@ -260,10 +276,9 @@ public:
   virtual ~RteCondition() override;
 
   /**
-   * @brief calculate device dependency flag by recursively checking all expressions: at least one expression in this or referenced conditions is device dependent
-   * @return true if condition is device dependent, i.e at least one expression in this or referenced conditions is device dependent
+   * @brief calculate device and board dependency flags by recursively checking all expressions: at least one expression in this or referenced conditions is dependent
   */
-  bool CalcDeviceDependentFlag();
+  void CalcDeviceAndBoardDependentFlags();
 
 public:
   /**
@@ -300,7 +315,13 @@ public:
    * @brief check if condition is device depended i.e at least one expression in this or referenced conditions is device dependent
    * @return cached device dependency flag
   */
-  virtual bool IsDeviceDependent() const override { return m_bDeviceDependent; }
+  virtual bool IsDeviceDependent() const override;
+
+  /**
+   * @brief check if condition is board depended i.e at least one expression in this or referenced conditions is board dependent
+   * @return cached board dependency flag
+  */
+  virtual bool IsBoardDependent() const override;
 
 public:
   /**
@@ -360,8 +381,9 @@ protected:
   void SetEvaluating(RteConditionContext* context, bool evaluating);
 
 private:
-  bool m_bDeviceDependent; // cached device dependency flag
-  bool m_bInCheck; // recursion protection flag for CalcDeviceDependentFlag() and  ValidateRecursion()
+  int m_bDeviceDependent; // cached device dependency flag
+  int m_bBoardDependent; // cached board dependency flag
+  bool m_bInCheck; // recursion protection flag for CalcDeviceAndBoardDependentFlags() and  ValidateRecursion()
   std::set<RteConditionContext*> m_evaluating; // recursion protection for Evaluate(RteConditionContext*)
 };
 
@@ -377,13 +399,6 @@ public:
     * @param parent pointer to RteCondition parent
    */
   RteConditionContainer(RteItem* parent);
-
-  /**
-    * @brief construct this item and call CalcDeviceDependentFlag() for all child conditions
-    * @param xmlElement pointer to XMLTreeElement to construct from
-    * @return true if successful
-   */
-  virtual bool Construct(XMLTreeElement* xmlElement) override;
 
 protected:
   /**
