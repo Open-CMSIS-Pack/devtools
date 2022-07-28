@@ -1920,7 +1920,7 @@ bool ProjMgrWorker::ExecuteGenerator(std::string& generatorId) {
     //const string generatorCommand = m_kernel->GetCmsisPackRoot() + "/" + generator->GetPackagePath() + generator->GetCommand();
     const string generatorCommand = generator->GetExpandedCommandLine(context.rteActiveTarget);
     if (generatorCommand.empty()) {
-      ProjMgrLogger::Error("generator command for'" + generatorId + "' was not found");
+      ProjMgrLogger::Error("generator command for '" + generatorId + "' was not found");
       return false;
     }
     const string generatorWorkingDir = generator->GetExpandedWorkingDir(context.rteActiveTarget);

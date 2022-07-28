@@ -1249,7 +1249,12 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ExecuteGeneratorEmptyContextMultipleTypes) {
   argv[4] = (char*)"-s";
   argv[5] = (char*)csolution.c_str();
 
-  EXPECT_EQ(0, RunProjMgr(6, argv));
+  const string& hostType = CrossPlatformUtils::GetHostType();
+  if (hostType == "linux" || hostType == "win") {
+    EXPECT_EQ(0, RunProjMgr(6, argv));
+  } else {
+    EXPECT_EQ(1, RunProjMgr(6, argv));
+  }
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ExecuteGeneratorNonExistentContext) {
