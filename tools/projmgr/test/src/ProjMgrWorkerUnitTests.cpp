@@ -259,7 +259,7 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDependencies) {
   EXPECT_TRUE(ProcessDevice(context));
   EXPECT_TRUE(SetTargetAttributes(context, context.targetAttributes));
   EXPECT_TRUE(ProcessComponents(context));
-  EXPECT_TRUE(ProcessDependencies(context));
+  EXPECT_TRUE(ProcessGpdsc(context));
   EXPECT_FALSE(ValidateContext(context));
   ASSERT_EQ(expected.size(), context.validationResults.size());
   map<string, set<string>> dependenciesMap;
@@ -353,7 +353,8 @@ TEST_F(ProjMgrWorkerUnitTests, LoadFilteredPack_2) {
 
   // get list of available packs
   vector<string> availablePacks;
-  EXPECT_TRUE(ListPacks(availablePacks, false, "Test"));
+  EXPECT_TRUE(ParseContextSelection("Test"));
+  EXPECT_TRUE(ListPacks(availablePacks, false));
   ContextItem context;
   EXPECT_TRUE(LoadPacks(context));
   ASSERT_EQ(availablePacks.size(), m_loadedPacks.size());
@@ -374,7 +375,8 @@ TEST_F(ProjMgrWorkerUnitTests, LoadFilteredPack_4) {
 
   // get list of available packs
   vector<string> availablePacks;
-  EXPECT_TRUE(ListPacks(availablePacks, false, "Test"));
+  EXPECT_TRUE(ParseContextSelection("Test"));
+  EXPECT_TRUE(ListPacks(availablePacks, false));
   ContextItem context;
   EXPECT_TRUE(LoadPacks(context));
   ASSERT_EQ(availablePacks.size(), m_loadedPacks.size());

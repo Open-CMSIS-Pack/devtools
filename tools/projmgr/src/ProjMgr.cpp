@@ -268,39 +268,19 @@ bool ProjMgr::PopulateContexts(void) {
   return true;
 }
 
-bool ProjMgr::CheckContext(void) {
-  vector<string> contexts;
-  m_worker.ListContexts(contexts);
-  if (m_context.empty()) {
-    if (contexts.size() == 1) {
-      m_context = contexts.front();
-    } else {
-      ProjMgrLogger::Error("context was not specified");
-      return false;
-    }
-  } else {
-    if (find(contexts.begin(), contexts.end(), m_context) == contexts.end()) {
-      ProjMgrLogger::Error("context '" + m_context + "' was not found");
-      return false;
-    }
-  }
-  return true;
-}
-
 bool ProjMgr::RunConvert(void) {
   // Parse all input files and populate contexts inputs
   if (!PopulateContexts()) {
     return false;
   }
-  // Check selected context
+  // Parse context selection
+  if (!m_worker.ParseContextSelection(m_context)) {
+    return false;
+  }
+  // Get context pointers
   map<string, ContextItem>* contexts = nullptr;
   m_worker.GetContexts(contexts);
-  if (!m_context.empty()) {
-    if (contexts->find(m_context) == contexts->end()) {
-      ProjMgrLogger::Error("context '" + m_context + "' was not found");
-      return false;
-    }
-  }
+
   // Initialize model
   if (!m_worker.InitializeModel()) {
     return false;
@@ -309,10 +289,10 @@ bool ProjMgr::RunConvert(void) {
   bool error = false;
   vector<string> processedContexts;
   for (auto& [contextName, contextItem] : *contexts) {
-    if (!m_context.empty() && m_context != contextName) {
+    if (!m_worker.IsContextSelected(contextName)) {
       continue;
     }
-    if (!m_worker.ProcessContext(contextItem, true)) {
+    if (!m_worker.ProcessContext(contextItem)) {
       ProjMgrLogger::Error("processing context '" + contextName + "' failed");
       error = true;
     } else {
@@ -344,13 +324,13 @@ bool ProjMgr::RunListPacks(void) {
     if (!PopulateContexts()) {
       return false;
     }
-    // Check context
-    if (!CheckContext()) {
-      return false;
-    }
+  }
+  // Parse context selection
+  if (!m_worker.ParseContextSelection(m_context)) {
+    return false;
   }
   vector<string> packs;
-  bool ret = m_worker.ListPacks(packs, m_missingPacks, m_context, m_filter);
+  bool ret = m_worker.ListPacks(packs, m_missingPacks, m_filter);
   for (const auto& pack : packs) {
     cout << pack << endl;
   }
@@ -363,13 +343,13 @@ bool ProjMgr::RunListBoards(void) {
     if (!PopulateContexts()) {
       return false;
     }
-    // Check context
-    if (!CheckContext()) {
-      return false;
-    }
+  }
+  // Parse context selection
+  if (!m_worker.ParseContextSelection(m_context)) {
+    return false;
   }
   vector<string> boards;
-  if (!m_worker.ListBoards(boards, m_context, m_filter)) {
+  if (!m_worker.ListBoards(boards, m_filter)) {
     ProjMgrLogger::Error("processing boards list failed");
     return false;
   }
@@ -385,13 +365,13 @@ bool ProjMgr::RunListDevices(void) {
     if (!PopulateContexts()) {
       return false;
     }
-    // Check context
-    if (!CheckContext()) {
-      return false;
-    }
+  }
+  // Parse context selection
+  if (!m_worker.ParseContextSelection(m_context)) {
+    return false;
   }
   vector<string> devices;
-  if (!m_worker.ListDevices(devices, m_context, m_filter)) {
+  if (!m_worker.ListDevices(devices, m_filter)) {
     ProjMgrLogger::Error("processing devices list failed");
     return false;
   }
@@ -407,13 +387,13 @@ bool ProjMgr::RunListComponents(void) {
     if (!PopulateContexts()) {
       return false;
     }
-    // Check context
-    if (!CheckContext()) {
-      return false;
-    }
+  }
+  // Parse context selection
+  if (!m_worker.ParseContextSelection(m_context)) {
+    return false;
   }
   vector<string> components;
-  if (!m_worker.ListComponents(components, m_context, m_filter)) {
+  if (!m_worker.ListComponents(components, m_filter)) {
     ProjMgrLogger::Error("processing components list failed");
     return false;
   }
@@ -428,12 +408,12 @@ bool ProjMgr::RunListDependencies(void) {
   if (!PopulateContexts()) {
     return false;
   }
-  // Check context
-  if (!CheckContext()) {
+  // Parse context selection
+  if (!m_worker.ParseContextSelection(m_context)) {
     return false;
   }
   vector<string> dependencies;
-  if (!m_worker.ListDependencies(dependencies, m_context, m_filter)) {
+  if (!m_worker.ListDependencies(dependencies, m_filter)) {
     ProjMgrLogger::Error("processing dependencies list failed");
     return false;
   }
@@ -464,13 +444,13 @@ bool ProjMgr::RunListGenerators(void) {
   if (!PopulateContexts()) {
     return false;
   }
-  // Check context
-  if (!CheckContext()) {
+  // Parse context selection
+  if (!m_worker.ParseContextSelection(m_context)) {
     return false;
   }
   // Get generators
   vector<string> generators;
-  if (!m_worker.ListGenerators(m_context, generators)) {
+  if (!m_worker.ListGenerators(generators)) {
     return false;
   }
   for (const auto& generator : generators) {
@@ -489,12 +469,12 @@ bool ProjMgr::RunCodeGenerator(void) {
   if (!PopulateContexts()) {
     return false;
   }
-  // Check context
-  if (!CheckContext()) {
+  // Parse context selection
+  if (!m_worker.ParseContextSelection(m_context)) {
     return false;
   }
   // Run code generator
-  if (!m_worker.ExecuteGenerator(m_context, m_codeGenerator)) {
+  if (!m_worker.ExecuteGenerator(m_codeGenerator)) {
     return false;
   }
   return true;

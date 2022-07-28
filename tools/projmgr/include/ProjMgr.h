@@ -92,7 +92,6 @@ protected:
   bool RunListContexts(void);
   bool RunListGenerators(void);
   bool PopulateContexts(void);
-  bool CheckContext(void);
 };
 
 #endif  // PROJMGR_H

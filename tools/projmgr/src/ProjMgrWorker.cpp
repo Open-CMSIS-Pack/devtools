@@ -226,13 +226,19 @@ bool ProjMgrWorker::LoadAllRelevantPacks() {
   // Get required pdsc files
   std::list<std::string> pdscFiles;
   std::set<std::string> errMsgs;
-  for (auto& [_, contextItem] : m_contexts) {
+  if (m_selectedContexts.empty()) {
+    for (const auto& [context,_] : m_contexts) {
+      m_selectedContexts.push_back(context);
+    }
+  }
+  for (const auto& context : m_selectedContexts) {
+    auto& contextItem = m_contexts.at(context);
     if (!GetRequiredPdscFiles(contextItem, m_packRoot, errMsgs)) {
       std::for_each(errMsgs.begin(), errMsgs.end(), [](const auto& errMsg) {ProjMgrLogger::Error(errMsg); });
       return false;
     }
     for (const auto& [pdscFile, _] : contextItem.pdscFiles) {
-      pdscFiles.push_back(pdscFile);
+      PushBackUniquely(pdscFiles, pdscFile);
     }
   }
   if (pdscFiles.empty()) {
@@ -865,7 +871,7 @@ bool ProjMgrWorker::ValidateContext(ContextItem& context) {
   return false;
 }
 
-bool ProjMgrWorker::ProcessDependencies(ContextItem& context) {
+bool ProjMgrWorker::ProcessGpdsc(ContextItem& context) {
   // Read gpdsc
   const map<string, RteGpdscInfo*>& gpdscInfos = context.rteActiveProject->GetGpdscInfos();
   for (const auto& [file, info] : gpdscInfos) {
@@ -1377,7 +1383,7 @@ bool ProjMgrWorker::CheckType(const TypeFilter& typeFilter, const TypePair& type
   }
 }
 
-bool ProjMgrWorker::ProcessContext(ContextItem& context, bool resolveDependencies) {
+bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGpdsc, bool resolveDependencies) {
   context.outputType = context.cproject->outputType.empty() ? "exe" : context.cproject->outputType;
 
   if (!LoadPacks(context)) {
@@ -1407,15 +1413,17 @@ bool ProjMgrWorker::ProcessContext(ContextItem& context, bool resolveDependencie
   if (!ProcessConfigFiles(context)) {
     return false;
   }
-  if (resolveDependencies) {
-    if (!ProcessDependencies(context)) {
+  if (loadGpdsc) {
+    if (!ProcessGpdsc(context)) {
       return false;
     }
+  }
+  if (resolveDependencies) {
     // TODO: Add uniquely identified missing dependencies to RTE Model
 
     // Get dependency validation results
     if (!ValidateContext(context)) {
-      string msg = "dependency validation failed:";
+      string msg = "dependency validation for context '" + context.name + "' failed:";
       set<string> results;
       FormatValidationResults(results, context);
       for (const auto& result : results) {
@@ -1479,36 +1487,34 @@ set<string> ProjMgrWorker::SplitArgs(const string& args, const string& delimiter
   return s;
 }
 
-bool ProjMgrWorker::ListPacks(vector<string>&packs, bool missingPacks, const string& contextName, const string& filter) {
+bool ProjMgrWorker::ListPacks(vector<string>&packs, bool missingPacks, const string& filter) {
   set<string> packsSet;
-  if (!contextName.empty()) {
-    // Get selected context
-    if (m_contexts.empty() || (m_contexts.find(contextName) == m_contexts.end())) {
-      ProjMgrLogger::Error("context '" + contextName + "' was not found");
-      return false;
-    }
-  }
-  ContextItem& context = m_contexts[contextName];
+  list<string> pdscFiles;
+  std::set<std::string> errMsgs;
+  bool reqOk = true;
+  bool allPacks = true;
   if (!InitializeModel()) {
     return false;
   }
-  std::set<std::string> errMsgs;
-  bool ret = GetRequiredPdscFiles(context, m_packRoot, errMsgs);
-
-  // Get missing packs identifiers
-  for (const auto& pack : context.missingPacks) {
-    packsSet.insert(ProjMgrUtils::GetPackageID(pack.vendor, pack.name, pack.version));
-  }
-  if (missingPacks) {
-    ret = true;
-  } else {
-    list<string> pdscFiles;
-    if (context.packRequirements.size() > 0) {
-      // Get context required packs
-      for (const auto& [pdscFile, _] : context.pdscFiles) {
-        pdscFiles.push_back(pdscFile);
+  for (const auto& selectedContext : m_selectedContexts) {
+    ContextItem& context = m_contexts[selectedContext];
+    GetRequiredPdscFiles(context, m_packRoot, errMsgs);
+    // Get missing packs identifiers
+    for (const auto& pack : context.missingPacks) {
+      packsSet.insert(ProjMgrUtils::GetPackageID(pack.vendor, pack.name, pack.version));
+    }
+    if (!missingPacks) {
+      if (context.packRequirements.size() > 0) {
+        // Get context required packs
+        for (const auto& [pdscFile, _] : context.pdscFiles) {
+          PushBackUniquely(pdscFiles, pdscFile);
+        }
+        allPacks = false;
       }
-    } else {
+    }
+  }
+  if (!missingPacks) {
+    if (allPacks) {
       // Get all installed packs
       m_kernel->GetInstalledPacks(pdscFiles);
     }
@@ -1519,8 +1525,9 @@ bool ProjMgrWorker::ListPacks(vector<string>&packs, bool missingPacks, const str
         packsSet.insert(ProjMgrUtils::GetPackageID(pack) + " (" + pack->GetPackageFileName() + ")");
       }
     }
-    if (!ret) {
+    if (errMsgs.size() > 0) {
       std::for_each(errMsgs.begin(), errMsgs.end(), [](const auto& errMsg) {ProjMgrLogger::Error(errMsg); });
+      reqOk = false;
     }
   }
   if (!filter.empty()) {
@@ -1533,29 +1540,24 @@ bool ProjMgrWorker::ListPacks(vector<string>&packs, bool missingPacks, const str
     packsSet = filteredPacks;
   }
   packs.assign(packsSet.begin(), packsSet.end());
-  return ret;
+  return reqOk;
 }
 
-bool ProjMgrWorker::ListBoards(vector<string>& boards, const string& contextName, const string& filter) {
-  if (!contextName.empty()) {
-    // Get selected context
-    if (m_contexts.empty() || (m_contexts.find(contextName) == m_contexts.end())) {
-      ProjMgrLogger::Error("context '" + contextName + "' was not found");
+bool ProjMgrWorker::ListBoards(vector<string>& boards, const string& filter) {
+  set<string> boardsSet;
+  for (const auto& selectedContext : m_selectedContexts) {
+    ContextItem& context = m_contexts[selectedContext];
+    if (!LoadPacks(context)) {
       return false;
     }
-  }
-  ContextItem& context = m_contexts[contextName];
-  if (!LoadPacks(context)) {
-    return false;
-  }
-  set<string> boardsSet;
-  const RteBoardMap& availableBoards = context.rteFilteredModel->GetBoards();
-  for (const auto& [_, board] : availableBoards) {
-    const string& boardVendor = board->GetVendorName();
-    const string& boardName = board->GetName();
-    const string& boardRevision = board->GetRevision();
-    const string& boardPack = ProjMgrUtils::GetPackageID(board->GetPackage());
-    boardsSet.insert(boardVendor + "::" + boardName + (!boardRevision.empty() ? ":" + boardRevision : "") + " (" + boardPack + ")");
+    const RteBoardMap& availableBoards = context.rteFilteredModel->GetBoards();
+    for (const auto& [_, board] : availableBoards) {
+      const string& boardVendor = board->GetVendorName();
+      const string& boardName = board->GetName();
+      const string& boardRevision = board->GetRevision();
+      const string& boardPack = ProjMgrUtils::GetPackageID(board->GetPackage());
+      boardsSet.insert(boardVendor + "::" + boardName + (!boardRevision.empty() ? ":" + boardRevision : "") + " (" + boardPack + ")");
+    }
   }
   if (boardsSet.empty()) {
     ProjMgrLogger::Error("no installed board was found");
@@ -1574,33 +1576,27 @@ bool ProjMgrWorker::ListBoards(vector<string>& boards, const string& contextName
   return true;
 }
 
-bool ProjMgrWorker::ListDevices(vector<string>& devices, const string& contextName, const string& filter) {
-  if (!contextName.empty()) {
-    // Get selected context
-    if (m_contexts.empty() || (m_contexts.find(contextName) == m_contexts.end())) {
-      ProjMgrLogger::Error("context '" + contextName + "' was not found");
+bool ProjMgrWorker::ListDevices(vector<string>& devices, const string& filter) {
+  set<string> devicesSet;
+  for (const auto& selectedContext : m_selectedContexts) {
+    ContextItem& context = m_contexts[selectedContext];
+    if (!LoadPacks(context)) {
       return false;
     }
-  }
-  ContextItem& context = m_contexts[contextName];
-  if (!LoadPacks(context)) {
-    return false;
-  }
-  set<string> devicesSet;
-
-  list<RteDevice*> filteredModelDevices;
-  context.rteFilteredModel->GetDevices(filteredModelDevices, "", "", RteDeviceItem::VARIANT);
-  for (const auto& deviceItem : filteredModelDevices) {
-    const string& deviceVendor = deviceItem->GetVendorName();
-    const string& deviceName = deviceItem->GetFullDeviceName();
-    const string& devicePack = ProjMgrUtils::GetPackageID(deviceItem->GetPackage());
-    if (deviceItem->GetProcessorCount() > 1) {
-      const auto& processors = deviceItem->GetProcessors();
-      for (const auto& processor : processors) {
-        devicesSet.insert(deviceVendor + "::" + deviceName + ":" + processor.first + " (" + devicePack +")");
+    list<RteDevice*> filteredModelDevices;
+    context.rteFilteredModel->GetDevices(filteredModelDevices, "", "", RteDeviceItem::VARIANT);
+    for (const auto& deviceItem : filteredModelDevices) {
+      const string& deviceVendor = deviceItem->GetVendorName();
+      const string& deviceName = deviceItem->GetFullDeviceName();
+      const string& devicePack = ProjMgrUtils::GetPackageID(deviceItem->GetPackage());
+      if (deviceItem->GetProcessorCount() > 1) {
+        const auto& processors = deviceItem->GetProcessors();
+        for (const auto& processor : processors) {
+          devicesSet.insert(deviceVendor + "::" + deviceName + ":" + processor.first + " (" + devicePack + ")");
+        }
+      } else {
+        devicesSet.insert(deviceVendor + "::" + deviceName + " (" + devicePack + ")");
       }
-    } else {
-      devicesSet.insert(deviceVendor + "::" + deviceName + " (" + devicePack + ")");
     }
   }
   if (devicesSet.empty()) {
@@ -1620,50 +1616,46 @@ bool ProjMgrWorker::ListDevices(vector<string>& devices, const string& contextNa
   return true;
 }
 
-bool ProjMgrWorker::ListComponents(vector<string>& components, const string& contextName, const string& filter) {
-  RteComponentMap installedComponents;
-  if (!contextName.empty()) {
-    // Get selected context
-    if (m_contexts.empty() || (m_contexts.find(contextName) == m_contexts.end())) {
-      ProjMgrLogger::Error("context '" + contextName + "' was not found");
-      return false;
-    }
-  }
-  ContextItem& context = m_contexts[contextName];
-  if (!LoadPacks(context)) {
-    return false;
-  }
-  if (!contextName.empty()) {
-    if (!ProcessPrecedences(context)) {
-      return false;
-    }
-    if (!ProcessToolchain(context)) {
-      return false;
-    }
-    if (!ProcessDevice(context)) {
-      return false;
-    }
-  }
-  if (!SetTargetAttributes(context, context.targetAttributes)) {
-    return false;
-  }
-  installedComponents = context.rteActiveTarget->GetFilteredComponents();
-  if (installedComponents.empty()) {
-    if (!contextName.empty()) {
-      ProjMgrLogger::Error("no component was found for device '" + context.device + "'");
-    } else {
-      ProjMgrLogger::Error("no installed component was found");
-    }
-    return false;
-  }
+bool ProjMgrWorker::ListComponents(vector<string>& components, const string& filter) {
   RteComponentMap componentMap;
-  set<string> componentIds, filteredIds;
-  for (auto& component : installedComponents) {
-    const string& componentId = ProjMgrUtils::GetComponentID(component.second);
-    componentIds.insert(componentId);
-    componentMap[componentId] = component.second;
+  set<string> componentIds;
+  for (const auto& selectedContext : m_selectedContexts) {
+    ContextItem& context = m_contexts[selectedContext];
+    if (!LoadPacks(context)) {
+      return false;
+    }
+    if (!selectedContext.empty()) {
+      if (!ProcessPrecedences(context)) {
+        return false;
+      }
+      if (!ProcessToolchain(context)) {
+        return false;
+      }
+      if (!ProcessDevice(context)) {
+        return false;
+      }
+    }
+    if (!SetTargetAttributes(context, context.targetAttributes)) {
+      return false;
+    }
+    RteComponentMap installedComponents = context.rteActiveTarget->GetFilteredComponents();
+    if (installedComponents.empty()) {
+      if (!selectedContext.empty()) {
+        ProjMgrLogger::Error("no component was found for device '" + context.device + "'");
+      }
+      else {
+        ProjMgrLogger::Error("no installed component was found");
+      }
+      return false;
+    }
+    for (auto& component : installedComponents) {
+      const string& componentId = ProjMgrUtils::GetComponentID(component.second);
+      componentIds.insert(componentId);
+      componentMap[componentId] = component.second;
+    }
   }
   if (!filter.empty()) {
+    set<string> filteredIds;
     ApplyFilter(componentIds, SplitArgs(filter), filteredIds);
     if (filteredIds.empty()) {
       ProjMgrLogger::Error("no component was found with filter '" + filter + "'");
@@ -1677,21 +1669,19 @@ bool ProjMgrWorker::ListComponents(vector<string>& components, const string& con
   return true;
 }
 
-bool ProjMgrWorker::ListDependencies(vector<string>& dependencies, const string& contextName, const string& filter) {
-  if (m_contexts.empty() || (m_contexts.find(contextName) == m_contexts.end())) {
-    ProjMgrLogger::Error("context '" + contextName + "' was not found");
-    return false;
-  }
-  ContextItem& context = m_contexts.at(contextName);
-  if (!ProcessContext(context, true)) {
-    return false;
-  }
+bool ProjMgrWorker::ListDependencies(vector<string>& dependencies, const string& filter) {
   set<string>dependenciesSet;
-  if (!ValidateContext(context)) {
-    for (const auto& [result, component, expressions, _] : context.validationResults) {
-      if ((result == RteItem::MISSING) || (result == RteItem::SELECTABLE)) {
-        for (const auto& expression : expressions) {
-          dependenciesSet.insert(component + " " + expression);
+  for (const auto& selectedContext : m_selectedContexts) {
+    ContextItem& context = m_contexts[selectedContext];
+    if (!ProcessContext(context, true, false)) {
+      return false;
+    }
+    if (!ValidateContext(context)) {
+      for (const auto& [result, component, expressions, _] : context.validationResults) {
+        if ((result == RteItem::MISSING) || (result == RteItem::SELECTABLE)) {
+          for (const auto& expression : expressions) {
+            dependenciesSet.insert(component + " " + expression);
+          }
         }
       }
     }
@@ -1762,17 +1752,18 @@ bool ProjMgrWorker::ListContexts(vector<string>& contexts, const string& filter)
   return true;
 }
 
-bool ProjMgrWorker::ListGenerators(const string& context, vector<string>& generators) {
-  if (m_contexts.find(context) == m_contexts.end()) {
-    ProjMgrLogger::Error("context '" + context + "' was not found");
-    return false;
+bool ProjMgrWorker::ListGenerators(vector<string>& generators) {
+  set<string> generatorsSet;
+  for (const auto& selectedContext : m_selectedContexts) {
+    ContextItem& context = m_contexts[selectedContext];
+    if (!ProcessContext(context, false)) {
+      return false;
+    }
+    for (const auto& [id, generator] : context.generators) {
+      generatorsSet.insert(id + " (" + generator->GetText() + ")");
+    }
   }
-  if (!ProcessContext(m_contexts.at(context))) {
-    return false;
-  }
-  for (const auto& [id, generator] : m_contexts.at(context).generators) {
-    generators.push_back(id +" (" + generator->GetText() + ")");
-  }
+  generators.assign(generatorsSet.begin(), generatorsSet.end());
   return true;
 }
 
@@ -1886,6 +1877,12 @@ void ProjMgrWorker::PushBackUniquely(vector<string>& vec, const string& value) {
   }
 }
 
+void ProjMgrWorker::PushBackUniquely(list<string>& list, const string& value) {
+  if (find(list.cbegin(), list.cend(), value) == list.cend()) {
+    list.push_back(value);
+  }
+}
+
 bool ProjMgrWorker::CopyLayerRTEFiles(ContextItem& context) {
   error_code ec;
   vector<string> rteDirs;
@@ -1907,43 +1904,42 @@ bool ProjMgrWorker::CopyLayerRTEFiles(ContextItem& context) {
   return true;
 }
 
-bool ProjMgrWorker::ExecuteGenerator(const std::string& context, std::string& generatorId) {
-  if (m_contexts.find(context) == m_contexts.end()) {
-    ProjMgrLogger::Error("context '" + context + "' was not found");
-    return false;
-  }
-  if (!ProcessContext(m_contexts.at(context))) {
-    return false;
-  }
-  const auto& generators = m_contexts.at(context).generators;
-  if (generators.find(generatorId) == generators.end()) {
-    ProjMgrLogger::Error("generator '" + generatorId + "' was not found");
-    return false;
-  }
-  RteGenerator* generator = generators.at(generatorId);
-  // TODO: review RteGenerator::GetExpandedCommandLine and variables
-  //const string generatorCommand = m_kernel->GetCmsisPackRoot() + "/" + generator->GetPackagePath() + generator->GetCommand();
-  const string generatorCommand = generator->GetExpandedCommandLine(m_contexts.at(context).rteActiveTarget);
-  if (generatorCommand.empty()) {
-    ProjMgrLogger::Error("generator command for'" + generatorId + "' was not found");
-    return false;
-  }
-  const string generatorWorkingDir = generator->GetExpandedWorkingDir(m_contexts.at(context).rteActiveTarget);
+bool ProjMgrWorker::ExecuteGenerator(std::string& generatorId) {
+  for (const auto& selectedContext : m_selectedContexts) {
+    ContextItem& context = m_contexts[selectedContext];
+    if (!ProcessContext(context, false)) {
+      return false;
+    }
+    const auto& generators = context.generators;
+    if (generators.find(generatorId) == generators.end()) {
+      ProjMgrLogger::Error("generator '" + generatorId + "' was not found");
+      return false;
+    }
+    RteGenerator* generator = generators.at(generatorId);
+    // TODO: review RteGenerator::GetExpandedCommandLine and variables
+    //const string generatorCommand = m_kernel->GetCmsisPackRoot() + "/" + generator->GetPackagePath() + generator->GetCommand();
+    const string generatorCommand = generator->GetExpandedCommandLine(context.rteActiveTarget);
+    if (generatorCommand.empty()) {
+      ProjMgrLogger::Error("generator command for '" + generatorId + "' was not found");
+      return false;
+    }
+    const string generatorWorkingDir = generator->GetExpandedWorkingDir(context.rteActiveTarget);
 
-  // Create generate.yml file with context info and destination
-  ProjMgrYamlEmitter::EmitContextInfo(m_contexts.at(context), generatorWorkingDir);
+    // Create generate.yml file with context info and destination
+    ProjMgrYamlEmitter::EmitContextInfo(context, generatorWorkingDir);
 
-  error_code ec;
-  const auto& workingDir = fs::current_path(ec);
-  fs::current_path(generatorWorkingDir, ec);
-  ProjMgrUtils::Result result = ProjMgrUtils::ExecCommand(generatorCommand);
-  fs::current_path(workingDir, ec);
+    error_code ec;
+    const auto& workingDir = fs::current_path(ec);
+    fs::current_path(generatorWorkingDir, ec);
+    ProjMgrUtils::Result result = ProjMgrUtils::ExecCommand(generatorCommand);
+    fs::current_path(workingDir, ec);
 
-  ProjMgrLogger::Info("generator '" + generatorId + "' reported:\n" + result.first);
+    ProjMgrLogger::Info("generator '" + generatorId + "' for context '" + selectedContext + "' reported:\n" + result.first);
 
-  if (result.second) {
-    ProjMgrLogger::Error("executing generator '" + generatorId + "' for context '" + context + "' failed");
-    return false;
+    if (result.second) {
+      ProjMgrLogger::Error("executing generator '" + generatorId + "' for context '" + selectedContext + "' failed");
+      return false;
+    }
   }
 
   return true;
@@ -1983,4 +1979,41 @@ bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem& context, BuildType& b
     }
   }
   return true;
+}
+
+bool ProjMgrWorker::ParseContextSelection(const string& contextSelection) {
+  vector<string> contexts;
+  ListContexts(contexts);
+  m_selectedContexts.clear();
+  if (contextSelection.empty()) {
+    if (contexts.empty()) {
+      // default context
+      m_selectedContexts.push_back("");
+    } else {
+      // select all contexts
+      for (const auto& context : contexts) {
+        m_selectedContexts.push_back(context);
+      }
+    }
+  } else {
+    bool match = false;
+    for (const auto& context : contexts) {
+      if (WildCards::Match(context, contextSelection)) {
+        m_selectedContexts.push_back(context);
+        match = true;
+      }
+    }
+    if (!match) {
+      ProjMgrLogger::Error("context '" + contextSelection + "' was not found");
+      return false;
+    }
+  }
+  return true;
+}
+
+bool ProjMgrWorker::IsContextSelected(const string& context) {
+  if (find(m_selectedContexts.begin(), m_selectedContexts.end(), context) != m_selectedContexts.end()) {
+    return true;
+  }
+  return false;
 }

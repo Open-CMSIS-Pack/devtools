@@ -221,10 +221,11 @@ public:
   /**
    * @brief process context
    * @param reference to context
-   * @param resolveDependencies boolean automatically resolve dependencies, default false
+   * @param loadGpdsc boolean automatically load gpdsc, default true
+   * @param resolveDependencies boolean automatically resolve dependencies, default true
    * @return true if executed successfully
   */
-  bool ProcessContext(ContextItem& context, bool resolveDependencies = false);
+  bool ProcessContext(ContextItem& context, bool loadGpdsc = true, bool resolveDependencies = true);
 
   /**
    * @brief list available packs
@@ -233,43 +234,39 @@ public:
    * @param filter words to filter results
    * @return true if executed successfully
   */
-  bool ListPacks(std::vector<std::string>& packs, bool missingPacks, const std::string& contextName, const std::string& filter = RteUtils::EMPTY_STRING);
+  bool ListPacks(std::vector<std::string>& packs, bool missingPacks, const std::string& filter = RteUtils::EMPTY_STRING);
 
   /**
    * @brief list available boards
    * @param reference to list of boards
-   * @param reference to context name
    * @param filter words to filter results
    * @return true if executed successfully
   */
-  bool ListBoards(std::vector<std::string>& boards, const std::string& contextName, const std::string& filter = RteUtils::EMPTY_STRING);
+  bool ListBoards(std::vector<std::string>& boards, const std::string& filter = RteUtils::EMPTY_STRING);
 
   /**
    * @brief list available devices
    * @param reference to list of devices
-   * @param reference to context name
    * @param filter words to filter results
    * @return true if executed successfully
   */
-  bool ListDevices(std::vector<std::string>& devices, const std::string& contextName, const std::string& filter = RteUtils::EMPTY_STRING);
+  bool ListDevices(std::vector<std::string>& devices, const std::string& filter = RteUtils::EMPTY_STRING);
 
   /**
    * @brief list available components
    * @param reference to list of components
-   * @param reference to context name
    * @param filter words to filter results
    * @return true if executed successfully
   */
-  bool ListComponents(std::vector<std::string>& components, const std::string& contextName, const std::string& filter = RteUtils::EMPTY_STRING);
+  bool ListComponents(std::vector<std::string>& components, const std::string& filter = RteUtils::EMPTY_STRING);
 
   /**
    * @brief list available dependencies
    * @param reference to list of dependencies
-   * @param reference to context name
    * @param filter words to filter results
    * @return true if executed successfully
   */
-  bool ListDependencies(std::vector<std::string>& dependencies, const std::string& contextName, const std::string& filter = RteUtils::EMPTY_STRING);
+  bool ListDependencies(std::vector<std::string>& dependencies, const std::string& filter = RteUtils::EMPTY_STRING);
 
   /**
    * @brief list contexts
@@ -281,11 +278,10 @@ public:
 
   /**
  * @brief list generators of a given context
- * @param context name
  * @param reference to list of generators
  * @return true if executed successfully
 */
-  bool ListGenerators(const std::string& context, std::vector<std::string>& generators);
+  bool ListGenerators(std::vector<std::string>& generators);
 
   /**
    * @brief add contexts for a given descriptor
@@ -317,11 +313,10 @@ public:
 
   /**
    * @brief execute generator of a given context
-   * @param context name
    * @param generator identifier
    * @return true if executed successfully
   */
-  bool ExecuteGenerator(const std::string& context, std::string& generatorId);
+  bool ExecuteGenerator(std::string& generatorId);
 
   /**
    * @brief initialize model
@@ -335,12 +330,27 @@ public:
   */
   bool LoadAllRelevantPacks(void);
 
+  /**
+   * @brief parse context selection
+   * @param contexts pattern (wildcards are allowed)
+   * @return true if executed successfully
+  */
+  bool ParseContextSelection(const std::string& contextSelection);
+
+  /**
+   * @brief check if context is selected
+   * @param context name
+   * @return true if it is selected
+  */
+  bool IsContextSelected(const std::string& context);
+
 protected:
   ProjMgrKernel* m_kernel = nullptr;
   RteGlobalModel* m_model = nullptr;
   std::list<RtePackage*> m_loadedPacks;
   std::map<std::string, ContextItem> m_contexts;
   std::map<std::string, ContextItem>* m_contextsPtr;
+  std::list<std::string> m_selectedContexts;
   std::string m_outputDir;
   std::string m_packRoot;
 
@@ -361,7 +371,7 @@ protected:
   bool ProcessToolchain(ContextItem& context);
   bool ProcessPackages(ContextItem& context);
   bool ProcessComponents(ContextItem& context);
-  bool ProcessDependencies(ContextItem& context);
+  bool ProcessGpdsc(ContextItem& context);
   bool ProcessConfigFiles(ContextItem& context);
   bool ProcessGroups(ContextItem& context);
   bool ProcessSequencesRelatives(ContextItem& context);
@@ -376,6 +386,7 @@ protected:
   void RemoveStringItems(std::vector<std::string>& dst, std::vector<std::string>& src);
   bool GetAccessSequence(size_t& offset, const std::string& src, std::string& sequence, const char start, const char end);
   void PushBackUniquely(std::vector<std::string>& vec, const std::string& value);
+  void PushBackUniquely(std::list<std::string>& vec, const std::string& value);
   void MergeStringVector(StringVectorCollection& item);
   void MergeMiscCPP(std::vector<MiscItem>& vec);
   bool AddGroup(const GroupNode& src, std::vector<GroupNode>& dst, ContextItem& context, const std::string root);
