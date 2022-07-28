@@ -51,6 +51,18 @@ bool RteConditionExpression::IsDeviceDependent() const
   return false;
 }
 
+bool RteConditionExpression::IsBoardExpression() const
+{
+  return m_domain == BOARD_EXPRESSION;
+}
+
+bool RteConditionExpression::IsBoardDependent() const
+{
+  if (IsBoardExpression())
+    return !GetAttribute("Bname").empty();
+  return false;
+}
+
 
 string RteConditionExpression::ConstructID()
 {
@@ -137,6 +149,7 @@ bool RteConditionExpression::Validate()
 
   map<string, string>::const_iterator it;
   bool bD = false;
+  bool bB = false;
   bool bC = false;
   bool bT = false;
   bool bCondition = false;
@@ -148,7 +161,7 @@ bool RteConditionExpression::Validate()
     case 'C':
       if (!bC) {
         bC = true;
-        bMixed = bD || bT || bCondition;
+        bMixed = bD || bB || bT || bCondition;
         if (GetAttribute("Cclass").empty() || GetAttribute("Cgroup").empty()) {
           string msg = " '";
           msg += GetDisplayName() + "': Cclass or Cgroup attribute is missing in expression";
@@ -160,20 +173,27 @@ bool RteConditionExpression::Validate()
     case 'T':
       if (!bT) {
         bT = true;
-        bMixed = bC || bD || bCondition;
+        bMixed = bC || bD || bB || bCondition;
       }
       break;
     case 'c':
       bCondition = true;
-      bMixed = bC || bD || bT;
+      bMixed = bC || bD || bB || bT;
       break;
     case 'P':
     case 'D':
       if (!bD) {
         bD = true;
-        bMixed = bC || bT || bCondition;
+        bMixed = bC || bT || bB || bCondition;
       }
       break;
+    case 'B':
+      if (!bB) {
+        bB = true;
+        bMixed = bC || bT || bD || bCondition;
+      }
+      break;
+
     default:
       break;
     }; //case
@@ -181,7 +201,7 @@ bool RteConditionExpression::Validate()
 
   if (bMixed) {
     string msg = " '";
-    msg += GetDisplayName() + "': mixed 'C', 'D', 'T' or 'condition' attributes";
+    msg += GetDisplayName() + "': mixed 'B', 'C', 'D', 'T' or 'condition' attributes";
     m_errors.push_back(msg);
     m_bValid = false;
   }
@@ -307,7 +327,8 @@ RteItem::ConditionResult RteDenyExpression::Evaluate(RteConditionContext* contex
 
 RteCondition::RteCondition(RteItem* parent) :
   RteItem(parent),
-  m_bDeviceDependent(false),
+  m_bDeviceDependent(-1),
+  m_bBoardDependent(-1),
   m_bInCheck(false)
 {
 }
@@ -371,30 +392,51 @@ bool RteCondition::ValidateRecursion()
   return noRecursion;
 }
 
-bool RteCondition::CalcDeviceDependentFlag()
+void RteCondition::CalcDeviceAndBoardDependentFlags()
 {
-  if (m_bDeviceDependent) // already calculated
-    return true;
-  if (m_bInCheck) { // to prevent recursion
-    return m_bDeviceDependent;
-  }
-  m_bInCheck = true;
-  list<RteItem*>::const_iterator it;
-  for (it = m_children.begin(); it != m_children.end(); it++) {
-    RteConditionExpression* expr = dynamic_cast<RteConditionExpression*>(*it);
-    if (!expr)
-      continue;
-    RteCondition* cond = expr->GetCondition();
-    if (!cond)
-      continue;
-
-    if (cond->CalcDeviceDependentFlag()) {
-      m_bDeviceDependent = true;
-      break;
+  if (m_bDeviceDependent < 0 || m_bBoardDependent < 0) { // not yet calculated
+    m_bDeviceDependent = 0;
+    m_bBoardDependent = 0;
+    if (m_bInCheck) { // to prevent recursion
+      return;
     }
+    m_bInCheck = true;
+    list<RteItem*>::const_iterator it;
+    for (it = m_children.begin(); it != m_children.end(); it++) {
+      RteConditionExpression* expr = dynamic_cast<RteConditionExpression*>(*it);
+      if (!expr) {
+        continue;
+      }
+      if (expr->IsDeviceDependent()) {
+        m_bDeviceDependent = 1;
+      }
+      if (expr->IsBoardDependent()) {
+        m_bBoardDependent = 1;
+      }
+      if (m_bDeviceDependent > 0 && m_bBoardDependent > 0) {
+        break;
+      }
+    }
+    m_bInCheck = false;
   }
-  m_bInCheck = false;
-  return m_bDeviceDependent;
+}
+
+bool RteCondition::IsDeviceDependent() const
+{
+  if (m_bDeviceDependent < 0) {
+    RteCondition* that = const_cast<RteCondition*>(this);
+    that->CalcDeviceAndBoardDependentFlags();
+  }
+  return m_bDeviceDependent > 0;
+}
+
+bool RteCondition::IsBoardDependent() const
+{
+  if (m_bBoardDependent < 0) {
+    RteCondition* that = const_cast<RteCondition*>(this);
+    that->CalcDeviceAndBoardDependentFlags();
+  }
+  return m_bBoardDependent > 0;
 }
 
 
@@ -505,8 +547,6 @@ bool RteCondition::ProcessXmlElement(XMLTreeElement* xmlElement)
   {
     if (expression->Construct(xmlElement)) {
       AddItem(expression);
-      if (expression->IsDeviceDependent())
-        m_bDeviceDependent = true;
       return true;
     }
     delete expression;
@@ -521,20 +561,6 @@ RteConditionContainer::RteConditionContainer(RteItem* parent) :
   RteItem(parent)
 {
 }
-
-bool RteConditionContainer::Construct(XMLTreeElement* xmlElement)
-{
-  if (!RteItem::Construct(xmlElement))
-    return false;
-  // update device dependent flags in conditions
-  for (auto it = m_children.begin(); it != m_children.end(); it++) {
-    RteCondition* cond = dynamic_cast<RteCondition*>(*it);
-    if (cond)
-      cond->CalcDeviceDependentFlag();
-  }
-  return true;
-}
-
 
 bool RteConditionContainer::ProcessXmlElement(XMLTreeElement* xmlElement)
 {
@@ -858,6 +884,7 @@ RteItem::ConditionResult RteConditionContext::EvaluateExpression(RteConditionExp
   char domain = expr->GetExpressionDomain();
   switch (domain)
   {
+  case BOARD_EXPRESSION:
   case DEVICE_EXPRESSION:
   case TOOLCHAIN_EXPRESSION:
     return expr->EvaluateExpression(GetTarget());
@@ -914,6 +941,7 @@ RteItem::ConditionResult RteDependencySolver::EvaluateExpression(RteConditionExp
   char domain = expr->GetExpressionDomain();
   switch (domain)
   {
+  case BOARD_EXPRESSION:
   case DEVICE_EXPRESSION:
   case TOOLCHAIN_EXPRESSION:
     return RteItem::IGNORED;

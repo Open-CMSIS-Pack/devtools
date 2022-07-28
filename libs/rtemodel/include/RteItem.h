@@ -459,6 +459,12 @@ public:
   virtual bool IsDeviceDependent() const;
 
   /**
+  * @brief check if item is associated with a condition that depends on selected board
+  * @return true if item's condition depends on selected board
+  */
+  virtual bool IsBoardDependent() const;
+
+  /**
    * @brief get errors found by Construct() or Validate()
    * @return list of error strings
   */

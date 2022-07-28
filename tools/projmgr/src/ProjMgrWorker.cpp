@@ -420,7 +420,7 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
           context.packages.insert({ ProjMgrUtils::GetPackageID(boardPackage), boardPackage });
           context.targetAttributes["Bname"]    = matchedBoard->GetName();
           context.targetAttributes["Bvendor"]  = matchedBoard->GetVendorName();
-          context.targetAttributes["Bversion"] = matchedBoard->GetAttribute("revision");
+          context.targetAttributes["Brevision"] = matchedBoard->GetRevision();
           break;
         }
       }
@@ -1554,7 +1554,7 @@ bool ProjMgrWorker::ListBoards(vector<string>& boards, const string& filter) {
     for (const auto& [_, board] : availableBoards) {
       const string& boardVendor = board->GetVendorName();
       const string& boardName = board->GetName();
-      const string& boardRevision = board->GetAttribute("revision");
+      const string& boardRevision = board->GetRevision();
       const string& boardPack = ProjMgrUtils::GetPackageID(board->GetPackage());
       boardsSet.insert(boardVendor + "::" + boardName + (!boardRevision.empty() ? ":" + boardRevision : "") + " (" + boardPack + ")");
     }

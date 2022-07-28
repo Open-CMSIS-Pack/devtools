@@ -57,6 +57,30 @@ public:
   virtual std::string GetDisplayName() const override;
 
   /**
+   * @brief get board name
+   * @return board name string
+  */
+  virtual const std::string& GetName() const override;
+
+  /**
+   * @brief get board vendor
+   * @return board vendor as string
+  */
+  virtual const std::string& GetVendorString() const override;
+
+  /**
+   * @brief get board version string from its revision
+   * @return version string
+  */
+  virtual const std::string& GetVersionString() const override { return GetRevision(); };
+
+  /**
+   * @brief get board revision
+   * @return revision string
+  */
+  const std::string& GetRevision() const;
+
+  /**
    * @brief collect list of all mounted and compatible devices
    * @param devices list of RteItem pointers to fill
   */
