@@ -146,6 +146,7 @@
         "compiler":     { "$ref": "#/definitions/CompilerType" },
         "C":            { "$ref": "#/definitions/ArrayOfStrings", "description": "List of C flags" },
         "CPP":          { "$ref": "#/definitions/ArrayOfStrings", "description": "List of CPP flags" },
+        "C*":           { "$ref": "#/definitions/ArrayOfStrings", "description": "List of C & CPP flags" },
         "C-CPP":        { "$ref": "#/definitions/ArrayOfStrings", "description": "List of C & CPP flags" },
         "ASM":          { "$ref": "#/definitions/ArrayOfStrings", "description": "List of ASM flags"  },
         "Link":         { "$ref": "#/definitions/ArrayOfStrings", "description": "List of Linker flags" },
