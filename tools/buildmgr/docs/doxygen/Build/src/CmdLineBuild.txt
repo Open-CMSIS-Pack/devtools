@@ -512,7 +512,7 @@ Note: \b cbuildgen does not update the *.cprj for commands \c packlist, \c cmake
 
 \verbatim
 $ cbuildgen Simulation.cprj packlist
-(cbuildgen): Build Process Manager 0.9.1 (C) 2020 ARM
+(cbuildgen): Build Process Manager 1.0.0 (C) 2022 ARM
 M654: URL 'http://www.keil.com/pack/ARM.CMSIS.5.6.0.pack' was added to the list of missing packages.
 M654: URL 'http://www.keil.com/pack/Keil.ARM_Compiler.1.6.1.pack' was added to the list of missing packages.
 M650: Command completed successfully.
@@ -522,7 +522,7 @@ M650: Command completed successfully.
 
 \verbatim
 $ cbuildgen Simulation.cprj extract --layer=Board --outdir=Layer
-(cbuildgen): Build Process Manager 0.9.1 (C) 2020 ARM
+(cbuildgen): Build Process Manager 1.0.0 (C) 2022 ARM
 M650: Command completed successfully.
 \endverbatim
 
@@ -534,7 +534,7 @@ The layer information is stored in <tt>./Layer/Board/Board.clayer</tt>.
 
 \verbatim
 $ cbuildgen NewProject.cprj compose Layer/App/App.clayer Layer/Board/Board.clayer
-(cbuildgen): Build Process Manager 0.9.1 (C) 2020 ARM
+(cbuildgen): Build Process Manager 1.0.0 (C) 2022 ARM
 M650: Command completed successfully.
 \endverbatim
 
