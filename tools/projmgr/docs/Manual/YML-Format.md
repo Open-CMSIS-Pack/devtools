@@ -20,7 +20,6 @@ The following chapter explains the YML format that is used to describe the YML i
 - [Toolchain Options](#toolchain-options)
   - [`compiler:`](#compiler)
   - [`output-type:`](#output-type)
-  - [`linker:`](#linker)
   - [`for-compiler:`](#for-compiler)
 - [Translation Control](#translation-control)
   - [`optimize:`](#optimize)
@@ -360,7 +359,6 @@ The `project:` node is the start of a `*.cproject.yml` file and can contain the 
 &nbsp;&nbsp; [`description:`](#description)    |  Optional    | Project description.
 &nbsp;&nbsp; [`output-type:`](#output-type)    | **Required** | Generate executable (default) or library.
 &nbsp;&nbsp; [`optimize:`](#optimize)          |  Optional    | Optimize level for code generation.
-&nbsp;&nbsp; [`linker:`](#linker)              | **Required** | Instructions for the linker.
 &nbsp;&nbsp; [`debug:`](#debug)                |  Optional    | Generation of debug information.
 &nbsp;&nbsp; [`define:`](#define)              |  Optional    | Preprocessor (#define) symbols for code generation.
 &nbsp;&nbsp; [`undefine:`](#undefine)          |  Optional    | Remove preprocessor (#define) symbols.
@@ -498,24 +496,6 @@ Value                                                 | Generated Output
 
 ```yml
 output-type: lib            # Generate a library
-```
-
-## `linker:`
-
-The `linker:` node controls the linker operation.
-
-`linker:`                                             |              |  Content
-:-----------------------------------------------------|:-------------|:--------------------------------
-`- script:`                                           |              | Explicit file name of the linker script
-&nbsp;&nbsp; [`for-type:`](#for-type)                 |   Optional   | Include script for a list of *build* and *target* types.
-&nbsp;&nbsp; [`not-for-type:`](#not-for-type)         |   Optional   | Exclude script for a list of *build* and *target* types.
-
-**Example:**
-
-```yml
-linker:                      # Control linker operation
-  - script: .\MyProject.sct  # Explicit scatter file
-    for-type: .Debug  
 ```
 
 ## `for-compiler:`
@@ -740,7 +720,6 @@ It is however possible to change that `setup:` settings on a [`group:`](#groups)
 &nbsp;&nbsp;&nbsp; [`undefine:`](#undefine)          |   Optional   | Remove define symbol settings for code generation.
 &nbsp;&nbsp;&nbsp; [`add-path:`](#add-path)          |   Optional   | Additional include file paths.
 &nbsp;&nbsp;&nbsp; [`del-path:`](#del-path)          |   Optional   | Remove specific include file paths.
-&nbsp;&nbsp;&nbsp; [`linker:`](#linker)              |   Optional   | Remove specific include file paths.
 &nbsp;&nbsp;&nbsp; [`misc:`](#misc)                  |   Optional   | Literal tool-specific controls.
 
 ```yml
@@ -748,15 +727,11 @@ project:
   setups:
     - setup: Arm Compiler 6 project setup
       for-compiler: AC6
-      linker:
-        - script: my-project.sct
       define:
         - test: 12
 
-   - setup: GCC project setup
-     for-compiler: GCC
-      linker:
-        - script: my-project.inc
+    - setup: GCC project setup
+      for-compiler: GCC
       define:
         - test: 11
 ```

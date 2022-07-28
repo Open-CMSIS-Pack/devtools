@@ -27,26 +27,25 @@ Build Manager      | cbuildgen      | Generate CMakeLists and invoke CMake/Ninja
   - Install [MDK](http://www2.keil.com/demo/eval/arm.htm) first.
   - In CMSIS Toolbox installer specify the MDK installation compiler path (c:\Keil_v5\ARM\ARMClang\bin) to setup AC6 compiler for you.
 
-- [GNU Arm Embedded Toolchain](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-rm/downloads):
+- [GNU Arm Embedded Toolchain](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/downloads):
 
-  Version 10-2020-q4-major (Dec. 11th 2020):
-  - [Windows 32-bit ZIP](https://developer.arm.com/-/media/Files/downloads/gnu-rm/10-2020q4/gcc-arm-none-eabi-10-2020-q4-major-win32.exe)
-  - [Linux x86_64 Tarball](https://developer.arm.com/-/media/Files/downloads/gnu-rm/10-2020q4/gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2)
-  - [Mac OS X 64-bit Package](https://developer.arm.com/-/media/Files/downloads/gnu-rm/10-2020q4/gcc-arm-none-eabi-10-2020-q4-major-mac.pkg)
+  Version 11.2-2022.02 (Feb. 15th 2022):
+  - [Windows 32-bit](https://developer.arm.com/-/media/Files/downloads/gnu/11.2-2022.02/binrel/gcc-arm-11.2-2022.02-mingw-w64-i686-arm-none-eabi.exe)
+  - [Linux x86_64 Tarball](https://developer.arm.com/-/media/Files/downloads/gnu/11.2-2022.02/binrel/gcc-arm-11.2-2022.02-x86_64-arm-none-eabi.tar.xz)
+  - [Mac OS X 64-bit Package](https://developer.arm.com/-/media/Files/downloads/gnu/11.2-2022.02/binrel/gcc-arm-11.2-2022.02-darwin-x86_64-arm-none-eabi.pkg) - Note: [Linaro Bug Report 5867](https://bugs.linaro.org/show_bug.cgi?id=5867)
 
 - [ARM Compiler Version 6](https://developer.arm.com/tools-and-software/embedded/arm-compiler/downloads/version-6) **license managed**:
 
-  Version 6.16 (Mar. 10th 2020)
-  - [Windows 32-bit Installer](https://developer.arm.com/-/media/Files/downloads/compiler/DS500-BN-00025-r5p0-18rel0.zip)
-
+  Version 6.18 (Mar. 31th 2022)
+  - Windows 32-bit Installer
     - Download installer
-    - Extract archive unzip DS500-BN-00025-r5p0-18rel0.zip
+    - Extract archive
     - Run win-x86_32\setup.exe
-    - Default installation path: C:\Program Files (x86)\ARMCompiler6.16\
+    - Default installation path: C:\Program Files (x86)\ARMCompiler6.18\
 
-  - [Linux x86_64 Installer](https://developer.arm.com/-/media/Files/downloads/compiler/DS500-BN-00026-r5p0-18rel0.tgz)
+  - Linux x86_64 Installer
     - Download installer
-    - Extract the archive tar -xzf DS500-BN-00026-r5p0-18rel0.tgz
+    - Extract the archive
     - Run install_x86_64.sh
 
 ### 3) CMake and Ninja installation
