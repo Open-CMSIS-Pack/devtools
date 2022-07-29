@@ -34,6 +34,10 @@ minimum/range component version handling                                        
 replacement of cbuild bash scripts                                                       | :heavy_check_mark:       | cbuild 0.11.0
 multi-project solution handling in cbuild                                                | :x:                      |
 layered solutions in-source conversion                                                   | :heavy_check_mark:       | csolution 0.9.4
+support for output directories customization at csolution level                          | :heavy_check_mark:       | csolution 1.0.0
+support for board attributes in conditions                                               | :heavy_check_mark:       | csolution 1.0.0
+`for-compiler` and `setup` handling                                                      | :heavy_check_mark:       | csolution 1.0.0
+multiple contexts selection via wildcards                                                | :heavy_check_mark:       | csolution 1.0.0
 layer `interface` definitions                                                            | :x:                      |
 distribution of layers                                                                   | :x:                      |
 resources management                                                                     | :x:                      |
@@ -41,4 +45,3 @@ linker scatter file handling                                                    
 execution groups/phases                                                                  | :x:                      |
 pre/post build steps in csolution                                                        | :x:                      |
 pre/post build steps in cbuild                                                           | :x:                      |
-board conditions                                                                         | :x:                      |
