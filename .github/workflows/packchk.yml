@@ -186,7 +186,7 @@ jobs:
           path: |
             ./build/tools/packchk/coverage/
             ./build/tools/packchk/coverage.info
-          retention-days: 1
+          retention-days: 7
           if-no-files-found: error
 
   release:
