@@ -1110,11 +1110,12 @@ void RteBoardInfo::Init(RteBoard* board)
 void RteBoardInfo::InitInstance(RteItem* item) {
   if (!item)
     return;
-  SetTag(item->GetTag());
-  AddAttribute("Bname", item->GetName());
-  AddAttribute("Bversion", item->GetAttribute("Bversion")); // for backward compatibility
-  AddAttribute("Brevision", item->GetVersionString());
-  AddAttribute("Bvendor", item->GetVendorString());
+  SetTag("board");
+  AddAttribute("Bname", item->GetAttribute("Bname"));
+  const string& revision = item->HasAttribute("Brevision") ? item->GetAttribute("Brevision") : item->GetAttribute("Bversion");
+  AddAttribute("Bversion", revision); // for backward compatibility
+  AddAttribute("Brevision", revision);
+  AddAttribute("Bvendor", item->GetAttribute("Bvendor"));
   m_ID = GetDisplayName();
 }
 

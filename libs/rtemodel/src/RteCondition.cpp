@@ -252,8 +252,9 @@ RteItem::ConditionResult RteConditionExpression::EvaluateExpression(RteTarget* t
         continue;
       }
       // all other attributes
-      if (!WildCards::Match(va, v))
+      if (!WildCards::Match(va, v)) {
         return FAILED;
+      }
     } else if (GetExpressionType() == DENY) {
       return FAILED; // for denied attributes, all must be given
     }

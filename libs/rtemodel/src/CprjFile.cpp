@@ -240,7 +240,7 @@ string CprjTargetElement::GetBoardDisplayName() const
 {
   string name = GetAttribute("Bname");
   if (!name.empty()) {
-    const string& rev = GetAttribute("Bversion");
+    const string &rev = HasAttribute("Bversion") ? GetAttribute("Bversion") : GetAttribute("Brevision");
     if (!rev.empty()) {
       name += " (" + rev + ")";
     }
