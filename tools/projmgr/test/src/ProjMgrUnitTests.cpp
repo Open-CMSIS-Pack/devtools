@@ -30,6 +30,7 @@ protected:
   virtual ~ProjMgrUnitTests() {}
 
   void CompareFile(const string& file1, const string& file2);
+  void GetFilesInTree(const string& dir, set<string>& files);
   void CompareFileTree(const string& dir1, const string& dir2);
 
   string UpdateTestSolutionFile(const string& projectFilePath);
@@ -81,19 +82,19 @@ void ProjMgrUnitTests::CompareFile(const string& file1, const string& file2) {
   f2.close();
 }
 
+void ProjMgrUnitTests::GetFilesInTree(const string& dir, set<string>& files) {
+  error_code ec;
+  if (RteFsUtils::Exists(dir)) {
+    for (auto& p : fs::recursive_directory_iterator(dir, ec)) {
+      files.insert(p.path().filename().generic_string());
+    }
+  }
+}
+
 void ProjMgrUnitTests::CompareFileTree(const string& dir1, const string& dir2) {
   set<string> tree1, tree2;
-  error_code ec;
-  if (RteFsUtils::Exists(dir1)) {
-    for (auto& p : fs::recursive_directory_iterator(dir1, ec)) {
-      tree1.insert(p.path().filename().generic_string());
-    }
-  }
-  if (RteFsUtils::Exists(dir2)) {
-    for (auto& p : fs::recursive_directory_iterator(dir2, ec)) {
-      tree2.insert(p.path().filename().generic_string());
-    }
-  }
+  GetFilesInTree(dir1, tree1);
+  GetFilesInTree(dir2, tree2);
   EXPECT_EQ(tree1, tree2);
 }
 
@@ -181,6 +182,10 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks_project) {
   char* argv[7];
   StdStreamRedirect streamRedirect;
   const string& csolution = testinput_folder + "/TestDefault/test.csolution.yml";
+  const std::string rteFolder = testinput_folder + "/TestDefault/RTE";
+  set<string> rteFilesBefore, rteFilesAfter;
+  GetFilesInTree(rteFolder, rteFilesBefore);
+
   // list packs
   argv[1] = (char*)"list";
   argv[2] = (char*)"packs";
@@ -189,6 +194,9 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks_project) {
   argv[5] = (char*)"-c";
   argv[6] = (char*)"project.Debug";
   EXPECT_EQ(0, RunProjMgr(7, argv));
+
+  GetFilesInTree(rteFolder, rteFilesAfter);
+  EXPECT_EQ(rteFilesBefore, rteFilesAfter);
 
   auto outStr = streamRedirect.GetOutString();
   EXPECT_TRUE(regex_match(outStr, regex("ARM::RteTest_DFP@0.1.1 \\(.*\\)\n")));
@@ -248,6 +256,9 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListBoardsProjectFiltered) {
   char* argv[7];
   StdStreamRedirect streamRedirect;
   string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject_board_and_device.yml");
+  const std::string rteFolder = testinput_folder + "/TestProject/RTE";
+  set<string> rteFilesBefore, rteFilesAfter;
+  GetFilesInTree(rteFolder, rteFilesBefore);
 
   // list boards
   argv[1] = (char*)"list";
@@ -257,6 +268,9 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListBoardsProjectFiltered) {
   argv[5] = (char*)"-s";
   argv[6] = (char*)csolutionFile.c_str();
   EXPECT_EQ(0, RunProjMgr(7, argv));
+
+  GetFilesInTree(rteFolder, rteFilesAfter);
+  EXPECT_EQ(rteFilesBefore, rteFilesAfter);
 
   auto outStr = streamRedirect.GetOutString();
   EXPECT_STREQ(outStr.c_str(), "Keil::RteTest Dummy board:1.2.3 (ARM::RteTest_DFP@0.2.0)\n");
@@ -295,6 +309,9 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListDependencies) {
   const std::string expected = "ARM::Device:Startup&RteTest Startup@2.0.3 require RteTest:CORE\n";
   StdStreamRedirect streamRedirect;
   string csolutionFile = UpdateTestSolutionFile("./TestProject4/test-dependency.cproject.yml");
+  const std::string rteFolder = testinput_folder + "/TestProject/RTE";
+  set<string> rteFilesBefore, rteFilesAfter;
+  GetFilesInTree(rteFolder, rteFilesBefore);
 
   // list dependencies
   argv[1] = (char*)"list";
@@ -302,6 +319,9 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListDependencies) {
   argv[3] = (char*)"-s";
   argv[4] = (char*)csolutionFile.c_str();
   EXPECT_EQ(0, RunProjMgr(5, argv));
+
+  GetFilesInTree(rteFolder, rteFilesAfter);
+  EXPECT_EQ(rteFilesBefore, rteFilesAfter);
 
   auto outStr = streamRedirect.GetOutString();
   EXPECT_STREQ(outStr.c_str(), expected.c_str());
@@ -1282,6 +1302,10 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Board_Device_Info) {
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListGenerators) {
+  const std::string rteFolder = testinput_folder + "/TestGenerator/RTE";
+  set<string> rteFilesBefore, rteFilesAfter;
+  GetFilesInTree(rteFolder, rteFilesBefore);
+
   char* argv[7];
   const string& csolution = testinput_folder + "/TestGenerator/test-gpdsc.csolution.yml";
   argv[1] = (char*)"list";
@@ -1291,6 +1315,9 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListGenerators) {
   argv[5] = (char*)"-c";
   argv[6] = (char*)"test-gpdsc.Debug+CM0";
   EXPECT_EQ(0, RunProjMgr(7, argv));
+
+  GetFilesInTree(rteFolder, rteFilesAfter);
+  EXPECT_EQ(rteFilesBefore, rteFilesAfter);
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListGeneratorsEmptyContext) {
@@ -1793,7 +1820,8 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_NoUpdateRTEFiles) {
   char* argv[7];
   const string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject.yml");
   const string rteFolder = RteFsUtils::ParentPath(csolutionFile) + "/TestProject4/RTE";
-  RteFsUtils::DeleteTree(rteFolder);
+  set<string> rteFilesBefore, rteFilesAfter;
+  GetFilesInTree(rteFolder, rteFilesBefore);
 
   argv[1] = (char*)"convert";
   argv[2] = (char*)"-s";
@@ -1803,8 +1831,9 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_NoUpdateRTEFiles) {
   argv[6] = (char*)"--no-update-rte";
   EXPECT_EQ(0, RunProjMgr(7, argv));
 
-  // No RTE folder should exist
-  EXPECT_FALSE(RteFsUtils::Exists(rteFolder));
+  // The RTE folder should be left untouched
+  GetFilesInTree(rteFolder, rteFilesAfter);
+  EXPECT_EQ(rteFilesBefore, rteFilesAfter);
 
   // CPRJ should still be generated
   CompareFile(testoutput_folder + "/test.cprj",

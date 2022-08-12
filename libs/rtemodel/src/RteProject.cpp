@@ -1073,7 +1073,7 @@ RteGpdscInfo* RteProject::AddGpdscInfo(RteComponent* c, RteTarget* target)
   if (!gi) {
     gi = AddGpdscInfo(gpdsc, 0);
     error_code ec;
-    if (!fs::exists(gpdsc, ec)) { // file not exists
+    if (ShouldUpdateRte() && !fs::exists(gpdsc, ec)) { // file not exists
     // create destination directory
       string dir = RteUtils::ExtractFilePath(gpdsc, true);
       // we need the to directory to exist for modification watch

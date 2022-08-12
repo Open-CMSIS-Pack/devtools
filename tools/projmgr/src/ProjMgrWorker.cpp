@@ -1890,7 +1890,7 @@ bool ProjMgrWorker::ListDependencies(vector<string>& dependencies, const string&
   set<string>dependenciesSet;
   for (const auto& selectedContext : m_selectedContexts) {
     ContextItem& context = m_contexts[selectedContext];
-    if (!ProcessContext(context, true, false)) {
+    if (!ProcessContext(context, true, false, false)) {
       return false;
     }
     if (!ValidateContext(context)) {
@@ -1973,7 +1973,7 @@ bool ProjMgrWorker::ListGenerators(vector<string>& generators) {
   set<string> generatorsSet;
   for (const auto& selectedContext : m_selectedContexts) {
     ContextItem& context = m_contexts[selectedContext];
-    if (!ProcessContext(context, false)) {
+    if (!ProcessContext(context, false, true, false)) {
       return false;
     }
     for (const auto& [id, generator] : context.generators) {
