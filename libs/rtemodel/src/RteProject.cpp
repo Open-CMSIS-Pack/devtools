@@ -338,9 +338,9 @@ RteComponentInstance* RteProject::AddCprjComponent(RteItem* item, RteTarget* tar
   info->SetInstanceCount(instanceCount);
   const string& version = item->GetAttribute("Cversion");
   if (version.empty()) {
-    info->SetVersionMatchMode(VersionCmp::LATEST_VERSION);
+    info->SetVersionMatchMode(VersionCmp::MatchMode::LATEST_VERSION);
   } else {
-    info->SetVersionMatchMode(VersionCmp::FIXED_VERSION);
+    info->SetVersionMatchMode(VersionCmp::MatchMode::FIXED_VERSION);
   }
   if (item->GetAttribute("instances").empty())
     instanceCount = -1;
@@ -953,7 +953,7 @@ RtePackageInstanceInfo* RteProject::GetLatestPackageInfo(const string& packId) c
 string RteProject::GetEffectivePackageID(const string& packId, const string& targetName) const
 {
   RtePackageInstanceInfo* pi = GetPackageInfo(packId);
-  if (pi && pi->GetVersionMatchMode(targetName) == VersionCmp::FIXED_VERSION) {
+  if (pi && pi->GetVersionMatchMode(targetName) == VersionCmp::MatchMode::FIXED_VERSION) {
     return pi->GetPackageID(true);
   }
   string commonId = RtePackage::CommonIdFromId(packId);
@@ -1256,7 +1256,7 @@ RteItem::ConditionResult RteProject::ResolveComponents(bool bFindReplacementForA
     RteComponentAggregate* a = NULL;
     set<RteComponentAggregate*> aggregates;
     RteAttributes componentAttributes = *ci; // copy attributes
-    if (ci->GetVersionMatchMode(activeTargetName) != VersionCmp::FIXED_VERSION)
+    if (ci->GetVersionMatchMode(activeTargetName) != VersionCmp::MatchMode::FIXED_VERSION)
     {
       // make search wider : remove bundle and version
       componentAttributes.RemoveAttribute("Cbundle");
@@ -1669,7 +1669,7 @@ void RteProject::PropagateFilteredPackagesToTargetModel(const string& targetName
     }
 
     VersionCmp::MatchMode mode = pi->GetVersionMatchMode(targetName);
-    if (mode == VersionCmp::FIXED_VERSION) {
+    if (mode == VersionCmp::MatchMode::FIXED_VERSION) {
       const string& id = itpi->first;
       fixedPacks[id] = *pi;
     } else {
@@ -1929,7 +1929,7 @@ bool RteProject::Validate()
     if (!pi->IsUsedByTarget(targetName))
       continue;
     VersionCmp::MatchMode mode = pi->GetVersionMatchMode(targetName);
-    string packId = pi->GetPackageID(mode == VersionCmp::FIXED_VERSION);
+    string packId = pi->GetPackageID(mode == VersionCmp::MatchMode::FIXED_VERSION);
     const string& url = pi->GetURL();
     //if(!IsPackageUsed( packId, targetName, mode == VersionCmp::FIXED_VERSION))
     // continue;

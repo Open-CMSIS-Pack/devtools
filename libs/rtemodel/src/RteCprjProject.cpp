@@ -221,7 +221,7 @@ void RteCprjProject::ApplySelectedComponentsToCprjFile() {
       item = new RteItem(cprjComponents);
       item->SetTag("component");
       item->AddAttributes(ci->GetAttributes(), true);         // take over attributes
-      if (ci->GetVersionMatchMode(GetActiveTargetName()) != VersionCmp::FIXED_VERSION) {
+      if (ci->GetVersionMatchMode(GetActiveTargetName()) != VersionCmp::MatchMode::FIXED_VERSION) {
         item->RemoveAttribute("Cversion");                    // specify version only if fixed
       }
       item->RemoveAttribute("condition");                     // remove generally attribute "condition"

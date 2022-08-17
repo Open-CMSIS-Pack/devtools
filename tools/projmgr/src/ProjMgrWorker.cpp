@@ -680,7 +680,7 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
     componentIds.insert(componentId);
     componentMap[componentId] = component.second;
   }
-  bool valid = true;
+
   for (auto& item : context.componentRequirements) {
     if (item.component.empty()) {
       continue;
@@ -693,7 +693,7 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
     set<string> filterSet;
     if (componentDescriptor.find_first_of(ProjMgrUtils::COMPONENT_DELIMITERS) != string::npos) {
       // Consider a full or partial component identifier was given
-      filterSet.insert(componentDescriptor);
+      filterSet.insert(RteUtils::GetPrefix(componentDescriptor, *(ProjMgrUtils::PREFIX_CVERSION)));
     } else {
       // Consider free text was given
       filterSet = SplitArgs(componentDescriptor);
@@ -723,7 +723,8 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
       for (const auto& [id, component] : filteredComponents) {
         // Get component id without vendor and version
         const string& componentId = ProjMgrUtils::GetPartialComponentID(component);
-        const string& requiredComponentId = RteUtils::RemovePrefixByString(item.component, ProjMgrUtils::SUFFIX_CVENDOR);
+        string requiredComponentId = RteUtils::RemovePrefixByString(item.component, ProjMgrUtils::SUFFIX_CVENDOR);
+        requiredComponentId = RteUtils::GetPrefix(requiredComponentId, *ProjMgrUtils::PREFIX_CVERSION);
         if (requiredComponentId.compare(componentId) == 0) {
           matchedComponents[id] = component;
         }
@@ -735,9 +736,29 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
     }
 
     // Evaluate filtered components
-    if (filteredComponents.size() == 1) {
-      // Single match
-      auto matchedComponent = filteredComponents.begin()->second;
+    if (filteredComponents.empty()) {
+      // No match
+      ProjMgrLogger::Error("no component was found with identifier '" + item.component + "'");
+      return false;
+    }
+    else {
+      // One or multiple matches found
+      set<string> availableComponentVersions;
+      for_each(filteredComponents.begin(), filteredComponents.end(),
+        [&](const pair<std::string, RteComponent*> &component) {
+          availableComponentVersions.insert(RteUtils::GetSuffix(component.first, *ProjMgrUtils::PREFIX_CVERSION));
+        });
+      string filterVerison = RteUtils::GetSuffix(item.component, *ProjMgrUtils::PREFIX_CVERSION, true);
+      string matchedVersion = VersionCmp::GetMatchingVersion(filterVerison, availableComponentVersions);
+      if (matchedVersion.empty()) {
+        ProjMgrLogger::Error("no component was found with identifier '" + item.component + "'");
+        return false;
+      }
+      auto itr = std::find_if(filteredComponents.begin(), filteredComponents.end(),
+        [&](const pair<std::string, RteComponent*>& item) {
+          return (item.first.find(matchedVersion) != string::npos);
+        });
+      auto matchedComponent = itr->second;
       const auto& componentId = ProjMgrUtils::GetComponentID(matchedComponent);
       MergeMiscCPP(item.build.misc);
       context.components.insert({ componentId, { matchedComponent, &item }});
@@ -750,22 +771,7 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
           context.packages.insert({ ProjMgrUtils::GetPackageID(apiPackage), apiPackage });
         }
       }
-    } else if (filteredComponents.empty()) {
-      // No match
-      ProjMgrLogger::Error("no component was found with identifier '" + item.component + "'");
-      valid = false;
-    } else {
-      // Multiple matches
-      string msg = "multiple components were found for identifier '" + item.component + "'";
-      for (const auto& component : filteredComponents) {
-        msg += "\n" + ProjMgrUtils::GetComponentID(component.second) + " in pack " + component.second->GetPackage()->GetPackageFileName();
-      }
-      ProjMgrLogger::Error(msg);
-      valid = false;
     }
-  }
-  if (!valid) {
-    return false;
   }
 
   // Get generators

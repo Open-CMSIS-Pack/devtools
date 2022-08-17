@@ -13,13 +13,13 @@
 
 using namespace std;
 
-class ProjMgUtilsUnitTests : public ProjMgrUtils, public ::testing::Test {
+class ProjMgrUtilsUnitTests : public ProjMgrUtils, public ::testing::Test {
 protected:
-  ProjMgUtilsUnitTests() {}
-  virtual ~ProjMgUtilsUnitTests() {}
+  ProjMgrUtilsUnitTests() {}
+  virtual ~ProjMgrUtilsUnitTests() {}
 };
 
-TEST_F(ProjMgUtilsUnitTests, GetComponentID) {
+TEST_F(ProjMgrUtilsUnitTests, GetComponentID) {
   const map<string, string> attributes = {
     {"Cvendor" , "Vendor"  },
     {"Cclass"  , "Class"   },
@@ -33,7 +33,7 @@ TEST_F(ProjMgUtilsUnitTests, GetComponentID) {
   EXPECT_EQ("Vendor::Class&Bundle:Group:Sub&Variant@9.9.9",GetComponentID((RteItem*)&item));
 }
 
-TEST_F(ProjMgUtilsUnitTests, GetComponentAggregateID) {
+TEST_F(ProjMgrUtilsUnitTests, GetComponentAggregateID) {
   const map<string, string> attributes = {
     {"Cvendor" , "Vendor"  },
     {"Cclass"  , "Class"   },
@@ -47,7 +47,7 @@ TEST_F(ProjMgUtilsUnitTests, GetComponentAggregateID) {
   EXPECT_EQ("Vendor::Class&Bundle:Group:Sub", GetComponentAggregateID((RteItem*)&item));
 }
 
-TEST_F(ProjMgUtilsUnitTests, GetConditionID) {
+TEST_F(ProjMgrUtilsUnitTests, GetConditionID) {
   const map<string, string> attributes = {
     {"Cvendor" , "Vendor"  },
     {"Cclass"  , "Class"   },
@@ -58,7 +58,7 @@ TEST_F(ProjMgUtilsUnitTests, GetConditionID) {
   EXPECT_EQ("require Vendor::Class:Group", GetConditionID((RteItem*)&item));
 }
 
-TEST_F(ProjMgUtilsUnitTests, GetPackageID) {
+TEST_F(ProjMgrUtilsUnitTests, GetPackageID) {
   const map<string, string> attributes = {
     {"vendor" , "Vendor"  },
     {"name"   , "Name"   },
@@ -69,7 +69,7 @@ TEST_F(ProjMgUtilsUnitTests, GetPackageID) {
   EXPECT_EQ("Vendor::Name@8.8.8", GetPackageID((RteItem*)&item));
 }
 
-TEST_F(ProjMgUtilsUnitTests, ReadGpdscFile) {
+TEST_F(ProjMgrUtilsUnitTests, ReadGpdscFile) {
   unique_ptr<RteGeneratorModel> gpdscModel = make_unique<RteGeneratorModel>();
   const string& gpdscFile = testinput_folder + "/TestGenerator/RTE/Device/RteTestGen_ARMCM0/RteTest.gpdsc";
   EXPECT_EQ(true, ProjMgrUtils::ReadGpdscFile(gpdscFile, gpdscModel.get()));
@@ -77,7 +77,7 @@ TEST_F(ProjMgUtilsUnitTests, ReadGpdscFile) {
   gpdscModel.reset();
 }
 
-TEST_F(ProjMgUtilsUnitTests, ExecCommand) {
+TEST_F(ProjMgrUtilsUnitTests, ExecCommand) {
   auto result = ProjMgrUtils::ExecCommand("invalid command");
   EXPECT_EQ(false, (0 == result.second) ? true : false) << result.first;
 

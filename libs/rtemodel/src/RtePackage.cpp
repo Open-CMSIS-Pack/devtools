@@ -1181,7 +1181,7 @@ bool RtePackageFilter::IsPackageFiltered(const string& packId) const
 
 RtePackageAggregate::RtePackageAggregate(RteItem* parent) :
   RteItem(parent),
-  m_mode(VersionCmp::EXCLUDED_VERSION)
+  m_mode(VersionCmp::MatchMode::EXCLUDED_VERSION)
 {
 }
 
@@ -1264,7 +1264,7 @@ void RtePackageAggregate::SetPackageSelected(const string& id, bool bSelected)
     return;
   if (bSelected) {
     m_selectedPackages.insert(id);
-    m_mode = VersionCmp::FIXED_VERSION;
+    m_mode = VersionCmp::MatchMode::FIXED_VERSION;
   } else {
     auto it = m_selectedPackages.find(id);
     if (it != m_selectedPackages.end())
@@ -1275,10 +1275,10 @@ void RtePackageAggregate::SetPackageSelected(const string& id, bool bSelected)
 void RtePackageAggregate::SetVersionMatchMode(VersionCmp::MatchMode mode)
 {
   m_mode = mode;
-  if (m_mode == VersionCmp::FIXED_VERSION) {
+  if (m_mode == VersionCmp::MatchMode::FIXED_VERSION) {
     string version = RtePackage::VersionFromId(GetLatestPackageID());
     if (version.empty()) {
-      m_mode = VersionCmp::LATEST_VERSION; // missing latest pack, cannot set to FIXED version
+      m_mode = VersionCmp::MatchMode::LATEST_VERSION; // missing latest pack, cannot set to FIXED version
     } else if (m_selectedPackages.empty()) {
       SetPackageSelected(GetLatestPackageID(), true);
     }
@@ -1290,9 +1290,9 @@ void RtePackageAggregate::AdjustVersionMatchMode()
   if (IsUsed()) {
     string version = RtePackage::VersionFromId(GetLatestPackageID());
     if (version.empty())
-      SetVersionMatchMode(VersionCmp::LATEST_VERSION);
+      SetVersionMatchMode(VersionCmp::MatchMode::LATEST_VERSION);
     else
-      SetVersionMatchMode(VersionCmp::FIXED_VERSION); // ensure selection not empty
+      SetVersionMatchMode(VersionCmp::MatchMode::FIXED_VERSION); // ensure selection not empty
   }
 }
 

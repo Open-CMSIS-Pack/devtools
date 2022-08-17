@@ -250,6 +250,12 @@ public:
   */
   static bool HasHexPrefix(const std::string& s);
   /**
+   * @brief determine first occurrence of a digit in a string
+   * @param s string containing the numerals
+   * @return index of first digit found, else string::npos
+  */
+  static std::string::size_type FindFirstDigit(const std::string& s);
+  /**
    * @brief convert string to a value of type unsigned long
    * @param s string to be converted
    * @return unsigned long value

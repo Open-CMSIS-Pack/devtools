@@ -1445,7 +1445,7 @@ RteComponent* RteTarget::ResolveComponent(RteComponentInstance* ci) const
 
   VersionCmp::MatchMode mode = ci->GetVersionMatchMode(GetName());
   RteComponent* c = NULL;
-  if (mode == VersionCmp::FIXED_VERSION) {
+  if (mode == VersionCmp::MatchMode::FIXED_VERSION) {
     c = GetComponent(ci->GetComponentID(true));
   } else {
     c = GetLatestComponent(ci);
@@ -1457,7 +1457,7 @@ RteComponent* RteTarget::ResolveComponent(RteComponentInstance* ci) const
     // try to find a component with a bundle
     RteComponentAggregate* a = m_classes->FindComponentAggregate(ci);
     if (a) {
-      if (mode == VersionCmp::FIXED_VERSION)
+      if (mode == VersionCmp::MatchMode::FIXED_VERSION)
         c = a->GetComponent(ci->GetCvariantName(), ci->GetVersionString());
       else
         c = a->GetLatestComponent(ci->GetCvariantName());
@@ -1477,7 +1477,7 @@ RteComponent* RteTarget::GetPotentialComponent(RteComponentInstance* ci) const
 
   VersionCmp::MatchMode mode = ci->GetVersionMatchMode(GetName());
   RteComponent* c = NULL;
-  if (mode == VersionCmp::FIXED_VERSION) {
+  if (mode == VersionCmp::MatchMode::FIXED_VERSION) {
     c = GetPotentialComponent(ci->GetComponentID(true));
   } else {
     c = GetLatestPotentialComponent(ci->GetComponentID(false));

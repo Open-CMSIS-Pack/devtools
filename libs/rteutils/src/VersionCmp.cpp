@@ -189,37 +189,100 @@ string VersionCmp::RemoveVersionMeta(const string& v) {
   return v;
 }
 
-
 VersionCmp::MatchMode VersionCmp::MatchModeFromString(const std::string& mode)
 {
   if (mode == "fixed")
-    return FIXED_VERSION;
+    return MatchMode::FIXED_VERSION;
   else if (mode == "latest")
-    return LATEST_VERSION;
+    return MatchMode::LATEST_VERSION;
   else if (mode == "excluded")
-    return EXCLUDED_VERSION;
+    return MatchMode::EXCLUDED_VERSION;
   // all other cases
-  return ANY_VERSION;
+  return MatchMode::ANY_VERSION;
+}
+
+VersionCmp::MatchMode VersionCmp::MatchModeFromVersionString(const std::string& version)
+{
+  string op, filter;
+  VersionCmp::MatchMode mode = MatchMode::LATEST_VERSION;
+  filter = RteUtils::GetSuffix(version, '@');
+  if (filter.empty())
+    return mode;
+  auto pos = RteUtils::FindFirstDigit(filter);
+  if (pos == std::string::npos)
+    return mode;
+  op = filter.substr(0, pos);
+  if (op.empty())
+    mode = MatchMode::FIXED_VERSION;
+  else if (op == HIGHER_OR_EQUAL_OPERATOR)
+    mode = MatchMode::HIGHER_OR_EQUAL;
+  return mode;
 }
 
 std::string VersionCmp::MatchModeToString(VersionCmp::MatchMode mode)
 {
   string s;
   switch (mode) {
-  case FIXED_VERSION:
+  case MatchMode::FIXED_VERSION:
     s = "fixed";
     break;
-  case LATEST_VERSION:
+  case MatchMode::LATEST_VERSION:
+  case MatchMode::HIGHER_OR_EQUAL:
     s = "latest";
     break;
-  case ANY_VERSION:
+  case MatchMode::ANY_VERSION:
     break; // no string
-  case EXCLUDED_VERSION:
+  case MatchMode::EXCLUDED_VERSION:
     s = "excluded";
     break;
   }
   return s;
 }
 
+const std::string VersionCmp::GetMatchingVersion(const std::string& filter, const std::set<std::string> availableVersions) {
+  string matchedVersion;
+  if (std::string::npos == filter.find('@')) {
+    // version range
+    vector<std::string> matchedVersions;
+    for (auto& version : availableVersions) {
+      if (0 == RangeCompare(version, filter)) {
+        matchedVersions.push_back(version);
+      }
+    }
+    auto itr = std::max_element(matchedVersions.begin(), matchedVersions.end(),
+      [](const auto& a, const auto& b) {
+        return (VersionCmp::Compare(a, b) < 0);
+      });
+    if (itr != matchedVersions.end()) {
+      matchedVersion = *itr;
+    }
+  }
+  else {
+    VersionCmp::MatchMode mode = VersionCmp::MatchModeFromVersionString(filter);
+    string filterVersion = RteUtils::RemovePrefixByString(filter, PREFIX_VERSION);
+    if (mode == MatchMode::HIGHER_OR_EQUAL) {
+      filterVersion = RteUtils::RemovePrefixByString(filterVersion, HIGHER_OR_EQUAL_OPERATOR);
+    }
+    for (auto& version : availableVersions) {
+      int result = VersionCmp::Compare(version, filterVersion, false);
+      switch (mode) {
+      case MatchMode::FIXED_VERSION:
+        if (result == 0)
+          return version;
+        break;
+      case MatchMode::LATEST_VERSION:
+      case MatchMode::HIGHER_OR_EQUAL:
+        if (result > 0 || result == 0) {
+          matchedVersion = version;
+          filterVersion = matchedVersion;
+        }
+        break;
+      default: // never happening
+        break;
+      }
+    }
+  }
+  return matchedVersion;
+}
 
 // End of VersionCmp.cpp

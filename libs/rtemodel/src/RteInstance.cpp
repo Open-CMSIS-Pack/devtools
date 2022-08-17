@@ -28,7 +28,7 @@ RteInstanceTargetInfo::RteInstanceTargetInfo() :
   m_bExcluded(false),
   m_bIncludeInLib(false),
   m_instanceCount(1),
-  m_VersionMatchMode(VersionCmp::LATEST_VERSION)
+  m_VersionMatchMode(VersionCmp::MatchMode::LATEST_VERSION)
 {
 };
 
@@ -48,7 +48,7 @@ RteInstanceTargetInfo::RteInstanceTargetInfo(const map<string, string>& attribut
   m_bExcluded(false),
   m_bIncludeInLib(false),
   m_instanceCount(1),
-  m_VersionMatchMode(VersionCmp::LATEST_VERSION)
+  m_VersionMatchMode(VersionCmp::MatchMode::LATEST_VERSION)
 {
   ProcessAttributes();
 }
@@ -106,7 +106,7 @@ bool RteInstanceTargetInfo::SetVersionMatchMode(VersionCmp::MatchMode mode)
   if (m_VersionMatchMode == mode)
     return false;
   m_VersionMatchMode = mode;
-  if (mode == VersionCmp::LATEST_VERSION)
+  if (mode == VersionCmp::MatchMode::LATEST_VERSION)
     RemoveAttribute("versionMatchMode");
   else {
     string sMode = VersionCmp::MatchModeToString(mode);
@@ -309,7 +309,7 @@ const string& RteItemInstance::GetFirstTargetName() const
 
 bool RteItemInstance::SetUseLatestVersion(bool bUseLatest, const string& targetName)
 {
-  VersionCmp::MatchMode mode = bUseLatest ? VersionCmp::LATEST_VERSION : VersionCmp::FIXED_VERSION;
+  VersionCmp::MatchMode mode = bUseLatest ? VersionCmp::MatchMode::LATEST_VERSION : VersionCmp::MatchMode::FIXED_VERSION;
   RteInstanceTargetInfo* ti = GetTargetInfo(targetName);
   if (ti) {
     return ti->SetVersionMatchMode(mode);
@@ -407,7 +407,7 @@ VersionCmp::MatchMode RteItemInstance::GetVersionMatchMode(const string& targetN
   RteInstanceTargetInfo* info = GetTargetInfo(targetName);
   if (info)
     return info->GetVersionMatchMode();
-  return VersionCmp::LATEST_VERSION;
+  return VersionCmp::MatchMode::LATEST_VERSION;
 }
 
 RteInstanceTargetInfo* RteItemInstance::AddTargetInfo(const string& targetName, const string& copyFrom)
@@ -1025,11 +1025,11 @@ bool RtePackageInstanceInfo::ResolvePack(const string& targetName)
   if (!IsUsedByTarget(targetName))
     return true;
   VersionCmp::MatchMode mode = GetVersionMatchMode(targetName);
-  if (mode == VersionCmp::EXCLUDED_VERSION)
+  if (mode == VersionCmp::MatchMode::EXCLUDED_VERSION)
     return true;
   RtePackage* pack = NULL;
   RteModel* model = GetModel();
-  if (mode == VersionCmp::FIXED_VERSION) {
+  if (mode == VersionCmp::MatchMode::FIXED_VERSION) {
     pack = model->GetPackage(GetPackageID(true));
   } else {
     pack = model->GetLatestPackage(GetPackageID(false));

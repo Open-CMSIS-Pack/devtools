@@ -414,6 +414,10 @@ bool RteUtils::HasHexPrefix(const string& s)
   return s.length() > 2 && s[0] == '0' && (s[1] == 'x' || s[1] == 'X');
 }
 
+string::size_type RteUtils::FindFirstDigit(const std::string& s) {
+  return s.find_first_of("0123456789");
+}
+
 unsigned long RteUtils::ToUL(const string& s) {
   if (s.empty()) {
     return (0x0L);
