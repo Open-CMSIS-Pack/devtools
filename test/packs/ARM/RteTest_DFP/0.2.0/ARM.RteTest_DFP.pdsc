@@ -441,6 +441,16 @@
       <mountedDevice    deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM4_NOFP"/>
       <compatibleDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM4_FP"/>
     </board>
+    <board name="RteTest board test revision" vendor="Keil" revision="Rev1">
+      <description>uVision Simulator</description>
+      <mountedDevice    deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM0_Dual"/>
+      <compatibleDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM3"/>
+    </board>
+    <board name="RteTest board test revision" vendor="Keil" revision="Rev2">
+      <description>uVision Simulator</description>
+      <mountedDevice    deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM0_Dual"/>
+      <compatibleDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM4_NOFP"/>
+    </board>
   </boards>
 
 </package>

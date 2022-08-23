@@ -375,15 +375,12 @@ void ProjMgrWorker::GetDeviceItem(const std::string& element, DeviceItem& device
 }
 
 void ProjMgrWorker::GetBoardItem(const std::string& element, BoardItem& board) const {
-  if (!element.empty()) {
-    const size_t vendorDelimiter = element.find("::");
-    if (vendorDelimiter != string::npos) {
-      board.vendor = element.substr(0, vendorDelimiter);
-      board.name = element.substr(vendorDelimiter + 2, string::npos);
-    }
-    else {
-      board.name = element;
-    }
+  string boardId = element;
+  if (!boardId.empty()) {
+    board.vendor = RteUtils::RemoveSuffixByString(boardId, "::");
+    boardId = RteUtils::RemovePrefixByString(boardId, "::");
+    board.name = RteUtils::GetPrefix(boardId);
+    board.revision = RteUtils::GetSuffix(boardId);
   }
 }
 
@@ -413,15 +410,34 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
     // find board
     RteBoard* matchedBoard = nullptr;
     const RteBoardMap& availableBoards = context.rteFilteredModel->GetBoards();
+    list<RteBoard*> partialMatchedBoards;
     for (const auto& [_, board] : availableBoards) {
       if (board->GetName() == boardItem.name) {
         if (boardItem.vendor.empty() || (boardItem.vendor == DeviceVendor::GetCanonicalVendorName(board->GetVendorName()))) {
+          partialMatchedBoards.push_back(board);
+        }
+      }
+    }
+    if (partialMatchedBoards.empty()) {
+      ProjMgrLogger::Error("board '" + context.board + "' was not found");
+      return false;
+    }
+
+    if (boardItem.revision.empty() && (partialMatchedBoards.size() == 1)) {
+      matchedBoard = partialMatchedBoards.front();
+    } else {
+      if (boardItem.revision.empty()) {
+        // Multiple matches
+        string msg = "multiple boards were found for identifier '" + context.board + "'";
+        for (const auto& board : partialMatchedBoards) {
+          msg += "\n" + board->GetDisplayName() + " in pack " + board->GetPackage()->GetPackageFileName();
+        }
+        ProjMgrLogger::Error(msg);
+        return false;
+      }
+      for (auto& board : partialMatchedBoards) {
+        if (boardItem.revision == board->GetRevision()) {
           matchedBoard = board;
-          const auto& boardPackage = matchedBoard->GetPackage();
-          context.packages.insert({ ProjMgrUtils::GetPackageID(boardPackage), boardPackage });
-          context.targetAttributes["Bname"]    = matchedBoard->GetName();
-          context.targetAttributes["Bvendor"]  = matchedBoard->GetVendorName();
-          context.targetAttributes["Brevision"] = matchedBoard->GetRevision();
           break;
         }
       }
@@ -431,6 +447,12 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
       return false;
     }
 
+    const auto& boardPackage = matchedBoard->GetPackage();
+    context.packages.insert({ ProjMgrUtils::GetPackageID(boardPackage), boardPackage });
+    context.targetAttributes["Bname"]    = matchedBoard->GetName();
+    context.targetAttributes["Bvendor"]  = matchedBoard->GetVendorName();
+    context.targetAttributes["Brevision"] = matchedBoard->GetRevision();
+ 
     // find device from the matched board
     list<RteItem*> mountedDevices;
     matchedBoard->GetMountedDevices(mountedDevices);
@@ -559,17 +581,17 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
 
 bool ProjMgrWorker::ProcessBoardPrecedence(StringCollection& item) {
   BoardItem board;
-  string boardVendor, boardName;
+  string boardVendor, boardName, boardRevision;
 
   for (const auto& element : item.elements) {
     GetBoardItem(*element, board);
     if (!(GetPrecedentValue(boardVendor, board.vendor) &&
-      GetPrecedentValue(boardName, board.name))) {
+      GetPrecedentValue(boardName, board.name) &&
+      GetPrecedentValue(boardRevision, board.revision))) {
       return false;
     }
   }
-  *item.assign = (boardVendor.empty() ? "" : boardVendor) +
-    (boardVendor.empty() ? "" : "::") + boardName;
+  *item.assign = GetBoardInfoString(boardVendor, boardName, boardRevision);
   return true;
 }
 
@@ -1962,6 +1984,12 @@ std::string ProjMgrWorker::GetDeviceInfoString(const std::string& vendor,
   const std::string& name, const std::string& processor) const {
   return vendor + (vendor.empty() ? "" : "::") +
     name + (processor.empty() ? "" : ":" + processor);
+}
+
+std::string ProjMgrWorker::GetBoardInfoString(const std::string& vendor,
+  const std::string& name, const std::string& revision) const {
+  return vendor + (vendor.empty() ? "" : "::") +
+    name + (revision.empty() ? "" : ":" + revision);
 }
 
 bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem& context, vector<string>& src, const string& ref) {

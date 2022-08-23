@@ -62,6 +62,7 @@ struct DeviceItem {
 struct BoardItem {
   std::string vendor;
   std::string name;
+  std::string revision;
 };
 
 /**
@@ -401,6 +402,7 @@ protected:
   void GetBoardItem (const std::string& element, BoardItem& board) const;
   bool GetPrecedentValue(std::string& outValue, const std::string& element) const;
   std::string GetDeviceInfoString(const std::string& vendor, const std::string& name, const std::string& processor) const;
+  std::string GetBoardInfoString(const std::string& vendor, const std::string& name, const std::string& revision) const;
   std::vector<PackageItem> GetFilteredPacks(const PackageItem& packItem, const std::string& rtePath) const;
   ToolchainItem GetToolchain(const std::string& compiler);
 };
