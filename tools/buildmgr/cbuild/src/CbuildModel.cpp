@@ -427,38 +427,43 @@ bool CbuildModel::GetCompatibleToolchain(const string& name, const string& versi
   GetCompatibleToolchain:
   Returns compatible toolchain configuration file in a given directory
   */
-
-  // Get file list
   error_code ec;
-  list<fs::directory_iterator> dirlist;
-  if (fs::exists(dir, ec)) dirlist.insert(dirlist.end(), fs::directory_iterator(dir, ec));
+  if (!fs::exists(dir, ec)) {
+    return false;
+  }
 
-  // Filter and sort
+  // Get file list, Filter and sort
   set<fs::directory_entry> localset;
-  for (auto dl : dirlist) {
-    for (const auto& p : dl) {
-      if (p.path().extension() != ext) continue;
-      localset.insert(p);
+  for (auto const& dir_entry : fs::recursive_directory_iterator(dir, ec)) {
+    string extn = dir_entry.path().extension().string();
+    if (dir_entry.path().extension().string() != ext) {
+      continue;
     }
+    localset.insert(dir_entry);
   }
 
-  // Iterate in descending order
-  set<fs::directory_entry>::reverse_iterator p;
-  for (p = localset.rbegin(); p != localset.rend(); p++) {
+  bool found = false;
+  string selectedVersion, selectedConfig;
+  for (const auto& p : localset) {
     // For every file get toolchain name and version
-    const string& compiler = (*p).path().stem().generic_string();
+    const string& compiler = p.path().stem().generic_string();
     const string& fname = compiler.substr(0, compiler.find_first_of("."));
-    const string& version = compiler.substr(compiler.find_first_of(".")+1, compiler.length());
-
-    // Compare name and version range
-    if ((fname.compare(name) == 0) && (VersionCmp::RangeCompare(version, versionRange) == 0)) {
-      // Compatible version found
-      m_toolchainConfig = (*p).path().string();
-      m_toolchainConfigVersion = version;
-      return true;
+    const string& version = compiler.substr(compiler.find_first_of(".") + 1, compiler.length());
+    if ((fname.compare(name) == 0) &&
+      (VersionCmp::RangeCompare(version, versionRange) == 0) &&
+      (VersionCmp::Compare(selectedVersion, version) <= 0))
+    {
+      selectedVersion = version;
+      selectedConfig = p.path().string();
+      found = true;
     }
   }
-  return false;
+  if (found) {
+    RteFsUtils::NormalizePath(selectedConfig);
+    m_toolchainConfig = selectedConfig;
+    m_toolchainConfigVersion = selectedVersion;
+  }
+  return found;
 }
 
 bool CbuildModel::EvalPreIncludeFiles() {
