@@ -108,84 +108,6 @@ TEST(RteUtilsTest, ExpandInstancePlaceholders) {
   EXPECT_EQ(expanded, text2);
 }
 
-TEST(RteUtilsTest, VersionMatchMode) {
-
-  EXPECT_EQ(VersionCmp::MatchModeFromString(""), VersionCmp::ANY_VERSION);
-  EXPECT_EQ(VersionCmp::MatchModeFromString("fixed"), VersionCmp::VersionCmp::FIXED_VERSION);
-  EXPECT_EQ(VersionCmp::MatchModeFromString("latest"), VersionCmp::VersionCmp::LATEST_VERSION);
-  EXPECT_EQ(VersionCmp::MatchModeFromString("excluded"), VersionCmp::VersionCmp::EXCLUDED_VERSION);
-
-  EXPECT_EQ(VersionCmp::MatchModeToString(VersionCmp::ANY_VERSION).empty(), true);
-  EXPECT_EQ(VersionCmp::MatchModeToString(VersionCmp::VersionCmp::FIXED_VERSION),"fixed");
-  EXPECT_EQ(VersionCmp::MatchModeToString(VersionCmp::VersionCmp::LATEST_VERSION), "latest");
-  EXPECT_EQ(VersionCmp::MatchModeToString(VersionCmp::VersionCmp::EXCLUDED_VERSION), "excluded");
-}
-
-TEST(RteUtilsTest, VersionCompare) {
-  EXPECT_EQ( -1, VersionCmp::Compare("6.5.0-a", "6.5.0", true));
-  EXPECT_EQ(  0, VersionCmp::Compare("6.5.0-a", "6.5.0-A", true));
-  EXPECT_EQ(  0, VersionCmp::Compare("6.5.0+b", "6.5.0+A", true));
-  EXPECT_EQ( -1, VersionCmp::Compare("6.5.0-a", "6.5.0-B", true));
-  EXPECT_EQ(  0, VersionCmp::Compare("6.5.0-a", "6.5.0-A", false));
-  EXPECT_EQ(  0, VersionCmp::Compare("6.5.0", "6.5.0", false));
-  EXPECT_EQ( -1, VersionCmp::Compare("6.5.0", "6.5.1"));
-  EXPECT_EQ( -2, VersionCmp::Compare("6.4.0", "6.5.0"));
-  EXPECT_EQ( -3, VersionCmp::Compare("2.5.0", "6.5.0"));
-  EXPECT_EQ(  1, VersionCmp::Compare("6.5.9", "6.5.1"));
-  EXPECT_EQ(  2, VersionCmp::Compare("6.6.0", "6.5.0"));
-  EXPECT_EQ(  3, VersionCmp::Compare("7.5.0", "6.5.0"));
-  EXPECT_EQ(-1, VersionCmp::Compare("6.5.0-", "6.5.0-a", true));
-
-  /*Ideally It should fail as the input
-  given is not compliant to Semantic versioning*/
-  EXPECT_EQ(  0, VersionCmp::Compare("1.2.5.0.1.2", "1.2.5.0.1.2"));
-  EXPECT_EQ(  3, VersionCmp::Compare("Test", "1.2.5.0"));
-  EXPECT_EQ( -3, VersionCmp::Compare("1.2.3", "v1.2.3"));
-}
-
-TEST(RteUtilsTest, VersionRangeCompare) {
-  EXPECT_EQ(0, VersionCmp::RangeCompare("3.2.0", "3.1.0:3.8.0"));
-  EXPECT_EQ(0, VersionCmp::RangeCompare("3.2.0", "3.1.0"));
-  EXPECT_EQ(0, VersionCmp::RangeCompare("3.2.0", ":3.8.0"));
-  EXPECT_EQ(0, VersionCmp::RangeCompare("3.2.0", "3.2.0"));
-  EXPECT_EQ(1, VersionCmp::RangeCompare("3.2.0", ":3.2.0-"));
-
-  EXPECT_EQ(0, VersionCmp::RangeCompare("1.0.0", "1.0.0:2.0.0"));
-  EXPECT_EQ(0, VersionCmp::RangeCompare("2.0.0", "1.0.0:2.0.0"));
-  EXPECT_EQ(0, VersionCmp::RangeCompare("1.99.99", "1.0.0:2.0.0"));
-  EXPECT_EQ(1, VersionCmp::RangeCompare("1.99.99", "1.0.0:1.99.9"));
-  EXPECT_EQ(0, VersionCmp::RangeCompare("1.0.0", "1.0.0:2.0.0-"));
-  EXPECT_EQ(1, VersionCmp::RangeCompare("2.0.0", "1.0.0:2.0.0-"));
-  EXPECT_EQ(1, VersionCmp::RangeCompare("2.0.0-a", "1.0.0:2.0.0-"));
-  EXPECT_EQ(0, VersionCmp::RangeCompare("2.0.0-a", "2.0.0-:2.0.0"));
-  EXPECT_EQ(0, VersionCmp::RangeCompare("1.99.99", "1.0.0:2.0.0-"));
-
-  EXPECT_EQ( 3,  VersionCmp::RangeCompare("9.0.0", "1.0.0:2.0.0"));
-  EXPECT_EQ(-3, VersionCmp::RangeCompare("0.9.0", "1.0.0:2.0.0"));
-
-  /* Greater than max version : Patch version out of range */
-  EXPECT_EQ(  1, VersionCmp::RangeCompare("3.8.2", "3.1.0:3.8.0"));
-
-  /* Greater than max version : Minor version out of range */
-  EXPECT_EQ(  2, VersionCmp::RangeCompare("3.9.0", "3.1.0:3.8.0"));
-
-  /* Greater than max version : Major version out of range */
-  EXPECT_EQ(  3, VersionCmp::RangeCompare("4.2.0", "3.1.0:3.8.0"));
-
-  /* Version matches */
-  EXPECT_EQ(  0, VersionCmp::RangeCompare("3.1.0", "3.1.0:3.1.0"));
-
-  /* less than Min version : Patch version out of range */
-  EXPECT_EQ( -1, VersionCmp::RangeCompare("3.3.8", "3.3.9:3.3.9"));
-
-  /* less than Min version : Minor version out of range */
-  EXPECT_EQ( -2, VersionCmp::RangeCompare("3.2.9", "3.3.9:3.3.9"));
-
-  /* less than Min version : Major version out of range */
-  EXPECT_EQ( -3, VersionCmp::RangeCompare("2.3.9", "3.3.9:3.3.9"));
-}
-
-
 TEST(RteUtilsTest, WildCardsTo) {
 
   string test_input = "This?? is a ${*}test1* _string-!#.";
@@ -395,4 +317,13 @@ TEST(RteUtilsTest, RemoveVectorDuplicates)
   expected = { };
   RteUtils::RemoveVectorDuplicates<int>(testInput);
   EXPECT_EQ(testInput, expected);
+}
+
+TEST(RteUtils, FindFirstDigit)
+{
+  EXPECT_EQ(0, RteUtils::FindFirstDigit("1Test2"));
+  EXPECT_EQ(4, RteUtils::FindFirstDigit("Test2"));
+  EXPECT_EQ(2, RteUtils::FindFirstDigit("Te3st"));
+  EXPECT_EQ(string::npos, RteUtils::FindFirstDigit("Test"));
+  EXPECT_EQ(string::npos, RteUtils::FindFirstDigit(""));
 }

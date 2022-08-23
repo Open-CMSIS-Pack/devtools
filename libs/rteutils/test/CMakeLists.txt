@@ -1,4 +1,4 @@
-SET(TEST_SOURCE_FILES src/RteUtilsTest.cpp)
+SET(TEST_SOURCE_FILES src/RteUtilsTest.cpp src/VersionCmpTests.cpp)
 
 add_executable(RteUtilsUnitTests ${TEST_SOURCE_FILES})
 

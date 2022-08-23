@@ -1,0 +1,12 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/1.0.0/tools/projmgr/schemas/cproject.schema.json
+
+project:
+  device: RteTest_ARMCM0
+  compiler: AC6@6.18.0
+  components:
+    - component: Device:Test variant 2@>=3.3.3
+    - component: CORE
+  groups:
+    - group: Sources
+      files: 
+        - file: main.c

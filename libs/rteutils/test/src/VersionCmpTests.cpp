@@ -1,0 +1,125 @@
+/*
+ * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+#include "RteUtils.h"
+
+#include "gtest/gtest.h"
+
+using namespace std;
+
+TEST(VersionCmpTest, VersionMatchMode) {
+
+  EXPECT_EQ(VersionCmp::MatchModeFromString(""),         VersionCmp::MatchMode::ANY_VERSION);
+  EXPECT_EQ(VersionCmp::MatchModeFromString("fixed"),    VersionCmp::MatchMode::FIXED_VERSION);
+  EXPECT_EQ(VersionCmp::MatchModeFromString("latest"),   VersionCmp::MatchMode::LATEST_VERSION);
+  EXPECT_EQ(VersionCmp::MatchModeFromString("excluded"), VersionCmp::MatchMode::EXCLUDED_VERSION);
+
+  EXPECT_EQ(VersionCmp::MatchModeToString(VersionCmp::MatchMode::ANY_VERSION).empty(), true);
+  EXPECT_EQ(VersionCmp::MatchModeToString(VersionCmp::MatchMode::FIXED_VERSION),"fixed");
+  EXPECT_EQ(VersionCmp::MatchModeToString(VersionCmp::MatchMode::LATEST_VERSION), "latest");
+  EXPECT_EQ(VersionCmp::MatchModeToString(VersionCmp::MatchMode::EXCLUDED_VERSION), "excluded");
+}
+
+TEST(VersionCmpTest, VersionCompare) {
+  EXPECT_EQ( -1, VersionCmp::Compare("6.5.0-a", "6.5.0", true));
+  EXPECT_EQ(  0, VersionCmp::Compare("6.5.0-a", "6.5.0-A", true));
+  EXPECT_EQ(  0, VersionCmp::Compare("6.5.0+b", "6.5.0+A", true));
+  EXPECT_EQ( -1, VersionCmp::Compare("6.5.0-a", "6.5.0-B", true));
+  EXPECT_EQ(  0, VersionCmp::Compare("6.5.0-a", "6.5.0-A", false));
+  EXPECT_EQ(  0, VersionCmp::Compare("6.5.0", "6.5.0", false));
+  EXPECT_EQ( -1, VersionCmp::Compare("6.5.0", "6.5.1"));
+  EXPECT_EQ( -2, VersionCmp::Compare("6.4.0", "6.5.0"));
+  EXPECT_EQ( -3, VersionCmp::Compare("2.5.0", "6.5.0"));
+  EXPECT_EQ(  1, VersionCmp::Compare("6.5.9", "6.5.1"));
+  EXPECT_EQ(  2, VersionCmp::Compare("6.6.0", "6.5.0"));
+  EXPECT_EQ(  3, VersionCmp::Compare("7.5.0", "6.5.0"));
+  EXPECT_EQ(-1, VersionCmp::Compare("6.5.0-", "6.5.0-a", true));
+
+  /*Ideally It should fail as the input
+  given is not compliant to Semantic versioning*/
+  EXPECT_EQ(  0, VersionCmp::Compare("1.2.5.0.1.2", "1.2.5.0.1.2"));
+  EXPECT_EQ(  3, VersionCmp::Compare("Test", "1.2.5.0"));
+  EXPECT_EQ( -3, VersionCmp::Compare("1.2.3", "v1.2.3"));
+}
+
+TEST(VersionCmpTest, VersionRangeCompare) {
+  EXPECT_EQ(0, VersionCmp::RangeCompare("3.2.0", "3.1.0:3.8.0"));
+  EXPECT_EQ(0, VersionCmp::RangeCompare("3.2.0", "3.1.0"));
+  EXPECT_EQ(0, VersionCmp::RangeCompare("3.2.0", ":3.8.0"));
+  EXPECT_EQ(0, VersionCmp::RangeCompare("3.2.0", "3.2.0"));
+  EXPECT_EQ(1, VersionCmp::RangeCompare("3.2.0", ":3.2.0-"));
+
+  EXPECT_EQ(0, VersionCmp::RangeCompare("1.0.0", "1.0.0:2.0.0"));
+  EXPECT_EQ(0, VersionCmp::RangeCompare("2.0.0", "1.0.0:2.0.0"));
+  EXPECT_EQ(0, VersionCmp::RangeCompare("1.99.99", "1.0.0:2.0.0"));
+  EXPECT_EQ(1, VersionCmp::RangeCompare("1.99.99", "1.0.0:1.99.9"));
+  EXPECT_EQ(0, VersionCmp::RangeCompare("1.0.0", "1.0.0:2.0.0-"));
+  EXPECT_EQ(1, VersionCmp::RangeCompare("2.0.0", "1.0.0:2.0.0-"));
+  EXPECT_EQ(1, VersionCmp::RangeCompare("2.0.0-a", "1.0.0:2.0.0-"));
+  EXPECT_EQ(0, VersionCmp::RangeCompare("2.0.0-a", "2.0.0-:2.0.0"));
+  EXPECT_EQ(0, VersionCmp::RangeCompare("1.99.99", "1.0.0:2.0.0-"));
+
+  EXPECT_EQ( 3,  VersionCmp::RangeCompare("9.0.0", "1.0.0:2.0.0"));
+  EXPECT_EQ(-3, VersionCmp::RangeCompare("0.9.0", "1.0.0:2.0.0"));
+
+  /* Greater than max version : Patch version out of range */
+  EXPECT_EQ(  1, VersionCmp::RangeCompare("3.8.2", "3.1.0:3.8.0"));
+
+  /* Greater than max version : Minor version out of range */
+  EXPECT_EQ(  2, VersionCmp::RangeCompare("3.9.0", "3.1.0:3.8.0"));
+
+  /* Greater than max version : Major version out of range */
+  EXPECT_EQ(  3, VersionCmp::RangeCompare("4.2.0", "3.1.0:3.8.0"));
+
+  /* Version matches */
+  EXPECT_EQ(  0, VersionCmp::RangeCompare("3.1.0", "3.1.0:3.1.0"));
+
+  /* less than Min version : Patch version out of range */
+  EXPECT_EQ( -1, VersionCmp::RangeCompare("3.3.8", "3.3.9:3.3.9"));
+
+  /* less than Min version : Minor version out of range */
+  EXPECT_EQ( -2, VersionCmp::RangeCompare("3.2.9", "3.3.9:3.3.9"));
+
+  /* less than Min version : Major version out of range */
+  EXPECT_EQ( -3, VersionCmp::RangeCompare("2.3.9", "3.3.9:3.3.9"));
+}
+
+TEST(VersionCmpTest, MatchModeFromVersionString) {
+  map<string, VersionCmp::MatchMode> inputs{
+    {"Vendor",               VersionCmp::MatchMode::LATEST_VERSION},
+    {"Vendor::Name@1.2.3",   VersionCmp::MatchMode::FIXED_VERSION},
+    {"Vendor::Name@>=1.2.3", VersionCmp::MatchMode::HIGHER_OR_EQUAL},
+    {"Vendor@Test",          VersionCmp::MatchMode::LATEST_VERSION},
+  };
+
+  for (auto& [input, expectedOutput] : inputs) {
+    EXPECT_EQ(expectedOutput, VersionCmp::MatchModeFromVersionString(input));
+  }
+}
+
+TEST(VersionCmpTest, GetMatchingVersion) {
+  map<pair<string, set<string>>, string> inputs{
+    // <versionfilter, <>>
+    {{"",             {"1.1.1", "2.2.2", "3.3.3"}},  "3.3.3"},
+    {{"@2.2.2",       {"1.1.1", "2.2.2", "3.3.3"}},  "2.2.2"},
+    {{"@>=1.5.5",     {"1.1.1", "2.2.2", "3.3.3"}},  "3.3.3"},
+    {{"@>=3.3.3",     {"1.1.1", "2.2.2", "3.3.3"}},  "3.3.3"},
+    {{"@1.2.3",       {"1.1.1", "2.2.2", "3.3.3"}},  ""},
+
+    // version range
+    {{"3.6.0",        {"3.5.0"}},                    ""},
+    {{"3.2.0",        {"3.2.0"}},                    "3.2.0"},
+    {{"3.2.0",        {"1.1.0", "2.8.0","3.5.0"}},   "3.5.0"},
+    {{":3.2.0",       {"1.1.0", "2.8.0","3.5.0"}},   "2.8.0"},
+    {{"1.2.0:3.2.0",  {"1.1.0", "1.2.0","3.5.0"}},   "1.2.0"},
+    {{"1.0.0:1.99.9", {"1.99.99", "2.2.0","3.5.0"}}, ""},
+    {{"1.2.0:3.2.0",  {"1.1.0", "1.2.0", "1.2.5", "3.2.0", "3.5.0"}}, "3.2.0"},
+  };
+
+  for (auto& [input, expectedOutput] : inputs) {
+    EXPECT_EQ(expectedOutput, VersionCmp::GetMatchingVersion(input.first, input.second)) <<
+      "error: for input " << input.first << " expected output is \"" << expectedOutput << "\"" << endl;
+  }
+}

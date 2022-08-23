@@ -15,6 +15,7 @@
 /******************************************************************************/
 
 #include <string>
+#include <set>
 
 class VersionCmp
 {
@@ -24,13 +25,16 @@ private:
 
 public:
 
-  enum MatchMode {
-    ANY_VERSION,   // any installed version is accepted
-    FIXED_VERSION, // fixed version is accepted
-    LATEST_VERSION,// use the latest version
-    EXCLUDED_VERSION  // exclude specified version
+  enum class MatchMode {
+    ANY_VERSION,      // any installed version is accepted
+    FIXED_VERSION,    // fixed version is accepted
+    LATEST_VERSION,   // use the latest version
+    EXCLUDED_VERSION, // exclude specified version
+    HIGHER_OR_EQUAL   // higher or equal version
   };
 
+  static constexpr const char* PREFIX_VERSION = "@";
+  static constexpr const char* HIGHER_OR_EQUAL_OPERATOR = ">=";
 
 public:
   /**
@@ -59,14 +63,30 @@ public:
    * @param mode mode specification: "fixed" | "latest" | "excluded"
    * @return mode constant
   */
-  static MatchMode   MatchModeFromString(const std::string& mode);
+  static MatchMode MatchModeFromString(const std::string& mode);
+  /**
+   * @brief compare version string to return mode constant
+   * @param version filter version string e.g: @1.2.3, @>=1.2.3
+   * @return mode constant
+  */
+  static MatchMode MatchModeFromVersionString(const std::string& version);
   /**
    * @brief compare mode with constant to return string
    * @param mode mode constant
    * @return mode string: "fixed" | "latest" | "excluded"
   */
   static std::string MatchModeToString(VersionCmp::MatchMode mode);
-
+  /**
+   * @brief get matched version from available versions
+   * @param filter version filter or version range e.g: @>=1.2.3, 1.2.3:1.4.0
+   * @param availableVersions list of available versions
+   * @return matching version string, based on filter
+   *      also, in case of multiple matches, latest matching version
+   *      has precedence over other versions
+  */
+  static const std::string GetMatchingVersion(
+    const std::string& filter,
+    const std::set<std::string> availableVersions);
 
   // helper compare class for map containers (version compare operators)
   class Less

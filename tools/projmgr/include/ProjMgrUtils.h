@@ -14,6 +14,7 @@
 */
 class ProjMgrUtils {
 public:
+
   typedef std::pair<std::string, int> Result;
 
   static constexpr const char* COMPONENT_DELIMITERS = ":&@";
