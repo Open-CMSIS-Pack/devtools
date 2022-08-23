@@ -748,8 +748,8 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
         [&](const pair<std::string, RteComponent*> &component) {
           availableComponentVersions.insert(RteUtils::GetSuffix(component.first, *ProjMgrUtils::PREFIX_CVERSION));
         });
-      string filterVerison = RteUtils::GetSuffix(item.component, *ProjMgrUtils::PREFIX_CVERSION, true);
-      string matchedVersion = VersionCmp::GetMatchingVersion(filterVerison, availableComponentVersions);
+      const string& filterVersion = RteUtils::GetSuffix(item.component, *ProjMgrUtils::PREFIX_CVERSION, true);
+      const string& matchedVersion = VersionCmp::GetMatchingVersion(filterVersion, availableComponentVersions);
       if (matchedVersion.empty()) {
         ProjMgrLogger::Error("no component was found with identifier '" + item.component + "'");
         return false;
