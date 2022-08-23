@@ -899,21 +899,12 @@ TEST_F(RteFsUtilsTest, FindFiles) {
 }
 
 TEST_F(RteFsUtilsTest, NormalizePath) {
-  error_code ec;
-  bool result;
   string path, base;
-  path = "Test";
+  path = "Test/.//foo/bar/../baz.h";
   base = dirnameBase + "/";
 
-  if (RteFsUtils::Exists(base + path)) {
-    fs::remove(base + path, ec);
-  }
-  result = RteFsUtils::NormalizePath(path, base);
-  EXPECT_FALSE(result);
-
-  RteFsUtils::CreateDirectories(path);
-  result = RteFsUtils::NormalizePath(path);
-  EXPECT_TRUE(result);
+  RteFsUtils::NormalizePath(path, base);
+  EXPECT_EQ(path, base + "Test/foo/baz.h");
 }
 
 TEST_F(RteFsUtilsTest, FindFirstFileWithExt) {

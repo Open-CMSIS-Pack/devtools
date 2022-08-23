@@ -187,12 +187,14 @@ bool ProjMgrWorker::GetRequiredPdscFiles(ContextItem& context, const std::string
       }
     } else {
       string packPath = packItem.path;
-      if (!RteFsUtils::NormalizePath(packPath, context.csolution->directory + "/")) {
+      RteFsUtils::NormalizePath(packPath, context.csolution->directory + "/");
+      if (!RteFsUtils::Exists(packPath)) {
         errMsgs.insert("pack path: " + packItem.path + " does not exist");
         break;
       }
       string pdscFile = packItem.pack.vendor + '.' + packItem.pack.name + ".pdsc";
-      if (!RteFsUtils::NormalizePath(pdscFile, packPath + "/")) {
+      RteFsUtils::NormalizePath(pdscFile, packPath + "/");
+      if (!RteFsUtils::Exists(pdscFile)) {
         errMsgs.insert("pdsc file was not found in: " + packItem.path);
         break;
       } else {

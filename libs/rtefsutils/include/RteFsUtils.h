@@ -248,9 +248,8 @@ public:
    * @brief normalize path by ensuring that it's absolute and canonical
    * @param path folder to be normalized
    * @param base root folder to form absolute
-   * @return true if path is normalized
   */
-  static bool NormalizePath(std::string& path, std::string base = "");
+  static void NormalizePath(std::string& path, const std::string& base = RteUtils::EMPTY_STRING);
   /**
    * @brief scan given directory for regular files with given extension
    * @param path directory to look in

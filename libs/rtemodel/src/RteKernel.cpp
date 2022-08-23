@@ -339,7 +339,8 @@ string RteKernel::GetPdscFileFromPath(const RteAttributes& attributes, const str
   const string& version = attributes.GetAttribute("version");
 
   string packPath = attributes.GetAttribute("path");
-  if (!RteFsUtils::NormalizePath(packPath, cprjPath + '/')) {
+  RteFsUtils::NormalizePath(packPath, cprjPath + '/');
+  if (!RteFsUtils::Exists(packPath)) {
     GetRteCallback()->Err("R822", R822, packPath);
   } else {
     const auto& pdscFilesList = RteFsUtils::FindFiles(packPath, ".pdsc");

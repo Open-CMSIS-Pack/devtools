@@ -361,21 +361,24 @@ bool CbuildModel::EvaluateResult() {
     if (!define.empty()) m_targetDefines.push_back(define);
   }
   for (auto inc : m_cprjTarget->GetIncludePaths()) {
-    if (!RteFsUtils::NormalizePath(inc, m_prjFolder)) {
+    RteFsUtils::NormalizePath(inc, m_prjFolder);
+    if (!RteFsUtils::Exists(inc)) {
       LogMsg("M204", PATH(inc));
       return false;
     }
     if (!inc.empty()) m_targetIncludePaths.push_back(inc);
   }
   for (auto lib : m_cprjTarget->GetLibraries()) {
-    if (!RteFsUtils::NormalizePath(lib, m_prjFolder)) {
+    RteFsUtils::NormalizePath(lib, m_prjFolder);
+    if (!RteFsUtils::Exists(lib)) {
       LogMsg("M204", PATH(lib));
       return false;
     }
     if (!lib.empty()) m_libraries.push_back(lib);
   }
   for (auto obj : m_cprjTarget->GetObjects()) {
-    if (!RteFsUtils::NormalizePath(obj, m_prjFolder)) {
+    RteFsUtils::NormalizePath(obj, m_prjFolder);
+    if (!RteFsUtils::Exists(obj)) {
       LogMsg("M204", PATH(obj));
       return false;
     }
@@ -479,7 +482,8 @@ bool CbuildModel::EvalPreIncludeFiles() {
       const string& baseFolder = (file == "Pre_Include_Global.h" || file == preIncludeLocal) ?
         m_prjFolder + m_cprjProject->GetRteFolder() + "/_" + WildCards::ToX(m_cprjTarget->GetName()) + "/" :
         m_prjFolder;
-      if (!RteFsUtils::NormalizePath(file, baseFolder)) {
+      RteFsUtils::NormalizePath(file, baseFolder);
+      if (!RteFsUtils::Exists(file)) {
         LogMsg("M204", PATH(file));
         return false;
       }
@@ -658,7 +662,8 @@ bool CbuildModel::EvalGeneratedSourceFiles() {
               continue;
             }
             string filepath = file->GetName();
-            if (!RteFsUtils::NormalizePath(filepath, gpdscPath)) {
+            RteFsUtils::NormalizePath(filepath, gpdscPath);
+            if (!RteFsUtils::Exists(filepath)) {
               LogMsg("M204", PATH(filepath));
               return false;
             }
@@ -702,7 +707,8 @@ bool CbuildModel::EvalFile(RteItem* file, const string& group, const string& bas
     const string & path = f->GetAttribute("path");
     filepath = (path.empty() ? fs::path(filepath).remove_filename().generic_string() : path);
   }
-  if (!RteFsUtils::NormalizePath(filepath, base)) {
+  RteFsUtils::NormalizePath(filepath, base);
+  if (!RteFsUtils::Exists(filepath)) {
     LogMsg("M204", PATH(filepath));
     return false;
   }
@@ -1033,7 +1039,8 @@ bool CbuildModel::EvalFlags() {
       m_targetLdFlags = SplitArgs(ldflags->GetAttribute("add"));
       m_linkerScript = ldflags->GetAttribute("file");
       if (!m_linkerScript.empty()) {
-        if (!RteFsUtils::NormalizePath(m_linkerScript, m_prjFolder)) {
+        RteFsUtils::NormalizePath(m_linkerScript, m_prjFolder);
+        if (!RteFsUtils::Exists(m_linkerScript)) {
           LogMsg("M204", PATH(m_linkerScript));
           return false;
         }
@@ -1141,7 +1148,8 @@ bool CbuildModel::EvalRteSourceFiles(map<string, list<string>> &cSourceFiles, ma
     for (auto file : grp.second) {
       const RteFile::Category& cat = file.second.m_cat;
       string filepath = file.first;
-      if (!RteFsUtils::NormalizePath(filepath, m_cprjProject->GetProjectPath())) {
+      RteFsUtils::NormalizePath(filepath, m_cprjProject->GetProjectPath());
+      if (!RteFsUtils::Exists(filepath)) {
         LogMsg("M204", PATH(filepath));
         return false;
       }
