@@ -102,18 +102,19 @@ The CMSIS-Pack repository must be present in the development environment.
 ### Invocation
 
 ```text
-CMSIS Project Manager 0.0.0+g23b6f99 (C) 2022 ARM 
+CMSIS Project Manager 1.0.0 (C) 2022 ARM
 Usage:
   csolution <command> [<args>] [OPTIONS...]
 
 Commands:
-  list packs            Print list of installed packs
+  list packs            Print list of used packs from the pack repository
+       boards           Print list of available board names
        devices          Print list of available device names
        components       Print list of available components
        dependencies     Print list of unresolved project dependencies
        contexts         Print list of contexts in a csolution.yml
        generators       Print list of code generators of a given context
-  convert               Convert cproject.yml or csolution.yml in cprj files
+  convert               Convert cproject.yml or csolution.yml to cprj files
   run                   Run code generator
   help                  Print usage
 
@@ -123,6 +124,7 @@ Options:
   -c, --context arg     Input context name <cproject>[.<build-type>][+<target-type>]
   -f, --filter arg      Filter words
   -g, --generator arg   Code generator identifier
+  -m, --missing         List only required packs that are missing in the pack repository
   -n, --no-check-schema Skip schema check
   -o, --output arg      Output directory
   -h, --help            Print usage
@@ -134,6 +136,19 @@ Print list of installed packs. The list can be filtered by words provided with t
 
 ```text
 csolution list packs [--filter "<filter words>"]
+```
+
+Print list of packs that are required by the `<example.csolution.yml>`.
+
+```text
+csolution list packs -s <example.csolution.yml>
+```
+
+Print list of missing packs to the file `packs.txt` that are required by the `<example.csolution.yml>` but not available in the pack repository. This missing packs might be installed using the [`cpackget`](../../../cpackget/docs/cpackget.md) tool.
+
+```text
+csolution list packs -s <example.csolution.yml> -m >packs.txt
+cpackget add -f packs.txt
 ```
 
 Print list of available device names. The list can be filtered by words provided with the option `--filter`:
