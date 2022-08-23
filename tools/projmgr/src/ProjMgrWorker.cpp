@@ -86,6 +86,7 @@ bool ProjMgrWorker::AddContext(ProjMgrParser& parser, ContextDesc& descriptor, c
     const string& buildType = (!type.build.empty() ? "." : "") + type.build;
     const string& targetType = (!type.target.empty() ? "+" : "") + type.target;
     context.name = context.cproject->name + buildType + targetType;
+    context.precedences = false;
 
     // default directories
     context.directories.cprj = m_outputDir.empty() ? context.cproject->directory : m_outputDir;
@@ -926,6 +927,11 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
   // The settings of the target-type are processed first; then the settings of the
   // build-type that potentially overwrite the target-type settings.
 
+  if (context.precedences) {
+    return true;
+  }
+  context.precedences = true;
+
   // Get content of build and target types
   if (!GetTypeContent(context)) {
     return false;
@@ -1146,7 +1152,7 @@ bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem& context) {
   return true;
 }
 
-bool ProjMgrWorker::ProcessSequenceRelative(ContextItem & context, string& item, const string& ref) {
+bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, const string& ref) {
   size_t offset = 0;
   bool pathReplace = false;
   const string input = item;
@@ -1205,17 +1211,22 @@ bool ProjMgrWorker::ProcessSequenceRelative(ContextItem & context, string& item,
         }
         if (m_contexts.find(contextName) != m_contexts.end()) {
           error_code ec;
-          const auto& depContext = m_contexts.at(contextName);
+          auto& depContext = m_contexts.at(contextName);
+          if (!depContext.precedences) {
+            if (!ProcessPrecedences(depContext)) {
+              return false;
+            }
+          }
           const string& depContextOutDir = depContext.directories.cprj + "/" + depContext.directories.outdir;
           const string& relOutDir = fs::relative(depContextOutDir, context.directories.cprj, ec).generic_string();
           const string& relSrcDir = fs::relative(depContext.cproject->directory, context.directories.cprj, ec).generic_string();
           if (regex_match(sequence, regex("^OutDir\\(.*"))) {
             regEx = regex("\\$OutDir\\(.*\\)\\$");
-            replacement = RteUtils::RemoveTrailingBackslash(relOutDir);
+            replacement = relOutDir;
           }
           else if (regex_match(sequence, regex("^Output\\(.*"))) {
             regEx = regex("\\$Output\\(.*\\)\\$");
-            replacement = relOutDir + contextName;
+            replacement = relOutDir + "/" + contextName;
           }
           else if (regex_match(sequence, regex("^Source\\(.*"))) {
             regEx = regex("\\$Source\\(.*\\)\\$");
