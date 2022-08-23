@@ -46,8 +46,12 @@ bool RteConditionExpression::IsDeviceExpression() const
 
 bool RteConditionExpression::IsDeviceDependent() const
 {
-  if (IsDeviceExpression())
+  if (IsDeviceExpression()) {
     return !GetAttribute("Dname").empty();
+  }
+  if (GetExpressionDomain() == CONDITION_EXPRESSION) {
+    return RteItem::IsDeviceDependent();
+  }
   return false;
 }
 
@@ -58,8 +62,12 @@ bool RteConditionExpression::IsBoardExpression() const
 
 bool RteConditionExpression::IsBoardDependent() const
 {
-  if (IsBoardExpression())
+  if (IsBoardExpression()) {
     return !GetAttribute("Bname").empty();
+  }
+  if (GetExpressionDomain() == CONDITION_EXPRESSION) {
+    return RteItem::IsBoardDependent();
+  }
   return false;
 }
 
@@ -252,9 +260,8 @@ RteItem::ConditionResult RteConditionExpression::EvaluateExpression(RteTarget* t
         continue;
       }
       // all other attributes
-      if (!WildCards::Match(va, v)) {
+      if (!WildCards::Match(va, v))
         return FAILED;
-      }
     } else if (GetExpressionType() == DENY) {
       return FAILED; // for denied attributes, all must be given
     }
