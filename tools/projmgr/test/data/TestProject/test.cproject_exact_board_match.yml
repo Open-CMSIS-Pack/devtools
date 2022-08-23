@@ -2,8 +2,8 @@
 
 project:
   description: Project 1
-  board: Keil::RteTest Dummy board:1.2.3
-  device: RteTest_ARMCM0_Dual:cm0_core7
+  board: Keil::RteTest board test revision:Rev1
+  device: RteTest_ARMCM0_Dual:cm0_core0
   compiler: AC6@6.18.0
   processor:
     fpu: off

@@ -565,6 +565,65 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDevice_Invalid_Board_Name) {
   EXPECT_NE(string::npos, errStr.find(expected));
 }
 
+TEST_F(ProjMgrWorkerUnitTests, ProcessDevice_Exact_Board_From_Multiple_Matches) {
+  ProjMgrParser parser;
+  ContextDesc descriptor;
+  const string& filename = testinput_folder +
+    "/TestProject/test.cproject_exact_board_match.yml";
+  const string& expectedBoard = "Keil::RteTest board test revision:Rev1";
+
+  EXPECT_TRUE(parser.ParseCproject(filename, true));
+  EXPECT_TRUE(AddContexts(parser, descriptor, filename));
+  map<string, ContextItem>* contexts;
+  GetContexts(contexts);
+  ContextItem context = contexts->begin()->second;
+  EXPECT_TRUE(LoadPacks(context));
+  EXPECT_TRUE(ProcessPrecedences(context));
+  EXPECT_TRUE(ProcessDevice(context));
+  EXPECT_STREQ(context.board.c_str(), expectedBoard.c_str());
+}
+
+TEST_F(ProjMgrWorkerUnitTests, ProcessDevice_Board_Not_Found) {
+  ProjMgrParser parser;
+  ContextDesc descriptor;
+  const string& filename = testinput_folder +
+    "/TestProject/test.cproject_board_not_found.yml";
+  const string& expected = "error csolution: board 'Keil::RteTest Dummy board:Rev10' was not found";
+  StdStreamRedirect streamRedirect;
+
+  EXPECT_TRUE(parser.ParseCproject(filename, true));
+  EXPECT_TRUE(AddContexts(parser, descriptor, filename));
+  map<string, ContextItem>* contexts;
+  GetContexts(contexts);
+  ContextItem context = contexts->begin()->second;
+  EXPECT_TRUE(LoadPacks(context));
+  EXPECT_TRUE(ProcessPrecedences(context));
+  EXPECT_FALSE(ProcessDevice(context));
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find(expected));
+}
+
+TEST_F(ProjMgrWorkerUnitTests, ProcessDevice_Multiple_Board_Matches) {
+  ProjMgrParser parser;
+  ContextDesc descriptor;
+  const string& filename = testinput_folder +
+    "/TestProject/test.cproject_board_with_multiple_matches.yml";
+  const string& expected = "error csolution: multiple boards were found for identifier 'Keil::RteTest board test revision'";
+  StdStreamRedirect streamRedirect;
+
+  EXPECT_TRUE(parser.ParseCproject(filename, true));
+  EXPECT_TRUE(AddContexts(parser, descriptor, filename));
+  map<string, ContextItem>* contexts;
+  GetContexts(contexts);
+  ContextItem context = contexts->begin()->second;
+  EXPECT_TRUE(LoadPacks(context));
+  EXPECT_TRUE(ProcessPrecedences(context));
+  EXPECT_FALSE(ProcessDevice(context));
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find(expected));
+}
+
+
 TEST_F(ProjMgrWorkerUnitTests, GetDeviceItem) {
   std::map<std::string, DeviceItem> input = {
     // {input, expected output}
@@ -629,10 +688,14 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDevicePrecedence) {
 TEST_F(ProjMgrWorkerUnitTests, GetBoardItem) {
   std::map<std::string, BoardItem> input = {
     // {input, expected output}
-    {"Vendor::Name", {"Vendor", "Name"}},
-    {"Name",         {"", "Name"}},
-    {"::Name",       {"", "Name"}},
-    {"",             {"", ""}},
+    {"Vendor::Name",          {"Vendor", "Name"}},
+    {"Name",                  {"", "Name"}},
+    {"::Name",                {"", "Name"}},
+    {"",                      {"", ""}},
+    {"Vendor::Name:Revision", {"Vendor", "Name", "Revision"}},
+    {"Name:Revision",         {"", "Name", "Revision"}},
+    {"::Name:Revision",       {"", "Name", "Revision"}},
+    {":Revision",             {"", "", "Revision"}},
   };
 
   for (const auto& in : input) {
