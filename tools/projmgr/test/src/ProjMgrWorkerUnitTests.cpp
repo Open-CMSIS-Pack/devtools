@@ -436,7 +436,9 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDevice_Invalid_Device_Name) {
   ProjMgrParser parser;
   ContextDesc descriptor;
   const string& filename = testinput_folder + "/TestProject/test.cproject_device_unknown.yml";
-  const string& expected = "specified device 'RteTest_ARM_UNKNOWN' was not found";
+  const string& expectedErrStr = R"(error csolution: specified device 'RteTest_ARM_UNKNOWN' was not found among the installed packs.
+use 'cpackget' utility to install software packs.
+  cpackget add Vendor.PackName --pack-root ./Path/Packs)";
   StdStreamRedirect streamRedirect;
 
   EXPECT_TRUE(parser.ParseCproject(filename, true));
@@ -448,7 +450,7 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDevice_Invalid_Device_Name) {
   EXPECT_TRUE(ProcessPrecedences(context));
   EXPECT_FALSE(ProcessDevice(context));
   auto errStr = streamRedirect.GetErrorString();
-  EXPECT_NE(string::npos, errStr.find(expected));
+  EXPECT_NE(string::npos, errStr.find(expectedErrStr));
 }
 
 TEST_F(ProjMgrWorkerUnitTests, ProcessDevice_Invalid_Device_Vendor) {
@@ -456,7 +458,9 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDevice_Invalid_Device_Vendor) {
   ContextDesc descriptor;
   const string& filename = testinput_folder +
     "/TestProject/test.cproject_device_unknown_vendor.yml";
-  const string& expected = "specified device 'RteTest_ARMCM0' was not found";
+  const string& expectedErrStr = R"(error csolution: specified device 'RteTest_ARMCM0' was not found among the installed packs.
+use 'cpackget' utility to install software packs.
+  cpackget add Vendor.PackName --pack-root ./Path/Packs)";
   StdStreamRedirect streamRedirect;
 
   EXPECT_TRUE(parser.ParseCproject(filename, true));
@@ -468,7 +472,7 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDevice_Invalid_Device_Vendor) {
   EXPECT_TRUE(ProcessPrecedences(context));
   EXPECT_FALSE(ProcessDevice(context));
   auto errStr = streamRedirect.GetErrorString();
-  EXPECT_NE(string::npos, errStr.find(expected));
+  EXPECT_NE(string::npos, errStr.find(expectedErrStr));
 }
 
 TEST_F(ProjMgrWorkerUnitTests, ProcessDevice_PName) {
