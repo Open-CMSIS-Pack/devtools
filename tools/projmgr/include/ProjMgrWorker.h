@@ -171,6 +171,7 @@ struct ContextItem {
   std::map<std::string, RteGenerator*> generators;
   std::map<std::string, std::pair<std::string, std::string>> gpdscs;
   std::string linkerScript;
+  bool precedences;
 };
 
 /**
