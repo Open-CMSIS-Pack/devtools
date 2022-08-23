@@ -26,16 +26,18 @@ Usage:
   cpackget [command] [flags]
 
 Available Commands:
-  help        Help about any command
-  index       Update public index
-  init        Initialize a pack root folder
-  add         Add Open-CMSIS-Pack packages
-  rm          Remove Open-CMSIS-Pack packages
-  list        List installed packs
+  add             Add Open-CMSIS-Pack packages
+  checksum-create Generates a .checksum file containing the digests of a pack
+  checksum-verify Verifies the integrity of a pack using its .checksum file
+  help            Help about any command
+  init            Initializes a pack root folder
+  list            List installed packs
+  rm              Remove Open-CMSIS-Pack packages
+  update-index    Update the public index
 
 Flags:
   -h, --help               help for cpackget
-  -R, --pack-root path     Specifies path of the CMSIS-Pack root directory, default: CMSIS_PACK_ROOT environment variable
+  -R, --pack-root string   Specifies pack root folder. Defaults to CMSIS_PACK_ROOT environment variable (default <current setting>)
   -q, --quiet              Run cpackget silently, printing only error messages
   -v, --verbose            Sets verboseness level: None (Errors + Info + Warnings), -v (all + Debugging). Specify "-q" for no messages
   -V, --version            Prints the version number of cpackget and exit
