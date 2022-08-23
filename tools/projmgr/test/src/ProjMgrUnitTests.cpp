@@ -903,7 +903,9 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Device_Unknown) {
   char* argv[6];
   const string& cproject = testinput_folder +
     "/TestProject/test.cproject_device_unknown.yml";
-  const string& expected = "specified device 'RteTest_ARM_UNKNOWN' was not found";
+  const string& expectedErrStr = R"(error csolution: specified device 'RteTest_ARM_UNKNOWN' was not found among the installed packs.
+use 'cpackget' utility to install software packs.
+  cpackget add Vendor.PackName --pack-root ./Path/Packs)";
   StdStreamRedirect streamRedirect;
 
   argv[1] = (char*)"convert";
@@ -913,7 +915,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Device_Unknown) {
   argv[5] = (char*)testoutput_folder.c_str();
   EXPECT_EQ(1, RunProjMgr(6, argv));
   auto errStr = streamRedirect.GetErrorString();
-  EXPECT_NE(string::npos, errStr.find(expected));
+  EXPECT_NE(string::npos, errStr.find(expectedErrStr));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_Device_Unknown_Vendor) {
@@ -921,8 +923,9 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Device_Unknown_Vendor) {
   char* argv[6];
   const string& cproject = testinput_folder +
     "/TestProject/test.cproject_device_unknown_vendor.yml";
-
-  const string& expected = "specified device 'RteTest_ARMCM0' was not found";
+  const string& expectedErrStr = R"(error csolution: specified device 'RteTest_ARMCM0' was not found among the installed packs.
+use 'cpackget' utility to install software packs.
+  cpackget add Vendor.PackName --pack-root ./Path/Packs)";
   StdStreamRedirect streamRedirect;
 
   argv[1] = (char*)"convert";
@@ -932,7 +935,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Device_Unknown_Vendor) {
   argv[5] = (char*)testoutput_folder.c_str();
   EXPECT_EQ(1, RunProjMgr(6, argv));
   auto errStr = streamRedirect.GetErrorString();
-  EXPECT_NE(string::npos, errStr.find(expected));
+  EXPECT_NE(string::npos, errStr.find(expectedErrStr));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_Device_Unknown_Processor) {
@@ -958,7 +961,9 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Device_Unavailable_In_Board) {
   char* argv[6];
   const string& cproject = testinput_folder +
     "/TestProject/test.cproject_device_unavailable_in_board.yml";
-  const string& expected = "specified device 'RteTest_ARMCM7' was not found";
+  const string& expectedErrStr = R"(error csolution: specified device 'RteTest_ARMCM7' was not found among the installed packs.
+use 'cpackget' utility to install software packs.
+  cpackget add Vendor.PackName --pack-root ./Path/Packs)";
   StdStreamRedirect streamRedirect;
 
   argv[1] = (char*)"convert";
@@ -968,7 +973,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Device_Unavailable_In_Board) {
   argv[5] = (char*)testoutput_folder.c_str();
   EXPECT_EQ(1, RunProjMgr(6, argv));
   auto errStr = streamRedirect.GetErrorString();
-  EXPECT_NE(string::npos, errStr.find(expected));
+  EXPECT_NE(string::npos, errStr.find(expectedErrStr));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_Device_Pname_Unavailable_In_Board) {
@@ -1019,7 +1024,9 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Correct_Board_Wrong_Device_Info) {
   char* argv[6];
   const string& cproject = testinput_folder +
     "/TestProject/test.cproject_correct_board_wrong_device.yml";
-  const string& expected = "specified device 'RteTest_ARMCM_Unknown' was not found";
+  const string& expectedErrStr = R"(error csolution: specified device 'RteTest_ARMCM_Unknown' was not found among the installed packs.
+use 'cpackget' utility to install software packs.
+  cpackget add Vendor.PackName --pack-root ./Path/Packs)";
   StdStreamRedirect streamRedirect;
 
   argv[1] = (char*)"convert";
@@ -1029,7 +1036,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Correct_Board_Wrong_Device_Info) {
   argv[5] = (char*)testoutput_folder.c_str();
   EXPECT_EQ(1, RunProjMgr(6, argv));
   auto errStr = streamRedirect.GetErrorString();
-  EXPECT_NE(string::npos, errStr.find(expected));
+  EXPECT_NE(string::npos, errStr.find(expectedErrStr));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_Correct_Device_Wrong_Board_Info) {
