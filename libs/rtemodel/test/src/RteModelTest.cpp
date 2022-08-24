@@ -299,8 +299,13 @@ TEST_F(RteModelPrjTest, LoadCprjConfigVer) {
   EXPECT_TRUE(RteFsUtils::Exists(deviceDir + ".system_ARMCM3.c@1.0.1"));
   EXPECT_FALSE(RteFsUtils::Exists(deviceDir + ".system_ARMCM3.c@1.0.2"));
   EXPECT_TRUE(RteFsUtils::Exists(deviceDir + "system_ARMCM3.c@1.0.2"));
-}
 
+  const string depsDir = rteDir + "Dependency/RteTest_ARMCM3/";
+  EXPECT_TRUE(RteFsUtils::Exists(depsDir + ".DeviceDependency.c@1.1.1"));
+  EXPECT_TRUE(RteFsUtils::Exists(depsDir + "DeviceDependency.c"));
+  EXPECT_TRUE(RteFsUtils::Exists(depsDir + ".BoardDependency.c@1.2.2"));
+  EXPECT_TRUE(RteFsUtils::Exists(depsDir + "BoardDependency.c"));
+}
 
 TEST_F(RteModelPrjTest, GetLocalPdscFile) {
   RteKernelSlim rteKernel;

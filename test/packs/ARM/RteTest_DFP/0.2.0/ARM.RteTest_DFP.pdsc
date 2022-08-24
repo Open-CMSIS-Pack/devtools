@@ -250,19 +250,37 @@
       <require Cclass="RteTest" Cgroup="CORE"/>
     </condition>
 
+    <condition id="DeviceDependent">
+      <description>Checks device dependency</description>
+      <accept condition="ARMCM0 RteTest"/>
+      <accept condition="ARMCM3 RteTest"/>
+      <accept condition="ARMCM4 RteTest"/>
+    </condition>
 
      <condition id="BoardTest1">
-      <description>Generic Arm Cortex-M4 device startup and depends on CMSIS Core</description>
+      <description>Test component filtering on selected board 1</description>
       <require Dvendor="ARM:82" Dname="*ARMCM*"/>
       <require Bname="RteTest Test board*" Bvendor="Keil" Brevision="1.1.1"/>
     </condition>
 
     <condition id="BoardTest2">
-      <description>Generic Arm Cortex-M4 device startup and depends on CMSIS Core</description>
+      <description>Test component filtering on selected board 2</description>
       <require Dvendor="ARM:82" Dname="*ARMCM*"/>
       <require Bname="RteTest Test board*" Bvendor="Keil" Brevision="2.2.2"/>
     </condition>
 
+    <condition id="BoardTest3">
+      <description>Test component filtering on selected board 3</description>
+      <require Dvendor="ARM:82" Dname="*ARMCM*"/>
+      <require Bname="RteTest Dummy board" Bvendor="Keil" Brevision="1.2.3"/>
+    </condition>
+    
+    <condition id="BoardDependent">
+      <description>Checks board dependency</description>
+      <accept condition="BoardTest1"/>
+      <accept condition="BoardTest2"/>
+      <accept condition="BoardTest3"/>
+    </condition>
   </conditions>
 
   <apis>
@@ -384,6 +402,19 @@
       </files>
     </component>
 
+    <component Cclass="Dependency" Cgroup="Board" Cversion="1.2.2" condition="BoardDependent">
+      <description>Dependency on board</description>
+      <files>
+        <file attr="config" category="sourceC" name="Components/BoardDependency.c" />
+      </files>
+    </component>
+
+    <component Cclass="Dependency" Cgroup="Device" Cversion="1.1.1" condition="DeviceDependent">
+      <description>Dependency on device</description>
+      <files>
+        <file attr="config" category="sourceC" name="Components/DeviceDependency.c" />
+      </files>
+    </component>
 
   </components>
 
