@@ -38,6 +38,12 @@
   </target>
 
   <components>
+    <component Cclass="Dependency" Cgroup="Device" Cvendor="ARM" Cversion="1.1.1">
+      <file attr="config" category="sourceC" name="Components/DeviceDependency.c" version="1.1.1"/>
+    </component>
+    <component Cclass="Dependency" Cgroup="Board" Cvendor="ARM" Cversion="1.2.2">
+      <file attr="config" category="sourceC" name="Components/BoardDependency.c" version="1.2.2"/>
+    </component>
     <component Cclass="Device" Cgroup="Startup" Cvariant="RteTest Startup" Cvendor="ARM" layer="LayerOne">
       <file attr="config" category="linkerScript" name="Device/ARM/ARMCM3/Source/ARM/ARMCM3_ac6.sct" version="1.0.0"/>
       <file attr="config" category="sourceC" name="Device/ARM/ARMCM3/Source/startup_ARMCM3.c" version="2.0.3"/>
