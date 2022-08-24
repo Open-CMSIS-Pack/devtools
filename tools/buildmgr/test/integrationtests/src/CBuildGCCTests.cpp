@@ -222,6 +222,15 @@ TEST_F(CBuildGCCTests, Minimal) {
   CheckCMakeLists         (param);
 }
 
+// Validate project compilation having components sources with same filenames
+TEST_F(CBuildGCCTests, DupFilename) {
+  TestParam param = { "GCC/DupFilename", "Project" };
+
+  RunCBuildScriptClean(param);
+  RunCBuildScript(param);
+  CheckCMakeLists(param);
+}
+
 // Validate project with preincluded header paths and their usage
 TEST_F(CBuildGCCTests, PreInclude) {
   TestParam param = { "GCC/Pre Include", "Target", "", "", true };
