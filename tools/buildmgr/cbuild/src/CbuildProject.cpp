@@ -5,7 +5,7 @@
  */
 
 #include "CbuildProject.h"
-
+#include "CbuildKernel.h"
 #include "CbuildModel.h"
 
 #include "ErrLog.h"
@@ -132,14 +132,6 @@ void CbuildProject::SetToolchain(const string& toolchain, map<string, string> &a
   }
 }
 
-const string CbuildProject::GetLocalRepoVersion(const string& rtePath, const string& name, const string& vendor, const string& versionRange, string& url) {
-  string version = versionRange;
-  if (GetUrlFromLocalRepository(rtePath, name, vendor, version, url)) {
-    return version;
-  }
-  return "";
-}
-
 RteDevice *CbuildProject::GetDeviceLeaf(const string& fullDeviceName, const string& deviceVendor, const string& targetName) {
   if (!m_project)
     return nullptr;
@@ -217,13 +209,13 @@ bool CbuildProject::CheckPackRequirements(const RtePackage *cprjPack, const stri
     string installedVersion = RteFsUtils::GetInstalledPackVersion(path, version);
 
     if (installedVersion.empty()) {
-      string url;
-      string localRepoVersion = GetLocalRepoVersion(string(rtePath), name, vendor, version, url);
+      string localRepoId;
+      CbuildKernel::Get()->GetLocalPdscFile(a, rtePath, localRepoId);
       // Check if local repo version is accepted
-      if (!localRepoVersion.empty()) {
+      if (!localRepoId.empty()) {
         continue;
       }
-      // pack is neither in pack folder nor in local repo index
+      // pack is neither in pack folder nor in local repo
       // add the pack identifier to the missing packs' list
       string maxVersion = RteUtils::GetSuffix(version);
       const CbuildPackItem& pack = { vendor, name, (maxVersion.empty() ? version : maxVersion) };
@@ -232,62 +224,6 @@ bool CbuildProject::CheckPackRequirements(const RtePackage *cprjPack, const stri
   }
 
   return true;
-}
-
-bool CbuildProject::GetUrlFromLocalRepository(const string&rtePath, const string&name,
-  const string& vendor, string& versionRange, string& url)
-{
-  /*
-  Get the PDSC URL from the .Local/local_repository.pidx file
-  */
-  string indexPath = string(rtePath) + "/.Local/local_repository.pidx";
-  fs::path path(indexPath);
-  error_code ec;
-  if (!fs::exists(path, ec)) {
-    return false;
-  }
-
-  // get the url root
-  if (GetUrl(path.generic_string(), name, vendor, versionRange, url)) {
-    url = RteFsUtils::GetAbsPathFromLocalUrl(url);
-    return true;
-  }
-
-  return false;
-}
-
-bool CbuildProject::GetUrl(const string& path, const string& name, const string& vendor,string& version, string& url) {
-  /*
-  Get the PDSC URL and version
-  */
-  XMLTreeSlim xmlTree;
-  xmlTree.Init();
-  xmlTree.AddFileName(path);
-
-  XMLTreeElement *indexChild, *pIndexChild;
-  if (!xmlTree.ParseAll() || ((indexChild = xmlTree.GetFirstChild("index")) == nullptr)
-                          || ((pIndexChild = indexChild->GetFirstChild("pindex")) == nullptr)) {
-    LogMsg("M613", PATH(path));
-    return false;
-  }
-
-  list<XMLTreeElement*> indexList = pIndexChild->GetChildren();
-  list<XMLTreeElement*>::reverse_iterator it;
-  for (it = indexList.rbegin(); it != indexList.rend(); it++) {
-    const string indexedName = (*it)->GetAttribute("name");
-    const string indexedVendor = (*it)->GetAttribute("vendor");
-    if ((name.compare(indexedName) == 0) && (vendor.compare(indexedVendor) == 0)) {
-      // get the indexed version
-      string indexedVersion = (*it)->GetAttribute("version");
-      if (version.empty() || VersionCmp::RangeCompare(indexedVersion, version) == 0) {
-        // get the url root
-        url = (*it)->GetAttribute("url");
-        version = indexedVersion;
-        return true;
-      }
-    }
-  }
-  return false;
 }
 
 RteGeneratorModel* CbuildProject::ReadGpdscFile(const string& gpdsc)
