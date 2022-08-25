@@ -249,6 +249,14 @@
         <file category="other" name="Dummy/DummyFile.txt"/>
       </files>
     </component>
+
+    <component Cclass="RteTest" Cgroup="DupFilename" Cversion="0.9.9">
+      <description>Component having source files with the same filename</description>
+      <files>
+        <file category="sourceC" name="Dummy/dummy.c"/>
+        <file category="sourceC" name="Dummy/Subfolder/dummy.c"/>
+      </files>
+    </component>
   </components>
 
   <examples>

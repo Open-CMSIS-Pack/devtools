@@ -10,10 +10,12 @@ using namespace std;
 
 string scripts_folder   = string(TEST_SRC_FOLDER) + "scripts";
 string testinput_folder = string(TEST_SRC_FOLDER) + "testinput";
+string testpacks_folder = string(TEST_SRC_FOLDER) + "../../../test/packs";
 string cbuildgen_bin    = string(CBUILDGEN_BIN);
 string testout_folder   = string(TEST_BUILD_FOLDER) + "testoutput";
 string testdata_folder  = string(TEST_BUILD_FOLDER) + "/testdata";
 string examples_folder  = testdata_folder + "/Examples";
+string packs_folder     = testdata_folder + "/Packs";
 
 std::string CBuildIntegTestEnv::ci_installer_path;
 std::string CBuildIntegTestEnv::ac6_toolchain_path;
@@ -41,6 +43,7 @@ void CBuildIntegTestEnv::SetUp() {
 
   // Copy test data from input test folder
   fs::copy(fs::path(testinput_folder), fs::path(testdata_folder), fs::copy_options::recursive, ec);
+  fs::copy(fs::path(testpacks_folder), fs::path(packs_folder), fs::copy_options::recursive, ec);
 
   examples_folder  = fs::canonical(examples_folder, ec).generic_string();
   scripts_folder   = fs::canonical(scripts_folder, ec).generic_string();
