@@ -126,12 +126,14 @@ $(document).ready(function(){initNavTree('projectDescriptionSchema.html','');});
   See the License for the specific language governing permissions and
   limitations under the License.
 
-  $Date:        06. July 2022
-  $Revision:    1.0.2
+  $Date:        30. August 2022
+  $Revision:    1.0.3
 
   $Project: Schema File for CMSIS Project Description File Format Specification
 
-  SchemaVersion=1.0.2
+  SchemaVersion=1.0.3
+
+  1.0.3: Added Brevision attribute, Bversion to be deprecated
 
   1.0.2: Added custom RTE attribute
 
@@ -428,8 +430,10 @@ $(document).ready(function(){initNavTree('projectDescriptionSchema.html','');});
     &lt;xs:attribute name="Bvendor"  type="xs:string"   use="optional" /&gt;
     &lt;!-- Board Name --&gt;
     &lt;xs:attribute name="Bname"    type="xs:string"   use="optional" /&gt;
+    &lt;!-- Board Revision --&gt;
+    &lt;xs:attribute name="Brevision" type="xs:string"  use="optional" /&gt;
     &lt;!-- Board Version --&gt;
-    &lt;xs:attribute name="Bversion" type="xs:string"   use="optional" /&gt;
+    &lt;xs:attribute name="Bversion" type="xs:string"   use="optional" /&gt; &lt;!-- Deprecated --&gt;
     &lt;!-- Device Vendor --&gt;
     &lt;xs:attribute name="Dvendor"  type="xs:string"   use="optional" /&gt;
     &lt;!-- Device Name --&gt;
