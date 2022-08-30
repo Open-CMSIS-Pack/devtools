@@ -454,6 +454,7 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
     context.targetAttributes["Bname"]    = matchedBoard->GetName();
     context.targetAttributes["Bvendor"]  = matchedBoard->GetVendorName();
     context.targetAttributes["Brevision"] = matchedBoard->GetRevision();
+    context.targetAttributes["Bversion"] = matchedBoard->GetRevision(); // deprecated
  
     // find device from the matched board
     list<RteItem*> mountedDevices;
