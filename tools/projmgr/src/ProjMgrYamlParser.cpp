@@ -137,6 +137,7 @@ bool ProjMgrYamlParser::ParseCproject(const string& input,
   cprojects[input] = cproject;
 
   if (single) {
+    csolution.directory = cproject.directory;
     csolution.contexts.push_back({ input });
   }
   return true;

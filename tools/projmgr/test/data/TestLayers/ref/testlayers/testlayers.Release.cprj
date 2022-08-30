@@ -16,9 +16,9 @@
   </compilers>
 
   <target Dfpu="NO_FPU" Dname="RteTest_ARMCM0" Dsecure="Non-secure" Dvendor="ARM:82">
-    <output intdir="tmp/testlayers/Release" name="testlayers.Release" outdir="out/testlayers/Release" rtedir="RTE" type="exe"/>
+    <output intdir="tmp/testlayers/Release" name="testlayers.Release" outdir="out/testlayers/Release" rtedir="../../data/TestLayers/RTE" type="exe"/>
     <cflags add="--layer1-flag --layer2-flag --layer3-flag" compiler="AC6"/>
-    <ldflags compiler="AC6" file="RTE/Device/RteTest_ARMCM0/ARMCM0_ac6.sct"/>
+    <ldflags compiler="AC6" file="../../data/TestLayers/RTE/Device/RteTest_ARMCM0/ARMCM0_ac6.sct"/>
     <defines>DEF_LAYER1;DEF_LAYER2;DEF_LAYER3</defines>
     <includes>../../data/TestLayers/Layer1/path/to/layer1;../../data/TestLayers/Layer2/path/to/layer2;../../data/TestLayers/Layer3/path/to/layer3</includes>
   </target>

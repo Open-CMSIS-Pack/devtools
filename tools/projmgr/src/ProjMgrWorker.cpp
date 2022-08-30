@@ -92,7 +92,8 @@ bool ProjMgrWorker::AddContext(ProjMgrParser& parser, ContextDesc& descriptor, c
     context.directories.cprj = m_outputDir.empty() ? context.cproject->directory : m_outputDir;
     context.directories.intdir = "tmp/" + context.cproject->name + (type.target.empty() ? "" : "/" + type.target) + (type.build.empty() ? "" : "/" + type.build);
     context.directories.outdir = "out/" + context.cproject->name + (type.target.empty() ? "" : "/" + type.target) + (type.build.empty() ? "" : "/" + type.build);
-    context.directories.rte = context.cproject->directory + "/RTE";
+    error_code ec;
+    context.directories.rte = fs::relative(context.cproject->directory + "/RTE", context.csolution->directory, ec).generic_string();
 
     // customized directories
     if (!context.csolution->directories.cprj.empty()) {
@@ -108,11 +109,7 @@ bool ProjMgrWorker::AddContext(ProjMgrParser& parser, ContextDesc& descriptor, c
       context.directories.rte = context.csolution->directories.rte;
     }
 
-    error_code ec;
     context.directories.cprj = fs::weakly_canonical(RteFsUtils::AbsolutePath(context.directories.cprj), ec).generic_string();
-    if (fs::path(context.directories.rte).is_absolute()) {
-      context.directories.rte = fs::relative(context.directories.rte, context.directories.cprj, ec).generic_string();
-    }
 
     for (const auto& clayer : context.cproject->clayers) {
       if (CheckType(clayer.type, type)) {
@@ -1137,9 +1134,9 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
 bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem& context) {
 
   // directories
-  const string ref = m_outputDir.empty() ? context.csolution->directory : m_outputDir;
+  const string ref = m_outputDir.empty() ? context.csolution->directory : RteFsUtils::AbsolutePath(m_outputDir).generic_string();
   if (!ProcessSequenceRelative(context, context.directories.cprj) ||
-      !ProcessSequenceRelative(context, context.directories.rte, ref) ||
+      !ProcessSequenceRelative(context, context.directories.rte, context.csolution->directory) ||
       !ProcessSequenceRelative(context, context.directories.outdir, ref) ||
       !ProcessSequenceRelative(context, context.directories.intdir, ref)) {
     return false;
