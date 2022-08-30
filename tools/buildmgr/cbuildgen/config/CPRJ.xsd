@@ -17,12 +17,14 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 
-  $Date:        06. July 2022
-  $Revision:    1.0.2
+  $Date:        30. August 2022
+  $Revision:    1.0.3
 
   $Project: Schema File for CMSIS Project Description File Format Specification
 
-  SchemaVersion=1.0.2
+  SchemaVersion=1.0.3
+
+  1.0.3: Added Brevision attribute, Bversion to be deprecated
 
   1.0.2: Added custom RTE attribute
 
@@ -319,8 +321,10 @@
     <xs:attribute name="Bvendor"  type="xs:string"   use="optional" />
     <!-- Board Name -->
     <xs:attribute name="Bname"    type="xs:string"   use="optional" />
+    <!-- Board Revision -->
+    <xs:attribute name="Brevision" type="xs:string"  use="optional" />
     <!-- Board Version -->
-    <xs:attribute name="Bversion" type="xs:string"   use="optional" />
+    <xs:attribute name="Bversion" type="xs:string"   use="optional" /> <!-- Deprecated -->
     <!-- Device Vendor -->
     <xs:attribute name="Dvendor"  type="xs:string"   use="optional" />
     <!-- Device Name -->
