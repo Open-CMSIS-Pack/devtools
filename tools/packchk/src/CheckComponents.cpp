@@ -68,8 +68,8 @@ bool CheckComponent::CheckComp(RteItem* item)
     if(pKg) {
       RteGeneratorContainer* genCont = pKg->GetGenerators();
       if(genCont) {
-        for(auto item : genCont->GetChildren()) {
-          RteGenerator* generator = dynamic_cast<RteGenerator*>(item);
+        for(auto itm : genCont->GetChildren()) {
+          RteGenerator* generator = dynamic_cast<RteGenerator*>(itm);
           if(!generator) {
             continue;
           }

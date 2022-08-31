@@ -120,9 +120,9 @@ void UsedConditionsVisitor::GetUsedSubConditions(RteCondition* cond)
   m_Conditions->AddUsedCondition(cond);
 
   for(auto expression : cond->GetChildren()) {
-    RteCondition* cond = expression->GetCondition();
-    if(cond) {
-      GetUsedSubConditions(cond);
+    RteCondition* c = expression->GetCondition();
+    if(c) {
+      GetUsedSubConditions(c);
     }
     else {
       m_Conditions->TestSubConditions(expression);
