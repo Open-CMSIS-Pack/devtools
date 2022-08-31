@@ -24,11 +24,12 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 if(MSVC)
-#disable C4996 warning: of not using *_s functions
+# disable C4996 warning: of not using *_s functions
   add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
- set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /ZI /Gy /FC")
+  set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /ZI /Gy /FC /utf-8")
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /utf-8")
 # disable optimization for RelWithDebug
-  set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /Zi /Od")
+  set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /Zi /Od /utf-8")
   add_link_options("$<$<CONFIG:Debug>:/SAFESEH:NO>")
 endif(MSVC)
 
