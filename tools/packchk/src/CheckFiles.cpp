@@ -93,7 +93,9 @@ const string& CheckFiles::GetFolder(RteItem* item) const
   }
   else if(tag == "environment") {
     RteItem* parent = item->GetParent();
-    return parent->GetAttribute("folder");
+    if(parent) {
+      return parent->GetAttribute("folder");
+    }
   }
 
   return RteUtils::EMPTY_STRING;

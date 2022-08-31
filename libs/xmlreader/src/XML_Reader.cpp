@@ -307,7 +307,7 @@ Err XML_Reader::Close()
 size_t XML_Reader::ReadLine()
 {
   if(!m_InputSourceReader->IsValid()) {
-    LogMsg("M410", GetLineNumber());     //fprintf(stderr, "Lost xml file stream at line %d.\n", GetLineNumber());
+    LogMsg("M410", GetLineNumber());
     return 0;
   }
 
@@ -401,51 +401,61 @@ UTFCode XML_Reader::CheckUTF(const string& text)
 
   UTFCode utfDetected = UTFCode::UTF_NULL;
   switch (*str++) {
-  case (char)0xEF: {
-    switch (*str++) {
-    case (char)0xBB: {
+    case (char)0xEF: {
       switch (*str++) {
-      case (char)0xBF: {
-        utfDetected = UTFCode::UTF8;
-      } break;
+        case (char)0xBB: {
+          switch (*str++) {
+            case (char)0xBF: {
+              utfDetected = UTFCode::UTF8;
+            } break;
+            default:
+              break;
+          }
+        } break;
+        default:
+          break;
       }
     } break;
-    }
-  } break;
 
-  case (char)0xFE: {
-    switch (*str++) {
-    case (char)0xFF: {
-      utfDetected = UTFCode::UTF16_BE;
-    } break;
-    }
-  } break;
-
-  case (char)0xFF: {
-    switch (*str++) {
     case (char)0xFE: {
-      utfDetected = UTFCode::UTF16_LE;
+      switch (*str++) {
+        case (char)0xFF: {
+          utfDetected = UTFCode::UTF16_BE;
+        } break;
+        default:
+          break;
+      }
     } break;
-    }
-  } break;
+
+    case (char)0xFF: {
+      switch (*str++) {
+        case (char)0xFE: {
+          utfDetected = UTFCode::UTF16_LE;
+        } break;
+        default:
+          break;
+      }
+    } break;
+    default:
+      break;
   }
 
   if (utfDetected != UTFCode::UTF_NULL) {
-    string text = "UTF Error";
+    string txt = "UTF Error";
 
     auto find = m_UTFCodeText.find(utfDetected);
     if (find != m_UTFCodeText.end()) {
-      text = find->second;
+      txt = find->second;
     }
 
-    LogMsg("M411", VAL("UTF", text));     //printf("\nUnicode: Preamble for %s should not be used, already specified via '<?xml'");
+    LogMsg("M411", VAL("UTF", txt));     //"\nUnicode: Preamble for %s should not be used, already specified via '<?xml'"
     if (utfDetected != UTFCode::UTF8) {
-      LogMsg("M413", VAL("UTF", text));   // printf("\nUTF Format not supported: %s", UTFCode_str[isUtf]);
+      LogMsg("M413", VAL("UTF", txt));   // "\nUTF Format not supported: %s", UTFCode_str[isUtf]
     }
   }
 
   if (*str) {
-    LogMsg("M412", VAL("STR", str));      //printf("\nUnicode: Unsupported format or extra characters found before '<?xml': \"%s\"\n", str);
+    LogMsg("M412", VAL("STR", str));      //"\nUnicode: Unsupported format or extra characters found before '<?xml': \"%s\"\n", str
   }
 
   return utfDetected;
@@ -539,13 +549,13 @@ bool XML_Reader::ReadNext()
         specialChar += c;
 
         if (c == '/' && c_prev == '<') {       // probably found an error
-          LogMsg("M414", VAL("SPECIALCHAR", specialChar), MSG("Found END Tag!"), GetLineNumber());   // printf("Line %d: Problem while parsing XML special characters: '%s'. Found END Tag!\n", GetLineNumber(), m_xmlData.specialChar);
+          LogMsg("M414", VAL("SPECIALCHAR", specialChar), MSG("Found END Tag!"), GetLineNumber());   // "Line %d: Problem while parsing XML special characters: '%s'. Found END Tag!\n", GetLineNumber(), m_xmlData.specialChar
           CorrectCnt(-1 * (int)specialChar.length());
           break;
         }
 
         if (specialChar.length() > 32) {
-          LogMsg("M414", VAL("SPECIALCHAR", specialChar), MSG("String too long!"), GetLineNumber());   // printf("Line %d: Problem while parsing XML special characters: '%s'. String too uint32_t!\n", GetLineNumber(), m_xmlData.specialChar);
+          LogMsg("M414", VAL("SPECIALCHAR", specialChar), MSG("String too long!"), GetLineNumber());   // "Line %d: Problem while parsing XML special characters: '%s'. String too uint32_t!\n", GetLineNumber(), m_xmlData.specialChar
           CorrectCnt(-1 * (int)specialChar.length());
           break;
         }
@@ -710,7 +720,7 @@ void XML_Reader::PrintTagStack()
     msg += tag;
   }
 
-  LogMsg("M406", MSG(msg));   // printf("XML Stack: ");
+  LogMsg("M406", MSG(msg));   // "XML Stack: "
 }
 
 bool XML_Reader::NextEntry ()
@@ -734,14 +744,14 @@ bool XML_Reader::NextEntry ()
       PopTag(xmlTag);
 
       if(!m_bPrevTagIsSingle && (xmlTag != m_xmlData.tagData)) {
-        LogMsg("M417", GetLineNumber());          // printf("Line %d: Inconsistent XML Structure\n", GetLineNumber());
+        LogMsg("M417", GetLineNumber());          // "Line %d: Inconsistent XML Structure\n", GetLineNumber()
         PushTag(xmlTag);
         PrintTagStack();
         PopTag(xmlTag);
 
         if(doTryAgain) {
           if(!xmlTag.empty()) {
-            LogMsg("M401", VAL("TAG", xmlTag));   // printf("Line %d: Did you mean '%s' ?\n", GetLineNumber(), xmlTag);
+            LogMsg("M401", VAL("TAG", xmlTag));   // "Line %d: Did you mean '%s' ?\n", GetLineNumber(), xmlTag
             m_xmlData.tagData = xmlTag;
           }
         }
@@ -749,14 +759,14 @@ bool XML_Reader::NextEntry ()
       else if(m_bPrevTagIsSingle) {
         m_bPrevTagIsSingle = false;
         if(xmlTag != m_xmlData.tagData) {
-          LogMsg("M417", GetLineNumber());        // printf("Line %d: Inconsistent XML Structure\n", GetLineNumber());
+          LogMsg("M417", GetLineNumber());        // "Line %d: Inconsistent XML Structure\n", GetLineNumber()
           PushTag(xmlTag);
           PrintTagStack();
           PopTag(xmlTag);
 
           if(doTryAgain) {
             if(!xmlTag.empty() && (xmlTag != m_xmlData.tagData))  {
-              LogMsg("M401", VAL("TAG", xmlTag));   // printf("Line %d: Did you mean '%s' ?\n", GetLineNumber(), xmlTag);
+              LogMsg("M401", VAL("TAG", xmlTag));   // "Line %d: Did you mean '%s' ?\n", GetLineNumber(), xmlTag
               m_xmlData.tagData = xmlTag;
             }
           }
@@ -765,11 +775,11 @@ bool XML_Reader::NextEntry ()
     }
     else if(m_xmlData.type == TagType::TAG_BEGIN) {
       if(!PushTag(m_xmlData.tagData)) {
-        LogMsg("M418", GetLineNumber());            // printf("Line %d: XML Stack deeper than 30 Items! Giving up...\n", GetLineNumber());
+        LogMsg("M418", GetLineNumber());            // "Line %d: XML Stack deeper than 30 Items! Giving up...\n", GetLineNumber()
         return 0;
       }
       if(m_bIsPrevText) {
-        LogMsg("M419", GetLineNumber());            // printf("Line %d: Begin Tag follows Text. Missing End Tag?\n", GetLineNumber());
+        LogMsg("M419", GetLineNumber());            // "Line %d: Begin Tag follows Text. Missing End Tag?\n", GetLineNumber()
         m_bIsPrevText = false;
         string xmlTag;
         PopTag(xmlTag);                             // correct stack
@@ -801,7 +811,7 @@ bool XML_Reader::Recover()
   uint32_t recoverCnt=0;
 
   errorTag = m_xmlData.tagData;
-  LogMsg("M407", GetLineNumber());    // printf("\nLine %d: Recover from Error\n", GetLineNumber());
+  LogMsg("M407", GetLineNumber());    // "\nLine %d: Recover from Error\n", GetLineNumber()
 
   if(m_bFirstTry) {                     // try to read a statement then return
     bool bOk = ReadNext();
@@ -839,14 +849,14 @@ bool XML_Reader::Recover()
       }
 
       if(m_xmlData.tagData == errorTag) {           // found end of unknown tag
-        LogMsg("M409", VAL("TAG", errorTag),  GetLineNumber());   // printf("Line %d: Skipping unknown Tag: '%s'\n", GetLineNumber(), errorTag);
+        LogMsg("M409", VAL("TAG", errorTag),  GetLineNumber());   // "Line %d: Skipping unknown Tag: '%s'\n", GetLineNumber(), errorTag
         break;
       }
     }
 
     recoverCnt++;
     if(recoverCnt > 100) {
-      LogMsg("M408", GetLineNumber());            // printf("\nLine %d: Recover from Error: giving up after 100 tries...\n", GetLineNumber());
+      LogMsg("M408", GetLineNumber());            // "\nLine %d: Recover from Error: giving up after 100 tries...\n", GetLineNumber()
       break;
     }
   } while(bOk);
@@ -917,13 +927,13 @@ bool XML_Reader::ReadNextAttribute(bool bInorePrefixes)
         specialChar += c;
 
         if(c == '/' && cPrev == '<') {       // probably found an error
-          LogMsg("M414", VAL("SPECIALCHAR", specialChar), MSG("Found END Tag!"), GetLineNumber());   // printf("Line %d: Problem while parsing XML special characters: '%s'. Found END Tag!\n", GetLineNumber(), m_xmlData.specialChar);
+          LogMsg("M414", VAL("SPECIALCHAR", specialChar), MSG("Found END Tag!"), GetLineNumber());   // "Line %d: Problem while parsing XML special characters: '%s'. Found END Tag!\n", GetLineNumber(), m_xmlData.specialChar
           CorrectCnt(-1 * (int)specialChar.length());
           break;
         }
 
         if (specialChar.length() > 32) {
-          LogMsg("M414", VAL("SPECIALCHAR", specialChar), MSG("String too uint32_t!"), GetLineNumber());   // printf("Line %d: Problem while parsing XML special characters: '%s'. String too uint32_t!\n", GetLineNumber(), m_xmlData.specialChar);
+          LogMsg("M414", VAL("SPECIALCHAR", specialChar), MSG("String too uint32_t!"), GetLineNumber());   // "Line %d: Problem while parsing XML special characters: '%s'. String too uint32_t!\n", GetLineNumber(), m_xmlData.specialChar
           CorrectCnt(-1 * (int)specialChar.length());
           break;
         }

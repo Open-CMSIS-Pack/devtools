@@ -730,8 +730,10 @@ bool ValidateSemantic::TestComponentDependencies()
     }
     else if(api) {
       RtePackage* apiPkg = api->GetPackage();
-      const string& packName = apiPkg->GetPackageFileName();
-      LogMsg("M378", CCLASS(compClass), CGROUP(compGroup), CSUB(compSub), CVER(compVer), NAME(packName), lineNo);
+      if(apiPkg) {
+        const string& packN = apiPkg->GetPackageFileName();
+        LogMsg("M378", CCLASS(compClass), CGROUP(compGroup), CSUB(compSub), CVER(compVer), NAME(packN), lineNo);
+      }
     }
 
     RteDependencyResult dependencyResult;

@@ -220,10 +220,10 @@ bool ValidateSyntax::CheckInfo(RtePackage* pKg)
     LogMsg("M305");
     bInfoComplete = false;
   }
-  for(auto release : releases) {
-    const string& rVer = release->GetVersionString();
-    const string& rDescr = release->GetDescription();
-    int lineNo = release->GetLineNumber();
+  for(auto rel : releases) {
+    const string& rVer = rel->GetVersionString();
+    const string& rDescr = rel->GetDescription();
+    int lineNo = rel->GetLineNumber();
 
     if(rVer.empty() && !rDescr.empty()) {
       LogMsg("M328", VAL("DESCR", rDescr), lineNo);
@@ -673,13 +673,13 @@ bool ValidateSyntax::CheckFeatureDevice(RteDeviceProperty* prop, const string& d
   }
   else {
     ok = false;
-    auto itexisting = m_featureTableDeviceLowerCase.find(typeLower);
-    if(itexisting != m_featureTableDeviceLowerCase.end()) {
-      existingFeature = &(itexisting->second->second);
+    auto itexist = m_featureTableDeviceLowerCase.find(typeLower);
+    if(itexist != m_featureTableDeviceLowerCase.end()) {
+      existingFeature = &(itexist->second->second);
     }
 
     if(existingFeature) {
-      LogMsg("M372", MCU(devName), SECTION("Device"), VAL("FEATURE", type), VAL("KNOWNFEATURE", itexisting->second->first), VAL("DESCR", existingFeature->defaultName), lineNo);
+      LogMsg("M372", MCU(devName), SECTION("Device"), VAL("FEATURE", type), VAL("KNOWNFEATURE", itexist->second->first), VAL("DESCR", existingFeature->defaultName), lineNo);
     }
     else {
       LogMsg("M371", MCU(devName), SECTION("Device"), VAL("FEATURE", type), lineNo);
@@ -719,13 +719,13 @@ bool ValidateSyntax::CheckFeatureBoard(RteItem* prop, const string& boardName)
   }
   else {
     ok = false;
-    auto itexisting = m_featureTableBoardLowerCase.find(typeLower);
-    if(itexisting != m_featureTableBoardLowerCase.end()) {
-      existingFeature = &(itexisting->second->second);
+    auto itexist = m_featureTableBoardLowerCase.find(typeLower);
+    if(itexist != m_featureTableBoardLowerCase.end()) {
+      existingFeature = &(itexist->second->second);
     }
 
     if(existingFeature) {
-      LogMsg("M372", MCU(boardName), SECTION("Board"), VAL("FEATURE", type), VAL("KNOWNFEATURE", itexisting->second->first), VAL("DESCR", existingFeature->defaultName), lineNo);
+      LogMsg("M372", MCU(boardName), SECTION("Board"), VAL("FEATURE", type), VAL("KNOWNFEATURE", itexist->second->first), VAL("DESCR", existingFeature->defaultName), lineNo);
     }
     else {
       LogMsg("M371", MCU(boardName), SECTION("Board"), VAL("FEATURE", type), lineNo);
@@ -1096,15 +1096,14 @@ bool ValidateSyntax::CheckBoardProperties(RteItem* boardItem, map<string, RteIte
   map<string, RteItem*> properties;
   map<string, RteItem*> allProperties = prevProperties;   // copy from previous recursion step
 
-  for(auto boardItem : boardItem->GetChildren()) {
-    RteItem* item = dynamic_cast<RteItem*>(boardItem);
+  for(auto item : boardItem->GetChildren()) {
     if(!item) {
       continue;
     }
 
     const string& tag = item->GetTag();
     if(tag == "feature") {
-      CheckAddBoardProperty(item, properties, boardItem->GetName());
+      CheckAddBoardProperty(item, properties, item->GetName());
     }
   }
 
@@ -1919,7 +1918,7 @@ bool ValidateSyntax::CheckRequirements_Packages(RteItem* requirement)
           }
 
           const string& pkName = pk->GetName();
-          const string& pkVendor = pk->GetAttribute("vendor"); //GetVendorName();
+          const string& pkVendor = pk->GetAttribute("vendor");
           const string& pkVersion = pk->GetVersionString();
 
           msg += "\n    ";

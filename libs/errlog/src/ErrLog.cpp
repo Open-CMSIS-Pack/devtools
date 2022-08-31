@@ -177,7 +177,7 @@ ErrLog::~ErrLog ()
     m_ErrOutputter = nullptr;
   }
 
-  delete m_outBuf;
+  delete[] m_outBuf;
 }
 
 void ErrLog::InitMessageTable()
