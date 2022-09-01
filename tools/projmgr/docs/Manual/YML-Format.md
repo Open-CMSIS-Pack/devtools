@@ -24,6 +24,8 @@ The following chapter explains the YML format that is used to describe the YML i
   - [`linker:`](#linker)
   - [`for-compiler:`](#for-compiler)
 - [Translation Control](#translation-control)
+  - [`language-C:`](#language-c)
+  - [`language-CPP:`](#language-cpp)
   - [`optimize:`](#optimize)
   - [`debug:`](#debug)
   - [`warnings:`](#warnings)
@@ -60,6 +62,7 @@ The following chapter explains the YML format that is used to describe the YML i
   - [`instances:`](#instances)
 - [Pre/Post build steps](#prepost-build-steps)
   - [`execute:`](#execute)
+  - [`interface:`](#interface)
 - [Layer todo](#layer-todo)
 - [Generator (Proposal)](#generator-proposal)
   - [Workflow assumptions](#workflow-assumptions)
@@ -356,24 +359,26 @@ solution:
 
 The `project:` node is the start of a `*.cproject.yml` file and can contain the following:
 
-`project:`                                     |              | Content
-:----------------------------------------------|--------------|:------------------------------------
-&nbsp;&nbsp; [`description:`](#description)    |  Optional    | Project description.
-&nbsp;&nbsp; [`output-type:`](#output-type)    |  Optional    | Generate executable (default) or library.
-&nbsp;&nbsp; [`optimize:`](#optimize)          |  Optional    | Optimize level for code generation.
-&nbsp;&nbsp; [`linker:`](#linker)              | **Required** | Instructions for the linker.
-&nbsp;&nbsp; [`debug:`](#debug)                |  Optional    | Generation of debug information.
-&nbsp;&nbsp; [`define:`](#define)              |  Optional    | Preprocessor (#define) symbols for code generation.
-&nbsp;&nbsp; [`undefine:`](#undefine)          |  Optional    | Remove preprocessor (#define) symbols.
-&nbsp;&nbsp; [`add-path:`](#add-path)          |  Optional    | Additional include file paths.
-&nbsp;&nbsp; [`del-path:`](#del-path)          |  Optional    | Remove specific include file paths.
-&nbsp;&nbsp; [`misc:`](#misc)                  |  Optional    | Literal tool-specific controls.
-&nbsp;&nbsp; [`board:`](#board)                |  Optional    | Board specification.
-&nbsp;&nbsp; [`device:`](#device)              |  Optional    | Device specification.
-&nbsp;&nbsp; [`processor:`](#processor)        |  Optional    | Processor specific settings.
-&nbsp;&nbsp; [`groups:`](#groups)              | **Required** | List of source file groups along with source files.
-&nbsp;&nbsp; [`components:`](#components)      |  Optional    | List of software components used.
-&nbsp;&nbsp; [`layers:`](#layers)              |  Optional    | List of software layers that belong to the project.
+`project:`                                          |              | Content
+:---------------------------------------------------|--------------|:------------------------------------
+&nbsp;&nbsp; [`description:`](#description)         |  Optional    | Project description.
+&nbsp;&nbsp; [`output-type:`](#output-type)         |  Optional    | Generate executable (default) or library.
+&nbsp;&nbsp; [`optimize:`](#optimize)               |  Optional    | Optimize level for code generation.
+&nbsp;&nbsp; [`linker:`](#linker)                   | **Required** | Instructions for the linker.
+&nbsp;&nbsp; [`debug:`](#debug)                     |  Optional    | Generation of debug information.
+&nbsp;&nbsp; [`define:`](#define)                   |  Optional    | Preprocessor (#define) symbols for code generation.
+&nbsp;&nbsp; [`undefine:`](#undefine)               |  Optional    | Remove preprocessor (#define) symbols.
+&nbsp;&nbsp; [`add-path:`](#add-path)               |  Optional    | Additional include file paths.
+&nbsp;&nbsp; [`del-path:`](#del-path)               |  Optional    | Remove specific include file paths.
+&nbsp;&nbsp; [`misc:`](#misc)                       |  Optional    | Literal tool-specific controls.
+&nbsp;&nbsp; [`board:`](#board)                     |  Optional    | Board specification.
+&nbsp;&nbsp; [`device:`](#device)                   |  Optional    | Device specification.
+&nbsp;&nbsp; [`processor:`](#processor)             |  Optional    | Processor specific settings.
+&nbsp;&nbsp; [`groups:`](#groups)                   | **Required** | List of source file groups along with source files.
+&nbsp;&nbsp; [`components:`](#components)           |  Optional    | List of software components used.
+&nbsp;&nbsp; [`layers:`](#layers)                   |  Optional    | List of software layers that belong to the project.
+&nbsp;&nbsp; [`layer-templates:`](#layer-templates) |  Optional    | Describes software layers that are compatible with the project.
+&nbsp;&nbsp; [`interface:`](#interface)             |  Optional    | List of consumed and provided interfaces.
 
 **Example:**
 
@@ -400,9 +405,11 @@ project:
 
 The `layer:` node is the start of a `*.clayer.yml` file and can contain the following:
 
-`project:`                                     |              | Content
+`layer:`                                       |              | Content
 :----------------------------------------------|--------------|:------------------------------------
-&nbsp;&nbsp; [`description:`](#description)    |  Optional    | Layer description.
+&nbsp;&nbsp; [`type:`](#type)                  |  Optional    | Layer type for combining layers.
+&nbsp;&nbsp; [`name:`](#name)                  |  Optional    | Brief descriptive name of the layer
+&nbsp;&nbsp; [`description:`](#description)    |  Optional    | Detailed layer description.
 &nbsp;&nbsp; [`interface:`](#interface)        |  Optional    | List of consumed and provided interfaces.
 &nbsp;&nbsp; [`processor:`](#processor)        |  Optional    | Processor specific settings.
 &nbsp;&nbsp; [`groups:`](#groups)              | **Required** | List of source file groups along with source files.
@@ -412,7 +419,9 @@ The `layer:` node is the start of a `*.clayer.yml` file and can contain the foll
 
 ```yml
 layer:
-  description: Secure layer
+  type: Board
+  name: AVH_MPS3_Cortsone-300
+  description: Board setup with Ethernet and WiFi interface
   processor:
     trustzone: secure        # set processor to secure
   components:
@@ -526,6 +535,7 @@ The `linker:` list node controls the linker operation.
 `linker:`                                             |              |  Content
 :-----------------------------------------------------|:-------------|:--------------------------------
 `- script:`                                           |              | Explicit file name of the linker script
+&nbsp;&nbsp; [`for-compiler:`](#for-compiler)         |   Optional   | Include script for the specified toolchain.
 &nbsp;&nbsp; [`for-type:`](#for-type)                 |   Optional   | Include script for a list of *build* and *target* types.
 &nbsp;&nbsp; [`not-for-type:`](#not-for-type)         |   Optional   | Exclude script for a list of *build* and *target* types.
 
@@ -557,7 +567,8 @@ List Node                                  | Description
 [`- group:`](#groups)                      | At `group:` node it is possible to control inclusion of a file group.
 [`- file:`](#files)                        | At `file:` node it is possible to control inclusion of a file.
 [`- setup:`](#setups)                      | At `setup:` node to define compiler-specific toolchain settings.
-[`- misc:`](#misc)                         | At `misc:` node that allows to add miscellaneous compiler-specific 
+[`- misc:`](#misc)                         | At `misc:` node that allows to add miscellaneous compiler-specific controls.
+[`- script:`](#linker)                     | At `linker:` node to control the usage of linker script files.
 
 The inclusion of a *compiler-specific node* is processed when the specified compiler(s) matches.
 
@@ -572,9 +583,44 @@ The following translation control options may be used at various places such as:
 
 > **Note:** `define:`, `add-path:`, `del-path:`  and `misc:` are additive. All other keywords overwrite previous settings.
 
+
+## `language-C:`
+
+Set the language standard for C source file compilation.
+
+Value                                                 | Select C Language Standard
+:-----------------------------------------------------|:------------------------------------
+`c90`                                                 | compile C source files as defined in C90 standard (ISO/IEC 9899:1990).
+`gnu90`                                               | same as `c90` but with additional GNU extensions.
+`c99` (default)                                       | compile C source files as defined in C99 standard (ISO/IEC 9899:1999).
+`gnu99`                                               | same as `c99` but with additional GNU extensions.
+`c11`                                                 | compile C source files as defined in C11 standard (ISO/IEC 9899:2011).
+`gnu11`                                               | same as `c11` but with additional GNU extensions.
+
+
+## `language-CPP:`
+
+Set the language standard for C++ source file compilation.
+
+Value                                                 | Select C++ Language Standard
+:-----------------------------------------------------|:------------------------------------
+`c++98`                                               | compile C++ source files as defined in C++98 standard (ISO/IEC 14882:1998).
+`gnu++98`                                             | same as `c++98` but with additional GNU extensions.
+`c++03`                                               | compile C++ source files as defined in C++03 standard (ISO/IEC 14882:2003).
+`gnu++03`                                             | same as `c++03` but with additional GNU extensions.
+`c++11`                                               | compile C++ source files as defined in C++11 standard (ISO/IEC 14882:2011).
+`gnu++11`                                             | same as `c++11` but with additional GNU extensions.
+`c++14` (default)                                     | compile C++ source files as defined in C++14 standard (ISO/IEC 14882:2014).
+`gnu++14`                                             | same as `c++14` but with additional GNU extensions.
+`c++17`                                               | compile C++ source files as defined in C++17 standard (ISO/IEC 14882:2014).
+`gnu++17`                                             | same as `c++17` but with additional GNU extensions.
+`c++20`                                               | compile C++ source files as defined in C++20 standard (ISO/IEC 14882:2020).
+`gnu++20`                                             | same as `c++20` but with additional GNU extensions.
+
+
 ## `optimize:`
 
-Generic optimize levels for code generation; mapped to the compiler toolchain by CMSIS-Build.
+Generic optimize levels for code generation.
 
 Value                                                 | Code Generation
 :-----------------------------------------------------|:------------------------------------
@@ -597,7 +643,7 @@ groups:
 
 ## `debug:`
 
-Control the generation of debug information; mapped to the compiler toolchain by CMSIS-Build.
+Control the generation of debug information.
 
 Value                                                 | Code Generation
 :-----------------------------------------------------|:------------------------------------
@@ -615,7 +661,15 @@ Value                                                 | Code Generation
 
 ## `warnings:`
 
-Control warnings (could be: no, all, Misra, AC5-like), mapped to the toolchain by CMSIS-Build.
+Control warning level for compiler diagnostics.
+
+Value                                                 | Control diagnostic messages (warnings)
+:-----------------------------------------------------|:------------------------------------
+`off`                                                 | No warning messages generated
+`misra`                                               | Warnings that conflict with MISRA-C and MISRA-C++ are disabled, otherwise identical with `all`.
+`all`                                                 | Generate warning messages out constructions that some users consider questionable, and that are easy to avoid.
+`extra`                                               | This enables some extra warning flags that are not enabled by `all`.
+
 
 ## `define:`
 
@@ -713,7 +767,9 @@ Add miscellaneous literal tool-specific controls that are directly passed to the
 &nbsp;&nbsp; `CPP:`                  |   Optional   | Applies to *.cpp files only.
 &nbsp;&nbsp; `C-CPP:`                |   Optional   | Applies to *.c and *.cpp files.
 &nbsp;&nbsp; `ASM:`                  |   Optional   | Applies to assembler source files only.
-&nbsp;&nbsp; `Link:`                 |   Optional   | Applies to the linker.
+&nbsp;&nbsp; `Link:`                 |   Optional   | Applies to the linker (added before `Link-C:` or `Link-CPP:`).
+&nbsp;&nbsp; `Link-C:`               |   Optional   | Applies to the linker; added when no C++ files are part of the project.
+&nbsp;&nbsp; `Link-CPP:`             |   Optional   | Applies to the linker; added when C++ files are part of the project.
 &nbsp;&nbsp; `Lib:`                  |   Optional   | Applies to the library manager or archiver.
 
 **Example:**
@@ -1346,6 +1402,29 @@ project:
         - file: file1a.c
 ```
 
+## `interface:`
+
+Describes consumed and required interfaces and can be applied to `project:`, `layer:` or `layer-template:`
+
+`interface:`                         |              | Description
+:------------------------------------|--------------|:------------------------------------
+`provides:`[#provides]               |   Optional   | List of interfaces (key/value pairs) that are provided by a `project:`, `layer:` or `layer-template:`
+`consumes:`[#consumes]               |   Optional   | List of interfaces (key/value pairs) that are consumed by a `project:`, `layer:` or `layer-template:`
+
+**Example:**
+```yml
+  interface:                         # interface description of a board layer
+    consumes:
+    - RTOS2:
+    provides:
+    - CMSIS Driver Ethernet: 0       # driver number
+    - CMSIS Driver USART Print: 2    # driver number
+    - IoT Socket:                    # available
+    - Heap : 65536                   # heap size 
+```
+
+
+
 # Layer todo
 
 Start of a layer definition in a `*.clayer.yml` file.
@@ -1370,7 +1449,7 @@ layer: App
 # name: Blinky
 #  description: Simple example
 
-# interfaces:
+# interface:
 #   consumes:
 #     - C_VIO:
 #     - RTOS2:
@@ -1402,7 +1481,7 @@ layer: Board
   name: NUCLEO-G474RE
   description: Board setup with interfaces 
   
-interfaces:
+interface:
   consumes:
     - RTOS2:
   provides:
