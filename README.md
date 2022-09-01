@@ -2,9 +2,9 @@
 
 This repository contains the source code of command line tools and library
 components for processing meta information specified by
-[CMSIS-Pack](https://arm-software.github.io/CMSIS_5/develop/Pack/html/index.html)
+[CMSIS-Pack](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/index.html)
 and
-[CMSIS-Build](https://arm-software.github.io/CMSIS_5/develop/Build/html/index.html)
+[CMSIS-Build](https://open-cmsis-pack.github.io/devtools/buildmgr/latest/index.html)
 which are written in C++ as well as build and test configurations targeting
 Windows, Linux and macOS host platforms.
 
