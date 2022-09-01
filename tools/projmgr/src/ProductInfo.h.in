@@ -4,6 +4,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#ifndef PRODUCTINFO_H
+#define PRODUCTINFO_H
+
 // Product Information
 
 static constexpr const char* MAJOR_VERSION = "@PROJECT_VERSION_MAJOR@";
@@ -20,3 +23,5 @@ static constexpr const char* COPYRIGHT_NOTICE  = "(C) @PROJECT_VERSION_YEAR@ ARM
 
 static constexpr const char* VERSION_STRING    = "@PROJECT_VERSION_FULL@";
 static constexpr const char* VERSION_STRING_RC = "@PROJECT_VERSION_FULL@";
+
+#endif  // PRODUCTINFO_H

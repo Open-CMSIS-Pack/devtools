@@ -4,6 +4,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#ifndef CBUILDTESTFIXTURE_H
+#define CBUILDTESTFIXTURE_H
+
 #include "CBuildIntegTestEnv.h"
 
 class CBuildTestFixture :public ::testing::Test {
@@ -18,3 +21,5 @@ protected:
   void CheckRteDir              (const TestParam& param, const std::string& rtedir);
   void CleanOutputDir           (const TestParam& param);
 };
+
+#endif  // CBUILDTESTFIXTURE_H

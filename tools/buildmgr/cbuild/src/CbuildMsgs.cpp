@@ -168,6 +168,5 @@ void InitMessageTableStrict()
 {
   MsgTableStrict table;
 
-  //table["M000"] = MsgLevel::LEVEL_ERROR;
   PdscMsg::AddMessagesStrict(table);
 }

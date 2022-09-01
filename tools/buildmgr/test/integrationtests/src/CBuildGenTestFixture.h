@@ -4,6 +4,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#ifndef CBUILDGENTESTFIXTURE_H
+#define CBUILDGENTESTFIXTURE_H
+
 #include "CBuildIntegTestEnv.h"
 
 class CBuildGenTestFixture : public ::testing::Test {
@@ -21,3 +24,5 @@ protected:
 
   void GetDirectoryItems         (const std::string& inPath, std::set<std::string> &Result, const std::string& ignoreDir);
 };
+
+#endif  // CBUILDGENTESTFIXTURE_H

@@ -1186,6 +1186,7 @@ bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, 
   const string input = item;
   while (offset != string::npos) {
     string sequence;
+    // get next access sequence
     if (!GetAccessSequence(offset, input, sequence, '$', '$')) {
       return false;
     }
@@ -1217,6 +1218,7 @@ bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, 
         replacement = context.compiler;
       }
       else if (regex_match(sequence, regex("(Output|OutDir|Source)\\(.*"))) {
+        // Output, OutDir and Source access sequences lead to path replacement
         pathReplace = true;
         string contextName;
         size_t offsetContext = 0;
@@ -1262,11 +1264,13 @@ bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, 
           }
         }
         else {
+          // full or partial context name cannot be resolved to a valid context
           ProjMgrLogger::Error("context '" + contextName + "' referenced by access sequence '" + sequence + "' does not exist");
           return false;
         }
       }
       else {
+        // access sequence is unknown
         ProjMgrLogger::Warn("unknown access sequence: '" + sequence + "'");
         continue;
       }
@@ -1274,6 +1278,7 @@ bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, 
     }
   }
   if (!pathReplace && !ref.empty()) {
+    // adjust relative path according to the given reference
     error_code ec;
     if (!fs::equivalent(context.directories.cprj, ref, ec)) {
       const string& absPath = fs::weakly_canonical(fs::path(item).is_relative() ? ref + "/" + item : item, ec).generic_string();
