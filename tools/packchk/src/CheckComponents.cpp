@@ -46,7 +46,8 @@ bool CheckComponent::CheckComp(RteItem* item)
   string cclass = item->GetAttribute("Cclass");
 
   // packchk to check that conditions filter device and board specific components
-  if(cclass == "Device" || cclass == "Board Support" || cclass == "CMSIS Driver") {                 // must have condition ref to a device
+  string csub = item->GetAttribute("Csub");
+  if(cclass == "Device" || cclass == "Board Support" || (cclass == "CMSIS Driver" && csub.empty()) ) {                 // must have condition ref to a device
     LogMsg("M087", TYP(cclass), CCLASS(item->GetAttribute("Cclass")), CGROUP(item->GetAttribute("Cgroup")), CVER(item->GetAttribute("Cversion")));
 
     RteItem* cond = item->GetCondition();
