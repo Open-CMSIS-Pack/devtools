@@ -4,6 +4,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#ifndef CBUILDINTEGTESTENV_H
+#define CBUILDINTEGTESTENV_H
+
 #include "gtest/gtest.h"
 
 #include "CrossPlatformUtils.h"
@@ -57,3 +60,5 @@ public:
   static std::string ci_installer_path;
   static std::string ac6_toolchain_path;
 };
+
+#endif  // CBUILDINTEGTESTENV_H

@@ -4,6 +4,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#ifndef PROJMGRTESTENV_H
+#define PROJMGRTESTENV_H
+
 #include "gtest/gtest.h"
 
 extern std::string testoutput_folder;
@@ -37,3 +40,5 @@ public:
   void SetUp() override;
   void TearDown() override;
 };
+
+#endif  // PROJMGRTESTENV_H

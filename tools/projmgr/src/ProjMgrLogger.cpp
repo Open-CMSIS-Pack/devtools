@@ -10,12 +10,6 @@
 
 using namespace std;
 
-/* TODO: handle colors
-static constexpr const char* PROJMGR_TOOL = " csolution: ";
-static constexpr const char* PROJMGR_ERROR = "\033[1;31merror\033[0m";
-static constexpr const char* PROJMGR_WARN = "\033[1;33mwarning\033[0m";
-static constexpr const char* PROJMGR_INFO = "\033[1;32minfo\033[0m";
-*/
 static constexpr const char* PROJMGR_TOOL = " csolution: ";
 static constexpr const char* PROJMGR_ERROR = "error";
 static constexpr const char* PROJMGR_WARN = "warning";
