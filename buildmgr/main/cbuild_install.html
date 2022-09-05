@@ -146,8 +146,6 @@ Environment Variables</h1>
 <td align="left"><code>$CMSIS_PACK_ROOT</code> </td><td align="left">Directory that contains the software packs in CMSIS-Pack format. </td></tr>
 <tr>
 <td align="left"><code>$CMSIS_COMPILER_ROOT</code> </td><td align="left">Directory that contains the <a class="el" href="cbuild_install.html#cbuild_compiler_config">Compiler Configuration</a>. </td></tr>
-<tr>
-<td align="left"><code>$CMSIS_BUILD_ROOT</code> </td><td align="left">Base directory of the CMSIS command line build tools. </td></tr>
 </table>
 <h1><a class="anchor" id="cbuild_compiler_config"></a>
 Compiler Configuration</h1>
@@ -162,7 +160,7 @@ Compiler Configuration</h1>
 <div class="line"><span class="preprocessor"></span>TOOLCHAIN_ROOT:=C:/Keil_v5/ARM/ARMCLANG</div>
 <div class="line"></div>
 <div class="line"><span class="preprocessor">############ DO NOT EDIT BELOW ###########</span></div>
-</div><!-- fragment --><p>The toolchain for compilation is defined in project file <b>*.cprj</b> and used by <a class="el" href="cbuildgen.html">cbuildgen</a>. <a class="el" href="cbuildgen.html">cbuildgen</a> first searches for the toolchain specific <b>.cmake file</b> in the project directory. If the toolchain specific <b>.cmake file</b> is not present there, it uses the directory that is specified by the <b>$CMSIS_BUILD_ROOT</b> environment variable.</p>
+</div><!-- fragment --><p>The toolchain for compilation is defined in project file <b>*.cprj</b> and used by <a class="el" href="cbuildgen.html">cbuildgen</a>. <a class="el" href="cbuildgen.html">cbuildgen</a> first searches for the toolchain specific <b>.cmake file</b> in the project directory. If the toolchain specific <b>.cmake file</b> is not present there, it uses the directory where executables are placed.</p>
 <h1><a class="anchor" id="libxml"></a>
 libxml (optional for Windows)</h1>
 <p>For Windows the <a href="https://www.zlatkovic.com/pub/libxml/" target="_blank"><b>libxml</b></a> provides an XML processor that provides the functionality of <b>xmllint</b>.</p>
