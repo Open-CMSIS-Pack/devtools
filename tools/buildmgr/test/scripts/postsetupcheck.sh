@@ -42,7 +42,7 @@ fi
 # Set environment variables
 source ${testoutdir}/cbuild/etc/setup
 
-envvars=("CMSIS_PACK_ROOT" "CMSIS_COMPILER_ROOT" "CMSIS_BUILD_ROOT")
+envvars=("CMSIS_PACK_ROOT" "CMSIS_COMPILER_ROOT")
 
 errcnt=0
 for var in ${envvars[@]}

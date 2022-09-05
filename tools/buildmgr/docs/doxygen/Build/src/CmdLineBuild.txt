@@ -80,7 +80,6 @@ $ source ./cbuild/etc/setup
 |:------------------------|:-----------------------------------------------------------------|
 |\c $CMSIS_PACK_ROOT      | Directory that contains the software packs in CMSIS-Pack format. |
 |\c $CMSIS_COMPILER_ROOT  | Directory that contains the \ref cbuild_compiler_config.         |
-|\c $CMSIS_BUILD_ROOT     | Base directory of the CMSIS command line build tools.            |
 
 
 \section cbuild_compiler_config Compiler Configuration
@@ -107,8 +106,7 @@ TOOLCHAIN_ROOT:=C:/Keil_v5/ARM/ARMCLANG
 
 The toolchain for compilation is defined in project file <b>*.cprj</b> and used by \ref cbuildgen "cbuildgen". 
 \ref cbuildgen "cbuildgen" first searches for the toolchain specific <b>.cmake file</b> in the project directory.
-If the toolchain specific <b>.cmake file</b> is not present there, it uses the directory that is specified
-by the \b $CMSIS_BUILD_ROOT environment variable.
+If the toolchain specific <b>.cmake file</b> is not present there, it uses the directory where executables are placed.
 
 \section libxml libxml (optional for Windows)
 
@@ -263,11 +261,6 @@ cbuild.sh finished successfully!
     <td>ERROR</td>
     <td>error: project file <\c project>.cprj does not exist</td>
     <td>Check project file.</td>
-  </tr>
-  <tr>
-    <td>ERROR</td>
-    <td>error: CMSIS_BUILD_ROOT environment variable not set</td>
-     <td>Set \ref cbuild_envsetup.</td>
   </tr>
   <tr>
     <td>ERROR</td>

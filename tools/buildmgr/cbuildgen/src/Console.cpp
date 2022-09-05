@@ -141,7 +141,6 @@ int main(int argc, const char *argv[])
     else if  (arg.compare(0, 8,  "--layer=")         == 0)            layerIDs.push_back(arg.substr(8, arg.length()));
     else if  (arg.compare("--quiet")                 == 0)            quiet = true;
     else if  (arg.compare(0, 12, "--pack_root=")     == 0)            packRoot = arg.substr(12, arg.length());
-    else if  (arg.compare(0, 13, "--build_root=")    == 0)            buildRoot = arg.substr(13, arg.length());
     else if  (arg.compare(0, 16, "--compiler_root=") == 0)            compilerRoot = arg.substr(16, arg.length());
     else if ((arg.compare(0, 1,  "-") == 0) && (arg.compare(1, 1, "-") != 0)) {
       size_t div = arg.find_first_of("=");
@@ -201,17 +200,24 @@ int main(int argc, const char *argv[])
   if (packRoot.empty()) {
     packRoot = CrossPlatformUtils::GetEnv("CMSIS_PACK_ROOT");
     if (packRoot.empty()) {
-      // Neither [--pack_root] option nor CMSIS_PACK_ROOT environment variable were found
-      LogMsg("M213", VAL("VAR", "CMSIS_PACK_ROOT"));
-      return 1;
+      packRoot = CrossPlatformUtils::GetDefaultCMSISPackRootDir();
     }
   }
 
   if (compilerRoot.empty()) {
     compilerRoot = CrossPlatformUtils::GetEnv("CMSIS_COMPILER_ROOT");
     if (compilerRoot.empty()) {
-      // Neither [--compiler_root] option nor CMSIS_COMPILER_ROOT environment variable were found
-      LogMsg("M655", VAL("VAR", "CMSIS_COMPILER_ROOT"));
+      error_code ec;
+      string currExePath = CrossPlatformUtils::GetExecutablePath(ec);
+      if (currExePath.empty()) {
+        LogMsg("M216", VAL("MSG", ec.message()));
+        return 1;
+      }
+      compilerRoot = fs::path(currExePath).parent_path().append("etc").generic_string();
+      if (fs::exists(compilerRoot)) {
+        LogMsg("M204", VAL("PATH", compilerRoot));
+        return 1;
+      }
     }
   }
 
@@ -252,15 +258,6 @@ int main(int argc, const char *argv[])
 
   // Get RTE Model output
   const CbuildModel* model = CbuildKernel::Get()->GetModel();
-
-  if (buildRoot.empty()) {
-    buildRoot = CrossPlatformUtils::GetEnv("CMSIS_BUILD_ROOT");
-    if (buildRoot.empty()) {
-      // Neither [--build_root] option nor CMSIS_BUILD_ROOT environment variable were found
-      LogMsg("M213", VAL("VAR", "CMSIS_BUILD_ROOT"));
-      return 1;
-    }
-  }
 
   if (cmakeMode) {
     // Create CMakeListsGenerator instance and collect data
