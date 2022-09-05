@@ -394,6 +394,53 @@ bool ProjMgrWorker::GetPrecedentValue(std::string& outValue, const std::string& 
   return true;
 }
 
+bool ProjMgrWorker::ProcessInterfaces(ContextItem& context) {
+  // collect consumed and provided interfaces of project and layers
+  vector<pair<string, string>*> consumedList;
+  vector<pair<string, string>*> providedList;
+  set<pair<string, string>> incompatibleList;
+  for (auto& consumed : context.cproject->interfaces.consumes) {
+    consumedList.push_back(&consumed);
+  }
+  for (auto& provided : context.cproject->interfaces.provides) {
+    providedList.push_back(&provided);
+  }
+  for (const auto& [_, clayer] : context.clayers) {
+    for (auto& consumed : clayer->interfaces.consumes) {
+      consumedList.push_back(&consumed);
+    }
+    for (auto& provided : clayer->interfaces.provides) {
+      providedList.push_back(&provided);
+    }
+  }
+  // check whether consumed interfaces are compatible with provided ones
+  // TODO: extend known interfaces validation
+  for (const auto& consumed : consumedList) {
+    bool found = false;
+    for (const auto& provided : providedList) {
+      if (provided->first == consumed->first) {
+        // valid interface
+        found = true;
+        // add context define
+        const string& define = "INTERFACE_" + provided->first + (provided->second.empty() ? "" : "=" + provided->second);
+        PushBackUniquely(context.defines, define);
+        break;
+      }
+    }
+    if (!found) {
+      incompatibleList.insert(*consumed);
+    }
+  }
+  if (!incompatibleList.empty()) {
+    string msg = "consumed interface(s) not provided:";
+    for (const auto& [id, value] : incompatibleList) {
+      msg += "\n" + id + (value.empty() ? "" : "=" + value);
+    }
+    ProjMgrLogger::Warn(msg);
+  }
+  return true;
+}
+
 bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
   DeviceItem deviceItem;
   GetDeviceItem(context.device, deviceItem);
@@ -1442,6 +1489,9 @@ bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGpdsc, bool re
     return false;
   }
   if (!ProcessDevice(context)) {
+    return false;
+  }
+  if (!ProcessInterfaces(context)) {
     return false;
   }
   if (!CopyLayerRTEFiles(context)) {

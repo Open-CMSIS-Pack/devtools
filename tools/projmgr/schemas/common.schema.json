@@ -457,7 +457,8 @@
         "groups":      { "$ref": "#/definitions/GroupsType" },
         "components":  { "$ref": "#/definitions/ComponentsType" },
         "layers":      { "$ref": "#/definitions/LayersType" },
-        "setups":      { "$ref": "#/definitions/SetupsType" }
+        "setups":      { "$ref": "#/definitions/SetupsType" },
+        "interfaces":  { "$ref": "#/definitions/InterfacesType" }
       },
       "additionalProperties": false
     },
@@ -483,7 +484,8 @@
         "del-path":    { "$ref": "#/definitions/DelpathsType" },
         "misc":        { "$ref": "#/definitions/MiscTypes" },
         "groups":      { "$ref": "#/definitions/GroupsType" },
-        "components":  { "$ref": "#/definitions/ComponentsType" }
+        "components":  { "$ref": "#/definitions/ComponentsType" },
+        "interfaces":  { "$ref": "#/definitions/InterfacesType" }
       },
       "additionalProperties": false
     },
@@ -513,9 +515,9 @@
     },
     "SetupsType": {
       "type": "array",
+      "description": "List of setup nodes that collects various toolchain options",
       "uniqueItems": true,
       "items": { "$ref": "#/definitions/SetupType" }
-      
     },
     "SetupType": {
       "type": "object",
@@ -533,6 +535,33 @@
         "misc":         { "$ref": "#/definitions/MiscTypes" }
       },
       "$ref": "#/definitions/TypeListMutualExclusion",
+      "additionalProperties": false
+    },
+    "InterfacesType": {
+      "type": "object",
+      "description": "List of consumed and provided interfaces",
+      "properties": {
+        "consumes": {
+          "type": "array",
+          "description": "Consumed interfaces",
+          "items": { 
+            "oneOf": [
+              {"type": "string" },
+              {"type": "object" }
+            ]
+          }
+        },
+        "provides": {
+          "type": "array",
+          "description": "Provided interfaces",
+          "items": { 
+            "oneOf": [
+              {"type": "string" },
+              {"type": "object" }
+            ]
+          }
+        }
+      },
       "additionalProperties": false
     }
   }
