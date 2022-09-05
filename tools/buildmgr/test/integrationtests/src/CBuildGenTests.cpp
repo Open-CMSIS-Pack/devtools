@@ -63,7 +63,7 @@ TEST_F(CBuildGenTests, GenCMake_Fixed_Cprj) {
 TEST_F(CBuildGenTests, RunWithoutEnvArgTest) {
   TestParam param = {
     "AC6/Build_AC6", "Simulation",
-    "", "packlist", false };
+    "", "packlist", true };
 
   RunCBuildGen           (param, examples_folder, false);
 }

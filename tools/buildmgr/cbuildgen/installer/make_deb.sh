@@ -107,13 +107,12 @@ curl --retry 3 -L ${cbuild_base}_linux_amd64.tar.gz  -o - | tar xzfO - --wildcar
 cp -r ${input}/bin usr/lib/${PACKAGE_NAME}  # This should be in /usr/bin but cannot for the time being.
 cp -r ${input}/doc usr/share/doc/${PACKAGE_NAME}
 cp -r ${input}/etc/* etc/${PACKAGE_NAME}
-cp -r ${input}/etc/ usr/lib/${PACKAGE_NAME} # Remove when utilities in /bin no longer reliant on ${CMSIS_BUILD_ROOT}/../etc/
+cp -r ${input}/etc/ usr/lib/${PACKAGE_NAME} # Remove when utilities in /bin no longer reliant on <path_to_utilities>/../etc/
 # The following is not recommended but could not find a better way
 # https://www.debian.org/doc/debian-policy/ch-opersys.html#environment-variables
 cat > etc/profile.d/${PACKAGE_NAME}.sh << EnvironmentVariables
 export CMSIS_PACK_ROOT=~/.cache/arm/packs
 export CMSIS_COMPILER_ROOT=/etc/${PACKAGE_NAME}
-export CMSIS_BUILD_ROOT=/usr/lib/${PACKAGE_NAME}/bin
 EnvironmentVariables
 find . -type f -name "*.exe" -exec rm {} ';'
 find . -type f -name "*.mac" -exec rm {} ';'

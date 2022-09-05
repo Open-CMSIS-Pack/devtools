@@ -15,8 +15,6 @@
 
 unset CMSIS_PACK_ROOT
 unset CMSIS_COMPILER_ROOT
-unset CMSIS_BUILD_ROOT
 
 echo "unset CMSIS_PACK_ROOT"
 echo "unset CMSIS_COMPILER_ROOT"
-echo "unset CMSIS_BUILD_ROOT"
