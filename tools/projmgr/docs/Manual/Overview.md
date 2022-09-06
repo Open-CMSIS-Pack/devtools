@@ -1,5 +1,14 @@
 # csolution: CMSIS Project Manager (Users Manual - Draft)
 
+Manual Chapters                           | Content
+:-----------------------------------------|:-------------------------
+[Usage](#usage)                           | Overall Concept, tool setup, and invocation commands
+[Project Examples](#project-examples)     | Various example projects to get started
+[Project Structure](#project-structure)   | Overall structure of projects
+[YML Input Format](YML-Input-Format.md)   | Format of the various YML input files (csolution, cproject, clayer, cdefault)
+[YML CBuild Format](YML-CBuild-Format.md) | Format of the YML CBuild output file.
+
+
 **Table of Contents**
 
 - [csolution: CMSIS Project Manager (Users Manual - Draft)](#csolution-cmsis-project-manager-users-manual---draft)
@@ -21,7 +30,6 @@
   - [Software Components](#software-components)
     - [PLM of configuration files](#plm-of-configuration-files)
   - [RTE_Components.h](#rte_componentsh)
-- [YML Input Format](#yml-input-format)
 - [Proposals](#proposals)
   - [Output versions to *.cprj](#output-versions-to-cprj)
   - [CMSIS-Zone Integration](#cmsis-zone-integration)
@@ -30,12 +38,6 @@
     - [Layers in packs](#layers-in-packs)
 - [Schema](#schema)
 
-Manual Chapters                          | Content
-:----------------------------------------|:-------------------------
-[Usage](#usage)                          | Overall Concept, tool setup, and invocation commands
-[Project Examples](#project-examples)    | Various example projects to get started
-[Project Structure](#project-structure)  | Directory structure of the projects
-[YML Input Format](YML-Format.md)        | Format of the various YML input files.
 
 ## Revision History
 
@@ -660,10 +662,6 @@ The typical usage of the `RTE_Components.h` file is in header files to control t
 #include "Net_Config_ETH_0.h"        // add the related configuration file for this component
 #endif
 ```
-
-# YML Input Format
-
-Is described in [here](YML-Format.md).
 
 # Proposals
 
