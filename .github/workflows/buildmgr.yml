@@ -14,6 +14,7 @@ on:
       - 'libs/rtemodel/**'
       - 'libs/rtefsutils/**'
       - 'tools/buildmgr/**'
+      - '!**/*.md'
   push:
     branches:
       - main
@@ -30,6 +31,7 @@ on:
       - 'libs/rtemodel/**'
       - 'libs/rtefsutils/**'
       - 'tools/buildmgr/**'
+      - '!**/*.md'
   release:
     types: [ published ]
 
