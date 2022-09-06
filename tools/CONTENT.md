@@ -8,8 +8,7 @@ executable programs.
     ┣ 📂buildmgr
     ┣ 📂packchk
     ┣ 📂packgen
-    ┣ 📂projmgr
-    ┗ 📂toolbox
+    ┗ 📂projmgr
 ```
 
 ## buildmgr
@@ -33,9 +32,3 @@ and its components which are responsible for generating CMSIS-Packs.
 The [projmgr](./projmgr) directory contains sources for the utility `projmgr`
 and its components which are responsible for handling CMSIS projects and
 generating CPRJ files.
-
-## toolbox
-
-The [toolbox](./toolbox) directory contains scripts to generate CMSIS-toolbox
-installer which encapsulates CMSIS Build tools, CMSIS Project Manager
-binaries and documents.
