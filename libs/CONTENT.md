@@ -7,7 +7,7 @@ components.
 > **Note:** Each library directory contains a `test` sub-directory that holds
 the source code to test the library.
 
-```
+```txt
     📂libs
     ┣ 📂crossplatform
     ┣ 📂errlog

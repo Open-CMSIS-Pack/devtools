@@ -1,6 +1,4 @@
-# Open-CMSIS-Pack Development Tools and Libraries
-
-# Coding Guidelines
+# Open-CMSIS-Pack Development Tools and Libraries Coding Guidelines
 
 ## File encoding, line endings, indentation
 
@@ -120,7 +118,7 @@ The aim of a copyright notice is to:
 
 The copyright notice should follow the format mentioned below.
 
-```
+```c++
 /*
  * Copyright (c) <Copyright_Date> <Copyright_Text>
  *

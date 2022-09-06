@@ -1,4 +1,6 @@
-# Writing Unit tests with CMake
+# Adding Unit Tests
+
+## Writing Unit tests with CMake
 
 Unit tests using the googletest framework compile into a standalone test
 executable that uses a simple gtest-provided main() as the entry point, and
@@ -6,7 +8,7 @@ which links against a library of code that is to be tested (the Unit Under
 Test, or UUT). The unit tests then exercise functions and methods within the
 UUT.
 
-# Refactoring an existing app with a main()
+## Refactoring an existing app with a main()
 
 If the UUT is an application then it will already have a main() entry point
 which will not invoke gtest unless modified or substituted. Whilst some guides
@@ -18,7 +20,7 @@ I will assume that the app is called `MyApp` and that all of the source is at
 the root of the project. Additionally I'm assuming that there is no test code
 there yet. This is what you have to do:
 
-## Split the app into a small executable and a library
+### Split the app into a small executable and a library
 
 * Rename the existing `main()` function to `MyAppMain()`
 * Add a suitable prototype for MyAppMain() into MyApp.h (which probably already
@@ -37,7 +39,7 @@ exists).
           MyAppMain(argc, argv, envp);
       }
 
-## Create a test folder
+### Create a test folder
 
 All of the test code will live in a folder called `test` under the root of this
 project. This folder will contain the unit test source code (in this example
@@ -71,7 +73,7 @@ which allows them to be easily identified and executed together by
         find it
        add_test(MyAppUnitTests MyAppUnitTests)
 
-# Update the top-level CMakeLists.txt file
+## Update the top-level CMakeLists.txt file
 
 * Recreate the executable using `add_executable(MyApp MyAppMain.cpp)`
 * Use `target_link_libraries(MyApp MyAppLib)` to bring in the library
@@ -89,6 +91,6 @@ are linked together. For example
       set_property(TARGET TestLib PROPERTY
            MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
-# Building and running
+## Building and running
 
 Employ the usual sequence [described here](../README.md) to build and run.

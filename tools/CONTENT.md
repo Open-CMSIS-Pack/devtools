@@ -3,7 +3,7 @@
 The [tools](./tools/) folder contains components that are compiled into
 executable programs.
 
-```
+```txt
     📂tools
     ┣ 📂buildmgr
     ┣ 📂packchk

@@ -1,4 +1,3 @@
-
 # License Terms
 
 Copyright 2020-2021 Arm Limited. All rights reserved.
@@ -23,14 +22,19 @@ SPDX-License-Identifier: Apache-2.0
 
 This enables machine processing of license information based on the SPDX License Identifiers that are here available: http://spdx.org/licenses/
 
+## Third Party Licenses
 
-# Third Party Licenses
+All files listed in the path `test/packs/ARM/RteTest_DFP/0.1.1/Device` are licensed under
+[Apache License 2.0](http://www.apache.org/licenses/LICENSE-2.0) and are attributed to ARM Limited. The files originate
+from https://github.com/ARM-software/CMSIS_5/tree/develop/Device/ARM.
 
-All files listed in the path `test/packs/ARM/RteTest_DFP/0.1.1/Device` are licensed under [Apache License 2.0](http://www.apache.org/licenses/LICENSE-2.0) and are attributed to ARM Limited. The files originate from https://github.com/ARM-software/CMSIS_5/tree/develop/Device/ARM.
+## External Dependencies
 
-# External Dependencies
+The components listed below are not redistributed with the project but are used internally for building, development,
+or testing purposes.
 
-The components listed below are not redistributed with the project but are used internally for building, development, or testing purposes.
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 
 | Component | Version | License | Origin | Usage |
 | --------- | ------- | ------- | ------ | ----- |
@@ -41,3 +45,5 @@ The components listed below are not redistributed with the project but are used 
 |[GetGitRevisionDescription.cmake.in](./cmake/GetGitRevisionDescription.cmake.in)||[Boost Software License, Version 1.0](http://www.boost.org/LICENSE_1_0.txt)||Continuous integration|
 |json|3.10.5|[MIT](https://opensource.org/licenses/MIT)|https://github.com/nlohmann/json| yml-schema-checker |
 |json-schema-validator|2.1.0|[MIT](https://opensource.org/licenses/MIT)|https://github.com/pboettch/json-schema-validator| yml-schema-checker |
+
+<!-- markdownlint-restore -->

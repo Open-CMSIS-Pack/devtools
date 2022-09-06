@@ -4,7 +4,7 @@ The [external](./external/) folder is used to store third party external
 dependencies. These dependencies are fetch as a `git submodule`. No components
 should be committed into this folder.
 
-```
+```txt
     📂external
     ┣ 📂cxxopts
     ┣ 📂googletest
