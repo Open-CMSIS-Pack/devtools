@@ -93,11 +93,15 @@ bool ProjMgrWorker::AddContext(ProjMgrParser& parser, ContextDesc& descriptor, c
     context.directories.intdir = "tmp/" + context.cproject->name + (type.target.empty() ? "" : "/" + type.target) + (type.build.empty() ? "" : "/" + type.build);
     context.directories.outdir = "out/" + context.cproject->name + (type.target.empty() ? "" : "/" + type.target) + (type.build.empty() ? "" : "/" + type.build);
     error_code ec;
+    context.directories.gendir = fs::relative(context.cproject->directory + "/generated", context.csolution->directory, ec).generic_string();
     context.directories.rte = fs::relative(context.cproject->directory + "/RTE", context.csolution->directory, ec).generic_string();
 
     // customized directories
     if (!context.csolution->directories.cprj.empty()) {
       context.directories.cprj = context.csolution->directory + "/" + context.csolution->directories.cprj;
+    }
+    if (!context.csolution->directories.gendir.empty()) {
+      context.directories.gendir = context.csolution->directories.gendir;
     }
     if (!context.csolution->directories.intdir.empty()) {
       context.directories.intdir = context.csolution->directories.intdir;
@@ -1138,6 +1142,7 @@ bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem& context) {
   const string ref = m_outputDir.empty() ? context.csolution->directory : RteFsUtils::AbsolutePath(m_outputDir).generic_string();
   if (!ProcessSequenceRelative(context, context.directories.cprj) ||
       !ProcessSequenceRelative(context, context.directories.rte, context.csolution->directory) ||
+      !ProcessSequenceRelative(context, context.directories.gendir, context.csolution->directory) ||
       !ProcessSequenceRelative(context, context.directories.outdir, ref) ||
       !ProcessSequenceRelative(context, context.directories.intdir, ref)) {
     return false;
@@ -1964,7 +1969,21 @@ bool ProjMgrWorker::ExecuteGenerator(std::string& generatorId) {
     RteGenerator* generator = generators.at(generatorId);
 
     // Create generate.yml file with context info and destination
-    const string generatorDestination = generator->GetExpandedWorkingDir(context.rteActiveTarget);  // TODO this should come from context.directories.generatordir instead
+    string generatorDestination = context.directories.gendir;
+    if (generatorDestination.empty()) {
+      generatorDestination = generator->GetExpandedWorkingDir(context.rteActiveTarget);  // Fallback to working dir if no specific generator directory was specified
+    }
+
+    // Make sure the generatorDestination is absolute
+    if (fs::path(generatorDestination).is_relative()) {
+      generatorDestination = context.rteActiveProject->GetProjectPath() + generatorDestination;
+    }
+
+    // Make the generatorDestination is a folder by adding a '/' to the end
+    if (!generatorDestination.empty() && generatorDestination.back() != '/') {
+      generatorDestination += '/';
+    }
+
     const auto generatorInputFilePath = ProjMgrYamlEmitter::EmitContextInfo(context, generatorDestination);
 
     if (!generatorInputFilePath) {

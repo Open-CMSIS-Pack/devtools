@@ -131,6 +131,7 @@ struct RteDirItem {
  *        rte directory,
 */
 struct DirectoriesItem {
+  std::string gendir;
   std::string intdir;
   std::string outdir;
   std::string cprj;
