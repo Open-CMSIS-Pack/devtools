@@ -1,6 +1,6 @@
-# CMSIS-Toolbox
+# Tools
 
-The **CMSIS-Toolbox** provides command-line tools that provide the foundation for software development flows.  The CMSIS-Toolbox contains the following tools:
+These command-line tools provide the foundation for software development flows and are part of [**CMSIS-Toolbox**](https://github.com/Open-CMSIS-Pack/cmsis-toolbox).
 
 **Package creation** and validation:
 
@@ -19,13 +19,13 @@ The **CMSIS-Toolbox** provides command-line tools that provide the foundation fo
 
 - [**cbuild**](buildmgr/docs/cbuild.md) (aka CMSIS-Build): convert a `*.cprj` file that describes a single target and single configuration of a project to a CMake input; start the build process.
 
-## Download and Install
+## CMSIS-Toolbox - Download and Install
 
 The **CMSIS-Toolbox** is currently under development but supports already a wide range of use cases.
 
-- [**Download CMSIS-Toolbox**](https://github.com/Open-CMSIS-Pack/devtools/releases)
-- [**Setup and Installation**](./toolbox/docs/installation.md)
-- [**Implementation Progress**](./toolbox/docs/progress.md)
+- [**Download CMSIS-Toolbox**](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/releases)
+- [**Setup and Installation**](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/docs/Installation.md)
+- [**Implementation Progress**](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/docs/progress.md)
 
 ## Development Cycle - Create Applications
 

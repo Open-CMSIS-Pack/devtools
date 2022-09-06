@@ -7,8 +7,8 @@ as well as unresolved component dependencies.
 
 **Refer to:**
 - [csolution Overview](./docs/Manual/Overview.md) for details and usage information for the CMSIS Project Manager
-- [README.md](../README.md) for an overview of the CMSIS-Toolbox
-- [Installation](./docs/Installation.md) for details on how to setup the CMSIS-Toolbox
+- [README.md](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/README.md) for an overview of the CMSIS-Toolbox
+- [Installation](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/docs/Installation.md) for details on how to setup the CMSIS-Toolbox
 
 ## Python interface
 
