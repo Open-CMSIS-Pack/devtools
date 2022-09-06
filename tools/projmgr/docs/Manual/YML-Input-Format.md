@@ -505,7 +505,7 @@ The following code translation options may be used at various places such as:
 
 ## `compiler:`
 
-Selects the compiler toolchain used for code generation.
+Selects the compiler toolchain used for code generation.  Optionally the compiler can have a version number specification.
 
 Value                                                 | Supported Compiler
 :-----------------------------------------------------|:------------------------------------
@@ -513,11 +513,16 @@ Value                                                 | Supported Compiler
 `GCC`                                                 | GCC Compiler
 `IAR`                                                 | IAR Compiler
 
-**Example:**
+**Examples:**
 
 ```yml
-compiler: AC6              # Select Arm Compiler version 6
+compiler: GCC              # Select GCC Compiler
 ```
+
+```yml
+compiler: AC6@6.18.0       # Select Arm Compiler version 6 version 6.18.0
+```
+
 
 ## `output-type:`
 
