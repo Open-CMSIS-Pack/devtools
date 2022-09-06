@@ -27,9 +27,10 @@ public:
   /**
    * @brief emit context info
    * @param context
-   * @return true if success otherwise false
+   * @param destinationPath A folder where the generator should place the resulting generated files
+   * @return Returns the file path of the created generator input file if success
   */
-  static bool EmitContextInfo(const ContextItem& context, const std::string& dst);
+  static std::optional<std::string> EmitContextInfo(const ContextItem& context, const std::string& destinationPath);
 };
 
 #endif  // PROJMGRYAMLEMITTER_H

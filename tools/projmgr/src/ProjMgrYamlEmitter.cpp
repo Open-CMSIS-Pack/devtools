@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "ProjMgrLogger.h"
 #include "ProjMgrYamlEmitter.h"
 #include "ProjMgrUtils.h"
 #include "RteFsUtils.h"
@@ -11,6 +12,7 @@
 
 #include "yaml-cpp/yaml.h"
 
+#include <filesystem>
 #include <fstream>
 
 using namespace std;
@@ -23,7 +25,7 @@ ProjMgrYamlEmitter::~ProjMgrYamlEmitter(void) {
   // Reserved
 }
 
-bool ProjMgrYamlEmitter::EmitContextInfo(const ContextItem& context, const string& dst) {
+optional<string> ProjMgrYamlEmitter::EmitContextInfo(const ContextItem& context, const string& destinationPath) {
   typedef map <string, string> StringMap;
   typedef vector<StringMap> StringMapVector;
   
@@ -55,14 +57,51 @@ bool ProjMgrYamlEmitter::EmitContextInfo(const ContextItem& context, const strin
   YAML::Node rootNode;
   rootNode["context"] = infoMap;
   rootNode["context"]["components"] = componentVector;
-  rootNode["destination"] = dst;
+  rootNode["destination"] = destinationPath;
   YAML::Emitter emitter;
   emitter << rootNode;
 
-  ofstream fileStream(context.name + ".generate.yml");
+  // Calculate output generator input file path
+  string generatorTmpWorkingDir = context.directories.outdir;  // Use out build folder by default since the generator input file is a temporary file
+  if (!generatorTmpWorkingDir.empty()) {
+    // Outdir may be relative, if so, add project path to it
+    if (fs::path(generatorTmpWorkingDir).is_relative()) {
+      string projectPath = context.rteActiveProject->GetProjectPath();
+      generatorTmpWorkingDir = context.rteActiveProject->GetProjectPath() + generatorTmpWorkingDir;
+    }
+  } else {
+    generatorTmpWorkingDir = destinationPath;
+  }
+  if (!generatorTmpWorkingDir.empty() && generatorTmpWorkingDir.back() != '/') {
+    generatorTmpWorkingDir += '/';
+  }
+  const string filePath = generatorTmpWorkingDir + context.name + ".generate.yml";
+
+  // Make sure the folders exist
+  try {
+    if (!fs::exists(generatorTmpWorkingDir)) {
+      fs::create_directories(generatorTmpWorkingDir);
+    }
+    if (!fs::exists(destinationPath)) {
+      fs::create_directories(destinationPath);
+    }
+  } catch (const fs::filesystem_error& e) {
+    ProjMgrLogger::Error("Failed to create folders for the generator input file '" + filePath + "': " + e.what());
+    return {};
+  }
+
+  ofstream fileStream(filePath);
+  if (!fileStream) {
+    ProjMgrLogger::Error("Failed to create generator input file '" + filePath + "'");
+    return {};
+  }
+
   fileStream << emitter.c_str();
   fileStream << flush;
+  if (!fileStream) {
+    ProjMgrLogger::Error("Failed to write generator input file '" + filePath + "'");
+    return {};
+  }
   fileStream.close();
-
-  return true;
+  return filePath;
 }

@@ -84,6 +84,7 @@ string RteCallback::ExpandString(const string& str) {
   const string& prjPathFile(prjPath + activeProject->GetName() + ".cprj");
   const string& packPath(activeTarget->GetDevicePackage()->GetAbsolutePackagePath());
   const string& deviceName(activeTarget->GetDeviceName());
+  const string& generatorInputFilePath(activeTarget->GetGeneratorInputFilePath());
 
   if (prjPath.empty() || prjPathFile.empty() || packPath.empty() || deviceName.empty()) {
     return RteUtils::EMPTY_STRING;
@@ -97,6 +98,7 @@ string RteCallback::ExpandString(const string& str) {
   RteUtils::ReplaceAll(res, "$S", packPath);
   RteUtils::ReplaceAll(res, "$D", deviceName);
   RteUtils::ReplaceAll(res, "$B", boardName);
+  RteUtils::ReplaceAll(res, "$G", generatorInputFilePath);
 
   return res;
 }

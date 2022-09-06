@@ -1962,6 +1962,19 @@ bool ProjMgrWorker::ExecuteGenerator(std::string& generatorId) {
       return false;
     }
     RteGenerator* generator = generators.at(generatorId);
+
+    // Create generate.yml file with context info and destination
+    const string generatorDestination = generator->GetExpandedWorkingDir(context.rteActiveTarget);  // TODO this should come from context.directories.generatordir instead
+    const auto generatorInputFilePath = ProjMgrYamlEmitter::EmitContextInfo(context, generatorDestination);
+
+    if (!generatorInputFilePath) {
+      ProjMgrLogger::Error("Failed to create the generator input file for '" + generatorId + "'");
+      return false;
+    }
+
+    // Update RteTarget with current generatorInputFilePath that was created
+    context.rteActiveTarget->SetGeneratorInputFilePath(*generatorInputFilePath);
+
     // TODO: review RteGenerator::GetExpandedCommandLine and variables
     //const string generatorCommand = m_kernel->GetCmsisPackRoot() + "/" + generator->GetPackagePath() + generator->GetCommand();
     const string generatorCommand = generator->GetExpandedCommandLine(context.rteActiveTarget);
@@ -1969,14 +1982,11 @@ bool ProjMgrWorker::ExecuteGenerator(std::string& generatorId) {
       ProjMgrLogger::Error("generator command for '" + generatorId + "' was not found");
       return false;
     }
-    const string generatorWorkingDir = generator->GetExpandedWorkingDir(context.rteActiveTarget);
 
-    // Create generate.yml file with context info and destination
-    ProjMgrYamlEmitter::EmitContextInfo(context, generatorWorkingDir);
 
     error_code ec;
     const auto& workingDir = fs::current_path(ec);
-    fs::current_path(generatorWorkingDir, ec);
+    fs::current_path(generatorDestination, ec);
     ProjMgrUtils::Result result = ProjMgrUtils::ExecCommand(generatorCommand);
     fs::current_path(workingDir, ec);
 
