@@ -129,6 +129,8 @@ bool ProjMgrYamlParser::ParseCproject(const string& input,
       return false;
     }
 
+    ParseInterfaces(projectNode, cproject.interfaces);
+
   } catch (YAML::Exception& e) {
     ProjMgrLogger::Error(input, e.mark.line + 1, e.mark.column + 1, e.msg);
     return false;
@@ -179,7 +181,8 @@ bool ProjMgrYamlParser::ParseClayer(const string& input,
     if (!ParseGroups(layerNode, clayer.groups)) {
       return false;
     }
-    //TODO: Parse Interfaces
+
+    ParseInterfaces(layerNode, clayer.interfaces);
 
   }
   catch (YAML::Exception& e) {
@@ -202,6 +205,27 @@ void ProjMgrYamlParser::ParseString(const YAML::Node& parent, const string& key,
 void ProjMgrYamlParser::ParseVector(const YAML::Node& parent, const string& key, vector<string>& value) {
   if (parent[key].IsDefined() && parent[key].IsSequence()) {
     value = parent[key].as<vector<string>>();
+  }
+}
+
+void ProjMgrYamlParser::ParseVectorOfStringPairs(const YAML::Node& parent, const string& key, vector<pair<string, string>>& value) {
+  if (parent[key].IsDefined() && parent[key].IsSequence()) {
+    for (const auto& item : parent[key]) {
+      // accept map elements <string, string> or a string
+      if (item.IsDefined()) {
+        if (item.IsMap()) {
+          const auto& elements = item.as<map<string, string>>();
+          for (auto element : elements) {
+            if (YAML::IsNullString(element.second)) {
+              element.second = "";
+            }
+            value.push_back(element);
+          }
+        } else {
+          value.push_back(make_pair(item.as<string>(), ""));
+        }
+      }
+    }
   }
 }
 
@@ -447,6 +471,19 @@ void ProjMgrYamlParser::ParseOutputDirs(const YAML::Node& parent, struct Directo
   }
 }
 
+void ProjMgrYamlParser::ParseInterfaces(const YAML::Node& parent, struct InterfacesItem& interfaces) {
+  if (parent[YAML_INTERFACES].IsDefined()) {
+    const YAML::Node& interfacesNode = parent[YAML_INTERFACES];
+    map<const string, vector<pair<string, string>>&> interfacesChildren = {
+      {YAML_PROVIDES, interfaces.provides},
+      {YAML_CONSUMES, interfaces.consumes},
+    };
+    for (const auto& item : interfacesChildren) {
+      ParseVectorOfStringPairs(interfacesNode, item.first, item.second);
+    }
+  }
+}
+
 void ProjMgrYamlParser::ParseTargetTypes(const YAML::Node& parent, map<string, TargetType>& targetTypes) {
   if (parent[YAML_TARGETTYPES].IsDefined()) {
     const YAML::Node& targetTypesNode = parent[YAML_TARGETTYPES];
@@ -569,6 +606,7 @@ const set<string> projectKeys = {
   YAML_GROUPS,
   YAML_LAYERS,
   YAML_SETUPS,
+  YAML_INTERFACES,
 };
 
 const set<string> layerKeys = {
@@ -761,12 +799,12 @@ const map<string, set<string>> sequences = {
   {YAML_LAYERS, layersKeys},
   {YAML_GROUPS, groupsKeys},
   {YAML_FILES, filesKeys},
-  {YAML_INTERFACES, interfacesKeys},
 };
 
 const map<string, set<string>> mappings = {
   {YAML_PROCESSOR, processorKeys},
   {YAML_OUTPUTDIRS, outputDirsKeys},
+  {YAML_INTERFACES, interfacesKeys},
 };
 
 bool ProjMgrYamlParser::ValidateCdefault(const string& input, const YAML::Node& root) {

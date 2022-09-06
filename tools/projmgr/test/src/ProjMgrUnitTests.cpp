@@ -498,6 +498,46 @@ TEST_F(ProjMgrUnitTests, RunProjMgrLayers2) {
     testinput_folder + "/TestLayers/ref2/testlayers.Release.cprj");
 }
 
+TEST_F(ProjMgrUnitTests, RunProjMgrLayersCompatibleInterfaces) {
+  char* argv[8];
+
+  // convert -s solution.yml
+  const string& csolution = testinput_folder + "/TestLayers/interfaces.csolution.yml";
+  const string& context = "*.CompatibleInterfaces";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  argv[6] = (char*)"-c";
+  argv[7] = (char*)context.c_str();
+  EXPECT_EQ(0, RunProjMgr(8, argv));
+
+  // Check generated CPRJ
+  CompareFile(testoutput_folder + "/interfaces.CompatibleInterfaces.cprj",
+    testinput_folder + "/TestLayers/ref/interfaces/interfaces.CompatibleInterfaces.cprj");
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgrLayersIncompatibleInterfaces) {
+  char* argv[8];
+  StdStreamRedirect streamRedirect;
+
+  // convert -s solution.yml
+  const string& csolution = testinput_folder + "/TestLayers/interfaces.csolution.yml";
+  const string& context = "*.IncompatibleInterfaces";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  argv[6] = (char*)"-c";
+  argv[7] = (char*)context.c_str();
+  EXPECT_EQ(0, RunProjMgr(8, argv));
+
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_EQ(errStr, "warning csolution: consumed interface(s) not provided:\nSTDOUT\n");
+}
+
 TEST_F(ProjMgrUnitTests, AccessSequences) {
   char* argv[7];
 

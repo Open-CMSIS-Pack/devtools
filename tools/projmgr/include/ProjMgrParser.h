@@ -162,6 +162,16 @@ struct LayerItem {
 };
 
 /**
+ * @brief interfaces item containing
+ *        vector of provided interfaces pairs,
+ *        vector of consumed interfaces pairs
+*/
+struct InterfacesItem {
+  std::vector<std::pair<std::string, std::string>> provides;
+  std::vector<std::pair<std::string, std::string>> consumes;
+};
+
+/**
  * @brief setup item containing
  *        setup description name,
  *        for compiler control,
@@ -280,16 +290,7 @@ struct CprojectItem {
   std::vector<GroupNode> groups;
   std::vector<LayerItem> clayers;
   std::vector<SetupItem> setups;
-};
-
-/**
- * @brief interface item containing
- *        map of provided interfaces,
- *        map of consumed interfaces
-*/
-struct InterfaceItem {
-  std::map<std::string, std::string> provides;
-  std::map<std::string, std::string> consumes;
+  InterfacesItem interfaces;
 };
 
 /**
@@ -312,7 +313,7 @@ struct ClayerItem {
   std::vector<RteDirItem> rteDirs;
   std::vector<ComponentItem> components;
   std::vector<GroupNode> groups;
-  std::vector<InterfaceItem> interfaces;
+  InterfacesItem interfaces;
 };
 
 /**

@@ -125,6 +125,7 @@ void InitMessageTable()
   table["M213"] = MessageEntry(MsgLevel::LEVEL_ERROR,    CRLF_B,   "'%VAR%' environment variable is not set!"                                    );
   table["M214"] = MessageEntry(MsgLevel::LEVEL_ERROR,    CRLF_B,   "'extract' command requires --outdir option!"                                 );
   table["M215"] = MessageEntry(MsgLevel::LEVEL_ERROR,    CRLF_B,   "Project does not have layers!"                                               );
+  table["M216"] = MessageEntry(MsgLevel::LEVEL_ERROR,    CRLF_B,   "Unable to get executable path %MSG%!"                                        );
 
   // 600... CMSIS Build Errors, warnings and messages
   table["M600"] = MessageEntry(MsgLevel::LEVEL_ERROR,    CRLF_B,   "Package index was not found in'%PATH%/.Web'!"                                );
@@ -168,6 +169,5 @@ void InitMessageTableStrict()
 {
   MsgTableStrict table;
 
-  //table["M000"] = MsgLevel::LEVEL_ERROR;
   PdscMsg::AddMessagesStrict(table);
 }

@@ -673,7 +673,7 @@ Value                                                 | Control diagnostic messa
 
 ## `define:`
 
->**Note:** For a transition period `defines:` is also accepted.  However this will be deprecated.
+>**Note:** For a transition period `defines:` is also accepted.  However, this is deprecated and will be removed in a future update.
 
 Contains a list of symbol #define statements that are passed via the command line to the development tools.
 
@@ -692,7 +692,7 @@ define:                    # Start a list of define statements
 
 ## `undefine:`
 
->**Note:** For a transition period `undefines:` is also accepted.  However this will be deprecated.
+>**Note:** For a transition period `undefines:` is also accepted.  However, this is deprecated and will be removed in a future update.
 
 Remove symbol #define statements from the command line of the development tools.
 
@@ -716,7 +716,7 @@ groups:
 
 ## `add-path:`
 
->**Note:** For a transition period `add-paths:` is also accepted.  However this will be deprecated.
+>**Note:** For a transition period `add-paths:` is also accepted.  However, this is deprecated and will be removed in a future update.
 
 Add include paths to the command line of the development tools.
 
@@ -739,7 +739,7 @@ project:
 
 ## `del-path:`
 
->**Note:** For a transition period `del-paths:` is also accepted.  However this will be deprecated.
+>**Note:** For a transition period `del-paths:` is also accepted.  However, this is deprecated and will be removed in a future update.
 
 Remove include paths (that are defined at the cproject level) from the command line of the development tools.
 

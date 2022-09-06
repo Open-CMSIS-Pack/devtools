@@ -131,9 +131,11 @@ protected:
   void ParseProcessor(const YAML::Node& parent, ProcessorItem& processor);
   void ParseString(const YAML::Node& parent, const std::string& key, std::string& value);
   void ParseVector(const YAML::Node& parent, const std::string& key, std::vector<std::string>& value);
+  void ParseVectorOfStringPairs(const YAML::Node& parent, const std::string& key, std::vector<std::pair<std::string, std::string>>& value);
   void ParseVectorOrString(const YAML::Node& parent, const std::string& key, std::vector<std::string>& value);
   void ParseBuildType(const YAML::Node& parent, BuildType& buildType);
   void ParseOutputDirs(const YAML::Node& parent, struct DirectoriesItem& directories);
+  void ParseInterfaces(const YAML::Node& parent, struct InterfacesItem& interfaces);
   void ParseTargetType(const YAML::Node& parent, TargetType& targetType);
   void ParseBuildTypes(const YAML::Node& parent, std::map<std::string, BuildType>& buildTypes);
   void ParseTargetTypes(const YAML::Node& parent, std::map<std::string, TargetType>& targetTypes);

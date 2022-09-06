@@ -95,25 +95,24 @@ mkdir -p etc/${PACKAGE_NAME}
 mkdir -p etc/profile.d
 
 # Get cpackget
-cpackget_version="0.7.0"
+cpackget_version="0.8.0"
 cpackget_base=https://github.com/Open-CMSIS-Pack/cpackget/releases/download/v${cpackget_version}/cpackget_${cpackget_version}
 curl --retry 3 -L ${cpackget_base}_linux_amd64.tar.gz -o - | tar xzfO - --wildcards '*cpackget' > ${input}/bin/cpackget.lin
 
 # Get cbuild
-cbuild_version="1.0.0"
+cbuild_version="1.1.0"
 cbuild_base=https://github.com/Open-CMSIS-Pack/cbuild/releases/download/v${cbuild_version}/cbuild_${cbuild_version}
 curl --retry 3 -L ${cbuild_base}_linux_amd64.tar.gz  -o - | tar xzfO - --wildcards '*cbuild' > ${input}/bin/cbuild.lin
 
 cp -r ${input}/bin usr/lib/${PACKAGE_NAME}  # This should be in /usr/bin but cannot for the time being.
 cp -r ${input}/doc usr/share/doc/${PACKAGE_NAME}
 cp -r ${input}/etc/* etc/${PACKAGE_NAME}
-cp -r ${input}/etc/ usr/lib/${PACKAGE_NAME} # Remove when utilities in /bin no longer reliant on ${CMSIS_BUILD_ROOT}/../etc/
+cp -r ${input}/etc/ usr/lib/${PACKAGE_NAME} # Remove when utilities in /bin no longer reliant on <path_to_utilities>/../etc/
 # The following is not recommended but could not find a better way
 # https://www.debian.org/doc/debian-policy/ch-opersys.html#environment-variables
 cat > etc/profile.d/${PACKAGE_NAME}.sh << EnvironmentVariables
 export CMSIS_PACK_ROOT=~/.cache/arm/packs
 export CMSIS_COMPILER_ROOT=/etc/${PACKAGE_NAME}
-export CMSIS_BUILD_ROOT=/usr/lib/${PACKAGE_NAME}/bin
 EnvironmentVariables
 find . -type f -name "*.exe" -exec rm {} ';'
 find . -type f -name "*.mac" -exec rm {} ';'
