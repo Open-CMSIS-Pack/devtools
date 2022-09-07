@@ -84,6 +84,7 @@ build:
     components:
     - component: ARM::CMSIS:RTOS2:FreeRTOS&Cortex-M
       from-pack: ARM::CMSIS-FreeRTOS@10.4.6
+      selected-by: MyProject.cproject.yml#55
       condition: ARMv6_7_8-M Device 
       component-files:
       - file: %CMSIS_PACK_ROOT%/ARM/CMSIS-FreeRTOS/10.4.6/CMSIS/RTOS2/FreeRTOS/Source/ARM/clib_arm.c
@@ -94,6 +95,7 @@ build:
         category: sourceC
     - component: ARM::RTOS&FreeRTOS:Config&CMSIS RTOS2
       from-pack: ARM::CMSIS-FreeRTOS@10.4.6
+      selected-by: MyProject.cproject.yml#23: - component: RTOS&FreeRTOS:Config&CMSIS RTOS2
       component-files:
       - file: ./RTE/RTOS/FreeRTOSConfig.h
         category: include
@@ -101,6 +103,8 @@ build:
 
     - component: ARM::Security:mbed TLS
       from-pack: ARM::mbedTLS@1.7.0
+      selected-by: MyLayer.clayer.yml#123: - component: Security:mbed TLS
+
       defines:
       - MBEDTLS_CONFIG_FILE="aws_mbedtls_config.h"
       component-files:
@@ -206,6 +210,7 @@ The `packs:` node is the start of a pack list that is used in the `csolution` ap
 :-----------------------------------------------------|:------------------------------------
 [`- pack:`](#pack)                                    | Explicit pack specification (additive) with exact version information used.
 &nbsp;&nbsp; `path:`                                  | For packs that are local to the `csolution`, explicit path name that stores the software pack
+&nbsp;&nbsp; `local-repository:`                      | For packs that are managed as local repository, the path name to the working directory of that pack.
 &nbsp;&nbsp; `devices:`                               | A list of device definitions defined by this pack and used by the solution.
 &nbsp;&nbsp; `boards:`                                | A list of board definitions defined by this pack and used by the solution.
 
@@ -218,6 +223,8 @@ packs:                                  # start section that specifics software 
   - pack: NXP::K32L3A60_DFP@10.6.0
     devices:
     - device: K32L3A61
+  - pack: MDK-Packs:IoT_Socket@1.3.1
+    local-repository: C:/w/IoT_Socket/
 ```
 
 # Source File Management
@@ -260,6 +267,7 @@ Keyword          | Description
 :--------------------------------------------------------|:------------------------------------
 `- component:`                                           | Name of the software component.
 &nbsp;&nbsp; `from-pack:`                                | Pack that defines this component.
+&nbsp;&nbsp; `selected-by:`                              | File name of the *.YML file optional with line number and/or original source line.
 &nbsp;&nbsp; [`optimize:`](YML-Input-Format.md#optimize) | Optimize level for code generation.
 &nbsp;&nbsp; [`debug:`](YML-Input-Format.md#debug)       | Generation of debug information.
 &nbsp;&nbsp; [`warnings:`](YML-Input-Format.md#warnings) | Control generation of compiler diagnostics.
