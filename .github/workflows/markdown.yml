@@ -12,7 +12,7 @@ jobs:
       - name: Checkout devtools
         uses: actions/checkout@v2
 
-      - name: Build documentation
+      - name: Register markdownlint warning matcher
         run: |
           echo "::add-matcher::.github/markdownlint.json"
 
@@ -22,3 +22,16 @@ jobs:
           args: '**/*.md'
           ignore: '**/testinput/**'
           config: '.github/markdownlint.jsonc'
+      
+      - name: Remove markdownlint warning matcher
+        if: always()
+        run: |
+          echo "::remove-matcher owner=markdownlint::"
+
+      - uses: gaurav-nelson/github-action-markdown-link-check@master
+        if: always()
+        with:
+          use-quiet-mode: 'yes'
+          use-verbose-mode: 'yes'
+          check-modified-files-only: 'yes'
+          base-branch: ${{ github.base_ref }}
