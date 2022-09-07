@@ -50,6 +50,8 @@
         <argument>#P</argument>
         <!-- absolute or relative to workingDir. $S = Device Family Pack base folder -->
         <argument>$S</argument>
+        <!-- absolute path to the generator input file -->
+        <argument>$G</argument>
       </exe>
       <!-- path is either absolute or relative to working directory -->
       <gpdsc name="$PRTE/Device/$D/RteTest.gpdsc"/>
@@ -70,6 +72,8 @@
         <argument>#P</argument>
         <!-- absolute or relative to workingDir. $S = Device Family Pack base folder -->
         <argument>$S</argument>
+        <!-- absolute path to the generator input file -->
+        <argument>$G</argument>
       </exe>
       <!-- path is either absolute or relative to working directory -->
       <gpdsc name="$PRTE/Device/$D/RteTest.gpdsc"/>
@@ -91,6 +95,15 @@
       <description>Configuration via RteTest script</description>
       <RTE_Components_h>
         #define RTE_TEST_GENERATOR_WITH_KEY
+      </RTE_Components_h>
+      <files>
+        <file category="other" name="Templates/RteTest.gpdsc.template" version ="1.0.0"/>
+      </files>
+    </component>
+    <component generator="RteTestGeneratorIdentifier" Cclass="Device" Cgroup="RteTest Generated Component" Csub="RteTestSimple" Cversion="1.1.0">
+      <description>Configuration via RteTest script</description>
+      <RTE_Components_h>
+        #define RTE_TEST_GENERATOR_SIMPLE
       </RTE_Components_h>
       <files>
         <file category="other" name="Templates/RteTest.gpdsc.template" version ="1.0.0"/>
