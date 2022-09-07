@@ -1,27 +1,36 @@
 # What is this?
+
 TBD:
 
-# How is it structured?
+## How is it structured?
+
 TBD:
 
-# How is it used?
-## Building
-* Call CMake command `cmake --build . --target RteUtils`
+## How is it used?
+
+### Building
+
+- Call CMake command `cmake --build . --target RteUtils`
   >**OR**
-* Use native build command (**msbuild, make, ninja**) 
+- Use native build command (**msbuild, make, ninja**)
 
-## Compilation
+### Compilation
+
 TBD:
 
-## Linking
+### Linking
+
 TBD:
 
-# How to build and run tests?
-## Building
-* Call CMake command `cmake --build . --target RteUtilsUnitTests`
+## How to build and run tests?
+
+### Building Tests
+
+- Call CMake command `cmake --build . --target RteUtilsUnitTests`
   >**OR**
-* Build using native build command (**msbuild, make, ninja**) 
+- Build using native build command (**msbuild, make, ninja**)
 
-## Running Tests
-* Goto <PATH>..rteutils/test/<Debug|Release>
-* Call `./RteUtilsUnitTests`
+### Running Tests
+
+- Goto \<PATH\>..rteutils/test/\<Debug|Release\>
+- Call `./RteUtilsUnitTests`
