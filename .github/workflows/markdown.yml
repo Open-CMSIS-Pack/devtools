@@ -16,7 +16,7 @@ jobs:
         run: |
           echo "::add-matcher::.github/markdownlint.json"
 
-      - name: Lint changelog file
+      - name: Lint markdown files
         uses: avto-dev/markdown-lint@v1
         with:
           args: '**/*.md'
