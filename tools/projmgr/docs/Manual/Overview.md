@@ -83,7 +83,7 @@ Input Files              | Description
 [*.rzone files](https://arm-software.github.io/CMSIS_5/Zone/html/xml_rzone_pg.html)                 | Definition of memory and peripheral resources. If it does not exist, content is created from DFP.
 *.cdefault.yml          | **Step 1:** setup of an environment (could be an IDE) to pre-define a toolchain.
 *.csolution.yml          | **Step 2:** complete scope of the application with build order of sub-projects. Defines target and build types.
-*.cproject.yml           | **Step 3:** content of an independent build (linker run) - directly relates to a *.cprj file.
+*.cproject.yml           | **Step 3:** content of an independent build (linker run) - directly relates to a `*.cprj` file.
 *.clayer.yml             | **Step 4:** set of source files along with pre-configured components for reuse in different applications.
 
 <!-- markdownlint-restore -->

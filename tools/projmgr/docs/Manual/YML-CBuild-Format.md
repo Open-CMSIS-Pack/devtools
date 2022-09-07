@@ -287,11 +287,14 @@ Keyword          | Description
 
 ### `components:`
 
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
+
 `components:`                                            | Content
 :--------------------------------------------------------|:------------------------------------
 `- component:`                                           | Name of the software component.
 &nbsp;&nbsp; `from-pack:`                                | Pack that defines this component.
-&nbsp;&nbsp; `selected-by:`                              | File name of the *.YML file optional with line number and/or original source line.
+&nbsp;&nbsp; `selected-by:`                              | File name of the `*.YML` file optional with line number and/or original source line.
 &nbsp;&nbsp; [`optimize:`](YML-Input-Format.md#optimize) | Optimize level for code generation.
 &nbsp;&nbsp; [`debug:`](YML-Input-Format.md#debug)       | Generation of debug information.
 &nbsp;&nbsp; [`warnings:`](YML-Input-Format.md#warnings) | Control generation of compiler diagnostics.
@@ -301,7 +304,9 @@ Keyword          | Description
 &nbsp;&nbsp; `instances:`                                | Configure component instances.
 &nbsp;&nbsp; [`generator:`]                              | Generator ID for components that are configurable via a generator.
 &nbsp;&nbsp; [`component-files:`](#component-files)      | Files that belong to this component.
-&nbsp;&nbsp; [`condition:`](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_conditions_pg.html#element_condition)                                  | Reference to the condition ID of the software pack that triggered inclusion of this component.
+&nbsp;&nbsp; [`condition:`](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_conditions_pg.html#element_condition) | Reference to the condition ID of the software pack that triggered inclusion of this component.
+
+<!-- markdownlint-restore -->
 
 ### `component-files:`
 
@@ -314,7 +319,6 @@ Keyword          | Description
 &nbsp;&nbsp; [`category:`](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_components_pg.html#FileCategoryEnum) | File category according Open-CMSIS-Pack specification
 &nbsp;&nbsp; [`attr:`](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_components_pg.html#FileAttributeEnum) | File category according Open-CMSIS-Pack specification
 &nbsp;&nbsp; [`condition:`](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_conditions_pg.html#element_condition)                                  | Reference to the condition ID of the software pack that triggered inclusion of this file.
-
 
 <!-- markdownlint-restore -->
 

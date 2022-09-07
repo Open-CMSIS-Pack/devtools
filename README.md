@@ -91,8 +91,8 @@ Note that some of the required tools are platform dependent:
     - GNU Bash (minimum recommended version **4.3**)
     - XCode/AppleClang (minimum recommended version **11**)
     - CMake (minimum recommended version **3.18**)
-  - **General:**
-    - [GNU Arm Embedded Toolchain](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-rm/downloads)  <!-- markdownlint-disable-line MD013 -->
+  - **General:** <!-- markdownlint-disable-next-line MD013 -->
+    - [GNU Arm Embedded Toolchain](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-rm/downloads)
       (version **10-2020-q4-major**)
 
     ```txt
