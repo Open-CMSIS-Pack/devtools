@@ -1992,7 +1992,7 @@ bool ProjMgrWorker::ExecuteGenerator(std::string& generatorId) {
     }
 
     // Update RteTarget with current generatorInputFilePath that was created
-    context.rteActiveTarget->SetGeneratorInputFilePath(*generatorInputFilePath);
+    context.rteActiveTarget->SetGeneratorInputFile(*generatorInputFilePath);
 
     // TODO: review RteGenerator::GetExpandedCommandLine and variables
     //const string generatorCommand = m_kernel->GetCmsisPackRoot() + "/" + generator->GetPackagePath() + generator->GetCommand();
