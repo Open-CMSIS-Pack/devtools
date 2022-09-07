@@ -518,22 +518,31 @@ public:
    * @return component ID
   */
   virtual std::string GetComponentAggregateID() const;
+
+  /**
+   * @brief construct string containing component's attributes "Cclass" "Cgroup" and "Csub"
+   * @param delimiter character between attributes "Cclass" "Cgroup" and "Csub"
+   * @return component ID
+  */
+  virtual std::string ConcatenateCclassCgroupCsub(char delimiter = '.') const;
+
   /**
    * @brief construct component ID
    * @param prefix component ID prefix (empty for API, Cvendor[.Cbundle] for components)
    * @param bVariant true if value of attribute "Cvariant" should be included
    * @param bVersion true if value of attribute related to version should be included
    * @param bCondition true if condition ID should be included
-   * @param delimiter character behind attribute "Cclass" and "Csub"
+   * @param delimiter character between attributes "Cclass" "Cgroup" and "Csub"
    * @return component ID
   */
   virtual std::string ConstructComponentID(const std::string& prefix, bool bVariant, bool bVersion, bool bCondition, char delimiter = '.') const;
+
   /**
    * @brief construct component display name
    * @param bClass true if value of attribute "Cclass" should be included
    * @param bVariant true if value of attribute "Cvariant" should be included
    * @param bVersion true if value of attribute related to version should be included
-   * @param delimiter character behind attribute "Cclass" and "Csub"
+   * @param delimiter character between attributes "Cclass" "Cgroup" and "Csub"
    * @return
   */
   virtual std::string ConstructComponentDisplayName(bool bClass = false, bool bVariant = false, bool bVersion = false, char delimiter = ':') const;

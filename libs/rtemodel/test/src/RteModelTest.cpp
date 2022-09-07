@@ -125,7 +125,7 @@ protected:
 
     const string projectDir = RteUtils::ExtractFilePath(project, true);
     const string targetFolder = "/_" + RteUtils::ExtractFileBaseName(project) + "/";
-    const string preIncComp = projectDir + rteFolder + targetFolder + "Pre_Include__RteTest_ComponentLevel.h";
+    const string preIncComp = projectDir + rteFolder + targetFolder + "Pre_Include_RteTest_ComponentLevel.h";
     const string preIncGlob = projectDir + rteFolder + targetFolder + "Pre_Include_Global.h";
     const string rteComp = projectDir + rteFolder + targetFolder + "RTE_Components.h";
 

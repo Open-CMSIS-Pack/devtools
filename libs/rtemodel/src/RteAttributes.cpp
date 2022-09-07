@@ -581,18 +581,24 @@ string RteAttributes::GetComponentAggregateID() const
   return ConstructComponentID(GetVendorAndBundle(), false, false, false);
 }
 
+string RteAttributes::ConcatenateCclassCgroupCsub(char delimiter) const
+{
+  string str = GetCclassName();
+  str += delimiter;
+  str += GetCgroupName();
+  // optional subgroup
+  if (!GetCsubName().empty()) {
+    str += delimiter;
+    str += GetCsubName();
+  }
+  return str;
+}
+
 string RteAttributes::ConstructComponentID(const string& prefix, bool bVariant, bool bVersion, bool bCondition, char delimiter) const
 {
   string id = prefix;
   id += "::";
-  id += GetCclassName();
-  id += delimiter;
-  id += GetCgroupName();
-  // optional subgroup
-  if (!GetCsubName().empty()) {
-    id += delimiter;
-    id += GetCsubName();
-  }
+  id += ConcatenateCclassCgroupCsub(delimiter);
 
   if (bCondition && !GetConditionID().empty())
   {
@@ -649,7 +655,8 @@ string RteAttributes::ConstructComponentDisplayName(bool bClass, bool bVariant, 
 
 string RteAttributes::ConstructComponentPreIncludeFileName() const
 {
-  return WildCards::ToX(ConstructComponentID("Pre_Include", false, false, false, '_')) + ".h";
+  string fileName = "Pre_Include_";
+  return fileName + WildCards::ToX(ConcatenateCclassCgroupCsub('_')) + ".h";
 }
 
 bool RteAttributes::HasComponentAttributes(const map<string, string>& attributes) const
@@ -670,7 +677,7 @@ bool RteAttributes::HasComponentAttributes(const map<string, string>& attributes
       else
         return false;
     }
-    if (a == "Cversion" || a == "Capiversion") { // version of this compomnent should match supplied version range
+    if (a == "Cversion" || a == "Capiversion") { // version of this component should match supplied version range
       int verCompareResult = VersionCmp::RangeCompare(it->second, v);
       if (verCompareResult != 0)
         return false;
