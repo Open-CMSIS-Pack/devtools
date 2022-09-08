@@ -1312,7 +1312,7 @@ TEST_F(ProjMgrUnitTests, ExecuteGenerator) {
   EXPECT_TRUE(PopulateContexts());
   EXPECT_TRUE(m_worker.ParseContextSelection(m_context));
   const string& hostType = CrossPlatformUtils::GetHostType();
-  if (hostType == "linux" || hostType == "win") {
+  if (hostType == "linux" || hostType == "win" || hostType == "mac") {
     EXPECT_TRUE(m_worker.ExecuteGenerator(m_codeGenerator));
   } else {
     EXPECT_FALSE(m_worker.ExecuteGenerator(m_codeGenerator));
