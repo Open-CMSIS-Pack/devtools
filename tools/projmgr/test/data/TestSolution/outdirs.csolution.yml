@@ -21,3 +21,4 @@ solution:
     intdir: $OutDir(test1)$/$TargetType$
     outdir: $Project$/$BuildType$
     rtedir: $Source()$/Custom/RTEDIR
+    gendir: $Project$/gendir/$TargetType$

@@ -54,6 +54,7 @@ static constexpr const char* YAML_OPTIMIZE = "optimize";
 static constexpr const char* YAML_OUTPUTTYPE = "output-type";
 static constexpr const char* YAML_OUTPUTDIRS = "output-dirs";
 static constexpr const char* YAML_OUTPUT_CPRJDIR = "cprjdir";
+static constexpr const char* YAML_OUTPUT_GENDIR = "gendir";
 static constexpr const char* YAML_OUTPUT_INTDIR = "intdir";
 static constexpr const char* YAML_OUTPUT_OUTDIR = "outdir";
 static constexpr const char* YAML_OUTPUT_RTEDIR = "rtedir";

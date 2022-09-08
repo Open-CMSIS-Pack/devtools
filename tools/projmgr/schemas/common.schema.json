@@ -97,6 +97,7 @@
     "OutputDirectoriesType": {
       "type": "object",
       "properties": {
+        "gendir":   { "type": "string" },
         "rtedir":   { "type": "string" },
         "intdir":   { "type": "string" },
         "outdir":   { "type": "string" },

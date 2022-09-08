@@ -854,6 +854,18 @@ public:
   RteDeviceProperty* GetDeviceEnvironment() const { return m_deviceEnvironment; }
 
   /**
+   * @brief get the absolute path to the generator input file
+   * @return absolute path to the generator input file
+  */
+  const std::string& GetGeneratorInputFile() const { return m_generatorInputFile; }
+
+  /**
+   * @brief set the generator input file path
+   * @param newGeneratorInputFile the new absolute path to the generator input file
+  */
+  void SetGeneratorInputFile(const std::string& newGeneratorInputFile) { m_generatorInputFile = newGeneratorInputFile; }
+
+  /**
    * @brief get <environment> property of device with given name
    * @param tag given name
    * @return device environment string
@@ -950,6 +962,8 @@ protected:
   std::set<std::string> m_objects;
   std::set<std::string> m_docs;
   std::map<std::string, RteComponent*> m_scvdFiles; // component viewer description files
+  std::string m_generatorInputFile; // Absolute path to the generator input file
+
   // header file content
   std::set<std::string> m_RTE_Component_h; // defines put into the file
   std::set<std::string> m_PreIncludeGlobal; // defines put into the global pre-include file

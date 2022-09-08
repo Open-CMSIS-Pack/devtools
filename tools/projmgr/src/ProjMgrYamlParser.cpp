@@ -461,6 +461,7 @@ void ProjMgrYamlParser::ParseOutputDirs(const YAML::Node& parent, struct Directo
     const YAML::Node& outputDirsNode = parent[YAML_OUTPUTDIRS];
     map<const string, string&> outputDirsChildren = {
       {YAML_OUTPUT_CPRJDIR, directories.cprj},
+      {YAML_OUTPUT_GENDIR, directories.gendir},
       {YAML_OUTPUT_INTDIR, directories.intdir},
       {YAML_OUTPUT_OUTDIR, directories.outdir},
       {YAML_OUTPUT_RTEDIR, directories.rte},
@@ -673,6 +674,7 @@ const set<string> buildTypeKeys = {
 
 const set<string> outputDirsKeys = {
   YAML_OUTPUT_CPRJDIR,
+  YAML_OUTPUT_GENDIR,
   YAML_OUTPUT_INTDIR,
   YAML_OUTPUT_OUTDIR,
   YAML_OUTPUT_RTEDIR,

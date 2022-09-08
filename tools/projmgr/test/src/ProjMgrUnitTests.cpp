@@ -17,6 +17,11 @@
 
 using namespace std;
 
+bool shouldHaveGeneratorForHostType(const string& hostType) {
+  return hostType == "linux" || hostType == "win" || hostType == "mac";
+}
+
+
 class ProjMgrUnitTests : public ProjMgr, public ::testing::Test {
 protected:
   ProjMgrUnitTests() {}
@@ -1263,7 +1268,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ExecuteGenerator) {
   argv[7] = (char*)"test-gpdsc.Debug+CM0";
 
   const string& hostType = CrossPlatformUtils::GetHostType();
-  if (hostType == "linux" || hostType == "win") {
+  if (shouldHaveGeneratorForHostType(hostType)) {
     EXPECT_EQ(0, RunProjMgr(8, argv));
   } else {
     EXPECT_EQ(1, RunProjMgr(8, argv));
@@ -1280,7 +1285,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ExecuteGeneratorEmptyContext) {
   argv[5] = (char*)csolution.c_str();
 
   const string& hostType = CrossPlatformUtils::GetHostType();
-  if (hostType == "linux" || hostType == "win") {
+  if (shouldHaveGeneratorForHostType(hostType)) {
     EXPECT_EQ(0, RunProjMgr(6, argv));
   } else {
     EXPECT_EQ(1, RunProjMgr(6, argv));
@@ -1297,7 +1302,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ExecuteGeneratorEmptyContextMultipleTypes) {
   argv[5] = (char*)csolution.c_str();
 
   const string& hostType = CrossPlatformUtils::GetHostType();
-  if (hostType == "linux" || hostType == "win") {
+  if (shouldHaveGeneratorForHostType(hostType)) {
     EXPECT_EQ(0, RunProjMgr(6, argv));
   } else {
     EXPECT_EQ(1, RunProjMgr(6, argv));
@@ -1352,7 +1357,7 @@ TEST_F(ProjMgrUnitTests, ExecuteGenerator) {
   EXPECT_TRUE(PopulateContexts());
   EXPECT_TRUE(m_worker.ParseContextSelection(m_context));
   const string& hostType = CrossPlatformUtils::GetHostType();
-  if (hostType == "linux" || hostType == "win") {
+  if (shouldHaveGeneratorForHostType(hostType)) {
     EXPECT_TRUE(m_worker.ExecuteGenerator(m_codeGenerator));
   } else {
     EXPECT_FALSE(m_worker.ExecuteGenerator(m_codeGenerator));
@@ -1373,7 +1378,7 @@ TEST_F(ProjMgrUnitTests, ExecuteGeneratorWithKey) {
   string genFolder = testcmsispack_folder + "/ARM/RteTestGenerator/0.1.0/Generator";
   // we use environment variable to test on all pl since it is reliable
   CrossPlatformUtils::SetEnv("RTE_GENERATOR_WITH_KEY", genFolder);
-  if (hostType == "linux" || hostType == "win") {
+  if (shouldHaveGeneratorForHostType(hostType)) {
     EXPECT_TRUE(m_worker.ExecuteGenerator(m_codeGenerator));
   } else {
     EXPECT_FALSE(m_worker.ExecuteGenerator(m_codeGenerator));
@@ -1707,6 +1712,7 @@ TEST_F(ProjMgrUnitTests, ListComponents_MultiplePackSelection) {
   };
   set<string> expected_Gen = {
     "ARM::Device:RteTest Generated Component:RteTest@1.1.0 (ARM::RteTestGenerator@0.1.0)",
+    "ARM::Device:RteTest Generated Component:RteTestSimple@1.1.0 (ARM::RteTestGenerator@0.1.0)",
     "ARM::Device:RteTest Generated Component:RteTestWithKey@1.1.0 (ARM::RteTestGenerator@0.1.0)"
   };
   vector<string> components;

@@ -43,6 +43,7 @@
       <exe>
       <command host="win">Generator/script.bat</command>
       <command host="linux">Generator/script.sh</command>
+      <command host="mac">Generator/script.sh</command>
         <!-- path is specified either absolute or relative to PDSC or GPDSC file. If not specified it is the project directory configured by the environment -->
         <!-- D = Device (Dname/Dvariant as configured by environment) -->
         <argument>$D</argument>
@@ -50,6 +51,8 @@
         <argument>#P</argument>
         <!-- absolute or relative to workingDir. $S = Device Family Pack base folder -->
         <argument>$S</argument>
+        <!-- absolute path to the generator input file -->
+        <argument>$G</argument>
       </exe>
       <!-- path is either absolute or relative to working directory -->
       <gpdsc name="$PRTE/Device/$D/RteTest.gpdsc"/>
@@ -63,6 +66,7 @@
       <exe>
       <command host="win"   key="RTE_GENERATOR_WITH_KEY">script.bat</command>
       <command host="linux" key="RTE_GENERATOR_WITH_KEY">script.sh</command>
+      <command host="mac"   key="RTE_GENERATOR_WITH_KEY">script.sh</command>
         <!-- path is specified either absolute or relative to PDSC or GPDSC file. If not specified it is the project directory configured by the environment -->
         <!-- D = Device (Dname/Dvariant as configured by environment) -->
         <argument>$D</argument>
@@ -70,6 +74,8 @@
         <argument>#P</argument>
         <!-- absolute or relative to workingDir. $S = Device Family Pack base folder -->
         <argument>$S</argument>
+        <!-- absolute path to the generator input file -->
+        <argument>$G</argument>
       </exe>
       <!-- path is either absolute or relative to working directory -->
       <gpdsc name="$PRTE/Device/$D/RteTest.gpdsc"/>
@@ -91,6 +97,15 @@
       <description>Configuration via RteTest script</description>
       <RTE_Components_h>
         #define RTE_TEST_GENERATOR_WITH_KEY
+      </RTE_Components_h>
+      <files>
+        <file category="other" name="Templates/RteTest.gpdsc.template" version ="1.0.0"/>
+      </files>
+    </component>
+    <component generator="RteTestGeneratorIdentifier" Cclass="Device" Cgroup="RteTest Generated Component" Csub="RteTestSimple" Cversion="1.1.0">
+      <description>Configuration via RteTest script</description>
+      <RTE_Components_h>
+        #define RTE_TEST_GENERATOR_SIMPLE
       </RTE_Components_h>
       <files>
         <file category="other" name="Templates/RteTest.gpdsc.template" version ="1.0.0"/>
