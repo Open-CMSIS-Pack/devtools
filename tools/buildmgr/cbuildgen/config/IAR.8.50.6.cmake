@@ -70,37 +70,10 @@ if(NOT DEFINED IAR_CPU)
   message(FATAL_ERROR "Error: CPU is not supported!")
 endif()
 
-# Options (optimize, debug, warnings)
-set (CC_OPT "")
-set (LD_OPT "")
-
-if(OPT_OPTIMIZE STREQUAL "none")
-  set(CC_OPT "-On")
-elseif(OPT_OPTIMIZE STREQUAL "balanced")
-  set(CC_OPT "-Oh")
-elseif(OPT_OPTIMIZE STREQUAL "size")
-  set(CC_OPT "-Ohz")
-elseif(OPT_OPTIMIZE STREQUAL "speed")
-  set(CC_OPT "-Ohs")
-elseif(DEFINED OPT_OPTIMIZE)
-  message(FATAL_ERROR "unkown OPT_OPTIMIZE = '${OPT_OPTIMIZE}' !")
-endif()
-
-if(OPT_DEBUG STREQUAL "on")
-  set(CC_OPT "${CC_OPT} --debug")
-elseif(OPT_DEBUG STREQUAL "off")
-  # nothing to do
-elseif(DEFINED OPT_DEBUG)
-  message(FATAL_ERROR "unkown OPT_DEBUG = '${OPT_DEBUG}' !")
-endif()
-
-if(OPT_WARNINGS STREQUAL "off")
-  set(CC_OPT "${CC_OPT} --no_warnings")
-  set(LD_OPT "${LD_OPT} --no_warnings")
-elseif(OPT_WARNINGS STREQUAL "on")
-  # nothing to do
-elseif(DEFINED OPT_WARNINGS)
-  message(FATAL_ERROR "unkown OPT_WARNINGS = '${OPT_WARNINGS}' !")
+if(BYTE_ORDER STREQUAL "Little-endian")
+  set(IAR_BYTE_ORDER "little")
+elseif(BYTE_ORDER STREQUAL "Big-endian")
+  set(IAR_BYTE_ORDER "big")
 endif()
 
 # Helpers
@@ -125,43 +98,75 @@ function(cbuild_set_defines lang defines)
   set(${defines} ${TMP_DEFINES} PARENT_SCOPE)
 endfunction()
 
+set(OPT_OPTIMIZE_VALUES    "none" "balanced" "size" "speed")
+set(OPT_OPTIMIZE_CC_FLAGS  "-On"  "-Oh"      "-Ohz" "-Ohs")
+set(OPT_OPTIMIZE_CXX_FLAGS ${OPT_OPTIMIZE_C_FLAGS})
+
+set(OPT_DEBUG_VALUES       "on"      "off")
+set(OPT_DEBUG_ASM_FLAGS    "-r"      "")
+set(OPT_DEBUG_CC_FLAGS     "--debug" "")
+set(OPT_DEBUG_CXX_FLAGS    ${OPT_DEBUG_C_FLAGS})
+
+set(OPT_WARNINGS_VALUES    "on" "off")
+set(OPT_WARNINGS_ASM_FLAGS ""   "-w-")
+set(OPT_WARNINGS_CC_FLAGS  ""   "--no_warnings")
+set(OPT_WARNINGS_CXX_FLAGS ${OPT_WARNINGS_C_FLAGS})
+set(OPT_WARNINGS_LD_FLAGS  ${OPT_WARNINGS_C_FLAGS})
+
+function(cbuild_get_option_flags lang option value flags)
+  if(NOT DEFINED OPT_${option}_${lang}_FLAGS)
+    return()
+  endif()
+  list(FIND OPT_${option}_VALUES ${value} _index)
+  if (${_index} GREATER -1)
+    list(GET OPT_${option}_${lang}_FLAGS ${_index} flag)
+    set(${flags} "${flag} ${flags}" PARENT_SCOPE)
+  else()
+    string(TOLOWER option _option)
+    message(FATAL_ERROR "unkown ${_option} value = '${value}' !")
+  endif()
+endfunction()
+
 # Assembler
 
 set(ASM_CPU "--cpu ${IAR_CPU}")
+set(ASM_BYTE_ORDER "--endian ${IAR_BYTE_ORDER}")
 set(ASM_FLAGS)
-
 set(ASM_DEFINES ${DEFINES})
 cbuild_set_defines(ASM ASM_DEFINES)
 
-set(CC_DEFINES ${DEFINES})
-cbuild_set_defines(C CC_DEFINES)
-
-if(BYTE_ORDER STREQUAL "Little-endian")
-  set(IAR_BYTE_ORDER "little")
-elseif(BYTE_ORDER STREQUAL "Big-endian")
-  set(IAR_BYTE_ORDER "big")
-endif()
-
-set(ASM_BYTE_ORDER "--endian ${IAR_BYTE_ORDER}")
+foreach(OPT "OPTIMIZE" "DEBUG" "WARNINGS")
+  cbuild_get_option_flags(ASM ${OPT} ${OPT_${OPT}} ASM_FLAGS)
+endforeach()
 
 # C Compiler
 
 set(CC_CPU "--cpu=${IAR_CPU}")
-set(CC_FLAGS "--silent ${CC_OPT}")
 set(CC_BYTE_ORDER "--endian=${IAR_BYTE_ORDER}")
+set(CC_FLAGS "--silent")
+set(CC_DEFINES ${DEFINES})
+cbuild_set_defines(CC CC_DEFINES)
 set(_PI "-include ")
 
 if(SECURE STREQUAL "Secure")
   set(CC_SECURE "--cmse")
 endif()
 
+foreach(OPT "OPTIMIZE" "DEBUG" "WARNINGS")
+  cbuild_get_option_flags(CC ${OPT} ${OPT_${OPT}} CC_FLAGS)
+endforeach()
+
 # C++ Compiler
 
 set(CXX_CPU "${CC_CPU}")
-set(CXX_DEFINES "${CC_DEFINES}")
 set(CXX_BYTE_ORDER "${CC_BYTE_ORDER}")
-set(CXX_SECURE "${CC_SECURE}")
 set(CXX_FLAGS "${CC_FLAGS}")
+set(CXX_DEFINES "${CC_DEFINES}")
+set(CXX_SECURE "${CC_SECURE}")
+
+foreach(OPT "OPTIMIZE" "DEBUG" "WARNINGS")
+  cbuild_get_option_flags(CXX ${OPT} ${OPT_${OPT}} CC_FLAGS)
+endforeach()
 
 # Linker
 
@@ -172,7 +177,11 @@ if(SECURE STREQUAL "Secure")
   set(LD_SECURE "--import_cmse_lib_out \"${OUT_DIR}/${TARGET}_CMSE_Lib.o\"")
 endif()
 
-set(LD_FLAGS "--silent ${LD_OPT}")
+set(LD_FLAGS "--silent")
+
+foreach(OPT "OPTIMIZE" "DEBUG" "WARNINGS")
+  cbuild_get_option_flags(LD ${OPT} ${OPT_${OPT}} CC_FLAGS)
+endforeach()
 
 # Target Output
 

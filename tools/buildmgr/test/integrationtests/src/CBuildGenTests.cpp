@@ -111,6 +111,17 @@ TEST_F(CBuildGenTests, GenCMakeTest_3) {
   CheckCMakeLists        (param);
 }
 
+// Validate generation of CMakeLists file required to build the project
+TEST_F(CBuildGenTests, GenCMakeTest_4) {
+  TestParam param = {
+    "GCC/TranslationControl/Project3", "Project",
+    "", "cmake", true
+  };
+
+  RunCBuildGen           (param);
+  CheckCMakeLists        (param);
+}
+
 // Validate generation of output files under current output directory
 TEST_F(CBuildGenTests, Gen_Output_In_SameDir) {
   vector<string> outDirs{ "OutDir", "./Build" };
@@ -448,4 +459,3 @@ TEST_F(CBuildGenTests, MultipleAuxCmdTest)
 
   RunCBuildGenAux       (cmd, false);
 }
-

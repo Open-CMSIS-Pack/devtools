@@ -226,11 +226,9 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
     }
   }
 
-  // File specific flags
+  // File specific flags and options
   bool as_file_specific_flags = false;
-  bool as_file_specific_optimize = false;
-  bool as_file_specific_debug = false;
-  bool as_file_specific_warnings = false;
+  bool as_file_specific_options = false;
   for (auto list : asFilesLists) {
     for (auto [src, file] : list.second) {
       if (!file.flags.empty()) {
@@ -239,23 +237,21 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
       }
       if (!file.optimize.empty()) {
         cmakelists << "set(AS_OPTIMIZE_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(file.optimize) << "\")"<< EOL;
-        as_file_specific_optimize = true;
+        as_file_specific_options = true;
       }
       if (!file.debug.empty()) {
         cmakelists << "set(AS_DEBUG_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(file.debug) << "\")"<< EOL;
-        as_file_specific_debug = true;
+        as_file_specific_options = true;
       }
       if (!file.warnings.empty()) {
         cmakelists << "set(AS_WARNINGS_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(file.warnings) << "\")"<< EOL;
-        as_file_specific_warnings = true;
+        as_file_specific_options = true;
       }
     }
   }
 
   bool cc_file_specific_flags = false;
-  bool cc_file_specific_optimize = false;
-  bool cc_file_specific_debug = false;
-  bool cc_file_specific_warnings = false;
+  bool cc_file_specific_options = false;
   for (auto [src, file] : m_ccFilesList) {
     if (!file.flags.empty()) {
       cmakelists << "set(CC_FLAGS_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(file.flags) << "\")"<< EOL;
@@ -263,22 +259,20 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
     }
     if (!file.optimize.empty()) {
       cmakelists << "set(CC_OPTIMIZE_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(file.optimize) << "\")"<< EOL;
-      cc_file_specific_optimize = true;
+      cc_file_specific_options = true;
     }
     if (!file.debug.empty()) {
       cmakelists << "set(CC_DEBUG_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(file.debug) << "\")"<< EOL;
-      cc_file_specific_debug = true;
+      cc_file_specific_options = true;
     }
     if (!file.warnings.empty()) {
       cmakelists << "set(CC_WARNINGS_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(file.warnings) << "\")"<< EOL;
-      cc_file_specific_warnings = true;
+      cc_file_specific_options = true;
     }
   }
 
   bool cxx_file_specific_flags = false;
-  bool cxx_file_specific_optimize = false;
-  bool cxx_file_specific_debug = false;
-  bool cxx_file_specific_warnings = false;
+  bool cxx_file_specific_options = false;
   for (auto [src, file] : m_cxxFilesList) {
     if (!file.flags.empty()) {
       cmakelists << "set(CXX_FLAGS_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(file.flags) << "\")"<< EOL;
@@ -286,32 +280,97 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
     }
     if (!file.optimize.empty()) {
       cmakelists << "set(CXX_OPTIMIZE_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(file.optimize) << "\")"<< EOL;
-      cxx_file_specific_optimize = true;
+      cxx_file_specific_options = true;
     }
     if (!file.debug.empty()) {
       cmakelists << "set(CXX_DEBUG_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(file.debug) << "\")"<< EOL;
-      cxx_file_specific_debug = true;
+      cxx_file_specific_options = true;
     }
     if (!file.warnings.empty()) {
       cmakelists << "set(CXX_WARNINGS_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(file.warnings) << "\")"<< EOL;
-      cxx_file_specific_warnings = true;
+      cxx_file_specific_options = true;
     }
   }
 
-  // Group specific flags
+  // Group specific flags and options
   bool as_group_specific_flags = false;
-  bool as_group_specific_optimize = false;
-  bool as_group_specific_debug = false;
-  bool as_group_specific_warnings = false;
+  bool as_group_specific_options = false;
   bool cc_group_specific_flags = false;
-  bool cc_group_specific_optimize = false;
-  bool cc_group_specific_debug = false;
-  bool cc_group_specific_warnings = false;
+  bool cc_group_specific_options = false;
   bool cxx_group_specific_flags = false;
-  bool cxx_group_specific_optimize = false;
-  bool cxx_group_specific_debug = false;
-  bool cxx_group_specific_warnings = false;
+  bool cxx_group_specific_options = false;
   for (auto [group, controls] : m_groupsList) {
+    if (!controls.optimize.empty()) {
+      for (auto& filesList : filesLists) {
+        for (const auto& [src, file] : *filesList) {
+          if (fs::path(file.group).generic_string() == group) {
+            if (file.optimize.empty()) {
+              string file_type;
+              if (m_ccFilesList.find(src) != m_ccFilesList.end()) {
+                file_type = "CC";
+                cc_group_specific_options = true;
+              } else if (m_cxxFilesList.find(src) != m_cxxFilesList.end()) {
+                file_type = "CXX";
+                cxx_group_specific_options = true;
+              } else {
+                file_type = "AS";
+                as_group_specific_options = true;
+              }
+
+              cmakelists << "set(" << file_type << "_OPTIMIZE_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src)
+                  << " \"" << CbuildUtils::EscapeQuotes(controls.optimize) << "\")"<< EOL;
+            }
+          }
+        }
+      }
+    }
+    if (!controls.debug.empty()) {
+      for (auto& filesList : filesLists) {
+        for (const auto& [src, file] : *filesList) {
+          if (fs::path(file.group).generic_string() == group) {
+            if (file.debug.empty()) {
+              string file_type;
+              if (m_ccFilesList.find(src) != m_ccFilesList.end()) {
+                file_type = "CC";
+                cc_group_specific_options = true;
+              } else if (m_cxxFilesList.find(src) != m_cxxFilesList.end()) {
+                file_type = "CXX";
+                cxx_group_specific_options = true;
+              } else {
+                file_type = "AS";
+                as_group_specific_options = true;
+              }
+
+              cmakelists << "set(" << file_type << "_DEBUG_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src)
+                  << " \"" << CbuildUtils::EscapeQuotes(controls.debug) << "\")"<< EOL;
+            }
+          }
+        }
+      }
+    }
+    if (!controls.warnings.empty()) {
+      for (auto& filesList : filesLists) {
+        for (const auto& [src, file] : *filesList) {
+          if (fs::path(file.group).generic_string() == group) {
+            if (file.warnings.empty()) {string file_type;
+              if (m_ccFilesList.find(src) != m_ccFilesList.end()) {
+                file_type = "CC";
+                cc_group_specific_options = true;
+              } else if (m_cxxFilesList.find(src) != m_cxxFilesList.end()) {
+                file_type = "CXX";
+                cxx_group_specific_options = true;
+              } else {
+                file_type = "AS";
+                as_group_specific_options = true;
+              }
+
+              cmakelists << "set(" << file_type << "_OPTIMIZE_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src)
+                  << " \"" << CbuildUtils::EscapeQuotes(controls.warnings) << "\")"<< EOL;
+            }
+          }
+        }
+      }
+    }
     if (!controls.asMsc.empty()) {
       for (auto list : asFilesLists) {
         for (auto [src, file] : list.second) {
@@ -319,18 +378,6 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
             if (file.flags.empty()) {
               cmakelists << "set(AS_FLAGS_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(controls.asMsc) << "\")"<< EOL;
               as_group_specific_flags = true;
-            }
-            if (file.optimize.empty()) {
-              cmakelists << "set(AS_OPTIMIZE_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(controls.optimize) << "\")"<< EOL;
-              as_group_specific_optimize = true;
-            }
-            if (file.debug.empty()) {
-              cmakelists << "set(AS_DEBUG_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(controls.debug) << "\")"<< EOL;
-              as_group_specific_debug = true;
-            }
-            if (file.warnings.empty()) {
-              cmakelists << "set(AS_WARNINGS_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(controls.warnings) << "\")"<< EOL;
-              as_group_specific_warnings = true;
             }
           }
         }
@@ -343,18 +390,6 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
             cmakelists << "set(CC_FLAGS_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(controls.ccMsc) << "\")"<< EOL;
             cc_group_specific_flags = true;
           }
-          if (file.optimize.empty()) {
-            cmakelists << "set(CC_OPTIMIZE_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(controls.optimize) << "\")"<< EOL;
-            as_group_specific_optimize = true;
-          }
-          if (file.debug.empty()) {
-            cmakelists << "set(CC_DEBUG_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(controls.debug) << "\")"<< EOL;
-            as_group_specific_debug = true;
-          }
-          if (file.warnings.empty()) {
-            cmakelists << "set(CC_WARNINGS_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(controls.warnings) << "\")"<< EOL;
-            as_group_specific_warnings = true;
-          }
         }
       }
     }
@@ -365,26 +400,12 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
             cmakelists << "set(CXX_FLAGS_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(controls.cxxMsc) << "\")"<< EOL;
             cxx_group_specific_flags = true;
           }
-          if (file.optimize.empty()) {
-            cmakelists << "set(CXX_OPTIMIZE_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(controls.optimize) << "\")"<< EOL;
-            as_group_specific_optimize = true;
-          }
-          if (file.debug.empty()) {
-            cmakelists << "set(CXX_DEBUG_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(controls.debug) << "\")"<< EOL;
-            as_group_specific_debug = true;
-          }
-          if (file.warnings.empty()) {
-            cmakelists << "set(CXX_WARNINGS_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(controls.warnings) << "\")"<< EOL;
-            as_group_specific_warnings = true;
-          }
         }
       }
     }
   }
-  if ((cc_file_specific_flags) || (cxx_file_specific_flags) || (as_file_specific_flags) ||
-     (cc_group_specific_flags) || (cxx_group_specific_flags) || (as_group_specific_flags)) {
-    cmakelists << EOL;
-  }
+
+  cmakelists << EOL;
 
   // Toolchain config
   cmakelists << "# Toolchain config map" << EOL << EOL;
@@ -404,8 +425,11 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
   cmakelists << "# Global Flags" << EOL << EOL;
 
   bool asflags = as_file_specific_flags || as_group_specific_flags;
+  bool as_options = as_file_specific_options || as_group_specific_options;
   bool ccflags = cc_file_specific_flags || cc_group_specific_flags;
+  bool cc_options = cc_file_specific_options || cc_group_specific_options;
   bool cxxflags = cxx_file_specific_flags || cxx_group_specific_flags;
+  bool cxx_options = cxx_file_specific_options || cxx_group_specific_options;
 
   for (auto list : asFilesLists) {
     if (!list.second.empty()) {
@@ -462,11 +486,11 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
   bool specific_defines = file_specific_defines || group_specific_defines;
   bool specific_includes = file_specific_includes || group_specific_includes;
 
-  if (asflags || ccflags || cxxflags || as_special_lang || preinc_local) {
+  if (asflags || ccflags || cxxflags || as_options || cc_options || cxx_options || as_special_lang || preinc_local) {
     // Set local flags
     cmakelists << "# Local Flags" << EOL << EOL;
 
-    if (asflags || as_special_lang) {
+    if (asflags || as_options || as_special_lang) {
       for (auto list : asFilesLists) {
         if (!list.second.empty()) {
           string lang = list.first;
@@ -478,8 +502,20 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
             cmakelists << "  else()" << EOL;
             cmakelists << "    set(AS_FLAGS_LOCAL \"${AS_FLAGS_GLOBAL}\")" << EOL;
             cmakelists << "  endif()" << EOL;
-            cmakelists << "  set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS \"${AS_FLAGS_LOCAL}\")" << EOL;
+          } else {
+            cmakelists << "  set(AS_FLAGS_LOCAL \"${AS_FLAGS_GLOBAL}\")" << EOL;
           }
+          if (as_options) {
+            cmakelists << "  foreach(OPT \"OPTIMIZE\" \"DEBUG\" \"WARNINGS\")" << EOL;
+            cmakelists << "    if(DEFINED AS_${OPT}_${S})" << EOL;
+            cmakelists << "      set(OPT_VAL \"AS_${OPT}_${S}\")" << EOL;
+            cmakelists << "    else()" << EOL;
+            cmakelists << "      set(OPT_VAL \"OPT_${OPT}\")" << EOL;
+            cmakelists << "    endif()" << EOL;
+            cmakelists << "    cbuild_get_option_flags(ASM ${OPT} ${OPT_VAL} AS_FLAGS_LOCAL)" << EOL;
+            cmakelists << "  endforeach()" << EOL;
+          }
+          cmakelists << "  set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS \"${AS_FLAGS_LOCAL}\")" << EOL;
           if (as_special_lang) {
             cmakelists << "  set_source_files_properties(${SRC} PROPERTIES LANGUAGE " << lang << ")" << EOL;
           }
@@ -487,8 +523,10 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
         }
       }
     }
-    map <string, bool> flagsLang = {{"CC", !m_ccFilesList.empty() && (ccflags || preinc_local)},
-                                    {"CXX", !m_cxxFilesList.empty() && (cxxflags || preinc_local)}};
+    map <string, bool> flagsLang = {{"CC", !m_ccFilesList.empty() && (ccflags || cc_options || preinc_local)},
+                                    {"CXX", !m_cxxFilesList.empty() && (cxxflags || cxx_options || preinc_local)}};
+    map <string, bool> optionsLang = {{"CC", cc_options},
+                                      {"CXX", cxx_options}};
     for (auto list : flagsLang) {
       if (list.second) {
         string lang = list.first;
@@ -502,6 +540,16 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
           cmakelists << "  endif()" << EOL;
         } else {
           cmakelists << "  set(" << lang << "_FLAGS_LOCAL \"${" << lang << "_FLAGS_GLOBAL}\")" << EOL;
+        }
+        if (optionsLang.at(lang)) {
+          cmakelists << "  foreach(OPT \"OPTIMIZE\" \"DEBUG\" \"WARNINGS\")" << EOL;
+          cmakelists << "    if(DEFINED " << lang << "_${OPT}_${S})" << EOL;
+          cmakelists << "      set(OPT_VAL \"" << lang << "_${OPT}_${S}\")" << EOL;
+          cmakelists << "    else()" << EOL;
+          cmakelists << "      set(OPT_VAL \"OPT_${OPT}\")" << EOL;
+          cmakelists << "    endif()" << EOL;
+          cmakelists << "    cbuild_get_option_flags(" << lang << " ${OPT} ${OPT_VAL} " << lang << "_FLAGS_LOCAL)" << EOL;
+          cmakelists << "  endforeach()" << EOL;
         }
         if (preinc_local) {
           cmakelists << "  if(DEFINED PRE_INC_LOCAL_${S})" << EOL;

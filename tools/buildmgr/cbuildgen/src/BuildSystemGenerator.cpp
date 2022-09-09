@@ -257,9 +257,8 @@ bool BuildSystemGenerator::Collect(const string& inputFile, const CbuildModel *m
     const map<string, string>& debugOpt = model->GetDebugOption();
     const map<string, string>& warningsOpt = model->GetWarningsOption();
 
-    for (auto list : model->GetCSourceFiles())
+    for (auto list : sourceFiles)
     {
-
       string group = list.first, groupName;
       string cGOptimizeOpt, cGDebugOpt, cGWarningsOpt;
 
@@ -283,7 +282,7 @@ bool BuildSystemGenerator::Collect(const string& inputFile, const CbuildModel *m
         }
         groupName = fs::path(groupName).parent_path().generic_string();
       } while (!groupName.empty());
-      m_groupsList[StrNorm(group)].optimize = cGDebugOpt;
+      m_groupsList[StrNorm(group)].debug = cGDebugOpt;
 
       // warnings option
       groupName = group;
@@ -294,7 +293,7 @@ bool BuildSystemGenerator::Collect(const string& inputFile, const CbuildModel *m
         }
         groupName = fs::path(groupName).parent_path().generic_string();
       } while (!groupName.empty());
-      m_groupsList[StrNorm(group)].optimize = cGWarningsOpt;
+      m_groupsList[StrNorm(group)].warnings = cGWarningsOpt;
 
       for (auto src : list.second) {
         string cFOptimizeOpt, cFDebugOpt, cFWarningsOpt;
@@ -304,7 +303,7 @@ bool BuildSystemGenerator::Collect(const string& inputFile, const CbuildModel *m
         m_ccFilesList[src].optimize = cFOptimizeOpt;
         if (debugOpt.find(src) != debugOpt.end()) cFDebugOpt = debugOpt.at(src);
         m_ccFilesList[src].debug = cFDebugOpt;
-        if (debugOpt.find(src) != debugOpt.end()) cFWarningsOpt = debugOpt.at(src);
+        if (warningsOpt.find(src) != warningsOpt.end()) cFWarningsOpt = warningsOpt.at(src);
         m_ccFilesList[src].warnings = cFWarningsOpt;
       }
     }

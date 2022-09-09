@@ -15,6 +15,9 @@
 
 /**
  * @brief TranslationControls struct:
+ *        optimize : optimize option
+ *        debug : debug option
+ *        warnings : warnings option
  *        as_msc: Assembler miscellaneous options and defines
  *        cc_msc: C Compiler miscellaneous options and defines
  *        cxx_msc: C++ Compiler miscellaneous options and defines
@@ -38,6 +41,9 @@ struct TranslationControls
 /**
  * @brief module struct:
  *        group: Group name
+ *        optimize : module optimize option
+ *        debug : module debug option
+ *        warnings : module warnings option
  *        flags: Assembler or C or C++ Compiler miscellaneous options and defines
  *        defines: module defines
  *        undefines: module undefines
