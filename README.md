@@ -185,6 +185,7 @@ Follow the respective commands:
 
 - Build all CMake targets
     > **cmake --build . --config <Debug/Release>**
+
     for e.g.
 
     ```bash
@@ -275,6 +276,87 @@ Set below mentioned environment variables:
     ~~~
 
     Make sure you have the proper **[Arm Compilers licenses](https://developer.arm.com/tools-and-software/software-development-tools/license-management/resources/product-and-toolkit-configuration)**.
+
+## Code coverage
+
+Users can generate coverage reports locally using a GNU tool [**lcov**](http://ltp.sourceforge.net/coverage/lcov.php).
+
+### Prerequisite
+
+As coverage reports can only be generated on **linux** platform.
+Ensure that the [linux prerequisite](#prerequisites) are fulfilled.
+
+### Generate coverage report
+
+- Create and switch to build directory
+
+  ```bash
+  mkdir build
+  cd build
+  ```
+
+  ~~~
+  ☑️ Ensure that the build tree is clean and doesn't have any existing coverage data i.e. .gcda or .gcno files
+  ~~~
+
+- Generate configuration files with coverage flag on
+
+  ```bash
+  cmake -DCMAKE_BUILD_TYPE=Debug -DCOVERAGE=ON ..
+  ```
+
+- Build target tests
+  > cmake --build . --config Debug --target **<target_name>**
+
+  for e.g.
+
+  ```bash
+  cmake --build . --config Debug --target CbuildUnitTests
+  ```
+
+- Run tests
+  > ctest -R **\<regex\>** -C Debug
+
+  for e.g.
+
+  ```bash
+  ctest -R CbuildUnitTests -C Debug
+  ```
+
+- Collect coverage data
+  > lcov -c --directory **\<path_to_user_space\>** --output-file **\<cov_out_file\>**
+
+  for e.g.
+
+  ```bash
+  lcov -c --directory ./tools/buildmgr --output-file full_coverage.info
+  ```
+
+- Extract coverage data from file
+
+  ~~~
+  ☑️ By default, lcov collects coverage data also from the currently running Linux
+      kernel. Specify -e option to extract data from files matching PATTERN from file
+  ~~~
+
+  > lcov -e **\<input_file\>** **'\<PATTERN\>'** -o **\<out_file\>**
+
+  for e.g.
+
+  ```bash
+  lcov -e full_coverage.info '/tools/buildmgr/cbuild/*' '*/tools/buildmgr/cbuildgen/*' '*/tools/buildmgr/cbuild/*' -o coverage.info
+  ```
+
+- Generate html coverage report
+  > genhtml **<cov_file>** --output-directory **<report_out_dir>**
+
+  for e.g.
+
+  ```bash
+  genhtml coverage.info --output-directory coverage
+  ```
+
+The coverage report i.e. **index.html** is generated into the specified directory.
 
 ## Build Documentation
 
