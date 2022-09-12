@@ -300,9 +300,9 @@ Ensure that the [linux prerequisite](#prerequisites) are fulfilled.
   cd build
   ```
 
-  ~~~
+  ```txt
   ☑️ Ensure that the build tree is clean and doesn't have any existing coverage data i.e. .gcda or .gcno files
-  ~~~
+  ```
 
 - Generate configuration files with coverage flag on
 
@@ -339,10 +339,10 @@ Ensure that the [linux prerequisite](#prerequisites) are fulfilled.
 
 - Extract coverage data from file
 
-  ~~~
+  ```txt
   ☑️ By default, lcov collects coverage data also from the currently running Linux
       kernel. Specify -e option to extract data from files matching PATTERN from file
-  ~~~
+  ```
 
   > lcov -e **\<input_file\>** **'\<PATTERN\>'** -o **\<out_file\>**
 
