@@ -7,11 +7,13 @@ on:
       - '.github/workflows/test_libs.yml'
       - '.github/matrix_includes_test_libs.json'
       - 'libs/**'
+      - '!**/*.md'
   pull_request:
     paths:
       - '.github/workflows/test_libs.yml'
       - '.github/matrix_includes_test_libs.json'
       - 'libs/**'
+      - '!**/*.md'
 
 jobs:
   matrix_prep:

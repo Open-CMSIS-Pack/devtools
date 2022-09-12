@@ -9,6 +9,7 @@ on:
       - '.github/matrix_includes_packchk.json'
       - 'CMakeLists.txt'
       - 'tools/packchk/**'
+      - '!**/*.md'
   pull_request:
     paths:
       - '.github/workflows/packchk.yml'
@@ -16,6 +17,7 @@ on:
       - '.github/matrix_includes_packchk.json'
       - 'CMakeLists.txt'
       - 'tools/packchk/**'
+      - '!**/*.md'
   release:
     types: [published]
 
