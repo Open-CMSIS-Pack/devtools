@@ -9,11 +9,11 @@ dependencies.
 
 - [csolution Overview](./docs/Manual/Overview.md) for details and usage information for the CMSIS Project Manager
 - [README.md](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/README.md) for an overview of the CMSIS-Toolbox
-- [Installation](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/docs/Installation.md) for details on how to
+- [Installation](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/docs/installation.md) for details on how to
   setup the CMSIS-Toolbox
 
 ## Python interface
 
 Python library interfaces are generated with SWIG and can be found among the release artifacts.
 A Python CLI wrapper is also provided as an example:
-[projmgr-cli.py](https://github.com/devtools/blob/main/tools/projmgr/swig/projmgr-cli.py).
+[projmgr-cli.py](https://github.com/Open-CMSIS-Pack/devtools/blob/main/tools/projmgr/swig/python/examples/projmgr-cli.py).

@@ -58,7 +58,7 @@ Usage help for a specific command available, with for example: `cpackget rm --he
 variants. There are two ways to specify the CMSIS-PACK root directory:
 
 1. With the `CMSIS_PACK_ROOT` environment variable.
-   Refer to [Installation - Environment Variables](Installation.md#environment-variables).
+   Refer to [Installation - Environment Variables](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/docs/installation.md#environment-variables).
 
 2. with the option `--pack-root <path>`, for example:
 

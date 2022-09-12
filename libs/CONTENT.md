@@ -1,6 +1,6 @@
 # Library Components
 
-The [libs](./libs) directory contain library components compiled into
+The libs directory contain library components compiled into
 static or dynamic libraries and are intended to be shared between multiple
 components.
 

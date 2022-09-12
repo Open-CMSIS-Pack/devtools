@@ -3,6 +3,8 @@ on:
   pull_request:
     paths:
       - '.github/workflows/markdown.yml'
+      - '.github/markdownlint.json'
+      - '.github/markdownlint.jsonc'
       - '**/*.md'
 jobs:
   markdown-lint:
@@ -35,3 +37,4 @@ jobs:
           use-verbose-mode: 'yes'
           check-modified-files-only: 'yes'
           base-branch: ${{ github.base_ref }}
+          config-file: '.github/markdown-link-check.jsonc'

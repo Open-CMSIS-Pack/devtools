@@ -27,7 +27,7 @@ These command-line tools provide the foundation for software development flows a
 The **CMSIS-Toolbox** is currently under development but supports already a wide range of use cases.
 
 - [**Download CMSIS-Toolbox**](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/releases)
-- [**Setup and Installation**](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/docs/Installation.md)
+- [**Setup and Installation**](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/docs/installation.md)
 - [**Implementation Progress**](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/docs/progress.md)
 
 ## Development Cycle - Create Applications
@@ -39,7 +39,7 @@ software packs. The development flow is outlined in the diagram below.  An IDE t
 ![CMSIS-Toolbox - Create Applications - Workflow Overview](./projmgr/docs/images/CMSIS-Toolbox-Development-Workflow.png
 "CMSIS-Toolbox - Create Applications - Workflow Overview")
 
-Discover packs for an application by using a [*catalog of software packs*](https://www.keil.com/dd2/pack).These packs
+Discover packs for an application by using a [*catalog of software packs*](https://www.keil.com/dd2/pack). These packs
 may be installed using [**cpackget**](cpackget/docs/cpackget.md) and by
 [**csolution**](projmgr/docs/Manual/Overview.md), for example to list devices or software components. Along with user
 code, these items are used to describe the application project in `*.csolution.yml` and `cproject.yml` format and

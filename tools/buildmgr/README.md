@@ -9,5 +9,5 @@ For command line build with software packs, the following tools and utilities ar
 
 - [README.md](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/README.md) for an overview of the
   CMSIS-Toolbox
-- [Installation](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/docs/Installation.md) for details on how
+- [Installation](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/docs/installation.md) for details on how
   to setup the CMSIS-Toolbox
