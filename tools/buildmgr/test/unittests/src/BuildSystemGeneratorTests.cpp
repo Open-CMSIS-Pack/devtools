@@ -98,9 +98,14 @@ TEST_F(BuildSystemGeneratorTests, StrNorm) {
   path     = StrNorm(path);
   EXPECT_EQ(expected, path);
 
-  path     = "//C//test dir//doubleslash//";
-  expected = "/C/test dir/doubleslash";
+  path     = "//network_path//test dir//doubleslash//";
+  expected = "//network_path/test dir/doubleslash";
   path     = StrNorm(path);
+  EXPECT_EQ(expected, path);
+
+  path = "/c\\test dir//mixed slash\\/";
+  expected = "/c/test dir/mixed slash";
+  path = StrNorm(path);
   EXPECT_EQ(expected, path);
 }
 

@@ -285,6 +285,10 @@ string BuildSystemGenerator::StrNorm(string path) {
 
   size_t s = 0;
   path = StrConv(path);
+  // Check if path is network path
+  if (path.compare(0, 2, DS) == 0) {
+    s = 2;
+  }
   while ((s = path.find(DS, s)) != string::npos) path.replace(s, 2, SS);
   if (path.compare(0, 2, LDOT) == 0) path.replace(0, 2, EMPTY);
   if (path.empty()) {
