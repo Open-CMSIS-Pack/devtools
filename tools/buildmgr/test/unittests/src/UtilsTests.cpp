@@ -101,20 +101,6 @@ TEST_F(CbuildUtilsTests, GetItemByTagAndAttribute) {
   EXPECT_TRUE(result);
 }
 
-TEST_F(CbuildUtilsTests, UpdatePathWithSpaces) {
-  string path, expected;
-
-  path     = "/mnt/C/test dir/new folder/";
-  expected = "/mnt/C/test\\ dir/new\\ folder/";
-  path     = CbuildUtils::UpdatePathWithSpaces(path);
-  EXPECT_EQ(expected, path);
-
-  path     = "/C/test dir/double  space/";
-  expected = "/C/test\\ dir/double\\ \\ space/";
-  path     = CbuildUtils::UpdatePathWithSpaces(path);
-  EXPECT_EQ(expected, path);
-}
-
 TEST_F(CbuildUtilsTests, StrPathConv) {
   string path, expected;
 

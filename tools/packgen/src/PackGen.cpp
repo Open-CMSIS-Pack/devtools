@@ -32,7 +32,7 @@ PackGen::~PackGen(void) {
   }
 }
 
-int PackGen::RunPackGen(int argc, char *argv[]) {
+int PackGen::RunPackGen(int argc, char **argv) {
   PackGen::Result result;
   PackGen generator;
   error_code ec;

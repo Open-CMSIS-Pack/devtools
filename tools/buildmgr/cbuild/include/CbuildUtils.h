@@ -124,13 +124,6 @@ public:
   static const Result ExecCommand(const std::string& cmd);
 
   /**
-   * @brief function to support directory name with spaces
-   * @param path string path with directory names containing spaces
-   * @return updated path in string
-  */
-  static const std::string UpdatePathWithSpaces(const std::string& path);
-
-  /**
    * @brief convert path to absolute if it's unambiguously recognized as relative
    *        accept toolchain flag as input (e.g. key=./relative/path)
    * @param path string relative path to concatenate to base
