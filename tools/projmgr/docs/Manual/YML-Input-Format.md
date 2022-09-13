@@ -1,8 +1,10 @@
 # YML Input Format
 
-The following chapter explains the YML format that is used to describe the YML input files for the **CSolution** Project Manager.
+The following chapter explains the YML format that is used to describe the YML input files for the **CSolution**
+Project Manager.
 
-**Table of Contents**
+## Table of Contents
+
 - [YML Input Format](#yml-input-format)
 - [Name Conventions](#name-conventions)
   - [Pack Name Conventions](#pack-name-conventions)
@@ -78,15 +80,13 @@ The following chapter explains the YML format that is used to describe the YML i
     - [`- combine`](#--combine)
   - [`phases:`](#phases)
   - [`project-zones:`](#project-zones)
+  - [`requires:`](#requires)
     - [`- memory:`](#--memory)
     - [`- peripheral:`](#--peripheral)
-  - [`requires:`](#requires)
-    - [`- memory:`](#--memory-1)
-    - [`- peripheral:`](#--peripheral-1)
 
-# Name Conventions
+## Name Conventions
 
-## Pack Name Conventions
+### Pack Name Conventions
 
 The CMSIS Project Manager uses the following syntax to specify the `pack:` names in the `*.yml` files.
 
@@ -94,11 +94,14 @@ The CMSIS Project Manager uses the following syntax to specify the `pack:` names
 vendor [:: pack-name [@[~ | >=] version] ]
 ```
 
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
+
 Element      |              | Description
 :------------|--------------|:---------------------
 `vendor`     | **Required** | Vendor name of the software pack.
 `pack-name`  | Optional     | Name of the software pack; wildcards (\*, ?) can be used.
-`version`    | Optional     | Version number of the software pack, with `@1.2.3` that must exactly match, `@~1.2`/`@~1` that matches with sematic versioning, or `@>=1.2.3` that allows any version higher or equal.
+`version`    | Optional     | Version number of the software pack, with `@1.2.3` that must exactly match, `@~1.2`/`@~1` that matches with semantic versioning, or `@>=1.2.3` that allows any version higher or equal.
 
 **Examples:**
 
@@ -109,13 +112,18 @@ Element      |              | Description
 - pack:   Keil::STM*                        # All Software Packs that start with 'STM' from vendor 'Keil'
 ```
 
-## Component Name Conventions
+<!-- markdownlint-restore -->
+
+### Component Name Conventions
 
 The CMSIS Project Manager uses the following syntax to specify the `component:` names in the `*.yml` files.
 
 ```text
 [Cvendor::] Cclass [&Cbundle] :Cgroup [:Csub] [&Cvariant] [@[~ | >=]Cversion]
 ```
+
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 
 Element    |              | Description
 :----------|--------------|:---------------------
@@ -125,11 +133,16 @@ Element    |              | Description
 `Cgroup`   | **Required** | Component group name  defined in `<components>` element of the software pack.
 `Csub`     | Optional     | Component sub-group name  defined in `<components>` element of the software pack.
 `Cvariant` | Optional     | Component sub-group name  defined in `<components>` element of the software pack.
-`Cversion` | Optional     | Version number of the component, with `@1.2.3` that must exactly match, `@~1.2`/`@~1` that matches with sematic versioning, or `@>=1.2.3` that allows any version higher or equal.
+`Cversion` | Optional     | Version number of the component, with `@1.2.3` that must exactly match, `@~1.2`/`@~1` that matches with semantic versioning, or `@>=1.2.3` that allows any version higher or equal.
+
+<!-- markdownlint-restore -->
 
 > **Note:** When `Cvariant` is omitted, the default `Cvariant` is selected.
 
 **Examples:**
+
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 
 ```yml
 - component: ARM::CMSIS:CORE                          # CMSIS Core component from vendor ARM (any version)
@@ -144,13 +157,19 @@ Element    |              | Description
 - component: Keil::USB&MDK-Pro:CORE&Release@6.15.1    # USB CORE component from bundle MDK-Pro in variant 'Release' and version 6.15.1
 ```
 
-## Device Name Conventions
+<!-- markdownlint-restore -->
 
-The device specifies multiple attributes about the target that ranges from the processor architecture to Flash algorithms used for device programming. The following syntax is used to specify a `device:` value in the `*.yml` files.
+### Device Name Conventions
+
+The device specifies multiple attributes about the target that ranges from the processor architecture to Flash
+algorithms used for device programming. The following syntax is used to specify a `device:` value in the `*.yml` files.
 
 ```text
 [Dvendor:: [device_name] ] [:Pname]
 ```
+
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 
 Element       |          | Description
 :-------------|----------|:---------------------
@@ -158,11 +177,19 @@ Element       |          | Description
 `device_name` | Optional | Device name (Dname attribute) or when used the variant name (Dvariant attribute) as defined in the \<devices\> element.
 `Pname`       | Optional | Processor identifier (Pname attribute) as defined in the `<devices>` element.
 
+<!-- markdownlint-restore -->
+
 > **Note:**
-> - All elements of a device name are optional which allows to supply additional information, such as the `:Pname` at different stages of the project. However the `device_name` itself is a mandatory element and must be specified in context of the various project files.
-> - `Dvendor::` must be used in combination with the `device_name`. 
+>
+> - All elements of a device name are optional which allows to supply additional information, such as the `:Pname` at
+>   different stages of the project. However the `device_name` itself is a mandatory element and must be specified in
+>   context of the various project files.
+> - `Dvendor::` must be used in combination with the `device_name`.
 
 **Examples:**
+
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 
 ```yml
 device: NXP::LPC1768                       # The LPC1788 device from NXP
@@ -172,13 +199,19 @@ device: LPC55S69JEV98:cm33_core0           # Device name (exact name as defined 
 device: :cm33_core0                        # Pname added to a previously defined device name (or a device derived from a board)
 ```
 
-## Board Name Conventions
+<!-- markdownlint-restore -->
 
-Evaluation Boards define indirectly a device via the related BSP. The following syntax is used to specify a `board:` value in the `*.yml` files.
+### Board Name Conventions
+
+Evaluation Boards define indirectly a device via the related BSP. The following syntax is used to specify a `board:`
+value in the `*.yml` files.
 
 ```text
 [vendor::] board_name [:revision] 
 ```
+
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 
 Element      |              | Description
 :------------|--------------|:---------------------
@@ -186,7 +219,10 @@ Element      |              | Description
 `board_name` | **Required** | Board name (name attribute) as defined in the \<board\> element of the BSP.
 `revision`   | Optional     | Board revision (revision attribute) as defined in the \<board\> element of the BSP.
 
-> **Note:** When a `board:` is specified, the `device:` specification can be omitted, however it is possible to overwrite the device setting in the BSP with an explicit `device:` setting.
+<!-- markdownlint-restore -->
+
+> **Note:** When a `board:` is specified, the `device:` specification can be omitted, however it is possible to
+  overwrite the device setting in the BSP with an explicit `device:` setting.
 
 **Examples:**
 
@@ -196,9 +232,14 @@ board: LPCXpresso55S28                            # The LPCXpresso55S28 board
 board: STMicroelectronics::NUCLEO-L476RG:Rev.C    # A board with revision specification
 ```
 
-# Access Sequences
+## Access Sequences
 
-The following **access sequences** allow to use arguments from the CMSIS Project Manager as arguments of the various `*.yml` files in the key values for `define:`, `add-path:`, `misc:`, `files:`, and `execute:`. The **access sequences** can refer in a different project and provide therefore a method to describe project dependencies.
+The following **access sequences** allow to use arguments from the CMSIS Project Manager as arguments of the various
+`*.yml` files in the key values for `define:`, `add-path:`, `misc:`, `files:`, and `execute:`. The **access sequences**
+can refer in a different project and provide therefore a method to describe project dependencies.
+
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 
 Access Sequence                                | Description
 :----------------------------------------------|:--------------------------------------
@@ -212,9 +253,15 @@ Access Sequence                                | Description
 `$OutDir(project[.build-type][+target-type])$` | Path to the output directory of a related project that is defined in the `*.csolution.yml` file.
 `$Source(project[.build-type][+target-type])$` | Path to the source directory of a related project that is defined in the `*.csolution.yml` file.
 
-The `.build-type` and `+target-type` can be explicitly specified. When omitted the `.build-type` and/or `+target-type` of the current processed context is used.
+<!-- markdownlint-restore -->
+
+The `.build-type` and `+target-type` can be explicitly specified. When omitted the `.build-type` and/or `+target-type`
+of the current processed context is used.
 
 > **Note:** The access sequences below are not completed yet, as they require a change to CMSIS-Build.
+
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 
 Access Sequence                                | Description
 :----------------------------------------------|:--------------------------------------
@@ -222,6 +269,8 @@ Access Sequence                                | Description
 `$Dpack$`                                      | Path to the pack that defines the selected device (DFP).
 `$PackRoot$`                                   | Path to the CMSIS Pack Root directory.
 `$Pack(vendor.name)$`                          | Path to specific pack [with latest version ToDo: revise wording]. Example: `$Pack(NXP.K32L3A60_DFP)$`.
+
+<!-- markdownlint-restore -->
 
 **Example:**
 
@@ -250,9 +299,11 @@ solution:
     - project: ./application/MQTT_AWS.cproject.yml            # relative path
 ```
 
-The `project: /application/MQTT_AWS.cproject.yml` can now use **Access Sequences** to reference files or directories in other projects that belong to a solution. For example, these references are possible in the file `MQTT_AWS.cproject.yml`.
+The `project: /application/MQTT_AWS.cproject.yml` can now use **Access Sequences** to reference files or directories in
+other projects that belong to a solution. For example, these references are possible in the file `MQTT_AWS.cproject.yml`.
 
-The example below uses the `build-type` and `target-type` of the current processed context. In practice this means that the same `build-type` and `target-type` is used as for the `MQTT_AWS.cproject.yml` project.
+The example below uses the `build-type` and `target-type` of the current processed context. In practice this means that
+the same `build-type` and `target-type` is used as for the `MQTT_AWS.cproject.yml` project.
 
 ```yml
     files:
@@ -284,9 +335,12 @@ groups:
       - $Dname$                           # Generate a #define 'device-name' for this file group
 ```
 
-# Overall File Structure
+## Overall File Structure
 
 The table below explains the top-level elements in each of the different `*.yml` input files.
+
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 
 Keyword                          | Description
 :--------------------------------|:------------------------------------
@@ -295,7 +349,9 @@ Keyword                          | Description
 [`project:`](#project)           | Start of `*.cproject.yml` file that that defines a project that can be independently generated.
 [`layer:`](#layer)               | Start of `*.clayer.yml` file that contains pre-configured software components along with source files.
 
-## `default:`
+<!-- markdownlint-restore -->
+
+### `default:`
 
 The `default:` node is the start of a `*.cdefaults.yml` file and contain the following.
 
@@ -313,10 +369,10 @@ default:
   compiler: AC6                   # use Arm Compiler 6 as default
 ```
 
+### `solution:`
 
-## `solution:`
-
-The `solution:` node is the start of a `*.csolution.yml` file that collects related projects as described in the section ["Project setup for related projects"](Overview.md#project-setup-for-related-projects).
+The `solution:` node is the start of a `*.csolution.yml` file that collects related projects as described in the section
+["Project setup for related projects"](Overview.md#project-setup-for-related-projects).
 
 `solution:`                                           | Content
 :-----------------------------------------------------|:------------------------------------
@@ -359,13 +415,16 @@ solution:
     - project: /application/MQTT_AWS.cproject.yml
 ```
 
-## `project:`
+### `project:`
 
 The `project:` node is the start of a `*.cproject.yml` file and can contain the following:
 
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
+
 `project:`                                          |              | Content
-:---------------------------------------------------|--------------|:------------------------------------
-&nbsp;&nbsp; [`description:`](#description)         |  Optional    | Project description.
+:---------------------------------------------------|:-------------|:------------------------------------
+&nbsp;&nbsp; `description:`                         |  Optional    | Project description.
 &nbsp;&nbsp; [`language-C:`](#language-c)           |  Optional    | Set the language standard for C source file compilation.
 &nbsp;&nbsp; [`language-CPP:`](#language-cpp)       |  Optional    | Set the language standard for C++ source file compilation.
 &nbsp;&nbsp; [`output-type:`](#output-type)         |  Optional    | Generate executable (default) or library.
@@ -383,8 +442,10 @@ The `project:` node is the start of a `*.cproject.yml` file and can contain the 
 &nbsp;&nbsp; [`groups:`](#groups)                   | **Required** | List of source file groups along with source files.
 &nbsp;&nbsp; [`components:`](#components)           |  Optional    | List of software components used.
 &nbsp;&nbsp; [`layers:`](#layers)                   |  Optional    | List of software layers that belong to the project.
-&nbsp;&nbsp; [`layer-templates:`](#layer-templates) |  Optional    | Describes software layers that are compatible with the project.
+&nbsp;&nbsp; `layer-templates:`                     |  Optional    | Describes software layers that are compatible with the project.
 &nbsp;&nbsp; [`interface:`](#interface)             |  Optional    | List of consumed and provided interfaces.
+
+<!-- markdownlint-restore -->
 
 **Example:**
 
@@ -407,15 +468,15 @@ project:
         - file: $Output(Secure)$_CMSE_Lib.o
 ```
 
-## `layer:`
+### `layer:`
 
 The `layer:` node is the start of a `*.clayer.yml` file and can contain the following:
 
 `layer:`                                       |              | Content
-:----------------------------------------------|--------------|:------------------------------------
-&nbsp;&nbsp; [`type:`](#type)                  |  Optional    | Layer type for combining layers.
-&nbsp;&nbsp; [`name:`](#name)                  |  Optional    | Brief descriptive name of the layer
-&nbsp;&nbsp; [`description:`](#description)    |  Optional    | Detailed layer description.
+:----------------------------------------------|:-------------|:------------------------------------
+&nbsp;&nbsp; `type:`                           |  Optional    | Layer type for combining layers.
+&nbsp;&nbsp; `name:`                           |  Optional    | Brief descriptive name of the layer
+&nbsp;&nbsp; `description:`]                   |  Optional    | Detailed layer description.
 &nbsp;&nbsp; [`interface:`](#interface)        |  Optional    | List of consumed and provided interfaces.
 &nbsp;&nbsp; [`processor:`](#processor)        |  Optional    | Processor specific settings.
 &nbsp;&nbsp; [`groups:`](#groups)              | **Required** | List of source file groups along with source files.
@@ -444,9 +505,10 @@ layer:
         - file: tz_context.c
 ```
 
-# List Nodes
+## List Nodes
 
-The key/value pairs in a list node can be in any order.  The two following list nodes are logically identical. This might be confusing for `yml` files that are generated by an IDE.
+The key/value pairs in a list node can be in any order.  The two following list nodes are logically identical. This
+might be confusing for `yml` files that are generated by an IDE.
 
 ```yml
 build-types:
@@ -462,13 +524,13 @@ build-types:
       type: Release         # build-type name
 ```
 
-# Directory Control
+## Directory Control
 
 The following node allows to control the directories used to generate the output files.  
 
 >**Note:** This control is only possible at `csolution.yml` level.
 
-## `output-dirs:`
+### `output-dirs:`
 
 `output-dirs:`               |              | Content
 :----------------------------|--------------|:------------------------------------
@@ -495,17 +557,17 @@ output-dirs:
   outdir: ./out/$Project$/$TargetType$   # $BuildType$ no longer part of the outdir    
 ```
 
-
-
-# Toolchain Options
+## Toolchain Options
 
 The following code translation options may be used at various places such as:
-  - [`solution:`](#solution) level to specify options for a collection of related projects
-  - [`project:`](#projects) level to specify options for a project
 
-## `compiler:`
+- [`solution:`](#solution) level to specify options for a collection of related projects
+- [`project:`](#projects) level to specify options for a project
 
-Selects the compiler toolchain used for code generation.  Optionally the compiler can have a version number specification.
+### `compiler:`
+
+Selects the compiler toolchain used for code generation.
+Optionally the compiler can have a version number specification.
 
 Value                                                 | Supported Compiler
 :-----------------------------------------------------|:------------------------------------
@@ -513,18 +575,17 @@ Value                                                 | Supported Compiler
 `GCC`                                                 | GCC Compiler
 `IAR`                                                 | IAR Compiler
 
-**Examples:**
+**Example:**
 
 ```yml
 compiler: GCC              # Select GCC Compiler
 ```
 
 ```yml
-compiler: AC6@6.18.0       # Select Arm Compiler version 6 version 6.18.0
+compiler: AC6@6.18.0       # Select Arm Compiler version 6
 ```
 
-
-## `output-type:`
+### `output-type:`
 
 Selects the output type for code generation.
 
@@ -539,9 +600,12 @@ Value                                                 | Generated Output
 output-type: lib            # Generate a library
 ```
 
-## `linker:`
+### `linker:`
 
 The `linker:` list node controls the linker operation.
+
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 
 `linker:`                                             |              |  Content
 :-----------------------------------------------------|:-------------|:--------------------------------
@@ -549,6 +613,8 @@ The `linker:` list node controls the linker operation.
 &nbsp;&nbsp; [`for-compiler:`](#for-compiler)         |   Optional   | Include script for the specified toolchain.
 &nbsp;&nbsp; [`for-type:`](#for-type)                 |   Optional   | Include script for a list of *build* and *target* types.
 &nbsp;&nbsp; [`not-for-type:`](#not-for-type)         |   Optional   | Exclude script for a list of *build* and *target* types.
+
+<!-- markdownlint-restore -->
 
 **Example:**
 
@@ -558,7 +624,8 @@ linker:                      # Control linker operation
     for-type: .Debug  
 ```
 
-## `for-compiler:`
+### `for-compiler:`
+
 Depending on a compiler toolchain it is possible to include *compiler-specific nodes* in the build process.
 
 **Examples:**
@@ -583,21 +650,24 @@ List Node                                  | Description
 
 The inclusion of a *compiler-specific node* is processed when the specified compiler(s) matches.
 
-
-# Translation Control
+## Translation Control
 
 The following translation control options may be used at various places such as:
-  - [`solution:`](#solution) level to specify options for a collection of related projects
-  - [`project:`](#projects) level to specify options for a project
-  - [`groups:`](#groups) level to specify options for a specify source file group
-  - [`files:`](#files) level to specify options for a specify source file
 
-> **Note:** `define:`, `add-path:`, `del-path:`  and `misc:` are additive. All other keywords overwrite previous settings.
+- [`solution:`](#solution) level to specify options for a collection of related projects
+- [`project:`](#projects) level to specify options for a project
+- [`groups:`](#groups) level to specify options for a specify source file group
+- [`files:`](#files) level to specify options for a specify source file
 
+> **Note:** `define:`, `add-path:`, `del-path:`  and `misc:` are additive. All other keywords overwrite previous
+  settings.
 
-## `language-C:`
+### `language-C:`
 
 Set the language standard for C source file compilation.
+
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 
 Value                                                 | Select C Language Standard
 :-----------------------------------------------------|:------------------------------------
@@ -608,10 +678,14 @@ Value                                                 | Select C Language Standa
 `c11`                                                 | compile C source files as defined in C11 standard (ISO/IEC 9899:2011).
 `gnu11`                                               | same as `c11` but with additional GNU extensions.
 
+<!-- markdownlint-restore -->
 
-## `language-CPP:`
+### `language-CPP:`
 
 Set the language standard for C++ source file compilation.
+
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 
 Value                                                 | Select C++ Language Standard
 :-----------------------------------------------------|:------------------------------------
@@ -628,10 +702,14 @@ Value                                                 | Select C++ Language Stan
 `c++20`                                               | compile C++ source files as defined in C++20 standard (ISO/IEC 14882:2020).
 `gnu++20`                                             | same as `c++20` but with additional GNU extensions.
 
+<!-- markdownlint-restore -->
 
-## `optimize:`
+### `optimize:`
 
 Generic optimize levels for code generation.
+
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 
 Value                                                 | Code Generation
 :-----------------------------------------------------|:------------------------------------
@@ -640,6 +718,8 @@ Value                                                 | Code Generation
 `speed`                                               | Optimized for execution speed
 `debug`                                               | Optimized for debug illusion (generates typical slower and larger code)
 `max`                                                 | Maximum optimization (may use link-time optimizations)
+
+<!-- markdownlint-restore -->
 
 **Example:**
 
@@ -652,7 +732,7 @@ groups:
       - file: file1b.c
 ```
 
-## `debug:`
+### `debug:`
 
 Control the generation of debug information.
 
@@ -670,9 +750,12 @@ Value                                                 | Code Generation
       debug: off            # generate no debug information for the release build
 ```
 
-## `warnings:`
+### `warnings:`
 
 Control warning level for compiler diagnostics.
+
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 
 Value                                                 | Control diagnostic messages (warnings)
 :-----------------------------------------------------|:------------------------------------
@@ -681,10 +764,12 @@ Value                                                 | Control diagnostic messa
 `all`                                                 | Generate warning messages out constructions that some users consider questionable, and that are easy to avoid.
 `extra`                                               | This enables some extra warning flags that are not enabled by `all`.
 
+<!-- markdownlint-restore -->
 
-## `define:`
+### `define:`
 
->**Note:** For a transition period `defines:` is also accepted.  However, this is deprecated and will be removed in a future update.
+>**Note:** For a transition period `defines:` is also accepted.  However, this is deprecated and will be removed in a
+ future update.
 
 Contains a list of symbol #define statements that are passed via the command line to the development tools.
 
@@ -701,9 +786,10 @@ define:                    # Start a list of define statements
   - TestMode               # add symbol 'TestMode'
 ```
 
-## `undefine:`
+### `undefine:`
 
->**Note:** For a transition period `undefines:` is also accepted.  However, this is deprecated and will be removed in a future update.
+>**Note:** For a transition period `undefines:` is also accepted.  However, this is deprecated and will be removed in a
+ future update.
 
 Remove symbol #define statements from the command line of the development tools.
 
@@ -725,9 +811,10 @@ groups:
       - file: file1b.c
 ```
 
-## `add-path:`
+### `add-path:`
 
->**Note:** For a transition period `add-paths:` is also accepted.  However, this is deprecated and will be removed in a future update.
+>**Note:** For a transition period `add-paths:` is also accepted.  However, this is deprecated and will be removed in a
+ future update.
 
 Add include paths to the command line of the development tools.
 
@@ -736,6 +823,7 @@ Add include paths to the command line of the development tools.
 &nbsp;&nbsp; `- <path-name>`                         | Named path to be added
 
 **Example:**
+
 ```yml
 project:
   misc:
@@ -748,9 +836,10 @@ project:
     - $OutDir(Secure)$                   # add path to secure project's output directory
 ```
 
-## `del-path:`
+### `del-path:`
 
->**Note:** For a transition period `del-paths:` is also accepted.  However, this is deprecated and will be removed in a future update.
+>**Note:** For a transition period `del-paths:` is also accepted.  However, this is deprecated and will be removed in a
+ future update.
 
 Remove include paths (that are defined at the cproject level) from the command line of the development tools.
 
@@ -758,7 +847,8 @@ Remove include paths (that are defined at the cproject level) from the command l
 :----------------------------------------------------|:------------------------------------
 &nbsp;&nbsp; `- <path-name>`                         | Named path to be removed; `*` for all
 
-**Example:**
+**Examle:**
+
 ```yml
   target-types:
     - type: CM3
@@ -767,16 +857,17 @@ Remove include paths (that are defined at the cproject level) from the command l
         - /path/solution/to-be-removed
 ```
 
-## `misc:`
+### `misc:`
 
-Add miscellaneous literal tool-specific controls that are directly passed to the individual tools depending on the file type.
+Add miscellaneous literal tool-specific controls that are directly passed to the individual tools depending on the file
+type.
 
 `misc:`                              |              | Content
 :------------------------------------|--------------|:------------------------------------
 [`- for-compiler:`](#for-compiler)   |   Optional   | Name of the toolchain that the literal control string applies to.
-&nbsp;&nbsp; `C:`                    |   Optional   | Applies to *.c files only.
-&nbsp;&nbsp; `CPP:`                  |   Optional   | Applies to *.cpp files only.
-&nbsp;&nbsp; `C-CPP:`                |   Optional   | Applies to *.c and *.cpp files.
+&nbsp;&nbsp; `C:`                    |   Optional   | Applies to `*.c` files only.
+&nbsp;&nbsp; `CPP:`                  |   Optional   | Applies to `*.cpp` files only.
+&nbsp;&nbsp; `C-CPP:`                |   Optional   | Applies to `*.c` and `*.cpp` files.
 &nbsp;&nbsp; `ASM:`                  |   Optional   | Applies to assembler source files only.
 &nbsp;&nbsp; `Link:`                 |   Optional   | Applies to the linker (added before `Link-C:` or `Link-CPP:`).
 &nbsp;&nbsp; `Link-C:`               |   Optional   | Applies to the linker; added when no C++ files are part of the project.
@@ -784,6 +875,7 @@ Add miscellaneous literal tool-specific controls that are directly passed to the
 &nbsp;&nbsp; `Lib:`                  |   Optional   | Applies to the library manager or archiver.
 
 **Example:**
+
 ```yml
   build-types:
     - type: Debug
@@ -803,20 +895,20 @@ Add miscellaneous literal tool-specific controls that are directly passed to the
           - -O3
 ```
 
-# Project Setups
+## Project Setups
 
 The `setups:` node can be used to create setups that are specific to a compiler, target-type, and/or built-type.
 
-## `setups:`
+### `setups:`
 
 The `setups:` node collects a list of `setup:` notes.  For each context, only one setup will be selected.
 
-The result is a `setup:` that collects various toolchain options and that is valid for all files and components in the project.
-It is however possible to change that `setup:` settings on a [`group:`](#groups) or [`file:`](#files) level.
+The result is a `setup:` that collects various toolchain options and that is valid for all files and components in the
+project. It is however possible to change that `setup:` settings on a [`group:`](#groups) or [`file:`](#files) level.
 
-`setups:`                                      |              | Content
-:----------------------------------------------|--------------|:------------------------------------
-[`- setup:`](#group)                           | **Required** | Description of the setup
+`setups:`                                            |              | Content
+:----------------------------------------------------|:-------------|:------------------------------------
+`- setup:`                                           | **Required** | Description of the setup
 &nbsp;&nbsp;&nbsp; [`for-type:`](#for-type)          |   Optional   | Include group for a list of *build* and *target* types.
 &nbsp;&nbsp;&nbsp; [`not-for-type:`](#not-for-type)  |   Optional   | Exclude group for a list of *build* and *target* types.
 &nbsp;&nbsp;&nbsp; [`for-compiler:`](#for-compiler)  |   Optional   | Include group for a list of compilers.
@@ -848,7 +940,7 @@ project:
        - test: 11
 ```
 
-# Pack Selection
+## Pack Selection
 
 The `packs:` node can be specified in the `*.csolution.yml` and `*.cdefault.yml` file allows you to:
   
@@ -857,9 +949,10 @@ The `packs:` node can be specified in the `*.csolution.yml` and `*.cdefault.yml`
 - Provide a path to a local installation of a software pack that is for example project specific or under development.
 
 The  [Pack Name Conventions](#pack-name-conventions) are used to specify the name of the software packs.
-The `pack:` definition can be specific to [target and build types](#target-and-build-types) and may provide a local path to a development repository of a software pack.
+The `pack:` definition can be specific to [target and build types](#target-and-build-types) and may provide a local path
+to a development repository of a software pack.
 
-## `packs:`
+### `packs:`
 
 The `packs:` node is the start of a pack selection.
 
@@ -867,9 +960,10 @@ The `packs:` node is the start of a pack selection.
 :-----------------------------------------------------|:------------------------------------
 &nbsp;&nbsp; [`- pack:`](#pack)                       | Explicit pack specification (additive)
 
-## `pack:`
+### `pack:`
 
-The `pack:` list allows to add specific software packs, optional with a version specification. The version number can have also the format `@~1.2`/`@~1` that matches with sematic versioning.
+The `pack:` list allows to add specific software packs, optional with a version specification. The version number can
+have also the format `@~1.2`/`@~1` that matches with semantic versioning.
 
 `pack:`                                               | Content
 :-----------------------------------------------------|:------------------------------------
@@ -897,31 +991,38 @@ packs:                                  # start section that specifics software 
     for-type: +DevTest                  # pack is only used for target-type "DevTest"
 ```
 
-# Target Selection
+## Target Selection
 
-## `board:`
+### `board:`
 
-Specifies a [unique board name](#board-name-conventions), optionally with vendor that must be defined in software packs. This information is used to define the `device:` along with basic toolchain settings.
+Specifies a [unique board name](#board-name-conventions), optionally with vendor that must be defined in software packs.
+This information is used to define the `device:` along with basic toolchain settings.
 
-## `device:`
+### `device:`
 
-Specifies a [unique device name](#device-name-conventions), optionally with vendor that must be defined in software packs. This information is used to define the `device:` along with basic toolchain settings.
+Specifies a [unique device name](#device-name-conventions), optionally with vendor that must be defined in software
+packs. This information is used to define the `device:` along with basic toolchain settings.
 
 A `device:` is derived from the `board:` setting, but an explicit `device:` setting overrules the `board:` device.
 
 If `device:` specifies a multi-core device, and no explicit `core` is specified, the default `core` of the device is used.
 
-# Processor Attributes
+## Processor Attributes
 
-## `processor:`
+### `processor:`
 
 The `processor:` keyword defines attributes such as TrustZone and FPU register usage.
+
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 
 `processor:`                   | Content
 :------------------------------|:------------------------------------
 &nbsp;&nbsp; `trustzone:`      | TrustZone mode: secure \| non-secure \| off.
 &nbsp;&nbsp; `fpu:`            | Control usage of FPU registers (S-Register for Helium/FPU) (default: on for devices with FPU registers).
 &nbsp;&nbsp; `endian:`         | Select endianness: little \| big (only available when devices are configurable).
+
+<!-- markdownlint-restore -->
 
 ```yml
 project:
@@ -930,24 +1031,31 @@ project:
 ```
 
 > **Note:**
-> - Default for `trustzone:` 
->    - `off` for devices that support this option.
->    - `non-secure` for devices that have TrustZone enabled.
+>
+> - Default for `trustzone:`
+>   - `off` for devices that support this option.
+>   - `non-secure` for devices that have TrustZone enabled.
 
-# Target and Build Types
+## Target and Build Types
 
-The section [Project setup for multiple targets and test builds](Overview.md#project-setup-for-multiple-targets-and-builds) describes the concept of  `target-types` and `build-types`. These *types* can be defined in the following files in the following order:
+The section
+[Project setup for multiple targets and test builds](Overview.md#project-setup-for-multiple-targets-and-builds)
+describes the concept of  `target-types` and `build-types`. These *types* can be defined in the following files in the
+following order:
 
 - `default.csettings.yml`  where it defines global *types*, such as *Debug* and *Release* build.
 - `*.csolution.yml` where it specifies the build and target *types* of the complete system.
 
-The *`target-type`* and *`build-type`* definitions are additive, but an attempt to redefine an already existing type results in an error.
+The *`target-type`* and *`build-type`* definitions are additive, but an attempt to redefine an already existing type
+results in an error.
 
-The settings of the *`target-type`* are processed first; then the settings of the *`build-type`* that potentially overwrite the *`target-type`* settings.
+The settings of the *`target-type`* are processed first; then the settings of the *`build-type`* that potentially
+overwrite the *`target-type`* settings.
 
-## `target-types:`
+### `target-types:`
 
-The `target-types:` node may include [toolchain options](#toolchain-options), [target selection](#target-selection), and [processor attributes](#processor-attributes):
+The `target-types:` node may include [toolchain options](#toolchain-options), [target selection](#target-selection), and
+[processor attributes](#processor-attributes):
 
 `target-types:`                                    |              | Content
 :--------------------------------------------------|--------------|:------------------------------------
@@ -966,7 +1074,7 @@ The `target-types:` node may include [toolchain options](#toolchain-options), [t
 &nbsp;&nbsp;&nbsp; [`device:`](#device)            |   Optional   | Device specification.
 &nbsp;&nbsp;&nbsp; [`processor:`](#processor)      |   Optional   | Processor specific settings.
 
-## `build-types:`
+### `build-types:`
 
 The `build-types:` node may include [toolchain options](#toolchain-options):
 
@@ -1003,11 +1111,16 @@ build-types:
     debug: on
 ```
 
-The `board:`, `device:`, and `processor:` settings are used to configure the code translation for the toolchain. These settings are processed in the following order:
+The `board:`, `device:`, and `processor:` settings are used to configure the code translation for the toolchain. These
+settings are processed in the following order:
 
-1. `board:` relates to a BSP software pack that defines board parameters, including the [mounted device](https://arm-software.github.io/CMSIS_5/Pack/html/pdsc_boards_pg.html#element_board_mountedDevice). If `board:` is not specified, a `device:` most be specified.
-2. `device:` defines the target device. If `board:` is specified, the `device:` setting can be used to overwrite the device or specify the processor core used.
-3. `processor:` overwrites default settings for code generation, such as endianess, TrustZone mode, or disable Floating Point code generation.
+1. `board:` relates to a BSP software pack that defines board parameters, including the
+   [mounted device](https://arm-software.github.io/CMSIS_5/Pack/html/pdsc_boards_pg.html#element_board_mountedDevice).
+   If `board:` is not specified, a `device:` most be specified.
+2. `device:` defines the target device. If `board:` is specified, the `device:` setting can be used to overwrite the
+   device or specify the processor core used.
+3. `processor:` overwrites default settings for code generation, such as endianess, TrustZone mode, or disable Floating
+   Point code generation.
 
 **Examples:**
 
@@ -1027,24 +1140,30 @@ target-types:
     device: :cm0plus          # use the Cortex-M0+ processor
 ```
 
-# Build/Target-Type control
+## Build/Target-Type control
 
-Depending on a *`target-type`* or *`build-type`* selection it is possible to include or exclude *items* in the build process.
+Depending on a *`target-type`* or *`build-type`* selection it is possible to include or exclude *items* in the build
+process.
 
-## `for-type:`
-A [*type list*](#type-list) that adds a [*list-node*](#list-nodes) for a specific target or build *type* or a list of *types*.
+### `for-type:`
 
-## `not-for-type:`
+A [*type list*](#type-list) that adds a [*list-node*](#list-nodes) for a specific target or build *type* or a list of
+*types*.
 
-A [*type list*](#type-list) that removes an [*list-node*](#list-nodes) for a specific target or build *type* or a list of *types*.
+### `not-for-type:`
 
-### *type list*
+A [*type list*](#type-list) that removes an [*list-node*](#list-nodes) for a specific target or build *type* or a list
+of *types*.
 
-It is possible to specify only a `<build-type>`, only a `<target-type>` or a combination of `<build-type>` and `<target-type>`. 
+#### type list
 
-It is also possible to provide a list of *build* and *target* types. The *type list syntax* for `for-type:` or `not-for-type:` is:
+It is possible to specify only a `<build-type>`, only a `<target-type>` or a combination of `<build-type>` and
+`<target-type>`.
 
-```
+It is also possible to provide a list of *build* and *target* types. The *type list syntax* for `for-type:` or
+`not-for-type:` is:
+
+```yml
   - [.<build-type>][+<target-type>]
   - [.<build-type>][+<target-type>]
 ```
@@ -1062,11 +1181,16 @@ for-type:                            # add item
 not-for-type:  +Virtual              # remove item for target-type: Virtual (any build-type)
 not-for-type:  .Release+Virtual      # remove item for build-type: Release with target-type: Virtual
 ```
-> **Note:** `for-type` and `not-for-type` are mutually exclusive, only one occurrence can be specified for a *list node*. 
 
-### *list nodes*
+> **Note:** `for-type` and `not-for-type` are mutually exclusive, only one occurrence can be specified for a
+  *list node*.
+
+#### list nodes
 
 The keyword `for-type:` or `not-for-type:` can be applied to the following list nodes:
+
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 
 List Node                                  | Description
 :------------------------------------------|:------------------------------------
@@ -1077,18 +1201,22 @@ List Node                                  | Description
 [`- setup:`](#setups)                      | At `setups:` level it is define toolchain specific options that apply to the whole project.
 [`- file:`](#files)                        | At `files:` level it is possible to control inclusion of a file.
 
-The inclusion of a *list node* is processed for a given *project context* respecting its hierarchy from top to bottom: `project` > `layer` > `component`/`group` > `file`
+<!-- markdownlint-restore -->
 
-In other words, the restrictions specified by a *type list* for a *list node* are automatically applied to its children nodes.
-Children *list nodes* inherit the restrictions from their parent and consequently it must be considered when processing their *type lists*.
+The inclusion of a *list node* is processed for a given *project context* respecting its hierarchy from top to bottom:
+`project` > `layer` > `component`/`group` > `file`
 
+In other words, the restrictions specified by a *type list* for a *list node* are automatically applied to its children
+nodes. Children *list nodes* inherit the restrictions from their parent and consequently it must be considered when
+processing their *type lists*.
 
+## Related Projects
 
-# Related Projects
+The section [Project setup for related projects](Overview.md#project-setup-for-related-projects) describes the
+collection of related projects. The file `*.csolution.yml` describes the relationship of this projects. This file may
+also define [Target and Build Types](#target-and-build-types) before the section `solution:`.
 
-The section [Project setup for related projects](Overview.md#project-setup-for-related-projects) describes the collection of related projects. The file `*.csolution.yml` describes the relationship of this projects. This file may also define [Target and Build Types](#target-and-build-types) before the section `solution:`.
-
-## `projects:`
+### `projects:`
 
 The YML structure of the section `projects:` is:
 
@@ -1127,8 +1255,10 @@ The YML structure of the section `projects:` is:
       not-for-type: .Release               # specify not to use case
 ```
 
+## Source File Management
 
-# Source File Management
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 
 Keyword          | Used in files                    | Description
 :----------------|:---------------------------------|:------------------------------------
@@ -1136,13 +1266,15 @@ Keyword          | Used in files                    | Description
 `layers:`        | `*.cproject.yml`                 | Start of a list that adds software layers to a project.
 `components:`    | `*.cproject.yml`, `*.clayer.yml` | Start of a list that adds software components to a project or layer.
 
-## `groups:`
+<!-- markdownlint-restore -->
+
+### `groups:`
 
 The `groups:` keyword specifies a list that adds [source groups and files](#source-file-management) to a project or layer:
 
 `groups:`                                      |              | Content
 :----------------------------------------------|--------------|:------------------------------------
-[`- group:`](#group)                           | **Required** | Name of the group.
+`- group:`                                     | **Required** | Name of the group.
 &nbsp;&nbsp; [`for-type:`](#for-type)          |   Optional   | Include group for a list of *build* and *target* types.
 &nbsp;&nbsp; [`not-for-type:`](#not-for-type)  |   Optional   | Exclude group for a list of *build* and *target* types.
 &nbsp;&nbsp; [`for-compiler:`](#for-compiler)  |   Optional   | Include group for a list of compilers.
@@ -1159,13 +1291,13 @@ The `groups:` keyword specifies a list that adds [source groups and files](#sour
 
 **Example:**
 
-See [`files:`](#files) section. 
+See [`files:`](#files) section.
 
-## `files:`
+### `files:`
 
 `files:`                                             |              | Content
 :----------------------------------------------------|--------------|:------------------------------------
-[`- file:`](#file)                                   | **Required** | Name of the file.
+`- file:                                             | **Required** | Name of the file.
 &nbsp;&nbsp;&nbsp; [`for-type:`](#for-type)          |   Optional   | Include file for a list of *build* and *target* types.
 &nbsp;&nbsp;&nbsp; [`not-for-type:`](#not-for-type)  |   Optional   | Exclude file for a list of *build* and *target* types.
 &nbsp;&nbsp;&nbsp; [`for-compiler:`](#for-compiler)  |   Optional   | Include file for a list of compilers.
@@ -1220,7 +1352,9 @@ groups:
           - file: file-sub2-2.c
 ```
 
-It is also possible to include a file group for a specific compiler using [`for-compiler:`](#for-compiler) or a specific target-type and/or build-type using [`for-type:`](#for-type) or [`not-for-type:`](#not-for-type).
+It is also possible to include a file group for a specific compiler using [`for-compiler:`](#for-compiler) or a specific
+target-type and/or build-type using [`for-type:`](#for-type) or [`not-for-type:`](#not-for-type).
+
 ```yml
 groups:
   - group:  "Main File Group"
@@ -1236,7 +1370,7 @@ groups:
       - file: file2b.c
 ```
 
-## `layers:`
+### `layers:`
 
 Add a software layer to a project. Used in `*.cproject.yml` files.
 
@@ -1273,13 +1407,13 @@ Add a software layer to a project. Used in `*.cproject.yml` files.
         - +AVH
 ```
 
-## `components:`
+### `components:`
 
 Add software components to a project or a software layer. Used in `*.cproject.yml` and `*.clayer.yml` files.
 
 `components:`                                  |              | Content
 :----------------------------------------------|--------------|:------------------------------------
-[`- component:`](#component)                   | **Required** | Name of the software component.
+`- component:`                                 | **Required** | Name of the software component.
 &nbsp;&nbsp; [`for-type:`](#for-type)          |   Optional   | Include component for a list of *build* and *target* types.
 &nbsp;&nbsp; [`not-for-type:`](#not-for-type)  |   Optional   | Exclude component for a list of *build* and *target* types.
 &nbsp;&nbsp; [`optimize:`](#optimize)          |   Optional   | Optimize level for code generation.
@@ -1316,17 +1450,21 @@ components:
         - MBEDTLS_CONFIG_FILE="aws_mbedtls_config.h"
 ```
 
-> **Note:** The name format for a software component is described under [Name Conventions - Component Names](#Component_Names).
+> **Note:** The name format for a software component is described under
+  [Name Conventions - Component Name Conventions](#component-name-conventions).
 
-## `instances:`
+### `instances:`
 
 This is a proposal for component instances.
 
-Modern microcontrollers often have multiple instances of the same peripheral interface (for example UART, SPI, USB, etc.). To be able to have separate configuration files for each of these instances, software components can have multiple instances as well. To cope with multiple configurations, the `instances:` list allows to assign peripherals to a usage and provide configuration parameters.
+Modern microcontrollers often have multiple instances of the same peripheral interface (for example UART, SPI, USB,
+etc.). To be able to have separate configuration files for each of these instances, software components can have
+multiple instances as well. To cope with multiple configurations, the `instances:` list allows to assign peripherals to
+a usage and provide configuration parameters.
 
 `instances:`                         |              | Content
 :------------------------------------|--------------|:------------------------------------
-[`- name:`](#name) value             | **Required** | Assign a name to a instance, value is the instance number.
+`- name:` value                      | **Required** | Assign a name to a instance, value is the instance number.
 &nbsp;&nbsp; `<parameters>`          |   Optional   | An unchecked list of key/value pairs to supply parameters for the instance.
 
 **Example:**
@@ -1344,18 +1482,25 @@ components:
 
 *Extend tool behavior:*
 
-- Existing definitions in the *.PDSC for [Component Instances](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_components_pg.html#Component_Instances) remain unchanged:
-  - The instance *value* must be within the range of the attribute `maxInstances`. Hence there is currently no change in the *.PDSC format required.
-  - The instance *values* can be non-contiguous, for example it is possible to specify instance value 1 and 4 for a component. This requires a tool modification.
+- Existing definitions in the `*.PDSC` for
+  [Component Instances](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_components_pg.html#Component_Instances)
+  remain unchanged:
+  - The instance *value* must be within the range of the attribute `maxInstances`. Hence there is currently no change in
+    the `*.PDSC` format required.
+  - The instance *values* can be non-contiguous, for example it is possible to specify instance value 1 and 4 for a
+    component. This requires a tool modification.
 
-If the user selects multiple instances of the same component, all files with  attribute `config` in the `*.PDSC` file will be copied multiple times to the project. The name of the component (for example config_mylib.h) will get a postfix `_value`. The instance `name:` specifies this `value`:
+If the user selects multiple instances of the same component, all files with  attribute `config` in the `*.PDSC` file
+will be copied multiple times to the project. The name of the component (for example config_mylib.h) will get a postfix
+`_value`. The instance `name:` specifies this `value`:
 
 Instance 0: config_uart_0.h  
 Instance 2: config_uart_2.h
 
-The availability of instances in a project can be made public in the `RTE_Components.h` file. The existing way to extend the `%Instance%` with the instance `value` is extended with `%Instance_Name%` to access the instance `name:`.
+The availability of instances in a project can be made public in the `RTE_Components.h` file. The existing way to extend
+the `%Instance%` with the instance `value` is extended with `%Instance_Name%` to access the instance `name:`.
 
-**Example: \*.PDSC file content:**
+**Example: `*.PDSC` file content:**
 
 ```c
 <RTE_Components_h>
@@ -1364,30 +1509,31 @@ The availability of instances in a project can be made public in the `RTE_Compon
 </RTE_Components_h>
 ```
 
-**Expanded RTE_Components.h file:**
+**Expanded `RTE_Components.h` file:**
 
 ```c
   #define HAL_UART0    WiFi
   #define HAL_UART2    Debug
 ```
 
-When component files are copied to the project workspace the tools also replaces text `%Instance%` and `%Instance_Name%` with instance `value` and `name:` for component files that have the `attr=config` or `attr=template` 
+When component files are copied to the project workspace the tools also replaces text `%Instance%` and `%Instance_Name%`
+with instance `value` and `name:` for component files that have the `attr=config` or `attr=template`.
 
-# Pre/Post build steps
+## Pre/Post build steps
 
 Tbd: potentially map to CMake add_custom_command.
 
-## `execute:`
+### `execute:`
 
 Execute and external command for pre- or post-build steps (such as code signing).
 
-`- execute:`                         |              | Content
-:------------------------------------|--------------|:------------------------------------
-[`- execute:`](#execute) description | **Required** | Execute an external command with description
-&nbsp;&nbsp; [`os:`](#os) name       |   Optional   | Executable on named operating systems (if omitted it is OS independent).
-&nbsp;&nbsp; [`run:`](#run) name     |   Optional   | Executable name, optionally with path to the tool.
-&nbsp;&nbsp; [`args:`](#args) name   |   Optional   | Execuatble arguments.
-&nbsp;&nbsp; [`stop:`](#stop) name   |   Optional   | Stop on exit code.
+`- execute:`                |               | Content
+:---------------------------|:--------------|:------------------------------------
+`- execute:` description    |  **Required** | Execute an external command with description
+&nbsp;&nbsp; `os:` name     |   Optional    | Executable on named operating systems (if omitted it is OS independent).
+&nbsp;&nbsp; `run:` name    |   Optional    | Executable name, optionally with path to the tool.
+&nbsp;&nbsp; `args:` name   |   Optional    | Executable arguments.
+&nbsp;&nbsp; `stop:` name   |   Optional    | Stop on exit code.
 
 Potential usage before/after build:
 
@@ -1420,16 +1566,22 @@ project:
         - file: file1a.c
 ```
 
-## `interface:`
+### `interface:`
 
 Describes consumed and required interfaces and can be applied to `project:`, `layer:` or `layer-template:`
+
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 
 `interface:`                         |              | Description
 :------------------------------------|--------------|:------------------------------------
 `provides:`[#provides]               |   Optional   | List of interfaces (key/value pairs) that are provided by a `project:`, `layer:` or `layer-template:`
 `consumes:`[#consumes]               |   Optional   | List of interfaces (key/value pairs) that are consumed by a `project:`, `layer:` or `layer-template:`
 
+<!-- markdownlint-restore -->
+
 **Example:**
+
 ```yml
   interface:                         # interface description of a board layer
     consumes:
@@ -1441,14 +1593,11 @@ Describes consumed and required interfaces and can be applied to `project:`, `la
     - Heap : 65536                   # heap size 
 ```
 
-
-
-# Layer todo
+## Layer todo
 
 Start of a layer definition in a `*.clayer.yml` file.
 
 **Example:**
-
 
 ```yml
 project:
@@ -1458,9 +1607,7 @@ project:
     - layer: ..\layer\App\Blinky.clayer.yml
     - layer: ..\layer\Board+NUCELO-G474RE\Nucelo-G474RE.clayer.yml      # 'NUCLEO-G474RE' is target-type
     - layer: ..\layer\RTOS\RTX.clayer.yml
-```    
-
-
+```
 
 ```yml
 layer: App
@@ -1543,15 +1690,16 @@ groups:
 Todo: work on this
 
 The YML structure of the section `layer:` is:
+
 ```yml
 layer:
   description:
   ....
 ```  
 
-# Generator (Proposal)
+## Generator (Proposal)
 
-## Workflow assumptions
+### Workflow assumptions
 
 The composition of a solution of a solution should have the following steps:
 
@@ -1564,48 +1712,54 @@ The composition of a solution of a solution should have the following steps:
 
 > **Note:** Components can have multiple [instances](#instances).
 
-## Steps for component selection and configuration
+### Steps for component selection and configuration
 
 The following explains the generator workflow of CSolution / CBuild for configuration of components:
 
 1. User selects components in `*.cproject.yml` under `components:`
-    - When these components require generation, user is notified to run a generator.
-    - "CSolution Run GenID” is invoked for a list of components.
-    - CSolution generates `*.cgen.json` file that provides project context and a list of user-selected components.
+   - When these components require generation, user is notified to run a generator.
+   - "CSolution Run GenID” is invoked for a list of components.
+   - CSolution generates `*.cgen.json` file that provides project context and a list of user-selected components.
   
 2. Running the Generator (for Component Configuration, i.e. pin selection)
-     - Generator reads `*.cgen.json` file
-     - User performs the configuration is done.
-         - Interactive mode (where a settings file is generated)
-         - Remote mode (where a settings file is an input) **IS THIS REALLY REQUIRED**
-     - Generator creates a `*.gpdsc` file that informs the CSolution tool about
-         - (a) the fact that a component is configured and has generated code, 
-         - (b) additional components that are the result of some user configuration.
+   - Generator reads `*.cgen.json` file
+   - User performs the configuration is done.
+     - Interactive mode (where a settings file is generated)
+     - Remote mode (where a settings file is an input) **IS THIS REALLY REQUIRED**
+   - Generator creates a `*.gpdsc` file that informs the CSolution tool about
+     - (a) the fact that a component is configured and has generated code,
+     - (b) additional components that are the result of some user configuration.
 
-   Discussions: 
-     - is a component list or a dependency list
-     - Generator might be VS Code plugin or web based
+   Discussions:
+   - is a component list or a dependency list
+   - Generator might be VS Code plugin or web based
 
 3. User creates CBuild output with CSolution Convert command
-      - Both `*.cproject.yml` and `*.gpdsc` are read by Csolution and create the complete list of selected components.
-      - If `*.gpdsc` does not contain component information about a component that has `genId` and selected in `*.cproject.yml` the generator configuration is incomplete. This can happen when a component is added at a later step.
-      - Likewise the Generator can detect with the `<component User="1">` attribute that a component is longer required. In this case the user is notified to run a generator.
+   - Both `*.cproject.yml` and `*.gpdsc` are read by Csolution and create the complete list of selected components.
+   - If `*.gpdsc` does not contain component information about a component that has `genId` and selected in
+     `*.cproject.yml` the generator configuration is incomplete. This can happen when a component is added at a later
+     step.
+   - Likewise the Generator can detect with the `<component User="1">` attribute that a component is longer required.
+     In this case the user is notified to run a generator.
 
-## Enhance Usability
+### Enhance Usability
 
 Add Run Generator buttons to Cclass descriptions.
 
 ![Add Run Generator buttons to Cclass](./images/gen.png "Add Run Generator buttons to Cclass")
 
-## Workflow
+### Workflow
 
-1. For `*.cproject.yml` files that contain selected `<components>` with a `generator` or `genid` attribute the `csolution` manager checks if a file with the name `./<project>/RTE+<target>/<genid>.cgen.json` exists.
-    - When this file is missing, it is required to use the command `csolution run genid` to start the generator.
-    - When this file exists, the `csolution` manager checks if the list of components with `genid` has changed. If this is the case it is required to use the command `csolution run genid` to reconfigure generated components.
+1. For `*.cproject.yml` files that contain selected `<components>` with a `generator` or `genid` attribute the
+   `csolution` manager checks if a file with the name `./<project>/RTE+<target>/<genid>.cgen.json` exists.
+   - When this file is missing, it is required to use the command `csolution run genid` to start the generator.
+   - When this file exists, the `csolution` manager checks if the list of components with `genid` has changed. If this
+     is the case it is required to use the command `csolution run genid` to reconfigure generated components.
+2. The command `csolution run genid` creates the file `./<project>/RTE+<target>/<genid>.cgen.json` and starts the
+   generator. The generator creates a `*.GDPSC` file along with other source files that are required
+   [as specified](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_generators_pg.html#element_generators).
 
-2. The command `csolution run genid` creates the file `./<project>/RTE+<target>/<genid>.cgen.json` and starts the generator. The generator creates a *.GDPSC file along with other source files that are required [as specified](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_generators_pg.html#element_generators).
-
-**Example Content of \*.cgen.json (in this case STM32CubeMX.cgen.json)**
+#### Example Content of `*.cgen.json` (in this case `STM32CubeMX.cgen.json`)
 
 The `*.cgen.json` file is passed to generator as argument.
 
@@ -1638,33 +1792,37 @@ cgenerator:
           baudrate: 57600
 ```
 
-## Changes to the *.GPDSC file
+### Changes to the *.GPDSC file
 
-To indicate that a component was generated due to a user selection in `*.cproject.yml`, the `component` element is extended with `User` attribute. When set to `1` it indicates that a component is included due to the selection in `*.cproject.yml`.
+To indicate that a component was generated due to a user selection in `*.cproject.yml`, the `component` element is
+extended with `User` attribute. When set to `1` it indicates that a component is included due to the selection in
+`*.cproject.yml`.
 
-When a user removes this component in the `*.cproject.yml`, the CSolution could detect that a Run command should be executed.
+When a user removes this component in the `*.cproject.yml`, the CSolution could detect that a Run command should be
+executed.
 
-## Changes to the *.PDSC file
+### Changes to the *.PDSC file
 
 - Add `<key>` to `<generator>` element. The `key` is used to invoke the generator and pass the `<genid>.cgen.json` file.
   - on Windows to a registry key to invoke the generator tool
   - on Linux and MacOS to an environment variable that specifies how to invoke the generator tool
   - todo: Web based tools?
-
 - Add `genId` to `component` element. Indicates that a component is managed by the `<generator>`.
-   
 - Add `inherent` to `component` element. Indicates that a component is managed by the `<generator>`
-
-     Components with inherent attribute are not selectable by the user (and could be managed by the `<generator>`). Components with `inherent` attribute have the following behavior:
-     - Are selected when a condition requires this component.
-     - Are de-selected when a no condition requires this component.
-    - IDE's may choose to hide such components in the RTE selection (default might be to show it).
-
+  Components with inherent attribute are not selectable by the user (and could be managed by the `<generator>`).
+  Components with `inherent` attribute have the following behavior:
+  - Are selected when a condition requires this component.
+  - Are de-selected when a no condition requires this component.
+  - IDE's may choose to hide such components in the RTE selection (default might be to show it).
 - Add new file category:
   - `genParms` template parameters
   - `genInput` source templates for the generator and other related input files for the generator
 
 **Example:**
+
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
+
 ```xml
  <generators>
     <!-- This generator is launched if any component referencing this generator by 'id' is selected and the specified <gpdsc> file does not exist -->
@@ -1714,7 +1872,7 @@ When a user removes this component in the `*.cproject.yml`, the CSolution could 
         <file category="genSource" name="Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_adc.c.template"/>
       </files>
     </component>
-	  :
+      :
     <bundle Cbundle="STM32F4-Discovery" Cclass="Board Support" Cversion="2.0.0">
       <description>STMicroelectronics STM32F4 Discovery Kit</description>
       <doc>http://www.st.com/st-web-ui/static/active/en/resource/technical/document/data_brief/DM00037955.pdf</doc>
@@ -1729,7 +1887,10 @@ When a user removes this component in the `*.cproject.yml`, the CSolution could 
       </component>
 ```
 
+<!-- markdownlint-restore -->
+
 **Example *.gpdsc file**
+
 ```xml
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!-- ******************************************************************************
@@ -1798,48 +1959,56 @@ When a user removes this component in the `*.cproject.yml`, the CSolution could 
 </package>
 ```
 
+## Resource Management
 
-# Resource Management
+The **CSolution Project Manager** integrates an extended version of the Project Zone functionality of
+[CMSIS-Zone](https://arm-software.github.io/CMSIS_5/Zone/html/index.html) with this nodes:
 
-The **CSolution Project Manager** integrates an extended version of the Project Zone functionality of [CMSIS-Zone](https://arm-software.github.io/CMSIS_5/Zone/html/index.html) with this nodes:
-- [`resources:`](#resources) imports resource files (in [CMSIS-Zone RZone format](https://arm-software.github.io/CMSIS_5/Zone/html/xml_rzone_pg.html) or a compatible yml format tbd) and allows to split or combine memory regions.
-- [`phases:`](#phases) defines the execution phases may be used to assign a life-time to memory or peripheral resources in the project zones.
-- [`project-zones:`](#project-zones) collect and configure the memory or peripheral resources that are available to individual projects. These zones are assigned to the [`projects:`](#projects) of a `*.csolution.yml` file.
-- [`requires:`](#requires) allows to specify additional resources at the level of a `*.cproject.yml` or `*.clayer.yml` file that are added to the related zone of the project.
+- [`resources:`](#resources) imports resource files (in
+  [CMSIS-Zone RZone format](https://arm-software.github.io/CMSIS_5/Zone/html/xml_rzone_pg.html) or a compatible yml
+  format tbd) and allows to split or combine memory regions.
+- [`phases:`](#phases) defines the execution phases may be used to assign a life-time to memory or peripheral resources
+  in the project zones.
+- [`project-zones:`](#project-zones) collect and configure the memory or peripheral resources that are available to
+  individual projects. These zones are assigned to the [`projects:`](#projects) of a `*.csolution.yml` file.
+- [`requires:`](#requires) allows to specify additional resources at the level of a `*.cproject.yml` or `*.clayer.yml`
+  file that are added to the related zone of the project.
 
-The **CSolution Project Manager** generates for each project context (with build and/or target-type) a data file (similar to the current [CMSIS FZone format](https://arm-software.github.io/CMSIS_5/Zone/html/GenDataModel.html), exact format tbd could be also JSON) for post-processing with a template engine (Handlebars?).
+The **CSolution Project Manager** generates for each project context (with build and/or target-type) a data file
+(similar to the current [CMSIS FZone format](https://arm-software.github.io/CMSIS_5/Zone/html/GenDataModel.html), exact
+format tbd could be also JSON) for post-processing with a template engine (Handlebars?).
 
-## `resources:`
+### `resources:`
 
 `resources:`                                   |              | Content
 :----------------------------------------------|--------------|:------------------------------------
-[`- import:`](#import)                         | **Required** | File/resource to be used.
-[`- split:`](#split)                           |   Optional   | Split a resource/memory region.
-[`- combine:`](#combine)                       |   Optional   | Combine a resource/memory region.
+`- import:`                                    | **Required** | File/resource to be used.
+`- split:`                                     |   Optional   | Split a resource/memory region.
+`- combine:`                                   |   Optional   | Combine a resource/memory region.
 
-### `- import:`
+#### `- import:`
 
-`-import:`                                     |              | Content
+`- import:`                                    |              | Content
 :----------------------------------------------|--------------|:------------------------------------
-[`- import:`](#import) path_to_resource        | **Required** | Path to the resource file.
+`- import:` path_to_resource                   | **Required** | Path to the resource file.
 
-### `- split:`
+#### `- split:`
 
 Split a resource into subresources.
 
 `- split:`                    |              | Content
 :-----------------------------|--------------|:------------------------------------
-[`into:`](#into)              | **Required** |
+`into:`                       | **Required** |
 &nbsp;&nbsp; `- region:` name | **Required** | Name of the new resource.
 &nbsp;&nbsp; `- size:` value  | **Required** | Size of the new resource.
 
-### `- combine`
+#### `- combine`
 
 Combine/merge resources into a new resource.
 
 `- combine:` name             |              | Content
 :-----------------------------|--------------|:------------------------------------
-[`from:`](#from)              | **Required** |
+`from:`                       | **Required** |
 &nbsp;&nbsp; `- region:` name | **Required** | Name of the resource to be combined.
 
 **Example:**
@@ -1865,9 +2034,10 @@ resources:
       - region: SRAM2
 ```
 
-> **Note:** Exact behavior for devices that have no RZone file is tbd. It could be that the memory resources are derived from device definitions
+> **Note:** Exact behavior for devices that have no RZone file is tbd. It could be that the memory resources are derived
+  from device definitions
 
-## `phases:`
+### `phases:`
 
 **Example:**
 
@@ -1880,11 +2050,7 @@ phases:    # define the life-time for resources in the project-zone definition
   - phase: Run
 ```
 
-## `project-zones:`
-
-### `- memory:`
-
-### `- peripheral:`
+### `project-zones:`
 
 **Example:**
 
@@ -1919,11 +2085,11 @@ projects:
     zone: Application
 ```
 
-## `requires:`
+#### `requires:`
 
-### `- memory:`
+##### `- memory:`
 
-### `- peripheral:`
+##### `- peripheral:`
 
 Added to `*.cproject.yml` or `*.clayer.yml` file
 

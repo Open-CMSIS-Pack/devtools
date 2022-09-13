@@ -2,7 +2,7 @@
 
 This repository contains `packchk` test development components.
 
-```
+```txt
     📦test
     ┣ 📂data
     ┣ 📂integtests

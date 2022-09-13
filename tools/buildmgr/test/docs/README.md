@@ -4,14 +4,17 @@ This project contains automated integration and unit tests. Developed using
 google test framework in order to validate various features and functionalities
 of `cbuildgen` and its components
 
-# How to run the tests
+## How to run the tests
 
 Please employ the sequence of the steps mentioned [here](../../../../README.md).
 
-# Integration Tests with commands & args
+## Integration Tests with commands & args
 
 This section lists the important integration tests to validate `cbuildgen` with
 different commands and arguments.
+
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 
 | Test | Command | Arguments | Env | Comments |
 | ---- | ------- | --------  | --- | -------- |
@@ -37,3 +40,5 @@ different commands and arguments.
 | RmdirCmdTest | rmdir | DIR_1...DIR_N | Yes | Checks removal of directory(s) |
 | TouchCmdTest | touch | FILE | Yes | Test to create, change and modfiy timestamps of file |
 | MultipleAuxCmdTest | mkdir rmdir touch | | Yes | Test with multiple commands |
+
+<!-- markdownlint-restore -->

@@ -1,6 +1,4 @@
-# Open-CMSIS-Pack Development Tools and Libraries
-
-# Coding Guidelines
+# Open-CMSIS-Pack Development Tools and Libraries Coding Guidelines
 
 ## File encoding, line endings, indentation
 
@@ -23,7 +21,7 @@ e.g. for Windows Batch files.
 The maximum length of a line *shall not* **exceed 120 characters** [1].
 
 In documentation (e.g. Markdown or Java doc strings) a line *shall not*
-**exceed 80 characters** [1].
+**exceed 120 characters** [1].
 
 In rare cases (e.g. static data in source files) it may not be well readable to
 add line breaks based on line length. In such situations, it *may* be
@@ -120,7 +118,7 @@ The aim of a copyright notice is to:
 
 The copyright notice should follow the format mentioned below.
 
-```
+```c++
 /*
  * Copyright (c) <Copyright_Date> <Copyright_Text>
  *

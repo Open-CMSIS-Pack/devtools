@@ -1,0 +1,18 @@
+{
+  "problemMatcher": [
+    {
+      "owner": "markdownlint",
+      "severity": "warning",
+      "pattern": [
+        {
+          "regexp": "^(.*):(\\d+)(:(\\d+))? (MD\\d+\\/[^ ]+) (.*)$",
+          "file": 1,
+          "line": 2,
+          "column": 4,
+          "code": 5,
+          "message": 6
+        }
+      ]
+    }
+  ]
+}

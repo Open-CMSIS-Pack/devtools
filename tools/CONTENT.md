@@ -1,9 +1,9 @@
 # Development Tools
 
-The [tools](./tools/) folder contains components that are compiled into
+The tools folder contains components that are compiled into
 executable programs.
 
-```
+```txt
     📂tools
     ┣ 📂buildmgr
     ┣ 📂packchk

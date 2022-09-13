@@ -34,7 +34,7 @@ microcontroller.
 
 ## Repository toplevel structure
 
-```
+```txt
     📦
     ┣ 📂cmake       local cmake functions and configuration files
     ┣ 📂docs        documentation shared by all components
@@ -68,18 +68,18 @@ Note that some of the required tools are platform dependent:
     - CMake (minimum recommended version **3.18**)
     - *optional* make or Ninja
 
-    ```
+    ```txt
     ☑️ Note:
         Make sure 'git' and 'bash' paths are listed under the PATH environment
         variable and set the git bash priority higher in the path.
     ```
 
-    ~~~
+    ```txt
     ☑️ GCC/Clang on Windows:
         Currently GCC and Clang (MSYS2/MinGW distribution) compilers do not work
         on Windows. The included libc++ has a known issue in std::filesystem,
         see [MSYS2 GitHub issue #1937](https://github.com/msys2/MSYS2-packages/issues/1937).
-    ~~~
+    ```
 
   - **Linux:**
     - GNU Bash (minimum recommended version **4.3**)
@@ -91,10 +91,11 @@ Note that some of the required tools are platform dependent:
     - GNU Bash (minimum recommended version **4.3**)
     - XCode/AppleClang (minimum recommended version **11**)
     - CMake (minimum recommended version **3.18**)
-  - **General:**
-    - [GNU Arm Embedded Toolchain](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-rm/downloads) (version **10-2020-q4-major**)
+  - **General:** <!-- markdownlint-disable-next-line MD013 -->
+    - [GNU Arm Embedded Toolchain](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-rm/downloads)
+      (version **10-2020-q4-major**)
 
-    ~~~
+    ```txt
     ☑️ Required only for packgen tests.
 
     Set below mentioned environment variable:
@@ -102,7 +103,7 @@ Note that some of the required tools are platform dependent:
 
       for e.g.
         $export CC=/c/my/path/to/arm-noneabi-gcc
-    ~~~
+    ```
 
 ## Clone repository
 
@@ -173,7 +174,7 @@ As usual, the actual build steps vary by platform.
 
 One can trigger a build for all CMake targets or specific targets from the command line.
 
-```
+```txt
 ☑️ Note:
     The flag `--config` is optional. If it is not specified in the command, depending on
     the platform the binaries shall build in default configurations.
@@ -213,7 +214,7 @@ Follow the respective commands:
 
 One can directly run the tests from command line.
 
-~~~
+```txt
 ☑️ Required only when the pack repository/installed toolchains reside in places different from the default values.
 
 Set below mentioned environment variables:
@@ -223,7 +224,7 @@ Set below mentioned environment variables:
   for e.g.
     $export CI_PACK_ROOT=/c/my/path/to/Pack/Root
     $export CI_GCC_TOOLCHAIN_ROOT=/c/my/path/to/toolchain
-~~~
+```
 
 - Using `ctest`:\
   Use the command below to trigger the tests.
@@ -254,18 +255,21 @@ Set below mentioned environment variables:
 ### Note
 
 - On running the tests all required packs shall get downloaded automatically under configured pack repository.
-- By default, few special tests are skipped from execution as they are dependent on specific environment configuration or other dependencies.
+- By default, few special tests are skipped from execution as they are dependent on specific environment configuration
+  or other dependencies.
 
     1. **CI dependent tests :**\
         These tests are designed to work only in CI (Continuous Integration) environment
         - [InstallerTests](./tools/buildmgr/test/integrationtests/src/InstallerTests.cpp)
         - [DebPkgTests](./tools/buildmgr/test/integrationtests/src/DebPkgTests.cpp)
     2. **AC6 toolchain test :**\
-        The below listed tests depend on a valid AC6 toolchain installed and can be run in the local environment on the installation of valid [Arm Compiler 6](https://developer.arm.com/tools-and-software/embedded/arm-compiler/downloads/version-6).
+        The below listed tests depend on a valid AC6 toolchain installed and can be run in the local environment on
+        the installation of valid
+        [Arm Compiler 6](https://developer.arm.com/tools-and-software/embedded/arm-compiler/downloads/version-6).
         - [CBuildAC6Tests](./tools/buildmgr/test/integrationtests/src/CBuildAC6Tests.cpp)
         - [MultiTargetAC6Tests](./tools/buildmgr/test/integrationtests/src/MultiTargetAC6Tests.cpp)
 
-    ~~~
+    ```txt
     ☑️ Required only when the installed AC6 toolchain resides in places different from the default values.
 
     Set below mentioned environment variables:
@@ -273,9 +277,10 @@ Set below mentioned environment variables:
 
       for e.g.
         $export CI_ARMCC6_TOOLCHAIN_ROOT=/c/my/path/to/AC6/toolchain
-    ~~~
+    ```
 
-    Make sure you have the proper **[Arm Compilers licenses](https://developer.arm.com/tools-and-software/software-development-tools/license-management/resources/product-and-toolkit-configuration)**.
+    Make sure you have the proper <!-- markdownlint-disable-next-line MD013 -->
+    **[Arm Compilers licenses](https://developer.arm.com/tools-and-software/software-development-tools/license-management/resources/product-and-toolkit-configuration)**.
 
 ## Code coverage
 
@@ -295,9 +300,9 @@ Ensure that the [linux prerequisite](#prerequisites) are fulfilled.
   cd build
   ```
 
-  ~~~
+  ```txt
   ☑️ Ensure that the build tree is clean and doesn't have any existing coverage data i.e. .gcda or .gcno files
-  ~~~
+  ```
 
 - Generate configuration files with coverage flag on
 
@@ -334,10 +339,10 @@ Ensure that the [linux prerequisite](#prerequisites) are fulfilled.
 
 - Extract coverage data from file
 
-  ~~~
+  ```txt
   ☑️ By default, lcov collects coverage data also from the currently running Linux
       kernel. Specify -e option to extract data from files matching PATTERN from file
-  ~~~
+  ```
 
   > lcov -e **\<input_file\>** **'\<PATTERN\>'** -o **\<out_file\>**
 
@@ -364,7 +369,7 @@ Some components provide Doxygen-based documentation which needs to be generated 
 it can be viewed and published. There are specific build targets for these generated
 documentations, see build target suffix `-docs`.
 
-```
+```txt
 ☑️ Note:
    The *-docs build targets require doxygen to be available. If CMake fails to
    detect the correct version of doxygen a warning message appears and the build
@@ -396,11 +401,16 @@ to start the discussion about your proposal.
 
 We are in the early days and discuss proposals which we are dividing into 5 work streams with a dedicated label:
 
-- **Core Library Components** - common libraries that are re-used across a range of tools. The PoC Tools are the first consumers, but the library components can also be used to create commercial derivatives or in-house tooling.
-- **Overall Project Concept** - procedures to generate packs and application software. We shall consider complex applications such as multi-core processor systems or secure/non-secure partitions.
-- **PoC Tools** - command line tools and utilities that implement the overall concepts and are intended to be used for open-source projects or even integrated into commercial software tools.
-- **Process Improvements** - documentation and tools that help the software community to streamline and secure the software delivery to the user base.
-- **Resource Management** - describes the data models used to manage and organized software packs and application projects.
+- **Core Library Components** - common libraries that are re-used across a range of tools. The PoC Tools are the first
+  consumers, but the library components can also be used to create commercial derivatives or in-house tooling.
+- **Overall Project Concept** - procedures to generate packs and application software. We shall consider complex
+  applications such as multi-core processor systems or secure/non-secure partitions.
+- **PoC Tools** - command line tools and utilities that implement the overall concepts and are intended to be used for
+  open-source projects or even integrated into commercial software tools.
+- **Process Improvements** - documentation and tools that help the software community to streamline and secure the
+  software delivery to the user base.
+- **Resource Management** - describes the data models used to manage and organized software packs and application
+  projects.
 
 These Issues are tracked inside the [project board](https://github.com/Open-CMSIS-Pack/Open-CMSIS-Pack/projects/1)
 
@@ -418,15 +428,11 @@ Please attempt to avoid filing duplicates of open or closed items when possible.
 In the spirit of openness we shall be tagging issues with the following:
 
 - **bug** – We consider this issue to be a bug that shall be investigated.
-
 - **wontfix** - We appreciate this issue but decided not to change the current behavior.
-
-- **out-of-scope** - We consider this issue loosely related to CMSIS. It might be implemented outside of CMSIS. Let us know about your work.
-
+- **out-of-scope** - We consider this issue loosely related to CMSIS. It might be implemented outside of CMSIS. Let us
+  know about your work.
 - **question** – We have further questions about this issue. Please review and provide feedback.
-
 - **documentation** - This issue is a documentation flaw that shall be improved in the future.
-
-- **DONE** - We consider this issue as resolved - please review and close it. In case of no further activity, these issues shall be closed after a week.
-
+- **DONE** - We consider this issue as resolved - please review and close it. In case of no further activity, these
+  issues shall be closed after a week.
 - **duplicate** - This issue is already addressed elsewhere, see a comment with provided references.

@@ -1,0 +1,40 @@
+name: markdown
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/markdown.yml'
+      - '.github/markdownlint.json'
+      - '.github/markdownlint.jsonc'
+      - '**/*.md'
+jobs:
+  markdown-lint:
+    name: Lint markdown files
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout devtools
+        uses: actions/checkout@v2
+
+      - name: Register markdownlint warning matcher
+        run: |
+          echo "::add-matcher::.github/markdownlint.json"
+
+      - name: Lint markdown files
+        uses: avto-dev/markdown-lint@v1
+        with:
+          args: '**/*.md'
+          ignore: '**/testinput/**'
+          config: '.github/markdownlint.jsonc'
+      
+      - name: Remove markdownlint warning matcher
+        if: always()
+        run: |
+          echo "::remove-matcher owner=markdownlint::"
+
+      - uses: gaurav-nelson/github-action-markdown-link-check@master
+        if: always()
+        with:
+          use-quiet-mode: 'yes'
+          use-verbose-mode: 'yes'
+          check-modified-files-only: 'yes'
+          base-branch: ${{ github.base_ref }}
+          config-file: '.github/markdown-link-check.jsonc'

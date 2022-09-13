@@ -1,8 +1,6 @@
-NextMDK Development Tools and Libraries
-=======================================
+# NextMDK Development Tools and Libraries
 
-Scripts and Helpers
--------------------
+## Scripts and Helpers
 
 This folder contains a collection of helper scripts for recurring activities.
 
@@ -14,7 +12,8 @@ should be copied into some bin folder (e.g. ~/bin) which is on the search
 PATH. Adopt the server URL and user credentials.
 
 Now one can validate Jenkins groovy Pipelines (i.e. Jenkinsfile's) like this:
-```
+
+```sh
 $ ./groovylint.sh Jenkinsfile
 Jenkinsfile failed with:
 Errors encountered validating Jenkinsfile:
