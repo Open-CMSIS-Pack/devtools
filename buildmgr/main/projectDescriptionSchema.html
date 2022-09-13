@@ -229,10 +229,10 @@ $(document).ready(function(){initNavTree('projectDescriptionSchema.html','');});
   &lt;!-- Optimize enumeration type --&gt;
   &lt;xs:simpleType name="OptimizeEnum"&gt;
     &lt;xs:restriction base="xs:token"&gt;
-      &lt;xs:enumeration value="max" /&gt;
       &lt;xs:enumeration value="size" /&gt;
       &lt;xs:enumeration value="speed" /&gt;
-      &lt;xs:enumeration value="debug" /&gt;
+      &lt;xs:enumeration value="balanced" /&gt;
+      &lt;xs:enumeration value="none" /&gt;
     &lt;/xs:restriction&gt;
   &lt;/xs:simpleType&gt;
 
@@ -247,10 +247,8 @@ $(document).ready(function(){initNavTree('projectDescriptionSchema.html','');});
   &lt;!-- Warnings enumeration type --&gt;
   &lt;xs:simpleType name="WarningsEnum"&gt;
     &lt;xs:restriction base="xs:token"&gt;
-      &lt;xs:enumeration value="no" /&gt;
-      &lt;xs:enumeration value="all" /&gt;
-      &lt;xs:enumeration value="Misra" /&gt;
-      &lt;xs:enumeration value="AC5-like" /&gt;
+      &lt;xs:enumeration value="on" /&gt;
+      &lt;xs:enumeration value="off" /&gt;
     &lt;/xs:restriction&gt;
   &lt;/xs:simpleType&gt;
 
@@ -543,7 +541,7 @@ $(document).ready(function(){initNavTree('projectDescriptionSchema.html','');});
     &lt;xs:attribute name="layer"    type="RestrictedString"        use="optional" /&gt;
   &lt;/xs:complexType&gt;
 
-  &lt;xs:element name="FileFlags" abstract="true"/&gt; 
+  &lt;xs:element name="FileFlags" abstract="true"/&gt;
   &lt;xs:element name="cflags"   substitutionGroup="FileFlags" type="ToolOptionType" /&gt;
   &lt;xs:element name="cxxflags" substitutionGroup="FileFlags" type="ToolOptionType" /&gt;
   &lt;xs:element name="asflags"  substitutionGroup="FileFlags" type="AsmOptionType" /&gt;
