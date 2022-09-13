@@ -1060,7 +1060,7 @@ bool PackGen::CreateQuery() {
   return true;
 }
 
-const PackGen::Result PackGen::ExecCommand(const string& cmd) {
+PackGen::Result PackGen::ExecCommand(const string& cmd) {
   array<char, 128> buffer;
   string result;
   int ret_code = -1;
@@ -1102,7 +1102,7 @@ bool PackGen::CopyItem(const string& src, const string& dst, list<string>& ext) 
   return true;
 }
 
-const string PackGen::GetFileCategory(const string& file, list<string>& ext) {
+string PackGen::GetFileCategory(const string& file, list<string>& ext) {
   ext = ext.empty() ? HEADER_EXT_DEFAULT : ext;
   if (find(ext.begin(), ext.end(), fs::path(file).extension()) != ext.end()) {
     return "header";
