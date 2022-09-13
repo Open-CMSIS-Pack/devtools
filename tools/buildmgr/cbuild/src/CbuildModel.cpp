@@ -208,19 +208,6 @@ bool CbuildModel::GenerateFixedCprj(const string& update) {
     }
   }
 
-// Temporarily disable compiler restrictions on regenerated cprj (use original compiler section)
-//
-//  // Set fixed CPRJ compiler minimum version
-//  const list<XMLTreeElement*> cprjCompilers = elements->compilers->GetChildren();
-//  for (auto cprjCompiler : cprjCompilers) {
-//    elements->compilers->RemoveChild(cprjCompiler, true);
-//  }
-//  map<string, string> compilerAttributes;
-//  compilerAttributes["name"] = m_compiler;
-//  compilerAttributes["version"] = m_compilerVersion.replace(0, m_compilerVersion.find(':'), m_toolchainConfigVersion);
-//  XMLTreeElement* compilerElement = elements->compilers->CreateElement("compiler");
-//  compilerElement->SetAttributes(compilerAttributes);
-
   // Get list of CPRJ components
   const list<XMLTreeElement*> cprjComponents = elements->components->GetChildren();
 

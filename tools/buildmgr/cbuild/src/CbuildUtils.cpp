@@ -151,18 +151,6 @@ const string CbuildUtils::GetLocalTimestamp()
   return string(timestamp);
 }
 
-const string CbuildUtils::UpdatePathWithSpaces(const string& path) {
-  if (path.find(' ') == string::npos)
-    return path;
-  string result = path;
-  for (size_t indx = 0; indx < result.length(); ++indx) {
-    if (result[indx] == ' ') {
-      result.insert(indx, "\\"); indx += strlen("\\");
-      }
-    }
-  return result;
-  }
-
 const string CbuildUtils::StrPathConv(const string& path) {
   if (path.empty())
     return path;

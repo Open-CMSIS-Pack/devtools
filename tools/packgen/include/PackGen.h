@@ -212,7 +212,7 @@ public:
    * @param argc command line argument count
    * @param argv command line argument vector
   */
-  static int RunPackGen(int argc, char* argv[]);
+  static int RunPackGen(int argc, char** argv);
 
   /**
    * @brief generate CMake File API query
