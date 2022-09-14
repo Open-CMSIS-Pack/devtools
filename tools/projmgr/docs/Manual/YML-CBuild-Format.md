@@ -1,4 +1,5 @@
 # YML CBuild Format
+<!-- markdownlint-disable MD013 -->
 
 The following chapter explains the YML CBuild format that describes how to build a complete application.
 
@@ -33,19 +34,13 @@ ToDo refer to instructions on how it is generated (if any)
 
 The CBuild output file has the following usage:
 
-- It contains all information for the build step of a complete application. This includes each project context of the
-  `csolution` application.
-- As it contains information about all software packs used including version information, this file can be used as
-  `lock-file` to ensure that subsequent runs of `csolution` use the very same software packs.
-- It can be used as input file for a generator as it contains explicit information about source files and avoids the
-  complexity of a pack data management at the generator level.
+- It contains all information for the build step of a complete application. This includes each project context of the `csolution` application.
+- As it contains information about all software packs used including version information, this file can be used as `lock-file` to ensure that subsequent runs of `csolution` use the very same software packs.
+- It can be used as input file for a generator as it contains explicit information about source files and avoids the complexity of a pack data management at the generator level.
 
 ### Overall File Structure
 
 The `cbuild.yml` file is structured into several sections.  The top-level structure is outlined below.
-
-<!-- markdownlint-capture -->
-<!-- markdownlint-disable MD013 -->
 
 `build:`                                           | Content
 :--------------------------------------------------|:------------------------------------
@@ -53,8 +48,6 @@ The `cbuild.yml` file is structured into several sections.  The top-level struct
 &nbsp;&nbsp; [`licenses:`](#licenses)              | List of common packs used to generate the solution
 &nbsp;&nbsp; [`csolution:`](#csolution)            | List of `*.yml` input files used to generate this `*.cbuild.yml` file.
 &nbsp;&nbsp; [`contexts:`](#contexts)              | List of project contexts that belong to the solution.
-
-<!-- markdownlint-restore -->
 
 **Example:**
 
@@ -145,11 +138,7 @@ build:
 
 ### `licenses:`
 
-The `licenses:` node collects the software licenses from all components and software packs that are used in a
-`csolution` based software project.
-
-<!-- markdownlint-capture -->
-<!-- markdownlint-disable MD013 -->
+The `licenses:` node collects the software licenses from all components and software packs that are used in a `csolution` based software project.
 
 `licenses:`                                                        | Content
 :------------------------------------------------------------------|:------------------------------------
@@ -157,8 +146,6 @@ The `licenses:` node collects the software licenses from all components and soft
 &nbsp;&nbsp;`license-agreement:`                                   | In cased of `<proprietary>` a link to the license agreement.
 &nbsp;&nbsp; [`packs:`]                                            | List of software packs that use this license.
 &nbsp;&nbsp; [`components:`]                                       | List of software components that use this license.
-
-<!-- markdownlint-restore -->
 
 **Example:**
 
@@ -183,11 +170,9 @@ licenses:
 
 ### `csolution:`
 
-The `csolution:` node lists all `*.yml` input files that are used to compose the `*.cbuild.yml`.  
-It includes `*.cdefault.yml`, `*.csolution.yml`, `*.cproject.yml`, `*.clayer.yml`, and `*.genlayer.yml` files and represents the file hierarchy of the solution.
-
-<!-- markdownlint-capture -->
-<!-- markdownlint-disable MD013 -->
+The `csolution:` node lists all `*.yml` input files that are used to compose the `*.cbuild.yml`.
+It includes `*.cdefault.yml`, `*.csolution.yml`, `*.cproject.yml`, `*.clayer.yml`, and `*.genlayer.yml`
+files and represents the file hierarchy of the solution.
 
 `csolution:`                                                       | Content
 :------------------------------------------------------------------|:------------------------------------
@@ -196,7 +181,7 @@ It includes `*.cdefault.yml`, `*.csolution.yml`, `*.cproject.yml`, `*.clayer.yml
 &nbsp;&nbsp;`projects:`                                            | List of `*.cproject.yml` files.
 &nbsp;&nbsp; `- file:`                                             | List of `*.clayer.yml` files.
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `layers:`                     | List of layer files.
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `- file:`                     | File name of the `*.clayer.yml` or `*.genlayer.yml` file: 
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `- file:`                     | File name of the `*.clayer.yml` or `*.genlayer.yml` file:
 
 **Example:**
 
@@ -217,9 +202,6 @@ csolution:
 ### `contexts:`
 
 The `contexts:` node is the start of project context list.
-
-<!-- markdownlint-capture -->
-<!-- markdownlint-disable MD013 -->
 
 `contexts:`                                                        | Content
 :------------------------------------------------------------------|:------------------------------------
@@ -246,8 +228,6 @@ The `contexts:` node is the start of project context list.
 &nbsp;&nbsp; [`messages:`](#messages)                              | List of messages (errors, warnings, etc.) that apply to this project context.
 &nbsp;&nbsp; [`constructed-files:`](#constructed-files)            | List of files that are generated by RTE management of `csolution` tool.
 
-<!-- markdownlint-restore -->
-
 > **Note:** Most fields are combined can collect the common settings that apply to any `group:` or `component:`
 > in the project.
 
@@ -262,9 +242,6 @@ The `contexts:` node is the start of project context list.
 
 The `packs:` node is the start of a pack list that is used in the `csolution` application.
 
-<!-- markdownlint-capture -->
-<!-- markdownlint-disable MD013 -->
-
 `packs:`                                              | Content
 :-----------------------------------------------------|:------------------------------------
 `- pack:`                                             | Explicit pack specification (additive) with exact version information used.
@@ -272,8 +249,6 @@ The `packs:` node is the start of a pack list that is used in the `csolution` ap
 &nbsp;&nbsp; `local-repository:`                      | For packs that are managed as local repository, the absolute path name to the working directory of that pack.
 &nbsp;&nbsp; `devices:`                               | A list of device definitions defined by this pack and used by the solution.
 &nbsp;&nbsp; `boards:`                                | A list of board definitions defined by this pack and used by the solution.
-
-<!-- markdownlint-restore -->
 
 >**NOTE:** Projects that use `local-repository:` might be not portable across systems.
 
@@ -325,9 +300,6 @@ Keyword          | Description
 
 ### `components:`
 
-<!-- markdownlint-capture -->
-<!-- markdownlint-disable MD013 -->
-
 `components:`                                            | Content
 :--------------------------------------------------------|:------------------------------------
 `- component:`                                           | Name of the software component.
@@ -343,8 +315,6 @@ Keyword          | Description
 &nbsp;&nbsp; [`generator:`]                              | Generator ID for components that are configurable via a generator.
 &nbsp;&nbsp; [`component-files:`](#component-files)      | Files that belong to this component.
 &nbsp;&nbsp; [`condition:`](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_conditions_pg.html#element_condition) | Reference to the condition ID of the software pack that triggered inclusion of this component.
-
-<!-- markdownlint-restore -->
 
 ### `component-files:`
 

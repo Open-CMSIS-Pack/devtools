@@ -1,6 +1,7 @@
 # Generator Workflow (Proposal)
+<!-- markdownlint-disable MD013 -->
 
->**NOTE:** This document replaces [Generator Proposal](https://github.com/Open-CMSIS-Pack/devtools/blob/main/tools/projmgr/docs/Manual/YML-Input-Format.md#generator-proposal) in previous documentation. 
+>**NOTE:** This document replaces [Generator Proposal](https://github.com/Open-CMSIS-Pack/devtools/blob/main/tools/projmgr/docs/Manual/YML-Input-Format.md#generator-proposal) in previous documentation.
 
 The composition of a `csolution` based application should have the following steps:
 
@@ -20,7 +21,7 @@ The following explains the generator workflow of CSolution / CBuild for configur
 
 1. User selects components in `*.cproject.yml` under `components:` and runs `csolution` tool with `convert` command.
     - `csolution` tool generates `*.cbuild.yml` file that provides project context and a list of user-selected components.
-    - When a component requires generation (related `*.genlayer.yml` file is missing), user is notified to run the generator. 
+    - When a component requires generation (related `*.genlayer.yml` file is missing), user is notified to run the generator.
       This is also reflected in a `message: - error:` that is part of `*.cbuild.yml`.
   
 2. Run the Generator (for component configuration, i.e. pin selection)
@@ -74,14 +75,14 @@ directory, i.e. `./RTE/Device`.  This directory may also store other artifacts u
 As it is proposed to make each RTE Cclass section configurable, this would allow to store multiple configuration (i.e. depending
 on the software layer used).
 
-- Example for a .clayer with RTE directory settings is 
+- Example for a .clayer with RTE directory settings is
   [here](
 https://github.com/RobertRostohar/Demo_EW/blob/test_rte/AWS_MQTT_MutualAuth_Demo/Board/B-U585I-IOT02A/Board.clayer.yml).
 
 - Complete project is [here](https://github.com/RobertRostohar/Demo_EW/tree/test_rte/AWS_MQTT_MutualAuth_Demo).
 
 The proposal is therefore to add `RTE-paths:` to `*.project.yml` and `*.clayer.yml` that is also used to store generated information.  
-This controls for each `Cclass` the location of the generated files.  This proposal was already discussed in the 
+This controls for each `Cclass` the location of the generated files.  This proposal was already discussed in the
 [TR on 2022-08-23](https://linaro.atlassian.net/wiki/spaces/CMSIS/pages/28757721476/Open-CMSIS-Pack+Technical+Meeting+2022-08-23).
 
 ```yml
@@ -100,9 +101,9 @@ Combined with the [proposal to store pre-configured layers in software packs](ht
 
 ### [\<generator\> element](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_generators_pg.html)
 
-- Add \<exe-csolution\> element that specifies the new method for the csolution tool.  Could be similar to 
+- Add \<exe-csolution\> element that specifies the new method for the csolution tool.  Could be similar to
   [\<exe\> element](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_generators_pg.html#element_gen_exe).
-  The remaining methods would be kept for legacy. 
+  The remaining methods would be kept for legacy.
 
 - Add Variable: `$R` Specifies the RTE directory that stores generator artifacts. This is configurable using `RTE-paths:` at
   project level.
@@ -167,7 +168,7 @@ Combined with the [proposal to store pre-configured layers in software packs](ht
         <file category="genSource" name="Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_adc.c.template"/>
       </files>
     </component>
-	  :
+    :
     <bundle Cbundle="STM32F4-Discovery" Cclass="Board Support" Cversion="2.0.0">
       <description>STMicroelectronics STM32F4 Discovery Kit</description>
       <doc>http://www.st.com/st-web-ui/static/active/en/resource/technical/document/data_brief/DM00037955.pdf</doc>
