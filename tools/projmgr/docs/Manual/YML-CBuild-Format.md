@@ -5,21 +5,23 @@ The following chapter explains the YML CBuild format that describes how to build
 ## Table of Contents
 
 - [YML CBuild Format](#yml-cbuild-format)
-- [CBuild Output File](#cbuild-output-file)
-  - [Usage](#usage)
-  - [Overall File Structure](#overall-file-structure)
-- [CBuild-specific Nodes](#cbuild-specific-nodes)
-  - [`licenses:`](#licenses)
-  - [`projects:`](#projects)
-  - [`output-dirs:`](#output-dirs)
-  - [`packs:`](#packs)
-- [Source File Management](#source-file-management)
-  - [`groups:`](#groups)
-  - [`files:`](#files)
-  - [`components:`](#components)
-  - [`component-files:`](#component-files)
+  - [Table of Contents](#table-of-contents)
+  - [CBuild Output File](#cbuild-output-file)
+    - [Usage](#usage)
+    - [Overall File Structure](#overall-file-structure)
+  - [CBuild-specific Nodes](#cbuild-specific-nodes)
+    - [`licenses:`](#licenses)
+    - [`csolution:`](#csolution)
+    - [`contexts:`](#contexts)
+    - [`output-dirs:`](#output-dirs)
+    - [`packs:`](#packs)
+  - [Source File Management](#source-file-management)
+    - [`groups:`](#groups)
+    - [`files:`](#files)
+    - [`components:`](#components)
+    - [`component-files:`](#component-files)
   - [`constructed-files:`](#constructed-files)
-  - [`messages:`](#messages)
+    - [`messages:`](#messages)
 
 ## CBuild Output File
 
@@ -49,7 +51,8 @@ The `cbuild.yml` file is structured into several sections.  The top-level struct
 :--------------------------------------------------|:------------------------------------
 &nbsp;&nbsp; [`packs:`](#packs)                    | List of common packs used to generate the solution
 &nbsp;&nbsp; [`licenses:`](#licenses)              | List of common packs used to generate the solution
-&nbsp;&nbsp; [`projects:`](#projects)              | List of projects that belong to the solution. Each context is represented in a separate section.
+&nbsp;&nbsp; [`csolution:`](#csolution)            | List of `*.yml` input files used to generate this `*.cbuild.yml` file.
+&nbsp;&nbsp; [`contexts:`](#contexts)              | List of project contexts that belong to the solution.
 
 <!-- markdownlint-restore -->
 
@@ -73,8 +76,8 @@ build:
   ...
 # project specific section; almost identical with cproject, except all types are explicit, components are expanded 
 
-  projects:
-  - project: MQTT_MutualAuth_Demo.Debug+AVH_MPS4_Corstone-300  
+  contexts:
+  - context: MQTT_MutualAuth_Demo.Debug+AVH_MPS4_Corstone-300  
     compiler: AC6@6.18   
 
     board: B-U585I-IOT02A
@@ -93,7 +96,7 @@ build:
     components:
     - component: ARM::CMSIS:RTOS2:FreeRTOS&Cortex-M
       from-pack: ARM::CMSIS-FreeRTOS@10.4.6
-      selected-by: MyProject.cproject.yml#55
+      selected-by: CMSIS:RTOS2:FreeRTOS
       condition: ARMv6_7_8-M Device 
       component-files:
       - file: %CMSIS_PACK_ROOT%/ARM/CMSIS-FreeRTOS/10.4.6/CMSIS/RTOS2/FreeRTOS/Source/ARM/clib_arm.c
@@ -104,7 +107,7 @@ build:
         category: sourceC
     - component: ARM::RTOS&FreeRTOS:Config&CMSIS RTOS2
       from-pack: ARM::CMSIS-FreeRTOS@10.4.6
-      selected-by: MyProject.cproject.yml#23: - component: RTOS&FreeRTOS:Config&CMSIS RTOS2
+      selected-by: RTOS&FreeRTOS:Config&CMSIS RTOS2
       component-files:
       - file: ./RTE/RTOS/FreeRTOSConfig.h
         category: include
@@ -112,7 +115,7 @@ build:
 
     - component: ARM::Security:mbed TLS
       from-pack: ARM::mbedTLS@1.7.0
-      selected-by: MyLayer.clayer.yml#123: - component: Security:mbed TLS
+      selected-by: Security:mbed TLS
 
       defines:
       - MBEDTLS_CONFIG_FILE="aws_mbedtls_config.h"
@@ -135,7 +138,7 @@ build:
       - file: ./RTE/RTE_Components.h
       - file: ./RTE/RTE_PreInclude.h
 
-  - project: # next project context
+  - context: # next project context
 ```
 
 ## CBuild-specific Nodes
@@ -178,16 +181,49 @@ licenses:
     - pack: Keil::STM32U5xx_DFP@2.0.0
 ```
 
-### `projects:`
+### `csolution:`
 
-The `projects:` node is the start of project list
+The `csolution:` node lists all `*.yml` input files that are used to compose the `*.cbuild.yml`.  
+It includes `*.cdefault.yml`, `*.csolution.yml`, `*.cproject.yml`, `*.clayer.yml`, and `*.genlayer.yml` files and represents the file hierarchy of the solution.
 
 <!-- markdownlint-capture -->
 <!-- markdownlint-disable MD013 -->
 
-`projects:`                                                        | Content
+`csolution:`                                                       | Content
 :------------------------------------------------------------------|:------------------------------------
-`- project:`                                                       | Project context name
+&nbsp;&nbsp;`cdefault:`                                            | File of the `*.cdefault.yml` file.
+&nbsp;&nbsp;`file:`                                                | File of the `*.csolution.yml` file.
+&nbsp;&nbsp;`projects:`                                            | List of `*.cproject.yml` files.
+&nbsp;&nbsp; `- file:`                                             | List of `*.clayer.yml` files.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `layers:`                     | List of layer files.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `- file:`                     | File name of the `*.clayer.yml` or `*.genlayer.yml` file: 
+
+**Example:**
+
+```yml
+csolution:
+  cdefault: ./Demo.cdefault.yml
+  file: ./Demo.csolution.yml
+  projects:
+  - file: ./Demo1.cproject.yml
+    layers:
+    - file: ./Board/IMXRT1050-EVKB/Board.clayer.yml
+    - file: ./Board/B-U585I-IOT02A/Board.clayer.yml
+    - file: ./Interface/AWS/FreeRTOS+TCP/Interface.clayer.yml
+  - file: ./Demo2.cproject.yml
+  :
+```
+
+### `contexts:`
+
+The `contexts:` node is the start of project context list.
+
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
+
+`contexts:`                                                        | Content
+:------------------------------------------------------------------|:------------------------------------
+`- context:`                                                       | Project context name
 &nbsp;&nbsp; `description:`                                        | Brief project description (copied from `cproject.yml`)
 &nbsp;&nbsp; [`compiler:`](YML-Input-Format.md#compiler)           | Compiler used for project generation.
 &nbsp;&nbsp; [`packs:`](#packs)                                    | List of packs that are specify to this project context.
@@ -233,11 +269,13 @@ The `packs:` node is the start of a pack list that is used in the `csolution` ap
 :-----------------------------------------------------|:------------------------------------
 `- pack:`                                             | Explicit pack specification (additive) with exact version information used.
 &nbsp;&nbsp; `path:`                                  | For packs that are local to the `csolution`, explicit path name that stores the software pack
-&nbsp;&nbsp; `local-repository:`                      | For packs that are managed as local repository, the path name to the working directory of that pack.
+&nbsp;&nbsp; `local-repository:`                      | For packs that are managed as local repository, the absolute path name to the working directory of that pack.
 &nbsp;&nbsp; `devices:`                               | A list of device definitions defined by this pack and used by the solution.
 &nbsp;&nbsp; `boards:`                                | A list of board definitions defined by this pack and used by the solution.
 
 <!-- markdownlint-restore -->
+
+>**NOTE:** Projects that use `local-repository:` might be not portable across systems.
 
 **Example:**
 
@@ -294,7 +332,7 @@ Keyword          | Description
 :--------------------------------------------------------|:------------------------------------
 `- component:`                                           | Name of the software component.
 &nbsp;&nbsp; `from-pack:`                                | Pack that defines this component.
-&nbsp;&nbsp; `selected-by:`                              | File name of the `*.YML` file optional with line number and/or original source line.
+&nbsp;&nbsp; `selected-by:`                              | The original component name used in `cproject/clayer.YML`.
 &nbsp;&nbsp; [`optimize:`](YML-Input-Format.md#optimize) | Optimize level for code generation.
 &nbsp;&nbsp; [`debug:`](YML-Input-Format.md#debug)       | Generation of debug information.
 &nbsp;&nbsp; [`warnings:`](YML-Input-Format.md#warnings) | Control generation of compiler diagnostics.
