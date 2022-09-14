@@ -225,3 +225,13 @@ string CbuildUtils::GenerateJsonPackList(const std::vector<CbuildPackItem>& pack
   }
   return json;
 }
+
+bool CbuildUtils::NormalizePath(std::string& path, const std::string& base) {
+  bool bNetworkPath = ((path.compare(0, 2, DS) == 0) || (path.compare(0, 2, DBS) == 0)) ? true : false;
+  string pathStr = bNetworkPath ? path : base + path;
+  if (!RteFsUtils::Exists(pathStr)) {
+    return false;
+  }
+  RteFsUtils::NormalizePath(path, bNetworkPath ? RteUtils::EMPTY_STRING : base);
+  return true;
+}

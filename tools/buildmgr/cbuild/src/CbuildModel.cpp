@@ -931,8 +931,7 @@ bool CbuildModel::SetItemIncludesDefines(const RteItem* item, const string& name
   if (excludes != nullptr || includes != nullptr) {
     auto excludesList = (excludes ? SplitArgs(excludes->GetText(), ";", false) : vector<string>{});
     for (auto& exclude : excludesList) {
-      if (RteFsUtils::Exists(m_prjFolder + exclude)) {
-        RteFsUtils::NormalizePath(exclude, m_prjFolder);
+      if (CbuildUtils::NormalizePath(exclude, m_prjFolder)) {
         continue;
       }
       regex regEx{ "^\\$.*\\$$" };
@@ -945,8 +944,7 @@ bool CbuildModel::SetItemIncludesDefines(const RteItem* item, const string& name
     const auto& parentIncludes = GetParentTranslationControls(item, m_includePaths, m_targetIncludePaths);
     auto includesList = (includes ? SplitArgs(includes->GetText(), ";", false) : vector<string>{});
     for (auto& include : includesList) {
-      if (RteFsUtils::Exists(m_prjFolder + include)) {
-        RteFsUtils::NormalizePath(include, m_prjFolder);
+      if (CbuildUtils::NormalizePath(include, m_prjFolder)) {
         continue;
       }
       regex regEx{ "^\\$.*\\$$" };
@@ -976,8 +974,7 @@ bool CbuildModel::EvalIncludesDefines() {
     if (includes) {
       const vector<string>& includesList = SplitArgs(includes->GetText(), ";", false);
       for (auto include : includesList) {
-        if (RteFsUtils::Exists(m_prjFolder + include)) {
-          RteFsUtils::NormalizePath(include, m_prjFolder);
+        if (CbuildUtils::NormalizePath(include, m_prjFolder)) {
           m_targetIncludePaths.push_back(include);
           continue;
         }

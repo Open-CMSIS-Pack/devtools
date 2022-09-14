@@ -12,6 +12,7 @@
 
 
 #define BS "\\"         // Back slash
+#define DBS "\\\\"      // Double Back slash
 #define DS "//"         // Double slash
 #define SS "/"          // Single slash
 #define LDOT "./"       // Leading dot
@@ -146,7 +147,13 @@ public:
   */
   static std::string GenerateJsonPackList(const std::vector<CbuildPackItem>& packList);
 
+  /**
+   * @brief normalize path by ensuring that it's absolute and canonical
+   * @param path folder to be normalized
+   * @param base root folder to form absolute
+   * @return true if successful, otherwise false
+  */
+  static bool NormalizePath(std::string& path, const std::string& base);
 };
 
 #endif /* CBUILDUTILS_H */
-
