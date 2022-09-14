@@ -1,17 +1,19 @@
 # Generator Workflow (Proposal)
+<!-- markdownlint-disable MD013 -->
 
->**NOTE:** This document replaces https://github.com/Open-CMSIS-Pack/devtools/blob/main/tools/projmgr/docs/Manual/YML-Input-Format.md#generator-proposal
+>**NOTE:** This document replaces [Generator Proposal](https://github.com/Open-CMSIS-Pack/devtools/blob/main/tools/projmgr/docs/Manual/YML-Input-Format.md#generator-proposal) in previous documentation.
 
 The composition of a `csolution` based application should have the following steps:
 
-- Create the `*.csolution.yml` container that refers the projects and selects `device:` or `board:` (optionally by using `target-types:`)
+- Create the `*.csolution.yml` container that refers the projects and selects `device:` or `board:`
+  (optionally by using `target-types:`)
 - Create `*.cproject.yml` files that are referred by the `*.csolution.yml` container.
 - Add `components:` and/or `layers:` to the `*.cproject.yml` file
 - For components that have configuration, run the generator in configuration mode
   - change pinout, clock, resources, etc.
   - reflect configuration in *.gpdsc file (and related settings files)
 
-> **Note:** Components can have multiple [instances](#instances).
+> **Note:** Components can have multiple instances.
 
 ## Workflow
 
@@ -19,23 +21,25 @@ The following explains the generator workflow of CSolution / CBuild for configur
 
 1. User selects components in `*.cproject.yml` under `components:` and runs `csolution` tool with `convert` command.
     - `csolution` tool generates `*.cbuild.yml` file that provides project context and a list of user-selected components.
-    - When a component requires generation (related `*.generator.yml` file is missing), user is notified to run the generator.  This is also reflected in a `message: - error:` that is part of `*.cbuild.yml`.
+    - When a component requires generation (related `*.genlayer.yml` file is missing), user is notified to run the generator.
+      This is also reflected in a `message: - error:` that is part of `*.cbuild.yml`.
   
 2. Run the Generator (for component configuration, i.e. pin selection)
      - Generator reads `*.cbuild.yml` file
-     - Generator may provide 
+     - Generator may provide
          - Interactive mode with user interactions
          - Script mode where a settings are provided in an input file
-     - Generator/User generates a `*.generator.yml` file; syntax is similar to a clayer.yml file.  This file informs the `csolution` tool about:
-         - (a) the fact that a component is configured and has generated code, 
+     - Generator/User generates a `*.genlayer.yml` file; syntax is similar to a clayer.yml file.  This file informs the `csolution` tool about:
+         - (a) the fact that a component is configured and has generated code,
          - (b) additional components that are the result of some user configuration.
 
-3. User runs `csolution` tool with convert command again.  There might be consistency check between the `*.genlayer.yml` and user input files.  If no new component that requires generation is selected (all components are also included in `*.genlayer.yml`) the convert command completes, otherwise a user notification might be displayed.
+3. User runs `csolution` tool with convert command again.  There might be consistency check between the `*.genlayer.yml` and user
+   input files.  If no new component that requires generation is selected (all components are also included in `*.genlayer.yml`)
+   the convert command completes, otherwise a user notification might be displayed.
 
 >**NOTE:** This is a basic workflow that still requires an iteration for IDE integration.
 
-
-**Example Content of \*.generator.yml (in this case STM32CubeMX.generator.yml)**
+### Example Content of \*.genlayer.yml (in this case STM32CubeMX.genlayer.yml)
 
 ```yml
 generator:
@@ -65,16 +69,21 @@ This diagram reflects the modified workflow:
 
 ![Workflow with Generator](./images/Workflow-Generator.png "Workflow with Generator")
 
-The `*.generator.yml` files are added by indirectly by components that refer to a generator ID and are stored in a defined  RTE directory, i.e. `./RTE/Device`.  This directory may also store other artifacts used by the Generator.
+The `*.genlayer.yml` files are added by indirectly by components that refer to a generator ID and are stored in a defined RTE
+directory, i.e. `./RTE/Device`.  This directory may also store other artifacts used by the Generator.
 
-As it is proposed to make each RTE Cclass section configurable, this would allow to store multiple configuration (i.e. depending on the software layer used).
+As it is proposed to make each RTE Cclass section configurable, this would allow to store multiple configuration (i.e. depending
+on the software layer used).
 
-Example for a .clayer with RTE directory settings is here:
-https://github.com/RobertRostohar/Demo_EW/blob/test_rte/AWS_MQTT_MutualAuth_Demo/Board/B-U585I-IOT02A/Board.clayer.yml
+- Example for a .clayer with RTE directory settings is
+  [here](
+https://github.com/RobertRostohar/Demo_EW/blob/test_rte/AWS_MQTT_MutualAuth_Demo/Board/B-U585I-IOT02A/Board.clayer.yml).
 
-(Complete project is here: https://github.com/RobertRostohar/Demo_EW/tree/test_rte/AWS_MQTT_MutualAuth_Demo)
+- Complete project is [here](https://github.com/RobertRostohar/Demo_EW/tree/test_rte/AWS_MQTT_MutualAuth_Demo).
 
-The proposal is therefore to add `RTE-paths:` to `*.project.yml` and `*.clayer.yml` that is also used to store generated information.  This controls for each `Cclass` the location of the generated files.  This proposal was already discussed in the [TR on 2022-08-23](https://linaro.atlassian.net/wiki/spaces/CMSIS/pages/28757721476/Open-CMSIS-Pack+Technical+Meeting+2022-08-23).
+The proposal is therefore to add `RTE-paths:` to `*.project.yml` and `*.clayer.yml` that is also used to store generated information.  
+This controls for each `Cclass` the location of the generated files.  This proposal was already discussed in the
+[TR on 2022-08-23](https://linaro.atlassian.net/wiki/spaces/CMSIS/pages/28757721476/Open-CMSIS-Pack+Technical+Meeting+2022-08-23).
 
 ```yml
   RTE-paths:
@@ -88,14 +97,16 @@ The proposal is therefore to add `RTE-paths:` to `*.project.yml` and `*.clayer.y
 
 Combined with the [proposal to store pre-configured layers in software packs](https://github.com/Open-CMSIS-Pack/Open-CMSIS-Pack-Spec/issues/134), this gives user starting points for own projects.
 
-
 ## Consolidated Changes to *.PDSC
 
 ### [\<generator\> element](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_generators_pg.html)
 
-- Add \<exe-csolution\> element that specifies the new method for the csolution tool.  Could be similar to [\<exe\> element](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_generators_pg.html#element_gen_exe). The remaining methods would be kept for legacy. 
+- Add \<exe-csolution\> element that specifies the new method for the csolution tool.  Could be similar to
+  [\<exe\> element](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_generators_pg.html#element_gen_exe).
+  The remaining methods would be kept for legacy.
 
-- Add Variable: `$R` Specifies the RTE directory that stores generator artifacts. This is configurable using `RTE-paths:` at project level.
+- Add Variable: `$R` Specifies the RTE directory that stores generator artifacts. This is configurable using `RTE-paths:` at
+  project level.
 
 ### [\<components\> element](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_components_pg.html)
 
@@ -109,6 +120,7 @@ Combined with the [proposal to store pre-configured layers in software packs](ht
 >**NOTE:** Attribute [`visiblity`](https://github.com/Open-CMSIS-Pack/Open-CMSIS-Pack-Spec/issues/112) is a separate pull request.
 
 **Possible Example:**
+
 ```xml
  <generators>
     <!-- This generator is launched if any component referencing this generator by 'id' is selected and the specified <gpdsc> file does not exist -->
@@ -156,7 +168,7 @@ Combined with the [proposal to store pre-configured layers in software packs](ht
         <file category="genSource" name="Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_adc.c.template"/>
       </files>
     </component>
-	  :
+    :
     <bundle Cbundle="STM32F4-Discovery" Cclass="Board Support" Cversion="2.0.0">
       <description>STMicroelectronics STM32F4 Discovery Kit</description>
       <doc>http://www.st.com/st-web-ui/static/active/en/resource/technical/document/data_brief/DM00037955.pdf</doc>
@@ -169,4 +181,5 @@ Combined with the [proposal to store pre-configured layers in software packs](ht
           <file category="genSource" name="MDK/Boards/ST/STM32F4-Discovery/Common/LED_F4Discovery.c.template"/>
         </files>
       </component>
+    </bundle>
 ```
