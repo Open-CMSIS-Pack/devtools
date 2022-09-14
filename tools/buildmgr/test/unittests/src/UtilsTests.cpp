@@ -188,3 +188,20 @@ TEST_F(CbuildUtilsTests, EscapeQuotes) {
   result = CbuildUtils::EscapeQuotes("-DFILE=\\\"config.h\\\"");
   EXPECT_EQ(result, "-DFILE=\\\\\\\"config.h\\\\\\\"");
 }
+
+TEST_F(CbuildUtilsTests, NormalizePath) {
+  error_code ec;
+  string path, base;
+  path = "./testinput//.//Test1/../Test1/Test2";
+  base = string(TEST_BUILD_FOLDER);
+  fs::create_directories(base + "testinput/Test1/Test2", ec);
+
+  EXPECT_TRUE(CbuildUtils::NormalizePath(path, base));
+  EXPECT_EQ(path, base + "testinput/Test1/Test2");
+
+  path = "./unknown/../path";
+  EXPECT_FALSE(CbuildUtils::NormalizePath(path, base));
+  EXPECT_EQ(path, path);
+
+  RemoveDir(base + "testinput/Test1");
+}
