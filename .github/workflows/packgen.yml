@@ -92,7 +92,7 @@ jobs:
         run: |
           mkdir -p tools/packgen/distribution/bin tools/packgen/distribution/doc/examples
           cp tools/packgen/docs/LICENSE.txt tools/packgen/distribution/
-          cp tools/packgen/docs/README.md tools/packgen/distribution/doc/
+          cp tools/packgen/docs/packgen.md tools/packgen/distribution/doc/
           cp -r tools/packgen/test/data/CMakeTestProject/ tools/packgen/distribution/doc/examples/
           cp -r tools/packgen/test/data/CMakeTestMultipleBuilds/ tools/packgen/distribution/doc/examples/
 
