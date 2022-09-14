@@ -15,6 +15,9 @@ on:
       - 'libs/rtefsutils/**'
       - 'tools/buildmgr/**'
       - '!**/*.md'
+      - '!**/*.png'
+      - '!**/*.pptx'
+      - '!**/*.svg'
   push:
     branches:
       - main
@@ -32,6 +35,10 @@ on:
       - 'libs/rtefsutils/**'
       - 'tools/buildmgr/**'
       - '!**/*.md'
+      - '!**/*.png'
+      - '!**/*.pptx'
+      - '!**/*.svg'
+
   release:
     types: [ published ]
 
