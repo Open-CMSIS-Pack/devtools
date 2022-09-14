@@ -40,10 +40,13 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
   if (!m_targetSecure.empty())       cmakelists << EOL << "set(SECURE " << m_targetSecure << ")";
   if (!m_targetMve.empty())          cmakelists << EOL << "set(MVE " << m_targetMve << ")";
   if (!m_byteOrder.empty())          cmakelists << EOL << "set(BYTE_ORDER " << m_byteOrder << ")";
-  if (!m_asMscGlobal.empty())       cmakelists << EOL << "set(AS_FLAGS_GLOBAL \"" << CbuildUtils::EscapeQuotes(m_asMscGlobal) << "\")";
-  if (!m_ccMscGlobal.empty())       cmakelists << EOL << "set(CC_FLAGS_GLOBAL \"" << CbuildUtils::EscapeQuotes(m_ccMscGlobal) << "\")";
-  if (!m_cxxMscGlobal.empty())      cmakelists << EOL << "set(CXX_FLAGS_GLOBAL \"" << CbuildUtils::EscapeQuotes(m_cxxMscGlobal) << "\")";
-  if (!m_linkerMscGlobal.empty())   cmakelists << EOL << "set(LD_FLAGS_GLOBAL \"" <<CbuildUtils::EscapeQuotes( m_linkerMscGlobal) << "\")";
+  if (!m_optimize.empty())           cmakelists << EOL << "set(OPT_OPTIMIZE " << m_optimize << ")";
+  if (!m_debug.empty())              cmakelists << EOL << "set(OPT_DEBUG " << m_debug << ")";
+  if (!m_warnings.empty())           cmakelists << EOL << "set(OPT_WARNINGS " << m_warnings << ")";
+  if (!m_asMscGlobal.empty())        cmakelists << EOL << "set(AS_FLAGS_GLOBAL \"" << CbuildUtils::EscapeQuotes(m_asMscGlobal) << "\")";
+  if (!m_ccMscGlobal.empty())        cmakelists << EOL << "set(CC_FLAGS_GLOBAL \"" << CbuildUtils::EscapeQuotes(m_ccMscGlobal) << "\")";
+  if (!m_cxxMscGlobal.empty())       cmakelists << EOL << "set(CXX_FLAGS_GLOBAL \"" << CbuildUtils::EscapeQuotes(m_cxxMscGlobal) << "\")";
+  if (!m_linkerMscGlobal.empty())    cmakelists << EOL << "set(LD_FLAGS_GLOBAL \"" << CbuildUtils::EscapeQuotes(m_linkerMscGlobal) << "\")";
   if (!m_linkerScript.empty())       cmakelists << EOL << "set(LD_SCRIPT \"" << m_linkerScript << "\")";
 
   cmakelists << EOL << EOL;

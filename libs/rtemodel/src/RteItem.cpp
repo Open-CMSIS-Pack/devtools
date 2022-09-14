@@ -207,6 +207,15 @@ RteItem* RteItem::GetItemByTag(const string& tag) const
 
 }
 
+const string& RteItem::GetChildAttribute(const std::string& tag, const std::string& attribute) const
+{
+  RteItem* child = GetItemByTag(tag);
+  if (child) {
+    return child->GetAttribute(attribute);
+  }
+  return EMPTY_STRING;
+}
+
 const string& RteItem::GetChildText(const string& tag) const
 {
   RteItem* child = GetItemByTag(tag);
