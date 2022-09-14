@@ -99,3 +99,14 @@ TEST_F(CbuildModelTests, GetCompatibleToolchain_Select_Latest_recursively) {
   EXPECT_EQ(m_toolchainConfig, expectedToolchainConfig);
   ASSERT_TRUE(RteFsUtils::RemoveDir(toolchainDir));
 }
+
+TEST_F(CbuildModelTests, EvalItemTranslationControls) {
+  RteItem groupItem(nullptr);
+  groupItem.SetTag("group");
+  groupItem.SetAttribute("name", "engine");
+  RteItem* optionsItem = groupItem.CreateChild("options");
+  optionsItem->SetAttribute("optimize", "speed");
+
+  EvalItemTranslationControls(&groupItem, OPTIONS);
+  EXPECT_EQ("speed", m_optimize["/engine"]);
+}

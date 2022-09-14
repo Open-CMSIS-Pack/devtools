@@ -229,6 +229,14 @@ public:
   void RemoveItem(RteItem* item);
 
   /**
+   * @brief get child's attribute value
+   * @param tag child's tag
+   * @param attribute child's attribute key
+   * @return child's attribute value string
+  */
+  const std::string& GetChildAttribute(const std::string& tag, const std::string& attribute) const;
+
+  /**
    * @brief get child's text
    * @param tag child's tag
    * @return child's text string

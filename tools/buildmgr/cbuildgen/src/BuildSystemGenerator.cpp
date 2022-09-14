@@ -93,6 +93,10 @@ bool BuildSystemGenerator::Collect(const string& inputFile, const CbuildModel *m
   m_linkerScript = StrNorm(model->GetLinkerScript());
   m_outputType = model->GetOutputType();
 
+  m_optimize = model->GetTargetOptimize();
+  m_debug = model->GetTargetDebug();
+  m_warnings = model->GetTargetWarnings();
+
   m_ccMscGlobal = GetString(model->GetTargetCFlags());
   m_cxxMscGlobal = GetString(model->GetTargetCxxFlags());
   m_asMscGlobal = GetString(model->GetTargetAsFlags());
