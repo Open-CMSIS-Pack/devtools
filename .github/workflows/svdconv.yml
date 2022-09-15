@@ -1,0 +1,306 @@
+name: svdconv
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/svdconv.yml'
+      - '.github/workflows/unit_test_results.yml'
+      - '.github/matrix_includes_svdconv.json'
+      - 'CMakeLists.txt'
+      - 'tools/svdconv/**'
+  pull_request:
+    paths:
+      - '.github/workflows/svdconv.yml'
+      - '.github/workflows/unit_test_results.yml'
+      - '.github/matrix_includes_svdconv.json'
+      - 'CMakeLists.txt'
+      - 'tools/svdconv/**'
+  release:
+    types: [published]
+
+jobs:
+  matrix_prep:
+    if: |
+        (github.event_name == 'pull_request') ||
+        (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/svdconv/'))
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+    - name: Check out repo
+      uses: actions/checkout@v3
+    - id: set-matrix
+      run: |
+        publicRepo=$(echo '${{ github.event.repository.private && 'privateRepo' || 'publicRepo' }}')
+        matrix=$(jq --arg publicRepo "$publicRepo" 'map(. | select((.runOn==$publicRepo) or (.runOn=="always")) )' matrix_includes_svdconv.json)
+        echo ::set-output name=matrix::{\"include\":$(echo $matrix)}\"
+      working-directory: .github/
+      
+  build:
+    needs: matrix_prep
+    runs-on: ${{ matrix.runs_on }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: true
+      matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
+    steps:
+      - name: Checkout devtools
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Build svdconv
+        uses: Open-CMSIS-Pack/devtools-build-action@v1
+        with:
+          target: svdconvdist
+          arch: ${{ matrix.arch }}
+      
+      - name: Archive svdconv binary
+        if: ${{ github.event_name != 'release' }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: svdconv-${{ matrix.target }}-${{ matrix.arch }}
+          path: ./build/tools/svdconv/SVDConv/svdconv-*-${{ matrix.target }}.*
+          retention-days: 1
+          if-no-files-found: error
+          
+      - name: Attach svdconv binary to release
+        if: ${{ github.event_name == 'release' && matrix.arch == 'amd64' }}
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref }}
+          overwrite: true
+          file_glob: true
+          file: build/tools/svdconv/SVDConv/svdconv-*-${{ matrix.target }}.*
+
+  test:
+    needs: matrix_prep
+    runs-on: ${{ matrix.runs_on }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
+    steps:
+      - name: Checkout devtools
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      # https://github.com/Open-CMSIS-Pack/devtools-build-action
+      - name: Build SVDConvUnitTests
+        uses: Open-CMSIS-Pack/devtools-build-action@v1
+        with:
+          arch: ${{ matrix.arch }}
+          build_type: Debug
+          target: SVDConvUnitTests
+
+      - name: Run svdconv unit tests
+        run: |
+          ctest -V -R SVDConvUnitTests
+        working-directory: ./build
+
+      # https://github.com/Open-CMSIS-Pack/devtools-build-action
+      - name: Build SvdConvIntegTests
+        uses: Open-CMSIS-Pack/devtools-build-action@v1
+        with:
+          arch: ${{ matrix.arch }}
+          build_type: Debug
+          target: SvdConvIntegTests
+
+      - name: Run svdconv integ tests
+        run: |
+          ctest -V -R SvdConvIntegTests
+        working-directory: ./build
+
+      - name: Archive unit test results
+        uses: actions/upload-artifact@v2
+        with:
+          name: unit_test_report-${{ matrix.target }}-${{ matrix.arch }}
+          path: ./build/test_reports/svdconvunittests-*.xml
+          if-no-files-found: error
+
+      - name: Archive integration test results
+        uses: actions/upload-artifact@v2
+        with:
+          name: integ_test_report-${{ matrix.target }}-${{ matrix.arch }}
+          path: ./build/test_reports/svdconvintegtests-*.xml
+          if-no-files-found: error
+
+  coverage:
+    if: |
+        (github.event_name == 'pull_request') ||
+        (github.event_name == 'push') ||
+        (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/svdconv/'))
+    runs-on: ubuntu-20.04
+    timeout-minutes: 15
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt-get install \
+            lcov
+
+      - name: Checkout devtools
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      # https://github.com/Open-CMSIS-Pack/devtools-build-action
+      - name: Build SVDConvUnitTests
+        uses: Open-CMSIS-Pack/devtools-build-action@v1
+        with:
+          add_cmake_variables: -DCOVERAGE=ON
+          arch: amd64
+          build_type: Debug
+          target: SVDConvUnitTests
+
+      # https://github.com/Open-CMSIS-Pack/devtools-build-action
+      - name: Build SvdConvIntegTests
+        uses: Open-CMSIS-Pack/devtools-build-action@v1
+        with:
+          add_cmake_variables: -DCOVERAGE=ON
+          arch: amd64
+          build_type: Debug
+          target: SvdConvIntegTests
+
+      - name: Run svdconv tests
+        run: |
+          ctest -V -C Debug -R SVDConvUnitTests
+          ctest -V -C Debug -R SvdConvIntegTests
+        working-directory: ./build
+
+      - name: Generate coverage report
+        run: |
+          lcov --rc lcov_branch_coverage=1 -c --directory . --output-file full_coverage.info
+          lcov --rc lcov_branch_coverage=1 -e full_coverage.info \
+            '*/tools/svdconv/SVDConv/include/*' \
+            '*/tools/svdconv/SVDConv/src/*' \
+            '*/tools/svdconv/SVDGenerator/include/*' \
+            '*/tools/svdconv/SVDGenerator/src/*' \
+            '*/tools/svdconv/SVDModel/include/*' \
+            '*/tools/svdconv/SVDModel/src/*' \
+            -o coverage.info
+          genhtml coverage.info --output-directory coverage
+        working-directory: ./build/tools/svdconv
+
+      - name: Upload Report to Codecov
+        if: ${{ !github.event.repository.private }}
+        uses: codecov/codecov-action@v2
+        with:
+          files: ./build/tools/svdconv/coverage.info
+          fail_ci_if_error: true
+          flags: svdconv-cov
+          functionalities: fix
+
+      - name: Archive coverage report
+        uses: actions/upload-artifact@v2
+        with:
+          name: coverage-report
+          path: |
+            ./build/tools/svdconv/coverage/
+            ./build/tools/svdconv/coverage.info
+          retention-days: 1
+          if-no-files-found: error
+
+  release:
+    if: |
+        github.event_name == 'release' &&
+        startsWith(github.ref, 'refs/tags/tools/svdconv/')
+    needs: [ build, test, coverage ]
+    runs-on: ubuntu-20.04
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout devtools
+        uses: actions/checkout@v3
+
+      - name: Create distribution folders
+        run: |
+          mkdir -p tools/svdconv/distribution/
+
+      - name: Download coverage report
+        uses: actions/download-artifact@v2
+        with:
+          name: coverage-report
+          path: tools/svdconv/distribution/coverage/
+
+      - name: Zip distribution folder
+        run: zip -r svdconv.zip *
+        working-directory: tools/svdconv/distribution
+
+      - name: Attach zip archive to release assets
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: tools/svdconv/distribution/svdconv.zip
+          tag: ${{ github.ref }}
+          overwrite: true
+          asset_name: svdconv.zip
+
+  test-results-preparation:
+    name: "Publish Tests Results"
+    needs: [ test ]
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      - name: Download unit test report windows
+        uses: actions/download-artifact@v2
+        with:
+          name: unit_test_report-windows64-amd64
+          path: testreports/
+
+      - name: Download unit test report linux amd64
+        uses: actions/download-artifact@v2
+        with:
+          name: unit_test_report-linux64-amd64
+          path: testreports/
+
+      - name: Download unit test report linux arm64
+        uses: actions/download-artifact@v2
+        with:
+          name: unit_test_report-linux64-arm64
+          path: testreports/
+
+      - name: Download unit test report macos
+        if: ${{ !github.event.repository.private }}
+        uses: actions/download-artifact@v2
+        with:
+          name: unit_test_report-darwin64-amd64
+          path: testreports/
+
+      - name: Download integ test report windows
+        uses: actions/download-artifact@v2
+        with:
+          name: integ_test_report-windows64-amd64
+          path: testreports/
+
+      - name: Download integ test report linux amd64
+        uses: actions/download-artifact@v2
+        with:
+          name: integ_test_report-linux64-amd64
+          path: testreports/
+
+      - name: Download integ test report linux arm64
+        uses: actions/download-artifact@v2
+        with:
+          name: integ_test_report-linux64-arm64
+          path: testreports/
+          
+      - name: Download integ test report macos
+        if: ${{ !github.event.repository.private }}
+        uses: actions/download-artifact@v2
+        with:
+          name: integ_test_report-darwin64-amd64
+          path: testreports/
+
+      - name: Event File
+        uses: actions/upload-artifact@v2
+        with:
+          name: Event File
+          path: ${{ github.event_path }}

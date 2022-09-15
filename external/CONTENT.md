@@ -7,6 +7,7 @@ should be committed into this folder.
 ```txt
     📂external
     ┣ 📂cxxopts
+    ┣ 📂fmt
     ┣ 📂googletest
     ┣ 📂json
     ┣ 📂json-schema-validator
@@ -18,6 +19,11 @@ should be committed into this folder.
 <!-- markdown-link-check-disable-next-line -->
 The [cxxopts](./cxxopts) directory contains sources of C++ option parser
 library fetched from [here](https://github.com/jarro2783/cxxopts).
+
+## fmt
+
+The [fmt](./fmt) directory contains sources of formatter
+library fetched from [here](https://github.com/fmtlib/fmt).
 
 ## googletest
 

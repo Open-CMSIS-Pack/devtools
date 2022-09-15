@@ -72,6 +72,16 @@ set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
+if("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
+    set(CMAKE_TAR_FLAGS "")
+    set(CMAKE_TAR_FORMAT "zip")
+    set(CMAKE_TAR_EXTENSION "zip")
+else()
+    set(CMAKE_TAR_FLAGS "j")
+    set(CMAKE_TAR_FORMAT "paxr")
+    set(CMAKE_TAR_EXTENSION "tbz2")
+endif()
+
 # Libraries
 add_subdirectory(libs/crossplatform)
 add_subdirectory(libs/errlog)
@@ -89,6 +99,7 @@ if(NOT LIBS_ONLY)
   add_subdirectory(tools/packchk)
   add_subdirectory(tools/packgen)
   add_subdirectory(tools/projmgr)
+  add_subdirectory(tools/svdconv)
 endif()
 
 # Prepare a list of CMake targets
@@ -127,3 +138,6 @@ add_subdirectory(external/json)
 
 # json-schema-validator
 add_subdirectory(external/json-schema-validator)
+
+#fmt
+add_subdirectory(external/fmt)

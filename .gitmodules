@@ -19,3 +19,6 @@
 	path = external/json-schema-validator
 	url = https://github.com/pboettch/json-schema-validator.git
 	ignore = dirty
+[submodule "external/fmt"]
+	path = external/fmt
+	url = https://github.com/fmtlib/fmt.git
