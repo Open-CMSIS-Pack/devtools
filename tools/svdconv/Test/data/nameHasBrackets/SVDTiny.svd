@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<device schemaVersion="fooBar" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="CMSIS-SVD.xsd">
+  <vendor>ARM</vendor>                                            <!-- Name for DoxyGroup -->
+  <vendorID>ARM</vendorID>                                        <!-- Vendor ID -->
+  <name>SVDTiny</name>                                         <!-- name of part or part series -->
+  <series>ARM_Ref</series>                                        <!-- series  -->
+  <version>1.0</version>                                          <!-- version of this description -->
+  <description>SVD Reference Description MCU V1.0, \nwith ARM 32-bit Cortex-M3 Microcontroller, CPU clock up to 80MHz</description>
+
+  <cpu>
+    <name>CM3</name>
+    <revision>r18p52</revision>                             
+    <endian>little</endian>                                 
+    <nvicPrioBits>4</nvicPrioBits>
+  </cpu>
+  
+  <addressUnitBits>8</addressUnitBits>
+  <width>32</width>
+  <peripherals>
+    
+  <peripheral>
+    <addressBlock>
+      <offset>0</offset>
+      <size>0x100</size>
+      <usage>registers</usage>
+    </addressBlock>
+    <interrupt>
+      <name>Peri</name>
+      <description>Peri Interrupt</description>
+      <value>2</value>
+    </interrupt>
+    <name>Peri</name>
+      <description>Peripheral testing for []</description>
+      <baseAddress>0x400C2000</baseAddress>
+      <registers>
+        <register>
+          <name>CTRL[%s]</name>
+          <dim>4</dim>
+          <dimIncrement>0x04</dimIncrement>
+          <description>Memory System Control Register</description>
+          <addressOffset>0x000</addressOffset>
+          <size>32</size>
+          <access>read-write</access>
+        </register>
+        <register>
+          <name>Data[0]</name>
+          <description>Data Register 0</description>
+          <addressOffset>0x020</addressOffset>
+          <size>32</size>
+          <access>read-write</access>
+        </register>
+      </registers>
+    </peripheral>
+
+  </peripherals>
+</device>
+
