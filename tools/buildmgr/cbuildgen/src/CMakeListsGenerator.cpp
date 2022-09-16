@@ -40,9 +40,9 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
   if (!m_targetSecure.empty())       cmakelists << EOL << "set(SECURE " << m_targetSecure << ")";
   if (!m_targetMve.empty())          cmakelists << EOL << "set(MVE " << m_targetMve << ")";
   if (!m_byteOrder.empty())          cmakelists << EOL << "set(BYTE_ORDER " << m_byteOrder << ")";
-  if (!m_optimize.empty())           cmakelists << EOL << "set(OPT_OPTIMIZE " << m_optimize << ")";
-  if (!m_debug.empty())              cmakelists << EOL << "set(OPT_DEBUG " << m_debug << ")";
-  if (!m_warnings.empty())           cmakelists << EOL << "set(OPT_WARNINGS " << m_warnings << ")";
+  if (!m_optimize.empty())           cmakelists << EOL << "set(OPTIMIZE " << m_optimize << ")";
+  if (!m_debug.empty())              cmakelists << EOL << "set(DEBUG " << m_debug << ")";
+  if (!m_warnings.empty())           cmakelists << EOL << "set(WARNINGS " << m_warnings << ")";
   if (!m_asMscGlobal.empty())        cmakelists << EOL << "set(AS_FLAGS_GLOBAL \"" << CbuildUtils::EscapeQuotes(m_asMscGlobal) << "\")";
   if (!m_ccMscGlobal.empty())        cmakelists << EOL << "set(CC_FLAGS_GLOBAL \"" << CbuildUtils::EscapeQuotes(m_ccMscGlobal) << "\")";
   if (!m_cxxMscGlobal.empty())       cmakelists << EOL << "set(CXX_FLAGS_GLOBAL \"" << CbuildUtils::EscapeQuotes(m_cxxMscGlobal) << "\")";
@@ -102,6 +102,53 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
       }
     }
   }
+
+  // file specific options (optimize, debug, warnings)
+  bool file_specific_options = false;
+  for (auto& filesList : filesLists) {
+    for (const auto& [src, file] : *filesList) {
+      map<string, string> file_options = {
+        {"OPTIMIZE", file.optimize},
+        {"DEBUG", file.debug},
+        {"WARNINGS", file.warnings},
+      };
+      for (const auto& [option, option_value] : file_options) {
+        if (option_value.empty()) continue;
+        cmakelists << "set(" << option << "_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(option_value) << "\")"<< EOL;
+        file_specific_options = true;
+      }
+    }
+  }
+
+  // group specific options (optimize, debug, warnings)
+  bool group_specific_options = false;
+  for (auto [group, controls] : m_groupsList) {
+    map<string, string> group_options = {
+      {"OPTIMIZE", controls.optimize},
+      {"DEBUG", controls.debug},
+      {"WARNINGS", controls.warnings},
+    };
+    for (const auto& [option, group_option_value] : group_options) {
+      if (group_option_value.empty()) continue;
+      for (auto& filesList : filesLists) {
+        for (auto [src, file] : *filesList) {
+          if (fs::path(file.group).generic_string() != group) continue;
+          map<string, string> file_options = {
+            {"OPTIMIZE", file.optimize},
+            {"DEBUG", file.debug},
+            {"WARNINGS", file.warnings},
+          };
+          if (!file_options.at(option).empty()) continue;
+          cmakelists << "set(" << option << "_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src)
+            << " \"" << CbuildUtils::EscapeQuotes(group_option_value) << "\")"<< EOL;
+          group_specific_options = true;
+        }
+      }
+    }
+  }
+
+  bool specific_options = file_specific_options || group_specific_options;
+  if (specific_options) cmakelists << EOL;
 
   // Include Paths
   if (!m_incPathsList.empty()) {
@@ -226,115 +273,36 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
     }
   }
 
-  // File specific flags and options
+  // File specific flags
   bool as_file_specific_flags = false;
-  bool as_file_specific_options = false;
   for (auto list : asFilesLists) {
     for (auto [src, file] : list.second) {
       if (!file.flags.empty()) {
         cmakelists << "set(AS_FLAGS_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(file.flags) << "\")"<< EOL;
         as_file_specific_flags = true;
       }
-      if (!file.optimize.empty()) {
-        cmakelists << "set(AS_OPTIMIZE_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(file.optimize) << "\")"<< EOL;
-        as_file_specific_options = true;
-      }
-      if (!file.debug.empty()) {
-        cmakelists << "set(AS_DEBUG_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(file.debug) << "\")"<< EOL;
-        as_file_specific_options = true;
-      }
-      if (!file.warnings.empty()) {
-        cmakelists << "set(AS_WARNINGS_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(file.warnings) << "\")"<< EOL;
-        as_file_specific_options = true;
-      }
     }
   }
   bool cc_file_specific_flags = false;
-  bool cc_file_specific_options = false;
   for (auto [src, file] : m_ccFilesList) {
     if (!file.flags.empty()) {
       cmakelists << "set(CC_FLAGS_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(file.flags) << "\")"<< EOL;
       cc_file_specific_flags = true;
     }
-    if (!file.optimize.empty()) {
-      cmakelists << "set(CC_OPTIMIZE_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(file.optimize) << "\")"<< EOL;
-      cc_file_specific_options = true;
-    }
-    if (!file.debug.empty()) {
-      cmakelists << "set(CC_DEBUG_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(file.debug) << "\")"<< EOL;
-      cc_file_specific_options = true;
-    }
-    if (!file.warnings.empty()) {
-      cmakelists << "set(CC_WARNINGS_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(file.warnings) << "\")"<< EOL;
-      cc_file_specific_options = true;
-    }
   }
   bool cxx_file_specific_flags = false;
-  bool cxx_file_specific_options = false;
   for (auto [src, file] : m_cxxFilesList) {
     if (!file.flags.empty()) {
       cmakelists << "set(CXX_FLAGS_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(file.flags) << "\")"<< EOL;
       cxx_file_specific_flags = true;
     }
-    if (!file.optimize.empty()) {
-      cmakelists << "set(CXX_OPTIMIZE_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(file.optimize) << "\")"<< EOL;
-      cxx_file_specific_options = true;
-    }
-    if (!file.debug.empty()) {
-      cmakelists << "set(CXX_DEBUG_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(file.debug) << "\")"<< EOL;
-      cxx_file_specific_options = true;
-    }
-    if (!file.warnings.empty()) {
-      cmakelists << "set(CXX_WARNINGS_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(file.warnings) << "\")"<< EOL;
-      cxx_file_specific_options = true;
-    }
   }
 
-  // Group specific flags and options
+  // Group specific flags
   bool as_group_specific_flags = false;
-  bool as_group_specific_options = false;
   bool cc_group_specific_flags = false;
-  bool cc_group_specific_options = false;
   bool cxx_group_specific_flags = false;
-  bool cxx_group_specific_options = false;
   for (auto [group, controls] : m_groupsList) {
-    map<string, string> group_options = {
-      {"OPTIMIZE", controls.optimize},
-      {"DEBUG", controls.debug},
-      {"WARNINGS", controls.warnings},
-    };
-
-    for (const auto& [opt, group_opt_value] : group_options) {
-      if (group_opt_value.empty()) continue;
-      for (auto& filesList : filesLists) {
-        for (const auto& [src, file] : *filesList) {
-          if (fs::path(file.group).generic_string() == group) {
-            map<string, string> file_options = {
-              {"OPTIMIZE", file.optimize},
-              {"DEBUG", file.debug},
-              {"WARNINGS", file.warnings},
-            };
-
-            if (!file_options.at(opt).empty()) continue;
-
-            string file_type;
-            if (m_ccFilesList.find(src) != m_ccFilesList.end()) {
-              file_type = "CC";
-              cc_group_specific_options = true;
-            } else if (m_cxxFilesList.find(src) != m_cxxFilesList.end()) {
-              file_type = "CXX";
-              cxx_group_specific_options = true;
-            } else {
-              file_type = "AS";
-              as_group_specific_options = true;
-            }
-
-            cmakelists << "set(" << file_type << "_" << opt << "_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src)
-                << " \"" << CbuildUtils::EscapeQuotes(group_opt_value) << "\")"<< EOL;
-          }
-        }
-      }
-    }
     if (!controls.asMsc.empty()) {
        for (auto list : asFilesLists) {
          for (auto [src, file] : list.second) {
@@ -366,10 +334,7 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
   bool asflags = as_file_specific_flags || as_group_specific_flags;
   bool ccflags = cc_file_specific_flags || cc_group_specific_flags;
   bool cxxflags = cxx_file_specific_flags || cxx_group_specific_flags;
-  bool as_options = as_file_specific_options || as_group_specific_options;
-  bool cc_options = cc_file_specific_options || cc_group_specific_options;
-  bool cxx_options = cxx_file_specific_options || cxx_group_specific_options;
-  if (asflags || ccflags || cxxflags || as_options || cc_options || cxx_options) {
+  if (asflags || ccflags || cxxflags) {
     cmakelists << EOL;
   }
 
@@ -397,7 +362,7 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
       cmakelists << "set(CMAKE_" << prefix << "_FLAGS \"${" << prefix << "_CPU}";
       if (!m_byteOrder.empty()) cmakelists << " ${" << prefix << "_BYTE_ORDER}";
       if (!m_definesList.empty()) cmakelists << " ${" << prefix << "_DEFINES}";
-      if (!as_options && target_options) cmakelists << " ${ASM_OPT_FLAGS}";
+      if (!specific_options && target_options) cmakelists << " ${ASM_OPTIONS_FLAGS}";
       cmakelists << " ${" << prefix << "_FLAGS}";
       if (!asflags && !preinc_local && !m_asMscGlobal.empty()) cmakelists << " ${AS_FLAGS_GLOBAL}";
       cmakelists << "\")" << EOL;
@@ -408,7 +373,7 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
     if (!m_byteOrder.empty()) cmakelists << " ${CC_BYTE_ORDER}";
     if (!m_definesList.empty()) cmakelists << " ${CC_DEFINES}";
     if (!m_targetSecure.empty()) cmakelists << " ${CC_SECURE}";
-    if (!cc_options && target_options) cmakelists << " ${CC_OPT_FLAGS}";
+    if (!specific_options && target_options) cmakelists << " ${CC_OPTIONS_FLAGS}";
     cmakelists << " ${CC_FLAGS}";
     if (!ccflags && !preinc_local && !m_ccMscGlobal.empty()) cmakelists << " ${CC_FLAGS_GLOBAL}";
     cmakelists << " ${CC_SYS_INC_PATHS}";
@@ -419,7 +384,7 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
     if (!m_byteOrder.empty()) cmakelists << " ${CXX_BYTE_ORDER}";
     if (!m_definesList.empty()) cmakelists << " ${CXX_DEFINES}";
     if (!m_targetSecure.empty()) cmakelists << " ${CXX_SECURE}";
-    if (!cxx_options && target_options) cmakelists << " ${CXX_OPT_FLAGS}";
+    if (!specific_options && target_options) cmakelists << " ${CXX_OPTIONS_FLAGS}";
     cmakelists << " ${CXX_FLAGS}";
     if (!cxxflags && !preinc_local && !m_cxxMscGlobal.empty()) cmakelists << " ${CXX_FLAGS_GLOBAL}";
     cmakelists << " ${CXX_SYS_INC_PATHS}";
@@ -435,7 +400,7 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
   if (!m_linkerScript.empty() && !lib_output) cmakelists << " ${_LS}\\\"${LD_SCRIPT}\\\"";
   if (!m_targetSecure.empty()) cmakelists << " ${LD_SECURE}";
   if (!m_linkerMscGlobal.empty()) cmakelists << " ${LD_FLAGS_GLOBAL}";
-  if (target_options) cmakelists << " ${LD_OPT_FLAGS}";
+  if (target_options) cmakelists << " ${LD_OPTIONS_FLAGS}";
   cmakelists << " ${LD_FLAGS}\")" << EOL << EOL;
 
   // Pre-include Global
@@ -450,11 +415,11 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
   bool specific_defines = file_specific_defines || group_specific_defines;
   bool specific_includes = file_specific_includes || group_specific_includes;
 
-  if (asflags || ccflags || cxxflags || as_options || cc_options || cxx_options || as_special_lang || preinc_local) {
+  if (asflags || ccflags || cxxflags || as_special_lang || preinc_local) {
     // Set local flags
     cmakelists << "# Local Flags" << EOL << EOL;
 
-    if (asflags || as_options || as_special_lang) {
+    if (asflags || as_special_lang) {
       for (auto list : asFilesLists) {
         if (!list.second.empty()) {
           string lang = list.first;
@@ -469,18 +434,6 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
           } else {
             cmakelists << "  set(AS_FLAGS_LOCAL \"${AS_FLAGS_GLOBAL}\")" << EOL;
           }
-          if (as_options) {
-            cmakelists << "  if(COMMAND cbuild_get_options_flags)" << EOL;
-            cmakelists << "    foreach(OPT \"OPTIMIZE\" \"DEBUG\" \"WARNINGS\")" << EOL;
-            cmakelists << "      if(DEFINED AS_${OPT}_${S})" << EOL;
-            cmakelists << "        set(${OPT}_LOCAL \"${AS_${OPT}_${S}}\")" << EOL;
-            cmakelists << "      else()" << EOL;
-            cmakelists << "        set(${OPT}_LOCAL \"${OPT_${OPT}}\")" << EOL;
-            cmakelists << "      endif()" << EOL;
-            cmakelists << "    endforeach()" << EOL;
-            cmakelists << "    cbuild_get_options_flags(ASM \"${OPTIMIZE_LOCAL}\" \"${DEBUG_LOCAL}\" \"${WARNINGS_LOCAL}\" AS_FLAGS_LOCAL)" << EOL;
-            cmakelists << "  endif()" << EOL;
-          }
           cmakelists << "  set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS \"${AS_FLAGS_LOCAL}\")" << EOL;
           if (as_special_lang) {
             cmakelists << "  set_source_files_properties(${SRC} PROPERTIES LANGUAGE " << lang << ")" << EOL;
@@ -489,10 +442,8 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
         }
       }
     }
-    map <string, bool> flagsLang = {{"CC", !m_ccFilesList.empty() && (ccflags || cc_options || preinc_local)},
-                                    {"CXX", !m_cxxFilesList.empty() && (cxxflags || cxx_options || preinc_local)}};
-    map <string, bool> optionsLang = {{"CC", cc_options},
-                                      {"CXX", cxx_options}};
+    map <string, bool> flagsLang = {{"CC", !m_ccFilesList.empty() && (ccflags || preinc_local)},
+                                    {"CXX", !m_cxxFilesList.empty() && (cxxflags || preinc_local)}};
     for (auto list : flagsLang) {
       if (list.second) {
         string lang = list.first;
@@ -507,18 +458,6 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
         } else {
           cmakelists << "  set(" << lang << "_FLAGS_LOCAL \"${" << lang << "_FLAGS_GLOBAL}\")" << EOL;
         }
-        if (optionsLang.at(lang)) {
-          cmakelists << "  if(COMMAND cbuild_get_options_flags)" << EOL;
-          cmakelists << "    foreach(OPT \"OPTIMIZE\" \"DEBUG\" \"WARNINGS\")" << EOL;
-          cmakelists << "      if(DEFINED " << lang << "_${OPT}_${S})" << EOL;
-          cmakelists << "        set(${OPT}_LOCAL \"${" << lang << "_${OPT}_${S}}\")" << EOL;
-          cmakelists << "      else()" << EOL;
-          cmakelists << "        set(${OPT}_LOCAL \"${OPT_${OPT}}\")" << EOL;
-          cmakelists << "      endif()" << EOL;
-          cmakelists << "    endforeach()" << EOL;
-          cmakelists << "    cbuild_get_options_flags(" << lang << " \"${OPTIMIZE_LOCAL}\" \"${DEBUG_LOCAL}\" \"${WARNINGS_LOCAL}\" " << lang << "_FLAGS_LOCAL)" << EOL;
-          cmakelists << "  endif()" << EOL;
-        }
         if (preinc_local) {
           cmakelists << "  if(DEFINED PRE_INC_LOCAL_${S})" << EOL;
           cmakelists << "    foreach(ENTRY ${PRE_INC_LOCAL_${S}})" << EOL;
@@ -532,8 +471,8 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
     }
   }
 
-  // Includes and Defines
-  if (specific_includes || specific_defines) {
+  // Includes, Defines and Options
+  if (specific_includes || specific_defines || specific_options) {
     map<string, bool> languages = {
       {"ASM",    !m_asFilesList.empty()         },
       {"AS_LEG", !m_asLegacyFilesList.empty()   },
@@ -542,7 +481,7 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
       {"CC",     !m_ccFilesList.empty()         },
       {"CXX",    !m_cxxFilesList.empty()        }
     };
-    cmakelists << "# File Includes and Defines" << EOL << EOL;
+    cmakelists << "# File Includes, Defines and Options" << EOL << EOL;
     for (const auto& [lang, present] : languages) {
       if (present) {
         cmakelists << "foreach(SRC ${" << lang << "_SRC_FILES})" << EOL;
@@ -563,6 +502,21 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
           cmakelists << "    string(APPEND FILE_FLAGS \" ${DEFINES_${S}}\")" << EOL;
           cmakelists << "    set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS \"${FILE_FLAGS}\")" << EOL;
           cmakelists << "  endif()" << EOL;
+        }
+        if (specific_options) {
+          cmakelists << "  foreach(OPTION OPTIMIZE DEBUG WARNINGS)" << EOL;
+          cmakelists << "    if(DEFINED ${OPTION}_${S})" << EOL;
+          cmakelists << "      set(${OPTION}_LOCAL \"${${OPTION}_${S}}\")" << EOL;
+          cmakelists << "    else()" << EOL;
+          cmakelists << "      set(${OPTION}_LOCAL \"${${OPTION}}\")" << EOL;
+          cmakelists << "    endif()" << EOL;
+          cmakelists << "  endforeach()" << EOL;
+          cmakelists << "  get_source_file_property(FILE_FLAGS ${SRC} COMPILE_FLAGS)" << EOL;
+          cmakelists << "  if(FILE_FLAGS STREQUAL \"NOTFOUND\")" << EOL;
+          cmakelists << "    set(FILE_FLAGS)" << EOL;
+          cmakelists << "  endif()" << EOL;
+          cmakelists << "  cbuild_get_options_flags(" << lang << " \"${OPTIMIZE_LOCAL}\" \"${DEBUG_LOCAL}\" \"${WARNINGS_LOCAL}\" FILE_FLAGS)" << EOL;
+          cmakelists << "  set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS \"${FILE_FLAGS}\")" << EOL;
         }
         cmakelists << "endforeach()" << EOL << EOL;
       }
