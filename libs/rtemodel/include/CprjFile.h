@@ -320,7 +320,7 @@ public:
   */
   RteItem* GetProjectInfo() const;
 
-  const std::optional<std::string> GetRteFolder() const;
+  const std::string& GetRteFolder() const override;
   /**
    * @brief getter for list of components specified for the project
    * @return list of RteItem pointer

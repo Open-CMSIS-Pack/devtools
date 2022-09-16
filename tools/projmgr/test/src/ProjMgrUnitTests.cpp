@@ -481,9 +481,10 @@ TEST_F(ProjMgrUnitTests, RunProjMgrLayers) {
   CompareFile(testoutput_folder + "/testlayers/testlayers.Release.cprj",
     testinput_folder + "/TestLayers/ref/testlayers/testlayers.Release.cprj");
 
-  // Check generated filetree
-  CompareFileTree(testoutput_folder + "/testlayers",
-    testinput_folder + "/TestLayers/ref/testlayers");
+  // Check creation of layers rte folders
+  EXPECT_TRUE(RteFsUtils::Exists(testinput_folder + "/TestLayers/Layer2/RTE/Device/RteTest_ARMCM0"));
+  EXPECT_TRUE(RteFsUtils::Exists(testinput_folder + "/TestLayers/Layer3/RTE/RteTest/MyDir"));
+
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgrLayers2) {

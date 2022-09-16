@@ -367,18 +367,18 @@ RteItem* CprjFile::GetProjectInfo() const
   return GetItemByTag("info");
 }
 
-const std::optional<std::string> CprjFile::GetRteFolder() const
+const std::string& CprjFile::GetRteFolder() const
 {
   if (m_cprjTargetElement) {
     const auto buildOption = m_cprjTargetElement->GetBuildOption();
     if (buildOption) {
-      const auto folder = buildOption->GetAttribute("rtedir");
+      const string& folder = buildOption->GetAttribute("rtedir");
       if (!folder.empty()) {
         return folder;
       }
     }
   }
-  return {};
+  return RteUtils::EMPTY_STRING;
 }
 
 const list<RteItem*>& CprjFile::GetProjectComponents() const

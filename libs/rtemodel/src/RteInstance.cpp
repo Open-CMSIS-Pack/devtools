@@ -843,7 +843,7 @@ RteFile* RteFileInstance::GetFile(const string& targetName) const
   RteTarget* t = GetTarget(targetName);
   if (t) {
     RteComponent* c = GetComponent(targetName);
-    return t->GetFile(this, c);
+    return t->GetFile(this, c, t->GetRteFolder(GetComponentInstance(targetName)));
   }
   return NULL;
 }

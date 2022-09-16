@@ -106,11 +106,18 @@ RteProject* RteProject::GetProject() const
   return const_cast<RteProject*>(this);
 }
 
-const std::string& RteProject::GetRteFolder() const {
-  if (m_rteFolder.has_value()) {
-    return m_rteFolder.value();
+const string& RteProject::GetRteFolder() const {
+  if (!m_rteFolder.empty()) {
+    return m_rteFolder;
   }
   return DEFAULT_RTE_FOLDER;
+}
+
+const string& RteProject::GetRteFolder(const RteComponentInstance* ci) const {
+  if (ci && !ci->GetRteFolder().empty()) {
+    return ci->GetRteFolder();
+  }
+  return GetRteFolder();
 }
 
 void RteProject::ClearClasses()
@@ -356,6 +363,9 @@ RteComponentInstance* RteProject::AddCprjComponent(RteItem* item, RteTarget* tar
   string layer = item->GetAttribute("layer");
   if (!layer.empty())
     ci->AddAttribute("layer", layer);
+  string rtePath = item->GetAttribute("rtedir");
+  if (!rtePath.empty())
+    ci->AddAttribute("rtedir", rtePath);
   m_components[id] = ci;
   return ci;
 }
@@ -409,7 +419,7 @@ RteFileInstance* RteProject::AddFileInstance(RteComponentInstance* ci, RteFile* 
     return NULL;
 
   string deviceName = target->GetFullDeviceName();
-  string id = f->GetInstancePathName(deviceName, index, GetRteFolder());
+  string id = f->GetInstancePathName(deviceName, index, GetRteFolder(ci));
   target->AddComponentInstanceForFile(id, ci);
 
   string savedVersion = "0.0.0"; // unknown version
@@ -422,7 +432,7 @@ RteFileInstance* RteProject::AddFileInstance(RteComponentInstance* ci, RteFile* 
     AddItem(fi);
     m_files[id] = fi;
   }
-  InitFileInstance(fi, f, index, target, savedVersion);
+  InitFileInstance(fi, f, index, target, savedVersion, GetRteFolder(ci));
   return fi;
 }
 
@@ -438,12 +448,12 @@ bool RteProject::UpdateFileToNewVersion(RteFileInstance* fi, RteFile* f, bool bM
   return false;
 }
 
-void RteProject::InitFileInstance(RteFileInstance* fi, RteFile* f, int index, RteTarget* target, const string& savedVersion)
+void RteProject::InitFileInstance(RteFileInstance* fi, RteFile* f, int index, RteTarget* target, const string& savedVersion, const string& rteFolder)
 {
   string deviceName = target->GetFullDeviceName();
   const string& targetName = target->GetName();
 
-  fi->Init(f, deviceName, index, GetRteFolder());
+  fi->Init(f, deviceName, index, rteFolder);
   fi->Update(f, false);
   fi->AddTargetInfo(targetName); // set/update supported targets
   fi->SetRemoved(false);

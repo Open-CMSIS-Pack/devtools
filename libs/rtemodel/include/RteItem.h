@@ -244,6 +244,12 @@ public:
   const std::string& GetChildText(const std::string& tag) const;
 
   /**
+   * @brief get rte folder associated with this item
+   * @return rte folder
+  */
+  virtual const std::string& GetRteFolder() const;
+
+  /**
    * @brief get a value that is either attribute value or a child's text
    * @param nameOrTag attribute key or child's tag
    * @return string value, empty if not found

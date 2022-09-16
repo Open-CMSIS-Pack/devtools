@@ -240,6 +240,12 @@ const string& RteItem::GetDocValue() const
   return GetDocAttribute();
 }
 
+const string& RteItem::GetRteFolder() const
+{
+  const string& rtePath = GetAttribute("rtedir");
+  return rtePath;
+}
+
 const string& RteItem::GetVendorString() const
 {
   if (IsApi())
