@@ -18,19 +18,19 @@
   <target Dfpu="NO_FPU" Dname="RteTest_ARMCM0" Dsecure="Non-secure" Dvendor="ARM:82">
     <output intdir="tmp/testlayers/Release" name="testlayers.Release" outdir="out/testlayers/Release" rtedir="RTE" type="exe"/>
     <cflags add="--layer1-flag --layer2-flag --layer3-flag" compiler="AC6"/>
-    <ldflags compiler="AC6" file="RTE/Device/RteTest_ARMCM0/ARMCM0_ac6.sct"/>
+    <ldflags compiler="AC6" file="Layer2/RTE/Device/RteTest_ARMCM0/ARMCM0_ac6.sct"/>
     <defines>DEF_LAYER1;DEF_LAYER2;DEF_LAYER3</defines>
     <includes>Layer1/path/to/layer1;Layer2/path/to/layer2;Layer3/path/to/layer3</includes>
   </target>
 
   <components>
-    <component Cclass="Device" Cgroup="Startup" Cvariant="RteTest Startup" Cvendor="ARM" Cversion="2.0.3">
+    <component Cclass="Device" Cgroup="Startup" Cvariant="RteTest Startup" Cvendor="ARM" Cversion="2.0.3" rtedir="Layer2/RTE">
       <file attr="config" category="linkerScript" name="Device/ARM/ARMCM0/Source/ARM/ARMCM0_ac6.sct" version="1.0.0"/>
       <file attr="config" category="sourceC" name="Device/ARM/ARMCM0/Source/startup_ARMCM0.c" version="2.0.3"/>
       <file attr="config" category="sourceC" name="Device/ARM/ARMCM0/Source/system_ARMCM0.c" version="1.0.0"/>
     </component>
     <component Cclass="RteTest" Cgroup="CORE" Cvendor="ARM" Cversion="0.1.1"/>
-    <component Cclass="RteTest" Cgroup="ComponentLevel" Cvendor="ARM" Cversion="0.0.1">
+    <component Cclass="RteTest" Cgroup="ComponentLevel" Cvendor="ARM" Cversion="0.0.1" rtedir="Layer3/RTE">
       <file attr="config" category="preIncludeLocal" name="ComponentLevel/ComponentLevelConfig.h" version="0.0.1"/>
       <file attr="config" category="header" name="ComponentLevel/Include/MyDir/RelativeComponentLevelConfig.h" version="0.0.1"/>
     </component>

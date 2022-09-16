@@ -141,6 +141,7 @@ struct ContextItem {
   RteProject* rteActiveProject = nullptr;
   RteTarget* rteActiveTarget = nullptr;
   RteModel* rteFilteredModel = nullptr;
+  RteItem* rteComponents;
   TranslationControl controls;
   TargetItem targetItem;
   DirectoriesItem directories;
@@ -156,7 +157,7 @@ struct ContextItem {
   std::vector<PackageItem> packRequirements;
   std::map<std::string, std::string> pdscFiles;
   std::vector<PackInfo>missingPacks;
-  std::vector<ComponentItem> componentRequirements;
+  std::vector<std::pair<ComponentItem, std::string>> componentRequirements;
   std::string compiler;
   ToolchainItem toolchain;
   std::vector<std::string> defines;
@@ -301,13 +302,6 @@ public:
   void GetContexts(std::map<std::string, ContextItem>* &contexts);
 
   /**
-   * @brief copy layer RTE files into project RTE directory
-   * @param reference to context
-   * @return true if executed successfully
-  */
-  bool CopyLayerRTEFiles(ContextItem& context);
-
-  /**
    * @brief set output directory
    * @param reference to output directory
   */
@@ -394,7 +388,7 @@ protected:
   void MergeMiscCPP(std::vector<MiscItem>& vec);
   bool AddGroup(const GroupNode& src, std::vector<GroupNode>& dst, ContextItem& context, const std::string root);
   bool AddFile(const FileNode& src, std::vector<FileNode>& dst, ContextItem& context, const std::string root);
-  bool AddComponent(const ComponentItem& src, std::vector<ComponentItem>& dst, TypePair type);
+  bool AddComponent(const ComponentItem& src, const std::string& layer, std::vector<std::pair<ComponentItem, std::string>>& dst, TypePair type);
   static std::set<std::string> SplitArgs(const std::string& args, const std::string& delimiter = " ");
   static void ApplyFilter(const std::set<std::string>& origin, const std::set<std::string>& filter, std::set<std::string>& result);
   static bool FullMatch(const std::set<std::string>& installed, const std::set<std::string>& required);

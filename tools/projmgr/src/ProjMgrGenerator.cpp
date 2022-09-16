@@ -176,38 +176,45 @@ void ProjMgrGenerator::GenerateCprjTarget(XMLTreeElement* element, const Context
 }
 
 void ProjMgrGenerator::GenerateCprjComponents(XMLTreeElement* element, const ContextItem& context) {
-  static constexpr const char* COMPONENT_ATTRIBUTES[] = { "Cbundle", "Cclass", "Cgroup", "Csub", "Cvariant", "Cvendor", "Cversion" };
-  for (const auto& component : context.components) {
+  static constexpr const char* COMPONENT_ATTRIBUTES[] = { "Cbundle", "Cclass", "Cgroup", "Csub", "Cvariant", "Cvendor", "Cversion"};
+  for (const auto& [componentId, component] : context.components) {
     XMLTreeElement* componentElement = element->CreateElement("component");
     if (componentElement) {
       for (const auto& name : COMPONENT_ATTRIBUTES) {
-        const string& value = component.second.first->GetAttribute(name);
+        const string& value = component.first->GetAttribute(name);
         SetAttribute(componentElement, name, value);
+      }
+      if (context.configFiles.find(componentId) != context.configFiles.end()) {
+        const string& rteDir = component.first->GetAttribute("rtedir");
+        if (!rteDir.empty()) {
+          error_code ec;
+          // Adjust component's rtePath relative to cprj
+          SetAttribute(componentElement, "rtedir", fs::relative(context.cproject->directory + "/" + rteDir, context.directories.cprj, ec).generic_string());
+        }
       }
 
       // Config files
       for (const auto& configFileMap : context.configFiles) {
-        if (configFileMap.first == component.first) {
-          for (const auto& configFile : configFileMap.second) {
+        if (configFileMap.first == componentId) {
+          for (const auto& [configFileId, configFile] : configFileMap.second) {
             XMLTreeElement* fileElement = componentElement->CreateElement("file");
             if (fileElement) {
               SetAttribute(fileElement, "attr", "config");
-              SetAttribute(fileElement, "name", configFile.first);
-              SetAttribute(fileElement, "category", configFile.second->GetAttribute("category"));
-              // TODO: Set config file version according to new PLM
-              const auto originalFile = configFile.second->GetFile(context.rteActiveTarget->GetName());
+              SetAttribute(fileElement, "name", configFileId);
+              SetAttribute(fileElement, "category", configFile->GetAttribute("category"));
+              const auto originalFile = configFile->GetFile(context.rteActiveTarget->GetName());
               SetAttribute(fileElement, "version", originalFile->GetVersionString());
             }
           }
         }
       }
 
-      GenerateCprjOptions(componentElement, component.second.second->build);
-      GenerateCprjMisc(componentElement, component.second.second->build.misc, context.toolchain.name);
-      GenerateCprjVector(componentElement, component.second.second->build.defines, "defines");
-      GenerateCprjVector(componentElement, component.second.second->build.undefines, "undefines");
-      GenerateCprjVector(componentElement, component.second.second->build.addpaths, "includes");
-      GenerateCprjVector(componentElement, component.second.second->build.delpaths, "excludes");
+      GenerateCprjOptions(componentElement, component.second->build);
+      GenerateCprjMisc(componentElement, component.second->build.misc, context.toolchain.name);
+      GenerateCprjVector(componentElement, component.second->build.defines, "defines");
+      GenerateCprjVector(componentElement, component.second->build.undefines, "undefines");
+      GenerateCprjVector(componentElement, component.second->build.addpaths, "includes");
+      GenerateCprjVector(componentElement, component.second->build.delpaths, "excludes");
     }
 
   }

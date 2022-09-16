@@ -757,7 +757,7 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
     componentMap[componentId] = component.second;
   }
 
-  for (auto& item : context.componentRequirements) {
+  for (auto& [item, layer] : context.componentRequirements) {
     if (item.component.empty()) {
       continue;
     }
@@ -837,6 +837,15 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
       auto matchedComponent = itr->second;
       const auto& componentId = ProjMgrUtils::GetComponentID(matchedComponent);
       MergeMiscCPP(item.build.misc);
+
+      // Set layer's rtePath attribute
+      if (!layer.empty() && context.csolution->directories.rte.empty()) {
+        error_code ec;
+        const string& rteDir = fs::relative(context.clayers[layer]->directory, context.cproject->directory, ec).append("RTE").generic_string();
+        matchedComponent->AddAttribute("rtedir", rteDir);
+      }
+
+      // Insert matched component into context list
       context.components.insert({ componentId, { matchedComponent, &item }});
       const auto& componentPackage = matchedComponent->GetPackage();
       context.packages.insert({ ProjMgrUtils::GetPackageID(componentPackage), componentPackage });
@@ -872,8 +881,8 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
 
 bool ProjMgrWorker::AddRequiredComponents(ContextItem& context) {
   list<RteItem*> selItems;
-  for (const auto& component : context.components) {
-    selItems.push_back(component.second.first);
+  for (auto& [_, component] : context.components) {
+    selItems.push_back(component.first);
   }
   set<RteComponentInstance*> unresolvedComponents;
   context.rteActiveProject->AddCprjComponents(selItems, context.rteActiveTarget, unresolvedComponents);
@@ -1209,7 +1218,7 @@ bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem& context) {
     if (!ProcessSequencesRelatives(context, component.build, context.cproject->directory)) {
       return false;
     }
-    if (!AddComponent(component, context.componentRequirements, context.type)) {
+    if (!AddComponent(component, "", context.componentRequirements, context.type)) {
       return false;
     }
   }
@@ -1224,7 +1233,7 @@ bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem& context) {
       if (!ProcessSequencesRelatives(context, component.build, clayer->directory)) {
         return false;
       }
-      if (!AddComponent(component, context.componentRequirements, context.type)) {
+      if (!AddComponent(component, name, context.componentRequirements, context.type)) {
         return false;
       }
     }
@@ -1422,15 +1431,15 @@ bool ProjMgrWorker::AddFile(const FileNode& src, vector<FileNode>& dst, ContextI
   return true;
 }
 
-bool ProjMgrWorker::AddComponent(const ComponentItem& src, vector<ComponentItem>& dst, TypePair type) {
+bool ProjMgrWorker::AddComponent(const ComponentItem& src, const string& layer, vector<pair<ComponentItem, string>>& dst, TypePair type) {
   if (CheckType(src.type, type)) {
-    for (auto& dstNode : dst) {
+    for (auto& [dstNode, layer] : dst) {
       if (dstNode.component == src.component) {
         ProjMgrLogger::Error("conflict: component '" + dstNode.component + "' is declared multiple times");
         return false;
       }
     }
-    dst.push_back(src);
+    dst.push_back({ src, layer });
   }
   return true;
 }
@@ -1497,9 +1506,6 @@ bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGpdsc, bool re
     return false;
   }
   if (!ProcessInterfaces(context)) {
-    return false;
-  }
-  if (!CopyLayerRTEFiles(context)) {
     return false;
   }
   if (!SetTargetAttributes(context, context.targetAttributes)) {
@@ -1982,27 +1988,6 @@ void ProjMgrWorker::PushBackUniquely(list<string>& list, const string& value) {
   if (find(list.cbegin(), list.cend(), value) == list.cend()) {
     list.push_back(value);
   }
-}
-
-bool ProjMgrWorker::CopyLayerRTEFiles(ContextItem& context) {
-  error_code ec;
-  vector<string> rteDirs;
-  static constexpr const char* LAYER_RTE_FOLDER = "/RTE";
-
-  // clayers RTE folders
-  for (auto const& clayer : context.clayers) {
-    const string& clayerDir = fs::path(clayer.first).parent_path().generic_string();
-    rteDirs.push_back(clayerDir + LAYER_RTE_FOLDER);
-  }
-
-  const string& destDir = context.directories.cprj + "/" + context.directories.rte;
-  RteFsUtils::CreateDirectories(destDir);
-  for (auto const& rteDir : rteDirs) {
-    if (RteFsUtils::Exists(rteDir)) {
-      fs::copy(rteDir, destDir, fs::copy_options::recursive | fs::copy_options::overwrite_existing, ec);
-    }
-  }
-  return true;
 }
 
 bool ProjMgrWorker::ExecuteGenerator(std::string& generatorId) {

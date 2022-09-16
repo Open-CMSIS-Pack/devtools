@@ -683,7 +683,7 @@ void RteTarget::CollectComponentSettings(RteComponentInstance* ci)
   if (files.empty())
     return;
   string deviceName = GetFullDeviceName();
-  const string& rteFolder = GetRteFolder();
+  const string& rteFolder = GetRteFolder(ci);
   for (auto itf = files.begin(); itf != files.end(); itf++) {
     RteFile* f = *itf;
     if (!f)
@@ -1271,6 +1271,12 @@ const std::string& RteTarget::GetRteFolder() const {
   return RteProject::DEFAULT_RTE_FOLDER;
 }
 
+const std::string& RteTarget::GetRteFolder(const RteComponentInstance* ci) const {
+  if (ci && !ci->GetRteFolder().empty()) {
+    return ci->GetRteFolder();
+  }
+  return GetRteFolder();
+}
 
 RteFile* RteTarget::GetFile(const RteFileInstance* fi, RteComponent* c) const
 {

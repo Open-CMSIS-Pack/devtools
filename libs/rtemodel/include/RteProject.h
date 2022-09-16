@@ -155,13 +155,20 @@ public:
    * @brief set custom RTE folder name to store config files,
    * @param rteFolder RTE folder name, default "RTE"
   */
-  void SetRteFolder(std::optional<std::string> rteFolder) { m_rteFolder = rteFolder; }
+  void SetRteFolder(std::string rteFolder) { m_rteFolder = rteFolder; }
 
   /**
    * @brief get project's RTE folder where config and generated files are stored
    * @return RTE folder name, default "RTE"
   */
-  const std::string& GetRteFolder() const;
+  const std::string& GetRteFolder() const override;
+
+  /**
+   * @brief get component instance's RTE folder where config and generated files are stored
+   * @param ci component instance
+   * @return RTE folder name
+  */
+  const std::string& GetRteFolder(const RteComponentInstance* ci) const;
 
   /**
    * @brief get RteCallback object
@@ -737,7 +744,7 @@ protected:
   bool RemoveFileInstance(const std::string& id);
   void DeleteFileInstance(RteFileInstance* fi);
   // initializes or updates (newer version is used) existing file instance
-  void InitFileInstance(RteFileInstance* fi, RteFile* f, int index, RteTarget* target, const std::string& savedVersion);
+  void InitFileInstance(RteFileInstance* fi, RteFile* f, int index, RteTarget* target, const std::string& savedVersion, const std::string& rteFolder);
   bool UpdateFileInstance(RteFileInstance* fi, RteFile* f, bool bMerge, bool bUpdateComponent);
   void UpdateConfigFileBackups(RteFileInstance* fi, RteFile* f);
 
@@ -776,7 +783,7 @@ protected:
   std::map<std::string, RteModel*> m_targetModels; // filtered models for each target
   std::map<int, std::string> m_targetIDs;
   std::string m_sActiveTarget;
-  std::optional<std::string> m_rteFolder;
+  std::string m_rteFolder;
 
 public:
   static const std::string DEFAULT_RTE_FOLDER;

@@ -500,6 +500,7 @@
           <xs:attribute name="Capiversion" type="ComponentVersionType" use="optional" />
           <xs:attribute name="instances"   type="InstancesType"        use="optional" default="1"/>
           <xs:attribute name="layer"       type="RestrictedString"     use="optional" />
+          <xs:attribute name="rtedir"      type="xs:string"            use="optional" />
         </xs:complexType>
       </xs:element>
     </xs:sequence>

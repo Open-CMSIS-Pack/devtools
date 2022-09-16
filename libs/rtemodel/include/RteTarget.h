@@ -219,7 +219,14 @@ public:
    * @brief get parent project's RTE folder where config and generated files are stored
    * @return RTE folder name, default "RTE"
   */
-  const std::string& GetRteFolder() const;
+  const std::string& GetRteFolder() const override;
+
+  /**
+   * @brief get component instance's RTE folder where config and generated files are stored
+   * @param ci component instance
+   * @return RTE folder name
+  */
+  const std::string& GetRteFolder(const RteComponentInstance* ci) const;
 
   /**
    * @brief determine file given by instances of type RteFileInstance and RteComponent
@@ -231,12 +238,12 @@ public:
   RteFile* GetFile(const RteFileInstance* fi, RteComponent* c) const;
 
   /**
- * @brief determine file given by instances of type RteFileInstance and RteComponent
- * @param fi given pointer of type RteFileInstance
- * @param c given pointer of type RteComponent
- * @param rteFolder the "RTE" folder path used for placing files
- * @return pointer of type RteFile
-*/
+   * @brief determine file given by instances of type RteFileInstance and RteComponent
+   * @param fi given pointer of type RteFileInstance
+   * @param c given pointer of type RteComponent
+   * @param rteFolder the "RTE" folder path used for placing files
+   * @return pointer of type RteFile
+  */
   RteFile* GetFile(const RteFileInstance* fi, RteComponent* c, const std::string& rteFolder) const;
 
   /**
