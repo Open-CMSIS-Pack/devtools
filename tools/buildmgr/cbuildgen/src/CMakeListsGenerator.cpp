@@ -362,7 +362,7 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
       cmakelists << "set(CMAKE_" << prefix << "_FLAGS \"${" << prefix << "_CPU}";
       if (!m_byteOrder.empty()) cmakelists << " ${" << prefix << "_BYTE_ORDER}";
       if (!m_definesList.empty()) cmakelists << " ${" << prefix << "_DEFINES}";
-      if (!specific_options && target_options) cmakelists << " ${ASM_OPTIONS_FLAGS}";
+      if (!specific_options && target_options) cmakelists << " ${" << prefix << "_OPTIONS_FLAGS}";
       cmakelists << " ${" << prefix << "_FLAGS}";
       if (!asflags && !preinc_local && !m_asMscGlobal.empty()) cmakelists << " ${AS_FLAGS_GLOBAL}";
       cmakelists << "\")" << EOL;
@@ -515,7 +515,7 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
           cmakelists << "  if(FILE_FLAGS STREQUAL \"NOTFOUND\")" << EOL;
           cmakelists << "    set(FILE_FLAGS)" << EOL;
           cmakelists << "  endif()" << EOL;
-          cmakelists << "  cbuild_get_options_flags(" << lang << " \"${OPTIMIZE_LOCAL}\" \"${DEBUG_LOCAL}\" \"${WARNINGS_LOCAL}\" FILE_FLAGS)" << EOL;
+          cmakelists << "  cbuild_set_options_flags(" << lang << " \"${OPTIMIZE_LOCAL}\" \"${DEBUG_LOCAL}\" \"${WARNINGS_LOCAL}\" FILE_FLAGS)" << EOL;
           cmakelists << "  set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS \"${FILE_FLAGS}\")" << EOL;
         }
         cmakelists << "endforeach()" << EOL << EOL;

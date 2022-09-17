@@ -113,7 +113,7 @@ set(WARNINGS_CC_FLAGS  ""   "--no_warnings")
 set(WARNINGS_CXX_FLAGS ${WARNINGS_CC_FLAGS})
 set(WARNINGS_LD_FLAGS  ${WARNINGS_CC_FLAGS})
 
-function(cbuild_get_option_flags lang option value flags)
+function(cbuild_set_option_flags lang option value flags)
   if(NOT DEFINED ${option}_${lang}_FLAGS)
     return()
   endif()
@@ -127,11 +127,11 @@ function(cbuild_get_option_flags lang option value flags)
   endif()
 endfunction()
 
-function(cbuild_get_options_flags lang optimize debug warnings flags)
+function(cbuild_set_options_flags lang optimize debug warnings flags)
   set(opt_flags)
-  cbuild_get_option_flags(${lang} OPTIMIZE "${optimize}" opt_flags)
-  cbuild_get_option_flags(${lang} DEBUG    "${debug}"    opt_flags)
-  cbuild_get_option_flags(${lang} WARNINGS "${warnings}" opt_flags)
+  cbuild_set_option_flags(${lang} OPTIMIZE "${optimize}" opt_flags)
+  cbuild_set_option_flags(${lang} DEBUG    "${debug}"    opt_flags)
+  cbuild_set_option_flags(${lang} WARNINGS "${warnings}" opt_flags)
   set(${flags} "${opt_flags} ${${flags}}" PARENT_SCOPE)
 endfunction()
 
@@ -143,7 +143,7 @@ set(ASM_FLAGS)
 set(ASM_DEFINES ${DEFINES})
 cbuild_set_defines(ASM ASM_DEFINES)
 set(ASM_OPTIONS_FLAGS)
-cbuild_get_options_flags(ASM "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" ASM_OPTIONS_FLAGS)
+cbuild_set_options_flags(ASM "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" ASM_OPTIONS_FLAGS)
 
 # C Compiler
 
@@ -153,7 +153,7 @@ set(CC_FLAGS)
 set(CC_DEFINES ${DEFINES})
 cbuild_set_defines(CC CC_DEFINES)
 set(CC_OPTIONS_FLAGS)
-cbuild_get_options_flags(CC "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" CC_OPTIONS_FLAGS)
+cbuild_set_options_flags(CC "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" CC_OPTIONS_FLAGS)
 set(_PI "-include ")
 
 if(SECURE STREQUAL "Secure")
@@ -180,7 +180,7 @@ endif()
 
 set(LD_FLAGS)
 set(LD_OPTIONS_FLAGS)
-cbuild_get_options_flags(LD "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" LD_OPTIONS_FLAGS)
+cbuild_set_options_flags(LD "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" LD_OPTIONS_FLAGS)
 
 # Target Output
 
