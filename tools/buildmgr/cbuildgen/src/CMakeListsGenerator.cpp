@@ -431,10 +431,8 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
             cmakelists << "  else()" << EOL;
             cmakelists << "    set(AS_FLAGS_LOCAL \"${AS_FLAGS_GLOBAL}\")" << EOL;
             cmakelists << "  endif()" << EOL;
-          } else {
-            cmakelists << "  set(AS_FLAGS_LOCAL \"${AS_FLAGS_GLOBAL}\")" << EOL;
+            cmakelists << "  set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS \"${AS_FLAGS_LOCAL}\")" << EOL;
           }
-          cmakelists << "  set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS \"${AS_FLAGS_LOCAL}\")" << EOL;
           if (as_special_lang) {
             cmakelists << "  set_source_files_properties(${SRC} PROPERTIES LANGUAGE " << lang << ")" << EOL;
           }

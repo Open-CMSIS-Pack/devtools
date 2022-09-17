@@ -78,8 +78,6 @@ set(CMAKE_CXX_LINK_FLAGS "${LD_CPU} ${_LS}\"${LD_SCRIPT}\" ${LD_SECURE} ${LD_OPT
 # Local Flags
 
 foreach(SRC ${AS_GNU_SRC_FILES})
-  set(AS_FLAGS_LOCAL "${AS_FLAGS_GLOBAL}")
-  set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS "${AS_FLAGS_LOCAL}")
   set_source_files_properties(${SRC} PROPERTIES LANGUAGE AS_GNU)
 endforeach()
 
