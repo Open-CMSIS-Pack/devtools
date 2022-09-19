@@ -1,16 +1,15 @@
 # CMSIS-Pack Development Tools and Libraries
 
-This repository contains the source code of command line tools and library
-components for processing meta information specified by
-[CMSIS-Pack](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/index.html)
-and
-[CMSIS-Build](https://open-cmsis-pack.github.io/devtools/buildmgr/latest/index.html)
-which are written in C++ as well as build and test configurations targeting
-Windows, Linux and macOS host platforms.
+<!-- markdownlint-disable MD013 -->
 
-CMSIS-Pack defines a delivery mechanism for software components, device
-parameters, and evaluation board support. The XML-based package description
-(PDSC) file contains the meta information of a so called 'Software Pack' which
+This repository contains the source code of the [CMSIS-Toolbox](https://github.com/Open-CMSIS-Pack/devtools/tree/main/tools).
+This toolbox provides command line tools for processing software packs that are provided in
+[Open-CMSIS-Pack](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/index.html) format.
+
+This repository provides the C++ source code of most CMSIS-Toolbox components and contains build and test configurations for Windows, Linux and macOS host platforms.
+
+[Open-CMSIS-Pack](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/index.html) defines a delivery mechanism for software components, device parameters, and evaluation board support. The XML-based package description
+(`*.PDSC`) file contains the meta information of a **software pack** which
 is a collection of files including:
 
 - Source code, header files, and software libraries
@@ -18,19 +17,16 @@ is a collection of files including:
 - Device parameters along with startup code and programming algorithms
 - Example projects
 
-The complete file collection along with the PDSC file is distributed as a zip
+The complete file collection along with the `*.PDSC` file is called **software pack** and distributed as a zip
 archive using the file extension `*.pack`.
 
-CMSIS-Build defines an XML project file format that allows building projects
-based on hardware descriptions, software components, source modules and linker
-scripts distributed as software packs. The build manager (cbuildgen) is reading
-the project (`*.cprj`) and generates the build instructions as CMake
-configuration files.
+The goal of this project is to provide a consistent and compliant set of command-line tools
+for **software packs** that covers the complete lifecycle including:
 
-The end goal of this project is to provide a consistent and compliant set of command-line tools
-for covering the Software Pack lifecycle from creation and maintenance, via distribution and
-installation all the way to the project build, flash programming and debugging on the targeted
-microcontroller.
+- creation and maintenance of software packs.
+- distribution and installation of software packs.
+- project build with interfaces to various compilation tools.
+- interfaces for flash programming and debugging tools.
 
 ## Repository toplevel structure
 
