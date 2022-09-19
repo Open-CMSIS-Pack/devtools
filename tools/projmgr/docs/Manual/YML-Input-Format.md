@@ -716,8 +716,7 @@ Value                                                 | Code Generation
 `balanced`                                            | Balanced optimization (default)
 `size`                                                | Optimized for code size
 `speed`                                               | Optimized for execution speed
-`debug`                                               | Optimized for debug illusion (generates typical slower and larger code)
-`max`                                                 | Maximum optimization (may use link-time optimizations)
+`none`                                                | No optimization
 
 <!-- markdownlint-restore -->
 
@@ -759,10 +758,8 @@ Control warning level for compiler diagnostics.
 
 Value                                                 | Control diagnostic messages (warnings)
 :-----------------------------------------------------|:------------------------------------
+`on`                                                  | Generate warning messages
 `off`                                                 | No warning messages generated
-`misra`                                               | Warnings that conflict with MISRA-C and MISRA-C++ are disabled, otherwise identical with `all`.
-`all`                                                 | Generate warning messages out constructions that some users consider questionable, and that are easy to avoid.
-`extra`                                               | This enables some extra warning flags that are not enabled by `all`.
 
 <!-- markdownlint-restore -->
 
