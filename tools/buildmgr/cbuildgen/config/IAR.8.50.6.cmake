@@ -70,10 +70,13 @@ if(NOT DEFINED IAR_CPU)
   message(FATAL_ERROR "Error: CPU is not supported!")
 endif()
 
-# Assembler
+if(BYTE_ORDER STREQUAL "Little-endian")
+  set(IAR_BYTE_ORDER "little")
+elseif(BYTE_ORDER STREQUAL "Big-endian")
+  set(IAR_BYTE_ORDER "big")
+endif()
 
-set(ASM_CPU "--cpu ${IAR_CPU}")
-set(ASM_FLAGS)
+# Helpers
 
 function(cbuild_set_defines lang defines)
   set(TMP_DEFINES)
@@ -95,25 +98,62 @@ function(cbuild_set_defines lang defines)
   set(${defines} ${TMP_DEFINES} PARENT_SCOPE)
 endfunction()
 
+set(OPTIMIZE_VALUES    "none" "balanced" "size" "speed")
+set(OPTIMIZE_CC_FLAGS  "-On"  "-Oh"      "-Ohz" "-Ohs")
+set(OPTIMIZE_CXX_FLAGS ${OPTIMIZE_CC_FLAGS})
+
+set(DEBUG_VALUES       "on"      "off")
+set(DEBUG_ASM_FLAGS    "-r"      "")
+set(DEBUG_CC_FLAGS     "--debug" "")
+set(DEBUG_CXX_FLAGS    ${DEBUG_CC_FLAGS})
+
+set(WARNINGS_VALUES    "on" "off")
+set(WARNINGS_ASM_FLAGS ""   "-w-")
+set(WARNINGS_CC_FLAGS  ""   "--no_warnings")
+set(WARNINGS_CXX_FLAGS ${WARNINGS_CC_FLAGS})
+set(WARNINGS_LD_FLAGS  ${WARNINGS_CC_FLAGS})
+
+function(cbuild_set_option_flags lang option value flags)
+  if(NOT DEFINED ${option}_${lang}_FLAGS)
+    return()
+  endif()
+  list(FIND ${option}_VALUES "${value}" _index)
+  if (${_index} GREATER -1)
+    list(GET ${option}_${lang}_FLAGS ${_index} flag)
+    set(${flags} "${flag} ${${flags}}" PARENT_SCOPE)
+  else()
+    string(TOLOWER "${option}" _option)
+    message(FATAL_ERROR "unkown "${_option}" value '${value}' !")
+  endif()
+endfunction()
+
+function(cbuild_set_options_flags lang optimize debug warnings flags)
+  set(opt_flags)
+  cbuild_set_option_flags(${lang} OPTIMIZE "${optimize}" opt_flags)
+  cbuild_set_option_flags(${lang} DEBUG    "${debug}"    opt_flags)
+  cbuild_set_option_flags(${lang} WARNINGS "${warnings}" opt_flags)
+  set(${flags} "${opt_flags} ${${flags}}" PARENT_SCOPE)
+endfunction()
+
+# Assembler
+
+set(ASM_CPU "--cpu ${IAR_CPU}")
+set(ASM_BYTE_ORDER "--endian ${IAR_BYTE_ORDER}")
+set(ASM_FLAGS)
 set(ASM_DEFINES ${DEFINES})
 cbuild_set_defines(ASM ASM_DEFINES)
-
-set(CC_DEFINES ${DEFINES})
-cbuild_set_defines(C CC_DEFINES)
-
-if(BYTE_ORDER STREQUAL "Little-endian")
-  set(IAR_BYTE_ORDER "little")
-elseif(BYTE_ORDER STREQUAL "Big-endian")
-  set(IAR_BYTE_ORDER "big")
-endif()
-
-set(ASM_BYTE_ORDER "--endian ${IAR_BYTE_ORDER}")
+set(ASM_OPTIONS_FLAGS)
+cbuild_set_options_flags(ASM "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" ASM_OPTIONS_FLAGS)
 
 # C Compiler
 
 set(CC_CPU "--cpu=${IAR_CPU}")
-set(CC_FLAGS "--silent")
 set(CC_BYTE_ORDER "--endian=${IAR_BYTE_ORDER}")
+set(CC_FLAGS)
+set(CC_DEFINES ${DEFINES})
+cbuild_set_defines(CC CC_DEFINES)
+set(CC_OPTIONS_FLAGS)
+cbuild_set_options_flags(CC "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" CC_OPTIONS_FLAGS)
 set(_PI "-include ")
 
 if(SECURE STREQUAL "Secure")
@@ -123,10 +163,11 @@ endif()
 # C++ Compiler
 
 set(CXX_CPU "${CC_CPU}")
-set(CXX_DEFINES "${CC_DEFINES}")
 set(CXX_BYTE_ORDER "${CC_BYTE_ORDER}")
-set(CXX_SECURE "${CC_SECURE}")
 set(CXX_FLAGS "${CC_FLAGS}")
+set(CXX_OPTIONS_FLAGS "${CC_OPTIONS_FLAGS}")
+set(CXX_DEFINES "${CC_DEFINES}")
+set(CXX_SECURE "${CC_SECURE}")
 
 # Linker
 
@@ -137,7 +178,9 @@ if(SECURE STREQUAL "Secure")
   set(LD_SECURE "--import_cmse_lib_out \"${OUT_DIR}/${TARGET}_CMSE_Lib.o\"")
 endif()
 
-set(LD_FLAGS "--silent")
+set(LD_FLAGS)
+set(LD_OPTIONS_FLAGS)
+cbuild_set_options_flags(LD "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" LD_OPTIONS_FLAGS)
 
 # Target Output
 

@@ -246,6 +246,81 @@ bool BuildSystemGenerator::Collect(const string& inputFile, const CbuildModel *m
     }
   }
 
+  // optimize, debug and warnings options
+  vector<std::map<std::string, std::list<std::string>>> sourceFilesList = {
+    model->GetAsmSourceFiles(), model->GetCSourceFiles(), model->GetCxxSourceFiles()
+  };
+
+  for (auto sourceFiles : sourceFilesList)
+  {
+    if (sourceFiles.empty()) continue;
+
+    const map<string, string>& optimizeOpt = model->GetOptimizeOption();
+    const map<string, string>& debugOpt = model->GetDebugOption();
+    const map<string, string>& warningsOpt = model->GetWarningsOption();
+
+    for (auto list : sourceFiles)
+    {
+      string group = list.first, groupName;
+      string optGOptimize, optGDebug, optGWarnings;
+
+      // optimize option
+      groupName = group;
+      do {
+        if (optimizeOpt.find(groupName) != optimizeOpt.end()) {
+          optGOptimize = optimizeOpt.at(groupName);
+          break;
+        }
+        groupName = fs::path(groupName).parent_path().generic_string();
+      } while (!groupName.empty());
+      m_groupsList[StrNorm(group)].optimize = optGOptimize;
+
+      // debug option
+      groupName = group;
+      do {
+        if (debugOpt.find(groupName) != debugOpt.end()) {
+          optGDebug = debugOpt.at(groupName);
+          break;
+        }
+        groupName = fs::path(groupName).parent_path().generic_string();
+      } while (!groupName.empty());
+      m_groupsList[StrNorm(group)].debug = optGDebug;
+
+      // warnings option
+      groupName = group;
+      do {
+        if (warningsOpt.find(groupName) != warningsOpt.end()) {
+          optGWarnings = warningsOpt.at(groupName);
+          break;
+        }
+        groupName = fs::path(groupName).parent_path().generic_string();
+      } while (!groupName.empty());
+      m_groupsList[StrNorm(group)].warnings = optGWarnings;
+
+      for (auto src : list.second) {
+        string optFOptimize, optFDebug, optFWarnings;
+        src = StrNorm(src);
+
+        std::map<std::string, module> *m_langFilesList;
+        if (m_ccFilesList.find(src) != m_ccFilesList.end()) m_langFilesList = &m_ccFilesList;
+        else if (m_cxxFilesList.find(src) != m_cxxFilesList.end()) m_langFilesList = &m_cxxFilesList;
+        else if (m_asFilesList.find(src) != m_asFilesList.end()) m_langFilesList = &m_asFilesList;
+        else if (m_asGnuFilesList.find(src) != m_asGnuFilesList.end()) m_langFilesList = &m_asGnuFilesList;
+        else if (m_asArmclangFilesList.find(src) != m_asArmclangFilesList.end()) m_langFilesList = &m_asArmclangFilesList;
+        else if (m_asLegacyFilesList.find(src) != m_asLegacyFilesList.end()) m_langFilesList = &m_asLegacyFilesList;
+        else { LogMsg("M101"); return false; }
+
+        (*m_langFilesList)[src].group = StrNorm(group + (group.empty() ? "" : SS));
+        if (optimizeOpt.find(src) != optimizeOpt.end()) optFOptimize = optimizeOpt.at(src);
+        (*m_langFilesList)[src].optimize = optFOptimize;
+        if (debugOpt.find(src) != debugOpt.end()) optFDebug = debugOpt.at(src);
+        (*m_langFilesList)[src].debug = optFDebug;
+        if (warningsOpt.find(src) != warningsOpt.end()) optFWarnings = warningsOpt.at(src);
+        (*m_langFilesList)[src].warnings = optFWarnings;
+      }
+    }
+  }
+
   // Configuration files
   for (auto cfg : model->GetConfigFiles())
   {
