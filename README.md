@@ -1,5 +1,7 @@
 # CMSIS-Pack Development Tools and Libraries
 
+<!-- markdownlint-disable MD013 -->
+
 This repository contains the source code of the [CMSIS-Toolbox](https://github.com/Open-CMSIS-Pack/devtools/tree/main/tools).
 This toolbox provides command line tools for processing software packs that are provided in
 [Open-CMSIS-Pack](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/index.html) format.
