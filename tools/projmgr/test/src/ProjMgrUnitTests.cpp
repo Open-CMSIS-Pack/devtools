@@ -151,7 +151,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks) {
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks_1) {
   char* argv[3];
   StdStreamRedirect streamRedirect;
-  const string& expected = "ARM::RteTest@0.1.0 \\(.*\\)\nARM::RteTestBoard@0.1.0 \\(.*\\)\nARM::RteTestGenerator@0.1.0 \\(.*\\)\nARM::RteTest_DFP@0.1.1 \\(.*\\)\nARM::RteTest_DFP@0.2.0 \\(.*\\)\n";
+  const string& expected = "ARM::RteTest@0.1.0 \\(.*\\)\nARM::RteTestBoard@0.1.0 \\(.*\\)\nARM::RteTestGenerator@0.1.0 \\(.*\\)\nARM::RteTest_DFP@0.2.0 \\(.*\\)\n";
   // list packs
   argv[1] = (char*)"list";
   argv[2] = (char*)"packs";

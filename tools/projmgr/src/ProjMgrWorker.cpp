@@ -19,7 +19,7 @@
 using namespace std;
 
 ProjMgrWorker::ProjMgrWorker(void) {
-  // Reserved
+  m_loadPacksPolicy = LoadPacksPolicy::DEFAULT;
 }
 
 ProjMgrWorker::~ProjMgrWorker(void) {

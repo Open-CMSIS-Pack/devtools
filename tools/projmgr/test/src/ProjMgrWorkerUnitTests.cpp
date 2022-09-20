@@ -463,8 +463,8 @@ TEST_F(ProjMgrWorkerUnitTests, LoadPacksNoPackage) {
   SetCsolutionPacks(&csolution, {}, "Test");
   ContextItem context;
   EXPECT_TRUE(LoadPacks(context));
-  // by default all packs available should be loaded
-  EXPECT_EQ(5, m_loadedPacks.size());
+  // by default latest packs available should be loaded
+  EXPECT_EQ(4, m_loadedPacks.size());
 }
 
 TEST_F(ProjMgrWorkerUnitTests, LoadFilteredPack_1) {
