@@ -1407,7 +1407,6 @@ Instance 1: config_usb_device_1.h
 The availability of instances in a project can be made public in the `RTE_Components.h` file. The existing way to extend
 the `%Instance%` with the instance number `n`.
 
-
 ## Pre/Post build steps
 
 Tbd: potentially map to CMake add_custom_command.
