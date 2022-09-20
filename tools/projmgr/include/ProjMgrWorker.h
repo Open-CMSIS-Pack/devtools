@@ -207,6 +207,17 @@ struct StringVectorCollection {
 };
 
 /**
+  * @brief set policy for packs loading [latest|all|required]
+*/
+enum class LoadPacksPolicy
+{
+  DEFAULT = 0,
+  LATEST,
+  ALL,
+  REQUIRED
+};
+
+/**
  * @brief projmgr worker class responsible for processing requests and orchestrating parser and generator calls
 */
 class ProjMgrWorker {
@@ -308,6 +319,12 @@ public:
   void SetOutputDir(const std::string& outputDir);
 
   /**
+   * @brief set load packs policy
+   * @param reference to load packs policy
+  */
+  void SetLoadPacksPolicy(const LoadPacksPolicy& policy);
+
+  /**
    * @brief execute generator of a given context
    * @param generator identifier
    * @return true if executed successfully
@@ -349,6 +366,7 @@ protected:
   std::list<std::string> m_selectedContexts;
   std::string m_outputDir;
   std::string m_packRoot;
+  LoadPacksPolicy m_loadPacksPolicy;
 
   bool LoadPacks(ContextItem& context);
   bool GetRequiredPdscFiles(ContextItem& context, const std::string& packRoot, std::set<std::string>& errMsgs);

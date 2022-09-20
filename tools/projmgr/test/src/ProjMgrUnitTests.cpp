@@ -105,7 +105,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks) {
     {{"TestSolution/test.csolution_filtered_pack_selection.yml", "test1.Debug+CM0"},
       "ARM::RteTest@0.1.0 \\(.*\\)\nARM::RteTestBoard@0.1.0 \\(.*\\)\nARM::RteTestGenerator@0.1.0 \\(.*\\)\nARM::RteTest_DFP@0.2.0 \\(.*\\)\n"},
     {{"TestSolution/test.csolution_no_packs.yml", "test1.Debug+CM0"},
-      "ARM::RteTest@0.1.0 \\(.*\\)\nARM::RteTestBoard@0.1.0 \\(.*\\)\nARM::RteTestGenerator@0.1.0 \\(.*\\)\nARM::RteTest_DFP@0.1.1 \\(.*\\)\nARM::RteTest_DFP@0.2.0 \\(.*\\)\n"},
+      "ARM::RteTest@0.1.0 \\(.*\\)\nARM::RteTestBoard@0.1.0 \\(.*\\)\nARM::RteTestGenerator@0.1.0 \\(.*\\)\nARM::RteTest_DFP@0.2.0 \\(.*\\)\n"},
     {{"TestSolution/test.csolution_pack_selection.yml", "test2.Debug+CM0"},
       "ARM::RteTest_DFP@0.2.0 \\(.*\\)\n"},
     {{"TestDefault/build-types.csolution.yml", "project.Debug"},
@@ -677,6 +677,24 @@ TEST_F(ProjMgrUnitTests, ListPacks) {
   };
   vector<string> packs;
   EXPECT_TRUE(m_worker.ParseContextSelection(""));
+  m_worker.SetLoadPacksPolicy(LoadPacksPolicy::ALL);
+  EXPECT_TRUE(m_worker.ListPacks(packs, false, "RteTest"));
+  auto packIt = packs.begin();
+  for (const auto& expected : expectedPacks) {
+    EXPECT_TRUE(regex_match(*packIt++, regex(expected)));
+  }
+}
+
+TEST_F(ProjMgrUnitTests, ListPacksLatest) {
+  set<string> expectedPacks = {
+    "ARM::RteTest@0.1.0 \\(.*\\)",
+    "ARM::RteTestBoard@0.1.0 \\(.*\\)",
+    "ARM::RteTestGenerator@0.1.0 \\(.*\\)",
+    "ARM::RteTest_DFP@0.2.0 \\(.*\\)"
+  };
+  vector<string> packs;
+  EXPECT_TRUE(m_worker.ParseContextSelection(""));
+  m_worker.SetLoadPacksPolicy(LoadPacksPolicy::LATEST);
   EXPECT_TRUE(m_worker.ListPacks(packs, false, "RteTest"));
   auto packIt = packs.begin();
   for (const auto& expected : expectedPacks) {
@@ -818,6 +836,7 @@ TEST_F(ProjMgrUnitTests, AddContextFailed) {
 }
 
 TEST_F(ProjMgrUnitTests, GetInstalledPacks) {
+  EXPECT_TRUE(m_worker.InitializeModel());
   auto kernel = ProjMgrKernel::Get();
   const auto& cmsisPackRoot = kernel->GetCmsisPackRoot();
   std::list<std::string> pdscFiles;
@@ -827,6 +846,8 @@ TEST_F(ProjMgrUnitTests, GetInstalledPacks) {
 
   kernel->SetCmsisPackRoot(string(CMAKE_SOURCE_DIR) + "test/local-malformed");
   EXPECT_FALSE(kernel->GetInstalledPacks(pdscFiles));
+
+  EXPECT_FALSE(m_worker.LoadAllRelevantPacks());
 
   kernel->SetCmsisPackRoot(cmsisPackRoot);
 }
@@ -1563,6 +1584,58 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_List_Board_Pack) {
     testinput_folder + "/TestSolution/ref/test1.Debug+CM0_board_package.cprj");
   CompareFile(testoutput_folder + "/test1.Release+CM0.cprj",
     testinput_folder + "/TestSolution/ref/test1.Release+CM0_board_package.cprj");
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_LoadPacksPolicy_Required) {
+  char* argv[6];
+  StdStreamRedirect streamRedirect;
+  const string& csolution = testinput_folder + "/TestSolution/test.csolution_no_packs.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-l";
+  argv[5] = (char*)"required";
+  EXPECT_EQ(1, RunProjMgr(6, argv));
+  auto errorStr = streamRedirect.GetErrorString();
+  EXPECT_EQ(0, errorStr.find("error csolution: required packs must be specified\n"));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_LoadPacksPolicy_Invalid) {
+  char* argv[6];
+  StdStreamRedirect streamRedirect;
+  const string& csolution = testinput_folder + "/TestSolution/test.csolution_no_packs.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-l";
+  argv[5] = (char*)"invalid";
+  EXPECT_EQ(1, RunProjMgr(6, argv));
+  auto errorStr = streamRedirect.GetErrorString();
+  EXPECT_EQ(0, errorStr.find("error csolution: unknown load option: 'invalid', it must be 'latest', 'all' or 'required'\n"));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_LoadPacksPolicy_Latest) {
+  char* argv[6];
+  StdStreamRedirect streamRedirect;
+  const string& csolution = testinput_folder + "/TestSolution/test.csolution_no_packs.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-l";
+  argv[5] = (char*)"latest";
+  EXPECT_EQ(0, RunProjMgr(6, argv));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_LoadPacksPolicy_All) {
+  char* argv[6];
+  StdStreamRedirect streamRedirect;
+  const string& csolution = testinput_folder + "/TestSolution/test.csolution_no_packs.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-l";
+  argv[5] = (char*)"all";
+  EXPECT_EQ(0, RunProjMgr(6, argv));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution_GetCdefaultFile1) {

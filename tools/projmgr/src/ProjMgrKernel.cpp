@@ -54,9 +54,35 @@ XMLTree* ProjMgrKernel::CreateXmlTree() const
   return xmlParser.release();
 }
 
-bool ProjMgrKernel::GetInstalledPacks(std::list<std::string>& pdscFiles) {
+bool ProjMgrKernel::GetInstalledPacks(std::list<std::string>& pdscFiles, bool latest) {
   // Find pdsc files from the CMSIS_PACK_ROOT
-  RteFsUtils::GetPackageDescriptionFiles(pdscFiles, theProjMgrKernel->GetCmsisPackRoot(), 3);
+  list<string> installedPdscFiles;
+  RteFsUtils::GetPackageDescriptionFiles(installedPdscFiles, theProjMgrKernel->GetCmsisPackRoot(), 3);
+
+  // Filter only latest versions according to CMSIS_PACK_ROOT file tree
+  if (latest) {
+    map<string, map<string, map<string, string>>> installedPacks;
+    for (const auto& pdsc : installedPdscFiles) {
+      fs::path pdscPath = fs::path(pdsc);
+      const auto& versionPath = pdscPath.parent_path();
+      const auto& namePath = versionPath.parent_path();
+      const auto& vendorPath = namePath.parent_path();
+      installedPacks[vendorPath.filename().generic_string()][namePath.filename().generic_string()][versionPath.filename().generic_string()] = pdsc;
+    }
+    for (const auto& [vendor, packs] : installedPacks) {
+      for (const auto& [pack, versions] : packs) {
+        string latestVersion;
+        for (const auto& [version, pdsc] : versions) {
+          if (VersionCmp::Compare(latestVersion, version) <= 0) {
+            latestVersion = version;
+          }
+        }
+        pdscFiles.push_back(versions.at(latestVersion));
+      }
+    }
+  } else {
+    pdscFiles.splice(pdscFiles.end(), installedPdscFiles);
+  }
 
   // Find pdsc files from local repository
   list<string> localPdscUrls;
