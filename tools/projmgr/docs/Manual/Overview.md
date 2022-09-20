@@ -119,7 +119,7 @@ Commands:
        dependencies     Print list of unresolved project dependencies
        contexts         Print list of contexts in a csolution.yml
        generators       Print list of code generators of a given context
-       setup            Print setup information and available compilers
+       config           Print configuration information and available compilers
   convert               Convert *.csolution.yml input file to *.cprj files
   run                   Run code generator
   help                  Print usage
