@@ -40,6 +40,7 @@ Options:\n\
   -f, --filter arg      Filter words\n\
   -g, --generator arg   Code generator identifier\n\
   -m, --missing         List only required packs that are missing in the pack repository\n\
+  -l, --load arg        Set policy for packs loading [latest|all|required]\n\
   -n, --no-check-schema Skip schema check\n\
   -o, --output arg      Output directory\n\
   -h, --help            Print usage\n\
@@ -74,6 +75,7 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
       ("c,context", "", cxxopts::value<string>())
       ("f,filter", "", cxxopts::value<string>())
       ("g,generator", "", cxxopts::value<string>())
+      ("l,load", "", cxxopts::value<string>())
       ("m,missing", "", cxxopts::value<bool>()->default_value("false"))
       ("n,no-check-schema", "", cxxopts::value<bool>()->default_value("false"))
       ("o,output", "", cxxopts::value<string>())
@@ -123,6 +125,9 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
     }
     if (parseResult.count("generator")) {
       manager.m_codeGenerator = parseResult["generator"].as<string>();
+    }
+    if (parseResult.count("load")) {
+      manager.m_loadPacksPolicy = parseResult["load"].as<string>();
     }
     if (parseResult.count("output")) {
       manager.m_outputDir = parseResult["output"].as<string>();
@@ -254,6 +259,20 @@ bool ProjMgr::PopulateContexts(void) {
 
   // Set output directory
   m_worker.SetOutputDir(m_outputDir);
+
+  // Set load packs policy
+  if (m_loadPacksPolicy.empty()) {
+    m_worker.SetLoadPacksPolicy(LoadPacksPolicy::DEFAULT);
+  } else if (m_loadPacksPolicy == "latest") {
+    m_worker.SetLoadPacksPolicy(LoadPacksPolicy::LATEST);
+  } else if (m_loadPacksPolicy == "all") {
+    m_worker.SetLoadPacksPolicy(LoadPacksPolicy::ALL);
+  } else if (m_loadPacksPolicy == "required") {
+    m_worker.SetLoadPacksPolicy(LoadPacksPolicy::REQUIRED);
+  } else {
+    ProjMgrLogger::Error("unknown load option: '" + m_loadPacksPolicy + "', it must be 'latest', 'all' or 'required'");
+    return false;
+  }
 
   // Add contexts
   for (auto& descriptor : m_parser.GetCsolution().contexts) {

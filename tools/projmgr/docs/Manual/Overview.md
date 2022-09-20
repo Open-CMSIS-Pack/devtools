@@ -130,6 +130,7 @@ Options:
   -f, --filter arg      Filter words
   -g, --generator arg   Code generator identifier
   -m, --missing         List only required packs that are missing in the pack repository
+  -l, --load arg        Set policy for packs loading [latest|all|required]
   -n, --no-check-schema Skip schema check
   -o, --output arg      Output directory
   -h, --help            Print usage

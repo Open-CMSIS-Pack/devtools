@@ -39,9 +39,10 @@ public:
   /**
    * @brief get installed packs
    * @param pdscFiles list of installed packs
+   * @param bool latest get only latest versions (default true)
    * @return true if executed successfully
   */
-  bool GetInstalledPacks(std::list<std::string>& pdscFiles);
+  bool GetInstalledPacks(std::list<std::string>& pdscFiles, bool latest=true);
 
   /**
    * @brief load and insert pack into global model

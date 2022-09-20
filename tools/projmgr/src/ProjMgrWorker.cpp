@@ -19,7 +19,7 @@
 using namespace std;
 
 ProjMgrWorker::ProjMgrWorker(void) {
-  // Reserved
+  m_loadPacksPolicy = LoadPacksPolicy::DEFAULT;
 }
 
 ProjMgrWorker::~ProjMgrWorker(void) {
@@ -141,6 +141,10 @@ void ProjMgrWorker::SetOutputDir(const std::string& outputDir) {
   m_outputDir = outputDir;
 }
 
+void ProjMgrWorker::SetLoadPacksPolicy(const LoadPacksPolicy& policy) {
+  m_loadPacksPolicy = policy;
+}
+
 bool ProjMgrWorker::GetRequiredPdscFiles(ContextItem& context, const std::string& packRoot, std::set<std::string>& errMsgs) {
   if (!ProcessPackages(context)) {
     return false;
@@ -245,9 +249,15 @@ bool ProjMgrWorker::LoadAllRelevantPacks() {
       PushBackUniquely(pdscFiles, pdscFile);
     }
   }
-  if (pdscFiles.empty()) {
-    // Get installed packs
-    if (!m_kernel->GetInstalledPacks(pdscFiles)) {
+  // Check load packs policy
+  if (pdscFiles.empty() && (m_loadPacksPolicy == LoadPacksPolicy::REQUIRED)) {
+    ProjMgrLogger::Error("required packs must be specified");
+    return false;
+  }
+  // Get installed packs
+  if (pdscFiles.empty() || (m_loadPacksPolicy == LoadPacksPolicy::ALL) || (m_loadPacksPolicy == LoadPacksPolicy::LATEST)) {
+    const bool latest = (m_loadPacksPolicy == LoadPacksPolicy::LATEST) || (m_loadPacksPolicy == LoadPacksPolicy::DEFAULT);
+    if (!m_kernel->GetInstalledPacks(pdscFiles, latest)) {
       ProjMgrLogger::Error("parsing installed packs failed");
       return false;
     }
@@ -1599,7 +1609,6 @@ bool ProjMgrWorker::ListPacks(vector<string>&packs, bool missingPacks, const str
   list<string> pdscFiles;
   std::set<std::string> errMsgs;
   bool reqOk = true;
-  bool allPacks = true;
   if (!InitializeModel()) {
     return false;
   }
@@ -1616,14 +1625,19 @@ bool ProjMgrWorker::ListPacks(vector<string>&packs, bool missingPacks, const str
         for (const auto& [pdscFile, _] : context.pdscFiles) {
           PushBackUniquely(pdscFiles, pdscFile);
         }
-        allPacks = false;
       }
     }
   }
   if (!missingPacks) {
-    if (allPacks) {
-      // Get all installed packs
-      m_kernel->GetInstalledPacks(pdscFiles);
+    // Check load packs policy
+    if (pdscFiles.empty() && (m_loadPacksPolicy == LoadPacksPolicy::REQUIRED)) {
+      ProjMgrLogger::Error("required packs must be specified");
+      return false;
+    }
+    if (pdscFiles.empty() || (m_loadPacksPolicy == LoadPacksPolicy::ALL) || (m_loadPacksPolicy == LoadPacksPolicy::LATEST)) {
+      // Get installed packs
+      const bool latest = (m_loadPacksPolicy == LoadPacksPolicy::LATEST) || (m_loadPacksPolicy == LoadPacksPolicy::DEFAULT);
+      m_kernel->GetInstalledPacks(pdscFiles, latest);
     }
     if (!pdscFiles.empty()) {
       // Load packs and get loaded packs identifiers
