@@ -1355,7 +1355,7 @@ Add software components to a project or a software layer. Used in `*.cproject.ym
 &nbsp;&nbsp; [`add-path:`](#add-path)          |   Optional   | Additional include file paths.
 &nbsp;&nbsp; [`del-path:`](#del-path)          |   Optional   | Remove specific include file paths.
 &nbsp;&nbsp; [`misc:`](#misc)                  |   Optional   | Literal tool-specific controls.
-&nbsp;&nbsp; [`instances:`](#instances)        |   Optional   | Configure component instances.
+&nbsp;&nbsp; [`instances:`](#instances)        |   Optional   | Add multiple instances of component configuration files (default: 1)
 
 **Example:**
 
@@ -1386,69 +1386,26 @@ components:
 
 ### `instances:`
 
-This is a proposal for component instances.
-
-Modern microcontrollers often have multiple instances of the same peripheral interface (for example UART, SPI, USB,
-etc.). To be able to have separate configuration files for each of these instances, software components can have
-multiple instances as well. To cope with multiple configurations, the `instances:` list allows to assign peripherals to
-a usage and provide configuration parameters.
-
-`instances:`                         |              | Content
-:------------------------------------|--------------|:------------------------------------
-`- name:` value                      | **Required** | Assign a name to a instance, value is the instance number.
-&nbsp;&nbsp; `<parameters>`          |   Optional   | An unchecked list of key/value pairs to supply parameters for the instance.
+Allows to add multiple instances of a component and actually applies to configuration files.
+Detailed description is [here](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_components_pg.html#Component_Instances)
 
 **Example:**
 
 ```yml
 components:
-  - component: CMSIS-Driver:UART
-    instances:
-      - WiFi: 0            # UART0 connection to WiFi chipset
-        setup: wifi-config.json
-        baudrate: 19200 
-      - Debug: 2           # UART2 Debug I/O
-        baudrate: 57600
+  - component: USB:Device
+    instances: 2
 ```
-
-*Extend tool behavior:*
-
-- Existing definitions in the `*.PDSC` for
-  [Component Instances](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_components_pg.html#Component_Instances)
-  remain unchanged:
-  - The instance *value* must be within the range of the attribute `maxInstances`. Hence there is currently no change in
-    the `*.PDSC` format required.
-  - The instance *values* can be non-contiguous, for example it is possible to specify instance value 1 and 4 for a
-    component. This requires a tool modification.
 
 If the user selects multiple instances of the same component, all files with  attribute `config` in the `*.PDSC` file
 will be copied multiple times to the project. The name of the component (for example config_mylib.h) will get a postfix
-`_value`. The instance `name:` specifies this `value`:
+`_n` whereby `n` is the instance number starting with 0.
 
-Instance 0: config_uart_0.h  
-Instance 2: config_uart_2.h
+Instance 0: config_usb_device_0.h  
+Instance 1: config_usb_device_1.h
 
 The availability of instances in a project can be made public in the `RTE_Components.h` file. The existing way to extend
-the `%Instance%` with the instance `value` is extended with `%Instance_Name%` to access the instance `name:`.
-
-**Example: `*.PDSC` file content:**
-
-```c
-<RTE_Components_h>
-  <!-- the following content goes into file 'RTE_Components.h' -->
-  #define HAL_UART%Instance%   %Instance_Name%
-</RTE_Components_h>
-```
-
-**Expanded `RTE_Components.h` file:**
-
-```c
-  #define HAL_UART0    WiFi
-  #define HAL_UART2    Debug
-```
-
-When component files are copied to the project workspace the tools also replaces text `%Instance%` and `%Instance_Name%`
-with instance `value` and `name:` for component files that have the `attr=config` or `attr=template`.
+the `%Instance%` with the instance number `n`.
 
 ## Pre/Post build steps
 

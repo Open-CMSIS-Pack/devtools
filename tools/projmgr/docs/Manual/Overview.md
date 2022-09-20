@@ -120,7 +120,7 @@ Commands:
        contexts         Print list of contexts in a csolution.yml
        generators       Print list of code generators of a given context
        setup            Print setup information and available compilers
-  convert               Convert cproject.yml or csolution.yml to cprj files
+  convert               Convert *.csolution.yml input file to *.cprj files
   run                   Run code generator
   help                  Print usage
 
@@ -129,8 +129,8 @@ Options:
   -c, --context arg     Input context name <cproject>.<build-type>+<target-type>
   -f, --filter arg      Filter words
   -g, --generator arg   Code generator identifier
+  -l, --load arg        Set policy for loading packs, arg= {latest | all | required}
   -m, --missing         List only required packs that are missing in the pack repository
-  -l, --load arg        Set policy for packs loading [latest|all|required]
   -n, --no-check-schema Skip schema check
   -o, --output arg      Output directory
   -h, --help            Print usage
