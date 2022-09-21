@@ -18,6 +18,7 @@
 
 #include <iostream>
 #include <string>
+#include <ctime>
 
 using namespace std;
 
@@ -37,6 +38,12 @@ public:
    * @param
   */
   void Usage(void);
+
+  /**
+   * @brief print version info
+   * @param
+  */
+  void ShowVersion(void);
 
   /**
    * @brief print module's command line options
@@ -63,6 +70,10 @@ void CMSISBuildConsole::DateTime(void) {
 
 void CMSISBuildConsole::Usage(void) {
   LogMsg("M020", VAL("EXE", ORIGINAL_FILENAME));
+}
+
+void CMSISBuildConsole::ShowVersion(void) {
+  LogMsg("M023", VAL("EXE", ORIGINAL_FILENAME), VAL("VER", VERSION_STRING), TXT(COPYRIGHT_NOTICE));
 }
 
 int main(int argc, const char *argv[])
@@ -120,7 +131,9 @@ int main(int argc, const char *argv[])
   }
 
   // Normal commands
-  bool packMode = false, cmakeMode = false, cmdlineErr = false, extractLayer = false, composeLayer = false, addLayer = false, removeLayer = false, quiet = false;
+  bool packMode = false, cmakeMode = false, cmdlineErr = false,
+    extractLayer = false, composeLayer = false, addLayer = false,
+    removeLayer = false, quiet = false, showVersion = false, showUsage = false;
   string cprjFile, toolchain, intdir, outdir, name, description, update;
   string packRoot, compilerRoot, buildRoot;
   list<string> layerFiles, layerIDs;
@@ -142,6 +155,8 @@ int main(int argc, const char *argv[])
     else if  (arg.compare("--quiet")                 == 0)            quiet = true;
     else if  (arg.compare(0, 12, "--pack_root=")     == 0)            packRoot = arg.substr(12, arg.length());
     else if  (arg.compare(0, 16, "--compiler_root=") == 0)            compilerRoot = arg.substr(16, arg.length());
+    else if ((arg.compare("--version") == 0) || (arg.compare("-V") == 0)) showVersion = true;
+    else if ((arg.compare("--help") == 0) || (arg.compare("-h") == 0))    showUsage = true;
     else if ((arg.compare(0, 1,  "-") == 0) && (arg.compare(1, 1, "-") != 0)) {
       size_t div = arg.find_first_of("=");
       if (div != string::npos) optionAttributes[arg.substr(0, div)] = arg.substr(div+1, arg.length());
@@ -157,17 +172,19 @@ int main(int argc, const char *argv[])
     ErrLog::Get()->SuppressAllInfo();
   }
 
-  // Print Signature
-  console.Signature();
+  if (!showVersion) {
+    // Print Signature
+    console.Signature();
+  }
 
-  if (!packMode && !cmakeMode && !extractLayer && !composeLayer && !addLayer && !removeLayer) {
+  if (!packMode && !cmakeMode && !extractLayer && !composeLayer && !addLayer && !removeLayer && !showVersion && !showUsage) {
     // No command was given
     LogMsg("M206");
     cmdlineErr = true;
   }
 
   int cnt = 0;
-  for (auto b : { packMode, cmakeMode, extractLayer, composeLayer, addLayer, removeLayer }) {
+  for (auto b : { packMode, cmakeMode, extractLayer, composeLayer, addLayer, removeLayer, showVersion, showUsage }) {
     if (b) {
       cnt++;
     }
@@ -178,7 +195,7 @@ int main(int argc, const char *argv[])
     cmdlineErr = true;
   }
 
-  if (cprjFile.empty()) {
+  if (cprjFile.empty() && !showVersion && !showUsage) {
     // No CPRJ file was given
     LogMsg("M202");
     cmdlineErr = true;
@@ -195,6 +212,16 @@ int main(int argc, const char *argv[])
     LogMsg("M200");
     console.Usage();
     return 1;
+  }
+
+  if (showVersion) {
+    console.ShowVersion();
+    return 0;
+  }
+
+  if (showUsage) {
+    console.Usage();
+    return 0;
   }
 
   if (packRoot.empty()) {

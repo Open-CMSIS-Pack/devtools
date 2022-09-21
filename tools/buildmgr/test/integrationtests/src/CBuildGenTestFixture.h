@@ -23,6 +23,8 @@ protected:
   void CheckCPInstallFile        (const TestParam& param, bool json=false);
 
   void GetDirectoryItems         (const std::string& inPath, std::set<std::string> &Result, const std::string& ignoreDir);
+
+  std::string stdoutStr;
 };
 
 #endif  // CBUILDGENTESTFIXTURE_H

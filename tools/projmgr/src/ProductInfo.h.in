@@ -19,7 +19,7 @@ static constexpr const char* FILE_DESCRIPTION  = "CMSIS Project Manager";
 static constexpr const char* PRODUCT_NAME      = "CMSIS Project Manager";
 static constexpr const char* INTERNAL_NAME     = "csolution";
 static constexpr const char* ORIGINAL_FILENAME = "csolution";
-static constexpr const char* COPYRIGHT_NOTICE  = "(C) @PROJECT_VERSION_YEAR@ ARM";
+static constexpr const char* COPYRIGHT_NOTICE  = "(C) @PROJECT_VERSION_YEAR@ Arm Ltd. and Contributors";
 
 static constexpr const char* VERSION_STRING    = "@PROJECT_VERSION_FULL@";
 static constexpr const char* VERSION_STRING_RC = "@PROJECT_VERSION_FULL@";

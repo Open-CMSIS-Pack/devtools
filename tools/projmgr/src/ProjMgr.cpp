@@ -44,6 +44,7 @@ Options:\n\
   -n, --no-check-schema Skip schema check\n\
   -o, --output arg      Output directory\n\
   -h, --help            Print usage\n\
+  -V, --version         Print version\n\
 ";
 
 ProjMgr::ProjMgr(void) : m_checkSchema(false) {
@@ -57,6 +58,10 @@ ProjMgr::~ProjMgr(void) {
 void ProjMgr::PrintUsage(void) {
   cout << PRODUCT_NAME << " " << VERSION_STRING << " " << COPYRIGHT_NOTICE << " " << endl;
   cout << USAGE << endl;
+}
+
+void ProjMgr::ShowVersion(void) {
+  cout << ORIGINAL_FILENAME << " " << VERSION_STRING << " " << COPYRIGHT_NOTICE << endl;
 }
 
 int ProjMgr::RunProjMgr(int argc, char **argv) {
@@ -80,6 +85,7 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
       ("n,no-check-schema", "", cxxopts::value<bool>()->default_value("false"))
       ("o,output", "", cxxopts::value<string>())
       ("h,help", "")
+      ("V,version", "")
       ;
     options.parse_positional({ "command", "args"});
 
@@ -89,7 +95,12 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
 
     if (parseResult.count("command")) {
       manager.m_command = parseResult["command"].as<string>();
-    } else {
+    }
+    else if (parseResult.count("version")) {
+      manager.ShowVersion();
+      return 0;
+    }
+    else {
       // No command was given, print usage and return success
       manager.PrintUsage();
       return 0;

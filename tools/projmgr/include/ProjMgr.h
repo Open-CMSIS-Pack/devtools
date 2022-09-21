@@ -39,6 +39,11 @@ public:
   void PrintUsage(void);
 
   /**
+   * @brief show version
+  */
+  void ShowVersion(void);
+
+  /**
    * @brief get parser object
    * @return reference to m_parser
   */

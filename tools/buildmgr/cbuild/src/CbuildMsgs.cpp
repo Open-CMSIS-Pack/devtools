@@ -10,7 +10,8 @@
 #define USAGE_STRING \
 "Usage:\n\n" \
 /*-------------------------------------------------------------------------------| */ \
-"  %EXE% <ProjectFile>.cprj <command> [<args>]\n" \
+"  %EXE% [-V] [--version] [-h] [--help]\n" \
+"            <ProjectFile>.cprj <command> [<args>]\n" \
 "\n" \
 "    <ProjectFile>.cprj      : CMSIS Project Description file\n" \
 "\n" \
@@ -109,6 +110,7 @@ void InitMessageTable()
   table["M020"] = MessageEntry(MsgLevel::LEVEL_INFO,     CRLF_B,   USAGE_STRING                                                                  );    // Program Usage
   table["M021"] = MessageEntry(MsgLevel::LEVEL_INFO,     CRLF_NO,  "(%EXE%): %PROD% %VER% %TEXT%"                                                );    // Module Name, Version, Copyright
   table["M022"] = MessageEntry(MsgLevel::LEVEL_INFO,     CRLF_BE,  "Date: %DATE% Time: %TIME%"                                                   );    // Build timestamp
+  table["M023"] = MessageEntry(MsgLevel::LEVEL_INFO,     CRLF_E,   "%EXE% %VER% %TEXT%"                                                          );    // EXE Name, Version, Copyright
 
 // 200... Invocation Errors
   table["M200"] = MessageEntry(MsgLevel::LEVEL_ERROR,    CRLF_B,   "Invalid arguments!"                                                          );

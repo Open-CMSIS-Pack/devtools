@@ -10,7 +10,7 @@
 #define PRODUCT_NAME        "Build Process Manager"
 #define INTERNAL_NAME       "cbuildgen"
 #define ORIGINAL_FILENAME   "cbuildgen"
-#define COPYRIGHT_NOTICE    "(C) @PROJECT_VERSION_YEAR@ ARM"
+#define COPYRIGHT_NOTICE    "(C) @PROJECT_VERSION_YEAR@ Arm Ltd. and Contributors"
 
 #define VERSION_STRING "@PROJECT_VERSION_FULL@"
 #define VERSION_STRING_RC "@PROJECT_VERSION_FULL@"

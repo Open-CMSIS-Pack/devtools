@@ -56,6 +56,7 @@ Usage:
   -c, --nocheck      Skip pack check
   -z, --nozip        Skip *.pack file creation
   -h, --help         Print usage
+  -V, --version      Print version
 ```
 
 ## Brief description

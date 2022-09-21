@@ -54,6 +54,7 @@ int PackGen::RunPackGen(int argc, char **argv) {
       ("c,nocheck", "Skip pack check", cxxopts::value<bool>()->default_value("false"))
       ("z,nozip", "Skip *.pack file creation", cxxopts::value<bool>()->default_value("false"))
       ("h,help", "Print usage")
+      ("V,version", "Print version")
       ;
     options.parse_positional({ "manifest" });
     options.positional_help("manifest.yml");
@@ -74,6 +75,9 @@ int PackGen::RunPackGen(int argc, char **argv) {
     }
     if (parseResult.count("manifest")) {
       generator.m_manifest = parseResult["manifest"].as<string>();
+    } else if (parseResult.count("version")) {
+      generator.ShowVersion();
+      return 0;
     } else {
       // Print usage
       cout << options.help() << endl;
@@ -1118,4 +1122,8 @@ uint32_t PackGen::CountNodes(const YAML::Node node, const string& name) {
     }
   }
   return occurrences;
+}
+
+void PackGen::ShowVersion(void) {
+  cout << ORIGINAL_FILENAME << " " << VERSION_STRING << " " << COPYRIGHT_NOTICE << endl;
 }
