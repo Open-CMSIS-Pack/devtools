@@ -177,7 +177,7 @@ ParseOptions::Result ParseOptions::Parse(int argc, const char* argv[])
       ("allow-suppress-error", "Allow to suppress error messages", cxxopts::value<bool>()->default_value("false"))
       ("break", "Debug halt after start", cxxopts::value<bool>()->default_value("false"))
       ("ignore-other-pdsc", "Ignores other PDSC files in working folder", cxxopts::value<bool>()->default_value("false"))
-      ("version", "Show program version")
+      ("V,version", "Print version")
       ("h,help", "Print usage")
       ;
 
@@ -191,7 +191,7 @@ ParseOptions::Result ParseOptions::Parse(int argc, const char* argv[])
 
     // Print version
     if (parseResult.count("version")) {
-      cout << m_packOptions.GetVersion() << endl;
+      cout << m_packOptions.GetVersionInfo() << endl;
       return Result::ExitNoError;
     }
 

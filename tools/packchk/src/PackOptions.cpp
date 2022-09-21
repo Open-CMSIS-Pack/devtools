@@ -272,6 +272,15 @@ bool CPackOptions::ConfigureProgramName(const string& programPath)
  * @brief returns the program version string
  * @return string version
 */
+const string CPackOptions::GetVersionInfo()
+{
+  return INTERNAL_NAME + string(" ") + VERSION_STRING + " " + COPYRIGHT_NOTICE;
+}
+
+/**
+ * @brief returns the program version string
+ * @return string version
+*/
 const string CPackOptions::GetVersion()
 {
   string text = string(VERSION_STRING);
@@ -292,7 +301,7 @@ const string CPackOptions::GetHeader()
   header += string(__DATE__);
   header += string(" ");
   header += string(__TIME__);
-  header += ")\n";
+  header += ") ";
   header += string(COPYRIGHT_NOTICE);
   header += "\n";
 

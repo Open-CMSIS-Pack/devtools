@@ -35,6 +35,7 @@ public:
 
   const std::string GetHeader();
   const std::string GetVersion();
+  const std::string GetVersionInfo();
   const std::string GetProgramName();
   const std::string& GetUrlRef();
   const std::string& GetPackTextfileName();

@@ -31,7 +31,7 @@ Flags:
   -s, --schema             Check *.cprj file against CPRJ.xsd schema
   -t, --target string      Optional CMake target name
   -u, --update string      Generate *.cprj file for reproducing current build
-  -v, --version            Print version
+  -V, --version            Print version
 ```
 
 ## Command Line Examples

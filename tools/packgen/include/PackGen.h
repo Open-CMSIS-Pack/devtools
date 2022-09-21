@@ -301,6 +301,7 @@ protected:
   void ParseManifestTaxonomy(const YAML::Node node, packInfo& pack);
   void ParseManifestApis(const YAML::Node node, packInfo& pack);
   bool ParseManifestComponents(const YAML::Node node, packInfo& pack);
+  void ShowVersion(void);
 };
 
 #endif  // PACKGEN_H

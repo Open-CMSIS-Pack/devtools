@@ -5,6 +5,7 @@
  */
 
 #include "CBuildGenTestFixture.h"
+#include "CbuildUtils.h"
 
 using namespace std;
 
@@ -55,24 +56,26 @@ void CBuildGenTestFixture::RunCBuildGen(const TestParam& param, string projpath,
   string cmd, workingDir;
   error_code ec;
 
-  if (projpath != examples_folder)
-    workingDir = projpath + "/" + param.name;
-  else {
-    workingDir = testout_folder + "/" + param.name;
+  if (param.name != RteUtils::EMPTY_STRING) {
+    if (projpath != examples_folder)
+      workingDir = projpath + "/" + param.name;
+    else {
+      workingDir = testout_folder + "/" + param.name;
 
-    if (fs::exists(workingDir, ec)) {
-      RteFsUtils::RemoveDir(workingDir);
+      if (fs::exists(workingDir, ec)) {
+        RteFsUtils::RemoveDir(workingDir);
+      }
+
+      fs::create_directories(workingDir, ec);
+      fs::copy(fs::path(examples_folder + "/" + param.name), fs::path(workingDir),
+        fs::copy_options::recursive, ec);
     }
-
-    fs::create_directories(workingDir, ec);
-    fs::copy(fs::path(examples_folder + "/" + param.name), fs::path(workingDir),
-      fs::copy_options::recursive, ec);
   }
 
   if (!env) {
-    cmd = testout_folder + "/cbuild/bin/cbuildgen \"" + workingDir +
-      '/' + param.targetArg + ".cprj\" " + param.command +
-      (param.options.empty() ? "" : " ") + param.options;
+    cmd = testout_folder + "/cbuild/bin/cbuildgen " +
+      (param.targetArg.empty() ? "" : "\"" + workingDir + '/' + param.targetArg + ".cprj\" ") +
+      param.command + (param.options.empty() ? "" : " ") + param.options;
   }
   else {
     cmd = "bash -c \"source " + testout_folder +
@@ -80,8 +83,9 @@ void CBuildGenTestFixture::RunCBuildGen(const TestParam& param, string projpath,
       '/' + param.targetArg + ".cprj\" " + param.command +
       (param.options.empty() ? "" : " ") + param.options + "\"";
   }
-  auto ret_val = system(cmd.c_str());
-  ASSERT_EQ(param.expect, (ret_val == 0) ? true : false);
+  const auto& ret_val = CbuildUtils::ExecCommand(cmd.c_str());
+  stdoutStr = ret_val.first;
+  ASSERT_EQ(param.expect, (ret_val.second == 0) ? true : false);
 }
 
 void CBuildGenTestFixture::RunCBuildGenAux(const string& cmd, bool expect) {

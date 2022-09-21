@@ -14,11 +14,24 @@
 
 #include "CBuildGenTestFixture.h"
 
+#include <regex>
+
 using namespace std;
 
 class CBuildGenTests : public CBuildGenTestFixture {
-
+  void SetUp() override;
+  void TearDown() override;
+protected:
+  std::regex versionStrRegex{ R"(^(cbuildgen\s\d+(?:\.\d+){2}([+\d\w-]+)?\s\(C\)\s[\d]{4}(-[\d]{4})?\sArm\sLtd.\sand\sContributors(\r\n|\n){2})$)" };
 };
+
+void CBuildGenTests::SetUp() {
+  stdoutStr = RteUtils::EMPTY_STRING;
+}
+
+void CBuildGenTests::TearDown() {
+  stdoutStr = RteUtils::EMPTY_STRING;
+}
 
 TEST_F(CBuildGenTests, GenCMake_AccessSequence) {
   TestParam param = { "GCC/AccessSequence", "Project", "", "cmake", true };
@@ -242,6 +255,33 @@ TEST_F(CBuildGenTests, NoArgTest) {
     "", "", false };
 
   RunCBuildGen          (param);
+}
+
+// Validate cbuildgen version option
+TEST_F(CBuildGenTests, VersionTest_1) {
+  TestParam param = {"", "", "", "-V", true };
+  RunCBuildGen(param, "", false);
+  EXPECT_TRUE(std::regex_match(stdoutStr, versionStrRegex));
+}
+
+// Validate cbuildgen version option
+TEST_F(CBuildGenTests, VersionTest_2) {
+  TestParam param = { "", "", "", "--version", true };
+  RunCBuildGen(param, "", false);
+  EXPECT_TRUE(std::regex_match(stdoutStr, versionStrRegex));
+}
+
+
+// Validate cbuildgen help option
+TEST_F(CBuildGenTests, HelpTest_1) {
+  TestParam param = { "", "", "", "-h", true };
+  RunCBuildGen(param, "", false);
+}
+
+// Validate cbuildgen help option
+TEST_F(CBuildGenTests, HelpTest_2) {
+  TestParam param = { "", "", "", "--help", true };
+  RunCBuildGen(param, "", false);
 }
 
 // Validate cbuildgen with multiple commands

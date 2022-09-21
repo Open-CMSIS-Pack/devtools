@@ -36,6 +36,19 @@ TEST_F(PackChkIntegTests, FileNotAVailable) {
   EXPECT_EQ(1, packChk.Check(2, argv, nullptr));
 }
 
+TEST_F(PackChkIntegTests, VersionOption) {
+  const char* argv[2];
+
+  argv[0] = (char*)"";
+  argv[1] = (char*)"-V";
+
+  PackChk packChk;
+  EXPECT_EQ(0, packChk.Check(2, argv, nullptr));
+
+  argv[1] = (char*)"--version";
+  EXPECT_EQ(0, packChk.Check(2, argv, nullptr));
+}
+
 // Validate PackChk with invalid arguments
 TEST_F(PackChkIntegTests, InvalidArguments) {
   const char *argv[3];

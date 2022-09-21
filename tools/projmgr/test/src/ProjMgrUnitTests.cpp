@@ -97,6 +97,16 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Help) {
   EXPECT_EQ(0, RunProjMgr(2, argv));
 }
 
+TEST_F(ProjMgrUnitTests, RunProjMgr_Version) {
+  char* argv[2];
+  // version
+  argv[1] = (char*)"--version";
+  EXPECT_EQ(0, RunProjMgr(2, argv));
+
+  argv[1] = (char*)"-V";
+  EXPECT_EQ(0, RunProjMgr(2, argv));
+}
+
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks) {
   char* argv[7];
   map<std::pair<string, string>, string> testInputs = {

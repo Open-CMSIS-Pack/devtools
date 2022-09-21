@@ -134,7 +134,7 @@ Options:
   -n, --no-check-schema Skip schema check
   -o, --output arg      Output directory
   -h, --help            Print usage
-  -v, --version         Only print version information
+  -V, --version         Print version
 ```
 
 ### Command Examples

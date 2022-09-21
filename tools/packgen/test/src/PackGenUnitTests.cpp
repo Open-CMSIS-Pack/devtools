@@ -12,6 +12,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <regex>
 
 using namespace std;
 
@@ -56,6 +57,8 @@ public:
   virtual ~PackGenUnitTests() {}
   void CompareFile(const string& file1, const string& file2);
   void CompareFiletree(const string& dir1, const string& dir2);
+protected:
+  std::regex versionStrRegex{ R"(^(packgen\s\d+(?:\.\d+){2}([+\d\w-]+)?\s\(C\)\s[\d]{4}(-[\d]{4})?\sArm\sLtd.\sand\sContributors(\r\n|\n))$)" };
 };
 
 void PackGenUnitTests::CompareFile(const string& file1, const string& file2) {
@@ -143,9 +146,40 @@ TEST_F(PackGenUnitTests, RunPackGen) {
   EXPECT_EQ(1, RunPackGen(2, argv));
 }
 
+TEST_F(PackGenUnitTests, RunPackGenVersion_1) {
+  char* argv[2];
+  std::stringstream coutBuf;
+  // Redirect std::cout to buffer
+  std::streambuf* buffer = std::cout.rdbuf(coutBuf.rdbuf());
+
+  // -V option
+  argv[1] = (char*)"-V";
+  EXPECT_EQ(0, RunPackGen(2, argv));
+  EXPECT_TRUE(std::regex_match(coutBuf.str(), versionStrRegex));
+
+  // Restore original buffer before exiting
+  std::cout.rdbuf(buffer);
+
+}
+
+TEST_F(PackGenUnitTests, RunPackGenVersion_2) {
+  char* argv[2];
+  std::stringstream coutBuf;
+  // Redirect std::cout to buffer
+  std::streambuf* buffer = std::cout.rdbuf(coutBuf.rdbuf());
+
+  // --version option
+  argv[1] = (char*)"--version";
+  EXPECT_EQ(0, RunPackGen(2, argv));
+  EXPECT_TRUE(std::regex_match(coutBuf.str(), versionStrRegex));
+
+  // Restore original buffer before exiting
+  std::cout.rdbuf(buffer);
+}
+
 TEST_F(PackGenUnitTests, RunPackGenVerbose) {
   char* argv[7];
-  std::stringstream coutBuf, fileBuf;
+  std::stringstream coutBuf;
 
   // Redirect std::cout to buffer
   std::streambuf* buffer = std::cout.rdbuf(coutBuf.rdbuf());

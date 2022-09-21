@@ -44,8 +44,8 @@ Options:
       --allow-suppress-error  Allow to suppress error messages
       --break                 Debug halt after start
       --ignore-other-pdsc     Ignores other PDSC files in working folder
-      --version               Show program version
   -h, --help                  Print usage
+  -V, --version               Print version
 ```
 
 ## Quick Start
