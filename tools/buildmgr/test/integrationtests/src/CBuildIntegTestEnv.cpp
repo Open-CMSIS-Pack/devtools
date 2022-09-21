@@ -35,6 +35,12 @@ void RunScript(const string& script, string arg) {
 
 void CBuildIntegTestEnv::SetUp() {
   error_code ec;
+  if (RteFsUtils::Exists(testout_folder)) {
+    RteFsUtils::RemoveDir(testout_folder);
+  }
+  if (RteFsUtils::Exists(testdata_folder)) {
+    RteFsUtils::RemoveDir(testdata_folder);
+  }
   fs::create_directories(testout_folder, ec);
   fs::create_directories(testdata_folder, ec);
 
