@@ -77,14 +77,42 @@ jobs:
         if: ${{ matrix.arch != 'aarch64' }}
         uses: actions/upload-artifact@v2
         with:
-          name: libs_unittest_report_${{ matrix.target }}_${{ matrix.arch }}
+          name: unit_test_result-${{ matrix.target }}-${{ matrix.arch }}
           path: build/*_test_report.xml
           retention-days: 1
           if-no-files-found: error
 
-      - name: Publish libs unittest reports
-        if: ${{ matrix.arch != 'aarch64' }}
-        uses: mikepenz/action-junit-report@v2
+  test-results-preparation:
+    name: "Publish Tests Results"
+    needs: [ test_libs ]
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Setup Python
+        uses: actions/setup-python@v2
         with:
-          check_name: libs_unittest_report_${{ matrix.target }}_${{ matrix.arch }}
-          report_paths: build/*_test_report.xml
+          python-version: 3.8
+
+      - name: Download unit test report windows
+        uses: actions/download-artifact@v2
+        with:
+          name: unit_test_result-windows64-amd64
+          path: testreports/
+
+      - name: Download unit test report linux amd64
+        uses: actions/download-artifact@v2
+        with:
+          name: unit_test_result-linux64-amd64
+          path: testreports/
+
+      - name: Download unit test report macos
+        if: ${{ !github.event.repository.private }}
+        uses: actions/download-artifact@v2
+        with:
+          name: unit_test_result-darwin64-amd64
+          path: testreports/
+
+      - name: Event File
+        uses: actions/upload-artifact@v2
+        with:
+          name: Event File
+          path: ${{ github.event_path }}

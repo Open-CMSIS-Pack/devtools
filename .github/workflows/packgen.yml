@@ -157,13 +157,108 @@ jobs:
         if: ${{ always() }}
         uses: actions/upload-artifact@v2
         with:
-          name: unittest-${{ matrix.target }}-${{ matrix.arch }}
+          name: unit_test_result-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/packgenunit_test_report.xml
           retention-days: 1
           if-no-files-found: error
 
-      - name: Publish packgen unit test results
-        uses: mikepenz/action-junit-report@v2
+  coverage:
+    if: |
+        (github.event_name == 'pull_request') ||
+        (github.event_name == 'push') ||
+        (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/packgen/'))
+    runs-on: ubuntu-20.04
+    timeout-minutes: 15
+    steps:
+      - name: Install linux deps
+        run: |
+          sudo apt update
+          sudo apt-get install \
+            lcov
+
+      - name: Checkout devtools
+        uses: actions/checkout@v2
         with:
-          check_name: "Packgen unit tests [${{ matrix.target }}-${{ matrix.arch }}]"
-          report_paths: build/packgenunit_test_report.xml
+          submodules: true
+
+      # https://github.com/Open-CMSIS-Pack/devtools-build-action
+      - name: Build PackGenUnitTests
+        uses: Open-CMSIS-Pack/devtools-build-action@v1.1
+        with:
+          add_cmake_variables: -DCOVERAGE=ON
+          arch: amd64
+          build_type: Debug
+          target: PackGenUnitTests
+
+      - name: Run PackGenUnitTests
+        run: |
+          ctest -V -C Debug -R PackGenUnitTests
+        working-directory: ./build
+
+      - name: Generate coverage report
+        run: |
+          lcov -c --directory . --output-file full_coverage.info
+          lcov -e full_coverage.info '/tools/packgen/include/*' '*/tools/packgen/src/*' -o coverage.info
+          genhtml coverage.info --output-directory coverage
+          zip -r coverage.zip coverage/*
+        working-directory: ./build/tools/packgen/
+
+      - name: Upload Report to Codecov
+        if: ${{ !github.event.repository.private }}
+        uses: codecov/codecov-action@v2
+        with:
+          files: ./build/tools/packgen/coverage.info
+          fail_ci_if_error: true
+          flags: packgen-cov
+          functionalities: fix
+
+      - name: Archive coverage report
+        uses: actions/upload-artifact@v2
+        with:
+          name: coverage-report
+          path: |
+            ./build/tools/packgen/coverage.zip
+            ./build/tools/packgen/coverage.info
+          retention-days: 1
+          if-no-files-found: error
+
+  test-results-preparation:
+    name: "Publish Tests Results"
+    needs: [ unittest ]
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      - name: Download unit test report windows
+        uses: actions/download-artifact@v2
+        with:
+          name: unit_test_result-windows64-amd64
+          path: testreports/
+
+      - name: Download unit test report linux amd64
+        uses: actions/download-artifact@v2
+        with:
+          name: unit_test_result-linux64-amd64
+          path: testreports/
+
+      - name: Download unit test report linux aarch64
+        uses: actions/download-artifact@v2
+        with:
+          name: unit_test_result-linux64-aarch64
+          path: testreports/
+
+      - name: Download unit test report macos
+        if: ${{ !github.event.repository.private }}
+        uses: actions/download-artifact@v2
+        with:
+          name: unit_test_result-darwin64-amd64
+          path: testreports/
+
+      - name: Event File
+        uses: actions/upload-artifact@v2
+        with:
+          name: Event File
+          path: ${{ github.event_path }}

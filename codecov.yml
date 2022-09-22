@@ -13,6 +13,10 @@ coverage:
         target: auto
         flags:
           - projmgr-cov
+      packgen-cov:
+        target: auto
+        flags:
+          - packgen-cov
       buildmgr-cov:
         target: auto
         flags:
@@ -34,6 +38,10 @@ flags:
   projmgr-cov:
     paths:
       - tools/projmgr
+    carryforward: true
+  packgen-cov:
+    paths:
+      - tools/packgen
     carryforward: true
   buildmgr-cov:
     paths:
