@@ -107,7 +107,9 @@ The CMSIS-Pack repository must be present in the development environment.
 ### Invocation
 
 ```text
-CMSIS Project Manager 1.0.0 (C) 2022 ARM
+csolution version 1.1.0 (C) 2020 - 2022 Arm Ltd. and Contributors
+Create build information from csolution.yml/cproject.yml input files and software packs
+
 Usage:
   csolution <command> [<args>] [OPTIONS...]
 
