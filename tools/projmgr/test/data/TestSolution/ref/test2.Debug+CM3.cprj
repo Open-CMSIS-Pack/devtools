@@ -18,8 +18,8 @@
     <output intdir="tmp/test2/CM3/Debug" name="test2.Debug+CM3" outdir="out/test2/CM3/Debug" rtedir="../data/TestSolution/TestProject2/RTE" type="exe"/>
     <arflags add="-Lib-project -Lib-type-CM3" compiler="AC6"/>
     <asflags add="-ASM-project -ASM-type-CM3" compiler="AC6"/>
-    <cflags add="-C-project -C-CPP-type-CM3" compiler="AC6"/>
-    <cxxflags add="-CPP-project -C-CPP-type-CM3" compiler="AC6"/>
+    <cflags add="-C-project -C-CPP-Debug-AC6 -C-CPP-type-CM3" compiler="AC6"/>
+    <cxxflags add="-CPP-project -C-CPP-Debug-AC6 -C-CPP-type-CM3" compiler="AC6"/>
     <ldflags add="-Link-project -Link-type-CM3" compiler="AC6" file="../data/TestSolution/TestProject2/RTE/Device/RteTest_ARMCM3/ARMCM3_ac6.sct"/>
     <defines>DEF-project;DEF-solution;DEF-CM3;DEF-Debug</defines>
     <includes>../data/TestSolution/TestProject2/path/project;../data/TestSolution/path/solution/;../data/TestSolution/path/CM3;../data/TestSolution/path/Debug</includes>

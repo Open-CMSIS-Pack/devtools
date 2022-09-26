@@ -18,8 +18,8 @@
     <output intdir="tmp/test1/CM0/Debug" name="test1.Debug+CM0" outdir="out/test1/CM0/Debug" rtedir="../data/TestSolution/TestProject1/RTE" type="exe"/>
     <arflags add="-Lib-type-CM0" compiler="AC6"/>
     <asflags add="-ASM-type-CM0" compiler="AC6"/>
-    <cflags add="-C-CPP-type-CM0" compiler="AC6"/>
-    <cxxflags add="-C-CPP-type-CM0" compiler="AC6"/>
+    <cflags add="-C-CPP-Debug-AC6 -C-CPP-type-CM0" compiler="AC6"/>
+    <cxxflags add="-C-CPP-Debug-AC6 -C-CPP-type-CM0" compiler="AC6"/>
     <ldflags add="-Link-type-CM0" compiler="AC6" file="../data/TestSolution/TestProject1/RTE/Device/RteTest_ARMCM0/ARMCM0_ac6.sct"/>
     <defines>DEF-solution;DEF-CM0;DEF-Debug</defines>
     <includes>../data/TestSolution/path/solution/;../data/TestSolution/path/CM0;../data/TestSolution/path/Debug</includes>
@@ -43,8 +43,8 @@
     <group name="Sources">
       <arflags add="-Lib-group" compiler="AC6"/>
       <asflags add="-ASM-group" compiler="AC6"/>
-      <cflags add="-C-group" compiler="AC6"/>
-      <cxxflags add="-CPP-group" compiler="AC6"/>
+      <cflags add="-C-group -C-CPP-group-AC6" compiler="AC6"/>
+      <cxxflags add="-CPP-group -C-CPP-group-AC6" compiler="AC6"/>
       <ldflags add="-Link-group" compiler="AC6"/>
       <defines>DEF1-GROUP-PROJECT;DEF2-GROUP-PROJECT</defines>
       <undefines>DEF3-GROUP-PROJECT;DEF4-GROUP-PROJECT</undefines>
@@ -53,8 +53,8 @@
       <file category="sourceC" name="../data/TestSolution/TestProject1/main.c">
         <arflags add="-Lib-file-AC6" compiler="AC6"/>
         <asflags add="-ASM-file-AC6" compiler="AC6"/>
-        <cflags add="-C-file-AC6" compiler="AC6"/>
-        <cxxflags add="-CPP-file-AC6" compiler="AC6"/>
+        <cflags add="-C-file-AC6 -C-CPP-file" compiler="AC6"/>
+        <cxxflags add="-CPP-file-AC6 -C-CPP-file" compiler="AC6"/>
         <ldflags add="-Link-file-AC6" compiler="AC6"/>
         <defines>DEF1-FILE-PROJECT;DEF2-FILE-PROJECT</defines>
         <undefines>DEF3-FILE-PROJECT;DEF4-FILE-PROJECT</undefines>

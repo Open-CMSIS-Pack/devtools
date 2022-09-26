@@ -49,8 +49,8 @@
       <file category="sourceC" name="../data/TestSolution/TestProject1/main.c">
         <arflags add="-Lib-file-GCC" compiler="GCC"/>
         <asflags add="-ASM-file-GCC" compiler="GCC"/>
-        <cflags add="-C-file-GCC" compiler="GCC"/>
-        <cxxflags add="-CPP-file-GCC" compiler="GCC"/>
+        <cflags add="-C-file-GCC -C-CPP-file" compiler="GCC"/>
+        <cxxflags add="-CPP-file-GCC -C-CPP-file" compiler="GCC"/>
         <ldflags add="-Link-file-GCC" compiler="GCC"/>
         <defines>DEF1-FILE-PROJECT;DEF2-FILE-PROJECT</defines>
         <undefines>DEF3-FILE-PROJECT;DEF4-FILE-PROJECT</undefines>
