@@ -45,6 +45,11 @@ solution:
 
   build-types:
     - type: Debug
+      misc:
+      - compiler: AC6
+        C-CPP: [-C-CPP-Debug-AC6]
+      - compiler: GCC
+        C-CPP: [-C-CPP-Debug-GCC]
       compiler: AC6
       optimize: none
       debug: on

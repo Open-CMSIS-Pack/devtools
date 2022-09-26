@@ -37,8 +37,8 @@
     <group name="Sources">
       <arflags add="-Lib-group" compiler="AC6"/>
       <asflags add="-ASM-group" compiler="AC6"/>
-      <cflags add="-C-group" compiler="AC6"/>
-      <cxxflags add="-CPP-group" compiler="AC6"/>
+      <cflags add="-C-group -C-CPP-group-AC6" compiler="AC6"/>
+      <cxxflags add="-CPP-group -C-CPP-group-AC6" compiler="AC6"/>
       <ldflags add="-Link-group" compiler="AC6"/>
       <defines>DEF1-GROUP-PROJECT;DEF2-GROUP-PROJECT</defines>
       <undefines>DEF3-GROUP-PROJECT;DEF4-GROUP-PROJECT</undefines>
@@ -47,8 +47,8 @@
       <file category="sourceC" name="../TestProject1/main.c">
         <arflags add="-Lib-file-AC6" compiler="AC6"/>
         <asflags add="-ASM-file-AC6" compiler="AC6"/>
-        <cflags add="-C-file-AC6" compiler="AC6"/>
-        <cxxflags add="-CPP-file-AC6" compiler="AC6"/>
+        <cflags add="-C-file-AC6 -C-CPP-file" compiler="AC6"/>
+        <cxxflags add="-CPP-file-AC6 -C-CPP-file" compiler="AC6"/>
         <ldflags add="-Link-file-AC6" compiler="AC6"/>
         <defines>DEF1-FILE-PROJECT;DEF2-FILE-PROJECT</defines>
         <undefines>DEF3-FILE-PROJECT;DEF4-FILE-PROJECT</undefines>

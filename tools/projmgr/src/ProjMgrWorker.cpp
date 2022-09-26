@@ -846,7 +846,7 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
         });
       auto matchedComponent = itr->second;
       const auto& componentId = ProjMgrUtils::GetComponentID(matchedComponent);
-      MergeMiscCPP(item.build.misc);
+      UpdateMisc(item.build.misc, context.toolchain.name);
 
       // Set layer's rtePath attribute
       if (!layer.empty() && context.csolution->directories.rte.empty()) {
@@ -1080,6 +1080,9 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
   if (!ProcessPrecedence(compiler)) {
     return false;
   }
+  if (!ProcessToolchain(context)) {
+    return false;
+  }
 
   // Access sequences and relative path references must be processed
   // after board, device and compiler precedences (due to $Bname$, $Dname$ and $Compiler$)
@@ -1152,8 +1155,8 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
   for (auto& [_, clayer] : context.controls.clayers) {
     miscVec.push_back(&clayer.misc);
   }
+  context.misc.compiler = context.toolchain.name;
   AddMiscUniquely(context.misc, miscVec);
-  MergeMiscCPP(context.misc);
 
   // Defines
   vector<string> projectDefines, projectUndefines;
@@ -1286,7 +1289,7 @@ bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, 
       }
       else if (sequence == "Compiler") {
         regEx = regex("\\$Compiler\\$");
-        replacement = context.compiler;
+        replacement = context.toolchain.name;
       }
       else if (regex_match(sequence, regex("(Output|OutDir|Source)\\(.*"))) {
         // Output, OutDir and Source access sequences lead to path replacement
@@ -1401,6 +1404,7 @@ bool ProjMgrWorker::AddGroup(const GroupNode& src, vector<GroupNode>& dst, Conte
     // Replace sequences and/or adjust file relative paths
     BuildType srcNodeBuild = src.build;
     ProcessSequencesRelatives(context, srcNodeBuild, root);
+    UpdateMisc(srcNodeBuild.misc, context.toolchain.name);
 
     dst.push_back({ src.group, src.forCompiler, files, groups, srcNodeBuild, src.type });
   }
@@ -1425,6 +1429,7 @@ bool ProjMgrWorker::AddFile(const FileNode& src, vector<FileNode>& dst, ContextI
     // Replace sequences and/or adjust file relative paths
     ProcessSequenceRelative(context, srcNode.file, root);
     ProcessSequencesRelatives(context, srcNode.build, root);
+    UpdateMisc(srcNode.build.misc, context.toolchain.name);
 
     dst.push_back(srcNode);
 
@@ -1507,9 +1512,6 @@ bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGpdsc, bool re
     return false;
   }
   if (!ProcessPrecedences(context)) {
-    return false;
-  }
-  if (!ProcessToolchain(context)) {
     return false;
   }
   if (!ProcessDevice(context)) {
@@ -1923,33 +1925,34 @@ bool ProjMgrWorker::GetProjectSetup(ContextItem& context) {
   return true;
 }
 
-void ProjMgrWorker::MergeMiscCPP(vector<MiscItem>& vec) {
-  for (auto& vecIt : vec) {
-    AddStringItemsUniquely(vecIt.c, vecIt.c_cpp);
-    AddStringItemsUniquely(vecIt.cpp, vecIt.c_cpp);
+void ProjMgrWorker::UpdateMisc(vector<MiscItem>& vec, const string& compiler) {
+  // Filter and adjust vector of MiscItem, leaving a single compiler compatible item
+  MiscItem dst;
+  dst.compiler = compiler;
+  AddMiscUniquely(dst, vec);
+  vec.clear();
+  vec.push_back(dst);
+}
+
+void ProjMgrWorker::AddMiscUniquely(MiscItem& dst, vector<vector<MiscItem>*>& vec) {
+  for (auto& src : vec) {
+    AddMiscUniquely(dst, *src);
   }
 }
 
-void ProjMgrWorker::AddMiscUniquely(vector<MiscItem>& dst, vector<vector<MiscItem>*>& srcVec) {
-  for (auto& src : srcVec) {
-    for (auto& srcIt : *src) {
-      if (dst.empty()) {
-        dst.push_back(srcIt);
-        continue;
-      }
-      for (auto& dstIt : dst) {
-        if (dstIt.compiler.empty() || srcIt.compiler.empty() || (dstIt.compiler == srcIt.compiler)) {
-          AddStringItemsUniquely(dstIt.as, srcIt.as);
-          AddStringItemsUniquely(dstIt.c, srcIt.c);
-          AddStringItemsUniquely(dstIt.cpp, srcIt.cpp);
-          AddStringItemsUniquely(dstIt.c_cpp, srcIt.c_cpp);
-          AddStringItemsUniquely(dstIt.link, srcIt.link);
-          AddStringItemsUniquely(dstIt.lib, srcIt.lib);
-        }
-        else {
-          dst.push_back(srcIt);
-        }
-      }
+void ProjMgrWorker::AddMiscUniquely(MiscItem& dst, vector<MiscItem>& vec) {
+  for (auto& src : vec) {
+    if (src.compiler.empty() || (src.compiler == dst.compiler)) {
+      // Copy individual flags
+      AddStringItemsUniquely(dst.as, src.as);
+      AddStringItemsUniquely(dst.c, src.c);
+      AddStringItemsUniquely(dst.cpp, src.cpp);
+      AddStringItemsUniquely(dst.c_cpp, src.c_cpp);
+      AddStringItemsUniquely(dst.link, src.link);
+      AddStringItemsUniquely(dst.lib, src.lib);
+      // Propagate C-CPP flags
+      AddStringItemsUniquely(dst.c, dst.c_cpp);
+      AddStringItemsUniquely(dst.cpp, dst.c_cpp);
     }
   }
 }

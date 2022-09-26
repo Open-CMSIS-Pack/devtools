@@ -162,7 +162,7 @@ struct ContextItem {
   ToolchainItem toolchain;
   std::vector<std::string> defines;
   std::vector<std::string> includes;
-  std::vector<MiscItem> misc;
+  MiscItem misc;
   std::map<std::string, std::string> targetAttributes;
   std::map<std::string, RtePackage*> packages;
   std::map<std::string, std::pair<RteComponent*, ComponentItem*>> components;
@@ -396,14 +396,15 @@ protected:
   bool AddContext(ProjMgrParser& parser, ContextDesc& descriptor, const TypePair& type, const std::string& cprojectFile, ContextItem& parentContext);
   bool ValidateContext(ContextItem& context);
   bool FormatValidationResults(std::set<std::string>& results, const ContextItem& context);
-  void AddMiscUniquely(std::vector<MiscItem>& dst, std::vector<std::vector<MiscItem>*>& srcVec);
+  void UpdateMisc(std::vector<MiscItem>& vec, const std::string& compiler);
+  void AddMiscUniquely(MiscItem& dst, std::vector<std::vector<MiscItem>*>& srcVec);
+  void AddMiscUniquely(MiscItem& dst, std::vector<MiscItem>& srcVec);
   void AddStringItemsUniquely(std::vector<std::string>& dst, const std::vector<std::string>& src);
   void RemoveStringItems(std::vector<std::string>& dst, std::vector<std::string>& src);
   bool GetAccessSequence(size_t& offset, const std::string& src, std::string& sequence, const char start, const char end);
   void PushBackUniquely(std::vector<std::string>& vec, const std::string& value);
   void PushBackUniquely(std::list<std::string>& vec, const std::string& value);
   void MergeStringVector(StringVectorCollection& item);
-  void MergeMiscCPP(std::vector<MiscItem>& vec);
   bool AddGroup(const GroupNode& src, std::vector<GroupNode>& dst, ContextItem& context, const std::string root);
   bool AddFile(const FileNode& src, std::vector<FileNode>& dst, ContextItem& context, const std::string root);
   bool AddComponent(const ComponentItem& src, const std::string& layer, std::vector<std::pair<ComponentItem, std::string>>& dst, TypePair type);

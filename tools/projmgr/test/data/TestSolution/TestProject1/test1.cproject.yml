@@ -41,6 +41,8 @@ project:
           ASM: [-ASM-group]
           Link: [-Link-group]
           Lib: [-Lib-group]
+        - compiler: AC6
+          C-CPP: [-C-CPP-group-AC6]
       files: 
         - file: main.c
           define:
@@ -68,6 +70,7 @@ project:
               ASM: [-ASM-file-GCC]
               Link: [-Link-file-GCC]
               Lib: [-Lib-file-GCC]
+            - C-CPP: [-C-CPP-file]
     - group: Debug Group
       for-type: .Debug
       files:

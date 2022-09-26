@@ -169,7 +169,7 @@ void ProjMgrGenerator::GenerateCprjTarget(XMLTreeElement* element, const Context
   }
 
   GenerateCprjOptions(element, context.cproject->target.build);
-  GenerateCprjMisc(element, context.misc, context.toolchain.name);
+  GenerateCprjMisc(element, context.misc);
   GenerateCprjLinkerScript(element, context.toolchain.name, context.linkerScript);
   GenerateCprjVector(element, context.defines, "defines");
   GenerateCprjVector(element, context.includes, "includes");
@@ -210,7 +210,7 @@ void ProjMgrGenerator::GenerateCprjComponents(XMLTreeElement* element, const Con
       }
 
       GenerateCprjOptions(componentElement, component.second->build);
-      GenerateCprjMisc(componentElement, component.second->build.misc, context.toolchain.name);
+      GenerateCprjMisc(componentElement, component.second->build.misc);
       GenerateCprjVector(componentElement, component.second->build.defines, "defines");
       GenerateCprjVector(componentElement, component.second->build.undefines, "undefines");
       GenerateCprjVector(componentElement, component.second->build.addpaths, "includes");
@@ -242,24 +242,26 @@ void ProjMgrGenerator::GenerateCprjOptions(XMLTreeElement* element, const BuildT
   }
 }
 
-void ProjMgrGenerator::GenerateCprjMisc(XMLTreeElement* element, const vector<MiscItem>& misc, const std::string& compiler) {
-  for (const auto& miscIt : misc) {
-    const map<string, vector<string>>& FLAGS_MATRIX = {
-      {"asflags", miscIt.as},
-      {"cflags", miscIt.c},
-      {"cxxflags", miscIt.cpp},
-      {"ldflags", miscIt.link},
-      {"arflags", miscIt.lib}
-    };
-    if (miscIt.compiler.empty() || (miscIt.compiler == compiler)) {
-      for (const auto& flags : FLAGS_MATRIX) {
-        if (!flags.second.empty()) {
-          XMLTreeElement* flagsElement = element->CreateElement(flags.first);
-          if (flagsElement) {
-            flagsElement->AddAttribute("add", GetStringFromVector(flags.second, " "));
-            flagsElement->AddAttribute("compiler", miscIt.compiler.empty() ? compiler : miscIt.compiler);
-          }
-        }
+void ProjMgrGenerator::GenerateCprjMisc(XMLTreeElement* element, const vector<MiscItem>& miscVec) {
+  for (const auto& miscIt : miscVec) {
+    GenerateCprjMisc(element, miscIt);
+  }
+}
+
+void ProjMgrGenerator::GenerateCprjMisc(XMLTreeElement* element, const MiscItem& misc) {
+  const map<string, vector<string>>& FLAGS_MATRIX = {
+    {"asflags", misc.as},
+    {"cflags", misc.c},
+    {"cxxflags", misc.cpp},
+    {"ldflags", misc.link},
+    {"arflags", misc.lib}
+  };
+  for (const auto& flags : FLAGS_MATRIX) {
+    if (!flags.second.empty()) {
+      XMLTreeElement* flagsElement = element->CreateElement(flags.first);
+      if (flagsElement) {
+        flagsElement->AddAttribute("add", GetStringFromVector(flags.second, " "));
+        flagsElement->AddAttribute("compiler", misc.compiler);
       }
     }
   }
@@ -293,7 +295,7 @@ void ProjMgrGenerator::GenerateCprjGroups(XMLTreeElement* element, const vector<
       }
 
       GenerateCprjOptions(groupElement, groupNode.build);
-      GenerateCprjMisc(groupElement, groupNode.build.misc, compiler);
+      GenerateCprjMisc(groupElement, groupNode.build.misc);
       GenerateCprjVector(groupElement, groupNode.build.defines, "defines");
       GenerateCprjVector(groupElement, groupNode.build.undefines, "undefines");
       GenerateCprjVector(groupElement, groupNode.build.addpaths, "includes");
@@ -306,7 +308,7 @@ void ProjMgrGenerator::GenerateCprjGroups(XMLTreeElement* element, const vector<
           fileElement->AddAttribute("category", fileNode.category);
 
           GenerateCprjOptions(fileElement, fileNode.build);
-          GenerateCprjMisc(fileElement, fileNode.build.misc, compiler);
+          GenerateCprjMisc(fileElement, fileNode.build.misc);
           GenerateCprjVector(fileElement, fileNode.build.defines, "defines");
           GenerateCprjVector(fileElement, fileNode.build.undefines, "undefines");
           GenerateCprjVector(fileElement, fileNode.build.addpaths, "includes");
