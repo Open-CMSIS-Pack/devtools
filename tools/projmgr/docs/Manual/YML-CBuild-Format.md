@@ -69,12 +69,12 @@ A typical directory structure of a `csolution` based application that uses commo
 
 `build-idx:`                                       | Content
 :--------------------------------------------------|:------------------------------------
-&nbsp;&nbsp; [`licenses:`](#licenses)              | List of common packs used to generate the solution
+&nbsp;&nbsp; [`licenses:`](#licenses)              | List of common licenses used by solution
 &nbsp;&nbsp; [`csolution:`](#csolution)            | List of `*.yml` input files used to generate this application.
-&nbsp;&nbsp; [`builds:`](#contexts)              | List of project contexts that belong to the solution.
+&nbsp;&nbsp; [`builds:`](#contexts)                | List of project contexts that belong to the solution.
 
 ```yml
-  licenses: # all packs used in the projects (exception when a project uses a different pack version)  
+  licenses: # all licenses used in the projects  
   ...
 
   builds:
