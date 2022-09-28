@@ -337,8 +337,8 @@ jobs:
 
       - name: Generate coverage report
         run: |
-          lcov -c --directory . --output-file full_coverage.info
-          lcov -e full_coverage.info '/tools/projmgr/include/*' '*/tools/projmgr/src/*' -o coverage.info
+          lcov --rc lcov_branch_coverage=1 -c --directory . --output-file full_coverage.info
+          lcov --rc lcov_branch_coverage=1 -e full_coverage.info '/tools/projmgr/include/*' '*/tools/projmgr/src/*' -o coverage.info
           genhtml coverage.info --output-directory coverage
           zip -r coverage.zip coverage/*
         working-directory: ./build/tools/projmgr/
