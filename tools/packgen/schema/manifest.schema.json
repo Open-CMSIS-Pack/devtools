@@ -284,7 +284,7 @@
         "conditions": { "$ref": "#/$defs/ConditionsType" },
         "files": {
           "type": "array",
-          "items": [{
+          "items": {
             "type": "object",
             "properties": {
               "name": { "type": "string" },
@@ -305,7 +305,7 @@
               "conditions": { "$ref": "#/$defs/ConditionsType" }
             },
             "required": [ "name", "attributes", "conditions" ]
-          }]
+          }
         },
         "extensions": { "$ref": "#/$defs/ExtensionType" }
       },
