@@ -14,37 +14,34 @@
 #include "CrossPlatformUtils.h"
 
 #include <algorithm>
-#include <cxxopts.hpp>
 #include <functional>
 
 using namespace std;
 
-static constexpr const char* USAGE = "\
+static constexpr const char* USAGE = "\n\
 Usage:\n\
-  csolution <command> [<args>] [OPTIONS...]\n\n\
-Commands:\n\
-  list packs            Print list of used packs from the pack repository\n\
-       boards           Print list of available board names\n\
-       devices          Print list of available device names\n\
-       components       Print list of available components\n\
-       dependencies     Print list of unresolved project dependencies\n\
-       contexts         Print list of contexts in a csolution.yml\n\
-       generators       Print list of code generators of a given context\n\
-  convert               Convert cproject.yml or csolution.yml in cprj files\n\
-  run                   Run code generator\n\
-  help                  Print usage\n\n\
-Options:\n\
-  -s, --solution arg    Input csolution.yml file\n\
-  -p, --project arg     Input cproject.yml file\n\
-  -c, --context arg     Input context name <cproject>[.<build-type>][+<target-type>]\n\
-  -f, --filter arg      Filter words\n\
-  -g, --generator arg   Code generator identifier\n\
-  -m, --missing         List only required packs that are missing in the pack repository\n\
-  -l, --load arg        Set policy for packs loading [latest|all|required]\n\
-  -n, --no-check-schema Skip schema check\n\
-  -o, --output arg      Output directory\n\
-  -h, --help            Print usage\n\
-  -V, --version         Print version\n\
+  csolution [-V] [--version] [-h] [--help]\n\
+            <command> [<arg>] [OPTIONS...]\n\n\
+ Commands:\n\
+   list packs            Print list of used packs from the pack repository\n\
+        boards           Print list of available board names\n\
+        devices          Print list of available device names\n\
+        components       Print list of available components\n\
+        dependencies     Print list of unresolved project dependencies\n\
+        contexts         Print list of contexts in a csolution.yml\n\
+        generators       Print list of code generators of a given context\n\
+   convert               Convert *.csolution.yml input file in *.cprj files\n\
+   run                   Run code generator\n\n\
+ Options:\n\
+   -s, --solution arg    Input csolution.yml file\n\
+   -c, --context arg     Input context name <cproject>[.<build-type>][+<target-type>]\n\
+   -f, --filter arg      Filter words\n\
+   -g, --generator arg   Code generator identifier\n\
+   -m, --missing         List only required packs that are missing in the pack repository\n\
+   -l, --load arg        Set policy for packs loading [latest|all|required]\n\
+   -n, --no-check-schema Skip schema check\n\
+   -o, --output arg      Output directory\n\n\
+Use 'csolution <command> -h' for more information about a command.\
 ";
 
 ProjMgr::ProjMgr(void) : m_checkSchema(false) {
@@ -55,9 +52,32 @@ ProjMgr::~ProjMgr(void) {
   // Reserved
 }
 
-void ProjMgr::PrintUsage(void) {
-  cout << PRODUCT_NAME << " " << VERSION_STRING << " " << COPYRIGHT_NOTICE << " " << endl;
-  cout << USAGE << endl;
+bool ProjMgr::PrintUsage(const map<string, vector<cxxopts::Option>>& cmdOptionsDict,
+  const std::string& cmd, const std::string& subCmd) {
+  string signature = PRODUCT_NAME + string(" ") + VERSION_STRING + string(" ") + COPYRIGHT_NOTICE;
+  if (cmd.empty() && subCmd.empty()) {
+    // print main help
+    cout << signature << endl;
+    cout << USAGE << endl;
+    return true;
+  }
+
+  string filter = cmd + (subCmd.empty() ? "" : (string(" ") + subCmd));
+  if (cmdOptionsDict.find(filter) == cmdOptionsDict.end()) {
+    ProjMgrLogger::Error("'" + filter + "' is not a valid command. See 'csolution --help'.");
+    return false;
+  }
+
+  // print command help
+  cout << signature << endl;
+  string program = ORIGINAL_FILENAME + string(" ") + cmd +
+    (subCmd.empty() ? "" : (string(" ") + subCmd));
+  cxxopts::Options options(program);
+  for (auto& option : cmdOptionsDict.at(filter)) {
+    options.add_option(filter, option);
+  }
+  cout << options.help() << endl;
+  return true;
 }
 
 void ProjMgr::ShowVersion(void) {
@@ -71,22 +91,39 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
   cxxopts::Options options(ORIGINAL_FILENAME);
   cxxopts::ParseResult parseResult;
 
+  cxxopts::Option solution("s,solution", "Input csolution.yml file", cxxopts::value<string>());
+  cxxopts::Option project("p,project", "Input cproject.yml file", cxxopts::value<string>());
+  cxxopts::Option context("c,context", "Input context name <cproject>[.<build-type>][+<target-type>]", cxxopts::value<string>());
+  cxxopts::Option filter("f,filter", "Filter words", cxxopts::value<string>());
+  cxxopts::Option help("h,help", "Print usage");
+  cxxopts::Option generator("g,generator", "Code generator identifier", cxxopts::value<string>());
+  cxxopts::Option load("l,load", "Set policy for packs loading [latest|all|required]", cxxopts::value<string>());
+  cxxopts::Option missing( "m,missing", "List only required packs that are missing in the pack repository", cxxopts::value<bool>()->default_value("false"));
+  cxxopts::Option schemaCheck( "n,no-check-schema", "Skip schema check", cxxopts::value<bool>()->default_value("false"));
+  cxxopts::Option output("o,output", "Output directory", cxxopts::value<string>());
+  cxxopts::Option version("V,version", "Print version");
+
+  // command options dictionary
+  map<string, vector<cxxopts::Option>> optionsDict = {
+    {"convert",           {solution, project, context, output, load, schemaCheck}},
+    {"run",               {solution, generator, context, load, schemaCheck}},
+    {"list packs",        {solution, project, context, filter, missing, load, schemaCheck}},
+    {"list boards",       {solution, project, context, filter, load, schemaCheck}},
+    {"list devices",      {solution, project, context, filter, load, schemaCheck}},
+    {"list components",   {solution, project, context, filter, load, schemaCheck}},
+    {"list dependencies", {solution, project, context, filter, load, schemaCheck}},
+    {"list contexts",     {solution, filter, load, schemaCheck}},
+    {"list generators",   {solution, context, load, schemaCheck}},
+  };
+
   try {
-    options.add_options()
-      ("command", "", cxxopts::value<string>())
-      ("args", "", cxxopts::value<string>())
-      ("s,solution", "", cxxopts::value<string>())
-      ("p,project", "", cxxopts::value<string>())
-      ("c,context", "", cxxopts::value<string>())
-      ("f,filter", "", cxxopts::value<string>())
-      ("g,generator", "", cxxopts::value<string>())
-      ("l,load", "", cxxopts::value<string>())
-      ("m,missing", "", cxxopts::value<bool>()->default_value("false"))
-      ("n,no-check-schema", "", cxxopts::value<bool>()->default_value("false"))
-      ("o,output", "", cxxopts::value<string>())
-      ("h,help", "")
-      ("V,version", "")
-      ;
+    options.add_options("", {
+      {"command", "", cxxopts::value<string>()},
+      {"args", "", cxxopts::value<string>()},
+      solution, project, context, filter,
+      generator, load, missing, schemaCheck,
+      output, help, version
+    });
     options.parse_positional({ "command", "args"});
 
     parseResult = options.parse(argc, argv);
@@ -102,9 +139,9 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
     }
     else {
       // No command was given, print usage and return success
-      manager.PrintUsage();
-      return 0;
+      return manager.PrintUsage(optionsDict, "", "") ? 0 : 1;
     }
+
     if (parseResult.count("args")) {
       manager.m_args = parseResult["args"].as<string>();
     }
@@ -162,12 +199,11 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
     }
   }
 
-  // Parse commands
-  if ((manager.m_command == "help") || parseResult.count("help")) {
-    // Print usage
-    manager.PrintUsage();
-    return 0;
-  } else if (manager.m_command == "list") {
+  if (parseResult.count("help")) {
+    return manager.PrintUsage(optionsDict, manager.m_command, manager.m_args) ? 0 : 1;
+  }
+
+  if (manager.m_command == "list") {
     // Process 'list' command
     if (manager.m_args.empty()) {
       ProjMgrLogger::Error("list <args> was not specified");
