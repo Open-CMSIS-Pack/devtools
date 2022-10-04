@@ -11,6 +11,8 @@
 #include "ProjMgrWorker.h"
 #include "ProjMgrGenerator.h"
 
+#include <cxxopts.hpp>
+
  /**
   * @brief projmgr class
  */
@@ -35,8 +37,13 @@ public:
 
   /**
    * @brief print usage
+   * @param cmdOptionsDict map of command and options
+   * @param cmd command for which usage is to be generated
+   * @param subCmd subcommand for which usage is to be generated
+   * @return true if successful, otherwise false
   */
-  void PrintUsage(void);
+  bool PrintUsage(const std::map<std::string, std::vector<cxxopts::Option>>& cmdOptionsDict,
+    const std::string& cmd, const std::string & subCmd);
 
   /**
    * @brief show version

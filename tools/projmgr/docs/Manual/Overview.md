@@ -107,36 +107,34 @@ The CMSIS-Pack repository must be present in the development environment.
 ### Invocation
 
 ```text
-csolution version 1.1.0 (C) 2020 - 2022 Arm Ltd. and Contributors
-Create build information from csolution.yml/cproject.yml input files and software packs
+CMSIS Project Manager 1.1.0 (C) 2022 Arm Ltd. and Contributors
 
 Usage:
-  csolution <command> [<args>] [OPTIONS...]
+  csolution [-V] [--version] [-h] [--help]
+            <command> [<arg>] [OPTIONS...]
 
-Commands:
-  list packs            Print list of used packs from the pack repository
-       boards           Print list of available board names
-       devices          Print list of available device names
-       components       Print list of available components
-       dependencies     Print list of unresolved project dependencies
-       contexts         Print list of contexts in a csolution.yml
-       generators       Print list of code generators of a given context
-       config           Print configuration information and available compilers
-  convert               Convert *.csolution.yml input file to *.cprj files
-  run                   Run code generator
-  help                  Print usage
+ Commands:
+   list packs            Print list of used packs from the pack repository
+        boards           Print list of available board names
+        devices          Print list of available device names
+        components       Print list of available components
+        dependencies     Print list of unresolved project dependencies
+        contexts         Print list of contexts in a csolution.yml
+        generators       Print list of code generators of a given context
+   convert               Convert *.csolution.yml input file in *.cprj files
+   run                   Run code generator
 
-Options:
-  -s, --solution arg    Input csolution.yml file
-  -c, --context arg     Input context name <cproject>.<build-type>+<target-type>
-  -f, --filter arg      Filter words
-  -g, --generator arg   Code generator identifier
-  -l, --load arg        Set policy for loading packs, arg= {latest | all | required}
-  -m, --missing         List only required packs that are missing in the pack repository
-  -n, --no-check-schema Skip schema check
-  -o, --output arg      Output directory
-  -h, --help            Print usage
-  -V, --version         Print version
+ Options:
+   -s, --solution arg    Input csolution.yml file
+   -c, --context arg     Input context name <cproject>[.<build-type>][+<target-type>]
+   -f, --filter arg      Filter words
+   -g, --generator arg   Code generator identifier
+   -m, --missing         List only required packs that are missing in the pack repository
+   -l, --load arg        Set policy for packs loading [latest|all|required]
+   -n, --no-check-schema Skip schema check
+   -o, --output arg      Output directory
+
+Use 'csolution <command> -h' for more information about a command.
 ```
 
 ### Command Examples
