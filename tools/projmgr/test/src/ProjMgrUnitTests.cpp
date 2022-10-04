@@ -89,14 +89,6 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_EmptyOptions) {
   EXPECT_EQ(0, RunProjMgr(1, argv));
 }
 
-TEST_F(ProjMgrUnitTests, RunProjMgr_Help) {
-  char* argv[2];
-
-  // help
-  argv[1] = (char*)"help";
-  EXPECT_EQ(0, RunProjMgr(2, argv));
-}
-
 TEST_F(ProjMgrUnitTests, RunProjMgr_Version) {
   char* argv[2];
   // version
@@ -1920,4 +1912,72 @@ TEST_F(ProjMgrUnitTests, ProjectSetup) {
     testinput_folder + "/TestProjectSetup/ref/setup-test.Build AC6.cprj");
   CompareFile(testoutput_folder + "/setup-test.Build GCC.cprj",
     testinput_folder + "/TestProjectSetup/ref/setup-test.Build GCC.cprj");
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_help) {
+  char* argv[4];
+
+  argv[1] = (char*)"-h";
+  EXPECT_EQ(0, RunProjMgr(2, argv));
+
+  argv[1] = (char*)"--help";
+  EXPECT_EQ(0, RunProjMgr(2, argv));
+
+  argv[1] = (char*)"run";
+  argv[2] = (char*)"-h";
+  EXPECT_EQ(0, RunProjMgr(3, argv));
+
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-h";
+  EXPECT_EQ(0, RunProjMgr(3, argv));
+
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"packs";
+  argv[3] = (char*)"-h";
+  EXPECT_EQ(0, RunProjMgr(4, argv));
+
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"boards";
+  argv[3] = (char*)"-h";
+  EXPECT_EQ(0, RunProjMgr(4, argv));
+
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"devices";
+  argv[3] = (char*)"-h";
+  EXPECT_EQ(0, RunProjMgr(4, argv));
+
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"components";
+  argv[3] = (char*)"-h";
+  EXPECT_EQ(0, RunProjMgr(4, argv));
+
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"dependencies";
+  argv[3] = (char*)"-h";
+  EXPECT_EQ(0, RunProjMgr(4, argv));
+
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"contexts";
+  argv[3] = (char*)"-h";
+  EXPECT_EQ(0, RunProjMgr(4, argv));
+
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"generators";
+  argv[3] = (char*)"-h";
+  EXPECT_EQ(0, RunProjMgr(4, argv));
+
+  // invalid command
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"invalid";
+  argv[3] = (char*)"-h";
+  EXPECT_EQ(1, RunProjMgr(4, argv));
+
+  // invalid command
+  argv[1] = (char*)"test";
+  argv[2] = (char*)"-h";
+  EXPECT_EQ(1, RunProjMgr(3, argv));
+
+  // invalid command
+  argv[1] = (char*)"--helped";
+  EXPECT_EQ(1, RunProjMgr(2, argv));
 }
