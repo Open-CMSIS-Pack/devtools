@@ -246,6 +246,7 @@ struct CdefaultItem {
 
 /**
  * @brief solution item containing
+ *        csolution name,
  *        csolution path,
  *        csolution directory,
  *        output directories,
@@ -257,6 +258,7 @@ struct CdefaultItem {
  *        list of packs
 */
 struct CsolutionItem {
+  std::string name;
   std::string path;
   std::string directory;
   DirectoriesItem directories;

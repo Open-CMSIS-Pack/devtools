@@ -434,6 +434,18 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution) {
     testinput_folder + "/TestSolution/ref/test2.Debug+CM0.cprj");
   CompareFile(testoutput_folder + "/test2.Debug+CM3.cprj",
     testinput_folder + "/TestSolution/ref/test2.Debug+CM3.cprj");
+
+  // Check generated cbuild YMLs
+  CompareFile(testoutput_folder + "/test.cbuild-idx.yml",
+    testinput_folder + "/TestSolution/ref/cbuild/test.cbuild-idx.yml");
+  CompareFile(testoutput_folder + "/test1.Debug+CM0.cbuild.yml",
+    testinput_folder + "/TestSolution/ref/cbuild/test1.Debug+CM0.cbuild.yml");
+  CompareFile(testoutput_folder + "/test1.Release+CM0.cbuild.yml",
+    testinput_folder + "/TestSolution/ref/cbuild/test1.Release+CM0.cbuild.yml");
+  CompareFile(testoutput_folder + "/test2.Debug+CM0.cbuild.yml",
+    testinput_folder + "/TestSolution/ref/cbuild/test2.Debug+CM0.cbuild.yml");
+  CompareFile(testoutput_folder + "/test2.Debug+CM3.cbuild.yml",
+    testinput_folder + "/TestSolution/ref/cbuild/test2.Debug+CM3.cbuild.yml");
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgrSolutionContext) {

@@ -1,0 +1,64 @@
+build:
+  context: test2.Debug+CM3
+  compiler: AC6
+  device: RteTest_ARMCM3
+  packs:
+    - pack: ARM::RteTest_DFP@0.2.0
+      path: $CMSIS_PACK_ROOT$/ARM/RteTest_DFP/0.2.0
+  misc:
+    ASM:
+      - -ASM-project
+      - -ASM-type-CM3
+    C:
+      - -C-project
+      - -C-CPP-Debug-AC6
+      - -C-CPP-type-CM3
+    CPP:
+      - -CPP-project
+      - -C-CPP-Debug-AC6
+      - -C-CPP-type-CM3
+    Lib:
+      - -Lib-project
+      - -Lib-type-CM3
+    Link:
+      - -Link-project
+      - -Link-type-CM3
+    for-compiler: AC6
+  define:
+    - DEF-project
+    - DEF-solution
+    - DEF-CM3
+    - DEF-Debug
+    - DEF-project
+    - DEF-solution
+    - DEF-CM3
+    - DEF-Debug
+    - ARMCM3
+    - _RTE_
+  add-path:
+    - ../data/TestSolution/TestProject2/path/project
+    - ../data/TestSolution/path/solution/
+    - ../data/TestSolution/path/CM3
+    - ../data/TestSolution/path/Debug
+    - ../data/TestSolution/TestProject2/RTE/_CMSIS
+    - $CMSIS_PACK_ROOT$/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM3/Include
+  components:
+    - component: ARM::Device:Startup&RteTest Startup@2.0.3
+      condition: ARMCM3 RteTest
+      from-pack: ARM::RteTest_DFP@0.2.0
+      selected-by: Startup
+      files:
+        - file: ../data/TestSolution/TestProject2/RTE/Device/RteTest_ARMCM3/ARMCM3_ac6.sct
+          category: linkerScript
+        - file: ../data/TestSolution/TestProject2/RTE/Device/RteTest_ARMCM3/startup_ARMCM3.c
+          category: sourceC
+        - file: ../data/TestSolution/TestProject2/RTE/Device/RteTest_ARMCM3/system_ARMCM3.c
+          category: sourceC
+    - component: ARM::RteTest:CORE@0.1.1
+      condition: Cortex-M Device
+      from-pack: ARM::RteTest_DFP@0.2.0
+      selected-by: CORE
+  groups:
+    - group: Sources
+      files:
+        - file: ../data/TestSolution/TestProject2/main.c

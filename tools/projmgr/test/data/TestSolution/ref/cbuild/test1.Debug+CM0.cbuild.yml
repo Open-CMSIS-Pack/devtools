@@ -1,0 +1,119 @@
+build:
+  context: test1.Debug+CM0
+  compiler: AC6
+  device: RteTest_ARMCM0
+  packs:
+    - pack: ARM::RteTest_DFP@0.2.0
+      path: $CMSIS_PACK_ROOT$/ARM/RteTest_DFP/0.2.0
+  misc:
+    ASM:
+      - -ASM-type-CM0
+    C:
+      - -C-CPP-Debug-AC6
+      - -C-CPP-type-CM0
+    CPP:
+      - -C-CPP-Debug-AC6
+      - -C-CPP-type-CM0
+    Lib:
+      - -Lib-type-CM0
+    Link:
+      - -Link-type-CM0
+    for-compiler: AC6
+  define:
+    - DEF-solution
+    - DEF-CM0
+    - DEF-Debug
+    - DEF-solution
+    - DEF-CM0
+    - DEF-Debug
+    - ARMCM0
+    - _RTE_
+  add-path:
+    - ../data/TestSolution/path/solution/
+    - ../data/TestSolution/path/CM0
+    - ../data/TestSolution/path/Debug
+    - ../data/TestSolution/TestProject1/RTE/_CMSIS
+    - $CMSIS_PACK_ROOT$/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
+  components:
+    - component: ARM::Device:Startup&RteTest Startup@2.0.3
+      condition: ARMCM0 RteTest
+      from-pack: ARM::RteTest_DFP@0.2.0
+      selected-by: Startup
+      files:
+        - file: ../data/TestSolution/TestProject1/RTE/Device/RteTest_ARMCM0/ARMCM0_ac6.sct
+          category: linkerScript
+        - file: ../data/TestSolution/TestProject1/RTE/Device/RteTest_ARMCM0/startup_ARMCM0.c
+          category: sourceC
+        - file: ../data/TestSolution/TestProject1/RTE/Device/RteTest_ARMCM0/system_ARMCM0.c
+          category: sourceC
+    - component: ARM::RteTest:CORE@0.1.1
+      condition: Cortex-M Device
+      from-pack: ARM::RteTest_DFP@0.2.0
+      selected-by: CORE
+      define:
+        - DEF1-COMPONENT
+      undefine:
+        - DEF2-COMPONENT
+      add-path:
+        - ../data/TestSolution/TestProject1/path/1/component
+      del-path:
+        - ../data/TestSolution/TestProject1/path/2/component
+  groups:
+    - group: Sources
+      misc:
+        ASM:
+          - -ASM-group
+        C:
+          - -C-group
+          - -C-CPP-group-AC6
+        CPP:
+          - -CPP-group
+          - -C-CPP-group-AC6
+        Lib:
+          - -Lib-group
+        Link:
+          - -Link-group
+        for-compiler: AC6
+      define:
+        - DEF1-GROUP-PROJECT
+        - DEF2-GROUP-PROJECT
+      undefine:
+        - DEF3-GROUP-PROJECT
+        - DEF4-GROUP-PROJECT
+      add-path:
+        - ../data/TestSolution/TestProject1/path/sources/1/group
+        - ../data/TestSolution/TestProject1/path/sources/2/group
+      del-path:
+        - ../data/TestSolution/TestProject1/path/sources/3/group
+        - ../data/TestSolution/TestProject1/path/sources/4/group
+      files:
+        - file: ../data/TestSolution/TestProject1/main.c
+          misc:
+            ASM:
+              - -ASM-file-AC6
+            C:
+              - -C-file-AC6
+              - -C-CPP-file
+            CPP:
+              - -CPP-file-AC6
+              - -C-CPP-file
+            Lib:
+              - -Lib-file-AC6
+            Link:
+              - -Link-file-AC6
+            for-compiler: AC6
+          define:
+            - DEF1-FILE-PROJECT
+            - DEF2-FILE-PROJECT
+          undefine:
+            - DEF3-FILE-PROJECT
+            - DEF4-FILE-PROJECT
+          add-path:
+            - ../data/TestSolution/TestProject1/path/main/1/file
+            - ../data/TestSolution/TestProject1/path/main/2/file
+          del-path:
+            - ../data/TestSolution/TestProject1/path/main/3/file
+            - ../data/TestSolution/TestProject1/path/main/4/file
+    - group: Debug Group
+      files:
+        - file: ../data/TestSolution/TestProject1/debug.c

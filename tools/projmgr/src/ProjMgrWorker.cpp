@@ -246,7 +246,7 @@ bool ProjMgrWorker::LoadAllRelevantPacks() {
       return false;
     }
     for (const auto& [pdscFile, _] : contextItem.pdscFiles) {
-      PushBackUniquely(pdscFiles, pdscFile);
+      ProjMgrUtils::PushBackUniquely(pdscFiles, pdscFile);
     }
   }
   // Check load packs policy
@@ -437,7 +437,7 @@ bool ProjMgrWorker::ProcessInterfaces(ContextItem& context) {
         found = true;
         // add context define
         const string& define = "INTERFACE_" + provided->first + (provided->second.empty() ? "" : "=" + provided->second);
-        PushBackUniquely(context.defines, define);
+        ProjMgrUtils::PushBackUniquely(context.defines, define);
         break;
       }
     }
@@ -939,6 +939,22 @@ bool ProjMgrWorker::ProcessConfigFiles(ContextItem& context) {
           break;
         }
       }
+    }
+  }
+  return true;
+}
+
+bool ProjMgrWorker::ProcessComponentFiles(ContextItem& context) {
+  if (!context.rteActiveTarget) {
+    ProjMgrLogger::Error("missing RTE target");
+    return false;
+  }
+  const auto& groups = context.rteActiveTarget->GetProjectGroups();
+  for (const auto& [_, group] : groups) {
+    for (auto& [file, fileInfo] : group) {
+      const auto& component = context.rteActiveTarget->GetComponentInstanceForFile(file);
+      const string& filename = fileInfo.m_fi ? fileInfo.m_fi->GetAbsolutePath() : file;
+      context.componentFiles[ProjMgrUtils::GetComponentID(component)].push_back(filename);
     }
   }
   return true;
@@ -1529,13 +1545,16 @@ bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGpdsc, bool re
   if (!ProcessComponents(context)) {
     return false;
   }
-  if (!ProcessConfigFiles(context)) {
-    return false;
-  }
   if (loadGpdsc) {
     if (!ProcessGpdsc(context)) {
       return false;
     }
+  }
+  if (!ProcessComponentFiles(context)) {
+    return false;
+  }
+  if (!ProcessConfigFiles(context)) {
+    return false;
   }
   if (resolveDependencies) {
     // TODO: Add uniquely identified missing dependencies to RTE Model
@@ -1625,7 +1644,7 @@ bool ProjMgrWorker::ListPacks(vector<string>&packs, bool missingPacks, const str
       if (context.packRequirements.size() > 0) {
         // Get context required packs
         for (const auto& [pdscFile, _] : context.pdscFiles) {
-          PushBackUniquely(pdscFiles, pdscFile);
+          ProjMgrUtils::PushBackUniquely(pdscFiles, pdscFile);
         }
       }
     }
@@ -1993,18 +2012,6 @@ bool ProjMgrWorker::GetAccessSequence(size_t& offset, const string& src, string&
   }
   offset = string::npos;
   return true;
-}
-
-void ProjMgrWorker::PushBackUniquely(vector<string>& vec, const string& value) {
-  if (find(vec.cbegin(), vec.cend(), value) == vec.cend()) {
-    vec.push_back(value);
-  }
-}
-
-void ProjMgrWorker::PushBackUniquely(list<string>& list, const string& value) {
-  if (find(list.cbegin(), list.cend(), value) == list.cend()) {
-    list.push_back(value);
-  }
 }
 
 bool ProjMgrWorker::ExecuteGenerator(std::string& generatorId) {

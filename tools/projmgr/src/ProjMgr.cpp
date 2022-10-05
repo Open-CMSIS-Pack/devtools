@@ -353,7 +353,7 @@ bool ProjMgr::RunConvert(void) {
   }
   // Process contexts
   bool error = false;
-  vector<string> processedContexts;
+  vector<ContextItem*> processedContexts;
   for (auto& [contextName, contextItem] : *contexts) {
     if (!m_worker.IsContextSelected(contextName)) {
       continue;
@@ -362,22 +362,28 @@ bool ProjMgr::RunConvert(void) {
       ProjMgrLogger::Error("processing context '" + contextName + "' failed");
       error = true;
     } else {
-      processedContexts.push_back(contextName);
+      processedContexts.push_back(&contextItem);
     }
   }
   // Generate Cprjs
-  for (auto& contextName : processedContexts) {
-    ContextItem& contextItem = (*contexts)[contextName];
+  for (auto& contextItem : processedContexts) {
     error_code ec;
-    const string& filename = fs::weakly_canonical(contextItem.directories.cprj + "/" + contextName + ".cprj", ec).generic_string();
-    RteFsUtils::CreateDirectories(contextItem.directories.cprj);
-    if (m_generator.GenerateCprj(contextItem, filename)) {
+    const string& filename = fs::weakly_canonical(contextItem->directories.cprj + "/" + contextItem->name + ".cprj", ec).generic_string();
+    RteFsUtils::CreateDirectories(contextItem->directories.cprj);
+    if (m_generator.GenerateCprj(*contextItem, filename)) {
       ProjMgrLogger::Info(filename, "file generated successfully");
     } else {
       ProjMgrLogger::Error(filename, "file cannot be written");
       return false;
     }
   }
+  // Generate cbuild files
+  if (!processedContexts.empty()) {
+    if (!m_emitter.GenerateCbuild(m_parser, processedContexts, m_outputDir)) {
+      return false;
+    }
+  }
+
   if (error) {
     return false;
   }

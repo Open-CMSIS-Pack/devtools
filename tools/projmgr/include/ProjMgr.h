@@ -10,6 +10,7 @@
 #include "ProjMgrParser.h"
 #include "ProjMgrWorker.h"
 #include "ProjMgrGenerator.h"
+#include "ProjMgrYamlEmitter.h"
 
 #include <cxxopts.hpp>
 
@@ -69,6 +70,12 @@ public:
   ProjMgrGenerator& GetGenerator(void) { return m_generator; };
 
   /**
+   * @brief get emitter object
+   * @return reference to m_emitter
+  */
+  ProjMgrYamlEmitter& GetEmitter(void) { return m_emitter; };
+
+  /**
    * @brief get cdefault file in solution/project or in installation directory
    * @return true if file is found successfully, false otherwise
   */
@@ -78,6 +85,7 @@ protected:
   ProjMgrParser m_parser;
   ProjMgrWorker m_worker;
   ProjMgrGenerator m_generator;
+  ProjMgrYamlEmitter m_emitter;
 
   std::string m_cprojectFile;
   std::string m_csolutionFile;
