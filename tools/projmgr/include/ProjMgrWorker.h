@@ -168,6 +168,7 @@ struct ContextItem {
   std::map<std::string, std::pair<RteComponent*, ComponentItem*>> components;
   std::vector<std::tuple<RteItem::ConditionResult, std::string, std::set<std::string>, std::set<std::string>>> validationResults;
   std::map<std::string, std::map<std::string, RteFileInstance*>> configFiles;
+  std::map<std::string, std::vector<std::string>> componentFiles;
   std::vector<GroupNode> groups;
   std::map<std::string, std::string> filePaths;
   std::map<std::string, RteGenerator*> generators;
@@ -387,6 +388,7 @@ protected:
   bool ProcessComponents(ContextItem& context);
   bool ProcessGpdsc(ContextItem& context);
   bool ProcessConfigFiles(ContextItem& context);
+  bool ProcessComponentFiles(ContextItem& context);
   bool ProcessGroups(ContextItem& context);
   bool ProcessInterfaces(ContextItem& context);
   bool ProcessSequencesRelatives(ContextItem& context);
@@ -402,8 +404,6 @@ protected:
   void AddStringItemsUniquely(std::vector<std::string>& dst, const std::vector<std::string>& src);
   void RemoveStringItems(std::vector<std::string>& dst, std::vector<std::string>& src);
   bool GetAccessSequence(size_t& offset, const std::string& src, std::string& sequence, const char start, const char end);
-  void PushBackUniquely(std::vector<std::string>& vec, const std::string& value);
-  void PushBackUniquely(std::list<std::string>& vec, const std::string& value);
   void MergeStringVector(StringVectorCollection& item);
   bool AddGroup(const GroupNode& src, std::vector<GroupNode>& dst, ContextItem& context, const std::string root);
   bool AddFile(const FileNode& src, std::vector<FileNode>& dst, ContextItem& context, const std::string root);

@@ -6,6 +6,7 @@
 
 #include "ProjMgrYamlParser.h"
 #include "ProjMgrLogger.h"
+#include "ProjMgrUtils.h"
 #include "ProjMgrYamlSchemaChecker.h"
 
 #include "RteFsUtils.h"
@@ -62,6 +63,7 @@ bool ProjMgrYamlParser::ParseCsolution(const string& input,
 
     csolution.path = RteFsUtils::MakePathCanonical(input);
     csolution.directory = RteFsUtils::ParentPath(csolution.path);
+    csolution.name = fs::path(input).stem().stem().generic_string();
 
     const YAML::Node& root = YAML::LoadFile(input);
     if (!ValidateCsolution(input, root)) {
@@ -437,7 +439,7 @@ bool ProjMgrYamlParser::ParseContexts(const YAML::Node& parent, CsolutionItem& c
       }
       ParseString(projectsEntry, YAML_PROJECT, descriptor.cproject);
       csolution.contexts.push_back(descriptor);
-      PushBackUniquely(csolution.cprojects, descriptor.cproject);
+      ProjMgrUtils::PushBackUniquely(csolution.cprojects, descriptor.cproject);
     }
   }
   return true;
@@ -541,12 +543,6 @@ void ProjMgrYamlParser::ParseTargetType(const YAML::Node& parent, TargetType& ta
     ParseString(parent, item.first, item.second);
   }
   ParseBuildType(parent, targetType.build);
-}
-
-void ProjMgrYamlParser::PushBackUniquely(vector<string>& vec, const string& value) {
-  if (find(vec.cbegin(), vec.cend(), value) == vec.cend()) {
-    vec.push_back(value);
-  }
 }
 
 // Validation Maps

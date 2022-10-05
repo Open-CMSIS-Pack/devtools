@@ -168,3 +168,15 @@ const string ProjMgrUtils::GetCategory(const string& file) {
   }
   return "other";
 }
+
+void ProjMgrUtils::PushBackUniquely(vector<string>& vec, const string& value) {
+  if (find(vec.cbegin(), vec.cend(), value) == vec.cend()) {
+    vec.push_back(value);
+  }
+}
+
+void ProjMgrUtils::PushBackUniquely(list<string>& list, const string& value) {
+  if (find(list.cbegin(), list.cend(), value) == list.cend()) {
+    list.push_back(value);
+  }
+}

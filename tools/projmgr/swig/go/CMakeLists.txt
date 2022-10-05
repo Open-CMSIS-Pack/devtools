@@ -12,4 +12,9 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
   target_link_options(projmgr-go PUBLIC -undefined dynamic_lookup)
 endif()
 
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+  # suppress warnings for swig generated code
+  target_compile_options(projmgr-go PUBLIC -Wno-strict-aliasing -Wno-unused-function -Wno-uninitialized)
+endif()
+
 swig_link_libraries(projmgr-go projmgrlib)

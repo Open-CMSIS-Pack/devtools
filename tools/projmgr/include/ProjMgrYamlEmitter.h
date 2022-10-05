@@ -31,6 +31,15 @@ public:
    * @return Returns the file path of the created generator input file if success
   */
   static std::optional<std::string> EmitContextInfo(const ContextItem& context, const std::string& destinationPath);
+
+  /**
+   * @brief generate cbuild.yml file
+   * @param parser reference
+   * @param processedContexts vector with pointers to contexts
+   * @param output directory
+   * @return true if executed successfully
+  */
+  bool GenerateCbuild(ProjMgrParser& parser, const std::vector<ContextItem*> processedContexts, const std::string& outputDir);
 };
 
 #endif  // PROJMGRYAMLEMITTER_H

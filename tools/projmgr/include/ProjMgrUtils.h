@@ -95,6 +95,14 @@ public:
   */
   static const std::string GetCategory(const std::string& file);
 
+  /**
+   * @brief add a value into a vector/list if it does not already exist in the vector/list
+   * @param vec/list the vector/list to add the value into
+   * @param value the value to add
+  */
+  static void PushBackUniquely(std::vector<std::string>& vec, const std::string& value);
+  static void PushBackUniquely(std::list<std::string>& lst, const std::string& value);
+
 protected:
   static std::string ConstructID(const std::vector<std::pair<const char*, const std::string&>>& elements);
 };
