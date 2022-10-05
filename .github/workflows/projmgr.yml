@@ -132,7 +132,7 @@ jobs:
         github.event_name == 'release' &&
         startsWith(github.ref, 'refs/tags/tools/projmgr/')
     needs: [ build, unittest, coverage ]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     timeout-minutes: 15
 
     steps:
@@ -307,7 +307,10 @@ jobs:
         (github.event_name == 'pull_request') ||
         (github.event_name == 'push') ||
         (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/projmgr/'))
-    runs-on: ubuntu-20.04
+    env:
+        lcov_base: https://github.com/linux-test-project/lcov/releases/download/v1.15/
+        lcov_installer: lcov-1.15.tar.gz
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - name: Install linux deps
@@ -335,11 +338,20 @@ jobs:
           ctest -V -C Debug -R ProjMgrUnitTests
         working-directory: ./build
 
+      # Needs to be removed once the bug is resolved
+      # lcov reporting 1.14 on 1.15 version
+      # https://groups.google.com/g/linux.debian.bugs.dist/c/a9SZGCENJ2s?pli=1
+      - name: Setup lcov1.15
+        run: |
+          wget -q ${{ env.lcov_base }}/${{ env.lcov_installer }}
+          tar -xvf ${{ env.lcov_installer }}
+        working-directory: ./build/tools/projmgr
+
       - name: Generate coverage report
         run: |
-          lcov -c --directory . --output-file full_coverage.info
-          lcov -e full_coverage.info '/tools/projmgr/include/*' '*/tools/projmgr/src/*' -o coverage.info
-          genhtml coverage.info --output-directory coverage
+          lcov-1.15/bin/lcov --rc lcov_branch_coverage=1 --rc geninfo_no_exception_branch=1 -c --directory . --output-file full_coverage.info
+          lcov-1.15/bin/lcov --rc lcov_branch_coverage=1 --rc geninfo_no_exception_branch=1 -e full_coverage.info '/tools/projmgr/include/*' '*/tools/projmgr/src/*' -o coverage.info
+          genhtml coverage.info --output-directory coverage --branch-coverage
           zip -r coverage.zip coverage/*
         working-directory: ./build/tools/projmgr/
 
@@ -365,7 +377,7 @@ jobs:
   test-results-preparation:
     name: "Publish Tests Results"
     needs: [ unittest ]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - name: Setup Python
         uses: actions/setup-python@v2

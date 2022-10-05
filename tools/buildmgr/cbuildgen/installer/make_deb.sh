@@ -171,7 +171,7 @@ Maintainer: Daniel Brondani - Arm Ltd <daniel.brondani@arm.com>
 Section: devel
 Priority: optional
 Standards-Version: 3.9.2
-Build-Depends: debhelper (>= 9), python
+Build-Depends: debhelper (>= 9)
 Homepage: https://arm-software.github.io/CMSIS_5/Build/html/index.html
 
 Package: ${PACKAGE_NAME}
