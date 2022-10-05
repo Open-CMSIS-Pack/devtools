@@ -9,7 +9,7 @@ on:
 jobs:
   markdown-lint:
     name: Lint markdown files
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout devtools
         uses: actions/checkout@v2

@@ -85,7 +85,7 @@ jobs:
   test-results-preparation:
     name: "Publish Tests Results"
     needs: [ test_libs ]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - name: Setup Python
         uses: actions/setup-python@v2
