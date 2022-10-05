@@ -126,7 +126,7 @@ private:
 
 ProjMgrYamlCbuild::ProjMgrYamlCbuild(YAML::Node node, const vector<ContextItem*> processedContexts, ProjMgrParser& parser, const string& directory) {
   error_code ec;
-  if (&parser.GetCdefault()) {
+  if (!parser.GetCdefault().path.empty()) {
     const string& cdefaultFilename = fs::relative(parser.GetCdefault().path, directory, ec).generic_string();
     SetNodeValue(node[YAML_CDEFAULT], cdefaultFilename);
   }
