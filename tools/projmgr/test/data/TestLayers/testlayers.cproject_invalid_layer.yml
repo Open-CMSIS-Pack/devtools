@@ -1,0 +1,11 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/1.1.0/tools/projmgr/schemas/cproject.schema.json
+
+project:
+  device: RteTest_ARMCM0
+  compiler: AC6@6.18.0
+
+  layers:
+    - layer: ./Layer1/layer1.clayer_invalid_schema.yml
+    - layer: ./Layer1/layer1.unknown.yml
+
+
