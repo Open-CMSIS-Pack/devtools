@@ -90,16 +90,6 @@ bool ParseOptions::AddRefPackFile(const std::string& includeFile)
 }
 
 /**
- * @brief option argv[0], configures executable name if possible
- * @param programPath string name
- * @return passed / failed
- */
-bool ParseOptions::ConfigureProgramName(const string& programPath)
-{
-  return m_packOptions.ConfigureProgramName(programPath);
-}
-
-/**
  * @brief option "b,log"
  * @param logFile string log file name
  * @return
@@ -151,12 +141,6 @@ bool ParseOptions::SetIgnoreOtherPdscFiles(bool bIgnore)
  */
 ParseOptions::Result ParseOptions::Parse(int argc, const char* argv[])
 {
-  string path;
-  if(argv[0] && *argv[0]) {
-    path = argv[0];
-  }
-  ConfigureProgramName(path);
-
   const string header = m_packOptions.GetHeader();
   const string fileName = m_packOptions.GetProgramName();
   bool bOk = true;
@@ -165,21 +149,25 @@ ParseOptions::Result ParseOptions::Parse(int argc, const char* argv[])
   try {
     cxxopts::Options options(fileName, header);
 
-    options.add_options()
-      ("input", "Input PDSC", cxxopts::value<std::string>()->default_value(""))
-      ("i,include", "PDSC file(s) as dependency reference", cxxopts::value<std::vector<std::string>>())
-      ("b,log", "Log file", cxxopts::value<string>())
-      ("x,diag-suppress", "Suppress Messages", cxxopts::value<std::vector<std::string>>())
-      ("w", "Warning level", cxxopts::value<string>()->default_value("all"))  /* -w0 .. -w3, -wall */
-      ("v,verbose", "Verbose mode. Prints extra process information", cxxopts::value<bool>()->default_value("false"))
-      ("u", "Verifies that the specified URL matches with the <url> element in the *.PDSC file", cxxopts::value<string>()->default_value(""))
-      ("n", "Text file for pack file name", cxxopts::value<string>()->default_value(""))
-      ("allow-suppress-error", "Allow to suppress error messages", cxxopts::value<bool>()->default_value("false"))
-      ("break", "Debug halt after start", cxxopts::value<bool>()->default_value("false"))
-      ("ignore-other-pdsc", "Ignores other PDSC files in working folder", cxxopts::value<bool>()->default_value("false"))
-      ("V,version", "Print version")
-      ("h,help", "Print usage")
-      ;
+    options
+      .set_width(90)
+      .custom_help("[-V] [--version] [-h] [--help]\n          [OPTIONS...]")
+      .positional_help("<PDSC file>")
+      .add_options("packchk", {
+        {"input", "Input PDSC", cxxopts::value<std::string>()->default_value("")},
+        {"i,include", "PDSC file(s) as dependency reference", cxxopts::value<std::vector<std::string>>()},
+        {"b,log", "Log file", cxxopts::value<string>()},
+        {"x,diag-suppress", "Suppress Messages", cxxopts::value<std::vector<std::string>>()},
+        {"v,verbose", "Verbose mode. Prints extra process information", cxxopts::value<bool>()->default_value("false")},
+        {"w,warning", "Warning level [0|1|2|3|all]", cxxopts::value<string>()->default_value("all")},  /* -w0 .. -w3, -wall */
+        {"u,url", "Verifies that the specified URL matches with the <url> element in the *.PDSC file", cxxopts::value<string>()->default_value("")},
+        {"n,name", "Text file for pack file name", cxxopts::value<string>()->default_value("")},
+        {"V,version", "Print version"},
+        {"h,help", "Print usage"},
+        {"allow-suppress-error", "Allow to suppress error messages", cxxopts::value<bool>()->default_value("false")},
+        {"break", "Debug halt after start", cxxopts::value<bool>()->default_value("false")},
+        {"ignore-other-pdsc", "Ignores other PDSC files in working folder", cxxopts::value<bool>()->default_value("false")},
+      });
 
     options.parse_positional({"input"});
     parseResult = options.parse(argc, argv);

@@ -25,7 +25,6 @@ public:
   bool AddRefPackFile(const std::string& includeFile);
   bool SetPackNamePath(const std::string& packNamePath);
   bool SetUrlRef(const std::string& urlRef);
-  bool ConfigureProgramName(const std::string& programPath);
   bool SetIgnoreOtherPdscFiles(bool bIgnore);
   bool GetIgnoreOtherPdscFiles();
   bool AddRefPdscFile(const std::string& filename);
@@ -53,7 +52,6 @@ private:
   std::string m_packNamePath;
   std::string m_packToCheck;
   std::string m_logPath;
-  std::string m_programName;
   std::set<std::string> m_packsToRef;
 };
 
