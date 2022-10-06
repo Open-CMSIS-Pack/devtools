@@ -87,7 +87,6 @@ protected:
   ProjMgrGenerator m_generator;
   ProjMgrYamlEmitter m_emitter;
 
-  std::string m_cprojectFile;
   std::string m_csolutionFile;
   std::string m_cdefaultFile;
   std::string m_context;

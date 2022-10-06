@@ -92,7 +92,6 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
   cxxopts::ParseResult parseResult;
 
   cxxopts::Option solution("s,solution", "Input csolution.yml file", cxxopts::value<string>());
-  cxxopts::Option project("p,project", "Input cproject.yml file", cxxopts::value<string>());
   cxxopts::Option context("c,context", "Input context name <cproject>[.<build-type>][+<target-type>]", cxxopts::value<string>());
   cxxopts::Option filter("f,filter", "Filter words", cxxopts::value<string>());
   cxxopts::Option help("h,help", "Print usage");
@@ -105,13 +104,13 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
 
   // command options dictionary
   map<string, vector<cxxopts::Option>> optionsDict = {
-    {"convert",           {solution, project, context, output, load, schemaCheck}},
+    {"convert",           {solution, context, output, load, schemaCheck}},
     {"run",               {solution, generator, context, load, schemaCheck}},
-    {"list packs",        {solution, project, context, filter, missing, load, schemaCheck}},
-    {"list boards",       {solution, project, context, filter, load, schemaCheck}},
-    {"list devices",      {solution, project, context, filter, load, schemaCheck}},
-    {"list components",   {solution, project, context, filter, load, schemaCheck}},
-    {"list dependencies", {solution, project, context, filter, load, schemaCheck}},
+    {"list packs",        {solution, context, filter, missing, load, schemaCheck}},
+    {"list boards",       {solution, context, filter, load, schemaCheck}},
+    {"list devices",      {solution, context, filter, load, schemaCheck}},
+    {"list components",   {solution, context, filter, load, schemaCheck}},
+    {"list dependencies", {solution, context, filter, load, schemaCheck}},
     {"list contexts",     {solution, filter, load, schemaCheck}},
     {"list generators",   {solution, context, load, schemaCheck}},
   };
@@ -120,9 +119,9 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
     options.add_options("", {
       {"command", "", cxxopts::value<string>()},
       {"args", "", cxxopts::value<string>()},
-      solution, project, context, filter,
-      generator, load, missing, schemaCheck,
-      output, help, version
+      solution, context, filter, generator,
+      load, missing, schemaCheck, output,
+      help, version
     });
     options.parse_positional({ "command", "args"});
 
@@ -154,16 +153,6 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
       }
       manager.m_csolutionFile = fs::canonical(manager.m_csolutionFile, ec).generic_string();
       manager.m_rootDir = fs::path(manager.m_csolutionFile).parent_path().generic_string();
-    }
-    if (parseResult.count("project")) {
-      manager.m_cprojectFile = parseResult["project"].as<string>();
-      error_code ec;
-      if (!fs::exists(manager.m_cprojectFile, ec)) {
-        ProjMgrLogger::Error(manager.m_cprojectFile, "cproject file was not found");
-        return 1;
-      }
-      manager.m_cprojectFile = fs::canonical(manager.m_cprojectFile, ec).generic_string();
-      manager.m_rootDir = fs::path(manager.m_cprojectFile).parent_path().generic_string();
     }
     if (parseResult.count("context")) {
       manager.m_context = parseResult["context"].as<string>();
@@ -278,11 +267,6 @@ bool ProjMgr::PopulateContexts(void) {
         return false;
       }
     }
-  } else if (!m_cprojectFile.empty()) {
-    // Parse single cproject
-    if (!m_parser.ParseCproject(m_cprojectFile, m_checkSchema, true)) {
-      return false;
-    }
   } else {
     ProjMgrLogger::Error("input yml files were not specified");
     return false;
@@ -391,7 +375,7 @@ bool ProjMgr::RunConvert(void) {
 }
 
 bool ProjMgr::RunListPacks(void) {
-  if (!m_csolutionFile.empty() || !m_cprojectFile.empty()) {
+  if (!m_csolutionFile.empty()) {
     // Parse all input files and create contexts
     if (!PopulateContexts()) {
       return false;
@@ -410,7 +394,7 @@ bool ProjMgr::RunListPacks(void) {
 }
 
 bool ProjMgr::RunListBoards(void) {
-  if (!m_csolutionFile.empty() || !m_cprojectFile.empty()) {
+  if (!m_csolutionFile.empty()) {
     // Parse all input files and create contexts
     if (!PopulateContexts()) {
       return false;
@@ -432,7 +416,7 @@ bool ProjMgr::RunListBoards(void) {
 }
 
 bool ProjMgr::RunListDevices(void) {
-  if (!m_csolutionFile.empty() || !m_cprojectFile.empty()) {
+  if (!m_csolutionFile.empty()) {
     // Parse all input files and create contexts
     if (!PopulateContexts()) {
       return false;
@@ -454,7 +438,7 @@ bool ProjMgr::RunListDevices(void) {
 }
 
 bool ProjMgr::RunListComponents(void) {
-  if (!m_csolutionFile.empty() || !m_cprojectFile.empty()) {
+  if (!m_csolutionFile.empty()) {
     // Parse all input files and create contexts
     if (!PopulateContexts()) {
       return false;

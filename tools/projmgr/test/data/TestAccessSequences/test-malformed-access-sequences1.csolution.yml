@@ -1,0 +1,4 @@
+### CMSIS Project Description ###
+solution:
+  projects:
+    - project: ./malformed-access-sequences1.cproject.yml
