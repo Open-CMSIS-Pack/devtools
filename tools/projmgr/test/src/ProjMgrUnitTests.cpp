@@ -12,6 +12,8 @@
 #include "CrossPlatformUtils.h"
 
 #include "gtest/gtest.h"
+#include "yaml-cpp/yaml.h"
+
 #include <fstream>
 #include <regex>
 
@@ -29,7 +31,19 @@ protected:
 
   void CompareFile(const string& file1, const string& file2);
   void CompareFileTree(const string& dir1, const string& dir2);
+
+  string UpdateTestSolutionFile(const string& projectFilePath);
 };
+
+string ProjMgrUnitTests::UpdateTestSolutionFile(const string& projectFilePath) {
+  string csolutionFile = testinput_folder + "/TestSolution/test.csolution_validate_project.yml";
+  YAML::Node root = YAML::LoadFile(csolutionFile);
+  root["solution"]["projects"][0]["project"] = projectFilePath;
+  std::ofstream fout(csolutionFile);
+  fout << root;
+  fout.close();
+  return csolutionFile;
+}
 
 void ProjMgrUnitTests::CompareFile(const string& file1, const string& file2) {
   ifstream f1, f2;
@@ -166,12 +180,12 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks_1) {
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks_project) {
   char* argv[7];
   StdStreamRedirect streamRedirect;
-  const string& cproject = testinput_folder + "/TestDefault/project.cproject.yml";
+  const string& csolution = testinput_folder + "/TestDefault/test.csolution.yml";
   // list packs
   argv[1] = (char*)"list";
   argv[2] = (char*)"packs";
-  argv[3] = (char*)"-p";
-  argv[4] = (char*)cproject.c_str();
+  argv[3] = (char*)"-s";
+  argv[4] = (char*)csolution.c_str();
   argv[5] = (char*)"-c";
   argv[6] = (char*)"project.Debug";
   EXPECT_EQ(0, RunProjMgr(7, argv));
@@ -233,15 +247,15 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListBoards) {
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListBoardsProjectFiltered) {
   char* argv[7];
   StdStreamRedirect streamRedirect;
+  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject_board_and_device.yml");
 
   // list boards
-  const string& cproject = testinput_folder + "/TestProject/test.cproject_board_and_device.yml";
   argv[1] = (char*)"list";
   argv[2] = (char*)"boards";
   argv[3] = (char*)"--filter";
   argv[4] = (char*)"Dummy";
-  argv[5] = (char*)"-p";
-  argv[6] = (char*)cproject.c_str();
+  argv[5] = (char*)"-s";
+  argv[6] = (char*)csolutionFile.c_str();
   EXPECT_EQ(0, RunProjMgr(7, argv));
 
   auto outStr = streamRedirect.GetOutString();
@@ -280,13 +294,13 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListDependencies) {
   char* argv[5];
   const std::string expected = "ARM::Device:Startup&RteTest Startup@2.0.3 require RteTest:CORE\n";
   StdStreamRedirect streamRedirect;
+  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test-dependency.cproject.yml");
 
   // list dependencies
-  const string& cproject = testinput_folder + "/TestProject/test-dependency.cproject.yml";
   argv[1] = (char*)"list";
   argv[2] = (char*)"dependencies";
-  argv[3] = (char*)"-p";
-  argv[4] = (char*)cproject.c_str();
+  argv[3] = (char*)"-s";
+  argv[4] = (char*)csolutionFile.c_str();
   EXPECT_EQ(0, RunProjMgr(5, argv));
 
   auto outStr = streamRedirect.GetOutString();
@@ -295,43 +309,42 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListDependencies) {
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ConvertProject) {
   char* argv[6];
-  // convert -p cproject.yml
-  const string& cproject = testinput_folder + "/TestProject/test.cproject.yml";
+  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject.yml");
+
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-p";
-  argv[3] = (char*)cproject.c_str();
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
   EXPECT_EQ(0, RunProjMgr(6, argv));
 
   // Check generated CPRJ
   CompareFile(testoutput_folder + "/test.cprj",
-    testinput_folder + "/TestProject/test.cprj");
+    testinput_folder + "/TestSolution/TestProject4/test.cprj");
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_LinkerScript) {
   char* argv[6];
-  // convert -p cproject.yml
-  const string& cproject = testinput_folder + "/TestProject/test_linker_script.cproject.yml";
+  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test_linker_script.cproject.yml");
+
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-p";
-  argv[3] = (char*)cproject.c_str();
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
   EXPECT_EQ(0, RunProjMgr(6, argv));
 
   // Check generated CPRJ
   CompareFile(testoutput_folder + "/test_linker_script.cprj",
-    testinput_folder + "/TestProject/test_linker_script.cprj");
+    testinput_folder + "/TestSolution/TestProject4/test_linker_script.cprj");
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_With_Schema_Check) {
   char* argv[6];
-  // convert -p cproject.yml
-  const string& cproject = testinput_folder + "/TestProject/test.cproject_invalid_schema.yml";
+  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject_invalid_schema.yml");
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-p";
-  argv[3] = (char*)cproject.c_str();
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
   EXPECT_EQ(1, RunProjMgr(6, argv));
@@ -339,11 +352,10 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_With_Schema_Check) {
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_Skip_Schema_Check) {
   char* argv[7];
-  // convert -p cproject.yml
-  const string& cproject = testinput_folder + "/TestProject/test.cproject_invalid_schema.yml";
+  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject_invalid_schema.yml");
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-p";
-  argv[3] = (char*)cproject.c_str();
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
   argv[6] = (char*)"-n";
@@ -351,7 +363,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Skip_Schema_Check) {
 
   // Check generated CPRJ
   CompareFile(testoutput_folder + "/test.cprj",
-    testinput_folder + "/TestProject/test.cprj");
+    testinput_folder + "/TestSolution/TestProject4/test.cprj");
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgrContextSolution) {
@@ -385,18 +397,6 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_MissingSolutionFile) {
 
   // list empty arguments
   EXPECT_EQ(1, RunProjMgr(2, argv));
-}
-
-TEST_F(ProjMgrUnitTests, RunProjMgr_MissingProjectFile) {
-  char* argv[6];
-  // convert -p cproject.yml
-  const string& cproject = testinput_folder + "/TestProject/unknown.cproject.yml";
-  argv[1] = (char*)"convert";
-  argv[2] = (char*)"-p";
-  argv[3] = (char*)cproject.c_str();
-  argv[4] = (char*)"-o";
-  argv[5] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(1, RunProjMgr(6, argv));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_InvalidArgs) {
@@ -476,6 +476,33 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolutionNonExistentContext) {
   EXPECT_EQ(1, RunProjMgr(8, argv));
 }
 
+TEST_F(ProjMgrUnitTests, RunProjMgr_InvalidLayerSchema) {
+  char* argv[7];
+
+  // convert -s solution.yml
+  const string& csolution = testinput_folder + "/TestLayers/testlayers.csolution_invalid_layer.yml";
+  const string& output = testoutput_folder + "/testlayers";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)output.c_str();
+  EXPECT_EQ(1, RunProjMgr(6, argv));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_UnknownLayer) {
+  char* argv[7];
+  const string& csolution = testinput_folder + "/TestLayers/testlayers.csolution_invalid_layer.yml";
+  const string& output = testoutput_folder + "/testlayers";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)output.c_str();
+  argv[6] = (char*)"-n";
+  EXPECT_EQ(1, RunProjMgr(7, argv));
+}
+
 TEST_F(ProjMgrUnitTests, RunProjMgrLayers) {
   char* argv[7];
 
@@ -498,7 +525,6 @@ TEST_F(ProjMgrUnitTests, RunProjMgrLayers) {
   // Check creation of layers rte folders
   EXPECT_TRUE(RteFsUtils::Exists(testinput_folder + "/TestLayers/Layer2/RTE/Device/RteTest_ARMCM0"));
   EXPECT_TRUE(RteFsUtils::Exists(testinput_folder + "/TestLayers/Layer3/RTE/RteTest/MyDir"));
-
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgrLayers2) {
@@ -610,11 +636,11 @@ TEST_F(ProjMgrUnitTests, AccessSequences2) {
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_MalformedAccessSequences1) {
   char* argv[6];
-  // convert -p cproject.yml
-  const string& cproject = testinput_folder + "/TestAccessSequences/malformed-access-sequences1.cproject.yml";
+  const string& csolution = testinput_folder + "/TestAccessSequences/test-malformed-access-sequences1.csolution.yml";
+
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-p";
-  argv[3] = (char*)cproject.c_str();
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
   EXPECT_EQ(1, RunProjMgr(6, argv));
@@ -622,11 +648,11 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_MalformedAccessSequences1) {
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_MalformedAccessSequences2) {
   char* argv[6];
-  // convert -p cproject.yml
-  const string& cproject = testinput_folder + "/TestAccessSequences/malformed-access-sequences2.cproject.yml";
+  const string& csolution = testinput_folder + "/TestAccessSequences/malformed-access-sequences2.cproject.yml";
+
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-p";
-  argv[3] = (char*)cproject.c_str();
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
   EXPECT_EQ(1, RunProjMgr(6, argv));
@@ -785,7 +811,7 @@ TEST_F(ProjMgrUnitTests, ListDependencies) {
   };
   vector<string> dependencies;
   ContextDesc descriptor;
-  const string& filenameInput = testinput_folder + "/TestProject/test-dependency.cproject.yml";
+  const string& filenameInput = testinput_folder + "/TestSolution/TestProject4/test-dependency.cproject.yml";
   EXPECT_TRUE(m_parser.ParseCproject(filenameInput, false, true));
   EXPECT_TRUE(m_worker.AddContexts(m_parser, descriptor, filenameInput));
   EXPECT_TRUE(m_worker.ParseContextSelection("test-dependency"));
@@ -885,12 +911,27 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_processor) {
     testinput_folder + "/TestSolution/ref/test2.Debug+CM3_pname.cprj");
 }
 
+TEST_F(ProjMgrUnitTests, RunProjMgrLayers_missing_project_file) {
+  char* argv[6];
+  StdStreamRedirect streamRedirect;
+  const string& expected = "./unknown.cproject.yml - error csolution: cproject file was not found\n";
+  const string& csolutionFile = testinput_folder + "/TestSolution/test.csolution_missing_project.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolutionFile.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(1, RunProjMgr(6, argv));
+  const string& errStr = streamRedirect.GetErrorString();
+  EXPECT_STREQ(errStr.c_str(), expected.c_str());
+}
+
 TEST_F(ProjMgrUnitTests, RunProjMgrLayers_pname) {
   char* argv[6];
-  const string& cproject = testinput_folder + "/TestLayers/testlayers.cproject_pname.yml";
+  const string& csolutionFile = testinput_folder + "/TestLayers/testlayers.csolution.yml";
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-p";
-  argv[3] = (char*)cproject.c_str();
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
   EXPECT_EQ(0, RunProjMgr(6, argv));
@@ -898,10 +939,10 @@ TEST_F(ProjMgrUnitTests, RunProjMgrLayers_pname) {
 
 TEST_F(ProjMgrUnitTests, RunProjMgrLayers_no_device_found) {
   char* argv[6];
-  const string& cproject = testinput_folder + "/TestLayers/testlayers.cproject_no_device_name.yml";
+  const string& csolution = testinput_folder + "/TestLayers/testlayers.csolution_no_device_name.yml";
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-p";
-  argv[3] = (char*)cproject.c_str();
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
   EXPECT_EQ(1, RunProjMgr(6, argv));
@@ -919,14 +960,13 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_No_Device_Name) {
 TEST_F(ProjMgrUnitTests, RunProjMgr_No_Board_No_Device) {
   // Test with no board no device info
   char* argv[6];
-  const string& cproject = testinput_folder +
-    "/TestProject/test.cproject_no_board_no_device.yml";
+  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject_no_board_no_device.yml");
   const string& expected = "missing device and/or board info";
   StdStreamRedirect streamRedirect;
 
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-p";
-  argv[3] = (char*)cproject.c_str();
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
   EXPECT_EQ(1, RunProjMgr(6, argv));
@@ -937,13 +977,13 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_No_Board_No_Device) {
 TEST_F(ProjMgrUnitTests, RunProjMgr_Invalid_Board_Name) {
   // Test project with invalid board name
   char* argv[6];
-  const string& cproject = testinput_folder + "/TestProject/test.cproject_board_name_invalid.yml";
+  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject_board_name_invalid.yml");
   const string& expected = "board 'Keil::RteTest_unknown' was not found";
   StdStreamRedirect streamRedirect;
 
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-p";
-  argv[3] = (char*)cproject.c_str();
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
   EXPECT_EQ(1, RunProjMgr(6, argv));
@@ -954,13 +994,13 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Invalid_Board_Name) {
 TEST_F(ProjMgrUnitTests, RunProjMgr_Invalid_Board_Vendor) {
   // Test project with invalid vendor name
   char* argv[6];
-  const string& cproject = testinput_folder + "/TestProject/test.cproject_board_vendor_invalid.yml";
+  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject_board_vendor_invalid.yml");
   const string& expected = "board 'UNKNOWN::RteTest Dummy board' was not found";
   StdStreamRedirect streamRedirect;
 
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-p";
-  argv[3] = (char*)cproject.c_str();
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
   EXPECT_EQ(1, RunProjMgr(6, argv));
@@ -971,26 +1011,26 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Invalid_Board_Vendor) {
 TEST_F(ProjMgrUnitTests, RunProjMgr_Only_Board_Info) {
   // Test project with only board info and missing device info
   char* argv[6];
-  const string& cproject = testinput_folder + "/TestProject/test.cproject_only_board.yml";
+  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject_only_board.yml");
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-p";
-  argv[3] = (char*)cproject.c_str();
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
   EXPECT_EQ(0, RunProjMgr(6, argv));
 
   // Check generated CPRJ
   CompareFile(testoutput_folder + "/test.cprj",
-    testinput_folder + "/TestProject/test_only_board.cprj");
+    testinput_folder + "/TestSolution/TestProject4/test_only_board.cprj");
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_Only_Board_No_Pname) {
   // Test project with only board info and no pname
   char* argv[6];
-  const string& cproject = testinput_folder + "/TestProject/test.cproject_only_board_no_pname.yml";
+  const string& csolution = testinput_folder + "/TestProject/test.cproject_only_board_no_pname.yml";
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-p";
-  argv[3] = (char*)cproject.c_str();
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
   EXPECT_EQ(1, RunProjMgr(6, argv));
@@ -999,16 +1039,15 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Only_Board_No_Pname) {
 TEST_F(ProjMgrUnitTests, RunProjMgr_Device_Unknown) {
   // Test project with unknown device
   char* argv[6];
-  const string& cproject = testinput_folder +
-    "/TestProject/test.cproject_device_unknown.yml";
+  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject_device_unknown.yml");
   const string& expectedErrStr = R"(error csolution: specified device 'RteTest_ARM_UNKNOWN' was not found among the installed packs.
 use 'cpackget' utility to install software packs.
   cpackget add Vendor.PackName --pack-root ./Path/Packs)";
   StdStreamRedirect streamRedirect;
 
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-p";
-  argv[3] = (char*)cproject.c_str();
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
   EXPECT_EQ(1, RunProjMgr(6, argv));
@@ -1019,16 +1058,15 @@ use 'cpackget' utility to install software packs.
 TEST_F(ProjMgrUnitTests, RunProjMgr_Device_Unknown_Vendor) {
   // Test project with unknown device vendor
   char* argv[6];
-  const string& cproject = testinput_folder +
-    "/TestProject/test.cproject_device_unknown_vendor.yml";
+  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject_device_unknown_vendor.yml");
   const string& expectedErrStr = R"(error csolution: specified device 'RteTest_ARMCM0' was not found among the installed packs.
 use 'cpackget' utility to install software packs.
   cpackget add Vendor.PackName --pack-root ./Path/Packs)";
   StdStreamRedirect streamRedirect;
 
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-p";
-  argv[3] = (char*)cproject.c_str();
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
   EXPECT_EQ(1, RunProjMgr(6, argv));
@@ -1039,14 +1077,13 @@ use 'cpackget' utility to install software packs.
 TEST_F(ProjMgrUnitTests, RunProjMgr_Device_Unknown_Processor) {
   // Test project with unknown processor
   char* argv[6];
-  const string& cproject = testinput_folder +
-    "/TestProject/test.cproject_device_unknown_processor.yml";
+  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject_device_unknown_processor.yml");
   const string& expected = "processor name 'NOT_AVAILABLE' was not found";
   StdStreamRedirect streamRedirect;
 
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-p";
-  argv[3] = (char*)cproject.c_str();
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
   EXPECT_EQ(1, RunProjMgr(6, argv));
@@ -1057,16 +1094,15 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Device_Unknown_Processor) {
 TEST_F(ProjMgrUnitTests, RunProjMgr_Device_Unavailable_In_Board) {
   // Test project with device different from the board's mounted device
   char* argv[6];
-  const string& cproject = testinput_folder +
-    "/TestProject/test.cproject_device_unavailable_in_board.yml";
+  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject_device_unavailable_in_board.yml");
   const string& expectedErrStr = R"(error csolution: specified device 'RteTest_ARMCM7' was not found among the installed packs.
 use 'cpackget' utility to install software packs.
   cpackget add Vendor.PackName --pack-root ./Path/Packs)";
   StdStreamRedirect streamRedirect;
 
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-p";
-  argv[3] = (char*)cproject.c_str();
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
   EXPECT_EQ(1, RunProjMgr(6, argv));
@@ -1077,14 +1113,13 @@ use 'cpackget' utility to install software packs.
 TEST_F(ProjMgrUnitTests, RunProjMgr_Device_Pname_Unavailable_In_Board) {
   // Test project with device processor name different from the board's mounted device's processors
   char* argv[6];
-  const string& cproject = testinput_folder +
-    "/TestProject/test.cproject_device_pname_unavailable_in_board.yml";
+  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject_device_pname_unavailable_in_board.yml");
   const string& expected = "processor name 'cm0_core7' was not found";
   StdStreamRedirect streamRedirect;
 
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-p";
-  argv[3] = (char*)cproject.c_str();
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
   EXPECT_EQ(1, RunProjMgr(6, argv));
@@ -1095,10 +1130,10 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Device_Pname_Unavailable_In_Board) {
 TEST_F(ProjMgrUnitTests, RunProjMgr_Only_Device_Info) {
   // Test project with only device info
   char* argv[6];
-  const string& cproject = testinput_folder + "/TestProject/test.cproject.yml";
+  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject.yml");
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-p";
-  argv[3] = (char*)cproject.c_str();
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
   EXPECT_EQ(0, RunProjMgr(6, argv));
@@ -1107,11 +1142,10 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Only_Device_Info) {
 TEST_F(ProjMgrUnitTests, RunProjMgr_Board_And_Device_Info) {
   // Test project with valid board and device info
   char* argv[6];
-  const string& cproject = testinput_folder +
-    "/TestProject/test.cproject_board_and_device.yml";
+  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject_board_and_device.yml");
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-p";
-  argv[3] = (char*)cproject.c_str();
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
   EXPECT_EQ(0, RunProjMgr(6, argv));
@@ -1120,16 +1154,15 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Board_And_Device_Info) {
 TEST_F(ProjMgrUnitTests, RunProjMgr_Correct_Board_Wrong_Device_Info) {
   // Test project with correct board info but wrong device info
   char* argv[6];
-  const string& cproject = testinput_folder +
-    "/TestProject/test.cproject_correct_board_wrong_device.yml";
+  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject_correct_board_wrong_device.yml");
   const string& expectedErrStr = R"(error csolution: specified device 'RteTest_ARMCM_Unknown' was not found among the installed packs.
 use 'cpackget' utility to install software packs.
   cpackget add Vendor.PackName --pack-root ./Path/Packs)";
   StdStreamRedirect streamRedirect;
 
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-p";
-  argv[3] = (char*)cproject.c_str();
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
   EXPECT_EQ(1, RunProjMgr(6, argv));
@@ -1140,14 +1173,13 @@ use 'cpackget' utility to install software packs.
 TEST_F(ProjMgrUnitTests, RunProjMgr_Correct_Device_Wrong_Board_Info) {
   // Test project with correct device info but wrong board info
   char* argv[6];
-  const string& cproject = testinput_folder +
-    "/TestProject/test.cproject_correct_device_wrong_board.yml";
+  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject_correct_device_wrong_board.yml");
   const string& expected = "board 'Keil::RteTest unknown board' was not found";
   StdStreamRedirect streamRedirect;
 
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-p";
-  argv[3] = (char*)cproject.c_str();
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
   EXPECT_EQ(1, RunProjMgr(6, argv));
@@ -1158,14 +1190,13 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Correct_Device_Wrong_Board_Info) {
 TEST_F(ProjMgrUnitTests, RunProjMgr_Board_Multi_Mounted_Devices) {
   // Test Project with only board info and multiple mounted devices
   char* argv[6];
-  const string& cproject = testinput_folder +
-    "/TestProject/test.cproject_board_multi_mounted_device.yml";
+  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject_board_multi_mounted_device.yml");
   const string& expected = "found multiple mounted devices";
   StdStreamRedirect streamRedirect;
 
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-p";
-  argv[3] = (char*)cproject.c_str();
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
   EXPECT_EQ(1, RunProjMgr(6, argv));
@@ -1176,12 +1207,11 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Board_Multi_Mounted_Devices) {
 TEST_F(ProjMgrUnitTests, RunProjMgr_Board_Device_Variant) {
   // Test Project with only board info and single mounted device with single variant
   char* argv[6];
-  const string& cproject = testinput_folder +
-    "/TestProject/test.cproject_board_device_variant.yml";
+  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject_board_device_variant.yml");
 
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-p";
-  argv[3] = (char*)cproject.c_str();
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
   EXPECT_EQ(0, RunProjMgr(6, argv));
@@ -1190,12 +1220,11 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Board_Device_Variant) {
 TEST_F(ProjMgrUnitTests, RunProjMgr_Board_Multi_Variants_And_Device) {
   // Test Project with device variant and board info and mounted device with multiple variants
   char* argv[6];
-  const string& cproject = testinput_folder +
-    "/TestProject/test.cproject_board_multi_variant_and_device.yml";
+  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject_board_multi_variant_and_device.yml");
 
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-p";
-  argv[3] = (char*)cproject.c_str();
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
   EXPECT_EQ(0, RunProjMgr(6, argv));
@@ -1204,14 +1233,13 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Board_Multi_Variants_And_Device) {
 TEST_F(ProjMgrUnitTests, RunProjMgr_Board_Multi_Variants) {
   // Test Project with only board info and mounted device with multiple variants
   char* argv[6];
-  const string& cproject = testinput_folder +
-    "/TestProject/test.cproject_board_multi_variant.yml";
+  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject_board_multi_variant.yml");
   const string& expected = "found multiple device variants";
   StdStreamRedirect streamRedirect;
 
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-p";
-  argv[3] = (char*)cproject.c_str();
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
   EXPECT_EQ(1, RunProjMgr(6, argv));
@@ -1222,14 +1250,13 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Board_Multi_Variants) {
 TEST_F(ProjMgrUnitTests, RunProjMgr_Board_No_Mounted_Devices) {
   // Test Project with only board info and no mounted devices
   char* argv[6];
-  const string& cproject = testinput_folder +
-    "/TestProject/test.cproject_board_no_mounted_device.yml";
+  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject_board_no_mounted_device.yml");
   const string& expected = "found no mounted device";
   StdStreamRedirect streamRedirect;
 
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-p";
-  argv[3] = (char*)cproject.c_str();
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
   EXPECT_EQ(1, RunProjMgr(6, argv));
@@ -1240,14 +1267,13 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Board_No_Mounted_Devices) {
 TEST_F(ProjMgrUnitTests, RunProjMgr_Board_Device_Info) {
   // Test Project with board mounted device different than selected devices
   char* argv[6];
-  const string& cproject = testinput_folder +
-    "/TestProject/test.cproject_mounted_device_differs_selected_device.yml";
+  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject_mounted_device_differs_selected_device.yml");
   const string& expected = "warning csolution: specified device 'RteTest_ARMCM0' and board mounted device 'RteTest_ARMCM0_Dual' are different";
   StdStreamRedirect streamRedirect;
 
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-p";
-  argv[3] = (char*)cproject.c_str();
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
   EXPECT_EQ(0, RunProjMgr(6, argv));
