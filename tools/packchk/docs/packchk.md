@@ -28,24 +28,23 @@ It performs the following operations:
 
 ```bash
 Usage:
-  Check: packchkcd InFile.pdsc> [-i <RefFile.pdsc> -i ...] [-n <TextFile>] [-u `<url>`] [-s|-v|-h|-?]
+  packchk [-V] [--version] [-h] [--help]
+          [OPTIONS...] <PDSC file>
 
-Options:
+ packchk options:
   -i, --include arg           PDSC file(s) as dependency reference
-  -b, --log arg               Log file (default: "")
+  -b, --log arg               Log file
   -x, --diag-suppress arg     Suppress Messages
-  -w arg                      Warning level (default: all)
-  -v, --verbose               Verbose mode. Prints extra process
-                              information
-  -u arg                      Verifies that the specified URL matches with
-                              the `<url>` element in the *.PDSC file
-                              (default: "")
-  -n arg                      Text file for pack file name (default: "")
+  -v, --verbose               Verbose mode. Prints extra process information
+  -w, --warning arg           Warning level [0|1|2|3|all] (default: all)
+  -u, --url arg               Verifies that the specified URL matches with the <url>
+                              element in the *.PDSC file (default: "")
+  -n, --name arg              Text file for pack file name (default: "")
+  -V, --version               Print version
+  -h, --help                  Print usage
       --allow-suppress-error  Allow to suppress error messages
       --break                 Debug halt after start
       --ignore-other-pdsc     Ignores other PDSC files in working folder
-  -h, --help                  Print usage
-  -V, --version               Print version
 ```
 
 ## Quick Start

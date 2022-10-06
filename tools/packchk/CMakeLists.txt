@@ -8,7 +8,6 @@ dump_cmake_project_version()
 set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT packchk)
 
 set(PROJECT_COPYRIGHT_NOTICE "(C) 2012-${PROJECT_VERSION_YEAR} Arm Ltd. and Contributors")
-set(PROJECT_TARGET_FILE_NAME "$<TARGET_FILE_NAME:packchk>")
 
 configure_file(src/ProductInfo.h.in ProductInfo.h.out)
 file(GENERATE

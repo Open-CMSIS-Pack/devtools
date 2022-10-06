@@ -12,8 +12,6 @@
 
 #include "XMLTree.h"
 
-#include <chrono>
-
 using namespace std;
 
 /**
@@ -244,37 +242,12 @@ bool CPackOptions::SetIgnoreOtherPdscFiles(bool bIgnore)
 }
 
 /**
- * @brief sets the program name if it can be determined from argv[0]
- * @param programPath string name
- * @return passed / failed
- */
-bool CPackOptions::ConfigureProgramName(const string& programPath)
-{
-  string programName;
-
-  if(programPath.empty()) {
-    programName = ORIGINAL_FILENAME;
-  }
-  else {
-    programName = RteUtils::ExtractFileName(programPath);
-  }
-
-  if(programName.empty()) {
-    programName = ORIGINAL_FILENAME;
-  }
-
-  m_programName = programName;
-
-  return true;
-}
-
-/**
  * @brief returns the program version string
  * @return string version
 */
 const string CPackOptions::GetVersionInfo()
 {
-  return INTERNAL_NAME + string(" ") + VERSION_STRING + " " + COPYRIGHT_NOTICE;
+  return ORIGINAL_FILENAME + string(" ") + VERSION_STRING + " " + COPYRIGHT_NOTICE;
 }
 
 /**
@@ -297,11 +270,7 @@ const string CPackOptions::GetHeader()
   string header = string(PRODUCT_NAME);
   header += " ";
   header += GetVersion();
-  header += " (";
-  header += string(__DATE__);
-  header += string(" ");
-  header += string(__TIME__);
-  header += ") ";
+  header += " ";
   header += string(COPYRIGHT_NOTICE);
   header += "\n";
 
@@ -336,7 +305,7 @@ string CPackOptions::GetCurrentDateTime()
 */
 const string CPackOptions::GetProgramName()
 {
-  return m_programName;
+  return ORIGINAL_FILENAME;
 }
 
 /**

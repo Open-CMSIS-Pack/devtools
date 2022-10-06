@@ -12,8 +12,7 @@ static constexpr const char* PATCH_VERSION = "${PROJECT_VERSION_PATCH}";
 
 static constexpr const char* COMPANY_NAME      = "Arm Ltd.";
 static constexpr const char* PRODUCT_NAME      = "CMSIS Pack Checker";
-static constexpr const char* INTERNAL_NAME     = "@PROJECT_NAME@";
-static constexpr const char* ORIGINAL_FILENAME = "${PROJECT_TARGET_FILE_NAME}";
+static constexpr const char* ORIGINAL_FILENAME = "@PROJECT_NAME@";
 static constexpr const char* COPYRIGHT_NOTICE  = "${PROJECT_COPYRIGHT_NOTICE}";
 
 static constexpr const char* VERSION_STRING    = "${PROJECT_VERSION_FULL}";

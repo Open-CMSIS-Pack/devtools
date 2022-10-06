@@ -35,7 +35,6 @@ protected:
   bool SetCheckSvd(bool bCheck);
   bool SetUrlRef(const std::string& urlRef);
   bool SetVerbose(bool bVerbose);
-  bool ConfigureProgramName(const std::string& programPath);
   bool SetIgnoreOtherPdscFiles(bool bIgnore);
 
 private:
