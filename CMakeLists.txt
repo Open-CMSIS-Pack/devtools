@@ -34,10 +34,13 @@ if(MSVC)
 endif(MSVC)
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR
-   "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR
-   "${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
+   "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
   set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -MD -Wall")
   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wall")
+  if (NOT SWIG_LIBS)
+    add_link_options("-static")
+  endif(SWIG_LIBS)
+elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
   add_link_options("-static-libstdc++")
 endif()
 
