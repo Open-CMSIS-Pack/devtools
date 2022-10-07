@@ -23,7 +23,9 @@
   </releases>
 
   <conditions>
-    <condition id="comp2 Condition"/>
+    <condition id="comp2 Condition">
+      <require Cclass="Class" Cgroup="Group" Csub="Comp1"/>
+    </condition>
   </conditions>
 
   <components>
