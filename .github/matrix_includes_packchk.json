@@ -6,13 +6,13 @@
         "runOn": "publicRepo"
     },
     {
-        "runs_on":"ubuntu-latest",
+        "runs_on":"ubuntu-22.04",
         "target":"linux64",
         "arch": "amd64",
         "runOn": "always"
     },
     {
-        "runs_on":"ubuntu-latest",
+        "runs_on":"ubuntu-22.04",
         "target":"linux64",
         "arch": "aarch64",
         "runOn": "always"
