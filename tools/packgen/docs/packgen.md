@@ -44,10 +44,12 @@ The generated PDSC file should be identical to
 ## Usage
 
 ```txt
-CMSIS Pack generator assistant 0.9.0
+CMSIS Pack Generator Assistant 0.9.0 (C) 2022 Arm Ltd. and Contributors
 Usage:
-  packgen [OPTION...] manifest.yml
+  packgen [-V] [--version] [-h] [--help]
+          [OPTIONS...] manifest.yml
 
+ packgen options:
   -s, --source arg   Source root folder
   -o, --output arg   Output folder
   -i, --include arg  PDSC file(s) for external dependency check
