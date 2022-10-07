@@ -240,7 +240,7 @@ TEST_F(PackGenUnitTests, RunPackGen_Rel_Output_Path) {
 TEST_F(PackGenUnitTests, RunPackGen_With_Defines) {
   error_code ec;
   vector<string> vecfile;
-  char* argv[6];
+  char* argv[7];
 
   const string& manifest = testinput_folder + "/TestProject/manifest.yml";
 
@@ -252,7 +252,8 @@ TEST_F(PackGenUnitTests, RunPackGen_With_Defines) {
   argv[3] = (char*)testoutput_folder.c_str();
   argv[4] = (char*)"--nocheck";
   argv[5] = (char*)"--nozip";
-  EXPECT_EQ(0, RunPackGen(6, argv));
+  argv[6] = (char*)"--verbose";
+  EXPECT_EQ(0, RunPackGen(7, argv));
 
   // Check generated pack file tree
   string fileName;
