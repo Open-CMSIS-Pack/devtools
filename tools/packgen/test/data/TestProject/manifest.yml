@@ -36,5 +36,5 @@ packs:
         target: lib2
         attributes: {Cclass: "Class", Cgroup: "Group", Csub: "Comp2", Cversion: "2.2.2"}
         description: "Comp2"
-        dependencies: lib1
+        dependencies: [comp1, lib1]
         extensions: [".h", ".hpp"]
