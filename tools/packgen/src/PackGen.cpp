@@ -44,21 +44,22 @@ int PackGen::RunPackGen(int argc, char **argv) {
   bool nocheck = false, nozip = false;
 
   try {
-    options.add_options()
-      ("manifest", "", cxxopts::value<string>())
-      ("s,source", "Source root folder", cxxopts::value<string>())
-      ("o,output", "Output folder", cxxopts::value<string>())
-      ("i,include", "PDSC file(s) for external dependency check", cxxopts::value<vector<string>>())
-      ("r,regenerate", "Regenerate CMake targets", cxxopts::value<bool>()->default_value("false"))
-      ("v,verbose", "Verbose mode", cxxopts::value<bool>()->default_value("false"))
-      ("c,nocheck", "Skip pack check", cxxopts::value<bool>()->default_value("false"))
-      ("z,nozip", "Skip *.pack file creation", cxxopts::value<bool>()->default_value("false"))
-      ("h,help", "Print usage")
-      ("V,version", "Print version")
-      ;
+    options
+      .custom_help("[-V] [--version] [-h] [--help]\n          [OPTIONS...]")
+      .positional_help("manifest.yml")
+      .add_options("packgen", {
+        {"manifest", "", cxxopts::value<string>()},
+        {"s,source", "Source root folder", cxxopts::value<string>()},
+        {"o,output", "Output folder", cxxopts::value<string>()},
+        {"i,include", "PDSC file(s) for external dependency check", cxxopts::value<vector<string>>()},
+        {"r,regenerate", "Regenerate CMake targets", cxxopts::value<bool>()->default_value("false")},
+        {"v,verbose", "Verbose mode", cxxopts::value<bool>()->default_value("false")},
+        {"c,nocheck", "Skip pack check", cxxopts::value<bool>()->default_value("false")},
+        {"z,nozip", "Skip *.pack file creation", cxxopts::value<bool>()->default_value("false")},
+        {"h,help", "Print usage"},
+        {"V,version", "Print version"}
+      });
     options.parse_positional({ "manifest" });
-    options.positional_help("manifest.yml");
-
     parseResult = options.parse(argc, argv);
     generator.m_verbose = parseResult["verbose"].as<bool>();
     generator.m_regenerate = parseResult["regenerate"].as<bool>();
