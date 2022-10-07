@@ -486,6 +486,43 @@ void PackGen::GetBuildInfo(buildInfo& reference, const list<string>& targetNames
   }
 }
 
+void PackGen::FilterOutDependencies(const string& name, const componentInfo& component) {
+  for (const auto& dependency : component.dependency) {
+    // Filter out component dependencies
+    if (m_components.find(dependency) != m_components.end()) {
+      for (const auto& src : m_components[dependency].build.src) {
+        m_components[name].build.src.erase(src);
+      }
+      for (const auto& inc : m_components[dependency].build.inc) {
+        m_components[name].build.inc.erase(inc);
+      }
+      for (const auto& def : m_components[dependency].build.def) {
+        m_components[name].build.def.erase(def);
+      }
+      for (const auto& file : m_components[dependency].files) {
+        m_components[name].build.src.erase(file.name);
+        m_components[name].build.inc.erase(RteUtils::RemoveTrailingBackslash(file.name));
+      }
+      // Recursively filter out subdependencies
+      FilterOutDependencies(name, m_components[dependency]);
+    }
+    // Filter out target
+    else if (m_target.find(dependency) != m_target.end()) {
+      for (const auto& buildName : component.builds.names) {
+        for (const auto& src : m_target[dependency][buildName].build.src) {
+          m_components[name].build.src.erase(src);
+        }
+        for (const auto& inc : m_target[dependency][buildName].build.inc) {
+          m_components[name].build.inc.erase(inc);
+        }
+        for (const auto& def : m_target[dependency][buildName].build.def) {
+          m_components[name].build.def.erase(def);
+        }
+      }
+    }
+  }
+}
+
 bool PackGen::CreateComponents(void) {
 
   // Set full build info of every component
@@ -498,36 +535,8 @@ bool PackGen::CreateComponents(void) {
   }
 
   // Filter out component dependencies
-  for (const auto& component : m_components) {
-    const string& name = component.first;
-    for (const auto& dependency : component.second.dependency) {
-      // Filter out component
-      if (m_components.find(dependency) != m_components.end()) {
-        for (const auto& src : m_components[dependency].build.src) {
-          m_components[name].build.src.erase(src);
-        }
-        for (const auto& inc : m_components[dependency].build.inc) {
-          m_components[name].build.inc.erase(inc);
-        }
-        for (const auto& def : m_components[dependency].build.def) {
-          m_components[name].build.def.erase(def);
-        }
-      }
-      // Filter out target
-      else if (m_target.find(dependency) != m_target.end()) {
-        for (const auto& buildName : component.second.builds.names) {
-          for (const auto& src : m_target[dependency][buildName].build.src) {
-            m_components[name].build.src.erase(src);
-          }
-          for (const auto& inc : m_target[dependency][buildName].build.inc) {
-            m_components[name].build.inc.erase(inc);
-          }
-          for (const auto& def : m_target[dependency][buildName].build.def) {
-            m_components[name].build.def.erase(def);
-          }
-        }
-      }
-    }
+  for (const auto& [name, component] : m_components) {
+    FilterOutDependencies(name, component);
   }
 
   // Verbose mode: print components build info
@@ -542,6 +551,9 @@ bool PackGen::CreateComponents(void) {
       }
       for (const auto& def : component.second.build.def) {
         cout << "def: " << def << endl;
+      }
+      for (const auto& file : component.second.files) {
+        cout << "custom: " << file.name << endl;
       }
     }
   }

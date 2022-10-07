@@ -286,6 +286,7 @@ protected:
   static uint32_t CountNodes(const YAML::Node node, const std::string& name);
   void AddComponentBuildInfo(const std::string& componentName, buildInfo& reference);
   void InsertBuildInfo(buildInfo& build, const std::string& targetName, const std::string& buildName);
+  void FilterOutDependencies(const std::string& name, const componentInfo& component);
   void GetBuildInfo(buildInfo& reference, const std::list<std::string>& targetNames, const std::list<std::string>& buildNames, const std::string& operation);
   void GetBuildInfoIntersection(buildInfo& reference, buildInfo& actual, buildInfo& intersect);
   void GetBuildInfoDifference(buildInfo& reference, buildInfo& actual, buildInfo& difference);

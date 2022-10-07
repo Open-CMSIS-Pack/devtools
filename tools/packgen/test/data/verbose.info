@@ -37,6 +37,7 @@ src: lib2/src/lib2.cpp
 src: lib3/src/lib3.cpp
 inc: lib2/inc
 inc: lib3/inc
+custom: lib1/config/config.h
 
 COMPONENT: component3
 src: lib4/src/lib4.cpp
