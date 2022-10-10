@@ -2,9 +2,15 @@ build:
   context: test2.Debug+CM0
   compiler: AC6
   device: RteTest_ARMCM0
+  processor:
+    fpu: off
+    endian: little
+    trustzone: non-secure
   packs:
     - pack: ARM::RteTest_DFP@0.2.0
       path: $CMSIS_PACK_ROOT$/ARM/RteTest_DFP/0.2.0
+  optimize: none
+  debug: on
   misc:
     ASM:
       - -ASM-project
@@ -23,12 +29,7 @@ build:
     Link:
       - -Link-project
       - -Link-type-CM0
-    for-compiler: AC6
   define:
-    - DEF-project
-    - DEF-solution
-    - DEF-CM0
-    - DEF-Debug
     - DEF-project
     - DEF-solution
     - DEF-CM0

@@ -16,6 +16,7 @@
 
   <target Dfpu="NO_FPU" Dname="RteTest_ARMCM3" Dsecure="Non-secure" Dvendor="ARM:82">
     <output intdir="tmp/test2/CM3/Debug" name="test2.Debug+CM3" outdir="out/test2/CM3/Debug" rtedir="../data/TestSolution/TestProject2/RTE" type="exe"/>
+    <options debug="on" optimize="none"/>
     <arflags add="-Lib-project -Lib-type-CM3" compiler="AC6"/>
     <asflags add="-ASM-project -ASM-type-CM3" compiler="AC6"/>
     <cflags add="-C-project -C-CPP-type-CM3" compiler="AC6"/>

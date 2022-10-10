@@ -437,7 +437,7 @@ bool ProjMgrWorker::ProcessInterfaces(ContextItem& context) {
         found = true;
         // add context define
         const string& define = "INTERFACE_" + provided->first + (provided->second.empty() ? "" : "=" + provided->second);
-        ProjMgrUtils::PushBackUniquely(context.defines, define);
+        ProjMgrUtils::PushBackUniquely(context.controls.processed.defines, define);
         break;
       }
     }
@@ -610,26 +610,26 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
   context.targetAttributes["Dvendor"] = matchedDevice->GetEffectiveAttribute("Dvendor");
   context.targetAttributes["Dname"] = matchedDevice->GetFullDeviceName();
 
-  if (!context.fpu.empty()) {
-    if (context.fpu == "on") {
+  if (!context.controls.processed.processor.fpu.empty()) {
+    if (context.controls.processed.processor.fpu == "on") {
       context.targetAttributes["Dfpu"] = "FPU";
-    } else if (context.fpu == "off") {
+    } else if (context.controls.processed.processor.fpu == "off") {
       context.targetAttributes["Dfpu"] = "NO_FPU";
     }
   }
-  if (!context.endian.empty()) {
-    if (context.endian == "big") {
+  if (!context.controls.processed.processor.endian.empty()) {
+    if (context.controls.processed.processor.endian == "big") {
       context.targetAttributes["Dendian"] = "Big-endian";
-    } else if (context.endian == "little") {
+    } else if (context.controls.processed.processor.endian == "little") {
       context.targetAttributes["Dendian"] = "Little-endian";
     }
   }
-  if (!context.trustzone.empty()) {
-    if (context.trustzone == "secure") {
+  if (!context.controls.processed.processor.trustzone.empty()) {
+    if (context.controls.processed.processor.trustzone == "secure") {
       context.targetAttributes["Dsecure"] = "Secure";
-    } else if (context.trustzone == "non-secure") {
+    } else if (context.controls.processed.processor.trustzone == "non-secure") {
       context.targetAttributes["Dsecure"] = "Non-secure";
-    } else if (context.trustzone == "off") {
+    } else if (context.controls.processed.processor.trustzone == "off") {
       context.targetAttributes["Dsecure"] = "TZ-disabled";
     }
   } else {
@@ -1085,6 +1085,7 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
    &context.compiler,
    {
      &context.controls.cproject.compiler,
+     &context.controls.setup.compiler,
      &context.controls.csolution.compiler,
      &context.controls.target.compiler,
      &context.controls.build.compiler,
@@ -1113,9 +1114,10 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
   }
 
   StringCollection trustzone = {
-    &context.trustzone,
+    &context.controls.processed.processor.trustzone,
     {
       &context.controls.cproject.processor.trustzone,
+      &context.controls.setup.processor.trustzone,
       &context.controls.csolution.processor.trustzone,
       &context.controls.target.processor.trustzone,
       &context.controls.build.processor.trustzone,
@@ -1129,9 +1131,10 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
   }
 
   StringCollection fpu = {
-    &context.fpu,
+    &context.controls.processed.processor.fpu,
     {
       &context.controls.cproject.processor.fpu,
+      &context.controls.setup.processor.fpu,
       &context.controls.csolution.processor.fpu,
       &context.controls.target.processor.fpu,
       &context.controls.build.processor.fpu,
@@ -1145,9 +1148,10 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
   }
 
   StringCollection endian = {
-    &context.endian,
+    &context.controls.processed.processor.endian,
     {
       &context.controls.cproject.processor.endian,
+      &context.controls.setup.processor.endian,
       &context.controls.csolution.processor.endian,
       &context.controls.target.processor.endian,
       &context.controls.build.processor.endian,
@@ -1157,6 +1161,60 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
     endian.elements.push_back(&clayer.processor.endian);
   }
   if (!ProcessPrecedence(endian)) {
+    return false;
+  }
+
+  // Optimize
+  StringCollection optimize = {
+    &context.controls.processed.optimize,
+    {
+      &context.controls.cproject.optimize,
+      &context.controls.setup.optimize,
+      &context.controls.csolution.optimize,
+      &context.controls.target.optimize,
+      &context.controls.build.optimize,
+    },
+  };
+  for (auto& [_, clayer] : context.controls.clayers) {
+    optimize.elements.push_back(&clayer.optimize);
+  }
+  if (!ProcessPrecedence(optimize)) {
+    return false;
+  }
+
+  // Debug
+  StringCollection debug = {
+    &context.controls.processed.debug,
+    {
+      &context.controls.cproject.debug,
+      &context.controls.setup.debug,
+      &context.controls.csolution.debug,
+      &context.controls.target.debug,
+      &context.controls.build.debug,
+    },
+  };
+  for (auto& [_, clayer] : context.controls.clayers) {
+    debug.elements.push_back(&clayer.debug);
+  }
+  if (!ProcessPrecedence(debug)) {
+    return false;
+  }
+
+  // Warnings
+  StringCollection warnings = {
+    &context.controls.processed.warnings,
+    {
+      &context.controls.cproject.warnings,
+      &context.controls.setup.warnings,
+      &context.controls.csolution.warnings,
+      &context.controls.target.warnings,
+      &context.controls.build.warnings,
+    },
+  };
+  for (auto& [_, clayer] : context.controls.clayers) {
+    warnings.elements.push_back(&clayer.warnings);
+  }
+  if (!ProcessPrecedence(warnings)) {
     return false;
   }
 
@@ -1171,8 +1229,9 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
   for (auto& [_, clayer] : context.controls.clayers) {
     miscVec.push_back(&clayer.misc);
   }
-  context.misc.compiler = context.toolchain.name;
-  AddMiscUniquely(context.misc, miscVec);
+  context.controls.processed.misc.push_back({});
+  context.controls.processed.misc.front().compiler = context.toolchain.name;
+  AddMiscUniquely(context.controls.processed.misc.front(), miscVec);
 
   // Defines
   vector<string> projectDefines, projectUndefines;
@@ -1185,7 +1244,7 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
     AddStringItemsUniquely(projectUndefines, clayer.undefines);
   }
   StringVectorCollection defines = {
-    &context.defines,
+    &context.controls.processed.defines,
     {
       {&projectDefines, &projectUndefines},
       {&context.controls.setup.defines, &context.controls.setup.undefines},
@@ -1207,7 +1266,7 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
     AddStringItemsUniquely(projectDelPaths, clayer.delpaths);
   }
   StringVectorCollection includes = {
-    &context.includes,
+    &context.controls.processed.addpaths,
     {
       {&projectAddPaths, &projectDelPaths},
       {&context.controls.setup.addpaths, &context.controls.setup.delpaths},

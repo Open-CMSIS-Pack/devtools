@@ -22,6 +22,10 @@ if(MSVC)
 endif(MSVC)
 set_property(TARGET packgen PROPERTY
   MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR
+   "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+  target_link_options(packgen PUBLIC "-static")
+endif()
 target_link_libraries(packgen packgenlib)
 target_include_directories(packgen PRIVATE include)
 
