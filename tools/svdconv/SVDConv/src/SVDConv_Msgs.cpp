@@ -48,9 +48,9 @@ const MsgTable SvdConv::msgTable = {
   { "M111", { MsgLevel::LEVEL_PROGRESS, CRLF_B,   "%NAME% failed!"                                                              } },
 
   { "M120", { MsgLevel::LEVEL_ERROR,    CRLF_BE,  "Invalid arguments!"                                                          } },
-  { "M121", { MsgLevel::LEVEL_ERROR,    CRLF_B,   "File not found %NAME%"                                                       } },
+  { "M121", { MsgLevel::LEVEL_ERROR,    CRLF_B,   ""                                                                            } },
   { "M122", { MsgLevel::LEVEL_ERROR,    CRLF_BE,  "Name of command file should follow '@'"                                      } },
-  { "M123", { MsgLevel::LEVEL_ERROR,    CRLF_B,   "File not found: '%PATH%'!"                                                   } },
+  { "M123", { MsgLevel::LEVEL_ERROR,    CRLF_B,   "File/Path not found: '%PATH%'!"                                              } },
   { "M124", { MsgLevel::LEVEL_ERROR,    CRLF_B,   "Cannot execute SfrCC2: '%PATH%'!"                                            } },
   { "M125", { MsgLevel::LEVEL_WARNING3, CRLF_B,   "SfrCC2 report:\n%MSG%\nSfrCC2 report end.\n"                                 } },
   { "M126", { MsgLevel::LEVEL_WARNING3, CRLF_B,   "SfrDis: %MSG%"                                                               } },

@@ -122,7 +122,15 @@ int SvdConv::Check(int argc, const char* argv[], const char* envp[])
 #endif
 
     ParseOptions parseOptions(m_svdOptions);
+    const string header = m_svdOptions.GetHeader();
+    LogMsg("M001", TXT(header));
+
     ParseOptions::Result result = parseOptions.Parse(argc, argv);
+
+    if(!m_svdOptions.GetLogPath().empty()) {
+      cout << header << endl;
+    }
+
     switch(result) {
       case ParseOptions::Result::Ok:
         break;
@@ -131,9 +139,6 @@ int SvdConv::Check(int argc, const char* argv[], const char* envp[])
       case ParseOptions::Result::Error:
         return 1;
     }
-
-    const string header = m_svdOptions.GetHeader();
-    LogMsg("M001", TXT(header));
 
     // Add date and time to log file
     if(!m_svdOptions.GetLogPath().empty()) {
@@ -168,6 +173,10 @@ int SvdConv::Check(int argc, const char* argv[], const char* envp[])
 
   LogMsg("M016");
   LogMsg("M022", ERR(errCnt), WARN(warnCnt));
+
+  if(!m_svdOptions.GetLogPath().empty()) {
+    cout << "Found " << errCnt << " Error(s) and " << warnCnt << " Warning(s)." << endl;
+  }
 
   if(errCnt) {
     return 2;
