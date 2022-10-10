@@ -1,0 +1,8 @@
+svdconv*
+.packs/.Download
+.packs/.Local
+.packs/.svd
+.packs/.Web
+out
+out2
+TEST-*.xml

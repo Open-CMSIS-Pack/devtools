@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<index schemaVersion="1.1.0" xs:noNamespaceSchemaLocation="PackIndex.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance">
+  <vendor>Keil</vendor>
+  <url>http://www.keil.com/pack/</url>
+  <timestamp>2022-07-01T09:41:01.8735872+00:00</timestamp>
+  <pindex>
+    <pdsc url="http://fex.autochips.com:90/download/CMSIS_PACK/AC781x/" vendor="AutoChips" name="AC781x_DFP" version="1.1.1" />
+    <pdsc url="http://fex.autochips.com:90/download/CMSIS_PACK/AC7801/" vendor="AutoChips" name="AC780x_DFP" version="1.0.5" />
+    <pdsc url="http://www.mindmotion.com.cn/Download/MDK_KEIL/" vendor="MindMotion" name="MM32x103_DFP" version="1.1.0" />
+    <pdsc url="http://www.mindmotion.com.cn/Download/MDK_KEIL/" vendor="MindMotion" name="MM32x031_DFP" version="1.0.0" />
+    <pdsc url="http://download.labs.mediatek.com" vendor="MediaTek" name="MTx" version="4.6.1" />
+    <pdsc url="http://www.analog.com/media/en/engineering-tools/design-tools" vendor="AnalogDevices" name="ADuCM320_DFP" version="1.1.0" />
+    <pdsc url="http://www.mcu.com.cn/pack/" vendor="Cmsemicon" name="BAT32G157-S" version="1.1.0" />
+  </pindex>
+</index>

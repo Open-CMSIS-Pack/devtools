@@ -36,7 +36,7 @@ jobs:
         matrix=$(jq --arg publicRepo "$publicRepo" 'map(. | select((.runOn==$publicRepo) or (.runOn=="always")) )' matrix_includes_svdconv.json)
         echo ::set-output name=matrix::{\"include\":$(echo $matrix)}\"
       working-directory: .github/
-      
+
   build:
     needs: matrix_prep
     runs-on: ${{ matrix.runs_on }}
@@ -55,16 +55,16 @@ jobs:
         with:
           target: svdconvdist
           arch: ${{ matrix.arch }}
-      
+
       - name: Archive svdconv binary
         if: ${{ github.event_name != 'release' }}
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: svdconv-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/tools/svdconv/SVDConv/svdconv-*-${{ matrix.target }}.*
           retention-days: 1
           if-no-files-found: error
-          
+
       - name: Attach svdconv binary to release
         if: ${{ github.event_name == 'release' && matrix.arch == 'amd64' }}
         uses: svenstaro/upload-release-action@v2
@@ -115,18 +115,69 @@ jobs:
         working-directory: ./build
 
       - name: Archive unit test results
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: unit_test_report-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/svdconvunittests-*.xml
           if-no-files-found: error
 
       - name: Archive integration test results
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: integ_test_report-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/svdconvintegtests-*.xml
           if-no-files-found: error
+
+  sys-test:
+    needs: build
+    runs-on: ubuntu-22.04
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout devtools
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install python requirements
+        run: |
+          pip install -U -r ./tools/svdconv/Test/systests/requirements.txt
+
+      - name: Download svdconv binary
+        uses: actions/download-artifact@v3
+        with:
+          name: svdconv-linux64-amd64
+          path: ./tools/svdconv/Test/systests
+
+      - name: Cache pack folder
+        uses: actions/cache@v3
+        with:
+          key: packs-${{ github.run_id }}
+          restore-keys: |
+            packs-
+          path: |
+            ./tools/svdconv/Test/systests/.packs/.Download
+            ./tools/svdconv/Test/systests/.packs/.Web
+
+      - name: Run svdconv sys tests
+        run: |
+          wget https://github.com/Open-CMSIS-Pack/devtools/releases/download/tools%2Fsvdconv%2F3.3.42/svdconv-3.3.42-linux64.zip
+          unzip svdconv-3.3.42-linux64.zip
+          mv SVDConv svdconv-3.3.42
+          tar xvf svdconv-*.tbz2
+          python3 svdtest.py --svdconv $(pwd)/svdconv --delta $(pwd)/svdconv-3.3.42 -v -k "*test_Keil_STM32F4*_sfd" || echo "Some tests failed!"
+          ls -lah
+        working-directory: ./tools/svdconv/Test/systests
+
+      - name: Archive sys test results
+        uses: actions/upload-artifact@v3
+        with:
+          name: sys_test_report
+          path: ./tools/svdconv/Test/systests/TEST-*.xml
+          if-no-files-found: error
+
 
   coverage:
     if: |
@@ -213,7 +264,7 @@ jobs:
           echo "cov_retention_days=7" >> $GITHUB_ENV
 
       - name: Archive coverage report
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: coverage-report
           path: |
@@ -239,7 +290,7 @@ jobs:
           mkdir -p tools/svdconv/distribution/
 
       - name: Download coverage report
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: coverage-report
           path: tools/svdconv/distribution/coverage/
@@ -259,66 +310,73 @@ jobs:
 
   test-results-preparation:
     name: "Publish Tests Results"
-    needs: [ test ]
+    needs: [ test, sys-test ]
     runs-on: ubuntu-22.04
     steps:
       - name: Setup Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: 3.8
 
       - name: Download unit test report windows
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: unit_test_report-windows64-amd64
           path: testreports/
 
       - name: Download unit test report linux amd64
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: unit_test_report-linux64-amd64
           path: testreports/
 
       - name: Download unit test report linux arm64
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: unit_test_report-linux64-arm64
           path: testreports/
 
       - name: Download unit test report macos
         if: ${{ !github.event.repository.private }}
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: unit_test_report-darwin64-amd64
           path: testreports/
 
       - name: Download integ test report windows
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: integ_test_report-windows64-amd64
           path: testreports/
 
       - name: Download integ test report linux amd64
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: integ_test_report-linux64-amd64
           path: testreports/
 
       - name: Download integ test report linux arm64
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: integ_test_report-linux64-arm64
           path: testreports/
-          
+
       - name: Download integ test report macos
         if: ${{ !github.event.repository.private }}
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: integ_test_report-darwin64-amd64
           path: testreports/
 
+      - name: Download sys test report
+        if: ${{ !github.event.repository.private }}
+        uses: actions/download-artifact@v3
+        with:
+          name: sys_test_report
+          path: testreports/
+
       - name: Event File
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: Event File
           path: ${{ github.event_path }}
