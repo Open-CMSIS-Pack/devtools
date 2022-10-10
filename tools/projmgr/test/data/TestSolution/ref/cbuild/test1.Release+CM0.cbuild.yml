@@ -2,13 +2,16 @@ build:
   context: test1.Release+CM0
   compiler: GCC
   device: RteTest_ARMCM0
+  processor:
+    fpu: off
+    endian: little
+    trustzone: non-secure
   packs:
     - pack: ARM::RteTest_DFP@0.2.0
       path: $CMSIS_PACK_ROOT$/ARM/RteTest_DFP/0.2.0
+  optimize: size
+  debug: off
   define:
-    - DEF-solution
-    - DEF-CM0
-    - DEF-Release
     - DEF-solution
     - DEF-CM0
     - DEF-Release
@@ -57,7 +60,6 @@ build:
           - -Lib-group
         Link:
           - -Link-group
-        for-compiler: GCC
       define:
         - DEF1-GROUP-PROJECT
         - DEF2-GROUP-PROJECT
@@ -85,7 +87,6 @@ build:
               - -Lib-file-GCC
             Link:
               - -Link-file-GCC
-            for-compiler: GCC
           define:
             - DEF1-FILE-PROJECT
             - DEF2-FILE-PROJECT

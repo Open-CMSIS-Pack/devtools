@@ -16,6 +16,7 @@
 
   <target Dfpu="NO_FPU" Dname="RteTest_ARMCM0_Dual" Dsecure="Non-secure" Dvendor="ARM:82" Pname="cm0_core1">
     <output intdir="tmp/test2/CM0/Debug" name="test2.Debug+CM0" outdir="out/test2/CM0/Debug" rtedir="../data/TestSolution/TestProject2/RTE" type="exe"/>
+    <options debug="on" optimize="none"/>
     <arflags add="-Lib-project -Lib-type-CM0" compiler="AC6"/>
     <asflags add="-ASM-project -ASM-type-CM0" compiler="AC6"/>
     <cflags add="-C-project -C-CPP-type-CM0" compiler="AC6"/>

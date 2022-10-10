@@ -50,6 +50,11 @@ endif()
 set_property(TARGET svdconv PROPERTY
   MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR
+   "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+  target_link_options(svdconv PUBLIC "-static")
+endif()
+
 target_link_libraries(svdconv PUBLIC svdconvlib)
 
 add_custom_target(svdconvdist COMMAND

@@ -53,6 +53,11 @@ endif()
 set_property(TARGET packchk PROPERTY
   MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR
+   "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+  target_link_options(packchk PUBLIC "-static")
+endif()
+
 target_link_libraries(packchk PUBLIC packchklib)
 
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)

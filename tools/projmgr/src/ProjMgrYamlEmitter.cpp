@@ -117,6 +117,8 @@ private:
   void SetPacksNode(YAML::Node node, const ContextItem* context);
   void SetGroupsNode(YAML::Node node, const vector<GroupNode>& groups);
   void SetFilesNode(YAML::Node node, const vector<FileNode>& files);
+  void SetControlsNode(YAML::Node Node, const BuildType& controls);
+  void SetProcessorNode(YAML::Node node, const map<string, string>& targetAttributes);
   void SetMiscNode(YAML::Node miscNode, const MiscItem& misc);
   void SetMiscNode(YAML::Node miscNode, const vector<MiscItem>& misc);
   void SetNodeValue(YAML::Node node, const string& value);
@@ -137,14 +139,15 @@ ProjMgrYamlCbuild::ProjMgrYamlCbuild(YAML::Node node, const vector<ContextItem*>
     YAML::Node cprojectNode;
     const string& cprojectFilename = fs::relative(cproject.path, directory, ec).generic_string();
     SetNodeValue(cprojectNode[YAML_CPROJECT], cprojectFilename);
+    for (const auto& item : cproject.clayers) {
+      string clayerPath = item.layer;
+      RteFsUtils::NormalizePath(clayerPath, cproject.directory);
+      const string& clayerFilename = fs::relative(clayerPath, directory, ec).generic_string();
+      YAML::Node clayerNode;
+      SetNodeValue(clayerNode[YAML_CLAYER], clayerFilename);
+      cprojectNode[YAML_CLAYERS].push_back(clayerNode);
+    }
     node[YAML_CPROJECTS].push_back(cprojectNode);
-  }
-
-  for (const auto& [clayerName, clayer] : parser.GetClayers()) {
-    YAML::Node clayerNode;
-    const string& clayerFilename = fs::relative(clayer.path, directory, ec).generic_string();
-    SetNodeValue(clayerNode[YAML_CLAYER], clayerFilename);
-    node[YAML_CLAYERS].push_back(clayerNode);
   }
 
   for (const auto& context : processedContexts) {
@@ -170,15 +173,15 @@ void ProjMgrYamlCbuild::SetContextNode(YAML::Node contextNode, const ContextItem
   SetNodeValue(contextNode[YAML_COMPILER], context->compiler);
   SetNodeValue(contextNode[YAML_BOARD], context->board);
   SetNodeValue(contextNode[YAML_DEVICE], context->device);
+  SetProcessorNode(contextNode[YAML_PROCESSOR], context->targetAttributes);
   SetPacksNode(contextNode[YAML_PACKS], context);
-  SetMiscNode(contextNode[YAML_MISC], context->misc);
-  SetNodeValue(contextNode[YAML_DEFINE], context->defines);
-  vector<string> defines = context->defines;
+  SetControlsNode(contextNode, context->controls.processed);
+  vector<string> defines;
   for (const auto& define : context->rteActiveTarget->GetDefines()) {
     ProjMgrUtils::PushBackUniquely(defines, define);
   }
   SetNodeValue(contextNode[YAML_DEFINE], defines);
-  vector<string> includes = context->includes;
+  vector<string> includes;
   for (auto include : context->rteActiveTarget->GetIncludePaths()) {
     RteFsUtils::NormalizePath(include, context->cproject->directory);
     ProjMgrUtils::PushBackUniquely(includes, FormatPath(include, context->directories.cprj));
@@ -197,11 +200,7 @@ void ProjMgrYamlCbuild::SetComponentsNode(YAML::Node node, const ContextItem* co
     SetNodeValue(componentNode[YAML_CONDITION], rteComponent->GetConditionID());
     SetNodeValue(componentNode[YAML_FROM_PACK], ProjMgrUtils::GetPackageID(rteComponent->GetPackage()));
     SetNodeValue(componentNode[YAML_SELECTED_BY], componentItem->component);
-    SetMiscNode(componentNode[YAML_MISC], componentItem->build.misc);
-    SetNodeValue(componentNode[YAML_DEFINE], componentItem->build.defines);
-    SetNodeValue(componentNode[YAML_UNDEFINE], componentItem->build.undefines);
-    SetNodeValue(componentNode[YAML_ADDPATH], componentItem->build.addpaths);
-    SetNodeValue(componentNode[YAML_DELPATH], componentItem->build.delpaths);
+    SetControlsNode(componentNode, componentItem->build);
     SetComponentFilesNode(componentNode[YAML_FILES], context, componentId);
     node.push_back(componentNode);
   }
@@ -233,11 +232,7 @@ void ProjMgrYamlCbuild::SetGroupsNode(YAML::Node node, const vector<GroupNode>& 
   for (const auto& group : groups) {
     YAML::Node groupNode;
     SetNodeValue(groupNode[YAML_GROUP], group.group);
-    SetMiscNode(groupNode[YAML_MISC], group.build.misc);
-    SetNodeValue(groupNode[YAML_DEFINE], group.build.defines);
-    SetNodeValue(groupNode[YAML_UNDEFINE], group.build.undefines);
-    SetNodeValue(groupNode[YAML_ADDPATH], group.build.addpaths);
-    SetNodeValue(groupNode[YAML_DELPATH], group.build.delpaths);
+    SetControlsNode(groupNode, group.build);
     SetFilesNode(groupNode[YAML_FILES], group.files);
     SetGroupsNode(groupNode[YAML_GROUPS], group.groups);
     node.push_back(groupNode);
@@ -248,12 +243,40 @@ void ProjMgrYamlCbuild::SetFilesNode(YAML::Node node, const vector<FileNode>& fi
   for (const auto& file : files) {
     YAML::Node fileNode;
     SetNodeValue(fileNode[YAML_FILE], file.file);
-    SetMiscNode(fileNode[YAML_MISC], file.build.misc);
-    SetNodeValue(fileNode[YAML_DEFINE], file.build.defines);
-    SetNodeValue(fileNode[YAML_UNDEFINE], file.build.undefines);
-    SetNodeValue(fileNode[YAML_ADDPATH], file.build.addpaths);
-    SetNodeValue(fileNode[YAML_DELPATH], file.build.delpaths);
+    SetControlsNode(fileNode, file.build);
     node.push_back(fileNode);
+  }
+}
+
+void ProjMgrYamlCbuild::SetControlsNode(YAML::Node node, const BuildType& controls) {
+  SetNodeValue(node[YAML_OPTIMIZE], controls.optimize);
+  SetNodeValue(node[YAML_DEBUG], controls.debug);
+  SetNodeValue(node[YAML_WARNINGS], controls.warnings);
+  SetMiscNode(node[YAML_MISC], controls.misc);
+  SetNodeValue(node[YAML_DEFINE], controls.defines);
+  SetNodeValue(node[YAML_UNDEFINE], controls.undefines);
+  SetNodeValue(node[YAML_ADDPATH], controls.addpaths);
+  SetNodeValue(node[YAML_DELPATH], controls.delpaths);
+}
+
+void ProjMgrYamlCbuild::SetProcessorNode(YAML::Node node, const map<string, string>& targetAttributes) {
+  if (targetAttributes.find("Dfpu") != targetAttributes.end()) {
+    const string& attribute = targetAttributes.at("Dfpu");
+    const string& value = (attribute == "NO_FPU") ? "off" : "on";
+    SetNodeValue(node[YAML_FPU], value);
+  }
+  if (targetAttributes.find("Dendian") != targetAttributes.end()) {
+    const string& attribute = targetAttributes.at("Dendian");
+    const string& value = (attribute == "Big-endian") ? "big" :
+                          (attribute == "Little-endian") ? "little" : "";
+    SetNodeValue(node[YAML_ENDIAN], value);
+  }
+  if (targetAttributes.find("Dsecure") != targetAttributes.end()) {
+    const string& attribute = targetAttributes.at("Dsecure");
+    const string& value = (attribute == "Secure") ? "secure" :
+                          (attribute == "Non-secure") ? "non-secure" :
+                          (attribute == "TZ-disabled") ? "off" : "";
+    SetNodeValue(node[YAML_TRUSTZONE], value);
   }
 }
 
@@ -275,9 +298,6 @@ void ProjMgrYamlCbuild::SetMiscNode(YAML::Node miscNode, const MiscItem& misc) {
     if (!value.empty()) {
       SetNodeValue(miscNode[key], value);
     }
-  }
-  if (miscNode.IsDefined()) {
-    SetNodeValue(miscNode[YAML_FORCOMPILER], misc.compiler);
   }
 }
 
