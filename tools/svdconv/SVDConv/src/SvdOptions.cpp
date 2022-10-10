@@ -291,7 +291,7 @@ bool SvdOptions::SetFileUnderTest(const string& filename)
   m_svdToCheck = RteFsUtils::AbsolutePath(svdToCheck).generic_string();
 
   if(!RteFsUtils::Exists(m_svdToCheck)) {
-    LogMsg("M204", PATH(m_svdToCheck));
+    LogMsg("M123", PATH(m_svdToCheck));
     m_svdToCheck.clear();
 
     return false;
@@ -325,7 +325,7 @@ bool SvdOptions::SetOutputDirectory(const string& filename)
       MakeSurePathExists(m_outputDir);
     }
     else {
-      LogMsg("M204", PATH(m_outputDir));
+      LogMsg("M123", PATH(m_outputDir));
       m_outputDir.clear();
       return false;
     }
