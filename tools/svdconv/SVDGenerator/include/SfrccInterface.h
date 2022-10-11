@@ -8,8 +8,6 @@
 
 #include <string>
 
-#define PATH_DIVIDER    "\\"
-
 
 class FileIo;
 
