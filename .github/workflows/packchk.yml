@@ -59,15 +59,15 @@ jobs:
           target: packchkdist
           arch: ${{ matrix.arch }}
 
-      - name: Attach installer to amd64 binaries release
-        if: ${{ github.event_name == 'release' && matrix.arch == 'amd64' }}
+      - name: Attach zipped binary to the release
+        if: ${{ github.event_name == 'release' }}
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref }}
           overwrite: true
           file_glob: true
-          file: build/tools/packchk/packchk-*-${{ matrix.target }}.zip
+          file: build/tools/packchk/packchk-*-${{ matrix.target }}-${{ matrix.arch }}.zip
 
   test:
     needs: matrix_prep
