@@ -115,9 +115,8 @@ class TestSequence(unittest.TestCase):
 
                 result = TestSequence.run_cmd(
                     ["bash", "-c", f"diff -dwB"
-                    f" <(tail -n +$(grep -n '*/' {outpath.as_posix()}/{devicename}.sfd | head -n 1 | cut -d: -f1) {out2path.as_posix()}/{devicename}.sfd)"
-                    f" <(tail -n +$(grep -n '*/' {out2path.as_posix()}/{devicename}.sfd | head -n 1 | cut -d: -f1) {out2path.as_posix()}/{devicename}.sfd)"
-                    f" > {out2path.as_posix()}/{devicename}.sfd.diff"])
+                    f" <(tail -n +$(grep -n '*/' {outpath.as_posix()}/{devicename}.sfd | head -n 1 | cut -d: -f1) {outpath.as_posix()}/{devicename}.sfd)"
+                    f" <(tail -n +$(grep -n '*/' {out2path.as_posix()}/{devicename}.sfd | head -n 1 | cut -d: -f1) {out2path.as_posix()}/{devicename}.sfd)"])
                 with self.subTest(msg=result.args[0]):
                     self.assertEqual(result.returncode, 0)
 
