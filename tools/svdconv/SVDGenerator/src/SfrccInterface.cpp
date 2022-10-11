@@ -29,7 +29,7 @@ SfrccInterface::SfrccInterface()
 #endif
 
   string modPath = modulePath;
-  string::size_type pos = modPath.find_last_of(PATH_DIVIDER);
+  string::size_type pos = modPath.find_last_of('/');
   if(pos != string::npos && pos > 1) {
     modPath.erase(pos, modPath.length());
     SetModulePath(modPath);
@@ -49,7 +49,7 @@ string SfrccInterface::GetPathToSfrcc()
 
   string pathToSfrcc;
   pathToSfrcc += modulePath;
-  pathToSfrcc += PATH_DIVIDER;
+  pathToSfrcc += '/';
   pathToSfrcc += "SfrCC2.exe";
 
   if(!RteFsUtils::Exists(pathToSfrcc)) {

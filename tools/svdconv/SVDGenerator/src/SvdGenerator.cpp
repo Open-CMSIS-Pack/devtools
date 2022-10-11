@@ -188,7 +188,7 @@ string SvdGenerator::GetCmsisHeaderFileName()
 {
   string name = GetOutPath();
   if(!name.empty()) {
-    name += PATH_DIVIDER;
+    name += '/';
   }
   name += GetDeviceName();
   name += ".h";
@@ -200,7 +200,7 @@ string SvdGenerator::GetSfdFileName()
 {
   string name = GetOutPath();
   if(!name.empty()) {
-    name += PATH_DIVIDER;
+    name += '/';
   }
   name += GetDeviceName();
   name += ".sfd";
@@ -212,7 +212,7 @@ string SvdGenerator::GetSfrFileName()
 {
   string name = GetOutPath();
   if(!name.empty()) {
-    name += PATH_DIVIDER;
+    name += '/';
   }
   name += GetDeviceName();
   name += ".sfr";
@@ -224,7 +224,7 @@ string SvdGenerator::GetCmsisPartitionFileName()
 {
   string name = GetOutPath();
   if(!name.empty()) {
-    name += PATH_DIVIDER;
+    name += '/';
   }
   name += "partition_";
   name += GetDeviceName();
@@ -237,7 +237,7 @@ string SvdGenerator::GetPeripheralListFileName()
 {
   string name = GetOutPath();
   if(!name.empty()) {
-    name += PATH_DIVIDER;
+    name += '/';
   }
   name += GetDeviceName();
   name += "_";
@@ -250,7 +250,7 @@ string SvdGenerator::GetRegisterListFileName()
 {
   string name = GetOutPath();
   if(!name.empty()) {
-    name += PATH_DIVIDER;
+    name += '/';
   }
   name += GetDeviceName();
   name += "_";
@@ -263,7 +263,7 @@ string SvdGenerator::GetFieldListFileName()
 {
   string name = GetOutPath();
   if(!name.empty()) {
-    name += PATH_DIVIDER;
+    name += '/';
   }
   name += GetDeviceName();
   name += "_";
