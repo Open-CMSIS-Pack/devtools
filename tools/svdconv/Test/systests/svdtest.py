@@ -5,7 +5,7 @@ import sys
 import unittest
 import xml.etree.ElementTree as ET
 
-from argparse import ArgumentParser
+from argparse import ArgumentParser, Action
 from datetime import datetime, timedelta
 from pathlib import Path
 from urllib.parse import urlparse, urljoin
@@ -29,7 +29,7 @@ class TestSequence(unittest.TestCase):
         self.assertTrue(packfile.exists())
 
         svdpath = f".packs/.svd/{pdsc.vendor}.{pdsc.name}.{pdsc.version}"
-        svdfile = Path(f"{svdpath}/{Path(svd).as_posix()}")
+        svdfile = Path(f"{svdpath}/{Path(svd).as_posix()}").resolve()
         if not svdfile.exists():
             with ZipFile(packfile, 'r') as archive:
                 archive.extract(Path(svd).as_posix(), path=svdpath)
@@ -57,26 +57,33 @@ class TestSequence(unittest.TestCase):
             svdxml = ET.parse(svdfile).getroot()
             devicename = svdxml.findtext("./name")
 
+            outpath = Path(f"out/{outdir}/").resolve()
+            outpath.mkdir(parents=True, exist_ok=True)
+
             result = TestSequence.run_cmd(
-                [SVDCONV_BIN, svdfile, "--generate=header", "--fields=struct", "--fields=macro",
-                "--fields=enum", "--create-folder", "-o", f"out/{outdir}/", "-b", f"out/{outdir}/{Path(svd).stem}.log"])
+                [SVDCONV_BIN.as_posix(), svdfile, "--generate=header", "--fields=struct", "--fields=macro",
+                "--fields=enum", "--create-folder", "-o", outpath.as_posix(), "-b",
+                f"{outpath.as_posix()}/{Path(svd).stem}.log"])
             with self.subTest(msg=result.args[0]):
                 self.assertLessEqual(result.returncode, 1)
 
             if SYNTAX_MODE:
                 self.assertIsNotNone(svdxml.find("./cpu"))
-                Path(f"out/{outdir}/system_{devicename}.h").touch()
+                Path(f"{outpath.as_posix()}/system_{devicename}.h").touch()
                 result = TestSequence.run_cmd(
-                    [SYNTAX_MODE, "--target=arm-arm-none-eabi",
+                    [SYNTAX_MODE.as_posix(), "--target=arm-arm-none-eabi",
                     f"-I{os.environ.get('CMSIS_PACK_ROOT', '.packs')}/ARM/CMSIS/5.9.0/CMSIS/Core/Include",
-                    "-fsyntax-only", f"out/{outdir}/{devicename}.h"])
+                    "-fsyntax-only", f"{outpath.as_posix()}/{devicename}.h"])
                 with self.subTest(msg=result.args[0]):
                     self.assertEqual(result.returncode, 0)
 
             if DELTA_MODE:
+                out2path = Path(f"out2/{outdir}/").resolve()
+                out2path.mkdir(parents=True, exist_ok=True)
                 result = TestSequence.run_cmd(
-                    [DELTA_MODE, svdfile, "--generate=header", "--fields=struct", "--fields=macro",
-                     "--fields=enum", "--create-folder", "-o", f"out2/{outdir}/", "-b", f"out2/{outdir}/{Path(svd).stem}.log"])
+                    [DELTA_MODE.as_posix(), svdfile, "--generate=header", "--fields=struct", "--fields=macro",
+                     "--fields=enum", "--create-folder", "-o", out2path.as_posix(), "-b",
+                     f"{out2path.as_posix()}/{Path(svd).stem}.log"])
                 with self.subTest(msg=result.args[0]):
                     self.assertLessEqual(result.returncode, 1)
 
@@ -87,24 +94,30 @@ class TestSequence(unittest.TestCase):
             svdxml = ET.parse(svdfile).getroot()
             devicename = svdxml.findtext("./name")
 
+            outpath = Path(f"out/{outdir}/").resolve()
+            outpath.mkdir(parents=True, exist_ok=True)
+
             result = TestSequence.run_cmd(
-                [SVDCONV_BIN, svdfile.as_posix(), "--generate=sfd", "--create-folder",
-                "-o", f"out/{outdir}/", "-b", f"out/{outdir}/{devicename}.log"])
+                [SVDCONV_BIN.as_posix(), svdfile.as_posix(), "--generate=sfd", "--create-folder",
+                "-o", outpath.as_posix(), "-b", f"{outpath.as_posix()}/{devicename}.log"])
             with self.subTest(msg=result.args[0]):
                 self.assertLessEqual(result.returncode, 1)
 
             if DELTA_MODE:
+                out2path = Path(f"out2/{outdir}/").resolve()
+                out2path.mkdir(parents=True, exist_ok=True)
+
                 result = TestSequence.run_cmd(
-                    [DELTA_MODE, svdfile.as_posix(), "--generate=sfd", "--create-folder",
-                    "-o", f"out2/{outdir}/", "-b", f"out2/{outdir}/{devicename}.log"])
+                    [DELTA_MODE.as_posix(), svdfile.as_posix(), "--generate=sfd", "--create-folder",
+                    "-o", out2path.as_posix(), "-b", f"{out2path.as_posix()}/{devicename}.log"])
                 with self.subTest(msg=result.args[0]):
                     self.assertLessEqual(result.returncode, 1)
 
                 result = TestSequence.run_cmd(
                     ["bash", "-c", f"diff -dwB"
-                    f" <(tail -n +$(grep -n '*/' out/{outdir}/{devicename}.sfd | head -n 1 | cut -d: -f1) out/{outdir}/{devicename}.sfd)"
-                    f" <(tail -n +$(grep -n '*/' out2/{outdir}/{devicename}.sfd | head -n 1 | cut -d: -f1) out2/{outdir}/{devicename}.sfd)"
-                    f" > out2/{outdir}/{devicename}.sfd.diff"])
+                    f" <(tail -n +$(grep -n '*/' {outpath.as_posix()}/{devicename}.sfd | head -n 1 | cut -d: -f1) {out2path.as_posix()}/{devicename}.sfd)"
+                    f" <(tail -n +$(grep -n '*/' {out2path.as_posix()}/{devicename}.sfd | head -n 1 | cut -d: -f1) {out2path.as_posix()}/{devicename}.sfd)"
+                    f" > {out2path.as_posix()}/{devicename}.sfd.diff"])
                 with self.subTest(msg=result.args[0]):
                     self.assertEqual(result.returncode, 0)
 
@@ -276,14 +289,24 @@ class PackIndex:
                 pdsc.update()
 
 
+class AbsolutePathAction(Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        if values and isinstance(values, Path):
+            values = values.resolve()
+        setattr(namespace, self.dest, values)
+
+
 def main():
     global OFFLINE_MODE, SYNTAX_MODE, DELTA_MODE, SVDCONV_BIN
 
     parser = ArgumentParser(add_help=False)
     parser.add_argument('--offline', action='store_true')
-    parser.add_argument('--syntax', type=Path, default=None, help="Compiler to be used for header file syntax check")
-    parser.add_argument('--delta', type=Path, default=None, help="Reference version of SVDConv for delta check")
-    parser.add_argument('--svdconv', type=Path, default=Path('./svdconv'), help="SVDConv binary to be tested")
+    parser.add_argument('--syntax', type=Path, default=None, action=AbsolutePathAction,
+        help="Compiler to be used for header file syntax check")
+    parser.add_argument('--delta', type=Path, default=None, action=AbsolutePathAction,
+        help="Reference version of SVDConv for delta check")
+    parser.add_argument('--svdconv', type=Path, default=Path('./svdconv'), action=AbsolutePathAction,
+        help="SVDConv binary to be tested")
     args, argv = parser.parse_known_args()
 
     OFFLINE_MODE = args.offline

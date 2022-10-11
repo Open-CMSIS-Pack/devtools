@@ -167,8 +167,7 @@ jobs:
           unzip svdconv-3.3.42-linux64.zip
           mv SVDConv svdconv-3.3.42
           tar xvf svdconv-*.tbz2
-          python3 svdtest.py --svdconv $(pwd)/svdconv --delta $(pwd)/svdconv-3.3.42 -v -k "*test_Keil_STM32F4*_sfd" || echo "Some tests failed!"
-          ls -lah
+          python3 svdtest.py --svdconv svdconv --delta svdconv-3.3.42 -v -k "*test_Keil_STM32F4*_sfd" || echo "Some tests failed!"
         working-directory: ./tools/svdconv/Test/systests
 
       - name: Archive sys test results
