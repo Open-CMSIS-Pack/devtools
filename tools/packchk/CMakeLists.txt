@@ -60,16 +60,11 @@ endif()
 
 target_link_libraries(packchk PUBLIC packchklib)
 
-if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-  set(ARCH "64")
-elseif(CMAKE_SIZEOF_VOID_P EQUAL 4)
-  set(ARCH "32")
-endif()
-
 string(TOLOWER ${CMAKE_SYSTEM_NAME} SYSTEM)
+string(TOLOWER ${CMAKE_SYSTEM_PROCESSOR} SYSTEM_PROCESSOR)
 
 add_custom_target(packchkdist COMMAND
-    ${CMAKE_COMMAND} -E tar "cfv" "${CMAKE_CURRENT_BINARY_DIR}/packchk-${PROJECT_VERSION_FULL}-${SYSTEM}${ARCH}.zip" --format=zip
+    ${CMAKE_COMMAND} -E tar "cfv" "${CMAKE_CURRENT_BINARY_DIR}/packchk-${PROJECT_VERSION_FULL}-${SYSTEM}-${SYSTEM_PROCESSOR}.zip" --format=zip
        "$<TARGET_FILE:packchk>"
        DEPENDS packchk
        WORKING_DIRECTORY "$<TARGET_FILE_DIR:packchk>")
