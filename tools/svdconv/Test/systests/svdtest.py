@@ -198,7 +198,7 @@ class PackDesc:
     @property
     def svds(self):
         debug = self.pdsc.findall(".//devices//debug[@svd]")
-        return (d.get("svd") for d in debug)
+        return [d.get("svd").replace('\\', '/') for d in debug]
 
     def exists(self):
         return self._file.exists()
