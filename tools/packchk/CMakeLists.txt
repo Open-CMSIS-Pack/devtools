@@ -75,7 +75,9 @@ else()
 endif()
 
 add_custom_target(packchkdist COMMAND
-    ${CMAKE_COMMAND} -E tar "cfv" "${CMAKE_CURRENT_BINARY_DIR}/packchk-${PROJECT_VERSION_FULL}-${SYSTEM}${ARCH}-${SYSTEM_PROCESSOR}.zip" --format=zip
+    ${CMAKE_COMMAND} -E tar "cvf${CMAKE_TAR_FLAGS}"
+      "${CMAKE_CURRENT_BINARY_DIR}/packchk-${PROJECT_VERSION_FULL}-${SYSTEM}${ARCH}-${SYSTEM_PROCESSOR}.${CMAKE_TAR_EXTENSION}"
+      "--format=${CMAKE_TAR_FORMAT}"
        "$<TARGET_FILE:packchk>"
        DEPENDS packchk
        WORKING_DIRECTORY "$<TARGET_FILE_DIR:packchk>")

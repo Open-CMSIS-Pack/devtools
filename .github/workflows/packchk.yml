@@ -232,17 +232,17 @@ jobs:
           path: tools/packchk/distribution/coverage/
 
       - name: Zip distribution folder
-        run: zip -r packchk.zip *
+        run: zip -r code-coverage.zip *
         working-directory: tools/packchk/distribution
 
       - name: Attach zip archive to release assets
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: tools/packchk/distribution/packchk.zip
+          file: tools/packchk/distribution/code-coverage.zip
           tag: ${{ github.ref }}
           overwrite: true
-          asset_name: packchk.zip
+          asset_name: code-coverage.zip
 
   test-results-preparation:
     name: "Publish Tests Results"
