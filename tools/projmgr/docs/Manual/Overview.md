@@ -593,7 +593,7 @@ operation:
     ```c
     ./RTE/component_class/ConfigFile.h                  // user editable configuration file (based on current version)
     ./RTE/component_class/ConfigFile.h.update@1.3.0     // new configuration file; used to start a 3-way merge
-    ./RTE/component_class/ConfigFile.h.baset@1.2.0      // current unmodified configuration file with version 
+    ./RTE/component_class/ConfigFile.h.base@1.2.0      // current unmodified configuration file with version 
                                                         // information; used as a base for version comparison
     ```
 
