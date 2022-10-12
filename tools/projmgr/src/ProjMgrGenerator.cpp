@@ -168,11 +168,11 @@ void ProjMgrGenerator::GenerateCprjTarget(XMLTreeElement* element, const Context
     targetOutputElement->AddAttribute("rtedir", context.directories.rte);
   }
 
-  GenerateCprjOptions(element, context.cproject->target.build);
-  GenerateCprjMisc(element, context.misc);
+  GenerateCprjOptions(element, context.controls.processed);
+  GenerateCprjMisc(element, context.controls.processed.misc);
   GenerateCprjLinkerScript(element, context.toolchain.name, context.linkerScript);
-  GenerateCprjVector(element, context.defines, "defines");
-  GenerateCprjVector(element, context.includes, "includes");
+  GenerateCprjVector(element, context.controls.processed.defines, "defines");
+  GenerateCprjVector(element, context.controls.processed.addpaths, "includes");
 }
 
 void ProjMgrGenerator::GenerateCprjComponents(XMLTreeElement* element, const ContextItem& context) {

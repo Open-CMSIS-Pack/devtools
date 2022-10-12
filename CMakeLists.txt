@@ -40,13 +40,6 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR
   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wall")
 endif()
 
-if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR
-   "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-  if (NOT SWIG_LIBS)
-    add_link_options("-static")
-  endif(SWIG_LIBS)
-endif()
-
 if(SWIG_LIBS)
   message("SWIG_LIBS is active. Build SWIG libraries")
   set(CMAKE_POSITION_INDEPENDENT_CODE ON)

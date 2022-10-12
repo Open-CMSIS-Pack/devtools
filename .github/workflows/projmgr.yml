@@ -213,20 +213,20 @@ jobs:
       - name: Download test report windows
         uses: actions/download-artifact@v2
         with:
-          name: unit_gtest-windows64-amd64
+          name: unit_test_result-windows64-amd64
           path: tools/testreport/windows64/
 
       - name: Download test report linux
         uses: actions/download-artifact@v2
         with:
-          name: unit_gtest-linux64-amd64
+          name: unit_test_result-linux64-amd64
           path: tools/testreport/linux64/
 
       - name: Download test report macos
         if: ${{ !github.event.repository.private }}
         uses: actions/download-artifact@v2
         with:
-          name: unit_gtest-darwin64-amd64
+          name: unit_test_result-darwin64-amd64
           path: tools/testreport/darwin64/
 
       - name: Zip test reports

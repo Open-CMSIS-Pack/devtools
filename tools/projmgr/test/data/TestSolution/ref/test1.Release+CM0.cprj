@@ -16,6 +16,7 @@
 
   <target Dendian="Little-endian" Dfpu="NO_FPU" Dname="RteTest_ARMCM0" Dsecure="Non-secure" Dvendor="ARM:82">
     <output intdir="tmp/test1/CM0/Release" name="test1.Release+CM0" outdir="out/test1/CM0/Release" rtedir="../data/TestSolution/TestProject1/RTE" type="exe"/>
+    <options debug="off" optimize="size"/>
     <ldflags compiler="GCC" file="../data/TestSolution/TestProject1/RTE/Device/RteTest_ARMCM0/gcc_arm.ld"/>
     <defines>DEF-solution;DEF-CM0;DEF-Release</defines>
     <includes>../data/TestSolution/path/solution/;../data/TestSolution/path/CM0;../data/TestSolution/path/Release</includes>

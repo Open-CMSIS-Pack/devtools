@@ -77,6 +77,7 @@ struct TargetItem {
 
 /**
  * @brief translation control item containing
+ *        final context controls after processing,
  *        csolution controls,
  *        cproject controls,
  *        project setup controls,
@@ -85,6 +86,7 @@ struct TargetItem {
  *        layers translation controls,
 */
 struct TranslationControl {
+  BuildType processed;
   BuildType csolution;
   BuildType cproject;
   BuildType setup;
@@ -112,17 +114,11 @@ struct TranslationControl {
  *        output type,
  *        device selection,
  *        board selection,
- *        trustzone selection,
- *        fpu selection,
- *        endianess selection,
  *        list of package requirements,
  *        map of required pdsc files and optionally its local path
  *        list of component requirements,
  *        compiler string in short syntax,
  *        toolchain with parsed name and version,
- *        list of defines
- *        list of include paths
- *        list of toolchain flags
  *        map of target attributes,
  *        map of used packages,
  *        map of used components,
@@ -151,18 +147,12 @@ struct ContextItem {
   std::string outputType;
   std::string device;
   std::string board;
-  std::string trustzone;
-  std::string fpu;
-  std::string endian;
   std::vector<PackageItem> packRequirements;
   std::map<std::string, std::string> pdscFiles;
   std::vector<PackInfo>missingPacks;
   std::vector<std::pair<ComponentItem, std::string>> componentRequirements;
   std::string compiler;
   ToolchainItem toolchain;
-  std::vector<std::string> defines;
-  std::vector<std::string> includes;
-  MiscItem misc;
   std::map<std::string, std::string> targetAttributes;
   std::map<std::string, RtePackage*> packages;
   std::map<std::string, std::pair<RteComponent*, ComponentItem*>> components;

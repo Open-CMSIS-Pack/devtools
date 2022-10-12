@@ -29,6 +29,11 @@ endif(MSVC)
 set_property(TARGET cbuildgen PROPERTY
   MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR
+   "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+  target_link_options(cbuildgen PUBLIC "-static")
+endif()
+
 target_include_directories(cbuildgen
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
   PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/include)
