@@ -130,10 +130,11 @@ bool XMLTreeSlimInterface::Parse(const std::string& fileName, const std::string&
 
     if (recursion) {
       LogMsg("M421");
+      m_pXmlReader->PrintTagStack();
     }
   }
 
- m_pXmlReader->UnInit();
+  m_pXmlReader->UnInit();
 
   ErrLog::Get()->SetErrConsumer(prevConsumer);
   ErrLog::Get()->SetFileName("");

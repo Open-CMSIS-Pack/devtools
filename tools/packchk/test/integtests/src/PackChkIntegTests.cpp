@@ -239,7 +239,7 @@ TEST_F(PackChkIntegTests, AddRefPacks) {
   refPack4 += "/" + refName4 + ".pdsc";
   const string contentBegin = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"\
                               "<package schemaVersion=\"1.3\" xmlns:xs=\"http://www.w3.org/2001/XMLSchema-instance\" xs:noNamespaceSchemaLocation=\"PACK.xsd\">\n"\
-                              "  <name>";    
+                              "  <name>";
   const string contentEnd =   "  </name>\n"\
                               "</package>\n";
 
@@ -274,7 +274,7 @@ TEST_F(PackChkIntegTests, AddRefPacks) {
 
   PackChk packChk;
   packChk.Check(10, argv, nullptr);
-  
+
   const RteGlobalModel& model = packChk.GetModel();
   const RtePackageMap& packs = model.GetPackages();
 
@@ -402,6 +402,34 @@ TEST_F(PackChkIntegTests, CheckFeatureSON) {
 
   if (!bFound) {
     FAIL() << "error: missing error M371";
+  }
+}
+
+// Validate self resolving component
+TEST_F(PackChkIntegTests, CheckCompResolvedByItself) {
+  const char* argv[2];
+
+  const string& pdscFile = PackChkIntegTestEnv::localtestdata_dir +
+    "/CompResolvedByItself/ARM.CompResolvedByItself.pdsc";
+  ASSERT_TRUE(RteFsUtils::Exists(pdscFile));
+
+  argv[0] = (char*)"";
+  argv[1] = (char*)pdscFile.c_str();
+
+  PackChk packChk;
+  EXPECT_EQ(0, packChk.Check(2, argv, nullptr));
+
+  auto errMsgs = ErrLog::Get()->GetLogMessages();
+  int foundCnt = 0;
+  for (const string& msg : errMsgs) {
+    size_t s;
+    if ((s = msg.find("M389")) != string::npos) {
+      foundCnt++;
+    }
+  }
+
+  if (foundCnt != 2) {
+    FAIL() << "error: missing message M389";
   }
 }
 

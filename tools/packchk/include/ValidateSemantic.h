@@ -29,6 +29,8 @@ public:
 
   bool Check();
   bool TestMcuDependencies(RtePackage* pKg);
+  bool TestDepsResult(const std::map<const RteItem*, RteDependencyResult>& results, RteComponent* component);
+  bool CheckSelfResolvedCondition(RteComponent* component, RteTarget* target);
   bool TestComponentDependencies();
   bool TestApis();
   bool CheckForUnsupportedChars(const std::string& name, const std::string& tag, int lineNo);

@@ -674,6 +674,7 @@ bool ValidateSemantic::TestMcuDependencies(RtePackage* pKg)
   return true;
 }
 
+
 /**
  * @brief check component dependencies
  * @return passed / failed
@@ -718,6 +719,9 @@ bool ValidateSemantic::TestComponentDependencies()
     rteProject->SetActiveTarget("Test");
     RteTarget* target = rteProject->GetActiveTarget();
     rteProject->FilterComponents();
+
+    CheckSelfResolvedCondition(component, target);
+
     target->SelectComponent(component, 1, true);
 
     const string& apiVersion = component->GetAttribute("Capiversion");
@@ -738,11 +742,12 @@ bool ValidateSemantic::TestComponentDependencies()
 
     RteDependencyResult dependencyResult;
     RteItem::ConditionResult result = target->GetDepsResult(dependencyResult.Results(), target);
+
     switch(result) {
       case RteItem::SELECTABLE: // all dependencies resolved, component can be selected
-      case RteItem::FULFILLED:  // all dependencies resolved, component is selected
       case RteItem::INSTALLED:
       case RteItem::IGNORED:    // condition/expression is irrelevant for the current context           (same as FULFILLED)
+      case RteItem::FULFILLED:  // all dependencies resolved, component is selected
         break;
       default:     // error
         bOk = false;
@@ -768,4 +773,51 @@ bool ValidateSemantic::TestComponentDependencies()
   ErrLog::Get()->SetFileName("");
 
   return bOk;
+}
+
+
+bool ValidateSemantic::TestDepsResult(const map<const RteItem*, RteDependencyResult>& results, RteComponent* component)
+{
+  bool success = true;
+
+  const string& compName = component->GetID();
+
+  for(auto& [item, dRes] : results) {
+    RteItem::ConditionResult r = dRes.GetResult();
+    if(r < RteItem::INSTALLED) {
+      continue;
+    }
+
+    if(!TestDepsResult(dRes.GetResults(), component)) {
+      success = false;
+    }
+
+    const string& itemName = item->GetID();
+    auto aggrs = dRes.GetComponentAggregates();
+    for(auto aggr : aggrs) {
+      if(aggr->HasComponent(component)) {
+        const string errExprStr = item->GetParent()->GetID();
+        const int compLineNo = item->GetLineNumber();
+        // "The component '%NAME%' has dependency '%NAME2%' : '%EXPR%' that is be resolved by the component itself."
+        LogMsg("M389", NAME(compName), LINE(compLineNo), NAME2(itemName), VAL("EXPR", errExprStr), item->GetLineNumber());
+        success = false;
+      }
+    }
+  }
+
+  return success;
+}
+
+
+bool ValidateSemantic::CheckSelfResolvedCondition(RteComponent* component, RteTarget* target)
+{
+  RteDependencySolver* depSolver = target->GetDependencySolver();
+  depSolver->Clear();
+
+  component->Evaluate(depSolver);
+  RteDependencyResult depsRes;
+  component->GetDepsResult(depsRes.Results(), target);
+  TestDepsResult(depsRes.GetResults(), component);
+
+  return true;
 }

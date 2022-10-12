@@ -316,6 +316,11 @@ public:
     return text.length();
   }
 
+  /**
+   * @brief prints out XML stack, for error reporting on an improper XML closing tag
+  */
+  void PrintTagStack();
+
 private:
   /**
    * @brief opens source from m_SourceStack
@@ -391,11 +396,6 @@ private:
    * @return success true/false
   */
   bool PopTag(std::string& tag);
-
-  /**
-   * @brief prints out XML stack, for error reporting on an improper XML closing tag
-  */
-  void PrintTagStack();
 
   /**
    * @brief get string length of whole attribute(s) for current tag
