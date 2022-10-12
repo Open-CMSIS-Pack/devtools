@@ -492,39 +492,42 @@ void RteProject::UpdateConfigFileBackups(RteFileInstance* fi, RteFile* f)
 {
   string src = f->GetOriginalAbsolutePath();
   string absPath = RteFsUtils::AbsolutePath(fi->GetAbsolutePath()).generic_string();
-  const string& originVersion = fi->GetVersionString();
-  const string& curVersion = f->GetVersionString();
-  string originFile = RteUtils::AppendFileVersion(absPath, originVersion, true);
-  if (!RteFsUtils::Exists(originFile)) {
-    // create saved file if possible
-    if (originVersion == curVersion) {
-      // we can use current version as backup one
-      RteFsUtils::CopyCheckFile(src, originFile, false);
+  const string& baseVersion = fi->GetVersionString();
+  const string& updateVersion = f->GetVersionString();
+  string baseFile = RteUtils::AppendFileBaseVersion(absPath, baseVersion);
+  if (!RteFsUtils::Exists(baseFile)) {
+    // create base file if possible
+    if (baseVersion == updateVersion) {
+      // we can use current version as base one
+      RteFsUtils::CopyCheckFile(src, baseFile, false);
+      RteFsUtils::SetFileReadOnly(baseFile, true);
     } else {
-      originFile.clear(); //no such file
+      baseFile.clear(); //no such file
     }
   }
   // copy current file if version differs
-  string curFile = RteUtils::AppendFileVersion(absPath, curVersion, false);
-  if (originVersion != curVersion) {
-    RteFsUtils::CopyCheckFile(src, curFile, false);
+  string updateFile = RteUtils::AppendFileUpdateVersion(absPath, updateVersion);
+  if (baseVersion != updateVersion) {
+    RteFsUtils::CopyCheckFile(src, updateFile, false);
+    RteFsUtils::SetFileReadOnly(updateFile, true);
   } else {
-    curFile.clear(); // no need in that
+    updateFile.clear(); // no need in that
   }
 
   // remove redundant current and origin files
-  string name = RteUtils::ExtractFileName(absPath);
-  string dotName = "." + name;
   string dir = RteUtils::ExtractFilePath(absPath, false);
+  string name = RteUtils::ExtractFileName(absPath);
+  string baseName = name + '.' +  RteUtils::BASE_STRING;
+  string updateName = name + '.' + RteUtils::UPDATE_STRING;
 
   list<string> backupFileNames;
-  RteFsUtils::GrepFileNames(backupFileNames, dir, name + "@*");
-  if (!originFile.empty()) {
-    RteFsUtils::GrepFileNames(backupFileNames, dir, dotName + "@*");
+  RteFsUtils::GrepFileNames(backupFileNames, dir, updateName + "@*");
+  if (!baseFile.empty()) {
+    RteFsUtils::GrepFileNames(backupFileNames, dir, baseName + "@*");
   }
   for (string fileName : backupFileNames) {
     error_code ec;
-    if (!fs::equivalent(fileName, originFile, ec) && !fs::equivalent(fileName, curFile, ec)) {
+    if (!fs::equivalent(fileName, baseFile, ec) && !fs::equivalent(fileName, updateFile, ec)) {
       RteFsUtils::DeleteFileAutoRetry(fileName);
     }
   }
@@ -532,12 +535,12 @@ void RteProject::UpdateConfigFileBackups(RteFileInstance* fi, RteFile* f)
 
 
 
-void RteProject::MergeFiles(const string& curFile, const string& newFile, const string& originFile)
+void RteProject::MergeFiles(const string& curFile, const string& updateFile, const string& baseFile)
 {
-  if (!originFile.empty() && RteFsUtils::Exists(originFile)) {
-    GetCallback()->MergeFiles3Way(curFile, newFile, originFile);
+  if (!baseFile.empty() && RteFsUtils::Exists(baseFile)) {
+    GetCallback()->MergeFiles3Way(curFile, updateFile, baseFile);
   } else {
-    GetCallback()->MergeFiles(curFile, newFile);
+    GetCallback()->MergeFiles(curFile, updateFile);
   }
 }
 

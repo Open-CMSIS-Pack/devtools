@@ -888,8 +888,8 @@ bool RteFileInstance::Copy(RteFile* f, bool bMerge)
   if (bMerge) {
     RteProject* project = GetProject();
     if (project) {
-      string savedFile = RteUtils::AppendFileVersion(dst, GetVersionString(), true);
-      project->MergeFiles(bak, dst, savedFile);
+      string baseFile = RteUtils::AppendFileBaseVersion(dst, GetVersionString());
+      project->MergeFiles(bak, dst, baseFile);
     }
   }
 

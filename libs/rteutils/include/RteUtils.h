@@ -209,10 +209,27 @@ public:
    * @brief construct filename with appended version string
    * @param fileName path to config file to use, can be absolute or relative
    * @param version string to append
-   * @param bHidden insert dot in front of base name
-   * @return constructed filename in the format: path/name.ext@version or path/.name.ext@version
+   * @param versionPrefix string to insert before version such as "base" or"update"
+   * @return constructed filename in the format: path/name.ext.versionPrefix@version
   */
-  static std::string AppendFileVersion(const std::string& fileName, const std::string& version, bool bHidden);
+  static std::string AppendFileVersion(const std::string& fileName, const std::string& version, const std::string& versionPrefix);
+
+  /**
+   * @brief construct filename with appended version string and "base" prefix
+   * @param fileName path to config file to use, can be absolute or relative
+   * @param version string to append
+   * @return constructed filename in the format: path/name.ext.base@version
+  */
+  static std::string AppendFileBaseVersion(const std::string& fileName, const std::string& version);
+
+  /**
+   * @brief construct filename with appended version string and "update" prefix
+   * @param fileName path to config file to use, can be absolute or relative
+   * @param version string to append
+   * @return constructed filename in the format: path/name.ext.update@version
+  */
+  static std::string AppendFileUpdateVersion(const std::string& fileName, const std::string& version);
+
 
   /**
    * @brief extract first file segments
@@ -294,6 +311,9 @@ public:
 
   static const std::string EMPTY_STRING;
   static const std::string ERROR_STRING;
+  static const std::string BASE_STRING;
+  static const std::string UPDATE_STRING;
+
   static const char CatalogName[];
   static const std::set<std::string> EMPTY_STRING_SET;
   static const std::list<std::string> EMPTY_STRING_LIST;
