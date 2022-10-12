@@ -566,14 +566,14 @@ operation:
 
 1. **Add** a software component for the first time: the related config file is copied twice into the related `RTE`
    project directory. The first copy can be modified by the user with the parameters for the user application. The
-   second copy is an unmodified  backup file with the format `<configfile>.<ext>.current@version`.
+   second copy is an unmodified  backup file with the format `<configfile>.<ext>.base@version`.
 
     **Example:** A configuration file `ConfigFile.h` at version `1.2.0` is copied:
 
     ```c
     ./RTE/component_class/ConfigFile.h                  // user editable configuration file
-    ./RTE/component_class/ConfigFile.h.current@1.2.0    // current unmodified configuration file with version
-                                                        // information; used for version comparison
+    ./RTE/component_class/ConfigFile.h.base@1.2.0       // current unmodified configuration file with version
+                                                        // information; used as a base for version comparison
     ```
 
     The `csolution` outputs a user notification to indicate that files are added:
@@ -593,8 +593,8 @@ operation:
     ```c
     ./RTE/component_class/ConfigFile.h                  // user editable configuration file (based on current version)
     ./RTE/component_class/ConfigFile.h.update@1.3.0     // new configuration file; used to start a 3-way merge
-    ./RTE/component_class/ConfigFile.h.current@1.2.0    // current unmodified configuration file with version 
-                                                        // information; used for version comparison
+    ./RTE/component_class/ConfigFile.h.base@1.2.0      // current unmodified configuration file with version 
+                                                        // information; used as a base for version comparison
     ```
 
     The `csolution` outputs a user notification to indicate that configuration files have changed:
@@ -612,8 +612,8 @@ operation:
     ```c
     ./RTE/component_class/ConfigFile.h                  // new configuration file with merge configuration
     ./RTE/component_class/ConfigFile.h.bak              // previous configuration file stored as backup
-    ./RTE/component_class/ConfigFile.h.current@1.3.0    // current unmodified configuration file with version 
-                                                        // information; used for version comparison
+    ./RTE/component_class/ConfigFile.h.base@1.3.0      // current unmodified configuration file with version 
+                                                        // information; used as a base for version comparison
     ```
 
 - **Note: Multiple Instances of Configuration files**
@@ -625,9 +625,9 @@ operation:
 
    ```c
    ./RTE/component_class/ConfigFile_0.h
-   ./RTE/component_class/ConfigFile_0.h.current@1.2.0
+   ./RTE/component_class/ConfigFile_0.h.base@1.2.0
    ./RTE/component_class/ConfigFile_1.h
-   ./RTE/component_class/ConfigFile_1.h.current@1.2.0
+   ./RTE/component_class/ConfigFile_1.h.base@1.2.0
    ```
 
 ### RTE_Components.h
