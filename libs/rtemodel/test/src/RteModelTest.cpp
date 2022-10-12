@@ -209,17 +209,26 @@ TEST_F(RteModelPrjTest, LoadCprj) {
   EXPECT_EQ(res, RteItem::FULFILLED);
 
   const string rteDir = RteUtils::ExtractFilePath(RteTestM3_cprj, true) + "RTE/";
-  const string CompConfig_0_Cur_Version = rteDir + "RteTest/" + ".ComponentLevelConfig_0.h@0.0.1";
-  const string CompConfig_1_Cur_Version = rteDir + "RteTest/" + ".ComponentLevelConfig_1.h@0.0.1";
-  EXPECT_TRUE(RteFsUtils::Exists(CompConfig_0_Cur_Version));
-  EXPECT_TRUE(RteFsUtils::Exists(CompConfig_1_Cur_Version));
+  const string CompConfig_0_Base_Version = rteDir + "RteTest/" + "ComponentLevelConfig_0.h.base@0.0.1";
+  const string CompConfig_1_Base_Version = rteDir + "RteTest/" + "ComponentLevelConfig_1.h.base@0.0.1";
+  EXPECT_TRUE(RteFsUtils::Exists(CompConfig_0_Base_Version));
+  EXPECT_TRUE(RteFsUtils::Exists(CompConfig_1_Base_Version));
 
+  error_code ec;
+  const fs::perms write_mask = fs::perms::owner_write | fs::perms::group_write | fs::perms::others_write;
+  // check config file PLM: existence and permissions
   const string deviceDir = rteDir + "Device/RteTest_ARMCM3/";
-  EXPECT_TRUE(RteFsUtils::Exists(deviceDir + ".ARMCM3_ac6.sct@1.0.0"));
-  EXPECT_TRUE(RteFsUtils::Exists(deviceDir + ".startup_ARMCM3.c@2.0.3"));
-  EXPECT_FALSE(RteFsUtils::Exists(deviceDir + ".system_ARMCM3.c@1.0.1"));
-  EXPECT_FALSE(RteFsUtils::Exists(deviceDir + ".system_ARMCM3.c@1.0.2"));
-  EXPECT_TRUE(RteFsUtils::Exists(deviceDir + "system_ARMCM3.c@1.0.2"));
+  EXPECT_TRUE(RteFsUtils::Exists(deviceDir + "ARMCM3_ac6.sct.base@1.0.0"));
+  EXPECT_EQ((fs::status(deviceDir + "ARMCM3_ac6.sct.base@1.0.0", ec).permissions() & write_mask), fs::perms::none);
+
+  EXPECT_TRUE(RteFsUtils::Exists(deviceDir + "startup_ARMCM3.c.base@2.0.3"));
+  EXPECT_EQ((fs::status(deviceDir + "startup_ARMCM3.c.base@2.0.3", ec).permissions() & write_mask), fs::perms::none);
+
+  EXPECT_FALSE(RteFsUtils::Exists(deviceDir + "system_ARMCM3.c.base@1.0.1"));
+  EXPECT_FALSE(RteFsUtils::Exists(deviceDir + "system_ARMCM3.c.base@1.0.2"));
+
+  EXPECT_TRUE(RteFsUtils::Exists(deviceDir + "system_ARMCM3.c.update@1.0.2"));
+  EXPECT_EQ((fs::status(deviceDir + "system_ARMCM3.c.update@1.0.2", ec).permissions() & write_mask), fs::perms::none);
 }
 
 TEST_F(RteModelPrjTest, LoadCprj_PackPath) {
@@ -288,22 +297,22 @@ TEST_F(RteModelPrjTest, LoadCprjConfigVer) {
   ASSERT_NE(loadedCprjProject, nullptr);
 
   const string rteDir = RteUtils::ExtractFilePath(RteTestM3_cprj, true) + loadedCprjProject->GetRteFolder() + "/";
-  const string CompConfig_0_Cur_Version = rteDir + "RteTest/" + ".ComponentLevelConfig_0.h@0.0.1";
-  const string CompConfig_1_Cur_Version = rteDir + "RteTest/" + ".ComponentLevelConfig_1.h@0.0.1";
-  EXPECT_TRUE(RteFsUtils::Exists(CompConfig_0_Cur_Version));
-  EXPECT_TRUE(RteFsUtils::Exists(CompConfig_1_Cur_Version));
+  const string CompConfig_0_Base_Version = rteDir + "RteTest/" + "ComponentLevelConfig_0.h.base@0.0.1";
+  const string CompConfig_1_Base_Version = rteDir + "RteTest/" + "ComponentLevelConfig_1.h.base@0.0.1";
+  EXPECT_TRUE(RteFsUtils::Exists(CompConfig_0_Base_Version));
+  EXPECT_TRUE(RteFsUtils::Exists(CompConfig_1_Base_Version));
 
   const string deviceDir = rteDir + "Device/RteTest_ARMCM3/";
-  EXPECT_TRUE(RteFsUtils::Exists(deviceDir + ".ARMCM3_ac6.sct@1.0.0"));
-  EXPECT_TRUE(RteFsUtils::Exists(deviceDir + ".startup_ARMCM3.c@2.0.3"));
-  EXPECT_TRUE(RteFsUtils::Exists(deviceDir + ".system_ARMCM3.c@1.0.1"));
-  EXPECT_FALSE(RteFsUtils::Exists(deviceDir + ".system_ARMCM3.c@1.0.2"));
-  EXPECT_TRUE(RteFsUtils::Exists(deviceDir + "system_ARMCM3.c@1.0.2"));
+  EXPECT_TRUE(RteFsUtils::Exists(deviceDir + "ARMCM3_ac6.sct.base@1.0.0"));
+  EXPECT_TRUE(RteFsUtils::Exists(deviceDir + "startup_ARMCM3.c.base@2.0.3"));
+  EXPECT_TRUE(RteFsUtils::Exists(deviceDir + "system_ARMCM3.c.base@1.0.1"));
+  EXPECT_FALSE(RteFsUtils::Exists(deviceDir + "system_ARMCM3.c.base@1.0.2"));
+  EXPECT_TRUE(RteFsUtils::Exists(deviceDir + "system_ARMCM3.c.update@1.0.2"));
 
   const string depsDir = rteDir + "Dependency/RteTest_ARMCM3/";
-  EXPECT_TRUE(RteFsUtils::Exists(depsDir + ".DeviceDependency.c@1.1.1"));
+  EXPECT_TRUE(RteFsUtils::Exists(depsDir + "DeviceDependency.c.base@1.1.1"));
   EXPECT_TRUE(RteFsUtils::Exists(depsDir + "DeviceDependency.c"));
-  EXPECT_TRUE(RteFsUtils::Exists(depsDir + ".BoardDependency.c@1.2.2"));
+  EXPECT_TRUE(RteFsUtils::Exists(depsDir + "BoardDependency.c.base@1.2.2"));
   EXPECT_TRUE(RteFsUtils::Exists(depsDir + "BoardDependency.c"));
 }
 

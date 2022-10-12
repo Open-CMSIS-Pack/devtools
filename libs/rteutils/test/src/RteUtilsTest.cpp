@@ -296,6 +296,12 @@ TEST(RteUtilsTest, NameFromPackageId)
   EXPECT_EQ(false, (0 == name.compare("Name")) ? true : false);
 }
 
+TEST(RteUtils, AppendFileVersion)
+{
+  EXPECT_EQ("./foo/bar.ext.base@1.2.0", RteUtils::AppendFileBaseVersion("./foo/bar.ext", "1.2.0"));
+  EXPECT_EQ("./foo/bar.ext.update@1.2.3", RteUtils::AppendFileUpdateVersion("./foo/bar.ext", "1.2.3"));
+}
+
 TEST(RteUtilsTest, RemoveVectorDuplicates)
 {
   vector<int> testInput = { 1,2,3,2,4,5,3,6 };
