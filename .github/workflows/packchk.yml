@@ -67,7 +67,7 @@ jobs:
           tag: ${{ github.ref }}
           overwrite: true
           file_glob: true
-          file: build/tools/packchk/packchk-*-${{ matrix.target }}-${{ matrix.arch }}.zip
+          file: build/tools/packchk/packchk-*-${{ matrix.target }}-${{ matrix.arch }}.*
 
   test:
     needs: matrix_prep
