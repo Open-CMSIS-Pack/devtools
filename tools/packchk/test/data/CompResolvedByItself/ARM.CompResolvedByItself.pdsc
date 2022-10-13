@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<package schemaVersion="1.4.9" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="PACK.xsd">
+  <vendor>ARM</vendor>
+  <url>http://www.keil.com/pack/</url>
+  <name>CompResolvedByItself</name>
+  <description>Add validation rule that detects a dependency rule satisfied by the component itself #510</description>
+
+  <releases>
+    <release version="1.0.0">
+      Added test
+    </release>
+  </releases>
+
+  <conditions>
+    <condition id="SW">                <!-- parent item -->
+     <require Cclass="C" Cgroup="G"/>  <!-- item -->
+    </condition>
+    <condition id="HW"> 
+      <require Dcore="Cortex-M*"/> 
+    </condition>
+
+    <condition id="cond1">
+     <require condition="HW"/>
+     <require condition="SW"/>
+    </condition>
+  </conditions>
+
+  <components>
+    <component Cclass="X" Cgroup="Y" condition="cond1"/>
+
+    <component Cclass="C" Cgroup="G" condition="cond1"/>
+    <component Cclass="C" Cgroup="G" Csub="S" condition="cond1"/>
+  </components>
+
+</package>
