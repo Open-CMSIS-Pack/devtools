@@ -1933,6 +1933,19 @@ TEST_F(ProjMgrUnitTests, OutputDirs) {
     testinput_folder + "/TestSolution/ref/GCC/test1.Release+TypeB.cprj");
 }
 
+TEST_F(ProjMgrUnitTests, OutputDirsAbsolutePath) {
+  StdStreamRedirect streamRedirect;
+  char* argv[4];
+  const string& csolution = testinput_folder + "/TestSolution/outdirs-absolute.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  EXPECT_EQ(0, RunProjMgr(4, argv));
+
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_TRUE(regex_match(errStr, regex("warning csolution: custom .* is not a relative path\n")));
+}
+
 TEST_F(ProjMgrUnitTests, ProjectSetup) {
   char* argv[6];
   // convert -s solution.yml
