@@ -97,7 +97,7 @@ bool ProjMgrWorker::AddContext(ProjMgrParser& parser, ContextDesc& descriptor, c
     context.directories.rte = fs::relative(context.cproject->directory + "/RTE", context.csolution->directory, ec).generic_string();
 
     // customized directories
-    if (!context.csolution->directories.cprj.empty()) {
+    if (m_outputDir.empty() && !context.csolution->directories.cprj.empty()) {
       context.directories.cprj = context.csolution->directory + "/" + context.csolution->directories.cprj;
     }
     if (!context.csolution->directories.gendir.empty()) {
@@ -1093,8 +1093,8 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
      &context.controls.build.compiler,
    },
   };
-  for (auto& [_, clayer] : context.controls.clayers) {
-    compiler.elements.push_back(&clayer.compiler);
+  for (const auto& [_, clayer] : context.clayers) {
+    compiler.elements.push_back(&clayer->target.build.compiler);
   }
   if (!ProcessPrecedence(compiler)) {
     return false;

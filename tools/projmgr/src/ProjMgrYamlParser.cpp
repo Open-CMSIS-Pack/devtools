@@ -470,6 +470,10 @@ void ProjMgrYamlParser::ParseOutputDirs(const YAML::Node& parent, struct Directo
     };
     for (const auto& item : outputDirsChildren) {
       ParseString(outputDirsNode, item.first, item.second);
+      if (!fs::path(item.second).is_relative()) {
+        ProjMgrLogger::Warn("custom " + item.first + " '" + item.second + "' is not a relative path");
+        item.second.clear();
+      }
     }
   }
 }
