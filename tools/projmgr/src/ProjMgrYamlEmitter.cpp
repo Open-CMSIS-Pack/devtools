@@ -317,14 +317,14 @@ void ProjMgrYamlCbuild::SetNodeValue(YAML::Node node, const vector<string>& vec)
 
 const string ProjMgrYamlCbuild::FormatPath(const string& original, const string& directory) {
   string packRoot = ProjMgrKernel::Get()->GetCmsisPackRoot();
-  RteFsUtils::NormalizePath(packRoot);
   string path = original;
   RteFsUtils::NormalizePath(path);
+  error_code ec;
+  path = fs::weakly_canonical(fs::path(path), ec).generic_string();
   size_t index = path.find(packRoot);
   if (index != string::npos) {
     path.replace(index, packRoot.length(), "$CMSIS_PACK_ROOT$");
   } else {
-    error_code ec;
     path = fs::relative(path, directory, ec).generic_string();
   }
   return path;
