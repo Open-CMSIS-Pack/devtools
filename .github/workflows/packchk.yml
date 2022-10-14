@@ -54,20 +54,20 @@ jobs:
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build packchk
-        uses: Open-CMSIS-Pack/devtools-build-action@v1.1
+        uses: Open-CMSIS-Pack/devtools-build-action@v1.2
         with:
           target: packchkdist
           arch: ${{ matrix.arch }}
 
-      - name: Attach installer to amd64 binaries release
-        if: ${{ github.event_name == 'release' && matrix.arch == 'amd64' }}
+      - name: Attach zipped binary to the release
+        if: ${{ github.event_name == 'release' }}
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref }}
           overwrite: true
           file_glob: true
-          file: build/tools/packchk/packchk-*-${{ matrix.target }}.zip
+          file: build/tools/packchk/packchk-*-${{ matrix.target }}-${{ matrix.arch }}.*
 
   test:
     needs: matrix_prep
@@ -84,7 +84,7 @@ jobs:
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build PackChkUnitTests
-        uses: Open-CMSIS-Pack/devtools-build-action@v1.1
+        uses: Open-CMSIS-Pack/devtools-build-action@v1.2
         with:
           arch: ${{ matrix.arch }}
           build_type: Debug
@@ -97,7 +97,7 @@ jobs:
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build PackChkIntegTests
-        uses: Open-CMSIS-Pack/devtools-build-action@v1.1
+        uses: Open-CMSIS-Pack/devtools-build-action@v1.2
         with:
           arch: ${{ matrix.arch }}
           build_type: Debug
@@ -147,7 +147,7 @@ jobs:
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build PackChkIntegTests
-        uses: Open-CMSIS-Pack/devtools-build-action@v1.1
+        uses: Open-CMSIS-Pack/devtools-build-action@v1.2
         with:
           add_cmake_variables: -DCOVERAGE=ON
           arch: amd64
@@ -156,7 +156,7 @@ jobs:
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build PackChkUnitTests
-        uses: Open-CMSIS-Pack/devtools-build-action@v1.1
+        uses: Open-CMSIS-Pack/devtools-build-action@v1.2
         with:
           add_cmake_variables: -DCOVERAGE=ON
           arch: amd64
@@ -232,17 +232,17 @@ jobs:
           path: tools/packchk/distribution/coverage/
 
       - name: Zip distribution folder
-        run: zip -r packchk.zip *
+        run: zip -r code-coverage.zip *
         working-directory: tools/packchk/distribution
 
       - name: Attach zip archive to release assets
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: tools/packchk/distribution/packchk.zip
+          file: tools/packchk/distribution/code-coverage.zip
           tag: ${{ github.ref }}
           overwrite: true
-          asset_name: packchk.zip
+          asset_name: code-coverage.zip
 
   test-results-preparation:
     name: "Publish Tests Results"

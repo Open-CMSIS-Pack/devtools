@@ -24,7 +24,7 @@ function(git_log_author_year _year)
 endfunction()
 
 function(get_version_from_git_tag _prefix)
-    git_describe(DESCRIBE --tags --match "${_prefix}*")
+    git_describe(DESCRIBE --tags --match "${_prefix}*" --always)
 
     if(DESCRIBE MATCHES "^${_prefix}[0-9]+\\.[0-9]+(\\.[0-9]+)?(-[0-9]+-g[0-9a-f]+)?")
         string(REGEX REPLACE "^${_prefix}([0-9]+).*" "\\1" VERSION_MAJOR "${DESCRIBE}")
