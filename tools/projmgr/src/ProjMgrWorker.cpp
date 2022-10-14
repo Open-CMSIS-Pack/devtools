@@ -225,6 +225,8 @@ bool ProjMgrWorker::InitializeModel() {
     ProjMgrLogger::Error("initializing RTE Model failed");
     return false;
   }
+  error_code ec;
+  m_packRoot = fs::weakly_canonical(fs::path(m_packRoot), ec).generic_string();
   m_kernel->SetCmsisPackRoot(m_packRoot);
   m_model->SetCallback(m_kernel->GetCallback());
   return true;
