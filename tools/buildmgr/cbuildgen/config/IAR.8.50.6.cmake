@@ -123,7 +123,7 @@ function(cbuild_set_option_flags lang option value flags)
     set(${flags} "${flag} ${${flags}}" PARENT_SCOPE)
   elseif(NOT value STREQUAL "")
     string(TOLOWER "${option}" _option)
-    message(FATAL_ERROR "unkown '${_option}' value '${value}' !")
+    message(FATAL_ERROR "unknown '${_option}' value '${value}' !")
   endif()
 endfunction()
 
