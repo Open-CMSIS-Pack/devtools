@@ -13,7 +13,7 @@ const MsgTable XML_Reader::msgTable = {
   { "M403", { MsgLevel::LEVEL_INFO ,    CRLF_B,   "Data:      [%TYPE%] '%DATA%'"                                                }  },
   { "M404", { MsgLevel::LEVEL_INFO ,    CRLF_B,   "Attribute name: '%NAME%'"                                                    }  },
   { "M405", { MsgLevel::LEVEL_INFO ,    CRLF_B,   "Attribute data: '%DATA%'"                                                    }  },
-  { "M406", { MsgLevel::LEVEL_INFO ,    CRLF_B,   "XML Stack:\n%MSG%"                                                           }  },
+  { "M406", { MsgLevel::LEVEL_WARNING3, CRLF_B,   "XML Stack:\n%MSG%"                                                           }  },
   { "M407", { MsgLevel::LEVEL_INFO ,    CRLF_B,   "Recover from Error"                                                          }  },
   { "M408", { MsgLevel::LEVEL_INFO ,    CRLF_B,   "Recover from Error: giving up after 100 tries..."                            }  },
   { "M409", { MsgLevel::LEVEL_INFO ,    CRLF_B,   "Skipping unknown Tag: '%TAG%'"                                               }  },

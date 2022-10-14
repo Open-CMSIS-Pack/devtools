@@ -19,6 +19,10 @@
 using namespace std;
 
 const string RteUtils::EMPTY_STRING("");
+const string RteUtils::BASE_STRING("base");
+const string RteUtils::UPDATE_STRING("update");
+
+
 const set<string> RteUtils::EMPTY_STRING_SET;
 const list<string> RteUtils::EMPTY_STRING_LIST;
 const vector<string> RteUtils::EMPTY_STRING_VECTOR;
@@ -278,14 +282,19 @@ string RteUtils::ExtractFileExtension(const string& fileName, bool withDot)
   return GetSuffix(fileName, '.', withDot);
 }
 
-std::string RteUtils::AppendFileVersion(const std::string& fileName, const string& version, bool bHidden)
+string RteUtils::AppendFileVersion(const std::string& fileName, const string& version, const string& versionPrefix)
 {
-  if (!bHidden) {
-    return fileName + '@' + version;
-  }
-  string path = ExtractFilePath(fileName, true);
-  string name = ExtractFileName(fileName);
-  return path + '.' + name + '@' + version;
+  return fileName + '.' + versionPrefix + '@' + version;
+}
+
+string RteUtils::AppendFileBaseVersion(const std::string& fileName, const std::string& version)
+{
+  return AppendFileVersion(fileName, version, RteUtils::BASE_STRING);
+}
+
+string RteUtils::AppendFileUpdateVersion(const std::string& fileName, const std::string& version)
+{
+  return AppendFileVersion(fileName, version, RteUtils::UPDATE_STRING);
 }
 
 
