@@ -75,18 +75,20 @@ jobs:
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build
-        uses: Open-CMSIS-Pack/devtools-build-action@v1.1
+        uses: Open-CMSIS-Pack/devtools-build-action@v1.2
         id: devtools-build
         with:
           target: cbuildgen
           arch: ${{ matrix.arch }}
 
-      - name: Rename binary to be integrated to the installer
+      - name: Rename binary to be integrated to the installer (macOS, Linux)
         if: ${{ startsWith(matrix.runs_on, 'macos') || startsWith(matrix.runs_on, 'ubuntu') }}
-        env:
-          target: ${{ matrix.target }}
-          binary_extension: ${{ matrix.binary_extension }}
-        run: mv cbuildgen cbuildgen${binary_extension}
+        run: mv cbuildgen cbuildgen${{ matrix.binary_extension }}
+        working-directory: build/tools/buildmgr/cbuildgen/${{ matrix.target }}/Release
+
+      - name: Rename binary to be integrated to the installer (Windows)
+        if: ${{ startsWith(matrix.runs_on, 'windows') }}
+        run: mv cbuildgen.exe cbuildgen${{ matrix.binary_extension }}
         working-directory: build/tools/buildmgr/cbuildgen/${{ matrix.target }}/Release
 
       - name: Archive cbuildgen
@@ -210,10 +212,16 @@ jobs:
           mkdir -p tools/buildmgr/cbuildgen/distribution/bin
           mkdir -p tools/buildmgr/cbuildgen/distribution/doc
 
-      - name: Download cbuildgen linux
+      - name: Download cbuildgen linux amd64
         uses: actions/download-artifact@v2
         with:
           name: cbuildgen-linux64-amd64
+          path: tools/buildmgr/cbuildgen/distribution/bin/
+
+      - name: Download cbuildgen linux arm64
+        uses: actions/download-artifact@v2
+        with:
+          name: cbuildgen-linux64-arm64
           path: tools/buildmgr/cbuildgen/distribution/bin/
 
       - name: Download cbuildgen macos
@@ -294,6 +302,7 @@ jobs:
       CI_CBUILD_INSTALLER: ${{ github.workspace }}/cbuild_install.sh
       CI_PACK_ROOT: ${{ github.workspace }}/packs
       CI_GCC_TOOLCHAIN_ROOT: ${{ github.workspace }}/${{ matrix.toolchain_root }}
+      CI_ARCH: ${{ matrix.arch }}
     strategy:
       fail-fast: true
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
@@ -368,7 +377,7 @@ jobs:
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build CbuildUnitTests
-        uses: Open-CMSIS-Pack/devtools-build-action@v1.1
+        uses: Open-CMSIS-Pack/devtools-build-action@v1.2
         with:
           target: CbuildUnitTests
           build_type: Debug
@@ -626,10 +635,10 @@ jobs:
           name: unit_test_result-linux64-amd64
           path: testreports/
 
-      - name: Download unit test report linux aarch64
+      - name: Download unit test report linux arm64
         uses: actions/download-artifact@v2
         with:
-          name: unit_test_result-linux64-aarch64
+          name: unit_test_result-linux64-arm64
           path: testreports/
 
       - name: Download unit test report macos

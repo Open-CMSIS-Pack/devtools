@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2022 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -68,8 +68,13 @@ void InstallerTests::CheckInstallationDir(const string& path, bool expect) {
 
 void InstallerTests::CheckExtractedDir(const string& path, bool expect) {
   vector<pair<string, vector<string>>> dirVec = {
-    { "bin", vector<string>{ "cbuild.sh", "cbuildgen.lin", "cbuildgen.exe",
-      "cpackget.lin", "cpackget.exe"} },
+    { "bin", vector<string>{ "cbuild.sh",
+    "cbuild.lin-amd64",    "cbuild.exe-amd64",
+    "cpackget.lin-amd64",  "cpackget.exe-amd64",
+    "cbuildgen.lin-amd64", "cbuildgen.exe-amd64",
+    "cbuild.lin-arm64",
+    "cpackget.lin-arm64",
+    "cbuildgen.lin-arm64"} },
     { "doc", vector<string>{ "index.html", "html"} },
     { "etc", vector<string>{"AC5.5.6.7.cmake", "AC6.6.18.0.cmake", "CPRJ.xsd",
       "GCC.11.2.1.cmake", "IAR.8.50.6.cmake", "setup"} }

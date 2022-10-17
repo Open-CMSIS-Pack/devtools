@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # -------------------------------------------------------
-# Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+# Copyright (c) 2020-2022 Arm Limited. All rights reserved.
 #
 # SPDX-License-Identifier: Apache-2.0
 # -------------------------------------------------------
@@ -80,7 +80,7 @@ fi
 
 # variables
 PACKAGE_NAME=cmsis-build
-PACKAGE_VERSION=$(echo $(${input}/bin/cbuildgen.lin) | cut -f5 -d ' ')
+PACKAGE_VERSION=$(echo $(${input}/bin/cbuildgen.lin-amd64) | cut -f5 -d ' ')
 echo "PACKAGE_VERSION: $PACKAGE_VERSION"
 
 rm -rf ${output}/${PACKAGE_NAME}-${PACKAGE_VERSION} > /dev/null 2>&1
@@ -95,14 +95,14 @@ mkdir -p etc/${PACKAGE_NAME}
 mkdir -p etc/profile.d
 
 # Get cpackget
-cpackget_version="0.8.1"
+cpackget_version="0.8.2"
 cpackget_base=https://github.com/Open-CMSIS-Pack/cpackget/releases/download/v${cpackget_version}/cpackget_${cpackget_version}
-curl --retry 3 -L ${cpackget_base}_linux_amd64.tar.gz -o - | tar xzfO - --wildcards '*cpackget' > ${input}/bin/cpackget.lin
+curl --retry 3 -L ${cpackget_base}_linux_amd64.tar.gz -o - | tar xzfO - --wildcards '*cpackget' > ${input}/bin/cpackget.lin-amd64
 
 # Get cbuild
 cbuild_version="1.2.0"
 cbuild_base=https://github.com/Open-CMSIS-Pack/cbuild/releases/download/v${cbuild_version}/cbuild_${cbuild_version}
-curl --retry 3 -L ${cbuild_base}_linux_amd64.tar.gz  -o - | tar xzfO - --wildcards '*cbuild' > ${input}/bin/cbuild.lin
+curl --retry 3 -L ${cbuild_base}_linux_amd64.tar.gz  -o - | tar xzfO - --wildcards '*cbuild' > ${input}/bin/cbuild.lin-amd64
 
 cp -r ${input}/bin usr/lib/${PACKAGE_NAME}  # This should be in /usr/bin but cannot for the time being.
 cp -r ${input}/doc usr/share/doc/${PACKAGE_NAME}
@@ -114,9 +114,10 @@ cat > etc/profile.d/${PACKAGE_NAME}.sh << EnvironmentVariables
 export CMSIS_PACK_ROOT=~/.cache/arm/packs
 export CMSIS_COMPILER_ROOT=/etc/${PACKAGE_NAME}
 EnvironmentVariables
-find . -type f -name "*.exe" -exec rm {} ';'
-find . -type f -name "*.mac" -exec rm {} ';'
-find . -type f -name "*.lin" | sed -e 's/.lin//g' | xargs -I file mv file".lin" file
+find . -type f -name "*.exe*" -exec rm {} ';'
+find . -type f -name "*.mac*" -exec rm {} ';'
+find . -type f -name "*.lin-arm64" -exec rm {} ';'
+find . -type f -name "*.lin-amd64" | sed -e 's/.lin-amd64//g' | xargs -I file mv file".lin-amd64" file
 find . -type f -name "*.cmake" -exec sed -i "s|set(TOOLCHAIN_ROOT.*|set(TOOLCHAIN_ROOT /usr/bin)|" {} ';'
 find usr/lib/${PACKAGE_NAME}/bin -type f -not -name "*.sh" | xargs -I file basename file | xargs -I util ln -s /usr/lib/${PACKAGE_NAME}/bin/util usr/bin/util
 # For the bash scripts, create wrappers as suggested in documentation:
@@ -124,7 +125,7 @@ find usr/lib/${PACKAGE_NAME}/bin -type f -not -name "*.sh" | xargs -I file basen
 function write_wrapper {
 cat > usr/bin/$1 << ScriptWrapper
 #!/bin/bash
-# Copyright (C) 2020 Arm Ltd. All rights reserved.
+# Copyright (C) 2020-2022 Arm Ltd. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
 # CMSIS Build utility wrapper ($1)
