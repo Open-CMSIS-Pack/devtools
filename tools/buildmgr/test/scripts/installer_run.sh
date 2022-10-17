@@ -1,13 +1,11 @@
 #!/bin/bash
 
 # -------------------------------------------------------
-# Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+# Copyright (c) 2020-2022 Arm Limited. All rights reserved.
 #
 # SPDX-License-Identifier: Apache-2.0
 # -------------------------------------------------------
 
-# Version: 1.0
-# Date: 2020-06-04
 # This script runs the installer
 #
 # Pre-requisites:
@@ -75,7 +73,7 @@ cat ${install_config}
 
 # Run cbuild installer
 dos2unix ${install_config}
-"${installer}" ${args} < ${install_config}
+"${installer}" ${args} -a "${CI_ARCH}" < ${install_config}
 if [ $? -ne 0 ]
   then
   exit 1
