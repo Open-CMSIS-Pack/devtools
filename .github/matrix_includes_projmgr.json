@@ -16,7 +16,7 @@
     {
         "runs_on":"ubuntu-22.04",
         "target":"linux64",
-        "arch": "aarch64",
+        "arch": "arm64",
         "binary": "csolution",
         "runOn": "always"
     },
