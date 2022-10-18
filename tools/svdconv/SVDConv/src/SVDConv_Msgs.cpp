@@ -197,7 +197,7 @@ const MsgTable SvdConv::msgTable = {
   { "M377", { MsgLevel::LEVEL_ERROR,    CRLF_B,   "%LEVEL% '%NAME%' (<enumeratedValues> '%NAME2%'): '%USAGE%' container conflicts with '%NAME3%' %LINE%."} },
   { "M378", { MsgLevel::LEVEL_ERROR,    CRLF_B,   "Register Array: Register '%NAME%' size (%NUM%Bit) does not match <dimIncrement> (%NUM2%Bit)."} },
   { "M379", { MsgLevel::LEVEL_WARNING,  CRLF_B,   "XBin Number '%NAME%' too large, skipping evaluation."                        } },
-  { "M380", { MsgLevel::LEVEL_ERROR,    CRLF_B,   "AddressBlock of Peripheral '%NAME%' (@%ADDR%) %TEXT% does not fit into 32Bit Address Space."} },
+  { "M380", { MsgLevel::LEVEL_WARNING,  CRLF_B,   "AddressBlock of Peripheral '%NAME%' (@%ADDR%) %TEXT% does not fit into 32Bit Address Space."} },
   { "M381", { MsgLevel::LEVEL_ERROR,    CRLF_B,   "Interrupt '%NAME%' Number '%NUM%' greater or equal <deviceNumInterrupts>: '%NUM2%'."} },   // 28.03.2017
   { "M382", { MsgLevel::LEVEL_WARNING,  CRLF_B,   "%LEVEL% '%NAME%': %NAME2% '%HEXNUM%' does not fit into %LEVEL% width: %NUM% Bit."             } },  // Register "foo": reset value '0xDEADBEEF' does not fit into register width: 32.
   { "M383", { MsgLevel::LEVEL_ERROR,    CRLF_B,   "Number of PMU Event Counters set but PMU present not set"                      } },   // 14.02.2020
@@ -252,6 +252,7 @@ const MsgTableStrict SvdConv::msgStrictTable = {
   { "M371",  MsgLevel::LEVEL_ERROR    },
   { "M373",  MsgLevel::LEVEL_ERROR    },
   { "M379",  MsgLevel::LEVEL_ERROR    },
+  { "M380",  MsgLevel::LEVEL_ERROR    },
 
   { "M382",  MsgLevel::LEVEL_ERROR    },
 };
