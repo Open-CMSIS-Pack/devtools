@@ -865,6 +865,7 @@ project. It is however possible to change that `setup:` settings on a [`group:`]
 &nbsp;&nbsp;&nbsp; [`del-path:`](#del-path)          |   Optional   | Remove specific include file paths.
 &nbsp;&nbsp;&nbsp; [`linker:`](#linker)              |   Optional   | Remove specific include file paths.
 &nbsp;&nbsp;&nbsp; [`misc:`](#misc)                  |   Optional   | Literal tool-specific controls.
+&nbsp;&nbsp;&nbsp; [`processor:`](#processor)        |   Optional   | Processor configuration.
 
 ```yml
 project:
@@ -951,16 +952,17 @@ packs. This information is used to define the `device:` along with basic toolcha
 
 A `device:` is derived from the `board:` setting, but an explicit `device:` setting overrules the `board:` device.
 
-If `device:` specifies a multi-core device, and no explicit `core` is specified, the default `core` of the device is used.
+If `device:` specifies a device with a multi-core processor, and no explicit `pname` for the processor core selection is specified, the default `pname` of the device is used.
 
 ## Processor Attributes
 
 ### `processor:`
 
-The `processor:` keyword defines attributes such as TrustZone and FPU register usage.
+The `processor:` keyword defines attributes such as TrustZone and FPU register usage or a processor core selection for multi-core devices.
 
 `processor:`                   | Content
 :------------------------------|:------------------------------------
+&nbsp;&nbsp; `name:`           | Specifies the `pname` to select a processor core. Note: overwrites a `pname` selection at [`device:`](#device) level.
 &nbsp;&nbsp; `trustzone:`      | TrustZone mode: secure \| non-secure \| off.
 &nbsp;&nbsp; `fpu:`            | Control usage of FPU registers (S-Register for Helium/FPU) (default: on for devices with FPU registers).
 &nbsp;&nbsp; `endian:`         | Select endianness: little \| big (only available when devices are configurable).
