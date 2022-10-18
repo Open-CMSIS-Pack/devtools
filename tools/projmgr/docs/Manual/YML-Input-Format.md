@@ -952,7 +952,7 @@ packs. This information is used to define the `device:` along with basic toolcha
 
 A `device:` is derived from the `board:` setting, but an explicit `device:` setting overrules the `board:` device.
 
-If `device:` specifies a device with a multi-core processor, and no explicit `pname`for the processor core selection is specified, the default `pname` of the device is used.
+If `device:` specifies a device with a multi-core processor, and no explicit `pname` for the processor core selection is specified, the default `pname` of the device is used.
 
 ## Processor Attributes
 
