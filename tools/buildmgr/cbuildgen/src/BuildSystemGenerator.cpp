@@ -102,50 +102,49 @@ bool BuildSystemGenerator::Collect(const string& inputFile, const CbuildModel *m
   m_asMscGlobal = GetString(model->GetTargetAsFlags());
   m_linkerMscGlobal = GetString(model->GetTargetLdFlags());
 
-  for (auto inc : model->GetTargetIncludePaths())
+  MergeVecStr(model->GetTargetDefines(), m_definesList);
+  MergeVecStrNorm(model->GetTargetIncludePaths(), m_incPathsList);
+  MergeVecStrNorm(model->GetPreIncludeFilesGlobal(), m_preincGlobal);
+  MergeVecStrNorm(model->GetLibraries(), m_libFilesList);
+  MergeVecStrNorm(model->GetObjects(), m_libFilesList);
+
+  for (const auto& [componentName, files] : model->GetPreIncludeFilesLocal())
   {
-    CbuildUtils::PushBackUniquely(m_incPathsList, StrNorm(inc));
+    MergeVecStrNorm(files, m_groupsList[StrNorm(componentName)].preinc);
   }
 
-  for (auto preinc : model->GetPreIncludeFilesGlobal())
-  {
-    CbuildUtils::PushBackUniquely(m_preincGlobal, StrNorm(preinc));
+  // Misc, defines and includes
+  if (!CollectMiscDefinesIncludes(model)) {
+    return false;
   }
 
-  for (auto group : model->GetPreIncludeFilesLocal())
-  {
-    set<string> preincSet;
-    for (auto preinc : group.second) {
-      preincSet.insert(StrNorm(preinc));
-    }
-    m_groupsList[StrNorm(group.first)].preinc = preincSet;
+  // Optimize, debug and warnings options
+  if (!CollectTranslationControls(model)) {
+    return false;
   }
 
-  for (auto lib : model->GetLibraries())
+  // Configuration files
+  for (const auto& cfg : model->GetConfigFiles())
   {
-    CbuildUtils::PushBackUniquely(m_libFilesList, StrNorm(lib));
+    m_cfgFilesList.insert({ StrNorm(cfg.first), StrNorm(cfg.second) });
   }
 
-  for (auto obj : model->GetObjects())
-  {
-    CbuildUtils::PushBackUniquely(m_libFilesList, StrNorm(obj));
-  }
+  // Audit data
+  m_auditData = model->GetAuditData();
 
-  for (auto def : model->GetTargetDefines())
-  {
-    CbuildUtils::PushBackUniquely(m_definesList, def);
-  }
+  return true;
+}
 
+bool BuildSystemGenerator::CollectMiscDefinesIncludes(const CbuildModel* model) {
+  // Misc, defines and includes
   const map<string, std::vector<string>>& defines = model->GetDefines();
   const map<string, std::vector<string>>& incPaths = model->GetIncludePaths();
-  for (auto list : model->GetCSourceFiles())
+  for (const auto& [group, files] : model->GetCSourceFiles())
   {
-    string group = list.first;
     string cGFlags, cGDefines, cGIncludes;
     const map<string, std::vector<string>>& cFlags = model->GetCFlags();
     string groupName = group;
 
-    // flags
     do {
       if (cFlags.find(groupName) != cFlags.end()) {
         cGFlags = GetString(cFlags.at(groupName));
@@ -156,7 +155,7 @@ bool BuildSystemGenerator::Collect(const string& inputFile, const CbuildModel *m
     m_groupsList[StrNorm(group)].ccMsc = cGFlags;
     CollectGroupDefinesIncludes(defines, incPaths, group);
 
-    for (auto src : list.second) {
+    for (auto src : files) {
       string cFFlags;
       if (cFlags.find(src) != cFlags.end()) cFFlags = GetString(cFlags.at(src));
       src = StrNorm(src);
@@ -166,9 +165,8 @@ bool BuildSystemGenerator::Collect(const string& inputFile, const CbuildModel *m
     }
   }
 
-  for (auto list : model->GetCxxSourceFiles())
+  for (const auto& [group, files] : model->GetCxxSourceFiles())
   {
-    string group = list.first;
     string cxxGFlags, cxxGDefines, cxxGIncludes;
     const map<string, std::vector<string>>& cxxFlags = model->GetCxxFlags();
     string groupName = group;
@@ -183,7 +181,7 @@ bool BuildSystemGenerator::Collect(const string& inputFile, const CbuildModel *m
     m_groupsList[StrNorm(group)].cxxMsc = cxxGFlags;
     CollectGroupDefinesIncludes(defines, incPaths, group);
 
-    for (auto src : list.second) {
+    for (auto src : files) {
       string cxxFFlags;
       if (cxxFlags.find(src) != cxxFlags.end()) cxxFFlags = GetString(cxxFlags.at(src));
       src = StrNorm(src);
@@ -196,9 +194,8 @@ bool BuildSystemGenerator::Collect(const string& inputFile, const CbuildModel *m
   const map<string, bool> assembler = model->GetAsm();
   m_asTargetAsm = (!assembler.empty()) && (assembler.find("") != assembler.end()) ? assembler.at("") : false;
 
-  for (auto list : model->GetAsmSourceFiles())
+  for (const auto& [group, files] : model->GetAsmSourceFiles())
   {
-    string group = list.first;
     string asGFlags, asGDefines, asGIncludes;
     const map<string, std::vector<string>>& asFlags = model->GetAsFlags();
     string groupName = group;
@@ -213,7 +210,7 @@ bool BuildSystemGenerator::Collect(const string& inputFile, const CbuildModel *m
     CollectGroupDefinesIncludes(defines, incPaths, group);
 
     bool group_asm = (assembler.find(group) != assembler.end()) ? assembler.at(group) : m_asTargetAsm;
-    for (auto src : list.second) {
+    for (auto src : files) {
       string asFFlags;
       if (asFlags.find(src) != asFlags.end()) asFFlags = GetString(asFlags.at(src));
 
@@ -245,13 +242,16 @@ bool BuildSystemGenerator::Collect(const string& inputFile, const CbuildModel *m
       CollectFileDefinesIncludes(defines, incPaths, src, group, (*pList));
     }
   }
+  return true;
+}
 
-  // optimize, debug and warnings options
+bool BuildSystemGenerator::CollectTranslationControls(const CbuildModel* model) {
+  // Optimize, debug and warnings options
   vector<std::map<std::string, std::list<std::string>>> sourceFilesList = {
     model->GetAsmSourceFiles(), model->GetCSourceFiles(), model->GetCxxSourceFiles()
   };
 
-  for (auto sourceFiles : sourceFilesList)
+  for (const auto& sourceFiles : sourceFilesList)
   {
     if (sourceFiles.empty()) continue;
 
@@ -259,9 +259,9 @@ bool BuildSystemGenerator::Collect(const string& inputFile, const CbuildModel *m
     const map<string, string>& debugOpt = model->GetDebugOption();
     const map<string, string>& warningsOpt = model->GetWarningsOption();
 
-    for (auto list : sourceFiles)
+    for (const auto& [group, files] : sourceFiles)
     {
-      string group = list.first, groupName;
+      string groupName;
       string optGOptimize, optGDebug, optGWarnings;
 
       // optimize option
@@ -297,11 +297,11 @@ bool BuildSystemGenerator::Collect(const string& inputFile, const CbuildModel *m
       } while (!groupName.empty());
       m_groupsList[StrNorm(group)].warnings = optGWarnings;
 
-      for (auto src : list.second) {
+      for (auto src : files) {
         string optFOptimize, optFDebug, optFWarnings;
         src = StrNorm(src);
 
-        std::map<std::string, module> *m_langFilesList;
+        std::map<std::string, module>* m_langFilesList;
         if (m_ccFilesList.find(src) != m_ccFilesList.end()) m_langFilesList = &m_ccFilesList;
         else if (m_cxxFilesList.find(src) != m_cxxFilesList.end()) m_langFilesList = &m_cxxFilesList;
         else if (m_asFilesList.find(src) != m_asFilesList.end()) m_langFilesList = &m_asFilesList;
@@ -320,16 +320,6 @@ bool BuildSystemGenerator::Collect(const string& inputFile, const CbuildModel *m
       }
     }
   }
-
-  // Configuration files
-  for (auto cfg : model->GetConfigFiles())
-  {
-    m_cfgFilesList.insert({ StrNorm(cfg.first), StrNorm(cfg.second) });
-  }
-
-  // Audit data
-  m_auditData = model->GetAuditData();
-
   return true;
 }
 
@@ -354,6 +344,20 @@ bool BuildSystemGenerator::GenAuditFile(void) {
   auditFile << std::endl;
   auditFile.close();
   return true;
+}
+
+void BuildSystemGenerator::MergeVecStr(const std::vector<std::string>& src, std::vector<std::string>& dest) {
+  for (const auto& item : src)
+  {
+    CbuildUtils::PushBackUniquely(dest, item);
+  }
+}
+
+void BuildSystemGenerator::MergeVecStrNorm(const std::vector<std::string>& src, std::vector<std::string>& dest) {
+  for (const auto& item : src)
+  {
+    CbuildUtils::PushBackUniquely(dest, StrNorm(item));
+  }
 }
 
 string BuildSystemGenerator::StrNorm(string path) {

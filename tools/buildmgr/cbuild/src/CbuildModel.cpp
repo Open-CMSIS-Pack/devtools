@@ -1086,9 +1086,11 @@ bool CbuildModel::EvalOptions() {
 
   // Target options
   const RteItem* target = m_cprjPack->GetItemByTag("target");
-  m_targetOptimize = target->GetChildAttribute("options", "optimize");
-  m_targetDebug = target->GetChildAttribute("options", "debug");
-  m_targetWarnings = target->GetChildAttribute("options", "warnings");
+  if (target) {
+    m_targetOptimize = target->GetChildAttribute("options", "optimize");
+    m_targetDebug = target->GetChildAttribute("options", "debug");
+    m_targetWarnings = target->GetChildAttribute("options", "warnings");
+  }
 
   // RTE group options
   const RteItem* components = m_cprjPack->GetItemByTag("components");
