@@ -33,7 +33,7 @@ struct TranslationControls
   std::string asMsc;
   std::string ccMsc;
   std::string cxxMsc;
-  std::set<std::string> preinc;
+  std::vector<std::string> preinc;
   std::string defines;
   std::string includes;
 };
@@ -153,6 +153,10 @@ protected:
     const std::map<std::string, std::vector<std::string>>& defines,
     const std::map<std::string, std::vector<std::string>>& includes,
     std::string& src, const std::string& group, std::map<std::string, module>& FilesList);
+  void MergeVecStr(const std::vector<std::string>& src, std::vector<std::string>& dest);
+  void MergeVecStrNorm(const std::vector<std::string>& src, std::vector<std::string>& dest);
+  bool CollectMiscDefinesIncludes(const CbuildModel* model);
+  bool CollectTranslationControls(const CbuildModel* model);
 };
 
 #endif  // BUILDSYSTEMGENERATOR_H
