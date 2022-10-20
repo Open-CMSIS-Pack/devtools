@@ -492,7 +492,27 @@ void RteProject::UpdateConfigFileBackups(RteFileInstance* fi, RteFile* f)
 {
   string src = f->GetOriginalAbsolutePath();
   string absPath = RteFsUtils::AbsolutePath(fi->GetAbsolutePath()).generic_string();
-  const string& baseVersion = fi->GetVersionString();
+  string dir = RteUtils::ExtractFilePath(absPath, false);
+  string name = RteUtils::ExtractFileName(absPath);
+  string baseVersion = fi->GetVersionString();
+  if (baseVersion.empty() || baseVersion == "0.0.0") {
+  // try to find base version from the version files
+    string baseName = name + '.' + RteUtils::BASE_STRING;
+    list<string> backupFileNames;
+    RteFsUtils::GrepFileNames(backupFileNames, dir, baseName + "@*");
+    if (!backupFileNames.empty()) {
+      // sort by version descending
+      backupFileNames.sort([](const string& s0, const string& s1) {
+        string v0 = RteUtils::GetSuffix(s0, '@');
+        string v1 = RteUtils::GetSuffix(s1, '@');
+        return VersionCmp::Compare(v0, v1) > 0;
+        });
+      baseVersion = RteUtils::GetSuffix(*backupFileNames.begin(), '@'); // use the top version
+      fi->AddAttribute("version", baseVersion, false);
+      backupFileNames.clear();
+    }
+  }
+
   const string& updateVersion = f->GetVersionString();
   string baseFile = RteUtils::AppendFileBaseVersion(absPath, baseVersion);
   if (!RteFsUtils::Exists(baseFile)) {
@@ -515,16 +535,11 @@ void RteProject::UpdateConfigFileBackups(RteFileInstance* fi, RteFile* f)
   }
 
   // remove redundant current and origin files
-  string dir = RteUtils::ExtractFilePath(absPath, false);
-  string name = RteUtils::ExtractFileName(absPath);
-  string baseName = name + '.' +  RteUtils::BASE_STRING;
-  string updateName = name + '.' + RteUtils::UPDATE_STRING;
+  string dotName = '.' + name;
 
   list<string> backupFileNames;
-  RteFsUtils::GrepFileNames(backupFileNames, dir, updateName + "@*");
-  if (!baseFile.empty()) {
-    RteFsUtils::GrepFileNames(backupFileNames, dir, baseName + "@*");
-  }
+  RteFsUtils::GrepFileNames(backupFileNames, dir, name + "*@*");
+  RteFsUtils::GrepFileNames(backupFileNames, dir, dotName + "*@*");
   for (string fileName : backupFileNames) {
     error_code ec;
     if (!fs::equivalent(fileName, baseFile, ec) && !fs::equivalent(fileName, updateFile, ec)) {

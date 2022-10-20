@@ -28,9 +28,9 @@
 
   <components>
     <component Cclass="Device" Cgroup="Startup" Cvariant="RteTest Startup" Cvendor="ARM" Cversion="2.0.3">
-      <file attr="config" category="linkerScript" name="Device/ARM/ARMCM3/Source/ARM/ARMCM3_ac6.sct" version="1.0.0"/>
+      <file attr="config" category="linkerScript" name="Device/ARM/ARMCM3/Source/ARM/ARMCM3_ac6.sct" version="1.2.0"/>
       <file attr="config" category="sourceC" name="Device/ARM/ARMCM3/Source/startup_ARMCM3.c" version="2.0.3"/>
-      <file attr="config" category="sourceC" name="Device/ARM/ARMCM3/Source/system_ARMCM3.c" version="1.0.2"/>
+      <file attr="config" category="sourceC" name="Device/ARM/ARMCM3/Source/system_ARMCM3.c" version="1.2.2"/>
     </component>
     <component Cclass="RteTest" Cgroup="CORE" Cvendor="ARM" Cversion="0.1.1"/>
   </components>
