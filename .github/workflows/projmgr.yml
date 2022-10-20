@@ -177,12 +177,6 @@ jobs:
           name: projmgr-swig-python-linux64-amd64
           path: tools/projmgr/distribution/lib/linux-amd64/python/
 
-      - name: Download projmgr-swig-python linux arm64
-        uses: actions/download-artifact@v2
-        with:
-          name: projmgr-swig-python-linux64-arm64
-          path: tools/projmgr/distribution/lib/linux-arm64/python/
-
       - name: Download projmgr-swig-python macos amd64
         if: ${{ !github.event.repository.private }}
         uses: actions/download-artifact@v2
@@ -201,12 +195,6 @@ jobs:
         with:
           name: projmgr-swig-go-linux64-amd64
           path: tools/projmgr/distribution/lib/linux-amd64/go/
-
-      - name: Download projmgr-swig-go linux arm64
-        uses: actions/download-artifact@v2
-        with:
-          name: projmgr-swig-go-linux64-arm64
-          path: tools/projmgr/distribution/lib/linux-arm64/go/
 
       - name: Download projmgr-swig-go macos amd64
         if: ${{ !github.event.repository.private }}
