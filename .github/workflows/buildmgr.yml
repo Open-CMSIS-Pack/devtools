@@ -334,7 +334,7 @@ jobs:
           submodules: true
 
       - name: Setup ARM GCC for Ubuntu and macOS
-        if: ${{ startsWith(matrix.runs_on, 'macos') || ( startsWith(matrix.runs_on, 'ubuntu') && matrix.arch == 'amd64' ) }}
+        if: ${{ startsWith(matrix.runs_on, 'macos') || startsWith(matrix.runs_on, 'ubuntu') }}
         env:
           installer_name: ${{ matrix.installer_name }}
         run: |
@@ -407,33 +407,42 @@ jobs:
         if: ${{ startsWith(matrix.runs_on, 'ubuntu') && matrix.arch == 'amd64' }}
         env:
           target: ${{ matrix.target }}
-        run: ./tools/buildmgr/test/integrationtests/${target}/Debug/CbuildIntegTests --gtest_filter=-*AC5*:*AC6*:*MultiTargetAC6Tests* --gtest_output=xml:integtest_report_${target}.xml
+          arch: ${{ matrix.arch }}
+        run: ./tools/buildmgr/test/integrationtests/${target}/Debug/CbuildIntegTests --gtest_filter=-*AC5*:*AC6*:*MultiTargetAC6Tests* --gtest_output=xml:integtest_report_${target}_${arch}.xml
+        working-directory: build
+
+      - name: Run Cbuild Integration Tests (excl. AC5, AC6, MultiTargetAC6Tests) for Linux arm64
+        if: ${{ startsWith(matrix.runs_on, 'ubuntu') && matrix.arch == 'arm64' }}
+        env:
+          target: ${{ matrix.target }}
+          arch: ${{ matrix.arch }}
+        run: /usr/bin/qemu-aarch64 -L /usr/aarch64-linux-gnu ./tools/buildmgr/test/integrationtests/${target}/Debug/CbuildIntegTests --gtest_filter=-*AC5*:*AC6*:*MultiTargetAC6Tests* --gtest_output=xml:integtest_report_${target}_${arch}.xml
         working-directory: build
 
       - name: Run Cbuild Integration Tests (excl. DebPkgTests, AC5, AC6, MultiTargetAC6Tests) for macOS
         if: ${{ startsWith(matrix.runs_on, 'macos') }}
         env:
           target: ${{ matrix.target }}
-        run: ./tools/buildmgr/test/integrationtests/${target}/Debug/CbuildIntegTests --gtest_filter=-*DebPkgTests*:*AC5*:*AC6*:*MultiTargetAC6Tests* --gtest_output=xml:integtest_report_${target}.xml
+          arch: ${{ matrix.arch }}
+        run: ./tools/buildmgr/test/integrationtests/${target}/Debug/CbuildIntegTests --gtest_filter=-*DebPkgTests*:*AC5*:*AC6*:*MultiTargetAC6Tests* --gtest_output=xml:integtest_report_${target}_${arch}.xml
         working-directory: build
 
       - name: Run Cbuild Integration Tests (excl. DebPkgTests, AC5, AC6, MultiTargetAC6Tests) for Windows
         if: ${{ startsWith(matrix.runs_on, 'windows') }}
         env:
           target: ${{ matrix.target }}
+          arch: ${{ matrix.arch }}
         # For some reason the env variable usage $Env:target does not work properly.
-        run: .\tools\buildmgr\test\integrationtests\windows64\Debug\CbuildIntegTests.exe --gtest_filter=-*DebPkgTests*:*AC5*:*AC6*:*MultiTargetAC6Tests* --gtest_output=xml:integtest_report_$Env:target.xml
+        run: .\tools\buildmgr\test\integrationtests\windows64\Debug\CbuildIntegTests.exe --gtest_filter=-*DebPkgTests*:*AC5*:*AC6*:*MultiTargetAC6Tests* --gtest_output=xml:integtest_report_windows64_amd64.xml
         working-directory: build
 
       - name: Archive Cbuild Integration Tests
-        if: ${{ matrix.arch == 'amd64' }}
         uses: actions/upload-artifact@v2
         with:
           name: integ_test_result-${{ matrix.target }}-${{ matrix.arch }}
-          path: build/integtest_report_${{ matrix.target }}.xml
+          path: build/integtest_report_${{ matrix.target }}_${{ matrix.arch }}.xml
           retention-days: 1
           if-no-files-found: error
-
 
   coverage:
     if: |
@@ -558,7 +567,6 @@ jobs:
         run: chmod +x cbuild_install.sh
 
       - name: Run cbuild_install.sh
-        if: ${{ matrix.arch == 'amd64' }}
         shell: bash
         run: |
           echo "${{ github.workspace }}/cbuild" > config
@@ -569,7 +577,6 @@ jobs:
           ./cbuild_install.sh < config
 
       - name: Test cbuildgen
-        if: ${{ matrix.arch == 'amd64' }}
         shell: bash
         run: |
           ${{ github.workspace }}/cbuild/bin/cbuildgen | grep "(cbuildgen): Build Process Manager"
