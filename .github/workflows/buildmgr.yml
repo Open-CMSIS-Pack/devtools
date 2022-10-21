@@ -52,12 +52,12 @@ jobs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
     - name: Check out repo
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
     - id: set-matrix
       run: |
         publicRepo=$(echo '${{ github.event.repository.private && 'privateRepo' || 'publicRepo' }}')
         matrix=$(jq --arg publicRepo "$publicRepo" 'map(. | select((.runOn==$publicRepo) or (.runOn=="always")) )' matrix_includes_buildmgr.json)
-        echo ::set-output name=matrix::{\"include\":$(echo $matrix)}\"
+        echo "matrix={\"include\":$(echo $matrix)}\"" >> $GITHUB_OUTPUT
       working-directory: .github/
 
   build:
@@ -69,7 +69,7 @@ jobs:
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
     steps:
       - name: Checkout devtools
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           submodules: true
 
@@ -92,7 +92,7 @@ jobs:
         working-directory: build/tools/buildmgr/cbuildgen/${{ matrix.target }}/Release
 
       - name: Archive cbuildgen
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: cbuildgen-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/tools/buildmgr/cbuildgen/${{ matrix.target }}/Release/cbuildgen${{ matrix.binary_extension }}
@@ -108,7 +108,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Checkout devtools
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           submodules: true
           fetch-depth: ${{ github.event_name == 'push' && '0' || '1' }}
@@ -140,7 +140,7 @@ jobs:
         working-directory: ./build
 
       - name: Upload documentation
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: documentation
           path: ./build/tools/buildmgr/docs/doxygen/output/
@@ -152,7 +152,7 @@ jobs:
         run: tar -cvjf /tmp/doc.tbz2 .
         working-directory: ./build/tools/buildmgr/docs/doxygen/output/html/
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         if: ${{ github.event_name == 'push' || github.event_name == 'release' }}
         with:
           ref: gh-pages
@@ -205,7 +205,7 @@ jobs:
             python3
 
       - name: Checkout devtools
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Create distribution folders
         run: |
@@ -213,26 +213,26 @@ jobs:
           mkdir -p tools/buildmgr/cbuildgen/distribution/doc
 
       - name: Download cbuildgen linux amd64
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: cbuildgen-linux64-amd64
           path: tools/buildmgr/cbuildgen/distribution/bin/
 
       - name: Download cbuildgen linux arm64
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: cbuildgen-linux64-arm64
           path: tools/buildmgr/cbuildgen/distribution/bin/
 
       - name: Download cbuildgen macos
         if: ${{ !github.event.repository.private }}
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: cbuildgen-darwin64-amd64
           path: tools/buildmgr/cbuildgen/distribution/bin/
 
       - name: Download cbuildgen windows
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: cbuildgen-windows64-amd64
           path: tools/buildmgr/cbuildgen/distribution/bin/
@@ -243,7 +243,7 @@ jobs:
         working-directory: tools/buildmgr/cbuildgen/distribution/bin
 
       - name: Download documentation
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: documentation
           path: tools/buildmgr/cbuildgen/distribution/doc/
@@ -257,7 +257,7 @@ jobs:
         working-directory: tools/buildmgr/cbuildgen/installer
 
       - name: Archive cbuild_install.sh
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: cbuild_install
           path: tools/buildmgr/cbuildgen/installer/cbuild_install.sh
@@ -265,7 +265,7 @@ jobs:
           if-no-files-found: error
 
       - name: Archive deb package
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: deb_package
           path: tools/buildmgr/cbuildgen/installer/cmsis-build*.deb
@@ -329,7 +329,7 @@ jobs:
         run: choco install -y unzip wget ninja
 
       - name: Checkout devtools
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           submodules: true
 
@@ -352,7 +352,7 @@ jobs:
           del $Env:installer_name
 
       - name: Cache CMSIS Pack
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         env:
           CACHE_NAME: cmsis_pack
         with:
@@ -360,13 +360,13 @@ jobs:
           path: ${{ env.CI_PACK_ROOT }}
 
       - name: Download cbuild_install
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: cbuild_install
           path: ${{ github.workspace }}
 
       - name: Download deb_package
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: deb_package
           path: ${{ github.workspace }}
@@ -388,7 +388,7 @@ jobs:
         working-directory: build
 
       - name: Archive unittest
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: unit_test_result-${{ matrix.target }}-${{ matrix.arch }}
           path: build/cbuildunit_test_report.xml
@@ -427,7 +427,7 @@ jobs:
 
       - name: Archive Cbuild Integration Tests
         if: ${{ matrix.arch == 'amd64' }}
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: integ_test_result-${{ matrix.target }}-${{ matrix.arch }}
           path: build/integtest_report_${{ matrix.target }}.xml
@@ -463,7 +463,7 @@ jobs:
             lcov
 
       - name: Checkout devtools
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           submodules: recursive
 
@@ -477,7 +477,7 @@ jobs:
           rm -rf ${{ env.installer_name }}
 
       - name: Cache CMSIS Pack
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         env:
           CACHE_NAME: cmsis_pack
         with:
@@ -512,7 +512,7 @@ jobs:
 
       - name: Upload Report to Codecov
         if: ${{ !github.event.repository.private }}
-        uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@v3
         with:
           files: ./build/tools/buildmgr/coverage.info
           fail_ci_if_error: true
@@ -525,7 +525,7 @@ jobs:
           echo "cov_retention_days=7" >> $GITHUB_ENV
 
       - name: Archive coverage report
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: coverage-report
           path: |
@@ -548,7 +548,7 @@ jobs:
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
     steps:
       - name: Download cbuild_install
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: cbuild_install
           path: ${{ github.workspace }}
@@ -591,7 +591,7 @@ jobs:
         image: [ "debian:buster" ]
     steps:
       - name: Download cbuild_install
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: cbuild_install
           path: ${{ github.workspace }}
@@ -619,56 +619,56 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Setup Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: 3.8
 
       - name: Download unit test report windows
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: unit_test_result-windows64-amd64
           path: testreports/
 
       - name: Download unit test report linux amd64
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: unit_test_result-linux64-amd64
           path: testreports/
 
       - name: Download unit test report linux arm64
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: unit_test_result-linux64-arm64
           path: testreports/
 
       - name: Download unit test report macos
         if: ${{ !github.event.repository.private }}
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: unit_test_result-darwin64-amd64
           path: testreports/
 
       - name: Download integ test report windows
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: integ_test_result-windows64-amd64
           path: testreports/
 
       - name: Download integ test report linux amd64
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: integ_test_result-linux64-amd64
           path: testreports/
 
       - name: Download integ test report macos
         if: ${{ !github.event.repository.private }}
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: integ_test_result-darwin64-amd64
           path: testreports/
 
       - name: Event File
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: Event File
           path: ${{ github.event_path }}

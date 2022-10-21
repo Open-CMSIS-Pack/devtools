@@ -3,7 +3,7 @@ name: Publish Test Results
 on:
   workflow_run:
     workflows: ["packchk", "svdconv", "buildmgr", "projmgr", "packgen", "test_libs"]
-    # avoid running once merged on main branch, this should be run only on PRs     
+    # avoid running once merged on main branch, this should be run only on PRs
     branches-ignore: ["main"]
     types:
       - completed
@@ -31,7 +31,7 @@ jobs:
            done
 
       - name: Publish Test Results
-        uses: EnricoMi/publish-unit-test-result-action@v1
+        uses: EnricoMi/publish-unit-test-result-action@v2
         with:
           commit: ${{ github.event.workflow_run.head_sha }}
           event_file: artifacts/Event File/event.json
