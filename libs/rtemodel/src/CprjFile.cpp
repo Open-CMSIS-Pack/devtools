@@ -285,6 +285,14 @@ const string &CprjTargetElement::GetLdFlags(const string &compiler) const {
   return GetTargetBuildFlags("ldflags", compiler);
 }
 
+const string &CprjTargetElement::GetLdCFlags(const string &compiler) const {
+  return GetTargetBuildFlags("ldcflags", compiler);
+}
+
+const string &CprjTargetElement::GetLdCxxFlags(const string &compiler) const {
+  return GetTargetBuildFlags("ldcxxflags", compiler);
+}
+
 void CprjTargetElement::SetTargetBuildFlags(const string &tag, const string &compiler, const string &value) {
   // if attribute does not exist, it'll be created and set with value
   // if attribute exists and value is not empty attribute is set with value
@@ -323,6 +331,14 @@ void CprjTargetElement::SetArFlags(const string &flags, const string &compiler) 
 
 void CprjTargetElement::SetLdFlags(const string &flags, const string &compiler) {
   SetTargetBuildFlags("ldflags", compiler, flags);
+}
+
+void CprjTargetElement::SetLdCFlags(const string &flags, const string &compiler) {
+  SetTargetBuildFlags("ldcflags", compiler, flags);
+}
+
+void CprjTargetElement::SetLdCxxFlags(const string &flags, const string &compiler) {
+  SetTargetBuildFlags("ldcxxflags", compiler, flags);
 }
 
 ///////////////////////////////////////////////

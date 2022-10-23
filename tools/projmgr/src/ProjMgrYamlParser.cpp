@@ -338,6 +338,8 @@ void ProjMgrYamlParser::ParseMisc(const YAML::Node& parent, vector<MiscItem>& mi
       }
       ParseVector(miscEntry, YAML_MISC_ASM, miscItem.as);
       ParseVector(miscEntry, YAML_MISC_LINK, miscItem.link);
+      ParseVector(miscEntry, YAML_MISC_LINK_C, miscItem.link_c);
+      ParseVector(miscEntry, YAML_MISC_LINK_CPP, miscItem.link_cpp);
       ParseVector(miscEntry, YAML_MISC_LIB, miscItem.lib);
       misc.push_back(miscItem);
     }
@@ -695,6 +697,8 @@ const set<string> miscKeys = {
   YAML_MISC_C_CPP,
   YAML_MISC_ASM,
   YAML_MISC_LINK,
+  YAML_MISC_LINK_C,
+  YAML_MISC_LINK_CPP,
   YAML_MISC_LIB,
 };
 

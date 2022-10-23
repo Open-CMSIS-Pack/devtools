@@ -40,6 +40,7 @@ project:
           CPP: [-CPP-group]
           ASM: [-ASM-group]
           Link: [-Link-group]
+          Link-CPP: [-Link-CPP-group]
           Lib: [-Lib-group]
         - compiler: AC6
           C-CPP: [-C-CPP-group-AC6]
@@ -69,6 +70,7 @@ project:
               CPP: [-CPP-file-GCC]
               ASM: [-ASM-file-GCC]
               Link: [-Link-file-GCC]
+              Link-C: [-Link-C-file-GCC]
               Lib: [-Lib-file-GCC]
             - C-CPP: [-C-CPP-file]
     - group: Debug Group

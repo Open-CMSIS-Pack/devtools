@@ -151,6 +151,8 @@
         "C-CPP":        { "$ref": "#/definitions/ArrayOfStrings", "description": "List of C & CPP flags" },
         "ASM":          { "$ref": "#/definitions/ArrayOfStrings", "description": "List of ASM flags"  },
         "Link":         { "$ref": "#/definitions/ArrayOfStrings", "description": "List of Linker flags" },
+        "Link-C":       { "$ref": "#/definitions/ArrayOfStrings", "description": "List of Linker flags for pure C project" },
+        "Link-CPP":     { "$ref": "#/definitions/ArrayOfStrings", "description": "List of Linker flags for project with C++ files" },
         "Lib":          { "$ref": "#/definitions/ArrayOfStrings", "description": "List of Library Manager or Archiver flags" }
       },
       "additionalProperties": false

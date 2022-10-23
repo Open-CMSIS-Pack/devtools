@@ -243,6 +243,22 @@ public:
   }
 
   /**
+   * @brief get C linker flags used for constructing the linker command line
+   * @return list of C linker flags
+   */
+  const std::vector<std::string> &GetTargetLdCFlags() const {
+    return m_targetLdCFlags;
+  }
+
+  /**
+   * @brief get C++ linker flags used for constructing the linker command line
+   * @return list of C++ linker flags
+   */
+  const std::vector<std::string> &GetTargetLdCxxFlags() const {
+    return m_targetLdCxxFlags;
+  }
+
+  /**
    * @brief get optimize option
    * @return optimize option
   */
@@ -481,6 +497,8 @@ protected:
   std::vector<std::string>                          m_targetCxxFlags;
   std::vector<std::string>                          m_targetAsFlags;
   std::vector<std::string>                          m_targetLdFlags;
+  std::vector<std::string>                          m_targetLdCFlags;
+  std::vector<std::string>                          m_targetLdCxxFlags;
   std::vector<std::string>                          m_targetIncludePaths;
   std::vector<std::string>                          m_targetDefines;
   std::map<std::string, std::vector<std::string>>   m_includePaths;

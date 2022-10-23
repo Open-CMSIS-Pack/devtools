@@ -292,6 +292,8 @@ void ProjMgrYamlCbuild::SetMiscNode(YAML::Node miscNode, const MiscItem& misc) {
     {YAML_MISC_C, misc.c},
     {YAML_MISC_CPP, misc.cpp},
     {YAML_MISC_LINK, misc.link},
+    {YAML_MISC_LINK_C, misc.link_c},
+    {YAML_MISC_LINK_CPP, misc.link_cpp},
     {YAML_MISC_LIB, misc.lib}
   };
   for (const auto& [key, value] : FLAGS_MATRIX) {

@@ -60,6 +60,8 @@ build:
           - -Lib-group
         Link:
           - -Link-group
+        Link-CPP:
+          - -Link-CPP-group
       define:
         - DEF1-GROUP-PROJECT
         - DEF2-GROUP-PROJECT
@@ -87,6 +89,8 @@ build:
               - -Lib-file-GCC
             Link:
               - -Link-file-GCC
+            Link-C:
+              - -Link-C-file-GCC
           define:
             - DEF1-FILE-PROJECT
             - DEF2-FILE-PROJECT
