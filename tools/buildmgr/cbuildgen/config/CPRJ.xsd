@@ -17,12 +17,14 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 
-  $Date:        30. August 2022
-  $Revision:    1.0.3
+  $Date:        20. October 2022
+  $Revision:    1.1.0
 
   $Project: Schema File for CMSIS Project Description File Format Specification
 
-  SchemaVersion=1.0.3
+  SchemaVersion=1.1.0
+
+  1.1.0: Added support for DbranchProt
 
   1.0.3: Added Brevision attribute, Bversion to be deprecated
 
@@ -157,6 +159,15 @@
       <xs:enumeration value="NO_MVE"/>
       <xs:enumeration value="MVE"/>
       <xs:enumeration value="FP_MVE"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- DbranchProt enumeration type -->
+  <xs:simpleType name="DbranchProtEnum">
+    <xs:restriction base="xs:token">
+      <xs:enumeration value="NO_BRANCHPROT"/>
+      <xs:enumeration value="BTI"/>
+      <xs:enumeration value="BTI_SIGNRET"/>
     </xs:restriction>
   </xs:simpleType>
 
@@ -329,16 +340,22 @@
     <xs:attribute name="Dname"    type="xs:string"   use="optional" />
     <!-- Processor Instance Name -->
     <xs:attribute name="Pname"    type="xs:string"   use="optional" />
-    <!-- FPU used in target build -->
+    <!-- Floating Point Unit -->
     <xs:attribute name="Dfpu"     type="DfpuEnum"    use="optional" />
-    <!-- Endianess used in target build -->
+    <!-- Endianess -->
     <xs:attribute name="Dendian"  type="DendianEnum" use="optional" />
-    <!-- MPU used in target build -->
+    <!-- Memory Protection Unit -->
     <xs:attribute name="Dmpu"     type="DmpuEnum"    use="optional" />
+    <!-- Digital Signal Processing Instructions -->
     <xs:attribute name="Ddsp"     type="DdspEnum"    use="optional" />
+    <!-- M-Profile Vector Extension Instructions -->
     <xs:attribute name="Dmve"     type="DmveEnum"    use="optional" />
+    <!-- TrustZone -->
     <xs:attribute name="Dtz"      type="DtzEnum"     use="optional" />
+    <!-- Secure Mode -->
     <xs:attribute name="Dsecure"  type="DsecureEnum" use="optional" />
+    <!-- Branch Protection -->
+    <xs:attribute name="DbranchProt"  type="DbranchProtEnum" use="optional" />
   </xs:complexType>
 
   <!-- Build settings for the project, setting RTE filter options -->

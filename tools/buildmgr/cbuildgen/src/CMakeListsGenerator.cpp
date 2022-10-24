@@ -39,6 +39,7 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
   if (!m_targetTz.empty())           cmakelists << EOL << "set(TZ " << m_targetTz << ")";
   if (!m_targetSecure.empty())       cmakelists << EOL << "set(SECURE " << m_targetSecure << ")";
   if (!m_targetMve.empty())          cmakelists << EOL << "set(MVE " << m_targetMve << ")";
+  if (!m_targetBranchProt.empty())   cmakelists << EOL << "set(BRANCHPROT " << m_targetBranchProt << ")";
   if (!m_byteOrder.empty())          cmakelists << EOL << "set(BYTE_ORDER " << m_byteOrder << ")";
   if (!m_optimize.empty())           cmakelists << EOL << "set(OPTIMIZE " << m_optimize << ")";
   if (!m_debug.empty())              cmakelists << EOL << "set(DEBUG " << m_debug << ")";
@@ -373,6 +374,7 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
     if (!m_byteOrder.empty()) cmakelists << " ${CC_BYTE_ORDER}";
     if (!m_definesList.empty()) cmakelists << " ${CC_DEFINES}";
     if (!m_targetSecure.empty()) cmakelists << " ${CC_SECURE}";
+    if (!m_targetBranchProt.empty()) cmakelists << " ${CC_BRANCHPROT}";
     if (!specific_options && target_options) cmakelists << " ${CC_OPTIONS_FLAGS}";
     cmakelists << " ${CC_FLAGS}";
     if (!ccflags && !preinc_local && !m_ccMscGlobal.empty()) cmakelists << " ${CC_FLAGS_GLOBAL}";
@@ -384,6 +386,7 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
     if (!m_byteOrder.empty()) cmakelists << " ${CXX_BYTE_ORDER}";
     if (!m_definesList.empty()) cmakelists << " ${CXX_DEFINES}";
     if (!m_targetSecure.empty()) cmakelists << " ${CXX_SECURE}";
+    if (!m_targetBranchProt.empty()) cmakelists << " ${CXX_BRANCHPROT}";
     if (!specific_options && target_options) cmakelists << " ${CXX_OPTIONS_FLAGS}";
     cmakelists << " ${CXX_FLAGS}";
     if (!cxxflags && !preinc_local && !m_cxxMscGlobal.empty()) cmakelists << " ${CXX_FLAGS_GLOBAL}";

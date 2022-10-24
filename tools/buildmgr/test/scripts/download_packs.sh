@@ -45,7 +45,7 @@ source ${testoutdir}/cbuild/etc/setup
 # Install packs
 packlist=${testoutdir}/pack.cpinstall
 > ${packlist}
-echo https://www.keil.com/pack/ARM.CMSIS.5.8.0.pack >> ${packlist}
+echo https://www.keil.com/pack/ARM.CMSIS.5.9.0.pack >> ${packlist}
 echo https://www.keil.com/pack/Keil.ARM_Compiler.1.6.3.pack >> ${packlist}
 echo http://www.keil.com/pack/Keil.STM32F4xx_DFP.2.14.0.pack >> ${packlist}
 echo http://www.keil.com/pack/Keil.MDK-Middleware.7.11.1.pack >> ${packlist}

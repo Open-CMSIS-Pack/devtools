@@ -448,6 +448,14 @@ if(SECURE STREQUAL "Secure")
   set(CC_SECURE "-mcmse")
 endif()
 
+if(BRANCHPROT STREQUAL "NO_BRANCHPROT")
+  set(CC_BRANCHPROT "-mbranch-protection=none")
+elseif(BRANCHPROT STREQUAL "BTI")
+  set(CC_BRANCHPROT "-mbranch-protection=bti")
+elseif(BRANCHPROT STREQUAL "BTI_SIGNRET")
+  set(CC_BRANCHPROT "-mbranch-protection=bti+pac-ret")
+endif()
+
 set (CC_SYS_INC_PATHS_LIST
   "${TOOLCHAIN_ROOT}/../include"
 )
@@ -461,6 +469,7 @@ set(CXX_CPU "${CC_CPU}")
 set(CXX_DEFINES "${CC_DEFINES}")
 set(CXX_BYTE_ORDER "${CC_BYTE_ORDER}")
 set(CXX_SECURE "${CC_SECURE}")
+set(CXX_BRANCHPROT "${CC_BRANCHPROT}")
 set(CXX_FLAGS "${CC_FLAGS}")
 
 set (CXX_SYS_INC_PATHS_LIST

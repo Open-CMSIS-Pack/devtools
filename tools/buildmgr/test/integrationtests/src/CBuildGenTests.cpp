@@ -72,6 +72,13 @@ TEST_F(CBuildGenTests, GenCMake_Fixed_Cprj) {
                           testout_folder + "/" + param.name + "/" + param.targetArg + ".fixed.cprj.ref");
 }
 
+// Validate Branch Protection
+TEST_F(CBuildGenTests, GenCMake_BranchProtection) {
+  TestParam param = { "AC6/BranchProtection", "Project", "", "cmake", true };
+  RunCBuildGen(param);
+  CheckCMakeLists(param);
+}
+
 // Validate cbuildgen without build environment set up
 TEST_F(CBuildGenTests, RunWithoutEnvArgTest) {
   TestParam param = {
@@ -499,4 +506,3 @@ TEST_F(CBuildGenTests, MultipleAuxCmdTest)
 
   RunCBuildGenAux       (cmd, false);
 }
-

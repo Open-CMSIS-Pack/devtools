@@ -248,3 +248,15 @@ TEST_F(CBuildGCCTests, Build_GCC_CustomRTE) {
   RunCBuildScript(param);
   CheckRteDir(param, "Custom/RTEDIR");
 }
+
+// Validate Branch Protection
+// TODO: Enable this test case after GCC 12.2.0 release and support completion
+/*
+TEST_F(CBuildAC6Tests, Build_AC6_BranchProtection) {
+  TestParam param = { "AC6/BranchProtection", "Project" };
+  RunCBuildScriptClean(param);
+  RunCBuildScript(param);
+  CheckCMakeLists(param);
+  CheckCompileCommand(param.name, "-mbranch-protection=bti");
+}
+*/

@@ -127,6 +127,7 @@ protected:
   std::string m_targetTz;
   std::string m_targetSecure;
   std::string m_targetMve;
+  std::string m_targetBranchProt;
   std::string m_byteOrder;
   std::string m_outputType;
   std::string m_optimize;

@@ -144,3 +144,31 @@ void CBuildTestFixture::CleanOutputDir(const TestParam& param) {
     fs::remove(file, ec);
   }
 }
+
+void CBuildTestFixture::CheckCompileCommand(const string& projectName, const string& cmdOption, const string& srcFile) {
+  int ret_val;
+  ifstream compileCommands;
+  string line;
+
+  string compileCommandsFilename = examples_folder + "/" + projectName + "/IntDir/compile_commands.json";
+  compileCommands.open(compileCommandsFilename);
+  ret_val = compileCommands.is_open();
+  ASSERT_TRUE(ret_val) << "Failed to open " << compileCommandsFilename;
+
+  bool found = false;
+  while (getline(compileCommands, line)) {
+    if ((line.find("\"command\":") != string::npos) &&
+      (line.find(cmdOption) != string::npos)) {
+      if (srcFile.empty() || 
+        (getline(compileCommands, line) &&
+        (line.find("\"file\":") != string::npos) &&
+        (line.find(srcFile) != string::npos))) {
+        found = true;
+        break;
+      }
+    }
+  }
+
+  ASSERT_TRUE(found) << "Compiler option '" << cmdOption << (srcFile.empty()? "" : "' for file '" + srcFile) << "' was not found";
+  compileCommands.close();
+}

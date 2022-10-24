@@ -11,7 +11,7 @@
   </info>
 
   <packages>
-    <package name="CMSIS" vendor="ARM" version="5.8.0:5.8.0"/>
+    <package name="CMSIS" vendor="ARM" version="5.9.0:5.9.0"/>
     <package name="ARM_Compiler" vendor="Keil" version="1.6.3:1.6.3"/>
   </packages>
 
@@ -26,8 +26,8 @@
   </target>
 
   <components>
-    <component Cclass="CMSIS" Cgroup="CORE" Cvendor="ARM" Cversion="5.5.0"/>
-    <component Cclass="CMSIS" Cgroup="RTOS2" Csub="Keil RTX5" Cvariant="Library" Cvendor="ARM" Cversion="5.5.3">
+    <component Cclass="CMSIS" Cgroup="CORE" Cvendor="ARM" Cversion="5.6.0"/>
+    <component Cclass="CMSIS" Cgroup="RTOS2" Csub="Keil RTX5" Cvariant="Library" Cvendor="ARM" Cversion="5.5.4">
       <file attr="config" category="source" name="CMSIS/RTOS2/RTX/Config/RTX_Config.c" version="5.1.1"/>
       <file attr="config" category="header" name="CMSIS/RTOS2/RTX/Config/RTX_Config.h" version="5.5.2"/>
     </component>
