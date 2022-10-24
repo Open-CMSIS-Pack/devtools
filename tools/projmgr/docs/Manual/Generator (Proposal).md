@@ -113,9 +113,10 @@ Combined with the [proposal to store pre-configured layers in software packs](ht
 - Add `genId` attribute to indicate that a component is managed by the `<generator>`.
 
 - Add new file categories:
-  - `genSource` source code templates for the generator and other related input files for the generator
-  - `genHeader` header file templates for the generator and other related input files for the generator
-  - `genParms` parameter templates for the generator and other related input files for the generator
+  - `genSource` source code templates for the generator
+  - `genHeader` header file templates for the generator
+  - `genParams` parameter templates for the generator
+  - `genInfo` other information files for the generator
 
 >**NOTE:** Attribute [`visiblity`](https://github.com/Open-CMSIS-Pack/Open-CMSIS-Pack-Spec/issues/112) is a separate pull request.
 
