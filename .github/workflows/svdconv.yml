@@ -66,7 +66,7 @@ jobs:
           if-no-files-found: error
 
       - name: Attach svdconv binary to release
-        if: ${{ github.event_name == 'release' && matrix.arch == 'amd64' }}
+        if: ${{ github.event_name == 'release' }}
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
@@ -90,7 +90,7 @@ jobs:
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build SVDConvUnitTests
-        uses: Open-CMSIS-Pack/devtools-build-action@v1
+        uses: Open-CMSIS-Pack/devtools-build-action@v1.2
         with:
           arch: ${{ matrix.arch }}
           build_type: Debug
@@ -153,7 +153,7 @@ jobs:
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build SVDConvUnitTests
-        uses: Open-CMSIS-Pack/devtools-build-action@v1
+        uses: Open-CMSIS-Pack/devtools-build-action@v1.2
         with:
           add_cmake_variables: -DCOVERAGE=ON
           arch: amd64
@@ -162,7 +162,7 @@ jobs:
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build SvdConvIntegTests
-        uses: Open-CMSIS-Pack/devtools-build-action@v1
+        uses: Open-CMSIS-Pack/devtools-build-action@v1.2
         with:
           add_cmake_variables: -DCOVERAGE=ON
           arch: amd64
