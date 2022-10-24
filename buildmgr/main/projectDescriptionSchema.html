@@ -126,12 +126,14 @@ $(document).ready(function(){initNavTree('projectDescriptionSchema.html','');});
   See the License for the specific language governing permissions and
   limitations under the License.
 
-  $Date:        30. August 2022
-  $Revision:    1.0.3
+  $Date:        20. October 2022
+  $Revision:    1.1.0
 
   $Project: Schema File for CMSIS Project Description File Format Specification
 
-  SchemaVersion=1.0.3
+  SchemaVersion=1.1.0
+
+  1.1.0: Added support for DbranchProt
 
   1.0.3: Added Brevision attribute, Bversion to be deprecated
 
@@ -266,6 +268,15 @@ $(document).ready(function(){initNavTree('projectDescriptionSchema.html','');});
       &lt;xs:enumeration value="NO_MVE"/&gt;
       &lt;xs:enumeration value="MVE"/&gt;
       &lt;xs:enumeration value="FP_MVE"/&gt;
+    &lt;/xs:restriction&gt;
+  &lt;/xs:simpleType&gt;
+
+  &lt;!-- DbranchProt enumeration type --&gt;
+  &lt;xs:simpleType name="DbranchProtEnum"&gt;
+    &lt;xs:restriction base="xs:token"&gt;
+      &lt;xs:enumeration value="NO_BRANCHPROT"/&gt;
+      &lt;xs:enumeration value="BTI"/&gt;
+      &lt;xs:enumeration value="BTI_SIGNRET"/&gt;
     &lt;/xs:restriction&gt;
   &lt;/xs:simpleType&gt;
 
@@ -438,16 +449,22 @@ $(document).ready(function(){initNavTree('projectDescriptionSchema.html','');});
     &lt;xs:attribute name="Dname"    type="xs:string"   use="optional" /&gt;
     &lt;!-- Processor Instance Name --&gt;
     &lt;xs:attribute name="Pname"    type="xs:string"   use="optional" /&gt;
-    &lt;!-- FPU used in target build --&gt;
+    &lt;!-- Floating Point Unit --&gt;
     &lt;xs:attribute name="Dfpu"     type="DfpuEnum"    use="optional" /&gt;
-    &lt;!-- Endianess used in target build --&gt;
+    &lt;!-- Endianess --&gt;
     &lt;xs:attribute name="Dendian"  type="DendianEnum" use="optional" /&gt;
-    &lt;!-- MPU used in target build --&gt;
+    &lt;!-- Memory Protection Unit --&gt;
     &lt;xs:attribute name="Dmpu"     type="DmpuEnum"    use="optional" /&gt;
+    &lt;!-- Digital Signal Processing Instructions --&gt;
     &lt;xs:attribute name="Ddsp"     type="DdspEnum"    use="optional" /&gt;
+    &lt;!-- M-Profile Vector Extension Instructions --&gt;
     &lt;xs:attribute name="Dmve"     type="DmveEnum"    use="optional" /&gt;
+    &lt;!-- TrustZone --&gt;
     &lt;xs:attribute name="Dtz"      type="DtzEnum"     use="optional" /&gt;
+    &lt;!-- Secure Mode --&gt;
     &lt;xs:attribute name="Dsecure"  type="DsecureEnum" use="optional" /&gt;
+    &lt;!-- Branch Protection --&gt;
+    &lt;xs:attribute name="DbranchProt"  type="DbranchProtEnum" use="optional" /&gt;
   &lt;/xs:complexType&gt;
 
   &lt;!-- Build settings for the project, setting RTE filter options --&gt;
