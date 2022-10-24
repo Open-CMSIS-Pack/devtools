@@ -31,12 +31,12 @@ jobs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
     - name: Check out repo
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
     - id: set-matrix
       run: |
         publicRepo=$(echo '${{ github.event.repository.private && 'privateRepo' || 'publicRepo' }}')
         matrix=$(jq --arg publicRepo "$publicRepo" 'map(. | select((.runOn==$publicRepo) or (.runOn=="always")) )' matrix_includes_packchk.json)
-        echo ::set-output name=matrix::{\"include\":$(echo $matrix)}\"
+        echo "matrix={\"include\":$(echo $matrix)}\"" >> $GITHUB_OUTPUT
       working-directory: .github/
 
   build:
@@ -48,7 +48,7 @@ jobs:
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
     steps:
       - name: Checkout devtools
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           submodules: recursive
 
@@ -78,7 +78,7 @@ jobs:
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
     steps:
       - name: Checkout devtools
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           submodules: recursive
 
@@ -109,14 +109,14 @@ jobs:
         working-directory: ./build
 
       - name: Archive unit test results
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: unit_test_result-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/packchkunittest-*.xml
           if-no-files-found: error
 
       - name: Archive integration test results
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: integ_test_result-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/packchkintegtest-*.xml
@@ -141,7 +141,7 @@ jobs:
             lcov
 
       - name: Checkout devtools
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           submodules: recursive
 
@@ -187,7 +187,7 @@ jobs:
 
       - name: Upload Report to Codecov
         if: ${{ !github.event.repository.private }}
-        uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@v3
         with:
           files: ./build/tools/packchk/coverage.info
           fail_ci_if_error: true
@@ -200,7 +200,7 @@ jobs:
           echo "cov_retention_days=7" >> $GITHUB_ENV
 
       - name: Archive coverage report
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: coverage-report
           path: |
@@ -219,14 +219,14 @@ jobs:
 
     steps:
       - name: Checkout devtools
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Create distribution folders
         run: |
           mkdir -p tools/packchk/distribution/
 
       - name: Download coverage report
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: coverage-report
           path: tools/packchk/distribution/coverage/
@@ -250,50 +250,50 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Setup Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: 3.8
 
       - name: Download unit test report windows
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: unit_test_result-windows64-amd64
           path: testreports/
 
       - name: Download unit test report linux amd64
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: unit_test_result-linux64-amd64
           path: testreports/
 
       - name: Download unit test report macos
         if: ${{ !github.event.repository.private }}
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: unit_test_result-darwin64-amd64
           path: testreports/
 
       - name: Download integ test report windows
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: integ_test_result-windows64-amd64
           path: testreports/
 
       - name: Download integ test report linux amd64
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: integ_test_result-linux64-amd64
           path: testreports/
 
       - name: Download integ test report macos
         if: ${{ !github.event.repository.private }}
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: integ_test_result-darwin64-amd64
           path: testreports/
 
       - name: Event File
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: Event File
           path: ${{ github.event_path }}

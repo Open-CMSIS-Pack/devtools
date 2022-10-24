@@ -22,12 +22,12 @@ jobs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
     - name: Check out repo
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
     - id: set-matrix
       run: |
         publicRepo=$(echo '${{ github.event.repository.private && 'privateRepo' || 'publicRepo' }}')
         matrix=$(jq --arg publicRepo "$publicRepo" 'map(. | select((.runOn==$publicRepo) or (.runOn=="always")) )' matrix_includes_test_libs.json)
-        echo ::set-output name=matrix::{\"include\":$(echo $matrix)}\"
+        echo "matrix={\"include\":$(echo $matrix)}\"" >> $GITHUB_OUTPUT
       working-directory: .github/
   test_libs:
     runs-on: ${{ matrix.runs_on }}
@@ -38,7 +38,7 @@ jobs:
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
     steps:
       - name: Checkout devtools
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           submodules: true
 
@@ -75,7 +75,7 @@ jobs:
 
       - name: Archive libs unittest reports
         if: ${{ matrix.arch != 'aarch64' }}
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: unit_test_result-${{ matrix.target }}-${{ matrix.arch }}
           path: build/*_test_report.xml
@@ -88,31 +88,31 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Setup Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: 3.8
 
       - name: Download unit test report windows
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: unit_test_result-windows64-amd64
           path: testreports/
 
       - name: Download unit test report linux amd64
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: unit_test_result-linux64-amd64
           path: testreports/
 
       - name: Download unit test report macos
         if: ${{ !github.event.repository.private }}
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: unit_test_result-darwin64-amd64
           path: testreports/
 
       - name: Event File
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: Event File
           path: ${{ github.event_path }}
