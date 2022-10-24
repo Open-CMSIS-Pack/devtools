@@ -746,6 +746,7 @@ protected:
   // initializes or updates (newer version is used) existing file instance
   void InitFileInstance(RteFileInstance* fi, RteFile* f, int index, RteTarget* target, const std::string& savedVersion, const std::string& rteFolder);
   bool UpdateFileInstance(RteFileInstance* fi, RteFile* f, bool bMerge, bool bUpdateComponent);
+  void UpdateFileInstanceVersion(RteFileInstance* fi, const std::string& savedVersion);
   void UpdateConfigFileBackups(RteFileInstance* fi, RteFile* f);
 
   void CollectSettings(const std::string& targetName);

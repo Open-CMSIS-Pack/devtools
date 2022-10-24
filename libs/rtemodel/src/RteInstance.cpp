@@ -859,10 +859,19 @@ const string& RteFileInstance::GetVersionString() const
 
 string RteFileInstance::Backup(bool bDeleteExisting)
 {
-  if (!IsConfig())
+  if (!IsConfig()) {
     return EMPTY_STRING; // nothing to do
-  string src = GetAbsolutePath();
-  return RteFsUtils::BackupFile(src, bDeleteExisting);
+  }
+  string thisFile = GetAbsolutePath();
+  string backupFile = RteFsUtils::BackupFile(thisFile, bDeleteExisting);
+  // backup .base file if exists
+  string baseFile = RteUtils::AppendFileBaseVersion(thisFile, GetVersionString());
+  if (RteFsUtils::Exists(baseFile)) {
+    // ensure the same backup number as this file
+    string baseBackupFile = RteUtils::AppendFileBaseVersion(backupFile, GetVersionString());
+    RteFsUtils::CopyCheckFile(baseFile, baseBackupFile, false);
+  }
+  return backupFile;
 }
 
 bool RteFileInstance::Copy(RteFile* f, bool bMerge)
@@ -875,7 +884,7 @@ bool RteFileInstance::Copy(RteFile* f, bool bMerge)
   if (src == dst) {
     return false; // should never happen!
   }
-
+  // backup config file and its .base if available
   string bak = Backup(false); // before copy
   if (bak == RteUtils::ERROR_STRING) {
     return false;
@@ -888,13 +897,12 @@ bool RteFileInstance::Copy(RteFile* f, bool bMerge)
   if (bMerge) {
     RteProject* project = GetProject();
     if (project) {
-      string baseFile = RteUtils::AppendFileBaseVersion(dst, GetVersionString());
+      // we can use base file backup here, it should already exist
+      string baseFile = RteUtils::AppendFileBaseVersion(bak, GetVersionString());
       project->MergeFiles(bak, dst, baseFile);
     }
   }
-
   return true;
-
 }
 
 bool RteFileInstance::Construct(XMLTreeElement* xmlElement)
