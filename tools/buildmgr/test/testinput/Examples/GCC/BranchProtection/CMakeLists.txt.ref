@@ -1,0 +1,78 @@
+# CMSIS Build CMakeLists generated on 2022-10-20T09:16:36
+
+cmake_minimum_required(VERSION 3.18)
+
+# Target options
+
+set(TARGET Project)
+set(CPU Cortex-M85)
+set(PRJ_DIR "C:/devtools/tools/buildmgr/test/testinput/Examples/GCC/BranchProtection")
+set(OUT_DIR "C:/devtools/tools/buildmgr/test/testinput/Examples/GCC/BranchProtection/OutDir")
+set(INT_DIR "C:/devtools/tools/buildmgr/test/testinput/Examples/GCC/BranchProtection/IntDir")
+set(FPU DP_FPU)
+set(DSP DSP)
+set(TZ TZ)
+set(SECURE Non-secure)
+set(MVE FP_MVE)
+set(BRANCHPROT BTI)
+set(BYTE_ORDER Little-endian)
+set(CC_FLAGS_GLOBAL "-O -Wall -gdwarf-4")
+set(LD_FLAGS_GLOBAL "--entry=Reset_Handler --specs=nosys.specs")
+set(LD_SCRIPT "C:/devtools/tools/buildmgr/test/testinput/Examples/GCC/BranchProtection/RTE/Device/ARMCM85/gcc_arm.ld")
+
+set(DEFINES
+  ARMCM85
+  _RTE_
+)
+
+set(INC_PATHS
+  "C:/devtools/tools/buildmgr/test/testinput/Examples/GCC/BranchProtection/RTE/CMSIS"
+  "C:/devtools/tools/buildmgr/test/testinput/Examples/GCC/BranchProtection/RTE/_Project"
+  "C:/localappdata/Arm/Packs/ARM/CMSIS/5.9.0/CMSIS/Core/Include"
+  "C:/localappdata/Arm/Packs/ARM/CMSIS/5.9.0/CMSIS/RTOS2/Include"
+  "C:/localappdata/Arm/Packs/ARM/CMSIS/5.9.0/CMSIS/RTOS2/RTX/Include"
+  "C:/localappdata/Arm/Packs/ARM/CMSIS/5.9.0/Device/ARM/ARMCM85/Include"
+)
+
+set(CC_SRC_FILES
+  "C:/localappdata/Arm/Packs/ARM/CMSIS/5.9.0/CMSIS/RTOS2/RTX/Source/rtx_lib.c"
+  "C:/devtools/tools/buildmgr/test/testinput/Examples/GCC/BranchProtection/RTE/CMSIS/RTX_Config.c"
+  "C:/devtools/tools/buildmgr/test/testinput/Examples/GCC/BranchProtection/RTE/Device/ARMCM85/startup_ARMCM85.c"
+  "C:/devtools/tools/buildmgr/test/testinput/Examples/GCC/BranchProtection/RTE/Device/ARMCM85/system_ARMCM85.c"
+  "C:/devtools/tools/buildmgr/test/testinput/Examples/GCC/BranchProtection/main.c"
+)
+
+set(LIB_FILES
+  "C:/localappdata/Arm/Packs/ARM/CMSIS/5.9.0/CMSIS/RTOS2/RTX/Library/GCC/libRTX_V8MMF.a"
+)
+
+# Toolchain config map
+
+include ("C:/cmsis-toolbox/1.2.0/etc/GCC.11.2.1.cmake")
+
+# Setup project
+
+project(${TARGET} LANGUAGES C)
+
+# Global Flags
+
+set(CMAKE_C_FLAGS "${CC_CPU} ${CC_BYTE_ORDER} ${CC_DEFINES} ${CC_SECURE} ${CC_BRANCHPROT} ${CC_FLAGS} ${CC_FLAGS_GLOBAL} ${CC_SYS_INC_PATHS}")
+set(CMAKE_C_LINK_FLAGS "${LD_CPU} ${_LS}\"${LD_SCRIPT}\" ${LD_SECURE} ${LD_FLAGS_GLOBAL} ${LD_FLAGS}")
+
+# Compilation Database
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+add_custom_target(database COMMAND ${CMAKE_COMMAND} -E copy_if_different "${INT_DIR}/compile_commands.json" "${OUT_DIR}")
+
+# Setup Target
+
+add_executable(${TARGET} ${CC_SRC_FILES})
+set(CMAKE_EXECUTABLE_SUFFIX ${EXE_SUFFIX})
+set_target_properties(${TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${OUT_DIR} LINK_DEPENDS ${LD_SCRIPT})
+target_include_directories(${TARGET} PUBLIC ${INC_PATHS})
+target_link_libraries(${TARGET} ${LIB_FILES})
+
+# Bin and Hex Conversion
+
+add_custom_command(TARGET ${TARGET} POST_BUILD COMMAND ${CMAKE_OBJCOPY} ${ELF2HEX})
+add_custom_command(TARGET ${TARGET} POST_BUILD COMMAND ${CMAKE_OBJCOPY} ${ELF2BIN})

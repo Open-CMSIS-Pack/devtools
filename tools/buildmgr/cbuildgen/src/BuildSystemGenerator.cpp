@@ -90,6 +90,7 @@ bool BuildSystemGenerator::Collect(const string& inputFile, const CbuildModel *m
   m_targetTz = target->GetAttribute("Dtz");
   m_targetSecure = target->GetAttribute("Dsecure");
   m_targetMve = target->GetAttribute("Dmve");
+  m_targetBranchProt = target->GetAttribute("DbranchProt");
   m_linkerScript = StrNorm(model->GetLinkerScript());
   m_outputType = model->GetOutputType();
 

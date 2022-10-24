@@ -20,6 +20,8 @@ protected:
   void CheckCMakeIntermediateDir(const TestParam& param, const std::string& intdir);
   void CheckRteDir              (const TestParam& param, const std::string& rtedir);
   void CleanOutputDir           (const TestParam& param);
+  void CheckCompileCommand      (const std::string& projectName, const std::string& cmdOption, const std::string& srcFile=std::string());
+
 };
 
 #endif  // CBUILDTESTFIXTURE_H
