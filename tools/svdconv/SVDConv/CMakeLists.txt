@@ -57,9 +57,15 @@ endif()
 
 target_link_libraries(svdconv PUBLIC svdconvlib)
 
+if(("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64") OR ("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "AMD64"))
+  set(SYSTEM_PROCESSOR amd64)
+else()
+  set(SYSTEM_PROCESSOR arm64)
+endif()
+
 add_custom_target(svdconvdist COMMAND
     ${CMAKE_COMMAND} -E tar "cvf${CMAKE_TAR_FLAGS}"
-       "${CMAKE_CURRENT_BINARY_DIR}/svdconv-${PROJECT_VERSION_FULL}-${SYSTEM}${ARCH}.${CMAKE_TAR_EXTENSION}"
+       "${CMAKE_CURRENT_BINARY_DIR}/svdconv-${PROJECT_VERSION_FULL}-${SYSTEM}${ARCH}-${SYSTEM_PROCESSOR}.${CMAKE_TAR_EXTENSION}"
        "--format=${CMAKE_TAR_FORMAT}"
        "$<TARGET_FILE_NAME:svdconv>"
        DEPENDS svdconv

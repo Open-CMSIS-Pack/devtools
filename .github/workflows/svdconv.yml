@@ -61,7 +61,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: svdconv-${{ matrix.target }}-${{ matrix.arch }}
-          path: ./build/tools/svdconv/SVDConv/svdconv-*-${{ matrix.target }}.*
+          path: ./build/tools/svdconv/SVDConv/svdconv-*-${{ matrix.target }}-${{ matrix.arch }}.*
           retention-days: 1
           if-no-files-found: error
 
@@ -73,7 +73,7 @@ jobs:
           tag: ${{ github.ref }}
           overwrite: true
           file_glob: true
-          file: build/tools/svdconv/SVDConv/svdconv-*-${{ matrix.target }}.*
+          file: build/tools/svdconv/SVDConv/svdconv-*-${{ matrix.target }}-${{ matrix.arch }}.*
 
   test:
     needs: matrix_prep
