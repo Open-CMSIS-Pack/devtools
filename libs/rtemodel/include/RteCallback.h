@@ -161,20 +161,20 @@ public:
 
   /**
    * @brief merge source file specified by curFile into destination one specified by newFile
-   * @param curFile source file to merge
-   * @param newFile destination file
+   * @param curFile source file to merge from (backup of file modified by the user)
+   * @param newFile destination file (fresh copy of the file from pack)
   */
   virtual void MergeFiles(const std::string& curFile, const std::string& newFile) { };
 
   /**
  * @brief merge source file specified by curFile into destination one specified by newFile.
-   Initial copy of the new file can be used if available.
+   Initial copy of the base file can be used if available.
    Default calls 2-way MergeFiles()
- * @param curFile source file to merge
- * @param newFile destination file
- * @param originFile a copy of the file used to instantiate the new file initially
+ * @param curFile source file to merge from (backup of file modified by the user)
+ * @param newFile destination file (fresh copy of the file from pack)
+ * @param baseFile a copy of the unmodified original file used initially or during last merge
 */
-  virtual void MergeFiles3Way(const std::string& curFile, const std::string& newFile, const std::string& originFile)
+  virtual void MergeFiles3Way(const std::string& curFile, const std::string& newFile, const std::string& baseFile)
   {
     MergeFiles(curFile, newFile);
   };

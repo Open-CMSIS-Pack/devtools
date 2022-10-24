@@ -303,7 +303,12 @@ TEST_F(RteModelPrjTest, LoadCprjConfigVer) {
   EXPECT_TRUE(RteFsUtils::Exists(CompConfig_1_Base_Version));
 
   const string deviceDir = rteDir + "Device/RteTest_ARMCM3/";
+  EXPECT_TRUE(RteFsUtils::Exists(deviceDir + "ARMCM3_ac6.sct"));
   EXPECT_TRUE(RteFsUtils::Exists(deviceDir + "ARMCM3_ac6.sct.base@1.0.0"));
+  // check if file version is taken from  base file (project contains "5.5.5")
+  RteFileInstance* fi = loadedCprjProject->GetFileInstance("CONFIG_FOLDER/Device/RteTest_ARMCM3/ARMCM3_ac6.sct");
+  EXPECT_TRUE(fi && fi->GetVersionString() == "1.0.0");
+
   EXPECT_TRUE(RteFsUtils::Exists(deviceDir + "startup_ARMCM3.c.base@2.0.3"));
   EXPECT_TRUE(RteFsUtils::Exists(deviceDir + "system_ARMCM3.c.base@1.0.1"));
   EXPECT_FALSE(RteFsUtils::Exists(deviceDir + "system_ARMCM3.c.base@1.0.2"));
@@ -314,6 +319,22 @@ TEST_F(RteModelPrjTest, LoadCprjConfigVer) {
   EXPECT_TRUE(RteFsUtils::Exists(depsDir + "DeviceDependency.c"));
   EXPECT_TRUE(RteFsUtils::Exists(depsDir + "BoardDependency.c.base@1.2.2"));
   EXPECT_TRUE(RteFsUtils::Exists(depsDir + "BoardDependency.c"));
+
+  // update file version
+  fi = loadedCprjProject->GetFileInstance("CONFIG_FOLDER/Device/RteTest_ARMCM3/system_ARMCM3.c");
+  EXPECT_TRUE(fi && fi->GetVersionString() == "1.0.1");
+  const string& targetName = loadedCprjProject->GetActiveTargetName();
+  RteFile* f = fi->GetFile(targetName);
+  EXPECT_TRUE(loadedCprjProject->UpdateFileToNewVersion(fi, f, true));
+  EXPECT_TRUE(fi && fi->GetVersionString() == "1.2.2");
+  // check if backups and new version files have been created
+  EXPECT_TRUE(RteFsUtils::Exists(deviceDir + "system_ARMCM3.c.0000"));
+  EXPECT_TRUE(RteFsUtils::Exists(deviceDir + "system_ARMCM3.c.0000.base@1.0.1"));
+
+  EXPECT_FALSE(RteFsUtils::Exists(deviceDir + "system_ARMCM3.c.base@1.0.1"));
+  EXPECT_TRUE(RteFsUtils::Exists(deviceDir + "system_ARMCM3.c.base@1.2.2"));
+  EXPECT_FALSE(RteFsUtils::Exists(deviceDir + "system_ARMCM3.c.update@1.2.2"));
+
 }
 
 TEST_F(RteModelPrjTest, GetLocalPdscFile) {

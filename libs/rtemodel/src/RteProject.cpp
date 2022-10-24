@@ -312,12 +312,14 @@ void RteProject::AddCprjComponents(const list<RteItem*>& selItems, RteTarget* ta
   for (auto itf = m_files.begin(); itf != m_files.end(); itf++) {
     const string& instanceName = itf->first;
     RteFileInstance* fi = itf->second;
+    string version;
     auto itver = configFileVersions.find(instanceName); // file in cprj can be specified by its instance name
     if (itver == configFileVersions.end())
       itver = configFileVersions.find(fi->GetName()); // or by original name
-    if (itver == configFileVersions.end())
-      continue;
-    fi->AddAttribute("version", itver->second);
+    if (itver != configFileVersions.end()) {
+      version = itver->second;
+    }
+    UpdateFileInstanceVersion(fi, version);
     UpdateConfigFileBackups(fi, fi->GetFile(target->GetName()));
   }
 }
@@ -462,11 +464,10 @@ void RteProject::InitFileInstance(RteFileInstance* fi, RteFile* f, int index, Rt
   if (!bExists) {
     UpdateFileInstance(fi, f, false, false);
   } else {
-    fi->AddAttribute("version", savedVersion, false);
+    UpdateFileInstanceVersion(fi, savedVersion);
   }
   UpdateConfigFileBackups(fi, f);
 }
-
 
 bool RteProject::UpdateFileInstance(RteFileInstance* fi, RteFile* f, bool bMerge, bool bUpdateComponent)
 {
@@ -488,31 +489,38 @@ bool RteProject::UpdateFileInstance(RteFileInstance* fi, RteFile* f, bool bMerge
   return true;
 }
 
+void RteProject::UpdateFileInstanceVersion(RteFileInstance* fi, const string& savedVersion) {
+  string baseVersion;
+  // try to find version from the base file if exists
+  string absPath = RteFsUtils::AbsolutePath(fi->GetAbsolutePath()).generic_string();
+  string dir = RteUtils::ExtractFilePath(absPath, false);
+  string name = RteUtils::ExtractFileName(absPath);
+  string baseName = name + '.' + RteUtils::BASE_STRING;
+  list<string> backupFileNames;
+  RteFsUtils::GrepFileNames(backupFileNames, dir, baseName + "@*");
+  if (!backupFileNames.empty()) {
+    // sort by version descending
+    backupFileNames.sort([](const string& s0, const string& s1) {
+      string v0 = RteUtils::GetSuffix(s0, '@');
+      string v1 = RteUtils::GetSuffix(s1, '@');
+      return VersionCmp::Compare(v0, v1) > 0;
+      });
+    baseVersion = RteUtils::GetSuffix(*backupFileNames.begin(), '@'); // use the top version
+  }
+  if (baseVersion.empty()) {
+    baseVersion = savedVersion;
+  }
+  fi->AddAttribute("version", baseVersion, false);
+}
+
+
 void RteProject::UpdateConfigFileBackups(RteFileInstance* fi, RteFile* f)
 {
   string src = f->GetOriginalAbsolutePath();
   string absPath = RteFsUtils::AbsolutePath(fi->GetAbsolutePath()).generic_string();
   string dir = RteUtils::ExtractFilePath(absPath, false);
   string name = RteUtils::ExtractFileName(absPath);
-  string baseVersion = fi->GetVersionString();
-  if (baseVersion.empty() || baseVersion == "0.0.0") {
-  // try to find base version from the version files
-    string baseName = name + '.' + RteUtils::BASE_STRING;
-    list<string> backupFileNames;
-    RteFsUtils::GrepFileNames(backupFileNames, dir, baseName + "@*");
-    if (!backupFileNames.empty()) {
-      // sort by version descending
-      backupFileNames.sort([](const string& s0, const string& s1) {
-        string v0 = RteUtils::GetSuffix(s0, '@');
-        string v1 = RteUtils::GetSuffix(s1, '@');
-        return VersionCmp::Compare(v0, v1) > 0;
-        });
-      baseVersion = RteUtils::GetSuffix(*backupFileNames.begin(), '@'); // use the top version
-      fi->AddAttribute("version", baseVersion, false);
-      backupFileNames.clear();
-    }
-  }
-
+  const string& baseVersion = fi->GetVersionString();
   const string& updateVersion = f->GetVersionString();
   string baseFile = RteUtils::AppendFileBaseVersion(absPath, baseVersion);
   if (!RteFsUtils::Exists(baseFile)) {
@@ -535,11 +543,12 @@ void RteProject::UpdateConfigFileBackups(RteFileInstance* fi, RteFile* f)
   }
 
   // remove redundant current and origin files
-  string dotName = '.' + name;
+  string baseName = name + '.' + RteUtils::BASE_STRING;
+  string updateName = name + '.' + RteUtils::UPDATE_STRING;
 
   list<string> backupFileNames;
-  RteFsUtils::GrepFileNames(backupFileNames, dir, name + "*@*");
-  RteFsUtils::GrepFileNames(backupFileNames, dir, dotName + "*@*");
+  RteFsUtils::GrepFileNames(backupFileNames, dir, baseName + "@*");
+  RteFsUtils::GrepFileNames(backupFileNames, dir, updateName + "@*");
   for (string fileName : backupFileNames) {
     error_code ec;
     if (!fs::equivalent(fileName, baseFile, ec) && !fs::equivalent(fileName, updateFile, ec)) {
@@ -547,7 +556,6 @@ void RteProject::UpdateConfigFileBackups(RteFileInstance* fi, RteFile* f)
     }
   }
 }
-
 
 
 void RteProject::MergeFiles(const string& curFile, const string& updateFile, const string& baseFile)

@@ -436,6 +436,7 @@ bool RteFsUtils::DeleteTree(const string& path) {
   // Remove files
   for (auto& p : fs::recursive_directory_iterator(path, ec)) {
     if (fs::is_regular_file(p, ec)) {
+      fs::permissions(p, fs::perms::all, ec);
       fs::remove(p, ec);
       if (ec) {
         return false;
