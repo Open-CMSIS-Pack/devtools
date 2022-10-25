@@ -38,6 +38,54 @@ function(cbuild_set_defines lang defines)
   set(${defines} ${TMP_DEFINES} PARENT_SCOPE)
 endfunction()
 
+set(OPTIMIZE_VALUES       "debug" "none" "balanced" "size" "speed")
+set(OPTIMIZE_CC_FLAGS     "-Og"   "-O0"  "-O2"      "-Oz" "-O3")
+set(OPTIMIZE_AS_GNU_FLAGS ${OPTIMIZE_CC_FLAGS})
+set(OPTIMIZE_ASM_FLAGS    ${OPTIMIZE_CC_FLAGS})
+set(OPTIMIZE_CXX_FLAGS    ${OPTIMIZE_CC_FLAGS})
+set(OPTIMIZE_LD_FLAGS     ${OPTIMIZE_CC_FLAGS})
+
+set(DEBUG_VALUES          "on"      "off")
+set(DEBUG_CC_FLAGS        "-g3"     "-g0")
+set(DEBUG_CXX_FLAGS       ${DEBUG_CC_FLAGS})
+set(DEBUG_LD_FLAGS        ${DEBUG_CC_FLAGS})
+set(DEBUG_AS_GNU_FLAGS    ${DEBUG_CC_FLAGS})
+set(DEBUG_ASM_FLAGS       ${DEBUG_CC_FLAGS})
+
+set(WARNINGS_VALUES       "on"     "off")
+set(WARNINGS_AS_LEG_FLAGS "--warn" "--no-warn")
+set(WARNINGS_CC_FLAGS     ""       "-w")
+set(WARNINGS_ASM_FLAGS    ${WARNINGS_CC_FLAGS})
+set(WARNINGS_AS_GNU_FLAGS ${WARNINGS_CC_FLAGS})
+set(WARNINGS_CXX_FLAGS    ${WARNINGS_CC_FLAGS})
+set(WARNINGS_LD_FLAGS     ${WARNINGS_CC_FLAGS})
+
+function(cbuild_set_option_flags lang option value flags)
+  if(NOT DEFINED ${option}_${lang}_FLAGS)
+    return()
+  endif()
+  list(FIND ${option}_VALUES "${value}" _index)
+  if (${_index} GREATER -1)
+    list(GET ${option}_${lang}_FLAGS ${_index} flag)
+    set(${flags} "${flag} ${${flags}}" PARENT_SCOPE)
+  else()
+    string(TOLOWER "${option}" _option)
+    message(FATAL_ERROR "unkown '${_option}' value '${value}' !")
+  endif()
+endfunction()
+
+function(cbuild_set_options_flags lang optimize debug warnings flags)
+  set(opt_flags)
+  # GCC provide a better optimization level for debug
+  if ((optimize STREQUAL "none") AND ${debug})
+    set(optimize "debug")
+  endif()
+  cbuild_set_option_flags(${lang} OPTIMIZE "${optimize}" opt_flags)
+  cbuild_set_option_flags(${lang} DEBUG    "${debug}"    opt_flags)
+  cbuild_set_option_flags(${lang} WARNINGS "${warnings}" opt_flags)
+  set(${flags} "${opt_flags} ${${flags}}" PARENT_SCOPE)
+endfunction()
+
 # Assembler
 
 if(CPU STREQUAL "Cortex-M0")
@@ -151,6 +199,13 @@ cbuild_set_defines(AS_GNU AS_GNU_DEFINES)
 set(ASM_DEFINES ${DEFINES})
 cbuild_set_defines(ASM ASM_DEFINES)
 
+set(AS_LEG_OPTIONS_FLAGS)
+cbuild_set_options_flags(AS_LEG "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" AS_LEG_OPTIONS_FLAGS)
+set(AS_GNU_OPTIONS_FLAGS)
+cbuild_set_options_flags(AS_GNU "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" AS_GNU_OPTIONS_FLAGS)
+set(ASM_OPTIONS_FLAGS)
+cbuild_set_options_flags(ASM "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" ASM_OPTIONS_FLAGS)
+
 if(BYTE_ORDER STREQUAL "Little-endian")
   set(ASM_BYTE_ORDER "-mlittle-endian")
 elseif(BYTE_ORDER STREQUAL "Big-endian")
@@ -167,6 +222,8 @@ set(CC_BYTE_ORDER ${ASM_BYTE_ORDER})
 set(CC_FLAGS)
 set(_PI "-include ")
 set(_ISYS "-isystem ")
+set(CC_OPTIONS_FLAGS)
+cbuild_set_options_flags(CC "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" CC_OPTIONS_FLAGS)
 
 if(SECURE STREQUAL "Secure")
   set(CC_SECURE "-mcmse")
@@ -190,6 +247,8 @@ set(CXX_DEFINES "${CC_DEFINES}")
 set(CXX_BYTE_ORDER "${CC_BYTE_ORDER}")
 set(CXX_SECURE "${CC_SECURE}")
 set(CXX_FLAGS "${CC_FLAGS}")
+set(CXX_OPTIONS_FLAGS)
+cbuild_set_options_flags(CXX "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" CXX_OPTIONS_FLAGS)
 
 set (CXX_SYS_INC_PATHS_LIST
   "${TOOLCHAIN_ROOT}/../arm-none-eabi/include/c++/11.2.1"
@@ -211,6 +270,8 @@ if(SECURE STREQUAL "Secure")
 endif()
 
 set(LD_FLAGS)
+set(LD_OPTIONS_FLAGS)
+cbuild_set_options_flags(LD "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" LD_OPTIONS_FLAGS)
 
 # Target Output
 
