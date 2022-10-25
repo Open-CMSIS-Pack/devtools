@@ -80,7 +80,7 @@ Input Files              | Description
 [DFP Software Packs](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/cp_PackTutorial.html#createPack_DFP)     | Device related information on the tool configuration. May refer an *.rzone file.
 [BSP Software Packs](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/cp_PackTutorial.html#createPackBoard)    | Board specific configuration (i.e. memory). May refer to an *.rzone file that defines board components.
 [*.rzone files](https://arm-software.github.io/CMSIS_5/Zone/html/xml_rzone_pg.html)                 | Definition of memory and peripheral resources. If it does not exist, content is created from DFP.
-*.cdefault.yml          | **Step 1:** setup of an environment (could be an IDE) to pre-define a toolchain.
+*.cdefault.yml           | **Step 1:** setup of an environment (could be an IDE) to pre-define a toolchain.
 *.csolution.yml          | **Step 2:** complete scope of the application with build order of sub-projects. Defines target and build types.
 *.cproject.yml           | **Step 3:** content of an independent build (linker run) - directly relates to a `*.cprj` file.
 *.clayer.yml             | **Step 4:** set of source files along with pre-configured components for reuse in different applications.
@@ -245,102 +245,16 @@ project:
 ### Software Layers
 
 Software layers collect source files and software components along with configuration files for re-use in different projects.
-The following diagram shows the various layers that are used to compose the IoT Cloud examples.
 
-![Software Layers](./images/Layer.png "Target and Build Types")
+An application could be composed of various layers, for example to compose an IoT cloud application:
 
-The following example is a `Blinky` application that uses a `App`, `Board`, and `RTOS` layer to compose the application
-for a NUCELO-G474RE board. Note, that the `device:` definition is is the `Board` layer.
+- **Demo.cproject.yml**: Implements the IoT Reference example.
+- **Socket.clayer.yml**: A software layer that provides the Socket interface for internet connectivity.
+- **Board.clayer.yml**: A software layer that provides the hardware interfaces to the device hardware.
 
-**Example Project: `Blinky.cproject.yml`**
+**Example:**
 
-```yml
-project:
-  compiler: AC6
-
-  layers:
-    - layer: .\Layer\App\Blinky.clayer.yml
-    - layer: .\Layer\RTOS\RTX.clayer.yml
-    - layer: .\Layer\Board\Nucleo-G474RE.clayer.yml
-```
-
-**App Layer: `.\Layer\App\Blinky.clayer.yml`**
-
-```yml
-layer:
-# type: RTOS
-  name: RTX
-  description: Keil RTX5 open-source real-time operating system with CMSIS-RTOS v2 API
-
-  interfaces:
-    - provides:
-        - RTOS2:
-
-  components:
-    - component: CMSIS:RTOS2:Keil RTX5&Source
-```
-
-**RTOS Layer: `.\Layer\RTOS\RTX.clayer.yml`**
-
-```yml
-layer:
-# type: RTOS
-  name: RTX
-  description: Keil RTX5 open-source real-time operating system with CMSIS-RTOS v2 API
-
-  interfaces:
-    - provides:
-        - RTOS2:
-
-  components:
-    - component: CMSIS:RTOS2:Keil RTX5&Source
-```
-
-**Board Layer: `.\Layer+NUCELO-G474RE\Board\Nucleo-G474RE.clayer.yml`**
-
-```yml
-layer:
-  name: NUCLEO-G474RE
-# type: Board
-  description: Board setup with interfaces
-  device: STM32G474CBTx
-
-  interfaces:
-    - consumes:
-        - RTOS2:
-    - provides:
-        - C_VIO:
-        - A_IO9_I:
-        - A_IO10_O:
-        - C_VIO:
-        - STDOUT:
-        - STDIN:
-        - STDERR:
-        - Heap: 65536
-  
-  components:
-    - component: CMSIS:CORE
-    - component: CMSIS Driver:USART:Custom
-    - component: CMSIS Driver:VIO:Board&NUCLEO-G474RE
-    - component: Compiler&ARM Compiler:Event Recorder&DAP
-    - component: Compiler&ARM Compiler:I/O:STDERR&User
-    - component: Compiler&ARM Compiler:I/O:STDIN&User
-    - component: Compiler&ARM Compiler:I/O:STDOUT&User
-    - component: Board Support&NUCLEO-G474RE:Drivers:Basic I/O
-    - component: Device&STM32CubeMX:STM32Cube Framework:STM32CubeMX
-    - component: Device&STM32CubeMX:STM32Cube HAL
-    - component: Device&STM32CubeMX:Startup
-  
-  groups:
-    - group: Board IO
-      files:
-        - file: ./Board_IO/arduino.c
-        - file: ./Board_IO/arduino.h
-        - file: ./Board_IO/retarget_stdio.c
-    - group: STM32CubeMX
-      files:
-        - file: ./RTE/Device/STM32G474RETx/STCubeGenerated/STCubeGenerated.ioc
-```
+The project [AWS_MQTT_MutualAuth_SW_Framework](https://github.com/Open-CMSIS-Pack/AWS_MQTT_MutualAuth_SW_Framework/blob/main/Demo.cdefault.yml) provides an example for software layers.
 
 ### Project Setup for Multiple Targets and Builds
 
@@ -517,10 +431,11 @@ Source Directory                    | Content
 :-----------------------------------|:---------------
 `.`                                 | Contains one or more `*.csolution.yml` files that describes an overall application.
 `./<project>`                       | Each project has its own directory
-`./<project>/RTE+<target>`          | Configurable files that are specific to a target have a specific directory.
-`./<project>/RTE`                   | Configurable files that are common to all targets may have a common directory.
-`./<project>/Layer+<target>/<name>` | `*.clayer.yml` and related source files of a layers that are specific to a target have a specific directory.
-`./<project>/Layer/<name>`          | `*.clayer.yml` and related source files of a layers that are common to all targets may have a common directory.
+`./<project>/RTE/<Cclass>`          | Configurable files for each component `Cclass` have a common directory.
+`./<project>/RTE/<Cclass>/<device>` | Configurable files for components that have a condition to a `device` are in a separate directory.
+`./<layer>`                         | `*.clayer.yml` and related source files of a layer have a specific directory.
+`./<layer>/RTE/<Cclass>`            | Configurable files for each component `Cclass` have a common directory.
+`./<layer>/RTE/<Cclass>/<device>`   | Configurable files for components that have a condition to a `device` are in a separate directory.
 
 > **Note:**
 >

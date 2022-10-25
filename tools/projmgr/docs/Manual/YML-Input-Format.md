@@ -1,5 +1,6 @@
 # YML Input Format
 
+<!-- markdownlint-disable MD009 -->
 <!-- markdownlint-disable MD013 -->
 <!-- markdownlint-disable MD036 -->
 
@@ -64,12 +65,16 @@ Project Manager.
     - [`groups:`](#groups)
     - [`files:`](#files)
     - [`layers:`](#layers)
+      - [Proposals for `layers:`](#proposals-for-layers)
     - [`components:`](#components)
     - [`instances:`](#instances)
   - [Pre/Post build steps](#prepost-build-steps)
     - [`execute:`](#execute)
-    - [`interface:`](#interface)
-  - [Layer todo](#layer-todo)
+  - [`interface:`](#interface)
+    - [`provides:`](#provides)
+      - [Proposal: Export symbols to RTE_components.h](#proposal-export-symbols-to-rte_componentsh)
+    - [`consumes:`](#consumes)
+      - [Proposal: for interface matching](#proposal-for-interface-matching)
   - [Generator (Proposal)](#generator-proposal)
     - [Workflow assumptions](#workflow-assumptions)
     - [Steps for component selection and configuration](#steps-for-component-selection-and-configuration)
@@ -78,7 +83,7 @@ Project Manager.
       - [Example Content of `*.cgen.json` (in this case `STM32CubeMX.cgen.json`)](#example-content-of-cgenjson-in-this-case-stm32cubemxcgenjson)
     - [Changes to the *.GPDSC file](#changes-to-the-gpdsc-file)
     - [Changes to the *.PDSC file](#changes-to-the-pdsc-file)
-  - [Resource Management](#resource-management)
+  - [Resource Management (Proposal)](#resource-management-proposal)
     - [`resources:`](#resources)
       - [`- import:`](#--import)
       - [`- split:`](#--split)
@@ -237,7 +242,7 @@ Access Sequence                                | Description
 `$Project$`                                    | Project name of the currently process project.
 `$BuildType$`                                  | [Build-type](#build-types) name of the currently process project.
 `$TargetType$`                                 | [Target-type](#target-types) name of the currently process project.
-`$Compiler$`                                   | [Compiler](#compiler) name of the currently process project.
+`$Compiler$`                                   | [Compiler](#compiler) name of the compiler used in this project context.
 `$Output(project[.build-type][+target-type])$` | Path to the output file of a related project that is defined in the `*.csolution.yml` file.
 `$OutDir(project[.build-type][+target-type])$` | Path to the output directory of a related project that is defined in the `*.csolution.yml` file.
 `$Source(project[.build-type][+target-type])$` | Path to the source directory of a related project that is defined in the `*.csolution.yml` file.
@@ -410,13 +415,10 @@ The `project:` node is the start of a `*.cproject.yml` file and can contain the 
 &nbsp;&nbsp; [`add-path:`](#add-path)               |  Optional    | Additional include file paths.
 &nbsp;&nbsp; [`del-path:`](#del-path)               |  Optional    | Remove specific include file paths.
 &nbsp;&nbsp; [`misc:`](#misc)                       |  Optional    | Literal tool-specific controls.
-&nbsp;&nbsp; [`board:`](#board)                     |  Optional    | Board specification.
-&nbsp;&nbsp; [`device:`](#device)                   |  Optional    | Device specification.
 &nbsp;&nbsp; [`processor:`](#processor)             |  Optional    | Processor specific settings.
 &nbsp;&nbsp; [`groups:`](#groups)                   | **Required** | List of source file groups along with source files.
 &nbsp;&nbsp; [`components:`](#components)           |  Optional    | List of software components used.
 &nbsp;&nbsp; [`layers:`](#layers)                   |  Optional    | List of software layers that belong to the project.
-&nbsp;&nbsp; `layer-templates:`                     |  Optional    | Describes software layers that are compatible with the project.
 &nbsp;&nbsp; [`interface:`](#interface)             |  Optional    | List of consumed and provided interfaces.
 
 **Example:**
@@ -442,16 +444,18 @@ project:
 
 ### `layer:`
 
-The `layer:` node is the start of a `*.clayer.yml` file and can contain the following:
+The `layer:` node is the start of a `*.clayer.yml` file and defines a [Software Layer](./Overview.md#software-layers). It can contain the following nodes:
 
 `layer:`                                       |              | Content
 :----------------------------------------------|:-------------|:------------------------------------
 &nbsp;&nbsp; `type:`                           |  Optional    | Layer type for combining layers.
 &nbsp;&nbsp; `name:`                           |  Optional    | Brief descriptive name of the layer
-&nbsp;&nbsp; `description:`]                   |  Optional    | Detailed layer description.
+&nbsp;&nbsp; `description:`                    |  Optional    | Detailed layer description.
+&nbsp;&nbsp; `for-device:`                     |  Optional    | Device information, used for consistency check (device selection is in `*.csolution.yml`).
+&nbsp;&nbsp; `for-board:`                      |  Optional    | Board information, used for consistency check (board selection is in `*.csolution.yml`).
 &nbsp;&nbsp; [`interface:`](#interface)        |  Optional    | List of consumed and provided interfaces.
 &nbsp;&nbsp; [`processor:`](#processor)        |  Optional    | Processor specific settings.
-&nbsp;&nbsp; [`groups:`](#groups)              | **Required** | List of source file groups along with source files.
+&nbsp;&nbsp; [`groups:`](#groups)              |  Optional    | List of source file groups along with source files.
 &nbsp;&nbsp; [`components:`](#components)      |  Optional    | List of software components used.
 
 **Example:**
@@ -809,9 +813,9 @@ type.
 `misc:`                              |              | Content
 :------------------------------------|--------------|:------------------------------------
 [`- for-compiler:`](#for-compiler)   |   Optional   | Name of the toolchain that the literal control string applies to.
+&nbsp;&nbsp; `C-CPP:`                |   Optional   | Applies to `*.c` and `*.cpp` files (added before `C` and `CPP:`).
 &nbsp;&nbsp; `C:`                    |   Optional   | Applies to `*.c` files only.
 &nbsp;&nbsp; `CPP:`                  |   Optional   | Applies to `*.cpp` files only.
-&nbsp;&nbsp; `C-CPP:`                |   Optional   | Applies to `*.c` and `*.cpp` files.
 &nbsp;&nbsp; `ASM:`                  |   Optional   | Applies to assembler source files only.
 &nbsp;&nbsp; `Link:`                 |   Optional   | Applies to the linker (added before `Link-C:` or `Link-CPP:`).
 &nbsp;&nbsp; `Link-C:`               |   Optional   | Applies to the linker; added when no C++ files are part of the project.
@@ -825,11 +829,11 @@ type.
     - type: Debug
       misc:
         - for-compiler: AC6
-          C:
+          C-CPP:
             - -O1
             - -g
         - for-compiler: GCC
-          C:
+          C-CPP:
             - -Og
 
     - type: Release
@@ -1310,6 +1314,7 @@ Add a software layer to a project. Used in `*.cproject.yml` files.
 `layers:`                                      |              | Content
 :----------------------------------------------|--------------|:------------------------------------
 [`- layer:`](#layer)                           | **Required** | Path to the `*.clayer.yml` file that defines the layer.
+&nbsp;&nbsp; `type:`                           |   Optional   | Refers to an expected layer type.
 &nbsp;&nbsp; [`for-type:`](#for-type)          |   Optional   | Include layer for a list of *build* and *target* types.
 &nbsp;&nbsp; [`not-for-type:`](#not-for-type)  |   Optional   | Exclude layer for a list of *build* and *target* types.
 &nbsp;&nbsp; [`optimize:`](#optimize)          |   Optional   | Optimize level for code generation.
@@ -1325,20 +1330,84 @@ Add a software layer to a project. Used in `*.cproject.yml` files.
 
 ```yml
   layers:
-    - layer: ./Socket/VSocket/Socket.clayer.yml
-      for-type: 
-        - +AVH
-
-    - layer: ./Interface/AWS/FreeRTOS+TCP/Interface.clayer.yml
+    # Socket
+    - layer: ./Socket/FreeRTOS+TCP/Socket.clayer.yml
       for-type:
         - +IP-Stack
-    - layer: ./Interface/AWS/WiFi/Interface.clayer.yml
+    - layer: ./Socket/WiFi/Socket.clayer.yml
       for-type:
         - +WiFi
-    - layer: ./Interface/AWS/Socket/Interface.clayer.yml
+    - layer: ./Socket/VSocket/Socket.clayer.yml
       for-type:
         - +AVH
+
+    # Board
+    - layer: ./Board/IMXRT1050-EVKB/Board.clayer.yml
+      for-type: 
+        - +IP-Stack
+        # - +WiFi
+    - layer: ./Board/B-U585I-IOT02A/Board.clayer.yml
+      for-type: 
+        - +WiFi
+    - layer: ./Board/AVH_MPS3_Corstone-300/Board.clayer.yml
+      for-type: 
+        - +AVH
 ```
+
+#### Proposals for `layers:`
+
+1. `layer type:` for evaluation of compatible layers.
+
+   The path to the `*.clayer.yml` file can be empty, but in this case a `type:` should be specified.
+   The `csolution` project manager searches in the available software packs for compatible layers and notifies the user.
+   The compatible layers are listed by evaluating the compatible [`interface:`](#interface).
+
+   **Example:**
+
+   ```yml
+     layers:
+       - layer:                    # no `*.clayer.yml` specified. Compatible layers are listed
+         type: Socket              # layer of type `Socket` is expected
+
+       - layer:                    # no `*.clayer.yml` specified. Compatible layers are listed
+         type: Board               # layer of type `Board` is expected
+   ```
+
+2. `variables:` to values via access sequences
+
+   With variables that are defined in the `*.csolution.yml` file, it could be avoided that a `*.cproject.yml` file requires modifications
+   when new target types are introduced.  The required `layers:` could be instead specified in the `*.csolution.yml` file using a new node `variables:`.
+
+   **Example:**
+   
+   *Example.csolution.yml*
+   
+   ```yml
+   solution:
+     target-types:
+       - type: NXP Board
+         board: IMXRT1050-EVKB
+         variables:
+           - Socket-Layer: ./Socket/FreeRTOS+TCP/Socket.clayer.yml
+           - Board-Layer:  ./Board/IMXRT1050-EVKB/Board.clayer.yml
+  
+       - type: ST Board
+         board: B-U585I-IOT02A
+         variables:
+           - Socket-Layer: ./Socket/WiFi/Socket.clayer.yml
+           - Board-Layer:  ./Board/B-U585I-IOT02A/Board.clayer.yml
+   ```
+   
+   *Example.cproject.yml*
+   
+   ```yml
+     layers:
+       - layer: $Socket-Layer$
+         type: Socket
+   
+       - layer: $Board-Layer$      # no `*.clayer.yml` specified. Compatible layers are listed
+         type: Board               # layer of type `Board` is expected
+   ```
 
 ### `components:`
 
@@ -1456,133 +1525,112 @@ project:
         - file: file1a.c
 ```
 
-### `interface:`
+## `interface:`
 
-Describes consumed and required interfaces and can be applied to `project:`, `layer:` or `layer-template:`
+Is a user-defined list of interfaces and can be applied to `project:` or `layer:`.  
 
 `interface:`                         |              | Description
 :------------------------------------|--------------|:------------------------------------
-`provides:`[#provides]               |   Optional   | List of interfaces (key/value pairs) that are provided by a `project:`, `layer:` or `layer-template:`
-`consumes:`[#consumes]               |   Optional   | List of interfaces (key/value pairs) that are consumed by a `project:`, `layer:` or `layer-template:`
+[`provides:`](#provides)             |   Optional   | List of interfaces (key/value pairs) that are provided by a `project:` or `layer:`
+[`consumes:`](#consumes)             |   Optional   | List of interfaces (key/value pairs) that are consumed by a `project:` or  `layer:`
 
 **Example:**
 
 ```yml
-  interface:                         # interface description of a board layer
-    consumes:
-    - RTOS2:
-    provides:
-    - CMSIS Driver Ethernet: 0       # driver number
-    - CMSIS Driver USART Print: 2    # driver number
-    - IoT Socket:                    # available
-    - Heap : 65536                   # heap size 
+  interface:                         # interface description of a board layer
+    consumes:
+    - RTOS2:
+    provides:
+    - CMSIS Driver Ethernet: 0       # driver number
+    - CMSIS Driver USART Print: 2    # driver number
+    - IoT Socket:                    # available
+    - Heap: 65536                    # heap size 
 ```
 
-## Layer todo
+### `provides:`
 
-Start of a layer definition in a `*.clayer.yml` file.
+A user-defined list of interfaces that are implemented or provided by the files or software components in a `project:` or `layer:`. 
+
+#### Proposal: Export symbols to RTE_components.h
+
+All provided interfaces in the current solution context are exported with `#define` symbols to the releated `RTE_components.h` header file and prefixed with `itf_`.
+
+*Content of RTE_components.h:*
+
+```c
+#define itf_CMSIS_Driver_Ethernet 0
+#define itf_CMSIS_Driver_USART_Print 2
+#define itf_IoT_Socket
+#define Heap 65536
+```
+
+### `consumes:`
+
+#### Proposal: for interface matching
+
+A user-defined list of interfaces that are requried or consumed by the files or software components in a `project:` or `layer:`. 
+This list is used by the `csolution` tool to identify compatible software layers and evaluate the completeness of an project.
 
 **Example:**
 
-```yml
-project:
-  compiler: AC6
+*MyProject.cproject.yml*
 
+```yml
+  interfaces:
+    provides:
+      - RTOS2:          # implements RTOS2 API interface
+    consumes:
+      - IoT_Socket:     # requires IoT_Socket interface
+      - STDOUT:         # requires STDOUT interface
+      - Heap:  +30000   # requires additional 30000 bytes memory heap
+  :
   layers:
-    - layer: ..\layer\App\Blinky.clayer.yml
-    - layer: ..\layer\Board+NUCELO-G474RE\Nucelo-G474RE.clayer.yml      # 'NUCLEO-G474RE' is target-type
-    - layer: ..\layer\RTOS\RTX.clayer.yml
-```
+    - layer: MySocket.clayer.yml
+    - layer: MyBoard.clayer.yml
+```      
+
+*MySocket.clayer.yml*
 
 ```yml
-layer: App
-# name: Blinky
-#  description: Simple example
-
-# interface:
-#   consumes:
-#     - C_VIO:
-#     - RTOS2:
-
-  groups:
-    - group: App
-      files:
-        - file: "./Blinky.c"
-    - group: Documentation
-      files:
-        - file: name="./README.md"
+interfaces:
+    consumes:
+      - RTOS2:          # requires RTOS2 API interface
+      - VSocket:        # requires VSocket interface
+      - Heap: +20000    # requires additional 20000 bytes memory heap
+    provides:
+      - IoT_Socket:     # provides IoT_Socket interface
 ```
 
+*MyBoard.clayer.yml*
+
 ```yml
-layer:
-  type: RTOS
-  description: Keil RTX5 open-source real-time operating system with CMSIS-RTOS v2 API
-  
-interface:
-  provides:
-    - RTOS2:
-    
-components:
-  component: CMSIS:RTOS2:Keil RTX5&Source
+  interfaces:
+    consumes:
+      - RTOS2:
+    provides:
+      - VSocket:
+      - STDOUT:
+      - Heap:  65536
 ```
 
-```yml
-layer: Board
-  name: NUCLEO-G474RE
-  description: Board setup with interfaces 
-  
-interface:
-  consumes:
-    - RTOS2:
-  provides:
-    - C_VIO:
-    - A_IO9_I:
-    - A_IO10_O:
-    - C_VIO:
-    - STDOUT:
-    - STDIN:
-    - STDERR:
-    - Heap: 65536
+The `csolution` tool combines all the interfaces that listed under `provides:` and matches it with the interfaces that are listed under `consumes:`.  
 
-target-types:
-  - type: NUCLEO-G474RE
-    board:NUCLEO-G474RE
+For interfaces listed under `provides:` the following rules exist:
 
-components:
-  component: CMSIS:CORE
-  component: CMSIS Driver:USART:Custom
-  component: CMSIS Driver:VIO:Board&NUCLEO-G474RE
-  component: Compiler&ARM Compiler:Event Recorder&DAP
-  component: Compiler&ARM Compiler:I/O:STDERR&User
-  component: Compiler&ARM Compiler:I/O:STDIN&User
-  component: Compiler&ARM Compiler:I/O:STDOUT&User
-  component: Board Support&NUCLEO-G474RE:Drivers:Basic I/O
-  component: Device&STM32CubeMX:STM32Cube Framework:STM32CubeMX
-  component: Device&STM32CubeMX:STM32Cube HAL
-  component: Device&STM32CubeMX:Startup
+- It is possible to omit the *value*.
+- A *value* is interpreted as number. When the same interface is listed multiple times under `provides:` the value must be identical.
 
-groups:
-  - group: Board IO
-    files:
-      - file: ./Board_IO/arduino.c
-      - file: ./Board_IO/arduino.h
-      - file: ./Board_IO/retarget_stdio.c
-  - group: STM32CubeMX
-    files:
-      - file: ./RTE/Device/STM32G474RETx/STCubeGenerated/STCubeGenerated.ioc
-```
+For interfaces listed under `consumed:` the following rules exist:
 
-Todo: work on this
-
-The YML structure of the section `layer:` is:
-
-```yml
-layer:
-  description:
-  ....
-```  
+- A *value* that is prefixed with '+' is interpreted as number that is added together in case that the same interface is listed multiple times under `consumes:`.
+- When no *value* is specified, it matches with any *value* of an interface listed under `provides:`.
+- When a *value* (or an added *value*) is specified, the *value* (or the sum of the *values*) must be less or equal then the *value* of an interface that is listed under `provides:`.
 
 ## Generator (Proposal)
+
+>Note: Superseeded by [Generator%20(Proposal).md](Generator%20(Proposal).md)
+
+--> Requires Review
 
 ### Workflow assumptions
 
@@ -1839,7 +1887,7 @@ executed.
 </package>
 ```
 
-## Resource Management
+## Resource Management (Proposal)
 
 The **CSolution Project Manager** integrates an extended version of the Project Zone functionality of
 [CMSIS-Zone](https://arm-software.github.io/CMSIS_5/Zone/html/index.html) with this nodes:
