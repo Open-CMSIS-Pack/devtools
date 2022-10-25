@@ -112,7 +112,7 @@ case $OS in
     ;;
 esac
 
-PKG_VERSION=$(echo $(${distdir}/bin/cbuildgen.${extn}) | cut -f5 -d ' ')
+PKG_VERSION=$(echo $(${distdir}/bin/cbuildgen.${extn} --version 2> /dev/null) | cut -f2 -d ' ')
 
 tar czf ${archive_name} -C ${distdir} .
 if [ $? -ne 0 ]
