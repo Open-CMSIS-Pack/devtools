@@ -40,6 +40,44 @@ function(cbuild_set_defines lang defines)
   set(${defines} ${TMP_DEFINES} PARENT_SCOPE)
 endfunction()
 
+set(OPTIMIZE_VALUES    "none" "balanced" "size"        "speed")
+set(OPTIMIZE_CC_FLAGS  "-O0"  "-O2"      "-O3 -Ospace" "-O3 -Otime")
+set(OPTIMIZE_CXX_FLAGS ${OPTIMIZE_CC_FLAGS})
+
+set(DEBUG_VALUES       "on"      "off")
+set(DEBUG_ASM_FLAGS    "--debug" "")
+set(DEBUG_CC_FLAGS     "--debug" "--no_debug")
+set(DEBUG_CXX_FLAGS    ${DEBUG_CC_FLAGS})
+set(DEBUG_LD_FLAGS     ${DEBUG_CC_FLAGS})
+
+set(WARNINGS_VALUES    "on" "off")
+set(WARNINGS_ASM_FLAGS ""   "--no_warn")
+set(WARNINGS_CC_FLAGS  ""   "-W")
+set(WARNINGS_CXX_FLAGS ${WARNINGS_CC_FLAGS})
+set(WARNINGS_LD_FLAGS  ""   "--diag_suppress=warning")
+
+function(cbuild_set_option_flags lang option value flags)
+  if(NOT DEFINED ${option}_${lang}_FLAGS)
+    return()
+  endif()
+  list(FIND ${option}_VALUES "${value}" _index)
+  if (${_index} GREATER -1)
+    list(GET ${option}_${lang}_FLAGS ${_index} flag)
+    set(${flags} "${flag} ${${flags}}" PARENT_SCOPE)
+  elseif(NOT value STREQUAL "")
+    string(TOLOWER "${option}" _option)
+    message(FATAL_ERROR "unkown '${_option}' value '${value}' !")
+  endif()
+endfunction()
+
+function(cbuild_set_options_flags lang optimize debug warnings flags)
+  set(opt_flags)
+  cbuild_set_option_flags(${lang} OPTIMIZE "${optimize}" opt_flags)
+  cbuild_set_option_flags(${lang} DEBUG    "${debug}"    opt_flags)
+  cbuild_set_option_flags(${lang} WARNINGS "${warnings}" opt_flags)
+  set(${flags} "${opt_flags} ${${flags}}" PARENT_SCOPE)
+endfunction()
+
 # Assembler
 
 if(CPU STREQUAL "Cortex-M0")
@@ -75,6 +113,8 @@ endif()
 
 set(ASM_CPU ${ARMASM_CPU})
 set(ASM_FLAGS)
+set(ASM_OPTIONS_FLAGS)
+cbuild_set_options_flags(ASM "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" ASM_OPTIONS_FLAGS)
 
 set(ASM_DEFINES ${DEFINES})
 cbuild_set_defines(ASM ASM_DEFINES)
@@ -91,6 +131,8 @@ set(CC_CPU "${ARMASM_CPU}")
 set(CC_FLAGS)
 set(CC_BYTE_ORDER ${ASM_BYTE_ORDER})
 set(_PI "--preinclude=")
+set(CC_OPTIONS_FLAGS)
+cbuild_set_options_flags(CC "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" CC_OPTIONS_FLAGS)
 
 set(CC_DEFINES ${DEFINES})
 cbuild_set_defines(C CC_DEFINES)
@@ -102,6 +144,8 @@ set(CXX_DEFINES "${CC_DEFINES}")
 set(CXX_BYTE_ORDER "${CC_BYTE_ORDER}")
 set(CXX_SECURE "${CC_SECURE}")
 set(CXX_FLAGS "${CC_FLAGS}")
+set(CXX_OPTIONS_FLAGS)
+cbuild_set_options_flags(CXX "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" CXX_OPTIONS_FLAGS)
 
 # Linker
 
@@ -109,6 +153,8 @@ set(LD_CPU ${ARMASM_CPU})
 set(_LS "--scatter=")
 
 set(LD_FLAGS "")
+set(LD_OPTIONS_FLAGS)
+cbuild_set_options_flags(LD "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" LD_OPTIONS_FLAGS)
 
 # Target Output
 
