@@ -527,7 +527,7 @@ void RteComponentAggregate::AddComponent(RteComponent* c)
   const string& variant = c->GetCvariantName();
   const string& generator = c->GetGeneratorName();
   RtePackage* pack = c->GetPackage();
-  bool bDominating = pack->IsDominating();
+  bool bDominating = pack && pack->IsDominating();
 
   if (!generator.empty() && GetGeneratorName() != generator)
     m_components.clear(); // for generated components only one can be added to aggregate
@@ -568,11 +568,11 @@ void RteComponentAggregate::AddComponent(RteComponent* c)
   if (versionMap.begin() != versionMap.end()) {
     RteComponent* inserted = versionMap.begin()->second;
     RtePackage* insertedPack = inserted->GetPackage();
-    if (!insertedPack->IsDominating()) {
+    if (!insertedPack || !insertedPack->IsDominating()) {
       // already inserted pack is NOT dominating
       if (bDominating) {
         // new pack is dominating
-        versionMap.clear(); // only domating component is available
+        versionMap.clear(); // only dominating component is available
       }
     } else {
       if (!bDominating) {
@@ -591,7 +591,7 @@ void RteComponentAggregate::AddComponent(RteComponent* c)
     RtePackage* devicePack = GetTarget()->GetEffectiveDevicePackage();
     if (insertedPack == devicePack)
       return; // component from device pack is already installed
-    if (devicePack != nullptr && pack != devicePack) {
+    if (insertedPack && devicePack && pack != devicePack) {
       const string& packVersion = pack->GetVersionString();
       const string& insertedPackVersion = insertedPack->GetVersionString();
       if (VersionCmp::Compare(packVersion, insertedPackVersion) < 0)

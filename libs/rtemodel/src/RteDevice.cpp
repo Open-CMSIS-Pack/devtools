@@ -1083,12 +1083,15 @@ void RteDeviceItemAggregate::AddDeviceItem(RteDeviceItem* item)
   RteDeviceItemAggregate* dia = nullptr;
   if (m_type == type || m_type == RteDeviceItem::PROCESSOR) {
     RtePackage* pack = item->GetPackage();
+    if (!pack) {
+      return;
+    }
     string packId = pack->GetPackageID();
     bool bDeprecated = pack->IsDeprecated();
     auto itd = m_deviceItems.find(packId);
     if (itd != m_deviceItems.end()) {
       RtePackage* packExisting = itd->second->GetPackage();
-      if (packExisting == pack || packExisting->GetPackageState() < pack->GetPackageState())
+      if (packExisting && ( packExisting == pack || packExisting->GetPackageState() < pack->GetPackageState()))
         return; // installed package has preference
     }
 

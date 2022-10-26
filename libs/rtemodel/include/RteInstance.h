@@ -902,13 +902,6 @@ public:
 public:
 
   /**
-   * @brief construct this item from XML data
-   * @param xmlElement pointer to XMLTreeElement to construct from
-   * @return true if successful
-  */
-  virtual bool Construct(XMLTreeElement* xmlElement) override;
-
-  /**
    * @brief get full component name to display
    * @return string in the format Cvendor.Cbundle::Cclass:Cgroup[:Csub]:Cvariant:Cversion
   */

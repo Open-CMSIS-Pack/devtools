@@ -197,6 +197,11 @@ void RteCprjProject::ApplySelectedComponentsToCprjFile() {
   if (!cprjFile)
     return;
   RteItem* cprjComponents = cprjFile->GetItemByTag("components");
+  if (!cprjComponents) {
+    cprjComponents = new RteComponentContainer(cprjFile);
+    cprjComponents->SetTag("components");
+    cprjFile->AddItem(cprjComponents);
+  }
 
   // remove component from cprj
   for (auto iter = m_idToCprjComponents.begin(); iter != m_idToCprjComponents.end();) {
@@ -232,7 +237,7 @@ void RteCprjProject::ApplySelectedComponentsToCprjFile() {
     }
     if (ci->HasMaxInstances()) {
       RteInstanceTargetInfo* info = ci->GetTargetInfo(GetActiveTargetName());
-      const string& count = info->GetAttribute("instances");
+      const string& count = info ? info->GetAttribute("instances") : RteUtils::EMPTY_STRING;
       if (!count.empty())
         item->AddAttribute("instances", count);
       else

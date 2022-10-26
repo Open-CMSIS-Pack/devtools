@@ -221,7 +221,7 @@ bool RteBoard::ProcessXmlElement(XMLTreeElement* xmlElement)
     }
   } else if (tag == "algorithm") {
     RteDeviceAlgorithm* algo = new RteDeviceAlgorithm(this);
-    if (algo && algo->Construct(xmlElement)) {
+    if (algo->Construct(xmlElement)) {
       AddItem(algo);
       return true;
     } else {
@@ -229,7 +229,7 @@ bool RteBoard::ProcessXmlElement(XMLTreeElement* xmlElement)
     }
   } else if (tag == "debugProbe") {
     RteItem* dp = new RteItem(this);
-    if (dp && dp->Construct(xmlElement)) {
+    if (dp->Construct(xmlElement)) {
       AddItem(dp);
       return true;
     } else {

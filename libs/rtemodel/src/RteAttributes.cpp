@@ -30,7 +30,7 @@ RteAttributes::RteAttributes(const map<string, string>& attributes) :
 
 RteAttributes::~RteAttributes()
 {
-  ClearAttributes();
+  m_attributes.clear();
 };
 
 const string& RteAttributes::GetName() const

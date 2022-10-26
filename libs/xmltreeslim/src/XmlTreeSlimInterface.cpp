@@ -1,7 +1,7 @@
 /******************************************************************************/
 /*
  * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
- * 
+ *
  * SPDX-License-Identifier: Apache-2.0
  */
 /******************************************************************************/
@@ -201,7 +201,6 @@ bool XMLTreeSlimInterface::DoParseElement(XmlTypes::XmlNode_t& elementNode)
     m_pXmlReader->GetNextNode(node);
     if (node.bEndOfFile)
       return false;
-    //  cout << "\n " << node.lineNo << ": " << node.tag << ", " << node.data << ", " << endl;
 
     switch (node.type) {
     case TagType::TAG_BEGIN:
@@ -213,13 +212,6 @@ bool XMLTreeSlimInterface::DoParseElement(XmlTypes::XmlNode_t& elementNode)
 
     case TagType::TAG_TEXT: {
       const string& text = node.data;
-      if (IsPath(tag, XMLTree::EMPTY_STRING)) {
-        if (XmlValueAdjuster::IsAbsolute(text)) {
-          // warning : abolute paths are not recommended
-        } if (!XmlValueAdjuster::IsURL(text) && text.find('\\') != string::npos) {
-          // error : backslashes are non permitted
-        }
-      }
       string text2 = AdjustAttributeValue(tag, XMLTree::EMPTY_STRING, text, m_pXmlReader->GetLineNumber());
       builder->SetText(text2);
     } break;

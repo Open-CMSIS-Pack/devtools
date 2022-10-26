@@ -413,7 +413,7 @@ VersionCmp::MatchMode RteItemInstance::GetVersionMatchMode(const string& targetN
 RteInstanceTargetInfo* RteItemInstance::AddTargetInfo(const string& targetName, const string& copyFrom)
 {
   RteInstanceTargetInfo* info = GetTargetInfo(targetName);
-  if (targetName == copyFrom)
+  if (info && targetName == copyFrom)
     return info;
   RteInstanceTargetInfo* src = GetTargetInfo(copyFrom);
   if (!src)
@@ -654,6 +654,9 @@ void RteFileInstance::Update(RteFile* f, bool bUpdateComponent)
 
   // get component properties
   RteComponent* c = f->GetComponent();
+  if (!c) {
+    return;
+  }
   m_componentAttributes.SetAttributes(c->GetAttributes());
 
   if (c->IsApi())
@@ -662,7 +665,9 @@ void RteFileInstance::Update(RteFile* f, bool bUpdateComponent)
 
   // get package attributes
   RtePackage* package = c->GetPackage();
-  m_packageAttributes.SetAttributes(package->GetAttributes());
+  if (package) {
+    m_packageAttributes.SetAttributes(package->GetAttributes());
+  }
 
   if (bUpdateComponent) {
     for (auto it = m_targetInfos.begin(); it != m_targetInfos.end(); it++) {
@@ -1112,7 +1117,9 @@ void RteBoardInfo::Init(RteBoard* board)
 
   // get package info
   RtePackage* package = board->GetPackage();
-  m_packageAttributes.SetAttributes(package->GetAttributes());
+  if (package) {
+    m_packageAttributes.SetAttributes(package->GetAttributes());
+  }
 }
 
 void RteBoardInfo::InitInstance(RteItem* item) {
@@ -1243,7 +1250,9 @@ void RteComponentInstance::Init(RteComponent* c)
 
   // get package info
   RtePackage* package = c->GetPackage();
-  m_packageAttributes.SetAttributes(package->GetAttributes());
+  if (package) {
+    m_packageAttributes.SetAttributes(package->GetAttributes());
+  }
 }
 
 RteComponentInstance* RteComponentInstance::MakeCopy()
@@ -1323,7 +1332,6 @@ bool RteComponentInstance::IsModified() const
 }
 
 
-
 bool RteComponentInstance::IsVersionMatchFixed() const
 {
   return GetAttribute("versionMatchMode") == "fixed";
@@ -1334,14 +1342,6 @@ bool RteComponentInstance::IsVersionMatchLatest() const
   return GetAttribute("versionMatchMode") == "latest";
 }
 
-
-bool RteComponentInstance::Construct(XMLTreeElement* xmlElement)
-{
-  bool success = RteItemInstance::Construct(xmlElement);
-  if (success) {
-  }
-  return success;
-}
 
 string RteComponentInstance::GetComponentUniqueID(bool withVersion) const
 {

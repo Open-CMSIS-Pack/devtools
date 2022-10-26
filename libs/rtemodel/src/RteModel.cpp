@@ -205,7 +205,7 @@ RteComponent* RteModel::GetComponent(const string& uniqueID) const
     return ita->second;
   }
 
-  // look in the components;
+  // look in the components
   RteComponentMap::const_iterator itc = m_componentList.find(uniqueID);
   if (itc != m_componentList.end()) {
     return itc->second;

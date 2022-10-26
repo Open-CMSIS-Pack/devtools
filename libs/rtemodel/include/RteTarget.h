@@ -551,8 +551,8 @@ protected:
   static void GetSpecificBundledClasses(const std::map<RteComponentAggregate*, int>& aggregates, std::map<std::string, std::string>& specificClasses);
 
   void FilterComponents();
-  const bool GenerateRTEComponentsH();
-  const bool GenerateRteHeaderFile(const std::string& headerName, const std::string& content);
+  bool GenerateRTEComponentsH();
+  bool GenerateRteHeaderFile(const std::string& headerName, const std::string& content);
 
   // instance operations
 public:

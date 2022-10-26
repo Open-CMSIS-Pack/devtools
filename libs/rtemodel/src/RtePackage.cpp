@@ -110,7 +110,7 @@ RtePackage::RtePackage(RteItem* parent, const map<string, string>& attributes) :
   m_deviceFamilies(0)
 {
   SetAttributes(attributes);
-  m_ID = ConstructID();
+  m_ID = RtePackage::ConstructID();
 }
 
 

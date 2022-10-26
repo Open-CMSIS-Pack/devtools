@@ -297,7 +297,7 @@ void CprjTargetElement::SetTargetBuildFlags(const string &tag, const string &com
       rteItem->SetAttribute("add", value.c_str());
     }
   } else if (!value.empty()) { // tag not existing, create it
-    RteItem *rteItem = new RteItem(this);
+    rteItem = new RteItem(this);
     rteItem->SetTag(tag);
     rteItem->SetAttribute("add", value.c_str());
     rteItem->SetAttribute("compiler", compiler.c_str());
