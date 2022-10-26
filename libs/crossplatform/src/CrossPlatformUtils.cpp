@@ -40,6 +40,7 @@ std::string CrossPlatformUtils::GetDefaultCMSISPackRootDir()
   }
   if (defaultPackRoot.empty()) {
     defaultPackRoot = GetEnv(USER_PROFILE);
+    defaultPackRoot += (defaultPackRoot.empty() ? "" : CACHE_DIR);
   }
   if (!defaultPackRoot.empty()) {
     defaultPackRoot += PACK_ROOT_DIR;

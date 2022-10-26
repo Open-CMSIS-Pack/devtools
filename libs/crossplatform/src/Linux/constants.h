@@ -11,6 +11,7 @@ constexpr const char* LOCAL_APP_DATA = "XDG_CACHE_HOME";
 constexpr const char* USER_PROFILE   = "HOME";
 constexpr const char* PACK_ROOT_DIR  = "/arm/packs";
 constexpr const char* PROC_SELF_EXE  = "/proc/self/exe";
-constexpr const char* HOST_TYPE = "linux";
+constexpr const char* CACHE_DIR      = "/.cache";
+constexpr const char* HOST_TYPE      = "linux";
 
 #endif // CROSSPLATFORM_CONSTANTS_H
