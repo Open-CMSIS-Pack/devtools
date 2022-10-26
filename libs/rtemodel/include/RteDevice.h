@@ -1463,7 +1463,7 @@ public:
    * @brief get number of stored devices
    * @return number of collected devices
   */
-  const int GetCount() const { return (int)m_devices.size(); }
+  int GetCount() const { return (int)m_devices.size(); }
 
 protected:
   /**

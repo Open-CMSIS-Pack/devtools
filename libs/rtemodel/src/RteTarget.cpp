@@ -777,10 +777,14 @@ void RteTarget::AddFile(RteFile* f, RteComponentInstance* ci)
   if (!ci || !f || f->IsConfig())
     return;
 
+  RteComponent* c = f->GetComponent();
+  if (!c) {
+    return;
+  }
+
   string id = f->GetOriginalAbsolutePath();
   AddComponentInstanceForFile(id, ci);
 
-  RteComponent* c = f->GetComponent();
   if (f->IsAddToProject()) {
     string groupName = c->GetProjectGroupName();
     AddProjectGroup(groupName);
@@ -1032,15 +1036,17 @@ RteComponent* RteTarget::GetLatestPotentialComponent(const string& id) const
 RteApi* RteTarget::GetApi(const map<string, string>& componentAttributes) const
 {
   RteProject* p = GetProject();
-  const map<string, RteGpdscInfo*>& gpdscInfos = p->GetGpdscInfos();
-  for (auto itg = gpdscInfos.begin(); itg != gpdscInfos.end(); itg++) {
-    RteGpdscInfo* gi = itg->second;
-    RteModel* m = gi->GetGeneratorModel();
-    if (!m)
-      continue;
-    RteApi* a = m->GetApi(componentAttributes);
-    if (a)
-      return a;
+  if (p) {
+    const map<string, RteGpdscInfo*>& gpdscInfos = p->GetGpdscInfos();
+    for (auto itg = gpdscInfos.begin(); itg != gpdscInfos.end(); itg++) {
+      RteGpdscInfo* gi = itg->second;
+      RteModel* m = gi->GetGeneratorModel();
+      if (!m)
+        continue;
+      RteApi* a = m->GetApi(componentAttributes);
+      if (a)
+        return a;
+    }
   }
   return m_filteredModel->GetApi(componentAttributes);
 }
@@ -1048,15 +1054,17 @@ RteApi* RteTarget::GetApi(const map<string, string>& componentAttributes) const
 RteApi* RteTarget::GetApi(const string& id) const
 {
   RteProject* p = GetProject();
-  const map<string, RteGpdscInfo*>& gpdscInfos = p->GetGpdscInfos();
-  for (auto itg = gpdscInfos.begin(); itg != gpdscInfos.end(); itg++) {
-    RteGpdscInfo* gi = itg->second;
-    RteModel* m = gi->GetGeneratorModel();
-    if (!m)
-      continue;
-    RteApi* a = m->GetApi(id);
-    if (a)
-      return a;
+  if (p) {
+    const map<string, RteGpdscInfo*>& gpdscInfos = p->GetGpdscInfos();
+    for (auto itg = gpdscInfos.begin(); itg != gpdscInfos.end(); itg++) {
+      RteGpdscInfo* gi = itg->second;
+      RteModel* m = gi->GetGeneratorModel();
+      if (!m)
+        continue;
+      RteApi* a = m->GetApi(id);
+      if (a)
+        return a;
+    }
   }
   return m_filteredModel->GetApi(id);
 }
@@ -1074,7 +1082,7 @@ void RteTarget::AddFilteredComponent(RteComponent* c)
   string id = c->GetComponentID(true);
   RtePackage* pack = c->GetPackage();
   RteComponent* inserted = GetComponent(id);
-  if (!c->IsGenerated() && inserted) {
+  if (!c->IsGenerated() && inserted && pack) {
     // check generated component
     if (inserted->IsGenerated()) {
       if (inserted->HasAttribute("generator") || c->HasAttribute("generator") || c->GetGpdscFile(this) == inserted->GetGpdscFile(this)) {
@@ -1122,7 +1130,7 @@ void RteTarget::AddPotentialComponent(RteComponent* c)
   string id = c->GetComponentID(true);
   RtePackage* pack = c->GetPackage();
   RteComponent* inserted = GetPotentialComponent(id);
-  if (inserted) {
+  if (inserted && pack) {
     const string& packVersion = pack->GetVersionString();
     const string& insertedPackVersion = inserted->GetPackage()->GetVersionString();
     if (VersionCmp::Compare(packVersion, insertedPackVersion) < 0)
@@ -1165,21 +1173,23 @@ void RteTarget::FilterComponents()
   RteComponent* deviceStartup = 0;
 
   RteProject* p = GetProject();
-  const map<string, RteGpdscInfo*>& gpdscInfos = p->GetGpdscInfos();
-  for (auto itg = gpdscInfos.begin(); itg != gpdscInfos.end(); itg++) {
-    RteGpdscInfo* gi = itg->second;
-    if (!gi->IsUsedByTarget(GetName()))
-      continue;
-    RteModel* generatedModel = gi->GetGeneratorModel();
-    if (generatedModel) {
-      const RteComponentMap& componentList = generatedModel->GetComponentList();
-      // fill unique filtered list
-      RteComponentMap::const_iterator itc;
-      for (itc = componentList.begin(); itc != componentList.end(); itc++) {
-        RteComponent* c = itc->second;
-        if (c->IsDeviceStartup())
-          deviceStartup = c;
-        AddFilteredComponent(c);
+  if (p) {
+    const map<string, RteGpdscInfo*>& gpdscInfos = p->GetGpdscInfos();
+    for (auto itg = gpdscInfos.begin(); itg != gpdscInfos.end(); itg++) {
+      RteGpdscInfo* gi = itg->second;
+      if (!gi->IsUsedByTarget(GetName()))
+        continue;
+      RteModel* generatedModel = gi->GetGeneratorModel();
+      if (generatedModel) {
+        const RteComponentMap& componentList = generatedModel->GetComponentList();
+        // fill unique filtered list
+        RteComponentMap::const_iterator itc;
+        for (itc = componentList.begin(); itc != componentList.end(); itc++) {
+          RteComponent* c = itc->second;
+          if (c->IsDeviceStartup())
+            deviceStartup = c;
+          AddFilteredComponent(c);
+        }
       }
     }
   }
@@ -1573,7 +1583,7 @@ bool RteTarget::GenerateRteHeaders() {
   return true;
 }
 
-const bool RteTarget::GenerateRTEComponentsH() {
+bool RteTarget::GenerateRTEComponentsH() {
 
   string content;
   const string& devheader = GetDeviceHeader();
@@ -1590,7 +1600,7 @@ const bool RteTarget::GenerateRTEComponentsH() {
   return GenerateRteHeaderFile("RTE_Components.h", content);
 }
 
-const bool RteTarget::GenerateRteHeaderFile(const string& headerName, const string& content) {
+bool RteTarget::GenerateRteHeaderFile(const string& headerName, const string& content) {
 
   RteProject *project = GetProject();
   if (!project)

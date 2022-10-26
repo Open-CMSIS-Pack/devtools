@@ -1201,6 +1201,9 @@ void RteProject::CollectSettings(const string& targetName)
   if (!m_globalModel)
     return;
   RteTarget* t = GetTarget(targetName);
+  if (!t) {
+    return;
+  }
   t->ClearCollections();
 
   // collect includes, libs and RTE_Components_h defines for active target
@@ -2073,11 +2076,13 @@ bool RteProject::Validate()
         msg += "': API version '";
         msg += c->GetApiVersionString();
         msg += "' or higher is required.";
-        msg += " (Version '";
-        msg += api->GetApiVersionString();
-        msg += "' is found in pack '";
-        msg += api->GetPackageID(true);
-        msg += "').";
+        if (api) {
+          msg += " (Version '";
+          msg += api->GetApiVersionString();
+          msg += "' is found in pack '";
+          msg += api->GetPackageID(true);
+          msg += "').";
+        }
         m_errors.push_back(msg);
       }
     }
@@ -2124,7 +2129,7 @@ bool RteProject::Construct(XMLTreeElement* xmlTree)
     XMLTreeElement* xmlElement = *it;
     m_tag = xmlElement->GetTag();
     success = ProcessXmlChildren(xmlElement);
-    m_ID = "RTE"; //ConstructID();
+    m_ID = "RTE";
     m_tag = "RTE";
   }
   UpdateClasses();

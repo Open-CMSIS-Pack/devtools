@@ -250,6 +250,11 @@ TEST(RteUtilsTest, VendorCompare)
   CheckVendorMatch({ "MyVendor:9999", "ThatVendor:9998" }, false);
   CheckVendorMatch({ "MyVendor:9999", "MyVendor:9998" }, true);
   CheckVendorMatch({ "MyVendor:9999", "ThatVendor:9999" }, true);
+
+  CheckVendorMatch({ "3PEAK:177", "3PEAK:177" }, true);
+  CheckVendorMatch({ "3PEAK:177", "anyOtherName:177" }, true);
+  CheckVendorMatch({ "3PEAK", "3PEAK" }, true);
+
 }
 
 TEST(RteUtilsTest, GetFullVendorString)

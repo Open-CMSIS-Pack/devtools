@@ -64,6 +64,7 @@ const string& DeviceVendor::VendorIDToOfficialID(const string& vendorSuffix)
 const map<string, string>& DeviceVendor::GetVendorNameToIdMap()
 {
   if (m_vendorNameToId.empty()) {
+    m_vendorNameToId["3PEAK"] = "177";
     m_vendorNameToId["ABOV Semiconductor"] = "126";
     m_vendorNameToId["ABOV"] = "126";
     m_vendorNameToId["Acer Labs"] = "20";
@@ -103,7 +104,7 @@ const map<string, string>& DeviceVendor::GetVendorNameToIdMap()
     m_vendorNameToId["easyplug"] = "61";
     m_vendorNameToId["EM Microelectronic"] = "74";
     m_vendorNameToId["Ember"] = "98";
-    m_vendorNameToId["Energy Micro"] = "21"; //97";
+    m_vendorNameToId["Energy Micro"] = "21"; // 97
     m_vendorNameToId["EnOcean"] = "91";
     m_vendorNameToId["Evatronix"] = "64";
     m_vendorNameToId["Freescale"] = "11";// NXP
@@ -219,6 +220,7 @@ const string& DeviceVendor::VendorNameToID(const string& vendorPrefix)
 const map<string, string>& DeviceVendor::GetVendorIdToNameMap()
 {
   if (m_vendorIdToName.empty()) {
+    m_vendorIdToName["177"] = "3PEAK";
     m_vendorIdToName["126"] = "ABOV Semiconductor";
     m_vendorIdToName["20"] = "Acer Labs";
     m_vendorIdToName["56"] = "Actel";

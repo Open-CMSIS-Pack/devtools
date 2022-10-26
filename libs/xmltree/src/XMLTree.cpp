@@ -1,7 +1,7 @@
 /******************************************************************************/
 /*
  * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
- * 
+ *
  * SPDX-License-Identifier: Apache-2.0
  */
 /******************************************************************************/
@@ -294,7 +294,7 @@ void XMLTreeParserInterface::Clear()
 
 bool XMLTreeParserInterface::Parse(const string& fileName, const std::string& xmlString)
 {
-  // default is not implemented;
+  // default is not implemented
   Error("Parsing XML is not implemented", false);
   return false;
 }
