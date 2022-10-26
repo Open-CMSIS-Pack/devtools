@@ -240,8 +240,8 @@ int main(int argc, const char *argv[])
         LogMsg("M216", VAL("MSG", ec.message()));
         return 1;
       }
-      compilerRoot = fs::path(currExePath).parent_path().append("etc").generic_string();
-      if (fs::exists(compilerRoot)) {
+      compilerRoot = fs::path(currExePath).parent_path().parent_path().append("etc").generic_string();
+      if (!fs::exists(compilerRoot)) {
         LogMsg("M204", VAL("PATH", compilerRoot));
         return 1;
       }
