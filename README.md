@@ -87,6 +87,18 @@ Note that some of the required tools are platform dependent:
     - GNU Bash (minimum recommended version **4.3**)
     - XCode/AppleClang (minimum recommended version **11**)
     - CMake (minimum recommended version **3.18**)
+
+    ```txt
+    ☑️ For Apple Silicon (M1/M2 series):
+        Currently the pre-installed bsdtar and apple gzip in macOS may cause some unexpected issues in CbuildIntegTests, like:
+          curl: (23) Failure writing output to destination
+          tar: Option --wildcards is not supported
+        So please use gnu-tar and gzip:
+          brew install gnu-tar
+          brew install gzip
+        And make sure they are added in $PATH.
+    ```
+
   - **General:** <!-- markdownlint-disable-next-line MD013 -->
     - [GNU Arm Embedded Toolchain](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-rm/downloads)
       (version **10-2020-q4-major**)
