@@ -10,6 +10,7 @@
 constexpr const char* LOCAL_APP_DATA = "";
 constexpr const char* USER_PROFILE   = "";
 constexpr const char* PACK_ROOT_DIR  = "";
-constexpr const char* HOST_TYPE = "";
+constexpr const char* CACHE_DIR      = "";
+constexpr const char* HOST_TYPE      = "";
 
 #endif // CROSSPLATFORM_CONSTANTS_H
