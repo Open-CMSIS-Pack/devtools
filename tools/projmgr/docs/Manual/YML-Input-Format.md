@@ -7,10 +7,9 @@
 The following chapter explains the YML format that is used to describe the YML input files for the **CSolution**
 Project Manager.
 
-## Table of Contents
+**Table of Contents**
 
 - [YML Input Format](#yml-input-format)
-  - [Table of Contents](#table-of-contents)
   - [Name Conventions](#name-conventions)
     - [Pack Name Conventions](#pack-name-conventions)
     - [Component Name Conventions](#component-name-conventions)
@@ -23,10 +22,9 @@ Project Manager.
     - [`project:`](#project)
     - [`layer:`](#layer)
   - [List Nodes](#list-nodes)
-  - [Directory Control](#directory-control)
+  - [Directory Control (Proposal)](#directory-control-proposal)
     - [`output-dirs:`](#output-dirs)
-  - [Toolchain Options](#toolchain-options)
-    - [`compiler:`](#compiler)
+    - [`rte-dirs:`](#rte-dirs)
     - [`output-type:`](#output-type)
     - [`linker:`](#linker)
     - [`for-compiler:`](#for-compiler)
@@ -500,7 +498,7 @@ build-types:
       type: Release         # build-type name
 ```
 
-## Directory Control
+## Directory Control (Proposal)
 
 The following node allows to control the directories used to generate the output files.  
 
@@ -532,6 +530,21 @@ output-dirs:
   rtedir: ./$Project$/RTE2               # alternative path for RTE files
   outdir: ./out/$Project$/$TargetType$   # $BuildType$ no longer part of the outdir    
 ```
+
+### `rte-dirs:`
+
+**(Proposal)**
+The `rte-dirs:` list allows to control the location of configuration files for each [component `Cclass`](#component-name-conventions).  A list of `Cclass` names can be assigned to specific directories that store the related configuration files.
+
+**Example:**
+
+```yml
+  rte-dirs:
+    - Board_Support: ..\common\RTE\Board
+    - CMSIS Driver:  ..\common\RTE\CMSIS_Driver
+    - Device:        ..\common\RTE\Device\Core1
+    - Compiler:      ..\RTE\Compiler\Debug
+      for-type:      .Debug
 
 ## Toolchain Options
 

@@ -4,10 +4,9 @@
 
 The following chapter explains the YML CBuild format that describes how to build a complete application.
 
-## Table of Contents
+**Table of Contents**
 
 - [YML CBuild Format](#yml-cbuild-format)
-  - [Table of Contents](#table-of-contents)
   - [CBuild Output Files](#cbuild-output-files)
     - [Directory Structure](#directory-structure)
     - [File Structure of `*.cbuild-idx.yml`](#file-structure-of-cbuild-idxyml)
@@ -37,7 +36,8 @@ File                | Description
 
 The `*.cbuild.yml` output file has the following usage:
 
-- It contains all information for the build step of a project that is part of an application. - As it contains information about all software packs used including version information, this file can be used as `lock-file` to ensure that subsequent runs of `csolution` use the very same software packs.
+- It contains all information for the build step of a project that is part of an application.
+- As it contains information about all software packs used including version information, this file can be used as `lock-file` to ensure that subsequent runs of `csolution` use the very same software packs.
 - It can be used as input file for a generator as it contains explicit information about source files and avoids the complexity of a pack data management at the generator level.
 
 ### Directory Structure
