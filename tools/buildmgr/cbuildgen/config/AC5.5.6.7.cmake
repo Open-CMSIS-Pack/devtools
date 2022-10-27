@@ -53,7 +53,7 @@ set(DEBUG_LD_FLAGS     ${DEBUG_CC_FLAGS})
 set(WARNINGS_VALUES    "on" "off")
 set(WARNINGS_ASM_FLAGS ""   "--no_warn")
 set(WARNINGS_CC_FLAGS  ""   "-W")
-set(WARNINGS_CXX_FLAGS ${WARNINGS_CC_FLAGS})
+set(WARNINGS_CXX_FLAGS ""   "-W")
 set(WARNINGS_LD_FLAGS  ""   "--diag_suppress=warning")
 
 function(cbuild_set_option_flags lang option value flags)
