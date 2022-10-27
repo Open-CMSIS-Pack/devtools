@@ -266,7 +266,7 @@ An application could be composed of various layers, for example to compose an Io
 
 **Example:**
 
-The project [AWS_MQTT_MutualAuth_SW_Framework](https://github.com/Open-CMSIS-Pack/AWS_MQTT_MutualAuth_SW_Framework/blob/main/Demo.cdefault.yml) provides an example for software layers.
+The project [AWS_MQTT_MutualAuth_SW_Framework](https://github.com/Open-CMSIS-Pack/AWS_MQTT_MutualAuth_SW_Framework) provides an example for software layers.
 
 ### Project Setup for Multiple Targets and Builds
 
