@@ -640,6 +640,4 @@ resources:
 #### Layers in packs
 
 A layer is a set of pre-configured software components. It should be possible to store a layer in a pack and apply
-filter conditions to it. In combination with interfaces specifications, an interactive IDE should be able to display
-suitable layers that could be added to an application.
-
+filter conditions to it. In combination with interfaces specifications, an interactive IDE should be able to display suitable layers that could be added to an application.
