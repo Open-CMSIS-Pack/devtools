@@ -114,10 +114,10 @@ install_config="${testoutdir}/install_config.def"
 echo "${testoutdir}/cbuild" > ${install_config}
 
 echo "calling cbuild_install.sh with values:"
-setinstallconfig CI_PACK_ROOT ${install_config}
-setinstallconfig CI_ARMCC6_TOOLCHAIN_ROOT ${install_config}
-setinstallconfig CI_ARMCC5_TOOLCHAIN_ROOT ${install_config}
-setinstallconfig CI_GCC_TOOLCHAIN_ROOT ${install_config}
+setinstallconfig CMSIS_PACK_ROOT ${install_config}
+setinstallconfig AC6_TOOLCHAIN_ROOT ${install_config}
+setinstallconfig AC5_TOOLCHAIN_ROOT ${install_config}
+setinstallconfig GCC_TOOLCHAIN_ROOT ${install_config}
 
 # Run cbuild installer
 dos2unix ${install_config}
@@ -125,12 +125,10 @@ dos2unix ${install_config}
 
 source ${testoutdir}/cbuild/etc/setup
 
-# Create pack repo
-if [ -d ${CMSIS_PACK_ROOT} ]; then
+if [ -f "${CMSIS_PACK_ROOT}/.Web/index.pidx" ]; then
   echo "warning: directory "${CMSIS_PACK_ROOT}" already exists."
   echo "skip pack repository creation."
+  ${testoutdir}/cbuild/bin/cpackget update-index
 else
   ${testoutdir}/cbuild/bin/cpackget init https://www.keil.com/pack/index.pidx
 fi
-
-

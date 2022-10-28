@@ -51,7 +51,6 @@ fi
 echo "Using installer: ${CI_CBUILD_INSTALLER}"
 installer="${CI_CBUILD_INSTALLER}"
 
-# check if CI_PACK_ROOT is set
 install_config=install_config.def
 > ${install_config}
 
@@ -59,15 +58,15 @@ echo "${testoutdir}/Installation" > ${install_config}
 if [[ `uname -s` != "Linux" && `uname -s` != "Darwin" ]]
   then
   # windows
-  echo "/$(echo $CI_PACK_ROOT | sed -e 's/\\/\//g' -e 's/://g')" >> ${install_config}
-  echo "/$(echo $CI_ARMCC6_TOOLCHAIN_ROOT | sed -e 's/\\/\//g' -e 's/://g')" >> ${install_config}
-  echo "/$(echo $CI_ARMCC5_TOOLCHAIN_ROOT | sed -e 's/\\/\//g' -e 's/://g')" >> ${install_config}
-  echo "/$(echo $CI_GCC_TOOLCHAIN_ROOT | sed -e 's/\\/\//g' -e 's/://g')" >> ${install_config}
+  echo "/$(echo $CMSIS_PACK_ROOT | sed -e 's/\\/\//g' -e 's/://g')" >> ${install_config}
+  echo "/$(echo $AC6_TOOLCHAIN_ROOT | sed -e 's/\\/\//g' -e 's/://g')" >> ${install_config}
+  echo "/$(echo $AC5_TOOLCHAIN_ROOT | sed -e 's/\\/\//g' -e 's/://g')" >> ${install_config}
+  echo "/$(echo $GCC_TOOLCHAIN_ROOT | sed -e 's/\\/\//g' -e 's/://g')" >> ${install_config}
 else
-  echo "$CI_PACK_ROOT" >> ${install_config}
-  echo "$CI_ARMCC6_TOOLCHAIN_ROOT" >> ${install_config}
-  echo "$CI_ARMCC5_TOOLCHAIN_ROOT" >> ${install_config}
-  echo "$CI_GCC_TOOLCHAIN_ROOT" >> ${install_config}
+  echo "$CMSIS_PACK_ROOT" >> ${install_config}
+  echo "$AC6_TOOLCHAIN_ROOT" >> ${install_config}
+  echo "$AC5_TOOLCHAIN_ROOT" >> ${install_config}
+  echo "$GCC_TOOLCHAIN_ROOT" >> ${install_config}
 fi
 cat ${install_config}
 

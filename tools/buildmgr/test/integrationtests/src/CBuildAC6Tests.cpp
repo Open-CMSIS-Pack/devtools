@@ -22,7 +22,7 @@ public:
 };
 
 void CBuildAC6Tests::SetUp() {
-  string toolchainPath = CrossPlatformUtils::GetEnv("CI_ARMCC6_TOOLCHAIN_ROOT");
+  string toolchainPath = CrossPlatformUtils::GetEnv("AC6_TOOLCHAIN_ROOT");
   if (!fs::exists(CBuildIntegTestEnv::ac6_toolchain_path)) {
     GTEST_SKIP();
   }
