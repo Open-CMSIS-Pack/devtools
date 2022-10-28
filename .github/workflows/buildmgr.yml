@@ -192,7 +192,8 @@ jobs:
 
   create_installer:
     needs: [ build, docs ]
-    runs-on: ubuntu-22.04
+    # Debian package generation in ubuntu 22.04 produces incompatible metadata
+    runs-on: ubuntu-20.04
     timeout-minutes: 15
     steps:
       - name: Install deps
