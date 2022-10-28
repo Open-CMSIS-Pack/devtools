@@ -81,11 +81,15 @@ TEST_F(CBuildGenTests, GenCMake_BranchProtection) {
 
 // Validate cbuildgen without build environment set up
 TEST_F(CBuildGenTests, RunWithoutEnvArgTest) {
+  const string packRoot = CrossPlatformUtils::GetEnv("CMSIS_PACK_ROOT");
+  CrossPlatformUtils::SetEnv("CMSIS_PACK_ROOT", RteUtils::EMPTY_STRING);
   TestParam param = {
     "AC6/Build_AC6", "Simulation",
     "", "packlist", true };
-
   RunCBuildGen           (param, examples_folder, false);
+
+  // restore CMSIS_PACK_ROOT env variable
+  CrossPlatformUtils::SetEnv("CMSIS_PACK_ROOT", packRoot);
 }
 
 // Validate cbuildgen with invalid command

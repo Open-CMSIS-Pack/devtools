@@ -300,8 +300,8 @@ jobs:
       arm_gcc_install_base: ${{ matrix.arm_gcc_install_base }}
       CI_CBUILD_DEB_PKG: ${{ github.workspace }}
       CI_CBUILD_INSTALLER: ${{ github.workspace }}/cbuild_install.sh
-      CI_PACK_ROOT: ${{ github.workspace }}/packs
-      CI_GCC_TOOLCHAIN_ROOT: ${{ github.workspace }}/${{ matrix.toolchain_root }}
+      CMSIS_PACK_ROOT: ${{ github.workspace }}/packs
+      GCC_TOOLCHAIN_ROOT: ${{ github.workspace }}/${{ matrix.toolchain_root }}
       CI_ARCH: ${{ matrix.arch }}
     strategy:
       fail-fast: true
@@ -357,7 +357,7 @@ jobs:
           CACHE_NAME: cmsis_pack
         with:
           key: ${{ env.CACHE_NAME }}-${{ matrix.runs_on }}
-          path: ${{ env.CI_PACK_ROOT }}
+          path: ${{ env.CMSIS_PACK_ROOT }}
 
       - name: Download cbuild_install
         uses: actions/download-artifact@v3
@@ -454,8 +454,8 @@ jobs:
         arm_gcc_install_base: https://developer.arm.com/-/media/Files/downloads/gnu/11.2-2022.02/binrel
         lcov_base: https://github.com/linux-test-project/lcov/releases/download/v1.15/
         lcov_installer: lcov-1.15.tar.gz
-        CI_PACK_ROOT: ${{ github.workspace }}/packs
-        CI_GCC_TOOLCHAIN_ROOT: ${{ github.workspace }}/gcc-arm-11.2-2022.02-x86_64-arm-none-eabi/bin
+        CMSIS_PACK_ROOT: ${{ github.workspace }}/packs
+        GCC_TOOLCHAIN_ROOT: ${{ github.workspace }}/gcc-arm-11.2-2022.02-x86_64-arm-none-eabi/bin
         cov_retention_days: 1
     runs-on: ubuntu-22.04
     timeout-minutes: 15
@@ -491,7 +491,7 @@ jobs:
           CACHE_NAME: cmsis_pack
         with:
           key: ${{ env.CACHE_NAME }}-${{ runner.os }}
-          path: ${{ env.CI_PACK_ROOT }}
+          path: ${{ env.CMSIS_PACK_ROOT }}
 
       - name: Build and run buildmgr tests
         run: |
@@ -548,10 +548,10 @@ jobs:
     timeout-minutes: 15
     runs-on: ${{ matrix.runs_on }}
     env:
-      CI_PACK_ROOT: ${{ github.workspace }}/packs
-      CI_ARMCC6_TOOLCHAIN_ROOT: ""
-      CI_ARMCC5_TOOLCHAIN_ROOT: ""
-      CI_GCC_TOOLCHAIN_ROOT: ""
+      CMSIS_PACK_ROOT: ${{ github.workspace }}/packs
+      AC6_TOOLCHAIN_ROOT: ""
+      AC5_TOOLCHAIN_ROOT: ""
+      GCC_TOOLCHAIN_ROOT: ""
     strategy:
       fail-fast: true
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
@@ -570,10 +570,10 @@ jobs:
         shell: bash
         run: |
           echo "${{ github.workspace }}/cbuild" > config
-          echo "$CI_PACK_ROOT" >> config
-          echo "$CI_ARMCC6_TOOLCHAIN_ROOT" >> config
-          echo "$CI_ARMCC5_TOOLCHAIN_ROOT" >> config
-          echo "$CI_GCC_TOOLCHAIN_ROOT" >> config
+          echo "$CMSIS_PACK_ROOT" >> config
+          echo "$AC6_TOOLCHAIN_ROOT" >> config
+          echo "$AC5_TOOLCHAIN_ROOT" >> config
+          echo "$GCC_TOOLCHAIN_ROOT" >> config
           ./cbuild_install.sh < config
 
       - name: Test cbuildgen
@@ -588,10 +588,10 @@ jobs:
     container:
       image: ${{ matrix.image }}
     env:
-      CI_PACK_ROOT: ${{ github.workspace }}/packs
-      CI_ARMCC6_TOOLCHAIN_ROOT: ""
-      CI_ARMCC5_TOOLCHAIN_ROOT: ""
-      CI_GCC_TOOLCHAIN_ROOT: ""
+      CMSIS_PACK_ROOT: ${{ github.workspace }}/packs
+      AC6_TOOLCHAIN_ROOT: ""
+      AC5_TOOLCHAIN_ROOT: ""
+      GCC_TOOLCHAIN_ROOT: ""
     strategy:
       fail-fast: true
       matrix:
@@ -610,10 +610,10 @@ jobs:
         shell: bash
         run: |
           echo "${{ github.workspace }}/cbuild" > config
-          echo "$CI_PACK_ROOT" >> config
-          echo "$CI_ARMCC6_TOOLCHAIN_ROOT" >> config
-          echo "$CI_ARMCC5_TOOLCHAIN_ROOT" >> config
-          echo "$CI_GCC_TOOLCHAIN_ROOT" >> config
+          echo "$CMSIS_PACK_ROOT" >> config
+          echo "$AC6_TOOLCHAIN_ROOT" >> config
+          echo "$AC5_TOOLCHAIN_ROOT" >> config
+          echo "$GCC_TOOLCHAIN_ROOT" >> config
           ./cbuild_install.sh < config
 
       - name: Test cbuildgen

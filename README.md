@@ -57,6 +57,8 @@ machine to allow components in this repository to be built and run.
 Note that some of the required tools are platform dependent:
 
 - [Git](https://git-scm.com/)
+- [GNU Arm Embedded Toolchain](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-rm/downloads)
+      (version **10-2020-q4-major**)
 - A toolchain for your platform
   - **Windows:**
     - [GIT Bash](https://gitforwindows.org/)
@@ -65,12 +67,9 @@ Note that some of the required tools are platform dependent:
     - *optional* make or Ninja
 
     ```txt
-    ☑️ Note:
-        Make sure 'git' and 'bash' paths are listed under the PATH environment
+    ☑️ Make sure 'git' and 'bash' paths are listed under the PATH environment
         variable and set the git bash priority higher in the path.
-    ```
 
-    ```txt
     ☑️ GCC/Clang on Windows:
         Currently GCC and Clang (MSYS2/MinGW distribution) compilers do not work
         on Windows. The included libc++ has a known issue in std::filesystem,
@@ -99,20 +98,6 @@ Note that some of the required tools are platform dependent:
         And make sure they are added in $PATH.
     ```
 
-  - **General:** <!-- markdownlint-disable-next-line MD013 -->
-    - [GNU Arm Embedded Toolchain](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-rm/downloads)
-      (version **10-2020-q4-major**)
-
-    ```txt
-    ☑️ Required only for packgen tests.
-
-    Set below mentioned environment variable:
-      * CC : Full qualified path to GNU Arm Embedded compiler binary (arm-noneabi-gcc)
-
-      for e.g.
-        $export CC=/c/my/path/to/arm-noneabi-gcc
-    ```
-
 ## Clone repository
 
 Clone github repository to create a local copy on your computer to make
@@ -139,7 +124,7 @@ This is a three step process:
     git submodule update --init --recursive
     ```
 
-- Create and enter the build directory
+- Create and switch to the build directory
 
     ```bash
     mkdir build
@@ -220,19 +205,60 @@ Follow the respective commands:
 
 ## Run Tests
 
+### Test Prerequisites
+
+- Ensure that the above applicable [prerequistes](#prerequisites) are fulfilled.
+- **Test environment setup:**\
+  In order to run the tests, the test environment should know about
+  - Path to [CMSIS-Pack Root Directory](https://github.com/Open-CMSIS-Pack/devtools/wiki/The-CMSIS-PACK-Root-Directory)
+  - Installation path of toolchains (AC6, GCC)
+  - Path to GNU Arm Embedded compiler binary
+
+  Users can configure the test environment by setting the environment variables mentioned below.\
+  **Note:** When the variables are already set, User doesn't need to set them again.
+
+  - **CMSIS_PACK_ROOT:**
+    - Follow the details [here](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/docs/installation.md#cmsis_pack_root-this-variable-points-to-the-cmsis-pack-root-directory-that-stores-software-packs).
+    - When it is pointing to an empty directory. The test scripts shall make this directory ready to be\
+    used, by initializing (creating subfolder **.Download**, **.Local**, **.Web** and placing a copy of the index\
+    file under **.Web/index**) this directory as a pack root directory and automatically downloading all the\
+    [packs required](https://github.com/Open-CMSIS-Pack/devtools/blob/main/tools/buildmgr/test/scripts/download_packs.sh#L48-L51) by test projects using [cpackget](https://github.com/Open-CMSIS-Pack/cpackget#usage) tool.
+
+  - **GCC_TOOLCHAIN_ROOT:**\
+    This variable should point to the installation path of [GNU Arm Embedded Toolchain](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-rm/downloads).
+    - When the variable is not set. Tests shall try to find the toolchain under default path.
+      | Platform    | Default path |
+      | ----------- | ------------ |
+      | Linux       | ${HOME}/gcc-arm-11.2-2022.02-x86_64-arm-none-eabi/bin |
+      | Windows     | ${PROGRAMFILES} (x86)/Arm GNU Toolchain arm-none-eabi/11.2 2022.02/bin |
+      | MacOS       | ${HOME}/gcc-arm-11.2-2022.02-x86_64-arm-none-eabi/bin |
+      | WSL_Windows | ${PROGRAMFILES} (x86)/Arm GNU Toolchain arm-none-eabi/11.2 2022.02/bin |
+
+  - **AC6_TOOLCHAIN_ROOT:**\
+    This variable should point to the installation path of [Arm Compiler 6](https://developer.arm.com/tools-and-software/embedded/arm-compiler/downloads/version-6).
+    - When the variable is not set. Tests shall try to find the toolchain under default path.
+      | Platform    | Default path |
+      | ----------- | ------------ |
+      | Linux       | ${HOME}/ArmCompilerforEmbedded6.18/bin |
+      | Windows     | ${PROGRAMFILES}/ArmCompilerforEmbedded6.18/bin |
+      | MacOS       | ${HOME}/ArmCompilerforEmbedded6.18/bin |
+      | WSL_Windows | ${PROGRAMFILES}/ArmCompilerforEmbedded6.18/bin |
+
+  - **CC:**\
+    This variable should point to the full qualified path to GNU Arm Embedded compiler binary (arm-noneabi-gcc)
+    - If the variable is not set `packgen` tests shall fail.
+
+#### Set the environment variables
+
+  ```txt
+    for e.g.
+      $export CMSIS_PACK_ROOT=/path/to/Pack/Root
+      $export GCC_TOOLCHAIN_ROOT=/path/to/GCC/toolchain
+      $export AC6_TOOLCHAIN_ROOT=/path/to/AC6/toolchain
+      $export CC=/path/to/arm-noneabi-gcc
+  ```
+
 One can directly run the tests from command line.
-
-```txt
-☑️ Required only when the pack repository/installed toolchains reside in places different from the default values.
-
-Set below mentioned environment variables:
-  * CI_PACK_ROOT          : Directory that contains the software packs in CMSIS-Pack format
-  * CI_GCC_TOOLCHAIN_ROOT : GCC toolchain installation path
-
-  for e.g.
-    $export CI_PACK_ROOT=/c/my/path/to/Pack/Root
-    $export CI_GCC_TOOLCHAIN_ROOT=/c/my/path/to/toolchain
-```
 
 - Using `ctest`:\
   Use the command below to trigger the tests.
@@ -262,8 +288,10 @@ Set below mentioned environment variables:
 
 ### Note
 
-- On running the tests all required packs shall get downloaded automatically under configured pack repository.
-- By default, few special tests are skipped from execution as they are dependent on specific environment configuration
+- On running the tests, all [required packs](https://github.com/Open-CMSIS-Pack/devtools/blob/main/tools/buildmgr/test/scripts/download_packs.sh#L48-L51) shall get downloaded automatically by [test scripts](https://github.com/Arm-Debug/devtools-external/blob/main/tools/buildmgr/test/scripts/download_packs.sh)\
+ under configured pack repository.
+- By default, few special tests are skipped from execution as they are dependent on specific\
+ environment configuration
   or other dependencies.
 
     1. **CI dependent tests :**\
@@ -271,21 +299,12 @@ Set below mentioned environment variables:
         - [InstallerTests](./tools/buildmgr/test/integrationtests/src/InstallerTests.cpp)
         - [DebPkgTests](./tools/buildmgr/test/integrationtests/src/DebPkgTests.cpp)
     2. **AC6 toolchain test :**\
-        The below listed tests depend on a valid AC6 toolchain installed and can be run in the local environment on
+        The below listed tests depend on a valid AC6 toolchain installed and can be run in\
+         the local environment on
         the installation of valid
         [Arm Compiler 6](https://developer.arm.com/tools-and-software/embedded/arm-compiler/downloads/version-6).
         - [CBuildAC6Tests](./tools/buildmgr/test/integrationtests/src/CBuildAC6Tests.cpp)
         - [MultiTargetAC6Tests](./tools/buildmgr/test/integrationtests/src/MultiTargetAC6Tests.cpp)
-
-    ```txt
-    ☑️ Required only when the installed AC6 toolchain resides in places different from the default values.
-
-    Set below mentioned environment variables:
-    * CI_ARMCC6_TOOLCHAIN_ROOT : AC6 toolchain installation path
-
-      for e.g.
-        $export CI_ARMCC6_TOOLCHAIN_ROOT=/c/my/path/to/AC6/toolchain
-    ```
 
     Make sure you have the proper <!-- markdownlint-disable-next-line MD013 -->
     **[Arm Compilers licenses](https://developer.arm.com/tools-and-software/software-development-tools/license-management/resources/product-and-toolkit-configuration)**.
@@ -296,8 +315,14 @@ Users can generate coverage reports locally using a GNU tool [**lcov**](http://l
 
 ### Prerequisite
 
-As coverage reports can only be generated on **linux** platform.
-Ensure that the [linux prerequisite](#prerequisites) are fulfilled.
+Coverage reports can only be generated on **linux** platform.
+
+- Ensure that the [linux prerequisite](#prerequisites) are fulfilled.
+- Install **lcov**
+
+  ```bash
+  sudo apt-get install lcov
+  ```
 
 ### Generate coverage report
 
@@ -312,7 +337,7 @@ Ensure that the [linux prerequisite](#prerequisites) are fulfilled.
   ☑️ Ensure that the build tree is clean and doesn't have any existing coverage data i.e. .gcda or .gcno files
   ```
 
-- Generate configuration files with coverage flag on
+- Generate configuration files with coverage flag **ON**
 
   ```bash
   cmake -DCMAKE_BUILD_TYPE=Debug -DCOVERAGE=ON ..
