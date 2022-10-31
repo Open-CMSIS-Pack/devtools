@@ -1595,12 +1595,13 @@ bool ProjMgrWorker::CheckType(const TypeFilter& typeFilter, const TypePair& type
   }
 }
 
-bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGpdsc, bool resolveDependencies) {
+bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGpdsc, bool resolveDependencies, bool updateRteFiles) {
   context.outputType = context.cproject->outputType.empty() ? "exe" : context.cproject->outputType;
 
   if (!LoadPacks(context)) {
     return false;
   }
+  context.rteActiveProject->SetAttribute("update-rte-files", updateRteFiles ? "1" : "0");
   if (!ProcessPrecedences(context)) {
     return false;
   }

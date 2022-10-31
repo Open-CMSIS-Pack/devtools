@@ -1789,6 +1789,28 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_DefaultFile3) {
     testinput_folder + "/TestDefault/ref/build-types/project.IAR.cprj");
 }
 
+TEST_F(ProjMgrUnitTests, RunProjMgr_NoUpdateRTEFiles) {
+  char* argv[7];
+  const string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject.yml");
+  const string rteFolder = RteFsUtils::ParentPath(csolutionFile) + "/TestProject4/RTE";
+  RteFsUtils::DeleteTree(rteFolder);
+
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolutionFile.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  argv[6] = (char*)"--no-update-rte";
+  EXPECT_EQ(0, RunProjMgr(7, argv));
+
+  // No RTE folder should exist
+  EXPECT_FALSE(RteFsUtils::Exists(rteFolder));
+
+  // CPRJ should still be generated
+  CompareFile(testoutput_folder + "/test.cprj",
+    testinput_folder + "/TestSolution/TestProject4/test.cprj");
+}
+
 TEST_F(ProjMgrUnitTests, LoadPacks_MultiplePackSelection) {
   m_csolutionFile = testinput_folder + "/TestSolution/pack_contexts.csolution.yml";
   m_rootDir = fs::path(m_csolutionFile).parent_path().generic_string();

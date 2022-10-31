@@ -41,11 +41,12 @@ Usage:\n\
    -l, --load arg        Set policy for packs loading [latest|all|required]\n\
    -e, --export arg      Set suffix for exporting <context><suffix>.cprj retaining only specified versions\n\
    -n, --no-check-schema Skip schema check\n\
+   -U, --no-update-rte   Skip creation of RTE directory and files\n\
    -o, --output arg      Output directory\n\n\
 Use 'csolution <command> -h' for more information about a command.\
 ";
 
-ProjMgr::ProjMgr(void) : m_checkSchema(false) {
+ProjMgr::ProjMgr(void) : m_checkSchema(false), m_updateRteFiles(true) {
   // Reserved
 }
 
@@ -100,13 +101,14 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
   cxxopts::Option load("l,load", "Set policy for packs loading [latest|all|required]", cxxopts::value<string>());
   cxxopts::Option missing( "m,missing", "List only required packs that are missing in the pack repository", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option schemaCheck( "n,no-check-schema", "Skip schema check", cxxopts::value<bool>()->default_value("false"));
+  cxxopts::Option noUpdateRte( "U,no-update-rte", "Skip creation of RTE directory and files", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option output("o,output", "Output directory", cxxopts::value<string>());
   cxxopts::Option version("V,version", "Print version");
   cxxopts::Option exportSuffix("e,export", "Set suffix for exporting <context><suffix>.cprj retaining only specified versions", cxxopts::value<string>());
 
   // command options dictionary
   map<string, vector<cxxopts::Option>> optionsDict = {
-    {"convert",           {solution, context, output, load, exportSuffix, schemaCheck}},
+    {"convert",           {solution, context, output, load, exportSuffix, schemaCheck, noUpdateRte}},
     {"run",               {solution, generator, context, load, schemaCheck}},
     {"list packs",        {solution, context, filter, missing, load, schemaCheck}},
     {"list boards",       {solution, context, filter, load, schemaCheck}},
@@ -122,7 +124,7 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
       {"command", "", cxxopts::value<string>()},
       {"args", "", cxxopts::value<string>()},
       solution, context, filter, generator,
-      load, missing, schemaCheck, output,
+      load, missing, schemaCheck, noUpdateRte, output,
       help, version, exportSuffix
     });
     options.parse_positional({ "command", "args"});
@@ -130,6 +132,7 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
     parseResult = options.parse(argc, argv);
     manager.m_checkSchema = !parseResult.count("n");
     manager.m_missingPacks = parseResult.count("m");
+    manager.m_updateRteFiles = !parseResult.count("no-update-rte");
 
     if (parseResult.count("command")) {
       manager.m_command = parseResult["command"].as<string>();
@@ -347,7 +350,7 @@ bool ProjMgr::RunConvert(void) {
     if (!m_worker.IsContextSelected(contextName)) {
       continue;
     }
-    if (!m_worker.ProcessContext(contextItem)) {
+    if (!m_worker.ProcessContext(contextItem, true, true, m_updateRteFiles)) {
       ProjMgrLogger::Error("processing context '" + contextName + "' failed");
       error = true;
     } else {
