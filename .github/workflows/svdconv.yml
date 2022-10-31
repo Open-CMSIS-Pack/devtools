@@ -19,6 +19,9 @@ on:
   release:
     types: [published]
 
+env:
+  retention_days: 1
+
 jobs:
   matrix_prep:
     if: |
@@ -114,12 +117,18 @@ jobs:
           ctest -V -R SvdConvIntegTests
         working-directory: ./build
 
+      - name: Determine retention days
+        if: (github.event_name == 'push' && !github.event.repository.private)
+        run: |
+          echo "retention_days=7" >> $GITHUB_ENV
+
       - name: Archive unit test results
         uses: actions/upload-artifact@v3
         with:
           name: unit_test_report-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/svdconvunittests-*.xml
           if-no-files-found: error
+          retention-days: ${{ env.retention_days }}
 
       - name: Archive integration test results
         uses: actions/upload-artifact@v3
@@ -127,6 +136,7 @@ jobs:
           name: integ_test_report-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/svdconvintegtests-*.xml
           if-no-files-found: error
+          retention-days: ${{ env.retention_days }}
 
   coverage:
     if: |
@@ -136,7 +146,6 @@ jobs:
     env:
         lcov_base: https://github.com/linux-test-project/lcov/releases/download/v1.15/
         lcov_installer: lcov-1.15.tar.gz
-        cov_retention_days: 1
     runs-on: ubuntu-22.04
     timeout-minutes: 15
     steps:
@@ -210,7 +219,7 @@ jobs:
       - name: Determine retention days
         if: (github.event_name == 'push')
         run: |
-          echo "cov_retention_days=7" >> $GITHUB_ENV
+          echo "retention_days=7" >> $GITHUB_ENV
 
       - name: Archive coverage report
         uses: actions/upload-artifact@v3
@@ -219,7 +228,7 @@ jobs:
           path: |
             ./build/tools/svdconv/coverage/
             ./build/tools/svdconv/coverage.info
-          retention-days: ${{ env.cov_retention_days }}
+          retention-days: ${{ env.retention_days }}
           if-no-files-found: error
 
   release:
