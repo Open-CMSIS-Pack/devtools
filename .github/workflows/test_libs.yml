@@ -15,6 +15,9 @@ on:
       - 'libs/**'
       - '!**/*.md'
 
+env:
+  retention_days: 1
+
 jobs:
   matrix_prep:
     runs-on: ubuntu-22.04
@@ -73,13 +76,18 @@ jobs:
           ctest -C Debug -V
         working-directory: ./build
 
+      - name: Determine retention days
+        if: (github.event_name == 'push' && !github.event.repository.private)
+        run: |
+          echo "retention_days=7" >> $GITHUB_ENV
+
       - name: Archive libs unittest reports
         if: ${{ matrix.arch != 'aarch64' }}
         uses: actions/upload-artifact@v3
         with:
           name: unit_test_result-${{ matrix.target }}-${{ matrix.arch }}
           path: build/*_test_report.xml
-          retention-days: 1
+          retention-days: ${{ env.retention_days }}
           if-no-files-found: error
 
   test-results-preparation:
