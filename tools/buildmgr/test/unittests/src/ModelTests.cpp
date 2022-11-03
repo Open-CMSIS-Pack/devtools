@@ -38,12 +38,11 @@ void ModelTests::CheckCreateRte(const TestParam& param, const string& inputDir) 
   string filename = inputDir + "/" + param.name;
   string toolchain = "", ext = CMEXT, novalue = "";
   bool ret_val, packMode = false;
-  std::map<string, string> optionAttributes;
 
   fs::current_path(filename.c_str(), ec);
   filename = param.targetArg + ".cprj";
 
-  ret_val = CreateRte({filename, novalue, novalue, optionAttributes, toolchain, ext, novalue, novalue, packMode});
+  ret_val = CreateRte({filename, novalue, novalue, toolchain, ext, novalue, novalue, packMode});
   EXPECT_EQ(ret_val, param.expect) << "CreateRte failed!";
 }
 
@@ -113,9 +112,8 @@ TEST_F(ModelTests, CreateRte_MissingDeviceName) {
 }
 
 TEST_F(ModelTests, CheckPackListLocalRepo) {
-  std::map<string, string> optionAttributes;
-    string const toolchain = "", ext = CMEXT, novalue = "";
-    string const filename = testinput_folder + "/PacklistLocal.cprj";
-    string const rtePath = string(CMAKE_SOURCE_DIR) + "/test/local";
-    EXPECT_TRUE(CreateRte({ filename, rtePath, novalue, optionAttributes, toolchain, ext, novalue, novalue, true }));
+  string const toolchain = "", ext = CMEXT, novalue = "";
+  string const filename = testinput_folder + "/PacklistLocal.cprj";
+  string const rtePath = string(CMAKE_SOURCE_DIR) + "/test/local";
+  EXPECT_TRUE(CreateRte({ filename, rtePath, novalue, toolchain, ext, novalue, novalue, true }));
 }

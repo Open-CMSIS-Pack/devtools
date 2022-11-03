@@ -150,7 +150,7 @@ ParseOptions::Result ParseOptions::Parse(int argc, const char* argv[])
     cxxopts::Options options(fileName, header);
 
     options
-      .set_width(90)
+      .set_width(80)
       .custom_help("[-V] [--version] [-h] [--help]\n          [OPTIONS...]")
       .positional_help("<PDSC file>")
       .add_options("packchk", {

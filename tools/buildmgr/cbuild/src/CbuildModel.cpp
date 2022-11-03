@@ -118,7 +118,7 @@ bool CbuildModel::Create(const CbuildRteArgs& args) {
     return false;
 
   // create target (resolve)
-  if (!CbuildProject(m_cprjProject).CreateTarget(m_targetName.c_str(), m_cprjPack, args.rtePath, args.optionAttributes, m_compiler))
+  if (!CbuildProject(m_cprjProject).CreateTarget(m_targetName.c_str(), m_cprjPack, args.rtePath, m_compiler))
     return false;
 
   // get target

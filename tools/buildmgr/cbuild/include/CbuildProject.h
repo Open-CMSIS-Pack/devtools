@@ -21,13 +21,11 @@ public:
    * @param targetName name of the target to be used
    * @param cprjPack pointer to RTE components
    * @param rtePath path to local pack repository
-   * @param optionAttributes list of target attributes
    * @param toolchain name of the build toolchain
    * @return
   */
   bool CreateTarget(const std::string& targetName, const RtePackage *cprjPack,
-                    const std::string& rtePath, const std::map<std::string, std::string> &optionAttributes,
-                    const std::string&  toolchain);
+                    const std::string& rtePath, const std::string&  toolchain);
 
   /**
    * @brief check pack requirements for cprj project

@@ -26,7 +26,7 @@ CbuildProject::~CbuildProject() {
 }
 
 bool CbuildProject::CreateTarget(const string& targetName, const RtePackage *cprjPack,
-  const string& rtePath, const map<string, string> &optionAttributes, const string& toolchain) {
+  const string& rtePath, const string& toolchain) {
   RteItem* target = cprjPack->GetItemByTag("target");
   if (!target)
     return false;
@@ -43,15 +43,6 @@ bool CbuildProject::CreateTarget(const string& targetName, const RtePackage *cpr
   SetToolchain(toolchain, attributes);
   if (!AddAdditionalAttributes(attributes, targetName))
     return false;
-
-  // command line options have higher priority
-  for (auto option : optionAttributes) {
-    auto it = attributes.find(option.first);
-    if (it == attributes.end())
-      attributes.insert(option);
-    else
-      it->second = option.second;
-  }
 
   // update target with attributes
   const RteItem* components = cprjPack->GetItemByTag("components");

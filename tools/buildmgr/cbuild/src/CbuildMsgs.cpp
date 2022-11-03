@@ -7,72 +7,6 @@
 #include "ErrLog.h"
 #include "Cbuild.h"
 
-#define USAGE_STRING \
-"Usage:\n\n" \
-/*-------------------------------------------------------------------------------| */ \
-"  %EXE% [-V] [--version] [-h] [--help]\n" \
-"            <ProjectFile>.cprj <command> [<args>]\n" \
-"\n" \
-"    <ProjectFile>.cprj      : CMSIS Project Description file\n" \
-"\n" \
-"    <command> : packlist    : write the URLs of missing packs into\n" \
-"                              <ProjectFile>.cpinstall\n" \
-"              : cmake       : generate CMakeLists.txt\n" \
-"\n" \
-"       <args> : [--toolchain=<Toolchain> --update=<CprjFile>\n" \
-"                 --intdir=<IntDir> --outdir=<OutDir> --quiet]\n" \
-"\n" \
-"                <Toolchain> : select the toolchain\n" \
-"                <CprjFile>  : generate <CprjFile> with fixed versions\n" \
-"                              for reproducing the current build\n" \
-"                <IntDir>    : set intermediate directory\n" \
-"                <OutDir>    : set output directory\n" \
-"\n" \
-"    <command> : extract     : export <Layer1> <Layer2> ... from\n" \
-"                              <ProjectFile>.cprj into <OutDir> folder\n" \
-"\n" \
-"       <args> : [--layer=<Layer1> ... --layer=<LayerN>] --outdir=<OutDir>\n" \
-"                <LayerN>    : optional layer ID\n" \
-"                <OutDir>    : set output directory for extracted layers\n" \
-"\n" \
-"    <command> : remove      : delete <Layer1> <Layer2> ... from\n" \
-"                              <ProjectFile>.cprj\n" \
-"\n" \
-"       <args> : --layer=<Layer1> ... --layer=<LayerN>\n" \
-"                <LayerN>    : layer ID\n" \
-"\n" \
-"    <command> : compose     : generate a new <ProjectFile>.cprj from\n" \
-"                              <1.clayer> <2.clayer> ...\n" \
-"\n" \
-"       <args> : <1.clayer> <2.clayer> ... <N.clayer>\n" \
-"                [--name=<ProjectName> --description=<ProjectDescription>]\n" \
-"\n" \
-"                <N.clayer>           : layer description file\n" \
-"                <ProjectName>        : project name string\n" \
-"                <ProjectDescription> : project description string\n" \
-"\n" \
-"    <command> : add         : insert <1.clayer> <2.clayer> ... into\n" \
-"                              <ProjectFile>.cprj\n" \
-"\n" \
-"       <args> : <1.clayer> <2.clayer> ... <N.clayer>\n" \
-"                <N.clayer>  : layer description file\n" \
-"\n" \
-"Auxiliary Commands Usage:\n\n" \
-"  %EXE% <command> <path1> ... <pathN> [<args>]\n" \
-"\n" \
-"    <command> : mkdir       : create directories including parents\n" \
-"\n" \
-"              : touch       : set access and modification time to current time,\n" \
-"                              create file if it does not exist.\n" \
-"\n" \
-"              : rmdir       : remove directories and their contents recursively\n" \
-"\n" \
-"       <args> : [--except=<ChildPath>]\n" \
-"                <ChildPath> : this file or child directory is exceptionally\n" \
-"                              not deleted by rmdir command\n" \
-"\n"
-
-
 /*******
   Message levels
   --------------
@@ -107,10 +41,9 @@ void InitMessageTable()
   MsgTable table;
 
 // 020 Constant Text (help, ...)
-  table["M020"] = MessageEntry(MsgLevel::LEVEL_INFO,     CRLF_B,   USAGE_STRING                                                                  );    // Program Usage
+  table["M020"] = MessageEntry(MsgLevel::LEVEL_INFO,     CRLF_B,   "%HELP%"                                                                      );    // Program Usage
   table["M021"] = MessageEntry(MsgLevel::LEVEL_INFO,     CRLF_NO,  "(%EXE%): %PROD% %VER% %TEXT%"                                                );    // Module Name, Version, Copyright
-  table["M022"] = MessageEntry(MsgLevel::LEVEL_INFO,     CRLF_BE,  "Date: %DATE% Time: %TIME%"                                                   );    // Build timestamp
-  table["M023"] = MessageEntry(MsgLevel::LEVEL_INFO,     CRLF_E,   "%EXE% %VER% %TEXT%"                                                          );    // EXE Name, Version, Copyright
+  table["M022"] = MessageEntry(MsgLevel::LEVEL_INFO,     CRLF_E,   "%EXE% %VER% %TEXT%"                                                          );    // EXE Name, Version, Copyright
 
 // 200... Invocation Errors
   table["M200"] = MessageEntry(MsgLevel::LEVEL_ERROR,    CRLF_B,   "Invalid arguments!"                                                          );
@@ -128,6 +61,9 @@ void InitMessageTable()
   table["M214"] = MessageEntry(MsgLevel::LEVEL_ERROR,    CRLF_B,   "'extract' command requires --outdir option!"                                 );
   table["M215"] = MessageEntry(MsgLevel::LEVEL_ERROR,    CRLF_B,   "Project does not have layers!"                                               );
   table["M216"] = MessageEntry(MsgLevel::LEVEL_ERROR,    CRLF_B,   "Unable to get executable path %MSG%!"                                        );
+  table["M217"] = MessageEntry(MsgLevel::LEVEL_ERROR,    CRLF_B,   "Argument parsing error: %MSG%!"                                              );
+  table["M218"] = MessageEntry(MsgLevel::LEVEL_ERROR,    CRLF_B,   "No arguments specified!"                                                     );
+  table["M219"] = MessageEntry(MsgLevel::LEVEL_ERROR,    CRLF_B,   "'%CMD%' is not a valid command!"                                             );
 
   // 600... CMSIS Build Errors, warnings and messages
   table["M600"] = MessageEntry(MsgLevel::LEVEL_ERROR,    CRLF_B,   "Package index was not found in'%PATH%/.Web'!"                                );
