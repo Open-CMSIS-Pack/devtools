@@ -31,7 +31,7 @@ using namespace std;
 string RteFsUtils::MakePathCanonical(const string& path)
 {
   error_code ec;
-  string canonical = fs::canonical(path, ec).generic_string();
+  string canonical = fs::weakly_canonical(path, ec).generic_string();
   if (ec) {
     // canonical call failed, e.g. path does not exist
     return path;
