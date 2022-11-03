@@ -785,11 +785,25 @@ TEST_F(RteFsUtilsTest, MakePathCanonical) {
   const string filenameCanonical = fs::current_path(ec).append(filenameRegular).generic_string();
   const string dirnameCanonical = fs::current_path(ec).append(dirnameSubdir).generic_string();
 
+  // create file and with parent directories for relialability of the tests
   RteFsUtils::CreateFile(filenameRegular, "foo");
 
-  // Test filename with regular separators
+  // Test filename with regular separators, file exists
   ret = RteFsUtils::MakePathCanonical(filenameRegular);
   EXPECT_EQ(ret, filenameCanonical);
+
+  // remove the file (not the parent directories)
+  RteFsUtils::DeleteFileAutoRetry(filenameRegular);
+
+  // it is still possible to get canonical name
+  ret = RteFsUtils::MakePathCanonical(filenameRegular);
+  EXPECT_EQ(ret, filenameCanonical);
+
+  // Even longer path can get canonical name
+  string nonExistingFileRel = dirnameSubdir + "/non/existing/path/../file.txt";
+  string nonExistingFileAbs = dirnameCanonical + "/non/existing/file.txt";
+  ret = RteFsUtils::MakePathCanonical(nonExistingFileRel);
+  EXPECT_EQ(ret, nonExistingFileAbs);
 
   // Test filename with backslashes separators
   ret = RteFsUtils::MakePathCanonical(filenameBackslash);
