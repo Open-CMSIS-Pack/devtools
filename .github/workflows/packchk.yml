@@ -120,7 +120,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: unit_test_result-${{ matrix.target }}-${{ matrix.arch }}
-          path: ./build/test_reports/packchkunittest-*.xml
+          path: ./build/test_reports/packchkunittests-*.xml
           if-no-files-found: error
           retention-days: ${{ env.retention_days }}
 
@@ -128,7 +128,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: integ_test_result-${{ matrix.target }}-${{ matrix.arch }}
-          path: ./build/test_reports/packchkintegtest-*.xml
+          path: ./build/test_reports/packchkintegtests-*.xml
           if-no-files-found: error
 
   coverage:

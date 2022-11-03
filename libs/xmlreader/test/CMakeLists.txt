@@ -10,6 +10,6 @@ set_property(TARGET XmlReaderUnitTests PROPERTY
 target_link_libraries(XmlReaderUnitTests PUBLIC XmlReader gtest_main)
 
 add_test(NAME XmlReaderUnitTests
-         COMMAND XmlReaderUnitTests --gtest_output=xml:xmlreader_test_report.xml
+         COMMAND XmlReaderUnitTests --gtest_output=xml:test_reports/xmlreaderunittests-report-${SYSTEM}${ARCH}-${CPU_ARCH}.xml
          WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 

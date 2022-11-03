@@ -22,5 +22,5 @@ target_include_directories(SvdConvIntegTests
                             PRIVATE ../../SVDConv/include)
 
 add_test(NAME SvdConvIntegTests
-         COMMAND SvdConvIntegTests --gtest_output=xml:test_reports/svdconvintegtests-${SYSTEM}${ARCH}$<$<BOOL:${COVERAGE}>:_cov>.xml
+         COMMAND SvdConvIntegTests --gtest_output=xml:test_reports/svdconvintegtests-${SYSTEM}${ARCH}-${CPU_ARCH}$<$<BOOL:${COVERAGE}>:_cov>.xml
          WORKING_DIRECTORY ${CMAKE_BINARY_DIR})

@@ -50,5 +50,5 @@ endif()
 target_link_libraries(CrossPlatformUnitTests PUBLIC gtest gtest_main CrossPlatform RteFsUtils)
 
 add_test(NAME CrossPlatformUnitTests
-         COMMAND CrossPlatformUnitTests --gtest_output=xml:crossplatform_test_report.xml
+         COMMAND CrossPlatformUnitTests --gtest_output=xml:test_reports/crossplatformunittests-report-${SYSTEM}${ARCH}-${CPU_ARCH}.xml
          WORKING_DIRECTORY ${CMAKE_BINARY_DIR})

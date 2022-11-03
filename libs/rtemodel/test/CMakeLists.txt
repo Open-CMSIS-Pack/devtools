@@ -14,5 +14,5 @@ target_link_libraries(RteModelUnitTests PUBLIC
   ErrLog RteModel RteFsUtils RteUtils XmlReader XmlTree XmlTreeSlim gtest_main)
 
 add_test(NAME RteModelUnitTests
-         COMMAND RteModelUnitTests --gtest_output=xml:rtemodel_test_report.xml
+         COMMAND RteModelUnitTests --gtest_output=xml:test_reports/rtemodelunittests-report-${SYSTEM}${ARCH}-${CPU_ARCH}.xml
          WORKING_DIRECTORY ${CMAKE_BINARY_DIR})

@@ -10,6 +10,6 @@ set_property(TARGET XmlTreeSlimUnitTests PROPERTY
 target_link_libraries(XmlTreeSlimUnitTests PUBLIC XmlTreeSlim RteFsUtils RteUtils gtest_main)
 
 add_test(NAME XmlTreeSlimUnitTests
-         COMMAND XmlTreeSlimUnitTests --gtest_output=xml:xmltreeslim_test_report.xml
+         COMMAND XmlTreeSlimUnitTests --gtest_output=xml:test_reports/xmltreeslimunittests-report-${SYSTEM}${ARCH}-${CPU_ARCH}.xml
          WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 

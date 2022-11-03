@@ -58,11 +58,16 @@ if(CMAKE_SIZEOF_VOID_P EQUAL 8)
   set(ARCH "64")
 endif()
 
+string(TOLOWER ${CMAKE_SYSTEM_NAME} SYSTEM)
+string(TOLOWER ${CMAKE_SYSTEM_PROCESSOR} CPU_ARCH)
+if("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64")
+  set(CPU_ARCH "amd64")
+endif()
+
 # binary output folder
 if ("${CMAKE_GENERATOR}" MATCHES "Visual Studio")
   set(OUTDIR "windows${ARCH}")
 else()
-  string(TOLOWER ${CMAKE_SYSTEM_NAME} SYSTEM)
   set(OUTDIR "${SYSTEM}${ARCH}/${CMAKE_BUILD_TYPE}")
 endif()
 

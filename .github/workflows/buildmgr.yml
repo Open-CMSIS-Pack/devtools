@@ -400,7 +400,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: unit_test_result-${{ matrix.target }}-${{ matrix.arch }}
-          path: build/cbuildunit_test_report.xml
+          path: ./build/test_reports/cbuildunittests-*.xml
           retention-days: ${{ env.retention_days }}
           if-no-files-found: error
 
@@ -417,7 +417,7 @@ jobs:
         env:
           target: ${{ matrix.target }}
           arch: ${{ matrix.arch }}
-        run: ./tools/buildmgr/test/integrationtests/${target}/Debug/CbuildIntegTests --gtest_filter=-*AC5*:*AC6*:*MultiTargetAC6Tests* --gtest_output=xml:integtest_report_${target}_${arch}.xml
+        run: ./tools/buildmgr/test/integrationtests/${target}/Debug/CbuildIntegTests --gtest_filter=-*AC5*:*AC6*:*MultiTargetAC6Tests* --gtest_output=xml:test_reports/cbuildintegtests-report-${target}-${arch}.xml
         working-directory: build
 
       - name: Run Cbuild Integration Tests (excl. AC5, AC6, MultiTargetAC6Tests) for Linux arm64
@@ -425,7 +425,7 @@ jobs:
         env:
           target: ${{ matrix.target }}
           arch: ${{ matrix.arch }}
-        run: /usr/bin/qemu-aarch64 -L /usr/aarch64-linux-gnu ./tools/buildmgr/test/integrationtests/${target}/Debug/CbuildIntegTests --gtest_filter=-*AC5*:*AC6*:*MultiTargetAC6Tests* --gtest_output=xml:integtest_report_${target}_${arch}.xml
+        run: /usr/bin/qemu-aarch64 -L /usr/aarch64-linux-gnu ./tools/buildmgr/test/integrationtests/${target}/Debug/CbuildIntegTests --gtest_filter=-*AC5*:*AC6*:*MultiTargetAC6Tests* --gtest_output=xml:test_reports/cbuildintegtests-report-${target}-${arch}.xml
         working-directory: build
 
       - name: Run Cbuild Integration Tests (excl. DebPkgTests, AC5, AC6, MultiTargetAC6Tests) for macOS
@@ -433,7 +433,7 @@ jobs:
         env:
           target: ${{ matrix.target }}
           arch: ${{ matrix.arch }}
-        run: ./tools/buildmgr/test/integrationtests/${target}/Debug/CbuildIntegTests --gtest_filter=-*DebPkgTests*:*AC5*:*AC6*:*MultiTargetAC6Tests* --gtest_output=xml:integtest_report_${target}_${arch}.xml
+        run: ./tools/buildmgr/test/integrationtests/${target}/Debug/CbuildIntegTests --gtest_filter=-*DebPkgTests*:*AC5*:*AC6*:*MultiTargetAC6Tests* --gtest_output=xml:test_reports/cbuildintegtests-report-${target}-${arch}.xml
         working-directory: build
 
       - name: Run Cbuild Integration Tests (excl. DebPkgTests, AC5, AC6, MultiTargetAC6Tests) for Windows
@@ -442,14 +442,14 @@ jobs:
           target: ${{ matrix.target }}
           arch: ${{ matrix.arch }}
         # For some reason the env variable usage $Env:target does not work properly.
-        run: .\tools\buildmgr\test\integrationtests\windows64\Debug\CbuildIntegTests.exe --gtest_filter=-*DebPkgTests*:*AC5*:*AC6*:*MultiTargetAC6Tests* --gtest_output=xml:integtest_report_windows64_amd64.xml
+        run: .\tools\buildmgr\test\integrationtests\windows64\Debug\CbuildIntegTests.exe --gtest_filter=-*DebPkgTests*:*AC5*:*AC6*:*MultiTargetAC6Tests* --gtest_output=xml:test_reports/cbuildintegtests-report-${target}-${arch}.xml
         working-directory: build
 
       - name: Archive Cbuild Integration Tests
         uses: actions/upload-artifact@v3
         with:
           name: integ_test_result-${{ matrix.target }}-${{ matrix.arch }}
-          path: build/integtest_report_${{ matrix.target }}_${{ matrix.arch }}.xml
+          path: ./build/test_reports/cbuildintegtests-*.xml
           retention-days: ${{ env.retention_days }}
           if-no-files-found: error
 

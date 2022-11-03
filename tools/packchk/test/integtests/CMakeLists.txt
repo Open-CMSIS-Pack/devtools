@@ -19,5 +19,5 @@ target_link_libraries(PackChkIntegTests PUBLIC RteFsUtils packchklib gtest_main)
 target_include_directories(PackChkIntegTests PUBLIC ../include ./src)
 
 add_test(NAME PackChkIntegTests
-         COMMAND PackChkIntegTests --gtest_output=xml:test_reports/packchkintegtest-${SYSTEM}${ARCH}.xml
+         COMMAND PackChkIntegTests --gtest_output=xml:test_reports/packchkintegtests-report-${SYSTEM}${ARCH}-${CPU_ARCH}.xml
          WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
