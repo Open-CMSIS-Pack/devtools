@@ -47,7 +47,7 @@ jobs:
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build all libs
-        uses: Open-CMSIS-Pack/devtools-build-action@v1.1
+        uses: Open-CMSIS-Pack/devtools-build-action@v1.2
         id: devtools-build
         with:
           add_cmake_variables: '-DLIBS_ONLY=ON'
@@ -69,9 +69,9 @@ jobs:
             dos2unix \
             libxml2-utils
 
-      # CrossPlatformUnitTests failing for aarch64
+      # CrossPlatformUnitTests failing for arm64
       - name: Run libs unittest
-        if: ${{ matrix.arch != 'aarch64' }}
+        if: ${{ matrix.arch != 'arm64' }}
         run: |
           ctest -C Debug -V
         working-directory: ./build
@@ -82,7 +82,7 @@ jobs:
           echo "retention_days=7" >> $GITHUB_ENV
 
       - name: Archive libs unittest reports
-        if: ${{ matrix.arch != 'aarch64' }}
+        if: ${{ matrix.arch != 'arm64' }}
         uses: actions/upload-artifact@v3
         with:
           name: unit_test_result-${{ matrix.target }}-${{ matrix.arch }}
