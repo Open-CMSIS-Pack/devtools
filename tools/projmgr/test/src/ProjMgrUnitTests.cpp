@@ -2053,3 +2053,30 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ExportNonLockedCprj) {
   CompareFile(testoutput_folder + "/test2.Debug+TestGen_export.cprj",
     testinput_folder + "/TestSolution/ref/test2.Debug+TestGen_export.cprj");
 }
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_WriteCprjFail) {
+  char* argv[10];
+
+  // convert -s solution.yml
+  const string& csolution = testinput_folder + "/TestSolution/test.csolution_pack_selection.yml";
+  const string& outputFolder = testoutput_folder + "/outputFolder";
+
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)outputFolder.c_str();
+  argv[6] = (char*)"-c";
+  argv[7] = (char*)"test2.Debug+CM0";
+  argv[8] = (char*)"-e";
+  argv[9] = (char*)"_export";
+
+  // Fail to write export cprj file
+  RteFsUtils::CreateFile(outputFolder + "/test2.Debug+CM0_export.cprj", "");
+  RteFsUtils::SetTreeReadOnly(outputFolder);
+  EXPECT_EQ(1, RunProjMgr(10, argv));
+
+  // Fail to write cprj file
+  RteFsUtils::SetTreeReadOnly(outputFolder);
+  EXPECT_EQ(1, RunProjMgr(10, argv));
+}
