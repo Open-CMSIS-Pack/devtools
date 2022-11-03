@@ -58,7 +58,7 @@ build:
     - component: ARM::RteTest:CORE@0.1.1
       condition: Cortex-M Device
       from-pack: ARM::RteTest_DFP@0.2.0
-      selected-by: CORE
+      selected-by: RteTest:CORE@0.1.1
   groups:
     - group: Sources
       files:

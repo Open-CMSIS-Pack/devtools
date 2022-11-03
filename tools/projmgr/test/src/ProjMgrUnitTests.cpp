@@ -2032,3 +2032,24 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_help) {
   argv[1] = (char*)"--helped";
   EXPECT_EQ(1, RunProjMgr(2, argv));
 }
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_ExportNonLockedCprj) {
+  char* argv[10];
+
+  // convert -s solution.yml
+  const string& csolution = testinput_folder + "/TestSolution/test.csolution_pack_selection.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  argv[6] = (char*)"-c";
+  argv[7] = (char*)"test2.Debug+TestGen";
+  argv[8] = (char*)"-e";
+  argv[9] = (char*)"_export";
+  EXPECT_EQ(0, RunProjMgr(10, argv));
+
+  // Check generated CPRJs
+  CompareFile(testoutput_folder + "/test2.Debug+TestGen_export.cprj",
+    testinput_folder + "/TestSolution/ref/test2.Debug+TestGen_export.cprj");
+}

@@ -29,17 +29,18 @@ public:
    * @brief generate cprj file
    * @param project reference to project item
    * @param filename cprj file
+   * @param bool generate non-locked cprj versions
    * @return true if executed successfully
   */
-  bool GenerateCprj(ContextItem& context, const std::string& filename);
+  bool GenerateCprj(ContextItem& context, const std::string& filename, bool nonLocked = false);
 
 protected:
   void GenerateCprjCreated(XMLTreeElement* element);
   void GenerateCprjInfo(XMLTreeElement* element, const std::string& description);
-  void GenerateCprjPackages(XMLTreeElement* element, const ContextItem& context);
+  void GenerateCprjPackages(XMLTreeElement* element, const ContextItem& context, bool nonLocked = false);
   void GenerateCprjCompilers(XMLTreeElement* element, const ToolchainItem& toolchain);
   void GenerateCprjTarget(XMLTreeElement* element, const ContextItem& context);
-  void GenerateCprjComponents(XMLTreeElement* element, const ContextItem& context);
+  void GenerateCprjComponents(XMLTreeElement* element, const ContextItem& context, bool nonLocked = false);
   void GenerateCprjGroups(XMLTreeElement* element, const std::vector<GroupNode>& groups, const std::string& compiler);
   void GenerateCprjOptions(XMLTreeElement* element, const BuildType& buildType);
   void GenerateCprjMisc(XMLTreeElement* element, const std::vector<MiscItem>& miscVec);

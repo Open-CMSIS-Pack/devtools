@@ -150,44 +150,57 @@ bool ProjMgrWorker::GetRequiredPdscFiles(ContextItem& context, const std::string
     return false;
   }
   for (auto packItem : context.packRequirements) {
+    // parse required version range
+    const auto& pack = packItem.pack;
+    const auto& reqVersion = pack.version;
+    string reqVersionRange;
+    if (!reqVersion.empty()) {
+      if (reqVersion.find(">=") != string::npos) {
+        reqVersionRange = reqVersion.substr(2);
+      } else {
+        reqVersionRange = reqVersion + ":" + reqVersion;
+      }
+    }
+
     if (packItem.path.empty()) {
-      auto pack = packItem.pack;
       bool bPackFilter = (pack.name.empty() || WildCards::IsWildcardPattern(pack.name));
       auto filteredPackItems = GetFilteredPacks(packItem, packRoot);
       for (const auto& filteredPackItem : filteredPackItems) {
         auto filteredPack = filteredPackItem.pack;
-        string packId, pdscFile, packversion;
-        if (!filteredPack.version.empty()) {
-          packversion = filteredPack.version + ":" + filteredPack.version;
-        }
+        string packId, pdscFile, localPackId;
 
         RteAttributes attributes({
           {"name",    filteredPack.name},
           {"vendor",  filteredPack.vendor},
-          {"version", packversion},
+          {"version", reqVersionRange},
           });
-
-        pdscFile = m_kernel->GetLocalPdscFile(attributes, packRoot, packId);
-        if (pdscFile.empty()) {
-          pdscFile = m_kernel->GetInstalledPdscFile(attributes, packRoot, packId);
+        // get installed and local pdsc that satisfy the version range requirements
+        pdscFile = m_kernel->GetInstalledPdscFile(attributes, packRoot, packId);
+        const string& localPdscFile = m_kernel->GetLocalPdscFile(attributes, packRoot, localPackId);
+        if (!localPdscFile.empty()) {
+          const size_t packIdLen = (filteredPack.vendor + '.' + filteredPack.name + '.').length();
+          if (pdscFile.empty() ? true : VersionCmp::Compare(localPackId.substr(packIdLen), packId.substr(packIdLen)) >= 0) {
+            // local pdsc takes precedence
+            pdscFile = localPdscFile;
+          }
         }
         if (pdscFile.empty()) {
           if (!bPackFilter) {
             std::string packageName =
               (filteredPack.vendor.empty() ? "" : filteredPack.vendor + "::") +
               filteredPack.name +
-              (filteredPack.version.empty() ? "" : "@" + filteredPack.version);
+              (reqVersion.empty() ? "" : "@" + reqVersion);
             errMsgs.insert("required pack: " + packageName + " not installed");
             context.missingPacks.push_back(filteredPack);
           }
           continue;
         }
-        context.pdscFiles.insert({ pdscFile, "" });
+        context.pdscFiles.insert({ pdscFile, {"", reqVersionRange }});
       }
       if (bPackFilter && context.pdscFiles.empty()) {
         std::string filterStr = pack.vendor +
           (pack.name.empty() ? "" : "::" + pack.name) +
-          (pack.version.empty() ? "" : "@" + pack.version);
+          (reqVersion.empty() ? "" : "@" + reqVersion);
         errMsgs.insert("no match found for pack filter: " + filterStr);
       }
     } else {
@@ -197,13 +210,13 @@ bool ProjMgrWorker::GetRequiredPdscFiles(ContextItem& context, const std::string
         errMsgs.insert("pack path: " + packItem.path + " does not exist");
         break;
       }
-      string pdscFile = packItem.pack.vendor + '.' + packItem.pack.name + ".pdsc";
+      string pdscFile = pack.vendor + '.' + pack.name + ".pdsc";
       RteFsUtils::NormalizePath(pdscFile, packPath + "/");
       if (!RteFsUtils::Exists(pdscFile)) {
         errMsgs.insert("pdsc file was not found in: " + packItem.path);
         break;
       } else {
-        context.pdscFiles.insert({ pdscFile, packPath });
+        context.pdscFiles.insert({ pdscFile, {packPath, reqVersionRange}});
       }
     }
   }
@@ -317,7 +330,7 @@ std::vector<PackageItem> ProjMgrWorker::GetFilteredPacks(const PackageItem& pack
       if (entry.is_directory()) {
         dirName = entry.path().filename().generic_string();
         if (pack.name.empty() || WildCards::Match(pack.name, dirName)) {
-          filteredPacks.push_back({{ dirName, pack.vendor, packItem.pack.version }});
+          filteredPacks.push_back({{ dirName, pack.vendor }});
         }
       }
     }

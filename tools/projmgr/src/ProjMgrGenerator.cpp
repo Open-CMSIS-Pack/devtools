@@ -5,6 +5,7 @@
  */
 
 #include "ProjMgrGenerator.h"
+#include "ProjMgrUtils.h"
 #include "ProductInfo.h"
 
 #include "RteFsUtils.h"
@@ -29,7 +30,7 @@ ProjMgrGenerator::~ProjMgrGenerator(void) {
   // Reserved
 }
 
-bool ProjMgrGenerator::GenerateCprj(ContextItem& context, const string& filename) {
+bool ProjMgrGenerator::GenerateCprj(ContextItem& context, const string& filename, bool nonLocked) {
   // Root
   XMLTreeSlim cprjTree = XMLTreeSlim();
   XMLTreeElement* rootElement;
@@ -53,7 +54,7 @@ bool ProjMgrGenerator::GenerateCprj(ContextItem& context, const string& filename
 
   // Packages
   if (packagesElement) {
-    GenerateCprjPackages(packagesElement, context);
+    GenerateCprjPackages(packagesElement, context, nonLocked);
   }
 
   // Compilers
@@ -68,7 +69,7 @@ bool ProjMgrGenerator::GenerateCprj(ContextItem& context, const string& filename
 
   // Components
   if (componentsElement) {
-    GenerateCprjComponents(componentsElement, context);
+    GenerateCprjComponents(componentsElement, context, nonLocked);
   }
 
   // Files
@@ -111,17 +112,25 @@ void ProjMgrGenerator::GenerateCprjInfo(XMLTreeElement* element, const string& d
   }
 }
 
-void ProjMgrGenerator::GenerateCprjPackages(XMLTreeElement* element, const ContextItem& context) {
+void ProjMgrGenerator::GenerateCprjPackages(XMLTreeElement* element, const ContextItem& context, bool nonLocked) {
   for (const auto& package : context.packages) {
     XMLTreeElement* packageElement = element->CreateElement("package");
     if (packageElement) {
       packageElement->AddAttribute("name", package.second->GetName());
       packageElement->AddAttribute("vendor", package.second->GetVendorString());
-      const auto& version = package.second->GetVersionString();
-      packageElement->AddAttribute("version", version + ":" + version);
       const string& pdscFile = package.second->GetPackageFileName();
+      if (!nonLocked) {
+        const string& version = package.second->GetVersionString() + ":" + package.second->GetVersionString();
+        packageElement->AddAttribute("version", version);
+      }
       if (context.pdscFiles.find(pdscFile) != context.pdscFiles.end()) {
-        const string& packPath = context.pdscFiles.at(pdscFile);
+        if (nonLocked) {
+          const string& version = context.pdscFiles.at(pdscFile).second;
+          if (!version.empty()) {
+            packageElement->AddAttribute("version", version);
+          }
+        }
+        const string& packPath = context.pdscFiles.at(pdscFile).first;
         if (!packPath.empty()) {
           error_code ec;
           packageElement->AddAttribute("path", fs::relative(packPath, context.directories.cprj, ec).generic_string());
@@ -175,8 +184,9 @@ void ProjMgrGenerator::GenerateCprjTarget(XMLTreeElement* element, const Context
   GenerateCprjVector(element, context.controls.processed.addpaths, "includes");
 }
 
-void ProjMgrGenerator::GenerateCprjComponents(XMLTreeElement* element, const ContextItem& context) {
-  static constexpr const char* COMPONENT_ATTRIBUTES[] = { "Cbundle", "Cclass", "Cgroup", "Csub", "Cvariant", "Cvendor", "Cversion"};
+void ProjMgrGenerator::GenerateCprjComponents(XMLTreeElement* element, const ContextItem& context, bool nonLocked) {
+  static constexpr const char* COMPONENT_ATTRIBUTES[] = { "Cbundle", "Cclass", "Cgroup", "Csub", "Cvariant", "Cvendor"};
+  static constexpr const char* versionAttribute = "Cversion";
   for (const auto& [componentId, component] : context.components) {
     XMLTreeElement* componentElement = element->CreateElement("component");
     if (componentElement) {
@@ -193,17 +203,24 @@ void ProjMgrGenerator::GenerateCprjComponents(XMLTreeElement* element, const Con
         }
       }
 
-      // Config files
-      for (const auto& configFileMap : context.configFiles) {
-        if (configFileMap.first == componentId) {
-          for (const auto& [configFileId, configFile] : configFileMap.second) {
-            XMLTreeElement* fileElement = componentElement->CreateElement("file");
-            if (fileElement) {
-              SetAttribute(fileElement, "attr", "config");
-              SetAttribute(fileElement, "name", configFileId);
-              SetAttribute(fileElement, "category", configFile->GetAttribute("category"));
-              const auto originalFile = configFile->GetFile(context.rteActiveTarget->GetName());
-              SetAttribute(fileElement, "version", originalFile->GetVersionString());
+      // Check whether non-locked option is not set or component version is required from user
+      if (!nonLocked || !RteUtils::GetSuffix(component.second->component, *ProjMgrUtils::PREFIX_CVERSION, true).empty()) {
+
+        // Set Cversion attribute
+        SetAttribute(componentElement, versionAttribute, component.first->GetAttribute(versionAttribute));
+
+        // Config files
+        for (const auto& configFileMap : context.configFiles) {
+          if (configFileMap.first == componentId) {
+            for (const auto& [configFileId, configFile] : configFileMap.second) {
+              XMLTreeElement* fileElement = componentElement->CreateElement("file");
+              if (fileElement) {
+                SetAttribute(fileElement, "attr", "config");
+                SetAttribute(fileElement, "name", configFileId);
+                SetAttribute(fileElement, "category", configFile->GetAttribute("category"));
+                const auto originalFile = configFile->GetFile(context.rteActiveTarget->GetName());
+                SetAttribute(fileElement, "version", originalFile->GetVersionString());
+              }
             }
           }
         }

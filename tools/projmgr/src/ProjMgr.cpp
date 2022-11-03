@@ -39,6 +39,7 @@ Usage:\n\
    -g, --generator arg   Code generator identifier\n\
    -m, --missing         List only required packs that are missing in the pack repository\n\
    -l, --load arg        Set policy for packs loading [latest|all|required]\n\
+   -e, --export arg      Set suffix for exporting <context><suffix>.cprj retaining only specified versions\n\
    -n, --no-check-schema Skip schema check\n\
    -o, --output arg      Output directory\n\n\
 Use 'csolution <command> -h' for more information about a command.\
@@ -101,10 +102,11 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
   cxxopts::Option schemaCheck( "n,no-check-schema", "Skip schema check", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option output("o,output", "Output directory", cxxopts::value<string>());
   cxxopts::Option version("V,version", "Print version");
+  cxxopts::Option exportSuffix("e,export", "Set suffix for exporting <context><suffix>.cprj retaining only specified versions", cxxopts::value<string>());
 
   // command options dictionary
   map<string, vector<cxxopts::Option>> optionsDict = {
-    {"convert",           {solution, context, output, load, schemaCheck}},
+    {"convert",           {solution, context, output, load, exportSuffix, schemaCheck}},
     {"run",               {solution, generator, context, load, schemaCheck}},
     {"list packs",        {solution, context, filter, missing, load, schemaCheck}},
     {"list boards",       {solution, context, filter, load, schemaCheck}},
@@ -121,7 +123,7 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
       {"args", "", cxxopts::value<string>()},
       solution, context, filter, generator,
       load, missing, schemaCheck, output,
-      help, version
+      help, version, exportSuffix
     });
     options.parse_positional({ "command", "args"});
 
@@ -165,6 +167,9 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
     }
     if (parseResult.count("load")) {
       manager.m_loadPacksPolicy = parseResult["load"].as<string>();
+    }
+    if (parseResult.count("export")) {
+      manager.m_export = parseResult["export"].as<string>();
     }
     if (parseResult.count("output")) {
       manager.m_outputDir = parseResult["output"].as<string>();
@@ -359,6 +364,17 @@ bool ProjMgr::RunConvert(void) {
     } else {
       ProjMgrLogger::Error(filename, "file cannot be written");
       return false;
+    }
+    if (!m_export.empty()) {
+      // Generate non-locked Cprj
+      error_code ec;
+      const string& filename = fs::weakly_canonical(contextItem->directories.cprj + "/" + contextItem->name + m_export + ".cprj", ec).generic_string();
+      if (m_generator.GenerateCprj(*contextItem, filename, true)) {
+        ProjMgrLogger::Info(filename, "export file generated successfully");
+      } else {
+        ProjMgrLogger::Error(filename, "export file cannot be written");
+        return false;
+      }
     }
   }
   // Generate cbuild files
