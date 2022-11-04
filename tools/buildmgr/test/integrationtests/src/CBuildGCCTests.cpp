@@ -27,6 +27,11 @@ TEST_F(CBuildGCCTests, Build_GCC_Translation_Control) {
   RunCBuildScriptClean       (param);
   RunCBuildScript            (param);
   CheckCMakeLists            (param);
+
+  param.name = "GCC/TranslationControl/Project3";
+  RunCBuildScriptClean       (param);
+  RunCBuildScript            (param);
+  CheckCMakeLists            (param);
 }
 
 // Validate successful build of C example
