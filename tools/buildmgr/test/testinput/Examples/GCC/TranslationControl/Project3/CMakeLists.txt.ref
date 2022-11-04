@@ -1,4 +1,4 @@
-# CMSIS Build CMakeLists generated on 2022-09-14T16:17:31
+# CMSIS Build CMakeLists generated on 2022-11-04T20:38:46
 
 cmake_minimum_required(VERSION 3.18)
 
@@ -18,6 +18,7 @@ set(BYTE_ORDER Little-endian)
 set(OPTIMIZE size)
 set(DEBUG on)
 set(WARNINGS on)
+set(LD_FLAGS_GLOBAL "--entry=main --specs=nosys.specs -mthumb")
 set(LD_SCRIPT "C:/Sandbox/devtools-external/build/testoutput/GCC/TranslationControl/Project3/RTE/Device/ARMCM3/gcc_arm.ld")
 
 set(DEFINES
@@ -73,7 +74,7 @@ project(${TARGET} LANGUAGES AS_GNU C CXX)
 set(CMAKE_AS_GNU_FLAGS "${AS_GNU_CPU} ${AS_GNU_BYTE_ORDER} ${AS_GNU_DEFINES} ${AS_GNU_FLAGS}")
 set(CMAKE_C_FLAGS "${CC_CPU} ${CC_BYTE_ORDER} ${CC_DEFINES} ${CC_SECURE} ${CC_FLAGS} ${CC_SYS_INC_PATHS}")
 set(CMAKE_CXX_FLAGS "${CXX_CPU} ${CXX_BYTE_ORDER} ${CXX_DEFINES} ${CXX_SECURE} ${CXX_FLAGS} ${CXX_SYS_INC_PATHS}")
-set(CMAKE_CXX_LINK_FLAGS "${LD_CPU} ${_LS}\"${LD_SCRIPT}\" ${LD_SECURE} ${LD_OPTIONS_FLAGS} ${LD_FLAGS}")
+set(CMAKE_CXX_LINK_FLAGS "${LD_CPU} ${_LS}\"${LD_SCRIPT}\" ${LD_SECURE} ${LD_FLAGS_GLOBAL} ${LD_OPTIONS_FLAGS} ${LD_FLAGS}")
 
 # Local Flags
 
