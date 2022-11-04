@@ -98,6 +98,7 @@ protected:
   std::string m_outputDir;
   std::string m_outputType;
   std::string m_loadPacksPolicy;
+  std::string m_export;
   bool m_checkSchema;
   bool m_missingPacks;
   GroupNode m_files;

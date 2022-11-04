@@ -148,7 +148,7 @@ struct ContextItem {
   std::string device;
   std::string board;
   std::vector<PackageItem> packRequirements;
-  std::map<std::string, std::string> pdscFiles;
+  std::map<std::string, std::pair<std::string, std::string>> pdscFiles;
   std::vector<PackInfo>missingPacks;
   std::vector<std::pair<ComponentItem, std::string>> componentRequirements;
   std::string compiler;
