@@ -48,13 +48,12 @@ void BuildSystemGeneratorTests::CheckBuildSystemGen_Collect(const TestParam& par
   string toolchain, ext = CMEXT, novalue = "";
   string packlistDir, output, update;
   bool ret_val, packMode = false;
-  std::map<string, string> optionAttributes;
   error_code ec;
 
   fs::current_path(filename.c_str(), ec);
 
   filename = param.targetArg + ".cprj";
-  ret_val = CreateRte({filename, novalue, novalue, optionAttributes, toolchain, ext, packlistDir, update, packMode});
+  ret_val = CreateRte({filename, novalue, novalue, toolchain, ext, packlistDir, update, packMode});
   ASSERT_EQ(ret_val, param.expect) << "CreateRte failed!";
 
   m_model = CbuildKernel::Get()->GetModel();

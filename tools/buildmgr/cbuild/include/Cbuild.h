@@ -25,7 +25,6 @@ struct CbuildRteArgs
   const std::string &file;
   const std::string &rtePath;
   const std::string &compilerRoot;
-  const std::map<std::string, std::string> &optionAttributes;
   const std::string &toolchain;
   const std::string &ext;
   const std::string &update;
@@ -41,7 +40,6 @@ struct CbuildLayerArgs
   const std::string &file;
   const std::string &rtePath;
   const std::string &compilerRoot;
-  const std::map<std::string, std::string> &optionAttributes;
   const std::list<std::string> &layerFiles;
   const std::string& name;
   const std::string& description;

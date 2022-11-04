@@ -28,6 +28,7 @@ public:
    * @return true if command executed successfully, otherwise false
   */
   bool RunAuxCmd(int cmd, const std::list<std::string>& params, const std::string& except);
+
 protected:
   bool MkdirCmd(const std::list<std::string>& params);
   bool RmdirCmd(const std::list<std::string>& params, const std::string& except);

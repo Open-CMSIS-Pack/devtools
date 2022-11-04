@@ -510,3 +510,64 @@ TEST_F(CBuildGenTests, MultipleAuxCmdTest)
 
   RunCBuildGenAux       (cmd, false);
 }
+
+// Validate cbuildgen packlist help
+TEST_F(CBuildGenTests, CommandHelpTest1) {
+  TestParam param = { "", "", "-h", "packlist", true };
+  RunCBuildGen(param, "", false);
+}
+
+// Validate cbuildgen cmake help
+TEST_F(CBuildGenTests, CommandHelpTest2) {
+  TestParam param = { "", "", "-h", "cmake", true };
+  RunCBuildGen(param, "", false);
+}
+
+// Validate cbuildgen extract help
+TEST_F(CBuildGenTests, CommandHelpTest3) {
+  TestParam param = { "", "", "-h", "extract", true };
+  RunCBuildGen(param, "", false);
+}
+
+// Validate cbuildgen remove help
+TEST_F(CBuildGenTests, CommandHelpTest4) {
+  TestParam param = { "", "", "-h", "remove", true };
+  RunCBuildGen(param, "", false);
+}
+
+// Validate cbuildgen compose help
+TEST_F(CBuildGenTests, CommandHelpTest5) {
+  TestParam param = { "", "", "-h", "compose", true };
+  RunCBuildGen(param, "", false);
+}
+
+// Validate cbuildgen add help
+TEST_F(CBuildGenTests, CommandHelpTest6) {
+  TestParam param = { "", "", "-h", "add", true };
+  RunCBuildGen(param, "", false);
+}
+
+// Validate cbuildgen mkdir help
+TEST_F(CBuildGenTests, CommandHelpTest7) {
+  TestParam param = { "", "", "-h", "mkdir", true };
+  RunCBuildGen(param, "", false);
+}
+
+// Validate cbuildgen touch help
+TEST_F(CBuildGenTests, CommandHelpTest8) {
+  TestParam param = { "", "", "-h", "touch", true };
+  RunCBuildGen(param, "", false);
+}
+
+// Validate cbuildgen rmdir help
+TEST_F(CBuildGenTests, CommandHelpTest9) {
+  TestParam param = { "", "", "-h", "rmdir", true };
+  RunCBuildGen(param, "", false);
+}
+
+// Validate cbuildgen invalidCmd help
+TEST_F(CBuildGenTests, CommandHelpTest10) {
+  TestParam param = { "", "", "-h", "invalidCmd", false };
+  RunCBuildGen(param, "", false);
+}
+
