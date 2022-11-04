@@ -86,7 +86,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: unit_test_result-${{ matrix.target }}-${{ matrix.arch }}
-          path: build/*_test_report.xml
+          path: ./build/test_reports/*${{ matrix.target }}-${{ matrix.arch }}.xml
           retention-days: ${{ env.retention_days }}
           if-no-files-found: error
 

@@ -10,6 +10,6 @@ set_property(TARGET RteUtilsUnitTests PROPERTY
 target_link_libraries(RteUtilsUnitTests PUBLIC RteUtils gtest_main)
 
 add_test(NAME RteUtilsUnitTests
-         COMMAND RteUtilsUnitTests --gtest_output=xml:rteutils_test_report.xml
+         COMMAND RteUtilsUnitTests --gtest_output=xml:test_reports/rteutilsunittests-report-${SYSTEM}${ARCH}-${CPU_ARCH}.xml
          WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 

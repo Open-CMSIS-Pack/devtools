@@ -9,5 +9,5 @@ target_include_directories(PackGenUnitTests PUBLIC ../include ./src)
 add_definitions(-DTEST_FOLDER="${CMAKE_CURRENT_SOURCE_DIR}/")
 
 add_test(NAME PackGenUnitTests
-         COMMAND PackGenUnitTests --gtest_output=xml:packgenunit_test_report.xml
+         COMMAND PackGenUnitTests --gtest_output=xml:test_reports/packgenunittests-report-${SYSTEM}${ARCH}-${CPU_ARCH}.xml
          WORKING_DIRECTORY ${CMAKE_BINARY_DIR})

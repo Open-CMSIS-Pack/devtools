@@ -318,7 +318,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: unit_test_result-${{ matrix.target }}-${{ matrix.arch }}
-          path: ./build/test_reports/projmgrunittest-*.xml
+          path: ./build/test_reports/projmgrunittests-*.xml
           retention-days: 1
           if-no-files-found: error
 
