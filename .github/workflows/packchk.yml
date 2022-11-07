@@ -154,15 +154,6 @@ jobs:
           submodules: recursive
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
-      - name: Build PackChkIntegTests
-        uses: Open-CMSIS-Pack/devtools-build-action@v1.2
-        with:
-          add_cmake_variables: -DCOVERAGE=ON
-          arch: amd64
-          build_type: Debug
-          target: PackChkIntegTests
-
-      # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build PackChkUnitTests
         uses: Open-CMSIS-Pack/devtools-build-action@v1.2
         with:
@@ -170,6 +161,15 @@ jobs:
           arch: amd64
           build_type: Debug
           target: PackChkUnitTests
+
+      # https://github.com/Open-CMSIS-Pack/devtools-build-action
+      - name: Build PackChkIntegTests
+        uses: Open-CMSIS-Pack/devtools-build-action@v1.2
+        with:
+          add_cmake_variables: -DCOVERAGE=ON
+          arch: amd64
+          build_type: Debug
+          target: PackChkIntegTests
 
       - name: Run packchk tests
         run: |

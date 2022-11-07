@@ -109,9 +109,10 @@ endif()
 # Prepare a list of CMake targets
 get_targets()
 
-# Apply patch on submodule
+# Apply patch on submodules
 apply_patch(${CMAKE_CURRENT_SOURCE_DIR}/external/json)
 apply_patch(${CMAKE_CURRENT_SOURCE_DIR}/external/json-schema-validator)
+apply_patch(${CMAKE_CURRENT_SOURCE_DIR}/external/cxxopts)
 
 # Google Test Framework
 set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
