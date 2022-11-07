@@ -16,7 +16,6 @@ set_property(TARGET PackChkIntegTests PROPERTY
   VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 
 target_link_libraries(PackChkIntegTests PUBLIC RteFsUtils packchklib gtest_main)
-target_include_directories(PackChkIntegTests PUBLIC ../include ./src)
 
 add_test(NAME PackChkIntegTests
          COMMAND PackChkIntegTests --gtest_output=xml:test_reports/packchkintegtests-report-${SYSTEM}${ARCH}-${CPU_ARCH}.xml
