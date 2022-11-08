@@ -1,0 +1,23 @@
+name: setup_env
+
+on:
+  workflow_call:
+    outputs:
+      nightly:
+        value: ${{ jobs.setup-job.outputs.nightly }}
+      retention_days:
+        value: ${{ jobs.setup-job.outputs.retention_days }}
+
+jobs:
+  setup-job:
+    name: Set environment
+    runs-on: ubuntu-latest
+    outputs:
+      nightly: ${{ steps.check-nightly.outputs.nightly }}
+      retention_days: ${{ steps.retention.outputs.retention_days }}
+    steps:
+      - name: Check Nightly/Scheduled
+      - id: check-nightly
+        run: |
+          nightly=${{ github.event.schedule && (!github.event.repository.private) }}
+          retention_days=7
