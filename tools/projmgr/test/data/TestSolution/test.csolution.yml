@@ -9,6 +9,8 @@ solution:
           C-CPP: [-C-CPP-type-CM0]
           ASM: [-ASM-type-CM0]
           Link: [-Link-type-CM0]
+          Link-C: [-Link-C-type-CM0]
+          Link-CPP: [-Link-CPP-type-CM0]
           Lib: [-Lib-type-CM0]
       define: 
         - DEF-CM0

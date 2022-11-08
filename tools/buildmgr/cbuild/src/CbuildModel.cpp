@@ -1039,6 +1039,8 @@ bool CbuildModel::EvalFlags() {
       if (!use.empty()) m_Asm.insert(pair<string, bool>("", use == "armasm" || use == "gas"));
     }
     const RteItem* ldflags = CbuildUtils::GetItemByTagAndAttribute(target->GetChildren(), "ldflags", "compiler", m_compiler);
+    const RteItem* ldcflags = CbuildUtils::GetItemByTagAndAttribute(target->GetChildren(), "ldcflags", "compiler", m_compiler);
+    const RteItem* ldcxxflags = CbuildUtils::GetItemByTagAndAttribute(target->GetChildren(), "ldcxxflags", "compiler", m_compiler);
     if (ldflags != NULL) {
       m_targetLdFlags = SplitArgs(ldflags->GetAttribute("add"));
       m_linkerScript = ldflags->GetAttribute("file");
@@ -1055,6 +1057,14 @@ bool CbuildModel::EvalFlags() {
           }
         }
       }
+    }
+    if (ldcflags != NULL)
+    {
+      m_targetLdCFlags = SplitArgs(ldcflags->GetAttribute("add"));
+    }
+    if (ldcxxflags != NULL)
+    {
+      m_targetLdCxxFlags = SplitArgs(ldcxxflags->GetAttribute("add"));
     }
   }
 
@@ -1288,6 +1298,8 @@ bool CbuildModel::EvalAccessSequence() {
   InsertVectorPointers(fields, m_targetCxxFlags);
   InsertVectorPointers(fields, m_targetAsFlags);
   InsertVectorPointers(fields, m_targetLdFlags);
+  InsertVectorPointers(fields, m_targetLdCFlags);
+  InsertVectorPointers(fields, m_targetLdCxxFlags);
 
   // iterate over every field and evaluate access sequences
   for (auto& item : fields) {
@@ -1380,6 +1392,8 @@ bool CbuildModel::EvalAccessSequence() {
   RteUtils::RemoveVectorDuplicates<string>(m_targetCxxFlags);
   RteUtils::RemoveVectorDuplicates<string>(m_targetAsFlags);
   RteUtils::RemoveVectorDuplicates<string>(m_targetLdFlags);
+  RteUtils::RemoveVectorDuplicates<string>(m_targetLdCFlags);
+  RteUtils::RemoveVectorDuplicates<string>(m_targetLdCxxFlags);
 
   return true;
 }

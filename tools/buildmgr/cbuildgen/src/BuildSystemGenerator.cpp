@@ -102,6 +102,8 @@ bool BuildSystemGenerator::Collect(const string& inputFile, const CbuildModel *m
   m_cxxMscGlobal = GetString(model->GetTargetCxxFlags());
   m_asMscGlobal = GetString(model->GetTargetAsFlags());
   m_linkerMscGlobal = GetString(model->GetTargetLdFlags());
+  m_linkerCMscGlobal = GetString(model->GetTargetLdCFlags());
+  m_linkerCxxMscGlobal = GetString(model->GetTargetLdCxxFlags());
 
   MergeVecStr(model->GetTargetDefines(), m_definesList);
   MergeVecStrNorm(model->GetTargetIncludePaths(), m_incPathsList);

@@ -39,6 +39,7 @@
       <asflags add="-ASM-group" compiler="GCC"/>
       <cflags add="-C-group" compiler="GCC"/>
       <cxxflags add="-CPP-group" compiler="GCC"/>
+      <ldcxxflags add="-Link-CPP-group" compiler="GCC"/>
       <ldflags add="-Link-group" compiler="GCC"/>
       <defines>DEF1-GROUP-PROJECT;DEF2-GROUP-PROJECT</defines>
       <undefines>DEF3-GROUP-PROJECT;DEF4-GROUP-PROJECT</undefines>
@@ -49,6 +50,7 @@
         <asflags add="-ASM-file-GCC" compiler="GCC"/>
         <cflags add="-C-file-GCC -C-CPP-file" compiler="GCC"/>
         <cxxflags add="-CPP-file-GCC -C-CPP-file" compiler="GCC"/>
+        <ldcflags add="-Link-C-file-GCC" compiler="GCC"/>
         <ldflags add="-Link-file-GCC" compiler="GCC"/>
         <defines>DEF1-FILE-PROJECT;DEF2-FILE-PROJECT</defines>
         <undefines>DEF3-FILE-PROJECT;DEF4-FILE-PROJECT</undefines>

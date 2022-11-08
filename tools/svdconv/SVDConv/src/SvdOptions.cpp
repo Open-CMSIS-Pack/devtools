@@ -112,7 +112,8 @@ bool SvdOptions::SetLogFile(const string& logFile)
     }
   }
 
-  ErrLog::Get()->SetLogFileName(RteUtils::RemoveQuotes(logFile));
+  m_logPath = RteUtils::RemoveQuotes(logFile);
+  ErrLog::Get()->SetLogFileName(m_logPath);
 
   return true;
 }
@@ -286,7 +287,7 @@ bool SvdOptions::SetFileUnderTest(const string& filename)
     LogMsg("M202");
     return false;
   }
-  
+
   string svdToCheck = RteUtils::BackSlashesToSlashes(RteUtils::RemoveQuotes(filename));
   m_svdToCheck = RteFsUtils::AbsolutePath(svdToCheck).generic_string();
 
@@ -334,7 +335,7 @@ bool SvdOptions::SetOutputDirectory(const string& filename)
   return true;
 }
 
-const std::string& SvdOptions::GetOutputDirectory() 
+const std::string& SvdOptions::GetOutputDirectory()
 {
   return m_outputDir;
 }

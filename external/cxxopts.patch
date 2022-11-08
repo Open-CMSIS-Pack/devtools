@@ -1,0 +1,17 @@
+diff --git a/include/cxxopts.hpp b/include/cxxopts.hpp
+index af87540..6f7b881 100644
+--- a/include/cxxopts.hpp
++++ b/include/cxxopts.hpp
+@@ -2548,7 +2548,11 @@ std::string
+ Options::help(const std::vector<std::string>& help_groups) const
+ {
+   String result = m_help_string + "\nUsage:\n  " +
+-    toLocalString(m_program) + " " + toLocalString(m_custom_help);
++    toLocalString(m_program);
++
++  if (!m_custom_help.empty()) {
++    result += " " + toLocalString(m_custom_help);
++  }
+ 
+   if (!m_positional.empty() && !m_positional_help.empty()) {
+     result += " " + toLocalString(m_positional_help);

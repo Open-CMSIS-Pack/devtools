@@ -24,6 +24,10 @@ build:
       - -Lib-type-CM0
     Link:
       - -Link-type-CM0
+    Link-C:
+      - -Link-C-type-CM0
+    Link-CPP:
+      - -Link-CPP-type-CM0
   define:
     - DEF-solution
     - DEF-CM0
@@ -75,6 +79,8 @@ build:
           - -Lib-group
         Link:
           - -Link-group
+        Link-CPP:
+          - -Link-CPP-group
       define:
         - DEF1-GROUP-PROJECT
         - DEF2-GROUP-PROJECT

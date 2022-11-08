@@ -396,6 +396,8 @@ TEST_F(RteModelPrjTest, LoadCprjCompDep) {
 #define CFLAGS "-xc -std=c99 --target=arm-arm-none-eabi -mcpu=cortex-m3"
 #define CXXFLAGS "-cxx"
 #define LDFLAGS "--cpu Cortex-M3"
+#define LDCFLAGS "-lm"
+#define LDCXXFLAGS "-lstdc++"
 #define ASFLAGS "--pd \"__MICROLIB SETA 1\" --xref -g"
 #define ARFLAGS "-arflag"
 
@@ -440,12 +442,16 @@ TEST_F(RteModelPrjTest, GetTargetBuildFlags)
   string cflags = getflags("cflags");
   string cxxflags = getflags("cxxflags");
   string ldflags = getflags("ldflags");
+  string ldcflags = getflags("ldcflags");
+  string ldcxxflags = getflags("ldcxxflags");
   string asflags = getflags("asflags");
   string arflags = getflags("arflags");
   EXPECT_TRUE(arflags.compare(te->GetArFlags(toolchain)) == 0);
   EXPECT_TRUE(cflags.compare(te->GetCFlags(toolchain)) == 0);
   EXPECT_TRUE(cxxflags.compare(te->GetCxxFlags(toolchain)) == 0);
   EXPECT_TRUE(ldflags.compare(te->GetLdFlags(toolchain)) == 0);
+  EXPECT_TRUE(ldcflags.compare(te->GetLdCFlags(toolchain)) == 0);
+  EXPECT_TRUE(ldcxxflags.compare(te->GetLdCxxFlags(toolchain)) == 0);
   EXPECT_TRUE(asflags.compare(te->GetAsFlags(toolchain)) == 0);
 }
 
@@ -481,12 +487,16 @@ TEST_F(RteModelPrjTest, SetTargetBuildFlags)
   te->SetCFlags(RteUtils::EMPTY_STRING, toolchain);
   te->SetCxxFlags(RteUtils::EMPTY_STRING, toolchain);
   te->SetLdFlags(RteUtils::EMPTY_STRING, toolchain);
+  te->SetLdCFlags(RteUtils::EMPTY_STRING, toolchain);
+  te->SetLdCxxFlags(RteUtils::EMPTY_STRING, toolchain);
   te->SetAsFlags(RteUtils::EMPTY_STRING, toolchain);
   te->SetArFlags(RteUtils::EMPTY_STRING, toolchain);
 
   CheckAttributeRemoved("cflags");
   CheckAttributeRemoved("cxxflags");
   CheckAttributeRemoved("ldflags");
+  CheckAttributeRemoved("ldcflags");
+  CheckAttributeRemoved("ldcxxflags");
   CheckAttributeRemoved("asflags");
   CheckAttributeRemoved("arflags");
 
@@ -494,12 +504,16 @@ TEST_F(RteModelPrjTest, SetTargetBuildFlags)
   te->SetCFlags(CFLAGS, toolchain);
   te->SetCxxFlags(CXXFLAGS, toolchain);
   te->SetLdFlags(LDFLAGS, toolchain);
+  te->SetLdCFlags(LDCFLAGS, toolchain);
+  te->SetLdCxxFlags(LDCXXFLAGS, toolchain);
   te->SetAsFlags(ASFLAGS, toolchain);
   te->SetArFlags(ARFLAGS, toolchain);
 
   EXPECT_TRUE(te->GetCFlags(toolchain).compare(CFLAGS) == 0);
   EXPECT_TRUE(te->GetCxxFlags(toolchain).compare(CXXFLAGS) == 0);
   EXPECT_TRUE(te->GetLdFlags(toolchain).compare(LDFLAGS) == 0);
+  EXPECT_TRUE(te->GetLdCFlags(toolchain).compare(LDCFLAGS) == 0);
+  EXPECT_TRUE(te->GetLdCxxFlags(toolchain).compare(LDCXXFLAGS) == 0);
   EXPECT_TRUE(te->GetAsFlags(toolchain).compare(ASFLAGS) == 0);
   EXPECT_TRUE(te->GetArFlags(toolchain).compare(ARFLAGS) == 0);
 }
@@ -529,11 +543,13 @@ TEST_F(RteModelPrjTest, UpdateCprjFile)
   rteKernel.SaveActiveCprjFile();
   const std::unordered_map<string, string> nothingChanged;
   const std::unordered_map<string, string> changedFlags = {
-    { "<ldflags",  LDFLAGS },
-    { "<cflags",   CFLAGS },
-    { "<asflags",  ASFLAGS },
-    { "<cxxflags", CXXFLAGS },
-    { "<arflags",  ARFLAGS }
+    { "<ldflags",    LDFLAGS },
+    { "<ldcflags",   LDCFLAGS },
+    { "<ldcxxflags", LDCXXFLAGS },
+    { "<cflags",     CFLAGS },
+    { "<asflags",    ASFLAGS },
+    { "<cxxflags",   CXXFLAGS },
+    { "<arflags",    ARFLAGS }
   };
   const string newFile = cprjFile->GetPackageFileName();
   const string refFile = RteModelTestConfig::PROJECTS_DIR + "/RteTestM3/RteTestM3.cprj";
@@ -541,6 +557,8 @@ TEST_F(RteModelPrjTest, UpdateCprjFile)
   te->SetCFlags(CFLAGS, toolchain);
   te->SetCxxFlags(CXXFLAGS, toolchain);
   te->SetLdFlags(LDFLAGS, toolchain);
+  te->SetLdCFlags(LDCFLAGS, toolchain);
+  te->SetLdCxxFlags(LDCXXFLAGS, toolchain);
   te->SetAsFlags(ASFLAGS, toolchain);
   te->SetArFlags(ARFLAGS, toolchain);
   rteKernel.SaveActiveCprjFile();

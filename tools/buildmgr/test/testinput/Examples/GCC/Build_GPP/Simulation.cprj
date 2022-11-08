@@ -18,7 +18,9 @@
 
   <target Ddsp="NO_DSP" Dendian="Little-endian" Dfpu="NO_FPU" Dmve="NO_MVE" Dname="ARMCM3" Dsecure="Non-secure" Dtz="NO_TZ" Dvendor="ARM:82">
     <output name="Build_G++" type="exe"/>
-    <ldflags add="--entry=Reset_Handler --specs=nosys.specs -lstdc++ -mcpu=cortex-m3 -mthumb" compiler="GCC" file="./RTE/Device/ARMCM3/gcc_arm.ld"/>
+    <ldflags compiler="GCC" file="./RTE/Device/ARMCM3/gcc_arm.ld"/>
+    <ldcflags add="-will-not-be-used" compiler="GCC"/>
+    <ldcxxflags add="--entry=Reset_Handler --specs=nosys.specs -lstdc++ -mcpu=cortex-m3 -mthumb" compiler="GCC"/>
     <cflags add="-O3 -Wall -gdwarf-2 -mapcs-frame -mthumb" compiler="GCC"/>
     <cxxflags add="-O3 -Wall -gdwarf-2 -mapcs-frame -mthumb" compiler="GCC"/>
     <asflags add="-Wa,--gdwarf-2 -mthumb" compiler="GCC"/>
