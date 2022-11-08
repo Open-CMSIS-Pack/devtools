@@ -48,7 +48,7 @@ on:
 
 jobs:
   set-up:
-    uses: ./.github/workflows/setup_env.yml
+    uses: soumeh01/devtools/.github/workflows/setup_env.yml@main
   matrix_prep:
     if: |
         (github.event_name == 'pull_request') ||
