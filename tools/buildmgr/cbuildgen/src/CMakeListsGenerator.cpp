@@ -47,7 +47,17 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
   if (!m_asMscGlobal.empty())        cmakelists << EOL << "set(AS_FLAGS_GLOBAL \"" << CbuildUtils::EscapeQuotes(m_asMscGlobal) << "\")";
   if (!m_ccMscGlobal.empty())        cmakelists << EOL << "set(CC_FLAGS_GLOBAL \"" << CbuildUtils::EscapeQuotes(m_ccMscGlobal) << "\")";
   if (!m_cxxMscGlobal.empty())       cmakelists << EOL << "set(CXX_FLAGS_GLOBAL \"" << CbuildUtils::EscapeQuotes(m_cxxMscGlobal) << "\")";
-  if (!m_linkerMscGlobal.empty())    cmakelists << EOL << "set(LD_FLAGS_GLOBAL \"" << CbuildUtils::EscapeQuotes(m_linkerMscGlobal) << "\")";
+  // LINK, LINK-C and LINK-CPP flags
+  if (!(m_linkerMscGlobal.empty() && m_linkerCMscGlobal.empty() && m_linkerCxxMscGlobal.empty())) {
+    string separator = "";
+    if (!m_linkerMscGlobal.empty()) separator = " ";
+    if(m_cxxFilesList.empty()) {
+      if (!m_linkerCMscGlobal.empty()) m_linkerMscGlobal += separator + m_linkerCMscGlobal;
+    } else {
+      if (!m_linkerCxxMscGlobal.empty()) m_linkerMscGlobal += separator + m_linkerCxxMscGlobal;
+    }
+    cmakelists << EOL << "set(LD_FLAGS_GLOBAL \"" << CbuildUtils::EscapeQuotes(m_linkerMscGlobal) << "\")";
+  }
   if (!m_linkerScript.empty())       cmakelists << EOL << "set(LD_SCRIPT \"" << m_linkerScript << "\")";
 
   cmakelists << EOL << EOL;

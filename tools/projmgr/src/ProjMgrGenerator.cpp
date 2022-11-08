@@ -271,6 +271,8 @@ void ProjMgrGenerator::GenerateCprjMisc(XMLTreeElement* element, const MiscItem&
     {"cflags", misc.c},
     {"cxxflags", misc.cpp},
     {"ldflags", misc.link},
+    {"ldcflags", misc.link_c},
+    {"ldcxxflags", misc.link_cpp},
     {"arflags", misc.lib}
   };
   for (const auto& flags : FLAGS_MATRIX) {

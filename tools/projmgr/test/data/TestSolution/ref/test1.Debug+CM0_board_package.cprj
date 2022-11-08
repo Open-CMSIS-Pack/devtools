@@ -41,6 +41,7 @@
       <asflags add="-ASM-group" compiler="AC6"/>
       <cflags add="-C-group -C-CPP-group-AC6" compiler="AC6"/>
       <cxxflags add="-CPP-group -C-CPP-group-AC6" compiler="AC6"/>
+      <ldcxxflags add="-Link-CPP-group" compiler="AC6"/>
       <ldflags add="-Link-group" compiler="AC6"/>
       <defines>DEF1-GROUP-PROJECT;DEF2-GROUP-PROJECT</defines>
       <undefines>DEF3-GROUP-PROJECT;DEF4-GROUP-PROJECT</undefines>

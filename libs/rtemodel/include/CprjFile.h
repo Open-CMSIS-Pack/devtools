@@ -209,6 +209,20 @@ public:
   const std::string &GetLdFlags(const std::string &compiler) const;
 
   /**
+   * @brief determine build flags specific to C object linker for the given toolchain
+   * @param compiler given toolchain
+   * @return build flags specific to linker
+  */
+  const std::string& GetLdCFlags(const std::string& compiler) const;
+
+  /**
+   * @brief determine build flags specific to Cpp object linker for the given toolchain
+   * @param compiler given toolchain
+   * @return build flags specific to linker
+   */
+  const std::string& GetLdCxxFlags(const std::string& compiler) const;
+
+  /**
    * @brief setter for target build flags depending on language tag and compiler
    * @param tag tag specific to language, e.g. "cflags", "cxxflags"
    * @param compiler given toolchain
@@ -250,6 +264,20 @@ public:
    * @param compiler given toolchain
   */
   void SetLdFlags(const std::string &flags, const std::string &compiler);
+
+  /**
+   * @brief setter for build flags specific to C Object linker and given toolchain
+   * @param flags string containing build flags
+   * @param compiler given toolchain
+  */
+  void SetLdCFlags(const std::string &flags, const std::string &compiler);
+
+  /**
+   * @brief setter for build flags specific to Cpp Object linker and given toolchain
+   * @param flags string containing build flags
+   * @param compiler given toolchain
+  */
+  void SetLdCxxFlags(const std::string &flags, const std::string &compiler);
 
 protected:
   RteDevice* ResolveDevice(RteModel* targetModel);

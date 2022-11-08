@@ -137,6 +137,8 @@ protected:
   std::string m_cxxMscGlobal;
   std::string m_asMscGlobal;
   std::string m_linkerMscGlobal;
+  std::string m_linkerCMscGlobal;
+  std::string m_linkerCxxMscGlobal;
   std::string m_linkerScript;
   std::string m_toolchain;
   std::string m_toolchainConfig;

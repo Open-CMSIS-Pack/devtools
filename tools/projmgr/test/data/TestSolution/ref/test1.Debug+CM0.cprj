@@ -21,6 +21,8 @@
     <asflags add="-ASM-type-CM0" compiler="AC6"/>
     <cflags add="-C-CPP-Debug-AC6 -C-CPP-type-CM0" compiler="AC6"/>
     <cxxflags add="-C-CPP-Debug-AC6 -C-CPP-type-CM0" compiler="AC6"/>
+    <ldcflags add="-Link-C-type-CM0" compiler="AC6"/>
+    <ldcxxflags add="-Link-CPP-type-CM0" compiler="AC6"/>
     <ldflags add="-Link-type-CM0" compiler="AC6" file="../data/TestSolution/TestProject1/RTE/Device/RteTest_ARMCM0/ARMCM0_ac6.sct"/>
     <defines>DEF-solution;DEF-CM0;DEF-Debug</defines>
     <includes>../data/TestSolution/path/solution/;../data/TestSolution/path/CM0;../data/TestSolution/path/Debug</includes>
@@ -46,6 +48,7 @@
       <asflags add="-ASM-group" compiler="AC6"/>
       <cflags add="-C-group -C-CPP-group-AC6" compiler="AC6"/>
       <cxxflags add="-CPP-group -C-CPP-group-AC6" compiler="AC6"/>
+      <ldcxxflags add="-Link-CPP-group" compiler="AC6"/>
       <ldflags add="-Link-group" compiler="AC6"/>
       <defines>DEF1-GROUP-PROJECT;DEF2-GROUP-PROJECT</defines>
       <undefines>DEF3-GROUP-PROJECT;DEF4-GROUP-PROJECT</undefines>

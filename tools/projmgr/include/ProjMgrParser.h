@@ -40,6 +40,8 @@ struct TypeFilter {
  *        options for c++ compiler,
  *        options for c and c++ compiler,
  *        options for linker,
+ *        options for linker c flags,
+ *        options for linker c++ flags,
  *        options for archiver
 */
 struct MiscItem {
@@ -50,6 +52,8 @@ struct MiscItem {
   std::vector<std::string> cpp;
   std::vector<std::string> c_cpp;
   std::vector<std::string> link;
+  std::vector<std::string> link_c;
+  std::vector<std::string> link_cpp;
   std::vector<std::string> lib;
 };
 

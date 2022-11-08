@@ -18,7 +18,8 @@
 
   <target Ddsp="NO_DSP" Dendian="Little-endian" Dfpu="NO_FPU" Dmve="NO_MVE" Dname="ARMCM3" Dsecure="Non-secure" Dtz="NO_TZ" Dvendor="ARM:82">
     <output name="Flags" type="exe"/>
-    <ldflags add="--entry=Reset_Handler --specs=nosys.specs -mcpu=cortex-m3 -mthumb" compiler="GCC" file="./RTE/Device/ARMCM3/gcc_arm.ld"/>
+    <ldflags add="--entry=Reset_Handler --specs=nosys.specs -mcpu=cortex-m3" compiler="GCC" file="./RTE/Device/ARMCM3/gcc_arm.ld"/>
+    <ldcflags add="-mthumb" compiler="GCC"/>
     <cflags add="-Og -Wall -gdwarf-2 -mapcs-frame -mthumb" compiler="GCC"/>
     <asflags compiler="GCC"/>
     <defines>DEF_TARGET_CC;DEF_RTE_Components=\"RTE_Components.h\"</defines>
