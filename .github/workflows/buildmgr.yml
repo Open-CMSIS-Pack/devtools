@@ -38,10 +38,11 @@ on:
       - '!**/*.png'
       - '!**/*.pptx'
       - '!**/*.svg'
-
   release:
     types: [ published ]
-
+  schedule:
+    # Nighty run @UTC 00:00 hrs
+    - cron: '*/5 * * * *'
 env:
   retention_days: 1
 
@@ -49,19 +50,25 @@ jobs:
   matrix_prep:
     if: |
         (github.event_name == 'pull_request') ||
-        (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/buildmgr/'))
+        (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/buildmgr/')) ||
+        (github.event.schedule && (!github.event.repository.private))
     runs-on: ubuntu-22.04
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
+      nightly: ${{ steps.check-nightly.outputs.nightly }}
     steps:
-    - name: Check out repo
-      uses: actions/checkout@v3
-    - id: set-matrix
-      run: |
-        publicRepo=$(echo '${{ github.event.repository.private && 'privateRepo' || 'publicRepo' }}')
-        matrix=$(jq --arg publicRepo "$publicRepo" 'map(. | select((.runOn==$publicRepo) or (.runOn=="always")) )' matrix_includes_buildmgr.json)
-        echo "matrix={\"include\":$(echo $matrix)}\"" >> $GITHUB_OUTPUT
-      working-directory: .github/
+      - name: Check out repo
+        uses: actions/checkout@v3
+      - id: set-matrix
+        run: |
+          publicRepo=$(echo '${{ github.event.repository.private && 'privateRepo' || 'publicRepo' }}')
+          matrix=$(jq --arg publicRepo "$publicRepo" 'map(. | select((.runOn==$publicRepo) or (.runOn=="always")) )' matrix_includes_buildmgr.json)
+          echo "matrix={\"include\":$(echo $matrix)}\"" >> $GITHUB_OUTPUT
+        working-directory: .github/
+      - name: Check Nightly
+        id: check-nightly
+        run: |
+          nightly=${{ github.event.schedule && (!github.event.repository.private) }}
 
   build:
     needs: matrix_prep
