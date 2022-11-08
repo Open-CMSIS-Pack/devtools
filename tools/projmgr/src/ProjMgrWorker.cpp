@@ -2185,7 +2185,6 @@ bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem& context, BuildType& b
   }
   for (auto& misc : build.misc) {
     if (!ProcessSequencesRelatives(context, misc.as)     ||
-        !ProcessSequencesRelatives(context, misc.as)     ||
         !ProcessSequencesRelatives(context, misc.c)      ||
         !ProcessSequencesRelatives(context, misc.cpp)    ||
         !ProcessSequencesRelatives(context, misc.c_cpp)  ||
