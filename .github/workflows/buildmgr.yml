@@ -40,9 +40,6 @@ on:
       - '!**/*.svg'
   release:
     types: [ published ]
-  schedule:
-    # Nighty run @UTC 00:00 hrs
-    - cron: '*/5 * * * *'
 env:
   retention_days: 1
 
