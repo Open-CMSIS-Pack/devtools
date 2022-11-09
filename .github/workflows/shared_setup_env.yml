@@ -1,0 +1,24 @@
+name: setup_env
+
+on:
+  workflow_call:
+    outputs:
+      nightly:
+        description: 'True if workflow triggered by nightly, else False'
+        value: ${{ jobs.config.outputs.nightly }}
+      retention_days:
+        description: 'Artifact retention days 7 when nightly, else 1'
+        value: ${{ jobs.config.outputs.retention_days }}
+
+jobs:
+  config:
+    runs-on: ubuntu-22.04
+    outputs:
+      nightly: ${{ steps.config.outputs.nightly }}
+      retention_days: ${{ steps.config.outputs.retention_days }}
+    steps:
+      - name: Check Nightly/Scheduled
+        id: config
+        run: |
+          echo "nightly=$(echo '${{ (github.event.schedule && (!github.event.repository.private)) && 'true' || 'false' }}')" >> $GITHUB_OUTPUT
+          echo "retention_days=$(echo '${{ (github.event.schedule && (!github.event.repository.private)) && '7' || '1' }}')" >> $GITHUB_OUTPUT
