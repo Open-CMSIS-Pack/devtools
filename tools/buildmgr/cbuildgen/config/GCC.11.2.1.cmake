@@ -5,10 +5,19 @@
 ############### EDIT BELOW ###############
 # Set base directory of toolchain
 set(TOOLCHAIN_ROOT)
+set(TOOLCHAIN_VERSION "11.2.1")
 set(PREFIX arm-none-eabi-)
 set(EXT)
 
 ############ DO NOT EDIT BELOW ###########
+
+set(TOOLCHAIN_STRING "GCC_TOOLCHAIN_${TOOLCHAIN_VERSION}")
+string(REPLACE "." "_" TOOLCHAIN_STRING ${TOOLCHAIN_STRING})
+if(DEFINED ENV{${TOOLCHAIN_STRING}})
+  cmake_path(SET ${TOOLCHAIN_STRING} "$ENV{${TOOLCHAIN_STRING}}")
+  message(STATUS "Using ${TOOLCHAIN_STRING}='${${TOOLCHAIN_STRING}}'")
+  set(TOOLCHAIN_ROOT "${${TOOLCHAIN_STRING}}")
+endif()
 
 set(AS ${TOOLCHAIN_ROOT}/${PREFIX}as${EXT})
 set(CC ${TOOLCHAIN_ROOT}/${PREFIX}gcc${EXT})
@@ -232,8 +241,8 @@ else()
 endif()
 
 set (CC_SYS_INC_PATHS_LIST
-  "${TOOLCHAIN_ROOT}/../lib/gcc/arm-none-eabi/11.2.1/include"
-  "${TOOLCHAIN_ROOT}/../lib/gcc/arm-none-eabi/11.2.1/include-fixed"
+  "${TOOLCHAIN_ROOT}/../lib/gcc/arm-none-eabi/${TOOLCHAIN_VERSION}/include"
+  "${TOOLCHAIN_ROOT}/../lib/gcc/arm-none-eabi/${TOOLCHAIN_VERSION}/include-fixed"
   "${TOOLCHAIN_ROOT}/../arm-none-eabi/include"
 )
 foreach(ENTRY ${CC_SYS_INC_PATHS_LIST})
@@ -251,9 +260,9 @@ set(CXX_OPTIONS_FLAGS)
 cbuild_set_options_flags(CXX "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" CXX_OPTIONS_FLAGS)
 
 set (CXX_SYS_INC_PATHS_LIST
-  "${TOOLCHAIN_ROOT}/../arm-none-eabi/include/c++/11.2.1"
-  "${TOOLCHAIN_ROOT}/../arm-none-eabi/include/c++/11.2.1/arm-none-eabi"
-  "${TOOLCHAIN_ROOT}/../arm-none-eabi/include/c++/11.2.1/backward"
+  "${TOOLCHAIN_ROOT}/../arm-none-eabi/include/c++/${TOOLCHAIN_VERSION}"
+  "${TOOLCHAIN_ROOT}/../arm-none-eabi/include/c++/${TOOLCHAIN_VERSION}/arm-none-eabi"
+  "${TOOLCHAIN_ROOT}/../arm-none-eabi/include/c++/${TOOLCHAIN_VERSION}/backward"
   "${CC_SYS_INC_PATHS_LIST}"
 )
 foreach(ENTRY ${CXX_SYS_INC_PATHS_LIST})
@@ -300,7 +309,7 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/CMakeASM")
 set(CMAKE_ASM_COMPILER_FORCED TRUE)
 set(CMAKE_C_COMPILER_ID "GNU")
 set(CMAKE_C_COMPILER_ID_RUN TRUE)
-set(CMAKE_C_COMPILER_VERSION "11.2.1")
+set(CMAKE_C_COMPILER_VERSION "${TOOLCHAIN_VERSION}")
 set(CMAKE_C_COMPILER_FORCED TRUE)
 set(CMAKE_C_COMPILER_WORKS TRUE)
 set(CMAKE_CXX_COMPILER_ID "${CMAKE_C_COMPILER_ID}")
