@@ -1,0 +1,33 @@
+name: matrix_prep
+
+on:
+  workflow_call:
+    inputs:
+      workflow_name:
+        description: 'Caller workflow name'
+        required: true
+        type: string
+      run_if:
+        description: 'True to get configuration matrix'
+        default: false 
+        required: true
+        type: boolean
+    outputs:
+      matrix:
+        value: ${{ jobs.matrix_prep.outputs.matrix }}
+
+jobs:
+  matrix_prep:
+    runs-on: ubuntu-22.04
+    if: ${{ inputs.run_if }}
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v3
+      - id: set-matrix
+        run: |
+          publicRepo=$(echo '${{ github.event.repository.private && 'privateRepo' || 'publicRepo' }}')
+          matrix=$(jq --arg publicRepo "$publicRepo" 'map(. | select((.runOn==$publicRepo) or (.runOn=="always")) )' matrix_includes_${{ inputs.workflow_name }}.json)
+          echo "matrix={\"include\":$(echo $matrix)}\"" >> $GITHUB_OUTPUT
+        working-directory: .github/
