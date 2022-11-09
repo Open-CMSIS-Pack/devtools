@@ -5,9 +5,18 @@
 ############### EDIT BELOW ###############
 # Set base directory of toolchain
 set(TOOLCHAIN_ROOT)
+set(TOOLCHAIN_VERSION "8.50.6")
 set(EXT)
 
 ############ DO NOT EDIT BELOW ###########
+
+set(TOOLCHAIN_STRING "IAR_TOOLCHAIN_${TOOLCHAIN_VERSION}")
+string(REPLACE "." "_" TOOLCHAIN_STRING ${TOOLCHAIN_STRING})
+if(DEFINED ENV{${TOOLCHAIN_STRING}})
+  cmake_path(SET ${TOOLCHAIN_STRING} "$ENV{${TOOLCHAIN_STRING}}")
+  message(STATUS "Using ${TOOLCHAIN_STRING}='${${TOOLCHAIN_STRING}}'")
+  set(TOOLCHAIN_ROOT "${${TOOLCHAIN_STRING}}")
+endif()
 
 set(AS ${TOOLCHAIN_ROOT}/iasmarm${EXT})
 set(CC ${TOOLCHAIN_ROOT}/iccarm${EXT})
