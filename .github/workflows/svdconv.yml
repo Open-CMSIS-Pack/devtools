@@ -19,6 +19,10 @@ on:
   release:
     types: [published]
 
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   retention_days: 1
 
