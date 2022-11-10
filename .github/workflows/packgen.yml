@@ -28,30 +28,22 @@ on:
       - '!**/*.md'
   release:
     types: [published]
-
-env:
-  retention_days: 1
+  schedule:
+    - cron: '0 0 * * *'
 
 jobs:
+  setup:
+    uses: Open-CMSIS-Pack/devtools/.github/workflows/shared_setup_env.yml@main
+
   matrix_prep:
-    if: |
-        (github.event_name == 'pull_request') ||
-        (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/packgen/'))
-    runs-on: ubuntu-22.04
-    outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
-    steps:
-    - name: Check out repo
-      uses: actions/checkout@v3
-    - id: set-matrix
-      run: |
-        publicRepo=$(echo '${{ github.event.repository.private && 'privateRepo' || 'publicRepo' }}')
-        matrix=$(jq --arg publicRepo "$publicRepo" 'map(. | select((.runOn==$publicRepo) or (.runOn=="always")) )' matrix_includes_packgen.json)
-        echo "matrix={\"include\":$(echo $matrix)}\"" >> $GITHUB_OUTPUT
-      working-directory: .github/
+    needs: setup
+    uses: Open-CMSIS-Pack/devtools/.github/workflows/shared_matrix_prep.yml@main
+    with:
+      workflow_name: packgen
+      run_if: ${{ fromJSON((github.event_name == 'pull_request') || (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/packgen/')) || needs.setup.outputs.nightly) }}
 
   build:
-    needs: matrix_prep
+    needs: [ setup, matrix_prep ]
     runs-on: ${{ matrix.runs_on }}
     timeout-minutes: 15
     strategy:
@@ -76,7 +68,7 @@ jobs:
         with:
           name: packgen-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/tools/packgen/${{ matrix.target }}/Release/${{ matrix.binary }}
-          retention-days: 1
+          retention-days: ${{ needs.setup.outputs.retention_days }}
           if-no-files-found: error
 
   release:
@@ -137,7 +129,7 @@ jobs:
           asset_name: packgen.zip
 
   unittest:
-    needs: matrix_prep
+    needs: [ setup, matrix_prep ]
     runs-on: ${{ matrix.runs_on }}
     timeout-minutes: 15
     strategy:
@@ -173,14 +165,16 @@ jobs:
         with:
           name: unit_test_result-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/packgenunittests-*.xml
-          retention-days: ${{ env.retention_days }}
+          retention-days: ${{ needs.setup.outputs.retention_days }}
           if-no-files-found: error
 
   coverage:
+    needs: setup
     if: |
         (github.event_name == 'pull_request') ||
         (github.event_name == 'push') ||
-        (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/packgen/'))
+        (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/packgen/')) ||
+        needs.setup.outputs.nightly
     env:
         lcov_base: https://github.com/linux-test-project/lcov/releases/download/v1.15/
         lcov_installer: lcov-1.15.tar.gz
@@ -237,11 +231,6 @@ jobs:
           flags: packgen-cov
           functionalities: fix
 
-      - name: Determine retention days
-        if: (github.event_name == 'push')
-        run: |
-          echo "retention_days=7" >> $GITHUB_ENV
-
       - name: Archive coverage report
         uses: actions/upload-artifact@v3
         with:
@@ -249,7 +238,7 @@ jobs:
           path: |
             ./build/tools/packgen/coverage/
             ./build/tools/packgen/coverage.info
-          retention-days: ${{ env.retention_days }}
+          retention-days: ${{ needs.setup.outputs.retention_days }}
           if-no-files-found: error
 
   test-results-preparation:
