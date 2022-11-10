@@ -11,6 +11,7 @@ layer:
       - --layer3-flag
   components:
     - component: ComponentLevel
+    - component: Startup
   groups:
     - group: Sources Layer 3
       files: 

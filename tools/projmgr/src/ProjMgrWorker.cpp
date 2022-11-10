@@ -863,15 +863,19 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
       const auto& componentId = ProjMgrUtils::GetComponentID(matchedComponent);
       UpdateMisc(item.build.misc, context.toolchain.name);
 
+      // Init matched component instance
+      RteComponentInstance* matchedComponentInstance = new RteComponentInstance(matchedComponent);
+      matchedComponentInstance->InitInstance(matchedComponent);
+
       // Set layer's rtePath attribute
       if (!layer.empty() && context.csolution->directories.rte.empty()) {
         error_code ec;
         const string& rteDir = fs::relative(context.clayers[layer]->directory, context.cproject->directory, ec).append("RTE").generic_string();
-        matchedComponent->AddAttribute("rtedir", rteDir);
+        matchedComponentInstance->AddAttribute("rtedir", rteDir);
       }
 
       // Insert matched component into context list
-      context.components.insert({ componentId, { matchedComponent, &item }});
+      context.components.insert({ componentId, { matchedComponentInstance, &item }});
       const auto& componentPackage = matchedComponent->GetPackage();
       context.packages.insert({ ProjMgrUtils::GetPackageID(componentPackage), componentPackage });
       if (matchedComponent->HasApi(context.rteActiveTarget)) {
@@ -886,7 +890,7 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
 
   // Get generators
   for (const auto& [componentId, component] : context.components) {
-    RteGenerator* generator = component.first->GetGenerator();
+    RteGenerator* generator = component.first->GetParent()->GetComponent()->GetGenerator();
     if (generator) {
       const string generatorId = generator->GetID();
       context.generators.insert({ generatorId, generator });
