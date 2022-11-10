@@ -28,29 +28,22 @@ on:
       - '!**/*.md'
   release:
     types: [published]
-
-env:
-  retention_days: 1
+  schedule:
+    - cron: '0 0 * * *'
 
 jobs:
+  setup:
+    uses: Open-CMSIS-Pack/devtools/.github/workflows/shared_setup_env.yml@main
+
   matrix_prep:
-    if: |
-        (github.event_name == 'pull_request') ||
-        (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/projmgr/'))
-    runs-on: ubuntu-22.04
-    outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
-    steps:
-    - name: Check out repo
-      uses: actions/checkout@v3
-    - id: set-matrix
-      run: |
-        publicRepo=$(echo '${{ github.event.repository.private && 'privateRepo' || 'publicRepo' }}')
-        matrix=$(jq --arg publicRepo "$publicRepo" 'map(. | select((.runOn==$publicRepo) or (.runOn=="always")) )' matrix_includes_projmgr.json)
-        echo "matrix={\"include\":$(echo $matrix)}\"" >> $GITHUB_OUTPUT
-      working-directory: .github/
+    needs: setup
+    uses: Open-CMSIS-Pack/devtools/.github/workflows/shared_matrix_prep.yml@main
+    with:
+      workflow_name: projmgr
+      run_if: ${{ fromJSON((github.event_name == 'pull_request') || (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/projmgr/')) || needs.setup.outputs.nightly) }}
+
   build:
-    needs: matrix_prep
+    needs: [ setup, matrix_prep ]
     runs-on: ${{ matrix.runs_on }}
     timeout-minutes: 15
     strategy:
@@ -75,7 +68,7 @@ jobs:
         with:
           name: projmgr-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/tools/projmgr/${{ matrix.target }}/Release/${{ matrix.binary }}
-          retention-days: 1
+          retention-days: ${{ needs.setup.outputs.retention_days }}
           if-no-files-found: error
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
@@ -108,7 +101,7 @@ jobs:
           path: |
              ./buildswig/tools/projmgr/swig/python/projmgr.py
              ./buildswig/tools/projmgr/swig/python/_projmgr.pyd
-          retention-days: 1
+          retention-days: ${{ needs.setup.outputs.retention_days }}
 
       - name: Archive projmgr swig python libs macos ubuntu amd64
         if: ${{ startsWith(matrix.runs_on, 'macos') || ( startsWith(matrix.runs_on, 'ubuntu') && matrix.arch == 'amd64' ) }}
@@ -118,7 +111,7 @@ jobs:
           path: |
              ./buildswig/tools/projmgr/swig/python/projmgr.py
              ./buildswig/tools/projmgr/swig/python/_projmgr.so
-          retention-days: 1
+          retention-days: ${{ needs.setup.outputs.retention_days }}
 
       - name: Archive projmgr swig go libs macos ubuntu amd64
         if: ${{ startsWith(matrix.runs_on, 'macos') || ( startsWith(matrix.runs_on, 'ubuntu') && matrix.arch == 'amd64' ) }}
@@ -128,7 +121,7 @@ jobs:
           path: |
              ./buildswig/tools/projmgr/swig/go/projmgr.go
              ./buildswig/tools/projmgr/swig/go/projmgr.so
-          retention-days: 1
+          retention-days: ${{ needs.setup.outputs.retention_days }}
 
   release:
     if: |
@@ -273,7 +266,7 @@ jobs:
           asset_name: coverage.zip
 
   unittest:
-    needs: matrix_prep
+    needs: [ setup, matrix_prep ]
     runs-on: ${{ matrix.runs_on }}
     timeout-minutes: 15
     strategy:
@@ -299,18 +292,13 @@ jobs:
           ctest -V -C Debug -R ProjMgrUnitTests
         working-directory: ./build
 
-      - name: Determine retention days
-        if: (github.event_name == 'push' && !github.event.repository.private)
-        run: |
-          echo "retention_days=7" >> $GITHUB_ENV
-
       - name: Archive unit tests results
         if: ${{ always() }}
         uses: actions/upload-artifact@v3
         with:
           name: unittest-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/Testing/Temporary/LastTest.log
-          retention-days: ${{ env.retention_days }}
+          retention-days: ${{ needs.setup.outputs.retention_days }}
           if-no-files-found: error
 
       - name: Archive gtest report
@@ -319,14 +307,16 @@ jobs:
         with:
           name: unit_test_result-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/projmgrunittests-*.xml
-          retention-days: 1
+          retention-days: ${{ needs.setup.outputs.retention_days }}
           if-no-files-found: error
 
   coverage:
+    needs: setup
     if: |
         (github.event_name == 'pull_request') ||
         (github.event_name == 'push') ||
-        (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/projmgr/'))
+        (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/projmgr/')) ||
+        needs.setup.outputs.nightly
     env:
         lcov_base: https://github.com/linux-test-project/lcov/releases/download/v1.15/
         lcov_installer: lcov-1.15.tar.gz
@@ -383,11 +373,6 @@ jobs:
           flags: projmgr-cov
           functionalities: fix
 
-      - name: Determine retention days
-        if: (github.event_name == 'push')
-        run: |
-          echo "retention_days=7" >> $GITHUB_ENV
-
       - name: Archive coverage report
         uses: actions/upload-artifact@v3
         with:
@@ -395,7 +380,7 @@ jobs:
           path: |
             ./build/tools/projmgr/coverage/
             ./build/tools/projmgr/coverage.info
-          retention-days: ${{ env.retention_days }}
+          retention-days: ${{ needs.setup.outputs.retention_days }}
           if-no-files-found: error
 
   test-results-preparation:

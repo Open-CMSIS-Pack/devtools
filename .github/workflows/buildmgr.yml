@@ -38,33 +38,24 @@ on:
       - '!**/*.png'
       - '!**/*.pptx'
       - '!**/*.svg'
-
   release:
     types: [ published ]
-
-env:
-  retention_days: 1
+  schedule:
+    - cron: '0 0 * * *'
 
 jobs:
+  setup:
+    uses: Open-CMSIS-Pack/devtools/.github/workflows/shared_setup_env.yml@main
+
   matrix_prep:
-    if: |
-        (github.event_name == 'pull_request') ||
-        (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/buildmgr/'))
-    runs-on: ubuntu-22.04
-    outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
-    steps:
-    - name: Check out repo
-      uses: actions/checkout@v3
-    - id: set-matrix
-      run: |
-        publicRepo=$(echo '${{ github.event.repository.private && 'privateRepo' || 'publicRepo' }}')
-        matrix=$(jq --arg publicRepo "$publicRepo" 'map(. | select((.runOn==$publicRepo) or (.runOn=="always")) )' matrix_includes_buildmgr.json)
-        echo "matrix={\"include\":$(echo $matrix)}\"" >> $GITHUB_OUTPUT
-      working-directory: .github/
+    needs: setup
+    uses: Open-CMSIS-Pack/devtools/.github/workflows/shared_matrix_prep.yml@main
+    with:
+      workflow_name: buildmgr
+      run_if: ${{ fromJSON((github.event_name == 'pull_request') || (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/buildmgr/')) || needs.setup.outputs.nightly) }}
 
   build:
-    needs: matrix_prep
+    needs: [ setup, matrix_prep ]
     runs-on: ${{ matrix.runs_on }}
     timeout-minutes: 15
     strategy:
@@ -99,14 +90,16 @@ jobs:
         with:
           name: cbuildgen-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/tools/buildmgr/cbuildgen/${{ matrix.target }}/Release/cbuildgen${{ matrix.binary_extension }}
-          retention-days: 1
+          retention-days: ${{ needs.setup.outputs.retention_days }}
           if-no-files-found: error
 
   docs:
+    needs: setup
     if: |
         (github.event_name == 'pull_request') ||
         (github.event_name == 'push') ||
-        (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/buildmgr/'))
+        (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/buildmgr/')) ||
+        needs.setup.outputs.nightly
     runs-on: ubuntu-22.04
     timeout-minutes: 5
     steps:
@@ -147,7 +140,7 @@ jobs:
         with:
           name: documentation
           path: ./build/tools/buildmgr/docs/doxygen/output/
-          retention-days: 1
+          retention-days: ${{ needs.setup.outputs.retention_days }}
           if-no-files-found: error
 
       - name: Archive documentation
@@ -194,7 +187,7 @@ jobs:
           git push
 
   create_installer:
-    needs: [ build, docs ]
+    needs: [ setup, build, docs ]
     # Debian package generation in ubuntu 22.04 produces incompatible metadata
     runs-on: ubuntu-20.04
     timeout-minutes: 15
@@ -265,7 +258,7 @@ jobs:
         with:
           name: cbuild_install
           path: tools/buildmgr/cbuildgen/installer/cbuild_install.sh
-          retention-days: 1
+          retention-days: ${{ needs.setup.outputs.retention_days }}
           if-no-files-found: error
 
       - name: Archive deb package
@@ -273,7 +266,7 @@ jobs:
         with:
           name: deb_package
           path: tools/buildmgr/cbuildgen/installer/cmsis-build*.deb
-          retention-days: 1
+          retention-days: ${{ needs.setup.outputs.retention_days }}
           if-no-files-found: error
 
       - name: Attach installer to release
@@ -297,7 +290,7 @@ jobs:
           overwrite: true
 
   tests:
-    needs: [ matrix_prep, create_installer ]
+    needs: [ setup, matrix_prep, create_installer ]
     timeout-minutes: 15
     runs-on: ${{ matrix.runs_on }}
     env:
@@ -391,17 +384,12 @@ jobs:
         run: ctest -V -R CbuildUnitTests
         working-directory: build
 
-      - name: Determine retention days
-        if: (github.event_name == 'push' && !github.event.repository.private)
-        run: |
-          echo "retention_days=7" >> $GITHUB_ENV
-
       - name: Archive unittest
         uses: actions/upload-artifact@v3
         with:
           name: unit_test_result-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/cbuildunittests-*.xml
-          retention-days: ${{ env.retention_days }}
+          retention-days: ${{ needs.setup.outputs.retention_days }}
           if-no-files-found: error
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
@@ -450,14 +438,16 @@ jobs:
         with:
           name: integ_test_result-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/cbuildintegtests-*.xml
-          retention-days: ${{ env.retention_days }}
+          retention-days: ${{ needs.setup.outputs.retention_days }}
           if-no-files-found: error
 
   coverage:
+    needs: setup
     if: |
         (github.event_name == 'pull_request') ||
         (github.event_name == 'push') ||
-        (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/buildmgr/'))
+        (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/buildmgr/')) ||
+        needs.setup.outputs.nightly
     env:
         installer_name: "gcc-arm-11.2-2022.02-x86_64-arm-none-eabi.tar.xz"
         arm_gcc_install_base: https://developer.arm.com/-/media/Files/downloads/gnu/11.2-2022.02/binrel
@@ -535,11 +525,6 @@ jobs:
           flags: buildmgr-cov
           functionalities: fix
 
-      - name: Determine retention days
-        if: (github.event_name == 'push')
-        run: |
-          echo "retention_days=7" >> $GITHUB_ENV
-
       - name: Archive coverage report
         uses: actions/upload-artifact@v3
         with:
@@ -547,11 +532,11 @@ jobs:
           path: |
             ./build/tools/buildmgr/coverage/
             ./build/tools/buildmgr/coverage.info
-          retention-days: ${{ env.retention_days }}
+          retention-days: ${{ needs.setup.outputs.retention_days }}
           if-no-files-found: error
 
   sanity-check-native:
-    needs: [ create_installer, matrix_prep ]
+    needs: [ matrix_prep, create_installer ]
     timeout-minutes: 15
     runs-on: ${{ matrix.runs_on }}
     env:
@@ -589,7 +574,7 @@ jobs:
           ${{ github.workspace }}/cbuild/bin/cbuildgen | grep "(cbuildgen): Build Process Manager"
 
   sanity-check-docker:
-    needs: [ create_installer ]
+    needs: create_installer
     timeout-minutes: 15
     runs-on: ubuntu-22.04
     container:
