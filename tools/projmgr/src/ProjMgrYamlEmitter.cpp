@@ -193,7 +193,7 @@ void ProjMgrYamlCbuild::SetContextNode(YAML::Node contextNode, const ContextItem
 
 void ProjMgrYamlCbuild::SetComponentsNode(YAML::Node node, const ContextItem* context) {
   for (const auto& [componentId, component] : context->components) {
-    const RteComponent* rteComponent = component.first;
+    const RteComponent* rteComponent = component.first->GetParent()->GetComponent();
     const ComponentItem* componentItem = component.second;
     YAML::Node componentNode;
     SetNodeValue(componentNode[YAML_COMPONENT], componentId);

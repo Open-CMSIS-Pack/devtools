@@ -155,7 +155,7 @@ struct ContextItem {
   ToolchainItem toolchain;
   std::map<std::string, std::string> targetAttributes;
   std::map<std::string, RtePackage*> packages;
-  std::map<std::string, std::pair<RteComponent*, ComponentItem*>> components;
+  std::map<std::string, std::pair<RteComponentInstance*, ComponentItem*>> components;
   std::vector<std::tuple<RteItem::ConditionResult, std::string, std::set<std::string>, std::set<std::string>>> validationResults;
   std::map<std::string, std::map<std::string, RteFileInstance*>> configFiles;
   std::map<std::string, std::vector<std::string>> componentFiles;
