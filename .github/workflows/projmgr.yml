@@ -260,6 +260,10 @@ jobs:
           name: coverage-report
           path: tools/coverage/
 
+      - name: Zip coverage reports
+        run: zip -r coverage.zip coverage
+        working-directory: tools/coverage
+
       - name: Attach coverage archive to release assets
         uses: svenstaro/upload-release-action@v2
         with:
