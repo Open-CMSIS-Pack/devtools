@@ -13,6 +13,7 @@ on:
 jobs:
   config:
     runs-on: ubuntu-22.04
+    if: ${{ (github.event.schedule && github.event.repository.private) == false }}
     outputs:
       nightly: ${{ steps.config.outputs.nightly }}
       retention_days: ${{ steps.config.outputs.retention_days }}

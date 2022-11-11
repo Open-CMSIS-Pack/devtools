@@ -14,31 +14,27 @@ on:
       - '.github/matrix_includes_test_libs.json'
       - 'libs/**'
       - '!**/*.md'
+  schedule:
+    - cron: '0 0 * * *'
 
 concurrency:
   group: ${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  retention_days: 1
-
 jobs:
+  setup:
+    uses: Open-CMSIS-Pack/devtools/.github/workflows/shared_setup_env.yml@main
+
   matrix_prep:
-    runs-on: ubuntu-22.04
-    outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
-    steps:
-    - name: Check out repo
-      uses: actions/checkout@v3
-    - id: set-matrix
-      run: |
-        publicRepo=$(echo '${{ github.event.repository.private && 'privateRepo' || 'publicRepo' }}')
-        matrix=$(jq --arg publicRepo "$publicRepo" 'map(. | select((.runOn==$publicRepo) or (.runOn=="always")) )' matrix_includes_test_libs.json)
-        echo "matrix={\"include\":$(echo $matrix)}\"" >> $GITHUB_OUTPUT
-      working-directory: .github/
+    needs: setup
+    uses: Open-CMSIS-Pack/devtools/.github/workflows/shared_matrix_prep.yml@main
+    with:
+      workflow_name: test_libs
+      run_if: ${{ (github.event.schedule && github.event.repository.private) == false }}
+
   test_libs:
     runs-on: ${{ matrix.runs_on }}
-    needs: matrix_prep
+    needs: [ setup, matrix_prep ]
     timeout-minutes: 15
     strategy:
       fail-fast: false
@@ -80,18 +76,13 @@ jobs:
           ctest -C Debug -V
         working-directory: ./build
 
-      - name: Determine retention days
-        if: (github.event_name == 'push' && !github.event.repository.private)
-        run: |
-          echo "retention_days=7" >> $GITHUB_ENV
-
       - name: Archive libs unittest reports
         if: ${{ matrix.arch != 'arm64' }}
         uses: actions/upload-artifact@v3
         with:
           name: unit_test_result-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/*${{ matrix.target }}-${{ matrix.arch }}.xml
-          retention-days: ${{ env.retention_days }}
+          retention-days: ${{ needs.setup.outputs.retention_days }}
           if-no-files-found: error
 
   test-results-preparation:

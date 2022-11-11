@@ -364,9 +364,10 @@ bool ProjMgrWorker::InitializeTarget(ContextItem& context) {
     m_model->AddProject(0, rteProject);
     m_model->SetActiveProjectId(rteProject->GetProjectId());
     context.rteActiveProject = m_model->GetActiveProject();
-    context.rteActiveProject->AddTarget("CMSIS", map<string, string>(), true, true);
-    context.rteActiveProject->SetActiveTarget("CMSIS");
-    context.rteActiveProject->SetName(context.name);
+    const string& targetName = context.name.empty() ? "CMSIS" : context.name;
+    context.rteActiveProject->AddTarget(targetName, map<string, string>(), true, true);
+    context.rteActiveProject->SetActiveTarget(targetName);
+    context.rteActiveProject->SetName(targetName);
     context.rteActiveTarget = context.rteActiveProject->GetActiveTarget();
     context.rteFilteredModel = context.rteActiveTarget->GetFilteredModel();
   }
@@ -863,15 +864,19 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
       const auto& componentId = ProjMgrUtils::GetComponentID(matchedComponent);
       UpdateMisc(item.build.misc, context.toolchain.name);
 
+      // Init matched component instance
+      RteComponentInstance* matchedComponentInstance = new RteComponentInstance(matchedComponent);
+      matchedComponentInstance->InitInstance(matchedComponent);
+
       // Set layer's rtePath attribute
       if (!layer.empty() && context.csolution->directories.rte.empty()) {
         error_code ec;
         const string& rteDir = fs::relative(context.clayers[layer]->directory, context.cproject->directory, ec).append("RTE").generic_string();
-        matchedComponent->AddAttribute("rtedir", rteDir);
+        matchedComponentInstance->AddAttribute("rtedir", rteDir);
       }
 
       // Insert matched component into context list
-      context.components.insert({ componentId, { matchedComponent, &item }});
+      context.components.insert({ componentId, { matchedComponentInstance, &item }});
       const auto& componentPackage = matchedComponent->GetPackage();
       context.packages.insert({ ProjMgrUtils::GetPackageID(componentPackage), componentPackage });
       if (matchedComponent->HasApi(context.rteActiveTarget)) {
@@ -885,10 +890,11 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
   }
 
   // Get generators
-  for (const auto& [componentId, component] : context.components) {
-    RteGenerator* generator = component.first->GetGenerator();
+  for (auto& [componentId, component] : context.components) {
+    RteGenerator* generator = component.instance->GetParent()->GetComponent()->GetGenerator();
     if (generator) {
       const string generatorId = generator->GetID();
+      component.generator = generatorId;
       context.generators.insert({ generatorId, generator });
       error_code ec;
       const string gpdsc = fs::weakly_canonical(generator->GetExpandedGpdsc(context.rteActiveTarget), ec).generic_string();
@@ -907,7 +913,7 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
 bool ProjMgrWorker::AddRequiredComponents(ContextItem& context) {
   list<RteItem*> selItems;
   for (auto& [_, component] : context.components) {
-    selItems.push_back(component.first);
+    selItems.push_back(component.instance);
   }
   set<RteComponentInstance*> unresolvedComponents;
   context.rteActiveProject->AddCprjComponents(selItems, context.rteActiveTarget, unresolvedComponents);
@@ -920,6 +926,11 @@ bool ProjMgrWorker::AddRequiredComponents(ContextItem& context) {
     return false;
   }
   context.rteActiveProject->CollectSettings();
+
+  // Generate RTE headers
+  if (!context.rteActiveTarget->GenerateRteHeaders()) {
+    return false;
+  }
   return true;
 }
 
@@ -964,15 +975,81 @@ bool ProjMgrWorker::ProcessComponentFiles(ContextItem& context) {
     ProjMgrLogger::Error("missing RTE target");
     return false;
   }
+  // files belonging to project groups, except config files
   const auto& groups = context.rteActiveTarget->GetProjectGroups();
   for (const auto& [_, group] : groups) {
     for (auto& [file, fileInfo] : group) {
-      const auto& component = context.rteActiveTarget->GetComponentInstanceForFile(file);
-      const string& filename = fileInfo.m_fi ? fileInfo.m_fi->GetAbsolutePath() : file;
-      context.componentFiles[ProjMgrUtils::GetComponentID(component)].push_back(filename);
+      const auto& ci = context.rteActiveTarget->GetComponentInstanceForFile(file);
+      const auto& component = ci->GetResolvedComponent(context.rteActiveTarget->GetName());
+      if (!fileInfo.m_fi) {
+        const auto& absPackPath = component->GetPackage()->GetAbsolutePackagePath();
+        error_code ec;
+        const auto& relFilename = fs::relative(file, absPackPath, ec).generic_string();
+        const auto& componentFile = context.rteActiveTarget->GetFile(relFilename, component);
+        const auto& attr = componentFile->GetAttribute("attr");
+        const auto& category = componentFile->GetAttribute("category");
+        const auto& version = attr == "config" ? componentFile->GetVersionString() : "";
+        context.componentFiles[ProjMgrUtils::GetComponentID(component)].push_back({ file, attr, category, version });
+      }
+    }
+  }
+  // iterate over components
+  for (const auto& [componentId, component] : context.components) {
+    const RteComponent* rteComponent = component.instance->GetParent()->GetComponent();
+    // pre-include files from packs
+    for (const auto& componentFile : rteComponent->GetFileContainer()->GetChildren()) {
+      const auto& category = componentFile->GetAttribute("category");
+      const auto& attr = componentFile->GetAttribute("attr");
+      if (((category == "preIncludeGlobal") || (category == "preIncludeLocal")) && attr.empty()) {
+        const auto& preInclude = rteComponent->GetPackage()->GetAbsolutePackagePath() + componentFile->GetAttribute("name");
+        if (IsPreIncludeByTarget(context.rteActiveTarget, preInclude)) {
+          context.componentFiles[componentId].push_back({ preInclude, "", category, "" });
+        }
+      }
+    }
+    // config files
+    for (const auto& configFileMap : context.configFiles) {
+      if (configFileMap.first == componentId) {
+        for (const auto& [_, configFile] : configFileMap.second) {
+          const auto& filename = configFile->GetAbsolutePath();
+          const auto& category = configFile->GetAttribute("category");
+          const auto& originalFile = configFile->GetFile(context.rteActiveTarget->GetName());
+          const auto& version = originalFile->GetVersionString();
+          context.componentFiles[componentId].push_back({ filename, "config", category, version });
+        }
+      }
+    }
+  }
+  // constructed local pre-include files
+  const auto& preIncludeFiles = context.rteActiveTarget->GetPreIncludeFiles();
+  for (const auto& [component, fileSet] : preIncludeFiles) {
+    if (component) {
+      const string& preIncludeLocal = component->ConstructComponentPreIncludeFileName();
+      for (const auto& file : fileSet) {
+        if (file == preIncludeLocal) {
+          const string& filename = context.rteActiveProject->GetProjectPath() +
+            context.rteActiveProject->GetRteHeader(file, context.rteActiveTarget->GetName(), "");
+          const string& componentID = ProjMgrUtils::GetComponentID(component);
+          context.componentFiles[componentID].push_back({ filename, "", "preIncludeLocal", ""});
+          break;
+        }
+      }
     }
   }
   return true;
+}
+
+bool ProjMgrWorker::IsPreIncludeByTarget(const RteTarget* activeTarget, const string& preInclude) {
+  const auto& preIncludeFiles = activeTarget->GetPreIncludeFiles();
+  for (const auto& [_, fileSet] : preIncludeFiles) {
+    for (auto file : fileSet) {
+      error_code ec;
+      if (fs::equivalent(file, preInclude, ec)) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 bool ProjMgrWorker::ValidateContext(ContextItem& context) {
@@ -1624,10 +1701,10 @@ bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGpdsc, bool re
       return false;
     }
   }
-  if (!ProcessComponentFiles(context)) {
+  if (!ProcessConfigFiles(context)) {
     return false;
   }
-  if (!ProcessConfigFiles(context)) {
+  if (!ProcessComponentFiles(context)) {
     return false;
   }
   if (resolveDependencies) {

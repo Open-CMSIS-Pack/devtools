@@ -20,34 +20,26 @@ on:
       - '!**/*.md'
   release:
     types: [published]
+  schedule:
+    - cron: '0 0 * * *'
 
 concurrency:
   group: ${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  retention_days: 1
-
 jobs:
+  setup:
+    uses: Open-CMSIS-Pack/devtools/.github/workflows/shared_setup_env.yml@main
+
   matrix_prep:
-    if: |
-        (github.event_name == 'pull_request') ||
-        (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/packchk/'))
-    runs-on: ubuntu-22.04
-    outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
-    steps:
-    - name: Check out repo
-      uses: actions/checkout@v3
-    - id: set-matrix
-      run: |
-        publicRepo=$(echo '${{ github.event.repository.private && 'privateRepo' || 'publicRepo' }}')
-        matrix=$(jq --arg publicRepo "$publicRepo" 'map(. | select((.runOn==$publicRepo) or (.runOn=="always")) )' matrix_includes_packchk.json)
-        echo "matrix={\"include\":$(echo $matrix)}\"" >> $GITHUB_OUTPUT
-      working-directory: .github/
+    needs: setup
+    uses: Open-CMSIS-Pack/devtools/.github/workflows/shared_matrix_prep.yml@main
+    with:
+      workflow_name: packchk
+      run_if: ${{ fromJSON((github.event_name == 'pull_request') || (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/packchk/')) || needs.setup.outputs.nightly) }}
 
   build:
-    needs: matrix_prep
+    needs: [ setup, matrix_prep ]
     runs-on: ${{ matrix.runs_on }}
     timeout-minutes: 15
     strategy:
@@ -66,6 +58,15 @@ jobs:
           target: packchkdist
           arch: ${{ matrix.arch }}
 
+      - name: Archive packchk binary
+        if: ${{ needs.setup.outputs.nightly }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: packchk-${{ matrix.target }}-${{ matrix.arch }}
+          path: build/tools/packchk/packchk-*-${{ matrix.target }}-${{ matrix.arch }}.*
+          retention-days: ${{ needs.setup.outputs.retention_days }}
+          if-no-files-found: error
+
       - name: Attach zipped binary to the release
         if: ${{ github.event_name == 'release' }}
         uses: svenstaro/upload-release-action@v2
@@ -77,7 +78,7 @@ jobs:
           file: build/tools/packchk/packchk-*-${{ matrix.target }}-${{ matrix.arch }}.*
 
   test:
-    needs: matrix_prep
+    needs: [ setup, matrix_prep ]
     runs-on: ${{ matrix.runs_on }}
     timeout-minutes: 15
     strategy:
@@ -115,18 +116,13 @@ jobs:
           ctest -V -R PackChkIntegTests
         working-directory: ./build
 
-      - name: Determine retention days
-        if: (github.event_name == 'push' && !github.event.repository.private)
-        run: |
-          echo "retention_days=7" >> $GITHUB_ENV
-
       - name: Archive unit test results
         uses: actions/upload-artifact@v3
         with:
           name: unit_test_result-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/packchkunittests-*.xml
           if-no-files-found: error
-          retention-days: ${{ env.retention_days }}
+          retention-days: ${{ needs.setup.outputs.retention_days }}
 
       - name: Archive integration test results
         uses: actions/upload-artifact@v3
@@ -134,17 +130,20 @@ jobs:
           name: integ_test_result-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/packchkintegtests-*.xml
           if-no-files-found: error
+          retention-days: ${{ needs.setup.outputs.retention_days }}
 
   coverage:
     if: |
         (github.event_name == 'pull_request') ||
         (github.event_name == 'push') ||
-        (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/packchk/'))
+        (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/packchk/')) ||
+        needs.setup.outputs.nightly
     env:
         lcov_base: https://github.com/linux-test-project/lcov/releases/download/v1.15/
         lcov_installer: lcov-1.15.tar.gz
     runs-on: ubuntu-22.04
     timeout-minutes: 15
+    needs: setup
     steps:
       - name: Install dependencies
         run: |
@@ -206,11 +205,6 @@ jobs:
           flags: packchk-cov
           functionalities: fix
 
-      - name: Determine retention days
-        if: (github.event_name == 'push')
-        run: |
-          echo "retention_days=7" >> $GITHUB_ENV
-
       - name: Archive coverage report
         uses: actions/upload-artifact@v3
         with:
@@ -218,7 +212,7 @@ jobs:
           path: |
             ./build/tools/packchk/coverage/
             ./build/tools/packchk/coverage.info
-          retention-days: ${{ env.retention_days }}
+          retention-days: ${{ needs.setup.outputs.retention_days }}
           if-no-files-found: error
 
   release:
