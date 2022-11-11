@@ -133,7 +133,7 @@ jobs:
         (github.event_name == 'pull_request') ||
         (github.event_name == 'push') ||
         (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/packchk/')) ||
-        needs.set-up.outputs.nightly
+        needs.setup.outputs.nightly
     env:
         lcov_base: https://github.com/linux-test-project/lcov/releases/download/v1.15/
         lcov_installer: lcov-1.15.tar.gz
