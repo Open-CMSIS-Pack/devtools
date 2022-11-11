@@ -1182,7 +1182,7 @@ void RteProject::CollectSettings()
 
 string RteProject::GetRteComponentsH(const string & targetName, const string & prefix) const
 {
-  return GetRteHeader(string("/RTE_Components.h"), targetName, prefix);
+  return GetRteHeader(string("RTE_Components.h"), targetName, prefix);
 }
 
 string RteProject::GetRteHeader(const string& name, const string & targetName, const string & prefix) const

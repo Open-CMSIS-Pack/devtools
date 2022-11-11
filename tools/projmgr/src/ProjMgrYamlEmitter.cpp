@@ -48,8 +48,8 @@ optional<string> ProjMgrYamlEmitter::EmitContextInfo(const ContextItem& context,
   for (const auto& [componentId, component] : context.components) {
     componentVector.push_back({
       {"component", componentId},
-      {"pack", ProjMgrUtils::GetPackageID(component.first->GetPackage())},
-      {"pack-path", fs::absolute(packRoot + "/" + component.first->GetPackagePath()).generic_string()},
+      {"pack", ProjMgrUtils::GetPackageID(component.instance->GetPackage())},
+      {"pack-path", fs::absolute(packRoot + "/" + component.instance->GetPackagePath()).generic_string()},
     });
   }
 
@@ -114,6 +114,8 @@ private:
   void SetContextNode(YAML::Node node, const ContextItem* context);
   void SetComponentsNode(YAML::Node node, const ContextItem* context);
   void SetComponentFilesNode(YAML::Node node, const ContextItem* context, const string& componentId);
+  void SetConstructedFilesNode(YAML::Node node, const ContextItem* context);
+  void SetOutputDirsNode(YAML::Node node, const ContextItem* context);
   void SetPacksNode(YAML::Node node, const ContextItem* context);
   void SetGroupsNode(YAML::Node node, const vector<GroupNode>& groups);
   void SetFilesNode(YAML::Node node, const vector<FileNode>& files);
@@ -176,6 +178,8 @@ void ProjMgrYamlCbuild::SetContextNode(YAML::Node contextNode, const ContextItem
   SetProcessorNode(contextNode[YAML_PROCESSOR], context->targetAttributes);
   SetPacksNode(contextNode[YAML_PACKS], context);
   SetControlsNode(contextNode, context->controls.processed);
+  SetNodeValue(contextNode[YAML_OUTPUTTYPE], context->outputType);
+  SetOutputDirsNode(contextNode[YAML_OUTPUTDIRS], context);
   vector<string> defines;
   for (const auto& define : context->rteActiveTarget->GetDefines()) {
     ProjMgrUtils::PushBackUniquely(defines, define);
@@ -189,30 +193,37 @@ void ProjMgrYamlCbuild::SetContextNode(YAML::Node contextNode, const ContextItem
   SetNodeValue(contextNode[YAML_ADDPATH], includes);
   SetComponentsNode(contextNode[YAML_COMPONENTS], context);
   SetGroupsNode(contextNode[YAML_GROUPS], context->groups);
+  SetConstructedFilesNode(contextNode[YAML_CONSTRUCTEDFILES], context);
 }
 
 void ProjMgrYamlCbuild::SetComponentsNode(YAML::Node node, const ContextItem* context) {
   for (const auto& [componentId, component] : context->components) {
-    const RteComponent* rteComponent = component.first->GetParent()->GetComponent();
-    const ComponentItem* componentItem = component.second;
+    const RteComponent* rteComponent = component.instance->GetParent()->GetComponent();
+    const ComponentItem* componentItem = component.item;
     YAML::Node componentNode;
     SetNodeValue(componentNode[YAML_COMPONENT], componentId);
     SetNodeValue(componentNode[YAML_CONDITION], rteComponent->GetConditionID());
     SetNodeValue(componentNode[YAML_FROM_PACK], ProjMgrUtils::GetPackageID(rteComponent->GetPackage()));
     SetNodeValue(componentNode[YAML_SELECTED_BY], componentItem->component);
+    const string& rteDir = rteComponent->GetAttribute("rtedir");
+    if (!rteDir.empty()) {
+      SetNodeValue(componentNode[YAML_OUTPUT_RTEDIR], FormatPath(context->cproject->directory + "/" + rteDir, context->directories.cprj));
+    }
     SetControlsNode(componentNode, componentItem->build);
     SetComponentFilesNode(componentNode[YAML_FILES], context, componentId);
+    SetNodeValue(componentNode[YAML_GENERATOR], component.generator);
     node.push_back(componentNode);
   }
 }
 
 void ProjMgrYamlCbuild::SetComponentFilesNode(YAML::Node node, const ContextItem* context, const string& componentId) {
   if (context->componentFiles.find(componentId) != context->componentFiles.end()) {
-    context->components.at(componentId).first->GetRteFolder();
-    for (const auto& file : context->componentFiles.at(componentId)) {
+    for (const auto& [file, attr, category, version] : context->componentFiles.at(componentId)) {
       YAML::Node fileNode;
       SetNodeValue(fileNode[YAML_FILE], FormatPath(file, context->directories.cprj));
-      SetNodeValue(fileNode[YAML_CATEGORY], ProjMgrUtils::GetCategory(file));
+      SetNodeValue(fileNode[YAML_CATEGORY], category);
+      SetNodeValue(fileNode[YAML_ATTR], attr);
+      SetNodeValue(fileNode[YAML_VERSION], version);
       node.push_back(fileNode);
     }
   }
@@ -243,8 +254,49 @@ void ProjMgrYamlCbuild::SetFilesNode(YAML::Node node, const vector<FileNode>& fi
   for (const auto& file : files) {
     YAML::Node fileNode;
     SetNodeValue(fileNode[YAML_FILE], file.file);
+    SetNodeValue(fileNode[YAML_CATEGORY], ProjMgrUtils::GetCategory(file.file));
     SetControlsNode(fileNode, file.build);
     node.push_back(fileNode);
+  }
+}
+
+void ProjMgrYamlCbuild::SetConstructedFilesNode(YAML::Node node, const ContextItem* context) {
+  // constructed preIncludeLocal don't appear here because they come under the component they belong to
+  // constructed preIncludeGlobal
+  const auto& preIncludeFiles = context->rteActiveTarget->GetPreIncludeFiles();
+  for (const auto& [component, fileSet] : preIncludeFiles) {
+    if (!component) {
+      for (const auto& file : fileSet) {
+        if (file == "Pre_Include_Global.h") {
+          const string& filename = context->rteActiveProject->GetProjectPath() +
+            context->rteActiveProject->GetRteHeader(file, context->rteActiveTarget->GetName(), "");
+          YAML::Node fileNode;
+          SetNodeValue(fileNode[YAML_FILE], FormatPath(filename, context->directories.cprj));
+          SetNodeValue(fileNode[YAML_CATEGORY], "preIncludeGlobal");
+          node.push_back(fileNode);
+        }
+      }
+    }
+  }
+  // constructed RTE_Components.h
+  const auto& rteComponents = context->rteActiveProject->GetProjectPath() + 
+    context->rteActiveProject->GetRteComponentsH(context->rteActiveTarget->GetName(), "");
+  YAML::Node rteComponentsNode;
+  SetNodeValue(rteComponentsNode[YAML_FILE], FormatPath(rteComponents, context->directories.cprj));
+  SetNodeValue(rteComponentsNode[YAML_CATEGORY], "header");
+  node.push_back(rteComponentsNode);
+}
+
+void ProjMgrYamlCbuild::SetOutputDirsNode(YAML::Node node, const ContextItem* context) {
+  const DirectoriesItem& dirs = context->directories;
+  map<const string, string> outputDirs = {
+    {YAML_OUTPUT_GENDIR, dirs.gendir},
+    {YAML_OUTPUT_INTDIR, dirs.intdir},
+    {YAML_OUTPUT_OUTDIR, dirs.outdir},
+    {YAML_OUTPUT_RTEDIR, dirs.rte},
+  };
+  for (const auto& [name, dirPath] : outputDirs) {
+    SetNodeValue(node[name], dirPath);
   }
 }
 
@@ -325,7 +377,7 @@ const string ProjMgrYamlCbuild::FormatPath(const string& original, const string&
   path = fs::weakly_canonical(fs::path(path), ec).generic_string();
   size_t index = path.find(packRoot);
   if (index != string::npos) {
-    path.replace(index, packRoot.length(), "$CMSIS_PACK_ROOT$");
+    path.replace(index, packRoot.length(), "${CMSIS_PACK_ROOT}");
   } else {
     path = fs::relative(path, directory, ec).generic_string();
   }
