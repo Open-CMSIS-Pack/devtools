@@ -1,0 +1,6 @@
+build-idx:
+  csolution: ../data/TestSolution/pre-include.csolution.yml
+  cprojects:
+    - cproject: ../data/TestSolution/pre-include.cproject.yml
+  cbuilds:
+    - cbuild: pre-include+CM0.cbuild.yml

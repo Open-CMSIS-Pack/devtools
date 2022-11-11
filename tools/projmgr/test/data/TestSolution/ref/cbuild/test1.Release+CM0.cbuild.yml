@@ -8,7 +8,7 @@ build:
     trustzone: non-secure
   packs:
     - pack: ARM::RteTest_DFP@0.2.0
-      path: $CMSIS_PACK_ROOT$/ARM/RteTest_DFP/0.2.0
+      path: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0
   optimize: size
   debug: off
   define:
@@ -21,8 +21,14 @@ build:
     - ../data/TestSolution/path/solution/
     - ../data/TestSolution/path/CM0
     - ../data/TestSolution/path/Release
-    - ../data/TestSolution/TestProject1/RTE/_CMSIS
-    - $CMSIS_PACK_ROOT$/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
+    - ../data/TestSolution/TestProject1/RTE/_test1.Release_CM0
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
+  output-type: exe
+  output-dirs:
+    gendir: ../data/TestSolution/TestProject1/generated
+    intdir: tmp/test1/CM0/Release
+    outdir: out/test1/CM0/Release
+    rtedir: ../data/TestSolution/TestProject1/RTE
   components:
     - component: ARM::Device:Startup&RteTest Startup@2.0.3
       condition: ARMCM0 RteTest
@@ -31,10 +37,16 @@ build:
       files:
         - file: ../data/TestSolution/TestProject1/RTE/Device/RteTest_ARMCM0/gcc_arm.ld
           category: linkerScript
+          attr: config
+          version: 2.0.0
         - file: ../data/TestSolution/TestProject1/RTE/Device/RteTest_ARMCM0/startup_ARMCM0.c
           category: sourceC
+          attr: config
+          version: 2.0.3
         - file: ../data/TestSolution/TestProject1/RTE/Device/RteTest_ARMCM0/system_ARMCM0.c
           category: sourceC
+          attr: config
+          version: 1.0.0
     - component: ARM::RteTest:CORE@0.1.1
       condition: Cortex-M Device
       from-pack: ARM::RteTest_DFP@0.2.0
@@ -76,6 +88,7 @@ build:
         - ../data/TestSolution/TestProject1/path/sources/4/group
       files:
         - file: ../data/TestSolution/TestProject1/main.c
+          category: sourceC
           misc:
             ASM:
               - -ASM-file-GCC
@@ -106,6 +119,7 @@ build:
     - group: Release Group
       files:
         - file: ../data/TestSolution/TestProject1/release.c
+          category: sourceC
           define:
             - DEF1-REL-FILE
           undefine:
@@ -114,3 +128,6 @@ build:
             - ../data/TestSolution/TestProject1/path/1/release/file
           del-path:
             - ../data/TestSolution/TestProject1/path/2/release/file
+  constructed-files:
+    - file: ../data/TestSolution/TestProject1/RTE/_test1.Release_CM0/RTE_Components.h
+      category: header

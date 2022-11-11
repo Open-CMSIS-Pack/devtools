@@ -191,11 +191,11 @@ void ProjMgrGenerator::GenerateCprjComponents(XMLTreeElement* element, const Con
     XMLTreeElement* componentElement = element->CreateElement("component");
     if (componentElement) {
       for (const auto& name : COMPONENT_ATTRIBUTES) {
-        const string& value = component.first->GetAttribute(name);
+        const string& value = component.instance->GetAttribute(name);
         SetAttribute(componentElement, name, value);
       }
       if (context.configFiles.find(componentId) != context.configFiles.end()) {
-        const string& rteDir = component.first->GetAttribute("rtedir");
+        const string& rteDir = component.instance->GetAttribute("rtedir");
         if (!rteDir.empty()) {
           error_code ec;
           // Adjust component's rtePath relative to cprj
@@ -204,10 +204,10 @@ void ProjMgrGenerator::GenerateCprjComponents(XMLTreeElement* element, const Con
       }
 
       // Check whether non-locked option is not set or component version is required from user
-      if (!nonLocked || !RteUtils::GetSuffix(component.second->component, *ProjMgrUtils::PREFIX_CVERSION, true).empty()) {
+      if (!nonLocked || !RteUtils::GetSuffix(component.item->component, *ProjMgrUtils::PREFIX_CVERSION, true).empty()) {
 
         // Set Cversion attribute
-        SetAttribute(componentElement, versionAttribute, component.first->GetAttribute(versionAttribute));
+        SetAttribute(componentElement, versionAttribute, component.instance->GetAttribute(versionAttribute));
 
         // Config files
         for (const auto& configFileMap : context.configFiles) {
@@ -226,12 +226,12 @@ void ProjMgrGenerator::GenerateCprjComponents(XMLTreeElement* element, const Con
         }
       }
 
-      GenerateCprjOptions(componentElement, component.second->build);
-      GenerateCprjMisc(componentElement, component.second->build.misc);
-      GenerateCprjVector(componentElement, component.second->build.defines, "defines");
-      GenerateCprjVector(componentElement, component.second->build.undefines, "undefines");
-      GenerateCprjVector(componentElement, component.second->build.addpaths, "includes");
-      GenerateCprjVector(componentElement, component.second->build.delpaths, "excludes");
+      GenerateCprjOptions(componentElement, component.item->build);
+      GenerateCprjMisc(componentElement, component.item->build.misc);
+      GenerateCprjVector(componentElement, component.item->build.defines, "defines");
+      GenerateCprjVector(componentElement, component.item->build.undefines, "undefines");
+      GenerateCprjVector(componentElement, component.item->build.addpaths, "includes");
+      GenerateCprjVector(componentElement, component.item->build.delpaths, "excludes");
     }
 
   }
