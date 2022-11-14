@@ -18,19 +18,20 @@ on:
     - cron: '0 0 * * *'
 
 concurrency:
-  group: ${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   setup:
     uses: Open-CMSIS-Pack/devtools/.github/workflows/shared_setup_env.yml@main
+    with:
+      run_if: ${{ ((github.event.schedule != '') && github.event.repository.private) == false }}
 
   matrix_prep:
     needs: setup
     uses: Open-CMSIS-Pack/devtools/.github/workflows/shared_matrix_prep.yml@main
     with:
       workflow_name: test_libs
-      run_if: ${{ (github.event.schedule && github.event.repository.private) == false }}
 
   test_libs:
     runs-on: ${{ matrix.runs_on }}
