@@ -32,19 +32,20 @@ on:
     - cron: '0 0 * * *'
 
 concurrency:
-  group: ${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   setup:
     uses: Open-CMSIS-Pack/devtools/.github/workflows/shared_setup_env.yml@main
+    with:
+      run_if: ${{ fromJSON((github.event_name == 'pull_request') || (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/projmgr/')) || ((github.event.schedule != '') && (!github.event.repository.private))) }}
 
   matrix_prep:
     needs: setup
     uses: Open-CMSIS-Pack/devtools/.github/workflows/shared_matrix_prep.yml@main
     with:
       workflow_name: projmgr
-      run_if: ${{ fromJSON((github.event_name == 'pull_request') || (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/projmgr/')) || needs.setup.outputs.nightly) }}
 
   build:
     needs: [ setup, matrix_prep ]
@@ -324,7 +325,7 @@ jobs:
         (github.event_name == 'pull_request') ||
         (github.event_name == 'push') ||
         (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/projmgr/')) ||
-        needs.setup.outputs.nightly
+        (needs.setup.outputs.nightly == 'true')
     env:
         lcov_base: https://github.com/linux-test-project/lcov/releases/download/v1.15/
         lcov_installer: lcov-1.15.tar.gz
