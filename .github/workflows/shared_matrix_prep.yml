@@ -9,8 +9,8 @@ on:
         type: string
       run_if:
         description: 'True to get configuration matrix'
-        default: false 
-        required: true
+        default: true
+        required: false
         type: boolean
     outputs:
       matrix:
