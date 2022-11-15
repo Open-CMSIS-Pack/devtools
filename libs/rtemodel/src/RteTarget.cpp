@@ -29,8 +29,6 @@ static const string szDevHdr = "\n"   \
 " */\n"                                \
 "#define CMSIS_device_header "; // appends device header
 
-static const string carRet = "\n";
-
 static const string szRteCh = "\n"                   \
 "/*\n"  \
 " * Auto generated Run-Time-Environment Configuration File\n" \
@@ -710,12 +708,12 @@ void RteTarget::CollectPreIncludeStrings(RteComponent* c, int count)
   // collect RTE_Components_h
   string s = RteUtils::ExpandInstancePlaceholders(c->GetItemValue("RTE_Components_h"), count);
   if (!s.empty()) {
-    m_RTE_Component_h.insert(componentComment + RteUtils::EnsureCrLf(s));
+    m_RTE_Component_h.insert(componentComment + RteUtils::EnsureLf(s));
   }
   // collect global pre-includes
   s = RteUtils::ExpandInstancePlaceholders(c->GetItemValue("Pre_Include_Global_h"), count);
   if (!s.empty()) {
-    m_PreIncludeGlobal.insert(componentComment + RteUtils::EnsureCrLf(s));
+    m_PreIncludeGlobal.insert(componentComment + RteUtils::EnsureLf(s));
     AddPreIncludeFile("Pre_Include_Global.h", NULL);
   }
   // collect local pre-includes
@@ -723,7 +721,7 @@ void RteTarget::CollectPreIncludeStrings(RteComponent* c, int count)
   if (!s.empty()) {
     string fileName = c->ConstructComponentPreIncludeFileName();
     AddPreIncludeFile(fileName, c);
-    m_PreIncludeLocal[c] = componentComment + RteUtils::EnsureCrLf(s);
+    m_PreIncludeLocal[c] = componentComment + RteUtils::EnsureLf(s);
   }
 }
 
@@ -1564,7 +1562,7 @@ bool RteTarget::GenerateRteHeaders() {
   string content;
   const set<string>& strings = GetGlobalPreIncludeStrings();
   for (auto s : strings) {
-    content += s + carRet;
+    content += s + RteUtils::LF_STRING;
   }
 
   if (!content.empty()) {
@@ -1589,13 +1587,13 @@ bool RteTarget::GenerateRTEComponentsH() {
   const string& devheader = GetDeviceHeader();
   if (!devheader.empty()) {            // found device header file.
     content += szDevHdr;
-    content += "\"" + devheader + "\"" + carRet + carRet;
+    content += "\"" + devheader + "\"" + RteUtils::LF_STRING + RteUtils::LF_STRING;
   }
 
   //---------------------------------------------------
   const set<string>& strings = GetRteComponentHstrings();
   for (auto s : strings) {
-    content += s + carRet;
+    content += s + RteUtils::LF_STRING;
   }
   return GenerateRteHeaderFile("RTE_Components.h", content);
 }
@@ -1623,16 +1621,16 @@ bool RteTarget::GenerateRteHeaderFile(const string& headerName, const string& co
 
   ostringstream  oss;
   oss << szRteCh;
-  oss << " * Project: '" << project->GetName() << "\' " << carRet;
-  oss << " * Target:  '"  << GetName()         << "\' " << carRet;
-  oss << " */" << carRet << carRet;
+  oss << " * Project: '" << project->GetName() << "\' " << RteUtils::LF_STRING;
+  oss << " * Target:  '"  << GetName()         << "\' " << RteUtils::LF_STRING;
+  oss << " */" << RteUtils::LF_STRING << RteUtils::LF_STRING;
 
   // content
-  oss << "#ifndef " << HEADER_H << carRet;
-  oss << "#define " << HEADER_H << carRet << carRet;
-  oss << content << carRet;
-  oss << carRet;
-  oss << "#endif /* " << HEADER_H << " */" << carRet;
+  oss << "#ifndef " << HEADER_H << RteUtils::LF_STRING;
+  oss << "#define " << HEADER_H << RteUtils::LF_STRING << RteUtils::LF_STRING;
+  oss << content << RteUtils::LF_STRING;
+  oss << RteUtils::LF_STRING;
+  oss << "#endif /* " << HEADER_H << " */" << RteUtils::LF_STRING;
 
   string str = oss.str();
   string fileBuf;
