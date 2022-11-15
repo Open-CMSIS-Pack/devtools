@@ -136,7 +136,7 @@ TEST_F(CPackGetTests, PackAddPackInstallationTest) {
 
 // Install pack with missing build environment
 TEST_F(CPackGetTests, PackAddNoEnvValidArgTest) {
-  TestParam param = { "", "pack.cpinstall", "", "", false };
+  TestParam param = { "", "pack.cpinstall", "", "", true };
 
   RunPackAdd(param, false);
 }
@@ -201,7 +201,7 @@ TEST_F(CPackGetTests, InitValidInstallTest) {
 // Validate pack environment setup without
 // build environment and without argument passed
 TEST_F(CPackGetTests, InitNoEnvNoArgTest) {
-  TestParam param = { "", "", "", "", false };
+  TestParam param = { "", "", "", "", true };
 
   RunInit(param, false);
 }
