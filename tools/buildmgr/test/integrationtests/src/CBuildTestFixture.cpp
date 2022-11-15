@@ -15,7 +15,8 @@ void CBuildTestFixture::RunCBuildScript(const TestParam& param) {
     << "error: cbuild.sh not found";
 
   string cmd = "cd " + examples_folder + "/" + param.name + " && " +
-    SH + " \"source " + testout_folder + "/cbuild/etc/setup && cbuild.sh "
+    SH + " \"source " + testout_folder + "/cbuild/etc/setup && cbuild.sh --update-rte "
+    //SH + " \"source " + testout_folder + "/cbuild/etc/setup && cbuild.sh "
     + param.targetArg + ".cprj\"";
   ret_val = system(cmd.c_str());
   ASSERT_EQ(ret_val, 0);
