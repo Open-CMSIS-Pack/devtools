@@ -101,6 +101,7 @@ protected:
   std::string m_export;
   bool m_checkSchema;
   bool m_missingPacks;
+  bool m_updateRteFiles;
   GroupNode m_files;
 
   bool RunConvert(void);

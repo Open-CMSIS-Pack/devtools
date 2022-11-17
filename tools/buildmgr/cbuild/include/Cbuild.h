@@ -30,6 +30,7 @@ struct CbuildRteArgs
   const std::string &update;
   const std::string &intDir;
   const bool checkPack;
+  const bool updateRteFiles;
 };
 
 /**

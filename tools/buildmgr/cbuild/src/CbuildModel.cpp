@@ -43,9 +43,11 @@ CbuildModel::~CbuildModel() {
 bool CbuildModel::Create(const CbuildRteArgs& args) {
   // load cprj file
   CbuildKernel::Get()->SetCmsisPackRoot(args.rtePath);
-  m_cprjProject = CbuildKernel::Get()->LoadCprj(args.file, args.toolchain);
+  m_cprjProject = CbuildKernel::Get()->LoadCprj(args.file, args.toolchain, true, args.updateRteFiles);
   if (!m_cprjProject)
     return false;
+
+  m_updateRteFiles = args.updateRteFiles;
 
   // init paths
   Init(args.file, args.rtePath);
@@ -329,7 +331,7 @@ bool CbuildModel::EvaluateResult() {
   EvaluateResult:
   Extract result info
   */
-  if (!GenerateRteHeaders())
+  if (m_updateRteFiles && !GenerateRteHeaders())
     return false;
   if (!EvalTargetOutput())
     return false;
@@ -514,7 +516,7 @@ bool CbuildModel::EvalConfigFiles() {
       const string& absPrjFile = m_cprjProject->GetProjectPath() + prjFile;
       const string& pkgFile = RteUtils::BackSlashesToSlashes(fi.second->GetFile(m_targetName)->GetOriginalAbsolutePath());
       error_code ec;
-      if (!fs::exists(absPrjFile, ec)) {
+      if (m_updateRteFiles && !fs::exists(absPrjFile, ec)) {
         // Copy config file from pack if it's missing
         LogMsg("M653", VAL("NAME", prjFile));
         string dir = fs::path(absPrjFile).remove_filename().generic_string();

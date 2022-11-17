@@ -254,9 +254,10 @@ public:
    * @param reference to context
    * @param loadGpdsc boolean automatically load gpdsc, default true
    * @param resolveDependencies boolean automatically resolve dependencies, default true
+   * @param updateRteFiles boolean update RTE files, default true
    * @return true if executed successfully
   */
-  bool ProcessContext(ContextItem& context, bool loadGpdsc = true, bool resolveDependencies = true);
+  bool ProcessContext(ContextItem& context, bool loadGpdsc = true, bool resolveDependencies = true, bool updateRteFiles = true);
 
   /**
    * @brief list available packs

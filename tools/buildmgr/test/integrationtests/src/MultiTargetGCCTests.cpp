@@ -26,13 +26,18 @@ void MultiTargetGCCTests::RunCBuildScript(const TestParam& param) {
     << "error: cbuild.sh not found";
 
   const string clean = "cd " + testdata_folder + "/" + param.name + " && " +
-    SH + " \"source " + testout_folder + "/cbuild/etc/setup && cbuild.sh " +
+    SH + " \"source " + testout_folder + "/cbuild/etc/setup && cbuild " +
     param.targetArg + " --clean\"";
   ret_val = system(clean.c_str());
   ASSERT_EQ(ret_val, 0);
 
-  const string cmd = "cd " + testdata_folder + "/" + param.name + " && " +
-    SH + " \"source " + testout_folder + "/cbuild/etc/setup && cbuild.sh " +
+  string cmd = "cd " + testdata_folder + "/" + param.name + " && " +
+    SH + " \"source " + testout_folder + "/cbuild/etc/setup && cbuildgen cmake --update-rte " +
+    param.targetArg + "\"";
+  system(cmd.c_str());
+
+  cmd = "cd " + testdata_folder + "/" + param.name + " && " +
+    SH + " \"source " + testout_folder + "/cbuild/etc/setup && cbuild " +
     param.targetArg + "\"";
   ret_val = system(cmd.c_str());
   ASSERT_EQ(ret_val, 0);

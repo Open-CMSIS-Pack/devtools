@@ -42,6 +42,7 @@ Usage:\n\
    --description arg     Description of the project to be composed\n\
    --pack_root arg       Path to the CMSIS-Pack root directory that stores software packs\n\
    --compiler_root arg   Path to the installation 'etc' directory\n\
+   --update-rte          Update the RTE directory and files\n\
    --quiet               Run cbuildgen silently, printing only error messages\n\n\
 Use 'cbuildgen <command> -h' for more information about a command.\n\
 ";
@@ -89,6 +90,7 @@ int CbuildGen::RunCbuildGen(int argc, char **argv) {
   cxxopts::Option update      ("update", "CprjFile to be generated with fixed versions for reproducing the current build", cxxopts::value<string>());
   cxxopts::Option intDir      ("intdir", "Path to intermediate directory", cxxopts::value<string>());
   cxxopts::Option outDir      ("outdir", "Path to output directory", cxxopts::value<string>());
+  cxxopts::Option updateRte   ("update-rte", "Update the RTE directory and files", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option quiet       ("quiet", "Run cbuildgen silently, printing only error messages", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option layer       ("layer", "Optional layer(s) ID", cxxopts::value<vector<string>>());
   cxxopts::Option name        ("name", "Name of the project to be composed", cxxopts::value<string>());
@@ -104,21 +106,22 @@ int CbuildGen::RunCbuildGen(int argc, char **argv) {
   // command options dictionary
   map<string, pair<vector<cxxopts::Option>, string>> optionsDict = {
     // { "Command", {<options...>, "positional arg help"}}
-    {"packlist", {{toolchain, update, intDir, outDir, quiet}, "<ProjectFile>.cprj"}},
-    {"cmake",    {{toolchain, update, intDir, outDir, quiet}, "<ProjectFile>.cprj"}},
-    {"extract",  {{layer, outDir},                            "<ProjectFile>.cprj"}},
-    {"remove",   {{layer},                                    "<ProjectFile>.cprj"}},
-    {"compose",  {{name, description},                        "<ProjectFile>.cprj <1.clayer>...<N.clayer>"}},
-    {"add",      {{},                                         "<ProjectFile>.cprj <1.clayer>...<N.clayer>"}},
-    {"mkdir",    {{},                                         "<path1>...<pathN>"}},
-    {"touch",    {{},                                         "<filepath1>...<filepathN>"}},
-    {"rmdir",    {{except},                                   "<path1>...<pathN>"}},
+    {"packlist", {{toolchain, update, intDir, outDir, quiet},            "<ProjectFile>.cprj"}},
+    {"cmake",    {{toolchain, update, intDir, outDir, updateRte, quiet}, "<ProjectFile>.cprj"}},
+    {"extract",  {{layer, outDir},                                       "<ProjectFile>.cprj"}},
+    {"remove",   {{layer},                                               "<ProjectFile>.cprj"}},
+    {"compose",  {{name, description},                                   "<ProjectFile>.cprj <1.clayer>...<N.clayer>"}},
+    {"add",      {{},                                                    "<ProjectFile>.cprj <1.clayer>...<N.clayer>"}},
+    {"mkdir",    {{},                                                    "<path1>...<pathN>"}},
+    {"touch",    {{},                                                    "<filepath1>...<filepathN>"}},
+    {"rmdir",    {{except},                                              "<path1>...<pathN>"}},
   };
 
   string cprjFilePath, intDirPath, outDirPath, projectName, projectDesc;
   string toolchainPath, updateCPRJ, packRootPath, compilerRootPath, exceptPath;
   vector<string> posArgs;
   list<string> layerIDs;
+  bool updateRteFiles = false;
 
   try {
     options
@@ -127,7 +130,8 @@ int CbuildGen::RunCbuildGen(int argc, char **argv) {
         cprjFile, args, toolchain,
         update, intDir, outDir, quiet,
         layer, name, description, packRoot,
-        compilerRoot, except, help, version
+        compilerRoot, except, help, version,
+        updateRte
       });
 
     options.parse_positional({"args"});
@@ -199,6 +203,10 @@ int CbuildGen::RunCbuildGen(int argc, char **argv) {
 
   if (parseResult.count("update")) {
     updateCPRJ = parseResult["update"].as<string>();
+  }
+
+  if (parseResult.count("update-rte")) {
+    updateRteFiles = parseResult["update-rte"].as<bool>();
   }
 
   bool mkdirCmd = false, rmdirCmd = false, touchCmd = false, packMode = false, cmakeMode = false;
@@ -330,7 +338,7 @@ int CbuildGen::RunCbuildGen(int argc, char **argv) {
     }
   }
 
-  if ((cmakeMode || packMode) && (!CreateRte({ cprjFilePath, packRootPath, compilerRootPath, toolchainPath, CMEXT, updateCPRJ, intDirPath, packMode }))) {
+  if ((cmakeMode || packMode) && (!CreateRte({ cprjFilePath, packRootPath, compilerRootPath, toolchainPath, CMEXT, updateCPRJ, intDirPath, packMode, updateRteFiles }))) {
     // CreateRte failed
     return 1;
   }

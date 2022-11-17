@@ -1672,12 +1672,13 @@ bool ProjMgrWorker::CheckType(const TypeFilter& typeFilter, const TypePair& type
   }
 }
 
-bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGpdsc, bool resolveDependencies) {
+bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGpdsc, bool resolveDependencies, bool updateRteFiles) {
   context.outputType = context.cproject->outputType.empty() ? "exe" : context.cproject->outputType;
 
   if (!LoadPacks(context)) {
     return false;
   }
+  context.rteActiveProject->SetAttribute("update-rte-files", updateRteFiles ? "1" : "0");
   if (!ProcessPrecedences(context)) {
     return false;
   }
@@ -1966,7 +1967,7 @@ bool ProjMgrWorker::ListDependencies(vector<string>& dependencies, const string&
   set<string>dependenciesSet;
   for (const auto& selectedContext : m_selectedContexts) {
     ContextItem& context = m_contexts[selectedContext];
-    if (!ProcessContext(context, true, false)) {
+    if (!ProcessContext(context, true, false, false)) {
       return false;
     }
     if (!ValidateContext(context)) {
@@ -2049,7 +2050,7 @@ bool ProjMgrWorker::ListGenerators(vector<string>& generators) {
   set<string> generatorsSet;
   for (const auto& selectedContext : m_selectedContexts) {
     ContextItem& context = m_contexts[selectedContext];
-    if (!ProcessContext(context, false)) {
+    if (!ProcessContext(context, false, true, false)) {
       return false;
     }
     for (const auto& [id, generator] : context.generators) {

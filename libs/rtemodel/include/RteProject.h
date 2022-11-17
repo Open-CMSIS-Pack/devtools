@@ -719,6 +719,10 @@ public:
   */
   std::string GetRteHeader(const std::string& name, const std::string & targetName, const std::string& prefix) const;
 
+
+  void WriteInstanceFiles(const std::string& targetName);
+  bool ShouldUpdateRte() const;
+
 protected:
   virtual RteTarget* CreateTarget(RteModel* filteredModel, const std::string& name, const std::map<std::string, std::string>& attributes);
   void AddTargetInfo(const std::string& targetName);

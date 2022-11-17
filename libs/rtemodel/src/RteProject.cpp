@@ -469,8 +469,28 @@ void RteProject::InitFileInstance(RteFileInstance* fi, RteFile* f, int index, Rt
   UpdateConfigFileBackups(fi, f);
 }
 
+void RteProject::WriteInstanceFiles(const std::string& targetName)
+{
+  for (auto it = m_files.begin(); it != m_files.end(); ++it) {
+    const string& fileID = it->first;
+    RteFileInstance* fi = it->second;
+    RteFile* f = fi->GetFile(targetName);
+
+    if (fi->IsRemoved() || fi->GetTargetCount() == 0) {
+      RemoveFileInstance(fileID);
+    } else {
+      if (!RteFsUtils::Exists(fi->GetAbsolutePath())) {
+        UpdateFileInstance(fi, f, false, false);
+      }
+      UpdateConfigFileBackups(fi, f);
+    }
+  }
+}
 bool RteProject::UpdateFileInstance(RteFileInstance* fi, RteFile* f, bool bMerge, bool bUpdateComponent)
 {
+  if (!ShouldUpdateRte())
+    return true;
+
   while (!fi->Copy(f, bMerge)) {
     string str = "Error: cannot copy file\n";
     str += f->GetOriginalAbsolutePath();
@@ -516,6 +536,9 @@ void RteProject::UpdateFileInstanceVersion(RteFileInstance* fi, const string& sa
 
 void RteProject::UpdateConfigFileBackups(RteFileInstance* fi, RteFile* f)
 {
+  if (!ShouldUpdateRte())
+    return;
+
   string src = f->GetOriginalAbsolutePath();
   string absPath = RteFsUtils::AbsolutePath(fi->GetAbsolutePath()).generic_string();
   string dir = RteUtils::ExtractFilePath(absPath, false);
@@ -570,6 +593,9 @@ void RteProject::MergeFiles(const string& curFile, const string& updateFile, con
 
 bool RteProject::RemoveFileInstance(const string& id)
 {
+  if (!ShouldUpdateRte())
+    return true;
+
   map<string, RteFileInstance*>::iterator it = m_files.find(id);
   if (it != m_files.end()) {
     RteFileInstance* fi = it->second;
@@ -941,6 +967,9 @@ void RteProject::Update()
 }
 
 void RteProject::GenerateRteHeaders() {
+  if (!ShouldUpdateRte())
+    return;
+
   // generate header files for all targets
   for (auto itt : m_targets) {
     RteTarget* target = itt.second;
@@ -1047,7 +1076,7 @@ RteGpdscInfo* RteProject::AddGpdscInfo(RteComponent* c, RteTarget* target)
   if (!gi) {
     gi = AddGpdscInfo(gpdsc, 0);
     error_code ec;
-    if (!fs::exists(gpdsc, ec)) { // file not exists
+    if (ShouldUpdateRte() && !fs::exists(gpdsc, ec)) { // file not exists
     // create destination directory
       string dir = RteUtils::ExtractFilePath(gpdsc, true);
       // we need the to directory to exist for modification watch
@@ -2428,6 +2457,11 @@ string RteProject::GetFileComment(const string& group, const string& file) const
       return comment;
   }
   return EMPTY_STRING;
+}
+
+bool RteProject::ShouldUpdateRte() const
+{
+    return GetAttributeAsBool("update-rte-files", true);
 }
 
 const RteFileInfo* RteProject::GetFileInfo(const string& groupName, const string& file, const string& targetName) const

@@ -127,9 +127,10 @@ public:
    * @param cprjFile project to load
    * @param toolchain toolchain to set
    * @param initialize flag to call InitializeCprj()
+   * @param updateRteFiles whether to update RTE files or not
    * @return RteCprjProject pointer
   */
-  RteCprjProject* LoadCprj(const std::string& cprjFile, const std::string& toolchain = RteUtils::EMPTY_STRING, bool initialize = true);
+  RteCprjProject* LoadCprj(const std::string& cprjFile, const std::string& toolchain = RteUtils::EMPTY_STRING, bool initialize = true, bool updateRteFiles = true);
 
   /**
    * @brief initializes loaded Rte
