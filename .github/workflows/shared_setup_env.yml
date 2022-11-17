@@ -2,6 +2,12 @@ name: setup_env
 
 on:
   workflow_call:
+    inputs:
+      run_if:
+        description: 'True if workflow needs to run'
+        default: false 
+        required: true
+        type: boolean
     outputs:
       nightly:
         description: 'True if workflow triggered by nightly, else False'
@@ -13,13 +19,18 @@ on:
 jobs:
   config:
     runs-on: ubuntu-22.04
-    if: ${{ (github.event.schedule && github.event.repository.private) == false }}
+    if: ${{ inputs.run_if }}
     outputs:
       nightly: ${{ steps.config.outputs.nightly }}
       retention_days: ${{ steps.config.outputs.retention_days }}
     steps:
+      - name: check condition status
+        run : |
+          echo ${{ github.event.schedule }}
+          echo ${{ github.event.repository.private }}
+          echo ${{ (github.event.schedule && github.event.repository.private) == false }}
       - name: Check Nightly/Scheduled
         id: config
         run: |
-          echo "nightly=$(echo '${{ (github.event.schedule && (!github.event.repository.private)) && 'true' || 'false' }}')" >> $GITHUB_OUTPUT
-          echo "retention_days=$(echo '${{ (github.event.schedule && (!github.event.repository.private)) && '7' || '1' }}')" >> $GITHUB_OUTPUT
+          echo "nightly=$(echo '${{ ((github.event.schedule != '') && (!github.event.repository.private)) && 'true' || 'false' }}')" >> $GITHUB_OUTPUT
+          echo "retention_days=$(echo '${{ ((github.event.schedule != '') && (!github.event.repository.private)) && '7' || '1' }}')" >> $GITHUB_OUTPUT

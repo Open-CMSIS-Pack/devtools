@@ -257,7 +257,8 @@ bool RteKernel::LoadRequiredPdscFiles(CprjFile* cprjFile)
     string packId, pdscFile;
     // Get pdsc from pack 'path' attribute
     if (packRequirement->HasAttribute("path")) {
-      pdscFile = GetPdscFileFromPath(*packRequirement, RteFsUtils::ParentPath(cprjFile->GetPackageFileName()), packId);
+      const string& absCprjPath = RteFsUtils::AbsolutePath(cprjFile->GetPackageFileName()).generic_string();
+      pdscFile = GetPdscFileFromPath(*packRequirement, RteFsUtils::ParentPath(absCprjPath), packId);
     }
     // Get local repo version
     if (pdscFile.empty()) {

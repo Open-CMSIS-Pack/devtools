@@ -109,7 +109,7 @@ The CMSIS-Pack repository must be present in the development environment.
 ### Invocation
 
 ```text
-CMSIS Project Manager 1.2.0 (C) 2022 Arm Ltd. and Contributors
+CMSIS Project Manager 1.3.0 (C) 2022 Arm Ltd. and Contributors
 
 Usage:
   csolution [-V] [--version] [-h] [--help]
@@ -133,10 +133,9 @@ Usage:
    -g, --generator arg   Code generator identifier
    -m, --missing         List only required packs that are missing in the pack repository
    -l, --load arg        Set policy for packs loading [latest|all|required]
+   -e, --export arg      Set suffix for exporting <context><suffix>.cprj retaining only specified versions
    -n, --no-check-schema Skip schema check
    -o, --output arg      Output directory
-
-Use 'csolution <command> -h' for more information about a command.
 ```
 
 ### Command Examples

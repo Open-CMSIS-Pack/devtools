@@ -3,6 +3,7 @@
 ## Table of Contents
 
 - [cpackget: Pack Installer](#cpackget-pack-installer)
+  - [Table of Contents](#table-of-contents)
   - [Usage Overview](#usage-overview)
   - [Specify CMSIS-Pack root directory](#specify-cmsis-pack-root-directory)
   - [Initialize CMSIS-Pack root directory](#initialize-cmsis-pack-root-directory)
@@ -29,21 +30,25 @@ Usage:
   cpackget [command] [flags]
 
 Available Commands:
-  add             Add Open-CMSIS-Pack packages
-  checksum-create Generates a .checksum file containing the digests of a pack
-  checksum-verify Verifies the integrity of a pack using its .checksum file
-  help            Help about any command
-  init            Initializes a pack root folder
-  list            List installed packs
-  rm              Remove Open-CMSIS-Pack packages
-  update-index    Update the public index
+  add              Add Open-CMSIS-Pack packages
+  checksum-create  Generates a .checksum file containing the digests of a pack
+  checksum-verify  Verifies the integrity of a pack using its .checksum file
+  help             Help about any command
+  init             Initializes a pack root folder
+  list             List installed packs
+  rm               Remove Open-CMSIS-Pack packages
+  signature-create Digitally signs a pack with a X.509 certificate or PGP key
+  signature-verify Verifies a signed pack
+  update-index     Update the public index
 
 Flags:
-  -h, --help               help for cpackget
-  -R, --pack-root string   Specifies pack root folder. Defaults to CMSIS_PACK_ROOT environment variable (default <current setting>)
-  -q, --quiet              Run cpackget silently, printing only error messages
-  -v, --verbose            Sets verboseness level: None (Errors + Info + Warnings), -v (all + Debugging). Specify "-q" for no messages
-  -V, --version            Prints the version number of cpackget and exit
+  -C, --concurrent-downloads uint   Number of concurrent batch downloads. Set to 0 to disable concurrency (default 5)
+  -h, --help                        help for cpackget
+  -R, --pack-root string            Specifies pack root folder. Defaults to CMSIS_PACK_ROOT environment variable (default "C:\\Users\\reikei01\\AppData\\Local\\Arm\\Packs")
+  -q, --quiet                       Run cpackget silently, printing only error messages
+  -T, --timeout uint                Set maximum duration (in seconds) of a download. Disabled by default
+  -v, --verbose                     Sets verboseness level: None (Errors + Info + Warnings), -v (all + Debugging). Specify "-q" for no messages
+  -V, --version                     Prints the version number of cpackget and exit
 
 Use "cpackget [command] --help" for more information about a command.
 ```

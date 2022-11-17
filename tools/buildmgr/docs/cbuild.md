@@ -21,16 +21,19 @@ Usage:
 Flags:
   -c, --clean              Remove intermediate and output directories
   -d, --debug              Enable debug messages
-  -g, --generator string   Select build CMake generator (default "Ninja")
+  -g, --generator string   Select build system generator (default "Ninja")
   -h, --help               Print usage
-  -i, --intdir path        Set directory for intermediate files
-  -j, --jobs number        Number of job slots for parallel execution (default: use all cores)
-  -l, --log file           Save output messages in a log file
-  -o, --outdir path        Set directory for output files
+  -i, --intdir string      Set directory for intermediate files
+  -j, --jobs int           Number of job slots for parallel execution
+  -l, --log string         Save output messages in a log file
+  -o, --outdir string      Set directory for output files
+  -p, --packs              Download missing software packs with cpackget
   -q, --quiet              Suppress output messages except build invocations
+  -r, --rebuild            Remove intermediate and output directories and rebuild
   -s, --schema             Check *.cprj file against CPRJ.xsd schema
   -t, --target string      Optional CMake target name
   -u, --update string      Generate *.cprj file for reproducing current build
+  -v, --verbose            Enable verbose messages from toolchain builds
   -V, --version            Print version
 ```
 

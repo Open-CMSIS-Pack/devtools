@@ -8,7 +8,7 @@ build:
     trustzone: non-secure
   packs:
     - pack: ARM::RteTest_DFP@0.2.0
-      path: $CMSIS_PACK_ROOT$/ARM/RteTest_DFP/0.2.0
+      path: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0
   optimize: none
   debug: on
   misc:
@@ -41,8 +41,14 @@ build:
     - ../data/TestSolution/path/solution/
     - ../data/TestSolution/path/CM3
     - ../data/TestSolution/path/Debug
-    - ../data/TestSolution/TestProject2/RTE/_CMSIS
-    - $CMSIS_PACK_ROOT$/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM3/Include
+    - ../data/TestSolution/TestProject2/RTE/_test2.Debug_CM3
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM3/Include
+  output-type: exe
+  output-dirs:
+    gendir: ../data/TestSolution/TestProject2/generated
+    intdir: tmp/test2/CM3/Debug
+    outdir: out/test2/CM3/Debug
+    rtedir: ../data/TestSolution/TestProject2/RTE
   components:
     - component: ARM::Device:Startup&RteTest Startup@2.0.3
       condition: ARMCM3 RteTest
@@ -51,10 +57,16 @@ build:
       files:
         - file: ../data/TestSolution/TestProject2/RTE/Device/RteTest_ARMCM3/ARMCM3_ac6.sct
           category: linkerScript
+          attr: config
+          version: 1.2.0
         - file: ../data/TestSolution/TestProject2/RTE/Device/RteTest_ARMCM3/startup_ARMCM3.c
           category: sourceC
+          attr: config
+          version: 2.0.3
         - file: ../data/TestSolution/TestProject2/RTE/Device/RteTest_ARMCM3/system_ARMCM3.c
           category: sourceC
+          attr: config
+          version: 1.2.2
     - component: ARM::RteTest:CORE@0.1.1
       condition: Cortex-M Device
       from-pack: ARM::RteTest_DFP@0.2.0
@@ -63,3 +75,7 @@ build:
     - group: Sources
       files:
         - file: ../data/TestSolution/TestProject2/main.c
+          category: sourceC
+  constructed-files:
+    - file: ../data/TestSolution/TestProject2/RTE/_test2.Debug_CM3/RTE_Components.h
+      category: header

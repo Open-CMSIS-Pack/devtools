@@ -15,6 +15,7 @@
 */
 static constexpr const char* YAML_ADDPATHS = "add-paths";
 static constexpr const char* YAML_ADDPATH = "add-path";
+static constexpr const char* YAML_ATTR = "attr";
 static constexpr const char* YAML_BOARD = "board";
 static constexpr const char* YAML_BUILD = "build";
 static constexpr const char* YAML_BUILD_IDX = "build-idx";
@@ -33,6 +34,7 @@ static constexpr const char* YAML_COMPILER = "compiler";
 static constexpr const char* YAML_COMPONENT = "component";
 static constexpr const char* YAML_COMPONENTS = "components";
 static constexpr const char* YAML_CONDITION = "condition";
+static constexpr const char* YAML_CONSTRUCTEDFILES = "constructed-files";
 static constexpr const char* YAML_CONTEXT = "context";
 static constexpr const char* YAML_CONTEXTS = "contexts";
 static constexpr const char* YAML_DEBUG = "debug";
@@ -50,6 +52,7 @@ static constexpr const char* YAML_FROM_PACK = "from-pack";
 static constexpr const char* YAML_FORCOMPILER = "for-compiler";
 static constexpr const char* YAML_FORTYPE = "for-type";
 static constexpr const char* YAML_FPU = "fpu";
+static constexpr const char* YAML_GENERATOR = "generator";
 static constexpr const char* YAML_GROUP = "group";
 static constexpr const char* YAML_GROUPS = "groups";
 static constexpr const char* YAML_INTERFACES = "interfaces";
@@ -90,6 +93,7 @@ static constexpr const char* YAML_TRUSTZONE = "trustzone";
 static constexpr const char* YAML_TYPE = "type";
 static constexpr const char* YAML_UNDEFINES = "undefines";
 static constexpr const char* YAML_UNDEFINE = "undefine";
+static constexpr const char* YAML_VERSION = "version";
 static constexpr const char* YAML_WARNINGS = "warnings";
 
 /**
