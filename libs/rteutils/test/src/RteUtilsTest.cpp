@@ -338,3 +338,21 @@ TEST(RteUtils, FindFirstDigit)
   EXPECT_EQ(string::npos, RteUtils::FindFirstDigit("Test"));
   EXPECT_EQ(string::npos, RteUtils::FindFirstDigit(""));
 }
+
+TEST(RteUtils, EnsureCrLf)
+{
+  const string toReplace("lf\n cr\r lflf\n\n crlf\r\n crcr\r\r");
+  const string expected("lf\r\n cr\r\n lflf\r\n\r\n crlf\r\n crcr\r\n\r\n");
+  string replaced = RteUtils::EnsureCrLf(toReplace);
+  EXPECT_EQ(replaced, expected);
+}
+
+TEST(RteUtils, EnsureLf)
+{
+  const string toReplace("lf\n cr\r lflf\n\n crlf\r\n crcr\r\r");
+  const string expected("lf\n cr\n lflf\n\n crlf\n crcr\n\n");
+  string replaced = RteUtils::EnsureLf(toReplace);
+  EXPECT_EQ(replaced, expected);
+}
+
+// end of RteUtilsTest.cpp

@@ -2131,3 +2131,26 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_WriteCprjFail) {
   RteFsUtils::SetTreeReadOnly(outputFolder);
   EXPECT_EQ(1, RunProjMgr(10, argv));
 }
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_PreInclude) {
+  char* argv[6];
+
+  // convert -s solution.yml
+  const string& csolution = testinput_folder + "/TestSolution/pre-include.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv));
+
+  // Check generated CPRJs
+  CompareFile(testoutput_folder + "/pre-include+CM0.cprj",
+    testinput_folder + "/TestSolution/ref/pre-include+CM0.cprj");
+
+  // Check generated cbuild YMLs
+  CompareFile(testoutput_folder + "/pre-include.cbuild-idx.yml",
+    testinput_folder + "/TestSolution/ref/pre-include.cbuild-idx.yml");
+  CompareFile(testoutput_folder + "/pre-include+CM0.cbuild.yml",
+    testinput_folder + "/TestSolution/ref/pre-include+CM0.cbuild.yml");
+}

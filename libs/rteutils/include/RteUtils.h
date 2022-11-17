@@ -166,11 +166,19 @@ public:
   */
   static std::string BackSlashesToSlashes(const std::string& fileName);
   /**
-   * @brief complete line endings with CRLF
+   * @brief complete line endings with CRLF ("\r\n")
    * @param s string to be manipulated
    * @return string with CRLF line endings
   */
   static std::string EnsureCrLf(const std::string& s);
+
+  /**
+   * @brief complete line endings LF ('n')
+   * @param s string to be manipulated
+   * @return string with CRLF line endings
+  */
+  static std::string EnsureLf(const std::string& s);
+
   /**
    * @brief replace %Instance% with number starting from 0
    * @param s string to be manipulated
@@ -313,6 +321,9 @@ public:
   static const std::string ERROR_STRING;
   static const std::string BASE_STRING;
   static const std::string UPDATE_STRING;
+  static const std::string CRLF_STRING;
+  static const std::string CR_STRING;
+  static const std::string LF_STRING;
 
   static const char CatalogName[];
   static const std::set<std::string> EMPTY_STRING_SET;

@@ -1,0 +1,89 @@
+build:
+  context: pre-include+CM0
+  compiler: AC6
+  device: RteTest_ARMCM0
+  processor:
+    fpu: off
+    trustzone: non-secure
+  packs:
+    - pack: ARM::RteTest@0.1.0
+      path: ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0
+    - pack: ARM::RteTest_DFP@0.2.0
+      path: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0
+  define:
+    - ARMCM0
+    - _RTE_
+  add-path:
+    - ../data/TestSolution/RTE/RteTest
+    - ../data/TestSolution/RTE/_pre-include_CM0
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/ComponentLevel/Include
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/GlobalLevel
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/Include
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
+  output-type: exe
+  output-dirs:
+    gendir: ../data/TestSolution/generated
+    intdir: tmp/pre-include/CM0
+    outdir: out/pre-include/CM0
+    rtedir: ../data/TestSolution/RTE
+  components:
+    - component: ARM::Device:Startup&RteTest Startup@2.0.3
+      condition: ARMCM0 RteTest
+      from-pack: ARM::RteTest_DFP@0.2.0
+      selected-by: Startup
+      files:
+        - file: ../data/TestSolution/RTE/Device/RteTest_ARMCM0/ARMCM0_ac6.sct
+          category: linkerScript
+          attr: config
+          version: 1.0.0
+        - file: ../data/TestSolution/RTE/Device/RteTest_ARMCM0/startup_ARMCM0.c
+          category: sourceC
+          attr: config
+          version: 2.0.3
+        - file: ../data/TestSolution/RTE/Device/RteTest_ARMCM0/system_ARMCM0.c
+          category: sourceC
+          attr: config
+          version: 1.0.0
+    - component: ARM::RteTest:CORE@0.1.1
+      condition: Cortex-M Device
+      from-pack: ARM::RteTest_DFP@0.2.0
+      selected-by: CORE
+    - component: ARM::RteTest:ComponentLevel@0.0.1
+      from-pack: ARM::RteTest@0.1.0
+      selected-by: RteTest:ComponentLevel
+      files:
+        - file: ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/ComponentLevel/ComponentLevel.c
+          category: sourceC
+        - file: ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/ComponentLevel/ComponentLevel.h
+          category: preIncludeLocal
+        - file: ../data/TestSolution/RTE/RteTest/ComponentLevelConfig_0.h
+          category: preIncludeLocal
+          attr: config
+          version: 0.0.1
+        - file: ../data/TestSolution/RTE/RteTest/MyDir/RelativeComponentLevelConfig_0.h
+          category: header
+          attr: config
+          version: 0.0.1
+        - file: ../data/TestSolution/RTE/_pre-include_CM0/Pre_Include_RteTest_ComponentLevel.h
+          category: preIncludeLocal
+    - component: ARM::RteTest:GlobalLevel@0.0.2
+      from-pack: ARM::RteTest@0.1.0
+      selected-by: RteTest:GlobalLevel
+      files:
+        - file: ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/GlobalLevel/GlobalLevel.c
+          category: sourceC
+        - file: ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/GlobalLevel/GlobalLevel.h
+          category: preIncludeGlobal
+        - file: ../data/TestSolution/RTE/RteTest/GlobalLevelConfig.h
+          category: preIncludeGlobal
+          attr: config
+          version: 0.0.2
+        - file: ../data/TestSolution/RTE/RteTest/Config/ConfigInclude.h
+          category: header
+          attr: config
+          version: 0.0.2
+  constructed-files:
+    - file: ../data/TestSolution/RTE/_pre-include_CM0/Pre_Include_Global.h
+      category: preIncludeGlobal
+    - file: ../data/TestSolution/RTE/_pre-include_CM0/RTE_Components.h
+      category: header

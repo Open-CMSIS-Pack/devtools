@@ -26,7 +26,8 @@ Project Manager.
     - [`output-dirs:`](#output-dirs)
     - [`rte-dirs:`](#rte-dirs)
     - [`output-type:`](#output-type)
-    - [`linker:`](#linker)
+    - [Proposal: `output:`](#proposal-output)
+    - [Proposal `linker:`](#proposal-linker)
     - [`for-compiler:`](#for-compiler)
   - [Translation Control](#translation-control)
     - [`language-C:`](#language-c)
@@ -413,6 +414,7 @@ The `project:` node is the start of a `*.cproject.yml` file and can contain the 
 &nbsp;&nbsp; [`add-path:`](#add-path)               |  Optional    | Additional include file paths.
 &nbsp;&nbsp; [`del-path:`](#del-path)               |  Optional    | Remove specific include file paths.
 &nbsp;&nbsp; [`misc:`](#misc)                       |  Optional    | Literal tool-specific controls.
+&nbsp;&nbsp; [`device:`](#device)                   |  Optional    | Device setting (specify processor core).
 &nbsp;&nbsp; [`processor:`](#processor)             |  Optional    | Processor specific settings.
 &nbsp;&nbsp; [`groups:`](#groups)                   | **Required** | List of source file groups along with source files.
 &nbsp;&nbsp; [`components:`](#components)           |  Optional    | List of software components used.
@@ -589,7 +591,36 @@ Value                                                 | Generated Output
 output-type: lib            # Generate a library
 ```
 
-### `linker:`
+### Proposal: `output:`
+
+This is a proposal to replace `output-type` with a more flexible solution.  It allows to generate both a elf/dwarf and bin file. Optionally the filename including path could be specified.
+
+```yml
+output:
+  - type: elf         # default
+    file: <path>\<file>.<ext>    # user define path with filename and extension (optional)
+    for-type:                    # (optional)
+
+  - type: hex
+    file: <path>\<file>.<ext>    # user define path with filename and extension
+
+  - type: bin
+    file: <path>\<file>.<ext>    # user define path with filename and extension
+    base-address:                # offset addresses
+
+  - type: lib                    # when lib is used, an elf and bin file would be not possible
+    file: <path>\<file>.<ext>    # user define path with filename and extension
+```
+
+If accepted, we would need to extend also the access sequences.
+
+### Proposal `linker:`
+
+>**Note:** Linker Control needs review. 
+>
+> Currently the linker command files are provided using the `file:` notation under [`groups:`](#groups) or as part of software components. The extensions `.sct`, `.scf` and `.ld` are automatically recognized as linker script files. The benefit is that linker control files can be part of software components.
+
+
 
 The `linker:` list node controls the linker operation.
 
@@ -971,6 +1002,8 @@ A `device:` is derived from the `board:` setting, but an explicit `device:` sett
 
 If `device:` specifies a device with a multi-core processor, and no explicit `pname` for the processor core selection is specified, the default `pname` of the device is used.
 
+At the level of a `cproject.yml` file, only the `pname` can be specified as the device itself is selected at the level of a `csolution.yml` file.
+
 ## Processor Attributes
 
 ### `processor:`
@@ -979,7 +1012,6 @@ The `processor:` keyword defines attributes such as TrustZone and FPU register u
 
 `processor:`                   | Content
 :------------------------------|:------------------------------------
-&nbsp;&nbsp; `name:`           | Specifies the `pname` to select a processor core. Note: overwrites a `pname` selection at [`device:`](#device) level.
 &nbsp;&nbsp; `trustzone:`      | TrustZone mode: secure \| non-secure \| off.
 &nbsp;&nbsp; `fpu:`            | Control usage of FPU registers (S-Register for Helium/FPU) (default: on for devices with FPU registers).
 &nbsp;&nbsp; `endian:`         | Select endianness: little \| big (only available when devices are configurable).

@@ -76,6 +76,32 @@ struct TargetItem {
 };
 
 /**
+ * @brief selected component item containing
+ *        pointer to component instance
+ *        pointer to input component item
+ *        generator identifier
+*/
+struct SelectedComponentItem {
+  RteComponentInstance* instance;
+  ComponentItem* item;
+  std::string generator;
+};
+
+/**
+ * @brief component file item containing
+ *        file name
+ *        file attribute
+ *        file category
+ *        file version
+*/
+struct ComponentFileItem {
+  std::string name;
+  std::string attr;
+  std::string category;
+  std::string version;
+};
+
+/**
  * @brief translation control item containing
  *        final context controls after processing,
  *        csolution controls,
@@ -155,10 +181,10 @@ struct ContextItem {
   ToolchainItem toolchain;
   std::map<std::string, std::string> targetAttributes;
   std::map<std::string, RtePackage*> packages;
-  std::map<std::string, std::pair<RteComponent*, ComponentItem*>> components;
+  std::map<std::string, SelectedComponentItem> components;
   std::vector<std::tuple<RteItem::ConditionResult, std::string, std::set<std::string>, std::set<std::string>>> validationResults;
   std::map<std::string, std::map<std::string, RteFileInstance*>> configFiles;
-  std::map<std::string, std::vector<std::string>> componentFiles;
+  std::map<std::string, std::vector<ComponentFileItem>> componentFiles;
   std::vector<GroupNode> groups;
   std::map<std::string, std::string> filePaths;
   std::map<std::string, RteGenerator*> generators;
@@ -410,6 +436,7 @@ protected:
   std::string GetBoardInfoString(const std::string& vendor, const std::string& name, const std::string& revision) const;
   std::vector<PackageItem> GetFilteredPacks(const PackageItem& packItem, const std::string& rtePath) const;
   ToolchainItem GetToolchain(const std::string& compiler);
+  bool IsPreIncludeByTarget(const RteTarget* activeTarget, const std::string& preInclude);
 };
 
 #endif  // PROJMGRWORKER_H

@@ -22,6 +22,9 @@ const string RteUtils::EMPTY_STRING("");
 const string RteUtils::BASE_STRING("base");
 const string RteUtils::UPDATE_STRING("update");
 
+const string RteUtils::CRLF_STRING("\r\n");
+const string RteUtils::CR_STRING("\r");
+const string RteUtils::LF_STRING("\n");
 
 const set<string> RteUtils::EMPTY_STRING_SET;
 const list<string> RteUtils::EMPTY_STRING_LIST;
@@ -224,6 +227,16 @@ string RteUtils::EnsureCrLf(const string& s)
   }
   return tmp;
 }
+
+string RteUtils::EnsureLf(const std::string& s)
+{
+  string tmp(s);
+  ReplaceAll(tmp, RteUtils::CRLF_STRING, RteUtils::LF_STRING);
+  return ReplaceAll(tmp, RteUtils::CR_STRING, RteUtils::LF_STRING);
+}
+
+
+
 
 string RteUtils::ExpandInstancePlaceholders(const string& s, int count)
 {

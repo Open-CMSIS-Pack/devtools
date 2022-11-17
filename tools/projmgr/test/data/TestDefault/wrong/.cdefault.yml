@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/1.2.0/tools/projmgr/schemas/cdefault.schema.json
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/1.3.0/tools/projmgr/schemas/cdefault.schema.json
 
 default:
   device: RteTest_ARMCM0
