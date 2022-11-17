@@ -34,7 +34,7 @@ void CBuildGenTests::TearDown() {
 }
 
 TEST_F(CBuildGenTests, GenCMake_AccessSequence) {
-  TestParam param = { "GCC/AccessSequence", "Project", "", "cmake", true };
+  TestParam param = { "GCC/AccessSequence", "Project", "--update-rte", "cmake", true };
 
   RunCBuildGen           (param);
   CheckCMakeLists        (param);
@@ -42,7 +42,7 @@ TEST_F(CBuildGenTests, GenCMake_AccessSequence) {
 
 TEST_F(CBuildGenTests, GenCMake_AccessSequence_Missing_Bname) {
   TestParam param = {
-    "GCC/AccessSequence", "Project_Missing_BoardName", "", "cmake", true
+    "GCC/AccessSequence", "Project_Missing_BoardName", "--update-rte", "cmake", true
   };
 
   RunCBuildGen(param);
@@ -50,7 +50,7 @@ TEST_F(CBuildGenTests, GenCMake_AccessSequence_Missing_Bname) {
 
 TEST_F(CBuildGenTests, GenCMake_AccessSequence_Invalid_Access_Sequence) {
   TestParam param = {
-    "GCC/AccessSequence", "Project_Invalid_Access_Sequence", "", "cmake", false
+    "GCC/AccessSequence", "Project_Invalid_Access_Sequence", "--update-rte", "cmake", false
   };
 
   RunCBuildGen(param);
@@ -58,14 +58,14 @@ TEST_F(CBuildGenTests, GenCMake_AccessSequence_Invalid_Access_Sequence) {
 
 TEST_F(CBuildGenTests, GenCMake_AccessSequence_Unknown_Board_Name) {
   TestParam param = {
-    "GCC/AccessSequence", "Project_Unknown_Board_Name", "", "cmake", false
+    "GCC/AccessSequence", "Project_Unknown_Board_Name", "--update-rte", "cmake", false
   };
 
   RunCBuildGen(param);
 }
 
 TEST_F(CBuildGenTests, GenCMake_Fixed_Cprj) {
-  TestParam param = { "AC6/Build_AC6", "Simulation", "--update=Simulation.fixed.cprj", "cmake", true };
+  TestParam param = { "AC6/Build_AC6", "Simulation", "--update-rte --update=Simulation.fixed.cprj", "cmake", true };
 
   RunCBuildGen           (param);
   CheckDescriptionFiles  (testout_folder + "/" + param.name + "/" + param.targetArg + ".fixed.cprj",
@@ -74,7 +74,7 @@ TEST_F(CBuildGenTests, GenCMake_Fixed_Cprj) {
 
 // Validate Branch Protection
 TEST_F(CBuildGenTests, GenCMake_BranchProtection) {
-  TestParam param = { "AC6/BranchProtection", "Project", "", "cmake", true };
+  TestParam param = { "AC6/BranchProtection", "Project", "--update-rte", "cmake", true };
   RunCBuildGen(param);
   CheckCMakeLists(param);
 }
@@ -106,7 +106,7 @@ TEST_F(CBuildGenTests, InvalidCommandTest) {
 TEST_F(CBuildGenTests, GenCMakeTest_1) {
   TestParam param = {
     "AC6/Build_AC6", "Simulation",
-    "", "cmake", true
+    "--update-rte", "cmake", true
   };
 
   RunCBuildGen           (param);
@@ -117,7 +117,7 @@ TEST_F(CBuildGenTests, GenCMakeTest_1) {
 TEST_F(CBuildGenTests, GenCMakeTest_2) {
   TestParam param = {
     "GCC/TranslationControl/Project1", "Project",
-    "", "cmake", true
+    "--update-rte", "cmake", true
   };
 
   RunCBuildGen           (param);
@@ -128,7 +128,7 @@ TEST_F(CBuildGenTests, GenCMakeTest_2) {
 TEST_F(CBuildGenTests, GenCMakeTest_3) {
   TestParam param = {
     "GCC/TranslationControl/Project2", "Project",
-    "", "cmake", true
+    "--update-rte", "cmake", true
   };
 
   RunCBuildGen           (param);
@@ -139,7 +139,7 @@ TEST_F(CBuildGenTests, GenCMakeTest_3) {
 TEST_F(CBuildGenTests, GenCMakeTest_4) {
   TestParam param = {
     "GCC/TranslationControl/Project3", "Project",
-    "", "cmake", true
+    "--update-rte", "cmake", true
   };
 
   RunCBuildGen           (param);
@@ -153,7 +153,7 @@ TEST_F(CBuildGenTests, Gen_Output_In_SameDir) {
   for (auto outdir = outDirs.begin(); outdir != outDirs.end(); ++outdir) {
     TestParam param = {
       "AC6/Build_AC6", "Simulation",
-      "--outdir=" + (*outdir), "cmake", true
+      "--update-rte --outdir=" + (*outdir), "cmake", true
     };
     error_code ec;
     auto outPath = fs::current_path(ec).append(*outdir);
@@ -176,7 +176,7 @@ TEST_F(CBuildGenTests, GenCMake_Under_multipleLevel_OutDir_Test) {
   string intDir = "./Int1/Int2";
   TestParam param = {
     "AC6/Build_AC6", "Simulation",
-    "--outdir=" + outDir + " --intdir=" + intDir, "cmake", true
+    "--update-rte --outdir=" + outDir + " --intdir=" + intDir, "cmake", true
   };
   error_code ec;
   auto outPath = fs::current_path(ec).append(outDir);
@@ -205,7 +205,7 @@ TEST_F(CBuildGenTests, GenCMake_Output_At_Absolute_path) {
   string intDir = testout_folder + "/BuildIntermediate";
   TestParam param = {
     "AC6/Build_AC6", "Simulation",
-    "--outdir=" + outDir + " --intdir=" + intDir, "cmake", true
+    "--update-rte --outdir=" + outDir + " --intdir=" + intDir, "cmake", true
   };
   error_code ec;
   auto outPath = fs::path(testout_folder + "/" + outDir);
@@ -238,7 +238,7 @@ TEST_F(CBuildGenTests, GenCMake_Output_At_Relative_path) {
 
   TestParam param = {
     "AC6/Build_AC6", "Simulation",
-    "--outdir=" + outDir + " --intdir=" + intDir, "cmake", true
+    "--update-rte --outdir=" + outDir + " --intdir=" + intDir, "cmake", true
   };
   auto outPath = fs::current_path(ec).append(outDir);
   auto intPath = fs::current_path(ec).append(intDir);
@@ -309,7 +309,7 @@ TEST_F(CBuildGenTests, MultipleCommandsTest) {
 TEST_F(CBuildGenTests, NoTargetArgTest) {
   TestParam param = {
     "GCC/Build_GCC", "",
-    "", "cmake", false
+    "--update-rte", "cmake", false
   };
 
   RunCBuildGen          (param);
@@ -368,7 +368,7 @@ TEST_F(CBuildGenTests, GeneratePackListDirTest) {
 TEST_F(CBuildGenTests, GenCMake_DuplicatedSourceFilename) {
   TestParam param = {
     "Mixed/Minimal_DupSrc", "MyProject",
-    "", "cmake", true
+    "--update-rte", "cmake", true
   };
 
   RunCBuildGen          (param);

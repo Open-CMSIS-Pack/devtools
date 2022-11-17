@@ -15,10 +15,12 @@ void CBuildTestFixture::RunCBuildScript(const TestParam& param) {
     << "error: cbuild.sh not found";
 
   string cmd = "cd " + examples_folder + "/" + param.name + " && " +
-    SH + " \"source " + testout_folder + "/cbuild/etc/setup" +
-    " && cbuildgen cmake --update-rte " +
-    param.targetArg + ".cprj" +
-    " && cbuild " +
+    SH + " \"source " + testout_folder + "/cbuild/etc/setup && cbuildgen cmake --update-rte " +
+    param.targetArg + ".cprj\"";
+  system(cmd.c_str());
+
+  cmd = "cd " + examples_folder + "/" + param.name + " && " +
+    SH + " \"source " + testout_folder + "/cbuild/etc/setup && cbuild " +
     param.targetArg + ".cprj\"";
   ret_val = system(cmd.c_str());
   ASSERT_EQ(ret_val, 0);
@@ -42,13 +44,15 @@ void CBuildTestFixture::RunCBuildScriptClean(const TestParam& param) {
 void CBuildTestFixture::RunCBuildScriptWithArgs(const TestParam& param) {
   int ret_val;
   string cmd = "cd \"" + examples_folder + "/" + param.name + "\" && " +
-               SH + " \"source " + testout_folder + "/cbuild/etc/setup" +
-               " && cbuildgen cmake --update-rte" +
-              (param.targetArg.empty() ? "" : " " + param.targetArg + ".cprj") +
-               " && cbuild" +
-              (param.targetArg.empty() ? "" : " " + param.targetArg + ".cprj") +
-              (param.command.empty() ? "" : " " + param.command) +
-              (param.options.empty() ? "" : " " + param.options) + "\"";
+    SH + " \"source " + testout_folder + "/cbuild/etc/setup && cbuildgen cmake --update-rte " +
+    param.targetArg + ".cprj\"";
+  system(cmd.c_str());
+
+  cmd = "cd \"" + examples_folder + "/" + param.name + "\" && " +
+    SH + " \"source " + testout_folder + "/cbuild/etc/setup && cbuild" +
+    (param.targetArg.empty() ? "" : " " + param.targetArg + ".cprj") +
+    (param.command.empty() ? "" : " " + param.command) +
+    (param.options.empty() ? "" : " " + param.options) + "\"";
   ret_val = system(cmd.c_str());
   ASSERT_EQ(param.expect, (ret_val == 0) ? true : false);
 }
