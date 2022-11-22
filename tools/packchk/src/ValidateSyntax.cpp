@@ -345,7 +345,7 @@ bool ValidateSyntax::CheckPackageReleaseDate(RtePackage* pKg)
   string latestVersion;
   string latestDate;
   int latestLineNo = 0;
-  
+
   for(auto child : childs) {
     string releaseDate = child->GetAttribute("date");
     string releaseVersion = child->GetAttribute("version");
@@ -523,14 +523,14 @@ string ValidateSyntax::CreateId(RteItem* prop, const string& cpuName)
 void ValidateSyntax::InitFeatures()
 {
   // device
+  m_featureTableDevice["Crypto"] = FeatureEntry("Cryptographic Engine", "<feature type=\"Crypto\" n=\"128.256\" name=\"HW accelerated AES Encryption Engine\"/>", "128/256-bit HW accelerated AES Encryption Engine");
   m_featureTableDevice["NVIC"] = FeatureEntry("NVIC", "<feature type=\"NVIC\" n=\"120\" name=\"NVIC\"/>", "NVIC with 120 interrupt sources");
   m_featureTableDevice["DMA"] = FeatureEntry("DMA", "<feature type=\"DMA\" n=\"16\" name=\"High-Speed DMA\"/>", "16-channel High-Speed DMA");
-  m_featureTableDevice["Crypto"] = FeatureEntry("Cryptographic Engine", "<feature type=\"Crypto\" n=\"128.256\" name=\"HW accelerated AES Encryption Engine\"/>", "128/256-bit HW accelerated AES Encryption Engine");
   m_featureTableDevice["RNG"] = FeatureEntry("Random Number Generator", "<feature type=\"RNG\" name=\"True Random Number Generator\"/>", "True Random Number Generator");
   m_featureTableDevice["CoreOther"] = FeatureEntry("Other Core Feature", "<feature type=\"CoreOther\" n=1 name=\"96-bit Unique Identifier\"/>", "1 x 96-bit Unique Identifier");
+  m_featureTableDevice["ExtBus"] = FeatureEntry("External Bus Interface", "<feature type=\"ExtBus\" n=\"16\" name=\"External Bus Interface for SRAM Communication\"/>", "16-bit External Bus Interface for SRAM Communication");
   m_featureTableDevice["Memory"] = FeatureEntry("Memory", "<feature type=\"Memory\" n=\"128\" name=\"EEPROM\"/>", "128 byte EEPROM");
   m_featureTableDevice["MemoryOther"] = FeatureEntry("Other Memory Type", "<feature type=\"MemoryOther\" n=\"1\" name=\"1 kB MRAM\"/>", "1 x 1 kB MRAM");
-  m_featureTableDevice["ExtBus"] = FeatureEntry("External Bus Interface", "<feature type=\"ExtBus\" n=\"16\" name=\"External Bus Interface for SRAM Communication\"/>", "16-bit External Bus Interface for SRAM Communication");
   m_featureTableDevice["XTAL"] = FeatureEntry("External Crystal Oscillator", "<feature type=\"XTAL\" n=\"4000000\" m=\"25000000\" name=\"External Crystal Oscillator\"/>", "4 MHz .. 25 MHz External Crystal Oscillator");
   m_featureTableDevice["IntRC"] = FeatureEntry("Internal RC Oscillator", "<feature type=\"IntRC\" n=\"16000000\" name=\"Internal RC Oscillator with +/- 1% accuracy\"/>", "16 MHz Internal RC Oscillator with +/- 1% accuracy");
   m_featureTableDevice["PLL"] = FeatureEntry("PLL", "<feature type=\"PLL\" n=\"3\" name=\"Internal PLL\"/>", "3 Internal PLL");
@@ -545,8 +545,8 @@ void ValidateSyntax::InitFeatures()
   m_featureTableDevice["PLCC"] = FeatureEntry("PLCC", "<feature type=\"PLCC\" n=\"20\" name=\"PLCC Package\"/>", "20-lead PLCC Package");
   m_featureTableDevice["QFN"] = FeatureEntry("QFN", "<feature type=\"QFN\" n=\"33\" name=\"QFN Package\"/>", "33-pad QFN Package");
   m_featureTableDevice["QFP"] = FeatureEntry("QFP", "<feature type=\"QFP\" n=\"128\" name=\"Low-Profile QFP Package\"/>", "128-lead Low-Profile QFP Package");
-  m_featureTableDevice["SOP"] = FeatureEntry("SOP", "<feature type=\"SOP\" n=\"16\" name=\"SSOP Package\"/>", "16-lead SSOP Package");
   m_featureTableDevice["SON"] = FeatureEntry("SON", "<feature type=\"SON\" n=\"16\" name=\"SSON Package\"/>", "16-no-lead SSON Package");
+  m_featureTableDevice["SOP"] = FeatureEntry("SOP", "<feature type=\"SOP\" n=\"16\" name=\"SSOP Package\"/>", "16-lead SSOP Package");
   m_featureTableDevice["DIP"] = FeatureEntry("DIP", "<feature type=\"DIP\" n=\"16\" name=\"Dual In-Line Package\"/>", "16-lead Dual In-Line Package");
   m_featureTableDevice["PackageOther"] = FeatureEntry("Other Package Type", "<feature type=\"PackageOther\" n=\"44\" name=\"My other Package\"/>", "44-contacts My other Package");
   m_featureTableDevice["IOs"] = FeatureEntry("Inputs/Outputs", "<feature type=\"IOs\" n=\"112\" name=\"General Purpose I/Os, 5V tolerant\"/>", "112 General Purpose I/Os, 5V tolerant");
@@ -556,8 +556,8 @@ void ValidateSyntax::InitFeatures()
   m_featureTableDevice["DAC"] = FeatureEntry("DAC", "<feature type=\"DAC\" n=\"2\" m=\"10\"/>", "2 x 12-bit DAC");
   m_featureTableDevice["TempSens"] = FeatureEntry("Temperature Sensor", "<feature type=\"TempSens\" n=\"1\"/>", "1 x Temperature Sensor");
   m_featureTableDevice["AnalogOther"] = FeatureEntry("Other Analog Peripheral", "<feature type=\"AnalogOther\" n=\"1\" name=\"My Analog\"/>", "1 x My Analog");
-  m_featureTableDevice["Timer"] = FeatureEntry("Timer/Counter Module", "<feature type=\"Timer\" n=\"2\" m=\"32\" name=\"Timer Module with Quadrature Encoding\"/>", "2 x 32-bit Timer Module with Quadrature Encoding");
   m_featureTableDevice["PWM"] = FeatureEntry("PWM", "<feature type=\"PWM\" n=\"2\" m=\"16\" name=\"Pulse Width Modulation\"/>", "2 x 16-bit Pulse Width Modulation");
+  m_featureTableDevice["Timer"] = FeatureEntry("Timer/Counter Module", "<feature type=\"Timer\" n=\"2\" m=\"32\" name=\"Timer Module with Quadrature Encoding\"/>", "2 x 32-bit Timer Module with Quadrature Encoding");
   m_featureTableDevice["WDT"] = FeatureEntry("Watchdog", "<feature type=\"WDT\" n=\"1\"/>", "1 x Watchdog Timer");
   m_featureTableDevice["TimerOther"] = FeatureEntry("Other Timer Peripheral", "<feature type=\"TimerOther\" n=\"1\" name=\"Quadrature En-/Decoder\"/>", "1 x Quadrature En-/Decoder");
   m_featureTableDevice["MPSerial"] = FeatureEntry("Multi-Purpose Serial Peripheral", "<feature type=\"MPSerial\" n=\"4\" name=\"Multi-Purpose Serial Interface Module: I2C, I2S, SPI, UART\"/>", "4 x Multi-Purpose Serial Interface Module: I2C, I2S, SPI, UART");
@@ -579,9 +579,32 @@ void ValidateSyntax::InitFeatures()
   m_featureTableDevice["LCD"] = FeatureEntry("Segment LCD Controller", "<feature type=\"LCD\" n=\"1\" m=\"16.40\" name=\"Segment LCD Controller\"/>", "1 x 16 x 40 Segment LCD Controller");
   m_featureTableDevice["Touch"] = FeatureEntry("Capacitive Touch Inputs", "<feature type=\"Touch\" n=\"10\" name=\"Capacitive Touch Inputs\"/>", "10 x Capacitive Touch Inputs");
   m_featureTableDevice["Other"] = FeatureEntry("Other Feature", "<feature type=\"Other\" n=\"2\" name=\"My other Interface\"/>", "2 x My other Interface");
+  m_featureTableDevice["GPU"] = FeatureEntry("GPU", "<feature type=\"GPU\"/>", "GPU");
+  m_featureTableDevice["AI"] = FeatureEntry("AI", "<feature type=\"AI\"/>", "AI");
+  m_featureTableDevice["FPGA"] = FeatureEntry("FPGA", "<feature type=\"FPGA\"/>", "FPGA");
+  m_featureTableDevice["Application"] = FeatureEntry("Application", "<feature type=\"Application\"/>", "Application");
+  m_featureTableDevice["IrDa"] = FeatureEntry("IrDa", "<feature type=\"IrDa\"/>", "IrDa");
+  m_featureTableDevice["HDMI"] = FeatureEntry("HDMI", "<feature type=\"HDMI\"/>", "HDMI");
+  m_featureTableDevice["MIPI"] = FeatureEntry("MIPI", "<feature type=\"MIPI\"/>", "MIPI");
+  m_featureTableDevice["PCIE"] = FeatureEntry("PCIE", "<feature type=\"PCIE\"/>", "PCIE");
+  m_featureTableDevice["Bluetooth"] = FeatureEntry("Bluetooth", "<feature type=\"Bluetooth\"/>", "Bluetooth");
+  m_featureTableDevice["ZigBee"] = FeatureEntry("ZigBee", "<feature type=\"ZigBee\"/>", "ZigBee");
+  m_featureTableDevice["802.15.4"] = FeatureEntry("802.15.4", "<feature type=\"802.15.4\"/>", "802.15.4");
+  m_featureTableDevice["LoRa"] = FeatureEntry("LoRa", "<feature type=\"LoRa\"/>", "LoRa");
+  m_featureTableDevice["LTE Cat-M"] = FeatureEntry("LTE Cat-M", "<feature type=\"LTE Cat-M\"/>", "LTE Cat-M");
+  m_featureTableDevice["NB-IoT"] = FeatureEntry("NB-IoT", "<feature type=\"NB-IoT\"/>", "NB-IoT");
+  m_featureTableDevice["NFC"] = FeatureEntry("NFC", "<feature type=\"NFC\"/>", "NFC");
+  m_featureTableDevice["WirelessOther"] = FeatureEntry("WirelessOther", "<feature type=\"WirelessOther\"/>", "WirelessOther");
+  m_featureTableDevice["I/O"] = FeatureEntry("I/O", "<feature type=\"I/O\"/>", "I/O");
+  m_featureTableDevice["D/A"] = FeatureEntry("D/A", "<feature type=\"D/A\"/>", "D/A");
+  m_featureTableDevice["A/D"] = FeatureEntry("A/D", "<feature type=\"A/D\"/>", "A/D");
+  m_featureTableDevice["Com"] = FeatureEntry("Com", "<feature type=\"Com\"/>", "Com");
+  m_featureTableDevice["USB"] = FeatureEntry("USB", "<feature type=\"USB\"/>", "USB");
+  m_featureTableDevice["Package"] = FeatureEntry("Package", "<feature type=\"Package\"/>", "Package");
+  m_featureTableDevice["Backup"] = FeatureEntry("Backup", "<feature type=\"Backup\"/>", "Backup");
 
   // Board
-  m_featureTableBoard["ODbg"] = FeatureEntry("Integrated Debug Adapter", "<feature type=\"ODbg\" n=\"1\" name=\"Integrated ST-Link on USB Connector J13\"/>", "1 x Integrated ST-Link on USB Connector J13");
+  m_featureTableBoard["ODbg"] = FeatureEntry("Integrated Debug Adapter", "<feature type=\"ODbg\" n=\"1\" name=\"Integrated Link on USB Connector J13\"/>", "1 x Integrated Link on USB Connector J13");
   m_featureTableBoard["XTAL"] = FeatureEntry("Crystal Oscillator", "<feature type=\"XTAL\" n=\"8000000\"/>", "8 MHz Crystal Oscillator");
   m_featureTableBoard["PWR"] = FeatureEntry("Power Supply", "<feature type=\"PWR\" n=\"8\" m=\"12\"/>", "8 V - 12 V Power Supply");
   m_featureTableBoard["PWRSock"] = FeatureEntry("Power Socket", "<feature type=\"PWRSock\" n=\"1\" name=\"Coaxial Power Receptacle\"/>", "1 x Coaxial Power Receptacle");
@@ -631,6 +654,7 @@ void ValidateSyntax::InitFeatures()
   m_featureTableBoard["LCD"] = FeatureEntry("LCD", "<feature type=\"LCD\" n=\"1\" m=\"16.40\" name=\"Segment LCD Controller\"/>", "1 x 16 x 40 Segment LCD Controller");
   m_featureTableBoard["GLCD"] = FeatureEntry("GLCD", "<feature type=\"GLCD\" n=\"1\" m=\"320.240\" name=\"2.4 inch Color TFT LCD with resistive touchscreen\"/>", "320 x 240 Pixel 2.4 inch Color TFT LCD with resistive touchscreen");
   m_featureTableBoard["Speaker"] = FeatureEntry("Speaker", "<feature type=\"Speaker\" n=\"1\"/>", "1 x Speaker");
+  m_featureTableBoard["VirtualHW"] = FeatureEntry("VirtualHW", "<feature type=\"VirtualHW\"/>", "VirtualHW");
   m_featureTableBoard["Other"] = FeatureEntry("Other Feature", "<feature type=\"Other\" n=1 name=\"My Other Feature\"/>", "1 x My Other Feature");
 
   // OTHER --> other
