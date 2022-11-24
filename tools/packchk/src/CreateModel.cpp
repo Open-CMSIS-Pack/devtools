@@ -8,6 +8,7 @@
 
 #include "ErrLog.h"
 #include "RteFsUtils.h"
+#include "XmlChecker.h"
 
 #include <list>
 #include <string>
@@ -115,6 +116,12 @@ bool CreateModel::AddPdsc(const string& pdscFile, bool bSkipCheckForOtherPdsc /*
     }
   }
 
+  if(m_validatePdsc) {
+    if(!XmlChecker::Validate(pdscFile, m_schemaFile)) {
+      return false;
+    }
+  }
+
   if(!m_reader.AddFile(pdscFile)) {
     LogMsg("M201", PATH(pdscFile));
     return false;
@@ -138,6 +145,23 @@ bool CreateModel::AddRefPdsc(const std::set<std::string>& pdscRefFiles)
     }
   }
 
+  return true;
+}
+
+bool CreateModel::SetPackXsd(const std::string& packXsdFile)
+{
+  m_validatePdsc = true;
+
+  if(packXsdFile.empty()) {
+    return false;
+  }
+
+  if(!RteFsUtils::Exists(packXsdFile)) {
+    LogMsg("M218", PATH(packXsdFile));
+    return false;
+  }
+
+  m_schemaFile = RteFsUtils::AbsolutePath(packXsdFile).generic_string();;
   return true;
 }
 

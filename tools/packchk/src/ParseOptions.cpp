@@ -110,6 +110,25 @@ bool ParseOptions::SetLogFile(const string& logFile)
 }
 
 /**
+ * @brief option "s,xsd"
+ * @return
+ */
+bool ParseOptions::SetXsdFile()
+{
+  return m_packOptions.SetXsdFile();
+}
+
+/**
+ * @brief option "s,xsd"
+ * @param logFile string xsd file name
+ * @return
+*/
+bool ParseOptions::SetXsdFile(const string& xsdFile)
+{
+  return m_packOptions.SetXsdFile(xsdFile);
+}
+
+/**
  * @brief option "n"
  * @param packNamePath string filename
  * @return passed / failed
@@ -144,6 +163,16 @@ bool ParseOptions::SetIgnoreOtherPdscFiles(bool bIgnore)
 }
 
 /**
+ * @brief option "disable-validation"
+ * @param bIgnore true/false
+ * @return passed / failed
+*/
+bool ParseOptions::SetDisableValidation(bool bDisable)
+{
+  return m_packOptions.SetDisableValidation(bDisable);
+}
+
+/**
  * @brief parses all options
  * @param argc command line
  * @param argv command line
@@ -168,12 +197,14 @@ ParseOptions::Result ParseOptions::Parse(int argc, const char* argv[])
         {"i,include", "PDSC file(s) as dependency reference", cxxopts::value<std::vector<std::string>>()},
         {"b,log", "Log file", cxxopts::value<string>()},
         {"x,diag-suppress", "Suppress Messages", cxxopts::value<std::vector<std::string>>()},
+        {"s,xsd", "Specify PACK.xsd path.", cxxopts::value<string>()},
         {"v,verbose", "Verbose mode. Prints extra process information", cxxopts::value<bool>()->default_value("false")},
         {"w,warning", "Warning level [0|1|2|3|all]", cxxopts::value<string>()->default_value("all")},  /* -w0 .. -w3, -wall */
         {"u,url", "Verifies that the specified URL matches with the <url> element in the *.PDSC file", cxxopts::value<string>()->default_value("")},
         {"n,name", "Text file for pack file name", cxxopts::value<string>()->default_value("")},
         {"V,version", "Print version"},
         {"h,help", "Print usage"},
+        {"disable-validation", "Disable the pdsc validation against the PACK.xsd.", cxxopts::value<bool>()->default_value("false")},
         {"allow-suppress-error", "Allow to suppress error messages", cxxopts::value<bool>()->default_value("false")},
         {"break", "Debug halt after start", cxxopts::value<bool>()->default_value("false")},
         {"ignore-other-pdsc", "Ignores other PDSC files in working folder", cxxopts::value<bool>()->default_value("false")},
@@ -261,6 +292,23 @@ ParseOptions::Result ParseOptions::Parse(int argc, const char* argv[])
     if(parseResult.count("ignore-other-pdsc")) {
       if(!SetIgnoreOtherPdscFiles(parseResult["ignore-other-pdsc"].as<bool>())) {
         bOk = false;
+      }
+    }
+    if(parseResult.count("disable-validation")) {
+      if(!SetDisableValidation(parseResult["disable-validation"].as<bool>())) {
+        bOk = false;
+      }
+    }
+    else {
+      if(parseResult.count("xsd")) {
+        if(!SetXsdFile(parseResult["xsd"].as<string>())) {
+          bOk = false;
+        }
+      } else {
+        // Get default pack.xsd
+        if(!SetXsdFile()) {
+          bOk = false;
+        }
       }
     }
   }

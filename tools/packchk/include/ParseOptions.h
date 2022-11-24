@@ -29,6 +29,8 @@ protected:
   bool SetWarnLevel(const std::string& warnLevel);
   bool SetTestPdscFile(const std::string& filename);
   bool SetLogFile(const std::string& m_logFile);
+  bool SetXsdFile();
+  bool SetXsdFile(const std::string& m_xsdFile);
   bool AddDiagSuppress(const std::string& suppress);
   bool AddRefPackFile(const std::string& includeFile);
   bool SetPackNamePath(const std::string& packNamePath);
@@ -37,6 +39,7 @@ protected:
   bool SetVerbose(bool bVerbose);
   bool SetIgnoreOtherPdscFiles(bool bIgnore);
   bool SetAllowSuppresssError(bool bAllow = true);
+  bool SetDisableValidation(bool bDisable);
 
 private:
   CPackOptions& m_packOptions;

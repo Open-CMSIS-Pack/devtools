@@ -18,9 +18,6 @@ the [CMSIS-Toolbox](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/d
   - 0 : no errors detected
   - 1 : errors during validation detected
 
-> Note: `packchk` does not validate the XML conformance of your PDSC file. You
- need to run an additional XML validation tool such as xmllint.
-
 ## Usage
 
 ```bash
@@ -31,6 +28,7 @@ the [CMSIS-Toolbox](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/d
   -i, --include arg           PDSC file(s) as dependency reference
   -b, --log arg               Log file
   -x, --diag-suppress arg     Suppress Messages
+  -s, --xsd arg               Specify PACK.xsd path.
   -v, --verbose               Verbose mode. Prints extra process information
   -w, --warning arg           Warning level [0|1|2|3|all] (default: all)
   -u, --url arg               Verifies that the specified URL matches with the <url>
@@ -38,6 +36,7 @@ the [CMSIS-Toolbox](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/d
   -n, --name arg              Text file for pack file name (default: "")
   -V, --version               Print version
   -h, --help                  Print usage
+      --disable-validation    Disable the pdsc validation against the PACK.xsd
       --allow-suppress-error  Allow to suppress error messages
       --break                 Debug halt after start
       --ignore-other-pdsc     Ignores other PDSC files in working folder
@@ -124,15 +123,16 @@ The errors in this category are issued because of an internal error in the `pack
 The errors in this category are issued because of an incorrect command-line input that prevents the `packchk`
 execution.
 
-| Message Number     | Type                | Message Text              | Details and Actions
-|:------------------ |:------------------- |:------------------------- |:---------------------------------------------------------
-| M202               | ERROR               | No PDSC input file specified | Correct the command line. **packchk** expects a *.pdsc file name as input.
-| M203               | ERROR               | Error reading PDSC file _'PATH/FILENAME'!_ | Verify the PDSC file for consistency.
-| M204               | ERROR               | File not found: _'PATH'_  | The specified PDSC file could not be found in the _PATH_ displayed in the message. Correct the path or the filename.
-| M205               | ERROR               | Cannot create Pack Name file _'PATH'_ | Check the disk space or your permissions. Correct the path name.
-| M206               | ERROR               | Multiple PDSC files found in package: _'FILES'_ | Only one PDSC file is allowed in a package. Remove unnecessary PDSC files. The message lists all \*.pdsc files found.
+| Message Number     | Type                | Message Text                                                              | Details and Actions
+|:------------------ |:------------------- |:--------------------------------------------------------------------------|:---------------------------------------------------------
+| M202               | ERROR               | No PDSC input file specified                                              | Correct the command line. **packchk** expects a *.pdsc file name as input.
+| M203               | ERROR               | Error reading PDSC file _'PATH/FILENAME'!_                                | Verify the PDSC file for consistency.
+| M204               | ERROR               | File not found: _'PATH'_                                                  | The specified PDSC file could not be found in the _PATH_ displayed in the message. Correct the path or the filename.
+| M205               | ERROR               | Cannot create Pack Name file _'PATH'_                                     | Check the disk space or your permissions. Correct the path name.
+| M206               | ERROR               | Multiple PDSC files found in package: _'FILES'_                           | Only one PDSC file is allowed in a package. Remove unnecessary PDSC files. The message lists all \*.pdsc files found.
 | M207               | ERROR               | PDSC file name mismatch! Expected: _'PDSC1.pdsc'_ Actual : _'PDSC2.pdsc'_ | The PDSC file expected has not been found. Rename or exchange the PDSC file.
-| M210               | ERROR               | Only one input file to be checked is allowed. | You can only check one PDSC file at a time.
+| M210               | ERROR               | Only one input file to be checked is allowed.                             | You can only check one PDSC file at a time.
+| M218               | ERROR               | Cannot find the schema file specified by "--xsd".                         | CHeck whether the file exists.
 
 ### Validation Messages
 
