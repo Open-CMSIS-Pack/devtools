@@ -844,3 +844,17 @@ TEST_F(ProjMgrWorkerUnitTests, ApplyFilter) {
   ApplyFilter(input, filter, result);
   EXPECT_EQ(expected, result);
 }
+
+TEST_F(ProjMgrWorkerUnitTests, ProcessComponentFilesEmpty) {
+  // test ProcessComponentFiles over a component without files
+  ContextItem context;
+  LoadPacks(context);
+  InitializeTarget(context);
+  RteItem* item = new RteItem(NULL);
+  RteComponent* c = new RteComponent(item);
+  RteComponentInstance* ci = new RteComponentInstance(c);
+  ci->InitInstance(c);
+  ci->SetAttributes({ {"Cclass" , "Class"}, {"Cgroup" , "Group"} });
+  context.components.insert({ "Class:Group", { ci } });
+  EXPECT_TRUE(ProcessComponentFiles(context));
+}

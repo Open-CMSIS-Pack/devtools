@@ -996,8 +996,9 @@ bool ProjMgrWorker::ProcessComponentFiles(ContextItem& context) {
   // iterate over components
   for (const auto& [componentId, component] : context.components) {
     const RteComponent* rteComponent = component.instance->GetParent()->GetComponent();
+    const auto& files = rteComponent->GetFileContainer() ? rteComponent->GetFileContainer()->GetChildren() : list<RteItem*>();
     // pre-include files from packs
-    for (const auto& componentFile : rteComponent->GetFileContainer()->GetChildren()) {
+    for (const auto& componentFile : files) {
       const auto& category = componentFile->GetAttribute("category");
       const auto& attr = componentFile->GetAttribute("attr");
       if (((category == "preIncludeGlobal") || (category == "preIncludeLocal")) && attr.empty()) {
