@@ -45,7 +45,7 @@
       </file>
       <file category="sourceAsm" name="./AsmArm.s">
         <asflags add="--xref -g" compiler="AC6" use="armasm"/>
-        <defines>HEXADECIMAL_TEST=0xABCDEF;DECIMAL_TEST=1234567890</defines>
+        <defines>HEXADECIMAL_TEST=0xABCDEF;DECIMAL_TEST=1234567890;STRING_TEST="String0"</defines>
       </file>
       <file category="sourceAsm" name="./GnuSyntax.s">
         <asflags add="-masm=gnu" compiler="AC6" remove="-masm=auto"/>
