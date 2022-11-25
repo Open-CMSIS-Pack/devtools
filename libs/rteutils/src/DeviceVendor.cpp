@@ -28,15 +28,18 @@ bool DeviceVendor::Match(const string& vendor1, const string& vendor2)
 {
   if (vendor1 == vendor2)
     return true; // trivial common case
+
+  string suffix1 = RteUtils::GetSuffix(vendor1);
+  string suffix2 = RteUtils::GetSuffix(vendor2);
+  if (!suffix1.empty() && !suffix2.empty()) {
+    if (suffix1 == suffix2 ||
+      VendorIDToOfficialID(suffix1) == VendorIDToOfficialID(suffix2)) {
+      return true;
+    }
+  }
   string v1 = GetFullVendorString(vendor1);
   string v2 = GetFullVendorString(vendor2);
 
-  string suffix1 = RteUtils::GetSuffix(v1);
-  string suffix2 = RteUtils::GetSuffix(v2);
-  if (!suffix1.empty() && !suffix2.empty()) {
-    if (VendorIDToOfficialID(suffix1) == VendorIDToOfficialID(suffix2))
-      return true;
-  }
   return WildCards::Match(RteUtils::GetPrefix(v1), RteUtils::GetPrefix(v2));
 }
 

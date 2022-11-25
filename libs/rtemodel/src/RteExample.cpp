@@ -77,12 +77,12 @@ const string& RteExample::GetVersionString() const
   return ver;
 }
 
-const string& RteExample::GetLoadPath(const string& env) {
+const string& RteExample::GetLoadPath(const string& env) const {
   return GetEnvironmentAttribute(env, "load");
 }
 
 // Get attribute string of an environment
-const string& RteExample::GetEnvironmentAttribute(const string& environment, const string& attribute) {
+const string& RteExample::GetEnvironmentAttribute(const string& environment, const string& attribute) const {
   if (m_children.empty()) {
     return EMPTY_STRING;
   }

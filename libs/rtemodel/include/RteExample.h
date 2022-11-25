@@ -108,7 +108,7 @@ public:
    * @param env development environment name
    * @return project pathname for specified environment if supported, empty string otherwise
   */
-  virtual const std::string& GetLoadPath(const std::string& env);
+  virtual const std::string& GetLoadPath(const std::string& env) const;
 
   /**
    * @brief get attribute value specified for given development environment
@@ -116,7 +116,7 @@ public:
    * @param attribute attribute name
    * @return attribute value if found, empty string otherwise
   */
-  virtual const std::string& GetEnvironmentAttribute(const std::string& env, const std::string& attribute); // Get attribute std::string of an environment
+  virtual const std::string& GetEnvironmentAttribute(const std::string& env, const std::string& attribute) const;
 
 protected:
   /**
