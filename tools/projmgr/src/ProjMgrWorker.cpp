@@ -6,7 +6,6 @@
 
 #include "ProjMgrWorker.h"
 #include "ProjMgrLogger.h"
-#include "ProjMgrUtils.h"
 #include "ProjMgrYamlEmitter.h"
 
 #include "CrossPlatformUtils.h"
@@ -24,6 +23,10 @@ ProjMgrWorker::ProjMgrWorker(void) {
 
 ProjMgrWorker::~ProjMgrWorker(void) {
   ProjMgrKernel::Destroy();
+}
+
+void ProjMgrWorker::SetParser(ProjMgrParser* parser) {
+  m_parser = parser;
 }
 
 bool ProjMgrWorker::AddContexts(ProjMgrParser& parser, ContextDesc& descriptor, const string& cprojectFile) {
@@ -116,7 +119,10 @@ bool ProjMgrWorker::AddContext(ProjMgrParser& parser, ContextDesc& descriptor, c
     context.directories.cprj = fs::weakly_canonical(RteFsUtils::AbsolutePath(context.directories.cprj), ec).generic_string();
 
     for (const auto& clayer : context.cproject->clayers) {
-      if (CheckType(clayer.type, type)) {
+      if (clayer.layer.empty()) {
+        continue;
+      }
+      if (CheckType(clayer.typeFilter, type)) {
         string const& clayerFile = fs::canonical(fs::path(cprojectFile).parent_path().append(clayer.layer), ec).generic_string();
         std::map<std::string, ClayerItem>& clayers = parser.GetClayers();
         if (clayers.find(clayerFile) == clayers.end()) {
@@ -139,6 +145,10 @@ void ProjMgrWorker::GetContexts(map<string, ContextItem>* &contexts) {
 
 void ProjMgrWorker::SetOutputDir(const std::string& outputDir) {
   m_outputDir = outputDir;
+}
+
+void ProjMgrWorker::SetCheckSchema(bool checkSchema) {
+  m_checkSchema = checkSchema;
 }
 
 void ProjMgrWorker::SetLoadPacksPolicy(const LoadPacksPolicy& policy) {
@@ -424,11 +434,171 @@ bool ProjMgrWorker::GetPrecedentValue(std::string& outValue, const std::string& 
   return true;
 }
 
+void ProjMgrWorker::GetAllCombinations(const StrVecMap & src, const StrVecMap::iterator it, std::vector<StrVec>&combinations, const StrVec& previous) {
+  const auto& nextIt = next(it, 1);
+  for (const auto& item : it->second) {
+    StrVec combination = previous;
+    combination.push_back(item);
+    if (nextIt != src.end()) {
+      GetAllCombinations(src, nextIt, combinations, combination);
+    } else {
+      combinations.push_back(combination);
+    }
+  }
+}
+
+bool ProjMgrWorker::CollectLayersFromPacks(ContextItem& context, map<string, map<string, ClayerItem*>>& clayers) {
+  for (const auto& [pdsc, _] : context.pdscFiles) {
+    error_code ec;
+    const string& dir = fs::path(pdsc).parent_path().generic_string();
+    for (auto& item : fs::recursive_directory_iterator(dir, ec)) {
+      if (fs::is_regular_file(item)) {
+        const string& clayerFile = item.path().generic_string();
+        if (WildCards::Match("*.clayer.yml", clayerFile)) {
+          if (!m_parser->ParseGenericClayer(clayerFile, m_checkSchema)) {
+            return false;
+          }
+          ClayerItem* clayer = &m_parser->GetGenericClayers()[clayerFile];
+          clayers[clayer->type][clayerFile] = clayer;
+        }
+      }
+    }
+  }
+  return true;
+}
+
+bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context) {
+  // required layer types
+  StrVec requiredLayerTypes;
+  for (const auto& clayer : context.cproject->clayers) {
+    if (clayer.type.empty() || !CheckType(clayer.typeFilter, context.type)) {
+      continue;
+    }
+    requiredLayerTypes.push_back(clayer.type);
+  }
+  if (requiredLayerTypes.empty()) {
+    // additional layers are not required
+    return true;
+  }
+  // collect generic clayers from loaded packs
+  map<string, map<string, ClayerItem*>> genericClayers;
+  if (!CollectLayersFromPacks(context, genericClayers)) {
+    return false;
+  }
+  // clayers matching required types
+  StrVecMap matchedClayers;
+  for (const auto& requiredType : requiredLayerTypes) {
+    if (genericClayers.find(requiredType) != genericClayers.end()) {
+      for (const auto& [clayer, _] : genericClayers.at(requiredType)) {
+        matchedClayers[requiredType].push_back(clayer);
+      }
+    } else {
+      ProjMgrLogger::Debug("no clayer matches type '" + requiredType + "' for context '" + context.name + "'");
+    }
+  }
+
+  // debug message
+  ProjMgrLogger::Debug("validating interfaces for context '" + context.name + "'");
+
+  // validate interfaces combinations
+  vector<StrVec> combinations;
+  if (!matchedClayers.empty()) {
+    GetAllCombinations(matchedClayers, matchedClayers.begin(), combinations);
+  }
+  map<string, vector<string>> validInterfaces;
+  for (const auto& clayers : combinations) {
+
+    // debug message
+    string msg = "validating clayers combined interfaces:";
+    for (const auto& clayer : clayers) {
+      msg += "\n  " + clayer;
+    }
+    ProjMgrLogger::Debug(msg);
+
+    // validate interfaces
+    InterfacesValidationResult result = ValidateInterfaces(context, clayers);
+    if (result.valid) {
+      auto clayerIt = clayers.begin();
+      for (const auto& [type, _] : matchedClayers) {
+        validInterfaces[type].push_back(*clayerIt++);
+      }
+    }
+
+    // debug message
+    PrintInterfaceValidation(result);
+    ProjMgrLogger::Debug("interfaces are " + string(result.valid ? "valid" : "invalid"));
+
+  }
+  // assess validation results
+  if (!validInterfaces.empty()) {
+    for (const auto& [type, clayers] : validInterfaces) {
+      if (clayers.size() == 1) {
+        // unique match
+        const auto& clayer = clayers.front();
+        ProjMgrLogger::Debug("clayer of type '" + type + "' was uniquely found: '" + clayer + "'");
+        // add clayer to project
+        //context.clayers[clayer] = &m_parser->GetGenericClayers()[clayer];
+        ProjMgrUtils::PushBackUniquely(context.compatibleLayers[type], clayer);
+      } else if (clayers.size() > 1) {
+        // multiple matches
+        for (const auto& clayer : clayers) {
+          ProjMgrUtils::PushBackUniquely(context.compatibleLayers[type], clayer);
+        }
+        string msg = "multiple clayers match type '" + type + "':";
+        for (const auto& clayer : context.compatibleLayers[type]) {
+          msg += "\n  " + clayer;
+        }
+        ProjMgrLogger::Debug(msg);
+      }
+    }
+  } else {
+    // no valid combination
+    ProjMgrLogger::Debug("no valid combination of clayers was found");
+  }
+  return true;
+}
+
 bool ProjMgrWorker::ProcessInterfaces(ContextItem& context) {
+  InterfacesValidationResult result = ValidateInterfaces(context);
+  PrintInterfaceValidation(result);
+  for (const auto& provide : result.provides) {
+    // add context define
+    const string& define = "itf_" + WildCards::ToX(provide->first) + (provide->second.empty() ? "" : "=" + provide->second);
+    ProjMgrUtils::PushBackUniquely(context.controls.processed.defines, define);
+  }
+  return true;
+}
+
+void ProjMgrWorker::PrintInterfaceValidation(InterfacesValidationResult result) {
+  if (!result.valid) {
+    if (!result.conflicts.empty()) {
+      string msg = "interfaces provided with multiple different values:";
+      for (const auto& id : result.conflicts) {
+        msg += "\n  " + id;
+      }
+      ProjMgrLogger::Debug(msg);
+    }
+    if (!result.incompatibles.empty()) {
+      string msg = "required interfaces not provided:";
+      for (const auto& [id, value] : result.incompatibles) {
+        msg += "\n  " + id + (value.empty() ? "" : ": " + value);
+      }
+      ProjMgrLogger::Debug(msg);
+    }
+    if (!result.overflows.empty()) {
+      string msg = "sum of required values exceed provided:";
+      for (const auto& [id, value] : result.overflows) {
+        msg += "\n  " + id + (value.empty() ? "" : ": " + value);
+      }
+      ProjMgrLogger::Debug(msg);
+    }
+  }
+}
+
+InterfacesValidationResult ProjMgrWorker::ValidateInterfaces(ContextItem& context, const StrVec& genericLayers) {
   // collect consumed and provided interfaces of project and layers
-  vector<pair<string, string>*> consumedList;
-  vector<pair<string, string>*> providedList;
-  set<pair<string, string>> incompatibleList;
+  StrPairPtrVec consumedList;
+  StrPairPtrVec providedList;
   for (auto& consumed : context.cproject->interfaces.consumes) {
     consumedList.push_back(&consumed);
   }
@@ -443,32 +613,68 @@ bool ProjMgrWorker::ProcessInterfaces(ContextItem& context) {
       providedList.push_back(&provided);
     }
   }
-  // check whether consumed interfaces are compatible with provided ones
-  // TODO: extend known interfaces validation
+
+  // collect consumed and provided interfaces of generic layers
+  for (const auto& genericLayer : genericLayers) {
+    ClayerItem* clayer = &m_parser->GetGenericClayers()[genericLayer];
+    for (auto& consumed : clayer->interfaces.consumes) {
+      consumedList.push_back(&consumed);
+    }
+    for (auto& provided : clayer->interfaces.provides) {
+      providedList.push_back(&provided);
+    }
+  }
+
+  // elaborate provided list
+  StrMap providedValues;
+  StrVec conflicts;
+  for (const auto& provided : providedList) {
+    const auto& key = provided->first;
+    const auto& value = provided->second;
+    if ((providedValues.find(key) != providedValues.end()) && (providedValues.at(key) != value)) {
+      // interface is provided with multiple different values
+      ProjMgrUtils::PushBackUniquely(conflicts, key);
+      continue;
+    }
+    // new entry
+    providedValues[key] = value;
+  }
+
+  // elaborate consumed list
+  IntMap consumedAddedValues;
+  for (auto it = consumedList.begin(); it != consumedList.end();) {
+    const auto& id = (*it)->first;
+    const auto& value = (*it)->second;
+    if (value.find_first_of('+') == 0) {
+      // move entry to the consumedAddedValues map
+      consumedAddedValues[id] += ProjMgrUtils::StringToInt(value);
+      it = consumedList.erase(it);
+    } else {
+      it++;
+    }
+  }
+
+  // validate consumedAddedValues against provided values
+  StrPairVec overflows;
+  for (const auto& [consumedKey, consumedValue] : consumedAddedValues) {
+    if ((providedValues.find(consumedKey) == providedValues.end()) ||
+      (consumedValue > ProjMgrUtils::StringToInt(providedValues.at(consumedKey)))) {
+      overflows.push_back({ consumedKey, to_string(consumedValue) });
+    }
+  }
+  // validate remaining consumedList against provided interface strings
+  StrPairVec incompatibles;
   for (const auto& consumed : consumedList) {
-    bool found = false;
-    for (const auto& provided : providedList) {
-      if (provided->first == consumed->first) {
-        // valid interface
-        found = true;
-        // add context define
-        const string& define = "INTERFACE_" + provided->first + (provided->second.empty() ? "" : "=" + provided->second);
-        ProjMgrUtils::PushBackUniquely(context.controls.processed.defines, define);
-        break;
-      }
-    }
-    if (!found) {
-      incompatibleList.insert(*consumed);
+    const auto& consumedKey = consumed->first;
+    if ((providedValues.find(consumedKey) == providedValues.end()) ||
+      (!consumed->second.empty() && (consumed->second != providedValues.at(consumedKey)))) {
+      incompatibles.push_back({ consumedKey, consumed->second });
     }
   }
-  if (!incompatibleList.empty()) {
-    string msg = "consumed interface(s) not provided:";
-    for (const auto& [id, value] : incompatibleList) {
-      msg += "\n" + id + (value.empty() ? "" : "=" + value);
-    }
-    ProjMgrLogger::Warn(msg);
-  }
-  return true;
+
+  // set results
+  bool result = !conflicts.empty() || !overflows.empty() || !incompatibles.empty() ? false : true;
+  return { result, conflicts, overflows, incompatibles, providedList };
 }
 
 bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
@@ -2059,6 +2265,47 @@ bool ProjMgrWorker::ListGenerators(vector<string>& generators) {
     }
   }
   generators.assign(generatorsSet.begin(), generatorsSet.end());
+  return true;
+}
+
+bool ProjMgrWorker::ListLayers(vector<string>& layers) {
+  for (const auto& selectedContext : m_selectedContexts) {
+    ContextItem& context = m_contexts[selectedContext];
+    if (!LoadPacks(context)) {
+      return false;
+    }
+    if (selectedContext.empty()) {
+      // get all layers from packs
+      for (const auto& pack : m_loadedPacks) {
+        context.pdscFiles.insert({ pack->GetPackageFileName(),{}});
+      }
+      map<string, map<string, ClayerItem*>> genericClayers;
+      if (!CollectLayersFromPacks(context, genericClayers)) {
+        return false;
+      }
+      for (const auto& [clayerType, clayerMap] : genericClayers) {
+        const string type = clayerType.empty() ? "" : " (" + clayerType + ")";
+        for (const auto& [clayer, _] : clayerMap) {
+          ProjMgrUtils::PushBackUniquely(layers, clayer + type);
+        }
+      }
+    } else {
+      // get matching layers for selected context
+      if (!DiscoverMatchingLayers(context)) {
+        return false;
+      }
+      for (const auto& [clayer, clayerItem] : context.clayers) {
+        const string type = clayerItem->type.empty() ? "" : " (" + clayerItem->type + ")";
+        ProjMgrUtils::PushBackUniquely(layers, clayer + type);
+      }
+      for (const auto& [clayerType, clayerVec] : context.compatibleLayers) {
+        const string type = clayerType.empty() ? "" : " (" + clayerType + ")";
+        for (const auto& clayer : clayerVec) {
+          ProjMgrUtils::PushBackUniquely(layers, clayer + type);
+        }
+      }
+    }
+  }
   return true;
 }
 

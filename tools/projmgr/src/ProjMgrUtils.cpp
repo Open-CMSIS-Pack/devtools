@@ -180,3 +180,15 @@ void ProjMgrUtils::PushBackUniquely(list<string>& list, const string& value) {
     list.push_back(value);
   }
 }
+
+int ProjMgrUtils::StringToInt(const string& value) {
+  int intValue = 0;
+  smatch sm;
+  if (regex_match(value, sm, regex("^[\\+]?([0-9]+)$"))) {
+    try {
+      intValue = stoi(sm[1]);
+    }
+    catch (exception&) {};
+  }
+  return intValue;
+}

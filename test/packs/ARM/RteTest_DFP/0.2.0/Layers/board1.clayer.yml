@@ -1,0 +1,18 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schemas/clayer.schema.json
+
+layer:
+
+  type: Board
+  
+  components:
+    - component: Board:Test:Rev1
+  
+  interfaces:
+    provides:
+      - MultipleProvided                 # same interface is provided multiple times with identical values
+    consumes:
+      - ExactMatch: 42                   # both key and value exact match
+      - EmptyConsumedValue               # key exact match, consumed value is empty
+      - EmptyValues                      # key exact match, both values empty
+      - AddedValueLessThanProvided: +49  # added consumed values are less than provided
+      - AddedValueEqualToProvided: +499  # added consumed values are equal to provided

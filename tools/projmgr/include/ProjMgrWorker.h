@@ -9,6 +9,23 @@
 
 #include "ProjMgrKernel.h"
 #include "ProjMgrParser.h"
+#include "ProjMgrUtils.h"
+
+/**
+ * @brief interfaces validation result containing
+ *        boolean valid,
+ *        conflicted interfaces,
+ *        overflowed interfaces,
+ *        incompatible interfaces,
+ *        provided interfaces
+*/
+struct InterfacesValidationResult {
+  bool valid;
+  StrVec conflicts;
+  StrPairVec overflows;
+  StrPairVec incompatibles;
+  StrPairPtrVec provides;
+};
 
 /**
  * @brief toolchain item containing
@@ -189,6 +206,7 @@ struct ContextItem {
   std::map<std::string, std::string> filePaths;
   std::map<std::string, RteGenerator*> generators;
   std::map<std::string, std::pair<std::string, std::string>> gpdscs;
+  StrVecMap compatibleLayers;
   std::string linkerScript;
   bool precedences;
 };
@@ -250,6 +268,12 @@ public:
   ~ProjMgrWorker(void);
 
   /**
+   * @brief set parser
+   * @param pointer to parser
+  */
+  void SetParser(ProjMgrParser* parser);
+
+  /**
    * @brief process context
    * @param reference to context
    * @param loadGpdsc boolean automatically load gpdsc, default true
@@ -309,11 +333,18 @@ public:
   bool ListContexts(std::vector<std::string>& contexts, const std::string& filter = RteUtils::EMPTY_STRING);
 
   /**
- * @brief list generators of a given context
- * @param reference to list of generators
- * @return true if executed successfully
-*/
+   * @brief list generators of a given context
+   * @param reference to list of generators
+   * @return true if executed successfully
+  */
   bool ListGenerators(std::vector<std::string>& generators);
+
+  /**
+  * @brief list available, referenced or compatible layers
+  * @param reference to list of layers
+  * @return true if executed successfully
+  */
+  bool ListLayers(std::vector<std::string>& layers);
 
   /**
    * @brief add contexts for a given descriptor
@@ -335,6 +366,12 @@ public:
    * @param reference to output directory
   */
   void SetOutputDir(const std::string& outputDir);
+
+  /**
+   * @brief set check schema
+   * @param boolean check schema
+  */
+  void SetCheckSchema(bool checkSchema);
 
   /**
    * @brief set load packs policy
@@ -376,6 +413,7 @@ public:
   bool IsContextSelected(const std::string& context);
 
 protected:
+  ProjMgrParser* m_parser = nullptr;
   ProjMgrKernel* m_kernel = nullptr;
   RteGlobalModel* m_model = nullptr;
   std::list<RtePackage*> m_loadedPacks;
@@ -385,6 +423,7 @@ protected:
   std::string m_outputDir;
   std::string m_packRoot;
   LoadPacksPolicy m_loadPacksPolicy;
+  bool m_checkSchema;
 
   bool LoadPacks(ContextItem& context);
   bool GetRequiredPdscFiles(ContextItem& context, const std::string& packRoot, std::set<std::string>& errMsgs);
@@ -437,6 +476,11 @@ protected:
   std::vector<PackageItem> GetFilteredPacks(const PackageItem& packItem, const std::string& rtePath) const;
   ToolchainItem GetToolchain(const std::string& compiler);
   bool IsPreIncludeByTarget(const RteTarget* activeTarget, const std::string& preInclude);
+  InterfacesValidationResult ValidateInterfaces(ContextItem& context, const StrVec& genericLayers = StrVec());
+  void PrintInterfaceValidation(InterfacesValidationResult result);
+  bool CollectLayersFromPacks(ContextItem& context, std::map<std::string, std::map<std::string, ClayerItem*>>& clayers);
+  bool DiscoverMatchingLayers(ContextItem& context);
+  void GetAllCombinations(const StrVecMap& src, const StrVecMap::iterator it, std::vector<StrVec>& combinations, const StrVec& previous = StrVec());
 };
 
 #endif  // PROJMGRWORKER_H

@@ -157,13 +157,15 @@ struct ComponentItem {
 /**
  * @brief layer item containing
  *        layer name,
+ *        layer type,
  *        layer build settings,
  *        type inclusion
 */
 struct LayerItem {
   std::string layer;
+  std::string type;
   BuildType build;
-  TypeFilter type;
+  TypeFilter typeFilter;
 };
 
 /**
@@ -304,6 +306,7 @@ struct CprojectItem {
  * @brief clayer item containing
  *        layer name,
  *        layer path,
+ *        layer type,
  *        layer directory,
  *        layer output type,
  *        layer target properties,
@@ -314,6 +317,7 @@ struct CprojectItem {
 struct ClayerItem {
   std::string name;
   std::string path;
+  std::string type;
   std::string directory;
   std::string outputType;
   TargetType target;
@@ -364,6 +368,12 @@ public:
   bool ParseClayer(const std::string& input, bool checkSchema);
 
   /**
+   * @brief parse generic clayer files
+   * @param input clayer.yml file
+  */
+  bool ParseGenericClayer(const std::string& input, bool checkSchema);
+
+  /**
    * @brief get cdefault
    * @return cdefault item
   */
@@ -377,21 +387,28 @@ public:
 
   /**
    * @brief get cprojects
-   * @return cprojects vector
+   * @return cprojects map
   */
   std::map<std::string, CprojectItem>& GetCprojects(void);
 
   /**
    * @brief get clayers
-   * @return clayers vector
+   * @return clayers map
   */
   std::map<std::string, ClayerItem>& GetClayers(void);
+
+  /**
+   * @brief get generic clayers
+   * @return clayers map
+  */
+  std::map<std::string, ClayerItem>& GetGenericClayers(void);
 
 protected:
   CdefaultItem m_cdefault;
   CsolutionItem m_csolution;
   std::map<std::string, CprojectItem> m_cprojects;
   std::map<std::string, ClayerItem> m_clayers;
+  std::map<std::string, ClayerItem> m_genericClayers;
 };
 
 #endif  // PROJMGRPARSER_H

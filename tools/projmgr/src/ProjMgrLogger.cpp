@@ -13,6 +13,7 @@ using namespace std;
 static constexpr const char* PROJMGR_TOOL = " csolution: ";
 static constexpr const char* PROJMGR_ERROR = "error";
 static constexpr const char* PROJMGR_WARN = "warning";
+static constexpr const char* PROJMGR_DEBUG = "debug";
 static constexpr const char* PROJMGR_INFO = "info";
 
 ProjMgrLogger::ProjMgrLogger(void) {
@@ -45,6 +46,10 @@ void ProjMgrLogger::Warn(const string& file, const string& msg) {
 
 void ProjMgrLogger::Warn(const string& msg) {
   cerr << PROJMGR_WARN << PROJMGR_TOOL << msg << endl;
+}
+
+void ProjMgrLogger::Debug(const string& msg) {
+  cerr << PROJMGR_DEBUG << PROJMGR_TOOL << msg << endl;
 }
 
 void ProjMgrLogger::Info(const string& file, const int line, const int column, const string& msg) {

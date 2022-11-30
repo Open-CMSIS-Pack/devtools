@@ -44,6 +44,11 @@ bool ProjMgrParser::ParseClayer(const string& input, bool checkSchema) {
   return ProjMgrYamlParser().ParseClayer(input, m_clayers, checkSchema);
 }
 
+bool ProjMgrParser::ParseGenericClayer(const string& input, bool checkSchema) {
+  // Parse generic layer file
+  return ProjMgrYamlParser().ParseClayer(input, m_genericClayers, checkSchema);
+}
+
 CdefaultItem& ProjMgrParser::GetCdefault(void) {
   return m_cdefault;
 }
@@ -58,4 +63,8 @@ map<string, CprojectItem>& ProjMgrParser::GetCprojects(void) {
 
 map<string, ClayerItem>& ProjMgrParser::GetClayers(void) {
   return m_clayers;
+}
+
+map<string, ClayerItem>& ProjMgrParser::GetGenericClayers(void) {
+  return m_genericClayers;
 }

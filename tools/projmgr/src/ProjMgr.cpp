@@ -30,6 +30,7 @@ Usage:\n\
         dependencies     Print list of unresolved project dependencies\n\
         contexts         Print list of contexts in a csolution.yml\n\
         generators       Print list of code generators of a given context\n\
+        layers           Print list of available, referenced and compatible layers\n\
    convert               Convert *.csolution.yml input file in *.cprj files\n\
    run                   Run code generator\n\n\
  Options:\n\
@@ -47,7 +48,7 @@ Use 'csolution <command> -h' for more information about a command.\
 ";
 
 ProjMgr::ProjMgr(void) : m_checkSchema(false), m_updateRteFiles(true) {
-  // Reserved
+  m_worker.SetParser(&m_parser);
 }
 
 ProjMgr::~ProjMgr(void) {
@@ -117,6 +118,7 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
     {"list dependencies", {solution, context, filter, load, schemaCheck}},
     {"list contexts",     {solution, filter, load, schemaCheck}},
     {"list generators",   {solution, context, load, schemaCheck}},
+    {"list layers",       {solution, context, load, schemaCheck}},
   };
 
   try {
@@ -131,6 +133,7 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
 
     parseResult = options.parse(argc, argv);
     manager.m_checkSchema = !parseResult.count("n");
+    manager.m_worker.SetCheckSchema(manager.m_checkSchema);
     manager.m_missingPacks = parseResult.count("m");
     manager.m_updateRteFiles = !parseResult.count("no-update-rte");
 
@@ -235,6 +238,10 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
       if (!manager.RunListGenerators()) {
         return 1;
       }
+    } else if (manager.m_args == "layers") {
+      if (!manager.RunListLayers()) {
+        return 1;
+      }
     }
     else {
       ProjMgrLogger::Error("list <args> was not found");
@@ -284,6 +291,9 @@ bool ProjMgr::PopulateContexts(void) {
   for (const auto& cproject : m_parser.GetCprojects()) {
     string const& cprojectFile = cproject.first;
     for (const auto& clayer : cproject.second.clayers) {
+      if (clayer.layer.empty()) {
+        continue;
+      }
       error_code ec;
       string const& clayerFile = fs::canonical(fs::path(cprojectFile).parent_path().append(clayer.layer), ec).generic_string();
       if (clayerFile.empty()) {
@@ -530,6 +540,28 @@ bool ProjMgr::RunListGenerators(void) {
   }
   for (const auto& generator : generators) {
     cout << generator << endl;
+  }
+  return true;
+}
+
+bool ProjMgr::RunListLayers(void) {
+  if (!m_csolutionFile.empty()) {
+    // Parse all input files and create contexts
+    if (!PopulateContexts()) {
+      return false;
+    }
+  }
+  // Parse context selection
+  if (!m_worker.ParseContextSelection(m_context)) {
+    return false;
+  }
+  // Get layers
+  vector<string> layers;
+  if (!m_worker.ListLayers(layers)) {
+    return false;
+  }
+  for (const auto& layers : layers) {
+    cout << layers << endl;
   }
   return true;
 }
