@@ -1,0 +1,30 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schemas/cproject.schema.json
+
+project:
+  device: RteTest_ARMCM0
+  compiler: AC6
+
+  layers:
+    - type: Board
+    - type: TestVariant
+      for-type: .CompatibleLayers
+    - type: Incompatible
+      for-type: .IncompatibleLayers
+    - type: UnknownType
+      for-type: .IncompatibleLayers
+
+  interfaces:
+    provides:
+      # compatible interfaces
+      - ExactMatch: 42                      # both key and value exact match
+      - EmptyConsumedValue: 1               # key exact match, consumed value is empty
+      - EmptyValues                         # key exact match, both values empty
+      - AddedValueLessThanProvided: 99      # added consumed values are less than provided
+      - AddedValueEqualToProvided: 998      # added consumed values are equal to provided
+      - MultipleProvided                    # same interface is provided multiple times with identical values
+      # incompatible interfaces
+      - MultipleProvidedNonIdentical0: 222  # same interface is provided multiple times with non identical values
+      - MultipleProvidedNonIdentical1       # same interface is provided multiple times with non identical values
+      - ProvidedDontMatch: 0                # consumed interface doesn't match provided one
+      - ProvidedEmpty                       # consumed interface doesn't match empty provided one
+      - AddedValueHigherThanProvided: 99    # added consumed values are equal to provided

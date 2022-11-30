@@ -601,7 +601,138 @@ TEST_F(ProjMgrUnitTests, RunProjMgrLayersIncompatibleInterfaces) {
   EXPECT_EQ(0, RunProjMgr(8, argv));
 
   auto errStr = streamRedirect.GetErrorString();
-  EXPECT_EQ(errStr, "warning csolution: consumed interface(s) not provided:\nSTDOUT\n");
+  EXPECT_EQ(errStr, "debug csolution: required interfaces not provided:\n  STDOUT\n");
+}
+
+TEST_F(ProjMgrUnitTests, ListLayersAll) {
+  StdStreamRedirect streamRedirect;
+  char* argv[3];
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"layers";
+  EXPECT_EQ(0, RunProjMgr(3, argv));
+
+  const string& expected = "\
+.*/ARM/RteTest_DFP/0.2.0/Layers/board1.clayer.yml \\(Board\\)\n\
+.*/ARM/RteTest_DFP/0.2.0/Layers/board2.clayer.yml \\(Board\\)\n\
+.*/ARM/RteTest_DFP/0.2.0/Layers/incompatible.clayer.yml \\(Incompatible\\)\n\
+.*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml \\(TestVariant\\)\n\
+";
+
+  const string& outStr = streamRedirect.GetOutString();
+  EXPECT_TRUE(regex_match(outStr, regex(expected)));
+}
+
+TEST_F(ProjMgrUnitTests, ListLayersCompatible) {
+  StdStreamRedirect streamRedirect;
+  char* argv[7];
+  const string& csolution = testinput_folder + "/TestLayers/genericlayers.csolution.yml";
+  const string& context = "*.CompatibleLayers";
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"layers";
+  argv[3] = (char*)"-s";
+  argv[4] = (char*)csolution.c_str();
+  argv[5] = (char*)"-c";
+  argv[6] = (char*)context.c_str();
+  EXPECT_EQ(0, RunProjMgr(7, argv));
+
+  const string& expectedErrStr = "\
+debug csolution: validating interfaces for context 'genericlayers.CompatibleLayers'\n\
+debug csolution: validating clayers combined interfaces:\n\
+  .*/ARM/RteTest_DFP/0.2.0/Layers/board1.clayer.yml\n\
+  .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml\n\
+debug csolution: interfaces are valid\n\
+debug csolution: validating clayers combined interfaces:\n\
+  .*/ARM/RteTest_DFP/0.2.0/Layers/board2.clayer.yml\n\
+  .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml\n\
+debug csolution: interfaces are valid\n\
+debug csolution: multiple clayers match type 'Board':\n\
+  .*/ARM/RteTest_DFP/0.2.0/Layers/board1.clayer.yml\n\
+  .*/ARM/RteTest_DFP/0.2.0/Layers/board2.clayer.yml\n\
+debug csolution: multiple clayers match type 'TestVariant':\n\
+  .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml\n\
+";
+
+  const string& errStr = streamRedirect.GetErrorString();
+  EXPECT_TRUE(regex_match(errStr, regex(expectedErrStr)));
+
+  const string& expectedOutStr = "\
+.*/ARM/RteTest_DFP/0.2.0/Layers/board1.clayer.yml \\(Board\\)\n\
+.*/ARM/RteTest_DFP/0.2.0/Layers/board2.clayer.yml \\(Board\\)\n\
+.*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml \\(TestVariant\\)\n\
+";
+
+  const string& outStr = streamRedirect.GetOutString();
+  EXPECT_TRUE(regex_match(outStr, regex(expectedOutStr)));
+}
+
+TEST_F(ProjMgrUnitTests, ListLayersIncompatible) {
+  StdStreamRedirect streamRedirect;
+  char* argv[7];
+  const string& csolution = testinput_folder + "/TestLayers/genericlayers.csolution.yml";
+  const string& context = "*.IncompatibleLayers";
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"layers";
+  argv[3] = (char*)"-s";
+  argv[4] = (char*)csolution.c_str();
+  argv[5] = (char*)"-c";
+  argv[6] = (char*)context.c_str();
+  EXPECT_EQ(0, RunProjMgr(7, argv));
+
+  const string& expected = "\
+debug csolution: no clayer matches type 'UnknownType' for context 'genericlayers.IncompatibleLayers'\n\
+debug csolution: validating interfaces for context 'genericlayers.IncompatibleLayers'\n\
+debug csolution: validating clayers combined interfaces:\n\
+  .*/ARM/RteTest_DFP/0.2.0/Layers/board1.clayer.yml\n\
+  .*/ARM/RteTest_DFP/0.2.0/Layers/incompatible.clayer.yml\n\
+debug csolution: interfaces provided with multiple different values:\n\
+  MultipleProvidedNonIdentical0\n\
+  MultipleProvidedNonIdentical1\n\
+debug csolution: required interfaces not provided:\n\
+  ProvidedDontMatch: -1\n\
+  ProvidedEmpty: 123\n\
+debug csolution: sum of required values exceed provided:\n\
+  AddedValueHigherThanProvided: 100\n\
+debug csolution: interfaces are invalid\n\
+debug csolution: validating clayers combined interfaces:\n\
+  .*/ARM/RteTest_DFP/0.2.0/Layers/board2.clayer.yml\n\
+  .*/ARM/RteTest_DFP/0.2.0/Layers/incompatible.clayer.yml\n\
+debug csolution: interfaces provided with multiple different values:\n\
+  MultipleProvidedNonIdentical0\n\
+  MultipleProvidedNonIdentical1\n\
+debug csolution: required interfaces not provided:\n\
+  ProvidedDontMatch: -1\n\
+  ProvidedEmpty: 123\n\
+debug csolution: sum of required values exceed provided:\n\
+  AddedValueHigherThanProvided: 100\n\
+debug csolution: interfaces are invalid\n\
+debug csolution: no valid combination of clayers was found\n\
+";
+
+  const string& errStr = streamRedirect.GetErrorString();
+  EXPECT_TRUE(regex_match(errStr, regex(expected)));
+}
+
+TEST_F(ProjMgrUnitTests, ListLayersInvalidContext) {
+  char* argv[7];
+  const string& csolution = testinput_folder + "/TestLayers/genericlayers.csolution.yml";
+  const string& context = "*.InvalidContext";
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"layers";
+  argv[3] = (char*)"-s";
+  argv[4] = (char*)csolution.c_str();
+  argv[5] = (char*)"-c";
+  argv[6] = (char*)context.c_str();
+  EXPECT_EQ(1, RunProjMgr(7, argv));
+}
+
+TEST_F(ProjMgrUnitTests, ListLayersAllContexts) {
+  char* argv[5];
+  const string& csolution = testinput_folder + "/TestLayers/genericlayers.csolution.yml";
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"layers";
+  argv[3] = (char*)"-s";
+  argv[4] = (char*)csolution.c_str();
+  EXPECT_EQ(0, RunProjMgr(5, argv));
 }
 
 TEST_F(ProjMgrUnitTests, AccessSequences) {
@@ -2065,6 +2196,11 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_help) {
 
   argv[1] = (char*)"list";
   argv[2] = (char*)"generators";
+  argv[3] = (char*)"-h";
+  EXPECT_EQ(0, RunProjMgr(4, argv));
+
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"layers";
   argv[3] = (char*)"-h";
   EXPECT_EQ(0, RunProjMgr(4, argv));
 

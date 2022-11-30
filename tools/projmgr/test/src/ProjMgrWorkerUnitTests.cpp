@@ -858,3 +858,74 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessComponentFilesEmpty) {
   context.components.insert({ "Class:Group", { ci } });
   EXPECT_TRUE(ProcessComponentFiles(context));
 }
+
+TEST_F(ProjMgrWorkerUnitTests, GetAllCombinations) {
+  StrVecMap clayers = {
+    {"Orange", {"OrangeA", "OrangeB", "OrangeC"}},
+    {"Ananas", {"AnanasA"}},
+    {"Banana", {"BananaA", "BananaB"}},
+  };
+  const vector<StrVec> expected = {
+    {"AnanasA", "BananaA", "OrangeA"},
+    {"AnanasA", "BananaA", "OrangeB"},
+    {"AnanasA", "BananaA", "OrangeC"},
+    {"AnanasA", "BananaB", "OrangeA"},
+    {"AnanasA", "BananaB", "OrangeB"},
+    {"AnanasA", "BananaB", "OrangeC"},
+  };
+  vector<StrVec> combinations;
+  GetAllCombinations(clayers, clayers.begin(), combinations);
+  EXPECT_EQ(expected, combinations);
+}
+
+TEST_F(ProjMgrWorkerUnitTests, ValidateInterfaces) {
+  InterfacesValidationResult result;
+  ContextItem context;
+  CprojectItem cproject;
+  context.cproject = &cproject;
+
+  // valid interfaces
+  cproject.interfaces.consumes = {
+    {"Orange", "3"},
+    {"Grape Fruit", ""},
+    {"Peach", ""},
+    {"Lime", "+98"},
+    {"Lime", "+2"},
+    {"Lemon", "+150"},
+    {"Lemon", "+20"},
+  };
+  cproject.interfaces.provides = {
+    {"Orange", "3"},                  // both key and value exact match
+    {"Grape Fruit", "999"},           // key exact match, consumed value is empty
+    {"Peach", ""},                    // key exact match, both values empty
+    {"Lemon", "200"},                 // added consumed values are less than provided
+    {"Lime", "100"},                  // added consumed values are equal to provided
+    {"Ananas", "2"}, {"Ananas", "2"}, // same interface is provided multiple times with identical values
+  };
+  result = ValidateInterfaces(context);
+  EXPECT_TRUE(result.valid);
+
+  // invalid interfaces
+  // same interface is provided multiple times with non identical values
+  cproject.interfaces.consumes = {
+    {"Lemon", "+150"},
+    {"Lemon", "+20"},
+    {"Ananas", "98"},
+    {"Grape Fruit", "1"},
+  };
+  cproject.interfaces.provides = {
+    {"Ananas", "97"},                 // consumed interface doesn't match provided one
+    {"Grape Fruit", ""},              // consumed interface doesn't match empty provided one
+    {"Lemon", "160"},                 // sum of consumed added values is higher than provided value
+    {"Orange", "3"}, {"Orange", "4"}, // same interface is provided multiple times with non identical values
+    {"Banana", ""}, {"Banana", "0"},  // same interface is provided multiple times with non identical values
+  };
+  StrVec expectedConflicts = { "Orange", "Banana" };
+  StrPairVec expectedOverflow = {{"Lemon", "170"}};
+  StrPairVec expectedIncompatibles = {{"Ananas", "98"}, {"Grape Fruit", "1"}};
+  result = ValidateInterfaces(context);
+  EXPECT_FALSE(result.valid);
+  EXPECT_EQ(result.conflicts, expectedConflicts);
+  EXPECT_EQ(result.overflows, expectedOverflow);
+  EXPECT_EQ(result.incompatibles, expectedIncompatibles);
+}

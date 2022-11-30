@@ -16,7 +16,7 @@
 
   <target Dfpu="NO_FPU" Dname="RteTest_ARMCM0" Dsecure="Non-secure" Dvendor="ARM:82">
     <output intdir="tmp/interfaces/CompatibleInterfaces" name="interfaces.CompatibleInterfaces" outdir="out/interfaces/CompatibleInterfaces" rtedir="../data/TestLayers/RTE" type="exe"/>
-    <defines>INTERFACE_STDOUT;INTERFACE_USART=1;INTERFACE_SPI=1;INTERFACE_RTOS2</defines>
+    <defines>itf_RTOS2;itf_STDOUT;itf_USART=1;itf_SPI=1</defines>
   </target>
 
   <components>

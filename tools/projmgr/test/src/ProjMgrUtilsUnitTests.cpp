@@ -95,3 +95,18 @@ TEST_F(ProjMgrUtilsUnitTests, ExecCommand) {
   fs::current_path(workingDir, ec);
   RteFsUtils::RemoveDir(testdir);
 }
+
+TEST_F(ProjMgrUtilsUnitTests, StrToInt) {
+  map<string, int> testDataVec = {
+    { "0", 0 },
+    { " ", 0 },
+    { "", 0 },
+    { "alphanum012345", 0 },
+    { "000", 0 },
+    { "123", 123 },
+    { "+456", 456 },
+  };
+  for (const auto& [input, expected] : testDataVec) {
+    EXPECT_EQ(ProjMgrUtils::StringToInt(input), expected);
+  }
+}

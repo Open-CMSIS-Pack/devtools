@@ -149,6 +149,10 @@ bool ProjMgrYamlParser::ParseCproject(const string& input,
 
 bool ProjMgrYamlParser::ParseClayer(const string& input,
   map<string, ClayerItem>& clayers, bool checkSchema) {
+  if (clayers.find(input) != clayers.end()) {
+    // already parsed
+    return true;
+  }
   ClayerItem clayer;
   try {
     // Validate file schema
@@ -170,6 +174,7 @@ bool ProjMgrYamlParser::ParseClayer(const string& input,
     const YAML::Node& layerNode = root[YAML_LAYER];
     map<const string, string&> projectChildren = {
       {YAML_OUTPUTTYPE, clayer.outputType},
+      {YAML_TYPE, clayer.type},
     };
     for (const auto& item : projectChildren) {
       ParseString(layerNode, item.first, item.second);
@@ -403,10 +408,11 @@ bool ProjMgrYamlParser::ParseLayers(const YAML::Node& parent, vector<LayerItem>&
     const YAML::Node& layersNode = parent[YAML_LAYERS];
     for (const auto& layerEntry : layersNode) {
       LayerItem layerItem;
-      if (!ParseTypeFilter(layerEntry, layerItem.type)) {
+      if (!ParseTypeFilter(layerEntry, layerItem.typeFilter)) {
         return false;
       }
       ParseString(layerEntry, YAML_LAYER, layerItem.layer);
+      ParseString(layerEntry, YAML_TYPE, layerItem.type);
       ParseBuildType(layerEntry, layerItem.build);
       layers.push_back(layerItem);
     }
@@ -614,6 +620,7 @@ const set<string> projectKeys = {
 
 const set<string> layerKeys = {
   YAML_DESCRIPTION,
+  YAML_TYPE,
   YAML_OUTPUTTYPE,
   YAML_DEVICE,
   YAML_BOARD,
@@ -730,6 +737,7 @@ const set<string> componentsKeys = {
 
 const set<string> layersKeys = {
   YAML_LAYER,
+  YAML_TYPE,
   YAML_FORTYPE,
   YAML_NOTFORTYPE,
   YAML_COMPILER,

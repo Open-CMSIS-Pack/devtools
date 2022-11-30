@@ -113,6 +113,7 @@ protected:
   bool RunListDependencies(void);
   bool RunListContexts(void);
   bool RunListGenerators(void);
+  bool RunListLayers(void);
   bool PopulateContexts(void);
 };
 

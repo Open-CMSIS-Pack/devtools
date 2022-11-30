@@ -39,6 +39,12 @@ public:
   static void Warn(const std::string& file, const int line, const int column, const std::string& msg);
   static void Warn(const std::string& file, const std::string& msg);
   static void Warn(const std::string& msg);
+
+  /**
+   * @brief print debug
+   * @param message
+  */
+  static void Debug(const std::string& msg);
   /**
    * @brief print info
    * @param message

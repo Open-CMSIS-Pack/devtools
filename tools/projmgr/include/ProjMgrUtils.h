@@ -10,6 +10,41 @@
 #include "ProjMgrKernel.h"
 
 /**
+  * @brief string pair
+ */
+typedef std::pair<std::string, std::string> StrPair;
+
+/**
+ * @brief string vector
+*/
+typedef std::vector<std::string> StrVec;
+
+/**
+ * @brief vector of string pair
+*/
+typedef std::vector<StrPair> StrPairVec;
+
+/**
+ * @brief vector of string pair pointer
+*/
+typedef std::vector<StrPair*> StrPairPtrVec;
+
+/**
+ * @brief map of string vector
+*/
+typedef std::map<std::string, StrVec> StrVecMap;
+
+/**
+ * @brief map of int
+*/
+typedef std::map<std::string, int> IntMap;
+
+/**
+ * @brief map of string
+*/
+typedef std::map<std::string, std::string> StrMap;
+
+/**
  * @brief projmgr utils class
 */
 class ProjMgrUtils {
@@ -102,6 +137,13 @@ public:
   */
   static void PushBackUniquely(std::vector<std::string>& vec, const std::string& value);
   static void PushBackUniquely(std::list<std::string>& lst, const std::string& value);
+
+  /**
+   * @brief convert string to int, return 0 if it's empty or not convertible
+   * @param string
+   * @return int
+  */
+  static int StringToInt(const std::string& value);
 
 protected:
   static std::string ConstructID(const std::vector<std::pair<const char*, const std::string&>>& elements);
