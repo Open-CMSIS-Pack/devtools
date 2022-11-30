@@ -712,6 +712,29 @@ debug csolution: no valid combination of clayers was found\n\
   EXPECT_TRUE(regex_match(errStr, regex(expected)));
 }
 
+TEST_F(ProjMgrUnitTests, ListLayersInvalidContext) {
+  char* argv[7];
+  const string& csolution = testinput_folder + "/TestLayers/genericlayers.csolution.yml";
+  const string& context = "*.InvalidContext";
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"layers";
+  argv[3] = (char*)"-s";
+  argv[4] = (char*)csolution.c_str();
+  argv[5] = (char*)"-c";
+  argv[6] = (char*)context.c_str();
+  EXPECT_EQ(1, RunProjMgr(7, argv));
+}
+
+TEST_F(ProjMgrUnitTests, ListLayersAllContexts) {
+  char* argv[5];
+  const string& csolution = testinput_folder + "/TestLayers/genericlayers.csolution.yml";
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"layers";
+  argv[3] = (char*)"-s";
+  argv[4] = (char*)csolution.c_str();
+  EXPECT_EQ(0, RunProjMgr(5, argv));
+}
+
 TEST_F(ProjMgrUnitTests, AccessSequences) {
   char* argv[7];
 
