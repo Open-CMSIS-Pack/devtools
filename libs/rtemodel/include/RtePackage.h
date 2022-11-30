@@ -245,6 +245,12 @@ public:
   RteItem* GetComponents() const { return m_components; }
 
   /**
+   * @brief get <apis> element
+   * @return pointer to RteItem representing container for APIs
+  */
+  RteItem* GetApis() const { return m_apis; }
+
+  /**
    * @brief get <components> element
    * @return pointer to RteItem representing container for examples
   */
@@ -263,9 +269,33 @@ public:
   RteItem* GetBoards() const { return m_boards; }
 
   /**
- * @brief get <generators> element
- * @return pointer to RteGeneratorContainer representing container for generators
-*/
+  * @brief get collection of <cimage> elements
+  * @return list of pointers RteItem representing cimage elements
+  */
+  const std::list<RteItem*> GetImageDescriptors() const { return GetGrandChildren("cimage"); }
+
+  /**
+  * @brief get collection of <clayer> elements
+  * @return list of pointers RteItem representing clayer elements
+  */
+  const std::list<RteItem*> GetLayerDescriptors() const { return GetGrandChildren("clayers"); }
+
+  /**
+  * @brief get collection of <cproject> elements
+  * @return list of pointers RteItem representing cproject elements
+  */
+  const std::list<RteItem*> GetProjectDescriptors() const { return GetGrandChildren("cprojects"); }
+
+  /**
+   * @brief get collection of <csolution> elements
+   * @return list of pointers RteItem representing csolution elements
+  */
+  const std::list<RteItem*> GetSolutionDescriptors() const { return GetGrandChildren("csolutions"); }
+
+  /**
+  * @brief get <generators> element
+  * @return pointer to RteGeneratorContainer representing container for generators
+  */
   RteGeneratorContainer* GetGenerators() const { return m_generators; }
 
   /**

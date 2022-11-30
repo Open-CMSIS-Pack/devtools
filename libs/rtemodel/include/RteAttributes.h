@@ -496,6 +496,26 @@ public:
   */
   virtual bool IsDefaultVariant() const { return GetAttributeAsBool("isDefaultVariant"); }
   /**
+   * @brief return value of attribute "variant"
+   * @return value of attribute "variant"
+   */
+  virtual const std::string& GetVariantString() const { return GetAttribute("variant"); }
+  /**
+  * @brief return value of attribute "type"
+  * @return value of attribute "type"
+  */
+  virtual const std::string& GetTypeString() const { return GetAttribute("type"); }
+  /**
+  * @brief return value of attribute "file"
+  * @return value of attribute "file"
+  */
+  virtual const std::string& GetFileString() const { return GetAttribute("file"); }
+ /**
+  * @brief return value of attribute "file"
+  * @return value of attribute "file"
+  */
+  virtual const std::string& GetFolderString() const { return GetAttribute("folder"); }
+  /**
    * @brief determine full unique component ID
    * @param withVersion true if version is considered as part of component ID
    * @return full unique component ID
