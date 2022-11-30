@@ -27,8 +27,8 @@ using namespace std;
 RteModel::RteModel(RteItem* parent, PackageState packageState) :
   RteItem(parent),
   m_packageState(packageState),
-  m_bUseDeviceTree(true),
   m_callback(NULL),
+  m_bUseDeviceTree(true),
   m_filterContext(NULL)
 {
   m_deviceTree = new RteDeviceItemAggregate("DeviceList", RteDeviceItem::VENDOR_LIST, NULL);
@@ -39,8 +39,8 @@ RteModel::RteModel(RteItem* parent, PackageState packageState) :
 RteModel::RteModel(PackageState packageState) :
   RteItem(NULL),
   m_packageState(packageState),
-  m_bUseDeviceTree(false),
   m_callback(NULL),
+  m_bUseDeviceTree(false),
   m_filterContext(NULL)
 {
   m_deviceTree = new RteDeviceItemAggregate("DeviceList", RteDeviceItem::VENDOR_LIST, NULL);
@@ -67,6 +67,11 @@ void RteModel::ClearModel()
   m_apiList.clear();
   m_taxonomy.clear();
   m_bundles.clear();
+
+  m_imageDescriptors.clear();
+  m_layerDescriptors.clear();
+  m_projectDescriptors.clear();
+  m_solutionDescriptors.clear();
 
   list<RtePackage*>::iterator it;
   for (it = m_packageDuplicates.begin(); it != m_packageDuplicates.end(); it++) {
@@ -371,7 +376,7 @@ void RteModel::InsertPacks(const list<RtePackage*>& packs)
   for (auto it = packs.begin(); it != packs.end(); it++) {
     InsertPack(*it);
   }
-  FillComponentList(NULL); // no deviced package yet
+  FillComponentList(NULL); // no device package yet
   FillDeviceTree();
 }
 
@@ -500,8 +505,26 @@ void RteModel::AddItemsFromPack(RtePackage* pack)
       }
     }
   }
+  // images
+  AddPackItemsToList(pack->GetImageDescriptors(), m_imageDescriptors);
+  // layers
+  AddPackItemsToList(pack->GetLayerDescriptors(), m_layerDescriptors);
+  // projects
+  AddPackItemsToList(pack->GetProjectDescriptors(), m_projectDescriptors);
+  // projects
+  AddPackItemsToList(pack->GetSolutionDescriptors(), m_solutionDescriptors);
+
   // fill api and component list
   pack->InsertInModel(this);
+}
+
+void RteModel::AddPackItemsToList(const std::list<RteItem*>& srcCollection, std::list<RteItem*>& dstCollection)
+{
+  for (auto item : srcCollection) {
+    if (IsFiltered(item)) {
+      dstCollection.push_back(item);
+    }
+  }
 }
 
 bool RteModel::IsFiltered(RteItem* item) {

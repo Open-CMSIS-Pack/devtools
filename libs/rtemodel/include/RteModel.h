@@ -518,14 +518,38 @@ public:
   */
   void InsertPack(RtePackage* package);
 
+  /**
+  * @brief get collection of filtered <cimage> elements collected from the packs
+  * @return list of pointers RteItem representing cimage elements
+  */
+  const std::list<RteItem*>& GetImageDescriptors() const { return m_imageDescriptors; }
+  /**
+  * @brief get collection of filtered <clayer> elements collected from the packs
+  * @return list of pointers RteItem representing clayer elements
+  */
+  const std::list<RteItem*>& GetLayerDescriptors() const { return  m_layerDescriptors; }
+  /**
+  * @brief get collection of filtered <cproject> elements collected from the packs
+  * @return list of pointers RteItem representing cproject elements
+  */
+  const std::list<RteItem*>& GetProjectDescriptors() const { return  m_projectDescriptors; }
+  /**
+  * @brief get collection of filtered <csolution> elements collected from the packs
+  * @return list of pointers RteItem representing csolution elements
+  */
+  const std::list<RteItem*>& GetSolutionDescriptors() const { return  m_solutionDescriptors; }
+
 protected:
 
   void ClearDevices();
 
   virtual void FillComponentList(RtePackage* devicePackage);
-  virtual void AddItemsFromPack(RtePackage* pack); // adds taxonomy and components
+  virtual void AddItemsFromPack(RtePackage* pack); // adds taxonomy, components, csolution related items
+
   virtual void FillDeviceTree();
   virtual void FillDeviceTree(RtePackage* pack);
+
+  void AddPackItemsToList(const std::list<RteItem*>& srcCollection, std::list<RteItem*>& dstCollection);
 
   bool IsApiDominatingOrNewer(RteApi* a);
 
@@ -533,25 +557,34 @@ protected:
   PackageState m_packageState;
 
 protected:
-  std::map<std::string, RteApi* > m_apiList; // flat std::list of available APIs
-  RteComponentMap m_componentList; // full unique component std::list
-  std::map<std::string, RteItem*> m_taxonomy; // flat std::list of standard Class descriptions
-  RteBundleMap m_bundles;
+  RteCallback* m_callback; // pointer to callback
 
+  // components, APIs, taxonomy
+  std::map<std::string, RteApi* > m_apiList; // collection of available APIs
+  RteComponentMap m_componentList; // full collection of unique components
+  std::map<std::string, RteItem*> m_taxonomy; // collection of standard Class descriptions
+  RteBundleMap m_bundles; // collection of available bundles
+
+  // device information
   std::map<std::string, RteDeviceVendor*> m_deviceVendors;
-
   RteDeviceItemAggregate* m_deviceTree;// vendor/family/subfamily/device/variant/processor
   bool m_bUseDeviceTree; // flag is set to true by Pack Installer, uVision does not use RteDeviceItemAggregate items any more
+
+  // boards
   RteBoardMap m_boards;
 
-  RteCallback* m_callback;
-
-  RtePackageMap m_packages; // sorted package std::list (full id to package, latest versions first)
+  // packs
+  RtePackageMap m_packages; // sorted package map (full id to package, latest versions first)
   RtePackageMap m_latestPackages; // latests packages (common id to package)
-
   std::list<RtePackage*> m_packageDuplicates;
-
   RtePackageFilter m_packageFilter;
+
+  // csolution-related collections
+  std::list<RteItem*> m_imageDescriptors;
+  std::list<RteItem*> m_layerDescriptors;
+  std::list<RteItem*> m_projectDescriptors;
+  std::list<RteItem*> m_solutionDescriptors;
+
   RteConditionContext* m_filterContext; // constructed, updated and deleted by target
 
   std::string m_rtePath; // path to RTEPATH from tools.ini

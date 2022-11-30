@@ -494,7 +494,6 @@ bool RteItem::ProcessXmlChildren(XMLTreeElement* xmlElement)
 
 bool RteItem::ProcessXmlElement(XMLTreeElement* xmlElement)
 {
-  // default inserts element's text asan  attribute
   const string& name = xmlElement->GetTag();
   if (name == "description") {
     m_text = xmlElement->GetText(); // if an item has children, it cannot have also a text, so reuse the member
@@ -568,7 +567,7 @@ bool RteItem::Validate()
 
 void RteItem::InsertInModel(RteModel* model)
 {
-  // default just iterates over children asking inser them itself
+  // default just iterates over children asking them to insert themselves
   for (auto it = m_children.begin(); it != m_children.end(); it++) {
     (*it)->InsertInModel(model);
   }
@@ -576,7 +575,7 @@ void RteItem::InsertInModel(RteModel* model)
 
 bool RteItem::AcceptVisitor(RteVisitor* visitor)
 {
-  // visitor design pattern implementaion
+  // visitor design pattern implementation
   if (visitor) {
     VISIT_RESULT res = visitor->Visit(this);
     if (res == CANCEL_VISIT) {
