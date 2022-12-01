@@ -30,7 +30,7 @@
     <compiler name="AC6" version="6.0.0:6.99.99"/>
   </compilers>
 
-  <target Bname="RteTest Dummy board" Bvendor="Keil" Bversion="1.2.3" Ddsp="NO_DSP" Dendian="Little-endian" Dfpu="NO_FPU" Dmve="NO_MVE" Dname="RteTest_ARMCM3" Dsecure="Non-secure" Dtz="NO_TZ" Dvendor="ARM:82">
+  <target Bname="RteTest Test board-2" Bvendor="Keil" Bversion="2.2.2" Ddsp="NO_DSP" Dendian="Little-endian" Dfpu="NO_FPU" Dmve="NO_MVE" Dname="RteTest_ARMCM3" Dsecure="Non-secure" Dtz="NO_TZ" Dvendor="ARM:82">
     <output intdir="./" name="RteTestM3" outdir="./" rtedir="CONFIG_FOLDER" type="exe"/>
     <ldflags add="--callgraph --info sizes --info summarysizes --info totals --info unused --info veneers --load_addr_map_info --map --strict --summary_stderr --symbols --xref" compiler="AC6" file="./RTE/Device/RteTest_ARMCM3/ARMCM3_ac6.sct"/>
     <cflags add="-Oz -ffunction-sections -fno-rtti -fshort-enums -fshort-wchar -funsigned-char -gdwarf-3 -std=c99 -xc" compiler="AC6"/>

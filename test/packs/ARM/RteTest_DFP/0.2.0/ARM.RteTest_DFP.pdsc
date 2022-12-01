@@ -124,7 +124,7 @@
         <processor Dcore="Cortex-M0" DcoreVersion="r0p0" Dfpu="NO_FPU" Dmpu="NO_MPU" Dendian="Configurable" Dclock="10000000"/>
         <compile header="Device/ARM/ARMCM0/Include/ARMCM0.h" define="ARMCM0"/>
       </device>
-      
+
       <device Dname="RteTest_ARMCM0_Dual">
         <processor Pname="cm0_core0" Dcore="Cortex-M0" DcoreVersion="r0p0" Dfpu="NO_FPU" Dmpu="NO_MPU" Dendian="Configurable" Dclock="10000000" />
         <processor Pname="cm0_core1" Dcore="Cortex-M0" DcoreVersion="r0p0" Dfpu="NO_FPU" Dmpu="NO_MPU" Dendian="Configurable" Dclock="10000000"/>
@@ -274,7 +274,7 @@
       <require Dvendor="ARM:82" Dname="*ARMCM*"/>
       <require Bname="RteTest Dummy board" Bvendor="Keil" Brevision="1.2.3"/>
     </condition>
-    
+
     <condition id="BoardDependent">
       <description>Checks board dependency</description>
       <accept condition="BoardTest1"/>
@@ -428,7 +428,7 @@
     </board>
     <board name="RteTest Test board" vendor="Keil" revision="1.1.1">
       <description>uVision Simulator</description>
-      <mountedDevice    deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM0"/>
+      <mountedDevice    deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM3"/>
       <mountedDevice    deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM0_Dual"/>
       <compatibleDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM3"/>
       <compatibleDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM4_NOFP"/>
@@ -443,7 +443,7 @@
     <board name="RteTest Test board-2" vendor="Keil" revision="2.2.2">
       <description>uVision Simulator</description>
       <mountedDevice    deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM0_Single"/>
-      <compatibleDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM3"/>
+      <mountedDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM3"/>
       <compatibleDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM4_NOFP"/>
       <compatibleDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM4_FP"/>
     </board>
@@ -483,5 +483,15 @@
       <compatibleDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM4_NOFP"/>
     </board>
   </boards>
+
+  <clayers>
+    <clayer name="Board1" type="Board" file="Layers/board1.clayer.yml" condition="BoardTest1">
+      <description>"Test board layer one"</description>
+    </clayer>
+    <clayer name="Board2" type="Board" file="Layers/board2.clayer.yml" condition="BoardTest2">
+      <description>"Test board layer two"</description>
+    </clayer>
+
+  </clayers>
 
 </package>
