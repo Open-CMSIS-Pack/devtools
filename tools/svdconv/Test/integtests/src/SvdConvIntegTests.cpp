@@ -44,7 +44,7 @@ TEST_F(SvdConvIntegTests, CheckDisableCondition) {
   Arguments args("SVDConv.exe", inFile);
   args.add({ "-o", testOut, "--generate=sfd", "--create-folder" });
   args.add({ "-b", logFile });
-  
+
   SvdConv svdConv;
   EXPECT_EQ(0, svdConv.Check(args, args, nullptr));
 
@@ -70,13 +70,13 @@ TEST_F(SvdConvIntegTests, CheckDisableCondition) {
   EXPECT_TRUE(1);
 }
 
-// Validate <disableCondition>
+// Validate NameHasBrackets
 TEST_F(SvdConvIntegTests, CheckNameHasBrackets) {
   const string& inFile = SvdConvIntegTestEnv::localtestdata_dir + "/nameHasBrackets/SVDTiny.svd";
   ASSERT_TRUE(RteFsUtils::Exists(inFile));
 
   Arguments args("SVDConv.exe", inFile);
-  
+
   SvdConv svdConv;
   EXPECT_EQ(2, svdConv.Check(args, args, nullptr));
 
@@ -91,3 +91,25 @@ TEST_F(SvdConvIntegTests, CheckNameHasBrackets) {
 
   EXPECT_TRUE(bFound);
 }
+
+// Validate Option -n
+TEST_F(SvdConvIntegTests, CheckOption_n) {
+  const string& inFile = SvdConvIntegTestEnv::localtestdata_dir + "/option_n/option_n.svd";
+  const string testOut = SvdConvIntegTestEnv::testoutput_dir + "/option_n";
+  ASSERT_TRUE(RteFsUtils::Exists(inFile));
+  const string sfdOutName = "override.abc";
+
+  Arguments args("SVDConv.exe", inFile);
+  args.add({ "-o", testOut, "--generate=sfd", "--create-folder" });
+  args.add( { "-n", sfdOutName } );
+
+  SvdConv svdConv;
+  EXPECT_FALSE(svdConv.Check(args, args, nullptr));
+
+  string outNameTest = testOut;
+  outNameTest += "/";
+  outNameTest += RteUtils::ExtractFileBaseName(sfdOutName);
+  outNameTest += ".sfd";
+  ASSERT_TRUE(RteFsUtils::Exists(outNameTest));
+}
+

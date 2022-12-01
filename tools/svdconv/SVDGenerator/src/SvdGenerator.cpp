@@ -74,7 +74,7 @@ bool SvdGenerator::CmsisHeaderFile(SvdDevice *device, const string &path)
 
   FileHeaderInfo fileHeaderInfo;
   SetFileHeader(fileHeaderInfo, device);
-  
+
   HeaderData *headerData = new HeaderData(fileHeaderInfo, m_options);
   headerData->Create(device, fileName);
 
@@ -91,7 +91,7 @@ bool SvdGenerator::CmsisPartitionFile(SvdDevice *device, const string &path)
 
   FileHeaderInfo fileHeaderInfo;
   SetFileHeader(fileHeaderInfo, device);
-  
+
   PartitionData *partitionData = new PartitionData(fileHeaderInfo, m_options);
   partitionData->Create(device, fileName);
 
@@ -108,10 +108,10 @@ bool SvdGenerator::SfdFile(SvdDevice *device, const string &path)
 
   FileHeaderInfo fileHeaderInfo;
   SetFileHeader(fileHeaderInfo, device);
-  
+
   const auto sfdData = new SfdData(fileHeaderInfo, m_options);
   sfdData->Create(device, fileName);
-  
+
   delete sfdData;
 
   return true;
@@ -125,7 +125,7 @@ bool SvdGenerator::SfrFile(SvdDevice *device, const string &path)
 
   const auto sfrIf = new SfrccInterface();
   bool status = sfrIf->Compile(sfdFileName);
-    
+
   delete sfrIf;
 
   return status;
@@ -139,9 +139,9 @@ bool SvdGenerator::PeripheralListing(SvdDevice *device, const string &path)
 
   FileHeaderInfo fileHeaderInfo;
   SetFileHeader(fileHeaderInfo, device);
-  
+
   const auto memoryMap = new MemoryMap(fileHeaderInfo);
-  memoryMap->CreateMap(device, fileName, MAPLEVEL_PERIPHERAL);  
+  memoryMap->CreateMap(device, fileName, MAPLEVEL_PERIPHERAL);
   delete memoryMap;
 
   return true;
@@ -155,9 +155,9 @@ bool SvdGenerator::RegisterListing(SvdDevice *device, const string &path)
 
   FileHeaderInfo fileHeaderInfo;
   SetFileHeader(fileHeaderInfo, device);
-  
+
   const auto memoryMap = new MemoryMap(fileHeaderInfo);
-  memoryMap->CreateMap(device, fileName, MAPLEVEL_REGISTER);  
+  memoryMap->CreateMap(device, fileName, MAPLEVEL_REGISTER);
   delete memoryMap;
 
   return true;
@@ -171,9 +171,9 @@ bool SvdGenerator::FieldListing(SvdDevice *device, const string &path)
 
   FileHeaderInfo fileHeaderInfo;
   SetFileHeader(fileHeaderInfo, device);
-  
+
   const auto memoryMap = new MemoryMap(fileHeaderInfo);
-  memoryMap->CreateMap(device, fileName, MAPLEVEL_FIELD);  
+  memoryMap->CreateMap(device, fileName, MAPLEVEL_FIELD);
   delete memoryMap;
 
   return true;
@@ -181,7 +181,7 @@ bool SvdGenerator::FieldListing(SvdDevice *device, const string &path)
 
 const string SvdGenerator::GetDeviceName()
 {
-  return m_deviceName; 
+  return m_deviceName;
 }
 
 string SvdGenerator::GetCmsisHeaderFileName()
@@ -200,9 +200,18 @@ string SvdGenerator::GetSfdFileName()
 {
   string name = GetOutPath();
   if(!name.empty()) {
-    name += '/';
+    name += "/";
   }
-  name += GetDeviceName();
+
+  const string& overrideName = m_options.GetOutFilenameOverride();
+
+  if(!overrideName.empty()) {
+    name += overrideName;
+  }
+  else {
+    name += GetDeviceName();
+  }
+
   name += ".sfd";
 
   return name;

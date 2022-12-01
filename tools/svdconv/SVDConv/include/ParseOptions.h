@@ -37,6 +37,7 @@ protected:
   bool SetTestFile(const std::string &filename);
   bool SetOutputDirectory(const std::string& filename);
   bool SetLogFile(const std::string &m_logFile);
+  bool SetOutFilenameOverride(const std::string& filename);
   bool AddDiagSuppress(const std::string &suppress);
   bool SetVerbose(bool bVerbose);
   bool ConfigureProgramName(std::string programPath);

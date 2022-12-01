@@ -29,7 +29,7 @@ SfrccInterface::SfrccInterface()
 #endif
 
   string modPath = modulePath;
-  string::size_type pos = modPath.find_last_of('/');
+  string::size_type pos = modPath.find_last_of('\\');  // do not change this to slash!
   if(pos != string::npos && pos > 1) {
     modPath.erase(pos, modPath.length());
     SetModulePath(modPath);
@@ -104,10 +104,7 @@ bool SfrccInterface::Compile(const string& fileName, bool bCleanup /*= true*/)
   int32_t ret = _pclose(pPipe);
   delete[] logBuf;
 
-  if(ret) {
-    LogMsg("M132", MSG(sfrccMsg));      // on error or warning of SfrCC2
-  }
-  else {
+  if(!sfrccMsg.empty()) {
     LogMsg("M125", MSG(sfrccMsg));      // verbose message
   }
 
