@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+
+<device schemaVersion="1.1"
+xmlns:xs="http://www.w3.org/2001/XMLSchema-instance"
+xs:noNamespaceSchemaLocation="CMSIS-SVD_Schema_1_1.xsd">
+  <name>option_n</name>
+  <version>1.5</version>
+  <description>option_n Test (Override SFD/SFR name)</description>
+  <addressUnitBits>8</addressUnitBits>
+  <width>32</width>
+  <size>0x20</size>
+  <resetValue>0x0</resetValue>
+  <resetMask>0xFFFFFFFF</resetMask>
+  
+   <cpu>
+    <name>CM4</name>
+    <revision>r1p5</revision>                             
+    <endian>little</endian>                                 
+    <fpuPresent>true</fpuPresent>                           
+	  <fpuDP>0</fpuDP>
+    <nvicPrioBits>4</nvicPrioBits>
+    <deviceNumInterrupts>20</deviceNumInterrupts>
+  </cpu>
+  
+  <peripherals>
+
+    <peripheral>
+      <name>IWDG</name>
+      <description>Independent watchdog</description>
+      <groupName>IWDG Group</groupName>
+      <baseAddress>0x40003000</baseAddress>
+  	  <disableCondition>DCB-&gt;DSCSR-&gt;CDS == 0</disableCondition>
+      <interrupt>
+        <name>IWDG</name>
+        <description>IWDG Interrupt</description>
+        <value>2</value>
+      </interrupt>
+      <addressBlock>
+        <offset>0x0</offset>
+        <size>0x400</size>
+        <usage>registers</usage>
+      </addressBlock>
+      <registers>
+        <register>
+          <name>KR</name>
+          <description>Key register</description>
+          <addressOffset>0x0</addressOffset>
+          <size>0x20</size>
+          <access>write-only</access>
+          <resetValue>0x00000000</resetValue>
+          <fields>
+            <field>
+              <name>KEY</name>
+              <description>Key value (write only, read
+              0x0000)</description>
+              <bitOffset>0</bitOffset>
+              <bitWidth>16</bitWidth>
+            </field>
+          </fields>
+        </register>
+        <register>
+          <name>PR</name>
+          <description>Prescaler register</description>
+          <addressOffset>0x4</addressOffset>
+          <size>0x20</size>
+          <access>read-write</access>
+          <resetValue>0x00000000</resetValue>
+          <fields>
+            <field>
+              <name>PR</name>
+              <description>Prescaler divider</description>
+              <bitOffset>0</bitOffset>
+              <bitWidth>8</bitWidth>
+            </field>
+          </fields>
+        </register>
+      </registers>
+    </peripheral>
+
+    <peripheral derivedFrom="IWDG">
+      <name>IWDG2</name>
+      <description>Independent watchdog 2</description>
+      <groupName>IWDG Group</groupName>
+      <baseAddress>0x40004000</baseAddress>
+  	  <disableCondition>DCB-&gt;DSCSR_Clust-&gt;DSCSR-&gt;CDS == 0</disableCondition>
+    </peripheral>
+
+	<peripheral>
+      <name>DCB</name>
+      <description>Debug Control Block</description>
+      <baseAddress>0xE000EE08</baseAddress>
+      <addressBlock>
+        <offset>0x0</offset>
+        <size>0x40</size>
+        <usage>registers</usage>
+      </addressBlock>
+      <registers>
+        <cluster>
+          <name>DSCSR_Clust</name>
+          <description>Expression test for Register in Cluster</description>
+          <addressOffset>0x0</addressOffset>
+          
+          <register>
+            <name>DSCSR</name>
+            <description>Debug Security Control and Status Register</description>
+            <addressOffset>0x0</addressOffset>
+            <size>0x20</size>
+            <access>read-write</access>
+            <resetValue>0x00000000</resetValue>
+            <fields>
+              <field>
+                <name>CDS</name>
+                <description>Current domain Secure</description>
+                <bitOffset>16</bitOffset>
+                <bitWidth>1</bitWidth>
+                <enumeratedValues>
+                  <enumeratedValue>
+                    <name>Disable</name>
+                    <description>Current domain Secure disabled</description>
+                    <value>0</value>
+                  </enumeratedValue>
+                  <enumeratedValue>
+                    <name>Enable</name>
+                    <description>Current domain Secure enabled</description>
+                    <value>1</value>
+                  </enumeratedValue>
+                </enumeratedValues>
+              </field>
+            </fields>
+          </register>
+         <register>
+           <name>OtherReg</name>
+            <description>Some other Register</description>
+            <addressOffset>0x04</addressOffset>
+            <size>0x20</size>
+            <access>read-write</access>
+            <resetValue>0x00000000</resetValue>
+          </register>
+        </cluster>
+        
+        <register derivedFrom="DSCSR_Clust.DSCSR">
+          <addressOffset>0x8</addressOffset>
+        </register>
+      </registers>
+    </peripheral>
+
+
+
+  </peripherals>
+</device>
+

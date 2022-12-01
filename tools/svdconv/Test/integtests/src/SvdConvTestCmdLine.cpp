@@ -34,11 +34,11 @@ void SvdConvIntegTestsCmdParser::TearDown() {
 }
 
 
-TEST_F(SvdConvIntegTestsCmdParser, CheckInputFile) {  
+TEST_F(SvdConvIntegTestsCmdParser, CheckInputFile) {
   const string& inFile = SvdConvIntegTestEnv::localtestdata_dir + "/cmdlineParser/DisableCondTest.svd";
 
   Arguments args("SVDConv.exe", inFile);
-   
+
   SvdOptions svdOptions;
   ParseOptions parseOptions(svdOptions);
   ParseOptions::Result result = parseOptions.Parse(args, args);
@@ -48,13 +48,13 @@ TEST_F(SvdConvIntegTestsCmdParser, CheckInputFile) {
   EXPECT_EQ(inFile, checkStr);
 }
 
-TEST_F(SvdConvIntegTestsCmdParser, CheckOutputDirectory) {  
+TEST_F(SvdConvIntegTestsCmdParser, CheckOutputDirectory) {
   const string& outDirFile = SvdConvIntegTestEnv::localtestdata_dir + "/cmdlineParser/outputDir";
 
   Arguments args("SVDConv.exe");
   args.add({ "-o", outDirFile });
   args.add({ "--create-folder" });
-   
+
   SvdOptions svdOptions;
   ParseOptions parseOptions(svdOptions);
   ParseOptions::Result result = parseOptions.Parse(args, args);
@@ -64,7 +64,7 @@ TEST_F(SvdConvIntegTestsCmdParser, CheckOutputDirectory) {
   EXPECT_EQ(outDirFile, checkStr);
 }
 
-TEST_F(SvdConvIntegTestsCmdParser, CheckLogfile) {  
+TEST_F(SvdConvIntegTestsCmdParser, CheckLogfile) {
   const string& inFile = SvdConvIntegTestEnv::localtestdata_dir + "/cmdlineParser/DisableCondTest.svd";
   const string testOut = SvdConvIntegTestEnv::testoutput_dir + "/checkLogfile";
   const string logFile = testOut + "/checkLogfile.log";
@@ -72,16 +72,16 @@ TEST_F(SvdConvIntegTestsCmdParser, CheckLogfile) {
   Arguments args("SVDConv.exe", inFile);
   args.add({ "-b", logFile });
   args.add({ "--create-folder" });
-   
+
   SvdConv svdConv;
   svdConv.Check(args, args, nullptr);
-  
+
   ErrLog::Get()->Save();
   bool bOk = RteFsUtils::Exists(logFile);
   EXPECT_TRUE(bOk);
 }
 
-TEST_F(SvdConvIntegTestsCmdParser, CheckGenerate) {  
+TEST_F(SvdConvIntegTestsCmdParser, CheckGenerate) {
   Arguments args("SVDConv.exe");
   args.add({ "--generate=header" });
   args.add({ "--generate=partition" });
@@ -106,7 +106,7 @@ TEST_F(SvdConvIntegTestsCmdParser, CheckGenerate) {
 }
 
 #if 0 // template
-TEST_F(SvdConvIntegTestsCmdParser, CheckFoo) {  
+TEST_F(SvdConvIntegTestsCmdParser, CheckFoo) {
   Arguments args("SVDConv.exe");
   args.add({ "" });
 
@@ -119,7 +119,7 @@ TEST_F(SvdConvIntegTestsCmdParser, CheckFoo) {
 }
 #endif
 
-TEST_F(SvdConvIntegTestsCmdParser, CheckFields) {  
+TEST_F(SvdConvIntegTestsCmdParser, CheckFields) {
   Arguments args("SVDConv.exe");
   args.add({ "--fields=macro" });
   args.add({ "--fields=struct" });
@@ -137,7 +137,7 @@ TEST_F(SvdConvIntegTestsCmdParser, CheckFields) {
   EXPECT_TRUE(svdOptions.IsCreateEnumValues());
 }
 
-TEST_F(SvdConvIntegTestsCmdParser, CheckDebug) {  
+TEST_F(SvdConvIntegTestsCmdParser, CheckDebug) {
   Arguments args("SVDConv.exe");
   args.add({ "--debug=struct" });
   args.add({ "--debug=header" });
@@ -153,7 +153,7 @@ TEST_F(SvdConvIntegTestsCmdParser, CheckDebug) {
   EXPECT_TRUE(svdOptions.IsDebugSfd());
 }
 
-TEST_F(SvdConvIntegTestsCmdParser, CheckSuppresPath) {  
+TEST_F(SvdConvIntegTestsCmdParser, CheckSuppresPath) {
   Arguments args("SVDConv.exe");
   args.add({ "--suppress-path" });
 
@@ -165,7 +165,7 @@ TEST_F(SvdConvIntegTestsCmdParser, CheckSuppresPath) {
   EXPECT_TRUE(svdOptions.IsSuppressPath());
 }
 
-TEST_F(SvdConvIntegTestsCmdParser, CheckCreateFolder) {  
+TEST_F(SvdConvIntegTestsCmdParser, CheckCreateFolder) {
   Arguments args("SVDConv.exe");
   args.add({ "--create-folder" });
 
@@ -177,7 +177,7 @@ TEST_F(SvdConvIntegTestsCmdParser, CheckCreateFolder) {
   EXPECT_TRUE(svdOptions.IsCreateFolder());
 }
 
-TEST_F(SvdConvIntegTestsCmdParser, CheckShowMissingEnums) {  
+TEST_F(SvdConvIntegTestsCmdParser, CheckShowMissingEnums) {
   Arguments args("SVDConv.exe");
   args.add({ "--show-missingEnums" });
 
@@ -190,7 +190,7 @@ TEST_F(SvdConvIntegTestsCmdParser, CheckShowMissingEnums) {
 }
 
 #if 0   // done directly in ErrLog
-TEST_F(SvdConvIntegTestsCmdParser, CheckStrict) {  
+TEST_F(SvdConvIntegTestsCmdParser, CheckStrict) {
   Arguments args("SVDConv.exe");
   args.add({ "--strict" });
 
@@ -204,7 +204,7 @@ TEST_F(SvdConvIntegTestsCmdParser, CheckStrict) {
 #endif
 
 #if 0   // done directly in ErrLog
-TEST_F(SvdConvIntegTestsCmdParser, CheckSuppressWarnings) {  
+TEST_F(SvdConvIntegTestsCmdParser, CheckSuppressWarnings) {
   Arguments args("SVDConv.exe");
   args.add({ "--suppress-warnings" });
 
@@ -218,7 +218,7 @@ TEST_F(SvdConvIntegTestsCmdParser, CheckSuppressWarnings) {
 #endif
 
 #if 0   // done directly in ErrLog
-TEST_F(SvdConvIntegTestsCmdParser, CheckAllowSuppressError) {  
+TEST_F(SvdConvIntegTestsCmdParser, CheckAllowSuppressError) {
   Arguments args("SVDConv.exe");
   args.add({ "--allow-suppress-error" });
 
@@ -231,7 +231,7 @@ TEST_F(SvdConvIntegTestsCmdParser, CheckAllowSuppressError) {
 }
 #endif
 
-TEST_F(SvdConvIntegTestsCmdParser, CheckNoCleanup) {  
+TEST_F(SvdConvIntegTestsCmdParser, CheckNoCleanup) {
   Arguments args("SVDConv.exe");
   args.add({ "--nocleanup" });
 
@@ -243,7 +243,7 @@ TEST_F(SvdConvIntegTestsCmdParser, CheckNoCleanup) {
   EXPECT_TRUE(svdOptions.IsNoCleanup());
 }
 
-TEST_F(SvdConvIntegTestsCmdParser, CheckUnderTest) {  
+TEST_F(SvdConvIntegTestsCmdParser, CheckUnderTest) {
   Arguments args("SVDConv.exe");
   args.add({ "--under-test" });
 
@@ -256,7 +256,7 @@ TEST_F(SvdConvIntegTestsCmdParser, CheckUnderTest) {
 }
 
 #if 0   // done directly in ErrLog
-TEST_F(SvdConvIntegTestsCmdParser, CheckQuiet) {  
+TEST_F(SvdConvIntegTestsCmdParser, CheckQuiet) {
   Arguments args("SVDConv.exe");
   args.add({ "--quiet" });
 
@@ -269,3 +269,18 @@ TEST_F(SvdConvIntegTestsCmdParser, CheckQuiet) {
 }
 #endif
 
+TEST_F(SvdConvIntegTestsCmdParser, CheckSfdNameOverride) {
+  Arguments args("SVDConv.exe");
+  args.add({ "-n", "override.abc" });
+
+  SvdOptions svdOptions;
+  ParseOptions parseOptions(svdOptions);
+  ParseOptions::Result result = parseOptions.Parse(args, args);
+  EXPECT_EQ(ParseOptions::Result::Ok, result);
+
+  const string& name = svdOptions.GetOutFilenameOverride();
+  const string ext = RteUtils::ExtractFileExtension(name);
+
+  EXPECT_TRUE(!name.empty());
+  EXPECT_TRUE(ext.empty());
+}

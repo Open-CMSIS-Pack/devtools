@@ -306,6 +306,18 @@ bool SvdOptions::MakeSurePathExists(const string& path)
   return RteFsUtils::CreateDirectories(path);
 }
 
+bool SvdOptions::SetOutFilenameOverride(const string& filename)
+{
+  m_outfileOverride = RteUtils::ExtractFileBaseName(filename);
+
+  return true;
+}
+
+const string& SvdOptions::GetOutFilenameOverride() const
+{
+  return m_outfileOverride;
+}
+
 /**
  * @brief set output directory
  * @param filename string name

@@ -108,8 +108,18 @@ bool ParseOptions::SetLogFile(const string& logFile)
 }
 
 /**
+ * @brief option "n"
+ * @param filename Override output file name
+ * @return
+*/
+bool ParseOptions::SetOutFilenameOverride(const string& filename)
+{
+  return m_options.SetOutFilenameOverride(filename);
+}
+
+/**
  * @brief option "generate="
- * @param 
+ * @param
  * @return passed / failed
 */
 bool ParseOptions::ParseOptGenerate(const string& opt)
@@ -124,6 +134,7 @@ bool ParseOptions::ParseOptGenerate(const string& opt)
     m_options.SetGenerateSfd();
   }
   else if(opt == "sfr") {
+    m_options.SetGenerateSfd();
     m_options.SetGenerateSfr();
   }
   else if(opt == "peripheralMap") {
@@ -141,7 +152,7 @@ bool ParseOptions::ParseOptGenerate(const string& opt)
 
 /**
  * @brief option "fields="
- * @param 
+ * @param
  * @return passed / failed
 */
 bool ParseOptions::ParseOptFields(const string& opt)
@@ -161,13 +172,13 @@ bool ParseOptions::ParseOptFields(const string& opt)
   else if(tmpOpt == "enum") {
     m_options.SetCreateEnumValues();
   }
-  
+
   return true;
 }
 
 /**
  * @brief option "debug="
- * @param 
+ * @param
  * @return passed / failed
 */
 bool ParseOptions::ParseOptDebug(const string& opt)
@@ -186,7 +197,7 @@ bool ParseOptions::ParseOptDebug(const string& opt)
   else if(tmpOpt == "break") {
     m_options.HaltProgramExecution();
   }
-  
+
   return true;
 }
 
@@ -287,7 +298,7 @@ ParseOptions::Result ParseOptions::ParseOptsFileLine(const string& line, vector<
     }
 
     if(!bStringFound && c == '#') {   // comment, skip line from here
-      break; 
+      break;
     }
 
     if(!bStringFound && isspace(c)) {
@@ -411,6 +422,7 @@ ParseOptions::Result ParseOptions::ParseOpts(int argc, const char* argv[])
       ( "nocleanup"             , "Do not delete intermediate files"                          , cxxopts::value<bool>()->default_value("false") )
       ( "quiet"                 , "No output on console"                                      , cxxopts::value<bool>()->default_value("false") )
       ( "debug"                 , "Add information to generated files: struct/header/sfd/break" , cxxopts::value<std::vector<std::string>>() )
+      ( "n"                     , "SFD Output file name"                                      , cxxopts::value<string>() )
       ( "version"               , "Show program version")
       ( "h,help"                , "Print usage")
       ;
@@ -439,6 +451,11 @@ ParseOptions::Result ParseOptions::ParseOpts(int argc, const char* argv[])
     }
     if(parseResult.count("log")) {
       if(!SetLogFile(parseResult["log"].as<string>())) {
+        bOk = false;
+      }
+    }
+    if(parseResult.count("n")) {
+      if(!SetOutFilenameOverride(parseResult["n"].as<string>())) {
         bOk = false;
       }
     }
@@ -534,7 +551,7 @@ ParseOptions::Result ParseOptions::ParseOpts(int argc, const char* argv[])
     cerr << fileName << " error: " << e.what() << endl;
     return Result::Error;
   }
-  
+
   if(!bOk) {
     return Result::Error;
   }
