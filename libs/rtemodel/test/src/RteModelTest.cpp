@@ -207,6 +207,14 @@ TEST_F(RteModelPrjTest, LoadCprj) {
   map<const RteItem*, RteDependencyResult> depResults;
   RteItem::ConditionResult res = activeTarget->GetDepsResult(depResults, activeTarget);
   EXPECT_EQ(res, RteItem::FULFILLED);
+  string boardName = activeTarget->GetAttribute("Bname");
+  EXPECT_EQ(boardName, "RteTest Test board");
+  // get layers
+  auto& allLayerDescriptors = rteKernel.GetGlobalModel()->GetLayerDescriptors();
+  EXPECT_EQ(allLayerDescriptors.size(), 2);
+  auto& filteredLayerDescriptors = activeTarget->GetFilteredModel()->GetLayerDescriptors();
+  EXPECT_EQ(filteredLayerDescriptors.size(), 1);
+
 
   const string rteDir = RteUtils::ExtractFilePath(RteTestM3_cprj, true) + "RTE/";
   const string CompConfig_0_Base_Version = rteDir + "RteTest/" + "ComponentLevelConfig_0.h.base@0.0.1";

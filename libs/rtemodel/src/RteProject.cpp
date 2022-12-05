@@ -1468,6 +1468,12 @@ bool RteProject::AddTarget(const string& name, const map<string, string>& attrib
       targetAttributes.AddAttributes(boardInfo->GetAttributes(), false);
     }
 
+    // add Brevision attribute if Bversion is specified
+    if (!targetAttributes.HasAttribute("Brevision") && targetAttributes.HasAttribute("Bversion")) {
+      targetAttributes.AddAttribute("Brevision", target->GetAttribute("Bversion"));
+      targetAttributes.RemoveAttribute("Bversion");
+    }
+
     bool changed = target->SetAttributes(targetAttributes);
     if (supported) {
       if (bNewTarget) {
