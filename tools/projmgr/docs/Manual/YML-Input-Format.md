@@ -26,8 +26,8 @@ Project Manager.
     - [`output-dirs:`](#output-dirs)
     - [`rte-dirs:`](#rte-dirs)
     - [`output-type:`](#output-type)
-    - [Proposal: `output:`](#proposal-output)
-    - [Proposal: `linker:`](#proposal-linker)
+    - [`output:`](#output)
+    - [`linker:`](#linker)
     - [`for-compiler:`](#for-compiler)
   - [Translation Control](#translation-control)
     - [`language-C:`](#language-c)
@@ -593,7 +593,9 @@ Value                                                 | Generated Output
 output-type: lib            # Generate a library
 ```
 
-### Proposal: `output:`
+### `output:`
+
+>**Proposal:** Output Control needs review. 
 
 This is a proposal to replace `output-type` with a more flexible solution.  It allows to generate both a elf/dwarf and bin file. Optionally the filename including path could be specified.
 
@@ -616,13 +618,11 @@ output:
 
 If accepted, we would need to extend also the access sequences.
 
-### Proposal: `linker:`
+### `linker:`
 
->**Note:** Linker Control needs review. 
+>**Proposal:** Linker Control needs review. 
 >
 > Currently the linker command files are provided using the `file:` notation under [`groups:`](#groups) or as part of software components. The extensions `.sct`, `.scf` and `.ld` are automatically recognized as linker script files. The benefit is that linker control files can be part of software components.
-
-
 
 The `linker:` list node controls the linker operation.
 
