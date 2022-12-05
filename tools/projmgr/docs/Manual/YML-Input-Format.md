@@ -16,18 +16,18 @@ Project Manager.
     - [Device Name Conventions](#device-name-conventions)
     - [Board Name Conventions](#board-name-conventions)
   - [Access Sequences](#access-sequences)
-  - [Overall File Structure](#overall-file-structure)
+  - [Project File Structure](#project-file-structure)
     - [`default:`](#default)
     - [`solution:`](#solution)
     - [`project:`](#project)
     - [`layer:`](#layer)
   - [List Nodes](#list-nodes)
-  - [Directory Control (Proposal)](#directory-control-proposal)
+  - [Directory Control](#directory-control)
     - [`output-dirs:`](#output-dirs)
     - [`rte-dirs:`](#rte-dirs)
     - [`output-type:`](#output-type)
     - [Proposal: `output:`](#proposal-output)
-    - [Proposal `linker:`](#proposal-linker)
+    - [Proposal: `linker:`](#proposal-linker)
     - [`for-compiler:`](#for-compiler)
   - [Translation Control](#translation-control)
     - [`language-C:`](#language-c)
@@ -71,7 +71,7 @@ Project Manager.
     - [`execute:`](#execute)
   - [`interface:`](#interface)
     - [`provides:`](#provides)
-      - [Proposal: Export symbols to RTE_components.h](#proposal-export-symbols-to-rte_componentsh)
+      - [Proposal: Export symbols to RTE\_components.h](#proposal-export-symbols-to-rte_componentsh)
     - [`consumes:`](#consumes)
       - [Proposal: for interface matching](#proposal-for-interface-matching)
   - [Generator (Proposal)](#generator-proposal)
@@ -80,8 +80,8 @@ Project Manager.
     - [Enhance Usability](#enhance-usability)
     - [Workflow](#workflow)
       - [Example Content of `*.cgen.json` (in this case `STM32CubeMX.cgen.json`)](#example-content-of-cgenjson-in-this-case-stm32cubemxcgenjson)
-    - [Changes to the *.GPDSC file](#changes-to-the-gpdsc-file)
-    - [Changes to the *.PDSC file](#changes-to-the-pdsc-file)
+    - [Changes to the \*.GPDSC file](#changes-to-the-gpdsc-file)
+    - [Changes to the \*.PDSC file](#changes-to-the-pdsc-file)
   - [Resource Management (Proposal)](#resource-management-proposal)
     - [`resources:`](#resources)
       - [`- import:`](#--import)
@@ -321,9 +321,9 @@ groups:
       - $Dname$                           # Generate a #define 'device-name' for this file group
 ```
 
-## Overall File Structure
+## Project File Structure
 
-The table below explains the top-level elements in each of the different `*.yml` input files.
+The table below explains the top-level elements in each of the different `*.yml` input files that define the overall application.
 
 Keyword                          | Description
 :--------------------------------|:------------------------------------
@@ -500,7 +500,9 @@ build-types:
       type: Release         # build-type name
 ```
 
-## Directory Control (Proposal)
+## Directory Control
+
+**(Proposal)**
 
 The following node allows to control the directories used to generate the output files.  
 
@@ -510,10 +512,10 @@ The following node allows to control the directories used to generate the output
 
 `output-dirs:`               |              | Content
 :----------------------------|--------------|:------------------------------------
-&nbsp;&nbsp; [`cprjdir:`]    |  Optional    | Specifies the directory for the *.CPRJ files.
-&nbsp;&nbsp; [`rtedir:`]     |  Optional    | Specifies the directory for the RTE files.
-&nbsp;&nbsp; [`intdir:`]     |  Optional    | Specifies the directory for the interim files.
-&nbsp;&nbsp; [`outdir:`]     |  Optional    | Specifies the directory for the build output files.
+&nbsp;&nbsp; [`cprjdir:`]    |  Optional    | Specifies the directory for the *.CPRJ files (input files to cbuild).
+&nbsp;&nbsp; [`rtedir:`]     |  Optional    | Specifies the directory for the RTE files (component configuration files).
+&nbsp;&nbsp; [`intdir:`]     |  Optional    | Specifies the directory for the interim files (temporary or object files).
+&nbsp;&nbsp; [`outdir:`]     |  Optional    | Specifies the directory for the build output files (ELF, binary, MAP files).
 
 The default setting for the `output-dirs:` are:
 
@@ -614,11 +616,13 @@ output:
 
 If accepted, we would need to extend also the access sequences.
 
-### Proposal `linker:`
+### Proposal: `linker:`
 
 >**Note:** Linker Control needs review. 
 >
 > Currently the linker command files are provided using the `file:` notation under [`groups:`](#groups) or as part of software components. The extensions `.sct`, `.scf` and `.ld` are automatically recognized as linker script files. The benefit is that linker control files can be part of software components.
+
+
 
 The `linker:` list node controls the linker operation.
 
@@ -1604,7 +1608,7 @@ All provided interfaces in the current solution context are exported with `#defi
 #define itf_CMSIS_Driver_Ethernet 0
 #define itf_CMSIS_Driver_USART_Print 2
 #define itf_IoT_Socket
-#define Heap 65536
+#define itf_Heap 65536
 ```
 
 ### `consumes:`
