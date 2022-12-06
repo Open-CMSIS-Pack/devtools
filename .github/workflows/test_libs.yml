@@ -1,5 +1,6 @@
 name: test_libs
 on:
+  workflow_call:
   push:
     branches:
       - main
@@ -14,8 +15,6 @@ on:
       - '.github/matrix_includes_test_libs.json'
       - 'libs/**'
       - '!**/*.md'
-  schedule:
-    - cron: '0 0 * * *'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
