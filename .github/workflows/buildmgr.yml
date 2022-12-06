@@ -1,5 +1,6 @@
 name: buildmgr
 on:
+  workflow_call:
   pull_request:
     paths:
       - '.github/workflows/buildmgr.yml'
@@ -40,8 +41,6 @@ on:
       - '!**/*.svg'
   release:
     types: [ published ]
-  schedule:
-    - cron: '0 0 * * *'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -517,26 +516,30 @@ jobs:
       - name: Generate coverage report
         run: |
           lcov-1.15/bin/lcov --rc lcov_branch_coverage=1 --rc geninfo_no_exception_branch=1 -c --directory . --output-file full_coverage.info
-          lcov-1.15/bin/lcov --rc lcov_branch_coverage=1 --rc geninfo_no_exception_branch=1 -e full_coverage.info '/tools/buildmgr/cbuild/*' '*/tools/buildmgr/cbuildgen/*' '*/tools/buildmgr/cbuild/*' -o coverage.info
-          genhtml coverage.info --output-directory coverage --branch-coverage
+          lcov-1.15/bin/lcov --rc lcov_branch_coverage=1 --rc geninfo_no_exception_branch=1 -e full_coverage.info '/tools/buildmgr/cbuild/*' '*/tools/buildmgr/cbuildgen/*' '*/tools/buildmgr/cbuild/*' -o coverage_buildmgr.info
+          genhtml coverage_buildmgr.info --output-directory coverage_buildmgr --branch-coverage
         working-directory: ./build/tools/buildmgr
 
       - name: Upload Report to Codecov
         if: ${{ !github.event.repository.private }}
-        uses: codecov/codecov-action@v3
+        uses: Wandalen/wretry.action@master
         with:
-          files: ./build/tools/buildmgr/coverage.info
-          fail_ci_if_error: true
-          flags: buildmgr-cov
-          functionalities: fix
+          action: codecov/codecov-action@v3
+          with: |
+            files: ./build/tools/buildmgr/coverage_buildmgr.info
+            fail_ci_if_error: true
+            flags: buildmgr-cov
+            functionalities: fix
+          attempt_limit: 3
+          attempt_delay: 5000
 
       - name: Archive coverage report
         uses: actions/upload-artifact@v3
         with:
           name: coverage-report
           path: |
-            ./build/tools/buildmgr/coverage/
-            ./build/tools/buildmgr/coverage.info
+            ./build/tools/buildmgr/coverage_buildmgr/
+            ./build/tools/buildmgr/coverage_buildmgr.info
           retention-days: ${{ needs.setup.outputs.retention_days }}
           if-no-files-found: error
 

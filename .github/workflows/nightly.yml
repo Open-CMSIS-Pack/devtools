@@ -1,0 +1,52 @@
+name: nightly
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * *'
+
+jobs:
+  buildmgr:
+    uses: Open-CMSIS-Pack/devtools/.github/workflows/buildmgr.yml@main
+  packchk:
+    needs: [buildmgr]
+    uses: Open-CMSIS-Pack/devtools/.github/workflows/packchk.yml@main
+  packgen:
+    needs: [packchk]
+    uses: Open-CMSIS-Pack/devtools/.github/workflows/packgen.yml@main
+  projmgr:
+    needs: [packgen]
+    uses: Open-CMSIS-Pack/devtools/.github/workflows/projmgr.yml@main
+  svdconv:
+    needs: [projmgr]
+    uses: Open-CMSIS-Pack/devtools/.github/workflows/svdconv.yml@main
+  test_libs:
+    needs: [svdconv]
+    uses: Open-CMSIS-Pack/devtools/.github/workflows/test_libs.yml@main
+  coverage:
+    runs-on: ubuntu-22.04
+    needs: [ buildmgr, packchk, packgen, projmgr, svdconv, test_libs ]
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt-get install \
+            lcov
+
+      - name: Download coverage report
+        uses: actions/download-artifact@v3
+        with:
+          name: coverage-report
+          path: coverage/
+
+      - name: Consolidate coverage data
+        run: |
+          lcov --rc lcov_branch_coverage=1 --add-tracefile coverage_packchk.info -a coverage_packgen.info -a coverage_projmgr.info -a coverage_buildmgr.info -a coverage_svdconv.info -o merged_coverage.info
+        working-directory: coverage/
+
+      - name: Archive merged coverage report
+        uses: actions/upload-artifact@v3
+        with:
+          name: merged-coverage-report
+          path: ./coverage/merged_coverage.info
+          if-no-files-found: error

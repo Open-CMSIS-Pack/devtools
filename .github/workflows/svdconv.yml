@@ -1,5 +1,6 @@
 name: svdconv
 on:
+  workflow_call:
   push:
     branches:
       - main
@@ -18,8 +19,6 @@ on:
       - 'tools/svdconv/**'
   release:
     types: [published]
-  schedule:
-    - cron: '0 0 * * *'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -197,26 +196,30 @@ jobs:
             '*/tools/svdconv/SVDGenerator/src/*' \
             '*/tools/svdconv/SVDModel/include/*' \
             '*/tools/svdconv/SVDModel/src/*' \
-            -o coverage.info
-          genhtml coverage.info --output-directory coverage --branch-coverage
+            -o coverage_svdconv.info
+          genhtml coverage_svdconv.info --output-directory coverage_svdconv --branch-coverage
         working-directory: ./build/tools/svdconv
 
       - name: Upload Report to Codecov
         if: ${{ !github.event.repository.private }}
-        uses: codecov/codecov-action@v3
+        uses: Wandalen/wretry.action@master
         with:
-          files: ./build/tools/svdconv/coverage.info
-          fail_ci_if_error: true
-          flags: svdconv-cov
-          functionalities: fix
+          action: codecov/codecov-action@v3
+          with: |
+            files: ./build/tools/svdconv/coverage_svdconv.info
+            fail_ci_if_error: true
+            flags: svdconv-cov
+            functionalities: fix
+          attempt_limit: 3
+          attempt_delay: 5000
 
       - name: Archive coverage report
         uses: actions/upload-artifact@v3
         with:
           name: coverage-report
           path: |
-            ./build/tools/svdconv/coverage/
-            ./build/tools/svdconv/coverage.info
+            ./build/tools/svdconv/coverage_svdconv/
+            ./build/tools/svdconv/coverage_svdconv.info
           retention-days: ${{ needs.setup.outputs.retention_days }}
           if-no-files-found: error
 
