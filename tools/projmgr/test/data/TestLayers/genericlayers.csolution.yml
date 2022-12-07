@@ -5,6 +5,14 @@ solution:
   build-types:
     - type: CompatibleLayers
     - type: IncompatibleLayers
+    - type: PdscTypeMismatch
+
+  target-types:
+    - type: Board3
+      board: RteTest Dummy board
+      device: :cm0_core0
+    - type: AnyBoard
+      device: RteTest_ARMCM3
 
   projects:
     - project: genericlayers.cproject.yml

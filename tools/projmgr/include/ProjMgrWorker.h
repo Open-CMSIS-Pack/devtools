@@ -478,7 +478,7 @@ protected:
   bool IsPreIncludeByTarget(const RteTarget* activeTarget, const std::string& preInclude);
   InterfacesValidationResult ValidateInterfaces(ContextItem& context, const StrVec& genericLayers = StrVec());
   void PrintInterfaceValidation(InterfacesValidationResult result);
-  bool CollectLayersFromPacks(ContextItem& context, std::map<std::string, std::map<std::string, ClayerItem*>>& clayers);
+  bool CollectLayersFromPacks(ContextItem& context, StrVecMap& clayers);
   bool DiscoverMatchingLayers(ContextItem& context);
   void GetAllCombinations(const StrVecMap& src, const StrVecMap::iterator it, std::vector<StrVec>& combinations, const StrVec& previous = StrVec());
 };
