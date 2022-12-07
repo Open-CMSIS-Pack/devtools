@@ -491,7 +491,18 @@
     <clayer name="Board2" type="Board" file="Layers/board2.clayer.yml" condition="BoardTest2">
       <description>"Test board layer two"</description>
     </clayer>
-
+    <clayer name="Board3" type="Board" file="Layers/board3.clayer.yml" condition="BoardTest3">
+      <description>"Test board layer three"</description>
+    </clayer>
+    <clayer name="TestVariant" type="TestVariant" file="Layers/testvariant.clayer.yml">
+      <description>"Test compatible layer"</description>
+    </clayer>
+    <clayer name="Incompatible" type="Incompatible" file="Layers/incompatible.clayer.yml">
+      <description>"Test incompatible variant"</description>
+    </clayer>
+    <clayer name="PdscType" type="PdscType" file="Layers/pdsc-type-mismatch.clayer.yml">
+      <description>"Test pdsc type mismatch"</description>
+    </clayer>    
   </clayers>
 
 </package>

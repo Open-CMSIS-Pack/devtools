@@ -447,22 +447,13 @@ void ProjMgrWorker::GetAllCombinations(const StrVecMap & src, const StrVecMap::i
   }
 }
 
-bool ProjMgrWorker::CollectLayersFromPacks(ContextItem& context, map<string, map<string, ClayerItem*>>& clayers) {
-  for (const auto& [pdsc, _] : context.pdscFiles) {
-    error_code ec;
-    const string& dir = fs::path(pdsc).parent_path().generic_string();
-    for (auto& item : fs::recursive_directory_iterator(dir, ec)) {
-      if (fs::is_regular_file(item)) {
-        const string& clayerFile = item.path().generic_string();
-        if (WildCards::Match("*.clayer.yml", clayerFile)) {
-          if (!m_parser->ParseGenericClayer(clayerFile, m_checkSchema)) {
-            return false;
-          }
-          ClayerItem* clayer = &m_parser->GetGenericClayers()[clayerFile];
-          clayers[clayer->type][clayerFile] = clayer;
-        }
-      }
+bool ProjMgrWorker::CollectLayersFromPacks(ContextItem& context, StrVecMap& clayers) {
+  for (const auto& clayerItem : context.rteActiveTarget->GetFilteredModel()->GetLayerDescriptors()) {
+    const string& clayerFile = clayerItem->GetOriginalAbsolutePath(clayerItem->GetFileString());
+    if (!RteFsUtils::Exists(clayerFile)) {
+      return false;
     }
+    ProjMgrUtils::PushBackUniquely(clayers[clayerItem->GetTypeString()], clayerFile);
   }
   return true;
 }
@@ -481,7 +472,7 @@ bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context) {
     return true;
   }
   // collect generic clayers from loaded packs
-  map<string, map<string, ClayerItem*>> genericClayers;
+  StrVecMap genericClayers;
   if (!CollectLayersFromPacks(context, genericClayers)) {
     return false;
   }
@@ -489,7 +480,7 @@ bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context) {
   StrVecMap matchedClayers;
   for (const auto& requiredType : requiredLayerTypes) {
     if (genericClayers.find(requiredType) != genericClayers.end()) {
-      for (const auto& [clayer, _] : genericClayers.at(requiredType)) {
+      for (const auto& clayer : genericClayers.at(requiredType)) {
         matchedClayers[requiredType].push_back(clayer);
       }
     } else {
@@ -499,6 +490,19 @@ bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context) {
 
   // debug message
   ProjMgrLogger::Debug("validating interfaces for context '" + context.name + "'");
+
+  // parse matched layers
+  for (const auto& [type, clayers] : matchedClayers) {
+    for (const auto& clayer : clayers) {
+      if (!m_parser->ParseGenericClayer(clayer, m_checkSchema)) {
+        return false;
+      }
+      const string& clayerType = m_parser->GetGenericClayers()[clayer].type;
+      if (type != clayerType) {
+        ProjMgrLogger::Debug("clayer type '" + clayerType + "' does not match type '" + type + "' in pack description");
+      }
+    }
+  }
 
   // validate interfaces combinations
   vector<StrVec> combinations;
@@ -535,7 +539,7 @@ bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context) {
       if (clayers.size() == 1) {
         // unique match
         const auto& clayer = clayers.front();
-        ProjMgrLogger::Debug("clayer of type '" + type + "' was uniquely found: '" + clayer + "'");
+        ProjMgrLogger::Debug("clayer of type '" + type + "' was uniquely found:\n  '" + clayer + "'");
         // add clayer to project
         //context.clayers[clayer] = &m_parser->GetGenericClayers()[clayer];
         ProjMgrUtils::PushBackUniquely(context.compatibleLayers[type], clayer);
@@ -554,6 +558,7 @@ bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context) {
   } else {
     // no valid combination
     ProjMgrLogger::Debug("no valid combination of clayers was found");
+    return false;
   }
   return true;
 }
@@ -657,9 +662,10 @@ InterfacesValidationResult ProjMgrWorker::ValidateInterfaces(ContextItem& contex
   // validate consumedAddedValues against provided values
   StrPairVec overflows;
   for (const auto& [consumedKey, consumedValue] : consumedAddedValues) {
-    if ((providedValues.find(consumedKey) == providedValues.end()) ||
-      (consumedValue > ProjMgrUtils::StringToInt(providedValues.at(consumedKey)))) {
-      overflows.push_back({ consumedKey, to_string(consumedValue) });
+    const int providedValue = providedValues.find(consumedKey) == providedValues.end() ? 0 :
+      ProjMgrUtils::StringToInt(providedValues.at(consumedKey));
+    if (consumedValue > providedValue) {
+      overflows.push_back({ consumedKey, to_string(consumedValue) + " > " + to_string(providedValue)});
     }
   }
   // validate remaining consumedList against provided interface strings
@@ -2276,20 +2282,27 @@ bool ProjMgrWorker::ListLayers(vector<string>& layers) {
     }
     if (selectedContext.empty()) {
       // get all layers from packs
-      for (const auto& pack : m_loadedPacks) {
-        context.pdscFiles.insert({ pack->GetPackageFileName(),{}});
-      }
-      map<string, map<string, ClayerItem*>> genericClayers;
+      StrVecMap genericClayers;
       if (!CollectLayersFromPacks(context, genericClayers)) {
         return false;
       }
-      for (const auto& [clayerType, clayerMap] : genericClayers) {
+      for (const auto& [clayerType, clayerVec] : genericClayers) {
         const string type = clayerType.empty() ? "" : " (" + clayerType + ")";
-        for (const auto& [clayer, _] : clayerMap) {
+        for (const auto& clayer : clayerVec) {
           ProjMgrUtils::PushBackUniquely(layers, clayer + type);
         }
       }
     } else {
+      // process board/device filtering
+      if (!ProcessPrecedences(context)) {
+        return false;
+      }
+      if (!ProcessDevice(context)) {
+        return false;
+      }
+      if (!SetTargetAttributes(context, context.targetAttributes)) {
+        return false;
+      }
       // get matching layers for selected context
       if (!DiscoverMatchingLayers(context)) {
         return false;

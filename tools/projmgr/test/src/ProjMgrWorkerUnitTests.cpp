@@ -921,11 +921,37 @@ TEST_F(ProjMgrWorkerUnitTests, ValidateInterfaces) {
     {"Banana", ""}, {"Banana", "0"},  // same interface is provided multiple times with non identical values
   };
   StrVec expectedConflicts = { "Orange", "Banana" };
-  StrPairVec expectedOverflow = {{"Lemon", "170"}};
+  StrPairVec expectedOverflow = {{"Lemon", "170 > 160"}};
   StrPairVec expectedIncompatibles = {{"Ananas", "98"}, {"Grape Fruit", "1"}};
   result = ValidateInterfaces(context);
   EXPECT_FALSE(result.valid);
   EXPECT_EQ(result.conflicts, expectedConflicts);
   EXPECT_EQ(result.overflows, expectedOverflow);
   EXPECT_EQ(result.incompatibles, expectedIncompatibles);
+}
+
+TEST_F(ProjMgrWorkerUnitTests, CollectLayersFromPacks) {
+  // test CollectLayersFromPacks with an non-existent clayer file
+  InitializeModel();
+  ContextItem context;
+  InitializeTarget(context);
+  const map<string, string> packAttributes = {
+    {"vendor" , "Vendor"  },
+    {"name"   , "Name"    },
+    {"version", "8.8.8"   }
+  };
+  const map<string, string> clayerAttributes = {
+    {"name"   , "TestVariant"  },
+    {"type"   , "TestVariant"  },
+    {"file"   , "Invalid/Path" }
+  };
+  RteModel* model = context.rteActiveTarget->GetModel();
+  RtePackage* pack = new RtePackage(model, packAttributes);
+  RteItem* clayersItem = pack->CreateChild("clayers");
+  RteItem* clayerItem = clayersItem->CreateChild("clayer");
+  clayerItem->SetAttributes(clayerAttributes);
+  model->InsertPacks(list<RtePackage*>{pack});
+  context.rteActiveTarget->UpdateFilterModel();
+  StrVecMap clayers;
+  EXPECT_FALSE(CollectLayersFromPacks(context, clayers));
 }
