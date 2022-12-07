@@ -116,7 +116,7 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
     {"list devices",      {solution, context, filter, load, schemaCheck}},
     {"list components",   {solution, context, filter, load, schemaCheck}},
     {"list dependencies", {solution, context, filter, load, schemaCheck}},
-    {"list contexts",     {solution, filter, load, schemaCheck}},
+    {"list contexts",     {solution, filter, schemaCheck}},
     {"list generators",   {solution, context, load, schemaCheck}},
     {"list layers",       {solution, context, load, schemaCheck}},
   };
