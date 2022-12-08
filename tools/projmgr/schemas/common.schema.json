@@ -156,7 +156,7 @@
       "type": ["object", "null"],
       "properties": {
         "for-compiler": { "$ref": "#/definitions/CompilerType" },
-        "compiler":     { "$ref": "#/definitions/CompilerType" },
+        "compiler":     { "$ref": "#/definitions/CompilerType", "description": "DEPRECATED" },
         "C":            { "$ref": "#/definitions/ArrayOfStrings", "description": "List of C flags" },
         "CPP":          { "$ref": "#/definitions/ArrayOfStrings", "description": "List of CPP flags" },
         "C*":           { "$ref": "#/definitions/ArrayOfStrings", "description": "List of C & CPP flags (DEPRECATED use: C-CPP)"},
@@ -400,7 +400,7 @@
         "add-path":     { "$ref": "#/definitions/AddpathsType" },
         "del-paths":    { "$ref": "#/definitions/DelpathsType", "description": "DEPRECATED use: del-path" },
         "del-path":     { "$ref": "#/definitions/DelpathsType" },
-        "misc":         { "$ref": "#/definitions/MiscType" }
+        "misc":         { "$ref": "#/definitions/MiscTypes" }
       },
       "$ref": "#/definitions/TypeListMutualExclusion",
       "oneOf": [
@@ -413,17 +413,18 @@
       "type": "object",
       "properties": {
         "packs": {
-          "$ref": "#/definitions/PacksType"
+          "$ref": "#/definitions/PacksType", "description": "DEPRECATED"
         },
         "compiler": {
           "$ref": "#/definitions/CompilerType"
         },
         "build-types": {
-          "$ref": "#/definitions/BuildTypes"
+          "$ref": "#/definitions/BuildTypes", "description": "DEPRECATED"
         },
         "output-dirs": {
-          "$ref": "#/definitions/OutputDirectoriesType"
-        }
+          "$ref": "#/definitions/OutputDirectoriesType", "description": "DEPRECATED"
+        },
+        "misc": { "$ref": "#/definitions/MiscTypes" }
       },
       "additionalProperties": false
     },

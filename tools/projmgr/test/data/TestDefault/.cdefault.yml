@@ -9,3 +9,11 @@ default:
 
   packs:
     - pack: ARM::RteTest_DFP@0.1.1
+
+  misc:
+    - for-compiler: GCC
+      ASM:
+        - defaultMiscASM-$Dname$
+    - for-compiler: AC6
+      C:
+        - defaultMiscC

@@ -1972,7 +1972,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_DefaultFile1) {
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution_DefaultFile2) {
   char* argv[6];
   // convert -s solution.yml
-  // csolution.yml is complete, no information from cdefault.yml is taken
+  // csolution.yml is complete, no information from cdefault.yml is taken except from misc
   const string& csolution = testinput_folder + "/TestDefault/full.csolution.yml";
   const string& output = testoutput_folder + "/full";
   argv[1] = (char*)"convert";

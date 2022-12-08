@@ -595,9 +595,9 @@ bool ProjMgr::GetCdefaultFile(void) {
   }
   vector<string> searchPaths = { m_rootDir, exePath + "/../etc/", exePath + "/../../etc/" };
   string cdefaultFile;
-  if (!RteFsUtils::FindFileRegEx(searchPaths, ".*\\.cdefault\\.yml", cdefaultFile)) {
+  if (!RteFsUtils::FindFileRegEx(searchPaths, ".*\\.cdefault\\.(yml|yaml)", cdefaultFile)) {
     if (!cdefaultFile.empty()) {
-      ProjMgrLogger::Error(cdefaultFile, "multiple cdefault.yml files were found");
+      ProjMgrLogger::Error(cdefaultFile, "multiple cdefault files were found");
     }
     return false;
   }

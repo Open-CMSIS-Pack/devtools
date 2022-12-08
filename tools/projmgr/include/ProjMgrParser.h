@@ -248,6 +248,7 @@ struct CdefaultItem {
   std::map<std::string, BuildType> buildTypes;
   std::string compiler;
   std::vector<PackItem> packs;
+  std::vector<MiscItem> misc;
 };
 
 /**
