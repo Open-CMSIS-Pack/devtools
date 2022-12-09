@@ -16,6 +16,7 @@
 
   <target Dfpu="NO_FPU" Dname="RteTest_ARMCM0" Dsecure="Non-secure" Dvendor="ARM:82">
     <output intdir="tmp/project/Debug" name="project.Debug" outdir="out/project/Debug" rtedir="../../data/TestDefault/RTE" type="exe"/>
+    <cflags add="defaultMiscC" compiler="AC6"/>
   </target>
 
   <components>

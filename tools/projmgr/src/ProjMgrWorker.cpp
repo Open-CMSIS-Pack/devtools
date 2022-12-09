@@ -1406,6 +1406,12 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
     return false;
   }
 
+  // Add cdefault misc into csolution
+  if (context.cdefault) {
+    context.controls.csolution.misc.insert(context.controls.csolution.misc.end(),
+      context.cdefault->misc.begin(), context.cdefault->misc.end());
+  }
+
   // Access sequences and relative path references must be processed
   // after board, device and compiler precedences (due to $Bname$, $Dname$ and $Compiler$)
   // but before processing misc, defines and includes precedences

@@ -43,6 +43,7 @@ bool ProjMgrYamlParser::ParseCdefault(const string& input,
     ParseBuildTypes(defaultNode, cdefault.buildTypes);
     ParseString(defaultNode, YAML_COMPILER, cdefault.compiler);
     ParsePacks(defaultNode, cdefault.packs);
+    ParseMisc(defaultNode, cdefault.misc);
   }
   catch (YAML::Exception& e) {
     ProjMgrLogger::Error(input, e.mark.line + 1, e.mark.column + 1, e.msg);
@@ -562,6 +563,7 @@ const set<string> defaultKeys = {
   YAML_BUILDTYPES,
   YAML_COMPILER,
   YAML_PACKS,
+  YAML_MISC,
 };
 
 const set<string> solutionKeys = {
