@@ -261,7 +261,7 @@ jobs:
           path: tools/coverage/
 
       - name: Zip coverage reports
-        run: zip -r coverage.zip coverage
+        run: zip -r coverage.zip coverage_projmgr
         working-directory: tools/coverage
 
       - name: Attach coverage archive to release assets
