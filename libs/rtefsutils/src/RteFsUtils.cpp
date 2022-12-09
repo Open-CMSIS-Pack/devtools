@@ -342,7 +342,7 @@ bool RteFsUtils::DeleteFileAutoRetry(const string& path, unsigned int retries, u
     }
 
     if (delay > 0) {
-      this_thread::sleep_for(std::chrono::milliseconds(delay*1000));
+      this_thread::sleep_for(std::chrono::milliseconds(delay));
     }
   }
   return false;
@@ -372,7 +372,7 @@ bool RteFsUtils::RemoveDirectoryAutoRetry(const string& path, int retries, int d
     }
 
     if (delay > 0) {
-      this_thread::sleep_for(std::chrono::milliseconds(delay * 1000));
+      this_thread::sleep_for(std::chrono::milliseconds(delay));
     }
   }
   return false;
@@ -384,7 +384,7 @@ bool RteFsUtils::MoveFileExAutoRetry(const string& existingFileName, const strin
       return true;
     }
     if (delay > 0) {
-      this_thread::sleep_for(std::chrono::milliseconds(delay*1000));
+      this_thread::sleep_for(std::chrono::milliseconds(delay));
     }
   }
   return false;
