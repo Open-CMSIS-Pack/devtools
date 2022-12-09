@@ -124,7 +124,7 @@ public:
    * @brief delete file with retries and delay between retries
    * @param path file to be deleted
    * @param retries number of retries
-   * @param delay time lag in second between retries
+   * @param delay time lag in milliseconds between retries
    * @return true if file is deleted
   */
   static bool DeleteFileAutoRetry(const std::string& path, unsigned int retries = 5, unsigned int delay = 1);
@@ -132,7 +132,7 @@ public:
    * @brief remove directory with retries and delay between retries
    * @param path directory to be removed
    * @param retries number of retries
-   * @param delay time lag in second between retries
+   * @param delay time lag in milliseconds between retries
    * @return true if directory is removed
   */
   static bool RemoveDirectoryAutoRetry(const std::string& path, int retries = 5, int delay = 1);
@@ -141,7 +141,7 @@ public:
    * @param existingFileName name of source file
    * @param newFileName name of destination file
    * @param retries number of retries
-   * @param delay time lag in second between retries
+   * @param delay time lag in milliseconds between retries
    * @return true if file is renamed
   */
   static bool MoveFileExAutoRetry(const std::string& existingFileName, const std::string& newFileName, unsigned int retries = 5, unsigned int delay = 1);
