@@ -211,10 +211,9 @@ TEST_F(RteModelPrjTest, LoadCprj) {
   EXPECT_EQ(boardName, "RteTest Test board");
   // get layers
   auto& allLayerDescriptors = rteKernel.GetGlobalModel()->GetLayerDescriptors();
-  EXPECT_EQ(allLayerDescriptors.size(), 2);
+  EXPECT_EQ(allLayerDescriptors.size(), 6);
   auto& filteredLayerDescriptors = activeTarget->GetFilteredModel()->GetLayerDescriptors();
-  EXPECT_EQ(filteredLayerDescriptors.size(), 1);
-
+  EXPECT_EQ(filteredLayerDescriptors.size(), 4);
 
   const string rteDir = RteUtils::ExtractFilePath(RteTestM3_cprj, true) + "RTE/";
   const string CompConfig_0_Base_Version = rteDir + "RteTest/" + "ComponentLevelConfig_0.h.base@0.0.1";
@@ -227,7 +226,7 @@ TEST_F(RteModelPrjTest, LoadCprj) {
   // check config file PLM: existence and permissions
   const string deviceDir = rteDir + "Device/RteTest_ARMCM3/";
   EXPECT_FALSE(RteFsUtils::Exists(deviceDir + "ARMCM3_ac6.sct.base@1.0.0"));
-  EXPECT_TRUE(RteFsUtils::Exists(deviceDir + "ARMCM3_ac6.sct.update@1.2.0"));
+  EXPECT_FALSE(RteFsUtils::Exists(deviceDir + "ARMCM3_ac6.sct.update@1.2.0"));
 
   EXPECT_FALSE(RteFsUtils::Exists(deviceDir + "system_ARMCM3.c.base@1.0.1"));
   EXPECT_FALSE(RteFsUtils::Exists(deviceDir + "system_ARMCM3.c.base@1.0.2"));
@@ -235,8 +234,7 @@ TEST_F(RteModelPrjTest, LoadCprj) {
   EXPECT_TRUE(RteFsUtils::Exists(deviceDir + "startup_ARMCM3.c.base@2.0.3"));
   EXPECT_EQ((fs::status(deviceDir + "startup_ARMCM3.c.base@2.0.3", ec).permissions() & write_mask), fs::perms::none);
 
-  EXPECT_TRUE(RteFsUtils::Exists(deviceDir + "system_ARMCM3.c.update@1.2.2"));
-  EXPECT_EQ((fs::status(deviceDir + "system_ARMCM3.c.update@1.2.2", ec).permissions() & write_mask), fs::perms::none);
+  EXPECT_FALSE(RteFsUtils::Exists(deviceDir + "system_ARMCM3.c.update@1.2.2"));
 }
 
 TEST_F(RteModelPrjTest, LoadCprj_NoRTEFileCreation) {
