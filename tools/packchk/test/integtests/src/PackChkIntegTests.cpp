@@ -433,3 +433,34 @@ TEST_F(PackChkIntegTests, CheckCompResolvedByItself) {
   }
 }
 
+// Validate Option: -n PackName.txt
+TEST_F(PackChkIntegTests, CheckPackFileName) {
+  const char* argv[4];
+
+  const string& pdscFile = PackChkIntegTestEnv::localtestdata_dir +
+    "/PackNameFile/Arm.PackNameFile_DFP.pdsc";
+  string outDir = PackChkIntegTestEnv::testoutput_dir + "/PackFileName";
+  ASSERT_TRUE(RteFsUtils::Exists(pdscFile));
+  ASSERT_TRUE(RteFsUtils::CreateDirectories(outDir));
+
+  string packNameFile = outDir;
+  packNameFile += (char*)"/PackFileName.txt";
+
+  argv[0] = (char*)"";
+  argv[1] = (char*)pdscFile.c_str();
+  argv[2] = (char*)"-n";
+  argv[3] = (char*)packNameFile.c_str();
+
+  PackChk packChk;
+  EXPECT_EQ(1, packChk.Check(4, argv, nullptr));
+
+  ASSERT_TRUE(RteFsUtils::Exists(packNameFile));
+
+  string content;
+  getline(std::ifstream(packNameFile), content);
+
+  if(content.compare("Arm.PackNameFile_DFP.0.1.1.pack")) {
+    FAIL() << "error: Pack name file must contain 'Arm.PackNameFile_DFP.0.1.1.pack'";
+  }
+}
+

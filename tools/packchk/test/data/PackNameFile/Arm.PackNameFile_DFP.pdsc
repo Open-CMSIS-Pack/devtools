@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<package schemaVersion="1.3" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="PACK.xsd">
+  <name>PackNameFile_DFP</name>
+  <description>Test for -n PackName file</description>
+  <vendor>Arm</vendor>
+  <!-- <license>license.txt</license> -->
+  <url>http://www.keil.com/pack/</url>
+
+  <releases>
+     <release version="0.1.1" date="2021-02-14">
+      Initial copy from ARM.CMSIS pack
+    </release>
+
+   <release version="4.7.1" date="2021-04-16">
+      <!-- ERROR M329: Description not set for Release Information '4.7.1' -->
+    </release>
+    <release version="4.7.0" date="2021-04-16">
+      OK: Same date different Version
+    </release>
+  
+    <release version="4.6.2" date="2021-03-16">
+      <!-- ERROR M329: Description not set for Release Information '4.6.2' -->
+    </release>
+    <release version="4.6.2-rc1" date="2021-03-16">
+      INFO M393: Package has development version '-rc1': '4.6.2-rc1'
+    </release>
+    <release version="4.6.2-rc1+alpha1" date="2021-03-16">
+      INFO M393: Package has development version '-rc1': '4.6.2-rc1+alpha1'
+      WARNING M396: Release Version not consecutive (newest first): '4.6.2-rc1+alpha1', '2021-03-16' (prev.: '4.6.2-rc1', '2021-03-16')
+    </release>
+
+    <release version="4.5" date="2021-02-31">
+      ERROR M394: Not Semantic Versioning, ignoring version: '4.5'
+    </release>
+    <release version="4.4." date="2021-02-30">
+      ERROR M394: Not Semantic Versioning, ignoring version: '4.4.'
+    </release>
+    <release version="4.3.6.1" date="2021-02-29">
+      ERROR M394: Not Semantic Versioning, ignoring version: '4.3.6.1'
+    </release>
+    <release version="4.3.5.rc1" date="2021-02-28">
+      ERROR M394: Not Semantic Versioning, ignoring version: '4.3.5.rc1'
+    </release>
+    
+    <release version="4.3.4+alpha2" date="2021-02-26">
+      Version ok, BUILD
+    </release>
+    <release version="4.3.4+alpha1" date="2021-02-26">
+      WARNING M396: Release Version not consecutive (newest first): '4.3.4+alpha1', '2021-02-26' (prev.: '4.3.4+alpha2', '2021-02-26')
+    </release>
+
+    <release version="4.3.2-alpha1+test0" date="2021-02-19">
+      INFO M393: Package has development version '-alpha1': '4.3.2-alpha1+test0'
+    </release>
+    <release version="4.3.2+alpha1-test0" date="2021-02-19">
+      WARNING M396: Release Version not consecutive (newest first): '4.3.2+alpha1-test0', '2021-02-19' (prev.: '4.3.2-alpha1+test0', '2021-02-19')
+    </release>
+
+       
+  </releases>
+
+</package>
