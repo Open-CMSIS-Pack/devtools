@@ -287,25 +287,6 @@ bool ProjMgr::PopulateContexts(void) {
     return false;
   }
 
-  // Parse clayers
-  for (const auto& cproject : m_parser.GetCprojects()) {
-    string const& cprojectFile = cproject.first;
-    for (const auto& clayer : cproject.second.clayers) {
-      if (clayer.layer.empty()) {
-        continue;
-      }
-      error_code ec;
-      string const& clayerFile = fs::canonical(fs::path(cprojectFile).parent_path().append(clayer.layer), ec).generic_string();
-      if (clayerFile.empty()) {
-        ProjMgrLogger::Error(clayer.layer, "clayer file was not found");
-        return false;
-      }
-      if (!m_parser.ParseClayer(clayerFile, m_checkSchema)) {
-        return false;
-      }
-    }
-  }
-
   // Set output directory
   m_worker.SetOutputDir(m_outputDir);
 

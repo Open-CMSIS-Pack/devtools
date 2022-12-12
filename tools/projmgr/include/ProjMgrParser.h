@@ -104,6 +104,7 @@ struct BuildType {
   std::vector<std::string> delpaths;
   std::vector<MiscItem> misc;
   ProcessorItem processor;
+  std::vector<std::pair<std::string, std::string>> variables;
 };
 
 /**
