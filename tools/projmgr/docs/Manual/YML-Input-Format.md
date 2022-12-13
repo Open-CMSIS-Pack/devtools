@@ -334,20 +334,32 @@ Keyword                          | Description
 
 ### `default:`
 
-The `default:` node is the start of a `*.cdefaults.yml` file and contain the following.
+The `default:` node is the start of a `*.cdefault.yml` file and contain the following.
+
+*** Proposal ***
+
+The **csolution - CMSIS Project Manager** uses a file with the name `cdefault.yml` or `cdefault.yaml` in the installation directory `.\etc` to pre-configure the default compiler.  This file may be ignored by using:
+
+- an explicit file with the name `*.cdefault.yml` in the same directory as the `*.csolution.yml` file. 
+- the command line option `-i` or `--ignore-cdefault` (file .\etc\cdefault.yml is not used)
 
 `default:`                                            | Content
 :-----------------------------------------------------|:------------------------------------
-&nbsp;&nbsp; [`compiler:`](#compiler)                 | Default toolchain selection.
-&nbsp;&nbsp; [`build-types:`](#build-types)           | List of build-types (i.e. Release, Debug, Test).
-&nbsp;&nbsp; [`language-C:`](#language-c)             | Set the language standard for C source file compilation.
-&nbsp;&nbsp; [`language-CPP:`](#language-cpp)         | Set the language standard for C++ source file compilation.
+&nbsp;&nbsp; [`compiler:`](#compiler)                 | Toolchain selection.
+&nbsp;&nbsp; [`misc:`](#misc)                         | Literal tool-specific controls.
 
 **Example:**
 
 ```yml
 default:
-  compiler: AC6                   # use Arm Compiler 6 as default
+  compiler: AC6
+  misc:
+    - ASM:
+      - -masm=auto
+
+    - Link:
+      - --info sizes --info totals --info unused --info veneers --info summarysizes
+      - --map
 ```
 
 ### `solution:`
@@ -885,7 +897,7 @@ type.
     - type: Release
       compiler: AC6
       misc:
-        C:
+        - C:
           - -O3
 ```
 
@@ -947,7 +959,11 @@ The  [Pack Name Conventions](#pack-name-conventions) are used to specify the nam
 The `pack:` definition can be specific to [target and build types](#target-and-build-types) and may provide a local path
 to a development repository of a software pack.
 
->**NOTE:** By default, the `csolution` project manager only loads the latest version of the installed software packs. It is however possible to request specific versions using the `- pack:` node.
+>**NOTES:** 
+>
+> - By default, the **csolution - CMSIS Project Manager** only loads the latest version of the installed software packs. It is however possible to request specific versions using the `- pack:` node.
+>
+> - An attempt to add two different versions of the same software pack results in an error.
 
 ### `packs:`
 
@@ -1936,7 +1952,7 @@ executed.
 
 ## Resource Management (Proposal)
 
-The **CSolution Project Manager** integrates an extended version of the Project Zone functionality of
+The **csolution - CMSIS Project Manager**  integrates an extended version of the Project Zone functionality of
 [CMSIS-Zone](https://arm-software.github.io/CMSIS_5/Zone/html/index.html) with this nodes:
 
 - [`resources:`](#resources) imports resource files (in
@@ -1949,7 +1965,7 @@ The **CSolution Project Manager** integrates an extended version of the Project 
 - [`requires:`](#requires) allows to specify additional resources at the level of a `*.cproject.yml` or `*.clayer.yml`
   file that are added to the related zone of the project.
 
-The **CSolution Project Manager** generates for each project context (with build and/or target-type) a data file
+The **csolution - CMSIS Project Manager** generates for each project context (with build and/or target-type) a data file
 (similar to the current [CMSIS FZone format](https://arm-software.github.io/CMSIS_5/Zone/html/GenDataModel.html), exact
 format tbd could be also JSON) for post-processing with a template engine (Handlebars?).
 

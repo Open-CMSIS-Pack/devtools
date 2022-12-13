@@ -25,6 +25,7 @@ Manual Chapters                           | Content
     - [Command Examples](#command-examples)
   - [Project Examples](#project-examples)
     - [Minimal Project Setup](#minimal-project-setup)
+    - [Compiler Agnostic Project](#compiler-agnostic-project)
     - [Software Layers](#software-layers)
     - [Project Setup for Multiple Targets and Builds](#project-setup-for-multiple-targets-and-builds)
     - [Project Setup for Related Projects](#project-setup-for-related-projects)
@@ -236,6 +237,75 @@ solution:
 ```
 
 **Simple Project: `Sample.cproject.yml`**
+
+```yml
+project:
+  groups:
+    - group: App
+      files:
+        - file: ./main.c
+
+  components:
+    - component: ARM::CMSIS:CORE
+    - component: Device:Startup
+```
+
+### Compiler Agnostic Project
+
+With generic [**Translation Control**](YML-Input-Format.md#translation-control) settings it is possible to create projects that work across the range of supported compilers (AC6, GCC, IAR).  The compiler selection and potential compiler specific settings can be stored in the file `*.cdefault.yml`. By replacing the `*.cdefault.yml` file it is possible to re-target application projects.  [**Translation Control**](YML-Input-Format.md#translation-control) settings are mapped to specify compiler by the build tools.
+
+**Simple Compiler Agnostic Project: `Sample.cdefault.yml` for Arm Compiler**
+
+```yml
+default:
+  compiler: AC6
+  misc:
+    - ASM:
+      - -masm=auto
+
+    - Link:
+      - --info sizes --info totals --info unused --info veneers --info summarysizes
+      - --map
+```
+
+**Simple Compiler Agnostic Project: `Sample.cdefault.yml` for GCC Compiler**
+
+```yml
+default:
+  compiler: GCC
+  misc:
+    - C:
+      - -g
+
+    - Link:
+      - --specs=nosys.specs
+      - --entry=Reset_Handler
+```
+
+**Simple Compiler Agnostic Project: `Sample.csolution.yml`**
+
+```yml
+solution:
+  packs:
+    - pack: ARM::CMSIS
+    - pack: Keil::LPC1700_DFP
+
+  target-types:
+    - type: MyHardware
+      device: NXP::LPC1768
+
+  build-types:
+    - type: Debug
+      optimize: none   # translated into compiler specific settings
+
+    - type: Release
+      optimize: size   # translated into compiler specific settings
+
+  projects:
+    - project: ./Sample.cproject.yml
+```
+
+**Simple Compiler Agnostic Project: `Sample.cproject.yml`**
 
 ```yml
 project:
