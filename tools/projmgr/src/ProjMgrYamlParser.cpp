@@ -545,6 +545,7 @@ void ProjMgrYamlParser::ParseBuildType(const YAML::Node& parent, BuildType& buil
     // TODO: after deprecation remove 'del-paths' keyword parsing in benefit of 'del-path'
     ParseVector(parent, YAML_DELPATHS, buildType.delpaths);
   }
+  ParseVectorOfStringPairs(parent, YAML_VARIABLES, buildType.variables);
 }
 
 void ProjMgrYamlParser::ParseTargetType(const YAML::Node& parent, TargetType& targetType) {
@@ -586,6 +587,7 @@ const set<string> solutionKeys = {
   YAML_DELPATHS,
   YAML_DELPATH,
   YAML_MISC,
+  YAML_VARIABLES,
 };
 
 const set<string> projectsKeys = {
@@ -663,6 +665,7 @@ const set<string> targetTypeKeys = {
   YAML_DELPATHS,
   YAML_DELPATH,
   YAML_MISC,
+  YAML_VARIABLES,
 };
 
 const set<string> buildTypeKeys = {
@@ -681,6 +684,7 @@ const set<string> buildTypeKeys = {
   YAML_DELPATHS,
   YAML_DELPATH,
   YAML_MISC,
+  YAML_VARIABLES,
 };
 
 const set<string> outputDirsKeys = {

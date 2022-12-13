@@ -208,6 +208,7 @@ struct ContextItem {
   std::map<std::string, std::pair<std::string, std::string>> gpdscs;
   StrVecMap compatibleLayers;
   std::string linkerScript;
+  std::map<std::string, std::string> variables;
   bool precedences;
 };
 
@@ -481,6 +482,7 @@ protected:
   bool CollectLayersFromPacks(ContextItem& context, StrVecMap& clayers);
   bool DiscoverMatchingLayers(ContextItem& context);
   void GetAllCombinations(const StrVecMap& src, const StrVecMap::iterator it, std::vector<StrVec>& combinations, const StrVec& previous = StrVec());
+  std::string ExpandString(const std::string& src, const StrMap& variables);
 };
 
 #endif  // PROJMGRWORKER_H

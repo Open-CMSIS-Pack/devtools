@@ -93,6 +93,7 @@ static constexpr const char* YAML_TRUSTZONE = "trustzone";
 static constexpr const char* YAML_TYPE = "type";
 static constexpr const char* YAML_UNDEFINES = "undefines";
 static constexpr const char* YAML_UNDEFINE = "undefine";
+static constexpr const char* YAML_VARIABLES = "variables";
 static constexpr const char* YAML_VERSION = "version";
 static constexpr const char* YAML_WARNINGS = "warnings";
 

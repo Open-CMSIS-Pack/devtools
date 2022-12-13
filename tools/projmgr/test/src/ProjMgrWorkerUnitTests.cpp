@@ -955,3 +955,18 @@ TEST_F(ProjMgrWorkerUnitTests, CollectLayersFromPacks) {
   StrVecMap clayers;
   EXPECT_FALSE(CollectLayersFromPacks(context, clayers));
 }
+
+TEST_F(ProjMgrWorkerUnitTests, ExpandString) {
+  ContextItem context;
+  context.variables = {
+    {"Foo", "./foo"},
+    {"Bar", "./bar"},
+    {"Foo Bar", "./foo-bar"},
+  };
+
+  EXPECT_EQ(ExpandString("path1: $Foo$/bar", context.variables), "path1: ./foo/bar");
+  EXPECT_EQ(ExpandString("path2: $Bar$/foo", context.variables), "path2: ./bar/foo");
+  EXPECT_EQ(ExpandString("$Foo$ $Bar$", context.variables), "./foo ./bar");
+  EXPECT_EQ(ExpandString("$Foo Bar$", context.variables), "./foo-bar");
+  EXPECT_EQ(ExpandString("$Foo$ $Foo$ $Foo$", context.variables), "./foo ./foo ./foo");
+}

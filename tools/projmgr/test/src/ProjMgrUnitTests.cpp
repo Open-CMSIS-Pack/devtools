@@ -801,6 +801,45 @@ TEST_F(ProjMgrUnitTests, ListLayersAllContexts) {
   EXPECT_EQ(1, RunProjMgr(5, argv));
 }
 
+TEST_F(ProjMgrUnitTests, LayerVariables) {
+  char* argv[6];
+
+  // convert -s solution.yml
+  const string& csolution = testinput_folder + "/TestLayers/variables.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv));
+
+  // Check generated CPRJs
+  CompareFile(testoutput_folder + "/variables.BuildType1+TargetType1.cprj",
+    testinput_folder + "/TestLayers/ref/variables/variables.BuildType1+TargetType1.cprj");
+  CompareFile(testoutput_folder + "/variables.BuildType1+TargetType2.cprj",
+    testinput_folder + "/TestLayers/ref/variables/variables.BuildType1+TargetType2.cprj");
+  CompareFile(testoutput_folder + "/variables.BuildType2+TargetType1.cprj",
+    testinput_folder + "/TestLayers/ref/variables/variables.BuildType2+TargetType1.cprj");
+  CompareFile(testoutput_folder + "/variables.BuildType2+TargetType2.cprj",
+    testinput_folder + "/TestLayers/ref/variables/variables.BuildType2+TargetType2.cprj");
+}
+
+TEST_F(ProjMgrUnitTests, LayerVariablesRedefinition) {
+  char* argv[6];
+  StdStreamRedirect streamRedirect;
+  // convert -s solution.yml
+  const string& csolution = testinput_folder + "/TestLayers/variables-redefinition.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv));
+  const string& expected = "warning csolution: variable 'VariableName' redefined from 'FirstValue' to 'SecondValue'\n";
+  const string& errStr = streamRedirect.GetErrorString();
+  EXPECT_STREQ(errStr.c_str(), expected.c_str());
+}
+
 TEST_F(ProjMgrUnitTests, AccessSequences) {
   char* argv[7];
 
