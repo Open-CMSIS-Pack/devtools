@@ -468,6 +468,45 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution) {
     testinput_folder + "/TestSolution/ref/cbuild/test2.Debug+CM3.cbuild.yml");
 }
 
+TEST_F(ProjMgrUnitTests, RunProjMgrSolution_PositionalArguments) {
+  char* argv[6];
+  const string& csolution = testinput_folder + "/TestSolution/test.csolution.yml";
+  argv[1] = (char*)csolution.c_str();
+  argv[2] = (char*)"list";
+  argv[3] = (char*)"devices";
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv));
+
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"devices";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv));
+
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"devices";
+  argv[3] = (char*)"-o";
+  argv[4] = (char*)testoutput_folder.c_str();
+  argv[5] = (char*)csolution.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv));
+
+  argv[1] = (char*)"-o";
+  argv[2] = (char*)testoutput_folder.c_str();
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"list";
+  argv[5] = (char*)"devices";
+  EXPECT_EQ(0, RunProjMgr(6, argv));
+
+  argv[1] = (char*)"-o";
+  argv[2] = (char*)testoutput_folder.c_str();
+  argv[3] = (char*)"list";
+  argv[4] = (char*)"devices";
+  argv[5] = (char*)csolution.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv));
+}
+
 TEST_F(ProjMgrUnitTests, RunProjMgrSolutionContext) {
   char* argv[8];
   // convert -s solution.yml
