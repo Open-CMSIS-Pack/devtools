@@ -1651,11 +1651,12 @@ Refer to [Example: Sensor Shield](#example-sensor-shield) for a usage example.
 
 A user-defined *key*/*value* pair list of functionality that is implemented or provided by a `project:` or `layer:`. 
 
-The **csolution - CMSIS Project Manager** combines all the *key*/*value* pairs that listed under `provides:` and matches it with the *key*/*value* pairs that are listed under `consumes:`. For *key*/*value* pairs listed under `provides:` the following rules exist for a match with `consumed`:
+The **csolution - CMSIS Project Manager** combines all the *key*/*value* pairs that listed under `provides:` and matches it with the *key*/*value* pairs that are listed under `consumes:`. For *key*/*value* pairs listed under `provides:` the following rules exist for a match with `consumed` *key*/*value* pair:
 
 - It is possible to omit the *value*. It matches with an identical *key* listed in `consumes:`
-- A *value* is interpreted as number. This number must be identical in the `consumes:` value pair.
-- A *value* that is prefixed with '+' is interpreted as upper limit. The `provided:` *value* must be  be higher or equal then the *value* of the matching `consumes:` *key*.
+- A *value* is interpreted as number. Depending on the value prefix, this number must be:
+  - when `consumes:` *value* is a plain number, identical with this value.
+  - when `consumes:` *value* is prefixed with `+`, higher or equal then this *value* or the sum of all *values* in multiple `consumes:` nodes.
 
 ### `consumes:`
 
@@ -1665,7 +1666,7 @@ For *key*/*value* pairs listed under `consumed:` the following rules exist:
 
 - When no *value* is specified, it matches with any *value* of an identical *key* listed under `provides:`.
 - A *value* is interpreted as number. This number must be identical in the `provides:` value pair.
-- A *value* that is prefixed with '+' is interpreted as a number that is added together in case that the same *key* is listed multiple times under `consumes:`. The sum of this value must be lower or equal to the *value* upper limit of the `provides:` *key*.
+- A *value* that is prefixed with `+` is interpreted as a number that is added together in case that the same *key* is listed multiple times under `consumes:`. The sum of this value must be lower or equal to the *value* upper limit of the `provides:` *key*.
  
 ### Example: Board
 
@@ -1729,7 +1730,7 @@ This shows a the `contacts:` node of a complete application project that is comp
       provides:
         - VSocket:
         - STDOUT:
-        - Heap:  +65536
+        - Heap:  65536
 ```
 
 ### Example: Sensor Shield
