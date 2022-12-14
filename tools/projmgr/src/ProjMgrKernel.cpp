@@ -101,6 +101,8 @@ bool ProjMgrKernel::GetInstalledPacks(std::list<std::string>& pdscFiles, bool la
 
 bool ProjMgrKernel::LoadAndInsertPacks(std::list<RtePackage*>& packs, std::list<std::string>& pdscFiles) {
   std::list<RtePackage*> newPacks;
+  pdscFiles.sort();
+  pdscFiles.unique();
   for (const auto& pdscFile : pdscFiles) {
     RtePackage* pack = theProjMgrKernel->LoadPack(pdscFile);
     if (!pack) {

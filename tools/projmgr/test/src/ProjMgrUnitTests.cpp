@@ -1931,13 +1931,16 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_LoadPacksPolicy_Latest) {
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_LoadPacksPolicy_All) {
   char* argv[6];
-  StdStreamRedirect streamRedirect;
   const string& csolution = testinput_folder + "/TestSolution/test.csolution_no_packs.yml";
   argv[1] = (char*)"convert";
   argv[2] = (char*)"-s";
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-l";
   argv[5] = (char*)"all";
+  EXPECT_EQ(0, RunProjMgr(6, argv));
+
+  const string& csolution2 = testinput_folder + "/TestSolution/test.csolution_pack_selection.yml";
+  argv[3] = (char*)csolution2.c_str();
   EXPECT_EQ(0, RunProjMgr(6, argv));
 }
 
