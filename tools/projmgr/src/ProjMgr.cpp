@@ -125,13 +125,12 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
 
   try {
     options.add_options("", {
-      {"command", "", cxxopts::value<string>()},
-      {"args", "", cxxopts::value<string>()},
+      {"positional", "", cxxopts::value<vector<string>>()},
       solution, context, filter, generator,
       load, missing, schemaCheck, noUpdateRte, output,
       help, version, exportSuffix
     });
-    options.parse_positional({ "command", "args"});
+    options.parse_positional({ "positional" });
 
     parseResult = options.parse(argc, argv);
     manager.m_checkSchema = !parseResult.count("n");
@@ -139,8 +138,9 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
     manager.m_missingPacks = parseResult.count("m");
     manager.m_updateRteFiles = !parseResult.count("no-update-rte");
 
-    if (parseResult.count("command")) {
-      manager.m_command = parseResult["command"].as<string>();
+    vector<string> positionalArguments;
+    if (parseResult.count("positional")) {
+      positionalArguments = parseResult["positional"].as<vector<string>>();
     }
     else if (parseResult.count("version")) {
       manager.ShowVersion();
@@ -151,11 +151,19 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
       return manager.PrintUsage(optionsDict, "", "") ? 0 : 1;
     }
 
-    if (parseResult.count("args")) {
-      manager.m_args = parseResult["args"].as<string>();
+    for (auto it = positionalArguments.begin(); it != positionalArguments.end(); it++) {
+      if (regex_match(*it, regex(".*\\.csolution\\.(yml|yaml)"))) {
+        manager.m_csolutionFile = *it;
+      } else if (manager.m_command.empty()) {
+        manager.m_command = *it;
+      } else if (manager.m_args.empty()) {
+        manager.m_args = *it;
+      }
     }
     if (parseResult.count("solution")) {
       manager.m_csolutionFile = parseResult["solution"].as<string>();
+    }
+    if (!manager.m_csolutionFile.empty()) {
       error_code ec;
       if (!fs::exists(manager.m_csolutionFile, ec)) {
         ProjMgrLogger::Error(manager.m_csolutionFile, "csolution file was not found");
