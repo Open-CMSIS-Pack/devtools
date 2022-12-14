@@ -25,6 +25,8 @@ Project Manager.
   - [Directory Control](#directory-control)
     - [`output-dirs:`](#output-dirs)
     - [`rte-dirs:`](#rte-dirs)
+  - [Toolchain Options](#toolchain-options)
+    - [`compiler:`](#compiler)
     - [`output-type:`](#output-type)
     - [`output:`](#output)
     - [`linker:`](#linker)
@@ -69,11 +71,15 @@ Project Manager.
     - [`instances:`](#instances)
   - [Pre/Post build steps](#prepost-build-steps)
     - [`execute:`](#execute)
-  - [`interface:`](#interface)
+  - [`contacts:`](#contacts)
+    - [`setting:`](#setting)
+    - [`set:`](#set)
+    - [`contact:`](#contact)
     - [`provides:`](#provides)
-      - [Proposal: Export symbols to RTE\_components.h](#proposal-export-symbols-to-rte_componentsh)
     - [`consumes:`](#consumes)
-      - [Proposal: for interface matching](#proposal-for-interface-matching)
+    - [Example: Board](#example-board)
+    - [Example: Shield](#example-shield)
+    - [Example: Simple Project](#example-simple-project)
   - [Generator (Proposal)](#generator-proposal)
     - [Workflow assumptions](#workflow-assumptions)
     - [Steps for component selection and configuration](#steps-for-component-selection-and-configuration)
@@ -334,14 +340,15 @@ Keyword                          | Description
 
 ### `default:`
 
-The `default:` node is the start of a `*.cdefault.yml` file and contain the following.
+The **csolution - CMSIS Project Manager** uses a file with the name `*.cdefault.yml` or `*.cdefault.yaml` to setup the compiler along with some specific controls. The search order for this file is:
 
-*** Proposal ***
+- An explicit file with the name `<solution-name>.cdefault.yml` in the same directory as the `<solution-name>.csolution.yml` file. 
+- Any `*.cdefault.yml` or `*.cdefault.yaml` file in the directory specified by the environment variable [`CMSIS_COMPILER_ROOT`](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/docs/installation.md#environment-variables).
+- Any `*.cdefault.yml` or `*.cdefault.yaml` file in the directory [`<cmsis-toolbox-installation-dir>/etc`](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/docs/installation.md##etccmake).
 
-The **csolution - CMSIS Project Manager** uses a file with the name `cdefault.yml` or `cdefault.yaml` in the installation directory `.\etc` to pre-configure the default compiler.  This file may be ignored by using:
+> **Note:** The command line option `-i` or `--ignore-cdefault` (file .\etc\cdefault.yml is not used)
 
-- an explicit file with the name `*.cdefault.yml` in the same directory as the `*.csolution.yml` file. 
-- the command line option `-i` or `--ignore-cdefault` (file .\etc\cdefault.yml is not used)
+The `default:` node is the start of a `*.cdefault.yml` or `*.cdefault.yaml` file and contains the following.
 
 `default:`                                            | Content
 :-----------------------------------------------------|:------------------------------------
@@ -431,7 +438,7 @@ The `project:` node is the start of a `*.cproject.yml` file and can contain the 
 &nbsp;&nbsp; [`groups:`](#groups)                   | **Required** | List of source file groups along with source files.
 &nbsp;&nbsp; [`components:`](#components)           |  Optional    | List of software components used.
 &nbsp;&nbsp; [`layers:`](#layers)                   |  Optional    | List of software layers that belong to the project.
-&nbsp;&nbsp; [`interface:`](#interface)             |  Optional    | List of consumed and provided interfaces.
+&nbsp;&nbsp; [`contacts:`](#contacts)               |  Optional    | List of consumed and provided resources.
 
 **Example:**
 
@@ -465,7 +472,7 @@ The `layer:` node is the start of a `*.clayer.yml` file and defines a [Software 
 &nbsp;&nbsp; `description:`                    |  Optional    | Detailed layer description.
 &nbsp;&nbsp; `for-device:`                     |  Optional    | Device information, used for consistency check (device selection is in `*.csolution.yml`).
 &nbsp;&nbsp; `for-board:`                      |  Optional    | Board information, used for consistency check (board selection is in `*.csolution.yml`).
-&nbsp;&nbsp; [`interface:`](#interface)        |  Optional    | List of consumed and provided interfaces.
+&nbsp;&nbsp; [`interfaces:`](#interfaces)      |  Optional    | List of consumed and provided interfaces.
 &nbsp;&nbsp; [`processor:`](#processor)        |  Optional    | Processor specific settings.
 &nbsp;&nbsp; [`groups:`](#groups)              |  Optional    | List of source file groups along with source files.
 &nbsp;&nbsp; [`components:`](#components)      |  Optional    | List of software components used.
@@ -495,7 +502,7 @@ layer:
 
 ## List Nodes
 
-The key/value pairs in a list node can be in any order.  The two following list nodes are logically identical. This
+The *key*/*value* pairs in a list node can be in any order.  The two following list nodes are logically identical. This
 might be confusing for `yml` files that are generated by an IDE.
 
 ```yml
@@ -561,6 +568,7 @@ The `rte-dirs:` list allows to control the location of configuration files for e
     - Device:        ..\common\RTE\Device\Core1
     - Compiler:      ..\RTE\Compiler\Debug
       for-type:      .Debug
+```
 
 ## Toolchain Options
 
@@ -949,7 +957,7 @@ project:
 
 ## Pack Selection
 
-The `packs:` node can be specified in the `*.csolution.yml` and `*.cdefault.yml` file allows you to:
+The `packs:` node can be specified in the `*.csolution.yml` file allows you to:
   
 - Reduce the scope of software packs that are available for projects.
 - Add specific software packs optional with a version specification.
@@ -1064,8 +1072,7 @@ overwrite the *`target-type`* settings.
 
 ### `target-types:`
 
-The `target-types:` node may include [toolchain options](#toolchain-options), [target selection](#target-selection), and
-[processor attributes](#processor-attributes):
+The `target-types:` node may include [toolchain options](#toolchain-options), [target selection](#target-selection), and [processor attributes](#processor-attributes):
 
 `target-types:`                                    |              | Content
 :--------------------------------------------------|--------------|:------------------------------------
@@ -1421,9 +1428,9 @@ Add a software layer to a project. Used in `*.cproject.yml` files.
 
 1. `layer type:` for evaluation of compatible layers.
 
-   The path to the `*.clayer.yml` file can be empty, but in this case a `type:` should be specified.
+   The path to the `*.clayer.yml` file can be empty, but in this case a `type:` must be specified.
    The `csolution` project manager searches in the available software packs for compatible layers and notifies the user.
-   The compatible layers are listed by evaluating the compatible [`interface:`](#interface).
+   The compatible layers are listed by evaluating the compatible [`contacts:`](#contacts).
 
    **Example:**
 
@@ -1588,53 +1595,110 @@ project:
         - file: file1a.c
 ```
 
-## `interface:`
+## `contacts:`
 
-Is a user-defined list of interfaces and can be applied to `project:` or `layer:`.  
+The `contacts` node contains meta-data that describe the compatiblity of `*.cproject.yml` and `*.clayer.yml` project parts.  The `contacts` node lists therefore functionality (drivers, pins, and other software or hardware resources) that are `consumed` (required) or `provided` by these different project parts.
 
-`interface:`                         |              | Description
+For example, this enables reference applications that work across a range of different hardware targets where:
+
+- The `*.cproject.yml` file of the reference application lists with the `contacts` node `consumed` (required) functionality.
+
+- The `*.clayer.yml` project part lists with the `contacts` node the `provided` functionality. 
+ 
+This works across multiple levels, which means that a `*.clayer.yml`file could also `consume` other functionality.
+  
+The `contacts` node is used to identify compatible software layers. These software layers could be stored in CMSIS software packs using, for example, the following structure:
+
+- A reference application described in a `*.cproject.yml` file could be provided in a git repository. This reference application uses software layers that are provided in CMSIS software packs.
+
+- A CMSIS Board Support Pack (BSP) contains a configured board layer desribed in a `*.clayer.yml` file. This software layer is pre-configured for a range of use-cases and provides drivers for I2C and SPI interfaces along with pin definitions and provisions for an Ardunio shield.
+
+- For a sensor, a CMSIS software pack contains the sensor middleware and software layer (`*.clayer.yml`) that describes the hardware of the Ardunio sensor shield. This shield can be applied to many different hardware boards that provide an Ardunio shield connector.
+
+This `contacts` concept enables software reuse in multiple ways:
+
+- The board layer can be used by many different reference applications, as the `provided` functionlity enables a wide range of use cases.
+  
+- The sensor hardware shield along with the middleware can be used across many different boards that provide an Ardunio shield connector along with board layer support.
+
+The structure of the `contacts` node is:
+
+`contacts:`                          |              | Description
 :------------------------------------|--------------|:------------------------------------
-[`provides:`](#provides)             |   Optional   | List of interfaces (key/value pairs) that are provided by a `project:` or `layer:`
-[`consumes:`](#consumes)             |   Optional   | List of interfaces (key/value pairs) that are consumed by a `project:` or  `layer:`
+[- `setting:`](#setting)             |   Optional   | Lists available configuration settings 
+[- `contact:`](#contact)               |   Required   | Lists specific functionality
 
-**Example:**
+### `setting:`
 
-```yml
-  interface:                         # interface description of a board layer
-    consumes:
-    - RTOS2:
-    provides:
-    - CMSIS Driver Ethernet: 0       # driver number
-    - CMSIS Driver USART Print: 2    # driver number
-    - IoT Socket:                    # available
-    - Heap: 65536                    # heap size 
-```
+Some hardware boards have configuration settings (DIP switch or jumper) that configure interfaces. These settings have impact to the functionality (for example hardware interfaces). 
+
+The `setting:` node describes a configuration setting.
+
+`setting:`                           |              | Description
+:------------------------------------|--------------|:------------------------------------
+&nbsp;&nbsp;`name:`                  |   Required   | Name of the configurable setting
+&nbsp;&nbsp;`brief:`                 |   Optional   | Verbal description of the configurable setting
+[- `set:`](#set)                     |   Required   | List of possible settings
+
+### `set:`
+
+The `set:` node describes one setting.
+
+`set:`                               |              | Description
+:------------------------------------|--------------|:------------------------------------
+`id:`                                |   Required   | Identifier (string) of the setting
+`info:`                              |   Required   | Verbal desription of jumper or DIP setting
+
+### `contact:`
+
+The `contact:` node describes one or more functionalities that belong together.
+
+`contact:`                           |              | Description
+:------------------------------------|--------------|:------------------------------------
+`set-id:`                            |   Optional   | Reference to a set id, the section is only active with this configuration setting.
+[`provides:`](#provides)             |   Optional   | List of functionality (*key*/*value* pairs) that are provided
+[`consumes:`](#consumes)             |   Optional   | List of functionality (*key*/*value* pairs) that are reuired 
 
 ### `provides:`
 
-A user-defined list of interfaces that are implemented or provided by the files or software components in a `project:` or `layer:`. 
+A user-defined *key*/*value* pair list of functionality that is implemented or provided by a `project:` or `layer:`. 
 
-#### Proposal: Export symbols to RTE_components.h
+The **csolution - CMSIS Project Manager** combines all the *key*/*value* pairs that listed under `provides:` and matches it with the *key*/*value* pairs that are listed under `consumes:`. For *key*/*value* pairs listed under `provides:` the following rules exist for a match with `consumed`:
 
-All provided interfaces in the current solution context are exported with `#define` symbols to the releated `RTE_components.h` header file and prefixed with `itf_`.
-
-*Content of RTE_components.h:*
-
-```c
-#define itf_CMSIS_Driver_Ethernet 0
-#define itf_CMSIS_Driver_USART_Print 2
-#define itf_IoT_Socket
-#define itf_Heap 65536
-```
+- It is possible to omit the *value*. It matches with an identical *key* listed in `consumes:`
+- A *value* is interpreted as number. This number must be identical in the `consumes:` value pair.
+- A *value* that is prefixed with '+' is interpreted as upper limit. This number provided in the `consumes:` value pair must be lower or equal.
 
 ### `consumes:`
 
-#### Proposal: for interface matching
+A user-defined *key*/*value* pair list of functionality that is requried or consumed a `project:` or `layer:`. 
 
-A user-defined list of interfaces that are requried or consumed by the files or software components in a `project:` or `layer:`. 
-This list is used by the `csolution` tool to identify compatible software layers and evaluate the completeness of an project.
+For *key*/*value* pairs listed under `consumed:` the following rules exist:
 
-**Example:**
+- When no *value* is specified, it matches with any *value* of an identical *key* listed under `provides:`.
+- When a *value* (or an added *value*) is specified, the *value* (or the sum of the *values*) must be less or equal then the *value* of an interface that is listed under `provides:`.
+- A *value* that is prefixed with '+' is interpreted as number that is added together in case that the same *key* is listed multiple times under `consumes:`.
+
+### Example: Board
+
+```yml
+  contacts:                          # describes functionality of a board layer
+    contact:                         # WiFi interface
+      provides:
+        - CMSIS-Driver WiFi:
+      requires:
+        - CMSIS-RTOS2:
+
+    contact:                         # SPI and UART interface
+      provides:
+        - CMSIS-Driver SPI:
+        - CMSIS-Driver UART:
+```
+
+### Example: Shield
+
+
+### Example: Simple Project
 
 *MyProject.cproject.yml*
 
@@ -1675,19 +1739,6 @@ interfaces:
       - STDOUT:
       - Heap:  65536
 ```
-
-The `csolution` tool combines all the interfaces that listed under `provides:` and matches it with the interfaces that are listed under `consumes:`.  
-
-For interfaces listed under `provides:` the following rules exist:
-
-- It is possible to omit the *value*.
-- A *value* is interpreted as number. When the same interface is listed multiple times under `provides:` the value must be identical.
-
-For interfaces listed under `consumed:` the following rules exist:
-
-- A *value* that is prefixed with '+' is interpreted as number that is added together in case that the same interface is listed multiple times under `consumes:`.
-- When no *value* is specified, it matches with any *value* of an interface listed under `provides:`.
-- When a *value* (or an added *value*) is specified, the *value* (or the sum of the *values*) must be less or equal then the *value* of an interface that is listed under `provides:`.
 
 ## Generator (Proposal)
 
