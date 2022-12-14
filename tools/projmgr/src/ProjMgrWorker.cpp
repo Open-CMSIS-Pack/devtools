@@ -1455,6 +1455,16 @@ bool ProjMgrWorker::ProcessComponentFiles(ContextItem& context) {
         }
       }
     }
+    // input files for component generator. This list of files is directly fetched from the PDSC.
+    if (rteComponent->GetGenerator()) {
+      for (const RteItem* rteFile : files) {
+        const auto& filename = rteFile->GetOriginalAbsolutePath();
+        const auto& category = rteFile->GetAttribute("category");
+        const auto& attr = rteFile->GetAttribute("attr");
+        const auto& version = rteFile->GetVersionString();
+        context.generatorInputFiles[componentId].push_back({ filename, attr, category, version });
+      }
+    }
   }
   // constructed local pre-include files
   const auto& preIncludeFiles = context.rteActiveTarget->GetPreIncludeFiles();

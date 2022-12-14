@@ -44,6 +44,12 @@ public:
   virtual ~RteGenerator() override;
 
   /**
+   * @brief get generator commands for all host types without expansion
+   * @return map with host type ("win", "linux", "mac", "other", or "all") as key and generator command as value
+  */
+  std::map<std::string, std::string> GetCommands() const;
+
+  /**
    * @brief get generator command without expansion
    * @param hostType host type to match, empty to match current host
    * @return generator command for specified host type
@@ -127,6 +133,20 @@ public:
  * @return vector of arguments consisting of switch and value in pairs
 */
   std::vector<std::pair<std::string, std::string> > GetExpandedArguments(RteTarget* target, const std::string& hostType = EMPTY_STRING) const;
+
+  /**
+   * @brief get the absolute path to the executable with expanded key sequences for specified target
+   * @param target pointer to RteTarget
+   * @return expanded executable
+  */
+  std::string GetExecutable(RteTarget* target) const;
+
+  /**
+   * @brief get the absolute paths to executables for all host types with the expanded key sequences for specified target
+   * @param target pointer to RteTarget
+   * @return map with host type ("win", "linux", "mac", "other" or "all") as key and path to executable as value
+  */
+  std::map<std::string, std::string> GetExecutables(RteTarget* target) const;
 
   /**
    * @brief get full command line with arguments and expanded key sequences for specified target

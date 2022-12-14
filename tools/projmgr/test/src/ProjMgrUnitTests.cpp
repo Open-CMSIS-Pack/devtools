@@ -1258,6 +1258,12 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Generator) {
   // Check generated CPRJs
   CompareFile(testoutput_folder + "/test-gpdsc.Debug+CM0.cprj",
     testinput_folder + "/TestGenerator/ref/test-gpdsc.Debug+CM0.cprj");
+
+  // Check generated cbuild YMLs
+  CompareFile(testoutput_folder + "/test-gpdsc.cbuild-idx.yml",
+    testinput_folder + "/TestGenerator/ref/test-gpdsc.cbuild-idx.yml");
+  CompareFile(testoutput_folder + "/test-gpdsc.Debug+CM0.cbuild.yml",
+    testinput_folder + "/TestGenerator/ref/test-gpdsc.Debug+CM0.cbuild.yml");
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_TargetOptions)

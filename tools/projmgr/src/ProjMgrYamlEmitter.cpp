@@ -114,6 +114,8 @@ private:
   void SetContextNode(YAML::Node node, const ContextItem* context);
   void SetComponentsNode(YAML::Node node, const ContextItem* context);
   void SetComponentFilesNode(YAML::Node node, const ContextItem* context, const string& componentId);
+  void SetGeneratorsNode(YAML::Node node, const ContextItem* context);
+  void SetGeneratorFiles(YAML::Node node, const ContextItem* context, const string& componentId);
   void SetConstructedFilesNode(YAML::Node node, const ContextItem* context);
   void SetOutputDirsNode(YAML::Node node, const ContextItem* context);
   void SetPacksNode(YAML::Node node, const ContextItem* context);
@@ -171,6 +173,8 @@ ProjMgrYamlCbuild::ProjMgrYamlCbuild(YAML::Node node, const ContextItem* context
 }
 
 void ProjMgrYamlCbuild::SetContextNode(YAML::Node contextNode, const ContextItem* context) {
+  SetNodeValue(contextNode[YAML_SOLUTION], FormatPath(context->csolution->path, context->directories.cprj));
+  SetNodeValue(contextNode[YAML_PROJECT], FormatPath(context->cproject->path, context->directories.cprj));
   SetNodeValue(contextNode[YAML_CONTEXT], context->name);
   SetNodeValue(contextNode[YAML_COMPILER], context->compiler);
   SetNodeValue(contextNode[YAML_BOARD], context->board);
@@ -192,6 +196,7 @@ void ProjMgrYamlCbuild::SetContextNode(YAML::Node contextNode, const ContextItem
   }
   SetNodeValue(contextNode[YAML_ADDPATH], includes);
   SetComponentsNode(contextNode[YAML_COMPONENTS], context);
+  SetGeneratorsNode(contextNode[YAML_GENERATORS], context);
   SetGroupsNode(contextNode[YAML_GROUPS], context->groups);
   SetConstructedFilesNode(contextNode[YAML_CONSTRUCTEDFILES], context);
 }
@@ -211,7 +216,8 @@ void ProjMgrYamlCbuild::SetComponentsNode(YAML::Node node, const ContextItem* co
     }
     SetControlsNode(componentNode, componentItem->build);
     SetComponentFilesNode(componentNode[YAML_FILES], context, componentId);
-    SetNodeValue(componentNode[YAML_GENERATOR], component.generator);
+    SetNodeValue(componentNode[YAML_GENERATOR][YAML_ID], component.generator);
+    SetGeneratorFiles(componentNode[YAML_GENERATOR], context, componentId);
     node.push_back(componentNode);
   }
 }
@@ -226,6 +232,57 @@ void ProjMgrYamlCbuild::SetComponentFilesNode(YAML::Node node, const ContextItem
       SetNodeValue(fileNode[YAML_VERSION], version);
       node.push_back(fileNode);
     }
+  }
+}
+
+void ProjMgrYamlCbuild::SetGeneratorFiles(YAML::Node node, const ContextItem* context, const string& componentId) {
+  if (context->generatorInputFiles.find(componentId) != context->generatorInputFiles.end()) {
+    YAML::Node filesNode;
+    for (const auto& [file, attr, category, version] : context->generatorInputFiles.at(componentId)) {
+      YAML::Node fileNode;
+      SetNodeValue(fileNode[YAML_FILE], FormatPath(file, context->directories.cprj));
+      SetNodeValue(fileNode[YAML_CATEGORY], category);
+      SetNodeValue(fileNode[YAML_ATTR], attr);
+      SetNodeValue(fileNode[YAML_VERSION], version);
+      filesNode.push_back(fileNode);
+    }
+    node[YAML_FILES] = filesNode;
+  }
+}
+
+void ProjMgrYamlCbuild::SetGeneratorsNode(YAML::Node node, const ContextItem* context) {
+  for (const auto& [generatorId, generator] : context->generators) {
+    YAML::Node genNode;
+    const string& workingDir = generator->GetExpandedWorkingDir(context->rteActiveTarget);
+    SetNodeValue(genNode[YAML_WORKING_DIR], FormatPath(workingDir, context->directories.cprj));
+    const string& gpdscFile = generator->GetExpandedGpdsc(context->rteActiveTarget);
+    SetNodeValue(genNode[YAML_GPDSC], FormatPath(gpdscFile, context->directories.cprj));
+
+    for (const string host : {"win", "linux", "mac", "other"}) {
+      YAML::Node commandNode;
+
+      // Executable file
+      const string exe = generator->GetExecutable(context->rteActiveTarget, host);
+      if (exe.empty())
+        continue;
+      commandNode[YAML_FILE] = FormatPath(exe, context->directories.cprj);
+
+      // Arguments
+      YAML::Node argumentsNode;
+      const vector<pair<string, string> >& args = generator->GetExpandedArguments(context->rteActiveTarget, host);
+      for (auto [swtch, value] : args) {
+        // If the argument is recognized as an absolute path, make sure to reformat
+        // it to use CMSIS_PACK_ROOT or to be relative the working directory
+        if (!value.empty() && fs::path(value).is_absolute())
+          value = FormatPath(value, workingDir);
+
+        argumentsNode.push_back(swtch + value);
+      }
+      commandNode[YAML_ARGUMENTS] = argumentsNode;
+      genNode[YAML_COMMAND][host] = commandNode;
+    }
+
+    node[generatorId] = genNode;
   }
 }
 
@@ -410,6 +467,10 @@ bool ProjMgrYamlEmitter::GenerateCbuild(ProjMgrParser& parser, const vector<Cont
   for (const auto& context : processedContexts) {
     RteFsUtils::CreateDirectories(context->directories.cprj);
     const string& filename = context->directories.cprj + "/" + context->name + ".cbuild.yml";
+
+    // Make sure $G (generator input file) is up to date
+    context->rteActiveTarget->SetGeneratorInputFile(filename);
+
     ofstream fileStream(filename);
     if (!fileStream) {
       error = true;

@@ -53,6 +53,9 @@
         <argument>$S</argument>
         <!-- absolute path to the generator input file -->
         <argument>$G</argument>
+        <argument host="win" switch="/foo=">bar</argument>
+        <argument host="linux" switch="--foo=">bar</argument>
+        <argument host="mac" switch="--foo=">bar</argument>
       </exe>
       <!-- path is either absolute or relative to working directory -->
       <gpdsc name="$PRTE/Device/$D/RteTest.gpdsc"/>
