@@ -673,6 +673,38 @@ debug csolution: multiple clayers match type 'TestVariant':\n\
   EXPECT_TRUE(regex_match(outStr, regex(expectedOutStr)));
 }
 
+TEST_F(ProjMgrUnitTests, ListToolchains) {
+  StdStreamRedirect streamRedirect;
+  char* argv[3];
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"toolchains";
+  EXPECT_EQ(0, RunProjMgr(3, argv));
+  const string& expected = "AC5@5.6.7\nAC6@6.18.0\nGCC@11.2.1\nIAR@8.50.6\n";
+  const string& outStr = streamRedirect.GetOutString();
+  EXPECT_EQ(outStr, expected);
+}
+
+TEST_F(ProjMgrUnitTests, ListToolchainsSolution) {
+  // create local cmake file
+  const string& cmakeFile = testinput_folder + "/TestSolution/AC6.6.19.0.cmake";
+  RteFsUtils::CreateFile(cmakeFile, "");
+
+  StdStreamRedirect streamRedirect;
+  char* argv[5];
+  const string& csolution = testinput_folder + "/TestSolution/test.csolution.yml";
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"toolchains";
+  argv[3] = (char*)"-s";
+  argv[4] = (char*)csolution.c_str();
+  EXPECT_EQ(0, RunProjMgr(5, argv));
+  const string& expected = "AC5@5.6.7\nAC6@6.18.0\nAC6@6.19.0\nGCC@11.2.1\nIAR@8.50.6\n";
+  const string& outStr = streamRedirect.GetOutString();
+  EXPECT_EQ(outStr, expected);
+
+  // remove local cmake file
+  RteFsUtils::RemoveFile(cmakeFile);
+}
+
 TEST_F(ProjMgrUnitTests, ListLayersUniquelyCompatibleBoard) {
   StdStreamRedirect streamRedirect;
   char* argv[7];
@@ -2306,6 +2338,11 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_help) {
 
   argv[1] = (char*)"list";
   argv[2] = (char*)"layers";
+  argv[3] = (char*)"-h";
+  EXPECT_EQ(0, RunProjMgr(4, argv));
+
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"toolchains";
   argv[3] = (char*)"-h";
   EXPECT_EQ(0, RunProjMgr(4, argv));
 

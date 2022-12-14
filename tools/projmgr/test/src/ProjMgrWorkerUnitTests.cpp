@@ -6,6 +6,11 @@
 
 #include "ProjMgr.h"
 #include "ProjMgrTestEnv.h"
+
+#include "RteFsUtils.h"
+
+#include "CrossPlatformUtils.h"
+
 #include "gtest/gtest.h"
 
 using namespace std;
@@ -61,6 +66,8 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessToolchainOptions) {
 
   for (auto input : testInput) {
     ContextItem context;
+    CsolutionItem csolution;
+    context.csolution = &csolution;
     context.compiler = input.first;
 
     EXPECT_EQ(input.second.result, ProcessToolchain(context));
@@ -969,4 +976,54 @@ TEST_F(ProjMgrWorkerUnitTests, ExpandString) {
   EXPECT_EQ(ExpandString("$Foo$ $Bar$", context.variables), "./foo ./bar");
   EXPECT_EQ(ExpandString("$Foo Bar$", context.variables), "./foo-bar");
   EXPECT_EQ(ExpandString("$Foo$ $Foo$ $Foo$", context.variables), "./foo ./foo ./foo");
+}
+
+TEST_F(ProjMgrWorkerUnitTests, ListToolchains) {
+  const string& cmsisPackRoot = CrossPlatformUtils::GetEnv("CMSIS_COMPILER_ROOT");
+
+  // create extra cmake file
+  const string& cmakeFile = cmsisPackRoot + "/AC6.6.19.0.cmake";
+  RteFsUtils::CreateFile(cmakeFile, "");
+
+  // list all configured toolchains
+  StrPairVec toolchains;
+  StrPairVec expectedToolchains = {
+    {"AC5", "5.6.7"},
+    {"AC6", "6.18.0"},
+    {"AC6", "6.19.0"},
+    {"GCC", "11.2.1"},
+    {"IAR", "8.50.6"},
+  };
+  ListToolchains(toolchains, RteUtils::EMPTY_STRING);
+  EXPECT_EQ(toolchains, expectedToolchains);
+
+  // with empty cmsis compiler root
+  CrossPlatformUtils::SetEnv("CMSIS_COMPILER_ROOT", "");
+  m_compilerRoot.clear();
+  toolchains.clear();
+  ListToolchains(toolchains, cmsisPackRoot);
+  EXPECT_EQ(toolchains, expectedToolchains);
+
+  // with empty cmsis compiler root and empty local directory
+  m_compilerRoot.clear();
+  toolchains.clear();
+  expectedToolchains.clear();
+  ListToolchains(toolchains, RteUtils::EMPTY_STRING);
+  EXPECT_EQ(toolchains, expectedToolchains);
+
+  // list latest toolchains
+  CrossPlatformUtils::SetEnv("CMSIS_COMPILER_ROOT", cmsisPackRoot);
+  m_compilerRoot.clear();
+  StrMap latestToolchains;
+  StrMap expectedLatestToolchains = {
+    {"AC5", "5.6.7"},
+    {"AC6", "6.19.0"},
+    {"GCC", "11.2.1"},
+    {"IAR", "8.50.6"},
+  };
+  ListLatestToolchains(latestToolchains, RteUtils::EMPTY_STRING);
+  EXPECT_EQ(latestToolchains, expectedLatestToolchains);
+
+  // remove extra cmake file
+  RteFsUtils::RemoveFile(cmakeFile);
 }

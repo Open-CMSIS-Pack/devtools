@@ -31,6 +31,7 @@ Usage:\n\
         contexts         Print list of contexts in a csolution.yml\n\
         generators       Print list of code generators of a given context\n\
         layers           Print list of available, referenced and compatible layers\n\
+        toolchains       Print list of installed toolchains\n\
    convert               Convert *.csolution.yml input file in *.cprj files\n\
    run                   Run code generator\n\n\
  Options:\n\
@@ -119,6 +120,7 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
     {"list contexts",     {solution, filter, schemaCheck}},
     {"list generators",   {solution, context, load, schemaCheck}},
     {"list layers",       {solution, context, load, schemaCheck}},
+    {"list toolchains",   {solution}},
   };
 
   try {
@@ -240,6 +242,10 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
       }
     } else if (manager.m_args == "layers") {
       if (!manager.RunListLayers()) {
+        return 1;
+      }
+    } else if (manager.m_args == "toolchains") {
+      if (!manager.RunListToolchains()) {
         return 1;
       }
     }
@@ -568,13 +574,22 @@ bool ProjMgr::RunCodeGenerator(void) {
   return true;
 }
 
+bool ProjMgr::RunListToolchains(void) {
+  StrPairVec toolchains;
+  m_worker.ListToolchains(toolchains, m_rootDir);
+  for (const auto& [name, version] : toolchains) {
+    cout << name << "@" << version << endl;
+  }
+  return true;
+}
+
 bool ProjMgr::GetCdefaultFile(void) {
   error_code ec;
-  string exePath = RteUtils::ExtractFilePath(CrossPlatformUtils::GetExecutablePath(ec), true);
-  if (ec) {
-    return false;
+  vector<string> searchPaths = { m_rootDir };
+  const string& compilerRoot = m_worker.GetCompilerRoot();
+  if (!compilerRoot.empty()) {
+    searchPaths.push_back(compilerRoot);
   }
-  vector<string> searchPaths = { m_rootDir, exePath + "/../etc/", exePath + "/../../etc/" };
   string cdefaultFile;
   if (!RteFsUtils::FindFileRegEx(searchPaths, ".*\\.cdefault\\.(yml|yaml)", cdefaultFile)) {
     if (!cdefaultFile.empty()) {

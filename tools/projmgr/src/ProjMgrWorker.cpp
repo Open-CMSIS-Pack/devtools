@@ -983,19 +983,16 @@ bool ProjMgrWorker::ProcessToolchain(ContextItem& context) {
 
   context.toolchain = GetToolchain(context.compiler);
   if (context.toolchain.version.empty()) {
-    static const map<string, string> DEF_MIN_VERSIONS = {
-      {"AC5","5.6.7"},
-      {"AC6","6.18.0"},
-      {"GCC","11.2.1"},
-      {"IAR","8.50.6"},
-    };
-    for (const auto& defMinVersion: DEF_MIN_VERSIONS) {
-      if (context.toolchain.name == defMinVersion.first) {
-        context.toolchain.version = defMinVersion.second;
+    StrMap latestVersions;
+    ListLatestToolchains(latestVersions, context.csolution->path);
+    for (const auto& [name, version] : latestVersions) {
+      if (context.toolchain.name == name) {
+        context.toolchain.version = version;
         break;
       }
     }
     if (context.toolchain.version.empty()) {
+      ProjMgrLogger::Warn("cmake configuration file for toolchain '" + context.toolchain.name + "' was not found");
       context.toolchain.version = "0.0.0";
     }
   }
@@ -2604,4 +2601,58 @@ string ProjMgrWorker::ExpandString(const string& src, const StrMap& variables) {
     }
   }
   return ret;
+}
+
+void ProjMgrWorker::ListToolchains(StrPairVec& toolchains, const string& localDir) {
+  // find cmake files in compiler root path
+  list<string> cmakeFiles;
+  const string& compilerRoot = GetCompilerRoot();
+  if (compilerRoot.empty()) {
+    ProjMgrLogger::Warn("compiler root path was not found");
+  }
+  RteFsUtils::GrepFileNames(cmakeFiles, compilerRoot, "*.cmake");
+
+  // find cmake files in local directory
+  if (!localDir.empty()) {
+    list<string> cmakeFilesLocal;
+    RteFsUtils::GrepFileNames(cmakeFilesLocal, localDir, "*.cmake");
+    cmakeFiles.insert(cmakeFiles.end(), cmakeFilesLocal.begin(), cmakeFilesLocal.end());
+  }
+
+  // extract toolchain info
+  for (const auto& cmakeFile : cmakeFiles) {
+    smatch sm;
+    const string& stem  = fs::path(cmakeFile).stem().generic_string();
+    regex_match(stem, sm, regex("(.*)\\.(.*\\..*\\..*)"));
+    if (sm.size() == 3) {
+      ProjMgrUtils::PushBackUniquely(toolchains, {sm[1], sm[2]});
+    }
+  }
+  std::sort(toolchains.begin(), toolchains.end());
+}
+
+void ProjMgrWorker::ListLatestToolchains(StrMap& toolchains, const string & localDir) {
+  StrPairVec fullList;
+  ListToolchains(fullList, localDir);
+  for (const auto& [name, version] : fullList) {
+    if ((toolchains.find(name) == toolchains.end()) ||
+      (VersionCmp::Compare(toolchains.at(name), version) < 0)) {
+      toolchains[name] = version;
+    }
+  }
+}
+
+string ProjMgrWorker::GetCompilerRoot(void) {
+  if (m_compilerRoot.empty()) {
+    m_compilerRoot = CrossPlatformUtils::GetEnv("CMSIS_COMPILER_ROOT");
+    if (m_compilerRoot.empty()) {
+      error_code ec;
+      string exePath = RteUtils::ExtractFilePath(CrossPlatformUtils::GetExecutablePath(ec), true);
+      m_compilerRoot = fs::path(exePath).parent_path().parent_path().append("etc").generic_string();
+      if (!RteFsUtils::Exists(m_compilerRoot)) {
+        m_compilerRoot.clear();
+      }
+    }
+  }
+  return m_compilerRoot;
 }

@@ -144,6 +144,7 @@ public:
   */
   static void PushBackUniquely(std::vector<std::string>& vec, const std::string& value);
   static void PushBackUniquely(std::list<std::string>& lst, const std::string& value);
+  static void PushBackUniquely(StrPairVec& vec, const StrPair& value);
 
   /**
    * @brief convert string to int, return 0 if it's empty or not convertible
