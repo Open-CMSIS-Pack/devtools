@@ -181,6 +181,15 @@ void ProjMgrUtils::PushBackUniquely(list<string>& list, const string& value) {
   }
 }
 
+void ProjMgrUtils::PushBackUniquely(StrPairVec& vec, const StrPair& value) {
+  for (const auto& item : vec) {
+    if ((value.first == item.first) && (value.second == item.second)) {
+      return;
+    }
+  }
+  vec.push_back(value);
+}
+
 int ProjMgrUtils::StringToInt(const string& value) {
   int intValue = 0;
   smatch sm;

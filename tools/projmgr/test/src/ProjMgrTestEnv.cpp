@@ -90,6 +90,15 @@ void ProjMgrTestEnv::SetUp() {
   fs::copy(fs::path(srcInvalidPacks), fs::path(destInvalidPacks), fs::copy_options::recursive, ec);
 
   CrossPlatformUtils::SetEnv("CMSIS_PACK_ROOT", testcmsispack_folder);
+
+  // create dummy cmsis compiler root
+  const string& testdir = testinput_folder + "/TestToolchains";
+  RteFsUtils::CreateDirectories(testdir);
+  RteFsUtils::CreateFile(testdir + "/AC5.5.6.7.cmake", "");
+  RteFsUtils::CreateFile(testdir + "/AC6.6.18.0.cmake", "");
+  RteFsUtils::CreateFile(testdir + "/GCC.11.2.1.cmake", "");
+  RteFsUtils::CreateFile(testdir + "/IAR.8.50.6.cmake", "");
+  CrossPlatformUtils::SetEnv("CMSIS_COMPILER_ROOT", testdir);
 }
 
 void ProjMgrTestEnv::TearDown() {
