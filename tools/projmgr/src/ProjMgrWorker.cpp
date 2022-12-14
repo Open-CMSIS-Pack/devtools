@@ -1166,9 +1166,8 @@ bool ProjMgrWorker::AddRequiredComponents(ContextItem& context) {
   context.rteActiveProject->CollectSettings();
 
   // Generate RTE headers
-  if (!context.rteActiveTarget->GenerateRteHeaders()) {
-    return false;
-  }
+  context.rteActiveProject->GenerateRteHeaders();
+
   return true;
 }
 
