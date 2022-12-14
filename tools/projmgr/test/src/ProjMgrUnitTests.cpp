@@ -2057,6 +2057,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_NoUpdateRTEFiles) {
   const string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject.yml");
   const string rteFolder = RteFsUtils::ParentPath(csolutionFile) + "/TestProject4/RTE";
   set<string> rteFilesBefore, rteFilesAfter;
+  RteFsUtils::RemoveDir(rteFolder);
   GetFilesInTree(rteFolder, rteFilesBefore);
 
   argv[1] = (char*)"convert";
