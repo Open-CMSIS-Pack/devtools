@@ -72,14 +72,13 @@ Project Manager.
   - [Pre/Post build steps](#prepost-build-steps)
     - [`execute:`](#execute)
   - [`contacts:`](#contacts)
-    - [`setting:`](#setting)
-    - [`set:`](#set)
     - [`contact:`](#contact)
+    - [`set:`](#set)
     - [`provides:`](#provides)
     - [`consumes:`](#consumes)
     - [Example: Board](#example-board)
-    - [Example: Shield](#example-shield)
     - [Example: Simple Project](#example-simple-project)
+    - [Example: Sensor Shield](#example-sensor-shield)
   - [Generator (Proposal)](#generator-proposal)
     - [Workflow assumptions](#workflow-assumptions)
     - [Steps for component selection and configuration](#steps-for-component-selection-and-configuration)
@@ -472,7 +471,7 @@ The `layer:` node is the start of a `*.clayer.yml` file and defines a [Software 
 &nbsp;&nbsp; `description:`                    |  Optional    | Detailed layer description.
 &nbsp;&nbsp; `for-device:`                     |  Optional    | Device information, used for consistency check (device selection is in `*.csolution.yml`).
 &nbsp;&nbsp; `for-board:`                      |  Optional    | Board information, used for consistency check (board selection is in `*.csolution.yml`).
-&nbsp;&nbsp; [`interfaces:`](#interfaces)      |  Optional    | List of consumed and provided interfaces.
+&nbsp;&nbsp; [`contacts:`](#contacts)          |  Optional    | List of consumed and provided resources.
 &nbsp;&nbsp; [`processor:`](#processor)        |  Optional    | Processor specific settings.
 &nbsp;&nbsp; [`groups:`](#groups)              |  Optional    | List of source file groups along with source files.
 &nbsp;&nbsp; [`components:`](#components)      |  Optional    | List of software components used.
@@ -1599,15 +1598,15 @@ project:
 
 The `contacts` node contains meta-data that describe the compatiblity of `*.cproject.yml` and `*.clayer.yml` project parts.  The `contacts` node lists therefore functionality (drivers, pins, and other software or hardware resources) that are `consumed` (required) or `provided` by these different project parts.
 
-For example, this enables reference applications that work across a range of different hardware targets where:
+This enables, for example, reference applications that work across a range of different hardware targets where:
 
 - The `*.cproject.yml` file of the reference application lists with the `contacts` node `consumed` (required) functionality.
 
 - The `*.clayer.yml` project part lists with the `contacts` node the `provided` functionality. 
  
-This works across multiple levels, which means that a `*.clayer.yml`file could also `consume` other functionality.
+This works across multiple levels, which means that a `*.clayer.yml` file could also `consume` other functionality.
   
-The `contacts` node is used to identify compatible software layers. These software layers could be stored in CMSIS software packs using, for example, the following structure:
+The `contacts` node is used to identify compatible software layers. These software layers could be stored in CMSIS software packs using the following structure:
 
 - A reference application described in a `*.cproject.yml` file could be provided in a git repository. This reference application uses software layers that are provided in CMSIS software packs.
 
@@ -1625,29 +1624,7 @@ The structure of the `contacts` node is:
 
 `contacts:`                          |              | Description
 :------------------------------------|--------------|:------------------------------------
-[- `setting:`](#setting)             |   Optional   | Lists available configuration settings 
-[- `contact:`](#contact)               |   Required   | Lists specific functionality
-
-### `setting:`
-
-Some hardware boards have configuration settings (DIP switch or jumper) that configure interfaces. These settings have impact to the functionality (for example hardware interfaces). 
-
-The `setting:` node describes a configuration setting.
-
-`setting:`                           |              | Description
-:------------------------------------|--------------|:------------------------------------
-&nbsp;&nbsp;`name:`                  |   Required   | Name of the configurable setting
-&nbsp;&nbsp;`brief:`                 |   Optional   | Verbal description of the configurable setting
-[- `set:`](#set)                     |   Required   | List of possible settings
-
-### `set:`
-
-The `set:` node describes one setting.
-
-`set:`                               |              | Description
-:------------------------------------|--------------|:------------------------------------
-`id:`                                |   Required   | Identifier (string) of the setting
-`info:`                              |   Required   | Verbal desription of jumper or DIP setting
+[- `contact:`](#contact)             | **Required** | Lists specific functionality with a brief verbal description
 
 ### `contact:`
 
@@ -1655,9 +1632,20 @@ The `contact:` node describes one or more functionalities that belong together.
 
 `contact:`                           |              | Description
 :------------------------------------|--------------|:------------------------------------
-`set-id:`                            |   Optional   | Reference to a set id, the section is only active with this configuration setting.
+[`set:`](#set)                       |   Optional   | Specifies a *config-id*.*select* value that identifies a configuration option
+`info:`                              |   Optional   | Verbal desription displayed when this contact is selected
 [`provides:`](#provides)             |   Optional   | List of functionality (*key*/*value* pairs) that are provided
-[`consumes:`](#consumes)             |   Optional   | List of functionality (*key*/*value* pairs) that are reuired 
+[`consumes:`](#consumes)             |   Optional   | List of functionality (*key*/*value* pairs) that are required 
+
+### `set:`
+
+Some hardware boards have configuration settings (DIP switch or jumper) that configure interfaces. These settings have impact to the functionality (for example hardware interfaces). With `set:` *config-id*.*select* the possible configration options are considered when evaluating compatible `*.cproject.yml` and `*.clayer.yml` project parts. The **csolution - CMSIS Project Manager** iterates the `contact:` node with a `set:` *config-id*.*select* as described below:
+
+- For each *config-id* only one `contact:` node with a *select* value is active at a time. Each possible *select* value is checked for a matching configuration.
+
+- When project parts have a matching configuration, the `set:` value along with the `info:` is shown to the user. This allows the user to enable the correct hardware options.
+
+Refer to [Example: Sensor Shield](#example-sensor-shield) for a usage example.
 
 ### `provides:`
 
@@ -1667,49 +1655,51 @@ The **csolution - CMSIS Project Manager** combines all the *key*/*value* pairs t
 
 - It is possible to omit the *value*. It matches with an identical *key* listed in `consumes:`
 - A *value* is interpreted as number. This number must be identical in the `consumes:` value pair.
-- A *value* that is prefixed with '+' is interpreted as upper limit. This number provided in the `consumes:` value pair must be lower or equal.
+- A *value* that is prefixed with '+' is interpreted as upper limit. The `provided:` *value* must be  be higher or equal then the *value* of the matching `consumes:` *key*.
 
 ### `consumes:`
 
-A user-defined *key*/*value* pair list of functionality that is requried or consumed a `project:` or `layer:`. 
+A user-defined *key*/*value* pair list of functionality that is requried or consumed by a `project:` or `layer:`. 
 
 For *key*/*value* pairs listed under `consumed:` the following rules exist:
 
 - When no *value* is specified, it matches with any *value* of an identical *key* listed under `provides:`.
-- When a *value* (or an added *value*) is specified, the *value* (or the sum of the *values*) must be less or equal then the *value* of an interface that is listed under `provides:`.
-- A *value* that is prefixed with '+' is interpreted as number that is added together in case that the same *key* is listed multiple times under `consumes:`.
-
+- A *value* is interpreted as number. This number must be identical in the `provides:` value pair.
+- A *value* that is prefixed with '+' is interpreted as a number that is added together in case that the same *key* is listed multiple times under `consumes:`. The sum of this value must be lower or equal to the *value* upper limit of the `provides:` *key*.
+ 
 ### Example: Board
+
+This `contacts:` node of a board layer describes the available interfaces.  The WiFi interface requires a CMSIS-RTOS2 function.
 
 ```yml
   contacts:                          # describes functionality of a board layer
-    contact:                         # WiFi interface
+    - contact: WiFi interface
       provides:
         - CMSIS-Driver WiFi:
       requires:
         - CMSIS-RTOS2:
 
-    contact:                         # SPI and UART interface
+    - contact: SPI and UART interface
       provides:
         - CMSIS-Driver SPI:
         - CMSIS-Driver UART:
 ```
 
-### Example: Shield
-
-
 ### Example: Simple Project
+
+This shows a the `contacts:` node of a complete application project that is composed of two software layers.
 
 *MyProject.cproject.yml*
 
 ```yml
-  interfaces:
-    provides:
-      - RTOS2:          # implements RTOS2 API interface
-    consumes:
-      - IoT_Socket:     # requires IoT_Socket interface
-      - STDOUT:         # requires STDOUT interface
-      - Heap:  +30000   # requires additional 30000 bytes memory heap
+  contacts:
+    - contact: all resources
+      provides:
+        - RTOS2:          # implements RTOS2 API interface
+      consumes:
+        - IoT_Socket:     # requires IoT_Socket interface
+        - STDOUT:         # requires STDOUT interface
+        - Heap:  +30000   # requires additional 30000 bytes memory heap
   :
   layers:
     - layer: MySocket.clayer.yml
@@ -1719,25 +1709,74 @@ For *key*/*value* pairs listed under `consumed:` the following rules exist:
 *MySocket.clayer.yml*
 
 ```yml
-interfaces:
-    consumes:
-      - RTOS2:          # requires RTOS2 API interface
-      - VSocket:        # requires VSocket interface
-      - Heap: +20000    # requires additional 20000 bytes memory heap
-    provides:
-      - IoT_Socket:     # provides IoT_Socket interface
+  contacts:
+    - contact:
+      consumes:
+        - RTOS2:          # requires RTOS2 API interface
+        - VSocket:        # requires VSocket interface
+        - Heap: +20000    # requires additional 20000 bytes memory heap
+      provides:
+        - IoT_Socket:     # provides IoT_Socket interface
 ```
 
 *MyBoard.clayer.yml*
 
 ```yml
-  interfaces:
-    consumes:
-      - RTOS2:
-    provides:
-      - VSocket:
-      - STDOUT:
-      - Heap:  65536
+  contacts:
+    - contact:
+      consumes:
+        - RTOS2:
+      provides:
+        - VSocket:
+        - STDOUT:
+        - Heap:  +65536
+```
+
+### Example: Sensor Shield
+
+This sensor shield layer provides a set of interfaces that are configurable.
+
+```yml
+  contacts:
+    - contact: I2C Interface 'Std'
+      set:  comm.I2C-Std
+      info: JP1=Off  JP2=Off
+      provides:
+        - Sensor_I2C:
+      consumes:
+        - Ardunio_Uno_I2C:
+
+    - contact: I2C Interface 'Alt'
+      set:  comm.I2C-Alt
+      info: JP1=On  JP2=Off
+      provides:
+        - Sensor_I2C:
+      consumes:
+        - Ardunio_Uno_I2C-Alt:
+
+    - contact: SPI Interface 'Alt'
+      set:  comm.SPI
+      info: JP2=On
+      provides:
+        - Sensor_SPI:
+      consumes:
+        - Ardunio_Uno_SPI:
+
+    - contact: Sensor Interrupt INT0
+      set:  SensorIRQ.0
+      info: JP3=Off
+      provides:
+        - Sensor_IRQ:
+      consumes:
+        - Ardunio_Uno_D2:
+
+    - contact: Sensor Interrupt INT1
+      set:  SensorIRQ.1
+      info: JP3=On
+      provides:
+        - Sensor_IRQ:
+      consumes:
+        - Ardunio_Uno_D3:
 ```
 
 ## Generator (Proposal)
