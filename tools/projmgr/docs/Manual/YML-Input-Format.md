@@ -71,8 +71,8 @@ Project Manager.
     - [`instances:`](#instances)
   - [Pre/Post build steps](#prepost-build-steps)
     - [`execute:`](#execute)
-  - [`contacts:`](#contacts)
-    - [`contact:`](#contact)
+  - [`connects:`](#connects)
+    - [`connect:`](#connect)
     - [`set:`](#set)
     - [`provides:`](#provides)
     - [`consumes:`](#consumes)
@@ -437,7 +437,7 @@ The `project:` node is the start of a `*.cproject.yml` file and can contain the 
 &nbsp;&nbsp; [`groups:`](#groups)                   | **Required** | List of source file groups along with source files.
 &nbsp;&nbsp; [`components:`](#components)           |  Optional    | List of software components used.
 &nbsp;&nbsp; [`layers:`](#layers)                   |  Optional    | List of software layers that belong to the project.
-&nbsp;&nbsp; [`contacts:`](#contacts)               |  Optional    | List of consumed and provided resources.
+&nbsp;&nbsp; [`connects:`](#connects)               |  Optional    | List of consumed and provided resources.
 
 **Example:**
 
@@ -471,7 +471,7 @@ The `layer:` node is the start of a `*.clayer.yml` file and defines a [Software 
 &nbsp;&nbsp; `description:`                    |  Optional    | Detailed layer description.
 &nbsp;&nbsp; `for-device:`                     |  Optional    | Device information, used for consistency check (device selection is in `*.csolution.yml`).
 &nbsp;&nbsp; `for-board:`                      |  Optional    | Board information, used for consistency check (board selection is in `*.csolution.yml`).
-&nbsp;&nbsp; [`contacts:`](#contacts)          |  Optional    | List of consumed and provided resources.
+&nbsp;&nbsp; [`connects:`](#connects)          |  Optional    | List of consumed and provided resources.
 &nbsp;&nbsp; [`processor:`](#processor)        |  Optional    | Processor specific settings.
 &nbsp;&nbsp; [`groups:`](#groups)              |  Optional    | List of source file groups along with source files.
 &nbsp;&nbsp; [`components:`](#components)      |  Optional    | List of software components used.
@@ -1429,7 +1429,7 @@ Add a software layer to a project. Used in `*.cproject.yml` files.
 
    The path to the `*.clayer.yml` file can be empty, but in this case a `type:` must be specified.
    The `csolution` project manager searches in the available software packs for compatible layers and notifies the user.
-   The compatible layers are listed by evaluating the compatible [`contacts:`](#contacts).
+   The compatible layers are listed by evaluating the compatible [`connects:`](#connects).
 
    **Example:**
 
@@ -1594,19 +1594,19 @@ project:
         - file: file1a.c
 ```
 
-## `contacts:`
+## `connects:`
 
-The `contacts` node contains meta-data that describe the compatiblity of `*.cproject.yml` and `*.clayer.yml` project parts.  The `contacts` node lists therefore functionality (drivers, pins, and other software or hardware resources) that are `consumed` (required) or `provided` by these different project parts.
+The `connects` node contains meta-data that describe the compatiblity of `*.cproject.yml` and `*.clayer.yml` project parts.  The `connects` node lists therefore functionality (drivers, pins, and other software or hardware resources) that are `consumed` (required) or `provided` by these different project parts.
 
 This enables, for example, reference applications that work across a range of different hardware targets where:
 
-- The `*.cproject.yml` file of the reference application lists with the `contacts` node `consumed` (required) functionality.
+- The `*.cproject.yml` file of the reference application lists with the `connects` node `consumed` (required) functionality.
 
-- The `*.clayer.yml` project part lists with the `contacts` node the `provided` functionality. 
+- The `*.clayer.yml` project part lists with the `connects` node the `provided` functionality. 
  
 This works across multiple levels, which means that a `*.clayer.yml` file could also `consume` other functionality.
   
-The `contacts` node is used to identify compatible software layers. These software layers could be stored in CMSIS software packs using the following structure:
+The `connects` node is used to identify compatible software layers. These software layers could be stored in CMSIS software packs using the following structure:
 
 - A reference application described in a `*.cproject.yml` file could be provided in a git repository. This reference application uses software layers that are provided in CMSIS software packs.
 
@@ -1614,34 +1614,34 @@ The `contacts` node is used to identify compatible software layers. These softwa
 
 - For a sensor, a CMSIS software pack contains the sensor middleware and software layer (`*.clayer.yml`) that describes the hardware of the Ardunio sensor shield. This shield can be applied to many different hardware boards that provide an Ardunio shield connector.
 
-This `contacts` concept enables software reuse in multiple ways:
+This `connects` concept enables software reuse in multiple ways:
 
 - The board layer can be used by many different reference applications, as the `provided` functionlity enables a wide range of use cases.
   
 - The sensor hardware shield along with the middleware can be used across many different boards that provide an Ardunio shield connector along with board layer support.
 
-The structure of the `contacts` node is:
+The structure of the `connects` node is:
 
-`contacts:`                          |              | Description
+`connects:`                          |              | Description
 :------------------------------------|--------------|:------------------------------------
-[- `contact:`](#contact)             | **Required** | Lists specific functionality with a brief verbal description
+[- `connect:`](#connect)             | **Required** | Lists specific functionality with a brief verbal description
 
-### `contact:`
+### `connect:`
 
-The `contact:` node describes one or more functionalities that belong together.
+The `connect:` node describes one or more functionalities that belong together.
 
-`contact:`                           |              | Description
+`connect:`                           |              | Description
 :------------------------------------|--------------|:------------------------------------
 [`set:`](#set)                       |   Optional   | Specifies a *config-id*.*select* value that identifies a configuration option
-`info:`                              |   Optional   | Verbal desription displayed when this contact is selected
+`info:`                              |   Optional   | Verbal desription displayed when this connect is selected
 [`provides:`](#provides)             |   Optional   | List of functionality (*key*/*value* pairs) that are provided
 [`consumes:`](#consumes)             |   Optional   | List of functionality (*key*/*value* pairs) that are required 
 
 ### `set:`
 
-Some hardware boards have configuration settings (DIP switch or jumper) that configure interfaces. These settings have impact to the functionality (for example hardware interfaces). With `set:` *config-id*.*select* the possible configration options are considered when evaluating compatible `*.cproject.yml` and `*.clayer.yml` project parts. The **csolution - CMSIS Project Manager** iterates the `contact:` node with a `set:` *config-id*.*select* as described below:
+Some hardware boards have configuration settings (DIP switch or jumper) that configure interfaces. These settings have impact to the functionality (for example hardware interfaces). With `set:` *config-id*.*select* the possible configration options are considered when evaluating compatible `*.cproject.yml` and `*.clayer.yml` project parts. The **csolution - CMSIS Project Manager** iterates the `connect:` node with a `set:` *config-id*.*select* as described below:
 
-- For each *config-id* only one `contact:` node with a *select* value is active at a time. Each possible *select* value is checked for a matching configuration.
+- For each *config-id* only one `connect:` node with a *select* value is active at a time. Each possible *select* value is checked for a matching configuration.
 
 - When project parts have a matching configuration, the `set:` value along with the `info:` is shown to the user. This allows the user to enable the correct hardware options.
 
@@ -1670,17 +1670,17 @@ For *key*/*value* pairs listed under `consumed:` the following rules exist:
  
 ### Example: Board
 
-This `contacts:` node of a board layer describes the available interfaces.  The WiFi interface requires a CMSIS-RTOS2 function.
+This `connects:` node of a board layer describes the available interfaces.  The WiFi interface requires a CMSIS-RTOS2 function.
 
 ```yml
-  contacts:                          # describes functionality of a board layer
-    - contact: WiFi interface
+  connects:                          # describes functionality of a board layer
+    - connect: WiFi interface
       provides:
         - CMSIS-Driver WiFi:
       requires:
         - CMSIS-RTOS2:
 
-    - contact: SPI and UART interface
+    - connect: SPI and UART interface
       provides:
         - CMSIS-Driver SPI:
         - CMSIS-Driver UART:
@@ -1688,13 +1688,13 @@ This `contacts:` node of a board layer describes the available interfaces.  The 
 
 ### Example: Simple Project
 
-This shows a the `contacts:` node of a complete application project that is composed of two software layers.
+This shows a the `connects:` node of a complete application project that is composed of two software layers.
 
 *MyProject.cproject.yml*
 
 ```yml
-  contacts:
-    - contact: all resources
+  connects:
+    - connect: all resources
       provides:
         - RTOS2:          # implements RTOS2 API interface
       consumes:
@@ -1710,8 +1710,8 @@ This shows a the `contacts:` node of a complete application project that is comp
 *MySocket.clayer.yml*
 
 ```yml
-  contacts:
-    - contact:
+  connects:
+    - connect:
       consumes:
         - RTOS2:          # requires RTOS2 API interface
         - VSocket:        # requires VSocket interface
@@ -1723,8 +1723,8 @@ This shows a the `contacts:` node of a complete application project that is comp
 *MyBoard.clayer.yml*
 
 ```yml
-  contacts:
-    - contact:
+  connects:
+    - connect:
       consumes:
         - RTOS2:
       provides:
@@ -1738,8 +1738,8 @@ This shows a the `contacts:` node of a complete application project that is comp
 This sensor shield layer provides a set of interfaces that are configurable.
 
 ```yml
-  contacts:
-    - contact: I2C Interface 'Std'
+  connects:
+    - connect: I2C Interface 'Std'
       set:  comm.I2C-Std
       info: JP1=Off  JP2=Off
       provides:
@@ -1747,7 +1747,7 @@ This sensor shield layer provides a set of interfaces that are configurable.
       consumes:
         - Ardunio_Uno_I2C:
 
-    - contact: I2C Interface 'Alt'
+    - connect: I2C Interface 'Alt'
       set:  comm.I2C-Alt
       info: JP1=On  JP2=Off
       provides:
@@ -1755,7 +1755,7 @@ This sensor shield layer provides a set of interfaces that are configurable.
       consumes:
         - Ardunio_Uno_I2C-Alt:
 
-    - contact: SPI Interface 'Alt'
+    - connect: SPI Interface 'Alt'
       set:  comm.SPI
       info: JP2=On
       provides:
@@ -1763,7 +1763,7 @@ This sensor shield layer provides a set of interfaces that are configurable.
       consumes:
         - Ardunio_Uno_SPI:
 
-    - contact: Sensor Interrupt INT0
+    - connect: Sensor Interrupt INT0
       set:  SensorIRQ.0
       info: JP3=Off
       provides:
@@ -1771,7 +1771,7 @@ This sensor shield layer provides a set of interfaces that are configurable.
       consumes:
         - Ardunio_Uno_D2:
 
-    - contact: Sensor Interrupt INT1
+    - connect: Sensor Interrupt INT1
       set:  SensorIRQ.1
       info: JP3=On
       provides:
