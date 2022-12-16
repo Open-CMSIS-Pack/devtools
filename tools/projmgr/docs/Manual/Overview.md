@@ -25,6 +25,7 @@ Manual Chapters                           | Content
     - [Command Examples](#command-examples)
   - [Project Examples](#project-examples)
     - [Minimal Project Setup](#minimal-project-setup)
+    - [Compiler Agnostic Project](#compiler-agnostic-project)
     - [Software Layers](#software-layers)
     - [Project Setup for Multiple Targets and Builds](#project-setup-for-multiple-targets-and-builds)
     - [Project Setup for Related Projects](#project-setup-for-related-projects)
@@ -105,7 +106,7 @@ The CMSIS-Pack repository must be present in the development environment.
 
 - There are several ways to initialize and configure the pack repository, for example using the
   `cpackget` tool available from <https://github.com/Open-CMSIS-Pack/cpackget>
-- Before running `csolution` the location of the pack repository shall be set via the environment variable
+- Before running the **csolution - CMSIS Project Manager** the location of the pack repository shall be set via the environment variable
   `CMSIS_PACK_ROOT` otherwise its default location (todo what is the default?) will be taken.
 
 ### Invocation
@@ -199,7 +200,7 @@ csolution run -g STCubeMX -s mysolution.csolution.yml -c Blinky.Debug+STM32L4
 
 The repository [csolution-examples](https://github.com/Open-CMSIS-Pack/csolution-examples) provides several working examples.  
 
-The section below explains the the overall concepts consider by the `csolution` tool based on examples.
+The section below explains the the overall concepts consider by the **csolution - CMSIS Project Manager** based on examples.
 
 ### Minimal Project Setup
 
@@ -236,6 +237,76 @@ solution:
 ```
 
 **Simple Project: `Sample.cproject.yml`**
+
+```yml
+project:
+  groups:
+    - group: App
+      files:
+        - file: ./main.c
+
+  components:
+    - component: ARM::CMSIS:CORE
+    - component: Device:Startup
+```
+
+### Compiler Agnostic Project
+
+With generic [**Translation Control**](YML-Input-Format.md#translation-control) settings it is possible to create projects that work across the range of supported compilers (AC6, GCC, IAR).  The compiler selection and potential compiler specific settings can be stored in the file `*.cdefault.yml`. By replacing the `*.cdefault.yml` file it is possible to re-target application projects.  [**Translation Control**](YML-Input-Format.md#translation-control) settings are mapped to specify compiler by the build tools.
+
+**Simple Compiler Agnostic Project: `Sample.cdefault.yml` for Arm Compiler**
+
+```yml
+default:
+  compiler: AC6
+  misc:
+    - ASM:
+      - -masm=auto
+
+    - Link:
+      - --info sizes --info totals --info unused --info veneers --info summarysizes
+      - --map
+      - --entry=Reset_Handler
+```
+
+**Simple Compiler Agnostic Project: `Sample.cdefault.yml` for GCC Compiler**
+
+```yml
+default:
+  compiler: GCC
+  misc:
+    - C:
+      - -g
+
+    - Link:
+      - --specs=nosys.specs
+      - --entry=Reset_Handler
+```
+
+**Simple Compiler Agnostic Project: `Sample.csolution.yml`**
+
+```yml
+solution:
+  packs:
+    - pack: ARM::CMSIS
+    - pack: Keil::LPC1700_DFP
+
+  target-types:
+    - type: MyHardware
+      device: NXP::LPC1768
+
+  build-types:
+    - type: Debug
+      optimize: none   # translated into compiler specific settings
+
+    - type: Release
+      optimize: size   # translated into compiler specific settings
+
+  projects:
+    - project: ./Sample.cproject.yml
+```
+
+**Simple Compiler Agnostic Project: `Sample.cproject.yml`**
 
 ```yml
 project:
@@ -465,7 +536,7 @@ There are no strict rules on how to organize the project area that stores the us
 
 ### RTE Directory Structure
 
-The table below summarizes the overall directory structure and further details the `./RTE` directory. The `./RTE` directory contains the configuration information for software components and is managed by the `csolution` tool. It contains:
+The table below summarizes the overall directory structure and further details the `./RTE` directory. The `./RTE` directory contains the configuration information for software components and is managed by the **csolution - CMSIS Project Manager**. It contains:
 
 - Configuration files of the software components. These files have `attr="config"` in the PDSC-file of the software packs.  Refer to [PLM of Configuration Files](#plm-of-configuration-files) for more information.
 - The file [`RTE_components.h`](#rte_componentsh) and pre-include files that are generated based on the PDSC-file information of the software packs.
@@ -478,7 +549,7 @@ Directory Structure                 | Content
 `<project>`                         | Each project has its own directory, this base directory contains the `*.cproject.yml` file.
 `<project>/RTE/<Cclass>`            | Configurable files for each component `Cclass` have a common directory.
 `<project>/RTE/<Cclass>/<device>`   | Configurable files for components that have a condition to a `device` are in a separate directory.
-`<project>/RTE/<context-dir>`       | Directory for `RTE_components.h` and pre-include files that are generated by the `csolution` tool.
+`<project>/RTE/<context-dir>`       | Directory for `RTE_components.h` and pre-include files that are generated by the **csolution - CMSIS Project Manager**.
 `<layer>`                           | Each layer has its own base directory; this directory contains the `*.clayer.yml` file.
 `<layer>/RTE/<Cclass>`              | Configurable files for each component `Cclass` have a common directory.
 `<layer>/RTE/<Cclass>/<device>`     | Configurable files for components that have a condition to a `device` are in a separate directory.

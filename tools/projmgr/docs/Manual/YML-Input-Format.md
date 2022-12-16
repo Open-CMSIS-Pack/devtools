@@ -25,6 +25,8 @@ Project Manager.
   - [Directory Control](#directory-control)
     - [`output-dirs:`](#output-dirs)
     - [`rte-dirs:`](#rte-dirs)
+  - [Toolchain Options](#toolchain-options)
+    - [`compiler:`](#compiler)
     - [`output-type:`](#output-type)
     - [`output:`](#output)
     - [`linker:`](#linker)
@@ -69,11 +71,14 @@ Project Manager.
     - [`instances:`](#instances)
   - [Pre/Post build steps](#prepost-build-steps)
     - [`execute:`](#execute)
-  - [`interface:`](#interface)
+  - [`connections:`](#connections)
+    - [`connect:`](#connect)
+    - [`set:`](#set)
     - [`provides:`](#provides)
-      - [Proposal: Export symbols to RTE\_components.h](#proposal-export-symbols-to-rte_componentsh)
     - [`consumes:`](#consumes)
-      - [Proposal: for interface matching](#proposal-for-interface-matching)
+    - [Example: Board](#example-board)
+    - [Example: Simple Project](#example-simple-project)
+    - [Example: Sensor Shield](#example-sensor-shield)
   - [Generator (Proposal)](#generator-proposal)
     - [Workflow assumptions](#workflow-assumptions)
     - [Steps for component selection and configuration](#steps-for-component-selection-and-configuration)
@@ -334,20 +339,33 @@ Keyword                          | Description
 
 ### `default:`
 
-The `default:` node is the start of a `*.cdefaults.yml` file and contain the following.
+The **csolution - CMSIS Project Manager** uses a file with the name `*.cdefault.yml` or `*.cdefault.yaml` to setup the compiler along with some specific controls. The search order for this file is:
+
+- An explicit file with the name `<solution-name>.cdefault.yml` in the same directory as the `<solution-name>.csolution.yml` file. 
+- Any `*.cdefault.yml` or `*.cdefault.yaml` file in the directory specified by the environment variable [`CMSIS_COMPILER_ROOT`](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/docs/installation.md#environment-variables).
+- Any `*.cdefault.yml` or `*.cdefault.yaml` file in the directory [`<cmsis-toolbox-installation-dir>/etc`](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/docs/installation.md##etccmake).
+
+> **Note:** The command line option `-i` or `--ignore-cdefault` (file .\etc\cdefault.yml is not used)
+
+The `default:` node is the start of a `*.cdefault.yml` or `*.cdefault.yaml` file and contains the following.
 
 `default:`                                            | Content
 :-----------------------------------------------------|:------------------------------------
-&nbsp;&nbsp; [`compiler:`](#compiler)                 | Default toolchain selection.
-&nbsp;&nbsp; [`build-types:`](#build-types)           | List of build-types (i.e. Release, Debug, Test).
-&nbsp;&nbsp; [`language-C:`](#language-c)             | Set the language standard for C source file compilation.
-&nbsp;&nbsp; [`language-CPP:`](#language-cpp)         | Set the language standard for C++ source file compilation.
+&nbsp;&nbsp; [`compiler:`](#compiler)                 | Toolchain selection.
+&nbsp;&nbsp; [`misc:`](#misc)                         | Literal tool-specific controls.
 
 **Example:**
 
 ```yml
 default:
-  compiler: AC6                   # use Arm Compiler 6 as default
+  compiler: AC6
+  misc:
+    - ASM:
+      - -masm=auto
+
+    - Link:
+      - --info sizes --info totals --info unused --info veneers --info summarysizes
+      - --map
 ```
 
 ### `solution:`
@@ -419,7 +437,7 @@ The `project:` node is the start of a `*.cproject.yml` file and can contain the 
 &nbsp;&nbsp; [`groups:`](#groups)                   | **Required** | List of source file groups along with source files.
 &nbsp;&nbsp; [`components:`](#components)           |  Optional    | List of software components used.
 &nbsp;&nbsp; [`layers:`](#layers)                   |  Optional    | List of software layers that belong to the project.
-&nbsp;&nbsp; [`interface:`](#interface)             |  Optional    | List of consumed and provided interfaces.
+&nbsp;&nbsp; [`connections:`](#connections)               |  Optional    | List of consumed and provided resources.
 
 **Example:**
 
@@ -453,7 +471,7 @@ The `layer:` node is the start of a `*.clayer.yml` file and defines a [Software 
 &nbsp;&nbsp; `description:`                    |  Optional    | Detailed layer description.
 &nbsp;&nbsp; `for-device:`                     |  Optional    | Device information, used for consistency check (device selection is in `*.csolution.yml`).
 &nbsp;&nbsp; `for-board:`                      |  Optional    | Board information, used for consistency check (board selection is in `*.csolution.yml`).
-&nbsp;&nbsp; [`interface:`](#interface)        |  Optional    | List of consumed and provided interfaces.
+&nbsp;&nbsp; [`connections:`](#connections)          |  Optional    | List of consumed and provided resources.
 &nbsp;&nbsp; [`processor:`](#processor)        |  Optional    | Processor specific settings.
 &nbsp;&nbsp; [`groups:`](#groups)              |  Optional    | List of source file groups along with source files.
 &nbsp;&nbsp; [`components:`](#components)      |  Optional    | List of software components used.
@@ -483,7 +501,7 @@ layer:
 
 ## List Nodes
 
-The key/value pairs in a list node can be in any order.  The two following list nodes are logically identical. This
+The *key*/*value* pairs in a list node can be in any order.  The two following list nodes are logically identical. This
 might be confusing for `yml` files that are generated by an IDE.
 
 ```yml
@@ -549,6 +567,7 @@ The `rte-dirs:` list allows to control the location of configuration files for e
     - Device:        ..\common\RTE\Device\Core1
     - Compiler:      ..\RTE\Compiler\Debug
       for-type:      .Debug
+```
 
 ## Toolchain Options
 
@@ -885,7 +904,7 @@ type.
     - type: Release
       compiler: AC6
       misc:
-        C:
+        - C:
           - -O3
 ```
 
@@ -937,7 +956,7 @@ project:
 
 ## Pack Selection
 
-The `packs:` node can be specified in the `*.csolution.yml` and `*.cdefault.yml` file allows you to:
+The `packs:` node can be specified in the `*.csolution.yml` file allows you to:
   
 - Reduce the scope of software packs that are available for projects.
 - Add specific software packs optional with a version specification.
@@ -947,7 +966,11 @@ The  [Pack Name Conventions](#pack-name-conventions) are used to specify the nam
 The `pack:` definition can be specific to [target and build types](#target-and-build-types) and may provide a local path
 to a development repository of a software pack.
 
->**NOTE:** By default, the `csolution` project manager only loads the latest version of the installed software packs. It is however possible to request specific versions using the `- pack:` node.
+>**NOTES:** 
+>
+> - By default, the **csolution - CMSIS Project Manager** only loads the latest version of the installed software packs. It is however possible to request specific versions using the `- pack:` node.
+>
+> - An attempt to add two different versions of the same software pack results in an error.
 
 ### `packs:`
 
@@ -1048,8 +1071,7 @@ overwrite the *`target-type`* settings.
 
 ### `target-types:`
 
-The `target-types:` node may include [toolchain options](#toolchain-options), [target selection](#target-selection), and
-[processor attributes](#processor-attributes):
+The `target-types:` node may include [toolchain options](#toolchain-options), [target selection](#target-selection), and [processor attributes](#processor-attributes):
 
 `target-types:`                                    |              | Content
 :--------------------------------------------------|--------------|:------------------------------------
@@ -1405,9 +1427,9 @@ Add a software layer to a project. Used in `*.cproject.yml` files.
 
 1. `layer type:` for evaluation of compatible layers.
 
-   The path to the `*.clayer.yml` file can be empty, but in this case a `type:` should be specified.
+   The path to the `*.clayer.yml` file can be empty, but in this case a `type:` must be specified.
    The `csolution` project manager searches in the available software packs for compatible layers and notifies the user.
-   The compatible layers are listed by evaluating the compatible [`interface:`](#interface).
+   The compatible layers are listed by evaluating the compatible [`connections:`](#connections).
 
    **Example:**
 
@@ -1572,64 +1594,113 @@ project:
         - file: file1a.c
 ```
 
-## `interface:`
+## `connections:`
 
-Is a user-defined list of interfaces and can be applied to `project:` or `layer:`.  
+The `connections` node contains meta-data that describe the compatiblity of `*.cproject.yml` and `*.clayer.yml` project parts.  The `connections` node lists therefore functionality (drivers, pins, and other software or hardware resources) that are `consumed` (required) or `provided` by these different project parts.
 
-`interface:`                         |              | Description
+This enables, for example, reference applications that work across a range of different hardware targets where:
+
+- The `*.cproject.yml` file of the reference application lists with the `connections` node `consumed` (required) functionality.
+
+- The `*.clayer.yml` project part lists with the `connections` node the `provided` functionality. 
+ 
+This works across multiple levels, which means that a `*.clayer.yml` file could also `consume` other functionality.
+  
+The `connections` node is used to identify compatible software layers. These software layers could be stored in CMSIS software packs using the following structure:
+
+- A reference application described in a `*.cproject.yml` file could be provided in a git repository. This reference application uses software layers that are provided in CMSIS software packs.
+
+- A CMSIS Board Support Pack (BSP) contains a configured board layer desribed in a `*.clayer.yml` file. This software layer is pre-configured for a range of use-cases and provides drivers for I2C and SPI interfaces along with pin definitions and provisions for an Ardunio shield.
+
+- For a sensor, a CMSIS software pack contains the sensor middleware and software layer (`*.clayer.yml`) that describes the hardware of the Ardunio sensor shield. This shield can be applied to many different hardware boards that provide an Ardunio shield connector.
+
+This `connections` concept enables software reuse in multiple ways:
+
+- The board layer can be used by many different reference applications, as the `provided` functionlity enables a wide range of use cases.
+  
+- The sensor hardware shield along with the middleware can be used across many different boards that provide an Ardunio shield connector along with board layer support.
+
+The structure of the `connections` node is:
+
+`connections:`                          |              | Description
 :------------------------------------|--------------|:------------------------------------
-[`provides:`](#provides)             |   Optional   | List of interfaces (key/value pairs) that are provided by a `project:` or `layer:`
-[`consumes:`](#consumes)             |   Optional   | List of interfaces (key/value pairs) that are consumed by a `project:` or  `layer:`
+[- `connect:`](#connect)             | **Required** | Lists specific functionality with a brief verbal description
 
-**Example:**
+### `connect:`
 
-```yml
-  interface:                         # interface description of a board layer
-    consumes:
-    - RTOS2:
-    provides:
-    - CMSIS Driver Ethernet: 0       # driver number
-    - CMSIS Driver USART Print: 2    # driver number
-    - IoT Socket:                    # available
-    - Heap: 65536                    # heap size 
-```
+The `connect:` node describes one or more functionalities that belong together.
+
+`connect:`                           |              | Description
+:------------------------------------|--------------|:------------------------------------
+[`set:`](#set)                       |   Optional   | Specifies a *config-id*.*select* value that identifies a configuration option
+`info:`                              |   Optional   | Verbal desription displayed when this connect is selected
+[`provides:`](#provides)             |   Optional   | List of functionality (*key*/*value* pairs) that are provided
+[`consumes:`](#consumes)             |   Optional   | List of functionality (*key*/*value* pairs) that are required 
+
+### `set:`
+
+Some hardware boards have configuration settings (DIP switch or jumper) that configure interfaces. These settings have impact to the functionality (for example hardware interfaces). With `set:` *config-id*.*select* the possible configration options are considered when evaluating compatible `*.cproject.yml` and `*.clayer.yml` project parts. The **csolution - CMSIS Project Manager** iterates the `connect:` node with a `set:` *config-id*.*select* as described below:
+
+- For each *config-id* only one `connect:` node with a *select* value is active at a time. Each possible *select* value is checked for a matching configuration.
+
+- When project parts have a matching configuration, the `set:` value along with the `info:` is shown to the user. This allows the user to enable the correct hardware options.
+
+Refer to [Example: Sensor Shield](#example-sensor-shield) for a usage example.
 
 ### `provides:`
 
-A user-defined list of interfaces that are implemented or provided by the files or software components in a `project:` or `layer:`. 
+A user-defined *key*/*value* pair list of functionality that is implemented or provided by a `project:` or `layer:`. 
 
-#### Proposal: Export symbols to RTE_components.h
+The **csolution - CMSIS Project Manager** combines all the *key*/*value* pairs that listed under `provides:` and matches it with the *key*/*value* pairs that are listed under `consumes:`. For *key*/*value* pairs listed under `provides:` the following rules exist for a match with `consumed` *key*/*value* pair:
 
-All provided interfaces in the current solution context are exported with `#define` symbols to the releated `RTE_components.h` header file and prefixed with `itf_`.
-
-*Content of RTE_components.h:*
-
-```c
-#define itf_CMSIS_Driver_Ethernet 0
-#define itf_CMSIS_Driver_USART_Print 2
-#define itf_IoT_Socket
-#define itf_Heap 65536
-```
+- It is possible to omit the *value*. It matches with an identical *key* listed in `consumes:`
+- A *value* is interpreted as number. Depending on the value prefix, this number must be:
+  - when `consumes:` *value* is a plain number, identical with this value.
+  - when `consumes:` *value* is prefixed with `+`, higher or equal then this *value* or the sum of all *values* in multiple `consumes:` nodes.
 
 ### `consumes:`
 
-#### Proposal: for interface matching
+A user-defined *key*/*value* pair list of functionality that is requried or consumed by a `project:` or `layer:`. 
 
-A user-defined list of interfaces that are requried or consumed by the files or software components in a `project:` or `layer:`. 
-This list is used by the `csolution` tool to identify compatible software layers and evaluate the completeness of an project.
+For *key*/*value* pairs listed under `consumed:` the following rules exist:
 
-**Example:**
+- When no *value* is specified, it matches with any *value* of an identical *key* listed under `provides:`.
+- A *value* is interpreted as number. This number must be identical in the `provides:` value pair.
+- A *value* that is prefixed with `+` is interpreted as a number that is added together in case that the same *key* is listed multiple times under `consumes:`. The sum of this value must be lower or equal to the *value* upper limit of the `provides:` *key*.
+ 
+### Example: Board
+
+This `connections:` node of a board layer describes the available interfaces.  The WiFi interface requires a CMSIS-RTOS2 function.
+
+```yml
+  connections:                          # describes functionality of a board layer
+    - connect: WiFi interface
+      provides:
+        - CMSIS-Driver WiFi:
+      requires:
+        - CMSIS-RTOS2:
+
+    - connect: SPI and UART interface
+      provides:
+        - CMSIS-Driver SPI:
+        - CMSIS-Driver UART:
+```
+
+### Example: Simple Project
+
+This shows a the `connections:` node of a complete application project that is composed of two software layers.
 
 *MyProject.cproject.yml*
 
 ```yml
-  interfaces:
-    provides:
-      - RTOS2:          # implements RTOS2 API interface
-    consumes:
-      - IoT_Socket:     # requires IoT_Socket interface
-      - STDOUT:         # requires STDOUT interface
-      - Heap:  +30000   # requires additional 30000 bytes memory heap
+  connections:
+    - connect: all resources
+      provides:
+        - RTOS2:          # implements RTOS2 API interface
+      consumes:
+        - IoT_Socket:     # requires IoT_Socket interface
+        - STDOUT:         # requires STDOUT interface
+        - Heap:  +30000   # requires additional 30000 bytes memory heap
   :
   layers:
     - layer: MySocket.clayer.yml
@@ -1639,39 +1710,75 @@ This list is used by the `csolution` tool to identify compatible software layers
 *MySocket.clayer.yml*
 
 ```yml
-interfaces:
-    consumes:
-      - RTOS2:          # requires RTOS2 API interface
-      - VSocket:        # requires VSocket interface
-      - Heap: +20000    # requires additional 20000 bytes memory heap
-    provides:
-      - IoT_Socket:     # provides IoT_Socket interface
+  connections:
+    - connect:
+      consumes:
+        - RTOS2:          # requires RTOS2 API interface
+        - VSocket:        # requires VSocket interface
+        - Heap: +20000    # requires additional 20000 bytes memory heap
+      provides:
+        - IoT_Socket:     # provides IoT_Socket interface
 ```
 
 *MyBoard.clayer.yml*
 
 ```yml
-  interfaces:
-    consumes:
-      - RTOS2:
-    provides:
-      - VSocket:
-      - STDOUT:
-      - Heap:  65536
+  connections:
+    - connect:
+      consumes:
+        - RTOS2:
+      provides:
+        - VSocket:
+        - STDOUT:
+        - Heap:  65536
 ```
 
-The `csolution` tool combines all the interfaces that listed under `provides:` and matches it with the interfaces that are listed under `consumes:`.  
+### Example: Sensor Shield
 
-For interfaces listed under `provides:` the following rules exist:
+This sensor shield layer provides a set of interfaces that are configurable.
 
-- It is possible to omit the *value*.
-- A *value* is interpreted as number. When the same interface is listed multiple times under `provides:` the value must be identical.
+```yml
+  connections:
+    - connect: I2C Interface 'Std'
+      set:  comm.I2C-Std
+      info: JP1=Off  JP2=Off
+      provides:
+        - Sensor_I2C:
+      consumes:
+        - Ardunio_Uno_I2C:
 
-For interfaces listed under `consumed:` the following rules exist:
+    - connect: I2C Interface 'Alt'
+      set:  comm.I2C-Alt
+      info: JP1=On  JP2=Off
+      provides:
+        - Sensor_I2C:
+      consumes:
+        - Ardunio_Uno_I2C-Alt:
 
-- A *value* that is prefixed with '+' is interpreted as number that is added together in case that the same interface is listed multiple times under `consumes:`.
-- When no *value* is specified, it matches with any *value* of an interface listed under `provides:`.
-- When a *value* (or an added *value*) is specified, the *value* (or the sum of the *values*) must be less or equal then the *value* of an interface that is listed under `provides:`.
+    - connect: SPI Interface 'Alt'
+      set:  comm.SPI
+      info: JP2=On
+      provides:
+        - Sensor_SPI:
+      consumes:
+        - Ardunio_Uno_SPI:
+
+    - connect: Sensor Interrupt INT0
+      set:  SensorIRQ.0
+      info: JP3=Off
+      provides:
+        - Sensor_IRQ:
+      consumes:
+        - Ardunio_Uno_D2:
+
+    - connect: Sensor Interrupt INT1
+      set:  SensorIRQ.1
+      info: JP3=On
+      provides:
+        - Sensor_IRQ:
+      consumes:
+        - Ardunio_Uno_D3:
+```
 
 ## Generator (Proposal)
 
@@ -1936,7 +2043,7 @@ executed.
 
 ## Resource Management (Proposal)
 
-The **CSolution Project Manager** integrates an extended version of the Project Zone functionality of
+The **csolution - CMSIS Project Manager**  integrates an extended version of the Project Zone functionality of
 [CMSIS-Zone](https://arm-software.github.io/CMSIS_5/Zone/html/index.html) with this nodes:
 
 - [`resources:`](#resources) imports resource files (in
@@ -1949,7 +2056,7 @@ The **CSolution Project Manager** integrates an extended version of the Project 
 - [`requires:`](#requires) allows to specify additional resources at the level of a `*.cproject.yml` or `*.clayer.yml`
   file that are added to the related zone of the project.
 
-The **CSolution Project Manager** generates for each project context (with build and/or target-type) a data file
+The **csolution - CMSIS Project Manager** generates for each project context (with build and/or target-type) a data file
 (similar to the current [CMSIS FZone format](https://arm-software.github.io/CMSIS_5/Zone/html/GenDataModel.html), exact
 format tbd could be also JSON) for post-processing with a template engine (Handlebars?).
 
