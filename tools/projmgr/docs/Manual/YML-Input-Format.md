@@ -71,7 +71,7 @@ Project Manager.
     - [`instances:`](#instances)
   - [Pre/Post build steps](#prepost-build-steps)
     - [`execute:`](#execute)
-  - [`connects:`](#connects)
+  - [`connections:`](#connections)
     - [`connect:`](#connect)
     - [`set:`](#set)
     - [`provides:`](#provides)
@@ -437,7 +437,7 @@ The `project:` node is the start of a `*.cproject.yml` file and can contain the 
 &nbsp;&nbsp; [`groups:`](#groups)                   | **Required** | List of source file groups along with source files.
 &nbsp;&nbsp; [`components:`](#components)           |  Optional    | List of software components used.
 &nbsp;&nbsp; [`layers:`](#layers)                   |  Optional    | List of software layers that belong to the project.
-&nbsp;&nbsp; [`connects:`](#connects)               |  Optional    | List of consumed and provided resources.
+&nbsp;&nbsp; [`connections:`](#connections)               |  Optional    | List of consumed and provided resources.
 
 **Example:**
 
@@ -471,7 +471,7 @@ The `layer:` node is the start of a `*.clayer.yml` file and defines a [Software 
 &nbsp;&nbsp; `description:`                    |  Optional    | Detailed layer description.
 &nbsp;&nbsp; `for-device:`                     |  Optional    | Device information, used for consistency check (device selection is in `*.csolution.yml`).
 &nbsp;&nbsp; `for-board:`                      |  Optional    | Board information, used for consistency check (board selection is in `*.csolution.yml`).
-&nbsp;&nbsp; [`connects:`](#connects)          |  Optional    | List of consumed and provided resources.
+&nbsp;&nbsp; [`connections:`](#connections)          |  Optional    | List of consumed and provided resources.
 &nbsp;&nbsp; [`processor:`](#processor)        |  Optional    | Processor specific settings.
 &nbsp;&nbsp; [`groups:`](#groups)              |  Optional    | List of source file groups along with source files.
 &nbsp;&nbsp; [`components:`](#components)      |  Optional    | List of software components used.
@@ -1429,7 +1429,7 @@ Add a software layer to a project. Used in `*.cproject.yml` files.
 
    The path to the `*.clayer.yml` file can be empty, but in this case a `type:` must be specified.
    The `csolution` project manager searches in the available software packs for compatible layers and notifies the user.
-   The compatible layers are listed by evaluating the compatible [`connects:`](#connects).
+   The compatible layers are listed by evaluating the compatible [`connections:`](#connections).
 
    **Example:**
 
@@ -1594,19 +1594,19 @@ project:
         - file: file1a.c
 ```
 
-## `connects:`
+## `connections:`
 
-The `connects` node contains meta-data that describe the compatiblity of `*.cproject.yml` and `*.clayer.yml` project parts.  The `connects` node lists therefore functionality (drivers, pins, and other software or hardware resources) that are `consumed` (required) or `provided` by these different project parts.
+The `connections` node contains meta-data that describe the compatiblity of `*.cproject.yml` and `*.clayer.yml` project parts.  The `connections` node lists therefore functionality (drivers, pins, and other software or hardware resources) that are `consumed` (required) or `provided` by these different project parts.
 
 This enables, for example, reference applications that work across a range of different hardware targets where:
 
-- The `*.cproject.yml` file of the reference application lists with the `connects` node `consumed` (required) functionality.
+- The `*.cproject.yml` file of the reference application lists with the `connections` node `consumed` (required) functionality.
 
-- The `*.clayer.yml` project part lists with the `connects` node the `provided` functionality. 
+- The `*.clayer.yml` project part lists with the `connections` node the `provided` functionality. 
  
 This works across multiple levels, which means that a `*.clayer.yml` file could also `consume` other functionality.
   
-The `connects` node is used to identify compatible software layers. These software layers could be stored in CMSIS software packs using the following structure:
+The `connections` node is used to identify compatible software layers. These software layers could be stored in CMSIS software packs using the following structure:
 
 - A reference application described in a `*.cproject.yml` file could be provided in a git repository. This reference application uses software layers that are provided in CMSIS software packs.
 
@@ -1614,15 +1614,15 @@ The `connects` node is used to identify compatible software layers. These softwa
 
 - For a sensor, a CMSIS software pack contains the sensor middleware and software layer (`*.clayer.yml`) that describes the hardware of the Ardunio sensor shield. This shield can be applied to many different hardware boards that provide an Ardunio shield connector.
 
-This `connects` concept enables software reuse in multiple ways:
+This `connections` concept enables software reuse in multiple ways:
 
 - The board layer can be used by many different reference applications, as the `provided` functionlity enables a wide range of use cases.
   
 - The sensor hardware shield along with the middleware can be used across many different boards that provide an Ardunio shield connector along with board layer support.
 
-The structure of the `connects` node is:
+The structure of the `connections` node is:
 
-`connects:`                          |              | Description
+`connections:`                          |              | Description
 :------------------------------------|--------------|:------------------------------------
 [- `connect:`](#connect)             | **Required** | Lists specific functionality with a brief verbal description
 
@@ -1670,10 +1670,10 @@ For *key*/*value* pairs listed under `consumed:` the following rules exist:
  
 ### Example: Board
 
-This `connects:` node of a board layer describes the available interfaces.  The WiFi interface requires a CMSIS-RTOS2 function.
+This `connections:` node of a board layer describes the available interfaces.  The WiFi interface requires a CMSIS-RTOS2 function.
 
 ```yml
-  connects:                          # describes functionality of a board layer
+  connections:                          # describes functionality of a board layer
     - connect: WiFi interface
       provides:
         - CMSIS-Driver WiFi:
@@ -1688,12 +1688,12 @@ This `connects:` node of a board layer describes the available interfaces.  The 
 
 ### Example: Simple Project
 
-This shows a the `connects:` node of a complete application project that is composed of two software layers.
+This shows a the `connections:` node of a complete application project that is composed of two software layers.
 
 *MyProject.cproject.yml*
 
 ```yml
-  connects:
+  connections:
     - connect: all resources
       provides:
         - RTOS2:          # implements RTOS2 API interface
@@ -1710,7 +1710,7 @@ This shows a the `connects:` node of a complete application project that is comp
 *MySocket.clayer.yml*
 
 ```yml
-  connects:
+  connections:
     - connect:
       consumes:
         - RTOS2:          # requires RTOS2 API interface
@@ -1723,7 +1723,7 @@ This shows a the `connects:` node of a complete application project that is comp
 *MyBoard.clayer.yml*
 
 ```yml
-  connects:
+  connections:
     - connect:
       consumes:
         - RTOS2:
@@ -1738,7 +1738,7 @@ This shows a the `connects:` node of a complete application project that is comp
 This sensor shield layer provides a set of interfaces that are configurable.
 
 ```yml
-  connects:
+  connections:
     - connect: I2C Interface 'Std'
       set:  comm.I2C-Std
       info: JP1=Off  JP2=Off
