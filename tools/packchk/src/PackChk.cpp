@@ -53,23 +53,32 @@ bool PackChk::InitMessageTable()
 */
 bool PackChk::CreatePacknameFile(const string& filename, RtePackage* pKg)
 {
-  const string& pdscRef = pKg->GetAttribute("vendor");
-  const string& pkgVersion = pKg->GetVersionString();
-  const string& pkgVendor = pKg->GetName();
-
   if(filename.empty()) {
     return false;
   }
 
-  string outFile = pdscRef + "." + pkgVendor + "." + pkgVersion + PKG_FEXT;
-  FILE* fp = fopen(filename.c_str(), "w");
-  if(!fp) {
-    LogMsg("M205", PATH(filename));
+  RteItem* releases = pKg->GetReleases();
+  if(!releases) {
     return false;
   }
 
-  fwrite(outFile.c_str(), 1, outFile.length(), fp);
-  fclose(fp);
+  const auto& childs = releases->GetChildren();
+  if(childs.empty()) {
+    return false;
+  }
+
+  const string& pdscRef = pKg->GetAttribute("vendor");
+  const string& pkgVendor = pKg->GetName();
+
+  const auto release = *childs.begin();
+  const string& pkgVersion = release->GetVersionString();
+
+  string absPath = RteFsUtils::AbsolutePath(filename).generic_string();
+  string content = pdscRef + "." + pkgVendor + "." + pkgVersion + PKG_FEXT;
+  if(!RteFsUtils::CreateFile(absPath, content)) {
+    LogMsg("M205", PATH(absPath));
+    return false;
+  }
 
   return true;
 }
