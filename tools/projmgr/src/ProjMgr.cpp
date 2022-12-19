@@ -31,6 +31,7 @@ Usage:\n\
         contexts         Print list of contexts in a csolution.yml\n\
         generators       Print list of code generators of a given context\n\
         layers           Print list of available, referenced and compatible layers\n\
+        toolchains       Print list of installed toolchains\n\
    convert               Convert *.csolution.yml input file in *.cprj files\n\
    run                   Run code generator\n\n\
  Options:\n\
@@ -119,17 +120,17 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
     {"list contexts",     {solution, filter, schemaCheck}},
     {"list generators",   {solution, context, load, schemaCheck}},
     {"list layers",       {solution, context, load, schemaCheck}},
+    {"list toolchains",   {solution}},
   };
 
   try {
     options.add_options("", {
-      {"command", "", cxxopts::value<string>()},
-      {"args", "", cxxopts::value<string>()},
+      {"positional", "", cxxopts::value<vector<string>>()},
       solution, context, filter, generator,
       load, missing, schemaCheck, noUpdateRte, output,
       help, version, exportSuffix
     });
-    options.parse_positional({ "command", "args"});
+    options.parse_positional({ "positional" });
 
     parseResult = options.parse(argc, argv);
     manager.m_checkSchema = !parseResult.count("n");
@@ -137,8 +138,9 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
     manager.m_missingPacks = parseResult.count("m");
     manager.m_updateRteFiles = !parseResult.count("no-update-rte");
 
-    if (parseResult.count("command")) {
-      manager.m_command = parseResult["command"].as<string>();
+    vector<string> positionalArguments;
+    if (parseResult.count("positional")) {
+      positionalArguments = parseResult["positional"].as<vector<string>>();
     }
     else if (parseResult.count("version")) {
       manager.ShowVersion();
@@ -149,11 +151,19 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
       return manager.PrintUsage(optionsDict, "", "") ? 0 : 1;
     }
 
-    if (parseResult.count("args")) {
-      manager.m_args = parseResult["args"].as<string>();
+    for (auto it = positionalArguments.begin(); it != positionalArguments.end(); it++) {
+      if (regex_match(*it, regex(".*\\.csolution\\.(yml|yaml)"))) {
+        manager.m_csolutionFile = *it;
+      } else if (manager.m_command.empty()) {
+        manager.m_command = *it;
+      } else if (manager.m_args.empty()) {
+        manager.m_args = *it;
+      }
     }
     if (parseResult.count("solution")) {
       manager.m_csolutionFile = parseResult["solution"].as<string>();
+    }
+    if (!manager.m_csolutionFile.empty()) {
       error_code ec;
       if (!fs::exists(manager.m_csolutionFile, ec)) {
         ProjMgrLogger::Error(manager.m_csolutionFile, "csolution file was not found");
@@ -242,6 +252,10 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
       if (!manager.RunListLayers()) {
         return 1;
       }
+    } else if (manager.m_args == "toolchains") {
+      if (!manager.RunListToolchains()) {
+        return 1;
+      }
     }
     else {
       ProjMgrLogger::Error("list <args> was not found");
@@ -285,25 +299,6 @@ bool ProjMgr::PopulateContexts(void) {
   } else {
     ProjMgrLogger::Error("input yml files were not specified");
     return false;
-  }
-
-  // Parse clayers
-  for (const auto& cproject : m_parser.GetCprojects()) {
-    string const& cprojectFile = cproject.first;
-    for (const auto& clayer : cproject.second.clayers) {
-      if (clayer.layer.empty()) {
-        continue;
-      }
-      error_code ec;
-      string const& clayerFile = fs::canonical(fs::path(cprojectFile).parent_path().append(clayer.layer), ec).generic_string();
-      if (clayerFile.empty()) {
-        ProjMgrLogger::Error(clayer.layer, "clayer file was not found");
-        return false;
-      }
-      if (!m_parser.ParseClayer(clayerFile, m_checkSchema)) {
-        return false;
-      }
-    }
   }
 
   // Set output directory
@@ -587,13 +582,22 @@ bool ProjMgr::RunCodeGenerator(void) {
   return true;
 }
 
+bool ProjMgr::RunListToolchains(void) {
+  StrPairVec toolchains;
+  m_worker.ListToolchains(toolchains, m_rootDir);
+  for (const auto& [name, version] : toolchains) {
+    cout << name << "@" << version << endl;
+  }
+  return true;
+}
+
 bool ProjMgr::GetCdefaultFile(void) {
   error_code ec;
-  string exePath = RteUtils::ExtractFilePath(CrossPlatformUtils::GetExecutablePath(ec), true);
-  if (ec) {
-    return false;
+  vector<string> searchPaths = { m_rootDir };
+  const string& compilerRoot = m_worker.GetCompilerRoot();
+  if (!compilerRoot.empty()) {
+    searchPaths.push_back(compilerRoot);
   }
-  vector<string> searchPaths = { m_rootDir, exePath + "/../etc/", exePath + "/../../etc/" };
   string cdefaultFile;
   if (!RteFsUtils::FindFileRegEx(searchPaths, ".*\\.cdefault\\.(yml|yaml)", cdefaultFile)) {
     if (!cdefaultFile.empty()) {

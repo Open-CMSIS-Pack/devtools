@@ -52,14 +52,15 @@ bool ProjMgrWorker::AddContexts(ProjMgrParser& parser, ContextDesc& descriptor, 
 
   // No build/target-types
   if (context.csolution->buildTypes.empty() && context.csolution->targetTypes.empty()) {
-    AddContext(parser, descriptor, { "" }, cprojectFile, context);
-    return true;
+    return AddContext(parser, descriptor, { "" }, cprojectFile, context);
   }
 
   // No build-types
   if (context.csolution->buildTypes.empty()) {
     for (const auto& targetTypeItem : context.csolution->targetTypes) {
-      AddContext(parser, descriptor, {"", targetTypeItem.first}, cprojectFile, context);
+      if (!AddContext(parser, descriptor, {"", targetTypeItem.first}, cprojectFile, context)) {
+        return false;
+      }
     }
     return true;
   }
@@ -67,7 +68,9 @@ bool ProjMgrWorker::AddContexts(ProjMgrParser& parser, ContextDesc& descriptor, 
   // No target-types
   if (context.csolution->targetTypes.empty()) {
     for (const auto& buildTypeItem : context.csolution->buildTypes) {
-      AddContext(parser, descriptor, {buildTypeItem.first, ""}, cprojectFile, context);
+      if (!AddContext(parser, descriptor, { buildTypeItem.first, "" }, cprojectFile, context)) {
+        return false;
+      }
     }
     return true;
   }
@@ -75,7 +78,9 @@ bool ProjMgrWorker::AddContexts(ProjMgrParser& parser, ContextDesc& descriptor, 
   // Add contexts for project x build-type x target-type combinations
   for (const auto& buildTypeItem : context.csolution->buildTypes) {
     for (const auto& targetTypeItem : context.csolution->targetTypes) {
-      AddContext(parser, descriptor, {buildTypeItem.first, targetTypeItem.first}, cprojectFile, context);
+      if (!AddContext(parser, descriptor, {buildTypeItem.first, targetTypeItem.first}, cprojectFile, context)) {
+        return false;
+      }
     }
   }
   return true;
@@ -118,18 +123,42 @@ bool ProjMgrWorker::AddContext(ProjMgrParser& parser, ContextDesc& descriptor, c
 
     context.directories.cprj = fs::weakly_canonical(RteFsUtils::AbsolutePath(context.directories.cprj), ec).generic_string();
 
+    // context variables
+    context.variables[ProjMgrUtils::AS_PROJECT] = context.cproject->name;
+    context.variables[ProjMgrUtils::AS_BUILD_TYPE] = context.type.build;
+    context.variables[ProjMgrUtils::AS_TARGET_TYPE] = context.type.target;
+
+    // user defined variables
+    auto userVariablesList = {
+      context.csolution->target.build.variables,
+      context.csolution->buildTypes[type.build].variables,
+      context.csolution->targetTypes[type.target].build.variables,
+    };
+    for (const auto& var : userVariablesList) {
+      for (const auto& [key, value] : var) {
+        if ((context.variables.find(key) != context.variables.end()) && (context.variables.at(key) != value)) {
+          ProjMgrLogger::Warn("variable '" + key + "' redefined from '" + context.variables.at(key) + "' to '" + value + "'");
+        }
+        context.variables[key] = value;
+      }
+    }
+
+    // parse clayers
     for (const auto& clayer : context.cproject->clayers) {
       if (clayer.layer.empty()) {
         continue;
       }
       if (CheckType(clayer.typeFilter, type)) {
-        string const& clayerFile = fs::canonical(fs::path(cprojectFile).parent_path().append(clayer.layer), ec).generic_string();
-        std::map<std::string, ClayerItem>& clayers = parser.GetClayers();
-        if (clayers.find(clayerFile) == clayers.end()) {
-          ProjMgrLogger::Error(clayerFile, "clayer not parsed, adding context failed");
+        string const& clayerRef = ExpandString(clayer.layer, context.variables);
+        string const& clayerFile = fs::canonical(fs::path(cprojectFile).parent_path().append(clayerRef), ec).generic_string();
+        if (clayerFile.empty()) {
+          ProjMgrLogger::Error(clayer.layer, "clayer file was not found");
           return false;
         }
-        context.clayers[clayerFile] = &clayers.at(clayerFile);
+        if (!parser.ParseClayer(clayerFile, m_checkSchema)) {
+          return false;
+        }
+        context.clayers[clayerFile] = &parser.GetClayers().at(clayerFile);
       }
     }
 
@@ -954,19 +983,16 @@ bool ProjMgrWorker::ProcessToolchain(ContextItem& context) {
 
   context.toolchain = GetToolchain(context.compiler);
   if (context.toolchain.version.empty()) {
-    static const map<string, string> DEF_MIN_VERSIONS = {
-      {"AC5","5.6.7"},
-      {"AC6","6.18.0"},
-      {"GCC","11.2.1"},
-      {"IAR","8.50.6"},
-    };
-    for (const auto& defMinVersion: DEF_MIN_VERSIONS) {
-      if (context.toolchain.name == defMinVersion.first) {
-        context.toolchain.version = defMinVersion.second;
+    StrMap latestVersions;
+    ListLatestToolchains(latestVersions, context.csolution->path);
+    for (const auto& [name, version] : latestVersions) {
+      if (context.toolchain.name == name) {
+        context.toolchain.version = version;
         break;
       }
     }
     if (context.toolchain.version.empty()) {
+      ProjMgrLogger::Warn("cmake configuration file for toolchain '" + context.toolchain.name + "' was not found");
       context.toolchain.version = "0.0.0";
     }
   }
@@ -1140,9 +1166,8 @@ bool ProjMgrWorker::AddRequiredComponents(ContextItem& context) {
   context.rteActiveProject->CollectSettings();
 
   // Generate RTE headers
-  if (!context.rteActiveTarget->GenerateRteHeaders()) {
-    return false;
-  }
+  context.rteActiveProject->GenerateRteHeaders();
+
   return true;
 }
 
@@ -1406,6 +1431,11 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
     return false;
   }
 
+  // set context variables (static access sequences)
+  context.variables[ProjMgrUtils::AS_DNAME] = context.device;
+  context.variables[ProjMgrUtils::AS_BNAME] = context.board;
+  context.variables[ProjMgrUtils::AS_COMPILER] = context.toolchain.name;
+
   // Add cdefault misc into csolution
   if (context.cdefault) {
     context.controls.csolution.misc.insert(context.controls.csolution.misc.end(),
@@ -1643,7 +1673,9 @@ bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem& context) {
 bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, const string& ref) {
   size_t offset = 0;
   bool pathReplace = false;
-  const string input = item;
+  // expand variables (static access sequences)
+  const string input = item = ExpandString(item, context.variables);
+  // expand dynamic access sequences
   while (offset != string::npos) {
     string sequence;
     // get next access sequence
@@ -1653,31 +1685,7 @@ bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, 
     if (offset != string::npos) {
       string replacement;
       regex regEx;
-      if (sequence == "Dname") {
-        regEx = regex("\\$Dname\\$");
-        replacement = context.device;
-      }
-      else if (sequence == "Bname") {
-        regEx = regex("\\$Bname\\$");
-        replacement = context.board;
-      }
-      else if (sequence == "Project") {
-        regEx = regex("\\$Project\\$");
-        replacement = context.cproject->name;
-      }
-      else if (sequence == "BuildType") {
-        regEx = regex("\\$BuildType\\$");
-        replacement = context.type.build;
-      }
-      else if (sequence == "TargetType") {
-        regEx = regex("\\$TargetType\\$");
-        replacement = context.type.target;
-      }
-      else if (sequence == "Compiler") {
-        regEx = regex("\\$Compiler\\$");
-        replacement = context.toolchain.name;
-      }
-      else if (regex_match(sequence, regex("(Output|OutDir|Source)\\(.*"))) {
+      if (regex_match(sequence, regex("(Output|OutDir|Source)\\(.*"))) {
         // Output, OutDir and Source access sequences lead to path replacement
         pathReplace = true;
         string contextName;
@@ -2578,4 +2586,72 @@ bool ProjMgrWorker::IsContextSelected(const string& context) {
     return true;
   }
   return false;
+}
+
+string ProjMgrWorker::ExpandString(const string& src, const StrMap& variables) {
+  string ret = src;
+  if (regex_match(ret, regex(".*\\$.*\\$.*"))) {
+    for (const auto& [varName, replacement] : variables) {
+      const string var = "$" + varName + "$";
+      size_t index = 0;
+      while ((index = ret.find(var)) != string::npos) {
+        ret.replace(index, var.length(), replacement);
+      }
+    }
+  }
+  return ret;
+}
+
+void ProjMgrWorker::ListToolchains(StrPairVec& toolchains, const string& localDir) {
+  // find cmake files in compiler root path
+  list<string> cmakeFiles;
+  const string& compilerRoot = GetCompilerRoot();
+  if (compilerRoot.empty()) {
+    ProjMgrLogger::Warn("compiler root path was not found");
+  }
+  RteFsUtils::GrepFileNames(cmakeFiles, compilerRoot, "*.cmake");
+
+  // find cmake files in local directory
+  if (!localDir.empty()) {
+    list<string> cmakeFilesLocal;
+    RteFsUtils::GrepFileNames(cmakeFilesLocal, localDir, "*.cmake");
+    cmakeFiles.insert(cmakeFiles.end(), cmakeFilesLocal.begin(), cmakeFilesLocal.end());
+  }
+
+  // extract toolchain info
+  for (const auto& cmakeFile : cmakeFiles) {
+    smatch sm;
+    const string& stem  = fs::path(cmakeFile).stem().generic_string();
+    regex_match(stem, sm, regex("(.*)\\.(.*\\..*\\..*)"));
+    if (sm.size() == 3) {
+      ProjMgrUtils::PushBackUniquely(toolchains, {sm[1], sm[2]});
+    }
+  }
+  std::sort(toolchains.begin(), toolchains.end());
+}
+
+void ProjMgrWorker::ListLatestToolchains(StrMap& toolchains, const string & localDir) {
+  StrPairVec fullList;
+  ListToolchains(fullList, localDir);
+  for (const auto& [name, version] : fullList) {
+    if ((toolchains.find(name) == toolchains.end()) ||
+      (VersionCmp::Compare(toolchains.at(name), version) < 0)) {
+      toolchains[name] = version;
+    }
+  }
+}
+
+string ProjMgrWorker::GetCompilerRoot(void) {
+  if (m_compilerRoot.empty()) {
+    m_compilerRoot = CrossPlatformUtils::GetEnv("CMSIS_COMPILER_ROOT");
+    if (m_compilerRoot.empty()) {
+      error_code ec;
+      string exePath = RteUtils::ExtractFilePath(CrossPlatformUtils::GetExecutablePath(ec), true);
+      m_compilerRoot = fs::path(exePath).parent_path().parent_path().append("etc").generic_string();
+      if (!RteFsUtils::Exists(m_compilerRoot)) {
+        m_compilerRoot.clear();
+      }
+    }
+  }
+  return m_compilerRoot;
 }

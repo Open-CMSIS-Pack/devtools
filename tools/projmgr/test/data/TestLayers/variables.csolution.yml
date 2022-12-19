@@ -1,0 +1,29 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schemas/csolution.schema.json
+
+solution:
+
+  target-types:
+    - type: TargetType1
+      device: RteTest_ARMCM0
+      variables:
+        - VarTargetLayer: ./variables/target1.clayer.yml
+    - type: TargetType2
+      device: RteTest_ARMCM3
+      variables:
+        - VarTargetLayer: ./variables/target2.clayer.yml
+
+  build-types:
+    - type: BuildType1
+      compiler: AC6
+      variables:
+        - VarBuildLayer: ./variables/build1.clayer.yml
+    - type: BuildType2
+      compiler: AC6
+      variables:
+        - VarBuildLayer: ./variables/build2.clayer.yml
+
+  variables:
+    - VarSolution: ./variables/app.clayer.yml
+
+  projects:
+    - project: variables.cproject.yml

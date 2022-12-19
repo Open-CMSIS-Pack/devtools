@@ -114,6 +114,7 @@ protected:
   bool RunListContexts(void);
   bool RunListGenerators(void);
   bool RunListLayers(void);
+  bool RunListToolchains(void);
   bool PopulateContexts(void);
 };
 

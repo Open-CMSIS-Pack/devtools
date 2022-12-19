@@ -208,6 +208,7 @@ struct ContextItem {
   std::map<std::string, std::pair<std::string, std::string>> gpdscs;
   StrVecMap compatibleLayers;
   std::string linkerScript;
+  std::map<std::string, std::string> variables;
   bool precedences;
 };
 
@@ -347,6 +348,13 @@ public:
   bool ListLayers(std::vector<std::string>& layers);
 
   /**
+  * @brief list installed toolchains
+  * @param reference to list of toolchains
+  * @param reference to local directory
+  */
+  void ListToolchains(StrPairVec& toolchains, const std::string& localDir);
+
+  /**
    * @brief add contexts for a given descriptor
    * @param reference to parser
    * @param reference to descriptor
@@ -412,6 +420,12 @@ public:
   */
   bool IsContextSelected(const std::string& context);
 
+  /**
+   * @brief get compiler root directory
+   * @return string compiler root directory
+  */
+  std::string GetCompilerRoot(void);
+
 protected:
   ProjMgrParser* m_parser = nullptr;
   ProjMgrKernel* m_kernel = nullptr;
@@ -422,6 +436,7 @@ protected:
   std::list<std::string> m_selectedContexts;
   std::string m_outputDir;
   std::string m_packRoot;
+  std::string m_compilerRoot;
   LoadPacksPolicy m_loadPacksPolicy;
   bool m_checkSchema;
 
@@ -481,6 +496,8 @@ protected:
   bool CollectLayersFromPacks(ContextItem& context, StrVecMap& clayers);
   bool DiscoverMatchingLayers(ContextItem& context);
   void GetAllCombinations(const StrVecMap& src, const StrVecMap::iterator it, std::vector<StrVec>& combinations, const StrVec& previous = StrVec());
+  std::string ExpandString(const std::string& src, const StrMap& variables);
+  void ListLatestToolchains(StrMap& toolchains, const std::string& localDir);
 };
 
 #endif  // PROJMGRWORKER_H

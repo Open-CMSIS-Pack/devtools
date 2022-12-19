@@ -468,6 +468,45 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution) {
     testinput_folder + "/TestSolution/ref/cbuild/test2.Debug+CM3.cbuild.yml");
 }
 
+TEST_F(ProjMgrUnitTests, RunProjMgrSolution_PositionalArguments) {
+  char* argv[6];
+  const string& csolution = testinput_folder + "/TestSolution/test.csolution.yml";
+  argv[1] = (char*)csolution.c_str();
+  argv[2] = (char*)"list";
+  argv[3] = (char*)"devices";
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv));
+
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"devices";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv));
+
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"devices";
+  argv[3] = (char*)"-o";
+  argv[4] = (char*)testoutput_folder.c_str();
+  argv[5] = (char*)csolution.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv));
+
+  argv[1] = (char*)"-o";
+  argv[2] = (char*)testoutput_folder.c_str();
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"list";
+  argv[5] = (char*)"devices";
+  EXPECT_EQ(0, RunProjMgr(6, argv));
+
+  argv[1] = (char*)"-o";
+  argv[2] = (char*)testoutput_folder.c_str();
+  argv[3] = (char*)"list";
+  argv[4] = (char*)"devices";
+  argv[5] = (char*)csolution.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv));
+}
+
 TEST_F(ProjMgrUnitTests, RunProjMgrSolutionContext) {
   char* argv[8];
   // convert -s solution.yml
@@ -673,6 +712,38 @@ debug csolution: multiple clayers match type 'TestVariant':\n\
   EXPECT_TRUE(regex_match(outStr, regex(expectedOutStr)));
 }
 
+TEST_F(ProjMgrUnitTests, ListToolchains) {
+  StdStreamRedirect streamRedirect;
+  char* argv[3];
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"toolchains";
+  EXPECT_EQ(0, RunProjMgr(3, argv));
+  const string& expected = "AC5@5.6.7\nAC6@6.18.0\nGCC@11.2.1\nIAR@8.50.6\n";
+  const string& outStr = streamRedirect.GetOutString();
+  EXPECT_EQ(outStr, expected);
+}
+
+TEST_F(ProjMgrUnitTests, ListToolchainsSolution) {
+  // create local cmake file
+  const string& cmakeFile = testinput_folder + "/TestSolution/AC6.6.19.0.cmake";
+  RteFsUtils::CreateFile(cmakeFile, "");
+
+  StdStreamRedirect streamRedirect;
+  char* argv[5];
+  const string& csolution = testinput_folder + "/TestSolution/test.csolution.yml";
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"toolchains";
+  argv[3] = (char*)"-s";
+  argv[4] = (char*)csolution.c_str();
+  EXPECT_EQ(0, RunProjMgr(5, argv));
+  const string& expected = "AC5@5.6.7\nAC6@6.18.0\nAC6@6.19.0\nGCC@11.2.1\nIAR@8.50.6\n";
+  const string& outStr = streamRedirect.GetOutString();
+  EXPECT_EQ(outStr, expected);
+
+  // remove local cmake file
+  RteFsUtils::RemoveFile(cmakeFile);
+}
+
 TEST_F(ProjMgrUnitTests, ListLayersUniquelyCompatibleBoard) {
   StdStreamRedirect streamRedirect;
   char* argv[7];
@@ -799,6 +870,45 @@ TEST_F(ProjMgrUnitTests, ListLayersAllContexts) {
   argv[3] = (char*)"-s";
   argv[4] = (char*)csolution.c_str();
   EXPECT_EQ(1, RunProjMgr(5, argv));
+}
+
+TEST_F(ProjMgrUnitTests, LayerVariables) {
+  char* argv[6];
+
+  // convert -s solution.yml
+  const string& csolution = testinput_folder + "/TestLayers/variables.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv));
+
+  // Check generated CPRJs
+  CompareFile(testoutput_folder + "/variables.BuildType1+TargetType1.cprj",
+    testinput_folder + "/TestLayers/ref/variables/variables.BuildType1+TargetType1.cprj");
+  CompareFile(testoutput_folder + "/variables.BuildType1+TargetType2.cprj",
+    testinput_folder + "/TestLayers/ref/variables/variables.BuildType1+TargetType2.cprj");
+  CompareFile(testoutput_folder + "/variables.BuildType2+TargetType1.cprj",
+    testinput_folder + "/TestLayers/ref/variables/variables.BuildType2+TargetType1.cprj");
+  CompareFile(testoutput_folder + "/variables.BuildType2+TargetType2.cprj",
+    testinput_folder + "/TestLayers/ref/variables/variables.BuildType2+TargetType2.cprj");
+}
+
+TEST_F(ProjMgrUnitTests, LayerVariablesRedefinition) {
+  char* argv[6];
+  StdStreamRedirect streamRedirect;
+  // convert -s solution.yml
+  const string& csolution = testinput_folder + "/TestLayers/variables-redefinition.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv));
+  const string& expected = "warning csolution: variable 'VariableName' redefined from 'FirstValue' to 'SecondValue'\n";
+  const string& errStr = streamRedirect.GetErrorString();
+  EXPECT_STREQ(errStr.c_str(), expected.c_str());
 }
 
 TEST_F(ProjMgrUnitTests, AccessSequences) {
@@ -1892,13 +2002,16 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_LoadPacksPolicy_Latest) {
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_LoadPacksPolicy_All) {
   char* argv[6];
-  StdStreamRedirect streamRedirect;
   const string& csolution = testinput_folder + "/TestSolution/test.csolution_no_packs.yml";
   argv[1] = (char*)"convert";
   argv[2] = (char*)"-s";
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-l";
   argv[5] = (char*)"all";
+  EXPECT_EQ(0, RunProjMgr(6, argv));
+
+  const string& csolution2 = testinput_folder + "/TestSolution/test.csolution_pack_selection.yml";
+  argv[3] = (char*)csolution2.c_str();
   EXPECT_EQ(0, RunProjMgr(6, argv));
 }
 
@@ -2018,6 +2131,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_NoUpdateRTEFiles) {
   const string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject.yml");
   const string rteFolder = RteFsUtils::ParentPath(csolutionFile) + "/TestProject4/RTE";
   set<string> rteFilesBefore, rteFilesAfter;
+  RteFsUtils::RemoveDir(rteFolder);
   GetFilesInTree(rteFolder, rteFilesBefore);
 
   argv[1] = (char*)"convert";
@@ -2267,6 +2381,11 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_help) {
 
   argv[1] = (char*)"list";
   argv[2] = (char*)"layers";
+  argv[3] = (char*)"-h";
+  EXPECT_EQ(0, RunProjMgr(4, argv));
+
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"toolchains";
   argv[3] = (char*)"-h";
   EXPECT_EQ(0, RunProjMgr(4, argv));
 

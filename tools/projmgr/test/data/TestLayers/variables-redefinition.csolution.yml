@@ -1,0 +1,18 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schemas/csolution.schema.json
+
+solution:
+
+  build-types:
+    - type: BuildType
+      compiler: AC6
+      variables:
+        - VariableName: FirstValue
+
+  target-types:
+    - type: TargetType
+      device: RteTest_ARMCM0
+      variables:
+        - VariableName: SecondValue
+
+  projects:
+    - project: variables-redefinition.cproject.yml

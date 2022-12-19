@@ -62,6 +62,13 @@ public:
   static constexpr const char* SUFFIX_PACK_VENDOR = "::";
   static constexpr const char* PREFIX_PACK_VERSION = "@";
 
+  static constexpr const char* AS_PROJECT = "Project";
+  static constexpr const char* AS_COMPILER = "Compiler";
+  static constexpr const char* AS_BUILD_TYPE = "BuildType";
+  static constexpr const char* AS_TARGET_TYPE = "TargetType";
+  static constexpr const char* AS_DNAME = "Dname";
+  static constexpr const char* AS_BNAME = "Bname";
+
   /**
    * @brief class constructor
   */
@@ -137,6 +144,7 @@ public:
   */
   static void PushBackUniquely(std::vector<std::string>& vec, const std::string& value);
   static void PushBackUniquely(std::list<std::string>& lst, const std::string& value);
+  static void PushBackUniquely(StrPairVec& vec, const StrPair& value);
 
   /**
    * @brief convert string to int, return 0 if it's empty or not convertible
