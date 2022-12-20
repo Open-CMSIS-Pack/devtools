@@ -661,6 +661,15 @@ debug csolution: multiple clayers match type 'Board':\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml\n\
 debug csolution: clayer of type 'TestVariant' was uniquely found:\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml\n\
+debug csolution: configuration match #1:\n\
+  Board: .*/ARM/RteTest_DFP/0.2.0/Layers/board1.clayer.yml\n\
+  TestVariant: .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml\n\
+debug csolution: configuration match #2:\n\
+  Board: .*/ARM/RteTest_DFP/0.2.0/Layers/board2.clayer.yml\n\
+  TestVariant: .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml\n\
+debug csolution: configuration match #3:\n\
+  Board: .*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml\n\
+  TestVariant: .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml\n\
 ";
 
   const string& errStr = streamRedirect.GetErrorString();
@@ -770,6 +779,9 @@ debug csolution: clayer of type 'Board' was uniquely found:\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml\n\
 debug csolution: clayer of type 'TestVariant' was uniquely found:\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml\n\
+debug csolution: configuration match #1:\n\
+  Board: .*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml\n\
+  TestVariant: .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml\n\
 ";
 
   const string& errStr = streamRedirect.GetErrorString();
@@ -798,8 +810,8 @@ TEST_F(ProjMgrUnitTests, ListLayersIncompatible) {
   EXPECT_EQ(1, RunProjMgr(7, argv));
 
   const string& expected = "\
-debug csolution: no clayer matches type 'UnknownType' for context 'genericlayers.IncompatibleLayers\\+AnyBoard'\n\
 debug csolution: validating connections for context 'genericlayers.IncompatibleLayers\\+AnyBoard'\n\
+debug csolution: no clayer matches type 'UnknownType'\n\
 debug csolution: clayer type 'DifferentFromDescriptionInPdsc' does not match type 'PdscType' in pack description\n\
 debug csolution: validating combined connections:\n\
   .*/TestLayers/genericlayers.cproject.yml\n\
