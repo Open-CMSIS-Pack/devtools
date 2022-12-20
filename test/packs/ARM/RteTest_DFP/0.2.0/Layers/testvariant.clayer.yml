@@ -7,9 +7,10 @@ layer:
   components:
     - component: Device:Test variant
   
-  interfaces:
-    provides:
-      - MultipleProvided                 # same interface is provided multiple times with identical values
-    consumes:
-      - AddedValueLessThanProvided: +49  # added consumed values are less than provided
-      - AddedValueEqualToProvided: +499  # added consumed values are equal to provided
+  connections:
+    - connect: Test variant Connections
+      provides:
+        - MultipleProvided                 # same connection is provided multiple times with identical values
+      consumes:
+        - AddedValueLessThanProvided: +49  # added consumed values are less than provided
+        - AddedValueEqualToProvided: +499  # added consumed values are equal to provided

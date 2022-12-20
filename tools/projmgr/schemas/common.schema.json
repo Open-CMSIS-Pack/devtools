@@ -492,7 +492,7 @@
         "components":  { "$ref": "#/definitions/ComponentsType" },
         "layers":      { "$ref": "#/definitions/LayersType" },
         "setups":      { "$ref": "#/definitions/SetupsType" },
-        "interfaces":  { "$ref": "#/definitions/InterfacesType" }
+        "connections": { "$ref": "#/definitions/ConnectionsType" }
       },
       "additionalProperties": false
     },
@@ -524,7 +524,7 @@
         "misc":        { "$ref": "#/definitions/MiscTypes" },
         "groups":      { "$ref": "#/definitions/GroupsType" },
         "components":  { "$ref": "#/definitions/ComponentsType" },
-        "interfaces":  { "$ref": "#/definitions/InterfacesType" }
+        "connections": { "$ref": "#/definitions/ConnectionsType" }
       },
       "additionalProperties": false
     },
@@ -580,22 +580,41 @@
       "$ref": "#/definitions/TypeListMutualExclusion",
       "additionalProperties": false
     },
-    "InterfacesType": {
+    "ConnectionsType": {
+      "description": "List of consumed and provided connections compatibility",
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/ConnectType" }
+    },
+    "ConnectType": {
       "type": "object",
-      "description": "List of consumed and provided interfaces",
+      "description": "Group of specific functionality",
       "properties": {
+        "connect": {
+          "type": "string",
+          "description": "Description of specific functionality"
+        },
+        "set": {
+          "type": "string",
+          "description": "Set configuration option in the format 'config-id.select'"
+        },
+        "info": {
+          "type": "string",
+          "description": "Display description when connect is selected"
+        },
         "consumes": {
           "type": "array",
-          "description": "Consumed interfaces",
+          "description": "Consumed connections",
           "items": { "$ref": "#/definitions/ConsumesProvidesType" }
         },
         "provides": {
           "type": "array",
-          "description": "Provided interfaces",
+          "description": "Provided connections",
           "items": { "$ref": "#/definitions/ConsumesProvidesType" }
         }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "required": [ "connect" ]
     }
   }
 }

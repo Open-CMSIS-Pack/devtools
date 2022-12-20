@@ -12,18 +12,55 @@
 #include "ProjMgrUtils.h"
 
 /**
- * @brief interfaces validation result containing
- *        boolean valid,
- *        conflicted interfaces,
- *        overflowed interfaces,
- *        incompatible interfaces,
- *        provided interfaces
+* @brief vector of ConnectItem pointers
 */
-struct InterfacesValidationResult {
+typedef std::vector<const ConnectItem*> ConnectPtrVec;
+
+/**
+ * @brief connections collection item containing
+ *        filename pointer
+ *        layer type
+ *        vector of ConnectItem pointers
+*/
+struct ConnectionsCollection {
+  const std::string* filename;
+  std::string type;
+  ConnectPtrVec connections;
+};
+
+/**
+ * @brief vector of ConnectionsCollection
+*/
+typedef std::vector<ConnectionsCollection> ConnectionsCollectionVec;
+
+/**
+ * @brief map of ConnectionsCollection
+*/
+typedef std::map<std::string, ConnectionsCollectionVec> ConnectionsCollectionMap;
+
+/**
+ * @brief connections validation result containing
+ *        boolean valid,
+ *        conflicted connections,
+ *        overflowed connections,
+ *        incompatible connections,
+ *        provided connections
+*/
+struct ConnectionsValidationResult {
   bool valid;
   StrVec conflicts;
   StrPairVec overflows;
   StrPairVec incompatibles;
+  StrPairPtrVec provides;
+};
+
+/**
+ * @brief connections lists
+ *        list of consumes
+ *        list of provides
+*/
+struct ConnectionsList {
+  StrPairPtrVec consumes;
   StrPairPtrVec provides;
 };
 
@@ -170,7 +207,11 @@ struct TranslationControl {
  *        list of user groups,
  *        map of absolute file paths,
  *        map of generators,
+ *        map of compatible layers,
+ *        valid connections,
  *        linker script,
+ *        map of variables,
+ *        boolean processed precedences
 */
 struct ContextItem {
   CdefaultItem* cdefault = nullptr;
@@ -207,6 +248,7 @@ struct ContextItem {
   std::map<std::string, RteGenerator*> generators;
   std::map<std::string, std::pair<std::string, std::string>> gpdscs;
   StrVecMap compatibleLayers;
+  std::vector<ConnectionsCollectionVec> validConnections;
   std::string linkerScript;
   std::map<std::string, std::string> variables;
   bool precedences;
@@ -461,7 +503,6 @@ protected:
   bool ProcessConfigFiles(ContextItem& context);
   bool ProcessComponentFiles(ContextItem& context);
   bool ProcessGroups(ContextItem& context);
-  bool ProcessInterfaces(ContextItem& context);
   bool ProcessSequencesRelatives(ContextItem& context);
   bool ProcessSequencesRelatives(ContextItem& context, std::vector<std::string>& src, const std::string& ref = std::string());
   bool ProcessSequencesRelatives(ContextItem& context, BuildType& build, const std::string& ref = std::string());
@@ -491,11 +532,16 @@ protected:
   std::vector<PackageItem> GetFilteredPacks(const PackageItem& packItem, const std::string& rtePath) const;
   ToolchainItem GetToolchain(const std::string& compiler);
   bool IsPreIncludeByTarget(const RteTarget* activeTarget, const std::string& preInclude);
-  InterfacesValidationResult ValidateInterfaces(ContextItem& context, const StrVec& genericLayers = StrVec());
-  void PrintInterfaceValidation(InterfacesValidationResult result);
+  void PrintConnectionsValidation(ConnectionsValidationResult result);
   bool CollectLayersFromPacks(ContextItem& context, StrVecMap& clayers);
   bool DiscoverMatchingLayers(ContextItem& context);
-  void GetAllCombinations(const StrVecMap& src, const StrVecMap::iterator it, std::vector<StrVec>& combinations, const StrVec& previous = StrVec());
+  void CollectConnections(ContextItem& context, ConnectionsCollectionVec& connections);
+  void GetConsumesProvides(const ConnectionsCollectionVec& collection, ConnectionsList& connections);
+  ConnectionsCollectionMap ClassifyConnections(const ConnectionsCollectionVec& connections);
+  ConnectionsValidationResult ValidateConnections(ConnectionsList& connections);
+  void GetAllCombinations(const ConnectionsCollectionMap& src, const ConnectionsCollectionMap::iterator it,
+    std::vector<ConnectionsCollectionVec>& combinations, const ConnectionsCollectionVec& previous = ConnectionsCollectionVec());
+  void PushBackUniquely(ConnectionsCollectionVec& vec, const ConnectionsCollection& value);
   std::string ExpandString(const std::string& src, const StrMap& variables);
   void ListLatestToolchains(StrMap& toolchains, const std::string& localDir);
 };

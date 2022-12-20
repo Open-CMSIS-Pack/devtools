@@ -603,46 +603,6 @@ TEST_F(ProjMgrUnitTests, RunProjMgrLayers2) {
     testinput_folder + "/TestLayers/ref2/testlayers.Release.cprj");
 }
 
-TEST_F(ProjMgrUnitTests, RunProjMgrLayersCompatibleInterfaces) {
-  char* argv[8];
-
-  // convert -s solution.yml
-  const string& csolution = testinput_folder + "/TestLayers/interfaces.csolution.yml";
-  const string& context = "*.CompatibleInterfaces";
-  argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
-  argv[3] = (char*)csolution.c_str();
-  argv[4] = (char*)"-o";
-  argv[5] = (char*)testoutput_folder.c_str();
-  argv[6] = (char*)"-c";
-  argv[7] = (char*)context.c_str();
-  EXPECT_EQ(0, RunProjMgr(8, argv));
-
-  // Check generated CPRJ
-  CompareFile(testoutput_folder + "/interfaces.CompatibleInterfaces.cprj",
-    testinput_folder + "/TestLayers/ref/interfaces/interfaces.CompatibleInterfaces.cprj");
-}
-
-TEST_F(ProjMgrUnitTests, RunProjMgrLayersIncompatibleInterfaces) {
-  char* argv[8];
-  StdStreamRedirect streamRedirect;
-
-  // convert -s solution.yml
-  const string& csolution = testinput_folder + "/TestLayers/interfaces.csolution.yml";
-  const string& context = "*.IncompatibleInterfaces";
-  argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
-  argv[3] = (char*)csolution.c_str();
-  argv[4] = (char*)"-o";
-  argv[5] = (char*)testoutput_folder.c_str();
-  argv[6] = (char*)"-c";
-  argv[7] = (char*)context.c_str();
-  EXPECT_EQ(0, RunProjMgr(8, argv));
-
-  auto errStr = streamRedirect.GetErrorString();
-  EXPECT_EQ(errStr, "debug csolution: required interfaces not provided:\n  STDOUT\n");
-}
-
 TEST_F(ProjMgrUnitTests, ListLayersAll) {
   StdStreamRedirect streamRedirect;
   char* argv[3];
@@ -654,6 +614,8 @@ TEST_F(ProjMgrUnitTests, ListLayersAll) {
 .*/ARM/RteTest_DFP/0.2.0/Layers/board1.clayer.yml \\(Board\\)\n\
 .*/ARM/RteTest_DFP/0.2.0/Layers/board2.clayer.yml \\(Board\\)\n\
 .*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml \\(Board\\)\n\
+.*/ARM/RteTest_DFP/0.2.0/Layers/config1.clayer.yml \\(Config1\\)\n\
+.*/ARM/RteTest_DFP/0.2.0/Layers/config2.clayer.yml \\(Config2\\)\n\
 .*/ARM/RteTest_DFP/0.2.0/Layers/incompatible.clayer.yml \\(Incompatible\\)\n\
 .*/ARM/RteTest_DFP/0.2.0/Layers/pdsc-type-mismatch.clayer.yml \\(PdscType\\)\n\
 .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml \\(TestVariant\\)\n\
@@ -677,24 +639,27 @@ TEST_F(ProjMgrUnitTests, ListLayersCompatible) {
   EXPECT_EQ(0, RunProjMgr(7, argv));
 
   const string& expectedErrStr = "\
-debug csolution: validating interfaces for context 'genericlayers.CompatibleLayers\\+AnyBoard'\n\
-debug csolution: validating clayers combined interfaces:\n\
+debug csolution: validating connections for context 'genericlayers.CompatibleLayers\\+AnyBoard'\n\
+debug csolution: validating combined connections:\n\
+  .*/TestLayers/genericlayers.cproject.yml\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/board1.clayer.yml\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml\n\
-debug csolution: interfaces are valid\n\
-debug csolution: validating clayers combined interfaces:\n\
+debug csolution: connections are valid\n\
+debug csolution: validating combined connections:\n\
+  .*/TestLayers/genericlayers.cproject.yml\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/board2.clayer.yml\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml\n\
-debug csolution: interfaces are valid\n\
-debug csolution: validating clayers combined interfaces:\n\
+debug csolution: connections are valid\n\
+debug csolution: validating combined connections:\n\
+  .*/TestLayers/genericlayers.cproject.yml\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml\n\
-debug csolution: interfaces are valid\n\
+debug csolution: connections are valid\n\
 debug csolution: multiple clayers match type 'Board':\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/board1.clayer.yml\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/board2.clayer.yml\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml\n\
-debug csolution: multiple clayers match type 'TestVariant':\n\
+debug csolution: clayer of type 'TestVariant' was uniquely found:\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml\n\
 ";
 
@@ -710,6 +675,43 @@ debug csolution: multiple clayers match type 'TestVariant':\n\
 
   const string& outStr = streamRedirect.GetOutString();
   EXPECT_TRUE(regex_match(outStr, regex(expectedOutStr)));
+}
+
+TEST_F(ProjMgrUnitTests, ListLayersConfigurations) {
+  StdStreamRedirect streamRedirect;
+  char* argv[5];
+  const string& csolution = testinput_folder + "/TestLayers/config.csolution.yml";
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"layers";
+  argv[3] = (char*)"-s";
+  argv[4] = (char*)csolution.c_str();
+  EXPECT_EQ(0, RunProjMgr(5, argv));
+
+  const string& expectedErrStr = ".*\n\
+debug csolution: configuration match #1:\n\
+  .*/TestLayers/config.clayer.yml\n\
+    set: set1.select1 \\(set 1 select 1 - connect R\\)\n\
+  .*/TestLayers/config.cproject.yml\n\
+    set: set1.select1 \\(set 1 select 1 - project X\\)\n\
+  Config1: .*/ARM/RteTest_DFP/0.2.0/Layers/config1.clayer.yml\n\
+    set: set1.select1 \\(set 1 select 1 - connect A\\)\n\
+    set: set2.select1 \\(set 2 select 1 - connect C\\)\n\
+  Config2: .*/ARM/RteTest_DFP/0.2.0/Layers/config2.clayer.yml\n\
+    set: set1.select1 \\(set 1 select 1 - connect F\\)\n\
+debug csolution: configuration match #2:\n\
+  .*/TestLayers/config.clayer.yml\n\
+    set: set1.select2 \\(set 1 select 2 - connect S\\)\n\
+  .*/TestLayers/config.cproject.yml\n\
+    set: set1.select2 \\(set 1 select 2 - project Y\\)\n\
+  Config1: .*/ARM/RteTest_DFP/0.2.0/Layers/config1.clayer.yml\n\
+    set: set1.select2 \\(set 1 select 2 - connect B\\)\n\
+    set: set2.select2 \\(set 2 select 2 - connect D\\)\n\
+  Config2: .*/ARM/RteTest_DFP/0.2.0/Layers/config2.clayer.yml\n\
+    set: set1.select2 \\(set 1 select 2 - connect G\\)\n\
+";
+
+  const string& errStr = streamRedirect.GetErrorString();
+  EXPECT_TRUE(regex_search(errStr, regex(expectedErrStr)));
 }
 
 TEST_F(ProjMgrUnitTests, ListToolchains) {
@@ -758,15 +760,16 @@ TEST_F(ProjMgrUnitTests, ListLayersUniquelyCompatibleBoard) {
   EXPECT_EQ(0, RunProjMgr(7, argv));
 
   const string& expectedErrStr = "\
-debug csolution: validating interfaces for context 'genericlayers.CompatibleLayers\\+Board3'\n\
-debug csolution: validating clayers combined interfaces:\n\
+debug csolution: validating connections for context 'genericlayers.CompatibleLayers\\+Board3'\n\
+debug csolution: validating combined connections:\n\
+  .*/TestLayers/genericlayers.cproject.yml\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml\n\
-debug csolution: interfaces are valid\n\
+debug csolution: connections are valid\n\
 debug csolution: clayer of type 'Board' was uniquely found:\n\
-  '.*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml'\n\
+  .*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml\n\
 debug csolution: clayer of type 'TestVariant' was uniquely found:\n\
-  '.*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml'\n\
+  .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml\n\
 ";
 
   const string& errStr = streamRedirect.GetErrorString();
@@ -796,47 +799,50 @@ TEST_F(ProjMgrUnitTests, ListLayersIncompatible) {
 
   const string& expected = "\
 debug csolution: no clayer matches type 'UnknownType' for context 'genericlayers.IncompatibleLayers\\+AnyBoard'\n\
-debug csolution: validating interfaces for context 'genericlayers.IncompatibleLayers\\+AnyBoard'\n\
+debug csolution: validating connections for context 'genericlayers.IncompatibleLayers\\+AnyBoard'\n\
 debug csolution: clayer type 'DifferentFromDescriptionInPdsc' does not match type 'PdscType' in pack description\n\
-debug csolution: validating clayers combined interfaces:\n\
+debug csolution: validating combined connections:\n\
+  .*/TestLayers/genericlayers.cproject.yml\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/board1.clayer.yml\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/incompatible.clayer.yml\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/pdsc-type-mismatch.clayer.yml\n\
-debug csolution: interfaces provided with multiple different values:\n\
+debug csolution: connections provided with multiple different values:\n\
   MultipleProvidedNonIdentical0\n\
   MultipleProvidedNonIdentical1\n\
-debug csolution: required interfaces not provided:\n\
+debug csolution: required connections not provided:\n\
   ProvidedDontMatch: -1\n\
   ProvidedEmpty: 123\n\
 debug csolution: sum of required values exceed provided:\n\
   AddedValueHigherThanProvided: 100 > 99\n\
-debug csolution: interfaces are invalid\n\
-debug csolution: validating clayers combined interfaces:\n\
+debug csolution: connections are invalid\n\
+debug csolution: validating combined connections:\n\
+  .*/TestLayers/genericlayers.cproject.yml\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/board2.clayer.yml\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/incompatible.clayer.yml\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/pdsc-type-mismatch.clayer.yml\n\
-debug csolution: interfaces provided with multiple different values:\n\
+debug csolution: connections provided with multiple different values:\n\
   MultipleProvidedNonIdentical0\n\
   MultipleProvidedNonIdentical1\n\
-debug csolution: required interfaces not provided:\n\
+debug csolution: required connections not provided:\n\
   ProvidedDontMatch: -1\n\
   ProvidedEmpty: 123\n\
 debug csolution: sum of required values exceed provided:\n\
   AddedValueHigherThanProvided: 100 > 99\n\
-debug csolution: interfaces are invalid\n\
-debug csolution: validating clayers combined interfaces:\n\
+debug csolution: connections are invalid\n\
+debug csolution: validating combined connections:\n\
+  .*/TestLayers/genericlayers.cproject.yml\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/incompatible.clayer.yml\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/pdsc-type-mismatch.clayer.yml\n\
-debug csolution: interfaces provided with multiple different values:\n\
+debug csolution: connections provided with multiple different values:\n\
   MultipleProvidedNonIdentical0\n\
   MultipleProvidedNonIdentical1\n\
-debug csolution: required interfaces not provided:\n\
+debug csolution: required connections not provided:\n\
   ProvidedDontMatch: -1\n\
   ProvidedEmpty: 123\n\
 debug csolution: sum of required values exceed provided:\n\
   AddedValueHigherThanProvided: 100 > 99\n\
-debug csolution: interfaces are invalid\n\
+debug csolution: connections are invalid\n\
 debug csolution: no valid combination of clayers was found\n\
 ";
 

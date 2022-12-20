@@ -7,11 +7,12 @@ layer:
   components:
     - component: Device:Test variant
   
-  interfaces:
-    provides:
-      - MultipleProvidedNonIdentical0: 111   # same interface is provided multiple times with non identical values
-      - MultipleProvidedNonIdentical1: 222   # same interface is provided multiple times with non identical values
-    consumes:
-      - ProvidedDontMatch: -1                # consumed interface doesn't match provided one
-      - ProvidedEmpty: 123                   # consumed interface doesn't match empty provided one
-      - AddedValueHigherThanProvided: +100   # added consumed values are equal to provided
+  connections:
+    - connect: Incompatible Connections
+      provides:
+        - MultipleProvidedNonIdentical0: 111   # same connection is provided multiple times with non identical values
+        - MultipleProvidedNonIdentical1: 222   # same connection is provided multiple times with non identical values
+      consumes:
+        - ProvidedDontMatch: -1                # consumed connection doesn't match provided one
+        - ProvidedEmpty: 123                   # consumed connection doesn't match empty provided one
+        - AddedValueHigherThanProvided: +100   # added consumed values are equal to provided

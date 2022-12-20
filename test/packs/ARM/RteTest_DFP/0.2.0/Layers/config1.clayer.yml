@@ -1,0 +1,37 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schemas/clayer.schema.json
+
+layer:
+
+  type: Config1
+  
+  components:
+    - component: Board:Test:Rev1
+  
+  connections:
+    - connect: connect A
+      set: set1.select1
+      info: set 1 select 1
+      provides:
+        - connectA
+
+    - connect: connect B
+      set: set1.select2
+      info: set 1 select 2
+      provides:
+        - connectB
+
+    - connect: connect C
+      set: set2.select1
+      info: set 2 select 1
+      provides:
+        - connectC
+
+    - connect: connect D
+      set: set2.select2
+      info: set 2 select 2
+      provides:
+        - connectD
+
+    - connect: "test connect common E"
+      provides:
+        - connectE

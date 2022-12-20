@@ -867,32 +867,47 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessComponentFilesEmpty) {
 }
 
 TEST_F(ProjMgrWorkerUnitTests, GetAllCombinations) {
-  StrVecMap clayers = {
-    {"Orange", {"OrangeA", "OrangeB", "OrangeC"}},
-    {"Ananas", {"AnanasA"}},
-    {"Banana", {"BananaA", "BananaB"}},
+  const string strOrangeA = "OrangeA";
+  const string strOrangeB = "OrangeB";
+  const string strOrangeC = "OrangeC";
+  const string strAnanasA = "AnanasA";
+  const string strBananaA = "BananaA";
+  const string strBananaB = "BananaB";
+  ConnectionsCollection OrangeA = { &strOrangeA };
+  ConnectionsCollection OrangeB = { &strOrangeB };
+  ConnectionsCollection OrangeC = { &strOrangeC };
+  ConnectionsCollection AnanasA = { &strAnanasA };
+  ConnectionsCollection BananaA = { &strBananaA };
+  ConnectionsCollection BananaB = { &strBananaB };
+
+  ConnectionsCollectionMap connections = {
+    {"Orange", {OrangeA, OrangeB, OrangeC}},
+    {"Ananas", {AnanasA}},
+    {"Banana", {BananaA, BananaB}},
   };
-  const vector<StrVec> expected = {
-    {"AnanasA", "BananaA", "OrangeA"},
-    {"AnanasA", "BananaA", "OrangeB"},
-    {"AnanasA", "BananaA", "OrangeC"},
-    {"AnanasA", "BananaB", "OrangeA"},
-    {"AnanasA", "BananaB", "OrangeB"},
-    {"AnanasA", "BananaB", "OrangeC"},
+  const vector<ConnectionsCollectionVec> expected = {
+    {AnanasA, BananaA, OrangeA},
+    {AnanasA, BananaA, OrangeB},
+    {AnanasA, BananaA, OrangeC},
+    {AnanasA, BananaB, OrangeA},
+    {AnanasA, BananaB, OrangeB},
+    {AnanasA, BananaB, OrangeC},
   };
-  vector<StrVec> combinations;
-  GetAllCombinations(clayers, clayers.begin(), combinations);
-  EXPECT_EQ(expected, combinations);
+  vector<ConnectionsCollectionVec> combinations;
+  GetAllCombinations(connections, connections.begin(), combinations);
+
+  auto it = combinations.begin();
+  for (const auto& expectedItem : expected) {
+    EXPECT_EQ(expectedItem.front().filename, (*it++).front().filename);
+  }
 }
 
-TEST_F(ProjMgrWorkerUnitTests, ValidateInterfaces) {
-  InterfacesValidationResult result;
-  ContextItem context;
-  CprojectItem cproject;
-  context.cproject = &cproject;
+TEST_F(ProjMgrWorkerUnitTests, ValidateConnections) {
+  ConnectionsValidationResult result;
+  ConnectionsList connections;
 
-  // valid interfaces
-  cproject.interfaces.consumes = {
+  // valid connections
+  StrPairVec consumedList = {
     {"Orange", "3"},
     {"Grape Fruit", ""},
     {"Peach", ""},
@@ -901,7 +916,10 @@ TEST_F(ProjMgrWorkerUnitTests, ValidateInterfaces) {
     {"Lemon", "+150"},
     {"Lemon", "+20"},
   };
-  cproject.interfaces.provides = {
+  for (const auto& item : consumedList) {
+    connections.consumes.push_back(&item);
+  }
+  StrPairVec providedList = {
     {"Orange", "3"},                  // both key and value exact match
     {"Grape Fruit", "999"},           // key exact match, consumed value is empty
     {"Peach", ""},                    // key exact match, both values empty
@@ -909,28 +927,39 @@ TEST_F(ProjMgrWorkerUnitTests, ValidateInterfaces) {
     {"Lime", "100"},                  // added consumed values are equal to provided
     {"Ananas", "2"}, {"Ananas", "2"}, // same interface is provided multiple times with identical values
   };
-  result = ValidateInterfaces(context);
+  for (const auto& item : providedList) {
+    connections.provides.push_back(&item);
+  }
+  result = ValidateConnections(connections);
   EXPECT_TRUE(result.valid);
 
-  // invalid interfaces
+  // invalid connections
+  connections.consumes.clear();
+  connections.provides.clear();
   // same interface is provided multiple times with non identical values
-  cproject.interfaces.consumes = {
+  consumedList = {
     {"Lemon", "+150"},
     {"Lemon", "+20"},
     {"Ananas", "98"},
     {"Grape Fruit", "1"},
   };
-  cproject.interfaces.provides = {
+  for (const auto& item : consumedList) {
+    connections.consumes.push_back(&item);
+  }
+  providedList = {
     {"Ananas", "97"},                 // consumed interface doesn't match provided one
     {"Grape Fruit", ""},              // consumed interface doesn't match empty provided one
     {"Lemon", "160"},                 // sum of consumed added values is higher than provided value
     {"Orange", "3"}, {"Orange", "4"}, // same interface is provided multiple times with non identical values
     {"Banana", ""}, {"Banana", "0"},  // same interface is provided multiple times with non identical values
   };
+  for (const auto& item : providedList) {
+    connections.provides.push_back(&item);
+  }
   StrVec expectedConflicts = { "Orange", "Banana" };
   StrPairVec expectedOverflow = {{"Lemon", "170 > 160"}};
   StrPairVec expectedIncompatibles = {{"Ananas", "98"}, {"Grape Fruit", "1"}};
-  result = ValidateInterfaces(context);
+  result = ValidateConnections(connections);
   EXPECT_FALSE(result.valid);
   EXPECT_EQ(result.conflicts, expectedConflicts);
   EXPECT_EQ(result.overflows, expectedOverflow);
