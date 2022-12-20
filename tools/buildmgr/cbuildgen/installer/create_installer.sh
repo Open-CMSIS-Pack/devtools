@@ -61,7 +61,7 @@ cp -R ../config/. ${distdir}/etc
 cp ../../docs/LICENSE.txt ${distdir}
 
 # Get cpackget
-cpackget_version="0.8.5"
+cpackget_version="0.9.0"
 cpackget_base=https://github.com/Open-CMSIS-Pack/cpackget/releases/download/v${cpackget_version}/cpackget_${cpackget_version}
 curl --retry 3 -L ${cpackget_base}_linux_amd64.tar.gz  -o - | tar xzfO - --wildcards    '*cpackget'     > ${distdir}/bin/cpackget.lin-amd64
 curl --retry 3 -L ${cpackget_base}_windows_amd64.zip   -o temp.zip && unzip -p temp.zip '*/cpackget.exe' > ${distdir}/bin/cpackget.exe-amd64 && rm temp.zip
@@ -71,7 +71,7 @@ curl --retry 3 -L ${cpackget_base}_linux_arm64.tar.gz  -o - | tar xzfO - --wildc
 #curl --retry 3 -L ${cpackget_base}_darwin_arm64.tar.gz -o - | tar xzfO - --wildcards    '*cpackget'     > ${distdir}/bin/cpackget.mac-arm64
 
 # Get cbuild
-cbuild_version="1.3.0"
+cbuild_version="1.4.0"
 cbuild_base=https://github.com/Open-CMSIS-Pack/cbuild/releases/download/v${cbuild_version}/cbuild_${cbuild_version}
 curl --retry 3 -L ${cbuild_base}_linux_amd64.tar.gz  -o - | tar xzfO - --wildcards    '*cbuild'     > ${distdir}/bin/cbuild.lin-amd64
 curl --retry 3 -L ${cbuild_base}_windows_amd64.zip   -o temp.zip && unzip -p temp.zip '*/cbuild.exe' > ${distdir}/bin/cbuild.exe-amd64 && rm temp.zip
