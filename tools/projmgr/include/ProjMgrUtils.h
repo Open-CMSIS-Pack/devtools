@@ -27,7 +27,7 @@ typedef std::vector<StrPair> StrPairVec;
 /**
  * @brief vector of string pair pointer
 */
-typedef std::vector<StrPair*> StrPairPtrVec;
+typedef std::vector<const StrPair*> StrPairPtrVec;
 
 /**
  * @brief map of string vector

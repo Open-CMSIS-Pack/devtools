@@ -502,7 +502,13 @@
     </clayer>
     <clayer name="PdscType" type="PdscType" file="Layers/pdsc-type-mismatch.clayer.yml">
       <description>"Test pdsc type mismatch"</description>
-    </clayer>    
+    </clayer>
+    <clayer name="Config1" type="Config1" file="Layers/config1.clayer.yml">
+      <description>"Test board layer with shield"</description>
+    </clayer>
+    <clayer name="Config2" type="Config2" file="Layers/config2.clayer.yml">
+      <description>"Test board layer with shield"</description>
+    </clayer>
   </clayers>
 
 </package>

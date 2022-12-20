@@ -14,18 +14,19 @@ project:
     - type: PdscType
       for-type: .IncompatibleLayers
 
-  interfaces:
-    provides:
-      # compatible interfaces
-      - ExactMatch: 42                      # both key and value exact match
-      - EmptyConsumedValue: 1               # key exact match, consumed value is empty
-      - EmptyValues                         # key exact match, both values empty
-      - AddedValueLessThanProvided: 99      # added consumed values are less than provided
-      - AddedValueEqualToProvided: 998      # added consumed values are equal to provided
-      - MultipleProvided                    # same interface is provided multiple times with identical values
-      # incompatible interfaces
-      - MultipleProvidedNonIdentical0: 222  # same interface is provided multiple times with non identical values
-      - MultipleProvidedNonIdentical1       # same interface is provided multiple times with non identical values
-      - ProvidedDontMatch: 0                # consumed interface doesn't match provided one
-      - ProvidedEmpty                       # consumed interface doesn't match empty provided one
-      - AddedValueHigherThanProvided: 99    # added consumed values are equal to provided
+  connections:
+    - connect: Project Connections
+      provides:
+        # compatible connections
+        - ExactMatch: 42                      # both key and value exact match
+        - EmptyConsumedValue: 1               # key exact match, consumed value is empty
+        - EmptyValues                         # key exact match, both values empty
+        - AddedValueLessThanProvided: 99      # added consumed values are less than provided
+        - AddedValueEqualToProvided: 998      # added consumed values are equal to provided
+        - MultipleProvided                    # same connection is provided multiple times with identical values
+        # incompatible connections
+        - MultipleProvidedNonIdentical0: 222  # same connection is provided multiple times with non identical values
+        - MultipleProvidedNonIdentical1       # same connection is provided multiple times with non identical values
+        - ProvidedDontMatch: 0                # consumed connection doesn't match provided one
+        - ProvidedEmpty                       # consumed connection doesn't match empty provided one
+        - AddedValueHigherThanProvided: 99    # added consumed values are equal to provided

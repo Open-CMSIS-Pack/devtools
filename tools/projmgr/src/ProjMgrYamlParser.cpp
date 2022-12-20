@@ -132,7 +132,7 @@ bool ProjMgrYamlParser::ParseCproject(const string& input,
       return false;
     }
 
-    ParseInterfaces(projectNode, cproject.interfaces);
+    ParseConnections(projectNode, cproject.connections);
 
   } catch (YAML::Exception& e) {
     ProjMgrLogger::Error(input, e.mark.line + 1, e.mark.column + 1, e.msg);
@@ -190,7 +190,7 @@ bool ProjMgrYamlParser::ParseClayer(const string& input,
       return false;
     }
 
-    ParseInterfaces(layerNode, clayer.interfaces);
+    ParseConnections(layerNode, clayer.connections);
 
   }
   catch (YAML::Exception& e) {
@@ -487,15 +487,22 @@ void ProjMgrYamlParser::ParseOutputDirs(const YAML::Node& parent, struct Directo
   }
 }
 
-void ProjMgrYamlParser::ParseInterfaces(const YAML::Node& parent, struct InterfacesItem& interfaces) {
-  if (parent[YAML_INTERFACES].IsDefined()) {
-    const YAML::Node& interfacesNode = parent[YAML_INTERFACES];
-    map<const string, vector<pair<string, string>>&> interfacesChildren = {
-      {YAML_PROVIDES, interfaces.provides},
-      {YAML_CONSUMES, interfaces.consumes},
-    };
-    for (const auto& item : interfacesChildren) {
-      ParseVectorOfStringPairs(interfacesNode, item.first, item.second);
+void ProjMgrYamlParser::ParseConnections(const YAML::Node& parent, vector<ConnectItem>& connects) {
+  if (parent[YAML_CONNECTIONS].IsDefined()) {
+    const YAML::Node& connectsNode = parent[YAML_CONNECTIONS];
+    for (const auto& connectEntry : connectsNode) {
+      ConnectItem connectItem;
+      ParseString(connectEntry, YAML_CONNECT, connectItem.connect);
+      ParseString(connectEntry, YAML_SET, connectItem.set);
+      ParseString(connectEntry, YAML_INFO, connectItem.info);
+      map<const string, vector<pair<string, string>>&> connectConsumesProvides = {
+        {YAML_PROVIDES, connectItem.provides},
+        {YAML_CONSUMES, connectItem.consumes},
+      };
+      for (const auto& item : connectConsumesProvides) {
+        ParseVectorOfStringPairs(connectEntry, item.first, item.second);
+      }
+      connects.push_back(connectItem);
     }
   }
 }
@@ -619,7 +626,7 @@ const set<string> projectKeys = {
   YAML_GROUPS,
   YAML_LAYERS,
   YAML_SETUPS,
-  YAML_INTERFACES,
+  YAML_CONNECTIONS,
 };
 
 const set<string> layerKeys = {
@@ -644,7 +651,7 @@ const set<string> layerKeys = {
   YAML_MISC,
   YAML_COMPONENTS,
   YAML_GROUPS,
-  YAML_INTERFACES,
+  YAML_CONNECTIONS,
 };
 
 const set<string> targetTypeKeys = {
@@ -741,6 +748,14 @@ const set<string> componentsKeys = {
   YAML_MISC,
 };
 
+const set<string> connectionsKeys = {
+  YAML_CONNECT,
+  YAML_SET,
+  YAML_INFO,
+  YAML_PROVIDES,
+  YAML_CONSUMES,
+};
+
 const set<string> layersKeys = {
   YAML_LAYER,
   YAML_TYPE,
@@ -759,11 +774,6 @@ const set<string> layersKeys = {
   YAML_DELPATHS,
   YAML_DELPATH,
   YAML_MISC,
-};
-
-const set<string> interfacesKeys = {
-  YAML_PROVIDES,
-  YAML_CONSUMES
 };
 
 const set<string> groupsKeys = {
@@ -816,6 +826,7 @@ const map<string, set<string>> sequences = {
   {YAML_MISC, miscKeys},
   {YAML_PACKS, packsKeys},
   {YAML_COMPONENTS, componentsKeys},
+  {YAML_CONNECTIONS, connectionsKeys},
   {YAML_LAYERS, layersKeys},
   {YAML_GROUPS, groupsKeys},
   {YAML_FILES, filesKeys},
@@ -824,7 +835,6 @@ const map<string, set<string>> sequences = {
 const map<string, set<string>> mappings = {
   {YAML_PROCESSOR, processorKeys},
   {YAML_OUTPUTDIRS, outputDirsKeys},
-  {YAML_INTERFACES, interfacesKeys},
 };
 
 bool ProjMgrYamlParser::ValidateCdefault(const string& input, const YAML::Node& root) {

@@ -170,11 +170,17 @@ struct LayerItem {
 };
 
 /**
- * @brief interfaces item containing
- *        vector of provided interfaces pairs,
- *        vector of consumed interfaces pairs
+ * @brief connect item containing
+ *        connect functionality description
+ *        set <config-id>.<select> value for config option identification
+ *        info display description
+ *        vector of provided connections pairs,
+ *        vector of consumed connections pairs
 */
-struct InterfacesItem {
+struct ConnectItem {
+  std::string connect;
+  std::string set;
+  std::string info;
   std::vector<std::pair<std::string, std::string>> provides;
   std::vector<std::pair<std::string, std::string>> consumes;
 };
@@ -288,7 +294,8 @@ struct CsolutionItem {
  *        list of required components,
  *        list of user groups,
  *        list of layers,
- *        list of setups
+ *        list of setups,
+ *        list of connections
 */
 struct CprojectItem {
   std::string name;
@@ -301,7 +308,7 @@ struct CprojectItem {
   std::vector<GroupNode> groups;
   std::vector<LayerItem> clayers;
   std::vector<SetupItem> setups;
-  InterfacesItem interfaces;
+  std::vector<ConnectItem> connections;
 };
 
 /**
@@ -314,7 +321,7 @@ struct CprojectItem {
  *        layer target properties,
  *        list of required components,
  *        list of user groups,
- *        list of interfaces
+ *        list of connections
 */
 struct ClayerItem {
   std::string name;
@@ -326,7 +333,7 @@ struct ClayerItem {
   std::vector<RteDirItem> rteDirs;
   std::vector<ComponentItem> components;
   std::vector<GroupNode> groups;
-  InterfacesItem interfaces;
+  std::vector<ConnectItem> connections;
 };
 
 /**
