@@ -497,48 +497,47 @@ bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context) {
     }
     requiredLayerTypes.push_back(clayer.type);
   }
-  if (requiredLayerTypes.empty()) {
-    // additional layers are not required
-    return true;
-  }
-  // collect generic clayers from loaded packs
-  StrVecMap genericClayers;
-  if (!CollectLayersFromPacks(context, genericClayers)) {
-    return false;
-  }
-  // clayers matching required types
-  StrVecMap matchedTypeClayers;
-  for (const auto& requiredType : requiredLayerTypes) {
-    if (genericClayers.find(requiredType) != genericClayers.end()) {
-      for (const auto& clayer : genericClayers.at(requiredType)) {
-        matchedTypeClayers[requiredType].push_back(clayer);
-      }
-    } else {
-      ProjMgrLogger::Debug("no clayer matches type '" + requiredType + "' for context '" + context.name + "'");
-    }
-  }
 
   // debug message
   ProjMgrLogger::Debug("validating connections for context '" + context.name + "'");
 
-  // parse matched type layers and collect connections
   ConnectionsCollectionVec allConnections;
-  for (const auto& [type, clayers] : matchedTypeClayers) {
-    for (const auto& clayer : clayers) {
-      if (!m_parser->ParseGenericClayer(clayer, m_checkSchema)) {
-        return false;
+  StrVecMap matchedTypeClayers;
+
+  if (!requiredLayerTypes.empty()) {
+    // collect generic clayers from loaded packs
+    StrVecMap genericClayers;
+    if (!CollectLayersFromPacks(context, genericClayers)) {
+      return false;
+    }
+    // clayers matching required types
+    for (const auto& requiredType : requiredLayerTypes) {
+      if (genericClayers.find(requiredType) != genericClayers.end()) {
+        for (const auto& clayer : genericClayers.at(requiredType)) {
+          matchedTypeClayers[requiredType].push_back(clayer);
+        }
+      } else {
+        ProjMgrLogger::Debug("no clayer matches type '" + requiredType + "'");
       }
-      const ClayerItem& clayerItem = m_parser->GetGenericClayers()[clayer];
-      if (type != clayerItem.type) {
-        ProjMgrLogger::Debug("clayer type '" + clayerItem.type + "' does not match type '" + type + "' in pack description");
+    }
+    // parse matched type layers and collect connections
+    for (const auto& [type, clayers] : matchedTypeClayers) {
+      for (const auto& clayer : clayers) {
+        if (!m_parser->ParseGenericClayer(clayer, m_checkSchema)) {
+          return false;
+        }
+        const ClayerItem& clayerItem = m_parser->GetGenericClayers()[clayer];
+        if (type != clayerItem.type) {
+          ProjMgrLogger::Debug("clayer type '" + clayerItem.type + "' does not match type '" + type + "' in pack description");
+        }
+        ConnectionsCollection collection;
+        collection.filename = &clayerItem.path;
+        collection.type = &type;
+        for (const auto& connect : clayerItem.connections) {
+          collection.connections.push_back(&connect);
+        }
+        allConnections.push_back(collection);
       }
-      ConnectionsCollection collection;
-      collection.filename = &clayerItem.path;
-      collection.type = type;
-      for (const auto& connect : clayerItem.connections) {
-        collection.connections.push_back(&connect);
-      }
-      allConnections.push_back(collection);
     }
   }
 
@@ -577,7 +576,7 @@ bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context) {
       context.validConnections.push_back(combination);
       for (const auto& [type, _] : matchedTypeClayers) {
         for (const auto& item : combination) {
-          if (item.type == type) {
+          if (*item.type == type) {
             ProjMgrUtils::PushBackUniquely(context.compatibleLayers[type], *item.filename);
           }
         }
@@ -589,26 +588,28 @@ bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context) {
     ProjMgrLogger::Debug("connections are " + string(result.valid ? "valid" : "invalid"));
   }
 
-  // assess validation results
-  if (!context.compatibleLayers.empty()) {
-    for (const auto& [type, _] : matchedTypeClayers) {
-      if (context.compatibleLayers[type].size() == 1) {
-        // unique match
-        const auto& clayer = context.compatibleLayers[type].front();
-        ProjMgrLogger::Debug("clayer of type '" + type + "' was uniquely found:\n  " + clayer);
-      } else if (context.compatibleLayers[type].size() > 1) {
-        // multiple matches
-        string msg = "multiple clayers match type '" + type + "':";
-        for (const auto& clayer : context.compatibleLayers[type]) {
-          msg += "\n  " + clayer;
+  // assess generic layers validation results
+  if (!matchedTypeClayers.empty()) {
+    if (!context.compatibleLayers.empty()) {
+      for (const auto& [type, _] : matchedTypeClayers) {
+        if (context.compatibleLayers[type].size() == 1) {
+          // unique match
+          const auto& clayer = context.compatibleLayers[type].front();
+          ProjMgrLogger::Debug("clayer of type '" + type + "' was uniquely found:\n  " + clayer);
+        } else if (context.compatibleLayers[type].size() > 1) {
+          // multiple matches
+          string msg = "multiple clayers match type '" + type + "':";
+          for (const auto& clayer : context.compatibleLayers[type]) {
+            msg += "\n  " + clayer;
+          }
+          ProjMgrLogger::Debug(msg);
         }
-        ProjMgrLogger::Debug(msg);
       }
+    } else {
+      // no valid combination
+      ProjMgrLogger::Debug("no valid combination of clayers was found");
+      return false;
     }
-  } else {
-    // no valid combination
-    ProjMgrLogger::Debug("no valid combination of clayers was found");
-    return false;
   }
 
   // print all valid configuration options
@@ -618,10 +619,14 @@ bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context) {
     for (const auto& combination : context.validConnections) {
       bool hasConfigOption = false;
       for (const auto& item : combination) {
+        if (!item.type->empty()) {
+          hasConfigOption = true;
+          configurationOptions[index][*item.type][*item.filename];
+        }
         for (const auto& connect : item.connections) {
           if (!connect->set.empty()) {
             hasConfigOption = true;
-            configurationOptions[index][item.type][*item.filename].push_back(connect);
+            configurationOptions[index][*item.type][*item.filename].push_back(connect);
           }
         }
       }
@@ -675,6 +680,7 @@ void ProjMgrWorker::CollectConnections(ContextItem& context, ConnectionsCollecti
   // collect connections from project and layers
   ConnectionsCollection projectCollection;
   projectCollection.filename = &context.cproject->path;
+  projectCollection.type = &RteUtils::EMPTY_STRING;
   for (const auto& connect : context.cproject->connections) {
     projectCollection.connections.push_back(&connect);
   }
@@ -682,7 +688,7 @@ void ProjMgrWorker::CollectConnections(ContextItem& context, ConnectionsCollecti
   for (const auto& [_, clayerItem] : context.clayers) {
     ConnectionsCollection layerCollection;
     layerCollection.filename = &clayerItem->path;
-    layerCollection.type = clayerItem->type;
+    layerCollection.type = &clayerItem->type;
     for (const auto& connect : clayerItem->connections) {
       layerCollection.connections.push_back(&connect);
     }
@@ -695,7 +701,7 @@ ConnectionsCollectionMap ProjMgrWorker::ClassifyConnections(const ConnectionsCol
   ConnectionsCollectionMap classifiedConnections;
   for (const auto& collectionEntry : connections) {
     // get type classification
-    const string& classifiedType = collectionEntry.type.empty() ? to_string(hash<string>{}(*collectionEntry.filename)) : collectionEntry.type;
+    const string& classifiedType = collectionEntry.type->empty() ? to_string(hash<string>{}(*collectionEntry.filename)) : *collectionEntry.type;
     // group connections by config-id
     map<string, ConnectPtrVec> connectionsMap;
     for (const auto& connect : collectionEntry.connections) {

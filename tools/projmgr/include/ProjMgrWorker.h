@@ -19,12 +19,12 @@ typedef std::vector<const ConnectItem*> ConnectPtrVec;
 /**
  * @brief connections collection item containing
  *        filename pointer
- *        layer type
+ *        layer type pointer
  *        vector of ConnectItem pointers
 */
 struct ConnectionsCollection {
   const std::string* filename;
-  std::string type;
+  const std::string* type;
   ConnectPtrVec connections;
 };
 
