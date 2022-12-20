@@ -57,6 +57,14 @@ Software layers and Virtual I/O simplify these use cases:
     <th>Description</th>
   </tr>
   <tr>
+    <td>1.4.0</td>
+    <td>Release for review of initial development:
+      - updated cbuild utility v1.4.0
+      - updated cpackget utility v0.9.0
+      - disable the update of RTE folder contents by default
+      - added '--update-rte' flag to enable the optional update of RTE folder
+      - fixed: handle legacy armasm hexadecimal defines
+    </td>
     <td>1.3.0</td>
     <td>Release for review of initial development:
       - updated cbuild utility v1.3.0
