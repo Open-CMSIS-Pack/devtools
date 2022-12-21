@@ -71,4 +71,4 @@ solution:
 
   projects:
     - project: ./unknown.cproject.yml
-      for-type: +CM0
+      for-context: +CM0

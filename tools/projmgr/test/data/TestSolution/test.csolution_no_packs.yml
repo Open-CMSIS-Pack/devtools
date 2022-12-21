@@ -73,9 +73,9 @@ solution:
 
   projects:
     - project: ./TestProject1/test1.cproject.yml
-      for-type: +CM0
+      for-context: +CM0
     - project: ./TestProject2/test2.cproject.yml
-      not-for-type: .Release
+      not-for-context: .Release
 
   define:
     - DEF-solution

@@ -37,18 +37,56 @@
     "TypeListMutualExclusion": {
       "oneOf": [
         { "required": ["for-type"],
-          "not": {"required": ["not-for-type"]}
+          "allOf": [
+            { "not": {"required": ["not-for-type"]} },
+            { "not": {"required": ["for-context"]} },
+            { "not": {"required": ["not-for-context"]} }
+          ]
+        },
+        { "required": ["for-context"],
+          "allOf": [
+            { "not": {"required": ["for-type"]} },
+            { "not": {"required": ["not-for-type"]} },
+            { "not": {"required": ["not-for-context"]} }
+          ]
         },
         { "required": ["not-for-type"],
-          "not": {"required": ["for-type"]}
+          "allOf": [
+            { "not": {"required": ["for-type"]} },
+            { "not": {"required": ["for-context"]} },
+            { "not": {"required": ["not-for-context"]} }
+          ]
+        },
+        { "required": ["not-for-context"],
+          "allOf": [
+            { "not": {"required": ["for-type"]} },
+            { "not": {"required": ["not-for-type"]} },
+            { "not": {"required": ["for-context"]} }
+          ]
         },
         {
           "allOf": [
             { "not": {"required": ["for-type"] }},
-            { "not": {"required": ["not-for-type"]}}
+            { "not": {"required": ["not-for-type"]}},
+            { "not": {"required": ["for-context"] }},
+            { "not": {"required": ["not-for-context"]}}
           ]
         }
       ]
+    },
+    "ForContext": {
+      "oneOf": [
+        {"$ref": "#/definitions/ArrayOfBuildContext" },
+        {"$ref": "#/definitions/BuildContext" }
+      ],
+      "description": "Include node for a list of [.<build-type>][+<target-type>]"
+    },
+    "NotForContext": {
+      "oneOf": [
+        {"$ref": "#/definitions/ArrayOfBuildContext" },
+        {"$ref": "#/definitions/BuildContext" }
+      ],
+      "description": "Exclude node for a list of [.<build-type>][+<target-type>]"
     },
     "CompilerType": {
       "type": "string",
@@ -248,8 +286,10 @@
           "type": "string",
           "description": "Path to the valid project file"
         },
-        "for-type":     { "$ref": "#/definitions/ForType" },
-        "not-for-type": { "$ref": "#/definitions/NotForType" }
+        "for-type":        { "$ref": "#/definitions/ForType", "description": "DEPRECATED use: for-context" },
+        "for-context":     { "$ref": "#/definitions/ForContext" },
+        "not-for-type":    { "$ref": "#/definitions/NotForType", "description": "DEPRECATED use: not-for-context" },
+        "not-for-context": { "$ref": "#/definitions/NotForContext" }
       },
       "additionalProperties": false,
       "$ref": "#/definitions/TypeListMutualExclusion",
@@ -283,24 +323,26 @@
     "GroupType": {
       "type": "object",
       "properties": {
-        "group":        { "type": "string", "description": "Name of the group." },
-        "for-type":     { "$ref": "#/definitions/ForType" },
-        "not-for-type": { "$ref": "#/definitions/NotForType" },
-        "for-compiler": { "$ref": "#/definitions/CompilersType" },
-        "optimize":     { "$ref": "#/definitions/OptimizeType" },
-        "debug":        { "$ref": "#/definitions/DebugType" },
-        "warnings":     { "$ref": "#/definitions/WarningsType" },
-        "defines":      { "$ref": "#/definitions/DefinesType", "description": "DEPRECATED use: define" },
-        "define":       { "$ref": "#/definitions/DefinesType" },
-        "undefines":    { "$ref": "#/definitions/UndefinesType", "description": "DEPRECATED use: undefine" },
-        "undefine":     { "$ref": "#/definitions/UndefinesType" },
-        "add-paths":    { "$ref": "#/definitions/AddpathsType", "description": "DEPRECATED use: add-path" },
-        "add-path":     { "$ref": "#/definitions/AddpathsType" },
-        "del-paths":    { "$ref": "#/definitions/DelpathsType", "description": "DEPRECATED use: del-path" },
-        "del-path":     { "$ref": "#/definitions/DelpathsType" },
-        "misc":         { "$ref": "#/definitions/MiscTypes" },
-        "groups":       { "$ref": "#/definitions/GroupsType" },
-        "files":        { "$ref": "#/definitions/FilesType" }
+        "group":           { "type": "string", "description": "Name of the group." },
+        "for-type":        { "$ref": "#/definitions/ForType", "description": "DEPRECATED use: for-context" },
+        "for-context":     { "$ref": "#/definitions/ForContext" },
+        "not-for-type":    { "$ref": "#/definitions/NotForType", "description": "DEPRECATED use: not-for-context" },
+        "not-for-context": { "$ref": "#/definitions/NotForContext" },
+        "for-compiler":    { "$ref": "#/definitions/CompilersType" },
+        "optimize":        { "$ref": "#/definitions/OptimizeType" },
+        "debug":           { "$ref": "#/definitions/DebugType" },
+        "warnings":        { "$ref": "#/definitions/WarningsType" },
+        "defines":         { "$ref": "#/definitions/DefinesType", "description": "DEPRECATED use: define" },
+        "define":          { "$ref": "#/definitions/DefinesType" },
+        "undefines":       { "$ref": "#/definitions/UndefinesType", "description": "DEPRECATED use: undefine" },
+        "undefine":        { "$ref": "#/definitions/UndefinesType" },
+        "add-paths":       { "$ref": "#/definitions/AddpathsType", "description": "DEPRECATED use: add-path" },
+        "add-path":        { "$ref": "#/definitions/AddpathsType" },
+        "del-paths":       { "$ref": "#/definitions/DelpathsType", "description": "DEPRECATED use: del-path" },
+        "del-path":        { "$ref": "#/definitions/DelpathsType" },
+        "misc":            { "$ref": "#/definitions/MiscTypes" },
+        "groups":          { "$ref": "#/definitions/GroupsType" },
+        "files":           { "$ref": "#/definitions/FilesType" }
       },
       "$ref": "#/definitions/TypeListMutualExclusion",
       "anyOf": [
@@ -318,22 +360,24 @@
     "FileType": {
       "type": "object",
       "properties": {
-        "file":         { "type": "string", "description": "File name along with the path." },
-        "for-type":     { "$ref": "#/definitions/ForType" },
-        "not-for-type": { "$ref": "#/definitions/NotForType" },
-        "for-compiler": { "$ref": "#/definitions/CompilersType" },
-        "optimize":     { "$ref": "#/definitions/OptimizeType" },
-        "debug":        { "$ref": "#/definitions/DebugType" },
-        "warnings":     { "$ref": "#/definitions/WarningsType" },
-        "defines":      { "$ref": "#/definitions/DefinesType", "description": "DEPRECATED use: define" },
-        "define":       { "$ref": "#/definitions/DefinesType" },
-        "undefines":    { "$ref": "#/definitions/UndefinesType", "description": "DEPRECATED use: undefine" },
-        "undefine":     { "$ref": "#/definitions/UndefinesType" },
-        "add-paths":    { "$ref": "#/definitions/AddpathsType", "description": "DEPRECATED use: add-path" },
-        "add-path":     { "$ref": "#/definitions/AddpathsType" },
-        "del-paths":    { "$ref": "#/definitions/DelpathsType", "description": "DEPRECATED use: del-path" },
-        "del-path":     { "$ref": "#/definitions/DelpathsType" },
-        "misc":         { "$ref": "#/definitions/MiscTypes" }
+        "file":            { "type": "string", "description": "File name along with the path." },
+        "for-type":        { "$ref": "#/definitions/ForType", "description": "DEPRECATED use: for-context" },
+        "for-context":     { "$ref": "#/definitions/ForContext" },
+        "not-for-type":    { "$ref": "#/definitions/NotForType", "description": "DEPRECATED use: not-for-context" },
+        "not-for-context": { "$ref": "#/definitions/NotForContext" },
+        "for-compiler":    { "$ref": "#/definitions/CompilersType" },
+        "optimize":        { "$ref": "#/definitions/OptimizeType" },
+        "debug":           { "$ref": "#/definitions/DebugType" },
+        "warnings":        { "$ref": "#/definitions/WarningsType" },
+        "defines":         { "$ref": "#/definitions/DefinesType", "description": "DEPRECATED use: define" },
+        "define":          { "$ref": "#/definitions/DefinesType" },
+        "undefines":       { "$ref": "#/definitions/UndefinesType", "description": "DEPRECATED use: undefine" },
+        "undefine":        { "$ref": "#/definitions/UndefinesType" },
+        "add-paths":       { "$ref": "#/definitions/AddpathsType", "description": "DEPRECATED use: add-path" },
+        "add-path":        { "$ref": "#/definitions/AddpathsType" },
+        "del-paths":       { "$ref": "#/definitions/DelpathsType", "description": "DEPRECATED use: del-path" },
+        "del-path":        { "$ref": "#/definitions/DelpathsType" },
+        "misc":            { "$ref": "#/definitions/MiscTypes" }
       },
       "$ref": "#/definitions/TypeListMutualExclusion",
       "required": [ "file" ],
@@ -354,20 +398,22 @@
           "pattern": "(^[\\w \\/.+-]+$)|(^([\\w \\/.+-]+::)?([\\w \\/.+-]+)(&[\\w \\/.+-]+)?(:[\\w \\/.+-]+)(:[\\w \\/.+-]+)?(&[\\w \\/.+-]+)?(@(>=)?(\\d+\\.\\d+\\.\\d+((\\+|\\-)[\\w.\\/+-]+)?))?$)",
           "description": "Name of the software component. It can be a free text or a component identifier in the format [Cvendor::] Cclass [&Cbundle] :Cgroup [:Csub] [&Cvariant] [@[>=]Cversion]"
         },
-        "for-type":     { "$ref": "#/definitions/ForType" },
-        "not-for-type": { "$ref": "#/definitions/NotForType" },
-        "optimize":     { "$ref": "#/definitions/OptimizeType" },
-        "debug":        { "$ref": "#/definitions/DebugType" },
-        "warnings":     { "$ref": "#/definitions/WarningsType" },
-        "defines":      { "$ref": "#/definitions/DefinesType", "description": "DEPRECATED use: define" },
-        "define":       { "$ref": "#/definitions/DefinesType" },
-        "undefines":    { "$ref": "#/definitions/UndefinesType", "description": "DEPRECATED use: undefine" },
-        "undefine":     { "$ref": "#/definitions/UndefinesType" },
-        "add-paths":    { "$ref": "#/definitions/AddpathsType", "description": "DEPRECATED use: add-path" },
-        "add-path":     { "$ref": "#/definitions/AddpathsType" },
-        "del-paths":    { "$ref": "#/definitions/DelpathsType", "description": "DEPRECATED use: del-path" },
-        "del-path":     { "$ref": "#/definitions/DelpathsType" },
-        "misc":         { "$ref": "#/definitions/MiscTypes" }
+        "for-type":        { "$ref": "#/definitions/ForType", "description": "DEPRECATED use: for-context" },
+        "for-context":     { "$ref": "#/definitions/ForContext" },
+        "not-for-type":    { "$ref": "#/definitions/NotForType", "description": "DEPRECATED use: not-for-context" },
+        "not-for-context": { "$ref": "#/definitions/NotForContext" },
+        "optimize":        { "$ref": "#/definitions/OptimizeType" },
+        "debug":           { "$ref": "#/definitions/DebugType" },
+        "warnings":        { "$ref": "#/definitions/WarningsType" },
+        "defines":         { "$ref": "#/definitions/DefinesType", "description": "DEPRECATED use: define" },
+        "define":          { "$ref": "#/definitions/DefinesType" },
+        "undefines":       { "$ref": "#/definitions/UndefinesType", "description": "DEPRECATED use: undefine" },
+        "undefine":        { "$ref": "#/definitions/UndefinesType" },
+        "add-paths":       { "$ref": "#/definitions/AddpathsType", "description": "DEPRECATED use: add-path" },
+        "add-path":        { "$ref": "#/definitions/AddpathsType" },
+        "del-paths":       { "$ref": "#/definitions/DelpathsType", "description": "DEPRECATED use: del-path" },
+        "del-path":        { "$ref": "#/definitions/DelpathsType" },
+        "misc":            { "$ref": "#/definitions/MiscTypes" }
       },
       "$ref": "#/definitions/TypeListMutualExclusion",
       "required": [ "component" ],
@@ -389,23 +435,25 @@
           "type": "string",
           "description": "Layer type for compatible layers matching"
         },
-        "for-type":     { "$ref": "#/definitions/ForType" },
-        "not-for-type": { "$ref": "#/definitions/NotForType" },
-        "optimize":     { "$ref": "#/definitions/OptimizeType" },
-        "debug":        { "$ref": "#/definitions/DebugType" },
-        "warnings":     { "$ref": "#/definitions/WarningsType" },
-        "defines":      { "$ref": "#/definitions/DefinesType", "description": "DEPRECATED use: define" },
-        "define":       { "$ref": "#/definitions/DefinesType" },
-        "undefines":    { "$ref": "#/definitions/UndefinesType", "description": "DEPRECATED use: undefine" },
-        "undefine":     { "$ref": "#/definitions/UndefinesType" },
-        "add-paths":    { "$ref": "#/definitions/AddpathsType", "description": "DEPRECATED use: add-path" },
-        "add-path":     { "$ref": "#/definitions/AddpathsType" },
-        "del-paths":    { "$ref": "#/definitions/DelpathsType", "description": "DEPRECATED use: del-path" },
-        "del-path":     { "$ref": "#/definitions/DelpathsType" },
-        "misc":         { "$ref": "#/definitions/MiscTypes" }
+        "for-type":        { "$ref": "#/definitions/ForType", "description": "DEPRECATED use: for-context" },
+        "for-context":     { "$ref": "#/definitions/ForContext" },
+        "not-for-type":    { "$ref": "#/definitions/NotForType", "description": "DEPRECATED use: not-for-context" },
+        "not-for-context": { "$ref": "#/definitions/NotForContext" },
+        "optimize":        { "$ref": "#/definitions/OptimizeType" },
+        "debug":           { "$ref": "#/definitions/DebugType" },
+        "warnings":        { "$ref": "#/definitions/WarningsType" },
+        "defines":         { "$ref": "#/definitions/DefinesType", "description": "DEPRECATED use: define" },
+        "define":          { "$ref": "#/definitions/DefinesType" },
+        "undefines":       { "$ref": "#/definitions/UndefinesType", "description": "DEPRECATED use: undefine" },
+        "undefine":        { "$ref": "#/definitions/UndefinesType" },
+        "add-paths":       { "$ref": "#/definitions/AddpathsType", "description": "DEPRECATED use: add-path" },
+        "add-path":        { "$ref": "#/definitions/AddpathsType" },
+        "del-paths":       { "$ref": "#/definitions/DelpathsType", "description": "DEPRECATED use: del-path" },
+        "del-path":        { "$ref": "#/definitions/DelpathsType" },
+        "misc":            { "$ref": "#/definitions/MiscTypes" }
       },
       "$ref": "#/definitions/TypeListMutualExclusion",
-      "oneOf": [
+      "anyOf": [
         { "required": ["layer"] },
         { "required": ["type"]  }
       ],
@@ -545,8 +593,10 @@
           "type": "string",
           "description": "Path to software pack"
         },
-        "for-type":     { "$ref": "#/definitions/ForType" },
-        "not-for-type": { "$ref": "#/definitions/NotForType" }
+        "for-type":        { "$ref": "#/definitions/ForType", "description": "DEPRECATED use: for-context" },
+        "for-context":     { "$ref": "#/definitions/ForContext" },
+        "not-for-type":    { "$ref": "#/definitions/NotForType", "description": "DEPRECATED use: not-for-context" },
+        "not-for-context": { "$ref": "#/definitions/NotForContext" }
       },
       "$ref": "#/definitions/TypeListMutualExclusion",
       "required": [ "pack" ],
@@ -561,21 +611,23 @@
     "SetupType": {
       "type": "object",
       "properties": {
-        "setup":        { "type": "string" },
-        "for-type":     { "$ref": "#/definitions/ForType" },
-        "not-for-type": { "$ref": "#/definitions/NotForType" },
-        "for-compiler": { "$ref": "#/definitions/CompilersType" },
-        "optimize":     { "$ref": "#/definitions/OptimizeType" },
-        "debug":        { "$ref": "#/definitions/DebugType" },
-        "defines":     { "$ref": "#/definitions/DefinesType", "description": "DEPRECATED use: define" },
-        "define":      { "$ref": "#/definitions/DefinesType" },
-        "undefines":   { "$ref": "#/definitions/UndefinesType", "description": "DEPRECATED use: undefine" },
-        "undefine":    { "$ref": "#/definitions/UndefinesType" },
-        "add-paths":   { "$ref": "#/definitions/AddpathsType", "description": "DEPRECATED use: add-path" },
-        "add-path":    { "$ref": "#/definitions/AddpathsType" },
-        "del-paths":   { "$ref": "#/definitions/DelpathsType", "description": "DEPRECATED use: del-path" },
-        "del-path":    { "$ref": "#/definitions/DelpathsType" },
-        "misc":         { "$ref": "#/definitions/MiscTypes" }
+        "setup":           { "type": "string" },
+        "for-type":        { "$ref": "#/definitions/ForType", "description": "DEPRECATED use: for-context" },
+        "for-context":     { "$ref": "#/definitions/ForContext" },
+        "not-for-type":    { "$ref": "#/definitions/NotForType", "description": "DEPRECATED use: not-for-context" },
+        "not-for-context": { "$ref": "#/definitions/NotForContext" },
+        "for-compiler":    { "$ref": "#/definitions/CompilersType" },
+        "optimize":        { "$ref": "#/definitions/OptimizeType" },
+        "debug":           { "$ref": "#/definitions/DebugType" },
+        "defines":         { "$ref": "#/definitions/DefinesType", "description": "DEPRECATED use: define" },
+        "define":          { "$ref": "#/definitions/DefinesType" },
+        "undefines":       { "$ref": "#/definitions/UndefinesType", "description": "DEPRECATED use: undefine" },
+        "undefine":        { "$ref": "#/definitions/UndefinesType" },
+        "add-paths":       { "$ref": "#/definitions/AddpathsType", "description": "DEPRECATED use: add-path" },
+        "add-path":        { "$ref": "#/definitions/AddpathsType" },
+        "del-paths":       { "$ref": "#/definitions/DelpathsType", "description": "DEPRECATED use: del-path" },
+        "del-path":        { "$ref": "#/definitions/DelpathsType" },
+        "misc":            { "$ref": "#/definitions/MiscTypes" }
       },
       "$ref": "#/definitions/TypeListMutualExclusion",
       "additionalProperties": false

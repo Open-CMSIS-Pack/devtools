@@ -10,9 +10,9 @@ solution:
 
   packs:
     - pack: ARM::RteTestGenerator@0.1.0
-      for-type: +Gen
+      for-context: +Gen
     - pack: ARM::RteTest_DFP@0.2.0
-      for-type: +CM0
+      for-context: +CM0
 
   projects:
     - project: pack_contexts.cproject.yml

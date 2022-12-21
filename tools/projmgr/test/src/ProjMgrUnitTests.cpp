@@ -2493,3 +2493,31 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_PreInclude) {
   CompareFile(testoutput_folder + "/pre-include+CM0.cbuild.yml",
     testinput_folder + "/TestSolution/ref/pre-include+CM0.cbuild.yml");
 }
+
+TEST_F(ProjMgrUnitTests, RunCheckForContext) {
+  const string& filenameInput = testinput_folder + "/TestSolution/contexts.csolution.yml";
+  EXPECT_TRUE(m_parser.ParseCsolution(filenameInput, false));
+  const CsolutionItem csolutionItem = m_parser.GetCsolution();
+  const auto& contexts = csolutionItem.contexts;
+  const string& cproject = "contexts.cproject.yml";
+  const vector<ContextDesc> expectedVec = {
+    {cproject, { {{"B1","T1"}}, { } }},
+    {cproject, { { }, {{"B1","T2"}} }},
+    {cproject, { {{"B2","T1"}}, { } }},
+    {cproject, { { }, {{"B2","T2"}} }},
+  };
+  auto it = contexts.begin();
+  for (const auto& expected : expectedVec) {
+    ASSERT_EQ(expected.type.include.size(), (*it).type.include.size());
+    ASSERT_EQ(expected.type.exclude.size(), (*it).type.exclude.size());
+    if (!expected.type.include.empty()) {
+      EXPECT_EQ(expected.type.include.front().build, (*it).type.include.front().build);
+      EXPECT_EQ(expected.type.include.front().target, (*it).type.include.front().target);
+    }
+    if (!expected.type.exclude.empty()) {
+      EXPECT_EQ(expected.type.exclude.front().build, (*it).type.exclude.front().build);
+      EXPECT_EQ(expected.type.exclude.front().target, (*it).type.exclude.front().target);
+    }
+    it++;
+  }
+}

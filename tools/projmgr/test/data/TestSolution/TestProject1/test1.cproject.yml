@@ -18,7 +18,7 @@ project:
       del-path:
         - ./path/2/component
     - component: RteTest.Check.Missing
-      not-for-type:
+      not-for-context:
         - .Debug
         - .Release
   groups:
@@ -74,11 +74,11 @@ project:
               Lib: [-Lib-file-GCC]
             - C-CPP: [-C-CPP-file]
     - group: Debug Group
-      for-type: .Debug
+      for-context: .Debug
       files:
         - file: debug.c
     - group: Release Group
-      for-type: .Release
+      for-context: .Release
       files:
         - file: release.c
           define:
@@ -90,4 +90,4 @@ project:
           del-path:
             - ./path/2/release/file
         - file: excluded.c
-          not-for-type: .Release
+          not-for-context: .Release

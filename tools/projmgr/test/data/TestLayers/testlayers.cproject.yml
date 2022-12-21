@@ -7,7 +7,7 @@ project:
   layers:
     - layer: ./Layer1/layer1.clayer.yml
     - layer: ./Layer2/layer2.clayer.yml
-      for-type: .Debug
+      for-context: .Debug
     - layer: ./Layer3/layer3.clayer.yml
-      for-type: .Release
+      for-context: .Release
 
