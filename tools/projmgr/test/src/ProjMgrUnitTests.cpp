@@ -642,18 +642,27 @@ TEST_F(ProjMgrUnitTests, ListLayersCompatible) {
 debug csolution: validating connections for context 'genericlayers.CompatibleLayers\\+AnyBoard'\n\
 debug csolution: validating combined connections:\n\
   .*/TestLayers/genericlayers.cproject.yml\n\
+    \\(Project Connections\\)\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/board1.clayer.yml\n\
+    \\(Board1 Connections\\)\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml\n\
+    \\(Test variant Connections\\)\n\
 debug csolution: connections are valid\n\
 debug csolution: validating combined connections:\n\
   .*/TestLayers/genericlayers.cproject.yml\n\
+    \\(Project Connections\\)\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/board2.clayer.yml\n\
+    \\(Board2 Connections\\)\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml\n\
+    \\(Test variant Connections\\)\n\
 debug csolution: connections are valid\n\
 debug csolution: validating combined connections:\n\
   .*/TestLayers/genericlayers.cproject.yml\n\
+    \\(Project Connections\\)\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml\n\
+    \\(Board3 Connections\\)\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml\n\
+    \\(Test variant Connections\\)\n\
 debug csolution: connections are valid\n\
 debug csolution: multiple clayers match type 'Board':\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/board1.clayer.yml\n\
@@ -662,14 +671,26 @@ debug csolution: multiple clayers match type 'Board':\n\
 debug csolution: clayer of type 'TestVariant' was uniquely found:\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml\n\
 debug csolution: configuration match #1:\n\
+  .*/TestLayers/genericlayers.cproject.yml\n\
+    \\(Project Connections\\)\n\
   Board: .*/ARM/RteTest_DFP/0.2.0/Layers/board1.clayer.yml\n\
+    \\(Board1 Connections\\)\n\
   TestVariant: .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml\n\
+    \\(Test variant Connections\\)\n\
 debug csolution: configuration match #2:\n\
+  .*/TestLayers/genericlayers.cproject.yml\n\
+    \\(Project Connections\\)\n\
   Board: .*/ARM/RteTest_DFP/0.2.0/Layers/board2.clayer.yml\n\
+    \\(Board2 Connections\\)\n\
   TestVariant: .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml\n\
+    \\(Test variant Connections\\)\n\
 debug csolution: configuration match #3:\n\
+  .*/TestLayers/genericlayers.cproject.yml\n\
+    \\(Project Connections\\)\n\
   Board: .*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml\n\
+    \\(Board3 Connections\\)\n\
   TestVariant: .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml\n\
+    \\(Test variant Connections\\)\n\
 ";
 
   const string& errStr = streamRedirect.GetErrorString();
@@ -700,23 +721,31 @@ TEST_F(ProjMgrUnitTests, ListLayersConfigurations) {
 debug csolution: configuration match #1:\n\
   .*/TestLayers/config.clayer.yml\n\
     set: set1.select1 \\(set 1 select 1 - connect R\\)\n\
+    \\(test connect common T\\)\n\
+    \\(test connect common U\\)\n\
   .*/TestLayers/config.cproject.yml\n\
     set: set1.select1 \\(set 1 select 1 - project X\\)\n\
   Config1: .*/ARM/RteTest_DFP/0.2.0/Layers/config1.clayer.yml\n\
     set: set1.select1 \\(set 1 select 1 - connect A\\)\n\
     set: set2.select1 \\(set 2 select 1 - connect C\\)\n\
+    \\(test connect common E\\)\n\
   Config2: .*/ARM/RteTest_DFP/0.2.0/Layers/config2.clayer.yml\n\
     set: set1.select1 \\(set 1 select 1 - connect F\\)\n\
+    \\(test connect common H\\)\n\
 debug csolution: configuration match #2:\n\
   .*/TestLayers/config.clayer.yml\n\
     set: set1.select2 \\(set 1 select 2 - connect S\\)\n\
+    \\(test connect common T\\)\n\
+    \\(test connect common U\\)\n\
   .*/TestLayers/config.cproject.yml\n\
     set: set1.select2 \\(set 1 select 2 - project Y\\)\n\
   Config1: .*/ARM/RteTest_DFP/0.2.0/Layers/config1.clayer.yml\n\
     set: set1.select2 \\(set 1 select 2 - connect B\\)\n\
     set: set2.select2 \\(set 2 select 2 - connect D\\)\n\
+    \\(test connect common E\\)\n\
   Config2: .*/ARM/RteTest_DFP/0.2.0/Layers/config2.clayer.yml\n\
     set: set1.select2 \\(set 1 select 2 - connect G\\)\n\
+    \\(test connect common H\\)\n\
 ";
 
   const string& errStr = streamRedirect.GetErrorString();
@@ -772,16 +801,23 @@ TEST_F(ProjMgrUnitTests, ListLayersUniquelyCompatibleBoard) {
 debug csolution: validating connections for context 'genericlayers.CompatibleLayers\\+Board3'\n\
 debug csolution: validating combined connections:\n\
   .*/TestLayers/genericlayers.cproject.yml\n\
-  .*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml\n\
-  .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml\n\
+    \\(Project Connections\\)\n\
+  Board: .*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml\n\
+    \\(Board3 Connections\\)\n\
+  TestVariant: .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml\n\
+    \\(Test variant Connections\\)\n\
 debug csolution: connections are valid\n\
 debug csolution: clayer of type 'Board' was uniquely found:\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml\n\
 debug csolution: clayer of type 'TestVariant' was uniquely found:\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml\n\
 debug csolution: configuration match #1:\n\
+  .*/TestLayers/genericlayers.cproject.yml\n\
+    \\(Project Connections\\)\n\
   Board: .*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml\n\
+    \\(Board3 Connections\\)\n\
   TestVariant: .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml\n\
+    \\(Test variant Connections\\)\n\
 ";
 
   const string& errStr = streamRedirect.GetErrorString();
@@ -815,9 +851,12 @@ debug csolution: no clayer matches type 'UnknownType'\n\
 debug csolution: clayer type 'DifferentFromDescriptionInPdsc' does not match type 'PdscType' in pack description\n\
 debug csolution: validating combined connections:\n\
   .*/TestLayers/genericlayers.cproject.yml\n\
-  .*/ARM/RteTest_DFP/0.2.0/Layers/board1.clayer.yml\n\
-  .*/ARM/RteTest_DFP/0.2.0/Layers/incompatible.clayer.yml\n\
-  .*/ARM/RteTest_DFP/0.2.0/Layers/pdsc-type-mismatch.clayer.yml\n\
+    \\(Project Connections\\)\n\
+  Board: .*/ARM/RteTest_DFP/0.2.0/Layers/board1.clayer.yml\n\
+    \\(Board1 Connections\\)\n\
+  Incompatible: .*/ARM/RteTest_DFP/0.2.0/Layers/incompatible.clayer.yml\n\
+    \\(Incompatible Connections\\)\n\
+  DifferentFromDescriptionInPdsc: .*/ARM/RteTest_DFP/0.2.0/Layers/pdsc-type-mismatch.clayer.yml\n\
 debug csolution: connections provided with multiple different values:\n\
   MultipleProvidedNonIdentical0\n\
   MultipleProvidedNonIdentical1\n\
@@ -829,9 +868,12 @@ debug csolution: sum of required values exceed provided:\n\
 debug csolution: connections are invalid\n\
 debug csolution: validating combined connections:\n\
   .*/TestLayers/genericlayers.cproject.yml\n\
-  .*/ARM/RteTest_DFP/0.2.0/Layers/board2.clayer.yml\n\
-  .*/ARM/RteTest_DFP/0.2.0/Layers/incompatible.clayer.yml\n\
-  .*/ARM/RteTest_DFP/0.2.0/Layers/pdsc-type-mismatch.clayer.yml\n\
+    \\(Project Connections\\)\n\
+  Board: .*/ARM/RteTest_DFP/0.2.0/Layers/board2.clayer.yml\n\
+    \\(Board2 Connections\\)\n\
+  Incompatible: .*/ARM/RteTest_DFP/0.2.0/Layers/incompatible.clayer.yml\n\
+    \\(Incompatible Connections\\)\n\
+  DifferentFromDescriptionInPdsc: .*/ARM/RteTest_DFP/0.2.0/Layers/pdsc-type-mismatch.clayer.yml\n\
 debug csolution: connections provided with multiple different values:\n\
   MultipleProvidedNonIdentical0\n\
   MultipleProvidedNonIdentical1\n\
@@ -843,9 +885,12 @@ debug csolution: sum of required values exceed provided:\n\
 debug csolution: connections are invalid\n\
 debug csolution: validating combined connections:\n\
   .*/TestLayers/genericlayers.cproject.yml\n\
-  .*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml\n\
-  .*/ARM/RteTest_DFP/0.2.0/Layers/incompatible.clayer.yml\n\
-  .*/ARM/RteTest_DFP/0.2.0/Layers/pdsc-type-mismatch.clayer.yml\n\
+    \\(Project Connections\\)\n\
+  Board: .*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml\n\
+    \\(Board3 Connections\\)\n\
+  Incompatible: .*/ARM/RteTest_DFP/0.2.0/Layers/incompatible.clayer.yml\n\
+    \\(Incompatible Connections\\)\n\
+  DifferentFromDescriptionInPdsc: .*/ARM/RteTest_DFP/0.2.0/Layers/pdsc-type-mismatch.clayer.yml\n\
 debug csolution: connections provided with multiple different values:\n\
   MultipleProvidedNonIdentical0\n\
   MultipleProvidedNonIdentical1\n\

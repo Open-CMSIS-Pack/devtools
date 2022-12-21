@@ -561,9 +561,8 @@ bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context) {
       const auto& type = m_parser->GetGenericClayers()[*item.filename].type;
       msg += "\n  " + (type.empty() ? "" : type + ": ") + *item.filename;
       for (const auto& connect : item.connections) {
-        if (!connect->set.empty()) {
-          msg += "\n    set: " + connect->set + " (" + (connect->info.empty() ? "" : connect->info + " - ") + connect->connect + ")";
-        }
+        msg += "\n    " + (connect->set.empty() ? "" : "set: " + connect->set + " ") + "(" +
+          (connect->info.empty() ? "" : connect->info + " - ") + connect->connect + ")";
       }
     }
     ProjMgrLogger::Debug(msg);
@@ -614,24 +613,14 @@ bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context) {
 
   // print all valid configuration options
   if (context.validConnections.size() > 0) {
-    map<int, map<string, map<string, ConnectPtrVec>>> configurationOptions;
-    int index = 1;
+    map<int, map<string, map<string, set<const ConnectItem*>>>> configurationOptions;
+    int index = 0;
     for (const auto& combination : context.validConnections) {
-      bool hasConfigOption = false;
+      index++;
       for (const auto& item : combination) {
-        if (!item.type->empty()) {
-          hasConfigOption = true;
-          configurationOptions[index][*item.type][*item.filename];
-        }
         for (const auto& connect : item.connections) {
-          if (!connect->set.empty()) {
-            hasConfigOption = true;
-            configurationOptions[index][*item.type][*item.filename].push_back(connect);
-          }
+          configurationOptions[index][*item.type][*item.filename].insert(connect);
         }
-      }
-      if (hasConfigOption) {
-        index++;
       }
     }
     for (const auto& [index, types] : configurationOptions) {
@@ -639,8 +628,9 @@ bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context) {
       for (const auto& [type, filenames] : types) {
         for (const auto& [filename, options] : filenames) {
           msg += "\n  " + (type.empty() ? "" : type + ": ") + filename;
-          for (const auto& option : options) {
-            msg += "\n    set: " + option->set + " (" + (option->info.empty() ? "" : option->info + " - ") + option->connect + ")";
+          for (const auto& connect : options) {
+            msg += "\n    " + (connect->set.empty() ? "" : "set: " + connect->set + " ") + "(" +
+              (connect->info.empty() ? "" : connect->info + " - ") + connect->connect + ")";
           }
         }
       }
@@ -711,20 +701,19 @@ ConnectionsCollectionMap ProjMgrWorker::ClassifyConnections(const ConnectionsCol
     // get common connections
     ConnectPtrVec commonConnections;
     bool hasMultipleSelect = false;
-    for (const auto& [configId, connections] : connectionsMap) {
-      if (connections.size() > 1) {
+    for (const auto& [configId, connectionsEntry] : connectionsMap) {
+      if (!configId.empty()) {
         // 'config-id' has multiple 'select' choices
         hasMultipleSelect = true;
-      }
-      else {
+      } else {
         // 'config-id' has only one 'select'
-        commonConnections.insert(commonConnections.end(), connections.begin(), connections.end());
+        commonConnections.insert(commonConnections.end(), connectionsEntry.begin(), connectionsEntry.end());
       }
     }
     // iterate over 'select' choices
     if (hasMultipleSelect) {
       for (const auto& [configId, selectConnections] : connectionsMap) {
-        if (selectConnections.size() > 1) {
+        if (!configId.empty()) {
           for (const auto& connect : selectConnections) {
             ConnectionsCollection collection = { collectionEntry.filename, collectionEntry.type, commonConnections };
             collection.connections.push_back(connect);
