@@ -386,6 +386,17 @@ bool CPackOptions::SetVerbose(bool bVerbose)
 }
 
 /**
+ * @brief enable suppressing of error message
+ * @param bVerbose set verbose mode
+ * @return passed / failed
+ */
+bool CPackOptions::SetAllowSuppresssError(bool bAllow)
+{
+  ErrLog::Get()->SetAllowSuppressError(bAllow);
+  return true;
+}
+
+/**
  * @brief test if the current PDSC file is under test or a reference file
  * @param filename string name to check
  * @return skip file or not

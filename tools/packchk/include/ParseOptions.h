@@ -36,6 +36,7 @@ protected:
   bool SetUrlRef(const std::string& urlRef);
   bool SetVerbose(bool bVerbose);
   bool SetIgnoreOtherPdscFiles(bool bIgnore);
+  bool SetAllowSuppresssError(bool bAllow = true);
 
 private:
   CPackOptions& m_packOptions;
