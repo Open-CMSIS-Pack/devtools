@@ -21,3 +21,7 @@ layer:
     - connect: "test connect common T"
       provides:
         - connectT
+
+    - connect: "test connect common U"
+      provides:
+        - connectU

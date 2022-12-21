@@ -648,6 +648,7 @@
         },
         "set": {
           "type": "string",
+          "pattern": "^.+\\..+$",
           "description": "Set configuration option in the format 'config-id.select'"
         },
         "info": {
