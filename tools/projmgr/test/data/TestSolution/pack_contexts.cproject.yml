@@ -4,8 +4,8 @@ project:
   compiler: AC6
   components:
     - component: Startup
-      for-type:
+      for-context:
         - +CM0
     - component: Device:RteTest Generated Component:RteTest
-      for-type:
+      for-context:
         - +Gen

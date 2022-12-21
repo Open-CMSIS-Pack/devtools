@@ -6,13 +6,13 @@ project:
   layers:
     - type: Board
     - type: TestVariant
-      for-type: .CompatibleLayers
+      for-context: .CompatibleLayers
     - type: Incompatible
-      for-type: .IncompatibleLayers
+      for-context: .IncompatibleLayers
     - type: UnknownType
-      for-type: .IncompatibleLayers
+      for-context: .IncompatibleLayers
     - type: PdscType
-      for-type: .IncompatibleLayers
+      for-context: .IncompatibleLayers
 
   connections:
     - connect: Project Connections

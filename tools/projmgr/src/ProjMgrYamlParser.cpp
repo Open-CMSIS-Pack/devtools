@@ -280,8 +280,16 @@ bool ProjMgrYamlParser::ParseComponents(const YAML::Node& parent, vector<Compone
 
 bool ProjMgrYamlParser::ParseTypeFilter(const YAML::Node& parent, TypeFilter& type) {
   vector<string> include, exclude;
-  ParseVectorOrString(parent, YAML_FORTYPE, include);
-  ParseVectorOrString(parent, YAML_NOTFORTYPE, exclude);
+  ParseVectorOrString(parent, YAML_FORCONTEXT, include);
+  if (include.empty()) {
+    // TODO: after deprecation remove 'for-type' keyword parsing in benefit of 'for-context'
+    ParseVectorOrString(parent, YAML_FORTYPE, include);
+  }
+  ParseVectorOrString(parent, YAML_NOTFORCONTEXT, exclude);
+  if (exclude.empty()) {
+    // TODO: after deprecation remove 'not-for-type' keyword parsing in benefit of 'not-for-context'
+    ParseVectorOrString(parent, YAML_NOTFORTYPE, exclude);
+  }
   if (!ParseTypePair(include, type.include) ||
       !ParseTypePair(exclude, type.exclude)) {
     return false;
@@ -600,7 +608,9 @@ const set<string> solutionKeys = {
 const set<string> projectsKeys = {
   YAML_PROJECT,
   YAML_FORTYPE,
+  YAML_FORCONTEXT,
   YAML_NOTFORTYPE,
+  YAML_NOTFORCONTEXT,
 };
 
 const set<string> projectKeys = {
@@ -726,13 +736,17 @@ const set<string> packsKeys = {
   YAML_PACK,
   YAML_PATH,
   YAML_FORTYPE,
+  YAML_FORCONTEXT,
   YAML_NOTFORTYPE,
+  YAML_NOTFORCONTEXT,
 };
 
 const set<string> componentsKeys = {
   YAML_COMPONENT,
   YAML_FORTYPE,
+  YAML_FORCONTEXT,
   YAML_NOTFORTYPE,
+  YAML_NOTFORCONTEXT,
   YAML_COMPILER,
   YAML_OPTIMIZE,
   YAML_DEBUG,
@@ -760,7 +774,9 @@ const set<string> layersKeys = {
   YAML_LAYER,
   YAML_TYPE,
   YAML_FORTYPE,
+  YAML_FORCONTEXT,
   YAML_NOTFORTYPE,
+  YAML_NOTFORCONTEXT,
   YAML_COMPILER,
   YAML_OPTIMIZE,
   YAML_DEBUG,
@@ -779,7 +795,9 @@ const set<string> layersKeys = {
 const set<string> groupsKeys = {
   YAML_GROUP,
   YAML_FORTYPE,
+  YAML_FORCONTEXT,
   YAML_NOTFORTYPE,
+  YAML_NOTFORCONTEXT,
   YAML_FORCOMPILER,
   YAML_GROUPS,
   YAML_FILES,
@@ -801,7 +819,9 @@ const set<string> groupsKeys = {
 const set<string> filesKeys = {
   YAML_FILE,
   YAML_FORTYPE,
+  YAML_FORCONTEXT,
   YAML_NOTFORTYPE,
+  YAML_NOTFORCONTEXT,
   YAML_FORCOMPILER,
   YAML_CATEGORY,
   YAML_COMPILER,

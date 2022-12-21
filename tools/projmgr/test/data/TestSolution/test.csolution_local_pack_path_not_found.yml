@@ -76,5 +76,5 @@ solution:
 
   projects:
     - project: ./TestProject1/test1.cproject.yml
-      for-type: +CM0
+      for-context: +CM0
 

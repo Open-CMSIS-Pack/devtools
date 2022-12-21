@@ -7,5 +7,5 @@ project:
   layers:
     - layer: ./Layer2/layer2.clayer_package_with_pname.yml
     - layer: ./Layer3/layer3.clayer.yml
-      for-type: .Release
+      for-context: .Release
 
