@@ -464,3 +464,34 @@ TEST_F(PackChkIntegTests, CheckPackFileName) {
   }
 }
 
+// Validate "--allow-suppress-error"
+TEST_F(PackChkIntegTests, CheckAllowSuppressError) {
+  const char* argv[5];
+
+  const string& pdscFile = PackChkIntegTestEnv::localtestdata_dir +
+    "/AllowSuppressError/TestVendor.TestInvalidPack.pdsc";
+  ASSERT_TRUE(RteFsUtils::Exists(pdscFile));
+
+  argv[0] = (char*)"";
+  argv[1] = (char*)pdscFile.c_str();
+  argv[2] = (char*)"--allow-suppress-error";
+  argv[3] = (char*)"-x";
+  argv[4] = (char*)"M323";
+
+  PackChk packChk;
+  EXPECT_EQ(0, packChk.Check(5, argv, nullptr));
+
+  auto errMsgs = ErrLog::Get()->GetLogMessages();
+  bool bFound = false;
+  for (const string& msg : errMsgs) {
+    size_t s;
+    if ((s = msg.find("M323")) != string::npos) {
+      bFound = true;
+      break;
+    }
+  }
+
+  if (bFound) {
+    FAIL() << "error: found error M323";
+  }
+}

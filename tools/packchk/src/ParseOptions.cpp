@@ -66,6 +66,16 @@ bool ParseOptions::SetVerbose(bool bVerbose)
 }
 
 /**
+ * @brief option "--allow-suppress-error"
+ * @param bVerbose set verbose mode
+ * @return passed / failed
+ */
+bool ParseOptions::SetAllowSuppresssError(bool bAllow /*= true*/)
+{
+  return m_packOptions.SetAllowSuppresssError(bAllow);
+}
+
+/**
  * @brief option "filename under test"
  * @param filename string input filename
  * @return passed / failed
@@ -207,6 +217,12 @@ ParseOptions::Result ParseOptions::Parse(int argc, const char* argv[])
         if(!AddRefPackFile(s)) {
           bOk = false;
         }
+      }
+    }
+
+    if (parseResult.count("allow-suppress-error"))  {
+      if(!SetAllowSuppresssError()) {
+        bOk = false;
       }
     }
 

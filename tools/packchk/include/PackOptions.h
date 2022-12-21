@@ -29,6 +29,7 @@ public:
   bool GetIgnoreOtherPdscFiles();
   bool AddRefPdscFile(const std::string& filename);
   bool HaltProgramExecution();
+  bool SetAllowSuppresssError(bool bAllow);
 
   std::string GetCurrentDateTime();
 
