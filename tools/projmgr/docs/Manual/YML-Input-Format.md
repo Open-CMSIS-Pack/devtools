@@ -11,10 +11,11 @@ Project Manager.
 
 - [YML Input Format](#yml-input-format)
   - [Name Conventions](#name-conventions)
-    - [Pack Name Conventions](#pack-name-conventions)
-    - [Component Name Conventions](#component-name-conventions)
-    - [Device Name Conventions](#device-name-conventions)
-    - [Board Name Conventions](#board-name-conventions)
+    - [`pack:` Name Conventions](#pack-name-conventions)
+    - [`component:` Name Conventions](#component-name-conventions)
+    - [`device:` Name Conventions](#device-name-conventions)
+    - [`board:` Name Conventions](#board-name-conventions)
+    - [`context:` Name Conventions](#context-name-conventions)
   - [Access Sequences](#access-sequences)
   - [Project File Structure](#project-file-structure)
     - [`default:`](#default)
@@ -52,14 +53,14 @@ Project Manager.
     - [`device:`](#device)
   - [Processor Attributes](#processor-attributes)
     - [`processor:`](#processor)
-  - [Target and Build Types](#target-and-build-types)
+  - [Context](#context)
     - [`target-types:`](#target-types)
     - [`build-types:`](#build-types)
+    - [`context-map:`](#context-map)
   - [Build/Target-Type control](#buildtarget-type-control)
-    - [`for-type:`](#for-type)
-    - [`not-for-type:`](#not-for-type)
-      - [type list](#type-list)
-      - [list nodes](#list-nodes-1)
+    - [`for-context:`](#for-context)
+    - [`not-for-context:`](#not-for-context)
+      - [context list](#context-list)
   - [Related Projects](#related-projects)
     - [`projects:`](#projects)
   - [Source File Management](#source-file-management)
@@ -100,11 +101,11 @@ Project Manager.
 
 ## Name Conventions
 
-### Pack Name Conventions
+### `pack:` Name Conventions
 
-The CMSIS Project Manager uses the following syntax to specify the `pack:` names in the `*.yml` files.
+The **csolution - CMSIS Project Manager** uses the following syntax to specify the `pack:` names in the `*.yml` files.
 
-```text
+```yml
 vendor [:: pack-name [@[~ | >=] version] ]
 ```
 
@@ -123,11 +124,11 @@ Element      |              | Description
 - pack:   Keil::STM*                        # All Software Packs that start with 'STM' from vendor 'Keil'
 ```
 
-### Component Name Conventions
+### `component:` Name Conventions
 
-The CMSIS Project Manager uses the following syntax to specify the `component:` names in the `*.yml` files.
+The **csolution - CMSIS Project Manager** uses the following syntax to specify the `component:` names in the `*.yml` files.
 
-```text
+```yml
 [Cvendor::] Cclass [&Cbundle] :Cgroup [:Csub] [&Cvariant] [@[~ | >=]Cversion]
 ```
 
@@ -175,12 +176,12 @@ The fully resolved component name is shown in the [`*.cbuild.yml`](YML-CBuild-Fo
 - component: Keil::USB&MDK-Pro:CORE&Release@6.15.1    # USB CORE component from bundle MDK-Pro in variant 'Release' and version 6.15.1
 ```
 
-### Device Name Conventions
+### `device:` Name Conventions
 
 The device specifies multiple attributes about the target that ranges from the processor architecture to Flash
 algorithms used for device programming. The following syntax is used to specify a `device:` value in the `*.yml` files.
 
-```text
+```yml
 [Dvendor:: [device_name] ] [:Pname]
 ```
 
@@ -207,12 +208,12 @@ device: LPC55S69JEV98:cm33_core0           # Device name (exact name as defined 
 device: :cm33_core0                        # Pname added to a previously defined device name (or a device derived from a board)
 ```
 
-### Board Name Conventions
+### `board:` Name Conventions
 
 Evaluation Boards define indirectly a device via the related BSP. The following syntax is used to specify a `board:`
 value in the `*.yml` files.
 
-```text
+```yml
 [vendor::] board_name [:revision] 
 ```
 
@@ -233,6 +234,52 @@ board: LPCXpresso55S28                            # The LPCXpresso55S28 board
 board: STMicroelectronics::NUCLEO-L476RG:Rev.C    # A board with revision specification
 ```
 
+### `context:` Name Conventions
+
+A `context:` name combines `project-name`, `built-type`, and `target-type` and is used on various places in the CMSIS-Toolbox.  The following syntax is used to specify a `context:` name.
+
+```yml
+[project-name][.build-type][+target-type]
+```
+
+Element        |              | Description
+:--------------|--------------|:---------------------
+`project-name` |   Optional   | Project name of a project (base name of the *.cproject.yml file).
+`.build-type`  |   Optional   | The [`build-type`](#build-types) name that is currently processed.
+`+target-type` |   Optional   | The [`target-type`](#target-types) name that is currently processed.
+
+- When `project-name` is omitted, the `project-name` is the base name of the `*.cproject.yml` file.
+- When `.build-type` is omitted, it matches with any possible `.build-type`.
+- When `+target-type` is omitted, it matches with any possible `+target-type`.
+
+By default the [`build-types:`](#build-types) and [`target-types:`](#target-types) specified in the `*.csolution.yml` file are directly mapped to the `context` name. 
+
+Using the [`context-map:`](#context-map) node it is possible to assign a different `.build-type` and/or `+target-type` mapping for a specific `project-name`.
+
+**Example:**
+
+Show the different possible context settings of a `*.csolution.yml` file.
+
+```txt
+AWS_MQTT_MutualAuth_SW_Framework>csolution list contexts -s Demo.csolution.yml
+Demo.Debug+AVH
+Demo.Debug+IP-Stack
+Demo.Debug+WiFi
+Demo.Release+AVH
+Demo.Release+IP-Stack
+Demo.Release+WiFi
+```
+
+The `context` name is also used in [`for-context:`](#for-context) and [`not-for-context:`](#not-for-context) nodes that allow to include or exclude items depending on the `context`. In many cases the `project-name` can be omitted as the `context` name is within a specific `*.cproject.yml` file or applied to a specific `*.cproject.yml` file.
+
+> **Note:**
+> In previous releases of the CMSIS-Toolbox `for-type:` and `not-for-type:` where used.  For backward  compatibility:
+> 
+> - `for-context:` is identical to `for-type:`
+> - `not-for-context:` is identical to `not-for-type:`.
+> 
+> It is however recommended to use the new `for-context:` and `not-for-context:` nodes as the older versions will be deprecated.
+
 ## Access Sequences
 
 The following **access sequences** allow to use arguments from the CMSIS Project Manager as arguments of the various
@@ -247,11 +294,11 @@ Access Sequence                                | Description
 `$BuildType$`                                  | [Build-type](#build-types) name of the currently process project.
 `$TargetType$`                                 | [Target-type](#target-types) name of the currently process project.
 `$Compiler$`                                   | [Compiler](#compiler) name of the compiler used in this project context.
-`$Output(project[.build-type][+target-type])$` | Path to the output file of a related project that is defined in the `*.csolution.yml` file.
-`$OutDir(project[.build-type][+target-type])$` | Path to the output directory of a related project that is defined in the `*.csolution.yml` file.
-`$Source(project[.build-type][+target-type])$` | Path to the source directory of a related project that is defined in the `*.csolution.yml` file.
+`$Output(context)$` | Path to the output file of a related project that is defined in the `*.csolution.yml` file.
+`$OutDir(context)$` | Path to the output directory of a related project that is defined in the `*.csolution.yml` file.
+`$Source(context)$` | Path to the source directory of a related project that is defined in the `*.csolution.yml` file.
 
-The `.build-type` and `+target-type` can be explicitly specified. When omitted the `.build-type` and/or `+target-type`
+For a [`context`](#context-name-conventions) the `.build-type` and `+target-type` can be explicitly specified. When omitted the `.build-type` and/or `+target-type`
 of the current processed context is used.
 
 > **Note:** The access sequences below are not completed yet, as they require a change to CMSIS-Build.
@@ -505,14 +552,14 @@ The *key*/*value* pairs in a list node can be in any order.  The two following l
 might be confusing for `yml` files that are generated by an IDE.
 
 ```yml
-build-types:
+  build-types:
     - type: Release         # build-type name
       optimize: size        # optimize for size
       debug: off            # generate no debug information for the release build
 ```
 
 ```yml
-build-types:
+  build-types:
     - debug: off            # generate no debug information for the release build
       optimize: size        # optimize for size
       type: Release         # build-type name
@@ -566,7 +613,7 @@ The `rte-dirs:` list allows to control the location of configuration files for e
     - CMSIS Driver:  ..\common\RTE\CMSIS_Driver
     - Device:        ..\common\RTE\Device\Core1
     - Compiler:      ..\RTE\Compiler\Debug
-      for-type:      .Debug
+      for-context:      .Debug
 ```
 
 ## Toolchain Options
@@ -614,7 +661,7 @@ output-type: lib            # Generate a library
 
 ### `output:`
 
->**Proposal:** Output Control needs review. 
+>**Proposal for Implementation:** Output Control needs review. 
 
 This is a proposal to replace `output-type` with a more flexible solution.  It allows to generate both a elf/dwarf and bin file. Optionally the filename including path could be specified.
 
@@ -622,7 +669,7 @@ This is a proposal to replace `output-type` with a more flexible solution.  It a
 output:
   - type: elf         # default
     file: <path>\<file>.<ext>    # user define path with filename and extension (optional)
-    for-type:                    # (optional)
+    for-context:                 # (optional)
 
   - type: hex
     file: <path>\<file>.<ext>    # user define path with filename and extension
@@ -639,7 +686,7 @@ If accepted, we would need to extend also the access sequences.
 
 ### `linker:`
 
->**Proposal:** Linker Control needs review. 
+>**Proposal for Implementation:** Linker Control needs review. 
 >
 > Currently the linker command files are provided using the `file:` notation under [`groups:`](#groups) or as part of software components. The extensions `.sct`, `.scf` and `.ld` are automatically recognized as linker script files. The benefit is that linker control files can be part of software components.
 
@@ -649,15 +696,15 @@ The `linker:` list node controls the linker operation.
 :-----------------------------------------------------|:-------------|:--------------------------------
 `- script:`                                           |              | Explicit file name of the linker script
 &nbsp;&nbsp; [`for-compiler:`](#for-compiler)         |   Optional   | Include script for the specified toolchain.
-&nbsp;&nbsp; [`for-type:`](#for-type)                 |   Optional   | Include script for a list of *build* and *target* types.
-&nbsp;&nbsp; [`not-for-type:`](#not-for-type)         |   Optional   | Exclude script for a list of *build* and *target* types.
+&nbsp;&nbsp; [`for-context:`](#for-context)                 |   Optional   | Include script for a list of *build* and *target* types.
+&nbsp;&nbsp; [`not-for-context:`](#not-for-context)         |   Optional   | Exclude script for a list of *build* and *target* types.
 
 **Example:**
 
 ```yml
 linker:                      # Control linker operation
   - script: .\MyProject.sct  # Explicit scatter file
-    for-type: .Debug  
+    for-context: .Debug  
 ```
 
 ### `for-compiler:`
@@ -922,8 +969,8 @@ project. It is however possible to change that `setup:` settings on a [`group:`]
 `setups:`                                            |              | Content
 :----------------------------------------------------|:-------------|:------------------------------------
 `- setup:`                                           | **Required** | Description of the setup
-&nbsp;&nbsp;&nbsp; [`for-type:`](#for-type)          |   Optional   | Include group for a list of *build* and *target* types.
-&nbsp;&nbsp;&nbsp; [`not-for-type:`](#not-for-type)  |   Optional   | Exclude group for a list of *build* and *target* types.
+&nbsp;&nbsp;&nbsp; [`for-context:`](#for-context)          |   Optional   | Include group for a list of *build* and *target* types.
+&nbsp;&nbsp;&nbsp; [`not-for-context:`](#not-for-context)  |   Optional   | Exclude group for a list of *build* and *target* types.
 &nbsp;&nbsp;&nbsp; [`for-compiler:`](#for-compiler)  |   Optional   | Include group for a list of compilers.
 &nbsp;&nbsp;&nbsp; [`optimize:`](#optimize)          |   Optional   | Optimize level for code generation.
 &nbsp;&nbsp;&nbsp; [`debug:`](#debug)                |   Optional   | Generation of debug information.
@@ -963,8 +1010,7 @@ The `packs:` node can be specified in the `*.csolution.yml` file allows you to:
 - Provide a path to a local installation of a software pack that is for example project specific or under development.
 
 The  [Pack Name Conventions](#pack-name-conventions) are used to specify the name of the software packs.
-The `pack:` definition can be specific to [target and build types](#target-and-build-types) and may provide a local path
-to a development repository of a software pack.
+The `pack:` definition may be specific to a [`context`](#context) that specifies `target-types:` and/or `build-types:` or provide a local path to a development repository of a software pack.
 
 >**NOTES:** 
 >
@@ -988,8 +1034,8 @@ have also the format `@~1.2`/`@~1` that matches with semantic versioning.
 `pack:`                                               | Content
 :-----------------------------------------------------|:------------------------------------
 &nbsp;&nbsp; `path:`                                  | Explicit path name that stores the software pack
-&nbsp;&nbsp; [`for-type:`](#for-type)                 | Include pack for a list of *build* and *target* types.
-&nbsp;&nbsp; [`not-for-type:`](#not-for-type)         | Exclude pack for a list of *build* and *target* types.
+&nbsp;&nbsp; [`for-context:`](#for-context)           | Include pack for a list of *build* and *target* types.
+&nbsp;&nbsp; [`not-for-context:`](#not-for-context)   | Exclude pack for a list of *build* and *target* types.
 
 **Example:**
 
@@ -1008,7 +1054,7 @@ packs:                                  # start section that specifics software 
 
   - pack: AWS::coreHTTP                 # add pack
     path: ./development/AWS/coreHTTP    # with path to development source directory
-    for-type: +DevTest                  # pack is only used for target-type "DevTest"
+    for-context: +DevTest                  # pack is only used for target-type "DevTest"
 ```
 
 ## Target Selection
@@ -1053,21 +1099,19 @@ project:
 >   - `off` for devices that support this option.
 >   - `non-secure` for devices that have TrustZone enabled.
 
-## Target and Build Types
+## Context
+
+A [`context`](#context-name-conventions) is an enviroment setup for a project that is composed of: 
+
+- `project-name` that is the base name of the `*.cproject.yml` file.
+- `.build-type` that defines typically build specific settings such as for debug, release, or test.
+- `+target-type` that defines typically target specific settings such as device, board, or usage of processor features.
 
 The section
 [Project setup for multiple targets and test builds](Overview.md#project-setup-for-multiple-targets-and-builds)
-describes the concept of  `target-types` and `build-types`. These *types* can be defined in the following files in the
-following order:
+explains the overall concept of  `target-types` and `build-types`. These `target-types` and `build-types` are defined in the `*.csolution.yml` that defines the overall application for a system.
 
-- `default.csettings.yml`  where it defines global *types*, such as *Debug* and *Release* build.
-- `*.csolution.yml` where it specifies the build and target *types* of the complete system.
-
-The *`target-type`* and *`build-type`* definitions are additive, but an attempt to redefine an already existing type
-results in an error.
-
-The settings of the *`target-type`* are processed first; then the settings of the *`build-type`* that potentially
-overwrite the *`target-type`* settings.
+The settings of the `target-types:` are processed first; then the settings of the `build-types:` that potentially overwrite the `target-types:` settings.
 
 ### `target-types:`
 
@@ -1089,23 +1133,25 @@ The `target-types:` node may include [toolchain options](#toolchain-options), [t
 &nbsp;&nbsp;&nbsp; [`board:`](#board)              |   Optional   | Board specification.
 &nbsp;&nbsp;&nbsp; [`device:`](#device)            |   Optional   | Device specification.
 &nbsp;&nbsp;&nbsp; [`processor:`](#processor)      |   Optional   | Processor specific settings.
+&nbsp;&nbsp;&nbsp; [`context-map:`](#context-map)  |   Optional   | Use different `target-types:` for specific projects.
 
 ### `build-types:`
 
 The `build-types:` node may include [toolchain options](#toolchain-options):
 
-`build-types:`                                        |              | Content
-:-----------------------------------------------------|--------------|:------------------------------------
-`- type:`                                             | **Required** | Name of the target-type.
-&nbsp;&nbsp;&nbsp; [`compiler:`](#compiler)           |   Optional   | Toolchain selection.
-&nbsp;&nbsp;&nbsp; [`output-type:`](#output-type)     |   Optional   | Generate executable (default) or library.
-&nbsp;&nbsp;&nbsp; [`optimize:`](#optimize)           |   Optional   | Optimize level for code generation.
-&nbsp;&nbsp;&nbsp; [`debug:`](#debug)                 |   Optional   | Generation of debug information.
-&nbsp;&nbsp;&nbsp; [`define:`](#define)               |   Optional   | Preprocessor (#define) symbols for code generation.
-&nbsp;&nbsp;&nbsp; [`undefine:`](#undefine)           |   Optional   | Remove preprocessor (#define) symbols.
-&nbsp;&nbsp;&nbsp; [`add-path:`](#add-path)           |   Optional   | Additional include file paths.
-&nbsp;&nbsp;&nbsp; [`del-path:`](#del-path)           |   Optional   | Remove specific include file paths.
-&nbsp;&nbsp;&nbsp; [`misc:`](#misc)                   |   Optional   | Literal tool-specific controls.
+`build-types:`                                     |              | Content
+:--------------------------------------------------|--------------|:------------------------------------
+`- type:`                                          | **Required** | Name of the target-type.
+&nbsp;&nbsp;&nbsp; [`compiler:`](#compiler)        |   Optional   | Toolchain selection.
+&nbsp;&nbsp;&nbsp; [`output-type:`](#output-type)  |   Optional   | Generate executable (default) or library.
+&nbsp;&nbsp;&nbsp; [`optimize:`](#optimize)        |   Optional   | Optimize level for code generation.
+&nbsp;&nbsp;&nbsp; [`debug:`](#debug)              |   Optional   | Generation of debug information.
+&nbsp;&nbsp;&nbsp; [`define:`](#define)            |   Optional   | Preprocessor (#define) symbols for code generation.
+&nbsp;&nbsp;&nbsp; [`undefine:`](#undefine)        |   Optional   | Remove preprocessor (#define) symbols.
+&nbsp;&nbsp;&nbsp; [`add-path:`](#add-path)        |   Optional   | Additional include file paths.
+&nbsp;&nbsp;&nbsp; [`del-path:`](#del-path)        |   Optional   | Remove specific include file paths.
+&nbsp;&nbsp;&nbsp; [`misc:`](#misc)                |   Optional   | Literal tool-specific controls.
+&nbsp;&nbsp;&nbsp; [`context-map:`](#context-map)  |   Optional   | Use different `build-types:` for specific projects.
 
 **Example:**
 
@@ -1132,7 +1178,7 @@ settings are processed in the following order:
 
 1. `board:` relates to a BSP software pack that defines board parameters, including the
    [mounted device](https://arm-software.github.io/CMSIS_5/Pack/html/pdsc_boards_pg.html#element_board_mountedDevice).
-   If `board:` is not specified, a `device:` most be specified.
+   If `board:` is not specified, a `device:` must be specified.
 2. `device:` defines the target device. If `board:` is specified, the `device:` setting can be used to overwrite the
    device or specify the processor core used.
 3. `processor:` overwrites default settings for code generation, such as endianess, TrustZone mode, or disable Floating
@@ -1156,54 +1202,108 @@ target-types:
     device: :cm0plus          # use the Cortex-M0+ processor
 ```
 
-## Build/Target-Type control
+### `context-map:`
 
-Depending on a *`target-type`* or *`build-type`* selection it is possible to include or exclude *items* in the build
-process.
+>**Proposal for Implementation:** allow to assign projects to different context
 
-### `for-type:`
+The `context-map:` node allows for a specific `project-name` the remapping of `target-types:` and/or `build-types:` to a different `context:` which enables: 
 
-A [*type list*](#type-list) that adds a [*list-node*](#list-nodes) for a specific target or build *type* or a list of
-*types*.
+- Integrating an existing `*.cproject.yml` file in a different `*.csolution.yml` file that uses different `build-types:` and/or `target-types:` for the overall application.
+- Defines how different `*.cproject.yml` files of a `*.csolution.yml` are to the binary image of the final target (needs reflection in cbuild-idx.yml).
 
-### `not-for-type:`
+The `context-map:` node lists the remapping the [`context:`](#context-name-conventions) of a `project-name` for specific `target-types:` and `build-types:`.
 
-A [*type list*](#type-list) that removes an [*list-node*](#list-nodes) for a specific target or build *type* or a list
-of *types*.
+`context-map:`                                     |              | Content
+:--------------------------------------------------|--------------|:------------------------------------
+`- context:`                                       | **Required** | Specify a next context for a project
 
-#### type list
+For the `context-map:` it is required to specify the `project-name` in the `context:` list. This project will use a different `.build-type` and/or `+target-type` as applied in the `context:`. This remapping of the context applies for the specific type in the `build-types:` or `target-types:` list.
 
-It is possible to specify only a `<build-type>`, only a `<target-type>` or a combination of `<build-type>` and
-`<target-type>`.
+**Example 1:**
 
-It is also possible to provide a list of *build* and *target* types. The *type list syntax* for `for-type:` or
-`not-for-type:` is:
+This application combines two projects for a multi-processor device, but the project `HelloCM7` requires a different setting for the build-type `.release` as this enables different settings within the `*.cproject.yml` file.
+ 
+```yml
+  target-types:
+    - type: DualCore
+      device: MyDualCoreDevice
+
+  build-types:
+    - type: release                        # When applying build-type: 'release':
+      context-map:
+        - context: HelloCM7.flex_release   # project HelloCM7 uses build-type "flex_release" instead of "release"
+     
+  projects:
+    - project: ./CM7/HelloCM7.cproject.yml
+    - project: ./CM4/HelloCM4.cproject.yml
+```
+
+**Example 2:**
+
+The following example uses three projects `Demo`, `TFM` and `Boot`. The project `TFM` should be always build using the context `TFM.Release+LibMode`.  For the target-type: 'Board', the Boot project requires the `+Flash` target, but any build-type could be used.
 
 ```yml
-  - [.<build-type>][+<target-type>]
-  - [.<build-type>][+<target-type>]
+  target-types:
+    - type: Board                          # When applying target-type: 'Board':
+      context-map:
+        - context: TFM.Release+LibMode     # for project TFM use build-type: Release, target-type: LibMode
+        - context: Boot+Flash              # for project Boot use target-type: Flash
+      board: B-U585I-IOT02A
+    - type: AVH                            # When applying target-type: 'AVH':
+      context-map:
+        - context: TFM.Release+LibMode     # for project TFM use build-type: Release, target-type: LibMode
+      device: ARM::SSE-300-MPS3
+
+  projects:
+    - project: ./App/Demo.cproject.yml
+    - project: ./Security/TFM.cproject.yml
+    - project: ./Loader/Boot.cproject.yml
+```
+
+## Build/Target-Type control
+
+Depending on the [`context`](#context-name-conventions) name it is possible to include or exclude *items* in the build process.
+It is possible to specify only a `.build-type`, only a `+target-type` or a combination of `.build-type` and `+target-type`.
+
+### `for-context:`
+
+A *context* list that adds a list-node for specific `target-types:` and/or `build-types:`.
+
+> **NOTE:** `for-type:` is identical to `for-context:`. `for-type:` will be deprecated and replaced by `for-context:` in future versions.
+
+### `not-for-context:`
+
+A *context* list that removes a list-node for specific `target-types:` and/or `build-types:`.
+
+> **NOTE:** `not-for-type:` is identical to `not-for-context:`. `not-for-type:` will be deprecated and replaced by `not-for-context:` in future versions.
+
+#### context list
+
+It is also possible to provide a [`context`](#context-name-conventions) list with:
+
+```yml
+  - [.build-type][+target-type]
+  - [.build-type][+target-type]
 ```
 
 **Examples:**
 
 ```yml
-for-type:      
+for-context:      
   - .Test                            # add item for build-type: Test (any target-type)
 
-for-type:                            # add item
+for-context:                         # add item
   - .Debug                           # for build-type: Debug and 
   - .Release+Production-HW           # build-type: Release / target-type: Production-HW
 
-not-for-type:  +Virtual              # remove item for target-type: Virtual (any build-type)
-not-for-type:  .Release+Virtual      # remove item for build-type: Release with target-type: Virtual
+not-for-context:  +Virtual           # remove item for target-type: Virtual (any build-type)
+not-for-context:  .Release+Virtual   # remove item for build-type: Release with target-type: Virtual
 ```
 
-> **Note:** `for-type` and `not-for-type` are mutually exclusive, only one occurrence can be specified for a
+> **Note:** `for-context` and `not-for-context` are mutually exclusive, only one occurrence can be specified for a
   *list node*.
 
-#### list nodes
-
-The keyword `for-type:` or `not-for-type:` can be applied to the following list nodes:
+The keyword `for-context:` or `not-for-context:` can be applied to the following *list nodes*:
 
 List Node                                  | Description
 :------------------------------------------|:------------------------------------
@@ -1214,8 +1314,9 @@ List Node                                  | Description
 [`- setup:`](#setups)                      | At `setups:` level it is define toolchain specific options that apply to the whole project.
 [`- file:`](#files)                        | At `files:` level it is possible to control inclusion of a file.
 
-The inclusion of a *list node* is processed for a given *project context* respecting its hierarchy from top to bottom:
-`project` > `layer` > `component`/`group` > `file`
+The inclusion of a *list node* is processed for a given project *context* respecting its hierarchy from top to bottom:
+
+`project` --> `layer` --> `component`/`group` --> `file`
 
 In other words, the restrictions specified by a *type list* for a *list node* are automatically applied to its children
 nodes. Children *list nodes* inherit the restrictions from their parent and consequently it must be considered when
@@ -1224,46 +1325,56 @@ processing their *type lists*.
 ## Related Projects
 
 The section [Project setup for related projects](Overview.md#project-setup-for-related-projects) describes the
-collection of related projects. The file `*.csolution.yml` describes the relationship of this projects. This file may
-also define [Target and Build Types](#target-and-build-types) before the section `solution:`.
+collection of related projects. The file `*.csolution.yml` describes the relationship of this projects and may also define
+`target-types:` and `build-types:` for this projects.
 
 ### `projects:`
 
 The YML structure of the section `projects:` is:
 
-`projects:`                                    |              | Content
-:----------------------------------------------|--------------|:------------------------------------
-[`- project:`](#project)                       | **Required** | Path to the project file.
-&nbsp;&nbsp; [`for-type:`](#for-type)          |   Optional   | Include project for a list of *build* and *target* types.
-&nbsp;&nbsp; [`not-for-type:`](#not-for-type)  |   Optional   | Exclude project for a list of *build* and *target* types.
-&nbsp;&nbsp; [`compiler:`](#compiler)          |   Optional   | Specify a specific compiler.
-&nbsp;&nbsp; [`optimize:`](#optimize)          |   Optional   | Optimize level for code generation.
-&nbsp;&nbsp; [`debug:`](#debug)                |   Optional   | Generation of debug information.
-&nbsp;&nbsp; [`warnings:`](#warnings)          |   Optional   | Control generation of compiler diagnostics.
-&nbsp;&nbsp; [`define:`](#define)              |   Optional   | Define symbol settings for code generation.
-&nbsp;&nbsp; [`undefine:`](#undefine)          |   Optional   | Remove define symbol settings for code generation.
-&nbsp;&nbsp; [`add-path:`](#add-path)          |   Optional   | Additional include file paths.
-&nbsp;&nbsp; [`del-path:`](#del-path)          |   Optional   | Remove specific include file paths.
-&nbsp;&nbsp; [`misc:`](#misc)                  |   Optional   | Literal tool-specific controls.
+`projects:`                                         |              | Content
+:---------------------------------------------------|--------------|:------------------------------------
+[`- project:`](#project)                            | **Required** | Path to the project file.
+&nbsp;&nbsp; [`for-context:`](#for-context)         |   Optional   | Include project for a list of *build* and *target* types.
+&nbsp;&nbsp; [`not-for-context:`](#not-for-context) |   Optional   | Exclude project for a list of *build* and *target* types.
+&nbsp;&nbsp; [`compiler:`](#compiler)               |   Optional   | Specify a specific compiler.
+&nbsp;&nbsp; [`optimize:`](#optimize)               |   Optional   | Optimize level for code generation.
+&nbsp;&nbsp; [`debug:`](#debug)                     |   Optional   | Generation of debug information.
+&nbsp;&nbsp; [`warnings:`](#warnings)               |   Optional   | Control generation of compiler diagnostics.
+&nbsp;&nbsp; [`define:`](#define)                   |   Optional   | Define symbol settings for code generation.
+&nbsp;&nbsp; [`undefine:`](#undefine)               |   Optional   | Remove define symbol settings for code generation.
+&nbsp;&nbsp; [`add-path:`](#add-path)               |   Optional   | Additional include file paths.
+&nbsp;&nbsp; [`del-path:`](#del-path)               |   Optional   | Remove specific include file paths.
+&nbsp;&nbsp; [`misc:`](#misc)                       |   Optional   | Literal tool-specific controls.
 
-**Example:**
+**Examples:**
+
+This example uses two projects that are build in parallel using the same `build-type:` and `target-type:`.  Such a setup is typical for multi-processor systems.
+
+```yml
+  projects:
+    - project: ./CM0/CM0.cproject.yml      # include project for Cortex-M0 processor
+    - project: ./CM4/CM4.cproject.yml      # include project for Cortex-M4 processor
+```
+
+This example uses multiple projects, but with additional controls.
 
 ```yml
   projects:
     - project: ./CM0/CM0.cproject.yml      # specify cproject.yml file
-      for-type: +CM0                       # specify use case
-      for-compiler: GCC
-      define:
+      for-context: +CM0-Addon                 # build only when 'target-type: CM0-Addon' is selected
+      for-compiler: GCC                    # build only when 'compiler: GCC'  is selected
+      define:                              # add additional defines during build process
         - test: 12
 
     - project: ./CM0/CM0.cproject.yml      # specify cproject.yml file
-      for-type: +CM0                       # specify use case
-      for-compiler: AC6
-      define:
+      for-context: +CM0-Addon                 # specify use case
+      for-compiler: AC6                    # build only when 'compiler: AC6'  is selected
+      define:                              # add additional defines during build process
         - test: 9
 
     - project: ./Debug/Debug.cproject.yml  # specify cproject.yml file
-      not-for-type: .Release               # specify not to use case
+      not-for-context: .Release               # generated for any 'build-type:' except 'Release'
 ```
 
 ## Source File Management
@@ -1278,22 +1389,22 @@ Keyword          | Used in files                    | Description
 
 The `groups:` keyword specifies a list that adds [source groups and files](#source-file-management) to a project or layer:
 
-`groups:`                                      |              | Content
-:----------------------------------------------|--------------|:------------------------------------
-`- group:`                                     | **Required** | Name of the group.
-&nbsp;&nbsp; [`for-type:`](#for-type)          |   Optional   | Include group for a list of *build* and *target* types.
-&nbsp;&nbsp; [`not-for-type:`](#not-for-type)  |   Optional   | Exclude group for a list of *build* and *target* types.
-&nbsp;&nbsp; [`for-compiler:`](#for-compiler)  |   Optional   | Include group for a list of compilers.
-&nbsp;&nbsp; [`optimize:`](#optimize)          |   Optional   | Optimize level for code generation.
-&nbsp;&nbsp; [`debug:`](#debug)                |   Optional   | Generation of debug information.
-&nbsp;&nbsp; [`warnings:`](#warnings)          |   Optional   | Control generation of compiler diagnostics.
-&nbsp;&nbsp; [`define:`](#define)              |   Optional   | Define symbol settings for code generation.
-&nbsp;&nbsp; [`undefine:`](#undefine)          |   Optional   | Remove define symbol settings for code generation.
-&nbsp;&nbsp; [`add-path:`](#add-path)          |   Optional   | Additional include file paths.
-&nbsp;&nbsp; [`del-path:`](#del-path)          |   Optional   | Remove specific include file paths.
-&nbsp;&nbsp; [`misc:`](#misc)                  |   Optional   | Literal tool-specific controls.
-&nbsp;&nbsp; [`groups:`](#groups)              |   Optional   | Start a nested list of groups.
-&nbsp;&nbsp; [`files:`](#files)                |   Optional   | Start a list of files.
+`groups:`                                           |              | Content
+:---------------------------------------------------|--------------|:------------------------------------
+`- group:`                                          | **Required** | Name of the group.
+&nbsp;&nbsp; [`for-context:`](#for-context)         |   Optional   | Include group for a list of *build* and *target* types.
+&nbsp;&nbsp; [`not-for-context:`](#not-for-context) |   Optional   | Exclude group for a list of *build* and *target* types.
+&nbsp;&nbsp; [`for-compiler:`](#for-compiler)       |   Optional   | Include group for a list of compilers.
+&nbsp;&nbsp; [`optimize:`](#optimize)               |   Optional   | Optimize level for code generation.
+&nbsp;&nbsp; [`debug:`](#debug)                     |   Optional   | Generation of debug information.
+&nbsp;&nbsp; [`warnings:`](#warnings)               |   Optional   | Control generation of compiler diagnostics.
+&nbsp;&nbsp; [`define:`](#define)                   |   Optional   | Define symbol settings for code generation.
+&nbsp;&nbsp; [`undefine:`](#undefine)               |   Optional   | Remove define symbol settings for code generation.
+&nbsp;&nbsp; [`add-path:`](#add-path)               |   Optional   | Additional include file paths.
+&nbsp;&nbsp; [`del-path:`](#del-path)               |   Optional   | Remove specific include file paths.
+&nbsp;&nbsp; [`misc:`](#misc)                       |   Optional   | Literal tool-specific controls.
+&nbsp;&nbsp; [`groups:`](#groups)                   |   Optional   | Start a nested list of groups.
+&nbsp;&nbsp; [`files:`](#files)                     |   Optional   | Start a list of files.
 
 **Example:**
 
@@ -1301,20 +1412,20 @@ See [`files:`](#files) section.
 
 ### `files:`
 
-`files:`                                             |              | Content
-:----------------------------------------------------|--------------|:------------------------------------
-`- file:                                             | **Required** | Name of the file.
-&nbsp;&nbsp;&nbsp; [`for-type:`](#for-type)          |   Optional   | Include file for a list of *build* and *target* types.
-&nbsp;&nbsp;&nbsp; [`not-for-type:`](#not-for-type)  |   Optional   | Exclude file for a list of *build* and *target* types.
-&nbsp;&nbsp;&nbsp; [`for-compiler:`](#for-compiler)  |   Optional   | Include file for a list of compilers.
-&nbsp;&nbsp;&nbsp; [`optimize:`](#optimize)          |   Optional   | Optimize level for code generation.
-&nbsp;&nbsp;&nbsp; [`debug:`](#debug)                |   Optional   | Generation of debug information.
-&nbsp;&nbsp;&nbsp; [`warnings:`](#warnings)          |   Optional   | Control generation of compiler diagnostics.
-&nbsp;&nbsp;&nbsp; [`define:`](#define)              |   Optional   | Define symbol settings for code generation.
-&nbsp;&nbsp;&nbsp; [`undefine:`](#undefine)          |   Optional   | Remove define symbol settings for code generation.
-&nbsp;&nbsp;&nbsp; [`add-path:`](#add-path)          |   Optional   | Additional include file paths.
-&nbsp;&nbsp;&nbsp; [`del-path:`](#del-path)          |   Optional   | Remove specific include file paths.
-&nbsp;&nbsp;&nbsp; [`misc:`](#misc)                  |   Optional   | Literal tool-specific controls.
+`files:`                                                  |              | Content
+:---------------------------------------------------------|--------------|:------------------------------------
+`- file:                                                  | **Required** | Name of the file.
+&nbsp;&nbsp;&nbsp; [`for-context:`](#for-context)         |   Optional   | Include file for a list of *build* and *target* types.
+&nbsp;&nbsp;&nbsp; [`not-for-context:`](#not-for-context) |   Optional   | Exclude file for a list of *build* and *target* types.
+&nbsp;&nbsp;&nbsp; [`for-compiler:`](#for-compiler)       |   Optional   | Include file for a list of compilers.
+&nbsp;&nbsp;&nbsp; [`optimize:`](#optimize)               |   Optional   | Optimize level for code generation.
+&nbsp;&nbsp;&nbsp; [`debug:`](#debug)                     |   Optional   | Generation of debug information.
+&nbsp;&nbsp;&nbsp; [`warnings:`](#warnings)               |   Optional   | Control generation of compiler diagnostics.     
+&nbsp;&nbsp;&nbsp; [`define:`](#define)                   |   Optional   | Define symbol settings for code generation.     
+&nbsp;&nbsp;&nbsp; [`undefine:`](#undefine)               |   Optional   | Remove define symbol settings for code generation.     
+&nbsp;&nbsp;&nbsp; [`add-path:`](#add-path)               |   Optional   | Additional include file paths.
+&nbsp;&nbsp;&nbsp; [`del-path:`](#del-path)               |   Optional   | Remove specific include file paths.
+&nbsp;&nbsp;&nbsp; [`misc:`](#misc)                       |   Optional   | Literal tool-specific controls.
 
 **Example:**
 
@@ -1323,10 +1434,10 @@ Add source files to a project or a software layer. Used in `*.cproject.yml` and 
 ```yml
 groups:
   - group:  "Main File Group"
-    not-for-type:                        # includes this group not for the following: 
-      - .Release+Virtual                 # build-type "Release" and target-type "Virtual"
-      - .Test-DSP+Virtual                # build-type "Test-DSP" and target-type "Virtual"
-      - +Board                           # target-type "Board"
+    not-for-context:                     # includes this group not for the following: 
+      - .Release+Virtual                 # build-type 'Release' and target-type 'Virtual'
+      - .Test-DSP+Virtual                # build-type 'Test-DSP' and target-type 'Virtual'
+      - +Board                           # target-type 'Board'
     files: 
       - file: file1a.c
       - file: file1b.c
@@ -1339,11 +1450,11 @@ groups:
   - group: "Other File Group"
     files:
       - file: file2a.c
-        for-type: +Virtual               # includes this file only for target-type "Virtual"
+        for-context: +Virtual               # include this file only for target-type 'Virtual'
         define: 
           - test: 2
       - file: file2a.c
-        not-for-type: +Virtual           # includes this file not for target-type "Virtual"
+        not-for-context: +Virtual           # include this file not for target-type 'Virtual'
       - file: file2b.c
 
   - group: "Nested Group"
@@ -1359,7 +1470,7 @@ groups:
 ```
 
 It is also possible to include a file group for a specific compiler using [`for-compiler:`](#for-compiler) or a specific
-target-type and/or build-type using [`for-type:`](#for-type) or [`not-for-type:`](#not-for-type).
+target-type and/or build-type using [`for-context:`](#for-context) or [`not-for-context:`](#not-for-context).
 
 ```yml
 groups:
@@ -1380,20 +1491,20 @@ groups:
 
 Add a software layer to a project. Used in `*.cproject.yml` files.
 
-`layers:`                                      |              | Content
-:----------------------------------------------|--------------|:------------------------------------
-[`- layer:`](#layer)                           | **Required** | Path to the `*.clayer.yml` file that defines the layer.
-&nbsp;&nbsp; `type:`                           |   Optional   | Refers to an expected layer type.
-&nbsp;&nbsp; [`for-type:`](#for-type)          |   Optional   | Include layer for a list of *build* and *target* types.
-&nbsp;&nbsp; [`not-for-type:`](#not-for-type)  |   Optional   | Exclude layer for a list of *build* and *target* types.
-&nbsp;&nbsp; [`optimize:`](#optimize)          |   Optional   | Optimize level for code generation.
-&nbsp;&nbsp; [`debug:`](#debug)                |   Optional   | Generation of debug information.
-&nbsp;&nbsp; [`warnings:`](#warnings)          |   Optional   | Control generation of compiler diagnostics.
-&nbsp;&nbsp; [`define:`](#define)              |   Optional   | Define symbol settings for code generation.
-&nbsp;&nbsp; [`undefine:`](#undefine)          |   Optional   | Remove define symbol settings for code generation.
-&nbsp;&nbsp; [`add-path:`](#add-path)          |   Optional   | Additional include file paths.
-&nbsp;&nbsp; [`del-path:`](#del-path)          |   Optional   | Remove specific include file paths.
-&nbsp;&nbsp; [`misc:`](#misc)                  |   Optional   | Literal tool-specific controls.
+`layers:`                                           |              | Content
+:---------------------------------------------------|--------------|:------------------------------------
+[`- layer:`](#layer)                                | **Required** | Path to the `*.clayer.yml` file that defines the layer.
+&nbsp;&nbsp; `type:`                                |   Optional   | Refers to an expected layer type.
+&nbsp;&nbsp; [`for-context:`](#for-context)         |   Optional   | Include layer for a list of *build* and *target* types.
+&nbsp;&nbsp; [`not-for-context:`](#not-for-context) |   Optional   | Exclude layer for a list of *build* and *target* types.
+&nbsp;&nbsp; [`optimize:`](#optimize)               |   Optional   | Optimize level for code generation.
+&nbsp;&nbsp; [`debug:`](#debug)                     |   Optional   | Generation of debug information.
+&nbsp;&nbsp; [`warnings:`](#warnings)               |   Optional   | Control generation of compiler diagnostics.
+&nbsp;&nbsp; [`define:`](#define)                   |   Optional   | Define symbol settings for code generation.
+&nbsp;&nbsp; [`undefine:`](#undefine)               |   Optional   | Remove define symbol settings for code generation.     
+&nbsp;&nbsp; [`add-path:`](#add-path)               |   Optional   | Additional include file paths.
+&nbsp;&nbsp; [`del-path:`](#del-path)               |   Optional   | Remove specific include file paths.
+&nbsp;&nbsp; [`misc:`](#misc)                       |   Optional   | Literal tool-specific controls.
 
 **Example:**
 
@@ -1401,25 +1512,25 @@ Add a software layer to a project. Used in `*.cproject.yml` files.
   layers:
     # Socket
     - layer: ./Socket/FreeRTOS+TCP/Socket.clayer.yml
-      for-type:
+      for-context:
         - +IP-Stack
     - layer: ./Socket/WiFi/Socket.clayer.yml
-      for-type:
+      for-context:
         - +WiFi
     - layer: ./Socket/VSocket/Socket.clayer.yml
-      for-type:
+      for-context:
         - +AVH
 
     # Board
     - layer: ./Board/IMXRT1050-EVKB/Board.clayer.yml
-      for-type: 
+      for-context: 
         - +IP-Stack
         # - +WiFi
     - layer: ./Board/B-U585I-IOT02A/Board.clayer.yml
-      for-type: 
+      for-context: 
         - +WiFi
     - layer: ./Board/AVH_MPS3_Corstone-300/Board.clayer.yml
-      for-type: 
+      for-context: 
         - +AVH
 ```
 
@@ -1485,8 +1596,8 @@ Add software components to a project or a software layer. Used in `*.cproject.ym
 `components:`                                  |              | Content
 :----------------------------------------------|--------------|:------------------------------------
 `- component:`                                 | **Required** | Name of the software component.
-&nbsp;&nbsp; [`for-type:`](#for-type)          |   Optional   | Include component for a list of *build* and *target* types.
-&nbsp;&nbsp; [`not-for-type:`](#not-for-type)  |   Optional   | Exclude component for a list of *build* and *target* types.
+&nbsp;&nbsp; [`for-context:`](#for-context)          |   Optional   | Include component for a list of *build* and *target* types.
+&nbsp;&nbsp; [`not-for-context:`](#not-for-context)  |   Optional   | Exclude component for a list of *build* and *target* types.
 &nbsp;&nbsp; [`optimize:`](#optimize)          |   Optional   | Optimize level for code generation.
 &nbsp;&nbsp; [`debug:`](#debug)                |   Optional   | Generation of debug information.
 &nbsp;&nbsp; [`warnings:`](#warnings)          |   Optional   | Control generation of compiler diagnostics.
@@ -1596,7 +1707,7 @@ project:
 
 ## `connections:`
 
-The `connections` node contains meta-data that describe the compatiblity of `*.cproject.yml` and `*.clayer.yml` project parts.  The `connections` node lists therefore functionality (drivers, pins, and other software or hardware resources) that are `consumed` (required) or `provided` by these different project parts.
+The `connections:` node contains meta-data that describe the compatiblity of `*.cproject.yml` and `*.clayer.yml` project parts.  The `connections:` node lists therefore functionality (drivers, pins, and other software or hardware resources) that are `consumed:` (required) or `provided:` by these different project parts.
 
 This enables, for example, reference applications that work across a range of different hardware targets where:
 
@@ -1606,7 +1717,7 @@ This enables, for example, reference applications that work across a range of di
  
 This works across multiple levels, which means that a `*.clayer.yml` file could also `consume` other functionality.
   
-The `connections` node is used to identify compatible software layers. These software layers could be stored in CMSIS software packs using the following structure:
+The `connections:` node is used to identify compatible software layers. These software layers could be stored in CMSIS software packs using the following structure:
 
 - A reference application described in a `*.cproject.yml` file could be provided in a git repository. This reference application uses software layers that are provided in CMSIS software packs.
 
@@ -1614,13 +1725,13 @@ The `connections` node is used to identify compatible software layers. These sof
 
 - For a sensor, a CMSIS software pack contains the sensor middleware and software layer (`*.clayer.yml`) that describes the hardware of the Ardunio sensor shield. This shield can be applied to many different hardware boards that provide an Ardunio shield connector.
 
-This `connections` concept enables software reuse in multiple ways:
+This `connections:` node enables therefore software reuse in multiple ways:
 
-- The board layer can be used by many different reference applications, as the `provided` functionlity enables a wide range of use cases.
+- The board layer can be used by many different reference applications, as the `provided:` functionlity enables a wide range of use cases.
   
 - The sensor hardware shield along with the middleware can be used across many different boards that provide an Ardunio shield connector along with board layer support.
 
-The structure of the `connections` node is:
+The structure of the `connections:` node is:
 
 `connections:`                          |              | Description
 :------------------------------------|--------------|:------------------------------------
@@ -1651,7 +1762,7 @@ Refer to [Example: Sensor Shield](#example-sensor-shield) for a usage example.
 
 A user-defined *key*/*value* pair list of functionality that is implemented or provided by a `project:` or `layer:`. 
 
-The **csolution - CMSIS Project Manager** combines all the *key*/*value* pairs that listed under `provides:` and matches it with the *key*/*value* pairs that are listed under `consumes:`. For *key*/*value* pairs listed under `provides:` the following rules exist for a match with `consumed` *key*/*value* pair:
+The **csolution - CMSIS Project Manager** combines all the *key*/*value* pairs that listed under `provides:` and matches it with the *key*/*value* pairs that are listed under `consumes:`. For *key*/*value* pairs listed under `provides:` the following rules exist for a match with `consumes:` *key*/*value* pair:
 
 - It is possible to omit the *value*. It matches with an identical *key* listed in `consumes:`
 - A *value* is interpreted as number. Depending on the value prefix, this number must be:

@@ -11,8 +11,10 @@ Manual Chapters                           | Content
 [Usage](#usage)                           | Overall Concept, tool setup, and invocation commands
 [Project Examples](#project-examples)     | Various example projects to get started
 [Project Structure](#project-structure)   | Overall structure of projects
-[YML Input Format](YML-Input-Format.md)   | Format of the various YML input files (csolution, cproject, clayer, cdefault)
+[YML Input Format](YML-Input-Format.md)   | Format of the various YML input files (`*.csolution.yml`, `*.cproject.yml`, `*.clayer.yml`, `*.cdefault.yml`)
 [YML CBuild Format](YML-CBuild-Format.md) | Format of the YML CBuild output file.
+
+>**Note:** This documentation uses the file extension `*.yml`. However, the file extension `*.yaml` is also supported by the CMSIS-Toolbox.
 
 **Table of Contents**
 
@@ -112,7 +114,7 @@ The CMSIS-Pack repository must be present in the development environment.
 ### Invocation
 
 ```text
-CMSIS Project Manager 1.3.0 (C) 2022 Arm Ltd. and Contributors
+CMSIS Project Manager 1.4.0 (C) 2022 Arm Ltd. and Contributors
 
 Usage:
   csolution [-V] [--version] [-h] [--help]
@@ -126,6 +128,8 @@ Usage:
         dependencies     Print list of unresolved project dependencies
         contexts         Print list of contexts in a csolution.yml
         generators       Print list of code generators of a given context
+        layers           Print list of available, referenced and compatible layers
+        toolchains       Print list of installed toolchains
    convert               Convert *.csolution.yml input file in *.cprj files
    run                   Run code generator
 
@@ -138,7 +142,10 @@ Usage:
    -l, --load arg        Set policy for packs loading [latest|all|required]
    -e, --export arg      Set suffix for exporting <context><suffix>.cprj retaining only specified versions
    -n, --no-check-schema Skip schema check
+   -U, --no-update-rte   Skip creation of RTE directory and files
    -o, --output arg      Output directory
+
+Use 'csolution <command> -h' for more information about a command.
 ```
 
 ### Command Examples
@@ -365,13 +372,11 @@ in other IDE's is to add:
   - `Test`: for a specific timing test using a test interface with code maximal optimization.
   - `Release`: for the final code deployment to the systems.
 
-It is required to generate reproducible builds that can deployed on independent CI/CD test systems. To achieve that, the
-CMSIS Project Manager generates *.cprj output files with the following naming conventions:
+It is required to generate reproducible builds that can deployed on independent CI/CD test systems. To achieve that, the **csolution - CMSIS Project Manager** generates *.cprj output files with the following naming conventions:
 
-`<projectname>[.<build-type>][+target-type].cprj` this would generate for example: `Multi.Debug+Production-HW.cprj`
+`<project-name>[.<build-type>][+target-type].cprj` this would generate for example: `Multi.Debug+Production-HW.cprj`
 
-This enables that each target and/or build type can be identified and independently generated which provides the support
-for test automation. It is however not required to build every possible combination, this should be under user control.
+This output file convention is identical with the [context: name conventions](YML-Input-Format.md#context-name-conventions) and enables that each `target-type:` and/or `build-type:` can be identified and independently generated which provides the support for test automation. It is however not required to build every possible combination, this should be under user control.
 
 **Flexible Builds for multi-target projects**
 
@@ -427,25 +432,25 @@ project:
         - file: file2a.c
 
     - group: Test-Interface
-      for-type: .Test
+      for-context: .Test
       files:
         - file: fileTa.c
 
   layers:
     - layer: NUCLEO-L552ZE-Q/Board.clayer.yml   # tbd find a better way: i.e. $Board$.clayer.yml
-      for-type: +Board
+      for-context: +Board
 
     - layer: Production.clayer.yml              # added for target type: Production-HW
-      for-type: +Production-HW
+      for-context: +Production-HW
 
-    - layer: Corstone-300/Board.clayer.yml      # added for target type: VHT-Corstone-300
-      for-type: +VHT-Corstone-300
+    - layer: Corstone-300/Board.clayer.yml      # added for target type: AVH-Corstone-300
+      for-context: +AVH-Corstone-300
 
   components:
     - component: Device:Startup
     - component: CMSIS:RTOS2:FreeRTOS
     - component: ARM::CMSIS:DSP&Source          # not added for build type: Test
-      not-for-type: .Test                           
+      not-for-context: .Test                           
 ```
 
 ### Project Setup for Related Projects
@@ -466,14 +471,14 @@ In addition such systems may have a boot-loader that can be also viewed as anoth
 ![Related Projects of an Embedded System](./images/Solution.png "Related Projects of an Embedded System")
 
 To manage the complexity of such related a projects, the `*.csolution.yml` file is introduced. At this level the
-`target-types` and `build-types` may be managed, so that a common set is available across the system. However it should
+`target-types:` and `build-types:` may be managed, so that a common set is available across the system. However it should
 be also possible to add project specific `build-types` at project level. (tdb: `target-types` might be only possible at
 solution level).
 
-- `target-types` describe a different hardware target system and have therefore different API files for peripherals or a
+- `target-types:` describe a different hardware target system and have therefore different API files for peripherals or a
   different hardware configuration.
 
-- `build-types` describe a build variant of the same hardware target. All `build-types` share the same API files for
+- `build-types:` describe a build variant of the same hardware target. All `build-types` share the same API files for
   peripherals and the same hardware configuration, but may compile a different variant (i.e. with test I/O enabled) of
   an application.
 
@@ -499,10 +504,10 @@ solution:
     
   projects:
     - project: /security/TFM.cproject.yml
-      for-type: .Release
+      for-context: .Release
     - project: /application/MQTT_AWS.cproject.yml
     - project: /bootloader/Bootloader.cproject.yml
-      not-for-type: +Virtual
+      not-for-context: +Virtual
 ```
 
 ## Project Structure
@@ -545,7 +550,7 @@ The table below summarizes the overall directory structure and further details t
 
 Directory Structure                 | Content
 :-----------------------------------|:---------------
-`<csolution>`                       | Base directory that one or more `*.csolution.yml` files.
+`<csolution>`                       | Base directory that contains one or more `*.csolution.yml` files.
 `<project>`                         | Each project has its own directory, this base directory contains the `*.cproject.yml` file.
 `<project>/RTE/<Cclass>`            | Configurable files for each component `Cclass` have a common directory.
 `<project>/RTE/<Cclass>/<device>`   | Configurable files for components that have a condition to a `device` are in a separate directory.
