@@ -25,7 +25,14 @@ Manual Chapters                           | Content
     - [Requirements](#requirements)
     - [Invocation](#invocation)
     - [Command Examples](#command-examples)
+      - [List Installed Packs](#list-installed-packs)
+      - [Install Missing Packs](#install-missing-packs)
+      - [List Devices or Boards](#list-devices-or-boards)
+      - [List Unresolved Dependencies](#list-unresolved-dependencies)
+      - [Build Projects](#build-projects)
+      - [Use Generators (i.e. CubeMX)](#use-generators-ie-cubemx)
   - [Project Examples](#project-examples)
+    - [GitHub repositories](#github-repositories)
     - [Minimal Project Setup](#minimal-project-setup)
     - [Compiler Agnostic Project](#compiler-agnostic-project)
     - [Software Layers](#software-layers)
@@ -150,6 +157,8 @@ Use 'csolution <command> -h' for more information about a command.
 
 ### Command Examples
 
+#### List Installed Packs
+
 Print list of installed packs. The list can be filtered by words provided with the option `--filter`:
 
 ```text
@@ -162,20 +171,28 @@ Print list of packs that are required by the `<example.csolution.yml>`.
 csolution list packs -s <example.csolution.yml>
 ```
 
+#### Install Missing Packs
+
 Print list of missing packs to the file `packs.txt` that are required by the `<example.csolution.yml>` but not available
 in the pack repository. This missing packs might be installed using the
 [`cpackget`](../../../cpackget/docs/cpackget.md) tool.
 
 ```text
 csolution list packs -s <example.csolution.yml> -m >packs.txt
+cpackget update-index               // optional to ensure that pack index is up-to-date
 cpackget add -f packs.txt
 ```
 
-Print list of available device names. The list can be filtered by words provided with the option `--filter`:
+#### List Devices or Boards
+
+Print list of available device or board names. The list can be filtered by words provided with the option `--filter`:
 
 ```text
-csolution list devices [--filter "<filter words>"]
+csolution list devices
+csolution list boards --filter NXP
 ```
+
+#### List Unresolved Dependencies
 
 Print list of unresolved project dependencies. Device, board, and software components are specified as part of the
 `*.csolution.yml` and `*.cproject.yml` files. The list may be filtered by words provided with the option `--filter`:
@@ -184,11 +201,15 @@ Print list of unresolved project dependencies. Device, board, and software compo
 csolution list dependencies -s mysolution.csolution.yml [-f "<filter words>"]
 ```
 
-Convert `example.csolution.yml` into *.cprj file(s):
+#### Build Projects
+
+Convert `example.csolution.yml` into `*.cprj` file(s). This `*.cprj` file can be compiled using the `cbuild` command.
 
 ```text
 csolution convert -s example.csolution.yml
 ```
+
+#### Use Generators (i.e. CubeMX)
 
 List external code generators that are used to create software components in `*.gpdsc` format. It outputs the generator
 ID that is required for the `run` command.
@@ -204,6 +225,8 @@ csolution run -g STCubeMX -s mysolution.csolution.yml -c Blinky.Debug+STM32L4
 ```
 
 ## Project Examples
+
+### GitHub repositories
 
 The repository [csolution-examples](https://github.com/Open-CMSIS-Pack/csolution-examples) provides several working examples.  
 

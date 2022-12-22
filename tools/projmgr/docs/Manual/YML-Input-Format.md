@@ -17,6 +17,7 @@ Project Manager.
     - [`board:` Name Conventions](#board-name-conventions)
     - [`context:` Name Conventions](#context-name-conventions)
   - [Access Sequences](#access-sequences)
+  - [Variables](#variables)
   - [Project File Structure](#project-file-structure)
     - [`default:`](#default)
     - [`solution:`](#solution)
@@ -60,14 +61,14 @@ Project Manager.
   - [Build/Target-Type control](#buildtarget-type-control)
     - [`for-context:`](#for-context)
     - [`not-for-context:`](#not-for-context)
-      - [context list](#context-list)
+    - [context list](#context-list)
   - [Related Projects](#related-projects)
     - [`projects:`](#projects)
   - [Source File Management](#source-file-management)
     - [`groups:`](#groups)
     - [`files:`](#files)
     - [`layers:`](#layers)
-      - [Proposals for `layers:`](#proposals-for-layers)
+      - [`layers:` - `type:`](#layers---type)
     - [`components:`](#components)
     - [`instances:`](#instances)
   - [Pre/Post build steps](#prepost-build-steps)
@@ -373,15 +374,52 @@ groups:
       - $Dname$                           # Generate a #define 'device-name' for this file group
 ```
 
+## Variables
+
+The `variables:` node defines are *key/value* pairs that can be used to refer to `*.clayer.yml` files.  The *key* can be specified in the [`layers:`](#layers) node and is replaced with the *value* that specifies a `*.clayer.yml` file including path.
+
+Using variables that are defined in the `*.csolution.yml` file, a `*.cproject.yml` file requires no modifications when new `target-types:` are introduced.  The required `layers:` could be instead specified in the `*.csolution.yml` file using a new node `variables:`.
+
+**Example:**
+   
+*Example.csolution.yml*
+   
+```yml
+solution:
+  target-types:
+    - type: NXP Board
+      board: IMXRT1050-EVKB
+      variables:
+        - Socket-Layer: ./Socket/FreeRTOS+TCP/Socket.clayer.yml
+        - Board-Layer:  ./Board/IMXRT1050-EVKB/Board.clayer.yml
+  
+    - type: ST Board
+      board: B-U585I-IOT02A
+      variables:
+        - Socket-Layer: ./Socket/WiFi/Socket.clayer.yml
+        - Board-Layer:  ./Board/B-U585I-IOT02A/Board.clayer.yml
+```
+   
+*Example.cproject.yml*
+   
+```yml
+  layers:
+    - layer: $Socket-Layer$
+      type: Socket
+   
+    - layer: $Board-Layer$      # no `*.clayer.yml` specified. Compatible layers are listed
+      type: Board               # layer of type `Board` is expected
+```
+
 ## Project File Structure
 
 The table below explains the top-level elements in each of the different `*.yml` input files that define the overall application.
 
 Keyword                          | Description
 :--------------------------------|:------------------------------------
-[`default:`](#default)           | Start of `*.cdefault.yml` file that provides global settings.
-[`solution:`](#solution)         | Start of `*.csolution.yml` file that [collects related projects](Overview.md#solution-collection-of-related-projects) along with build order.
-[`project:`](#project)           | Start of `*.cproject.yml` file that that defines a project that can be independently generated.
+[`default:`](#default)           | Start of `*.cdefault.yml` file that is used to setup the compiler along with some compiler-specific controls.
+[`solution:`](#solution)         | Start of `*.csolution.yml` file that [collects related projects](Overview.md#solution-collection-of-related-projects) along with `build-types:` and `target-types:`.
+[`project:`](#project)           | Start of `*.cproject.yml` file that defines files, components, and layers which can be independently translated to a binary image or library.
 [`layer:`](#layer)               | Start of `*.clayer.yml` file that contains pre-configured software components along with source files.
 
 ### `default:`
@@ -511,25 +549,24 @@ project:
 
 The `layer:` node is the start of a `*.clayer.yml` file and defines a [Software Layer](./Overview.md#software-layers). It can contain the following nodes:
 
-`layer:`                                       |              | Content
-:----------------------------------------------|:-------------|:------------------------------------
-&nbsp;&nbsp; `type:`                           |  Optional    | Layer type for combining layers.
-&nbsp;&nbsp; `name:`                           |  Optional    | Brief descriptive name of the layer
-&nbsp;&nbsp; `description:`                    |  Optional    | Detailed layer description.
-&nbsp;&nbsp; `for-device:`                     |  Optional    | Device information, used for consistency check (device selection is in `*.csolution.yml`).
-&nbsp;&nbsp; `for-board:`                      |  Optional    | Board information, used for consistency check (board selection is in `*.csolution.yml`).
-&nbsp;&nbsp; [`connections:`](#connections)          |  Optional    | List of consumed and provided resources.
-&nbsp;&nbsp; [`processor:`](#processor)        |  Optional    | Processor specific settings.
-&nbsp;&nbsp; [`groups:`](#groups)              |  Optional    | List of source file groups along with source files.
-&nbsp;&nbsp; [`components:`](#components)      |  Optional    | List of software components used.
+`layer:`                                               |              | Content
+:------------------------------------------------------|:-------------|:------------------------------------
+&nbsp;&nbsp; [`type:`](#layers---type)                 |  Optional    | Layer type for combining layers.
+&nbsp;&nbsp; [`packs:`](#packs)                        |  Optional    | Defines packs that are required for this layer.
+&nbsp;&nbsp; `description:`                            |  Optional    | Brief layer description.
+&nbsp;&nbsp; [`for-device:`](#device-name-conventions) |  Optional    | Device information, used for consistency check (device selection is in `*.csolution.yml`).
+&nbsp;&nbsp; [`for-board:`](#board-name-conventions)   |  Optional    | Board information, used for consistency check (board selection is in `*.csolution.yml`).
+&nbsp;&nbsp; [`connections:`](#connections)            |  Optional    | List of consumed and provided resources.
+&nbsp;&nbsp; [`processor:`](#processor)                |  Optional    | Processor specific settings.
+&nbsp;&nbsp; [`groups:`](#groups)                      |  Optional    | List of source file groups along with source files.
+&nbsp;&nbsp; [`components:`](#components)              |  Optional    | List of software components used.
 
 **Example:**
 
 ```yml
 layer:
   type: Board
-  name: AVH_MPS3_Cortsone-300
-  description: Board setup with Ethernet and WiFi interface
+  description: Setup with Ethernet and WiFi interface
   processor:
     trustzone: secure        # set processor to secure
   components:
@@ -1134,6 +1171,8 @@ The `target-types:` node may include [toolchain options](#toolchain-options), [t
 &nbsp;&nbsp;&nbsp; [`device:`](#device)            |   Optional   | Device specification.
 &nbsp;&nbsp;&nbsp; [`processor:`](#processor)      |   Optional   | Processor specific settings.
 &nbsp;&nbsp;&nbsp; [`context-map:`](#context-map)  |   Optional   | Use different `target-types:` for specific projects.
+&nbsp;&nbsp;&nbsp; [`context-map:`](#context-map)  |   Optional   | Use different `target-types:` for specific projects.
+&nbsp;&nbsp;&nbsp; [`variables:`](#variables)      |   Optional   | Variables that can be used to define project components.
 
 ### `build-types:`
 
@@ -1152,6 +1191,7 @@ The `build-types:` node may include [toolchain options](#toolchain-options):
 &nbsp;&nbsp;&nbsp; [`del-path:`](#del-path)        |   Optional   | Remove specific include file paths.
 &nbsp;&nbsp;&nbsp; [`misc:`](#misc)                |   Optional   | Literal tool-specific controls.
 &nbsp;&nbsp;&nbsp; [`context-map:`](#context-map)  |   Optional   | Use different `build-types:` for specific projects.
+&nbsp;&nbsp;&nbsp; [`variables:`](#variables)      |   Optional   | Variables that can be used to define project components.
 
 **Example:**
 
@@ -1277,7 +1317,7 @@ A *context* list that removes a list-node for specific `target-types:` and/or `b
 
 > **NOTE:** `not-for-type:` is identical to `not-for-context:`. `not-for-type:` will be deprecated and replaced by `not-for-context:` in future versions.
 
-#### context list
+### context list
 
 It is also possible to provide a [`context`](#context-name-conventions) list with:
 
@@ -1493,8 +1533,8 @@ Add a software layer to a project. Used in `*.cproject.yml` files.
 
 `layers:`                                           |              | Content
 :---------------------------------------------------|--------------|:------------------------------------
-[`- layer:`](#layer)                                | **Required** | Path to the `*.clayer.yml` file that defines the layer.
-&nbsp;&nbsp; `type:`                                |   Optional   | Refers to an expected layer type.
+[`- layer:`](#layer)                                |   Optional   | Path to the `*.clayer.yml` file that defines the layer.
+&nbsp;&nbsp; [`type:`](#layers---type)              |   Optional   | Refers to an expected layer type.
 &nbsp;&nbsp; [`for-context:`](#for-context)         |   Optional   | Include layer for a list of *build* and *target* types.
 &nbsp;&nbsp; [`not-for-context:`](#not-for-context) |   Optional   | Exclude layer for a list of *build* and *target* types.
 &nbsp;&nbsp; [`optimize:`](#optimize)               |   Optional   | Optimize level for code generation.
@@ -1534,79 +1574,39 @@ Add a software layer to a project. Used in `*.cproject.yml` files.
         - +AVH
 ```
 
-#### Proposals for `layers:`
+#### `layers:` - `type:`
 
-1. `layer type:` for evaluation of compatible layers.
+The `layers:` - `type:` is used in combination with the meta-data of the [`connections:`](#connections) to check the list of available `*.clayer.yml` files for matching layers. Instead of an explicit `layer:` node that specifies a `*.clayer.yml` file, the `type:` is used to search for matching layers with the `csolution` command `list layers`.
 
-   The path to the `*.clayer.yml` file can be empty, but in this case a `type:` must be specified.
-   The `csolution` project manager searches in the available software packs for compatible layers and notifies the user.
-   The compatible layers are listed by evaluating the compatible [`connections:`](#connections).
+**Example:**
 
-   **Example:**
+```yml
+  layers:
+    - type: Socket              # search for matching layers of type `Socket`
 
-   ```yml
-     layers:
-       - layer:                    # no `*.clayer.yml` specified. Compatible layers are listed
-         type: Socket              # layer of type `Socket` is expected
+    - type: Board               # search for matching layers of type `Board`
+```
 
-       - layer:                    # no `*.clayer.yml` specified. Compatible layers are listed
-         type: Board               # layer of type `Board` is expected
-   ```
-
-2. `variables:` to values via access sequences
-
-   With variables that are defined in the `*.csolution.yml` file, it could be avoided that a `*.cproject.yml` file requires modifications
-   when new target types are introduced.  The required `layers:` could be instead specified in the `*.csolution.yml` file using a new node `variables:`.
-
-   **Example:**
-   
-   *Example.csolution.yml*
-   
-   ```yml
-   solution:
-     target-types:
-       - type: NXP Board
-         board: IMXRT1050-EVKB
-         variables:
-           - Socket-Layer: ./Socket/FreeRTOS+TCP/Socket.clayer.yml
-           - Board-Layer:  ./Board/IMXRT1050-EVKB/Board.clayer.yml
-  
-       - type: ST Board
-         board: B-U585I-IOT02A
-         variables:
-           - Socket-Layer: ./Socket/WiFi/Socket.clayer.yml
-           - Board-Layer:  ./Board/B-U585I-IOT02A/Board.clayer.yml
-   ```
-   
-   *Example.cproject.yml*
-   
-   ```yml
-     layers:
-       - layer: $Socket-Layer$
-         type: Socket
-   
-       - layer: $Board-Layer$      # no `*.clayer.yml` specified. Compatible layers are listed
-         type: Board               # layer of type `Board` is expected
-   ```
+When combined with [`variables:`](#variables) it is possible to define the required `*.clayer.yml` files at the level of the `*.csolution.yml` file.  Refer to [`variables:`](#variables) for an example.
 
 ### `components:`
 
 Add software components to a project or a software layer. Used in `*.cproject.yml` and `*.clayer.yml` files.
 
-`components:`                                  |              | Content
-:----------------------------------------------|--------------|:------------------------------------
-`- component:`                                 | **Required** | Name of the software component.
-&nbsp;&nbsp; [`for-context:`](#for-context)          |   Optional   | Include component for a list of *build* and *target* types.
-&nbsp;&nbsp; [`not-for-context:`](#not-for-context)  |   Optional   | Exclude component for a list of *build* and *target* types.
-&nbsp;&nbsp; [`optimize:`](#optimize)          |   Optional   | Optimize level for code generation.
-&nbsp;&nbsp; [`debug:`](#debug)                |   Optional   | Generation of debug information.
-&nbsp;&nbsp; [`warnings:`](#warnings)          |   Optional   | Control generation of compiler diagnostics.
-&nbsp;&nbsp; [`define:`](#define)              |   Optional   | Define symbol settings for code generation.
-&nbsp;&nbsp; [`undefine:`](#undefine)          |   Optional   | Remove define symbol settings for code generation.
-&nbsp;&nbsp; [`add-path:`](#add-path)          |   Optional   | Additional include file paths.
-&nbsp;&nbsp; [`del-path:`](#del-path)          |   Optional   | Remove specific include file paths.
-&nbsp;&nbsp; [`misc:`](#misc)                  |   Optional   | Literal tool-specific controls.
-&nbsp;&nbsp; [`instances:`](#instances)        |   Optional   | Add multiple instances of component configuration files (default: 1)
+`components:`                                       |              | Content
+:---------------------------------------------------|--------------|:------------------------------------
+`- component:`                                      | **Required** | Name of the software component.
+&nbsp;&nbsp; [`for-context:`](#for-context)         |   Optional   | Include component for a list of *build* and *target* types. 
+&nbsp;&nbsp; [`not-for-context:`](#not-for-context) |   Optional   | Exclude component for a list of *build* and *target* types.
+&nbsp;&nbsp; [`optimize:`](#optimize)               |   Optional   | Optimize level for code generation.
+&nbsp;&nbsp; [`debug:`](#debug)                     |   Optional   | Generation of debug information.
+&nbsp;&nbsp; [`warnings:`](#warnings)               |   Optional   | Control generation of compiler diagnostics.
+&nbsp;&nbsp; [`define:`](#define)                   |   Optional   | Define symbol settings for code generation.
+&nbsp;&nbsp; [`undefine:`](#undefine)               |   Optional   | Remove define symbol settings for code generation.
+&nbsp;&nbsp; [`add-path:`](#add-path)               |   Optional   | Additional include file paths.
+&nbsp;&nbsp; [`del-path:`](#del-path)               |   Optional   | Remove specific include file paths.
+&nbsp;&nbsp; [`misc:`](#misc)                       |   Optional   | Literal tool-specific controls.
+&nbsp;&nbsp; [`instances:`](#instances)             |   Optional   | Add multiple instances of component configuration files (default: 1)
 
 **Example:**
 
