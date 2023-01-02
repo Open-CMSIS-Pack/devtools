@@ -15,5 +15,5 @@ If no `region_defs.h` is available, it could be generated using the information 
 
 The process is shown in the picture below.
 
-![Linker Script File Generation](./images/scatter-file.png "Linker Script File Generation")
+![Linker Script File Generation](./images/linker-script-file.png "Linker Script File Generation")
 
