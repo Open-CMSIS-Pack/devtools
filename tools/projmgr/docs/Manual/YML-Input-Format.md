@@ -11,6 +11,7 @@ Project Manager.
 
 - [YAML Input Format](#yaml-input-format)
   - [Name Conventions](#name-conventions)
+    - [Filename Extensions](#filename-extensions)
     - [`pack:` Name Conventions](#pack-name-conventions)
     - [`component:` Name Conventions](#component-name-conventions)
     - [`device:` Name Conventions](#device-name-conventions)
@@ -102,6 +103,23 @@ Project Manager.
         - [`- peripheral:`](#--peripheral)
 
 ## Name Conventions
+
+### Filename Extensions
+
+The **csolution - CMSIS Project Manager** recognizes the [categories](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_components_pg.html#FileCategoryEnum) of [files](#files) based on the filename extension in the YAML input files as shown in the table below.
+
+Extension          | [Category](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_components_pg.html#FileCategoryEnum)        | Description
+:------------------------|--------------|:---------------------
+`*.c`                    | sourceC      | C source file
+`*.cpp`                  | sourceCpp    | C++ source file
+`*.h`                    | header       | Header file
+`*.s`, `*.asm`, `*.S`    | sourceAsm    | Assembly source file
+`*.ld`, `*.scf`, `*.sct` | linkerScript | Linker Script file
+???                      | library      | Library file
+???                      | object       | Object file
+`*.txt`, `*.md`          | doc          | Documentation
+
+> ToDo: verify and complete the list above
 
 ### `pack:` Name Conventions
 
