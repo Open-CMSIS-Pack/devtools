@@ -29,7 +29,7 @@ Linker Script files are provided using the `file:` notation under [`groups:`](YM
 
 If a project context does not specify any linker script it could be generated using information of the header file `region_defs.h`.
 
-If no `region_defs.h` is **not** available, it is generated based on information of the software packs using the:
+If `region_defs.h` is **not** available, it is generated based on information of the software packs using the:
 
 - [`<device>` - `<memory>` element in the DFP](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_boards_pg.html#element_board_memory)
 - [`<board>` - `<memory>` element in the BSP](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_family_pg.html#element_memory)
@@ -83,6 +83,14 @@ The `linker:` list node controls the linker operation.
 &nbsp;&nbsp; [`for-compiler:`](YML-Input-Format.md#for-compiler)         |   Optional   | Include Linker Script for the specified toolchain.
 &nbsp;&nbsp; [`for-context:`](YML-Input-Format.md#for-context)           |   Optional   | Include Linker Script for a list of *build* and *target* types.
 &nbsp;&nbsp; [`not-for-context:`](YML-Input-Format.md#not-for-context)   |   Optional   | Exclude Linker Script for a list of *build* and *target* types.
+
+**Example:**
+
+```yml
+linker:                      # Control linker operation
+  - script: .\MyProject.sct  # Explicit scatter file
+    for-context: .Debug  
+```
 
 >**Note:**
 >

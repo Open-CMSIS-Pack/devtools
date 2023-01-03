@@ -730,28 +730,7 @@ If accepted, we would need to extend also the access sequences.
 
 ### `linker:`
 
->**Proposal for Implementation:** Linker Control needs review. 
->
-> Currently the linker command files are provided using the `file:` notation under [`groups:`](#groups) or as part of software components. The extensions `.sct`, `.scf` and `.ld` are automatically recognized as linker script files. The benefit is that linker control files can be part of software components.
-
-The `linker:` list node controls the linker operation.
-
-`linker:`                                             |              |  Content
-:-----------------------------------------------------|:-------------|:--------------------------------
-`- script:`                                           |              | Explicit file name of the linker script
-&nbsp;&nbsp; [`for-compiler:`](#for-compiler)         |   Optional   | Include script for the specified toolchain.
-&nbsp;&nbsp; [`for-context:`](#for-context)                 |   Optional   | Include script for a list of *build* and *target* types.
-&nbsp;&nbsp; [`not-for-context:`](#not-for-context)         |   Optional   | Exclude script for a list of *build* and *target* types.
-
-**Example:**
-
-```yml
-linker:                      # Control linker operation
-  - script: .\MyProject.sct  # Explicit scatter file
-    for-context: .Debug  
-```
-
-The inclusion of a *compiler-specific node* is processed when the specified compiler(s) matches.
+>**Proposal for Implementation:** is now in [Linker Script File (Proposal)](Linker%20Script%20File%20(Proposal).md).
 
 ## Translation Control
 
