@@ -17,7 +17,7 @@ This is a proposal for resource handling that is based on information that is pr
   - [Questions](#questions)
   - [YAML Input File extension](#yaml-input-file-extension)
     - [`linker:` control script generation](#linker-control-script-generation)
-  - [`region_defs.h` template file](#region_defsh-template-file)
+  - [`regions_<device_or_board>.h` template file](#regions_device_or_boardh-template-file)
 
 ## Introduction
 
@@ -27,35 +27,35 @@ Linker Script files are provided using the `file:` notation under [`groups:`](YM
 
 ## Automatic Linker Script generation
 
-If a project context does not specify any linker script it could be generated using information of the header file `region_defs.h`.
+If a project context does not specify any linker script it could be generated using information of the header file `regions_<device_or_board>.h`.
 
-If `region_defs.h` is **not** available, it is generated based on information of the software packs using the:
+If `regions_<device_or_board>.h` is **not** available, it is generated based on information of the software packs using the:
 
 - [`<device>` - `<memory>` element in the DFP](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_boards_pg.html#element_board_memory)
 - [`<board>` - `<memory>` element in the BSP](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_family_pg.html#element_memory)
 
 ### File locations
 
-The file `region_defs.h` and the Linker Script file should be generated in the directory `\RTE\Device\<device-name>`.  
+The file `regions_<device_or_board>.h` and the Linker Script file should be generated in the [RTE directory](Overview.md#rte-directory-structure) path `\RTE\Device\<device>`. The actual file name is extended with:
 
-It should be evaluated if `board:` specific `region_defs.h` files could have a name specific to the board and located in the same directory or if it is required to store it in a directory `\RTE\Board\<board-name>` (see Questions below).
-
+  -  `board:` name when the `*.cproject.yml` file uses in the project context a `board:` specification, i.e. `regions_IMXRT1050-EVKB.h`
+  -  `device:` name when the `*.cproject.yml` file uses in the project context only a `device:` specification, i.e. `regions_stm32u585xx.h`.
+  
 ## User Modifications to Memory Regions
 
-The file `region_defs.h` should be user modifiable as it might be required to adjust the memory regions or give additional attributes (such as `noinit`).  Therefore this file should have [Configuration Wizard Annotations](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/configWizard.html). It might be consider to generate this file using a file template provided in the `.\etc` directory.
+The file `regions_<device_or_board>.h` should be user modifiable as it might be required to adjust the memory regions or give additional attributes (such as `noinit`).  Therefore this file should have [Configuration Wizard Annotations](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/configWizard.html). It might be consider to generate this file using a file template provided in the `.\etc` directory.
 
 ## File Overview
 
-The picture below gives an overview and explains the relationship between the different files. It includes also a compiler agnostic `Startup.c` file/
+The picture below gives an overview and explains the relationship between the different files.
 
 ![Linker Script File Generation](./images/linker-script-file.png "Linker Script File Generation")
 
 ## Questions
 
-- Is it possible to specify the name of the `region-defs.h` file for the C Preprocessor step?  In this way the filename `region-defs.h` could be flexible. Consider that a system with a `board:` may require a different `region-defs.h` files.  Same may apply for different project contexts that require fine tuning of memory regions.
-- Is it required to include `region-defs.h` in `Startup.c` (i.e. to define the heap)? If not, that would simplify `Startup.c`.
 - This proposal should work well for single-processor devices.  For multi-processor devices or devices with TrustZone an interface to a CMSIS-Zone tool might be required. Should we add already provisions?
 - Is there Linker Script support for all toolchains with: (a) multiple regions, (b) startup attribute, (c) noinit attribute?  (see `region_defs.h` template file below).
+- Should there be differences in the linker script depending on the architecture (ArmV6M, ArmV7M, ArmV8M) and/or Secure/Non-Secure programming model?
 
 ## YAML Input File extension
 
@@ -71,7 +71,7 @@ The `linker:` list node controls the linker operation.
 
 `linker:`                                             |              |  Content
 :-----------------------------------------------------|:-------------|:--------------------------------
-`- regions:`                                          |  Optional    | Path and file name of `region_defs.h`, used to generate a Linker Script
+`- regions:`                                          |  Optional    | Path and file name of `regions_<device_or_board>.h`, used to generate a Linker Script.
 &nbsp;&nbsp; [`for-compiler:`](YML-Input-Format.md#for-compiler)         |   Optional   | Include Linker Script for the specified toolchain.
 &nbsp;&nbsp; [`for-context:`](YML-Input-Format.md#for-context)           |   Optional   | Include Linker Script for a list of *build* and *target* types.
 &nbsp;&nbsp; [`not-for-context:`](YML-Input-Format.md#not-for-context)   |   Optional   | Exclude Linker Script for a list of *build* and *target* types.
@@ -96,7 +96,7 @@ linker:                      # Control linker operation
 >
 > Specifying both a `- script:` file and a `- regions:` file results in a error at `csolution` tool.
 
-## `region_defs.h` template file
+## `regions_<device_or_board>.h` template file
 
 A `region_defs.h` template file should be pre-annotated using [Configuration Wizard Annotations](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/configWizard.html) and could include:
 
