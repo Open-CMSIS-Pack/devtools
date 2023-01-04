@@ -108,8 +108,8 @@ Project Manager.
 
 The **csolution - CMSIS Project Manager** recognizes the [categories](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_components_pg.html#FileCategoryEnum) of [files](#files) based on the filename extension in the YAML input files as shown in the table below.
 
-Extension          | [Category](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_components_pg.html#FileCategoryEnum)        | Description
-:------------------------|--------------|:---------------------
+File Extension           | [Category](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_components_pg.html#FileCategoryEnum) | Description
+:------------------------|:-------------|:---------------------
 `*.c`                    | sourceC      | C source file
 `*.cpp`                  | sourceCpp    | C++ source file
 `*.h`                    | header       | Header file
@@ -766,6 +766,8 @@ The following translation control options may be used at various places such as:
 
 ### `language-C:`
 
+>**Proposal for Implementation:**
+
 Set the language standard for C source file compilation.
 
 Value                                                 | Select C Language Standard
@@ -778,6 +780,8 @@ Value                                                 | Select C Language Standa
 `gnu11`                                               | same as `c11` but with additional GNU extensions.
 
 ### `language-CPP:`
+
+>**Proposal for Implementation:**
 
 Set the language standard for C++ source file compilation.
 

@@ -38,8 +38,8 @@ If `regions_<device_or_board>.h` is **not** available, it is generated based on 
 
 The file `regions_<device_or_board>.h` and the Linker Script file should be generated in the [RTE directory](Overview.md#rte-directory-structure) path `\RTE\Device\<device>`. The actual file name is extended with:
 
-  -  `board:` name when the `*.cproject.yml` file uses in the project context a `board:` specification, i.e. `regions_IMXRT1050-EVKB.h`
-  -  `device:` name when the `*.cproject.yml` file uses in the project context only a `device:` specification, i.e. `regions_stm32u585xx.h`.
+- `board:` name when the `*.cproject.yml` file uses in the project context a `board:` specification, i.e. `regions_IMXRT1050-EVKB.h`
+- `device:` name when the `*.cproject.yml` file uses in the project context only a `device:` specification, i.e. `regions_stm32u585xx.h`.
   
 ## User Modifications to Memory Regions
 
@@ -101,6 +101,6 @@ linker:                      # Control linker operation
 A `region_defs.h` template file should be pre-annotated using [Configuration Wizard Annotations](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/configWizard.html) and could include:
 
 - memory regions defined by [MemoryID](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_family_pg.html#MemoryIDTypeEnum) in DFP or BSP
-  - memory names (when available) in comment annotations
+- memory names (when available) in comment annotations
 - a way to specify the `startup` attribute.
 - a way to set the `uninit` attribute.

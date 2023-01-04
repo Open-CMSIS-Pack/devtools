@@ -578,7 +578,7 @@ The table below summarizes the overall directory structure and further details t
 
 > **Note:**
 >
-> The `./RTE` directory structure is maintained by tools. You should not modify the structure of this directory.
+> The `./RTE` directory structure is maintained by tools. You should not modify the structure of this directory.  However the complete directory should be committed to a repository of a version control system.
 
 Directory Structure                 | Content
 :-----------------------------------|:---------------
@@ -591,15 +591,15 @@ Directory Structure                 | Content
 `<layer>/RTE/<Cclass>`              | Configurable files for each component `Cclass` have a common directory.
 `<layer>/RTE/<Cclass>/<device>`     | Configurable files for components that have a condition to a `device` are in a separate directory.
 
-The `<context-dir>` has the following format: `_<project-name>.<release-type>_<build-type>`.
+The `<context-dir>` has the following format: `_<project-name>.<build-type>_<target-type>`.
 
 #### Proposal
 
 The default RTE directory structure can be modified with [`rte-dirs:`](YML-Input-Format.md#rte-dirs).
 This list node allows to specify for each software component `Cclass` the directory that should be used to partly share a common configuration across a `project:` or `layer:`.
 
-Review if the `<context-dir>` can just have the same format as the `context` which is: `<project-name>+<build-type>.<release-type>`.
-I don't think it is required to align `<project>/RTE/<context-dir>` with other tools, but the remaining RTE directory structure should aligned with existing implementations (MDK, CMSIS-Eclipse-Pack).
+As CBuild no longer generates the `<context-dir>` it is required to align with naming conventions of other tools. MDK uses `_<build-type>_<target-type>` when a CPRJ file is imported.
+As fallback, Review if the `<context-dir>` can just have the same format as the `context` which is: `<project-name>.<build-type>_<target-type>`.
 
 ### Output Directory Structure
 
