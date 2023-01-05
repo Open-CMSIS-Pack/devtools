@@ -10,10 +10,10 @@ This is a proposal for resource handling that is based on information that is pr
 
 - [Linker Script File Handling (Proposal)](#linker-script-file-handling-proposal)
   - [Introduction](#introduction)
+  - [File Overview](#file-overview)
   - [Automatic Linker Script generation](#automatic-linker-script-generation)
     - [File locations](#file-locations)
   - [User Modifications to Memory Regions](#user-modifications-to-memory-regions)
-  - [File Overview](#file-overview)
   - [Questions](#questions)
   - [YAML Input File extension](#yaml-input-file-extension)
     - [`linker:` control script generation](#linker-control-script-generation)
@@ -25,9 +25,21 @@ The Linker Script contains a series of Linker directives that specify the availa
 
 Linker Script files are provided using the `file:` notation under [`groups:`](YML-Input-Format.md#groups) or as part of software components. The extensions `.sct`, `.scf` and `.ld` are automatically recognized as linker script files. The benefit is that linker script files can be part of software components.
 
+>**Notes:**
+>
+> This proposal recommends preprocessing of all linker scripts to unify the workflow. This allows to use C preprocessor commands in the linker script, regardless of using a `regions_<device_or_board>.h` file to define memory regions.
+>
+> In a later interation of the tools it should be possible to generate the `regions_<device_or_board>.h` with a workflow that is similar to "CMSIS-Zone" or "DeviceTree".
+
+## File Overview
+
+The picture below gives an overview and explains the relationship between the different files.
+
+![Linker Script File Generation](./images/linker-script-file.png "Linker Script File Generation")
+
 ## Automatic Linker Script generation
 
-If a project context does not specify any linker script it could be generated using information of the header file `regions_<device_or_board>.h`.
+If a project context does not specify any linker script it could be generated using information of the header file `regions_<device_or_board>.h` and a toolchain specific linker script template.
 
 If `regions_<device_or_board>.h` is **not** available, it is generated based on information of the software packs using the:
 
@@ -44,12 +56,6 @@ The file `regions_<device_or_board>.h` and the Linker Script file should be gene
 ## User Modifications to Memory Regions
 
 The file `regions_<device_or_board>.h` should be user modifiable as it might be required to adjust the memory regions or give additional attributes (such as `noinit`).  Therefore this file should have [Configuration Wizard Annotations](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/configWizard.html). It might be consider to generate this file using a file template provided in the `.\etc` directory.
-
-## File Overview
-
-The picture below gives an overview and explains the relationship between the different files.
-
-![Linker Script File Generation](./images/linker-script-file.png "Linker Script File Generation")
 
 ## Questions
 
@@ -79,10 +85,7 @@ The `linker:` list node controls the linker operation.
 &nbsp;&nbsp; [`for-compiler:`](YML-Input-Format.md#for-compiler)         |   Optional   | Include Linker Script for the specified toolchain.
 &nbsp;&nbsp; [`for-context:`](YML-Input-Format.md#for-context)           |   Optional   | Include Linker Script for a list of *build* and *target* types.
 &nbsp;&nbsp; [`not-for-context:`](YML-Input-Format.md#not-for-context)   |   Optional   | Exclude Linker Script for a list of *build* and *target* types.
-`- script-template:`                                  |   Optional   | Path and file name of a Linker Script template. If not used, the `.\etc` directory is searched.
-&nbsp;&nbsp; [`for-compiler:`](YML-Input-Format.md#for-compiler)         |   Optional   | Include Linker Script for the specified toolchain.
-&nbsp;&nbsp; [`for-context:`](YML-Input-Format.md#for-context)           |   Optional   | Include Linker Script for a list of *build* and *target* types.
-&nbsp;&nbsp; [`not-for-context:`](YML-Input-Format.md#not-for-context)   |   Optional   | Exclude Linker Script for a list of *build* and *target* types.
+&nbsp;&nbsp; `preprocess:`                                               |   Optional   | Values: `on` (default) and `off`. When set to `off` the C preprocess step is skip and the script is the direct command input to the linker.
 
 **Example:**
 
