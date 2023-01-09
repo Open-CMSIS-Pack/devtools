@@ -292,8 +292,10 @@
         "not-for-context": { "$ref": "#/definitions/NotForContext" }
       },
       "additionalProperties": false,
-      "$ref": "#/definitions/TypeListMutualExclusion",
-      "required": [ "project" ]
+      "allOf": [
+        { "$ref": "#/definitions/TypeListMutualExclusion"},
+        { "required": [ "project" ] }
+      ]
     },
     "ProcessorType": {
       "type": ["object", "null"],
@@ -344,10 +346,13 @@
         "groups":          { "$ref": "#/definitions/GroupsType" },
         "files":           { "$ref": "#/definitions/FilesType" }
       },
-      "$ref": "#/definitions/TypeListMutualExclusion",
-      "anyOf": [
-        {"required" : ["files"]},
-        {"required" : ["groups"]}
+      "allOf": [
+        { "$ref": "#/definitions/TypeListMutualExclusion" },
+        { "anyOf": [
+            {"required" : ["files"]},
+            {"required" : ["groups"]}
+          ]
+        }
       ],
       "additionalProperties": false
     },
@@ -379,8 +384,10 @@
         "del-path":        { "$ref": "#/definitions/DelpathsType" },
         "misc":            { "$ref": "#/definitions/MiscTypes" }
       },
-      "$ref": "#/definitions/TypeListMutualExclusion",
-      "required": [ "file" ],
+      "allOf": [
+        { "$ref": "#/definitions/TypeListMutualExclusion" },
+        { "required": [ "file" ] }
+      ],
       "additionalProperties": false
     },
     "ComponentsType": {
@@ -415,8 +422,10 @@
         "del-path":        { "$ref": "#/definitions/DelpathsType" },
         "misc":            { "$ref": "#/definitions/MiscTypes" }
       },
-      "$ref": "#/definitions/TypeListMutualExclusion",
-      "required": [ "component" ],
+      "allOf": [
+        { "$ref": "#/definitions/TypeListMutualExclusion" },
+        { "required": [ "component" ] }
+      ],
       "additionalProperties": false
     },
     "LayersType": {
@@ -452,10 +461,13 @@
         "del-path":        { "$ref": "#/definitions/DelpathsType" },
         "misc":            { "$ref": "#/definitions/MiscTypes" }
       },
-      "$ref": "#/definitions/TypeListMutualExclusion",
-      "anyOf": [
-        { "required": ["layer"] },
-        { "required": ["type"]  }
+      "allOf": [
+        { "$ref": "#/definitions/TypeListMutualExclusion" },
+        { "anyOf": [
+            { "required": ["layer"] },
+            { "required": ["type"]  }
+          ]
+        }
       ],
       "additionalProperties": false
     },
@@ -602,8 +614,10 @@
         "not-for-type":    { "$ref": "#/definitions/NotForType", "description": "DEPRECATED use: not-for-context" },
         "not-for-context": { "$ref": "#/definitions/NotForContext" }
       },
-      "$ref": "#/definitions/TypeListMutualExclusion",
-      "required": [ "pack" ],
+      "allOf": [
+        { "$ref": "#/definitions/TypeListMutualExclusion" },
+        { "required": [ "pack" ] }
+      ],
       "additionalProperties": false
     },
     "SetupsType": {
