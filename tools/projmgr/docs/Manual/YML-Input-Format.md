@@ -109,17 +109,15 @@ Project Manager.
 The **csolution - CMSIS Project Manager** recognizes the [categories](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_components_pg.html#FileCategoryEnum) of [files](#files) based on the filename extension in the YAML input files as shown in the table below.
 
 File Extension           | [Category](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_components_pg.html#FileCategoryEnum) | Description
-:------------------------|:-------------|:---------------------
-`*.c`                    | sourceC      | C source file
-`*.cpp`                  | sourceCpp    | C++ source file
-`*.h`                    | header       | Header file
-`*.s`, `*.asm`, `*.S`    | sourceAsm    | Assembly source file
-`*.ld`, `*.scf`, `*.sct` | linkerScript | Linker Script file
-???                      | library      | Library file
-???                      | object       | Object file
-`*.txt`, `*.md`          | doc          | Documentation
-
-> ToDo: verify and complete the list above
+:--------------------------------------------|:-------------|:---------------------
+`.c`, `.C`                                   | sourceC      | C source file
+`.cpp`, `.c++`, `.C++`, `.cxx`, `.cc`, `.CC` | sourceCpp    | C++ source file
+`.h`,`.hpp`                                  | header       | Header file
+`.asm`, `.s`, `.S`                           | sourceAsm    | Assembly source file
+`.ld`, `.scf`, `.sct`                        | linkerScript | Linker Script file
+`.a`, `.lib`                                 | library      | Library file
+`.o`                                         | object       | Object file
+`.txt`, `.md`, `.pdf`, `.htm`, `.html`       | doc          | Documentation
 
 ### `pack:` Name Conventions
 
@@ -397,7 +395,7 @@ groups:
 
 ## Variables
 
-The `variables:` node defines are *key/value* pairs that can be used to refer to `*.clayer.yml` files.  The *key* can be specified in the [`layers:`](#layers) node and is replaced with the *value* that specifies a `*.clayer.yml` file including path.
+The `variables:` node defines are *key/value* pairs that can be used to refer to `*.clayer.yml` files.  The *key* is the name of the *variable* and can be used  in the following nodes: [`layers:`](#layers), [`define:`](#define), [`add-path:`](#add-path), [`misc:`](#misc), [`files:`](#files), and [`execute:`](#execute)
 
 Using variables that are defined in the `*.csolution.yml` file, a `*.cproject.yml` file requires no modifications when new `target-types:` are introduced.  The required `layers:` could be instead specified in the `*.csolution.yml` file using a new node `variables:`.
 
