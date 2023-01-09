@@ -1,16 +1,17 @@
-# YML Input Format
+# YAML Input Format
 
 <!-- markdownlint-disable MD009 -->
 <!-- markdownlint-disable MD013 -->
 <!-- markdownlint-disable MD036 -->
 
-The following chapter explains the YML format that is used to describe the YML input files for the **CSolution**
+The following chapter explains the YAML format that is used to describe the `*.yml` input files for the **CSolution**
 Project Manager.
 
 **Table of Contents**
 
-- [YML Input Format](#yml-input-format)
+- [YAML Input Format](#yaml-input-format)
   - [Name Conventions](#name-conventions)
+    - [Filename Extensions](#filename-extensions)
     - [`pack:` Name Conventions](#pack-name-conventions)
     - [`component:` Name Conventions](#component-name-conventions)
     - [`device:` Name Conventions](#device-name-conventions)
@@ -32,7 +33,6 @@ Project Manager.
     - [`output-type:`](#output-type)
     - [`output:`](#output)
     - [`linker:`](#linker)
-    - [`for-compiler:`](#for-compiler)
   - [Translation Control](#translation-control)
     - [`language-C:`](#language-c)
     - [`language-CPP:`](#language-cpp)
@@ -58,10 +58,12 @@ Project Manager.
     - [`target-types:`](#target-types)
     - [`build-types:`](#build-types)
     - [`context-map:`](#context-map)
-  - [Build/Target-Type control](#buildtarget-type-control)
+  - [Conditional Build](#conditional-build)
+    - [`for-compiler:`](#for-compiler)
     - [`for-context:`](#for-context)
     - [`not-for-context:`](#not-for-context)
     - [context list](#context-list)
+    - [List nodes](#list-nodes-1)
   - [Related Projects](#related-projects)
     - [`projects:`](#projects)
   - [Source File Management](#source-file-management)
@@ -101,6 +103,21 @@ Project Manager.
         - [`- peripheral:`](#--peripheral)
 
 ## Name Conventions
+
+### Filename Extensions
+
+The **csolution - CMSIS Project Manager** recognizes the [categories](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_components_pg.html#FileCategoryEnum) of [files](#files) based on the filename extension in the YAML input files as shown in the table below.
+
+File Extension           | [Category](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_components_pg.html#FileCategoryEnum) | Description
+:--------------------------------------------|:-------------|:---------------------
+`.c`, `.C`                                   | sourceC      | C source file
+`.cpp`, `.c++`, `.C++`, `.cxx`, `.cc`, `.CC` | sourceCpp    | C++ source file
+`.h`,`.hpp`                                  | header       | Header file
+`.asm`, `.s`, `.S`                           | sourceAsm    | Assembly source file
+`.ld`, `.scf`, `.sct`                        | linkerScript | Linker Script file
+`.a`, `.lib`                                 | library      | Library file
+`.o`                                         | object       | Object file
+`.txt`, `.md`, `.pdf`, `.htm`, `.html`       | doc          | Documentation
 
 ### `pack:` Name Conventions
 
@@ -224,8 +241,9 @@ Element      |              | Description
 `board_name` | **Required** | Board name (name attribute) as defined in the \<board\> element of the BSP.
 `revision`   | Optional     | Board revision (revision attribute) as defined in the \<board\> element of the BSP.
 
-> **Note:** When a `board:` is specified, the `device:` specification can be omitted, however it is possible to
-  overwrite the device setting in the BSP with an explicit `device:` setting.
+> **Note:**
+>
+> When a `board:` is specified, the `device:` specification can be omitted, however it is possible to overwrite the device setting in the BSP with an explicit `device:` setting.
 
 **Examples:**
 
@@ -274,6 +292,7 @@ Demo.Release+WiFi
 The `context` name is also used in [`for-context:`](#for-context) and [`not-for-context:`](#not-for-context) nodes that allow to include or exclude items depending on the `context`. In many cases the `project-name` can be omitted as the `context` name is within a specific `*.cproject.yml` file or applied to a specific `*.cproject.yml` file.
 
 > **Note:**
+>
 > In previous releases of the CMSIS-Toolbox `for-type:` and `not-for-type:` where used.  For backward  compatibility:
 > 
 > - `for-context:` is identical to `for-type:`
@@ -376,7 +395,7 @@ groups:
 
 ## Variables
 
-The `variables:` node defines are *key/value* pairs that can be used to refer to `*.clayer.yml` files.  The *key* can be specified in the [`layers:`](#layers) node and is replaced with the *value* that specifies a `*.clayer.yml` file including path.
+The `variables:` node defines are *key/value* pairs that can be used to refer to `*.clayer.yml` files.  The *key* is the name of the *variable* and can be used  in the following nodes: [`layers:`](#layers), [`define:`](#define), [`add-path:`](#add-path), [`misc:`](#misc), [`files:`](#files), and [`execute:`](#execute)
 
 Using variables that are defined in the `*.csolution.yml` file, a `*.cproject.yml` file requires no modifications when new `target-types:` are introduced.  The required `layers:` could be instead specified in the `*.csolution.yml` file using a new node `variables:`.
 
@@ -430,7 +449,9 @@ The **csolution - CMSIS Project Manager** uses a file with the name `*.cdefault.
 - Any `*.cdefault.yml` or `*.cdefault.yaml` file in the directory specified by the environment variable [`CMSIS_COMPILER_ROOT`](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/docs/installation.md#environment-variables).
 - Any `*.cdefault.yml` or `*.cdefault.yaml` file in the directory [`<cmsis-toolbox-installation-dir>/etc`](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/docs/installation.md##etccmake).
 
-> **Note:** The command line option `-i` or `--ignore-cdefault` (file .\etc\cdefault.yml is not used)
+> **Note:**
+>
+> The command line option `-i` or `--ignore-cdefault` (file .\etc\cdefault.yml is not used)
 
 The `default:` node is the start of a `*.cdefault.yml` or `*.cdefault.yaml` file and contains the following.
 
@@ -608,7 +629,9 @@ might be confusing for `yml` files that are generated by an IDE.
 
 The following node allows to control the directories used to generate the output files.  
 
->**Note:** This control is only possible at `csolution.yml` level.
+>**Note:**
+> 
+> This control is only possible at `csolution.yml` level.
 
 ### `output-dirs:`
 
@@ -723,52 +746,7 @@ If accepted, we would need to extend also the access sequences.
 
 ### `linker:`
 
->**Proposal for Implementation:** Linker Control needs review. 
->
-> Currently the linker command files are provided using the `file:` notation under [`groups:`](#groups) or as part of software components. The extensions `.sct`, `.scf` and `.ld` are automatically recognized as linker script files. The benefit is that linker control files can be part of software components.
-
-The `linker:` list node controls the linker operation.
-
-`linker:`                                             |              |  Content
-:-----------------------------------------------------|:-------------|:--------------------------------
-`- script:`                                           |              | Explicit file name of the linker script
-&nbsp;&nbsp; [`for-compiler:`](#for-compiler)         |   Optional   | Include script for the specified toolchain.
-&nbsp;&nbsp; [`for-context:`](#for-context)                 |   Optional   | Include script for a list of *build* and *target* types.
-&nbsp;&nbsp; [`not-for-context:`](#not-for-context)         |   Optional   | Exclude script for a list of *build* and *target* types.
-
-**Example:**
-
-```yml
-linker:                      # Control linker operation
-  - script: .\MyProject.sct  # Explicit scatter file
-    for-context: .Debug  
-```
-
-### `for-compiler:`
-
-Depending on a compiler toolchain it is possible to include *compiler-specific nodes* in the build process.
-
-**Examples:**
-
-```yml
-for-compiler: AC6@6.16               # add item for Arm Compiler version 6.16 only      
-
-for-compiler:                        # add item
-  - AC6                              # for Arm Compiler (any version)
-  - GCC                              # for GCC Compiler
-```
-
-The keyword `for-compiler:` can be applied to the following nodes:
-
-List Node                                  | Description
-:------------------------------------------|:------------------------------------
-[`- group:`](#groups)                      | At `group:` node it is possible to control inclusion of a file group.
-[`- file:`](#files)                        | At `file:` node it is possible to control inclusion of a file.
-[`- setup:`](#setups)                      | At `setup:` node to define compiler-specific toolchain settings.
-[`- misc:`](#misc)                         | At `misc:` node that allows to add miscellaneous compiler-specific controls.
-[`- script:`](#linker)                     | At `linker:` node to control the usage of linker script files.
-
-The inclusion of a *compiler-specific node* is processed when the specified compiler(s) matches.
+>**Proposal for Implementation:** is now in [Linker Script File (Proposal)](Linker%20Script%20File%20(Proposal).md).
 
 ## Translation Control
 
@@ -779,10 +757,14 @@ The following translation control options may be used at various places such as:
 - [`groups:`](#groups) level to specify options for a specify source file group
 - [`files:`](#files) level to specify options for a specify source file
 
-> **Note:** `define:`, `add-path:`, `del-path:`  and `misc:` are additive. All other keywords overwrite previous
+> **Note:**
+> 
+> `define:`, `add-path:`, `del-path:`  and `misc:` are additive. All other keywords overwrite previous
   settings.
 
 ### `language-C:`
+
+>**Proposal for Implementation:**
 
 Set the language standard for C source file compilation.
 
@@ -796,6 +778,8 @@ Value                                                 | Select C Language Standa
 `gnu11`                                               | same as `c11` but with additional GNU extensions.
 
 ### `language-CPP:`
+
+>**Proposal for Implementation:**
 
 Set the language standard for C++ source file compilation.
 
@@ -865,9 +849,6 @@ Value                                                 | Control diagnostic messa
 
 ### `define:`
 
->**Note:** For a transition period `defines:` is also accepted.  However, this is deprecated and will be removed in a
- future update.
-
 Contains a list of symbol #define statements that are passed via the command line to the development tools.
 
 `define:`                                             | Content
@@ -884,9 +865,6 @@ define:                    # Start a list of define statements
 ```
 
 ### `undefine:`
-
->**Note:** For a transition period `undefines:` is also accepted.  However, this is deprecated and will be removed in a
- future update.
 
 Remove symbol #define statements from the command line of the development tools.
 
@@ -910,12 +888,9 @@ groups:
 
 ### `add-path:`
 
->**Note:** For a transition period `add-paths:` is also accepted.  However, this is deprecated and will be removed in a
- future update.
-
 Add include paths to the command line of the development tools.
 
-`add-paths:`                                         | Content
+`add-path:`                                          | Content
 :----------------------------------------------------|:------------------------------------
 &nbsp;&nbsp; `- <path-name>`                         | Named path to be added
 
@@ -934,9 +909,6 @@ project:
 ```
 
 ### `del-path:`
-
->**Note:** For a transition period `del-paths:` is also accepted.  However, this is deprecated and will be removed in a
- future update.
 
 Remove include paths (that are defined at the cproject level) from the command line of the development tools.
 
@@ -1132,9 +1104,10 @@ project:
 
 > **Note:**
 >
-> - Default for `trustzone:`
->   - `off` for devices that support this option.
->   - `non-secure` for devices that have TrustZone enabled.
+> Default for `trustzone:`
+> 
+> - `off` for devices that support this option.
+> - `non-secure` for devices that have TrustZone enabled.
 
 ## Context
 
@@ -1170,7 +1143,6 @@ The `target-types:` node may include [toolchain options](#toolchain-options), [t
 &nbsp;&nbsp;&nbsp; [`board:`](#board)              |   Optional   | Board specification.
 &nbsp;&nbsp;&nbsp; [`device:`](#device)            |   Optional   | Device specification.
 &nbsp;&nbsp;&nbsp; [`processor:`](#processor)      |   Optional   | Processor specific settings.
-&nbsp;&nbsp;&nbsp; [`context-map:`](#context-map)  |   Optional   | Use different `target-types:` for specific projects.
 &nbsp;&nbsp;&nbsp; [`context-map:`](#context-map)  |   Optional   | Use different `target-types:` for specific projects.
 &nbsp;&nbsp;&nbsp; [`variables:`](#variables)      |   Optional   | Variables that can be used to define project components.
 
@@ -1300,22 +1272,48 @@ The following example uses three projects `Demo`, `TFM` and `Boot`. The project 
     - project: ./Loader/Boot.cproject.yml
 ```
 
-## Build/Target-Type control
+## Conditional Build
 
-Depending on the [`context`](#context-name-conventions) name it is possible to include or exclude *items* in the build process.
-It is possible to specify only a `.build-type`, only a `+target-type` or a combination of `.build-type` and `+target-type`.
+It is possible to include or exclude *items* of a [*list node*] in the build process.
+
+- [`for-compiler:`](#for-compiler) includes *items* only for a compiler toolchain.
+- [`for-context:`](#for-context) includes *items* only for a *context* list.
+- [`not-for-context:`](#not-for-context) excludes *items* for a *context* list.
+
+> **Note:**
+> 
+> `for-context` and `not-for-context` are mutually exclusive, only one occurrence can be specified for a
+  *list node*.
+
+### `for-compiler:`
+
+Depending on a [compiler](#compiler) toolchain it is possible to include *list nodes* in the build process.
+
+**Examples:**
+
+```yml
+for-compiler: AC6@6.16               # add item for Arm Compiler version 6.16 only      
+
+for-compiler:                        # add item
+  - AC6                              # for Arm Compiler (any version)
+  - GCC                              # for GCC Compiler
+```
 
 ### `for-context:`
 
 A *context* list that adds a list-node for specific `target-types:` and/or `build-types:`.
 
-> **NOTE:** `for-type:` is identical to `for-context:`. `for-type:` will be deprecated and replaced by `for-context:` in future versions.
+> **NOTE:**
+> 
+> `for-type:` is identical to `for-context:`. `for-type:` will be deprecated and replaced by `for-context:` in future versions.
 
 ### `not-for-context:`
 
 A *context* list that removes a list-node for specific `target-types:` and/or `build-types:`.
 
-> **NOTE:** `not-for-type:` is identical to `not-for-context:`. `not-for-type:` will be deprecated and replaced by `not-for-context:` in future versions.
+> **NOTE:**
+> 
+> `not-for-type:` is identical to `not-for-context:`. `not-for-type:` will be deprecated and replaced by `not-for-context:` in future versions.
 
 ### context list
 
@@ -1340,10 +1338,9 @@ not-for-context:  +Virtual           # remove item for target-type: Virtual (any
 not-for-context:  .Release+Virtual   # remove item for build-type: Release with target-type: Virtual
 ```
 
-> **Note:** `for-context` and `not-for-context` are mutually exclusive, only one occurrence can be specified for a
-  *list node*.
+### List nodes
 
-The keyword `for-context:` or `not-for-context:` can be applied to the following *list nodes*:
+The keyword `for-context:`, `not-for-context:`, and `for-compiler:` can be applied to the following *list nodes*:
 
 List Node                                  | Description
 :------------------------------------------|:------------------------------------
@@ -1358,9 +1355,9 @@ The inclusion of a *list node* is processed for a given project *context* respec
 
 `project` --> `layer` --> `component`/`group` --> `file`
 
-In other words, the restrictions specified by a *type list* for a *list node* are automatically applied to its children
-nodes. Children *list nodes* inherit the restrictions from their parent and consequently it must be considered when
-processing their *type lists*.
+In other words, the restrictions specified by `for-context:` or `not-for-context` for a *list node* are automatically applied to its children nodes. Children *list nodes* inherit the restrictions from their parent.
+
+> ToDo: Question: is `for-compiler` possible for projects and layers?
 
 ## Related Projects
 
@@ -1370,7 +1367,7 @@ collection of related projects. The file `*.csolution.yml` describes the relatio
 
 ### `projects:`
 
-The YML structure of the section `projects:` is:
+The YAML structure of the section `projects:` is:
 
 `projects:`                                         |              | Content
 :---------------------------------------------------|--------------|:------------------------------------
@@ -1632,8 +1629,9 @@ components:
         - MBEDTLS_CONFIG_FILE="aws_mbedtls_config.h"
 ```
 
-> **Note:** The name format for a software component is described under
-  [Name Conventions - Component Name Conventions](#component-name-conventions).
+> **Note:** 
+>
+> The name format for a software component is described under  [Name Conventions - Component Name Conventions](#component-name-conventions).
 
 ### `instances:`
 
@@ -1908,7 +1906,9 @@ The composition of a solution of a solution should have the following steps:
   - change pinout, clock, resources, etc.
   - reflect configuration in *.gpdsc file (and related settings files)
 
-> **Note:** Components can have multiple [instances](#instances).
+> **Note:**
+>
+> Components can have multiple [instances](#instances).
 
 ### Steps for component selection and configuration
 
@@ -1961,7 +1961,9 @@ Add Run Generator buttons to Cclass descriptions.
 
 The `*.cgen.json` file is passed to generator as argument.
 
-> **Note:** Shown is still a YML file, but the equivalent data would be formatted in *.JSON format
+> **Note:**
+>
+> Shown is still a `*.yml` file, but the equivalent data would be formatted in `*.json` format.
 
 ```yml
 cgenerator:
@@ -2227,8 +2229,9 @@ resources:
       - region: SRAM2
 ```
 
-> **Note:** Exact behavior for devices that have no RZone file is tbd. It could be that the memory resources are derived
-  from device definitions
+> **Note:**
+>
+> Exact behavior for devices that have no RZone file is tbd. It could be that the memory resources are derived from device definitions
 
 ### `phases:`
 

@@ -4,6 +4,7 @@
 <!-- markdownlint-disable MD036 -->
 
 >**Important Note:**
+>
 > While the CMSIS-Toolbox is already version 1.0.0 or higher, several aspects of the tools are still under review.  The sections that are market with `Proposal` are features that are not implemented or subject to change in the final implementation.  All other features are considered as stable and changes that are not upward compatible are avoided whenever possible.
 
 Manual Chapters                           | Content
@@ -14,7 +15,9 @@ Manual Chapters                           | Content
 [YML Input Format](YML-Input-Format.md)   | Format of the various YML input files (`*.csolution.yml`, `*.cproject.yml`, `*.clayer.yml`, `*.cdefault.yml`)
 [YML CBuild Format](YML-CBuild-Format.md) | Format of the YML CBuild output file.
 
->**Note:** This documentation uses the file extension `*.yml`. However, the file extension `*.yaml` is also supported by the CMSIS-Toolbox.
+> **Note:**
+>
+>This documentation uses the filename extension `*.yml`, but the extension `*.yaml` is also supported.
 
 **Table of Contents**
 
@@ -60,7 +63,7 @@ Draft              | Work in progress
 
 ## Overview of Operation
 
-The **csolution - CMSIS Project Manager** processes **user input files** (in YML format) and **software packs**
+The **csolution - CMSIS Project Manager** processes **user input files** (in YAML format) and **software packs**
 (in Open-CMSIS-Pack format) to create self-contained CMSIS-Build input files that allow to generate independent projects
 which may be a part of a more complex application.
 
@@ -81,7 +84,9 @@ The **csolution - CMSIS Project Manager** supports the user with the following f
 - Manage multiple build types to support software verification (debug build, test build, release build, ect.)
 - Support multiple compiler toolchains (GCC, LLVM, Arm Compiler 6, IAR, etc.) for project deployment.
 
-> **Note:** The **csolution - CMSIS Project Manager** is currently under development and part of the
+> **Note:**
+>
+>The **csolution - CMSIS Project Manager** is currently under development and part of the
   **[Open-CMSIS-Pack](https://www.open-cmsis-pack.org/index.html)** open source project.
 
 ![Overview](./images/Overview.png "Overview")
@@ -99,7 +104,9 @@ Input Files              | Description
 *.cproject.yml           | **Step 3:** content of an independent build (linker run) - directly relates to a `*.cprj` file.
 *.clayer.yml             | **Step 4:** set of source files along with pre-configured components for reuse in different applications.
 
-> **Note:** **Steps 1 - 4** indicate the order of processing of the user input files.
+> **Note:**
+>
+>**Steps 1 - 4** indicate the order of processing of the user input files.
 
 Output Files             | Description
 :------------------------|:---------------------------------
@@ -569,7 +576,9 @@ The table below summarizes the overall directory structure and further details t
 - Configuration files of the software components. These files have `attr="config"` in the PDSC-file of the software packs.  Refer to [PLM of Configuration Files](#plm-of-configuration-files) for more information.
 - The file [`RTE_components.h`](#rte_componentsh) and pre-include files that are generated based on the PDSC-file information of the software packs.
 
-> **Note:** The `./RTE` directory structure is maintained by tools. You should not modify the structure of this directory.
+> **Note:**
+>
+> The `./RTE` directory structure is maintained by tools. You should not modify the structure of this directory.  However the complete directory should be committed to a repository of a version control system.
 
 Directory Structure                 | Content
 :-----------------------------------|:---------------
@@ -582,15 +591,15 @@ Directory Structure                 | Content
 `<layer>/RTE/<Cclass>`              | Configurable files for each component `Cclass` have a common directory.
 `<layer>/RTE/<Cclass>/<device>`     | Configurable files for components that have a condition to a `device` are in a separate directory.
 
-The `<context-dir>` has the following format: `_<project-name>.<release-type>_<build-type>`.
+The `<context-dir>` has the following format: `_<project-name>.<build-type>_<target-type>`.
 
 #### Proposal
 
 The default RTE directory structure can be modified with [`rte-dirs:`](YML-Input-Format.md#rte-dirs).
 This list node allows to specify for each software component `Cclass` the directory that should be used to partly share a common configuration across a `project:` or `layer:`.
 
-Review if the `<context-dir>` can just have the same format as the `context` which is: `<project-name>+<build-type>.<release-type>`.
-I don't think it is required to align `<project>/RTE/<context-dir>` with other tools, but the remaining RTE directory structure should aligned with existing implementations (MDK, CMSIS-Eclipse-Pack).
+As CBuild no longer generates the `<context-dir>` it is required to align with naming conventions of other tools. MDK uses `_<build-type>_<target-type>` when a CPRJ file is imported.
+As fallback, Review if the `<context-dir>` can just have the same format as the `context` which is: `<project-name>.<build-type>_<target-type>`.
 
 ### Output Directory Structure
 
@@ -639,7 +648,9 @@ operation:
     ./RTE/component_class/ConfigFile.h -  info: component 'name' added configuration file version '1.2.0'
     ```
 
-    >**NOTE:** The unmodified files with `@version` information should be committed to the repository of the version control system as this files are used to upgrade configuration information using merge utilities.
+    >**NOTE:**
+    >
+    > The unmodified files with `@version` information should be committed to the repository of the version control system as this files are used to upgrade configuration information using merge utilities.
 
 2. **Upgrade** (or downgrade) a software component: if the version of the unmodified backup file is identical, no
    operation is performed. If the version differs, the new configuration file is copied with the format
@@ -673,19 +684,18 @@ operation:
                                                         // information; used as a base for version comparison
     ```
 
-- **Note: Multiple Instances of Configuration files**
-
-   The system is also capable of handling multiple instances of configuration files as explained in the CMSIS-Pack
-   specification under
-   [Component Instances](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_components_pg.html#Component_Instances).
-   In this case the instance %placeholder% is expanded as shown below:
-
-   ```c
-   ./RTE/component_class/ConfigFile_0.h
-   ./RTE/component_class/ConfigFile_0.h.base@1.2.0
-   ./RTE/component_class/ConfigFile_1.h
-   ./RTE/component_class/ConfigFile_1.h.base@1.2.0
-   ```
+> **Note: Multiple Instances of Configuration files**
+>
+>The system is also capable of handling multiple instances of configuration files as explained in the CMSIS-Pack specification under
+>[Component Instances](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_components_pg.html#Component_Instances).
+>In this case the instance %placeholder% is expanded as shown below:
+>
+>  ```c
+>  ./RTE/component_class/ConfigFile_0.h
+>  ./RTE/component_class/ConfigFile_0.h.base@1.2.0
+>  ./RTE/component_class/ConfigFile_1.h
+>  ./RTE/component_class/ConfigFile_1.h.base@1.2.0
+>  ```
 
 ### RTE_Components.h
 
