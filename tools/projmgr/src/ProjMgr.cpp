@@ -375,12 +375,11 @@ bool ProjMgr::RunConvert(void) {
     }
     if (!m_export.empty()) {
       // Generate non-locked Cprj
-      error_code ec;
-      const string& filename = fs::weakly_canonical(contextItem->directories.cprj + "/" + contextItem->name + m_export + ".cprj", ec).generic_string();
-      if (m_generator.GenerateCprj(*contextItem, filename, true)) {
-        ProjMgrLogger::Info(filename, "export file generated successfully");
+      const string& exportfilename = fs::weakly_canonical(contextItem->directories.cprj + "/" + contextItem->name + m_export + ".cprj", ec).generic_string();
+      if (m_generator.GenerateCprj(*contextItem, exportfilename, true)) {
+        ProjMgrLogger::Info(exportfilename, "export file generated successfully");
       } else {
-        ProjMgrLogger::Error(filename, "export file cannot be written");
+        ProjMgrLogger::Error(exportfilename, "export file cannot be written");
         return false;
       }
     }
@@ -555,8 +554,8 @@ bool ProjMgr::RunListLayers(void) {
   if (!m_worker.ListLayers(layers)) {
     return false;
   }
-  for (const auto& layers : layers) {
-    cout << layers << endl;
+  for (const auto& layer : layers) {
+    cout << layer << endl;
   }
   return true;
 }
