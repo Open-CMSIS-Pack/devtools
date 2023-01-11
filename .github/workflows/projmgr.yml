@@ -319,12 +319,11 @@ jobs:
           if-no-files-found: error
 
   coverage:
-    needs: setup
     if: |
         (github.event_name == 'pull_request') ||
         (github.event_name == 'push') ||
         (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/projmgr/')) ||
-        (needs.setup.outputs.nightly == 'true')
+        ((github.event.schedule != '') && (!github.event.repository.private))
     env:
         lcov_base: https://github.com/linux-test-project/lcov/releases/download/v1.15/
         lcov_installer: lcov-1.15.tar.gz
@@ -385,6 +384,11 @@ jobs:
           attempt_limit: 3
           attempt_delay: 5000
 
+      - name: Get retention days
+        id: var
+        run: |
+          echo "cov_retention_days=$(echo '${{ (!github.event.repository.private && (github.event_name == 'push' || github.event.schedule != '')) && '7' || '1' }}')" >> $GITHUB_OUTPUT
+
       - name: Archive coverage report
         uses: actions/upload-artifact@v3
         with:
@@ -392,7 +396,7 @@ jobs:
           path: |
             ./build/tools/projmgr/coverage_projmgr/
             ./build/tools/projmgr/coverage_projmgr.info
-          retention-days: ${{ needs.setup.outputs.retention_days }}
+          retention-days: ${{ steps.vars.outputs.cov_retention_days }}
           if-no-files-found: error
 
   test-results-preparation:
