@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2023 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -539,8 +539,10 @@ protected:
   void GetConsumesProvides(const ConnectionsCollectionVec& collection, ConnectionsList& connections);
   ConnectionsCollectionMap ClassifyConnections(const ConnectionsCollectionVec& connections);
   ConnectionsValidationResult ValidateConnections(ConnectionsList& connections);
-  void GetAllCombinations(const ConnectionsCollectionMap& src, const ConnectionsCollectionMap::iterator it,
+  void GetAllCombinations(const ConnectionsCollectionMap& src, const ConnectionsCollectionMap::iterator& it,
     std::vector<ConnectionsCollectionVec>& combinations, const ConnectionsCollectionVec& previous = ConnectionsCollectionVec());
+  void GetAllSelectCombinations(const ConnectPtrVec& src, const ConnectPtrVec::iterator& it,
+    std::vector<ConnectPtrVec>& combinations);
   void PushBackUniquely(ConnectionsCollectionVec& vec, const ConnectionsCollection& value);
   std::string ExpandString(const std::string& src, const StrMap& variables);
   void ListLatestToolchains(StrMap& toolchains, const std::string& localDir);

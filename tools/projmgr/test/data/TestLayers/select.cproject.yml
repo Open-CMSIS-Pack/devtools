@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schemas/cproject.schema.json
+
+project:
+  compiler: AC6
+
+  layers:
+    - layer: select.clayer.yml
+
+  connections:
+    - connect: project X
+      set: set1.select1
+      info: set 1 select 1
+      consumes:
+        - connectA
+
+    - connect: project Y
+      set: set1.select2
+      info: set 1 select 2
+      consumes:
+        - connectB
+
+    - connect: project Z
+      set: set1.select2
+      info: set 1 select 2
+      consumes:
+        - connectC
