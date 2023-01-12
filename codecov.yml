@@ -21,6 +21,10 @@ coverage:
         target: auto
         flags:
           - buildmgr-cov
+      svdconv-cov:
+        target: auto
+        flags:
+          - svdconv-cov
 
 comment:
   layout: "diff, flags, files"
@@ -46,4 +50,8 @@ flags:
   buildmgr-cov:
     paths:
       - tools/buildmgr
+    carryforward: true
+  svdconv-cov:
+    paths:
+      - tools/svdconv
     carryforward: true
