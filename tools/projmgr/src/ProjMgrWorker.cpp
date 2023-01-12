@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2023 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -463,17 +463,40 @@ bool ProjMgrWorker::GetPrecedentValue(std::string& outValue, const std::string& 
   return true;
 }
 
-void ProjMgrWorker::GetAllCombinations(const ConnectionsCollectionMap& src, const ConnectionsCollectionMap::iterator it,
+void ProjMgrWorker::GetAllCombinations(const ConnectionsCollectionMap& src, const ConnectionsCollectionMap::iterator& it,
   std::vector<ConnectionsCollectionVec>& combinations, const ConnectionsCollectionVec& previous) {
-  const auto& nextIt = next(it, 1);
+  // combine items from a table of 'connections'
+  // see an example in the test case ProjMgrWorkerUnitTests.GetAllCombinations
+  const auto nextIt = next(it, 1);
+  // iterate over the input columns
   for (const auto& item : it->second) {
     ConnectionsCollectionVec combination = previous;
     combination.push_back(item);
     if (nextIt != src.end()) {
+      // run recursively over the next item
       GetAllCombinations(src, nextIt, combinations, combination);
     } else {
+      // add a new combination containing an item from each column
       combinations.push_back(combination);
     }
+  }
+}
+
+void ProjMgrWorker::GetAllSelectCombinations(const ConnectPtrVec& src, const ConnectPtrVec::iterator& it,
+  // combine items from a vector of 'select' nodes
+  // see an example in the test case ProjMgrWorkerUnitTests.GetAllSelectCombinations
+  std::vector<ConnectPtrVec>& combinations) {
+  // for every past combination add a new combination containing additionally the current item
+  for (auto combination : vector<ConnectPtrVec>(combinations)) {
+    combination.push_back(*it);
+    combinations.push_back(combination);
+  }
+  // add a new combination with the current item
+  combinations.push_back(ConnectPtrVec({*it}));
+  const auto nextIt = next(it, 1);
+  if (nextIt != src.end()) {
+    // run recursively over the next item
+    GetAllSelectCombinations(src, nextIt, combinations);
   }
 }
 
@@ -714,14 +737,25 @@ ConnectionsCollectionMap ProjMgrWorker::ClassifyConnections(const ConnectionsCol
     if (hasMultipleSelect) {
       for (const auto& [configId, selectConnections] : connectionsMap) {
         if (!configId.empty()) {
+          // combine nodes with identical 'config-id'.'select'
+          map<string, ConnectPtrVec> selectMap;
           for (const auto& connect : selectConnections) {
-            ConnectionsCollection collection = { collectionEntry.filename, collectionEntry.type, commonConnections };
-            collection.connections.push_back(connect);
-            classifiedConnections[classifiedType + configId].push_back(collection);
+            selectMap[connect->set].push_back(connect);
+          }
+          for (auto& [_, multipleSelectConnections] : selectMap) {
+            vector<ConnectPtrVec> selectCombinations;
+            GetAllSelectCombinations(multipleSelectConnections, multipleSelectConnections.begin(), selectCombinations);
+            for (const auto& selectCombination : selectCombinations) {
+              // insert a classified connections entry
+              ConnectionsCollection collection = { collectionEntry.filename, collectionEntry.type, commonConnections };
+              collection.connections.insert(collection.connections.end(), selectCombination.begin(), selectCombination.end());
+              classifiedConnections[classifiedType + configId].push_back(collection);
+            }
           }
         }
       }
     } else {
+      // insert a classified connections entry
       ConnectionsCollection collection = { collectionEntry.filename, collectionEntry.type, commonConnections };
       classifiedConnections[classifiedType].push_back(collection);
     }

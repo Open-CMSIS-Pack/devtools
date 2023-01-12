@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2023 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -899,6 +899,42 @@ TEST_F(ProjMgrWorkerUnitTests, GetAllCombinations) {
   auto it = combinations.begin();
   for (const auto& expectedItem : expected) {
     EXPECT_EQ(expectedItem.front().filename, (*it++).front().filename);
+  }
+}
+
+TEST_F(ProjMgrWorkerUnitTests, GetAllSelectCombinations) {
+  ConnectItem connectA = { "A" };
+  ConnectItem connectB = { "B" };
+  ConnectItem connectC = { "C" };
+  ConnectItem connectD = { "D" };
+  const ConnectItem* A = { &connectA };
+  const ConnectItem* B = { &connectB };
+  const ConnectItem* C = { &connectC };
+  const ConnectItem* D = { &connectD };
+  ConnectPtrVec connections = { A, B, C, D };
+  const vector<ConnectPtrVec> expected = {
+    {A},
+    {A, B},
+    {B},
+    {A, C},
+    {A, B, C},
+    {B, C},
+    {C},
+    {A, D},
+    {A, B, D},
+    {B, D},
+    {A, C, D},
+    {A, B, C, D},
+    {B, C, D},
+    {C, D},
+    {D},
+  };
+  vector<ConnectPtrVec> combinations;
+  GetAllSelectCombinations(connections, connections.begin(), combinations);
+
+  auto it = combinations.begin();
+  for (const auto& expectedItem : expected) {
+    EXPECT_EQ(expectedItem.front()->connect, (*it++).front()->connect);
   }
 }
 

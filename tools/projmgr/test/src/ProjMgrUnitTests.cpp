@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2023 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -746,6 +746,44 @@ debug csolution: configuration match #2:\n\
   Config2: .*/ARM/RteTest_DFP/0.2.0/Layers/config2.clayer.yml\n\
     set: set1.select2 \\(set 1 select 2 - connect G\\)\n\
     \\(test connect common H\\)\n\
+";
+
+  const string& errStr = streamRedirect.GetErrorString();
+  EXPECT_TRUE(regex_search(errStr, regex(expectedErrStr)));
+}
+
+TEST_F(ProjMgrUnitTests, ListLayersMultipleSelect) {
+  StdStreamRedirect streamRedirect;
+  char* argv[5];
+  const string& csolution = testinput_folder + "/TestLayers/select.csolution.yml";
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"layers";
+  argv[3] = (char*)"-s";
+  argv[4] = (char*)csolution.c_str();
+  EXPECT_EQ(0, RunProjMgr(5, argv));
+
+  const string& expectedErrStr = ".*\n\
+debug csolution: configuration match #1:\n\
+  .*/TestLayers/select.clayer.yml\n\
+    \\(provided connections\\)\n\
+  .*/TestLayers/select.cproject.yml\n\
+    set: set1.select1 \\(set 1 select 1 - project X\\)\n\
+debug csolution: configuration match #2:\n\
+  .*/TestLayers/select.clayer.yml\n\
+    \\(provided connections\\)\n\
+  .*/TestLayers/select.cproject.yml\n\
+    set: set1.select2 \\(set 1 select 2 - project Y\\)\n\
+debug csolution: configuration match #3:\n\
+  .*/TestLayers/select.clayer.yml\n\
+    \\(provided connections\\)\n\
+  .*/TestLayers/select.cproject.yml\n\
+    set: set1.select2 \\(set 1 select 2 - project Y\\)\n\
+    set: set1.select2 \\(set 1 select 2 - project Z\\)\n\
+debug csolution: configuration match #4:\n\
+  .*/TestLayers/select.clayer.yml\n\
+    \\(provided connections\\)\n\
+  .*/TestLayers/select.cproject.yml\n\
+    set: set1.select2 \\(set 1 select 2 - project Z\\)\n\
 ";
 
   const string& errStr = streamRedirect.GetErrorString();
