@@ -403,7 +403,8 @@ bool ProjMgrWorker::InitializeTarget(ContextItem& context) {
     m_model->AddProject(0, rteProject);
     m_model->SetActiveProjectId(rteProject->GetProjectId());
     context.rteActiveProject = m_model->GetActiveProject();
-    const string& targetName = context.name.empty() ? "CMSIS" : context.name;
+    const string& targetName = (context.type.build.empty() && context.type.target.empty()) ? "Target 1" :
+      context.type.build.empty() ? context.type.target : context.type.build + (context.type.target.empty() ? "" : '+' + context.type.target);
     context.rteActiveProject->AddTarget(targetName, map<string, string>(), true, true);
     context.rteActiveProject->SetActiveTarget(targetName);
     context.rteActiveProject->SetName(targetName);
