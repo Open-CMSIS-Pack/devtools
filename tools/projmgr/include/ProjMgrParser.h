@@ -296,6 +296,7 @@ struct CsolutionItem {
  *        list of layers,
  *        list of setups,
  *        list of connections
+ *        list of packs
 */
 struct CprojectItem {
   std::string name;
@@ -309,6 +310,7 @@ struct CprojectItem {
   std::vector<LayerItem> clayers;
   std::vector<SetupItem> setups;
   std::vector<ConnectItem> connections;
+  std::vector<PackItem> packs;
 };
 
 /**
@@ -322,6 +324,7 @@ struct CprojectItem {
  *        list of required components,
  *        list of user groups,
  *        list of connections
+ *        list of packs
 */
 struct ClayerItem {
   std::string name;
@@ -334,6 +337,7 @@ struct ClayerItem {
   std::vector<ComponentItem> components;
   std::vector<GroupNode> groups;
   std::vector<ConnectItem> connections;
+  std::vector<PackItem> packs;
 };
 
 /**

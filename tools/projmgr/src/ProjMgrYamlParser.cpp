@@ -119,6 +119,8 @@ bool ProjMgrYamlParser::ParseCproject(const string& input,
     }
     ParseTargetType(projectNode, cproject.target);
 
+    ParsePacks(projectNode, cproject.packs);
+
     if (!ParseComponents(projectNode, cproject.components)) {
       return false;
     }
@@ -182,6 +184,8 @@ bool ProjMgrYamlParser::ParseClayer(const string& input,
     }
 
     ParseTargetType(layerNode, clayer.target);
+
+    ParsePacks(layerNode, clayer.packs);
 
     if (!ParseComponents(layerNode, clayer.components)) {
       return false;
@@ -616,6 +620,7 @@ const set<string> projectsKeys = {
 const set<string> projectKeys = {
   YAML_DESCRIPTION,
   YAML_OUTPUTTYPE,
+  YAML_PACKS,
   YAML_DEVICE,
   YAML_BOARD,
   YAML_PROCESSOR,
@@ -643,6 +648,7 @@ const set<string> layerKeys = {
   YAML_DESCRIPTION,
   YAML_TYPE,
   YAML_OUTPUTTYPE,
+  YAML_PACKS,
   YAML_DEVICE,
   YAML_BOARD,
   YAML_PROCESSOR,

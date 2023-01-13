@@ -519,6 +519,7 @@
       "properties": {
         "description": { "type": "string" },
         "output-type": { "$ref": "#/definitions/OutputType" },
+        "packs":       { "$ref": "#/definitions/PacksType" },
         "output-dirs": { "$ref": "#/definitions/OutputDirectoriesType" },
         "board":       { "$ref": "#/definitions/BoardType" },
         "device":      { "$ref": "#/definitions/DeviceType" },
@@ -554,6 +555,7 @@
           "description": "Layer type for compatible layers matching"
         },
         "output-type": { "$ref": "#/definitions/OutputType" },
+        "packs":       { "$ref": "#/definitions/PacksType" },
         "board":       { "$ref": "#/definitions/BoardType" },
         "device":      { "$ref": "#/definitions/DeviceType" },
         "compiler":    { "$ref": "#/definitions/CompilerType" },
