@@ -1028,6 +1028,33 @@ TEST_F(ProjMgrUnitTests, LayerVariablesRedefinition) {
   EXPECT_STREQ(errStr.c_str(), expected.c_str());
 }
 
+TEST_F(ProjMgrUnitTests, LayerVariablesNotDefined) {
+  char* argv[7];
+  StdStreamRedirect streamRedirect;
+  // convert -s solution.yml
+  const string& csolution = testinput_folder + "/TestLayers/variables-notdefined.csolution.yml";
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"layers";
+  argv[3] = (char*)"-s";
+  argv[4] = (char*)csolution.c_str();
+  argv[5] = (char*)"-o";
+  argv[6] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(1, RunProjMgr(7, argv));
+
+  const string& expectedErrStr = ".*\
+\\$NotDefined\\$ - warning csolution: variable was not defined.*\
+  Board: .*/ARM/RteTest_DFP/0.2.0/Layers/board1.clayer.yml.*\
+  Board: .*/ARM/RteTest_DFP/0.2.0/Layers/board2.clayer.yml.*\
+  Board: .*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml.*\
+debug csolution: no valid combination of clayers was found\
+";
+
+  string errStr = streamRedirect.GetErrorString();
+  errStr.erase(std::remove(errStr.begin(), errStr.end(), '\n'), errStr.cend());
+
+  EXPECT_TRUE(regex_match(errStr, regex(expectedErrStr)));
+}
+
 TEST_F(ProjMgrUnitTests, AccessSequences) {
   char* argv[7];
 

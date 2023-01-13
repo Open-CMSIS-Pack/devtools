@@ -152,13 +152,18 @@ bool ProjMgrWorker::AddContext(ProjMgrParser& parser, ContextDesc& descriptor, c
         string const& clayerRef = ExpandString(clayer.layer, context.variables);
         string const& clayerFile = fs::canonical(fs::path(cprojectFile).parent_path().append(clayerRef), ec).generic_string();
         if (clayerFile.empty()) {
-          ProjMgrLogger::Error(clayer.layer, "clayer file was not found");
-          return false;
+          if (regex_match(clayer.layer, regex(".*\\$.*\\$.*"))) {
+            ProjMgrLogger::Warn(clayer.layer, "variable was not defined");
+          } else {
+            ProjMgrLogger::Error(clayer.layer, "clayer file was not found");
+            return false;
+          }
+        } else {
+          if (!parser.ParseClayer(clayerFile, m_checkSchema)) {
+            return false;
+          }
+          context.clayers[clayerFile] = &parser.GetClayers().at(clayerFile);
         }
-        if (!parser.ParseClayer(clayerFile, m_checkSchema)) {
-          return false;
-        }
-        context.clayers[clayerFile] = &parser.GetClayers().at(clayerFile);
       }
     }
 
