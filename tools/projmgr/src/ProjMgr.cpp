@@ -397,9 +397,17 @@ bool ProjMgr::RunConvert(void) {
       }
     }
   }
+
   // Generate cbuild files
+  for (auto& contextItem : processedContexts) {
+    if (!m_emitter.GenerateCbuild(contextItem)) {
+      return false;
+    }
+  }
+
+  // Generate cbuild index
   if (!processedContexts.empty()) {
-    if (!m_emitter.GenerateCbuild(m_parser, processedContexts, m_outputDir)) {
+    if (!m_emitter.GenerateCbuildIndex(m_parser, processedContexts, m_outputDir)) {
       return false;
     }
   }

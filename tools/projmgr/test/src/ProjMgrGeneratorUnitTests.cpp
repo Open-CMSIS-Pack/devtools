@@ -47,7 +47,7 @@ TEST_F(ProjMgrGeneratorUnitTests, GenDir) {
 
   EXPECT_EQ(0, ProjMgr::RunProjMgr(6, argv));
 
-  const string generatorInputFile = testinput_folder + "/TestSolution/TestProject3/outdir/TestProject3.Debug+TypeA.generate.yml";
+  const string generatorInputFile = testinput_folder + "/TestSolution/TestProject3/TestProject3.Debug+TypeA.cbuild.yml";
   const string generatedGPDSC = testinput_folder + "/TestSolution/TestProject3/gendir/RteTestGen_ARMCM0/RteTest.gpdsc";
 
   EXPECT_EQ(true, std::filesystem::exists(generatorInputFile));

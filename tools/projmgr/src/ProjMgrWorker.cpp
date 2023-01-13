@@ -2712,15 +2712,9 @@ bool ProjMgrWorker::ExecuteGenerator(std::string& generatorId) {
       generatorDestination += '/';
     }
 
-    const auto generatorInputFilePath = ProjMgrYamlEmitter::EmitContextInfo(context, generatorDestination);
-
-    if (!generatorInputFilePath) {
-      ProjMgrLogger::Error("Failed to create the generator input file for '" + generatorId + "'");
+    if (!ProjMgrYamlEmitter::GenerateCbuild(&context)) {
       return false;
     }
-
-    // Update RteTarget with current generatorInputFilePath that was created
-    context.rteActiveTarget->SetGeneratorInputFile(*generatorInputFilePath);
 
     // TODO: review RteGenerator::GetExpandedCommandLine and variables
     //const string generatorCommand = m_kernel->GetCmsisPackRoot() + "/" + generator->GetPackagePath() + generator->GetCommand();
@@ -2730,9 +2724,9 @@ bool ProjMgrWorker::ExecuteGenerator(std::string& generatorId) {
       return false;
     }
 
-
     error_code ec;
     const auto& workingDir = fs::current_path(ec);
+    RteFsUtils::CreateDirectories(generatorDestination);
     fs::current_path(generatorDestination, ec);
     ProjMgrUtils::Result result = ProjMgrUtils::ExecCommand(generatorCommand);
     fs::current_path(workingDir, ec);

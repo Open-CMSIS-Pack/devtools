@@ -25,21 +25,20 @@ public:
   ~ProjMgrYamlEmitter(void);
 
   /**
-   * @brief emit context info
-   * @param context
-   * @param destinationPath A folder where the generator should place the resulting generated files
-   * @return Returns the file path of the created generator input file if success
+   * @brief generate cbuild-idx.yml file
+   * @param parser reference
+   * @param contexts vector with pointers to contexts
+   * @param outputDir directory
+   * @return true if executed successfully
   */
-  static std::optional<std::string> EmitContextInfo(const ContextItem& context, const std::string& destinationPath);
+  static bool GenerateCbuildIndex(ProjMgrParser& parser, const std::vector<ContextItem*> contexts, const std::string& outputDir);
 
   /**
    * @brief generate cbuild.yml file
-   * @param parser reference
-   * @param processedContexts vector with pointers to contexts
-   * @param output directory
+   * @param context pointer to the context
    * @return true if executed successfully
   */
-  bool GenerateCbuild(ProjMgrParser& parser, const std::vector<ContextItem*> processedContexts, const std::string& outputDir);
+  static bool GenerateCbuild(ContextItem* context);
 };
 
 #endif  // PROJMGRYAMLEMITTER_H

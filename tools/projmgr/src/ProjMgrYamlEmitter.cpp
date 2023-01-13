@@ -24,87 +24,6 @@ ProjMgrYamlEmitter::~ProjMgrYamlEmitter(void) {
   // Reserved
 }
 
-optional<string> ProjMgrYamlEmitter::EmitContextInfo(const ContextItem& context, const string& destinationPath) {
-  typedef map <string, string> StringMap;
-  typedef vector<StringMap> StringMapVector;
-  
-  StringMap infoMap;
-  const StringMap origin = {
-    {"solution",    context.csolution->path},
-    {"project",     context.cproject->path},
-    {"build-type",  context.type.build},
-    {"target-type", context.type.target},
-    {"board",       context.board},
-    {"device",      context.device}
-  };
-  for (const auto& [key, value] : origin) {
-    if (!value.empty()) {
-      infoMap.insert({ key, value });
-    }
-  }
-
-  StringMapVector componentVector;
-  const string& packRoot = ProjMgrKernel::Get()->GetCmsisPackRoot();
-  for (const auto& [componentId, component] : context.components) {
-    componentVector.push_back({
-      {"component", componentId},
-      {"pack", ProjMgrUtils::GetPackageID(component.instance->GetPackage())},
-      {"pack-path", fs::absolute(packRoot + "/" + component.instance->GetPackagePath()).generic_string()},
-    });
-  }
-
-  YAML::Node rootNode;
-  rootNode["context"] = infoMap;
-  rootNode["context"]["components"] = componentVector;
-  rootNode["destination"] = destinationPath;
-  YAML::Emitter emitter;
-  emitter << rootNode;
-
-  // Calculate output generator input file path
-  string generatorTmpWorkingDir = context.directories.outdir;  // Use out build folder by default since the generator input file is a temporary file
-  if (!generatorTmpWorkingDir.empty()) {
-    // Outdir may be relative, if so, add project path to it
-    if (fs::path(generatorTmpWorkingDir).is_relative()) {
-      string projectPath = context.rteActiveProject->GetProjectPath();
-      generatorTmpWorkingDir = context.rteActiveProject->GetProjectPath() + generatorTmpWorkingDir;
-    }
-  } else {
-    generatorTmpWorkingDir = destinationPath;
-  }
-  if (!generatorTmpWorkingDir.empty() && generatorTmpWorkingDir.back() != '/') {
-    generatorTmpWorkingDir += '/';
-  }
-  const string filePath = generatorTmpWorkingDir + context.name + ".generate.yml";
-
-  // Make sure the folders exist
-  try {
-    if (!fs::exists(generatorTmpWorkingDir)) {
-      fs::create_directories(generatorTmpWorkingDir);
-    }
-    if (!fs::exists(destinationPath)) {
-      fs::create_directories(destinationPath);
-    }
-  } catch (const fs::filesystem_error& e) {
-    ProjMgrLogger::Error("Failed to create folders for the generator input file '" + filePath + "': " + e.what());
-    return {};
-  }
-
-  ofstream fileStream(filePath);
-  if (!fileStream) {
-    ProjMgrLogger::Error("Failed to create generator input file '" + filePath + "'");
-    return {};
-  }
-
-  fileStream << emitter.c_str();
-  fileStream << flush;
-  if (!fileStream) {
-    ProjMgrLogger::Error("Failed to write generator input file '" + filePath + "'");
-    return {};
-  }
-  fileStream.close();
-  return filePath;
-}
-
 // the ProjMgrYamlCbuild class encapsulates the use of the YAML library avoiding propagating its header files
 class ProjMgrYamlCbuild {
 private:
@@ -441,19 +360,18 @@ const string ProjMgrYamlCbuild::FormatPath(const string& original, const string&
   return path;
 }
 
-bool ProjMgrYamlEmitter::GenerateCbuild(ProjMgrParser& parser, const vector<ContextItem*> processedContexts, const string& outputDir) {
+bool ProjMgrYamlEmitter::GenerateCbuildIndex(ProjMgrParser& parser, const vector<ContextItem*> contexts, const string& outputDir) {
 
   // generate cbuild-idx.yml
   const string& directory = outputDir.empty() ? parser.GetCsolution().directory : RteFsUtils::AbsolutePath(outputDir).generic_string();
   const string& filename = directory + "/" + parser.GetCsolution().name + ".cbuild-idx.yml";
   ofstream fileStream(filename);
-  bool error = false;
   if (!fileStream) {
-    error = true;
     ProjMgrLogger::Error(filename, "file cannot be written");
+    return false;
   } else {
     YAML::Node rootNode;
-    ProjMgrYamlCbuild cbuild(rootNode[YAML_BUILD_IDX], processedContexts, parser, directory);
+    ProjMgrYamlCbuild cbuild(rootNode[YAML_BUILD_IDX], contexts, parser, directory);
     YAML::Emitter emitter;
     emitter << rootNode;
     fileStream << emitter.c_str();
@@ -462,33 +380,30 @@ bool ProjMgrYamlEmitter::GenerateCbuild(ProjMgrParser& parser, const vector<Cont
     fileStream.close();
     ProjMgrLogger::Info(filename, "file generated successfully");
   }
+  return true;
+}
 
+bool ProjMgrYamlEmitter::GenerateCbuild(ContextItem* context) {
   // generate cbuild.yml for each context
-  for (const auto& context : processedContexts) {
-    RteFsUtils::CreateDirectories(context->directories.cprj);
-    const string& filename = context->directories.cprj + "/" + context->name + ".cbuild.yml";
+  RteFsUtils::CreateDirectories(context->directories.cprj);
+  const string& filename = context->directories.cprj + "/" + context->name + ".cbuild.yml";
 
-    // Make sure $G (generator input file) is up to date
-    context->rteActiveTarget->SetGeneratorInputFile(filename);
+  // Make sure $G (generator input file) is up to date
+  context->rteActiveTarget->SetGeneratorInputFile(filename);
 
-    ofstream fileStream(filename);
-    if (!fileStream) {
-      error = true;
-      ProjMgrLogger::Error(filename, "file cannot be written");
-      continue;
-    }
-    YAML::Node rootNode;
-    ProjMgrYamlCbuild cbuild(rootNode[YAML_BUILD], context);
-    YAML::Emitter emitter;
-    emitter << rootNode;
-    fileStream << emitter.c_str();
-    fileStream << endl;
-    fileStream << flush;
-    fileStream.close();
-    ProjMgrLogger::Info(filename, "file generated successfully");
-  }
-  if (error) {
+  ofstream fileStream(filename);
+  if (!fileStream) {
+    ProjMgrLogger::Error(filename, "file cannot be written");
     return false;
   }
+  YAML::Node rootNode;
+  ProjMgrYamlCbuild cbuild(rootNode[YAML_BUILD], context);
+  YAML::Emitter emitter;
+  emitter << rootNode;
+  fileStream << emitter.c_str();
+  fileStream << endl;
+  fileStream << flush;
+  fileStream.close();
+  ProjMgrLogger::Info(filename, "file generated successfully");
   return true;
 }
