@@ -237,6 +237,22 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacksMissing) {
   EXPECT_STREQ(outStr.c_str(), "ARM::Missing_DFP@0.0.9\n");
 }
 
+TEST_F(ProjMgrUnitTests, ListPacks_ProjectAndLayer) {
+  char* argv[5];
+  StdStreamRedirect streamRedirect;
+  const string& csolution = testinput_folder + "/TestLayers/packs.csolution.yml";
+  const string& expected = "ARM::RteTest@0.1.0 \\(.*\\)\nARM::RteTestBoard@0.1.0 \\(.*\\)\nARM::RteTest_DFP@0.2.0 \\(.*\\)\n";
+  // list packs
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"packs";
+  argv[3] = (char*)"-s";
+  argv[4] = (char*)csolution.c_str();
+  EXPECT_EQ(0, RunProjMgr(5, argv));
+
+  auto outStr = streamRedirect.GetOutString();
+  EXPECT_TRUE(regex_match(outStr, regex(expected.c_str())));
+}
+
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListBoards) {
   char* argv[5];
   StdStreamRedirect streamRedirect;

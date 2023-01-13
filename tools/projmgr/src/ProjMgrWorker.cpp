@@ -1052,22 +1052,30 @@ bool ProjMgrWorker::ProcessDevicePrecedence(StringCollection& item) {
 }
 
 bool ProjMgrWorker::ProcessPackages(ContextItem& context) {
-  std::vector<PackItem> packages;
+  vector<PackItem> packRequirements;
 
   // Default package requirements
   if (context.cdefault) {
-    for (const auto& packItem : context.cdefault->packs) {
-      if (CheckType(packItem.type, context.type)) {
-        packages.push_back(packItem);
-      }
-    }
+    packRequirements.insert(packRequirements.end(), context.cdefault->packs.begin(), context.cdefault->packs.end());
   }
-  // Add package requirements
+  // Solution package requirements
   if (context.csolution) {
-    for (const auto& packItem : context.csolution->packs) {
-      if (CheckType(packItem.type, context.type)) {
-        packages.push_back(packItem);
-      }
+    packRequirements.insert(packRequirements.end(), context.csolution->packs.begin(), context.csolution->packs.end());
+  }
+  // Project package requirements
+  if (context.cproject) {
+    packRequirements.insert(packRequirements.end(), context.cproject->packs.begin(), context.cproject->packs.end());
+  }
+  // Layers package requirements
+  for (const auto& [_, clayer] : context.clayers) {
+    packRequirements.insert(packRequirements.end(), clayer->packs.begin(), clayer->packs.end());
+  }
+
+  // Filter context specific package requirements
+  vector<PackItem> packages;
+  for (const auto& packItem : packRequirements) {
+    if (CheckType(packItem.type, context.type)) {
+      packages.push_back(packItem);
     }
   }
   // Process packages
