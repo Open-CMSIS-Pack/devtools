@@ -15,7 +15,7 @@ build:
     - _RTE_
   add-path:
     - ../data/TestSolution/RTE/RteTest
-    - ../data/TestSolution/RTE/_pre-include_CM0
+    - ../data/TestSolution/RTE/_CM0
     - ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/ComponentLevel/Include
     - ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/GlobalLevel
     - ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/Include
@@ -64,7 +64,7 @@ build:
           category: header
           attr: config
           version: 0.0.1
-        - file: ../data/TestSolution/RTE/_pre-include_CM0/Pre_Include_RteTest_ComponentLevel.h
+        - file: ../data/TestSolution/RTE/_CM0/Pre_Include_RteTest_ComponentLevel.h
           category: preIncludeLocal
     - component: ARM::RteTest:GlobalLevel@0.0.2
       from-pack: ARM::RteTest@0.1.0
@@ -83,7 +83,7 @@ build:
           attr: config
           version: 0.0.2
   constructed-files:
-    - file: ../data/TestSolution/RTE/_pre-include_CM0/Pre_Include_Global.h
+    - file: ../data/TestSolution/RTE/_CM0/Pre_Include_Global.h
       category: preIncludeGlobal
-    - file: ../data/TestSolution/RTE/_pre-include_CM0/RTE_Components.h
+    - file: ../data/TestSolution/RTE/_CM0/RTE_Components.h
       category: header

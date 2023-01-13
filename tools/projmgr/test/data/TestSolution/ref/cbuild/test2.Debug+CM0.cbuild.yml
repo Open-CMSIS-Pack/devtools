@@ -45,7 +45,7 @@ build:
     - ../data/TestSolution/path/solution/
     - ../data/TestSolution/path/CM0
     - ../data/TestSolution/path/Debug
-    - ../data/TestSolution/TestProject2/RTE/_test2.Debug_CM0
+    - ../data/TestSolution/TestProject2/RTE/_Debug_CM0
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
   output-type: exe
   output-dirs:
@@ -81,5 +81,5 @@ build:
         - file: ../data/TestSolution/TestProject2/main.c
           category: sourceC
   constructed-files:
-    - file: ../data/TestSolution/TestProject2/RTE/_test2.Debug_CM0/RTE_Components.h
+    - file: ../data/TestSolution/TestProject2/RTE/_Debug_CM0/RTE_Components.h
       category: header
