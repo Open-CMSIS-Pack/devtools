@@ -857,12 +857,19 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessComponentFilesEmpty) {
   ContextItem context;
   LoadPacks(context);
   InitializeTarget(context);
-  RteItem* item = new RteItem(NULL);
-  RteComponent* c = new RteComponent(item);
+  RtePackage* pack = new RtePackage(NULL);
+  RteComponent* c = new RteComponent(pack);
   RteComponentInstance* ci = new RteComponentInstance(c);
   ci->InitInstance(c);
   ci->SetAttributes({ {"Cclass" , "Class"}, {"Cgroup" , "Group"} });
   context.components.insert({ "Class:Group", { ci } });
+  EXPECT_TRUE(ProcessComponentFiles(context));
+
+  // test ProcessComponentFiles over component with a non-filtered file
+  ci->SetResolvedComponent(c, context.rteActiveTarget->GetName());
+  RteFile file = RteFile(c);
+  file.SetAttributes({ {"category" , "source"}, {"name" , "path/"} });
+  context.rteActiveTarget->AddFile(&file, ci);
   EXPECT_TRUE(ProcessComponentFiles(context));
 }
 

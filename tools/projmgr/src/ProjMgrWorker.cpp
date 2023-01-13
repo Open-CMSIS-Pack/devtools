@@ -1351,10 +1351,12 @@ bool ProjMgrWorker::ProcessComponentFiles(ContextItem& context) {
         error_code ec;
         const auto& relFilename = fs::relative(file, absPackPath, ec).generic_string();
         const auto& componentFile = context.rteActiveTarget->GetFile(relFilename, component);
-        const auto& attr = componentFile->GetAttribute("attr");
-        const auto& category = componentFile->GetAttribute("category");
-        const auto& version = attr == "config" ? componentFile->GetVersionString() : "";
-        context.componentFiles[ProjMgrUtils::GetComponentID(component)].push_back({ file, attr, category, version });
+        if (componentFile) {
+          const auto& attr = componentFile->GetAttribute("attr");
+          const auto& category = componentFile->GetAttribute("category");
+          const auto& version = attr == "config" ? componentFile->GetVersionString() : "";
+          context.componentFiles[ProjMgrUtils::GetComponentID(component)].push_back({ file, attr, category, version });
+        }
       }
     }
   }
