@@ -989,6 +989,31 @@ TEST_F(ProjMgrUnitTests, ListLayersAllContexts) {
   EXPECT_EQ(1, RunProjMgr(5, argv));
 }
 
+TEST_F(ProjMgrUnitTests, ListLayersSearchPath) {
+  StdStreamRedirect streamRedirect;
+  char* argv[7];
+  const string& csolution = testinput_folder + "/TestLayers/searchpath.csolution.yml";
+  const string& clayerSearchPath = testcmsispack_folder;
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"layers";
+  argv[3] = (char*)"-s";
+  argv[4] = (char*)csolution.c_str();
+  argv[5] = (char*)"--clayer-path";
+  argv[6] = (char*)clayerSearchPath.c_str();
+  EXPECT_EQ(1, RunProjMgr(7, argv));
+
+  const string& expectedErrStr = ".*\
+debug csolution: validating combined connections:\
+  .*/TestLayers/searchpath.cproject.yml.*\
+  TestVariant: .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml.*\
+";
+
+  string errStr = streamRedirect.GetErrorString();
+  errStr.erase(std::remove(errStr.begin(), errStr.end(), '\n'), errStr.cend());
+
+  EXPECT_TRUE(regex_match(errStr, regex(expectedErrStr)));
+}
+
 TEST_F(ProjMgrUnitTests, LayerVariables) {
   char* argv[6];
 

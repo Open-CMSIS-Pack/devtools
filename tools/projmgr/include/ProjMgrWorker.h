@@ -385,9 +385,10 @@ public:
   /**
   * @brief list available, referenced or compatible layers
   * @param reference to list of layers
+  * @param reference clayer search path
   * @return true if executed successfully
   */
-  bool ListLayers(std::vector<std::string>& layers);
+  bool ListLayers(std::vector<std::string>& layers, const std::string& clayerSearchPath);
 
   /**
   * @brief list installed toolchains
@@ -534,7 +535,8 @@ protected:
   bool IsPreIncludeByTarget(const RteTarget* activeTarget, const std::string& preInclude);
   void PrintConnectionsValidation(ConnectionsValidationResult result);
   bool CollectLayersFromPacks(ContextItem& context, StrVecMap& clayers);
-  bool DiscoverMatchingLayers(ContextItem& context);
+  bool CollectLayersFromSearchPath(const std::string& clayerSearchPath, StrVecMap& clayers);
+  bool DiscoverMatchingLayers(ContextItem& context, const std::string& clayerSearchPath);
   void CollectConnections(ContextItem& context, ConnectionsCollectionVec& connections);
   void GetConsumesProvides(const ConnectionsCollectionVec& collection, ConnectionsList& connections);
   ConnectionsCollectionMap ClassifyConnections(const ConnectionsCollectionVec& connections);
