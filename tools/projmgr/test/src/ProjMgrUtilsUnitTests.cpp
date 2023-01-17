@@ -110,3 +110,21 @@ TEST_F(ProjMgrUtilsUnitTests, StrToInt) {
     EXPECT_EQ(ProjMgrUtils::StringToInt(input), expected);
   }
 }
+
+TEST_F(ProjMgrUtilsUnitTests, GetCategory) {
+  map<string, vector<string>> testDataVec = {
+    {"sourceC",      {"sourceFile.c", "sourceFile.C"}},
+    {"sourceCpp",    {"sourceFile.cpp", "sourceFile.c++", "sourceFile.C++", "sourceFile.cxx", "sourceFile.cc", "sourceFile.CC"}},
+    {"sourceAsm",    {"sourceFile.asm", "sourceFile.s", "sourceFile.S"}},
+    {"header",       {"headerFile.h", "headerFile.hpp"}},
+    {"library",      {"libraryFile.a", "libraryFile.lib"}},
+    {"object",       {"objectFile.o"}},
+    {"linkerScript", {"linkerFile.sct", "linkerFile.scf", "linkerFile.ld", "linkerFile.icf"}},
+    {"doc",          {"documentFile.txt", "documentFile.md", "documentFile.pdf", "documentFile.htm", "documentFile.html"}},
+  };
+  for (const auto& [expected, files] : testDataVec) {
+    for (const auto& file : files) {
+      EXPECT_EQ(ProjMgrUtils::GetCategory(file), expected);
+    }
+  }
+}
