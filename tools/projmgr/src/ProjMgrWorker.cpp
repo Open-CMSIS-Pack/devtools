@@ -517,7 +517,24 @@ bool ProjMgrWorker::CollectLayersFromPacks(ContextItem& context, StrVecMap& clay
   return true;
 }
 
-bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context) {
+bool ProjMgrWorker::CollectLayersFromSearchPath(const string& clayerSearchPath, StrVecMap& clayers) {
+  error_code ec;
+  for (auto& item : fs::recursive_directory_iterator(clayerSearchPath, ec)) {
+    if (fs::is_regular_file(item)) {
+      const string& clayerFile = item.path().generic_string();
+      if (regex_match(clayerFile, regex(".*\\.clayer\\.(yml|yaml)"))) {
+        if (!m_parser->ParseGenericClayer(clayerFile, m_checkSchema)) {
+          return false;
+        }
+        ClayerItem* clayer = &m_parser->GetGenericClayers()[clayerFile];
+        ProjMgrUtils::PushBackUniquely(clayers[clayer->type], clayerFile);
+      }
+    }
+  }
+  return true;
+}
+
+bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context, const string& clayerSearchPath) {
   // required layer types
   StrVec requiredLayerTypes;
   for (const auto& clayer : context.cproject->clayers) {
@@ -534,9 +551,10 @@ bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context) {
   StrVecMap matchedTypeClayers;
 
   if (!requiredLayerTypes.empty()) {
-    // collect generic clayers from loaded packs
+    // collect generic clayers from loaded packs and from search path
     StrVecMap genericClayers;
-    if (!CollectLayersFromPacks(context, genericClayers)) {
+    if (!CollectLayersFromPacks(context, genericClayers) ||
+        !CollectLayersFromSearchPath(clayerSearchPath, genericClayers)) {
       return false;
     }
     // clayers matching required types
@@ -2420,16 +2438,17 @@ bool ProjMgrWorker::ListGenerators(vector<string>& generators) {
   return true;
 }
 
-bool ProjMgrWorker::ListLayers(vector<string>& layers) {
+bool ProjMgrWorker::ListLayers(vector<string>& layers, const string& clayerSearchPath) {
   for (const auto& selectedContext : m_selectedContexts) {
     ContextItem& context = m_contexts[selectedContext];
     if (!LoadPacks(context)) {
       return false;
     }
     if (selectedContext.empty()) {
-      // get all layers from packs
+      // get all layers from packs and from search path
       StrVecMap genericClayers;
-      if (!CollectLayersFromPacks(context, genericClayers)) {
+      if (!CollectLayersFromPacks(context, genericClayers) ||
+          !CollectLayersFromSearchPath(clayerSearchPath, genericClayers)) {
         return false;
       }
       for (const auto& [clayerType, clayerVec] : genericClayers) {
@@ -2450,7 +2469,7 @@ bool ProjMgrWorker::ListLayers(vector<string>& layers) {
         return false;
       }
       // get matching layers for selected context
-      if (!DiscoverMatchingLayers(context)) {
+      if (!DiscoverMatchingLayers(context, clayerSearchPath)) {
         return false;
       }
       for (const auto& [clayer, clayerItem] : context.clayers) {

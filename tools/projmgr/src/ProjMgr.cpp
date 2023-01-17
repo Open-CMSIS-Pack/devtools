@@ -41,6 +41,7 @@ Usage:\n\
    -g, --generator arg   Code generator identifier\n\
    -m, --missing         List only required packs that are missing in the pack repository\n\
    -l, --load arg        Set policy for packs loading [latest|all|required]\n\
+   -L, --clayer-path arg Set search path for external clayers\n\
    -e, --export arg      Set suffix for exporting <context><suffix>.cprj retaining only specified versions\n\
    -n, --no-check-schema Skip schema check\n\
    -U, --no-update-rte   Skip creation of RTE directory and files\n\
@@ -101,6 +102,7 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
   cxxopts::Option help("h,help", "Print usage");
   cxxopts::Option generator("g,generator", "Code generator identifier", cxxopts::value<string>());
   cxxopts::Option load("l,load", "Set policy for packs loading [latest|all|required]", cxxopts::value<string>());
+  cxxopts::Option clayerSearchPath("L,clayer-path", "Set search path for external clayers", cxxopts::value<string>());
   cxxopts::Option missing( "m,missing", "List only required packs that are missing in the pack repository", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option schemaCheck( "n,no-check-schema", "Skip schema check", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option noUpdateRte( "U,no-update-rte", "Skip creation of RTE directory and files", cxxopts::value<bool>()->default_value("false"));
@@ -119,7 +121,7 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
     {"list dependencies", {solution, context, filter, load, schemaCheck}},
     {"list contexts",     {solution, filter, schemaCheck}},
     {"list generators",   {solution, context, load, schemaCheck}},
-    {"list layers",       {solution, context, load, schemaCheck}},
+    {"list layers",       {solution, context, load, schemaCheck, clayerSearchPath}},
     {"list toolchains",   {solution}},
   };
 
@@ -127,7 +129,7 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
     options.add_options("", {
       {"positional", "", cxxopts::value<vector<string>>()},
       solution, context, filter, generator,
-      load, missing, schemaCheck, noUpdateRte, output,
+      load, clayerSearchPath, missing, schemaCheck, noUpdateRte, output,
       help, version, exportSuffix
     });
     options.parse_positional({ "positional" });
@@ -183,6 +185,9 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
     }
     if (parseResult.count("load")) {
       manager.m_loadPacksPolicy = parseResult["load"].as<string>();
+    }
+    if (parseResult.count("clayer-path")) {
+      manager.m_clayerSearchPath = parseResult["clayer-path"].as<string>();
     }
     if (parseResult.count("export")) {
       manager.m_export = parseResult["export"].as<string>();
@@ -551,7 +556,7 @@ bool ProjMgr::RunListLayers(void) {
   }
   // Get layers
   vector<string> layers;
-  if (!m_worker.ListLayers(layers)) {
+  if (!m_worker.ListLayers(layers, m_clayerSearchPath)) {
     return false;
   }
   for (const auto& layer : layers) {
