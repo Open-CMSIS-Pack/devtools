@@ -179,6 +179,29 @@ jobs:
           ctest -V -C Debug -R PackChkIntegTests
         working-directory: ./build
 
+      - name: Get retention days
+        id: var
+        run: |
+          echo "retention_days=$(echo '${{ (!github.event.repository.private && (github.event_name == 'push' || github.event.schedule != '')) && '7' || '1' }}')" >> $GITHUB_OUTPUT
+
+      - name: Archive unit test results
+        if: (github.event_name == 'push')
+        uses: actions/upload-artifact@v3
+        with:
+          name: unit_test_result-linux64-amd64
+          path: ./build/test_reports/packchkunittests-*.xml
+          if-no-files-found: error
+          retention-days: ${{ steps.var.outputs.retention_days }}
+
+      - name: Archive integration test results
+        if: (github.event_name == 'push')
+        uses: actions/upload-artifact@v3
+        with:
+          name: integ_test_result-linux64-amd64
+          path: ./build/test_reports/packchkintegtests-*.xml
+          if-no-files-found: error
+          retention-days: ${{ steps.var.outputs.retention_days }}
+
       # Needs to be removed once the bug is resolved
       # lcov reporting 1.14 on 1.15 version
       # https://groups.google.com/g/linux.debian.bugs.dist/c/a9SZGCENJ2s?pli=1
@@ -208,11 +231,6 @@ jobs:
           attempt_limit: 3
           attempt_delay: 5000
 
-      - name: Get retention days
-        id: var
-        run: |
-          echo "cov_retention_days=$(echo '${{ (!github.event.repository.private && (github.event_name == 'push' || github.event.schedule != '')) && '7' || '1' }}')" >> $GITHUB_OUTPUT
-
       - name: Archive coverage report
         uses: actions/upload-artifact@v3
         with:
@@ -220,7 +238,7 @@ jobs:
           path: |
             ./build/tools/packchk/coverage_packchk/
             ./build/tools/packchk/coverage_packchk.info
-          retention-days: ${{ steps.vars.outputs.cov_retention_days }}
+          retention-days: ${{ steps.var.outputs.retention_days }}
           if-no-files-found: error
 
   release:

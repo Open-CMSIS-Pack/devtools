@@ -355,6 +355,20 @@ jobs:
           ctest -V -C Debug -R ProjMgrUnitTests
         working-directory: ./build
 
+      - name: Get retention days
+        id: var
+        run: |
+          echo "retention_days=$(echo '${{ (!github.event.repository.private && (github.event_name == 'push' || github.event.schedule != '')) && '7' || '1' }}')" >> $GITHUB_OUTPUT
+
+      - name: Archive test report
+        if: (github.event_name == 'push')
+        uses: actions/upload-artifact@v3
+        with:
+          name: unit_test_result-linux64-amd64
+          path: ./build/test_reports/projmgrunittests-*.xml
+          retention-days: ${{ steps.var.outputs.retention_days }}
+          if-no-files-found: error
+
       # Needs to be removed once the bug is resolved
       # lcov reporting 1.14 on 1.15 version
       # https://groups.google.com/g/linux.debian.bugs.dist/c/a9SZGCENJ2s?pli=1
@@ -384,11 +398,6 @@ jobs:
           attempt_limit: 3
           attempt_delay: 5000
 
-      - name: Get retention days
-        id: var
-        run: |
-          echo "cov_retention_days=$(echo '${{ (!github.event.repository.private && (github.event_name == 'push' || github.event.schedule != '')) && '7' || '1' }}')" >> $GITHUB_OUTPUT
-
       - name: Archive coverage report
         uses: actions/upload-artifact@v3
         with:
@@ -396,7 +405,7 @@ jobs:
           path: |
             ./build/tools/projmgr/coverage_projmgr/
             ./build/tools/projmgr/coverage_projmgr.info
-          retention-days: ${{ steps.vars.outputs.cov_retention_days }}
+          retention-days: ${{ steps.var.outputs.retention_days }}
           if-no-files-found: error
 
   test-results-preparation:
