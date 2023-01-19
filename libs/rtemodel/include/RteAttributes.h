@@ -14,126 +14,21 @@
  */
 /******************************************************************************/
 
-#include <string>
+#include <XmlItem.h>
 #include <map>
 
-class RteAttributes
+class RteAttributes : public XmlItem
 {
 public:
   // default constructor
-  RteAttributes() {};
+  RteAttributes() noexcept : XmlItem() {};
 
   // parametrized constructor to instantiate with given attributes
   RteAttributes(const std::map<std::string, std::string>& attributes);
 
-  // destructor
-  virtual ~RteAttributes();
-
-  // copy constructor, uses default implementation
-  RteAttributes(const RteAttributes&) = default;
-
-  // assignment operator, uses default implementation
-  RteAttributes& operator=(const RteAttributes&) = default;
-
-  // move assignment operator, uses default implementation
-  RteAttributes& operator=(RteAttributes&&) noexcept = default;
-
-  /**
-   * @brief return XML tag name
-   * @return XML tag name
-  */
-  const std::string& GetTag() const { return m_tag; }
-  /**
-   * @brief set XML tag name
-   * @param tag XML tag name
-  */
-  void SetTag(const std::string& tag) { m_tag = tag; }
-  /**
-   * @brief determine XML attribute name if not empty, otherwise XML tag name
-   * @return attribute or tag name
-  */
-  virtual const std::string& GetName() const;
-
-  // attribute operations
+   // attribute operations
 public:
-  /**
-   * @brief add new XML attribute to XML tag
-   * @param name attribute name
-   * @param value attribute value
-   * @param insertEmpty true to insert, false to remove if attribute exists but is empty
-   * @return true if attribute is inserted/removed
-  */
-  bool AddAttribute(const std::string& name, const std::string& value, bool insertEmpty = true);
-  /**
-   * @brief add new attribute
-   * @param name attribute name
-   * @param value attribute value
-   * @return true if attribute is added
-  */
-  bool SetAttribute(const char* name, const char* value);
-  /**
-   * @brief add new attribute
-   * @param name attribute name
-   * @param value attribute value
-   * @param radix transformation radix
-   * @return true if attribute is added
-  */
-  bool SetAttribute(const char* name, long value, int radix = 10);
-  /**
-   * @brief remove attribute
-   * @param name attribute name
-   * @return true if attribute is removed
-  */
-  bool RemoveAttribute(const char* name);
-  /**
-   * @brief replace instance attributes with the given ones
-   * @param attributes given attributes
-   * @return true if attributes are set
-  */
-  bool SetAttributes(const std::map<std::string, std::string>& attributes);
-  /**
-   * @brief replace instance attributes with the given ones
-   * @param attributes given instance of RteAttributes
-   * @return true if attributes are set
-  */
-  bool SetAttributes(const RteAttributes& attributes);
-  /**
-   * @brief add missing attributes, optionally replace existing
-   * @param attributes map of name to value pairs to add
-   * @param replaceExisting true to replace existing attributes
-   * @return true if any attribute is set
-  */
-  bool AddAttributes(const std::map<std::string, std::string>& attributes, bool replaceExisting);
-  /**
-   * @brief clear all attributes of the instance
-   * @return true if any attribute is removed
-  */
-  bool ClearAttributes();
-  /**
-   * @brief determine number of attributes
-   * @return number of attributes
-  */
-  int GetCount() const { return (int)m_attributes.size(); }
-  /**
-   * @brief check if attribute list is empty
-   * @return true if attribute list is empty
-  */
-  bool IsEmpty() const { return m_attributes.empty(); }
-  /**
-   * @brief return list of attributes
-   * @return list of attributes
-  */
-  const std::map<std::string, std::string>& GetAttributes() const { return m_attributes; }
-  /**
-   * @brief concatenate instance attributes
-   * @return string containing all attributes
-  */
-  std::string GetAttributesString() const;
-  /**
-   * @brief concatenate attributes in a string conformed to XML syntax
-   * @return XML string containing attributes
-  */
-  std::string GetAttributesAsXmlString() const;
+
   /**
    * @brief determine prefix of attribute value
    * @param name attribute name
@@ -155,63 +50,8 @@ public:
    * @return suffix as integer of attribute value
   */
   int GetAttributeSuffixAsInt(const char* name, char delimiter = ':') const;
-  /**
-   * @brief convert attribute value to boolean value
-   * @param name attribute name
-   * @param defaultValue default value to be returned if attribute value is empty
-   * @return true if attribute value equal "1" or "true"
-  */
-  bool GetAttributeAsBool(const char* name, bool defaultValue = false) const;
-  /**
-   * @brief convert attribute value to integer value
-   * @param name attribute name
-   * @param defaultValue default value to be returned if attribute value is empty
-   * @return attribute value as integer
-  */
-  int GetAttributeAsInt(const char* name, int defaultValue = -1) const;
-  /**
-   * @brief convert attribute value to unsigned integer
-   * @param name attribute name
-   * @param defaultValue default value to be returned if attribute value is empty
-   * @return attribute value as unsigned integer
-  */
-  unsigned GetAttributeAsUnsigned(const char* name, unsigned defaultValue = 0) const;
-  /**
-   * @brief convert attribute value to unsigned long long
-   * @param name attribute name
-   * @param defaultValue default value to be returned if attribute value is empty
-   * @return attribute value as unsigned long long
-  */
-  unsigned long long GetAttributeAsULL(const char* name, unsigned long long defaultValue = 0L) const;
-  /**
-   * @brief return value of the attribute "generator"
-   * @return value of attribute "generator"
-  */
-  virtual const std::string& GetGeneratorName() const { return GetAttribute("generator"); }
-  /**
-   * @brief return attribute value of the attribute "generated" as boolean
-   * @return attribute value as boolean
-  */
-  virtual bool IsGenerated() const { return GetAttributeAsBool("generated"); }
-  /**
-   * @brief check if a component may be selected
-   * @return true if a component may be selected
-  */
-  virtual bool IsSelectable() const { return !IsGenerated() || GetAttributeAsBool("selectable") || HasAttribute("generator"); }
 
 public:
-  /**
-   * @brief determine attribute value
-   * @param name attribute name
-   * @return attribute value
-  */
-  virtual const std::string& GetAttribute(const std::string& name) const;
-  /**
-   * @brief check if attribute exists
-   * @param name attribute name
-   * @return true if attribute exists in the instance
-  */
-  virtual bool HasAttribute(const std::string& name) const;
   /**
    * @brief check if attribute has a certain value
    * @param pattern value to be checked, can contain wild cards
@@ -236,24 +76,7 @@ public:
    * @return true if attributes of the given instance exist in this instance
   */
   virtual bool Compare(const RteAttributes* other) const;
-  /**
-   * @brief check if all given attributes exist in the instance
-   * @param attributes given list of attributes
-   * @return true if all given attributes exist in the instance
-  */
-  virtual bool EqualAttributes(const std::map<std::string, std::string>& attributes) const;
-  /**
-   * @brief check if all attributes of the given instance exist in this instance
-   * @param other given instance of RteAttributes
-   * @return true if all attributes of the given instance exist in this instance
-  */
-  virtual bool EqualAttributes(const RteAttributes& other) const;
-  /**
-   * @brief check if all attributes of the given instance exist in this instance
-   * @param other pointer to given instance of RteAttributes
-   * @return true if all attributes of the given instance exist in this instance
-  */
-  virtual bool EqualAttributes(const RteAttributes* other) const;
+
   /**
    * @brief determine value of attribute related to version
    * @return value of attribute related to version
@@ -335,11 +158,6 @@ public:
   */
   static std::string GetPackageIDfromAttributes(const RteAttributes& attr, bool withVersion = true);
   /**
-   * @brief return value of attribute "url"
-   * @return value of attribute "url"
-  */
-  virtual const std::string& GetURL() const { return GetAttribute("url"); }
-  /**
    * @brief return value of component attribute "Cclass"
    * @return value of component attribute "Cclass"
   */
@@ -364,11 +182,7 @@ public:
    * @return value of component attribute "Cbundle"
   */
   virtual const std::string& GetCbundleName() const { return GetAttribute("Cbundle"); }
-  /**
-   * @brief check value of attribute "custom"
-   * @return true if value is "1" or "true"
-  */
-  virtual bool IsCustom() const { return GetAttributeAsBool("custom"); }
+
   /**
    * @brief return value of device attribute "Dfamily"
    * @return value of device attribute "Dfamily"
@@ -405,77 +219,6 @@ public:
   */
   virtual std::string GetFullDeviceName() const;
   /**
-   * @brief determine value of device attribute "remove" as boolean
-   * @return value of device attribute "remove" as boolean
-  */
-  virtual bool IsRemove() const { return GetAttributeAsBool("remove"); }
-  /**
-   * @brief determine value of device attribute "default" as boolean
-   * @return value of device attribute "default" as boolean
-  */
-  virtual bool IsDefault() const { return GetAttributeAsBool("default"); }
-  /**
-   * @brief return value of memory attribute "alias"
-   * @return value of memory attribute "alias"
-  */
-  virtual const std::string& GetAlias() const { return GetAttribute("alias"); }
-  /**
-   * @brief determine value of memory attribute "uninit" as boolean. Evaluates "init" if "uninit" does not exist
-   * @return value of memory attribute "uninit"
-  */
-  virtual bool IsNoInit() const
-  {
-    if (HasAttribute("uninit")) {
-      return GetAttributeAsBool("uninit");
-    }
-    return GetAttributeAsBool("init"); // backward compatibility
-  }
-  /**
-   * @brief check value of memory attribute "startup"
-   * @return true if value is "1" or "true"
-  */
-  virtual bool IsStartup() const { return GetAttributeAsBool("startup"); }
-  /**
-   * @brief return value of memory attribute "access"
-   * @return value of memory attribute "access"
-  */
-  virtual const std::string& GetAccess() const { return GetAttribute("access"); }
-  /**
-   * @brief check for memory read access
-   * @return true if read access specified
-  */
-  virtual bool IsReadAccess();
-  /**
-   * @brief check for memory write access
-   * @return true if write access specified
-  */
-  virtual bool IsWriteAccess();
-  /**
-   * @brief check for memory executable access
-   * @return true if executable access specified
-  */
-  virtual bool IsExecuteAccess();
-  /**
-   * @brief check for memory secure access
-   * @return true if secure access specified
-  */
-  virtual bool IsSecureAccess();
-  /**
-   * @brief check for memory non-secure access
-   * @return true if non-secure access specified
-  */
-  virtual bool IsNonSecureAccess();
-  /**
-   * @brief check for memory callable access
-   * @return true if callable access specified
-  */
-  virtual bool IsCallableAccess();
-  /**
-   * @brief check for memory peripheral area
-   * @return true if memory peripheral area specified
-  */
-  virtual bool IsPeripheralAccess();
-  /**
    * @brief determine value of attribute "condition"
    * @return condition ID
   */
@@ -490,11 +233,6 @@ public:
    * @return true if tag is API
   */
   virtual bool IsApi() const { return m_tag == "api"; }
-  /**
-   * @brief evaluate attribute "isDefaultVariant"
-   * @return true if value of attribute is "1" or "true"
-  */
-  virtual bool IsDefaultVariant() const { return GetAttributeAsBool("isDefaultVariant"); }
   /**
    * @brief return value of attribute "variant"
    * @return value of attribute "variant"
@@ -572,14 +310,6 @@ public:
   */
   virtual std::string ConstructComponentPreIncludeFileName() const;
   /**
-   * @brief clears list of attributes
-  */
-  virtual void Clear() { ClearAttributes(); }
-  /**
-   * @brief default does nothing
-  */
-  virtual void ProcessAttributes() {}; // called from SetAttributes(), AddAttributes() and ClearAttributes(), default does nothing
-  /**
    * @brief check if all given 'C' attributes exist in the instance
    * @param attributes given list of 'C' attributes
    * @return true if all given 'C' attributes exist in the instance
@@ -605,11 +335,7 @@ public:
   virtual bool MatchDevice(const std::map<std::string, std::string>& attributes) const;
 
 public:
-  static const std::string EMPTY_STRING;
-
-protected:
-  std::string m_tag; // an item can have a corresponding XML element with tag
-  std::map<std::string, std::string> m_attributes;
+  static const RteAttributes EMPTY_ATTRIBUTES;
 };
 
 typedef std::map<std::string, RteAttributes> RteAttributesMap;

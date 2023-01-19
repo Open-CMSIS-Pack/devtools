@@ -122,18 +122,18 @@ public:
    * @brief get memory options
    * @return memory options as a reference to RteAttributes
   */
-  const RteAttributes& GetMemOpt() const { return m_memOpt; }
+  const RteItem& GetMemOpt() const { return m_memOpt; }
 
   /**
    * @brief get C/C++ compiler options
    * @return C/C++ compiler options as a reference to RteAttributes
   */
-  const RteAttributes& GetCOpt() const { return m_cOpt; }
+  const RteItem& GetCOpt() const { return m_cOpt; }
   /**
    * @brief get assembler options
    * @return assembler options as a reference to RteAttributes
   */
-  const RteAttributes& GetAsmOpt() const { return m_asmOpt; }
+  const RteItem& GetAsmOpt() const { return m_asmOpt; }
 
   /**
    * @brief get options of specified type (immutable)
@@ -181,9 +181,9 @@ private:
   bool m_bIncludeInLib;
   int m_instanceCount;
   VersionCmp::MatchMode m_VersionMatchMode;
-  RteAttributes m_memOpt;
-  RteAttributes m_cOpt;
-  RteAttributes m_asmOpt;
+  RteItem m_memOpt;
+  RteItem m_cOpt;
+  RteItem m_asmOpt;
 };
 
 typedef std::map<std::string, RteInstanceTargetInfo*> RteInstanceTargetInfoMap;
@@ -518,7 +518,7 @@ protected:
   virtual void CreateXmlTreeElementContent(XMLTreeElement* parentElement) const override;
 
 protected:
-  RteAttributes m_packageAttributes;
+  RteItem m_packageAttributes;
   RteInstanceTargetInfoMap m_targetInfos;
   bool m_bRemoved;
 };
@@ -1581,7 +1581,7 @@ protected:
   int m_instanceIndex; // zero-base instance index for multi-instance components, -1 otherwise
   std::string m_instanceName; // file name relative to project directory
   std::string m_fileName; // file name without path
-  RteAttributes m_componentAttributes;
+  RteItem m_componentAttributes;
 };
 
 #endif // RteInstance_H

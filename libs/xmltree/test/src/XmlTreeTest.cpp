@@ -24,6 +24,9 @@ TEST(XmlTreeTest, GetAttribute) {
   e.AddAttribute("yes", "true");
   e.AddAttribute("no", "false");
   e.AddAttribute("one", "1");
+  EXPECT_EQ(e.GetAttributesString(), "no=false one=1 string=strVal yes=true");
+  EXPECT_EQ(e.GetAttributesAsXmlString(), "no=\"false\" one=\"1\" string=\"strVal\" yes=\"true\"");
+
   e.AddAttribute("zero", "0");
   e.AddAttribute("empty", "");
   e.AddAttribute("zero", "0");

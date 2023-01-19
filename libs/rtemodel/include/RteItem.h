@@ -113,7 +113,7 @@ public:
    * @brief constructor
    * @param parent pointer to parent RteItem or nullptr if this item has no parent
   */
-  RteItem(RteItem* parent);
+  RteItem(RteItem* parent = nullptr);
 
   /**
    * @brief virtual destructor
@@ -121,30 +121,6 @@ public:
   virtual ~RteItem() override;
 
 public:
-
-  /**
-   * @brief get line number corresponding to position of the item's tag in associated file (is supported by XML parser)
-   * @return line number or 0 if not set
-  */
-  int GetLineNumber() const { return m_lineNumber; }
-
-  /**
-   * @brief set line number corresponding to position of the item's tag in associated file
-   * @param lineNumber 1-based integer
-  */
-  void SetLineNumber(int lineNumber) { m_lineNumber = lineNumber; }
-
-  /**
-   * @brief get item's text
-   * @return item's text string, empty if not set
-  */
-  const std::string& GetText() const { return m_text; }
-
-  /**
-   * @brief set item's text
-   * @param text string to set
-  */
-  void SetText(const std::string& text) { m_text = text; }
 
   /**
    * @brief get number of children
@@ -193,7 +169,7 @@ public:
    * @brief checks if this item is in valid state
    * @return true if item is valid
   */
-  bool IsValid() const { return m_bValid; }
+  bool IsValid() const override { return m_bValid; }
 
   /**
    * @brief get child item for specified ID
@@ -454,6 +430,74 @@ public:
   virtual std::string GetDownloadUrl(bool withVersion, const char* extension) const;
 
   /**
+ * @brief return value of memory attribute "alias"
+ * @return value of memory attribute "alias"
+*/
+  virtual const std::string& GetAlias() const { return GetAttribute("alias"); }
+  /**
+   * @brief determine value of memory attribute "uninit" as boolean. Evaluates "init" if "uninit" does not exist
+   * @return value of memory attribute "uninit"
+  */
+  virtual bool IsNoInit() const
+  {
+    if (HasAttribute("uninit")) {
+      return GetAttributeAsBool("uninit");
+    }
+    return GetAttributeAsBool("init"); // backward compatibility
+  }
+  /**
+   * @brief check value of memory attribute "startup"
+   * @return true if value is "1" or "true"
+  */
+  virtual bool IsStartup() const { return GetAttributeAsBool("startup"); }
+  /**
+   * @brief return value of memory attribute "access"
+   * @return value of memory attribute "access"
+  */
+  virtual const std::string& GetAccess() const { return GetAttribute("access"); }
+  /**
+   * @brief check for memory read access
+   * @return true if read access specified
+  */
+  virtual bool IsReadAccess();
+  /**
+   * @brief check for memory write access
+   * @return true if write access specified
+  */
+  virtual bool IsWriteAccess();
+  /**
+   * @brief check for memory executable access
+   * @return true if executable access specified
+  */
+  virtual bool IsExecuteAccess();
+  /**
+   * @brief check for memory secure access
+   * @return true if secure access specified
+  */
+  virtual bool IsSecureAccess();
+  /**
+   * @brief check for memory non-secure access
+   * @return true if non-secure access specified
+  */
+  virtual bool IsNonSecureAccess();
+  /**
+   * @brief check for memory callable access
+   * @return true if callable access specified
+  */
+  virtual bool IsCallableAccess();
+  /**
+   * @brief check for memory peripheral area
+   * @return true if memory peripheral area specified
+  */
+  virtual bool IsPeripheralAccess();
+  /**
+   * @brief determine value of attribute "condition"
+   * @return condition ID
+  */
+  virtual const std::string& GetConditionID() const { return GetAttribute("condition"); }
+
+
+  /**
    * @brief get RteCondition associated with the item
    * @return pointer RteCondition or nullptr if item has no condition
   */
@@ -477,6 +521,51 @@ public:
   * @return true if item's condition depends on selected board
   */
   virtual bool IsBoardDependent() const;
+
+  /**
+  * @brief return value of the attribute "generator"
+  * @return value of attribute "generator"
+  */
+  virtual const std::string& GetGeneratorName() const { return GetAttribute("generator"); }
+
+  /**
+ * @brief return attribute value of the attribute "generated" as boolean
+ * @return attribute value as boolean
+*/
+  virtual bool IsGenerated() const { return GetAttributeAsBool("generated"); }
+  /**
+   * @brief check if a component may be selected
+   * @return true if a component may be selected
+  */
+  virtual bool IsSelectable() const { return !IsGenerated() || GetAttributeAsBool("selectable") || HasAttribute("generator"); }
+  /**
+   * @brief check value of attribute "custom"
+   * @return true if value is "1" or "true"
+  */
+  virtual bool IsCustom() const { return GetAttributeAsBool("custom"); }
+
+  /**
+ * @brief determine value of device attribute "remove" as boolean
+ * @return value of device attribute "remove" as boolean
+*/
+  virtual bool IsRemove() const { return GetAttributeAsBool("remove"); }
+  /**
+   * @brief determine value of device attribute "default" as boolean
+   * @return value of device attribute "default" as boolean
+  */
+  virtual bool IsDefault() const { return GetAttributeAsBool("default"); }
+
+  /**
+ * @brief evaluate attribute "isDefaultVariant"
+ * @return true if value of attribute is "1" or "true"
+*/
+  virtual bool IsDefaultVariant() const { return GetAttributeAsBool("isDefaultVariant"); }
+
+  /**
+ * @brief return value of attribute "url"
+ * @return value of attribute "url"
+*/
+  virtual const std::string& GetURL() const { return GetAttribute("url"); }
 
   /**
    * @brief get errors found by Construct() or Validate()
@@ -590,9 +679,6 @@ protected:
 
   bool m_bValid; // validity flag
 
-  int m_lineNumber; // 1 - based line number in XML file
-
-  std::string m_text; // an item text, can be empty
   std::string m_ID; // an item ID, constructed in ConstructID() called by Construct()
 
   std::list<std::string> m_errors; // errors or warnings found by Construct() or Validate()

@@ -973,7 +973,7 @@ bool CbuildLayer::InitXml(const string &file, string* layerName) {
   } else {
     m_cprjTree = tree;
     m_cprj = elements;
-    m_cprj->root->SetAttributes({});
+    m_cprj->root->ClearAttributes();
   }
   return true;
 }

@@ -21,39 +21,11 @@
 using namespace std;
 
 ///////////////////////////
-const string RteAttributes::EMPTY_STRING("");
+const RteAttributes RteAttributes::EMPTY_ATTRIBUTES;
 
 RteAttributes::RteAttributes(const map<string, string>& attributes) :
-  m_attributes(attributes)
+  XmlItem(attributes)
 {
-}
-
-RteAttributes::~RteAttributes()
-{
-  m_attributes.clear();
-};
-
-const string& RteAttributes::GetName() const
-{
-  const string& name = GetAttribute("name");
-  if (name.empty())
-    return m_tag;
-  return name;
-}
-
-
-const string& RteAttributes::GetAttribute(const string& name) const
-{
-  map<string, string>::const_iterator it = m_attributes.find(name);
-  if (it != m_attributes.end())
-    return it->second;
-  return EMPTY_STRING;
-}
-
-bool RteAttributes::HasAttribute(const string& name) const
-{
-  map<string, string>::const_iterator it = m_attributes.find(name);
-  return it != m_attributes.end();
 }
 
 bool RteAttributes::HasValue(const string& pattern) const
@@ -64,7 +36,6 @@ bool RteAttributes::HasValue(const string& pattern) const
   }
   return false;
 }
-
 
 bool RteAttributes::CompareAttributes(const map<string, string>& attributes) const
 {
@@ -91,214 +62,17 @@ bool RteAttributes::CompareAttributes(const map<string, string>& attributes) con
 
 bool RteAttributes::Compare(const RteAttributes& other) const
 {
-  if (GetCount() != other.GetCount())
+  if (GetAttributeCount() != other.GetAttributeCount())
     return false;
   return CompareAttributes(other.GetAttributes());
 }
 
 bool RteAttributes::Compare(const RteAttributes* other) const
 {
-  if (!other || GetCount() != other->GetCount())
+  if (!other || GetAttributeCount() != other->GetAttributeCount())
     return false;
   return CompareAttributes(other->GetAttributes());
 }
-
-
-bool RteAttributes::EqualAttributes(const map<string, string>& attributes) const
-{
-  // all supplied attributes must exist in this ones
-  map<string, string>::const_iterator itm, ita;
-  for (ita = attributes.begin(); ita != attributes.end(); ita++) {
-    const string& a = ita->first;
-    const string& v = ita->second;
-    itm = m_attributes.find(a);
-    if (itm != m_attributes.end()) {
-      const string& va = itm->second;
-      if (va != v)
-        return false;
-    } else {
-      return false;
-    }
-  }
-  return true;
-}
-
-bool RteAttributes::EqualAttributes(const RteAttributes& other) const
-{
-  if (GetCount() != other.GetCount())
-    return false;
-  return EqualAttributes(other.GetAttributes());
-}
-
-bool RteAttributes::EqualAttributes(const RteAttributes* other) const
-{
-  if (!other || GetCount() != other->GetCount())
-    return false;
-  return EqualAttributes(other->GetAttributes());
-}
-
-
-bool RteAttributes::GetAttributeAsBool(const char* name, bool defaultValue) const
-{
-  const string& s = GetAttribute(name);
-  if (s.empty())
-    return defaultValue;
-  return (s == "1" || s == "true");
-}
-
-int RteAttributes::GetAttributeAsInt(const char* name, int defaultValue) const
-{
-  const string& s = GetAttribute(name);
-  if (s.empty())
-    return defaultValue;
-  return stoi(s, 0, 0);
-}
-
-unsigned RteAttributes::GetAttributeAsUnsigned(const char* name, unsigned defaultValue) const
-{
-  const string& s = GetAttribute(name);
-  if (s.empty())
-    return defaultValue;
-  return RteUtils::ToUL(s);
-}
-
-unsigned long long RteAttributes::GetAttributeAsULL(const char* name, unsigned long long defaultValue) const {
-  const string& s = GetAttribute(name);
-
-  if (s.empty()) {
-    return (defaultValue);
-  }
-  return RteUtils::ToULL(s);
-}
-
-
-string RteAttributes::GetAttributesString() const
-{
-  string s;
-  map<string, string>::const_iterator it;
-  for (it = m_attributes.begin(); it != m_attributes.end(); it++) {
-    if (!s.empty())
-      s += " ";
-    s += it->first;
-    s += "=";
-    s += it->second;
-  }
-  return s;
-}
-
-string RteAttributes::GetAttributesAsXmlString() const
-{
-  return RteUtils::ToXmlString(m_attributes);
-}
-
-
-bool RteAttributes::SetAttribute(const char* name, const char* value)
-{
-  if (!name)
-    return false;
-  map<string, string>::iterator it = m_attributes.find(name);
-  if (it != m_attributes.end()) {
-    if (value && it->second == value)
-      return false;
-    m_attributes.erase(it);
-  }
-  if (value) {
-    m_attributes[name] = value;
-  }
-  return true;
-}
-
-bool RteAttributes::SetAttribute(const char* name, long value, int radix)
-{
-  ostringstream ss;
-  if (radix == 16) {
-    ss << showbase << hex;
-  }
-  ss << value;
-  const string s = ss.str();
-  const char* c = s.c_str();
-  return SetAttribute(name, c);
-}
-
-bool RteAttributes::AddAttribute(const string& name, const string& value, bool insertEmpty)
-{
-  if (name.empty())
-    return false;
-  map<string, string>::iterator it = m_attributes.find(name);
-  if (it != m_attributes.end()) {
-    if (it->second == value)
-      return false;
-    if (!insertEmpty && value.empty()) {
-      m_attributes.erase(it);
-      return true;
-    }
-  }
-  if (insertEmpty || !value.empty())
-    m_attributes[name] = value;
-  return true;
-}
-
-
-bool RteAttributes::SetAttributes(const map<string, string>& attributes)
-{
-  if (m_attributes == attributes)
-    return false;
-
-  m_attributes = attributes;
-  ProcessAttributes();
-  return true;
-}
-
-bool RteAttributes::SetAttributes(const RteAttributes& attributes)
-{
-  return SetAttributes(attributes.GetAttributes());
-}
-
-
-bool RteAttributes::AddAttributes(const map<string, string>& attributes, bool replaceExisting)
-{
-  if (attributes.empty())
-    return false;
-  bool bChanged = false;
-  if (m_attributes.empty()) {
-    bChanged = true;
-    SetAttributes(attributes);
-  } else {
-    for (auto it = attributes.begin(); it != attributes.end(); it++) {
-      if (replaceExisting || !HasAttribute(it->first)) {
-        if (AddAttribute(it->first, it->second))
-          bChanged = true;
-      }
-    }
-  }
-  if (bChanged)
-    ProcessAttributes();
-  return bChanged;
-}
-
-
-bool RteAttributes::RemoveAttribute(const char* name)
-{
-  if (name) {
-    map<string, string>::iterator it = m_attributes.find(name);
-    if (it != m_attributes.end()) {
-      m_attributes.erase(it);
-      return true;
-    }
-  }
-  return false;
-}
-
-
-bool RteAttributes::ClearAttributes()
-{
-  if (m_attributes.empty())
-    return false;
-  m_attributes.clear();
-  ProcessAttributes();
-  return true;
-}
-
 
 string RteAttributes::GetAttributePrefix(const char* name, char delimiter) const
 {
@@ -466,71 +240,6 @@ string RteAttributes::GetFullDeviceName() const
 
   return fullDeviceName;
 }
-
-bool RteAttributes::IsReadAccess()
-{
-  if (HasAttribute("id")) {
-    return true;
-  }
-  const string& access = GetAccess();
-  return access.empty() || access.find('r') != string::npos;
-}
-
-bool RteAttributes::IsWriteAccess()
-{
-  const string& id = GetAttribute("id");
-  if (!id.empty()) {
-    return id.find("IRAM") == 0;
-  }
-  const string& access = GetAccess();
-  return access.find('w') != string::npos;
-}
-
-bool RteAttributes::IsExecuteAccess()
-{
-  const string& id = GetAttribute("id");
-  if (!id.empty()) {
-    return id.find("IROM") == 0;
-  }
-  const string& access = GetAccess();
-  return access.find('x') != string::npos;
-}
-
-bool RteAttributes::IsSecureAccess()
-{
-  if (HasAttribute("id")) {
-    return true;
-  }
-  const string& access = GetAccess();
-  return access.find('s') != string::npos && access.find('n') == string::npos;
-}
-bool RteAttributes::IsNonSecureAccess()
-{
-  if (HasAttribute("id")) {
-    return false;
-  }
-  const string& access = GetAccess();
-  return access.find('n') != string::npos && access.find('s') == string::npos;
-}
-
-bool RteAttributes::IsCallableAccess()
-{
-  if (HasAttribute("id")) {
-    return false;
-  }
-  const string& access = GetAccess();
-  return access.find('c') != string::npos;
-}
-
-bool RteAttributes::IsPeripheralAccess()
-{
-  if (HasAttribute("id")) {
-    return false;
-  }
-  const string& access = GetAccess();
-  return access.find('p') != string::npos;
-}
-
 
 
 string RteAttributes::GetProjectGroupName() const

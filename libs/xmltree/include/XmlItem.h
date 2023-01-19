@@ -26,32 +26,58 @@ public:
   /**
    * @brief default constructor
   */
-  XmlItem() :m_lineNumber(0) {};
+  XmlItem() noexcept :m_lineNumber(0) {};
 
   /**
-   * @brief constructor
+   * @brief copy constructor, uses default implementation
+  */
+  XmlItem(const XmlItem&) = default;
+
+  /**
+   * @brief assignment operator, uses default implementation
+  */
+  XmlItem& operator=(const XmlItem&) = default;
+
+  /**
+   * @brief move assignment operator, uses default implementation
+  */
+  XmlItem& operator=(XmlItem&&) noexcept = default;
+
+  /**
+   * @brief parametrized constructor
    * @param tag XML tag
   */
   XmlItem(const std::string& tag) : m_tag(tag), m_lineNumber(0) {};
 
   /**
-   * @brief destructor
+   * @brief parametrized constructor to instantiate with given attributes
+   * @param attributes collection as key to value pairs
+  */
+  XmlItem(const std::map<std::string, std::string>& attributes) : m_attributes(attributes), m_lineNumber(0) {};
+
+  /**
+   * @brief virtual destructor
   */
   virtual ~XmlItem() {};
 
   /**
-   * @brief remove all attributes of the instance
+   * @brief clears the item, default removes all attributes of the instance
   */
   virtual void Clear();
 
   /**
-   * @brief called to construct a XML node with attributes and child elements. Default does nothing.
+   * @brief clear all attributes of the instance
   */
-  virtual void Construct() {};
+  virtual void ClearAttributes();
+
+  /**
+   * @brief called to construct the item with attributes and child elements. Default does nothing.
+  */
+  virtual void Construct() {/* default does nothing */};
 
   /**
    * @brief check if XML element is empty, i.e. if text and attributes list are empty
-   * @return
+   * @return true if empty
   */
   virtual bool IsEmpty() { return m_text.empty() && m_attributes.empty(); }
 
@@ -68,6 +94,13 @@ public:
   void SetTag(const std::string& tag) { m_tag = tag; }
 
   /**
+  * @brief return item's name
+  * @return item name, default returns "name" attribute if exists, otherwise item's tag
+ */
+  virtual const std::string& GetName() const;
+
+
+  /**
    * @brief getter for tag text
    * @return string containing tag text
   */
@@ -75,28 +108,69 @@ public:
 
   /**
    * @brief setter for tag text
-   * @param text text be set
+   * @param text string to set as item's text
   */
   void SetText(const std::string& text) { m_text = text; }
 
   /**
-   * @brief getter for list of attribute name mapped to attribute value
-   * @return list of attribute name mapped to attribute value
+   * @brief return collection of attributes as a key-value pairs
+   * @return map of name to value pairs
   */
   const std::map<std::string, std::string>& GetAttributes() const { return m_attributes; }
 
   /**
-   * @brief setter for list of attribute name mapped to its value
-   * @param attributes list of attribute name mapped to its value
-  */
-  void SetAttributes(const std::map<std::string, std::string>& attributes) { m_attributes = attributes; }
+  * @brief add missing attributes, optionally replace existing
+  * @param attributes map of name to value pairs to add
+  * @param replaceExisting true to replace existing attributes
+  * @return true if any attribute is set or changed
+ */
+  bool AddAttributes(const std::map<std::string, std::string>& attributes, bool replaceExisting);
 
   /**
-   * @brief add an attribute to the instance
+   * @brief add a single attribute to the item
    * @param name attribute name
    * @param value attribute value
+   * @param insertEmpty true to insert, false to remove if attribute exists but is empty
+   * @return true if attribute is inserted/removed/changed
   */
-  void AddAttribute(const std::string& name, const std::string& value);
+  bool AddAttribute(const std::string& name, const std::string& value, bool insertEmpty = true);
+
+  /**
+   * @brief add new attribute
+   * @param name attribute name
+   * @param value attribute value
+   * @return true if attribute is added
+  */
+  bool SetAttribute(const char* name, const char* value);
+  /**
+   * @brief add new attribute
+   * @param name attribute name
+   * @param value attribute value
+   * @param radix transformation radix
+   * @return true if attribute is added
+  */
+  bool SetAttribute(const char* name, long value, int radix = 10);
+
+  /**
+   * @brief set all attributes replacing existing ones
+   * @param attributes collection as key to value pairs
+   * @return true if any attribute collection has changed
+  */
+  bool SetAttributes(const std::map<std::string, std::string>& attributes);
+
+  /**
+   * @brief replace instance attributes with the given ones
+   * @param attributes given instance of XmlItem
+   * @return true if attributes are set
+  */
+  bool SetAttributes(const XmlItem &attributes);
+
+  /**
+   * @brief remove attribute
+   * @param name attribute name
+   * @return true if attribute is removed
+  */
+  bool RemoveAttribute(const char* name);
 
   /**
    * @brief remove the given attribute from the instance
@@ -139,7 +213,7 @@ public:
    * @param defaultValue value to be returned if attribute does not exist
    * @return true if attribute value is equal to "1" or "true", otherwise false
   */
-  bool      GetAttributeAsBool(const char* name, bool defaultValue = false) const;
+  bool GetAttributeAsBool(const char* name, bool defaultValue = false) const;
 
   /**
    * @brief getter for attribute value as integer
@@ -147,7 +221,7 @@ public:
    * @param defaultValue returned value in case attribute does not exist or its value is empty
    * @return attribute value as integer
   */
-  int       GetAttributeAsInt(const char* name, int defaultValue = -1) const;
+  int  GetAttributeAsInt(const char* name, int defaultValue = -1) const;
 
   /**
    * @brief getter for attribute value as unsigned long
@@ -155,7 +229,7 @@ public:
    * @param defaultValue value to be returned if attribute does not exist or its value is empty
    * @return attribute value as unsigned long
   */
-  unsigned  GetAttributeAsUnsigned(const char* name, unsigned defaultValue = 0) const;
+  unsigned GetAttributeAsUnsigned(const char* name, unsigned defaultValue = 0) const;
 
   /**
    * @brief getter for attribute value as unsigned long long
@@ -171,7 +245,7 @@ public:
    * @param defaultValue value to be returned if attribute does not exist
    * @return true if attribute value is equal to "1" or "true", otherwise false
   */
-  bool      GetAttributeAsBool(const std::string& name, bool defaultValue = false) const;
+  bool GetAttributeAsBool(const std::string& name, bool defaultValue = false) const;
 
   /**
    * @brief getter for attribute value as integer
@@ -179,7 +253,7 @@ public:
    * @param defaultValue returned value in case attribute does not exist or its value is empty
    * @return attribute value as integer
   */
-  int       GetAttributeAsInt(const std::string& name, int defaultValue = -1) const;
+  int  GetAttributeAsInt(const std::string& name, int defaultValue = -1) const;
 
   /**
    * @brief getter for attribute value as unsigned long
@@ -202,14 +276,14 @@ public:
    * @param defaultValue value to be returned if text is empty
    * @return tag text as boolean
   */
-  bool      GetTextAsBool(bool defaultValue = false) const;
+  bool  GetTextAsBool(bool defaultValue = false) const;
 
   /**
    * @brief getter for tag text as integer
    * @param defaultValue value to be returned if text is empty
    * @return tag text as integer
   */
-  int       GetTextAsInt(int defaultValue = -1) const;
+  int  GetTextAsInt(int defaultValue = -1) const;
 
   /**
    * @brief getter for tag text as unsigned long
@@ -270,7 +344,7 @@ public:
    * @param defaultValue value to be returned if given string is empty
    * @return true if given string is equal to "1" or "true"
   */
-  static bool      StringToBool(const std::string& value, bool defaultValue = false);
+  static bool StringToBool(const std::string& value, bool defaultValue = false);
 
   /**
    * @brief convert string to integer
@@ -278,7 +352,7 @@ public:
    * @param defaultValue value to be returned in case of empty string or conversion error
    * @return converted integer value
   */
-  static int       StringToInt(const std::string& value, int defaultValue = -1);
+  static int StringToInt(const std::string& value, int defaultValue = -1);
 
   /**
    * @brief convert string to unsigned integer
@@ -286,7 +360,7 @@ public:
    * @param defaultValue value to be returned in case of empty string or conversion error
    * @return converted unsigned integer value
   */
-  static unsigned  StringToUnsigned(const std::string& value, unsigned defaultValue = 0);
+  static unsigned StringToUnsigned(const std::string& value, unsigned defaultValue = 0);
 
   /**
    * @brief convert string to unsigned long long
@@ -326,6 +400,54 @@ public:
   */
   void SetLineNumber(int lineNumber) { m_lineNumber = lineNumber; }
 
+  /**
+  * @brief get number of attributes
+  * @return number of attributes as int
+ */
+  size_t GetAttributeCount() const { return m_attributes.size(); }
+  /**
+   * @brief check if attribute collection is empty
+   * @return true if attribute collection is empty
+  */
+  bool IsEmpty() const { return m_attributes.empty(); }
+
+  /**
+ * @brief check if all given attributes exist in the instance
+ * @param attributes given list of attributes
+ * @return true if all given attributes exist in the instance
+*/
+  virtual bool EqualAttributes(const std::map<std::string, std::string>& attributes) const;
+  /**
+   * @brief check if all attributes of the given instance exist in this instance
+   * @param other given instance of XmlItem
+   * @return true if all attributes of the given instance exist in this instance
+  */
+  virtual bool EqualAttributes(const XmlItem& other) const;
+  /**
+   * @brief check if all attributes of the given instance exist in this instance
+   * @param other pointer to given instance of XmlItem
+   * @return true if all attributes of the given instance exist in this instance
+  */
+  virtual bool EqualAttributes(const XmlItem* other) const;
+
+  /**
+  * @brief concatenate instance attributes
+  * @parem quote insert quotes around value strings
+  * @return string containing all attributes
+ */
+  std::string GetAttributesString(bool quote = false) const;
+  /**
+   * @brief concatenate attributes in a string conformed to XML syntax
+   * @return XML string containing attributes
+  */
+  std::string GetAttributesAsXmlString() const;
+
+protected:
+  /**
+   * @brief perform changes in internal data after calls to SetAttributes(), AddAttributes() and ClearAttributes()
+  */
+  virtual void ProcessAttributes() {/* default does nothing */};
+
 protected:
   std::string m_tag;  // item tag
   std::string m_text; // item text
@@ -335,7 +457,6 @@ protected:
 
 public:
   static const std::string EMPTY_STRING;
-
 };
 
 #endif // XmlItem_H

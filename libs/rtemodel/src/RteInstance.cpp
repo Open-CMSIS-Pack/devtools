@@ -156,9 +156,9 @@ void RteInstanceTargetInfo::CopySettings(const RteInstanceTargetInfo& other)
   SetVersionMatchMode(other.GetVersionMatchMode());
   SetExcluded(other.IsExcluded());
   SetIncludeInLib(other.IsIncludeInLib());
-  m_memOpt = other.GetMemOpt();
-  m_cOpt = other.GetCOpt();
-  m_asmOpt = other.GetAsmOpt();
+  m_memOpt.SetAttributes(other.GetMemOpt());
+  m_cOpt.SetAttributes(other.GetCOpt());
+  m_asmOpt.SetAttributes(other.GetAsmOpt());
 }
 
 
@@ -488,7 +488,7 @@ string RteItemInstance::GetPackageID(bool withVersion) const
   if (IsPackageInfo())
     return RteAttributes::GetPackageID(withVersion);
 
-  return m_packageAttributes.GetPackageID(withVersion);
+  return RteAttributes::GetPackageIDfromAttributes(m_packageAttributes, withVersion);
 }
 
 const string& RteItemInstance::GetURL() const
