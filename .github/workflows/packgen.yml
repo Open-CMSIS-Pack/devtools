@@ -158,11 +158,6 @@ jobs:
           ctest -C Debug -R PackGenUnitTests
         working-directory: ./build
 
-      - name: Determine retention days
-        if: (github.event_name == 'push' && !github.event.repository.private)
-        run: |
-          echo "retention_days=7" >> $GITHUB_ENV
-
       - name: Archive unit tests results
         if: ${{ always() }}
         uses: actions/upload-artifact@v3
@@ -209,6 +204,20 @@ jobs:
           ctest -V -C Debug -R PackGenUnitTests
         working-directory: ./build
 
+      - name: Get retention days
+        id: var
+        run: |
+          echo "retention_days=$(echo '${{ (!github.event.repository.private && (github.event_name == 'push' || github.event.schedule != '')) && '7' || '1' }}')" >> $GITHUB_OUTPUT
+
+      - name: Archive unit tests results
+        if: (github.event_name == 'push')
+        uses: actions/upload-artifact@v3
+        with:
+          name: unit_test_result-linux64-amd64
+          path: ./build/test_reports/packgenunittests-*.xml
+          retention-days: ${{ steps.var.outputs.retention_days }}
+          if-no-files-found: error
+
       # Needs to be removed once the bug is resolved
       # lcov reporting 1.14 on 1.15 version
       # https://groups.google.com/g/linux.debian.bugs.dist/c/a9SZGCENJ2s?pli=1
@@ -238,11 +247,6 @@ jobs:
           attempt_limit: 3
           attempt_delay: 5000
 
-      - name: Get retention days
-        id: var
-        run: |
-          echo "cov_retention_days=$(echo '${{ (!github.event.repository.private && (github.event_name == 'push' || github.event.schedule != '')) && '7' || '1' }}')" >> $GITHUB_OUTPUT
-
       - name: Archive coverage report
         uses: actions/upload-artifact@v3
         with:
@@ -250,7 +254,7 @@ jobs:
           path: |
             ./build/tools/packgen/coverage_packgen/
             ./build/tools/packgen/coverage_packgen.info
-          retention-days: ${{ steps.vars.outputs.cov_retention_days }}
+          retention-days: ${{ steps.var.outputs.retention_days }}
           if-no-files-found: error
 
   test-results-preparation:

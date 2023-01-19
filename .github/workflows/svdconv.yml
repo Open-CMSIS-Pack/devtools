@@ -130,7 +130,6 @@ jobs:
           retention-days: ${{ needs.setup.outputs.retention_days }}
 
   coverage:
-    needs: setup
     if: |
         (github.event_name == 'pull_request') ||
         (github.event_name == 'push') ||
@@ -177,6 +176,29 @@ jobs:
           ctest -V -C Debug -R SvdConvIntegTests
         working-directory: ./build
 
+      - name: Get retention days
+        id: var
+        run: |
+          echo "retention_days=$(echo '${{ (!github.event.repository.private && (github.event_name == 'push' || github.event.schedule != '')) && '7' || '1' }}')" >> $GITHUB_OUTPUT
+
+      - name: Archive unit test results
+        if: (github.event_name == 'push')
+        uses: actions/upload-artifact@v3
+        with:
+          name: unit_test_report-linux64-amd64
+          path: ./build/test_reports/svdconvunittests-*.xml
+          if-no-files-found: error
+          retention-days: ${{ steps.var.outputs.retention_days }}
+
+      - name: Archive integration test results
+        if: (github.event_name == 'push')
+        uses: actions/upload-artifact@v3
+        with:
+          name: integ_test_report-linux64-amd64
+          path: ./build/test_reports/svdconvintegtests-*.xml
+          if-no-files-found: error
+          retention-days: ${{ steps.var.outputs.retention_days }}
+
       # Needs to be removed once the bug is resolved
       # lcov reporting 1.14 on 1.15 version
       # https://groups.google.com/g/linux.debian.bugs.dist/c/a9SZGCENJ2s?pli=1
@@ -213,11 +235,6 @@ jobs:
           attempt_limit: 3
           attempt_delay: 5000
 
-      - name: Get retention days
-        id: var
-        run: |
-          echo "cov_retention_days=$(echo '${{ (!github.event.repository.private && (github.event_name == 'push' || github.event.schedule != '')) && '7' || '1' }}')" >> $GITHUB_OUTPUT
-
       - name: Archive coverage report
         uses: actions/upload-artifact@v3
         with:
@@ -225,7 +242,7 @@ jobs:
           path: |
             ./build/tools/svdconv/coverage_svdconv/
             ./build/tools/svdconv/coverage_svdconv.info
-          retention-days: ${{ steps.vars.outputs.cov_retention_days }}
+          retention-days: ${{ steps.var.outputs.retention_days }}
           if-no-files-found: error
 
   release:

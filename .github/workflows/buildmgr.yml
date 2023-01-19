@@ -498,10 +498,33 @@ jobs:
         run: |
           cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCOVERAGE=ON ..
           cmake --build . --target CbuildUnitTests
-          ./tools/buildmgr/test/unittests/linux64/Debug/CbuildUnitTests --gtest_output=xml:cbuildunittests-linux64.xml
+          ./tools/buildmgr/test/unittests/linux64/Debug/CbuildUnitTests --gtest_output=xml:test_reports/cbuildunittests-report-linux64-amd64.xml
           cmake --build . --target CbuildIntegTests
-          ./tools/buildmgr/test/integrationtests/linux64/Debug/CbuildIntegTests --gtest_filter=-*AC5*:*AC6*:*MultiTargetAC6Tests*:*DebPkgTests*:*InstallerTests* --gtest_output=xml:cbuildintegtests-linux64.xml
+          ./tools/buildmgr/test/integrationtests/linux64/Debug/CbuildIntegTests --gtest_filter=-*AC5*:*AC6*:*MultiTargetAC6Tests*:*DebPkgTests*:*InstallerTests* --gtest_output=xml:test_reports/cbuildintegtests-report-linux64-amd64.xml
         working-directory: build
+
+      - name: Get retention days
+        id: var
+        run: |
+          echo "retention_days=$(echo '${{ (!github.event.repository.private && (github.event_name == 'push' || github.event.schedule != '')) && '7' || '1' }}')" >> $GITHUB_OUTPUT
+
+      - name: Archive unittest
+        if: (github.event_name == 'push')
+        uses: actions/upload-artifact@v3
+        with:
+          name: unit_test_result-linux64-amd64
+          path: ./build/test_reports/cbuildunittests-*.xml
+          retention-days: ${{ steps.var.outputs.retention_days }}
+          if-no-files-found: error
+
+      - name: Archive Cbuild Integration Tests
+        if: (github.event_name == 'push')
+        uses: actions/upload-artifact@v3
+        with:
+          name: integ_test_result-linux64-amd64
+          path: ./build/test_reports/cbuildintegtests-*.xml
+          retention-days: ${{ steps.var.outputs.retention_days }}
+          if-no-files-found: error
 
       # Needs to be removed once the bug is resolved
       # lcov reporting 1.14 on 1.15 version
@@ -532,11 +555,6 @@ jobs:
           attempt_limit: 3
           attempt_delay: 5000
 
-      - name: Get retention days
-        id: var
-        run: |
-          echo "cov_retention_days=$(echo '${{ (!github.event.repository.private && (github.event_name == 'push' || github.event.schedule != '')) && '7' || '1' }}')" >> $GITHUB_OUTPUT
-
       - name: Archive coverage report
         uses: actions/upload-artifact@v3
         with:
@@ -544,7 +562,7 @@ jobs:
           path: |
             ./build/tools/buildmgr/coverage_buildmgr/
             ./build/tools/buildmgr/coverage_buildmgr.info
-          retention-days: ${{ steps.vars.outputs.cov_retention_days }}
+          retention-days: ${{ steps.var.outputs.retention_days }}
           if-no-files-found: error
 
   sanity-check-native:
