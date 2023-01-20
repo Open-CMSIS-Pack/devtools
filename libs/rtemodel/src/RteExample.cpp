@@ -22,7 +22,8 @@
 using namespace std;
 
 RteExample::RteExample(RteItem* parent) :
-  RteItem(parent)
+  RteItem(parent),
+  m_board(nullptr)
 {
 }
 
@@ -37,10 +38,8 @@ void RteExample::Clear()
 {
   m_keywords.clear();
   m_categories.clear();
-  for (auto it = m_componentAttributes.begin(); it != m_componentAttributes.end(); it++) {
-    delete *it;
-  }
   m_componentAttributes.clear();
+  m_board = nullptr;
   RteItem::Clear();
 }
 
@@ -106,15 +105,17 @@ string RteExample::ConstructID()
   string id = GetPackageID(false);
   id += "::";
   id += GetName();
-  string vendor = DeviceVendor::GetCanonicalVendorName(m_board.GetAttribute("vendor"));
-  if (!vendor.empty()) {
-    id += ".";
-    id += vendor;
-  }
-  const string& board = m_board.GetAttribute("name");
-  if (!board.empty()) {
-    id += ".";
-    id += board;
+  if (m_board) {
+    string vendor = DeviceVendor::GetCanonicalVendorName(m_board->GetAttribute("vendor"));
+    if (!vendor.empty()) {
+      id += ".";
+      id += vendor;
+    }
+    const string& board = m_board->GetAttribute("name");
+    if (!board.empty()) {
+      id += ".";
+      id += board;
+    }
   }
   return id;
 };
@@ -125,7 +126,15 @@ bool RteExample::ProcessXmlElement(XMLTreeElement* xmlElement)
 {
   const string& tag = xmlElement->GetTag();
   if (tag == "board") {
-    m_board.SetAttributes(xmlElement->GetAttributes());
+    m_board = new RteItem(this);
+    if (m_board->Construct(xmlElement)) {
+      AddItem(m_board);
+      return true;
+    } else {
+      delete m_board;
+      m_board = nullptr;
+      return false;
+    }
     return true;
   } else if (tag == "attributes") {
     return ProcessXmlChildren(xmlElement);
@@ -138,9 +147,15 @@ bool RteExample::ProcessXmlElement(XMLTreeElement* xmlElement)
       m_categories.insert(xmlElement->GetText());
     return true;
   } else if (tag == "component") { // child element of "attributes"
-    RteAttributes* ca = new RteAttributes(xmlElement->GetAttributes());
-    m_componentAttributes.push_back(ca);
-    return true;
+    RteItem* ca = new RteItem(this);
+    if (ca->Construct(xmlElement)) {
+      AddItem(ca);
+      m_componentAttributes.push_back(ca);
+      return true;
+    } else {
+      delete ca;
+      return false;
+    }
   } else if (tag == "project") {
     return ProcessXmlChildren(xmlElement);
   } else if (tag == "environment") { // child elements of "project"
@@ -160,7 +175,7 @@ bool RteExample::ProcessXmlElement(XMLTreeElement* xmlElement)
 
 bool RteExample::HasKeyword(const string& keyword) const
 {
-  if (m_board.HasValue(keyword))
+  if (m_board &&  m_board->HasValue(keyword))
     return true;
 
   // search keywords

@@ -1,13 +1,14 @@
 /******************************************************************************/
 /*
  * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
- * 
+ *
  * SPDX-License-Identifier: Apache-2.0
  */
 /******************************************************************************/
 
 #include "XmlItem.h"
 
+#include <sstream>
 using namespace std;
 
 const string XmlItem::EMPTY_STRING("");
@@ -17,11 +18,96 @@ void XmlItem::Clear()
   m_attributes.clear();
 }
 
-void XmlItem::AddAttribute(const string& name, const string& value)
+void XmlItem::ClearAttributes()
 {
-  if (!name.empty()) {
+  if (!m_attributes.empty()) {
+    m_attributes.clear();
+    ProcessAttributes();
+  }
+}
+
+bool XmlItem::AddAttributes(const map<string, string>& attributes, bool replaceExisting)
+{
+  if (attributes.empty())
+    return false;
+  bool bChanged = false;
+  if (m_attributes.empty()) {
+    bChanged = true;
+    SetAttributes(attributes);
+  } else {
+    for (auto it = attributes.begin(); it != attributes.end(); it++) {
+      if (replaceExisting || !HasAttribute(it->first)) {
+        if (AddAttribute(it->first, it->second))
+          bChanged = true;
+      }
+    }
+  }
+  if (bChanged) {
+    ProcessAttributes();
+  }
+  return bChanged;
+}
+
+bool XmlItem::AddAttribute(const string& name, const string& value, bool insertEmpty)
+{
+  if (name.empty())
+    return false;
+  map<string, string>::iterator it = m_attributes.find(name);
+  if (it != m_attributes.end()) {
+    if (it->second == value)
+      return false;
+    if (!insertEmpty && value.empty()) {
+      m_attributes.erase(it);
+      return true;
+    }
+  }
+  if (insertEmpty || !value.empty())
+    m_attributes[name] = value;
+  return true;
+}
+
+bool XmlItem::SetAttribute(const char* name, const char* value)
+{
+  if (!name)
+    return false;
+  map<string, string>::iterator it = m_attributes.find(name);
+  if (it != m_attributes.end()) {
+    if (value && it->second == value)
+      return false;
+    m_attributes.erase(it);
+  }
+  if (value) {
     m_attributes[name] = value;
   }
+  return true;
+}
+
+bool XmlItem::SetAttribute(const char* name, long value, int radix)
+{
+  ostringstream ss;
+  if (radix == 16) {
+    ss << showbase << hex;
+  }
+  ss << value;
+  const string s = ss.str();
+  const char* c = s.c_str();
+  return SetAttribute(name, c);
+}
+
+bool XmlItem::SetAttributes(const map<string, string>& attributes)
+{
+  if (m_attributes == attributes)
+    return false;
+
+  m_attributes = attributes;
+  ProcessAttributes();
+  return true;
+}
+
+
+bool XmlItem::SetAttributes(const XmlItem& attributes)
+{
+  return SetAttributes(attributes.GetAttributes());
 }
 
 bool XmlItem::RemoveAttribute(const std::string& name)
@@ -33,6 +119,15 @@ bool XmlItem::RemoveAttribute(const std::string& name)
   }
   return false;
 }
+
+bool XmlItem::RemoveAttribute(const char* name)
+{
+  if (name) {
+    return RemoveAttribute(string(name));
+  }
+  return false;
+}
+
 
 const string& XmlItem::GetAttribute(const char* name) const
 {
@@ -59,6 +154,14 @@ bool XmlItem::HasAttribute(const char* name) const
 bool XmlItem::HasAttribute(const std::string& name) const
 {
   return m_attributes.find(name) != m_attributes.end();
+}
+
+const string& XmlItem::GetName() const
+{
+  const string& name = GetAttribute("name");
+  if (!name.empty())
+    return name;
+  return m_tag;
 }
 
 
@@ -130,6 +233,65 @@ unsigned long long XmlItem::GetTextAsULL(unsigned long long defaultValue) const
   return StringToULL(GetText(), defaultValue);
 }
 
+string XmlItem::GetAttributesString(bool quote) const
+{
+  string s;
+  map<string, string>::const_iterator it;
+  for (it = m_attributes.begin(); it != m_attributes.end(); it++) {
+    if (!s.empty())
+      s += " ";
+    s += it->first;
+    s += "=";
+    if (quote) {
+      s += "\"";
+    }
+    s += it->second;
+    if (quote) {
+      s += "\"";
+    }
+  }
+  return s;
+}
+
+string XmlItem::GetAttributesAsXmlString() const
+{
+  return GetAttributesString(true);
+}
+
+bool XmlItem::EqualAttributes(const map<string, string>& attributes) const
+{
+  // all supplied attributes must exist in this ones
+  map<string, string>::const_iterator itm, ita;
+  for (ita = attributes.begin(); ita != attributes.end(); ita++) {
+    const string& a = ita->first;
+    const string& v = ita->second;
+    itm = m_attributes.find(a);
+    if (itm != m_attributes.end()) {
+      const string& va = itm->second;
+      if (va != v)
+        return false;
+    } else {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool XmlItem::EqualAttributes(const XmlItem& other) const
+{
+  if (GetAttributeCount() != other.GetAttributeCount())
+    return false;
+  return EqualAttributes(other.GetAttributes());
+}
+
+bool XmlItem::EqualAttributes(const XmlItem* other) const
+{
+  if (!other || GetAttributeCount() != other->GetAttributeCount())
+    return false;
+  return EqualAttributes(other->GetAttributes());
+}
+
+
 bool XmlItem::StringToBool(const std::string& value, bool defaultValue)
 {
   if (value.empty())
@@ -149,7 +311,7 @@ int XmlItem::StringToInt(const std::string& value, int defaultValue)
   }
 }
 
-unsigned  XmlItem::StringToUnsigned(const std::string& value, unsigned defaultValue)
+unsigned XmlItem::StringToUnsigned(const std::string& value, unsigned defaultValue)
 {
   if (value.empty())
     return defaultValue;

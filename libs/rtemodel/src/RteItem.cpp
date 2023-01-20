@@ -27,8 +27,7 @@ using namespace std;
 
 RteItem::RteItem(RteItem* parent) :
   m_parent(parent),
-  m_bValid(false),
-  m_lineNumber(0)
+  m_bValid(false)
 {
 }
 
@@ -359,6 +358,71 @@ string RteItem::GetDocFile() const
   }
   return EMPTY_STRING;
 }
+
+bool RteItem::IsReadAccess()
+{
+  if (HasAttribute("id")) {
+    return true;
+  }
+  const string& access = GetAccess();
+  return access.empty() || access.find('r') != string::npos;
+}
+
+bool RteItem::IsWriteAccess()
+{
+  const string& id = GetAttribute("id");
+  if (!id.empty()) {
+    return id.find("IRAM") == 0;
+  }
+  const string& access = GetAccess();
+  return access.find('w') != string::npos;
+}
+
+bool RteItem::IsExecuteAccess()
+{
+  const string& id = GetAttribute("id");
+  if (!id.empty()) {
+    return id.find("IROM") == 0;
+  }
+  const string& access = GetAccess();
+  return access.find('x') != string::npos;
+}
+
+bool RteItem::IsSecureAccess()
+{
+  if (HasAttribute("id")) {
+    return true;
+  }
+  const string& access = GetAccess();
+  return access.find('s') != string::npos && access.find('n') == string::npos;
+}
+bool RteItem::IsNonSecureAccess()
+{
+  if (HasAttribute("id")) {
+    return false;
+  }
+  const string& access = GetAccess();
+  return access.find('n') != string::npos && access.find('s') == string::npos;
+}
+
+bool RteItem::IsCallableAccess()
+{
+  if (HasAttribute("id")) {
+    return false;
+  }
+  const string& access = GetAccess();
+  return access.find('c') != string::npos;
+}
+
+bool RteItem::IsPeripheralAccess()
+{
+  if (HasAttribute("id")) {
+    return false;
+  }
+  const string& access = GetAccess();
+  return access.find('p') != string::npos;
+}
+
 
 string RteItem::GetOriginalAbsolutePath() const
 {

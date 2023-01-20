@@ -1,5 +1,11 @@
 SET(TEST_SOURCE_FILES src/RteModelTest.cpp src/RteExampleTest.cpp
- src/RteModelTestConfig.h src/RteModelTestConfig.cpp)
+ src/RteModelTestConfig.h src/RteModelTestConfig.cpp src/RteChk.cpp src/RteChkTest.cpp )
+
+ SET(RTE_CHK_HEADER_FILES src/RteChk.h)
+ SET(RTE_CHK_SOURCE_FILES src/RteChk.cpp src/RteChkMain.cpp)
+ add_executable(RteChk ${RTE_CHK_SOURCE_FILES} ${RTE_CHK_HEADER_FILES})
+ target_link_libraries(RteChk PUBLIC
+  ErrLog RteModel RteFsUtils RteUtils XmlReader XmlTree XmlTreeSlim)
 
 add_definitions(-DGLOBAL_TEST_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../../../test")
 

@@ -45,14 +45,32 @@ public:
   const std::set<std::string>& GetCategories() const { return m_categories; }
   /**
    * @brief get information about board for which the example is created
-   * @return board information as about RteAttributes
+   * @return board information as RteAttributes
   */
-  const RteAttributes& GetBoardInfo() const { return m_board; }
+  const RteAttributes& GetBoardInfo() const { return m_board ? *m_board : EMPTY_ATTRIBUTES;}
+
+  /**
+   * @brief get information about board for which the example is created
+   * @return board information as RteItem pointer
+  */
+  const RteItem* GetBoardInfoItem() const { return m_board; }
+
+  /**
+   * @brief get board name for which the example is created
+   * @return board name
+  */
+  const std::string& GetBoardName() const { return m_board ? m_board->GetAttribute("name") : EMPTY_STRING; }
+
+  /**
+     * @brief get board vendor name for which the example is created
+     * @return board vendor name
+    */
+  const std::string& GetBoardVendor() const { return m_board ? m_board->GetAttribute("vendor") : EMPTY_STRING; }
 
 public:
   /**
    * @brief check if example meta-data contain the specified keyword
-   * @param keyword keyword string to search for
+   * @param keyword string to search for in the collection of keywords
    * @return true if found
   */
   bool HasKeyword(const std::string& keyword) const;
@@ -132,10 +150,10 @@ protected:
   */
   virtual bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
 
-  RteAttributes m_board; // development board the example refers to
+  RteItem* m_board; // development board the example refers to
   std::set<std::string> m_keywords; // example keywords
   std::set<std::string> m_categories; // example categories
-  std::list<RteAttributes*> m_componentAttributes; // component attributes of a component this example refers
+  std::list<RteItem*> m_componentAttributes; // component attributes of a component this example refers
   // Note: RteItem::m_children contain project files for different environments
 };
 /**

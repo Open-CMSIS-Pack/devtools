@@ -68,7 +68,7 @@ void RteDeviceElement::GetEffectiveAttributes(RteAttributes& attributes) const
 {
   // fill in own attributes
   attributes.AddAttributes(m_attributes, false);
-  // get parent atributes
+  // get parent attributes
   RteDeviceElement* parent = GetDeviceElementParent();
   if (parent)
     parent->GetEffectiveAttributes(attributes);
