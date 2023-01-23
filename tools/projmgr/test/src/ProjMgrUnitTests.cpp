@@ -627,14 +627,14 @@ TEST_F(ProjMgrUnitTests, ListLayersAll) {
   EXPECT_EQ(0, RunProjMgr(3, argv));
 
   const string& expected = "\
-.*/ARM/RteTest_DFP/0.2.0/Layers/board1.clayer.yml \\(Board\\)\n\
-.*/ARM/RteTest_DFP/0.2.0/Layers/board2.clayer.yml \\(Board\\)\n\
-.*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml \\(Board\\)\n\
-.*/ARM/RteTest_DFP/0.2.0/Layers/config1.clayer.yml \\(Config1\\)\n\
-.*/ARM/RteTest_DFP/0.2.0/Layers/config2.clayer.yml \\(Config2\\)\n\
-.*/ARM/RteTest_DFP/0.2.0/Layers/incompatible.clayer.yml \\(Incompatible\\)\n\
-.*/ARM/RteTest_DFP/0.2.0/Layers/pdsc-type-mismatch.clayer.yml \\(PdscType\\)\n\
-.*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml \\(TestVariant\\)\n\
+.*/ARM/RteTest_DFP/0.2.0/Layers/board1.clayer.yml \\(layer type: Board\\)\n\
+.*/ARM/RteTest_DFP/0.2.0/Layers/board2.clayer.yml \\(layer type: Board\\)\n\
+.*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml \\(layer type: Board\\)\n\
+.*/ARM/RteTest_DFP/0.2.0/Layers/config1.clayer.yml \\(layer type: Config1\\)\n\
+.*/ARM/RteTest_DFP/0.2.0/Layers/config2.clayer.yml \\(layer type: Config2\\)\n\
+.*/ARM/RteTest_DFP/0.2.0/Layers/incompatible.clayer.yml \\(layer type: Incompatible\\)\n\
+.*/ARM/RteTest_DFP/0.2.0/Layers/pdsc-type-mismatch.clayer.yml \\(layer type: PdscType\\)\n\
+.*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml \\(layer type: TestVariant\\)\n\
 ";
 
   const string& outStr = streamRedirect.GetOutString();
@@ -643,7 +643,7 @@ TEST_F(ProjMgrUnitTests, ListLayersAll) {
 
 TEST_F(ProjMgrUnitTests, ListLayersCompatible) {
   StdStreamRedirect streamRedirect;
-  char* argv[7];
+  char* argv[8];
   const string& csolution = testinput_folder + "/TestLayers/genericlayers.csolution.yml";
   const string& context = "genericlayers.CompatibleLayers+AnyBoard";
   argv[1] = (char*)"list";
@@ -652,71 +652,70 @@ TEST_F(ProjMgrUnitTests, ListLayersCompatible) {
   argv[4] = (char*)csolution.c_str();
   argv[5] = (char*)"-c";
   argv[6] = (char*)context.c_str();
-  EXPECT_EQ(0, RunProjMgr(7, argv));
+  argv[7] = (char*)"-v";
+  EXPECT_EQ(0, RunProjMgr(8, argv));
 
   const string& expectedErrStr = "\
-debug csolution: validating connections for context 'genericlayers.CompatibleLayers\\+AnyBoard'\n\
-debug csolution: validating combined connections:\n\
+debug csolution: check for context 'genericlayers.CompatibleLayers\\+AnyBoard'\n\
+\n\
+check combined connections:\n\
   .*/TestLayers/genericlayers.cproject.yml\n\
     \\(Project Connections\\)\n\
-  .*/ARM/RteTest_DFP/0.2.0/Layers/board1.clayer.yml\n\
+  .*/ARM/RteTest_DFP/0.2.0/Layers/board1.clayer.yml \\(layer type: Board\\)\n\
     \\(Board1 Connections\\)\n\
-  .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml\n\
+  .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml \\(layer type: TestVariant\\)\n\
     \\(Test variant Connections\\)\n\
-debug csolution: connections are valid\n\
-debug csolution: validating combined connections:\n\
+connections are valid\n\
+\n\
+check combined connections:\n\
   .*/TestLayers/genericlayers.cproject.yml\n\
     \\(Project Connections\\)\n\
-  .*/ARM/RteTest_DFP/0.2.0/Layers/board2.clayer.yml\n\
+  .*/ARM/RteTest_DFP/0.2.0/Layers/board2.clayer.yml \\(layer type: Board\\)\n\
     \\(Board2 Connections\\)\n\
-  .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml\n\
+  .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml \\(layer type: TestVariant\\)\n\
     \\(Test variant Connections\\)\n\
-debug csolution: connections are valid\n\
-debug csolution: validating combined connections:\n\
+connections are valid\n\
+\n\
+check combined connections:\n\
   .*/TestLayers/genericlayers.cproject.yml\n\
     \\(Project Connections\\)\n\
-  .*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml\n\
+  .*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml \\(layer type: Board\\)\n\
     \\(Board3 Connections\\)\n\
-  .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml\n\
+  .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml \\(layer type: TestVariant\\)\n\
     \\(Test variant Connections\\)\n\
-debug csolution: connections are valid\n\
-debug csolution: multiple clayers match type 'Board':\n\
+connections are valid\n\
+\n\
+multiple clayers match type 'Board':\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/board1.clayer.yml\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/board2.clayer.yml\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml\n\
-debug csolution: clayer of type 'TestVariant' was uniquely found:\n\
+\n\
+clayer of type 'TestVariant' was uniquely found:\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml\n\
-debug csolution: configuration match #1:\n\
-  .*/TestLayers/genericlayers.cproject.yml\n\
-    \\(Project Connections\\)\n\
-  Board: .*/ARM/RteTest_DFP/0.2.0/Layers/board1.clayer.yml\n\
-    \\(Board1 Connections\\)\n\
-  TestVariant: .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml\n\
-    \\(Test variant Connections\\)\n\
-debug csolution: configuration match #2:\n\
-  .*/TestLayers/genericlayers.cproject.yml\n\
-    \\(Project Connections\\)\n\
-  Board: .*/ARM/RteTest_DFP/0.2.0/Layers/board2.clayer.yml\n\
-    \\(Board2 Connections\\)\n\
-  TestVariant: .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml\n\
-    \\(Test variant Connections\\)\n\
-debug csolution: configuration match #3:\n\
-  .*/TestLayers/genericlayers.cproject.yml\n\
-    \\(Project Connections\\)\n\
-  Board: .*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml\n\
-    \\(Board3 Connections\\)\n\
-  TestVariant: .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml\n\
-    \\(Test variant Connections\\)\n\
+\n\
 ";
 
   const string& errStr = streamRedirect.GetErrorString();
   EXPECT_TRUE(regex_match(errStr, regex(expectedErrStr)));
 
   const string& expectedOutStr = "\
-.*/ARM/RteTest_DFP/0.2.0/Layers/board1.clayer.yml \\(Board\\)\n\
-.*/ARM/RteTest_DFP/0.2.0/Layers/board2.clayer.yml \\(Board\\)\n\
-.*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml \\(Board\\)\n\
-.*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml \\(TestVariant\\)\n\
+info csolution: valid for context 'genericlayers.CompatibleLayers\\+AnyBoard'\n\
+\n\
+valid configuration #1:\n\
+  .*/TestLayers/genericlayers.cproject.yml\n\
+  .*/ARM/RteTest_DFP/0.2.0/Layers/board1.clayer.yml \\(layer type: Board\\)\n\
+  .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml \\(layer type: TestVariant\\)\n\
+\n\
+valid configuration #2:\n\
+  .*/TestLayers/genericlayers.cproject.yml\n\
+  .*/ARM/RteTest_DFP/0.2.0/Layers/board2.clayer.yml \\(layer type: Board\\)\n\
+  .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml \\(layer type: TestVariant\\)\n\
+\n\
+valid configuration #3:\n\
+  .*/TestLayers/genericlayers.cproject.yml\n\
+  .*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml \\(layer type: Board\\)\n\
+  .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml \\(layer type: TestVariant\\)\n\
+\n\
 ";
 
   const string& outStr = streamRedirect.GetOutString();
@@ -733,39 +732,35 @@ TEST_F(ProjMgrUnitTests, ListLayersConfigurations) {
   argv[4] = (char*)csolution.c_str();
   EXPECT_EQ(0, RunProjMgr(5, argv));
 
-  const string& expectedErrStr = ".*\n\
-debug csolution: configuration match #1:\n\
+  const string& expectedOutStr = "\
+info csolution: valid for context 'config.CompatibleLayers\\+RteTest_ARMCM3'\n\
+\n\
+valid configuration #1:\n\
   .*/TestLayers/config.clayer.yml\n\
     set: set1.select1 \\(set 1 select 1 - connect R\\)\n\
-    \\(test connect common T\\)\n\
-    \\(test connect common U\\)\n\
   .*/TestLayers/config.cproject.yml\n\
     set: set1.select1 \\(set 1 select 1 - project X\\)\n\
-  Config1: .*/ARM/RteTest_DFP/0.2.0/Layers/config1.clayer.yml\n\
+  .*/ARM/RteTest_DFP/0.2.0/Layers/config1.clayer.yml \\(layer type: Config1\\)\n\
     set: set1.select1 \\(set 1 select 1 - connect A\\)\n\
     set: set2.select1 \\(set 2 select 1 - connect C\\)\n\
-    \\(test connect common E\\)\n\
-  Config2: .*/ARM/RteTest_DFP/0.2.0/Layers/config2.clayer.yml\n\
+  .*/ARM/RteTest_DFP/0.2.0/Layers/config2.clayer.yml \\(layer type: Config2\\)\n\
     set: set1.select1 \\(set 1 select 1 - connect F\\)\n\
-    \\(test connect common H\\)\n\
-debug csolution: configuration match #2:\n\
+\n\
+valid configuration #2:\n\
   .*/TestLayers/config.clayer.yml\n\
     set: set1.select2 \\(set 1 select 2 - connect S\\)\n\
-    \\(test connect common T\\)\n\
-    \\(test connect common U\\)\n\
   .*/TestLayers/config.cproject.yml\n\
     set: set1.select2 \\(set 1 select 2 - project Y\\)\n\
-  Config1: .*/ARM/RteTest_DFP/0.2.0/Layers/config1.clayer.yml\n\
+  .*/ARM/RteTest_DFP/0.2.0/Layers/config1.clayer.yml \\(layer type: Config1\\)\n\
     set: set1.select2 \\(set 1 select 2 - connect B\\)\n\
     set: set2.select2 \\(set 2 select 2 - connect D\\)\n\
-    \\(test connect common E\\)\n\
-  Config2: .*/ARM/RteTest_DFP/0.2.0/Layers/config2.clayer.yml\n\
+  .*/ARM/RteTest_DFP/0.2.0/Layers/config2.clayer.yml \\(layer type: Config2\\)\n\
     set: set1.select2 \\(set 1 select 2 - connect G\\)\n\
-    \\(test connect common H\\)\n\
+\n\
 ";
 
-  const string& errStr = streamRedirect.GetErrorString();
-  EXPECT_TRUE(regex_search(errStr, regex(expectedErrStr)));
+  const string& outStr = streamRedirect.GetOutString();
+  EXPECT_TRUE(regex_match(outStr, regex(expectedOutStr)));
 }
 
 TEST_F(ProjMgrUnitTests, ListLayersMultipleSelect) {
@@ -778,32 +773,34 @@ TEST_F(ProjMgrUnitTests, ListLayersMultipleSelect) {
   argv[4] = (char*)csolution.c_str();
   EXPECT_EQ(0, RunProjMgr(5, argv));
 
-  const string& expectedErrStr = ".*\n\
-debug csolution: configuration match #1:\n\
+  const string& expectedOutStr = "\
+info csolution: valid for context 'select\\+RteTest_ARMCM3'\n\
+\n\
+valid configuration #1:\n\
   .*/TestLayers/select.clayer.yml\n\
-    \\(provided connections\\)\n\
   .*/TestLayers/select.cproject.yml\n\
     set: set1.select1 \\(set 1 select 1 - project X\\)\n\
-debug csolution: configuration match #2:\n\
+\n\
+valid configuration #2:\n\
   .*/TestLayers/select.clayer.yml\n\
-    \\(provided connections\\)\n\
   .*/TestLayers/select.cproject.yml\n\
     set: set1.select2 \\(set 1 select 2 - project Y\\)\n\
-debug csolution: configuration match #3:\n\
+\n\
+valid configuration #3:\n\
   .*/TestLayers/select.clayer.yml\n\
-    \\(provided connections\\)\n\
   .*/TestLayers/select.cproject.yml\n\
     set: set1.select2 \\(set 1 select 2 - project Y\\)\n\
     set: set1.select2 \\(set 1 select 2 - project Z\\)\n\
-debug csolution: configuration match #4:\n\
+\n\
+valid configuration #4:\n\
   .*/TestLayers/select.clayer.yml\n\
-    \\(provided connections\\)\n\
   .*/TestLayers/select.cproject.yml\n\
     set: set1.select2 \\(set 1 select 2 - project Z\\)\n\
+\n\
 ";
 
-  const string& errStr = streamRedirect.GetErrorString();
-  EXPECT_TRUE(regex_search(errStr, regex(expectedErrStr)));
+  const string& outStr = streamRedirect.GetOutString();
+  EXPECT_TRUE(regex_match(outStr, regex(expectedOutStr)));
 }
 
 TEST_F(ProjMgrUnitTests, ListToolchains) {
@@ -840,7 +837,7 @@ TEST_F(ProjMgrUnitTests, ListToolchainsSolution) {
 
 TEST_F(ProjMgrUnitTests, ListLayersUniquelyCompatibleBoard) {
   StdStreamRedirect streamRedirect;
-  char* argv[7];
+  char* argv[8];
   const string& csolution = testinput_folder + "/TestLayers/genericlayers.csolution.yml";
   const string& context = "genericlayers.CompatibleLayers+Board3";
   argv[1] = (char*)"list";
@@ -849,37 +846,40 @@ TEST_F(ProjMgrUnitTests, ListLayersUniquelyCompatibleBoard) {
   argv[4] = (char*)csolution.c_str();
   argv[5] = (char*)"-c";
   argv[6] = (char*)context.c_str();
-  EXPECT_EQ(0, RunProjMgr(7, argv));
+  argv[7] = (char*)"-v";
+  EXPECT_EQ(0, RunProjMgr(8, argv));
 
   const string& expectedErrStr = "\
-debug csolution: validating connections for context 'genericlayers.CompatibleLayers\\+Board3'\n\
-debug csolution: validating combined connections:\n\
+debug csolution: check for context 'genericlayers.CompatibleLayers\\+Board3'\n\
+\n\
+check combined connections:\n\
   .*/TestLayers/genericlayers.cproject.yml\n\
     \\(Project Connections\\)\n\
-  Board: .*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml\n\
+  .*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml \\(layer type: Board\\)\n\
     \\(Board3 Connections\\)\n\
-  TestVariant: .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml\n\
+  .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml \\(layer type: TestVariant\\)\n\
     \\(Test variant Connections\\)\n\
-debug csolution: connections are valid\n\
-debug csolution: clayer of type 'Board' was uniquely found:\n\
+connections are valid\n\
+\n\
+clayer of type 'Board' was uniquely found:\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml\n\
-debug csolution: clayer of type 'TestVariant' was uniquely found:\n\
+\n\
+clayer of type 'TestVariant' was uniquely found:\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml\n\
-debug csolution: configuration match #1:\n\
-  .*/TestLayers/genericlayers.cproject.yml\n\
-    \\(Project Connections\\)\n\
-  Board: .*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml\n\
-    \\(Board3 Connections\\)\n\
-  TestVariant: .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml\n\
-    \\(Test variant Connections\\)\n\
+\n\
 ";
 
   const string& errStr = streamRedirect.GetErrorString();
   EXPECT_TRUE(regex_match(errStr, regex(expectedErrStr)));
 
   const string& expectedOutStr = "\
-.*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml \\(Board\\)\n\
-.*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml \\(TestVariant\\)\n\
+info csolution: valid for context 'genericlayers.CompatibleLayers\\+Board3'\n\
+\n\
+valid configuration #1:\n\
+  .*/TestLayers/genericlayers.cproject.yml\n\
+  .*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml \\(layer type: Board\\)\n\
+  .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml \\(layer type: TestVariant\\)\n\
+\n\
 ";
 
   const string& outStr = streamRedirect.GetOutString();
@@ -888,7 +888,7 @@ debug csolution: configuration match #1:\n\
 
 TEST_F(ProjMgrUnitTests, ListLayersIncompatible) {
   StdStreamRedirect streamRedirect;
-  char* argv[7];
+  char* argv[8];
   const string& csolution = testinput_folder + "/TestLayers/genericlayers.csolution.yml";
   const string& context = "genericlayers.IncompatibleLayers+AnyBoard";
   argv[1] = (char*)"list";
@@ -897,64 +897,70 @@ TEST_F(ProjMgrUnitTests, ListLayersIncompatible) {
   argv[4] = (char*)csolution.c_str();
   argv[5] = (char*)"-c";
   argv[6] = (char*)context.c_str();
-  EXPECT_EQ(1, RunProjMgr(7, argv));
+  argv[7] = (char*)"-v";
+  EXPECT_EQ(1, RunProjMgr(8, argv));
 
   const string& expected = "\
-debug csolution: validating connections for context 'genericlayers.IncompatibleLayers\\+AnyBoard'\n\
-debug csolution: no clayer matches type 'UnknownType'\n\
-debug csolution: clayer type 'DifferentFromDescriptionInPdsc' does not match type 'PdscType' in pack description\n\
-debug csolution: validating combined connections:\n\
+debug csolution: check for context 'genericlayers.IncompatibleLayers\\+AnyBoard'\n\
+no clayer matches type 'UnknownType'\n\
+clayer type 'DifferentFromDescriptionInPdsc' does not match type 'PdscType' in pack description\n\
+\n\
+check combined connections:\n\
   .*/TestLayers/genericlayers.cproject.yml\n\
     \\(Project Connections\\)\n\
-  Board: .*/ARM/RteTest_DFP/0.2.0/Layers/board1.clayer.yml\n\
+  .*/ARM/RteTest_DFP/0.2.0/Layers/board1.clayer.yml \\(layer type: Board\\)\n\
     \\(Board1 Connections\\)\n\
-  Incompatible: .*/ARM/RteTest_DFP/0.2.0/Layers/incompatible.clayer.yml\n\
+  .*/ARM/RteTest_DFP/0.2.0/Layers/incompatible.clayer.yml \\(layer type: Incompatible\\)\n\
     \\(Incompatible Connections\\)\n\
-  DifferentFromDescriptionInPdsc: .*/ARM/RteTest_DFP/0.2.0/Layers/pdsc-type-mismatch.clayer.yml\n\
-debug csolution: connections provided with multiple different values:\n\
+  .*/ARM/RteTest_DFP/0.2.0/Layers/pdsc-type-mismatch.clayer.yml \\(layer type: DifferentFromDescriptionInPdsc\\)\n\
+connections provided with multiple different values:\n\
   MultipleProvidedNonIdentical0\n\
   MultipleProvidedNonIdentical1\n\
-debug csolution: required connections not provided:\n\
+required connections not provided:\n\
   ProvidedDontMatch: -1\n\
   ProvidedEmpty: 123\n\
-debug csolution: sum of required values exceed provided:\n\
+sum of required values exceed provided:\n\
   AddedValueHigherThanProvided: 100 > 99\n\
-debug csolution: connections are invalid\n\
-debug csolution: validating combined connections:\n\
+connections are invalid\n\
+\n\
+check combined connections:\n\
   .*/TestLayers/genericlayers.cproject.yml\n\
     \\(Project Connections\\)\n\
-  Board: .*/ARM/RteTest_DFP/0.2.0/Layers/board2.clayer.yml\n\
+  .*/ARM/RteTest_DFP/0.2.0/Layers/board2.clayer.yml \\(layer type: Board\\)\n\
     \\(Board2 Connections\\)\n\
-  Incompatible: .*/ARM/RteTest_DFP/0.2.0/Layers/incompatible.clayer.yml\n\
+  .*/ARM/RteTest_DFP/0.2.0/Layers/incompatible.clayer.yml \\(layer type: Incompatible\\)\n\
     \\(Incompatible Connections\\)\n\
-  DifferentFromDescriptionInPdsc: .*/ARM/RteTest_DFP/0.2.0/Layers/pdsc-type-mismatch.clayer.yml\n\
-debug csolution: connections provided with multiple different values:\n\
+  .*/ARM/RteTest_DFP/0.2.0/Layers/pdsc-type-mismatch.clayer.yml \\(layer type: DifferentFromDescriptionInPdsc\\)\n\
+connections provided with multiple different values:\n\
   MultipleProvidedNonIdentical0\n\
   MultipleProvidedNonIdentical1\n\
-debug csolution: required connections not provided:\n\
+required connections not provided:\n\
   ProvidedDontMatch: -1\n\
   ProvidedEmpty: 123\n\
-debug csolution: sum of required values exceed provided:\n\
+sum of required values exceed provided:\n\
   AddedValueHigherThanProvided: 100 > 99\n\
-debug csolution: connections are invalid\n\
-debug csolution: validating combined connections:\n\
+connections are invalid\n\
+\n\
+check combined connections:\n\
   .*/TestLayers/genericlayers.cproject.yml\n\
     \\(Project Connections\\)\n\
-  Board: .*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml\n\
+  .*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml \\(layer type: Board\\)\n\
     \\(Board3 Connections\\)\n\
-  Incompatible: .*/ARM/RteTest_DFP/0.2.0/Layers/incompatible.clayer.yml\n\
+  .*/ARM/RteTest_DFP/0.2.0/Layers/incompatible.clayer.yml \\(layer type: Incompatible\\)\n\
     \\(Incompatible Connections\\)\n\
-  DifferentFromDescriptionInPdsc: .*/ARM/RteTest_DFP/0.2.0/Layers/pdsc-type-mismatch.clayer.yml\n\
-debug csolution: connections provided with multiple different values:\n\
+  .*/ARM/RteTest_DFP/0.2.0/Layers/pdsc-type-mismatch.clayer.yml \\(layer type: DifferentFromDescriptionInPdsc\\)\n\
+connections provided with multiple different values:\n\
   MultipleProvidedNonIdentical0\n\
   MultipleProvidedNonIdentical1\n\
-debug csolution: required connections not provided:\n\
+required connections not provided:\n\
   ProvidedDontMatch: -1\n\
   ProvidedEmpty: 123\n\
-debug csolution: sum of required values exceed provided:\n\
+sum of required values exceed provided:\n\
   AddedValueHigherThanProvided: 100 > 99\n\
-debug csolution: connections are invalid\n\
-debug csolution: no valid combination of clayers was found\n\
+connections are invalid\n\
+\n\
+no valid combination of clayers was found\n\
+\n\
 ";
 
   const string& errStr = streamRedirect.GetErrorString();
@@ -991,7 +997,7 @@ TEST_F(ProjMgrUnitTests, ListLayersAllContexts) {
 
 TEST_F(ProjMgrUnitTests, ListLayersSearchPath) {
   StdStreamRedirect streamRedirect;
-  char* argv[7];
+  char* argv[8];
   const string& csolution = testinput_folder + "/TestLayers/searchpath.csolution.yml";
   const string& clayerSearchPath = testcmsispack_folder;
   argv[1] = (char*)"list";
@@ -1000,12 +1006,13 @@ TEST_F(ProjMgrUnitTests, ListLayersSearchPath) {
   argv[4] = (char*)csolution.c_str();
   argv[5] = (char*)"--clayer-path";
   argv[6] = (char*)clayerSearchPath.c_str();
-  EXPECT_EQ(1, RunProjMgr(7, argv));
+  argv[7] = (char*)"-v";
+  EXPECT_EQ(1, RunProjMgr(8, argv));
 
   const string& expectedErrStr = ".*\
-debug csolution: validating combined connections:\
+check combined connections:\
   .*/TestLayers/searchpath.cproject.yml.*\
-  TestVariant: .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml.*\
+  .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml \\(layer type: TestVariant\\).*\
 ";
 
   string errStr = streamRedirect.GetErrorString();
@@ -1054,7 +1061,7 @@ TEST_F(ProjMgrUnitTests, LayerVariablesRedefinition) {
 }
 
 TEST_F(ProjMgrUnitTests, LayerVariablesNotDefined) {
-  char* argv[7];
+  char* argv[8];
   StdStreamRedirect streamRedirect;
   // convert -s solution.yml
   const string& csolution = testinput_folder + "/TestLayers/variables-notdefined.csolution.yml";
@@ -1064,14 +1071,15 @@ TEST_F(ProjMgrUnitTests, LayerVariablesNotDefined) {
   argv[4] = (char*)csolution.c_str();
   argv[5] = (char*)"-o";
   argv[6] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(1, RunProjMgr(7, argv));
+  argv[7] = (char*)"-v";
+  EXPECT_EQ(1, RunProjMgr(8, argv));
 
   const string& expectedErrStr = ".*\
 \\$NotDefined\\$ - warning csolution: variable was not defined.*\
-  Board: .*/ARM/RteTest_DFP/0.2.0/Layers/board1.clayer.yml.*\
-  Board: .*/ARM/RteTest_DFP/0.2.0/Layers/board2.clayer.yml.*\
-  Board: .*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml.*\
-debug csolution: no valid combination of clayers was found\
+  .*/ARM/RteTest_DFP/0.2.0/Layers/board1.clayer.yml \\(layer type: Board\\).*\
+  .*/ARM/RteTest_DFP/0.2.0/Layers/board2.clayer.yml \\(layer type: Board\\).*\
+  .*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml \\(layer type: Board\\).*\
+no valid combination of clayers was found\
 ";
 
   string errStr = streamRedirect.GetErrorString();
