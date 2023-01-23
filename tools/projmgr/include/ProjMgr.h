@@ -103,6 +103,7 @@ protected:
   bool m_checkSchema;
   bool m_missingPacks;
   bool m_updateRteFiles;
+  bool m_verbose;
   GroupNode m_files;
 
   bool RunConvert(void);

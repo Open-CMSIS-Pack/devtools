@@ -425,6 +425,12 @@ public:
   void SetCheckSchema(bool checkSchema);
 
   /**
+   * @brief set verbose mode
+   * @param boolean verbose
+  */
+  void SetVerbose(bool verbose);
+
+  /**
    * @brief set load packs policy
    * @param reference to load packs policy
   */
@@ -482,6 +488,7 @@ protected:
   std::string m_compilerRoot;
   LoadPacksPolicy m_loadPacksPolicy;
   bool m_checkSchema;
+  bool m_verbose;
 
   bool LoadPacks(ContextItem& context);
   bool GetRequiredPdscFiles(ContextItem& context, const std::string& packRoot, std::set<std::string>& errMsgs);
@@ -533,7 +540,7 @@ protected:
   std::vector<PackageItem> GetFilteredPacks(const PackageItem& packItem, const std::string& rtePath) const;
   ToolchainItem GetToolchain(const std::string& compiler);
   bool IsPreIncludeByTarget(const RteTarget* activeTarget, const std::string& preInclude);
-  void PrintConnectionsValidation(ConnectionsValidationResult result);
+  void PrintConnectionsValidation(ConnectionsValidationResult result, std::string& msg);
   bool CollectLayersFromPacks(ContextItem& context, StrVecMap& clayers);
   bool CollectLayersFromSearchPath(const std::string& clayerSearchPath, StrVecMap& clayers);
   bool DiscoverMatchingLayers(ContextItem& context, const std::string& clayerSearchPath);
