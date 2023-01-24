@@ -10,6 +10,8 @@ on:
       - '.github/matrix_includes_packchk.json'
       - 'CMakeLists.txt'
       - 'tools/packchk/**'
+      - 'libs/xml**'
+      - 'libs/rte**'
       - '!**/*.md'
   pull_request:
     paths:
@@ -18,6 +20,8 @@ on:
       - '.github/matrix_includes_packchk.json'
       - 'CMakeLists.txt'
       - 'tools/packchk/**'
+      - 'libs/xml**'
+      - 'libs/rte**'
       - '!**/*.md'
   release:
     types: [published]
