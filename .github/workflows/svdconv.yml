@@ -10,6 +10,7 @@ on:
       - '.github/matrix_includes_svdconv.json'
       - 'CMakeLists.txt'
       - 'tools/svdconv/**'
+      - 'libs/xml**'
   pull_request:
     paths:
       - '.github/workflows/svdconv.yml'
@@ -17,6 +18,7 @@ on:
       - '.github/matrix_includes_svdconv.json'
       - 'CMakeLists.txt'
       - 'tools/svdconv/**'
+      - 'libs/xml**'
   release:
     types: [published]
 
