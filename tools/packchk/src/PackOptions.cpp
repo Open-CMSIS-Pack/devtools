@@ -283,20 +283,18 @@ const string CPackOptions::GetHeader()
 */
 string CPackOptions::GetCurrentDateTime()
 {
-  string text;
+  time_t result = time(nullptr);
+  const char* timeAsc = asctime(std::localtime(&result));
+  string timeText { "<unknown>" };
+  if(timeAsc) {
+    timeText = timeAsc;
 
-  char buffer[128] = { "0000-00-00" };
-
-  time_t rawtime;
-  time(&rawtime);
-  struct tm* timeinfo = localtime(&rawtime);
-  if(timeinfo) {
-    strftime(buffer, sizeof(buffer), "%A %Y-%m-%d %H:%M:%S (%z)", timeinfo);   // https://de.wikipedia.org/wiki/ISO_8601
+    if(*timeText.rbegin() == '\n') {
+      timeText.pop_back();    // erase '\n'
+    }
   }
 
-  text = buffer;
-
-  return text;
+  return timeText;
 }
 
 /**

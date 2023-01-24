@@ -77,27 +77,27 @@ bool SvdCExpression::LinkSymbols(SvdItem* item, const SvdCExpressionParser::Toke
 
   auto& regList = device->GetExpressionRegistersList();
 
-  for(auto& symbol : m_symbolsList) {
-    switch(symbol.token.type) {
+  for(auto& foundSymbol : m_symbolsList) {
+    switch(foundSymbol.token.type) {
       case SvdCExpressionParser::xme_identi: {
         SvdItem* from = 0;
         string lastSearchName;
-        item->GetDeriveItem(from, symbol.searchname, L_UNDEF, lastSearchName);
+        item->GetDeriveItem(from, foundSymbol.searchname, L_UNDEF, lastSearchName);
         if(!from) {
           LogMsg("M244", NAME(lastSearchName), MSG(errText), lineNo);
           return false;
         }
-        symbol.svdItem = from;
+        foundSymbol.svdItem = from;
 
-        string name = symbol.svdItem->GetHierarchicalNameResulting();
+        string name = foundSymbol.svdItem->GetHierarchicalNameResulting();
         if(!name.empty()) {
-          if(symbol.svdItem->GetSvdLevel() == L_Register) {
-            regList[name] = symbol.svdItem;
+          if(foundSymbol.svdItem->GetSvdLevel() == L_Register) {
+            regList[name] = foundSymbol.svdItem;
           }
-          else if(symbol.svdItem->GetSvdLevel() == L_Field) {
-            SvdItem* item = symbol.svdItem->GetParent()->GetParent();
+          else if(foundSymbol.svdItem->GetSvdLevel() == L_Field) {
+            SvdItem* symbolItem = foundSymbol.svdItem->GetParent()->GetParent();
             if(item) {
-              regList[name] = item;
+              regList[name] = symbolItem;
             }
           }
           else {

@@ -103,6 +103,8 @@ SvdPeripheral::~SvdPeripheral()
   for(const auto interrupt : m_interrupt) {
     delete interrupt;
   }
+
+  delete m_disableCondition;
 }
 
 bool SvdPeripheral::Construct(XMLTreeElement* xmlElement)
@@ -232,7 +234,7 @@ bool SvdPeripheral::ProcessXmlElement(XMLTreeElement* xmlElement)
   return SvdItem::ProcessXmlElement(xmlElement);
 }
 
-bool SvdPeripheral::ProcessXmlAttributes(XMLTreeElement* xmlElement) 
+bool SvdPeripheral::ProcessXmlAttributes(XMLTreeElement* xmlElement)
 {
   return SvdItem::ProcessXmlAttributes(xmlElement);
 }
@@ -248,22 +250,22 @@ SvdRegisterContainer* SvdPeripheral::GetRegisterContainer() const
   return cont;
 }
 
-list<SvdAddressBlock*>& SvdPeripheral::GetAddressBlock() 
+list<SvdAddressBlock*>& SvdPeripheral::GetAddressBlock()
 {
   return m_addressBlock;
 }
 
-list<SvdInterrupt*>& SvdPeripheral::GetInterrupt() 
+list<SvdInterrupt*>& SvdPeripheral::GetInterrupt()
 {
   return m_interrupt;
 }
 
-void SvdPeripheral::AddAddressBlock (SvdAddressBlock* addrBlock) 
+void SvdPeripheral::AddAddressBlock (SvdAddressBlock* addrBlock)
 {
   m_addressBlock.push_back(addrBlock);
 }
 
-void SvdPeripheral::AddInterrupt (SvdInterrupt* interrupt) 
+void SvdPeripheral::AddInterrupt (SvdInterrupt* interrupt)
 {
   m_interrupt.push_back(interrupt);
 }
@@ -886,7 +888,7 @@ bool SvdPeripheral::CheckRegisterAddress(SvdRegister* reg, const list<SvdAddress
 
       addrBlkText += "Offs: ";
       if(offs != SvdItem::VALUE32_NOT_INIT) {
-        addrBlkText += SvdUtils::CreateHexNum(offs, 4); 
+        addrBlkText += SvdUtils::CreateHexNum(offs, 4);
       }
       else {
         addrBlkText += " ---  ";
@@ -894,7 +896,7 @@ bool SvdPeripheral::CheckRegisterAddress(SvdRegister* reg, const list<SvdAddress
 
       addrBlkText += ", Size: ";
       if(size != SvdItem::VALUE32_NOT_INIT) {
-        addrBlkText += SvdUtils::CreateHexNum(size, 4); 
+        addrBlkText += SvdUtils::CreateHexNum(size, 4);
       }
       else {
         addrBlkText += " ---  ";

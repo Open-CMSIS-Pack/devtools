@@ -60,18 +60,18 @@ SvdElement::~SvdElement()
 {
 }
 
-bool SvdElement::SetName(const string &name) 
+bool SvdElement::SetName(const string &name)
 {
   m_name = name;
   return true;
 }
 
-const string &SvdElement::GetName() 
+const string &SvdElement::GetName()
 {
   return m_name;
 }
 
-bool SvdElement::SetTag(const string &tag) 
+bool SvdElement::SetTag(const string &tag)
 {
   m_tag = tag;
   return true;
@@ -126,13 +126,13 @@ SvdItem::~SvdItem()
   ClearChildren();
 }
 
-bool SvdItem::SetDescription(const string &descr) 
+bool SvdItem::SetDescription(const string &descr)
 {
   m_description = descr;
   return true;
 }
 
-const string &SvdItem::GetDescription() 
+const string &SvdItem::GetDescription()
 {
   return m_description;
 }
@@ -336,7 +336,7 @@ bool SvdItem::Validate()
 	return IsValid();
 }
 
-void SvdItem::AddItem(SvdItem* item) 
+void SvdItem::AddItem(SvdItem* item)
 {
   if(!item) {
     return;
@@ -409,7 +409,7 @@ string SvdItem::GetDisplayNameCalculated(bool bDataCheck /*= false*/)
     if(!dispName.empty()) {
       return dispName;
     }
-  } 
+  }
   else {
     const auto& dispName = GetDisplayName();
     if(!dispName.empty()) {
@@ -462,34 +462,34 @@ string SvdItem::GetDeriveName()
   return deriveName;
 }
 
-bool SvdItem::SetDisplayName(const string &name) 
+bool SvdItem::SetDisplayName(const string &name)
 {
   m_displayName = name;
 
   return true;
 }
 
-const string &SvdItem::GetDisplayName() 
+const string &SvdItem::GetDisplayName()
 {
   return m_displayName;
 }
 
-const string& SvdItem::GetAlternate() 
+const string& SvdItem::GetAlternate()
 {
   return GetParent()->GetAlternate();
 }
 
-const string& SvdItem::GetPrependToName() 
+const string& SvdItem::GetPrependToName()
 {
   return GetParent()->GetPrependToName();
 }
 
-const string& SvdItem::GetAppendToName() 
+const string& SvdItem::GetAppendToName()
 {
   return GetParent()->GetAppendToName();
 }
 
-const string& SvdItem::GetHeaderDefinitionsPrefix() 
+const string& SvdItem::GetHeaderDefinitionsPrefix()
 {
   return GetParent()->GetHeaderDefinitionsPrefix();
 }
@@ -612,26 +612,26 @@ const string& SvdItem::GetPeripheralName()
   return SvdUtils::EMPTY_STRING;
 }
 
-bool SvdItem::SetDerivedFrom(SvdDerivedFrom *derivedFrom) 
+bool SvdItem::SetDerivedFrom(SvdDerivedFrom *derivedFrom)
 {
   m_derivedFrom = derivedFrom;
 
   return true;
 }
 
-SvdDerivedFrom* SvdItem::GetDerivedFrom() 
+SvdDerivedFrom* SvdItem::GetDerivedFrom()
 {
   return m_derivedFrom;
 }
 
-bool SvdItem::SetDimension(SvdDimension *dimension) 
+bool SvdItem::SetDimension(SvdDimension *dimension)
 {
   m_dimension = dimension;
 
   return true;
 }
 
-SvdDimension* SvdItem::GetDimension() 
+SvdDimension* SvdItem::GetDimension()
 {
   return m_dimension;
 }
@@ -947,7 +947,7 @@ bool SvdItem::CopyChilds(SvdItem *from, SvdItem *hook)
         nItem = new SvdFieldContainer(hook);
         hook->AddItem(nItem);
         nItem->CopyItem(copy);
-      } 
+      }
       else {
         nItem = (SvdFieldContainer *)*(hook->GetChildren().begin());
       }
@@ -959,7 +959,7 @@ bool SvdItem::CopyChilds(SvdItem *from, SvdItem *hook)
         nItem = new SvdRegisterContainer(hook);
         hook->AddItem(nItem);
         nItem->CopyItem(copy);
-      } 
+      }
       else {
         nItem = (SvdRegisterContainer *)*(hook->GetChildren().begin());
       }
@@ -1150,12 +1150,12 @@ SvdTypes::ProtectionType SvdItem::GetEffectiveProtection()
   return SvdTypes::ProtectionType::UNDEF;    // default, if UNDEF, then do not generate information (SFD, ...);
 }
 
-const string& SvdItem::GetSvdLevelStr(SVD_LEVEL level) 
+const string& SvdItem::GetSvdLevelStr(SVD_LEVEL level)
 {
   return m_svdLevelStr[level];
 }
 
-const string& SvdItem::GetSvdLevelStr() 
+const string& SvdItem::GetSvdLevelStr()
 {
   return m_svdLevelStr[GetSvdLevel()];
 }
@@ -1185,6 +1185,7 @@ bool SvdItem::CheckItem()
     if(IsNameRequired()) {
       const auto dim = GetDimension();
       if(svdLevel != L_Peripheral && dim && dim->GetExpression()->GetType() == SvdTypes::Expression::EXTEND) {
+        ;
       }
       else {
         LogMsg("M316", LEVEL(svdLevelStr), lineNo);

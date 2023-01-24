@@ -145,32 +145,32 @@ const map <SvdTypes::CpuType, CpuTypeFeature> SvdTypes::cpuTypeName = {
 };
 
 
-const string& SvdTypes::GetExpressionType(Expression expr) 
+const string& SvdTypes::GetExpressionType(Expression expr)
 {
   return expression_str[(uint32_t)expr];
 }
 
-const string& SvdTypes::GetAccessType(Access acc) 
+const string& SvdTypes::GetAccessType(Access acc)
 {
   return access_str[(uint32_t)acc];
 }
 
-const string& SvdTypes::GetAccessTypeSfd(Access acc) 
+const string& SvdTypes::GetAccessTypeSfd(Access acc)
 {
   return accessSfd_str[(uint32_t)acc];
 }
 
-const string& SvdTypes::GetAccessTypeIo(Access acc) 
+const string& SvdTypes::GetAccessTypeIo(Access acc)
 {
   return access_ioTypes_str[(uint32_t)acc];
 }
 
-const string& SvdTypes::GetUsage(AddrBlockUsage usage) 
+const string& SvdTypes::GetUsage(AddrBlockUsage usage)
 {
   return addrBlockUsage_str[(uint32_t)usage];
 }
 
-const string& SvdTypes::GetCpuType(CpuType  cpuType) 
+const string& SvdTypes::GetCpuType(CpuType  cpuType)
 {
   auto it = cpuTypeName.find(cpuType);
   if(it != cpuTypeName.end()) {
@@ -180,7 +180,7 @@ const string& SvdTypes::GetCpuType(CpuType  cpuType)
   return SvdUtils::EMPTY_STRING;
 }
 
-const string& SvdTypes::GetCpuName(CpuType  cpuType) 
+const string& SvdTypes::GetCpuName(CpuType  cpuType)
 {
   auto it = cpuTypeName.find(cpuType);
   if(it != cpuTypeName.end()) {
@@ -190,7 +190,7 @@ const string& SvdTypes::GetCpuName(CpuType  cpuType)
   return SvdUtils::EMPTY_STRING;
 }
 
-const string& SvdTypes::GetCpuEndian(Endian endian) 
+const string& SvdTypes::GetCpuEndian(Endian endian)
 {
   return endian_str[(uint32_t)endian];
 }
@@ -225,7 +225,7 @@ const string& SvdTypes::GetCortexMInterruptDescription(SvdTypes::CpuIrqNum num)
   return SvdUtils::EMPTY_STRING;
 }
 
-const bool SvdTypes::GetCortexMInterruptAvailable(CpuType cpuType, SvdTypes::CpuIrqNum num)
+bool SvdTypes::GetCortexMInterruptAvailable(CpuType cpuType, SvdTypes::CpuIrqNum num)
 {
   auto it = cpuTypeName.find(cpuType);
   if(it != cpuTypeName.end()) {
@@ -235,7 +235,7 @@ const bool SvdTypes::GetCortexMInterruptAvailable(CpuType cpuType, SvdTypes::Cpu
   return false;
 }
 
-const bool SvdTypes::GetCortexMInterrupt(CpuType cpuType, SvdTypes::CpuIrqNum num, string &name, string &descr) 
+bool SvdTypes::GetCortexMInterrupt(CpuType cpuType, SvdTypes::CpuIrqNum num, string &name, string &descr)
 {
   if(!GetCortexMInterruptAvailable(cpuType, num)) {
     name  = GetCortexMInterruptName(SvdTypes::CpuIrqNum::IRQ_RESERVED);
@@ -255,7 +255,7 @@ const string& SvdTypes::GetEnumUsage(EnumUsage enumUsage)
   return enumUsage_str[(uint32_t)enumUsage];
 }
 
-const CpuFeature& SvdTypes::GetCpuFeatures(CpuType cpuType) 
+const CpuFeature& SvdTypes::GetCpuFeatures(CpuType cpuType)
 {
   auto it = cpuTypeName.find(cpuType);
   if(it != cpuTypeName.end()) {

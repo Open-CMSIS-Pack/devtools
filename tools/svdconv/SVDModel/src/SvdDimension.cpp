@@ -125,23 +125,26 @@ bool SvdDimension::Construct(XMLTreeElement* xmlElement)
   SetLineNumber(xmlElement->GetLineNumber());
 
   if(GetTag().empty()) {
-    string tag { "Dim data: " };
+    string thisTag { "Dim data: " };
     auto parent = GetParent();
     if(parent) {
-      tag += parent->GetTag();
+      thisTag += parent->GetTag();
     }
     else {
-      tag += "???";
+      thisTag += "???";
     }
-    SetTag(tag);
+    SetTag(thisTag);
   }
 
   if(!IsTagAllowed(tag)) {
     const auto parent = GetParent();
-    const auto lineNo = xmlElement->GetLineNumber();
-    const auto svdLevel = parent->GetSvdLevel();
-    LogMsg("M240", TAG(tag), THISLEVEL(), LEVEL2(GetSvdLevelStr(svdLevel)), lineNo);
-    parent->Invalidate();
+    if(parent) {
+      const auto lineNo = xmlElement->GetLineNumber();
+      const auto svdLevel = parent->GetSvdLevel();
+      LogMsg("M240", TAG(tag), THISLEVEL(), LEVEL2(GetSvdLevelStr(svdLevel)), lineNo);
+      parent->Invalidate();
+    }
+
     return true;
   }
 
@@ -343,7 +346,7 @@ bool SvdDimension::CalculateNameFromExpression()
   if(!item) {
     return true;
   }
-  
+
   const auto& itemName = item->GetName();
   string name;
   uint32_t insertPos = 0;
@@ -361,9 +364,11 @@ bool SvdDimension::CalculateNameFromExpression()
   }
 
   const auto expr = GetExpression();
-  expr->SetName(name);
-  expr->SetType(exprType);
-  expr->SetNameInsertPos(insertPos);
+  if(expr) {
+    expr->SetName(name);
+    expr->SetType(exprType);
+    expr->SetNameInsertPos(insertPos);
+  }
 
   return true;
 }
@@ -392,8 +397,10 @@ bool SvdDimension::CalculateDisplayNameFromExpression()
   }
 
   const auto expr = GetExpression();
-  expr->SetDisplayName           (name);
-  expr->SetDisplayNameInsertPos  (insertPos);
+  if(expr) {
+    expr->SetDisplayName           (name);
+    expr->SetDisplayNameInsertPos  (insertPos);
+  }
 
   return true;
 }
@@ -422,8 +429,10 @@ bool SvdDimension::CalculateDescriptionFromExpression()
   }
 
   const auto expr = GetExpression();
-  expr->SetDescription          (descr);
-  expr->SetDescriptionInsertPos (insertPos);
+  if(expr) {
+    expr->SetDescription          (descr);
+    expr->SetDescriptionInsertPos (insertPos);
+  }
 
   return true;
 }
@@ -521,8 +530,11 @@ bool SvdDimension::CopyItem(SvdItem *from)
 bool SvdDimension::AddToMap(const string& dimIndex)
 {
   const auto parent = GetParent();
-  const auto lineNo = parent->GetLineNumber();
+  if(!parent) {
+    return true;
+  }
 
+  const auto lineNo = parent->GetLineNumber();
   auto found = m_dimIndexSet.find(dimIndex);
   if(found != m_dimIndexSet.end()) {
     LogMsg("M336", LEVEL("<dimIndex>"), NAME(dimIndex), LINE2(lineNo), lineNo);
@@ -541,6 +553,10 @@ bool SvdDimension::CheckItem()
   }
 
   const auto parent = GetParent();
+  if(!parent) {
+    return true;
+  }
+
   const auto name = parent->GetNameCalculated();
   const auto lineNo = parent->GetLineNumber();
 

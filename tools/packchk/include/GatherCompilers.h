@@ -30,8 +30,8 @@ private:
 
   std::map<std::string, std::string> EMPTY_MAP;
   std::map<std::string, compiler_s>   m_compilerMap;
-  RteTarget m_target;           // for expression evaluation
   RteModel m_filteredModel;     // needed to test conditions
+  RteTarget m_target;           // for expression evaluation
 };
 
 #endif //GATHERCOMPILERS_H

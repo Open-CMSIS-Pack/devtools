@@ -32,9 +32,9 @@ struct CpuFeature {
   const uint16_t NUMEXTIRQ;
 public:
   CpuFeature(const bool vtor, const bool mpu, const bool fpu, const bool fpudp,
-               const bool icache, const bool dcache, const bool itcm, const bool dtcm, 
+               const bool icache, const bool dcache, const bool itcm, const bool dtcm,
                const bool sau, const bool dsp, const bool pmu, const bool mve, const bool mvefp,
-               const uint16_t numExtIrq) 
+               const uint16_t numExtIrq)
   : VTOR(vtor), MPU(mpu), FPU(fpu), FPUDP(fpudp), ICACHE(icache), DCACHE(dcache),
     ITCM(itcm), DTCM(dtcm), SAU(sau), DSP(dsp), PMU(pmu), MVE(mve), MVEFP(mvefp),
     NUMEXTIRQ(numExtIrq)
@@ -53,19 +53,19 @@ struct CpuTypeFeature {
   const CpuFeature  cpuFeature;
 
 public:
-  CpuTypeFeature(const char *t, const char *n, 
+  CpuTypeFeature(const char *t, const char *n,
         const bool irqVals0,  const bool irqVals1,  const bool irqVals2,  const bool irqVals3,
         const bool irqVals4,  const bool irqVals5,  const bool irqVals6,  const bool irqVals7,
         const bool irqVals8,  const bool irqVals9,  const bool irqVals10, const bool irqVals11,
         const bool irqVals12, const bool irqVals13, const bool irqVals14, const bool irqVals15,
         const bool cpuF0,     const bool cpuF1,     const bool cpuF2,     const bool cpuF3,
-        const bool cpuF4,     const bool cpuF5,     const bool cpuF6,     const bool cpuF7, 
-        const bool cpuF8,     const bool cpuF9,     const bool cpuF10,    const bool cpuF11, 
+        const bool cpuF4,     const bool cpuF5,     const bool cpuF6,     const bool cpuF7,
+        const bool cpuF8,     const bool cpuF9,     const bool cpuF10,    const bool cpuF11,
         const bool cpuF12,
         const uint16_t numExtIrq
   )
     : type(t), name(n),
-      cpuFeature(cpuF0,cpuF1,cpuF2,cpuF3,cpuF4,cpuF5,cpuF6,cpuF7,cpuF8,cpuF9,cpuF10,cpuF11,cpuF12, numExtIrq) 
+      cpuFeature(cpuF0,cpuF1,cpuF2,cpuF3,cpuF4,cpuF5,cpuF6,cpuF7,cpuF8,cpuF9,cpuF10,cpuF11,cpuF12, numExtIrq)
   {
     uint32_t i = 0;
     irq[i++] = irqVals0;
@@ -103,7 +103,7 @@ public:
   enum class EnumUsage        { UNDEF = 0, READ, WRITE, READWRITE                                   };
   enum class SvdConvV2accType { EMPTY = 0, READ, READONLY, WRITE, WRITEONLY, READWRITE, UNDEF       };
   enum class CpuIrqNum        { IRQ0  = 0, IRQ1, IRQ2, IRQ3, IRQ4, IRQ5, IRQ6, IRQ7, IRQ8, IRQ9, IRQ10, IRQ11, IRQ12, IRQ13, IRQ14, IRQ15, IRQ_END, IRQ_RESERVED, IRQ_UNDEF };
-    
+
   #define CPUTYPE(enumType, name) enumType,
   enum class CpuType {
     #include "EnumStringTables.h"
@@ -115,7 +115,7 @@ public:
     #include "EnumStringTables.h"
   };
   #undef MODIFWRV
-  
+
   struct CmsisCfgForce {
     uint32_t  bMpuPresent     : 1;
     uint32_t  bFpuPresent     : 1;
@@ -131,7 +131,7 @@ public:
     uint32_t  bMvePresent     : 1;
     uint32_t  bMveFP          : 1;
   };
-  
+
   static const std::string&   GetExpressionType                (Expression exprType);
   static const std::string&   GetAccessType                    (Access accType);
   static const std::string&   GetAccessTypeSfd                 (Access accType);
@@ -145,8 +145,8 @@ public:
   static const std::string&   GetCortexMInterruptName          (SvdTypes::CpuIrqNum num);
   static const std::string&   GetCortexMInterruptDescription   (SvdTypes::CpuIrqNum num);
   static const std::string&   GetEnumUsage                     (EnumUsage enumUsage);
-  static const bool           GetCortexMInterruptAvailable     (CpuType cpuType, SvdTypes::CpuIrqNum num);
-  static const bool           GetCortexMInterrupt              (CpuType cpuType, SvdTypes::CpuIrqNum num, std::string &name, std::string &descr);
+  static       bool           GetCortexMInterruptAvailable     (CpuType cpuType, SvdTypes::CpuIrqNum num);
+  static       bool           GetCortexMInterrupt              (CpuType cpuType, SvdTypes::CpuIrqNum num, std::string &name, std::string &descr);
   static const CpuFeature&    GetCpuFeatures                   (CpuType cpuType);
 
 private:

@@ -197,16 +197,18 @@ bool SvdEnum::Calculate()
     SetName(n);
 
     it++;
-    for(; it != numbers.end(); it++) {
-      const auto enu = new SvdEnum(parent);
-      parent->AddItem(enu);
-      enu->CopyItem(this);
-      enu->SetValue(*it);
+    if(parent) {
+      for(; it != numbers.end(); it++) {
+        const auto enu = new SvdEnum(parent);
+        parent->AddItem(enu);
+        enu->CopyItem(this);
+        enu->SetValue(*it);
 
-      string n = name;
-      n += "_";
-      n += SvdUtils::CreateDecNum(*it);
-      enu->SetName(n);
+        string n2 = name;
+        n2 += "_";
+        n2 += SvdUtils::CreateDecNum(*it);
+        enu->SetName(n2);
+      }
     }
   }
 
