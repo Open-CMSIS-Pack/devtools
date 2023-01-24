@@ -404,37 +404,37 @@ jobs:
           build_type: Debug
           arch: ${{ matrix.arch }}
 
-      - name: Run Cbuild Integration Tests (excl. AC5, AC6, MultiTargetAC6Tests) for Linux amd64
+      - name: Run Cbuild Integration Tests (excl. AC5, AC6, MultiTargetAC6Tests, MultiTargetIARTests) for Linux amd64
         if: ${{ startsWith(matrix.runs_on, 'ubuntu') && matrix.arch == 'amd64' }}
         env:
           target: ${{ matrix.target }}
           arch: ${{ matrix.arch }}
-        run: ./tools/buildmgr/test/integrationtests/${target}/Debug/CbuildIntegTests --gtest_filter=-*AC5*:*AC6*:*MultiTargetAC6Tests* --gtest_output=xml:test_reports/cbuildintegtests-report-${target}-${arch}.xml
+        run: ./tools/buildmgr/test/integrationtests/${target}/Debug/CbuildIntegTests --gtest_filter=-*AC5*:*AC6*:*MultiTargetAC6Tests*:*MultiTargetIARTests* --gtest_output=xml:test_reports/cbuildintegtests-report-${target}-${arch}.xml
         working-directory: build
 
-      - name: Run Cbuild Integration Tests (excl. AC5, AC6, MultiTargetAC6Tests) for Linux arm64
+      - name: Run Cbuild Integration Tests (excl. AC5, AC6, MultiTargetAC6Tests, MultiTargetIARTests) for Linux arm64
         if: ${{ startsWith(matrix.runs_on, 'ubuntu') && matrix.arch == 'arm64' }}
         env:
           target: ${{ matrix.target }}
           arch: ${{ matrix.arch }}
-        run: /usr/bin/qemu-aarch64 -L /usr/aarch64-linux-gnu ./tools/buildmgr/test/integrationtests/${target}/Debug/CbuildIntegTests --gtest_filter=-*AC5*:*AC6*:*MultiTargetAC6Tests* --gtest_output=xml:test_reports/cbuildintegtests-report-${target}-${arch}.xml
+        run: /usr/bin/qemu-aarch64 -L /usr/aarch64-linux-gnu ./tools/buildmgr/test/integrationtests/${target}/Debug/CbuildIntegTests --gtest_filter=-*AC5*:*AC6*:*MultiTargetAC6Tests*:*MultiTargetIARTests* --gtest_output=xml:test_reports/cbuildintegtests-report-${target}-${arch}.xml
         working-directory: build
 
-      - name: Run Cbuild Integration Tests (excl. DebPkgTests, AC5, AC6, MultiTargetAC6Tests) for macOS
+      - name: Run Cbuild Integration Tests (excl. DebPkgTests, AC5, AC6, MultiTargetAC6Tests, MultiTargetIARTests) for macOS
         if: ${{ startsWith(matrix.runs_on, 'macos') }}
         env:
           target: ${{ matrix.target }}
           arch: ${{ matrix.arch }}
-        run: ./tools/buildmgr/test/integrationtests/${target}/Debug/CbuildIntegTests --gtest_filter=-*DebPkgTests*:*AC5*:*AC6*:*MultiTargetAC6Tests* --gtest_output=xml:test_reports/cbuildintegtests-report-${target}-${arch}.xml
+        run: ./tools/buildmgr/test/integrationtests/${target}/Debug/CbuildIntegTests --gtest_filter=-*DebPkgTests*:*AC5*:*AC6*:*MultiTargetAC6Tests*:*MultiTargetIARTests* --gtest_output=xml:test_reports/cbuildintegtests-report-${target}-${arch}.xml
         working-directory: build
 
-      - name: Run Cbuild Integration Tests (excl. DebPkgTests, AC5, AC6, MultiTargetAC6Tests) for Windows
+      - name: Run Cbuild Integration Tests (excl. DebPkgTests, AC5, AC6, MultiTargetAC6Tests, MultiTargetIARTests) for Windows
         if: ${{ startsWith(matrix.runs_on, 'windows') }}
         env:
           target: ${{ matrix.target }}
           arch: ${{ matrix.arch }}
         # For some reason the env variable usage $Env:target does not work properly.
-        run: .\tools\buildmgr\test\integrationtests\windows64\Debug\CbuildIntegTests.exe --gtest_filter=-*DebPkgTests*:*AC5*:*AC6*:*MultiTargetAC6Tests* --gtest_output=xml:test_reports/cbuildintegtests-report-${target}-${arch}.xml
+        run: .\tools\buildmgr\test\integrationtests\windows64\Debug\CbuildIntegTests.exe --gtest_filter=-*DebPkgTests*:*AC5*:*AC6*:*MultiTargetAC6Tests*:*MultiTargetIARTests* --gtest_output=xml:test_reports/cbuildintegtests-report-${target}-${arch}.xml
         working-directory: build
 
       - name: Archive Cbuild Integration Tests
@@ -500,7 +500,7 @@ jobs:
           cmake --build . --target CbuildUnitTests
           ./tools/buildmgr/test/unittests/linux64/Debug/CbuildUnitTests --gtest_output=xml:test_reports/cbuildunittests-report-linux64-amd64.xml
           cmake --build . --target CbuildIntegTests
-          ./tools/buildmgr/test/integrationtests/linux64/Debug/CbuildIntegTests --gtest_filter=-*AC5*:*AC6*:*MultiTargetAC6Tests*:*DebPkgTests*:*InstallerTests* --gtest_output=xml:test_reports/cbuildintegtests-report-linux64-amd64.xml
+          ./tools/buildmgr/test/integrationtests/linux64/Debug/CbuildIntegTests --gtest_filter=-*AC5*:*AC6*:*MultiTargetAC6Tests*:*MultiTargetIARTests*:*DebPkgTests*:*InstallerTests* --gtest_output=xml:test_reports/cbuildintegtests-report-linux64-amd64.xml
         working-directory: build
 
       - name: Get retention days
