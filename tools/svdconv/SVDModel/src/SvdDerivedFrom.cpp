@@ -83,7 +83,7 @@ bool SvdDerivedFrom::CalculateDerivedFrom()
     do {
       auto it = name.find("%");
       if(it == string::npos) {
-        break;      	
+        break;
       }
       name.erase(it, 1);
     } while(1);
@@ -91,9 +91,9 @@ bool SvdDerivedFrom::CalculateDerivedFrom()
     const auto lineNo = GetLineNumber();
     LogMsg("M206", NAME(name), lineNo);
     Invalidate();
-    auto parent = GetParent();
-    if(parent) {
-      parent->Invalidate();
+    auto invalidParent = GetParent();
+    if(invalidParent) {
+      invalidParent->Invalidate();
     }
   }
 
@@ -103,6 +103,9 @@ bool SvdDerivedFrom::CalculateDerivedFrom()
 bool SvdDerivedFrom::DeriveItem(SvdItem *from)
 {
   const auto parent = GetParent();
+  if(!parent) {
+    return true;
+  }
 
   // If there are already any childs, the item is changed from it's derivedFrom item
   if(parent->GetChildCount()) {

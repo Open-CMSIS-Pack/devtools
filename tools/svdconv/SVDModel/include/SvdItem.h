@@ -287,7 +287,7 @@ bool SvdItem::GetDeriveItem(T *&item, const std::list<std::string>& searchName, 
   }
 
   if(parent && parent->FindChild(child, name)) {
-    bool found = false;
+    found = false;
     // go down the levels
     for(const auto& searchN : searchName) {
       const auto& childs = parent->GetChildren();
@@ -307,7 +307,7 @@ bool SvdItem::GetDeriveItem(T *&item, const std::list<std::string>& searchName, 
       if(parent && parent->FindChild(parent->GetChildren(), child, searchN)) {
         parent = child;
         found = true;
-      } 
+      }
       else {
         found = false;
         break;

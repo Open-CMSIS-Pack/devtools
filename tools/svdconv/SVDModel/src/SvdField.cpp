@@ -196,7 +196,13 @@ bool SvdField::CalculateDim()
 
   dim->CalculateDim();
 
-  if(dim->GetExpression()->GetType() == SvdTypes::Expression::ARRAY) {
+  const auto dimExpression = dim->GetExpression();
+  SvdTypes::Expression exprType = SvdTypes::Expression::NONE;
+  if(dimExpression) {
+    exprType = dimExpression->GetType();
+  }
+
+  if(exprType == SvdTypes::Expression::ARRAY) {
     const auto lineNo = GetLineNumber();
     const auto& svdLevelStr = GetSvdLevelStr(GetSvdLevel());
     const auto name = GetNameCalculated();
@@ -233,13 +239,15 @@ bool SvdField::CalculateDim()
     }
   }
 
-  if(dimIndexList.size() >= 1) {
-    auto dimIndexText = *dimIndexList.begin();
+  if(dimIndexText.empty()) {
+    if(dimIndexList.size() >= 1) {
+      dimIndexText = *dimIndexList.begin();
 
-    if(dimIndexList.size() > 1) {
-      const auto& dimIndexTextEnd = *dimIndexList.rbegin();
-      dimIndexText += "..";
-      dimIndexText += dimIndexTextEnd;
+      if(dimIndexList.size() > 1) {
+        const auto& dimIndexTextEnd = *dimIndexList.rbegin();
+        dimIndexText += "..";
+        dimIndexText += dimIndexTextEnd;
+      }
     }
   }
 

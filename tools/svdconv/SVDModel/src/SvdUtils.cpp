@@ -133,7 +133,7 @@ SvdTypes::Expression SvdUtils::ParseExpression(const string &expr, string &name,
 
   string::size_type pos = expr.find("%");
   if(pos != string::npos) {
-    string::size_type pos = expr.find("[%s]");
+    pos = expr.find("[%s]");
     if(pos != string::npos) {
       exp = SvdTypes::Expression::ARRAY;
       if(pos != expr.length() - 4) {
@@ -440,7 +440,7 @@ bool SvdUtils::ConvertNumber(const string &text, set<uint64_t> &numbers)
   if(!ConvertNumber(text, num)) {
     return false;
   }
-    
+
   numbers.insert(num);
 
   return true;
@@ -497,7 +497,7 @@ bool SvdUtils::ConvertNumber (const string &text, uint64_t &number)
     if(t.find_first_of("x", 2) != string::npos) {    // XBin Number
       return false;
     }
-    
+
     // Bin Number
     if(!ConvertNumber(&t[2], num, 2)) {
       return false;
@@ -689,7 +689,7 @@ bool SvdUtils::ConvertAccess (const string &text, SvdTypes::Access &acc, uint32_
       LogMsg("M225", NAME(text), NAME2("read-only"), lineNo);
     }
     return true;
-  } 
+  }
   else if(t == "write-only") {
     acc = SvdTypes::Access::WRITEONLY;
     if(text != "write-only") {
@@ -788,14 +788,14 @@ bool SvdUtils::ConvertEnumUsage (const string &text, SvdTypes::EnumUsage &usage,
       LogMsg("M225", NAME(text), NAME2("read"), lineNo);
     }
     return true;
-  } 
+  }
   else if(t == "write") {
     usage = SvdTypes::EnumUsage::WRITE;
     if(text != "write") {
       LogMsg("M225", NAME(text), NAME2("write"), lineNo);
     }
     return true;
-  } 
+  }
   else if(t == "read-write") {
     usage = SvdTypes::EnumUsage::READWRITE;
     if(text != "read-write") {
@@ -847,21 +847,21 @@ bool SvdUtils::ConvertCpuEndian (const string &text, SvdTypes::Endian &endian, u
       LogMsg("M225", NAME(text), NAME2("little"), lineNo);
     }
     return true;
-  } 
+  }
   else if(t == "big") {
     endian = SvdTypes::Endian::BIG;
     if(text != "big") {
       LogMsg("M225", NAME(text), NAME2("big"), lineNo);
     }
     return true;
-  } 
+  }
   else if(t == "selectable") {
     endian = SvdTypes::Endian::SELECTABLE;
     if(text != "selectable") {
       LogMsg("M225", NAME(text), NAME2("selectable"), lineNo);
     }
     return true;
-  } 
+  }
   else if(t == "other") {
     endian = SvdTypes::Endian::OTHER;
     if(text != "other") {
@@ -935,56 +935,56 @@ bool SvdUtils::ConvertModifiedWriteValues(const string &text, SvdTypes::Modified
       LogMsg("M225", NAME(text), NAME2("oneToClear"), lineNo);
     }
     return true;
-  } 
+  }
   else if(t == "onetoset") {
     val = SvdTypes::ModifiedWriteValue::ONETOSET;
     if(text != "oneToSet") {
       LogMsg("M225", NAME(text), NAME2("oneToSet"), lineNo);
     }
     return true;
-  } 
+  }
   else if(t == "onetotoggle") {
     val = SvdTypes::ModifiedWriteValue::ONETOTOGGLE;
     if(text != "oneToToggle") {
       LogMsg("M225", NAME(text), NAME2("oneToToggle"), lineNo);
     }
     return true;
-  } 
+  }
   else if(t == "zerotoclear") {
     val = SvdTypes::ModifiedWriteValue::ZEROTOCLEAR;
     if(text != "zeroToClear") {
       LogMsg("M225", NAME(text), NAME2("zeroToClear"), lineNo);
     }
     return true;
-  } 
+  }
   else if(t == "zerotoset") {
     val = SvdTypes::ModifiedWriteValue::ZEROTOSET;
     if(text != "zeroToSet") {
       LogMsg("M225", NAME(text), NAME2("zeroToSet"), lineNo);
     }
     return true;
-  } 
+  }
   else if(t == "zerototoggle") {
     val = SvdTypes::ModifiedWriteValue::ZEROTOTOGGLE;
     if(text != "zeroToToggle") {
       LogMsg("M225", NAME(text), NAME2("zeroToToggle"), lineNo);
     }
     return true;
-  } 
+  }
   else if(t == "clear") {
     val = SvdTypes::ModifiedWriteValue::CLEAR;
     if(text != "clear") {
       LogMsg("M225", NAME(text), NAME2("clear"), lineNo);
     }
     return true;
-  } 
+  }
   else if(t == "set") {
     val = SvdTypes::ModifiedWriteValue::SET;
     if(text != "set") {
       LogMsg("M225", NAME(text), NAME2("set"), lineNo);
     }
     return true;
-  } 
+  }
   else if(t == "selectable") {
     val = SvdTypes::ModifiedWriteValue::SET;
     if(text != "selectable") {
@@ -1027,14 +1027,14 @@ bool SvdUtils::ConvertReadAction  (const string &text, SvdTypes::ReadAction &act
       LogMsg("M225", NAME(text), NAME2("set"), lineNo);
     }
     return true;
-  } 
+  }
   else if(t == "modify") {
     act = SvdTypes::ReadAction::MODIFY;
     if(text != "modify") {
       LogMsg("M225", NAME(text), NAME2("modify"), lineNo);
     }
     return true;
-  } 
+  }
   else if(t == "modifyexternal") {
     act = SvdTypes::ReadAction::MODIFEXT;
     if(text != "modifyExternal") {
@@ -1070,7 +1070,7 @@ bool SvdUtils::ConvertDerivedNameHirachy(const string &name, list<string>& searc
       string text = name.substr(prevPos, pos - prevPos);
       if(!text.empty()) {
         searchName.push_back(text);
-      } 
+      }
       else {
         searchName.push_back("!ERROR!");
       }

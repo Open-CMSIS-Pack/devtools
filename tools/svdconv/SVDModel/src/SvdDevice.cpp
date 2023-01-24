@@ -428,7 +428,7 @@ bool SvdDevice::AddToMap(SvdCluster *clust)
   if(enumCont) {
     AddToMap(enumCont);
   }
-  
+
   return true;
 }
 
@@ -622,8 +622,8 @@ bool SvdDevice::CheckPeripherals(const list<SvdItem*>& childs)
       // ClusterNames must be unique to peripherals
       const auto regs = peri->GetRegisterContainer();
       if(regs) {
-        const auto& childs = regs->GetChildren();
-        AddClusterNames(childs);
+        const auto& children = regs->GetChildren();
+        AddClusterNames(children);
       }
     }
   }
@@ -787,12 +787,12 @@ bool SvdDevice::CheckForItemsRegister(SvdRegister* reg)
   if(dim) {
     const auto& dimChilds = dim->GetChildren();
     for(const auto dimChild : dimChilds) {
-      const auto reg = dynamic_cast<SvdRegister*>(dimChild);
-      if(!reg || !reg->IsValid()) {
+      const auto dimReg = dynamic_cast<SvdRegister*>(dimChild);
+      if(!dimReg || !dimReg->IsValid()) {
         continue;
       }
 
-      itemCnt += CheckForItemsRegister(reg);
+      itemCnt += CheckForItemsRegister(dimReg);
     }
     return true;
   }
