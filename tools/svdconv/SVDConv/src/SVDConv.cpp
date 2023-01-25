@@ -184,7 +184,7 @@ int SvdConv::Check(int argc, const char* argv[], const char* envp[])
   else if(warnCnt) {
     return 1;
   }
-  
+
   return 0;
 }
 
@@ -287,7 +287,7 @@ SVD_ERR SvdConv::CheckSvdFile()
   if(m_svdOptions.IsGenerateMap()) {
     t1 = CrossPlatformUtils::ClockInMsec();
 
-    if(generator && device) {
+    if(device) {
       generator->SetSvdFileName(path);
       generator->SetProgramInfo(version, descr, copyright);
 
@@ -310,7 +310,7 @@ SVD_ERR SvdConv::CheckSvdFile()
   // ----------------------  Generate CMSIS Headerfile  ----------------------
   if(m_svdOptions.IsGenerateHeader()) {
     t1 = CrossPlatformUtils::ClockInMsec();
-    if(generator && device) {
+    if(device) {
       generator->SetSvdFileName(path);
       generator->SetProgramInfo(version, descr, copyright);
       success = generator->CmsisHeaderFile(device, outDir);
@@ -324,7 +324,7 @@ SVD_ERR SvdConv::CheckSvdFile()
   // ----------------------  Generate CMSIS Partitionfile  ----------------------
   if(m_svdOptions.IsGeneratePartition()) {
     t1 = CrossPlatformUtils::ClockInMsec();
-    if(generator && device) {
+    if(device) {
       generator->SetSvdFileName(path);
       generator->SetProgramInfo(version, descr, copyright);
       success = generator->CmsisPartitionFile(device, outDir);
@@ -338,7 +338,7 @@ SVD_ERR SvdConv::CheckSvdFile()
   // ----------------------  Generate SFD File  ----------------------
   if(m_svdOptions.IsGenerateSfd()) {
     t1 = CrossPlatformUtils::ClockInMsec();
-    if(generator && device) {
+    if(device) {
       generator->SetSvdFileName(path);
       generator->SetProgramInfo(version, descr, copyright);
       success = generator->SfdFile(device, outDir);
@@ -352,7 +352,7 @@ SVD_ERR SvdConv::CheckSvdFile()
   // ----------------------  Generate SFR File  ----------------------
   if(m_svdOptions.IsGenerateSfr()) {
     t1 = CrossPlatformUtils::ClockInMsec();
-    if(generator && device) {
+    if(device) {
       generator->SetSvdFileName(path);
       generator->SetProgramInfo(version, descr, copyright);
       success = generator->SfrFile(device, outDir);
