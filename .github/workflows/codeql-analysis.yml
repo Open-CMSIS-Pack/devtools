@@ -5,7 +5,12 @@ on:
   pull_request:
     branches: [ main ]
     paths:
-      - '!**/*.md'
+      - '.github/workflows/codeql-analysis.yml'
+      - '**/*.c'
+      - '**/*.cpp'
+      - '**/*.h'
+      - '**/*.in'
+      - '**/CMakeLists.txt'
   push:
     branches: [ main ]
 
@@ -31,8 +36,9 @@ jobs:
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v2
         with:
-          languages: 'cpp'
-
+          languages: cpp
+          queries: security-and-quality
+          
       - name: Create build folder
         run: mkdir build
 
