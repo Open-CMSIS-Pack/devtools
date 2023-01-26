@@ -338,6 +338,8 @@ struct ClayerItem {
   std::vector<GroupNode> groups;
   std::vector<ConnectItem> connections;
   std::vector<PackItem> packs;
+  std::string forBoard;
+  std::string forDevice;
 };
 
 /**

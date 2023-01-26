@@ -1088,6 +1088,31 @@ no valid combination of clayers was found\
   EXPECT_TRUE(regex_match(errStr, regex(expectedErrStr)));
 }
 
+TEST_F(ProjMgrUnitTests, LayerVariablesNotDefined_SearchPath) {
+  StdStreamRedirect streamRedirect;
+  char* argv[8];
+  const string& csolution = testinput_folder + "/TestLayers/variables-notdefined.csolution.yml";
+  const string& clayerSearchPath = testinput_folder + "/TestLayers/variables";
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"layers";
+  argv[3] = (char*)"-s";
+  argv[4] = (char*)csolution.c_str();
+  argv[5] = (char*)"--clayer-path";
+  argv[6] = (char*)clayerSearchPath.c_str();
+  argv[7] = (char*)"-v";
+  EXPECT_EQ(0, RunProjMgr(8, argv));
+
+  const string& expectedErrStr = ".*\
+clayer of type 'Board' was uniquely found:\
+  .*/TestLayers/variables/target1.clayer.yml\
+";
+
+  string errStr = streamRedirect.GetErrorString();
+  errStr.erase(std::remove(errStr.begin(), errStr.end(), '\n'), errStr.cend());
+
+  EXPECT_TRUE(regex_match(errStr, regex(expectedErrStr)));
+}
+
 TEST_F(ProjMgrUnitTests, AccessSequences) {
   char* argv[7];
 
