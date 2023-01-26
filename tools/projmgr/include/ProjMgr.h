@@ -104,6 +104,7 @@ protected:
   bool m_missingPacks;
   bool m_updateRteFiles;
   bool m_verbose;
+  bool m_debug;
   GroupNode m_files;
 
   bool RunConvert(void);

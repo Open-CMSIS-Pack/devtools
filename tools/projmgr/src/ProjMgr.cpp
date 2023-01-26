@@ -46,6 +46,7 @@ Usage:\n\
    -n, --no-check-schema Skip schema check\n\
    -U, --no-update-rte   Skip creation of RTE directory and files\n\
    -v, --verbose         Enable verbose messages\n\
+   -d, --debug           Enable debug messages\n\
    -o, --output arg      Output directory\n\n\
 Use 'csolution <command> -h' for more information about a command.\
 ";
@@ -110,21 +111,22 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
   cxxopts::Option output("o,output", "Output directory", cxxopts::value<string>());
   cxxopts::Option version("V,version", "Print version");
   cxxopts::Option verbose("v,verbose", "Enable verbose messages", cxxopts::value<bool>()->default_value("false"));
+  cxxopts::Option debug("d,debug", "Enable debug messages", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option exportSuffix("e,export", "Set suffix for exporting <context><suffix>.cprj retaining only specified versions", cxxopts::value<string>());
 
   // command options dictionary
   map<string, vector<cxxopts::Option>> optionsDict = {
-    {"convert",           {solution, context, output, load, verbose, exportSuffix, schemaCheck, noUpdateRte}},
-    {"run",               {solution, generator, context, load, verbose, schemaCheck}},
-    {"list packs",        {solution, context, filter, missing, load, verbose, schemaCheck}},
-    {"list boards",       {solution, context, filter, load, verbose, schemaCheck}},
-    {"list devices",      {solution, context, filter, load, verbose, schemaCheck}},
-    {"list components",   {solution, context, filter, load, verbose, schemaCheck}},
-    {"list dependencies", {solution, context, filter, load, verbose, schemaCheck}},
-    {"list contexts",     {solution, filter, verbose, schemaCheck}},
-    {"list generators",   {solution, context, load, verbose, schemaCheck}},
-    {"list layers",       {solution, context, load, verbose, schemaCheck, clayerSearchPath}},
-    {"list toolchains",   {solution, verbose}},
+    {"convert",           {solution, context, output, load, verbose, debug, exportSuffix, schemaCheck, noUpdateRte}},
+    {"run",               {solution, generator, context, load, verbose, debug, schemaCheck}},
+    {"list packs",        {solution, context, filter, missing, load, verbose, debug, schemaCheck}},
+    {"list boards",       {solution, context, filter, load, verbose, debug, schemaCheck}},
+    {"list devices",      {solution, context, filter, load, verbose, debug, schemaCheck}},
+    {"list components",   {solution, context, filter, load, verbose, debug, schemaCheck}},
+    {"list dependencies", {solution, context, filter, load, verbose, debug, schemaCheck}},
+    {"list contexts",     {solution, filter, verbose, debug, schemaCheck}},
+    {"list generators",   {solution, context, load, verbose, debug, schemaCheck}},
+    {"list layers",       {solution, context, load, verbose, debug, schemaCheck, clayerSearchPath}},
+    {"list toolchains",   {solution, verbose, debug,}},
   };
 
   try {
@@ -132,7 +134,7 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
       {"positional", "", cxxopts::value<vector<string>>()},
       solution, context, filter, generator,
       load, clayerSearchPath, missing, schemaCheck, noUpdateRte, output,
-      help, version, verbose, exportSuffix
+      help, version, verbose, debug, exportSuffix
     });
     options.parse_positional({ "positional" });
 
@@ -143,6 +145,8 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
     manager.m_updateRteFiles = !parseResult.count("no-update-rte");
     manager.m_verbose = parseResult.count("v");
     manager.m_worker.SetVerbose(manager.m_verbose);
+    manager.m_debug = parseResult.count("d");
+    manager.m_worker.SetDebug(manager.m_debug);
 
     vector<string> positionalArguments;
     if (parseResult.count("positional")) {
