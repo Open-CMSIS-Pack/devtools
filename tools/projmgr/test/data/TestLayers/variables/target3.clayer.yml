@@ -4,10 +4,10 @@ layer:
 
   type: Board
 
-  for-device: RteTest_ARMCM3
+  for-board: RteTest Dummy board
 
   components:
     - component: Device:Startup
 
   define:
-    - Target2-Layer
+    - Target3-Layer

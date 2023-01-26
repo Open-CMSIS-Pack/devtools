@@ -593,6 +593,10 @@ bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context, const string& c
             debugMsg += "clayer type '" + clayerItem.type + "' does not match type '" + type + "' in pack description\n";
           }
         }
+        // skip non-matching 'for-board' and 'for-device' filters
+        if (!CheckBoardDeviceInLayer(context, clayerItem)) {
+          continue;
+        }
         ConnectionsCollection collection;
         collection.filename = &clayerItem.path;
         collection.type = &type;
@@ -2039,6 +2043,30 @@ bool ProjMgrWorker::AddComponent(const ComponentItem& src, const string& layer, 
       }
     }
     dst.push_back({ src, layer });
+  }
+  return true;
+}
+
+bool ProjMgrWorker::CheckBoardDeviceInLayer(const ContextItem& context, const ClayerItem& clayer) {
+  if (!clayer.forBoard.empty()) {
+    BoardItem forBoard, board;
+    GetBoardItem(clayer.forBoard, forBoard);
+    GetBoardItem(context.board, board);
+    if ((!forBoard.vendor.empty() && (forBoard.vendor != board.vendor)) ||
+        (!forBoard.name.empty() && (forBoard.name != board.name)) ||
+        (!forBoard.revision.empty() && (forBoard.revision != board.revision))) {
+      return false;
+    }
+  }
+  if (!clayer.forDevice.empty()) {
+    DeviceItem forDevice, device;
+    GetDeviceItem(clayer.forDevice, forDevice);
+    GetDeviceItem(context.device, device);
+    if ((!forDevice.vendor.empty() && (forDevice.vendor != device.vendor)) ||
+        (!forDevice.name.empty() && (forDevice.name != device.name)) ||
+        (!forDevice.pname.empty() && (forDevice.pname != device.pname))) {
+      return false;
+    }
   }
   return true;
 }

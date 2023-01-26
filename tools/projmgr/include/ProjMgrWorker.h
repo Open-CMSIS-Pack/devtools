@@ -500,6 +500,7 @@ protected:
   bool LoadPacks(ContextItem& context);
   bool GetRequiredPdscFiles(ContextItem& context, const std::string& packRoot, std::set<std::string>& errMsgs);
   bool CheckRteErrors(void);
+  bool CheckBoardDeviceInLayer(const ContextItem& context, const ClayerItem& clayer);
   bool CheckCompiler(const std::vector<std::string>& forCompiler, const std::string& selectedCompiler);
   bool CheckType(const TypeFilter& typeFilter, const TypePair& type);
   bool GetTypeContent(ContextItem& context);
