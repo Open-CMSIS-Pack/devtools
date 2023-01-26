@@ -110,9 +110,9 @@ TEST(RteUtilsTest, ExpandInstancePlaceholders) {
 
 TEST(RteUtilsTest, WildCardsTo) {
 
-  string test_input = "This?? is a ${*}test1* _string-!#.";
-  string regex = "This.. is a \\$\\{.*\\}test1.* _string-!#\\.";
-  string replaced = "Thisxx_is_a___x_test1x__string-__.";
+  string test_input = "This?? is a ${*}+test1* _string-!#.";
+  string regex = "This.. is a \\$\\{.*\\}\\+test1.* _string-!#\\.";
+  string replaced = "Thisxx_is_a___x__test1x__string-__.";
 
   string converted = WildCards::ToRegEx(test_input);
   EXPECT_EQ(converted, regex);
@@ -169,10 +169,12 @@ TEST(RteUtilsTest, WildCardMatch) {
   EXPECT_EQ(true, WildCards::Match("Prefix*Suffix", "Prefix_Mid_Suffix_Suffix"));
   EXPECT_EQ(true, WildCards::Match("Prefix_*Suffix", "Prefix_Mid_Suffix"));
   EXPECT_EQ(true, WildCards::Match("Prefix.*.Suffix", "Prefix.Mid.Suffix"));
+  EXPECT_EQ(true, WildCards::Match("Prefix.*+Suffix", "Prefix.Mid+Suffix"));
 
   EXPECT_EQ(true, WildCards::Match("Prefix_${*}Suffix", "Prefix_${Mid_}Suffix"));
+  EXPECT_EQ(true, WildCards::Match("Prefix_$(*)Suffix", "Prefix_$(Mid_)Suffix"));
 
-  EXPECT_EQ(false, WildCards::Match("Prefix(((*Suffix", "Prefix_(((Suffix")); // test illegal expression
+  EXPECT_EQ(false, WildCards::Match("Prefix_\\(*Suffix", "Prefix_\\(Suffix")); // test illegal expression
 
   std::vector<string> inputStr{ "STM32F10[123]?[CDE]", "STM32F103ZE", "*", "*?", "?*", "?*?", "*?*", "**", "**?" };
   for (auto iter = inputStr.cbegin(); iter != inputStr.cend() - 1; iter++) {
