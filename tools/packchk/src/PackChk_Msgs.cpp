@@ -205,7 +205,7 @@ const MsgTable PackChk::msgTable = {
   { "M393", { MsgLevel::LEVEL_WARNING3, CRLF_B, "Package has development version '%DEVVERSION%': '%RELEASEVER%'" } },
   { "M394", { MsgLevel::LEVEL_ERROR,    CRLF_B, "Not Semantic Versioning, ignoring version: '%RELEASEVER%'" } },
   { "M395", { MsgLevel::LEVEL_WARNING3, CRLF_B, "Release date attribute is not set for release version: '%RELEASEVER%'" } },
-  { "M396", { MsgLevel::LEVEL_WARNING,  CRLF_B, "Release %TAG% not consecutive (newest first): '%RELEASEVER%', '%RELEASEDATE%' (prev.: '%LATESTVER%', '%LATESTDATE%', see Line %LINE%)" } },
+  { "M396", { MsgLevel::LEVEL_ERROR,    CRLF_B, "Release %TAG% not consecutive (newest first): '%RELEASEVER%', '%RELEASEDATE%' (prev.: '%LATESTVER%', '%LATESTDATE%', see Line %LINE%)" } },
   { "M397", { MsgLevel::LEVEL_WARNING,  CRLF_B, "File extension '.pdsc' must be lowercase: '%PATH%'" } },
   { "M398", { MsgLevel::LEVEL_ERROR,    CRLF_B, "Attribute 'Dname' missing in expression using 'Pname=\"%NAME%\"" } },
   { "M399", { MsgLevel::LEVEL_WARNING3, CRLF_B, "Attribute '%TAG%' is ignored, because '%TAG2%' + '%TAG3%' is specified" } },
