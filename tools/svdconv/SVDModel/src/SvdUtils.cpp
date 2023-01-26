@@ -683,41 +683,24 @@ bool SvdUtils::ConvertAccess (const string &text, SvdTypes::Access &acc, uint32_
   string t = text;
   ToLower(t);
 
-  if(t == "read-only") {
-    acc = SvdTypes::Access::READONLY;
-    if(text != "read-only") {
-      LogMsg("M225", NAME(text), NAME2("read-only"), lineNo);
+  uint32_t cnt=1;
+  do {
+    const auto& accStr = SvdTypes::GetAccessType((SvdTypes::Access)cnt);
+    if(accStr.empty()) {
+      break;
     }
-    return true;
-  }
-  else if(t == "write-only") {
-    acc = SvdTypes::Access::WRITEONLY;
-    if(text != "write-only") {
-      LogMsg("M225", NAME(text), NAME2("write-only"), lineNo);
+
+    string accStrLower = accStr;
+    ToLower(accStrLower);
+
+    if(t == accStrLower) {
+      acc = (SvdTypes::Access)cnt;
+      if(text != accStr) {
+        LogMsg("M225", NAME(text), NAME2(accStr), lineNo);
+      }
+      return true;
     }
-    return true;
-  }
-  else if(t == "read-write") {
-    acc = SvdTypes::Access::READWRITE;
-    if(text != "read-write") {
-      LogMsg("M225", NAME(text), NAME2("read-write"), lineNo);
-    }
-    return true;
-  }
-  else if(t == "writeonce") {
-    acc = SvdTypes::Access::WRITEONCE;
-    if(text != "writeOnce") {
-      LogMsg("M225", NAME(text), NAME2("writeOnce"), lineNo);
-    }
-    return true;
-  }
-  else if(t == "read-writeonce") {
-    acc = SvdTypes::Access::READWRITEONCE;
-    if(text != "read-writeOnce") {
-      LogMsg("M225", NAME(text), NAME2("read-writeOnce"), lineNo);
-    }
-    return true;
-  }
+  } while(++cnt < (uint32_t)SvdTypes::Access::END);
 
   // Deprecated
   if(t == "read") {
