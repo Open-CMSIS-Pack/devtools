@@ -40,8 +40,8 @@ Usage:\n\
    --layer arg           Optional layer(s) ID\n\
    --name arg            Name of the project to be composed\n\
    --description arg     Description of the project to be composed\n\
-   --pack_root arg       Path to the CMSIS-Pack root directory that stores software packs\n\
-   --compiler_root arg   Path to the installation 'etc' directory\n\
+   --pack-root arg       Path to the CMSIS-Pack root directory that stores software packs\n\
+   --compiler-root arg   Path to the installation 'etc' directory\n\
    --update-rte          Update the RTE directory and files\n\
    --quiet               Run cbuildgen silently, printing only error messages\n\n\
 Use 'cbuildgen <command> -h' for more information about a command.\n\
