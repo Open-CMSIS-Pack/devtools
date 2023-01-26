@@ -15,6 +15,9 @@
       OK: Same date different Version
     </release>
   
+    <release version="4.6.3" date="2023-01-01">
+      Patch with newer date is allowed, versions must be in order.
+    </release>
     <release version="4.6.2" date="2021-03-16">
       <!-- ERROR M329: Description not set for Release Information '4.6.2' -->
     </release>
