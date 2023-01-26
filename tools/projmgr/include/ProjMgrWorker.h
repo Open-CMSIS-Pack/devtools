@@ -431,6 +431,12 @@ public:
   void SetVerbose(bool verbose);
 
   /**
+   * @brief set debug verbosity
+   * @param boolean debug
+  */
+  void SetDebug(bool debug);
+
+  /**
    * @brief set load packs policy
    * @param reference to load packs policy
   */
@@ -489,6 +495,7 @@ protected:
   LoadPacksPolicy m_loadPacksPolicy;
   bool m_checkSchema;
   bool m_verbose;
+  bool m_debug;
 
   bool LoadPacks(ContextItem& context);
   bool GetRequiredPdscFiles(ContextItem& context, const std::string& packRoot, std::set<std::string>& errMsgs);
