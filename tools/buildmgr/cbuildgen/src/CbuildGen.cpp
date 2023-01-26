@@ -96,8 +96,8 @@ int CbuildGen::RunCbuildGen(int argc, char **argv) {
   cxxopts::Option name        ("name", "Name of the project to be composed", cxxopts::value<string>());
   cxxopts::Option description ("description", "Description of the project to be composed", cxxopts::value<string>());
   cxxopts::Option except      ("except", "File or child directory exceptionally not deleted by rmdir command", cxxopts::value<string>());
-  cxxopts::Option packRoot    ("pack_root", "Path to the CMSIS-Pack root directory that stores software packs", cxxopts::value<string>());
-  cxxopts::Option compilerRoot("compiler_root", "Path to the installation 'etc' directory", cxxopts::value<string>());
+  cxxopts::Option packRoot    ("pack-root", "Path to the CMSIS-Pack root directory that stores software packs", cxxopts::value<string>());
+  cxxopts::Option compilerRoot("compiler-root", "Path to the installation 'etc' directory", cxxopts::value<string>());
   cxxopts::Option cprjFile    ("cprjfile", "CMSIS Project Description file", cxxopts::value<string>());
   cxxopts::Option args        ("args", "", cxxopts::value<vector<string>>());
   cxxopts::Option help        ("h,help", "Print usage");
