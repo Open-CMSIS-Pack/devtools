@@ -1111,7 +1111,7 @@ TEST_F(ProjMgrUnitTests, LayerVariablesNotDefined_SearchPath) {
   argv[4] = (char*)csolution.c_str();
   argv[5] = (char*)"--clayer-path";
   argv[6] = (char*)clayerSearchPath.c_str();
-  argv[7] = (char*)"-v";
+  argv[7] = (char*)"-d";
   EXPECT_EQ(0, RunProjMgr(8, argv));
 
   const string& expectedErrStr = ".*\
