@@ -554,6 +554,8 @@
           "type": "string",
           "description": "Layer type for compatible layers matching"
         },
+        "for-board":   { "$ref": "#/definitions/BoardType" },
+        "for-device":  { "$ref": "#/definitions/DeviceType" },
         "output-type": { "$ref": "#/definitions/OutputType" },
         "packs":       { "$ref": "#/definitions/PacksType" },
         "board":       { "$ref": "#/definitions/BoardType" },

@@ -176,6 +176,8 @@ bool ProjMgrYamlParser::ParseClayer(const string& input,
 
     const YAML::Node& layerNode = root[YAML_LAYER];
     map<const string, string&> projectChildren = {
+      {YAML_FORBOARD, clayer.forBoard},
+      {YAML_FORDEVICE, clayer.forDevice},
       {YAML_OUTPUTTYPE, clayer.outputType},
       {YAML_TYPE, clayer.type},
     };
@@ -646,6 +648,8 @@ const set<string> projectKeys = {
 
 const set<string> layerKeys = {
   YAML_DESCRIPTION,
+  YAML_FORBOARD,
+  YAML_FORDEVICE,
   YAML_TYPE,
   YAML_OUTPUTTYPE,
   YAML_PACKS,

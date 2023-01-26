@@ -1099,3 +1099,77 @@ TEST_F(ProjMgrWorkerUnitTests, ListToolchains) {
   // remove extra cmake file
   RteFsUtils::RemoveFile(cmakeFile);
 }
+
+TEST_F(ProjMgrWorkerUnitTests, CheckBoardLayer) {
+  ContextItem context;
+  context.board = "BoardVendor::BoardName:BoardRevision";
+
+  // test valid forBoard values
+  const vector<string> forBoardValues = {
+    "",
+    "BoardName",
+    "BoardName:BoardRevision",
+    "BoardVendor::BoardName",
+    "BoardVendor::BoardName:BoardRevision",
+  };
+  for (const auto& forBoard : forBoardValues) {
+    ClayerItem clayer;
+    clayer.forBoard = forBoard;
+    EXPECT_TRUE(CheckBoardDeviceInLayer(context, clayer));
+  }
+
+  // test invalid forBoard values
+  const vector<string> invalidForBoardValues = {
+    "InvalidBoardName",
+    "InvalidBoardName:BoardRevision",
+    "BoardName:InvalidBoardRevision",
+    "InvalidBoardVendor::BoardName",
+    "BoardVendor::InvalidBoardName",
+    "InvalidBoardVendor::BoardName:BoardRevision",
+    "BoardVendor::InvalidBoardName:BoardRevision",
+    "BoardVendor::BoardName:InvalidBoardRevision",
+  };
+  for (const auto& forBoard : invalidForBoardValues) {
+    ClayerItem clayer;
+    clayer.forBoard = forBoard;
+    EXPECT_FALSE(CheckBoardDeviceInLayer(context, clayer));
+  }
+};
+
+TEST_F(ProjMgrWorkerUnitTests, CheckDeviceLayer) {
+  ContextItem context;
+  context.device = "DeviceVendor::DeviceName:DevicePname";
+
+  // test valid forDevice values
+  const vector<string> forDeviceValues = {
+    "",
+    "DeviceName"
+    ":DevicePname",
+    "DeviceName:DevicePname",
+    "DeviceVendor::DeviceName",
+    "DeviceVendor::DeviceName:DevicePname",
+  };
+  for (const auto& forDevice : forDeviceValues) {
+    ClayerItem clayer;
+    clayer.forDevice = forDevice;
+    EXPECT_TRUE(CheckBoardDeviceInLayer(context, clayer));
+  }
+
+  // test invalid forDevice values
+  const vector<string> invalidForDeviceValues = {
+    "InvalidDeviceName"
+    ":InvalidDevicePname",
+    "InvalidDeviceName:DevicePname",
+    "DeviceName:InvalidDevicePname",
+    "InvalidDeviceVendor::DeviceName",
+    "DeviceVendor::InvalidDeviceName",
+    "InvalidDeviceVendor::DeviceName:DevicePname",
+    "DeviceVendor::InvalidDeviceName:DevicePname",
+    "DeviceVendor::DeviceName:InvalidDevicePname",
+  };
+  for (const auto& forDevice : invalidForDeviceValues) {
+    ClayerItem clayer;
+    clayer.forDevice = forDevice;
+    EXPECT_FALSE(CheckBoardDeviceInLayer(context, clayer));
+  }
+};

@@ -652,7 +652,7 @@ TEST_F(ProjMgrUnitTests, ListLayersCompatible) {
   argv[4] = (char*)csolution.c_str();
   argv[5] = (char*)"-c";
   argv[6] = (char*)context.c_str();
-  argv[7] = (char*)"-v";
+  argv[7] = (char*)"-d";
   EXPECT_EQ(0, RunProjMgr(8, argv));
 
   const string& expectedErrStr = "\
@@ -716,6 +716,10 @@ valid configuration #3:\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml \\(layer type: Board\\)\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml \\(layer type: TestVariant\\)\n\
 \n\
+.*/ARM/RteTest_DFP/0.2.0/Layers/board1.clayer.yml \\(layer type: Board\\)\n\
+.*/ARM/RteTest_DFP/0.2.0/Layers/board2.clayer.yml \\(layer type: Board\\)\n\
+.*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml \\(layer type: Board\\)\n\
+.*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml \\(layer type: TestVariant\\)\n\
 ";
 
   const string& outStr = streamRedirect.GetOutString();
@@ -724,13 +728,14 @@ valid configuration #3:\n\
 
 TEST_F(ProjMgrUnitTests, ListLayersConfigurations) {
   StdStreamRedirect streamRedirect;
-  char* argv[5];
+  char* argv[6];
   const string& csolution = testinput_folder + "/TestLayers/config.csolution.yml";
   argv[1] = (char*)"list";
   argv[2] = (char*)"layers";
   argv[3] = (char*)"-s";
   argv[4] = (char*)csolution.c_str();
-  EXPECT_EQ(0, RunProjMgr(5, argv));
+  argv[5] = (char*)"-v";
+  EXPECT_EQ(0, RunProjMgr(6, argv));
 
   const string& expectedOutStr = "\
 info csolution: valid for context 'config.CompatibleLayers\\+RteTest_ARMCM3'\n\
@@ -757,6 +762,9 @@ valid configuration #2:\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/config2.clayer.yml \\(layer type: Config2\\)\n\
     set: set1.select2 \\(set 1 select 2 - connect G\\)\n\
 \n\
+.*/TestLayers/config.clayer.yml\n\
+.*/ARM/RteTest_DFP/0.2.0/Layers/config1.clayer.yml \\(layer type: Config1\\)\n\
+.*/ARM/RteTest_DFP/0.2.0/Layers/config2.clayer.yml \\(layer type: Config2\\)\n\
 ";
 
   const string& outStr = streamRedirect.GetOutString();
@@ -765,13 +773,14 @@ valid configuration #2:\n\
 
 TEST_F(ProjMgrUnitTests, ListLayersMultipleSelect) {
   StdStreamRedirect streamRedirect;
-  char* argv[5];
+  char* argv[6];
   const string& csolution = testinput_folder + "/TestLayers/select.csolution.yml";
   argv[1] = (char*)"list";
   argv[2] = (char*)"layers";
   argv[3] = (char*)"-s";
   argv[4] = (char*)csolution.c_str();
-  EXPECT_EQ(0, RunProjMgr(5, argv));
+  argv[5] = (char*)"-v";
+  EXPECT_EQ(0, RunProjMgr(6, argv));
 
   const string& expectedOutStr = "\
 info csolution: valid for context 'select\\+RteTest_ARMCM3'\n\
@@ -797,6 +806,7 @@ valid configuration #4:\n\
   .*/TestLayers/select.cproject.yml\n\
     set: set1.select2 \\(set 1 select 2 - project Z\\)\n\
 \n\
+.*/TestLayers/select.clayer.yml\n\
 ";
 
   const string& outStr = streamRedirect.GetOutString();
@@ -846,7 +856,7 @@ TEST_F(ProjMgrUnitTests, ListLayersUniquelyCompatibleBoard) {
   argv[4] = (char*)csolution.c_str();
   argv[5] = (char*)"-c";
   argv[6] = (char*)context.c_str();
-  argv[7] = (char*)"-v";
+  argv[7] = (char*)"-d";
   EXPECT_EQ(0, RunProjMgr(8, argv));
 
   const string& expectedErrStr = "\
@@ -880,6 +890,8 @@ valid configuration #1:\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml \\(layer type: Board\\)\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml \\(layer type: TestVariant\\)\n\
 \n\
+.*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml \\(layer type: Board\\)\n\
+.*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml \\(layer type: TestVariant\\)\n\
 ";
 
   const string& outStr = streamRedirect.GetOutString();
@@ -897,7 +909,7 @@ TEST_F(ProjMgrUnitTests, ListLayersIncompatible) {
   argv[4] = (char*)csolution.c_str();
   argv[5] = (char*)"-c";
   argv[6] = (char*)context.c_str();
-  argv[7] = (char*)"-v";
+  argv[7] = (char*)"-d";
   EXPECT_EQ(1, RunProjMgr(8, argv));
 
   const string& expected = "\
@@ -1006,7 +1018,7 @@ TEST_F(ProjMgrUnitTests, ListLayersSearchPath) {
   argv[4] = (char*)csolution.c_str();
   argv[5] = (char*)"--clayer-path";
   argv[6] = (char*)clayerSearchPath.c_str();
-  argv[7] = (char*)"-v";
+  argv[7] = (char*)"-d";
   EXPECT_EQ(1, RunProjMgr(8, argv));
 
   const string& expectedErrStr = ".*\
@@ -1071,7 +1083,7 @@ TEST_F(ProjMgrUnitTests, LayerVariablesNotDefined) {
   argv[4] = (char*)csolution.c_str();
   argv[5] = (char*)"-o";
   argv[6] = (char*)testoutput_folder.c_str();
-  argv[7] = (char*)"-v";
+  argv[7] = (char*)"-d";
   EXPECT_EQ(1, RunProjMgr(8, argv));
 
   const string& expectedErrStr = ".*\
@@ -1080,6 +1092,31 @@ TEST_F(ProjMgrUnitTests, LayerVariablesNotDefined) {
   .*/ARM/RteTest_DFP/0.2.0/Layers/board2.clayer.yml \\(layer type: Board\\).*\
   .*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml \\(layer type: Board\\).*\
 no valid combination of clayers was found\
+";
+
+  string errStr = streamRedirect.GetErrorString();
+  errStr.erase(std::remove(errStr.begin(), errStr.end(), '\n'), errStr.cend());
+
+  EXPECT_TRUE(regex_match(errStr, regex(expectedErrStr)));
+}
+
+TEST_F(ProjMgrUnitTests, LayerVariablesNotDefined_SearchPath) {
+  StdStreamRedirect streamRedirect;
+  char* argv[8];
+  const string& csolution = testinput_folder + "/TestLayers/variables-notdefined.csolution.yml";
+  const string& clayerSearchPath = testinput_folder + "/TestLayers/variables";
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"layers";
+  argv[3] = (char*)"-s";
+  argv[4] = (char*)csolution.c_str();
+  argv[5] = (char*)"--clayer-path";
+  argv[6] = (char*)clayerSearchPath.c_str();
+  argv[7] = (char*)"-v";
+  EXPECT_EQ(0, RunProjMgr(8, argv));
+
+  const string& expectedErrStr = ".*\
+clayer of type 'Board' was uniquely found:\
+  .*/TestLayers/variables/target1.clayer.yml\
 ";
 
   string errStr = streamRedirect.GetErrorString();

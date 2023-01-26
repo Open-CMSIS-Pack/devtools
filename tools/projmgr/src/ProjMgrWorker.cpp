@@ -189,6 +189,10 @@ void ProjMgrWorker::SetVerbose(bool verbose) {
   m_verbose = verbose;
 }
 
+void ProjMgrWorker::SetDebug(bool debug) {
+  m_debug = debug;
+}
+
 void ProjMgrWorker::SetLoadPacksPolicy(const LoadPacksPolicy& policy) {
   m_loadPacksPolicy = policy;
 }
@@ -551,7 +555,7 @@ bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context, const string& c
 
   // debug message
   string debugMsg;
-  if (m_verbose) {
+  if (m_debug) {
     debugMsg = "check for context '" + context.name + "'\n";
   }
 
@@ -572,7 +576,7 @@ bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context, const string& c
           matchedTypeClayers[requiredType].push_back(clayer);
         }
       } else {
-        if (m_verbose) {
+        if (m_debug) {
           debugMsg += "no clayer matches type '" + requiredType + "'\n";
         }
       }
@@ -585,9 +589,13 @@ bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context, const string& c
         }
         const ClayerItem& clayerItem = m_parser->GetGenericClayers()[clayer];
         if (type != clayerItem.type) {
-          if (m_verbose) {
+          if (m_debug) {
             debugMsg += "clayer type '" + clayerItem.type + "' does not match type '" + type + "' in pack description\n";
           }
+        }
+        // skip non-matching 'for-board' and 'for-device' filters
+        if (!CheckBoardDeviceInLayer(context, clayerItem)) {
+          continue;
         }
         ConnectionsCollection collection;
         collection.filename = &clayerItem.path;
@@ -615,7 +623,7 @@ bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context, const string& c
   // validate connections combinations
   for (const auto& combination : combinations) {
     // debug message
-    if (m_verbose) {
+    if (m_debug) {
       debugMsg += "\ncheck combined connections:";
       for (const auto& item : combination) {
         const auto& type = m_parser->GetGenericClayers()[*item.filename].type;
@@ -643,7 +651,7 @@ bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context, const string& c
     }
 
     // debug message
-    if (m_verbose) {
+    if (m_debug) {
       PrintConnectionsValidation(result, debugMsg);
       debugMsg += "connections are " + string(result.valid ? "valid" : "invalid") + "\n";
     }
@@ -656,12 +664,12 @@ bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context, const string& c
         if (context.compatibleLayers[type].size() == 1) {
           // unique match
           const auto& clayer = context.compatibleLayers[type].front();
-          if (m_verbose) {
+          if (m_debug) {
             debugMsg += "\nclayer of type '" + type + "' was uniquely found:\n  " + clayer + "\n";
           }
         } else if (context.compatibleLayers[type].size() > 1) {
           // multiple matches
-          if (m_verbose) {
+          if (m_debug) {
             debugMsg += "\nmultiple clayers match type '" + type + "':";
             for (const auto& clayer : context.compatibleLayers[type]) {
               debugMsg += "\n  " + clayer;
@@ -672,13 +680,13 @@ bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context, const string& c
       }
     } else {
       // no valid combination
-      if (m_verbose) {
+      if (m_debug) {
         debugMsg += "\nno valid combination of clayers was found\n";
       }
     }
   }
 
-  if (m_verbose) {
+  if (m_debug) {
     ProjMgrLogger::Debug(debugMsg);
   }
 
@@ -686,34 +694,36 @@ bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context, const string& c
     return false;
   }
 
-  // print all valid configuration options
-  if (context.validConnections.size() > 0) {
-    map<int, map<string, map<string, set<const ConnectItem*>>>> configurationOptions;
-    int index = 0;
-    for (const auto& combination : context.validConnections) {
-      index++;
-      for (const auto& item : combination) {
-        for (const auto& connect : item.connections) {
-          configurationOptions[index][*item.type][*item.filename].insert(connect);
-        }
-      }
-    }
-    string infoMsg = "valid for context '" + context.name + "'\n";
-    for (const auto& [index, types] : configurationOptions) {
-      infoMsg += "\nvalid configuration #" + to_string(index) + ":";
-      for (const auto& [type, filenames] : types) {
-        for (const auto& [filename, options] : filenames) {
-          infoMsg += "\n  " + filename + (type.empty() ? "" : " (layer type: " + type + ")");
-          for (const auto& connect : options) {
-            if (!connect->set.empty()) {
-              infoMsg += "\n    set: " + connect->set + " (" + (connect->info.empty() ? "" : connect->info + " - ") + connect->connect + ")";
-            }
+  if (m_verbose || m_debug) {
+    // print all valid configuration options
+    if (context.validConnections.size() > 0) {
+      map<int, map<string, map<string, set<const ConnectItem*>>>> configurationOptions;
+      int index = 0;
+      for (const auto& combination : context.validConnections) {
+        index++;
+        for (const auto& item : combination) {
+          for (const auto& connect : item.connections) {
+            configurationOptions[index][*item.type][*item.filename].insert(connect);
           }
         }
       }
-      infoMsg += "\n";
+      string infoMsg = "valid for context '" + context.name + "'\n";
+      for (const auto& [index, types] : configurationOptions) {
+        infoMsg += "\nvalid configuration #" + to_string(index) + ":";
+        for (const auto& [type, filenames] : types) {
+          for (const auto& [filename, options] : filenames) {
+            infoMsg += "\n  " + filename + (type.empty() ? "" : " (layer type: " + type + ")");
+            for (const auto& connect : options) {
+              if (!connect->set.empty()) {
+                infoMsg += "\n    set: " + connect->set + " (" + (connect->info.empty() ? "" : connect->info + " - ") + connect->connect + ")";
+              }
+            }
+          }
+        }
+        infoMsg += "\n";
+      }
+      ProjMgrLogger::Info(infoMsg);
     }
-    ProjMgrLogger::Info(infoMsg);
   }
   return true;
 }
@@ -2037,6 +2047,30 @@ bool ProjMgrWorker::AddComponent(const ComponentItem& src, const string& layer, 
   return true;
 }
 
+bool ProjMgrWorker::CheckBoardDeviceInLayer(const ContextItem& context, const ClayerItem& clayer) {
+  if (!clayer.forBoard.empty()) {
+    BoardItem forBoard, board;
+    GetBoardItem(clayer.forBoard, forBoard);
+    GetBoardItem(context.board, board);
+    if ((!forBoard.vendor.empty() && (forBoard.vendor != board.vendor)) ||
+        (!forBoard.name.empty() && (forBoard.name != board.name)) ||
+        (!forBoard.revision.empty() && (forBoard.revision != board.revision))) {
+      return false;
+    }
+  }
+  if (!clayer.forDevice.empty()) {
+    DeviceItem forDevice, device;
+    GetDeviceItem(clayer.forDevice, forDevice);
+    GetDeviceItem(context.device, device);
+    if ((!forDevice.vendor.empty() && (forDevice.vendor != device.vendor)) ||
+        (!forDevice.name.empty() && (forDevice.name != device.name)) ||
+        (!forDevice.pname.empty() && (forDevice.pname != device.pname))) {
+      return false;
+    }
+  }
+  return true;
+}
+
 bool ProjMgrWorker::CheckCompiler(const vector<string>& forCompiler, const string& selectedCompiler) {
   if (forCompiler.empty()) {
     return true;
@@ -2502,6 +2536,16 @@ bool ProjMgrWorker::ListLayers(vector<string>& layers, const string& clayerSearc
       // get matching layers for selected context
       if (!DiscoverMatchingLayers(context, clayerSearchPath)) {
         return false;
+      }
+      for (const auto& [clayer, clayerItem] : context.clayers) {
+        const string type = clayerItem->type.empty() ? "" : " (layer type: " + clayerItem->type + ")";
+        ProjMgrUtils::PushBackUniquely(layers, clayer + type);
+      }
+      for (const auto& [clayerType, clayerVec] : context.compatibleLayers) {
+        const string type = clayerType.empty() ? "" : " (layer type: " + clayerType + ")";
+        for (const auto& clayer : clayerVec) {
+          ProjMgrUtils::PushBackUniquely(layers, clayer + type);
+        }
       }
     }
   }
