@@ -60,3 +60,27 @@ TEST(SvdUtilsUnitTests, DISABLED_CheckTextGeneric_SfrCC2_CP1252_doubleQuote) {
 
   ASSERT_EQ("test1 \\\" test2 \\\" test3", s);
 }
+
+
+const list<tuple<bool, string>> testList = {
+  { true,  "read-only"         },
+  { true,  "write-only"        },
+  { true,  "read-write"        },
+  { true,  "writeOnce"         },
+  { true,  "read-writeOnce"    },
+  { true , "read"              }, // deprecated but ok
+  { true , "write"             }, // deprecated but ok
+  { true,  "read-writeonce"    }, // warning but ok
+  { false, "readonly"          },
+  { false, "writeonly"         },
+  { false, "readwrite"         },
+};
+
+TEST(SvdUtilsUnitTests, CheckConvertAccess) {
+
+  for(const auto& [testOk, testStr] : testList) {
+    SvdTypes::Access acc = SvdTypes::Access::UNDEF;
+    bool bFound = SvdUtils::ConvertAccess(testStr, acc, -1);
+    EXPECT_EQ(bFound, testOk) << "Error CheckConvertAccess: " << testStr << endl;
+  }
+}

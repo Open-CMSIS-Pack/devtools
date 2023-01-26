@@ -96,7 +96,7 @@ public:
   enum class ProtectionType   { UNDEF = 0, NONSECURE/*n*/, SECURE/*s*/, PRIVILEGED/*p*/             };
   enum class SauAccessType    { UNDEF = 0, NONSECURE/*n*/, SECURE/*c*/                              };
   enum class Expression       { UNDEF = 0, NONE, EXTEND, ARRAY, INVALID, ARRAYINVALID               };
-  enum class Access           { UNDEF = 0, READONLY, WRITEONLY, READWRITE, WRITEONCE, READWRITEONCE };
+  enum class Access           { UNDEF = 0, READONLY, WRITEONLY, READWRITE, WRITEONCE, READWRITEONCE, END };
   enum class AddrBlockUsage   { UNDEF = 0, REGISTERS, BUFFER, RESERVED                              };
   enum class Endian           { UNDEF = 0, LITTLE, BIG, SELECTABLE, OTHER                           };
   enum class ReadAction       { UNDEF = 0, CLEAR, SET, MODIFY, MODIFEXT                             };
