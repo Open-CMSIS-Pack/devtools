@@ -391,13 +391,6 @@ bool ValidateSyntax::CheckPackageReleaseDate(RtePackage* pKg)
       }
     }
 
-    if(!latestDate.empty() && !releaseDate.empty()) {
-      int res = AlnumCmp::Compare(latestDate, releaseDate);     // sorting of release version is fixed. The latest version is at the top the earliest release tag is at the bottom
-      if(res < 0) {   // allow same date
-        LogMsg("M396", TAG("Date"), RELEASEVER(releaseVersion), RELEASEDATE(releaseDate), LATESTVER(latestVersion), LATESTDATE(latestDate), LINE(latestLineNo), lineNo);
-      }
-    }
-
     latestVersion = releaseVersion;
     latestDate = releaseDate;
     latestLineNo = lineNo;
