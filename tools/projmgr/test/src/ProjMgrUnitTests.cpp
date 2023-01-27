@@ -794,16 +794,6 @@ valid configuration #2:\n\
   .*/TestLayers/select.clayer.yml\n\
   .*/TestLayers/select.cproject.yml\n\
     set: set1.select2 \\(set 1 select 2 - project Y\\)\n\
-\n\
-valid configuration #3:\n\
-  .*/TestLayers/select.clayer.yml\n\
-  .*/TestLayers/select.cproject.yml\n\
-    set: set1.select2 \\(set 1 select 2 - project Y\\)\n\
-    set: set1.select2 \\(set 1 select 2 - project Z\\)\n\
-\n\
-valid configuration #4:\n\
-  .*/TestLayers/select.clayer.yml\n\
-  .*/TestLayers/select.cproject.yml\n\
     set: set1.select2 \\(set 1 select 2 - project Z\\)\n\
 \n\
 .*/TestLayers/select.clayer.yml\n\

@@ -1173,3 +1173,26 @@ TEST_F(ProjMgrWorkerUnitTests, CheckDeviceLayer) {
     EXPECT_FALSE(CheckBoardDeviceInLayer(context, clayer));
   }
 };
+
+TEST_F(ProjMgrWorkerUnitTests, RemoveRedundantSubsets) {
+  const string strA = "A";
+  const string strB = "B";
+  const string strC = "C";
+  ConnectionsCollection A = { &strA };
+  ConnectionsCollection B = { &strB };
+  ConnectionsCollection C = { &strC };
+  ConnectionsCollectionVec vecAB = { A, B };
+  ConnectionsCollectionVec vecA = { A };
+  ConnectionsCollectionVec vecB = { B };
+  ConnectionsCollectionVec vecC = { C };
+  vector<ConnectionsCollectionVec> validConnections = { vecAB, vecA, vecB, vecC };
+  vector<ConnectionsCollectionVec> expected = { vecAB, vecC };
+  RemoveRedundantSubsets(validConnections);
+  auto it = validConnections.begin();
+  for (const auto& expectedItem : expected) {
+    auto it2 = (*it++).begin();
+    for (const auto& expectedElement : expectedItem) {
+      EXPECT_EQ(expectedElement.filename, (*it2++).filename);
+    }
+  }
+};

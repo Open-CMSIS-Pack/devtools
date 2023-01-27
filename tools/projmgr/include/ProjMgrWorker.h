@@ -563,6 +563,9 @@ protected:
   void PushBackUniquely(ConnectionsCollectionVec& vec, const ConnectionsCollection& value);
   std::string ExpandString(const std::string& src, const StrMap& variables);
   void ListLatestToolchains(StrMap& toolchains, const std::string& localDir);
+  bool IsConnectionSubset(const ConnectionsCollection& connectionSubset, const ConnectionsCollection& connectionSuperset);
+  bool IsCollectionSubset(const ConnectionsCollectionVec& collectionSubset, const ConnectionsCollectionVec& collectionSuperset);
+  void RemoveRedundantSubsets(std::vector<ConnectionsCollectionVec>& validConnections);
 };
 
 #endif  // PROJMGRWORKER_H
