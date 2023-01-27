@@ -694,6 +694,11 @@ bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context, const string& c
     return false;
   }
 
+  if (context.validConnections.size() > 0) {
+    // remove redundant sets
+    RemoveRedundantSubsets(context.validConnections);
+  }
+
   if (m_verbose || m_debug) {
     // print all valid configuration options
     if (context.validConnections.size() > 0) {
@@ -2879,4 +2884,54 @@ void ProjMgrWorker::PushBackUniquely(ConnectionsCollectionVec& vec, const Connec
     }
   }
   vec.push_back(value);
+}
+
+bool ProjMgrWorker::IsConnectionSubset(const ConnectionsCollection& connectionSubset, const ConnectionsCollection& connectionSuperset) {
+  if ((connectionSubset.type == connectionSuperset.type) &&
+    (connectionSubset.filename == connectionSuperset.filename)) {
+    ConnectPtrVec subset = connectionSubset.connections;
+    ConnectPtrVec superset = connectionSuperset.connections;
+    sort(subset.begin(), subset.end());
+    sort(superset.begin(), superset.end());
+    return includes(superset.begin(), superset.end(), subset.begin(), subset.end());
+  }
+  return false;
+}
+
+bool ProjMgrWorker::IsCollectionSubset(const ConnectionsCollectionVec& collectionSubset, const ConnectionsCollectionVec& collectionSuperset) {
+  for (const auto& subset : collectionSubset) {
+    bool isSubset = false;
+    for (const auto& superset : collectionSuperset) {
+      if (IsConnectionSubset(subset, superset)) {
+        isSubset = true;
+        break;
+      }
+    }
+    if (!isSubset) {
+      return false;
+    }
+  }
+  return true;
+}
+
+void ProjMgrWorker::RemoveRedundantSubsets(std::vector<ConnectionsCollectionVec>& validConnections) {
+  const auto connections = validConnections;
+  auto it = validConnections.begin();
+  for (const auto& collection : connections) {
+    bool isSubset = false;
+    for (const auto& otherCollection : connections) {
+      if (&collection == &otherCollection) {
+        continue;
+      }
+      if (IsCollectionSubset(collection, otherCollection)) {
+        isSubset = true;
+        break;
+      }
+    }
+    if (isSubset) {
+      it = validConnections.erase(it);
+    } else {
+      it++;
+    }
+  }
 }
