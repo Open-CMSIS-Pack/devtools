@@ -12,33 +12,6 @@
 #include "ProjMgrUtils.h"
 
 /**
-* @brief vector of ConnectItem pointers
-*/
-typedef std::vector<const ConnectItem*> ConnectPtrVec;
-
-/**
- * @brief connections collection item containing
- *        filename pointer
- *        layer type pointer
- *        vector of ConnectItem pointers
-*/
-struct ConnectionsCollection {
-  const std::string* filename;
-  const std::string* type;
-  ConnectPtrVec connections;
-};
-
-/**
- * @brief vector of ConnectionsCollection
-*/
-typedef std::vector<ConnectionsCollection> ConnectionsCollectionVec;
-
-/**
- * @brief map of ConnectionsCollection
-*/
-typedef std::map<std::string, ConnectionsCollectionVec> ConnectionsCollectionMap;
-
-/**
  * @brief connections validation result containing
  *        boolean valid,
  *        conflicted connections,
