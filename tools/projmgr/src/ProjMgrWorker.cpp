@@ -597,9 +597,7 @@ bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context, const string& c
         if (!CheckBoardDeviceInLayer(context, clayerItem)) {
           continue;
         }
-        ConnectionsCollection collection;
-        collection.filename = &clayerItem.path;
-        collection.type = &type;
+        ConnectionsCollection collection = {clayerItem.path, type};
         for (const auto& connect : clayerItem.connections) {
           collection.connections.push_back(&connect);
         }
@@ -626,8 +624,8 @@ bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context, const string& c
     if (m_debug) {
       debugMsg += "\ncheck combined connections:";
       for (const auto& item : combination) {
-        const auto& type = m_parser->GetGenericClayers()[*item.filename].type;
-        debugMsg += "\n  " + *item.filename + (type.empty() ? "" : " (layer type: " + type + ")");
+        const auto& type = m_parser->GetGenericClayers()[item.filename].type;
+        debugMsg += "\n  " + item.filename + (type.empty() ? "" : " (layer type: " + type + ")");
         for (const auto& connect : item.connections) {
           debugMsg += "\n    " + (connect->set.empty() ? "" : "set: " + connect->set + " ") + "(" +
             (connect->info.empty() ? "" : connect->info + " - ") + connect->connect + ")";
@@ -643,8 +641,8 @@ bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context, const string& c
       context.validConnections.push_back(combination);
       for (const auto& [type, _] : matchedTypeClayers) {
         for (const auto& item : combination) {
-          if (*item.type == type) {
-            ProjMgrUtils::PushBackUniquely(context.compatibleLayers[type], *item.filename);
+          if (item.type == type) {
+            ProjMgrUtils::PushBackUniquely(context.compatibleLayers[type], item.filename);
           }
         }
       }
@@ -708,7 +706,7 @@ bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context, const string& c
         index++;
         for (const auto& item : combination) {
           for (const auto& connect : item.connections) {
-            configurationOptions[index][*item.type][*item.filename].insert(connect);
+            configurationOptions[index][item.type][item.filename].insert(connect);
           }
         }
       }
@@ -761,17 +759,13 @@ void ProjMgrWorker::PrintConnectionsValidation(ConnectionsValidationResult resul
 
 void ProjMgrWorker::CollectConnections(ContextItem& context, ConnectionsCollectionVec& connections) {
   // collect connections from project and layers
-  ConnectionsCollection projectCollection;
-  projectCollection.filename = &context.cproject->path;
-  projectCollection.type = &RteUtils::EMPTY_STRING;
+  ConnectionsCollection projectCollection = { context.cproject->path, RteUtils::EMPTY_STRING };
   for (const auto& connect : context.cproject->connections) {
     projectCollection.connections.push_back(&connect);
   }
   connections.push_back(projectCollection);
   for (const auto& [_, clayerItem] : context.clayers) {
-    ConnectionsCollection layerCollection;
-    layerCollection.filename = &clayerItem->path;
-    layerCollection.type = &clayerItem->type;
+    ConnectionsCollection layerCollection = { clayerItem->path, clayerItem->type };
     for (const auto& connect : clayerItem->connections) {
       layerCollection.connections.push_back(&connect);
     }
@@ -784,7 +778,7 @@ ConnectionsCollectionMap ProjMgrWorker::ClassifyConnections(const ConnectionsCol
   ConnectionsCollectionMap classifiedConnections;
   for (const auto& collectionEntry : connections) {
     // get type classification
-    const string& classifiedType = collectionEntry.type->empty() ? to_string(hash<string>{}(*collectionEntry.filename)) : *collectionEntry.type;
+    const string& classifiedType = collectionEntry.type.empty() ? to_string(hash<string>{}(collectionEntry.filename)) : collectionEntry.type;
     // group connections by config-id
     map<string, ConnectPtrVec> connectionsMap;
     for (const auto& connect : collectionEntry.connections) {

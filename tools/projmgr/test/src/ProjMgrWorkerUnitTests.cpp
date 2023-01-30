@@ -880,12 +880,12 @@ TEST_F(ProjMgrWorkerUnitTests, GetAllCombinations) {
   const string strAnanasA = "AnanasA";
   const string strBananaA = "BananaA";
   const string strBananaB = "BananaB";
-  ConnectionsCollection OrangeA = { &strOrangeA };
-  ConnectionsCollection OrangeB = { &strOrangeB };
-  ConnectionsCollection OrangeC = { &strOrangeC };
-  ConnectionsCollection AnanasA = { &strAnanasA };
-  ConnectionsCollection BananaA = { &strBananaA };
-  ConnectionsCollection BananaB = { &strBananaB };
+  ConnectionsCollection OrangeA = { strOrangeA, RteUtils::EMPTY_STRING };
+  ConnectionsCollection OrangeB = { strOrangeB, RteUtils::EMPTY_STRING };
+  ConnectionsCollection OrangeC = { strOrangeC, RteUtils::EMPTY_STRING };
+  ConnectionsCollection AnanasA = { strAnanasA, RteUtils::EMPTY_STRING };
+  ConnectionsCollection BananaA = { strBananaA, RteUtils::EMPTY_STRING };
+  ConnectionsCollection BananaB = { strBananaB, RteUtils::EMPTY_STRING };
 
   ConnectionsCollectionMap connections = {
     {"Orange", {OrangeA, OrangeB, OrangeC}},
@@ -1178,9 +1178,9 @@ TEST_F(ProjMgrWorkerUnitTests, RemoveRedundantSubsets) {
   const string strA = "A";
   const string strB = "B";
   const string strC = "C";
-  ConnectionsCollection A = { &strA };
-  ConnectionsCollection B = { &strB };
-  ConnectionsCollection C = { &strC };
+  ConnectionsCollection A = { strA, RteUtils::EMPTY_STRING };
+  ConnectionsCollection B = { strB, RteUtils::EMPTY_STRING };
+  ConnectionsCollection C = { strC, RteUtils::EMPTY_STRING };
   ConnectionsCollectionVec vecAB = { A, B };
   ConnectionsCollectionVec vecA = { A };
   ConnectionsCollectionVec vecB = { B };
