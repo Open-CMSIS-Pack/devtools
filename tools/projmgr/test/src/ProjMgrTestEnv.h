@@ -24,6 +24,7 @@ public:
 
   std::string GetOutString();
   std::string GetErrorString();
+  void ClearStringStreams();
 
 private:
   std::stringstream m_outbuffer;

@@ -30,6 +30,11 @@ std::string StdStreamRedirect::GetErrorString() {
   return m_cerrbuffer.str();
 }
 
+void StdStreamRedirect::ClearStringStreams() {
+  m_outbuffer.str(string());
+  m_cerrbuffer.str(string());
+}
+
 StdStreamRedirect::~StdStreamRedirect() {
   // reverse redirect
   std::cout.rdbuf(m_stdoutStreamBuf);
