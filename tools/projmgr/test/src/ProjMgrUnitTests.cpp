@@ -203,7 +203,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks_project) {
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks_MultiContext) {
-  char* argv[7];
+  char* argv[9];
   StdStreamRedirect streamRedirect;
   const string& csolution = testinput_folder + "/TestSolution/test.csolution_pack_selection.yml";
   // list packs
@@ -217,6 +217,37 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks_MultiContext) {
 
   auto outStr = streamRedirect.GetOutString();
   EXPECT_TRUE(regex_match(outStr.c_str(), regex("ARM::RteTestGenerator@0.1.0 \\(.*\\)\nARM::RteTest_DFP@0.2.0 \\(.*\\)\n")));
+
+  argv[7] = (char*)"-l";
+  argv[8] = (char*)"latest";
+  streamRedirect.ClearStringStreams();
+  EXPECT_EQ(0, RunProjMgr(9, argv));
+
+  const string& expectedLatest = "\
+ARM::RteTest@0.1.0 \\(.*\\)\n\
+ARM::RteTestBoard@0.1.0 \\(.*\\)\n\
+ARM::RteTestGenerator@0.1.0 \\(.*\\)\n\
+ARM::RteTest_DFP@0.2.0 \\(.*\\)\n\
+";
+
+  outStr = streamRedirect.GetOutString();
+  EXPECT_TRUE(regex_match(outStr, regex(expectedLatest)));
+
+  argv[7] = (char*)"-l";
+  argv[8] = (char*)"all";
+  streamRedirect.ClearStringStreams();
+  EXPECT_EQ(0, RunProjMgr(9, argv));
+
+  const string& expectedAll = "\
+ARM::RteTest@0.1.0 \\(.*\\)\n\
+ARM::RteTestBoard@0.1.0 \\(.*\\)\n\
+ARM::RteTestGenerator@0.1.0 \\(.*\\)\n\
+ARM::RteTest_DFP@0.1.1 \\(.*\\)\n\
+ARM::RteTest_DFP@0.2.0 \\(.*\\)\n\
+";
+
+  outStr = streamRedirect.GetOutString();
+  EXPECT_TRUE(regex_match(outStr, regex(expectedAll)));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacksMissing) {

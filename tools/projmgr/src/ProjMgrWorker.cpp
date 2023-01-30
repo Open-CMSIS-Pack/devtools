@@ -352,7 +352,7 @@ bool ProjMgrWorker::LoadPacks(ContextItem& context) {
     return false;
   }
   // Filter context specific packs
-  if (!context.pdscFiles.empty()) {
+  if (!context.pdscFiles.empty() && (m_loadPacksPolicy != LoadPacksPolicy::ALL) && (m_loadPacksPolicy != LoadPacksPolicy::LATEST)) {
     RteAttributesMap selectedPacks;
     for (const auto& pack : m_loadedPacks) {
       if (context.pdscFiles.find(pack->GetPackageFileName()) != context.pdscFiles.end()) {
