@@ -189,3 +189,19 @@ TEST_F(TestCheckFiles, CheckCaseSense)
   RteFsUtils::RemoveDir(testDataFolder);
   checkFiles.SetPackagePath(packPath);
 }
+
+
+TEST_F(TestCheckFiles, CheckForSpaces)
+{
+  map<string, bool> testInputs = {
+    // FilePath, expectedResults
+    { RteUtils::EMPTY_STRING,        true},
+    { "TestFile.h",                  true},
+    { "Test File.h",                 false},
+  };
+
+  for (const auto& [fileName, result] : testInputs) {
+    EXPECT_EQ(result, checkFiles.CheckForSpaces(fileName, 1)) <<
+      "error: failed for input \"" << fileName << "\"" << endl;
+  }
+}
