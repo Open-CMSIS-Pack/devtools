@@ -122,7 +122,7 @@ const MsgTable PackChk::msgTable = {
   { "M311", { MsgLevel::LEVEL_ERROR,    CRLF_B, "Redefinition of '%TAG%' : '%NAME%', see Line %LINE%" } },
   { "M312", { MsgLevel::LEVEL_WARNING3, CRLF_B, "No '%TAG%' found for device '%NAME%'" } },
   { "M313", { MsgLevel::LEVEL_WARNING,  CRLF_B, "" } },
-  { "M314", { MsgLevel::LEVEL_ERROR,    CRLF_B, "" } },
+  { "M314", { MsgLevel::LEVEL_WARNING,  CRLF_B, "Filename '%NAME%' contains whitespaces, this is not recommended" } },
   { "M315", { MsgLevel::LEVEL_ERROR,    CRLF_B, "Invalid URL / Paths to Drives are not allowed in Package URL: '%URL%'" } },
   { "M316", { MsgLevel::LEVEL_WARNING,  CRLF_B, "URL must end with slash '/': '%URL%'" } },
   { "M317", { MsgLevel::LEVEL_ERROR,    CRLF_B, "" } },

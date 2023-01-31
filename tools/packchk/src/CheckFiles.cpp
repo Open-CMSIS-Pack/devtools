@@ -236,6 +236,7 @@ bool CheckFiles::CheckFile(RteItem* item)
   if(!fileName.empty()) {
     if(CheckFileExists(fileName, lineNo)) {
       CheckCaseSense(fileName, lineNo);
+      CheckForSpaces(fileName, lineNo);
     }
 
     if(tag == "environment" && envName == "DS5") {
@@ -261,6 +262,7 @@ bool CheckFiles::CheckFile(RteItem* item)
   if(!fileName2.empty()) {
     if(CheckFileExists(fileName2, lineNo)) {
       CheckCaseSense(fileName2, lineNo);   // File must exist for this check!
+      CheckForSpaces(fileName2, lineNo);
     }
   }
 
@@ -413,6 +415,27 @@ bool CheckFiles::CheckCaseSense(const string& fileName, int lineNo)
     LogMsg("M010");
   }
   return ok;
+}
+
+/**
+ * @brief check name for whitespace
+ * @param fileName filename as written in PDSC
+ * @param lineNo line number for error reporting
+ * @return true/false
+*/
+bool CheckFiles::CheckForSpaces(const string& fileName, int lineNo)
+{
+  if (fileName.empty()) {
+    return true;
+  }
+
+  string name = RteUtils::ExtractFileName(fileName);
+  if(name.find(' ') != string::npos) {
+    LogMsg("M314", PATH(name), lineNo);
+    return false;
+  }
+
+  return true;
 }
 
 /**

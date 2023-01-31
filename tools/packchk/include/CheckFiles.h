@@ -32,6 +32,7 @@ public:
   bool CheckFile(RteItem* item);
   bool CheckFileExists(const std::string& fileName, int lineNo, bool associated = false);
   bool CheckCaseSense(const std::string& fileName, int lineNo);
+  bool CheckForSpaces(const std::string& fileName, int lineNo);
   bool FindGetExactFileSystemName(const std::string& path, const std::string& fileNameIn, std::string& fileNameOut);
   bool CheckFileHasVersion(RteItem* item);
   bool CheckFileExtension(RteItem* item);
