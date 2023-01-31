@@ -236,6 +236,7 @@ bool CheckFiles::CheckFile(RteItem* item)
   if(!fileName.empty()) {
     if(CheckFileExists(fileName, lineNo)) {
       CheckCaseSense(fileName, lineNo);
+      CheckFileIsInPack(fileName, lineNo);
       CheckForSpaces(fileName, lineNo);
     }
 
@@ -262,6 +263,7 @@ bool CheckFiles::CheckFile(RteItem* item)
   if(!fileName2.empty()) {
     if(CheckFileExists(fileName2, lineNo)) {
       CheckCaseSense(fileName2, lineNo);   // File must exist for this check!
+      CheckFileIsInPack(fileName2, lineNo);
       CheckForSpaces(fileName2, lineNo);
     }
   }
@@ -356,6 +358,35 @@ bool CheckFiles::FindGetExactFileSystemName(const std::string& path, const std::
   return false;
 }
 
+
+/**
+ * @brief check if file is below pack root folder
+ * @param fileName filename as written in PDSC
+ * @param lineNo line number for error reporting
+ * @return true/false
+*/
+bool CheckFiles::CheckFileIsInPack(const string& fileName, int lineNo)
+{
+  if (fileName.empty()) {
+    return true;
+  }
+
+  string fullFileName = GetFullFilename(fileName);
+  string absPath = RteFsUtils::MakePathCanonical(fullFileName);
+  if(absPath.empty()) {
+    return true;
+  }
+
+  const auto& packPath = GetPackagePath();
+  if(absPath.find(packPath, 0) != 0) {
+    LogMsg("M313", PATH(fileName), lineNo);
+    return false;
+  }
+
+  return true;
+}
+
+
 /**
  * @brief check name as written in PDSC against it's counterpart on the filesystem, for case sensitivity
  * @param fileName filename as written in PDSC
@@ -365,6 +396,12 @@ bool CheckFiles::FindGetExactFileSystemName(const std::string& path, const std::
 bool CheckFiles::CheckCaseSense(const string& fileName, int lineNo)
 {
   if (fileName.empty()) {
+    return true;
+  }
+
+  // not testing relative paths. They must be interpreted first to be comparable to FS path,
+  // and there is no function doing this without changing the case of path characters.
+  if(fileName.find("./") != string::npos || fileName.find("../") != string::npos) {
     return true;
   }
 
