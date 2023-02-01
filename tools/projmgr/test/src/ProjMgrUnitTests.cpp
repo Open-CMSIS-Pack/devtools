@@ -794,8 +794,16 @@ valid configuration #2:\n\
     set: set1.select2 \\(set 1 select 2 - connect G\\)\n\
 \n\
 .*/TestLayers/config.clayer.yml\n\
+  set: set1.select1 \\(set 1 select 1 - connect R\\)\n\
+  set: set1.select2 \\(set 1 select 2 - connect S\\)\n\
 .*/ARM/RteTest_DFP/0.2.0/Layers/config1.clayer.yml \\(layer type: Config1\\)\n\
+  set: set1.select1 \\(set 1 select 1 - connect A\\)\n\
+  set: set1.select2 \\(set 1 select 2 - connect B\\)\n\
+  set: set2.select1 \\(set 2 select 1 - connect C\\)\n\
+  set: set2.select2 \\(set 2 select 2 - connect D\\)\n\
 .*/ARM/RteTest_DFP/0.2.0/Layers/config2.clayer.yml \\(layer type: Config2\\)\n\
+  set: set1.select1 \\(set 1 select 1 - connect F\\)\n\
+  set: set1.select2 \\(set 1 select 2 - connect G\\)\n\
 ";
 
   const string& outStr = streamRedirect.GetOutString();

@@ -24,14 +24,14 @@ Usage:\n\
             <command> [<arg>] [OPTIONS...]\n\n\
  Commands:\n\
    list packs            Print list of used packs from the pack repository\n\
-        boards           Print list of available board names\n\
-        devices          Print list of available device names\n\
-        components       Print list of available components\n\
-        dependencies     Print list of unresolved project dependencies\n\
-        contexts         Print list of contexts in a csolution.yml\n\
-        generators       Print list of code generators of a given context\n\
-        layers           Print list of available, referenced and compatible layers\n\
-        toolchains       Print list of installed toolchains\n\
+   list boards           Print list of available board names\n\
+   list devices          Print list of available device names\n\
+   list components       Print list of available components\n\
+   list dependencies     Print list of unresolved project dependencies\n\
+   list contexts         Print list of contexts in a csolution.yml\n\
+   list generators       Print list of code generators of a given context\n\
+   list layers           Print list of available, referenced and compatible layers\n\
+   list toolchains       Print list of supported toolchains\n\
    convert               Convert *.csolution.yml input file in *.cprj files\n\
    run                   Run code generator\n\n\
  Options:\n\
