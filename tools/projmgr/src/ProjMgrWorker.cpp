@@ -2536,15 +2536,22 @@ bool ProjMgrWorker::ListLayers(vector<string>& layers, const string& clayerSearc
       if (!DiscoverMatchingLayers(context, clayerSearchPath)) {
         return false;
       }
+      StrMap layersMap;
       for (const auto& [clayer, clayerItem] : context.clayers) {
-        const string type = clayerItem->type.empty() ? "" : " (layer type: " + clayerItem->type + ")";
-        ProjMgrUtils::PushBackUniquely(layers, clayer + type);
+        layersMap[clayer] = clayerItem->type;
       }
       for (const auto& [clayerType, clayerVec] : context.compatibleLayers) {
-        const string type = clayerType.empty() ? "" : " (layer type: " + clayerType + ")";
         for (const auto& clayer : clayerVec) {
-          ProjMgrUtils::PushBackUniquely(layers, clayer + type);
+          layersMap[clayer] = clayerType;
         }
+      }
+      for (const auto& [clayer, type] : layersMap) {
+        string layerEntry = clayer + (type.empty() ? "" : " (layer type: " + type + ")");
+        const auto& validSets = GetValidSets(context, clayer);
+        for (const auto& connect : validSets) {
+          layerEntry += "\n  set: " + connect->set + " (" + (connect->info.empty() ? "" : connect->info + " - ") + connect->connect + ")";
+        }
+        ProjMgrUtils::PushBackUniquely(layers, layerEntry);
       }
     }
   }
@@ -2928,4 +2935,20 @@ void ProjMgrWorker::RemoveRedundantSubsets(std::vector<ConnectionsCollectionVec>
       it++;
     }
   }
+}
+
+ConnectPtrVec ProjMgrWorker::GetValidSets(ContextItem& context, const string& clayer) {
+  set<const ConnectItem*> validSets;
+  for (const auto& combination : context.validConnections) {
+    for (const auto& item : combination) {
+      if (item.filename == clayer) {
+        for (const auto& connect : item.connections) {
+          if (!connect->set.empty()) {
+            validSets.insert(connect);
+          }
+        }
+      }
+    }
+  }
+  return vector(validSets.begin(), validSets.end());
 }
