@@ -30,7 +30,7 @@ class RteProject;
 /**
  * @brief class to store settings per project target for an owning item: component, file, pack
 */
-class RteInstanceTargetInfo : public RteAttributes
+class RteInstanceTargetInfo : public RteItem
 {
 public:
 
@@ -120,34 +120,34 @@ public:
 
   /**
    * @brief get memory options
-   * @return memory options as a reference to RteAttributes
+   * @return memory options as a reference to RteItem
   */
   const RteItem& GetMemOpt() const { return m_memOpt; }
 
   /**
    * @brief get C/C++ compiler options
-   * @return C/C++ compiler options as a reference to RteAttributes
+   * @return C/C++ compiler options as a reference to RteItem
   */
   const RteItem& GetCOpt() const { return m_cOpt; }
   /**
    * @brief get assembler options
-   * @return assembler options as a reference to RteAttributes
+   * @return assembler options as a reference to RteItem
   */
   const RteItem& GetAsmOpt() const { return m_asmOpt; }
 
   /**
    * @brief get options of specified type (immutable)
    * @param type options type as RteOptType value
-   * @return pointer to RteAttributes containing options, nullptr if no such options are supported
+   * @return pointer to RteItem containing options, nullptr if no such options are supported
   */
-  const RteAttributes* GetOpt(RteOptType type) const;
+  const RteItem* GetOpt(RteOptType type) const;
 
   /**
    * @brief get options of specified type (mutable)
    * @param type options type as RteOptType value
-   * @return pointer to RteAttributes containing options, nullptr if no such options are supported
+   * @return pointer to RteItem containing options, nullptr if no such options are supported
   */
-  RteAttributes* GetOpt(RteOptType type);
+  RteItem* GetOpt(RteOptType type);
 
   /**
    * @brief check if the instance contains specific options for compiler, assembler or memory
@@ -405,15 +405,15 @@ public:
 
   /**
    * @brief get pack attributes
-   * @return pack attributes as RteAttributes reference
+   * @return pack attributes as RteItem reference
   */
-  virtual const RteAttributes& GetPackageAttributes() const { return m_packageAttributes; }
+  virtual const RteItem& GetPackageAttributes() const { return m_packageAttributes; }
   /**
    * @brief set pack attributes
-   * @param attr RteAttributes to set
+   * @param attr attributes to set as XmlItem reference
    * @return true if changed
   */
-  virtual bool SetPackageAttributes(const RteAttributes& attr) { return m_packageAttributes.SetAttributes(attr); }
+  virtual bool SetPackageAttributes(const XmlItem& attr) { return m_packageAttributes.SetAttributes(attr); }
 
   /**
    * @brief get pointer to resolved RtePackage
@@ -537,6 +537,19 @@ public:
   RtePackageInstanceInfo(RteItem* parent) : RteItemInstance(parent) {};
 
   /**
+   * @brief constructor
+   * @param parent pointer to RteItem parent
+   * @param packId full pack ID
+  */
+  RtePackageInstanceInfo(RteItem* parent, const std::string& packId);
+
+  /**
+   * @brief set pack ID and set corresponding attributes
+   * @param packId full pack ID
+  */
+  void SetPackId(const std::string& packId);
+
+  /**
    * @brief get resolved pack for specified target
    * @param targetName target name
    * @return pointer to RtePackage if resolved, nullptr otherwise
@@ -566,14 +579,14 @@ public:
    * @brief get pack attributes
    * @return reference to this
   */
-  virtual const RteAttributes& GetPackageAttributes() const override { return *this; }
+  virtual const RteItem& GetPackageAttributes() const override { return *this; }
 
   /**
    * @brief set pack attributes
    * @param attr pack attributes to set
    * @return true if attribute values have changed
   */
-  virtual bool SetPackageAttributes(const RteAttributes& attr) override { return SetAttributes(attr); }
+  virtual bool SetPackageAttributes(const XmlItem& attr) override { return SetAttributes(attr); }
 
   /**
    * @brief check if this object contains pack attributes directly rather than in a dedicated child
@@ -668,14 +681,14 @@ public:
    * @brief get pack attributes
    * @return reference to this
   */
-  virtual const RteAttributes& GetPackageAttributes() const override { return *this; }
+  virtual const RteItem& GetPackageAttributes() const override { return *this; }
 
   /**
    * @brief set pack attributes
    * @param attr pack attributes
    * @return true if changed
   */
-  virtual bool SetPackageAttributes(const RteAttributes& attr) override { return SetAttributes(attr); }
+  virtual bool SetPackageAttributes(const XmlItem& attr) override { return SetAttributes(attr); }
 
   /**
    * @brief check if this object contains pack attributes directly rather than in a dedicated child

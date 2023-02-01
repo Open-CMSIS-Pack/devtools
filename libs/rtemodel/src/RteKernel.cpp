@@ -300,7 +300,7 @@ bool RteKernel::LoadRequiredPdscFiles(CprjFile* cprjFile)
 }
 
 
-string RteKernel::GetInstalledPdscFile(const RteAttributes& attributes, const string& rtePath, string& packId)
+string RteKernel::GetInstalledPdscFile(const XmlItem& attributes, const string& rtePath, string& packId)
 {
   const string& name = attributes.GetAttribute("name");
   const string& vendor = attributes.GetAttribute("vendor");
@@ -319,7 +319,7 @@ string RteKernel::GetInstalledPdscFile(const RteAttributes& attributes, const st
   return RteUtils::EMPTY_STRING;
 }
 
-string RteKernel::GetLocalPdscFile(const RteAttributes& attributes, const string& rtePath, string& packId)
+string RteKernel::GetLocalPdscFile(const XmlItem& attributes, const string& rtePath, string& packId)
 {
   const string& name = attributes.GetAttribute("name");
   const string& vendor = attributes.GetAttribute("vendor");
@@ -334,7 +334,7 @@ string RteKernel::GetLocalPdscFile(const RteAttributes& attributes, const string
   return RteUtils::EMPTY_STRING;
 }
 
-string RteKernel::GetPdscFileFromPath(const RteAttributes& attributes, const string& cprjPath, string& packId)
+string RteKernel::GetPdscFileFromPath(const XmlItem& attributes, const string& cprjPath, string& packId)
 {
   const string& name = attributes.GetAttribute("name");
   const string& vendor = attributes.GetAttribute("vendor");

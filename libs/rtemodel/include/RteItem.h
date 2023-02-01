@@ -16,7 +16,6 @@
 
 #include "RteCallback.h"
 
-#include "RteAttributes.h"
 #include "RteUtils.h"
 
 #include "XmlTreeItem.h"
@@ -79,7 +78,7 @@ public:
 /**
  * @brief base RTE Data Model class to describe an XML element in a *.pdsc and *.cprj files.
 */
-class RteItem : public RteAttributes
+class RteItem : public XmlItem
 {
 
 public:
@@ -114,6 +113,15 @@ public:
    * @param parent pointer to parent RteItem or nullptr if this item has no parent
   */
   RteItem(RteItem* parent = nullptr);
+
+/**
+  * @brief parametrized constructor to instantiate with given attributes
+  * @param attributes collection as key to value pairs
+  * @param parent pointer to parent RteItem or nullptr if this item has no parent
+ */
+  RteItem(const std::map<std::string, std::string>& attributes, RteItem* parent = nullptr);
+
+
 
   /**
    * @brief virtual destructor
@@ -230,7 +238,7 @@ public:
    * @param nameOrTag attribute key or child's tag
    * @return string value, empty if not found
   */
-  virtual const std::string& GetItemValue(const std::string& nameOrTag) const;
+  virtual const std::string& GetItemValue(const std::string& nameOrTag) const override;
 
   /**
    * @brief get url or file path to documentation associated with this item
@@ -239,10 +247,34 @@ public:
   virtual const std::string& GetDocValue() const;
 
   /**
+ * @brief determine value of attribute "doc" or "name" in case first one is empty
+ * @return value of attribute "doc"
+*/
+  virtual const std::string& GetDocAttribute() const;
+
+  /**
    * @brief get vendor associated with the item
    * @return vendor string
   */
-  virtual const std::string& GetVendorString() const override;
+  virtual const std::string& GetVendorString() const;
+
+  /**
+ * @brief determine official vendor name of attribute related to vendor
+ * @return official vendor name
+*/
+  virtual std::string GetVendorName() const;
+
+  /**
+ * @brief determine value of attribute related to version
+ * @return value of attribute related to version
+*/
+  virtual const std::string& GetVersionString() const;
+
+  /**
+ * @brief determine value of attribute related to API version
+ * @return value of attribute related to API version
+*/
+  virtual const std::string& GetApiVersionString() const { return GetAttribute("Capiversion"); }
 
   /**
    * @brief sort children of an RteItem instance
@@ -296,12 +328,6 @@ public:
   virtual RteComponent* GetComponent() const;
 
   /**
-   * @brief get component aggregate ID for this item
-   * @return component aggregate ID if this item is an RteComponent or has RteComponent parent
-  */
-  virtual std::string GetComponentAggregateID() const override;
-
-  /**
    * @brief search for RteProject item in the parent chain
    * @return pointer to this or parent RteProject or nullptr
   */
@@ -347,7 +373,27 @@ public:
    * @param withVersion flag to include version information into ID
    * @return component unique ID
   */
-  virtual std::string GetComponentUniqueID(bool withVersion) const override;
+  virtual std::string GetComponentUniqueID(bool withVersion) const;
+
+  /**
+ * @brief determine component ID
+ * @param withVersion true if version is considered as part of component ID
+ * @return full component ID
+*/
+  virtual std::string GetComponentID(bool withVersion) const;
+
+  /**
+ * @brief get component aggregate ID for this item
+ * @return component aggregate ID if this item is an RteComponent or has RteComponent parent
+*/
+  virtual std::string GetComponentAggregateID() const;
+
+  /**
+   * @brief determine API ID
+   * @param withVersion true if version is considered as part of API ID
+   * @return API ID
+  */
+  virtual std::string GetApiID(bool withVersion) const;
 
   /**
    * @brief get item's name to display to user
@@ -355,13 +401,108 @@ public:
   */
   virtual std::string GetDisplayName() const;
 
+  /**
+ * @brief check if tag is API
+ * @return true if tag is API
+*/
+  virtual bool IsApi() const { return m_tag == "api"; }
 
+  /**
+   * @brief return value of component attribute "Cclass"
+   * @return value of component attribute "Cclass"
+  */
+  virtual const std::string& GetCclassName() const { return GetAttribute("Cclass"); }
+  /**
+   * @brief return value of component attribute "Cgroup"
+   * @return value of component attribute "Cgroup"
+  */
+  virtual const std::string& GetCgroupName() const { return GetAttribute("Cgroup"); }
+  /**
+   * @brief return value of component attribute "Csub"
+   * @return value of component attribute "Csub"
+  */
+  virtual const std::string& GetCsubName() const { return GetAttribute("Csub"); }
+  /**
+   * @brief return value of component attribute "Cvariant"
+   * @return value of component attribute "Cvariant"
+  */
+  virtual const std::string& GetCvariantName() const { return GetAttribute("Cvariant"); }
+  /**
+   * @brief return value of component attribute "Cbundle"
+   * @return value of component attribute "Cbundle"
+  */
+  virtual const std::string& GetCbundleName() const { return GetAttribute("Cbundle"); }
+
+  /**
+ * @brief construct string containing component's attributes "Cclass" "Cgroup" and "Csub"
+ * @param delimiter character between attributes "Cclass" "Cgroup" and "Csub"
+ * @return component ID
+*/
+  std::string ConcatenateCclassCgroupCsub(char delimiter = '.') const;
+
+  /**
+ * @brief construct component ID
+ * @param prefix component ID prefix (empty for API, Cvendor[.Cbundle] for components)
+ * @param bVariant true if value of attribute "Cvariant" should be included
+ * @param bVersion true if value of attribute related to version should be included
+ * @param bCondition true if condition ID should be included
+ * @param delimiter character between attributes "Cclass" "Cgroup" and "Csub"
+ * @return component ID
+*/
+  std::string ConstructComponentID(const std::string& prefix, bool bVariant, bool bVersion, bool bCondition, char delimiter = '.') const;
+
+  /**
+   * @brief construct component display name
+   * @param bClass true if value of attribute "Cclass" should be included
+   * @param bVariant true if value of attribute "Cvariant" should be included
+   * @param bVersion true if value of attribute related to version should be included
+   * @param delimiter character between attributes "Cclass" "Cgroup" and "Csub"
+   * @return
+  */
+  virtual std::string ConstructComponentDisplayName(bool bClass = false, bool bVariant = false, bool bVersion = false, char delimiter = ':') const;
+
+  /**
+ * @brief only if not an API, determine value of vendor and bundle attribute (if any, separated by a blank)
+ * @return value of vendor and bundle attribute
+*/
+  virtual std::string GetVendorAndBundle() const;
+
+  /**
+   * @brief determine value of component attribute "Cclass" with "::" as prefix included
+   * @return project group name
+  */
+  virtual std::string GetProjectGroupName() const;
+
+  /**
+   * @brief only if bundle attribute not empty, determine value of vendor and bundle attribute
+   * @return value of vendor and bundle attribute
+  */
+  virtual std::string GetBundleShortID() const;
+
+  /**
+   * @brief determine bundle ID
+   * @param bWithVersion true if version should be included
+   * @return bundle ID
+  */
+  virtual std::string GetBundleID(bool bWithVersion) const;
+
+  /**
+ * @brief determine taxonomy ID of an item
+ * @return taxonomy ID of an item
+*/
+  virtual std::string GetTaxonomyDescriptionID() const;
+  /**
+   * @brief determine taxonomy ID of the given attributes
+   * @param attributes list of attributes as XmlItem reference
+   * @return taxonomy ID
+  */
+  static std::string GetTaxonomyDescriptionID(const XmlItem& attributes);
   /**
    * @brief get ID of RtePackage containing this item
    * @param withVersion flag to append version to pack ID
    * @return pack ID if any or empty string
   */
-  virtual std::string GetPackageID(bool withVersion = true) const override;
+  virtual std::string GetPackageID(bool withVersion = true) const;
 
   /**
    * @brief get path to installed pack containing this item
@@ -402,6 +543,45 @@ public:
   */
   virtual bool MatchesHost() const;
 
+ /**
+* @brief checks if the item contains all attributes matching those in the supplied map
+* @param attributes map of key-value pairs to match against component attributes
+* @return true if the item has all attributes found in the supplied map
+*/
+  virtual bool MatchComponentAttributes(const std::map<std::string, std::string>& attributes) const;
+
+ /**
+  * @brief check if the item matches supplied API attributes
+  * @param attributes collection of 'C' (API) attributes
+  * @return true if the item matches supplied API attributes
+ */
+  virtual bool MatchApiAttributes(const std::map<std::string, std::string>& attributes) const;
+
+ /**
+  * @brief check if given collection of attributes contains the same values for "Dname", "Pname" and "Dvendor"
+  * @param attributes collection of attributes
+  * @return true if collection of attributes contains the same values for "Dname", "Pname" and "Dvendor"
+ */
+  virtual bool MatchDevice(const std::map<std::string, std::string>& attributes) const;
+
+ /**
+  * @brief check if the item matches all supplied 'D' attributes stored in the instance
+  * @param attributes collection of 'D' device attributes
+  * @return true if given list contains all device attributes stored in the instance
+ */
+  virtual bool MatchDeviceAttributes(const std::map<std::string, std::string>& attributes) const;
+
+  /**
+ * @brief check if attribute "maxInstances" is not empty
+ * @return true if attribute "maxInstances" is not empty
+*/
+  virtual bool HasMaxInstances() const;
+  /**
+   * @brief determine value of attribute "maxInstances" as integer, default value is 1
+   * @return value of attribute "maxInstances" as integer, default value is 1
+  */
+  virtual int GetMaxInstances() const;
+
   /**
    * @brief expands key sequences ("@L", "%L", etc.) in the supplied string.
    * @param str string to expand
@@ -429,6 +609,71 @@ public:
   */
   virtual std::string GetDownloadUrl(bool withVersion, const char* extension) const;
 
+  /**
+  * @brief determine value of attribute "condition"
+  * @return condition ID
+  */
+  virtual const std::string& GetConditionID() const { return GetAttribute("condition"); }
+
+  /**
+   * @brief return value of attribute "variant"
+   * @return value of attribute "variant"
+   */
+  virtual const std::string& GetVariantString() const { return GetAttribute("variant"); }
+
+  /**
+   * @brief return value of attribute "type"
+   * @return value of attribute "type"
+  */
+  virtual const std::string& GetTypeString() const { return GetAttribute("type"); }
+  /**
+  * @brief return value of attribute "file"
+  * @return value of attribute "file"
+  */
+  virtual const std::string& GetFileString() const { return GetAttribute("file"); }
+  /**
+   * @brief return value of attribute "file"
+   * @return value of attribute "file"
+   */
+  virtual const std::string& GetFolderString() const { return GetAttribute("folder"); }
+
+  /**
+ * @brief determine full device name
+ * @return full device name
+*/
+  virtual std::string GetFullDeviceName() const;
+
+  /**
+  * @brief return value of device attribute "Dfamily"
+  * @return value of device attribute "Dfamily"
+ */
+  virtual const std::string& GetDeviceFamilyName() const { return GetAttribute("Dfamily"); }
+  /**
+   * @brief return value of device attribute "DsubFamily"
+   * @return value of device attribute "DsubFamily"
+  */
+  virtual const std::string& GetDeviceSubFamilyName()const { return GetAttribute("DsubFamily"); }
+  /**
+   * @brief return value of device attribute "Dname"
+   * @return value of device attribute "Dname"
+  */
+  virtual const std::string& GetDeviceName() const { return GetAttribute("Dname"); }
+  /**
+   * @brief return value of device attribute "Dvariant"
+   * @return value of device attribute "Dvariant"
+  */
+  virtual const std::string& GetDeviceVariantName() const { return GetAttribute("Dvariant"); }
+  /**
+   * @brief return value of device attribute "Dvendor"
+   * @return value of device attribute "Dvendor"
+  */
+  virtual const std::string& GetDeviceVendor() const { return GetAttribute("Dvendor"); }
+  /**
+   * @brief return value of attribute "Pname"
+   * @return value of attribute "Pname"
+  */
+
+  virtual const std::string& GetProcessorName() const { return GetAttribute("Pname"); }
   /**
  * @brief return value of memory attribute "alias"
  * @return value of memory attribute "alias"
@@ -490,12 +735,6 @@ public:
    * @return true if memory peripheral area specified
   */
   virtual bool IsPeripheralAccess();
-  /**
-   * @brief determine value of attribute "condition"
-   * @return condition ID
-  */
-  virtual const std::string& GetConditionID() const { return GetAttribute("condition"); }
-
 
   /**
    * @brief get RteCondition associated with the item

@@ -109,7 +109,7 @@ public:
  * @param deviceAttributes device attributes to match
  * @return true if at least one mounted device matches supplied attributes
 */
-  bool HasMountedDevice(const RteAttributes& deviceAttributes) const;
+  bool HasMountedDevice(const XmlItem& deviceAttributes) const;
 
   /**
    * @brief check if board has mounted or compatible device for given attributes
@@ -117,7 +117,7 @@ public:
    * @param bOnlyMounted flag to check only mounted devices
    * @return true if at least one mounted or compatible device matches supplied attributes
   */
-  bool HasCompatibleDevice(const RteAttributes& deviceAttributes, bool bOnlyMounted = false) const;
+  bool HasCompatibleDevice(const XmlItem& deviceAttributes, bool bOnlyMounted = false) const;
 
   /**
    * @brief check if supplied device attributes match supplied attributes describing mounted or compatible device
@@ -125,7 +125,7 @@ public:
    * @param boardDeviceAttributes mounted or compatible device attributes
    * @return true if attributes match
   */
-  static bool IsDeviceCompatible(const RteAttributes& deviceAttributes, const RteAttributes& boardDeviceAttributes);
+  static bool IsDeviceCompatible(const XmlItem& deviceAttributes, const RteItem& boardDeviceAttributes);
 
   /**
    * @brief collect board books

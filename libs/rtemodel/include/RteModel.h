@@ -122,7 +122,7 @@ public:
    * @param attr package attributes
    * @return RtePackage pointer
   */
-  RtePackage* GetPackage(const RteAttributes& attr) const;
+  RtePackage* GetPackage(const XmlItem& attr) const;
 
   /**
    * @brief get pointer to parent RtePackage

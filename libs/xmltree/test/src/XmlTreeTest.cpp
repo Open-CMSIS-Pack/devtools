@@ -7,16 +7,6 @@
 
 #include "XMLTree.h"
 
-TEST(XmlTreeTest, Trim) {
-  EXPECT_EQ(XmlItem::Trim("").empty(), true);
-  EXPECT_EQ(XmlItem::Trim(" \t\n\r").empty(), true);
-  EXPECT_EQ(XmlItem::Trim(" \t\n\rEnd"), "End");
-  EXPECT_EQ(XmlItem::Trim("\t Middle\r\n"), "Middle");
-  EXPECT_EQ(XmlItem::Trim("\t Mid with\t space \r\n"), "Mid with\t space");
-  EXPECT_EQ(XmlItem::Trim("Start \r\n"), "Start");
-  EXPECT_EQ(XmlItem::Trim("Full"), "Full");
-}
-
 TEST(XmlTreeTest, GetAttribute) {
 
   XMLTreeElement e;

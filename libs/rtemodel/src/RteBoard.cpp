@@ -116,13 +116,13 @@ string RteBoard::GetDeviceVendorName(const string& devName) const
   return (EMPTY_STRING);
 }
 
-bool RteBoard::HasMountedDevice(const RteAttributes& deviceAttributes) const
+bool RteBoard::HasMountedDevice(const XmlItem& deviceAttributes) const
 {
   return HasCompatibleDevice(deviceAttributes, true);
 }
 
 
-bool RteBoard::HasCompatibleDevice(const RteAttributes& deviceAttributes, bool bOnlyMounted) const
+bool RteBoard::HasCompatibleDevice(const XmlItem& deviceAttributes, bool bOnlyMounted) const
 {
   for (auto it = m_children.begin(); it != m_children.end(); it++) {
     RteItem* rteItem = (*it);
@@ -137,7 +137,7 @@ bool RteBoard::HasCompatibleDevice(const RteAttributes& deviceAttributes, bool b
   return false;
 }
 
-bool RteBoard::IsDeviceCompatible(const RteAttributes& deviceAttributes, const RteAttributes& boardDeviceAttributes)
+bool RteBoard::IsDeviceCompatible(const XmlItem& deviceAttributes, const RteItem& boardDeviceAttributes)
 {
   const string& dname = deviceAttributes.GetAttribute("Dname");
   const string& dvariant = deviceAttributes.GetAttribute("Dvariant");

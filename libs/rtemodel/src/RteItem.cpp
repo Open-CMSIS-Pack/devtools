@@ -31,6 +31,13 @@ RteItem::RteItem(RteItem* parent) :
 {
 }
 
+RteItem::RteItem(const std::map<std::string, std::string>& attributes, RteItem* parent) :
+  XmlItem(attributes),
+  m_parent(parent),
+  m_bValid(true)
+{
+};
+
 RteItem::~RteItem()
 {
   RteItem::Clear(); // must be so: explicit call to this class implementation!
@@ -46,7 +53,7 @@ void RteItem::Clear()
   m_children.clear();
   m_bValid = false;
   m_errors.clear();
-  RteAttributes::Clear();
+  XmlItem::Clear();
 }
 
 
@@ -121,24 +128,141 @@ RteComponent* RteItem::GetComponent() const
   return nullptr;
 }
 
-string RteItem::GetComponentAggregateID() const
-{
-  RteComponent* c = GetComponent();
-  if (c && c != this) {
-    return c->GetComponentAggregateID();
-  }
-  return RteAttributes::GetComponentAggregateID();
-}
-
-
 string RteItem::GetComponentUniqueID(bool withVersion) const
 {
   RteComponent* c = GetComponent();
   if (c && c != this) {
     return c->GetComponentUniqueID(withVersion);
   }
-  return RteAttributes::GetComponentUniqueID(withVersion);
+  if (IsApi()) {
+    withVersion = false; // api ID is always without version (the latest is used)
+    return GetApiID(false);
+  }
+  return ConstructComponentID(GetVendorAndBundle(), true, withVersion, true);
 }
+
+string RteItem::GetComponentID(bool withVersion) const // to use in filtered list
+{
+  if (IsApi()) {
+    withVersion = false; // api ID is always without version (the latest is used)
+    return GetApiID(false);
+  }
+  return ConstructComponentID(GetVendorAndBundle(), true, withVersion, false);
+}
+
+string RteItem::GetComponentAggregateID() const
+{
+  RteComponent* c = GetComponent();
+  if (c && c != this) {
+    return c->GetComponentAggregateID();
+  }
+  return ConstructComponentID(GetVendorAndBundle(), false, false, false);
+}
+
+string RteItem::GetApiID(bool withVersion) const
+{
+  string id = "::";
+  id += GetCclassName();
+  id += ".";
+  id += GetCgroupName();
+
+  if (withVersion) {
+    const string& ver = GetAttribute("Capiversion");
+    if (!ver.empty()) {
+      id += ":";
+      id += ver;
+    }
+  }
+  id += "(API)";
+  return id;
+}
+
+string RteItem::GetVendorAndBundle() const
+{
+  string s;
+  if (!IsApi()) {
+    s = GetVendorName();
+    if (!GetCbundleName().empty()) {
+      s += ".";
+      s += GetCbundleName();
+    }
+  }
+  return s;
+};
+
+string RteItem::ConcatenateCclassCgroupCsub(char delimiter) const
+{
+  string str = GetCclassName();
+  str += delimiter;
+  str += GetCgroupName();
+  // optional subgroup
+  if (!GetCsubName().empty()) {
+    str += delimiter;
+    str += GetCsubName();
+  }
+  return str;
+}
+
+string RteItem::ConstructComponentID(const string& prefix, bool bVariant, bool bVersion, bool bCondition, char delimiter) const
+{
+  string id = prefix;
+  id += "::";
+  id += ConcatenateCclassCgroupCsub(delimiter);
+
+  if (bCondition && !GetConditionID().empty())
+  {
+    id += "(";
+    id += GetConditionID();
+    id += ")";
+  }
+
+  // optional variant
+  if (bVariant && !GetCvariantName().empty()) {
+    id += ":";
+    id += GetCvariantName();
+  }
+
+  if (bVersion) {
+    const string& ver = GetVersionString();
+    if (!ver.empty()) {
+      id += ":";
+      id += ver;
+    }
+  }
+  return id;
+}
+
+
+string RteItem::ConstructComponentDisplayName(bool bClass, bool bVariant, bool bVersion, char delimiter) const
+{
+  string id;
+  if (bClass) {
+    id += GetCclassName();
+    id += delimiter;
+  }
+  id += GetCgroupName();
+  // optional subgroup
+  if (!GetCsubName().empty()) {
+    id += delimiter;
+    id += GetCsubName();
+  }
+
+  // optional variant
+  if (bVariant && !GetCvariantName().empty()) {
+    id += ":";
+    id += GetCvariantName();
+  }
+
+  if (bVersion) {
+    const string& ver = GetVersionString();
+    if (!ver.empty()) {
+      id += ":";
+      id += ver;
+    }
+  }
+  return id;
+}
+
 
 const list<RteItem*>& RteItem::GetItemChildren(RteItem* item)
 {
@@ -239,6 +363,14 @@ const string& RteItem::GetDocValue() const
   return GetDocAttribute();
 }
 
+const string& RteItem::GetDocAttribute() const
+{
+  const string& doc = GetAttribute("doc");
+  if (!doc.empty())
+    return doc;
+  return GetAttribute("name");
+}
+
 const string& RteItem::GetRteFolder() const
 {
   const string& rtePath = GetAttribute("rtedir");
@@ -254,6 +386,23 @@ const string& RteItem::GetVendorString() const
     return cv;
   return GetItemValue("vendor");
 }
+
+string RteItem::GetVendorName() const
+{
+  const string& vendor = GetVendorString();
+  return DeviceVendor::GetCanonicalVendorName(vendor);
+};
+
+const string& RteItem::GetVersionString() const
+{
+  if (IsApi())
+    return GetApiVersionString();
+  const string& ver = GetAttribute("Cversion");
+  if (!ver.empty())
+    return ver;
+  return GetAttribute("version");
+}
+
 
 void RteItem::RemoveItem(RteItem* item)
 {
@@ -287,11 +436,77 @@ string RteItem::GetDisplayName() const
 }
 
 
+string RteItem::GetFullDeviceName() const
+{
+  string fullDeviceName;
+  const string& variant = GetDeviceVariantName();
+  if (!variant.empty())
+    fullDeviceName = variant;
+  else
+    fullDeviceName = GetDeviceName();
+  const string& processor = GetProcessorName();
+  if (!processor.empty()) {
+    fullDeviceName += ":";
+    fullDeviceName += processor;
+  }
+  return fullDeviceName;
+}
+
+string RteItem::GetProjectGroupName() const
+{
+  return string("::") + GetCclassName();
+}
+
+string RteItem::GetBundleShortID() const
+{
+  string s;
+  if (!GetCbundleName().empty()) {
+    s = GetVendorAndBundle();
+  }
+  return s;
+};
+
+string RteItem::GetBundleID(bool bWithVersion) const
+{
+  if (!GetCbundleName().empty()) {
+    string s = GetVendorAndBundle();
+    s += "::";
+    s += GetCclassName();
+    if (bWithVersion && !GetVersionString().empty()) {
+      s += ":";
+      s += GetVersionString();
+    }
+    return s;
+  }
+  return EMPTY_STRING;
+}
+
+string RteItem::GetTaxonomyDescriptionID() const
+{
+  return RteItem::GetTaxonomyDescriptionID(*this);
+}
+
+string RteItem::GetTaxonomyDescriptionID(const XmlItem& attributes)
+{
+  string taxonomyId =  attributes.GetAttribute("Cclass"); // taxonomy must have at least Cclass attribute
+  if (!taxonomyId.empty()) {
+    const string& group = attributes.GetAttribute("Cgroup");
+    if (!group.empty()) {
+      taxonomyId += "." + group;
+      const string& sub = attributes.GetAttribute("Csub");
+      if (!sub.empty()) {
+        taxonomyId += "." + sub;
+      }
+    }
+  }
+  return taxonomyId;
+}
+
 string RteItem::GetPackageID(bool withVersion) const
 {
   RtePackage* package = GetPackage();
   if (package == this) {
-    return RteAttributes::GetPackageID(withVersion);
+    return RtePackage::GetPackageIDfromAttributes(*this, withVersion);
   } else if (package) {
     return package->GetPackageID(withVersion);
   }
@@ -333,6 +548,128 @@ bool RteItem::MatchesHost() const
   return false;
 }
 
+
+bool RteItem::MatchComponentAttributes(const map<string, string>& attributes) const
+{
+  if (attributes.empty()) // no limiting attributes
+    return true;
+
+  map<string, string>::const_iterator it, ita;
+  for (ita = attributes.begin(); ita != attributes.end(); ita++) {
+    const string& a = ita->first;
+    const string& v = ita->second;
+    if (a.empty() || a.at(0) != 'C')
+      continue; // we are interested only in Cclass, Cgroup, etc.
+    it = m_attributes.find(a);
+    if (it == m_attributes.end()) { // no such attribute in the component
+      if (v.empty() || a == "Capiversion")
+        continue; // ok: it is required that this attribute is not set or empty
+      else
+        return false;
+    }
+    if (a == "Cversion" || a == "Capiversion") { // version of this component should match supplied version range
+      int verCompareResult = VersionCmp::RangeCompare(it->second, v);
+      if (verCompareResult != 0)
+        return false;
+    } else {
+      if (!WildCards::Match(v, it->second))
+        return false;
+    }
+  }
+  return true; // no other checks
+}
+
+
+bool RteItem::MatchApiAttributes(const map<string, string>& attributes) const
+{
+  if (attributes.empty())
+    return false;
+
+  map<string, string>::const_iterator itm, ita;
+  for (itm = m_attributes.begin(); itm != m_attributes.end(); itm++) {
+    const string& a = itm->first;
+    if (!a.empty() && a[0] == 'C' && a != "Cvendor") {
+      const string& v = itm->second;
+      ita = attributes.find(a);
+      if (a == "Capiversion") { // version of this api should be >= supplied version
+        if (ita == attributes.end())
+          continue; // version is not set => accept any
+        if (VersionCmp::RangeCompare(v, ita->second) != 0) // this version is within supplied range
+          return false;
+      } else {
+        if (ita == attributes.end()) // no api attribute in supplied map
+          return false;
+        if (!WildCards::Match(v, ita->second))
+          return false;
+      }
+    }
+  }
+  return true; // no other checks
+}
+
+
+bool RteItem::MatchDeviceAttributes(const map<string, string>& attributes) const
+{
+  if (attributes.empty())
+    return false;
+
+  map<string, string>::const_iterator itm, ita;
+  for (itm = m_attributes.begin(); itm != m_attributes.end(); itm++) {
+    const string& a = itm->first;
+    if (!a.empty() && a[0] == 'D') {
+      const string& v = itm->second;
+      ita = attributes.find(a);
+      if (ita == attributes.end()) // no attribute in supplied map
+        return false;
+      const string& va = ita->second;
+      if (a == "Dvendor") {
+        if (!DeviceVendor::Match(va, v))
+          return false;
+      } else if (!WildCards::Match(v, ita->second)) {
+        return false;
+      }
+    }
+  }
+  return true; // all attributes are found in supplied map
+}
+
+bool RteItem::MatchDevice(const map<string, string>& attributes) const
+{
+  if (attributes.empty())
+    return false;
+
+  map<string, string>::const_iterator itm, ita;
+  for (itm = m_attributes.begin(); itm != m_attributes.end(); itm++) {
+    const string& a = itm->first;
+    if (a == "Dname" || a == "Pname" || a == "Dvendor") {
+      const string& v = itm->second;
+      ita = attributes.find(a);
+      if (ita == attributes.end()) // no attribute in supplied map
+        return false;
+      const string& va = ita->second;
+      if (a == "Dvendor") {
+        if (!DeviceVendor::Match(va, v))
+          return false;
+      } else if (!WildCards::Match(v, ita->second)) {
+        return false;
+      }
+    }
+  }
+  return true; // all attributes are found in supplied map
+}
+
+bool RteItem::HasMaxInstances() const
+{
+  return !GetAttribute("maxInstances").empty();
+}
+
+int RteItem::GetMaxInstances() const
+{
+  int n = GetAttributeAsInt("maxInstances", 1);
+  if (n > 1)
+    return n;
+  return 1; // not specified, single instance : default is always one
+}
 
 const string& RteItem::GetDescription() const {
   const string& description = GetItemValue("description");
@@ -463,7 +800,6 @@ string RteItem::GetDownloadUrl(bool withVersion, const char* extension) const
   }
   return url;
 }
-
 
 RteCondition* RteItem::GetCondition() const
 {

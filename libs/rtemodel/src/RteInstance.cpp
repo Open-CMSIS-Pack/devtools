@@ -24,7 +24,7 @@
 using namespace std;
 
 RteInstanceTargetInfo::RteInstanceTargetInfo() :
-  RteAttributes(),
+  RteItem(),
   m_bExcluded(false),
   m_bIncludeInLib(false),
   m_instanceCount(1),
@@ -33,7 +33,7 @@ RteInstanceTargetInfo::RteInstanceTargetInfo() :
 };
 
 RteInstanceTargetInfo::RteInstanceTargetInfo(RteInstanceTargetInfo* info) :
-  RteAttributes(info->GetAttributes()),
+  RteItem(info->GetAttributes()),
   m_bExcluded(info->IsExcluded()),
   m_bIncludeInLib(info->IsIncludeInLib()),
   m_instanceCount(info->GetInstanceCount()),
@@ -44,7 +44,7 @@ RteInstanceTargetInfo::RteInstanceTargetInfo(RteInstanceTargetInfo* info) :
 
 
 RteInstanceTargetInfo::RteInstanceTargetInfo(const map<string, string>& attributes) :
-  RteAttributes(attributes),
+  RteItem(attributes),
   m_bExcluded(false),
   m_bIncludeInLib(false),
   m_instanceCount(1),
@@ -115,7 +115,7 @@ bool RteInstanceTargetInfo::SetVersionMatchMode(VersionCmp::MatchMode mode)
   return true;
 }
 
-RteAttributes* RteInstanceTargetInfo::GetOpt(RteOptType type)
+RteItem* RteInstanceTargetInfo::GetOpt(RteOptType type)
 {
   switch (type) {
   case MEMOPT:
@@ -130,7 +130,7 @@ RteAttributes* RteInstanceTargetInfo::GetOpt(RteOptType type)
   return NULL;
 }
 
-const RteAttributes* RteInstanceTargetInfo::GetOpt(RteOptType type) const
+const RteItem* RteInstanceTargetInfo::GetOpt(RteOptType type) const
 {
   switch (type) {
   case MEMOPT:
@@ -485,10 +485,10 @@ RtePackage* RteItemInstance::GetPackage() const
 
 string RteItemInstance::GetPackageID(bool withVersion) const
 {
-  if (IsPackageInfo())
-    return RteAttributes::GetPackageID(withVersion);
-
-  return RteAttributes::GetPackageIDfromAttributes(m_packageAttributes, withVersion);
+  if (IsPackageInfo()) {
+    return RtePackage::GetPackageIDfromAttributes(*this, withVersion);
+  }
+  return RtePackage::GetPackageIDfromAttributes(m_packageAttributes, withVersion);
 }
 
 const string& RteItemInstance::GetURL() const
@@ -973,6 +973,23 @@ void RteFileInstance::CreateXmlTreeElementContent(XMLTreeElement* parentElement)
   RteItemInstance::CreateXmlTreeElementContent(parentElement);
 }
 
+////
+
+RtePackageInstanceInfo::RtePackageInstanceInfo(RteItem* parent, const string& packId):
+RteItemInstance(parent)
+{
+  SetPackId(packId);
+};
+
+void RtePackageInstanceInfo::SetPackId(const string& packId)
+{
+  m_ID = packId;
+  m_commonID = RtePackage::CommonIdFromId(packId);
+  AddAttribute("name", RtePackage::NameFromId(packId));
+  AddAttribute("vendor", RtePackage::VendorFromId(packId));
+  AddAttribute("version", RtePackage::VersionFromId(packId), false);
+}
+
 void RtePackageInstanceInfo::ProcessAttributes()
 {
   m_ID = ConstructID();
@@ -987,8 +1004,8 @@ void RtePackageInstanceInfo::ClearResolved()
 
 string RtePackageInstanceInfo::ConstructID()
 {
-  m_commonID = RteAttributes::GetPackageID(false);
-  return RteAttributes::GetPackageID(true);
+  m_commonID = RtePackage::GetPackageIDfromAttributes(*this, false);
+  return RtePackage::GetPackageIDfromAttributes(*this, false);
 }
 
 
@@ -1345,7 +1362,7 @@ bool RteComponentInstance::IsVersionMatchLatest() const
 
 string RteComponentInstance::GetComponentUniqueID(bool withVersion) const
 {
-  string id = RteAttributes::GetComponentUniqueID(withVersion);
+  string id = RteItem::GetComponentUniqueID(withVersion);
   if (!IsApi()) {
     id += "[";
     id += GetPackageID(false);

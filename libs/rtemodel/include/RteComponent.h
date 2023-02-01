@@ -234,6 +234,13 @@ public:
   */
   bool Dominates(RteComponent *that) const;
 
+  /**
+   * @brief construct name for component pre-include header file (prefix "Pre_Include")
+   * @return header file name for component pre-include
+  */
+  virtual std::string ConstructComponentPreIncludeFileName() const;
+
+
 protected:
   /**
    * @brief process a single XMLTreeElement during construction
@@ -658,7 +665,7 @@ public:
    * @param attributes map of key-value pairs to match against component attributes
    * @return true if at least one component has all attributes found in the supplied map
   */
-  virtual bool HasComponentAttributes(const std::map<std::string, std::string>& attributes) const override;
+  virtual bool MatchComponentAttributes(const std::map<std::string, std::string>& attributes) const override;
 
   /**
    * @brief get short component aggregate display name to use in a tree view
@@ -1032,11 +1039,11 @@ public:
 
   /**
    * @brief find recursively component aggregates matching supplied attributes
-   * @param componentAttributes component attributes as a reference to RteAttributes
+   * @param componentAttributes component attributes as a reference to XmlItem
    * @param components std::set collection of RteComponentAggregate pointer to fill
    * @return overall matching result as RteItem::ConditionResult value
   */
-  virtual ConditionResult GetComponentAggregates(const RteAttributes& componentAttributes, std::set<RteComponentAggregate*>& components) const;
+  virtual ConditionResult GetComponentAggregates(const XmlItem& componentAttributes, std::set<RteComponentAggregate*>& components) const;
 
   /**
    * @brief adjust component selection in the group when active bundle changes
@@ -1184,11 +1191,11 @@ public:
 
   /**
    * @brief find recursively component aggregates matching supplied attributes
-   * @param componentAttributes component attributes as a reference to RteAttributes
+   * @param componentAttributes component attributes as a reference to XmlItem
    * @param components std::set collection of RteComponentAggregate pointer to fill
    * @return overall matching result as RteItem::ConditionResult value
   */
-  virtual ConditionResult GetComponentAggregates(const RteAttributes& componentAttributes, std::set<RteComponentAggregate*>& components) const override;
+  virtual ConditionResult GetComponentAggregates(const XmlItem& componentAttributes, std::set<RteComponentAggregate*>& components) const override;
 
   /**
    * @brief find component aggregate matching supplied instance to resolve a component

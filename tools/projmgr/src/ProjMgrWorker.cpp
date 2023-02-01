@@ -221,7 +221,7 @@ bool ProjMgrWorker::GetRequiredPdscFiles(ContextItem& context, const std::string
         auto filteredPack = filteredPackItem.pack;
         string packId, pdscFile, localPackId;
 
-        RteAttributes attributes({
+        XmlItem attributes({
           {"name",    filteredPack.name},
           {"vendor",  filteredPack.vendor},
           {"version", reqVersionRange},
@@ -353,10 +353,10 @@ bool ProjMgrWorker::LoadPacks(ContextItem& context) {
   }
   // Filter context specific packs
   if (!context.pdscFiles.empty() && (m_loadPacksPolicy != LoadPacksPolicy::ALL) && (m_loadPacksPolicy != LoadPacksPolicy::LATEST)) {
-    RteAttributesMap selectedPacks;
+    set<string> selectedPacks;
     for (const auto& pack : m_loadedPacks) {
       if (context.pdscFiles.find(pack->GetPackageFileName()) != context.pdscFiles.end()) {
-        selectedPacks.insert({ pack->GetPackageID(), pack->GetAttributes() });
+        selectedPacks.insert( pack->GetPackageID());
       }
     }
     RtePackageFilter filter;
@@ -611,7 +611,7 @@ bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context, const string& c
 
   // classify connections according to layer types and set config-ids
   ConnectionsCollectionMap classifiedConnections = ClassifyConnections(allConnections);
- 
+
   // cross classified connections to get all combinations to be validated
   vector<ConnectionsCollectionVec> combinations;
   if (!classifiedConnections.empty()) {
@@ -953,7 +953,7 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
     context.targetAttributes["Bvendor"]  = matchedBoard->GetVendorName();
     context.targetAttributes["Brevision"] = matchedBoard->GetRevision();
     context.targetAttributes["Bversion"] = matchedBoard->GetRevision(); // deprecated
- 
+
     // find device from the matched board
     list<RteItem*> mountedDevices;
     matchedBoard->GetMountedDevices(mountedDevices);

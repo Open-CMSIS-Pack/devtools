@@ -68,9 +68,9 @@ public:
 
   /**
    * @brief obtain for all effectively defined attributes of this device element. That is collection of all attributes defined in this element and in parent elements.
-   * @param attributes reference to RteAttributes to fill
+   * @param attributes reference to XmlItem to fill
   */
-  virtual void GetEffectiveAttributes(RteAttributes& attributes) const;
+  virtual void GetEffectiveAttributes(XmlItem& attributes) const;
 };
 
 /**
@@ -99,9 +99,9 @@ public:
 
   /**
    * @brief obtain all effective attributes of this device property combined with corresponding properties of parent device elements. Own attributes always take precedence.
-   * @param attributes reference to RteAttributes to fill with values
+   * @param attributes reference to XmlItem to fill with values
   */
-  virtual void GetEffectiveAttributes(RteAttributes& attributes) const override;
+  virtual void GetEffectiveAttributes(XmlItem& attributes) const override;
 
   /**
    * @brief add data from supplied device property to this one, default only adds attributes
@@ -1043,9 +1043,9 @@ public:
   /**
    * @brief obtain effective filter attributes  for given processor name
    * @param pName processor name
-   * @param attributes reference to RteAttributes to fill
+   * @param attributes reference to XmlItem to fill
   */
-  void GetEffectiveFilterAttributes(const std::string& pName, RteAttributes& attributes);
+  void GetEffectiveFilterAttributes(const std::string& pName, XmlItem& attributes);
 
   /**
    * @brief create a pdsc-like XMLTreeElement structure for a single device with effective properties

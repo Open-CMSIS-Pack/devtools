@@ -185,15 +185,14 @@ bool CbuildProject::CheckPackRequirements(const RtePackage *cprjPack, const stri
   }
 
   for (RteItem *it : packages->GetChildren()) {
-    RteAttributes a = it->GetAttributes();
 
     // Skip project specific packs
     if (it->HasAttribute("path")) {
       continue;
     }
 
-    const string& name = a.GetAttribute("name");
-    const string& vendor = a.GetAttribute("vendor");
+    const string& name = it->GetAttribute("name");
+    const string& vendor = it->GetAttribute("vendor");
     const string& version = it->GetAttribute("version");
     string path(rtePath);
     path += '/' + vendor + '/' + name;
@@ -201,7 +200,7 @@ bool CbuildProject::CheckPackRequirements(const RtePackage *cprjPack, const stri
 
     if (installedVersion.empty()) {
       string localRepoId;
-      CbuildKernel::Get()->GetLocalPdscFile(a, rtePath, localRepoId);
+      CbuildKernel::Get()->GetLocalPdscFile(*it, rtePath, localRepoId);
       // Check if local repo version is accepted
       if (!localRepoId.empty()) {
         continue;

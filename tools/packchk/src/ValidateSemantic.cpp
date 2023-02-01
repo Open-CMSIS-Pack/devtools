@@ -468,7 +468,7 @@ bool ValidateSemantic::CheckDeviceDependencies(RteDeviceItem *device, RteProject
   CheckForUnsupportedChars(mcuName, "Dname", lineNo);
   CheckMemory(device);
 
-  RteAttributes deviceStartup;
+  XmlItem deviceStartup;
   deviceStartup.SetAttribute("Cclass", "Device");
   deviceStartup.SetAttribute("Cgroup", "Startup");
 
@@ -485,7 +485,7 @@ bool ValidateSemantic::CheckDeviceDependencies(RteDeviceItem *device, RteProject
       mcuDispName += Pname;
     }
 
-    RteAttributes filter;
+    RteItem filter;
     device->GetEffectiveFilterAttributes(processorName, filter);
     filter.AddAttribute("Dname", mcuName);
 
@@ -713,7 +713,7 @@ bool ValidateSemantic::TestComponentDependencies()
 
     LogMsg("M069", CCLASS(compClass), CGROUP(compGroup), CSUB(compSub), CVER(compVer));
 
-    RteAttributes filter;
+    XmlItem filter;
     rteProject->Clear();
     rteProject->AddTarget("Test", filter.GetAttributes(), true, true);
     rteProject->SetActiveTarget("Test");
