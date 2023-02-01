@@ -16,4 +16,4 @@ set_property(TARGET XmlTree PROPERTY
 
 target_include_directories(XmlTree PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-target_link_libraries(XmlTree)
+target_link_libraries(XmlTree RteUtils)

@@ -292,6 +292,47 @@ public:
    * @return unsigned long long value
   */
   static unsigned long long ToULL(const std::string& s);
+
+  /**
+   * @brief convert string to boolean
+   * @param value given string
+   * @param defaultValue value to be returned if given string is empty
+   * @return true if given string is equal to "1" or "true"
+  */
+  static bool StringToBool(const std::string& value, bool defaultValue = false);
+
+  /**
+   * @brief convert string to integer
+   * @param value given string
+   * @param defaultValue value to be returned in case of empty string or conversion error
+   * @return converted integer value
+  */
+  static int StringToInt(const std::string& value, int defaultValue = -1);
+
+  /**
+   * @brief convert string to unsigned integer
+   * @param value string to be converted
+   * @param defaultValue value to be returned in case of empty string or conversion error
+   * @return converted unsigned integer value
+  */
+  static unsigned StringToUnsigned(const std::string& value, unsigned defaultValue = 0);
+
+  /**
+   * @brief convert string to unsigned long long
+   * @param value decimal or hexadecimal string as to be converted
+   * @param defaultValue value to be returned in case of empty string or conversion error
+   * @return converted value of type unsigned long long
+  */
+  static unsigned long long StringToULL(const std::string& value, unsigned long long defaultValue = 0L);
+
+  /**
+   * @brief trim whitespace characters
+   * @param s string to be trimmed
+   * @return trimmed string without whitespace characters
+  */
+  static std::string Trim(const std::string& s);
+
+
   /**
    * @brief fill a buffer with blanks
    * @param indent number of blanks in the buffer to be returned

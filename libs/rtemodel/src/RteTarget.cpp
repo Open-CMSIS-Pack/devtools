@@ -172,7 +172,7 @@ RteItem::ConditionResult RteTarget::GetComponents(const map<string, string>& com
   RteItem::ConditionResult result = RteItem::MISSING;
   for (auto it = m_filteredComponents.begin(); it != m_filteredComponents.end(); it++) {
     RteComponent* c = it->second;
-    if (c->HasComponentAttributes(componentAttributes)) {
+    if (c->MatchComponentAttributes(componentAttributes)) {
       components.insert(c);
       if (IsComponentSelected(c)) {
         result = RteItem::FULFILLED;
@@ -185,7 +185,7 @@ RteItem::ConditionResult RteTarget::GetComponents(const map<string, string>& com
 }
 
 
-RteItem::ConditionResult RteTarget::GetComponentAggregates(const RteAttributes& componentAttributes, set<RteComponentAggregate*>& aggregates) const
+RteItem::ConditionResult RteTarget::GetComponentAggregates(const XmlItem& componentAttributes, set<RteComponentAggregate*>& aggregates) const
 {
   return m_classes->GetComponentAggregates(componentAttributes, aggregates);
 }
@@ -1523,7 +1523,7 @@ RteItem::ConditionResult RteTarget::GetComponentsForApi(RteApi* api, const map<s
   int nSelected = 0;
   for (auto it = m_filteredComponents.begin(); it != m_filteredComponents.end(); it++) {
     RteComponent* c = it->second;
-    if (c->HasComponentAttributes(componentAttributes)) {
+    if (c->MatchComponentAttributes(componentAttributes)) {
       if (IsComponentSelected(c)) {
         components.insert(c);
         nSelected++;

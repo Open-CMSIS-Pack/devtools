@@ -8,6 +8,8 @@
 
 #include "XmlItem.h"
 
+#include "RteUtils.h"
+
 #include <sstream>
 using namespace std;
 
@@ -156,6 +158,17 @@ bool XmlItem::HasAttribute(const std::string& name) const
   return m_attributes.find(name) != m_attributes.end();
 }
 
+
+bool XmlItem::HasValue(const string& pattern) const
+{
+  for (auto itm = m_attributes.begin(); itm != m_attributes.end(); itm++) {
+    if (WildCards::Match(pattern, itm->second))
+      return true;
+  }
+  return false;
+}
+
+
 const string& XmlItem::GetName() const
 {
   const string& name = GetAttribute("name");
@@ -196,41 +209,66 @@ unsigned long long XmlItem::GetAttributeAsULL(const char* name, unsigned long lo
 
 bool XmlItem::GetAttributeAsBool(const string& name, bool defaultValue) const
 {
-  return StringToBool(GetAttribute(name), defaultValue);
+  return RteUtils::StringToBool(GetAttribute(name), defaultValue);
 }
 
 int XmlItem::GetAttributeAsInt(const string& name, int defaultValue) const
 {
-  return StringToInt(GetAttribute(name), defaultValue);
+  return RteUtils::StringToInt(GetAttribute(name), defaultValue);
 }
 
 unsigned XmlItem::GetAttributeAsUnsigned(const string& name, unsigned defaultValue) const
 {
-  return StringToUnsigned(GetAttribute(name), defaultValue);
+  return RteUtils::StringToUnsigned(GetAttribute(name), defaultValue);
 }
 
 unsigned long long XmlItem::GetAttributeAsULL(const string& name, unsigned long long defaultValue) const
 {
-  return StringToULL(GetAttribute(name), defaultValue);
+  return RteUtils::StringToULL(GetAttribute(name), defaultValue);
+}
+
+string XmlItem::GetAttributePrefix(const char* name, char delimiter) const
+{
+  return RteUtils::GetPrefix(GetAttribute(name), delimiter);
+}
+
+string XmlItem::GetAttributeSuffix(const char* name, char delimiter) const
+{
+  return RteUtils::GetSuffix(GetAttribute(name), delimiter);
+}
+
+int XmlItem::GetAttributeSuffixAsInt(const char* name, char delimiter) const
+{
+  return RteUtils::GetSuffixAsInt(GetAttribute(name), delimiter);
 }
 
 bool  XmlItem::GetTextAsBool(bool defaultValue) const
 {
-  return StringToBool(GetText(), defaultValue);
+  return RteUtils::StringToBool(GetText(), defaultValue);
 }
 
 int XmlItem::GetTextAsInt(int defaultValue) const
 {
-  return StringToInt(GetText(), defaultValue);
+  return RteUtils::StringToInt(GetText(), defaultValue);
 }
 
 unsigned XmlItem::GetTextAsUnsigned(unsigned defaultValue) const
 {
-  return StringToUnsigned(GetText(), defaultValue);
+  return RteUtils::StringToUnsigned(GetText(), defaultValue);
 }
 unsigned long long XmlItem::GetTextAsULL(unsigned long long defaultValue) const
 {
-  return StringToULL(GetText(), defaultValue);
+  return RteUtils::StringToULL(GetText(), defaultValue);
+}
+
+bool XmlItem::GetItemValueAsBool(const std::string& keyOrTag, bool defaultValue) const
+{
+  return RteUtils::StringToBool(GetItemValue(keyOrTag), defaultValue);
+}
+
+int XmlItem::GetItemValueAsInt(const std::string& keyOrTag, int defaultValue) const
+{
+  return RteUtils::StringToInt(GetItemValue(keyOrTag), defaultValue);
 }
 
 string XmlItem::GetAttributesString(bool quote) const
@@ -292,63 +330,41 @@ bool XmlItem::EqualAttributes(const XmlItem* other) const
 }
 
 
-bool XmlItem::StringToBool(const std::string& value, bool defaultValue)
+bool XmlItem::CompareAttributes(const map<string, string>& attributes) const
 {
-  if (value.empty())
-    return defaultValue;
-  return (value == "1" || value == "true");
-}
-
-
-int XmlItem::StringToInt(const std::string& value, int defaultValue)
-{
-  if (value.empty())
-    return defaultValue;
-  try {
-    return std::stoi(value, 0, 0);
-  } catch (const std::exception& ) {
-    return defaultValue;
-  }
-}
-
-unsigned XmlItem::StringToUnsigned(const std::string& value, unsigned defaultValue)
-{
-  if (value.empty())
-    return defaultValue;
-  try {
-    return std::stoul(value, 0, 0);
-  } catch (const std::exception&) {
-    return defaultValue;
-  }
-}
-
-unsigned long long XmlItem::StringToULL(const std::string& value, unsigned long long defaultValue)
-{
-  if (value.empty()) {
-    return (defaultValue);
-  }
-  int base = 10; // use 10 as default, prevent octal numbers
-  if (value.length() > 2) {                                  // 17.1.2014, check for hex number 0xnnn...
-    if (value[0] == '0' && (value[1] == 'x' || value[1] == 'X')) {   // 0xnnnn
-      base = 16; // use base 16 since it is a hex value
+  // all supplied attributes must exist in this ones
+  map<string, string>::const_iterator itm, ita;
+  for (ita = attributes.begin(); ita != attributes.end(); ita++) {
+    const string& a = ita->first;
+    const string& v = ita->second;
+    itm = m_attributes.find(a);
+    if (itm != m_attributes.end()) {
+      const string& va = itm->second;
+      if (a == "Dvendor" || a == "vendor") {
+        if (!DeviceVendor::Match(va, v))
+          return false;
+      } else if (!WildCards::Match(va, v)) {
+        return false;
+      }
+    } else {
+      return false;
     }
   }
-  try {
-    return std::stoull(value, 0, base);
-  } catch (const std::exception&) {
-    return defaultValue;
-  }
+  return true;
 }
 
-std::string XmlItem::Trim(const std::string &str) {
-  static const char *whitespace = " \t\r\n";
-  const auto begin = str.find_first_not_of(whitespace);
-  if (begin == std::string::npos)
-    return EMPTY_STRING;
+bool XmlItem::Compare(const XmlItem& other) const
+{
+  if (GetAttributeCount() != other.GetAttributeCount())
+    return false;
+  return CompareAttributes(other.GetAttributes());
+}
 
-  const auto end = str.find_last_not_of(whitespace);
-  const auto range = end - begin + 1;
-  return str.substr(begin, range);
+bool XmlItem::Compare(const XmlItem* other) const
+{
+  if (!other || GetAttributeCount() != other->GetAttributeCount())
+    return false;
+  return CompareAttributes(other->GetAttributes());
 }
 
 

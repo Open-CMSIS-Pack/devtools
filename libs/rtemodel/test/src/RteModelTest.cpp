@@ -366,7 +366,7 @@ TEST_F(RteModelPrjTest, GetLocalPdscFile) {
   RteKernelSlim rteKernel;
   const string& expectedPdsc = UpdateLocalIndex();
 
-  RteAttributes attributes;
+  XmlItem attributes;
   attributes.AddAttribute("name", "LocalPack");
   attributes.AddAttribute("vendor", "LocalVendor");
   attributes.AddAttribute("version", "0.1.0");

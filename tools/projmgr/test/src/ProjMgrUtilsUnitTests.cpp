@@ -29,8 +29,8 @@ TEST_F(ProjMgrUtilsUnitTests, GetComponentID) {
     {"Cvariant", "Variant" },
     {"Cversion", "9.9.9"   }
   };
-  RteAttributes item = RteAttributes(attributes);
-  EXPECT_EQ("Vendor::Class&Bundle:Group:Sub&Variant@9.9.9",GetComponentID((RteItem*)&item));
+  RteItem item(attributes);
+  EXPECT_EQ("Vendor::Class&Bundle:Group:Sub&Variant@9.9.9",GetComponentID(&item));
 }
 
 TEST_F(ProjMgrUtilsUnitTests, GetComponentAggregateID) {
@@ -43,8 +43,8 @@ TEST_F(ProjMgrUtilsUnitTests, GetComponentAggregateID) {
     {"Cvariant", "Variant" },
     {"Cversion", "9.9.9"   }
   };
-  RteAttributes item = RteAttributes(attributes);
-  EXPECT_EQ("Vendor::Class&Bundle:Group:Sub", GetComponentAggregateID((RteItem*)&item));
+  RteItem item(attributes);
+  EXPECT_EQ("Vendor::Class&Bundle:Group:Sub", GetComponentAggregateID(&item));
 }
 
 TEST_F(ProjMgrUtilsUnitTests, GetConditionID) {
@@ -53,9 +53,9 @@ TEST_F(ProjMgrUtilsUnitTests, GetConditionID) {
     {"Cclass"  , "Class"   },
     {"Cgroup"  , "Group"   }
   };
-  RteAttributes item = RteAttributes(attributes);
+  RteItem item(attributes);;
   item.SetTag("require");
-  EXPECT_EQ("require Vendor::Class:Group", GetConditionID((RteItem*)&item));
+  EXPECT_EQ("require Vendor::Class:Group", GetConditionID(&item));
 }
 
 TEST_F(ProjMgrUtilsUnitTests, GetPackageID) {
@@ -64,9 +64,9 @@ TEST_F(ProjMgrUtilsUnitTests, GetPackageID) {
     {"name"   , "Name"   },
     {"version", "8.8.8"   }
   };
-  RteAttributes item = RteAttributes(attributes);
+  RteItem item(attributes);
   item.SetTag("require");
-  EXPECT_EQ("Vendor::Name@8.8.8", GetPackageID((RteItem*)&item));
+  EXPECT_EQ("Vendor::Name@8.8.8", GetPackageID(&item));
 }
 
 TEST_F(ProjMgrUtilsUnitTests, ReadGpdscFile) {

@@ -1323,7 +1323,7 @@ RteItem::ConditionResult RteProject::ResolveComponents(bool bFindReplacementForA
       continue; // already resolved
     RteComponentAggregate* a = NULL;
     set<RteComponentAggregate*> aggregates;
-    RteAttributes componentAttributes = *ci; // copy attributes
+    RteItem componentAttributes(ci->GetAttributes()); // copy just attributes
     if (ci->GetVersionMatchMode(activeTargetName) != VersionCmp::MatchMode::FIXED_VERSION)
     {
       // make search wider : remove bundle and version
@@ -1462,7 +1462,7 @@ bool RteProject::AddTarget(const string& name, const map<string, string>& attrib
 
   if (target) {
     target->SetTargetSupported(supported);
-    RteAttributes targetAttributes(attributes);
+    XmlItem targetAttributes(attributes);
     RteBoardInfo* boardInfo = target->GetBoardInfo();
     if (boardInfo) {
       targetAttributes.AddAttributes(boardInfo->GetAttributes(), false);
@@ -1731,11 +1731,10 @@ void RteProject::PropagateFilteredPackagesToTargetModel(const string& targetName
   bool bUseAll = !info || !info->IsExcluded();
 
   RtePackageFilter& filter = model->GetPackageFilter();
-  RteAttributesMap fixedPacks;
-  RteAttributesMap latestPacks;
-  for (auto itpi = m_filteredPackages.begin(); itpi != m_filteredPackages.end(); itpi++) {
-    RtePackageInstanceInfo* pi = itpi->second;
-    if (!pi->IsFilteredByTarget(targetName))
+  set<string> fixedPacks;
+  set<string> latestPacks;
+  for (auto [id, pi] : m_filteredPackages) {
+    if (!pi || !pi->IsFilteredByTarget(targetName))
       continue;
 
     if (pi->IsExcluded(targetName)) {
@@ -1744,11 +1743,9 @@ void RteProject::PropagateFilteredPackagesToTargetModel(const string& targetName
 
     VersionCmp::MatchMode mode = pi->GetVersionMatchMode(targetName);
     if (mode == VersionCmp::MatchMode::FIXED_VERSION) {
-      const string& id = itpi->first;
-      fixedPacks[id] = *pi;
+      fixedPacks.insert(id);
     } else {
-      const string& id = pi->GetPackageID(false);
-      latestPacks[id] = *pi;
+      latestPacks.insert(pi->GetPackageID(false));
     }
   }
   filter.SetSelectedPackages(fixedPacks);
@@ -1799,7 +1796,6 @@ bool RteProject::CollectFilteredPackagesFromTargets()
       m_filteredPackages.erase(itcurrent);
     }
   }
-
   // add new
   for (auto it = m_targets.begin(); it != m_targets.end(); it++) {
     RteTarget* target = it->second;
@@ -1812,19 +1808,16 @@ bool RteProject::CollectFilteredPackagesFromTargets()
       m_packFilterInfos->RemoveTargetInfo(targetName);
     }
 
-    const RteAttributesMap& latestPacks = filter.GetLatestPacks();
-    for (auto ite = latestPacks.begin(); ite != latestPacks.end(); ite++) {
-      const RteAttributes& attr = ite->second;
-      const string& id = attr.GetPackageID(true);
-      auto itpi = m_filteredPackages.find(id);
+    const set<string>& latestPacks = filter.GetLatestPacks();
+    for (auto& commonId : latestPacks) {
+      auto itpi = m_filteredPackages.find(commonId);
       RtePackageInstanceInfo* pi = NULL;
       if (itpi != m_filteredPackages.end()) {
         pi = itpi->second;
       }
       if (!pi) {
-        pi = new RtePackageInstanceInfo(this);
-        m_filteredPackages[id] = pi;
-        pi->SetAttributes(attr);
+        pi = new RtePackageInstanceInfo(this, commonId);
+        m_filteredPackages[commonId] = pi;
         bModified = true;
       } else if (!pi->GetTargetInfo(targetName))
         bModified = true;
@@ -1834,19 +1827,17 @@ bool RteProject::CollectFilteredPackagesFromTargets()
         bModified = true;
     }
 
-    const RteAttributesMap& packs = filter.GetSelectedPackages();
+    const set<string>& packs = filter.GetSelectedPackages();
     for (auto itp = packs.begin(); itp != packs.end(); itp++) {
-      const string& id = itp->first;
-      const RteAttributes& attr = itp->second;
+      const string& id = *itp;
       auto itpi = m_filteredPackages.find(id);
       RtePackageInstanceInfo* pi = NULL;
       if (itpi != m_filteredPackages.end()) {
         pi = itpi->second;
       }
       if (!pi) {
-        pi = new RtePackageInstanceInfo(this);
+        pi = new RtePackageInstanceInfo(this, id);
         m_filteredPackages[id] = pi;
-        pi->SetAttributes(attr);
         bModified = true;
       } else if (!pi->GetTargetInfo(targetName))
         bModified = true;

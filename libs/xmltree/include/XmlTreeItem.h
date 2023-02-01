@@ -8,7 +8,7 @@
 /******************************************************************************/
 /*
  * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
- * 
+ *
  * SPDX-License-Identifier: Apache-2.0
  */
 /******************************************************************************/
@@ -425,26 +425,6 @@ public:
       return GetAttribute(keyOrTag);
     }
     return GetChildText(keyOrTag);
-  }
-
-  /**
-   * @brief convert attribute value or child text to boolean
-   * @param keyOrTag name of attribute or child on first level
-   * @param defaultValue value to be returned in case of empty string
-   * @return true if value equal to "1" or "true", otherwise false
-  */
-  virtual bool GetItemValueAsBool(const std::string& keyOrTag, bool defaultValue = false) const override {
-    return StringToBool(GetItemValue(keyOrTag), defaultValue);
-  }
-
-  /**
-   * @brief convert attribute or child text to integer
-   * @param keyOrTag name of attribute or child on first level
-   * @param defaultValue value to be returned in case of empty string or conversion error
-   * @return converted integer value from attribute value or child text
-  */
-  virtual int GetItemValueAsInt(const std::string& keyOrTag, int defaultValue = -1) const override {
-    return StringToInt(GetItemValue(keyOrTag), defaultValue);
   }
 
 protected:

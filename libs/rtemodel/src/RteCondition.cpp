@@ -977,7 +977,7 @@ RteItem::ConditionResult RteDependencySolver::CalculateDependencies(RteCondition
       RteItem* c = a->GetComponent();
       if (!c)
         c = a->GetComponentInstance();
-      if (c && c->HasComponentAttributes(expr->GetAttributes())) {
+      if (c && c->MatchComponentAttributes(expr->GetAttributes())) {
         components.insert(a);
         result = RteItem::INCOMPATIBLE;
       }
@@ -1070,21 +1070,17 @@ bool RteDependencySolver::ResolveDependency(const RteDependencyResult& depsRes)
     RteComponentAggregate* a = expr->GetSingleComponentAggregate(m_target);
     if (a) {
       RteComponent* c = a->GetComponent();
-      if (!c) {
+      if (!c || c->IsCustom()) {
+        // Disable "Resolve" function for components with 'custom=1' attribute
         continue;
       }
-      if (!c->HasComponentAttributes(expr->GetAttributes())) {
+      if (!c->MatchComponentAttributes(expr->GetAttributes())) {
         c = a->FindComponent(expr->GetAttributes());
         if (c) {
           a->SetSelectedVariant(c->GetCvariantName());
           a->SetSelectedVersion(c->GetVersionString());
         }
       }
-      if (c->IsCustom()) {
-        // Disable "Resolve" function for components with 'custom=1' attribute
-        continue;
-      }
-
       m_target->SelectComponent(a, 1, true); // will trigger EvaluateDependencies()
       return true;
     }

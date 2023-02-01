@@ -103,7 +103,7 @@ public:
   void ApplySelectedComponents();
 
 protected:
-  void FillToolchainAttributes(RteAttributes &attributes) const;
+  void FillToolchainAttributes(XmlItem &attributes) const;
   virtual RteTarget* CreateTarget(RteModel* filteredModel, const std::string& name, const std::map<std::string, std::string>& attributes) override;
   virtual void PropagateFilteredPackagesToTargetModel(const std::string& targetName) override;
   virtual RteComponentInstance* AddCprjComponent(RteItem* item, RteTarget* target) override;

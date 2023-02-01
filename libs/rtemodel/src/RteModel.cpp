@@ -138,13 +138,13 @@ RtePackage* RteModel::GetAvailablePackage(const string& id) const
 }
 
 
-RtePackage* RteModel::GetPackage(const RteAttributes& attr) const
+RtePackage* RteModel::GetPackage(const XmlItem& attr) const
 {
-  string commonId = RteAttributes::GetPackageIDfromAttributes(attr, false);
+  string commonId = RtePackage::GetPackageIDfromAttributes(attr, false);
   RtePackage* pack = GetLatestPackage(commonId);
   if (!pack)
     return NULL; // latest not found => none is found
-  const string& versionRange = attr.GetVersionString();
+  const string& versionRange = attr.GetAttribute("version");
   if (versionRange.empty()) {
     return pack; // version is not provided => the latest
   }
@@ -178,7 +178,7 @@ void RteModel::GetCompatibleBoards(vector<RteBoard*>& boards, RteDeviceItem* dev
   if (!device) {
     return;
   }
-  RteAttributes ea;
+  XmlItem ea;
   device->GetEffectiveAttributes(ea);
   const RteBoardMap& availableBoards = GetBoards();
   for (auto it = availableBoards.begin(); it != availableBoards.end(); it++) {
@@ -446,18 +446,16 @@ RtePackage* RteModel::FilterModel(RteModel* globalModel, RtePackage* devicePacka
   Clear();
 
   // first add all latest packs
-
-  RteAttributesMap latestPackIds;
+  set<string> latestPackIds;
   const RtePackageMap& latestPackages = globalModel->GetLatestPackages();
-  for (auto itp = latestPackages.begin(); itp != latestPackages.end(); itp++) {
-    RtePackage* pack = itp->second;
-    const string& id = pack->GetID();
-    latestPackIds[id] = *pack;
+  for ( auto& [key, pack] : latestPackages) {
+    if (pack) {
+      latestPackIds.insert(pack->GetID());
+    }
   }
   m_packageFilter.SetLatestInstalledPacks(latestPackIds); // filter requires global latests
 
   const RtePackageMap& allPacks = globalModel->GetPackages();
-
   for (auto itp = allPacks.begin(); itp != allPacks.end(); itp++) {
     RtePackage* pack = itp->second;
     const string& id = itp->first;
@@ -818,7 +816,7 @@ void RteModel::GetBoardBooks(map<string, string>& books, const string& device, c
   RteDevice* d = GetDevice(device, vendor);
   if (!d)
     return;
-  RteAttributes ea;
+  XmlItem ea;
   d->GetEffectiveAttributes(ea);
   GetBoardBooks(books, ea.GetAttributes());
 }

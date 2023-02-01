@@ -16,6 +16,15 @@ static void CheckVendorMatch(const vector<string>& vendors, bool expect) {
   }
 }
 
+TEST(RteUtilsTest, Trim) {
+  EXPECT_EQ(RteUtils::Trim("").empty(), true);
+  EXPECT_EQ(RteUtils::Trim(" \t\n\r").empty(), true);
+  EXPECT_EQ(RteUtils::Trim(" \t\n\rEnd"), "End");
+  EXPECT_EQ(RteUtils::Trim("\t Middle\r\n"), "Middle");
+  EXPECT_EQ(RteUtils::Trim("\t Mid with\t space \r\n"), "Mid with\t space");
+  EXPECT_EQ(RteUtils::Trim("Start \r\n"), "Start");
+  EXPECT_EQ(RteUtils::Trim("Full"), "Full");
+}
 TEST(RteUtilsTest, EqualNoCase) {
 
   EXPECT_TRUE(RteUtils::EqualNoCase("", ""));

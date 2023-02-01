@@ -43,11 +43,6 @@ public:
    * @return set of strings
   */
   const std::set<std::string>& GetCategories() const { return m_categories; }
-  /**
-   * @brief get information about board for which the example is created
-   * @return board information as RteAttributes
-  */
-  const RteAttributes& GetBoardInfo() const { return m_board ? *m_board : EMPTY_ATTRIBUTES;}
 
   /**
    * @brief get information about board for which the example is created

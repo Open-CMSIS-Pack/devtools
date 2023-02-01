@@ -89,9 +89,9 @@ public:
 
   /**
    * @brief get all device attributes
-   * @return reference to RteAttributes
+   * @return device attributes as a reference to RteItem
   */
-  const RteAttributes& GetDeviceAttributes() const { return m_deviceAttributes; }
+  const RteItem& GetDeviceAttributes() const { return m_deviceAttributes; }
 
   /**
    * @brief get generator group name to use in project
@@ -185,7 +185,7 @@ protected:
   virtual std::string ConstructID() override { return GetAttribute("id"); }
 
 private:
-  RteAttributes m_deviceAttributes;
+  RteItem m_deviceAttributes;
   RteFileContainer* m_files;
 };
 

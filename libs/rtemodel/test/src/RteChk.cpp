@@ -284,9 +284,9 @@ void RteChk::DumpDeviceElement(RteDeviceElement* e)
 {
   if (!e)
     return;
-  RteAttributes rteAttributes;
+  XmlItem rteAttributes;
   e->GetEffectiveAttributes(rteAttributes); // also inherited/overwritten
-  RteAttributes* pAttributes = &rteAttributes;
+  XmlItem* pAttributes = &rteAttributes;
   const string& tag = e->GetTag();
   const string& name = e->GetName();
 
@@ -452,8 +452,10 @@ void RteChk::DumpExamples(RtePackage* pack)
       m_os << " Desc: " << pExmp->GetDescription() << endl;
 
       // board
-      RteAttributes board = pExmp->GetBoardInfo();
-      m_os << " Board: " << board.GetAttributesString() << endl;
+      const RteItem* boardInfo = pExmp->GetBoardInfoItem();
+      if (boardInfo) {
+        m_os << " Board: " << boardInfo->GetAttributesString() << endl;
+      }
 
       auto children = pExmp->GetChildren();
       for (auto itchild = children.begin(); itchild != children.end(); ++itchild) {

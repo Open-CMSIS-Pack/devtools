@@ -64,7 +64,7 @@ RteDeviceElement* RteDeviceElement::GetDeviceElementParent() const
 
 }
 
-void RteDeviceElement::GetEffectiveAttributes(RteAttributes& attributes) const
+void RteDeviceElement::GetEffectiveAttributes(XmlItem& attributes) const
 {
   // fill in own attributes
   attributes.AddAttributes(m_attributes, false);
@@ -85,7 +85,7 @@ string RteDeviceProperty::ConstructID()
   return id;
 }
 
-void RteDeviceProperty::GetEffectiveAttributes(RteAttributes& attributes) const
+void RteDeviceProperty::GetEffectiveAttributes(XmlItem& attributes) const
 {
   // fill in own attributes
   attributes.AddAttributes(m_attributes, false);
@@ -812,7 +812,7 @@ RteDeviceProperty* RteDeviceItem::GetSingleEffectiveProperty(const string& tag, 
 }
 
 
-void RteDeviceItem::GetEffectiveFilterAttributes(const string& pName, RteAttributes& attributes)
+void RteDeviceItem::GetEffectiveFilterAttributes(const string& pName, XmlItem& attributes)
 {
   // get effective attributes: Dname, Dfamily, Dvendor, etc.
   GetEffectiveAttributes(attributes);
@@ -836,7 +836,7 @@ XMLTreeElement* RteDeviceItem::CreateEffectiveXmlTree(const string& pname, XMLTr
   // create mandatory family element
   XMLTreeElement* family = packElement->CreateElement("devices")->CreateElement("family");
 
-  RteAttributes effectiveAttributes;
+  RteItem effectiveAttributes;
   GetEffectiveAttributes(effectiveAttributes);
 
   family->AddAttribute("Dfamily", effectiveAttributes.GetDeviceFamilyName());

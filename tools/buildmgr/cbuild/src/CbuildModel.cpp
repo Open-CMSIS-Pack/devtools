@@ -1215,7 +1215,7 @@ bool CbuildModel::EvalRteSourceFiles(map<string, list<string>> &cSourceFiles, ma
         LogMsg("M204", PATH(filepath));
         return false;
       }
-      // Use extended RTE group name instead of string obtained by RteAttributes::GetProjectGroupName() implementation("::" + Cclass)
+      // Use extended RTE group name instead of string obtained by RteItem::GetProjectGroupName() implementation("::" + Cclass)
       const string& componentName = GetExtendedRteGroupName(m_cprjTarget->GetComponentInstanceForFile(file.first.c_str()), m_cprjProject->GetRteFolder());
       switch (CbuildUtils::GetFileType(cat, file.first)) {
         case RteFile::Category::SOURCE_C:

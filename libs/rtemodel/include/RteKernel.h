@@ -182,7 +182,7 @@ public:
    * @param packId pack ID
    * @return pdsc file
   */
-  static std::string GetInstalledPdscFile(const RteAttributes& attributes, const std::string& rtePath, std::string& packId);
+  static std::string GetInstalledPdscFile(const XmlItem& attributes, const std::string& rtePath, std::string& packId);
 
   /**
    * @brief getter for pdsc file pointed by the local repository index and determined by pack attributes, pack path and pack ID.
@@ -191,7 +191,7 @@ public:
    * @param packId pack ID
    * @return pdsc file
   */
-  std::string GetLocalPdscFile(const RteAttributes& attributes, const std::string& rtePath, std::string& packId);
+  std::string GetLocalPdscFile(const XmlItem& attributes, const std::string& rtePath, std::string& packId);
 
   /**
    * @brief getter for pdsc file pointed by the pack 'path' attribute
@@ -200,7 +200,7 @@ public:
    * @param packId pack ID
    * @return pdsc file
   */
-  std::string GetPdscFileFromPath(const RteAttributes& attributes, const std::string& cprjPath, std::string& packId);
+  std::string GetPdscFileFromPath(const XmlItem& attributes, const std::string& cprjPath, std::string& packId);
 
   /**
    * @brief create a smart pointer holding a XMLTree pointer

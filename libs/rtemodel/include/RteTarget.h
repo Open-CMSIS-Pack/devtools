@@ -295,7 +295,7 @@ public:
    * @param aggregates collection of RteComponentAggregates to be filled
    * @return status of component dependency of type ConditionResult
   */
-  ConditionResult GetComponentAggregates(const RteAttributes& componentAttributes, std::set<RteComponentAggregate*>& aggregates) const;
+  ConditionResult GetComponentAggregates(const XmlItem& componentAttributes, std::set<RteComponentAggregate*>& aggregates) const;
 
   /**
    * @brief select a component for the target

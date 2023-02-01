@@ -111,7 +111,7 @@ void RteCprjProject::Initialize()
   CprjFile* cprjFile = GetCprjFile();
   string targetName = GetName(); // use same name as project
 
-  RteAttributes filterAttributes;
+  XmlItem filterAttributes;
   CprjTargetElement* cprjTarget = cprjFile->GetTargetElement();
   if(cprjTarget) {
     filterAttributes.SetAttributes(cprjTarget->GetAttributes());
@@ -137,7 +137,7 @@ void RteCprjProject::Initialize()
 }
 
 
-void RteCprjProject::FillToolchainAttributes(RteAttributes &attributes) const{
+void RteCprjProject::FillToolchainAttributes(XmlItem &attributes) const{
   if (m_toolchain == "AC5" || m_toolchain == "AC6") {
     attributes.AddAttribute("Tcompiler","ARMCC");
     attributes.AddAttribute("Toptions", m_toolchain);
@@ -148,23 +148,19 @@ void RteCprjProject::FillToolchainAttributes(RteAttributes &attributes) const{
 
 void RteCprjProject::PropagateFilteredPackagesToTargetModel(const string& targetName)
 {
-  RteAttributesMap fixedPacks;
-  RteAttributesMap latestPacks;
-  RteModel *globalModel = GetModel();
-
+  RteModel* globalModel = GetModel();
+  set<string> fixedPacks;
+  set<string> latestPacks;
   for (auto item : GetCprjFile()->GetPackRequirements()) {
-    RteAttributes a = item->GetAttributes(); // make copy of attributes
-    const string& versionRange = a.GetVersionString();
+    const string& versionRange = item->GetVersionString();
     if (versionRange.empty()) {
-      string commonId = RteAttributes::GetPackageIDfromAttributes(*item, false);
-      latestPacks[commonId] = a;
+      string commonId = RtePackage::GetPackageIDfromAttributes(*item, false);
+      latestPacks.insert(commonId);
       continue;
     }
-    RtePackage* pack = globalModel->GetPackage(a);
+    RtePackage* pack = globalModel->GetPackage(*item);
     if (pack) {
-      a = pack->GetAttributes();
-      string id = RteAttributes::GetPackageIDfromAttributes(a, true);
-      fixedPacks[id] = a;
+      fixedPacks.insert(pack->GetID());
     }
   }
 

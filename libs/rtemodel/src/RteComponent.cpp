@@ -82,6 +82,12 @@ bool RteComponent::Dominates(RteComponent *that) const {
   return false;
 }
 
+string RteComponent::ConstructComponentPreIncludeFileName() const
+{
+  string fileName = "Pre_Include_";
+  return fileName + WildCards::ToX(ConcatenateCclassCgroupCsub('_')) + ".h";
+}
+
 bool RteComponent::IsDeviceDependent() const
 {
   if (GetCclassName() == "Device")
@@ -479,20 +485,20 @@ bool RteComponentAggregate::SetSelected(int nSel)
   return false;
 }
 
-bool RteComponentAggregate::HasComponentAttributes(const map<string, string>& attributes) const
+bool RteComponentAggregate::MatchComponentAttributes(const map<string, string>& attributes) const
 {
   if (!m_components.empty()) {
     for (auto itvar = m_components.begin(); itvar != m_components.end(); itvar++) {
       const RteComponentVersionMap& versionMap = itvar->second;
       for (auto it = versionMap.begin(); it != versionMap.end(); it++) {
         RteComponent* c = it->second;
-        if (c && c->HasComponentAttributes(attributes))
+        if (c && c->MatchComponentAttributes(attributes))
           return true;
       }
     }
     return false;
   } else if (m_instance)
-    return m_instance->HasComponentAttributes(attributes);
+    return m_instance->MatchComponentAttributes(attributes);
   return false;
 }
 
@@ -887,14 +893,14 @@ RteComponent* RteComponentAggregate::FindComponentMatch(const string& variant, c
 RteComponent* RteComponentAggregate::FindComponent(const map<string, string>& attributes) const
 {
   RteComponent* c = GetComponent();
-  if (c && c->HasComponentAttributes(attributes))
+  if (c && c->MatchComponentAttributes(attributes))
     return c;
 
   for (auto itvar = m_components.begin(); itvar != m_components.end(); itvar++) {
     const RteComponentVersionMap& versionMap = itvar->second;
     for (auto it = versionMap.begin(); it != versionMap.end(); it++) {
       c = it->second;
-      if (c && c->HasComponentAttributes(attributes))
+      if (c && c->MatchComponentAttributes(attributes))
         return c;
     }
   }
@@ -1782,13 +1788,13 @@ string RteComponentGroup::GetDocFile() const
 }
 
 
-RteItem::ConditionResult RteComponentGroup::GetComponentAggregates(const RteAttributes& componentAttributes, set<RteComponentAggregate*>& aggregates) const
+RteItem::ConditionResult RteComponentGroup::GetComponentAggregates(const XmlItem& componentAttributes, set<RteComponentAggregate*>& aggregates) const
 {
   ConditionResult res = MISSING;
 
   for (auto ita = m_children.begin(); ita != m_children.end(); ita++) {
     RteComponentAggregate* a = dynamic_cast<RteComponentAggregate*>(*ita);
-    if (a && a->HasComponentAttributes(componentAttributes.GetAttributes())) {
+    if (a && a->MatchComponentAttributes(componentAttributes.GetAttributes())) {
       aggregates.insert(a);
       ConditionResult r = INSTALLED;
       if (a->IsFiltered()) {
@@ -1796,9 +1802,9 @@ RteItem::ConditionResult RteComponentGroup::GetComponentAggregates(const RteAttr
         if (a->IsSelected()) {
           RteComponent* c = a->GetComponent();
           if (c) {
-            if (c->HasComponentAttributes(componentAttributes.GetAttributes())) {
+            if (c->MatchComponentAttributes(componentAttributes.GetAttributes())) {
               r = FULFILLED;
-            } else if (!WildCards::Match(componentAttributes.GetCvariantName(), c->GetCvariantName())) {
+            } else if (!WildCards::Match(componentAttributes.GetAttribute("Cvariant"), c->GetCvariantName())) {
               r = INCOMPATIBLE_VARIANT;
             } else {
               r = INCOMPATIBLE;
@@ -1837,7 +1843,7 @@ void RteComponentGroup::AdjustComponentSelection(const string& newBundleName)
     // find similar aggregate with the same attributes and new BundleName
     const string& variant = a->GetSelectedVariant();
     const string id = a->GetID();
-    RteAttributes attr = a->GetAttributes();
+    XmlItem attr(a->GetAttributes());
     attr.AddAttribute("Cbundle", newBundleName);
     attr.AddAttribute("Cvendor", "*");
     set<RteComponentAggregate*> aggregates;
@@ -1984,9 +1990,9 @@ RteComponentGroup* RteComponentClassContainer::CreateGroup(const string& name)
   return new RteComponentClass(this);
 }
 
-RteItem::ConditionResult RteComponentClassContainer::GetComponentAggregates(const RteAttributes& componentAttributes, set<RteComponentAggregate*>& aggregates) const
+RteItem::ConditionResult RteComponentClassContainer::GetComponentAggregates(const XmlItem& componentAttributes, set<RteComponentAggregate*>& aggregates) const
 {
-  RteComponentGroup* classGroup = GetGroup(componentAttributes.GetCclassName());
+  RteComponentGroup* classGroup = GetGroup(componentAttributes.GetAttribute("Cclass"));
   if (classGroup)
     return classGroup->GetComponentAggregates(componentAttributes, aggregates);
   return MISSING;
