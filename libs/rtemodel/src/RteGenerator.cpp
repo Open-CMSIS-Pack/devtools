@@ -88,14 +88,14 @@ RteItem* RteGenerator::GetArgumentsItem(const string& type) const
   return args;
 }
 
-const string RteGenerator::GetCommand() const {
+const string RteGenerator::GetCommand(const std::string& hostType) const {
 
   RteItem* exe = GetItemByTag("exe");
   if (exe != NULL) {
     const list<RteItem*>& children = exe->GetChildren();
     for (auto it = children.begin(); it != children.end(); it++) {
       RteItem* cmd = *it;
-      if (cmd->GetTag() != "command" || !cmd->MatchesHost()) {
+      if (cmd->GetTag() != "command" || !cmd->MatchesHost(hostType)) {
         continue;
       }
       const string& key = cmd->GetAttribute("key");
@@ -120,11 +120,9 @@ const string RteGenerator::GetCommand() const {
   return GetItemValue("command");
 }
 
-
-string RteGenerator::GetExpandedCommandLine(RteTarget* target) const
+string RteGenerator::GetExecutable(RteTarget* target, const std::string& hostType) const
 {
-  string fullCmd;
-  string cmd = GetCommand();
+  string cmd = GetCommand(hostType);
   if (cmd.empty())
     return cmd;
 
@@ -139,37 +137,37 @@ string RteGenerator::GetExpandedCommandLine(RteTarget* target) const
     if (p)
       cmd = p->GetAbsolutePackagePath() + cmd;
   }
+  return cmd;
+}
+
+
+vector<string> RteGenerator::GetExpandedArgv(RteTarget* target, const string& hostType) const
+{
+  vector<string> argv;
+  string exe = RteUtils::AddQuotesIfSpace(GetExecutable(target, hostType));
+  argv.push_back(exe); // executable as arv[0]
 
   RteItem* argsItem = GetArgumentsItem("exe");
   if (argsItem) {
-    bool quote = cmd.find(' ') != string::npos && cmd.find('\"') == string::npos;
-    if (quote)
-      fullCmd += "\"";
-    fullCmd += cmd;
-    if (quote)
-      fullCmd += "\"";
-
-    const list<RteItem*>& args = argsItem->GetChildren();
-    for (auto it = args.begin(); it != args.end(); it++) {
-      RteItem* arg = *it;
-      if (arg->GetTag() != "argument")
+    for (auto arg : argsItem->GetChildren()) {
+      if (arg->GetTag() != "argument" || !arg->MatchesHost(hostType))
         continue;
-      if (!arg->MatchesHost())
-        continue;
-      fullCmd += " ";
-      const string& key = arg->GetAttribute("switch");
-      if (!key.empty())
-        fullCmd += key;
-      string value = ExpandString(arg->GetText());
-      quote = value.find(' ') != string::npos && value.find('\"') == string::npos;
-      if (quote)
-        fullCmd += "\"";
-      fullCmd += value;
-      if (quote)
-        fullCmd += "\"";
+      string value = arg->GetAttribute("switch") + RteUtils::AddQuotesIfSpace(ExpandString(arg->GetText()));
+      argv.push_back(value);
     }
-  } else {
-    fullCmd = cmd;
+  }
+  return argv;
+}
+
+string RteGenerator::GetExpandedCommandLine(RteTarget* target, const string& hostType) const
+{
+  vector<string> argv = GetExpandedArgv(target, hostType);
+  string fullCmd;
+  for (size_t i = 0; i < argv.size(); i++) {
+    if (i > 0) {
+      fullCmd += ' ';
+    }
+    fullCmd += argv[i];
   }
   return fullCmd;
 }

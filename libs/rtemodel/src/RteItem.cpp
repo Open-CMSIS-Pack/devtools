@@ -542,10 +542,14 @@ const string& RteItem::GetPackageFileName() const
 
 bool RteItem::MatchesHost() const
 {
+  return MatchesHost(CrossPlatformUtils::GetHostType());
+}
+
+bool RteItem::MatchesHost(const string& hostType) const
+{
   const string& host = GetAttribute("host");
-  if (host.empty() || host == "all" || host == CrossPlatformUtils::GetHostType())
-    return true;
-  return false;
+  return (host.empty() || host == "all" ||
+          host == (hostType.empty() ? CrossPlatformUtils::GetHostType() : hostType));
 }
 
 

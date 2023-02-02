@@ -45,9 +45,18 @@ public:
 
   /**
    * @brief get generator command without expansion
-   * @return generator command
+   * @param hostType host type to match, empty to match current host
+   * @return generator command for specified host type
   */
-  const std::string GetCommand() const;
+  const std::string GetCommand(const std::string& hostType = EMPTY_STRING ) const;
+
+  /**
+  * @brief get expanded generator executable command
+  * @param target pointer to RteTarget
+  * @param hostType host type to match, empty to match current host
+  * @return generator command for specified host type
+ */
+  std::string GetExecutable(RteTarget* target, const std::string& hostType = EMPTY_STRING) const;
 
   /**
    * @brief get item containing command line arguments
@@ -105,18 +114,27 @@ public:
   */
   const std::string& GetGpdsc() const;
 
-  /**
-   * @brief get generator working directory
-   * @return working directory value
-  */
+ /**
+  * @brief get generator working directory
+  * @return working directory value
+ */
   const std::string& GetWorkingDir() const { return GetItemValue("workingDir"); }
+
+ /**
+ * @brief get all arguments as vector similar to argv for the given host type
+ * @param target pointer to RteTarget
+ * @param hostType host type, empty to match current host
+ * @return vector of arguments including command line at 0 vector element
+*/
+  std::vector<std::string> GetExpandedArgv(RteTarget* target, const std::string& hostType = EMPTY_STRING) const;
 
   /**
    * @brief get full command line with arguments and expanded key sequences for specified target
    * @param target pointer to RteTarget
+   * @param hostType host type, empty to match current host
    * @return expanded command line with arguments, properly quoted
   */
-  std::string GetExpandedCommandLine(RteTarget* target) const;
+  std::string GetExpandedCommandLine(RteTarget* target, const std::string& hostType = EMPTY_STRING) const;
 
   /**
    * @brief get absolute path to gpdsc file for specified target
