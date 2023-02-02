@@ -200,10 +200,8 @@ string RteFile::GetInstancePathName(const string& deviceName, int instanceIndex,
     bool bForcedCopy = IsForcedCopy();
     if (bConfig || bTemplate || bForcedCopy) {
       if (bConfig || bForcedCopy) {
-        pathName = rteFolder + "/";
-        const string& className = c->GetCclassName();
-        pathName += className;
-        pathName += "/";
+        // replace all ' ' with '_' in class name, the generated path should not contain spaces
+        pathName += rteFolder + "/" + RteUtils::SpacesToUnderscore(c->GetCclassName()) + "/";
         if (!bForcedCopy && !deviceName.empty() && c->IsDeviceDependent()) {
           string device = WildCards::ToX(deviceName);
           if (!device.empty()) {
@@ -211,9 +209,7 @@ string RteFile::GetInstancePathName(const string& deviceName, int instanceIndex,
             pathName += "/";
           }
         }
-        pathName = RteUtils::SpacesToUnderscore(pathName); // replace all ' ' with '_', the generated path should not contian spaces
       }
-
       string fullName = GetIncludeFileName(); // valid for all file categories
       string fileName = RteUtils::ExtractFileName(fullName);
       // add file path in case of relative header
