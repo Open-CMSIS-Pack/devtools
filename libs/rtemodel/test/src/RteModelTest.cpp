@@ -254,6 +254,19 @@ TEST_F(RteModelPrjTest, LoadCprj_NoRTEFileCreation) {
   EXPECT_FALSE(RteFsUtils::Exists(deviceDir + "ARMCM3_ac6.sct.update@1.2.0"));
   EXPECT_FALSE(RteFsUtils::Exists(deviceDir + "startup_ARMCM3.c.base@2.0.3"));
   EXPECT_FALSE(RteFsUtils::Exists(deviceDir + "system_ARMCM3.c.update@1.2.2"));
+
+  // additionally test support for RTE folder with spaces
+  auto& fileInstances= loadedCprjProject->GetFileInstances();
+  // take existing file instance
+  auto it = fileInstances.find("RTE/Device/RteTest_ARMCM3/startup_ARMCM3.c");
+  RteFileInstance* fi = it != fileInstances.end() ? it->second : nullptr;
+  ASSERT_NE(fi, nullptr);
+  // use its file to create path with another RTE directory
+  RteFile* f = fi->GetFile(loadedCprjProject->GetActiveTargetName());
+  ASSERT_NE(f, nullptr);
+  const string& deviceName = loadedCprjProject->GetActiveTarget()->GetDeviceName();
+  string pathName = f->GetInstancePathName(deviceName, 0 , "RTE With Spaces");
+  EXPECT_EQ(pathName, "RTE With Spaces/Device/RteTest_ARMCM3/startup_ARMCM3.c");
 }
 
 TEST_F(RteModelPrjTest, LoadCprj_PackPath) {
