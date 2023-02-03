@@ -44,7 +44,7 @@ void CBuildGenTestFixture::CheckCMakeLists(const TestParam& param) {
         continue;
       }
 
-      FAIL() << filename1 << " is different from " << filename2;
+      FAIL() << filename1 << " is different from " << filename2 << endl << "[" << l1 << " is different from " << l2 << "]";
     }
   }
 
