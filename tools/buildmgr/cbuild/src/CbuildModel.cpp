@@ -774,7 +774,7 @@ vector<string> CbuildModel::SplitArgs(const string& args, const string& delim, b
   return s;
 }
 
-vector<string> CbuildModel::MergeArgs(const vector<string>& add, const vector<string>& remove, const vector<string>& reference) {
+vector<string> CbuildModel::MergeArgs(const vector<string>& add, const vector<string>& remove, const vector<string>& reference, bool front) {
   /*
   MergeArgs:
    - Merge 'add' arguments from 'reference'
@@ -785,8 +785,10 @@ vector<string> CbuildModel::MergeArgs(const vector<string>& add, const vector<st
   }
 
   vector<string> list = reference;
-  for (auto add_item : add) {
-    list.push_back(add_item);
+  if (front) {
+    list.insert(list.begin(), add.begin(), add.end());
+  } else {
+    list.insert(list.end(), add.begin(), add.end());
   }
   for (auto rem_item : remove) {
     auto first_match = std::find(list.cbegin(), list.cend(), rem_item);
@@ -956,7 +958,7 @@ bool CbuildModel::SetItemIncludesDefines(const RteItem* item, const string& name
       LogMsg("M204", PATH(include));
       return false;
     }
-    const auto& resIncludesList = MergeArgs(includesList, excludesList, parentIncludes);
+    const auto& resIncludesList = MergeArgs(includesList, excludesList, parentIncludes, true);
     m_includePaths.insert(pair<string, vector<string>>(name, resIncludesList));
   }
   return true;
@@ -975,19 +977,21 @@ bool CbuildModel::EvalIncludesDefines() {
     const RteItem* defines = target->GetItemByTag("defines");
     if (includes) {
       const vector<string>& includesList = SplitArgs(includes->GetText(), ";", false);
+      vector<string> normalizedIncludesList;
       for (auto include : includesList) {
         if (CbuildUtils::NormalizePath(include, m_prjFolder)) {
-          m_targetIncludePaths.push_back(include);
+          normalizedIncludesList.push_back(include);
           continue;
         }
         regex regEx{ "^\\$.*\\$$" };
         if (regex_search(include, regEx)) {
-          m_targetIncludePaths.push_back(include);
+          normalizedIncludesList.push_back(include);
           continue;
         }
         LogMsg("M204", PATH(include));
         return false;
       }
+      m_targetIncludePaths.insert(m_targetIncludePaths.begin(), normalizedIncludesList.begin(), normalizedIncludesList.end());
     }
     if (defines) {
       const vector<string>& definesList = SplitArgs(defines->GetText(), ";", false);

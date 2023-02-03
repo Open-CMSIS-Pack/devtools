@@ -153,7 +153,7 @@ bool ProjMgrWorker::AddContext(ProjMgrParser& parser, ContextDesc& descriptor, c
         string const& clayerFile = fs::canonical(fs::path(cprojectFile).parent_path().append(clayerRef), ec).generic_string();
         if (clayerFile.empty()) {
           if (regex_match(clayer.layer, regex(".*\\$.*\\$.*"))) {
-            ProjMgrLogger::Warn(clayer.layer, "variable was not defined");
+            ProjMgrLogger::Warn(clayer.layer, "variable was not defined for context '" + context.name +"'");
           } else {
             ProjMgrLogger::Error(clayer.layer, "clayer file was not found");
             return false;
@@ -526,16 +526,23 @@ bool ProjMgrWorker::CollectLayersFromPacks(ContextItem& context, StrVecMap& clay
 }
 
 bool ProjMgrWorker::CollectLayersFromSearchPath(const string& clayerSearchPath, StrVecMap& clayers) {
-  error_code ec;
-  for (auto& item : fs::recursive_directory_iterator(clayerSearchPath, ec)) {
-    if (fs::is_regular_file(item)) {
-      const string& clayerFile = item.path().generic_string();
-      if (regex_match(clayerFile, regex(".*\\.clayer\\.(yml|yaml)"))) {
-        if (!m_parser->ParseGenericClayer(clayerFile, m_checkSchema)) {
-          return false;
+  if (!clayerSearchPath.empty()) {
+    error_code ec;
+    const auto& absSearchPath = RteFsUtils::MakePathCanonical(clayerSearchPath);
+    if (!RteFsUtils::Exists(absSearchPath)) {
+      ProjMgrLogger::Error(absSearchPath, "clayer search path does not exist");
+      return false;
+    }
+    for (auto& item : fs::recursive_directory_iterator(absSearchPath, ec)) {
+      if (fs::is_regular_file(item, ec) && (!ec)) {
+        const string& clayerFile = item.path().generic_string();
+        if (regex_match(clayerFile, regex(".*\\.clayer\\.(yml|yaml)"))) {
+          if (!m_parser->ParseGenericClayer(clayerFile, m_checkSchema)) {
+            return false;
+          }
+          ClayerItem* clayer = &m_parser->GetGenericClayers()[clayerFile];
+          ProjMgrUtils::PushBackUniquely(clayers[clayer->type], clayerFile);
         }
-        ClayerItem* clayer = &m_parser->GetGenericClayers()[clayerFile];
-        ProjMgrUtils::PushBackUniquely(clayers[clayer->type], clayerFile);
       }
     }
   }
@@ -628,7 +635,7 @@ bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context, const string& c
         debugMsg += "\n  " + item.filename + (type.empty() ? "" : " (layer type: " + type + ")");
         for (const auto& connect : item.connections) {
           debugMsg += "\n    " + (connect->set.empty() ? "" : "set: " + connect->set + " ") + "(" +
-            (connect->info.empty() ? "" : connect->info + " - ") + connect->connect + ")";
+            connect->connect + (connect->info.empty() ? "" : " - " + connect->info) + ")";
         }
       }
       debugMsg += "\n";
@@ -710,22 +717,20 @@ bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context, const string& c
           }
         }
       }
-      string infoMsg = "valid for context '" + context.name + "'\n";
       for (const auto& [index, types] : configurationOptions) {
-        infoMsg += "\nvalid configuration #" + to_string(index) + ":";
+        string infoMsg = "valid configuration #" + to_string(index) + ": (context '" + context.name +"')";
         for (const auto& [type, filenames] : types) {
           for (const auto& [filename, options] : filenames) {
             infoMsg += "\n  " + filename + (type.empty() ? "" : " (layer type: " + type + ")");
             for (const auto& connect : options) {
               if (!connect->set.empty()) {
-                infoMsg += "\n    set: " + connect->set + " (" + (connect->info.empty() ? "" : connect->info + " - ") + connect->connect + ")";
+                infoMsg += "\n    set: " + connect->set + " (" + connect->connect + (connect->info.empty() ? "" : " - " + connect->info) + ")";
               }
             }
           }
         }
-        infoMsg += "\n";
+        ProjMgrLogger::Info(infoMsg + "\n");
       }
-      ProjMgrLogger::Info(infoMsg);
     }
   }
   return true;
@@ -2503,6 +2508,7 @@ bool ProjMgrWorker::ListGenerators(vector<string>& generators) {
 }
 
 bool ProjMgrWorker::ListLayers(vector<string>& layers, const string& clayerSearchPath) {
+  map<StrPair, StrSet> layersMap;
   for (const auto& selectedContext : m_selectedContexts) {
     ContextItem& context = m_contexts[selectedContext];
     if (!LoadPacks(context)) {
@@ -2516,9 +2522,8 @@ bool ProjMgrWorker::ListLayers(vector<string>& layers, const string& clayerSearc
         return false;
       }
       for (const auto& [clayerType, clayerVec] : genericClayers) {
-        const string type = clayerType.empty() ? "" : " (layer type: " + clayerType + ")";
         for (const auto& clayer : clayerVec) {
-          ProjMgrUtils::PushBackUniquely(layers, clayer + type);
+          layersMap[{clayer, clayerType}].insert({});
         }
       }
     } else {
@@ -2536,24 +2541,27 @@ bool ProjMgrWorker::ListLayers(vector<string>& layers, const string& clayerSearc
       if (!DiscoverMatchingLayers(context, clayerSearchPath)) {
         return false;
       }
-      StrMap layersMap;
       for (const auto& [clayer, clayerItem] : context.clayers) {
-        layersMap[clayer] = clayerItem->type;
+        const auto& validSets = GetValidSets(context, clayer);
+        layersMap[{clayer, clayerItem->type}].insert(validSets.begin(), validSets.end());
       }
       for (const auto& [clayerType, clayerVec] : context.compatibleLayers) {
         for (const auto& clayer : clayerVec) {
-          layersMap[clayer] = clayerType;
+          const auto& validSets = GetValidSets(context, clayer);
+          layersMap[{clayer, clayerType}].insert(validSets.begin(), validSets.end());
         }
-      }
-      for (const auto& [clayer, type] : layersMap) {
-        string layerEntry = clayer + (type.empty() ? "" : " (layer type: " + type + ")");
-        const auto& validSets = GetValidSets(context, clayer);
-        for (const auto& connect : validSets) {
-          layerEntry += "\n  set: " + connect->set + " (" + (connect->info.empty() ? "" : connect->info + " - ") + connect->connect + ")";
-        }
-        ProjMgrUtils::PushBackUniquely(layers, layerEntry);
       }
     }
+  }
+  // print layer paths, types and valid sets for all selected contexts without duplicates
+  for (const auto& [clayerPair, validSets] : layersMap) {
+    const auto& clayer = clayerPair.first;
+    const auto& type = clayerPair.second;
+    string layerEntry = clayer + (type.empty() ? "" : " (layer type: " + type + ")");
+    for (const auto& validSet : validSets) {
+      layerEntry += "\n  set: " + validSet;
+    }
+    ProjMgrUtils::PushBackUniquely(layers, layerEntry);
   }
   return true;
 }
@@ -2937,18 +2945,18 @@ void ProjMgrWorker::RemoveRedundantSubsets(std::vector<ConnectionsCollectionVec>
   }
 }
 
-ConnectPtrVec ProjMgrWorker::GetValidSets(ContextItem& context, const string& clayer) {
-  set<const ConnectItem*> validSets;
+StrSet ProjMgrWorker::GetValidSets(ContextItem& context, const string& clayer) {
+  StrSet validSets;
   for (const auto& combination : context.validConnections) {
     for (const auto& item : combination) {
       if (item.filename == clayer) {
         for (const auto& connect : item.connections) {
           if (!connect->set.empty()) {
-            validSets.insert(connect);
+            validSets.insert(connect->set + " (" + connect->connect + (connect->info.empty() ? "" : " - " + connect->info) + ")");
           }
         }
       }
     }
   }
-  return vector(validSets.begin(), validSets.end());
+  return validSets;
 }

@@ -50,6 +50,11 @@ typedef std::pair<std::string, std::string> StrPair;
 typedef std::vector<std::string> StrVec;
 
 /**
+ * @brief string set
+*/
+typedef std::set<std::string> StrSet;
+
+/**
  * @brief vector of string pair
 */
 typedef std::vector<StrPair> StrPairVec;

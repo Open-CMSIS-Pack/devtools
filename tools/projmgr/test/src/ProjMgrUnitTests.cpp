@@ -730,19 +730,17 @@ clayer of type 'TestVariant' was uniquely found:\n\
   EXPECT_TRUE(regex_match(errStr, regex(expectedErrStr)));
 
   const string& expectedOutStr = "\
-info csolution: valid for context 'genericlayers.CompatibleLayers\\+AnyBoard'\n\
-\n\
-valid configuration #1:\n\
+info csolution: valid configuration #1: \\(context 'genericlayers.CompatibleLayers\\+AnyBoard'\\)\n\
   .*/TestLayers/genericlayers.cproject.yml\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/board1.clayer.yml \\(layer type: Board\\)\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml \\(layer type: TestVariant\\)\n\
 \n\
-valid configuration #2:\n\
+info csolution: valid configuration #2: \\(context 'genericlayers.CompatibleLayers\\+AnyBoard'\\)\n\
   .*/TestLayers/genericlayers.cproject.yml\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/board2.clayer.yml \\(layer type: Board\\)\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml \\(layer type: TestVariant\\)\n\
 \n\
-valid configuration #3:\n\
+info csolution: valid configuration #3: \\(context 'genericlayers.CompatibleLayers\\+AnyBoard'\\)\n\
   .*/TestLayers/genericlayers.cproject.yml\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml \\(layer type: Board\\)\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml \\(layer type: TestVariant\\)\n\
@@ -769,41 +767,39 @@ TEST_F(ProjMgrUnitTests, ListLayersConfigurations) {
   EXPECT_EQ(0, RunProjMgr(6, argv));
 
   const string& expectedOutStr = "\
-info csolution: valid for context 'config.CompatibleLayers\\+RteTest_ARMCM3'\n\
-\n\
-valid configuration #1:\n\
+info csolution: valid configuration #1: \\(context 'config.CompatibleLayers\\+RteTest_ARMCM3'\\)\n\
   .*/TestLayers/config.clayer.yml\n\
-    set: set1.select1 \\(set 1 select 1 - connect R\\)\n\
+    set: set1.select1 \\(connect R - set 1 select 1\\)\n\
   .*/TestLayers/config.cproject.yml\n\
-    set: set1.select1 \\(set 1 select 1 - project X\\)\n\
+    set: set1.select1 \\(project X - set 1 select 1\\)\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/config1.clayer.yml \\(layer type: Config1\\)\n\
-    set: set1.select1 \\(set 1 select 1 - connect A\\)\n\
-    set: set2.select1 \\(set 2 select 1 - connect C\\)\n\
+    set: set1.select1 \\(connect A - set 1 select 1\\)\n\
+    set: set2.select1 \\(connect C - set 2 select 1\\)\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/config2.clayer.yml \\(layer type: Config2\\)\n\
-    set: set1.select1 \\(set 1 select 1 - connect F\\)\n\
+    set: set1.select1 \\(connect F - set 1 select 1\\)\n\
 \n\
-valid configuration #2:\n\
+info csolution: valid configuration #2: \\(context 'config.CompatibleLayers\\+RteTest_ARMCM3'\\)\n\
   .*/TestLayers/config.clayer.yml\n\
-    set: set1.select2 \\(set 1 select 2 - connect S\\)\n\
+    set: set1.select2 \\(connect S - set 1 select 2\\)\n\
   .*/TestLayers/config.cproject.yml\n\
-    set: set1.select2 \\(set 1 select 2 - project Y\\)\n\
+    set: set1.select2 \\(project Y - set 1 select 2\\)\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/config1.clayer.yml \\(layer type: Config1\\)\n\
-    set: set1.select2 \\(set 1 select 2 - connect B\\)\n\
-    set: set2.select2 \\(set 2 select 2 - connect D\\)\n\
+    set: set1.select2 \\(connect B - set 1 select 2\\)\n\
+    set: set2.select2 \\(connect D - set 2 select 2\\)\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/config2.clayer.yml \\(layer type: Config2\\)\n\
-    set: set1.select2 \\(set 1 select 2 - connect G\\)\n\
+    set: set1.select2 \\(connect G - set 1 select 2\\)\n\
 \n\
 .*/TestLayers/config.clayer.yml\n\
-  set: set1.select1 \\(set 1 select 1 - connect R\\)\n\
-  set: set1.select2 \\(set 1 select 2 - connect S\\)\n\
+  set: set1.select1 \\(connect R - set 1 select 1\\)\n\
+  set: set1.select2 \\(connect S - set 1 select 2\\)\n\
 .*/ARM/RteTest_DFP/0.2.0/Layers/config1.clayer.yml \\(layer type: Config1\\)\n\
-  set: set1.select1 \\(set 1 select 1 - connect A\\)\n\
-  set: set1.select2 \\(set 1 select 2 - connect B\\)\n\
-  set: set2.select1 \\(set 2 select 1 - connect C\\)\n\
-  set: set2.select2 \\(set 2 select 2 - connect D\\)\n\
+  set: set1.select1 \\(connect A - set 1 select 1\\)\n\
+  set: set1.select2 \\(connect B - set 1 select 2\\)\n\
+  set: set2.select1 \\(connect C - set 2 select 1\\)\n\
+  set: set2.select2 \\(connect D - set 2 select 2\\)\n\
 .*/ARM/RteTest_DFP/0.2.0/Layers/config2.clayer.yml \\(layer type: Config2\\)\n\
-  set: set1.select1 \\(set 1 select 1 - connect F\\)\n\
-  set: set1.select2 \\(set 1 select 2 - connect G\\)\n\
+  set: set1.select1 \\(connect F - set 1 select 1\\)\n\
+  set: set1.select2 \\(connect G - set 1 select 2\\)\n\
 ";
 
   const string& outStr = streamRedirect.GetOutString();
@@ -822,18 +818,16 @@ TEST_F(ProjMgrUnitTests, ListLayersMultipleSelect) {
   EXPECT_EQ(0, RunProjMgr(6, argv));
 
   const string& expectedOutStr = "\
-info csolution: valid for context 'select\\+RteTest_ARMCM3'\n\
-\n\
-valid configuration #1:\n\
+info csolution: valid configuration #1: \\(context 'select\\+RteTest_ARMCM3'\\)\n\
   .*/TestLayers/select.clayer.yml\n\
   .*/TestLayers/select.cproject.yml\n\
-    set: set1.select1 \\(set 1 select 1 - project X\\)\n\
+    set: set1.select1 \\(project X - set 1 select 1\\)\n\
 \n\
-valid configuration #2:\n\
+info csolution: valid configuration #2: \\(context 'select\\+RteTest_ARMCM3'\\)\n\
   .*/TestLayers/select.clayer.yml\n\
   .*/TestLayers/select.cproject.yml\n\
-    set: set1.select2 \\(set 1 select 2 - project Y\\)\n\
-    set: set1.select2 \\(set 1 select 2 - project Z\\)\n\
+    set: set1.select2 \\(project Y - set 1 select 2\\)\n\
+    set: set1.select2 \\(project Z - set 1 select 2\\)\n\
 \n\
 .*/TestLayers/select.clayer.yml\n\
 ";
@@ -912,9 +906,7 @@ clayer of type 'TestVariant' was uniquely found:\n\
   EXPECT_TRUE(regex_match(errStr, regex(expectedErrStr)));
 
   const string& expectedOutStr = "\
-info csolution: valid for context 'genericlayers.CompatibleLayers\\+Board3'\n\
-\n\
-valid configuration #1:\n\
+info csolution: valid configuration #1: \\(context 'genericlayers.CompatibleLayers\\+Board3'\\)\n\
   .*/TestLayers/genericlayers.cproject.yml\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml \\(layer type: Board\\)\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml \\(layer type: TestVariant\\)\n\
@@ -1060,6 +1052,14 @@ check combined connections:\
   errStr.erase(std::remove(errStr.begin(), errStr.end(), '\n'), errStr.cend());
 
   EXPECT_TRUE(regex_match(errStr, regex(expectedErrStr)));
+
+  // test invalid clayer path
+  streamRedirect.ClearStringStreams();
+  argv[6] = (char*)"invalid/clayer/path";
+  EXPECT_EQ(1, RunProjMgr(8, argv));
+ 
+  errStr = streamRedirect.GetErrorString();
+  EXPECT_TRUE(regex_match(errStr, regex(".*invalid/clayer/path - error csolution: clayer search path does not exist\n")));
 }
 
 TEST_F(ProjMgrUnitTests, LayerVariables) {
@@ -1116,7 +1116,7 @@ TEST_F(ProjMgrUnitTests, LayerVariablesNotDefined) {
   EXPECT_EQ(1, RunProjMgr(8, argv));
 
   const string& expectedErrStr = ".*\
-\\$NotDefined\\$ - warning csolution: variable was not defined.*\
+\\$NotDefined\\$ - warning csolution: variable was not defined for context 'variables-notdefined.BuildType\\+TargetType'.*\
   .*/ARM/RteTest_DFP/0.2.0/Layers/board1.clayer.yml \\(layer type: Board\\).*\
   .*/ARM/RteTest_DFP/0.2.0/Layers/board2.clayer.yml \\(layer type: Board\\).*\
   .*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml \\(layer type: Board\\).*\
