@@ -3,7 +3,6 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-#include "gtest/gtest.h"
 
 #include "RteModelTestConfig.h"
 
@@ -59,40 +58,10 @@ TEST(RteModelTest, LoadPacks) {
   EXPECT_EQ(summary, "ARM Cortex-M4, 10 MHz, 128 kB RAM, 256 kB ROM");
 }
 
-// define project and header file names with relative paths
-const string prjsDir = "RteModelTestProjects";
-const string localRepoDir = "RteModelLocalRepo";
-const string RteTestM3 = "/RteTestM3";
-const string RteTestM3_cprj = prjsDir + RteTestM3 + "/RteTestM3.cprj";
-const string RteTestM3_ConfigFolder_cprj = prjsDir + RteTestM3 + "/RteTestM3_ConfigFolder.cprj";
-const string RteTestM3_PackPath_cprj = prjsDir + RteTestM3 + "/RteTestM3_PackPath.cprj";
-const string RteTestM3_PackPath_MultiplePdscs_cprj = prjsDir + RteTestM3 + "/RteTestM3_PackPath_MultiplePdscs.cprj";
-const string RteTestM3_PackPath_NoPdsc_cprj = prjsDir + RteTestM3 + "/RteTestM3_PackPath_NoPdsc.cprj";
-const string RteTestM3_PackPath_Invalid_cprj = prjsDir + RteTestM3 + "/RteTestM3_PackPath_Invalid.cprj";
-const string RteTestM3_PrjPackPath = prjsDir + RteTestM3 + "/packs";
-
-const string RteTestM4 = "/RteTestM4";
-const string RteTestM4_cprj = prjsDir + RteTestM4 + "/RteTestM4.cprj";
-const string RteTestM4_CompDep_cprj = prjsDir + RteTestM4 + "/RteTestM4_CompDep.cprj";
-
-
-
-class RteModelPrjTest :public ::testing::Test {
+class RteModelPrjTest : public RteModelTestConfig {
 public:
 
 protected:
-  void SetUp() override
-  {
-    RteFsUtils::DeleteTree(prjsDir);
-    RteFsUtils::CopyTree(RteModelTestConfig::PROJECTS_DIR, prjsDir);
-    RteFsUtils::CopyTree(RteModelTestConfig::LOCAL_REPO_DIR, localRepoDir);
-  }
-
-  void TearDown() override
-  {
-    RteFsUtils::DeleteTree(prjsDir);
-  }
-
   void compareFile(const string &newFile, const string &refFile,
     const std::unordered_map<string, string> &expectedChangedFlags, const string &toolchain) const;
 
@@ -262,7 +231,7 @@ TEST_F(RteModelPrjTest, LoadCprj_NoRTEFileCreation) {
   RteFileInstance* fi = it != fileInstances.end() ? it->second : nullptr;
   ASSERT_NE(fi, nullptr);
   // use its file to create path with another RTE directory
-  RteFile* f = fi->GetFile(loadedCprjProject->GetActiveTargetName());
+  RteFile* f = fi ? fi->GetFile(loadedCprjProject->GetActiveTargetName()) : nullptr ;
   ASSERT_NE(f, nullptr);
   const string& deviceName = loadedCprjProject->GetActiveTarget()->GetDeviceName();
   string pathName = f->GetInstancePathName(deviceName, 0 , "RTE With Spaces");
