@@ -27,6 +27,7 @@ class RteConditionContext;
 
 #define DEVICE_EXPRESSION 'D'
 #define BOARD_EXPRESSION 'B'
+#define HW_EXPRESSION 'H'
 #define TOOLCHAIN_EXPRESSION 'T'
 #define COMPONENT_EXPRESSION 'C'
 #define CONDITION_EXPRESSION 'c'
@@ -102,10 +103,9 @@ public:
   */
   virtual bool IsBoardDependent() const override;
 
-
   /**
    * @brief get expression domain : Device, Toolchain, Component dependency or a reference to a condition
-   * @return expression domain as char value: 'D', 'T', 'C', or 'c'
+   * @return expression domain as char value: 'B', 'D', 'H', 'T', 'C', or 'c'
   */
   char GetExpressionDomain() const { return m_domain; }
   /**

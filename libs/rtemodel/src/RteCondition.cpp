@@ -154,62 +154,35 @@ RteComponentAggregate* RteConditionExpression::GetSingleComponentAggregate(RteTa
 bool RteConditionExpression::Validate()
 {
   m_bValid = RteItem::Validate();
+  if (m_attributes.empty()) {
+    string msg = " '";
+    msg += GetDisplayName() + "': Empty expression";
+    m_errors.push_back(msg);
+    m_bValid = false;
+    return false;
+  }
 
-  map<string, string>::const_iterator it;
-  bool bD = false;
-  bool bB = false;
-  bool bC = false;
-  bool bT = false;
-  bool bCondition = false;
-  bool bMixed = false;
-  for (it = m_attributes.begin(); it != m_attributes.end(); it++) {
+  set<char> domains;
+  bool bComponent = false;
+  for (auto it = m_attributes.begin(); it != m_attributes.end(); it++) {
     string a = it->first;
     char ch = a.at(0);
-    switch (ch) {
-    case 'C':
-      if (!bC) {
-        bC = true;
-        bMixed = bD || bB || bT || bCondition;
-        if (GetAttribute("Cclass").empty() || GetAttribute("Cgroup").empty()) {
-          string msg = " '";
-          msg += GetDisplayName() + "': Cclass or Cgroup attribute is missing in expression";
-          m_errors.push_back(msg);
-          m_bValid = false;
-        }
-      }
-      break;
-    case 'T':
-      if (!bT) {
-        bT = true;
-        bMixed = bC || bD || bB || bCondition;
-      }
-      break;
-    case 'c':
-      bCondition = true;
-      bMixed = bC || bD || bB || bT;
-      break;
-    case 'P':
-    case 'D':
-      if (!bD) {
-        bD = true;
-        bMixed = bC || bT || bB || bCondition;
-      }
-      break;
-    case 'B':
-      if (!bB) {
-        bB = true;
-        bMixed = bC || bT || bD || bCondition;
-      }
-      break;
-
-    default:
-      break;
-    }; //case
-  } // for
-
-  if (bMixed) {
+    if (ch == COMPONENT_EXPRESSION) {
+      bComponent = true;
+    } else if (ch == 'P') { // processor properties belong to Device domain
+      ch = 'D';
+    }
+    domains.insert(ch);
+  }
+  if (domains.size() > 1) {
     string msg = " '";
     msg += GetDisplayName() + "': mixed 'B', 'C', 'D', 'T' or 'condition' attributes";
+    m_errors.push_back(msg);
+    m_bValid = false;
+  }
+  if (bComponent && (GetCclassName().empty() || GetCgroupName().empty())) {
+    string msg = " '";
+    msg += GetDisplayName() + "': Cclass or Cgroup attribute is missing in expression";
     m_errors.push_back(msg);
     m_bValid = false;
   }
@@ -897,14 +870,13 @@ RteItem::ConditionResult RteConditionContext::EvaluateExpression(RteConditionExp
   case TOOLCHAIN_EXPRESSION:
     return expr->EvaluateExpression(GetTarget());
 
-  case COMPONENT_EXPRESSION:
-    return RteItem::IGNORED;
-
-  case CONDITION_EXPRESSION:
+  case CONDITION_EXPRESSION: // evaluate referenced condition
     return Evaluate(expr->GetCondition());
 
-  default:
-    return RteItem::R_ERROR;
+  case COMPONENT_EXPRESSION: // component expressions are ignored by filtering
+  case HW_EXPRESSION: // reserved for future, currently ignored
+  default:  // any unknown expression is ignored
+    return RteItem::IGNORED;
   };
 }
 
@@ -949,19 +921,18 @@ RteItem::ConditionResult RteDependencySolver::EvaluateExpression(RteConditionExp
   char domain = expr->GetExpressionDomain();
   switch (domain)
   {
-  case BOARD_EXPRESSION:
-  case DEVICE_EXPRESSION:
-  case TOOLCHAIN_EXPRESSION:
-    return RteItem::IGNORED;
-
   case COMPONENT_EXPRESSION:
     return CalculateDependencies(expr);
 
   case CONDITION_EXPRESSION:
-    return Evaluate(expr->GetCondition());
+    return Evaluate(expr->GetCondition());  // evaluate referenced condition
 
-  default:
-    return RteItem::R_ERROR;
+  case BOARD_EXPRESSION:    // ignored in dependency context
+  case DEVICE_EXPRESSION:   // ignored in dependency context
+  case TOOLCHAIN_EXPRESSION:// ignored in dependency context
+  case HW_EXPRESSION:       // ignored in dependency context
+  default:  // any unknown expression is ignored
+    return RteItem::IGNORED;
   };
 }
 
