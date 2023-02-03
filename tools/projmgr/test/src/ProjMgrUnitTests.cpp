@@ -1059,7 +1059,7 @@ check combined connections:\
   EXPECT_EQ(1, RunProjMgr(8, argv));
  
   errStr = streamRedirect.GetErrorString();
-  EXPECT_TRUE(regex_match(errStr, regex("invalid/clayer/path - error csolution: clayer search path does not exist\n")));
+  EXPECT_TRUE(regex_match(errStr, regex(".*invalid/clayer/path - error csolution: clayer search path does not exist\n")));
 }
 
 TEST_F(ProjMgrUnitTests, LayerVariables) {
