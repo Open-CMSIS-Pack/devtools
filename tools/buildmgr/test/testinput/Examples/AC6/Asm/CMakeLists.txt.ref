@@ -25,13 +25,21 @@ set(DEFINES
   _RTE_
 )
 
+set(DEFINES_C:/WORK/devtools-external-wip/build/tools/buildmgr/test/integrationtests/testdata/Examples/AC6/Asm/AsmArm.s
+  ARMCM3
+  _RTE_
+  HEXADECIMAL_TEST=0xABCDEF
+  DECIMAL_TEST=1234567890
+  STRING_TEST="String0"
+)
+
 set(INC_PATHS
-  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/Core/Include"
-  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/Include"
-  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/RTX/Include"
-  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/Device/ARM/ARMCM3/Include"
   "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/Asm/RTE/CMSIS"
   "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/Asm/RTE/_Target"
+  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.9.0/CMSIS/Core/Include"
+  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.9.0/CMSIS/RTOS2/Include"
+  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.9.0/CMSIS/RTOS2/RTX/Include"
+  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.9.0/Device/ARM/ARMCM3/Include"
 )
 
 set(ASM_SRC_FILES
@@ -52,16 +60,16 @@ set(AS_LEG_SRC_FILES
 )
 
 set(CC_SRC_FILES
+  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.9.0/CMSIS/RTOS2/RTX/Source/rtx_lib.c"
+  "C:/Users/Test/AppData/Local/Arm/Packs/Keil/ARM_Compiler/1.6.3/Source/retarget_io.c"
   "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/Asm/Blinky.c"
   "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/Asm/RTE/CMSIS/RTX_Config.c"
-  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/RTX/Source/rtx_lib.c"
-  "C:/Users/Test/AppData/Local/Arm/Packs/Keil/ARM_Compiler/1.6.3/Source/retarget_io.c"
   "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/Asm/RTE/Device/ARMCM3/startup_ARMCM3.c"
   "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/Asm/RTE/Device/ARMCM3/system_ARMCM3.c"
 )
 
 set(LIB_FILES
-  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/RTX/Library/ARM/RTX_CM3.lib"
+  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.9.0/CMSIS/RTOS2/RTX/Library/ARM/RTX_CM3.lib"
 )
 
 set(AS_FLAGS_C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/Asm/ArmSyntax.s "-gdwarf-3 -masm=armasm")
@@ -129,6 +137,73 @@ foreach(SRC ${AS_LEG_SRC_FILES})
   endif()
   set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS "${AS_FLAGS_LOCAL}")
   set_source_files_properties(${SRC} PROPERTIES LANGUAGE AS_LEG)
+endforeach()
+
+# File Includes, Defines and Options
+
+foreach(SRC ${ASM_SRC_FILES})
+  string(REPLACE " " "?" S ${SRC})
+  if(DEFINED DEFINES_${S})
+    cbuild_set_defines(ASM DEFINES_${S})
+    get_source_file_property(FILE_FLAGS ${SRC} COMPILE_FLAGS)
+    if(FILE_FLAGS STREQUAL "NOTFOUND")
+      set(FILE_FLAGS)
+    endif()
+    string(APPEND FILE_FLAGS " ${DEFINES_${S}}")
+    set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS "${FILE_FLAGS}")
+  endif()
+endforeach()
+
+foreach(SRC ${AS_ARM_SRC_FILES})
+  string(REPLACE " " "?" S ${SRC})
+  if(DEFINED DEFINES_${S})
+    cbuild_set_defines(AS_ARM DEFINES_${S})
+    get_source_file_property(FILE_FLAGS ${SRC} COMPILE_FLAGS)
+    if(FILE_FLAGS STREQUAL "NOTFOUND")
+      set(FILE_FLAGS)
+    endif()
+    string(APPEND FILE_FLAGS " ${DEFINES_${S}}")
+    set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS "${FILE_FLAGS}")
+  endif()
+endforeach()
+
+foreach(SRC ${AS_GNU_SRC_FILES})
+  string(REPLACE " " "?" S ${SRC})
+  if(DEFINED DEFINES_${S})
+    cbuild_set_defines(AS_GNU DEFINES_${S})
+    get_source_file_property(FILE_FLAGS ${SRC} COMPILE_FLAGS)
+    if(FILE_FLAGS STREQUAL "NOTFOUND")
+      set(FILE_FLAGS)
+    endif()
+    string(APPEND FILE_FLAGS " ${DEFINES_${S}}")
+    set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS "${FILE_FLAGS}")
+  endif()
+endforeach()
+
+foreach(SRC ${AS_LEG_SRC_FILES})
+  string(REPLACE " " "?" S ${SRC})
+  if(DEFINED DEFINES_${S})
+    cbuild_set_defines(AS_LEG DEFINES_${S})
+    get_source_file_property(FILE_FLAGS ${SRC} COMPILE_FLAGS)
+    if(FILE_FLAGS STREQUAL "NOTFOUND")
+      set(FILE_FLAGS)
+    endif()
+    string(APPEND FILE_FLAGS " ${DEFINES_${S}}")
+    set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS "${FILE_FLAGS}")
+  endif()
+endforeach()
+
+foreach(SRC ${CC_SRC_FILES})
+  string(REPLACE " " "?" S ${SRC})
+  if(DEFINED DEFINES_${S})
+    cbuild_set_defines(CC DEFINES_${S})
+    get_source_file_property(FILE_FLAGS ${SRC} COMPILE_FLAGS)
+    if(FILE_FLAGS STREQUAL "NOTFOUND")
+      set(FILE_FLAGS)
+    endif()
+    string(APPEND FILE_FLAGS " ${DEFINES_${S}}")
+    set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS "${FILE_FLAGS}")
+  endif()
 endforeach()
 
 # Compilation Database

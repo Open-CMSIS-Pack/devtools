@@ -65,28 +65,28 @@ set(DEFINES_C:/Sandbox/devtools-external/build/testoutput/GCC/TranslationControl
 )
 
 set(INC_PATHS
+  "C:/Sandbox/devtools-external/build/testoutput/GCC/TranslationControl/Project1"
   "C:/Sandbox/devtools-external/build/testoutput/GCC/TranslationControl/Project1/RTE/_Project"
   "C:/Users/user1/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/Core/Include"
   "C:/Users/user1/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/Device/ARM/ARMCM3/Include"
-  "C:/Sandbox/devtools-external/build/testoutput/GCC/TranslationControl/Project1"
 )
 
 set(INC_PATHS_C:/Sandbox/devtools-external/build/testoutput/GCC/TranslationControl/Project1/File.c
+  "C:/Sandbox/devtools-external/build/testoutput/GCC/TranslationControl/Project1/inc"
+  "C:/Sandbox/devtools-external/build/testoutput/GCC/TranslationControl/Project1/inc1"
+  "C:/Sandbox/devtools-external/build/testoutput/GCC/TranslationControl/Project1"
   "C:/Sandbox/devtools-external/build/testoutput/GCC/TranslationControl/Project1/RTE/_Project"
   "C:/Users/user1/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/Core/Include"
   "C:/Users/user1/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/Device/ARM/ARMCM3/Include"
-  "C:/Sandbox/devtools-external/build/testoutput/GCC/TranslationControl/Project1"
-  "C:/Sandbox/devtools-external/build/testoutput/GCC/TranslationControl/Project1/inc1"
-  "C:/Sandbox/devtools-external/build/testoutput/GCC/TranslationControl/Project1/inc"
 )
 
 set(INC_PATHS_C:/Sandbox/devtools-external/build/testoutput/GCC/TranslationControl/Project1/File2.cpp
+  "C:/Sandbox/devtools-external/build/testoutput/GCC/TranslationControl/Project1/inc1"
+  "C:/Sandbox/devtools-external/build/testoutput/GCC/TranslationControl/Project1/inc2"
+  "C:/Sandbox/devtools-external/build/testoutput/GCC/TranslationControl/Project1"
   "C:/Sandbox/devtools-external/build/testoutput/GCC/TranslationControl/Project1/RTE/_Project"
   "C:/Users/user1/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/Core/Include"
   "C:/Users/user1/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/Device/ARM/ARMCM3/Include"
-  "C:/Sandbox/devtools-external/build/testoutput/GCC/TranslationControl/Project1"
-  "C:/Sandbox/devtools-external/build/testoutput/GCC/TranslationControl/Project1/inc1"
-  "C:/Sandbox/devtools-external/build/testoutput/GCC/TranslationControl/Project1/inc2"
 )
 
 set(CC_SRC_FILES
@@ -103,7 +103,7 @@ set(CXX_FLAGS_C:/Sandbox/devtools-external/build/testoutput/GCC/TranslationContr
 
 # Toolchain config map
 
-include ("C:/Sandbox/devtools-external/build/testoutput/cbuild/etc/GCC.10.2.1.cmake")
+include ("C:/Sandbox/devtools-external/build/testoutput/cbuild/etc/GCC.11.2.1.cmake")
 
 # Setup project
 

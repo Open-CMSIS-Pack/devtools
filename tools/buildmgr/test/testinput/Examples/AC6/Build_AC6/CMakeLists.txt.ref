@@ -25,30 +25,30 @@ set(DEFINES
 )
 
 set(INC_PATHS
-  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/Core/Include"
-  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/Include"
-  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/RTX/Include"
-  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/Device/ARM/ARMCM3/Include"
   "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/Build_AC6/RTE/CMSIS"
   "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/Build_AC6/RTE/_Simulation"
+  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.9.0/CMSIS/Core/Include"
+  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.9.0/CMSIS/RTOS2/Include"
+  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.9.0/CMSIS/RTOS2/RTX/Include"
+  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.9.0/Device/ARM/ARMCM3/Include"
 )
 
 set(CC_SRC_FILES
-  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/Build_AC6/Blinky.c"
-  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/Build_AC6/RTE/CMSIS/RTX_Config.c"
-  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/RTX/Source/rtx_lib.c"
+  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.9.0/CMSIS/RTOS2/RTX/Source/rtx_lib.c"
   "C:/Users/Test/AppData/Local/Arm/Packs/Keil/ARM_Compiler/1.6.3/Source/retarget_io.c"
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/Build_AC6/Main.c"
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/Build_AC6/RTE/CMSIS/RTX_Config.c"
   "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/Build_AC6/RTE/Device/ARMCM3/startup_ARMCM3.c"
   "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/Build_AC6/RTE/Device/ARMCM3/system_ARMCM3.c"
 )
 
 set(LIB_FILES
-  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/RTX/Library/ARM/RTX_CM3.lib"
+  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.9.0/CMSIS/RTOS2/RTX/Library/ARM/RTX_CM3.lib"
 )
 
 # Toolchain config map
 
-include ("C:/sandbox/devtools/build/TestOutput/cbuild/etc/AC6.6.16.0.cmake")
+include ("C:/sandbox/devtools/build/TestOutput/cbuild/etc/AC6.6.18.0.cmake")
 
 # Setup project
 
