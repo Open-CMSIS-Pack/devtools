@@ -36,7 +36,7 @@ From DFP: 16\n\
 From BSP: 0\n\
 \n\
 Devices: 10\n\
-Boards: 11\n\
+Boards: 12\n\
 \n\
 completed\n";
 
@@ -53,7 +53,7 @@ completed\n";
   ASSERT_EQ(rteChk.GetPackCount(), 5);
   ASSERT_EQ(rteChk.GetComponentCount(), 40);
   ASSERT_EQ(rteChk.GetDeviceCount(), 10);
-  ASSERT_EQ(rteChk.GetBoardCount(), 11);
+  ASSERT_EQ(rteChk.GetBoardCount(), 12);
 
   string s = RteUtils::EnsureLf(ss.str());
   ASSERT_EQ(s, summary);

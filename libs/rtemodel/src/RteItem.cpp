@@ -290,14 +290,22 @@ const list<RteItem*>& RteItem::GetItemGrandChildren(RteItem* item, const string&
 
 RteItem* RteItem::GetChildByTagAndAttribute(const string& tag, const string& attribute, const string& value) const
 {
-  const list<RteItem*>& children = GetChildren();
-  for (auto child : children) {
+  for (auto child : GetChildren()) {
     if ((child->GetTag() == tag) && (child->GetAttribute(attribute) == value))
       return child;
   }
   return nullptr;
 }
 
+list<RteItem*>& RteItem::GetChildrenByTag(const std::string& tag, list<RteItem*>& items) const
+{
+  for (auto child : GetChildren()) {
+    if ((child->GetTag() == tag)) {
+      items.push_back(child);
+    }
+  }
+  return items;
+}
 
 
 RteItem* RteItem::GetItem(const string& id) const

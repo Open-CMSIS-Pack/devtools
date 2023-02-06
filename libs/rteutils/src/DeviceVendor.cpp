@@ -19,6 +19,9 @@
 using namespace std;
 
 // static data members
+std::string DeviceVendor::NO_VENDOR("NO_VENDOR:0");
+std::string DeviceVendor::NO_MCU("NO_MCU");
+
 map<string, string> DeviceVendor::m_vendorNameToId;
 map<string, string> DeviceVendor::m_vendorIdToName;
 map<string, string> DeviceVendor::m_vendorIdToId;
@@ -67,6 +70,7 @@ const string& DeviceVendor::VendorIDToOfficialID(const string& vendorSuffix)
 const map<string, string>& DeviceVendor::GetVendorNameToIdMap()
 {
   if (m_vendorNameToId.empty()) {
+    m_vendorNameToId["NO_VENDOR"] = "0";
     m_vendorNameToId["3PEAK"] = "177";
     m_vendorNameToId["ABOV Semiconductor"] = "126";
     m_vendorNameToId["ABOV"] = "126";
@@ -223,6 +227,7 @@ const string& DeviceVendor::VendorNameToID(const string& vendorPrefix)
 const map<string, string>& DeviceVendor::GetVendorIdToNameMap()
 {
   if (m_vendorIdToName.empty()) {
+    m_vendorIdToName["0"] = "NO_VENDOR";
     m_vendorIdToName["177"] = "3PEAK";
     m_vendorIdToName["126"] = "ABOV Semiconductor";
     m_vendorIdToName["20"] = "Acer Labs";
