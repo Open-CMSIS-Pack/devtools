@@ -15,7 +15,7 @@
   </compilers>
 
   <target Dfpu="NO_FPU" Dname="RteTest_ARMCM0" Dsecure="Non-secure" Dvendor="ARM:82">
-    <output intdir="tmp/project/IAR" name="project.IAR" outdir="out/project/IAR" rtedir="../../data/TestDefault/RTE" type="exe"/>
+    <output intdir="tmp/project/IAR" name="IAR" outdir="out/project/IAR" rtedir="../../data/TestDefault/RTE" type="exe"/>
   </target>
 
   <components>

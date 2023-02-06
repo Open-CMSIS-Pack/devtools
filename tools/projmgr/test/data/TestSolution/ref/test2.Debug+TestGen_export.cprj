@@ -16,7 +16,7 @@
   </compilers>
 
   <target Dname="RteTestGen_ARMCM0" Dsecure="Non-secure" Dvendor="ARM:82">
-    <output intdir="tmp/test2/TestGen/Debug" name="test2.Debug+TestGen" outdir="out/test2/TestGen/Debug" rtedir="../data/TestSolution/TestProject2/RTE" type="exe"/>
+    <output intdir="tmp/test2/TestGen/Debug" name="Debug+TestGen" outdir="out/test2/TestGen/Debug" rtedir="../data/TestSolution/TestProject2/RTE" type="exe"/>
     <options debug="on" optimize="none"/>
     <arflags add="-Lib-project -Lib-type-CM3" compiler="AC6"/>
     <asflags add="-ASM-project -ASM-type-CM3" compiler="AC6"/>

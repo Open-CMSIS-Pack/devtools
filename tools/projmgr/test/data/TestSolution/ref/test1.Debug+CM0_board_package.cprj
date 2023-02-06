@@ -16,7 +16,7 @@
   </compilers>
 
   <target Bname="RteTest board listing" Brevision="Rev.C" Bvendor="Keil" Bversion="Rev.C" Dendian="Little-endian" Dfpu="NO_FPU" Dname="RteTest_ARMCM0" Dsecure="Non-secure" Dvendor="ARM:82">
-    <output intdir="tmp/test1/CM0/Debug" name="test1.Debug+CM0" outdir="out/test1/CM0/Debug" rtedir="../data/TestSolution/TestProject1/RTE" type="exe"/>
+    <output intdir="tmp/test1/CM0/Debug" name="Debug+CM0" outdir="out/test1/CM0/Debug" rtedir="../data/TestSolution/TestProject1/RTE" type="exe"/>
     <options debug="on" optimize="none"/>
     <ldflags compiler="AC6" file="../data/TestSolution/TestProject1/RTE/Device/RteTest_ARMCM0/ARMCM0_ac6.sct"/>
   </target>
