@@ -121,12 +121,12 @@ public:
   const std::string& GetWorkingDir() const { return GetItemValue("workingDir"); }
 
  /**
- * @brief get all arguments as vector similar to argv for the given host type
+ * @brief get all arguments as vector for the given host type
  * @param target pointer to RteTarget
  * @param hostType host type, empty to match current host
- * @return vector of arguments including command line at 0 vector element
+ * @return vector of arguments consisting of switch and value in pairs
 */
-  std::vector<std::string> GetExpandedArgv(RteTarget* target, const std::string& hostType = EMPTY_STRING) const;
+  std::vector<std::pair<std::string, std::string> > GetExpandedArguments(RteTarget* target, const std::string& hostType = EMPTY_STRING) const;
 
   /**
    * @brief get full command line with arguments and expanded key sequences for specified target

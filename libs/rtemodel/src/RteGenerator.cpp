@@ -141,33 +141,26 @@ string RteGenerator::GetExecutable(RteTarget* target, const std::string& hostTyp
 }
 
 
-vector<string> RteGenerator::GetExpandedArgv(RteTarget* target, const string& hostType) const
+vector<pair<string, string> > RteGenerator::GetExpandedArguments(RteTarget* target, const string& hostType) const
 {
-  vector<string> argv;
-  string exe = RteUtils::AddQuotesIfSpace(GetExecutable(target, hostType));
-  argv.push_back(exe); // executable as arv[0]
-
+  vector<pair<string, string> > args;
   RteItem* argsItem = GetArgumentsItem("exe");
   if (argsItem) {
     for (auto arg : argsItem->GetChildren()) {
       if (arg->GetTag() != "argument" || !arg->MatchesHost(hostType))
         continue;
-      string value = arg->GetAttribute("switch") + RteUtils::AddQuotesIfSpace(ExpandString(arg->GetText()));
-      argv.push_back(value);
+      args.push_back({arg->GetAttribute("switch"), ExpandString(arg->GetText())});
     }
   }
-  return argv;
+  return args;
 }
 
 string RteGenerator::GetExpandedCommandLine(RteTarget* target, const string& hostType) const
 {
-  vector<string> argv = GetExpandedArgv(target, hostType);
-  string fullCmd;
-  for (size_t i = 0; i < argv.size(); i++) {
-    if (i > 0) {
-      fullCmd += ' ';
-    }
-    fullCmd += argv[i];
+  const vector<pair<string, string> > args = GetExpandedArguments(target, hostType);
+  string fullCmd = GetExecutable(target, hostType);
+  for (size_t i = 0; i < args.size(); i++) {
+    fullCmd += ' ' + RteUtils::AddQuotesIfSpace(args[i].first + args[i].second);
   }
   return fullCmd;
 }
