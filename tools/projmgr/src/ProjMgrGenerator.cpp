@@ -170,7 +170,7 @@ void ProjMgrGenerator::GenerateCprjTarget(XMLTreeElement* element, const Context
 
   XMLTreeElement* targetOutputElement = element->CreateElement("output");
   if (targetOutputElement) {
-    targetOutputElement->AddAttribute("name", context.name);
+    targetOutputElement->AddAttribute("name", context.rteActiveTarget->GetName());
     targetOutputElement->AddAttribute("type", context.outputType);
     targetOutputElement->AddAttribute("intdir", context.directories.intdir);
     targetOutputElement->AddAttribute("outdir", context.directories.outdir);
