@@ -82,9 +82,11 @@ public:
 
   /**
    * @brief collect list of all mounted and compatible devices
+   * @param bCompatible boolean flag to collect compatible devices
+   * @param bCMounted boolean flag to collect mounted devices
    * @param devices list of RteItem pointers to fill
   */
-  virtual void GetDevices(std::list<RteItem*>& devices) const; //
+  virtual void GetDevices(std::list<RteItem*>& devices, bool bCompatible = true, bool bMounted = true ) const;
   /**
    * @brief collect list of all mounted devices
    * @param mountedDevices list of RteItem pointers to fill
@@ -103,13 +105,18 @@ public:
   */
   std::string GetDeviceVendorName(const std::string& devName) const;
 
+  /**
+   * @brief check if board has mounted device for given attributes
+   * @param deviceAttributes device attributes to match
+   * @return true if at least one mounted device matches supplied attributes
+  */
+  bool HasMountedDevice(const XmlItem& deviceAttributes) const;
 
   /**
- * @brief check if board has mounted device for given attributes
- * @param deviceAttributes device attributes to match
- * @return true if at least one mounted device matches supplied attributes
-*/
-  bool HasMountedDevice(const XmlItem& deviceAttributes) const;
+   * @brief check if board has an MCU device
+   * @return true if at least one mounted device contains device with Dname != "NO_MCU"
+  */
+  bool HasMCU() const;
 
   /**
    * @brief check if board has mounted or compatible device for given attributes
@@ -140,6 +147,20 @@ public:
    * @return pointer to RteItem corresponding <debugProbe> child element
   */
   RteItem* GetDebugProbe(const std::string& pname, int deviceIndex = -1);
+
+  /**
+   * @brief collect list of algorithms provided by the board
+   * @param algos list of RteItem pointers to fill
+   * @return reference to algos parameter
+  */
+  std::list<RteItem*>& GetAlgorithms(std::list<RteItem*>& algos) const;
+
+  /**
+ * @brief collect list of memory provided by the board
+ * @param mems list of RteItem pointers to fill
+ * @return reference to mems parameter
+ */
+  std::list<RteItem*>& GetMemories(std::list<RteItem*>& mems) const;
 
 public:
   /**

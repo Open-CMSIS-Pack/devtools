@@ -159,6 +159,14 @@ public:
   RteItem* GetChildByTagAndAttribute(const std::string& tag, const std::string& attribute, const std::string& value) const;
 
   /**
+  * @brief get list of child items with corresponding tag
+  * @param tag item's tag
+  * @param items collection of RteItem* to fill
+  * @reture reference to items
+  */
+  std::list<RteItem*>& GetChildrenByTag(const std::string& tag, std::list<RteItem*>&items) const;
+
+  /**
    * @brief static method to query children of RteItem
    * @param item RteItem whose children to query
    * @return list of RteItem pointers

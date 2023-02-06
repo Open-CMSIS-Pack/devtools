@@ -56,6 +56,22 @@ TEST(RteModelTest, LoadPacks) {
   // test recommended memory attributes: name and access
   summary = da->GetSummaryString();
   EXPECT_EQ(summary, "ARM Cortex-M4, 10 MHz, 128 kB RAM, 256 kB ROM");
+
+  RteBoard* board = rteModel.FindBoard("RteTest board listing (Rev.C)");
+  ASSERT_NE(board, nullptr);
+  EXPECT_TRUE(board->HasMCU());
+  list<RteItem*> algos;
+  EXPECT_EQ(board->GetAlgorithms(algos).size(), 2);
+  list<RteItem*> mems;
+  EXPECT_EQ(board->GetMemories(mems).size(), 2);
+
+  board = rteModel.FindBoard("RteTest NoMCU board");
+  ASSERT_NE(board, nullptr);
+  EXPECT_FALSE(board->HasMCU());
+  algos.clear();
+  EXPECT_EQ(board->GetAlgorithms(algos).size(), 0);
+  mems.clear();
+  EXPECT_EQ(board->GetMemories(mems).size(), 2);
 }
 
 class RteModelPrjTest : public RteModelTestConfig {

@@ -48,6 +48,9 @@ public:
    * @return official vendor name
   */
   static std::string GetCanonicalVendorName(const std::string& vendor);
+public:
+  static std::string NO_VENDOR;
+  static std::string NO_MCU;
 
 private:
   static const std::map<std::string, std::string>& GetVendorIdToIdMap();

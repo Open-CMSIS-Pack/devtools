@@ -220,7 +220,7 @@ RteItem::ConditionResult RteConditionExpression::EvaluateExpression(RteTarget* t
     ita = attributes.find(a);
     if (ita != attributes.end()) {
       const string& va = ita->second;
-      if (a == "Dvendor" || a == "vendor") {
+      if (a == "Dvendor" || a == "Bvendor" || a == "vendor") {
         if (!DeviceVendor::Match(va, v))
           return FAILED;
         continue;

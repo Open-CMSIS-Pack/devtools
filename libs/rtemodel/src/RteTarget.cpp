@@ -557,13 +557,12 @@ void RteTarget::AddBoadProperties(RteDeviceItem* device, const string& processor
   if (!board)
     return;
 
-  // for now only algoritms are added
-  for (RteItem* item : board->GetChildren()) {
-    if (item && item->GetTag() == "algorithm") {
-      const string& pname = item->GetProcessorName();
-      if (pname.empty() || pname == processorName) {
-        AddAlgorithm(item, board);
-      }
+  // for now only algorithms are added
+  list<RteItem*> algos;
+  for (RteItem* item : board->GetAlgorithms(algos)) {
+    const string& pname = item->GetProcessorName();
+    if (pname.empty() || pname == processorName) {
+      AddAlgorithm(item, board);
     }
   }
 }
