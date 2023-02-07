@@ -1455,6 +1455,16 @@ bool ProjMgrWorker::ProcessComponentFiles(ContextItem& context) {
         }
       }
     }
+    // input files for component generator. This list of files is directly fetched from the PDSC.
+    if (rteComponent->GetGenerator()) {
+      for (const RteItem* rteFile : files) {
+        const auto& filename = rteFile->GetOriginalAbsolutePath();
+        const auto& category = rteFile->GetAttribute("category");
+        const auto& attr = rteFile->GetAttribute("attr");
+        const auto& version = rteFile->GetVersionString();
+        context.generatorInputFiles[componentId].push_back({ filename, attr, category, version });
+      }
+    }
   }
   // constructed local pre-include files
   const auto& preIncludeFiles = context.rteActiveTarget->GetPreIncludeFiles();
@@ -2702,15 +2712,9 @@ bool ProjMgrWorker::ExecuteGenerator(std::string& generatorId) {
       generatorDestination += '/';
     }
 
-    const auto generatorInputFilePath = ProjMgrYamlEmitter::EmitContextInfo(context, generatorDestination);
-
-    if (!generatorInputFilePath) {
-      ProjMgrLogger::Error("Failed to create the generator input file for '" + generatorId + "'");
+    if (!ProjMgrYamlEmitter::GenerateCbuild(&context)) {
       return false;
     }
-
-    // Update RteTarget with current generatorInputFilePath that was created
-    context.rteActiveTarget->SetGeneratorInputFile(*generatorInputFilePath);
 
     // TODO: review RteGenerator::GetExpandedCommandLine and variables
     //const string generatorCommand = m_kernel->GetCmsisPackRoot() + "/" + generator->GetPackagePath() + generator->GetCommand();
@@ -2720,9 +2724,9 @@ bool ProjMgrWorker::ExecuteGenerator(std::string& generatorId) {
       return false;
     }
 
-
     error_code ec;
     const auto& workingDir = fs::current_path(ec);
+    RteFsUtils::CreateDirectories(generatorDestination);
     fs::current_path(generatorDestination, ec);
     ProjMgrUtils::Result result = ProjMgrUtils::ExecCommand(generatorCommand);
     fs::current_path(workingDir, ec);

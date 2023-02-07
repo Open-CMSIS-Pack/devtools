@@ -15,6 +15,8 @@
 */
 static constexpr const char* YAML_ADDPATHS = "add-paths";
 static constexpr const char* YAML_ADDPATH = "add-path";
+static constexpr const char* YAML_ARGUMENT = "argument";
+static constexpr const char* YAML_ARGUMENTS = "arguments";
 static constexpr const char* YAML_ATTR = "attr";
 static constexpr const char* YAML_BOARD = "board";
 static constexpr const char* YAML_BUILD = "build";
@@ -30,6 +32,7 @@ static constexpr const char* YAML_CPROJECTS = "cprojects";
 static constexpr const char* YAML_CPROJECT = "cproject";
 static constexpr const char* YAML_CSOLUTION = "csolution";
 static constexpr const char* YAML_CONSUMES = "consumes";
+static constexpr const char* YAML_COMMAND = "command";
 static constexpr const char* YAML_COMPILER = "compiler";
 static constexpr const char* YAML_COMPONENT = "component";
 static constexpr const char* YAML_COMPONENTS = "components";
@@ -58,8 +61,12 @@ static constexpr const char* YAML_FORDEVICE = "for-device";
 static constexpr const char* YAML_FORTYPE = "for-type";
 static constexpr const char* YAML_FPU = "fpu";
 static constexpr const char* YAML_GENERATOR = "generator";
+static constexpr const char* YAML_GENERATORS = "generators";
+static constexpr const char* YAML_GPDSC = "gpdsc";
 static constexpr const char* YAML_GROUP = "group";
 static constexpr const char* YAML_GROUPS = "groups";
+static constexpr const char* YAML_HOST = "host";
+static constexpr const char* YAML_ID = "id";
 static constexpr const char* YAML_INFO = "info";
 static constexpr const char* YAML_LAYER = "layer";
 static constexpr const char* YAML_LAYERS = "layers";
@@ -95,6 +102,7 @@ static constexpr const char* YAML_SELECTED_BY = "selected-by";
 static constexpr const char* YAML_SETUPS = "setups";
 static constexpr const char* YAML_SETUP = "setup";
 static constexpr const char* YAML_SET = "set";
+static constexpr const char* YAML_SWITCH = "switch";
 static constexpr const char* YAML_TARGETTYPES = "target-types";
 static constexpr const char* YAML_TRUSTZONE = "trustzone";
 static constexpr const char* YAML_TYPE = "type";
@@ -103,6 +111,7 @@ static constexpr const char* YAML_UNDEFINE = "undefine";
 static constexpr const char* YAML_VARIABLES = "variables";
 static constexpr const char* YAML_VERSION = "version";
 static constexpr const char* YAML_WARNINGS = "warnings";
+static constexpr const char* YAML_WORKING_DIR = "working-dir";
 
 /**
   * @brief projmgr parser yaml implementation class, directly coupled to underlying yaml-cpp external library

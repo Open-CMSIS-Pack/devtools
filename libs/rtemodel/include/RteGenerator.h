@@ -44,10 +44,25 @@ public:
   virtual ~RteGenerator() override;
 
   /**
-   * @brief get generator command without expansion
-   * @return generator command
+   * @brief get generator commands for all host types without expansion
+   * @return map with host type ("win", "linux", "mac", "other", or "all") as key and generator command as value
   */
-  const std::string GetCommand() const;
+  std::map<std::string, std::string> GetCommands() const;
+
+  /**
+   * @brief get generator command without expansion
+   * @param hostType host type to match, empty to match current host
+   * @return generator command for specified host type
+  */
+  const std::string GetCommand(const std::string& hostType = EMPTY_STRING ) const;
+
+  /**
+  * @brief get expanded generator executable command
+  * @param target pointer to RteTarget
+  * @param hostType host type to match, empty to match current host
+  * @return generator command for specified host type
+ */
+  std::string GetExecutable(RteTarget* target, const std::string& hostType = EMPTY_STRING) const;
 
   /**
    * @brief get item containing command line arguments
@@ -105,18 +120,41 @@ public:
   */
   const std::string& GetGpdsc() const;
 
-  /**
-   * @brief get generator working directory
-   * @return working directory value
-  */
+ /**
+  * @brief get generator working directory
+  * @return working directory value
+ */
   const std::string& GetWorkingDir() const { return GetItemValue("workingDir"); }
+
+ /**
+ * @brief get all arguments as vector for the given host type
+ * @param target pointer to RteTarget
+ * @param hostType host type, empty to match current host
+ * @return vector of arguments consisting of switch and value in pairs
+*/
+  std::vector<std::pair<std::string, std::string> > GetExpandedArguments(RteTarget* target, const std::string& hostType = EMPTY_STRING) const;
+
+  /**
+   * @brief get the absolute path to the executable with expanded key sequences for specified target
+   * @param target pointer to RteTarget
+   * @return expanded executable
+  */
+  std::string GetExecutable(RteTarget* target) const;
+
+  /**
+   * @brief get the absolute paths to executables for all host types with the expanded key sequences for specified target
+   * @param target pointer to RteTarget
+   * @return map with host type ("win", "linux", "mac", "other" or "all") as key and path to executable as value
+  */
+  std::map<std::string, std::string> GetExecutables(RteTarget* target) const;
 
   /**
    * @brief get full command line with arguments and expanded key sequences for specified target
    * @param target pointer to RteTarget
+   * @param hostType host type, empty to match current host
    * @return expanded command line with arguments, properly quoted
   */
-  std::string GetExpandedCommandLine(RteTarget* target) const;
+  std::string GetExpandedCommandLine(RteTarget* target, const std::string& hostType = EMPTY_STRING) const;
 
   /**
    * @brief get absolute path to gpdsc file for specified target

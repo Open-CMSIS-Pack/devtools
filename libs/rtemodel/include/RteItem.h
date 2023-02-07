@@ -551,6 +551,14 @@ public:
   */
   virtual bool MatchesHost() const;
 
+  /**
+ * @brief check if item provides data matching supplied host type
+ * @param hostType host type to match, empty to match current host
+ * @return true if item data matches host platform
+*/
+  virtual bool MatchesHost(const std::string& hostType) const;
+
+
  /**
 * @brief checks if the item contains all attributes matching those in the supplied map
 * @param attributes map of key-value pairs to match against component attributes

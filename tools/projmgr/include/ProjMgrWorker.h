@@ -216,6 +216,7 @@ struct ContextItem {
   std::vector<std::tuple<RteItem::ConditionResult, std::string, std::set<std::string>, std::set<std::string>>> validationResults;
   std::map<std::string, std::map<std::string, RteFileInstance*>> configFiles;
   std::map<std::string, std::vector<ComponentFileItem>> componentFiles;
+  std::map<std::string, std::vector<ComponentFileItem>> generatorInputFiles;
   std::vector<GroupNode> groups;
   std::map<std::string, std::string> filePaths;
   std::map<std::string, RteGenerator*> generators;
