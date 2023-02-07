@@ -43,7 +43,7 @@ MemoryMap::MemoryMap(FileHeaderInfo &fileHeaderInfo) :
 {
   m_fileIo = new FileIo();
   m_gen    = new SfdGenerator(m_fileIo);
-    
+
   m_fileIo->SetSvdFileName        (fileHeaderInfo.svdFileName);
   m_fileIo->SetProgramDescription (fileHeaderInfo.descr);
   m_fileIo->SetCopyrightString    (fileHeaderInfo.copyright);
@@ -61,11 +61,11 @@ MemoryMap::~MemoryMap()
 
 bool MemoryMap::Interrupt(SvdDevice *device)
 {
-  if(!device) 
+  if(!device)
     return false;
 
   const auto& interrupts = device->GetInterruptList();
-  if(interrupts.empty()) 
+  if(interrupts.empty())
     return true;       // no interrupts
 
   uint32_t idx=0;
@@ -93,7 +93,7 @@ bool MemoryMap::AddressBlock(SvdPeripheral *peripheral)
   if(!peripheral)  {
     return false;
   }
-  
+
   m_fileIo->WriteLine("AddressBlock:");
 
   uint64_t periBaseAddr = peripheral->GetAbsoluteAddress();
@@ -124,8 +124,11 @@ bool MemoryMap::ClusterInfo(SvdCluster *item)
 {
   string name;
   SvdDimension* dim = item->GetDimension();
+  SvdExpression* expr = nullptr;
   if(dim) {
-    SvdExpression* expr = dim->GetExpression();
+    expr = dim->GetExpression();
+  }
+  if(expr) {
     name    =  expr->GetName();
   } else {
     name    =  item->GetName();
@@ -137,7 +140,7 @@ bool MemoryMap::ClusterInfo(SvdCluster *item)
   //const string &accType = SvdTypes::GetAccessType(item->GetAccess());
   const string &accType = m_access_str[(uint32_t)item->GetAccess()];
 
-  m_fileIo->WriteLine("  %s \r\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t: Address: 0x%08x, \tOffset: 0x%08x, \tWidth: %i, \tAccess: %s", 
+  m_fileIo->WriteLine("  %s \r\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t: Address: 0x%08x, \tOffset: 0x%08x, \tWidth: %i, \tAccess: %s",
     name.c_str(), address, offset, bitWidth, accType.c_str());
 
   return true;
@@ -148,8 +151,11 @@ bool MemoryMap::RegisterInfo(SvdRegister *item)
 {
   string name;
   SvdDimension* dim = item->GetDimension();
+  SvdExpression* expr = nullptr;
   if(dim) {
-    SvdExpression* expr = dim->GetExpression();
+    expr = dim->GetExpression();
+  }
+  if(expr) {
     name =  expr->GetName();
   } else {
     name =  item->GetName();
@@ -162,7 +168,7 @@ bool MemoryMap::RegisterInfo(SvdRegister *item)
   const string &accType = m_access_str[(uint32_t)item->GetAccess()];
 
   m_fileIo->WriteLine("");
-  m_fileIo->WriteLine("    %s \r\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t: Address: 0x%08x, \tOffset: 0x%08x, \tWidth: %i, \tAccess: %s", 
+  m_fileIo->WriteLine("    %s \r\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t: Address: 0x%08x, \tOffset: 0x%08x, \tWidth: %i, \tAccess: %s",
     name.c_str(), address, offset, bitWidth, accType.c_str());
 
   return true;
@@ -177,7 +183,7 @@ bool MemoryMap::FieldInfo(SvdField *item)
   //const string &accType = SvdTypes::GetAccessType(item->GetAccess());
   const auto &accType   = m_access_str[(uint32_t)item->GetAccess()];
 
-   m_fileIo->WriteLine("    %s \r\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t: [%2i ... %2i] <%s> \r\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tBits: %i", 
+   m_fileIo->WriteLine("    %s \r\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t: [%2i ... %2i] <%s> \r\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tBits: %i",
      name.c_str(), offset+bitWidth-1, offset, accType.c_str(), bitWidth);
 
   return true;
@@ -188,7 +194,7 @@ bool MemoryMap::EnumInfo(SvdEnum *item)
   const auto& name  = item->GetName();
   uint32_t    value = (uint32_t)item->GetValue().u32;
 
-   m_fileIo->WriteLine("\r\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t: %i: %s", 
+   m_fileIo->WriteLine("\r\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t: %i: %s",
      value, name.c_str());
 
   return true;
@@ -198,8 +204,11 @@ bool MemoryMap::PeripheralInfo(SvdItem *item)
 {
   string name;
   SvdDimension* dim = item->GetDimension();
+  SvdExpression* expr = nullptr;
   if(dim) {
-    SvdExpression* expr = dim->GetExpression();
+    expr = dim->GetExpression();
+  }
+  if(expr) {
     name =  expr->GetName();
   } else {
     name =  item->GetName();
@@ -207,7 +216,7 @@ bool MemoryMap::PeripheralInfo(SvdItem *item)
 
   //m_fileIo->WriteLine("%s", name.c_str());
   m_gen->Generate<sfd::DESCR|sfd::SUBPART>("%s", name.c_str());
-  m_fileIo->WriteLine("Base Address: 0x%08x", item->GetAbsoluteAddress());
+  m_fileIo->WriteLine("Base Address: 0x%08x", (uint32_t) item->GetAbsoluteAddress());
 
   return true;
 }
@@ -224,7 +233,7 @@ bool MemoryMap::DimInfo(SvdItem *item)
       dim     = item->GetDimension();
     }
   }
-  if(!dim || !parent) 
+  if(!dim || !parent)
     return false;
 
   //const string &name  = item->GetName();
@@ -233,7 +242,7 @@ bool MemoryMap::DimInfo(SvdItem *item)
   string index = "";
   uint32_t cnt=0;
   const auto& dimList = dim->GetDimIndexList();
-  for(const auto& item : dimList) {
+  for(const auto& dimItem : dimList) {
     if(!index.empty()) {
       index += ",";
     }
@@ -243,7 +252,7 @@ bool MemoryMap::DimInfo(SvdItem *item)
       break;
     }
 
-    index += item;
+    index += dimItem;
   }
 
   //m_fileIo->WriteLine("Dimed from '%s' [%s]", name.c_str(), index.c_str());
@@ -300,7 +309,7 @@ bool MemoryMap::Register(SvdRegister *reg)
   RegisterInfo  (reg);
   DeriveInfo    (reg);
   DimInfo       (reg);
-  
+
   return true;
 }
 
@@ -309,7 +318,7 @@ bool MemoryMap::Cluster(SvdCluster *cluster)
   ClusterInfo   (cluster);
   DeriveInfo    (cluster);
   DimInfo       (cluster);
-  
+
   return true;
 }
 
@@ -359,9 +368,9 @@ bool MemoryMap::IteratePeripherals(SvdDevice *device, MapLevel mapLevel)
       continue;
     }
 
-    // Dim 
+    // Dim
     const auto& dimChilds = dimension->GetChildren();
-    for(const auto dimChild : dimChilds) {     
+    for(const auto dimChild : dimChilds) {
       const auto dimPeri = dynamic_cast<SvdPeripheral*>(dimChild);
       if(!dimPeri) {
         continue;
@@ -378,9 +387,9 @@ bool MemoryMap::IteratePeripherals(SvdDevice *device, MapLevel mapLevel)
   return true;
 }
 
-bool MemoryMap::IterateClusterRegisters(SvdCluster *clust, MapLevel mapLevel)
+bool MemoryMap::IterateClusterRegisters(SvdCluster *inClust, MapLevel mapLevel)
 {
-  const auto& childs = clust->GetChildren();
+  const auto& childs = inClust->GetChildren();
   if(childs.empty()) {
     return true;
   }
@@ -492,9 +501,9 @@ bool MemoryMap::IterateRegisters(SvdPeripheral *peri, MapLevel mapLevel)
 
     // Dim
     const auto& dimChilds = dim->GetChildren();
-    for(const auto dimChilds : dimChilds) {
-      const auto dimReg   = dynamic_cast<SvdRegister*>(dimChilds);
-      const auto dimClust = dynamic_cast<SvdCluster*>(dimChilds);
+    for(const auto dimChild : dimChilds) {
+      const auto dimReg   = dynamic_cast<SvdRegister*>(dimChild);
+      const auto dimClust = dynamic_cast<SvdCluster*>(dimChild);
       if(!dimReg && !dimClust) {
         continue;
       }
@@ -599,7 +608,7 @@ bool MemoryMap::IterateEnums(SvdField *field, MapLevel mapLevel)
       EnumValue(dimEnu);
     }
 #endif
-    
+
     const auto& childs = enumCont->GetChildren();
     if(childs.empty()) {
       return false;
