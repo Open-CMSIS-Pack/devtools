@@ -63,7 +63,7 @@ jobs:
           arch: ${{ matrix.arch }}
 
       - name: Archive packchk binary
-        if: ${{ fromJSON(needs.setup.outputs.nightly) }}
+        if: ${{ github.event_name != 'release' }}
         uses: actions/upload-artifact@v3
         with:
           name: packchk-${{ matrix.target }}-${{ matrix.arch }}
