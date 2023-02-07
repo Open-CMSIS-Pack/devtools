@@ -200,7 +200,7 @@ bool MemoryMap::EnumInfo(SvdEnum *item)
   return true;
 }
 
-bool MemoryMap::PeripheralInfo(SvdItem *item)
+bool MemoryMap::PeripheralInfo(SvdItem* item)
 {
   string name;
   SvdDimension* dim = item->GetDimension();
@@ -221,10 +221,10 @@ bool MemoryMap::PeripheralInfo(SvdItem *item)
   return true;
 }
 
-bool MemoryMap::DimInfo(SvdItem *item)
+bool MemoryMap::DimInfo(SvdItem* item)
 {
-  SvdItem      *parent  = item->GetParent();
-  SvdDimension *dim     = item->GetDimension();
+  SvdItem*      parent  = item->GetParent();
+  SvdDimension* dim     = item->GetDimension();
   if(!dim) {
     SvdDimension *dimParent = dynamic_cast<SvdDimension*>(parent);
     if(dimParent) {    // item is child of <dim> Object
@@ -260,7 +260,7 @@ bool MemoryMap::DimInfo(SvdItem *item)
   return true;
 }
 
-bool MemoryMap::DeriveInfo(SvdItem *item)
+bool MemoryMap::DeriveInfo(SvdItem* item)
 {
   SvdDerivedFrom *derived = item->GetDerivedFrom();
   if(!derived) {
@@ -274,7 +274,7 @@ bool MemoryMap::DeriveInfo(SvdItem *item)
   return true;
 }
 
-bool MemoryMap::EnumContainer(SvdEnumContainer *enu)
+bool MemoryMap::EnumContainer(SvdEnumContainer* enu)
 {
   string name = enu->GetName();
   if(name == "") name = "<unnamed>";
