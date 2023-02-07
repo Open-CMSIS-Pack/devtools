@@ -495,3 +495,31 @@ TEST_F(PackChkIntegTests, CheckAllowSuppressError) {
     FAIL() << "error: found error M323";
   }
 }
+
+// Validate files are inside pack root
+TEST_F(PackChkIntegTests, CheckTestPackRoot) {
+  const char* argv[2];
+
+  const string& pdscFile = PackChkIntegTestEnv::localtestdata_dir +
+    "/TestPackRoot/Pack/TestVendor.TestPackRoot.pdsc";
+  ASSERT_TRUE(RteFsUtils::Exists(pdscFile));
+
+  argv[0] = (char*)"";
+  argv[1] = (char*)pdscFile.c_str();
+
+  PackChk packChk;
+  EXPECT_EQ(1, packChk.Check(2, argv, nullptr));
+
+  auto errMsgs = ErrLog::Get()->GetLogMessages();
+  int foundCnt = 0;
+  for (const string& msg : errMsgs) {
+    size_t s;
+    if ((s = msg.find("M313")) != string::npos) {
+      foundCnt++;
+    }
+  }
+
+  if (foundCnt != 1) {
+    FAIL() << "error: missing message M313";
+  }
+}

@@ -175,7 +175,7 @@ TEST_F(TestCheckFiles, CheckCaseSense)
     { ".test1/NonExclusive.h",       true},
     { ".test1/../Api/Exclusive.h",   true},
     { "../testdata/Api/Exclusive.h", true},
-    { "../Invalid/Path/Exclusive.h", false},
+    { "../Invalid/Path/Exclusive.h", true},   // result is true now because relative paths are currently not checked
     { "api\\exclusive.h",            false},
     { "api/exclusive.h",             false}
   };
