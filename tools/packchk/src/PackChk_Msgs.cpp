@@ -188,7 +188,7 @@ const MsgTable PackChk::msgTable = {
   { "M374", { MsgLevel::LEVEL_ERROR,    CRLF_B, "While checking Feature for '%MCU%': Pname '%CPU%' not found." } },
   { "M375", { MsgLevel::LEVEL_ERROR,    CRLF_B, "No <mountedDevices> for Board '%BOARD%' found." } },
   { "M376", { MsgLevel::LEVEL_ERROR,    CRLF_B, "Schema Version not set!" } },
-  { "M377", { MsgLevel::LEVEL_WARNING3, CRLF_B, "File '%NAME%' %TYPE% must have 'attr=\"config\"'" } },
+  { "M377", { MsgLevel::LEVEL_WARNING,  CRLF_B, "File '%NAME%' %TYPE% must have 'attr=\"config\"'" } },
   { "M378", { MsgLevel::LEVEL_WARNING,  CRLF_B, "Component 'Cclass=%CCLASS%, Cgroup=%CGROUP%, Csub=%CSUB%, Cversion=%CVER%, implements the API defined in '%NAME%' but does not attribute 'Capiversion' specifying the version it implements." } },
   { "M379", { MsgLevel::LEVEL_WARNING,  CRLF_B, "No example(s) found for Board '[%VENDOR%] %BOARD%'." } },
   { "M380", { MsgLevel::LEVEL_WARNING,  CRLF_B, "No description found for [%VENDOR%] '%MCU%'" } },
