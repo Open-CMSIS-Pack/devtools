@@ -1640,7 +1640,10 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
   }
 
   // set context variables (static access sequences)
-  context.variables[ProjMgrUtils::AS_DNAME] = context.device;
+  DeviceItem deviceItem;
+  GetDeviceItem(context.device, deviceItem);
+  context.variables[ProjMgrUtils::AS_DNAME] = deviceItem.name;
+  context.variables[ProjMgrUtils::AS_PNAME] = deviceItem.pname;
   context.variables[ProjMgrUtils::AS_BNAME] = context.board;
   context.variables[ProjMgrUtils::AS_COMPILER] = context.toolchain.name;
 
