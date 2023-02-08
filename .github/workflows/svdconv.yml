@@ -118,7 +118,7 @@ jobs:
       - name: Archive unit test results
         uses: actions/upload-artifact@v3
         with:
-          name: unit_test_report-${{ matrix.target }}-${{ matrix.arch }}
+          name: unit_test_result-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/svdconvunittests-*.xml
           if-no-files-found: error
           retention-days: ${{ needs.setup.outputs.retention_days }}
@@ -126,7 +126,7 @@ jobs:
       - name: Archive integration test results
         uses: actions/upload-artifact@v3
         with:
-          name: integ_test_report-${{ matrix.target }}-${{ matrix.arch }}
+          name: integ_test_result-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/svdconvintegtests-*.xml
           if-no-files-found: error
           retention-days: ${{ needs.setup.outputs.retention_days }}
@@ -187,7 +187,7 @@ jobs:
         if: (github.event_name == 'push')
         uses: actions/upload-artifact@v3
         with:
-          name: unit_test_report-linux64-amd64
+          name: unit_test_result-linux64-amd64
           path: ./build/test_reports/svdconvunittests-*.xml
           if-no-files-found: error
           retention-days: ${{ steps.var.outputs.retention_days }}
@@ -196,7 +196,7 @@ jobs:
         if: (github.event_name == 'push')
         uses: actions/upload-artifact@v3
         with:
-          name: integ_test_report-linux64-amd64
+          name: integ_test_result-linux64-amd64
           path: ./build/test_reports/svdconvintegtests-*.xml
           if-no-files-found: error
           retention-days: ${{ steps.var.outputs.retention_days }}
@@ -295,51 +295,51 @@ jobs:
       - name: Download unit test report windows
         uses: actions/download-artifact@v3
         with:
-          name: unit_test_report-windows64-amd64
+          name: unit_test_result-windows64-amd64
           path: testreports/
 
       - name: Download unit test report linux amd64
         uses: actions/download-artifact@v3
         with:
-          name: unit_test_report-linux64-amd64
+          name: unit_test_result-linux64-amd64
           path: testreports/
 
       - name: Download unit test report linux arm64
         uses: actions/download-artifact@v3
         with:
-          name: unit_test_report-linux64-arm64
+          name: unit_test_result-linux64-arm64
           path: testreports/
 
       - name: Download unit test report macos
         if: ${{ !github.event.repository.private }}
         uses: actions/download-artifact@v3
         with:
-          name: unit_test_report-darwin64-amd64
+          name: unit_test_result-darwin64-amd64
           path: testreports/
 
       - name: Download integ test report windows
         uses: actions/download-artifact@v3
         with:
-          name: integ_test_report-windows64-amd64
+          name: integ_test_result-windows64-amd64
           path: testreports/
 
       - name: Download integ test report linux amd64
         uses: actions/download-artifact@v3
         with:
-          name: integ_test_report-linux64-amd64
+          name: integ_test_result-linux64-amd64
           path: testreports/
 
       - name: Download integ test report linux arm64
         uses: actions/download-artifact@v3
         with:
-          name: integ_test_report-linux64-arm64
+          name: integ_test_result-linux64-arm64
           path: testreports/
 
       - name: Download integ test report macos
         if: ${{ !github.event.repository.private }}
         uses: actions/download-artifact@v3
         with:
-          name: integ_test_report-darwin64-amd64
+          name: integ_test_result-darwin64-amd64
           path: testreports/
 
       - name: Event File
