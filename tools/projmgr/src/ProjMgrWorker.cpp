@@ -2987,7 +2987,7 @@ bool ProjMgrWorker::ProcessOutputFilenames(ContextItem& context) {
         RteFsUtils::NormalizePath(outputFile);
         if ((context.outputFiles.find(output.type) != context.outputFiles.end()) &&
           (context.outputFiles.at(output.type) != outputFile)) {
-          ProjMgrLogger::Warn("output '" + output.type + "' redefined from '" + context.variables.at(output.type) + "' to '" + outputFile + "'");
+          ProjMgrLogger::Warn("output '" + output.type + "' redefined from '" + context.outputFiles.at(output.type) + "' to '" + outputFile + "'");
         }
         context.outputFiles[output.type] = outputFile;
         if (typeMap.find(output.type) != typeMap.end()) {

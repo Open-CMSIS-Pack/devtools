@@ -17,6 +17,9 @@ project:
     - type: lib
       file: conflict.lib
       for-context: .Conflict
+    - type: lib
+      file: renaming_conflict.lib
+      for-context: .Conflict
 
   components:
     - component: Startup

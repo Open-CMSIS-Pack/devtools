@@ -2779,6 +2779,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgrOutputFiles) {
 
   // Check error messages
   const string expected = "\
+warning csolution: output 'lib' redefined from 'conflict.lib' to 'renaming_conflict.lib'\n\
 error csolution: output 'lib' is incompatible with other output types\n\
 error csolution: processing context 'outputFiles.Conflict\\+Target' failed\n\
 ";

@@ -176,9 +176,7 @@ void ProjMgrGenerator::GenerateCprjTarget(XMLTreeElement* element, const Context
     targetOutputElement->AddAttribute("outdir", context.directories.outdir);
     targetOutputElement->AddAttribute("rtedir", context.directories.rte);
     for (const auto& [type, file] : context.outputFiles) {
-      if (context.outputFiles.find(type) != context.outputFiles.end()) {
-        targetOutputElement->AddAttribute(type, file, false);
-      }
+      targetOutputElement->AddAttribute(type, file, false);
     }
   }
 
