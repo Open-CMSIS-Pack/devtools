@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=C:\WORK\devtools-external-wip\tools\projmgr\schemas\cproject.schema.json
+
+project:  
+  output:
+    - type: elf
+      file: subfolder1/file.elf
+      not-for-context: .Library
+    - type: hex
+      file: subfolder2/file.hex
+      not-for-context: .Library
+    - type: bin
+      file: subfolder3/file.bin
+      not-for-context: .Library
+    - type: lib
+      file: subfolder4/file-$Compiler$.lib
+      for-context: .Library
+    - type: lib
+      file: conflict.lib
+      for-context: .Conflict
+    - type: lib
+      file: renaming_conflict.lib
+      for-context: .Conflict
+
+  components:
+    - component: Startup
+    - component: CORE

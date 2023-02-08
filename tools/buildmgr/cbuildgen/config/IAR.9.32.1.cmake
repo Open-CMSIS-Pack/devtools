@@ -211,7 +211,7 @@ set(LD_CPU "--cpu=${IAR_CPU}")
 set(_LS "--config ")
 
 if(SECURE STREQUAL "Secure")
-  set(LD_SECURE "--import_cmse_lib_out \"${OUT_DIR}/${TARGET}_CMSE_Lib.o\"")
+  set(LD_SECURE "--import_cmse_lib_out \"${OUT_DIR}/${OUT_NAME}_CMSE_Lib.o\"")
 endif()
 
 set(LD_FLAGS)
@@ -225,10 +225,10 @@ set (LIB_SUFFIX ".a")
 set (EXE_SUFFIX ".out")
 
 # ELF to HEX conversion
-set (ELF2HEX --silent --ihex "${OUT_DIR}/${TARGET}${EXE_SUFFIX}" "${OUT_DIR}/${TARGET}.hex")
+set (ELF2HEX --silent --ihex "${OUT_DIR}/$<TARGET_PROPERTY:${TARGET},OUTPUT_NAME>$<TARGET_PROPERTY:${TARGET},SUFFIX>" "${OUT_DIR}/${HEX_FILE}")
 
 # ELF to BIN conversion
-set (ELF2BIN --silent --bin "${OUT_DIR}/${TARGET}${EXE_SUFFIX}" "${OUT_DIR}/${TARGET}.bin")
+set (ELF2BIN --silent --bin "${OUT_DIR}/$<TARGET_PROPERTY:${TARGET},OUTPUT_NAME>$<TARGET_PROPERTY:${TARGET},SUFFIX>" "${OUT_DIR}/${BIN_FILE}")
 
 # Set CMake variables for toolchain initialization
 set(CMAKE_SYSTEM_NAME Generic)

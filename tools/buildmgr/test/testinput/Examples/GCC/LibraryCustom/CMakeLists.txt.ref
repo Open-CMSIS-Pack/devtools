@@ -1,0 +1,60 @@
+# CMSIS Build CMakeLists generated on 2021-07-06T15:49:07
+
+cmake_minimum_required(VERSION 3.18)
+
+# Target options
+
+set(TARGET Library)
+set(CPU Cortex-M3)
+set(PRJ_DIR "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Library")
+set(OUT_DIR "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Library/OutDir")
+set(INT_DIR "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Library/IntDir")
+set(FPU NO_FPU)
+set(DSP NO_DSP)
+set(TZ NO_TZ)
+set(SECURE Non-secure)
+set(MVE NO_MVE)
+set(BYTE_ORDER Little-endian)
+set(CXX_FLAGS_GLOBAL "-O -Wall -ffunction-sections -gdwarf-2 -mapcs-frame -mthumb -mthumb-interwork")
+set(OUT_NAME MyLibrary)
+
+set(DEFINES
+  ARMCM3
+  _RTE_
+)
+
+set(INC_PATHS
+  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/Core/Include"
+  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/Device/ARM/ARMCM3/Include"
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Library"
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Library/RTE/_project"
+)
+
+set(CXX_SRC_FILES
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Library/calc.cpp"
+)
+
+# Toolchain config map
+
+include ("C:/sandbox/devtools/build/TestOutput/cbuild/etc/GCC.10.2.1.cmake")
+
+# Setup project
+
+project(${TARGET} LANGUAGES CXX)
+
+# Global Flags
+
+set(CMAKE_CXX_FLAGS "${CXX_CPU} ${CXX_BYTE_ORDER} ${CXX_DEFINES} ${CXX_SECURE} ${CXX_FLAGS} ${CXX_FLAGS_GLOBAL} ${CXX_SYS_INC_PATHS}")
+set(CMAKE_CXX_LINK_FLAGS "${LD_CPU} ${LD_SECURE} ${LD_FLAGS}")
+
+# Compilation Database
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+add_custom_target(database COMMAND ${CMAKE_COMMAND} -E copy_if_different "${INT_DIR}/compile_commands.json" "${OUT_DIR}")
+
+# Setup Target
+
+add_library(${TARGET} ${CXX_SRC_FILES})
+set_target_properties(${TARGET} PROPERTIES PREFIX "" SUFFIX ".custom" OUTPUT_NAME "MyLibrary")
+set_target_properties(${TARGET} PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${OUT_DIR})
+target_include_directories(${TARGET} PUBLIC ${INC_PATHS})

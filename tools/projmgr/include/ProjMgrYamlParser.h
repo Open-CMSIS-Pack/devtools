@@ -83,6 +83,7 @@ static constexpr const char* YAML_MISC_LINK_CPP = "Link-CPP";
 static constexpr const char* YAML_NOTFORTYPE = "not-for-type";
 static constexpr const char* YAML_NOTFORCONTEXT = "not-for-context";
 static constexpr const char* YAML_OPTIMIZE = "optimize";
+static constexpr const char* YAML_OUTPUT = "output";
 static constexpr const char* YAML_OUTPUTTYPE = "output-type";
 static constexpr const char* YAML_OUTPUTDIRS = "output-dirs";
 static constexpr const char* YAML_OUTPUT_CPRJDIR = "cprjdir";
@@ -173,6 +174,7 @@ protected:
   void ParseVectorOfStringPairs(const YAML::Node& parent, const std::string& key, std::vector<std::pair<std::string, std::string>>& value);
   void ParseVectorOrString(const YAML::Node& parent, const std::string& key, std::vector<std::string>& value);
   void ParseBuildType(const YAML::Node& parent, BuildType& buildType);
+  bool ParseOutputFiles(const YAML::Node& parent, std::vector<OutputItem>& outputFiles);
   void ParseOutputDirs(const YAML::Node& parent, struct DirectoriesItem& directories);
   void ParseConnections(const YAML::Node& parent, std::vector<ConnectItem>& connects);
   void ParseTargetType(const YAML::Node& parent, TargetType& targetType);
