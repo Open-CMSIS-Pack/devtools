@@ -1650,8 +1650,15 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
       context.cdefault->misc.begin(), context.cdefault->misc.end());
   }
 
+  // Output filenames must be processed after board, device and compiler precedences
+  // but before processing other access sequences
+  if (!ProcessOutputFilenames(context)) {
+    return false;
+  }
+
   // Access sequences and relative path references must be processed
   // after board, device and compiler precedences (due to $Bname$, $Dname$ and $Compiler$)
+  // after output filenames (due to $Output$)
   // but before processing misc, defines and includes precedences
   if (!ProcessSequencesRelatives(context)) {
     return false;
@@ -1932,7 +1939,7 @@ bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, 
           }
           else if (regex_match(sequence, regex("^Output\\(.*"))) {
             regEx = regex("\\$Output\\(.*\\)\\$");
-            replacement = relOutDir + "/" + contextName;
+            replacement = relOutDir + "/" + (depContext.outputFiles.find("elf") != depContext.outputFiles.end() ? depContext.outputFiles.at("elf") : contextName);
           }
           else if (regex_match(sequence, regex("^Source\\(.*"))) {
             regEx = regex("\\$Source\\(.*\\)\\$");
@@ -2132,8 +2139,6 @@ bool ProjMgrWorker::CheckType(const TypeFilter& typeFilter, const TypePair& type
 }
 
 bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGpdsc, bool resolveDependencies, bool updateRteFiles) {
-  context.outputType = context.cproject->outputType.empty() ? "exe" : context.cproject->outputType;
-
   if (!LoadPacks(context)) {
     return false;
   }
@@ -2963,4 +2968,37 @@ StrSet ProjMgrWorker::GetValidSets(ContextItem& context, const string& clayer) {
     }
   }
   return validSets;
+}
+
+bool ProjMgrWorker::ProcessOutputFilenames(ContextItem& context) {
+  if (context.cproject->outputFiles.empty()) {
+    // TODO: after deprecation remove 'outputType' attribute
+    context.outputType = context.cproject->outputType.empty() ? "exe" : context.cproject->outputType;
+  } else {
+    map<const string, bool> typeMap = {
+      { "elf", false },
+      { "hex", false },
+      { "bin", false },
+      { "lib", false },
+    };
+    for (const auto& output : context.cproject->outputFiles) {
+      if (CheckType(output.typeFilter, context.type)) {
+        string outputFile = ExpandString(output.file, context.variables);
+        RteFsUtils::NormalizePath(outputFile);
+        if ((context.outputFiles.find(output.type) != context.outputFiles.end()) &&
+          (context.outputFiles.at(output.type) != outputFile)) {
+          ProjMgrLogger::Warn("output '" + output.type + "' redefined from '" + context.variables.at(output.type) + "' to '" + outputFile + "'");
+        }
+        context.outputFiles[output.type] = outputFile;
+        if (typeMap.find(output.type) != typeMap.end()) {
+          typeMap[output.type] = true;
+        }
+      }
+    }
+    if (typeMap["lib"] && (typeMap["elf"] || typeMap["bin"] || typeMap["hex"])) {
+      ProjMgrLogger::Error("output 'lib' is incompatible with other output types");
+      return false;
+    }
+  }
+  return true;
 }

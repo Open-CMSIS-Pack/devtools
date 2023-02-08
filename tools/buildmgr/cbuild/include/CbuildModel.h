@@ -402,6 +402,15 @@ public:
   }
 
   /**
+   * @brief get output files
+   * @return string map containing output type and filenames
+  */
+  const std::map<std::string, std::string>& GetOutputFiles() const
+  {
+    return m_outputFiles;
+  }
+
+  /**
    * @brief get list of preinclude files specific to project
    * @return list of preinclude files associated with project
   */
@@ -519,6 +528,7 @@ protected:
   std::string                                       m_intDir;
   std::string                                       m_outputType;
   std::string                                       m_outputName;
+  std::map<std::string, std::string>                m_outputFiles;
   std::vector<std::string>                          m_preIncludeFilesGlobal;
   std::map<std::string, std::vector<std::string>>   m_preIncludeFilesLocal;
   std::string                                       m_auditData;

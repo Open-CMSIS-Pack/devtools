@@ -17,7 +17,7 @@
   </compilers>
 
   <target Ddsp="NO_DSP" Dendian="Little-endian" Dfpu="NO_FPU" Dmve="NO_MVE" Dname="ARMCM3" Dsecure="Non-secure" Dtz="NO_TZ" Dvendor="ARM:82">
-    <output name="MyProject" type="exe"/>
+    <output name="MyProject" elf="subfolder/MyElf.custom" bin="MyBin.binary" hex="MyHex.hexadecimal"/>
     <ldflags add="--entry=Reset_Handler --specs=nosys.specs -mcpu=cortex-m3 -mthumb" compiler="GCC" file="./RTE/Device/ARMCM3/gcc_arm.ld"/>
     <cflags add="-O -Wall -gdwarf-2 -mapcs-frame -mthumb" compiler="GCC"/>
     <asflags compiler="GCC"/>
