@@ -42,11 +42,6 @@ add_dependencies(CrossPlatformUnitTests TestProg)
 
 add_definitions(-DTEST_BIN_PATH="$<TARGET_FILE:CrossPlatformUnitTests>")
 
-if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR
-   "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    target_link_libraries(CrossPlatformUnitTests PUBLIC stdc++fs)
-endif()
-
 target_link_libraries(CrossPlatformUnitTests PUBLIC gtest gtest_main CrossPlatform RteFsUtils)
 
 add_test(NAME CrossPlatformUnitTests
