@@ -7,7 +7,7 @@
 
 #include <cassert>
 #include <limits.h>
-#include <Windows.h>
+#include <windows.h>
 
 using namespace std;
 // windows-specific methods
