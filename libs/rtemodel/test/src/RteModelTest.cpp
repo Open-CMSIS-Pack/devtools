@@ -109,7 +109,7 @@ protected:
   void GenerateHeadersTest(const string& project, const string& rteFolder) {
 
     const string projectDir = RteUtils::ExtractFilePath(project, true);
-    const string targetFolder = "/_" + RteUtils::ExtractFileBaseName(project) + "/";
+    const string targetFolder = "/_Target_1/";
     const string preIncComp = projectDir + rteFolder + targetFolder + "Pre_Include_RteTest_ComponentLevel.h";
     const string preIncGlob = projectDir + rteFolder + targetFolder + "Pre_Include_Global.h";
     const string rteComp = projectDir + rteFolder + targetFolder + "RTE_Components.h";
