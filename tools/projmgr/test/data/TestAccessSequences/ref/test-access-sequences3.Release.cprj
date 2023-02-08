@@ -14,11 +14,11 @@
     <compiler name="AC6" version="6.18.0"/>
   </compilers>
 
-  <target Dfpu="NO_FPU" Dname="RteTest_ARMCM0" Dsecure="Non-secure" Dvendor="ARM:82">
+  <target Dfpu="NO_FPU" Dname="RteTest_ARMCM0_Dual" Dsecure="Non-secure" Dvendor="ARM:82" Pname="cm0_core0">
     <output intdir="tmp/test-access-sequences3/Release" name="Release" outdir="out/test-access-sequences3/Release" rtedir="../data/TestAccessSequences/RTE" type="exe"/>
     <cflags add="-O3" compiler="AC6"/>
     <cxxflags add="-O3" compiler="AC6"/>
-    <defines>DEF1-PROJ1-out/test-access-sequences3/Debug/test-access-sequences3.Debug;DEF2-PROJ1-out/test-access-sequences3/Release/test-access-sequences3.Release</defines>
+    <defines>DEF1-PROJ1-out/test-access-sequences3/Debug/test-access-sequences3.Debug;DEF2-PROJ1-out/test-access-sequences3/Release/test-access-sequences3.Release;Device_RteTest_ARMCM0_Dual_Processor_cm0_core0</defines>
   </target>
 
   <components>
