@@ -86,7 +86,7 @@ bool CbuildModel::Create(const CbuildRteArgs& args) {
         fs::create_directories(intdir, ec);
       }
       // generate cpinstall file
-      string filename = intdir + (intdir.back() == '/' ? "" : "/") + m_targetName + ".cpinstall";
+      string filename = intdir + (intdir.back() == '/' ? "" : "/") + m_prjName + ".cpinstall";
       ofstream missingPacks(filename);
       for (const auto& pack : packList) {
         const string& packID = pack.vendor + "::" + pack.name + (pack.version.empty() ? "" : "@" + pack.version);
@@ -163,7 +163,7 @@ void CbuildModel::Init(const string &file, const string &rtePath) {
 
   fs::path name(file);
   m_prjName = name.filename().replace_extension("").generic_string();
-  m_targetName = m_prjName;   // project and target have same name
+  m_targetName = m_cprjProject->GetActiveTargetName();
 }
 
 bool CbuildModel::GenerateFixedCprj(const string& update) {

@@ -3,8 +3,8 @@
  * Auto generated Run-Time-Environment Configuration File
  *      *** Do not modify ! ***
  *
- * Project: 'RteTestM3_ConfigFolder' 
- * Target:  'RteTestM3_ConfigFolder' 
+ * Project: 'RteTestM3' 
+ * Target:  'Target 1' 
  */
 
 #ifndef PRE_INCLUDE_RTETEST_COMPONENTLEVEL_H

@@ -4,7 +4,7 @@
  *      *** Do not modify ! ***
  *
  * Project: 'RteTestM3_ConfigFolder' 
- * Target:  'RteTestM3_ConfigFolder' 
+ * Target:  'Target 1' 
  */
 
 #ifndef RTE_COMPONENTS_H
