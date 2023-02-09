@@ -166,8 +166,11 @@ Element    |              | Description
 
 A component can be partly defined in `csolution` input files (`*.cproject.yml`, `*.clayer.yml`, `*.genlayer.yml`) by omitting `Cvendor`, `Cvariant`, and `Cversion`, even when this are part of the `components` element of the software pack. The component select algorithm resolves this to a fully defined component by:
 
-- verify that the partly specified component resolves to only one possible choice, otherwise an *error* is issued.
-- extended the partly specified component by:
+- when a partly specified component resolves to several possible choices, the tool selects:
+  - (a) the default `Cvariant` of the component as defined in the PDSC file. 
+  - (b) the component with the higher `Cversion` value.
+  - (c) and error message is issued when two identical components are defined by multiple vendors and `Cvendor` is not specified.
+- the partly specified component is extended by:
   - version information from the software pack.
   - default variant definition from the software pack.
 

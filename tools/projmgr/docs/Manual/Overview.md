@@ -7,13 +7,15 @@
 >
 > While the CMSIS-Toolbox is already version 1.0.0 or higher, several aspects of the tools are still under review.  The sections that are market with `Proposal` are features that are not implemented or subject to change in the final implementation.  All other features are considered as stable and changes that are not upward compatible are avoided whenever possible.
 
-Manual Chapters                           | Content
-:-----------------------------------------|:-------------------------
-[Usage](#usage)                           | Overall Concept, tool setup, and invocation commands
-[Project Examples](#project-examples)     | Various example projects to get started
-[Project Structure](#project-structure)   | Overall structure of projects
-[YML Input Format](YML-Input-Format.md)   | Format of the various YML input files (`*.csolution.yml`, `*.cproject.yml`, `*.clayer.yml`, `*.cdefault.yml`)
-[YML CBuild Format](YML-CBuild-Format.md) | Format of the YML CBuild output file.
+Manual Chapters                                        | Content
+:------------------------------------------------------|:-------------------------
+[Usage](#usage)                                        | Overall Concept, tool setup, and invocation commands
+[Project Examples](#project-examples)                  | Various example projects to get started
+[Project Structure](#project-structure)                | Overall structure of projects
+[YML Input Format](YML-Input-Format.md)                | Format of the various YML input files (`*.csolution.yml`, `*.cproject.yml`, `*.clayer.yml`, `*.cdefault.yml`)
+[YML CBuild Format](YML-CBuild-Format.md)              | Format of the YML CBuild output file.
+[Build Operation](Build-Operation.md)                  | Build process overview and toolchain interface for adding additional compilers.
+[Reference Application Framework](RefApp-Framework.md) | Enables example projects that scale across many boards and production hardware.
 
 > **Note:**
 >
