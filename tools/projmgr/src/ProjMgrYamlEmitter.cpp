@@ -37,6 +37,7 @@ private:
   void SetGeneratorFiles(YAML::Node node, const ContextItem* context, const string& componentId);
   void SetConstructedFilesNode(YAML::Node node, const ContextItem* context);
   void SetOutputDirsNode(YAML::Node node, const ContextItem* context);
+  void SetOutputNode(YAML::Node node, const ContextItem* context);
   void SetPacksNode(YAML::Node node, const ContextItem* context);
   void SetGroupsNode(YAML::Node node, const vector<GroupNode>& groups);
   void SetFilesNode(YAML::Node node, const vector<FileNode>& files);
@@ -103,6 +104,9 @@ void ProjMgrYamlCbuild::SetContextNode(YAML::Node contextNode, const ContextItem
   SetControlsNode(contextNode, context->controls.processed);
   SetNodeValue(contextNode[YAML_OUTPUTTYPE], context->outputType);
   SetOutputDirsNode(contextNode[YAML_OUTPUTDIRS], context);
+  if (!context->outputFiles.empty()) {
+    SetOutputNode(contextNode[YAML_OUTPUT], context);
+  }
   vector<string> defines;
   for (const auto& define : context->rteActiveTarget->GetDefines()) {
     ProjMgrUtils::PushBackUniquely(defines, define);
@@ -273,6 +277,16 @@ void ProjMgrYamlCbuild::SetOutputDirsNode(YAML::Node node, const ContextItem* co
   };
   for (const auto& [name, dirPath] : outputDirs) {
     SetNodeValue(node[name], dirPath);
+  }
+}
+
+void ProjMgrYamlCbuild::SetOutputNode(YAML::Node node, const ContextItem* context) {
+  const StrMap& files = context->outputFiles;
+  for (const auto& [type, file] : files) {
+    YAML::Node fileNode;
+    SetNodeValue(fileNode[YAML_TYPE], type);
+    SetNodeValue(fileNode[YAML_FILE], file);
+    node.push_back(fileNode);
   }
 }
 

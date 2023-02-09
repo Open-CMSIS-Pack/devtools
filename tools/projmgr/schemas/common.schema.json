@@ -152,9 +152,31 @@
       "enum": [ "on", "off" ],
       "description": "Control warnings (on, off)."
     },
+    "ArtifactType": {
+      "enum": [ "elf", "hex", "bin", "lib" ],
+      "description": "Output type: elf (default), hex, bin or lib"
+    },
     "OutputType": {
       "enum": [ "exe", "lib" ],
       "description": "Generate executable (default) or library (exe, lib)."
+    },
+    "OutputFilesType": {
+      "type": "array",
+      "description": "List of output artifacts",
+      "uniqueItems": true,
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/OutputFileType" }
+    },
+    "OutputFileType": {
+      "type": "object",
+      "properties": {
+        "for-context":     { "$ref": "#/definitions/ForContext" },
+        "not-for-context": { "$ref": "#/definitions/NotForContext" },
+        "type":            { "$ref": "#/definitions/ArtifactType" },
+        "file":            { "type": "string" }
+      },
+      "additionalProperties": false,
+      "required": ["type"]
     },
     "OutputDirectoriesType": {
       "type": "object",
@@ -610,7 +632,8 @@
       "type": ["object", "null"],
       "properties": {
         "description": { "type": "string" },
-        "output-type": { "$ref": "#/definitions/OutputType" },
+        "output-type": { "$ref": "#/definitions/OutputType", "description": "DEPRECATED use: define" },
+        "output":      { "$ref": "#/definitions/OutputFilesType" },
         "packs":       { "$ref": "#/definitions/PacksType" },
         "output-dirs": { "$ref": "#/definitions/OutputDirectoriesType" },
         "board":       { "$ref": "#/definitions/BoardType" },

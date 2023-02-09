@@ -10,6 +10,9 @@ set(PRJ_DIR "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/NestedGr
 set(OUT_DIR "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/NestedGroups/OutDir")
 set(INT_DIR "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/NestedGroups/IntDir")
 set(LD_SCRIPT "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/NestedGroups/RTE/Device/ARMCM0/ARMCM0_ac6.sct")
+set(OUT_NAME NestedGroups)
+set(HEX_FILE "${OUT_NAME}.hex")
+set(BIN_FILE "${OUT_NAME}.bin")
 
 set(DEFINES
   ARMCM0
@@ -71,7 +74,7 @@ add_custom_target(database COMMAND ${CMAKE_COMMAND} -E copy_if_different "${INT_
 # Setup Target
 
 add_executable(${TARGET} ${CC_SRC_FILES})
-set(CMAKE_EXECUTABLE_SUFFIX ${EXE_SUFFIX})
+set_target_properties(${TARGET} PROPERTIES PREFIX "" SUFFIX "${EXE_SUFFIX}" OUTPUT_NAME "${TARGET}")
 set_target_properties(${TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${OUT_DIR} LINK_DEPENDS ${LD_SCRIPT})
 target_include_directories(${TARGET} PUBLIC ${INC_PATHS})
 

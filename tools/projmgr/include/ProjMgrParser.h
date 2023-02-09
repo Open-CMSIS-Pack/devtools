@@ -156,6 +156,18 @@ struct ComponentItem {
 };
 
 /**
+ * @brief output item containing
+ *        type [elf, hex, bin, lib],
+ *        filename,
+ *        context inclusion
+*/
+struct OutputItem {
+  std::string type;
+  std::string file;
+  TypeFilter typeFilter;
+};
+
+/**
  * @brief layer item containing
  *        layer name,
  *        layer type,
@@ -311,6 +323,7 @@ struct CprojectItem {
   std::vector<SetupItem> setups;
   std::vector<ConnectItem> connections;
   std::vector<PackItem> packs;
+  std::vector<OutputItem> outputFiles;
 };
 
 /**

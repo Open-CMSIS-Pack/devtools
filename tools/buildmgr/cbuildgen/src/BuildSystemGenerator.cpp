@@ -93,6 +93,7 @@ bool BuildSystemGenerator::Collect(const string& inputFile, const CbuildModel *m
   m_targetBranchProt = target->GetAttribute("DbranchProt");
   m_linkerScript = StrNorm(model->GetLinkerScript());
   m_outputType = model->GetOutputType();
+  m_outputFiles = model->GetOutputFiles();
 
   m_optimize = model->GetTargetOptimize();
   m_debug = model->GetTargetDebug();
