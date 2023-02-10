@@ -190,7 +190,7 @@ set(CC_DEFINES ${DEFINES})
 cbuild_set_defines(CC CC_DEFINES)
 set(CC_OPTIONS_FLAGS)
 cbuild_set_options_flags(CC "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" CC_OPTIONS_FLAGS)
-set(_PI "-include ")
+set(_PI "--preinclude ")
 
 if(SECURE STREQUAL "Secure")
   set(CC_SECURE "--cmse")
