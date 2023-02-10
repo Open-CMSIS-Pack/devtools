@@ -25,9 +25,7 @@ Project Manager.
     - [`project:`](#project)
     - [`layer:`](#layer)
   - [List Nodes](#list-nodes)
-  - [Directory Control](#directory-control)
     - [`output-dirs:`](#output-dirs)
-    - [`rte-dirs:`](#rte-dirs)
   - [Toolchain Options](#toolchain-options)
     - [`compiler:`](#compiler)
     - [`output-type:`](#output-type)
@@ -70,7 +68,7 @@ Project Manager.
     - [`groups:`](#groups)
     - [`files:`](#files)
     - [`layers:`](#layers)
-      - [`layers:` - `type:`](#layers---type)
+      - [`layer:` - `type:`](#layer---type)
     - [`components:`](#components)
     - [`instances:`](#instances)
   - [Pre/Post build steps](#prepost-build-steps)
@@ -91,16 +89,6 @@ Project Manager.
       - [Example Content of `*.cgen.json` (in this case `STM32CubeMX.cgen.json`)](#example-content-of-cgenjson-in-this-case-stm32cubemxcgenjson)
     - [Changes to the \*.GPDSC file](#changes-to-the-gpdsc-file)
     - [Changes to the \*.PDSC file](#changes-to-the-pdsc-file)
-  - [Resource Management (Proposal)](#resource-management-proposal)
-    - [`resources:`](#resources)
-      - [`- import:`](#--import)
-      - [`- split:`](#--split)
-      - [`- combine`](#--combine)
-    - [`phases:`](#phases)
-    - [`project-zones:`](#project-zones)
-      - [`requires:`](#requires)
-        - [`- memory:`](#--memory)
-        - [`- peripheral:`](#--peripheral)
 
 ## Name Conventions
 
@@ -114,7 +102,7 @@ File Extension           | [Category](https://open-cmsis-pack.github.io/Open-CMS
 `.cpp`, `.c++`, `.C++`, `.cxx`, `.cc`, `.CC` | sourceCpp    | C++ source file
 `.h`,`.hpp`                                  | header       | Header file
 `.asm`, `.s`, `.S`                           | sourceAsm    | Assembly source file
-`.ld`, `.scf`, `.sct`                        | linkerScript | Linker Script file
+`.ld`, `.scf`, `.sct`, `.icf`                | linkerScript | Linker Script file
 `.a`, `.lib`                                 | library      | Library file
 `.o`                                         | object       | Object file
 `.txt`, `.md`, `.pdf`, `.htm`, `.html`       | doc          | Documentation
@@ -203,21 +191,21 @@ The device specifies multiple attributes about the target that ranges from the p
 algorithms used for device programming. The following syntax is used to specify a `device:` value in the `*.yml` files.
 
 ```yml
-[Dvendor:: [device_name] ] [:Pname]
+[ [ Dvendor:: ] Dname] [:Pname]
 ```
 
 Element       |          | Description
 :-------------|----------|:---------------------
 `Dvendor`     | Optional | Name (without enum field) of the device vendor defined in `<devices><family>` element of the software pack.
-`device_name` | Optional | Device name (Dname attribute) or when used the variant name (Dvariant attribute) as defined in the \<devices\> element.
+`Dname`       | Optional | Device name (Dname attribute) or when used the variant name (Dvariant attribute) as defined in the \<devices\> element.
 `Pname`       | Optional | Processor identifier (Pname attribute) as defined in the `<devices>` element.
 
 > **Note:**
 >
 > - All elements of a device name are optional which allows to supply additional information, such as the `:Pname` at
->   different stages of the project. However the `device_name` itself is a mandatory element and must be specified in
+>   different stages of the project. However the `Dname` itself is a mandatory element and must be specified in
 >   context of the various project files.
-> - `Dvendor::` must be used in combination with the `device_name`.
+> - `Dvendor::` must be used in combination with the `Dname`.
 
 **Examples:**
 
@@ -241,7 +229,7 @@ value in the `*.yml` files.
 Element      |              | Description
 :------------|--------------|:---------------------
 `vendor`     | Optional     | Name of the board vendor defined in `<boards><board>` element of the board support pack (BSP).
-`board_name` | **Required** | Board name (name attribute) as defined in the \<board\> element of the BSP.
+`Bname`      | **Required** | Board name (name attribute) as defined in the \<board\> element of the BSP.
 `revision`   | Optional     | Board revision (revision attribute) as defined in the \<board\> element of the BSP.
 
 > **Note:**
@@ -311,12 +299,13 @@ can refer in a different project and provide therefore a method to describe proj
 
 Access Sequence                                | Description
 :----------------------------------------------|:--------------------------------------
-`$Bname$`                                      | Board name of the selected board.
-`$Dname$`                                      | Device name of the selected device.
-`$Project$`                                    | Project name of the currently process project.
+`$Bname$`                                      | [Bname](#board-name-conventions) of the selected board as specified in the [board](#board) node.
+`$Dname$`                                      | [Dname](#device-name-conventions) of the selected device as specified in the [`device:`](#device) node.
+`$Pname$`                                      | [Pname](#device-name-conventions) of the selected device as specified in the [`device:`](#device) node.
+`$Project$`                                    | Project name (base name of the *.cproject.yml file) of the currently process project.
 `$BuildType$`                                  | [Build-type](#build-types) name of the currently process project.
 `$TargetType$`                                 | [Target-type](#target-types) name of the currently process project.
-`$Compiler$`                                   | [Compiler](#compiler) name of the compiler used in this project context.
+`$Compiler$`                                   | [Compiler](#compiler) name of the compiler used in this project context as specified in the [compiler](#compiler) node.
 `$Output(context)$` | Path to the output file of a related project that is defined in the `*.csolution.yml` file.
 `$OutDir(context)$` | Path to the output directory of a related project that is defined in the `*.csolution.yml` file.
 `$Source(context)$` | Path to the source directory of a related project that is defined in the `*.csolution.yml` file.
@@ -575,7 +564,7 @@ The `layer:` node is the start of a `*.clayer.yml` file and defines a [Software 
 
 `layer:`                                               |              | Content
 :------------------------------------------------------|:-------------|:------------------------------------
-&nbsp;&nbsp; [`type:`](#layers---type)                 |  Optional    | Layer type for combining layers.
+&nbsp;&nbsp; [`type:`](#layer---type)                 |  Optional    | Layer type for combining layers.
 &nbsp;&nbsp; [`packs:`](#packs)                        |  Optional    | Defines packs that are required for this layer.
 &nbsp;&nbsp; `description:`                            |  Optional    | Brief layer description.
 &nbsp;&nbsp; [`for-device:`](#device-name-conventions) |  Optional    | Device information, used for consistency check (device selection is in `*.csolution.yml`).
@@ -626,9 +615,7 @@ might be confusing for `yml` files that are generated by an IDE.
       type: Release         # build-type name
 ```
 
-## Directory Control
-
-**(Proposal)**
+**(Proposal)**  already implemented in upcoming CMSIS-Toolbox 1.5
 
 The following node allows to control the directories used to generate the output files.  
 
@@ -644,6 +631,7 @@ The following node allows to control the directories used to generate the output
 &nbsp;&nbsp; [`rtedir:`]     |  Optional    | Specifies the directory for the RTE files (component configuration files).
 &nbsp;&nbsp; [`intdir:`]     |  Optional    | Specifies the directory for the interim files (temporary or object files).
 &nbsp;&nbsp; [`outdir:`]     |  Optional    | Specifies the directory for the build output files (ELF, binary, MAP files).
+&nbsp;&nbsp; [`gendir:`]     |  Optional    | Specifies the directory for the generated files (GPDSC controlled files).
 
 The default setting for the `output-dirs:` are:
 
@@ -652,6 +640,7 @@ cprjdir: <cproject.yml base directory>
 rtedir:  <cproject.yml base directory>/RTE
 intdir:  <csolution.yml base directory>/tmp/$Project$/$TargetType$/$BuildType$
 outdir:  <csolution.yml base directory>/out/$Project$/$TargetType$/$BuildType$
+gendir:  <cproject.yml base directory>/generated
 ```
 
 **Example:**
@@ -661,22 +650,6 @@ output-dirs:
   cprjdir: ./cprj                        # relative path to csolution.yml file
   rtedir: ./$Project$/RTE2               # alternative path for RTE files
   outdir: ./out/$Project$/$TargetType$   # $BuildType$ no longer part of the outdir    
-```
-
-### `rte-dirs:`
-
-**(Proposal)**
-The `rte-dirs:` list allows to control the location of configuration files for each [component `Cclass`](#component-name-conventions).  A list of `Cclass` names can be assigned to specific directories that store the related configuration files.
-
-**Example:**
-
-```yml
-  rte-dirs:
-    - Board_Support: ..\common\RTE\Board
-    - CMSIS Driver:  ..\common\RTE\CMSIS_Driver
-    - Device:        ..\common\RTE\Device\Core1
-    - Compiler:      ..\RTE\Compiler\Debug
-      for-context:      .Debug
 ```
 
 ## Toolchain Options
@@ -691,7 +664,7 @@ The following code translation options may be used at various places such as:
 Selects the compiler toolchain used for code generation.
 Optionally the compiler can have a version number specification.
 
-Value                                                 | Supported Compiler
+Compiler Name                                         | Supported Compiler
 :-----------------------------------------------------|:------------------------------------
 `AC6`                                                 | Arm Compiler version 6
 `GCC`                                                 | GCC Compiler
@@ -724,7 +697,7 @@ output-type: lib            # Generate a library
 
 ### `output:`
 
->**Proposal for Implementation:** Output Control needs review. 
+>**Proposal**  Already implemented in upcoming CMSIS-Toolbox 1.5 
 
 This is a proposal to replace `output-type` with a more flexible solution.  It allows to generate both a elf/dwarf and bin file. Optionally the filename including path could be specified.
 
@@ -739,7 +712,7 @@ output:
 
   - type: bin
     file: <path>\<file>.<ext>    # user define path with filename and extension
-    base-address:                # offset addresses
+    base-address:                # offset addresses   (out-of-scope for now)
 
   - type: lib                    # when lib is used, an elf and bin file would be not possible
     file: <path>\<file>.<ext>    # user define path with filename and extension
@@ -749,7 +722,24 @@ If accepted, we would need to extend also the access sequences.
 
 ### `linker:`
 
->**Proposal for Implementation:** is now in [Linker Script File (Proposal)](Linker%20Script%20File%20(Proposal).md).
+>**Scheduled for CMSIS-Toolbox 2.0 - Q1**
+
+The `linker:` node specifies an explicit Linker Script and/or memory regions header file.
+
+`linker:`                                             |              |  Content
+:-----------------------------------------------------|:-------------|:--------------------------------
+`- regions:`                                          |  Optional    | Path and file name of `regions_<device_or_board>.h`, used to generate a Linker Script.
+&nbsp;&nbsp; [`for-compiler:`](YML-Input-Format.md#for-compiler)         |   Optional   | Include Linker Script for the specified toolchain.
+&nbsp;&nbsp; [`for-context:`](YML-Input-Format.md#for-context)           |   Optional   | Include Linker Script for a list of *build* and *target* types.
+&nbsp;&nbsp; [`not-for-context:`](YML-Input-Format.md#not-for-context)   |   Optional   | Exclude Linker Script for a list of *build* and *target* types.
+`- script:`                                           |   Optional   | Explicit file name of the Linker Script, overrules files provided with `file:` or components.
+&nbsp;&nbsp; [`for-compiler:`](YML-Input-Format.md#for-compiler)         |   Optional   | Include Linker Script for the specified toolchain.
+&nbsp;&nbsp; [`for-context:`](YML-Input-Format.md#for-context)           |   Optional   | Include Linker Script for a list of *build* and *target* types.
+&nbsp;&nbsp; [`not-for-context:`](YML-Input-Format.md#not-for-context)   |   Optional   | Exclude Linker Script for a list of *build* and *target* types.
+
+> **Note:** 
+>
+> If no `script:` file is specified, compiler specific [linker script template files](Linker-Script-Management.md#linker-script-templates) are used.
 
 ## Translation Control
 
@@ -767,7 +757,7 @@ The following translation control options may be used at various places such as:
 
 ### `language-C:`
 
->**Proposal for Implementation:**
+>**Scheduled for CMSIS-Toolbox 2.0 - Q2**
 
 Set the language standard for C source file compilation.
 
@@ -782,7 +772,7 @@ Value                                                 | Select C Language Standa
 
 ### `language-CPP:`
 
->**Proposal for Implementation:**
+>**Scheduled for CMSIS-Toolbox 2.0 - Q2**
 
 Set the language standard for C++ source file compilation.
 
@@ -852,12 +842,16 @@ Value                                                 | Control diagnostic messa
 
 ### `define:`
 
-Contains a list of symbol #define statements that are passed via the command line to the development tools.
+Contains a list of symbol #define statements that are passed via the command line to the development tools for C and C++ source files.
 
 `define:`                                             | Content
 :-----------------------------------------------------|:------------------------------------
 &nbsp;&nbsp; `- <symbol-name>`                        | #define symbol passed via command line
 &nbsp;&nbsp; `- <symbol-name> = <value>`              | #define symbol with value passed via command line
+
+>**Note:**
+>
+> This control only applies to C and C++ source files.  For assembler source files use the `misc:` node.
 
 **Example:**
 
@@ -891,11 +885,15 @@ groups:
 
 ### `add-path:`
 
-Add include paths to the command line of the development tools.
+Add include paths to the command line of the development tools for C and C++ source files.
 
 `add-path:`                                          | Content
 :----------------------------------------------------|:------------------------------------
 &nbsp;&nbsp; `- <path-name>`                         | Named path to be added
+
+>**Note:**
+>
+> This control only applies to C and C++ source files.  For assembler source files use the `misc:` node.
 
 **Example:**
 
@@ -1219,7 +1217,7 @@ target-types:
 
 ### `context-map:`
 
->**Proposal for Implementation:** allow to assign projects to different context
+>**Scheduled for CMSIS-Toolbox 2.0 - Q2**
 
 The `context-map:` node allows for a specific `project-name` the remapping of `target-types:` and/or `build-types:` to a different `context:` which enables: 
 
@@ -1452,6 +1450,8 @@ See [`files:`](#files) section.
 
 ### `files:`
 
+Add source files to a project.
+
 `files:`                                                  |              | Content
 :---------------------------------------------------------|--------------|:------------------------------------
 `- file:                                                  | **Required** | Name of the file.
@@ -1466,6 +1466,10 @@ See [`files:`](#files) section.
 &nbsp;&nbsp;&nbsp; [`add-path:`](#add-path)               |   Optional   | Additional include file paths.
 &nbsp;&nbsp;&nbsp; [`del-path:`](#del-path)               |   Optional   | Remove specific include file paths.
 &nbsp;&nbsp;&nbsp; [`misc:`](#misc)                       |   Optional   | Literal tool-specific controls.
+
+> **Note:** 
+> 
+> It is also possible to specify a [Linker Script](Linker-Script-Management.md). Files with the extension `.sct`, `.scf`, `.ld`, and `.icf` are recognized as Linker Script files.
 
 **Example:**
 
@@ -1534,7 +1538,7 @@ Add a software layer to a project. Used in `*.cproject.yml` files.
 `layers:`                                           |              | Content
 :---------------------------------------------------|--------------|:------------------------------------
 [`- layer:`](#layer)                                |   Optional   | Path to the `*.clayer.yml` file that defines the layer.
-&nbsp;&nbsp; [`type:`](#layers---type)              |   Optional   | Refers to an expected layer type.
+&nbsp;&nbsp; [`type:`](#layer---type)              |   Optional   | Refers to an expected layer type.
 &nbsp;&nbsp; [`for-context:`](#for-context)         |   Optional   | Include layer for a list of *build* and *target* types.
 &nbsp;&nbsp; [`not-for-context:`](#not-for-context) |   Optional   | Exclude layer for a list of *build* and *target* types.
 &nbsp;&nbsp; [`optimize:`](#optimize)               |   Optional   | Optimize level for code generation.
@@ -1574,9 +1578,9 @@ Add a software layer to a project. Used in `*.cproject.yml` files.
         - +AVH
 ```
 
-#### `layers:` - `type:`
+#### `layer:` - `type:`
 
-The `layers:` - `type:` is used in combination with the meta-data of the [`connections:`](#connections) to check the list of available `*.clayer.yml` files for matching layers. Instead of an explicit `layer:` node that specifies a `*.clayer.yml` file, the `type:` is used to search for matching layers with the `csolution` command `list layers`.
+The `layer:` - `type:` is used in combination with the meta-data of the [`connections:`](#connections) to check the list of available `*.clayer.yml` files for matching layers. Instead of an explicit `layer:` node that specifies a `*.clayer.yml` file, the `type:` is used to search for matching layers with the `csolution` command `list layers`.
 
 **Example:**
 
@@ -2155,147 +2159,4 @@ executed.
     </bundle>
   </components>
 </package>
-```
-
-## Resource Management (Proposal)
-
-The **csolution - CMSIS Project Manager**  integrates an extended version of the Project Zone functionality of
-[CMSIS-Zone](https://arm-software.github.io/CMSIS_5/Zone/html/index.html) with this nodes:
-
-- [`resources:`](#resources) imports resource files (in
-  [CMSIS-Zone RZone format](https://arm-software.github.io/CMSIS_5/Zone/html/xml_rzone_pg.html) or a compatible yml
-  format tbd) and allows to split or combine memory regions.
-- [`phases:`](#phases) defines the execution phases may be used to assign a life-time to memory or peripheral resources
-  in the project zones.
-- [`project-zones:`](#project-zones) collect and configure the memory or peripheral resources that are available to
-  individual projects. These zones are assigned to the [`projects:`](#projects) of a `*.csolution.yml` file.
-- [`requires:`](#requires) allows to specify additional resources at the level of a `*.cproject.yml` or `*.clayer.yml`
-  file that are added to the related zone of the project.
-
-The **csolution - CMSIS Project Manager** generates for each project context (with build and/or target-type) a data file
-(similar to the current [CMSIS FZone format](https://arm-software.github.io/CMSIS_5/Zone/html/GenDataModel.html), exact
-format tbd could be also JSON) for post-processing with a template engine (Handlebars?).
-
-### `resources:`
-
-`resources:`                                   |              | Content
-:----------------------------------------------|--------------|:------------------------------------
-`- import:`                                    | **Required** | File/resource to be used.
-`- split:`                                     |   Optional   | Split a resource/memory region.
-`- combine:`                                   |   Optional   | Combine a resource/memory region.
-
-#### `- import:`
-
-`- import:`                                    |              | Content
-:----------------------------------------------|--------------|:------------------------------------
-`- import:` path_to_resource                   | **Required** | Path to the resource file.
-
-#### `- split:`
-
-Split a resource into subresources.
-
-`- split:`                    |              | Content
-:-----------------------------|--------------|:------------------------------------
-`into:`                       | **Required** |
-&nbsp;&nbsp; `- region:` name | **Required** | Name of the new resource.
-&nbsp;&nbsp; `- size:` value  | **Required** | Size of the new resource.
-
-#### `- combine`
-
-Combine/merge resources into a new resource.
-
-`- combine:` name             |              | Content
-:-----------------------------|--------------|:------------------------------------
-`from:`                       | **Required** |
-&nbsp;&nbsp; `- region:` name | **Required** | Name of the resource to be combined.
-
-**Example:**
-
-Added to `*.csolution.yml` file
-
-```yml
-resources:
-# depending on the device: and/or board: settings these resources may get added automatically
-  - import: .\LPC55S69.rzone             # resource definitions of the device
-  - import: .\MyEvalBoard.rzone          # add resource definitions of the Eval board
-
-  - split: SRAM_NS                       # split a memory resource into two regions
-    into:
-    - region: DATA_NS
-      size: 128k
-    - region: DATA_BOOT
-      size: 45k
-
-  - combine: SRAM                        # combine two memory regions (contiguous, same permissions) 
-    from:
-      - region: SRAM1
-      - region: SRAM2
-```
-
-> **Note:**
->
-> Exact behavior for devices that have no RZone file is tbd. It could be that the memory resources are derived from device definitions
-
-### `phases:`
-
-**Example:**
-
-Added to `*.csolution.yml` file
-
-```yml
-phases:    # define the life-time for resources in the project-zone definition
-  - phase: Boot
-  - phase: OTA
-  - phase: Run
-```
-
-### `project-zones:`
-
-**Example:**
-
-Added to `*.csolution.yml` file
-
-```yml
-project-zones:   
-  - zone: BootLoader
-    requires:
-    - memory: Code_Boot
-      permission: rx, s
-    - memory: Ram_Boot
-      phase: Boot
-      permission: rw, s
-    - peripheral: UART1
-    - peripheral: Watchdog
-      phase: Boot      # only for phase Boot
-
-  - zone: Application
-    - memory: *        # all remaining memory
-      permission: ns   # with permission ns
-      phase: ~Boot     # for every phase except Boot
-
-projects:
-  - project: ./bootloader/Bootloader.cproject.yml           # relative path
-    zone: Bootloader
-
-  - project: ./application/MyApp1.yml                       # Application 1
-    zone: Application
-
-  - project: ./application/MyApp2.yml                       # relative path
-    zone: Application
-```
-
-#### `requires:`
-
-##### `- memory:`
-
-##### `- peripheral:`
-
-Added to `*.cproject.yml` or `*.clayer.yml` file
-
-```yml
-requires:
- - memory: Ram2
-   permission: rx, s
- - peripheral: SPI2
-   permission: ns, p
 ```
