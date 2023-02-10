@@ -136,14 +136,14 @@ Usage:
 
  Commands:
    list packs            Print list of used packs from the pack repository
-        boards           Print list of available board names
-        devices          Print list of available device names
-        components       Print list of available components
-        dependencies     Print list of unresolved project dependencies
-        contexts         Print list of contexts in a csolution.yml
-        generators       Print list of code generators of a given context
-        layers           Print list of available, referenced and compatible layers
-        toolchains       Print list of installed toolchains
+   list boards           Print list of available board names
+   list devices          Print list of available device names
+   list components       Print list of available components
+   list dependencies     Print list of unresolved project dependencies
+   list contexts         Print list of contexts in a csolution.yml
+   list generators       Print list of code generators of a given context
+   list layers           Print list of available, referenced and compatible layers
+   list toolchains       Print list of supported toolchains
    convert               Convert *.csolution.yml input file in *.cprj files
    run                   Run code generator
 
