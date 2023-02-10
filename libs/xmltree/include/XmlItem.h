@@ -79,7 +79,7 @@ public:
    * @brief check if XML element is empty, i.e. if text and attributes list are empty
    * @return true if empty
   */
-  virtual bool IsEmpty() { return m_text.empty() && m_attributes.empty(); }
+  virtual bool IsEmpty() const { return m_text.empty() && m_attributes.empty(); }
 
   /**
    * @brief getter for tag name
@@ -405,11 +405,6 @@ public:
   * @return number of attributes as int
  */
   size_t GetAttributeCount() const { return m_attributes.size(); }
-  /**
-   * @brief check if attribute collection is empty
-   * @return true if attribute collection is empty
-  */
-  bool IsEmpty() const { return m_attributes.empty(); }
 
   /**
  * @brief check if all given attributes exist in the instance

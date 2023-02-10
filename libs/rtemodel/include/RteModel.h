@@ -194,7 +194,7 @@ public:
    * @brief check if this object has no children
    * @return true if this object has no children
   */
-  bool IsEmpty() const { return m_children.size() == 0; }
+  bool IsEmpty() const override { return m_children.size() == 0; }
 
   /**
    * @brief getter for component by given component ID

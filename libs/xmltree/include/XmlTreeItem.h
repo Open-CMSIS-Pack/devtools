@@ -379,7 +379,7 @@ public:
    * @brief check if instance is empty
    * @return true if instance is empty otherwise false
   */
-  virtual bool IsEmpty() override { return !HasChildren() && XmlItem::IsEmpty(); }
+  virtual bool IsEmpty() const override { return !HasChildren() && XmlItem::IsEmpty(); }
 
   /**
    * @brief check if the given name is an attribute one
