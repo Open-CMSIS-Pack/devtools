@@ -17,10 +17,9 @@ In a later version of the CMSIS-Toolbox, ASM specific controls may be added.
 
 ## Linker Script
 
-In CMSIS-Toolbox 2.0 the [Linker Script Management](Linker-Script-Management.md) will be implemented. 
+In CMSIS-Toolbox 2.0 the [Linker Script Management](Linker-Script-Management.md) will be implemented.
 
-In a later interation of the tools it should be possible to generate the `regions_<device_or_board>.h` with a workflow that is similar to "CMSIS-Zone" or "DeviceTree".
-
+In a later iteration of the tools it should be possible to generate the `regions_<device_or_board>.h` with a workflow that is similar to "CMSIS-Zone" or "DeviceTree".
 
 ## Resource Management (Proposal)  (out-of-scope)
 
@@ -33,7 +32,7 @@ The **csolution - CMSIS Project Manager**  integrates an extended version of the
 - [`phases:`](#phases) defines the execution phases may be used to assign a life-time to memory or peripheral resources
   in the project zones.
 - [`project-zones:`](#project-zones) collect and configure the memory or peripheral resources that are available to
-  individual projects. These zones are assigned to the [`projects:`](#projects) of a `*.csolution.yml` file.
+  individual projects. These zones are assigned to the [`projects:`](YML-Input-Format.md#projects) of a `*.csolution.yml` file.
 - [`requires:`](#requires) allows to specify additional resources at the level of a `*.cproject.yml` or `*.clayer.yml`
   file that are added to the related zone of the project.
 
@@ -174,7 +173,7 @@ requires:
 The default RTE directory structure can be modified with [`rte-dirs:`](YML-Input-Format.md#rte-dirs).
 This list node allows to specify for each software component `Cclass` the directory that should be used to partly share a common configuration across a `project:` or `layer:`.
 
-The `rte-dirs:` list allows to control the location of configuration files for each [component `Cclass`](#component-name-conventions).  A list of `Cclass` names can be assigned to specific directories that store the related configuration files.
+The `rte-dirs:` list allows to control the location of configuration files for each [component `Cclass`](YML-Input-Format.md#component-name-conventions).  A list of `Cclass` names can be assigned to specific directories that store the related configuration files.
 
 **Example:**
 

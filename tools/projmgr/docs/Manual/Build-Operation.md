@@ -82,12 +82,11 @@ CMake Variable                                   | Possible Values           | D
 
 The following table lists the possible values for the CMake variable `BRANCHPROT`.
 
-Values        |	Description
+Values        | Description
 --------------|------------------------------
-NO_BRANCHPROT |	Branch protection not used
-BTI	          | Using BTI (Branch Target ID)
-BTI_SIGNRET   | Using	BTI + Sign Return
-
+NO_BRANCHPROT | Branch protection not used
+BTI           | Using BTI (Branch Target ID)
+BTI_SIGNRET   | Using BTI + Sign Return
 
 The `compiler_name.<version>.cmake` sets the following **CMake** variables to specify the toolchain and select toolchain options.
 
