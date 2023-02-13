@@ -43,7 +43,7 @@ If `regions_<device_or_board>.h` is **not** available, it is generated based on 
 
 ### File locations
 
-The file `regions_<device_or_board>.h` and the Linker Script file should be generated in the [RTE directory](Overview.md#rte-directory-structure) path `\RTE\Device\<device>`. The actual file name is extended with:
+The file `regions_<device_or_board>.h` is generated in the [RTE directory](Overview.md#rte-directory-structure) path `\RTE\Device\<device>`. The actual file name is extended with:
 
 - `Bname` when the `*.cproject.yml` file uses in the project context a [`board:`](YML-Input-Format.md#board-name-conventions) specification, i.e. `regions_IMXRT1050-EVKB.h`
 - `Dname` name when the `*.cproject.yml` file uses in the project context only a [`device:`](YML-Input-Format.md#device-name-conventions) specification, i.e. `regions_stm32u585xx.h`.

@@ -49,6 +49,6 @@ External hardware components are frequently available on Arduino Shields that co
 
 **Arduino Shield Pinout**
 
-There are several different Arduino pin mappings, however for standardization, a consistent naming is required. The pinout used by teh [Board Layer](#board-layer) is shown in the diagram below.
+There are several different Arduino pin mappings, however for standardization, a consistent naming is required. The pinout used by the [Board Layer](#board-layer) is shown in the diagram below.
 
 ![Arduino Shield Pinout](./images/Arduino-Shield.png "Arduino Shield Pinout")
