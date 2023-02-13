@@ -22,7 +22,7 @@ The following sequence describes the Linker Script management of the **csolution
 
 1. The [`linker:`](YML-Input-Format.md#linker) node specifies an explicit linker script and/or memory regions header file. This overrules linker scripts that are part of software components or specified using the `file:` notation.
 
-2. If no [`linker:`](YML-Input-Format.md#linker) node is used, a linker script file can be provided using the `file:` notation under [`groups:`](YML-Input-Format.md#groups) or as part of software components. The extensions `.sct`, `.scf`, `.ld`, and `.icf` are recognized as Linker Script files.
+2. If no [`linker:`](YML-Input-Format.md#linker) node is used, a linker script file can be provided as part of software components. The extensions `.sct`, `.scf`, `.ld`, and `.icf` are recognized as Linker Script files.
 
 3. If no Linker script is found, a [Linker Script is generated](#automatic-linker-script-generation) based on information that is provided by the `<memory>` element in Device Family Packs (DFP) and Board Support Packs (BSP).
  
@@ -50,11 +50,11 @@ The file `regions_<device_or_board>.h` is generated in the [RTE directory](Overv
   
 ### User Modifications to Memory Regions
 
-The file `regions_<device_or_board>.h` can be modified by the user as it might be required to adjust the memory regions or give additional attributes (such as `noinit`).  Therefore this file should has [Configuration Wizard Annotations](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/configWizard.html).
+The file `regions_<device_or_board>.h` can be modified by the user as it might be required to adjust the memory regions or give additional attributes (such as `noinit`).  Therefore this file should have [Configuration Wizard Annotations](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/configWizard.html).
 
 ### Linker Script Templates
 
-The following compiler specific Linker Script files are used when no explicit file is specified.  The files are located in the directory `<cmsis-toolbox-installation-dir>/.etc` of the CMSIS-Toolbox.
+The following compiler specific Linker Script files are used when no explicit file is specified.  The files are located in the directory `<cmsis-toolbox-installation-dir>/etc` of the CMSIS-Toolbox.
 
 Linker Script Template  | Linker control file for ...
 :-----------------------|:-----------------------------

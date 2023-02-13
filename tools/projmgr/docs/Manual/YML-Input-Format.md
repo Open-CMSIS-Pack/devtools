@@ -523,7 +523,7 @@ The `project:` node is the start of a `*.cproject.yml` file and can contain the 
 &nbsp;&nbsp; [`language-CPP:`](#language-cpp)       |  Optional    | Set the language standard for C++ source file compilation.
 &nbsp;&nbsp; [`output-type:`](#output-type)         |  Optional    | Generate executable (default) or library.
 &nbsp;&nbsp; [`optimize:`](#optimize)               |  Optional    | Optimize level for code generation.
-&nbsp;&nbsp; [`linker:`](#linker)                   | **Required** | Instructions for the linker.
+&nbsp;&nbsp; [`linker:`](#linker)                   |  Optional    | Instructions for the linker.
 &nbsp;&nbsp; [`debug:`](#debug)                     |  Optional    | Generation of debug information.
 &nbsp;&nbsp; [`define:`](#define)                   |  Optional    | Preprocessor (#define) symbols for code generation.
 &nbsp;&nbsp; [`undefine:`](#undefine)               |  Optional    | Remove preprocessor (#define) symbols.
@@ -564,13 +564,14 @@ The `layer:` node is the start of a `*.clayer.yml` file and defines a [Software 
 
 `layer:`                                               |              | Content
 :------------------------------------------------------|:-------------|:------------------------------------
-&nbsp;&nbsp; [`type:`](#layer---type)                 |  Optional    | Layer type for combining layers.
+&nbsp;&nbsp; [`type:`](#layer---type)                  |  Optional    | Layer type for combining layers.
 &nbsp;&nbsp; [`packs:`](#packs)                        |  Optional    | Defines packs that are required for this layer.
 &nbsp;&nbsp; `description:`                            |  Optional    | Brief layer description.
 &nbsp;&nbsp; [`for-device:`](#device-name-conventions) |  Optional    | Device information, used for consistency check (device selection is in `*.csolution.yml`).
 &nbsp;&nbsp; [`for-board:`](#board-name-conventions)   |  Optional    | Board information, used for consistency check (board selection is in `*.csolution.yml`).
 &nbsp;&nbsp; [`connections:`](#connections)            |  Optional    | List of consumed and provided resources.
 &nbsp;&nbsp; [`processor:`](#processor)                |  Optional    | Processor specific settings.
+&nbsp;&nbsp; [`linker:`](#linker)                      |  Optional    | Instructions for the linker.
 &nbsp;&nbsp; [`groups:`](#groups)                      |  Optional    | List of source file groups along with source files.
 &nbsp;&nbsp; [`components:`](#components)              |  Optional    | List of software components used.
 
@@ -724,15 +725,15 @@ If accepted, we would need to extend also the access sequences.
 
 >**Scheduled for CMSIS-Toolbox 2.0 - Q1**
 
-The `linker:` node specifies an explicit Linker Script and/or memory regions header file.
+The `linker:` node specifies an explicit Linker Script and/or memory regions header file.  It can be applied in `*.cproject.yml` and `*.clayer.yml` files.  If multiple `linker:` nodes are specified an error is issued.
 
-`linker:`                                             |              |  Content
-:-----------------------------------------------------|:-------------|:--------------------------------
-`- regions:`                                          |  Optional    | Path and file name of `regions_<device_or_board>.h`, used to generate a Linker Script.
+`linker:`                                                                |              |  Content
+:------------------------------------------------------------------------|:-------------|:--------------------------------
+`- regions:`                                                             |  Optional    | Path and file name of `regions_<device_or_board>.h`, used to generate a Linker Script.
 &nbsp;&nbsp; [`for-compiler:`](YML-Input-Format.md#for-compiler)         |   Optional   | Include Linker Script for the specified toolchain.
 &nbsp;&nbsp; [`for-context:`](YML-Input-Format.md#for-context)           |   Optional   | Include Linker Script for a list of *build* and *target* types.
 &nbsp;&nbsp; [`not-for-context:`](YML-Input-Format.md#not-for-context)   |   Optional   | Exclude Linker Script for a list of *build* and *target* types.
-`- script:`                                           |   Optional   | Explicit file name of the Linker Script, overrules files provided with `file:` or components.
+`- script:`                                                              |   Optional   | Explicit file name of the Linker Script, overrules files provided with `file:` or components.
 &nbsp;&nbsp; [`for-compiler:`](YML-Input-Format.md#for-compiler)         |   Optional   | Include Linker Script for the specified toolchain.
 &nbsp;&nbsp; [`for-context:`](YML-Input-Format.md#for-context)           |   Optional   | Include Linker Script for a list of *build* and *target* types.
 &nbsp;&nbsp; [`not-for-context:`](YML-Input-Format.md#not-for-context)   |   Optional   | Exclude Linker Script for a list of *build* and *target* types.
