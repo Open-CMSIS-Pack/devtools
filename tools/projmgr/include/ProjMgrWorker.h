@@ -164,6 +164,7 @@ struct TranslationControl {
  *        build-type/target-type pair,
  *        project name,
  *        project description,
+ *        list of output files,
  *        output type,
  *        device selection,
  *        board selection,
@@ -202,6 +203,7 @@ struct ContextItem {
   std::string name;
   std::string description;
   std::string outputType;
+  StrMap outputFiles;
   std::string device;
   std::string board;
   std::vector<PackageItem> packRequirements;
@@ -216,6 +218,7 @@ struct ContextItem {
   std::vector<std::tuple<RteItem::ConditionResult, std::string, std::set<std::string>, std::set<std::string>>> validationResults;
   std::map<std::string, std::map<std::string, RteFileInstance*>> configFiles;
   std::map<std::string, std::vector<ComponentFileItem>> componentFiles;
+  std::map<std::string, std::vector<ComponentFileItem>> generatorInputFiles;
   std::vector<GroupNode> groups;
   std::map<std::string, std::string> filePaths;
   std::map<std::string, RteGenerator*> generators;
@@ -496,6 +499,7 @@ protected:
   bool ProcessSequencesRelatives(ContextItem& context, std::vector<std::string>& src, const std::string& ref = std::string());
   bool ProcessSequencesRelatives(ContextItem& context, BuildType& build, const std::string& ref = std::string());
   bool ProcessSequenceRelative(ContextItem& context, std::string& item, const std::string& ref = std::string());
+  bool ProcessOutputFilenames(ContextItem& context);
   bool AddContext(ProjMgrParser& parser, ContextDesc& descriptor, const TypePair& type, const std::string& cprojectFile, ContextItem& parentContext);
   bool ValidateContext(ContextItem& context);
   bool FormatValidationResults(std::set<std::string>& results, const ContextItem& context);

@@ -1,4 +1,6 @@
 build:
+  solution: ../data/TestSolution/test.csolution.yml
+  project: ../data/TestSolution/TestProject1/test1.cproject.yml
   context: test1.Debug+CM0
   compiler: AC6
   device: RteTest_ARMCM0

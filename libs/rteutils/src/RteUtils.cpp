@@ -431,6 +431,15 @@ string RteUtils::RemoveQuotes(const string& s)
   return s;
 }
 
+std::string RteUtils::AddQuotesIfSpace(const std::string& s)
+{
+  static const string& QUOTE = string("\"");
+  if (s.find(' ') != string::npos && s.find('\"') == string::npos){
+    return QUOTE + s + QUOTE;
+  }
+  return s;
+}
+
 bool RteUtils::HasHexPrefix(const string& s)
 {
   return s.length() > 2 && s[0] == '0' && (s[1] == 'x' || s[1] == 'X');

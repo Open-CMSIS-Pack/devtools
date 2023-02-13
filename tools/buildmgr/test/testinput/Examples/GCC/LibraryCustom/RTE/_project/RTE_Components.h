@@ -3,8 +3,8 @@
  * Auto generated Run-Time-Environment Configuration File
  *      *** Do not modify ! ***
  *
- * Project: 'RteTestM3' 
- * Target:  'RteTestM3' 
+ * Project: 'project' 
+ * Target:  'project' 
  */
 
 #ifndef RTE_COMPONENTS_H
@@ -16,10 +16,6 @@
  */
 #define CMSIS_device_header "ARMCM3.h"
 
-/* ARM::RteTest:ComponentLevel:0.0.1 */
-#define COMPONENT_LEVEL 1
-/* ARM::RteTest:GlobalLevel:0.0.2 */
-#define GLOBAL_LEVEL 1
 
 
 #endif /* RTE_COMPONENTS_H */

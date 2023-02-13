@@ -111,11 +111,11 @@ bool ProjMgrYamlParser::ParseCproject(const string& input,
     cproject.name = fs::path(input).stem().stem().generic_string();
 
     const YAML::Node& projectNode = root[YAML_PROJECT];
-    map<const string, string&> projectChildren = {
-      {YAML_OUTPUTTYPE, cproject.outputType},
-    };
-    for (const auto& item : projectChildren) {
-      ParseString(projectNode, item.first, item.second);
+
+    ParseOutputFiles(projectNode, cproject.outputFiles);
+    if (cproject.outputFiles.empty()) {
+      // TODO: after deprecation remove 'output-type' keyword parsing in benefit of 'output'
+      ParseString(projectNode, YAML_OUTPUTTYPE, cproject.outputType);
     }
     ParseTargetType(projectNode, cproject.target);
 
@@ -279,6 +279,22 @@ bool ProjMgrYamlParser::ParseComponents(const YAML::Node& parent, vector<Compone
       ParseString(componentEntry, YAML_COMPONENT, componentItem.component);
       ParseBuildType(componentEntry, componentItem.build);
       components.push_back(componentItem);
+    }
+  }
+  return true;
+}
+
+bool ProjMgrYamlParser::ParseOutputFiles(const YAML::Node& parent, vector<OutputItem>& outputFiles) {
+  if (parent[YAML_OUTPUT].IsDefined()) {
+    const YAML::Node& outputNode = parent[YAML_OUTPUT];
+    for (const auto& outputEntry : outputNode) {
+      OutputItem outputItem;
+      if (!ParseTypeFilter(outputEntry, outputItem.typeFilter)) {
+        return false;
+      }
+      ParseString(outputEntry, YAML_TYPE, outputItem.type);
+      ParseString(outputEntry, YAML_FILE, outputItem.file);
+      outputFiles.push_back(outputItem);
     }
   }
   return true;
@@ -622,6 +638,7 @@ const set<string> projectsKeys = {
 const set<string> projectKeys = {
   YAML_DESCRIPTION,
   YAML_OUTPUTTYPE,
+  YAML_OUTPUT,
   YAML_PACKS,
   YAML_DEVICE,
   YAML_BOARD,
@@ -720,6 +737,13 @@ const set<string> outputDirsKeys = {
   YAML_OUTPUT_INTDIR,
   YAML_OUTPUT_OUTDIR,
   YAML_OUTPUT_RTEDIR,
+};
+
+const set<string> outputKeys = {
+  YAML_FORCONTEXT,
+  YAML_NOTFORCONTEXT,
+  YAML_TYPE,
+  YAML_FILE,
 };
 
 const set<string> processorKeys = {
@@ -860,6 +884,7 @@ const map<string, set<string>> sequences = {
   {YAML_LAYERS, layersKeys},
   {YAML_GROUPS, groupsKeys},
   {YAML_FILES, filesKeys},
+  {YAML_OUTPUT, outputKeys},
 };
 
 const map<string, set<string>> mappings = {

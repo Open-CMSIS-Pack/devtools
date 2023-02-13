@@ -121,10 +121,17 @@ public:
   static std::string RemoveTrailingBackslash(const std::string& s);
   /**
    * @brief determine string between two quotes
-   * @param s string to be looked for
+   * @param s string to be processed for
    * @return string between two quotes
   */
   static std::string RemoveQuotes(const std::string& s);
+  /**
+   * @brief adds quotes to a string if it contains spaces and not yet quoted
+   * @param s string to be processed
+   * @return string between two quotes
+  */
+  static std::string AddQuotesIfSpace(const std::string& s);
+
   /**
    * @brief check if name (e.g. Dname) is CMSIS-conformed
    * @param s name to be checked

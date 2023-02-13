@@ -130,6 +130,7 @@ protected:
   std::string m_targetBranchProt;
   std::string m_byteOrder;
   std::string m_outputType;
+  std::map<std::string, std::string> m_outputFiles;
   std::string m_optimize;
   std::string m_debug;
   std::string m_warnings;

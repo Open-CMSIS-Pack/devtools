@@ -109,7 +109,10 @@ void RteCprjProject::Initialize()
 {
   // create target based on cprj description
   CprjFile* cprjFile = GetCprjFile();
-  string targetName = GetName(); // use same name as project
+  const string& cprjName = GetName();
+  size_t lastDot = cprjName.find_last_of('.');
+  const string& targetName = (lastDot != string::npos) && ((lastDot+1) < cprjName.length()) ?
+    cprjName.substr(lastDot+1) : "Target 1";
 
   XmlItem filterAttributes;
   CprjTargetElement* cprjTarget = cprjFile->GetTargetElement();

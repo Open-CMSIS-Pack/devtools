@@ -102,6 +102,7 @@ public:
   static constexpr const char* AS_BUILD_TYPE = "BuildType";
   static constexpr const char* AS_TARGET_TYPE = "TargetType";
   static constexpr const char* AS_DNAME = "Dname";
+  static constexpr const char* AS_PNAME = "Pname";
   static constexpr const char* AS_BNAME = "Bname";
 
   /**

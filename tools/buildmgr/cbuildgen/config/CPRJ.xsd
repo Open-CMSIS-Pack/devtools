@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-  Copyright (c) 2020-2022 ARM Limited. All rights reserved.
+  Copyright (c) 2020-2023 ARM Limited. All rights reserved.
 
   SPDX-License-Identifier: Apache-2.0
 
@@ -17,12 +17,15 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 
-  $Date:        20. October 2022
-  $Revision:    1.1.0
+  $Date:        26. February 2023
+  $Revision:    1.2.0
 
   $Project: Schema File for CMSIS Project Description File Format Specification
 
-  SchemaVersion=1.1.0
+  SchemaVersion=1.2.0
+
+  1.2.0: Added output attributes 'elf', 'hex', 'bin', 'lib'
+         output 'type' to be deprecated
 
   1.1.0: Added support for DbranchProt
 
@@ -371,7 +374,11 @@
     <xs:attribute name="outdir" type="xs:string"          use="optional" />
     <xs:attribute name="intdir" type="xs:string"          use="optional" />
     <xs:attribute name="rtedir" type="xs:string"          use="optional" />
-    <xs:attribute name="type"   type="CompilerOutputType" use="required" />
+    <xs:attribute name="type"   type="CompilerOutputType" use="optional" /> <!-- Deprecated -->
+    <xs:attribute name="elf"    type="xs:string"          use="optional" />
+    <xs:attribute name="hex"    type="xs:string"          use="optional" />
+    <xs:attribute name="bin"    type="xs:string"          use="optional" />
+    <xs:attribute name="lib"    type="xs:string"          use="optional" />
   </xs:complexType>
 
   <xs:complexType name="LinkerFlagsType">

@@ -1,4 +1,6 @@
 build:
+  solution: ../data/TestSolution/pre-include.csolution.yml
+  project: ../data/TestSolution/pre-include.cproject.yml
   context: pre-include+CM0
   compiler: AC6
   device: RteTest_ARMCM0

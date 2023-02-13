@@ -41,16 +41,16 @@ const char HeaderGenerator::m_headerCommentPartChar = '=';
 const char HeaderGenerator::m_headerCommentSubPartChar = '=';
 
 const string HeaderGenerator::m_itemsH[] = {
-  "",       // EMPTY              
+  "",       // EMPTY
   "",       // DOXY_COMMENT       / keep empty for DOXY_COMMENT
-  "//",     // C_COMMENT          
-  "union",  // UNION              
-  "struct", // STRUCT             
-  "enum",   // ENUM               
-  "",       // C_ERROR            
-  "",       // C_WARNING          
+  "//",     // C_COMMENT
+  "union",  // UNION
+  "struct", // STRUCT
+  "enum",   // ENUM
+  "",       // C_ERROR
+  "",       // C_WARNING
   "",       // DOXY_COMMENT_POSMSK
-  "",       // DOXY_COMMENTSTAR     
+  "",       // DOXY_COMMENTSTAR
 };
 
 const string HeaderGenerator::m_langAddH[] = {
@@ -213,7 +213,7 @@ void HeaderGenerator::MakeCMSISConfig(const std::string& text, const std::string
   Generate_NewLine();
   Generate<DESCR|HEADER         >("Processor and Core Peripheral Section");
   Generate<DESCR|SUBPART        >("Configuration of the %s Processor and Core Peripherals",   cpuName);
-  
+
   Generate<DIRECT               >("#define __%s_REV                 0x%04xU",                 cpuTypeDefine, cmsisCfg.cpuRevision);
   Generate<MAKE|MK_DOXY_COMMENT >("%s Core Revision",                                         cpuType);
 
@@ -402,7 +402,7 @@ void HeaderGenerator::MakeEnumStructUnionEnd(const std::string& textBuf, Index e
 {
   if(specialType == ANON) {
     Generate<RAW>(";");
-  } 
+  }
   else if(langAdditional == TYPEDEF) {
     if(elementIndex == ENUM) {
       Generate<RAW>(" %s_Enum;", textBuf);
@@ -438,7 +438,7 @@ void HeaderGenerator::MakeEnumStructUnionEndArray(const std::string& textBuf, In
 {
   if(specialType == ANON) {
     Generate<RAW>(";");
-  } 
+  }
   else if(langAdditional == TYPEDEF) {
     if(elementIndex == ENUM) {
       Generate<RAW>(" %s_Enum;", textBuf);
@@ -675,7 +675,7 @@ void HeaderGenerator::MakeDoxyCommentAddress(const std::string& text, uint32_t a
   }
   else {
     MakeDoxyComment(text);
-  }  
+  }
 }
 
 void HeaderGenerator::MakeDoxyCommentNumber(const std::string& text, uint32_t number)
@@ -690,7 +690,7 @@ void HeaderGenerator::MakeDoxyCommentNumber(const std::string& text, uint32_t nu
   }
   else {
     MakeDoxyComment(text);
-  }  
+  }
 }
 
 void HeaderGenerator::MakeDoxyComment(const std::string& text)
@@ -764,7 +764,7 @@ void HeaderGenerator::MakeFieldPosMask(const std::string& field, const std::stri
     GenerateH_CRTabOffset(HEADER_POSMAK_VAL_OFFSET);
     Generate<RAW>("(0x%02xUL << %s_%s_%s%s)", mask, peri, reg, field, m_definePosStr);
   }
-  else if(mask < 0xff)  {
+  else if(mask < 0xffff)  {
     Generate<DIRECT>("#define %s_%s_%s%s ", peri, reg, field, m_defineMaskStr);
     GenerateH_CRTabOffset(HEADER_POSMAK_VAL_OFFSET);
     Generate<RAW>("(0x%04xUL << %s_%s_%s%s)", mask, peri, reg, field, m_definePosStr);

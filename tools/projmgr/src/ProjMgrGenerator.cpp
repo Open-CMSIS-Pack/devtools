@@ -19,7 +19,7 @@
 using namespace std;
 
 static constexpr const char* SCHEMA_FILE = "CPRJ.xsd";    // XML schema file name
-static constexpr const char* SCHEMA_VERSION = "1.0.1";    // XML schema version
+static constexpr const char* SCHEMA_VERSION = "1.2.0";    // XML schema version
 
 
 ProjMgrGenerator::ProjMgrGenerator(void) {
@@ -175,6 +175,9 @@ void ProjMgrGenerator::GenerateCprjTarget(XMLTreeElement* element, const Context
     targetOutputElement->AddAttribute("intdir", context.directories.intdir);
     targetOutputElement->AddAttribute("outdir", context.directories.outdir);
     targetOutputElement->AddAttribute("rtedir", context.directories.rte);
+    for (const auto& [type, file] : context.outputFiles) {
+      targetOutputElement->AddAttribute(type, file, false);
+    }
   }
 
   GenerateCprjOptions(element, context.controls.processed);

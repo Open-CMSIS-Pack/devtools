@@ -1258,6 +1258,12 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Generator) {
   // Check generated CPRJs
   CompareFile(testoutput_folder + "/test-gpdsc.Debug+CM0.cprj",
     testinput_folder + "/TestGenerator/ref/test-gpdsc.Debug+CM0.cprj");
+
+  // Check generated cbuild YMLs
+  CompareFile(testoutput_folder + "/test-gpdsc.cbuild-idx.yml",
+    testinput_folder + "/TestGenerator/ref/test-gpdsc.cbuild-idx.yml");
+  CompareFile(testoutput_folder + "/test-gpdsc.Debug+CM0.cbuild.yml",
+    testinput_folder + "/TestGenerator/ref/test-gpdsc.Debug+CM0.cbuild.yml");
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_TargetOptions)
@@ -2745,4 +2751,39 @@ TEST_F(ProjMgrUnitTests, RunCheckForContext) {
     }
     it++;
   }
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgrOutputFiles) {
+  char* argv[5];
+  StdStreamRedirect streamRedirect;
+
+  // convert solution.yml
+  const string& csolution = testinput_folder + "/TestSolution/outputFiles.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"-o";
+  argv[4] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(1, RunProjMgr(5, argv));
+
+  // Check generated CPRJs
+  CompareFile(testoutput_folder + "/outputFiles.Debug+Target.cprj",
+    testinput_folder + "/TestSolution/ref/outputFiles.Debug+Target.cprj");
+  CompareFile(testoutput_folder + "/outputFiles.Library+Target.cprj",
+    testinput_folder + "/TestSolution/ref/outputFiles.Library+Target.cprj");
+
+  // Check generated cbuild YMLs
+  CompareFile(testoutput_folder + "/outputFiles.Debug+Target.cbuild.yml",
+    testinput_folder + "/TestSolution/ref/outputFiles.Debug+Target.cbuild.yml");
+  CompareFile(testoutput_folder + "/outputFiles.Library+Target.cbuild.yml",
+    testinput_folder + "/TestSolution/ref/outputFiles.Library+Target.cbuild.yml");
+
+  // Check error messages
+  const string expected = "\
+warning csolution: output 'lib' redefined from 'conflict.lib' to 'renaming_conflict.lib'\n\
+error csolution: output 'lib' is incompatible with other output types\n\
+error csolution: processing context 'outputFiles.Conflict\\+Target' failed\n\
+";
+
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_TRUE(regex_match(errStr, regex(expected)));
 }
