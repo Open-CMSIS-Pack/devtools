@@ -7,13 +7,16 @@
 >
 > While the CMSIS-Toolbox is already version 1.0.0 or higher, several aspects of the tools are still under review.  The sections that are market with `Proposal` are features that are not implemented or subject to change in the final implementation.  All other features are considered as stable and changes that are not upward compatible are avoided whenever possible.
 
-Manual Chapters                           | Content
-:-----------------------------------------|:-------------------------
-[Usage](#usage)                           | Overall Concept, tool setup, and invocation commands
-[Project Examples](#project-examples)     | Various example projects to get started
-[Project Structure](#project-structure)   | Overall structure of projects
-[YML Input Format](YML-Input-Format.md)   | Format of the various YML input files (`*.csolution.yml`, `*.cproject.yml`, `*.clayer.yml`, `*.cdefault.yml`)
-[YML CBuild Format](YML-CBuild-Format.md) | Format of the YML CBuild output file.
+Manual Chapters                                         | Content
+:-------------------------------------------------------|:-------------------------
+[Usage](#usage)                                         | Overall Concept, tool setup, and invocation commands.
+[Project Examples](#project-examples)                   | Various example projects to get started.
+[Project Structure](#project-structure)                 | Overall structure of projects.
+[YML Input Format](YML-Input-Format.md)                 | Format of the various YML input files (`*.csolution.yml`, `*.cproject.yml`, `*.clayer.yml`, `*.cdefault.yml`).
+[Linker Script Management](Linker-Script-Management.md) | Specify the available memory and control the linker operation.
+[Build Operation](Build-Operation.md)                   | Build process overview and toolchain interface for adding additional compilers.
+[YML CBuild Format](YML-CBuild-Format.md)               | Format of the YML CBuild output file.
+[Reference Application Framework](RefApp-Framework.md)  | Enables example projects that scale across many boards and production hardware.
 
 > **Note:**
 >
@@ -39,21 +42,18 @@ Manual Chapters                           | Content
     - [Minimal Project Setup](#minimal-project-setup)
     - [Compiler Agnostic Project](#compiler-agnostic-project)
     - [Software Layers](#software-layers)
+      - [Configuration Settings](#configuration-settings)
+      - [Software Layers in Packs](#software-layers-in-packs)
     - [Project Setup for Multiple Targets and Builds](#project-setup-for-multiple-targets-and-builds)
     - [Project Setup for Related Projects](#project-setup-for-related-projects)
   - [Project Structure](#project-structure)
     - [Working Areas](#working-areas)
     - [Project Area](#project-area)
     - [RTE Directory Structure](#rte-directory-structure)
-      - [Proposal](#proposal)
     - [Output Directory Structure](#output-directory-structure)
     - [Software Components](#software-components)
     - [PLM of Configuration Files](#plm-of-configuration-files)
     - [RTE\_Components.h](#rte_componentsh)
-  - [Proposals](#proposals)
-    - [CMSIS-Zone Integration](#cmsis-zone-integration)
-    - [CMSIS-Pack extensions](#cmsis-pack-extensions)
-      - [Layers in packs](#layers-in-packs)
 
 ## Revision History
 
@@ -359,11 +359,7 @@ project:
 
 ### Software Layers
 
-Software layers collect source files and software components along with configuration files for re-use in different projects as shown in the picture below. There are two ways to share configuration settings:
-
-- By default, the configuration files of a `layer` are store within the directory structure of the software layer. Projects can therefore share a `layer` with common configuration settings.
-
-- With [RTE directory settings](./YML-Input-Format.md#rte-dirs) that are specific to software component `Cclass` names it is possible partly share a common configuration across layers.
+Software layers collect source files and software components along with configuration files for re-use in different projects as shown in the picture below.
 
 ![Project Layers](./images/Layers.png "Project Layers")
 
@@ -376,6 +372,18 @@ An application could be composed of various layers, for example to compose an Io
 **Example:**
 
 The project [AWS_MQTT_MutualAuth_SW_Framework](https://github.com/Open-CMSIS-Pack/AWS_MQTT_MutualAuth_SW_Framework) provides an example for software layers.
+
+#### Configuration Settings
+
+A software layer is a set of source files and pre-configured software components that can be shared across multiple projects. For sharing the configuration settings of software components across multiple projects,
+the configuration files of a [`layer`](YML-Input-Format.md#layer) are stored within the directory structure of the software layer. This separate [RTE Directory Structure](#rte-directory-structure) allows that projects
+can share a `layer` with common configuration settings.
+
+#### Software Layers in Packs
+
+A collection of software layers can be stored in software packs using the element [`<csolution>`](todo-link). Using the `list layers` command it is possible to identify compatible software by iterating the [`layers:` - `type:`](YML-Input-Format.md#layers---type)
+ [`connections`](YML-Input-Format.md#connections).
+filter conditions to it. In combination with interfaces specifications, an interactive IDE should be able to display suitable layers that could be added to an application.
 
 ### Project Setup for Multiple Targets and Builds
 
@@ -591,15 +599,12 @@ Directory Structure                 | Content
 `<layer>/RTE/<Cclass>`              | Configurable files for each component `Cclass` have a common directory.
 `<layer>/RTE/<Cclass>/<device>`     | Configurable files for components that have a condition to a `device` are in a separate directory.
 
-The `<context-dir>` has the following format: `_<project-name>.<build-type>_<target-type>`.
+- For CMSIS-Toolbox 1.4 and before: The `<context-dir>` has the following format: `_<project-name>.<build-type>_<target-type>`.
+- With CMSIS-Toolbox 1.5 and later: The `<context-dir>` has the following format: `_<build-type>_<target-type>`.
 
-#### Proposal
-
-The default RTE directory structure can be modified with [`rte-dirs:`](YML-Input-Format.md#rte-dirs).
-This list node allows to specify for each software component `Cclass` the directory that should be used to partly share a common configuration across a `project:` or `layer:`.
-
-As CBuild no longer generates the `<context-dir>` it is required to align with naming conventions of other tools. MDK uses `_<build-type>_<target-type>` when a CPRJ file is imported.
-As fallback, Review if the `<context-dir>` can just have the same format as the `context` which is: `<project-name>.<build-type>_<target-type>`.
+> **Note:**
+>
+> CBuild does no longer generate the `<context-dir>` by default. It is therefore required to align the naming of `<context-dir>` with other tools (MDK, CMSIS-Pack-Eclipse, etc.) that support the CMSIS-Pack system.
 
 ### Output Directory Structure
 
@@ -731,46 +736,3 @@ to other components of the same software pack.
 #include "Net_Config_ETH_0.h"        // add the related configuration file for this component
 #endif
 ```
-
-## Proposals
-
-### CMSIS-Zone Integration
-
-Suggest to split this into two sections:
-
-- `resources:` to define the execution phases, memory regions and region splits, and peripherals. This section would be
-  in the `csolution.yml` file.
-- `requirements:` to define project requirements - effectively the partitioning of a system. It should be possible to
-  assign to the application all remaining resources.
-
-Add to the project the possibility to specify . The issue might be that the project files become overwhelming,
-alternative is to keep partitioning in separate files.
-
-```yml
-resources:
-  phases:    # define the life-time of a resource definition
-    - phase: Boot
-    - phase: OTA
-    - phase: Run
-
-  memories:              # specifies the required memory
-    - split: SRAM_NS
-      into:
-      - region: DATA_NS
-        size: 128k
-        permission: n
-      - region: DATA_BOOT
-        phase: Boot      # region life-time (should allow to specify multiple phases)
-        size: 128k
-    
-  peripherals:           # specifies the required peripherals
-    - peripheral: I2C0
-      permission: rw, s
-```
-
-### CMSIS-Pack extensions
-
-#### Layers in packs
-
-A layer is a set of pre-configured software components. It should be possible to store a layer in a pack and apply
-filter conditions to it. In combination with interfaces specifications, an interactive IDE should be able to display suitable layers that could be added to an application.
