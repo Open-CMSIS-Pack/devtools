@@ -161,14 +161,14 @@ public:
    * @param bCreateContent true to create XML content out of children
    * @return created XMLTreeElement
   */
-  XMLTreeElement* CreateXmlTreeElement(XMLTreeElement* parentElement, bool bCreateContent = true) const;
+  XMLTreeElement* CreateXmlTreeElement(XMLTreeElement* parentElement, bool bCreateContent = true) const override;
 
   /**
    * @brief process child elements of supplied XMLTreeElement to extract XML data and create RteItem children
    * @param xmlElement XMLTreeElement whose children to process
    * @return true if successful
   */
-  bool ProcessXmlChildren(XMLTreeElement* xmlElement);
+  bool ProcessXmlChildren(XMLTreeElement* xmlElement) override;
 
 protected:
   /**

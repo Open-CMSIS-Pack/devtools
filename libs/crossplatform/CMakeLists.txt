@@ -31,13 +31,6 @@ target_include_directories(CrossPlatform
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
   PRIVATE ./src/${CMAKE_SYSTEM_NAME})
 
-if(NOT EMSCRIPTEN AND
-   ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR
-    "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang"))
-# Add library to support std::filesystem
-  target_link_libraries(CrossPlatform PUBLIC stdc++fs)
-endif()
-
 if(UNIX)
   target_include_directories(CrossPlatform PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/win)
 elseif(WIN32)
