@@ -13,6 +13,7 @@
 #include "XMLTreeSlim.h"
 
 #include <algorithm>
+#include <iomanip>
 #include <iterator>
 #include <fstream>
 
