@@ -15,4 +15,10 @@ set_property(TARGET RteFsUtils PROPERTY
 
 target_include_directories(RteFsUtils PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-target_link_libraries(RteFsUtils PUBLIC RteUtils CrossPlatform)
+# Explicitly link with stdc++fs for GCC 8
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND
+   CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9)
+  target_link_libraries(RteFsUtils PUBLIC RteUtils CrossPlatform stdc++fs)
+else()
+  target_link_libraries(RteFsUtils PUBLIC RteUtils CrossPlatform)
+endif()
