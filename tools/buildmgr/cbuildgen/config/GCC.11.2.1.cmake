@@ -1,28 +1,34 @@
 # This file maps the CMSIS project options to toolchain settings.
 #
-#   - Applies to toolchain: GNU Toolchain for the Arm Architecture 11.2.1 (11.2-2022.02)
+#   - Applies to toolchain: GNU Toolchain for the Arm Architecture 11.2.1 (11.2-2022.02) and greater
 
 ############### EDIT BELOW ###############
 # Set base directory of toolchain
 set(TOOLCHAIN_ROOT)
 set(TOOLCHAIN_VERSION "11.2.1")
-set(PREFIX arm-none-eabi-)
-set(EXT)
 
 ############ DO NOT EDIT BELOW ###########
 
-set(TOOLCHAIN_STRING "GCC_TOOLCHAIN_${TOOLCHAIN_VERSION}")
-string(REPLACE "." "_" TOOLCHAIN_STRING ${TOOLCHAIN_STRING})
-if(DEFINED ENV{${TOOLCHAIN_STRING}})
-  cmake_path(SET ${TOOLCHAIN_STRING} "$ENV{${TOOLCHAIN_STRING}}")
-  message(STATUS "Using ${TOOLCHAIN_STRING}='${${TOOLCHAIN_STRING}}'")
-  set(TOOLCHAIN_ROOT "${${TOOLCHAIN_STRING}}")
+set(AS "as")
+set(CC "gcc")
+set(CXX "g++")
+set(OC "objcopy")
+
+if(DEFINED REGISTERED_TOOLCHAIN_ROOT)
+  set(TOOLCHAIN_ROOT "${REGISTERED_TOOLCHAIN_ROOT}")
+endif()
+if(DEFINED REGISTERED_TOOLCHAIN_VERSION)
+  set(TOOLCHAIN_VERSION "${REGISTERED_TOOLCHAIN_VERSION}")
 endif()
 
-set(AS ${TOOLCHAIN_ROOT}/${PREFIX}as${EXT})
-set(CC ${TOOLCHAIN_ROOT}/${PREFIX}gcc${EXT})
-set(CXX ${TOOLCHAIN_ROOT}/${PREFIX}g++${EXT})
-set(OC ${TOOLCHAIN_ROOT}/${PREFIX}objcopy${EXT})
+if(DEFINED TOOLCHAIN_ROOT)
+  set(PREFIX arm-none-eabi-)
+  set(EXT)
+  set(AS ${TOOLCHAIN_ROOT}/${PREFIX}${AS}${EXT})
+  set(CC ${TOOLCHAIN_ROOT}/${PREFIX}${CC}${EXT})
+  set(CXX ${TOOLCHAIN_ROOT}/${PREFIX}${CXX}${EXT})
+  set(OC ${TOOLCHAIN_ROOT}/${PREFIX}${OC}${EXT})
+endif()
 
 # Helpers
 
@@ -241,13 +247,14 @@ else()
 endif()
 
 set (CC_SYS_INC_PATHS_LIST
-  "${TOOLCHAIN_ROOT}/../lib/gcc/arm-none-eabi/${TOOLCHAIN_VERSION}/include"
-  "${TOOLCHAIN_ROOT}/../lib/gcc/arm-none-eabi/${TOOLCHAIN_VERSION}/include-fixed"
-  "${TOOLCHAIN_ROOT}/../arm-none-eabi/include"
+  "$\{TOOLCHAIN_ROOT}/../lib/gcc/arm-none-eabi/\${TOOLCHAIN_VERSION}/include"
+  "$\{TOOLCHAIN_ROOT}/../lib/gcc/arm-none-eabi/\${TOOLCHAIN_VERSION}/include-fixed"
+  "$\{TOOLCHAIN_ROOT}/../arm-none-eabi/include"
 )
-foreach(ENTRY ${CC_SYS_INC_PATHS_LIST})
-  string(APPEND CC_SYS_INC_PATHS "${_ISYS}\"${ENTRY}\" ")
-endforeach()
+function(cbuild_get_c_system_includes includes)
+  cbuild_get_system_includes(CC_SYS_INC_PATHS_LIST ${includes})
+  set(${includes} ${${includes}} PARENT_SCOPE)
+endfunction()
 
 # C++ Compiler
 
@@ -260,14 +267,15 @@ set(CXX_OPTIONS_FLAGS)
 cbuild_set_options_flags(CXX "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" CXX_OPTIONS_FLAGS)
 
 set (CXX_SYS_INC_PATHS_LIST
-  "${TOOLCHAIN_ROOT}/../arm-none-eabi/include/c++/${TOOLCHAIN_VERSION}"
-  "${TOOLCHAIN_ROOT}/../arm-none-eabi/include/c++/${TOOLCHAIN_VERSION}/arm-none-eabi"
-  "${TOOLCHAIN_ROOT}/../arm-none-eabi/include/c++/${TOOLCHAIN_VERSION}/backward"
+  "$\{TOOLCHAIN_ROOT}/../arm-none-eabi/include/c++/\${TOOLCHAIN_VERSION}"
+  "$\{TOOLCHAIN_ROOT}/../arm-none-eabi/include/c++/\${TOOLCHAIN_VERSION}/arm-none-eabi"
+  "$\{TOOLCHAIN_ROOT}/../arm-none-eabi/include/c++/\${TOOLCHAIN_VERSION}/backward"
   "${CC_SYS_INC_PATHS_LIST}"
 )
-foreach(ENTRY ${CXX_SYS_INC_PATHS_LIST})
-  string(APPEND CXX_SYS_INC_PATHS "${_ISYS}\"${ENTRY}\" ")
-endforeach()
+function(cbuild_get_cxx_system_includes includes)
+  cbuild_get_system_includes(CXX_SYS_INC_PATHS_LIST ${includes})
+  set(${includes} ${${includes}} PARENT_SCOPE)
+endfunction()
 
 # Linker
 
@@ -297,6 +305,7 @@ set (ELF2BIN -O binary "${OUT_DIR}/$<TARGET_PROPERTY:${TARGET},OUTPUT_NAME>$<TAR
 # Set CMake variables for toolchain initialization
 set(CMAKE_SYSTEM_NAME Generic)
 set(CMAKE_CROSSCOMPILING TRUE)
+set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 set(CMAKE_ASM_COMPILER "${CC}")
 set(CMAKE_AS_LEG_COMPILER "${AS}")
 set(CMAKE_AS_GNU_COMPILER "${CC}")
@@ -304,16 +313,3 @@ set(CMAKE_C_COMPILER "${CC}")
 set(CMAKE_CXX_COMPILER "${CXX}")
 set(CMAKE_OBJCOPY "${OC}")
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/CMakeASM")
-
-# Set CMake variables for skipping compiler identification
-set(CMAKE_ASM_COMPILER_FORCED TRUE)
-set(CMAKE_C_COMPILER_ID "GNU")
-set(CMAKE_C_COMPILER_ID_RUN TRUE)
-set(CMAKE_C_COMPILER_VERSION "${TOOLCHAIN_VERSION}")
-set(CMAKE_C_COMPILER_FORCED TRUE)
-set(CMAKE_C_COMPILER_WORKS TRUE)
-set(CMAKE_CXX_COMPILER_ID "${CMAKE_C_COMPILER_ID}")
-set(CMAKE_CXX_COMPILER_ID_RUN "${CMAKE_C_COMPILER_ID_RUN}")
-set(CMAKE_CXX_COMPILER_VERSION "${CMAKE_C_COMPILER_VERSION}")
-set(CMAKE_CXX_COMPILER_FORCED "${CMAKE_C_COMPILER_FORCED}")
-set(CMAKE_CXX_COMPILER_WORKS "${CMAKE_C_COMPILER_WORKS}")

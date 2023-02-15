@@ -25,7 +25,7 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
 
   cmakelists << "# CMSIS Build CMakeLists generated on " << CbuildUtils::GetLocalTimestamp() << EOL << EOL;
 
-  cmakelists << "cmake_minimum_required(VERSION 3.18)" << EOL << EOL;
+  cmakelists << "cmake_minimum_required(VERSION 3.22)" << EOL << EOL;
 
   cmakelists << "# Target options" << EOL;
 
@@ -383,17 +383,42 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
 
   // Toolchain config
   cmakelists << "# Toolchain config map" << EOL << EOL;
-  cmakelists << "include (\"" << m_toolchainConfig << "\")" << EOL << EOL;
+  if (!m_toolchainRegisteredRoot.empty()) {
+    cmakelists << "set(REGISTERED_TOOLCHAIN_ROOT \"" << m_toolchainRegisteredRoot << "\")" << EOL;
+    cmakelists << "set(REGISTERED_TOOLCHAIN_VERSION \"" << m_toolchainRegisteredVersion << "\")" << EOL;
+  }
+  const string& toolchainVersionMin = RteUtils::GetPrefix(m_toolchainVersion);
+  if (!toolchainVersionMin.empty()) {
+    cmakelists << "set(TOOLCHAIN_VERSION_MIN \"" << toolchainVersionMin << "\")" << EOL;
+  }
+  const string& toolchainVersionMax = RteUtils::GetSuffix(m_toolchainVersion);
+  if (!toolchainVersionMax.empty()) {
+    cmakelists << "set(TOOLCHAIN_VERSION_MAX \"" << toolchainVersionMax << "\")" << EOL;
+  }
+  cmakelists << "include (\"" << m_toolchainConfig << "\")" << EOL;
+  cmakelists << "include (\"" << m_compilerRoot + "/CMSIS-Build-Utils.cmake" << "\")" << EOL << EOL;
 
   // Setup project
+  vector<string> languages;
+  for (auto list : asFilesLists) {
+    if (!list.second.empty()) {
+      languages.push_back(list.first);
+    }
+  }
+  if (!m_ccFilesList.empty()) {
+    languages.push_back("C");
+  }
+  if (!m_cxxFilesList.empty()) {
+    languages.push_back("CXX");
+  }
   cmakelists << "# Setup project" << EOL << EOL;
   cmakelists << "project(${TARGET} LANGUAGES";
-  for (auto list : asFilesLists) {
-    if (!list.second.empty()) cmakelists << " " << list.first;
+  for (auto language : languages) {
+    cmakelists << " " << language;
   }
-  if (!m_ccFilesList.empty())   cmakelists << " C";
-  if (!m_cxxFilesList.empty())  cmakelists << " CXX";
   cmakelists << ")" << EOL << EOL;
+
+  cmakelists << "cbuild_get_running_toolchain(TOOLCHAIN_ROOT TOOLCHAIN_VERSION " << languages.back() << ")" << EOL << EOL;
 
   // Set global flags
   cmakelists << "# Global Flags" << EOL << EOL;
@@ -412,6 +437,7 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
     }
   }
   if (!m_ccFilesList.empty()) {
+    cmakelists << "cbuild_get_system_includes(CC_SYS_INC_PATHS_LIST CC_SYS_INC_PATHS)" << EOL;
     cmakelists << "set(CMAKE_C_FLAGS \"${CC_CPU}";
     if (!m_byteOrder.empty()) cmakelists << " ${CC_BYTE_ORDER}";
     if (!m_definesList.empty()) cmakelists << " ${CC_DEFINES}";
@@ -424,6 +450,7 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
     cmakelists << "\")" << EOL;
   }
   if (!m_cxxFilesList.empty()) {
+    cmakelists << "cbuild_get_system_includes(CXX_SYS_INC_PATHS_LIST CXX_SYS_INC_PATHS)" << EOL;
     cmakelists << "set(CMAKE_CXX_FLAGS \"${CXX_CPU}";
     if (!m_byteOrder.empty()) cmakelists << " ${CXX_BYTE_ORDER}";
     if (!m_definesList.empty()) cmakelists << " ${CXX_DEFINES}";

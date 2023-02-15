@@ -90,9 +90,10 @@ public:
    * @param model pointer to valid RTE Model containing build information
    * @param outdir string path to output directory
    * @param intdir string path to intermediate directory
+   * @param compilerRoot string path to compiler configuration directory
    * @return
   */
-  bool Collect(const std::string& inputFile, const CbuildModel *model, const std::string& outdir, const std::string& intdir);
+  bool Collect(const std::string& inputFile, const CbuildModel *model, const std::string& outdir, const std::string& intdir, const std::string& compilerRoot);
 
   /**
    * @brief generate log file with packages, components and config files information
@@ -121,6 +122,7 @@ protected:
   std::string m_projectName;
   std::string m_outdir;
   std::string m_intdir;
+  std::string m_compilerRoot;
   std::string m_targetCpu;
   std::string m_targetFpu;
   std::string m_targetDsp;
@@ -142,7 +144,10 @@ protected:
   std::string m_linkerCxxMscGlobal;
   std::string m_linkerScript;
   std::string m_toolchain;
+  std::string m_toolchainVersion;
   std::string m_toolchainConfig;
+  std::string m_toolchainRegisteredRoot;
+  std::string m_toolchainRegisteredVersion;
   std::string m_auditData;
   bool m_asTargetAsm = false;
 
