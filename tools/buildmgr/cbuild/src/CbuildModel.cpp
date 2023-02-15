@@ -418,7 +418,9 @@ bool CbuildModel::GetCompatibleToolchain(const string& name, const string& versi
   map<string, map<string, string>> toolchains;
   for (const auto& envVar : envVars) {
     smatch sm;
-    regex_match(envVar, sm, regex("(\\w+)_TOOLCHAIN_(\\d+)\\_(\\d+)\\_(\\d+)=(.*)"));
+    try {
+      regex_match(envVar, sm, regex("(\\w+)_TOOLCHAIN_(\\d+)\\_(\\d+)\\_(\\d+)=(.*)"));
+    } catch (exception&) {};
     if (sm.size() == 6) {
       toolchains[sm[1]][string(sm[2])+'.'+string(sm[3])+'.'+string(sm[4])] = sm[5];
     }
@@ -477,7 +479,9 @@ bool CbuildModel::GetToolchainConfig(const set<fs::directory_entry>& files, cons
   for (const auto& p : files) {
     smatch sm;
     const string& stem = p.path().stem().generic_string();
-    regex_match(stem, sm, regex("(\\w+)\\.(\\d+\\.\\d+\\.\\d+)"));
+    try {
+      regex_match(stem, sm, regex("(\\w+)\\.(\\d+\\.\\d+\\.\\d+)"));
+    } catch (exception&) {};
     if (sm.size() == 3) {
       const string& configName = sm[1];
       const string& configVersion = sm[2];
