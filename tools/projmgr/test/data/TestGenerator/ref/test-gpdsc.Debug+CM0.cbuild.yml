@@ -17,7 +17,7 @@ build:
     - ../data/TestGenerator/RTE/_Debug_CM0
   output-type: exe
   output-dirs:
-    gendir: ../data/TestGenerator/generated
+    gendir: ../data/TestGenerator
     intdir: tmp/test-gpdsc/CM0/Debug
     outdir: out/test-gpdsc/CM0/Debug
     rtedir: ../data/TestGenerator/RTE

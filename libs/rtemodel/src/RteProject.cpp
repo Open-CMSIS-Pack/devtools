@@ -362,12 +362,9 @@ RteComponentInstance* RteProject::AddCprjComponent(RteItem* item, RteTarget* tar
   } else {
     id = ci->ConstructID();
   }
-  string layer = item->GetAttribute("layer");
-  if (!layer.empty())
-    ci->AddAttribute("layer", layer);
-  string rtePath = item->GetAttribute("rtedir");
-  if (!rtePath.empty())
-    ci->AddAttribute("rtedir", rtePath);
+  ci->AddAttribute("layer", item->GetAttribute("layer"), false);
+  ci->AddAttribute("rtedir", item->GetAttribute("rtedir"), false);
+  ci->AddAttribute("gendir", item->GetAttribute("gendir"), false);
   m_components[id] = ci;
   return ci;
 }

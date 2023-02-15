@@ -1266,6 +1266,34 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Generator) {
     testinput_folder + "/TestGenerator/ref/test-gpdsc.Debug+CM0.cbuild.yml");
 }
 
+TEST_F(ProjMgrUnitTests, RunProjMgr_GeneratorLayer) {
+  char* argv[5];
+  // run generator
+  const string& csolution = testinput_folder + "/TestGenerator/test-gpdsc-layer.csolution.yml";
+  argv[1] = (char*)"run";
+  argv[2] = (char*)"-g";
+  argv[3] = (char*)"RteTestGeneratorIdentifier";
+  argv[4] = (char*)csolution.c_str();
+
+  const string& hostType = CrossPlatformUtils::GetHostType();
+  if (shouldHaveGeneratorForHostType(hostType)) {
+    EXPECT_EQ(0, RunProjMgr(5, argv));
+
+    // convert solution
+    argv[1] = (char*)"convert";
+    argv[2] = (char*)csolution.c_str();
+    argv[3] = (char*)"-o";
+    argv[4] = (char*)testoutput_folder.c_str();
+    EXPECT_EQ(0, RunProjMgr(5, argv));
+
+    // Check generated CPRJs
+    CompareFile(testoutput_folder + "/test-gpdsc-layer.Debug+CM0.cprj",
+      testinput_folder + "/TestGenerator/ref/test-gpdsc-layer.Debug+CM0.cprj");
+  } else {
+    EXPECT_EQ(1, RunProjMgr(5, argv));
+  }
+}
+
 TEST_F(ProjMgrUnitTests, RunProjMgr_TargetOptions)
 {
   char *argv[7];

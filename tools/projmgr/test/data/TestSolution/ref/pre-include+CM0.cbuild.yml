@@ -24,7 +24,7 @@ build:
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
   output-type: exe
   output-dirs:
-    gendir: ../data/TestSolution/generated
+    gendir: ../data/TestSolution
     intdir: tmp/pre-include/CM0
     outdir: out/pre-include/CM0
     rtedir: ../data/TestSolution/RTE

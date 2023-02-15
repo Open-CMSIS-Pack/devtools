@@ -101,7 +101,6 @@ bool ProjMgrWorker::AddContext(ProjMgrParser& parser, ContextDesc& descriptor, c
     context.directories.intdir = "tmp/" + context.cproject->name + (type.target.empty() ? "" : "/" + type.target) + (type.build.empty() ? "" : "/" + type.build);
     context.directories.outdir = "out/" + context.cproject->name + (type.target.empty() ? "" : "/" + type.target) + (type.build.empty() ? "" : "/" + type.build);
     error_code ec;
-    context.directories.gendir = fs::relative(context.cproject->directory + "/generated", context.csolution->directory, ec).generic_string();
     context.directories.rte = fs::relative(context.cproject->directory + "/RTE", context.csolution->directory, ec).generic_string();
 
     // customized directories
@@ -1309,8 +1308,33 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
         matchedComponentInstance->AddAttribute("rtedir", rteDir);
       }
 
+      // Get generator
+      RteGenerator* generator = matchedComponent->GetGenerator();
+      const string generatorId = generator ? generator->GetID() : "";
+      if (generator) {
+        context.generators.insert({ generatorId, generator });
+
+        string genDir;
+        error_code ec;
+        if (!context.csolution->directories.gendir.empty()) {
+          // custom gendir
+          genDir = context.directories.gendir;
+        } else {
+          // original working dir
+          genDir = fs::relative(generator->GetExpandedWorkingDir(context.rteActiveTarget), context.cproject->directory, ec).generic_string();
+          if (!layer.empty()) {
+            // component belongs to layer
+            genDir = fs::relative(fs::path(context.clayers[layer]->directory).append(genDir), context.cproject->directory, ec).generic_string();
+          }
+        }
+        matchedComponentInstance->AddAttribute("gendir", genDir);
+
+        const string& gpdsc = fs::weakly_canonical(generator->GetExpandedGpdsc(context.rteActiveTarget, genDir), ec).generic_string();
+        context.gpdscs.insert({ gpdsc, {componentId, generatorId, genDir} });
+      }
+
       // Insert matched component into context list
-      context.components.insert({ componentId, { matchedComponentInstance, &item }});
+      context.components.insert({ componentId, { matchedComponentInstance, &item, generatorId }});
       const auto& componentPackage = matchedComponent->GetPackage();
       context.packages.insert({ ProjMgrUtils::GetPackageID(componentPackage), componentPackage });
       if (matchedComponent->HasApi(context.rteActiveTarget)) {
@@ -1320,19 +1344,6 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
           context.packages.insert({ ProjMgrUtils::GetPackageID(apiPackage), apiPackage });
         }
       }
-    }
-  }
-
-  // Get generators
-  for (auto& [componentId, component] : context.components) {
-    RteGenerator* generator = component.instance->GetParent()->GetComponent()->GetGenerator();
-    if (generator) {
-      const string generatorId = generator->GetID();
-      component.generator = generatorId;
-      context.generators.insert({ generatorId, generator });
-      error_code ec;
-      const string gpdsc = fs::weakly_canonical(generator->GetExpandedGpdsc(context.rteActiveTarget), ec).generic_string();
-      context.gpdscs.insert({ gpdsc, {componentId, generatorId} });
     }
   }
 
@@ -1534,8 +1545,8 @@ bool ProjMgrWorker::ProcessGpdsc(ContextItem& context) {
     error_code ec;
     const string gpdscFile = fs::weakly_canonical(file, ec).generic_string();
     if (!ProjMgrUtils::ReadGpdscFile(gpdscFile, gpdscModel.get())) {
-      ProjMgrLogger::Error(gpdscFile, "generator '" + context.gpdscs.at(gpdscFile).second +
-        "' from component '" + context.gpdscs.at(gpdscFile).first + "': reading gpdsc failed");
+      ProjMgrLogger::Error(gpdscFile, "generator '" + context.gpdscs.at(gpdscFile).generator +
+        "' from component '" + context.gpdscs.at(gpdscFile).component + "': reading gpdsc failed");
       gpdscModel.reset();
       return false;
     } else {
@@ -2705,9 +2716,11 @@ bool ProjMgrWorker::ExecuteGenerator(std::string& generatorId) {
     RteGenerator* generator = generators.at(generatorId);
 
     // Create generate.yml file with context info and destination
-    string generatorDestination = context.directories.gendir;
-    if (generatorDestination.empty()) {
-      generatorDestination = generator->GetExpandedWorkingDir(context.rteActiveTarget);  // Fallback to working dir if no specific generator directory was specified
+    string generatorDestination;
+    for (const auto& [gpdsc, item] : context.gpdscs) {
+      if (item.generator == generatorId) {
+        generatorDestination = item.workingDir;
+      }
     }
 
     // Make sure the generatorDestination is absolute

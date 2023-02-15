@@ -159,16 +159,18 @@ public:
   /**
    * @brief get absolute path to gpdsc file for specified target
    * @param target pointer to RteTarget
+   * @param optional generator destination directory
    * @return absolute gpdsc filename
   */
-  std::string GetExpandedGpdsc(RteTarget* target) const;
+  std::string GetExpandedGpdsc(RteTarget* target, const std::string& genDir = EMPTY_STRING) const;
 
   /**
    * @brief get absolute path to working directory for specified target
    * @param target pointer to RteTarget
+   * @param optional generator destination directory
    * @return absolute path to working directory
   */
-  std::string GetExpandedWorkingDir(RteTarget* target) const;
+  std::string GetExpandedWorkingDir(RteTarget* target, const std::string& genDir = EMPTY_STRING) const;
 
   /**
    * @brief get command line for a web application with expanded key sequences
