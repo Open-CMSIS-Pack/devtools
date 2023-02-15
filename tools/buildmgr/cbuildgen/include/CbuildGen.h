@@ -18,8 +18,9 @@ public:
    * @brief entry point for running cbuildgen
    * @param argc command line argument count
    * @param argv command line argument vector
+   * @param envp environment variables
   */
-  static int RunCbuildGen(int argc, char** argv);
+  static int RunCbuildGen(int argc, char** argv, char** envp);
 
 protected:
   /**

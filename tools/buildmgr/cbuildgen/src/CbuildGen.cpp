@@ -16,6 +16,8 @@
 #include "ErrLog.h"
 #include "ErrOutputterSaveToStdoutOrFile.h"
 
+#include <regex>
+
 using namespace std;
 
 static constexpr const char* USAGE = "\n\
@@ -67,7 +69,7 @@ void CbuildGen::ShowVersion(void) {
   LogMsg("M022", VAL("EXE", ORIGINAL_FILENAME), VAL("VER", VERSION_STRING), TXT(COPYRIGHT_NOTICE));
 }
 
-int CbuildGen::RunCbuildGen(int argc, char **argv) {
+int CbuildGen::RunCbuildGen(int argc, char **argv, char** envp) {
   bool cmdlineErr = false;
   CbuildGen console;
 
@@ -120,7 +122,7 @@ int CbuildGen::RunCbuildGen(int argc, char **argv) {
   string cprjFilePath, intDirPath, outDirPath, projectName, projectDesc;
   string toolchainPath, updateCPRJ, packRootPath, compilerRootPath, exceptPath;
   vector<string> posArgs;
-  list<string> layerIDs;
+  vector<string> layerIDs;
   bool updateRteFiles = false;
 
   try {
@@ -311,10 +313,16 @@ int CbuildGen::RunCbuildGen(int argc, char **argv) {
     }
   }
 
-  list<string> layers(params.begin(), params.end());
+  // environment variables;
+  vector<string> envVars;
+  for (char** env = envp; *env != 0; env++) {
+    envVars.push_back(string(*env));
+  }
+
+  vector<string> layers(params.begin(), params.end());
   // Run layer command
   int cmd = extractLayer ? L_EXTRACT : composeLayer ? L_COMPOSE : addLayer ? L_ADD : removeLayer ? L_REMOVE : 0;
-  list<string>* pLayer = NULL;
+  vector<string>* pLayer = NULL;
   switch (cmd) {
   case L_EXTRACT:
   case L_REMOVE:
@@ -327,7 +335,7 @@ int CbuildGen::RunCbuildGen(int argc, char **argv) {
   }
 
   if (cmd != 0) {
-    if (RunLayer(cmd, { cprjFilePath, packRootPath, compilerRootPath, *pLayer, projectName, projectDesc, outDirPath })) {
+    if (RunLayer(cmd, { cprjFilePath, packRootPath, compilerRootPath, *pLayer, envVars, projectName, projectDesc, outDirPath })) {
       // layer command run successfully
       LogMsg("M650");
       return 0;
@@ -338,7 +346,7 @@ int CbuildGen::RunCbuildGen(int argc, char **argv) {
     }
   }
 
-  if ((cmakeMode || packMode) && (!CreateRte({ cprjFilePath, packRootPath, compilerRootPath, toolchainPath, CMEXT, updateCPRJ, intDirPath, packMode, updateRteFiles }))) {
+  if ((cmakeMode || packMode) && (!CreateRte({ cprjFilePath, packRootPath, compilerRootPath, toolchainPath, updateCPRJ, intDirPath, envVars, packMode, updateRteFiles }))) {
     // CreateRte failed
     return 1;
   }
@@ -355,7 +363,7 @@ int CbuildGen::RunCbuildGen(int argc, char **argv) {
   if (cmakeMode) {
     // Create CMakeListsGenerator instance and collect data
     CMakeListsGenerator instance;
-    if (!instance.Collect(cprjFilePath, model, outDirPath, intDirPath)) {
+    if (!instance.Collect(cprjFilePath, model, outDirPath, intDirPath, compilerRootPath)) {
       return 1;
     }
     if (instance.GenBuildCMakeLists()) {

@@ -189,6 +189,24 @@ public:
   }
 
   /**
+   * @brief get path to toolchain registered root
+   * @return string containing fully qualified path to toolchain root
+  */
+  const std::string& GetToolchainRegisteredRoot() const
+  {
+    return m_toolchainRegisteredRoot;
+  }
+
+  /**
+   * @brief get toolchain registered version
+   * @return string containing toolchain registered version
+  */
+  const std::string& GetToolchainRegisteredVersion() const
+  {
+    return m_toolchainRegisteredVersion;
+  }
+
+  /**
    * @brief get path to toolchain config file
    * @return string containing fully qualified path to toolchain config
   */
@@ -491,6 +509,8 @@ protected:
   std::string            m_targetName;
   std::string            m_deviceName;
   std::string            m_toolchainConfigVersion;
+  std::string            m_toolchainRegisteredVersion;
+  std::string            m_toolchainRegisteredRoot;
 
   std::map<std::string, std::string>                m_configFiles;
   std::map<std::string, std::list<std::string>>     m_cSourceFiles;
@@ -562,8 +582,9 @@ protected:
   const std::vector<std::string>& GetParentTranslationControls(const RteItem* item, std::map<std::string, std::vector<std::string>>& transCtrlMap, const std::vector<std::string>& targetTransCtrls);
   bool GenerateAuditData();
   bool GenerateFixedCprj(const std::string& update);
-  bool EvaluateToolchainConfig(const std::string& name, const std::string& versionRange, const std::string& localPath, const std::string& compilerRoot, const std::string& ext);
-  bool GetCompatibleToolchain(const std::string& name, const std::string& versionRange, const std::string& dir, const std::string& ext);
+  bool EvaluateToolchainConfig(const std::string& name, const std::string& versionRange, const std::vector<std::string>& envVars, const std::string& compilerRoot);
+  bool GetCompatibleToolchain(const std::string& name, const std::string& versionRange, const std::string& dir, const std::vector<std::string>& envVars);
+  bool GetToolchainConfig(const std::set<fs::directory_entry>& files, const std::string& name, const std::string& version);
   std::vector<std::string> SplitArgs(const std::string& args, const std::string& delim=std::string(" -"), bool relativePath=true);
   static std::vector<std::string> MergeArgs(const std::vector<std::string>& add, const std::vector<std::string>& remove, const std::vector<std::string>& reference, bool front = false);
   static std::string GetExtendedRteGroupName(RteItem* ci, const std::string& rteFolder);

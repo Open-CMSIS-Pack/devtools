@@ -7,9 +7,9 @@
 #ifndef CBUILD_H
 #define CBUILD_H
 
-#include <list>
 #include <map>
 #include <string>
+#include <vector>
 
 // CMSIS Layer commands
 #define L_EXTRACT 1
@@ -26,9 +26,9 @@ struct CbuildRteArgs
   const std::string &rtePath;
   const std::string &compilerRoot;
   const std::string &toolchain;
-  const std::string &ext;
   const std::string &update;
   const std::string &intDir;
+  const std::vector<std::string> &envVars;
   const bool checkPack;
   const bool updateRteFiles;
 };
@@ -41,7 +41,8 @@ struct CbuildLayerArgs
   const std::string &file;
   const std::string &rtePath;
   const std::string &compilerRoot;
-  const std::list<std::string> &layerFiles;
+  const std::vector<std::string> &layerFiles;
+  const std::vector<std::string> &envVars;
   const std::string& name;
   const std::string& description;
   const std::string& output;

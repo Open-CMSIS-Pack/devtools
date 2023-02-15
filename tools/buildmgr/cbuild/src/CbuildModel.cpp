@@ -112,7 +112,7 @@ bool CbuildModel::Create(const CbuildRteArgs& args) {
   // find toolchain configuration file
   m_compiler = m_cprjProject->GetToolchain();
   m_compilerVersion = m_cprjProject->GetToolchainVersion();
-  if (!EvaluateToolchainConfig(m_compiler, m_compilerVersion, m_prjFolder, args.compilerRoot, args.ext))
+  if (!EvaluateToolchainConfig(m_compiler, m_compilerVersion, args.envVars, args.compilerRoot))
     return false;
 
   // evaluate device name
@@ -397,17 +397,14 @@ bool CbuildModel::GenerateRteHeaders() {
   return m_cprjTarget ? m_cprjTarget->GenerateRteHeaders() : false;
 }
 
-bool CbuildModel::EvaluateToolchainConfig(const string& name, const string& versionRange, const string& localPath, const string& compilerRoot, const string& ext) {
+bool CbuildModel::EvaluateToolchainConfig(const string& name, const string& versionRange, const vector<string>& envVars, const string& compilerRoot) {
   /*
   EvaluateToolchain:
   Search for compatible toolchain configuration file
   */
 
-  // Search order: first in the project folder, then in the compiler root
-  if (GetCompatibleToolchain(name, versionRange, localPath, ext)) {
-    return true;
-  }
-  if (GetCompatibleToolchain(name, versionRange, compilerRoot, ext)) {
+  // Search registered toolchains and config files in the compiler root
+  if (GetCompatibleToolchain(name, versionRange, compilerRoot, envVars)) {
     return true;
   }
 
@@ -416,48 +413,90 @@ bool CbuildModel::EvaluateToolchainConfig(const string& name, const string& vers
   return false;
 }
 
-bool CbuildModel::GetCompatibleToolchain(const string& name, const string& versionRange, const string& dir, const string& ext) {
-  /*
-  GetCompatibleToolchain:
-  Returns compatible toolchain configuration file in a given directory
-  */
-  error_code ec;
-  if (!fs::exists(dir, ec)) {
+bool CbuildModel::GetCompatibleToolchain(const string& name, const string& versionRange, const string& dir, const vector<string>& envVars) {
+  // extract toolchain info from environment variables
+  map<string, map<string, string>> toolchains;
+  for (const auto& envVar : envVars) {
+    smatch sm;
+    regex_match(envVar, sm, regex("(\\w+)_TOOLCHAIN_(\\d+)\\_(\\d+)\\_(\\d+)=(.*)"));
+    if (sm.size() == 6) {
+      toolchains[sm[1]][string(sm[2])+'.'+string(sm[3])+'.'+string(sm[4])] = sm[5];
+    }
+  }
+
+  // get toolchain configuration files
+  if (!RteFsUtils::Exists(dir)) {
     return false;
   }
-
-  // Get file list, Filter and sort
-  set<fs::directory_entry> localset;
+  set<fs::directory_entry> toolchainConfigFiles;
+  error_code ec;
   for (auto const& dir_entry : fs::recursive_directory_iterator(dir, ec)) {
     string extn = dir_entry.path().extension().string();
-    if (dir_entry.path().extension().string() != ext) {
+    if (dir_entry.path().extension().string() != CMEXT) {
       continue;
     }
-    localset.insert(dir_entry);
+    toolchainConfigFiles.insert(dir_entry);
   }
 
-  bool found = false;
-  string selectedVersion, selectedConfig;
-  for (const auto& p : localset) {
-    // For every file get toolchain name and version
-    const string& compiler = p.path().stem().generic_string();
-    const string& fname = compiler.substr(0, compiler.find_first_of("."));
-    const string& version = compiler.substr(compiler.find_first_of(".") + 1, compiler.length());
-    if ((fname.compare(name) == 0) &&
-      (VersionCmp::RangeCompare(version, versionRange) == 0) &&
-      (VersionCmp::Compare(selectedVersion, version) <= 0))
-    {
-      selectedVersion = version;
-      selectedConfig = p.path().string();
-      found = true;
+  // find compatible registered version
+  string selectedVersion;
+  for (const auto& [toolchainName, versions] : toolchains) {
+    if (toolchainName.compare(name) == 0) {
+      for (const auto& [version, root] : versions) {
+        if ((VersionCmp::RangeCompare(version, versionRange) == 0) &&
+          (VersionCmp::Compare(selectedVersion, version) <= 0)) {
+          if (RteFsUtils::Exists(root)) {
+            // check whether a config file is available for the registered version
+            if (GetToolchainConfig(toolchainConfigFiles, toolchainName, RteUtils::GetPrefix(versionRange) + ':' + version)) {
+              selectedVersion = version;
+            }
+          }
+        }
+      }
     }
   }
-  if (found) {
+
+  if (selectedVersion.empty()) {
+    // no compatible registered toolchain was found, search for a suitable config file
+    if (GetToolchainConfig(toolchainConfigFiles, name, versionRange)) {
+      return true;
+    }
+  } else {
+    // registered toolchain was found
+    m_toolchainRegisteredVersion = selectedVersion;
+    m_toolchainRegisteredRoot = toolchains[name][selectedVersion];
+    RteFsUtils::NormalizePath(m_toolchainRegisteredRoot);
+    return true;
+  }
+  return false;
+}
+
+bool CbuildModel::GetToolchainConfig(const set<fs::directory_entry>& files, const string& name, const string& version) {
+  // find compatible toolchain configuration file
+  string selectedVersion, selectedConfig;
+  for (const auto& p : files) {
+    smatch sm;
+    const string& stem = p.path().stem().generic_string();
+    regex_match(stem, sm, regex("(\\w+)\\.(\\d+\\.\\d+\\.\\d+)"));
+    if (sm.size() == 3) {
+      const string& configName = sm[1];
+      const string& configVersion = sm[2];
+      if ((configName.compare(name) == 0) &&
+        (VersionCmp::RangeCompare(configVersion, version) <= 0) &&
+        (VersionCmp::Compare(selectedVersion, configVersion) <= 0))
+      {
+        selectedVersion = configVersion;
+        selectedConfig = p.path().generic_string();
+      }
+    }
+  }
+  if (!selectedVersion.empty()) {
     RteFsUtils::NormalizePath(selectedConfig);
     m_toolchainConfig = selectedConfig;
     m_toolchainConfigVersion = selectedVersion;
+    return true;
   }
-  return found;
+  return false;
 }
 
 bool CbuildModel::EvalPreIncludeFiles() {

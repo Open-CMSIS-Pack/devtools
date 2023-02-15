@@ -1,27 +1,33 @@
 # This file maps the CMSIS project options to toolchain settings.
 #
-#   - Applies to toolchain: ARM Compiler 6.18
+#   - Applies to toolchain: ARM Compiler 6.18 and greater
 
 ############### EDIT BELOW ###############
 # Set base directory of toolchain
 set(TOOLCHAIN_ROOT)
 set(TOOLCHAIN_VERSION "6.18.0")
-set(EXT)
 
 ############ DO NOT EDIT BELOW ###########
 
-set(TOOLCHAIN_STRING "AC6_TOOLCHAIN_${TOOLCHAIN_VERSION}")
-string(REPLACE "." "_" TOOLCHAIN_STRING ${TOOLCHAIN_STRING})
-if(DEFINED ENV{${TOOLCHAIN_STRING}})
-  cmake_path(SET ${TOOLCHAIN_STRING} "$ENV{${TOOLCHAIN_STRING}}")
-  message(STATUS "Using ${TOOLCHAIN_STRING}='${${TOOLCHAIN_STRING}}'")
-  set(TOOLCHAIN_ROOT "${${TOOLCHAIN_STRING}}")
+set(AS "armasm")
+set(CC "armclang")
+set(CXX "armclang")
+set(OC "fromelf")
+
+if(DEFINED REGISTERED_TOOLCHAIN_ROOT)
+  set(TOOLCHAIN_ROOT "${REGISTERED_TOOLCHAIN_ROOT}")
+endif()
+if(DEFINED REGISTERED_TOOLCHAIN_VERSION)
+  set(TOOLCHAIN_VERSION "${REGISTERED_TOOLCHAIN_VERSION}")
 endif()
 
-set(AS ${TOOLCHAIN_ROOT}/armasm${EXT})
-set(CC ${TOOLCHAIN_ROOT}/armclang${EXT})
-set(CXX ${TOOLCHAIN_ROOT}/armclang${EXT})
-set(OC ${TOOLCHAIN_ROOT}/fromelf${EXT})
+if(DEFINED TOOLCHAIN_ROOT AND NOT TOOLCHAIN_ROOT STREQUAL "")
+  set(EXT)
+  set(AS ${TOOLCHAIN_ROOT}/${AS}${EXT})
+  set(CC ${TOOLCHAIN_ROOT}/${CC}${EXT})
+  set(CXX ${TOOLCHAIN_ROOT}/${CXX}${EXT})
+  set(OC ${TOOLCHAIN_ROOT}/${OC}${EXT})
+endif()
 
 # Helpers
 
@@ -553,12 +559,9 @@ elseif(BRANCHPROT STREQUAL "BTI_SIGNRET")
   set(CC_BRANCHPROT "-mbranch-protection=bti+pac-ret")
 endif()
 
-set (CC_SYS_INC_PATHS_LIST
-  "${TOOLCHAIN_ROOT}/../include"
+set(CC_SYS_INC_PATHS_LIST
+  "\${TOOLCHAIN_ROOT}/../include"
 )
-foreach(ENTRY ${CC_SYS_INC_PATHS_LIST})
-  string(APPEND CC_SYS_INC_PATHS "${_ISYS}\"${ENTRY}\" ")
-endforeach()
 
 # C++ Compiler
 
@@ -571,13 +574,10 @@ set(CXX_FLAGS "${CC_FLAGS}")
 set(CXX_OPTIONS_FLAGS)
 cbuild_set_options_flags(CXX "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" CXX_OPTIONS_FLAGS)
 
-set (CXX_SYS_INC_PATHS_LIST
-  "${TOOLCHAIN_ROOT}/../include/libcxx"
+set(CXX_SYS_INC_PATHS_LIST
+  "\${TOOLCHAIN_ROOT}/../include/libcxx"
   "${CC_SYS_INC_PATHS_LIST}"
 )
-foreach(ENTRY ${CXX_SYS_INC_PATHS_LIST})
-  string(APPEND CXX_SYS_INC_PATHS "${_ISYS}\"${ENTRY}\" ")
-endforeach()
 
 # Linker
 
@@ -607,6 +607,7 @@ set (ELF2BIN --bin --output "${OUT_DIR}/${BIN_FILE}" "${OUT_DIR}/$<TARGET_PROPER
 # Set CMake variables for toolchain initialization
 set(CMAKE_SYSTEM_NAME Generic)
 set(CMAKE_CROSSCOMPILING TRUE)
+set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 set(CMAKE_ASM_COMPILER "${CC}")
 set(CMAKE_AS_LEG_COMPILER "${AS}")
 set(CMAKE_AS_ARM_COMPILER "${CC}")
@@ -614,18 +615,4 @@ set(CMAKE_AS_GNU_COMPILER "${CC}")
 set(CMAKE_C_COMPILER "${CC}")
 set(CMAKE_CXX_COMPILER "${CXX}")
 set(CMAKE_OBJCOPY "${OC}")
-set(CMAKE_SYSTEM_PROCESSOR "cortex-m0") # N.A.
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/CMakeASM")
-
-# Set CMake variables for skipping compiler identification
-set(CMAKE_ASM_COMPILER_FORCED TRUE)
-set(CMAKE_C_COMPILER_ID "ARMClang")
-set(CMAKE_C_COMPILER_ID_RUN TRUE)
-set(CMAKE_C_COMPILER_VERSION "${TOOLCHAIN_VERSION}")
-set(CMAKE_C_COMPILER_FORCED TRUE)
-set(CMAKE_C_COMPILER_WORKS TRUE)
-set(CMAKE_CXX_COMPILER_ID "${CMAKE_C_COMPILER_ID}")
-set(CMAKE_CXX_COMPILER_ID_RUN "${CMAKE_C_COMPILER_ID_RUN}")
-set(CMAKE_CXX_COMPILER_VERSION "${CMAKE_C_COMPILER_VERSION}")
-set(CMAKE_CXX_COMPILER_FORCED "${CMAKE_C_COMPILER_FORCED}")
-set(CMAKE_CXX_COMPILER_WORKS "${CMAKE_C_COMPILER_WORKS}")

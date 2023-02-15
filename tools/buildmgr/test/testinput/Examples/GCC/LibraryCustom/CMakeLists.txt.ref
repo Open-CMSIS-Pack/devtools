@@ -1,6 +1,6 @@
 # CMSIS Build CMakeLists generated on 2021-07-06T15:49:07
 
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.22)
 
 # Target options
 
@@ -36,14 +36,19 @@ set(CXX_SRC_FILES
 
 # Toolchain config map
 
-include ("C:/sandbox/devtools/build/TestOutput/cbuild/etc/GCC.10.2.1.cmake")
+set(TOOLCHAIN_VERSION_MIN "11.2.1")
+include ("C:/sandbox/cbuild/etc/GCC.11.2.1.cmake")
+include ("C:/sandbox/cbuild/etc/CMSIS-Build-Utils.cmake")
 
 # Setup project
 
 project(${TARGET} LANGUAGES CXX)
 
+cbuild_get_running_toolchain(TOOLCHAIN_ROOT TOOLCHAIN_VERSION CXX)
+
 # Global Flags
 
+cbuild_get_system_includes(CXX_SYS_INC_PATHS_LIST CXX_SYS_INC_PATHS)
 set(CMAKE_CXX_FLAGS "${CXX_CPU} ${CXX_BYTE_ORDER} ${CXX_DEFINES} ${CXX_SECURE} ${CXX_FLAGS} ${CXX_FLAGS_GLOBAL} ${CXX_SYS_INC_PATHS}")
 set(CMAKE_CXX_LINK_FLAGS "${LD_CPU} ${LD_SECURE} ${LD_FLAGS}")
 
