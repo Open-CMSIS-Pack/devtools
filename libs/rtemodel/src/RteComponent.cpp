@@ -339,7 +339,9 @@ string RteComponent::GetGpdscFile(RteTarget* target) const
     } else {
       RteGenerator* gen = GetGenerator();
       if (gen) {
-        return gen->GetExpandedGpdsc(target);
+        const auto& ci = target->GetProject()->GetComponentInstance(this->GetID());
+        const auto& genDir = ci ? ci->GetAttribute("gendir") : RteUtils::EMPTY_STRING;
+        return gen->GetExpandedGpdsc(target, genDir);
       }
     }
   }

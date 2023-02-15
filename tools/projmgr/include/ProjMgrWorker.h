@@ -129,6 +129,18 @@ struct ComponentFileItem {
 };
 
 /**
+ * @brief gpdsc item containing
+ *        component id
+ *        generator id
+ *        working directory
+*/
+struct GpdscItem {
+  std::string component;
+  std::string generator;
+  std::string workingDir;
+};
+
+/**
  * @brief translation control item containing
  *        final context controls after processing,
  *        csolution controls,
@@ -222,7 +234,7 @@ struct ContextItem {
   std::vector<GroupNode> groups;
   std::map<std::string, std::string> filePaths;
   std::map<std::string, RteGenerator*> generators;
-  std::map<std::string, std::pair<std::string, std::string>> gpdscs;
+  std::map<std::string, GpdscItem> gpdscs;
   StrVecMap compatibleLayers;
   std::vector<ConnectionsCollectionVec> validConnections;
   std::string linkerScript;

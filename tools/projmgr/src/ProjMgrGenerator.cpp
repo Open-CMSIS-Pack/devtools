@@ -206,6 +206,14 @@ void ProjMgrGenerator::GenerateCprjComponents(XMLTreeElement* element, const Con
           SetAttribute(componentElement, "rtedir", fs::relative(context.cproject->directory + "/" + rteDir, context.directories.cprj, ec).generic_string());
         }
       }
+      if (!component.generator.empty()) {
+        const string& genDir = component.instance->GetAttribute("gendir");
+        if (!genDir.empty()) {
+          error_code ec;
+          // Adjust component's genDir relative to cprj
+          SetAttribute(componentElement, "gendir", fs::relative(context.cproject->directory + "/" + genDir, context.directories.cprj, ec).generic_string());
+        }
+      }
 
       // Check whether non-locked option is not set or component version is required from user
       if (!nonLocked || !RteUtils::GetSuffix(component.item->component, *ProjMgrUtils::PREFIX_CVERSION, true).empty()) {
