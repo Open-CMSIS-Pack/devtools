@@ -66,8 +66,8 @@ set(CXX_SRC_FILES
 
 # Toolchain config map
 
-set(TOOLCHAIN_VERSION_MIN "11.2.1")
-include ("C:/sandbox/cbuild/etc/GCC.11.2.1.cmake")
+set(TOOLCHAIN_VERSION_MIN "10.2.1")
+include ("C:/sandbox/cbuild/etc/GCC.10.2.1.cmake")
 include ("C:/sandbox/cbuild/etc/CMSIS-Build-Utils.cmake")
 
 # Setup project

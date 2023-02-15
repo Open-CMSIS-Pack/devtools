@@ -53,7 +53,7 @@ set(LIB_FILES
 # Toolchain config map
 
 set(TOOLCHAIN_VERSION_MIN "9.2.1")
-include ("C:/sandbox/cbuild/etc/GCC.11.2.1.cmake")
+include ("C:/sandbox/cbuild/etc/GCC.10.2.1.cmake")
 include ("C:/sandbox/cbuild/etc/CMSIS-Build-Utils.cmake")
 
 # Setup project
