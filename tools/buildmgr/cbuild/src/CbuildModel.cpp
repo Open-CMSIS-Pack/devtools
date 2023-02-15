@@ -419,7 +419,7 @@ bool CbuildModel::GetCompatibleToolchain(const string& name, const string& versi
   for (const auto& envVar : envVars) {
     smatch sm;
     try {
-      regex_match(envVar, sm, regex("(\\w+)_TOOLCHAIN_(\\d+)\\_(\\d+)\\_(\\d+)=(.*)"));
+      regex_match(envVar, sm, regex("(\\w+)_TOOLCHAIN_(\\d+)_(\\d+)_(\\d+)=(.*)"));
     } catch (exception&) {};
     if (sm.size() == 6) {
       toolchains[sm[1]][string(sm[2])+'.'+string(sm[3])+'.'+string(sm[4])] = sm[5];
