@@ -6,6 +6,22 @@
 <!-- markdownlint-disable MD013 -->
 <!-- markdownlint-disable MD036 -->
 
+**Table of Contents**
+
+- [Reference Application Framework](#reference-application-framework)
+  - [Overview](#overview)
+    - [Software Layers](#software-layers)
+    - [Connections](#connections)
+    - [Arduino Shield](#arduino-shield)
+  - [Software Layer Types](#software-layer-types)
+    - [Board](#board)
+    - [Shield](#shield)
+    - [RTOS](#rtos)
+    - [Socket](#socket)
+    - [Stream](#stream)
+
+## Overview
+
 The following section describes the structure of a standardized **Reference Application Framework** that allows to demonstrate a range of application examples:
   
 - Cloud connectivity using SDKs from Cloud Service Providers
@@ -22,25 +38,62 @@ These reference examples can target various evaluation boards. It is also possib
 
 ![Layers of Reference Examples](./images/Reference-Example.png "Layers of Reference Examples")
 
-ToDo:
-
-- explain structure of each layer
-- add CMSIS-Stream and ML stacks to the
-
-## Software Layers
+### Software Layers
 
 The following table lists the various software layers types that are used to compose reference applications.
 
 Software Layer Type    | Description of the operations
 :----------------------|:----------------------------------
+Socket                 | Provides an IoT_Socket for network connectivity.
+RTOS                   | Provides a CMSIS-RTOS2 complained RTOS; various RTOS implementations may provide extra functionality.
+Stream                 | Provides middleware for sensor, audio, and video data streaming to DSP and ML algorithms.
 Board                  | System startup: board/device hardware initialization; transfers control to application. Exposes various drivers and interfaces.
 Shield                 | Provides software definitions and support for additional hardware provided on shields that extend a physical hardware board. 
-RTOS                   | Provides a CMSIS-RTOS2 complained RTOS; various RTOS implementations may provide extra functionality.
-Socket                 | Provides an IoT_Socket for network connectivity.
 
-Each of the software layers is described in the following section.
+Each of the software layers is described in the section [Software Layer Types](#software-layer-types)
 
-### Software Layer Type: Board
+### Connections
+
+The [connections](YML-Input-Format.md#connections) are used identify compatible software layers. There are no strict rules for the **`connect` Name** it is therefore possible to extend it with additional name spacing, i.e. prefix with *ST_* to denote ST specific interfaces.
+
+There are also no strict rules how the different software layers consume or provide the `connect` names.  However guidelines will be developed once reference applications mature.
+
+Currently the following **`connect` names** are used.
+
+`connect` name         | Value                  | Description
+:----------------------|:-----------------------|:-------------------- 
+.                      |.                       | **Arduino Shield Interface**
+ARDUINO_UNO_UART       | CMSIS-Driver instance  | CMSIS-Driver UART connecting to UART on Arduino pins D0..D1
+ARDUINO_UNO_SPI        | CMSIS-Driver instance  | CMSIS-Driver SPI connecting to SPI on Arduino pins D10..D13
+ARDUINO_UNO_I2C        | CMSIS-Driver instance  | CMSIS-Driver I2C connecting to I2C on Arduino pins D20..D21
+ARDUINO_UNO_I2C-Alt    | CMSIS-Driver instance  | CMSIS-Driver I2C connecting to I2C on Arduino pins D18..D19
+ARDUINO_UNO_D0 .. D21  | -                      | CMSIS-Driver GPIO connecting to Arduino pins D0..D21
+.                      |.                       | **CMSIS Driver and RTOS Interfaces**
+CMSIS_\<driver-name\>  | CMSIS-Driver instance  | CMSIS-Driver name
+CMSIS-RTOS2            |.                       | CMSIS-RTOS2 compliant RTOS
+.                      |                        | **Network Connectivity**
+IoT_Socket             |.                       | IP Socket (BSD like) Network layer
+.                      |.                       | **I/O Retargeting**
+STDERR                 |.                       | Standard Error output
+STDIN                  |.                       | Standard Input
+STDOUT                 |.                       | Standard Output
+.                      |.                       | **Memmory allocation**
+Heap                   | Heap Size              | Memory heap configuration in startup
+.                      |.                       | **Data Streaming Interfaces**
+Stream_Audio           |.                       | Audio Data Stream
+Stream_SDS             |.                       | Synchronous Data Stream (Sensors)
+.                      |                        | **PSA Security Interfaces**
+PSA_\<interface-name\> |.                       | Interfaces for Crypto, Storage, Firmware Update
+
+### Arduino Shield
+
+The software layers [Board](#board) and [Shield](#shield) are currently based on Arduino UNO connectors. To combine different boards and shields a a consistent pin naming is required. The standardized mapping is shown in the diagram below.
+
+![Arduino Shield Pinout](./images/Arduino-Shield.png "Arduino Shield Pinout")
+
+## Software Layer Types
+
+### Board
 
 Provides system startup, board/device hardware initialization, and transfers control to the application. It also exposes various drivers and interfaces.
 
@@ -49,124 +102,111 @@ Provides system startup, board/device hardware initialization, and transfers con
 - System startup
 - Heap and Stack configuration
 - Device/Board hardware initialization
+- Application startup for applications with and without RTOS
 - Event Recorder initialization [optional] 
 - RTOS initialization and startup [optional]
-- Application startup for applications with and without RTOS
-- STDIO re-targeting
+- Drivers for peripherals or Arduino interfaces [optional]
+- STDIO re-targeting to debug interfaces [optional]
+- PSA interfaces [optional]
 
-**Software modules:**
+**Files:**
 
-- Startup file
-- System file
-- Main module with function ‘main’
-- Drivers and interfaces (CMSIS-Drivers, GPIO, STDIO)
+- CMSIS startup and system file for device initialization.
+- `main.c` source module that implements the function `main`.
+- Optional drivers and interfaces (CMSIS-Drivers, GPIO, STDIO).
+- Files that relate to the device and/or board configuration (i.e. generated by MCUxpressor or STCube)
 - Linker script definition
 
-The startup of the Board software layer supports uses two function call entry points:
+The `main.c` source module of the Board software layer uses the following entry points to the application code:
 
 - `app_initialize` initializes the software stack and is executed in Handler mode.
 - `app_main` transfers execution to the application. For RTOS-based applications this is a RTOS thread.
 
-**Not using RTOS:**
-`extern int app_main (void);` defines the entry point of the application; executes as a single thread with default settings (priority, stack).
-b.)	Board layer using RTOS:
-Before RTOS is started the ‘app_initialize’ is called where the user can create application threads. Default weak implementation in board layer:
-void app_initialize (void) {
-  osThreadNew(app_main, NULL, NULL);
-}
-By default, ‘app_main’ is the thread that starts executing.
-I.	Application not using RTOS:
-‘app_main’ application entry starts executing as a single thread with default settings (priority, stack)
-II.	Application using RTOS:
-‘app_main’ is the application entry thread with default settings (can be overridden by re-implementing ‘app_initialize’
+**RTOS Usage**
 
-### Board
+The board layer supports application with or without RTOS.  `extern int app_main (void);` defines the entry point of the application; it executes as a single thread with default settings (priority, stack).
 
-**Provided Connections**
+- Application using RTOS:
 
-`connect` Name         | Value                  | Description
-:----------------------|:-----------------------|:-------------------- 
-.                      |.                       | **Arduino Shield Interface**
-ARDUINO_UNO_UART       | CMSIS-Driver instance  | CMSIS-Driver UART connecting to UART on Arduino pins D0..D1
-ARDUINO_UNO_SPI        | CMSIS-Driver instance  | CMSIS-Driver SPI connecting to SPI on Arduino pins D10..D13
-ARDUINO_UNO_I2C        | CMSIS-Driver instance  | CMSIS-Driver I2C connecting to I2C on Arduino pins D20..D21
-ARDUINO_UNO_I2C-Alt    | CMSIS-Driver instance  | CMSIS-Driver I2C connecting to I2C on Arduino pins D18..D19
-ARDUINO_UNO_D0 .. D21  | -                      | CMSIS-Driver GPIO connecting to Arduino pins D0..D21
-.                      |.                       | **CMSIS Driver Interfaces**
-CMSIS_ETH              | CMSIS-Driver instance  | CMSIS-Driver Ethernet (combined MAC and PHY)
-CMSIS_ETH_MAC          | CMSIS-Driver instance  | CMSIS-Driver Ethernet MAC
-CMSIS_ETH_PHY          | CMSIS-Driver instance  | CMSIS-Driver Ethernet PHY
-CMSIS_WiFi             | CMSIS-Driver instance  | CMSIS-Driver WiFi
-CMSIS_VIO              | CMSIS-Driver instance  | CMSIS-Driver Ethernet VIO for LEDs
-.                      |.                       | **I/O Retargeting**
-STDERR                 |.                       | Standard Error output
-STDIN                  |.                       | Standard Input
-STDOUT                 |.                       | Standard Output
-.                      |.                       | **Memmory allocation**
-Heap                   | Heap Size              | Memory heap configuration in startup
+  Before RTOS is started the function `app_initialize` is called where the user can create application threads. A default implementation (defined `weak`) is part of the board layer:
+
+  ``` c
+  void app_initialize (void) {
+    osThreadNew(app_main, NULL, NULL);
+  }
+  ```
+
+  By default, `app_main` is the thread that starts executing.
+
+- Application not using RTOS:
+  
+  `app_main` is the entry of the application and executes as a single thread with default settings (priority, stack)
 
 ### Shield
 
-Provides support for external hardware on shields that can be plugged into the board module. Currently only Arduino Uno shields (connections defined by ‘ARDUINO_UNO_’) are supported. Potentially also shields with other connections could be covered.
+Support for additional hardware via plugin shields (i.e. Arduino Uno).  Arduino shields [*consume connections*](YML-Input-Format.md#example-sensor-shield) with the prefix `ARDUINO_UNO_`.  Potentially other shields could be covered.
 
-Shields feature various hardware modules: WiFi, Sensors, …
+Shields may feature various hardware modules such as WiFi chips or MEMS sensors.  Frequently the Shield software layer only defines a header file that redirects the Arduino specific `connect:` to a chip specific `connect:` that is then used by application software.
 
-Features:
--	Drivers for shield’s hardware modules
+**Example:**
 
 Connections (consumed):
--	ARDUIINO_UNO_* (provided by board layer)
--	STDIN/OUT (if used by the driver)
--	RTOS2 (if used by the driver)
+
+- ARDUINO_UNO_* (provided by board layer)
+- STDIN/OUT (if used by the driver)
+- RTOS2 (if used by the driver)
 
 Connections (provided):
--	CMSIS_WiFi (WiFi Shield)
--	<Sensor>
--	<Sensor>_<Feature>
+
+- CMSIS_WiFi (WiFi Shield)
+- \<Sensor\>
+- \<Sensor\>_\<Feature\>
 
 Note regarding sensors:
-<Sensor> is typically a sensor name (for example NXP sensors: FXLS8974, FXAS21002, …
+
+\<Sensor\> is typically a sensor name (for example NXP sensors: FXLS8974, FXAS21002, …
 Sensor can use different buses (I2C, SPI) and have optional interrupt lines. It makes sense to define sensor connections with specifying features to cover various layer combinations. Examples of connections:
 FXLS8974 sensor:
--	Connected via I2C:
-o	FXLS8974_I2C: connected via I2C
-o	FXLS8974_INT: interrupt line (optional)
--	Connected via SPI:
-o	FXLS8974_SPI: connected via SPI
-o	FXLS8974_CS: SPI CS (can be any Arduino Dx pin to cover multiple devices on the same SPI bus)
-o	FXLS8974_INT: interrupt line (optional)
 
-External hardware components are frequently available on Arduino Shields that connect to hardware boards. Components such as sensors can be added to 
-
-**Arduino Shield Pinout**
-
-There are several different Arduino pin mappings, however for standardization, a consistent naming is required. The pinout used by the [Board Layer](#board-layer) is shown in the diagram below.
-
-![Arduino Shield Pinout](./images/Arduino-Shield.png "Arduino Shield Pinout")
-
+- Connected via I2C:
+  - FXLS8974_I2C: connected via I2C
+  - FXLS8974_INT: interrupt line (optional)
+- Connected via SPI:
+  - FXLS8974_SPI: connected via SPI
+  - FXLS8974_CS: SPI CS (can be any Arduino Dx pin to cover multiple devices on the same SPI bus)
+  - FXLS8974_INT: interrupt line (optional)
 
 ### RTOS
 
-Provides a CMSIS-RTOS2 compliant RTOS. Various implementation can be used. We have layers for RTX and FreeRTOS.
+The RTOS software layer provides a CMSIS-RTOS2 compliant RTOS. Various implementations can be used; currently RTX and FreeRTOS is provided as software layer. Some RTOS functionality might be used by peripheral drivers, the PSA interface or the application itself. When present, the RTOS is initialized and started in the [Board](#board) software layer.
 
-Connections (provided):
--	CMSIS-RTOS2
-
-RTOS2 might be used by drivers (Board and Shield layer) and also by the application itself.
-Note: AWS IoT stack uses FreeRTOS directly however the underlaying CMSIS-Drivers might require CMSIS-RTOS2 API (provided by the CMSIS-RTOS2 FreeRTOS wrapper).
-
-Note: RTOS is initialized and started in the Board layer.
-
+> **Note:**
+> 
+> The *CMSIS-RTOS2 connect name* may be also provided by the application software. For example, the AWS IoT stack directly implements FreeRTOS.
+> directly however the underlaying CMSIS-Drivers might require CMSIS-RTOS2 API (provided by the CMSIS-RTOS2 FreeRTOS wrapper).
 
 ### Socket
 
-Provides an IoT Socket compliant socket. Various implementation can be used. We have layers for: WiFi CMSIS-Driver (with built-in TCP/IP stack), MW-Network over Ethernet (using Ethernet CMSIS-Driver) or WiFi (using WiFi CMSIS-Driver in bypass mode), lwIP over Ethernet (using Ethernet CMSIS-Driver), VSocket (AVH).
+Provides an [IoT Socket](https://github.com/MDK-Packs/IoT_Socket) compliant socket. Various implementation can be used. 
 
-Connections (provided):
--	IoT_Socket
+Currently layers are available for: 
 
-Connections (consumed) depend on the implementation. Examples: CMSIS_WiFi, CMSIS_ETH, VSocket, …
+- WiFi using CMSIS-Driver with built-in TCP/IP stack
+- Networking middleware over Ethernet (using Ethernet CMSIS-Driver) or WiFi (using WiFi CMSIS-Driver in bypass mode)
+- lwIP middleware over Ethernet (using Ethernet CMSIS-Driver)
+- VSocket over Arm Virtual Hardware (AVH).
 
-Note: Socket is initialized and started from the application by call the following function:
+The IoT Socket is initialized and started from the application by calling the following function:
+
+``` c
 extern int32_t socket_startup (void);
+```
 
+### Stream
+
+Provides middleware for data streaming in a format that is consumed by DSP or ML algorithms.  Proposals for these interfaces will be provided.
+
+The data streaming interfaces relate to:
+
+- [SDS-Framework](https://github.com/RobertRostohar/SDS-Framework) for recording, analyzing, and playback of data streams. 
+- [CMSIS-DSP compute graph](https://github.com/ARM-software/CMSIS-DSP) that allows to optimize data flows between DSP and ML algorithms.
