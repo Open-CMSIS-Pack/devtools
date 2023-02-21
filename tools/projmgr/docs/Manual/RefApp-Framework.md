@@ -59,7 +59,7 @@ Each of the software layers is described in the section [Software Layer Types](#
 
 ### Interface Definitions
 
-The interfaces between the software layers are defined in header files.  As such is it possible to reuse the various software blocks with other built-systems that are not CMSIS aware.
+The interfaces between the software layers are defined in header files.  As such is it possible to reuse the various software blocks with other build systems that are not CMSIS aware.
 
 The header files `CMSIS_board_header`, `iot_socket.h`, `cmsis_os.h`, and `todo: cmsis_stream.h` are typically used by the reference application to access the software layers.
 
