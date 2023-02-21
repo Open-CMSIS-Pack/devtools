@@ -165,7 +165,7 @@ bool ProjMgrWorker::AddContext(ProjMgrParser& parser, ContextDesc& descriptor, c
         }
       }
     }
-
+    ProjMgrUtils::PushBackUniquely(m_ymlOrderedContexts, context.name);
     m_contexts[context.name] = context;
   }
   return true;
@@ -174,6 +174,10 @@ bool ProjMgrWorker::AddContext(ProjMgrParser& parser, ContextDesc& descriptor, c
 void ProjMgrWorker::GetContexts(map<string, ContextItem>* &contexts) {
   m_contextsPtr = &m_contexts;
   contexts = m_contextsPtr;
+}
+
+void ProjMgrWorker::GetYmlOrderedContexts(vector<string> &contexts) {
+  contexts = m_ymlOrderedContexts;
 }
 
 void ProjMgrWorker::SetOutputDir(const std::string& outputDir) {
@@ -1220,7 +1224,7 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
     }
     // Filter components
     RteComponentMap filteredComponents;
-    set<string> filteredIds;
+    vector<string> filteredIds;
     string componentDescriptor = item.component;
 
     set<string> filterSet;
@@ -1232,7 +1236,8 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
       filterSet = SplitArgs(componentDescriptor);
     }
 
-    ApplyFilter(componentIds, filterSet, filteredIds);
+    vector<string> componentIdVec(componentIds.begin(), componentIds.end());
+    ApplyFilter(componentIdVec, filterSet, filteredIds);
     for (const auto& filteredId : filteredIds) {
       filteredComponents[filteredId] = componentMap[filteredId];
     }
@@ -2198,7 +2203,7 @@ bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGpdsc, bool re
   return true;
 }
 
-void ProjMgrWorker::ApplyFilter(const set<string>& origin, const set<string>& filter, set<string>& result) {
+void ProjMgrWorker::ApplyFilter(const vector<string>& origin, const set<string>& filter, vector<string>& result) {
   result.clear();
   for (const auto& item : origin) {
     bool match = true;
@@ -2212,7 +2217,7 @@ void ProjMgrWorker::ApplyFilter(const set<string>& origin, const set<string>& fi
       }
     }
     if (match) {
-      result.insert(item);
+      ProjMgrUtils::PushBackUniquely(result, item);
     }
   }
 }
@@ -2297,16 +2302,17 @@ bool ProjMgrWorker::ListPacks(vector<string>&packs, bool missingPacks, const str
       reqOk = false;
     }
   }
+  vector<string> packsVec(packsSet.begin(), packsSet.end());
   if (!filter.empty()) {
-    set<string> filteredPacks;
-    ApplyFilter(packsSet, SplitArgs(filter), filteredPacks);
+    vector<string> filteredPacks;
+    ApplyFilter(packsVec, SplitArgs(filter), filteredPacks);
     if (filteredPacks.empty()) {
       ProjMgrLogger::Error("no pack was found with filter '" + filter + "'");
       return false;
     }
-    packsSet = filteredPacks;
+    packsVec = filteredPacks;
   }
-  packs.assign(packsSet.begin(), packsSet.end());
+  packs.assign(packsVec.begin(), packsVec.end());
   return reqOk;
 }
 
@@ -2330,16 +2336,17 @@ bool ProjMgrWorker::ListBoards(vector<string>& boards, const string& filter) {
     ProjMgrLogger::Error("no installed board was found");
     return false;
   }
+  vector<string> boardsVec(boardsSet.begin(), boardsSet.end());
   if (!filter.empty()) {
-    set<string> matchedBoards;
-    ApplyFilter(boardsSet, SplitArgs(filter), matchedBoards);
+    vector<string> matchedBoards;
+    ApplyFilter(boardsVec, SplitArgs(filter), matchedBoards);
     if (matchedBoards.empty()) {
       ProjMgrLogger::Error("no board was found with filter '" + filter + "'");
       return false;
     }
-    boardsSet = matchedBoards;
+    boardsVec = matchedBoards;
   }
-  boards.assign(boardsSet.begin(), boardsSet.end());
+  boards.assign(boardsVec.begin(), boardsVec.end());
   return true;
 }
 
@@ -2370,16 +2377,17 @@ bool ProjMgrWorker::ListDevices(vector<string>& devices, const string& filter) {
     ProjMgrLogger::Error("no installed device was found");
     return false;
   }
+  vector<string> devicesVec(devicesSet.begin(), devicesSet.end());
   if (!filter.empty()) {
-    set<string> matchedDevices;
-    ApplyFilter(devicesSet, SplitArgs(filter), matchedDevices);
+    vector<string> matchedDevices;
+    ApplyFilter(devicesVec, SplitArgs(filter), matchedDevices);
     if (matchedDevices.empty()) {
       ProjMgrLogger::Error("no device was found with filter '" + filter + "'");
       return false;
     }
-    devicesSet = matchedDevices;
+    devicesVec = matchedDevices;
   }
-  devices.assign(devicesSet.begin(), devicesSet.end());
+  devices.assign(devicesVec.begin(), devicesVec.end());
   return true;
 }
 
@@ -2421,16 +2429,17 @@ bool ProjMgrWorker::ListComponents(vector<string>& components, const string& fil
       componentMap[componentId] = component.second;
     }
   }
+  vector<string> componentIdsVec(componentIds.begin(), componentIds.end());
   if (!filter.empty()) {
-    set<string> filteredIds;
-    ApplyFilter(componentIds, SplitArgs(filter), filteredIds);
+    vector<string> filteredIds;
+    ApplyFilter(componentIdsVec, SplitArgs(filter), filteredIds);
     if (filteredIds.empty()) {
       ProjMgrLogger::Error("no component was found with filter '" + filter + "'");
       return false;
     }
-    componentIds = filteredIds;
+    componentIdsVec = filteredIds;
   }
-  for (const auto& componentId : componentIds) {
+  for (const auto& componentId : componentIdsVec) {
     components.push_back(componentId + " (" + ProjMgrUtils::GetPackageID(componentMap[componentId]->GetPackage()) + ")");
   }
   return true;
@@ -2453,16 +2462,17 @@ bool ProjMgrWorker::ListDependencies(vector<string>& dependencies, const string&
       }
     }
   }
+  vector<string> dependenciesVec(dependenciesSet.begin(), dependenciesSet.end());
   if (!filter.empty()) {
-    set<string> filteredDependencies;
-    ApplyFilter(dependenciesSet, SplitArgs(filter), filteredDependencies);
+    vector<string> filteredDependencies;
+    ApplyFilter(dependenciesVec, SplitArgs(filter), filteredDependencies);
     if (filteredDependencies.empty()) {
       ProjMgrLogger::Error("no unresolved dependency was found with filter '" + filter + "'");
       return false;
     }
-    dependenciesSet = filteredDependencies;
+    dependenciesVec = filteredDependencies;
   }
-  dependencies.assign(dependenciesSet.begin(), dependenciesSet.end());
+  dependencies.assign(dependenciesVec.begin(), dependenciesVec.end());
   return true;
 }
 
@@ -2498,24 +2508,25 @@ bool ProjMgrWorker::FormatValidationResults(set<string>& results, const ContextI
   return true;
 }
 
-bool ProjMgrWorker::ListContexts(vector<string>& contexts, const string& filter) {
+bool ProjMgrWorker::ListContexts(vector<string>& contexts, const string& filter, const bool ymlOrder) {
   if (m_contexts.empty()) {
     return false;
   }
-  set<string>contextsSet;
-  for (auto& context : m_contexts) {
-    contextsSet.insert(context.first);
-  }
+  vector<string> contextsVec = m_ymlOrderedContexts;
   if (!filter.empty()) {
-    set<string> filteredContexts;
-    ApplyFilter(contextsSet, SplitArgs(filter), filteredContexts);
+    vector<string> filteredContexts;
+    ApplyFilter(contextsVec, SplitArgs(filter), filteredContexts);
     if (filteredContexts.empty()) {
       ProjMgrLogger::Error("no context was found with filter '" + filter + "'");
       return false;
     }
-    contextsSet = filteredContexts;
+    contextsVec = filteredContexts;
   }
-  contexts.assign(contextsSet.begin(), contextsSet.end());
+  contexts.assign(contextsVec.begin(), contextsVec.end());
+
+  if (!ymlOrder) {
+    std::sort(contexts.begin(), contexts.end());
+  }
   return true;
 }
 

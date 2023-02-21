@@ -1478,6 +1478,30 @@ TEST_F(ProjMgrUnitTests, RunListContexts) {
   EXPECT_EQ(expected, set<string>(contexts.begin(), contexts.end()));
 }
 
+TEST_F(ProjMgrUnitTests, RunListContexts_Ordered) {
+  set<string> expected = {
+    "test2.Debug+CM0",
+    "test2.Debug+CM3",
+    "test1.Debug+CM0",
+    "test1.Release+CM0"
+  };
+  const string& dirInput = testinput_folder + "/TestSolution/";
+  const string& filenameInput = dirInput + "test.csolution_ordered.yml";
+  error_code ec;
+  EXPECT_TRUE(m_parser.ParseCsolution(filenameInput, false));
+  for (const auto& cproject : m_parser.GetCsolution().cprojects) {
+    string const& cprojectFile = fs::canonical(dirInput + cproject, ec).generic_string();
+    EXPECT_TRUE(m_parser.ParseCproject(cprojectFile, false, false));
+  }
+  for (auto& descriptor : m_parser.GetCsolution().contexts) {
+    const string& cprojectFile = fs::canonical(dirInput + descriptor.cproject, ec).generic_string();
+    EXPECT_TRUE(m_worker.AddContexts(m_parser, descriptor, cprojectFile));
+  }
+  vector<string> contexts;
+  EXPECT_TRUE(m_worker.ListContexts(contexts, RteUtils::EMPTY_STRING, true));
+  EXPECT_EQ(expected, set<string>(contexts.begin(), contexts.end()));
+}
+
 TEST_F(ProjMgrUnitTests, RunListContexts_Without_BuildTypes) {
   set<string> expected = {
     "test1+CM0",

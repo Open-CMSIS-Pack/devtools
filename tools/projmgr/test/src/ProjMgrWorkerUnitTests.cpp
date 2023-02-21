@@ -30,6 +30,7 @@ void ProjMgrWorkerUnitTests::SetCsolutionPacks(CsolutionItem* csolution, std::ve
   }
   context.csolution = csolution;
   context.type.target = targetType;
+  ProjMgrUtils::PushBackUniquely(m_ymlOrderedContexts, targetType);
   m_contexts.insert(std::pair<string, ContextItem>(string(targetType), context));
 }
 
@@ -844,10 +845,10 @@ TEST_F(ProjMgrWorkerUnitTests, GetBoardItem) {
 }
 
 TEST_F(ProjMgrWorkerUnitTests, ApplyFilter) {
-  std::set<std::string> input = { "TestString1", "FilteredString", "TestString2" };
+  std::vector<std::string> input = { "TestString1", "FilteredString", "TestString2" };
   std::set<std::string> filter = { "String", "Filtered", "" };
-  std::set<std::string> expected = { "FilteredString" };
-  std::set<std::string> result;
+  std::vector<std::string> expected = { "FilteredString" };
+  std::vector<std::string> result;
   ApplyFilter(input, filter, result);
   EXPECT_EQ(expected, result);
 }
