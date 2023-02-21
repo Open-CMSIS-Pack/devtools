@@ -11,6 +11,7 @@
 - [Reference Application Framework](#reference-application-framework)
   - [Overview](#overview)
     - [Software Layers](#software-layers)
+    - [Interface Definitions](#interface-definitions)
     - [Connections](#connections)
     - [Arduino Shield](#arduino-shield)
   - [Software Layer Types](#software-layer-types)
@@ -24,19 +25,23 @@
 
 The following section describes the structure of a standardized **Reference Application Framework** that allows to demonstrate a range of application examples:
   
-- Cloud connectivity using SDKs from Cloud Service Providers
-- Sensor reference examples
-- Machine Learning applications that use sensors and audio inputs
-- Middleware examples such as TCP/IP stack and file system
+- Cloud connectivity using SDKs from Cloud Service Providers.
+- Sensor reference examples.
+- Machine Learning applications that use sensors and audio inputs.
+- Middleware examples such as TCP/IP stack and file system.
 
-These reference examples can target various evaluation boards. It is also possible to target production hardware and use the examples are starting point for embedded IoT and ML applications. This is enabled by:
+These reference examples can target various evaluation boards. It is also possible to target production hardware and use the examples as starting point for embedded IoT and ML applications. This is enabled by:
 
 - Software layers with defined and standardized interfaces that contain re-usable parts of applications.
 - Description of standardized connections (provided and consumed interfaces) between these software layers. 
-- Consistent bootstrap and application startup that initializes. 
+- Consistent bootstrap and startup sequence that initializes the system resources and starts the application software. 
 - Board software layer that provides connections for many different applications.
 
 ![Layers of Reference Examples](./images/Reference-Example.png "Layers of Reference Examples")
+
+> **Note:** 
+> 
+> The various software layer types are optional; the usage depends on the reference application. The layer type board is an exception, as it is the base software layer that implements the system startup.
 
 ### Software Layers
 
@@ -45,16 +50,30 @@ The following table lists the various software layers types that are used to com
 Software Layer Type    | Description of the operations
 :----------------------|:----------------------------------
 Socket                 | Provides an IoT_Socket for network connectivity.
-RTOS                   | Provides a CMSIS-RTOS2 complained RTOS; various RTOS implementations may provide extra functionality.
+RTOS                   | Provides a CMSIS-RTOS2 compliant RTOS; various RTOS implementations may provide extra functionality.
 Stream                 | Provides middleware for sensor, audio, and video data streaming to DSP and ML algorithms.
 Board                  | System startup: board/device hardware initialization; transfers control to application. Exposes various drivers and interfaces.
 Shield                 | Provides software definitions and support for additional hardware provided on shields that extend a physical hardware board. 
 
 Each of the software layers is described in the section [Software Layer Types](#software-layer-types)
 
+### Interface Definitions
+
+The interfaces between the software layers are defined in header files.  As such is it possible to reuse the various software blocks with other built-systems that are not CMSIS aware.
+
+The header files `CMSIS_board_header`, `iot_socket.h`, `cmsis_os.h`, and `todo: cmsis_stream.h` are typically used by the reference application to access the software layers.
+
+Header File              | Description
+:------------------------|:----------------------------------
+`CMSIS_board_header`     | `#define` of the board header file; gives access to device, board; optional to shield and PSA resources.
+`CMSIS_shield_header`    | `#define` of the shield header file; included by the CMSIS_board_header; gives access shield resources.
+[`iot_socket.h`](https://github.com/MDK-Packs/IoT_Socket/blob/develop/include/iot_socket.h)           | Defines the interface to the [IoT Socket](https://github.com/MDK-Packs/IoT_Socket).
+[`cmsis_os.h`](https://github.com/ARM-software/CMSIS_5/blob/develop/CMSIS/RTOS2/Include/cmsis_os2.h)  | Defines the interface to the [RTOS](https://arm-software.github.io/CMSIS_5/RTOS2/html/group__CMSIS__RTOS.html).
+`cmsis_stream.h`                                                                                      | ToDo: Defines the interface for data streaming.
+
 ### Connections
 
-The [connections](YML-Input-Format.md#connections) are used identify compatible software layers. There are no strict rules for the **`connect` Name** it is therefore possible to extend it with additional name spacing, i.e. prefix with *ST_* to denote ST specific interfaces.
+The [connections](YML-Input-Format.md#connections) are only used to identify compatible software layers. There are no strict rules for the **`connect` Name** it is therefore possible to extend it with additional name spacing, i.e. prefix with *ST_* to denote ST specific interfaces.
 
 There are also no strict rules how the different software layers consume or provide the `connect` names.  However guidelines will be developed once reference applications mature.
 
@@ -69,7 +88,7 @@ ARDUINO_UNO_I2C        | CMSIS-Driver instance  | CMSIS-Driver I2C connecting to
 ARDUINO_UNO_I2C-Alt    | CMSIS-Driver instance  | CMSIS-Driver I2C connecting to I2C on Arduino pins D18..D19
 ARDUINO_UNO_D0 .. D21  | -                      | CMSIS-Driver GPIO connecting to Arduino pins D0..D21
 .                      |.                       | **CMSIS Driver and RTOS Interfaces**
-CMSIS_\<driver-name\>  | CMSIS-Driver instance  | CMSIS-Driver name
+CMSIS_\<driver-name\>  | CMSIS-Driver instance  | [CMSIS-Driver](https://arm-software.github.io/CMSIS_5/Driver/html/modules.html) name, i.e. CMSIS_I2C, CMSIS_ETH_MAC.
 CMSIS-RTOS2            |.                       | CMSIS-RTOS2 compliant RTOS
 .                      |                        | **Network Connectivity**
 IoT_Socket             |.                       | IP Socket (BSD like) Network layer
@@ -77,17 +96,17 @@ IoT_Socket             |.                       | IP Socket (BSD like) Network l
 STDERR                 |.                       | Standard Error output
 STDIN                  |.                       | Standard Input
 STDOUT                 |.                       | Standard Output
-.                      |.                       | **Memmory allocation**
+.                      |.                       | **Memory allocation**
 Heap                   | Heap Size              | Memory heap configuration in startup
 .                      |.                       | **Data Streaming Interfaces**
-Stream_Audio           |.                       | Audio Data Stream
-Stream_SDS             |.                       | Synchronous Data Stream (Sensors)
+Stream_Audio           |.                       | Audio Data Stream (todo)
+Stream_SDS             |.                       | Synchronous Data Stream (Sensors) (todo)
 .                      |                        | **PSA Security Interfaces**
 PSA_\<interface-name\> |.                       | Interfaces for Crypto, Storage, Firmware Update
 
 ### Arduino Shield
 
-The software layers [Board](#board) and [Shield](#shield) are currently based on Arduino UNO connectors. To combine different boards and shields a a consistent pin naming is required. The standardized mapping is shown in the diagram below.
+The software layers [Board](#board) and [Shield](#shield) are currently based on Arduino UNO connectors. To combine different boards and shields a consistent pin naming is required. The standardized mapping is shown in the diagram below.
 
 ![Arduino Shield Pinout](./images/Arduino-Shield.png "Arduino Shield Pinout")
 
@@ -182,8 +201,7 @@ The RTOS software layer provides a CMSIS-RTOS2 compliant RTOS. Various implement
 
 > **Note:**
 > 
-> The *CMSIS-RTOS2 connect name* may be also provided by the application software. For example, the AWS IoT stack directly implements FreeRTOS.
-> directly however the underlaying CMSIS-Drivers might require CMSIS-RTOS2 API (provided by the CMSIS-RTOS2 FreeRTOS wrapper).
+> The *CMSIS-RTOS2 connect name* may be also provided by the application software. For example, the AWS IoT stack implements FreeRTOS and also exposes CMSIS-RTOS2 API as the underlying driver interfaces may require it.
 
 ### Socket
 
