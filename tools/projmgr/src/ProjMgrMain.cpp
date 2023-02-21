@@ -9,8 +9,8 @@
 /*
 Main function
 */
-int main(int argc, char **argv) {
+int main(int argc, char **argv, char** envp) {
 
-  return ProjMgr::RunProjMgr(argc, argv);
+  return ProjMgr::RunProjMgr(argc, argv, envp);
 
 }

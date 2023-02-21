@@ -40,11 +40,19 @@ struct ConnectionsList {
 /**
  * @brief toolchain item containing
  *        toolchain name,
- *        toolchain version
+ *        toolchain version,
+ *        toolchain required version,
+ *        toolchain required range in the format <min>[:<max>],
+ *        toolchain root,
+ *        toolchain config
 */
 struct ToolchainItem {
   std::string name;
   std::string version;
+  std::string required;
+  std::string range;
+  std::string root;
+  std::string config;
 };
 
 /**
@@ -380,10 +388,10 @@ public:
 
   /**
   * @brief list installed toolchains
-  * @param reference to list of toolchains
-  * @param reference to local directory
+  * @param reference to vector of toolchain items
+  * @return true if executed successfully
   */
-  void ListToolchains(StrPairVec& toolchains, const std::string& localDir);
+  bool ListToolchains(std::vector<ToolchainItem>& toolchains);
 
   /**
    * @brief add contexts for a given descriptor
@@ -437,6 +445,12 @@ public:
   void SetLoadPacksPolicy(const LoadPacksPolicy& policy);
 
   /**
+   * @brief set vector of environment variables
+   * @param reference to vector of environment variables
+  */
+  void SetEnvironmentVariables(const StrVec& envVars);
+
+  /**
    * @brief execute generator of a given context
    * @param generator identifier
    * @return true if executed successfully
@@ -480,6 +494,8 @@ protected:
   ProjMgrKernel* m_kernel = nullptr;
   RteGlobalModel* m_model = nullptr;
   std::list<RtePackage*> m_loadedPacks;
+  std::vector<ToolchainItem> m_toolchains;
+  StrVec m_envVars;
   std::vector<std::string> m_ymlOrderedContexts;
   std::map<std::string, ContextItem> m_contexts;
   std::map<std::string, ContextItem>* m_contextsPtr;
@@ -557,8 +573,11 @@ protected:
   void GetAllSelectCombinations(const ConnectPtrVec& src, const ConnectPtrVec::iterator& it,
     std::vector<ConnectPtrVec>& combinations);
   void PushBackUniquely(ConnectionsCollectionVec& vec, const ConnectionsCollection& value);
+  void PushBackUniquely(std::vector<ToolchainItem>& vec, const ToolchainItem& value);
   std::string ExpandString(const std::string& src, const StrMap& variables);
-  void ListLatestToolchains(StrMap& toolchains, const std::string& localDir);
+  void GetRegisteredToolchains(void);
+  bool GetLatestToolchain(ToolchainItem& toolchain);
+  bool GetToolchainConfig(const std::string& name, const std::string& version, std::string& configPath, std::string& selectedConfigVersion);
   bool IsConnectionSubset(const ConnectionsCollection& connectionSubset, const ConnectionsCollection& connectionSuperset);
   bool IsCollectionSubset(const ConnectionsCollectionVec& collectionSubset, const ConnectionsCollectionVec& collectionSuperset);
   void RemoveRedundantSubsets(std::vector<ConnectionsCollectionVec>& validConnections);

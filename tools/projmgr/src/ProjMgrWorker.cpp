@@ -200,6 +200,10 @@ void ProjMgrWorker::SetLoadPacksPolicy(const LoadPacksPolicy& policy) {
   m_loadPacksPolicy = policy;
 }
 
+void ProjMgrWorker::SetEnvironmentVariables(const StrVec& envVars) {
+  m_envVars = envVars;
+}
+
 bool ProjMgrWorker::GetRequiredPdscFiles(ContextItem& context, const std::string& packRoot, std::set<std::string>& errMsgs) {
   if (!ProcessPackages(context)) {
     return false;
@@ -1159,8 +1163,7 @@ bool ProjMgrWorker::ProcessPackages(ContextItem& context) {
       pack.vendor = RteUtils::RemoveSuffixByString(packInfoStr, "::");
       packInfoStr = RteUtils::RemovePrefixByString(packInfoStr, "::");
       pack.name   = RteUtils::GetPrefix(packInfoStr, '@');
-    }
-    else {
+    } else {
       pack.vendor = RteUtils::GetPrefix(packInfoStr, '@');
     }
     pack.version = RteUtils::GetSuffix(packInfoStr, '@');
@@ -1181,18 +1184,13 @@ bool ProjMgrWorker::ProcessToolchain(ContextItem& context) {
   }
 
   context.toolchain = GetToolchain(context.compiler);
-  if (context.toolchain.version.empty()) {
-    StrMap latestVersions;
-    ListLatestToolchains(latestVersions, context.csolution->path);
-    for (const auto& [name, version] : latestVersions) {
-      if (context.toolchain.name == name) {
-        context.toolchain.version = version;
-        break;
-      }
-    }
-    if (context.toolchain.version.empty()) {
-      ProjMgrLogger::Warn("cmake configuration file for toolchain '" + context.toolchain.name + "' was not found");
-      context.toolchain.version = "0.0.0";
+
+  // get compatible registered toolchain
+  if (!GetLatestToolchain(context.toolchain)) {
+    // get compatible supported toolchain
+    if (!GetToolchainConfig(context.toolchain.name, context.toolchain.range, context.toolchain.config, context.toolchain.version)) {
+      ProjMgrLogger::Warn("cmake configuration file for toolchain '" + context.compiler + "' was not found");
+      context.toolchain.version = context.toolchain.range;
     }
   }
   if (context.toolchain.name == "AC6" || context.toolchain.name == "AC5") {
@@ -2610,10 +2608,18 @@ ToolchainItem ProjMgrWorker::GetToolchain(const string& compiler) {
   ToolchainItem toolchain;
   if (compiler.find("@") != string::npos) {
     toolchain.name = RteUtils::RemoveSuffixByString(compiler, "@");
-    toolchain.version = RteUtils::RemovePrefixByString(compiler, "@");
-  }
-  else {
+    toolchain.required = RteUtils::RemovePrefixByString(compiler, "@");
+    if (toolchain.required.find(">=") != string::npos) {
+      // minimum version
+      toolchain.range = toolchain.required.substr(2);
+    } else {
+      // fixed version
+      toolchain.range = toolchain.required + ":" + toolchain.required;
+    }
+  } else {
     toolchain.name = compiler;
+    toolchain.required = ">=0.0.0";
+    toolchain.range = "0.0.0";
   }
   return toolchain;
 }
@@ -2868,43 +2874,113 @@ string ProjMgrWorker::ExpandString(const string& src, const StrMap& variables) {
   return ret;
 }
 
-void ProjMgrWorker::ListToolchains(StrPairVec& toolchains, const string& localDir) {
-  // find cmake files in compiler root path
-  list<string> cmakeFiles;
-  const string& compilerRoot = GetCompilerRoot();
-  if (compilerRoot.empty()) {
-    ProjMgrLogger::Warn("compiler root path was not found");
-  }
-  RteFsUtils::GrepFileNames(cmakeFiles, compilerRoot, "*.cmake");
-
-  // find cmake files in local directory
-  if (!localDir.empty()) {
-    list<string> cmakeFilesLocal;
-    RteFsUtils::GrepFileNames(cmakeFilesLocal, localDir, "*.cmake");
-    cmakeFiles.insert(cmakeFiles.end(), cmakeFilesLocal.begin(), cmakeFilesLocal.end());
-  }
-
-  // extract toolchain info
-  for (const auto& cmakeFile : cmakeFiles) {
-    smatch sm;
-    const string& stem  = fs::path(cmakeFile).stem().generic_string();
-    regex_match(stem, sm, regex("(.*)\\.(.*\\..*\\..*)"));
-    if (sm.size() == 3) {
-      ProjMgrUtils::PushBackUniquely(toolchains, {sm[1], sm[2]});
+bool ProjMgrWorker::ListToolchains(vector<ToolchainItem>& toolchains) {
+  bool allSupported = true;
+  for (const auto& selectedContext : m_selectedContexts) {
+    ContextItem& context = m_contexts[selectedContext];
+    if (selectedContext.empty()) {
+      // list registered toolchains
+      GetRegisteredToolchains();
+      toolchains = m_toolchains;
+      return true;
+    }
+    // list required toolchains for selected contexts
+    if (!LoadPacks(context)) {
+      return false;
+    }
+    if (!ProcessPrecedences(context)) {
+      return false;
+    }
+    if (!context.toolchain.name.empty()) {
+      PushBackUniquely(toolchains, context.toolchain);
+    }
+    if (context.toolchain.config.empty() || context.toolchain.root.empty()) {
+      allSupported = false;
     }
   }
-  std::sort(toolchains.begin(), toolchains.end());
+  return allSupported;
 }
 
-void ProjMgrWorker::ListLatestToolchains(StrMap& toolchains, const string & localDir) {
-  StrPairVec fullList;
-  ListToolchains(fullList, localDir);
-  for (const auto& [name, version] : fullList) {
-    if ((toolchains.find(name) == toolchains.end()) ||
-      (VersionCmp::Compare(toolchains.at(name), version) < 0)) {
-      toolchains[name] = version;
+void ProjMgrWorker::GetRegisteredToolchains(void) {
+  if (!m_toolchains.empty()) {
+    return;
+  }
+  // extract toolchain info from environment variables
+  map<string, map<string, string>> registeredToolchains;
+  static const regex regEx = regex("(\\w+)_TOOLCHAIN_(\\d+)_(\\d+)_(\\d+)=(.*)");
+  for (const auto& envVar : m_envVars) {
+    smatch sm;
+    try {
+      regex_match(envVar, sm, regEx);
+    } catch (exception&) {};
+    if (sm.size() == 6) {
+      registeredToolchains[sm[1]][string(sm[2]) + '.' + string(sm[3]) + '.' + string(sm[4])] = sm[5];
     }
   }
+  // iterate over registered toolchains
+  for (const auto& [toolchainName, toolchainVersions] : registeredToolchains) {
+    for (const auto& [toolchainVersion, toolchainRoot] : toolchainVersions) {
+      if (RteFsUtils::Exists(toolchainRoot)) {
+        // check whether a config file is available for the registered version
+        string configPath, configVersion;
+        if (GetToolchainConfig(toolchainName, "0.0.0:" + toolchainVersion, configPath, configVersion)) {
+          m_toolchains.push_back({toolchainName, toolchainVersion, "", "", toolchainRoot, configPath});
+        }
+      }
+    }
+  }
+}
+
+bool ProjMgrWorker::GetLatestToolchain(ToolchainItem& toolchain) {
+  // get latest toolchain version
+  GetRegisteredToolchains();
+  bool found = false;
+  for (const auto& registeredToolchain : m_toolchains) {
+    if ((toolchain.name == registeredToolchain.name) &&
+      (VersionCmp::RangeCompare(registeredToolchain.version, toolchain.range) == 0)) {
+      toolchain.version = registeredToolchain.version;
+      toolchain.config = registeredToolchain.config;
+      toolchain.root = registeredToolchain.root;
+      found = true;
+    }
+  }
+  return found;
+}
+
+bool ProjMgrWorker::GetToolchainConfig(const string& toolchainName, const string& toolchainVersion, string& configPath, string& selectedConfigVersion) {
+  // get toolchain configuration files
+  const string& compilerRoot = GetCompilerRoot();
+  StrVec toolchainConfigFiles;
+  error_code ec;
+  for (auto const& entry : fs::recursive_directory_iterator(compilerRoot, ec)) {
+    string extn = entry.path().extension().string();
+    if (entry.path().extension().string() != ".cmake") {
+      continue;
+    }
+    toolchainConfigFiles.push_back(entry.path().generic_string());
+  }
+  // find greatest compatible file
+  bool found = false;
+  static const regex regEx = regex("(\\w+)\\.(\\d+\\.\\d+\\.\\d+)");
+  for (const auto& file : toolchainConfigFiles) {
+    smatch sm;
+    const string& stem = fs::path(file).stem().generic_string();
+    try {
+      regex_match(stem, sm, regEx);
+    } catch (exception&) {};
+    if (sm.size() == 3) {
+      const string& configName = sm[1];
+      const string& configVersion = sm[2];
+      if ((configName.compare(toolchainName) == 0) &&
+        (toolchainVersion.empty() || (VersionCmp::RangeCompare(configVersion, toolchainVersion) == 0)) &&
+        (VersionCmp::Compare(selectedConfigVersion, configVersion) <= 0)) {
+        selectedConfigVersion = configVersion;
+        configPath = file;
+        found = true;
+      }
+    }
+  }
+  return found;
 }
 
 string ProjMgrWorker::GetCompilerRoot(void) {
@@ -2925,6 +3001,15 @@ string ProjMgrWorker::GetCompilerRoot(void) {
 void ProjMgrWorker::PushBackUniquely(ConnectionsCollectionVec& vec, const ConnectionsCollection& value) {
   for (const auto& item : vec) {
     if ((value.filename == item.filename) && (value.connections == item.connections)) {
+      return;
+    }
+  }
+  vec.push_back(value);
+}
+
+void ProjMgrWorker::PushBackUniquely(vector<ToolchainItem>& vec, const ToolchainItem& value) {
+  for (const auto& item : vec) {
+    if ((value.name == item.name) && (value.required == item.required)) {
       return;
     }
   }

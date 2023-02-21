@@ -313,10 +313,12 @@ int CbuildGen::RunCbuildGen(int argc, char **argv, char** envp) {
     }
   }
 
-  // environment variables;
+  // Environment variables
   vector<string> envVars;
-  for (char** env = envp; *env != 0; env++) {
-    envVars.push_back(string(*env));
+  if (envp) {
+    for (char** env = envp; *env != 0; env++) {
+      envVars.push_back(string(*env));
+    }
   }
 
   vector<string> layers(params.begin(), params.end());
