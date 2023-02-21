@@ -33,8 +33,9 @@ public:
    * @brief entry point for running projmgr
    * @param argc command line argument count
    * @param argv command line argument vector
+   * @param envp environment variables
   */
-  static int RunProjMgr(int argc, char **argv);
+  static int RunProjMgr(int argc, char **argv, char** envp);
 
   /**
    * @brief print usage

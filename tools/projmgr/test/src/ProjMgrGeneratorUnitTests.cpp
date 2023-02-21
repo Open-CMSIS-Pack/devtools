@@ -45,7 +45,7 @@ TEST_F(ProjMgrGeneratorUnitTests, GenDir) {
   argv[4] = (char*)"-g";
   argv[5] = (char*)"RteTestGeneratorIdentifier";
 
-  EXPECT_EQ(0, ProjMgr::RunProjMgr(6, argv));
+  EXPECT_EQ(0, ProjMgr::RunProjMgr(6, argv, 0));
 
   const string generatorInputFile = testinput_folder + "/TestSolution/TestProject3/TestProject3.Debug+TypeA.cbuild.yml";
   const string generatedGPDSC = testinput_folder + "/TestSolution/TestProject3/gendir/RteTestGen_ARMCM0/RteTest.gpdsc";

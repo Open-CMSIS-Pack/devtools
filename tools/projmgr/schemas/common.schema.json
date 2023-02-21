@@ -97,7 +97,7 @@
     },
     "CompilerType": {
       "type": "string",
-      "pattern": "^(GCC|AC6|IAR)(@(\\d+\\.\\d+\\.\\d+((\\+|\\-)[\\w.+-]+)?))?$",
+      "pattern": "^(GCC|AC6|IAR)(@(>=)?(\\d+\\.\\d+\\.\\d+((\\+|\\-)[\\w.+-]+)?))?$",
       "description": "Selection of the toolchain used in the project (GCC, AC6, IAR), optionally with version, for example AC6@6.16.0"
     },
     "ConsumesProvidesType": {

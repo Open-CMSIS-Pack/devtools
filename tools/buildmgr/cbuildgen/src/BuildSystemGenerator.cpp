@@ -38,6 +38,7 @@ bool BuildSystemGenerator::Collect(const string& inputFile, const CbuildModel *m
   m_projectDir = StrConv(RteFsUtils::AbsolutePath(inputFile).remove_filename().generic_string());
   m_workingDir = fs::current_path(ec).generic_string() + SS;
   m_compilerRoot = compilerRoot;
+  RteFsUtils::NormalizePath(m_compilerRoot);
 
   // Find toolchain config
   m_toolchainConfig = StrNorm(model->GetToolchainConfig());

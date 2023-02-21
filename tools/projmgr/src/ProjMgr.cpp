@@ -91,7 +91,7 @@ void ProjMgr::ShowVersion(void) {
   cout << ORIGINAL_FILENAME << " " << VERSION_STRING << " " << COPYRIGHT_NOTICE << endl;
 }
 
-int ProjMgr::RunProjMgr(int argc, char **argv) {
+int ProjMgr::RunProjMgr(int argc, char **argv, char** envp) {
   ProjMgr manager;
 
   // Command line options
@@ -225,6 +225,15 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
   if (parseResult.count("help")) {
     return manager.PrintUsage(optionsDict, manager.m_command, manager.m_args) ? 0 : 1;
   }
+
+  // Environment variables
+  vector<string> envVars;
+  if (envp) {
+    for (char** env = envp; *env != 0; env++) {
+      envVars.push_back(string(*env));
+    }
+  }
+  manager.m_worker.SetEnvironmentVariables(envVars);
 
   if (manager.m_command == "list") {
     // Process 'list' command
@@ -603,12 +612,39 @@ bool ProjMgr::RunCodeGenerator(void) {
 }
 
 bool ProjMgr::RunListToolchains(void) {
-  StrPairVec toolchains;
-  m_worker.ListToolchains(toolchains, m_rootDir);
-  for (const auto& [name, version] : toolchains) {
-    cout << name << "@" << version << endl;
+  if (!m_csolutionFile.empty()) {
+    // Parse all input files and create contexts
+    if (!PopulateContexts()) {
+      return false;
+    }
   }
-  return true;
+  // Parse context selection
+  if (!m_worker.ParseContextSelection(m_context)) {
+    return false;
+  }
+  vector<ToolchainItem> toolchains;
+  bool ret = m_worker.ListToolchains(toolchains);
+  StrSet toolchainsSet;
+  for (const auto& toolchain : toolchains) {
+    string toolchainEntry = toolchain.name + "@" +
+      (toolchain.required.empty() ? toolchain.version : toolchain.required) + "\n";
+    if (m_verbose) {
+      string env = toolchain.version;
+      replace(env.begin(), env.end(), '.', '_');
+      if (!toolchain.root.empty()) {
+        toolchainEntry += "  Environment: " + toolchain.name + "_TOOLCHAIN_" + env + "\n";
+        toolchainEntry += "  Toolchain: " + toolchain.root + "\n";
+      }
+      if (!toolchain.config.empty()) {
+        toolchainEntry += "  Configuration: " + toolchain.config + "\n";
+      }
+    }
+    toolchainsSet.insert(toolchainEntry);
+  }
+  for (const auto& toolchainEntry : toolchainsSet) {
+    cout << toolchainEntry;
+  }
+  return ret;
 }
 
 bool ProjMgr::GetCdefaultFile(void) {
