@@ -203,6 +203,9 @@ bool CheckFiles::CheckFile(RteItem* item)
     fileName = item->GetAttribute("large");
     fileName2 = item->GetAttribute("small");
   }
+  else if(tag == "debug") {
+    fileName = item->GetAttribute("svd");
+  }
   else {
     GetFileName(item, fileName, fileType);
   }
@@ -234,10 +237,10 @@ bool CheckFiles::CheckFile(RteItem* item)
 
   // Filename
   if(!fileName.empty()) {
+    CheckForSpaces(fileName, lineNo);
     if(CheckFileExists(fileName, lineNo)) {
       CheckCaseSense(fileName, lineNo);
       CheckFileIsInPack(fileName, lineNo);
-      CheckForSpaces(fileName, lineNo);
     }
 
     if(tag == "environment" && envName == "DS5") {
@@ -261,10 +264,10 @@ bool CheckFiles::CheckFile(RteItem* item)
 
   // Filename2
   if(!fileName2.empty()) {
+    CheckForSpaces(fileName2, lineNo);
     if(CheckFileExists(fileName2, lineNo)) {
       CheckCaseSense(fileName2, lineNo);   // File must exist for this check!
       CheckFileIsInPack(fileName2, lineNo);
-      CheckForSpaces(fileName2, lineNo);
     }
   }
 
@@ -469,9 +472,9 @@ bool CheckFiles::CheckForSpaces(const string& fileName, int lineNo)
     return true;
   }
 
-  string name = RteUtils::ExtractFileName(fileName);
+  string name = fileName;
   if(name.find(' ') != string::npos) {
-    LogMsg("M314", PATH(name), lineNo);
+    LogMsg("M314", NAME(name), lineNo);
     return false;
   }
 
