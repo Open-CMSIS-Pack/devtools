@@ -29,7 +29,7 @@ public:
   /**
    * @brief file category, corresponds to "category" attribute
   */
-  enum Category {
+  enum class Category {
     DOC,                // document file or URL
     HEADER,             // C/C++ header file
     INCLUDE,            // include path
@@ -41,17 +41,21 @@ public:
     SOURCE_CPP,         // C++ source file
     LINKER_SCRIPT,      // linker script or scatter file
     UTILITY,            // utility file or executable
-    SVD,                // SVD file
+    SVD,                // SVD file : deprecated
     IMAGE,              // image file
     PRE_INCLUDE_GLOBAL, // global C/C++ pre-include file (for entire project)
     PRE_INCLUDE_LOCAL,  // local C/C++ pre-include file (for files of contributing component)
+    GEN_SOURCE,         // source file which is exclusively used by the generator
+    GEN_HEADER,         // header file which is exclusively used by the generator
+    GEN_PARAMS,         // parameter file which is exclusively used by the generator
+    GEN_ASSET,          // asset file which is exclusively used by the generator
     OTHER               // uncategorized file or path
   };
 
  /**
    * @brief file role, corresponds to "attr" attribute
   */
-  enum Role {
+  enum class Role {
     ROLE_NONE,      // file has no specific role
     ROLE_COPY,      // file must be copied to the project
     ROLE_CONFIG,    // file is a "config" file, must be copied to the project and edited by the user
@@ -59,6 +63,28 @@ public:
     ROLE_INTERFACE  // file is an interface
   };
 
+  /**
+   * @brief file scope, corresponds to "scope" attribute
+  */
+  enum class Scope {
+    SCOPE_NONE,     // scope is not specified
+    SCOPE_VISIBLE,  // header suggested for inclusion by other modules and is considered the contract of the component.
+    SCOPE_HIDDEN,   // header is an internal header file which must not be explicitly included by modules outside of the scope of the component
+    SCOPE_PUBLIC,   // include path is added to the command line for building any modules of the specified language.
+    SCOPE_PRIVATE   // include path is added to the command line for building any module of the component for the specified language.
+  };
+
+  /**
+   * @brief file language, corresponds to "language" attribute
+  */
+  enum class Language {
+    LANGUAGE_NONE,  // not explicitly specified language
+    LANGUAGE_ASM,   // The file information is passed to an assembler
+    LANGUAGE_C,     // The file information is passed to a C compiler
+    LANGUAGE_CPP,   // The file information is passed to a C++ compiler
+    LANGUAGE_C_CPP, // The file information is passed to both C - as well as C++ compiler
+    LANGUAGE_LINK   // The file information is passed to a linker
+  };
 
   /**
   * @brief constructor
@@ -71,12 +97,6 @@ public:
    * @return true if valid
   */
   virtual bool Validate() override;
-
-  /**
-   * @brief get file role
-   * @return RteFile::Role
-  */
-  Role GetRole() const;
 
   /**
    * @brief check if file has copy role
@@ -110,6 +130,24 @@ public:
    * @return file category as string
   */
   const std::string& GetCategoryString() const;
+
+  /**
+   * @brief get file role
+   * @return RteFile::Role
+  */
+  Role GetRole() const;
+
+  /**
+   * @brief get file scope
+   * @return RteFile::Scope
+  */
+  Scope GetScope() const;
+
+  /**
+   * @brief get file language
+   * @return RteFile::Language
+  */
+  Language GetLanguage() const;
 
   /**
    * @brief construct file item
@@ -168,16 +206,31 @@ public:
 
   /**
    * @brief helper static method to convert string to RteFile::Category value
-   * @param category category string
+   * @param category string with category
    * @return RteFile::Category value
   */
   static Category CategoryFromString(const std::string& category);
   /**
    * @brief helper static method to convert string to RteFile::Role value
-   * @param category category string
+   * @param role string with role
    * @return RteFile::Role value
   */
   static Role     RoleFromString(const std::string& role);
+
+  /**
+   * @brief helper static method to convert string to RteFile::Scope value
+   * @param scope string with scope
+   * @return RteFile::Scope value
+  */
+  static Scope     ScopeFromString(const std::string& scope);
+
+  /**
+   * @brief helper static method to convert string to RteFile::Language value
+   * @param language string with language
+   * @return RteFile::Language value
+  */
+  static Language  LanguageFromString(const std::string& language);
+
 };
 
 

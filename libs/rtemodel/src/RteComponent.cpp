@@ -241,7 +241,7 @@ string RteComponent::GetDocFile() const
   const list<RteItem*>& files = m_files->GetChildren();
   for (auto it = files.begin(); it != files.end(); it++) {
     RteFile* f = dynamic_cast<RteFile*>(*it);
-    if (f && !f->IsConfig() && f->GetCategory() == RteFile::DOC) {
+    if (f && !f->IsConfig() && f->GetCategory() == RteFile::Category::DOC) {
       fDoc = f;
       break;
     }

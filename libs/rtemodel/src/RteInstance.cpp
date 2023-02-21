@@ -724,6 +724,16 @@ RteFile::Category RteFileInstance::GetCategory() const
   return RteFile::CategoryFromString(GetAttribute("category"));
 }
 
+RteFile::Scope RteFileInstance::GetScope() const
+{
+  return RteFile::ScopeFromString(GetAttribute("scope"));
+}
+
+RteFile::Language RteFileInstance::GetLanguage() const
+{
+  return RteFile::LanguageFromString(GetAttribute("language"));
+}
+
 int RteFileInstance::HasNewVersion(const string& targetName) const
 {
   RteFile* f = GetFile(targetName);

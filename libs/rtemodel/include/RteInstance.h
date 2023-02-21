@@ -1420,6 +1420,18 @@ public:
   RteFile::Category GetCategory() const;
 
   /**
+   * @brief get file scope
+   * @return RteFile::Scope value
+  */
+  RteFile::Scope GetScope() const;
+
+  /**
+   * @brief get file language
+   * @return RteFile::Language value
+  */
+  RteFile::Language GetLanguage() const;
+
+  /**
    * @brief get zero-based file instance index
    * @return instance index
   */
