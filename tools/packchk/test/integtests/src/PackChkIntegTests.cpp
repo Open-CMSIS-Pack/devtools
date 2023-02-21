@@ -523,3 +523,31 @@ TEST_F(PackChkIntegTests, CheckTestPackRoot) {
     FAIL() << "error: missing message M313";
   }
 }
+
+// Validate invalid file path (file is directory)
+TEST_F(PackChkIntegTests, CheckFilenameIsDir) {
+  const char* argv[2];
+
+  const string& pdscFile = PackChkIntegTestEnv::localtestdata_dir +
+    "/FilenameIsDir/TestVendor.FilenameIsDirPack.pdsc";
+  ASSERT_TRUE(RteFsUtils::Exists(pdscFile));
+
+  argv[0] = (char*)"";
+  argv[1] = (char*)pdscFile.c_str();
+
+  PackChk packChk;
+  EXPECT_EQ(1, packChk.Check(2, argv, nullptr));
+
+  auto errMsgs = ErrLog::Get()->GetLogMessages();
+  int foundCnt = 0;
+  for (const string& msg : errMsgs) {
+    size_t s;
+    if ((s = msg.find("M356")) != string::npos) {
+      foundCnt++;
+    }
+  }
+
+  if (foundCnt != 1) {
+    FAIL() << "error: missing message M356";
+  }
+}
