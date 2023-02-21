@@ -122,6 +122,7 @@ bool ValidateSemantic::GatherCompilers(RtePackage* pKg)
   return true;
 }
 
+
 /**
  * @brief RTE Model messages
 */
@@ -361,7 +362,7 @@ bool ValidateSemantic::UpdateRte(RteTarget* target, RteProject* rteProject, RteC
   target->ClearSelectedComponents();
   RteComponentAggregate* cmsisComp = target->GetComponentAggregate("ARM::CMSIS.CORE");
   target->SelectComponent(cmsisComp, 1, true);
-  target->SelectComponent(component, 1, true);
+  target->SelectComponent(component, 1, true, true);
   rteProject->CollectSettings();
   target->CollectFilteredFiles();
   target->EvaluateComponentDependencies();
@@ -485,168 +486,220 @@ bool ValidateSemantic::CheckDeviceDependencies(RteDeviceItem *device, RteProject
       mcuDispName += Pname;
     }
 
-    RteItem filter;
-    device->GetEffectiveFilterAttributes(processorName, filter);
-    filter.AddAttribute("Dname", mcuName);
+    list<string> trustZoneList;
+    auto trustZone = processor->GetAttribute("Dtz");
+    if(trustZone.empty()) {
+      trustZoneList.push_back("");
+    }
+    else {
+      trustZoneList.push_back("TZ-disabled");
+      trustZoneList.push_back("Secure");
+      trustZoneList.push_back("Non-secure");
+    }
 
-    for(auto &[compilerKey, compiler] : m_compilers) {
-      filter.AddAttribute("Tcompiler", compiler.tcompiler);
-      filter.AddAttribute("Toptions", compiler.toptions);
+    for(auto trustZoneMode : trustZoneList) {
+      RteItem filter;
+      device->GetEffectiveFilterAttributes(processorName, filter);
+      filter.AddAttribute("Dname", mcuName);
 
-      rteProject->Clear();
-      rteProject->AddTarget("Test", filter.GetAttributes(), true, true);
-      rteProject->SetActiveTarget("Test");
-      RteTarget* target = rteProject->GetActiveTarget();
-      rteProject->FilterComponents();
+      for(auto &[compilerKey, compiler] : m_compilers) {
+        filter.AddAttribute("Tcompiler", compiler.tcompiler);
+        filter.AddAttribute("Toptions", compiler.toptions);
 
-      set<RteComponentAggregate*> startupComponents;
-      target->GetComponentAggregates(deviceStartup, startupComponents);
-      if(startupComponents.empty()) {
-        LogMsg("M350", COMP("Startup"), VENDOR(mcuVendor), MCU(mcuDispName), COMPILER(compiler.tcompiler), OPTION(compiler.toptions), lineNo);
-        continue;  // error: no startup component found
-      }
+        if(!trustZoneMode.empty()) {
+          filter.AddAttribute("Dsecure", trustZoneMode);
+        }
 
-      for(auto aggregate : startupComponents) {
-        ErrLog::Get()->SetFileName(aggregate->GetPackage()->GetPackageFileName());
+        rteProject->Clear();
+        rteProject->AddTarget("Test", filter.GetAttributes(), true, true);
+        rteProject->SetActiveTarget("Test");
+        RteTarget* target = rteProject->GetActiveTarget();
+        rteProject->FilterComponents();
 
-        for(auto &[componentKey, componentMap] : aggregate->GetAllComponents()) {
-          int foundSystemC = 0, foundStartup = 0;
-          bool bFoundSystemH = false;
-          int lineSystem = 0, lineStartup = 0;
+        set<RteComponentAggregate*> startupComponents;
+        target->GetComponentAggregates(deviceStartup, startupComponents);
+        if(startupComponents.empty()) {
+          LogMsg("M350", COMP("Startup"), VENDOR(mcuVendor), MCU(mcuDispName), COMPILER(compiler.tcompiler), OPTION(compiler.toptions), lineNo);
+          continue;  // error: no startup component found
+        }
 
-          for(auto& [key, component] : componentMap) {
-            string compId = component->GetComponentID(true);
-            LogMsg("M091", COMP("Startup"), VAL("COMPID", compId), VENDOR(mcuVendor), MCU(mcuDispName), COMPILER(compiler.tcompiler), OPTION(compiler.toptions), lineNo);
+        for(auto aggregate : startupComponents) {
+          ErrLog::Get()->SetFileName(aggregate->GetPackage()->GetPackageFileName());
 
-            UpdateRte(target, rteProject, component);
-            int lineNo = component->GetLineNumber();
+          for(auto &[componentKey, componentMap] : aggregate->GetAllComponents()) {
+            int foundSystemC = 0, foundStartup = 0;
+            bool bFoundSystemH = false;
+            int lineSystem = 0, lineStartup = 0;
 
-            CheckDependencyResult(target, component, mcuVendor, mcuDispName, compiler);
+            for(auto& [key, component] : componentMap) {
+              string compId = component->GetComponentID(true);
+              LogMsg("M091", COMP("Startup"), VAL("COMPID", compId), VENDOR(mcuVendor), MCU(mcuDispName), COMPILER(compiler.tcompiler), OPTION(compiler.toptions), lineNo);
 
-            const set<RteFile*>& targFiles = target->GetFilteredFiles(component);
-            if(targFiles.empty()) {
-              LogMsg("M352", COMP("Startup"), VAL("COMPID", compId), VENDOR(mcuVendor), MCU(mcuDispName), COMPILER(compiler.tcompiler), OPTION(compiler.toptions), lineNo);
-              continue;
-            }
+              UpdateRte(target, rteProject, component);
+              int lineNo = component->GetLineNumber();
 
-            const string& deviceHeaderfile = target->GetDeviceHeader();
-            if(deviceHeaderfile.empty()) {
-              LogMsg("M353", VAL("FILECAT", "Device Header-file"), COMP("Startup"), VAL("COMPID", compId), VENDOR(mcuVendor), MCU(mcuDispName), COMPILER(compiler.tcompiler), OPTION(compiler.toptions), lineNo);
-              bOk = false;
-            }
+              CheckDependencyResult(target, component, mcuVendor, mcuDispName, compiler);
 
-            const set<string>& incPaths = target->GetIncludePaths();
-            if(incPaths.empty()) {
-              LogMsg("M355", VAL("FILECAT", "Include"), COMP("Startup"), VAL("COMPID", compId), VENDOR(mcuVendor), MCU(mcuDispName), COMPILER(compiler.tcompiler), OPTION(compiler.toptions), lineNo);
-              bOk = false;
-            }
+              const set<RteFile*>& targFiles = target->GetFilteredFiles(component);
+              if(targFiles.empty()) {
+                LogMsg("M352", COMP("Startup"), VAL("COMPID", compId), VENDOR(mcuVendor), MCU(mcuDispName), COMPILER(compiler.tcompiler), OPTION(compiler.toptions), lineNo);
+                continue;
+              }
 
-            for(auto file : targFiles) {
-              const string& category = file->GetAttribute("category");
+              const string& deviceHeaderfile = target->GetDeviceHeader();
+              if(deviceHeaderfile.empty()) {
+                LogMsg("M353", VAL("FILECAT", "Device Header-file"), COMP("Startup"), VAL("COMPID", compId), VENDOR(mcuVendor), MCU(mcuDispName), COMPILER(compiler.tcompiler), OPTION(compiler.toptions), lineNo);
+                bOk = false;
+              }
 
-              if(category == "source" || category == "sourceAsm" || category == "sourceC") {
-                string fileName = RteUtils::BackSlashesToSlashes(RteUtils::ExtractFileName(file->GetName()));
-                if(fileName.empty()) {
-                  continue;
-                }
-                const string& attribute = file->GetAttribute("attr");
+              const set<string>& incPaths = target->GetIncludePaths();
+              if(incPaths.empty()) {
+                LogMsg("M355", VAL("FILECAT", "Include"), COMP("Startup"), VAL("COMPID", compId), VENDOR(mcuVendor), MCU(mcuDispName), COMPILER(compiler.tcompiler), OPTION(compiler.toptions), lineNo);
+                bOk = false;
+              }
 
-                if(FindName(fileName, "system_", ".c")) {
-                  foundSystemC++;
-                  lineSystem = file->GetLineNumber();
-                  if(attribute != "config") {
-                    LogMsg("M377", NAME(fileName), TYP(category), lineNo);
+              for(auto file : targFiles) {
+                const string& category = file->GetAttribute("category");
+
+                if(category == "source" || category == "sourceAsm" || category == "sourceC") {
+                  string fileName = RteUtils::BackSlashesToSlashes(RteUtils::ExtractFileName(file->GetName()));
+                  if(fileName.empty()) {
+                    continue;
                   }
+                  const string& attribute = file->GetAttribute("attr");
 
-                  string systemHeader = RteUtils::ExtractFileBaseName(fileName);
-                  systemHeader += ".h";
+                  if(FindName(fileName, "system_", ".c")) {
+                    foundSystemC++;
+                    lineSystem = file->GetLineNumber();
+                    if(attribute != "config") {
+                      LogMsg("M377", NAME(fileName), TYP(category), lineNo);
+                    }
 
-                  bFoundSystemH = FindFileFromList(systemHeader, targFiles);
-                  if(!bFoundSystemH) {
-                    string incPathsMsg;
-                    int    incPathsCnt = 0;
-                    for(auto& incPath : incPaths) {
-                      systemHeader = RteUtils::BackSlashesToSlashes(incPath);
-                      if(ExcludeSysHeaderDirectories(systemHeader, rteProject->GetRteFolder())) {
-                        continue;
-                      }
+                    string systemHeader = RteUtils::ExtractFileBaseName(fileName);
+                    systemHeader += ".h";
 
-                      incPathsMsg += "\n  ";
-                      incPathsMsg += to_string((unsigned long long) ++incPathsCnt);
-                      incPathsMsg += ": ";
-                      incPathsMsg += systemHeader;
+                    bFoundSystemH = FindFileFromList(systemHeader, targFiles);
+                    if(!bFoundSystemH) {
+                      string incPathsMsg;
+                      int    incPathsCnt = 0;
+                      for(auto& incPath : incPaths) {
+                        systemHeader = RteUtils::BackSlashesToSlashes(incPath);
+                        if(ExcludeSysHeaderDirectories(systemHeader, rteProject->GetRteFolder())) {
+                          continue;
+                        }
 
-                      systemHeader += "/";
-                      systemHeader += RteUtils::ExtractFileBaseName(fileName);
-                      systemHeader += ".h";
+                        incPathsMsg += "\n  ";
+                        incPathsMsg += to_string((unsigned long long) ++incPathsCnt);
+                        incPathsMsg += ": ";
+                        incPathsMsg += systemHeader;
 
-                      string sysHeader = RteUtils::ExtractFileName(systemHeader);
-                      for (auto f : targFiles) {
-                        if(RteUtils::ExtractFileName(f->GetName()) == sysHeader) {
-                          systemHeader = f->GetOriginalAbsolutePath();
-                          break;
+                        systemHeader += "/";
+                        systemHeader += RteUtils::ExtractFileBaseName(fileName);
+                        systemHeader += ".h";
+
+                        string sysHeader = RteUtils::ExtractFileName(systemHeader);
+                        for (auto f : targFiles) {
+                          if(RteUtils::ExtractFileName(f->GetName()) == sysHeader) {
+                            systemHeader = f->GetOriginalAbsolutePath();
+                            break;
+                          }
+                        }
+
+                        if(RteFsUtils::Exists(systemHeader)) {
+                          bFoundSystemH = true;
                         }
                       }
 
-                      if(RteFsUtils::Exists(systemHeader)) {
-                        bFoundSystemH = true;
+                      if(!bFoundSystemH) {
+                        systemHeader  = RteUtils::ExtractFileBaseName(fileName);
+                        systemHeader += ".h";
+                        if(incPathsMsg.empty()) {
+                          incPathsMsg  = "\n  ";
+                          incPathsMsg += to_string((unsigned long long) ++incPathsCnt);
+                          incPathsMsg += ": ";
+                          incPathsMsg += "<not found any include path>";
+                        }
+                        LogMsg("M358", VAL("HFILE", RteUtils::ExtractFileName(systemHeader)), VAL("CFILE", fileName), COMP("Startup"), VAL("COMPID", compId),
+                               VENDOR(mcuVendor), MCU(mcuDispName), COMPILER(compiler.tcompiler), OPTION(compiler.toptions), PATH(incPathsMsg), lineNo);
+                        bOk = false;
                       }
-                    }
-
-                    if(!bFoundSystemH) {
-                      systemHeader  = RteUtils::ExtractFileBaseName(fileName);
-                      systemHeader += ".h";
-                      if(incPathsMsg.empty()) {
-                        incPathsMsg  = "\n  ";
-                        incPathsMsg += to_string((unsigned long long) ++incPathsCnt);
-                        incPathsMsg += ": ";
-                        incPathsMsg += "<not found any include path>";
-                      }
-                      LogMsg("M358", VAL("HFILE", RteUtils::ExtractFileName(systemHeader)), VAL("CFILE", fileName), COMP("Startup"), VAL("COMPID", compId),
-                             VENDOR(mcuVendor), MCU(mcuDispName), COMPILER(compiler.tcompiler), OPTION(compiler.toptions), PATH(incPathsMsg), lineNo);
-                      bOk = false;
                     }
                   }
-                }
 
-                if(fileName.find("startup_", 0) != string::npos) {
-                  foundStartup++;
-                  lineStartup = file->GetLineNumber();
+                  if(fileName.find("startup_", 0) != string::npos) {
+                    foundStartup++;
+                    lineStartup = file->GetLineNumber();
 
-                  if(attribute != "config") {
-                    LogMsg("M377", NAME(fileName), TYP(category), lineNo);
+                    if(attribute != "config") {
+                      LogMsg("M377", NAME(fileName), TYP(category), lineNo);
+                    }
                   }
                 }
               }
             }
-          }
 
-          if(foundSystemC != 1) {
-            LogMsg(foundSystemC ? "M354" : "M353",
-                   VAL("FILECAT", "system_*"), COMP("Startup"), VENDOR(mcuVendor), MCU(mcuDispName), COMPILER(compiler.tcompiler), OPTION(compiler.toptions),
-                   foundSystemC ? lineSystem : lineNo);
-            bOk = false;
-          }
+            if(foundSystemC != 1 || foundStartup != 1) {    // ignore if generator="..."
+              if(HasExternalGenerator(aggregate)) {
+                continue;
+              }
+            }
 
-          if(foundStartup != 1) {
-            LogMsg(foundStartup ? "M354" : "M353",
-                   VAL("FILECAT", "startup_*"), COMP("Startup"), VENDOR(mcuVendor), MCU(mcuDispName), COMPILER(compiler.tcompiler), OPTION(compiler.toptions),
-                   foundStartup ? lineStartup : lineNo);
-            bOk = false;
+            if(foundSystemC != 1) {
+              LogMsg(foundSystemC ? "M354" : "M353",
+                     VAL("FILECAT", "system_*"), COMP("Startup"), VENDOR(mcuVendor), MCU(mcuDispName), COMPILER(compiler.tcompiler), OPTION(compiler.toptions),
+                     foundSystemC ? lineSystem : lineNo);
+              bOk = false;
+            }
+
+            if(foundStartup != 1) {
+              LogMsg(foundStartup ? "M354" : "M353",
+                     VAL("FILECAT", "startup_*"), COMP("Startup"), VENDOR(mcuVendor), MCU(mcuDispName), COMPILER(compiler.tcompiler), OPTION(compiler.toptions),
+                     foundStartup ? lineStartup : lineNo);
+              bOk = false;
+            }
           }
         }
+
       }
+      filter.RemoveAttribute("Tcompiler");
 
-    }
-    filter.RemoveAttribute("Tcompiler");
-
-    if(bOk) {
-      LogMsg("M010");
+      if(bOk) {
+        LogMsg("M010");
+      }
     }
   }
 
   return bOk;
 }
+
+
+/**
+ * @brief check for MCU dependencies
+ * @param pKg package under test
+ * @return passed / failed
+ */
+bool ValidateSemantic::HasExternalGenerator(RteComponentAggregate* aggregate)
+{
+  auto bundleName = aggregate->GetCbundleName();
+  if(!bundleName.empty()) {
+    for(auto &[componentKey, componentMap] : aggregate->GetAllComponents()) {
+      for(auto& [key, component] : componentMap) {
+        auto parentBundle = component->GetParentBundle();
+        if(parentBundle) {
+          for(auto bundleComponent : parentBundle->GetChildren()) {
+            auto generatorAttrName = bundleComponent->GetAttribute("generator");
+            if(!generatorAttrName.empty()) {
+              return true;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return false;
+}
+
 
 /**
  * @brief check for MCU dependencies
