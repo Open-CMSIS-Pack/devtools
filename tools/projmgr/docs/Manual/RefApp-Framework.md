@@ -7,6 +7,7 @@
 <!-- markdownlint-disable MD036 -->
 
 **Table of Contents**
+
 - [Reference Application Framework](#reference-application-framework)
   - [Overview](#overview)
     - [Software Layers](#software-layers)
