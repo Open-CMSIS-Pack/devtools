@@ -105,6 +105,7 @@ protected:
   bool m_updateRteFiles;
   bool m_verbose;
   bool m_debug;
+  bool m_ymlOrder;
   GroupNode m_files;
 
   bool RunConvert(void);

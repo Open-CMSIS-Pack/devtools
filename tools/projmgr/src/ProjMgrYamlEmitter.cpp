@@ -59,7 +59,15 @@ ProjMgrYamlCbuild::ProjMgrYamlCbuild(YAML::Node node, const vector<ContextItem*>
   const string& csolutionFilename = fs::relative(parser.GetCsolution().path, directory, ec).generic_string();
   SetNodeValue(node[YAML_CSOLUTION], csolutionFilename);
 
-  for (const auto& [cprojectName, cproject] : parser.GetCprojects()) {
+  const auto& cprojects = parser.GetCprojects();
+  const auto& csolution = parser.GetCsolution();
+
+  for (const auto& cprojectFile : csolution.cprojects) {
+    auto itr = std::find_if(cprojects.begin(), cprojects.end(),
+      [&](const pair<std::string, CprojectItem>& elem) {
+        return (elem.first.find(fs::path(cprojectFile).filename().string()) != std::string::npos);
+      });
+    auto cproject = itr->second;
     YAML::Node cprojectNode;
     const string& cprojectFilename = fs::relative(cproject.path, directory, ec).generic_string();
     SetNodeValue(cprojectNode[YAML_CPROJECT], cprojectFilename);
