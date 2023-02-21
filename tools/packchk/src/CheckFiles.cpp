@@ -469,7 +469,7 @@ bool CheckFiles::CheckForSpaces(const string& fileName, int lineNo)
     return true;
   }
 
-  string name = fileName; //RteUtils::ExtractFileName(fileName);
+  string name = fileName;
   if(name.find(' ') != string::npos) {
     LogMsg("M314", NAME(name), lineNo);
     return false;
