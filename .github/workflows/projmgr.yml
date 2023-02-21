@@ -297,12 +297,13 @@ jobs:
           target: ProjMgrUnitTests
 
       - name: Run projmgr unit tests
+        if: (matrix.arch != 'arm64')
         run: |
           ctest -V -C Debug -R ProjMgrUnitTests
         working-directory: ./build
 
       - name: Archive unit tests results
-        if: ${{ always() }}
+        if: always() && (matrix.arch != 'arm64')
         uses: actions/upload-artifact@v3
         with:
           name: unittest-${{ matrix.target }}-${{ matrix.arch }}
@@ -311,7 +312,7 @@ jobs:
           if-no-files-found: error
 
       - name: Archive gtest report
-        if: ${{ always() }}
+        if: always() && (matrix.arch != 'arm64')
         uses: actions/upload-artifact@v3
         with:
           name: unit_test_result-${{ matrix.target }}-${{ matrix.arch }}

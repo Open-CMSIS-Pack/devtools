@@ -9,11 +9,7 @@ set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT packchk)
 
 set(PROJECT_COPYRIGHT_NOTICE "(C) 2012-${PROJECT_VERSION_YEAR} Arm Ltd. and Contributors")
 
-configure_file(src/ProductInfo.h.in ProductInfo.h.out)
-file(GENERATE
-  OUTPUT "$<CONFIG>/ProductInfo.h"
-  INPUT ${CMAKE_CURRENT_BINARY_DIR}/ProductInfo.h.out
-)
+configure_file(src/ProductInfo.h.in ProductInfo.h)
 if(MSVC)
     configure_file(src/PackChk.rc.in PackChk.rc)
 endif()
@@ -36,7 +32,7 @@ list(TRANSFORM LIB_HEADER_FILES PREPEND include/)
 add_library(packchklib OBJECT ${LIB_SOURCE_FILES} ${LIB_HEADER_FILES})
 target_include_directories(packchklib
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/
-  PRIVATE ${PROJECT_BINARY_DIR}/$<CONFIG>
+  PRIVATE ${PROJECT_BINARY_DIR}/
 )
 
 set_property(TARGET packchklib PROPERTY
@@ -60,23 +56,9 @@ endif()
 
 target_link_libraries(packchk PUBLIC packchklib)
 
-if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-  set(ARCH "64")
-elseif(CMAKE_SIZEOF_VOID_P EQUAL 4)
-  set(ARCH "32")
-endif()
-
-string(TOLOWER ${CMAKE_SYSTEM_NAME} SYSTEM)
-
-if(("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64") OR ("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "AMD64"))
-  set(SYSTEM_PROCESSOR amd64)
-else()
-  set(SYSTEM_PROCESSOR arm64)
-endif()
-
 add_custom_target(packchkdist COMMAND
     ${CMAKE_COMMAND} -E tar "cvf${CMAKE_TAR_FLAGS}"
-      "${CMAKE_CURRENT_BINARY_DIR}/packchk-${PROJECT_VERSION_FULL}-${SYSTEM}${ARCH}-${SYSTEM_PROCESSOR}.${CMAKE_TAR_EXTENSION}"
+      "${CMAKE_CURRENT_BINARY_DIR}/packchk-${PROJECT_VERSION_FULL}-${SYSTEM}-${CPU_ARCH}.${CMAKE_TAR_EXTENSION}"
       "--format=${CMAKE_TAR_FORMAT}"
        "$<TARGET_FILE:packchk>"
        DEPENDS packchk

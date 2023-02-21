@@ -15,5 +15,5 @@ set_property(TARGET PackChkUnitTests PROPERTY
 target_link_libraries(PackChkUnitTests PUBLIC packchklib gmock_main)
 
 add_test(NAME PackChkUnitTests
-         COMMAND PackChkUnitTests --gtest_output=xml:test_reports/packchkunittests-report-${SYSTEM}${ARCH}-${CPU_ARCH}.xml
+         COMMAND PackChkUnitTests --gtest_output=xml:test_reports/packchkunittests-report-${SYSTEM}-${CPU_ARCH}.xml
          WORKING_DIRECTORY ${CMAKE_BINARY_DIR})

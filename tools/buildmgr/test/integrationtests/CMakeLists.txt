@@ -22,5 +22,5 @@ add_dependencies(CbuildIntegTests cbuildgen)
 target_link_libraries(CbuildIntegTests cbuild cbuildgenlib gtest_main)
 
 add_test(NAME CbuildIntegTests
-         COMMAND CbuildIntegTests --gtest_output=xml:test_reports/cbuildintegtests-report-${SYSTEM}${ARCH}-${CPU_ARCH}.xml
+         COMMAND CbuildIntegTests --gtest_output=xml:test_reports/cbuildintegtests-report-${SYSTEM}-${CPU_ARCH}.xml
          WORKING_DIRECTORY ${CMAKE_BINARY_DIR})

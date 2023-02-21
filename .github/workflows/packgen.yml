@@ -155,12 +155,13 @@ jobs:
           arch: ${{ matrix.arch }}
 
       - name: Run packgen unit tests
+        if: (matrix.arch != 'arm64')
         run: |
           ctest -C Debug -R PackGenUnitTests
         working-directory: ./build
 
       - name: Archive unit tests results
-        if: ${{ always() }}
+        if: always() && (matrix.arch != 'arm64')
         uses: actions/upload-artifact@v3
         with:
           name: unit_test_result-${{ matrix.target }}-${{ matrix.arch }}

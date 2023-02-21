@@ -17,10 +17,10 @@ set_property(TARGET SvdConvIntegTests PROPERTY
 
 target_link_libraries(SvdConvIntegTests PUBLIC RteFsUtils svdconvlib ErrLog gtest_main)
 
-target_include_directories(SvdConvIntegTests 
+target_include_directories(SvdConvIntegTests
                             PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
                             PRIVATE ../../SVDConv/include)
 
 add_test(NAME SvdConvIntegTests
-         COMMAND SvdConvIntegTests --gtest_output=xml:test_reports/svdconvintegtests-${SYSTEM}${ARCH}-${CPU_ARCH}$<$<BOOL:${COVERAGE}>:_cov>.xml
+         COMMAND SvdConvIntegTests --gtest_output=xml:test_reports/svdconvintegtests-${SYSTEM}-${CPU_ARCH}$<$<BOOL:${COVERAGE}>:_cov>.xml
          WORKING_DIRECTORY ${CMAKE_BINARY_DIR})

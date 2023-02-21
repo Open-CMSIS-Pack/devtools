@@ -1,29 +1,43 @@
 [
     {
         "runs_on":"macos-12",
-        "target":"darwin64",
+        "target":"darwin",
         "arch": "amd64",
         "binary": "packgen",
         "runOn": "publicRepo"
     },
     {
+        "runs_on":"macos-12",
+        "target":"darwin",
+        "arch": "arm64",
+        "binary": "packgen",
+        "runOn": "publicRepo"
+    },
+    {
         "runs_on":"ubuntu-22.04",
-        "target":"linux64",
+        "target":"linux",
         "arch": "amd64",
         "binary": "packgen",
         "runOn": "always"
     },
     {
         "runs_on":"ubuntu-22.04",
-        "target":"linux64",
+        "target":"linux",
         "arch": "arm64",
         "binary": "packgen",
         "runOn": "always"
     },
     {
         "runs_on":"windows-2019",
-        "target":"windows64",
+        "target":"windows",
         "arch": "amd64",
+        "binary": "packgen.exe",
+        "runOn": "always"
+    },
+    {
+        "runs_on":"windows-2019",
+        "target":"windows",
+        "arch": "arm64",
         "binary": "packgen.exe",
         "runOn": "always"
     }

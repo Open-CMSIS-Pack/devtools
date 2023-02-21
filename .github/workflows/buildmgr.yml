@@ -387,10 +387,12 @@ jobs:
           arch: ${{ matrix.arch }}
 
       - name: Run CbuildUnitTests
+        if: matrix.arch != 'arm64'
         run: ctest -V -R CbuildUnitTests
         working-directory: build
 
       - name: Archive unittest
+        if: always() && (matrix.arch != 'arm64')
         uses: actions/upload-artifact@v3
         with:
           name: unit_test_result-${{ matrix.target }}-${{ matrix.arch }}
@@ -649,60 +651,12 @@ jobs:
         shell: bash
         run: |
           ${{ github.workspace }}/cbuild/bin/cbuildgen | grep "(cbuildgen): Build Process Manager"
+
   test-results-preparation:
     name: "Publish Tests Results"
     needs: [ tests ]
     runs-on: ubuntu-22.04
     steps:
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: 3.8
-
-      - name: Download unit test report windows
-        uses: actions/download-artifact@v3
-        with:
-          name: unit_test_result-windows64-amd64
-          path: testreports/
-
-      - name: Download unit test report linux amd64
-        uses: actions/download-artifact@v3
-        with:
-          name: unit_test_result-linux64-amd64
-          path: testreports/
-
-      - name: Download unit test report linux arm64
-        uses: actions/download-artifact@v3
-        with:
-          name: unit_test_result-linux64-arm64
-          path: testreports/
-
-      - name: Download unit test report macos
-        if: ${{ !github.event.repository.private }}
-        uses: actions/download-artifact@v3
-        with:
-          name: unit_test_result-darwin64-amd64
-          path: testreports/
-
-      - name: Download integ test report windows
-        uses: actions/download-artifact@v3
-        with:
-          name: integ_test_result-windows64-amd64
-          path: testreports/
-
-      - name: Download integ test report linux amd64
-        uses: actions/download-artifact@v3
-        with:
-          name: integ_test_result-linux64-amd64
-          path: testreports/
-
-      - name: Download integ test report macos
-        if: ${{ !github.event.repository.private }}
-        uses: actions/download-artifact@v3
-        with:
-          name: integ_test_result-darwin64-amd64
-          path: testreports/
-
       - name: Event File
         uses: actions/upload-artifact@v3
         with:

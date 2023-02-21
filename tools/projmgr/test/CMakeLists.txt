@@ -14,5 +14,5 @@ add_definitions(-DCMAKE_SOURCE_DIR="${CMAKE_SOURCE_DIR}/")
 add_definitions(-DPROJMGRUNITTESTS_BIN_PATH="$<TARGET_FILE_DIR:ProjMgrUnitTests>")
 
 add_test(NAME ProjMgrUnitTests
-         COMMAND ProjMgrUnitTests --gtest_output=xml:test_reports/projmgrunittests-report-${SYSTEM}${ARCH}-${CPU_ARCH}.xml
+         COMMAND ProjMgrUnitTests --gtest_output=xml:test_reports/projmgrunittests-report-${SYSTEM}-${CPU_ARCH}.xml
          WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
