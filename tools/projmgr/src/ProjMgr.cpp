@@ -105,14 +105,15 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
   cxxopts::Option generator("g,generator", "Code generator identifier", cxxopts::value<string>());
   cxxopts::Option load("l,load", "Set policy for packs loading [latest|all|required]", cxxopts::value<string>());
   cxxopts::Option clayerSearchPath("L,clayer-path", "Set search path for external clayers", cxxopts::value<string>());
-  cxxopts::Option missing( "m,missing", "List only required packs that are missing in the pack repository", cxxopts::value<bool>()->default_value("false"));
-  cxxopts::Option schemaCheck( "n,no-check-schema", "Skip schema check", cxxopts::value<bool>()->default_value("false"));
-  cxxopts::Option noUpdateRte( "U,no-update-rte", "Skip creation of RTE directory and files", cxxopts::value<bool>()->default_value("false"));
+  cxxopts::Option missing("m,missing", "List only required packs that are missing in the pack repository", cxxopts::value<bool>()->default_value("false"));
+  cxxopts::Option schemaCheck("n,no-check-schema", "Skip schema check", cxxopts::value<bool>()->default_value("false"));
+  cxxopts::Option noUpdateRte("U,no-update-rte", "Skip creation of RTE directory and files", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option output("o,output", "Output directory", cxxopts::value<string>());
   cxxopts::Option version("V,version", "Print version");
   cxxopts::Option verbose("v,verbose", "Enable verbose messages", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option debug("d,debug", "Enable debug messages", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option exportSuffix("e,export", "Set suffix for exporting <context><suffix>.cprj retaining only specified versions", cxxopts::value<string>());
+  cxxopts::Option ymlOrder("yml-order", "Preserve order as specified in input yml", cxxopts::value<bool>()->default_value("false"));
 
   // command options dictionary
   map<string, vector<cxxopts::Option>> optionsDict = {
@@ -123,7 +124,7 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
     {"list devices",      {solution, context, filter, load, verbose, debug, schemaCheck}},
     {"list components",   {solution, context, filter, load, verbose, debug, schemaCheck}},
     {"list dependencies", {solution, context, filter, load, verbose, debug, schemaCheck}},
-    {"list contexts",     {solution, filter, verbose, debug, schemaCheck}},
+    {"list contexts",     {solution, filter, verbose, debug, schemaCheck, ymlOrder}},
     {"list generators",   {solution, context, load, verbose, debug, schemaCheck}},
     {"list layers",       {solution, context, load, verbose, debug, schemaCheck, clayerSearchPath}},
     {"list toolchains",   {solution, verbose, debug,}},
@@ -134,7 +135,7 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
       {"positional", "", cxxopts::value<vector<string>>()},
       solution, context, filter, generator,
       load, clayerSearchPath, missing, schemaCheck, noUpdateRte, output,
-      help, version, verbose, debug, exportSuffix
+      help, version, verbose, debug, exportSuffix, ymlOrder
     });
     options.parse_positional({ "positional" });
 
@@ -147,6 +148,7 @@ int ProjMgr::RunProjMgr(int argc, char **argv) {
     manager.m_worker.SetVerbose(manager.m_verbose);
     manager.m_debug = parseResult.count("d");
     manager.m_worker.SetDebug(manager.m_debug);
+    manager.m_ymlOrder = parseResult.count("yml-order");
 
     vector<string> positionalArguments;
     if (parseResult.count("positional")) {
@@ -361,10 +363,13 @@ bool ProjMgr::RunConvert(void) {
   if (!m_worker.InitializeModel()) {
     return false;
   }
+  vector<string> orderedContexts;
+  m_worker.GetYmlOrderedContexts(orderedContexts);
   // Process contexts
   bool error = false;
   vector<ContextItem*> processedContexts;
-  for (auto& [contextName, contextItem] : *contexts) {
+  for (auto& contextName : orderedContexts) {
+    auto& contextItem = (*contexts)[contextName];
     if (!m_worker.IsContextSelected(contextName)) {
       continue;
     }
@@ -529,7 +534,7 @@ bool ProjMgr::RunListContexts(void) {
     return false;
   }
   vector<string> contexts;
-  if (!m_worker.ListContexts(contexts, m_filter)) {
+  if (!m_worker.ListContexts(contexts, m_filter, m_ymlOrder)) {
     ProjMgrLogger::Error("processing contexts list failed");
     return false;
   }

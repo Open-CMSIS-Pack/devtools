@@ -361,7 +361,7 @@ public:
    * @param filter words to filter results
    * @return true if executed successfully
   */
-  bool ListContexts(std::vector<std::string>& contexts, const std::string& filter = RteUtils::EMPTY_STRING);
+  bool ListContexts(std::vector<std::string>& contexts, const std::string& filter = RteUtils::EMPTY_STRING, const bool ymlOrder = false);
 
   /**
    * @brief list generators of a given context
@@ -399,6 +399,12 @@ public:
    * @param pointer to context map
   */
   void GetContexts(std::map<std::string, ContextItem>* &contexts);
+
+  /**
+   * @brief get yml ordered contexts
+   * @param reference to contexts
+  */
+  void GetYmlOrderedContexts(std::vector<std::string> &contexts);
 
   /**
    * @brief set output directory
@@ -474,6 +480,7 @@ protected:
   ProjMgrKernel* m_kernel = nullptr;
   RteGlobalModel* m_model = nullptr;
   std::list<RtePackage*> m_loadedPacks;
+  std::vector<std::string> m_ymlOrderedContexts;
   std::map<std::string, ContextItem> m_contexts;
   std::map<std::string, ContextItem>* m_contextsPtr;
   std::list<std::string> m_selectedContexts;
@@ -526,7 +533,7 @@ protected:
   bool AddFile(const FileNode& src, std::vector<FileNode>& dst, ContextItem& context, const std::string root);
   bool AddComponent(const ComponentItem& src, const std::string& layer, std::vector<std::pair<ComponentItem, std::string>>& dst, TypePair type);
   static std::set<std::string> SplitArgs(const std::string& args, const std::string& delimiter = " ");
-  static void ApplyFilter(const std::set<std::string>& origin, const std::set<std::string>& filter, std::set<std::string>& result);
+  static void ApplyFilter(const std::vector<std::string>& origin, const std::set<std::string>& filter, std::vector<std::string>& result);
   static bool FullMatch(const std::set<std::string>& installed, const std::set<std::string>& required);
   bool AddRequiredComponents(ContextItem& context);
   void GetDeviceItem(const std::string& element, DeviceItem& device) const;
