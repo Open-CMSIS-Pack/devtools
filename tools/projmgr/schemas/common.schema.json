@@ -397,13 +397,22 @@
       "items": { "$ref": "#/definitions/FileType" }
     },
     "FileCategoryType": {
-      "enum": [ "doc", "header", "headerAsm", "headerC", "headerCpp", "headerLd", "include", "includeAsm", "includeC", "includeCpp", "includeLd", "library", "object", "source", "sourceC", "sourceCpp", "sourceAsm", "linkerScript", "utility", "image", "preIncludeGlobal", "preIncludeLocal", "other" ],
+      "enum": [ "doc", "header", "headerAsm", "headerC", "headerCpp", "headerLd", "include", "includeAsm", "includeC", "includeCpp", "includeLd", "library", "object", "source", "sourceC", "sourceCpp", "sourceAsm", "linkerScript", "utility", "image", "preIncludeGlobal", "preIncludeLocal","genSource", "genHeader", "genParams", "genAsset", "other" ],
       "description": "File category types define the use of component files within the application. Typically, these files are added to the project and processed by the build tools."
     },
     "FileAttributeType": {
       "enum": [ "config", "template" ],
       "description": "The file attribute defines the special handling in the project when being used as configuration or template file."
     },
+    "FileLanguageType": {
+      "enum": [ "asm", "c", "cpp", "c-cpp", "link" ],
+      "description": "File language attribute type defines the language for source, header and include file categories. Based on the language the information is used by language specific build tools."
+    },
+    "FileScopeType": {
+      "enum": [ "visible", "hidden", "public", "private" ],
+      "description": "File scope attribute type defines the visibility of header file and include path file categories. Based on the specified scope header files are visible or hidden and include paths are public or private."
+    },
+
     "FileType": {
       "type": "object",
       "properties": {
