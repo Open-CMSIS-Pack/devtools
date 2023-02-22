@@ -423,13 +423,14 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
   // Set global flags
   cmakelists << "# Global Flags" << EOL << EOL;
 
+  bool specific_defines = file_specific_defines || group_specific_defines;
   bool target_options = !m_optimize.empty() || !m_debug.empty() || !m_warnings.empty();
   for (auto list : asFilesLists) {
     if (!list.second.empty()) {
       string prefix = list.first;
       cmakelists << "set(CMAKE_" << prefix << "_FLAGS \"${" << prefix << "_CPU}";
       if (!m_byteOrder.empty()) cmakelists << " ${" << prefix << "_BYTE_ORDER}";
-      if (!m_definesList.empty()) cmakelists << " ${" << prefix << "_DEFINES}";
+      if (!specific_defines && !m_definesList.empty()) cmakelists << " ${" << prefix << "_DEFINES}";
       if (!specific_options && target_options) cmakelists << " ${" << prefix << "_OPTIONS_FLAGS}";
       cmakelists << " ${" << prefix << "_FLAGS}";
       if (!asflags && !preinc_local && !m_asMscGlobal.empty()) cmakelists << " ${AS_FLAGS_GLOBAL}";
@@ -440,7 +441,7 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
     cmakelists << "cbuild_get_system_includes(CC_SYS_INC_PATHS_LIST CC_SYS_INC_PATHS)" << EOL;
     cmakelists << "set(CMAKE_C_FLAGS \"${CC_CPU}";
     if (!m_byteOrder.empty()) cmakelists << " ${CC_BYTE_ORDER}";
-    if (!m_definesList.empty()) cmakelists << " ${CC_DEFINES}";
+    if (!specific_defines && !m_definesList.empty()) cmakelists << " ${CC_DEFINES}";
     if (!m_targetSecure.empty()) cmakelists << " ${CC_SECURE}";
     if (!m_targetBranchProt.empty()) cmakelists << " ${CC_BRANCHPROT}";
     if (!specific_options && target_options) cmakelists << " ${CC_OPTIONS_FLAGS}";
@@ -453,7 +454,7 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
     cmakelists << "cbuild_get_system_includes(CXX_SYS_INC_PATHS_LIST CXX_SYS_INC_PATHS)" << EOL;
     cmakelists << "set(CMAKE_CXX_FLAGS \"${CXX_CPU}";
     if (!m_byteOrder.empty()) cmakelists << " ${CXX_BYTE_ORDER}";
-    if (!m_definesList.empty()) cmakelists << " ${CXX_DEFINES}";
+    if (!specific_defines && !m_definesList.empty()) cmakelists << " ${CXX_DEFINES}";
     if (!m_targetSecure.empty()) cmakelists << " ${CXX_SECURE}";
     if (!m_targetBranchProt.empty()) cmakelists << " ${CXX_BRANCHPROT}";
     if (!specific_options && target_options) cmakelists << " ${CXX_OPTIONS_FLAGS}";
@@ -483,7 +484,6 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
   }
 
   bool as_special_lang = (!m_asLegacyFilesList.empty() || !m_asArmclangFilesList.empty() || !m_asGnuFilesList.empty());
-  bool specific_defines = file_specific_defines || group_specific_defines;
   bool specific_includes = file_specific_includes || group_specific_includes;
 
   if (asflags || ccflags || cxxflags || as_special_lang || preinc_local) {
@@ -562,15 +562,17 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
           cmakelists << "  endif()" << EOL;
         }
         if (specific_defines) {
+          cmakelists << "  get_source_file_property(FILE_FLAGS ${SRC} COMPILE_FLAGS)" << EOL;
+          cmakelists << "  if(FILE_FLAGS STREQUAL \"NOTFOUND\")" << EOL;
+          cmakelists << "    set(FILE_FLAGS)" << EOL;
+          cmakelists << "  endif()" << EOL;
           cmakelists << "  if(DEFINED DEFINES_${S})" << EOL;
           cmakelists << "    cbuild_set_defines(" << lang << " DEFINES_${S})" << EOL;
-          cmakelists << "    get_source_file_property(FILE_FLAGS ${SRC} COMPILE_FLAGS)" << EOL;
-          cmakelists << "    if(FILE_FLAGS STREQUAL \"NOTFOUND\")" << EOL;
-          cmakelists << "      set(FILE_FLAGS)" << EOL;
-          cmakelists << "    endif()" << EOL;
           cmakelists << "    string(APPEND FILE_FLAGS \" ${DEFINES_${S}}\")" << EOL;
-          cmakelists << "    set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS \"${FILE_FLAGS}\")" << EOL;
+          cmakelists << "  else()" << EOL;
+          cmakelists << "    string(APPEND FILE_FLAGS \" ${" << lang << "_DEFINES}\")" << EOL;
           cmakelists << "  endif()" << EOL;
+          cmakelists << "  set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS \"${FILE_FLAGS}\")" << EOL;
         }
         if (specific_options) {
           cmakelists << "  foreach(OPTION OPTIMIZE DEBUG WARNINGS)" << EOL;

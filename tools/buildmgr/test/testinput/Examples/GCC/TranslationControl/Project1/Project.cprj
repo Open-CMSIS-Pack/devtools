@@ -44,7 +44,7 @@
       <file category="sourceC" name="File.c">
         <cflags compiler="GCC"/>
         <defines>DEF1FILE;DEF2FILE</defines>
-        <undefines>DEF2-GROUP</undefines>
+        <undefines>DEF2GROUP</undefines>
         <includes>./inc</includes>
       </file>
     </group>
