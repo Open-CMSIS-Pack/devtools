@@ -63,7 +63,7 @@ jobs:
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build
-        uses: Open-CMSIS-Pack/devtools-build-action@v1.2
+        uses: Open-CMSIS-Pack/devtools-build-action@arm64
         with:
           target: projmgr
           arch: ${{ matrix.arch }}
@@ -79,7 +79,7 @@ jobs:
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build swig libs windows
         if: ${{ startsWith(matrix.runs_on, 'windows') }}
-        uses: Open-CMSIS-Pack/devtools-build-action@v1.2
+        uses: Open-CMSIS-Pack/devtools-build-action@arm64
         with:
           add_cmake_variables: -DSWIG_LIBS=ON
           add_cmake_build_args: --config Release
@@ -90,7 +90,7 @@ jobs:
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build swig libs macos and ubuntu amd64
         if: ${{ startsWith(matrix.runs_on, 'macos') || ( startsWith(matrix.runs_on, 'ubuntu') && matrix.arch == 'amd64' ) }}
-        uses: Open-CMSIS-Pack/devtools-build-action@v1.2
+        uses: Open-CMSIS-Pack/devtools-build-action@arm64
         with:
           add_cmake_variables: -DSWIG_LIBS=ON
           add_cmake_build_args: --config Release
@@ -302,7 +302,7 @@ jobs:
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build ProjMgrUnitTests
-        uses: Open-CMSIS-Pack/devtools-build-action@v1.2
+        uses: Open-CMSIS-Pack/devtools-build-action@arm64
         with:
           arch: ${{ matrix.arch }}
           build_type: Debug
@@ -357,7 +357,7 @@ jobs:
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build ProjMgrUnitTests
-        uses: Open-CMSIS-Pack/devtools-build-action@v1.2
+        uses: Open-CMSIS-Pack/devtools-build-action@arm64
         with:
           add_cmake_variables: -DCOVERAGE=ON
           arch: amd64

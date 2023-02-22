@@ -49,7 +49,7 @@ jobs:
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build all libs
-        uses: Open-CMSIS-Pack/devtools-build-action@v1.2
+        uses: Open-CMSIS-Pack/devtools-build-action@arm64
         id: devtools-build
         with:
           add_cmake_variables: '-DLIBS_ONLY=ON'

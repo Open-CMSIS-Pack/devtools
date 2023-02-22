@@ -56,7 +56,7 @@ jobs:
           submodules: recursive
 
       - name: Build svdconv
-        uses: Open-CMSIS-Pack/devtools-build-action@v1
+        uses: Open-CMSIS-Pack/devtools-build-action@arm64
         with:
           target: svdconvdist
           arch: ${{ matrix.arch }}
@@ -95,7 +95,7 @@ jobs:
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build SVDConvUnitTests
-        uses: Open-CMSIS-Pack/devtools-build-action@v1.2
+        uses: Open-CMSIS-Pack/devtools-build-action@arm64
         with:
           arch: ${{ matrix.arch }}
           build_type: Debug
@@ -109,7 +109,7 @@ jobs:
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build SvdConvIntegTests
-        uses: Open-CMSIS-Pack/devtools-build-action@v1
+        uses: Open-CMSIS-Pack/devtools-build-action@arm64
         with:
           arch: ${{ matrix.arch }}
           build_type: Debug
@@ -164,7 +164,7 @@ jobs:
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build SVDConvUnitTests
-        uses: Open-CMSIS-Pack/devtools-build-action@v1.2
+        uses: Open-CMSIS-Pack/devtools-build-action@arm64
         with:
           add_cmake_variables: -DCOVERAGE=ON
           arch: amd64
@@ -173,7 +173,7 @@ jobs:
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build SvdConvIntegTests
-        uses: Open-CMSIS-Pack/devtools-build-action@v1.2
+        uses: Open-CMSIS-Pack/devtools-build-action@arm64
         with:
           add_cmake_variables: -DCOVERAGE=ON
           arch: amd64
