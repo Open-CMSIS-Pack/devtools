@@ -72,7 +72,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: packgen-${{ matrix.target }}-${{ matrix.arch }}
-          path: ./build/tools/packgen/${{ matrix.target }}/Release/${{ matrix.binary }}
+          path: ./build/tools/packgen/${{ matrix.target }}-${{ matrix.arch }}/Release/${{ matrix.binary }}
           retention-days: ${{ needs.setup.outputs.retention_days }}
           if-no-files-found: error
 
@@ -96,29 +96,41 @@ jobs:
           cp -r tools/packgen/test/data/CMakeTestProject/ tools/packgen/distribution/doc/examples/
           cp -r tools/packgen/test/data/CMakeTestMultipleBuilds/ tools/packgen/distribution/doc/examples/
 
-      - name: Download packgen linux amd64
+      - name: Download packgen linux-amd64
         uses: actions/download-artifact@v3
         with:
-          name: packgen-linux64-amd64
+          name: packgen-linux-amd64
           path: tools/packgen/distribution/bin/linux-amd64/
 
       - name: Download packgen linux arm64
         uses: actions/download-artifact@v3
         with:
-          name: packgen-linux64-arm64
+          name: packgen-linux-arm64
           path: tools/packgen/distribution/bin/linux-arm64/
 
-      - name: Download packgen macos amd64
+      - name: Download packgen macos-amd64
         uses: actions/download-artifact@v3
         with:
-          name: packgen-darwin64-amd64
+          name: packgen-darwin-amd64
           path: tools/packgen/distribution/bin/darwin-amd64/
 
-      - name: Download packgen windows amd64
+      - name: Download packgen macos-arm64
         uses: actions/download-artifact@v3
         with:
-          name: packgen-windows64-amd64
+          name: packgen-darwin-arm64
+          path: tools/packgen/distribution/bin/darwin-arm64/
+
+      - name: Download packgen windows-amd64
+        uses: actions/download-artifact@v3
+        with:
+          name: packgen-windows-amd64
           path: tools/packgen/distribution/bin/windows-amd64/
+
+      - name: Download packgen windows-arm64
+        uses: actions/download-artifact@v3
+        with:
+          name: packgen-windows-arm64
+          path: tools/packgen/distribution/bin/windows-arm64/
 
       - name: Zip distribution folder
         run: zip -r packgen.zip *
@@ -215,7 +227,7 @@ jobs:
         if: (github.event_name == 'push')
         uses: actions/upload-artifact@v3
         with:
-          name: unit_test_result-linux64-amd64
+          name: unit_test_result-linux-amd64
           path: ./build/test_reports/packgenunittests-*.xml
           retention-days: ${{ steps.var.outputs.retention_days }}
           if-no-files-found: error
@@ -264,36 +276,6 @@ jobs:
     needs: [ unittest ]
     runs-on: ubuntu-22.04
     steps:
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: 3.8
-
-      - name: Download unit test report windows
-        uses: actions/download-artifact@v3
-        with:
-          name: unit_test_result-windows64-amd64
-          path: testreports/
-
-      - name: Download unit test report linux amd64
-        uses: actions/download-artifact@v3
-        with:
-          name: unit_test_result-linux64-amd64
-          path: testreports/
-
-      - name: Download unit test report linux arm64
-        uses: actions/download-artifact@v3
-        with:
-          name: unit_test_result-linux64-arm64
-          path: testreports/
-
-      - name: Download unit test report macos
-        if: ${{ !github.event.repository.private }}
-        uses: actions/download-artifact@v3
-        with:
-          name: unit_test_result-darwin64-amd64
-          path: testreports/
-
       - name: Event File
         uses: actions/upload-artifact@v3
         with:

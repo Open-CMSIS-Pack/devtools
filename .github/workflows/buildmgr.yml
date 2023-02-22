@@ -209,29 +209,42 @@ jobs:
           mkdir -p tools/buildmgr/cbuildgen/distribution/bin
           mkdir -p tools/buildmgr/cbuildgen/distribution/doc
 
-      - name: Download cbuildgen linux amd64
+      - name: Download cbuildgen linux-amd64
         uses: actions/download-artifact@v3
         with:
-          name: cbuildgen-linux64-amd64
+          name: cbuildgen-linux-amd64
           path: tools/buildmgr/cbuildgen/distribution/bin/
 
-      - name: Download cbuildgen linux arm64
+      - name: Download cbuildgen linux-arm64
         uses: actions/download-artifact@v3
         with:
-          name: cbuildgen-linux64-arm64
+          name: cbuildgen-linux-arm64
           path: tools/buildmgr/cbuildgen/distribution/bin/
 
-      - name: Download cbuildgen macos
+      - name: Download cbuildgen macos-amd64
         if: ${{ !github.event.repository.private }}
         uses: actions/download-artifact@v3
         with:
-          name: cbuildgen-darwin64-amd64
+          name: cbuildgen-darwin-amd64
           path: tools/buildmgr/cbuildgen/distribution/bin/
 
-      - name: Download cbuildgen windows
+      - name: Download cbuildgen macos-arm64
+        if: ${{ !github.event.repository.private }}
         uses: actions/download-artifact@v3
         with:
-          name: cbuildgen-windows64-amd64
+          name: cbuildgen-darwin-arm64
+          path: tools/buildmgr/cbuildgen/distribution/bin/
+
+      - name: Download cbuildgen windows-amd64
+        uses: actions/download-artifact@v3
+        with:
+          name: cbuildgen-windows-amd64
+          path: tools/buildmgr/cbuildgen/distribution/bin/
+
+      - name: Download cbuildgen windows-arm64
+        uses: actions/download-artifact@v3
+        with:
+          name: cbuildgen-windows-arm64
           path: tools/buildmgr/cbuildgen/distribution/bin/
 
       - name: Adding execution permission to the binaries
@@ -413,7 +426,7 @@ jobs:
         env:
           target: ${{ matrix.target }}
           arch: ${{ matrix.arch }}
-        run: ./tools/buildmgr/test/integrationtests/${target}/Debug/CbuildIntegTests --gtest_filter=-*AC5*:*AC6*:*MultiTargetAC6Tests* --gtest_output=xml:test_reports/cbuildintegtests-report-${target}-${arch}.xml
+        run: ./tools/buildmgr/test/integrationtests/${target}-${arch}/Debug/CbuildIntegTests --gtest_filter=-*AC5*:*AC6*:*MultiTargetAC6Tests* --gtest_output=xml:test_reports/cbuildintegtests-report-${target}-${arch}.xml
         working-directory: build
 
       - name: Run Cbuild Integration Tests (excl. AC5, AC6, MultiTargetAC6Tests) for Linux arm64
@@ -421,7 +434,7 @@ jobs:
         env:
           target: ${{ matrix.target }}
           arch: ${{ matrix.arch }}
-        run: /usr/bin/qemu-aarch64 -L /usr/aarch64-linux-gnu ./tools/buildmgr/test/integrationtests/${target}/Debug/CbuildIntegTests --gtest_filter=-*AC5*:*AC6*:*MultiTargetAC6Tests* --gtest_output=xml:test_reports/cbuildintegtests-report-${target}-${arch}.xml
+        run: /usr/bin/qemu-aarch64 -L /usr/aarch64-linux-gnu ./tools/buildmgr/test/integrationtests/${target}-${arch}/Debug/CbuildIntegTests --gtest_filter=-*AC5*:*AC6*:*MultiTargetAC6Tests* --gtest_output=xml:test_reports/cbuildintegtests-report-${target}-${arch}.xml
         working-directory: build
 
       - name: Run Cbuild Integration Tests (excl. DebPkgTests, AC5, AC6, MultiTargetAC6Tests) for macOS
@@ -429,7 +442,7 @@ jobs:
         env:
           target: ${{ matrix.target }}
           arch: ${{ matrix.arch }}
-        run: ./tools/buildmgr/test/integrationtests/${target}/Debug/CbuildIntegTests --gtest_filter=-*DebPkgTests*:*AC5*:*AC6*:*MultiTargetAC6Tests* --gtest_output=xml:test_reports/cbuildintegtests-report-${target}-${arch}.xml
+        run: ./tools/buildmgr/test/integrationtests/${target}-${arch}/Debug/CbuildIntegTests --gtest_filter=-*DebPkgTests*:*AC5*:*AC6*:*MultiTargetAC6Tests* --gtest_output=xml:test_reports/cbuildintegtests-report-${target}-${arch}.xml
         working-directory: build
 
       - name: Run Cbuild Integration Tests (excl. DebPkgTests, AC5, AC6, MultiTargetAC6Tests) for Windows
@@ -438,7 +451,7 @@ jobs:
           target: ${{ matrix.target }}
           arch: ${{ matrix.arch }}
         # For some reason the env variable usage $Env:target does not work properly.
-        run: .\tools\buildmgr\test\integrationtests\windows64\Debug\CbuildIntegTests.exe --gtest_filter=-*DebPkgTests*:*AC5*:*AC6*:*MultiTargetAC6Tests* --gtest_output=xml:test_reports/cbuildintegtests-report-${target}-${arch}.xml
+        run: .\tools\buildmgr\test\integrationtests\${target}-${arch}\Debug\CbuildIntegTests.exe --gtest_filter=-*DebPkgTests*:*AC5*:*AC6*:*MultiTargetAC6Tests* --gtest_output=xml:test_reports/cbuildintegtests-report-${target}-${arch}.xml
         working-directory: build
 
       - name: Archive Cbuild Integration Tests
@@ -507,9 +520,9 @@ jobs:
         run: |
           cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCOVERAGE=ON ..
           cmake --build . --target CbuildUnitTests
-          ./tools/buildmgr/test/unittests/linux64/Debug/CbuildUnitTests --gtest_output=xml:test_reports/cbuildunittests-report-linux64-amd64.xml
+          ./tools/buildmgr/test/unittests/linux-amd64/Debug/CbuildUnitTests --gtest_output=xml:test_reports/cbuildunittests-report-linux-amd64.xml
           cmake --build . --target CbuildIntegTests
-          ./tools/buildmgr/test/integrationtests/linux64/Debug/CbuildIntegTests --gtest_filter=-*AC5*:*AC6*:*MultiTargetAC6Tests*:*DebPkgTests*:*InstallerTests* --gtest_output=xml:test_reports/cbuildintegtests-report-linux64-amd64.xml
+          ./tools/buildmgr/test/integrationtests/linux-amd64/Debug/CbuildIntegTests --gtest_filter=-*AC5*:*AC6*:*MultiTargetAC6Tests*:*DebPkgTests*:*InstallerTests* --gtest_output=xml:test_reports/cbuildintegtests-report-linux-amd64.xml
         working-directory: build
 
       - name: Get retention days
@@ -521,7 +534,7 @@ jobs:
         if: (github.event_name == 'push')
         uses: actions/upload-artifact@v3
         with:
-          name: unit_test_result-linux64-amd64
+          name: unit_test_result-linux-amd64
           path: ./build/test_reports/cbuildunittests-*.xml
           retention-days: ${{ steps.var.outputs.retention_days }}
           if-no-files-found: error
@@ -530,7 +543,7 @@ jobs:
         if: (github.event_name == 'push')
         uses: actions/upload-artifact@v3
         with:
-          name: integ_test_result-linux64-amd64
+          name: integ_test_result-linux-amd64
           path: ./build/test_reports/cbuildintegtests-*.xml
           retention-days: ${{ steps.var.outputs.retention_days }}
           if-no-files-found: error
