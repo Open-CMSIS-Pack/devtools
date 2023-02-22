@@ -2720,63 +2720,65 @@ bool ProjMgrWorker::GetAccessSequence(size_t& offset, const string& src, string&
 }
 
 bool ProjMgrWorker::ExecuteGenerator(std::string& generatorId) {
-  for (const auto& selectedContext : m_selectedContexts) {
-    ContextItem& context = m_contexts[selectedContext];
-    if (!ProcessContext(context, false)) {
-      return false;
-    }
-    const auto& generators = context.generators;
-    if (generators.find(generatorId) == generators.end()) {
-      ProjMgrLogger::Error("generator '" + generatorId + "' was not found");
-      return false;
-    }
-    RteGenerator* generator = generators.at(generatorId);
+  if (m_selectedContexts.size() != 1) {
+    ProjMgrLogger::Error("a single context must be specified");
+    return false;
+  }
+  const string& selectedContext = m_selectedContexts.front();
+  ContextItem& context = m_contexts[selectedContext];
+  if (!ProcessContext(context, false)) {
+    return false;
+  }
+  const auto& generators = context.generators;
+  if (generators.find(generatorId) == generators.end()) {
+    ProjMgrLogger::Error("generator '" + generatorId + "' was not found");
+    return false;
+  }
+  RteGenerator* generator = generators.at(generatorId);
 
-    // Create generate.yml file with context info and destination
-    string generatorDestination;
-    for (const auto& [gpdsc, item] : context.gpdscs) {
-      if (item.generator == generatorId) {
-        generatorDestination = item.workingDir;
-      }
-    }
-
-    // Make sure the generatorDestination is absolute
-    if (fs::path(generatorDestination).is_relative()) {
-      generatorDestination = context.rteActiveProject->GetProjectPath() + generatorDestination;
-    }
-
-    // Make the generatorDestination is a folder by adding a '/' to the end
-    if (!generatorDestination.empty() && generatorDestination.back() != '/') {
-      generatorDestination += '/';
-    }
-
-    if (!ProjMgrYamlEmitter::GenerateCbuild(&context)) {
-      return false;
-    }
-
-    // TODO: review RteGenerator::GetExpandedCommandLine and variables
-    //const string generatorCommand = m_kernel->GetCmsisPackRoot() + "/" + generator->GetPackagePath() + generator->GetCommand();
-    const string generatorCommand = generator->GetExpandedCommandLine(context.rteActiveTarget);
-    if (generatorCommand.empty()) {
-      ProjMgrLogger::Error("generator command for '" + generatorId + "' was not found");
-      return false;
-    }
-
-    error_code ec;
-    const auto& workingDir = fs::current_path(ec);
-    RteFsUtils::CreateDirectories(generatorDestination);
-    fs::current_path(generatorDestination, ec);
-    ProjMgrUtils::Result result = ProjMgrUtils::ExecCommand(generatorCommand);
-    fs::current_path(workingDir, ec);
-
-    ProjMgrLogger::Info("generator '" + generatorId + "' for context '" + selectedContext + "' reported:\n" + result.first);
-
-    if (result.second) {
-      ProjMgrLogger::Error("executing generator '" + generatorId + "' for context '" + selectedContext + "' failed");
-      return false;
+  // Create generate.yml file with context info and destination
+  string generatorDestination;
+  for (const auto& [gpdsc, item] : context.gpdscs) {
+    if (item.generator == generatorId) {
+      generatorDestination = item.workingDir;
     }
   }
 
+  // Make sure the generatorDestination is absolute
+  if (fs::path(generatorDestination).is_relative()) {
+    generatorDestination = context.rteActiveProject->GetProjectPath() + generatorDestination;
+  }
+
+  // Make the generatorDestination is a folder by adding a '/' to the end
+  if (!generatorDestination.empty() && generatorDestination.back() != '/') {
+    generatorDestination += '/';
+  }
+
+  if (!ProjMgrYamlEmitter::GenerateCbuild(&context)) {
+    return false;
+  }
+
+  // TODO: review RteGenerator::GetExpandedCommandLine and variables
+  //const string generatorCommand = m_kernel->GetCmsisPackRoot() + "/" + generator->GetPackagePath() + generator->GetCommand();
+  const string generatorCommand = generator->GetExpandedCommandLine(context.rteActiveTarget);
+  if (generatorCommand.empty()) {
+    ProjMgrLogger::Error("generator command for '" + generatorId + "' was not found");
+    return false;
+  }
+
+  error_code ec;
+  const auto& workingDir = fs::current_path(ec);
+  RteFsUtils::CreateDirectories(generatorDestination);
+  fs::current_path(generatorDestination, ec);
+  ProjMgrUtils::Result result = ProjMgrUtils::ExecCommand(generatorCommand);
+  fs::current_path(workingDir, ec);
+
+  ProjMgrLogger::Info("generator '" + generatorId + "' for context '" + selectedContext + "' reported:\n" + result.first);
+
+  if (result.second) {
+    ProjMgrLogger::Error("executing generator '" + generatorId + "' for context '" + selectedContext + "' failed");
+    return false;
+  }
   return true;
 }
 

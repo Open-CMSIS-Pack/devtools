@@ -2038,19 +2038,24 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ExecuteGeneratorEmptyContext) {
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ExecuteGeneratorEmptyContextMultipleTypes) {
-  char* argv[6];
+  char* argv[8];
   const string& csolution = testinput_folder + "/TestGenerator/test-gpdsc-multiple-types.csolution.yml";
   argv[1] = (char*)"run";
   argv[2] = (char*)"-g";
   argv[3] = (char*)"RteTestGeneratorIdentifier";
   argv[4] = (char*)"-s";
   argv[5] = (char*)csolution.c_str();
+  // the project has multiple contexts but none is specified
+  EXPECT_EQ(1, RunProjMgr(6, argv, 0));
 
+  // specify a single context
+  argv[6] = (char*)"-c";
+  argv[7] = (char*)"test-gpdsc.Debug+CM0";
   const string& hostType = CrossPlatformUtils::GetHostType();
   if (shouldHaveGeneratorForHostType(hostType)) {
-    EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+    EXPECT_EQ(0, RunProjMgr(8, argv, 0));
   } else {
-    EXPECT_EQ(1, RunProjMgr(6, argv, 0));
+    EXPECT_EQ(1, RunProjMgr(8, argv, 0));
   }
 }
 
