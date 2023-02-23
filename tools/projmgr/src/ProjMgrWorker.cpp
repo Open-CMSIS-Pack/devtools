@@ -1458,12 +1458,24 @@ bool ProjMgrWorker::ProcessComponentFiles(ContextItem& context) {
       }
     }
     // config files
+    map<const RteItem*, string> configFilePaths;
     for (const auto& configFileMap : context.configFiles) {
       if (configFileMap.first == componentId) {
         for (const auto& [_, configFile] : configFileMap.second) {
-          const auto& filename = configFile->GetAbsolutePath();
-          const auto& category = configFile->GetAttribute("category");
+          // cache config file path first
           const auto& originalFile = configFile->GetFile(context.rteActiveTarget->GetName());
+          const auto& filename = configFile->GetAbsolutePath();
+          configFilePaths[originalFile] = filename;
+          const auto& category = configFile->GetAttribute("category");
+          switch (RteFile::CategoryFromString(category)) {
+          case RteFile::Category::GEN_SOURCE:
+          case RteFile::Category::GEN_HEADER:
+          case RteFile::Category::GEN_PARAMS:
+          case RteFile::Category::GEN_ASSET:
+            continue; // ignore gen files
+          default:
+            break;
+          };
           const auto& version = originalFile->GetVersionString();
           context.componentFiles[componentId].push_back({ filename, "config", category, version });
         }
@@ -1471,11 +1483,21 @@ bool ProjMgrWorker::ProcessComponentFiles(ContextItem& context) {
     }
     // input files for component generator. This list of files is directly fetched from the PDSC.
     if (rteComponent->GetGenerator()) {
-      for (const RteItem* rteFile : files) {
-        const auto& filename = rteFile->GetOriginalAbsolutePath();
+      for (const RteItem* rteFile: files) {
         const auto& category = rteFile->GetAttribute("category");
-        const auto& attr = rteFile->GetAttribute("attr");
+        switch (RteFile::CategoryFromString(category)) {
+        case RteFile::Category::GEN_SOURCE:
+        case RteFile::Category::GEN_HEADER:
+        case RteFile::Category::GEN_PARAMS:
+        case RteFile::Category::GEN_ASSET:
+          break; // add only gen files, ignore others
+        default:
+          continue;
+        };
         const auto& version = rteFile->GetVersionString();
+        const auto& attr = rteFile->GetAttribute("attr");
+        const auto& filename = (attr == "config" && configFilePaths.find(rteFile) != configFilePaths.end()) ?
+                                configFilePaths[rteFile] : rteFile->GetOriginalAbsolutePath();
         context.generatorInputFiles[componentId].push_back({ filename, attr, category, version });
       }
     }

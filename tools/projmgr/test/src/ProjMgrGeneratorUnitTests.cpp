@@ -24,7 +24,7 @@ TEST_F(ProjMgrGeneratorUnitTests, GetStringFromVector) {
    "Word1", "Word2", "Word3",
   };
   EXPECT_EQ(expected, ProjMgrGenerator().GetStringFromVector(vec, " "));
-  
+
   const vector<string> emptyVec;
   EXPECT_EQ("", ProjMgrGenerator().GetStringFromVector(emptyVec, " "));
 }
@@ -49,6 +49,27 @@ TEST_F(ProjMgrGeneratorUnitTests, GenDir) {
 
   const string generatorInputFile = testinput_folder + "/TestSolution/TestProject3/TestProject3.Debug+TypeA.cbuild.yml";
   const string generatedGPDSC = testinput_folder + "/TestSolution/TestProject3/gendir/RteTestGen_ARMCM0/RteTest.gpdsc";
+
+  EXPECT_EQ(true, std::filesystem::exists(generatorInputFile));
+  EXPECT_EQ(true, std::filesystem::exists(generatedGPDSC));
+}
+
+TEST_F(ProjMgrGeneratorUnitTests, GenFiles) {
+  char* argv[6];
+
+  const string& csolution = testinput_folder + "/TestSolution/genfiles.csolution.yml";
+  argv[1] = (char*)"run";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-g";
+  argv[5] = (char*)"RteTestGeneratorIdentifier";
+
+  EXPECT_EQ(0, ProjMgr::RunProjMgr(6, argv, 0));
+
+  const string generatorInputFile = testinput_folder + "/TestSolution/TestProject3_1/TestProject3_1.Debug+TypeA.cbuild.yml";
+  const string generatedGPDSC = testinput_folder + "/TestSolution/TestProject3_1/gendir/RteTestGen_ARMCM0/RteTest.gpdsc";
+
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/TestSolution/ref/TestProject3_1.Debug+TypeA.cbuild.yml",  generatorInputFile);
 
   EXPECT_EQ(true, std::filesystem::exists(generatorInputFile));
   EXPECT_EQ(true, std::filesystem::exists(generatedGPDSC));

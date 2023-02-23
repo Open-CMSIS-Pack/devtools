@@ -29,7 +29,6 @@ protected:
   ProjMgrUnitTests() {}
   virtual ~ProjMgrUnitTests() {}
 
-  void CompareFile(const string& file1, const string& file2);
   void GetFilesInTree(const string& dir, set<string>& files);
   void CompareFileTree(const string& dir1, const string& dir2);
 
@@ -44,42 +43,6 @@ string ProjMgrUnitTests::UpdateTestSolutionFile(const string& projectFilePath) {
   fout << root;
   fout.close();
   return csolutionFile;
-}
-
-void ProjMgrUnitTests::CompareFile(const string& file1, const string& file2) {
-  ifstream f1, f2;
-  string l1, l2;
-  bool ret_val;
-
-  f1.open(file1);
-  ret_val = f1.is_open();
-  ASSERT_EQ(ret_val, true) << "Failed to open " << file1;
-
-  f2.open(file2);
-  ret_val = f2.is_open();
-  ASSERT_EQ(ret_val, true) << "Failed to open " << file2;
-
-  while (getline(f1, l1) && getline(f2, l2)) {
-    if (!l1.empty() && l1.rfind('\r') == l1.length() - 1) {
-      l1.pop_back();
-    }
-
-    if (!l2.empty() && l2.rfind('\r') == l2.length() - 1) {
-      l2.pop_back();
-    }
-
-    if (l1 != l2) {
-      // ignore 'timestamp'
-      if ((!l1.empty() && (l1.find("timestamp=") != string::npos)) && (!l2.empty() && (l2.find("timestamp=") != string::npos))) {
-        continue;
-      }
-
-      FAIL() << "error: " << file1 << " is different from " << file2;
-    }
-  }
-
-  f1.close();
-  f2.close();
 }
 
 void ProjMgrUnitTests::GetFilesInTree(const string& dir, set<string>& files) {
@@ -386,7 +349,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ConvertProject) {
   EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   // Check generated CPRJ
-  CompareFile(testoutput_folder + "/test.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test.cprj",
     testinput_folder + "/TestSolution/TestProject4/test.cprj");
 }
 
@@ -402,7 +365,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_LinkerScript) {
   EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   // Check generated CPRJ
-  CompareFile(testoutput_folder + "/test_linker_script.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test_linker_script.cprj",
     testinput_folder + "/TestSolution/TestProject4/test_linker_script.cprj");
 }
 
@@ -429,7 +392,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Skip_Schema_Check) {
   EXPECT_EQ(0, RunProjMgr(7, argv, 0));
 
   // Check generated CPRJ
-  CompareFile(testoutput_folder + "/test.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test.cprj",
     testinput_folder + "/TestSolution/TestProject4/test.cprj");
 }
 
@@ -492,26 +455,26 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution) {
   EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   // Check generated CPRJs
-  CompareFile(testoutput_folder + "/test1.Debug+CM0.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test1.Debug+CM0.cprj",
     testinput_folder + "/TestSolution/ref/test1.Debug+CM0.cprj");
-  CompareFile(testoutput_folder + "/test1.Release+CM0.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test1.Release+CM0.cprj",
     testinput_folder + "/TestSolution/ref/test1.Release+CM0.cprj");
 
-  CompareFile(testoutput_folder + "/test2.Debug+CM0.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test2.Debug+CM0.cprj",
     testinput_folder + "/TestSolution/ref/test2.Debug+CM0.cprj");
-  CompareFile(testoutput_folder + "/test2.Debug+CM3.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test2.Debug+CM3.cprj",
     testinput_folder + "/TestSolution/ref/test2.Debug+CM3.cprj");
 
   // Check generated cbuild YMLs
-  CompareFile(testoutput_folder + "/test.cbuild-idx.yml",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test.cbuild-idx.yml",
     testinput_folder + "/TestSolution/ref/cbuild/test.cbuild-idx.yml");
-  CompareFile(testoutput_folder + "/test1.Debug+CM0.cbuild.yml",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test1.Debug+CM0.cbuild.yml",
     testinput_folder + "/TestSolution/ref/cbuild/test1.Debug+CM0.cbuild.yml");
-  CompareFile(testoutput_folder + "/test1.Release+CM0.cbuild.yml",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test1.Release+CM0.cbuild.yml",
     testinput_folder + "/TestSolution/ref/cbuild/test1.Release+CM0.cbuild.yml");
-  CompareFile(testoutput_folder + "/test2.Debug+CM0.cbuild.yml",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test2.Debug+CM0.cbuild.yml",
     testinput_folder + "/TestSolution/ref/cbuild/test2.Debug+CM0.cbuild.yml");
-  CompareFile(testoutput_folder + "/test2.Debug+CM3.cbuild.yml",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test2.Debug+CM3.cbuild.yml",
     testinput_folder + "/TestSolution/ref/cbuild/test2.Debug+CM3.cbuild.yml");
 }
 
@@ -623,9 +586,9 @@ TEST_F(ProjMgrUnitTests, RunProjMgrLayers) {
   EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   // Check generated CPRJs
-  CompareFile(testoutput_folder + "/testlayers/testlayers.Debug.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/testlayers/testlayers.Debug.cprj",
     testinput_folder + "/TestLayers/ref/testlayers/testlayers.Debug.cprj");
-  CompareFile(testoutput_folder + "/testlayers/testlayers.Release.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/testlayers/testlayers.Release.cprj",
     testinput_folder + "/TestLayers/ref/testlayers/testlayers.Release.cprj");
 
   // Check creation of layers rte folders
@@ -644,9 +607,9 @@ TEST_F(ProjMgrUnitTests, RunProjMgrLayers2) {
   EXPECT_EQ(0, RunProjMgr(4, argv, 0));
 
   // Check generated CPRJs
-  CompareFile(testinput_folder + "/TestLayers/testlayers.Debug.cprj",
+ ProjMgrTestEnv:: CompareFile(testinput_folder + "/TestLayers/testlayers.Debug.cprj",
     testinput_folder + "/TestLayers/ref2/testlayers.Debug.cprj");
-  CompareFile(testinput_folder + "/TestLayers/testlayers.Release.cprj",
+ ProjMgrTestEnv:: CompareFile(testinput_folder + "/TestLayers/testlayers.Release.cprj",
     testinput_folder + "/TestLayers/ref2/testlayers.Release.cprj");
 }
 
@@ -1116,7 +1079,7 @@ check combined connections:\
   streamRedirect.ClearStringStreams();
   argv[6] = (char*)"invalid/clayer/path";
   EXPECT_EQ(1, RunProjMgr(8, argv, 0));
- 
+
   errStr = streamRedirect.GetErrorString();
   EXPECT_TRUE(regex_match(errStr, regex(".*invalid/clayer/path - error csolution: clayer search path does not exist\n")));
 }
@@ -1134,13 +1097,13 @@ TEST_F(ProjMgrUnitTests, LayerVariables) {
   EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   // Check generated CPRJs
-  CompareFile(testoutput_folder + "/variables.BuildType1+TargetType1.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/variables.BuildType1+TargetType1.cprj",
     testinput_folder + "/TestLayers/ref/variables/variables.BuildType1+TargetType1.cprj");
-  CompareFile(testoutput_folder + "/variables.BuildType1+TargetType2.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/variables.BuildType1+TargetType2.cprj",
     testinput_folder + "/TestLayers/ref/variables/variables.BuildType1+TargetType2.cprj");
-  CompareFile(testoutput_folder + "/variables.BuildType2+TargetType1.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/variables.BuildType2+TargetType1.cprj",
     testinput_folder + "/TestLayers/ref/variables/variables.BuildType2+TargetType1.cprj");
-  CompareFile(testoutput_folder + "/variables.BuildType2+TargetType2.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/variables.BuildType2+TargetType2.cprj",
     testinput_folder + "/TestLayers/ref/variables/variables.BuildType2+TargetType2.cprj");
 }
 
@@ -1226,21 +1189,21 @@ TEST_F(ProjMgrUnitTests, AccessSequences) {
   EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   // Check generated CPRJs
-  CompareFile(testoutput_folder + "/test-access-sequences1.Debug+CM0.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test-access-sequences1.Debug+CM0.cprj",
     testinput_folder + "/TestAccessSequences/ref/test-access-sequences1.Debug+CM0.cprj");
-  CompareFile(testoutput_folder + "/test-access-sequences1.Release+CM0.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test-access-sequences1.Release+CM0.cprj",
     testinput_folder + "/TestAccessSequences/ref/test-access-sequences1.Release+CM0.cprj");
-  CompareFile(testoutput_folder + "/test-access-sequences2.Debug+CM0.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test-access-sequences2.Debug+CM0.cprj",
     testinput_folder + "/TestAccessSequences/ref/test-access-sequences2.Debug+CM0.cprj");
-  CompareFile(testoutput_folder + "/test-access-sequences2.Release+CM0.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test-access-sequences2.Release+CM0.cprj",
     testinput_folder + "/TestAccessSequences/ref/test-access-sequences2.Release+CM0.cprj");
-  CompareFile(testoutput_folder + "/test-access-sequences1.Debug+CM3.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test-access-sequences1.Debug+CM3.cprj",
     testinput_folder + "/TestAccessSequences/ref/test-access-sequences1.Debug+CM3.cprj");
-  CompareFile(testoutput_folder + "/test-access-sequences1.Release+CM3.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test-access-sequences1.Release+CM3.cprj",
     testinput_folder + "/TestAccessSequences/ref/test-access-sequences1.Release+CM3.cprj");
-  CompareFile(testoutput_folder + "/test-access-sequences2.Debug+CM3.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test-access-sequences2.Debug+CM3.cprj",
     testinput_folder + "/TestAccessSequences/ref/test-access-sequences2.Debug+CM3.cprj");
-  CompareFile(testoutput_folder + "/test-access-sequences2.Release+CM3.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test-access-sequences2.Release+CM3.cprj",
     testinput_folder + "/TestAccessSequences/ref/test-access-sequences2.Release+CM3.cprj");
 }
 
@@ -1257,9 +1220,9 @@ TEST_F(ProjMgrUnitTests, AccessSequences2) {
   EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   // Check generated CPRJs
-  CompareFile(testoutput_folder + "/test-access-sequences3.Debug.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test-access-sequences3.Debug.cprj",
     testinput_folder + "/TestAccessSequences/ref/test-access-sequences3.Debug.cprj");
-  CompareFile(testoutput_folder + "/test-access-sequences3.Release.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test-access-sequences3.Release.cprj",
     testinput_folder + "/TestAccessSequences/ref/test-access-sequences3.Release.cprj");
 }
 
@@ -1299,7 +1262,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Multicore) {
   EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   // Check generated CPRJs
-  CompareFile(testoutput_folder + "/multicore+CM0.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/multicore+CM0.cprj",
     testinput_folder + "/TestSolution/ref/multicore+CM0.cprj");
 }
 
@@ -1315,13 +1278,13 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Generator) {
   EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   // Check generated CPRJs
-  CompareFile(testoutput_folder + "/test-gpdsc.Debug+CM0.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test-gpdsc.Debug+CM0.cprj",
     testinput_folder + "/TestGenerator/ref/test-gpdsc.Debug+CM0.cprj");
 
   // Check generated cbuild YMLs
-  CompareFile(testoutput_folder + "/test-gpdsc.cbuild-idx.yml",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test-gpdsc.cbuild-idx.yml",
     testinput_folder + "/TestGenerator/ref/test-gpdsc.cbuild-idx.yml");
-  CompareFile(testoutput_folder + "/test-gpdsc.Debug+CM0.cbuild.yml",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test-gpdsc.Debug+CM0.cbuild.yml",
     testinput_folder + "/TestGenerator/ref/test-gpdsc.Debug+CM0.cbuild.yml");
 }
 
@@ -1338,7 +1301,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_TargetOptions)
   EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   // Check generated CPRJs
-  CompareFile(testoutput_folder + "/test.target_options+CM0.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test.target_options+CM0.cprj",
               testinput_folder + "/TestSolution/ref/test.target_options+CM0.cprj");
 }
 
@@ -1564,9 +1527,9 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_processor) {
   EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   // Check generated CPRJs
-  CompareFile(testoutput_folder + "/test2.Debug+CM0.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test2.Debug+CM0.cprj",
     testinput_folder + "/TestSolution/ref/test2.Debug+CM0_pname.cprj");
-  CompareFile(testoutput_folder + "/test2.Debug+CM3.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test2.Debug+CM3.cprj",
     testinput_folder + "/TestSolution/ref/test2.Debug+CM3_pname.cprj");
 }
 
@@ -1679,7 +1642,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Only_Board_Info) {
   EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   // Check generated CPRJ
-  CompareFile(testoutput_folder + "/test.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test.cprj",
     testinput_folder + "/TestSolution/TestProject4/test_only_board.cprj");
 }
 
@@ -2162,9 +2125,9 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Pack_Selection) {
   EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   // Check generated CPRJs
-  CompareFile(testoutput_folder + "/test2.Debug+CM0.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test2.Debug+CM0.cprj",
     testinput_folder + "/TestSolution/ref/test2.Debug+CM0_pack_selection.cprj");
-  CompareFile(testoutput_folder + "/test2.Debug+TestGen.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test2.Debug+TestGen.cprj",
     testinput_folder + "/TestSolution/ref/test2.Debug+TestGen.cprj");
 }
 
@@ -2212,7 +2175,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Local_Pack) {
   EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   // Check generated CPRJ
-  CompareFile(testoutput_folder + "/pack_path+CM0.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/pack_path+CM0.cprj",
     testinput_folder + "/TestSolution/ref/pack_path+CM0.cprj");
 
 }
@@ -2291,9 +2254,9 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_List_Board_Pack) {
   EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   // Check generated CPRJs
-  CompareFile(testoutput_folder + "/test1.Debug+CM0.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test1.Debug+CM0.cprj",
     testinput_folder + "/TestSolution/ref/test1.Debug+CM0_board_package.cprj");
-  CompareFile(testoutput_folder + "/test1.Release+CM0.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test1.Release+CM0.cprj",
     testinput_folder + "/TestSolution/ref/test1.Release+CM0_board_package.cprj");
 }
 
@@ -2413,9 +2376,9 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_DefaultFile1) {
   EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   // Check generated CPRJs
-  CompareFile(testoutput_folder + "/empty/project.Debug.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/empty/project.Debug.cprj",
     testinput_folder + "/TestDefault/ref/empty/project.Debug.cprj");
-  CompareFile(testoutput_folder + "/empty/project.Release.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/empty/project.Release.cprj",
     testinput_folder + "/TestDefault/ref/empty/project.Release.cprj");
 }
 
@@ -2433,9 +2396,9 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_DefaultFile2) {
   EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   // Check generated CPRJs
-  CompareFile(testoutput_folder + "/full/project.Debug.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/full/project.Debug.cprj",
     testinput_folder + "/TestDefault/ref/full/project.Debug.cprj");
-  CompareFile(testoutput_folder + "/full/project.Release.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/full/project.Release.cprj",
     testinput_folder + "/TestDefault/ref/full/project.Release.cprj");
 }
 
@@ -2453,13 +2416,13 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_DefaultFile3) {
   EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   // Check generated CPRJs
-  CompareFile(testoutput_folder + "/build-types/project.Debug.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/build-types/project.Debug.cprj",
     testinput_folder + "/TestDefault/ref/build-types/project.Debug.cprj");
-  CompareFile(testoutput_folder + "/build-types/project.Release.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/build-types/project.Release.cprj",
     testinput_folder + "/TestDefault/ref/build-types/project.Release.cprj");
-  CompareFile(testoutput_folder + "/build-types/project.AC6.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/build-types/project.AC6.cprj",
     testinput_folder + "/TestDefault/ref/build-types/project.AC6.cprj");
-  CompareFile(testoutput_folder + "/build-types/project.IAR.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/build-types/project.IAR.cprj",
     testinput_folder + "/TestDefault/ref/build-types/project.IAR.cprj");
 }
 
@@ -2484,7 +2447,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_NoUpdateRTEFiles) {
   EXPECT_EQ(rteFilesBefore, rteFilesAfter);
 
   // CPRJ should still be generated
-  CompareFile(testoutput_folder + "/test.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test.cprj",
     testinput_folder + "/TestSolution/TestProject4/test.cprj");
 }
 
@@ -2542,6 +2505,7 @@ TEST_F(ProjMgrUnitTests, ListComponents_MultiplePackSelection) {
   };
   set<string> expected_Gen = {
     "ARM::Device:RteTest Generated Component:RteTest@1.1.0 (ARM::RteTestGenerator@0.1.0)",
+    "ARM::Device:RteTest Generated Component:RteTestGenFiles@1.1.0 (ARM::RteTestGenerator@0.1.0)",
     "ARM::Device:RteTest Generated Component:RteTestSimple@1.1.0 (ARM::RteTestGenerator@0.1.0)",
     "ARM::Device:RteTest Generated Component:RteTestWithKey@1.1.0 (ARM::RteTestGenerator@0.1.0)"
   };
@@ -2622,13 +2586,13 @@ TEST_F(ProjMgrUnitTests, OutputDirs) {
   EXPECT_EQ(0, RunProjMgr(4, argv, 0));
 
   // Check generated CPRJs
-  CompareFile(testinput_folder + "/TestSolution/AC6/test1.Debug+TypeA.cprj",
+ ProjMgrTestEnv:: CompareFile(testinput_folder + "/TestSolution/AC6/test1.Debug+TypeA.cprj",
     testinput_folder + "/TestSolution/ref/AC6/test1.Debug+TypeA.cprj");
-  CompareFile(testinput_folder + "/TestSolution/AC6/test1.Debug+TypeB.cprj",
+ ProjMgrTestEnv:: CompareFile(testinput_folder + "/TestSolution/AC6/test1.Debug+TypeB.cprj",
     testinput_folder + "/TestSolution/ref/AC6/test1.Debug+TypeB.cprj");
-  CompareFile(testinput_folder + "/TestSolution/GCC/test1.Release+TypeA.cprj",
+ ProjMgrTestEnv:: CompareFile(testinput_folder + "/TestSolution/GCC/test1.Release+TypeA.cprj",
     testinput_folder + "/TestSolution/ref/GCC/test1.Release+TypeA.cprj");
-  CompareFile(testinput_folder + "/TestSolution/GCC/test1.Release+TypeB.cprj",
+ ProjMgrTestEnv:: CompareFile(testinput_folder + "/TestSolution/GCC/test1.Release+TypeB.cprj",
     testinput_folder + "/TestSolution/ref/GCC/test1.Release+TypeB.cprj");
 }
 
@@ -2658,9 +2622,9 @@ TEST_F(ProjMgrUnitTests, ProjectSetup) {
   EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   // Check generated CPRJs
-  CompareFile(testoutput_folder + "/setup-test.Build AC6.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/setup-test.Build AC6.cprj",
     testinput_folder + "/TestProjectSetup/ref/setup-test.Build AC6.cprj");
-  CompareFile(testoutput_folder + "/setup-test.Build GCC.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/setup-test.Build GCC.cprj",
     testinput_folder + "/TestProjectSetup/ref/setup-test.Build GCC.cprj");
 }
 
@@ -2759,7 +2723,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ExportNonLockedCprj) {
   EXPECT_EQ(0, RunProjMgr(10, argv, 0));
 
   // Check generated CPRJs
-  CompareFile(testoutput_folder + "/test2.Debug+TestGen_export.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test2.Debug+TestGen_export.cprj",
     testinput_folder + "/TestSolution/ref/test2.Debug+TestGen_export.cprj");
 }
 
@@ -2803,13 +2767,13 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_PreInclude) {
   EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   // Check generated CPRJs
-  CompareFile(testoutput_folder + "/pre-include+CM0.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/pre-include+CM0.cprj",
     testinput_folder + "/TestSolution/ref/pre-include+CM0.cprj");
 
   // Check generated cbuild YMLs
-  CompareFile(testoutput_folder + "/pre-include.cbuild-idx.yml",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/pre-include.cbuild-idx.yml",
     testinput_folder + "/TestSolution/ref/pre-include.cbuild-idx.yml");
-  CompareFile(testoutput_folder + "/pre-include+CM0.cbuild.yml",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/pre-include+CM0.cbuild.yml",
     testinput_folder + "/TestSolution/ref/pre-include+CM0.cbuild.yml");
 }
 
@@ -2854,15 +2818,15 @@ TEST_F(ProjMgrUnitTests, RunProjMgrOutputFiles) {
   EXPECT_EQ(1, RunProjMgr(5, argv, 0));
 
   // Check generated CPRJs
-  CompareFile(testoutput_folder + "/outputFiles.Debug+Target.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/outputFiles.Debug+Target.cprj",
     testinput_folder + "/TestSolution/ref/outputFiles.Debug+Target.cprj");
-  CompareFile(testoutput_folder + "/outputFiles.Library+Target.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/outputFiles.Library+Target.cprj",
     testinput_folder + "/TestSolution/ref/outputFiles.Library+Target.cprj");
 
   // Check generated cbuild YMLs
-  CompareFile(testoutput_folder + "/outputFiles.Debug+Target.cbuild.yml",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/outputFiles.Debug+Target.cbuild.yml",
     testinput_folder + "/TestSolution/ref/outputFiles.Debug+Target.cbuild.yml");
-  CompareFile(testoutput_folder + "/outputFiles.Library+Target.cbuild.yml",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/outputFiles.Library+Target.cbuild.yml",
     testinput_folder + "/TestSolution/ref/outputFiles.Library+Target.cbuild.yml");
 
   // Check error messages
