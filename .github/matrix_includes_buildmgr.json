@@ -13,7 +13,7 @@
         "runs_on":"macos-12",
         "target":"darwin",
         "arch": "arm64",
-        "binary_extension":".mac-amd64",
+        "binary_extension":".mac-arm64",
         "arm_gcc_install_base": "https://developer.arm.com/-/media/Files/downloads/gnu-rm/10-2020q4",
         "installer_name": "gcc-arm-none-eabi-10-2020-q4-major-mac.tar.bz2",
         "toolchain_root": "gcc-arm-none-eabi-10-2020-q4-major/bin",

@@ -25,6 +25,17 @@ set_property(TARGET cbuildgenlib PROPERTY
 # cbuildgen target
 add_executable(cbuildgen ${SOURCE_FILES} ${HEADER_FILES})
 
+if("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
+  set(EXT "-${CPU_ARCH}")
+elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
+  set(EXT ".lin-${CPU_ARCH}")
+elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
+  set(EXT ".mac-${CPU_ARCH}")
+endif()
+
+add_custom_command(TARGET cbuildgen POST_BUILD COMMAND cp "$<TARGET_FILE:cbuildgen>" "$<TARGET_FILE:cbuildgen>${EXT}")
+
+#
 if(MSVC)
   target_link_options(cbuildgen PUBLIC "$<$<CONFIG:Debug>:/SAFESEH:NO>")
 endif(MSVC)
