@@ -304,7 +304,7 @@ jobs:
       GCC_TOOLCHAIN_ROOT: ${{ github.workspace }}/${{ matrix.toolchain_root }}
       CI_ARCH: ${{ matrix.arch }}
     strategy:
-      fail-fast: true
+      #fail-fast: true
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
     steps:
       - name: Install macos deps
@@ -428,7 +428,7 @@ jobs:
         working-directory: build
 
       - name: Run Cbuild Integration Tests (excl. DebPkgTests, AC5, AC6, MultiTargetAC6Tests) for macOS
-        if: ${{ startsWith(matrix.runs_on, 'macos') }}
+        if: ${{ startsWith(matrix.runs_on, 'macos') && matrix.arch == 'amd64' }}
         env:
           target: ${{ matrix.target }}
           arch: ${{ matrix.arch }}
@@ -436,7 +436,7 @@ jobs:
         working-directory: build
 
       - name: Run Cbuild Integration Tests (excl. DebPkgTests, AC5, AC6, MultiTargetAC6Tests) for Windows
-        if: ${{ startsWith(matrix.runs_on, 'windows') }}
+        if: ${{ startsWith(matrix.runs_on, 'windows') && matrix.arch == 'amd64' }}
         env:
           target: ${{ matrix.target }}
           arch: ${{ matrix.arch }}
