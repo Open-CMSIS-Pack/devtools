@@ -481,7 +481,6 @@ jobs:
         run: mkdir build
 
       - name: Cache ARM GCC
-        id: cache-arm-gcc
         uses: actions/cache@v3
         with:
           key: "${{ env.arm_gcc_install_base }}/${{ env.installer_name }}"
