@@ -64,7 +64,7 @@ jobs:
       - name: Install linux deps
         if: ${{ startsWith(matrix.runs_on, 'ubuntu') }}
         run: |
-          sudo apt update
+          sudo apt-get update
           sudo apt-get install \
             dos2unix \
             libxml2-utils
