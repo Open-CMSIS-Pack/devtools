@@ -52,7 +52,7 @@ jobs:
     runs-on: ${{ matrix.runs_on }}
     timeout-minutes: 15
     strategy:
-      fail-fast: true
+      # fail-fast: true
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
 
     steps:
@@ -89,7 +89,7 @@ jobs:
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build swig libs macos and ubuntu amd64
-        if: ${{ startsWith(matrix.runs_on, 'macos') || ( startsWith(matrix.runs_on, 'ubuntu') && matrix.arch == 'amd64' ) }}
+        if: ${{ (startsWith(matrix.runs_on, 'macos') || startsWith(matrix.runs_on, 'ubuntu')) && (matrix.arch == 'amd64') }}
         uses: Open-CMSIS-Pack/devtools-build-action@arm64
         with:
           add_cmake_variables: -DSWIG_LIBS=ON
@@ -109,7 +109,7 @@ jobs:
           retention-days: ${{ needs.setup.outputs.retention_days }}
 
       - name: Archive projmgr swig python libs macos ubuntu amd64
-        if: ${{ startsWith(matrix.runs_on, 'macos') || ( startsWith(matrix.runs_on, 'ubuntu') && matrix.arch == 'amd64' ) }}
+        if: ${{ (startsWith(matrix.runs_on, 'macos') || startsWith(matrix.runs_on, 'ubuntu')) && (matrix.arch == 'amd64') }}
         uses: actions/upload-artifact@v3
         with:
           name: projmgr-swig-python-${{ matrix.target }}-${{ matrix.arch }}
@@ -119,7 +119,7 @@ jobs:
           retention-days: ${{ needs.setup.outputs.retention_days }}
 
       - name: Archive projmgr swig go libs macos ubuntu amd64
-        if: ${{ startsWith(matrix.runs_on, 'macos') || ( startsWith(matrix.runs_on, 'ubuntu') && matrix.arch == 'amd64' ) }}
+        if: ${{ (startsWith(matrix.runs_on, 'macos') || startsWith(matrix.runs_on, 'ubuntu')) && (matrix.arch == 'amd64') }}
         uses: actions/upload-artifact@v3
         with:
           name: projmgr-swig-go-${{ matrix.target }}-${{ matrix.arch }}

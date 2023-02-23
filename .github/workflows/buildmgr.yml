@@ -78,18 +78,18 @@ jobs:
       - name: Rename binary to be integrated to the installer (macOS, Linux)
         if: ${{ startsWith(matrix.runs_on, 'macos') || startsWith(matrix.runs_on, 'ubuntu') }}
         run: mv cbuildgen cbuildgen${{ matrix.binary_extension }}
-        working-directory: build/tools/buildmgr/cbuildgen/${{ matrix.target }}/Release
+        working-directory: build/tools/buildmgr/cbuildgen/${{ matrix.target }-${{ matrix.arch }}/Release
 
       - name: Rename binary to be integrated to the installer (Windows)
         if: ${{ startsWith(matrix.runs_on, 'windows') }}
         run: mv cbuildgen.exe cbuildgen${{ matrix.binary_extension }}
-        working-directory: build/tools/buildmgr/cbuildgen/${{ matrix.target }}/Release
+        working-directory: build/tools/buildmgr/cbuildgen/${{ matrix.target }}-${{ matrix.arch }}/Release
 
       - name: Archive cbuildgen
         uses: actions/upload-artifact@v3
         with:
           name: cbuildgen-${{ matrix.target }}-${{ matrix.arch }}
-          path: ./build/tools/buildmgr/cbuildgen/${{ matrix.target }}/Release/cbuildgen${{ matrix.binary_extension }}
+          path: ./build/tools/buildmgr/cbuildgen/${{ matrix.target }}-${{ matrix.arch }}/Release/cbuildgen${{ matrix.binary_extension }}
           retention-days: ${{ needs.setup.outputs.retention_days }}
           if-no-files-found: error
 
