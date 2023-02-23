@@ -415,7 +415,7 @@ jobs:
         env:
           target: ${{ matrix.target }}
           arch: ${{ matrix.arch }}
-        run: ./tools/buildmgr/test/integrationtests/${target}/Debug/CbuildIntegTests --gtest_filter=-*AC5*:*AC6*:*MultiTargetAC6Tests* --gtest_output=xml:test_reports/cbuildintegtests-report-${target}-${arch}.xml
+        run: ./tools/buildmgr/test/integrationtests/${{ env.target }}/Debug/CbuildIntegTests --gtest_filter=-*AC5*:*AC6*:*MultiTargetAC6Tests* --gtest_output=xml:test_reports/cbuildintegtests-report-${{ env.target }}-${{ env.arch }}.xml
         working-directory: build
 
       - name: Run Cbuild Integration Tests (excl. AC5, AC6, MultiTargetAC6Tests) for Linux arm64
@@ -423,7 +423,7 @@ jobs:
         env:
           target: ${{ matrix.target }}
           arch: ${{ matrix.arch }}
-        run: /usr/bin/qemu-aarch64 -L /usr/aarch64-linux-gnu ./tools/buildmgr/test/integrationtests/${target}/Debug/CbuildIntegTests --gtest_filter=-*AC5*:*AC6*:*MultiTargetAC6Tests* --gtest_output=xml:test_reports/cbuildintegtests-report-${target}-${arch}.xml
+        run: /usr/bin/qemu-aarch64 -L /usr/aarch64-linux-gnu ./tools/buildmgr/test/integrationtests/${{ env.target }}/Debug/CbuildIntegTests --gtest_filter=-*AC5*:*AC6*:*MultiTargetAC6Tests* --gtest_output=xml:test_reports/cbuildintegtests-report-${{ env.target }}-${{ env.arch }}.xml
         working-directory: build
 
       - name: Run Cbuild Integration Tests (excl. DebPkgTests, AC5, AC6, MultiTargetAC6Tests) for macOS
@@ -431,7 +431,7 @@ jobs:
         env:
           target: ${{ matrix.target }}
           arch: ${{ matrix.arch }}
-        run: ./tools/buildmgr/test/integrationtests/${target}/Debug/CbuildIntegTests --gtest_filter=-*DebPkgTests*:*AC5*:*AC6*:*MultiTargetAC6Tests* --gtest_output=xml:test_reports/cbuildintegtests-report-${target}-${arch}.xml
+        run: ./tools/buildmgr/test/integrationtests/${{ env.target }}/Debug/CbuildIntegTests --gtest_filter=-*DebPkgTests*:*AC5*:*AC6*:*MultiTargetAC6Tests* --gtest_output=xml:test_reports/cbuildintegtests-report-${{ env.target }}-${{ env.arch }}.xml
         working-directory: build
 
       - name: Run Cbuild Integration Tests (excl. DebPkgTests, AC5, AC6, MultiTargetAC6Tests) for Windows
@@ -439,8 +439,7 @@ jobs:
         env:
           target: ${{ matrix.target }}
           arch: ${{ matrix.arch }}
-        # For some reason the env variable usage $Env:target does not work properly.
-        run: .\tools\buildmgr\test\integrationtests\windows64\Debug\CbuildIntegTests.exe --gtest_filter=-*DebPkgTests*:*AC5*:*AC6*:*MultiTargetAC6Tests* --gtest_output=xml:test_reports/cbuildintegtests-report-${target}-${arch}.xml
+        run: .\tools\buildmgr\test\integrationtests\windows64\Debug\CbuildIntegTests.exe --gtest_filter=-*DebPkgTests*:*AC5*:*AC6*:*MultiTargetAC6Tests* --gtest_output=xml:test_reports/cbuildintegtests-report-${{ env.target }}-${{ env.arch }}.xml
         working-directory: build
 
       - name: Archive Cbuild Integration Tests
@@ -655,9 +654,14 @@ jobs:
           ${{ github.workspace }}/cbuild/bin/cbuildgen | grep "(cbuildgen): Build Process Manager"
   test-results-preparation:
     name: "Publish Tests Results"
-    needs: [ tests ]
+    needs: [ setup, tests ]
     runs-on: ubuntu-22.04
     steps:
+      - name: Checkout devtools
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
@@ -707,6 +711,33 @@ jobs:
           name: integ_test_result-darwin64-amd64
           path: testreports/
 
+      - name: install python packages
+        run: |
+          python3 -m pip install --upgrade pip
+          pip install -r ./scripts/requirements.txt
+
+      - name: Generate consolidated HTML test report
+        run: |
+          mkdir -p merged_report
+          python3 ./scripts/merge_test_reports.py -r testreports -o ./merged_report/buildmgr_merged_test_report.xml
+          junit2html ./merged_report/buildmgr_merged_test_report.xml ./merged_report/html_test_report.html
+
+      - name: Archive merged test report
+        uses: actions/upload-artifact@v3
+        with:
+          name: merged-test-report
+          path: ./merged_report/buildmgr_merged_test_report.xml
+          retention-days: ${{ needs.setup.outputs.retention_days }}
+          if-no-files-found: error
+
+      - name: Archive HTML report
+        uses: actions/upload-artifact@v3
+        with:
+          name: html-test-report
+          path: ./merged_report/html_test_report.html
+          retention-days: ${{ needs.setup.outputs.retention_days }}
+          if-no-files-found: error
+          
       - name: Event File
         uses: actions/upload-artifact@v3
         with:

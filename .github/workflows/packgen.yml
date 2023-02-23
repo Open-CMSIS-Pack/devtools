@@ -259,9 +259,12 @@ jobs:
 
   test-results-preparation:
     name: "Publish Tests Results"
-    needs: [ unittest ]
+    needs: [ setup, unittest ]
     runs-on: ubuntu-22.04
     steps:
+      - name: Checkout devtools
+        uses: actions/checkout@v3
+
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
@@ -291,6 +294,33 @@ jobs:
         with:
           name: unit_test_result-darwin64-amd64
           path: testreports/
+
+      - name: install python packages
+        run: |
+          python3 -m pip install --upgrade pip
+          pip install -r ./scripts/requirements.txt
+
+      - name: Generate consolidated HTML test report
+        run: |
+          mkdir -p merged_report
+          python3 ./scripts/merge_test_reports.py -r testreports -o ./merged_report/packgen_merged_test_report.xml
+          junit2html ./merged_report/packgen_merged_test_report.xml ./merged_report/html_test_report.html
+
+      - name: Archive merged test report
+        uses: actions/upload-artifact@v3
+        with:
+          name: merged-test-report
+          path: ./merged_report/packgen_merged_test_report.xml
+          retention-days: ${{ needs.setup.outputs.retention_days }}
+          if-no-files-found: error
+
+      - name: Archive HTML report
+        uses: actions/upload-artifact@v3
+        with:
+          name: html-test-report
+          path: ./merged_report/html_test_report.html
+          retention-days: ${{ needs.setup.outputs.retention_days }}
+          if-no-files-found: error
 
       - name: Event File
         uses: actions/upload-artifact@v3
