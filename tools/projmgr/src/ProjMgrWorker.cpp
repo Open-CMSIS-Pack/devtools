@@ -184,6 +184,10 @@ void ProjMgrWorker::SetOutputDir(const std::string& outputDir) {
   m_outputDir = outputDir;
 }
 
+void ProjMgrWorker::SetSelectedToolchain(const std::string& selectedToolchain) {
+  m_selectedToolchain = selectedToolchain;
+}
+
 void ProjMgrWorker::SetCheckSchema(bool checkSchema) {
   m_checkSchema = checkSchema;
 }
@@ -1601,6 +1605,19 @@ bool ProjMgrWorker::ProcessPrecedence(StringCollection& item) {
   return true;
 }
 
+bool ProjMgrWorker::ProcessCompilerPrecedence(StringCollection& item) {
+  for (const auto& element : item.elements) {
+    if (!element->empty()) {
+      if (!ProjMgrUtils::AreCompilersCompatible(*item.assign, *element)) {
+        ProjMgrLogger::Error("redefinition from '" + *item.assign + "' into '" + *element + "' is not allowed");
+        return false;
+      }
+      ProjMgrUtils::CompilersIntersect(*item.assign, *element, *item.assign);
+    }
+  }
+  return true;
+}
+
 void ProjMgrWorker::MergeStringVector(StringVectorCollection& item) {
   for (const auto& element : item.pair) {
     AddStringItemsUniquely(*item.assign, *element.add);
@@ -1663,12 +1680,13 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
      &context.controls.csolution.compiler,
      &context.controls.target.compiler,
      &context.controls.build.compiler,
+     &m_selectedToolchain,
    },
   };
   for (const auto& [_, clayer] : context.clayers) {
     compiler.elements.push_back(&clayer->target.build.compiler);
   }
-  if (!ProcessPrecedence(compiler)) {
+  if (!ProcessCompilerPrecedence(compiler)) {
     return false;
   }
   if (!ProcessToolchain(context)) {
@@ -1825,7 +1843,7 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
     miscVec.push_back(&clayer.misc);
   }
   context.controls.processed.misc.push_back({});
-  context.controls.processed.misc.front().compiler = context.toolchain.name;
+  context.controls.processed.misc.front().compiler = context.compiler;
   AddMiscUniquely(context.controls.processed.misc.front(), miscVec);
 
   // Defines
@@ -2135,11 +2153,8 @@ bool ProjMgrWorker::CheckCompiler(const vector<string>& forCompiler, const strin
   if (forCompiler.empty()) {
     return true;
   }
-  const ToolchainItem& selectedToolchain = GetToolchain(selectedCompiler);
   for (const auto& compiler : forCompiler) {
-    const ToolchainItem& toolchain = GetToolchain(compiler);
-    if (toolchain.name == selectedToolchain.name &&
-       (toolchain.version.empty() || toolchain.version == selectedToolchain.version)) {
+    if (ProjMgrUtils::AreCompilersCompatible(compiler, selectedCompiler)) {
       return true;
     }
   }
@@ -2425,9 +2440,6 @@ bool ProjMgrWorker::ListComponents(vector<string>& components, const string& fil
       if (!ProcessPrecedences(context)) {
         return false;
       }
-      if (!ProcessToolchain(context)) {
-        return false;
-      }
       if (!ProcessDevice(context)) {
         return false;
       }
@@ -2686,7 +2698,7 @@ void ProjMgrWorker::AddMiscUniquely(MiscItem& dst, vector<vector<MiscItem>*>& ve
 
 void ProjMgrWorker::AddMiscUniquely(MiscItem& dst, vector<MiscItem>& vec) {
   for (auto& src : vec) {
-    if (src.compiler.empty() || (src.compiler == dst.compiler)) {
+    if (ProjMgrUtils::AreCompilersCompatible(src.compiler, dst.compiler)) {
       // Copy individual flags
       AddStringItemsUniquely(dst.as, src.as);
       AddStringItemsUniquely(dst.c, src.c);

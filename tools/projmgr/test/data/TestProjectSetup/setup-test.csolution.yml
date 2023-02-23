@@ -7,6 +7,6 @@ solution:
   
   build-types:
     - type: Build AC6
-      compiler: "AC6@6.18.0"
+      compiler: AC6
     - type: Build GCC
-      compiler: "GCC@11.2.1"
+      compiler: GCC
