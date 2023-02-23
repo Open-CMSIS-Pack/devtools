@@ -76,20 +76,22 @@ jobs:
           retention-days: ${{ needs.setup.outputs.retention_days }}
           if-no-files-found: error
 
-      # https://github.com/Open-CMSIS-Pack/devtools-build-action
-      - name: Build swig libs windows
-        if: ${{ startsWith(matrix.runs_on, 'windows') }}
-        uses: Open-CMSIS-Pack/devtools-build-action@arm64
-        with:
-          add_cmake_variables: -DSWIG_LIBS=ON
-          add_cmake_build_args: --config Release
-          arch: ${{ matrix.arch }}
-          build_folder: buildswig
-          target: projmgr-python
+  build-swig:
+    needs: [ setup, matrix_prep ]
+    runs-on: ${{ matrix.runs_on }}
+    timeout-minutes: 15
+    strategy:
+      # fail-fast: true
+      matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
+    if: matrix.arch == 'amd64'
 
-      # https://github.com/Open-CMSIS-Pack/devtools-build-action
-      - name: Build swig libs macos and ubuntu amd64
-        if: ${{ (startsWith(matrix.runs_on, 'macos') || startsWith(matrix.runs_on, 'ubuntu')) && (matrix.arch == 'amd64') }}
+    steps:
+      - name: Checkout devtools
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+
+      - name: Build swig libs
         uses: Open-CMSIS-Pack/devtools-build-action@arm64
         with:
           add_cmake_variables: -DSWIG_LIBS=ON
@@ -98,7 +100,7 @@ jobs:
           build_folder: buildswig
           target: projmgr-python projmgr-go
 
-      - name: Archive projmgr swig python libs windows
+      - name: Archive projmgr swig python libs
         if: ${{ startsWith(matrix.runs_on, 'windows') }}
         uses: actions/upload-artifact@v3
         with:
@@ -106,20 +108,10 @@ jobs:
           path: |
              ./buildswig/tools/projmgr/swig/python/projmgr.py
              ./buildswig/tools/projmgr/swig/python/_projmgr.pyd
-          retention-days: ${{ needs.setup.outputs.retention_days }}
-
-      - name: Archive projmgr swig python libs macos ubuntu amd64
-        if: ${{ (startsWith(matrix.runs_on, 'macos') || startsWith(matrix.runs_on, 'ubuntu')) && (matrix.arch == 'amd64') }}
-        uses: actions/upload-artifact@v3
-        with:
-          name: projmgr-swig-python-${{ matrix.target }}-${{ matrix.arch }}
-          path: |
-             ./buildswig/tools/projmgr/swig/python/projmgr.py
              ./buildswig/tools/projmgr/swig/python/_projmgr.so
           retention-days: ${{ needs.setup.outputs.retention_days }}
 
-      - name: Archive projmgr swig go libs macos ubuntu amd64
-        if: ${{ (startsWith(matrix.runs_on, 'macos') || startsWith(matrix.runs_on, 'ubuntu')) && (matrix.arch == 'amd64') }}
+      - name: Archive projmgr swig go libs
         uses: actions/upload-artifact@v3
         with:
           name: projmgr-swig-go-${{ matrix.target }}-${{ matrix.arch }}
@@ -132,7 +124,7 @@ jobs:
     if: |
         github.event_name == 'release' &&
         startsWith(github.ref, 'refs/tags/tools/projmgr/')
-    needs: [ build, unittest, coverage ]
+    needs: [ build, build-swig, unittest, coverage ]
     runs-on: ubuntu-22.04
     timeout-minutes: 15
 
