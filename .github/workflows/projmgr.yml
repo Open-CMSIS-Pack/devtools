@@ -86,23 +86,33 @@ jobs:
 
     steps:
       - name: Checkout devtools
-        if: matrix.arch == 'amd64'
+        if: matrix.pyswig || matrix.goswig
         uses: actions/checkout@v3
         with:
           submodules: true
 
-      - name: Build swig libs
-        if: matrix.arch == 'amd64'
+      - name: Build swig python libs
+        if: matrix.pyswig
         uses: Open-CMSIS-Pack/devtools-build-action@arm64
         with:
           add_cmake_variables: -DSWIG_LIBS=ON
           add_cmake_build_args: --config Release
           arch: ${{ matrix.arch }}
           build_folder: buildswig
-          target: projmgr-python projmgr-go
+          target: projmgr-python
+
+      - name: Build swig go libs
+        if: matrix.goswig
+        uses: Open-CMSIS-Pack/devtools-build-action@arm64
+        with:
+          add_cmake_variables: -DSWIG_LIBS=ON
+          add_cmake_build_args: --config Release
+          arch: ${{ matrix.arch }}
+          build_folder: buildswig
+          target: projmgr-go
 
       - name: Archive projmgr swig python libs
-        if: matrix.arch == 'amd64'
+        if: always() && matrix.pyswig
         uses: actions/upload-artifact@v3
         with:
           name: projmgr-swig-python-${{ matrix.target }}-${{ matrix.arch }}
@@ -113,7 +123,7 @@ jobs:
           retention-days: ${{ needs.setup.outputs.retention_days }}
 
       - name: Archive projmgr swig go libs
-        if: matrix.arch == 'amd64'
+        if: always() && matrix.goswig
         uses: actions/upload-artifact@v3
         with:
           name: projmgr-swig-go-${{ matrix.target }}-${{ matrix.arch }}
