@@ -2839,3 +2839,55 @@ error csolution: processing context 'outputFiles.Conflict\\+Target' failed\n\
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_TRUE(regex_match(errStr, regex(expected)));
 }
+
+TEST_F(ProjMgrUnitTests, SelectToolchains) {
+  const string& AC6_6_6_5 = testinput_folder + "/TestToolchains/AC6.6.6.5.cmake";
+  RteFsUtils::CreateFile(AC6_6_6_5, "");
+  char* envp[6];
+  string ac6_0 = "AC6_TOOLCHAIN_6_20_0=" + testinput_folder;
+  string ac6_1 = "AC6_TOOLCHAIN_6_16_1=" + testinput_folder;
+  string ac6_2 = "AC6_TOOLCHAIN_6_6_5=" + testinput_folder;
+  string gcc = "GCC_TOOLCHAIN_11_2_1=" + testinput_folder;
+  string iar = "IAR_TOOLCHAIN_9_32_1=" + testinput_folder;
+  envp[0] = (char*)ac6_0.c_str();
+  envp[1] = (char*)ac6_1.c_str();
+  envp[2] = (char*)ac6_2.c_str();
+  envp[3] = (char*)gcc.c_str();
+  envp[4] = (char*)iar.c_str();
+  envp[5] = (char*)'\0';
+  char* argv[8];
+  const string& csolution = testinput_folder + "/TestSolution/toolchain-selection.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  argv[6] = (char*)"-t";
+
+  argv[7] = (char*)"AC6@6.20.0";
+  EXPECT_EQ(0, RunProjMgr(8, argv, envp));
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/toolchain.Debug+Target.cprj",
+    testinput_folder + "/TestSolution/ref/toolchains/toolchain.Debug+Target.cprj.ac6_6_20_0");
+
+  argv[7] = (char*)"AC6@6.16.1";
+  EXPECT_EQ(0, RunProjMgr(8, argv, envp));
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/toolchain.Debug+Target.cprj",
+    testinput_folder + "/TestSolution/ref/toolchains/toolchain.Debug+Target.cprj.ac6_6_16_1");
+
+  argv[7] = (char*)"AC6@6.6.5";
+  EXPECT_EQ(0, RunProjMgr(8, argv, envp));
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/toolchain.Debug+Target.cprj",
+    testinput_folder + "/TestSolution/ref/toolchains/toolchain.Debug+Target.cprj.ac6_6_6_5");
+
+  argv[7] = (char*)"GCC";
+  EXPECT_EQ(0, RunProjMgr(8, argv, envp));
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/toolchain.Debug+Target.cprj",
+    testinput_folder + "/TestSolution/ref/toolchains/toolchain.Debug+Target.cprj.gcc");
+
+  argv[7] = (char*)"IAR";
+  EXPECT_EQ(0, RunProjMgr(8, argv, envp));
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/toolchain.Debug+Target.cprj",
+    testinput_folder + "/TestSolution/ref/toolchains/toolchain.Debug+Target.cprj.iar");
+
+  RteFsUtils::RemoveFile(AC6_6_6_5);
+}

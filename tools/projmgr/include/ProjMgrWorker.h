@@ -451,6 +451,12 @@ public:
   void SetEnvironmentVariables(const StrVec& envVars);
 
   /**
+   * @brief set selected toolchain
+   * @param reference to selected toolchain
+  */
+  void SetSelectedToolchain(const std::string& selectedToolchain);
+
+  /**
    * @brief execute generator of a given context
    * @param generator identifier
    * @return true if executed successfully
@@ -503,6 +509,7 @@ protected:
   std::string m_outputDir;
   std::string m_packRoot;
   std::string m_compilerRoot;
+  std::string m_selectedToolchain;
   LoadPacksPolicy m_loadPacksPolicy;
   bool m_checkSchema;
   bool m_verbose;
@@ -520,6 +527,7 @@ protected:
   bool SetTargetAttributes(ContextItem& context, std::map<std::string, std::string>& attributes);
   bool ProcessPrecedences(ContextItem& context);
   bool ProcessPrecedence(StringCollection& item);
+  bool ProcessCompilerPrecedence(StringCollection& item);
   bool ProcessDevice(ContextItem& context);
   bool ProcessDevicePrecedence(StringCollection& item);
   bool ProcessBoardPrecedence(StringCollection& item);

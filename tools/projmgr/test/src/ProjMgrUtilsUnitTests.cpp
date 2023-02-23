@@ -128,3 +128,58 @@ TEST_F(ProjMgrUtilsUnitTests, GetCategory) {
     }
   }
 }
+
+
+TEST_F(ProjMgrUtilsUnitTests, CompilersIntersect) {
+  string intersection;
+  CompilersIntersect("AC6@6.16.0", "AC6", intersection);
+  EXPECT_EQ("AC6@6.16.0", intersection);
+  intersection.clear();
+  CompilersIntersect("AC6@>=6.16.0", "AC6", intersection);
+  EXPECT_EQ("AC6@>=6.16.0", intersection);
+  intersection.clear();
+  CompilersIntersect("AC6@>=6.6.5", "AC6@6.16.0", intersection);
+  EXPECT_EQ("AC6@6.16.0", intersection);
+  intersection.clear();
+  CompilersIntersect("AC6@>=6.6.5", "AC6@6.6.5", intersection);
+  EXPECT_EQ("AC6@6.6.5", intersection);
+  intersection.clear();
+  CompilersIntersect("AC6@>=6.6.5", "AC6@>=6.16.0", intersection);
+  EXPECT_EQ("AC6@>=6.16.0", intersection);
+  intersection.clear();
+  CompilersIntersect("AC6@>=6.6.5", "", intersection);
+  EXPECT_EQ("AC6@>=6.6.5", intersection);
+  intersection.clear();
+  CompilersIntersect("GCC@0.0.0", "", intersection);
+  EXPECT_EQ("GCC@0.0.0", intersection);
+  intersection.clear();
+  CompilersIntersect("", "", intersection);
+  EXPECT_EQ("", intersection);
+  intersection.clear();
+  CompilersIntersect("AC6@6.6.5", "AC6@6.16.0", intersection);
+  EXPECT_EQ("", intersection);
+  intersection.clear();
+  CompilersIntersect("AC6@6.6.5", "AC6@>=6.16.0", intersection);
+  EXPECT_EQ("", intersection);
+  intersection.clear();
+  CompilersIntersect("GCC@6.16.0", "AC6@6.16.0", intersection);
+  EXPECT_EQ("", intersection);
+  intersection.clear();
+  CompilersIntersect("GCC", "AC6", intersection);
+  EXPECT_EQ("", intersection);
+  intersection.clear();
+};
+
+TEST_F(ProjMgrUtilsUnitTests, AreCompilersCompatible) {
+  EXPECT_TRUE(AreCompilersCompatible("AC6@6.16.0", "AC6"));
+  EXPECT_TRUE(AreCompilersCompatible("AC6@>=6.16.0", "AC6"));
+  EXPECT_TRUE(AreCompilersCompatible("AC6@>=6.6.5", "AC6@6.16.0"));
+  EXPECT_TRUE(AreCompilersCompatible("AC6@>=6.6.5", "AC6@6.6.5"));
+  EXPECT_TRUE(AreCompilersCompatible("AC6@>=6.6.5", "AC6@>=6.16.0"));
+  EXPECT_TRUE(AreCompilersCompatible("AC6@>=6.6.5", ""));
+  EXPECT_TRUE(AreCompilersCompatible("", ""));
+  EXPECT_FALSE(AreCompilersCompatible("AC6@6.6.5", "AC6@6.16.0"));
+  EXPECT_FALSE(AreCompilersCompatible("AC6@6.6.5", "AC6@>=6.16.0"));
+  EXPECT_FALSE(AreCompilersCompatible("GCC@6.16.0", "AC6@6.16.0"));
+  EXPECT_FALSE(AreCompilersCompatible("GCC", "AC6"));
+};

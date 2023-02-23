@@ -43,6 +43,7 @@ Usage:\n\
    -l, --load arg        Set policy for packs loading [latest|all|required]\n\
    -L, --clayer-path arg Set search path for external clayers\n\
    -e, --export arg      Set suffix for exporting <context><suffix>.cprj retaining only specified versions\n\
+   -t, --toolchain arg   Selection of the toolchain used in the project optionally with version\n\
    -n, --no-check-schema Skip schema check\n\
    -U, --no-update-rte   Skip creation of RTE directory and files\n\
    -v, --verbose         Enable verbose messages\n\
@@ -113,21 +114,22 @@ int ProjMgr::RunProjMgr(int argc, char **argv, char** envp) {
   cxxopts::Option verbose("v,verbose", "Enable verbose messages", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option debug("d,debug", "Enable debug messages", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option exportSuffix("e,export", "Set suffix for exporting <context><suffix>.cprj retaining only specified versions", cxxopts::value<string>());
+  cxxopts::Option toolchain("t,toolchain","Selection of the toolchain used in the project optionally with version", cxxopts::value<string>());
   cxxopts::Option ymlOrder("yml-order", "Preserve order as specified in input yml", cxxopts::value<bool>()->default_value("false"));
 
   // command options dictionary
   map<string, vector<cxxopts::Option>> optionsDict = {
-    {"convert",           {solution, context, output, load, verbose, debug, exportSuffix, schemaCheck, noUpdateRte}},
+    {"convert",           {solution, context, output, load, verbose, debug, exportSuffix, toolchain, schemaCheck, noUpdateRte}},
     {"run",               {solution, generator, context, load, verbose, debug, schemaCheck}},
-    {"list packs",        {solution, context, filter, missing, load, verbose, debug, schemaCheck}},
-    {"list boards",       {solution, context, filter, load, verbose, debug, schemaCheck}},
-    {"list devices",      {solution, context, filter, load, verbose, debug, schemaCheck}},
-    {"list components",   {solution, context, filter, load, verbose, debug, schemaCheck}},
-    {"list dependencies", {solution, context, filter, load, verbose, debug, schemaCheck}},
+    {"list packs",        {solution, context, filter, missing, load, verbose, debug, toolchain, schemaCheck}},
+    {"list boards",       {solution, context, filter, load, verbose, debug, toolchain, schemaCheck}},
+    {"list devices",      {solution, context, filter, load, verbose, debug, toolchain, schemaCheck}},
+    {"list components",   {solution, context, filter, load, verbose, debug, toolchain, schemaCheck}},
+    {"list dependencies", {solution, context, filter, load, verbose, debug, toolchain, schemaCheck}},
     {"list contexts",     {solution, filter, verbose, debug, schemaCheck, ymlOrder}},
-    {"list generators",   {solution, context, load, verbose, debug, schemaCheck}},
-    {"list layers",       {solution, context, load, verbose, debug, schemaCheck, clayerSearchPath}},
-    {"list toolchains",   {solution, verbose, debug,}},
+    {"list generators",   {solution, context, load, verbose, debug, toolchain, schemaCheck}},
+    {"list layers",       {solution, context, load, verbose, debug, toolchain, schemaCheck, clayerSearchPath}},
+    {"list toolchains",   {solution, context, verbose, debug, toolchain}},
   };
 
   try {
@@ -135,7 +137,7 @@ int ProjMgr::RunProjMgr(int argc, char **argv, char** envp) {
       {"positional", "", cxxopts::value<vector<string>>()},
       solution, context, filter, generator,
       load, clayerSearchPath, missing, schemaCheck, noUpdateRte, output,
-      help, version, verbose, debug, exportSuffix, ymlOrder
+      help, version, verbose, debug, exportSuffix, toolchain, ymlOrder
     });
     options.parse_positional({ "positional" });
 
@@ -201,6 +203,9 @@ int ProjMgr::RunProjMgr(int argc, char **argv, char** envp) {
     }
     if (parseResult.count("export")) {
       manager.m_export = parseResult["export"].as<string>();
+    }
+    if (parseResult.count("toolchain")) {
+      manager.m_selectedToolchain = parseResult["toolchain"].as<string>();
     }
     if (parseResult.count("output")) {
       manager.m_outputDir = parseResult["output"].as<string>();
@@ -324,6 +329,9 @@ bool ProjMgr::PopulateContexts(void) {
     ProjMgrLogger::Error("input yml files were not specified");
     return false;
   }
+
+  // Set output directory
+  m_worker.SetSelectedToolchain(m_selectedToolchain);
 
   // Set output directory
   m_worker.SetOutputDir(m_outputDir);
