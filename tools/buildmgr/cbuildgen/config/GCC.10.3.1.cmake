@@ -1,11 +1,11 @@
 # This file maps the CMSIS project options to toolchain settings.
 #
-#   - Applies to toolchain: GNU Toolchain for the Arm Architecture 11.2.1 (11.2-2022.02) and greater
+#   - Applies to toolchain: GNU Toolchain for the Arm Architecture 10.3.1 and greater
 
 ############### EDIT BELOW ###############
 # Set base directory of toolchain
 set(TOOLCHAIN_ROOT)
-set(TOOLCHAIN_VERSION "11.2.1")
+set(TOOLCHAIN_VERSION "10.3.1")
 
 ############ DO NOT EDIT BELOW ###########
 
