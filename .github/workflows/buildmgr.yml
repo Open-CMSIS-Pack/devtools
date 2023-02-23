@@ -413,42 +413,30 @@ jobs:
 
       - name: Run Cbuild Integration Tests (excl. AC5, AC6, MultiTargetAC6Tests) for Linux amd64
         if: ${{ startsWith(matrix.runs_on, 'ubuntu') && matrix.arch == 'amd64' }}
-        env:
-          target: ${{ matrix.target }}
-          arch: ${{ matrix.arch }}
-        run: ./tools/buildmgr/test/integrationtests/${target}-${arch}/Debug/CbuildIntegTests --gtest_filter=-*AC5*:*AC6*:*MultiTargetAC6Tests* --gtest_output=xml:test_reports/cbuildintegtests-report-${target}-${arch}.xml
+        run: ./tools/buildmgr/test/integrationtests/${{ matrix.target }}-${{ matrix.arch }}/Debug/CbuildIntegTests --gtest_filter=-*AC5*:*AC6*:*MultiTargetAC6Tests* --gtest_output=xml:test_reports/cbuildintegtests-report-${{ matrix.target }}-${{ matrix.arch }}.xml
         working-directory: build
 
       - name: Run Cbuild Integration Tests (excl. AC5, AC6, MultiTargetAC6Tests) for Linux arm64
         if: ${{ startsWith(matrix.runs_on, 'ubuntu') && matrix.arch == 'arm64' }}
-        env:
-          target: ${{ matrix.target }}
-          arch: ${{ matrix.arch }}
-        run: /usr/bin/qemu-aarch64 -L /usr/aarch64-linux-gnu ./tools/buildmgr/test/integrationtests/${target}-${arch}/Debug/CbuildIntegTests --gtest_filter=-*AC5*:*AC6*:*MultiTargetAC6Tests* --gtest_output=xml:test_reports/cbuildintegtests-report-${target}-${arch}.xml
+        run: /usr/bin/qemu-aarch64 -L /usr/aarch64-linux-gnu ./tools/buildmgr/test/integrationtests/${{ matrix.target }}-${{ matrix.arch }}/Debug/CbuildIntegTests --gtest_filter=-*AC5*:*AC6*:*MultiTargetAC6Tests* --gtest_output=xml:test_reports/cbuildintegtests-report-${{ matrix.target }}-${{ matrix.arch }}.xml
         working-directory: build
 
       - name: Run Cbuild Integration Tests (excl. DebPkgTests, AC5, AC6, MultiTargetAC6Tests) for macOS
         if: ${{ startsWith(matrix.runs_on, 'macos') && matrix.arch == 'amd64' }}
-        env:
-          target: ${{ matrix.target }}
-          arch: ${{ matrix.arch }}
-        run: ./tools/buildmgr/test/integrationtests/${target}-${arch}/Debug/CbuildIntegTests --gtest_filter=-*DebPkgTests*:*AC5*:*AC6*:*MultiTargetAC6Tests* --gtest_output=xml:test_reports/cbuildintegtests-report-${target}-${arch}.xml
+        run: ./tools/buildmgr/test/integrationtests/${{ matrix.target }}-${{ matrix.arch }}/Debug/CbuildIntegTests --gtest_filter=-*DebPkgTests*:*AC5*:*AC6*:*MultiTargetAC6Tests* --gtest_output=xml:test_reports/cbuildintegtests-report-${{ matrix.target }}-${{ matrix.arch }}.xml
         working-directory: build
 
       - name: Run Cbuild Integration Tests (excl. DebPkgTests, AC5, AC6, MultiTargetAC6Tests) for Windows
         if: ${{ startsWith(matrix.runs_on, 'windows') && matrix.arch == 'amd64' }}
-        env:
-          target: ${{ matrix.target }}
-          arch: ${{ matrix.arch }}
-        # For some reason the env variable usage $Env:target does not work properly.
-        run: .\tools\buildmgr\test\integrationtests\${target}-${arch}\Debug\CbuildIntegTests.exe --gtest_filter=-*DebPkgTests*:*AC5*:*AC6*:*MultiTargetAC6Tests* --gtest_output=xml:test_reports/cbuildintegtests-report-${target}-${arch}.xml
+        run: .\tools\buildmgr\test\integrationtests\${{ matrix.target }}-${{ matrix.arch }}\Debug\CbuildIntegTests.exe --gtest_filter=-*DebPkgTests*:*AC5*:*AC6*:*MultiTargetAC6Tests* --gtest_output=xml:test_reports/cbuildintegtests-report-${{ matrix.target }}-${{ matrix.arch }}.xml
         working-directory: build
 
       - name: Archive Cbuild Integration Tests
+        if: always() && ((matrix.arch == 'amd64') || (startsWith(matrix.runs_on, 'ubuntu')))
         uses: actions/upload-artifact@v3
         with:
           name: integ_test_result-${{ matrix.target }}-${{ matrix.arch }}
-          path: ./build/test_reports/cbuildintegtests-*.xml
+          path: ./build/test_reports/cbuildintegtests-report-${{ matrix.target }}-${{ matrix.arch }}.xml
           retention-days: ${{ needs.setup.outputs.retention_days }}
           if-no-files-found: error
 
