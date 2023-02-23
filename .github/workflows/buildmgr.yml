@@ -334,23 +334,29 @@ jobs:
         with:
           submodules: true
 
+      - name: Cache ARM GCC
+        uses: actions/cache@v3
+        with:
+          key: "${{ matrix.arm_gcc_install_base }}/${{ matrix.installer_name }}"
+          path: ${{ matrix.installer_name }}
+
       - name: Setup ARM GCC for Ubuntu and macOS
         if: ${{ startsWith(matrix.runs_on, 'macos') || startsWith(matrix.runs_on, 'ubuntu') }}
         env:
           installer_name: ${{ matrix.installer_name }}
         run: |
-          wget -q ${arm_gcc_install_base}/${installer_name}
+          test -f ${installer_name} || wget -q ${arm_gcc_install_base}/${installer_name}
           tar -xvf ${installer_name}
-          rm -rf ${installer_name}
 
       - name: Setup ARM GCC for Windows
         if: ${{ startsWith(matrix.runs_on, 'windows') }}
         env:
           installer_name: ${{ matrix.installer_name }}
         run: |
-          wget -q $Env:arm_gcc_install_base/$Env:installer_name
+          if (!(Test-Path $Env:installer_name -PathType Leaf)) {
+            wget -q $Env:arm_gcc_install_base/$Env:installer_name
+          }
           unzip -o $Env:installer_name
-          del $Env:installer_name
 
       - name: Cache CMSIS Pack
         uses: actions/cache@v3
