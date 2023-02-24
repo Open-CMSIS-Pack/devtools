@@ -66,7 +66,7 @@ Software layers and Virtual I/O simplify these use cases:
       - added 'output' filenames customization handling
       - added 'gendir' component instance attribute
       - rework toolchain registration
-      - fixex: include paths order
+      - fixed: include paths order
       - fixed: file specific defines
     </td>
     <td>1.4.0</td>
