@@ -76,6 +76,12 @@ public:
   */
   static std::string GetRegistryString(const std::string& key);
 
+  /**
+   * @brief check if given path has execute permissions
+   * @param path path to be checked
+   * @return true if path provides effective execute permissions
+  */
+  static bool CanExecute(const std::string& file);
 };
 
 #endif  /* CROSSPLATFORM_UTILS_H */
