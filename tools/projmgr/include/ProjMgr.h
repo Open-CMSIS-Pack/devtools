@@ -101,6 +101,7 @@ protected:
   std::string m_loadPacksPolicy;
   std::string m_clayerSearchPath;
   std::string m_export;
+  std::string m_selectedToolchain;
   bool m_checkSchema;
   bool m_missingPacks;
   bool m_updateRteFiles;

@@ -189,6 +189,31 @@ public:
   */
   static int StringToInt(const std::string& value);
 
+  /**
+   * @brief expand compiler id the format <name>@[>=]<version> into name, minimum and maximum versions
+   * @param compiler id
+   * @param name reference to compiler name
+   * @param minVer reference to compiler minimum version
+   * @param maxVer reference to compiler maximum version
+  */
+  static void ExpandCompilerId(const  std::string& compiler, std::string& name, std::string& minVer, std::string& maxVer);
+
+  /**
+   * @brief check if compilers are compatible in the format <name>@[>=]<version>
+   * @param first compiler id
+   * @param second compiler id
+   * @return true if compilers are compatible, false otherwise
+  */
+  static bool AreCompilersCompatible(const std::string& first, const std::string& second);
+
+  /**
+   * @brief get compilers version range intersection in the format <name>@[>=]<version>
+   * @param first compiler id
+   * @param second compiler id
+   * @param intersection reference to intersection id
+  */
+  static void CompilersIntersect(const std::string& first, const std::string& second, std::string& intersection);
+
 protected:
   static std::string ConstructID(const std::vector<std::pair<const char*, const std::string&>>& elements);
 };

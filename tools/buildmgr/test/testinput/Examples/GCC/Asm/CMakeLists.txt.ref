@@ -129,7 +129,7 @@ set(AS_FLAGS_C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Asm/GAS.
 # Toolchain config map
 
 set(TOOLCHAIN_VERSION_MIN "9.2.1")
-include ("C:/sandbox/cbuild/etc/GCC.11.2.1.cmake")
+include ("C:/sandbox/cbuild/etc/GCC.10.3.1.cmake")
 include ("C:/sandbox/cbuild/etc/CMSIS-Build-Utils.cmake")
 
 # Setup project
