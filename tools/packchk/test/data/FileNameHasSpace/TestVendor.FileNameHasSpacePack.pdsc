@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<package schemaVersion="1.4" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="PACK.xsd">
+  <vendor>TestVendor</vendor>
+  <url>http://www.testurl.com/pack/</url>
+  <name>FileNameHasSpacePack</name>
+  <description>Filename has space(s)</description>
+
+  <releases>
+    <release version="0.0.1" date="2021-09-06">>
+      Initial release of FileNameHasSpacePack.
+    </release>
+  </releases>
+
+  <keywords>
+    <keyword>FileNameHasSpacePack</keyword>
+  </keywords>
+  
+  <!-- List of test files:
+    Files/Test M3.dbgconf
+    Files/Test M3.pdf
+    Files/Test M30x.h
+    Files/Test M30x.svd
+    Files/Test M30x CMSIS.c
+    Files/Test M30x CMSIS.h
+    Files/Test M30x 128.FLM
+    Files/startup_Test M30x.s
+    Files/system_Test M30x.c
+  -->
+
+  <conditions>
+    <condition id="TestM30X">
+      <description>Test TestM30X Device</description>
+      <require Dvendor="Test:00" Dname="TestM30?"/>
+    </condition>
+    <condition id="TestM30X CMSIS">
+      <description>Test TestM30X Device with CMSIS</description>
+      <require condition="TestM30X"/>
+      <require Cclass="CMSIS" Cgroup="CORE"/>
+    </condition>
+    <condition id="TestM30X ARMCC">
+      <description>filter for STM32F1xx Value Line Low Density Device and the ARM compiler</description>
+      <require condition="TestM30X"/>
+      <require Tcompiler="ARMCC"/>
+    </condition>
+  </conditions>
+  
+  <devices>
+    <family Dfamily="Test Series" Dvendor="Test:00">
+      <processor Dcore="Cortex-M3" DcoreVersion="r1p1"/>
+      <subFamily DsubFamily="TestM3">
+        <debugvars configfile="Files/Test M3.dbgconf" version="1.0.0">
+          __var DbgMCU_CR      = 0x00000007;   // DBGMCU_CR:  DBG_SLEEP, DBG_STOP, DBG_STANDBY
+        </debugvars>
+
+        <book name="Files/Test M3.pdf" title="TestM3 Reference Manual"/>
+        <device Dname="TestM301">
+          <processor Dfpu="0" Dmpu="0" Dendian="Little-endian" Dclock="24000000"/>
+          <compile header="Files/Test M30x.h"  define="TestM30X"/>
+          <debug svd="Files/Test M30x.svd"/>
+          <memory id="IROM1"                        start="0x08000000" size="0x00008000" startup="1" default="1"/>
+          <memory id="IRAM1"                        start="0x20000000" size="0x00001000" init   ="0" default="1"/>
+          <algorithm name="Files/Test M30x 128.FLM" start="0x08000000" size="0x00020000"             default="1"/>
+        </device>
+      </subFamily>
+    </family>
+  </devices>
+    
+  <components>
+    <component Cclass="Device" Cgroup="Startup" Cversion="1.0.0" condition="TestM30X CMSIS">
+      <description>Device Startup</description>
+      <files>
+        <file category="source" name="Files/Test M30x CMSIS.c"/>
+        <file category="TestGlobal" name="Files/Test M30x CMSIS.h"/>
+        <file category="source" name="Files/startup_Test M30x.s" attr="config" version="1.0.1" condition="TestM30X ARMCC"/>
+        <!-- system file -->
+        <file category="source" name="Files/system_Test M30x.c"  attr="config" version="1.0.1" />
+      </files>
+    </component>
+  </components>
+
+</package>
