@@ -41,6 +41,7 @@ endif()
 add_dependencies(CrossPlatformUnitTests TestProg)
 
 add_definitions(-DTEST_BIN_PATH="$<TARGET_FILE:CrossPlatformUnitTests>")
+add_definitions(-DGLOBAL_TEST_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../../../test")
 
 # Explicitly link with stdc++fs for GCC 8
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND

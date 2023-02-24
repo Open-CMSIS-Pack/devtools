@@ -57,4 +57,9 @@ std::string CrossPlatformUtils::GetRegistryString(const std::string& key)
   return GetEnv(key); // non-Windows implementation returns environment variable value
 }
 
+bool CrossPlatformUtils::CanExecute(const std::string& file)
+{
+  return access(file.c_str(), X_OK) == 0;
+}
+
 // end of Utils.cpp
