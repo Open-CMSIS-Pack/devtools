@@ -47,7 +47,7 @@ VISIT_RESULT DefinedConditionsVisitor::Visit(RteItem* item)
   if(cond) {
     RteItem::ConditionResult result = cond->Evaluate(m_target->GetFilterContext());
     if(result == RteItem::R_ERROR) {
-      LogMsg("M384", NAME(cond->GetName()), MSG(" Skipping condition for further checks."), cond->GetLineNumber());
+      LogMsg("M390", NAME(cond->GetName()), MSG("Skipping condition for further checks."), cond->GetLineNumber());
       cond->Invalidate();
       return CONTINUE_VISIT;
     }
