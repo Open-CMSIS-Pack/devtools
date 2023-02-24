@@ -508,11 +508,20 @@ bool RteFsUtils::IsRegularFile(const string& path)
   return fs::is_regular_file(path, ec);
 }
 
+bool RteFsUtils::IsExecutableFile(const string& path)
+{
+  if (!IsRegularFile(path)) {
+    return false;
+  }
+  return CrossPlatformUtils::CanExecute(path);
+}
+
 
 bool RteFsUtils::IsRelative(const string& path)
 {
   return fs::path(path).is_relative();
 }
+
 
 fs::path RteFsUtils::AbsolutePath(const std::string& path) {
   if (!path.empty()) {

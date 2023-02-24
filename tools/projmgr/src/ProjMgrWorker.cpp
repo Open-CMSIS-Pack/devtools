@@ -2794,11 +2794,23 @@ bool ProjMgrWorker::ExecuteGenerator(std::string& generatorId) {
 
   // TODO: review RteGenerator::GetExpandedCommandLine and variables
   //const string generatorCommand = m_kernel->GetCmsisPackRoot() + "/" + generator->GetPackagePath() + generator->GetCommand();
-  const string generatorCommand = generator->GetExpandedCommandLine(context.rteActiveTarget);
-  if (generatorCommand.empty()) {
-    ProjMgrLogger::Error("generator command for '" + generatorId + "' was not found");
+
+  // check if generator executable has execute permissions
+  const string generatorExe = generator->GetExecutable(context.rteActiveTarget);
+  if (generatorExe.empty()) {
+    ProjMgrLogger::Error("generator executable '" + generatorId + "' was not found");
     return false;
   }
+  if(!RteFsUtils::Exists(generatorExe)) {
+    ProjMgrLogger::Error("generator executable file '" + generatorExe + "' does not exist");
+    return false;
+  }
+
+  if (!RteFsUtils::IsExecutableFile(generatorExe)) {
+    ProjMgrLogger::Error("generator file '" + generatorExe + "' cannot be executed, check permissions");
+    return false;
+  }
+  const string generatorCommand = generator->GetExpandedCommandLine(context.rteActiveTarget);
 
   error_code ec;
   const auto& workingDir = fs::current_path(ec);

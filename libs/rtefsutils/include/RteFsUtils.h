@@ -189,11 +189,18 @@ public:
   */
   static bool IsRegularFile(const std::string& path);
   /**
-   * @brief check if whether given path is relative or absolute
+   * @brief check if given path is a regular file with execute permissions
+   * @param path path to be checked
+   * @return true if path is an executable
+  */
+  static bool IsExecutableFile(const std::string& path);
+  /**
+   * @brief check if given path is relative or absolute
    * @param path path to be checked
    * @return true if path is relative, false if path is absolute
   */
   static bool IsRelative(const std::string& path);
+
   /**
    * @brief make path to absolute one
    * @param path path to be processed
