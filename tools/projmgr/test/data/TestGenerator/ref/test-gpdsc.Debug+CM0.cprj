@@ -20,7 +20,7 @@
   </target>
 
   <components>
-    <component Cclass="Device" Cgroup="RteTest Generated Component" Csub="RteTest" Cvendor="ARM" Cversion="1.1.0"/>
+    <component Cclass="Device" Cgroup="RteTest Generated Component" Csub="RteTest" Cvendor="ARM" Cversion="1.1.0" gendir="../data/TestGenerator/RTE/Device"/>
     <component Cclass="RteTest" Cgroup="CORE" Cvendor="ARM" Cversion="0.1.1"/>
   </components>
 </cprj>

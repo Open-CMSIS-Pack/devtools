@@ -939,6 +939,11 @@ protected:
   std::list<std::string> m_errors; // errors or warnings found by Construct() or Validate()
 
   std::list<RteItem*> m_children; // children (files, components, conditions, etc.)
+
+private:
+  // Tell the compiler that Construct in the parent class isn't the same as the one in this class
+  // Deals with "warning: 'RteItem::Construct' hides overloaded virtual function [-Woverloaded-virtual]"
+  using XmlItem::Construct;
 };
 
 

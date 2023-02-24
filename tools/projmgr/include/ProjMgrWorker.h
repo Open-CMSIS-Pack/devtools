@@ -40,11 +40,19 @@ struct ConnectionsList {
 /**
  * @brief toolchain item containing
  *        toolchain name,
- *        toolchain version
+ *        toolchain version,
+ *        toolchain required version,
+ *        toolchain required range in the format <min>[:<max>],
+ *        toolchain root,
+ *        toolchain config
 */
 struct ToolchainItem {
   std::string name;
   std::string version;
+  std::string required;
+  std::string range;
+  std::string root;
+  std::string config;
 };
 
 /**
@@ -126,6 +134,18 @@ struct ComponentFileItem {
   std::string attr;
   std::string category;
   std::string version;
+};
+
+/**
+ * @brief gpdsc item containing
+ *        component id
+ *        generator id
+ *        working directory
+*/
+struct GpdscItem {
+  std::string component;
+  std::string generator;
+  std::string workingDir;
 };
 
 /**
@@ -222,7 +242,7 @@ struct ContextItem {
   std::vector<GroupNode> groups;
   std::map<std::string, std::string> filePaths;
   std::map<std::string, RteGenerator*> generators;
-  std::map<std::string, std::pair<std::string, std::string>> gpdscs;
+  std::map<std::string, GpdscItem> gpdscs;
   StrVecMap compatibleLayers;
   std::vector<ConnectionsCollectionVec> validConnections;
   std::string linkerScript;
@@ -349,7 +369,7 @@ public:
    * @param filter words to filter results
    * @return true if executed successfully
   */
-  bool ListContexts(std::vector<std::string>& contexts, const std::string& filter = RteUtils::EMPTY_STRING);
+  bool ListContexts(std::vector<std::string>& contexts, const std::string& filter = RteUtils::EMPTY_STRING, const bool ymlOrder = false);
 
   /**
    * @brief list generators of a given context
@@ -368,10 +388,10 @@ public:
 
   /**
   * @brief list installed toolchains
-  * @param reference to list of toolchains
-  * @param reference to local directory
+  * @param reference to vector of toolchain items
+  * @return true if executed successfully
   */
-  void ListToolchains(StrPairVec& toolchains, const std::string& localDir);
+  bool ListToolchains(std::vector<ToolchainItem>& toolchains);
 
   /**
    * @brief add contexts for a given descriptor
@@ -387,6 +407,12 @@ public:
    * @param pointer to context map
   */
   void GetContexts(std::map<std::string, ContextItem>* &contexts);
+
+  /**
+   * @brief get yml ordered contexts
+   * @param reference to contexts
+  */
+  void GetYmlOrderedContexts(std::vector<std::string> &contexts);
 
   /**
    * @brief set output directory
@@ -417,6 +443,18 @@ public:
    * @param reference to load packs policy
   */
   void SetLoadPacksPolicy(const LoadPacksPolicy& policy);
+
+  /**
+   * @brief set vector of environment variables
+   * @param reference to vector of environment variables
+  */
+  void SetEnvironmentVariables(const StrVec& envVars);
+
+  /**
+   * @brief set selected toolchain
+   * @param reference to selected toolchain
+  */
+  void SetSelectedToolchain(const std::string& selectedToolchain);
 
   /**
    * @brief execute generator of a given context
@@ -462,12 +500,16 @@ protected:
   ProjMgrKernel* m_kernel = nullptr;
   RteGlobalModel* m_model = nullptr;
   std::list<RtePackage*> m_loadedPacks;
+  std::vector<ToolchainItem> m_toolchains;
+  StrVec m_envVars;
+  std::vector<std::string> m_ymlOrderedContexts;
   std::map<std::string, ContextItem> m_contexts;
   std::map<std::string, ContextItem>* m_contextsPtr;
   std::list<std::string> m_selectedContexts;
   std::string m_outputDir;
   std::string m_packRoot;
   std::string m_compilerRoot;
+  std::string m_selectedToolchain;
   LoadPacksPolicy m_loadPacksPolicy;
   bool m_checkSchema;
   bool m_verbose;
@@ -485,6 +527,7 @@ protected:
   bool SetTargetAttributes(ContextItem& context, std::map<std::string, std::string>& attributes);
   bool ProcessPrecedences(ContextItem& context);
   bool ProcessPrecedence(StringCollection& item);
+  bool ProcessCompilerPrecedence(StringCollection& item);
   bool ProcessDevice(ContextItem& context);
   bool ProcessDevicePrecedence(StringCollection& item);
   bool ProcessBoardPrecedence(StringCollection& item);
@@ -514,7 +557,7 @@ protected:
   bool AddFile(const FileNode& src, std::vector<FileNode>& dst, ContextItem& context, const std::string root);
   bool AddComponent(const ComponentItem& src, const std::string& layer, std::vector<std::pair<ComponentItem, std::string>>& dst, TypePair type);
   static std::set<std::string> SplitArgs(const std::string& args, const std::string& delimiter = " ");
-  static void ApplyFilter(const std::set<std::string>& origin, const std::set<std::string>& filter, std::set<std::string>& result);
+  static void ApplyFilter(const std::vector<std::string>& origin, const std::set<std::string>& filter, std::vector<std::string>& result);
   static bool FullMatch(const std::set<std::string>& installed, const std::set<std::string>& required);
   bool AddRequiredComponents(ContextItem& context);
   void GetDeviceItem(const std::string& element, DeviceItem& device) const;
@@ -538,8 +581,11 @@ protected:
   void GetAllSelectCombinations(const ConnectPtrVec& src, const ConnectPtrVec::iterator& it,
     std::vector<ConnectPtrVec>& combinations);
   void PushBackUniquely(ConnectionsCollectionVec& vec, const ConnectionsCollection& value);
+  void PushBackUniquely(std::vector<ToolchainItem>& vec, const ToolchainItem& value);
   std::string ExpandString(const std::string& src, const StrMap& variables);
-  void ListLatestToolchains(StrMap& toolchains, const std::string& localDir);
+  void GetRegisteredToolchains(void);
+  bool GetLatestToolchain(ToolchainItem& toolchain);
+  bool GetToolchainConfig(const std::string& name, const std::string& version, std::string& configPath, std::string& selectedConfigVersion);
   bool IsConnectionSubset(const ConnectionsCollection& connectionSubset, const ConnectionsCollection& connectionSuperset);
   bool IsCollectionSubset(const ConnectionsCollectionVec& collectionSubset, const ConnectionsCollectionVec& collectionSuperset);
   void RemoveRedundantSubsets(std::vector<ConnectionsCollectionVec>& validConnections);

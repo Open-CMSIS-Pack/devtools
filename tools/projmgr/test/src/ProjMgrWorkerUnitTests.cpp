@@ -30,6 +30,7 @@ void ProjMgrWorkerUnitTests::SetCsolutionPacks(CsolutionItem* csolution, std::ve
   }
   context.csolution = csolution;
   context.type.target = targetType;
+  ProjMgrUtils::PushBackUniquely(m_ymlOrderedContexts, targetType);
   m_contexts.insert(std::pair<string, ContextItem>(string(targetType), context));
 }
 
@@ -844,10 +845,10 @@ TEST_F(ProjMgrWorkerUnitTests, GetBoardItem) {
 }
 
 TEST_F(ProjMgrWorkerUnitTests, ApplyFilter) {
-  std::set<std::string> input = { "TestString1", "FilteredString", "TestString2" };
+  std::vector<std::string> input = { "TestString1", "FilteredString", "TestString2" };
   std::set<std::string> filter = { "String", "Filtered", "" };
-  std::set<std::string> expected = { "FilteredString" };
-  std::set<std::string> result;
+  std::vector<std::string> expected = { "FilteredString" };
+  std::vector<std::string> result;
   ApplyFilter(input, filter, result);
   EXPECT_EQ(expected, result);
 }
@@ -1053,51 +1054,49 @@ TEST_F(ProjMgrWorkerUnitTests, ExpandString) {
 TEST_F(ProjMgrWorkerUnitTests, ListToolchains) {
   const string& cmsisPackRoot = CrossPlatformUtils::GetEnv("CMSIS_COMPILER_ROOT");
 
-  // create extra cmake file
-  const string& cmakeFile = cmsisPackRoot + "/AC6.6.19.0.cmake";
-  RteFsUtils::CreateFile(cmakeFile, "");
+  StrVec envVars = {
+  "AC6_TOOLCHAIN_6_18_0=" + cmsisPackRoot,
+  "AC6_TOOLCHAIN_6_18_1=" + cmsisPackRoot + "/non-existent",
+  "AC6_TOOLCHAIN_6_19_0=" + cmsisPackRoot,
+  "AC6_TOOLCHAIN_6_6_0=" + cmsisPackRoot,
+  "GCC_TOOLCHAIN_11_3_1=" + cmsisPackRoot,
+  };
+  SetEnvironmentVariables(envVars);
 
   // list all configured toolchains
-  StrPairVec toolchains;
-  StrPairVec expectedToolchains = {
-    {"AC5", "5.6.7"},
-    {"AC6", "6.18.0"},
-    {"AC6", "6.19.0"},
-    {"GCC", "11.2.1"},
-    {"IAR", "8.50.6"},
+  GetRegisteredToolchains();
+  vector<ToolchainItem> expected {
+    {"AC6", "6.18.0", "", "", cmsisPackRoot, cmsisPackRoot + "/AC6.6.18.0.cmake"},
+    {"AC6", "6.19.0", "", "", cmsisPackRoot, cmsisPackRoot + "/AC6.6.18.0.cmake"},
+    {"GCC", "11.3.1", "", "", cmsisPackRoot, cmsisPackRoot + "/GCC.11.2.1.cmake"}
   };
-  ListToolchains(toolchains, RteUtils::EMPTY_STRING);
-  EXPECT_EQ(toolchains, expectedToolchains);
-
+  ASSERT_EQ(m_toolchains.size(), 3);
+  for (int i = 0; i < 3; i++) {
+    EXPECT_EQ(m_toolchains[i].name, expected[i].name);
+    EXPECT_EQ(m_toolchains[i].version, expected[i].version);
+    EXPECT_EQ(m_toolchains[i].root, expected[i].root);
+    EXPECT_EQ(m_toolchains[i].config, expected[i].config);
+  }
   // with empty cmsis compiler root
   CrossPlatformUtils::SetEnv("CMSIS_COMPILER_ROOT", "");
   m_compilerRoot.clear();
-  toolchains.clear();
-  ListToolchains(toolchains, cmsisPackRoot);
-  EXPECT_EQ(toolchains, expectedToolchains);
-
-  // with empty cmsis compiler root and empty local directory
-  m_compilerRoot.clear();
-  toolchains.clear();
-  expectedToolchains.clear();
-  ListToolchains(toolchains, RteUtils::EMPTY_STRING);
-  EXPECT_EQ(toolchains, expectedToolchains);
-
+  m_toolchains.clear();
+  GetRegisteredToolchains();
+  EXPECT_TRUE(m_toolchains.empty());
+ 
   // list latest toolchains
   CrossPlatformUtils::SetEnv("CMSIS_COMPILER_ROOT", cmsisPackRoot);
   m_compilerRoot.clear();
-  StrMap latestToolchains;
-  StrMap expectedLatestToolchains = {
-    {"AC5", "5.6.7"},
-    {"AC6", "6.19.0"},
-    {"GCC", "11.2.1"},
-    {"IAR", "8.50.6"},
-  };
-  ListLatestToolchains(latestToolchains, RteUtils::EMPTY_STRING);
-  EXPECT_EQ(latestToolchains, expectedLatestToolchains);
-
-  // remove extra cmake file
-  RteFsUtils::RemoveFile(cmakeFile);
+  m_toolchains.clear();
+  ToolchainItem latestToolchainInfo;
+  latestToolchainInfo.name = "AC6";
+  GetLatestToolchain(latestToolchainInfo);
+  EXPECT_EQ(latestToolchainInfo.version, "6.19.0");
+  EXPECT_EQ(latestToolchainInfo.config, cmsisPackRoot + "/AC6.6.18.0.cmake");
+  latestToolchainInfo.name = "GCC";
+  GetLatestToolchain(latestToolchainInfo);
+  EXPECT_EQ(latestToolchainInfo.version, "11.3.1");
+  EXPECT_EQ(latestToolchainInfo.config, cmsisPackRoot + "/GCC.11.2.1.cmake");
 }
 
 TEST_F(ProjMgrWorkerUnitTests, CheckBoardLayer) {

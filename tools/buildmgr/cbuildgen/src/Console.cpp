@@ -8,7 +8,7 @@
 
 using namespace std;
 
-int main(int argc, char **argv)
+int main(int argc, char **argv, char** envp)
 {
-  return CbuildGen::RunCbuildGen(argc, argv);
+  return CbuildGen::RunCbuildGen(argc, argv, envp);
 }

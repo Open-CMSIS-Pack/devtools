@@ -1,29 +1,37 @@
 # This file maps the CMSIS project options to toolchain settings.
 #
-#   - Applies to toolchain: IAR ARM C/C++ Compiler V9.32.1
+#   - Applies to toolchain: IAR ARM C/C++ Compiler V9.32.1 and greater
 
 ############### EDIT BELOW ###############
 # Set base directory of toolchain
 set(TOOLCHAIN_ROOT)
 set(TOOLCHAIN_VERSION "9.32.1")
-set(EXT)
 
 ############ DO NOT EDIT BELOW ###########
 
-set(TOOLCHAIN_STRING "IAR_TOOLCHAIN_${TOOLCHAIN_VERSION}")
-string(REPLACE "." "_" TOOLCHAIN_STRING ${TOOLCHAIN_STRING})
-if(DEFINED ENV{${TOOLCHAIN_STRING}})
-  cmake_path(SET ${TOOLCHAIN_STRING} "$ENV{${TOOLCHAIN_STRING}}")
-  message(STATUS "Using ${TOOLCHAIN_STRING}='${${TOOLCHAIN_STRING}}'")
-  set(TOOLCHAIN_ROOT "${${TOOLCHAIN_STRING}}")
+set(AS "iasmarm")
+set(CC "iccarm")
+set(CXX "iccarm")
+set(LD "ilinkarm")
+set(AR "iarchive")
+set(OC "ielftool")
+
+if(DEFINED REGISTERED_TOOLCHAIN_ROOT)
+  set(TOOLCHAIN_ROOT "${REGISTERED_TOOLCHAIN_ROOT}")
+endif()
+if(DEFINED REGISTERED_TOOLCHAIN_VERSION)
+  set(TOOLCHAIN_VERSION "${REGISTERED_TOOLCHAIN_VERSION}")
 endif()
 
-set(AS ${TOOLCHAIN_ROOT}/iasmarm${EXT})
-set(CC ${TOOLCHAIN_ROOT}/iccarm${EXT})
-set(CXX ${TOOLCHAIN_ROOT}/iccarm${EXT})
-set(LD ${TOOLCHAIN_ROOT}/ilinkarm${EXT})
-set(AR ${TOOLCHAIN_ROOT}/iarchive${EXT})
-set(OC ${TOOLCHAIN_ROOT}/ielftool${EXT})
+if(DEFINED TOOLCHAIN_ROOT)
+  set(EXT)
+  set(AS ${TOOLCHAIN_ROOT}/${AS}${EXT})
+  set(CC ${TOOLCHAIN_ROOT}/${CC}${EXT})
+  set(CXX ${TOOLCHAIN_ROOT}/${CXX}${EXT})
+  set(LD ${TOOLCHAIN_ROOT}/${LD}${EXT})
+  set(AR ${TOOLCHAIN_ROOT}/${AR}${EXT})
+  set(OC ${TOOLCHAIN_ROOT}/${OC}${EXT})
+endif()
 
 # Core Options
 
@@ -190,7 +198,7 @@ set(CC_DEFINES ${DEFINES})
 cbuild_set_defines(CC CC_DEFINES)
 set(CC_OPTIONS_FLAGS)
 cbuild_set_options_flags(CC "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" CC_OPTIONS_FLAGS)
-set(_PI "-include ")
+set(_PI "--preinclude ")
 
 if(SECURE STREQUAL "Secure")
   set(CC_SECURE "--cmse")
@@ -233,18 +241,9 @@ set (ELF2BIN --silent --bin "${OUT_DIR}/$<TARGET_PROPERTY:${TARGET},OUTPUT_NAME>
 # Set CMake variables for toolchain initialization
 set(CMAKE_SYSTEM_NAME Generic)
 set(CMAKE_CROSSCOMPILING TRUE)
+set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 set(CMAKE_ASM_COMPILER "${AS}")
 set(CMAKE_C_COMPILER "${CC}")
 set(CMAKE_CXX_COMPILER "${CXX}")
 set(CMAKE_OBJCOPY "${OC}")
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/CMakeASM")
-
-# Set CMake variables for skipping compiler identification
-set(CMAKE_ASM_COMPILER_FORCED TRUE)
-set(CMAKE_C_COMPILER_FORCED TRUE)
-set(CMAKE_C_COMPILER_WORKS TRUE)
-set(CMAKE_CXX_COMPILER_ID "${CMAKE_C_COMPILER_ID}")
-set(CMAKE_CXX_COMPILER_ID_RUN "${CMAKE_C_COMPILER_ID_RUN}")
-set(CMAKE_CXX_COMPILER_VERSION "${CMAKE_C_COMPILER_VERSION}")
-set(CMAKE_CXX_COMPILER_FORCED "${CMAKE_C_COMPILER_FORCED}")
-set(CMAKE_CXX_COMPILER_WORKS "${CMAKE_C_COMPILER_WORKS}")

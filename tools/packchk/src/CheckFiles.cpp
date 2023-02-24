@@ -203,6 +203,9 @@ bool CheckFiles::CheckFile(RteItem* item)
     fileName = item->GetAttribute("large");
     fileName2 = item->GetAttribute("small");
   }
+  else if(tag == "debug") {
+    fileName = item->GetAttribute("svd");
+  }
   else {
     GetFileName(item, fileName, fileType);
   }
@@ -234,10 +237,10 @@ bool CheckFiles::CheckFile(RteItem* item)
 
   // Filename
   if(!fileName.empty()) {
+    CheckForSpaces(fileName, lineNo);
     if(CheckFileExists(fileName, lineNo)) {
       CheckCaseSense(fileName, lineNo);
       CheckFileIsInPack(fileName, lineNo);
-      CheckForSpaces(fileName, lineNo);
     }
 
     if(tag == "environment" && envName == "DS5") {
@@ -261,10 +264,10 @@ bool CheckFiles::CheckFile(RteItem* item)
 
   // Filename2
   if(!fileName2.empty()) {
+    CheckForSpaces(fileName2, lineNo);
     if(CheckFileExists(fileName2, lineNo)) {
       CheckCaseSense(fileName2, lineNo);   // File must exist for this check!
       CheckFileIsInPack(fileName2, lineNo);
-      CheckForSpaces(fileName2, lineNo);
     }
   }
 
@@ -280,7 +283,9 @@ bool CheckFiles::CheckFile(RteItem* item)
     CheckCompilerDependency(item);
   }
 
-  CheckFileExtension(item);
+  if(tag == "file") {
+    CheckFileExtension(item);
+  }
 
   string ext = RteUtils::ExtractFileExtension(fileName);
   if((category == "source" && (!_stricmp(ext.c_str(), "s") || !_stricmp(ext.c_str(), "asm"))) || category == "sourceAsm") {
@@ -335,6 +340,7 @@ bool CheckFiles::CheckFileExists(const string& fileName, int lineNo, bool associ
 
   return ok;
 }
+
 
 /**
  * @brief searches the filesystem for the exact name of a file object (case sensitive name)
@@ -466,9 +472,9 @@ bool CheckFiles::CheckForSpaces(const string& fileName, int lineNo)
     return true;
   }
 
-  string name = RteUtils::ExtractFileName(fileName);
+  string name = fileName;
   if(name.find(' ') != string::npos) {
-    LogMsg("M314", PATH(name), lineNo);
+    LogMsg("M314", NAME(name), lineNo);
     return false;
   }
 
@@ -737,16 +743,16 @@ bool CheckFiles::CheckFileExtension(RteItem* item)
     return true;
   }
 
-  // skip categories that are not tested yet
-  if(!(category == "include" || category == "header" || category == "sourceAsm" || category == "sourceC" || category == "sourceCpp")) {
-    return true;
-  }
+  // removed category check, tag="file" is checked before calling this function.
+  // ref: Table: File Categories. Everything but "include" must be a file.
+  // https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_components_pg.html#FileCategoryEnum
 
   LogMsg("M056", VAL("CAT", category), PATH(name));
 
   bool ok = true;
+  string checkPath = GetFullFilename(name);
+
   if(category == "include") {
-    string checkPath = GetFullFilename(name);
     if(!RteFsUtils::IsDirectory(checkPath)) {
       LogMsg("M339", PATH(name), lineNo);
       ok = false;
@@ -756,28 +762,35 @@ bool CheckFiles::CheckFileExtension(RteItem* item)
       ok = false;
     }
   }
-  else if(category == "header") {
-    if(_stricmp(extension.c_str(), "h") && _stricmp(extension.c_str(), "hpp")) {
-      LogMsg("M337", VAL("CAT", category), PATH(name), EXT(extension), lineNo);
+  else {
+    if(RteFsUtils::IsDirectory(checkPath)) {
+      LogMsg("M356", PATH(name), lineNo);
       ok = false;
     }
-  }
-  else if(category == "sourceAsm") {
-    if(_stricmp(extension.c_str(), "s") && _stricmp(extension.c_str(), "asm")) {
-      LogMsg("M337", VAL("CAT", category), PATH(name), EXT(extension), lineNo);
-      ok = false;
+
+    if(category == "header") {
+      if(_stricmp(extension.c_str(), "h") && _stricmp(extension.c_str(), "hpp")) {
+        LogMsg("M337", VAL("CAT", category), PATH(name), EXT(extension), lineNo);
+        ok = false;
+      }
     }
-  }
-  else if(category == "sourceC") {
-    if(_stricmp(extension.c_str(), "c")) {
-      LogMsg("M337", VAL("CAT", category), PATH(name), EXT(extension), lineNo);
-      ok = false;
+    else if(category == "sourceAsm") {
+      if(_stricmp(extension.c_str(), "s") && _stricmp(extension.c_str(), "asm")) {
+        LogMsg("M337", VAL("CAT", category), PATH(name), EXT(extension), lineNo);
+        ok = false;
+      }
     }
-  }
-  else if(category == "sourceCpp") {
-    if(_stricmp(extension.c_str(), "cpp")) {
-      LogMsg("M337", VAL("CAT", category), PATH(name), EXT(extension), lineNo);
-      ok = false;
+    else if(category == "sourceC") {
+      if(_stricmp(extension.c_str(), "c")) {
+        LogMsg("M337", VAL("CAT", category), PATH(name), EXT(extension), lineNo);
+        ok = false;
+      }
+    }
+    else if(category == "sourceCpp") {
+      if(_stricmp(extension.c_str(), "cpp")) {
+        LogMsg("M337", VAL("CAT", category), PATH(name), EXT(extension), lineNo);
+        ok = false;
+      }
     }
   }
 

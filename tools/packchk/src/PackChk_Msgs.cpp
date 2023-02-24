@@ -166,7 +166,7 @@ const MsgTable PackChk::msgTable = {
   { "M353", { MsgLevel::LEVEL_WARNING3, CRLF_B, "No '%FILECAT%' File found for Component '%COMP%' for '[%VENDOR%] %MCU%' (Compiler: %COMPILER% [%OPTION%])" } },
   { "M354", { MsgLevel::LEVEL_WARNING3, CRLF_B, "Multiple '%FILECAT%' Files found for Component '%COMP%' for '[%VENDOR%] %MCU%' (Compiler: %COMPILER% [%OPTION%])" } },
   { "M355", { MsgLevel::LEVEL_WARNING3, CRLF_B, "No '%FILECAT%' Directory found for Component '%COMP%' (%COMPID%) for '[%VENDOR%] %MCU%' (Compiler: %COMPILER% [%OPTION%])" } },
-  { "M356", { MsgLevel::LEVEL_WARNING3, CRLF_B, "" } },
+  { "M356", { MsgLevel::LEVEL_ERROR,    CRLF_B, "Path '%PATH%' does not specify a file!" } },
   { "M357", { MsgLevel::LEVEL_WARNING,  CRLF_B, "" } },
   { "M358", { MsgLevel::LEVEL_WARNING3, CRLF_B, "Header File '%HFILE%' for '%CFILE%', used by Component '%COMP%' (%COMPID%)\n"\
                                                 "  for Device '[%VENDOR%] %MCU%' (Compiler: %COMPILER% [%OPTION%]) not found on file system in any include paths: %PATH%" } },
@@ -199,7 +199,7 @@ const MsgTable PackChk::msgTable = {
   { "M385", { MsgLevel::LEVEL_INFO,     CRLF_B, "Release date is empty." } },
   { "M386", { MsgLevel::LEVEL_WARNING,  CRLF_B, "Release date is in future: '%RELEASEDATE%' (today: %TODAYDATE%)" } },
   { "M389", { MsgLevel::LEVEL_WARNING,  CRLF_B, "The component '%NAME%' (Line %LINE%) has dependency '%EXPR%' : '%NAME2%' that is resolved by the component itself." } },
-  { "M390", { MsgLevel::LEVEL_WARNING3, CRLF_B, "" } },
+  { "M390", { MsgLevel::LEVEL_ERROR,    CRLF_B, "Condition '%NAME%': Direct or indirect recursion detected. %MSG%" } },
   { "M391", { MsgLevel::LEVEL_WARNING3, CRLF_B, "Redefined Item '%NAME%': %MSG%" } },
   { "M392", { MsgLevel::LEVEL_ERROR,    CRLF_B, "Redefined Device or Variant '%NAME%': %MSG%" } },
   { "M393", { MsgLevel::LEVEL_WARNING3, CRLF_B, "Package has development version '%DEVVERSION%': '%RELEASEVER%'" } },

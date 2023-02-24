@@ -47,19 +47,20 @@ void BuildSystemGeneratorTests::CheckBuildSystemGen_Collect(const TestParam& par
   string filename = inputDir + "/" + param.name;
   string toolchain, ext = CMEXT, novalue = "";
   string packlistDir, output, update;
-  bool ret_val, packMode = false;
+  vector<string> envVars;
+  bool ret_val, packMode = false, updateRte = false;
   error_code ec;
 
   fs::current_path(filename.c_str(), ec);
 
   filename = param.targetArg + ".cprj";
-  ret_val = CreateRte({filename, novalue, novalue, toolchain, ext, packlistDir, update, packMode});
+  ret_val = CreateRte({filename, novalue, novalue, toolchain, packlistDir, update, envVars, packMode, updateRte});
   ASSERT_EQ(ret_val, param.expect) << "CreateRte failed!";
 
   m_model = CbuildKernel::Get()->GetModel();
 
   /* Test */
-  ret_val = Collect(filename, m_model, output, "");
+  ret_val = Collect(filename, m_model, output, "", "");
 
   ASSERT_EQ(ret_val, param.expect) << "BuildSystemGenerator Collect failed!";
 }

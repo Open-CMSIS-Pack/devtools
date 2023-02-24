@@ -16,8 +16,8 @@
 #error "DEF1 is not defined!"
 #endif
 
-#ifndef DEF2
-#error "DEF2 is not defined!"
+#ifdef DEF2
+#error "DEF2 is defined!"
 #endif
 
 #ifndef DEF3

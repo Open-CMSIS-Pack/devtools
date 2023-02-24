@@ -241,7 +241,7 @@ string RteComponent::GetDocFile() const
   const list<RteItem*>& files = m_files->GetChildren();
   for (auto it = files.begin(); it != files.end(); it++) {
     RteFile* f = dynamic_cast<RteFile*>(*it);
-    if (f && !f->IsConfig() && f->GetCategory() == RteFile::DOC) {
+    if (f && !f->IsConfig() && f->GetCategory() == RteFile::Category::DOC) {
       fDoc = f;
       break;
     }
@@ -339,7 +339,9 @@ string RteComponent::GetGpdscFile(RteTarget* target) const
     } else {
       RteGenerator* gen = GetGenerator();
       if (gen) {
-        return gen->GetExpandedGpdsc(target);
+        const auto& ci = target->GetProject()->GetComponentInstance(this->GetID());
+        const auto& genDir = ci ? ci->GetAttribute("gendir") : RteUtils::EMPTY_STRING;
+        return gen->GetExpandedGpdsc(target, genDir);
       }
     }
   }

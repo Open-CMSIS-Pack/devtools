@@ -115,7 +115,7 @@ jobs:
 
       - name: Install deps
         run: |
-          sudo apt update
+          sudo apt-get update
           sudo apt-get install ninja-build python3
           wget -q http://launchpadlibrarian.net/163827726/doxygen_1.8.6-2_amd64.deb
           sudo dpkg -i doxygen_1.8.6-2_amd64.deb
@@ -198,7 +198,7 @@ jobs:
     steps:
       - name: Install deps
         run: |
-          sudo apt update
+          sudo apt-get update
           sudo apt-get install \
             build-essential \
             debhelper \
@@ -319,7 +319,7 @@ jobs:
       - name: Install linux deps
         if: ${{ startsWith(matrix.runs_on, 'ubuntu') }}
         run: |
-          sudo apt update
+          sudo apt-get update
           sudo apt-get install \
             dos2unix \
             ninja-build \
@@ -334,23 +334,29 @@ jobs:
         with:
           submodules: true
 
+      - name: Cache ARM GCC
+        uses: actions/cache@v3
+        with:
+          key: "${{ matrix.arm_gcc_install_base }}/${{ matrix.installer_name }}"
+          path: ${{ matrix.installer_name }}
+
       - name: Setup ARM GCC for Ubuntu and macOS
         if: ${{ startsWith(matrix.runs_on, 'macos') || startsWith(matrix.runs_on, 'ubuntu') }}
         env:
           installer_name: ${{ matrix.installer_name }}
         run: |
-          wget -q ${arm_gcc_install_base}/${installer_name}
+          test -f ${installer_name} || wget -q ${arm_gcc_install_base}/${installer_name}
           tar -xvf ${installer_name}
-          rm -rf ${installer_name}
 
       - name: Setup ARM GCC for Windows
         if: ${{ startsWith(matrix.runs_on, 'windows') }}
         env:
           installer_name: ${{ matrix.installer_name }}
         run: |
-          wget -q $Env:arm_gcc_install_base/$Env:installer_name
+          if (!(Test-Path $Env:installer_name -PathType Leaf)) {
+            wget -q $Env:arm_gcc_install_base/$Env:installer_name
+          }
           unzip -o $Env:installer_name
-          del $Env:installer_name
 
       - name: Cache CMSIS Pack
         uses: actions/cache@v3
@@ -465,7 +471,7 @@ jobs:
     steps:
       - name: Install dependencies
         run: |
-          sudo apt update
+          sudo apt-get update
           sudo apt-get install \
             bc \
             build-essential \
@@ -480,11 +486,16 @@ jobs:
       - name: Create build folder
         run: mkdir build
 
+      - name: Cache ARM GCC
+        uses: actions/cache@v3
+        with:
+          key: "${{ env.arm_gcc_install_base }}/${{ env.installer_name }}"
+          path: ${{ env.installer_name }}
+
       - name: Setup ARM GCC for Ubuntu
         run: |
-          wget -q ${{ env.arm_gcc_install_base }}/${{ env.installer_name }}
+          test -f ${{ env.installer_name }} || wget -q ${{ env.arm_gcc_install_base }}/${{ env.installer_name }}
           tar -xvf ${{ env.installer_name }}
-          rm -rf ${{ env.installer_name }}
 
       - name: Cache CMSIS Pack
         uses: actions/cache@v3

@@ -362,12 +362,9 @@ RteComponentInstance* RteProject::AddCprjComponent(RteItem* item, RteTarget* tar
   } else {
     id = ci->ConstructID();
   }
-  string layer = item->GetAttribute("layer");
-  if (!layer.empty())
-    ci->AddAttribute("layer", layer);
-  string rtePath = item->GetAttribute("rtedir");
-  if (!rtePath.empty())
-    ci->AddAttribute("rtedir", rtePath);
+  ci->AddAttribute("layer", item->GetAttribute("layer"), false);
+  ci->AddAttribute("rtedir", item->GetAttribute("rtedir"), false);
+  ci->AddAttribute("gendir", item->GetAttribute("gendir"), false);
   m_components[id] = ci;
   return ci;
 }
@@ -1271,11 +1268,18 @@ void RteProject::CollectSettings(const string& targetName)
           continue;
         RteFile::Category cat = f->GetCategory();
         switch (cat) {
-        case RteFile::HEADER:
+        case RteFile::Category::HEADER:
           t->AddFile(f->GetIncludeFileName(), cat, comment);
-          // intended fall through
-        case RteFile::INCLUDE:
-          t->AddIncludePath(f->GetIncludePath());
+          if (f->GetScope() != RteFile::Scope::SCOPE_HIDDEN) {
+            t->AddIncludePath(f->GetIncludePath(), f->GetLanguage());
+          }
+          break;
+        case RteFile::Category::INCLUDE:
+          // could we have situation that gpdsc describes private include paths directly in gpdsc outside component descriptions?
+          if(f->GetScope() != RteFile::Scope::SCOPE_PRIVATE) {
+            t->AddIncludePath(f->GetIncludePath(), f->GetLanguage());
+          }
+          break;
         default:
           break;
         }
@@ -1287,8 +1291,8 @@ void RteProject::CollectSettings(const string& targetName)
   // add .\RTE\_TargetName\RTE_Components.h filePath
   if (GetComponentCount() > 0) {
     string rteComponentsH = GetRteComponentsH(targetName, "./");
-    t->AddIncludePath(RteUtils::ExtractFilePath(rteComponentsH, false));
-    t->AddFile("RTE_Components.h", RteFile::HEADER, "Component selection"); // add ".\RTE\_TargetName\RTE_Components.h" folder to all target includes
+    t->AddIncludePath(RteUtils::ExtractFilePath(rteComponentsH, false), RteFile::Language::LANGUAGE_NONE);
+    t->AddFile("RTE_Components.h", RteFile::Category::HEADER, "Component selection"); // add ".\RTE\_TargetName\RTE_Components.h" folder to all target includes
     t->InsertDefine("_RTE_");
   }
   // add device properties

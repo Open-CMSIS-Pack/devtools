@@ -48,7 +48,7 @@ void InstallerTests::CheckInstallationDir(const string& path, bool expect) {
 #endif
     { "doc", vector<string>{ "index.html", "html"} },
     { "etc", vector<string>{ "AC5.5.6.7.cmake", "AC6.6.18.0.cmake", "CPRJ.xsd",
-      "GCC.11.2.1.cmake", "IAR.9.32.1.cmake", "setup"} }
+      "GCC.10.3.1.cmake", "IAR.9.32.1.cmake", "setup"} }
   };
 
   error_code ec;
@@ -77,7 +77,7 @@ void InstallerTests::CheckExtractedDir(const string& path, bool expect) {
     "cbuildgen.lin-arm64"} },
     { "doc", vector<string>{ "index.html", "html"} },
     { "etc", vector<string>{"AC5.5.6.7.cmake", "AC6.6.18.0.cmake", "CPRJ.xsd",
-      "GCC.11.2.1.cmake", "IAR.9.32.1.cmake", "setup"} }
+      "GCC.10.3.1.cmake", "IAR.9.32.1.cmake", "setup"} }
   };
 
   error_code ec;

@@ -204,7 +204,7 @@ string RteGenerator::GetExpandedWebLine(RteTarget* target) const
 }
 
 
-string RteGenerator::GetExpandedGpdsc(RteTarget* target) const
+string RteGenerator::GetExpandedGpdsc(RteTarget* target, const string& genDir) const
 {
   string gpdsc = GetGpdsc();
   if (gpdsc.empty()) {
@@ -213,17 +213,21 @@ string RteGenerator::GetExpandedGpdsc(RteTarget* target) const
     gpdsc = ExpandString(gpdsc);
   }
 
-  fs::path path(gpdsc);
-  if (path.is_relative()) {
-    gpdsc = GetExpandedWorkingDir(target) + gpdsc;
+  if (!genDir.empty() && fs::path(gpdsc).is_absolute()) {
+    error_code ec;
+    gpdsc = fs::relative(gpdsc, GetExpandedWorkingDir(target), ec).generic_string();
+  }
+
+  if (fs::path(gpdsc).is_relative()) {
+    gpdsc = GetExpandedWorkingDir(target, genDir) + gpdsc;
   }
 
   return RteFsUtils::MakePathCanonical(gpdsc);
 }
 
-string RteGenerator::GetExpandedWorkingDir(RteTarget* target) const
+string RteGenerator::GetExpandedWorkingDir(RteTarget* target, const string& genDir) const
 {
-  string wd = ExpandString(GetWorkingDir());
+  string wd = genDir.empty() ? ExpandString(GetWorkingDir()) : genDir;
   fs::path path(wd);
   if (wd.empty() || path.is_relative()) {
     // use project directory

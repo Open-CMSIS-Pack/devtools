@@ -1,6 +1,6 @@
 # CMSIS Build CMakeLists generated on 2021-07-15T11:49:01
 
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.22)
 
 # Target options
 
@@ -128,18 +128,23 @@ set(AS_FLAGS_C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Asm/GAS.
 
 # Toolchain config map
 
-include ("c:/sandbox/devtools/build/TestOutput/cbuild/etc/GCC.10.2.1.cmake")
+set(TOOLCHAIN_VERSION_MIN "9.2.1")
+include ("C:/sandbox/cbuild/etc/GCC.10.3.1.cmake")
+include ("C:/sandbox/cbuild/etc/CMSIS-Build-Utils.cmake")
 
 # Setup project
 
 project(${TARGET} LANGUAGES ASM AS_GNU AS_LEG C)
 
+cbuild_get_running_toolchain(TOOLCHAIN_ROOT TOOLCHAIN_VERSION C)
+
 # Global Flags
 
-set(CMAKE_ASM_FLAGS "${ASM_CPU} ${ASM_BYTE_ORDER} ${ASM_DEFINES} ${ASM_FLAGS}")
-set(CMAKE_AS_GNU_FLAGS "${AS_GNU_CPU} ${AS_GNU_BYTE_ORDER} ${AS_GNU_DEFINES} ${AS_GNU_FLAGS}")
-set(CMAKE_AS_LEG_FLAGS "${AS_LEG_CPU} ${AS_LEG_BYTE_ORDER} ${AS_LEG_DEFINES} ${AS_LEG_FLAGS}")
-set(CMAKE_C_FLAGS "${CC_CPU} ${CC_BYTE_ORDER} ${CC_DEFINES} ${CC_SECURE} ${CC_FLAGS} ${CC_FLAGS_GLOBAL} ${CC_SYS_INC_PATHS}")
+set(CMAKE_ASM_FLAGS "${ASM_CPU} ${ASM_BYTE_ORDER} ${ASM_FLAGS}")
+set(CMAKE_AS_GNU_FLAGS "${AS_GNU_CPU} ${AS_GNU_BYTE_ORDER} ${AS_GNU_FLAGS}")
+set(CMAKE_AS_LEG_FLAGS "${AS_LEG_CPU} ${AS_LEG_BYTE_ORDER} ${AS_LEG_FLAGS}")
+cbuild_get_system_includes(CC_SYS_INC_PATHS_LIST CC_SYS_INC_PATHS)
+set(CMAKE_C_FLAGS "${CC_CPU} ${CC_BYTE_ORDER} ${CC_SECURE} ${CC_FLAGS} ${CC_FLAGS_GLOBAL} ${CC_SYS_INC_PATHS}")
 set(CMAKE_C_LINK_FLAGS "${LD_CPU} ${_LS}\"${LD_SCRIPT}\" ${LD_SECURE} ${LD_FLAGS_GLOBAL} ${LD_FLAGS}")
 
 # Local Flags
@@ -177,7 +182,7 @@ foreach(SRC ${AS_LEG_SRC_FILES})
   set_source_files_properties(${SRC} PROPERTIES LANGUAGE AS_LEG)
 endforeach()
 
-# File Includes and Defines
+# File Includes, Defines and Options
 
 foreach(SRC ${ASM_SRC_FILES})
   string(REPLACE " " "?" S ${SRC})
@@ -185,15 +190,17 @@ foreach(SRC ${ASM_SRC_FILES})
     set(INC_PATHS_LOCAL "${INC_PATHS_${S}}")
     set_source_files_properties(${SRC} PROPERTIES INCLUDE_DIRECTORIES "${INC_PATHS_LOCAL}")
   endif()
+  get_source_file_property(FILE_FLAGS ${SRC} COMPILE_FLAGS)
+  if(FILE_FLAGS STREQUAL "NOTFOUND")
+    set(FILE_FLAGS)
+  endif()
   if(DEFINED DEFINES_${S})
     cbuild_set_defines(ASM DEFINES_${S})
-    get_source_file_property(FILE_FLAGS ${SRC} COMPILE_FLAGS)
-    if(FILE_FLAGS STREQUAL "NOTFOUND")
-      set(FILE_FLAGS)
-    endif()
     string(APPEND FILE_FLAGS " ${DEFINES_${S}}")
-    set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS "${FILE_FLAGS}")
+  else()
+    string(APPEND FILE_FLAGS " ${ASM_DEFINES}")
   endif()
+  set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS "${FILE_FLAGS}")
 endforeach()
 
 foreach(SRC ${AS_GNU_SRC_FILES})
@@ -202,15 +209,17 @@ foreach(SRC ${AS_GNU_SRC_FILES})
     set(INC_PATHS_LOCAL "${INC_PATHS_${S}}")
     set_source_files_properties(${SRC} PROPERTIES INCLUDE_DIRECTORIES "${INC_PATHS_LOCAL}")
   endif()
+  get_source_file_property(FILE_FLAGS ${SRC} COMPILE_FLAGS)
+  if(FILE_FLAGS STREQUAL "NOTFOUND")
+    set(FILE_FLAGS)
+  endif()
   if(DEFINED DEFINES_${S})
     cbuild_set_defines(AS_GNU DEFINES_${S})
-    get_source_file_property(FILE_FLAGS ${SRC} COMPILE_FLAGS)
-    if(FILE_FLAGS STREQUAL "NOTFOUND")
-      set(FILE_FLAGS)
-    endif()
     string(APPEND FILE_FLAGS " ${DEFINES_${S}}")
-    set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS "${FILE_FLAGS}")
+  else()
+    string(APPEND FILE_FLAGS " ${AS_GNU_DEFINES}")
   endif()
+  set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS "${FILE_FLAGS}")
 endforeach()
 
 foreach(SRC ${AS_LEG_SRC_FILES})
@@ -219,15 +228,17 @@ foreach(SRC ${AS_LEG_SRC_FILES})
     set(INC_PATHS_LOCAL "${INC_PATHS_${S}}")
     set_source_files_properties(${SRC} PROPERTIES INCLUDE_DIRECTORIES "${INC_PATHS_LOCAL}")
   endif()
+  get_source_file_property(FILE_FLAGS ${SRC} COMPILE_FLAGS)
+  if(FILE_FLAGS STREQUAL "NOTFOUND")
+    set(FILE_FLAGS)
+  endif()
   if(DEFINED DEFINES_${S})
     cbuild_set_defines(AS_LEG DEFINES_${S})
-    get_source_file_property(FILE_FLAGS ${SRC} COMPILE_FLAGS)
-    if(FILE_FLAGS STREQUAL "NOTFOUND")
-      set(FILE_FLAGS)
-    endif()
     string(APPEND FILE_FLAGS " ${DEFINES_${S}}")
-    set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS "${FILE_FLAGS}")
+  else()
+    string(APPEND FILE_FLAGS " ${AS_LEG_DEFINES}")
   endif()
+  set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS "${FILE_FLAGS}")
 endforeach()
 
 foreach(SRC ${CC_SRC_FILES})
@@ -236,15 +247,17 @@ foreach(SRC ${CC_SRC_FILES})
     set(INC_PATHS_LOCAL "${INC_PATHS_${S}}")
     set_source_files_properties(${SRC} PROPERTIES INCLUDE_DIRECTORIES "${INC_PATHS_LOCAL}")
   endif()
+  get_source_file_property(FILE_FLAGS ${SRC} COMPILE_FLAGS)
+  if(FILE_FLAGS STREQUAL "NOTFOUND")
+    set(FILE_FLAGS)
+  endif()
   if(DEFINED DEFINES_${S})
     cbuild_set_defines(CC DEFINES_${S})
-    get_source_file_property(FILE_FLAGS ${SRC} COMPILE_FLAGS)
-    if(FILE_FLAGS STREQUAL "NOTFOUND")
-      set(FILE_FLAGS)
-    endif()
     string(APPEND FILE_FLAGS " ${DEFINES_${S}}")
-    set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS "${FILE_FLAGS}")
+  else()
+    string(APPEND FILE_FLAGS " ${CC_DEFINES}")
   endif()
+  set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS "${FILE_FLAGS}")
 endforeach()
 
 # Compilation Database

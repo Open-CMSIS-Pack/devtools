@@ -33,14 +33,19 @@ BuildSystemGenerator::~BuildSystemGenerator(void) {
   // Reserved
 }
 
-bool BuildSystemGenerator::Collect(const string& inputFile, const CbuildModel *model, const string& outdir, const string& intdir) {
+bool BuildSystemGenerator::Collect(const string& inputFile, const CbuildModel *model, const string& outdir, const string& intdir, const string& compilerRoot) {
   error_code ec;
   m_projectDir = StrConv(RteFsUtils::AbsolutePath(inputFile).remove_filename().generic_string());
   m_workingDir = fs::current_path(ec).generic_string() + SS;
+  m_compilerRoot = compilerRoot;
+  RteFsUtils::NormalizePath(m_compilerRoot);
 
   // Find toolchain config
   m_toolchainConfig = StrNorm(model->GetToolchainConfig());
   m_toolchain = model->GetCompiler();
+  m_toolchainVersion = model->GetCompilerVersion();
+  m_toolchainRegisteredRoot = model->GetToolchainRegisteredRoot();
+  m_toolchainRegisteredVersion = model->GetToolchainRegisteredVersion();
 
   // Output and intermediate directories
   if (!outdir.empty()) {

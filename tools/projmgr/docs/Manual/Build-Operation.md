@@ -15,6 +15,7 @@ The following chapter explains the overall build process that of the CMSIS-Toolb
   - [Add Toolchain to CMSIS-Toolbox](#add-toolchain-to-cmsis-toolbox)
     - [Steps](#steps)
     - [CMake Variables](#cmake-variables)
+      - [`BRANCHPROT` Values](#branchprot-values)
 
 ## Build Process Overview
 
@@ -62,23 +63,31 @@ The section below describes the steps to add a new compiler toolchain to the CMS
 
 The `CMakeLists.txt` file sets the following **CMake** input variables that should be processed by `compiler_name.<version>.cmake`.
 
-CMake Variable                                   | Possible Values      | Description
-:------------------------------------------------|:---------------------|:-----------------------
-`BYTE_ORDER`                                     | [DendianEnum](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_family_pg.html#DendianEnum)  | Endian processor configuration
+CMake Variable                                   | Possible Values           | Description
+:------------------------------------------------|:--------------------------|:-----------------------
+`BYTE_ORDER`                                     | Little-endian, Big-endian | [Endian processor configuration](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_family_pg.html#Dendian)
 `CPU`                                            | [DCoreEnum](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_family_pg.html#DcoreEnum)      | Processor core selection
 `FPU`                                            | [DfpuEnum](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_family_pg.html#DfpuEnum)        | Floating point unit support
 `DSP`                                            | [DdspEnum](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_family_pg.html#DdspEnum)        | DSP instruction set support
 `TZ`                                             | [DtzEnum](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_family_pg.html#DtzEnum)          | TrustZone support
 `SECURE`                                         | [DsecureEnum](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_family_pg.html#DsecureEnum)  | Software model selection
 `MVE`                                            | [DmveEnum](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_family_pg.html#DmveEnum)        | MVE instruction set support
-`BRANCHPROT`                                     | [DpacbtiEnum](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_family_pg.html#DpacbtiEnum)  | Branch protection
+`BRANCHPROT`                                     | [`BRANCHPROT` values](#branchprot-values)  | [Branch protection
 `OPTIMIZE`                                       | [Optimize values](YML-Input-Format.md#optimize)  | Generic optimize levels for code generation
 `WARNINGS`                                       | [Warnings values](YML-Input-Format.md#warnings)  | Control warning level for compiler diagnostic
 `DEBUG`                                          | [Debug values](YML-Input-Format.md#debug)        | Control the generation of debug information
 `DEFINES`                                        | [Define symbols](YML-Input-Format.md#define)     | List of symbol #define statements
 
-> ToDo: verify BRANCHPROT values as the mapping seems to be different.
- 
+#### `BRANCHPROT` Values
+
+The following table lists the possible values for the CMake variable `BRANCHPROT`.
+
+Values        | Description
+--------------|------------------------------
+NO_BRANCHPROT | Branch protection not used
+BTI           | Using BTI (Branch Target ID)
+BTI_SIGNRET   | Using BTI + Sign Return
+
 The `compiler_name.<version>.cmake` sets the following **CMake** variables to specify the toolchain and select toolchain options.
 
 CMake Variable                                   | Description

@@ -3,7 +3,7 @@
 project:
   description: Project 1
   board: Keil::RteTest Test board
-  compiler: AC6@6.18.0
+  compiler: AC6@>=6.18.0
   processor:
     fpu: off
     endian: little

@@ -13,6 +13,7 @@
 #include "XMLTreeSlim.h"
 
 #include <algorithm>
+#include <iomanip>
 #include <iterator>
 #include <fstream>
 
@@ -59,7 +60,7 @@ bool ProjMgrGenerator::GenerateCprj(ContextItem& context, const string& filename
 
   // Compilers
   if (compilersElement) {
-    GenerateCprjCompilers(compilersElement, context.toolchain);
+    GenerateCprjCompilers(compilersElement, context);
   }
 
   // Target
@@ -140,13 +141,19 @@ void ProjMgrGenerator::GenerateCprjPackages(XMLTreeElement* element, const Conte
   }
 }
 
-void ProjMgrGenerator::GenerateCprjCompilers(XMLTreeElement* element, const ToolchainItem& toolchain) {
+void ProjMgrGenerator::GenerateCprjCompilers(XMLTreeElement* element, const ContextItem& context) {
   XMLTreeElement* compilerElement = element->CreateElement("compiler");
   if (compilerElement) {
-    compilerElement->AddAttribute("name", toolchain.name);
-    if (!toolchain.version.empty()) {
-      compilerElement->AddAttribute("version", toolchain.version);
+    compilerElement->AddAttribute("name", context.toolchain.name);
+    // set minimum version according to registered/supported toolchain
+    string versionRange = context.toolchain.version;
+    // set maximum version according to solution requirements
+    string name, minVer, maxVer;
+    ProjMgrUtils::ExpandCompilerId(context.compiler, name, minVer, maxVer);
+    if (!maxVer.empty()) {
+      versionRange += ":" + maxVer;
     }
+    compilerElement->AddAttribute("version", versionRange);
   }
 }
 
@@ -203,6 +210,14 @@ void ProjMgrGenerator::GenerateCprjComponents(XMLTreeElement* element, const Con
           error_code ec;
           // Adjust component's rtePath relative to cprj
           SetAttribute(componentElement, "rtedir", fs::relative(context.cproject->directory + "/" + rteDir, context.directories.cprj, ec).generic_string());
+        }
+      }
+      if (!component.generator.empty()) {
+        const string& genDir = component.instance->GetAttribute("gendir");
+        if (!genDir.empty()) {
+          error_code ec;
+          // Adjust component's genDir relative to cprj
+          SetAttribute(componentElement, "gendir", fs::relative(context.cproject->directory + "/" + genDir, context.directories.cprj, ec).generic_string());
         }
       }
 
@@ -283,7 +298,7 @@ void ProjMgrGenerator::GenerateCprjMisc(XMLTreeElement* element, const MiscItem&
       XMLTreeElement* flagsElement = element->CreateElement(flags.first);
       if (flagsElement) {
         flagsElement->AddAttribute("add", GetStringFromVector(flags.second, " "));
-        flagsElement->AddAttribute("compiler", misc.compiler);
+        flagsElement->AddAttribute("compiler", RteUtils::GetPrefix(misc.compiler, '@'));
       }
     }
   }

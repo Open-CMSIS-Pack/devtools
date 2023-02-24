@@ -35,7 +35,7 @@ struct RteFileInfo
    * @param ci pointer to an object of type RteComponentInstance
    * @param fi pointer to an object of type RteFileInstance
   */
-  RteFileInfo(RteFile::Category cat = RteFile::OTHER, RteComponentInstance* ci = NULL, RteFileInstance* fi = NULL);
+  RteFileInfo(RteFile::Category cat = RteFile::Category::OTHER, RteComponentInstance* ci = NULL, RteFileInstance* fi = NULL);
 
   /**
    * @brief check if attribute "attr" has value "config"
@@ -578,6 +578,7 @@ public:
   */
   void AddFileInstance(RteFileInstance* fi);
 
+
   /**
    * @brief add file to project group based on instances of type RteFile and RteComponentInstance
    * @param f pointer to RteFile object
@@ -590,15 +591,25 @@ public:
    * @param pathName file name with path
    * @param cat file category
    * @param comment file-specific comment to add
-   * @param c pointer to RteComponent object for pre-include file specific to component
+   * @param c pointer to RteComponent object for files specific to component
+   * @param f pointer to RteFile object for its additional properties
   */
-  void AddFile(const std::string& pathName, RteFile::Category cat, const std::string& comment, RteComponent* c = 0);
+  void AddFile(const std::string& pathName, RteFile::Category cat, const std::string& comment, RteComponent* c = 0, RteFile* f = 0);
 
   /**
    * @brief add an include path to the target
    * @param path include path to add
+   * @param language supported language, supply LANGUAGE_NONE to add the include path to any language
   */
-  void AddIncludePath(const std::string& path);
+  void AddIncludePath(const std::string& path, RteFile::Language language);
+
+  /**
+   * @brief add an include path to the target for given component
+   * @param path include path to add
+   * @param c given component
+   * @param language supported language, supply LANGUAGE_NONE if no language specified
+  */
+  void AddPrivateIncludePath(const std::string& path, RteComponent* c, RteFile::Language language);
 
   /**
    * @brief add a pre-include file specific to the given component to the target
@@ -666,16 +677,43 @@ public:
   const std::map<std::string, RteFileInfo>& GetFilesInProjectGroup(const std::string& groupName) const;
 
   /**
-   * @brief getter for include paths
+   * @brief get global include paths for specified language
+   * @param language specific language, default is RteFile::Language::LANGUAGE_NONE to return all non-language specific include paths
    * @return collection of include path strings
   */
-  const std::set<std::string>& GetIncludePaths() const { return m_includePaths; }
+  const std::set<std::string>& GetIncludePaths(RteFile::Language language = RteFile::Language::LANGUAGE_NONE) const;
+
+  /**
+   * @brief get global effective include paths for specified language, for example combined "c"', "c-cpp" and non-language specific
+   * @param language specific language, specifying Language::LANGUAGE_NONE will return the same paths as GetIncludePaths()
+   * @param includePaths reference to a collection of strings to obtain a result
+   * @param c an optional component to obtain collection of include paths seen by a component (private + global)
+   * @return reference to the collection of strings supplied by includePaths argument
+  */
+  std::set<std::string>& GetEffectiveIncludePaths(std::set<std::string>& includePaths, RteFile::Language language, RteComponent* c = nullptr) const;
 
   /**
    * @brief getter for a collection of includes
    * @return collection of includes
   */
   const std::map<std::string, std::string>& GetHeaders() const { return m_headers; }
+
+  /**
+   * @brief getter for private include paths specific to the given component and language
+   * @param c given component, if nullptr, global include paths are returned, equivalent to GetIncludePaths()
+   * @param language specific language, default is RteFile::Language::LANGUAGE_NONE to return all non-language specific include paths
+   * @return string collection of private include paths
+  */
+  const std::set<std::string>& GetPrivateIncludePaths(RteComponent* c, RteFile::Language language = RteFile::Language::LANGUAGE_NONE) const;
+
+  /**
+   * @brief getter for effective include paths for given component for specified language, not combined with global paths
+   * @param c given component, if nullptr, global include paths are returned, equivalent to GetEffectiveIncludePaths()
+   * @param language specific language
+   * @param includePaths reference to a collection of strings to obtain a result
+   * @return reference to the collection of strings supplied by includePaths argument
+  */
+  std::set<std::string>& GetEffectivePrivateIncludePaths(std::set<std::string>& includePaths, RteComponent* c, RteFile::Language language) const;
 
   /**
    * @brief getter for collection of pre-include files
@@ -929,12 +967,24 @@ protected:
   virtual void CategorizeComponent(RteComponent* c);
   virtual void CategorizeComponentInstance(RteComponentInstance* ci, int count);
 
+ /**
+  * @brief add an include path to the target for given component
+  * @param path include path to add
+  * @param c given component or nullptr to add to the global collection
+  * @param language supported language, supply RteFile::Language::LANGUAGE_NONE if no language specified
+ */
+  void InternalAddIncludePath(const std::string& path, RteComponent* c, RteFile::Language language);
+
   void UpdateSelectedAggregates(RteComponentAggregate* a, int count);
 
   void CollectPreIncludeStrings(RteComponent* c, int count);
 
   void AddBoadProperties(RteDeviceItem* device, const std::string& processorName);
   void AddAlgorithm(RteItem* algo, RteItem* holder);
+
+  std::string NormalizeIncPath(const std::string& path) const;
+  std::string ReplaceProjectPathWithDotSlash(const std::string& path) const;
+
   // model data
 protected:
   RteModel* m_filteredModel;
@@ -954,13 +1004,15 @@ protected:
   RtePackage* m_effectiveDevicePackage;
 
   // instance data
-protected:
   std::map<RteComponentAggregate*, int> m_selectedAggregates;
   std::map<std::string, std::string> t_missingPackIds; // list of missing packs for this target
 
   std::map<std::string, std::map<std::string, RteFileInfo> > m_projectGroups; // <group name ,<filepath, comment> >
   std::map<std::string, RteComponentInstance*> m_fileToComponentInstanceMap; // <filepath, component instance>
-  std::set<std::string> m_includePaths; // also contains device includes
+  // all include paths, component specific if RteComponet != 0, global otherwise
+  // global collection contains device includes
+  std::map<RteComponent*, std::map < RteFile::Language, std::set<std::string> > > m_includePaths;
+
   std::map<std::string, std::string> m_headers; // also contains device includes, the second is a comment (originating component or text), without path
   std::map<RteComponent*, std::set<std::string> > m_PreIncludeFiles; // global (key == NULL) and local (key = component ) pre-includes
   std::string m_deviceHeader; // device header filename without path (also put into m_headers)

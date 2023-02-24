@@ -631,7 +631,7 @@ public:
    * @brief check if this component aggregate is empty, i.e. does not contain any entry in component collection
    * @return true if empty
   */
-  virtual bool IsEmpty() const;
+  virtual bool IsEmpty() const override;
 
   /**
    * @brief check if at least one component passes current filter.
@@ -959,7 +959,7 @@ public:
    * @brief check if group is empty
    * @return true if group contains no data: API, sub-groups and aggregates
   */
-  virtual bool IsEmpty() const;
+  virtual bool IsEmpty() const override;
 
   /**
    * @brief clear internal data

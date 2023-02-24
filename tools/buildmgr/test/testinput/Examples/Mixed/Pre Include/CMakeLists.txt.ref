@@ -1,6 +1,6 @@
 # CMSIS Build CMakeLists generated on 2021-03-30T08:56:32
 
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.22)
 
 # Target options
 
@@ -66,14 +66,20 @@ set(PRE_INC_LOCAL_C:/Users/Test/AppData/Local/Arm/Packs/Keil/PreIncludeTestPack/
 
 # Toolchain config map
 
-include ("C:/sandbox/devtools/build/TestOutput/cbuild/etc/AC6.6.16.0.cmake")
+set(TOOLCHAIN_VERSION_MIN "6.0.0")
+set(TOOLCHAIN_VERSION_MAX "6.99.99")
+include ("C:/sandbox/cbuild/etc/AC6.6.18.0.cmake")
+include ("C:/sandbox/cbuild/etc/CMSIS-Build-Utils.cmake")
 
 # Setup project
 
 project(${TARGET} LANGUAGES C)
 
+cbuild_get_running_toolchain(TOOLCHAIN_ROOT TOOLCHAIN_VERSION C)
+
 # Global Flags
 
+cbuild_get_system_includes(CC_SYS_INC_PATHS_LIST CC_SYS_INC_PATHS)
 set(CMAKE_C_FLAGS "${CC_CPU} ${CC_BYTE_ORDER} ${CC_DEFINES} ${CC_SECURE} ${CC_FLAGS} ${CC_SYS_INC_PATHS}")
 set(CMAKE_C_LINK_FLAGS "${LD_CPU} ${_LS}\"${LD_SCRIPT}\" ${LD_SECURE} ${LD_FLAGS_GLOBAL} ${LD_FLAGS}")
 
