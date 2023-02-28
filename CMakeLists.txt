@@ -113,6 +113,7 @@ add_subdirectory(libs/xmlreader)
 add_subdirectory(libs/xmltree)
 add_subdirectory(libs/xmltreeslim)
 add_subdirectory(libs/ymlschemachecker)
+add_subdirectory(libs/xmlschemachecker)
 
 # Tools
 if(NOT LIBS_ONLY)
@@ -130,6 +131,7 @@ get_targets()
 apply_patch(${CMAKE_CURRENT_SOURCE_DIR}/external/json)
 apply_patch(${CMAKE_CURRENT_SOURCE_DIR}/external/json-schema-validator)
 apply_patch(${CMAKE_CURRENT_SOURCE_DIR}/external/cxxopts)
+apply_patch(${CMAKE_CURRENT_SOURCE_DIR}/external/xerces-c)
 
 # Google Test Framework
 set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
@@ -163,3 +165,7 @@ add_subdirectory(external/json-schema-validator)
 
 #fmt
 add_subdirectory(external/fmt)
+
+#xerces-c
+set(XERCESC_BUILD_SHARED_LIBS OFF)
+add_subdirectory(external/xerces-c)
