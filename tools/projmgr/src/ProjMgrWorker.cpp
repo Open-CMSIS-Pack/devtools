@@ -1372,7 +1372,7 @@ bool ProjMgrWorker::AddRequiredComponents(ContextItem& context) {
   if (!unresolvedComponents.empty()) {
     string msg = "unresolved components:";
     for (const auto& component : unresolvedComponents) {
-      msg += "\n" + ProjMgrUtils::GetComponentID(component->GetComponent());
+      msg += "\n" + ProjMgrUtils::GetComponentID(component);
     }
     ProjMgrLogger::Error(msg);
     return false;

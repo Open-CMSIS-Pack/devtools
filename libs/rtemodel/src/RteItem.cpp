@@ -26,14 +26,19 @@
 using namespace std;
 
 RteItem::RteItem(RteItem* parent) :
-  m_parent(parent),
+  XmlTreeItem<RteItem>(parent),
+  m_bValid(false)
+{
+}
+
+RteItem::RteItem(const std::string& tag, RteItem* parent):
+  XmlTreeItem<RteItem>(parent, tag),
   m_bValid(false)
 {
 }
 
 RteItem::RteItem(const std::map<std::string, std::string>& attributes, RteItem* parent) :
-  XmlItem(attributes),
-  m_parent(parent),
+  XmlTreeItem<RteItem>(parent, attributes),
   m_bValid(true)
 {
 };
@@ -56,19 +61,6 @@ void RteItem::Clear()
   XmlItem::Clear();
 }
 
-
-void RteItem::Reparent(RteItem* newParent)
-{
-  if (m_parent == newParent)
-    return;
-  if (m_parent) {
-    m_parent->RemoveItem(this);
-  }
-  if (newParent) {
-    newParent->AddItem(this);
-  }
-  m_parent = newParent;
-}
 
 RteCallback* RteItem::GetCallback() const
 {
@@ -273,12 +265,6 @@ const list<RteItem*>& RteItem::GetItemChildren(RteItem* item)
   return EMPTY_ITEM_LIST;
 }
 
-const list<RteItem*>& RteItem::GetGrandChildren(const string& tag) const
-{
-  RteItem* child = GetItemByTag(tag);
-  return GetItemChildren(child);
-}
-
 const list<RteItem*>& RteItem::GetItemGrandChildren(RteItem* item, const string& tag)
 {
   RteItem* child = 0;
@@ -329,39 +315,9 @@ bool RteItem::HasItem(RteItem* item) const
 
 RteItem* RteItem::GetItemByTag(const string& tag) const
 {
-  for (auto it = m_children.begin(); it != m_children.end(); it++) {
-    RteItem* item = *it;
-    if (item->GetTag() == tag)
-      return item;
-  }
-  return nullptr;
-
+  return GetFirstChild(tag);
 }
 
-const string& RteItem::GetChildAttribute(const std::string& tag, const std::string& attribute) const
-{
-  RteItem* child = GetItemByTag(tag);
-  if (child) {
-    return child->GetAttribute(attribute);
-  }
-  return EMPTY_STRING;
-}
-
-const string& RteItem::GetChildText(const string& tag) const
-{
-  RteItem* child = GetItemByTag(tag);
-  if (child)
-    return child->GetText();
-  return EMPTY_STRING;
-}
-
-const string& RteItem::GetItemValue(const string& nameOrTag) const
-{
-  if (HasAttribute(nameOrTag)) {
-    return GetAttribute(nameOrTag);
-  }
-  return GetChildText(nameOrTag);
-}
 
 const string& RteItem::GetDocValue() const
 {
@@ -414,12 +370,7 @@ const string& RteItem::GetVersionString() const
 
 void RteItem::RemoveItem(RteItem* item)
 {
-  for (auto it = m_children.begin(); it != m_children.end(); it++) {
-    if (item == *it) {
-      m_children.erase(it);
-      break;
-    }
-  }
+  RemoveChild(item, false);
 }
 
 string RteItem::ConstructID()
@@ -983,25 +934,6 @@ void RteItem::InsertInModel(RteModel* model)
   for (auto it = m_children.begin(); it != m_children.end(); it++) {
     (*it)->InsertInModel(model);
   }
-}
-
-bool RteItem::AcceptVisitor(RteVisitor* visitor)
-{
-  // visitor design pattern implementation
-  if (visitor) {
-    VISIT_RESULT res = visitor->Visit(this);
-    if (res == CANCEL_VISIT) {
-      return false;
-    }
-    if (res == CONTINUE_VISIT) {
-      for (auto it = m_children.begin(); it != m_children.end(); it++) {
-        if (!(*it)->AcceptVisitor(visitor))
-          return false;
-      }
-    }
-    return true;
-  }
-  return false;
 }
 
 bool RteItem::HasXmlContent() const

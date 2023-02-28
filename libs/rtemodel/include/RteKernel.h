@@ -229,7 +229,7 @@ protected:
    * @brief get this pointer to use in const methods
    * @return this
   */
-  RteKernel* GetThis() const { return const_cast<RteKernel*>(this); }
+  RteKernel* GetThisKernel() const { return const_cast<RteKernel*>(this); }
 
 private:
   RteGlobalModel* m_globalModel;

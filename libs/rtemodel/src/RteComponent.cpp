@@ -114,7 +114,7 @@ RteBundle* RteComponent::GetParentBundle() const
 }
 
 
-int RteComponent::GetFileCount() const
+size_t RteComponent::GetFileCount() const
 {
   return m_files ? m_files->GetChildCount() : 0;
 }

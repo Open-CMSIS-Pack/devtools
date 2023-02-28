@@ -792,11 +792,11 @@ bool SvdItem::AcceptVisitor(SvdVisitor* visitor)
 {
   if(visitor) {
     const auto res = visitor->Visit(this);
-    if( res == CANCEL_VISIT) {
+    if( res == VISIT_RESULT::CANCEL_VISIT) {
       return false;
     }
 
-    if(res == CONTINUE_VISIT) {
+    if(res == VISIT_RESULT::CONTINUE_VISIT) {
       SvdDimension *dimItem = GetDimension();
       if(dimItem) {
         dimItem->AcceptVisitor(visitor);

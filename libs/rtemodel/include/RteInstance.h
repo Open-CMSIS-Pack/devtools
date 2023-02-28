@@ -1035,12 +1035,20 @@ public:
   */
   virtual std::string GetEffectiveDisplayName(const std::string& targetName) const;
 
+
+  /**
+   * @brief get resolved component for specified target
+   * @param targetName target name
+   * @return pointer to resolved RteComponent, nullptr if not resolved
+  */
+  RteComponent* GetComponent(const std::string& targetName) const override
+  { return GetResolvedComponent(targetName); }
   /**
    * @brief get resolved component for specified target
    * @param targetName target name to resolve component
    * @return pointer to RteComponent if resolved, nullptr otherwise
   */
-  virtual RteComponent* GetResolvedComponent(const std::string& targetName) const override;
+  RteComponent* GetResolvedComponent(const std::string& targetName) const override;
 
   /**
    * @brief set resolved component for specified target

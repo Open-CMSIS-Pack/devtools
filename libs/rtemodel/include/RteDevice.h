@@ -1371,14 +1371,14 @@ public:
    * @brief get number of RteDeviceItemAggregate children
    * @return number of RteDeviceItemAggregate children as integer
   */
-  int GetChildCount() const { return (int)m_children.size(); }
+  size_t GetChildCount() const { return m_children.size(); }
 
   /**
    * @brief get number of RteDeviceItemAggregate children of requested hierarchy type
    * @param type RteDeviceItem::TYPE
    * @return  number of RteDeviceItemAggregate children as integer
   */
-  int GetChildCount(RteDeviceItem::TYPE type) const;
+  size_t GetChildCount(RteDeviceItem::TYPE type) const;
   /**
    * @brief create short device item description
    * @return summary string

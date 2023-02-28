@@ -593,7 +593,7 @@ bool RtePackage::Construct(XMLTreeElement* xmlElement)
   // we are not interested in XML attributes for package
   m_lineNumber = xmlElement->GetLineNumber();
   m_tag = xmlElement->GetTag();
-  m_fileName = xmlElement->GetFileName();
+  m_fileName = xmlElement->GetRootFileName();
   AddAttribute("schemaVersion", xmlElement->GetAttribute("schemaVersion"), false);
   bool success = ProcessXmlChildren(xmlElement);
   m_ID = ConstructID();
