@@ -33,6 +33,15 @@ void PackChkIntegTestEnv::SetUp() {
   ASSERT_FALSE(localtestdata_dir.empty());
   ASSERT_FALSE(globaltestdata_dir.empty());
   ASSERT_FALSE(testoutput_dir.empty());
+
+  // Copy Pack.xsd
+  const string packXsd = string(PACKXSD_FOLDER) + "/PACK.xsd";
+  const string schemaDestDir = string(PROJMGRUNITTESTS_BIN_PATH) + "/../etc";
+  if (RteFsUtils::Exists(schemaDestDir)) {
+    RteFsUtils::RemoveDir(schemaDestDir);
+  }
+  RteFsUtils::CreateDirectories(schemaDestDir);
+  fs::copy(fs::path(packXsd), fs::path(schemaDestDir + "/PACK.xsd"), ec);
 }
 
 void PackChkIntegTestEnv::TearDown() {

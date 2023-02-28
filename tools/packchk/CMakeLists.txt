@@ -42,7 +42,7 @@ target_include_directories(packchklib
 set_property(TARGET packchklib PROPERTY
   MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
-target_link_libraries(packchklib CrossPlatform ErrLog RteModel RteFsUtils RteUtils XmlTree XmlTreeSlim cxxopts)
+target_link_libraries(packchklib CrossPlatform ErrLog RteModel RteFsUtils RteUtils XmlTree XmlTreeSlim cxxopts XmlValidator)
 
 # Create the packchk target
 add_executable(packchk src/PackChkMain.cpp)

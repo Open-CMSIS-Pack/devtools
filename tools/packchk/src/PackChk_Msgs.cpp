@@ -98,6 +98,9 @@ const MsgTable PackChk::msgTable = {
   { "M213", { MsgLevel::LEVEL_WARNING,  CRLF_BE, "Found blank char '%NUM%' in Packname output filename, deleted" } },
   { "M214", { MsgLevel::LEVEL_ERROR,    CRLF_BE, "Invalid argument: %OPT%" } },
   { "M215", { MsgLevel::LEVEL_ERROR,    CRLF_BE, "" } },
+  { "M216", { MsgLevel::LEVEL_ERROR,    CRLF_B, "Unable to get executable path %MSG%!"} },
+  { "M217", { MsgLevel::LEVEL_ERROR,    CRLF_B, "Unable to get executable path %MSG%!"} },
+  { "M218", { MsgLevel::LEVEL_ERROR,    CRLF_B, "Unable to find schema file '%PATH%' for validation"} },
 
 // 300... Validation Errors
   { "M300", { MsgLevel::LEVEL_ERROR,    CRLF_B, "" } },
