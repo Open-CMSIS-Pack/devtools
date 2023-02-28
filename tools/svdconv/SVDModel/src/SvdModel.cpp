@@ -93,5 +93,5 @@ bool SvdModel::CheckItem()
 
 VISIT_RESULT SvdModelCalculate::Visit(SvdItem* item)
 {
-  return CONTINUE_VISIT;
+  return VISIT_RESULT::CONTINUE_VISIT;
 }

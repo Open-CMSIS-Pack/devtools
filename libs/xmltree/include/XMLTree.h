@@ -138,20 +138,20 @@ public:
    * @param tag name of tag
   */
   XMLTreeElement(XMLTreeElement* parent, const std::string& tag);
-  virtual ~XMLTreeElement();
+  ~XMLTreeElement() override;
 
   /**
    * @brief getter for this instance
    * @return pointer to the instance of type XMLTreeElement
   */
-  virtual XMLTreeElement* GetThis() const override { return const_cast<XMLTreeElement*>(this); }
+  XMLTreeElement* GetThis() const override { return const_cast<XMLTreeElement*>(this); }
 
   /**
    * @brief create a new instance of type XMLTreeElement
    * @param tag name of tag
    * @return pointer to instance of type XMLTreeElement
   */
-  virtual XMLTreeElement* CreateItem(const std::string& tag) override { return new XMLTreeElement(GetThis(), tag); }
+  XMLTreeElement* CreateItem(const std::string& tag) override { return new XMLTreeElement(GetThis(), tag); }
 
   /**
    * @brief create a new XML child element of the instance
@@ -201,13 +201,13 @@ public:
    * @brief getter for XML file name stored in the instance
    * @return string containing XML file name
   */
-  virtual const std::string& GetFileName() const  override { return m_xmlFile; }
+  const std::string& GetRootFileName() const  override { return m_xmlFile; }
 
   /**
    * @brief check if instance is valid
    * @return true if instance is valid, otherwise false
   */
-  virtual bool IsValid() const  override { return m_bValid; }
+  bool IsValid() const  override { return m_bValid; }
 
   /**
    * @brief setter for instance validity

@@ -33,7 +33,7 @@ public:
    * @brief clear the instance
    * @param bDeleteContent true to delete the member m_pRoot of template type T
   */
-  virtual void Clear(bool bDeleteContent = false) {
+  void Clear(bool bDeleteContent = false) override {
 
     if (bDeleteContent && m_pRoot != 0)
       delete m_pRoot;
@@ -58,7 +58,7 @@ public:
   /**
    * @brief add child specified by member m_pCurrent to parent
   */
-  virtual void AddItem()
+  void AddItem() override
   {
     if (m_pParent && m_pParent != m_pCurrent)
       m_pParent->AddChild(m_pCurrent);
@@ -69,7 +69,7 @@ public:
    * @param key attribute name
    * @param value attribute value to set in instance of template type T
   */
-  virtual void AddAttribute(const std::string& key, const std::string& value)
+  void AddAttribute(const std::string& key, const std::string& value) override
   {
     if (m_pCurrent)
       m_pCurrent->AddAttribute(key, value);
@@ -79,7 +79,7 @@ public:
    * @brief setter for tag text of member m_pCurrent of template type T
    * @param text string to set in instance of template type T
   */
-  virtual void SetText(const std::string& text)
+  void SetText(const std::string& text) override
   {
     if (m_pCurrent)
       m_pCurrent->SetText(text);
@@ -88,7 +88,7 @@ public:
   /**
    * @brief this function gets called before a new item is created
   */
-  virtual void PreCreateItem()
+  void PreCreateItem() override
   {
     if (m_pParent)
       m_stack.push_front(m_pParent);
@@ -101,7 +101,7 @@ public:
    * @param tag name of item
    * @return true if item is successfully created
   */
-  virtual bool CreateItem(const std::string& tag)
+  bool CreateItem(const std::string& tag) override
   {
     if (!HasRoot()) {
       m_pRoot = m_pCurrent = CreateRootItem(tag);
@@ -122,7 +122,7 @@ public:
    * @brief this function get called after an item has been created
    * @param success validity flag to set for item having been created
   */
-  virtual void PostCreateItem(bool success)
+  void PostCreateItem(bool success) override
   {
     m_pCurrent = m_pParent;
     auto it = m_stack.begin();
@@ -143,7 +143,7 @@ public:
    * @brief setter for line number of the current item in the instance
    * @param lineNumber line number to set
   */
-  void SetLineNumber(int lineNumber)
+  void SetLineNumber(int lineNumber) override
   {
     if (m_pCurrent)
       m_pCurrent->SetLineNumber(lineNumber);

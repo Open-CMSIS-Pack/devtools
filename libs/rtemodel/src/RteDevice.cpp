@@ -1150,14 +1150,10 @@ void RteDeviceItemAggregate::AddDeviceItem(RteDeviceItem* item)
 }
 
 
-int RteDeviceItemAggregate::GetChildCount(RteDeviceItem::TYPE type) const
+size_t RteDeviceItemAggregate::GetChildCount(RteDeviceItem::TYPE type) const
 {
-  int cnt = 0;
-  auto childmap = GetChildren();
-  if (childmap.empty()) {
-    return (0);
-  }
-
+  size_t cnt = 0;
+  auto& childmap = GetChildren();
   for (auto it = childmap.begin(); it != childmap.end(); it++) {
     if (it->second && it->second->GetType() == type) {
       cnt++;

@@ -352,7 +352,7 @@ RtePackage* RteModel::ConstructPack(XMLTreeElement* xmlTreeDoc)
     GetCallback()->PackProcessed(package->GetID(), true);
     return package;
   }
-  GetCallback()->PackProcessed(xmlTreeDoc->GetFileName(), false);
+  GetCallback()->PackProcessed(xmlTreeDoc->GetRootFileName(), false);
   const list<string>& errors = package->GetErrors();
   m_errors.insert(m_errors.end(), errors.begin(), errors.end());
   delete package;

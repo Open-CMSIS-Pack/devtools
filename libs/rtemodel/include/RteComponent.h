@@ -51,7 +51,7 @@ public:
    * @brief get number of files described in this component
    * @return number of <file> elements
   */
-  int GetFileCount() const;
+  size_t GetFileCount() const;
   /**
    * @brief get <files> element
    * @return pointer to RteFileContainer representing container for RteFile items
