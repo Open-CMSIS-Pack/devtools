@@ -12,6 +12,7 @@ on:
       - 'tools/packchk/**'
       - 'libs/xml**'
       - 'libs/rte**'
+      - '!**/docs/**/*'
       - '!**/*.md'
   pull_request:
     paths:
@@ -22,6 +23,7 @@ on:
       - 'tools/packchk/**'
       - 'libs/xml**'
       - 'libs/rte**'
+      - '!**/docs/**/*'
       - '!**/*.md'
   release:
     types: [published]
