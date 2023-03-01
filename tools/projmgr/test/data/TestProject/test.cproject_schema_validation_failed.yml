@@ -19,7 +19,7 @@ project:
     - component: Keil::USB&MDK-Pro:CORE&Release@6.15.1
     - component: ARM::CMSIS:CORE@>=5.5.0
     - component: Vendor Test::Class (Test1/Test+2/Test-3.Test4)&Cbundle (Test1/Test+2/Test-3.Test4):Group  (Test1/Test+2/Test-3.Test4):Sub (Test1/Test+2/Test-3.Test4:Test5)&Variant (Test1/Test+2/Test-3.Test4)@>=5.05.00-dev.01-alpha09
-    - component: ARM Temp Test::CMSIS&Temp-1 I/O Test:CORE/Dummy:Temp-1&Temp-2I/P@>=5.5.0
+    - component: ARM Temp-Test::CMSIS&Temp-1 I/O Test:CORE/Dummy:Temp-1&Temp-2I/P@>=5.5.0
   groups:
     - group: Sources
       files: 

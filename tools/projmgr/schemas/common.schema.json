@@ -502,7 +502,7 @@
     },
     "ComponentID": {
       "type": "string",
-      "pattern": "(^[A-Za-z\\d][\\w+()'\\/\\- \\.]+$)|(^([A-Za-z\\d][A-Za-z\\d ]+::)?([A-Za-z\\d][\\w+()'\\/\\- \\.]+)(&[A-Za-z\\d][\\w+()'\\/\\- \\.]+)?(:[A-Za-z\\d][\\w+()'\\/\\- \\.]+)(:[A-Za-z\\d][\\w+():\\/\\- \\.]*)?(&[A-Za-z\\d][\\w+()'\\/\\- \\.]+)?(@(>=)?((0|[1-9]\\d*)\\.([\\d]+)(\\.([\\d]+))?(\\-((0|[1-9]\\d*|\\d*[a-zA-Z-][\\da-zA-Z-]*)(\\.(0|[1-9]\\d*|\\d*[a-zA-Z-][\\da-zA-Z-]*))*))?))?$)",
+      "pattern": "(^[A-Za-z\\d][\\w+()'\\/\\- \\.]+$)|(^([A-Za-z\\d][A-Za-z\\d \\-]+::)?([A-Za-z\\d][\\w+()'\\/\\- \\.]+)(&[A-Za-z\\d][\\w+()'\\/\\- \\.]+)?(:[A-Za-z\\d][\\w+()'\\/\\- \\.]+)(:[A-Za-z\\d][\\w+():\\/\\- \\.]*)?(&[A-Za-z\\d][\\w+()'\\/\\- \\.]+)?(@(>=)?((0|[1-9]\\d*)\\.([\\d]+)(\\.([\\d]+))?(\\-((0|[1-9]\\d*|\\d*[a-zA-Z-][\\da-zA-Z-]*)(\\.(0|[1-9]\\d*|\\d*[a-zA-Z-][\\da-zA-Z-]*))*))?))?$)",
       "description": "Name of the software component. It can be a free text or a component identifier in the format [Cvendor::] Cclass [&Cbundle] :Cgroup [:Csub] [&Cvariant] [@[>=]Cversion]"
     },
     "ComponentsType": {
