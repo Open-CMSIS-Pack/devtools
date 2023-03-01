@@ -1118,8 +1118,8 @@ bool CbuildLayer::CompareSections (const XMLTreeElement* first, const XMLTreeEle
 
 bool CbuildLayer::ConstructModel (const XMLTreeElement* compilers, const CbuildLayerArgs& args) {
   const string& toolchain = compilers->GetFirstChild()->GetAttribute("name");
-  const string& ext = CMEXT, update = "", intdir = "";
-  if (!CbuildKernel::Get()->Construct({args.file, args.rtePath, args.compilerRoot, toolchain, ext, update, intdir, false, true})) {
+  const string& update = "", intdir = "";
+  if (!CbuildKernel::Get()->Construct({args.file, args.rtePath, args.compilerRoot, toolchain, update, intdir, args.envVars, false, true})) {
     return false;
   }
   m_layerFiles = CbuildKernel::Get()->GetModel()->GetLayerFiles();

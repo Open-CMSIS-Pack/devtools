@@ -36,8 +36,8 @@ TEST_F(CbuildUtilsTests, GetFileType)
   {"Test.asm", RteFile::Category::SOURCE_ASM}, {"Test.s", RteFile::Category::SOURCE_ASM },
   {"Test.S",RteFile::Category::SOURCE_ASM }, {"Test.txt",RteFile::Category::OTHER} };
 
-  for (auto elem = 0; elem <= RteFile::Category::OTHER &&
-    elem != RteFile::Category::SOURCE; ++elem) {
+  for (int elem = 0; elem <= (int)RteFile::Category::OTHER &&
+    elem != (int)RteFile::Category::SOURCE; ++elem) {
      cat = CbuildUtils::GetFileType(static_cast<RteFile::Category>(elem), "");
      EXPECT_EQ(cat, static_cast<RteFile::Category>(elem));
   }

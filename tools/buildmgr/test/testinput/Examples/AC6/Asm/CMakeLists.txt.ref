@@ -1,6 +1,6 @@
 # CMSIS Build CMakeLists generated on 2021-07-05T10:53:33
 
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.22)
 
 # Target options
 
@@ -19,19 +19,30 @@ set(AS_FLAGS_GLOBAL "-gdwarf-3 -masm=auto")
 set(CC_FLAGS_GLOBAL "-Wno-documentation -Wno-documentation-unknown-command -Wno-license-management -Wno-missing-noreturn -Wno-missing-prototypes -Wno-missing-variable-declarations -Wno-nonportable-include-path -Wno-packed -Wno-parentheses-equality  -Wno-reserved-id-macro -Wno-sign-conversion -Wno-unused-macros -ffunction-sections -fno-rtti -fshort-enums -fshort-wchar -funsigned-char -gdwarf-3 -std=c99 -xc")
 set(LD_FLAGS_GLOBAL "--callgraph --entry=Reset_Handler --info sizes --info summarysizes --info totals --info unused --info veneers --load_addr_map_info --map --strict --summary_stderr --symbols --xref")
 set(LD_SCRIPT "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/Asm/RTE/Device/ARMCM3/ARMCM3_ac6.sct")
+set(OUT_NAME Blinky)
+set(HEX_FILE "${OUT_NAME}.hex")
+set(BIN_FILE "${OUT_NAME}.bin")
 
 set(DEFINES
   ARMCM3
   _RTE_
 )
 
+set(DEFINES_C:/WORK/devtools-external-wip/build/tools/buildmgr/test/integrationtests/testdata/Examples/AC6/Asm/AsmArm.s
+  ARMCM3
+  _RTE_
+  HEXADECIMAL_TEST=0xABCDEF
+  DECIMAL_TEST=1234567890
+  STRING_TEST="String0"
+)
+
 set(INC_PATHS
-  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/Core/Include"
-  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/Include"
-  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/RTX/Include"
-  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/Device/ARM/ARMCM3/Include"
   "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/Asm/RTE/CMSIS"
   "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/Asm/RTE/_Target"
+  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.9.0/CMSIS/Core/Include"
+  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.9.0/CMSIS/RTOS2/Include"
+  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.9.0/CMSIS/RTOS2/RTX/Include"
+  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.9.0/Device/ARM/ARMCM3/Include"
 )
 
 set(ASM_SRC_FILES
@@ -52,16 +63,16 @@ set(AS_LEG_SRC_FILES
 )
 
 set(CC_SRC_FILES
+  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.9.0/CMSIS/RTOS2/RTX/Source/rtx_lib.c"
+  "C:/Users/Test/AppData/Local/Arm/Packs/Keil/ARM_Compiler/1.6.3/Source/retarget_io.c"
   "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/Asm/Blinky.c"
   "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/Asm/RTE/CMSIS/RTX_Config.c"
-  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/RTX/Source/rtx_lib.c"
-  "C:/Users/Test/AppData/Local/Arm/Packs/Keil/ARM_Compiler/1.6.3/Source/retarget_io.c"
   "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/Asm/RTE/Device/ARMCM3/startup_ARMCM3.c"
   "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/Asm/RTE/Device/ARMCM3/system_ARMCM3.c"
 )
 
 set(LIB_FILES
-  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0/CMSIS/RTOS2/RTX/Library/ARM/RTX_CM3.lib"
+  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.9.0/CMSIS/RTOS2/RTX/Library/ARM/RTX_CM3.lib"
 )
 
 set(AS_FLAGS_C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/Asm/ArmSyntax.s "-gdwarf-3 -masm=armasm")
@@ -70,19 +81,25 @@ set(AS_FLAGS_C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/Asm/AsmA
 
 # Toolchain config map
 
-include ("C:/sandbox/devtools/build/TestOutput/cbuild/etc/AC6.6.16.0.cmake")
+set(TOOLCHAIN_VERSION_MIN "6.0.0")
+set(TOOLCHAIN_VERSION_MAX "6.99.99")
+include ("C:/sandbox/cbuild/etc/AC6.6.18.0.cmake")
+include ("C:/sandbox/cbuild/etc/CMSIS-Build-Utils.cmake")
 
 # Setup project
 
 project(${TARGET} LANGUAGES ASM AS_ARM AS_GNU AS_LEG C)
 
+cbuild_get_running_toolchain(TOOLCHAIN_ROOT TOOLCHAIN_VERSION C)
+
 # Global Flags
 
-set(CMAKE_ASM_FLAGS "${ASM_CPU} ${ASM_BYTE_ORDER} ${ASM_DEFINES} ${ASM_FLAGS}")
-set(CMAKE_AS_ARM_FLAGS "${AS_ARM_CPU} ${AS_ARM_BYTE_ORDER} ${AS_ARM_DEFINES} ${AS_ARM_FLAGS}")
-set(CMAKE_AS_GNU_FLAGS "${AS_GNU_CPU} ${AS_GNU_BYTE_ORDER} ${AS_GNU_DEFINES} ${AS_GNU_FLAGS}")
-set(CMAKE_AS_LEG_FLAGS "${AS_LEG_CPU} ${AS_LEG_BYTE_ORDER} ${AS_LEG_DEFINES} ${AS_LEG_FLAGS}")
-set(CMAKE_C_FLAGS "${CC_CPU} ${CC_BYTE_ORDER} ${CC_DEFINES} ${CC_SECURE} ${CC_FLAGS} ${CC_FLAGS_GLOBAL} ${CC_SYS_INC_PATHS}")
+set(CMAKE_ASM_FLAGS "${ASM_CPU} ${ASM_BYTE_ORDER} ${ASM_FLAGS}")
+set(CMAKE_AS_ARM_FLAGS "${AS_ARM_CPU} ${AS_ARM_BYTE_ORDER} ${AS_ARM_FLAGS}")
+set(CMAKE_AS_GNU_FLAGS "${AS_GNU_CPU} ${AS_GNU_BYTE_ORDER} ${AS_GNU_FLAGS}")
+set(CMAKE_AS_LEG_FLAGS "${AS_LEG_CPU} ${AS_LEG_BYTE_ORDER} ${AS_LEG_FLAGS}")
+cbuild_get_system_includes(CC_SYS_INC_PATHS_LIST CC_SYS_INC_PATHS)
+set(CMAKE_C_FLAGS "${CC_CPU} ${CC_BYTE_ORDER} ${CC_SECURE} ${CC_FLAGS} ${CC_FLAGS_GLOBAL} ${CC_SYS_INC_PATHS}")
 set(CMAKE_C_LINK_FLAGS "${LD_CPU} ${_LS}\"${LD_SCRIPT}\" ${LD_SECURE} ${LD_FLAGS_GLOBAL} ${LD_FLAGS}")
 
 # Local Flags
@@ -131,6 +148,83 @@ foreach(SRC ${AS_LEG_SRC_FILES})
   set_source_files_properties(${SRC} PROPERTIES LANGUAGE AS_LEG)
 endforeach()
 
+# File Includes, Defines and Options
+
+foreach(SRC ${ASM_SRC_FILES})
+  string(REPLACE " " "?" S ${SRC})
+  get_source_file_property(FILE_FLAGS ${SRC} COMPILE_FLAGS)
+  if(FILE_FLAGS STREQUAL "NOTFOUND")
+    set(FILE_FLAGS)
+  endif()
+  if(DEFINED DEFINES_${S})
+    cbuild_set_defines(ASM DEFINES_${S})
+    string(APPEND FILE_FLAGS " ${DEFINES_${S}}")
+  else()
+    string(APPEND FILE_FLAGS " ${ASM_DEFINES}")
+  endif()
+  set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS "${FILE_FLAGS}")
+endforeach()
+
+foreach(SRC ${AS_ARM_SRC_FILES})
+  string(REPLACE " " "?" S ${SRC})
+  get_source_file_property(FILE_FLAGS ${SRC} COMPILE_FLAGS)
+  if(FILE_FLAGS STREQUAL "NOTFOUND")
+    set(FILE_FLAGS)
+  endif()
+  if(DEFINED DEFINES_${S})
+    cbuild_set_defines(AS_ARM DEFINES_${S})
+    string(APPEND FILE_FLAGS " ${DEFINES_${S}}")
+  else()
+    string(APPEND FILE_FLAGS " ${AS_ARM_DEFINES}")
+  endif()
+  set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS "${FILE_FLAGS}")
+endforeach()
+
+foreach(SRC ${AS_GNU_SRC_FILES})
+  string(REPLACE " " "?" S ${SRC})
+  get_source_file_property(FILE_FLAGS ${SRC} COMPILE_FLAGS)
+  if(FILE_FLAGS STREQUAL "NOTFOUND")
+    set(FILE_FLAGS)
+  endif()
+  if(DEFINED DEFINES_${S})
+    cbuild_set_defines(AS_GNU DEFINES_${S})
+    string(APPEND FILE_FLAGS " ${DEFINES_${S}}")
+  else()
+    string(APPEND FILE_FLAGS " ${AS_GNU_DEFINES}")
+  endif()
+  set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS "${FILE_FLAGS}")
+endforeach()
+
+foreach(SRC ${AS_LEG_SRC_FILES})
+  string(REPLACE " " "?" S ${SRC})
+  get_source_file_property(FILE_FLAGS ${SRC} COMPILE_FLAGS)
+  if(FILE_FLAGS STREQUAL "NOTFOUND")
+    set(FILE_FLAGS)
+  endif()
+  if(DEFINED DEFINES_${S})
+    cbuild_set_defines(AS_LEG DEFINES_${S})
+    string(APPEND FILE_FLAGS " ${DEFINES_${S}}")
+  else()
+    string(APPEND FILE_FLAGS " ${AS_LEG_DEFINES}")
+  endif()
+  set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS "${FILE_FLAGS}")
+endforeach()
+
+foreach(SRC ${CC_SRC_FILES})
+  string(REPLACE " " "?" S ${SRC})
+  get_source_file_property(FILE_FLAGS ${SRC} COMPILE_FLAGS)
+  if(FILE_FLAGS STREQUAL "NOTFOUND")
+    set(FILE_FLAGS)
+  endif()
+  if(DEFINED DEFINES_${S})
+    cbuild_set_defines(CC DEFINES_${S})
+    string(APPEND FILE_FLAGS " ${DEFINES_${S}}")
+  else()
+    string(APPEND FILE_FLAGS " ${CC_DEFINES}")
+  endif()
+  set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS "${FILE_FLAGS}")
+endforeach()
+
 # Compilation Database
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -139,7 +233,7 @@ add_custom_target(database COMMAND ${CMAKE_COMMAND} -E copy_if_different "${INT_
 # Setup Target
 
 add_executable(${TARGET} ${ASM_SRC_FILES} ${AS_ARM_SRC_FILES} ${AS_GNU_SRC_FILES} ${AS_LEG_SRC_FILES} ${CC_SRC_FILES})
-set(CMAKE_EXECUTABLE_SUFFIX ${EXE_SUFFIX})
+set_target_properties(${TARGET} PROPERTIES PREFIX "" SUFFIX "${EXE_SUFFIX}" OUTPUT_NAME "${TARGET}")
 set_target_properties(${TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${OUT_DIR} LINK_DEPENDS ${LD_SCRIPT})
 target_include_directories(${TARGET} PUBLIC ${INC_PATHS})
 target_link_libraries(${TARGET} ${LIB_FILES})

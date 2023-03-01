@@ -1,27 +1,33 @@
 # This file maps the CMSIS project options to toolchain settings.
 #
-#   - Applies to toolchain: ARM Compiler 5.06 update 7 (build 960)
+#   - Applies to toolchain: ARM Compiler 5.06 update 7 (build 960) and greater
 
 ############### EDIT BELOW ###############
 # Set base directory of toolchain
 set(TOOLCHAIN_ROOT)
 set(TOOLCHAIN_VERSION "5.6.7")
-set(EXT)
 
 ############ DO NOT EDIT BELOW ###########
 
-set(TOOLCHAIN_STRING "AC5_TOOLCHAIN_${TOOLCHAIN_VERSION}")
-string(REPLACE "." "_" TOOLCHAIN_STRING ${TOOLCHAIN_STRING})
-if(DEFINED ENV{${TOOLCHAIN_STRING}})
-  cmake_path(SET ${TOOLCHAIN_STRING} "$ENV{${TOOLCHAIN_STRING}}")
-  message(STATUS "Using ${TOOLCHAIN_STRING}='${${TOOLCHAIN_STRING}}'")
-  set(TOOLCHAIN_ROOT "${${TOOLCHAIN_STRING}}")
+set(AS "armasm")
+set(CC "armcc")
+set(CXX "armcc")
+set(OC "fromelf")
+
+if(DEFINED REGISTERED_TOOLCHAIN_ROOT)
+  set(TOOLCHAIN_ROOT "${REGISTERED_TOOLCHAIN_ROOT}")
+endif()
+if(DEFINED REGISTERED_TOOLCHAIN_VERSION)
+  set(TOOLCHAIN_VERSION "${REGISTERED_TOOLCHAIN_VERSION}")
 endif()
 
-set(AS ${TOOLCHAIN_ROOT}/armasm${EXT})
-set(CC ${TOOLCHAIN_ROOT}/armcc${EXT})
-set(CXX ${TOOLCHAIN_ROOT}/armcc${EXT})
-set(OC ${TOOLCHAIN_ROOT}/fromelf${EXT})
+if(DEFINED TOOLCHAIN_ROOT AND NOT TOOLCHAIN_ROOT STREQUAL "")
+  set(EXT)
+  set(AS ${TOOLCHAIN_ROOT}/${AS}${EXT})
+  set(CC ${TOOLCHAIN_ROOT}/${CC}${EXT})
+  set(CXX ${TOOLCHAIN_ROOT}/${CXX}${EXT})
+  set(OC ${TOOLCHAIN_ROOT}/${OC}${EXT})
+endif()
 
 # Helpers
 
@@ -172,30 +178,16 @@ set (LIB_SUFFIX ".lib")
 set (EXE_SUFFIX ".axf")
 
 # ELF to HEX conversion
-set (ELF2HEX --i32combined --output "${OUT_DIR}/${TARGET}.hex" "${OUT_DIR}/${TARGET}${EXE_SUFFIX}")
+set (ELF2HEX --i32combined --output "${OUT_DIR}/${HEX_FILE}" "${OUT_DIR}/$<TARGET_PROPERTY:${TARGET},OUTPUT_NAME>$<TARGET_PROPERTY:${TARGET},SUFFIX>")
 
 # ELF to BIN conversion
-set (ELF2BIN --bin --output "${OUT_DIR}/${TARGET}.bin" "${OUT_DIR}/${TARGET}${EXE_SUFFIX}")
+set (ELF2BIN --bin --output "${OUT_DIR}/${BIN_FILE}" "${OUT_DIR}/$<TARGET_PROPERTY:${TARGET},OUTPUT_NAME>$<TARGET_PROPERTY:${TARGET},SUFFIX>")
 
 # Set CMake variables for toolchain initialization
 set(CMAKE_SYSTEM_NAME Generic)
 set(CMAKE_CROSSCOMPILING TRUE)
+set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 set(CMAKE_ASM_COMPILER "${AS}")
 set(CMAKE_C_COMPILER "${CC}")
 set(CMAKE_CXX_COMPILER "${CXX}")
 set(CMAKE_OBJCOPY "${OC}")
-set(CMAKE_ASM_COMPILER_FORCED TRUE)
-set(CMAKE_C_COMPILER_FORCED TRUE)
-set(CMAKE_CXX_COMPILER_FORCED TRUE)
-
-# Set CMake variables for skipping compiler identification
-set(CMAKE_C_COMPILER_ID "ARMCC")
-set(CMAKE_C_COMPILER_ID_RUN TRUE)
-set(CMAKE_C_COMPILER_VERSION "${TOOLCHAIN_VERSION}")
-set(CMAKE_C_COMPILER_FORCED TRUE)
-set(CMAKE_C_COMPILER_WORKS TRUE)
-set(CMAKE_CXX_COMPILER_ID "${CMAKE_C_COMPILER_ID}")
-set(CMAKE_CXX_COMPILER_ID_RUN "${CMAKE_C_COMPILER_ID_RUN}")
-set(CMAKE_CXX_COMPILER_VERSION "${CMAKE_C_COMPILER_VERSION}")
-set(CMAKE_CXX_COMPILER_FORCED "${CMAKE_C_COMPILER_FORCED}")
-set(CMAKE_CXX_COMPILER_WORKS "${CMAKE_C_COMPILER_WORKS}")

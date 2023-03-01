@@ -172,7 +172,7 @@ RteItem::ConditionResult RteTarget::GetComponents(const map<string, string>& com
   RteItem::ConditionResult result = RteItem::MISSING;
   for (auto it = m_filteredComponents.begin(); it != m_filteredComponents.end(); it++) {
     RteComponent* c = it->second;
-    if (c->HasComponentAttributes(componentAttributes)) {
+    if (c->MatchComponentAttributes(componentAttributes)) {
       components.insert(c);
       if (IsComponentSelected(c)) {
         result = RteItem::FULFILLED;
@@ -185,7 +185,7 @@ RteItem::ConditionResult RteTarget::GetComponents(const map<string, string>& com
 }
 
 
-RteItem::ConditionResult RteTarget::GetComponentAggregates(const RteAttributes& componentAttributes, set<RteComponentAggregate*>& aggregates) const
+RteItem::ConditionResult RteTarget::GetComponentAggregates(const XmlItem& componentAttributes, set<RteComponentAggregate*>& aggregates) const
 {
   return m_classes->GetComponentAggregates(componentAttributes, aggregates);
 }
@@ -557,13 +557,12 @@ void RteTarget::AddBoadProperties(RteDeviceItem* device, const string& processor
   if (!board)
     return;
 
-  // for now only algoritms are added
-  for (RteItem* item : board->GetChildren()) {
-    if (item && item->GetTag() == "algorithm") {
-      const string& pname = item->GetProcessorName();
-      if (pname.empty() || pname == processorName) {
-        AddAlgorithm(item, board);
-      }
+  // for now only algorithms are added
+  list<RteItem*> algos;
+  for (RteItem* item : board->GetAlgorithms(algos)) {
+    const string& pname = item->GetProcessorName();
+    if (pname.empty() || pname == processorName) {
+      AddAlgorithm(item, board);
     }
   }
 }
@@ -594,7 +593,7 @@ void RteTarget::AddDeviceProperties(RteDeviceItem* d, const string& processorNam
         const string& header = p->GetAttribute("header");
         if (!header.empty()) {
           // device header is a special file :
-          // we need its name, but should use its path only if no Device.Startup component is vavailable
+          // we need its name, but should use its path only if no Device.Startup component is available
           m_deviceHeader = RteUtils::ExtractFileName(header);
           RteFile* deviceHeaderFile = NULL;
           if (m_deviceStartupComponent) {
@@ -602,10 +601,10 @@ void RteTarget::AddDeviceProperties(RteDeviceItem* d, const string& processorNam
             deviceHeaderFile = FindFile(m_deviceHeader, m_deviceStartupComponent);
           }
           if (deviceHeaderFile) {
-            AddFile(m_deviceHeader, RteFile::HEADER, "Device header");
+            AddFile(m_deviceHeader, RteFile::Category::HEADER, "Device header", m_deviceStartupComponent, deviceHeaderFile);
           } else {
-            AddIncludePath(RteUtils::ExtractFilePath(packagePath + header, false));
-            AddFile(RteUtils::ExtractFileName(header), RteFile::HEADER, "Device header");
+            AddIncludePath(RteUtils::ExtractFilePath(packagePath + header, false), RteFile::Language::LANGUAGE_NONE);
+            AddFile(RteUtils::ExtractFileName(header), RteFile::Category::HEADER, "Device header");
           }
         }
         const string& define = p->GetAttribute("define");
@@ -757,13 +756,15 @@ void RteTarget::AddFileInstance(RteFileInstance* fi)
     effectivePathName = "./" + id;
   }
   if (fi->IsUsedByTarget(GetName())) {
-    if (cat == RteFile::HEADER) {
-      string incPath = "./" + fi->GetIncludePath();
-      AddIncludePath(incPath);
-      effectivePathName = fi->GetIncludeFileName();
-    }
     RteComponent* c = ci ? ci->GetComponent(GetName()) : NULL;
-    AddFile(effectivePathName, cat, fi->GetHeaderComment(), c);
+    if (cat == RteFile::Category::HEADER) {
+      effectivePathName = fi->GetIncludeFileName();
+      string incPath = "./" + fi->GetIncludePath();
+      if (fi->GetScope() != RteFile::Scope::SCOPE_HIDDEN) {
+        AddIncludePath(incPath, fi->GetLanguage());
+      }
+    }
+    AddFile(effectivePathName, cat, fi->GetHeaderComment(), c, fi->GetFile(GetName()));
   }
   string groupName = fi->GetProjectGroupName();
   AddProjectGroup(groupName);
@@ -802,50 +803,63 @@ void RteTarget::AddFile(RteFile* f, RteComponentInstance* ci)
   } else {
     RteFile::Category cat = f->GetCategory();
     string pathName;
-    if (cat == RteFile::HEADER) {
-      AddIncludePath(f->GetIncludePath());
+    if (cat == RteFile::Category::HEADER) {
+      if (f->GetScope() == RteFile::Scope::SCOPE_HIDDEN) {
+        return; // do not add hidden headers
+      }
+      if (f->GetScope() == RteFile::Scope::SCOPE_PRIVATE) {
+        AddPrivateIncludePath(f->GetIncludePath(), c, f->GetLanguage());
+      } else {
+        AddIncludePath(f->GetIncludePath(), f->GetLanguage());
+      }
       pathName = f->GetIncludeFileName();
     } else {
       pathName = f->GetOriginalAbsolutePath();
     }
-    AddFile(pathName, cat, c->GetAggregateDisplayName(), c);
-    if (cat == RteFile::LIBRARY)
+    AddFile(pathName, cat, c->GetAggregateDisplayName(), c, f);
+    if (cat == RteFile::Category::LIBRARY)
       f->GetAbsoluteSourcePaths(m_librarySourcePaths);
   }
 }
 
 
-void RteTarget::AddFile(const string& pathName, RteFile::Category cat, const string& comment, RteComponent* c)
+void RteTarget::AddFile(const string& pathName, RteFile::Category cat, const string& comment, RteComponent* c, RteFile* f)
 {
   if (pathName.empty())
     return;
+  RteFile::Language language = f ? f->GetLanguage() : RteFile::Language::LANGUAGE_NONE;
   switch (cat) {
-  case RteFile::HEADER:
+  case RteFile::Category::HEADER:
   {
-    m_headers[pathName] = comment;
+    if (!f || f->GetScope() != RteFile::Scope::SCOPE_HIDDEN) {
+      m_headers[pathName] = comment;
+    }
     break;
   }
-  case RteFile::INCLUDE:
+  case RteFile::Category::INCLUDE:
   {
-    string incpath = RteUtils::RemoveTrailingBackslash(pathName);
-    AddIncludePath(incpath);
+    if (f && f->GetScope() == RteFile::Scope::SCOPE_PRIVATE) {
+      AddPrivateIncludePath(pathName, c, language);
+    } else {
+      AddIncludePath(pathName, language);
+    }
   }
   break;
-  case RteFile::LIBRARY:
+  case RteFile::Category::LIBRARY:
     // Note: ED 01.08.2013 - libs are added to project directly, see RteFile::IsAddToProject()
     m_libraries.insert(pathName);
     break;
-  case RteFile::OBJECT:
+  case RteFile::Category::OBJECT:
     // Note: ED 01.08.2013 - objs are added to project directly, see RteFile::IsAddToProject()
     m_objects.insert(pathName);
     break;
-  case RteFile::SVD:
+  case RteFile::Category::SVD:
     m_svd = pathName;
     break;
-  case RteFile::PRE_INCLUDE_LOCAL:
+  case RteFile::Category::PRE_INCLUDE_LOCAL:
     AddPreIncludeFile(pathName, c);
     break;
-  case RteFile::PRE_INCLUDE_GLOBAL:
+  case RteFile::Category::PRE_INCLUDE_GLOBAL:
     AddPreIncludeFile(pathName, NULL);
     break;
   default:
@@ -854,7 +868,6 @@ void RteTarget::AddFile(const string& pathName, RteFile::Category cat, const str
     string ext = RteUtils::ExtractFileExtension(pathName);
     if (ext == "scvd") {
       m_scvdFiles[pathName] = c;
-
     }
   }
   break;
@@ -864,12 +877,8 @@ void RteTarget::AddFile(const string& pathName, RteFile::Category cat, const str
 void RteTarget::AddPreIncludeFile(const string& pathName, RteComponent* c) {
   if (pathName.empty())
     return;
-  auto it = m_PreIncludeFiles.find(c);
-  if (it == m_PreIncludeFiles.end()) {
-    m_PreIncludeFiles[c] = set<string>();
-    it = m_PreIncludeFiles.find(c);
-  }
-  it->second.insert(pathName);
+  auto& preIncludeFiles = m_PreIncludeFiles.try_emplace(c, set<string>()).first->second;
+  preIncludeFiles.insert(pathName);
 }
 
 const set<string>& RteTarget::GetPreIncludeFiles(RteComponent* c) const
@@ -881,21 +890,88 @@ const set<string>& RteTarget::GetPreIncludeFiles(RteComponent* c) const
   return RteUtils::EMPTY_STRING_SET;
 }
 
+const std::set<std::string>& RteTarget::GetIncludePaths(RteFile::Language language) const
+{
+  return GetPrivateIncludePaths(nullptr, language);
+}
 
-void RteTarget::AddIncludePath(const string& path) {
+void RteTarget::AddIncludePath(const string& path, RteFile::Language language)
+{
+  InternalAddIncludePath(path, nullptr, language);
+}
 
-  string incpath = RteUtils::RemoveTrailingBackslash(path);
-  if (incpath.empty())
+
+void RteTarget::AddPrivateIncludePath(const string& path, RteComponent* c, RteFile::Language language)
+{
+  if (c) {
+    InternalAddIncludePath(path, c, language);
+  }
+}
+
+void RteTarget::InternalAddIncludePath(const string& path, RteComponent* c, RteFile::Language language)
+{
+  string incpath = NormalizeIncPath(path);
+  if (incpath.empty()) {
     return;
-  // replace to relative if an include path starts with project path
-  RteProject* proj = GetProject();
-  if (proj) {
-    const string& projPath = proj->GetProjectPath();
-    if (!projPath.empty() && incpath.find(projPath) == 0) {
-      incpath = incpath.replace(0, projPath.length(), "./");
+  }
+  // ensures collections for the language and the component exist
+  m_includePaths[c][language].insert(incpath);
+}
+
+const std::set<std::string>& RteTarget::GetPrivateIncludePaths(RteComponent* c, RteFile::Language language) const
+{
+  // get collection specific to component (or global if c == nullptr)
+  auto it = m_includePaths.find(c);
+  if (it != m_includePaths.end()) {
+    auto& pathsMap = it->second;
+    auto it1 = pathsMap.find(language);
+    if (it1 != pathsMap.end()) {
+      return it1->second;
     }
   }
-  m_includePaths.insert(incpath);
+  return RteUtils::EMPTY_STRING_SET;
+}
+
+std::set<std::string>& RteTarget::GetEffectivePrivateIncludePaths(std::set<std::string>& includePaths,
+  RteComponent* c, RteFile::Language language) const
+{
+  auto& languagePaths = GetPrivateIncludePaths(c, language);
+  includePaths.insert(languagePaths.begin(), languagePaths.end());
+  if (language == RteFile::Language::LANGUAGE_C || language == RteFile::Language::LANGUAGE_CPP) {
+    GetEffectivePrivateIncludePaths(includePaths,c, RteFile::Language::LANGUAGE_C_CPP);
+  }
+  if (language != RteFile::Language::LANGUAGE_NONE) {
+    GetEffectivePrivateIncludePaths(includePaths, c, RteFile::Language::LANGUAGE_NONE);
+  }
+  return includePaths;
+}
+
+std::set<std::string>& RteTarget::GetEffectiveIncludePaths(std::set<std::string>& includePaths, RteFile::Language language, RteComponent* c) const
+{
+  GetEffectivePrivateIncludePaths(includePaths, c, language);
+  if (c) {
+    // combine with global
+    GetEffectivePrivateIncludePaths(includePaths, nullptr, language);
+  }
+  return includePaths;
+}
+
+string RteTarget::NormalizeIncPath(const string& path) const
+{
+  return ReplaceProjectPathWithDotSlash(RteUtils::RemoveTrailingBackslash(path));
+}
+
+string RteTarget::ReplaceProjectPathWithDotSlash(const string& path) const
+{
+  // replace to relative if path starts with project path
+  RteProject* proj = GetProject();
+  if (proj&& !path.empty()) {
+    const string& projPath = proj->GetProjectPath();
+    if (!projPath.empty() && path.find(projPath) == 0) {
+      return string("./") + path.substr(projPath.length());
+    }
+  }
+  return path;
 }
 
 
@@ -1441,7 +1517,7 @@ string RteTarget::GetCMSISCoreIncludePath() const
       const list<RteItem*>& files = fc->GetChildren();
       for (auto itf = files.begin(); itf != files.end(); itf++) {
         RteFile* f = dynamic_cast<RteFile*>(*itf);
-        if (f && f->GetCategory() == RteFile::INCLUDE) {
+        if (f && f->GetCategory() == RteFile::Category::INCLUDE) {
           string inc = f->GetOriginalAbsolutePath();
           return inc;
         }
@@ -1523,7 +1599,7 @@ RteItem::ConditionResult RteTarget::GetComponentsForApi(RteApi* api, const map<s
   int nSelected = 0;
   for (auto it = m_filteredComponents.begin(); it != m_filteredComponents.end(); it++) {
     RteComponent* c = it->second;
-    if (c->HasComponentAttributes(componentAttributes)) {
+    if (c->MatchComponentAttributes(componentAttributes)) {
       if (IsComponentSelected(c)) {
         components.insert(c);
         nSelected++;

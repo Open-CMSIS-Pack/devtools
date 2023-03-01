@@ -1,0 +1,6 @@
+build-idx:
+  csolution: ../data/TestGenerator/test-gpdsc.csolution.yml
+  cprojects:
+    - cproject: ../data/TestGenerator/test-gpdsc.cproject.yml
+  cbuilds:
+    - cbuild: test-gpdsc.Debug+CM0.cbuild.yml

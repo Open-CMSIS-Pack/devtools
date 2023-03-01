@@ -42,13 +42,13 @@ void InstallerTests::RunInstallerScript(const string& arg) {
 void InstallerTests::CheckInstallationDir(const string& path, bool expect) {
   vector<pair<string, vector<string>>> dirVec = {
 #ifdef _WIN32
-    { "bin", vector<string>{ "cbuild.sh", "cbuildgen.exe", "cpackget.exe"} },
+    { "bin", vector<string>{ "cbuild.sh", "cbuildgen.exe", "cpackget.exe", "csolution.exe"} },
 #else
-    { "bin", vector<string>{ "cbuild.sh", "cbuildgen", "cpackget"} },
+    { "bin", vector<string>{ "cbuild.sh", "cbuildgen", "cpackget", "csolution"} },
 #endif
     { "doc", vector<string>{ "index.html", "html"} },
     { "etc", vector<string>{ "AC5.5.6.7.cmake", "AC6.6.18.0.cmake", "CPRJ.xsd",
-      "GCC.11.2.1.cmake", "IAR.8.50.6.cmake", "setup"} }
+      "GCC.10.3.1.cmake", "IAR.9.32.1.cmake", "setup"} }
   };
 
   error_code ec;
@@ -72,12 +72,14 @@ void InstallerTests::CheckExtractedDir(const string& path, bool expect) {
     "cbuild.lin-amd64",    "cbuild.exe-amd64",
     "cpackget.lin-amd64",  "cpackget.exe-amd64",
     "cbuildgen.lin-amd64", "cbuildgen.exe-amd64",
+    "csolution.lin-amd64", "csolution.exe-amd64",
     "cbuild.lin-arm64",
     "cpackget.lin-arm64",
-    "cbuildgen.lin-arm64"} },
+    "cbuildgen.lin-arm64",
+    "csolution.lin-arm64"} },
     { "doc", vector<string>{ "index.html", "html"} },
     { "etc", vector<string>{"AC5.5.6.7.cmake", "AC6.6.18.0.cmake", "CPRJ.xsd",
-      "GCC.11.2.1.cmake", "IAR.8.50.6.cmake", "setup"} }
+      "GCC.10.3.1.cmake", "IAR.9.32.1.cmake", "setup"} }
   };
 
   error_code ec;

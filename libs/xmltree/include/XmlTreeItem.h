@@ -8,7 +8,7 @@
 /******************************************************************************/
 /*
  * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
- * 
+ *
  * SPDX-License-Identifier: Apache-2.0
  */
 /******************************************************************************/
@@ -20,7 +20,7 @@
 /**
  * @brief enumerators for visitor class
 */
-enum VISIT_RESULT {
+enum class VISIT_RESULT {
   CONTINUE_VISIT, // continue processing
   SKIP_CHILDREN,  // skip processing of the children
   CANCEL_VISIT    // abort any further processing
@@ -67,12 +67,19 @@ public:
    * @param parent pointer to parent element
    * @param tag name of tag
   */
-  XmlTreeItem(TITEM* parent, const std::string& tag) :XmlItem(tag), m_parent(parent) {}
+  XmlTreeItem(TITEM* parent, const std::string& tag) : XmlItem(tag), m_parent(parent) {}
+
+  /**
+   * @brief parametrized constructor to instantiate with given attributes
+   * @param parent pointer to parent element
+   * @param attributes collection as key to value pairs
+  */
+  XmlTreeItem(TITEM* parent, const std::map<std::string, std::string>& attributes) : XmlItem(attributes), m_parent(parent) {}
 
   /**
    * @brief destructor
   */
-  virtual ~XmlTreeItem() {
+  ~XmlTreeItem() override {
     m_parent = nullptr;
     XmlTreeItem::Clear();
   }
@@ -80,7 +87,7 @@ public:
   /**
    * @brief clear children and attributes of the instance
   */
-  virtual void Clear() override
+  void Clear() override
   {
     for (auto it = m_children.begin(); it != m_children.end(); it++) {
       delete *it;
@@ -183,6 +190,12 @@ public:
   const std::list<TITEM*>& GetEmptyList() const { static const std::list<TITEM*> sEmptyList; return sEmptyList; }
 
   /**
+  * @brief get number of children
+  * @return number of children
+  */
+  size_t GetChildCount() const { return m_children.size(); }
+
+  /**
    * @brief  getter for member m_children
    * @return list of pointer to instances of template type TITEM
   */
@@ -210,15 +223,13 @@ public:
    * @brief add a new child to the instance
    * @param child pointer to a new child of template type TITEM
    * @param prepend true to insert child at the front, false to append child at the list end
-   * @return pointer to the new child
+   * @return pointer to the new child to allow something like newChild = AddChild(CreateItem(tag))
   */
   virtual TITEM* AddChild(TITEM* child, bool prepend) {
-    // returns TITEM* to allow something like newChild = AddChild(CreateItem(tag))
-    if (child && child != GetThis() && child->GetParent() == GetThis()) {
-      if (prepend)
-        m_children.push_front(child);
-      else
-        m_children.push_back(child);
+    if (prepend) {
+      m_children.push_front(child);
+    } else {
+      m_children.push_back(child);
     }
     return child;
   }
@@ -229,7 +240,8 @@ public:
    * @return pointer to the new child
   */
   virtual TITEM* AddChild(TITEM* child) {
-    return AddChild(child, false);
+    m_children.push_back(child);
+    return child;
   }
 
   /**
@@ -258,6 +270,21 @@ public:
       }
     }
     return nullptr;
+  }
+
+  /**
+   * @brief get child's attribute value
+   * @param tag child's tag
+   * @param attribute child's attribute key
+   * @return child's attribute value string
+  */
+  const std::string& GetChildAttribute(const std::string& tag, const std::string& attribute) const
+  {
+    TITEM* child = GetFirstChild(tag);
+    if (child) {
+      return child->GetAttribute(attribute);
+    }
+    return EMPTY_STRING;
   }
 
   /**
@@ -313,15 +340,15 @@ public:
   }
 
   /**
-   * @brief recursively look for an instance of template type TITEM specified by tag and tag text
-   * @param tag name of tag
-   * @param text text of tag
+   * @brief recursively look for an instance of a child item specified by tag and text
+   * @param tag child tag to search for
+   * @param text child text to search for
    * @return pointer to the instance found, otherwise nullptr
   */
-  virtual TITEM* FindItem(const char* tag, const char* text) const
+  virtual TITEM* FindItem(const std::string& tag, const std::string& text) const
   {
-    if (!tag || GetTag() == tag) {
-      if (!text || GetText() == text)
+    if (!tag.empty() || GetTag() == tag) {
+      if (!text.empty() || GetText() == text)
         return GetThis();
     }
     for (auto it = m_children.begin(); it != m_children.end(); it++) {
@@ -336,11 +363,11 @@ public:
    * @brief getter for file name associated with this instance
    * @return file name string
   */
-  virtual const std::string& GetFileName() const
+  virtual const std::string& GetRootFileName() const
   {
     TITEM* root = GetRoot();
     if (root)
-      return root->GetFileName();
+      return root->GetRootFileName();
     return EMPTY_STRING;
   }
 
@@ -352,10 +379,10 @@ public:
   virtual bool AcceptVisitor(XmlItemVisitor<TITEM>* visitor) {
     if (visitor) {
       VISIT_RESULT res = visitor->Visit(GetThis());
-      if (res == CANCEL_VISIT) {
+      if (res == VISIT_RESULT::CANCEL_VISIT) {
         return false;
       }
-      if (res == CONTINUE_VISIT) {
+      if (res == VISIT_RESULT::CONTINUE_VISIT) {
         for (auto it = m_children.begin(); it != m_children.end(); it++) {
           if (!(*it)->AcceptVisitor(visitor))
             return false;
@@ -369,7 +396,7 @@ public:
   /**
    * @brief setter for text of a child given by tag
    * @param tag name of child instance
-   * @param text text to set
+   * @param text child text to set
   */
   virtual void SetChildText(const std::string& tag, const std::string& text) {
     GetOrCreateChild(tag)->SetText(text);
@@ -379,7 +406,7 @@ public:
    * @brief check if instance is empty
    * @return true if instance is empty otherwise false
   */
-  virtual bool IsEmpty() override { return !HasChildren() && XmlItem::IsEmpty(); }
+  virtual bool IsEmpty() const override { return !HasChildren() && XmlItem::IsEmpty(); }
 
   /**
    * @brief check if the given name is an attribute one
@@ -425,26 +452,6 @@ public:
       return GetAttribute(keyOrTag);
     }
     return GetChildText(keyOrTag);
-  }
-
-  /**
-   * @brief convert attribute value or child text to boolean
-   * @param keyOrTag name of attribute or child on first level
-   * @param defaultValue value to be returned in case of empty string
-   * @return true if value equal to "1" or "true", otherwise false
-  */
-  virtual bool GetItemValueAsBool(const std::string& keyOrTag, bool defaultValue = false) const override {
-    return StringToBool(GetItemValue(keyOrTag), defaultValue);
-  }
-
-  /**
-   * @brief convert attribute or child text to integer
-   * @param keyOrTag name of attribute or child on first level
-   * @param defaultValue value to be returned in case of empty string or conversion error
-   * @return converted integer value from attribute value or child text
-  */
-  virtual int GetItemValueAsInt(const std::string& keyOrTag, int defaultValue = -1) const override {
-    return StringToInt(GetItemValue(keyOrTag), defaultValue);
   }
 
 protected:

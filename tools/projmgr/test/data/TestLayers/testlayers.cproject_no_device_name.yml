@@ -2,7 +2,7 @@
 
 project:
   device: :cm0_core0
-  compiler: AC6@6.18.0
+  compiler: AC6@>=6.18.0
 
   layers:
     - layer: ./Layer2/layer2.clayer_package_with_pname.yml

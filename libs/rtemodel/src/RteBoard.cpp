@@ -63,29 +63,21 @@ const string& RteBoard::GetRevision() const {
   return GetAttribute("revision");
 }
 
-void RteBoard::GetDevices(list<RteItem*>& devices) const {
-  for (auto it = m_children.begin(); it != m_children.end(); it++) {
-    const string& tag = (*it)->GetTag();
-    if (tag == "mountedDevice" || tag == "compatibleDevice") {
-      devices.push_back(*it);
+void RteBoard::GetDevices(list<RteItem*>& devices, bool bCompatible, bool bMounted) const {
+  for (auto rteItem : m_children) {
+    const string& tag = rteItem->GetTag();
+    if ((bMounted && tag == "mountedDevice") || (bCompatible && tag == "compatibleDevice")) {
+      devices.push_back(rteItem);
     }
   }
 }
 
 void RteBoard::GetMountedDevices(list<RteItem*>& mountedDevices) const {
-  for (auto it = m_children.begin(); it != m_children.end(); it++) {
-    if ((*it)->GetTag() == "mountedDevice") {
-      mountedDevices.push_back(*it);
-    }
-  }
+  GetDevices(mountedDevices, false, true);
 }
 
 void RteBoard::GetCompatibleDevices(list<RteItem*>& compatibleDevices) const {
-  for (auto it = m_children.begin(); it != m_children.end(); it++) {
-    if ((*it)->GetTag() == "compatibleDevice") {
-      compatibleDevices.push_back(*it);
-    }
-  }
+  GetDevices(compatibleDevices, true, false);
 }
 
 // get vendor name for a mounted/compatible device (e.g. if no device aggregate available)
@@ -97,13 +89,10 @@ string RteBoard::GetDeviceVendorName(const string& devName) const
 
   list <RteItem*> devices;
   GetDevices(devices);
-
-  for (auto it = devices.begin(); it != devices.end(); it++) {
-    RteItem* item = (*it);
+  for (auto item: devices) {
     if (item == 0) {
       continue;
     }
-
     if (item->GetAttribute("Dname") == devName
       || item->GetAttribute("Dfamily") == devName
       || item->GetAttribute("DsubFamily") == devName)
@@ -116,17 +105,27 @@ string RteBoard::GetDeviceVendorName(const string& devName) const
   return (EMPTY_STRING);
 }
 
-bool RteBoard::HasMountedDevice(const RteAttributes& deviceAttributes) const
+bool RteBoard::HasMountedDevice(const XmlItem& deviceAttributes) const
 {
   return HasCompatibleDevice(deviceAttributes, true);
 }
 
-
-bool RteBoard::HasCompatibleDevice(const RteAttributes& deviceAttributes, bool bOnlyMounted) const
+bool RteBoard::HasMCU() const
 {
-  for (auto it = m_children.begin(); it != m_children.end(); it++) {
-    RteItem* rteItem = (*it);
+  for (auto rteItem : m_children) {
+    if (rteItem->GetTag() == "mountedDevice") {
+      const string& dname = rteItem->GetAttribute("Dname");
+      if (!dname.empty() && dname != "NO_MCU") {
+        return true;
+      }
+    }
+  }
+  return false;
+}
 
+bool RteBoard::HasCompatibleDevice(const XmlItem& deviceAttributes, bool bOnlyMounted) const
+{
+  for (auto rteItem : m_children) {
     const string& tag = rteItem->GetTag();
     if (tag == "mountedDevice" || (!bOnlyMounted && tag == "compatibleDevice")) {
       if (IsDeviceCompatible(deviceAttributes, *rteItem)) {
@@ -137,7 +136,7 @@ bool RteBoard::HasCompatibleDevice(const RteAttributes& deviceAttributes, bool b
   return false;
 }
 
-bool RteBoard::IsDeviceCompatible(const RteAttributes& deviceAttributes, const RteAttributes& boardDeviceAttributes)
+bool RteBoard::IsDeviceCompatible(const XmlItem& deviceAttributes, const RteItem& boardDeviceAttributes)
 {
   const string& dname = deviceAttributes.GetAttribute("Dname");
   const string& dvariant = deviceAttributes.GetAttribute("Dvariant");
@@ -154,15 +153,14 @@ bool RteBoard::IsDeviceCompatible(const RteAttributes& deviceAttributes, const R
 // collects board books as name-title collection
 void RteBoard::GetBooks(map<string, string>& books) const
 {
-  for (auto it = m_children.begin(); it != m_children.end(); it++) {
-    RteItem* item = *it;
-    if (item->GetTag() == "book") {
-      string title = item->GetAttribute("title");
+  for (auto rteItem : m_children) {
+    if (rteItem->GetTag() == "book") {
+      string title = rteItem->GetAttribute("title");
       if (title.empty())
         continue;
       title += " (" + GetName() + ")";
 
-      string doc = item->GetDocFile();
+      string doc = rteItem->GetDocFile();
       if (doc.empty())
         continue;
       books[doc] = title;
@@ -172,16 +170,25 @@ void RteBoard::GetBooks(map<string, string>& books) const
 
 RteItem* RteBoard::GetDebugProbe(const string& pname, int deviceIndex)
 {
-  for (auto it = m_children.begin(); it != m_children.end(); it++) {
-    RteItem* item = *it;
-    if (item->GetTag() == "debugProbe" && item->GetAttributeAsInt("deviceIndex", -1) == deviceIndex) {
-      const string& procName = item->GetProcessorName();
+  for (auto rteItem : m_children) {
+    if (rteItem->GetTag() == "debugProbe" && rteItem->GetAttributeAsInt("deviceIndex", -1) == deviceIndex) {
+      const string& procName = rteItem->GetProcessorName();
       if (pname.empty() || procName.empty() || procName == pname) {
-        return item;
+        return rteItem;
       }
     }
   }
   return nullptr;
+}
+
+list<RteItem*>& RteBoard::GetAlgorithms(std::list<RteItem*>& algos) const
+{
+  return GetChildrenByTag("algorithm", algos);
+}
+
+list<RteItem*>& RteBoard::GetMemories(std::list<RteItem*>& mems) const
+{
+  return GetChildrenByTag("memory", mems);
 }
 
 
@@ -223,6 +230,14 @@ bool RteBoard::ProcessXmlElement(XMLTreeElement* xmlElement)
     RteDeviceAlgorithm* algo = new RteDeviceAlgorithm(this);
     if (algo->Construct(xmlElement)) {
       AddItem(algo);
+      return true;
+    } else {
+      return false;
+    }
+  } else if (tag == "memory") {
+    RteDeviceMemory* mem = new RteDeviceMemory(this);
+    if (mem->Construct(xmlElement)) {
+      AddItem(mem);
       return true;
     } else {
       return false;

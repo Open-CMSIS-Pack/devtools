@@ -31,15 +31,14 @@ target_include_directories(CrossPlatform
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
   PRIVATE ./src/${CMAKE_SYSTEM_NAME})
 
-if(NOT EMSCRIPTEN AND
-   ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR
-    "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang"))
-# Add library to support std::filesystem
+# Explicitly link with stdc++fs for GCC 8
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND
+   CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9)
   target_link_libraries(CrossPlatform PUBLIC stdc++fs)
 endif()
 
 if(UNIX)
   target_include_directories(CrossPlatform PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/win)
 elseif(WIN32)
-  target_link_libraries(CrossPlatform PUBLIC Urlmon Shlwapi Version Dbghelp)
+  target_link_libraries(CrossPlatform PUBLIC urlmon shlwapi version dbghelp)
 endif()

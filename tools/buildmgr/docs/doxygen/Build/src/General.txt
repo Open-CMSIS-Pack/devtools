@@ -57,6 +57,18 @@ Software layers and Virtual I/O simplify these use cases:
     <th>Description</th>
   </tr>
   <tr>
+    <td>1.5.0</td>
+    <td>Release for review of initial development:
+      - updated cbuild utility v1.5.0
+      - updated cpackget utility v0.9.2
+      - added Star-MC1 flags for Arm Compiler
+      - added Star-MC1, Cortex-M55 and Cortex-M85 for IAR Compiler
+      - added 'output' filenames customization handling
+      - added 'gendir' component instance attribute
+      - rework toolchain registration
+      - fixed: include paths order
+      - fixed: file specific defines
+    </td>
     <td>1.4.0</td>
     <td>Release for review of initial development:
       - updated cbuild utility v1.4.0

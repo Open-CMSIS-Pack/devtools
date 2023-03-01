@@ -7,7 +7,7 @@
 
 #include <cassert>
 #include <limits.h>
-#include <Windows.h>
+#include <windows.h>
 
 using namespace std;
 // windows-specific methods
@@ -104,5 +104,19 @@ std::string CrossPlatformUtils::GetRegistryString(const std::string& key)
   }
 
   return value;
+}
+
+bool CrossPlatformUtils::CanExecute(const std::string& file)
+{
+  // on Windows we only check file extension: exe, com or bat;
+  std::string::size_type pos = file.find_last_of('.');
+  if (pos == string::npos) {
+    return false;
+  }
+  std::string ext = file.substr(pos + 1);
+  return
+    _stricmp(ext.c_str(), "exe") == 0 ||
+    _stricmp(ext.c_str(), "com") == 0 ||
+    _stricmp(ext.c_str(), "bat") == 0;
 }
 // end of Utils.cpp

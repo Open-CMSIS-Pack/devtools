@@ -391,13 +391,6 @@ bool ValidateSyntax::CheckPackageReleaseDate(RtePackage* pKg)
       }
     }
 
-    if(!latestDate.empty() && !releaseDate.empty()) {
-      int res = AlnumCmp::Compare(latestDate, releaseDate);     // sorting of release version is fixed. The latest version is at the top the earliest release tag is at the bottom
-      if(res < 0) {   // allow same date
-        LogMsg("M396", TAG("Date"), RELEASEVER(releaseVersion), RELEASEDATE(releaseDate), LATESTVER(latestVersion), LATESTDATE(latestDate), LINE(latestLineNo), lineNo);
-      }
-    }
-
     latestVersion = releaseVersion;
     latestDate = releaseDate;
     latestLineNo = lineNo;
@@ -1415,9 +1408,12 @@ bool ValidateSyntax::CheckForBoard(RteExample* example)
     return true;
   }
 
-  const RteAttributes& boardInfo = example->GetBoardInfo();
-  const string& boardName = boardInfo.GetAttribute("name");
-  const string& boardVendor = boardInfo.GetAttribute("vendor");
+  const RteItem* boardInfo = example->GetBoardInfoItem();
+  if (!boardInfo) {
+    return true;
+  }
+  const string& boardName = boardInfo->GetAttribute("name");
+  const string& boardVendor = boardInfo->GetAttribute("vendor");
   const string& exampleName = example->GetName();
   const RteBoardMap& boardMap = GetModel().GetBoards();
 
@@ -1538,13 +1534,13 @@ bool ValidateSyntax::BoardFindExamples(RteBoard* board)
 
     for(auto child : examples->GetChildren()) {
       RteExample* example = dynamic_cast<RteExample*>(child);
-      if(!example) {
+      if(!example ||!example->GetBoardInfoItem()) {
         continue;
       }
 
-      const RteAttributes& boardInfo = example->GetBoardInfo();
-      const string& boardName = boardInfo.GetAttribute("name");
-      const string& boardVendor = boardInfo.GetAttribute("vendor");
+      const RteItem* boardInfo = example->GetBoardInfoItem();
+      const string& boardName = boardInfo->GetAttribute("name");
+      const string& boardVendor = boardInfo->GetAttribute("vendor");
 
       if(!boardName.compare(name) && !boardVendor.compare(vendor)) {
         ok = true;

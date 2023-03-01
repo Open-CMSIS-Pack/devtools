@@ -82,7 +82,7 @@ TEST_F(PackChkIntegTests, CheckValidPack) {
 
 // Validate invalid software pack
 TEST_F(PackChkIntegTests, CheckInvalidPack) {
-  const char* argv[2];
+  const char* argv[3];
 
   const string& pdscFile = PackChkIntegTestEnv::localtestdata_dir +
     "/InvalidPack/TestVendor.TestInvalidPack.pdsc";
@@ -90,14 +90,15 @@ TEST_F(PackChkIntegTests, CheckInvalidPack) {
 
   argv[0] = (char*)"";
   argv[1] = (char*)pdscFile.c_str();
+  argv[2] = (char*)"--disable-validation";
 
   PackChk packChk;
-  EXPECT_EQ(1, packChk.Check(2, argv, nullptr));
+  EXPECT_EQ(1, packChk.Check(3, argv, nullptr));
 }
 
 // Validate software pack with component dependencies
 TEST_F(PackChkIntegTests, CheckComponentDependency) {
-  const char* argv[8];
+  const char* argv[9];
 
   const string& pdscFile = PackChkIntegTestEnv::globaltestdata_dir +
     "/packs/ARM/RteTest/0.1.0/ARM.RteTest.pdsc";
@@ -114,9 +115,10 @@ TEST_F(PackChkIntegTests, CheckComponentDependency) {
   argv[5] = (char*)"M334";
   argv[6] = (char*)"M324";
   argv[7] = (char*)"M362";
+  argv[8] = (char*)"--disable-validation";
 
   PackChk packChk;
-  EXPECT_EQ(0, packChk.Check(8, argv, nullptr));
+  EXPECT_EQ(0, packChk.Check(9, argv, nullptr));
 
   auto errMsgs = ErrLog::Get()->GetLogMessages();
   for (const string& msg : errMsgs) {
@@ -210,7 +212,7 @@ TEST_F(PackChkIntegTests, SuppressValidationMsgs) {
 }
 
 TEST_F(PackChkIntegTests, AddRefPacks) {
-  const char* argv[10];
+  const char* argv[11];
 
   string outDir = PackChkIntegTestEnv::testoutput_dir + "/Packs";
   ASSERT_TRUE(RteFsUtils::CreateDirectories(outDir));
@@ -271,9 +273,10 @@ TEST_F(PackChkIntegTests, AddRefPacks) {
   argv[7] = (char*)refPack3.c_str();
   argv[8] = (char*)"-i";
   argv[9] = (char*)refPack4.c_str();
+  argv[10] = (char*)"--disable-validation";
 
   PackChk packChk;
-  packChk.Check(10, argv, nullptr);
+  packChk.Check(11, argv, nullptr);
 
   const RteGlobalModel& model = packChk.GetModel();
   const RtePackageMap& packs = model.GetPackages();
@@ -304,7 +307,7 @@ TEST_F(PackChkIntegTests, CheckPackWithDot) {
 
 // Validate software pack with SemVer semantic versioning
 TEST_F(PackChkIntegTests, CheckSemVer) {
-  const char* argv[2];
+  const char* argv[3];
 
   const string& pdscFile = PackChkIntegTestEnv::localtestdata_dir +
     "/SemVerTest/Arm.SemVerTest_DFP.pdsc";
@@ -312,9 +315,10 @@ TEST_F(PackChkIntegTests, CheckSemVer) {
 
   argv[0] = (char*)"";
   argv[1] = (char*)pdscFile.c_str();
+  argv[2] = (char*)"--disable-validation";
 
   PackChk packChk;
-  EXPECT_EQ(1, packChk.Check(2, argv, nullptr));
+  EXPECT_EQ(1, packChk.Check(3, argv, nullptr));
 
   struct {
     int M329 = 0;
@@ -349,7 +353,7 @@ TEST_F(PackChkIntegTests, CheckSemVer) {
 
 // Validate license path
 TEST_F(PackChkIntegTests, CheckPackLicense) {
-  const char* argv[2];
+  const char* argv[3];
 
   const string& pdscFile = PackChkIntegTestEnv::localtestdata_dir +
     "/TestLicense/TestVendor.TestPackLicense.pdsc";
@@ -357,9 +361,10 @@ TEST_F(PackChkIntegTests, CheckPackLicense) {
 
   argv[0] = (char*)"";
   argv[1] = (char*)pdscFile.c_str();
+  argv[2] = (char*)"--disable-validation";
 
   PackChk packChk;
-  EXPECT_EQ(0, packChk.Check(2, argv, nullptr));
+  EXPECT_EQ(0, packChk.Check(3, argv, nullptr));
 
   auto errMsgs = ErrLog::Get()->GetLogMessages();
   bool bFound = false;
@@ -378,7 +383,7 @@ TEST_F(PackChkIntegTests, CheckPackLicense) {
 
 // Validate license path
 TEST_F(PackChkIntegTests, CheckFeatureSON) {
-  const char* argv[2];
+  const char* argv[3];
 
   const string& pdscFile = PackChkIntegTestEnv::localtestdata_dir +
     "/TestSON/TestVendor.TestSON.pdsc";
@@ -386,9 +391,10 @@ TEST_F(PackChkIntegTests, CheckFeatureSON) {
 
   argv[0] = (char*)"";
   argv[1] = (char*)pdscFile.c_str();
+  argv[2] = (char *)"--disable-validation";
 
   PackChk packChk;
-  EXPECT_EQ(1, packChk.Check(2, argv, nullptr));
+  EXPECT_EQ(1, packChk.Check(3, argv, nullptr));
 
   auto errMsgs = ErrLog::Get()->GetLogMessages();
   bool bFound = false;
@@ -407,7 +413,7 @@ TEST_F(PackChkIntegTests, CheckFeatureSON) {
 
 // Validate self resolving component
 TEST_F(PackChkIntegTests, CheckCompResolvedByItself) {
-  const char* argv[2];
+  const char* argv[3];
 
   const string& pdscFile = PackChkIntegTestEnv::localtestdata_dir +
     "/CompResolvedByItself/ARM.CompResolvedByItself.pdsc";
@@ -415,9 +421,10 @@ TEST_F(PackChkIntegTests, CheckCompResolvedByItself) {
 
   argv[0] = (char*)"";
   argv[1] = (char*)pdscFile.c_str();
+  argv[2] = (char *)"--disable-validation";
 
   PackChk packChk;
-  EXPECT_EQ(0, packChk.Check(2, argv, nullptr));
+  EXPECT_EQ(0, packChk.Check(3, argv, nullptr));
 
   auto errMsgs = ErrLog::Get()->GetLogMessages();
   int foundCnt = 0;
@@ -435,7 +442,7 @@ TEST_F(PackChkIntegTests, CheckCompResolvedByItself) {
 
 // Validate Option: -n PackName.txt
 TEST_F(PackChkIntegTests, CheckPackFileName) {
-  const char* argv[4];
+  const char* argv[5];
 
   const string& pdscFile = PackChkIntegTestEnv::localtestdata_dir +
     "/PackNameFile/Arm.PackNameFile_DFP.pdsc";
@@ -450,9 +457,10 @@ TEST_F(PackChkIntegTests, CheckPackFileName) {
   argv[1] = (char*)pdscFile.c_str();
   argv[2] = (char*)"-n";
   argv[3] = (char*)packNameFile.c_str();
+  argv[4] = (char*)"--disable-validation";
 
   PackChk packChk;
-  EXPECT_EQ(1, packChk.Check(4, argv, nullptr));
+  EXPECT_EQ(1, packChk.Check(5, argv, nullptr));
 
   ASSERT_TRUE(RteFsUtils::Exists(packNameFile));
 
@@ -466,7 +474,7 @@ TEST_F(PackChkIntegTests, CheckPackFileName) {
 
 // Validate "--allow-suppress-error"
 TEST_F(PackChkIntegTests, CheckAllowSuppressError) {
-  const char* argv[5];
+  const char* argv[6];
 
   const string& pdscFile = PackChkIntegTestEnv::localtestdata_dir +
     "/AllowSuppressError/TestVendor.TestInvalidPack.pdsc";
@@ -477,9 +485,10 @@ TEST_F(PackChkIntegTests, CheckAllowSuppressError) {
   argv[2] = (char*)"--allow-suppress-error";
   argv[3] = (char*)"-x";
   argv[4] = (char*)"M323";
+  argv[5] = (char*)"--disable-validation";
 
   PackChk packChk;
-  EXPECT_EQ(0, packChk.Check(5, argv, nullptr));
+  EXPECT_EQ(0, packChk.Check(6, argv, nullptr));
 
   auto errMsgs = ErrLog::Get()->GetLogMessages();
   bool bFound = false;
@@ -493,5 +502,143 @@ TEST_F(PackChkIntegTests, CheckAllowSuppressError) {
 
   if (bFound) {
     FAIL() << "error: found error M323";
+  }
+}
+
+// Validate files are inside pack root
+TEST_F(PackChkIntegTests, CheckTestPackRoot) {
+  const char* argv[2];
+
+  const string& pdscFile = PackChkIntegTestEnv::localtestdata_dir +
+    "/TestPackRoot/Pack/TestVendor.TestPackRoot.pdsc";
+  ASSERT_TRUE(RteFsUtils::Exists(pdscFile));
+
+  argv[0] = (char*)"";
+  argv[1] = (char*)pdscFile.c_str();
+
+  PackChk packChk;
+  EXPECT_EQ(1, packChk.Check(2, argv, nullptr));
+
+  auto errMsgs = ErrLog::Get()->GetLogMessages();
+  int foundCnt = 0;
+  for (const string& msg : errMsgs) {
+    size_t s;
+    if ((s = msg.find("M313")) != string::npos) {
+      foundCnt++;
+    }
+  }
+
+  if (foundCnt != 1) {
+    FAIL() << "error: missing message M313";
+  }
+}
+
+// Validate invalid file path (file is directory)
+TEST_F(PackChkIntegTests, CheckFilenameIsDir) {
+  const char *argv[3];
+
+  const string &pdscFile = PackChkIntegTestEnv::localtestdata_dir +
+                           "/FilenameIsDir/TestVendor.FilenameIsDirPack.pdsc";
+  ASSERT_TRUE(RteFsUtils::Exists(pdscFile));
+
+  argv[0] = (char *) "";
+  argv[1] = (char *) pdscFile.c_str();
+  argv[2] = (char *) "--disable-validation";
+
+  PackChk packChk;
+  EXPECT_EQ(1, packChk.Check(3, argv, nullptr));
+
+  auto errMsgs = ErrLog::Get()->GetLogMessages();
+  int foundCnt = 0;
+  for (const string &msg: errMsgs) {
+    size_t s;
+    if ((s = msg.find("M356")) != string::npos) {
+      foundCnt++;
+    }
+  }
+
+  if (foundCnt != 1) {
+    FAIL() << "error: missing message M356";
+  }
+}
+
+// Validate invalid file path (file is directory)
+TEST_F(PackChkIntegTests, CheckFileNameHasSpace) {
+  const char* argv[3];
+
+  const string& pdscFile = PackChkIntegTestEnv::localtestdata_dir +
+    "/FileNameHasSpace/TestVendor.FileNameHasSpacePack.pdsc";
+  ASSERT_TRUE(RteFsUtils::Exists(pdscFile));
+
+  argv[0] = (char*)"";
+  argv[1] = (char*)pdscFile.c_str();
+  argv[2] = (char *)"--disable-validation";
+
+  PackChk packChk;
+  EXPECT_EQ(0, packChk.Check(3, argv, nullptr));
+
+  auto errMsgs = ErrLog::Get()->GetLogMessages();
+  int foundCnt = 0;
+  for (const string& msg : errMsgs) {
+    size_t s;
+    if ((s = msg.find("M314")) != string::npos) {
+      foundCnt++;
+    }
+  }
+
+  if (foundCnt != 9) {
+    FAIL() << "error: missing message M314";
+  }
+}
+
+// Validate "--xsd"
+TEST_F(PackChkIntegTests, CheckXsd) {
+  const char* argv[4];
+
+  const string& pdscFile = PackChkIntegTestEnv::globaltestdata_dir +
+  "/packs/ARM/RteTest/0.1.0/ARM.RteTest.pdsc";
+  const string& schemaFile = PackChkIntegTestEnv::localtestdata_dir + "/schema.xsd";
+  ASSERT_TRUE(RteFsUtils::Exists(pdscFile));
+  ASSERT_TRUE(RteFsUtils::Exists(schemaFile));
+
+  argv[0] = (char*)"";
+  argv[1] = (char*)pdscFile.c_str();
+  argv[2] = (char*)"--xsd";
+  argv[3] = (char*)schemaFile.c_str();
+
+  PackChk packChk;
+  EXPECT_EQ(0, packChk.Check(4, argv, nullptr));
+}
+
+// Validate "--xsd" incorrect path
+TEST_F(PackChkIntegTests, CheckNotExistXsd) {
+  const char* argv[4];
+
+  const string& pdscFile = PackChkIntegTestEnv::globaltestdata_dir +
+                           "/packs/ARM/RteTest/0.1.0/ARM.RteTest.pdsc";
+  const string& schemaFile = PackChkIntegTestEnv::localtestdata_dir + "/schemaNotExist.xsd";
+  ASSERT_TRUE(RteFsUtils::Exists(pdscFile));
+  ASSERT_FALSE(RteFsUtils::Exists(schemaFile));
+
+  argv[0] = (char*)"";
+  argv[1] = (char*)pdscFile.c_str();
+  argv[2] = (char*)"--xsd";
+  argv[3] = (char*)schemaFile.c_str();
+
+  PackChk packChk;
+  EXPECT_EQ(1, packChk.Check(4, argv, nullptr));
+
+  auto errMsgs = ErrLog::Get()->GetLogMessages();
+  bool bFound = false;
+  for (const string& msg : errMsgs) {
+    size_t s;
+    if ((s = msg.find("M218")) != string::npos) {
+      bFound = true;
+      break;
+    }
+  }
+
+  if (!bFound) {
+    FAIL() << "error: missing error M218";
   }
 }

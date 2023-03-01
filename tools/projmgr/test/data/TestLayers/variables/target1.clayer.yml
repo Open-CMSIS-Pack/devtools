@@ -2,6 +2,10 @@
 
 layer:
 
+  type: Board
+
+  for-device: RteTest_ARMCM0
+
   components:
     - component: Device:Startup
 

@@ -92,6 +92,13 @@ bool PackChk::CheckPackage()
   LogMsg("M061");
   CreateModel createModel(m_rteModel);
 
+  // Validate all PDSC files against Pack.xsd
+  if(!m_packOptions.GetDisableValidation()) {
+    if(!createModel.SetPackXsd(m_packOptions.GetXsdPath())) {
+      return false;
+    }
+  }
+
   // Add PDSC files to check (currently limited to one)
   const string& pdscFile = m_packOptions.GetPdscFullpath();
   if(!createModel.AddPdsc(pdscFile, m_packOptions.GetIgnoreOtherPdscFiles())) {
@@ -102,10 +109,10 @@ bool PackChk::CheckPackage()
   const set<string>& pdscRefFiles = m_packOptions.GetPdscRefFullpath();
   createModel.AddRefPdsc(pdscRefFiles);
 
+  bool bOk = true;
+
   LogMsg("M015");
   LogMsg("M023", VAL("CHECK", "1: Read PDSC files"));
-
-  bool bOk = true;
 
   // Read all PDSC files
   if(!createModel.ReadAllPdsc()) {
@@ -152,6 +159,9 @@ bool PackChk::CheckPackage()
     }
   }
 
+  LogMsg("M016");
+  LogMsg("M022", ERR(ErrLog::Get()->GetErrCnt()), WARN(ErrLog::Get()->GetWarnCnt()));
+
   return bOk;
 }
 
@@ -185,9 +195,6 @@ int PackChk::Check(int argc, const char* argv[], const char* envp[])
   }
 
   bool bOk = CheckPackage();
-
-  LogMsg("M016");
-  LogMsg("M022", ERR(ErrLog::Get()->GetErrCnt()), WARN(ErrLog::Get()->GetWarnCnt()));
 
   if(ErrLog::Get()->GetErrCnt() || !bOk) {
     return 1;

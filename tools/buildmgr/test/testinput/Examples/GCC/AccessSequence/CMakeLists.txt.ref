@@ -1,6 +1,6 @@
 # CMSIS Build CMakeLists generated on 2022-04-07T11:33:13
 
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.22)
 
 # Target options
 
@@ -19,6 +19,9 @@ set(AS_FLAGS_GLOBAL "-AS-flag-C:/Users/user1/AppData/Local/Arm/Packs/ARM/CMSIS/5
 set(CC_FLAGS_GLOBAL "-O -Wall -gdwarf-2 -mapcs-frame -mthumb -C-flag-C:/Users/user1/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0")
 set(LD_FLAGS_GLOBAL "--entry=Reset_Handler --specs=nosys.specs -mcpu=cortex-m3 -LD-flag-C:/Users/user1/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0")
 set(LD_SCRIPT "C:/Temp/devtools/tools/buildmgr/test/testinput/Examples/GCC/AccessSequence/RTE/Device/ARMCM3/gcc_arm.ld")
+set(OUT_NAME Project)
+set(HEX_FILE "${OUT_NAME}.hex")
+set(BIN_FILE "${OUT_NAME}.bin")
 
 set(DEFINES
   ARMCM3
@@ -128,16 +131,22 @@ set(CXX_FLAGS_C:/Temp/devtools/tools/buildmgr/test/testinput/Examples/GCC/Access
 
 # Toolchain config map
 
-include ("C:/Temp/devtools/build/testoutput/cbuild/etc/GCC.10.2.1.cmake")
+set(TOOLCHAIN_VERSION_MIN "9.2.1")
+include ("C:/sandbox/cbuild/etc/GCC.10.3.1.cmake")
+include ("C:/sandbox/cbuild/etc/CMSIS-Build-Utils.cmake")
 
 # Setup project
 
 project(${TARGET} LANGUAGES C CXX)
 
+cbuild_get_running_toolchain(TOOLCHAIN_ROOT TOOLCHAIN_VERSION CXX)
+
 # Global Flags
 
-set(CMAKE_C_FLAGS "${CC_CPU} ${CC_BYTE_ORDER} ${CC_DEFINES} ${CC_SECURE} ${CC_FLAGS} ${CC_SYS_INC_PATHS}")
-set(CMAKE_CXX_FLAGS "${CXX_CPU} ${CXX_BYTE_ORDER} ${CXX_DEFINES} ${CXX_SECURE} ${CXX_FLAGS} ${CXX_SYS_INC_PATHS}")
+cbuild_get_system_includes(CC_SYS_INC_PATHS_LIST CC_SYS_INC_PATHS)
+set(CMAKE_C_FLAGS "${CC_CPU} ${CC_BYTE_ORDER} ${CC_SECURE} ${CC_FLAGS} ${CC_SYS_INC_PATHS}")
+cbuild_get_system_includes(CXX_SYS_INC_PATHS_LIST CXX_SYS_INC_PATHS)
+set(CMAKE_CXX_FLAGS "${CXX_CPU} ${CXX_BYTE_ORDER} ${CXX_SECURE} ${CXX_FLAGS} ${CXX_SYS_INC_PATHS}")
 set(CMAKE_CXX_LINK_FLAGS "${LD_CPU} ${_LS}\"${LD_SCRIPT}\" ${LD_SECURE} ${LD_FLAGS_GLOBAL} ${LD_FLAGS}")
 
 # Local Flags
@@ -162,7 +171,7 @@ foreach(SRC ${CXX_SRC_FILES})
   set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS "${CXX_FLAGS_LOCAL}")
 endforeach()
 
-# File Includes and Defines
+# File Includes, Defines and Options
 
 foreach(SRC ${CC_SRC_FILES})
   string(REPLACE " " "?" S ${SRC})
@@ -170,15 +179,17 @@ foreach(SRC ${CC_SRC_FILES})
     set(INC_PATHS_LOCAL "${INC_PATHS_${S}}")
     set_source_files_properties(${SRC} PROPERTIES INCLUDE_DIRECTORIES "${INC_PATHS_LOCAL}")
   endif()
+  get_source_file_property(FILE_FLAGS ${SRC} COMPILE_FLAGS)
+  if(FILE_FLAGS STREQUAL "NOTFOUND")
+    set(FILE_FLAGS)
+  endif()
   if(DEFINED DEFINES_${S})
     cbuild_set_defines(CC DEFINES_${S})
-    get_source_file_property(FILE_FLAGS ${SRC} COMPILE_FLAGS)
-    if(FILE_FLAGS STREQUAL "NOTFOUND")
-      set(FILE_FLAGS)
-    endif()
     string(APPEND FILE_FLAGS " ${DEFINES_${S}}")
-    set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS "${FILE_FLAGS}")
+  else()
+    string(APPEND FILE_FLAGS " ${CC_DEFINES}")
   endif()
+  set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS "${FILE_FLAGS}")
 endforeach()
 
 foreach(SRC ${CXX_SRC_FILES})
@@ -187,15 +198,17 @@ foreach(SRC ${CXX_SRC_FILES})
     set(INC_PATHS_LOCAL "${INC_PATHS_${S}}")
     set_source_files_properties(${SRC} PROPERTIES INCLUDE_DIRECTORIES "${INC_PATHS_LOCAL}")
   endif()
+  get_source_file_property(FILE_FLAGS ${SRC} COMPILE_FLAGS)
+  if(FILE_FLAGS STREQUAL "NOTFOUND")
+    set(FILE_FLAGS)
+  endif()
   if(DEFINED DEFINES_${S})
     cbuild_set_defines(CXX DEFINES_${S})
-    get_source_file_property(FILE_FLAGS ${SRC} COMPILE_FLAGS)
-    if(FILE_FLAGS STREQUAL "NOTFOUND")
-      set(FILE_FLAGS)
-    endif()
     string(APPEND FILE_FLAGS " ${DEFINES_${S}}")
-    set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS "${FILE_FLAGS}")
+  else()
+    string(APPEND FILE_FLAGS " ${CXX_DEFINES}")
   endif()
+  set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS "${FILE_FLAGS}")
 endforeach()
 
 # Compilation Database
@@ -206,7 +219,7 @@ add_custom_target(database COMMAND ${CMAKE_COMMAND} -E copy_if_different "${INT_
 # Setup Target
 
 add_executable(${TARGET} ${CC_SRC_FILES} ${CXX_SRC_FILES})
-set(CMAKE_EXECUTABLE_SUFFIX ${EXE_SUFFIX})
+set_target_properties(${TARGET} PROPERTIES PREFIX "" SUFFIX "${EXE_SUFFIX}" OUTPUT_NAME "${TARGET}")
 set_target_properties(${TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${OUT_DIR} LINK_DEPENDS ${LD_SCRIPT})
 target_include_directories(${TARGET} PUBLIC ${INC_PATHS})
 

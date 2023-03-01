@@ -6,6 +6,7 @@
 #include "PackOptions.h"
 #include "ProductInfo.h"
 
+#include "CrossPlatformUtils.h"
 #include "ErrLog.h"
 #include "RteUtils.h"
 #include "RteFsUtils.h"
@@ -36,6 +37,15 @@ CPackOptions::~CPackOptions()
 bool CPackOptions::GetIgnoreOtherPdscFiles()
 {
   return m_bIgnoreOtherPdscFiles;
+}
+
+/**
+ * @brief returns options flag (disable validate pdsc file)
+ * @return
+*/
+bool CPackOptions::GetDisableValidation()
+{
+  return m_bDisableValidation;
 }
 
 /**
@@ -90,6 +100,15 @@ const string& CPackOptions::GetPdscFullpath()
 const std::string& CPackOptions::GetLogPath()
 {
   return m_logPath;
+}
+
+/**
+ * @brief returns path for schema file
+ * @return filename
+*/
+const std::string& CPackOptions::GetXsdPath()
+{
+  return m_xsdPath;
 }
 
 /**
@@ -201,6 +220,59 @@ bool CPackOptions::SetLogFile(const string& logFile)
 }
 
 /**
+ * @brief set default pack.xsd file
+ * @return passed / failed
+ */
+bool CPackOptions::SetXsdFile()
+{
+  // Get current exe path
+  std::error_code ec;
+  string exePath = RteUtils::ExtractFilePath(
+      CrossPlatformUtils::GetExecutablePath(ec), true);
+  if (ec) {
+    LogMsg("M216", MSG(ec.message()));
+    return false;
+  }
+  // Search schema in priority order
+  vector<string> relSearchOrder = { "./", "../etc/", "../../etc/" };
+  string schemaFilePath;
+  for (auto& relPath : relSearchOrder) {
+    schemaFilePath = exePath + relPath + "PACK.xsd";
+    if (RteFsUtils::Exists(schemaFilePath)) {
+      m_xsdPath = fs::canonical(schemaFilePath, ec).generic_string();
+      if (m_xsdPath.empty()) {
+        LogMsg("M204", PATH(schemaFilePath));
+        return false;
+      }
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * @brief set pack.xsd file
+ * @param xsdFile string filename
+ * @return passed / failed
+ */
+bool CPackOptions::SetXsdFile(const string& xsdFile)
+{
+  if(xsdFile.empty()) {
+    return false;
+  }
+
+  m_xsdPath = RteFsUtils::AbsolutePath(xsdFile).generic_string();
+  if(!RteFsUtils::Exists(m_xsdPath)) {
+    LogMsg("M218", PATH(m_xsdPath));
+    m_xsdPath.clear();
+
+    return false;
+  }
+
+  return true;
+}
+
+/**
  * @brief sets reference URL to check against
  * @param ref string url
  * @return passed / failed
@@ -237,6 +309,13 @@ bool CPackOptions::SetUrlRef(const string& ref)
 bool CPackOptions::SetIgnoreOtherPdscFiles(bool bIgnore)
 {
   m_bIgnoreOtherPdscFiles = bIgnore;
+
+  return true;
+}
+
+bool CPackOptions::SetDisableValidation(bool bDisable)
+{
+  m_bDisableValidation = bDisable;
 
   return true;
 }

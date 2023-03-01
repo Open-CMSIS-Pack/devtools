@@ -12,6 +12,7 @@ on:
       - 'tools/packchk/**'
       - 'libs/xml**'
       - 'libs/rte**'
+      - '!**/docs/**/*'
       - '!**/*.md'
   pull_request:
     paths:
@@ -22,6 +23,7 @@ on:
       - 'tools/packchk/**'
       - 'libs/xml**'
       - 'libs/rte**'
+      - '!**/docs/**/*'
       - '!**/*.md'
   release:
     types: [published]
@@ -63,7 +65,7 @@ jobs:
           arch: ${{ matrix.arch }}
 
       - name: Archive packchk binary
-        if: ${{ fromJSON(needs.setup.outputs.nightly) }}
+        if: ${{ github.event_name != 'release' }}
         uses: actions/upload-artifact@v3
         with:
           name: packchk-${{ matrix.target }}-${{ matrix.arch }}
@@ -150,7 +152,7 @@ jobs:
     steps:
       - name: Install dependencies
         run: |
-          sudo apt update
+          sudo apt-get update
           sudo apt-get install \
             lcov
 

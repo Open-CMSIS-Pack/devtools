@@ -25,7 +25,7 @@
 #endif
 
 #ifndef DEF1GROUP
-#error "DEF1-GROUP is not defined!"
+#error "DEF1GROUP is not defined!"
 #endif
 
 #ifndef DEF1FILE
@@ -36,8 +36,8 @@
 #error "DEF2FILE is not defined!"
 #endif
 
-#ifndef DEF2GROUP
-#error "DEF2GROUP is not defined!"
+#ifdef DEF2GROUP
+#error "DEF2GROUP not defined!"
 #endif
 
 int main (void) {

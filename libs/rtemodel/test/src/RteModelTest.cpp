@@ -3,7 +3,6 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-#include "gtest/gtest.h"
 
 #include "RteModelTestConfig.h"
 
@@ -57,42 +56,28 @@ TEST(RteModelTest, LoadPacks) {
   // test recommended memory attributes: name and access
   summary = da->GetSummaryString();
   EXPECT_EQ(summary, "ARM Cortex-M4, 10 MHz, 128 kB RAM, 256 kB ROM");
+
+  RteBoard* board = rteModel.FindBoard("RteTest board listing (Rev.C)");
+  ASSERT_NE(board, nullptr);
+  EXPECT_TRUE(board->HasMCU());
+  list<RteItem*> algos;
+  EXPECT_EQ(board->GetAlgorithms(algos).size(), 2);
+  list<RteItem*> mems;
+  EXPECT_EQ(board->GetMemories(mems).size(), 2);
+
+  board = rteModel.FindBoard("RteTest NoMCU board");
+  ASSERT_NE(board, nullptr);
+  EXPECT_FALSE(board->HasMCU());
+  algos.clear();
+  EXPECT_EQ(board->GetAlgorithms(algos).size(), 0);
+  mems.clear();
+  EXPECT_EQ(board->GetMemories(mems).size(), 2);
 }
 
-// define project and header file names with relative paths
-const string prjsDir = "RteModelTestProjects";
-const string localRepoDir = "RteModelLocalRepo";
-const string RteTestM3 = "/RteTestM3";
-const string RteTestM3_cprj = prjsDir + RteTestM3 + "/RteTestM3.cprj";
-const string RteTestM3_ConfigFolder_cprj = prjsDir + RteTestM3 + "/RteTestM3_ConfigFolder.cprj";
-const string RteTestM3_PackPath_cprj = prjsDir + RteTestM3 + "/RteTestM3_PackPath.cprj";
-const string RteTestM3_PackPath_MultiplePdscs_cprj = prjsDir + RteTestM3 + "/RteTestM3_PackPath_MultiplePdscs.cprj";
-const string RteTestM3_PackPath_NoPdsc_cprj = prjsDir + RteTestM3 + "/RteTestM3_PackPath_NoPdsc.cprj";
-const string RteTestM3_PackPath_Invalid_cprj = prjsDir + RteTestM3 + "/RteTestM3_PackPath_Invalid.cprj";
-const string RteTestM3_PrjPackPath = prjsDir + RteTestM3 + "/packs";
-
-const string RteTestM4 = "/RteTestM4";
-const string RteTestM4_cprj = prjsDir + RteTestM4 + "/RteTestM4.cprj";
-const string RteTestM4_CompDep_cprj = prjsDir + RteTestM4 + "/RteTestM4_CompDep.cprj";
-
-
-
-class RteModelPrjTest :public ::testing::Test {
+class RteModelPrjTest : public RteModelTestConfig {
 public:
 
 protected:
-  void SetUp() override
-  {
-    RteFsUtils::DeleteTree(prjsDir);
-    RteFsUtils::CopyTree(RteModelTestConfig::PROJECTS_DIR, prjsDir);
-    RteFsUtils::CopyTree(RteModelTestConfig::LOCAL_REPO_DIR, localRepoDir);
-  }
-
-  void TearDown() override
-  {
-    RteFsUtils::DeleteTree(prjsDir);
-  }
-
   void compareFile(const string &newFile, const string &refFile,
     const std::unordered_map<string, string> &expectedChangedFlags, const string &toolchain) const;
 
@@ -124,7 +109,7 @@ protected:
   void GenerateHeadersTest(const string& project, const string& rteFolder) {
 
     const string projectDir = RteUtils::ExtractFilePath(project, true);
-    const string targetFolder = "/_" + RteUtils::ExtractFileBaseName(project) + "/";
+    const string targetFolder = "/_Target_1/";
     const string preIncComp = projectDir + rteFolder + targetFolder + "Pre_Include_RteTest_ComponentLevel.h";
     const string preIncGlob = projectDir + rteFolder + targetFolder + "Pre_Include_Global.h";
     const string rteComp = projectDir + rteFolder + targetFolder + "RTE_Components.h";
@@ -254,6 +239,19 @@ TEST_F(RteModelPrjTest, LoadCprj_NoRTEFileCreation) {
   EXPECT_FALSE(RteFsUtils::Exists(deviceDir + "ARMCM3_ac6.sct.update@1.2.0"));
   EXPECT_FALSE(RteFsUtils::Exists(deviceDir + "startup_ARMCM3.c.base@2.0.3"));
   EXPECT_FALSE(RteFsUtils::Exists(deviceDir + "system_ARMCM3.c.update@1.2.2"));
+
+  // additionally test support for RTE folder with spaces
+  auto& fileInstances= loadedCprjProject->GetFileInstances();
+  // take existing file instance
+  auto it = fileInstances.find("RTE/Device/RteTest_ARMCM3/startup_ARMCM3.c");
+  RteFileInstance* fi = it != fileInstances.end() ? it->second : nullptr;
+  ASSERT_NE(fi, nullptr);
+  // use its file to create path with another RTE directory
+  RteFile* f = fi ? fi->GetFile(loadedCprjProject->GetActiveTargetName()) : nullptr ;
+  ASSERT_NE(f, nullptr);
+  const string& deviceName = loadedCprjProject->GetActiveTarget()->GetDeviceName();
+  string pathName = f->GetInstancePathName(deviceName, 0 , "RTE With Spaces");
+  EXPECT_EQ(pathName, "RTE With Spaces/Device/RteTest_ARMCM3/startup_ARMCM3.c");
 }
 
 TEST_F(RteModelPrjTest, LoadCprj_PackPath) {
@@ -366,7 +364,7 @@ TEST_F(RteModelPrjTest, GetLocalPdscFile) {
   RteKernelSlim rteKernel;
   const string& expectedPdsc = UpdateLocalIndex();
 
-  RteAttributes attributes;
+  XmlItem attributes;
   attributes.AddAttribute("name", "LocalPack");
   attributes.AddAttribute("vendor", "LocalVendor");
   attributes.AddAttribute("version", "0.1.0");

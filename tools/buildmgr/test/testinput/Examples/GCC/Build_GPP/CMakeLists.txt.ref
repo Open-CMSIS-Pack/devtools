@@ -1,6 +1,6 @@
 # CMSIS Build CMakeLists generated on 2021-06-29T18:34:00
 
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.22)
 
 # Target options
 
@@ -20,6 +20,9 @@ set(CC_FLAGS_GLOBAL "-O3 -Wall -gdwarf-2 -mapcs-frame -mthumb")
 set(CXX_FLAGS_GLOBAL "-O3 -Wall -gdwarf-2 -mapcs-frame -mthumb")
 set(LD_FLAGS_GLOBAL "--entry=Reset_Handler --specs=nosys.specs -lstdc++ -mcpu=cortex-m3 -mthumb")
 set(LD_SCRIPT "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Build_GPP/RTE/Device/ARMCM3/gcc_arm.ld")
+set(OUT_NAME Build_G++)
+set(HEX_FILE "${OUT_NAME}.hex")
+set(BIN_FILE "${OUT_NAME}.bin")
 
 set(DEFINES
   ARMCM3
@@ -55,16 +58,22 @@ set(LIB_FILES
 
 # Toolchain config map
 
-include ("C:/sandbox/devtools/build/TestOutput/cbuild/etc/GCC.10.2.1.cmake")
+set(TOOLCHAIN_VERSION_MIN "9.2.1")
+include ("C:/sandbox/cbuild/etc/GCC.10.3.1.cmake")
+include ("C:/sandbox/cbuild/etc/CMSIS-Build-Utils.cmake")
 
 # Setup project
 
 project(${TARGET} LANGUAGES ASM C CXX)
 
+cbuild_get_running_toolchain(TOOLCHAIN_ROOT TOOLCHAIN_VERSION CXX)
+
 # Global Flags
 
 set(CMAKE_ASM_FLAGS "${ASM_CPU} ${ASM_BYTE_ORDER} ${ASM_DEFINES} ${ASM_FLAGS} ${AS_FLAGS_GLOBAL}")
+cbuild_get_system_includes(CC_SYS_INC_PATHS_LIST CC_SYS_INC_PATHS)
 set(CMAKE_C_FLAGS "${CC_CPU} ${CC_BYTE_ORDER} ${CC_DEFINES} ${CC_SECURE} ${CC_FLAGS} ${CC_FLAGS_GLOBAL} ${CC_SYS_INC_PATHS}")
+cbuild_get_system_includes(CXX_SYS_INC_PATHS_LIST CXX_SYS_INC_PATHS)
 set(CMAKE_CXX_FLAGS "${CXX_CPU} ${CXX_BYTE_ORDER} ${CXX_DEFINES} ${CXX_SECURE} ${CXX_FLAGS} ${CXX_FLAGS_GLOBAL} ${CXX_SYS_INC_PATHS}")
 set(CMAKE_CXX_LINK_FLAGS "${LD_CPU} ${_LS}\"${LD_SCRIPT}\" ${LD_SECURE} ${LD_FLAGS_GLOBAL} ${LD_FLAGS}")
 
@@ -76,7 +85,7 @@ add_custom_target(database COMMAND ${CMAKE_COMMAND} -E copy_if_different "${INT_
 # Setup Target
 
 add_executable(${TARGET} ${ASM_SRC_FILES} ${CC_SRC_FILES} ${CXX_SRC_FILES})
-set(CMAKE_EXECUTABLE_SUFFIX ${EXE_SUFFIX})
+set_target_properties(${TARGET} PROPERTIES PREFIX "" SUFFIX "${EXE_SUFFIX}" OUTPUT_NAME "${TARGET}")
 set_target_properties(${TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${OUT_DIR} LINK_DEPENDS ${LD_SCRIPT})
 target_include_directories(${TARGET} PUBLIC ${INC_PATHS})
 target_link_libraries(${TARGET} ${LIB_FILES})

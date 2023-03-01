@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no" ?>
-<cprj schemaVersion="1.0.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="CPRJ.xsd">
+<cprj schemaVersion="1.2.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="CPRJ.xsd">
   <created timestamp="2022-09-06T00:57:42" tool="csolution 0.9.5+p86-g4d629a4"/>
 
   <info isLayer="false">
@@ -15,7 +15,7 @@
   </compilers>
 
   <target Dfpu="NO_FPU" Dname="RteTest_ARMCM0_Dual" Dsecure="Non-secure" Dvendor="ARM:82" Pname="cm0_core1">
-    <output intdir="tmp/test.target_options/CM0" name="test.target_options+CM0" outdir="out/test.target_options/CM0" rtedir="../data/TestSolution/RTE" type="exe"/>
+    <output intdir="tmp/test.target_options/CM0" name="CM0" outdir="out/test.target_options/CM0" rtedir="../data/TestSolution/RTE" type="exe"/>
     <options debug="off" optimize="size" warnings="off"/>
   </target>
 

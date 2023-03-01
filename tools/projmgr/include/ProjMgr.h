@@ -33,8 +33,9 @@ public:
    * @brief entry point for running projmgr
    * @param argc command line argument count
    * @param argv command line argument vector
+   * @param envp environment variables
   */
-  static int RunProjMgr(int argc, char **argv);
+  static int RunProjMgr(int argc, char **argv, char** envp);
 
   /**
    * @brief print usage
@@ -100,10 +101,13 @@ protected:
   std::string m_loadPacksPolicy;
   std::string m_clayerSearchPath;
   std::string m_export;
+  std::string m_selectedToolchain;
   bool m_checkSchema;
   bool m_missingPacks;
   bool m_updateRteFiles;
   bool m_verbose;
+  bool m_debug;
+  bool m_ymlOrder;
   GroupNode m_files;
 
   bool RunConvert(void);

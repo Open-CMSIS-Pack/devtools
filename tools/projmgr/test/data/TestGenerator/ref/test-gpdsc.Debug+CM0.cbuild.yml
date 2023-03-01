@@ -1,0 +1,66 @@
+build:
+  solution: ../data/TestGenerator/test-gpdsc.csolution.yml
+  project: ../data/TestGenerator/test-gpdsc.cproject.yml
+  context: test-gpdsc.Debug+CM0
+  compiler: AC6
+  device: RteTestGen_ARMCM0
+  processor:
+    trustzone: non-secure
+  packs:
+    - pack: ARM::RteTestGenerator@0.1.0
+      path: ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0
+    - pack: ARM::RteTest_DFP@0.2.0
+      path: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0
+  define:
+    - _RTE_
+  add-path:
+    - ../data/TestGenerator/RTE/_Debug_CM0
+  output-type: exe
+  output-dirs:
+    gendir: ../data/TestGenerator
+    intdir: tmp/test-gpdsc/CM0/Debug
+    outdir: out/test-gpdsc/CM0/Debug
+    rtedir: ../data/TestGenerator/RTE
+  components:
+    - component: ARM::Device:RteTest Generated Component:RteTest@1.1.0
+      condition: RteDevice
+      from-pack: ARM::RteTestGenerator@0.1.0
+      selected-by: Device:RteTest Generated Component:RteTest
+      generator:
+        id: RteTestGeneratorIdentifier
+    - component: ARM::RteTest:CORE@0.1.1
+      condition: Cortex-M Device
+      from-pack: ARM::RteTest_DFP@0.2.0
+      selected-by: RteTest:CORE
+  generators:
+    RteTestGeneratorIdentifier:
+      working-dir: ../data/TestGenerator/RTE/Device
+      gpdsc: ../data/TestGenerator/RTE/Device/RteTestGen_ARMCM0/RteTest.gpdsc
+      command:
+        win:
+          file: ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0/Generator/script.bat
+          arguments:
+            - RteTestGen_ARMCM0
+            - ../../Debug+CM0.cprj
+            - ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0
+            - ../../../../output/test-gpdsc.Debug+CM0.cbuild.yml
+            - /foo=bar
+        linux:
+          file: ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0/Generator/script.sh
+          arguments:
+            - RteTestGen_ARMCM0
+            - ../../Debug+CM0.cprj
+            - ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0
+            - ../../../../output/test-gpdsc.Debug+CM0.cbuild.yml
+            - --foo=bar
+        mac:
+          file: ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0/Generator/script.sh
+          arguments:
+            - RteTestGen_ARMCM0
+            - ../../Debug+CM0.cprj
+            - ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0
+            - ../../../../output/test-gpdsc.Debug+CM0.cbuild.yml
+            - --foo=bar
+  constructed-files:
+    - file: ../data/TestGenerator/RTE/_Debug_CM0/RTE_Components.h
+      category: header

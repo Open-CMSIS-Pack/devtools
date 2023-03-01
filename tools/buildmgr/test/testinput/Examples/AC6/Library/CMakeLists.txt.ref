@@ -1,6 +1,6 @@
 # CMSIS Build CMakeLists generated on 2021-07-06T15:21:29
 
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.22)
 
 # Target options
 
@@ -16,6 +16,7 @@ set(SECURE Non-secure)
 set(MVE NO_MVE)
 set(BYTE_ORDER Little-endian)
 set(CXX_FLAGS_GLOBAL "-O1 -Wno-documentation -Wno-documentation-unknown-command -Wno-license-management -Wno-missing-noreturn -Wno-missing-prototypes -Wno-missing-variable-declarations -Wno-nonportable-include-path -Wno-packed -Wno-parentheses-equality  -Wno-reserved-id-macro -Wno-sign-conversion -Wno-unused-macros -ffunction-sections -fno-exceptions -fno-rtti -fshort-enums -fshort-wchar -funsigned-char -std=c++11 -xc++")
+set(OUT_NAME calc)
 
 set(DEFINES
   ARMCM3
@@ -35,14 +36,20 @@ set(CXX_SRC_FILES
 
 # Toolchain config map
 
-include ("C:/sandbox/devtools/build/TestOutput/cbuild/etc/AC6.6.16.0.cmake")
+set(TOOLCHAIN_VERSION_MIN "6.0.0")
+set(TOOLCHAIN_VERSION_MAX "6.99.99")
+include ("C:/sandbox/cbuild/etc/AC6.6.18.0.cmake")
+include ("C:/sandbox/cbuild/etc/CMSIS-Build-Utils.cmake")
 
 # Setup project
 
 project(${TARGET} LANGUAGES CXX)
 
+cbuild_get_running_toolchain(TOOLCHAIN_ROOT TOOLCHAIN_VERSION CXX)
+
 # Global Flags
 
+cbuild_get_system_includes(CXX_SYS_INC_PATHS_LIST CXX_SYS_INC_PATHS)
 set(CMAKE_CXX_FLAGS "${CXX_CPU} ${CXX_BYTE_ORDER} ${CXX_DEFINES} ${CXX_SECURE} ${CXX_FLAGS} ${CXX_FLAGS_GLOBAL} ${CXX_SYS_INC_PATHS}")
 set(CMAKE_CXX_LINK_FLAGS "${LD_CPU} ${LD_SECURE} ${LD_FLAGS}")
 
@@ -54,7 +61,6 @@ add_custom_target(database COMMAND ${CMAKE_COMMAND} -E copy_if_different "${INT_
 # Setup Target
 
 add_library(${TARGET} ${CXX_SRC_FILES})
-set(CMAKE_STATIC_LIBRARY_PREFIX ${LIB_PREFIX})
-set(CMAKE_STATIC_LIBRARY_SUFFIX ${LIB_SUFFIX})
+set_target_properties(${TARGET} PROPERTIES PREFIX "${LIB_PREFIX}" SUFFIX "${LIB_SUFFIX}" OUTPUT_NAME "${TARGET}")
 set_target_properties(${TARGET} PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${OUT_DIR})
 target_include_directories(${TARGET} PUBLIC ${INC_PATHS})

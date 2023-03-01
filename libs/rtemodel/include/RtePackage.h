@@ -195,30 +195,30 @@ public:
    * @return number of <api> elements as integer
   */
 
-  int GetApiCount() const { return m_apis ? m_apis->GetChildCount() : 0; }
+  size_t GetApiCount() const { return m_apis ? m_apis->GetChildCount() : 0; }
   /**
    * @brief get number of conditions in the pack described under <conditions> element
    * @return number of <condition> elements as integer
   */
 
-  int GetConditionCount() const { return m_conditions ? m_conditions->GetChildCount() : 0; }
+  size_t GetConditionCount() const { return m_conditions ? m_conditions->GetChildCount() : 0; }
   /**
    * @brief get number of components in the pack described under <components> element
    * @return number of <component> elements as integer
   */
 
-  int GetComponentCount() const { return m_components ? m_components->GetChildCount() : 0; }
+  size_t GetComponentCount() const { return m_components ? m_components->GetChildCount() : 0; }
   /**
    * @brief get number of examples  in the pack described under <examples> element
    * @return number of <example> elements as integer
   */
-  int GetExampleCount() const { return m_examples ? m_examples->GetChildCount() : 0; }
+  size_t GetExampleCount() const { return m_examples ? m_examples->GetChildCount() : 0; }
 
   /**
    * @brief get number of boards in the pack described under <boards> element
    * @return number of <board> elements as integer
   */
-  int GetBoardCount() const { return m_boards ? m_boards->GetChildCount() : 0; }
+  size_t GetBoardCount() const { return m_boards ? m_boards->GetChildCount() : 0; }
 
   /**
    * @brief get <releases> element
@@ -440,6 +440,14 @@ public:
    * @return full or common pack ID depending on argument
   */
   virtual std::string GetPackageID(bool withVersion = true) const override;
+
+  /**
+   * @brief determine package ID by given list of attributes
+   * @param attr list of attributes
+   * @param withVersion true if version string should included
+   * @return package ID
+  */
+  static std::string GetPackageIDfromAttributes(const XmlItem& attr, bool withVersion = true);
 
   /**
    * @brief get absolute filename of pack description file (pdsc)
@@ -1013,35 +1021,35 @@ public:
 
   /**
    * @brief get attributes of selected packs
-   * @return reference to RteAttributesMap (pack ID to RteAttributes)
+   * @return collection of selected pack IDs
   */
-  const RteAttributesMap& GetSelectedPackages() const { return m_selectedPacks; }
+  const std::set<std::string>& GetSelectedPackages() const { return m_selectedPacks; }
 
   /**
-   * @brief set selected packs as collection of their attributes
-   * @param packs RteAttributesMap (pack ID to RteAttributes)
+   * @brief set selected packs as collection of their IDs
+   * @param packs collection of pack IDs to select
    * @return true if selection changed
   */
-  bool SetSelectedPackages(const RteAttributesMap& packs);
+  bool SetSelectedPackages(const std::set<std::string>& packs);
 
   /**
-   * @brief get attributes
-   * @return reference to RteAttributesMap (pack ID to RteAttributes)
+   * @brief get collection of latest packs to use
+   * @return collection common pack IDs
   */
-  const RteAttributesMap& GetLatestPacks() const { return m_latestPacks; }
+  const std::set<std::string>& GetLatestPacks() const { return m_latestPacks; }
 
   /**
    * @brief set attributes of the latest available pack releases
-   * @param latestPacks RteAttributesMap (pack ID to RteAttributes)
+   * @param latestPacks collection of common IDs
    * @return true if internal collection has changed
   */
-  bool SetLatestPacks(const RteAttributesMap& latestPacks);
+  bool SetLatestPacks(const std::set<std::string>& latestPacks);
 
   /**
-   * @brief set attributes of the latest installed pack releases
-   * @param latestInstalledPacks  RteAttributesMap (pack ID to RteAttributes)
+   * @brief set IDs of the latest installed pack releases
+   * @param latestInstalledPacks collection of pack IDs
   */
-  void SetLatestInstalledPacks(const RteAttributesMap& latestInstalledPacks) { m_latestInstalledPacks = latestInstalledPacks; }
+  void SetLatestInstalledPacks(const std::set<std::string>& latestInstalledPacks) { m_latestInstalledPacks = latestInstalledPacks; }
 
   /**
    * @brief set to use all packs (their latest releases)
@@ -1051,10 +1059,10 @@ public:
 
 protected:
   bool m_bUseAllPacks; // flag to use latest releases of all installed packs
-  RteAttributesMap m_selectedPacks; // pack ID to pack attributes
-  RteAttributesMap m_latestPacks; // common IDs to pack attributes of latest packs
+  std::set<std::string> m_selectedPacks; // pack IDs
+  std::set<std::string> m_latestPacks; // common IDs to pack version
 
-  RteAttributesMap m_latestInstalledPacks; // IDs of global latest packs, used when m_selectedPacks and m_latestPacks are empty
+  std::set<std::string> m_latestInstalledPacks; // IDs of global latest packs, used when m_selectedPacks and m_latestPacks are empty
 };
 
 #endif // RtePackage_H

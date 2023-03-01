@@ -8,6 +8,8 @@
 #include "RteFsUtils.h"
 #include "CrossPlatformUtils.h"
 
+#include <fstream>
+
 using namespace std;
 
 string testinput_folder;
@@ -28,6 +30,11 @@ std::string StdStreamRedirect::GetOutString() {
 
 std::string StdStreamRedirect::GetErrorString() {
   return m_cerrbuffer.str();
+}
+
+void StdStreamRedirect::ClearStringStreams() {
+  m_outbuffer.str(string());
+  m_cerrbuffer.str(string());
 }
 
 StdStreamRedirect::~StdStreamRedirect() {
@@ -104,6 +111,44 @@ void ProjMgrTestEnv::SetUp() {
 void ProjMgrTestEnv::TearDown() {
   // Reserved
 }
+
+void ProjMgrTestEnv::CompareFile(const string& file1, const string& file2) {
+  ifstream f1, f2;
+  string l1, l2;
+  bool ret_val;
+
+  f1.open(file1);
+  ret_val = f1.is_open();
+  ASSERT_EQ(ret_val, true) << "Failed to open " << file1;
+
+  f2.open(file2);
+  ret_val = f2.is_open();
+  ASSERT_EQ(ret_val, true) << "Failed to open " << file2;
+
+  while (getline(f1, l1) && getline(f2, l2)) {
+    if (!l1.empty() && l1.rfind('\r') == l1.length() - 1) {
+      l1.pop_back();
+    }
+
+    if (!l2.empty() && l2.rfind('\r') == l2.length() - 1) {
+      l2.pop_back();
+    }
+
+    if (l1 != l2) {
+      // ignore 'timestamp'
+      if ((!l1.empty() && (l1.find("timestamp=") != string::npos)) && (!l2.empty() && (l2.find("timestamp=") != string::npos))) {
+        continue;
+      }
+
+      FAIL() << "error: " << file1 << " is different from " << file2;
+    }
+  }
+
+  f1.close();
+  f2.close();
+}
+
+
 
 int main(int argc, char **argv) {
   try {

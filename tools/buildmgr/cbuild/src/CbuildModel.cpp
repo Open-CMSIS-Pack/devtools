@@ -86,7 +86,7 @@ bool CbuildModel::Create(const CbuildRteArgs& args) {
         fs::create_directories(intdir, ec);
       }
       // generate cpinstall file
-      string filename = intdir + (intdir.back() == '/' ? "" : "/") + m_targetName + ".cpinstall";
+      string filename = intdir + (intdir.back() == '/' ? "" : "/") + m_prjName + ".cpinstall";
       ofstream missingPacks(filename);
       for (const auto& pack : packList) {
         const string& packID = pack.vendor + "::" + pack.name + (pack.version.empty() ? "" : "@" + pack.version);
@@ -112,7 +112,7 @@ bool CbuildModel::Create(const CbuildRteArgs& args) {
   // find toolchain configuration file
   m_compiler = m_cprjProject->GetToolchain();
   m_compilerVersion = m_cprjProject->GetToolchainVersion();
-  if (!EvaluateToolchainConfig(m_compiler, m_compilerVersion, m_prjFolder, args.compilerRoot, args.ext))
+  if (!EvaluateToolchainConfig(m_compiler, m_compilerVersion, args.envVars, args.compilerRoot))
     return false;
 
   // evaluate device name
@@ -163,7 +163,7 @@ void CbuildModel::Init(const string &file, const string &rtePath) {
 
   fs::path name(file);
   m_prjName = name.filename().replace_extension("").generic_string();
-  m_targetName = m_prjName;   // project and target have same name
+  m_targetName = m_cprjProject->GetActiveTargetName();
 }
 
 bool CbuildModel::GenerateFixedCprj(const string& update) {
@@ -397,17 +397,14 @@ bool CbuildModel::GenerateRteHeaders() {
   return m_cprjTarget ? m_cprjTarget->GenerateRteHeaders() : false;
 }
 
-bool CbuildModel::EvaluateToolchainConfig(const string& name, const string& versionRange, const string& localPath, const string& compilerRoot, const string& ext) {
+bool CbuildModel::EvaluateToolchainConfig(const string& name, const string& versionRange, const vector<string>& envVars, const string& compilerRoot) {
   /*
   EvaluateToolchain:
   Search for compatible toolchain configuration file
   */
 
-  // Search order: first in the project folder, then in the compiler root
-  if (GetCompatibleToolchain(name, versionRange, localPath, ext)) {
-    return true;
-  }
-  if (GetCompatibleToolchain(name, versionRange, compilerRoot, ext)) {
+  // Search registered toolchains and config files in the compiler root
+  if (GetCompatibleToolchain(name, versionRange, compilerRoot, envVars)) {
     return true;
   }
 
@@ -416,48 +413,94 @@ bool CbuildModel::EvaluateToolchainConfig(const string& name, const string& vers
   return false;
 }
 
-bool CbuildModel::GetCompatibleToolchain(const string& name, const string& versionRange, const string& dir, const string& ext) {
-  /*
-  GetCompatibleToolchain:
-  Returns compatible toolchain configuration file in a given directory
-  */
-  error_code ec;
-  if (!fs::exists(dir, ec)) {
+bool CbuildModel::GetCompatibleToolchain(const string& name, const string& versionRange, const string& dir, const vector<string>& envVars) {
+  // extract toolchain info from environment variables
+  map<string, map<string, string>> toolchains;
+  for (const auto& envVar : envVars) {
+    smatch sm;
+    try {
+      regex_match(envVar, sm, regex("(\\w+)_TOOLCHAIN_(\\d+)_(\\d+)_(\\d+)=(.*)"));
+    } catch (exception&) {};
+    if (sm.size() == 6) {
+      toolchains[sm[1]][string(sm[2])+'.'+string(sm[3])+'.'+string(sm[4])] = sm[5];
+    }
+  }
+
+  // get toolchain configuration files
+  if (!RteFsUtils::Exists(dir)) {
     return false;
   }
-
-  // Get file list, Filter and sort
-  set<fs::directory_entry> localset;
+  set<fs::directory_entry> toolchainConfigFiles;
+  error_code ec;
   for (auto const& dir_entry : fs::recursive_directory_iterator(dir, ec)) {
     string extn = dir_entry.path().extension().string();
-    if (dir_entry.path().extension().string() != ext) {
+    if (dir_entry.path().extension().string() != CMEXT) {
       continue;
     }
-    localset.insert(dir_entry);
+    toolchainConfigFiles.insert(dir_entry);
   }
 
-  bool found = false;
-  string selectedVersion, selectedConfig;
-  for (const auto& p : localset) {
-    // For every file get toolchain name and version
-    const string& compiler = p.path().stem().generic_string();
-    const string& fname = compiler.substr(0, compiler.find_first_of("."));
-    const string& version = compiler.substr(compiler.find_first_of(".") + 1, compiler.length());
-    if ((fname.compare(name) == 0) &&
-      (VersionCmp::RangeCompare(version, versionRange) == 0) &&
-      (VersionCmp::Compare(selectedVersion, version) <= 0))
-    {
-      selectedVersion = version;
-      selectedConfig = p.path().string();
-      found = true;
+  // find compatible registered version
+  string selectedVersion;
+  for (const auto& [toolchainName, versions] : toolchains) {
+    if (toolchainName.compare(name) == 0) {
+      for (const auto& [version, root] : versions) {
+        if ((VersionCmp::RangeCompare(version, versionRange) == 0) &&
+          (VersionCmp::Compare(selectedVersion, version) <= 0)) {
+          if (RteFsUtils::Exists(root)) {
+            // check whether a config file is available for the registered version
+            if (GetToolchainConfig(toolchainConfigFiles, toolchainName, RteUtils::GetPrefix(versionRange) + ':' + version)) {
+              selectedVersion = version;
+            }
+          }
+        }
+      }
     }
   }
-  if (found) {
+
+  if (selectedVersion.empty()) {
+    // no compatible registered toolchain was found, search for a suitable config file
+    if (GetToolchainConfig(toolchainConfigFiles, name, versionRange)) {
+      return true;
+    }
+  } else {
+    // registered toolchain was found
+    m_toolchainRegisteredVersion = selectedVersion;
+    m_toolchainRegisteredRoot = toolchains[name][selectedVersion];
+    RteFsUtils::NormalizePath(m_toolchainRegisteredRoot);
+    return true;
+  }
+  return false;
+}
+
+bool CbuildModel::GetToolchainConfig(const set<fs::directory_entry>& files, const string& name, const string& version) {
+  // find compatible toolchain configuration file
+  string selectedVersion, selectedConfig;
+  for (const auto& p : files) {
+    smatch sm;
+    const string& stem = p.path().stem().generic_string();
+    try {
+      regex_match(stem, sm, regex("(\\w+)\\.(\\d+\\.\\d+\\.\\d+)"));
+    } catch (exception&) {};
+    if (sm.size() == 3) {
+      const string& configName = sm[1];
+      const string& configVersion = sm[2];
+      if ((configName.compare(name) == 0) &&
+        (VersionCmp::RangeCompare(configVersion, version) <= 0) &&
+        (VersionCmp::Compare(selectedVersion, configVersion) <= 0))
+      {
+        selectedVersion = configVersion;
+        selectedConfig = p.path().generic_string();
+      }
+    }
+  }
+  if (!selectedVersion.empty()) {
     RteFsUtils::NormalizePath(selectedConfig);
     m_toolchainConfig = selectedConfig;
     m_toolchainConfigVersion = selectedVersion;
+    return true;
   }
-  return found;
+  return false;
 }
 
 bool CbuildModel::EvalPreIncludeFiles() {
@@ -774,7 +817,7 @@ vector<string> CbuildModel::SplitArgs(const string& args, const string& delim, b
   return s;
 }
 
-vector<string> CbuildModel::MergeArgs(const vector<string>& add, const vector<string>& remove, const vector<string>& reference) {
+vector<string> CbuildModel::MergeArgs(const vector<string>& add, const vector<string>& remove, const vector<string>& reference, bool front) {
   /*
   MergeArgs:
    - Merge 'add' arguments from 'reference'
@@ -785,8 +828,10 @@ vector<string> CbuildModel::MergeArgs(const vector<string>& add, const vector<st
   }
 
   vector<string> list = reference;
-  for (auto add_item : add) {
-    list.push_back(add_item);
+  if (front) {
+    list.insert(list.begin(), add.begin(), add.end());
+  } else {
+    list.insert(list.end(), add.begin(), add.end());
   }
   for (auto rem_item : remove) {
     auto first_match = std::find(list.cbegin(), list.cend(), rem_item);
@@ -956,7 +1001,7 @@ bool CbuildModel::SetItemIncludesDefines(const RteItem* item, const string& name
       LogMsg("M204", PATH(include));
       return false;
     }
-    const auto& resIncludesList = MergeArgs(includesList, excludesList, parentIncludes);
+    const auto& resIncludesList = MergeArgs(includesList, excludesList, parentIncludes, true);
     m_includePaths.insert(pair<string, vector<string>>(name, resIncludesList));
   }
   return true;
@@ -975,19 +1020,21 @@ bool CbuildModel::EvalIncludesDefines() {
     const RteItem* defines = target->GetItemByTag("defines");
     if (includes) {
       const vector<string>& includesList = SplitArgs(includes->GetText(), ";", false);
+      vector<string> normalizedIncludesList;
       for (auto include : includesList) {
         if (CbuildUtils::NormalizePath(include, m_prjFolder)) {
-          m_targetIncludePaths.push_back(include);
+          normalizedIncludesList.push_back(include);
           continue;
         }
         regex regEx{ "^\\$.*\\$$" };
         if (regex_search(include, regEx)) {
-          m_targetIncludePaths.push_back(include);
+          normalizedIncludesList.push_back(include);
           continue;
         }
         LogMsg("M204", PATH(include));
         return false;
       }
+      m_targetIncludePaths.insert(m_targetIncludePaths.begin(), normalizedIncludesList.begin(), normalizedIncludesList.end());
     }
     if (defines) {
       const vector<string>& definesList = SplitArgs(defines->GetText(), ";", false);
@@ -1196,6 +1243,15 @@ bool CbuildModel::EvalTargetOutput() {
   m_outDir = RteUtils::BackSlashesToSlashes(output->GetAttribute("outdir"));
   m_intDir = RteUtils::BackSlashesToSlashes(output->GetAttribute("intdir"));
   m_outputType = output->GetAttribute("type");
+
+  const string typeMap[] = { "elf", "hex", "bin", "lib" };
+  for (const auto& type : typeMap) {
+    const auto& file = output->GetAttribute(type);
+    if (!file.empty()) {
+      m_outputFiles[type] = file;
+    }
+  }
+
   return true;
 }
 
@@ -1215,7 +1271,7 @@ bool CbuildModel::EvalRteSourceFiles(map<string, list<string>> &cSourceFiles, ma
         LogMsg("M204", PATH(filepath));
         return false;
       }
-      // Use extended RTE group name instead of string obtained by RteAttributes::GetProjectGroupName() implementation("::" + Cclass)
+      // Use extended RTE group name instead of string obtained by RteItem::GetProjectGroupName() implementation("::" + Cclass)
       const string& componentName = GetExtendedRteGroupName(m_cprjTarget->GetComponentInstanceForFile(file.first.c_str()), m_cprjProject->GetRteFolder());
       switch (CbuildUtils::GetFileType(cat, file.first)) {
         case RteFile::Category::SOURCE_C:

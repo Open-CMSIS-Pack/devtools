@@ -431,6 +431,15 @@ string RteUtils::RemoveQuotes(const string& s)
   return s;
 }
 
+std::string RteUtils::AddQuotesIfSpace(const std::string& s)
+{
+  static const string& QUOTE = string("\"");
+  if (s.find(' ') != string::npos && s.find('\"') == string::npos){
+    return QUOTE + s + QUOTE;
+  }
+  return s;
+}
+
 bool RteUtils::HasHexPrefix(const string& s)
 {
   return s.length() > 2 && s[0] == '0' && (s[1] == 'x' || s[1] == 'X');
@@ -450,15 +459,66 @@ unsigned long RteUtils::ToUL(const string& s) {
   return stoul(s, 0); // use auto
 }
 
-unsigned long long RteUtils::ToULL(const string& s) {
-  if (s.empty()) {
-    return (0x0LL);
-  }
-  if (HasHexPrefix(s)) {
-    return stoull(s, 0, 16);                           // use base 16
-  }
-  return stoull(s, 0); // use auto
+bool RteUtils::StringToBool(const std::string& value, bool defaultValue)
+{
+  if (value.empty())
+    return defaultValue;
+  return (value == "1" || value == "true");
 }
+
+
+int RteUtils::StringToInt(const std::string& value, int defaultValue)
+{
+  if (value.empty())
+    return defaultValue;
+  try {
+    return std::stoi(value, 0, 0);
+  }
+  catch (const std::exception&) {
+    return defaultValue;
+  }
+}
+
+unsigned RteUtils::StringToUnsigned(const std::string& value, unsigned defaultValue)
+{
+  if (value.empty())
+    return defaultValue;
+  try {
+    return std::stoul(value, 0, 0);
+  }
+  catch (const std::exception&) {
+    return defaultValue;
+  }
+}
+
+unsigned long long RteUtils::StringToULL(const std::string& value, unsigned long long defaultValue)
+{
+  if (value.empty()) {
+    return (defaultValue);
+  }
+  int base = 10; // use 10 as default, prevent octal numbers
+  if (HasHexPrefix(value)) {   // 0xnnnn
+    base = 16; // use base 16 since it is a hex value
+  }
+  try {
+    return std::stoull(value, 0, base);
+  }
+  catch (const std::exception&) {
+    return defaultValue;
+  }
+}
+
+std::string RteUtils::Trim(const std::string& str) {
+  static const char* whitespace = " \t\r\n";
+  const auto begin = str.find_first_not_of(whitespace);
+  if (begin == std::string::npos)
+    return EMPTY_STRING;
+
+  const auto end = str.find_last_not_of(whitespace);
+  const auto range = end - begin + 1;
+  return str.substr(begin, range);
+}
+
 
 string RteUtils::GetPackID(const string &path) {
   string res;

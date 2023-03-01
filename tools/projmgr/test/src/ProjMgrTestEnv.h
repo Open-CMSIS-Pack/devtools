@@ -24,6 +24,7 @@ public:
 
   std::string GetOutString();
   std::string GetErrorString();
+  void ClearStringStreams();
 
 private:
   std::stringstream m_outbuffer;
@@ -39,6 +40,8 @@ class ProjMgrTestEnv : public ::testing::Environment {
 public:
   void SetUp() override;
   void TearDown() override;
+  static void CompareFile(const std::string& file1, const std::string& file2);
+
 };
 
 #endif  // PROJMGRTESTENV_H

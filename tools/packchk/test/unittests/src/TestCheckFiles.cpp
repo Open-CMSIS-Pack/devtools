@@ -175,7 +175,7 @@ TEST_F(TestCheckFiles, CheckCaseSense)
     { ".test1/NonExclusive.h",       true},
     { ".test1/../Api/Exclusive.h",   true},
     { "../testdata/Api/Exclusive.h", true},
-    { "../Invalid/Path/Exclusive.h", false},
+    { "../Invalid/Path/Exclusive.h", true},   // result is true now because relative paths are currently not checked
     { "api\\exclusive.h",            false},
     { "api/exclusive.h",             false}
   };
@@ -188,4 +188,20 @@ TEST_F(TestCheckFiles, CheckCaseSense)
   // cleanup
   RteFsUtils::RemoveDir(testDataFolder);
   checkFiles.SetPackagePath(packPath);
+}
+
+
+TEST_F(TestCheckFiles, CheckForSpaces)
+{
+  map<string, bool> testInputs = {
+    // FilePath, expectedResults
+    { RteUtils::EMPTY_STRING,        true},
+    { "TestFile.h",                  true},
+    { "Test File.h",                 false},
+  };
+
+  for (const auto& [fileName, result] : testInputs) {
+    EXPECT_EQ(result, checkFiles.CheckForSpaces(fileName, 1)) <<
+      "error: failed for input \"" << fileName << "\"" << endl;
+  }
 }

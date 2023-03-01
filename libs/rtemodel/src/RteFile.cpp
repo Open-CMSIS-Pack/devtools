@@ -59,25 +59,19 @@ bool RteFile::Validate()
   return m_bValid;
 }
 
-
-RteFile::Role RteFile::GetRole() const
-{
-  return RoleFromString(GetAttribute("attr"));
-}
-
 bool RteFile::IsForcedCopy() const
 {
-  return GetRole() == ROLE_COPY;
+  return GetRole() == Role::ROLE_COPY;
 }
 
 bool RteFile::IsConfig() const
 {
-  return GetRole() == ROLE_CONFIG;
+  return GetRole() == Role::ROLE_CONFIG;
 }
 
 bool RteFile::IsTemplate() const
 {
-  return GetRole() == ROLE_TEMPLATE;
+  return GetRole() == Role::ROLE_TEMPLATE;
 }
 
 bool RteFile::IsAddToProject() const
@@ -85,10 +79,16 @@ bool RteFile::IsAddToProject() const
   if (IsConfig()) {
     return true;
   }
-  Category cat = GetCategory();
-  if (cat == SOURCE || cat == SOURCE_ASM || cat == SOURCE_C || cat == SOURCE_CPP ||
-    cat == LIBRARY || cat == OBJECT) {
+  switch (GetCategory()) {
+  case Category::SOURCE:
+  case Category::SOURCE_ASM:
+  case Category::SOURCE_C:
+  case Category::SOURCE_CPP:
+  case Category::LIBRARY:
+  case Category::OBJECT:
     return !IsTemplate(); // templates are not added to project as is
+  default:
+    break;
   }
   return false;
 }
@@ -103,6 +103,22 @@ const string& RteFile::GetCategoryString() const
 {
   return GetAttribute("category");
 }
+
+RteFile::Role RteFile::GetRole() const
+{
+  return RoleFromString(GetAttribute("attr"));
+}
+
+RteFile::Scope RteFile::GetScope() const
+{
+  return ScopeFromString(GetAttribute("scope"));
+}
+
+RteFile::Language RteFile::GetLanguage() const
+{
+  return LanguageFromString(GetAttribute("language"));
+}
+
 
 string RteFile::GetFileComment() const
 {
@@ -200,10 +216,8 @@ string RteFile::GetInstancePathName(const string& deviceName, int instanceIndex,
     bool bForcedCopy = IsForcedCopy();
     if (bConfig || bTemplate || bForcedCopy) {
       if (bConfig || bForcedCopy) {
-        pathName = rteFolder + "/";
-        const string& className = c->GetCclassName();
-        pathName += className;
-        pathName += "/";
+        // replace all ' ' with '_' in class name, the generated path should not contain spaces
+        pathName += rteFolder + "/" + RteUtils::SpacesToUnderscore(c->GetCclassName()) + "/";
         if (!bForcedCopy && !deviceName.empty() && c->IsDeviceDependent()) {
           string device = WildCards::ToX(deviceName);
           if (!device.empty()) {
@@ -211,9 +225,7 @@ string RteFile::GetInstancePathName(const string& deviceName, int instanceIndex,
             pathName += "/";
           }
         }
-        pathName = RteUtils::SpacesToUnderscore(pathName); // replace all ' ' with '_', the generated path should not contian spaces
       }
-
       string fullName = GetIncludeFileName(); // valid for all file categories
       string fileName = RteUtils::ExtractFileName(fullName);
       // add file path in case of relative header
@@ -240,54 +252,81 @@ string RteFile::GetInstancePathName(const string& deviceName, int instanceIndex,
   return pathName;
 }
 
+RteFile::Category RteFile::CategoryFromString(const string& category)
+{
+  static const map<string, RteFile::Category> stringToCat = {
+    {"doc", Category::DOC},
+    {"header", Category::HEADER },
+    {"include", Category::INCLUDE},
+    {"library", Category::LIBRARY},
+    {"object", Category::OBJECT},
+    {"source", Category::SOURCE},
+    {"sourceAsm", Category::SOURCE_ASM},
+    {"sourceC", Category::SOURCE_C},
+    {"sourceCpp", Category::SOURCE_CPP},
+    {"linkerScript", Category::LINKER_SCRIPT},
+    {"utility", Category::UTILITY},
+    {"svd", Category::SVD}, // deprecated
+    {"image", Category::IMAGE},
+    {"preIncludeGlobal", Category::PRE_INCLUDE_GLOBAL},
+    {"preIncludeLocal", Category::PRE_INCLUDE_LOCAL},
+    {"genSource", Category::GEN_SOURCE},
+    {"genHeader", Category::GEN_HEADER},
+    {"genParams", Category::GEN_PARAMS},
+    {"genAsset", Category::GEN_ASSET}
+  };
+
+  auto it = stringToCat.find(category);
+  if (it != stringToCat.end()) {
+    return it->second;
+  }
+  return Category::OTHER;
+}
+
 RteFile::Role RteFile::RoleFromString(const string& role)
 {
   if (role == "copy") {
-    return ROLE_COPY;
+    return Role::ROLE_COPY;
   } else if (role == "config") {
-    return ROLE_CONFIG;
+    return Role::ROLE_CONFIG;
   } else if (role == "template") {
-    return ROLE_TEMPLATE;
+    return Role::ROLE_TEMPLATE;
   } else if (role == "interface") {
-    return ROLE_INTERFACE;
+    return Role::ROLE_INTERFACE;
   }
-  return ROLE_NONE;
+  return Role::ROLE_NONE;
 }
 
-RteFile::Category RteFile::CategoryFromString(const string& category)
+RteFile::Scope  RteFile::ScopeFromString(const std::string& scope)
 {
-  if (category == "doc")
-    return DOC;
-  else if (category == "header")
-    return HEADER;
-  else if (category == "include")
-    return INCLUDE;
-  else if (category == "library")
-    return LIBRARY;
-  else if (category == "object")
-    return OBJECT;
-  else if (category == "source")
-    return SOURCE;
-  else if (category == "sourceAsm")
-    return SOURCE_ASM;
-  else if (category == "sourceC")
-    return SOURCE_C;
-  else if (category == "sourceCpp")
-    return SOURCE_CPP;
-  else if (category == "linkerScript")
-    return LINKER_SCRIPT;
-  else if (category == "utility")
-    return UTILITY;
-  else if (category == "svd") // deprecated
-    return SVD;
-  else if (category == "image")
-    return IMAGE;
-  else if (category == "preIncludeGlobal")
-    return PRE_INCLUDE_GLOBAL;
-  else if (category == "preIncludeLocal")
-    return PRE_INCLUDE_LOCAL;
-  return OTHER;
+  if (scope == "visible") {
+    return Scope::SCOPE_VISIBLE;
+  } else if (scope == "hidden") {
+    return Scope::SCOPE_HIDDEN;
+  } else if (scope == "public") {
+    return Scope::SCOPE_PUBLIC;
+  } else if (scope == "private") {
+    return Scope::SCOPE_PRIVATE;
+  }
+  return Scope::SCOPE_NONE;
 }
+
+RteFile::Language RteFile::LanguageFromString(const std::string& language)
+{
+  if (language == "asm") {
+    return Language::LANGUAGE_ASM;
+  } else if (language == "c") {
+    return Language::LANGUAGE_C;
+  } else if (language == "cpp") {
+    return Language::LANGUAGE_CPP;
+  } else if (language == "c-cpp") {
+    return Language::LANGUAGE_C_CPP;
+  } else if (language == "link") {
+    return Language::LANGUAGE_LINK;
+  }
+  return Language::LANGUAGE_NONE;
+}
+
 
 const string& RteFile::GetVersionString() const
 {
@@ -354,11 +393,11 @@ void RteFileContainer::GetIncludePaths(set<string>& incPaths) const {
     RteFile* f = dynamic_cast<RteFile*>(child);
     if (f) {
       RteFile::Category cat = f->GetCategory();
-      if (cat == RteFile::INCLUDE) {
+      if (cat == RteFile::Category::INCLUDE) {
         string path = RteUtils::RemoveTrailingBackslash(f->GetOriginalAbsolutePath());
         if (!path.empty())
           incPaths.insert(path);
-      } else if (cat == RteFile::HEADER) {
+      } else if (cat == RteFile::Category::HEADER) {
         string path = RteUtils::ExtractFilePath(f->GetOriginalAbsolutePath(), false);
         if (!path.empty())
           incPaths.insert(path);
@@ -379,7 +418,7 @@ void RteFileContainer::GetLinkerScripts(set<RteFile*>& linkerScripts) const {
     RteFile* f = dynamic_cast<RteFile*>(child);
     if (f) {
       RteFile::Category cat = f->GetCategory();
-      if (cat == RteFile::LINKER_SCRIPT) {
+      if (cat == RteFile::Category::LINKER_SCRIPT) {
         linkerScripts.insert(f);
       }
       continue;

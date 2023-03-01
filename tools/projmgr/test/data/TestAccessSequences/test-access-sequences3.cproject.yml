@@ -1,10 +1,11 @@
 ### CMSIS Project Description ###
 
 project:
-  device: RteTest_ARMCM0
+  device: RteTest_ARMCM0_Dual:cm0_core0
   define:
     - DEF1-PROJ1-$Output(test-access-sequences3.Debug)$
     - DEF2-PROJ1-$Output(test-access-sequences3.Release)$
+    - Device_$Dname$_Processor_$Pname$
   components:
     - component: CORE
   groups:

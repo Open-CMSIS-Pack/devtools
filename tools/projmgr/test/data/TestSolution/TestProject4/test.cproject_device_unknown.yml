@@ -3,7 +3,7 @@
 project:
   description: Project 1
   device: RteTest_ARM_UNKNOWN
-  compiler: AC6@6.18.0
+  compiler: AC6@>=6.18.0
   processor:
     fpu: off
     endian: little

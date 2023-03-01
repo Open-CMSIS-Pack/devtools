@@ -101,7 +101,6 @@ bool ProjMgrWorker::AddContext(ProjMgrParser& parser, ContextDesc& descriptor, c
     context.directories.intdir = "tmp/" + context.cproject->name + (type.target.empty() ? "" : "/" + type.target) + (type.build.empty() ? "" : "/" + type.build);
     context.directories.outdir = "out/" + context.cproject->name + (type.target.empty() ? "" : "/" + type.target) + (type.build.empty() ? "" : "/" + type.build);
     error_code ec;
-    context.directories.gendir = fs::relative(context.cproject->directory + "/generated", context.csolution->directory, ec).generic_string();
     context.directories.rte = fs::relative(context.cproject->directory + "/RTE", context.csolution->directory, ec).generic_string();
 
     // customized directories
@@ -153,7 +152,7 @@ bool ProjMgrWorker::AddContext(ProjMgrParser& parser, ContextDesc& descriptor, c
         string const& clayerFile = fs::canonical(fs::path(cprojectFile).parent_path().append(clayerRef), ec).generic_string();
         if (clayerFile.empty()) {
           if (regex_match(clayer.layer, regex(".*\\$.*\\$.*"))) {
-            ProjMgrLogger::Warn(clayer.layer, "variable was not defined");
+            ProjMgrLogger::Warn(clayer.layer, "variable was not defined for context '" + context.name +"'");
           } else {
             ProjMgrLogger::Error(clayer.layer, "clayer file was not found");
             return false;
@@ -166,7 +165,7 @@ bool ProjMgrWorker::AddContext(ProjMgrParser& parser, ContextDesc& descriptor, c
         }
       }
     }
-
+    ProjMgrUtils::PushBackUniquely(m_ymlOrderedContexts, context.name);
     m_contexts[context.name] = context;
   }
   return true;
@@ -177,8 +176,16 @@ void ProjMgrWorker::GetContexts(map<string, ContextItem>* &contexts) {
   contexts = m_contextsPtr;
 }
 
+void ProjMgrWorker::GetYmlOrderedContexts(vector<string> &contexts) {
+  contexts = m_ymlOrderedContexts;
+}
+
 void ProjMgrWorker::SetOutputDir(const std::string& outputDir) {
   m_outputDir = outputDir;
+}
+
+void ProjMgrWorker::SetSelectedToolchain(const std::string& selectedToolchain) {
+  m_selectedToolchain = selectedToolchain;
 }
 
 void ProjMgrWorker::SetCheckSchema(bool checkSchema) {
@@ -189,8 +196,16 @@ void ProjMgrWorker::SetVerbose(bool verbose) {
   m_verbose = verbose;
 }
 
+void ProjMgrWorker::SetDebug(bool debug) {
+  m_debug = debug;
+}
+
 void ProjMgrWorker::SetLoadPacksPolicy(const LoadPacksPolicy& policy) {
   m_loadPacksPolicy = policy;
+}
+
+void ProjMgrWorker::SetEnvironmentVariables(const StrVec& envVars) {
+  m_envVars = envVars;
 }
 
 bool ProjMgrWorker::GetRequiredPdscFiles(ContextItem& context, const std::string& packRoot, std::set<std::string>& errMsgs) {
@@ -217,7 +232,7 @@ bool ProjMgrWorker::GetRequiredPdscFiles(ContextItem& context, const std::string
         auto filteredPack = filteredPackItem.pack;
         string packId, pdscFile, localPackId;
 
-        RteAttributes attributes({
+        XmlItem attributes({
           {"name",    filteredPack.name},
           {"vendor",  filteredPack.vendor},
           {"version", reqVersionRange},
@@ -348,11 +363,11 @@ bool ProjMgrWorker::LoadPacks(ContextItem& context) {
     return false;
   }
   // Filter context specific packs
-  if (!context.pdscFiles.empty()) {
-    RteAttributesMap selectedPacks;
+  if (!context.pdscFiles.empty() && (m_loadPacksPolicy != LoadPacksPolicy::ALL) && (m_loadPacksPolicy != LoadPacksPolicy::LATEST)) {
+    set<string> selectedPacks;
     for (const auto& pack : m_loadedPacks) {
       if (context.pdscFiles.find(pack->GetPackageFileName()) != context.pdscFiles.end()) {
-        selectedPacks.insert({ pack->GetPackageID(), pack->GetAttributes() });
+        selectedPacks.insert( pack->GetPackageID());
       }
     }
     RtePackageFilter filter;
@@ -522,16 +537,23 @@ bool ProjMgrWorker::CollectLayersFromPacks(ContextItem& context, StrVecMap& clay
 }
 
 bool ProjMgrWorker::CollectLayersFromSearchPath(const string& clayerSearchPath, StrVecMap& clayers) {
-  error_code ec;
-  for (auto& item : fs::recursive_directory_iterator(clayerSearchPath, ec)) {
-    if (fs::is_regular_file(item)) {
-      const string& clayerFile = item.path().generic_string();
-      if (regex_match(clayerFile, regex(".*\\.clayer\\.(yml|yaml)"))) {
-        if (!m_parser->ParseGenericClayer(clayerFile, m_checkSchema)) {
-          return false;
+  if (!clayerSearchPath.empty()) {
+    error_code ec;
+    const auto& absSearchPath = RteFsUtils::MakePathCanonical(clayerSearchPath);
+    if (!RteFsUtils::Exists(absSearchPath)) {
+      ProjMgrLogger::Error(absSearchPath, "clayer search path does not exist");
+      return false;
+    }
+    for (auto& item : fs::recursive_directory_iterator(absSearchPath, ec)) {
+      if (fs::is_regular_file(item, ec) && (!ec)) {
+        const string& clayerFile = item.path().generic_string();
+        if (regex_match(clayerFile, regex(".*\\.clayer\\.(yml|yaml)"))) {
+          if (!m_parser->ParseGenericClayer(clayerFile, m_checkSchema)) {
+            return false;
+          }
+          ClayerItem* clayer = &m_parser->GetGenericClayers()[clayerFile];
+          ProjMgrUtils::PushBackUniquely(clayers[clayer->type], clayerFile);
         }
-        ClayerItem* clayer = &m_parser->GetGenericClayers()[clayerFile];
-        ProjMgrUtils::PushBackUniquely(clayers[clayer->type], clayerFile);
       }
     }
   }
@@ -551,7 +573,7 @@ bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context, const string& c
 
   // debug message
   string debugMsg;
-  if (m_verbose) {
+  if (m_debug) {
     debugMsg = "check for context '" + context.name + "'\n";
   }
 
@@ -572,7 +594,7 @@ bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context, const string& c
           matchedTypeClayers[requiredType].push_back(clayer);
         }
       } else {
-        if (m_verbose) {
+        if (m_debug) {
           debugMsg += "no clayer matches type '" + requiredType + "'\n";
         }
       }
@@ -585,13 +607,15 @@ bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context, const string& c
         }
         const ClayerItem& clayerItem = m_parser->GetGenericClayers()[clayer];
         if (type != clayerItem.type) {
-          if (m_verbose) {
+          if (m_debug) {
             debugMsg += "clayer type '" + clayerItem.type + "' does not match type '" + type + "' in pack description\n";
           }
         }
-        ConnectionsCollection collection;
-        collection.filename = &clayerItem.path;
-        collection.type = &type;
+        // skip non-matching 'for-board' and 'for-device' filters
+        if (!CheckBoardDeviceInLayer(context, clayerItem)) {
+          continue;
+        }
+        ConnectionsCollection collection = {clayerItem.path, type};
         for (const auto& connect : clayerItem.connections) {
           collection.connections.push_back(&connect);
         }
@@ -605,7 +629,7 @@ bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context, const string& c
 
   // classify connections according to layer types and set config-ids
   ConnectionsCollectionMap classifiedConnections = ClassifyConnections(allConnections);
- 
+
   // cross classified connections to get all combinations to be validated
   vector<ConnectionsCollectionVec> combinations;
   if (!classifiedConnections.empty()) {
@@ -615,14 +639,14 @@ bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context, const string& c
   // validate connections combinations
   for (const auto& combination : combinations) {
     // debug message
-    if (m_verbose) {
+    if (m_debug) {
       debugMsg += "\ncheck combined connections:";
       for (const auto& item : combination) {
-        const auto& type = m_parser->GetGenericClayers()[*item.filename].type;
-        debugMsg += "\n  " + *item.filename + (type.empty() ? "" : " (layer type: " + type + ")");
+        const auto& type = m_parser->GetGenericClayers()[item.filename].type;
+        debugMsg += "\n  " + item.filename + (type.empty() ? "" : " (layer type: " + type + ")");
         for (const auto& connect : item.connections) {
           debugMsg += "\n    " + (connect->set.empty() ? "" : "set: " + connect->set + " ") + "(" +
-            (connect->info.empty() ? "" : connect->info + " - ") + connect->connect + ")";
+            connect->connect + (connect->info.empty() ? "" : " - " + connect->info) + ")";
         }
       }
       debugMsg += "\n";
@@ -635,15 +659,15 @@ bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context, const string& c
       context.validConnections.push_back(combination);
       for (const auto& [type, _] : matchedTypeClayers) {
         for (const auto& item : combination) {
-          if (*item.type == type) {
-            ProjMgrUtils::PushBackUniquely(context.compatibleLayers[type], *item.filename);
+          if (item.type == type) {
+            ProjMgrUtils::PushBackUniquely(context.compatibleLayers[type], item.filename);
           }
         }
       }
     }
 
     // debug message
-    if (m_verbose) {
+    if (m_debug) {
       PrintConnectionsValidation(result, debugMsg);
       debugMsg += "connections are " + string(result.valid ? "valid" : "invalid") + "\n";
     }
@@ -656,12 +680,12 @@ bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context, const string& c
         if (context.compatibleLayers[type].size() == 1) {
           // unique match
           const auto& clayer = context.compatibleLayers[type].front();
-          if (m_verbose) {
+          if (m_debug) {
             debugMsg += "\nclayer of type '" + type + "' was uniquely found:\n  " + clayer + "\n";
           }
         } else if (context.compatibleLayers[type].size() > 1) {
           // multiple matches
-          if (m_verbose) {
+          if (m_debug) {
             debugMsg += "\nmultiple clayers match type '" + type + "':";
             for (const auto& clayer : context.compatibleLayers[type]) {
               debugMsg += "\n  " + clayer;
@@ -672,13 +696,13 @@ bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context, const string& c
       }
     } else {
       // no valid combination
-      if (m_verbose) {
+      if (m_debug) {
         debugMsg += "\nno valid combination of clayers was found\n";
       }
     }
   }
 
-  if (m_verbose) {
+  if (m_debug) {
     ProjMgrLogger::Debug(debugMsg);
   }
 
@@ -686,34 +710,39 @@ bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context, const string& c
     return false;
   }
 
-  // print all valid configuration options
   if (context.validConnections.size() > 0) {
-    map<int, map<string, map<string, set<const ConnectItem*>>>> configurationOptions;
-    int index = 0;
-    for (const auto& combination : context.validConnections) {
-      index++;
-      for (const auto& item : combination) {
-        for (const auto& connect : item.connections) {
-          configurationOptions[index][*item.type][*item.filename].insert(connect);
-        }
-      }
-    }
-    string infoMsg = "valid for context '" + context.name + "'\n";
-    for (const auto& [index, types] : configurationOptions) {
-      infoMsg += "\nvalid configuration #" + to_string(index) + ":";
-      for (const auto& [type, filenames] : types) {
-        for (const auto& [filename, options] : filenames) {
-          infoMsg += "\n  " + filename + (type.empty() ? "" : " (layer type: " + type + ")");
-          for (const auto& connect : options) {
-            if (!connect->set.empty()) {
-              infoMsg += "\n    set: " + connect->set + " (" + (connect->info.empty() ? "" : connect->info + " - ") + connect->connect + ")";
-            }
+    // remove redundant sets
+    RemoveRedundantSubsets(context.validConnections);
+  }
+
+  if (m_verbose || m_debug) {
+    // print all valid configuration options
+    if (context.validConnections.size() > 0) {
+      map<int, map<string, map<string, set<const ConnectItem*>>>> configurationOptions;
+      int index = 0;
+      for (const auto& combination : context.validConnections) {
+        index++;
+        for (const auto& item : combination) {
+          for (const auto& connect : item.connections) {
+            configurationOptions[index][item.type][item.filename].insert(connect);
           }
         }
       }
-      infoMsg += "\n";
+      for (const auto& [index, types] : configurationOptions) {
+        string infoMsg = "valid configuration #" + to_string(index) + ": (context '" + context.name +"')";
+        for (const auto& [type, filenames] : types) {
+          for (const auto& [filename, options] : filenames) {
+            infoMsg += "\n  " + filename + (type.empty() ? "" : " (layer type: " + type + ")");
+            for (const auto& connect : options) {
+              if (!connect->set.empty()) {
+                infoMsg += "\n    set: " + connect->set + " (" + connect->connect + (connect->info.empty() ? "" : " - " + connect->info) + ")";
+              }
+            }
+          }
+        }
+        ProjMgrLogger::Info(infoMsg + "\n");
+      }
     }
-    ProjMgrLogger::Info(infoMsg);
   }
   return true;
 }
@@ -746,17 +775,13 @@ void ProjMgrWorker::PrintConnectionsValidation(ConnectionsValidationResult resul
 
 void ProjMgrWorker::CollectConnections(ContextItem& context, ConnectionsCollectionVec& connections) {
   // collect connections from project and layers
-  ConnectionsCollection projectCollection;
-  projectCollection.filename = &context.cproject->path;
-  projectCollection.type = &RteUtils::EMPTY_STRING;
+  ConnectionsCollection projectCollection = { context.cproject->path, RteUtils::EMPTY_STRING };
   for (const auto& connect : context.cproject->connections) {
     projectCollection.connections.push_back(&connect);
   }
   connections.push_back(projectCollection);
   for (const auto& [_, clayerItem] : context.clayers) {
-    ConnectionsCollection layerCollection;
-    layerCollection.filename = &clayerItem->path;
-    layerCollection.type = &clayerItem->type;
+    ConnectionsCollection layerCollection = { clayerItem->path, clayerItem->type };
     for (const auto& connect : clayerItem->connections) {
       layerCollection.connections.push_back(&connect);
     }
@@ -769,7 +794,7 @@ ConnectionsCollectionMap ProjMgrWorker::ClassifyConnections(const ConnectionsCol
   ConnectionsCollectionMap classifiedConnections;
   for (const auto& collectionEntry : connections) {
     // get type classification
-    const string& classifiedType = collectionEntry.type->empty() ? to_string(hash<string>{}(*collectionEntry.filename)) : *collectionEntry.type;
+    const string& classifiedType = collectionEntry.type.empty() ? to_string(hash<string>{}(collectionEntry.filename)) : collectionEntry.type;
     // group connections by config-id
     map<string, ConnectPtrVec> connectionsMap;
     for (const auto& connect : collectionEntry.connections) {
@@ -944,7 +969,7 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
     context.targetAttributes["Bvendor"]  = matchedBoard->GetVendorName();
     context.targetAttributes["Brevision"] = matchedBoard->GetRevision();
     context.targetAttributes["Bversion"] = matchedBoard->GetRevision(); // deprecated
- 
+
     // find device from the matched board
     list<RteItem*> mountedDevices;
     matchedBoard->GetMountedDevices(mountedDevices);
@@ -1142,8 +1167,7 @@ bool ProjMgrWorker::ProcessPackages(ContextItem& context) {
       pack.vendor = RteUtils::RemoveSuffixByString(packInfoStr, "::");
       packInfoStr = RteUtils::RemovePrefixByString(packInfoStr, "::");
       pack.name   = RteUtils::GetPrefix(packInfoStr, '@');
-    }
-    else {
+    } else {
       pack.vendor = RteUtils::GetPrefix(packInfoStr, '@');
     }
     pack.version = RteUtils::GetSuffix(packInfoStr, '@');
@@ -1164,18 +1188,13 @@ bool ProjMgrWorker::ProcessToolchain(ContextItem& context) {
   }
 
   context.toolchain = GetToolchain(context.compiler);
-  if (context.toolchain.version.empty()) {
-    StrMap latestVersions;
-    ListLatestToolchains(latestVersions, context.csolution->path);
-    for (const auto& [name, version] : latestVersions) {
-      if (context.toolchain.name == name) {
-        context.toolchain.version = version;
-        break;
-      }
-    }
-    if (context.toolchain.version.empty()) {
-      ProjMgrLogger::Warn("cmake configuration file for toolchain '" + context.toolchain.name + "' was not found");
-      context.toolchain.version = "0.0.0";
+
+  // get compatible registered toolchain
+  if (!GetLatestToolchain(context.toolchain)) {
+    // get compatible supported toolchain
+    if (!GetToolchainConfig(context.toolchain.name, context.toolchain.range, context.toolchain.config, context.toolchain.version)) {
+      ProjMgrLogger::Warn("cmake configuration file for toolchain '" + context.compiler + "' was not found");
+      context.toolchain.version = context.toolchain.range;
     }
   }
   if (context.toolchain.name == "AC6" || context.toolchain.name == "AC5") {
@@ -1209,7 +1228,7 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
     }
     // Filter components
     RteComponentMap filteredComponents;
-    set<string> filteredIds;
+    vector<string> filteredIds;
     string componentDescriptor = item.component;
 
     set<string> filterSet;
@@ -1221,7 +1240,8 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
       filterSet = SplitArgs(componentDescriptor);
     }
 
-    ApplyFilter(componentIds, filterSet, filteredIds);
+    vector<string> componentIdVec(componentIds.begin(), componentIds.end());
+    ApplyFilter(componentIdVec, filterSet, filteredIds);
     for (const auto& filteredId : filteredIds) {
       filteredComponents[filteredId] = componentMap[filteredId];
     }
@@ -1295,8 +1315,33 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
         matchedComponentInstance->AddAttribute("rtedir", rteDir);
       }
 
+      // Get generator
+      RteGenerator* generator = matchedComponent->GetGenerator();
+      const string generatorId = generator ? generator->GetID() : "";
+      if (generator) {
+        context.generators.insert({ generatorId, generator });
+
+        string genDir;
+        error_code ec;
+        if (!context.csolution->directories.gendir.empty()) {
+          // custom gendir
+          genDir = context.directories.gendir;
+        } else {
+          // original working dir
+          genDir = fs::relative(generator->GetExpandedWorkingDir(context.rteActiveTarget), context.cproject->directory, ec).generic_string();
+          if (!layer.empty()) {
+            // component belongs to layer
+            genDir = fs::relative(fs::path(context.clayers[layer]->directory).append(genDir), context.cproject->directory, ec).generic_string();
+          }
+        }
+        matchedComponentInstance->AddAttribute("gendir", genDir);
+
+        const string& gpdsc = fs::weakly_canonical(generator->GetExpandedGpdsc(context.rteActiveTarget, genDir), ec).generic_string();
+        context.gpdscs.insert({ gpdsc, {componentId, generatorId, genDir} });
+      }
+
       // Insert matched component into context list
-      context.components.insert({ componentId, { matchedComponentInstance, &item }});
+      context.components.insert({ componentId, { matchedComponentInstance, &item, generatorId }});
       const auto& componentPackage = matchedComponent->GetPackage();
       context.packages.insert({ ProjMgrUtils::GetPackageID(componentPackage), componentPackage });
       if (matchedComponent->HasApi(context.rteActiveTarget)) {
@@ -1306,19 +1351,6 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
           context.packages.insert({ ProjMgrUtils::GetPackageID(apiPackage), apiPackage });
         }
       }
-    }
-  }
-
-  // Get generators
-  for (auto& [componentId, component] : context.components) {
-    RteGenerator* generator = component.instance->GetParent()->GetComponent()->GetGenerator();
-    if (generator) {
-      const string generatorId = generator->GetID();
-      component.generator = generatorId;
-      context.generators.insert({ generatorId, generator });
-      error_code ec;
-      const string gpdsc = fs::weakly_canonical(generator->GetExpandedGpdsc(context.rteActiveTarget), ec).generic_string();
-      context.gpdscs.insert({ gpdsc, {componentId, generatorId} });
     }
   }
 
@@ -1340,7 +1372,7 @@ bool ProjMgrWorker::AddRequiredComponents(ContextItem& context) {
   if (!unresolvedComponents.empty()) {
     string msg = "unresolved components:";
     for (const auto& component : unresolvedComponents) {
-      msg += "\n" + ProjMgrUtils::GetComponentID(component->GetComponent());
+      msg += "\n" + ProjMgrUtils::GetComponentID(component);
     }
     ProjMgrLogger::Error(msg);
     return false;
@@ -1430,15 +1462,47 @@ bool ProjMgrWorker::ProcessComponentFiles(ContextItem& context) {
       }
     }
     // config files
+    map<const RteItem*, string> configFilePaths;
     for (const auto& configFileMap : context.configFiles) {
       if (configFileMap.first == componentId) {
         for (const auto& [_, configFile] : configFileMap.second) {
-          const auto& filename = configFile->GetAbsolutePath();
-          const auto& category = configFile->GetAttribute("category");
+          // cache config file path first
           const auto& originalFile = configFile->GetFile(context.rteActiveTarget->GetName());
+          const auto& filename = configFile->GetAbsolutePath();
+          configFilePaths[originalFile] = filename;
+          const auto& category = configFile->GetAttribute("category");
+          switch (RteFile::CategoryFromString(category)) {
+          case RteFile::Category::GEN_SOURCE:
+          case RteFile::Category::GEN_HEADER:
+          case RteFile::Category::GEN_PARAMS:
+          case RteFile::Category::GEN_ASSET:
+            continue; // ignore gen files
+          default:
+            break;
+          };
           const auto& version = originalFile->GetVersionString();
           context.componentFiles[componentId].push_back({ filename, "config", category, version });
         }
+      }
+    }
+    // input files for component generator. This list of files is directly fetched from the PDSC.
+    if (rteComponent->GetGenerator()) {
+      for (const RteItem* rteFile: files) {
+        const auto& category = rteFile->GetAttribute("category");
+        switch (RteFile::CategoryFromString(category)) {
+        case RteFile::Category::GEN_SOURCE:
+        case RteFile::Category::GEN_HEADER:
+        case RteFile::Category::GEN_PARAMS:
+        case RteFile::Category::GEN_ASSET:
+          break; // add only gen files, ignore others
+        default:
+          continue;
+        };
+        const auto& version = rteFile->GetVersionString();
+        const auto& attr = rteFile->GetAttribute("attr");
+        const auto& filename = (attr == "config" && configFilePaths.find(rteFile) != configFilePaths.end()) ?
+                                configFilePaths[rteFile] : rteFile->GetOriginalAbsolutePath();
+        context.generatorInputFiles[componentId].push_back({ filename, attr, category, version });
       }
     }
   }
@@ -1510,8 +1574,8 @@ bool ProjMgrWorker::ProcessGpdsc(ContextItem& context) {
     error_code ec;
     const string gpdscFile = fs::weakly_canonical(file, ec).generic_string();
     if (!ProjMgrUtils::ReadGpdscFile(gpdscFile, gpdscModel.get())) {
-      ProjMgrLogger::Error(gpdscFile, "generator '" + context.gpdscs.at(gpdscFile).second +
-        "' from component '" + context.gpdscs.at(gpdscFile).first + "': reading gpdsc failed");
+      ProjMgrLogger::Error(gpdscFile, "generator '" + context.gpdscs.at(gpdscFile).generator +
+        "' from component '" + context.gpdscs.at(gpdscFile).component + "': reading gpdsc failed");
       gpdscModel.reset();
       return false;
     } else {
@@ -1536,6 +1600,19 @@ bool ProjMgrWorker::ProcessPrecedence(StringCollection& item) {
   for (const auto& element : item.elements) {
     if (!GetPrecedentValue(*item.assign, *element)) {
       return false;
+    }
+  }
+  return true;
+}
+
+bool ProjMgrWorker::ProcessCompilerPrecedence(StringCollection& item) {
+  for (const auto& element : item.elements) {
+    if (!element->empty()) {
+      if (!ProjMgrUtils::AreCompilersCompatible(*item.assign, *element)) {
+        ProjMgrLogger::Error("redefinition from '" + *item.assign + "' into '" + *element + "' is not allowed");
+        return false;
+      }
+      ProjMgrUtils::CompilersIntersect(*item.assign, *element, *item.assign);
     }
   }
   return true;
@@ -1603,12 +1680,13 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
      &context.controls.csolution.compiler,
      &context.controls.target.compiler,
      &context.controls.build.compiler,
+     &m_selectedToolchain,
    },
   };
   for (const auto& [_, clayer] : context.clayers) {
     compiler.elements.push_back(&clayer->target.build.compiler);
   }
-  if (!ProcessPrecedence(compiler)) {
+  if (!ProcessCompilerPrecedence(compiler)) {
     return false;
   }
   if (!ProcessToolchain(context)) {
@@ -1616,7 +1694,10 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
   }
 
   // set context variables (static access sequences)
-  context.variables[ProjMgrUtils::AS_DNAME] = context.device;
+  DeviceItem deviceItem;
+  GetDeviceItem(context.device, deviceItem);
+  context.variables[ProjMgrUtils::AS_DNAME] = deviceItem.name;
+  context.variables[ProjMgrUtils::AS_PNAME] = deviceItem.pname;
   context.variables[ProjMgrUtils::AS_BNAME] = context.board;
   context.variables[ProjMgrUtils::AS_COMPILER] = context.toolchain.name;
 
@@ -1626,8 +1707,15 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
       context.cdefault->misc.begin(), context.cdefault->misc.end());
   }
 
+  // Output filenames must be processed after board, device and compiler precedences
+  // but before processing other access sequences
+  if (!ProcessOutputFilenames(context)) {
+    return false;
+  }
+
   // Access sequences and relative path references must be processed
   // after board, device and compiler precedences (due to $Bname$, $Dname$ and $Compiler$)
+  // after output filenames (due to $Output$)
   // but before processing misc, defines and includes precedences
   if (!ProcessSequencesRelatives(context)) {
     return false;
@@ -1755,7 +1843,7 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
     miscVec.push_back(&clayer.misc);
   }
   context.controls.processed.misc.push_back({});
-  context.controls.processed.misc.front().compiler = context.toolchain.name;
+  context.controls.processed.misc.front().compiler = context.compiler;
   AddMiscUniquely(context.controls.processed.misc.front(), miscVec);
 
   // Defines
@@ -1908,7 +1996,7 @@ bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, 
           }
           else if (regex_match(sequence, regex("^Output\\(.*"))) {
             regEx = regex("\\$Output\\(.*\\)\\$");
-            replacement = relOutDir + "/" + contextName;
+            replacement = relOutDir + "/" + (depContext.outputFiles.find("elf") != depContext.outputFiles.end() ? depContext.outputFiles.at("elf") : contextName);
           }
           else if (regex_match(sequence, regex("^Source\\(.*"))) {
             regEx = regex("\\$Source\\(.*\\)\\$");
@@ -2037,15 +2125,36 @@ bool ProjMgrWorker::AddComponent(const ComponentItem& src, const string& layer, 
   return true;
 }
 
+bool ProjMgrWorker::CheckBoardDeviceInLayer(const ContextItem& context, const ClayerItem& clayer) {
+  if (!clayer.forBoard.empty()) {
+    BoardItem forBoard, board;
+    GetBoardItem(clayer.forBoard, forBoard);
+    GetBoardItem(context.board, board);
+    if ((!forBoard.vendor.empty() && (forBoard.vendor != board.vendor)) ||
+        (!forBoard.name.empty() && (forBoard.name != board.name)) ||
+        (!forBoard.revision.empty() && (forBoard.revision != board.revision))) {
+      return false;
+    }
+  }
+  if (!clayer.forDevice.empty()) {
+    DeviceItem forDevice, device;
+    GetDeviceItem(clayer.forDevice, forDevice);
+    GetDeviceItem(context.device, device);
+    if ((!forDevice.vendor.empty() && (forDevice.vendor != device.vendor)) ||
+        (!forDevice.name.empty() && (forDevice.name != device.name)) ||
+        (!forDevice.pname.empty() && (forDevice.pname != device.pname))) {
+      return false;
+    }
+  }
+  return true;
+}
+
 bool ProjMgrWorker::CheckCompiler(const vector<string>& forCompiler, const string& selectedCompiler) {
   if (forCompiler.empty()) {
     return true;
   }
-  const ToolchainItem& selectedToolchain = GetToolchain(selectedCompiler);
   for (const auto& compiler : forCompiler) {
-    const ToolchainItem& toolchain = GetToolchain(compiler);
-    if (toolchain.name == selectedToolchain.name &&
-       (toolchain.version.empty() || toolchain.version == selectedToolchain.version)) {
+    if (ProjMgrUtils::AreCompilersCompatible(compiler, selectedCompiler)) {
       return true;
     }
   }
@@ -2084,8 +2193,6 @@ bool ProjMgrWorker::CheckType(const TypeFilter& typeFilter, const TypePair& type
 }
 
 bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGpdsc, bool resolveDependencies, bool updateRteFiles) {
-  context.outputType = context.cproject->outputType.empty() ? "exe" : context.cproject->outputType;
-
   if (!LoadPacks(context)) {
     return false;
   }
@@ -2133,7 +2240,7 @@ bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGpdsc, bool re
   return true;
 }
 
-void ProjMgrWorker::ApplyFilter(const set<string>& origin, const set<string>& filter, set<string>& result) {
+void ProjMgrWorker::ApplyFilter(const vector<string>& origin, const set<string>& filter, vector<string>& result) {
   result.clear();
   for (const auto& item : origin) {
     bool match = true;
@@ -2147,7 +2254,7 @@ void ProjMgrWorker::ApplyFilter(const set<string>& origin, const set<string>& fi
       }
     }
     if (match) {
-      result.insert(item);
+      ProjMgrUtils::PushBackUniquely(result, item);
     }
   }
 }
@@ -2232,16 +2339,17 @@ bool ProjMgrWorker::ListPacks(vector<string>&packs, bool missingPacks, const str
       reqOk = false;
     }
   }
+  vector<string> packsVec(packsSet.begin(), packsSet.end());
   if (!filter.empty()) {
-    set<string> filteredPacks;
-    ApplyFilter(packsSet, SplitArgs(filter), filteredPacks);
+    vector<string> filteredPacks;
+    ApplyFilter(packsVec, SplitArgs(filter), filteredPacks);
     if (filteredPacks.empty()) {
       ProjMgrLogger::Error("no pack was found with filter '" + filter + "'");
       return false;
     }
-    packsSet = filteredPacks;
+    packsVec = filteredPacks;
   }
-  packs.assign(packsSet.begin(), packsSet.end());
+  packs.assign(packsVec.begin(), packsVec.end());
   return reqOk;
 }
 
@@ -2265,16 +2373,17 @@ bool ProjMgrWorker::ListBoards(vector<string>& boards, const string& filter) {
     ProjMgrLogger::Error("no installed board was found");
     return false;
   }
+  vector<string> boardsVec(boardsSet.begin(), boardsSet.end());
   if (!filter.empty()) {
-    set<string> matchedBoards;
-    ApplyFilter(boardsSet, SplitArgs(filter), matchedBoards);
+    vector<string> matchedBoards;
+    ApplyFilter(boardsVec, SplitArgs(filter), matchedBoards);
     if (matchedBoards.empty()) {
       ProjMgrLogger::Error("no board was found with filter '" + filter + "'");
       return false;
     }
-    boardsSet = matchedBoards;
+    boardsVec = matchedBoards;
   }
-  boards.assign(boardsSet.begin(), boardsSet.end());
+  boards.assign(boardsVec.begin(), boardsVec.end());
   return true;
 }
 
@@ -2305,16 +2414,17 @@ bool ProjMgrWorker::ListDevices(vector<string>& devices, const string& filter) {
     ProjMgrLogger::Error("no installed device was found");
     return false;
   }
+  vector<string> devicesVec(devicesSet.begin(), devicesSet.end());
   if (!filter.empty()) {
-    set<string> matchedDevices;
-    ApplyFilter(devicesSet, SplitArgs(filter), matchedDevices);
+    vector<string> matchedDevices;
+    ApplyFilter(devicesVec, SplitArgs(filter), matchedDevices);
     if (matchedDevices.empty()) {
       ProjMgrLogger::Error("no device was found with filter '" + filter + "'");
       return false;
     }
-    devicesSet = matchedDevices;
+    devicesVec = matchedDevices;
   }
-  devices.assign(devicesSet.begin(), devicesSet.end());
+  devices.assign(devicesVec.begin(), devicesVec.end());
   return true;
 }
 
@@ -2328,9 +2438,6 @@ bool ProjMgrWorker::ListComponents(vector<string>& components, const string& fil
     }
     if (!selectedContext.empty()) {
       if (!ProcessPrecedences(context)) {
-        return false;
-      }
-      if (!ProcessToolchain(context)) {
         return false;
       }
       if (!ProcessDevice(context)) {
@@ -2356,16 +2463,17 @@ bool ProjMgrWorker::ListComponents(vector<string>& components, const string& fil
       componentMap[componentId] = component.second;
     }
   }
+  vector<string> componentIdsVec(componentIds.begin(), componentIds.end());
   if (!filter.empty()) {
-    set<string> filteredIds;
-    ApplyFilter(componentIds, SplitArgs(filter), filteredIds);
+    vector<string> filteredIds;
+    ApplyFilter(componentIdsVec, SplitArgs(filter), filteredIds);
     if (filteredIds.empty()) {
       ProjMgrLogger::Error("no component was found with filter '" + filter + "'");
       return false;
     }
-    componentIds = filteredIds;
+    componentIdsVec = filteredIds;
   }
-  for (const auto& componentId : componentIds) {
+  for (const auto& componentId : componentIdsVec) {
     components.push_back(componentId + " (" + ProjMgrUtils::GetPackageID(componentMap[componentId]->GetPackage()) + ")");
   }
   return true;
@@ -2388,16 +2496,17 @@ bool ProjMgrWorker::ListDependencies(vector<string>& dependencies, const string&
       }
     }
   }
+  vector<string> dependenciesVec(dependenciesSet.begin(), dependenciesSet.end());
   if (!filter.empty()) {
-    set<string> filteredDependencies;
-    ApplyFilter(dependenciesSet, SplitArgs(filter), filteredDependencies);
+    vector<string> filteredDependencies;
+    ApplyFilter(dependenciesVec, SplitArgs(filter), filteredDependencies);
     if (filteredDependencies.empty()) {
       ProjMgrLogger::Error("no unresolved dependency was found with filter '" + filter + "'");
       return false;
     }
-    dependenciesSet = filteredDependencies;
+    dependenciesVec = filteredDependencies;
   }
-  dependencies.assign(dependenciesSet.begin(), dependenciesSet.end());
+  dependencies.assign(dependenciesVec.begin(), dependenciesVec.end());
   return true;
 }
 
@@ -2433,24 +2542,25 @@ bool ProjMgrWorker::FormatValidationResults(set<string>& results, const ContextI
   return true;
 }
 
-bool ProjMgrWorker::ListContexts(vector<string>& contexts, const string& filter) {
+bool ProjMgrWorker::ListContexts(vector<string>& contexts, const string& filter, const bool ymlOrder) {
   if (m_contexts.empty()) {
     return false;
   }
-  set<string>contextsSet;
-  for (auto& context : m_contexts) {
-    contextsSet.insert(context.first);
-  }
+  vector<string> contextsVec = m_ymlOrderedContexts;
   if (!filter.empty()) {
-    set<string> filteredContexts;
-    ApplyFilter(contextsSet, SplitArgs(filter), filteredContexts);
+    vector<string> filteredContexts;
+    ApplyFilter(contextsVec, SplitArgs(filter), filteredContexts);
     if (filteredContexts.empty()) {
       ProjMgrLogger::Error("no context was found with filter '" + filter + "'");
       return false;
     }
-    contextsSet = filteredContexts;
+    contextsVec = filteredContexts;
   }
-  contexts.assign(contextsSet.begin(), contextsSet.end());
+  contexts.assign(contextsVec.begin(), contextsVec.end());
+
+  if (!ymlOrder) {
+    std::sort(contexts.begin(), contexts.end());
+  }
   return true;
 }
 
@@ -2470,6 +2580,7 @@ bool ProjMgrWorker::ListGenerators(vector<string>& generators) {
 }
 
 bool ProjMgrWorker::ListLayers(vector<string>& layers, const string& clayerSearchPath) {
+  map<StrPair, StrSet> layersMap;
   for (const auto& selectedContext : m_selectedContexts) {
     ContextItem& context = m_contexts[selectedContext];
     if (!LoadPacks(context)) {
@@ -2483,9 +2594,8 @@ bool ProjMgrWorker::ListLayers(vector<string>& layers, const string& clayerSearc
         return false;
       }
       for (const auto& [clayerType, clayerVec] : genericClayers) {
-        const string type = clayerType.empty() ? "" : " (layer type: " + clayerType + ")";
         for (const auto& clayer : clayerVec) {
-          ProjMgrUtils::PushBackUniquely(layers, clayer + type);
+          layersMap[{clayer, clayerType}].insert({});
         }
       }
     } else {
@@ -2503,7 +2613,27 @@ bool ProjMgrWorker::ListLayers(vector<string>& layers, const string& clayerSearc
       if (!DiscoverMatchingLayers(context, clayerSearchPath)) {
         return false;
       }
+      for (const auto& [clayer, clayerItem] : context.clayers) {
+        const auto& validSets = GetValidSets(context, clayer);
+        layersMap[{clayer, clayerItem->type}].insert(validSets.begin(), validSets.end());
+      }
+      for (const auto& [clayerType, clayerVec] : context.compatibleLayers) {
+        for (const auto& clayer : clayerVec) {
+          const auto& validSets = GetValidSets(context, clayer);
+          layersMap[{clayer, clayerType}].insert(validSets.begin(), validSets.end());
+        }
+      }
     }
+  }
+  // print layer paths, types and valid sets for all selected contexts without duplicates
+  for (const auto& [clayerPair, validSets] : layersMap) {
+    const auto& clayer = clayerPair.first;
+    const auto& type = clayerPair.second;
+    string layerEntry = clayer + (type.empty() ? "" : " (layer type: " + type + ")");
+    for (const auto& validSet : validSets) {
+      layerEntry += "\n  set: " + validSet;
+    }
+    ProjMgrUtils::PushBackUniquely(layers, layerEntry);
   }
   return true;
 }
@@ -2512,10 +2642,18 @@ ToolchainItem ProjMgrWorker::GetToolchain(const string& compiler) {
   ToolchainItem toolchain;
   if (compiler.find("@") != string::npos) {
     toolchain.name = RteUtils::RemoveSuffixByString(compiler, "@");
-    toolchain.version = RteUtils::RemovePrefixByString(compiler, "@");
-  }
-  else {
+    toolchain.required = RteUtils::RemovePrefixByString(compiler, "@");
+    if (toolchain.required.find(">=") != string::npos) {
+      // minimum version
+      toolchain.range = toolchain.required.substr(2);
+    } else {
+      // fixed version
+      toolchain.range = toolchain.required + ":" + toolchain.required;
+    }
+  } else {
     toolchain.name = compiler;
+    toolchain.required = ">=0.0.0";
+    toolchain.range = "0.0.0";
   }
   return toolchain;
 }
@@ -2560,7 +2698,7 @@ void ProjMgrWorker::AddMiscUniquely(MiscItem& dst, vector<vector<MiscItem>*>& ve
 
 void ProjMgrWorker::AddMiscUniquely(MiscItem& dst, vector<MiscItem>& vec) {
   for (auto& src : vec) {
-    if (src.compiler.empty() || (src.compiler == dst.compiler)) {
+    if (ProjMgrUtils::AreCompilersCompatible(src.compiler, dst.compiler)) {
       // Copy individual flags
       AddStringItemsUniquely(dst.as, src.as);
       AddStringItemsUniquely(dst.c, src.c);
@@ -2616,67 +2754,77 @@ bool ProjMgrWorker::GetAccessSequence(size_t& offset, const string& src, string&
 }
 
 bool ProjMgrWorker::ExecuteGenerator(std::string& generatorId) {
-  for (const auto& selectedContext : m_selectedContexts) {
-    ContextItem& context = m_contexts[selectedContext];
-    if (!ProcessContext(context, false)) {
-      return false;
-    }
-    const auto& generators = context.generators;
-    if (generators.find(generatorId) == generators.end()) {
-      ProjMgrLogger::Error("generator '" + generatorId + "' was not found");
-      return false;
-    }
-    RteGenerator* generator = generators.at(generatorId);
+  if (m_selectedContexts.size() != 1) {
+    ProjMgrLogger::Error("a single context must be specified");
+    return false;
+  }
+  const string& selectedContext = m_selectedContexts.front();
+  ContextItem& context = m_contexts[selectedContext];
+  if (!ProcessContext(context, false)) {
+    return false;
+  }
+  const auto& generators = context.generators;
+  if (generators.find(generatorId) == generators.end()) {
+    ProjMgrLogger::Error("generator '" + generatorId + "' was not found");
+    return false;
+  }
+  RteGenerator* generator = generators.at(generatorId);
 
-    // Create generate.yml file with context info and destination
-    string generatorDestination = context.directories.gendir;
-    if (generatorDestination.empty()) {
-      generatorDestination = generator->GetExpandedWorkingDir(context.rteActiveTarget);  // Fallback to working dir if no specific generator directory was specified
-    }
-
-    // Make sure the generatorDestination is absolute
-    if (fs::path(generatorDestination).is_relative()) {
-      generatorDestination = context.rteActiveProject->GetProjectPath() + generatorDestination;
-    }
-
-    // Make the generatorDestination is a folder by adding a '/' to the end
-    if (!generatorDestination.empty() && generatorDestination.back() != '/') {
-      generatorDestination += '/';
-    }
-
-    const auto generatorInputFilePath = ProjMgrYamlEmitter::EmitContextInfo(context, generatorDestination);
-
-    if (!generatorInputFilePath) {
-      ProjMgrLogger::Error("Failed to create the generator input file for '" + generatorId + "'");
-      return false;
-    }
-
-    // Update RteTarget with current generatorInputFilePath that was created
-    context.rteActiveTarget->SetGeneratorInputFile(*generatorInputFilePath);
-
-    // TODO: review RteGenerator::GetExpandedCommandLine and variables
-    //const string generatorCommand = m_kernel->GetCmsisPackRoot() + "/" + generator->GetPackagePath() + generator->GetCommand();
-    const string generatorCommand = generator->GetExpandedCommandLine(context.rteActiveTarget);
-    if (generatorCommand.empty()) {
-      ProjMgrLogger::Error("generator command for '" + generatorId + "' was not found");
-      return false;
-    }
-
-
-    error_code ec;
-    const auto& workingDir = fs::current_path(ec);
-    fs::current_path(generatorDestination, ec);
-    ProjMgrUtils::Result result = ProjMgrUtils::ExecCommand(generatorCommand);
-    fs::current_path(workingDir, ec);
-
-    ProjMgrLogger::Info("generator '" + generatorId + "' for context '" + selectedContext + "' reported:\n" + result.first);
-
-    if (result.second) {
-      ProjMgrLogger::Error("executing generator '" + generatorId + "' for context '" + selectedContext + "' failed");
-      return false;
+  // Create generate.yml file with context info and destination
+  string generatorDestination;
+  for (const auto& [gpdsc, item] : context.gpdscs) {
+    if (item.generator == generatorId) {
+      generatorDestination = item.workingDir;
     }
   }
 
+  // Make sure the generatorDestination is absolute
+  if (fs::path(generatorDestination).is_relative()) {
+    generatorDestination = context.rteActiveProject->GetProjectPath() + generatorDestination;
+  }
+
+  // Make the generatorDestination is a folder by adding a '/' to the end
+  if (!generatorDestination.empty() && generatorDestination.back() != '/') {
+    generatorDestination += '/';
+  }
+
+  if (!ProjMgrYamlEmitter::GenerateCbuild(&context)) {
+    return false;
+  }
+
+  // TODO: review RteGenerator::GetExpandedCommandLine and variables
+  //const string generatorCommand = m_kernel->GetCmsisPackRoot() + "/" + generator->GetPackagePath() + generator->GetCommand();
+
+  // check if generator executable has execute permissions
+  const string generatorExe = generator->GetExecutable(context.rteActiveTarget);
+  if (generatorExe.empty()) {
+    ProjMgrLogger::Error("generator executable '" + generatorId + "' was not found");
+    return false;
+  }
+  if(!RteFsUtils::Exists(generatorExe)) {
+    ProjMgrLogger::Error("generator executable file '" + generatorExe + "' does not exist");
+    return false;
+  }
+
+  if (!RteFsUtils::IsExecutableFile(generatorExe)) {
+    ProjMgrLogger::Error("generator file '" + generatorExe + "' cannot be executed, check permissions");
+    return false;
+  }
+  const string generatorCommand = generator->GetExpandedCommandLine(context.rteActiveTarget);
+
+  error_code ec;
+  const auto& workingDir = fs::current_path(ec);
+  RteFsUtils::CreateDirectories(generatorDestination);
+  fs::current_path(generatorDestination, ec);
+  ProjMgrUtils::Result result = ProjMgrUtils::ExecCommand(generatorCommand);
+  fs::current_path(workingDir, ec);
+
+  ProjMgrLogger::Info("generator '" + generatorId + "' for context '" + selectedContext + "' reported:\n" + result.first);
+
+  if (result.second) {
+    ProjMgrLogger::Error("executing generator '" + generatorId + "' for context '" + selectedContext + "' failed");
+    return false;
+  }
   return true;
 }
 
@@ -2774,43 +2922,113 @@ string ProjMgrWorker::ExpandString(const string& src, const StrMap& variables) {
   return ret;
 }
 
-void ProjMgrWorker::ListToolchains(StrPairVec& toolchains, const string& localDir) {
-  // find cmake files in compiler root path
-  list<string> cmakeFiles;
-  const string& compilerRoot = GetCompilerRoot();
-  if (compilerRoot.empty()) {
-    ProjMgrLogger::Warn("compiler root path was not found");
-  }
-  RteFsUtils::GrepFileNames(cmakeFiles, compilerRoot, "*.cmake");
-
-  // find cmake files in local directory
-  if (!localDir.empty()) {
-    list<string> cmakeFilesLocal;
-    RteFsUtils::GrepFileNames(cmakeFilesLocal, localDir, "*.cmake");
-    cmakeFiles.insert(cmakeFiles.end(), cmakeFilesLocal.begin(), cmakeFilesLocal.end());
-  }
-
-  // extract toolchain info
-  for (const auto& cmakeFile : cmakeFiles) {
-    smatch sm;
-    const string& stem  = fs::path(cmakeFile).stem().generic_string();
-    regex_match(stem, sm, regex("(.*)\\.(.*\\..*\\..*)"));
-    if (sm.size() == 3) {
-      ProjMgrUtils::PushBackUniquely(toolchains, {sm[1], sm[2]});
+bool ProjMgrWorker::ListToolchains(vector<ToolchainItem>& toolchains) {
+  bool allSupported = true;
+  for (const auto& selectedContext : m_selectedContexts) {
+    ContextItem& context = m_contexts[selectedContext];
+    if (selectedContext.empty()) {
+      // list registered toolchains
+      GetRegisteredToolchains();
+      toolchains = m_toolchains;
+      return true;
+    }
+    // list required toolchains for selected contexts
+    if (!LoadPacks(context)) {
+      return false;
+    }
+    if (!ProcessPrecedences(context)) {
+      return false;
+    }
+    if (!context.toolchain.name.empty()) {
+      PushBackUniquely(toolchains, context.toolchain);
+    }
+    if (context.toolchain.config.empty() || context.toolchain.root.empty()) {
+      allSupported = false;
     }
   }
-  std::sort(toolchains.begin(), toolchains.end());
+  return allSupported;
 }
 
-void ProjMgrWorker::ListLatestToolchains(StrMap& toolchains, const string & localDir) {
-  StrPairVec fullList;
-  ListToolchains(fullList, localDir);
-  for (const auto& [name, version] : fullList) {
-    if ((toolchains.find(name) == toolchains.end()) ||
-      (VersionCmp::Compare(toolchains.at(name), version) < 0)) {
-      toolchains[name] = version;
+void ProjMgrWorker::GetRegisteredToolchains(void) {
+  if (!m_toolchains.empty()) {
+    return;
+  }
+  // extract toolchain info from environment variables
+  map<string, map<string, string>> registeredToolchains;
+  static const regex regEx = regex("(\\w+)_TOOLCHAIN_(\\d+)_(\\d+)_(\\d+)=(.*)");
+  for (const auto& envVar : m_envVars) {
+    smatch sm;
+    try {
+      regex_match(envVar, sm, regEx);
+    } catch (exception&) {};
+    if (sm.size() == 6) {
+      registeredToolchains[sm[1]][string(sm[2]) + '.' + string(sm[3]) + '.' + string(sm[4])] = sm[5];
     }
   }
+  // iterate over registered toolchains
+  for (const auto& [toolchainName, toolchainVersions] : registeredToolchains) {
+    for (const auto& [toolchainVersion, toolchainRoot] : toolchainVersions) {
+      if (RteFsUtils::Exists(toolchainRoot)) {
+        // check whether a config file is available for the registered version
+        string configPath, configVersion;
+        if (GetToolchainConfig(toolchainName, "0.0.0:" + toolchainVersion, configPath, configVersion)) {
+          m_toolchains.push_back({toolchainName, toolchainVersion, "", "", toolchainRoot, configPath});
+        }
+      }
+    }
+  }
+}
+
+bool ProjMgrWorker::GetLatestToolchain(ToolchainItem& toolchain) {
+  // get latest toolchain version
+  GetRegisteredToolchains();
+  bool found = false;
+  for (const auto& registeredToolchain : m_toolchains) {
+    if ((toolchain.name == registeredToolchain.name) &&
+      (VersionCmp::RangeCompare(registeredToolchain.version, toolchain.range) == 0)) {
+      toolchain.version = registeredToolchain.version;
+      toolchain.config = registeredToolchain.config;
+      toolchain.root = registeredToolchain.root;
+      found = true;
+    }
+  }
+  return found;
+}
+
+bool ProjMgrWorker::GetToolchainConfig(const string& toolchainName, const string& toolchainVersion, string& configPath, string& selectedConfigVersion) {
+  // get toolchain configuration files
+  const string& compilerRoot = GetCompilerRoot();
+  StrVec toolchainConfigFiles;
+  error_code ec;
+  for (auto const& entry : fs::recursive_directory_iterator(compilerRoot, ec)) {
+    string extn = entry.path().extension().string();
+    if (entry.path().extension().string() != ".cmake") {
+      continue;
+    }
+    toolchainConfigFiles.push_back(entry.path().generic_string());
+  }
+  // find greatest compatible file
+  bool found = false;
+  static const regex regEx = regex("(\\w+)\\.(\\d+\\.\\d+\\.\\d+)");
+  for (const auto& file : toolchainConfigFiles) {
+    smatch sm;
+    const string& stem = fs::path(file).stem().generic_string();
+    try {
+      regex_match(stem, sm, regEx);
+    } catch (exception&) {};
+    if (sm.size() == 3) {
+      const string& configName = sm[1];
+      const string& configVersion = sm[2];
+      if ((configName.compare(toolchainName) == 0) &&
+        (toolchainVersion.empty() || (VersionCmp::RangeCompare(configVersion, toolchainVersion) == 0)) &&
+        (VersionCmp::Compare(selectedConfigVersion, configVersion) <= 0)) {
+        selectedConfigVersion = configVersion;
+        configPath = file;
+        found = true;
+      }
+    }
+  }
+  return found;
 }
 
 string ProjMgrWorker::GetCompilerRoot(void) {
@@ -2835,4 +3053,112 @@ void ProjMgrWorker::PushBackUniquely(ConnectionsCollectionVec& vec, const Connec
     }
   }
   vec.push_back(value);
+}
+
+void ProjMgrWorker::PushBackUniquely(vector<ToolchainItem>& vec, const ToolchainItem& value) {
+  for (const auto& item : vec) {
+    if ((value.name == item.name) && (value.required == item.required)) {
+      return;
+    }
+  }
+  vec.push_back(value);
+}
+
+bool ProjMgrWorker::IsConnectionSubset(const ConnectionsCollection& connectionSubset, const ConnectionsCollection& connectionSuperset) {
+  if ((connectionSubset.type == connectionSuperset.type) &&
+    (connectionSubset.filename == connectionSuperset.filename)) {
+    ConnectPtrVec subset = connectionSubset.connections;
+    ConnectPtrVec superset = connectionSuperset.connections;
+    sort(subset.begin(), subset.end());
+    sort(superset.begin(), superset.end());
+    return includes(superset.begin(), superset.end(), subset.begin(), subset.end());
+  }
+  return false;
+}
+
+bool ProjMgrWorker::IsCollectionSubset(const ConnectionsCollectionVec& collectionSubset, const ConnectionsCollectionVec& collectionSuperset) {
+  for (const auto& subset : collectionSubset) {
+    bool isSubset = false;
+    for (const auto& superset : collectionSuperset) {
+      if (IsConnectionSubset(subset, superset)) {
+        isSubset = true;
+        break;
+      }
+    }
+    if (!isSubset) {
+      return false;
+    }
+  }
+  return true;
+}
+
+void ProjMgrWorker::RemoveRedundantSubsets(std::vector<ConnectionsCollectionVec>& validConnections) {
+  const auto connections = validConnections;
+  auto it = validConnections.begin();
+  for (const auto& collection : connections) {
+    bool isSubset = false;
+    for (const auto& otherCollection : connections) {
+      if (&collection == &otherCollection) {
+        continue;
+      }
+      if (IsCollectionSubset(collection, otherCollection)) {
+        isSubset = true;
+        break;
+      }
+    }
+    if (isSubset) {
+      it = validConnections.erase(it);
+    } else {
+      it++;
+    }
+  }
+}
+
+StrSet ProjMgrWorker::GetValidSets(ContextItem& context, const string& clayer) {
+  StrSet validSets;
+  for (const auto& combination : context.validConnections) {
+    for (const auto& item : combination) {
+      if (item.filename == clayer) {
+        for (const auto& connect : item.connections) {
+          if (!connect->set.empty()) {
+            validSets.insert(connect->set + " (" + connect->connect + (connect->info.empty() ? "" : " - " + connect->info) + ")");
+          }
+        }
+      }
+    }
+  }
+  return validSets;
+}
+
+bool ProjMgrWorker::ProcessOutputFilenames(ContextItem& context) {
+  if (context.cproject->outputFiles.empty()) {
+    // TODO: after deprecation remove 'outputType' attribute
+    context.outputType = context.cproject->outputType.empty() ? "exe" : context.cproject->outputType;
+  } else {
+    map<const string, bool> typeMap = {
+      { "elf", false },
+      { "hex", false },
+      { "bin", false },
+      { "lib", false },
+    };
+    for (const auto& output : context.cproject->outputFiles) {
+      if (CheckType(output.typeFilter, context.type)) {
+        string outputFile = ExpandString(output.file, context.variables);
+        RteFsUtils::NormalizePath(outputFile);
+        if ((context.outputFiles.find(output.type) != context.outputFiles.end()) &&
+          (context.outputFiles.at(output.type) != outputFile)) {
+          ProjMgrLogger::Warn("output '" + output.type + "' redefined from '" + context.outputFiles.at(output.type) + "' to '" + outputFile + "'");
+        }
+        context.outputFiles[output.type] = outputFile;
+        if (typeMap.find(output.type) != typeMap.end()) {
+          typeMap[output.type] = true;
+        }
+      }
+    }
+    if (typeMap["lib"] && (typeMap["elf"] || typeMap["bin"] || typeMap["hex"])) {
+      ProjMgrLogger::Error("output 'lib' is incompatible with other output types");
+      return false;
+    }
+  }
+  return true;
 }

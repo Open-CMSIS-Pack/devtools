@@ -44,10 +44,25 @@ public:
   virtual ~RteGenerator() override;
 
   /**
-   * @brief get generator command without expansion
-   * @return generator command
+   * @brief get generator commands for all host types without expansion
+   * @return map with host type ("win", "linux", "mac", "other", or "all") as key and generator command as value
   */
-  const std::string GetCommand() const;
+  std::map<std::string, std::string> GetCommands() const;
+
+  /**
+   * @brief get generator command without expansion
+   * @param hostType host type to match, empty to match current host
+   * @return generator command for specified host type
+  */
+  const std::string GetCommand(const std::string& hostType = EMPTY_STRING ) const;
+
+  /**
+  * @brief get expanded generator executable command
+  * @param target pointer to RteTarget
+  * @param hostType host type to match, empty to match current host
+  * @return generator command for specified host type
+ */
+  std::string GetExecutable(RteTarget* target, const std::string& hostType = EMPTY_STRING) const;
 
   /**
    * @brief get item containing command line arguments
@@ -89,9 +104,9 @@ public:
 
   /**
    * @brief get all device attributes
-   * @return reference to RteAttributes
+   * @return device attributes as a reference to RteItem
   */
-  const RteAttributes& GetDeviceAttributes() const { return m_deviceAttributes; }
+  const RteItem& GetDeviceAttributes() const { return m_deviceAttributes; }
 
   /**
    * @brief get generator group name to use in project
@@ -105,32 +120,43 @@ public:
   */
   const std::string& GetGpdsc() const;
 
-  /**
-   * @brief get generator working directory
-   * @return working directory value
-  */
+ /**
+  * @brief get generator working directory
+  * @return working directory value
+ */
   const std::string& GetWorkingDir() const { return GetItemValue("workingDir"); }
 
-  /**
+ /**
+ * @brief get all arguments as vector for the given host type
+ * @param target pointer to RteTarget
+ * @param hostType host type, empty to match current host
+ * @return vector of arguments consisting of switch and value in pairs
+*/
+  std::vector<std::pair<std::string, std::string> > GetExpandedArguments(RteTarget* target, const std::string& hostType = EMPTY_STRING) const;
+
+ /**
    * @brief get full command line with arguments and expanded key sequences for specified target
    * @param target pointer to RteTarget
+   * @param hostType host type, empty to match current host
    * @return expanded command line with arguments, properly quoted
   */
-  std::string GetExpandedCommandLine(RteTarget* target) const;
+  std::string GetExpandedCommandLine(RteTarget* target, const std::string& hostType = EMPTY_STRING) const;
 
   /**
    * @brief get absolute path to gpdsc file for specified target
    * @param target pointer to RteTarget
+   * @param optional generator destination directory
    * @return absolute gpdsc filename
   */
-  std::string GetExpandedGpdsc(RteTarget* target) const;
+  std::string GetExpandedGpdsc(RteTarget* target, const std::string& genDir = EMPTY_STRING) const;
 
   /**
    * @brief get absolute path to working directory for specified target
    * @param target pointer to RteTarget
+   * @param optional generator destination directory
    * @return absolute path to working directory
   */
-  std::string GetExpandedWorkingDir(RteTarget* target) const;
+  std::string GetExpandedWorkingDir(RteTarget* target, const std::string& genDir = EMPTY_STRING) const;
 
   /**
    * @brief get command line for a web application with expanded key sequences
@@ -185,7 +211,7 @@ protected:
   virtual std::string ConstructID() override { return GetAttribute("id"); }
 
 private:
-  RteAttributes m_deviceAttributes;
+  RteItem m_deviceAttributes;
   RteFileContainer* m_files;
 };
 

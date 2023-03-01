@@ -1,6 +1,6 @@
 # CMSIS Build CMakeLists generated on 2021-03-30T08:56:53
 
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.22)
 
 # Target options
 
@@ -10,6 +10,9 @@ set(PRJ_DIR "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/NestedGr
 set(OUT_DIR "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/NestedGroups/OutDir")
 set(INT_DIR "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/NestedGroups/IntDir")
 set(LD_SCRIPT "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/NestedGroups/RTE/Device/ARMCM0/ARMCM0_ac6.sct")
+set(OUT_NAME NestedGroups)
+set(HEX_FILE "${OUT_NAME}.hex")
+set(BIN_FILE "${OUT_NAME}.bin")
 
 set(DEFINES
   ARMCM0
@@ -40,14 +43,19 @@ set(CC_FLAGS_C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/NestedGr
 
 # Toolchain config map
 
-include ("C:/sandbox/devtools/build/TestOutput/cbuild/etc/AC6.6.16.0.cmake")
+set(TOOLCHAIN_VERSION_MIN "6.0.0")
+include ("C:/sandbox/cbuild/etc/AC6.6.18.0.cmake")
+include ("C:/sandbox/cbuild/etc/CMSIS-Build-Utils.cmake")
 
 # Setup project
 
 project(${TARGET} LANGUAGES C)
 
+cbuild_get_running_toolchain(TOOLCHAIN_ROOT TOOLCHAIN_VERSION C)
+
 # Global Flags
 
+cbuild_get_system_includes(CC_SYS_INC_PATHS_LIST CC_SYS_INC_PATHS)
 set(CMAKE_C_FLAGS "${CC_CPU} ${CC_DEFINES} ${CC_FLAGS} ${CC_SYS_INC_PATHS}")
 set(CMAKE_C_LINK_FLAGS "${LD_CPU} ${_LS}\"${LD_SCRIPT}\" ${LD_FLAGS}")
 
@@ -71,7 +79,7 @@ add_custom_target(database COMMAND ${CMAKE_COMMAND} -E copy_if_different "${INT_
 # Setup Target
 
 add_executable(${TARGET} ${CC_SRC_FILES})
-set(CMAKE_EXECUTABLE_SUFFIX ${EXE_SUFFIX})
+set_target_properties(${TARGET} PROPERTIES PREFIX "" SUFFIX "${EXE_SUFFIX}" OUTPUT_NAME "${TARGET}")
 set_target_properties(${TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${OUT_DIR} LINK_DEPENDS ${LD_SCRIPT})
 target_include_directories(${TARGET} PUBLIC ${INC_PATHS})
 

@@ -44,17 +44,17 @@ public:
   virtual VISIT_RESULT Visit(RteItem* rteItem)
   {
     if (rteItem->IsValid())
-      return SKIP_CHILDREN;
+      return VISIT_RESULT::SKIP_CHILDREN;
 
     const list<string>& errors = rteItem->GetErrors();
     if (errors.empty())
-      return CONTINUE_VISIT;
+      return VISIT_RESULT::CONTINUE_VISIT;
     list<string>::const_iterator it;
     for (it = errors.begin(); it != errors.end(); it++) {
       string sErr = (*it);
       cerr << sErr << endl;
     }
-    return CONTINUE_VISIT;
+    return VISIT_RESULT::CONTINUE_VISIT;
   }
 };
 
@@ -284,9 +284,9 @@ void RteChk::DumpDeviceElement(RteDeviceElement* e)
 {
   if (!e)
     return;
-  RteAttributes rteAttributes;
+  XmlItem rteAttributes;
   e->GetEffectiveAttributes(rteAttributes); // also inherited/overwritten
-  RteAttributes* pAttributes = &rteAttributes;
+  XmlItem* pAttributes = &rteAttributes;
   const string& tag = e->GetTag();
   const string& name = e->GetName();
 
@@ -452,8 +452,10 @@ void RteChk::DumpExamples(RtePackage* pack)
       m_os << " Desc: " << pExmp->GetDescription() << endl;
 
       // board
-      RteAttributes board = pExmp->GetBoardInfo();
-      m_os << " Board: " << board.GetAttributesString() << endl;
+      const RteItem* boardInfo = pExmp->GetBoardInfoItem();
+      if (boardInfo) {
+        m_os << " Board: " << boardInfo->GetAttributesString() << endl;
+      }
 
       auto children = pExmp->GetChildren();
       for (auto itchild = children.begin(); itchild != children.end(); ++itchild) {

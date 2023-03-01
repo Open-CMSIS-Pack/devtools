@@ -201,3 +201,69 @@ int ProjMgrUtils::StringToInt(const string& value) {
   }
   return intValue;
 }
+
+
+void ProjMgrUtils::ExpandCompilerId(const string& compiler, string& name, string& minVer, string& maxVer) {
+  name = RteUtils::GetPrefix(compiler, '@');
+  string version = RteUtils::GetSuffix(compiler, '@');
+  if (version.empty()) {
+    // any version
+    minVer = "0.0.0";
+  } else {
+    if (version.find(">=") != string::npos) {
+      // minimum version
+      minVer = version.substr(2);
+    } else {
+      // fixed version
+      minVer = maxVer = version;
+    }
+  }
+}
+
+bool ProjMgrUtils::AreCompilersCompatible(const string& first, const string& second) {
+  if (!first.empty() && !second.empty()) {
+    string firstName, firstMin, firstMax, secondName, secondMin, secondMax;
+    ExpandCompilerId(first, firstName, firstMin, firstMax);
+    ExpandCompilerId(second, secondName, secondMin, secondMax);
+    if ((firstName != secondName) ||
+      (!firstMax.empty() && !secondMin.empty() && (VersionCmp::Compare(firstMax, secondMin) < 0)) ||
+      (!secondMax.empty() && !firstMin.empty() && (VersionCmp::Compare(secondMax, firstMin) < 0))) {
+      return false;
+    }
+  }
+  return true;
+}
+
+void ProjMgrUtils::CompilersIntersect(const string& first, const string& second, string& intersection) {
+  if ((first.empty() && second.empty()) ||
+    !AreCompilersCompatible(first, second)) {
+    return;
+  }
+  string firstName, firstMin, firstMax, secondName, secondMin, secondMax;
+  ExpandCompilerId(first, firstName, firstMin, firstMax);
+  ExpandCompilerId(second, secondName, secondMin, secondMax);
+  // get intersection
+  if (firstMax.empty()) {
+    firstMax = secondMax;
+  }
+  if (secondMax.empty()) {
+    secondMax = firstMax;
+  }
+  const string& intersectName = firstName.empty() ? secondName : firstName;
+  const string& intersectMin = VersionCmp::Compare(firstMin, secondMin) < 0 ? secondMin : firstMin;
+  const string& intersectMax = VersionCmp::Compare(firstMax, secondMax) > 0 ? secondMax : firstMax;
+  if (intersectMax.empty()) {
+    if (VersionCmp::Compare(intersectMin, "0.0.0") == 0) {
+      // any version
+      intersection = intersectName;
+    } else {
+      // minimum version
+      intersection = intersectName + "@>=" + intersectMin;
+    }
+  } else {
+    if (intersectMin == intersectMax) {
+      // fixed version
+      intersection = intersectName + "@" + intersectMin;
+    }
+  }
+}

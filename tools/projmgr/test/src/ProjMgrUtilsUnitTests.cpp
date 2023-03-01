@@ -29,8 +29,8 @@ TEST_F(ProjMgrUtilsUnitTests, GetComponentID) {
     {"Cvariant", "Variant" },
     {"Cversion", "9.9.9"   }
   };
-  RteAttributes item = RteAttributes(attributes);
-  EXPECT_EQ("Vendor::Class&Bundle:Group:Sub&Variant@9.9.9",GetComponentID((RteItem*)&item));
+  RteItem item(attributes);
+  EXPECT_EQ("Vendor::Class&Bundle:Group:Sub&Variant@9.9.9",GetComponentID(&item));
 }
 
 TEST_F(ProjMgrUtilsUnitTests, GetComponentAggregateID) {
@@ -43,8 +43,8 @@ TEST_F(ProjMgrUtilsUnitTests, GetComponentAggregateID) {
     {"Cvariant", "Variant" },
     {"Cversion", "9.9.9"   }
   };
-  RteAttributes item = RteAttributes(attributes);
-  EXPECT_EQ("Vendor::Class&Bundle:Group:Sub", GetComponentAggregateID((RteItem*)&item));
+  RteItem item(attributes);
+  EXPECT_EQ("Vendor::Class&Bundle:Group:Sub", GetComponentAggregateID(&item));
 }
 
 TEST_F(ProjMgrUtilsUnitTests, GetConditionID) {
@@ -53,9 +53,9 @@ TEST_F(ProjMgrUtilsUnitTests, GetConditionID) {
     {"Cclass"  , "Class"   },
     {"Cgroup"  , "Group"   }
   };
-  RteAttributes item = RteAttributes(attributes);
+  RteItem item(attributes);;
   item.SetTag("require");
-  EXPECT_EQ("require Vendor::Class:Group", GetConditionID((RteItem*)&item));
+  EXPECT_EQ("require Vendor::Class:Group", GetConditionID(&item));
 }
 
 TEST_F(ProjMgrUtilsUnitTests, GetPackageID) {
@@ -64,9 +64,9 @@ TEST_F(ProjMgrUtilsUnitTests, GetPackageID) {
     {"name"   , "Name"   },
     {"version", "8.8.8"   }
   };
-  RteAttributes item = RteAttributes(attributes);
+  RteItem item(attributes);
   item.SetTag("require");
-  EXPECT_EQ("Vendor::Name@8.8.8", GetPackageID((RteItem*)&item));
+  EXPECT_EQ("Vendor::Name@8.8.8", GetPackageID(&item));
 }
 
 TEST_F(ProjMgrUtilsUnitTests, ReadGpdscFile) {
@@ -128,3 +128,58 @@ TEST_F(ProjMgrUtilsUnitTests, GetCategory) {
     }
   }
 }
+
+
+TEST_F(ProjMgrUtilsUnitTests, CompilersIntersect) {
+  string intersection;
+  CompilersIntersect("AC6@6.16.0", "AC6", intersection);
+  EXPECT_EQ("AC6@6.16.0", intersection);
+  intersection.clear();
+  CompilersIntersect("AC6@>=6.16.0", "AC6", intersection);
+  EXPECT_EQ("AC6@>=6.16.0", intersection);
+  intersection.clear();
+  CompilersIntersect("AC6@>=6.6.5", "AC6@6.16.0", intersection);
+  EXPECT_EQ("AC6@6.16.0", intersection);
+  intersection.clear();
+  CompilersIntersect("AC6@>=6.6.5", "AC6@6.6.5", intersection);
+  EXPECT_EQ("AC6@6.6.5", intersection);
+  intersection.clear();
+  CompilersIntersect("AC6@>=6.6.5", "AC6@>=6.16.0", intersection);
+  EXPECT_EQ("AC6@>=6.16.0", intersection);
+  intersection.clear();
+  CompilersIntersect("AC6@>=6.6.5", "", intersection);
+  EXPECT_EQ("AC6@>=6.6.5", intersection);
+  intersection.clear();
+  CompilersIntersect("GCC@0.0.0", "", intersection);
+  EXPECT_EQ("GCC@0.0.0", intersection);
+  intersection.clear();
+  CompilersIntersect("", "", intersection);
+  EXPECT_EQ("", intersection);
+  intersection.clear();
+  CompilersIntersect("AC6@6.6.5", "AC6@6.16.0", intersection);
+  EXPECT_EQ("", intersection);
+  intersection.clear();
+  CompilersIntersect("AC6@6.6.5", "AC6@>=6.16.0", intersection);
+  EXPECT_EQ("", intersection);
+  intersection.clear();
+  CompilersIntersect("GCC@6.16.0", "AC6@6.16.0", intersection);
+  EXPECT_EQ("", intersection);
+  intersection.clear();
+  CompilersIntersect("GCC", "AC6", intersection);
+  EXPECT_EQ("", intersection);
+  intersection.clear();
+};
+
+TEST_F(ProjMgrUtilsUnitTests, AreCompilersCompatible) {
+  EXPECT_TRUE(AreCompilersCompatible("AC6@6.16.0", "AC6"));
+  EXPECT_TRUE(AreCompilersCompatible("AC6@>=6.16.0", "AC6"));
+  EXPECT_TRUE(AreCompilersCompatible("AC6@>=6.6.5", "AC6@6.16.0"));
+  EXPECT_TRUE(AreCompilersCompatible("AC6@>=6.6.5", "AC6@6.6.5"));
+  EXPECT_TRUE(AreCompilersCompatible("AC6@>=6.6.5", "AC6@>=6.16.0"));
+  EXPECT_TRUE(AreCompilersCompatible("AC6@>=6.6.5", ""));
+  EXPECT_TRUE(AreCompilersCompatible("", ""));
+  EXPECT_FALSE(AreCompilersCompatible("AC6@6.6.5", "AC6@6.16.0"));
+  EXPECT_FALSE(AreCompilersCompatible("AC6@6.6.5", "AC6@>=6.16.0"));
+  EXPECT_FALSE(AreCompilersCompatible("GCC@6.16.0", "AC6@6.16.0"));
+  EXPECT_FALSE(AreCompilersCompatible("GCC", "AC6"));
+};

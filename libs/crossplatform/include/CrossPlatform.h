@@ -9,7 +9,7 @@
 // Platform-specific API,  C-runtime methods and includes
 #ifdef _WIN32
 
-#include <Windows.h>
+#include <windows.h>
 #include <tchar.h>
 
 #else

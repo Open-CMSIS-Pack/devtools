@@ -1,0 +1,13 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schemas/clayer.schema.json
+
+layer:
+
+  type: Board
+
+  for-board: RteTest Dummy board
+
+  components:
+    - component: Device:Startup
+
+  define:
+    - Target3-Layer

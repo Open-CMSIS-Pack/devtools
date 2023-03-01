@@ -1,18 +1,17 @@
-# csolution - CMSIS Project Manager
+# Project Manager
 
-The **projmgr** directory contains the **csolution** tool that assists with the generation of CMSIS Project Description
-files in  [CPRJ format](https://arm-software.github.io/CMSIS_5/Build/html/cprjFormat_pg.html).
-It provides commands to search packs, devices and components from installed packs as well as unresolved component
-dependencies.
+The **projmgr** directory contains the `csolution` utility that assists with the generation of CMSIS project
+description files in [CPRJ format](https://arm-software.github.io/CMSIS_5/Build/html/cprjFormat_pg.html) that are used
+by [*cbuild*](../buildmgr). It provides commands to search packs, devices, and components from installed packs as well
+as unresolved component dependencies. It is distributed as part of the **CMSIS-Toolbox**.
 
 ## References
 
-- [csolution Overview](./docs/Manual/Overview.md) for details and usage information for the CMSIS Project Manager
-- [README.md](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/README.md) for an overview of the CMSIS-Toolbox
-- [Installation](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/docs/installation.md) for details on how to
-  setup the CMSIS-Toolbox
+- [csolution Overview](./docs/Manual/Overview.md) for details about the CMSIS Project Manager.
+- [CMSIS-Toolbox Overview](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/README.md)
+- [CMSIS-Toolbox Installation](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/docs/installation.md)
 
-## Python interface
+## Python Interface
 
 Python library interfaces are generated with SWIG and can be found among the release artifacts.
 A Python CLI wrapper is also provided as an example:

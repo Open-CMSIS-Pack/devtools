@@ -10,7 +10,7 @@
 #include "RteFsUtils.h"
 
 #ifdef _WIN32
-#include <Shlwapi.h>
+#include <shlwapi.h>
 #endif
 
 #include <string>

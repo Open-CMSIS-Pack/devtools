@@ -41,7 +41,7 @@ VISIT_RESULT CheckFilesVisitor::Visit(RteItem* item)
 {
   m_checkFiles.CheckFile(item);
 
-  return CONTINUE_VISIT;
+  return VISIT_RESULT::CONTINUE_VISIT;
 }
 
 /**
@@ -203,6 +203,9 @@ bool CheckFiles::CheckFile(RteItem* item)
     fileName = item->GetAttribute("large");
     fileName2 = item->GetAttribute("small");
   }
+  else if(tag == "debug") {
+    fileName = item->GetAttribute("svd");
+  }
   else {
     GetFileName(item, fileName, fileType);
   }
@@ -221,7 +224,7 @@ bool CheckFiles::CheckFile(RteItem* item)
 
   // check if fileName is a URL
   if(fileName.find(":", 2) != (size_t)-1 || fileName.find("www.") == 0) {
-    return CONTINUE_VISIT;
+    return true;
   }
 
   // Trim #directJump from htm(l) strings
@@ -234,8 +237,10 @@ bool CheckFiles::CheckFile(RteItem* item)
 
   // Filename
   if(!fileName.empty()) {
+    CheckForSpaces(fileName, lineNo);
     if(CheckFileExists(fileName, lineNo)) {
       CheckCaseSense(fileName, lineNo);
+      CheckFileIsInPack(fileName, lineNo);
     }
 
     if(tag == "environment" && envName == "DS5") {
@@ -259,8 +264,10 @@ bool CheckFiles::CheckFile(RteItem* item)
 
   // Filename2
   if(!fileName2.empty()) {
+    CheckForSpaces(fileName2, lineNo);
     if(CheckFileExists(fileName2, lineNo)) {
       CheckCaseSense(fileName2, lineNo);   // File must exist for this check!
+      CheckFileIsInPack(fileName2, lineNo);
     }
   }
 
@@ -276,7 +283,9 @@ bool CheckFiles::CheckFile(RteItem* item)
     CheckCompilerDependency(item);
   }
 
-  CheckFileExtension(item);
+  if(tag == "file") {
+    CheckFileExtension(item);
+  }
 
   string ext = RteUtils::ExtractFileExtension(fileName);
   if((category == "source" && (!_stricmp(ext.c_str(), "s") || !_stricmp(ext.c_str(), "asm"))) || category == "sourceAsm") {
@@ -332,6 +341,7 @@ bool CheckFiles::CheckFileExists(const string& fileName, int lineNo, bool associ
   return ok;
 }
 
+
 /**
  * @brief searches the filesystem for the exact name of a file object (case sensitive name)
  * @param path the path to search in
@@ -354,6 +364,35 @@ bool CheckFiles::FindGetExactFileSystemName(const std::string& path, const std::
   return false;
 }
 
+
+/**
+ * @brief check if file is below pack root folder
+ * @param fileName filename as written in PDSC
+ * @param lineNo line number for error reporting
+ * @return true/false
+*/
+bool CheckFiles::CheckFileIsInPack(const string& fileName, int lineNo)
+{
+  if (fileName.empty()) {
+    return true;
+  }
+
+  string fullFileName = GetFullFilename(fileName);
+  string absPath = RteFsUtils::MakePathCanonical(fullFileName);
+  if(absPath.empty()) {
+    return true;
+  }
+
+  const auto& packPath = GetPackagePath();
+  if(absPath.find(packPath, 0) != 0) {
+    LogMsg("M313", PATH(fileName), lineNo);
+    return false;
+  }
+
+  return true;
+}
+
+
 /**
  * @brief check name as written in PDSC against it's counterpart on the filesystem, for case sensitivity
  * @param fileName filename as written in PDSC
@@ -363,6 +402,12 @@ bool CheckFiles::FindGetExactFileSystemName(const std::string& path, const std::
 bool CheckFiles::CheckCaseSense(const string& fileName, int lineNo)
 {
   if (fileName.empty()) {
+    return true;
+  }
+
+  // not testing relative paths. They must be interpreted first to be comparable to FS path,
+  // and there is no function doing this without changing the case of path characters.
+  if(fileName.find("./") != string::npos || fileName.find("../") != string::npos) {
     return true;
   }
 
@@ -413,6 +458,27 @@ bool CheckFiles::CheckCaseSense(const string& fileName, int lineNo)
     LogMsg("M010");
   }
   return ok;
+}
+
+/**
+ * @brief check name for whitespace
+ * @param fileName filename as written in PDSC
+ * @param lineNo line number for error reporting
+ * @return true/false
+*/
+bool CheckFiles::CheckForSpaces(const string& fileName, int lineNo)
+{
+  if (fileName.empty()) {
+    return true;
+  }
+
+  string name = fileName;
+  if(name.find(' ') != string::npos) {
+    LogMsg("M314", NAME(name), lineNo);
+    return false;
+  }
+
+  return true;
 }
 
 /**
@@ -677,16 +743,16 @@ bool CheckFiles::CheckFileExtension(RteItem* item)
     return true;
   }
 
-  // skip categories that are not tested yet
-  if(!(category == "include" || category == "header" || category == "sourceAsm" || category == "sourceC" || category == "sourceCpp")) {
-    return true;
-  }
+  // removed category check, tag="file" is checked before calling this function.
+  // ref: Table: File Categories. Everything but "include" must be a file.
+  // https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_components_pg.html#FileCategoryEnum
 
   LogMsg("M056", VAL("CAT", category), PATH(name));
 
   bool ok = true;
+  string checkPath = GetFullFilename(name);
+
   if(category == "include") {
-    string checkPath = GetFullFilename(name);
     if(!RteFsUtils::IsDirectory(checkPath)) {
       LogMsg("M339", PATH(name), lineNo);
       ok = false;
@@ -696,28 +762,35 @@ bool CheckFiles::CheckFileExtension(RteItem* item)
       ok = false;
     }
   }
-  else if(category == "header") {
-    if(_stricmp(extension.c_str(), "h") && _stricmp(extension.c_str(), "hpp")) {
-      LogMsg("M337", VAL("CAT", category), PATH(name), EXT(extension), lineNo);
+  else {
+    if(RteFsUtils::IsDirectory(checkPath)) {
+      LogMsg("M356", PATH(name), lineNo);
       ok = false;
     }
-  }
-  else if(category == "sourceAsm") {
-    if(_stricmp(extension.c_str(), "s") && _stricmp(extension.c_str(), "asm")) {
-      LogMsg("M337", VAL("CAT", category), PATH(name), EXT(extension), lineNo);
-      ok = false;
+
+    if(category == "header") {
+      if(_stricmp(extension.c_str(), "h") && _stricmp(extension.c_str(), "hpp")) {
+        LogMsg("M337", VAL("CAT", category), PATH(name), EXT(extension), lineNo);
+        ok = false;
+      }
     }
-  }
-  else if(category == "sourceC") {
-    if(_stricmp(extension.c_str(), "c")) {
-      LogMsg("M337", VAL("CAT", category), PATH(name), EXT(extension), lineNo);
-      ok = false;
+    else if(category == "sourceAsm") {
+      if(_stricmp(extension.c_str(), "s") && _stricmp(extension.c_str(), "asm")) {
+        LogMsg("M337", VAL("CAT", category), PATH(name), EXT(extension), lineNo);
+        ok = false;
+      }
     }
-  }
-  else if(category == "sourceCpp") {
-    if(_stricmp(extension.c_str(), "cpp")) {
-      LogMsg("M337", VAL("CAT", category), PATH(name), EXT(extension), lineNo);
-      ok = false;
+    else if(category == "sourceC") {
+      if(_stricmp(extension.c_str(), "c")) {
+        LogMsg("M337", VAL("CAT", category), PATH(name), EXT(extension), lineNo);
+        ok = false;
+      }
+    }
+    else if(category == "sourceCpp") {
+      if(_stricmp(extension.c_str(), "cpp")) {
+        LogMsg("M337", VAL("CAT", category), PATH(name), EXT(extension), lineNo);
+        ok = false;
+      }
     }
   }
 

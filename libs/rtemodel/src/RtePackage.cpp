@@ -292,19 +292,18 @@ string RtePackage::VendorFromId(const string& id)
 string RtePackage::NameFromId(const string& id)
 {
   string name;
-
   string::size_type pos = 0;
   string::size_type posEnd = 0;
   pos = id.find('.');
-  if (pos == string::npos)
+  if (pos == string::npos) {
     return name;
+  }
   pos++;
   posEnd = id.find('.', pos);
-  if (posEnd == string::npos)
-    return name;
-
-  name = id.substr(pos, posEnd - pos);
-  return name;
+  if (posEnd == string::npos) {
+    return id.substr(pos);
+  }
+  return id.substr(pos, posEnd - pos);
 }
 
 int RtePackage::ComparePackageIDs(const string& a, const string& b)
@@ -594,7 +593,7 @@ bool RtePackage::Construct(XMLTreeElement* xmlElement)
   // we are not interested in XML attributes for package
   m_lineNumber = xmlElement->GetLineNumber();
   m_tag = xmlElement->GetTag();
-  m_fileName = xmlElement->GetFileName();
+  m_fileName = xmlElement->GetRootFileName();
   AddAttribute("schemaVersion", xmlElement->GetAttribute("schemaVersion"), false);
   bool success = ProcessXmlChildren(xmlElement);
   m_ID = ConstructID();
@@ -653,8 +652,8 @@ string RtePackage::ConstructID()
     AddAttribute("url", GetChildText("url"));
   }
 
-  string id = RteAttributes::GetPackageID(true);
-  m_commonID = RteAttributes::GetPackageID(false);
+  string id = RtePackage::GetPackageIDfromAttributes(*this, true);
+  m_commonID = RtePackage::GetPackageIDfromAttributes(*this, false);
 
   m_nDeprecated = IsDeprecated() ? 1 : 0;
   m_nDominating = IsDominating() ? 1 : 0;
@@ -667,6 +666,24 @@ string RtePackage::GetPackageID(bool withVersion) const
   if (withVersion)
     return GetID();
   return GetCommonID();
+}
+
+
+string RtePackage::GetPackageIDfromAttributes(const XmlItem& attr, bool withVersion)
+{
+  string id = attr.GetAttribute("vendor");
+  if (!id.empty())
+    id += ".";
+  id += attr.GetAttribute("name");
+
+  if (withVersion) {
+    const string& version = attr.GetAttribute("version");
+    if (!version.empty()) {
+      id += ".";
+      id += VersionCmp::RemoveVersionMeta(version);
+    }
+  }
+  return id;
 }
 
 
@@ -783,8 +800,8 @@ RtePackageInfo::RtePackageInfo(RtePackage* pack, const string& version)
 
 string RtePackageInfo::ConstructID()
 {
-  m_commonID = RteAttributes::GetPackageID(false);
-  return RteAttributes::GetPackageID(true);
+  m_commonID = RtePackage::GetPackageIDfromAttributes(*this, false);
+  return RtePackage::GetPackageIDfromAttributes(*this, true);
 }
 
 
@@ -1056,38 +1073,26 @@ void RtePackageFilter::Clear()
 
 bool RtePackageFilter::IsEqual(const RtePackageFilter& other) const
 {
-  const RteAttributesMap& otherSelected = other.GetSelectedPackages();
-  const RteAttributesMap& otherLatest = other.GetLatestPacks();
 
   if (m_bUseAllPacks != other.IsUseAllPacks())
     return false;
 
-  if (m_selectedPacks.size() != otherSelected.size())
+  if (m_selectedPacks != other.GetSelectedPackages())
     return false;
 
-  if (m_latestPacks.size() != otherLatest.size())
+  if (m_latestPacks != other.GetLatestPacks())
     return false;
-
-  RteAttributesMap::const_iterator it;
-  for (it = otherLatest.begin(); it != otherLatest.end(); it++) {
-    if (m_latestPacks.find(it->first) == m_latestPacks.end())
-      return false;
-  }
-  for (it = otherSelected.begin(); it != otherSelected.end(); it++) {
-    if (m_selectedPacks.find(it->first) == m_selectedPacks.end())
-      return false;
-  }
 
   return true;
 }
 
 
-bool RtePackageFilter::SetSelectedPackages(const RteAttributesMap& packs)
+bool RtePackageFilter::SetSelectedPackages(const std::set<std::string>& packs)
 {
   bool equal = m_selectedPacks.size() == packs.size();
   if (equal) {
-    for (auto it = packs.begin(); it != packs.end(); it++) {
-      if (m_selectedPacks.find(it->first) == m_selectedPacks.end()) {
+    for (auto& it : packs) {
+      if (m_selectedPacks.find(it) == m_selectedPacks.end()) {
         equal = false;
         break;
       }
@@ -1100,23 +1105,14 @@ bool RtePackageFilter::SetSelectedPackages(const RteAttributesMap& packs)
   return false;
 }
 
-bool RtePackageFilter::SetLatestPacks(const RteAttributesMap& latestPacks)
+bool RtePackageFilter::SetLatestPacks(const std::set<std::string>& latestPacks)
 {
-
-  bool equal = m_latestPacks.size() == latestPacks.size();
+  bool equal = m_latestPacks == latestPacks;
   if (equal) {
-    for (auto it = latestPacks.begin(); it != latestPacks.end(); it++) {
-      if (m_latestPacks.find(it->first) == m_latestPacks.end()) {
-        equal = false;
-        break;
-      }
-    }
+    return false;
   }
-  if (!equal) {
-    m_latestPacks = latestPacks;
-    return true;
-  }
-  return false;
+  m_latestPacks = latestPacks;
+  return true;
 }
 
 bool RtePackageFilter::AreAllExcluded() const
@@ -1165,8 +1161,8 @@ bool RtePackageFilter::IsPackageFiltered(const string& packId) const
     if (m_latestPacks.find(commonId) == m_latestPacks.end())
       return false;
 
-    for (auto it = m_selectedPacks.begin(); it != m_selectedPacks.end(); it++) {
-      string id = RtePackage::CommonIdFromId(it->first);
+    for (auto& it : m_selectedPacks) {
+      string id = RtePackage::CommonIdFromId(it);
       if (id == commonId) {
         return false; // another pack version is explicitly selected
       }

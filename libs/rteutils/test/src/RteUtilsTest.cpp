@@ -16,6 +16,15 @@ static void CheckVendorMatch(const vector<string>& vendors, bool expect) {
   }
 }
 
+TEST(RteUtilsTest, Trim) {
+  EXPECT_EQ(RteUtils::Trim("").empty(), true);
+  EXPECT_EQ(RteUtils::Trim(" \t\n\r").empty(), true);
+  EXPECT_EQ(RteUtils::Trim(" \t\n\rEnd"), "End");
+  EXPECT_EQ(RteUtils::Trim("\t Middle\r\n"), "Middle");
+  EXPECT_EQ(RteUtils::Trim("\t Mid with\t space \r\n"), "Mid with\t space");
+  EXPECT_EQ(RteUtils::Trim("Start \r\n"), "Start");
+  EXPECT_EQ(RteUtils::Trim("Full"), "Full");
+}
 TEST(RteUtilsTest, EqualNoCase) {
 
   EXPECT_TRUE(RteUtils::EqualNoCase("", ""));
@@ -110,9 +119,9 @@ TEST(RteUtilsTest, ExpandInstancePlaceholders) {
 
 TEST(RteUtilsTest, WildCardsTo) {
 
-  string test_input = "This?? is a ${*}test1* _string-!#.";
-  string regex = "This.. is a \\$\\{.*\\}test1.* _string-!#\\.";
-  string replaced = "Thisxx_is_a___x_test1x__string-__.";
+  string test_input = "This?? is a ${*}+test1* _string-!#.";
+  string regex = "This.. is a \\$\\{.*\\}\\+test1.* _string-!#\\.";
+  string replaced = "Thisxx_is_a___x__test1x__string-__.";
 
   string converted = WildCards::ToRegEx(test_input);
   EXPECT_EQ(converted, regex);
@@ -169,10 +178,12 @@ TEST(RteUtilsTest, WildCardMatch) {
   EXPECT_EQ(true, WildCards::Match("Prefix*Suffix", "Prefix_Mid_Suffix_Suffix"));
   EXPECT_EQ(true, WildCards::Match("Prefix_*Suffix", "Prefix_Mid_Suffix"));
   EXPECT_EQ(true, WildCards::Match("Prefix.*.Suffix", "Prefix.Mid.Suffix"));
+  EXPECT_EQ(true, WildCards::Match("Prefix.*+Suffix", "Prefix.Mid+Suffix"));
 
   EXPECT_EQ(true, WildCards::Match("Prefix_${*}Suffix", "Prefix_${Mid_}Suffix"));
+  EXPECT_EQ(true, WildCards::Match("Prefix_$(*)Suffix", "Prefix_$(Mid_)Suffix"));
 
-  EXPECT_EQ(false, WildCards::Match("Prefix(((*Suffix", "Prefix_(((Suffix")); // test illegal expression
+  EXPECT_EQ(false, WildCards::Match("Prefix_\\(*Suffix", "Prefix_\\(Suffix")); // test illegal expression
 
   std::vector<string> inputStr{ "STM32F10[123]?[CDE]", "STM32F103ZE", "*", "*?", "?*", "?*?", "*?*", "**", "**?" };
   for (auto iter = inputStr.cbegin(); iter != inputStr.cend() - 1; iter++) {

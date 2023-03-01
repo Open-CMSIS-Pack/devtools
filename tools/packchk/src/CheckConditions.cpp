@@ -40,22 +40,22 @@ DefinedConditionsVisitor::~DefinedConditionsVisitor()
 VISIT_RESULT DefinedConditionsVisitor::Visit(RteItem* item)
 {
   if(!m_target) {
-    return CANCEL_VISIT;
+    return VISIT_RESULT::CANCEL_VISIT;
   }
 
   RteCondition* cond = dynamic_cast<RteCondition*>(item);
   if(cond) {
     RteItem::ConditionResult result = cond->Evaluate(m_target->GetFilterContext());
     if(result == RteItem::R_ERROR) {
-      LogMsg("M384", NAME(cond->GetName()), MSG(" Skipping condition for further checks."), cond->GetLineNumber());
+      LogMsg("M390", NAME(cond->GetName()), MSG("Skipping condition for further checks."), cond->GetLineNumber());
       cond->Invalidate();
-      return CONTINUE_VISIT;
+      return VISIT_RESULT::CONTINUE_VISIT;
     }
 
     m_Conditions->AddDefinedCondition(cond);
   }
 
-  return CONTINUE_VISIT;
+  return VISIT_RESULT::CONTINUE_VISIT;
 }
 
 /**
@@ -87,11 +87,11 @@ VISIT_RESULT UsedConditionsVisitor::Visit(RteItem* item)
     if(!condId.empty()) {
       m_Conditions->AddUsedCondition(condId, item->GetLineNumber());
     }
-    return CONTINUE_VISIT;
+    return VISIT_RESULT::CONTINUE_VISIT;
   }
 
   if(!cond->IsValid()) {
-    return CONTINUE_VISIT;
+    return VISIT_RESULT::CONTINUE_VISIT;
   }
 
   if(cond != item) {                // item is not a condition, but something that can use a condition
@@ -101,7 +101,7 @@ VISIT_RESULT UsedConditionsVisitor::Visit(RteItem* item)
     m_Conditions->AddUsedCondition(condId, item->GetLineNumber());
   }
 
-  return CONTINUE_VISIT;
+  return VISIT_RESULT::CONTINUE_VISIT;
 }
 
 /**

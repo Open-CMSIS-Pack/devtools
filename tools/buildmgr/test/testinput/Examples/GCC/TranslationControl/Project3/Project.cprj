@@ -13,7 +13,7 @@
   </packages>
 
   <compilers>
-    <compiler name="GCC" version="11.2.1"/>
+    <compiler name="GCC" version="10.2.1"/>
   </compilers>
 
   <target Ddsp="NO_DSP" Dendian="Little-endian" Dfpu="NO_FPU" Dmve="NO_MVE" Dname="ARMCM3" Dsecure="Non-secure" Dtz="NO_TZ" Dvendor="ARM:82">

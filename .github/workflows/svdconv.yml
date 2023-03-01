@@ -11,6 +11,8 @@ on:
       - 'CMakeLists.txt'
       - 'tools/svdconv/**'
       - 'libs/xml**'
+      - '!**/docs/**/*'
+      - '!**/*.md'
   pull_request:
     paths:
       - '.github/workflows/svdconv.yml'
@@ -19,6 +21,8 @@ on:
       - 'CMakeLists.txt'
       - 'tools/svdconv/**'
       - 'libs/xml**'
+      - '!**/docs/**/*'
+      - '!**/*.md'
   release:
     types: [published]
 
@@ -145,7 +149,7 @@ jobs:
     steps:
       - name: Install dependencies
         run: |
-          sudo apt update
+          sudo apt-get update
           sudo apt-get install \
             lcov
 

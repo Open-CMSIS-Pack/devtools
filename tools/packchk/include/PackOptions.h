@@ -19,6 +19,8 @@ public:
 
   bool SetWarnLevel(const uint32_t warnLevel);
   bool SetLogFile(const std::string& m_logFile);
+  bool SetXsdFile();
+  bool SetXsdFile(const std::string& m_xsdFile);
   bool AddDiagSuppress(const std::string& suppress);
   bool SetVerbose(bool bVerbose);
   bool SetFileUnderTest(const std::string& filename);
@@ -27,6 +29,8 @@ public:
   bool SetUrlRef(const std::string& urlRef);
   bool SetIgnoreOtherPdscFiles(bool bIgnore);
   bool GetIgnoreOtherPdscFiles();
+  bool SetDisableValidation(bool bDisable);
+  bool GetDisableValidation();
   bool AddRefPdscFile(const std::string& filename);
   bool HaltProgramExecution();
   bool SetAllowSuppresssError(bool bAllow);
@@ -41,6 +45,7 @@ public:
   const std::string& GetPackTextfileName();
   const std::string& GetPdscFullpath();
   const std::string& GetLogPath();
+  const std::string& GetXsdPath();
 
   const std::set<std::string>& GetPdscRefFullpath();
 
@@ -48,11 +53,13 @@ public:
 
 private:
   bool m_bIgnoreOtherPdscFiles;
+  bool m_bDisableValidation;
 
   std::string m_urlRef;    // package URL reference, check the URL of the PDSC against this value. if not std::set it is compared against the Keil Pack Server URL
   std::string m_packNamePath;
   std::string m_packToCheck;
   std::string m_logPath;
+  std::string m_xsdPath;   // PACK.xsd file path, use to validate the input PDSC file
   std::set<std::string> m_packsToRef;
 };
 

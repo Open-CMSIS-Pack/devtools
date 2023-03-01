@@ -79,7 +79,7 @@ public:
    * @brief check if XML element is empty, i.e. if text and attributes list are empty
    * @return true if empty
   */
-  virtual bool IsEmpty() { return m_text.empty() && m_attributes.empty(); }
+  virtual bool IsEmpty() const { return m_text.empty() && m_attributes.empty(); }
 
   /**
    * @brief getter for tag name
@@ -194,6 +194,16 @@ public:
   const std::string& GetAttribute(const std::string& name) const;
 
   /**
+   * @brief static getter for attribute value
+   * @param item reference to XmlItem to get attribute
+   * @param name attribute name
+   * @return string containing attribute value or empty string if attribute does not exist
+  */
+  static const std::string& GetAttribute(const XmlItem& item, const std::string& name) {
+    return item.GetAttribute(name);
+  }
+
+  /**
    * @brief check if the given attribute exists
    * @param name pointer to attribute name
    * @return true if attribute exists
@@ -206,6 +216,13 @@ public:
    * @return true if attribute exists
   */
   bool HasAttribute(const std::string& name) const;
+
+  /**
+ * @brief check if attribute has a certain value
+ * @param pattern value to be checked, can contain wild cards
+ * @return true if value is found
+*/
+  virtual bool HasValue(const std::string& pattern) const;
 
   /**
    * @brief getter for attribute value as boolean
@@ -272,6 +289,27 @@ public:
   unsigned long long GetAttributeAsULL(const std::string& name, unsigned long long defaultValue = 0L) const;
 
   /**
+   * @brief determine prefix of attribute value
+   * @param delimiter character value as delimiter
+   * @return prefix of attribute value
+  */
+  std::string GetAttributePrefix(const char* name, char delimiter = ':') const;
+  /**
+   * @brief determine suffix of attribute value
+   * @param name attribute name
+   * @param delimiter character value as delimiter
+   * @return suffix of attribute value
+  */
+  std::string GetAttributeSuffix(const char* name, char delimiter = ':') const;
+  /**
+   * @brief determine suffix as integer of attribute value
+   * @param name attribute name
+   * @param delimiter character value as delimiter
+   * @return suffix as integer of attribute value
+  */
+  int GetAttributeSuffixAsInt(const char* name, char delimiter = ':') const;
+
+  /**
    * @brief getter for tag text as boolean
    * @param defaultValue value to be returned if text is empty
    * @return tag text as boolean
@@ -312,7 +350,7 @@ public:
    * @param defaultValue value to be returned if attribute does not exist or its value is empty
    * @return boolean value of attribute or child text if attribute does not exist. The default implementation considers only attribute
   */
-  virtual bool GetItemValueAsBool(const std::string& keyOrTag, bool defaultValue = false) const { return GetAttributeAsBool(keyOrTag, defaultValue); }
+  virtual bool GetItemValueAsBool(const std::string& keyOrTag, bool defaultValue = false) const;
 
   /**
    * @brief getter for attribute value or child text as integer if attribute does not exist. The default implementation considers only attribute
@@ -320,7 +358,7 @@ public:
    * @param defaultValue value to be returned if both attribute and child element do not exist
    * @return integer value of attribute or child text. The default implementation considers only attribute
   */
-  virtual int GetItemValueAsInt(const std::string& keyOrTag, int defaultValue = -1)  const { return GetAttributeAsInt(keyOrTag, defaultValue); }
+  virtual int GetItemValueAsInt(const std::string& keyOrTag, int defaultValue = -1) const;
 
   /**
    * @brief setter for attribute if exists otherwise create a child element if necessary and set text for it. The default implementation considers only attribute
@@ -338,45 +376,7 @@ public:
   */
   virtual bool IsAttributeKey(const std::string& keyOrTag) const { return true; } // default is always true
 
-  /**
-   * @brief convert string to boolean
-   * @param value given string
-   * @param defaultValue value to be returned if given string is empty
-   * @return true if given string is equal to "1" or "true"
-  */
-  static bool StringToBool(const std::string& value, bool defaultValue = false);
-
-  /**
-   * @brief convert string to integer
-   * @param value given string
-   * @param defaultValue value to be returned in case of empty string or conversion error
-   * @return converted integer value
-  */
-  static int StringToInt(const std::string& value, int defaultValue = -1);
-
-  /**
-   * @brief convert string to unsigned integer
-   * @param value string to be converted
-   * @param defaultValue value to be returned in case of empty string or conversion error
-   * @return converted unsigned integer value
-  */
-  static unsigned StringToUnsigned(const std::string& value, unsigned defaultValue = 0);
-
-  /**
-   * @brief convert string to unsigned long long
-   * @param value decimal or hexadecimal string as to be converted
-   * @param defaultValue value to be returned in case of empty string or conversion error
-   * @return converted value of type unsigned long long
-  */
-  static unsigned long long StringToULL(const std::string& value, unsigned long long defaultValue = 0L);
-
-  /**
-   * @brief trim whitespace characters
-   * @param s string to be trimmed
-   * @return trimmed string without whitespace characters
-  */
-  static std::string Trim(const std::string& s);
-  /**
+ /**
    * @brief check if instance is valid
    * @return true if instance is valid. The default implementation returns true
   */
@@ -405,11 +405,6 @@ public:
   * @return number of attributes as int
  */
   size_t GetAttributeCount() const { return m_attributes.size(); }
-  /**
-   * @brief check if attribute collection is empty
-   * @return true if attribute collection is empty
-  */
-  bool IsEmpty() const { return m_attributes.empty(); }
 
   /**
  * @brief check if all given attributes exist in the instance
@@ -429,6 +424,25 @@ public:
    * @return true if all attributes of the given instance exist in this instance
   */
   virtual bool EqualAttributes(const XmlItem* other) const;
+
+  /**
+ * @brief check if given attributes exist in the instance
+ * @param attributes given list of attributes
+ * @return true if given attributes exist in the instance
+*/
+  virtual bool CompareAttributes(const std::map<std::string, std::string>& attributes) const;
+  /**
+   * @brief check if attributes of the given instance exist in this instance
+   * @param other given instance of XmlItem
+   * @return true if attributes of the given instance exist in this instance
+  */
+  virtual bool Compare(const XmlItem& other) const;
+  /**
+   * @brief check if attributes of the given instance exist in this instance
+   * @param other pointer to given instance of XmlItem
+   * @return true if attributes of the given instance exist in this instance
+  */
+  virtual bool Compare(const XmlItem* other) const;
 
   /**
   * @brief concatenate instance attributes

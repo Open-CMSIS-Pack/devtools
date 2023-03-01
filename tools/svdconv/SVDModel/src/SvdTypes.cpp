@@ -152,6 +152,10 @@ const string& SvdTypes::GetExpressionType(Expression expr)
 
 const string& SvdTypes::GetAccessType(Access acc)
 {
+  if(acc >= Access::END) {
+    return SvdUtils::EMPTY_STRING;
+  }
+
   return access_str[(uint32_t)acc];
 }
 

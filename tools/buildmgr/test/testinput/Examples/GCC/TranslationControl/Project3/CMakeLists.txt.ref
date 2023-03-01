@@ -1,6 +1,6 @@
 # CMSIS Build CMakeLists generated on 2022-11-04T20:38:46
 
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.22)
 
 # Target options
 
@@ -20,6 +20,9 @@ set(DEBUG on)
 set(WARNINGS on)
 set(LD_FLAGS_GLOBAL "--entry=main --specs=nosys.specs -mthumb")
 set(LD_SCRIPT "C:/Sandbox/devtools-external/build/testoutput/GCC/TranslationControl/Project3/RTE/Device/ARMCM3/gcc_arm.ld")
+set(OUT_NAME Project)
+set(HEX_FILE "${OUT_NAME}.hex")
+set(BIN_FILE "${OUT_NAME}.bin")
 
 set(DEFINES
   ARMCM3
@@ -63,16 +66,22 @@ set(CXX_SRC_FILES
 
 # Toolchain config map
 
-include ("C:/Sandbox/devtools-external/build/testoutput/cbuild/etc/GCC.11.2.1.cmake")
+set(TOOLCHAIN_VERSION_MIN "10.2.1")
+include ("C:/sandbox/cbuild/etc/GCC.10.2.1.cmake")
+include ("C:/sandbox/cbuild/etc/CMSIS-Build-Utils.cmake")
 
 # Setup project
 
 project(${TARGET} LANGUAGES AS_GNU C CXX)
 
+cbuild_get_running_toolchain(TOOLCHAIN_ROOT TOOLCHAIN_VERSION CXX)
+
 # Global Flags
 
 set(CMAKE_AS_GNU_FLAGS "${AS_GNU_CPU} ${AS_GNU_BYTE_ORDER} ${AS_GNU_DEFINES} ${AS_GNU_FLAGS}")
+cbuild_get_system_includes(CC_SYS_INC_PATHS_LIST CC_SYS_INC_PATHS)
 set(CMAKE_C_FLAGS "${CC_CPU} ${CC_BYTE_ORDER} ${CC_DEFINES} ${CC_SECURE} ${CC_FLAGS} ${CC_SYS_INC_PATHS}")
+cbuild_get_system_includes(CXX_SYS_INC_PATHS_LIST CXX_SYS_INC_PATHS)
 set(CMAKE_CXX_FLAGS "${CXX_CPU} ${CXX_BYTE_ORDER} ${CXX_DEFINES} ${CXX_SECURE} ${CXX_FLAGS} ${CXX_SYS_INC_PATHS}")
 set(CMAKE_CXX_LINK_FLAGS "${LD_CPU} ${_LS}\"${LD_SCRIPT}\" ${LD_SECURE} ${LD_FLAGS_GLOBAL} ${LD_OPTIONS_FLAGS} ${LD_FLAGS}")
 
@@ -143,7 +152,7 @@ add_custom_target(database COMMAND ${CMAKE_COMMAND} -E copy_if_different "${INT_
 # Setup Target
 
 add_executable(${TARGET} ${AS_GNU_SRC_FILES} ${CC_SRC_FILES} ${CXX_SRC_FILES})
-set(CMAKE_EXECUTABLE_SUFFIX ${EXE_SUFFIX})
+set_target_properties(${TARGET} PROPERTIES PREFIX "" SUFFIX "${EXE_SUFFIX}" OUTPUT_NAME "${TARGET}")
 set_target_properties(${TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${OUT_DIR} LINK_DEPENDS ${LD_SCRIPT})
 target_include_directories(${TARGET} PUBLIC ${INC_PATHS})
 

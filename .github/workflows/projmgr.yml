@@ -14,6 +14,7 @@ on:
       - 'libs/xmltree/**'
       - 'libs/xmltreeslim/**'
       - 'tools/projmgr/**'
+      - '!**/docs/**/*'
       - '!**/*.md'
   pull_request:
     paths:
@@ -332,7 +333,7 @@ jobs:
     steps:
       - name: Install linux deps
         run: |
-          sudo apt update
+          sudo apt-get update
           sudo apt-get install \
             lcov
 

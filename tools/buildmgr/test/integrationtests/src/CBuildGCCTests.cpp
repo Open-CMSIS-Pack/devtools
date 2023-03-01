@@ -96,6 +96,14 @@ TEST_F(CBuildGCCTests, Library) {
   CheckCMakeLists             (param);
 }
 
+// Validate compilation of library project with custom output
+TEST_F(CBuildGCCTests, LibraryCustom) {
+  TestParam param = { "GCC/LibraryCustom", "project" };
+  RunCBuildScriptClean(param);
+  RunCBuildScript(param);
+  CheckCMakeLists(param);
+}
+
 // Validate usage of secure objects in non secure project
 TEST_F(CBuildGCCTests, TrustZone_GCC) {
   TestParam param = { "GCC/TrustZone/CM33_s", "FVP_Simulation_Model" };

@@ -67,7 +67,7 @@ void CBuildIntegTestEnv::SetUp() {
   ifstream file(ac6ToolchainFilePath);
   string line;
   while (getline(file, line)) {
-    if (string::npos != line.find("TOOLCHAIN_ROOT")) {
+    if (string::npos != line.find("set(TOOLCHAIN_ROOT")) {
       ac6_toolchain_path = RteUtils::RemoveQuotes(line);
       break;
     }

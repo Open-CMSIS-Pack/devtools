@@ -86,6 +86,23 @@ else()
     set(CMAKE_TAR_EXTENSION "tbz2")
 endif()
 
+include(CheckCXXSymbolExists)
+check_cxx_symbol_exists(std::filesystem::path::preferred_separator filesystem HAS_STD_FILESYSTEM)
+if (NOT HAS_STD_FILESYSTEM)
+  message(WARNING "Compiler seems to lack std::filesystem support!")
+  if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    message(WARNING "Try GCC version 8.1 or later ...")
+  elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    message(WARNING "Try Clang version 8 or later ...")
+  elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
+    message(WARNING "Try AppleClang version 11 or later ...")
+  elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+    message(WARNING "Try Visual Studio 2019 or later ...")
+  else()
+    message(WARNING "Check for a newer version of your compiler implementing C++17 std::filesystem ...")
+  endif()
+endif()
+
 # Libraries
 add_subdirectory(libs/crossplatform)
 add_subdirectory(libs/errlog)
@@ -96,6 +113,7 @@ add_subdirectory(libs/xmlreader)
 add_subdirectory(libs/xmltree)
 add_subdirectory(libs/xmltreeslim)
 add_subdirectory(libs/ymlschemachecker)
+add_subdirectory(libs/xmlschemachecker)
 
 # Tools
 if(NOT LIBS_ONLY)
@@ -113,6 +131,7 @@ get_targets()
 apply_patch(${CMAKE_CURRENT_SOURCE_DIR}/external/json)
 apply_patch(${CMAKE_CURRENT_SOURCE_DIR}/external/json-schema-validator)
 apply_patch(${CMAKE_CURRENT_SOURCE_DIR}/external/cxxopts)
+apply_patch(${CMAKE_CURRENT_SOURCE_DIR}/external/xerces-c)
 
 # Google Test Framework
 set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
@@ -146,3 +165,7 @@ add_subdirectory(external/json-schema-validator)
 
 #fmt
 add_subdirectory(external/fmt)
+
+#xerces-c
+set(XERCESC_BUILD_SHARED_LIBS OFF)
+add_subdirectory(external/xerces-c)

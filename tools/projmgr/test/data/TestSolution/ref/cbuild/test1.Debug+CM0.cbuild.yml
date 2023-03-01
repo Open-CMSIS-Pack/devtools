@@ -1,4 +1,6 @@
 build:
+  solution: ../data/TestSolution/test.csolution.yml
+  project: ../data/TestSolution/TestProject1/test1.cproject.yml
   context: test1.Debug+CM0
   compiler: AC6
   device: RteTest_ARMCM0
@@ -42,7 +44,7 @@ build:
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
   output-type: exe
   output-dirs:
-    gendir: ../data/TestSolution/TestProject1/generated
+    gendir: ../data/TestSolution
     intdir: tmp/test1/CM0/Debug
     outdir: out/test1/CM0/Debug
     rtedir: ../data/TestSolution/TestProject1/RTE

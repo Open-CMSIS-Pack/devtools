@@ -41,13 +41,13 @@ bool WildCards::Match(const std::string& s1, const std::string& s2)
 std::string WildCards::ToRegEx(const std::string& s)
 {
   // Char translations:
-  // 1) escape '.', '{', '}', and '$' if any
+  // 1) escape '.', '{', '}', '(', ')', '$', and '+' if any
   // 2) replace '?' with '.'
   // 3) replace '*' with ".*"
-  static const std::string from[] = {".", "$", "{", "}", "?", "*" };
-  static const std::string to[] = { "\\.", "\\$", "\\{", "\\}", ".", ".*" };
+  static const std::string from[] = {".", "$", "+", "{", "}", "(", ")", "?", "*" };
+  static const std::string to[] = { "\\.", "\\$", "\\+", "\\{", "\\}", "\\(", "\\)", ".", ".*" };
   std::string str = s;
-  for (int i = 0; i < 6; i++) {
+  for (int i = 0; i < 9; i++) {
     size_t start_pos = 0;
     while ((start_pos = str.find(from[i], start_pos)) != std::string::npos) {
       str.replace(start_pos, from[i].length(), to[i]);

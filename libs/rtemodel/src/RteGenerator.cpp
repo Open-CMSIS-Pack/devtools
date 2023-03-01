@@ -88,14 +88,14 @@ RteItem* RteGenerator::GetArgumentsItem(const string& type) const
   return args;
 }
 
-const string RteGenerator::GetCommand() const {
+const string RteGenerator::GetCommand(const std::string& hostType) const {
 
   RteItem* exe = GetItemByTag("exe");
   if (exe != NULL) {
     const list<RteItem*>& children = exe->GetChildren();
     for (auto it = children.begin(); it != children.end(); it++) {
       RteItem* cmd = *it;
-      if (cmd->GetTag() != "command" || !cmd->MatchesHost()) {
+      if (cmd->GetTag() != "command" || !cmd->MatchesHost(hostType)) {
         continue;
       }
       const string& key = cmd->GetAttribute("key");
@@ -120,11 +120,9 @@ const string RteGenerator::GetCommand() const {
   return GetItemValue("command");
 }
 
-
-string RteGenerator::GetExpandedCommandLine(RteTarget* target) const
+string RteGenerator::GetExecutable(RteTarget* target, const std::string& hostType) const
 {
-  string fullCmd;
-  string cmd = GetCommand();
+  string cmd = GetCommand(hostType);
   if (cmd.empty())
     return cmd;
 
@@ -139,37 +137,30 @@ string RteGenerator::GetExpandedCommandLine(RteTarget* target) const
     if (p)
       cmd = p->GetAbsolutePackagePath() + cmd;
   }
+  return cmd;
+}
 
+
+vector<pair<string, string> > RteGenerator::GetExpandedArguments(RteTarget* target, const string& hostType) const
+{
+  vector<pair<string, string> > args;
   RteItem* argsItem = GetArgumentsItem("exe");
   if (argsItem) {
-    bool quote = cmd.find(' ') != string::npos && cmd.find('\"') == string::npos;
-    if (quote)
-      fullCmd += "\"";
-    fullCmd += cmd;
-    if (quote)
-      fullCmd += "\"";
-
-    const list<RteItem*>& args = argsItem->GetChildren();
-    for (auto it = args.begin(); it != args.end(); it++) {
-      RteItem* arg = *it;
-      if (arg->GetTag() != "argument")
+    for (auto arg : argsItem->GetChildren()) {
+      if (arg->GetTag() != "argument" || !arg->MatchesHost(hostType))
         continue;
-      if (!arg->MatchesHost())
-        continue;
-      fullCmd += " ";
-      const string& key = arg->GetAttribute("switch");
-      if (!key.empty())
-        fullCmd += key;
-      string value = ExpandString(arg->GetText());
-      quote = value.find(' ') != string::npos && value.find('\"') == string::npos;
-      if (quote)
-        fullCmd += "\"";
-      fullCmd += value;
-      if (quote)
-        fullCmd += "\"";
+      args.push_back({arg->GetAttribute("switch"), ExpandString(arg->GetText())});
     }
-  } else {
-    fullCmd = cmd;
+  }
+  return args;
+}
+
+string RteGenerator::GetExpandedCommandLine(RteTarget* target, const string& hostType) const
+{
+  const vector<pair<string, string> > args = GetExpandedArguments(target, hostType);
+  string fullCmd = GetExecutable(target, hostType);
+  for (size_t i = 0; i < args.size(); i++) {
+    fullCmd += ' ' + RteUtils::AddQuotesIfSpace(args[i].first + args[i].second);
   }
   return fullCmd;
 }
@@ -213,7 +204,7 @@ string RteGenerator::GetExpandedWebLine(RteTarget* target) const
 }
 
 
-string RteGenerator::GetExpandedGpdsc(RteTarget* target) const
+string RteGenerator::GetExpandedGpdsc(RteTarget* target, const string& genDir) const
 {
   string gpdsc = GetGpdsc();
   if (gpdsc.empty()) {
@@ -222,17 +213,21 @@ string RteGenerator::GetExpandedGpdsc(RteTarget* target) const
     gpdsc = ExpandString(gpdsc);
   }
 
-  fs::path path(gpdsc);
-  if (path.is_relative()) {
-    gpdsc = GetExpandedWorkingDir(target) + gpdsc;
+  if (!genDir.empty() && fs::path(gpdsc).is_absolute()) {
+    error_code ec;
+    gpdsc = fs::relative(gpdsc, GetExpandedWorkingDir(target), ec).generic_string();
+  }
+
+  if (fs::path(gpdsc).is_relative()) {
+    gpdsc = GetExpandedWorkingDir(target, genDir) + gpdsc;
   }
 
   return RteFsUtils::MakePathCanonical(gpdsc);
 }
 
-string RteGenerator::GetExpandedWorkingDir(RteTarget* target) const
+string RteGenerator::GetExpandedWorkingDir(RteTarget* target, const string& genDir) const
 {
-  string wd = ExpandString(GetWorkingDir());
+  string wd = genDir.empty() ? ExpandString(GetWorkingDir()) : genDir;
   fs::path path(wd);
   if (wd.empty() || path.is_relative()) {
     // use project directory

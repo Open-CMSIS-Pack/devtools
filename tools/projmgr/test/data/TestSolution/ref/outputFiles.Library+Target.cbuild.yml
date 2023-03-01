@@ -1,0 +1,51 @@
+build:
+  solution: ../data/TestSolution/outputFiles.csolution.yml
+  project: ../data/TestSolution/outputFiles.cproject.yml
+  context: outputFiles.Library+Target
+  compiler: AC6
+  device: RteTest_ARMCM3
+  processor:
+    fpu: off
+    trustzone: non-secure
+  packs:
+    - pack: ARM::RteTest_DFP@0.2.0
+      path: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0
+  define:
+    - ARMCM3
+    - _RTE_
+  add-path:
+    - ../data/TestSolution/RTE/_Library_Target
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM3/Include
+  output-dirs:
+    gendir: ../data/TestSolution
+    intdir: tmp/outputFiles/Target/Library
+    outdir: out/outputFiles/Target/Library
+    rtedir: ../data/TestSolution/RTE
+  output:
+    - type: lib
+      file: subfolder4/file-AC6.lib
+  components:
+    - component: ARM::Device:Startup&RteTest Startup@2.0.3
+      condition: ARMCM3 RteTest
+      from-pack: ARM::RteTest_DFP@0.2.0
+      selected-by: Startup
+      files:
+        - file: ../data/TestSolution/RTE/Device/RteTest_ARMCM3/ARMCM3_ac6.sct
+          category: linkerScript
+          attr: config
+          version: 1.2.0
+        - file: ../data/TestSolution/RTE/Device/RteTest_ARMCM3/startup_ARMCM3.c
+          category: sourceC
+          attr: config
+          version: 2.0.3
+        - file: ../data/TestSolution/RTE/Device/RteTest_ARMCM3/system_ARMCM3.c
+          category: sourceC
+          attr: config
+          version: 1.2.2
+    - component: ARM::RteTest:CORE@0.1.1
+      condition: Cortex-M Device
+      from-pack: ARM::RteTest_DFP@0.2.0
+      selected-by: CORE
+  constructed-files:
+    - file: ../data/TestSolution/RTE/_Library_Target/RTE_Components.h
+      category: header

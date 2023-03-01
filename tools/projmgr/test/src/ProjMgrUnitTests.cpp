@@ -29,7 +29,6 @@ protected:
   ProjMgrUnitTests() {}
   virtual ~ProjMgrUnitTests() {}
 
-  void CompareFile(const string& file1, const string& file2);
   void GetFilesInTree(const string& dir, set<string>& files);
   void CompareFileTree(const string& dir1, const string& dir2);
 
@@ -44,42 +43,6 @@ string ProjMgrUnitTests::UpdateTestSolutionFile(const string& projectFilePath) {
   fout << root;
   fout.close();
   return csolutionFile;
-}
-
-void ProjMgrUnitTests::CompareFile(const string& file1, const string& file2) {
-  ifstream f1, f2;
-  string l1, l2;
-  bool ret_val;
-
-  f1.open(file1);
-  ret_val = f1.is_open();
-  ASSERT_EQ(ret_val, true) << "Failed to open " << file1;
-
-  f2.open(file2);
-  ret_val = f2.is_open();
-  ASSERT_EQ(ret_val, true) << "Failed to open " << file2;
-
-  while (getline(f1, l1) && getline(f2, l2)) {
-    if (!l1.empty() && l1.rfind('\r') == l1.length() - 1) {
-      l1.pop_back();
-    }
-
-    if (!l2.empty() && l2.rfind('\r') == l2.length() - 1) {
-      l2.pop_back();
-    }
-
-    if (l1 != l2) {
-      // ignore 'timestamp'
-      if ((!l1.empty() && (l1.find("timestamp=") != string::npos)) && (!l2.empty() && (l2.find("timestamp=") != string::npos))) {
-        continue;
-      }
-
-      FAIL() << "error: " << file1 << " is different from " << file2;
-    }
-  }
-
-  f1.close();
-  f2.close();
 }
 
 void ProjMgrUnitTests::GetFilesInTree(const string& dir, set<string>& files) {
@@ -101,17 +64,17 @@ void ProjMgrUnitTests::CompareFileTree(const string& dir1, const string& dir2) {
 TEST_F(ProjMgrUnitTests, RunProjMgr_EmptyOptions) {
   char* argv[1];
   // Empty options
-  EXPECT_EQ(0, RunProjMgr(1, argv));
+  EXPECT_EQ(0, RunProjMgr(1, argv, 0));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_Version) {
   char* argv[2];
   // version
   argv[1] = (char*)"--version";
-  EXPECT_EQ(0, RunProjMgr(2, argv));
+  EXPECT_EQ(0, RunProjMgr(2, argv, 0));
 
   argv[1] = (char*)"-V";
-  EXPECT_EQ(0, RunProjMgr(2, argv));
+  EXPECT_EQ(0, RunProjMgr(2, argv, 0));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks) {
@@ -139,7 +102,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks) {
     argv[4] = (char*)csolution.c_str();
     argv[5] = (char*)"-c";
     argv[6] = (char*)input.second.c_str();
-    EXPECT_EQ(0, RunProjMgr(7, argv));
+    EXPECT_EQ(0, RunProjMgr(7, argv, 0));
 
     auto outStr = streamRedirect.GetOutString();
     EXPECT_TRUE(regex_match(outStr, regex(expected.c_str()))) << "error listing pack for " << csolution << endl;
@@ -158,7 +121,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks) {
     argv[4] = (char*)csolution.c_str();
     argv[5] = (char*)"-c";
     argv[6] = (char*)input.second.c_str();
-    EXPECT_EQ(1, RunProjMgr(7, argv));
+    EXPECT_EQ(1, RunProjMgr(7, argv, 0));
 
     auto errStr = streamRedirect.GetErrorString();
     EXPECT_NE(string::npos, errStr.find(expected)) << "error listing pack for " << csolution << endl;
@@ -172,7 +135,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks_1) {
   // list packs
   argv[1] = (char*)"list";
   argv[2] = (char*)"packs";
-  EXPECT_EQ(0, RunProjMgr(3, argv));
+  EXPECT_EQ(0, RunProjMgr(3, argv, 0));
 
   auto outStr = streamRedirect.GetOutString();
   EXPECT_TRUE(regex_match(outStr, regex(expected.c_str())));
@@ -193,7 +156,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks_project) {
   argv[4] = (char*)csolution.c_str();
   argv[5] = (char*)"-c";
   argv[6] = (char*)"project.Debug";
-  EXPECT_EQ(0, RunProjMgr(7, argv));
+  EXPECT_EQ(0, RunProjMgr(7, argv, 0));
 
   GetFilesInTree(rteFolder, rteFilesAfter);
   EXPECT_EQ(rteFilesBefore, rteFilesAfter);
@@ -203,7 +166,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks_project) {
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks_MultiContext) {
-  char* argv[7];
+  char* argv[9];
   StdStreamRedirect streamRedirect;
   const string& csolution = testinput_folder + "/TestSolution/test.csolution_pack_selection.yml";
   // list packs
@@ -213,10 +176,41 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks_MultiContext) {
   argv[4] = (char*)csolution.c_str();
   argv[5] = (char*)"-c";
   argv[6] = (char*)"test2.*";
-  EXPECT_EQ(0, RunProjMgr(7, argv));
+  EXPECT_EQ(0, RunProjMgr(7, argv, 0));
 
   auto outStr = streamRedirect.GetOutString();
   EXPECT_TRUE(regex_match(outStr.c_str(), regex("ARM::RteTestGenerator@0.1.0 \\(.*\\)\nARM::RteTest_DFP@0.2.0 \\(.*\\)\n")));
+
+  argv[7] = (char*)"-l";
+  argv[8] = (char*)"latest";
+  streamRedirect.ClearStringStreams();
+  EXPECT_EQ(0, RunProjMgr(9, argv, 0));
+
+  const string& expectedLatest = "\
+ARM::RteTest@0.1.0 \\(.*\\)\n\
+ARM::RteTestBoard@0.1.0 \\(.*\\)\n\
+ARM::RteTestGenerator@0.1.0 \\(.*\\)\n\
+ARM::RteTest_DFP@0.2.0 \\(.*\\)\n\
+";
+
+  outStr = streamRedirect.GetOutString();
+  EXPECT_TRUE(regex_match(outStr, regex(expectedLatest)));
+
+  argv[7] = (char*)"-l";
+  argv[8] = (char*)"all";
+  streamRedirect.ClearStringStreams();
+  EXPECT_EQ(0, RunProjMgr(9, argv, 0));
+
+  const string& expectedAll = "\
+ARM::RteTest@0.1.0 \\(.*\\)\n\
+ARM::RteTestBoard@0.1.0 \\(.*\\)\n\
+ARM::RteTestGenerator@0.1.0 \\(.*\\)\n\
+ARM::RteTest_DFP@0.1.1 \\(.*\\)\n\
+ARM::RteTest_DFP@0.2.0 \\(.*\\)\n\
+";
+
+  outStr = streamRedirect.GetOutString();
+  EXPECT_TRUE(regex_match(outStr, regex(expectedAll)));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacksMissing) {
@@ -231,7 +225,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacksMissing) {
   argv[5] = (char*)"-c";
   argv[6] = (char*)"test1+CM0";
   argv[7] = (char*)"-m";
-  EXPECT_EQ(0, RunProjMgr(8, argv));
+  EXPECT_EQ(0, RunProjMgr(8, argv, 0));
 
   auto outStr = streamRedirect.GetOutString();
   EXPECT_STREQ(outStr.c_str(), "ARM::Missing_DFP@0.0.9\n");
@@ -247,7 +241,7 @@ TEST_F(ProjMgrUnitTests, ListPacks_ProjectAndLayer) {
   argv[2] = (char*)"packs";
   argv[3] = (char*)"-s";
   argv[4] = (char*)csolution.c_str();
-  EXPECT_EQ(0, RunProjMgr(5, argv));
+  EXPECT_EQ(0, RunProjMgr(5, argv, 0));
 
   auto outStr = streamRedirect.GetOutString();
   EXPECT_TRUE(regex_match(outStr, regex(expected.c_str())));
@@ -262,7 +256,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListBoards) {
   argv[2] = (char*)"boards";
   argv[3] = (char*)"--filter";
   argv[4] = (char*)"Dummy";
-  EXPECT_EQ(0, RunProjMgr(5, argv));
+  EXPECT_EQ(0, RunProjMgr(5, argv, 0));
 
   auto outStr = streamRedirect.GetOutString();
   EXPECT_STREQ(outStr.c_str(), "Keil::RteTest Dummy board:1.2.3 (ARM::RteTest_DFP@0.2.0)\n");
@@ -283,7 +277,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListBoardsProjectFiltered) {
   argv[4] = (char*)"Dummy";
   argv[5] = (char*)"-s";
   argv[6] = (char*)csolutionFile.c_str();
-  EXPECT_EQ(0, RunProjMgr(7, argv));
+  EXPECT_EQ(0, RunProjMgr(7, argv, 0));
 
   GetFilesInTree(rteFolder, rteFilesAfter);
   EXPECT_EQ(rteFilesBefore, rteFilesAfter);
@@ -301,7 +295,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListDevices) {
   argv[2] = (char*)"devices";
   argv[3] = (char*)"--filter";
   argv[4] = (char*)"RteTest_ARMCM4";
-  EXPECT_EQ(0, RunProjMgr(5, argv));
+  EXPECT_EQ(0, RunProjMgr(5, argv, 0));
 
   auto outStr = streamRedirect.GetOutString();
   EXPECT_STREQ(outStr.c_str(),"\
@@ -317,7 +311,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListComponents) {
   // list components
   argv[1] = (char*)"list";
   argv[2] = (char*)"components";
-  EXPECT_EQ(0, RunProjMgr(3, argv));
+  EXPECT_EQ(0, RunProjMgr(3, argv, 0));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListDependencies) {
@@ -334,7 +328,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListDependencies) {
   argv[2] = (char*)"dependencies";
   argv[3] = (char*)"-s";
   argv[4] = (char*)csolutionFile.c_str();
-  EXPECT_EQ(0, RunProjMgr(5, argv));
+  EXPECT_EQ(0, RunProjMgr(5, argv, 0));
 
   GetFilesInTree(rteFolder, rteFilesAfter);
   EXPECT_EQ(rteFilesBefore, rteFilesAfter);
@@ -352,10 +346,10 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ConvertProject) {
   argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(0, RunProjMgr(6, argv));
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   // Check generated CPRJ
-  CompareFile(testoutput_folder + "/test.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test.cprj",
     testinput_folder + "/TestSolution/TestProject4/test.cprj");
 }
 
@@ -368,10 +362,10 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_LinkerScript) {
   argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(0, RunProjMgr(6, argv));
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   // Check generated CPRJ
-  CompareFile(testoutput_folder + "/test_linker_script.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test_linker_script.cprj",
     testinput_folder + "/TestSolution/TestProject4/test_linker_script.cprj");
 }
 
@@ -383,7 +377,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_With_Schema_Check) {
   argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(1, RunProjMgr(6, argv));
+  EXPECT_EQ(1, RunProjMgr(6, argv, 0));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_Skip_Schema_Check) {
@@ -395,10 +389,10 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Skip_Schema_Check) {
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
   argv[6] = (char*)"-n";
-  EXPECT_EQ(0, RunProjMgr(7, argv));
+  EXPECT_EQ(0, RunProjMgr(7, argv, 0));
 
   // Check generated CPRJ
-  CompareFile(testoutput_folder + "/test.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test.cprj",
     testinput_folder + "/TestSolution/TestProject4/test.cprj");
 }
 
@@ -414,7 +408,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgrContextSolution) {
   argv[4] = (char*)csolution.c_str();
   argv[5] = (char*)"--filter";
   argv[6] = (char*)"test1";
-  EXPECT_EQ(0, RunProjMgr(7, argv));
+  EXPECT_EQ(0, RunProjMgr(7, argv, 0));
 
   auto outStr = streamRedirect.GetOutString();
   EXPECT_STREQ(outStr.c_str(), "test1.Debug+CM0\ntest1.Release+CM0\n");
@@ -429,10 +423,10 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_MissingSolutionFile) {
   argv[4] = (char*)csolution.c_str();
 
   // Missing Solution File
-  EXPECT_EQ(1, RunProjMgr(5, argv));
+  EXPECT_EQ(1, RunProjMgr(5, argv, 0));
 
   // list empty arguments
-  EXPECT_EQ(1, RunProjMgr(2, argv));
+  EXPECT_EQ(1, RunProjMgr(2, argv, 0));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_InvalidArgs) {
@@ -445,7 +439,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_InvalidArgs) {
   argv[5] = (char*)"--solution";
   argv[6] = (char*)csolution.c_str();
 
-  EXPECT_EQ(1, RunProjMgr(7, argv));
+  EXPECT_EQ(1, RunProjMgr(7, argv, 0));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution) {
@@ -458,29 +452,29 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution) {
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(0, RunProjMgr(6, argv));
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   // Check generated CPRJs
-  CompareFile(testoutput_folder + "/test1.Debug+CM0.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test1.Debug+CM0.cprj",
     testinput_folder + "/TestSolution/ref/test1.Debug+CM0.cprj");
-  CompareFile(testoutput_folder + "/test1.Release+CM0.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test1.Release+CM0.cprj",
     testinput_folder + "/TestSolution/ref/test1.Release+CM0.cprj");
 
-  CompareFile(testoutput_folder + "/test2.Debug+CM0.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test2.Debug+CM0.cprj",
     testinput_folder + "/TestSolution/ref/test2.Debug+CM0.cprj");
-  CompareFile(testoutput_folder + "/test2.Debug+CM3.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test2.Debug+CM3.cprj",
     testinput_folder + "/TestSolution/ref/test2.Debug+CM3.cprj");
 
   // Check generated cbuild YMLs
-  CompareFile(testoutput_folder + "/test.cbuild-idx.yml",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test.cbuild-idx.yml",
     testinput_folder + "/TestSolution/ref/cbuild/test.cbuild-idx.yml");
-  CompareFile(testoutput_folder + "/test1.Debug+CM0.cbuild.yml",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test1.Debug+CM0.cbuild.yml",
     testinput_folder + "/TestSolution/ref/cbuild/test1.Debug+CM0.cbuild.yml");
-  CompareFile(testoutput_folder + "/test1.Release+CM0.cbuild.yml",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test1.Release+CM0.cbuild.yml",
     testinput_folder + "/TestSolution/ref/cbuild/test1.Release+CM0.cbuild.yml");
-  CompareFile(testoutput_folder + "/test2.Debug+CM0.cbuild.yml",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test2.Debug+CM0.cbuild.yml",
     testinput_folder + "/TestSolution/ref/cbuild/test2.Debug+CM0.cbuild.yml");
-  CompareFile(testoutput_folder + "/test2.Debug+CM3.cbuild.yml",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test2.Debug+CM3.cbuild.yml",
     testinput_folder + "/TestSolution/ref/cbuild/test2.Debug+CM3.cbuild.yml");
 }
 
@@ -492,35 +486,35 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_PositionalArguments) {
   argv[3] = (char*)"devices";
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(0, RunProjMgr(6, argv));
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   argv[1] = (char*)"list";
   argv[2] = (char*)"devices";
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(0, RunProjMgr(6, argv));
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   argv[1] = (char*)"list";
   argv[2] = (char*)"devices";
   argv[3] = (char*)"-o";
   argv[4] = (char*)testoutput_folder.c_str();
   argv[5] = (char*)csolution.c_str();
-  EXPECT_EQ(0, RunProjMgr(6, argv));
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   argv[1] = (char*)"-o";
   argv[2] = (char*)testoutput_folder.c_str();
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"list";
   argv[5] = (char*)"devices";
-  EXPECT_EQ(0, RunProjMgr(6, argv));
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   argv[1] = (char*)"-o";
   argv[2] = (char*)testoutput_folder.c_str();
   argv[3] = (char*)"list";
   argv[4] = (char*)"devices";
   argv[5] = (char*)csolution.c_str();
-  EXPECT_EQ(0, RunProjMgr(6, argv));
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgrSolutionContext) {
@@ -534,7 +528,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolutionContext) {
   argv[5] = (char*)testoutput_folder.c_str();
   argv[6] = (char*)"-c";
   argv[7] = (char*)"test2.Debug+CM0";
-  EXPECT_EQ(0, RunProjMgr(8, argv));
+  EXPECT_EQ(0, RunProjMgr(8, argv, 0));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgrSolutionNonExistentContext) {
@@ -548,7 +542,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolutionNonExistentContext) {
   argv[5] = (char*)testoutput_folder.c_str();
   argv[6] = (char*)"-c";
   argv[7] = (char*)"NON-EXISTENT-CONTEXT";
-  EXPECT_EQ(1, RunProjMgr(8, argv));
+  EXPECT_EQ(1, RunProjMgr(8, argv, 0));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_InvalidLayerSchema) {
@@ -562,7 +556,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_InvalidLayerSchema) {
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)output.c_str();
-  EXPECT_EQ(1, RunProjMgr(6, argv));
+  EXPECT_EQ(1, RunProjMgr(6, argv, 0));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_UnknownLayer) {
@@ -575,7 +569,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_UnknownLayer) {
   argv[4] = (char*)"-o";
   argv[5] = (char*)output.c_str();
   argv[6] = (char*)"-n";
-  EXPECT_EQ(1, RunProjMgr(7, argv));
+  EXPECT_EQ(1, RunProjMgr(7, argv, 0));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgrLayers) {
@@ -589,12 +583,12 @@ TEST_F(ProjMgrUnitTests, RunProjMgrLayers) {
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)output.c_str();
-  EXPECT_EQ(0, RunProjMgr(6, argv));
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   // Check generated CPRJs
-  CompareFile(testoutput_folder + "/testlayers/testlayers.Debug.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/testlayers/testlayers.Debug.cprj",
     testinput_folder + "/TestLayers/ref/testlayers/testlayers.Debug.cprj");
-  CompareFile(testoutput_folder + "/testlayers/testlayers.Release.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/testlayers/testlayers.Release.cprj",
     testinput_folder + "/TestLayers/ref/testlayers/testlayers.Release.cprj");
 
   // Check creation of layers rte folders
@@ -610,12 +604,12 @@ TEST_F(ProjMgrUnitTests, RunProjMgrLayers2) {
   argv[1] = (char*)"convert";
   argv[2] = (char*)"-s";
   argv[3] = (char*)csolution.c_str();
-  EXPECT_EQ(0, RunProjMgr(4, argv));
+  EXPECT_EQ(0, RunProjMgr(4, argv, 0));
 
   // Check generated CPRJs
-  CompareFile(testinput_folder + "/TestLayers/testlayers.Debug.cprj",
+ ProjMgrTestEnv:: CompareFile(testinput_folder + "/TestLayers/testlayers.Debug.cprj",
     testinput_folder + "/TestLayers/ref2/testlayers.Debug.cprj");
-  CompareFile(testinput_folder + "/TestLayers/testlayers.Release.cprj",
+ ProjMgrTestEnv:: CompareFile(testinput_folder + "/TestLayers/testlayers.Release.cprj",
     testinput_folder + "/TestLayers/ref2/testlayers.Release.cprj");
 }
 
@@ -624,7 +618,7 @@ TEST_F(ProjMgrUnitTests, ListLayersAll) {
   char* argv[3];
   argv[1] = (char*)"list";
   argv[2] = (char*)"layers";
-  EXPECT_EQ(0, RunProjMgr(3, argv));
+  EXPECT_EQ(0, RunProjMgr(3, argv, 0));
 
   const string& expected = "\
 .*/ARM/RteTest_DFP/0.2.0/Layers/board1.clayer.yml \\(layer type: Board\\)\n\
@@ -652,8 +646,8 @@ TEST_F(ProjMgrUnitTests, ListLayersCompatible) {
   argv[4] = (char*)csolution.c_str();
   argv[5] = (char*)"-c";
   argv[6] = (char*)context.c_str();
-  argv[7] = (char*)"-v";
-  EXPECT_EQ(0, RunProjMgr(8, argv));
+  argv[7] = (char*)"-d";
+  EXPECT_EQ(0, RunProjMgr(8, argv, 0));
 
   const string& expectedErrStr = "\
 debug csolution: check for context 'genericlayers.CompatibleLayers\\+AnyBoard'\n\
@@ -699,23 +693,25 @@ clayer of type 'TestVariant' was uniquely found:\n\
   EXPECT_TRUE(regex_match(errStr, regex(expectedErrStr)));
 
   const string& expectedOutStr = "\
-info csolution: valid for context 'genericlayers.CompatibleLayers\\+AnyBoard'\n\
-\n\
-valid configuration #1:\n\
+info csolution: valid configuration #1: \\(context 'genericlayers.CompatibleLayers\\+AnyBoard'\\)\n\
   .*/TestLayers/genericlayers.cproject.yml\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/board1.clayer.yml \\(layer type: Board\\)\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml \\(layer type: TestVariant\\)\n\
 \n\
-valid configuration #2:\n\
+info csolution: valid configuration #2: \\(context 'genericlayers.CompatibleLayers\\+AnyBoard'\\)\n\
   .*/TestLayers/genericlayers.cproject.yml\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/board2.clayer.yml \\(layer type: Board\\)\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml \\(layer type: TestVariant\\)\n\
 \n\
-valid configuration #3:\n\
+info csolution: valid configuration #3: \\(context 'genericlayers.CompatibleLayers\\+AnyBoard'\\)\n\
   .*/TestLayers/genericlayers.cproject.yml\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml \\(layer type: Board\\)\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml \\(layer type: TestVariant\\)\n\
 \n\
+.*/ARM/RteTest_DFP/0.2.0/Layers/board1.clayer.yml \\(layer type: Board\\)\n\
+.*/ARM/RteTest_DFP/0.2.0/Layers/board2.clayer.yml \\(layer type: Board\\)\n\
+.*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml \\(layer type: Board\\)\n\
+.*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml \\(layer type: TestVariant\\)\n\
 ";
 
   const string& outStr = streamRedirect.GetOutString();
@@ -724,39 +720,49 @@ valid configuration #3:\n\
 
 TEST_F(ProjMgrUnitTests, ListLayersConfigurations) {
   StdStreamRedirect streamRedirect;
-  char* argv[5];
+  char* argv[6];
   const string& csolution = testinput_folder + "/TestLayers/config.csolution.yml";
   argv[1] = (char*)"list";
   argv[2] = (char*)"layers";
   argv[3] = (char*)"-s";
   argv[4] = (char*)csolution.c_str();
-  EXPECT_EQ(0, RunProjMgr(5, argv));
+  argv[5] = (char*)"-v";
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   const string& expectedOutStr = "\
-info csolution: valid for context 'config.CompatibleLayers\\+RteTest_ARMCM3'\n\
-\n\
-valid configuration #1:\n\
+info csolution: valid configuration #1: \\(context 'config.CompatibleLayers\\+RteTest_ARMCM3'\\)\n\
   .*/TestLayers/config.clayer.yml\n\
-    set: set1.select1 \\(set 1 select 1 - connect R\\)\n\
+    set: set1.select1 \\(connect R - set 1 select 1\\)\n\
   .*/TestLayers/config.cproject.yml\n\
-    set: set1.select1 \\(set 1 select 1 - project X\\)\n\
+    set: set1.select1 \\(project X - set 1 select 1\\)\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/config1.clayer.yml \\(layer type: Config1\\)\n\
-    set: set1.select1 \\(set 1 select 1 - connect A\\)\n\
-    set: set2.select1 \\(set 2 select 1 - connect C\\)\n\
+    set: set1.select1 \\(connect A - set 1 select 1\\)\n\
+    set: set2.select1 \\(connect C - set 2 select 1\\)\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/config2.clayer.yml \\(layer type: Config2\\)\n\
-    set: set1.select1 \\(set 1 select 1 - connect F\\)\n\
+    set: set1.select1 \\(connect F - set 1 select 1\\)\n\
 \n\
-valid configuration #2:\n\
+info csolution: valid configuration #2: \\(context 'config.CompatibleLayers\\+RteTest_ARMCM3'\\)\n\
   .*/TestLayers/config.clayer.yml\n\
-    set: set1.select2 \\(set 1 select 2 - connect S\\)\n\
+    set: set1.select2 \\(connect S - set 1 select 2\\)\n\
   .*/TestLayers/config.cproject.yml\n\
-    set: set1.select2 \\(set 1 select 2 - project Y\\)\n\
+    set: set1.select2 \\(project Y - set 1 select 2\\)\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/config1.clayer.yml \\(layer type: Config1\\)\n\
-    set: set1.select2 \\(set 1 select 2 - connect B\\)\n\
-    set: set2.select2 \\(set 2 select 2 - connect D\\)\n\
+    set: set1.select2 \\(connect B - set 1 select 2\\)\n\
+    set: set2.select2 \\(connect D - set 2 select 2\\)\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/config2.clayer.yml \\(layer type: Config2\\)\n\
-    set: set1.select2 \\(set 1 select 2 - connect G\\)\n\
+    set: set1.select2 \\(connect G - set 1 select 2\\)\n\
 \n\
+.*/TestLayers/config.clayer.yml\n\
+  set: set1.select1 \\(connect R - set 1 select 1\\)\n\
+  set: set1.select2 \\(connect S - set 1 select 2\\)\n\
+.*/ARM/RteTest_DFP/0.2.0/Layers/config1.clayer.yml \\(layer type: Config1\\)\n\
+  set: set1.select1 \\(connect A - set 1 select 1\\)\n\
+  set: set1.select2 \\(connect B - set 1 select 2\\)\n\
+  set: set2.select1 \\(connect C - set 2 select 1\\)\n\
+  set: set2.select2 \\(connect D - set 2 select 2\\)\n\
+.*/ARM/RteTest_DFP/0.2.0/Layers/config2.clayer.yml \\(layer type: Config2\\)\n\
+  set: set1.select1 \\(connect F - set 1 select 1\\)\n\
+  set: set1.select2 \\(connect G - set 1 select 2\\)\n\
 ";
 
   const string& outStr = streamRedirect.GetOutString();
@@ -765,38 +771,28 @@ valid configuration #2:\n\
 
 TEST_F(ProjMgrUnitTests, ListLayersMultipleSelect) {
   StdStreamRedirect streamRedirect;
-  char* argv[5];
+  char* argv[6];
   const string& csolution = testinput_folder + "/TestLayers/select.csolution.yml";
   argv[1] = (char*)"list";
   argv[2] = (char*)"layers";
   argv[3] = (char*)"-s";
   argv[4] = (char*)csolution.c_str();
-  EXPECT_EQ(0, RunProjMgr(5, argv));
+  argv[5] = (char*)"-v";
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   const string& expectedOutStr = "\
-info csolution: valid for context 'select\\+RteTest_ARMCM3'\n\
-\n\
-valid configuration #1:\n\
+info csolution: valid configuration #1: \\(context 'select\\+RteTest_ARMCM3'\\)\n\
   .*/TestLayers/select.clayer.yml\n\
   .*/TestLayers/select.cproject.yml\n\
-    set: set1.select1 \\(set 1 select 1 - project X\\)\n\
+    set: set1.select1 \\(project X - set 1 select 1\\)\n\
 \n\
-valid configuration #2:\n\
+info csolution: valid configuration #2: \\(context 'select\\+RteTest_ARMCM3'\\)\n\
   .*/TestLayers/select.clayer.yml\n\
   .*/TestLayers/select.cproject.yml\n\
-    set: set1.select2 \\(set 1 select 2 - project Y\\)\n\
+    set: set1.select2 \\(project Y - set 1 select 2\\)\n\
+    set: set1.select2 \\(project Z - set 1 select 2\\)\n\
 \n\
-valid configuration #3:\n\
-  .*/TestLayers/select.clayer.yml\n\
-  .*/TestLayers/select.cproject.yml\n\
-    set: set1.select2 \\(set 1 select 2 - project Y\\)\n\
-    set: set1.select2 \\(set 1 select 2 - project Z\\)\n\
-\n\
-valid configuration #4:\n\
-  .*/TestLayers/select.clayer.yml\n\
-  .*/TestLayers/select.cproject.yml\n\
-    set: set1.select2 \\(set 1 select 2 - project Z\\)\n\
-\n\
+.*/TestLayers/select.clayer.yml\n\
 ";
 
   const string& outStr = streamRedirect.GetOutString();
@@ -805,34 +801,93 @@ valid configuration #4:\n\
 
 TEST_F(ProjMgrUnitTests, ListToolchains) {
   StdStreamRedirect streamRedirect;
+  char* envp[4];
+  string ac6 = "AC6_TOOLCHAIN_6_18_1=" + testinput_folder;
+  string gcc = "GCC_TOOLCHAIN_11_3_1=" + testinput_folder;
+  string iar = "IAR_TOOLCHAIN_9_32_5=" + testinput_folder;
+  envp[0] = (char*)ac6.c_str();
+  envp[1] = (char*)iar.c_str();
+  envp[2] = (char*)gcc.c_str();
+  envp[3] = (char*)'\0';
   char* argv[3];
   argv[1] = (char*)"list";
   argv[2] = (char*)"toolchains";
-  EXPECT_EQ(0, RunProjMgr(3, argv));
-  const string& expected = "AC5@5.6.7\nAC6@6.18.0\nGCC@11.2.1\nIAR@8.50.6\n";
+  EXPECT_EQ(0, RunProjMgr(3, argv, envp));
+
+  const string& expectedOutStr = "\
+AC6@6.18.1\n\
+GCC@11.3.1\n\
+IAR@9.32.5\n\
+";
+
   const string& outStr = streamRedirect.GetOutString();
-  EXPECT_EQ(outStr, expected);
+  EXPECT_TRUE(regex_match(outStr, regex(expectedOutStr)));
+}
+
+TEST_F(ProjMgrUnitTests, ListToolchainsVerbose) {
+  StdStreamRedirect streamRedirect;
+  char* envp[4];
+  string ac6 = "AC6_TOOLCHAIN_6_18_1=" + testinput_folder;
+  string gcc = "GCC_TOOLCHAIN_11_3_1=" + testinput_folder;
+  string iar = "IAR_TOOLCHAIN_9_32_5=" + testinput_folder;
+  envp[0] = (char*)ac6.c_str();
+  envp[1] = (char*)iar.c_str();
+  envp[2] = (char*)gcc.c_str();
+  envp[3] = (char*)'\0';
+  char* argv[4];
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"toolchains";
+  argv[3] = (char*)"-v";
+
+  // Test listing registered toolchains in verbose mode
+  EXPECT_EQ(0, RunProjMgr(4, argv, envp));
+
+  const string& expectedOutStr = "\
+AC6@6.18.1\n\
+  Environment: AC6_TOOLCHAIN_6_18_1\n\
+  Toolchain: .*/data\n\
+  Configuration: .*/data/TestToolchains/AC6.6.18.0.cmake\n\
+GCC@11.3.1\n\
+  Environment: GCC_TOOLCHAIN_11_3_1\n\
+  Toolchain: .*/data\n\
+  Configuration: .*/data/TestToolchains/GCC.11.2.1.cmake\n\
+IAR@9.32.5\n\
+  Environment: IAR_TOOLCHAIN_9_32_5\n\
+  Toolchain: .*/data\n\
+  Configuration: .*/data/TestToolchains/IAR.8.50.6.cmake\n\
+";
+
+  const string& outStr = streamRedirect.GetOutString();
+  EXPECT_TRUE(regex_match(outStr, regex(expectedOutStr)));
 }
 
 TEST_F(ProjMgrUnitTests, ListToolchainsSolution) {
-  // create local cmake file
-  const string& cmakeFile = testinput_folder + "/TestSolution/AC6.6.19.0.cmake";
-  RteFsUtils::CreateFile(cmakeFile, "");
-
   StdStreamRedirect streamRedirect;
+  char* envp[3];
+  string ac6 = "AC6_TOOLCHAIN_6_18_1=" + testinput_folder;
+  string gcc = "GCC_TOOLCHAIN_11_3_1=" + testinput_folder;
+  envp[0] = (char*)ac6.c_str();
+  envp[1] = (char*)gcc.c_str();
+  envp[2] = (char*)'\0';
   char* argv[5];
-  const string& csolution = testinput_folder + "/TestSolution/test.csolution.yml";
+  const string& csolution = testinput_folder + "/TestSolution/toolchain.csolution.yml";
   argv[1] = (char*)"list";
   argv[2] = (char*)"toolchains";
   argv[3] = (char*)"-s";
   argv[4] = (char*)csolution.c_str();
-  EXPECT_EQ(0, RunProjMgr(5, argv));
-  const string& expected = "AC5@5.6.7\nAC6@6.18.0\nAC6@6.19.0\nGCC@11.2.1\nIAR@8.50.6\n";
+
+  // Test listing required toolchains
+  EXPECT_EQ(0, RunProjMgr(5, argv, envp));
+  const string& expected = "AC6@>=0.0.0\nAC6@>=6.18.0\nGCC@11.3.1\n";
   const string& outStr = streamRedirect.GetOutString();
   EXPECT_EQ(outStr, expected);
 
-  // remove local cmake file
-  RteFsUtils::RemoveFile(cmakeFile);
+  // Test with no registered toolchains (empty environment variables)
+  streamRedirect.ClearStringStreams();
+  EXPECT_EQ(1, RunProjMgr(5, argv, 0));
+  const string& expected2 = "AC6@>=0.0.0\nAC6@>=6.18.0\nGCC@11.3.1\n";
+  const string& outStr2 = streamRedirect.GetOutString();
+  EXPECT_EQ(outStr2, expected2);
 }
 
 TEST_F(ProjMgrUnitTests, ListLayersUniquelyCompatibleBoard) {
@@ -846,8 +901,8 @@ TEST_F(ProjMgrUnitTests, ListLayersUniquelyCompatibleBoard) {
   argv[4] = (char*)csolution.c_str();
   argv[5] = (char*)"-c";
   argv[6] = (char*)context.c_str();
-  argv[7] = (char*)"-v";
-  EXPECT_EQ(0, RunProjMgr(8, argv));
+  argv[7] = (char*)"-d";
+  EXPECT_EQ(0, RunProjMgr(8, argv, 0));
 
   const string& expectedErrStr = "\
 debug csolution: check for context 'genericlayers.CompatibleLayers\\+Board3'\n\
@@ -873,13 +928,13 @@ clayer of type 'TestVariant' was uniquely found:\n\
   EXPECT_TRUE(regex_match(errStr, regex(expectedErrStr)));
 
   const string& expectedOutStr = "\
-info csolution: valid for context 'genericlayers.CompatibleLayers\\+Board3'\n\
-\n\
-valid configuration #1:\n\
+info csolution: valid configuration #1: \\(context 'genericlayers.CompatibleLayers\\+Board3'\\)\n\
   .*/TestLayers/genericlayers.cproject.yml\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml \\(layer type: Board\\)\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml \\(layer type: TestVariant\\)\n\
 \n\
+.*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml \\(layer type: Board\\)\n\
+.*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml \\(layer type: TestVariant\\)\n\
 ";
 
   const string& outStr = streamRedirect.GetOutString();
@@ -897,8 +952,8 @@ TEST_F(ProjMgrUnitTests, ListLayersIncompatible) {
   argv[4] = (char*)csolution.c_str();
   argv[5] = (char*)"-c";
   argv[6] = (char*)context.c_str();
-  argv[7] = (char*)"-v";
-  EXPECT_EQ(1, RunProjMgr(8, argv));
+  argv[7] = (char*)"-d";
+  EXPECT_EQ(1, RunProjMgr(8, argv, 0));
 
   const string& expected = "\
 debug csolution: check for context 'genericlayers.IncompatibleLayers\\+AnyBoard'\n\
@@ -982,7 +1037,7 @@ TEST_F(ProjMgrUnitTests, ListLayersInvalidContext) {
   argv[4] = (char*)csolution.c_str();
   argv[5] = (char*)"-c";
   argv[6] = (char*)context.c_str();
-  EXPECT_EQ(1, RunProjMgr(7, argv));
+  EXPECT_EQ(1, RunProjMgr(7, argv, 0));
 }
 
 TEST_F(ProjMgrUnitTests, ListLayersAllContexts) {
@@ -992,7 +1047,7 @@ TEST_F(ProjMgrUnitTests, ListLayersAllContexts) {
   argv[2] = (char*)"layers";
   argv[3] = (char*)"-s";
   argv[4] = (char*)csolution.c_str();
-  EXPECT_EQ(1, RunProjMgr(5, argv));
+  EXPECT_EQ(1, RunProjMgr(5, argv, 0));
 }
 
 TEST_F(ProjMgrUnitTests, ListLayersSearchPath) {
@@ -1006,8 +1061,8 @@ TEST_F(ProjMgrUnitTests, ListLayersSearchPath) {
   argv[4] = (char*)csolution.c_str();
   argv[5] = (char*)"--clayer-path";
   argv[6] = (char*)clayerSearchPath.c_str();
-  argv[7] = (char*)"-v";
-  EXPECT_EQ(1, RunProjMgr(8, argv));
+  argv[7] = (char*)"-d";
+  EXPECT_EQ(1, RunProjMgr(8, argv, 0));
 
   const string& expectedErrStr = ".*\
 check combined connections:\
@@ -1019,6 +1074,14 @@ check combined connections:\
   errStr.erase(std::remove(errStr.begin(), errStr.end(), '\n'), errStr.cend());
 
   EXPECT_TRUE(regex_match(errStr, regex(expectedErrStr)));
+
+  // test invalid clayer path
+  streamRedirect.ClearStringStreams();
+  argv[6] = (char*)"invalid/clayer/path";
+  EXPECT_EQ(1, RunProjMgr(8, argv, 0));
+
+  errStr = streamRedirect.GetErrorString();
+  EXPECT_TRUE(regex_match(errStr, regex(".*invalid/clayer/path - error csolution: clayer search path does not exist\n")));
 }
 
 TEST_F(ProjMgrUnitTests, LayerVariables) {
@@ -1031,16 +1094,16 @@ TEST_F(ProjMgrUnitTests, LayerVariables) {
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(0, RunProjMgr(6, argv));
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   // Check generated CPRJs
-  CompareFile(testoutput_folder + "/variables.BuildType1+TargetType1.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/variables.BuildType1+TargetType1.cprj",
     testinput_folder + "/TestLayers/ref/variables/variables.BuildType1+TargetType1.cprj");
-  CompareFile(testoutput_folder + "/variables.BuildType1+TargetType2.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/variables.BuildType1+TargetType2.cprj",
     testinput_folder + "/TestLayers/ref/variables/variables.BuildType1+TargetType2.cprj");
-  CompareFile(testoutput_folder + "/variables.BuildType2+TargetType1.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/variables.BuildType2+TargetType1.cprj",
     testinput_folder + "/TestLayers/ref/variables/variables.BuildType2+TargetType1.cprj");
-  CompareFile(testoutput_folder + "/variables.BuildType2+TargetType2.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/variables.BuildType2+TargetType2.cprj",
     testinput_folder + "/TestLayers/ref/variables/variables.BuildType2+TargetType2.cprj");
 }
 
@@ -1054,7 +1117,7 @@ TEST_F(ProjMgrUnitTests, LayerVariablesRedefinition) {
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(0, RunProjMgr(6, argv));
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
   const string& expected = "warning csolution: variable 'VariableName' redefined from 'FirstValue' to 'SecondValue'\n";
   const string& errStr = streamRedirect.GetErrorString();
   EXPECT_STREQ(errStr.c_str(), expected.c_str());
@@ -1071,15 +1134,40 @@ TEST_F(ProjMgrUnitTests, LayerVariablesNotDefined) {
   argv[4] = (char*)csolution.c_str();
   argv[5] = (char*)"-o";
   argv[6] = (char*)testoutput_folder.c_str();
-  argv[7] = (char*)"-v";
-  EXPECT_EQ(1, RunProjMgr(8, argv));
+  argv[7] = (char*)"-d";
+  EXPECT_EQ(1, RunProjMgr(8, argv, 0));
 
   const string& expectedErrStr = ".*\
-\\$NotDefined\\$ - warning csolution: variable was not defined.*\
+\\$NotDefined\\$ - warning csolution: variable was not defined for context 'variables-notdefined.BuildType\\+TargetType'.*\
   .*/ARM/RteTest_DFP/0.2.0/Layers/board1.clayer.yml \\(layer type: Board\\).*\
   .*/ARM/RteTest_DFP/0.2.0/Layers/board2.clayer.yml \\(layer type: Board\\).*\
   .*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml \\(layer type: Board\\).*\
 no valid combination of clayers was found\
+";
+
+  string errStr = streamRedirect.GetErrorString();
+  errStr.erase(std::remove(errStr.begin(), errStr.end(), '\n'), errStr.cend());
+
+  EXPECT_TRUE(regex_match(errStr, regex(expectedErrStr)));
+}
+
+TEST_F(ProjMgrUnitTests, LayerVariablesNotDefined_SearchPath) {
+  StdStreamRedirect streamRedirect;
+  char* argv[8];
+  const string& csolution = testinput_folder + "/TestLayers/variables-notdefined.csolution.yml";
+  const string& clayerSearchPath = testinput_folder + "/TestLayers/variables";
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"layers";
+  argv[3] = (char*)"-s";
+  argv[4] = (char*)csolution.c_str();
+  argv[5] = (char*)"--clayer-path";
+  argv[6] = (char*)clayerSearchPath.c_str();
+  argv[7] = (char*)"-d";
+  EXPECT_EQ(0, RunProjMgr(8, argv, 0));
+
+  const string& expectedErrStr = ".*\
+clayer of type 'Board' was uniquely found:\
+  .*/TestLayers/variables/target1.clayer.yml\
 ";
 
   string errStr = streamRedirect.GetErrorString();
@@ -1098,24 +1186,24 @@ TEST_F(ProjMgrUnitTests, AccessSequences) {
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(0, RunProjMgr(6, argv));
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   // Check generated CPRJs
-  CompareFile(testoutput_folder + "/test-access-sequences1.Debug+CM0.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test-access-sequences1.Debug+CM0.cprj",
     testinput_folder + "/TestAccessSequences/ref/test-access-sequences1.Debug+CM0.cprj");
-  CompareFile(testoutput_folder + "/test-access-sequences1.Release+CM0.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test-access-sequences1.Release+CM0.cprj",
     testinput_folder + "/TestAccessSequences/ref/test-access-sequences1.Release+CM0.cprj");
-  CompareFile(testoutput_folder + "/test-access-sequences2.Debug+CM0.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test-access-sequences2.Debug+CM0.cprj",
     testinput_folder + "/TestAccessSequences/ref/test-access-sequences2.Debug+CM0.cprj");
-  CompareFile(testoutput_folder + "/test-access-sequences2.Release+CM0.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test-access-sequences2.Release+CM0.cprj",
     testinput_folder + "/TestAccessSequences/ref/test-access-sequences2.Release+CM0.cprj");
-  CompareFile(testoutput_folder + "/test-access-sequences1.Debug+CM3.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test-access-sequences1.Debug+CM3.cprj",
     testinput_folder + "/TestAccessSequences/ref/test-access-sequences1.Debug+CM3.cprj");
-  CompareFile(testoutput_folder + "/test-access-sequences1.Release+CM3.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test-access-sequences1.Release+CM3.cprj",
     testinput_folder + "/TestAccessSequences/ref/test-access-sequences1.Release+CM3.cprj");
-  CompareFile(testoutput_folder + "/test-access-sequences2.Debug+CM3.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test-access-sequences2.Debug+CM3.cprj",
     testinput_folder + "/TestAccessSequences/ref/test-access-sequences2.Debug+CM3.cprj");
-  CompareFile(testoutput_folder + "/test-access-sequences2.Release+CM3.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test-access-sequences2.Release+CM3.cprj",
     testinput_folder + "/TestAccessSequences/ref/test-access-sequences2.Release+CM3.cprj");
 }
 
@@ -1129,12 +1217,12 @@ TEST_F(ProjMgrUnitTests, AccessSequences2) {
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(0, RunProjMgr(6, argv));
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   // Check generated CPRJs
-  CompareFile(testoutput_folder + "/test-access-sequences3.Debug.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test-access-sequences3.Debug.cprj",
     testinput_folder + "/TestAccessSequences/ref/test-access-sequences3.Debug.cprj");
-  CompareFile(testoutput_folder + "/test-access-sequences3.Release.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test-access-sequences3.Release.cprj",
     testinput_folder + "/TestAccessSequences/ref/test-access-sequences3.Release.cprj");
 }
 
@@ -1147,7 +1235,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_MalformedAccessSequences1) {
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(1, RunProjMgr(6, argv));
+  EXPECT_EQ(1, RunProjMgr(6, argv, 0));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_MalformedAccessSequences2) {
@@ -1159,7 +1247,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_MalformedAccessSequences2) {
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(1, RunProjMgr(6, argv));
+  EXPECT_EQ(1, RunProjMgr(6, argv, 0));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_Multicore) {
@@ -1171,10 +1259,10 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Multicore) {
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(0, RunProjMgr(6, argv));
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   // Check generated CPRJs
-  CompareFile(testoutput_folder + "/multicore+CM0.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/multicore+CM0.cprj",
     testinput_folder + "/TestSolution/ref/multicore+CM0.cprj");
 }
 
@@ -1187,11 +1275,17 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Generator) {
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(0, RunProjMgr(6, argv));
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   // Check generated CPRJs
-  CompareFile(testoutput_folder + "/test-gpdsc.Debug+CM0.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test-gpdsc.Debug+CM0.cprj",
     testinput_folder + "/TestGenerator/ref/test-gpdsc.Debug+CM0.cprj");
+
+  // Check generated cbuild YMLs
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test-gpdsc.cbuild-idx.yml",
+    testinput_folder + "/TestGenerator/ref/test-gpdsc.cbuild-idx.yml");
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test-gpdsc.Debug+CM0.cbuild.yml",
+    testinput_folder + "/TestGenerator/ref/test-gpdsc.Debug+CM0.cbuild.yml");
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_TargetOptions)
@@ -1204,10 +1298,10 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_TargetOptions)
   argv[3] = (char *)csolution.c_str();
   argv[4] = (char *)"-o";
   argv[5] = (char *)testoutput_folder.c_str();
-  EXPECT_EQ(0, RunProjMgr(6, argv));
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   // Check generated CPRJs
-  CompareFile(testoutput_folder + "/test.target_options+CM0.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test.target_options+CM0.cprj",
               testinput_folder + "/TestSolution/ref/test.target_options+CM0.cprj");
 }
 
@@ -1347,6 +1441,30 @@ TEST_F(ProjMgrUnitTests, RunListContexts) {
   EXPECT_EQ(expected, set<string>(contexts.begin(), contexts.end()));
 }
 
+TEST_F(ProjMgrUnitTests, RunListContexts_Ordered) {
+  set<string> expected = {
+    "test2.Debug+CM0",
+    "test2.Debug+CM3",
+    "test1.Debug+CM0",
+    "test1.Release+CM0"
+  };
+  const string& dirInput = testinput_folder + "/TestSolution/";
+  const string& filenameInput = dirInput + "test.csolution_ordered.yml";
+  error_code ec;
+  EXPECT_TRUE(m_parser.ParseCsolution(filenameInput, false));
+  for (const auto& cproject : m_parser.GetCsolution().cprojects) {
+    string const& cprojectFile = fs::canonical(dirInput + cproject, ec).generic_string();
+    EXPECT_TRUE(m_parser.ParseCproject(cprojectFile, false, false));
+  }
+  for (auto& descriptor : m_parser.GetCsolution().contexts) {
+    const string& cprojectFile = fs::canonical(dirInput + descriptor.cproject, ec).generic_string();
+    EXPECT_TRUE(m_worker.AddContexts(m_parser, descriptor, cprojectFile));
+  }
+  vector<string> contexts;
+  EXPECT_TRUE(m_worker.ListContexts(contexts, RteUtils::EMPTY_STRING, true));
+  EXPECT_EQ(expected, set<string>(contexts.begin(), contexts.end()));
+}
+
 TEST_F(ProjMgrUnitTests, RunListContexts_Without_BuildTypes) {
   set<string> expected = {
     "test1+CM0",
@@ -1406,12 +1524,12 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_processor) {
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(0, RunProjMgr(6, argv));
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   // Check generated CPRJs
-  CompareFile(testoutput_folder + "/test2.Debug+CM0.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test2.Debug+CM0.cprj",
     testinput_folder + "/TestSolution/ref/test2.Debug+CM0_pname.cprj");
-  CompareFile(testoutput_folder + "/test2.Debug+CM3.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test2.Debug+CM3.cprj",
     testinput_folder + "/TestSolution/ref/test2.Debug+CM3_pname.cprj");
 }
 
@@ -1425,7 +1543,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgrLayers_missing_project_file) {
   argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(1, RunProjMgr(6, argv));
+  EXPECT_EQ(1, RunProjMgr(6, argv, 0));
   const string& errStr = streamRedirect.GetErrorString();
   EXPECT_STREQ(errStr.c_str(), expected.c_str());
 }
@@ -1438,7 +1556,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgrLayers_pname) {
   argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(0, RunProjMgr(6, argv));
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgrLayers_no_device_found) {
@@ -1449,7 +1567,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgrLayers_no_device_found) {
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(1, RunProjMgr(6, argv));
+  EXPECT_EQ(1, RunProjMgr(6, argv, 0));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution_No_Device_Name) {
@@ -1458,7 +1576,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_No_Device_Name) {
   argv[1] = (char*)"convert";
   argv[2] = (char*)"-s";
   argv[3] = (char*)csolution.c_str();
-  EXPECT_EQ(1, RunProjMgr(4, argv));
+  EXPECT_EQ(1, RunProjMgr(4, argv, 0));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_No_Board_No_Device) {
@@ -1473,7 +1591,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_No_Board_No_Device) {
   argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(1, RunProjMgr(6, argv));
+  EXPECT_EQ(1, RunProjMgr(6, argv, 0));
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_NE(string::npos, errStr.find(expected));
 }
@@ -1490,7 +1608,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Invalid_Board_Name) {
   argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(1, RunProjMgr(6, argv));
+  EXPECT_EQ(1, RunProjMgr(6, argv, 0));
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_NE(string::npos, errStr.find(expected));
 }
@@ -1507,7 +1625,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Invalid_Board_Vendor) {
   argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(1, RunProjMgr(6, argv));
+  EXPECT_EQ(1, RunProjMgr(6, argv, 0));
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_NE(string::npos, errStr.find(expected));
 }
@@ -1521,10 +1639,10 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Only_Board_Info) {
   argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(0, RunProjMgr(6, argv));
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   // Check generated CPRJ
-  CompareFile(testoutput_folder + "/test.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test.cprj",
     testinput_folder + "/TestSolution/TestProject4/test_only_board.cprj");
 }
 
@@ -1537,7 +1655,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Only_Board_No_Pname) {
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(1, RunProjMgr(6, argv));
+  EXPECT_EQ(1, RunProjMgr(6, argv, 0));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_Device_Unknown) {
@@ -1554,7 +1672,7 @@ use 'cpackget' utility to install software packs.
   argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(1, RunProjMgr(6, argv));
+  EXPECT_EQ(1, RunProjMgr(6, argv, 0));
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_NE(string::npos, errStr.find(expectedErrStr));
 }
@@ -1573,7 +1691,7 @@ use 'cpackget' utility to install software packs.
   argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(1, RunProjMgr(6, argv));
+  EXPECT_EQ(1, RunProjMgr(6, argv, 0));
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_NE(string::npos, errStr.find(expectedErrStr));
 }
@@ -1590,7 +1708,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Device_Unknown_Processor) {
   argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(1, RunProjMgr(6, argv));
+  EXPECT_EQ(1, RunProjMgr(6, argv, 0));
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_NE(string::npos, errStr.find(expected));
 }
@@ -1609,7 +1727,7 @@ use 'cpackget' utility to install software packs.
   argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(1, RunProjMgr(6, argv));
+  EXPECT_EQ(1, RunProjMgr(6, argv, 0));
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_NE(string::npos, errStr.find(expectedErrStr));
 }
@@ -1626,7 +1744,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Device_Pname_Unavailable_In_Board) {
   argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(1, RunProjMgr(6, argv));
+  EXPECT_EQ(1, RunProjMgr(6, argv, 0));
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_NE(string::npos, errStr.find(expected));
 }
@@ -1640,7 +1758,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Only_Device_Info) {
   argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(0, RunProjMgr(6, argv));
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_Board_And_Device_Info) {
@@ -1652,7 +1770,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Board_And_Device_Info) {
   argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(0, RunProjMgr(6, argv));
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_Correct_Board_Wrong_Device_Info) {
@@ -1669,7 +1787,7 @@ use 'cpackget' utility to install software packs.
   argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(1, RunProjMgr(6, argv));
+  EXPECT_EQ(1, RunProjMgr(6, argv, 0));
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_NE(string::npos, errStr.find(expectedErrStr));
 }
@@ -1686,7 +1804,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Correct_Device_Wrong_Board_Info) {
   argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(1, RunProjMgr(6, argv));
+  EXPECT_EQ(1, RunProjMgr(6, argv, 0));
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_NE(string::npos, errStr.find(expected));
 }
@@ -1703,7 +1821,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Board_Multi_Mounted_Devices) {
   argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(1, RunProjMgr(6, argv));
+  EXPECT_EQ(1, RunProjMgr(6, argv, 0));
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_NE(string::npos, errStr.find(expected));
 }
@@ -1718,7 +1836,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Board_Device_Variant) {
   argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(0, RunProjMgr(6, argv));
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_Board_Multi_Variants_And_Device) {
@@ -1731,7 +1849,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Board_Multi_Variants_And_Device) {
   argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(0, RunProjMgr(6, argv));
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_Board_Multi_Variants) {
@@ -1746,7 +1864,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Board_Multi_Variants) {
   argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(1, RunProjMgr(6, argv));
+  EXPECT_EQ(1, RunProjMgr(6, argv, 0));
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_NE(string::npos, errStr.find(expected));
 }
@@ -1763,7 +1881,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Board_No_Mounted_Devices) {
   argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(1, RunProjMgr(6, argv));
+  EXPECT_EQ(1, RunProjMgr(6, argv, 0));
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_NE(string::npos, errStr.find(expected));
 }
@@ -1780,7 +1898,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Board_Device_Info) {
   argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(0, RunProjMgr(6, argv));
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
   auto warnStr = streamRedirect.GetErrorString();
   EXPECT_NE(string::npos, warnStr.find(expected));
 }
@@ -1798,7 +1916,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListGenerators) {
   argv[4] = (char*)csolution.c_str();
   argv[5] = (char*)"-c";
   argv[6] = (char*)"test-gpdsc.Debug+CM0";
-  EXPECT_EQ(0, RunProjMgr(7, argv));
+  EXPECT_EQ(0, RunProjMgr(7, argv, 0));
 
   GetFilesInTree(rteFolder, rteFilesAfter);
   EXPECT_EQ(rteFilesBefore, rteFilesAfter);
@@ -1811,7 +1929,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListGeneratorsEmptyContext) {
   argv[2] = (char*)"generators";
   argv[3] = (char*)"-s";
   argv[4] = (char*)csolution.c_str();
-  EXPECT_EQ(0, RunProjMgr(5, argv));
+  EXPECT_EQ(0, RunProjMgr(5, argv, 0));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListGeneratorsEmptyContextMultipleTypes) {
@@ -1821,7 +1939,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListGeneratorsEmptyContextMultipleTypes) {
   argv[2] = (char*)"generators";
   argv[3] = (char*)"-s";
   argv[4] = (char*)csolution.c_str();
-  EXPECT_EQ(0, RunProjMgr(5, argv));
+  EXPECT_EQ(0, RunProjMgr(5, argv, 0));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListGeneratorsNonExistentContext) {
@@ -1833,7 +1951,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListGeneratorsNonExistentContext) {
   argv[4] = (char*)csolution.c_str();
   argv[5] = (char*)"-c";
   argv[6] = (char*)"NON-EXISTENT-CONTEXT";
-  EXPECT_EQ(1, RunProjMgr(7, argv));
+  EXPECT_EQ(1, RunProjMgr(7, argv, 0));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListGeneratorsNonExistentSolution) {
@@ -1843,7 +1961,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListGeneratorsNonExistentSolution) {
   argv[2] = (char*)"generators";
   argv[3] = (char*)"-s";
   argv[4] = (char*)csolution.c_str();
-  EXPECT_EQ(1, RunProjMgr(5, argv));
+  EXPECT_EQ(1, RunProjMgr(5, argv, 0));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ExecuteGenerator) {
@@ -1859,9 +1977,9 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ExecuteGenerator) {
 
   const string& hostType = CrossPlatformUtils::GetHostType();
   if (shouldHaveGeneratorForHostType(hostType)) {
-    EXPECT_EQ(0, RunProjMgr(8, argv));
+    EXPECT_EQ(0, RunProjMgr(8, argv, 0));
   } else {
-    EXPECT_EQ(1, RunProjMgr(8, argv));
+    EXPECT_EQ(1, RunProjMgr(8, argv, 0));
   }
 }
 
@@ -1876,26 +1994,31 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ExecuteGeneratorEmptyContext) {
 
   const string& hostType = CrossPlatformUtils::GetHostType();
   if (shouldHaveGeneratorForHostType(hostType)) {
-    EXPECT_EQ(0, RunProjMgr(6, argv));
+    EXPECT_EQ(0, RunProjMgr(6, argv, 0));
   } else {
-    EXPECT_EQ(1, RunProjMgr(6, argv));
+    EXPECT_EQ(1, RunProjMgr(6, argv, 0));
   }
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ExecuteGeneratorEmptyContextMultipleTypes) {
-  char* argv[6];
+  char* argv[8];
   const string& csolution = testinput_folder + "/TestGenerator/test-gpdsc-multiple-types.csolution.yml";
   argv[1] = (char*)"run";
   argv[2] = (char*)"-g";
   argv[3] = (char*)"RteTestGeneratorIdentifier";
   argv[4] = (char*)"-s";
   argv[5] = (char*)csolution.c_str();
+  // the project has multiple contexts but none is specified
+  EXPECT_EQ(1, RunProjMgr(6, argv, 0));
 
+  // specify a single context
+  argv[6] = (char*)"-c";
+  argv[7] = (char*)"test-gpdsc.Debug+CM0";
   const string& hostType = CrossPlatformUtils::GetHostType();
   if (shouldHaveGeneratorForHostType(hostType)) {
-    EXPECT_EQ(0, RunProjMgr(6, argv));
+    EXPECT_EQ(0, RunProjMgr(8, argv, 0));
   } else {
-    EXPECT_EQ(1, RunProjMgr(6, argv));
+    EXPECT_EQ(1, RunProjMgr(8, argv, 0));
   }
 }
 
@@ -1909,7 +2032,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ExecuteGeneratorNonExistentContext) {
   argv[5] = (char*)csolution.c_str();
   argv[6] = (char*)"-c";
   argv[7] = (char*)"NON-EXISTENT-CONTEXT";
-  EXPECT_EQ(1, RunProjMgr(8, argv));
+  EXPECT_EQ(1, RunProjMgr(8, argv, 0));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ExecuteGeneratorNonExistentSolution) {
@@ -1920,7 +2043,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ExecuteGeneratorNonExistentSolution) {
   argv[3] = (char*)"RteTestGeneratorIdentifier";
   argv[4] = (char*)"-s";
   argv[5] = (char*)csolution.c_str();
-  EXPECT_EQ(1, RunProjMgr(6, argv));
+  EXPECT_EQ(1, RunProjMgr(6, argv, 0));
 }
 
 TEST_F(ProjMgrUnitTests, ListGenerators) {
@@ -1986,7 +2109,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Filtered_Pack_Selection) {
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(0, RunProjMgr(6, argv));
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Pack_Selection) {
@@ -1999,12 +2122,12 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Pack_Selection) {
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(0, RunProjMgr(6, argv));
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   // Check generated CPRJs
-  CompareFile(testoutput_folder + "/test2.Debug+CM0.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test2.Debug+CM0.cprj",
     testinput_folder + "/TestSolution/ref/test2.Debug+CM0_pack_selection.cprj");
-  CompareFile(testoutput_folder + "/test2.Debug+TestGen.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test2.Debug+TestGen.cprj",
     testinput_folder + "/TestSolution/ref/test2.Debug+TestGen.cprj");
 }
 
@@ -2018,7 +2141,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_No_Packs) {
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(0, RunProjMgr(6, argv));
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Invalid_Packs) {
@@ -2033,7 +2156,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Invalid_Packs) {
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(1, RunProjMgr(6, argv));
+  EXPECT_EQ(1, RunProjMgr(6, argv, 0));
 
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_NE(string::npos, errStr.find(errExpected));
@@ -2049,10 +2172,10 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Local_Pack) {
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(0, RunProjMgr(6, argv));
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   // Check generated CPRJ
-  CompareFile(testoutput_folder + "/pack_path+CM0.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/pack_path+CM0.cprj",
     testinput_folder + "/TestSolution/ref/pack_path+CM0.cprj");
 
 }
@@ -2076,7 +2199,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Local_Multiple_Pack_Files) {
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(0, RunProjMgr(6, argv));
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   // remove additionally added file
   RteFsUtils::RemoveFile(destPackFile);
@@ -2094,7 +2217,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Local_Pack_Path_Not_Found) {
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(1, RunProjMgr(6, argv));
+  EXPECT_EQ(1, RunProjMgr(6, argv, 0));
 
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_NE(string::npos, errStr.find(errExpected));
@@ -2112,7 +2235,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Local_Pack_File_Not_Found) {
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(1, RunProjMgr(6, argv));
+  EXPECT_EQ(1, RunProjMgr(6, argv, 0));
 
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_NE(string::npos, errStr.find(errExpected));
@@ -2128,12 +2251,12 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_List_Board_Pack) {
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(0, RunProjMgr(6, argv));
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   // Check generated CPRJs
-  CompareFile(testoutput_folder + "/test1.Debug+CM0.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test1.Debug+CM0.cprj",
     testinput_folder + "/TestSolution/ref/test1.Debug+CM0_board_package.cprj");
-  CompareFile(testoutput_folder + "/test1.Release+CM0.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test1.Release+CM0.cprj",
     testinput_folder + "/TestSolution/ref/test1.Release+CM0_board_package.cprj");
 }
 
@@ -2146,7 +2269,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_LoadPacksPolicy_Required) {
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-l";
   argv[5] = (char*)"required";
-  EXPECT_EQ(1, RunProjMgr(6, argv));
+  EXPECT_EQ(1, RunProjMgr(6, argv, 0));
   auto errorStr = streamRedirect.GetErrorString();
   EXPECT_EQ(0, errorStr.find("error csolution: required packs must be specified\n"));
 }
@@ -2160,7 +2283,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_LoadPacksPolicy_Invalid) {
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-l";
   argv[5] = (char*)"invalid";
-  EXPECT_EQ(1, RunProjMgr(6, argv));
+  EXPECT_EQ(1, RunProjMgr(6, argv, 0));
   auto errorStr = streamRedirect.GetErrorString();
   EXPECT_EQ(0, errorStr.find("error csolution: unknown load option: 'invalid', it must be 'latest', 'all' or 'required'\n"));
 }
@@ -2174,7 +2297,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_LoadPacksPolicy_Latest) {
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-l";
   argv[5] = (char*)"latest";
-  EXPECT_EQ(0, RunProjMgr(6, argv));
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_LoadPacksPolicy_All) {
@@ -2185,11 +2308,11 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_LoadPacksPolicy_All) {
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-l";
   argv[5] = (char*)"all";
-  EXPECT_EQ(0, RunProjMgr(6, argv));
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   const string& csolution2 = testinput_folder + "/TestSolution/test.csolution_pack_selection.yml";
   argv[3] = (char*)csolution2.c_str();
-  EXPECT_EQ(0, RunProjMgr(6, argv));
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution_GetCdefaultFile1) {
@@ -2250,12 +2373,12 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_DefaultFile1) {
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)output.c_str();
-  EXPECT_EQ(0, RunProjMgr(6, argv));
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   // Check generated CPRJs
-  CompareFile(testoutput_folder + "/empty/project.Debug.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/empty/project.Debug.cprj",
     testinput_folder + "/TestDefault/ref/empty/project.Debug.cprj");
-  CompareFile(testoutput_folder + "/empty/project.Release.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/empty/project.Release.cprj",
     testinput_folder + "/TestDefault/ref/empty/project.Release.cprj");
 }
 
@@ -2270,12 +2393,12 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_DefaultFile2) {
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)output.c_str();
-  EXPECT_EQ(0, RunProjMgr(6, argv));
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   // Check generated CPRJs
-  CompareFile(testoutput_folder + "/full/project.Debug.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/full/project.Debug.cprj",
     testinput_folder + "/TestDefault/ref/full/project.Debug.cprj");
-  CompareFile(testoutput_folder + "/full/project.Release.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/full/project.Release.cprj",
     testinput_folder + "/TestDefault/ref/full/project.Release.cprj");
 }
 
@@ -2290,16 +2413,16 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_DefaultFile3) {
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)output.c_str();
-  EXPECT_EQ(0, RunProjMgr(6, argv));
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   // Check generated CPRJs
-  CompareFile(testoutput_folder + "/build-types/project.Debug.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/build-types/project.Debug.cprj",
     testinput_folder + "/TestDefault/ref/build-types/project.Debug.cprj");
-  CompareFile(testoutput_folder + "/build-types/project.Release.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/build-types/project.Release.cprj",
     testinput_folder + "/TestDefault/ref/build-types/project.Release.cprj");
-  CompareFile(testoutput_folder + "/build-types/project.AC6.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/build-types/project.AC6.cprj",
     testinput_folder + "/TestDefault/ref/build-types/project.AC6.cprj");
-  CompareFile(testoutput_folder + "/build-types/project.IAR.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/build-types/project.IAR.cprj",
     testinput_folder + "/TestDefault/ref/build-types/project.IAR.cprj");
 }
 
@@ -2317,14 +2440,14 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_NoUpdateRTEFiles) {
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
   argv[6] = (char*)"--no-update-rte";
-  EXPECT_EQ(0, RunProjMgr(7, argv));
+  EXPECT_EQ(0, RunProjMgr(7, argv, 0));
 
   // The RTE folder should be left untouched
   GetFilesInTree(rteFolder, rteFilesAfter);
   EXPECT_EQ(rteFilesBefore, rteFilesAfter);
 
   // CPRJ should still be generated
-  CompareFile(testoutput_folder + "/test.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test.cprj",
     testinput_folder + "/TestSolution/TestProject4/test.cprj");
 }
 
@@ -2382,8 +2505,10 @@ TEST_F(ProjMgrUnitTests, ListComponents_MultiplePackSelection) {
   };
   set<string> expected_Gen = {
     "ARM::Device:RteTest Generated Component:RteTest@1.1.0 (ARM::RteTestGenerator@0.1.0)",
+    "ARM::Device:RteTest Generated Component:RteTestGenFiles@1.1.0 (ARM::RteTestGenerator@0.1.0)",
     "ARM::Device:RteTest Generated Component:RteTestSimple@1.1.0 (ARM::RteTestGenerator@0.1.0)",
-    "ARM::Device:RteTest Generated Component:RteTestWithKey@1.1.0 (ARM::RteTestGenerator@0.1.0)"
+    "ARM::Device:RteTest Generated Component:RteTestWithKey@1.1.0 (ARM::RteTestGenerator@0.1.0)",
+    "ARM::Device:RteTest Generated Component:RteTestNoExe@1.1.0 (ARM::RteTestGenerator@0.1.0)"
   };
   vector<string> components;
   m_csolutionFile = testinput_folder + "/TestSolution/pack_contexts.csolution.yml";
@@ -2419,7 +2544,7 @@ TEST_F(ProjMgrUnitTests, Convert_ValidationResults_Dependencies) {
   for (const auto& [context, expected] : testData) {
     StdStreamRedirect streamRedirect;
     argv[5] = (char*)context.c_str();
-    EXPECT_EQ(0, RunProjMgr(6, argv));
+    EXPECT_EQ(0, RunProjMgr(6, argv, 0));
     auto errorStr = streamRedirect.GetErrorString();
     EXPECT_EQ(0, errorStr.find(expected));
   }
@@ -2446,7 +2571,7 @@ warning csolution:  condition 'MissingCondition' not found\n"},
     const string& context = project + "+CM0";
     argv[3] = (char*)csolution.c_str();
     argv[5] = (char*)context.c_str();
-    EXPECT_EQ(expectedReturn, RunProjMgr(6, argv));
+    EXPECT_EQ(expectedReturn, RunProjMgr(6, argv, 0));
     auto errorStr = streamRedirect.GetErrorString();
     EXPECT_EQ(0, errorStr.find(expectedMessage));
   }
@@ -2459,16 +2584,16 @@ TEST_F(ProjMgrUnitTests, OutputDirs) {
   argv[1] = (char*)"convert";
   argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
-  EXPECT_EQ(0, RunProjMgr(4, argv));
+  EXPECT_EQ(0, RunProjMgr(4, argv, 0));
 
   // Check generated CPRJs
-  CompareFile(testinput_folder + "/TestSolution/AC6/test1.Debug+TypeA.cprj",
+ ProjMgrTestEnv:: CompareFile(testinput_folder + "/TestSolution/AC6/test1.Debug+TypeA.cprj",
     testinput_folder + "/TestSolution/ref/AC6/test1.Debug+TypeA.cprj");
-  CompareFile(testinput_folder + "/TestSolution/AC6/test1.Debug+TypeB.cprj",
+ ProjMgrTestEnv:: CompareFile(testinput_folder + "/TestSolution/AC6/test1.Debug+TypeB.cprj",
     testinput_folder + "/TestSolution/ref/AC6/test1.Debug+TypeB.cprj");
-  CompareFile(testinput_folder + "/TestSolution/GCC/test1.Release+TypeA.cprj",
+ ProjMgrTestEnv:: CompareFile(testinput_folder + "/TestSolution/GCC/test1.Release+TypeA.cprj",
     testinput_folder + "/TestSolution/ref/GCC/test1.Release+TypeA.cprj");
-  CompareFile(testinput_folder + "/TestSolution/GCC/test1.Release+TypeB.cprj",
+ ProjMgrTestEnv:: CompareFile(testinput_folder + "/TestSolution/GCC/test1.Release+TypeB.cprj",
     testinput_folder + "/TestSolution/ref/GCC/test1.Release+TypeB.cprj");
 }
 
@@ -2479,7 +2604,7 @@ TEST_F(ProjMgrUnitTests, OutputDirsAbsolutePath) {
   argv[1] = (char*)"convert";
   argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
-  EXPECT_EQ(0, RunProjMgr(4, argv));
+  EXPECT_EQ(0, RunProjMgr(4, argv, 0));
 
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_TRUE(regex_match(errStr, regex("warning csolution: custom .* is not a relative path\n")));
@@ -2495,12 +2620,12 @@ TEST_F(ProjMgrUnitTests, ProjectSetup) {
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)output.c_str();
-  EXPECT_EQ(0, RunProjMgr(6, argv));
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   // Check generated CPRJs
-  CompareFile(testoutput_folder + "/setup-test.Build AC6.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/setup-test.Build AC6.cprj",
     testinput_folder + "/TestProjectSetup/ref/setup-test.Build AC6.cprj");
-  CompareFile(testoutput_folder + "/setup-test.Build GCC.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/setup-test.Build GCC.cprj",
     testinput_folder + "/TestProjectSetup/ref/setup-test.Build GCC.cprj");
 }
 
@@ -2508,78 +2633,78 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_help) {
   char* argv[4];
 
   argv[1] = (char*)"-h";
-  EXPECT_EQ(0, RunProjMgr(2, argv));
+  EXPECT_EQ(0, RunProjMgr(2, argv, 0));
 
   argv[1] = (char*)"--help";
-  EXPECT_EQ(0, RunProjMgr(2, argv));
+  EXPECT_EQ(0, RunProjMgr(2, argv, 0));
 
   argv[1] = (char*)"run";
   argv[2] = (char*)"-h";
-  EXPECT_EQ(0, RunProjMgr(3, argv));
+  EXPECT_EQ(0, RunProjMgr(3, argv, 0));
 
   argv[1] = (char*)"convert";
   argv[2] = (char*)"-h";
-  EXPECT_EQ(0, RunProjMgr(3, argv));
+  EXPECT_EQ(0, RunProjMgr(3, argv, 0));
 
   argv[1] = (char*)"list";
   argv[2] = (char*)"packs";
   argv[3] = (char*)"-h";
-  EXPECT_EQ(0, RunProjMgr(4, argv));
+  EXPECT_EQ(0, RunProjMgr(4, argv, 0));
 
   argv[1] = (char*)"list";
   argv[2] = (char*)"boards";
   argv[3] = (char*)"-h";
-  EXPECT_EQ(0, RunProjMgr(4, argv));
+  EXPECT_EQ(0, RunProjMgr(4, argv, 0));
 
   argv[1] = (char*)"list";
   argv[2] = (char*)"devices";
   argv[3] = (char*)"-h";
-  EXPECT_EQ(0, RunProjMgr(4, argv));
+  EXPECT_EQ(0, RunProjMgr(4, argv, 0));
 
   argv[1] = (char*)"list";
   argv[2] = (char*)"components";
   argv[3] = (char*)"-h";
-  EXPECT_EQ(0, RunProjMgr(4, argv));
+  EXPECT_EQ(0, RunProjMgr(4, argv, 0));
 
   argv[1] = (char*)"list";
   argv[2] = (char*)"dependencies";
   argv[3] = (char*)"-h";
-  EXPECT_EQ(0, RunProjMgr(4, argv));
+  EXPECT_EQ(0, RunProjMgr(4, argv, 0));
 
   argv[1] = (char*)"list";
   argv[2] = (char*)"contexts";
   argv[3] = (char*)"-h";
-  EXPECT_EQ(0, RunProjMgr(4, argv));
+  EXPECT_EQ(0, RunProjMgr(4, argv, 0));
 
   argv[1] = (char*)"list";
   argv[2] = (char*)"generators";
   argv[3] = (char*)"-h";
-  EXPECT_EQ(0, RunProjMgr(4, argv));
+  EXPECT_EQ(0, RunProjMgr(4, argv, 0));
 
   argv[1] = (char*)"list";
   argv[2] = (char*)"layers";
   argv[3] = (char*)"-h";
-  EXPECT_EQ(0, RunProjMgr(4, argv));
+  EXPECT_EQ(0, RunProjMgr(4, argv, 0));
 
   argv[1] = (char*)"list";
   argv[2] = (char*)"toolchains";
   argv[3] = (char*)"-h";
-  EXPECT_EQ(0, RunProjMgr(4, argv));
+  EXPECT_EQ(0, RunProjMgr(4, argv, 0));
 
   // invalid command
   argv[1] = (char*)"list";
   argv[2] = (char*)"invalid";
   argv[3] = (char*)"-h";
-  EXPECT_EQ(1, RunProjMgr(4, argv));
+  EXPECT_EQ(1, RunProjMgr(4, argv, 0));
 
   // invalid command
   argv[1] = (char*)"test";
   argv[2] = (char*)"-h";
-  EXPECT_EQ(1, RunProjMgr(3, argv));
+  EXPECT_EQ(1, RunProjMgr(3, argv, 0));
 
   // invalid command
   argv[1] = (char*)"--helped";
-  EXPECT_EQ(1, RunProjMgr(2, argv));
+  EXPECT_EQ(1, RunProjMgr(2, argv, 0));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ExportNonLockedCprj) {
@@ -2596,10 +2721,10 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ExportNonLockedCprj) {
   argv[7] = (char*)"test2.Debug+TestGen";
   argv[8] = (char*)"-e";
   argv[9] = (char*)"_export";
-  EXPECT_EQ(0, RunProjMgr(10, argv));
+  EXPECT_EQ(0, RunProjMgr(10, argv, 0));
 
   // Check generated CPRJs
-  CompareFile(testoutput_folder + "/test2.Debug+TestGen_export.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test2.Debug+TestGen_export.cprj",
     testinput_folder + "/TestSolution/ref/test2.Debug+TestGen_export.cprj");
 }
 
@@ -2623,11 +2748,11 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_WriteCprjFail) {
   // Fail to write export cprj file
   RteFsUtils::CreateFile(outputFolder + "/test2.Debug+CM0_export.cprj", "");
   RteFsUtils::SetTreeReadOnly(outputFolder);
-  EXPECT_EQ(1, RunProjMgr(10, argv));
+  EXPECT_EQ(1, RunProjMgr(10, argv, 0));
 
   // Fail to write cprj file
   RteFsUtils::SetTreeReadOnly(outputFolder);
-  EXPECT_EQ(1, RunProjMgr(10, argv));
+  EXPECT_EQ(1, RunProjMgr(10, argv, 0));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_PreInclude) {
@@ -2640,16 +2765,16 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_PreInclude) {
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(0, RunProjMgr(6, argv));
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   // Check generated CPRJs
-  CompareFile(testoutput_folder + "/pre-include+CM0.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/pre-include+CM0.cprj",
     testinput_folder + "/TestSolution/ref/pre-include+CM0.cprj");
 
   // Check generated cbuild YMLs
-  CompareFile(testoutput_folder + "/pre-include.cbuild-idx.yml",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/pre-include.cbuild-idx.yml",
     testinput_folder + "/TestSolution/ref/pre-include.cbuild-idx.yml");
-  CompareFile(testoutput_folder + "/pre-include+CM0.cbuild.yml",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/pre-include+CM0.cbuild.yml",
     testinput_folder + "/TestSolution/ref/pre-include+CM0.cbuild.yml");
 }
 
@@ -2679,4 +2804,91 @@ TEST_F(ProjMgrUnitTests, RunCheckForContext) {
     }
     it++;
   }
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgrOutputFiles) {
+  char* argv[5];
+  StdStreamRedirect streamRedirect;
+
+  // convert solution.yml
+  const string& csolution = testinput_folder + "/TestSolution/outputFiles.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"-o";
+  argv[4] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(1, RunProjMgr(5, argv, 0));
+
+  // Check generated CPRJs
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/outputFiles.Debug+Target.cprj",
+    testinput_folder + "/TestSolution/ref/outputFiles.Debug+Target.cprj");
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/outputFiles.Library+Target.cprj",
+    testinput_folder + "/TestSolution/ref/outputFiles.Library+Target.cprj");
+
+  // Check generated cbuild YMLs
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/outputFiles.Debug+Target.cbuild.yml",
+    testinput_folder + "/TestSolution/ref/outputFiles.Debug+Target.cbuild.yml");
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/outputFiles.Library+Target.cbuild.yml",
+    testinput_folder + "/TestSolution/ref/outputFiles.Library+Target.cbuild.yml");
+
+  // Check error messages
+  const string expected = "\
+warning csolution: output 'lib' redefined from 'conflict.lib' to 'renaming_conflict.lib'\n\
+error csolution: output 'lib' is incompatible with other output types\n\
+error csolution: processing context 'outputFiles.Conflict\\+Target' failed\n\
+";
+
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_TRUE(regex_match(errStr, regex(expected)));
+}
+
+TEST_F(ProjMgrUnitTests, SelectToolchains) {
+  const string& AC6_6_6_5 = testinput_folder + "/TestToolchains/AC6.6.6.5.cmake";
+  RteFsUtils::CreateFile(AC6_6_6_5, "");
+  char* envp[6];
+  string ac6_0 = "AC6_TOOLCHAIN_6_20_0=" + testinput_folder;
+  string ac6_1 = "AC6_TOOLCHAIN_6_16_1=" + testinput_folder;
+  string ac6_2 = "AC6_TOOLCHAIN_6_6_5=" + testinput_folder;
+  string gcc = "GCC_TOOLCHAIN_11_2_1=" + testinput_folder;
+  string iar = "IAR_TOOLCHAIN_9_32_1=" + testinput_folder;
+  envp[0] = (char*)ac6_0.c_str();
+  envp[1] = (char*)ac6_1.c_str();
+  envp[2] = (char*)ac6_2.c_str();
+  envp[3] = (char*)gcc.c_str();
+  envp[4] = (char*)iar.c_str();
+  envp[5] = (char*)'\0';
+  char* argv[8];
+  const string& csolution = testinput_folder + "/TestSolution/toolchain-selection.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  argv[6] = (char*)"-t";
+
+  argv[7] = (char*)"AC6@6.20.0";
+  EXPECT_EQ(0, RunProjMgr(8, argv, envp));
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/toolchain.Debug+Target.cprj",
+    testinput_folder + "/TestSolution/ref/toolchains/toolchain.Debug+Target.cprj.ac6_6_20_0");
+
+  argv[7] = (char*)"AC6@6.16.1";
+  EXPECT_EQ(0, RunProjMgr(8, argv, envp));
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/toolchain.Debug+Target.cprj",
+    testinput_folder + "/TestSolution/ref/toolchains/toolchain.Debug+Target.cprj.ac6_6_16_1");
+
+  argv[7] = (char*)"AC6@6.6.5";
+  EXPECT_EQ(0, RunProjMgr(8, argv, envp));
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/toolchain.Debug+Target.cprj",
+    testinput_folder + "/TestSolution/ref/toolchains/toolchain.Debug+Target.cprj.ac6_6_6_5");
+
+  argv[7] = (char*)"GCC";
+  EXPECT_EQ(0, RunProjMgr(8, argv, envp));
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/toolchain.Debug+Target.cprj",
+    testinput_folder + "/TestSolution/ref/toolchains/toolchain.Debug+Target.cprj.gcc");
+
+  argv[7] = (char*)"IAR";
+  EXPECT_EQ(0, RunProjMgr(8, argv, envp));
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/toolchain.Debug+Target.cprj",
+    testinput_folder + "/TestSolution/ref/toolchains/toolchain.Debug+Target.cprj.iar");
+
+  RteFsUtils::RemoveFile(AC6_6_6_5);
 }
