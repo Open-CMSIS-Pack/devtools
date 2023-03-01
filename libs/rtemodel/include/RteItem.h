@@ -57,28 +57,15 @@ class XMLTreeElement;
 /**
  * @brief Abstract visitor class. Allows to perform operations over RteItem tree according to visitor design pattern
 */
-class RteVisitor
+class RteVisitor : public XmlItemVisitor<RteItem>
 {
-public:
-  /**
-   * @brief default virtual destructor
-  */
-  virtual ~RteVisitor() {};
-
-  /**
-   * @brief virtual method to perform processing over supplied RteItem during visit
-   * @param item pointer to RteItem to process
-   * @return one of VISIT_RESULT values
-  */
-  virtual VISIT_RESULT Visit(RteItem* item) = 0;
 };
-
 
 
 /**
  * @brief base RTE Data Model class to describe an XML element in a *.pdsc and *.cprj files.
 */
-class RteItem : public XmlItem
+class RteItem : public XmlTreeItem<RteItem>
 {
 
 public:
@@ -114,6 +101,13 @@ public:
   */
   RteItem(RteItem* parent = nullptr);
 
+  /**
+   * @brief constructor
+   * @param item tag
+   * @param parent pointer to parent RteItem or nullptr if this item has no parent
+  */
+  RteItem(const std::string& tag,  RteItem* parent = nullptr);
+
 /**
   * @brief parametrized constructor to instantiate with given attributes
   * @param attributes collection as key to value pairs
@@ -121,33 +115,25 @@ public:
  */
   RteItem(const std::map<std::string, std::string>& attributes, RteItem* parent = nullptr);
 
-
-
   /**
    * @brief virtual destructor
   */
-  virtual ~RteItem() override;
+  ~RteItem() override;
+
+  /**
+ * @brief getter for this instance
+ * @return pointer to the instance of type RteItem
+*/
+  RteItem* GetThis() const override { return const_cast<RteItem*>(this); }
+
+  /**
+   * @brief create a new instance of type RteItem
+   * @param tag name of tag
+   * @return pointer to instance of type RteItem
+  */
+  RteItem* CreateItem(const std::string& tag) override { return new RteItem(tag, GetThis()); }
 
 public:
-
-  /**
-   * @brief get number of children
-   * @return number of children
-  */
-  int GetChildCount() const { return (int)m_children.size(); }
-
-  /**
-   * @brief returns list of children
-   * @return list of RteItem pointers, may be empty
-  */
-  const std::list<RteItem*>& GetChildren() const { return m_children; }
-
-  /**
-   * @brief get list of children of a child item with given tag
-   * @param tag child's tag to query
-   * @return list of RteItem pointers
-  */
-  const std::list<RteItem*>& GetGrandChildren(const std::string& tag) const;
 
   /**
    * @brief get a child with corresponding tag and attribute
@@ -212,7 +198,7 @@ public:
    * @brief add item to the list of children
    * @param item pointer to RteItem to add
   */
-  void AddItem(RteItem* item) { m_children.push_back(item); }
+  void AddItem(RteItem* item) { AddChild(item);}
 
   /**
    * @brief remove item from the list of children
@@ -221,32 +207,10 @@ public:
   void RemoveItem(RteItem* item);
 
   /**
-   * @brief get child's attribute value
-   * @param tag child's tag
-   * @param attribute child's attribute key
-   * @return child's attribute value string
-  */
-  const std::string& GetChildAttribute(const std::string& tag, const std::string& attribute) const;
-
-  /**
-   * @brief get child's text
-   * @param tag child's tag
-   * @return child's text string
-  */
-  const std::string& GetChildText(const std::string& tag) const;
-
-  /**
    * @brief get rte folder associated with this item
    * @return rte folder
   */
   virtual const std::string& GetRteFolder() const;
-
-  /**
-   * @brief get a value that is either attribute value or a child's text
-   * @param nameOrTag attribute key or child's tag
-   * @return string value, empty if not found
-  */
-  virtual const std::string& GetItemValue(const std::string& nameOrTag) const override;
 
   /**
    * @brief get url or file path to documentation associated with this item
@@ -299,17 +263,6 @@ public:
   static bool CompareComponents(RteItem* c0, RteItem* c1);
 
 public:
-  /**
-   * @brief get the immediate parent item of this one
-   * @return pointer to parent RteItem or nullptr if this item has no parent
-  */
-  RteItem* GetParent() const { return m_parent; }
-
-  /**
-   * @brief change parent for this item
-   * @param newParent new parent for this item, can be nullptr
-  */
-  void Reparent(RteItem* newParent);
 
   /**
    * @brief get RteCallback available for this item if any
@@ -847,7 +800,7 @@ public:
   /**
    * @brief clear internal item structure including children. The method is called from destructor
   */
-  virtual void Clear() override;
+  void Clear() override;
 
   /**
    * @brief construct this item out of supplied XML data
@@ -872,13 +825,6 @@ public:
    * @param model pointer to RteModel, cannot be nullptr
   */
   virtual void InsertInModel(RteModel* model);
-
-  /**
-   * @brief accept visitor to perform operations walking through item tree (visitor design pattern)
-   * @param visitor pointer to RteVisitor to accept
-   * @return true to continue processing, false to abort (cancel visit)
-  */
-  virtual bool AcceptVisitor(RteVisitor* visitor);
 
   /**
    * @brief create XMLTreeElement object to export this item to XML
@@ -930,15 +876,10 @@ protected:
   virtual void CreateXmlTreeElementContent(XMLTreeElement* parentElement) const;
 
 protected:
-  RteItem* m_parent; // parent for this item or NULL if it is a model
-
   bool m_bValid; // validity flag
-
   std::string m_ID; // an item ID, constructed in ConstructID() called by Construct()
 
   std::list<std::string> m_errors; // errors or warnings found by Construct() or Validate()
-
-  std::list<RteItem*> m_children; // children (files, components, conditions, etc.)
 
 private:
   // Tell the compiler that Construct in the parent class isn't the same as the one in this class
@@ -982,13 +923,13 @@ public:
 
 public:
 
-	virtual VISIT_RESULT Visit(RteItem* rteItem) override
+	VISIT_RESULT Visit(RteItem* rteItem) override
 	{
     if(rteItem->IsValid())
       return VISIT_RESULT::SKIP_CHILDREN;
     const std::list<std::string>& errors = rteItem->GetErrors();
     if(errors.empty())
-      return CONTINUE_VISIT;
+      return VISIT_RESULT::CONTINUE_VISIT;
     std::list<std::string>::const_iterator it;
     for( it = errors.begin(); it != errors.end(); it++){
       std::string sErr= (*it);

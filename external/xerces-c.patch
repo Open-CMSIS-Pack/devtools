@@ -1,0 +1,94 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index bee6cd581..dbd9a9b37 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -106,7 +106,7 @@ include(XercesIncludes)
+ include(XercesFunctions)
+ include(XercesDLL)
+ include(XercesPathDelimiters)
+-include(XercesICU)
++# include(XercesICU)
+ include(XercesMutexMgrSelection)
+ include(XercesNetAccessorSelection)
+ include(XercesMsgLoaderSelection)
+@@ -171,7 +171,7 @@ message(STATUS "  Installation directory:    ${prefix}")
+ message(STATUS "  C compiler:                ${CMAKE_C_COMPILER}")
+ message(STATUS "  C++ compiler:              ${CMAKE_CXX_COMPILER}")
+ message(STATUS "")
+-message(STATUS "  Build shared libraries:    ${BUILD_SHARED_LIBS}")
++message(STATUS "  Build shared libraries:    ${XERCESC_BUILD_SHARED_LIBS}")
+ message(STATUS "  Path delimiters:           \"${path_delims}\"")
+ message(STATUS "  File Manager:              ${filemgr}")
+ message(STATUS "  Mutex Manager:             ${mutexmgr}")
+diff --git a/cmake/XercesDLL.cmake b/cmake/XercesDLL.cmake
+index 8ebb8aa09..a69078e64 100644
+--- a/cmake/XercesDLL.cmake
++++ b/cmake/XercesDLL.cmake
+@@ -20,7 +20,7 @@
+ # Option for selection of shared or static libraries, exported as
+ # cache variable
+ 
+-set(BUILD_SHARED_LIBS ON CACHE BOOL "Build shared libraries")
++# set(BUILD_SHARED_LIBS ON CACHE BOOL "Build shared libraries")
+ 
+ # Add a d postfix to Debug libraries on Windows
+ 
+@@ -35,7 +35,7 @@ set(XERCES_PLATFORM_IMPORT)
+ set(XERCES_TEMPLATE_EXTERN extern)
+ set(XERCES_DLL_EXPORT)
+ set(XERCES_STATIC_LIBRARY)
+-if(NOT BUILD_SHARED_LIBS)
++if(NOT XERCESC_BUILD_SHARED_LIBS)
+   set(XERCES_STATIC_LIBRARY 1)
+ else()
+   if(WIN32)
+diff --git a/cmake/XercesTranscoderSelection.cmake b/cmake/XercesTranscoderSelection.cmake
+index 5dd7c6257..6c63df72f 100644
+--- a/cmake/XercesTranscoderSelection.cmake
++++ b/cmake/XercesTranscoderSelection.cmake
+@@ -23,8 +23,11 @@
+ 
+ # ICU
+ 
+-if(ICU_FOUND)
+-  list(APPEND transcoders icu)
++# if(ICU_FOUND)
++#   list(APPEND transcoders icu)
++# endif()
++if(UNIX AND NOT APPLE)
++  set(transcoder iconv)
+ endif()
+ 
+ # MacOS
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index a168db125..9197034da 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -1075,12 +1075,12 @@ endif()
+ list(APPEND libxerces_c_SOURCES ${xerces_replacement_funcs})
+ 
+ # NetAccessors, conditionally built based on selection
+-if(SOCKET_LIBRARY)
+-  list(APPEND libxerces_c_DEPS ${SOCKET_LIBRARY})
+-endif()
+-if(NSL_LIBRARY)
+-  list(APPEND libxerces_c_DEPS ${NSL_LIBRARY})
+-endif()
++# if(SOCKET_LIBRARY)
++#   list(APPEND libxerces_c_DEPS ${SOCKET_LIBRARY})
++# endif()
++# if(NSL_LIBRARY)
++#   list(APPEND libxerces_c_DEPS ${NSL_LIBRARY})
++# endif()
+ 
+ if(XERCES_USE_NETACCESSOR_CURL)
+   list(APPEND libxerces_c_SOURCES ${curl_sources})
+@@ -1289,7 +1289,7 @@ elseif(UNIX)
+   # set the version in the filename, and create the symlink at install
+   # time.  Note: could be dropped when the SONAME is updated and
+   # libtool compatibility is no longer required.
+-  if(BUILD_SHARED_LIBS)
++  if(XERCESC_BUILD_SHARED_LIBS)
+     set_target_properties(xerces-c PROPERTIES OUTPUT_NAME "xerces-c-${INTERFACE_VERSION_D}")
+     file(GENERATE
+       OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/InstallLibrarySymlink.cmake"

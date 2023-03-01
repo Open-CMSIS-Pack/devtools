@@ -20,3 +20,4 @@
 *.opendb
 .vscode
 /build*/
+**/cmake-*

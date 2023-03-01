@@ -22,3 +22,10 @@
 [submodule "external/fmt"]
 	path = external/fmt
 	url = https://github.com/fmtlib/fmt.git
+[submodule "external/open-cmsis-pack-spec"]
+	path = external/open-cmsis-pack-spec
+	url = https://github.com/Open-CMSIS-Pack/Open-CMSIS-Pack-Spec.git
+[submodule "external/xerces-c"]
+	path = external/xerces-c
+	url = https://github.com/apache/xerces-c.git
+	ignore = dirty

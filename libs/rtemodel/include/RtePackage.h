@@ -195,30 +195,30 @@ public:
    * @return number of <api> elements as integer
   */
 
-  int GetApiCount() const { return m_apis ? m_apis->GetChildCount() : 0; }
+  size_t GetApiCount() const { return m_apis ? m_apis->GetChildCount() : 0; }
   /**
    * @brief get number of conditions in the pack described under <conditions> element
    * @return number of <condition> elements as integer
   */
 
-  int GetConditionCount() const { return m_conditions ? m_conditions->GetChildCount() : 0; }
+  size_t GetConditionCount() const { return m_conditions ? m_conditions->GetChildCount() : 0; }
   /**
    * @brief get number of components in the pack described under <components> element
    * @return number of <component> elements as integer
   */
 
-  int GetComponentCount() const { return m_components ? m_components->GetChildCount() : 0; }
+  size_t GetComponentCount() const { return m_components ? m_components->GetChildCount() : 0; }
   /**
    * @brief get number of examples  in the pack described under <examples> element
    * @return number of <example> elements as integer
   */
-  int GetExampleCount() const { return m_examples ? m_examples->GetChildCount() : 0; }
+  size_t GetExampleCount() const { return m_examples ? m_examples->GetChildCount() : 0; }
 
   /**
    * @brief get number of boards in the pack described under <boards> element
    * @return number of <board> elements as integer
   */
-  int GetBoardCount() const { return m_boards ? m_boards->GetChildCount() : 0; }
+  size_t GetBoardCount() const { return m_boards ? m_boards->GetChildCount() : 0; }
 
   /**
    * @brief get <releases> element

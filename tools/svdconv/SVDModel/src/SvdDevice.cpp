@@ -46,7 +46,7 @@ SvdDevice::~SvdDevice()
 bool SvdDevice::Construct(XMLTreeElement* xmlElement)
 {
   // we are not interested in XML attributes for package
-	m_fileName = xmlElement->GetFileName();
+	m_fileName = xmlElement->GetRootFileName();
   AddAttribute("schemaVersion", xmlElement->GetAttribute("schemaVersion"), false);
 
   return SvdItem::Construct(xmlElement);

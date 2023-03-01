@@ -37,7 +37,7 @@ VISIT_RESULT GatherCompilersVisitor::Visit(RteItem* item)
     AddCompiler(cond);
   }
 
-  return CONTINUE_VISIT;
+  return VISIT_RESULT::CONTINUE_VISIT;
 }
 
 /**

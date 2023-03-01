@@ -22,7 +22,7 @@ VISIT_RESULT ComponentsVisitor::Visit(RteItem* item)
 {
   m_checkComponent.CheckComp(item);
 
-  return CONTINUE_VISIT;
+  return VISIT_RESULT::CONTINUE_VISIT;
 }
 
 /**

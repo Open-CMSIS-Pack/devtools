@@ -74,3 +74,27 @@ TEST_F(ProjMgrGeneratorUnitTests, GenFiles) {
   EXPECT_EQ(true, std::filesystem::exists(generatorInputFile));
   EXPECT_EQ(true, std::filesystem::exists(generatedGPDSC));
 }
+
+TEST_F(ProjMgrGeneratorUnitTests, NoExeFiles) {
+  char* argv[6];
+
+  StdStreamRedirect streamRedirect;
+  const string& csolution = testinput_folder + "/TestSolution/gen_noexe.csolution.yml";
+  argv[1] = (char*)"run";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-g";
+  argv[5] = (char*)"RteTestGeneratorNoExe";
+
+  // execution fails
+  EXPECT_EQ(1, ProjMgr::RunProjMgr(6, argv, 0));
+
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find("permissions"));
+  // still cbuild.yaml file got created
+  const string generatorInputFile = testinput_folder + "/TestSolution/TestProject3_2/TestProject3_2.Debug+TypeA.cbuild.yml";
+  EXPECT_TRUE(std::filesystem::exists(generatorInputFile));
+  const string generatedGPDSC = testinput_folder + "/TestSolution/TestProject3_2/gendir/RteTestGen_ARMCM0/RteTest.gpdsc";
+  // but not gpdsc
+  EXPECT_FALSE(std::filesystem::exists(generatedGPDSC));
+}

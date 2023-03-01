@@ -41,7 +41,7 @@ VISIT_RESULT CheckFilesVisitor::Visit(RteItem* item)
 {
   m_checkFiles.CheckFile(item);
 
-  return CONTINUE_VISIT;
+  return VISIT_RESULT::CONTINUE_VISIT;
 }
 
 /**
@@ -224,7 +224,7 @@ bool CheckFiles::CheckFile(RteItem* item)
 
   // check if fileName is a URL
   if(fileName.find(":", 2) != (size_t)-1 || fileName.find("www.") == 0) {
-    return CONTINUE_VISIT;
+    return true;
   }
 
   // Trim #directJump from htm(l) strings

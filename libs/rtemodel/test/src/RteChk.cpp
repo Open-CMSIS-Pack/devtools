@@ -44,17 +44,17 @@ public:
   virtual VISIT_RESULT Visit(RteItem* rteItem)
   {
     if (rteItem->IsValid())
-      return SKIP_CHILDREN;
+      return VISIT_RESULT::SKIP_CHILDREN;
 
     const list<string>& errors = rteItem->GetErrors();
     if (errors.empty())
-      return CONTINUE_VISIT;
+      return VISIT_RESULT::CONTINUE_VISIT;
     list<string>::const_iterator it;
     for (it = errors.begin(); it != errors.end(); it++) {
       string sErr = (*it);
       cerr << sErr << endl;
     }
-    return CONTINUE_VISIT;
+    return VISIT_RESULT::CONTINUE_VISIT;
   }
 };
 

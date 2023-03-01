@@ -67,6 +67,16 @@ TEST(CrossPlatformUnitTests, GetExecutablePath) {
   std::string exePath = fs::canonical(CrossPlatformUtils::GetExecutablePath(ec)).generic_string();
   EXPECT_STREQ(TEST_BIN_PATH, exePath.c_str());
   EXPECT_EQ(ec.value(), 0);
+
+}
+
+TEST(CrossPlatformUnitTests, CanExecute) {
+  EXPECT_TRUE(CrossPlatformUtils::CanExecute(TEST_BIN_PATH));
+  std::string genFolder = std::string(GLOBAL_TEST_DIR) + std::string("/packs/ARM/RteTestGenerator/0.1.0/Generator/");
+  std::string genExe = genFolder + ((CrossPlatformUtils::GetHostType() == "win") ? string("script.bat") : string("script.sh"));
+  EXPECT_TRUE(CrossPlatformUtils::CanExecute(genExe));
+  std::string noExe = genFolder + string("noexe.sh");
+  EXPECT_FALSE(CrossPlatformUtils::CanExecute(noExe));
 }
 
 TEST(CrossPlatformUnitTests, GetRegistryString) {
