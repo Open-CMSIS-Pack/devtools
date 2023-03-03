@@ -63,7 +63,7 @@ Note that some of the required tools are platform dependent:
   - **Windows:**
     - [GIT Bash](https://gitforwindows.org/)
     - Visual Studio 2019 with "Desktop development with C++"
-    - CMake (minimum recommended version **3.18**)
+    - CMake (minimum recommended version **3.22**)
     - *optional* make or Ninja
 
     ```txt
@@ -80,12 +80,12 @@ Note that some of the required tools are platform dependent:
     - GNU Bash (minimum recommended version **4.3**)
     - GNU Compiler (minimum recommended version **8.1**)
     - *alternatively* LLVM/Clang Compiler (minimum recommended version **8**)
-    - CMake (minimum recommended version **3.18**)
+    - CMake (minimum recommended version **3.22**)
     - make or Ninja
   - **MacOS:**
     - GNU Bash (minimum recommended version **4.3**)
     - XCode/AppleClang (minimum recommended version **11**)
-    - CMake (minimum recommended version **3.18**)
+    - CMake (minimum recommended version **3.22**)
 
     ```txt
     ☑️ For Apple Silicon (M1/M2 series):
