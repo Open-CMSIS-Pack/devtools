@@ -1,6 +1,6 @@
 # CMSIS Build CMakeLists generated on 2021-03-30T09:47:11
 
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.22)
 
 # Target options
 
