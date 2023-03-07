@@ -20,6 +20,7 @@
     - [RTOS](#rtos)
     - [Socket](#socket)
     - [Stream](#stream)
+  - [Working with Layers](#working-with-layers)
 
 ## Overview
 
@@ -228,3 +229,7 @@ The data streaming interfaces relate to:
 
 - [SDS-Framework](https://github.com/RobertRostohar/SDS-Framework) for recording, analyzing, and playback of data streams. 
 - [CMSIS-DSP compute graph](https://github.com/ARM-software/CMSIS-DSP) that allows to optimize data flows between DSP and ML algorithms.
+
+## Working with Layers
+
+The following section explains how to operate with layers.
