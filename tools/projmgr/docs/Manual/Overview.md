@@ -358,7 +358,6 @@ default:
         - --semihosting
 ```
 
-
 **Simple Compiler Agnostic Project: `Sample.csolution.yml`**
 
 ```yml
