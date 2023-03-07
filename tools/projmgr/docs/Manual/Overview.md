@@ -1,21 +1,25 @@
-# csolution: CMSIS Project Manager (Users Manual - Draft)
+# csolution: CMSIS Project Manager - Users Manual (Draft)
 
 <!-- markdownlint-disable MD013 -->
 <!-- markdownlint-disable MD036 -->
 
 >**Important Note:**
 >
-> While the CMSIS-Toolbox is already version 1.0.0 or higher, several aspects of the tools are still under review.  The sections that are market with `Proposal` are features that are not implemented or subject to change in the final implementation.  All other features are considered as stable and changes that are not upward compatible are avoided whenever possible.
+>
+>The **csolution - CMSIS Project Manager** is currently under development and part of the
+  **[Open-CMSIS-Pack](https://www.open-cmsis-pack.org/index.html)** open source project.
+>
+>While the [CMSIS-Toolbox](https://github.com/Open-CMSIS-Pack/cmsis-toolbox) is already version 1.0.0 or higher, several aspects of the tools are still under review.  The sections that are market with `Proposal` are features that are not implemented or subject to change in the final implementation.  All other features are considered as stable and changes that are not upward compatible are avoided whenever possible.
 
 Manual Chapters                                         | Content
 :-------------------------------------------------------|:-------------------------
 [Usage](#usage)                                         | Overall Concept, tool setup, and invocation commands.
 [Project Examples](#project-examples)                   | Various example projects to get started.
 [Project Structure](#project-structure)                 | Overall structure of projects.
-[YML Input Format](YML-Input-Format.md)                 | Format of the various YML input files (`*.csolution.yml`, `*.cproject.yml`, `*.clayer.yml`, `*.cdefault.yml`).
+[YML Input Format](YML-Input-Format.md)                 | Format of the various YAML input files (`*.csolution.yml`, `*.cproject.yml`, `*.clayer.yml`, `*.cdefault.yml`).
 [Linker Script Management](Linker-Script-Management.md) | Specify the available memory and control the linker operation.
 [Build Operation](Build-Operation.md)                   | Build process overview and toolchain interface for adding additional compilers.
-[YML CBuild Format](YML-CBuild-Format.md)               | Format of the YML CBuild output file.
+[YML CBuild Format](YML-CBuild-Format.md)               | Format of the YAML CBuild output file.
 [Reference Application Framework](RefApp-Framework.md)  | Enables example projects that scale across many boards and production hardware.
 
 > **Note:**
@@ -24,9 +28,10 @@ Manual Chapters                                         | Content
 
 **Table of Contents**
 
-- [csolution: CMSIS Project Manager (Users Manual - Draft)](#csolution-cmsis-project-manager-users-manual---draft)
+- [csolution: CMSIS Project Manager - Users Manual (Draft)](#csolution-cmsis-project-manager---users-manual-draft)
   - [Revision History](#revision-history)
   - [Overview of Operation](#overview-of-operation)
+    - [Convert Command](#convert-command)
   - [Usage](#usage)
     - [Requirements](#requirements)
     - [Invocation](#invocation)
@@ -36,6 +41,8 @@ Manual Chapters                                         | Content
       - [List Devices or Boards](#list-devices-or-boards)
       - [List Unresolved Dependencies](#list-unresolved-dependencies)
       - [Build Projects](#build-projects)
+      - [Select a Toolchain](#select-a-toolchain)
+      - [List Compatible Layers](#list-compatible-layers)
       - [Use Generators (i.e. CubeMX)](#use-generators-ie-cubemx)
   - [Project Examples](#project-examples)
     - [GitHub repositories](#github-repositories)
@@ -74,45 +81,53 @@ The **csolution - CMSIS Project Manager** supports the user with the following f
   - Add software components that are provided in the various software packs to the application.
 - Organize applications (with a `*.csolution.yml` file) into projects that are independently managed
   (using `*.cproject.yml` files).
-- Manage the resources (memory, peripherals, and user defined) across the entire application to:
-  - Partition the resources of the system and create related system and linker configuration.
-  - Support in the configuration of software stacks (such as RTOS threads).
-  - Hint the user for inclusion of software layers that are pre-configured for typical use cases.
 - Organize software layers (with a `*.clayer.yml` file) that enable code reuse across similar applications.
 - Manage multiple hardware targets to allow application deployment to different hardware
   (test board, production hardware, etc.).
 - Manage multiple build types to support software verification (debug build, test build, release build, ect.)
-- Support multiple compiler toolchains (GCC, LLVM, Arm Compiler 6, IAR, etc.) for project deployment.
+- Support multiple compiler toolchains (GCC, Arm Compiler 6, IAR, etc.) for project deployment.
 
-> **Note:**
->
->The **csolution - CMSIS Project Manager** is currently under development and part of the
-  **[Open-CMSIS-Pack](https://www.open-cmsis-pack.org/index.html)** open source project.
+### Convert Command
+
+The diagram below outlines the operation of the `csolution convert` command. It processes one or more [`context`](YML-Input-Format.md#context) configurations of the application project (called solution). Refer to ["Project Examples"](#project-examples) for more information.
 
 ![Overview](./images/Overview.png "Overview")
-
-This picture above outlines the operation. The **CMSIS Project Manager** uses the following files.
 
 Input Files              | Description
 :------------------------|:---------------------------------
 [Generic Software Packs](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/cp_PackTutorial.html#cp_SWComponents) | Provide re-usable software components that are typically configurable  towards a user application.
-[DFP Software Packs](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/cp_PackTutorial.html#createPack_DFP)     | Device related information on the tool configuration. May refer an *.rzone file.
-[BSP Software Packs](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/cp_PackTutorial.html#createPackBoard)    | Board specific configuration (i.e. memory). May refer to an *.rzone file that defines board components.
-[*.rzone files](https://arm-software.github.io/CMSIS_5/Zone/html/xml_rzone_pg.html)                 | Definition of memory and peripheral resources. If it does not exist, content is created from DFP.
-*.cdefault.yml           | **Step 1:** setup of an environment (could be an IDE) to pre-define a toolchain.
-*.csolution.yml          | **Step 2:** complete scope of the application with build order of sub-projects. Defines target and build types.
-*.cproject.yml           | **Step 3:** content of an independent build (linker run) - directly relates to a `*.cprj` file.
-*.clayer.yml             | **Step 4:** set of source files along with pre-configured components for reuse in different applications.
-
-> **Note:**
->
->**Steps 1 - 4** indicate the order of processing of the user input files.
+[DFP Software Packs](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/cp_PackTutorial.html#createPack_DFP)     | Device related information (including memory sizes) for the tool configuration.
+[BSP Software Packs](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/cp_PackTutorial.html#createPackBoard)    | Board specific configuration (i.e. additional memory resources).
+[*.cdefault.yml](YML-Input-Format.md#default)           | Setup of an environment (with toolchain specific controls) and pre-defined toolchains.
+[*.csolution.yml](YML-Input-Format.md#solution)         | Complete scope of the application with build order of sub-projects. Defines [target](YML-Input-Format.md#target-types) and [build](YML-Input-Format.md#build-types) types.
+[*.cproject.yml](YML-Input-Format.md#project)           | Content of an independent build (linker run) - directly relates to a `*.cprj` file.
+[*.clayer.yml](YML-Input-Format.md#layer)               | Set of source files along with pre-configured components for reuse in different applications.
 
 Output Files             | Description
 :------------------------|:---------------------------------
+[*.cbuild-idx.yml](YML-CBuild-Format.md#file-structure-of-cbuild-idxyml)  | Index file of all `*.cbuild.yml` build descriptions; contains also overall information for the application.
+[*.cbuild.yml](YML-CBuild-Format.md#file-structure-of-cbuild-yml)      | Build description of a single [`*.cproject.yml`](YML-Input-Format.md#project-file-structure) input file (replaces *.CPRJ in CMSIS-Toolbox 2.1 - schedule for Q3'23)
 [Project Build Files *.cprj](https://arm-software.github.io/CMSIS_5/Build/html/cprjFormat_pg.html) | Project build information for a Open-CMSIS-Pack based tool environment.
-Run-Time Environment (RTE)  | Contains the user configured files of a project along with RTE_Components.h inventory file.
-[Project Resource Files *.fzone](https://arm-software.github.io/CMSIS_5/Zone/html/GenDataModel.html)     | Resource and partition data structure for template based code generators.
+[Run-Time Environment (RTE)](#rte-directory-structure)  | Contains the user configured files of a project along with RTE_Components.h inventory file.
+[Linker Script Files](Linker-Script-Management.md#automatic-linker-script-generation) | Header file that describes the memory resources.
+
+To build an application project, the `csolution convert` command executes the following steps:
+
+1. Read Input Files:
+   - Read *.YML input files and check files against schema (disable schema check with option: `--no-check-schema`)
+   - Parse *.YML input nodes.
+   - Load software packs for selected contexts (control packs with option: `--load [latest|all|required]`).
+
+2. Process each project context (select a specific context with option: `--context`):
+   - Apply [`pack:`](YML-Input-Format.md#pack), [`device:`](YML-Input-Format.md#device) and [`board:`](YML-Input-Format.md#board) to filter the content of software packs.
+   - From [`groups:`](YML-Input-Format.md#groups) add the list of user source files.
+   - From [`components:`](YML-Input-Format.md#components) add the list of component source files.
+   - From [*.GPDSC files](#use-generators-ie-cubemx) add the list of generated source files.
+
+3. Generate output files:
+   - Update [configuration files](#plm-of-configuration-files) in RTE directory (disable with option: `--no-update-rte`).
+   - Print results of software component dependency validation.
+   - Create `cbuild-idx.yml`, `cbuild.yml` and `*.CPRJ` files.
 
 ## Usage
 
@@ -128,7 +143,7 @@ The CMSIS-Pack repository must be present in the development environment.
 ### Invocation
 
 ```text
-CMSIS Project Manager 1.4.0 (C) 2022 Arm Ltd. and Contributors
+CMSIS Project Manager 1.5.0 (C) 2023 Arm Ltd. and Contributors
 
 Usage:
   csolution [-V] [--version] [-h] [--help]
@@ -154,9 +169,13 @@ Usage:
    -g, --generator arg   Code generator identifier
    -m, --missing         List only required packs that are missing in the pack repository
    -l, --load arg        Set policy for packs loading [latest|all|required]
+   -L, --clayer-path arg Set search path for external clayers
    -e, --export arg      Set suffix for exporting <context><suffix>.cprj retaining only specified versions
+   -t, --toolchain arg   Selection of the toolchain used in the project optionally with version
    -n, --no-check-schema Skip schema check
    -U, --no-update-rte   Skip creation of RTE directory and files
+   -v, --verbose         Enable verbose messages
+   -d, --debug           Enable debug messages
    -o, --output arg      Output directory
 
 Use 'csolution <command> -h' for more information about a command.
@@ -214,7 +233,27 @@ Convert `example.csolution.yml` into `*.cprj` file(s). This `*.cprj` file can be
 
 ```text
 csolution convert -s example.csolution.yml
+cbuild example.debug.cprj
 ```
+
+#### Select a Toolchain
+
+List and select a specific toolchain (in this case AC6 for Arm Compiler version 6) for the compilation of a project.
+
+```text
+csolution list toolchains --verbose
+csolution convert -s example.csolution.yml -t AC6
+```
+
+#### List Compatible Layers
+
+List compatible layers for `.\fxls8962_normal_spi.csolution.yml` and the context `*+frdmk22f_agmp03`. This contains also setup information.
+
+```text
+csolution list layers -s .\fxls8962_normal_spi.csolution.yml -c *+frdmk22f_agmp03
+```
+
+Refer to [Working with Layers](RefApp-Framework.md#working-with-layers) for more information.
 
 #### Use Generators (i.e. CubeMX)
 
@@ -235,7 +274,12 @@ csolution run -g STCubeMX -s mysolution.csolution.yml -c Blinky.Debug+STM32L4
 
 ### GitHub repositories
 
-The repository [csolution-examples](https://github.com/Open-CMSIS-Pack/csolution-examples) provides several working examples.  
+The following repositories provide several working examples:
+
+Repository            | Description
+:---------------------|:-------------------------------------
+[csolution-examples](https://github.com/Open-CMSIS-Pack/csolution-examples) | Contains a simple Hello World example and links to other working examples.  
+[vscode-get-started](https://github.com/Open-CMSIS-Pack/vscode-get-started) | Contains the setup for a VS Code development environment including an example project.
 
 The section below explains the the overall concepts consider by the **csolution - CMSIS Project Manager** based on examples.
 
@@ -252,18 +296,7 @@ Simple applications require just one self-contained file.
 
 ```yml
 solution:
-  compiler: AC6
-  misc:
-    - C:
-      - -std=c99
-    - ASM:
-      - -masm=auto
-    - Link:
-      - --info summarysizes
-
-  packs:
-    - pack: ARM::CMSIS
-    - pack: Keil::LPC1700_DFP
+  compiler: AC6                   # explicit compiler selection (optional)
 
   target-types:
     - type: MyHardware
@@ -291,54 +324,66 @@ project:
 
 With generic [**Translation Control**](YML-Input-Format.md#translation-control) settings it is possible to create projects that work across the range of supported compilers (AC6, GCC, IAR).  The compiler selection and potential compiler specific settings can be stored in the file `*.cdefault.yml`. By replacing the `*.cdefault.yml` file it is possible to re-target application projects.  [**Translation Control**](YML-Input-Format.md#translation-control) settings are mapped to specify compiler by the build tools.
 
-**Simple Compiler Agnostic Project: `Sample.cdefault.yml` for Arm Compiler**
+**Default settings for multiple compiler toolchains**
 
 ```yml
 default:
-  compiler: AC6
+  compiler: GCC          # selects the default compiler for an installation
+
   misc:
-    - ASM:
-      - -masm=auto
+    - for-compiler: GCC
+      C:
+        - -std=gnu11
+      Link:
+        - --specs=nano.specs
+        - --specs=rdimon.specs
 
-    - Link:
-      - --info sizes --info totals --info unused --info veneers --info summarysizes
-      - --map
-      - --entry=Reset_Handler
-```
+    - for-compiler: AC6
+      C-CPP:
+        - -Wno-macro-redefined
+        - -Wno-pragma-pack
+        - -Wno-parentheses-equality
+      C:
+        - -std=gnu11
+      ASM:
+        - -masm=auto
+      Link:
+        - --entry=Reset_Handler
+        - --info summarysizes
 
-**Simple Compiler Agnostic Project: `Sample.cdefault.yml` for GCC Compiler**
-
-```yml
-default:
-  compiler: GCC
-  misc:
-    - C:
-      - -g
-
-    - Link:
-      - --specs=nosys.specs
-      - --entry=Reset_Handler
+    - for-compiler: IAR
+      C-CPP:
+        - --dlib_config DLib_Config_Full.h
+      Link:
+        - --semihosting
 ```
 
 **Simple Compiler Agnostic Project: `Sample.csolution.yml`**
 
 ```yml
 solution:
+  compiler: AC6                  # explicit compiler selection (optional)
+
   packs:
     - pack: ARM::CMSIS
     - pack: Keil::LPC1700_DFP
 
-  target-types:
+  target-types:                  # multiple device or boards
     - type: MyHardware
       device: NXP::LPC1768
 
+    - type: MyBoard
+      board: MCB1700
+
   build-types:
-    - type: Debug
-      optimize: none   # translated into compiler specific settings
+    - type: debug                # options for 'debug'
+      optimize: none
+      debug: on
 
-    - type: Release
-      optimize: size   # translated into compiler specific settings
-
+    - type: release              # options for 'release'
+      optimize: balanced
+      debug: off
+      
   projects:
     - project: ./Sample.cproject.yml
 ```
@@ -625,6 +670,10 @@ Optionally, configurable source and header files are provided that allow to set 
   of the software component (typically part of CMSIS_Pack_ROOT) and get included directly from this location into the
   project.
 - An Include Path to the header files of the software component is added to the C/C++ Compiler control string.
+
+> **Note:**
+>
+> The option `--no-update-rte` disables generation of files in the `./RTE` directory and therefore the management of configuration files and the `RTE_Components.h` file.
 
 ### PLM of Configuration Files
 

@@ -6,6 +6,13 @@
 This document is a collection of proposals that are currently on hold and will not get implemented for CMSIS-Toolbox 2.0.
 The proposals in this document will be discussed and potentially progressed after release of CMSIS-Toolbox 2.0.
 
+## Feature Overview (on hold)
+
+- Manage the resources (memory, peripherals, and user defined) across the entire application to:
+  - Partition the resources of the system and create related system and linker configuration.
+  - Support in the configuration of software stacks (such as RTOS threads).
+  - Hint the user for inclusion of software layers that are pre-configured for typical use cases.
+
 ## ASM Specific nodes
 
 In CMSIS-Toolbox 2.0 the `define:` and `add-path:` will be applied only to C and C++ source files.
