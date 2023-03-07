@@ -15,7 +15,7 @@ SET(HEADER_FILES    include/CrossPlatform.h
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
   add_definitions(-DDEFAULT_PACKROOTDEF=\"XDG_CACHE_HOME\")
 elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
-  add_definitions(-DDEFAULT_PACKROOTDEF=\"HOME\")
+  add_definitions(-DDEFAULT_PACKROOTDEF=\"XDG_CACHE_HOME\")
 elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
   add_definitions(-DDEFAULT_PACKROOTDEF=\"LOCALAPPDATA\")
 elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Emscripten")
