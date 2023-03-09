@@ -63,7 +63,7 @@ bool HeaderData::CreateSortedRegisters(const REGMAP &regs)
   return true;
 }
 
-uint32_t HeaderData::CreateSvdItem(SvdItem *item, uint64_t address) 
+uint32_t HeaderData::CreateSvdItem(SvdItem *item, uint64_t address)
 {
   if(!item) {
     return true;
@@ -117,7 +117,7 @@ bool HeaderData::CheckAlignment(SvdItem* item)
   if(/* (pos == 0 && size > 4) \
     ||*/(pos == 1 && size > 3) \
     ||  (pos == 2 && size > 2) \
-    ||  (pos == 3 && size > 1) ) 
+    ||  (pos == 3 && size > 1) )
   {
         const auto& name = item->GetName();
         m_gen->Generate<C_ERROR >("Unaligned Registers are not supported: '%s' addr: 0x%08x pos: %d, size: %d", item->GetLineNumber(), name.c_str(), address, pos, size);
@@ -202,20 +202,16 @@ uint32_t HeaderData::CreateRegister(SvdRegister* reg)
 
     size *= num;
   }
-  
+
   if(generateFields) {
     m_gen->Generate<UNION|BEGIN >("");
   }
-  
+
   m_gen->Generate<MAKE|MK_REGISTER_STRUCT    >("%s", accessType, dataTypeStr.c_str(), size, regName.c_str());
   m_gen->Generate<MAKE|MK_DOXY_COMMENT_ADDR  >("%s", addr, !descr.empty()? descr.c_str() : name.c_str());
-  
+
   if(generateFields) {
-    m_gen->Generate<STRUCT|BEGIN             >("");
-
-    CreateFields(reg);
-
-    m_gen->Generate<STRUCT|END               >("%s", structName.c_str());
+    CreateFields(reg, structName);
     m_gen->Generate<UNION|END                >("%s", unionName.c_str());
   }
 
@@ -244,6 +240,6 @@ uint32_t HeaderData::CreateRegCluster(SvdCluster*  cluster)
   }
 
   m_gen->Generate<MAKE|MK_DOXY_COMMENT_ADDR  >("%s", addr, !descr.empty()? descr.c_str() : name.c_str());
-  
+
   return size;
 }
