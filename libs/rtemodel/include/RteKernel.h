@@ -22,7 +22,6 @@
 
 #include <memory>
 
-class RteCprjModel;
 class RteCprjProject;
 class CprjFile;
 
@@ -151,11 +150,9 @@ public:
   /**
    * @brief Parse *.cprj file
    * @param cprjFileName absolute filename
-   * @return pointer to RteCprjModel is successful, nullptr otherwise
+   * @return pointer to CprjFile is successful, nullptr otherwise
   */
-  RteCprjModel* ParseCprj(const std::string& cprjFileName);
-
-
+  CprjFile* ParseCprj(const std::string& cprjFileName);
 
   /**
    * @brief getter for active project

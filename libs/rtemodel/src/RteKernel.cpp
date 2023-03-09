@@ -14,7 +14,6 @@
 #include "RteKernel.h"
 
 #include "RteItem.h"
-#include "RteCprjModel.h"
 #include "RteCprjProject.h"
 #include "CprjFile.h"
 
@@ -149,7 +148,7 @@ bool RteKernel::SaveActiveCprjFile(const string& file/* = RteUtils::EMPTY_STRING
     XMLTreeElement *root = cprjFile->CreateXmlTreeElement(NULL);
     XmlFormatter xmlFormatter;
     string xmlContent = xmlFormatter.FormatElement(root, schemaFile, schemaVer);
-    string fileName = file.empty() ? cprjFile->GetPackageFileName() : file;
+    string fileName = file.empty() ? cprjFile->GetRootFileName() : file;
     if (!fileName.empty()) {
       RteFsUtils::CopyBufferToFile(fileName, xmlContent, false);
       return true;
@@ -160,12 +159,12 @@ bool RteKernel::SaveActiveCprjFile(const string& file/* = RteUtils::EMPTY_STRING
 
 RteCprjProject* RteKernel::LoadCprj(const string& cprjFileName, const string& toolchain, bool initialize, bool updateRteFiles)
 {
-  RteCprjModel* cprjModel = ParseCprj(cprjFileName);
-  if (!cprjModel)  {
+  CprjFile* cprj = ParseCprj(cprjFileName);
+  if (!cprj)  {
     return nullptr;
   }
 
-  RteCprjProject* cprjProject = new RteCprjProject(cprjModel);
+  RteCprjProject* cprjProject = new RteCprjProject(cprj);
   cprjProject->SetCallback(GetRteCallback());
   cprjProject->SetAttribute("update-rte-files", updateRteFiles ? "1" : "0");
   m_globalModel->AddProject(0, cprjProject);
@@ -181,7 +180,7 @@ RteCprjProject* RteKernel::LoadCprj(const string& cprjFileName, const string& to
 }
 
 
-RteCprjModel* RteKernel::ParseCprj(const string& cprjFile)
+CprjFile* RteKernel::ParseCprj(const string& cprjFile)
 {
   string msg = "Loading '" + cprjFile + "'";
   GetRteCallback()->OutputInfoMessage(msg);
@@ -192,15 +191,18 @@ RteCprjModel* RteKernel::ParseCprj(const string& cprjFile)
     return nullptr;
   }
 
-  RteCprjModel* cprjModel = new RteCprjModel();
-  if (!cprjModel->Construct(xmlTree.get()) || !cprjModel->Validate())  {
+  XMLTreeElement* docElement = xmlTree->GetFirstChild();
+
+  CprjFile* cprj = new CprjFile(nullptr);
+  cprj->SetRootFileName(docElement->GetRootFileName());
+  if (!cprj->Construct(docElement) || !cprj->Validate()) {
     GetRteCallback()->Err("R812", R812, cprjFile);
     RtePrintErrorVistior visitor(m_rteCallback);
-    cprjModel->AcceptVisitor(&visitor);
-    delete cprjModel;
+    cprj->AcceptVisitor(&visitor);
+    delete cprj;
     return nullptr;
   }
-  return cprjModel;
+  return cprj;
 }
 
 bool RteKernel::InitializeCprj(RteCprjProject* cprjProject, const string& toolchain, const string& toolChainVersion)

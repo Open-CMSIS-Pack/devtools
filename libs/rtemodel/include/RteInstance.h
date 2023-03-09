@@ -21,7 +21,6 @@
 #include <map>
 
 class RteModel;
-class RteGeneratorModel;
 class RteProject;
 class RteFileInstance;
 class RteTarget;
@@ -650,14 +649,14 @@ public:
   /**
    * @brief constructor
    * @param parent pointer to RteItem parent
-   * @param model pointer to RteGenratorModel if available
+   * @param gpdscPack pointer to RtePackage representing gpdsc if available
   */
-  RteGpdscInfo(RteItem* parent, RteGeneratorModel* model = nullptr);
+  RteGpdscInfo(RteItem* parent, RtePackage* gpdscPack = nullptr);
 
   /**
    * @brief virtual destructor
   */
-  virtual ~RteGpdscInfo() override;
+  ~RteGpdscInfo() override;
 
   /**
    * @brief get absolute path to *.gpdsc
@@ -666,16 +665,22 @@ public:
   std::string GetAbsolutePath() const;
 
   /**
-   * @brief get associated generator model
-   * @return pointer to RteGeneratorModel
+   * @brief return associated generator if any
+   * @return pointer to RteGenerator
   */
-  virtual RteGeneratorModel* GetGeneratorModel() const { return m_model; }
+  RteGenerator* GetGenerator() const { return m_generator; }
+
+  /**
+   * @brief get associated generator model
+   * @return pointer to generator RtePackage
+  */
+  RtePackage* GetGpdscPack() const { return m_gpdscPack; }
 
   /**
    * @brief set associated generator model
-   * @param model pointer to RteGeneratorModel
+   * @param gpdscPack pointer to gpdsc RtePackage
   */
-  void SetGeneratorModel(RteGeneratorModel* model) { m_model = model; }
+  void SetGpdscPack(RtePackage* gpdscPack);
 
   /**
    * @brief get pack attributes
@@ -698,7 +703,8 @@ public:
 
 
 protected:
-  RteGeneratorModel* m_model; // generator model produced by gpdsc pack
+  RtePackage* m_gpdscPack; // generator pack
+  RteGenerator* m_generator; // generator item
 };
 
 class RteBoard;

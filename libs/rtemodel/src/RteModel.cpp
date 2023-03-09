@@ -234,7 +234,6 @@ RteComponent* RteModel::GetComponent(RteComponentInstance* ci, bool matchVersion
 }
 
 
-
 RteApi* RteModel::GetApi(const map<string, string>& componentAttributes) const
 {
   map<string, RteApi*>::const_iterator it;
@@ -314,9 +313,6 @@ RteCondition* RteModel::GetCondition(const string& packageId, const string& cond
 
 RtePackage* RteModel::CreatePackage(const string& tag)
 {
-  if (tag == "cprj") {
-    return new CprjFile(this);
-  }
   return new RtePackage(this);
 }
 
@@ -349,6 +345,7 @@ RtePackage* RteModel::ConstructPack(XMLTreeElement* xmlTreeDoc)
   RtePackage* package = CreatePackage(xmlTreeDoc->GetTag());
   bool ok = package->Construct(xmlTreeDoc);
   if (ok) {
+    package->SetPackageState(GetPackageState());
     GetCallback()->PackProcessed(package->GetID(), true);
     return package;
   }
@@ -834,7 +831,7 @@ void RteModel::GetBoardBooks(map<string, string>& books, const map<string, strin
 }
 
 RteGlobalModel::RteGlobalModel() :
-  RteModel(NULL, PS_INSTALLED),
+  RteModel(NULL, PackageState::PS_INSTALLED),
   m_nActiveProjectId(-1)
 {
 }
@@ -932,61 +929,6 @@ void RteGlobalModel::ClearProjectTargets(int id)
     if (id <= 0 || id == it->first) {
       RteProject* project = it->second;
       project->ClearTargets();
-    }
-  }
-}
-
-
-RteGeneratorModel::RteGeneratorModel(RteItem* parent) :
-  RteModel(parent, PS_GENERATED),
-  m_gpdscPack(0),
-  m_generator(0)
-{
-}
-
-RteGeneratorModel::RteGeneratorModel() :
-  RteModel(PS_GENERATED),
-  m_gpdscPack(0),
-  m_generator(0)
-{
-}
-
-
-RteGeneratorModel::~RteGeneratorModel()
-{
-  RteGeneratorModel::Clear();
-}
-
-void RteGeneratorModel::Clear()
-{
-  ClearModel();
-}
-
-void RteGeneratorModel::ClearModel()
-{
-  m_gpdscPack = 0;
-  m_generator = 0;
-  RteModel::ClearModel();
-}
-
-const string& RteGeneratorModel::GetGeneratorName() const
-{
-  RteGenerator* gen = GetGenerator();
-  if (gen)
-    return gen->GetName();
-  return EMPTY_STRING;
-}
-
-void RteGeneratorModel::AddItemsFromPack(RtePackage* pack)
-{
-  if (!pack)
-    return;
-  RteModel::AddItemsFromPack(pack);
-  // get generator (the very first one for now)
-  if (!m_gpdscPack) {
-    m_gpdscPack = pack;
-    if (!m_generator) {
-      m_generator = pack->GetFirstGenerator();
     }
   }
 }

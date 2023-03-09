@@ -10,7 +10,7 @@
 #include "Cbuild.h"
 #include "CbuildProject.h"
 
-#include "RteCprjModel.h"
+#include "RteCprjProject.h"
 #include "RteModel.h"
 
 class CbuildModel {
@@ -496,7 +496,7 @@ protected:
   };
 
 protected:
-  RtePackage        *m_cprjPack = 0;
+  CprjFile          *m_cprj = 0;
   RteCprjProject    *m_cprjProject = 0;
   RteTarget         *m_cprjTarget = 0;
 

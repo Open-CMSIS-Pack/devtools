@@ -488,15 +488,13 @@ PackageState RteItem::GetPackageState() const
   if (package) {
     return package->GetPackageState();
   }
-  return PS_UNKNOWN;
+  return PackageState::PS_UNKNOWN;
 
 }
 
 const string& RteItem::GetPackageFileName() const
 {
-  if (m_parent)
-    return m_parent->GetPackageFileName();
-  return EMPTY_STRING;
+  return GetRootFileName();
 }
 
 bool RteItem::MatchesHost() const

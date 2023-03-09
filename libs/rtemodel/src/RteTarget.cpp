@@ -1114,10 +1114,10 @@ RteApi* RteTarget::GetApi(const map<string, string>& componentAttributes) const
     const map<string, RteGpdscInfo*>& gpdscInfos = p->GetGpdscInfos();
     for (auto itg = gpdscInfos.begin(); itg != gpdscInfos.end(); itg++) {
       RteGpdscInfo* gi = itg->second;
-      RteModel* m = gi->GetGeneratorModel();
-      if (!m)
+      RtePackage* gpdscPack = gi->GetGpdscPack();
+      if (!gpdscPack)
         continue;
-      RteApi* a = m->GetApi(componentAttributes);
+      RteApi* a = gpdscPack->GetApi(componentAttributes);
       if (a)
         return a;
     }
@@ -1132,10 +1132,10 @@ RteApi* RteTarget::GetApi(const string& id) const
     const map<string, RteGpdscInfo*>& gpdscInfos = p->GetGpdscInfos();
     for (auto itg = gpdscInfos.begin(); itg != gpdscInfos.end(); itg++) {
       RteGpdscInfo* gi = itg->second;
-      RteModel* m = gi->GetGeneratorModel();
-      if (!m)
+      RtePackage* gpdscPack = gi->GetGpdscPack();
+      if (!gpdscPack)
         continue;
-      RteApi* a = m->GetApi(id);
+      RteApi* a = gpdscPack->GetApi(id);
       if (a)
         return a;
     }
@@ -1253,16 +1253,15 @@ void RteTarget::FilterComponents()
       RteGpdscInfo* gi = itg->second;
       if (!gi->IsUsedByTarget(GetName()))
         continue;
-      RteModel* generatedModel = gi->GetGeneratorModel();
-      if (generatedModel) {
-        const RteComponentMap& componentList = generatedModel->GetComponentList();
-        // fill unique filtered list
-        RteComponentMap::const_iterator itc;
-        for (itc = componentList.begin(); itc != componentList.end(); itc++) {
-          RteComponent* c = itc->second;
-          if (c->IsDeviceStartup())
-            deviceStartup = c;
-          AddFilteredComponent(c);
+      RtePackage* gpdscPack = gi->GetGpdscPack();
+      if (gpdscPack && gpdscPack->GetComponents()) {
+        for (auto itc : gpdscPack->GetComponents()->GetChildren()) {
+          RteComponent* c = dynamic_cast<RteComponent*>(itc);
+          if (c) {
+            if (c->IsDeviceStartup())
+              deviceStartup = c;
+            AddFilteredComponent(c);
+          }
         }
       }
     }

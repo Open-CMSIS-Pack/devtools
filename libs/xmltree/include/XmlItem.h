@@ -456,6 +456,27 @@ public:
   */
   std::string GetAttributesAsXmlString() const;
 
+  /**
+   * @brief set filename associated with the root item this instance belongs to
+   * @param rootFileName absolute file name string
+  */
+  virtual void SetRootFileName(const std::string& rootFileName) {
+    // default does nothing
+  }
+
+  /**
+   * @brief get absolute filename associated with the root item this instance belongs to
+   * @return file name string, empty if no file is associated (default)
+  */
+  virtual const std::string& GetRootFileName() const { return EMPTY_STRING; }
+
+  /**
+   * @brief return absolute path of the file this item is read from or associated with
+   * @param withTrailingSlash true if returned path should contain trailing slash
+   * @return file path string, empty if no file is associated (default)
+  */
+  virtual const std::string GetRootFilePath(bool withTrailingSlash = true) const;
+
 protected:
   /**
    * @brief perform changes in internal data after calls to SetAttributes(), AddAttributes() and ClearAttributes()

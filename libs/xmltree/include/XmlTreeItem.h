@@ -119,7 +119,7 @@ public:
    * @brief getter for root item
    * @return root item of template type TITEM
   */
-  TITEM* GetRoot() const {
+  virtual TITEM* GetRoot() const {
     if (!GetParent())
       return GetThis();
     else
@@ -129,14 +129,15 @@ public:
   /**
    * @brief change parent instance to another one
    * @param newParent pointer to another instance of template type TITEM
+   * @param addToChildren flag to add the item to the list of children, default is true
   */
-  virtual void Reparent(TITEM* newParent) {
+  virtual void Reparent(TITEM* newParent, bool addToChildren = true) {
     TITEM* parent = GetParent();
     if (parent) {
       parent->RemoveChild(GetThis(), false);
     }
     m_parent = newParent;
-    if (newParent)
+    if (addToChildren && newParent)
       newParent->AddChild(GetThis());
   }
 
@@ -363,10 +364,10 @@ public:
    * @brief getter for file name associated with this instance
    * @return file name string
   */
-  virtual const std::string& GetRootFileName() const
+  const std::string& GetRootFileName() const override
   {
     TITEM* root = GetRoot();
-    if (root)
+    if (root && root != this) // to protect recursion
       return root->GetRootFileName();
     return EMPTY_STRING;
   }

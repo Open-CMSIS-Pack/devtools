@@ -1570,17 +1570,16 @@ bool ProjMgrWorker::ProcessGpdsc(ContextItem& context) {
   // Read gpdsc
   const map<string, RteGpdscInfo*>& gpdscInfos = context.rteActiveProject->GetGpdscInfos();
   for (const auto& [file, info] : gpdscInfos) {
-    unique_ptr<RteGeneratorModel> gpdscModel = make_unique<RteGeneratorModel>();
+    RtePackage* gpdscPack = info->GetGpdscPack();
     error_code ec;
     const string gpdscFile = fs::weakly_canonical(file, ec).generic_string();
-    if (!ProjMgrUtils::ReadGpdscFile(gpdscFile, gpdscModel.get())) {
+    gpdscPack = ProjMgrUtils::ReadGpdscFile(gpdscFile);
+    if (!gpdscPack) {
       ProjMgrLogger::Error(gpdscFile, "generator '" + context.gpdscs.at(gpdscFile).generator +
         "' from component '" + context.gpdscs.at(gpdscFile).component + "': reading gpdsc failed");
-      gpdscModel.reset();
       return false;
     } else {
-      // Release pointer ownership
-      info->SetGeneratorModel(gpdscModel.release());
+      info->SetGpdscPack(gpdscPack);
     }
   }
   if (!gpdscInfos.empty()) {

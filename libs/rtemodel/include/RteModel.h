@@ -40,14 +40,14 @@ public:
    * @param parent pointer to the parent RteItem
    * @param packageState pack state
   */
-  RteModel(RteItem* parent, PackageState packageState = PS_INSTALLED);
+  RteModel(RteItem* parent, PackageState packageState = PackageState::PS_INSTALLED);
 
 public:
   /**
    * @brief constructor
    * @param packageState pack state
   */
-  RteModel(PackageState packageState = PS_INSTALLED);
+  RteModel(PackageState packageState = PackageState::PS_INSTALLED);
 
   /**
    * @brief virtual destructor
@@ -288,7 +288,7 @@ public:
    * @brief getter for number of components
    * @return number of components as integer
   */
-  int GetComponentCount() const { return (int)m_componentList.size(); }
+  size_t GetComponentCount() const { return m_componentList.size(); }
 
   /**
    * @brief getter for collection of components
@@ -423,7 +423,7 @@ public:
    * @brief getter for package state
    * @return enumerator of type PackageState
   */
-  virtual PackageState GetPackageState() const override{ return m_packageState; }
+  PackageState GetPackageState() const override{ return m_packageState; }
 
   /**
    * @brief clean up this object
@@ -693,34 +693,6 @@ protected:
 
   std::map<int, RteProject*> m_projects;
   int m_nActiveProjectId; // 1-based project id
-};
-
-
-class RteGeneratorModel : public RteModel
-{
-public:
-  RteGeneratorModel(RteItem* parent);
-
-public:
-  RteGeneratorModel();
-  virtual ~RteGeneratorModel() override;
-
-  virtual void ClearModel() override;
-
-
-public:
-  RtePackage* GetGpdscPack() const { return m_gpdscPack; }
-  RteGenerator* GetGenerator() const { return m_generator; }
-
-  virtual void Clear() override;
-  virtual const std::string& GetGeneratorName() const override;
-
-protected:
-  virtual void AddItemsFromPack(RtePackage* pack) override; // adds taxonomy and components
-
-protected:
-  RtePackage* m_gpdscPack; // only one gpdsc/cprj is allowed for generated model
-  RteGenerator* m_generator; // only one generator is allowed for generated model
 };
 
 #endif // RteModel_H

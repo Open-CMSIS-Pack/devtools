@@ -1082,19 +1082,37 @@ bool RtePackageInstanceInfo::ResolvePack(const string& targetName)
 }
 
 
-RteGpdscInfo::RteGpdscInfo(RteItem* parent, RteGeneratorModel* model) :
+RteGpdscInfo::RteGpdscInfo(RteItem* parent, RtePackage* gpdscPack) :
   RteItemInstance(parent),
-  m_model(model)
+  m_gpdscPack(gpdscPack),
+  m_generator(gpdscPack ? gpdscPack->GetFirstGenerator() : nullptr)
 {
+  if (gpdscPack) {
+    gpdscPack->Reparent(this, false); //  set parent chain, but not add as a child
+  }
 };
 
 RteGpdscInfo::~RteGpdscInfo()
 {
-  if (m_model) {
-    delete m_model;
-    m_model = 0;
+  if(m_gpdscPack)
+    delete m_gpdscPack;
+}
+
+void RteGpdscInfo::SetGpdscPack(RtePackage* gpdscPack)
+{
+  if (m_gpdscPack) {
+    delete m_gpdscPack;
+  }
+  m_gpdscPack = gpdscPack;
+  if (gpdscPack) {
+    gpdscPack->Reparent(this, false); //  set parent chain, but not add as a child
+    m_generator = gpdscPack->GetFirstGenerator();
+  } else {
+    m_generator = nullptr;
   }
 }
+
+
 string RteGpdscInfo::GetAbsolutePath() const
 {
   const string& name = GetName();

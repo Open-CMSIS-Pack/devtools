@@ -9,6 +9,7 @@
 #include "CbuildModel.h"
 
 #include "ErrLog.h"
+#include "CprjFile.h"
 #include "RteCprjProject.h"
 #include "RteFsUtils.h"
 #include "RteGenerator.h"
@@ -25,13 +26,13 @@ CbuildProject::CbuildProject(RteCprjProject* project) {
 CbuildProject::~CbuildProject() {
 }
 
-bool CbuildProject::CreateTarget(const string& targetName, const RtePackage *cprjPack,
+bool CbuildProject::CreateTarget(const string& targetName, const CprjFile *cprj,
   const string& rtePath, const string& toolchain) {
-  RteItem* target = cprjPack->GetItemByTag("target");
+  RteItem* target = cprj->GetItemByTag("target");
   if (!target)
     return false;
 
-  const auto packages = cprjPack->GetItemByTag("packages");
+  const auto packages = cprj->GetItemByTag("packages");
   if (!packages) {
     // Missing <packages> element
     LogMsg("M609", VAL("NAME", "packages"));
@@ -45,7 +46,7 @@ bool CbuildProject::CreateTarget(const string& targetName, const RtePackage *cpr
     return false;
 
   // update target with attributes
-  const RteItem* components = cprjPack->GetItemByTag("components");
+  const RteItem* components = cprj->GetItemByTag("components");
   if (!UpdateTarget(components, attributes, targetName)) {
     return false;
   }
@@ -56,15 +57,13 @@ bool CbuildProject::CreateTarget(const string& targetName, const RtePackage *cpr
   const map<string, RteGpdscInfo*>& gpdscInfos = m_project->GetGpdscInfos();
   for(auto itg = gpdscInfos.begin(); itg != gpdscInfos.end(); itg++ ) {
     RteGpdscInfo* gi = itg->second;
-    RteGeneratorModel* genModel = gi->GetGeneratorModel();
     const string& gpdscFile = gi->GetAbsolutePath();
-    genModel = ReadGpdscFile(gpdscFile);
-    if (!genModel) {
+    RtePackage*  gpdscPack = ReadGpdscFile(gpdscFile);
+    gi->SetGpdscPack(gpdscPack);
+    if (!gpdscPack) {
       return false;
     }
-    gi->SetGeneratorModel(genModel);
   }
-
   if (!gpdscInfos.empty()) {
     // update target with gpdsc model
     if (!UpdateTarget(components, attributes, targetName)) {
@@ -175,8 +174,8 @@ bool CbuildProject::AddAdditionalAttributes(map<string, string> &attributes, con
   return true;
 }
 
-bool CbuildProject::CheckPackRequirements(const RtePackage *cprjPack, const string& rtePath, vector<CbuildPackItem>& packList) {
-  const auto packages = cprjPack->GetItemByTag("packages");
+bool CbuildProject::CheckPackRequirements(const CprjFile *cprj, const string& rtePath, vector<CbuildPackItem>& packList) {
+  const auto packages = cprj->GetItemByTag("packages");
 
   if (!packages) {
     // Missing <packages> element
@@ -216,12 +215,11 @@ bool CbuildProject::CheckPackRequirements(const RtePackage *cprjPack, const stri
   return true;
 }
 
-RteGeneratorModel* CbuildProject::ReadGpdscFile(const string& gpdsc)
+RtePackage* CbuildProject::ReadGpdscFile(const string& gpdsc)
 {
   /*
   Reads gpdsc file
   */
-  RteGeneratorModel* gpdscModel = 0;
   fs::path path(gpdsc);
   error_code ec;
   if (!fs::exists(path, ec)) {
@@ -232,14 +230,17 @@ RteGeneratorModel* CbuildProject::ReadGpdscFile(const string& gpdsc)
   tree.Init();
   if(!tree.AddFileName(gpdsc, true)) {
       LogMsg("M203", PATH(gpdsc));
-      return NULL;
+      return nullptr;
   }
-  gpdscModel = new RteGeneratorModel();
-  if(!gpdscModel->Construct(&tree))
-  {
+  XMLTreeElement* doc = tree.GetFirstChild();
+  if (doc) {
+    RtePackage* gpdscPack = new RtePackage(nullptr);
+    if (gpdscPack->Construct(doc)) {
+      gpdscPack->SetPackageState(PackageState::PS_GENERATED);
+      return gpdscPack;
+    }
     LogMsg("M203", PATH(gpdsc));
-    delete gpdscModel;
-    return NULL;
+    delete gpdscPack;
   }
-  return gpdscModel;
+  return nullptr;
 }

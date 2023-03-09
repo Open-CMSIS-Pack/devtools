@@ -473,6 +473,12 @@ public:
   virtual std::string GetPackagePath(bool withVersion = true) const;
 
   /**
+  * @brief get absolute path to the directory where pack's *.pdsc file is located
+   * @return absolute path to pdsc file directory with trailing slash
+ */
+  virtual std::string GetAbsolutePackagePath() const { return GetRootFilePath(true); }
+
+  /**
    * @brief get PackageState of RtePackage containing this item
    * @return PackageState of parent RtePackage or PS_UNKNOWN if item does not belong to a package
   */
@@ -483,7 +489,6 @@ public:
    * @return RtePackage's file name or empty string if item does not belong to a package
   */
   virtual const std::string& GetPackageFileName() const;
-
 
   /**
    * @brief get absolute filename associated with this item (only relevant for files, docs and books)
@@ -906,6 +911,54 @@ public:
    * @return true if successful
    */
   virtual bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
+};
+
+
+
+/**
+ * @brief container class that represent root element at file level (pdsc, cprj, etc.)
+*/
+class RteRootItem : public RteItem
+{
+public:
+
+  /**
+   * @brief constructor
+   * @param parent pointer to parent RteItem or nullptr if this item has no parent
+  */
+  RteRootItem(RteItem* parent = nullptr) : RteItem(parent) {}
+
+  /**
+   * @brief constructor
+   * @param item tag
+   * @param parent pointer to parent RteItem or nullptr if this item has no parent
+  */
+  RteRootItem(const std::string& tag, RteItem* parent = nullptr) : RteItem(tag, parent) {}
+
+  /**
+   * @brief getter for root item
+   * @return this
+  */
+  RteItem* GetRoot() const override {
+    return GetThis();
+  }
+
+  /**
+   * @brief get absolute filename of the file for this root item
+   * @return filename this root element is read from
+  */
+  const std::string& GetRootFileName() const override { return m_rootFileName; }
+
+  /**
+   * @brief set filename associated with the root item this instance belongs to
+   * @param rootFileName absolute file name string
+  */
+  virtual void SetRootFileName(const std::string& rootFileName) {
+    m_rootFileName = rootFileName;
+  }
+
+protected:
+  std::string m_rootFileName; // absolute filename of this item's file
 };
 
 

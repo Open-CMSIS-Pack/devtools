@@ -72,7 +72,7 @@ class RteDeviceFamilyContainer;
 /**
  * @brief class represents CMSIS-Pack and corresponds to top-level <package> element in *.pdsc file. It also serves as a base for classes supporting *.gpdsc and *.cprj files.
 */
-class RtePackage : public RteItem
+class RtePackage : public RteRootItem
 {
 public:
 
@@ -95,10 +95,10 @@ public:
   virtual ~RtePackage() override;
 
   /**
-   * @brief get absolute path to the directory where pack's *.pdsc file is located
-   * @return absolute path to pdsc file directory with trailing slash
+   * @brief get absolute filename of pack description file (pdsc)
+   * @return *.pdsc filename this <package> element is read from
   */
-  std::string GetAbsolutePackagePath() const;
+  const std::string& GetPackageFileName() const override { return GetRootFileName(); }
 
   /**
    * @brief get pack common ID, also known as 'pack family ID', does not contain version
@@ -251,6 +251,21 @@ public:
   RteItem* GetApis() const { return m_apis; }
 
   /**
+   * @brief getter for api by given component attributes
+   * @param componentAttributes given component attributes
+   * @return RteApi pointer
+  */
+  RteApi* GetApi(const std::map<std::string, std::string>& componentAttributes) const;
+
+  /**
+   * @brief getter for api by given api ID
+   * @param id api ID
+   * @return RteApi pointer
+  */
+  RteApi* GetApi(const std::string& id) const;
+
+
+  /**
    * @brief get <components> element
    * @return pointer to RteItem representing container for examples
   */
@@ -272,25 +287,25 @@ public:
   * @brief get collection of <cimage> elements
   * @return list of pointers RteItem representing cimage elements
   */
-  const std::list<RteItem*> GetImageDescriptors() const { return GetGrandChildren("cimage"); }
+  const std::list<RteItem*>& GetImageDescriptors() const { return GetGrandChildren("cimage"); }
 
   /**
   * @brief get collection of <clayer> elements
   * @return list of pointers RteItem representing clayer elements
   */
-  const std::list<RteItem*> GetLayerDescriptors() const { return GetGrandChildren("clayers"); }
+  const std::list<RteItem*>& GetLayerDescriptors() const { return GetGrandChildren("clayers"); }
 
   /**
   * @brief get collection of <cproject> elements
   * @return list of pointers RteItem representing cproject elements
   */
-  const std::list<RteItem*> GetProjectDescriptors() const { return GetGrandChildren("cprojects"); }
+  const std::list<RteItem*>& GetProjectDescriptors() const { return GetGrandChildren("cprojects"); }
 
   /**
    * @brief get collection of <csolution> elements
    * @return list of pointers RteItem representing csolution elements
   */
-  const std::list<RteItem*> GetSolutionDescriptors() const { return GetGrandChildren("csolutions"); }
+  const std::list<RteItem*>& GetSolutionDescriptors() const { return GetGrandChildren("csolutions"); }
 
   /**
   * @brief get <generators> element
@@ -429,10 +444,16 @@ public:
   virtual std::string GetPackagePath(bool withVersion = true) const override;
 
   /**
-   * @brief get package state
+   * @brief get pack state
    * @return PackageState value
   */
-  virtual PackageState GetPackageState() const override;
+  PackageState GetPackageState() const override { return m_packState; }
+
+  /**
+   * @brief set pack state
+   * @param packState PackageState value
+  */
+  void SetPackageState(PackageState packState) { m_packState = packState; }
 
   /**
    * @brief get full or common pack ID
@@ -448,12 +469,6 @@ public:
    * @return package ID
   */
   static std::string GetPackageIDfromAttributes(const XmlItem& attr, bool withVersion = true);
-
-  /**
-   * @brief get absolute filename of pack description file (pdsc)
-   * @return *.pdsc filename this <package> element is read from
-  */
-  virtual const std::string& GetPackageFileName() const override { return m_fileName; }
 
   /**
    * @brief get URL to download this pack from
@@ -474,7 +489,28 @@ public:
    * @brief get condition for this pack
    * @return nullptr since pack has no condition
   */
-  virtual RteCondition* GetCondition() const override { return nullptr;}
+  virtual RteCondition* GetCondition() const override { return nullptr; }
+
+  /**
+   * @brief get taxonomy  with specified ID
+   * @param id given taxonomy ID
+   * @return pointer to RteItem if found, nullptr otherwise
+ */
+  const RteItem* GetTaxonomyItem(const std::string& id) const;
+
+  /**
+   * @brief get taxonomy description with specified ID
+   * @param id given taxonomy ID
+   * @return description string of taxonomy empty if  not found
+ */
+  const std::string& GetTaxonomyDescription(const std::string& id) const;
+
+  /**
+   * @brief get taxonomy description with specified ID
+   * @param id given taxonomy ID
+   * @return description string of taxonomy empty if  not found
+ */
+  const std::string GetTaxonomyDoc(const std::string& id) const;
 
 public:
   /**
@@ -540,6 +576,8 @@ protected:
   virtual std::string ConstructID() override;
 
 private:
+
+  PackageState m_packState;
   int m_nDominating;      // pack dominating flag (-1 if not set)
   int m_nDeprecated;      // pack deprecation flag (-1 if not set)
   RteItem* m_releases;    // <releases> element
@@ -556,7 +594,6 @@ private:
 
   std::set<std::string> m_keywords; // collected keyword
   std::string m_commonID; // common or 'family' pack ID
-  std::string m_fileName; // absolute filename of this file
 };
 
 /**
@@ -662,7 +699,7 @@ public:
    * @brief get absolute path to the directory where pack's *.pdsc file is located
    * @return absolute path to pdsc file directory with trailing slash
   */
-  std::string GetAbsolutePackagePath() const;
+  std::string GetAbsolutePackagePath() const override;
 
   /**
    * @brief get release text this info represents

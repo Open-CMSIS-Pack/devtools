@@ -4,9 +4,9 @@ add_subdirectory("test")
 
 SET(SOURCE_FILES CprjFile.cpp RteBoard.cpp RteCallback.cpp RteComponent.cpp RteCondition.cpp
   RteDevice.cpp RteExample.cpp RteFile.cpp RteGenerator.cpp RteInstance.cpp RteItem.cpp
-  RteKernel.cpp RteModel.cpp RteCprjModel.cpp RtePackage.cpp RteProject.cpp RteCprjProject.cpp
+  RteKernel.cpp RteModel.cpp RtePackage.cpp RteProject.cpp RteCprjProject.cpp
   RteTarget.cpp RteCprjTarget.cpp  RteValueAdjuster.cpp)
-SET(HEADER_FILES CprjFile.h RteBoard.h  RteCallback.h RteItem.h RteKernel.h RteModel.h RteCprjModel.h
+SET(HEADER_FILES CprjFile.h RteBoard.h  RteCallback.h RteItem.h RteKernel.h RteModel.h
   RtePackage.h RteProject.h RteCprjProject.h  RteTarget.h RteCprjTarget.h RteValueAdjuster.h
   RteComponent.h RteCondition.h RteDevice.h RteExample.h RteFile.h RteGenerator.h RteInstance.h
   RteKernelSlim.h)

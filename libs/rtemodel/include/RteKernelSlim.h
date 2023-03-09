@@ -34,7 +34,7 @@ public:
   /**
    * @brief constructor
   */
-  RteXmlTreeSlim() : XMLTreeSlim(0, true) {
+  RteXmlTreeSlim() : XMLTreeSlim(0, true, false) {
     m_XmlValueAdjuster = new RteValueAdjuster(false);
   }
 

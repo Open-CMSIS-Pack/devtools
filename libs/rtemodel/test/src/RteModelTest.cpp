@@ -574,7 +574,7 @@ TEST_F(RteModelPrjTest, UpdateCprjFile)
     { "<cxxflags",   CXXFLAGS },
     { "<arflags",    ARFLAGS }
   };
-  const string newFile = cprjFile->GetPackageFileName();
+  const string newFile = cprjFile->GetRootFileName();
   const string refFile = RteModelTestConfig::PROJECTS_DIR + "/RteTestM3/RteTestM3.cprj";
   compareFile(newFile, refFile, nothingChanged, toolchain);  // expected: nothing changed
   te->SetCFlags(CFLAGS, toolchain);
