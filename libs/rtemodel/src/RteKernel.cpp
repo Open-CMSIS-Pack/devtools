@@ -165,7 +165,6 @@ RteCprjProject* RteKernel::LoadCprj(const string& cprjFileName, const string& to
   }
 
   RteCprjProject* cprjProject = new RteCprjProject(cprj);
- // cprj->Reparent(cprjProject);
   cprjProject->SetCallback(GetRteCallback());
   cprjProject->SetAttribute("update-rte-files", updateRteFiles ? "1" : "0");
   m_globalModel->AddProject(0, cprjProject);
