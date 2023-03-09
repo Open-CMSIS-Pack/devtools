@@ -11,15 +11,22 @@
 #include "SvdGenerator.h"
 #include "SvdOptions.h"
 #include "FileIo.h"
+#include "SvdField.h"
 
 #include <stdint.h>
 #include <string>
 #include <map>
 #include <list>
 
+struct ONESTRUCT {
+  uint32_t mask;
+  std::map<uint32_t, SvdField*> fields;
 
-using REGMAP = std::map<uint64_t,     std::list<SvdItem*> >;
-using FIELDMAP = std::map<uint32_t, std::list<SvdItem*> >;
+  ONESTRUCT() : mask(0) {}
+};
+
+using REGMAP = std::map<uint64_t, std::list<SvdItem*> >;
+using FIELDMAPLIST = std::list<ONESTRUCT>;
 
 #define MAX_REGS      32
 
@@ -104,7 +111,7 @@ protected:
 
   // HeaderData_Peripheral
   bool      CreatePeripherals                       (SvdDevice* device);
-  
+
   bool      CreatePeripheralsInstance               (SvdDevice* device);
   bool      CreatePeripheralInstance                (SvdPeripheral* peripheral);
 
@@ -152,10 +159,10 @@ protected:
   void            Init_OpenCloseStructUnion         ();
 
   // HeaderData_Fields
-  uint32_t        CreateField                       (const std::list<SvdItem*>& fieldList, uint32_t regSize, uint32_t offsCnt);
-  bool            CreateSortedFields                (const FIELDMAP& sortedFields, uint32_t regSize);
-  bool            AddFields                         (SvdItem* container, FIELDMAP& sortedFields);
-  bool            CreateFields                      (SvdRegister* reg);
+  uint32_t        CreateField                       (SvdField* field, uint32_t regSize, uint32_t offsCnt);
+  bool            CreateSortedFields                (const FIELDMAPLIST& sortedFields, uint32_t regSize, std::string structName);
+  bool            AddFields                         (SvdItem* container, FIELDMAPLIST& sortedFields);
+  bool            CreateFields                      (SvdRegister* reg, std::string structName);
 
   // HeaderData_PosMask
   bool            CreatePosMask                     (SvdDevice* device);

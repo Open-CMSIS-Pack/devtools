@@ -18,14 +18,18 @@ using namespace std;
 using namespace c_header;
 
 
-bool HeaderData::CreateFields(SvdRegister* reg)
+bool HeaderData::CreateFields(SvdRegister* reg, string structName)
 {
-  uint32_t regSize = reg->GetSize();  //GetEffectiveBitWidth() / 8;
-  
+  if(!reg) {
+    return false;
+  }
+
   const auto& childs = reg->GetChildren();
   if(childs.empty()) {
     return true;
   }
+
+  uint32_t regSize = reg->GetSize();
 
   for(const auto child : childs) {
     const auto fieldCont = dynamic_cast<SvdFieldContainer*>(child);
@@ -33,16 +37,27 @@ bool HeaderData::CreateFields(SvdRegister* reg)
       continue;
     }
 
-    FIELDMAP sortedFields;
+    FIELDMAPLIST sortedFields;
     AddFields(fieldCont, sortedFields);
-    CreateSortedFields(sortedFields, regSize);
-    break;      // only create first one now
+
+    CreateSortedFields(sortedFields, regSize, structName);
   }
 
   return true;
 }
 
-bool HeaderData::AddFields(SvdItem* container, FIELDMAP& sortedFields)
+
+struct FIELDSTRUCT {
+  uint32_t usedBits;
+  std::map<uint32_t, SvdItem*> fields;
+
+  FIELDSTRUCT() { usedBits = 0; }
+};
+
+std::list<FIELDSTRUCT> allFields;
+
+
+bool HeaderData::AddFields(SvdItem* container, FIELDMAPLIST& sortedFields)
 {
   const auto& childs = container->GetChildren();
   for(const auto child : childs) {
@@ -61,80 +76,82 @@ bool HeaderData::AddFields(SvdItem* container, FIELDMAP& sortedFields)
 
     const auto name = field->GetNameCalculated();
     uint32_t offs = (uint32_t) field->GetOffset();
-    sortedFields[offs].push_back(field);
+    uint32_t width = (uint32_t) field->GetBitWidth();
+    uint32_t mask = ((1<<width)-1) << offs;
+
+    ONESTRUCT* oneStruct = nullptr;
+    for(auto& oneStr : sortedFields) {
+      if(!(oneStr.mask & mask)) {
+        oneStruct = &oneStr;
+        break;
+      }
+    }
+
+    if(!oneStruct) {
+      ONESTRUCT oneStr;
+      sortedFields.push_back(oneStr);
+      oneStruct = &*sortedFields.rbegin();
+    }
+
+    oneStruct->mask |= mask;
+    oneStruct->fields[offs] = field;
   }
 
   return true;
 }
 
 
-
-bool HeaderData::CreateSortedFields(const FIELDMAP& sortedFields, uint32_t regSize)
+bool HeaderData::CreateSortedFields(const FIELDMAPLIST& sortedFields, uint32_t regSize, string structName)
 {
-  uint32_t offsCnt = 0;
   m_reservedFieldCnt = 0;
 
-  for(const auto& [newOffs, fieldList] : sortedFields) {
-    int32_t res = newOffs - offsCnt;
+  for(const auto& oneStruct : sortedFields) {
+    uint32_t offsCnt = 0;
+    m_gen->Generate<STRUCT|BEGIN>("");
 
-    GenerateReservedField(res, regSize);
-    offsCnt += res;
-    offsCnt += CreateField(fieldList, regSize, offsCnt);
+    for(const auto& [newOffs, field] : oneStruct.fields) {
+      int32_t res = newOffs - offsCnt;
+
+      GenerateReservedField(res, regSize);
+      offsCnt += res;
+      offsCnt += CreateField(field, regSize, offsCnt);
+    }
+
+    GenerateReservedField((regSize * 8) - offsCnt, regSize);  // fill up (pad) bitfields
+
+    m_gen->Generate<STRUCT|END>("%s", structName.c_str());
   }
-
-  GenerateReservedField((regSize * 8) - offsCnt, regSize);  // fill up (pad) bitfields
 
   return true;
 }
 
-uint32_t HeaderData::CreateField(const list<SvdItem*>& fieldList, uint32_t regSize, uint32_t offsCnt) 
+uint32_t HeaderData::CreateField(SvdField* field, uint32_t regSize, uint32_t offsCnt)
 {
-  if(fieldList.empty()) {
+  if(!field) {
     return false;
   }
 
   uint32_t sizeNeeded = 0;
-  //SvdField* field = dynamic_cast<SvdField*>(*fieldList.begin());
-  //uint32_t newOffs = (uint32_t)field->GetOffset();
 
-  if(fieldList.size() > 1) {
-    m_gen->Generate<UNION|BEGIN>("");
+  const auto& dataType  = SvdUtils::GetDataTypeString(regSize);
+  const auto name       = field->GetNameCalculated();
+  const auto descr      = field->GetDescriptionCalculated();
+  const auto accType    = field->GetEffectiveAccess();
+  uint32_t   fieldWidth = field->GetBitWidth();
+  uint32_t   fieldPos   = (uint32_t)field->GetOffset();
+
+  m_gen->Generate<MAKE|MK_FIELD_STRUCT>("%s", accType, dataType.c_str(), regSize, fieldWidth, name.c_str());
+  uint32_t lastBit = fieldPos + fieldWidth -1;
+  m_gen->Generate<MAKE|MK_DOXY_COMMENT_BITFIELD>("%s", fieldPos, lastBit, !descr.empty()? descr.c_str() : name.c_str());
+
+  if(sizeNeeded < fieldWidth) {
+    sizeNeeded = fieldWidth;
   }
 
-  for(const auto item : fieldList) {
-    const auto field = dynamic_cast<SvdField*>(item);
-    if(!field) {
-      continue;
-    }
-
-    const auto& dataType  = SvdUtils::GetDataTypeString(regSize);
-    const auto name       = field->GetNameCalculated();
-    const auto descr      = field->GetDescriptionCalculated();
-    const auto accType    = field->GetEffectiveAccess();
-    uint32_t   fieldWidth = field->GetBitWidth();
-    uint32_t   fieldPos   = (uint32_t)field->GetOffset();
-
-    m_gen->Generate<MAKE|MK_FIELD_STRUCT>("%s", accType, dataType.c_str(), regSize, fieldWidth, name.c_str());
-    //m_gen->Generate<MAKE|MK_DOXY_COMMENT_ADDR>("%s", fieldPos, !descr.empty()? descr.c_str() : name.c_str());
-    //if(fieldWidth == 1)
-    //  m_gen->Generate<MAKE|MK_DOXY_COMMENT_BITPOS>("%s", fieldPos, !descr.empty()? descr.c_str() : name.c_str());
-    //else {
-      uint32_t lastBit = fieldPos + fieldWidth -1;
-      m_gen->Generate<MAKE|MK_DOXY_COMMENT_BITFIELD>("%s", fieldPos, lastBit, !descr.empty()? descr.c_str() : name.c_str());
-    //}
-
-    if(sizeNeeded < fieldWidth) {
-      sizeNeeded = fieldWidth;
-    }
-
-    if(offsCnt != fieldPos) {
-      m_gen->Generate<C_ERROR>("Reserved bits calculation error", -1);
-    }
+  if(offsCnt != fieldPos) {
+    m_gen->Generate<C_ERROR>("Reserved bits calculation error", -1);
   }
 
-  if(fieldList.size() > 1) {
-    m_gen->Generate<UNION|END|ANON>("");
-  }
-  
   return sizeNeeded;
 }
+
