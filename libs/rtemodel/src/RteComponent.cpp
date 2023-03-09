@@ -1739,9 +1739,9 @@ const string& RteComponentGroup::GetDescription() const
       RteGpdscInfo* gi = itg->second;
       if (!gi->IsUsedByTarget(target->GetName()))
         continue;
-      RteModel* genModel = gi->GetGeneratorModel();
-      if (genModel) {
-        const string& descr = genModel->GetTaxonomyDescription(GetTaxonomyDescriptionID());
+      RtePackage* gpdscPack = gi->GetGpdscPack();
+      if (gpdscPack) {
+        const string& descr = gpdscPack->GetTaxonomyDescription(GetTaxonomyDescriptionID());
         if (!descr.empty())
           return descr;
       }
@@ -1773,9 +1773,9 @@ string RteComponentGroup::GetDocFile() const
       RteGpdscInfo* gi = itg->second;
       if (!gi->IsUsedByTarget(target->GetName()))
         continue;
-      RteModel* genModel = gi->GetGeneratorModel();
-      if (genModel) {
-        string doc = genModel->GetTaxonomyDoc(GetTaxonomyDescriptionID());
+      RtePackage* gpdscPack = gi->GetGpdscPack();
+      if (gpdscPack) {
+        string doc = gpdscPack->GetTaxonomyDoc(GetTaxonomyDescriptionID());
         if (!doc.empty())
           return doc;
       }

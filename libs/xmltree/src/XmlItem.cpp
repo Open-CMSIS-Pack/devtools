@@ -367,5 +367,9 @@ bool XmlItem::Compare(const XmlItem* other) const
   return CompareAttributes(other->GetAttributes());
 }
 
+const std::string XmlItem::GetRootFilePath(bool withTrailingSlash) const
+{
+  return RteUtils::ExtractFilePath(GetRootFileName(), withTrailingSlash);
+}
 
 // End of XmlItem.cpp

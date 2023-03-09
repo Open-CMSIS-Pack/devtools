@@ -78,7 +78,8 @@ bool RteTaxonomyContainer::ProcessXmlElement(XMLTreeElement* xmlElement)
 }
 
 RtePackage::RtePackage(RteItem* parent) :
-  RteItem(parent),
+  RteRootItem(parent),
+  m_packState(PackageState::PS_UNKNOWN),
   m_nDominating(-1),
   m_nDeprecated(-1),
   m_releases(0),
@@ -95,7 +96,8 @@ RtePackage::RtePackage(RteItem* parent) :
 }
 
 RtePackage::RtePackage(RteItem* parent, const map<string, string>& attributes) :
-  RteItem(parent),
+  RteRootItem(parent),
+  m_packState(PackageState::PS_UNKNOWN),
   m_nDominating(-1),
   m_nDeprecated(-1),
   m_releases(0),
@@ -135,17 +137,6 @@ void RtePackage::Clear()
   m_nDominating = -1;
   m_keywords.clear();
   RteItem::Clear();
-}
-
-
-PackageState RtePackage::GetPackageState() const
-{
-  RteModel* model = GetModel();
-  if (model) {
-    return model->GetPackageState();
-  }
-  return PS_UNKNOWN;
-
 }
 
 bool RtePackage::IsDeprecated() const
@@ -330,14 +321,6 @@ int RtePackage::ComparePackageIDs(const string& a, const string& b)
   string verB = RtePackage::VersionFromId(b);
   return VersionCmp::Compare(verB, verA); // reverse comparison!
 }
-
-
-string RtePackage::GetAbsolutePackagePath() const
-{
-  string path = RteUtils::ExtractFilePath(m_fileName, true);
-  return path;
-}
-
 
 RteItem* RtePackage::GetRelease(const string& version) const
 {
@@ -530,6 +513,34 @@ string RtePackage::GetDownloadUrl(bool withVersion, const char* extension) const
   return url;
 }
 
+
+RteApi* RtePackage::GetApi(const map<string, string>& componentAttributes) const
+{
+  if (m_apis) {
+    map<string, RteApi*>::const_iterator it;
+    for (auto item : m_apis->GetChildren()) {
+      RteApi* a = dynamic_cast<RteApi*>(item);
+      if (a && a->MatchApiAttributes(componentAttributes))
+        return a;
+    }
+  }
+  return nullptr;
+}
+
+RteApi* RtePackage::GetApi(const string& id) const
+{
+  if (m_apis) {
+    map<string, RteApi*>::const_iterator it;
+    for (auto item : m_apis->GetChildren()) {
+      RteApi* a = dynamic_cast<RteApi*>(item);
+      if (a && a->GetID() == id)
+        return a;
+    }
+  }
+  return nullptr;
+}
+
+
 RteGenerator* RtePackage::GetGenerator(const string& id) const
 {
   if (m_generators)
@@ -570,7 +581,36 @@ RteCondition* RtePackage::GetCondition(const string& id) const
   return nullptr;
 }
 
+const RteItem* RtePackage::GetTaxonomyItem(const std::string& id) const
+{
+  if (m_taxonomy) {
+    for (auto t : m_taxonomy->GetChildren()) {
+      if (t->GetTaxonomyDescriptionID() == id) {
+        return t;
+      }
+    }
+  }
+  return nullptr;
+}
 
+
+const std::string& RtePackage::GetTaxonomyDescription(const std::string& id) const
+{
+  const RteItem* t = GetTaxonomyItem(id);
+  if (t) {
+    return t->GetText();
+  }
+  return EMPTY_STRING;
+}
+
+const std::string RtePackage::GetTaxonomyDoc(const std::string& id) const
+{
+  const RteItem* t = GetTaxonomyItem(id);
+  if (t) {
+    return t->GetDocFile();
+  }
+  return EMPTY_STRING;
+}
 
 void RtePackage::GetEffectiveDeviceItems(list<RteDeviceItem*>& devices) const
 {
@@ -587,13 +627,12 @@ void RtePackage::GetEffectiveDeviceItems(list<RteDeviceItem*>& devices) const
 }
 
 
-
 bool RtePackage::Construct(XMLTreeElement* xmlElement)
 {
   // we are not interested in XML attributes for package
   m_lineNumber = xmlElement->GetLineNumber();
   m_tag = xmlElement->GetTag();
-  m_fileName = xmlElement->GetRootFileName();
+  SetRootFileName(xmlElement->GetRootFileName());
   AddAttribute("schemaVersion", xmlElement->GetAttribute("schemaVersion"), false);
   bool success = ProcessXmlChildren(xmlElement);
   m_ID = ConstructID();
@@ -903,7 +942,7 @@ RteDeviceFamilyContainer* RtePackageInfo::GetDeviceFamiles() const
 string RtePackageInfo::GetAbsolutePackagePath() const
 {
   RtePackage* pack = GetPackage();
-  if (pack && pack->GetPackageState() == PS_INSTALLED) {
+  if (pack && pack->GetPackageState() == PackageState::PS_INSTALLED) {
     return pack->GetAbsolutePackagePath();
   }
   // No sense in returning this path if not installed

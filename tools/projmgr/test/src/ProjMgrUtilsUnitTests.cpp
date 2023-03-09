@@ -8,7 +8,9 @@
 #include "ProjMgrTestEnv.h"
 #include "ProjMgrUtils.h"
 #include "RteFsUtils.h"
-#include "RteItem.h"
+#include "RtePackage.h"
+#include "RteGenerator.h"
+
 #include "gtest/gtest.h"
 
 using namespace std;
@@ -70,11 +72,19 @@ TEST_F(ProjMgrUtilsUnitTests, GetPackageID) {
 }
 
 TEST_F(ProjMgrUtilsUnitTests, ReadGpdscFile) {
-  unique_ptr<RteGeneratorModel> gpdscModel = make_unique<RteGeneratorModel>();
   const string& gpdscFile = testinput_folder + "/TestGenerator/RTE/Device/RteTestGen_ARMCM0/RteTest.gpdsc";
-  EXPECT_EQ(true, ProjMgrUtils::ReadGpdscFile(gpdscFile, gpdscModel.get()));
-  EXPECT_EQ("RteTestGeneratorIdentifier", gpdscModel.get()->GetGeneratorName());
-  gpdscModel.reset();
+ RtePackage* gpdscPack = ProjMgrUtils::ReadGpdscFile(gpdscFile);
+  ASSERT_NE(gpdscPack, nullptr);
+  RteGenerator* gen = gpdscPack->GetFirstGenerator();
+  ASSERT_NE(gen, nullptr);
+  EXPECT_EQ("RteTestGeneratorIdentifier", gen->GetName());
+  delete gpdscPack;
+}
+
+TEST_F(ProjMgrUtilsUnitTests, ReadGpdscFileNoExists) {
+  const string& gpdscFile = testinput_folder + "/TestGenerator/NonExisting.gpdsc";
+  RtePackage* gpdscPack = ProjMgrUtils::ReadGpdscFile(gpdscFile);
+  EXPECT_EQ(gpdscPack, nullptr);
 }
 
 TEST_F(ProjMgrUtilsUnitTests, ExecCommand) {

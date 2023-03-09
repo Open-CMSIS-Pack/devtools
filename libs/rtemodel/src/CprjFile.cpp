@@ -343,7 +343,7 @@ void CprjTargetElement::SetLdCxxFlags(const string &flags, const string &compile
 
 ///////////////////////////////////////////////
 CprjFile::CprjFile(RteItem* parent) :
-  RtePackage(parent),
+  RteRootItem(parent),
   m_cprjTargetElement(0),
   m_files(0)
 {
@@ -358,7 +358,7 @@ void CprjFile::Clear()
 {
   m_files = 0;
   m_cprjTargetElement = 0;
-  RtePackage::Clear();
+  RteRootItem::Clear();
 }
 
 bool CprjFile::ProcessXmlElement(XMLTreeElement* xmlElement)
@@ -375,7 +375,7 @@ bool CprjFile::ProcessXmlElement(XMLTreeElement* xmlElement)
     AddItem(m_cprjTargetElement);
     return true;
   }
-  return RtePackage::ProcessXmlElement(xmlElement);
+  return RteRootItem::ProcessXmlElement(xmlElement);
 }
 
 RteItem* CprjFile::GetProjectInfo() const

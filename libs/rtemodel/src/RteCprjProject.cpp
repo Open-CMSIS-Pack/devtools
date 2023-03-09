@@ -14,7 +14,6 @@
 
 #include "RteCprjProject.h"
 
-#include "RteCprjModel.h"
 #include "RteCprjTarget.h"
 #include "CprjFile.h"
 #include "XmlFormatter.h"
@@ -22,20 +21,20 @@
 using namespace std;
 
 ////////////////////////////
-RteCprjProject::RteCprjProject(RteCprjModel* cprjModel) :
+RteCprjProject::RteCprjProject(CprjFile* cprjFile) :
   RteProject(),
-  m_cprjModel(cprjModel)
+  m_cprjFile(cprjFile)
 {
   // set project name based on filename
-  SetName(RteUtils::ExtractFileBaseName(GetCprjFile()->GetPackageFileName()));
-  SetProjectPath(RteUtils::ExtractFilePath(GetCprjFile()->GetPackageFileName(), true));
+  SetName(RteUtils::ExtractFileBaseName(GetCprjFile()->GetRootFileName()));
+  SetProjectPath(GetCprjFile()->GetRootFilePath(true));
   SetRteFolder(GetCprjFile()->GetRteFolder());
 }
 
 RteCprjProject::~RteCprjProject()
 {
   RteCprjProject::Clear();
-  delete m_cprjModel;
+  delete m_cprjFile;
 }
 
 void RteCprjProject::Clear()
@@ -45,10 +44,8 @@ void RteCprjProject::Clear()
 
 CprjFile* RteCprjProject::GetCprjFile() const
 {
-  RteCprjModel* cprjModel = GetCprjModel();
-  if(cprjModel) {
-    return cprjModel->GetCprjFile();
-  }
+  if (m_cprjFile)
+    return m_cprjFile;
   static CprjFile EMPTY_CPRJ_FILE(nullptr);
   return &EMPTY_CPRJ_FILE;
 }
@@ -75,7 +72,7 @@ bool RteCprjProject::SetToolchain(const string& toolchain, const std::string& to
 
   const list<RteItem*>& compilersList = cprjFile->GetCompilerRequirements();
   if(toolchain.empty() && compilersList.size() > 1) {
-    GetCallback()->Err("R816", "Project supports more than one toolchain, select one to use", cprjFile->GetPackageFileName());
+    GetCallback()->Err("R816", "Project supports more than one toolchain, select one to use", cprjFile->GetRootFileName());
     return false;
   }
 
@@ -95,7 +92,7 @@ bool RteCprjProject::SetToolchain(const string& toolchain, const std::string& to
   m_toolchain = toolchain;
 
   string msg = "Toolchain not supported by project: " + toolchain;
-  GetCallback()->Err("R817", msg, cprjFile->GetPackageFileName());
+  GetCallback()->Err("R817", msg, cprjFile->GetRootFileName());
   return false;
 }
 

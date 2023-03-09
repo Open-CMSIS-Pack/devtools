@@ -626,18 +626,17 @@ void RteProject::AddGeneratedComponents()
 {
   for (auto itg = m_gpdscInfos.begin(); itg != m_gpdscInfos.end(); itg++) {
     RteGpdscInfo* gi = itg->second;
-    RteModel* m = gi->GetGeneratorModel();
-    if (!m)
+    RtePackage* gpdscPack = gi->GetGpdscPack();
+    if (!gpdscPack || !gpdscPack->GetComponents())
       continue;
     for (auto itt = m_targets.begin(); itt != m_targets.end(); itt++) {
       const string& targetName = itt->first;
       if (!gi->IsUsedByTarget(targetName))
         continue;
       RteTarget* target = itt->second;
-      const RteComponentMap& components = m->GetComponentList();
-      for (auto itc = components.begin(); itc != components.end(); itc++) {
-        RteComponent* c = itc->second;
-        AddComponent(c, 1, target, NULL);
+      for (auto item : gpdscPack->GetComponents()->GetChildren()) {
+        RteComponent* c = dynamic_cast<RteComponent*>(item);
+        AddComponent(c, 1, target, nullptr);
       }
     }
   }
@@ -1033,7 +1032,7 @@ string RteProject::GetEffectivePackageID(const string& packId, const string& tar
   return commonId;
 }
 
-RteGpdscInfo* RteProject::AddGpdscInfo(const string& gpdscFile, RteGeneratorModel* model)
+RteGpdscInfo* RteProject::AddGpdscInfo(const string& gpdscFile, RtePackage* gpdscPack)
 {
   string name = gpdscFile;
   if (!m_projectPath.empty() && name.find(m_projectPath) == 0) {
@@ -1042,14 +1041,13 @@ RteGpdscInfo* RteProject::AddGpdscInfo(const string& gpdscFile, RteGeneratorMode
 
   RteGpdscInfo* gi = GetGpdscInfo(gpdscFile);
   if (!gi) {
-    gi = new RteGpdscInfo(this, model);
+    gi = new RteGpdscInfo(this, gpdscPack);
     gi->AddAttribute("name", name);
     m_gpdscInfos[gpdscFile] = gi;
     t_bGpdscListModified = true;
   } else {
-    gi->SetGeneratorModel(model);
+    gi->SetGpdscPack(gpdscPack);
   }
-
   return gi;
 }
 
@@ -1071,7 +1069,7 @@ RteGpdscInfo* RteProject::AddGpdscInfo(RteComponent* c, RteTarget* target)
 
   RteGpdscInfo* gi = GetGpdscInfo(gpdsc);
   if (!gi) {
-    gi = AddGpdscInfo(gpdsc, 0);
+    gi = AddGpdscInfo(gpdsc, nullptr);
     error_code ec;
     if (ShouldUpdateRte() && !fs::exists(gpdsc, ec)) { // file not exists
     // create destination directory
@@ -1108,36 +1106,21 @@ RteGpdscInfo* RteProject::GetGpdscInfo(const string& gpdscFile)
   return NULL;
 }
 
-bool RteProject::HasGpdscModels() const
+bool RteProject::HasGpdscPacks() const
 {
   return !m_gpdscInfos.empty();
 }
 
-bool RteProject::HasMissingGpdscModels() const
+bool RteProject::HasMissingGpdscPacks() const
 {
   if (m_gpdscInfos.empty())
     return false;
   for (auto itg = m_gpdscInfos.begin(); itg != m_gpdscInfos.end(); itg++) {
     RteGpdscInfo* gi = itg->second;
-    RteModel* m = gi->GetGeneratorModel();
-    if (!m)
+    if (!gi->GetGpdscPack())
       return true;
   }
   return false;
-}
-
-RteGeneratorModel* RteProject::GetGpdscModelForTaxonomy(const string& taxonomyID)
-{
-  for (auto itg = m_gpdscInfos.begin(); itg != m_gpdscInfos.end(); itg++) {
-    RteGpdscInfo* gi = itg->second;
-    RteGeneratorModel* m = gi->GetGeneratorModel();
-    if (m) {
-      RteItem* taxonomy = m->GetTaxonomyItem(taxonomyID);
-      if (taxonomy)
-        return m;
-    }
-  }
-  return NULL;
 }
 
 RteBoardInfo* RteProject::GetBoardInfo(const string& boardId) const
@@ -1250,10 +1233,7 @@ void RteProject::CollectSettings(const string& targetName)
 
   for (auto itg = m_gpdscInfos.begin(); itg != m_gpdscInfos.end(); itg++) {
     RteGpdscInfo* gi = itg->second;
-    RteGeneratorModel* m = gi->GetGeneratorModel();
-    if (!m)
-      continue;
-    RteGenerator* gen = m->GetGenerator();
+    RteGenerator* gen = gi->GetGenerator();
     if (!gen)
       continue;
     RteFileContainer* projectFiles = gen->GetProjectFiles();
@@ -1969,12 +1949,12 @@ bool RteProject::Validate()
     return true; // nothing to do
   target->ClearMissingPacks();
 
-  // checki if all required gpdsc files are available
+  // check if all required gpdsc files are available
   for (auto itg = m_gpdscInfos.begin(); itg != m_gpdscInfos.end(); itg++) {
     RteGpdscInfo* gi = itg->second;
-    RteModel* m = gi->GetGeneratorModel();
-    if (m)
+    if (gi->GetGpdscPack()) {
       continue; // loaded
+    }
     bValid = false;
     string fileName = gi->GetAbsolutePath();
     error_code ec;

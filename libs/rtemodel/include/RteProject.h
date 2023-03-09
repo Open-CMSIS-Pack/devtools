@@ -22,7 +22,6 @@
 #include <stdio.h>
 
 class RteModel;
-class RteGeneratorModel;
 class RteComponent;
 class RteComponentAggregate;
 class RteComponentInstance;
@@ -311,12 +310,12 @@ public:
 
   /**
    * @brief look for RteGpdscInfo object associated with the given gpdsc file and set the specified
-   * RteGeneratorModel for it. Create a new one with the given information in case no associated RteGpdscInfo object is found
+   * RtePackage for it. Create a new one with the given information in case no associated RteGpdscInfo object is found
    * @param gpdscFile given gpdsc file
-   * @param model given RteGeneratorModel object
+   * @param gpdscPack given generator RtePackage
    * @return RteGpdscInfo pointer
   */
-  RteGpdscInfo* AddGpdscInfo(const std::string& gpdscFile, RteGeneratorModel* model);
+  RteGpdscInfo* AddGpdscInfo(const std::string& gpdscFile, RtePackage* gpdscPack);
 
   /**
    * @brief add a new RteGpdscInfo object specific to the given RteComponent and RteTarget object to the project
@@ -330,20 +329,13 @@ public:
    * @brief check if any RteGpdscInfo object exists in the project
    * @return true if any RteGpdscInfo object exists
   */
-  bool HasGpdscModels() const;
+  bool HasGpdscPacks() const;
 
   /**
-   * @brief check if any RteGpdscInfo is missing its own RteModel
-   * @return true if any RteGpdscInfo object does not have its RteModel
+   * @brief check if any RteGpdscInfo is missing its loaded generator pack
+   * @return true if any RteGpdscInfo object does not have its RtePackage
   */
-  bool HasMissingGpdscModels() const;
-
-  /**
-   * @brief get RteGeneratorModel object for the specified taxonomy object
-   * @param taxonomyID given taxonomy object
-   * @return RteGeneratorModel pointer
-  */
-  RteGeneratorModel* GetGpdscModelForTaxonomy(const std::string& taxonomyID);
+  bool HasMissingGpdscPacks() const;
 
   /**
    * @brief get collection of board display names mapped to RteBoardInfo objects

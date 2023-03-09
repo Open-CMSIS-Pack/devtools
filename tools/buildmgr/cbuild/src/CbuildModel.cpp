@@ -12,8 +12,9 @@
 #include "CbuildUtils.h"
 
 #include "ErrLog.h"
+
 #include "RteCprjProject.h"
-#include "RteCprjModel.h"
+#include "CprjFile.h"
 #include "RteCprjTarget.h"
 #include "RteFsUtils.h"
 #include "RteKernel.h"
@@ -54,12 +55,12 @@ bool CbuildModel::Create(const CbuildRteArgs& args) {
   m_cprjProject->SetProjectPath(m_prjFolder);
 
   // get cprj pack structure
-  m_cprjPack = m_cprjProject->GetCprjModel()->GetPackages().begin()->second;
+  m_cprj = m_cprjProject->GetCprjFile();
 
   // check pack requirements (packlist command)
   if (args.checkPack) {
     vector<CbuildPackItem> packList;
-    if (!CbuildProject::CheckPackRequirements(m_cprjPack, args.rtePath, packList))
+    if (!CbuildProject::CheckPackRequirements(m_cprj, args.rtePath, packList))
       return false;
 
     if (!packList.empty()) {
@@ -120,7 +121,7 @@ bool CbuildModel::Create(const CbuildRteArgs& args) {
     return false;
 
   // create target (resolve)
-  if (!CbuildProject(m_cprjProject).CreateTarget(m_targetName.c_str(), m_cprjPack, args.rtePath, m_compiler))
+  if (!CbuildProject(m_cprjProject).CreateTarget(m_targetName.c_str(), m_cprj, args.rtePath, m_compiler))
     return false;
 
   // get target
@@ -614,7 +615,7 @@ bool CbuildModel::EvalNonRteSourceFiles() {
   */
 
   // non-rte source files
-  RteItem* files = m_cprjPack->GetItemByTag("files");
+  RteItem* files = m_cprj->GetItemByTag("files");
   if (files) {
     if (!EvalItem(files))
       return false;
@@ -665,21 +666,23 @@ bool CbuildModel::EvalGeneratedSourceFiles() {
 
   // add generator's project files if any
   for (auto gi : m_cprjProject ->GetGpdscInfos()) {
-    const RteGeneratorModel* genModel = gi.second->GetGeneratorModel();
-    if(!genModel) {
+    const RtePackage* gpdscPack = gi.second->GetGpdscPack();
+    if (!gpdscPack) {
       continue;
     }
-    const RteGenerator* gen = genModel->GetGenerator();
+    const RteGenerator* gen = gi.second->GetGenerator();
     if(gen) {
       // gpdsc
-      const RtePackage* gpdscPack = genModel->GetGpdscPack();
       const string& gpdscName = gpdscPack->GetPackageFileName();
       const string& gpdscPath = gpdscPack->GetAbsolutePackagePath();
-      const string& layer = m_cprjProject->GetComponentInstance((*genModel->GetComponentList().begin()).second->GetID())->GetAttribute("layer");
+      const RteItem* components = gpdscPack->GetComponents();
+      const RteItem* c = components ? components->GetFirstChild("component") : nullptr;
+      const RteComponentInstance* ci = c ? m_cprjProject->GetComponentInstance(c->GetID()) : nullptr;
+      const string& layer = ci ? ci->GetAttribute("layer") : RteUtils::EMPTY_STRING;
+
       m_layerFiles[layer].insert(gpdscName.substr(m_prjFolder.length(), string::npos));
 
       // gpdsc <components> section
-      RteItem* components = gpdscPack->GetComponents();
       if (components) {
         for (const RteItem* item : components->GetChildren()) {
           std::list<RteItem*> files;
@@ -782,7 +785,7 @@ bool CbuildModel::EvalDeviceName() {
   Evaluate Device Name
   */
 
-  const RteItem *target = m_cprjPack->GetItemByTag("target");
+  const RteItem *target = m_cprj->GetItemByTag("target");
   if (!target) {
     // Missing <target> element
     LogMsg("M609", VAL("NAME", "target"));
@@ -1014,7 +1017,7 @@ bool CbuildModel::EvalIncludesDefines() {
   */
 
   // Target includes and defines
-  const RteItem* target = m_cprjPack->GetItemByTag("target");
+  const RteItem* target = m_cprj->GetItemByTag("target");
   if (target) {
     const RteItem* includes = target->GetItemByTag("includes");
     const RteItem* defines = target->GetItemByTag("defines");
@@ -1047,7 +1050,7 @@ bool CbuildModel::EvalIncludesDefines() {
   }
 
   // component defines/includes
-  const RteItem* components = m_cprjPack->GetItemByTag("components");
+  const RteItem* components = m_cprj->GetItemByTag("components");
   if (components) {
     for (auto ci : components->GetChildren()) {
       const string& componentName = GetExtendedRteGroupName(ci, m_cprjProject->GetRteFolder());
@@ -1058,7 +1061,7 @@ bool CbuildModel::EvalIncludesDefines() {
   }
 
   // files defines/includes
-  const RteItem* files = m_cprjPack->GetItemByTag("files");
+  const RteItem* files = m_cprj->GetItemByTag("files");
   if (files) {
     if (!EvalItemTranslationControls(files, DEFINES)) {
       return false;
@@ -1075,7 +1078,7 @@ bool CbuildModel::EvalFlags() {
   */
 
   // Target flags
-  const RteItem* target = m_cprjPack->GetItemByTag("target");
+  const RteItem* target = m_cprj->GetItemByTag("target");
   if (target) {
     const RteItem* cflags = CbuildUtils::GetItemByTagAndAttribute(target->GetChildren(), "cflags", "compiler", m_compiler);
     const RteItem* cxxflags = CbuildUtils::GetItemByTagAndAttribute(target->GetChildren(), "cxxflags", "compiler", m_compiler);
@@ -1099,7 +1102,7 @@ bool CbuildModel::EvalFlags() {
           LogMsg("M204", PATH(m_linkerScript));
           return false;
         }
-        const RteItem* layers = m_cprjPack->GetItemByTag("layers");
+        const RteItem* layers = m_cprj->GetItemByTag("layers");
         if (layers) for (auto layer : layers->GetChildren()) {
           if (layer->GetAttributeAsBool("hasTarget")) {
             m_layerFiles[layer->GetAttribute("name")].insert(m_linkerScript.substr(m_prjFolder.length(), string::npos));
@@ -1118,7 +1121,7 @@ bool CbuildModel::EvalFlags() {
   }
 
   // RTE group flags
-  const RteItem* components = m_cprjPack->GetItemByTag("components");
+  const RteItem* components = m_cprj->GetItemByTag("components");
   if (components) {
     for (auto ci : components->GetChildren()) {
       const string& componentName = GetExtendedRteGroupName(ci, m_cprjProject->GetRteFolder());
@@ -1127,7 +1130,7 @@ bool CbuildModel::EvalFlags() {
   }
 
   // User groups/files flags
-  const RteItem* files = m_cprjPack->GetItemByTag("files");
+  const RteItem* files = m_cprj->GetItemByTag("files");
   if (files) {
     if (!EvalItemTranslationControls(files, FLAGS)) {
       return false;
@@ -1144,7 +1147,7 @@ bool CbuildModel::EvalOptions() {
   */
 
   // Target options
-  const RteItem* target = m_cprjPack->GetItemByTag("target");
+  const RteItem* target = m_cprj->GetItemByTag("target");
   if (target) {
     m_targetOptimize = target->GetChildAttribute("options", "optimize");
     m_targetDebug = target->GetChildAttribute("options", "debug");
@@ -1152,7 +1155,7 @@ bool CbuildModel::EvalOptions() {
   }
 
   // RTE group options
-  const RteItem* components = m_cprjPack->GetItemByTag("components");
+  const RteItem* components = m_cprj->GetItemByTag("components");
   if (components) {
     for (auto ci : components->GetChildren()) {
       const string& componentName = GetExtendedRteGroupName(ci, m_cprjProject->GetRteFolder());
@@ -1161,7 +1164,7 @@ bool CbuildModel::EvalOptions() {
   }
 
   // User groups/files options
-  const RteItem* files = m_cprjPack->GetItemByTag("files");
+  const RteItem* files = m_cprj->GetItemByTag("files");
   if (files) {
     if (!EvalItemTranslationControls(files, OPTIONS)) {
       return false;
@@ -1228,7 +1231,7 @@ bool CbuildModel::EvalTargetOutput() {
   */
 
   // Target output
-  const RteItem* output = m_cprjPack->GetItemByTag("target")->GetItemByTag("output");
+  const RteItem* output = m_cprj->GetItemByTag("target")->GetItemByTag("output");
   if (!output) {
     // Missing <target output> element
     LogMsg("M609", VAL("NAME", "target output"));

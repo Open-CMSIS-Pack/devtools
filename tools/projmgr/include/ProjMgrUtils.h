@@ -155,9 +155,9 @@ public:
    * @brief read gpdsc file
    * @param path to gpdsc file
    * @param pointer to rte generator model
-   * @return true if file is read successfully, false otherwise
+   * @return pointer to created RtePackage if successful, nullptr otherwise
   */
-  static bool ReadGpdscFile(const std::string& gpdsc, RteGeneratorModel* gpdscModel);
+  static RtePackage* ReadGpdscFile(const std::string& gpdsc);
 
   /**
    * @brief execute shell command

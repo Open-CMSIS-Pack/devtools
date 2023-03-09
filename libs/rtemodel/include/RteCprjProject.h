@@ -15,7 +15,6 @@
 /******************************************************************************/
 #include "RteProject.h"
 
-class RteCprjModel;
 class RteModel;
 class CprjFile;
 
@@ -27,20 +26,15 @@ class RteCprjProject : public RteProject
 public:
   /**
    * @brief constructor
-   * @param cprjModel pointer to an RteCprjModel object containing CMSIS RTE data
+   * @param cprjModel pointer to CprjFile object containing CMSIS RTE data
   */
-  RteCprjProject(RteCprjModel* cprjModel);
+  RteCprjProject(CprjFile* cprjFile);
 
   /**
    * @brief destructor
   */
   virtual ~RteCprjProject() override;
 
-  /**
-   * @brief getter for the RteCprjModel object containing CMSIS RTE data associated with this project
-   * @return RteCprjModel pointer
-  */
-  RteCprjModel* GetCprjModel() const { return m_cprjModel; }
 
   /**
    * @brief getter for cprj file associated with this project
@@ -111,7 +105,7 @@ protected:
   void ApplyComponentFilesToCprjFile(RteComponentInstance* ci, RteItem* cprjComponent);
 
 protected:
-  RteCprjModel* m_cprjModel; // model read from .cprj file
+  CprjFile* m_cprjFile; // data read from .cprj file
   std::string m_toolchain;        // toolchain to use: AC6, AC5, ARMCC, GCC
   std::string m_toolchainVersion; // toolchain version
   std::map<std::string, RteItem*> m_idToCprjComponents; // component ID mapped to RteItem in CPRJ project

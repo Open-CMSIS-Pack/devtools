@@ -112,22 +112,25 @@ string ProjMgrUtils::ConstructID(const std::vector<std::pair<const char*, const 
   return id;
 }
 
-bool ProjMgrUtils::ReadGpdscFile(const string& gpdsc, RteGeneratorModel* gpdscModel) {
-  if (!gpdscModel) {
-    return false;
-  }
+RtePackage* ProjMgrUtils::ReadGpdscFile(const string& gpdsc) {
   fs::path path(gpdsc);
   error_code ec;
   if (fs::exists(path, ec)) {
     XMLTreeSlim tree;
     tree.Init();
     if (tree.AddFileName(gpdsc, true)) {
-      if (gpdscModel->Construct(&tree)) {
-        return true;
+      XMLTreeElement* doc = tree.GetFirstChild();
+      if (doc) {
+        RtePackage* gpdscPack = new RtePackage(nullptr);
+        if (gpdscPack->Construct(doc)) {
+          gpdscPack->SetPackageState(PackageState::PS_GENERATED);
+          return gpdscPack;
+        }
+        delete gpdscPack;
       }
     }
   }
-  return false;
+  return nullptr;
 }
 
 const ProjMgrUtils::Result ProjMgrUtils::ExecCommand(const string& cmd) {
