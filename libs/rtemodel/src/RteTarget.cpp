@@ -1732,9 +1732,9 @@ std::string RteTarget::GenerateRegionsHeaderContent() const
   oss << "// <h>RAM Configuration" << RteUtils::LF_STRING;
   oss << "// =======================" << RteUtils::LF_STRING;
   for (size_t i = 0; i < memRW.size(); i++) {
-    RteItem* mem = memRO[i];
+    RteItem* mem = memRW[i];
     string id = string("__ROM") + RteUtils::LongToString(i);
-    oss << GenerateMemoryRegionContent(memRW[i], id, i >= nDeviceRW);
+    oss << GenerateMemoryRegionContent(mem, id, i >= nDeviceRW);
   }
   oss << "// </h>" << RteUtils::LF_STRING;
   return oss.str();
