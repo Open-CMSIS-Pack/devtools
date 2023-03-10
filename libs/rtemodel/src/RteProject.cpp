@@ -1194,12 +1194,24 @@ string RteProject::GetRteComponentsH(const string & targetName, const string & p
   return GetRteHeader(string("RTE_Components.h"), targetName, prefix);
 }
 
+
+string RteProject::GetRegionsHeader(const string& targetName, const string& prefix) const
+{
+  RteTarget* target = GetTarget(targetName);
+  string regionsHeader = target ? target->GetRegionsHeader() : RteUtils::EMPTY_STRING;
+  return GetRteHeader(regionsHeader, RteUtils::EMPTY_STRING, prefix);
+}
+
+
 string RteProject::GetRteHeader(const string& name, const string & targetName, const string & prefix) const
 {
   string rteHeader = prefix;
-  rteHeader += GetRteFolder() + "/_";
-  rteHeader += WildCards::ToX(targetName);
-  rteHeader += "/";
+  rteHeader += GetRteFolder() + "/";
+  if (!targetName.empty()) {
+    rteHeader += "_";
+    rteHeader += WildCards::ToX(targetName);
+    rteHeader += "/";
+  }
   rteHeader += name;
   return rteHeader;
 }

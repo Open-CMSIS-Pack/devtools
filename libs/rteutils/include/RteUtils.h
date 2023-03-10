@@ -333,6 +333,14 @@ public:
   static unsigned long long StringToULL(const std::string& value, unsigned long long defaultValue = 0L);
 
   /**
+   * @brief converts long value to string
+   * @param value long value to convert
+   * @param radix conversion radix, default 10
+   * @return string representation of supplied value, prefixed with 0x if radix is 16
+  */
+  static std::string LongToString(long value, int radix = 10);
+
+  /**
    * @brief trim whitespace characters
    * @param s string to be trimmed
    * @return trimmed string without whitespace characters

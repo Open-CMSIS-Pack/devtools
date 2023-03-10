@@ -540,6 +540,18 @@ public:
   void CollectFilteredFiles();
 
   /**
+   * @brief get file name regions*.h relative to RTE folder
+   * @return string containing file name
+  */
+  std::string GetRegionsHeader() const;
+
+  /**
+   * @brief generate region*.h header file according to selected device and board
+   * @return true if generation of the header file is successful
+  */
+  bool GenerateRegionsHeader();
+
+  /**
    * @brief generate header files specific to selected components, e.g. Pre_Include_Global.h, RTE_Components.h
    * @return true if generation of header files is successful
   */
@@ -551,8 +563,10 @@ protected:
   static void GetSpecificBundledClasses(const std::map<RteComponentAggregate*, int>& aggregates, std::map<std::string, std::string>& specificClasses);
 
   void FilterComponents();
+  std::string GenerateRegionsHeaderContent() const;
+  std::string GenerateMemoryRegionContent(RteItem* memory, const std::string& id, bool bBoardMemory ) const;
   bool GenerateRTEComponentsH();
-  bool GenerateRteHeaderFile(const std::string& headerName, const std::string& content);
+  bool GenerateRteHeaderFile(const std::string& headerName, const std::string& content, bool bRegionsHeader = false);
 
   // instance operations
 public:

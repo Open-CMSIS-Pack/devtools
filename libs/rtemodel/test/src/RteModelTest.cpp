@@ -20,7 +20,6 @@
 
 #include <iostream>
 #include <fstream>
-#include <unordered_map>
 
 using namespace std;
 
@@ -74,13 +73,9 @@ TEST(RteModelTest, LoadPacks) {
   EXPECT_EQ(board->GetMemories(mems).size(), 2);
 }
 
-class RteModelPrjTest : public RteModelTestConfig {
-public:
-
+class RteModelPrjTest : public RteModelTestConfig
+{
 protected:
-  void compareFile(const string &newFile, const string &refFile,
-    const std::unordered_map<string, string> &expectedChangedFlags, const string &toolchain) const;
-
   string UpdateLocalIndex() {
     const string index = localRepoDir + "/.Local/local_repository.pidx";
     const string pdsc = RteModelTestConfig::CMSIS_PACK_ROOT + "/ARM/RteTest/0.1.0/ARM.RteTest.pdsc";
@@ -588,90 +583,6 @@ TEST_F(RteModelPrjTest, UpdateCprjFile)
   compareFile(newFile, refFile, changedFlags, toolchain);    // expected: only build flags changed
 }
 
-void RteModelPrjTest::compareFile(const string &newFile, const string &refFile,
-  const std::unordered_map<string, string> &expectedChangedFlags, const string &toolchain) const {
-  ifstream streamNewFile, streamRefFile;
-  string newLine, refLine;
-
-  streamNewFile.open(newFile);
-  EXPECT_TRUE(streamNewFile.is_open());
-
-  streamRefFile.open(refFile);
-  EXPECT_TRUE(streamRefFile.is_open());
-
-  auto nextline = [](ifstream &f, string &line, bool wait)
-  {
-    if (wait)
-      return true;
-    line.clear();
-    while (getline(f, line)) {
-      if (!line.empty())
-        return true;
-    }
-    return false;
-  };
-
-  auto compareLine = [](const string &key, const string &flags, const string &line)
-  {
-    string res;
-    size_t pos, pos2 = string::npos;
-    if (line.find(key) != string::npos) {
-      pos = line.find("\"");
-      if (pos != string::npos)
-        pos2 = line.find("\"", pos + 1);
-      if (pos != string::npos && pos2 != string::npos) {
-        res = line;
-        string convFlags = XmlFormatter::ConvertSpecialChars(flags);
-        res.replace(pos + 1, pos2 - pos - 1, convFlags);
-        EXPECT_EQ(res.compare(line), 0);
-      }
-    }
-  };
-
-  auto getTag = [&toolchain](const string &line) {
-    string compiler = "compiler=\"" + toolchain + "\"";
-    if (line.find(compiler) != string::npos) {
-      size_t pos1 = line.find("<");
-      if (pos1 != string::npos) {
-        size_t pos2 = line.find(" ", pos1);
-        if (pos2 != string::npos)
-          return line.substr(pos1, pos2 - pos1);
-      }
-    }
-    return RteUtils::EMPTY_STRING;
-  };
-
-  // compare lines of files
-  bool wait = false;
-  bool diff = false;
-  while (nextline(streamNewFile, newLine, false) && nextline(streamRefFile, refLine, wait)) {
-    if (newLine != refLine) {
-      auto iter = expectedChangedFlags.find(getTag(newLine));
-      if (iter != expectedChangedFlags.end()) {
-        compareLine(iter->first, iter->second, newLine);
-        if (!wait) {
-          iter = expectedChangedFlags.find(getTag(refLine));
-          if (iter == expectedChangedFlags.end())
-            wait = true;      // wait until checking buildflags in updated file is done
-        }
-      }
-      else {
-        diff = true;
-        break;
-      }
-    }
-    else {
-      wait = false;
-    }
-  }
-
-  streamNewFile.close();
-  streamRefFile.close();
-  if (diff) {
-    FAIL() << newFile << " is different from " << refFile;
-  }
-}
-
 TEST_F(RteModelPrjTest, GetChildAttribute) {
   RteItem fileItem(nullptr);
   fileItem.SetTag("file");
@@ -687,3 +598,140 @@ TEST_F(RteModelPrjTest, GetChildAttribute) {
   EXPECT_EQ("", attr_invalid);
   EXPECT_EQ("", tag_invalid);
 }
+
+TEST_F(RteModelPrjTest, LoadCprjM4) {
+
+  RteKernelSlim rteKernel;
+  rteKernel.SetCmsisPackRoot(RteModelTestConfig::CMSIS_PACK_ROOT);
+  RteCprjProject* loadedCprjProject = rteKernel.LoadCprj(RteTestM4_cprj);
+  ASSERT_NE(loadedCprjProject, nullptr);
+
+  // check if active project is set
+  RteCprjProject* activeCprjProject = rteKernel.GetActiveCprjProject();
+  ASSERT_NE(activeCprjProject, nullptr);
+  // check if it is the loaded project
+  EXPECT_EQ(activeCprjProject, loadedCprjProject);
+
+  RteDeviceItem* device = rteKernel.GetActiveDevice();
+  string deviceName = device ? device->GetName() : RteUtils::ERROR_STRING;
+  string deviceVendor = device ? device->GetVendorString() : RteUtils::ERROR_STRING;
+  EXPECT_EQ(deviceName, "RteTest_ARMCM4_FP");
+
+  RteTarget* activeTarget = activeCprjProject->GetActiveTarget();
+  ASSERT_NE(activeTarget, nullptr);
+  map<const RteItem*, RteDependencyResult> depResults;
+  RteItem::ConditionResult res = activeTarget->GetDepsResult(depResults, activeTarget);
+  EXPECT_EQ(res, RteItem::FULFILLED);
+  string boardName = activeTarget->GetAttribute("Bname");
+  EXPECT_TRUE(boardName.empty());
+  // get layers
+  auto& allLayerDescriptors = rteKernel.GetGlobalModel()->GetLayerDescriptors();
+  EXPECT_EQ(allLayerDescriptors.size(), 8);
+  auto& filteredLayerDescriptors = activeTarget->GetFilteredModel()->GetLayerDescriptors();
+  EXPECT_EQ(filteredLayerDescriptors.size(), 8);
+
+  const string projDir = RteUtils::ExtractFilePath(RteTestM4_cprj, true);
+  const string rteDir = projDir + "RTE/";
+  const string CompConfig_0_Base_Version = rteDir + "RteTest/" + "ComponentLevelConfig_0.h.base@0.0.1";
+  const string CompConfig_1_Base_Version = rteDir + "RteTest/" + "ComponentLevelConfig_1.h.base@0.0.1";
+  EXPECT_TRUE(RteFsUtils::Exists(CompConfig_0_Base_Version));
+  EXPECT_TRUE(RteFsUtils::Exists(CompConfig_1_Base_Version));
+
+  error_code ec;
+  const fs::perms write_mask = fs::perms::owner_write | fs::perms::group_write | fs::perms::others_write;
+  // check config file PLM: existence and permissions
+  const string deviceDir = rteDir + "Device/RteTest_ARMCM4_FP/";
+  EXPECT_FALSE(RteFsUtils::Exists(deviceDir + "ARMCM4_ac6.sct.base@1.0.0"));
+  EXPECT_FALSE(RteFsUtils::Exists(deviceDir + "ARMCM4_ac6.sct.update@1.2.0"));
+
+  EXPECT_FALSE(RteFsUtils::Exists(deviceDir + "system_ARMCM4.c.base@1.0.1"));
+  EXPECT_FALSE(RteFsUtils::Exists(deviceDir + "system_ARMCM4.c.base@1.0.2"));
+
+  EXPECT_TRUE(RteFsUtils::Exists(deviceDir + "startup_ARMCM4.c.base@2.0.3"));
+  EXPECT_EQ((fs::status(deviceDir + "startup_ARMCM4.c.base@2.0.3", ec).permissions() & write_mask), fs::perms::none);
+
+  EXPECT_FALSE(RteFsUtils::Exists(deviceDir + "system_ARMCM4.c.update@1.2.2"));
+
+  // test regions_h
+  string regionsFile = deviceDir + "regions_RteTest_ARMCM4_FP.h";
+  EXPECT_EQ(activeCprjProject->GetRegionsHeader(activeTarget->GetName(), projDir), regionsFile);
+  ASSERT_TRUE(RteFsUtils::Exists(regionsFile));
+
+  string generatedContent;
+  RteFsUtils::ReadFile(regionsFile, generatedContent);
+
+  string referenceContent;
+  string refFile = projDir + "regions_RteTest_ARMCM4_FP_ref.h";
+  RteFsUtils::ReadFile(refFile, referenceContent);
+  EXPECT_EQ(generatedContent, referenceContent);
+}
+
+TEST_F(RteModelPrjTest, LoadCprjM4_Board) {
+
+  RteKernelSlim rteKernel;
+  rteKernel.SetCmsisPackRoot(RteModelTestConfig::CMSIS_PACK_ROOT);
+  RteCprjProject* loadedCprjProject = rteKernel.LoadCprj(RteTestM4_Board_cprj);
+  ASSERT_NE(loadedCprjProject, nullptr);
+
+  // check if active project is set
+  RteCprjProject* activeCprjProject = rteKernel.GetActiveCprjProject();
+  ASSERT_NE(activeCprjProject, nullptr);
+  // check if it is the loaded project
+  EXPECT_EQ(activeCprjProject, loadedCprjProject);
+
+  RteDeviceItem* device = rteKernel.GetActiveDevice();
+  string deviceName = device ? device->GetName() : RteUtils::ERROR_STRING;
+  string deviceVendor = device ? device->GetVendorString() : RteUtils::ERROR_STRING;
+  EXPECT_EQ(deviceName, "RteTest_ARMCM4_FP");
+
+  RteTarget* activeTarget = activeCprjProject->GetActiveTarget();
+  ASSERT_NE(activeTarget, nullptr);
+  map<const RteItem*, RteDependencyResult> depResults;
+  RteItem::ConditionResult res = activeTarget->GetDepsResult(depResults, activeTarget);
+  EXPECT_EQ(res, RteItem::FULFILLED);
+  string boardName = activeTarget->GetAttribute("Bname");
+  EXPECT_EQ(boardName, "RteTest CM4 board");
+  // get layers
+  auto& allLayerDescriptors = rteKernel.GetGlobalModel()->GetLayerDescriptors();
+  EXPECT_EQ(allLayerDescriptors.size(), 8);
+  auto& filteredLayerDescriptors = activeTarget->GetFilteredModel()->GetLayerDescriptors();
+  EXPECT_EQ(filteredLayerDescriptors.size(), 5);
+
+  const string projDir = RteUtils::ExtractFilePath(RteTestM4_Board_cprj, true);
+  const string rteDir = projDir + "RTE_BOARD/";
+  const string CompConfig_0_Base_Version = rteDir + "RteTest/" + "ComponentLevelConfig_0.h.base@0.0.1";
+  const string CompConfig_1_Base_Version = rteDir + "RteTest/" + "ComponentLevelConfig_1.h.base@0.0.1";
+  EXPECT_TRUE(RteFsUtils::Exists(CompConfig_0_Base_Version));
+  EXPECT_TRUE(RteFsUtils::Exists(CompConfig_1_Base_Version));
+
+  error_code ec;
+  const fs::perms write_mask = fs::perms::owner_write | fs::perms::group_write | fs::perms::others_write;
+  // check config file PLM: existence and permissions
+  const string deviceDir = rteDir + "Device/RteTest_ARMCM4_FP/";
+  EXPECT_FALSE(RteFsUtils::Exists(deviceDir + "ARMCM4_ac6.sct.base@1.0.0"));
+  EXPECT_FALSE(RteFsUtils::Exists(deviceDir + "ARMCM4_ac6.sct.update@1.2.0"));
+
+  EXPECT_FALSE(RteFsUtils::Exists(deviceDir + "system_ARMCM4.c.base@1.0.1"));
+  EXPECT_FALSE(RteFsUtils::Exists(deviceDir + "system_ARMCM4.c.base@1.0.2"));
+
+  EXPECT_TRUE(RteFsUtils::Exists(deviceDir + "startup_ARMCM4.c.base@2.0.3"));
+  EXPECT_EQ((fs::status(deviceDir + "startup_ARMCM4.c.base@2.0.3", ec).permissions() & write_mask), fs::perms::none);
+
+  EXPECT_FALSE(RteFsUtils::Exists(deviceDir + "system_ARMCM4.c.update@1.2.2"));
+
+  // test regions_h
+  string regionsFile = deviceDir + "regions_RteTest_CM4_board.h";
+  EXPECT_EQ(activeCprjProject->GetRegionsHeader(activeTarget->GetName(), projDir), regionsFile);
+  EXPECT_TRUE(RteFsUtils::Exists(regionsFile));
+
+  string generatedContent;
+  RteFsUtils::ReadFile(regionsFile, generatedContent);
+
+  string referenceContent;
+  string refFile = projDir + "regions_RteTest_CM4_board_ref.h";
+  RteFsUtils::ReadFile(refFile, referenceContent);
+  EXPECT_EQ(generatedContent, referenceContent);
+
+}
+
+// end of RTEModelTest.cpp

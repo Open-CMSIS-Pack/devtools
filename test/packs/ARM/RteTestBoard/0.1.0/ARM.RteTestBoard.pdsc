@@ -35,6 +35,15 @@
       <memory name="BoardFLASH" access="rx" start="0x30000000" size="0x00040000" startup="1" default="1"/>
       <memory name="BoardRAM" access="rwx" start="0x40000000" size="0x00020000" init   ="0" default="1"/>
     </board>
+    <board name="RteTest CM4 board" vendor="Keil" revision="Rev.C">
+      <description>uVision Simulator</description>
+      <mountedDevice    deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM4_FP"/>
+      <compatibleDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM4_NOFP"/>
+      <algorithm name="Board/Flash/BoargAlgo1.FLM" start="0x00000000" size="0x00040000" default="1"/>
+      <algorithm name="Board/Flash/BoargAlgo2.FLM" start="0x00000000" size="0x00020000" default="0"/>
+      <memory name="BoardFLASH" access="rx" start="0x30000000" size="0x00040000" startup="1" default="1"/>
+      <memory name="BoardRAM" access="rwx" start="0x40000000" size="0x00020000" init   ="0" default="1"/>
+    </board>
   </boards>
 
 </package>

@@ -697,10 +697,18 @@ public:
   /**
    * @brief get file name and path of "RTE_Components.h" determined by the specified target and prefix
    * @param targetName given target name
-   * @param prefix given prefix to be added at beginning of the file path
+   * @param prefix given prefix to prep-end to the file path
    * @return string containing file name and path
   */
   std::string GetRteComponentsH(const std::string& targetName, const std::string& prefix) const;
+
+  /**
+   * @brief get file name and project relative path of regions*.h determined by the specified target and prefix
+   * @param targetName given target name
+   * @param prefix given prefix to prep-end to the file path
+   * @return string containing file name and path
+  */
+  std::string GetRegionsHeader(const std::string& targetName, const std::string& prefix) const;
 
   /**
    * @brief get file name and path locating in folder "RTE" determined by the specified name, target and prefix
@@ -711,8 +719,16 @@ public:
   */
   std::string GetRteHeader(const std::string& name, const std::string & targetName, const std::string& prefix) const;
 
-
+  /**
+   * @brief copy config files to RTE directory if not exist
+   * @param targetName
+  */
   void WriteInstanceFiles(const std::string& targetName);
+
+  /**
+   * @brief check if RTE folder content should be updated with config files
+   * @return true if update is enabled
+  */
   bool ShouldUpdateRte() const;
 
 protected:

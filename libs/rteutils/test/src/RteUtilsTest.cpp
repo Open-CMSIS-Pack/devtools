@@ -16,6 +16,16 @@ static void CheckVendorMatch(const vector<string>& vendors, bool expect) {
   }
 }
 
+TEST(RteUtilsTest, StringToFrom) {
+  EXPECT_EQ(RteUtils::StringToInt("42"), 42);
+  EXPECT_EQ(RteUtils::StringToUnsigned("0x20"), 32);
+  EXPECT_EQ(RteUtils::StringToULL("0x20"), 32L);
+  EXPECT_EQ(RteUtils::StringToULL("0xFFFF0000"), 0xFFFF0000L);
+  EXPECT_EQ(RteUtils::LongToString(1), "1");
+  EXPECT_EQ(RteUtils::LongToString(1, 16), "0x1");
+  EXPECT_EQ(RteUtils::LongToString(32,16), "0x20");
+}
+
 TEST(RteUtilsTest, Trim) {
   EXPECT_EQ(RteUtils::Trim("").empty(), true);
   EXPECT_EQ(RteUtils::Trim(" \t\n\r").empty(), true);
