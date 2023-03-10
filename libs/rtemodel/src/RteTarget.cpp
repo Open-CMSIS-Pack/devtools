@@ -531,15 +531,21 @@ void RteTarget::ProcessAttributes() // called from SetAttributes(), AddAttribute
   string fullDeviceName = GetFullDeviceName();
 
   m_device = model->GetDevice(fullDeviceName, vendor);
-  // add Dcore attribute as if not present
-  if(!m_device || HasAttribute("Dcore")) {
+
+  if (!m_device) {
     return;
   }
-  const string& pname = GetProcessorName();
-  RteDeviceProperty* p = m_device->GetProcessor(pname);
-  if(p) {
-    AddAttribute("Dcore", p->GetEffectiveAttribute("Dcore"));
+  // add Dcore attribute if not present
+  if (!HasAttribute("Dcore")) {
+    const string& pname = GetProcessorName();
+    RteDeviceProperty* p = m_device->GetProcessor(pname);
+    if (p) {
+      AddAttribute("Dcore", p->GetEffectiveAttribute("Dcore"));
+    }
   }
+  // resolve board
+  // RteBoard* board = model->FindBoard();
+
 };
 
 void RteTarget::AddBoadProperties(RteDeviceItem* device, const string& processorName) {
@@ -1630,9 +1636,124 @@ bool RteTarget::IsPackMissing(const string& pack)
   return t_missingPackIds.find(pack) != t_missingPackIds.end();
 }
 
+std::string RteTarget::GetRegionsHeader() const
+{
+  string deviceName = WildCards::ToX(GetFullDeviceName());
+  string boardName = WildCards::ToX(GetAttribute("Bname"));
+  return string("Device/") + deviceName + "/regions_" + (boardName.empty() ? deviceName : boardName) + ".h";
+}
+
+std::string RteTarget::GenerateMemoryRegionContent(RteItem* memory, const std::string& id, bool bBoardMemory) const
+{
+  bool bRam = memory->IsWriteAccess();
+ string name = memory->GetName();
+  if (bBoardMemory) {
+    name += " (board memory)";
+  }
+  ostringstream oss;
+  oss << "// <h> " << name << RteUtils::LF_STRING;
+
+  string start = memory->GetAttribute("start");
+  oss << "//   <o> Base address <0x0-0xFFFFFFFF:8>" << RteUtils::LF_STRING;
+  oss << "//   <i> Defines base address of memory region." << RteUtils::LF_STRING;
+  oss << "//   <i> Default: " << start << RteUtils::LF_STRING;
+  oss << "#define " << id << "_BASE " << start << RteUtils::LF_STRING;
+
+  string size = memory->GetAttribute("size");
+  oss << "//   <o> Region size [bytes] <0x0-0xFFFFFFFF:8>" << RteUtils::LF_STRING;
+  oss << "//   <i> Defines size of memory region." << RteUtils::LF_STRING;
+  oss << "//   <i> Default: " << size << RteUtils::LF_STRING;
+  oss << "#define " << id << "_SIZE " << size << RteUtils::LF_STRING;
+
+  int defaultRegion = memory->IsDefault() ? 1 : 0;
+  oss << "//   <q>Default region" << RteUtils::LF_STRING;
+  oss << "//   <i> Enables memory region globally for the application." << RteUtils::LF_STRING;
+  oss << "#define " << id << "_DEFAULT " << defaultRegion << RteUtils::LF_STRING;
+
+  if (bRam) {
+    int noInit = memory->IsNoInit() ? 1 : 0;
+    oss << "//   <q>No zero initialize" << RteUtils::LF_STRING;
+    oss << "//   <i> Excludes region from zero initialization." << RteUtils::LF_STRING;
+    oss << "#define " << id << "_NOINIT " << noInit << RteUtils::LF_STRING;
+  } else {
+    int startup = memory->IsStartup() ? 1 : 0;
+    oss << "//   <q>Startup" << RteUtils::LF_STRING;
+    oss << "//   <i> Selects region to be used for startup code." << RteUtils::LF_STRING;
+    oss << "#define " << id << "_STARTUP " << startup << RteUtils::LF_STRING;
+  }
+  oss << "// </h>" << RteUtils::LF_STRING;
+  oss << RteUtils::LF_STRING;
+  return oss.str();
+}
+
+std::string RteTarget::GenerateRegionsHeaderContent() const
+{
+  vector<RteItem*> memRO;
+  vector<RteItem*> memRW;
+  // collect device memory data
+  RteDeviceItem* device = GetDevice();
+  auto& deviceMems = device->GetEffectiveProperties("memory", GetProcessorName());
+  for (auto mem : deviceMems) {
+    if (mem->IsWriteAccess()) {
+      memRW.push_back(mem);
+    } else {
+      memRO.push_back(mem);
+    }
+  }
+  size_t nDeviceRO = memRO.size();
+  size_t nDeviceRW = memRW.size();
+  RteBoard* board = GetBoard();
+  if (board) {
+    list <RteItem*> boardMemCollection;
+    for( auto mem : board->GetMemories(boardMemCollection)) {
+      if (mem->IsWriteAccess()) {
+        memRW.push_back(mem);
+      } else {
+        memRO.push_back(mem);
+      }
+    }
+  }
+
+  ostringstream  oss;
+  oss <<  RteUtils::LF_STRING;
+  oss << "//-------- <<< Use Configuration Wizard in Context Menu >>> --------------------" << RteUtils::LF_STRING;
+  oss <<  RteUtils::LF_STRING;
+
+  oss << "// <h>ROM Configuration"   << RteUtils::LF_STRING;
+  oss << "// =======================" << RteUtils::LF_STRING;
+  for (size_t i = 0; i < memRO.size(); i++) {
+    RteItem* mem = memRO[i];
+    string id = string("__ROM") +RteUtils::LongToString(i);
+    oss << GenerateMemoryRegionContent(mem, id, i >= nDeviceRO);
+  }
+  oss << "// </h>" << RteUtils::LF_STRING;
+  oss << RteUtils::LF_STRING;
+
+  oss << "// <h>RAM Configuration" << RteUtils::LF_STRING;
+  oss << "// =======================" << RteUtils::LF_STRING;
+  for (size_t i = 0; i < memRW.size(); i++) {
+    RteItem* mem = memRO[i];
+    string id = string("__ROM") + RteUtils::LongToString(i);
+    oss << GenerateMemoryRegionContent(memRW[i], id, i >= nDeviceRW);
+  }
+  oss << "// </h>" << RteUtils::LF_STRING;
+  return oss.str();
+}
+
+bool RteTarget::GenerateRegionsHeader()
+{
+  string content = GenerateRegionsHeaderContent();
+  return GenerateRteHeaderFile(GetRegionsHeader(), content, true);
+}
+
 bool RteTarget::GenerateRteHeaders() {
-  if (!GenerateRTEComponentsH())
+  if (!GenerateRTEComponentsH()) {
     return false;
+  }
+
+  if (!GenerateRegionsHeader()) {
+    return false;
+  }
 
   string content;
   const set<string>& strings = GetGlobalPreIncludeStrings();
@@ -1673,33 +1794,36 @@ bool RteTarget::GenerateRTEComponentsH() {
   return GenerateRteHeaderFile("RTE_Components.h", content);
 }
 
-bool RteTarget::GenerateRteHeaderFile(const string& headerName, const string& content) {
+bool RteTarget::GenerateRteHeaderFile(const string& headerName, const string& content, bool bRegionsHeader) {
 
   RteProject *project = GetProject();
   if (!project)
     return false;
 
-  string rteCompH = project->GetRteHeader(headerName, GetName(), project->GetProjectPath());
+  string headerFile = project->GetRteHeader(headerName, bRegionsHeader? RteUtils::EMPTY_STRING : GetName(), project->GetProjectPath());
 
-  if (!RteFsUtils::MakeSureFilePath(rteCompH))
+  if (bRegionsHeader && RteFsUtils::Exists(headerFile))
+    return true; // nothing to do
+
+  if (!RteFsUtils::MakeSureFilePath(headerFile))
     return false;
 
   string HEADER_H;
-  for (string::size_type pos = 0; pos < headerName.length(); pos++) {
-    char ch = toupper(headerName[pos]);
+  string headerFileName = RteUtils::ExtractFileName(headerName);
+  for (string::size_type pos = 0; pos < headerFileName.length(); pos++) {
+    char ch = toupper(headerFileName[pos]);
     if (ch == '.')
       ch = '_';
     HEADER_H += ch;
   }
-
   // construct head comment
-
   ostringstream  oss;
-  oss << szRteCh;
-  oss << " * Project: '" << project->GetName() << "\' " << RteUtils::LF_STRING;
-  oss << " * Target:  '"  << GetName()         << "\' " << RteUtils::LF_STRING;
-  oss << " */" << RteUtils::LF_STRING << RteUtils::LF_STRING;
-
+  if (!bRegionsHeader) {
+    oss << szRteCh;
+    oss << " * Project: '" << project->GetName() << "\' " << RteUtils::LF_STRING;
+    oss << " * Target:  '" << GetName() << "\' " << RteUtils::LF_STRING;
+    oss << " */" << RteUtils::LF_STRING << RteUtils::LF_STRING;
+  }
   // content
   oss << "#ifndef " << HEADER_H << RteUtils::LF_STRING;
   oss << "#define " << HEADER_H << RteUtils::LF_STRING << RteUtils::LF_STRING;
@@ -1711,13 +1835,13 @@ bool RteTarget::GenerateRteHeaderFile(const string& headerName, const string& co
   string fileBuf;
 
   // check if file has been changed
-  RteFsUtils::ReadFile(rteCompH.c_str(), fileBuf);
+  RteFsUtils::ReadFile(headerFile, fileBuf);
   if (fileBuf.compare(str) == 0) {
     return true;
   }
 
   // file does not exist or its content is different
-  RteFsUtils::CopyBufferToFile(rteCompH, str, false); // write file
+  RteFsUtils::CopyBufferToFile(headerFile, str, false); // write file
 
   return true;
 }

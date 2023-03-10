@@ -16,11 +16,15 @@
 #include "gtest/gtest.h"
 
 #include <string>
+#include <unordered_map>
 
 class RteModelTestConfig : public ::testing::Test
 {
 public:
   RteModelTestConfig();
+
+  void compareFile(const std::string& newFile, const std::string& refFile,
+    const std::unordered_map<std::string, std::string>& expectedChangedFlags, const std::string& toolchain) const;
 
 protected:
   void SetUp() override;
@@ -45,8 +49,8 @@ public:
 
   static const std::string RteTestM4;
   static const std::string RteTestM4_cprj;
+  static const std::string RteTestM4_Board_cprj;
   static const std::string RteTestM4_CompDep_cprj;
-
 };
 
 #endif // RteModelTestConfig_H
