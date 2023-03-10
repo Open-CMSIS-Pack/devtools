@@ -55,7 +55,7 @@ public:
   static std::string ConvertSpecialChars(const std::string& input);
 
 protected:
-  virtual void FormatXmlElement(std::ostringstream& xmlStream, XMLTreeElement* element, int level=0) override;
+  void FormatXmlElement(std::ostringstream& xmlStream, XMLTreeElement* element, int level=0) override;
 };
 
 #endif /* XMLFORMATTER_H */

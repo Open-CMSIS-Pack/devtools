@@ -79,14 +79,14 @@ public:
   /**
    * @brief destructor
   */
-  virtual ~RteTarget() override;
+   ~RteTarget() override;
 
 public:
   /**
    * @brief return ID of this item
    * @return ID of this item as string
   */
-  virtual const std::string& GetName() const override { return m_ID; }
+   const std::string& GetName() const override { return m_ID; }
 
   /**
    * @brief setter for ID of this item
@@ -97,7 +97,7 @@ public:
   /**
    * @brief clear the object
   */
-  virtual void Clear() override;
+   void Clear() override;
 
   /**
    * @brief return RTE model filtered for this target
@@ -133,7 +133,7 @@ public:
    * @brief return pointer to an object of type RteComponent. The default implementation returns nullptr
    * @return pointer to an object of type RteComponent
   */
-  virtual RteComponent* GetComponent() const override { return nullptr;}
+   RteComponent* GetComponent() const override { return nullptr;}
 
   /**
    * @brief determine component identified by a given component ID
@@ -506,7 +506,7 @@ public:
    * @param target pointer to given target
    * @return enumerator of type ConditionResult
   */
-  virtual ConditionResult GetDepsResult(std::map<const RteItem*, RteDependencyResult>& results, RteTarget* target) const override;
+   ConditionResult GetDepsResult(std::map<const RteItem*, RteDependencyResult>& results, RteTarget* target) const override;
 
   /**
    * @brief collect dependency results of selected components for the given target
@@ -800,12 +800,12 @@ public:
    * @brief getter for attribute value of "Dvendor"
    * @return attribute value of "Dvendor"
   */
-  virtual const std::string& GetVendorString() const override;
+   const std::string& GetVendorString() const override;
 
   /**
    * @brief set device and attribute "Dcore"
   */
-  virtual void ProcessAttributes() override;
+   void ProcessAttributes() override;
 
   /**
    * @brief add properties specific to the given device

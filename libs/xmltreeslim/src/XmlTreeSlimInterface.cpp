@@ -32,7 +32,7 @@ class XMLTreeSlimErrorConsumer : public IErrConsumer
 public:
   XMLTreeSlimErrorConsumer(XMLTreeSlimInterface* xmlTreeIf) : m_treeIf(xmlTreeIf) { }
   // consumes (outputs or ignores message), returns true if consumed and should not be output in the regular way
-  virtual bool Consume(const PdscMsg& msg, const std::string& fileName) override {
+  bool Consume(const PdscMsg& msg, const std::string& fileName) override {
     MsgLevel msgLevel = msg.GetMsgLevel();
     if (msgLevel <= MsgLevel::LEVEL_INFO || msgLevel == MsgLevel::LEVEL_TEXT)
       return false; // let the original process it

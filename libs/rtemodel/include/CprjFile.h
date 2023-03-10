@@ -40,19 +40,19 @@ public:
   /**
    * @brief destructor
   */
-  virtual ~CprjTargetElement() override;
+  ~CprjTargetElement() override;
 
   /**
    * @brief clean up the object
   */
-  virtual void Clear() override;
+  void Clear() override;
 
   /**
    * @brief recursively construct XML nodes
    * @param xmlElement pointer to a XMLTreeElement object to construct
    * @return true if processing was successful
   */
-  virtual bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
+  bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
 
   /**
    * @brief validate device and board for the target determined by RteModel object
@@ -101,7 +101,7 @@ public:
    * @brief getter for device name specified by attribute "Dname"
    * @return device name
   */
-  virtual std::string GetFullDeviceName() const override { return GetAttribute("Dname"); }
+  std::string GetFullDeviceName() const override { return GetAttribute("Dname"); }
 
   /**
    * @brief getter for processor name
@@ -316,12 +316,12 @@ public:
   /**
    * @brief destructor
   */
-  virtual ~CprjFile() override;
+  ~CprjFile() override;
 
   /**
    * @brief clean up the instance
   */
-  virtual void Clear() override;
+  void Clear() override;
 
   /**
    * @brief process a single XMLTreeElement during construction
@@ -380,7 +380,7 @@ public:
   bool IsGenerated() const override { return false; }
 
 protected:
-  virtual std::string ConstructID() override;
+   std::string ConstructID() override;
 
   CprjTargetElement* m_cprjTargetElement;
   RteFileContainer* m_files;

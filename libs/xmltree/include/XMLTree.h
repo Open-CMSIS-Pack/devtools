@@ -230,9 +230,9 @@ protected:
   XMLTree(IXmlItemBuilder* itemBuilder); // protected constructor preventing instantiating the base class
 
 public:
-  virtual ~XMLTree() override;
+  ~XMLTree() override;
 
-  virtual void Clear() override; // does not destroy XML parser!
+  void Clear() override; // does not destroy XML parser!
   virtual bool Init() ;
 
   /**

@@ -33,7 +33,7 @@ public:
   /**
    * @brief destructor
   */
-  virtual ~RteCprjProject() override;
+   ~RteCprjProject() override;
 
 
   /**
@@ -64,12 +64,12 @@ public:
   /**
    * @brief clean up the project
   */
-  virtual void Clear() override;
+   void Clear() override;
 
   /**
    * @brief create target based on cprj description
   */
-  virtual void Initialize() override;
+   void Initialize() override;
 
 public:
   /**
@@ -98,9 +98,9 @@ public:
 
 protected:
   void FillToolchainAttributes(XmlItem &attributes) const;
-  virtual RteTarget* CreateTarget(RteModel* filteredModel, const std::string& name, const std::map<std::string, std::string>& attributes) override;
-  virtual void PropagateFilteredPackagesToTargetModel(const std::string& targetName) override;
-  virtual RteComponentInstance* AddCprjComponent(RteItem* item, RteTarget* target) override;
+   RteTarget* CreateTarget(RteModel* filteredModel, const std::string& name, const std::map<std::string, std::string>& attributes) override;
+   void PropagateFilteredPackagesToTargetModel(const std::string& targetName) override;
+   RteComponentInstance* AddCprjComponent(RteItem* item, RteTarget* target) override;
   void ApplySelectedComponentsToCprjFile();
   void ApplyComponentFilesToCprjFile(RteComponentInstance* ci, RteItem* cprjComponent);
 

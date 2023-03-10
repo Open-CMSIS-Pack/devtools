@@ -59,7 +59,7 @@ public:
   /**
    * @brief virtual destructor
   */
-  virtual ~RteConditionExpression() override;
+   ~RteConditionExpression() override;
 
   /**
    * @brief get expression type. The base method is abstract.
@@ -95,13 +95,13 @@ public:
    * @brief check if this expression is dependent on selected device
    * @return true if this is a device expression that contains non-empty "Dname" attribute
   */
-  virtual bool IsDeviceDependent() const override;
+   bool IsDeviceDependent() const override;
 
   /**
    * @brief check if this expression is dependent on selected board
    * @return true if this is a device expression that contains non-empty "Bname" attribute
   */
-  virtual bool IsBoardDependent() const override;
+   bool IsBoardDependent() const override;
 
   /**
    * @brief get expression domain : Device, Toolchain, Component dependency or a reference to a condition
@@ -135,33 +135,33 @@ public:
    * @brief construct expression ID
    * @return expression ID constructed out of its tag and attributes
   */
-  virtual std::string ConstructID() override;
+   std::string ConstructID() override;
 
   /**
    * @brief validate expression after creation: attributes of different domains may not be mixed and
    * @return true if validation is passed
   */
-  virtual bool Validate() override;
+   bool Validate() override;
 
 public:
   /**
    * @brief get string to display expression to user
    * @return expression ID
   */
-  virtual std::string GetDisplayName() const override;
+   std::string GetDisplayName() const override;
 
   /**
    * @brief evaluate the expression for given context
    * @param context pointer to RteConditionContext to evaluate
    * @return evaluation result as RteItem::ConditionResult value
   */
-  virtual ConditionResult Evaluate(RteConditionContext* context) override;
+   ConditionResult Evaluate(RteConditionContext* context) override;
   /**
    * @brief get cached evaluation result for given context
    * @param context pointer to RteConditionContext to obtain cached value from
    * @return evaluation result as RteItem::ConditionResult value
   */
-  virtual ConditionResult GetConditionResult(RteConditionContext* context) const override;
+   ConditionResult GetConditionResult(RteConditionContext* context) const override;
 
   /**
    * @brief collect cached results of evaluating component dependencies by this item
@@ -169,7 +169,7 @@ public:
    * @param target RteTarget associated with condition context
    * @return overall RteItem::ConditionResult value for this item
   */
-  virtual ConditionResult GetDepsResult(std::map<const RteItem*, RteDependencyResult>& results, RteTarget* target) const override;
+   ConditionResult GetDepsResult(std::map<const RteItem*, RteDependencyResult>& results, RteTarget* target) const override;
 
 protected:
   /**
@@ -207,7 +207,7 @@ public:
    * @brief get expression type
    * @return RteConditionExpression::ACCEPT
   */
-  virtual RTEConditionExpressionType GetExpressionType() const override { return RteConditionExpression::ACCEPT; }
+   RTEConditionExpressionType GetExpressionType() const override { return RteConditionExpression::ACCEPT; }
 };
 
 /**
@@ -227,7 +227,7 @@ public:
    * @brief get expression type
    * @return RteConditionExpression::REQUIRE
   */
-  virtual RTEConditionExpressionType GetExpressionType() const override { return RteConditionExpression::REQUIRE; }
+   RTEConditionExpressionType GetExpressionType() const override { return RteConditionExpression::REQUIRE; }
 };
 
 /**
@@ -247,14 +247,14 @@ public:
    * @brief get expression type
    * @return RteConditionExpression::DENY
   */
-  virtual RTEConditionExpressionType GetExpressionType() const override { return RteConditionExpression::DENY; }
+   RTEConditionExpressionType GetExpressionType() const override { return RteConditionExpression::DENY; }
 
   /**
     * @brief evaluate the expression for given context. The method call base class implementation and negates its result
     * @param context pointer to RteConditionContext to evaluate
     * @return evaluation result as RteItem::ConditionResult value
   */
-  virtual ConditionResult Evaluate(RteConditionContext* context) override;
+   ConditionResult Evaluate(RteConditionContext* context) override;
 
 };
 
@@ -273,7 +273,7 @@ public:
   /**
    * @brief virtual destructor
   */
-  virtual ~RteCondition() override;
+   ~RteCondition() override;
 
   /**
    * @brief calculate device and board dependency flags by recursively checking all expressions: at least one expression in this or referenced conditions is dependent
@@ -285,43 +285,43 @@ public:
    * @brief get parent condition, override from RteItem
    * @return return this
   */
-  virtual RteCondition* GetCondition() const override;
+   RteCondition* GetCondition() const override;
 
   /**
    * @brief get condition with given ID
    * @param id condition ID
    * @return this if id equals this ID, otherwise one found in parent container
   */
-  virtual RteCondition* GetCondition(const std::string& id) const override; // returns this if id == this->id
+   RteCondition* GetCondition(const std::string& id) const override; // returns this if id == this->id
   /**
    * @brief return condition name
    * @return value of "id" attribute
   */
-  virtual const std::string& GetName() const override;
+   const std::string& GetName() const override;
 
   /**
    * @brief get condition name to display to user
    * @return display name combined from tag ("condition") and ID
   */
-  virtual std::string GetDisplayName() const override;
+   std::string GetDisplayName() const override;
 
 public:
   /**
    * @brief validate condition after construction
    * @return true if all child expressions are valid and no recursion is detected
   */
-  virtual bool Validate() override;
+   bool Validate() override;
   /**
    * @brief check if condition is device depended i.e at least one expression in this or referenced conditions is device dependent
    * @return cached device dependency flag
   */
-  virtual bool IsDeviceDependent() const override;
+   bool IsDeviceDependent() const override;
 
   /**
    * @brief check if condition is board depended i.e at least one expression in this or referenced conditions is board dependent
    * @return cached board dependency flag
   */
-  virtual bool IsBoardDependent() const override;
+   bool IsBoardDependent() const override;
 
 public:
   /**
@@ -330,21 +330,21 @@ public:
   * @param target RteTarget associated with condition context
   * @return overall RteItem::ConditionResult value for this item
  */
-  virtual ConditionResult GetDepsResult(std::map<const RteItem*, RteDependencyResult>& results, RteTarget* target) const override;
+   ConditionResult GetDepsResult(std::map<const RteItem*, RteDependencyResult>& results, RteTarget* target) const override;
 
   /**
     * @brief evaluate the condition for given context
     * @param context pointer to RteConditionContext to evaluate
     * @return evaluation result as RteItem::ConditionResult value
    */
-  virtual ConditionResult Evaluate(RteConditionContext* context) override;
+   ConditionResult Evaluate(RteConditionContext* context) override;
 
   /**
    * @brief get cached evaluation result for given context
    * @param context pointer to RteConditionContext to obtain cached value from
    * @return evaluation result as RteItem::ConditionResult value
   */
-  virtual ConditionResult GetConditionResult(RteConditionContext* context) const override;
+   ConditionResult GetConditionResult(RteConditionContext* context) const override;
 
 
 private:
@@ -372,7 +372,7 @@ protected:
     * @param xmlElement pointer to XMLTreeElement to process
     * @return true if successful
   */
-  virtual bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
+   bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
   /**
    * @brief set if this condition is under evaluation for given context (recursion protection)
    * @param context pointer to RteConditionContext
@@ -406,7 +406,7 @@ protected:
     * @param xmlElement pointer to XMLTreeElement to process
     * @return true if successful
   */
-  virtual bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
+   bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
 
 };
 
@@ -597,12 +597,12 @@ public:
   /**
    * @brief virtual destructor
   */
-  virtual ~RteDependencySolver() override;
+   ~RteDependencySolver() override;
 
   /**
     * @brief clear internal data and caches
    */
-  virtual void Clear() override;
+   void Clear() override;
 
 
   /**
@@ -610,13 +610,13 @@ public:
   * @param condition pointer to RteCondition to evaluate
   * @return evaluation result as RteItem::ConditionResult value
   */
-  virtual RteItem::ConditionResult EvaluateCondition(RteCondition* condition) override;
+   RteItem::ConditionResult EvaluateCondition(RteCondition* condition) override;
   /**
    * @brief evaluate expression condition, called from supplied condition expression
    * @param condition pointer to RteConditionExpression to evaluate
    * @return evaluation result as RteItem::ConditionResult value
   */
-  virtual RteItem::ConditionResult EvaluateExpression(RteConditionExpression* expr) override;
+   RteItem::ConditionResult EvaluateExpression(RteConditionExpression* expr) override;
 
   /**
    * @brief get cached component aggregates for supplied expression

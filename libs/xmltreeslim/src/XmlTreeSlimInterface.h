@@ -41,12 +41,12 @@ public:
    * @brief initialize the instance. The default implementation does nothing
    * @return true if initialization is done
   */
-  virtual bool Init() override;
+  bool Init() override;
 
   /**
    * @brief clean up instance but do not destroy XML parser
   */
-  virtual void Clear() override;
+  void Clear() override;
 
   /**
    * @brief parse XML file or buffer containing XML formatted text
@@ -54,7 +54,7 @@ public:
    * @param xmlString buffer containing XML formatted text
    * @return true if parsing was successful
   */
-  virtual bool Parse(const std::string& fileName, const std::string& xmlString) override;
+  bool Parse(const std::string& fileName, const std::string& xmlString) override;
 
 private:
   bool ParseElement(XmlTypes::XmlNode_t &node);
