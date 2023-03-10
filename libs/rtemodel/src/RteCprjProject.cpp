@@ -99,7 +99,9 @@ bool RteCprjProject::SetToolchain(const string& toolchain, const std::string& to
 
 RteTarget* RteCprjProject::CreateTarget(RteModel* filteredModel, const string& name, const map<string, string>& attributes)
 {
-  return new RteCprjTarget(this, filteredModel, name, attributes);
+  RteTarget* target = new RteCprjTarget(this, filteredModel, name, attributes);
+  CreateBoardInfo(target, GetCprjFile()->GetTargetElement());
+  return target;
 }
 
 void RteCprjProject::Initialize()

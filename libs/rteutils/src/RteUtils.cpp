@@ -15,6 +15,7 @@
 #include "RteUtils.h"
 
 #include <cstring>
+#include <sstream>
 
 using namespace std;
 
@@ -506,6 +507,16 @@ unsigned long long RteUtils::StringToULL(const std::string& value, unsigned long
   catch (const std::exception&) {
     return defaultValue;
   }
+}
+
+std::string RteUtils::LongToString(long value, int radix)
+{
+  ostringstream ss;
+  if (radix == 16) {
+    ss << showbase << hex;
+  }
+  ss << value;
+  return ss.str();
 }
 
 std::string RteUtils::Trim(const std::string& str) {

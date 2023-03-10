@@ -10,7 +10,6 @@
 
 #include "RteUtils.h"
 
-#include <sstream>
 using namespace std;
 
 const string XmlItem::EMPTY_STRING("");
@@ -86,14 +85,7 @@ bool XmlItem::SetAttribute(const char* name, const char* value)
 
 bool XmlItem::SetAttribute(const char* name, long value, int radix)
 {
-  ostringstream ss;
-  if (radix == 16) {
-    ss << showbase << hex;
-  }
-  ss << value;
-  const string s = ss.str();
-  const char* c = s.c_str();
-  return SetAttribute(name, c);
+  return SetAttribute(name, RteUtils::LongToString(value, radix).c_str());
 }
 
 bool XmlItem::SetAttributes(const map<string, string>& attributes)

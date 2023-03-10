@@ -36,26 +36,26 @@ From DFP: 18\n\
 From BSP: 0\n\
 \n\
 Devices: 10\n\
-Boards: 12\n\
+Boards: 13\n\
 \n\
 completed\n";
 
   list<string> files;
   RteFsUtils::GetPackageDescriptionFiles(files, RteModelTestConfig::CMSIS_PACK_ROOT, 3);
-  ASSERT_TRUE(files.size() > 0);
+  EXPECT_TRUE(files.size() > 0);
 
   stringstream ss;
   RteChk rteChk(ss);
   rteChk.SetFlag(RteChk::TIME, '-');
   rteChk.AddFileDir(RteModelTestConfig::CMSIS_PACK_ROOT);
   int res = rteChk.RunCheckRte();
-  ASSERT_EQ(res, 0);
-  ASSERT_EQ(rteChk.GetPackCount(), 5);
-  ASSERT_EQ(rteChk.GetComponentCount(), 42);
-  ASSERT_EQ(rteChk.GetDeviceCount(), 10);
-  ASSERT_EQ(rteChk.GetBoardCount(), 12);
+  EXPECT_EQ(res, 0);
+  EXPECT_EQ(rteChk.GetPackCount(), 5);
+  EXPECT_EQ(rteChk.GetComponentCount(), 42);
+  EXPECT_EQ(rteChk.GetDeviceCount(), 10);
+  EXPECT_EQ(rteChk.GetBoardCount(), 13);
 
   string s = RteUtils::EnsureLf(ss.str());
-  ASSERT_EQ(s, summary);
+  EXPECT_EQ(s, summary);
 }
 // end of RteChkTest.cpp
