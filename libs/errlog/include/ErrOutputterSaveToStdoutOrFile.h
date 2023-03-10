@@ -17,7 +17,7 @@
 class ErrOutputterSaveToStdoutOrFile : public ErrOutputter
 {
 public:
-  virtual void Save() override { // called by ErrLog::Save saves/outputs collected messages
+  void Save() override { // called by ErrLog::Save saves/outputs collected messages
     if(m_logText.empty()) {
       return;
     }

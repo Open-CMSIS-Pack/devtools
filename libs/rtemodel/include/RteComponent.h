@@ -45,7 +45,7 @@ public:
   /**
    * @brief virtual destructor
   */
-  virtual ~RteComponent() override;
+   ~RteComponent() override;
 
   /**
    * @brief get number of files described in this component
@@ -82,7 +82,7 @@ public:
    * @brief check if this item represents <api> element
    * @return false, the base supports only <component>
   */
-  virtual bool IsApi() const override { return false; }
+   bool IsApi() const override { return false; }
 
   /**
    * @brief check if this component implements an API
@@ -121,24 +121,24 @@ public:
    * associated condition contains expressions that evaluate "Dname" attribute
    * @return true if device dependent
   */
-  virtual bool IsDeviceDependent() const override;
+   bool IsDeviceDependent() const override;
 
   /**
    * @brief construct this component from XML data
    * @param xmlElement pointer to XMLTreeElement to construct from
    * @return true if successful
   */
-  virtual bool Construct(XMLTreeElement* xmlElement) override;
+   bool Construct(XMLTreeElement* xmlElement) override;
   /**
    * @brief clear internal data and children
   */
-  virtual void Clear() override;
+   void Clear() override;
 
   /**
    * @brief validate component after construction, in particular checks for duplicated component declarations
    * @return true if validated sucessfully
   */
-  virtual bool Validate() override;
+   bool Validate() override;
 
   /**
    * @brief get parent component bundle if any
@@ -150,13 +150,13 @@ public:
    * @brief return component name (reserved for future)
    * @return "Cname" attribute value, currently empty string
   */
-  virtual const std::string& GetName() const override;
+   const std::string& GetName() const override;
 
   /**
    * @brief get component display name to be used in the tree views
    * @return "Csub" attribute value if set, otherwise "Cgroup" attribute value
   */
-  virtual std::string GetDisplayName() const override;
+   std::string GetDisplayName() const override;
 
   /**
    * @brief get full component name to display
@@ -174,57 +174,57 @@ public:
    * @brief get "Cclass" attribute value from this item or parent bundle
    * @return "Cclass" attribute value
   */
-  virtual const std::string& GetCclassName() const override;
+   const std::string& GetCclassName() const override;
 
   /**
    * @brief get "Cbundle" attribute value from this item or parent bundle
    * @return "Cbundle" attribute value, empty if component does not belong to a bundle
   */
-  virtual const std::string& GetCbundleName() const override;
+   const std::string& GetCbundleName() const override;
 
   /**
    * @brief get component version string from this item or parent bundle
    * @return version string
   */
-  virtual const std::string& GetVersionString() const override;
+   const std::string& GetVersionString() const override;
 
   /**
    * @brief get component vendor string from this item or parent( bundle, component container or pack)
    * @return vendor string
   */
-  virtual const std::string& GetVendorString() const override;
+   const std::string& GetVendorString() const override;
 
   /**
    * @brief get path to component documentation
    * @return an URL or absolute filename to doc file if any
   */
-  virtual std::string GetDocFile() const override;
+   std::string GetDocFile() const override;
 
   /**
    * @brief get unique component ID
    * @param withVersion flag to include version to the ID
    * @return constructed component ID
   */
-  virtual std::string GetComponentUniqueID(bool withVersion) const override;
+   std::string GetComponentUniqueID(bool withVersion) const override;
 
   /**
    * @brief get parent component
    * @return this since components cannot be nested
   */
-  virtual RteComponent* GetComponent() const override { return const_cast<RteComponent*>(this); }
+   RteComponent* GetComponent() const override { return const_cast<RteComponent*>(this); }
 
   /**
    * @brief get cached result of evaluating associated condition
    * @param context pointer to RteConditionContext
    * @return RteItem::ConditionResult value
   */
-  virtual ConditionResult GetConditionResult(RteConditionContext* context) const override;
+   ConditionResult GetConditionResult(RteConditionContext* context) const override;
 
   /**
    * @brief insert this component in the supplied model
    * @param model pointer to RteModel
   */
-  virtual void InsertInModel(RteModel* model) override;
+   void InsertInModel(RteModel* model) override;
 
   /**
    * @brief check if this component dominates over the supplied one
@@ -247,12 +247,12 @@ protected:
    * @param xmlElement pointer to XMLTreeElement to process
    * @return true if successful
  */
-  virtual bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
+   bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
   /**
    * @brief construct component ID
    * @return constructed component ID string
   */
-  virtual std::string ConstructID() override;
+   std::string ConstructID() override;
 
   /**
    * @brief item corresponding <files> element
@@ -283,39 +283,39 @@ public:
    * @brief validate API item after construction
    * @return true if validation is successful
   */
-  virtual bool Validate() override;
+   bool Validate() override;
 
   /**
    * @brief check if this item represents <api> element
    * @return true
   */
-  virtual bool IsApi() const override { return true; }
+   bool IsApi() const override { return true; }
 
   /**
    * @brief get API version string
    * @return "Capiversion" attribute value
   */
-  virtual const std::string& GetVersionString() const override { return GetAttribute("Capiversion"); }
+   const std::string& GetVersionString() const override { return GetAttribute("Capiversion"); }
 
   /**
    * @brief return full display name
    * @return string in format  'Cvendor::Cclass:Cgroup:Cversion (API)'
   */
-  virtual std::string GetFullDisplayName() const override;
+   std::string GetFullDisplayName() const override;
 
   /**
    * @brief get API ID
    * @param withVersion ignored argument, treated as false
    * @return API ID
   */
-  virtual std::string GetComponentUniqueID(bool withVersion) const override;
+   std::string GetComponentUniqueID(bool withVersion) const override;
 
   /**
    * @brief get API ID
    * @param withVersion ignored argument, treated as false
    * @return API ID
   */
-  virtual std::string GetComponentID(bool withVersion) const override;
+   std::string GetComponentID(bool withVersion) const override;
 };
 
 class RteComponentClass;
@@ -338,7 +338,7 @@ public:
    * @return vendor string
   */
 
-  virtual const std::string& GetVendorString() const override;
+   const std::string& GetVendorString() const override;
 
   /**
    * @brief get pointer to RteComponentClass item containing this container
@@ -377,7 +377,7 @@ protected:
    * @param xmlElement pointer to XMLTreeElement to process
    * @return true if successful
   */
-  virtual bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
+   bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
 
   /**
    * @brief construct child component
@@ -405,7 +405,7 @@ public:
    * @brief get display name
    * @return bundle display name in format Cvendor.Cbundle
   */
-  virtual std::string GetDisplayName() const override;
+   std::string GetDisplayName() const override;
 
   /**
    * @brief get full bundle name to display
@@ -417,19 +417,19 @@ public:
    * @brief get version string
    * @return "Cversion" attribute value
   */
-  virtual const std::string& GetVersionString() const override;
+   const std::string& GetVersionString() const override;
   /**
    * @brief insert this bundle and its components in the supplied model
    * @param model pointer to RteModel
   */
-  virtual void InsertInModel(RteModel* model) override;
+   void InsertInModel(RteModel* model) override;
 
 protected:
   /**
    * @brief construct bundle ID
    * @return bundle ID string in the format Cvendor.Cbundle::Cclass:Cversion
   */
-  virtual std::string ConstructID() override;
+   std::string ConstructID() override;
 };
 
 typedef std::map<std::string, RteBundle*, AlnumCmp::LenGreater> RteBundleMap;
@@ -478,7 +478,7 @@ public:
   /**
    * @brief virtual destructor
   */
-  virtual ~RteComponentAggregate() override;
+   ~RteComponentAggregate() override;
 
   /**
    * @brief add component to this aggregate
@@ -612,13 +612,13 @@ public:
    * @brief check if aggregate represents a multi-instance component
    * @return true if multi-instance
   */
-  virtual bool HasMaxInstances() const override { return m_bHasMaxInstances || m_maxInstances > 1; }
+   bool HasMaxInstances() const override { return m_bHasMaxInstances || m_maxInstances > 1; }
 
   /**
    * @brief get maximal number of instances that can be select for the component
    * @return maximal number of instances as integer value
   */
-  virtual int GetMaxInstances() const override { return m_maxInstances; }
+   int GetMaxInstances() const override { return m_maxInstances; }
 
   /**
    * @brief remove entries in component collection that do not contain a pointer to RteComponent
@@ -631,7 +631,7 @@ public:
    * @brief check if this component aggregate is empty, i.e. does not contain any entry in component collection
    * @return true if empty
   */
-  virtual bool IsEmpty() const override;
+   bool IsEmpty() const override;
 
   /**
    * @brief check if at least one component passes current filter.
@@ -665,13 +665,13 @@ public:
    * @param attributes map of key-value pairs to match against component attributes
    * @return true if at least one component has all attributes found in the supplied map
   */
-  virtual bool MatchComponentAttributes(const std::map<std::string, std::string>& attributes) const override;
+   bool MatchComponentAttributes(const std::map<std::string, std::string>& attributes) const override;
 
   /**
    * @brief get short component aggregate display name to use in a tree view
    * @return value of "Csub" attribute if set, "Cgroup" one otherwise
   */
-  virtual std::string GetDisplayName() const override;
+   std::string GetDisplayName() const override;
 
   /**
    * @brief get full component aggregate display name
@@ -684,25 +684,25 @@ public:
    * @brief get active RteComponent, i.e. the one with currently selected variant and version
    * @return pointer to RteComponent
   */
-  virtual RteComponent* GetComponent() const override;
+   RteComponent* GetComponent() const override;
 
   /**
    * @brief get active component description
    * @return component description as string
   */
-  virtual const std::string& GetDescription() const override;
+   const std::string& GetDescription() const override;
 
   /**
    * @brief get document file of active component
    * @return component document file or URL
   */
-  virtual std::string GetDocFile() const override;
+   std::string GetDocFile() const override;
 
   /**
    * @brief get pack containing active component
    * @return pointer to RtePackage
   */
-  virtual RtePackage* GetPackage() const override;
+   RtePackage* GetPackage() const override;
 
   /**
    * @brief get RteComponent item for specified variant and version
@@ -737,34 +737,34 @@ public:
   /**
    * @brief clear internal aggregate structure
   */
-  virtual void Clear() override;
+   void Clear() override;
 
   /**
    * @brief get full or common pack ID of active component
    * @param withVersion flag to return full (true) or common (false) pack ID
    * @return pack ID of active component
   */
-  virtual std::string GetPackageID(bool withVersion = true) const override;
+   std::string GetPackageID(bool withVersion = true) const override;
 
   /**
    * @brief get a tooltip string to be displayed in component selection view
    * @return tooltip string containing full aggregate display name and pack ID of the active component
   */
-  virtual std::string GetToolTip() const override;
+   std::string GetToolTip() const override;
 
   /**
    * @brief evaluate condition associated with the component
    * @param context pointer to RteConditionContext to evaluate
    * @return RteItem::ConditionResult, IGNORED if active component has no condition
   */
-  virtual ConditionResult Evaluate(RteConditionContext* context) override;
+   ConditionResult Evaluate(RteConditionContext* context) override;
 
   /**
    * @brief get cached evaluation result for given context
    * @param context pointer to RteConditionContext to obtain cached value from
    * @return evaluation result as RteItem::ConditionResult value
   */
-  virtual ConditionResult GetConditionResult(RteConditionContext* context) const override;
+   ConditionResult GetConditionResult(RteConditionContext* context) const override;
 
   /**
    * @brief collect cached results of evaluating component dependencies by this item
@@ -772,7 +772,7 @@ public:
    * @param target RteTarget associated with condition context
    * @return overall RteItem::ConditionResult value for this item
   */
-  virtual ConditionResult GetDepsResult(std::map<const RteItem*, RteDependencyResult>& results, RteTarget* target) const override;
+   ConditionResult GetDepsResult(std::map<const RteItem*, RteDependencyResult>& results, RteTarget* target) const override;
 
 private:
   std::map<std::string, RteComponentVersionMap> m_components; // key: variant, value: version ordered component std::list (descending);
@@ -802,7 +802,7 @@ public:
   /**
    * @brief virtual destructor
   */
-  virtual ~RteComponentGroup() override;
+   ~RteComponentGroup() override;
 
   /**
    * @brief get API associated with the group (Cgroup level)
@@ -952,25 +952,25 @@ public:
    * @brief get tooltip to show in component selection view
    * @return tooltip string with group name and API information if available
   */
-  virtual std::string GetToolTip() const override;
+   std::string GetToolTip() const override;
 
 public:
   /**
    * @brief check if group is empty
    * @return true if group contains no data: API, sub-groups and aggregates
   */
-  virtual bool IsEmpty() const override;
+   bool IsEmpty() const override;
 
   /**
    * @brief clear internal data
   */
-  virtual void Clear() override;
+   void Clear() override;
 
   /**
    * @brief get group display name
    * @return display name depending on level: value of "Cclass", "Cgroup" or "Csub" component attribute
   */
-  virtual std::string GetDisplayName() const override;
+   std::string GetDisplayName() const override;
 
   /**
    * @brief check if group or at least one of its sub-groups contains selected aggregates
@@ -988,32 +988,32 @@ public:
    * @brief get taxonomy item ID corresponding group's Cclass and/or Croup information
    * @return taxonomy description ID
   */
-  virtual std::string GetTaxonomyDescriptionID() const override;
+   std::string GetTaxonomyDescriptionID() const override;
 
   /**
    * @brief get group description
    * @return description taken from API or taxonomy
   */
-  virtual const std::string& GetDescription() const override;
+   const std::string& GetDescription() const override;
 
   /**
    * @brief get group document file
    * @return file or URL to documentation taken from API or taxonomy
   */
-  virtual std::string GetDocFile() const override;
+   std::string GetDocFile() const override;
 
   /**
    * @brief get API version (Cgroup level)
    * @return API version is available, empty string otherwise
   */
-  virtual const std::string& GetApiVersionString() const override;
+   const std::string& GetApiVersionString() const override;
 
   /**
    * @brief evaluate conditions associated with components children recursively
    * @param context pointer to RteConditionContext to evaluate
    * @return overall (worst) evaluation result out of all evaluated conditions as ConditionResult value
   */
-  virtual ConditionResult Evaluate(RteConditionContext* context) override;
+   ConditionResult Evaluate(RteConditionContext* context) override;
 
 
   /**
@@ -1024,7 +1024,7 @@ public:
    * MISSING if associated API is not available,
    * otherwise the worst result from all components recursively
   */
-  virtual ConditionResult GetConditionResult(RteConditionContext* context) const override;
+   ConditionResult GetConditionResult(RteConditionContext* context) const override;
 
   /**
    * @brief collect cached results of evaluating component dependencies by this item
@@ -1035,7 +1035,7 @@ public:
    * MISSING if associated API is not available,
    * otherwise the worst result from all components recursively
   */
-  virtual ConditionResult GetDepsResult(std::map<const RteItem*, RteDependencyResult>& results, RteTarget* target) const override;
+   ConditionResult GetDepsResult(std::map<const RteItem*, RteDependencyResult>& results, RteTarget* target) const override;
 
   /**
    * @brief find recursively component aggregates matching supplied attributes
@@ -1089,7 +1089,7 @@ public:
   /**
    * @brief virtual destructor
   */
-  virtual ~RteComponentClass() override;
+   ~RteComponentClass() override;
 
   /**
    * @brief set active bundle
@@ -1116,55 +1116,55 @@ public:
     * @param name bundle name
     * @param id bundle ID
    */
-  virtual void AddBundleName(const std::string& name, const std::string& id) override;
+   void AddBundleName(const std::string& name, const std::string& id) override;
 
   /**
    * @brief get pointer to RteComponentClass item containing this container
    * @return return this
   */
-  virtual RteComponentClass* GetComponentClass() const override;
+   RteComponentClass* GetComponentClass() const override;
 
   /**
    * @brief return active selected bundle name
    * @return selected bundle name
   */
-  virtual const std::string& GetSelectedBundleName() const override { return m_selectedBundleName; }
+   const std::string& GetSelectedBundleName() const override { return m_selectedBundleName; }
 
   /**
    * @brief return active selected bundle name
    * @return selected bundle name
   */
-  virtual const std::string& GetSelectedBundleShortID() const override;
+   const std::string& GetSelectedBundleShortID() const override;
 
   /**
    * @brief get component class documentation file or URL
    * @return filename or URL bundle if available or taxonomy
   */
-  virtual std::string GetDocFile() const override;
+   std::string GetDocFile() const override;
 
   /**
    * @brief get taxonomy description ID for associated component class
    * @return group name corresponding "Cclass" component attribute value
   */
-  virtual std::string GetTaxonomyDescriptionID() const override;
+   std::string GetTaxonomyDescriptionID() const override;
 
   /**
    * @brief get component class description
    * @return description string taken from bundle if available or taxonomy
   */
-  virtual const std::string& GetDescription() const override;
+   const std::string& GetDescription() const override;
 
   /**
     * @brief get a tooltip string to be displayed in component selection view
     * @return tooltip string containing active bundle name and  its pack ID
    */
-  virtual std::string GetToolTip() const override;
+   std::string GetToolTip() const override;
 
   /**
    * @brief adjust component selection in the group when active bundle changes
    * @param newBundleName name of newly selected bundle
   */
-  virtual void AdjustComponentSelection(const std::string& newBundleName) override;
+   void AdjustComponentSelection(const std::string& newBundleName) override;
 
 private:
   std::string m_selectedBundleName; // selected bundle name
@@ -1187,7 +1187,7 @@ public:
    * @param name component class name
    * @return pointer to RteComponentGroup representing RteComponentClass
   */
-  virtual RteComponentGroup* CreateGroup(const std::string& name) override;
+   RteComponentGroup* CreateGroup(const std::string& name) override;
 
   /**
    * @brief find recursively component aggregates matching supplied attributes
@@ -1195,14 +1195,14 @@ public:
    * @param components std::set collection of RteComponentAggregate pointer to fill
    * @return overall matching result as RteItem::ConditionResult value
   */
-  virtual ConditionResult GetComponentAggregates(const XmlItem& componentAttributes, std::set<RteComponentAggregate*>& components) const override;
+   ConditionResult GetComponentAggregates(const XmlItem& componentAttributes, std::set<RteComponentAggregate*>& components) const override;
 
   /**
    * @brief find component aggregate matching supplied instance to resolve a component
    * @param ci pointer to RteComponentInstance to match
    * @return pointer to RteComponentAggregate if found, nullptr otherwise
   */
-  virtual RteComponentAggregate* FindComponentAggregate(RteComponentInstance* ci) const override;
+   RteComponentAggregate* FindComponentAggregate(RteComponentInstance* ci) const override;
 
   /**
    * @brief find component class with given name
@@ -1215,13 +1215,13 @@ public:
    * @brief check if at least one component passes current filter
    * @return true (top is always available)
   */
-  virtual bool IsFiltered() const override { return true; }
+   bool IsFiltered() const override { return true; }
 
   /**
    * @brief check if at least one component is selected
    * @return 1 (top container is always treated as "selected")
   */
-  virtual int IsSelected() const override { return 1; }
+   int IsSelected() const override { return 1; }
 };
 
 #endif // RteComponent_H

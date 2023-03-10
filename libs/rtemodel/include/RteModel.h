@@ -52,7 +52,7 @@ public:
   /**
    * @brief virtual destructor
   */
-  virtual ~RteModel() override;
+   ~RteModel() override;
 
   /**
    * @brief cleanup the object
@@ -63,7 +63,7 @@ public:
    * @brief getter for RteCallback object
    * @return RteCallback pointer
   */
-  virtual RteCallback* GetCallback() const override;
+   RteCallback* GetCallback() const override;
 
   /**
    * @brief setter for RteCallback object
@@ -128,7 +128,7 @@ public:
    * @brief get pointer to parent RtePackage
    * @return nullptr since RteModel does not have parent RtePackage
   */
-  virtual RtePackage* GetPackage() const override { return nullptr;}
+   RtePackage* GetPackage() const override { return nullptr;}
 
   /**
    * @brief getter for package filter object
@@ -215,7 +215,7 @@ public:
    * @brief getter for component. Default implementation returns nullptr
    * @return nullptr in the default implementation
   */
-  virtual RteComponent* GetComponent() const override { return nullptr;}
+   RteComponent* GetComponent() const override { return nullptr;}
 
   /**
    * @brief getter for api by given component attributes
@@ -309,13 +309,13 @@ public:
    * @param conditionId given condition ID
    * @return nullptr in the default implementation
   */
-  virtual RteCondition* GetCondition(const std::string& conditionId) const override { return nullptr;}
+   RteCondition* GetCondition(const std::string& conditionId) const override { return nullptr;}
 
   /**
    * @brief getter for condition. Default returns nullptr
    * @return nullptr in the default implementation
   */
-  virtual RteCondition* GetCondition() const override { return nullptr;}
+   RteCondition* GetCondition() const override { return nullptr;}
 
   /**
    * @brief getter for collection of device vendors
@@ -417,7 +417,7 @@ public:
    * @brief getter for this pointer
    * @return this pointer
   */
-  virtual RteModel* GetModel() const override{ return const_cast<RteModel*>(this); }
+   RteModel* GetModel() const override{ return const_cast<RteModel*>(this); }
 
   /**
    * @brief getter for package state
@@ -428,20 +428,20 @@ public:
   /**
    * @brief clean up this object
   */
-  virtual void Clear() override;
+   void Clear() override;
 
   /**
    * @brief construct CMSIS RTE data model given by XMLTreeElement object
    * @param xmlTree given XMLTreeElement object
    * @return true if successful
   */
-  virtual bool Construct(XMLTreeElement* xmlTree) override;
+   bool Construct(XMLTreeElement* xmlTree) override;
 
   /**
    * @brief validate this object
    * @return true if validation is successful
   */
-  virtual bool Validate() override;
+   bool Validate() override;
 
 public:
   /**
@@ -609,18 +609,18 @@ public:
   /**
    * @brief clean up CMSIS RTE data model and loaded projects
   */
-  virtual void Clear() override;
+   void Clear() override;
 
   /**
    * @brief clean up all project targets and CMSIS RTE data model
   */
-  virtual void ClearModel() override;
+   void ClearModel() override;
 
   /**
    * @brief setter for RteCallback object
    * @param callback given RteCallback object to set
   */
-  virtual void SetCallback(RteCallback* callback) override;
+   void SetCallback(RteCallback* callback) override;
 
 public:
   /**
@@ -654,7 +654,7 @@ public:
    * @brief getter for a project. Default returns nullptr
    * @return
   */
-  virtual RteProject* GetProject() const override { return nullptr;}
+   RteProject* GetProject() const override { return nullptr;}
 
   /**
    * @brief remove all projects

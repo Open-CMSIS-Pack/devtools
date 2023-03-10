@@ -910,7 +910,7 @@ public:
    * @param xmlElement pointer to XMLTreeElement to process
    * @return true if successful
    */
-  virtual bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
+   bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
 };
 
 
@@ -953,7 +953,7 @@ public:
    * @brief set filename associated with the root item this instance belongs to
    * @param rootFileName absolute file name string
   */
-  virtual void SetRootFileName(const std::string& rootFileName) {
+   void SetRootFileName(const std::string& rootFileName) override {
     m_rootFileName = rootFileName;
   }
 

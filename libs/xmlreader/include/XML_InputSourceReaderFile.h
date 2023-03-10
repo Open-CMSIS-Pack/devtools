@@ -21,15 +21,15 @@ public:
   XML_InputSourceReaderFile() : XML_InputSourceReader(), m_fpInFile(0), m_bFile(false) {
   }
 
-  virtual ~XML_InputSourceReaderFile() override {
+  ~XML_InputSourceReaderFile() override {
     XML_InputSourceReaderFile::Close();
   }
 
-  virtual bool IsValid() const override {
+  bool IsValid() const override {
     return m_bFile ? m_fpInFile != NULL : true;
   }
 
-  virtual void Close() override {
+  void Close() override {
     if (m_fpInFile) {
       fclose(m_fpInFile);
       m_fpInFile = 0;
@@ -38,7 +38,7 @@ public:
     XML_InputSourceReader::Close();
   }
 
-  virtual size_t ReadLine(char* buf, size_t maxLen) override {
+  size_t ReadLine(char* buf, size_t maxLen) override {
     if (m_bFile) {
       if (m_fpInFile) {
         return fread(buf, sizeof(char), maxLen, m_fpInFile);
@@ -49,7 +49,7 @@ public:
   }
 
 protected:
-  virtual XmlTypes::Err DoOpen() override {
+  XmlTypes::Err DoOpen() override {
     if (m_source->xmlString && strlen(m_source->xmlString) > 0) {
       m_bFile = false;
       return XML_InputSourceReader::DoOpen();

@@ -41,7 +41,7 @@ public:
   /**
    * @brief virtual destructor
   */
-  virtual ~RteGenerator() override;
+   ~RteGenerator() override;
 
   /**
    * @brief get generator commands for all host types without expansion
@@ -82,25 +82,25 @@ public:
    * @brief get generator device name
    * @return device name
   */
-  virtual const std::string& GetDeviceName() const override { return m_deviceAttributes.GetDeviceName(); }
+   const std::string& GetDeviceName() const override { return m_deviceAttributes.GetDeviceName(); }
 
   /**
    * @brief get generator device vendor
    * @return device vendor
   */
-  virtual const std::string& GetDeviceVendor() const override { return m_deviceAttributes.GetDeviceVendor(); }
+   const std::string& GetDeviceVendor() const override { return m_deviceAttributes.GetDeviceVendor(); }
 
   /**
    * @brief get device variant
    * @return device variant name
   */
-  virtual const std::string& GetDeviceVariantName() const override { return m_deviceAttributes.GetDeviceVariantName(); }
+   const std::string& GetDeviceVariantName() const override { return m_deviceAttributes.GetDeviceVariantName(); }
 
   /**
    * @brief get processor name
    * @return processor name
   */
-  virtual const std::string& GetProcessorName() const override { return m_deviceAttributes.GetProcessorName(); }
+   const std::string& GetProcessorName() const override { return m_deviceAttributes.GetProcessorName(); }
 
   /**
    * @brief get all device attributes
@@ -183,19 +183,19 @@ public:
    * @brief get generator name
    * @return generator ID
   */
-  virtual const std::string& GetName() const override { return GetAttribute("id"); }
+   const std::string& GetName() const override { return GetAttribute("id"); }
 
   /**
    * @brief get generator name
    * @return generator ID
   */
-  virtual const std::string& GetGeneratorName() const override { return GetName(); }
+   const std::string& GetGeneratorName() const override { return GetName(); }
 
 public:
   /**
    * @brief clear internal data structures
   */
-  virtual void Clear() override;
+   void Clear() override;
 
 protected:
   /**
@@ -203,12 +203,12 @@ protected:
    * @param xmlElement pointer to XMLTreeElement to process
    * @return true if successful
    */
-  virtual bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
+   bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
   /**
    * @brief construct generator ID
    * @return value of "id" attribute
   */
-  virtual std::string ConstructID() override { return GetAttribute("id"); }
+   std::string ConstructID() override { return GetAttribute("id"); }
 
 private:
   RteItem m_deviceAttributes;
@@ -241,7 +241,7 @@ public:
    * @param xmlElement pointer to XMLTreeElement to process
    * @return true if successful
    */
-  virtual bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
+   bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
 };
 
 #endif // RteGenerator_H

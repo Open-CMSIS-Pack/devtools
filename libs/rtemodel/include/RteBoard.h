@@ -32,7 +32,7 @@ public:
   /**
    * @brief virtual destructor
   */
-  virtual ~RteBoard() override;
+   ~RteBoard() override;
   /**
    * @brief get mounted device name in the format Dname[,Dvendor]
    * @param withVendor flag to indicate to append vendor string
@@ -54,25 +54,25 @@ public:
    * @brief get board name to present to user
    * @return string with board name and revision
   */
-  virtual std::string GetDisplayName() const override;
+   std::string GetDisplayName() const override;
 
   /**
    * @brief get board name
    * @return board name string
   */
-  virtual const std::string& GetName() const override;
+   const std::string& GetName() const override;
 
   /**
    * @brief get board vendor
    * @return board vendor as string
   */
-  virtual const std::string& GetVendorString() const override;
+   const std::string& GetVendorString() const override;
 
   /**
    * @brief get board version string from its revision
    * @return version string
   */
-  virtual const std::string& GetVersionString() const override { return GetRevision(); };
+   const std::string& GetVersionString() const override { return GetRevision(); };
 
   /**
    * @brief get board revision
@@ -166,7 +166,7 @@ public:
   /**
    * @brief clear internal data and calls base class implementation
   */
-  virtual void Clear() override;
+   void Clear() override;
 
 protected:
   /**
@@ -174,13 +174,13 @@ protected:
    * @param xmlElement pointer to XMLTreeElement to process
    * @return true if successful
  */
-  virtual bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
+   bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
 
   /**
    * @brief construct board ID
    * @return board ID string including name and revision
   */
-  virtual std::string ConstructID() override;
+   std::string ConstructID() override;
 
   /**
    * @brief add memory description to internal description string
@@ -220,7 +220,7 @@ public:
    * @param xmlElement pointer to XMLTreeElement to process
    * @return true if successful
  */
-  virtual bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
+   bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
 };
 
 // helper compare class for std::map container, returns true if a > b

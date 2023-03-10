@@ -44,7 +44,7 @@ public:
    * @param name attribute name, can be empty
    * @return true if value represents path
   */
-  virtual bool IsPath(const std::string& tag, const std::string& name) const override;
+   bool IsPath(const std::string& tag, const std::string& name) const override;
 
   /**
     * @brief adjust attribute value
@@ -54,7 +54,7 @@ public:
     * @param lineNumber line number in the XML file
     * @return adjusted attribute value.
    */
-  virtual std::string AdjustAttributeValue(const std::string& tag, const std::string& name, const std::string& value, int lineNumber) override;
+   std::string AdjustAttributeValue(const std::string& tag, const std::string& name, const std::string& value, int lineNumber) override;
 
 protected:
   bool m_bConvertPaths; //flag telling if to convert paths to OS format

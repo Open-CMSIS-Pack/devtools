@@ -41,7 +41,7 @@ public:
   /**
    * @brief virtual destructor
   */
-  virtual ~RteXmlTreeSlim() override { delete m_XmlValueAdjuster; }
+   ~RteXmlTreeSlim() override { delete m_XmlValueAdjuster; }
 };
 
 /**
@@ -57,7 +57,7 @@ public:
   RteKernelSlim(RteCallback* callback = nullptr) : RteKernel(callback) {}
 
 protected:
-  virtual XMLTree* CreateXmlTree() const override { return new RteXmlTreeSlim();}
+   XMLTree* CreateXmlTree() const override { return new RteXmlTreeSlim();}
 };
 
 #endif // RteKernelSlim_H

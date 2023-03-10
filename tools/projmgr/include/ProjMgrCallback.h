@@ -57,19 +57,19 @@ public:
   /**
    * @brief clear all output messages
   */
-  virtual void ClearOutput() override;
+  void ClearOutput() override;
 
   /**
    * @brief add message to output message list
    * @param message error message to be added
   */
-  virtual void OutputErrMessage(const std::string& message) override;
+  void OutputErrMessage(const std::string& message) override;
 
   /**
    * @brief output specified message
    * @param message string to output specified message
   */
-  virtual void OutputMessage(const std::string& message) override;
+  void OutputMessage(const std::string& message) override;
 
   /**
    * @brief create error message string and add it to message list
@@ -77,7 +77,7 @@ public:
    * @param message error message
    * @param object file in which error occured
   */
-  virtual void Err(const std::string& id, const std::string& message, const std::string& object = RteUtils::EMPTY_STRING) override;
+  void Err(const std::string& id, const std::string& message, const std::string& object = RteUtils::EMPTY_STRING) override;
 
 protected:
   std::list<std::string> m_errorMessages;

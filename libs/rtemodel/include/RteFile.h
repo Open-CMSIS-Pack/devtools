@@ -96,7 +96,7 @@ public:
    * @brief validate item after construction
    * @return true if valid
   */
-  virtual bool Validate() override;
+   bool Validate() override;
 
   /**
    * @brief check if file has copy role
@@ -154,18 +154,18 @@ public:
    * @param xmlElement pointer to XMLTreeElement to construct from
    * @return true if successful
   */
-  virtual bool Construct(XMLTreeElement* xmlElement) override;
+   bool Construct(XMLTreeElement* xmlElement) override;
   /**
    * @brief construct file ID out of "name" attribute and version
    * @return string ID
   */
-  virtual std::string ConstructID() override;
+   std::string ConstructID() override;
 
   /**
    * @brief get file version string
    * @return "version" attribute value if set, otherwise parent component version
   */
-  virtual const std::string& GetVersionString() const override;
+   const std::string& GetVersionString() const override;
   /**
    * @brief construct a comment string that can be shown in a window or view displaying project structure next to filename
    * @return constructed file comment string if the file belongs to a component, empty string otherwise
@@ -288,7 +288,7 @@ public:
   * @param xmlElement pointer to XMLTreeElement to process
   * @return true if successful
 */
-  virtual bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
+   bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
 };
 
 /**

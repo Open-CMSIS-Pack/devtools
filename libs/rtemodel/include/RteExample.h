@@ -31,7 +31,7 @@ public:
   /**
    * @brief virtual destructor
   */
-  virtual ~RteExample() override;
+   ~RteExample() override;
 
   /**
    * @brief get collection of keywords in example meta-data
@@ -91,30 +91,30 @@ public:
   /**
    * @brief clear internal data and call base class implementation
   */
-  virtual void Clear() override;
+   void Clear() override;
 
   /**
    * @brief validate item after construction
    * @return true if valid
   */
-  virtual bool Validate() override;
+   bool Validate() override;
 
   /**
    * @brief get name to display to user
    * @return example name
   */
-  virtual std::string GetDisplayName() const override { return GetName(); }
+   std::string GetDisplayName() const override { return GetName(); }
 
   /**
    * @brief get example vendor
    * @return vendor string
   */
-  virtual const std::string& GetVendorString() const override;
+   const std::string& GetVendorString() const override;
   /**
    * @brief get example version
    * @return version string
   */
-  virtual const std::string& GetVersionString() const override;
+   const std::string& GetVersionString() const override;
 
   /**
    * @brief get project pathname to load in the specified development environment
@@ -136,14 +136,14 @@ protected:
    * @brief construct example ID
    * @return example ID string constructed out of name, board name and board vendor
   */
-  virtual std::string ConstructID() override;
+   std::string ConstructID() override;
 
   /**
     * @brief process a single XMLTreeElement during construction
     * @param xmlElement pointer to XMLTreeElement to process
     * @return true if successful
   */
-  virtual bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
+   bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
 
   RteItem* m_board; // development board the example refers to
   std::set<std::string> m_keywords; // example keywords

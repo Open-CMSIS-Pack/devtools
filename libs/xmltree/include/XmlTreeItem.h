@@ -407,14 +407,14 @@ public:
    * @brief check if instance is empty
    * @return true if instance is empty otherwise false
   */
-  virtual bool IsEmpty() const override { return !HasChildren() && XmlItem::IsEmpty(); }
+  bool IsEmpty() const override { return !HasChildren() && XmlItem::IsEmpty(); }
 
   /**
    * @brief check if the given name is an attribute one
    * @param keyOrTag attribute name
    * @return true if string corresponds to attribute name
   */
-  virtual bool IsAttributeKey(const std::string& keyOrTag) const override {
+  bool IsAttributeKey(const std::string& keyOrTag) const override {
     return !GetText().empty() || HasAttribute(keyOrTag);
   };
 
@@ -435,7 +435,7 @@ public:
    * @param keyOrTag name of attribute or child
    * @param value string to set
   */
-  virtual void SetItemValue(const std::string& keyOrTag, const std::string& value) override {
+  void SetItemValue(const std::string& keyOrTag, const std::string& value) override {
     if (IsAttributeKey(keyOrTag)) {
       AddAttribute(keyOrTag, value);
     } else {

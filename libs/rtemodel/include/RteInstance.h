@@ -173,7 +173,7 @@ protected:
   /**
    * @brief perform changes in internal data after calls to SetAttributes(), AddAttributes() and ClearAttributes()
   */
-  virtual void ProcessAttributes() override;
+   void ProcessAttributes() override;
 
 private:
   bool m_bExcluded;
@@ -203,7 +203,7 @@ public:
   /**
    * @brief virtual destructor
   */
-  virtual ~RteItemInstance() override;
+   ~RteItemInstance() override;
 
   /**
    * @brief initializes this object from supplied RteItem
@@ -400,7 +400,7 @@ public:
   /**
    * @brief clear internal data
   */
-  virtual void Clear() override;
+   void Clear() override;
 
   /**
    * @brief get pack attributes
@@ -418,13 +418,13 @@ public:
    * @brief get pointer to resolved RtePackage
    * @return pointer to RtePackage if resolved, nullptr otherwise
   */
-  virtual RtePackage* GetPackage() const override;
+   RtePackage* GetPackage() const override;
 
   /**
    * @brief get pointer to RteComponent
    * @return pointer to RteComponent, nullptr by default
   */
-  virtual RteComponent* GetComponent() const override { return nullptr;}
+   RteComponent* GetComponent() const override { return nullptr;}
 
   /**
    * @brief get resolved component, even if this item is not filtered by specified target
@@ -445,19 +445,19 @@ public:
    * @param withVersion flag to get full (true) or common (false) pack ID
    * @return full or common pack ID constructed from underlying pack info
   */
-  virtual std::string GetPackageID(bool withVersion) const override;
+   std::string GetPackageID(bool withVersion) const override;
 
   /**
    * @brief get originating pack URL
    * @return "url" attribute value from underlying pack info
   */
-  virtual const std::string& GetURL() const override;
+   const std::string& GetURL() const override;
 
   /**
    * @brief get pack vendor
    * @return pack vendor from underlying pack info
   */
-  virtual const std::string& GetVendorString() const override;
+   const std::string& GetVendorString() const override;
 
   /**
    * @brief get pack vendor
@@ -501,20 +501,20 @@ protected:
    * @brief check if this item provides content to be stored in XML format
    * @return true
   */
-  virtual bool HasXmlContent() const override { return true; }
+   bool HasXmlContent() const override { return true; }
 
  /**
    * @brief process a single XMLTreeElement during construction
    * @param xmlElement pointer to XMLTreeElement to process
    * @return true if successful
  */
-  virtual bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
+   bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
 
   /**
    * @brief creates child element for supplied XMLTreeElement
    * @param parentElement XMLTreeElement to generate content for
   */
-  virtual void CreateXmlTreeElementContent(XMLTreeElement* parentElement) const override;
+   void CreateXmlTreeElementContent(XMLTreeElement* parentElement) const override;
 
 protected:
   RteItem m_packageAttributes;
@@ -553,20 +553,20 @@ public:
    * @param targetName target name
    * @return pointer to RtePackage if resolved, nullptr otherwise
   */
-  virtual RtePackage* GetEffectivePackage(const std::string& targetName) const override;
+   RtePackage* GetEffectivePackage(const std::string& targetName) const override;
 
   /**
    * @brief construct package ID out of attributes
    * @return constructed pack ID
   */
-  virtual std::string ConstructID() override;
+   std::string ConstructID() override;
 
   /**
    * @brief get pack ID
    * @param withVersion flag to include pack version to the ID
    * @return full or common pack ID
   */
-  virtual std::string GetPackageID(bool withVersion) const override;
+   std::string GetPackageID(bool withVersion) const override;
 
   /**
    * @brief get common (family) pack ID
@@ -578,26 +578,26 @@ public:
    * @brief get pack attributes
    * @return reference to this
   */
-  virtual const RteItem& GetPackageAttributes() const override { return *this; }
+   const RteItem& GetPackageAttributes() const override { return *this; }
 
   /**
    * @brief set pack attributes
    * @param attr pack attributes to set
    * @return true if attribute values have changed
   */
-  virtual bool SetPackageAttributes(const XmlItem& attr) override { return SetAttributes(attr); }
+   bool SetPackageAttributes(const XmlItem& attr) override { return SetAttributes(attr); }
 
   /**
    * @brief check if this object contains pack attributes directly rather than in a dedicated child
    * @return true
   */
-  virtual bool IsPackageInfo() const override { return true; }
+   bool IsPackageInfo() const override { return true; }
 
   /**
    * @brief get pack URL
    * @return value of "url" attribute
   */
-  virtual const std::string& GetURL() const override { return GetAttribute("url"); }
+   const std::string& GetURL() const override { return GetAttribute("url"); }
 
   /**
     * @brief get resolved pack for specified target
@@ -632,7 +632,7 @@ public:
   void ClearResolved();
 
 protected:
-  virtual void ProcessAttributes() override;
+   void ProcessAttributes() override;
 
 protected:
   std::map<std::string, RtePackage*> m_resolvedPacks;
@@ -686,20 +686,20 @@ public:
    * @brief get pack attributes
    * @return reference to this
   */
-  virtual const RteItem& GetPackageAttributes() const override { return *this; }
+   const RteItem& GetPackageAttributes() const override { return *this; }
 
   /**
    * @brief set pack attributes
    * @param attr pack attributes
    * @return true if changed
   */
-  virtual bool SetPackageAttributes(const XmlItem& attr) override { return SetAttributes(attr); }
+   bool SetPackageAttributes(const XmlItem& attr) override { return SetAttributes(attr); }
 
   /**
    * @brief check if this object contains pack attributes directly rather than in a dedicated child
    * @return true
   */
-  virtual bool IsPackageInfo() const override { return true; }
+   bool IsPackageInfo() const override { return true; }
 
 
 protected:
@@ -724,12 +724,12 @@ public:
   /**
    * @brief virtual destructor
   */
-  virtual ~RteBoardInfo() override;
+   ~RteBoardInfo() override;
 
   /**
    * @brief clear internal data
   */
-  virtual void Clear() override;
+   void Clear() override;
 
   /**
    * @brief clear pointer to resolved board
@@ -753,31 +753,31 @@ public:
    * @brief initialize info
    * @param item pointer to RteItem to initialize from
   */
-  virtual void InitInstance(RteItem* item) override;
+   void InitInstance(RteItem* item) override;
 
   /**
    * @brief construct board ID
    * @return constructed board ID by calling GetDisplayName()
   */
-  virtual std::string ConstructID() override;
+   std::string ConstructID() override;
 
   /**
    * @brief get board display name
    * @return string constructed from attribute values in the format "Bname (Bversion)"
   */
-  virtual std::string GetDisplayName() const override;
+   std::string GetDisplayName() const override;
 
   /**
    * @brief get board name
    * @return "Bname" attribute value
   */
-  virtual const std::string& GetName() const override { return GetAttribute("Bname"); }
+   const std::string& GetName() const override { return GetAttribute("Bname"); }
 
   /**
    * @brief get board version from its revision
    * @return board revision
   */
-  virtual const std::string& GetVersionString() const override { return GetRevision(); }
+   const std::string& GetVersionString() const override { return GetRevision(); }
 
   /**
    * @brief get board revision
@@ -789,7 +789,7 @@ public:
    * @brief get board vendor string
    * @return vendor string
   */
-  virtual const std::string& GetVendorString() const override { return GetAttribute("Bvendor"); }
+   const std::string& GetVendorString() const override { return GetAttribute("Bvendor"); }
 
 
   /**
@@ -815,14 +815,14 @@ public:
    * @brief get the original board's pack
    * @return pointer to RtePackage if resolved, nullptr otherwise
   */
-  virtual RtePackage* GetPackage() const override;
+   RtePackage* GetPackage() const override;
 
   /**
    * @brief get the original board's pack ID
    * @param withVersion flag to return full (true) or common (false) pack ID
    * @return full or common pack ID
   */
-  virtual std::string GetPackageID(bool withVersion) const override;
+   std::string GetPackageID(bool withVersion) const override;
 
 protected:
   RteBoard* m_board; // in contrast to other instance classes, it can only be one resolution
@@ -845,13 +845,13 @@ public:
   /**
    * @brief virtual destructor
   */
-  virtual ~RteComponentInstance() override;
+   ~RteComponentInstance() override;
 
 
   /**
    * @brief clear internal data
   */
-  virtual void Clear() override;
+   void Clear() override;
 
   /**
    * @brief initialize info from component
@@ -936,7 +936,7 @@ public:
    * @brief get component name to display
    * @return string in the format Cvendor.Cbundle::Cclass:Cgroup[:Csub]
   */
-  virtual std::string GetDisplayName() const override;
+   std::string GetDisplayName() const override;
   /**
    * @brief get short component name to display
    * @return string in the format Cgroup[:Csub]
@@ -947,20 +947,20 @@ public:
    * @brief get component instance version string (can differ from resolved component)
    * @return version string
   */
-  virtual const std::string& GetVersionString() const override;
+   const std::string& GetVersionString() const override;
 
   /**
    * @brief construct component ID
    * @return constructed ID string
   */
-  virtual std::string ConstructID() override;
+   std::string ConstructID() override;
 
   /**
    * @brief construct component ID (including pack) or API ID (without pack)
    * @param withVersion flag to get component ID with version, for API always evaluates to false
    * @return component unique ID string in the format Cvendor.Cbundle::Cclass:Cgroup:Csub(conditionID):Cvariant:Cversion[FullPackID]
   */
-  virtual std::string GetComponentUniqueID(bool withVersion) const override;
+   std::string GetComponentUniqueID(bool withVersion) const override;
 
   /**
    * @brief check if this component instance has the same aggregate ID as supplied one
@@ -973,25 +973,25 @@ public:
    * @brief get vendor
    * @return component vendor string
   */
-  virtual const std::string& GetVendorString() const override;
+   const std::string& GetVendorString() const override;
 
   /**
    * @brief check if the component is removed and not used by any target
    * @return true if removed
   */
-  virtual bool IsRemoved() const override;
+   bool IsRemoved() const override;
 
   /**
    * @brief set this component as being removed from all project targets
    * @param removed flag to indicate removed state
   */
-  virtual void SetRemoved(bool removed) override;
+   void SetRemoved(bool removed) override;
 
   /**
    * @brief get path to doc file if any (for active target)
    * @return absolute path to doc file or URL, empty string if component is not resolved
   */
-  virtual std::string GetDocFile() const override;
+   std::string GetDocFile() const override;
 
   /**
    * @brief check if component instance has specific flags for different project targets
@@ -1032,7 +1032,7 @@ public:
    * @param targetName target name to resolve component
    * @return pointer to RtePackage of the resolved component, or potential one, or installed pack with instance pack ID
   */
-  virtual RtePackage* GetEffectivePackage(const std::string& targetName) const override;
+   RtePackage* GetEffectivePackage(const std::string& targetName) const override;
 
   /**
    * @brief get display name of resolved component, otherwise own display name
@@ -1123,20 +1123,20 @@ public:
   /**
    * @brief virtual destructor
   */
-  virtual ~RteComponentInstanceAggregate() override;
+   ~RteComponentInstanceAggregate() override;
 
 public:
 
   /**
    * @brief clear internal data
   */
-  virtual void Clear() override;
+   void Clear() override;
 
   /**
    * @brief get instance aggregate display name
    * @return value of Csub attribute if available, Cgroup otherwise
   */
-  virtual std::string GetDisplayName() const override;
+   std::string GetDisplayName() const override;
 
   /**
    * @brief get cached full display name
@@ -1262,7 +1262,7 @@ public:
   /**
    * @brief virtual destructor
   */
-  virtual ~RteComponentInstanceGroup() override;
+   ~RteComponentInstanceGroup() override;
 
   /**
    * @brief get API instance associated with this group (Cgroup level)
@@ -1362,13 +1362,13 @@ public:
   /**
    * @brief clear internal data
   */
-  virtual void Clear() override;
+   void Clear() override;
 
   /**
    * @brief get group display name
    * @return
   */
-  virtual std::string GetDisplayName() const override;
+   std::string GetDisplayName() const override;
 
 private:
   std::map<std::string, RteComponentInstanceGroup*> m_groups; // sub-groups
@@ -1467,7 +1467,7 @@ public:
    * @brief get file display name
    * @return string in the format "filename comment"
   */
-  virtual std::string GetDisplayName() const override;
+   std::string GetDisplayName() const override;
 
   /**
    * @brief get comment to show next to file in a project view
@@ -1541,66 +1541,66 @@ public:
    * @brief return file instance ID
    * @return instance name
   */
-  virtual const std::string& GetID() const override { return m_instanceName; }
+   const std::string& GetID() const override { return m_instanceName; }
 
   /**
    * @brief get component instance this file belongs to
    * @param targetName target name to resolve component
    * @return pointer to RteComponentInstance
   */
-  virtual RteComponentInstance* GetComponentInstance(const std::string& targetName) const override;
+   RteComponentInstance* GetComponentInstance(const std::string& targetName) const override;
 
   /**
    * @brief get component ID this file belongs to
    * @param withVersion flag to include component version to ID
    * @return component ID to use in a filtered list
   */
-  virtual std::string GetComponentID(bool withVersion) const override;
+   std::string GetComponentID(bool withVersion) const override;
 
   /**
    * @brief get full component ID including originating pack
    * @param withVersion flag to include component version to ID
    * @return full  component ID
   */
-  virtual std::string GetComponentUniqueID(bool withVersion) const override;
+   std::string GetComponentUniqueID(bool withVersion) const override;
 
   /**
    * @brief get component aggregate ID
    * @param withVersion
    * @return
   */
-  virtual std::string GetComponentAggregateID() const override;
+   std::string GetComponentAggregateID() const override;
 
   /**
    * @brief get file version
    * @return file version string if present, otherwise component's version
   */
-  virtual const std::string& GetVersionString() const override;
+   const std::string& GetVersionString() const override;
 
   /**
    * @brief get component vendor
    * @return component vendor string
   */
-  virtual const std::string& GetVendorString() const override;
+   const std::string& GetVendorString() const override;
 
   /**
    * @brief get component bundle name
    * @return component bundle name
   */
-  virtual const std::string& GetCbundleName() const override;
+   const std::string& GetCbundleName() const override;
 
   /**
    * @brief get name of a file group this file instance belongs to in the project
    * @return project group name
   */
-  virtual std::string GetProjectGroupName() const override;
+   std::string GetProjectGroupName() const override;
 
   /**
    * @brief construct this item from XML data
    * @param xmlElement pointer to XMLTreeElement to construct from
    * @return true if successful
   */
-  virtual bool Construct(XMLTreeElement* xmlElement) override;
+   bool Construct(XMLTreeElement* xmlElement) override;
 
 protected:
   /**
@@ -1608,13 +1608,13 @@ protected:
    * @param xmlElement pointer to XMLTreeElement to process
    * @return true if successful
   */
-  virtual bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
+   bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
 
   /**
    * @brief creates child element for supplied XMLTreeElement
    * @param parentElement XMLTreeElement to generate content for
   */
-  virtual void CreateXmlTreeElementContent(XMLTreeElement* parentElement) const override;
+   void CreateXmlTreeElementContent(XMLTreeElement* parentElement) const override;
 
 protected:
   int m_instanceIndex; // zero-base instance index for multi-instance components, -1 otherwise

@@ -64,7 +64,7 @@ public:
    * @brief get device vendor string obtained from "Dvendor" attribute effectively defined in this or parent elements
    * @return value for effective "Dvendor" attribute
   */
-  virtual const std::string& GetVendorString() const override { return GetEffectiveAttribute("Dvendor"); }
+   const std::string& GetVendorString() const override { return GetEffectiveAttribute("Dvendor"); }
 
   /**
    * @brief obtain for all effectively defined attributes of this device element. That is collection of all attributes defined in this element and in parent elements.
@@ -101,7 +101,7 @@ public:
    * @brief obtain all effective attributes of this device property combined with corresponding properties of parent device elements. Own attributes always take precedence.
    * @param attributes reference to XmlItem to fill with values
   */
-  virtual void GetEffectiveAttributes(XmlItem& attributes) const override;
+   void GetEffectiveAttributes(XmlItem& attributes) const override;
 
   /**
    * @brief add data from supplied device property to this one, default only adds attributes
@@ -141,7 +141,7 @@ protected:
    * @brief construct device property ID
    * @return device property ID string
   */
-  virtual std::string ConstructID() override;
+   std::string ConstructID() override;
 
 public:
   /**
@@ -185,13 +185,13 @@ public:
    * @brief get effective tag content : list of own RteDeviceProperty children and those from device items in parent chain
    * @return list of RteDeviceProperty* items
   */
-  virtual const std::list<RteDeviceProperty*>& GetEffectiveContent() const override { return m_effectiveContent; }
+   const std::list<RteDeviceProperty*>& GetEffectiveContent() const override { return m_effectiveContent; }
 
   /**
    * @brief collect effective content:  list of own RteDeviceProperty children and those from device items in parent chain
    * @param p RteDeviceProperty to collect content from
   */
-  virtual void CollectEffectiveContent(RteDeviceProperty* p) override;
+   void CollectEffectiveContent(RteDeviceProperty* p) override;
 
   /**
    * @brief construct an RteDeviceProperty from supplied XMLTreeElement
@@ -213,7 +213,7 @@ protected:
      * @param xmlElement pointer to XMLTreeElement to process
      * @return true if successful
    */
-  virtual bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
+   bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
 
 protected:
   // collected effective content
@@ -236,7 +236,7 @@ public:
    * @brief indicate that this property type provides effective content to collect
    * @return true
   */
-  virtual bool IsCollectEffectiveContent() const override { return true; }
+   bool IsCollectEffectiveContent() const override { return true; }
 
 };
 
@@ -269,7 +269,7 @@ public:
    * @brief indicate the property is not unique, a device can have several <description> elements
    * @return false
   */
-  virtual bool IsUnique() const override { return false; }
+   bool IsUnique() const override { return false; }
 };
 
 /**
@@ -288,7 +288,7 @@ protected:
    * @brief indicate the property is not unique, a device can have several <feature> elements
    * @return false
   */
-  virtual bool IsUnique() const override { return false; }
+   bool IsUnique() const override { return false; }
 };
 
 
@@ -308,7 +308,7 @@ public:
    * @brief get memory name
    * @return memory name string
   */
-  virtual const std::string& GetName() const override {
+   const std::string& GetName() const override {
     if (HasAttribute("id"))
       return GetAttribute("id");
     return RteDeviceProperty::GetName();
@@ -343,7 +343,7 @@ public:
    * @brief get processor property name
    * @return processor name
   */
-  virtual const std::string& GetName() const override { return GetProcessorName(); }
+   const std::string& GetName() const override { return GetProcessorName(); }
 };
 
 /**
@@ -362,7 +362,7 @@ public:
     * @brief indicate the property is not unique, a sequence can have several <control> elements
     * @return false
    */
-  virtual bool IsUnique() const override { return false; }
+   bool IsUnique() const override { return false; }
 
 protected:
   /**
@@ -370,7 +370,7 @@ protected:
    * @param tag XML tag
    * @return pointer to RteDeviceProperty-derived class, never null
   */
-  virtual RteDeviceProperty* CreateProperty(const std::string& tag) override;
+   RteDeviceProperty* CreateProperty(const std::string& tag) override;
 };
 
 /**
@@ -389,7 +389,7 @@ public:
     * @brief indicate the property is not unique, a sequence can have several <block> elements
     * @return false
    */
-  virtual bool IsUnique() const override { return false; }
+   bool IsUnique() const override { return false; }
 };
 
 
@@ -409,14 +409,14 @@ public:
     * @brief indicate the property is unique, a sequence with the same name can be listed only once per device
     * @return true
    */
-  virtual bool IsUnique() const override { return true; }
+   bool IsUnique() const override { return true; }
 protected:
   /**
    * @brief create an RteDeviceProperty for given tag
    * @param tag XML tag
    * @return pointer to RteDeviceProperty-derived class, never null
   */
-  virtual RteDeviceProperty* CreateProperty(const std::string& tag) override;
+   RteDeviceProperty* CreateProperty(const std::string& tag) override;
 };
 
 
@@ -436,13 +436,13 @@ public:
     * @brief indicate the property is not unique, a device can contain several <datapatch> elements
     * @return false
    */
-  virtual bool IsUnique() const override { return false; }
+   bool IsUnique() const override { return false; }
 
   /**
    * @brief get datapatch element name, constructed from "address" attribute
    * @return "address" attribute value
   */
-  virtual const std::string& GetName() const override { return GetAttribute("address"); }
+   const std::string& GetName() const override { return GetAttribute("address"); }
 
   /**
    * @brief check if datapatch property has effective "__dp" attribute
@@ -466,7 +466,7 @@ protected:
    * @brief construct unique datapatch ID
    * @return ID string
   */
-  virtual std::string ConstructID() override;
+   std::string ConstructID() override;
 protected:
   bool m_hasDP;
   bool m_hasAP;
@@ -528,7 +528,7 @@ public:
    * @brief get debug port name
    * @return "__dp" attribute value
   */
-  virtual const std::string& GetName() const override { return GetAttribute("__dp"); }
+   const std::string& GetName() const override { return GetAttribute("__dp"); }
 protected:
 
   /**
@@ -536,7 +536,7 @@ protected:
    * @param tag XML tag
    * @return pointer to RteDeviceProperty-derived class, never null
   */
-  virtual RteDeviceProperty* CreateProperty(const std::string& tag) override;
+   RteDeviceProperty* CreateProperty(const std::string& tag) override;
 };
 
 
@@ -556,7 +556,7 @@ public:
    * @brief get access port name
    * @return "__apid" attribute value
   */
-  virtual const std::string& GetName() const override { return GetAttribute("__apid"); }
+   const std::string& GetName() const override { return GetAttribute("__apid"); }
   /**
    * @brief get access port version
    * @return version string
@@ -567,7 +567,7 @@ protected:
     * @brief construct unique access port ID
     * @return ID string
    */
-  virtual std::string ConstructID() override;
+   std::string ConstructID() override;
 protected:
   unsigned char m_apVersion;
 };
@@ -616,7 +616,7 @@ public:
   * @brief check if child properties should be collected from this property to contribute to effective content
   * @return true
   */
-  virtual bool IsCollectEffectiveContent() const override { return true; }
+   bool IsCollectEffectiveContent() const override { return true; }
 
 protected:
   /**
@@ -624,13 +624,13 @@ protected:
    * @param tag XML tag
    * @return pointer to RteDeviceProperty-derived class, never null
   */
-  virtual RteDeviceProperty* CreateProperty(const std::string& tag) override;
+   RteDeviceProperty* CreateProperty(const std::string& tag) override;
 
   /**
   * @brief construct unique debug property ID
   * @return ID string
   */
-  virtual std::string ConstructID() override { return RteDeviceProperty::ConstructID() + std::string(":") + GetProcessorName(); }
+   std::string ConstructID() override { return RteDeviceProperty::ConstructID() + std::string(":") + GetProcessorName(); }
 };
 
 
@@ -651,7 +651,7 @@ protected:
    * @brief construct unique debugvars property ID
    * @return ID string
   */
-  virtual std::string ConstructID() override { return RteDeviceProperty::ConstructID() + std::string(":") + GetProcessorName(); }
+   std::string ConstructID() override { return RteDeviceProperty::ConstructID() + std::string(":") + GetProcessorName(); }
 };
 
 
@@ -680,7 +680,7 @@ public:
   */
   RteTraceBuffer(RteItem* parent) : RteDeviceProperty(parent) {};
 protected:
-  virtual std::string ConstructID() override;
+   std::string ConstructID() override;
 };
 
 /**
@@ -699,7 +699,7 @@ public:
    * @brief get trace port name
    * @return "width" attribute value
   */
-  virtual const std::string& GetName() const override { return GetAttribute("width"); }
+   const std::string& GetName() const override { return GetAttribute("width"); }
 };
 
 /**
@@ -718,14 +718,14 @@ public:
    * @brief check if child properties should be collected from this property
    * @return true
    */
-  virtual bool IsCollectEffectiveContent() const override { return true; }
+   bool IsCollectEffectiveContent() const override { return true; }
 protected:
   /**
    * @brief create an RteDeviceProperty for given tag
    * @param tag XML tag
    * @return pointer to RteDeviceProperty-derived class, never null
   */
-  virtual RteDeviceProperty* CreateProperty(const std::string& tag) override;
+   RteDeviceProperty* CreateProperty(const std::string& tag) override;
 };
 
 class RteFlashInfo;
@@ -853,11 +853,11 @@ protected:
    * @param tag XML tag
    * @return pointer to RteDeviceProperty-derived class, never null
   */
-  virtual RteDeviceProperty* CreateProperty(const std::string& tag) override;
+   RteDeviceProperty* CreateProperty(const std::string& tag) override;
   /**
    * @brief iterate over RteFlashInfoBlock children to calculate and cache their values
   */
-  virtual void CalculateCachedValues() override;
+   void CalculateCachedValues() override;
 
 protected:
   // typed collection of child blocks
@@ -911,20 +911,20 @@ public:
   /**
    * @brief clear internal item structure including children. The method is called from destructor
   */
-  virtual void Clear() override;
+   void Clear() override;
 
  /**
  * @brief validate internal item structure and children recursively and set internal validity flag
  * @return validation result as boolean value
  */
-  virtual bool Validate() override;
+   bool Validate() override;
 
   /**
     * @brief construct this item out of supplied XML data
     * @param xmlElement XMLTreeElement to construct from
     * @return true if successful
    */
-  virtual bool Construct(XMLTreeElement* xmlElement) override;
+   bool Construct(XMLTreeElement* xmlElement) override;
   /**
    * @brief get device item hierarchy type
    * @return RteDeviceItem::TYPE
@@ -1076,13 +1076,13 @@ protected:
    * @param xmlElement pointer to XMLTreeElement item to process
    * @return true if successful
   */
-  virtual bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
+   bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
 
   /**
    * @brief construct item ID
    * @return device item ID
   */
-  virtual std::string ConstructID() override;
+   std::string ConstructID() override;
 
   /**
    * @brief collect effective properties for a supplied tag (e.g. "debug") and processor (e.g. "core_one")
@@ -1131,26 +1131,26 @@ public:
    * @brief get device item hierarchy type
    * @return RteDeviceItem::DEVICE
   */
-  virtual TYPE GetType() const override { return RteDeviceItem::DEVICE; }
+   TYPE GetType() const override { return RteDeviceItem::DEVICE; }
 
   /**
    * @brief get this RteDevice or parent of type RteDevice
    * @return this
   */
-  virtual RteDevice* GetDevice() const override;
+   RteDevice* GetDevice() const override;
 
   /**
    * @brief collect RteDevice children with names matching given wild-card pattern
    * @param devices list RteDevice pointers to fill
    * @param searchPattern wild-card pattern, if empty all RteDevic children are collected
   */
-  virtual void GetDevices(std::list<RteDevice*>& devices, const std::string& searchPattern = EMPTY_STRING) const override;
+   void GetDevices(std::list<RteDevice*>& devices, const std::string& searchPattern = EMPTY_STRING) const override;
 
   /**
    * @brief get device name
    * @return "Dname" attribute value
   */
-  virtual const std::string& GetName() const override { return GetAttribute("Dname"); }
+   const std::string& GetName() const override { return GetAttribute("Dname"); }
 };
 
 
@@ -1170,18 +1170,18 @@ public:
    * @brief get device item hierarchy type
    * @return RteDeviceItem::VARIANT
   */
-  virtual TYPE GetType() const override { return RteDeviceItem::VARIANT; }
+   TYPE GetType() const override { return RteDeviceItem::VARIANT; }
 
   /**
    * @brief get pointer to RteDevice parent
    * @return pointer to RteDevice parent, never nullptr for schema-conform CMSIS packs
   */
-  virtual RteDevice* GetDevice() const override;
+   RteDevice* GetDevice() const override;
   /**
    * @brief get device variant name
    * @return "Dvariant" attribute value
   */
-  virtual const std::string& GetName() const override { return GetAttribute("Dvariant"); }
+   const std::string& GetName() const override { return GetAttribute("Dvariant"); }
 };
 
 
@@ -1202,12 +1202,12 @@ public:
    * @brief get device item hierarchy type
    * @return RteDeviceItem::SUBFAMILY
   */
-  virtual TYPE GetType() const override { return RteDeviceItem::SUBFAMILY; }
+   TYPE GetType() const override { return RteDeviceItem::SUBFAMILY; }
   /**
    * @brief get device subfamily name
    * @return "DsubFamily" attribute value
   */
-  virtual const std::string& GetName() const override { return GetAttribute("DsubFamily"); }
+   const std::string& GetName() const override { return GetAttribute("DsubFamily"); }
 };
 
 
@@ -1227,12 +1227,12 @@ public:
    * @brief get device item hierarchy type
    * @return RteDeviceItem::FAMILY
   */
-  virtual TYPE GetType() const override { return FAMILY; }
+   TYPE GetType() const override { return FAMILY; }
   /**
    * @brief get device family name
    * @return "Dfamily" attribute value
   */
-  virtual const std::string& GetName() const override { return GetAttribute("Dfamily"); }
+   const std::string& GetName() const override { return GetAttribute("Dfamily"); }
 };
 
 /**
@@ -1252,7 +1252,7 @@ public:
    * @param xmlElement pointer to XMLTreeElement to process
    * @return true if successful
    */
-  virtual bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
+   bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
 };
 
 /**

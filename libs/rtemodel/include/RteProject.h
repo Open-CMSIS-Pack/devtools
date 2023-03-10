@@ -45,13 +45,13 @@ public:
   /**
    * @brief destructor
   */
-  virtual ~RteProject() override;
+   ~RteProject() override;
 
 public:
   /**
    * @brief clean up the project data
   */
-  virtual void Clear() override;
+   void Clear() override;
 
   /**
    * @brief initialize project
@@ -142,7 +142,7 @@ public:
    * @brief get project name
    * @return project name
   */
-  virtual const std::string& GetName() const override { return m_ID; }
+   const std::string& GetName() const override { return m_ID; }
 
   /**
    * @brief set project name
@@ -173,7 +173,7 @@ public:
    * @brief get RteCallback object
    * @return RteCallback pointer
   */
-  virtual RteCallback* GetCallback() const override;
+   RteCallback* GetCallback() const override;
 
   /**
    * @brief set RteCallback object
@@ -517,26 +517,26 @@ public:
    * @brief get CMSIS RTE data model specific to this project
    * @return RteModel pointer
   */
-  virtual RteModel* GetModel() const override { return m_globalModel; }
+   RteModel* GetModel() const override { return m_globalModel; }
 
   /**
    * @brief get 'this' pointer of the instance
    * @return RteProject pointer
   */
-  virtual RteProject* GetProject() const override;
+   RteProject* GetProject() const override;
 
   /**
    * @brief construct the project out of supplied XML Data
    * @param xmlElement XMLTreeElement object to construct from
    * @return true if successful
   */
-  virtual bool Construct(XMLTreeElement* xmlElement) override;
+   bool Construct(XMLTreeElement* xmlElement) override;
 
   /**
    * @brief validates if all required packs, components and APIs are resolved
    * @return true if successful
   */
-  virtual bool Validate() override;
+   bool Validate() override;
 
 public:
   /**
@@ -751,8 +751,8 @@ protected:
   void CreateTargetModels(RteItemInstance* instance);
 
 protected:
-  virtual bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
-  virtual void CreateXmlTreeElementContent(XMLTreeElement* parentElement) const override;
+   bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
+   void CreateXmlTreeElementContent(XMLTreeElement* parentElement) const override;
 
 protected:
   RteModel* m_globalModel; // global Model

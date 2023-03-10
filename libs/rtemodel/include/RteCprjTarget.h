@@ -34,13 +34,13 @@ public:
   /**
    * @brief destructor
   */
-  virtual ~RteCprjTarget() override;
+   ~RteCprjTarget() override;
 
 public:
   /**
    * @brief clean up this object
   */
-  virtual void Clear() override;
+   void Clear() override;
 };
 
 #endif // RteCprjTarget_H

@@ -46,7 +46,7 @@ private:
   public:
     StdoutOutputter() : ErrOutputter(), newline(true) { }
 
-    virtual void MsgOut(const std::string& msg) override {
+    void MsgOut(const std::string& msg) override {
       ErrOutputter::MsgOut(msg);
       if (newline) { cout << "[  ErrLog  ] "; }
 
@@ -61,7 +61,7 @@ private:
       if (newline) { cout << endl; }
     }
 
-    virtual void Clear() override {
+    void Clear() override {
       ErrOutputter::Clear();
       if (!newline) { cout << endl; }
       newline = true;
