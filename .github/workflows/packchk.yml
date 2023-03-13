@@ -12,6 +12,10 @@ on:
       - 'tools/packchk/**'
       - 'libs/xml**'
       - 'libs/rte**'
+      - 'external/cxxopts'
+      - 'external/cxxopts.patch'
+      - 'external/xerces-c'
+      - 'external/xerces-c.patch'
       - '!**/docs/**/*'
       - '!**/*.md'
   pull_request:
@@ -23,6 +27,10 @@ on:
       - 'tools/packchk/**'
       - 'libs/xml**'
       - 'libs/rte**'
+      - 'external/cxxopts'
+      - 'external/cxxopts.patch'
+      - 'external/xerces-c'
+      - 'external/xerces-c.patch'
       - '!**/docs/**/*'
       - '!**/*.md'
   release:
