@@ -138,6 +138,12 @@ endif()
 # Prepare a list of CMake targets
 get_targets()
 
+# Reset global compiler flags
+set(CMAKE_CXX_FLAGS_DEBUG "")
+set(CMAKE_CXX_FLAGS_RELEASE "")
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "")
+set(CMAKE_EXE_LINKER_FLAGS_DEBUG "")
+
 # Apply patch on submodules
 apply_patch(${CMAKE_CURRENT_SOURCE_DIR}/external/json)
 apply_patch(${CMAKE_CURRENT_SOURCE_DIR}/external/json-schema-validator)
