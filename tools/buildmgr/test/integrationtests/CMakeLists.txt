@@ -1,7 +1,8 @@
 SET(SOURCE_FILES CPackGetTests.cpp InstallerTests.cpp
-  CBuildTestFixture.cpp CBuildAC6Tests.cpp CBuildGCCTests.cpp
+  CBuildTestFixture.cpp CBuildAC6Tests.cpp CBuildGCCTests.cpp CBuildIARTests.cpp
   CBuildGenTestFixture.cpp CBuildGenTests.cpp SetupTests.cpp CBuildIntegTestEnv.cpp
-  MultiTargetAC6Tests.cpp MultiTargetGCCTests.cpp DebPkgTests.cpp AuxCmdTests.cpp)
+  MultiTargetAC6Tests.cpp MultiTargetGCCTests.cpp MultiTargetIARTests.cpp 
+  DebPkgTests.cpp AuxCmdTests.cpp)
 SET(HEADER_FILES CBuildIntegTestEnv.h CBuildTestFixture.h CBuildGenTestFixture.h)
 
 list(TRANSFORM SOURCE_FILES PREPEND src/)

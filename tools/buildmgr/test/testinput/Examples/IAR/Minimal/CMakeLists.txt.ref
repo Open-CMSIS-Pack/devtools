@@ -1,0 +1,66 @@
+# CMSIS Build CMakeLists generated on 2021-03-30T08:56:44
+
+cmake_minimum_required(VERSION 3.22)
+
+# Target options
+
+set(TARGET Minimal)
+set(CPU Cortex-M0)
+set(PRJ_DIR "C:/sandbox/devtools/build/TestOutput/TestData/Examples/IAR/Minimal")
+set(OUT_DIR "C:/sandbox/devtools/build/TestOutput/TestData/Examples/IAR/Minimal/OutDir")
+set(INT_DIR "C:/sandbox/devtools/build/TestOutput/TestData/Examples/IAR/Minimal/IntDir")
+set(OUT_NAME Minimal)
+set(HEX_FILE "${OUT_NAME}.hex")
+set(BIN_FILE "${OUT_NAME}.bin")
+
+set(DEFINES
+  ARMCM0
+  _RTE_
+)
+
+set(INC_PATHS
+  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.7.0/CMSIS/Core/Include"
+  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.7.0/Device/ARM/ARMCM0/Include"
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/IAR/Minimal/RTE/_MyProject"
+)
+
+set(CC_SRC_FILES
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/IAR/Minimal/RTE/Device/ARMCM0/startup_ARMCM0.c"
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/IAR/Minimal/RTE/Device/ARMCM0/system_ARMCM0.c"
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/IAR/Minimal/MyMain.c"
+)
+
+# Toolchain config map
+
+set(TOOLCHAIN_VERSION_MIN "9.30.1")
+include ("D:/Devel/CMSIS-Toolbox/iar-devtools-internal/build_Debug/tools/buildmgr/test/integrationtests/testoutput/cbuild/etc/IAR.9.32.1.cmake")
+include ("D:/Devel/CMSIS-Toolbox/iar-devtools-internal/build_Debug/tools/buildmgr/test/integrationtests/testoutput/cbuild/etc/CMSIS-Build-Utils.cmake")
+
+# Setup project
+
+project(${TARGET} LANGUAGES C)
+
+cbuild_get_running_toolchain(TOOLCHAIN_ROOT TOOLCHAIN_VERSION C)
+
+# Global Flags
+
+cbuild_get_system_includes(CC_SYS_INC_PATHS_LIST CC_SYS_INC_PATHS)
+set(CMAKE_C_FLAGS "${CC_CPU} ${CC_DEFINES} ${CC_FLAGS} ${CC_SYS_INC_PATHS}")
+set(CMAKE_C_LINK_FLAGS "${LD_CPU} ${LD_FLAGS}")
+
+# Compilation Database
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+add_custom_target(database COMMAND ${CMAKE_COMMAND} -E copy_if_different "${INT_DIR}/compile_commands.json" "${OUT_DIR}")
+
+# Setup Target
+
+add_executable(${TARGET} ${CC_SRC_FILES})
+set_target_properties(${TARGET} PROPERTIES PREFIX "" SUFFIX "${EXE_SUFFIX}" OUTPUT_NAME "${TARGET}")
+set_target_properties(${TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${OUT_DIR})
+target_include_directories(${TARGET} PUBLIC ${INC_PATHS})
+
+# Bin and Hex Conversion
+
+add_custom_command(TARGET ${TARGET} POST_BUILD COMMAND ${CMAKE_OBJCOPY} ${ELF2HEX})
+add_custom_command(TARGET ${TARGET} POST_BUILD COMMAND ${CMAKE_OBJCOPY} ${ELF2BIN})

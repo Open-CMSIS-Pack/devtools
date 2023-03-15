@@ -118,6 +118,7 @@ setinstallconfig CMSIS_PACK_ROOT ${install_config}
 setinstallconfig AC6_TOOLCHAIN_ROOT ${install_config}
 setinstallconfig AC5_TOOLCHAIN_ROOT ${install_config}
 setinstallconfig GCC_TOOLCHAIN_ROOT ${install_config}
+setinstallconfig IAR_TOOLCHAIN_ROOT ${install_config}
 
 # Run cbuild installer
 dos2unix ${install_config}

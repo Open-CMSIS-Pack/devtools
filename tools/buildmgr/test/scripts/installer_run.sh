@@ -62,11 +62,13 @@ if [[ `uname -s` != "Linux" && `uname -s` != "Darwin" ]]
   echo "/$(echo $AC6_TOOLCHAIN_ROOT | sed -e 's/\\/\//g' -e 's/://g')" >> ${install_config}
   echo "/$(echo $AC5_TOOLCHAIN_ROOT | sed -e 's/\\/\//g' -e 's/://g')" >> ${install_config}
   echo "/$(echo $GCC_TOOLCHAIN_ROOT | sed -e 's/\\/\//g' -e 's/://g')" >> ${install_config}
+  echo "/$(echo $IAR_TOOLCHAIN_ROOT | sed -e 's/\\/\//g' -e 's/://g')" >> ${install_config}
 else
   echo "$CMSIS_PACK_ROOT" >> ${install_config}
   echo "$AC6_TOOLCHAIN_ROOT" >> ${install_config}
   echo "$AC5_TOOLCHAIN_ROOT" >> ${install_config}
   echo "$GCC_TOOLCHAIN_ROOT" >> ${install_config}
+  echo "$IAR_TOOLCHAIN_ROOT" >> ${install_config}
 fi
 cat ${install_config}
 
