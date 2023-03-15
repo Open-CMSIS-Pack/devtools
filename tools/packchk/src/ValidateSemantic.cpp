@@ -874,3 +874,4 @@ bool ValidateSemantic::CheckSelfResolvedCondition(RteComponent* component, RteTa
 
   return true;
 }
+

@@ -562,35 +562,6 @@ TEST_F(PackChkIntegTests, CheckFilenameIsDir) {
   }
 }
 
-// Validate invalid file path (file is directory)
-TEST_F(PackChkIntegTests, CheckFileNameHasSpace) {
-  const char* argv[3];
-
-  const string& pdscFile = PackChkIntegTestEnv::localtestdata_dir +
-    "/FileNameHasSpace/TestVendor.FileNameHasSpacePack.pdsc";
-  ASSERT_TRUE(RteFsUtils::Exists(pdscFile));
-
-  argv[0] = (char*)"";
-  argv[1] = (char*)pdscFile.c_str();
-  argv[2] = (char *)"--disable-validation";
-
-  PackChk packChk;
-  EXPECT_EQ(0, packChk.Check(3, argv, nullptr));
-
-  auto errMsgs = ErrLog::Get()->GetLogMessages();
-  int foundCnt = 0;
-  for (const string& msg : errMsgs) {
-    size_t s;
-    if ((s = msg.find("M314")) != string::npos) {
-      foundCnt++;
-    }
-  }
-
-  if (foundCnt != 9) {
-    FAIL() << "error: missing message M314";
-  }
-}
-
 // Validate "--xsd"
 TEST_F(PackChkIntegTests, CheckXsd) {
   const char* argv[4];
@@ -640,5 +611,66 @@ TEST_F(PackChkIntegTests, CheckNotExistXsd) {
 
   if (!bFound) {
     FAIL() << "error: missing error M218";
+  }
+}
+
+// Validate invalid file path (file is directory)
+TEST_F(PackChkIntegTests, CheckFileNameHasSpace) {
+  const char* argv[3];
+
+  const string& pdscFile = PackChkIntegTestEnv::localtestdata_dir +
+    "/FileNameHasSpace/TestVendor.FileNameHasSpacePack.pdsc";
+  ASSERT_TRUE(RteFsUtils::Exists(pdscFile));
+
+  argv[0] = (char*)"";
+  argv[1] = (char*)pdscFile.c_str();
+  argv[2] = (char *)"--disable-validation";
+
+  PackChk packChk;
+  EXPECT_EQ(0, packChk.Check(3, argv, nullptr));
+
+  auto errMsgs = ErrLog::Get()->GetLogMessages();
+  int foundCnt = 0;
+  for (const string& msg : errMsgs) {
+    size_t s;
+    if ((s = msg.find("M314")) != string::npos) {
+      foundCnt++;
+    }
+  }
+
+  if (foundCnt != 9) {
+    FAIL() << "error: missing message M314";
+  }
+}
+
+// Validate invalid file path (file is directory)
+TEST_F(PackChkIntegTests, CheckDuplicateFlashAlgo) {
+  const char* argv[2];
+
+  const string& pdscFile = PackChkIntegTestEnv::localtestdata_dir +
+    "/DuplicateFlashAlgo/TestVendor.DuplicateFlashAlgo.pdsc";
+  ASSERT_TRUE(RteFsUtils::Exists(pdscFile));
+
+  argv[0] = (char*)"";
+  argv[1] = (char*)pdscFile.c_str();
+
+  PackChk packChk;
+  EXPECT_EQ(1, packChk.Check(2, argv, nullptr));
+
+  auto errMsgs = ErrLog::Get()->GetLogMessages();
+  int M348_foundCnt = 0;
+  int M369_foundCnt = 0;
+  for (const string& msg : errMsgs) {
+    size_t s;
+    if ((s = msg.find("M348")) != string::npos) {
+      M348_foundCnt++;
+    }
+    if ((s = msg.find("M369")) != string::npos) {
+      M369_foundCnt++;
+    }
+  }
+
+  if (M348_foundCnt != 2 || M369_foundCnt != 4) {
+    FAIL() << "error: missing message M348 or M369";
   }
 }
