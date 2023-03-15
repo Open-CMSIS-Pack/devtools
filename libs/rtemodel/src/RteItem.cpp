@@ -878,11 +878,12 @@ XMLTreeElement* RteItem::CreateXmlTreeElement(XMLTreeElement* parentElement, boo
   if (bCreateContent) {
     CreateXmlTreeElementContent(element);
   }
-  if (GetChildCount() > 0) {
-    element->CreateElement("description", text, false);
-  }
-  else {
-    element->SetText(text);
+  if (!text.empty()) {
+    if (GetChildCount() > 0) {
+      element->CreateElement("description", text);
+    } else {
+      element->SetText(text);
+    }
   }
   return element;
 }
