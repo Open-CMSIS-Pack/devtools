@@ -30,44 +30,6 @@ XMLTreeElement::~XMLTreeElement()
   XMLTreeElement::Clear();
 }
 
-XMLTreeElement* XMLTreeElement::CreateElement(const string& tag)
-{
-  XMLTreeElement* e = new XMLTreeElement(this, tag);
-  AddChild(e);
-  return e;
-}
-
-XMLTreeElement* XMLTreeElement::CreateElement(const string& tag, const string& text, bool bAcceptEmptyText)
-{
-  if (!bAcceptEmptyText && text.empty())
-    return nullptr;
-  XMLTreeElement* e = CreateElement(tag);
-  e->SetText(text);
-  return e;
-}
-
-void XMLTreeElement::CreateSimpleChildElements(const map<string, string>& elements)
-{
-  for (auto it = elements.begin(); it != elements.end(); it++) {
-    XMLTreeElement* e = new XMLTreeElement(GetThis());
-    e->SetTag(it->first.c_str());
-    e->SetText(it->second.c_str());
-  }
-}
-
-void XMLTreeElement::GetSimpleChildElements(map<string, string>& elements)
-{
-  for (auto it = m_children.begin(); it != m_children.end(); it++) {
-    XMLTreeElement* child = *it;
-    const string& tag = child->GetTag();
-    const string& text = child->GetText();
-    if (!tag.empty()) {
-      elements[tag] = text;
-    }
-  }
-}
-
-
 class XMLTreeElementBuilder : public XmlTreeItemBuilder<XMLTreeElement>
 {
 public:
@@ -82,7 +44,6 @@ public:
 
 private:
   XMLTree* m_xmlTree;
-
 };
 
 
