@@ -35,6 +35,7 @@ if(MSVC)
 # disable optimization for RelWithDebug
   set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /Zi /Od /utf-8")
   add_link_options("$<$<CONFIG:Debug>:/SAFESEH:NO>")
+  set(CMAKE_CXX_FLAGS_DEFAULT "/w /utf-8")
 endif(MSVC)
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR
@@ -42,6 +43,7 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR
    "${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
   set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -MD -Wall")
   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wall")
+  set(CMAKE_CXX_FLAGS_DEFAULT "-w")
 endif()
 
 if(SWIG_LIBS)
@@ -137,6 +139,12 @@ endif()
 
 # Prepare a list of CMake targets
 get_targets()
+
+# Reset global compiler flags
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEFAULT}")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_DEFAULT}")
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_DEFAULT}")
+set(CMAKE_EXE_LINKER_FLAGS_DEBUG "")
 
 # Apply patch on submodules
 apply_patch(${CMAKE_CURRENT_SOURCE_DIR}/external/json)

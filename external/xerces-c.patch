@@ -27,12 +27,12 @@ index 8ebb8aa09..a69078e64 100644
 @@ -20,7 +20,7 @@
  # Option for selection of shared or static libraries, exported as
  # cache variable
- 
+
 -set(BUILD_SHARED_LIBS ON CACHE BOOL "Build shared libraries")
 +# set(BUILD_SHARED_LIBS ON CACHE BOOL "Build shared libraries")
- 
+
  # Add a d postfix to Debug libraries on Windows
- 
+
 @@ -35,7 +35,7 @@ set(XERCES_PLATFORM_IMPORT)
  set(XERCES_TEMPLATE_EXTERN extern)
  set(XERCES_DLL_EXPORT)
@@ -47,9 +47,9 @@ index 5dd7c6257..6c63df72f 100644
 --- a/cmake/XercesTranscoderSelection.cmake
 +++ b/cmake/XercesTranscoderSelection.cmake
 @@ -23,8 +23,11 @@
- 
+
  # ICU
- 
+
 -if(ICU_FOUND)
 -  list(APPEND transcoders icu)
 +# if(ICU_FOUND)
@@ -58,7 +58,7 @@ index 5dd7c6257..6c63df72f 100644
 +if(UNIX AND NOT APPLE)
 +  set(transcoder iconv)
  endif()
- 
+
  # MacOS
 diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
 index a168db125..9197034da 100644
@@ -66,7 +66,7 @@ index a168db125..9197034da 100644
 +++ b/src/CMakeLists.txt
 @@ -1075,12 +1075,12 @@ endif()
  list(APPEND libxerces_c_SOURCES ${xerces_replacement_funcs})
- 
+
  # NetAccessors, conditionally built based on selection
 -if(SOCKET_LIBRARY)
 -  list(APPEND libxerces_c_DEPS ${SOCKET_LIBRARY})
@@ -80,7 +80,7 @@ index a168db125..9197034da 100644
 +# if(NSL_LIBRARY)
 +#   list(APPEND libxerces_c_DEPS ${NSL_LIBRARY})
 +# endif()
- 
+
  if(XERCES_USE_NETACCESSOR_CURL)
    list(APPEND libxerces_c_SOURCES ${curl_sources})
 @@ -1289,7 +1289,7 @@ elseif(UNIX)
@@ -92,3 +92,86 @@ index a168db125..9197034da 100644
      set_target_properties(xerces-c PROPERTIES OUTPUT_NAME "xerces-c-${INTERFACE_VERSION_D}")
      file(GENERATE
        OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/InstallLibrarySymlink.cmake"
+diff --git a/cmake/XercesNetAccessorSelection.cmake b/cmake/XercesNetAccessorSelection.cmake
+index 7a63f1f6b..ecbcd1014 100644
+--- a/cmake/XercesNetAccessorSelection.cmake
++++ b/cmake/XercesNetAccessorSelection.cmake
+@@ -19,9 +19,9 @@
+
+ # netaccessor selection
+
+-option(network "Network support" ON)
++option(XERCESC_NETWORK "Network support" OFF)
+
+-if(network)
++if(XERCESC_NETWORK)
+   find_library(SOCKET_LIBRARY socket)
+   find_library(NSL_LIBRARY nsl)
+
+@@ -93,4 +93,4 @@ if(network)
+   endif()
+ else()
+   set(netaccessor OFF)
+-endif(network)
++endif(XERCESC_NETWORK)
+
+diff --git a/cmake/XercesWarnings.cmake b/cmake/XercesWarnings.cmake
+index f91be0faf..7ce567c9d 100644
+--- a/cmake/XercesWarnings.cmake
++++ b/cmake/XercesWarnings.cmake
+@@ -18,6 +18,7 @@
+ # limitations under the License.
+
+ # compiler warnings
++option(warnings "Enable compiler warnings" OFF)
+
+ # These are annoyingly verbose, produce false positives or don't work
+ # nicely with all supported compiler versions, so are disabled unless
+@@ -33,25 +34,28 @@ option(fatal-warnings "Compiler warnings are errors" OFF)
+ # some of which are quite serious.
+ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR
+    CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+-  set(test_flags
+-      -Wall
+-      -Wcast-align
+-      -Wcast-qual
+-      -Wctor-dtor-privacy
+-      -Wextra
+-      -Wformat=2
+-      -Wimplicit-atomic-properties
+-      -Wmissing-declarations
+-      -Wno-long-long
+-      -Woverlength-strings
+-      -Woverloaded-virtual
+-      -Wredundant-decls
+-      -Wreorder
+-      -Wswitch-default
+-      -Wunused-variable
+-      -Wwrite-strings
+-      -Wno-variadic-macros
+-      -fstrict-aliasing)
++  set(test_flags)
++  if(warnings)
++    list(APPEND test_flags
++        -Wall
++        -Wcast-align
++        -Wcast-qual
++        -Wctor-dtor-privacy
++        -Wextra
++        -Wformat=2
++        -Wimplicit-atomic-properties
++        -Wmissing-declarations
++        -Wno-long-long
++        -Woverlength-strings
++        -Woverloaded-virtual
++        -Wredundant-decls
++        -Wreorder
++        -Wswitch-default
++        -Wunused-variable
++        -Wwrite-strings
++        -Wno-variadic-macros
++        -fstrict-aliasing)
++  endif()
+   if(extra-warnings)
+     list(APPEND test_flags
+         -Wfloat-equal
