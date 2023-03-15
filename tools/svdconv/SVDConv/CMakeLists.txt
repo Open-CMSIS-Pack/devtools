@@ -9,11 +9,7 @@ set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT svdconv)
 
 set(PROJECT_COPYRIGHT_NOTICE "Copyright (C) 2010-${PROJECT_VERSION_YEAR} ARM Ltd and ARM Germany GmbH. All rights reserved.")
 set(PROJECT_TARGET_FILE_NAME "$<TARGET_FILE_NAME:svdconv>")
-configure_file(src/ProductInfo.h.in ProductInfo.h.out)
-file(GENERATE
-  OUTPUT "$<CONFIG>/ProductInfo.h"
-  INPUT ${CMAKE_CURRENT_BINARY_DIR}/ProductInfo.h.out
-)
+configure_file(src/ProductInfo.h.in ProductInfo.h)
 
 if(MSVC)
     configure_file(src/SVDConv.rc.in SVDConv.rc)
@@ -33,7 +29,7 @@ list(TRANSFORM LIB_HEADER_FILES PREPEND include/)
 add_library(svdconvlib OBJECT ${LIB_SOURCE_FILES} ${LIB_HEADER_FILES})
 target_include_directories(svdconvlib
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/
-  PRIVATE ${PROJECT_BINARY_DIR}/$<CONFIG>
+  PRIVATE ${PROJECT_BINARY_DIR}/
 )
 
 set_property(TARGET svdconvlib PROPERTY
@@ -57,15 +53,9 @@ endif()
 
 target_link_libraries(svdconv PUBLIC svdconvlib)
 
-if(("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64") OR ("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "AMD64"))
-  set(SYSTEM_PROCESSOR amd64)
-else()
-  set(SYSTEM_PROCESSOR arm64)
-endif()
-
 add_custom_target(svdconvdist COMMAND
     ${CMAKE_COMMAND} -E tar "cvf${CMAKE_TAR_FLAGS}"
-       "${CMAKE_CURRENT_BINARY_DIR}/svdconv-${PROJECT_VERSION_FULL}-${SYSTEM}${ARCH}-${SYSTEM_PROCESSOR}.${CMAKE_TAR_EXTENSION}"
+       "${CMAKE_CURRENT_BINARY_DIR}/svdconv-${PROJECT_VERSION_FULL}-${SYSTEM}-${CPU_ARCH}.${CMAKE_TAR_EXTENSION}"
        "--format=${CMAKE_TAR_FORMAT}"
        "$<TARGET_FILE_NAME:svdconv>"
        DEPENDS svdconv

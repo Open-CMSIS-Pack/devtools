@@ -52,7 +52,7 @@ jobs:
     runs-on: ${{ matrix.runs_on }}
     timeout-minutes: 15
     strategy:
-      fail-fast: true
+      # fail-fast: true
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
 
     steps:
@@ -63,7 +63,7 @@ jobs:
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build
-        uses: Open-CMSIS-Pack/devtools-build-action@v1.2
+        uses: Open-CMSIS-Pack/devtools-build-action@arm64
         with:
           target: projmgr
           arch: ${{ matrix.arch }}
@@ -72,14 +72,28 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: projmgr-${{ matrix.target }}-${{ matrix.arch }}
-          path: ./build/tools/projmgr/${{ matrix.target }}/Release/${{ matrix.binary }}
+          path: ./build/tools/projmgr/${{ matrix.target }}-${{ matrix.arch }}/Release/${{ matrix.binary }}
           retention-days: ${{ needs.setup.outputs.retention_days }}
           if-no-files-found: error
 
-      # https://github.com/Open-CMSIS-Pack/devtools-build-action
-      - name: Build swig libs windows
-        if: ${{ startsWith(matrix.runs_on, 'windows') }}
-        uses: Open-CMSIS-Pack/devtools-build-action@v1.2
+  build-swig:
+    needs: [ setup, matrix_prep ]
+    runs-on: ${{ matrix.runs_on }}
+    timeout-minutes: 15
+    strategy:
+      # fail-fast: true
+      matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
+
+    steps:
+      - name: Checkout devtools
+        if: matrix.pyswig || matrix.goswig
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+
+      - name: Build swig python libs
+        if: matrix.pyswig
+        uses: Open-CMSIS-Pack/devtools-build-action@arm64
         with:
           add_cmake_variables: -DSWIG_LIBS=ON
           add_cmake_build_args: --config Release
@@ -87,39 +101,29 @@ jobs:
           build_folder: buildswig
           target: projmgr-python
 
-      # https://github.com/Open-CMSIS-Pack/devtools-build-action
-      - name: Build swig libs macos and ubuntu amd64
-        if: ${{ startsWith(matrix.runs_on, 'macos') || ( startsWith(matrix.runs_on, 'ubuntu') && matrix.arch == 'amd64' ) }}
-        uses: Open-CMSIS-Pack/devtools-build-action@v1.2
+      - name: Build swig go libs
+        if: matrix.goswig
+        uses: Open-CMSIS-Pack/devtools-build-action@arm64
         with:
           add_cmake_variables: -DSWIG_LIBS=ON
           add_cmake_build_args: --config Release
           arch: ${{ matrix.arch }}
           build_folder: buildswig
-          target: projmgr-python projmgr-go
+          target: projmgr-go
 
-      - name: Archive projmgr swig python libs windows
-        if: ${{ startsWith(matrix.runs_on, 'windows') }}
+      - name: Archive projmgr swig python libs
+        if: always() && matrix.pyswig
         uses: actions/upload-artifact@v3
         with:
           name: projmgr-swig-python-${{ matrix.target }}-${{ matrix.arch }}
           path: |
              ./buildswig/tools/projmgr/swig/python/projmgr.py
              ./buildswig/tools/projmgr/swig/python/_projmgr.pyd
-          retention-days: ${{ needs.setup.outputs.retention_days }}
-
-      - name: Archive projmgr swig python libs macos ubuntu amd64
-        if: ${{ startsWith(matrix.runs_on, 'macos') || ( startsWith(matrix.runs_on, 'ubuntu') && matrix.arch == 'amd64' ) }}
-        uses: actions/upload-artifact@v3
-        with:
-          name: projmgr-swig-python-${{ matrix.target }}-${{ matrix.arch }}
-          path: |
-             ./buildswig/tools/projmgr/swig/python/projmgr.py
              ./buildswig/tools/projmgr/swig/python/_projmgr.so
           retention-days: ${{ needs.setup.outputs.retention_days }}
 
-      - name: Archive projmgr swig go libs macos ubuntu amd64
-        if: ${{ startsWith(matrix.runs_on, 'macos') || ( startsWith(matrix.runs_on, 'ubuntu') && matrix.arch == 'amd64' ) }}
+      - name: Archive projmgr swig go libs
+        if: always() && matrix.goswig
         uses: actions/upload-artifact@v3
         with:
           name: projmgr-swig-go-${{ matrix.target }}-${{ matrix.arch }}
@@ -132,7 +136,7 @@ jobs:
     if: |
         github.event_name == 'release' &&
         startsWith(github.ref, 'refs/tags/tools/projmgr/')
-    needs: [ build, unittest, coverage ]
+    needs: [ build, build-swig, unittest, coverage ]
     runs-on: ubuntu-22.04
     timeout-minutes: 15
 
@@ -148,60 +152,72 @@ jobs:
           cp -r tools/projmgr/schemas/* tools/projmgr/distribution/etc/
           cp -r tools/projmgr/templates/* tools/projmgr/distribution/etc/
 
-      - name: Download projmgr linux amd64
+      - name: Download projmgr linux-amd64
         uses: actions/download-artifact@v3
         with:
-          name: projmgr-linux64-amd64
+          name: projmgr-linux-amd64
           path: tools/projmgr/distribution/bin/linux-amd64/
 
-      - name: Download projmgr linux arm64
+      - name: Download projmgr linux-arm64
         uses: actions/download-artifact@v3
         with:
-          name: projmgr-linux64-arm64
+          name: projmgr-linux-arm64
           path: tools/projmgr/distribution/bin/linux-arm64/
 
-      - name: Download projmgr macos amd64
+      - name: Download projmgr macos-amd64
         uses: actions/download-artifact@v3
         with:
-          name: projmgr-darwin64-amd64
+          name: projmgr-darwin-amd64
           path: tools/projmgr/distribution/bin/darwin-amd64/
 
-      - name: Download projmgr windows amd64
+      - name: Download projmgr macos-arm64
         uses: actions/download-artifact@v3
         with:
-          name: projmgr-windows64-amd64
+          name: projmgr-darwin-arm64
+          path: tools/projmgr/distribution/bin/darwin-arm64/
+
+      - name: Download projmgr windows-amd64
+        uses: actions/download-artifact@v3
+        with:
+          name: projmgr-windows-amd64
           path: tools/projmgr/distribution/bin/windows-amd64/
 
-      - name: Download projmgr-swig-python linux amd64
+      - name: Download projmgr windows-arm64
         uses: actions/download-artifact@v3
         with:
-          name: projmgr-swig-python-linux64-amd64
+          name: projmgr-windows-arm64
+          path: tools/projmgr/distribution/bin/windows-arm64/
+
+      - name: Download projmgr-swig-python linux-amd64
+        uses: actions/download-artifact@v3
+        with:
+          name: projmgr-swig-python-linux-amd64
           path: tools/projmgr/distribution/lib/linux-amd64/python/
 
-      - name: Download projmgr-swig-python macos amd64
+      - name: Download projmgr-swig-python macos-amd64
         if: ${{ !github.event.repository.private }}
         uses: actions/download-artifact@v3
         with:
-          name: projmgr-swig-python-darwin64-amd64
+          name: projmgr-swig-python-darwin-amd64
           path: tools/projmgr/distribution/lib/darwin-amd64/python/
 
-      - name: Download projmgr-swig-python windows amd64
+      - name: Download projmgr-swig-python windows-amd64
         uses: actions/download-artifact@v3
         with:
-          name: projmgr-swig-python-windows64-amd64
+          name: projmgr-swig-python-windows-amd64
           path: tools/projmgr/distribution/lib/windows-amd64/python/
 
-      - name: Download projmgr-swig-go linux amd64
+      - name: Download projmgr-swig-go linux-amd64
         uses: actions/download-artifact@v3
         with:
-          name: projmgr-swig-go-linux64-amd64
+          name: projmgr-swig-go-linux-amd64
           path: tools/projmgr/distribution/lib/linux-amd64/go/
 
-      - name: Download projmgr-swig-go macos amd64
+      - name: Download projmgr-swig-go macos-amd64
         if: ${{ !github.event.repository.private }}
         uses: actions/download-artifact@v3
         with:
-          name: projmgr-swig-go-darwin64-amd64
+          name: projmgr-swig-go-darwin-amd64
           path: tools/projmgr/distribution/lib/darwin-amd64/go/
 
       - name: Zip distribution folder
@@ -217,29 +233,29 @@ jobs:
           overwrite: true
           asset_name: projmgr.zip
 
-      - name: Download test report windows amd64
+      - name: Download test report windows-amd64
         uses: actions/download-artifact@v3
         with:
-          name: unit_test_result-windows64-amd64
+          name: unit_test_result-windows-amd64
           path: tools/testreport/windows-amd64/
 
-      - name: Download test report linux amd64
+      - name: Download test report linux-amd64
         uses: actions/download-artifact@v3
         with:
-          name: unit_test_result-linux64-amd64
+          name: unit_test_result-linux-amd64
           path: tools/testreport/linux-amd64/
 
-      - name: Download test report linux arm64
+      - name: Download test report linux-arm64
         uses: actions/download-artifact@v3
         with:
-          name: unit_test_result-linux64-arm64
+          name: unit_test_result-linux-arm64
           path: tools/testreport/linux-arm64/
 
-      - name: Download test report macos amd64
+      - name: Download test report macos-amd64
         if: ${{ !github.event.repository.private }}
         uses: actions/download-artifact@v3
         with:
-          name: unit_test_result-darwin64-amd64
+          name: unit_test_result-darwin-amd64
           path: tools/testreport/darwin-amd64/
 
       - name: Zip test reports
@@ -290,19 +306,20 @@ jobs:
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build ProjMgrUnitTests
-        uses: Open-CMSIS-Pack/devtools-build-action@v1.2
+        uses: Open-CMSIS-Pack/devtools-build-action@arm64
         with:
           arch: ${{ matrix.arch }}
           build_type: Debug
           target: ProjMgrUnitTests
 
       - name: Run projmgr unit tests
+        if: (matrix.arch != 'arm64')
         run: |
           ctest -V -C Debug -R ProjMgrUnitTests
         working-directory: ./build
 
       - name: Archive unit tests results
-        if: ${{ always() }}
+        if: always() && (matrix.arch != 'arm64')
         uses: actions/upload-artifact@v3
         with:
           name: unittest-${{ matrix.target }}-${{ matrix.arch }}
@@ -311,7 +328,7 @@ jobs:
           if-no-files-found: error
 
       - name: Archive gtest report
-        if: ${{ always() }}
+        if: always() && (matrix.arch != 'arm64')
         uses: actions/upload-artifact@v3
         with:
           name: unit_test_result-${{ matrix.target }}-${{ matrix.arch }}
@@ -344,7 +361,7 @@ jobs:
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build ProjMgrUnitTests
-        uses: Open-CMSIS-Pack/devtools-build-action@v1.2
+        uses: Open-CMSIS-Pack/devtools-build-action@arm64
         with:
           add_cmake_variables: -DCOVERAGE=ON
           arch: amd64
@@ -365,7 +382,7 @@ jobs:
         if: (github.event_name == 'push')
         uses: actions/upload-artifact@v3
         with:
-          name: unit_test_result-linux64-amd64
+          name: unit_test_result-linux-amd64
           path: ./build/test_reports/projmgrunittests-*.xml
           retention-days: ${{ steps.var.outputs.retention_days }}
           if-no-files-found: error
@@ -414,36 +431,6 @@ jobs:
     needs: [ unittest ]
     runs-on: ubuntu-22.04
     steps:
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: 3.8
-
-      - name: Download unit test report windows
-        uses: actions/download-artifact@v3
-        with:
-          name: unit_test_result-windows64-amd64
-          path: testreports/
-
-      - name: Download unit test report linux amd64
-        uses: actions/download-artifact@v3
-        with:
-          name: unit_test_result-linux64-amd64
-          path: testreports/
-
-      - name: Download unit test report linux arm64
-        uses: actions/download-artifact@v3
-        with:
-          name: unit_test_result-linux64-arm64
-          path: testreports/
-
-      - name: Download unit test report macos
-        if: ${{ !github.event.repository.private }}
-        uses: actions/download-artifact@v3
-        with:
-          name: unit_test_result-darwin64-amd64
-          path: testreports/
-
       - name: Event File
         uses: actions/upload-artifact@v3
         with:

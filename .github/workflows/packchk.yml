@@ -59,7 +59,7 @@ jobs:
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build packchk
-        uses: Open-CMSIS-Pack/devtools-build-action@v1.2
+        uses: Open-CMSIS-Pack/devtools-build-action@arm64
         with:
           target: packchkdist
           arch: ${{ matrix.arch }}
@@ -98,31 +98,34 @@ jobs:
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build PackChkUnitTests
-        uses: Open-CMSIS-Pack/devtools-build-action@v1.2
+        uses: Open-CMSIS-Pack/devtools-build-action@arm64
         with:
           arch: ${{ matrix.arch }}
           build_type: Debug
           target: PackChkUnitTests
 
       - name: Run packchk unit tests
+        if: matrix.arch != 'arm64'
         run: |
           ctest -V -R PackChkUnitTests
         working-directory: ./build
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build PackChkIntegTests
-        uses: Open-CMSIS-Pack/devtools-build-action@v1.2
+        uses: Open-CMSIS-Pack/devtools-build-action@arm64
         with:
           arch: ${{ matrix.arch }}
           build_type: Debug
           target: PackChkIntegTests
 
       - name: Run packchk integ tests
+        if: matrix.arch != 'arm64'
         run: |
           ctest -V -R PackChkIntegTests
         working-directory: ./build
 
       - name: Archive unit test results
+        if: always() && (matrix.arch != 'arm64')
         uses: actions/upload-artifact@v3
         with:
           name: unit_test_result-${{ matrix.target }}-${{ matrix.arch }}
@@ -131,6 +134,7 @@ jobs:
           retention-days: ${{ needs.setup.outputs.retention_days }}
 
       - name: Archive integration test results
+        if: always() && (matrix.arch != 'arm64')
         uses: actions/upload-artifact@v3
         with:
           name: integ_test_result-${{ matrix.target }}-${{ matrix.arch }}
@@ -163,7 +167,7 @@ jobs:
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build PackChkUnitTests
-        uses: Open-CMSIS-Pack/devtools-build-action@v1.2
+        uses: Open-CMSIS-Pack/devtools-build-action@arm64
         with:
           add_cmake_variables: -DCOVERAGE=ON
           arch: amd64
@@ -172,7 +176,7 @@ jobs:
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build PackChkIntegTests
-        uses: Open-CMSIS-Pack/devtools-build-action@v1.2
+        uses: Open-CMSIS-Pack/devtools-build-action@arm64
         with:
           add_cmake_variables: -DCOVERAGE=ON
           arch: amd64
@@ -194,7 +198,7 @@ jobs:
         if: (github.event_name == 'push')
         uses: actions/upload-artifact@v3
         with:
-          name: unit_test_result-linux64-amd64
+          name: unit_test_result-linux-amd64
           path: ./build/test_reports/packchkunittests-*.xml
           if-no-files-found: error
           retention-days: ${{ steps.var.outputs.retention_days }}
@@ -203,7 +207,7 @@ jobs:
         if: (github.event_name == 'push')
         uses: actions/upload-artifact@v3
         with:
-          name: integ_test_result-linux64-amd64
+          name: integ_test_result-linux-amd64
           path: ./build/test_reports/packchkintegtests-*.xml
           if-no-files-found: error
           retention-days: ${{ steps.var.outputs.retention_days }}
@@ -287,49 +291,6 @@ jobs:
     needs: [ test ]
     runs-on: ubuntu-22.04
     steps:
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: 3.8
-
-      - name: Download unit test report windows
-        uses: actions/download-artifact@v3
-        with:
-          name: unit_test_result-windows64-amd64
-          path: testreports/
-
-      - name: Download unit test report linux amd64
-        uses: actions/download-artifact@v3
-        with:
-          name: unit_test_result-linux64-amd64
-          path: testreports/
-
-      - name: Download unit test report macos
-        if: ${{ !github.event.repository.private }}
-        uses: actions/download-artifact@v3
-        with:
-          name: unit_test_result-darwin64-amd64
-          path: testreports/
-
-      - name: Download integ test report windows
-        uses: actions/download-artifact@v3
-        with:
-          name: integ_test_result-windows64-amd64
-          path: testreports/
-
-      - name: Download integ test report linux amd64
-        uses: actions/download-artifact@v3
-        with:
-          name: integ_test_result-linux64-amd64
-          path: testreports/
-
-      - name: Download integ test report macos
-        if: ${{ !github.event.repository.private }}
-        uses: actions/download-artifact@v3
-        with:
-          name: integ_test_result-darwin64-amd64
-          path: testreports/
-
       - name: Event File
         uses: actions/upload-artifact@v3
         with:

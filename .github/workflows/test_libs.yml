@@ -49,7 +49,7 @@ jobs:
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build all libs
-        uses: Open-CMSIS-Pack/devtools-build-action@v1.2
+        uses: Open-CMSIS-Pack/devtools-build-action@arm64
         id: devtools-build
         with:
           add_cmake_variables: '-DLIBS_ONLY=ON'
@@ -73,13 +73,13 @@ jobs:
 
       # CrossPlatformUnitTests failing for arm64
       - name: Run libs unittest
-        if: ${{ matrix.arch != 'arm64' }}
+        if: matrix.arch != 'arm64'
         run: |
           ctest -C Debug -V
         working-directory: ./build
 
       - name: Archive libs unittest reports
-        if: ${{ matrix.arch != 'arm64' }}
+        if: always() && (matrix.arch != 'arm64')
         uses: actions/upload-artifact@v3
         with:
           name: unit_test_result-${{ matrix.target }}-${{ matrix.arch }}
@@ -92,30 +92,6 @@ jobs:
     needs: [ test_libs ]
     runs-on: ubuntu-22.04
     steps:
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: 3.8
-
-      - name: Download unit test report windows
-        uses: actions/download-artifact@v3
-        with:
-          name: unit_test_result-windows64-amd64
-          path: testreports/
-
-      - name: Download unit test report linux amd64
-        uses: actions/download-artifact@v3
-        with:
-          name: unit_test_result-linux64-amd64
-          path: testreports/
-
-      - name: Download unit test report macos
-        if: ${{ !github.event.repository.private }}
-        uses: actions/download-artifact@v3
-        with:
-          name: unit_test_result-darwin64-amd64
-          path: testreports/
-
       - name: Event File
         uses: actions/upload-artifact@v3
         with:

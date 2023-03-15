@@ -1,30 +1,56 @@
 [
     {
         "runs_on":"macos-12",
-        "target":"darwin64",
+        "target":"darwin",
         "arch": "amd64",
         "binary": "csolution",
-        "runOn": "publicRepo"
+        "runOn": "publicRepo",
+        "pyswig": true,
+        "goswig": true
     },
     {
-        "runs_on":"ubuntu-22.04",
-        "target":"linux64",
-        "arch": "amd64",
-        "binary": "csolution",
-        "runOn": "always"
-    },
-    {
-        "runs_on":"ubuntu-22.04",
-        "target":"linux64",
+        "runs_on":"macos-12",
+        "target":"darwin",
         "arch": "arm64",
         "binary": "csolution",
-        "runOn": "always"
+        "runOn": "publicRepo",
+        "pyswig": false,
+        "goswig": false
+    },
+    {
+        "runs_on":"ubuntu-22.04",
+        "target":"linux",
+        "arch": "amd64",
+        "binary": "csolution",
+        "runOn": "always",
+        "pyswig": true,
+        "goswig": true
+    },
+    {
+        "runs_on":"ubuntu-22.04",
+        "target":"linux",
+        "arch": "arm64",
+        "binary": "csolution",
+        "runOn": "always",
+        "pyswig": false,
+        "goswig": false
     },
     {
         "runs_on":"windows-2019",
-        "target":"windows64",
+        "target":"windows",
         "arch": "amd64",
         "binary": "csolution.exe",
-        "runOn": "always"
+        "runOn": "always",
+        "pyswig": true,
+        "goswig": false
+    },
+    {
+        "runs_on":"windows-2019",
+        "target":"windows",
+        "arch": "arm64",
+        "binary": "csolution.exe",
+        "runOn": "always",
+        "pyswig": false,
+        "goswig": false
     }
 ]
