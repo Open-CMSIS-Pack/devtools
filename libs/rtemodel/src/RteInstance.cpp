@@ -1121,9 +1121,9 @@ string RteGpdscInfo::GetAbsolutePath() const
     return name;// absolute
   if (project && !project->GetProjectPath().empty()) {
     string abs = project->GetProjectPath() + name;
-    return abs;
+    return RteUtils::BackSlashesToSlashes(abs);
   }
-  return name;// absolute
+  return RteUtils::BackSlashesToSlashes(name);// absolute
 }
 
 RteBoardInfo::RteBoardInfo(RteItem* parent) :

@@ -182,8 +182,6 @@ public:
     return clone;
   }
 
-  //child hierarchy
-
   /**
    * @brief getter for a static list of pointer to instances of template type TITEM
    * @return static list of pointer to instances of template type TITEM
@@ -454,6 +452,60 @@ public:
     }
     return GetChildText(keyOrTag);
   }
+
+  /**
+   * @brief get unique child elements on the first level as a map (tag to text)
+   * @param elements map to fill
+   * @return supplied elements map
+  */
+  std::map<std::string, std::string>& GetSimpleChildElements(std::map<std::string, std::string>& elements) const
+  {
+    for (auto child : m_children) {
+      if (child) {
+        elements[child->GetTag()] = child->GetText();
+      }
+    }
+    return elements;
+  }
+
+  /**
+   * @brief create a new child element and add it to the children
+   * @param tag name of child's tag
+   * @return pointer to instance of type TITEM*
+  */
+  TITEM* CreateElement(const std::string& tag)
+  {
+    return AddChild(CreateItem(tag));
+  }
+
+  /**
+   * @brief create a new child element and add it to the children
+   * @param tag name of child's tag
+   * @param text child's text
+   * @param bAcceptEmptyText true to create child element in case tag text is empty
+   * @return pointer to instance of type TITEM*
+  */
+  TITEM* CreateElement(const std::string& tag, const std::string& text, bool bAcceptEmptyText = true)
+  {
+    if (bAcceptEmptyText || !text.empty()) {
+      TITEM* e = CreateElement(tag);
+      e->SetText(text);
+      return e;
+    }
+    return nullptr;
+  }
+
+  /**
+   * @brief create new simple child elements (only tag and text) and add them to the children
+   * @param elements map of tag to text pairs
+  */
+  void CreateSimpleChildElements(const std::map<std::string, std::string>& elements)
+  {
+    for (auto& [tag, text] : elements) {
+      CreateElement(tag, text);
+    }
+  }
+
 
 protected:
   // set new parent without changing the hierarchy. use with care!
