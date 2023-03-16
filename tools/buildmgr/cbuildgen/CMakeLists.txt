@@ -33,7 +33,7 @@ elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
   set(EXT ".mac-${CPU_ARCH}")
 endif()
 
-add_custom_command(TARGET cbuildgen POST_BUILD COMMAND cp "$<TARGET_FILE:cbuildgen>" "$<TARGET_FILE:cbuildgen>${EXT}")
+add_custom_command(TARGET cbuildgen POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:cbuildgen>" "$<TARGET_FILE:cbuildgen>${EXT}")
 
 #
 if(MSVC)
