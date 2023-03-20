@@ -1015,7 +1015,7 @@ void RtePackageInstanceInfo::ClearResolved()
 string RtePackageInstanceInfo::ConstructID()
 {
   m_commonID = RtePackage::GetPackageIDfromAttributes(*this, false);
-  return RtePackage::GetPackageIDfromAttributes(*this, false);
+  return RtePackage::GetPackageIDfromAttributes(*this, true);
 }
 
 
