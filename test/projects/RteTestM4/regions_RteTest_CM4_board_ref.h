@@ -48,34 +48,34 @@
 //   <o> Base address <0x0-0xFFFFFFFF:8>
 //   <i> Defines base address of memory region.
 //   <i> Default: 0x20000000
-#define __ROM0_BASE 0x20000000
+#define __RAM0_BASE 0x20000000
 //   <o> Region size [bytes] <0x0-0xFFFFFFFF:8>
 //   <i> Defines size of memory region.
 //   <i> Default: 0x00020000
-#define __ROM0_SIZE 0x00020000
+#define __RAM0_SIZE 0x00020000
 //   <q>Default region
 //   <i> Enables memory region globally for the application.
-#define __ROM0_DEFAULT 1
+#define __RAM0_DEFAULT 1
 //   <q>No zero initialize
 //   <i> Excludes region from zero initialization.
-#define __ROM0_NOINIT 0
+#define __RAM0_NOINIT 1
 // </h>
 
 // <h> BoardRAM (board memory)
 //   <o> Base address <0x0-0xFFFFFFFF:8>
 //   <i> Defines base address of memory region.
 //   <i> Default: 0x40000000
-#define __ROM1_BASE 0x40000000
+#define __RAM1_BASE 0x40000000
 //   <o> Region size [bytes] <0x0-0xFFFFFFFF:8>
 //   <i> Defines size of memory region.
 //   <i> Default: 0x00020000
-#define __ROM1_SIZE 0x00020000
+#define __RAM1_SIZE 0x00020000
 //   <q>Default region
 //   <i> Enables memory region globally for the application.
-#define __ROM1_DEFAULT 1
+#define __RAM1_DEFAULT 1
 //   <q>No zero initialize
 //   <i> Excludes region from zero initialization.
-#define __ROM1_NOINIT 0
+#define __RAM1_NOINIT 0
 // </h>
 
 // </h>

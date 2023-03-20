@@ -118,7 +118,7 @@
       </description>
       <debug svd="Device/ARM/SVD/ARMCM0.svd"/>  <!-- SVD files do not contain any peripheral -->
       <memory id="IROM1" start="0x00000000" size="0x00040000" startup="1" default="1"/>
-      <memory id="IRAM1" start="0x20000000" size="0x00020000" init   ="0" default="1"/>
+      <memory id="IRAM1" start="0x20000000" size="0x00020000" uninit="1" default="1"/>
 
       <device Dname="RteTest_ARMCM0">
         <processor Dcore="Cortex-M0" DcoreVersion="r0p0" Dfpu="NO_FPU" Dmpu="NO_MPU" Dendian="Configurable" Dclock="10000000"/>
@@ -148,7 +148,7 @@
       </description>
       <debug svd="Device/ARM/SVD/ARMCM3.svd"/>  <!-- SVD files do not contain any peripheral -->
       <memory id="IROM1" start="0x00000000" size="0x00040000" startup="1" default="1"/>
-      <memory id="IRAM1" start="0x20000000" size="0x00020000" init   ="0" default="1"/>
+      <memory id="IRAM1" start="0x20000000" size="0x00020000" uninit="1" default="1"/>
 
       <device Dname="RteTest_ARMCM3">
         <processor Dcore="Cortex-M3" DcoreVersion="r2p1" Dfpu="NO_FPU" Dmpu="MPU" Dendian="Configurable" Dclock="10000000"/>
@@ -164,7 +164,7 @@
       </description>
       <debug svd="Device/ARM/SVD/ARMCM4.svd"/>  <!-- SVD files do not contain any peripheral -->
       <memory name="FLASH" access="rx" start="0x00000000" size="0x00040000" startup="1" default="1"/>
-      <memory name="SRAM"  access="rwx" start="0x20000000" size="0x00020000" init   ="0" default="1"/>
+      <memory name="SRAM"  access="rwx" start="0x20000000" size="0x00020000" uninit="1" default="1"/>
       <algorithm name="Device/ARM/Flash/CortexM4SubFamily.FLM" start="0x00000000" size="0x00040000" default="1"/>
 
       <device Dname="RteTest_ARMCM4">

@@ -1745,7 +1745,7 @@ std::string RteTarget::GenerateRegionsHeaderContent() const
   oss << "// =======================" << RteUtils::LF_STRING;
   for (size_t i = 0; i < memRW.size(); i++) {
     RteItem* mem = memRW[i];
-    string id = string("__ROM") + RteUtils::LongToString(i);
+    string id = string("__RAM") + RteUtils::LongToString(i);
     oss << GenerateMemoryRegionContent(mem, id, i >= nDeviceRW);
   }
   oss << "// </h>" << RteUtils::LF_STRING;
