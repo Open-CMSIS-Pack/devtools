@@ -383,7 +383,7 @@ bool CheckFiles::CheckFileIsInPack(const string& fileName, int lineNo)
     return true;
   }
 
-  const auto& packPath = GetPackagePath();
+  const auto& packPath = RteFsUtils::MakePathCanonical(GetPackagePath());
   if(absPath.find(packPath, 0) != 0) {
     LogMsg("M313", PATH(fileName), lineNo);
     return false;
