@@ -1149,6 +1149,25 @@ RteApi* RteTarget::GetApi(const string& id) const
   return m_filteredModel->GetApi(id);
 }
 
+RteComponent* RteTarget::AddFilteredComponents(RteItem* parentContainer) {
+  if (!parentContainer) {
+    return nullptr;
+  }
+  RteComponent* deviceStartup = nullptr;
+  for (auto itc : parentContainer->GetChildren()) {
+    RteComponent* c = dynamic_cast<RteComponent*>(itc);
+    if (c) {
+      AddFilteredComponent(c);
+    } else {
+      c = AddFilteredComponents(itc);
+    }
+    if (!deviceStartup && c && c->IsDeviceStartup()) {
+      deviceStartup = c;
+    }
+  }
+  return deviceStartup;
+}
+
 void RteTarget::AddFilteredComponent(RteComponent* c)
 {
   /*
@@ -1260,15 +1279,8 @@ void RteTarget::FilterComponents()
       if (!gi->IsUsedByTarget(GetName()))
         continue;
       RtePackage* gpdscPack = gi->GetGpdscPack();
-      if (gpdscPack && gpdscPack->GetComponents()) {
-        for (auto itc : gpdscPack->GetComponents()->GetChildren()) {
-          RteComponent* c = dynamic_cast<RteComponent*>(itc);
-          if (c) {
-            if (c->IsDeviceStartup())
-              deviceStartup = c;
-            AddFilteredComponent(c);
-          }
-        }
+      if (gpdscPack) {
+        deviceStartup = AddFilteredComponents(gpdscPack->GetComponents());
       }
     }
   }
@@ -1733,7 +1745,7 @@ std::string RteTarget::GenerateRegionsHeaderContent() const
   oss << "// =======================" << RteUtils::LF_STRING;
   for (size_t i = 0; i < memRW.size(); i++) {
     RteItem* mem = memRW[i];
-    string id = string("__ROM") + RteUtils::LongToString(i);
+    string id = string("__RAM") + RteUtils::LongToString(i);
     oss << GenerateMemoryRegionContent(mem, id, i >= nDeviceRW);
   }
   oss << "// </h>" << RteUtils::LF_STRING;

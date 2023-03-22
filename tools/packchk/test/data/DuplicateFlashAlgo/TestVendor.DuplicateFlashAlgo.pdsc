@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<package schemaVersion="1.1" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="PACK.xsd">
+  <vendor>TestVendor</vendor>
+  <url>http://www.keil.com/pack/</url>
+  <name>TestDuplicateFlashAlgo</name>
+  <description>Test DFP</description>
+
+  <releases>
+    <release version="1.0.0" date="2023-02-22">
+      First Release version of Test DFP.
+    </release>
+  </releases>
+
+  <keywords>
+  <!-- keywords for indexing -->
+    <keyword>ARM</keyword>
+  </keywords>
+  
+  <conditions>
+    <condition id="TestDevices">
+      <description>Test devices</description>
+      <require Dvendor="ARM:82" Dname="Test*"/>
+    </condition>
+    <condition id="Test ARMCC">
+      <description>filter for STM32F1xx Value Line Low Density Device and the ARM compiler</description>
+      <require condition="TestDevices"/>
+      <require Tcompiler="ARMCC"/>
+    </condition>
+  </conditions>
+
+
+  <devices>
+    <family Dfamily="TestFamily" Dvendor="ARM:82">
+      <algorithm name="Flash/ARMCMx_512.FLM"  start="0x00000000" size="0x00040000" default="1"/>
+
+      <!-- ******************************  TestSubFamily  ****************************** -->
+      <subFamily DsubFamily="TestSubFamily">
+        <compile header="Files/TestDevices.h"  define="TESTDEVICES"/>
+
+        <description>
+The TestSubFamily is ...
+        </description>
+
+        <!-- ******************************  TestDevice1  ***************************** -->
+        <device Dname="TestDevice1">
+          <processor Dcore="Cortex-M4"  DcoreVersion="r0p1" Dfpu="SP_FPU" Dmpu="MPU" Dendian="Little-endian" Dclock="204000000"/>
+          <memory  id="IROM1"                  start="0x00000000" size="0x00040000" default="1" startup="1"/>
+          <memory  id="IRAM1"                  start="0x10000000" size="0x00010000" default="1" init   ="0"/>
+          <memory  id="IRAM2"                  start="0x20000000" size="0x00010000" default="0" init   ="0"/>
+        </device>
+
+        <!-- ******************************  TestDevice2  ***************************** -->
+        <device Dname="TestDevice2">
+          <processor Dcore="Cortex-M4"  DcoreVersion="r0p1" Dfpu="SP_FPU" Dmpu="MPU" Dendian="Little-endian" Dclock="204000000"/>
+          <memory  id="IROM1"                  start="0x00000000" size="0x00040000" default="1" startup="1"/>
+          <memory  id="IRAM1"                  start="0x10000000" size="0x00010000" default="0" init   ="0"/>
+          <memory  id="IRAM2"                  start="0x20000000" size="0x00010000" default="1" init   ="0"/>
+        </device>
+
+        <!-- ******************************  TestDevice3  ***************************** -->
+        <device Dname="TestDevice3">
+          <processor Dcore="Cortex-M4"  DcoreVersion="r0p1" Dfpu="SP_FPU" Dmpu="MPU" Dendian="Little-endian" Dclock="204000000"/>
+          <memory  id="IROM1"                  start="0x00000000" size="0x00040000" default="1" startup="1"/>
+          <memory  id="IRAM1"                  start="0x10000000" size="0x00010000" default="0" init   ="0"/>
+          <memory  id="IRAM2"                  start="0x20000000" size="0x00010000" default="0" init   ="0"/>
+        </device>
+
+        <!-- ******************************  TestDevice4  ***************************** -->
+        <device Dname="TestDevice4">
+          <processor Dcore="Cortex-M4"  DcoreVersion="r0p1" Dfpu="SP_FPU" Dmpu="MPU" Dendian="Little-endian" Dclock="204000000"/>
+          <memory  id="IROM1"                  start="0x00000000" size="0x00040000" default="1" startup="1"/>
+          <memory  id="IRAM1"                  start="0x10000000" size="0x00010000" default="1" init   ="0"/>
+          <memory  id="IRAM2"                  start="0x20000000" size="0x00010000" default="1" init   ="0"/>
+        </device>
+
+        <!-- ******************************  TestDevice5  ***************************** -->
+        <device Dname="TestDevice5">
+          <processor Dcore="Cortex-M4"  DcoreVersion="r0p1" Dfpu="SP_FPU" Dmpu="MPU" Dendian="Little-endian" Dclock="204000000"/>
+          <memory  id="IROM1"                  start="0x00000000" size="0x00040000" default="1" startup="1"/>
+          <memory  id="IROM2"                  start="0x00040000" size="0x00040000" default="0" startup="0"/>
+          <memory  id="IRAM1"                  start="0x10000000" size="0x00010000" default="1" init   ="0"/>
+          <memory  id="IRAM2"                  start="0x20000000" size="0x00010000" default="0" init   ="0"/>
+        </device>
+
+        <!-- ******************************  TestDevice6  ***************************** -->
+        <device Dname="TestDevice6">
+          <processor Pname="M7" Dcore="Cortex-M7"  DcoreVersion="r0p1" Dfpu="SP_FPU" Dmpu="MPU" Dendian="Little-endian" Dclock="204000000"/>
+          <memory  id="IROM1"                  start="0x00000000" size="0x00040000" default="1" startup="1"/>
+          <memory  id="IROM2"                  start="0x00040000" size="0x00040000" default="0" startup="0"/>
+          <memory  id="IRAM1"                  start="0x10000000" size="0x00010000" default="1" init   ="0"/>
+          <memory  id="IRAM2"                  start="0x20000000" size="0x00010000" default="0" init   ="0"/>
+          <algorithm Pname="M7" name="Flash/ARMCMx_Low_256.FLM"  start="0x00000000" size="0x00040000" default="1"/>
+          <algorithm Pname="M7" name="Flash/ARMCMx_High_256.FLM" start="0x00040000" size="0x00040000" default="0"/>
+        </device>
+
+        <!-- ******************************  TestDevice7  ***************************** -->
+        <device Dname="TestDevice7">
+          <processor Pname="M7" Dcore="Cortex-M7"  DcoreVersion="r0p1" Dfpu="SP_FPU" Dmpu="MPU" Dendian="Little-endian" Dclock="204000000"/>
+          <memory  id="IROM1"                  start="0x00000000" size="0x00040000" default="1" startup="1"/>
+          <memory  id="IROM2"                  start="0x00040000" size="0x00040000" default="0" startup="0"/>
+          <memory  id="IRAM1"                  start="0x10000000" size="0x00010000" default="1" init   ="0"/>
+          <memory  id="IRAM2"                  start="0x20000000" size="0x00010000" default="0" init   ="0"/>
+          <algorithm Pname="M7" name="Flash/ARMCMx_512.FLM"  start="0x00000000" size="0x00040000" default="1"/>
+          <algorithm Pname="M7" name="Flash/ARMCMx_512.FLM"  start="0x00040000" size="0x00040000" default="0"/>
+        </device>
+
+        <!-- ******************************  TestDevice8  ***************************** -->
+        <device Dname="TestDevice8">
+          <processor  Dcore="Cortex-M7"  DcoreVersion="r0p1" Dfpu="SP_FPU" Dmpu="MPU" Dendian="Little-endian" Dclock="204000000"/>
+          <memory  id="IROM1"                  start="0x00000000" size="0x00040000" default="1" startup="1"/>
+          <memory  id="IROM2"                  start="0x00040000" size="0x00040000" default="0" startup="0"/>
+          <memory  id="IRAM1"                  start="0x10000000" size="0x00010000" default="1" init   ="0"/>
+          <memory  id="IRAM2"                  start="0x20000000" size="0x00010000" default="0" init   ="0"/>
+          <algorithm name="Flash/ARMCMx_Low_256.FLM"  start="0x00000000" size="0x00040000" default="1"/>
+          <algorithm name="Flash/ARMCMx_High_256.FLM" start="0x00040000" size="0x00040000" default="0"/>
+        </device>
+
+        <!-- ******************************  TestDevice9  ***************************** -->
+        <device Dname="TestDevice9">
+          <processor Dcore="Cortex-M7"  DcoreVersion="r0p1" Dfpu="SP_FPU" Dmpu="MPU" Dendian="Little-endian" Dclock="204000000"/>
+          <memory  id="IROM1"                  start="0x00000000" size="0x00040000" default="1" startup="1"/>
+          <memory  id="IROM2"                  start="0x00040000" size="0x00040000" default="0" startup="0"/>
+          <memory  id="IRAM1"                  start="0x10000000" size="0x00010000" default="1" init   ="0"/>
+          <memory  id="IRAM2"                  start="0x20000000" size="0x00010000" default="0" init   ="0"/>
+          <algorithm name="Flash/ARMCMx_512.FLM"  start="0x00000000" size="0x00040000" default="1"/>
+          <algorithm name="Flash/ARMCMx_512.FLM"  start="0x00040000" size="0x00040000" default="0"/>
+        </device>
+
+      </subFamily>
+    </family>
+  </devices>
+
+  <components>
+    <component Cclass="Device" Cgroup="Startup" Cversion="1.0.0" condition="TestDevices">
+      <description>System Startup for STMicroelectronics STM32F1xx device series</description>
+      <files>
+        <file category="include" name="Files/"/>
+        <file category="source"  name="Files/startup_Test.s"     attr="config" version="1.0.0" condition="Test ARMCC"/>
+        <file category="source"  name="Files/system_Test.c"      attr="config" version="1.0.0" />
+      </files>
+    </component>
+  </components>
+
+</package>

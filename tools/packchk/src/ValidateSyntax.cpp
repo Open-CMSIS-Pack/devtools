@@ -502,6 +502,13 @@ string ValidateSyntax::CreateId(RteItem* prop, const string& cpuName)
       LogMsg("M010");
     }
   }
+  if(tag == "algorithm") {
+    id = prop->GetID();
+    if(!id.empty()) {
+      LogMsg("M089", MCU(cpuName), VAL("ID", id));
+      LogMsg("M010");
+    }
+  }
   else {
     LogMsg("M095", VAL("MCU", cpuName), VAL("TAG", tag));
   }

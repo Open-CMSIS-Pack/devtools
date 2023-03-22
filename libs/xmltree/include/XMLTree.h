@@ -152,34 +152,6 @@ public:
    * @return pointer to instance of type XMLTreeElement
   */
   XMLTreeElement* CreateItem(const std::string& tag) override { return new XMLTreeElement(GetThis(), tag); }
-
-  /**
-   * @brief create a new XML child element of the instance
-   * @param tag name of tag
-   * @return pointer to instance of type XMLTreeElement
-  */
-  virtual XMLTreeElement* CreateElement(const std::string& tag);
-
-  /**
-   * @brief create a new XML child element of the instance
-   * @param tag name of tag
-   * @param text tag text
-   * @param bAcceptEmptyText true to create child element in case tag text is empty
-   * @return pointer of type XMLTreeElement, otherwise nullptr in case XML element is not created
-  */
-  virtual XMLTreeElement* CreateElement(const std::string& tag, const std::string& text, bool bAcceptEmptyText = true);
-
-  /**
-   * @brief create a list of XML child elements
-   * @param elements list of XML tags mapped to tag text to be created
-  */
-  void CreateSimpleChildElements(const std::map<std::string, std::string>& elements);
-
-  /**
-   * @brief getter for list of child elements on the first level
-   * @param elements list of child elements on the first level
-  */
-  void GetSimpleChildElements(std::map<std::string, std::string>& elements);
 };
 
 /**

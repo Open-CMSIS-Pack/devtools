@@ -976,7 +976,18 @@ public:
   bool IsGpdscUsed(const std::string& gpdsc) const { return m_gpdscFileNames.find(gpdsc) != m_gpdscFileNames.end(); }
 
 protected:
+  /**
+   * @brief add supplied component to the list of filtered components
+   * @param c pointer to RteComponent
+  */
   virtual void AddFilteredComponent(RteComponent* c);
+  /**
+   * @brief adds components to the list of available components from suppled container
+   * @param parentContainer pointer to RteItem representing <components> or <bundle> elements
+   * @return pointer to device startup component if found in the container, nullptr otherwise
+  */
+  virtual RteComponent* AddFilteredComponents(RteItem* parentContainer);
+
   virtual void AddPotentialComponent(RteComponent* c);
   virtual void CategorizeComponent(RteComponent* c);
   virtual void CategorizeComponentInstance(RteComponentInstance* ci, int count);

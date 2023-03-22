@@ -1015,7 +1015,7 @@ void RtePackageInstanceInfo::ClearResolved()
 string RtePackageInstanceInfo::ConstructID()
 {
   m_commonID = RtePackage::GetPackageIDfromAttributes(*this, false);
-  return RtePackage::GetPackageIDfromAttributes(*this, false);
+  return RtePackage::GetPackageIDfromAttributes(*this, true);
 }
 
 
@@ -1121,9 +1121,9 @@ string RteGpdscInfo::GetAbsolutePath() const
     return name;// absolute
   if (project && !project->GetProjectPath().empty()) {
     string abs = project->GetProjectPath() + name;
-    return abs;
+    return RteUtils::BackSlashesToSlashes(abs);
   }
-  return name;// absolute
+  return RteUtils::BackSlashesToSlashes(name);// absolute
 }
 
 RteBoardInfo::RteBoardInfo(RteItem* parent) :
