@@ -1,6 +1,9 @@
 # This file maps the CMSIS project options to toolchain settings.
 #
 #   - Applies to toolchain: IAR ARM C/C++ Compiler V9.32.1 and greater
+#
+#    V1: Initial support
+#    V2: Support for 32-bit Cortex M,A and R
 
 ############### EDIT BELOW ###############
 # Set base directory of toolchain
@@ -33,85 +36,163 @@ if(DEFINED TOOLCHAIN_ROOT)
   set(OC ${TOOLCHAIN_ROOT}/${OC}${EXT})
 endif()
 
-# Core Options
+######## Core Options ##########
+set(SUPPORTS_BRANCHPROT FALSE) # Branch protection
+set(SUPPORTS_MVE FALSE)        # Vector extensions
+set(SUPPORTS_DSP FALSE)        # Digital signal processing
+set(SUPPORTS_TZ FALSE)         # Trust zones
+
+function(iar_set_option_flag option_values value flags option_to_set default)
+  list(FIND ${option_values} "${value}" _index)
+    if (${_index} GREATER -1)
+      list(GET ${flags} ${_index} flag)
+      if("${flag}" STREQUAL "ERROR")
+        message(FATAL_ERROR "${value} is not supported")
+      endif()
+      set(${option_to_set} "${flag}" PARENT_SCOPE)
+    else()
+      set(${option_to_set} "${default}" PARENT_SCOPE)
+    endif()
+endfunction()
+
+# The list of generic values from CPRJ.xsd
+set(FPU_VALUES "none" "SP_FPU" "DP_FPU" "FPU")
 
 if(CPU STREQUAL "Cortex-M0")
   set(IAR_CPU "Cortex-M0")
+
 elseif(CPU STREQUAL "Cortex-M0+")
   set(IAR_CPU "Cortex-M0+")
+
 elseif(CPU STREQUAL "Cortex-M1")
   set(IAR_CPU "Cortex-M1")
+
 elseif(CPU STREQUAL "Cortex-M3")
   set(IAR_CPU "Cortex-M3")
+
 elseif(CPU STREQUAL "Cortex-M4")
   set(IAR_CPU "Cortex-M4")
-  if(FPU STREQUAL "SP_FPU")
-    set(IAR_CPU "Cortex-M4.fp.sp")
-  endif()
+  set(FPU_FLAGS     "none" "VFPv4_sp" "ERROR" "VFPv4_sp")
+
 elseif(CPU STREQUAL "Cortex-M7")
   set(IAR_CPU "Cortex-M7")
-  if(FPU STREQUAL "DP_FPU")
-    set(IAR_CPU "${IAR_CPU}.fp.dp")
-  elseif(FPU STREQUAL "SP_FPU")
-    set(IAR_CPU "${IAR_CPU}.fp.sp")
-  endif()
+  set(FPU_FLAGS     "none" "VFPv5_sp" "VFPv5_d16" "VFPv5_sp")
+
 elseif(CPU STREQUAL "Cortex-M23")
-  set(IAR_CPU "Cortex-M23")
-  if(TZ STREQUAL "NO_TZ")
-    set(IAR_CPU "${IAR_CPU}.no_se")
-  endif()
+  set(IAR_CPU      "Cortex-M23")
+  set(SUPPORTS_TZ  TRUE)
+
 elseif(CPU STREQUAL "Cortex-M33")
-  set(IAR_CPU "Cortex-M33")
-  if(FPU STREQUAL "SP_FPU")
-    set(IAR_CPU "${IAR_CPU}.fp")
-  endif()
-  if(DSP STREQUAL "NO_DSP")
-    set(IAR_CPU "${IAR_CPU}.no_dsp")
-  endif()
-  if(TZ STREQUAL "NO_TZ")
-    set(IAR_CPU "${IAR_CPU}.no_se")
-  endif()
+  set(IAR_CPU      "Cortex-M33")
+  set(FPU_FLAGS    "none" "VFPv5_sp" "VFPv5_d16" "VFPv5_sp")
+  set(SUPPORTS_TZ  TRUE)
+  set(SUPPORTS_DSP TRUE)
+
 elseif(CPU STREQUAL "Star-MC1")
-  set(IAR_CPU "STAR")
-  if(FPU STREQUAL "SP_FPU")
-    set(IAR_CPU "${IAR_CPU}.fp")
-  endif()
-  if(DSP STREQUAL "NO_DSP")
-    set(IAR_CPU "${IAR_CPU}.no_dsp")
-  endif()
-  if(TZ STREQUAL "NO_TZ")
-    set(IAR_CPU "${IAR_CPU}.no_se")
-  endif()
+  set(IAR_CPU      "STAR")
+  set(FPU_FLAGS    "none" "VFPv5_sp" "VFPv5_d16" "VFPv5_sp")
+  set(SUPPORTS_TZ  TRUE)
+  set(SUPPORTS_DSP TRUE)
+
 elseif(CPU STREQUAL "Cortex-M35P")
-  set(IAR_CPU "Cortex-M35P")
-  if(FPU STREQUAL "SP_FPU")
-    set(IAR_CPU "${IAR_CPU}.fp")
-  endif()
-  if(DSP STREQUAL "NO_DSP")
-    set(IAR_CPU "${IAR_CPU}.no_dsp")
-  endif()
-  if(TZ STREQUAL "NO_TZ")
-    set(IAR_CPU "${IAR_CPU}.no_se")
-  endif()
+  set(IAR_CPU      "Cortex-M35P")
+  set(FPU_FLAGS    "none" "VFPv5_sp" "VFPv5_d16" "VFPv5_sp")
+  set(SUPPORTS_TZ  TRUE)
+  set(SUPPORTS_DSP TRUE)
+
 elseif(CPU STREQUAL "Cortex-M55")
-  set(IAR_CPU "Cortex-M55")
-  if(TZ STREQUAL "NO_TZ")
-    set(IAR_CPU "${IAR_CPU}.no_se")
-  endif()
-  if(MVE STREQUAL "NO_MVE")
-    set(IAR_CPU "${IAR_CPU}.no_mve")
-  endif()
+  set(IAR_CPU      "Cortex-M55")
+  set(FPU_FLAGS    "none" "ERROR" "VFPv5_d16" "VFPv5_d16")
+  set(SUPPORTS_MVE TRUE)
+  set(SUPPORTS_TZ  TRUE)
+
 elseif(CPU STREQUAL "Cortex-M85")
-  set(IAR_CPU "Cortex-M85")
-  if(BRANCHPROT STREQUAL "NO_BRANCHPROT")
-    set(IAR_CPU "${IAR_CPU}.no_pacbti")
-  endif()
-  if(MVE STREQUAL "NO_MVE")
-    set(IAR_CPU "${IAR_CPU}.no_mve")
-  endif()
+  set(IAR_CPU             "Cortex-M85")
+  set(FPU_FLAGS           "none" "ERROR" "VFPv5_d16" "VFPv5_d16")
+  set(SUPPORTS_BRANCHPROT TRUE)
+  set(SUPPORTS_MVE        TRUE)
+  set(SUPPORTS_TZ         TRUE)
+  set(TZ                  "TZ") # Always on for M85
+
+elseif(CPU STREQUAL "Cortex-A5")
+set(IAR_CPU             "Cortex-A5")
+set(FPU_FLAGS           "none" "ERROR" "VFPv4_d16" "VFPv4_d16")
+
+elseif(CPU STREQUAL "Cortex-A7")
+set(IAR_CPU             "Cortex-A7")
+set(FPU_FLAGS           "none" "ERROR" "VFPv4_d16" "VFPv4_d16")
+
+elseif(CPU STREQUAL "Cortex-A8")
+set(IAR_CPU             "Cortex-A8")
+set(FPU_FLAGS           "none" "ERROR" "VFPv3_d16" "VFPv3_d16")
+
+elseif(CPU STREQUAL "Cortex-A9")
+set(IAR_CPU             "Cortex-A9.no_neon")
+set(FPU_FLAGS           "none" "ERROR" "VFPv3_d16" "VFPv3_d16")
+
+elseif(CPU STREQUAL "Cortex-A15")
+set(IAR_CPU             "Cortex-A15.no_neon")
+set(FPU_FLAGS           "none" "ERROR" "VFPv4_d16" "VFPv4_d16")
+
+elseif(CPU STREQUAL "Cortex-A17")
+set(IAR_CPU             "Cortex-A17.no_neon")
+set(FPU_FLAGS           "none" "ERROR" "VFPv4_d16" "VFPv4_d16")
+
+elseif(CPU STREQUAL "Cortex-R4")
+set(IAR_CPU             "Cortex-R4")
+set(FPU_FLAGS           "none" "ERROR" "VFPv3_d16" "VFPv3_d16")
+
+elseif(CPU STREQUAL "Cortex-R5")
+set(IAR_CPU             "Cortex-R5")
+set(FPU_FLAGS           "none" "ERROR" "VFPv3_d16" "VFPv3_d16")
+
+elseif(CPU STREQUAL "Cortex-R7")
+set(IAR_CPU             "Cortex-R7")
+set(FPU_FLAGS           "none" "ERROR" "VFPv3_d16" "VFPv3_d16")
+
+elseif(CPU STREQUAL "Cortex-R8")
+set(IAR_CPU             "Cortex-R8")
+set(FPU_FLAGS           "none" "ERROR" "VFPv3_d16" "VFPv3_d16")
+
+elseif(CPU EQUAL "Cortex-R52")
+if("${FPU}" STREQUAL "FPU")
+  set(IAR_CPU             "Cortex-R52.no_neon")
+else()
+  set(IAR_CPU             "Cortex-R52")
 endif()
+set(FPU_FLAGS           "none" "VFPv5sp" "VFPv5_d16" "VFPv5")
+
+elseif(CPU STREQUAL "Cortex-R52+")
+if("${FPU}" STREQUAL "FPU")
+  set(IAR_CPU             "Cortex-R52+.no_neon")
+else()
+  set(IAR_CPU             "Cortex-R52+")
+endif()
+set(FPU_FLAGS           "none" "VFPv5sp" "VFPv5_d16" "VFPv5")
+
+endif()
+
 if(NOT DEFINED IAR_CPU)
   message(FATAL_ERROR "Error: CPU is not supported!")
+endif()
+
+iar_set_option_flag(FPU_VALUES "${FPU}" FPU_FLAGS IAR_FPU "none")
+
+# Handle any modifiers to the cpu. DO NOT ALTER THE ORDER!
+if((DSP STREQUAL "NO_DSP") AND ${SUPPORTS_DSP})
+set(IAR_CPU "${IAR_CPU}.no_dsp")
+endif()
+
+if((TZ STREQUAL "NO_TZ") AND ${SUPPORTS_TZ})
+set(IAR_CPU "${IAR_CPU}.no_se")
+endif()
+
+if((BRANCHPROT STREQUAL "NO_BRANCHPROT") AND ${SUPPORTS_BRANCHPROT})
+  set(IAR_CPU "${IAR_CPU}.no_pacbti")
+endif()
+
+if((MVE STREQUAL "NO_MVE") AND ${SUPPORTS_MVE})
+  set(IAR_CPU "${IAR_CPU}.no_mve")
 endif()
 
 if(BYTE_ORDER STREQUAL "Little-endian")
@@ -152,10 +233,11 @@ set(DEBUG_CC_FLAGS     "--debug" "")
 set(DEBUG_CXX_FLAGS    "--debug" "")
 
 set(WARNINGS_VALUES    "on" "off")
-set(WARNINGS_ASM_FLAGS ""   "-w-")
+set(WARNINGS_ASM_FLAGS ""   "-w")
 set(WARNINGS_CC_FLAGS  ""   "--no_warnings")
 set(WARNINGS_CXX_FLAGS ""   "--no_warnings")
 set(WARNINGS_LD_FLAGS  ""   "--no_warnings")
+
 
 function(cbuild_set_option_flags lang option value flags)
   if(NOT DEFINED ${option}_${lang}_FLAGS)
@@ -181,7 +263,7 @@ endfunction()
 
 # Assembler
 
-set(ASM_CPU "--cpu ${IAR_CPU}")
+set(ASM_CPU "--cpu ${IAR_CPU} --fpu=${IAR_FPU}")
 set(ASM_BYTE_ORDER "--endian ${IAR_BYTE_ORDER}")
 set(ASM_FLAGS)
 set(ASM_DEFINES ${DEFINES})
@@ -191,16 +273,18 @@ cbuild_set_options_flags(ASM "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" ASM_OPTIONS_
 
 # C Compiler
 
-set(CC_CPU "--cpu=${IAR_CPU}")
+set(CC_CPU "--cpu=${IAR_CPU} --fpu=${IAR_FPU}")
 set(CC_BYTE_ORDER "--endian=${IAR_BYTE_ORDER}")
 set(CC_FLAGS)
 set(CC_DEFINES ${DEFINES})
 cbuild_set_defines(CC CC_DEFINES)
 set(CC_OPTIONS_FLAGS)
 cbuild_set_options_flags(CC "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" CC_OPTIONS_FLAGS)
-set(_PI "--preinclude ")
+set(_PI "-include ")
 
-if(SECURE STREQUAL "Secure")
+if((SECURE STREQUAL "Secure") AND 
+        (TZ STREQUAL "NO_TZ") AND 
+              ${SUPPORTS_TZ}     )
   set(CC_SECURE "--cmse")
 endif()
 
@@ -215,7 +299,7 @@ set(CXX_SECURE "${CC_SECURE}")
 
 # Linker
 
-set(LD_CPU "--cpu=${IAR_CPU}")
+set(LD_CPU "--cpu=${IAR_CPU} --fpu=${IAR_FPU}")
 set(_LS "--config ")
 
 if(SECURE STREQUAL "Secure")

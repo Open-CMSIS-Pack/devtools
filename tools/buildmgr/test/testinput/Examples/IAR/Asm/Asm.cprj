@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<cprj schemaVersion="1.0.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="CPRJ.xsd">
+  <packages>
+    <package name="CMSIS" vendor="ARM" version="5.9.0:5.9.0"/>
+  </packages>
+
+  <compilers>
+    <compiler name="IAR" version="9.30.1"/>
+  </compilers>
+
+  <target Dname="ARMCM3" Dvendor="ARM">
+    <output intdir="intdir" name="reproducer" outdir="outdir" rtedir="RTE" type="exe"/>
+    <options debug="on" optimize="none"/>
+    <cflags add="--dlib_config DLib_Config_Full.h -e" compiler="IAR"/>
+    <cxxflags add="--dlib_config DLib_Config_Full.h -e" compiler="IAR"/>
+    <ldflags add="--semihosting" compiler="IAR"/>
+  </target>
+
+  <files>
+    <group name="main">
+      <file category="sourceC" name="main.c"/>
+      <file category="sourceC" name="startup.c"/>
+      <file category="sourceAsm" name="Reset_Handler.S"/>
+    </group>
+  </files>
+</cprj>
+
