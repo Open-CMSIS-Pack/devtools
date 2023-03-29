@@ -379,8 +379,28 @@ bool RteFsUtils::RemoveDirectoryAutoRetry(const string& path, int retries, int d
 }
 
 bool RteFsUtils::MoveFileExAutoRetry(const string& existingFileName, const string& newFileName, unsigned int retries, unsigned int delay) {
+  // Check if file exists
+  if (!Exists(existingFileName)) {
+    return false;
+  }
   for ( unsigned int r = 0; r < retries ; r++ ) {
     if(MoveExistingFile(existingFileName, newFileName)) {
+      return true;
+    }
+    if (delay > 0) {
+      this_thread::sleep_for(std::chrono::milliseconds(delay));
+    }
+  }
+  return false;
+}
+
+bool RteFsUtils::CopyFileExAutoRetry(const string& existingFileName, const string& newFileName, unsigned int retries, unsigned int delay) {
+  // Check if file exists
+  if (!Exists(existingFileName)) {
+    return false;
+  }
+  for (unsigned int r = 0; r < retries; r++) {
+    if (CopyCheckFile(existingFileName, newFileName, false)) {
       return true;
     }
     if (delay > 0) {
