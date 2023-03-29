@@ -603,8 +603,6 @@ TEST_F(RteFsUtilsTest, MoveExistingFile) {
 
 TEST_F(RteFsUtilsTest, MoveFileExAutoRetry) {
   bool ret;
-  error_code ec;
-
   // Test filename with default retry and delay arguments
   RteFsUtils::CreateFile(filenameRegular, "foo");
   ret = RteFsUtils::MoveFileExAutoRetry(filenameRegular, filenameRegularCopy);
@@ -626,6 +624,36 @@ TEST_F(RteFsUtilsTest, MoveFileExAutoRetry) {
   ret = RteFsUtils::MoveFileExAutoRetry(filenameRegular, filenameRegularCopy, 0U, 1U);
   EXPECT_EQ(ret, false);
   RteFsUtils::RemoveFile(filenameRegular);
+
+  // try to move non-existing file
+  ret = RteFsUtils::MoveFileExAutoRetry(filenameRegular, filenameRegularCopy, 0U, 1U);
+  EXPECT_FALSE(ret);
+  EXPECT_FALSE(RteFsUtils::Exists(filenameRegular));
+  EXPECT_FALSE(RteFsUtils::Exists(filenameRegularCopy));
+}
+
+
+TEST_F(RteFsUtilsTest, CopyFileExAutoRetry) {
+  // try to move non-existing file first
+  bool ret = RteFsUtils::MoveFileExAutoRetry(filenameRegular, filenameRegularCopy, 0U, 1U);
+  EXPECT_FALSE(ret);
+  EXPECT_FALSE(RteFsUtils::Exists(filenameRegular));
+  EXPECT_FALSE(RteFsUtils::Exists(filenameRegularCopy));
+
+  // Test filename with default retry and delay arguments
+  RteFsUtils::CreateFile(filenameRegular, "foo");
+  ret = RteFsUtils::CopyFileExAutoRetry(filenameRegular, filenameRegularCopy);
+  EXPECT_EQ(ret, true);
+  EXPECT_EQ(RteFsUtils::Exists(filenameRegular), true);
+  EXPECT_EQ(RteFsUtils::Exists(filenameRegularCopy), true);
+  RteFsUtils::RemoveFile(filenameRegularCopy);
+
+  // Test filename with delay argument equal to 0
+  ret = RteFsUtils::CopyFileExAutoRetry(filenameRegular, filenameRegularCopy, 5U, 0U);
+  EXPECT_EQ(ret, true);
+  EXPECT_EQ(RteFsUtils::Exists(filenameRegular), true);
+  EXPECT_EQ(RteFsUtils::Exists(filenameRegularCopy), true);
+  RteFsUtils::RemoveFile(filenameRegularCopy);
 }
 
 TEST_F(RteFsUtilsTest, RemoveDirectoryAutoRetry) {

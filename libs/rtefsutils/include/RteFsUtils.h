@@ -146,6 +146,15 @@ public:
   */
   static bool MoveFileExAutoRetry(const std::string& existingFileName, const std::string& newFileName, unsigned int retries = 5, unsigned int delay = 1);
   /**
+   * @brief copy file with retries and delay between retries, create destination directory if necessary
+   * @param existingFileName name of source file
+   * @param newFileName name of destination file
+   * @param retries number of retries
+   * @param delay time lag in milliseconds between retries
+   * @return true if file is copied
+  */
+  static bool CopyFileExAutoRetry(const std::string& existingFileName, const std::string& newFileName, unsigned int retries = 5, unsigned int delay = 1);
+  /**
    * @brief copy source file/directory include subdirectories to destination one
    * @param src source file/directory
    * @param dst destination file/directory
