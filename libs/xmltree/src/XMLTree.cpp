@@ -33,9 +33,18 @@ XMLTreeElement::~XMLTreeElement()
 class XMLTreeElementBuilder : public XmlTreeItemBuilder<XMLTreeElement>
 {
 public:
+  /**
+   * @brief constructor
+   * @param xmlTree pointer to XMLTree that calls this builder
+  */
   XMLTreeElementBuilder(XMLTree* xmlTree) :XmlTreeItemBuilder<XMLTreeElement>(), m_xmlTree(xmlTree) {};
 
-  XMLTreeElement* CreateRootItem(const string& tag)
+  /**
+   * @brief pure virtual function to create an XMLTreeElement specified by tag
+   * @param tag name of new tag
+   * @return pointer to created XMLTreeElement
+  */
+  XMLTreeElement* CreateRootItem(const string& tag) override
   {
     XMLTreeDoc* pDoc = new XMLTreeDoc(m_xmlTree, GetFileName());
     pDoc->SetTag(tag);
@@ -54,42 +63,53 @@ XMLTree::XMLTree(IXmlItemBuilder* itemBuilder) :
   m_nWarnings(0),
   m_callback(0),
   m_XmlItemBuilder(itemBuilder),
-  m_XmlValueAdjuster(0),
+  m_bInternalBuilder(false),
+  m_XmlValueAdjuster(nullptr),
   m_p(0)
 {
-  if (!m_XmlItemBuilder)
+  if (!m_XmlItemBuilder) {
     m_XmlItemBuilder = new XMLTreeElementBuilder(this);
+    m_bInternalBuilder = true;
+  }
 }
 
 XMLTree::~XMLTree()
 {
-  delete m_XmlItemBuilder;
-  m_XmlItemBuilder = NULL;
   delete m_p;
-  m_p = NULL;
-  m_XmlValueAdjuster = NULL;
+  if (m_bInternalBuilder) {
+    delete m_XmlItemBuilder;
+  }
 }
 
 void XMLTree::Clear() // does not destroy XML parser!
 {
   m_p->Clear();
-
   m_nErrors = 0;
   m_nWarnings = 0;
   m_errorStrings.clear();
-
   m_fileNames.clear();
-
   XMLTreeElement::Clear();
+}
+
+void XMLTree::SetXmlItemBuilder(IXmlItemBuilder* itemBuilder, bool takeOnerschip )
+{
+  if (m_XmlItemBuilder != itemBuilder) {
+    if (m_bInternalBuilder) {
+      delete m_XmlItemBuilder;
+    }
+    m_XmlItemBuilder = itemBuilder;
+  }
+  m_bInternalBuilder = m_XmlItemBuilder ? takeOnerschip : false;
 }
 
 
 void XMLTree::SetSchemaFileName(const char* xsdFile)
 {
-  if (xsdFile)
+  if (xsdFile) {
     m_xsdFile = XmlValueAdjuster::SlashesToOsSlashes(xsdFile);
-  else
+  } else {
     m_xsdFile.clear();
+  }
 }
 
 void XMLTree::SetIgnoreTags(const set<string>& ignoreTags)

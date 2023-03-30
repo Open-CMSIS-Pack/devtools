@@ -29,34 +29,31 @@ TEST(RteModelTest, LoadPacks) {
   list<string> files;
   RteFsUtils::GetPackageDescriptionFiles(files, RteModelTestConfig::CMSIS_PACK_ROOT, 3);
   EXPECT_TRUE(files.size() > 0);
-  unique_ptr<XMLTree> xmlTree = rteKernel.CreateUniqueXmlTree();
-  xmlTree->SetFileNames(files, false);
-  xmlTree->Init();
 
-  bool pdscParseResult = xmlTree->ParseAll();
-  EXPECT_TRUE(pdscParseResult);
+  RteModel* rteModel = rteKernel.GetGlobalModel();
+  ASSERT_NE(rteModel, nullptr);
+  rteModel->SetUseDeviceTree(true);
+  list<RtePackage*> packs;
+  EXPECT_TRUE(rteKernel.LoadPacks(files, packs));
+  EXPECT_TRUE(!packs.empty());
+  rteModel->InsertPacks(packs);
 
-  RteModel rteModel;
-  rteModel.SetUseDeviceTree(true);
-  bool rteModelConstructResult = rteModel.Construct(xmlTree.get());
-  EXPECT_TRUE(rteModelConstructResult);
-
-  bool rteModelValidateResult = rteModel.Validate();
+  bool rteModelValidateResult = rteModel->Validate();
   EXPECT_TRUE(rteModelValidateResult);
 
-  RteDeviceItemAggregate* da = rteModel.GetDeviceAggregate("RteTest_ARMCM3", "ARM:82");
+  RteDeviceItemAggregate* da = rteModel->GetDeviceAggregate("RteTest_ARMCM3", "ARM:82");
   ASSERT_NE(da, nullptr);
   // test deprecated memory attributes: IROM and IRAM
   string summary = da->GetSummaryString();
   EXPECT_EQ(summary, "ARM Cortex-M3, 10 MHz, 128 kB RAM, 256 kB ROM");
 
-  da = rteModel.GetDeviceAggregate("RteTest_ARMCM4", "ARM:82");
+  da = rteModel->GetDeviceAggregate("RteTest_ARMCM4", "ARM:82");
   ASSERT_NE(da, nullptr);
   // test recommended memory attributes: name and access
   summary = da->GetSummaryString();
   EXPECT_EQ(summary, "ARM Cortex-M4, 10 MHz, 128 kB RAM, 256 kB ROM");
 
-  RteBoard* board = rteModel.FindBoard("RteTest board listing (Rev.C)");
+  RteBoard* board = rteModel->FindBoard("RteTest board listing (Rev.C)");
   ASSERT_NE(board, nullptr);
   EXPECT_TRUE(board->HasMCU());
   list<RteItem*> algos;
@@ -64,7 +61,7 @@ TEST(RteModelTest, LoadPacks) {
   list<RteItem*> mems;
   EXPECT_EQ(board->GetMemories(mems).size(), 2);
 
-  board = rteModel.FindBoard("RteTest NoMCU board");
+  board = rteModel->FindBoard("RteTest NoMCU board");
   ASSERT_NE(board, nullptr);
   EXPECT_FALSE(board->HasMCU());
   algos.clear();

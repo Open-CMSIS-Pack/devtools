@@ -33,53 +33,21 @@ RteReleaseContainer::RteReleaseContainer(RteItem* parent) :
 {
 }
 
-
-bool RteReleaseContainer::ProcessXmlElement(XMLTreeElement* xmlElement)
+void RteReleaseContainer::Construct()
 {
-  const string& tag = xmlElement->GetTag();
-  if (tag == "release") {
-    RteItem* release = new RteItem(this);
-    if (release->Construct(xmlElement)) {
-      AddItem(release);
-      // find the latest
-      const string& version = GetVersionString();
-      const string& releaseVersion = release->GetVersionString();
-      if (version.empty() || VersionCmp::Compare(releaseVersion, version) > 0) {
-        SetAttribute("version", release->GetVersionString().c_str());
-      }
-      return true;
+  string version;
+  for (auto release : GetChildren()) {
+    const string& releaseVersion = release->GetVersionString();
+    if (version.empty() || VersionCmp::Compare(releaseVersion, version) > 0) {
+      version = releaseVersion;
     }
-    delete release;
-    return false;
   }
-  return RteItem::ProcessXmlElement(xmlElement);
+  AddAttribute("version", version);
 }
 
-
-RteTaxonomyContainer::RteTaxonomyContainer(RteItem* parent) :
-  RteItem(parent)
-{
-}
-
-
-bool RteTaxonomyContainer::ProcessXmlElement(XMLTreeElement* xmlElement)
-{
-  const string& tag = xmlElement->GetTag();
-  if (tag == "description") {
-    RteItem* taxonomy = new RteItem(this);
-    if (taxonomy->Construct(xmlElement)) {
-      AddItem(taxonomy);
-      return true;
-    }
-    delete taxonomy;
-    return false;
-  }
-  return RteItem::ProcessXmlElement(xmlElement);
-}
-
-RtePackage::RtePackage(RteItem* parent) :
+RtePackage::RtePackage(RteItem* parent, PackageState ps) :
   RteRootItem(parent),
-  m_packState(PackageState::PS_UNKNOWN),
+  m_packState(ps),
   m_nDominating(-1),
   m_nDeprecated(-1),
   m_releases(0),
@@ -626,18 +594,61 @@ void RtePackage::GetEffectiveDeviceItems(list<RteDeviceItem*>& devices) const
   }
 }
 
-
-bool RtePackage::Construct(XMLTreeElement* xmlElement)
+RteItem* RtePackage::CreateItem(const std::string& tag)
 {
-  // we are not interested in XML attributes for package
-  m_lineNumber = xmlElement->GetLineNumber();
-  m_tag = xmlElement->GetTag();
-  SetRootFileName(xmlElement->GetRootFileName());
-  AddAttribute("schemaVersion", xmlElement->GetAttribute("schemaVersion"), false);
-  bool success = ProcessXmlChildren(xmlElement);
-  m_ID = ConstructID();
-  return success;
+  if (tag == "components") {
+    m_components = new RteComponentContainer(this);
+    return m_components;
+  } else if (tag == "apis") {
+      m_apis = new RteApiContainer(this);
+      return m_apis;
+  } else if (tag == "generators") {
+      m_generators = new RteGeneratorContainer(this);
+    return m_generators;
+  } else if (tag == "devices") {
+      m_deviceFamilies = new RteDeviceFamilyContainer(this);
+    return m_deviceFamilies;
+  } else if (tag == "examples") {
+      m_examples = new RteExampleContainer(this);
+    return m_examples;
+  } else if (tag == "conditions") {
+      m_conditions = new RteConditionContainer(this);
+    return m_conditions;
+  } else if (tag == "releases") {
+      m_releases = new RteReleaseContainer(this);
+      return m_releases;
+  } else if (tag == "requirements") {
+      m_requirements = new RteItem(this);
+      return m_requirements;
+  } else if (tag == "taxonomy") {
+      m_taxonomy = new RteItem(this);
+      return m_taxonomy;
+  } else if (tag == "boards") {
+      m_boards = new RteBoardContainer(this);
+    return m_boards;
+  }
+  return RteRootItem::CreateItem(tag);
 }
+
+
+void RtePackage::Construct()
+{
+  // remove attributes that we do not need:
+  RemoveAttribute("xmlns:xs");
+  RemoveAttribute("xs:noNamespaceSchemaLocation");
+  // some XML readers strip namespaces
+  RemoveAttribute("xs");
+  RemoveAttribute("noNamespaceSchemaLocation");
+
+  if (m_releases) {
+    AddAttribute("version", m_releases->GetVersionString());
+  }
+  for (auto keyword : GetGrandChildren("keywords")) {
+    m_keywords.insert(keyword->GetText());
+  }
+  RteRootItem::Construct();
+}
+
 
 bool RtePackage::Validate()
 {
@@ -723,88 +734,6 @@ string RtePackage::GetPackageIDfromAttributes(const XmlItem& attr, bool withVers
     }
   }
   return id;
-}
-
-
-bool RtePackage::ProcessXmlElement(XMLTreeElement* xmlElement)
-{
-  const string& tag = xmlElement->GetTag();
-  if (tag == "components") {
-    if (!m_components) {
-      m_components = new RteComponentContainer(this);
-      AddItem(m_components);
-    }
-    return m_components->Construct(xmlElement);
-  } else if (tag == "apis") {
-    if (!m_apis) {
-      m_apis = new RteApiContainer(this);
-      AddItem(m_apis);
-    }
-    return m_apis->Construct(xmlElement);
-  } else if (tag == "generators") {
-    if (!m_generators) {
-      m_generators = new RteGeneratorContainer(this);
-      AddItem(m_generators);
-    }
-    return m_generators->Construct(xmlElement);
-  } else if (tag == "devices") {
-    if (!m_deviceFamilies) {
-      m_deviceFamilies = new RteDeviceFamilyContainer(this);
-      AddItem(m_deviceFamilies);
-    }
-    return m_deviceFamilies->Construct(xmlElement);
-  } else if (tag == "examples") {
-    if (!m_examples) {
-      m_examples = new RteExampleContainer(this);
-      AddItem(m_examples);
-    }
-    return m_examples->Construct(xmlElement);
-  } else if (tag == "conditions") {
-    if (!m_conditions) {
-      m_conditions = new RteConditionContainer(this);
-      AddItem(m_conditions);
-    }
-    return m_conditions->Construct(xmlElement);
-  } else if (tag == "releases") {
-    if (!m_releases) {
-      m_releases = new RteReleaseContainer(this);
-      AddItem(m_releases);
-    }
-    if (!m_releases->Construct(xmlElement))
-      return false;
-    // assign version
-    SetAttribute("version", m_releases->GetVersionString().c_str());
-    return true;
-  } else if (tag == "requirements") {
-    if (!m_requirements) {
-      m_requirements = new RteItem(this);
-      AddItem(m_requirements);
-    }
-    if (!m_requirements->Construct(xmlElement))
-      return false;
-    return true;
-  } else if (tag == "keywords") {
-    return ProcessXmlChildren(xmlElement);
-  } else if (tag == "keyword") {
-    const string& text = xmlElement->GetText();
-    if (!text.empty())
-      m_keywords.insert(text);
-    return true;
-  } else if (tag == "taxonomy") {
-    if (!m_taxonomy) {
-      m_taxonomy = new RteTaxonomyContainer(this);
-      AddItem(m_taxonomy);
-    }
-    return m_taxonomy->Construct(xmlElement);
-  } else if (tag == "boards") {
-    if (!m_boards) {
-      m_boards = new RteBoardContainer(this);
-      AddItem(m_boards);
-    }
-    return m_boards->Construct(xmlElement);
-  }
-
-  return RteItem::ProcessXmlElement(xmlElement);
 }
 
 

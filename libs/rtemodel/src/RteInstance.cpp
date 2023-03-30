@@ -23,8 +23,8 @@
 
 using namespace std;
 
-RteInstanceTargetInfo::RteInstanceTargetInfo() :
-  RteItem(),
+RteInstanceTargetInfo::RteInstanceTargetInfo(RteItem* parent) :
+  RteItem(parent),
   m_bExcluded(false),
   m_bIncludeInLib(false),
   m_instanceCount(1),
@@ -189,33 +189,40 @@ XMLTreeElement* RteInstanceTargetInfo::CreateXmlTreeElement(XMLTreeElement* pare
   return thisElement;
 }
 
-
-bool RteInstanceTargetInfo::ProcessXmlChildren(XMLTreeElement* xmlElement)
+void RteInstanceTargetInfo::Construct()
 {
-  if (!xmlElement)
-    return false;
-  // process children
-  const list<XMLTreeElement*>& children = xmlElement->GetChildren();
-  for (auto it = children.begin(); it != children.end(); it++) {
-    XMLTreeElement* e = *it;
+  if (GetTag() != "targetInfo") {
+    SetTag("targetInfo");
+  }
+  if (!HasAttribute("name")) {
+    AddAttribute("name", GetText());
+  }
+  ProcessAttributes();
+  RteItem::Construct();
+  set<RteItem*> toRemove;
+  for (auto e : GetChildren()) {
     const string& tag = e->GetTag();
     if (tag == "mem") {
       map<string, string> attributes;
       e->GetSimpleChildElements(attributes);
       m_memOpt.SetAttributes(attributes);
+      toRemove.insert(e);
     } else if (tag == "c") {
       map<string, string> attributes;
       e->GetSimpleChildElements(attributes);
       m_cOpt.SetAttributes(attributes);
+      toRemove.insert(e);
     } else if (tag == "asm") {
       map<string, string> attributes;
       e->GetSimpleChildElements(attributes);
       m_asmOpt.SetAttributes(attributes);
+      toRemove.insert(e);
     }
   }
-  return true;
+  for (auto item : toRemove) {
+    RemoveChild(item, true);
+  }
 }
-
 
 RteItemInstance::RteItemInstance(RteItem* parent) :
   RteItem(parent),
@@ -385,16 +392,17 @@ RteTarget* RteItemInstance::GetTarget(const string& targetName) const
 RteInstanceTargetInfo* RteItemInstance::GetTargetInfo(const string& targetName) const
 {
   auto it = m_targetInfos.find(targetName);
-  if (it != m_targetInfos.end())
+  if (it != m_targetInfos.end()) {
     return it->second;
-  return NULL;
+  }
+  return nullptr;
 }
 
 RteInstanceTargetInfo* RteItemInstance::EnsureTargetInfo(const string& targetName)
 {
   RteInstanceTargetInfo* info = GetTargetInfo(targetName);
   if (!info) {
-    info = new RteInstanceTargetInfo();
+    info = new RteInstanceTargetInfo(this);
     info->AddAttribute("name", targetName);
     m_targetInfos[targetName] = info;
   }
@@ -449,8 +457,9 @@ bool RteItemInstance::RemoveTargetInfo(const string& targetName, bool bDelete)
 {
   auto it = m_targetInfos.find(targetName);
   if (it != m_targetInfos.end()) {
-    if (bDelete)
+    if (bDelete) {
       delete it->second;
+    }
     m_targetInfos.erase(it);
     return true;
   }
@@ -599,7 +608,6 @@ void RteItemInstance::CreateXmlTreeElementContent(XMLTreeElement* parentElement)
     e->SetTag("package");
     e->SetAttributes(m_packageAttributes.GetAttributes());
   }
-
   e = new XMLTreeElement(parentElement);
   e->SetTag("targetInfos");
 
@@ -609,28 +617,42 @@ void RteItemInstance::CreateXmlTreeElementContent(XMLTreeElement* parentElement)
   }
 }
 
-
-bool RteItemInstance::ProcessXmlElement(XMLTreeElement* xmlElement)
+RteItem* RteItemInstance::AddChild(RteItem* child)
 {
-  const string& tag = xmlElement->GetTag();
-  if (tag == "targets" || tag == "targetInfos") {
-    return ProcessXmlChildren(xmlElement); // will recursively call this function (processed in the next if clauses)
-  } else if (tag == "target") {
-    const string& targetName = xmlElement->GetText();
-    AddTargetInfo(targetName, xmlElement->GetAttributes());
-    return true;
-  } else if (tag == "targetInfo") {
-    const string& targetName = xmlElement->GetAttribute("name");
-    RteInstanceTargetInfo* ti = AddTargetInfo(targetName, xmlElement->GetAttributes());
-    ti->ProcessXmlChildren(xmlElement);
-    return true;
-  } else if (tag == "package") {
-    m_packageAttributes.SetAttributes(xmlElement->GetAttributes());
-    return ProcessXmlChildren(xmlElement); // will recursively call this function
+  if (!child) {
+    return child;
   }
-  return RteItem::ProcessXmlElement(xmlElement);
+  RteInstanceTargetInfo* ti = dynamic_cast<RteInstanceTargetInfo*>(child);
+  if (ti) {
+    const string& targetName = ti->GetName();
+    RemoveTargetInfo(targetName, true); // ensure no duplicates
+    m_targetInfos[targetName] = ti;
+    return ti;
+  }
+  return RteItem::AddChild(child);
 }
 
+void RteItemInstance::Construct()
+{
+  RteItem::Construct();
+
+  RteItem* packItem = GetFirstChild("package");
+  if (packItem) {
+    SetPackageAttributes(*packItem);
+    RemoveChild(packItem, true); // we only need attributes, not the child
+  }
+}
+
+RteItem* RteItemInstance::CreateItem(const std::string& tag)
+{
+  if (tag == "targets" || tag == "targetInfos") {
+    return this; // we will add child elements directly below
+  }
+  if (tag == "target" || tag == "targetInfo") {
+    return new RteInstanceTargetInfo(this);
+  }
+  return RteItem::CreateItem(tag);
+}
 
 
 RteFileInstance::RteFileInstance(RteItem* parent) :
@@ -920,48 +942,25 @@ bool RteFileInstance::Copy(RteFile* f, bool bMerge)
   return true;
 }
 
-bool RteFileInstance::Construct(XMLTreeElement* xmlElement)
+void RteFileInstance::Construct()
 {
-  bool success = RteItemInstance::Construct(xmlElement);
-  if (success) {
-    // backward compatibility
-    // replace copy="1" attribute with attr="config"
-    const string& s = GetAttribute("copy");
-    if (s == "1" || s == "true")
-      SetAttribute("attr", "config");
-    if (!s.empty())
-      RemoveAttribute("copy");
-    if (!IsConfig())
-      return false; // will cause to delete the instance
-  }
-
-  if (m_componentAttributes.GetAttribute("Cvendor").empty()) {
-    m_componentAttributes.AddAttribute("Cvendor", m_packageAttributes.GetAttribute("vendor"));
-  }
-
-  return success;
-}
-
-
-bool RteFileInstance::ProcessXmlElement(XMLTreeElement* xmlElement)
-{
-  const string& tag = xmlElement->GetTag();
-  if (tag == "instance") {
-    const string& val = xmlElement->GetText();
-    m_instanceName = val;
+  RteItemInstance::Construct();
+  RteItem* instance = GetFirstChild("instance");
+  if (instance) {
+    m_instanceName = instance->GetText();
     m_fileName = RteUtils::ExtractFileName(m_instanceName);
-    const string& sIndex = xmlElement->GetAttribute("index");
+    const string& sIndex = instance->GetAttribute("index");
     if (!sIndex.empty())
       m_instanceIndex = stoi(sIndex);
-    const string& removed = xmlElement->GetAttribute("removed");
+    const string& removed = instance->GetAttribute("removed");
     if (!removed.empty())
       m_bRemoved = stoi(removed) != 0;
-    return true;
-  } else if (tag == "component") {
-    m_componentAttributes.SetAttributes(xmlElement->GetAttributes());
-    return true;
   }
-  return RteItemInstance::ProcessXmlElement(xmlElement);
+
+  RteItem* component = GetFirstChild("component");
+  if (component) {
+    m_componentAttributes.SetAttributes(component->GetAttributes());
+  }
 }
 
 void RteFileInstance::CreateXmlTreeElementContent(XMLTreeElement* parentElement) const
@@ -1306,6 +1305,8 @@ RteComponentInstance* RteComponentInstance::MakeCopy()
     delete m_copy;
   m_copy = 0;
   m_copy = new RteComponentInstance(*this);
+  m_copy->m_children.clear();
+  m_copy->SetPackageAttributes(GetPackageAttributes());
   // copy target infos
   m_copy->SetTargets(m_targetInfos);
   return m_copy;

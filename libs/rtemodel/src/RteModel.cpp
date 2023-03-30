@@ -311,81 +311,34 @@ RteCondition* RteModel::GetCondition(const string& packageId, const string& cond
   return NULL;
 }
 
-RtePackage* RteModel::CreatePackage(const string& tag)
+void RteModel::Construct()
 {
-  return new RtePackage(this);
-}
-
-bool RteModel::ConstructPacks(XMLTreeElement* xmlTree, list<RtePackage*>& packs)
-{
-  if (!xmlTree) {
-    return false;
-  }
-  bool success = true;
-  const list<XMLTreeElement*>& docs = xmlTree->GetChildren();
-  for (auto it = docs.begin(); it != docs.end(); it++) {
-
-    XMLTreeElement* xmlElement = *it;
-    RtePackage* package = ConstructPack(xmlElement);
-    if (package) {
-      packs.push_back(package);
-    } else {
-      success = false;
-    }
-  }
-  return success;
-}
-
-RtePackage* RteModel::ConstructPack(XMLTreeElement* xmlTreeDoc)
-{
-  if (!xmlTreeDoc || !xmlTreeDoc->IsValid()) {
-    return nullptr;
-  }
-
-  RtePackage* package = CreatePackage(xmlTreeDoc->GetTag());
-  bool ok = package->Construct(xmlTreeDoc);
-  if (ok) {
-    package->SetPackageState(GetPackageState());
-    GetCallback()->PackProcessed(package->GetID(), true);
-    return package;
-  }
-  GetCallback()->PackProcessed(xmlTreeDoc->GetRootFileName(), false);
-  const list<string>& errors = package->GetErrors();
-  m_errors.insert(m_errors.end(), errors.begin(), errors.end());
-  delete package;
-  return nullptr;
-}
-
-
-bool RteModel::Construct(XMLTreeElement* xmlTree)
-{
-  list<RtePackage*> packs;
-
-  if(!ConstructPacks(xmlTree, packs)) {
-    return false;
-  }
-  InsertPacks(packs);
-  return true;
 }
 
 void RteModel::InsertPacks(const list<RtePackage*>& packs)
 {
   for (auto it = packs.begin(); it != packs.end(); it++) {
-    InsertPack(*it);
+    InsertPack(dynamic_cast<RtePackage*>(*it));
   }
-  FillComponentList(NULL); // no device package yet
+  FillComponentList(nullptr); // no device package yet
   FillDeviceTree();
 }
 
 void RteModel::InsertPack(RtePackage* package)
 {
+  if (!package) {
+    return;
+  }
+  if (package->GetPackageState() == PackageState::PS_UNKNOWN) {
+    package->SetPackageState(GetPackageState());
+  }
   // check for duplicates
   const string& id = package->GetID();
   RtePackage* insertedPack = GetPackage(id);
   if (insertedPack) {
     string pdscPath = RteFsUtils::MakePathCanonical(package->GetAbsolutePackagePath());
     if (pdscPath.find(m_rtePath) == 0) { // regular installed pack => error
-    // duplicate, keept it in a temporary collection till validate;
+    // duplicate, kept it in a temporary collection till validate;
       m_packageDuplicates.push_back(package);
       return;
     }

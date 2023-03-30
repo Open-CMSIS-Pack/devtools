@@ -512,29 +512,16 @@ RteCondition* RteCondition::GetCondition(const string& id) const
   return RteItem::GetCondition(id);
 }
 
-bool RteCondition::ProcessXmlElement(XMLTreeElement* xmlElement)
+RteItem* RteCondition::CreateItem(const std::string& tag)
 {
-  RteConditionExpression* expression = nullptr;
-  const string& tag = xmlElement->GetTag();
   if (tag == "accept") {
-    expression = new RteAcceptExpression(this);
+    return new RteAcceptExpression(this);
   } else if (tag == "require") {
-    expression = new RteRequireExpression(this);
+    return new RteRequireExpression(this);
   } else if (tag == "deny") {
-    expression = new RteDenyExpression(this);
+    return new RteDenyExpression(this);
   }
-
-  if (expression)
-  {
-    if (expression->Construct(xmlElement)) {
-      AddItem(expression);
-      return true;
-    }
-    delete expression;
-    return false;
-  }
-
-  return RteItem::ProcessXmlElement(xmlElement);
+  return RteItem::CreateItem(tag);
 }
 
 
@@ -543,20 +530,14 @@ RteConditionContainer::RteConditionContainer(RteItem* parent) :
 {
 }
 
-bool RteConditionContainer::ProcessXmlElement(XMLTreeElement* xmlElement)
+RteItem* RteConditionContainer::CreateItem(const std::string& tag)
 {
-  const string& tag = xmlElement->GetTag();
   if (tag == "condition") {
-    RteCondition* condition = new RteCondition(this);
-    if (condition->Construct(xmlElement)) {
-      AddItem(condition);
-      return true;
-    }
-    delete condition;
-    return false;
+    return new RteCondition(this);
   }
-  return RteItem::ProcessXmlElement(xmlElement);
+  return RteItem::CreateItem(tag);
 }
+
 
 RteDependencyResult::RteDependencyResult(const RteItem* item, RteItem::ConditionResult result) :
   m_item(item),

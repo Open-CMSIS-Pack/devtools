@@ -24,6 +24,7 @@
 
 class RteCprjProject;
 class CprjFile;
+class IXmlItemBuilder;
 
 /**
  * @brief this singleton class orchestrates CMSIS RTE support, provides access to underlying RTE Model and manages *.cprj projects
@@ -203,7 +204,7 @@ public:
    * @brief create a smart pointer holding a XMLTree pointer
    * @return a std::unique_ptr object holding a XMLTree pointer which is nullptr in the default implementation
   */
-  virtual std::unique_ptr<XMLTree> CreateUniqueXmlTree() const;
+  virtual std::unique_ptr<XMLTree> CreateUniqueXmlTree(IXmlItemBuilder* itemBuilder = nullptr) const;
 
   /**
    * @brief save active project into cprj file
@@ -212,14 +213,29 @@ public:
   */
   bool SaveActiveCprjFile(const std::string& file = RteUtils::EMPTY_STRING) const;
 
+  /**
+   * @brief load pdsc or gpdsc file and construct it
+   * @param pdscFile pathname to load
+   * @param packState PackageState to assign to a loaded pack
+   * @return pointer to loaded RtePackage
+  */
+  RtePackage* LoadPack(const std::string& pdscFile, PackageState packState = PackageState::PS_UNKNOWN) const ;
+
+  /**
+   * @brief load specified pdsc files, but does not insert them in the model
+   * @param pdscFiles list of pathnames to load
+   * @param packs list to receive loaded packs
+   * @return true if successful
+  */
+  bool LoadPacks(const std::list<std::string>& pdscFiles, std::list<RtePackage*>& packs) const;
+
 protected:
 
-  RtePackage* LoadPack( const std::string& pdscFile);
-  bool GetUrlFromIndex(const std::string& indexFile, const std::string& name, const std::string& vendor, const std::string& version, std::string& indexedUrl, std::string& indexedVersion);
-  bool GetLocalPacks(const std::string& rtePath, std::unique_ptr<XMLTree>& xmlTree, std::list<XMLTreeElement*>& packs);
-  bool GetLocalPacksUrls(const std::string& rtePath, std::list<std::string>& urls);
+  bool GetUrlFromIndex(const std::string& indexFile, const std::string& name, const std::string& vendor, const std::string& version, std::string& indexedUrl, std::string& indexedVersion) const;
+  bool GetLocalPacks(const std::string& rtePath, std::unique_ptr<XMLTree>& xmlTree, std::list<XMLTreeElement*>& packs) const;
+  bool GetLocalPacksUrls(const std::string& rtePath, std::list<std::string>& urls) const;
 
-  virtual XMLTree* CreateXmlTree() const { return nullptr; } // creates new XMLTree implementation
+  virtual XMLTree* CreateXmlTree(IXmlItemBuilder* itemBuilder) const { return nullptr; } // creates new XMLTree implementation
 
 protected:
   /**
@@ -228,7 +244,6 @@ protected:
   */
   RteKernel* GetThisKernel() const { return const_cast<RteKernel*>(this); }
 
-private:
   RteGlobalModel* m_globalModel;
   bool m_bOwnModel;
   RteCallback* m_rteCallback;

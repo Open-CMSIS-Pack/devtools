@@ -33,13 +33,7 @@ RteCprjProject::RteCprjProject(CprjFile* cprjFile) :
 
 RteCprjProject::~RteCprjProject()
 {
-  RteCprjProject::Clear();
   delete m_cprjFile;
-}
-
-void RteCprjProject::Clear()
-{
-  RteProject::Clear();
 }
 
 CprjFile* RteCprjProject::GetCprjFile() const

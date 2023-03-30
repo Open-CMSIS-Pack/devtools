@@ -2571,7 +2571,7 @@ bool ProjMgrWorker::ListGenerators(vector<string>& generators) {
       return false;
     }
     for (const auto& [id, generator] : context.generators) {
-      generatorsSet.insert(id + " (" + generator->GetText() + ")");
+      generatorsSet.insert(id + " (" + generator->GetDescription() + ")");
     }
   }
   generators.assign(generatorsSet.begin(), generatorsSet.end());

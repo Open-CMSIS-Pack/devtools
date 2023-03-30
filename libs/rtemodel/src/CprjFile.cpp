@@ -58,40 +58,43 @@ void CprjTargetElement::Clear()
   RteItem::Clear();
 }
 
-bool CprjTargetElement::ProcessXmlElement(XMLTreeElement* xmlElement)
+RteItem* CprjTargetElement::CreateItem(const std::string& tag)
 {
-  const string& tag = xmlElement->GetTag();
   if (tag == "algorithm" || tag == "memory") {
-    RteDeviceProperty* p;
-    if (tag == "algorithm")
-      p = new RteDeviceAlgorithm(this);
-    else
-      p = new RteDeviceMemory(this);
-    AddItem(p);
-    p->Construct(xmlElement);
-    const string& id = p->GetID();
-    if (GetDeviceOption(id) == 0)
-      m_deviceOptions[id] = p; // do not add duplicates
-    return true;
+    return new RteDeviceAlgorithm(this);
+  } else if ( tag == "memory") {
+      return new RteDeviceMemory(this);
   } else if (tag == "output") {
     m_buildOption = new RteItem(this);
-    AddItem(m_buildOption);
-    return m_buildOption->Construct(xmlElement);
+    return m_buildOption;
   } else if (tag == "debugProbe") {
     m_debugProbeOption = new RteItem(this);
-    AddItem(m_debugProbeOption);
-    return m_debugProbeOption->Construct(xmlElement);
+    return m_debugProbeOption;
   } else if (tag == "heap") {
     m_heapOption = new RteItem(this);
-    AddItem(m_heapOption);
-    return m_heapOption->Construct(xmlElement);
+    return m_heapOption;
   } else if (tag == "stack") {
     m_stackOption = new RteItem(this);
-    AddItem(m_stackOption);
-    return m_stackOption->Construct(xmlElement);
+    return m_stackOption;
   }
-  return RteItem::ProcessXmlElement(xmlElement);
+  return RteItem::CreateItem(tag);
+}
 
+void CprjTargetElement::Construct()
+{
+  RteItem::Construct();
+  for (auto child : GetChildren()) {
+    const string& tag = child->GetTag();
+    if (tag == "algorithm" || tag == "memory") {
+      RteDeviceProperty* p = dynamic_cast<RteDeviceProperty*>(child);
+      if (p) {
+        const string& id = p->GetID();
+        if (GetDeviceOption(id) == 0) {
+          m_deviceOptions[id] = p;
+        }
+      }
+    }
+  }
 }
 
 int CprjTargetElement::GetStartupMemoryIndex() const
@@ -361,21 +364,16 @@ void CprjFile::Clear()
   RteRootItem::Clear();
 }
 
-bool CprjFile::ProcessXmlElement(XMLTreeElement* xmlElement)
+RteItem* CprjFile::CreateItem(const std::string& tag)
 {
-  const string& tag = xmlElement->GetTag();
   if (tag == "files") {
     m_files = new RteFileContainer(this);
-    AddItem(m_files);
-    m_files->Construct(xmlElement);
-    return true;
+    return m_files;
   } else if (tag == "target") {
     m_cprjTargetElement = new CprjTargetElement(this);
-    m_cprjTargetElement->Construct(xmlElement);
-    AddItem(m_cprjTargetElement);
-    return true;
+    return m_cprjTargetElement;
   }
-  return RteRootItem::ProcessXmlElement(xmlElement);
+  return RteRootItem::CreateItem(tag);
 }
 
 RteItem* CprjFile::GetProjectInfo() const

@@ -37,32 +37,11 @@ public:
    * @param parent pointer to RteItem parent
   */
   RteReleaseContainer(RteItem* parent);
-  /**
-   * @brief process a single XMLTreeElement during construction
-   * @param xmlElement pointer to XMLTreeElement to process
-   * @return true if successful
-  */
-   bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
-};
-
-/**
- * @brief class representing <taxonomy> element in  *.pdsc files
-*/
-class RteTaxonomyContainer : public RteItem
-{
-public:
 
   /**
-   * @brief constructor
-   * @param parent pointer to RteItem parent
+   * @brief called to construct the item with attributes and child elements
   */
-  RteTaxonomyContainer(RteItem* parent);
-  /**
-   * @brief process a single XMLTreeElement during construction
-   * @param xmlElement pointer to XMLTreeElement to process
-   * @return true if successful
-  */
-   bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
+  void Construct() override;
 };
 
 
@@ -80,7 +59,7 @@ public:
    * @brief constructor
    * @param parent pointer to RteItem parent (pointer to RteModel)
   */
-  RtePackage(RteItem* parent);
+  RtePackage(RteItem* parent, PackageState ps = PackageState::PS_UNKNOWN);
 
   /**
    * @brief constructor
@@ -542,12 +521,17 @@ public:
   */
    void Clear() override;
 
-  /**
-   * @brief construct this pack item and all child elements
-   * @param xmlElement pointer to XMLTreeElement to construct from
-   * @return true if successful
-  */
-   bool Construct(XMLTreeElement* xmlElement) override;
+   /**
+     * @brief create a new instance of type RteItem
+     * @param tag name of tag
+     * @return pointer to instance of type RteItem
+   */
+   RteItem* CreateItem(const std::string& tag) override;
+
+   /**
+     * @brief called to construct the item with attributes and child elements
+   */
+   void Construct() override;
 
   /**
    * @brief validate this pack item and children. Checks for condition duplicates
@@ -562,13 +546,6 @@ public:
    void InsertInModel(RteModel* model) override;
 
 protected:
-  /**
-   * @brief process a single XMLTreeElement during construction
-   * @param xmlElement pointer to XMLTreeElement to process
-   * @return true if successful
-  */
-   bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
-
   /**
    * @brief construct and cache pack full and custom ID
    * @return full pack ID

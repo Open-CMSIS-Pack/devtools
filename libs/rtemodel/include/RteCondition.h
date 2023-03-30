@@ -366,14 +366,16 @@ private:
   */
   bool ValidateRecursion();
 
+ /**
+   * @brief create a new instance of type RteItem
+   * @param tag name of tag
+   * @return pointer to instance of type RteItem
+ */
+  RteItem* CreateItem(const std::string& tag) override;
+
 protected:
-  /**
-    * @brief process a single XMLTreeElement during construction
-    * @param xmlElement pointer to XMLTreeElement to process
-    * @return true if successful
-  */
-   bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
-  /**
+
+ /**
    * @brief set if this condition is under evaluation for given context (recursion protection)
    * @param context pointer to RteConditionContext
    * @param evaluating: true before valuating, false after evaluating
@@ -400,14 +402,13 @@ public:
    */
   RteConditionContainer(RteItem* parent);
 
-protected:
-  /**
-    * @brief process a single XMLTreeElement during construction
-    * @param xmlElement pointer to XMLTreeElement to process
-    * @return true if successful
-  */
-   bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
 
+  /**
+   * @brief create a new instance of type RteItem
+   * @param tag name of tag
+   * @return pointer to instance of type RteItem
+  */
+  RteItem* CreateItem(const std::string& tag) override;
 };
 
 /**

@@ -9,6 +9,7 @@
 
 #include "RteModel.h"
 #include "RteValueAdjuster.h"
+#include "RteItemBuilder.h"
 #include "XMLTreeSlim.h"
 #include "ErrLog.h"
 
@@ -44,6 +45,7 @@ public:
 
 private:
   RteGlobalModel& m_rteModel;
+  RteItemBuilder m_rteItemBuilder;
   XMLTreeSlim m_xmlTree;
   ValueAdjuster m_valueAdjuster;
 };

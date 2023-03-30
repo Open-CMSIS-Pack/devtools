@@ -20,6 +20,7 @@
 /******************************************************************************/
 #include "RteKernel.h"
 #include "RteValueAdjuster.h"
+#include "RteItemBuilder.h"
 
 #include "XMLTreeSlim.h"
 
@@ -34,8 +35,8 @@ public:
   /**
    * @brief constructor
   */
-  RteXmlTreeSlim() : XMLTreeSlim(0, true, false) {
-    m_XmlValueAdjuster = new RteValueAdjuster(false);
+  RteXmlTreeSlim(IXmlItemBuilder* itemBuilder) : XMLTreeSlim(itemBuilder, true, false) {
+    SetXmlValueAdjuster(new RteValueAdjuster(false));
   }
 
   /**
@@ -53,11 +54,19 @@ public:
   /**
    * @brief constructor
    * @param callback RteCallback pointer
+   * @param globalModel RteGlobalModel pointer
   */
-  RteKernelSlim(RteCallback* callback = nullptr) : RteKernel(callback) {}
+  RteKernelSlim(RteCallback* callback = nullptr, RteGlobalModel* globalModel = nullptr) : RteKernel(callback, globalModel) {}
+
+  /**
+   * @brief constructor
+   * @param callback RteCallback pointer
+  */
+  RteKernelSlim(RteGlobalModel* globalModel) : RteKernel(nullptr, globalModel) {}
+
 
 protected:
-   XMLTree* CreateXmlTree() const override { return new RteXmlTreeSlim();}
+   XMLTree* CreateXmlTree(IXmlItemBuilder* itemBuilder) const override { return new RteXmlTreeSlim(itemBuilder);}
 };
 
 #endif // RteKernelSlim_H

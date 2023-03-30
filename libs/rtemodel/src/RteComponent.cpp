@@ -252,25 +252,25 @@ string RteComponent::GetDocFile() const
   return doc;
 }
 
-bool RteComponent::Construct(XMLTreeElement* xmlElement)
+RteItem* RteComponent::CreateItem(const std::string& tag)
 {
-  bool success = RteItem::Construct(xmlElement);
-  return success;
-}
-
-
-bool RteComponent::ProcessXmlElement(XMLTreeElement* xmlElement)
-{
-  const string& tag = xmlElement->GetTag();
   if (tag == "files") {
     if (!m_files) {
       m_files = new RteFileContainer(this);
-      AddItem(m_files);
     }
-    return m_files->Construct(xmlElement);
+    return m_files;
   }
-  return RteItem::ProcessXmlElement(xmlElement);
+  return RteItem::CreateItem(tag);
 }
+
+void RteComponent::Construct()
+{
+  RteItem::Construct();
+  if (!HasAttribute("generator")) {
+    AddAttribute("generator", GetGeneratorName(), false);
+  }
+}
+
 
 bool RteComponent::HasApi(RteTarget* target) const
 {
@@ -1046,37 +1046,14 @@ RteComponentContainer::RteComponentContainer(RteItem* parent) :
 {
 }
 
-
-bool RteComponentContainer::ProcessXmlElement(XMLTreeElement* xmlElement)
+RteItem* RteComponentContainer::CreateItem(const std::string& tag)
 {
-  const string& tag = xmlElement->GetTag();
   if (tag == "component") {
-    return ConstructComponent(xmlElement) != nullptr;
+    return new RteComponent(this);
   } else if (tag == "bundle") {
-    RteBundle* b = new RteBundle(this);
-    if (b->Construct(xmlElement)) {
-      AddItem(b);
-      return true;
-    } else {
-      delete b;
-      return false;
-    }
+    return new RteBundle(this);
   }
-  return RteItem::ProcessXmlElement(xmlElement);
-}
-
-RteComponent* RteComponentContainer::ConstructComponent(XMLTreeElement* xmlElement)
-{
-  RteComponent* component = new RteComponent(this);
-  if (component->Construct(xmlElement)) {
-    if (!component->HasAttribute("generator"))
-      component->AddAttribute("generator", GetGeneratorName(), false);
-    AddItem(component);
-  } else {
-    delete component;
-    component = nullptr;
-  }
-  return component;
+  return RteItem::CreateItem(tag);
 }
 
 const string& RteComponentContainer::GetVendorString() const
@@ -1168,21 +1145,13 @@ RteApiContainer::RteApiContainer(RteItem* parent) :
 {
 }
 
-bool RteApiContainer::ProcessXmlElement(XMLTreeElement* xmlElement)
+RteItem* RteApiContainer::CreateItem(const string& tag)
 {
-  const string& tag = xmlElement->GetTag();
   if (tag == "api") {
-    RteApi* api = new RteApi(this);
-    if (api->Construct(xmlElement)) {
-      AddItem(api);
-      return true;
-    }
-    delete api;
-    return false;
+    return new RteApi(this);
   }
-  return RteItem::ProcessXmlElement(xmlElement);
+  return RteItem::CreateItem(tag);
 }
-
 
 
 RteComponentGroup::RteComponentGroup(RteItem* parent) :

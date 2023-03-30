@@ -29,17 +29,18 @@ const std::string RteProject::DEFAULT_RTE_FOLDER = "RTE";
 
 ////////////////////////////
 RteProject::RteProject() :
-  RteItem(NULL),
-  m_globalModel(NULL),
-  m_callback(NULL),
-  m_classes(NULL),
+  RteRootItem(nullptr),
+  m_globalModel(nullptr),
+  m_callback(nullptr),
+  m_packFilterInfos(nullptr),
+  m_classes(nullptr),
   m_nID(0),
   m_bInitialized(false),
   t_bGpdscListModified(false)
 {
+  m_tag = "RTE";
   m_packFilterInfos = new RteItemInstance(this);
   m_packFilterInfos->SetTag("filter");
-  m_tag = "RTE";
 }
 
 RteProject::~RteProject()
@@ -68,8 +69,7 @@ void RteProject::Clear()
   }
   m_boardInfos.clear();
 
-  m_filteredPackages.clear();
-  RteItem::Clear();
+  RteRootItem::Clear();
   m_bInitialized = false;
   t_bGpdscListModified = false;
 }
@@ -616,9 +616,7 @@ void RteProject::DeleteFileInstance(RteFileInstance* fi) {
   if (it != m_files.end()) {
     m_files.erase(it);
   }
-  RemoveItem(fi);
-  delete fi;
-
+  RemoveChild(fi, true);
 }
 
 
@@ -1576,6 +1574,7 @@ void RteProject::ClearTargets()
 
 void RteProject::AddTargetInfo(const string& targetName)
 {
+
   const string& activeTarget = GetActiveTargetName();
   m_packFilterInfos->AddTargetInfo(targetName, activeTarget);
 
@@ -2141,81 +2140,68 @@ void RteProject::UpdateModel()
   }
 }
 
-bool RteProject::Construct(XMLTreeElement* xmlTree)
+void RteProject::Construct()
 {
-  // we are not interested in XML attributes for model Instance
-  const list<XMLTreeElement*>& docs = xmlTree->GetChildren();
-  list<XMLTreeElement*>::const_iterator it = docs.begin();
-  bool success = false;
-  if (it != docs.end()) { // there should be only one
-    XMLTreeElement* xmlElement = *it;
-    m_tag = xmlElement->GetTag();
-    success = ProcessXmlChildren(xmlElement);
-    m_ID = "RTE";
-    m_tag = "RTE";
+  RteRootItem::Construct();
+  for (auto child : GetChildren()) {
+    RteComponentInstance* ci = dynamic_cast<RteComponentInstance*>(child);
+    if (ci) {
+      m_components[ci->GetID()] = ci;
+    }
+    RteFileInstance* fi = dynamic_cast<RteFileInstance*>(child);
+    if (fi) {
+      m_files[fi->GetID()] = fi;
+    }
   }
   UpdateClasses();
-  return success;
 }
 
-bool RteProject::ProcessXmlElement(XMLTreeElement* xmlElement)
+
+RteItem* RteProject::AddChild(RteItem* child)
 {
-  const string& tag = xmlElement->GetTag();
-  if (tag == "components" || tag == "apis" || tag == "files" || tag == "packages" || tag == "gpdscs" || tag == "boards") {
-    return ProcessXmlChildren(xmlElement); // will recurcively call this function (processed in the next if clauses)
-  } else if (tag == "component" || tag == "api") {
-    RteComponentInstance* ci = new RteComponentInstance(this);
-    if (ci->Construct(xmlElement)) {
-      AddItem(ci);
-      m_components[ci->GetID()] = ci;
-      return true;
-    }
-    delete ci;
-    return false;
-  } else if (tag == "file") {
-    RteFileInstance* fi = new RteFileInstance(this);
-    if (fi->Construct(xmlElement)) {
-      // in old packs we also same files with other case, do not load duplicated removed files in this case
-      RteFileInstance* oldFi = GetFileInstance(fi->GetID());
-      if (!oldFi || (oldFi->IsRemoved() && !fi->IsRemoved())) {
-        DeleteFileInstance(oldFi);
-        AddItem(fi);
-        m_files[fi->GetID()] = fi;
-        return true;
-      }
-    }
-    delete fi;
-    return true; // fi can only be deleted if the item is not a config one
-  } else if (tag == "package") {
-    RtePackageInstanceInfo* pi = new RtePackageInstanceInfo(this);
-    if (pi->Construct(xmlElement)) {
-      m_filteredPackages[pi->GetPackageID(true)] = pi;
-      return true;
-    }
-    delete pi;
-    return true;
-  } else if (tag == "gpdsc") {
-    RteGpdscInfo* gi = new RteGpdscInfo(this);
-    if (gi->Construct(xmlElement)) {
-      m_gpdscInfos[gi->GetAbsolutePath()] = gi;
-      return true;
-    }
-    delete gi;
-    return true;
-  } else if (tag == "board") {
-    RteBoardInfo* bi = new RteBoardInfo(this);
-    if (bi->Construct(xmlElement)) {
-      m_boardInfos[bi->GetDisplayName()] = bi;
-      return true;
-    }
-    delete bi;
-    return true;
-  } else if (tag == "filter") {
-    m_packFilterInfos->Construct(xmlElement);
-    return true;
+  if (child == m_packFilterInfos) {
+    return child; // do not add to children
   }
 
-  return RteItem::ProcessXmlElement(xmlElement);
+  RtePackageInstanceInfo* pi = dynamic_cast<RtePackageInstanceInfo*>(child);
+  if (pi) {
+    m_filteredPackages[pi->GetPackageID(true)] = pi;
+    // do not add to children
+    return pi;
+  }
+  RteGpdscInfo* gi = dynamic_cast<RteGpdscInfo*>(child);
+  if (gi) {
+    m_gpdscInfos[gi->GetAbsolutePath()] = gi;
+    // do not add to children
+    return gi;
+  }
+  RteBoardInfo* bi = dynamic_cast<RteBoardInfo*>(child);
+  if (bi) {
+    m_boardInfos[bi->GetDisplayName()] = bi;
+    // do not add to children
+    return bi;
+  }
+  return RteRootItem::AddChild(child);
+}
+
+RteItem* RteProject::CreateItem(const std::string& tag)
+{
+  if (tag == "components" || tag == "apis" || tag == "files" || tag == "packages" || tag == "gpdscs" || tag == "boards") {
+    return GetThis(); // factory will recursively call this function (processed in the next if clauses)
+  } else if (tag == "component" || tag == "api") {
+    return new RteComponentInstance(this);
+  } else if (tag == "file") {
+    return new RteFileInstance(this);
+  } else if (tag == "package") {
+   return new RtePackageInstanceInfo(this);
+  } else if (tag == "gpdsc") {
+    return new RteGpdscInfo(this);
+  } else if (tag == "board") {
+    return new RteBoardInfo(this);
+  } else if (tag == "filter") {
+    return m_packFilterInfos; // already exists
+  }
+  return RteRootItem::CreateItem(tag);
 }
 
 
