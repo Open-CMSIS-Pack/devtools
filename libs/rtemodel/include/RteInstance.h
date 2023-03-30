@@ -46,7 +46,7 @@ public:
   /**
    * @brief default constructor
   */
-  RteInstanceTargetInfo();
+  RteInstanceTargetInfo(RteItem* parent);
   /**
    * @brief copy constructor
    * @param info pointer to RteInstanceTargetInfo to copy from
@@ -84,7 +84,6 @@ public:
    * @return true if the setting has changed
   */
   bool SetIncludeInLib(bool include);
-
 
   /**
    * @brief get component instance count
@@ -163,11 +162,9 @@ public:
   XMLTreeElement* CreateXmlTreeElement(XMLTreeElement* parentElement, bool bCreateContent = true) const override;
 
   /**
-   * @brief process child elements of supplied XMLTreeElement to extract XML data and create RteItem children
-   * @param xmlElement XMLTreeElement whose children to process
-   * @return true if successful
+   * @brief called to construct the item with attributes and child elements
   */
-  bool ProcessXmlChildren(XMLTreeElement* xmlElement) override;
+  void Construct() override;
 
 protected:
   /**
@@ -400,7 +397,26 @@ public:
   /**
    * @brief clear internal data
   */
-   void Clear() override;
+  void Clear() override;
+
+  /**
+   * @brief called to construct the item with attributes and child elements
+  */
+  void Construct() override;
+
+  /**
+   * @brief append a new child at the end of the list
+   * @param child pointer to a new child of template type RteItem
+   * @return pointer to the new child
+  */
+  RteItem* AddChild(RteItem* child) override;
+
+  /**
+   * @brief create a new instance of type RteItem
+   * @param tag name of tag
+   * @return pointer to instance of type RteItem
+  */
+  RteItem* CreateItem(const std::string& tag) override;
 
   /**
    * @brief get pack attributes
@@ -502,13 +518,6 @@ protected:
    * @return true
   */
    bool HasXmlContent() const override { return true; }
-
- /**
-   * @brief process a single XMLTreeElement during construction
-   * @param xmlElement pointer to XMLTreeElement to process
-   * @return true if successful
- */
-   bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
 
   /**
    * @brief creates child element for supplied XMLTreeElement
@@ -1595,20 +1604,12 @@ public:
   */
    std::string GetProjectGroupName() const override;
 
-  /**
-   * @brief construct this item from XML data
-   * @param xmlElement pointer to XMLTreeElement to construct from
-   * @return true if successful
-  */
-   bool Construct(XMLTreeElement* xmlElement) override;
+   /**
+    * @brief called to construct the item with attributes and child elements
+   */
+   void Construct() override;
 
 protected:
-  /**
-   * @brief process a single XMLTreeElement during construction
-   * @param xmlElement pointer to XMLTreeElement to process
-   * @return true if successful
-  */
-   bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
 
   /**
    * @brief creates child element for supplied XMLTreeElement

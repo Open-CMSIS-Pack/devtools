@@ -147,7 +147,7 @@ void CBuildGenTestFixture::RunLayerCommand(int cmdNum, const TestParam& param) {
   string cmd = "bash -c \"source " + testout_folder + "/cbuild/etc/setup && cbuildgen " + workingDir + "/" + param.targetArg + ".cprj " +
     cmdName + " " + layers + output + "\"";
   ret_val = system(cmd.c_str());
-  ASSERT_EQ(ret_val, 0);
+  ASSERT_EQ(ret_val, 0) << "cmd: " << cmd << endl;
 }
 
 void CBuildGenTestFixture::CheckDescriptionFiles(const string& filename1, const string& filename2) {
@@ -163,7 +163,13 @@ void CBuildGenTestFixture::CheckDescriptionFiles(const string& filename1, const 
   ret_val = f2.is_open();
   ASSERT_EQ(ret_val, true) << "Failed to open " << filename2;
 
+  string f1Name = RteUtils::ExtractFileName(filename1);
+  string f2Name = RteUtils::ExtractFileName(filename2);
+
+  bool equal = true;
+  size_t lineNumber = 0;
   while (getline(f1, l1) && getline(f2, l2)) {
+    lineNumber++;
     // remove eol cr
     if (!l1.empty() && l1.rfind('\r') == l1.length() - 1) {
       l1.pop_back();
@@ -183,11 +189,21 @@ void CBuildGenTestFixture::CheckDescriptionFiles(const string& filename1, const 
       if ((!l1.empty() && (l1.find("used file=") != string::npos)) && (!l2.empty() && (l2.find("used file=") != string::npos))) {
         continue;
       }
+      equal = false;
+      EXPECT_TRUE(equal)
+        << f1Name << "(" << lineNumber << "):" << endl
+        << l1 << endl
+        << " is different from " << endl <<
+        f2Name << "(" << lineNumber << "):" << endl
+        << l2 << endl;
 
-      FAIL() << filename1 << " is different from " << filename2;
     }
   }
-
+  if (!equal) {
+    FAIL() << filename1 << endl
+      << " is different from " << endl
+      << filename2 << endl;
+  }
   f1.close();
   f2.close();
 }

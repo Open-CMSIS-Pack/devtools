@@ -8,12 +8,12 @@
 #define PROJMGRKERNEL_H
 
 #include "ProjMgrCallback.h"
-#include "RteKernel.h"
+#include "RteKernelSlim.h"
 
 /**
  * @brief extension to RTE Kernel
 */
-class ProjMgrKernel : public RteKernel {
+class ProjMgrKernel : public RteKernelSlim {
 public:
   /**
    * @brief class constructor
@@ -23,7 +23,7 @@ public:
   /**
    * @brief class destructor
   */
-  virtual ~ProjMgrKernel();
+  ~ProjMgrKernel() override;
 
   /**
    * @brief get kernel
@@ -56,10 +56,7 @@ public:
    * @brief get callback
    * @return pointer to callback
   */
-  ProjMgrCallback* GetCallback();
-
-protected:
-  XMLTree* CreateXmlTree() const;
+  ProjMgrCallback* GetCallback() const;
 
 private:
   std::unique_ptr<ProjMgrCallback> m_callback;

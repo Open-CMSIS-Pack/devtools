@@ -8,6 +8,7 @@
 
 #include "RteFsUtils.h"
 #include "RteItem.h"
+#include "RteItemBuilder.h"
 #include "XMLTreeSlim.h"
 #include "CrossPlatform.h"
 #include "CrossPlatformUtils.h"
@@ -116,18 +117,17 @@ RtePackage* ProjMgrUtils::ReadGpdscFile(const string& gpdsc) {
   fs::path path(gpdsc);
   error_code ec;
   if (fs::exists(path, ec)) {
-    XMLTreeSlim tree;
+    RteItemBuilder rteItemBuilder;
+    XMLTreeSlim tree(&rteItemBuilder);
     tree.Init();
-    if (tree.AddFileName(gpdsc, true)) {
-      XMLTreeElement* doc = tree.GetFirstChild();
-      if (doc) {
-        RtePackage* gpdscPack = new RtePackage(nullptr);
-        if (gpdscPack->Construct(doc)) {
-          gpdscPack->SetPackageState(PackageState::PS_GENERATED);
-          return gpdscPack;
-        }
-        delete gpdscPack;
-      }
+    bool success = tree.AddFileName(gpdsc, true);
+    RtePackage* gpdscPack = rteItemBuilder.GetPack();
+    if (!success || !gpdscPack) {
+      return nullptr;
+    }
+    if (gpdscPack->Validate()) {
+      gpdscPack->SetPackageState(PackageState::PS_GENERATED);
+      return gpdscPack;
     }
   }
   return nullptr;

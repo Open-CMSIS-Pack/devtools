@@ -83,7 +83,9 @@ string ValueAdjuster::AdjustPath(const string& fileName, int lineNo)
  * @param rteModel Rte Model to run on
 */
 RteModelReader::RteModelReader(RteGlobalModel& rteModel) :
-  m_rteModel(rteModel)
+  m_rteModel(rteModel),
+  m_rteItemBuilder(&rteModel),
+  m_xmlTree(&m_rteItemBuilder)
 {
   m_xmlTree.SetXmlValueAdjuster(&m_valueAdjuster);
   m_xmlTree.Init();
@@ -129,7 +131,7 @@ bool RteModelReader::ReadAll()
 
   // ----------------------  Construct Model  ----------------------
   t1 = CrossPlatformUtils::ClockInMsec();
-  bOk = m_rteModel.Construct(&m_xmlTree);
+  m_rteModel.InsertPacks(m_rteItemBuilder.GetPacks());
   t2 = CrossPlatformUtils::ClockInMsec() - t1;
   LogMsg("M076", TIME(t2));
 

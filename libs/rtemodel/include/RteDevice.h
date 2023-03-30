@@ -71,6 +71,14 @@ public:
    * @param attributes reference to XmlItem to fill
   */
   virtual void GetEffectiveAttributes(XmlItem& attributes) const;
+
+protected:
+  /**
+   * @brief create an RteDeviceProperty for given tag
+   * @param tag XML tag
+   * @return pointer to RteDeviceProperty-derived class, never null
+  */
+  virtual RteDeviceProperty* CreateProperty(const std::string& tag);
 };
 
 /**
@@ -172,7 +180,18 @@ public:
    * @brief constructor
    * @param parent pointer to parent RteItem
   */
-  RteDevicePropertyGroup(RteItem* parent);
+  RteDevicePropertyGroup(RteItem* parent, bool bOwnChldren = true);
+
+
+  /**
+   * @brief virtual destructor
+  */
+  ~RteDevicePropertyGroup() override;
+
+  /**
+   * @brief clear internal item structure including children. The method is called from destructor
+  */
+  void Clear() override;
 
   /**
    * @brief get immediate RteDeviceProperty child with given ID
@@ -194,30 +213,23 @@ public:
    void CollectEffectiveContent(RteDeviceProperty* p) override;
 
   /**
-   * @brief construct an RteDeviceProperty from supplied XMLTreeElement
-   * @param xmlElement XMLTreeElement to construct from
-   * @return true if successful
+   * @brief append a new child at the end of the list
+   * @param child pointer to a new child of template type RteItem
+   * @return pointer to the new child
   */
-  virtual bool ConstructProperty(XMLTreeElement* xmlElement);
+   RteItem* AddChild(RteItem* child) override;
 
-protected:
-  /**
-   * @brief create an RteDeviceProperty for given tag
-   * @param tag XML tag
-   * @return pointer to RteDeviceProperty-derived class, never null
-  */
-  virtual RteDeviceProperty* CreateProperty(const std::string& tag);
-
-  /**
-     * @brief process a single XMLTreeElement during construction
-     * @param xmlElement pointer to XMLTreeElement to process
-     * @return true if successful
+   /**
+     * @brief create a new instance of type RteItem
+     * @param tag name of tag
+     * @return pointer to instance of type RteItem
    */
-   bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
+   RteItem* CreateItem(const std::string& tag) override;
 
 protected:
   // collected effective content
   std::list<RteDeviceProperty*> m_effectiveContent;
+  bool m_bOwnChildren;
 };
 
 /**
@@ -419,6 +431,38 @@ protected:
    RteDeviceProperty* CreateProperty(const std::string& tag) override;
 };
 
+/**
+ * @brief class to support <sequence> device property
+*/
+class RteSequences : public RteDevicePropertyGroup
+{
+public:
+  /**
+   * @brief constructor
+   * @param parent pointer to parent RteItem
+  */
+  RteSequences(RteItem* parent) : RteDevicePropertyGroup(parent) {};
+public:
+  /**
+    * @brief indicate the property is unique, a sequence with the same name can be listed only once per device
+    * @return true
+  */
+  bool IsUnique() const override { return true; }
+
+  /**
+   * @brief indicate that this property type provides effective content to collect
+   * @return true
+  */
+  bool IsCollectEffectiveContent() const override { return true; }
+
+protected:
+  /**
+   * @brief create an RteDeviceProperty for given tag
+   * @param tag XML tag
+   * @return pointer to RteDeviceProperty-derived class, never null
+  */
+  RteDeviceProperty* CreateProperty(const std::string& tag) override;
+};
 
 /**
  * @brief class to support <datapatch> device property
@@ -913,22 +957,28 @@ public:
   */
    void Clear() override;
 
- /**
- * @brief validate internal item structure and children recursively and set internal validity flag
- * @return validation result as boolean value
- */
+   /**
+    * @brief validate internal item structure and children recursively and set internal validity flag
+    * @return validation result as boolean value
+   */
    bool Validate() override;
 
-  /**
-    * @brief construct this item out of supplied XML data
-    * @param xmlElement XMLTreeElement to construct from
-    * @return true if successful
+   /**
+    * @brief create a new instance of type RteItem
+    * @param tag name of tag
+    * @return pointer to instance of type RteItem
    */
-   bool Construct(XMLTreeElement* xmlElement) override;
-  /**
+   RteItem* CreateItem(const std::string& tag) override;
+
+   /**
+     * @brief called to construct the item with attributes and child elements
+   */
+   void Construct() override;
+
+   /**
    * @brief get device item hierarchy type
    * @return RteDeviceItem::TYPE
-  */
+   */
   virtual TYPE GetType() const = 0;
 
   /**
@@ -1065,20 +1115,20 @@ protected:
   void CreateEffectiveXmlTreeElements(XMLTreeElement* parent, const std::list<RteDeviceProperty*>& properties);
 
   /**
+   * @brief create an RteDeviceProperty for given tag
+   * @param tag XML tag
+   * @return pointer to RteDeviceProperty-derived class, never null
+  */
+  RteDeviceProperty* CreateProperty(const std::string& tag) override;
+
+  /**
    * @brief create a device item derived from RteDeviceItem class for given tag
    * @param tag device item tag
    * @return pointer to created RteDeviceItem
   */
   RteDeviceItem* CreateDeviceItem(const std::string& tag);
 
-  /**
-   * @brief process single XMLTreeElement
-   * @param xmlElement pointer to XMLTreeElement item to process
-   * @return true if successful
-  */
-   bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
-
-  /**
+ /**
    * @brief construct item ID
    * @return device item ID
   */
@@ -1247,12 +1297,13 @@ public:
   */
   RteDeviceFamilyContainer(RteItem* parent);
 public:
+
   /**
-   * @brief process a single XMLTreeElement during construction
-   * @param xmlElement pointer to XMLTreeElement to process
-   * @return true if successful
-   */
-   bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
+   * @brief create a new instance of type RteItem
+   * @param tag name of tag
+   * @return pointer to instance of type RteItem
+  */
+  RteItem* CreateItem(const std::string& tag) override;
 };
 
 /**

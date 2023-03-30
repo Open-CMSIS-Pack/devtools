@@ -82,31 +82,31 @@ public:
    * @brief get generator device name
    * @return device name
   */
-   const std::string& GetDeviceName() const override { return m_deviceAttributes.GetDeviceName(); }
+   const std::string& GetDeviceName() const override { return m_pDeviceAttributes ? m_pDeviceAttributes->GetDeviceName() : EMPTY_STRING; }
 
   /**
    * @brief get generator device vendor
    * @return device vendor
   */
-   const std::string& GetDeviceVendor() const override { return m_deviceAttributes.GetDeviceVendor(); }
+   const std::string& GetDeviceVendor() const override { return m_pDeviceAttributes ? m_pDeviceAttributes->GetDeviceVendor() : EMPTY_STRING; }
 
   /**
    * @brief get device variant
    * @return device variant name
   */
-   const std::string& GetDeviceVariantName() const override { return m_deviceAttributes.GetDeviceVariantName(); }
+   const std::string& GetDeviceVariantName() const override { return m_pDeviceAttributes ? m_pDeviceAttributes->GetDeviceVariantName() : EMPTY_STRING; }
 
   /**
    * @brief get processor name
    * @return processor name
   */
-   const std::string& GetProcessorName() const override { return m_deviceAttributes.GetProcessorName(); }
+   const std::string& GetProcessorName() const override { return m_pDeviceAttributes ? m_pDeviceAttributes->GetProcessorName() : EMPTY_STRING; }
 
   /**
    * @brief get all device attributes
    * @return device attributes as a reference to RteItem
   */
-  const RteItem& GetDeviceAttributes() const { return m_deviceAttributes; }
+  const RteItem& GetDeviceAttributes() const { return m_pDeviceAttributes ? *m_pDeviceAttributes : RteItem::EMPTY_RTE_ITEM; }
 
   /**
    * @brief get generator group name to use in project
@@ -191,19 +191,24 @@ public:
   */
    const std::string& GetGeneratorName() const override { return GetName(); }
 
-public:
   /**
    * @brief clear internal data structures
   */
    void Clear() override;
 
-protected:
   /**
-   * @brief process a single XMLTreeElement during construction
-   * @param xmlElement pointer to XMLTreeElement to process
-   * @return true if successful
-   */
-   bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
+   * @brief called to construct the item with attributes and child elements
+  */
+  void Construct() override;
+
+  /**
+   * @brief create a new instance of type RteItem
+   * @param tag name of tag
+   * @return pointer to instance of type RteItem
+  */
+  RteItem* CreateItem(const std::string& tag) override;
+
+protected:
   /**
    * @brief construct generator ID
    * @return value of "id" attribute
@@ -211,7 +216,7 @@ protected:
    std::string ConstructID() override { return GetAttribute("id"); }
 
 private:
-  RteItem m_deviceAttributes;
+  RteItem* m_pDeviceAttributes;
   RteFileContainer* m_files;
 };
 
@@ -237,11 +242,11 @@ public:
   RteGenerator* GetGenerator(const std::string& id) const;
 
   /**
-   * @brief process a single XMLTreeElement during construction
-   * @param xmlElement pointer to XMLTreeElement to process
-   * @return true if successful
-   */
-   bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
+   * @brief create a new instance of type RteItem
+   * @param tag name of tag
+   * @return pointer to instance of type RteItem
+  */
+  RteItem* CreateItem(const std::string& tag) override;
 };
 
 #endif // RteGenerator_H

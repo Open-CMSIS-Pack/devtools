@@ -8,7 +8,7 @@
 */
 /******************************************************************************/
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2023 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -120,11 +120,21 @@ public:
   */
   ~RteItem() override;
 
-  /**
- * @brief getter for this instance
- * @return pointer to the instance of type RteItem
-*/
+ /**
+  * @brief getter for this instance
+  * @return pointer to the instance of type RteItem
+ */
   RteItem* GetThis() const override { return const_cast<RteItem*>(this); }
+
+ /**
+  * @brief clear internal item structure including children. The method is called from destructor
+ */
+  void Clear() override;
+
+  /**
+   * @brief called to construct the item with attributes and child elements
+  */
+  void Construct() override;
 
   /**
    * @brief create a new instance of type RteItem
@@ -803,18 +813,6 @@ public:
 public:
 
   /**
-   * @brief clear internal item structure including children. The method is called from destructor
-  */
-  void Clear() override;
-
-  /**
-   * @brief construct this item out of supplied XML data
-   * @param xmlElement XMLTreeElement to construct from
-   * @return true if successful
-  */
-  virtual bool Construct(XMLTreeElement* xmlElement);
-
-  /**
    * @brief validate internal item structure and children recursively and set internal validity flag
    * @return validation result as boolean value
   */
@@ -848,19 +846,6 @@ public:
   virtual RteItem* CreateChild(const std::string& tag, const std::string& name = RteUtils::EMPTY_STRING);
 
 protected:
-  /**
-   * @brief process child elements of supplied XMLTreeElement to extract XML data and create RteItem children
-   * @param xmlElement XMLTreeElement whose children to process
-   * @return true if successful
-  */
-  virtual bool ProcessXmlChildren(XMLTreeElement* xmlElement);
-
-  /**
-   * @brief process a single XMLTreeElement during construction. The method can recursively call Construct() or ProcessXmlChildren()
-   * @param xmlElement XMLTreeElement to process
-   * @return true if successful
-  */
-  virtual bool ProcessXmlElement(XMLTreeElement* xmlElement);
 
   /**
    * @brief construct item's ID
@@ -879,6 +864,11 @@ protected:
    * @param parentElement XMLTreeElement to generate content for
   */
   virtual void CreateXmlTreeElementContent(XMLTreeElement* parentElement) const;
+public:
+  /**
+   * @brief Empty RteItem to be used as a null object
+  */
+  static RteItem EMPTY_RTE_ITEM;
 
 protected:
   bool m_bValid; // validity flag
@@ -886,33 +876,7 @@ protected:
 
   std::list<std::string> m_errors; // errors or warnings found by Construct() or Validate()
 
-private:
-  // Tell the compiler that Construct in the parent class isn't the same as the one in this class
-  // Deals with "warning: 'RteItem::Construct' hides overloaded virtual function [-Woverloaded-virtual]"
-  using XmlItem::Construct;
 };
-
-
-/**
- * @brief container class that adds all sub-items as children including text items (<tag>text</tag>)
-*/
-class RteItemContainer : public RteItem
-{
-public:
-  /**
-   * @brief base constructor
-   * @param parent pointer to parent RteItem, can be nullptr for top-level items
-  */
-  RteItemContainer(RteItem* parent);
-
-  /**
-   * @brief process a single XMLTreeElement during construction
-   * @param xmlElement pointer to XMLTreeElement to process
-   * @return true if successful
-   */
-   bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
-};
-
 
 
 /**

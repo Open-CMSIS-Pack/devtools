@@ -18,6 +18,7 @@ class RteDeviceElement;
 class RteDeviceProperty;
 class RteDeviceItem;
 class RteDeviceItemAggregate;
+class RteItemBuilder;
 class XMLTree;
 
 enum PACK_TYPE { PACK_GENERIC, PACK_DFP, PACK_BSP };
@@ -87,6 +88,7 @@ public:
 private:
   RteModel* m_rteModel;
   XMLTree* m_xmlTree;
+  RteItemBuilder* m_rteItemBuilder;
   std::set<std::string> m_files;
   std::set<std::string> m_dirs;
 

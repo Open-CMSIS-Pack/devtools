@@ -74,6 +74,45 @@ void RteDeviceElement::GetEffectiveAttributes(XmlItem& attributes) const
     parent->GetEffectiveAttributes(attributes);
 }
 
+
+
+RteDeviceProperty* RteDeviceElement::CreateProperty(const string& tag)
+{
+  if (tag == "feature") {
+    return new RteDeviceFeature(this);
+  } else if (tag == "processor") {
+    return new RteDeviceProcessor(this);
+  } else if (tag == "memory") {
+    return new RteDeviceMemory(this);
+  } else if (tag == "debug") {
+    return new RteDeviceDebug(this);
+  } else if (tag == "debugport") {
+    return new RteDebugPort(this);
+  } else if (tag == "debugconfig") {
+    return new RteDebugConfig(this);
+  } else if (tag == "trace") {
+    return new RteDeviceTrace(this);
+  } else if (tag == "debugvars") {
+    return new RteDeviceDebugVars(this);
+  } else if (tag == "algorithm") {
+    return new RteDeviceAlgorithm(this);
+  } else if (tag == "book") {
+    return new RteDeviceBook(this);
+  } else if (tag == "description") {
+    return new RteDeviceDescription(this);
+  } else if (tag == "environment") {
+    return new RteDeviceEnvironment(this);
+  } else if (tag == "flashinfo") {
+    return new RteFlashInfo(this);
+  } else if (tag == "accessportV1") {
+    return new RteAccessPortV1(this);
+  } else if (tag == "accessportV2") {
+    return new RteAccessPortV2(this);
+  }
+  return new RteDeviceProperty(this);
+}
+
+
 string RteDeviceProperty::ConstructID()
 {
   string id = GetTag();
@@ -146,10 +185,25 @@ RteDeviceProperty* RteDeviceProperty::GetPropertyFromMap(const string& tag, cons
 }
 
 
-RteDevicePropertyGroup::RteDevicePropertyGroup(RteItem* parent) :
-  RteDeviceProperty(parent)
+RteDevicePropertyGroup::RteDevicePropertyGroup(RteItem* parent, bool bOwnChldren) :
+  RteDeviceProperty(parent),
+  m_bOwnChildren(bOwnChldren)
 {
 };
+
+RteDevicePropertyGroup::~RteDevicePropertyGroup()
+{
+  RteDevicePropertyGroup::Clear();
+}
+
+void RteDevicePropertyGroup::Clear()
+{
+  if (!m_bOwnChildren) {
+    m_children.clear(); // do not destroy child objects
+  }
+  RteDeviceProperty::Clear();
+}
+
 
 RteDeviceProperty* RteDevicePropertyGroup::GetProperty(const string& id) const
 {
@@ -184,68 +238,22 @@ void RteDevicePropertyGroup::CollectEffectiveContent(RteDeviceProperty* dp)
   }
 }
 
-RteDeviceProperty* RteDevicePropertyGroup::CreateProperty(const string& tag)
-{
-  if (tag == "feature") {
-    return new RteDeviceFeature(this);
-  } else if (tag == "processor") {
-    return new RteDeviceProcessor(this);
-  } else if (tag == "memory") {
-    return new RteDeviceMemory(this);
-  } else if (tag == "debug") {
-    return new RteDeviceDebug(this);
-  } else if (tag == "debugport") {
-    return new RteDebugPort(this);
-  } else if (tag == "debugconfig") {
-    return new RteDebugConfig(this);
-  } else if (tag == "trace") {
-    return new RteDeviceTrace(this);
-  } else if (tag == "debugvars") {
-    return new RteDeviceDebugVars(this);
-  } else if (tag == "sequence") {
-    return new RteSequence(this);
-  } else if (tag == "algorithm") {
-    return new RteDeviceAlgorithm(this);
-  } else if (tag == "book") {
-    return new RteDeviceBook(this);
-  } else if (tag == "description") {
-    return new RteDeviceDescription(this);
-  } else if (tag == "environment") {
-    return new RteDeviceEnvironment(this);
-  } else if (tag == "flashinfo") {
-    return new RteFlashInfo(this);
-  } else if (tag == "accessportV1") {
-    return new RteAccessPortV1(this);
-  } else if (tag == "accessportV2") {
-    return new RteAccessPortV2(this);
-  } else {
-    return new RteDeviceProperty(this);
-  }
-}
 
-bool RteDevicePropertyGroup::ConstructProperty(XMLTreeElement* xmlElement)
+RteItem* RteDevicePropertyGroup::AddChild(RteItem* child)
 {
-  return ProcessXmlElement(xmlElement);
-}
-
-bool RteDevicePropertyGroup::ProcessXmlElement(XMLTreeElement* xmlElement)
-{
-  const string& tag = xmlElement->GetTag();
-  RteDeviceProperty* dp = CreateProperty(tag);
-  if (dp && dp->Construct(xmlElement)) {
-    // ensure properties with Pname defined are above those without Pname
-    if (dp->HasAttribute("Pname")) {
-      m_children.push_front(dp);
-    } else {
-      m_children.push_back(dp);
-    }
+  RteDeviceProperty::AddChild(child, child->HasAttribute("Pname"));
+  RteDeviceProperty* dp = dynamic_cast<RteDeviceProperty*>(child);
+  if (dp) {
     m_effectiveContent.push_back(dp);
-    return true;
   }
-  delete dp;
-  return false;
+  return child;
 }
 
+
+RteItem* RteDevicePropertyGroup::CreateItem(const std::string& tag)
+{
+  return CreateProperty(tag);
+}
 
 RteDeviceProperty* RteSequenceControlBlock::CreateProperty(const string& tag)
 {
@@ -263,6 +271,14 @@ RteDeviceProperty* RteSequence::CreateProperty(const string& tag)
     return new RteSequenceCommandBlock(this);
   } else if (tag == "control") {
     return new RteSequenceControlBlock(this);
+  }
+  return new RteDeviceProperty(this);
+}
+
+RteDeviceProperty* RteSequences::CreateProperty(const string& tag)
+{
+  if (tag == "sequence") {
+    return new RteSequence(this);
   }
   return new RteDeviceProperty(this);
 }
@@ -428,6 +444,9 @@ RteDeviceItem::~RteDeviceItem()
 
 void RteDeviceItem::Clear()
 {
+  for (auto& [tag, pg ]: m_properties) {
+    delete pg;
+  }
   m_properties.clear();
   m_deviceItems.clear(); // items are in m_children collection as well, do not delete here
   m_effectiveProperties.clear();
@@ -494,7 +513,6 @@ void RteDeviceItem::GetEffectiveDeviceItems(list<RteDeviceItem*>& devices) const
   }
 }
 
-
 bool RteDeviceItem::Validate()
 {
   m_bValid = RteDeviceElement::Validate();
@@ -530,10 +548,56 @@ bool RteDeviceItem::Validate()
   return m_bValid;
 }
 
-bool RteDeviceItem::Construct(XMLTreeElement* xmlElement)
+RteItem* RteDeviceItem::CreateItem(const std::string& tag)
 {
-  bool success = RteDeviceElement::Construct(xmlElement);
+  if (tag == "subFamily" || tag == "device" || tag == "variant") {
+    RteDeviceItem* di = CreateDeviceItem(tag);
+    if (di) {
+      m_deviceItems.push_back(di);
+      return di;
+    }
+  }
 
+  RteDeviceProperty* deviceProperty = CreateProperty(tag);
+  RteDevicePropertyGroup* props = GetProperties(tag);
+  if (!props) {
+    props = new RteDevicePropertyGroup(this, false);
+    props->SetTag(tag);
+    m_properties[tag] = props;
+  }
+  props->AddItem(deviceProperty);
+  return deviceProperty;
+}
+
+RteDeviceProperty* RteDeviceItem::CreateProperty(const string& tag)
+{
+  if (tag == "sequences") {
+    return new RteSequences(this);
+  }
+  return RteDeviceElement::CreateProperty(tag);
+}
+
+
+RteDeviceItem* RteDeviceItem::CreateDeviceItem(const string& tag)
+{
+  // since our tags differ already by first item, use simple switch
+  switch (tag[0]) {
+  case 's':
+    return new RteDeviceSubFamily(this);
+  case 'd':
+    return new RteDevice(this);
+  case 'v':
+    return new RteDeviceVariant(this);
+
+  default:
+    break;
+  }
+  return nullptr;
+}
+
+void RteDeviceItem::Construct()
+{
+  RteDeviceElement::Construct();
   // get processor names
   list<RteDeviceProperty*> processors;
   GetEffectiveProcessors(processors);
@@ -541,7 +605,6 @@ bool RteDeviceItem::Construct(XMLTreeElement* xmlElement)
     RteDeviceProperty* p = *it;
     m_processors[p->GetProcessorName()] = p;
   }
-  return success;
 }
 
 
@@ -594,52 +657,6 @@ string RteDeviceItem::ConstructID()
   }
   return id;
 };
-
-RteDeviceItem* RteDeviceItem::CreateDeviceItem(const string& tag)
-{
-  // since our tags differ already by first item, use simple switch
-  switch (tag[0]) {
-  case 's':
-    return new RteDeviceSubFamily(this);
-  case 'd':
-    return new RteDevice(this);
-  case 'v':
-    return new RteDeviceVariant(this);
-
-  default:
-    break;
-  }
-  return nullptr;
-}
-
-
-bool RteDeviceItem::ProcessXmlElement(XMLTreeElement* xmlElement)
-{
-  const string& tag = xmlElement->GetTag();
-  if (tag == "subFamily" || tag == "device" || tag == "variant") {
-    RteDeviceItem* di = CreateDeviceItem(tag);
-    if (di && di->Construct(xmlElement)) {
-      AddItem(di);
-      m_deviceItems.push_back(di);
-      return true;
-    }
-    delete di;
-    return false;
-  }
-
-  if (tag == "sequences") {
-    return ProcessXmlChildren(xmlElement);
-  }
-
-  RteDevicePropertyGroup* props = GetProperties(tag);
-  if (!props) {
-    props = new RteDevicePropertyGroup(this);
-    props->SetTag(tag);
-    AddItem(props);
-    m_properties[tag] = props;
-  }
-  return props->ConstructProperty(xmlElement);
-}
 
 
 RteDevicePropertyGroup* RteDeviceItem::GetProperties(const string& tag) const
@@ -920,19 +937,12 @@ RteDeviceFamilyContainer::RteDeviceFamilyContainer(RteItem* parent) :
 }
 
 
-bool RteDeviceFamilyContainer::ProcessXmlElement(XMLTreeElement* xmlElement)
+RteItem* RteDeviceFamilyContainer::CreateItem(const std::string& tag)
 {
-  const string& tag = xmlElement->GetTag();
   if (tag == "family") {
-    RteDeviceFamily* family = new RteDeviceFamily(this);
-    if (family->Construct(xmlElement)) {
-      AddItem(family);
-      return true;
-    }
-    delete family;
-    return false;
+    return new RteDeviceFamily(this);
   }
-  return RteItem::ProcessXmlElement(xmlElement);
+  return RteItem::CreateItem(tag);
 }
 
 // device aggregation

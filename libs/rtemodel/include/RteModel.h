@@ -430,12 +430,10 @@ public:
   */
    void Clear() override;
 
-  /**
-   * @brief construct CMSIS RTE data model given by XMLTreeElement object
-   * @param xmlTree given XMLTreeElement object
-   * @return true if successful
-  */
-   bool Construct(XMLTreeElement* xmlTree) override;
+   /**
+    * @brief called to construct the item with attributes and child elements
+   */
+   void Construct() override;
 
   /**
    * @brief validate this object
@@ -483,28 +481,6 @@ public:
   */
   RtePackage* FilterModel(RteModel* globalModel, RtePackage* devicePackage);
 
-  /**
-   * @brief create pack object depending on the given tag
-   * @param tag given tag
-   * @return pointer to created pack of type RtePackage
-  */
-  virtual RtePackage* CreatePackage(const std::string& tag);
-
-  /**
-   * @brief construct packs out of the given XMLTreeElement object.
-   * Created packs are stored in the given collection
-   * @param xmlTree given XMLTreeElement object
-   * @param packs collection of RtePackage pointer to fill
-   * @return true if construction successful
-  */
-  virtual bool ConstructPacks(XMLTreeElement* xmlTree, std::list<RtePackage*>& packs);
-
-  /**
-   * @brief construct pack out of the given XMLTreeElement object
-   * @param xmlTreeDoc given XMLTreeElement object
-   * @return pointer to created pack of type RtePackage
-  */
-  virtual RtePackage* ConstructPack(XMLTreeElement* xmlTreeDoc);
 
   /**
    * @brief insert given collection of packs into internal collection

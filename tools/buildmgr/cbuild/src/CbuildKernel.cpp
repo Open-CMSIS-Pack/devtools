@@ -17,7 +17,7 @@
 // Singleton kernel object
 static CbuildKernel *theCbuildKernel = 0;
 
-CbuildKernel::CbuildKernel(RteCallback* callback) : RteKernel(callback) {
+CbuildKernel::CbuildKernel(RteCallback* callback) : RteKernelSlim(callback) {
   m_model = new CbuildModel();
   m_callback = dynamic_cast<CbuildCallback*>(callback);
   if (m_callback) {
@@ -46,18 +46,6 @@ void CbuildKernel::Destroy() {
   if (theCbuildKernel)
     delete theCbuildKernel;
   theCbuildKernel = 0;
-}
-
-class CbuildXmlParser : public XMLTreeSlim
-{
-public:
-  CbuildXmlParser() :XMLTreeSlim(0, true) { m_XmlValueAdjuster = new RteValueAdjuster(); }
-  ~CbuildXmlParser() { delete m_XmlValueAdjuster; }
-};
-
-XMLTree* CbuildKernel::CreateXmlTree() const
-{
-  return new CbuildXmlParser();
 }
 
 bool CbuildKernel::Construct(const CbuildRteArgs& args) {

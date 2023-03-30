@@ -213,6 +213,13 @@ public:
   */
   IXmlItemBuilder* GetXmlItemBuilder() const { return m_XmlItemBuilder; }
 
+ /**
+  * @brief set item builder factory
+  * @param pointer to IXmlItemBuilder
+  * @param takeOnerschip flag to make XMLTree to delete the builder
+ */
+  void SetXmlItemBuilder(IXmlItemBuilder* itemBuilder, bool takeOnerschip = false);
+
   /**
    * @brief return XmlValueAdjuster used by the class
    * @return pointer to XmlValueAdjuster object
@@ -390,9 +397,10 @@ protected:
   int m_nWarnings;
 
   XMLTreeCallback* m_callback;
-  IXmlItemBuilder* m_XmlItemBuilder;
-  XmlValueAdjuster* m_XmlValueAdjuster;
-  XMLTreeParserInterface* m_p; // internal implementation to hide xerces from client
+  IXmlItemBuilder* m_XmlItemBuilder;    // the builders is managed externally unless m_bInternal builder is specified
+  bool m_bInternalBuilder; // flag is set if default builder is allocated internally or the builder is set with takeOnership flag
+  XmlValueAdjuster* m_XmlValueAdjuster; // the adjuster is managed externally
+  XMLTreeParserInterface* m_p; // internal implementation to hide XML parser like xerces from client
 };
 
 /**

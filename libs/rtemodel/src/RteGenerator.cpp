@@ -26,7 +26,9 @@
 using namespace std;
 
 RteGenerator::RteGenerator(RteItem* parent) :
-  RteItem(parent)
+  RteItem(parent),
+  m_pDeviceAttributes(nullptr),
+  m_files(nullptr)
 {
   RteGenerator::Clear();
 }
@@ -40,7 +42,6 @@ RteGenerator::~RteGenerator()
 void RteGenerator::Clear()
 {
   m_files = 0;
-  m_deviceAttributes.Clear();
   RteItem::Clear();
 }
 
@@ -238,27 +239,29 @@ string RteGenerator::GetExpandedWorkingDir(RteTarget* target, const string& genD
   return wd;
 }
 
-
-bool RteGenerator::ProcessXmlElement(XMLTreeElement* xmlElement)
+void RteGenerator::Construct()
 {
-  const string& tag = xmlElement->GetTag();
+  RteItem::Construct();
+  if (m_files) {
+    m_files->AddAttribute("name", GetGeneratorGroupName());
+  }
+}
+
+RteItem* RteGenerator::CreateItem(const std::string& tag)
+{
   if (tag == "project_files") {
     if (!m_files) {
       m_files = new RteFileContainer(this);
-      m_files->Construct(xmlElement);
       m_files->AddAttribute("name", GetGeneratorGroupName());
-      AddItem(m_files);
-      return true;
+      return m_files;
     }
   } else if (tag == "select") {
-    m_deviceAttributes.SetAttributes(xmlElement->GetAttributes());
+    m_pDeviceAttributes = new RteItem(this);
+    return m_pDeviceAttributes;
   } else if (tag == "arguments" || tag == "exe" || tag == "web" || tag == "eclipse") {
-    RteItem* container = new RteItemContainer(this);
-    container->Construct(xmlElement);
-    AddItem(container);
-    return true;
+    return new RteItem(this);
   }
-  return RteItem::ProcessXmlElement(xmlElement);
+  return RteItem::CreateItem(tag);
 }
 
 
@@ -273,20 +276,12 @@ RteGenerator* RteGeneratorContainer::GetGenerator(const string& id) const
   return dynamic_cast<RteGenerator*>(GetItem(id));
 }
 
-bool RteGeneratorContainer::ProcessXmlElement(XMLTreeElement* xmlElement)
+RteItem* RteGeneratorContainer::CreateItem(const std::string& tag)
 {
-  const string& tag = xmlElement->GetTag();
   if (tag == "generator") {
-    RteGenerator* generator = new RteGenerator(this);
-    if (generator->Construct(xmlElement)) {
-      AddItem(generator);
-      return true;
-    }
-    delete generator;
-    return false;
+    return new RteGenerator(this);
   }
-  return RteItem::ProcessXmlElement(xmlElement);
+  return RteItem::CreateItem(tag);
 }
-
 
 // End of RteGenerator.cpp

@@ -200,72 +200,60 @@ void RteBoard::Clear()
   RteItem::Clear();
 }
 
-bool RteBoard::ProcessXmlElement(XMLTreeElement* xmlElement)
+RteItem* RteBoard::CreateItem(const std::string& tag)
 {
-  const string& tag = xmlElement->GetTag();
-  if (tag == "mountedDevice") {
-    const string& dname = xmlElement->GetAttribute("Dname");
-    const string& dvendor = xmlElement->GetAttribute("Dvendor");
-    if (!dname.empty()) {
-      if (!m_mountedDevs.empty()) {
-        m_mountedDevs += ", ";
-      }
-      if (!m_mountedDevsVendor.empty()) {
-        m_mountedDevsVendor += ", ";
-      }
-      m_mountedDevs += dname;
-      m_mountedDevsVendor += dname;
-      if (!dvendor.empty()) {
-        m_mountedDevsVendor += " (" + DeviceVendor::GetCanonicalVendorName(dvendor) + ")";
-      }
-    }
-  } else if (tag == "feature") {
-    const string& ftype = xmlElement->GetAttribute("type");
-    if (ftype == "ROM") {
-      AddMemStr(m_rom, xmlElement);
-    } else if (ftype == "RAM") {
-      AddMemStr(m_ram, xmlElement);
-    }
-  } else if (tag == "algorithm") {
-    RteDeviceAlgorithm* algo = new RteDeviceAlgorithm(this);
-    if (algo->Construct(xmlElement)) {
-      AddItem(algo);
-      return true;
-    } else {
-      return false;
-    }
+if (tag == "algorithm") {
+    return new RteDeviceAlgorithm(this);
   } else if (tag == "memory") {
-    RteDeviceMemory* mem = new RteDeviceMemory(this);
-    if (mem->Construct(xmlElement)) {
-      AddItem(mem);
-      return true;
-    } else {
-      return false;
-    }
-  } else if (tag == "debugProbe") {
-    RteItem* dp = new RteItem(this);
-    if (dp->Construct(xmlElement)) {
-      AddItem(dp);
-      return true;
-    } else {
-      return false;
+    return  new RteDeviceMemory(this);
+  }
+  return RteItem::CreateItem(tag);
+}
+
+void RteBoard::Construct()
+{
+  RteItem::Construct();
+  for (auto child : GetChildren()) {
+    const string& tag = child->GetTag();
+    if (tag == "mountedDevice") {
+      const string& dname = child->GetAttribute("Dname");
+      const string& dvendor = child->GetAttribute("Dvendor");
+      if (!dname.empty()) {
+        if (!m_mountedDevs.empty()) {
+          m_mountedDevs += ", ";
+        }
+        if (!m_mountedDevsVendor.empty()) {
+          m_mountedDevsVendor += ", ";
+        }
+        m_mountedDevs += dname;
+        m_mountedDevsVendor += dname;
+        if (!dvendor.empty()) {
+          m_mountedDevsVendor += " (" + DeviceVendor::GetCanonicalVendorName(dvendor) + ")";
+        }
+      }
+    } else if (tag == "feature") {
+      const string& ftype = child->GetAttribute("type");
+      if (ftype == "ROM") {
+        AddMemStr(m_rom, child);
+      } else if (ftype == "RAM") {
+        AddMemStr(m_ram, child);
+      }
     }
   }
-  return RteItem::ProcessXmlElement(xmlElement);
 }
+
 
 string RteBoard::ConstructID()
 {
   return GetDisplayName();
 }
 
-void RteBoard::AddMemStr(string& memStr, XMLTreeElement* xmlElement) {
-  const string& name = xmlElement->GetAttribute("name");
-  const string& num = xmlElement->GetAttribute("n");
-
+void RteBoard::AddMemStr(string& memStr, const XmlItem* xmlItem) {
+  const string& name = xmlItem->GetAttribute("name");
   if (name.empty()) {
     return;
   }
+  const string& num = xmlItem->GetAttribute("n");
   if (!memStr.empty()) {
     memStr += ", ";
   }
@@ -289,21 +277,12 @@ RteBoard* RteBoardContainer::GetBoard(const string& id) const
   return dynamic_cast<RteBoard*>(GetItem(id));
 }
 
-
-bool RteBoardContainer::ProcessXmlElement(XMLTreeElement* xmlElement)
+RteItem* RteBoardContainer::CreateItem(const string& tag)
 {
-  const string& tag = xmlElement->GetTag();
   if (tag == "board") {
-    RteBoard* board = new RteBoard(this);
-    if (board->Construct(xmlElement)) {
-      AddItem(board);
-      return true;
-    }
-    delete board;
-    return false;
+    return new RteBoard(this);
   }
-  return RteItem::ProcessXmlElement(xmlElement);
+  return RteItem::CreateItem(tag);
 }
-
 
 // End of RteBoard.cpp

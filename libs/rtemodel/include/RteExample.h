@@ -91,7 +91,19 @@ public:
   /**
    * @brief clear internal data and call base class implementation
   */
-   void Clear() override;
+  void Clear() override;
+
+  /**
+   * @brief called to construct the item with attributes and child elements
+  */
+  void Construct() override;
+
+  /**
+   * @brief create a new instance of type RteItem
+   * @param tag name of tag
+   * @return pointer to instance of type RteItem
+  */
+  RteItem* CreateItem(const std::string& tag) override;
 
   /**
    * @brief validate item after construction
@@ -138,13 +150,6 @@ protected:
   */
    std::string ConstructID() override;
 
-  /**
-    * @brief process a single XMLTreeElement during construction
-    * @param xmlElement pointer to XMLTreeElement to process
-    * @return true if successful
-  */
-   bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
-
   RteItem* m_board; // development board the example refers to
   std::set<std::string> m_keywords; // example keywords
   std::set<std::string> m_categories; // example categories
@@ -167,12 +172,13 @@ public:
    * @param parent pointer to RteItem parent
   */
   RteExampleContainer(RteItem* parent);
+
   /**
-    * @brief process a single XMLTreeElement during construction
-    * @param xmlElement pointer to XMLTreeElement to process
-    * @return true if successful
+   * @brief create a new instance of type RteItem
+   * @param tag name of tag
+   * @return pointer to instance of type RteItem
   */
-  virtual bool ProcessXmlElement(XMLTreeElement* xmlElement);
+  RteItem* CreateItem(const std::string& tag) override;
 };
 
 #endif // RteExample_H

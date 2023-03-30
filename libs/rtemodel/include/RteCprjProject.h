@@ -62,11 +62,6 @@ public:
   RteItem* GetCprjComponent(const std::string& id) const;
 
   /**
-   * @brief clean up the project
-  */
-   void Clear() override;
-
-  /**
    * @brief create target based on cprj description
   */
    void Initialize() override;

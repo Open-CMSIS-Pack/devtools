@@ -18,7 +18,9 @@ using namespace std;
 // Singleton kernel object
 static unique_ptr<ProjMgrKernel> theProjMgrKernel = 0;
 
-ProjMgrKernel::ProjMgrKernel() {
+ProjMgrKernel::ProjMgrKernel() :
+  RteKernelSlim()
+{
   m_callback = make_unique<ProjMgrCallback>();
   SetRteCallback(m_callback.get());
   m_callback.get()->SetRteKernel(this);
@@ -30,7 +32,7 @@ ProjMgrKernel::~ProjMgrKernel() {
   }
 }
 
-ProjMgrCallback* ProjMgrKernel::GetCallback() {
+ProjMgrCallback* ProjMgrKernel::GetCallback() const {
   return m_callback.get();
 }
 
@@ -45,13 +47,6 @@ void ProjMgrKernel::Destroy() {
   if (theProjMgrKernel) {
     theProjMgrKernel.reset();
   }
-}
-
-XMLTree* ProjMgrKernel::CreateXmlTree() const
-{
-  // RteKernel has the pointer ownership
-  unique_ptr<ProjMgrXmlParser> xmlParser = make_unique<ProjMgrXmlParser>();
-  return xmlParser.release();
 }
 
 bool ProjMgrKernel::GetInstalledPacks(std::list<std::string>& pdscFiles, bool latest) {

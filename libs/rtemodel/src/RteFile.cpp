@@ -26,21 +26,6 @@ RteFile::RteFile(RteItem* parent) :
 {
 }
 
-bool RteFile::Construct(XMLTreeElement* xmlElement)
-{
-  if (!RteItem::Construct(xmlElement))
-    return false;
-  // backward compatibility
-  // replace copy="1" attribute with attr="config"
-  const string& s = GetAttribute("copy");
-  if (s == "1" || s == "true")
-    SetAttribute("attr", "config");
-  if (!s.empty())
-    RemoveAttribute("copy");
-
-  return true;
-}
-
 bool RteFile::Validate()
 {
   m_bValid = true; // assume valid
@@ -431,28 +416,14 @@ void RteFileContainer::GetLinkerScripts(set<RteFile*>& linkerScripts) const {
 }
 
 
-bool RteFileContainer::ProcessXmlElement(XMLTreeElement* xmlElement)
+RteItem* RteFileContainer::CreateItem(const std::string& tag)
 {
-  const string& tag = xmlElement->GetTag();
   if (tag == "file") {
-    RteFile* file = new RteFile(this);
-    if (file->Construct(xmlElement)) {
-      AddItem(file);
-      return true;
-    }
-    delete file;
-    return false;
+    return new RteFile(this);
+  } else if (tag == "group") {
+    return new RteFileContainer(this);
   }
-  if (tag == "group") {
-    RteFileContainer* group = new RteFileContainer(this);
-    if (group->Construct(xmlElement)) {
-      AddItem(group);
-      return true;
-    }
-    delete group;
-    return false;
-  }
-  return RteItem::ProcessXmlElement(xmlElement);
+  return RteItem::CreateItem(tag);
 }
 
 

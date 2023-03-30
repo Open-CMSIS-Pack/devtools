@@ -9,9 +9,9 @@
 
 #include "CbuildCallback.h"
 #include "CbuildModel.h"
-#include "RteKernel.h"
+#include "RteKernelSlim.h"
 
-class CbuildKernel : public RteKernel
+class CbuildKernel : public RteKernelSlim
 {
 public:
   CbuildKernel(RteCallback* callback);
@@ -50,9 +50,6 @@ public:
   const CbuildCallback* GetCallback() {
     return m_callback;
   }
-
-protected:
-  XMLTree* CreateXmlTree() const;
 
 private:
   CbuildModel    *m_model;

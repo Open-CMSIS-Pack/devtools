@@ -34,7 +34,7 @@ class CprjTargetElement;
 /**
  * @brief class representing project consuming CMSIS RTE data
 */
-class RteProject : public RteItem
+class RteProject : public RteRootItem
 {
 public:
   /**
@@ -525,12 +525,24 @@ public:
   */
    RteProject* GetProject() const override;
 
-  /**
-   * @brief construct the project out of supplied XML Data
-   * @param xmlElement XMLTreeElement object to construct from
-   * @return true if successful
-  */
-   bool Construct(XMLTreeElement* xmlElement) override;
+   /**
+    * @brief append a new child at the end of the list
+    * @param child pointer to a new child of template type RteItem
+    * @return pointer to the new child
+   */
+   RteItem* AddChild(RteItem* child) override;
+
+   /**
+     * @brief create a new instance of type RteItem
+     * @param tag name of tag
+     * @return pointer to instance of type RteItem
+   */
+   RteItem* CreateItem(const std::string& tag) override;
+
+   /**
+     * @brief called to construct the item with attributes and child elements
+   */
+   void Construct() override;
 
   /**
    * @brief validates if all required packs, components and APIs are resolved
@@ -767,7 +779,6 @@ protected:
   void CreateTargetModels(RteItemInstance* instance);
 
 protected:
-   bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
    void CreateXmlTreeElementContent(XMLTreeElement* parentElement) const override;
 
 protected:

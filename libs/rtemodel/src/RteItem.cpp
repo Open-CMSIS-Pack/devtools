@@ -25,6 +25,8 @@
 
 using namespace std;
 
+RteItem RteItem::EMPTY_RTE_ITEM(nullptr);
+
 RteItem::RteItem(RteItem* parent) :
   XmlTreeItem<RteItem>(parent),
   m_bValid(false)
@@ -51,14 +53,9 @@ RteItem::~RteItem()
 
 void RteItem::Clear()
 {
-  for (auto it = m_children.begin(); it != m_children.end(); it++) {
-    (*it)->Clear();
-    delete *it;
-  }
-  m_children.clear();
   m_bValid = false;
   m_errors.clear();
-  XmlItem::Clear();
+  XmlTreeItem::Clear();
 }
 
 
@@ -822,52 +819,11 @@ RteItem::ConditionResult RteItem::GetDepsResult(map<const RteItem*, RteDependenc
 }
 
 
-bool RteItem::Construct(XMLTreeElement* xmlElement)
+void RteItem::Construct()
 {
-  if (!xmlElement)
-    return false;
-  // set data to this item
-  m_lineNumber = xmlElement->GetLineNumber();
-  m_tag = xmlElement->GetTag();
-  m_text = xmlElement->GetText();
-  SetAttributes(xmlElement->GetAttributes());
-// process children
-  bool success = ProcessXmlChildren(xmlElement);
-// create id after processing children, it might be a child that contains required information, e.g. RtePackage
   m_ID = ConstructID();
-  return success;
 }
 
-
-bool RteItem::ProcessXmlChildren(XMLTreeElement* xmlElement)
-{
-  if (!xmlElement)
-    return false;
-  const list<XMLTreeElement*>& children = xmlElement->GetChildren();
-  list<XMLTreeElement*>::const_iterator it = children.begin();
-  for (; it != children.end(); it++) {
-    if (!ProcessXmlElement(*it))
-      return false;
-  }
-  return true;
-}
-
-
-bool RteItem::ProcessXmlElement(XMLTreeElement* xmlElement)
-{
-  const string& name = xmlElement->GetTag();
-  if (name == "description") {
-    m_text = xmlElement->GetText(); // if an item has children, it cannot have also a text, so reuse the member
-    return true;
-  }
-  RteItem* child = new RteItem(this);
-  if (child->Construct(xmlElement)) {
-    AddItem(child);
-    return true;
-  }
-  delete child;
-  return false;
-}
 
 XMLTreeElement* RteItem::CreateXmlTreeElement(XMLTreeElement* parentElement, bool bCreateContent) const
 {
@@ -961,23 +917,6 @@ bool RteItem::CompareComponents(RteItem* c0, RteItem* c1)
 void RteItem::SortChildren(CompareRteItemType cmp)
 {
   m_children.sort(cmp);
-}
-
-RteItemContainer::RteItemContainer(RteItem* parent) :
-  RteItem(parent)
-{
-}
-
-bool RteItemContainer::ProcessXmlElement(XMLTreeElement* xmlElement)
-{
-  RteItem* child = new RteItem(this);
-  if (child->Construct(xmlElement)) {
-    AddItem(child);
-  } else {
-    delete child;
-    return false;
-  }
-  return true;
 }
 
 // End of RteItem.cpp

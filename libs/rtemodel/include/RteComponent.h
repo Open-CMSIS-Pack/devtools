@@ -124,11 +124,17 @@ public:
    bool IsDeviceDependent() const override;
 
   /**
-   * @brief construct this component from XML data
-   * @param xmlElement pointer to XMLTreeElement to construct from
-   * @return true if successful
+   * @brief create a new instance of type RteItem
+   * @param tag name of tag
+   * @return pointer to instance of type RteItem
   */
-   bool Construct(XMLTreeElement* xmlElement) override;
+  RteItem* CreateItem(const std::string& tag) override;
+
+  /**
+   * @brief called to construct the item with attributes and child elements
+  */
+  void Construct() override;
+
   /**
    * @brief clear internal data and children
   */
@@ -242,12 +248,6 @@ public:
 
 
 protected:
-  /**
-   * @brief process a single XMLTreeElement during construction
-   * @param xmlElement pointer to XMLTreeElement to process
-   * @return true if successful
- */
-   bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
   /**
    * @brief construct component ID
    * @return constructed component ID string
@@ -370,22 +370,12 @@ public:
   */
   virtual std::string GetToolTip() const { return EMPTY_STRING; }
 
-protected:
-
   /**
-   * @brief process a single XMLTreeElement during construction
-   * @param xmlElement pointer to XMLTreeElement to process
-   * @return true if successful
+   * @brief create a new instance of type RteItem
+   * @param tag name of tag
+   * @return pointer to instance of type RteItem
   */
-   bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
-
-  /**
-   * @brief construct child component
-   * @param xmlElement pointer to XMLTreeElement to process
-   * @return true if successful
-  */
-  virtual RteComponent* ConstructComponent(XMLTreeElement* xmlElement);
-
+  RteItem* CreateItem(const std::string& tag) override;
 };
 
 /**
@@ -447,14 +437,12 @@ public:
   */
   RteApiContainer(RteItem* parent);
 
-protected:
-
- /**
-   * @brief process a single XMLTreeElement during construction
-   * @param xmlElement pointer to XMLTreeElement to process
-   * @return true if successful
- */
-  virtual bool ProcessXmlElement(XMLTreeElement* xmlElement);
+  /**
+   * @brief create a new instance of type RteItem
+   * @param tag name of tag
+   * @return pointer to instance of type RteItem
+  */
+  RteItem* CreateItem(const std::string& tag) override;
 };
 
 

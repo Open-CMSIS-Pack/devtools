@@ -168,13 +168,20 @@ public:
   */
    void Clear() override;
 
-protected:
   /**
-   * @brief process a single XMLTreeElement during construction
-   * @param xmlElement pointer to XMLTreeElement to process
-   * @return true if successful
- */
-   bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
+   * @brief create a new instance of type RteItem
+   * @param tag name of tag
+   * @return pointer to instance of type RteItem
+  */
+  RteItem* CreateItem(const std::string& tag) override;
+
+  /**
+   * @brief called to construct the item with attributes and child elements
+  */
+  void Construct() override;
+
+
+protected:
 
   /**
    * @brief construct board ID
@@ -185,9 +192,9 @@ protected:
   /**
    * @brief add memory description to internal description string
    * @param memStr reference to memory string to collect
-   * @param xmlElement pointer to XMLTreeElement with ROM or RAM tags
+   * @param xmlItem pointer to XmlItem with ROM or RAM tags
   */
-  void AddMemStr(std::string& memStr, XMLTreeElement* xmlElement);
+  void AddMemStr(std::string& memStr, const XmlItem* xmlItem);
 
 protected:
   std::string m_mountedDevs; // Display std::string for mounted devices
@@ -215,12 +222,13 @@ public:
    * @return pointer to RteBoard item if found, nullptr otherwise
   */
   RteBoard* GetBoard(const std::string& id) const;
+
   /**
-   * @brief process a single XMLTreeElement during construction
-   * @param xmlElement pointer to XMLTreeElement to process
-   * @return true if successful
- */
-   bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
+   * @brief create a new instance of type RteItem
+   * @param tag name of tag
+   * @return pointer to instance of type RteItem
+  */
+  RteItem* CreateItem(const std::string& tag) override;
 };
 
 // helper compare class for std::map container, returns true if a > b

@@ -7,6 +7,7 @@
 
 #include "RteModel.h"
 #include "RteKernelSlim.h"
+#include "RteItemBuilder.h"
 
 #include "XMLTree.h"
 #include "XmlFormatter.h"
@@ -19,37 +20,31 @@ using namespace std;
 
 class RteExampleTest :public ::testing::Test {
 public:
-  static RteModel* s_model;
+  static RteGlobalModel* s_model;
 
 protected:
   void SetUp() override;
   void TearDown() override;
 };
 
-RteModel* RteExampleTest::s_model = nullptr;
+RteGlobalModel* RteExampleTest::s_model = nullptr;
 
 void RteExampleTest::SetUp() {
-  RteKernelSlim rteKernel;  // here just to instantiate XMLTree parser
   list<string> files;
   RteFsUtils::GetPackageDescriptionFiles(files, RteModelTestConfig::CMSIS_PACK_ROOT, 3);
   ASSERT_TRUE(files.size() > 0);
-  unique_ptr<XMLTree> xmlTree = rteKernel.CreateUniqueXmlTree();
-  xmlTree->SetFileNames(files, false);
-  xmlTree->Init();
 
-  bool pdscParseResult = xmlTree->ParseAll();
-  ASSERT_TRUE(pdscParseResult);
+  s_model = new RteGlobalModel();
+  s_model->SetUseDeviceTree(true);
+  RteKernelSlim rteKernel(s_model);  // here just to instantiate XMLTree parser and read packs, model will persist
 
-  RteModel *newModel = new RteModel();
-  ASSERT_NE(newModel, nullptr);
-  bool rteModelConstructResult = newModel->Construct(xmlTree.get());
-  newModel->SetUseDeviceTree(true);
-  ASSERT_TRUE(rteModelConstructResult);
+  list<RtePackage*> packs;
+  ASSERT_TRUE(rteKernel.LoadPacks(files, packs));
+  ASSERT_TRUE(!packs.empty());
+  s_model->InsertPacks(packs);
 
-  bool rteModelValidateResult = newModel->Validate();
+  bool rteModelValidateResult = s_model->Validate();
   ASSERT_TRUE(rteModelValidateResult);
-
-  RteExampleTest::s_model = newModel;
 }
 
 

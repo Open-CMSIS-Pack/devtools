@@ -50,6 +50,12 @@ public:
   T* GetRoot() const { return m_pRoot; }
 
   /**
+   * @brief setter for member m_pRoot
+   * @param root object of template type T
+  */
+  void SetRoot(T* root) { m_pRoot = root; }
+
+  /**
    * @brief check member m_pRoot
    * @return true if member m_pRoot not equal 0
   */
@@ -112,7 +118,7 @@ public:
     else {
       m_pCurrent = 0;
     }
-    if (m_pCurrent) {
+    if (m_pCurrent && m_pCurrent != m_pParent) {
       m_pCurrent->SetTag(tag);
     }
     return m_pCurrent != 0;
@@ -124,6 +130,11 @@ public:
   */
   void PostCreateItem(bool success) override
   {
+    if (m_pCurrent && m_pCurrent != m_pParent) {
+      m_pCurrent->Construct();
+      m_pCurrent->SetValid(success);
+    }
+
     m_pCurrent = m_pParent;
     auto it = m_stack.begin();
     if (it != m_stack.end()) {
@@ -133,10 +144,6 @@ public:
     else {
       m_pParent = 0;
     }
-    if (m_pCurrent) {
-      m_pCurrent->SetValid(success);
-      m_pCurrent->Construct();
-    }
   }
 
   /**
@@ -145,7 +152,7 @@ public:
   */
   void SetLineNumber(int lineNumber) override
   {
-    if (m_pCurrent)
+    if (m_pCurrent && m_pCurrent != m_pParent)
       m_pCurrent->SetLineNumber(lineNumber);
   }
 
@@ -164,6 +171,11 @@ public:
   }
 
 protected:
+  /**
+   * @brief pure virtual function to create an item specified by tag
+   * @param tag name of new tag
+   * @return pointer to created item
+  */
   virtual T* CreateRootItem(const std::string& tag) = 0;
 
 private:

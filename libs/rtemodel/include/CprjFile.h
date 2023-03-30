@@ -47,14 +47,19 @@ public:
   */
   void Clear() override;
 
-  /**
-   * @brief recursively construct XML nodes
-   * @param xmlElement pointer to a XMLTreeElement object to construct
-   * @return true if processing was successful
-  */
-  bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
+ /**
+  * @brief called to construct the item with attributes and child elements
+ */
+  void Construct() override;
 
   /**
+   * @brief create a new instance of type RteItem
+   * @param tag name of tag
+   * @return pointer to instance of type RteItem
+  */
+  RteItem* CreateItem(const std::string& tag) override;
+
+ /**
    * @brief validate device and board for the target determined by RteModel object
    * @param targetModel given CMSIS RTE data
    * @return RteDevice pointer if successful, otherwise nullptr
@@ -324,11 +329,11 @@ public:
   void Clear() override;
 
   /**
-   * @brief process a single XMLTreeElement during construction
-   * @param xmlElement pointer to XMLTreeElement to process
-   * @return true if successful
+   * @brief create a new instance of type RteItem
+   * @param tag name of tag
+   * @return pointer to instance of type RteItem
   */
-  bool ProcessXmlElement(XMLTreeElement* xmlElement) override;
+  RteItem* CreateItem(const std::string& tag) override;
 
   /**
    * @brief getter for node "target" specified in cprj file

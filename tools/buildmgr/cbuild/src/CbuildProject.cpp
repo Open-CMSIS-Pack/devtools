@@ -15,6 +15,8 @@
 #include "RteGenerator.h"
 #include "RteModel.h"
 #include "RteValueAdjuster.h"
+#include "RteItemBuilder.h"
+
 #include "XMLTreeSlim.h"
 
 using namespace std;
@@ -226,21 +228,20 @@ RtePackage* CbuildProject::ReadGpdscFile(const string& gpdsc)
     LogMsg("M204", PATH(gpdsc));
     return NULL;
   }
-  XMLTreeSlim tree;
+  RteItemBuilder rteItemBuilder;
+  XMLTreeSlim tree(&rteItemBuilder);
   tree.Init();
-  if(!tree.AddFileName(gpdsc, true)) {
+  bool success = tree.AddFileName(gpdsc, true);
+  RtePackage* gpdscPack = rteItemBuilder.GetPack();
+  if(!success || !gpdscPack) {
       LogMsg("M203", PATH(gpdsc));
       return nullptr;
   }
-  XMLTreeElement* doc = tree.GetFirstChild();
-  if (doc) {
-    RtePackage* gpdscPack = new RtePackage(nullptr);
-    if (gpdscPack->Construct(doc)) {
-      gpdscPack->SetPackageState(PackageState::PS_GENERATED);
-      return gpdscPack;
-    }
-    LogMsg("M203", PATH(gpdsc));
-    delete gpdscPack;
+  if (gpdscPack->Validate()) {
+    gpdscPack->SetPackageState(PackageState::PS_GENERATED);
+    return gpdscPack;
   }
+  LogMsg("M203", PATH(gpdsc));
+  delete gpdscPack;
   return nullptr;
-}
+} // end of CbuildProject.cpp

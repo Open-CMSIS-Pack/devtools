@@ -10,6 +10,7 @@
 #include "RteChk.h"
 #include "XMLTreeSlim.h"
 #include "RteValueAdjuster.h"
+#include "RteItemBuilder.h"
 
 #include "RteModel.h"
 #include "RteFsUtils.h"
@@ -32,7 +33,7 @@ static clock_t clockInMsec() {
 class RteXmlParser : public XMLTreeSlim
 {
 public:
-  RteXmlParser() :XMLTreeSlim(0, true) { m_XmlValueAdjuster = new RteValueAdjuster(); }
+  RteXmlParser(RteItemBuilder* builder) :XMLTreeSlim(builder, true) { m_XmlValueAdjuster = new RteValueAdjuster(); }
   ~RteXmlParser() { delete m_XmlValueAdjuster; }
 
 };
@@ -65,15 +66,17 @@ RteChk::RteChk(std::ostream& os) :
   m_indent(0),
   m_os(os)
 {
-  m_xmlTree = new RteXmlParser();
   m_rteModel = new RteModel();
   m_rteModel->SetUseDeviceTree(true);
+  m_rteItemBuilder = new RteItemBuilder();
+  m_xmlTree = new RteXmlParser(m_rteItemBuilder);
 }
 
 RteChk::~RteChk()
 {
   delete m_xmlTree;
   delete m_rteModel;
+  delete m_rteItemBuilder;
 };
 
 void RteChk::SetFlag(unsigned flag, char op)
@@ -207,7 +210,7 @@ int RteChk::RunCheckRte()
 
   m_os << endl<< "Constructing Model ";
 
-  success = m_rteModel->Construct(m_xmlTree);
+  m_rteModel->InsertPacks(m_rteItemBuilder->GetPacks());
 
   clock_t t3 = clockInMsec();
   if (IsFlagSet(TIME)) {
