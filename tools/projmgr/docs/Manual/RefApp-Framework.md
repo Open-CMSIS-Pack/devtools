@@ -12,6 +12,7 @@
   - [Overview](#overview)
     - [Software Layers](#software-layers)
     - [Interface Definitions](#interface-definitions)
+    - [Target Hardware Abstraction](#target-hardware-abstraction)
     - [Connections](#connections)
     - [Arduino Shield](#arduino-shield)
   - [Software Layer Types](#software-layer-types)
@@ -21,6 +22,11 @@
     - [Socket](#socket)
     - [Stream](#stream)
   - [Working with Layers](#working-with-layers)
+    - [Install missing software packs](#install-missing-software-packs)
+    - [Compile application](#compile-application)
+    - [Add new targets](#add-new-targets)
+    - [Known problems](#known-problems)
+    - [Finalize Workflow](#finalize-workflow)
 
 ## Overview
 
@@ -66,11 +72,24 @@ The header files `CMSIS_board_header`, `iot_socket.h`, `cmsis_os2.h`, and `todo:
 
 Header File              | Description
 :------------------------|:----------------------------------
-`CMSIS_board_header`     | `#define` of the board header file; gives access to device, board; optional to shield and PSA resources.
-`CMSIS_shield_header`    | `#define` of the shield header file; included by the CMSIS_board_header; gives access shield resources.
+`CMSIS_board_header`     | `#define` of the board header file; gives access to drivers defined in the board connections.
+`CMSIS_shield_header`    | `#define` of the shield header file; gives access to drivers defined in the shield connections.
+`CMSIS_target_header`    | `#define` of the target header file; combines drivers defined in Board and Shield layers.
 [`iot_socket.h`](https://github.com/MDK-Packs/IoT_Socket/blob/develop/include/iot_socket.h)           | Defines the interface to the [IoT Socket](https://github.com/MDK-Packs/IoT_Socket).
 [`cmsis_os2.h`](https://github.com/ARM-software/CMSIS_5/blob/develop/CMSIS/RTOS2/Include/cmsis_os2.h) | Defines the interface to the [RTOS](https://arm-software.github.io/CMSIS_5/RTOS2/html/group__CMSIS__RTOS.html).
 `cmsis_stream.h`                                                                                      | ToDo: Defines the interface for data streaming.
+
+### Target Hardware Abstraction 
+
+**Proposed Software Structure (work-in-progress)**
+
+The Board and Shield layer combined are the Target Hardware Abstraction (defined in `CMSIS_target_header`) for the IoT/ML Software Platform (composed of Reference Application, Socket, RTOS and Stream layer). Using the CMSIS-Toolbox, the `target-type:` selection allows to change both  the Board and Shield layer along with the `CMSIS_target_header` definition. This retargets the IoT/ML Software Platform to run on a different hardware target as shown in the picture below. This is a typical use case for validation and prototyping during software development.
+
+![Target Layer](./images/Target-Layer.png "Target Layer")
+
+Some applications require Process Isolation to separate safety critical functionality from uncritical functionality. The parts of the IoT/ML Software Platform are typical qualified uncritical functionality. In such a design the Target it is required to  rquGoing forward, 
+
+![Process Isolation](./images/Process-Isolation.png "Process Isolation")
 
 ### Connections
 
@@ -122,8 +141,10 @@ Provides system startup, board/device hardware initialization, and transfers con
 - System startup
 - Heap and Stack configuration
 - Device/Board hardware initialization
+- Shield setup [optional]
 - Application startup for applications with and without RTOS
-- Event Recorder initialization [optional] 
+- [Event Recorder](https://arm-software.github.io/CMSIS-View/main/evr.html) initialization [optional] 
+- [Fault Storage](https://arm-software.github.io/CMSIS-View/main/evr.html) [optional]
 - RTOS initialization and startup [optional]
 - Drivers for peripherals or Arduino interfaces [optional]
 - STDIO re-targeting to debug interfaces [optional]
@@ -144,29 +165,35 @@ The `main.c` source module of the Board software layer uses the following entry 
 
 **RTOS Usage**
 
-The board layer supports application with or without RTOS.  `extern int app_main (void);` defines the entry point of the application; it executes as a single thread with default settings (priority, stack).
+The board layer supports application with or without RTOS. The function  `extern void app_main (void *argument)` defines the entry point of the application.
 
 - Application using RTOS:
 
   Before RTOS is started the function `app_initialize` is called where the user can create application threads. A default implementation (defined `weak`) is part of the board layer:
 
   ``` c
-  void app_initialize (void) {
+  __WEAK int32_t app_initialize (void) {
     osThreadNew(app_main, NULL, NULL);
   }
   ```
 
-  By default, `app_main` is the thread that starts executing.
+  By default, `app_main` is the thread that starts executing with default settings (priority, stack).
 
 - Application not using RTOS:
   
-  `app_main` is the entry of the application and executes as a single thread with default settings (priority, stack)
+  `app_main` is the entry of the application and executes as a single thread.
 
 ### Shield
 
 Support for additional hardware via plugin shields (i.e. Arduino Uno).  Arduino shields [*consume connections*](YML-Input-Format.md#example-sensor-shield) with the prefix `ARDUINO_UNO_`.  Potentially other shields could be covered.
 
 Shields may feature various hardware modules such as WiFi chips or MEMS sensors.  Frequently the Shield software layer only defines a header file that redirects the Arduino specific `connect:` to a chip specific `connect:` that is then used by application software.
+
+The Shield software layer is configured from the Board software layer which calls the following function:
+
+``` c
+extern int32_t shield_setup (void);
+```
 
 **Example:**
 
@@ -210,9 +237,8 @@ Provides an [IoT Socket](https://github.com/MDK-Packs/IoT_Socket) compliant sock
 
 Currently layers are available for: 
 
-- WiFi using CMSIS-Driver with built-in TCP/IP stack
-- Networking middleware over Ethernet (using Ethernet CMSIS-Driver) or WiFi (using WiFi CMSIS-Driver in bypass mode)
-- lwIP middleware over Ethernet (using Ethernet CMSIS-Driver)
+- WiFi using CMSIS-Driver with built-in TCP/IP stack.
+- TCP/IP middleware over Ethernet (using Ethernet CMSIS-Driver).
 - VSocket over Arm Virtual Hardware (AVH).
 
 The IoT Socket is initialized and started from the application by calling the following function:
@@ -227,9 +253,90 @@ Provides middleware for data streaming in a format that is consumed by DSP or ML
 
 The data streaming interfaces relate to:
 
-- [SDS-Framework](https://github.com/RobertRostohar/SDS-Framework) for recording, analyzing, and playback of data streams. 
+- [SDS-Framework](https://github.com/Arm-software/SDS-Framework) for recording, analyzing, and playback of data streams. 
 - [CMSIS-DSP compute graph](https://github.com/ARM-software/CMSIS-DSP) that allows to optimize data flows between DSP and ML algorithms.
 
 ## Working with Layers
 
-The following section explains how to operate with layers.
+The following section explains how to operate with layers. It uses the projects:
+
+- [AWS_MQTT_MutualAuth_SW_Framework](https://github.com/Open-CMSIS-Pack/AWS_MQTT_MutualAuth_SW_Framework/tree/develop) - currently the branch `develop`. When cloning this project ensure that you also get the git sub-module `framework`. 
+- [RefApp-Framework](https://github.com/Open-CMSIS-Pack/RefApp-Framework) contains the software layers that are used by various projects. It is represented by the git sub-module `framework` in the example above.
+
+[AWS_MQTT_MutualAuth_SW_Framework](https://github.com/Open-CMSIS-Pack/AWS_MQTT_MutualAuth_SW_Framework/tree/develop) is a AWS Cloud connector project that is defined in `Demo.csolution.yml`.  The directory `framework` contains various [software layers](#software-layers) that are compatible with this application.
+
+### Install missing software packs
+
+Before
+
+```text
+csolution list packs -s Demo.csolution.yml -m >packs.txt
+cpackget update-index               // optional to ensure that pack index is up-to-date
+cpackget add -f packs.txt
+```
+
+### Compile application
+
+To generate the application variants enter:
+
+``` txt
+csolution convert -s Demo.csolution.yml
+```
+
+Despite the fact that currently warnings are generated, it creates the following projects:
+
+``` txt
+./AWS_MQTT_MutualAuth_SW_Framework/Demo.Debug+AVH_MPS3_Corstone-300.cprj - info csolution: file generated successfully
+./AWS_MQTT_MutualAuth_SW_Framework/Demo.Debug+AVH_MPS3_Corstone-310.cprj - info csolution: file generated successfully
+./AWS_MQTT_MutualAuth_SW_Framework/Demo.Debug+B-U585I-IOT02A.cprj - info csolution: file generated successfully
+./AWS_MQTT_MutualAuth_SW_Framework/Demo.Debug+IMXRT1050-EVKB.cprj - info csolution: file generated successfully
+./AWS_MQTT_MutualAuth_SW_Framework/Demo.Debug+IMXRT1050-EVKB_DA16200.cprj - info csolution: file generated successfully
+./AWS_MQTT_MutualAuth_SW_Framework/Demo.Debug+IMXRT1050-EVKB_WizFi360.cprj - info csolution: file generated successfully
+./AWS_MQTT_MutualAuth_SW_Framework/Demo.Release+AVH_MPS3_Corstone-300.cprj - info csolution: file generated successfully
+./AWS_MQTT_MutualAuth_SW_Framework/Demo.Release+AVH_MPS3_Corstone-310.cprj - info csolution: file generated successfully
+./AWS_MQTT_MutualAuth_SW_Framework/Demo.Release+B-U585I-IOT02A.cprj - info csolution: file generated successfully
+./AWS_MQTT_MutualAuth_SW_Framework/Demo.Release+IMXRT1050-EVKB.cprj - info csolution: file generated successfully
+./AWS_MQTT_MutualAuth_SW_Framework/Demo.Release+IMXRT1050-EVKB_DA16200.cprj - info csolution: file generated successfully
+./AWS_MQTT_MutualAuth_SW_Framework/Demo.Release+IMXRT1050-EVKB_WizFi360.cprj - info csolution: file generated successfully
+```
+
+Each of these projects can be translated using:
+
+```txt
+cbuild "Demo.Debug+AVH_MPS3_Corstone-300.cprj"
+```
+
+### Add new targets
+
+To add a new target, add in `Demo.csolution.yml` under `target-types:` a new type as shown below:
+
+```txt
+    - type: test
+      device: NXP::MIMXRT1052DVL6B
+```
+
+Compatible layers can be listed using the command:
+
+```txt
+csolution list layers -s Demo.csolution.yml -c Demo.Release+test verbose -L ./framework -l all
+
+./AWS_MQTT_MutualAuth_SW_Framework/framework/layer/Board/B-U585I-IOT02A/IoT/Board.clayer.yml (layer type: Board)
+./AWS_MQTT_MutualAuth_SW_Framework/framework/layer/Shield/WiFi/Inventek_ISMART43362-E/Shield.clayer.yml (layer type: Shield)
+./AWS_MQTT_MutualAuth_SW_Framework/framework/layer/Shield/WiFi/Sparkfun_DA16200/Shield.clayer.yml (layer type: Shield)
+./AWS_MQTT_MutualAuth_SW_Framework/framework/layer/Shield/WiFi/Sparkfun_ESP8266/Shield.clayer.yml (layer type: Shield)
+./AWS_MQTT_MutualAuth_SW_Framework/framework/layer/Shield/WiFi/WizNet_WizFi360-EVB/Shield.clayer.yml (layer type: Shield)
+./AWS_MQTT_MutualAuth_SW_Framework/framework/layer/Socket/WiFi/Socket.clayer.yml (layer type: Socket)
+```
+
+Each of the different layers is working with the new added target.
+
+### Known problems
+
+- Not every target requires a `Shield`, but `csolution` complains about a missing $Shield-Layer$.  csolution should not search for additional layers when all `consumed connections` are `provided` the the layers already.
+- The board `B-U585I-IOT02A` as onboard WiFi and would not work with a `Shield`.  The tool does not raise a conflict when the same `connection:` is `provided` multiple times, 
+  nor does check that a Shiel layer is not required.
+
+### Finalize Workflow
+
+- The current workflow needs review and improvements in the usability.
+- Layers should be provided in packs, the workflow with packs has not been validated yet.

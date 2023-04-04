@@ -247,10 +247,10 @@ csolution convert -s example.csolution.yml -t AC6
 
 #### List Compatible Layers
 
-List compatible layers for `.\fxls8962_normal_spi.csolution.yml` and the context `*+frdmk22f_agmp03`. This contains also setup information.
+List compatible layers for `./fxls8962_normal_spi.csolution.yml` and the context `*+frdmk22f_agmp03`. This contains also setup information.
 
 ```text
-csolution list layers -s .\fxls8962_normal_spi.csolution.yml -c *+frdmk22f_agmp03
+csolution list layers -s ./fxls8962_normal_spi.csolution.yml -c *+frdmk22f_agmp03
 ```
 
 Refer to [Working with Layers](RefApp-Framework.md#working-with-layers) for more information.
@@ -496,7 +496,7 @@ solution:
       debug: off
 
 projects:
-  - project: .\MyProject.cproject.yml
+  - project: ./MyProject.cproject.yml
 ```
 
 **File: MyProject.csolution.yml**

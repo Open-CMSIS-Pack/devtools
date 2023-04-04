@@ -443,7 +443,7 @@ The **csolution - CMSIS Project Manager** uses a file with the name `*.cdefault.
 
 > **Note:**
 >
-> The command line option `-i` or `--ignore-cdefault` (file .\etc\cdefault.yml is not used)
+> The command line option `-i` or `--ignore-cdefault` (file ./etc/cdefault.yml is not used)
 
 The `default:` node is the start of a `*.cdefault.yml` or `*.cdefault.yaml` file and contains the following.
 
@@ -497,7 +497,7 @@ solution:
       debug: on
       packs:                    # with explicit pack specification
         - pack: ST::TestSW
-          path: .\MyDev\TestSW    
+          path: ./MyDev/TestSW    
 
   target-types:
     - type: Board
@@ -703,18 +703,18 @@ This is a proposal to replace `output-type` with a more flexible solution.  It a
 ```yml
 output:
   - type: elf         # default
-    file: <path>\<file>.<ext>    # user define path with filename and extension (optional)
+    file: <path>/<file>.<ext>    # user define path with filename and extension (optional)
     for-context:                 # (optional)
 
   - type: hex
-    file: <path>\<file>.<ext>    # user define path with filename and extension
+    file: <path>/<file>.<ext>    # user define path with filename and extension
 
   - type: bin
-    file: <path>\<file>.<ext>    # user define path with filename and extension
+    file: <path>/<file>.<ext>    # user define path with filename and extension
     base-address:                # offset addresses   (out-of-scope for now)
 
   - type: lib                    # when lib is used, an elf and bin file would be not possible
-    file: <path>\<file>.<ext>    # user define path with filename and extension
+    file: <path>/<file>.<ext>    # user define path with filename and extension
 ```
 
 If accepted, we would need to extend also the access sequences.
@@ -1692,7 +1692,7 @@ solution:
     - project: /security/TFM.cproject.yml
     - project: /application/MQTT_AWS.cproject.yml
     - execute: Copy output files
-      run: cp *.out .\output
+      run: cp *.out ./output
 ```
 
 Potential usage during build steps:
@@ -2114,8 +2114,8 @@ executed.
     <generator id="STM32CubeMX" Gvendor="STMicroelectronics" Gtool="STM32CubeMX" Gversion="4.10.0">
       <description>STM32CubeMX Environment</description>
       <select Dname="STM32G474RETx" Dvendor="STMicroelectronics:13"/>
-      <command>$SMDK\CubeMX\STM32CubeMXLauncher</command>
-      <workingDir>$PRTE\Device\STM32G474RETx</workingDir>
+      <command>$SMDK/CubeMX/STM32CubeMXLauncher</command>
+      <workingDir>$PRTE/Device/STM32G474RETx</workingDir>
       <project_files>
         <file category="include" name="STCubeGenerated/Inc/"/>
         <file category="source" name="STCubeGenerated/Src/main.c" />
