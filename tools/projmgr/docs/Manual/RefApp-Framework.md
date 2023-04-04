@@ -91,9 +91,6 @@ Some applications require Process Isolation to separate safety critical function
 
 ![Process Isolation](./images/Process-Isolation.png "Process Isolation")
 
-
-
-
 ### Connections
 
 The [connections](YML-Input-Format.md#connections) are only used to identify compatible software layers. There are no strict rules for the **`connect` Name** it is therefore possible to extend it with additional name spacing, i.e. prefix with *ST_* to denote ST specific interfaces.
@@ -144,7 +141,7 @@ Provides system startup, board/device hardware initialization, and transfers con
 - System startup
 - Heap and Stack configuration
 - Device/Board hardware initialization
--	Shield setup [optional]
+- Shield setup [optional]
 - Application startup for applications with and without RTOS
 - [Event Recorder](https://arm-software.github.io/CMSIS-View/main/evr.html) initialization [optional] 
 - [Fault Storage](https://arm-software.github.io/CMSIS-View/main/evr.html) [optional]
