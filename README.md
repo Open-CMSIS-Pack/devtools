@@ -57,8 +57,13 @@ machine to allow components in this repository to be built and run.
 Note that some of the required tools are platform dependent:
 
 - [Git](https://git-scm.com/)
-- [GNU Arm Embedded Toolchain](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-rm/downloads)
-      (version **10-2020-q4-major**)
+- GNU Arm Embedded Toolchain
+
+  | Processor | Min. Version |
+  | :-- | :------ |
+  | Cortex-M85 | [12.2.MPACBTI-Rel1](https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads) |
+  | Others | [10-2020-q4-major](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-rm/downloads) |
+
 - A toolchain for your platform
   - **Windows:**
     - [GIT Bash](https://gitforwindows.org/)
