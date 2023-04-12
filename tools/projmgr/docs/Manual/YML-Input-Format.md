@@ -306,12 +306,15 @@ Access Sequence                                | Description
 `$BuildType$`                                  | [Build-type](#build-types) name of the currently process project.
 `$TargetType$`                                 | [Target-type](#target-types) name of the currently process project.
 `$Compiler$`                                   | [Compiler](#compiler) name of the compiler used in this project context as specified in the [compiler](#compiler) node.
-`$Output(context)$` | Path to the output file of a related project that is defined in the `*.csolution.yml` file.
-`$OutDir(context)$` | Path to the output directory of a related project that is defined in the `*.csolution.yml` file.
-`$Source(context)$` | Path to the source directory of a related project that is defined in the `*.csolution.yml` file.
+`$Out(context)$`               | Path to the output directory of a related project that is defined in the `*.csolution.yml` file.
+`$CProject(context)$`          | Path to the directory of a related `cproject.yml` file.
+`$CProject$`                   | Path to the directory of the current processed `cproject.yml` file.
+NEW: `$Output(context).type$`       | Path to the output file of a related project (type specificies the filetype).
+NEW: `$Output.type$`                | Path to the output file of the current project (type specificies the filetype).
+DEPRECATE: `$OutDir(context)$` | Path to the output directory of a related project that is defined in the `*.csolution.yml` file.
+DEPRECATE: `$Source(context)$` | Path to the source directory of a related project that is defined in the `*.csolution.yml` file.
 
-For a [`context`](#context-name-conventions) the `.build-type` and `+target-type` can be explicitly specified. When omitted the `.build-type` and/or `+target-type`
-of the current processed context is used.
+For a [`context`](#context-name-conventions) the `project-name` must be specified. The `.build-type` and `+target-type` are optional; when omitted the `.build-type` and/or `+target-type` of the current processed context is used.
 
 > **Note:** The access sequences below are not completed yet, as they require a change to CMSIS-Build.
 
@@ -471,21 +474,24 @@ default:
 The `solution:` node is the start of a `*.csolution.yml` file that collects related projects as described in the section
 ["Project setup for related projects"](Overview.md#project-setup-for-related-projects).
 
-`solution:`                                           | Content
-:-----------------------------------------------------|:------------------------------------
-&nbsp;&nbsp; [`packs:`](#packs)                       | Defines local packs and/or scope of packs that are used.
-&nbsp;&nbsp; [`output-dirs:`](#output-dirs)           | Control the output directories for generating the csolution.
-&nbsp;&nbsp; [`language-C:`](#language-c)             | Set the language standard for C source file compilation.
-&nbsp;&nbsp; [`language-CPP:`](#language-cpp)         | Set the language standard for C++ source file compilation.
-&nbsp;&nbsp; [`compiler:`](#compiler)                 | Overall toolchain selection for the solution.
-&nbsp;&nbsp; [`target-types:`](#target-types)         | List of target-types that define the target system (device or board).
-&nbsp;&nbsp; [`build-types:`](#build-types)           | List of build-types (i.e. Release, Debug, Test).
-&nbsp;&nbsp; [`projects:`](#projects)                 | List of projects that belong to the solution.
+`solution:`                                           |              | Content
+:-----------------------------------------------------|:-------------|:------------------------------------
+&nbsp;&nbsp; `created-by:`                            |  Optional    | Identifies the tool that created this csolution project.
+&nbsp;&nbsp; `created-for:`                           |  Optional    | Specifies the tool for building this csolution project, i.e. **ctools@1.5.0**
+&nbsp;&nbsp; [`packs:`](#packs)                       |  Optional    | Defines local packs and/or scope of packs that are used.
+&nbsp;&nbsp; [`output-dirs:`](#output-dirs)           |  Optional    | Control the output directories for generating the csolution.
+&nbsp;&nbsp; [`language-C:`](#language-c)             |  Optional    | Set the language standard for C source file compilation.
+&nbsp;&nbsp; [`language-CPP:`](#language-cpp)         |  Optional    | Set the language standard for C++ source file compilation.
+&nbsp;&nbsp; [`compiler:`](#compiler)                 |  Optional    | Overall toolchain selection for the solution.
+&nbsp;&nbsp; [`target-types:`](#target-types)         | **Required** | List of target-types that define the target system (device or board).
+&nbsp;&nbsp; [`build-types:`](#build-types)           |  Optional    | List of build-types (i.e. Release, Debug, Test).
+&nbsp;&nbsp; [`projects:`](#projects)                 | **Required** | List of projects that belong to the solution.
 
 **Example:**
 
 ```yml
 solution:
+  created-for: ctools@1.5       # minimum CMSIS-Toolbox version required for project build
   compiler: GCC                 # overwrite compiler definition in 'cdefaults.yml'
 
   packs: 
@@ -616,17 +622,18 @@ might be confusing for `yml` files that are generated by an IDE.
       type: Release         # build-type name
 ```
 
-The following node allows to control the directories used to generate the output files.  
+### `output-dirs:`
+
+Allows to control the directory structure for generated files.  
 
 >**Note:**
 > 
-> This control is only possible at `csolution.yml` level.
-
-### `output-dirs:`
+> This control is only possible at `csolution.yml` level.  
+>
+> Only relative paths to the base directory of the `csolution.yml` file are permitted. Use command line options of the `cbuild` tool to redirect the absolute path for this working directory.
 
 `output-dirs:`               |              | Content
 :----------------------------|--------------|:------------------------------------
-&nbsp;&nbsp; [`cprjdir:`]    |  Optional    | Specifies the directory for the *.CPRJ files (input files to cbuild).
 &nbsp;&nbsp; [`rtedir:`]     |  Optional    | Specifies the directory for the RTE files (component configuration files).
 &nbsp;&nbsp; [`intdir:`]     |  Optional    | Specifies the directory for the interim files (temporary or object files).
 &nbsp;&nbsp; [`outdir:`]     |  Optional    | Specifies the directory for the build output files (ELF, binary, MAP files).
@@ -635,11 +642,10 @@ The following node allows to control the directories used to generate the output
 The default setting for the `output-dirs:` are:
 
 ```yml
-cprjdir: <cproject.yml base directory>
-rtedir:  <cproject.yml base directory>/RTE
+rtedir:  <csolution.yml base directory>/%Project$/RTE
 intdir:  <csolution.yml base directory>/tmp/$Project$/$TargetType$/$BuildType$
-outdir:  <csolution.yml base directory>/out/$Project$/$TargetType$/$BuildType$
-gendir:  <cproject.yml base directory>/generated
+outdir:  <csolution.yml base directory>/out/$TargetType$
+gendir:  <csolution.yml base directory>/generated
 ```
 
 **Example:**
