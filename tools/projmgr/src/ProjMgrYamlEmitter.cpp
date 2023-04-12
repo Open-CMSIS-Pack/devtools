@@ -89,6 +89,12 @@ ProjMgrYamlCbuild::ProjMgrYamlCbuild(YAML::Node node, const vector<ContextItem*>
       const string& filename = context->directories.cprj + "/" + context->name + ".cbuild.yml";
       const string& relativeFilename = fs::relative(filename, directory, ec).generic_string();
       SetNodeValue(cbuildNode[YAML_CBUILD], relativeFilename);
+      if (context->cproject) {
+        SetNodeValue(cbuildNode[YAML_PROJECT], context->cproject->name);
+        SetNodeValue(cbuildNode[YAML_CONFIGURATION],
+          (context->type.build.empty() ? "" : ("." + context->type.build)) +
+          "+" + context->type.target);
+      }
       node[YAML_CBUILDS].push_back(cbuildNode);
     }
   }

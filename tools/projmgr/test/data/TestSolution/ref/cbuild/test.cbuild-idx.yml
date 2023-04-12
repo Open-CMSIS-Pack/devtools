@@ -5,6 +5,14 @@ build-idx:
     - cproject: ../data/TestSolution/TestProject1/test1.cproject.yml
   cbuilds:
     - cbuild: test2.Debug+CM0.cbuild.yml
+      project: test2
+      configuration: .Debug+CM0
     - cbuild: test2.Debug+CM3.cbuild.yml
+      project: test2
+      configuration: .Debug+CM3
     - cbuild: test1.Debug+CM0.cbuild.yml
+      project: test1
+      configuration: .Debug+CM0
     - cbuild: test1.Release+CM0.cbuild.yml
+      project: test1
+      configuration: .Release+CM0
