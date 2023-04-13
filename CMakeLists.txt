@@ -14,6 +14,9 @@ if(LIBS_ONLY)
   message("LIBS_ONLY is active. Build only libraries")
 endif(LIBS_ONLY)
 
+# Minimum OSX version 11.7 Big Sur
+set(CMAKE_OSX_DEPLOYMENT_TARGET "11.7")
+
 # project must be below above statements because of setting CMAKE_TOOLCHAIN_FILE variable
 project(devtools)
 
