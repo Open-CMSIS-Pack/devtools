@@ -731,16 +731,20 @@ If accepted, we would need to extend also the access sequences.
 
 The `linker:` node specifies an explicit Linker Script and/or memory regions header file.  It can be applied in `*.cproject.yml` and `*.clayer.yml` files.  If multiple `linker:` nodes are specified an error is issued.
 
-`linker:`                                                                |              |  Content
-:------------------------------------------------------------------------|:-------------|:--------------------------------
-`- regions:`                                                             |  Optional    | Path and file name of `regions_<device_or_board>.h`, used to generate a Linker Script.
-&nbsp;&nbsp; [`for-compiler:`](YML-Input-Format.md#for-compiler)         |   Optional   | Include Linker Script for the specified toolchain.
-&nbsp;&nbsp; [`for-context:`](YML-Input-Format.md#for-context)           |   Optional   | Include Linker Script for a list of *build* and *target* types.
-&nbsp;&nbsp; [`not-for-context:`](YML-Input-Format.md#not-for-context)   |   Optional   | Exclude Linker Script for a list of *build* and *target* types.
-`- script:`                                                              |   Optional   | Explicit file name of the Linker Script, overrules files provided with `file:` or components.
-&nbsp;&nbsp; [`for-compiler:`](YML-Input-Format.md#for-compiler)         |   Optional   | Include Linker Script for the specified toolchain.
-&nbsp;&nbsp; [`for-context:`](YML-Input-Format.md#for-context)           |   Optional   | Include Linker Script for a list of *build* and *target* types.
-&nbsp;&nbsp; [`not-for-context:`](YML-Input-Format.md#not-for-context)   |   Optional   | Exclude Linker Script for a list of *build* and *target* types.
+`linker:`                                             |            |  Content
+:-----------------------------------------------------|:-----------|:--------------------------------
+**`- regions:`**                                      |**Optional**|**Path and file name of `regions_<device_or_board>.h`, used to generate a Linker Script.**
+&nbsp;&nbsp; [`for-compiler:`](#for-compiler)         |  Optional  |  Include Linker Script for the specified toolchain.
+&nbsp;&nbsp; [`for-context:`](#for-context)           |  Optional  |  Include Linker Script for a list of *build* and *target* types.
+&nbsp;&nbsp; [`not-for-context:`](#not-for-context)   |  Optional  |  Exclude Linker Script for a list of *build* and *target* types.
+**`- script:`**                                       |**Optional**|**Explicit file name of the Linker Script, overrules files provided with [`file:`](#files) or components.**
+&nbsp;&nbsp; [`for-compiler:`](#for-compiler)         |  Optional  |  Include Linker Script for the specified toolchain.
+&nbsp;&nbsp; [`for-context:`](#for-context)           |  Optional  |  Include Linker Script for a list of *build* and *target* types.
+&nbsp;&nbsp; [`not-for-context:`](#not-for-context)   |  Optional  |  Exclude Linker Script for a list of *build* and *target* types.
+**[`- define:`](#define)**                            |**Optional**|**Define symbol settings for the linker script file preprocessor.**
+&nbsp;&nbsp; [`for-compiler:`](#for-compiler)         |  Optional  |  Apply define settings for the specified toolchain.
+&nbsp;&nbsp; [`for-context:`](#for-context)           |  Optional  |  Include define settings for a list of *build* and *target* types.
+&nbsp;&nbsp; [`not-for-context:`](#not-for-context)   |  Optional  |  Exclude define settings for a list of *build* and *target* types.
 
 > **Note:** 
 >
@@ -847,7 +851,7 @@ Value                                                 | Control diagnostic messa
 
 ### `define:`
 
-Contains a list of symbol #define statements that are passed via the command line to the development tools for C and C++ source files.
+Contains a list of symbol #define statements that are passed via the command line to the development tools for C, C++ source files, or the [linker](#linker) script file preprocessor.
 
 `define:`                                             | Content
 :-----------------------------------------------------|:------------------------------------
@@ -856,7 +860,7 @@ Contains a list of symbol #define statements that are passed via the command lin
 
 >**Note:**
 >
-> This control only applies to C and C++ source files.  For assembler source files use the `misc:` node.
+> This control only applies to C and C++ source files (or to the [linker](#linker) script preprocessor).  For assembler source files use the `misc:` node.
 
 **Example:**
 
@@ -1459,7 +1463,7 @@ Add source files to a project.
 
 `files:`                                                  |              | Content
 :---------------------------------------------------------|--------------|:------------------------------------
-`- file:                                                  | **Required** | Name of the file.
+`- file:`                                                 | **Required** | Name of the file.
 &nbsp;&nbsp;&nbsp; [`for-context:`](#for-context)         |   Optional   | Include file for a list of *build* and *target* types.
 &nbsp;&nbsp;&nbsp; [`not-for-context:`](#not-for-context) |   Optional   | Exclude file for a list of *build* and *target* types.
 &nbsp;&nbsp;&nbsp; [`for-compiler:`](#for-compiler)       |   Optional   | Include file for a list of compilers.
@@ -1543,7 +1547,7 @@ Add a software layer to a project. Used in `*.cproject.yml` files.
 `layers:`                                           |              | Content
 :---------------------------------------------------|--------------|:------------------------------------
 [`- layer:`](#layer)                                |   Optional   | Path to the `*.clayer.yml` file that defines the layer.
-&nbsp;&nbsp; [`type:`](#layer---type)              |   Optional   | Refers to an expected layer type.
+&nbsp;&nbsp; [`type:`](#layer---type)               |   Optional   | Refers to an expected layer type.
 &nbsp;&nbsp; [`for-context:`](#for-context)         |   Optional   | Include layer for a list of *build* and *target* types.
 &nbsp;&nbsp; [`not-for-context:`](#not-for-context) |   Optional   | Exclude layer for a list of *build* and *target* types.
 &nbsp;&nbsp; [`optimize:`](#optimize)               |   Optional   | Optimize level for code generation.
