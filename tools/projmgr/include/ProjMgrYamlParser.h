@@ -37,6 +37,7 @@ static constexpr const char* YAML_COMPILER = "compiler";
 static constexpr const char* YAML_COMPONENT = "component";
 static constexpr const char* YAML_COMPONENTS = "components";
 static constexpr const char* YAML_CONDITION = "condition";
+static constexpr const char* YAML_CONFIGURATION = "configuration";
 static constexpr const char* YAML_CONNECT = "connect";
 static constexpr const char* YAML_CONNECTIONS = "connections";
 static constexpr const char* YAML_CONSTRUCTEDFILES = "constructed-files";
