@@ -15,7 +15,7 @@
   </compilers>
 
   <target Dfpu="NO_FPU" Dname="RteTest_ARMCM0" Dsecure="Non-secure" Dvendor="ARM:82">
-    <output intdir="tmp/setup-test/Build GCC" name="Build GCC" outdir="out/setup-test/Build GCC" rtedir="../data/TestProjectSetup/RTE" type="exe"/>
+    <output intdir="tmp/setup-test/Build GCC" name="setup-test" outdir="out/setup-test/Build GCC" rtedir="../data/TestProjectSetup/RTE" type="exe"/>
     <defines>SETUP_GCC</defines>
   </target>
 

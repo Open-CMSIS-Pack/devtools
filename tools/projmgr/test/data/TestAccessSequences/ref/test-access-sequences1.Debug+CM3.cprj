@@ -15,7 +15,7 @@
   </compilers>
 
   <target Dfpu="NO_FPU" Dname="RteTest_ARMCM3" Dsecure="Non-secure" Dvendor="ARM:82">
-    <output intdir="tmp/test-access-sequences1/CM3/Debug" name="Debug+CM3" outdir="out/test-access-sequences1/CM3/Debug" rtedir="../data/TestAccessSequences/RTE" type="exe"/>
+    <output intdir="tmp/test-access-sequences1/CM3/Debug" name="test-access-sequences1" outdir="out/test-access-sequences1/CM3/Debug" rtedir="../data/TestAccessSequences/RTE" type="exe"/>
     <cflags add="-O1 -g -C-CPP-RteTest_ARMCM3" compiler="AC6"/>
     <cxxflags add="-O1 -g -C-CPP-RteTest_ARMCM3" compiler="AC6"/>
     <defines>DEF1-PROJ1-out/test-access-sequences2/CM3/Debug/test-access-sequences2.Debug+CM3;DEF2-PROJ1-out/test-access-sequences2/CM3/Debug/test-access-sequences2.Debug+CM3;DEF3-PROJ1-out/test-access-sequences2/CM0/Release/test-access-sequences2.Release+CM0;DEF4-PROJ1-out/test-access-sequences2/CM3/Debug;DEF5-PROJ1-../data/TestAccessSequences;DEF-CM3-RteTest_ARMCM3</defines>
