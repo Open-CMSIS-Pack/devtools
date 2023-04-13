@@ -15,7 +15,7 @@
   </compilers>
 
   <target Dfpu="NO_FPU" Dname="RteTest_ARMCM0" Dsecure="Non-secure" Dvendor="ARM:82">
-    <output intdir="tmp/pack_path/CM0" name="CM0" outdir="out/pack_path/CM0" rtedir="../data/TestSolution/RTE" type="exe"/>
+    <output intdir="tmp/pack_path/CM0" name="pack_path" outdir="out/pack_path/CM0" rtedir="../data/TestSolution/RTE" type="exe"/>
     <ldflags compiler="AC6" file="../data/TestSolution/RTE/Device/RteTest_ARMCM0/ARMCM0_ac6.sct"/>
   </target>
 

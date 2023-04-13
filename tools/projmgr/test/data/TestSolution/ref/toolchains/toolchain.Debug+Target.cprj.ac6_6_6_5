@@ -15,7 +15,7 @@
   </compilers>
 
   <target Dfpu="NO_FPU" Dname="RteTest_ARMCM3" Dsecure="Non-secure" Dvendor="ARM:82">
-    <output intdir="tmp/toolchain/Target/Debug" name="Debug+Target" outdir="out/toolchain/Target/Debug" rtedir="../data/TestSolution/RTE" type="exe"/>
+    <output intdir="tmp/toolchain/Target/Debug" name="toolchain" outdir="out/toolchain/Target/Debug" rtedir="../data/TestSolution/RTE" type="exe"/>
     <cflags add="-DAC6@6.6.5" compiler="AC6"/>
     <defines>CompilerDefinition:AC6</defines>
   </target>

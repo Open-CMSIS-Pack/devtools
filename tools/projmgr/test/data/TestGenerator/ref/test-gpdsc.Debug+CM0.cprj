@@ -16,7 +16,7 @@
   </compilers>
 
   <target Dname="RteTestGen_ARMCM0" Dsecure="Non-secure" Dvendor="ARM:82">
-    <output intdir="tmp/test-gpdsc/CM0/Debug" name="Debug+CM0" outdir="out/test-gpdsc/CM0/Debug" rtedir="../data/TestGenerator/RTE" type="exe"/>
+    <output intdir="tmp/test-gpdsc/CM0/Debug" name="test-gpdsc" outdir="out/test-gpdsc/CM0/Debug" rtedir="../data/TestGenerator/RTE" type="exe"/>
   </target>
 
   <components>

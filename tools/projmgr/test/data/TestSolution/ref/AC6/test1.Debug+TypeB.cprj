@@ -15,7 +15,7 @@
   </compilers>
 
   <target Dendian="Little-endian" Dfpu="NO_FPU" Dname="RteTest_ARMCM0" Dsecure="Non-secure" Dvendor="ARM:82">
-    <output intdir="../test1/Debug/TypeB" name="Debug+TypeB" outdir="../test1/Debug" rtedir="../TestProject1/Custom/RTEDIR" type="exe"/>
+    <output intdir="../test1/Debug/TypeB" name="test1" outdir="../test1/Debug" rtedir="../TestProject1/Custom/RTEDIR" type="exe"/>
     <ldflags compiler="AC6" file="../TestProject1/Custom/RTEDIR/Device/RteTest_ARMCM0/ARMCM0_ac6.sct"/>
   </target>
 
