@@ -541,7 +541,7 @@ The `project:` node is the start of a `*.cproject.yml` file and can contain the 
 &nbsp;&nbsp; [`groups:`](#groups)                   | **Required** | List of source file groups along with source files.
 &nbsp;&nbsp; [`components:`](#components)           |  Optional    | List of software components used.
 &nbsp;&nbsp; [`layers:`](#layers)                   |  Optional    | List of software layers that belong to the project.
-&nbsp;&nbsp; [`connections:`](#connections)               |  Optional    | List of consumed and provided resources.
+&nbsp;&nbsp; [`connections:`](#connections)         |  Optional    | List of consumed and provided resources.
 
 **Example:**
 
@@ -727,7 +727,7 @@ If accepted, we would need to extend also the access sequences.
 
 ### `linker:`
 
->**Scheduled for CMSIS-Toolbox 2.0 - Q1'23**
+>**Scheduled for CMSIS-Toolbox 2.0 - Q2'23**
 
 The `linker:` node specifies an explicit Linker Script and/or memory regions header file.  It can be applied in `*.cproject.yml` and `*.clayer.yml` files.  If multiple `linker:` nodes are specified an error is issued.
 
@@ -1103,7 +1103,7 @@ The `processor:` keyword defines attributes such as TrustZone and FPU register u
 `processor:`                   | Content
 :------------------------------|:------------------------------------
 &nbsp;&nbsp; `trustzone:`      | TrustZone mode: secure \| non-secure \| off.
-&nbsp;&nbsp; `fpu:`            | Control usage of FPU registers (S-Register for Helium/FPU) (default: on for devices with FPU registers).
+&nbsp;&nbsp; `fpu:`            | Control usage of FPU registers (S-Register for MVE/Helium, float/double hardware FPU) (default: on for devices with FPU registers).
 &nbsp;&nbsp; `endian:`         | Select endianness: little \| big (only available when devices are configurable).
 
 ```yml
