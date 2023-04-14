@@ -13,7 +13,7 @@
   </packages>
 
   <compilers>
-    <compiler name="AC6"/>
+    <compiler name="AC6" version="6.18.0"/>
   </compilers>
 
   <target DbranchProt="BTI" Ddsp="DSP" Dendian="Little-endian" Dfpu="DP_FPU" Dmve="FP_MVE" Dname="ARMCM85" Dsecure="Non-secure" Dtz="TZ" Dvendor="ARM:82">
