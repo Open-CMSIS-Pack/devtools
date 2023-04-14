@@ -15,6 +15,7 @@ The following chapter explains the YAML CBuild format that describes how to buil
     - [`licenses:`](#licenses)
     - [`cprojects:`](#cprojects)
     - [`packs:`](#packs)
+    - [`generators:`](#generators)
   - [Source File Management](#source-file-management)
     - [`groups:`](#groups)
     - [`files:` of a group](#files-of-a-group)
@@ -294,6 +295,33 @@ The `packs:` node is the start of a pack list that is used for the project conte
        :
     - pack: MDK-Packs::IoT_Socket@1.3.1
       path: ../IoT_Socket
+```
+
+### `generators:`
+
+The `generators:` node contains information for calling a generator.
+
+`generators:`                                                       | Content
+:-------------------------------------------------------------------|:------------------------------------
+`- <generator-id>:`                                                 | Section for a specific generator.
+&nbsp;&nbsp; [`generator-dir:`](YML-Input-Format.md#generator-dir)  | Path name for storing the files generated.
+&nbsp;&nbsp; `gdpsc:`                                               | File name of the *.GDPSC file that stores the information in `generator-dir:`.
+&nbsp;&nbsp; `command:`                                             | Section for invoking the generator on different Host operating systems.
+
+**Example:**
+
+```yml
+  generators:
+    - STM32CubeMX:
+      generator-dir: RTE/Device
+      gpdsc: RTE/Device/STM32L475VGTx/FrameworkCubeMX.gpdsc
+      command:
+        win:
+          file: ${CMSIS_PACK_ROOT}/Keil/STM32L4xx_DFP/2.6.1/MDK/CubeMX/STM32CubeMxLauncher.exe
+          arguments:
+            - STM32L475VGTx
+            - ../../Release+STM32L4.cprj
+            - ${CMSIS_PACK_ROOT}/Keil/STM32L4xx_DFP/2.6.1
 ```
 
 ## Source File Management
