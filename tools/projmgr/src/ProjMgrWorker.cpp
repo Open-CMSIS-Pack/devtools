@@ -1995,7 +1995,7 @@ bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, 
           }
           else if (regex_match(sequence, regex("^Output\\(.*"))) {
             regEx = regex("\\$Output\\(.*\\)\\$");
-            replacement = relOutDir + "/" + (depContext.outputFiles.find("elf") != depContext.outputFiles.end() ? depContext.outputFiles.at("elf") : contextName);
+            replacement = relOutDir + "/" + (depContext.outputFiles.find("elf") != depContext.outputFiles.end() ? depContext.outputFiles.at("elf") : depContext.cproject->name);
           }
           else if (regex_match(sequence, regex("^Source\\(.*"))) {
             regEx = regex("\\$Source\\(.*\\)\\$");

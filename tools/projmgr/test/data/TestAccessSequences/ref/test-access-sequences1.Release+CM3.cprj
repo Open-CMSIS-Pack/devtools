@@ -18,7 +18,7 @@
     <output intdir="tmp/test-access-sequences1/CM3/Release" name="test-access-sequences1" outdir="out/test-access-sequences1/CM3/Release" rtedir="../data/TestAccessSequences/RTE" type="exe"/>
     <cflags add="-O3 -C-CPP-RteTest_ARMCM3" compiler="AC6"/>
     <cxxflags add="-O3 -C-CPP-RteTest_ARMCM3" compiler="AC6"/>
-    <defines>DEF1-PROJ1-out/test-access-sequences2/CM3/Debug/test-access-sequences2.Debug+CM3;DEF2-PROJ1-out/test-access-sequences2/CM3/Release/test-access-sequences2.Release+CM3;DEF3-PROJ1-out/test-access-sequences2/CM0/Release/test-access-sequences2.Release+CM0;DEF4-PROJ1-out/test-access-sequences2/CM3/Debug;DEF5-PROJ1-../data/TestAccessSequences;DEF-CM3-RteTest_ARMCM3</defines>
+    <defines>DEF1-PROJ1-out/test-access-sequences2/CM3/Debug/test-access-sequences2;DEF2-PROJ1-out/test-access-sequences2/CM3/Release/test-access-sequences2;DEF3-PROJ1-out/test-access-sequences2/CM0/Release/test-access-sequences2;DEF4-PROJ1-out/test-access-sequences2/CM3/Debug;DEF5-PROJ1-../data/TestAccessSequences;DEF-CM3-RteTest_ARMCM3</defines>
     <includes>../data/TestAccessSequences/path/CM3/RteTest_ARMCM3</includes>
   </target>
 
@@ -28,7 +28,7 @@
 
   <files>
     <group name="CMSE">
-      <file category="object" name="out/test-access-sequences2/CM3/Release/test-access-sequences2.Release+CM3_CMSE_Lib.o"/>
+      <file category="object" name="out/test-access-sequences2/CM3/Release/test-access-sequences2_CMSE_Lib.o"/>
     </group>
   </files>
 </cprj>
