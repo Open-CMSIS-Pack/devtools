@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # -------------------------------------------------------
-# Copyright (c) 2020-2022 Arm Limited. All rights reserved.
+# Copyright (c) 2020-2023 Arm Limited. All rights reserved.
 #
 # SPDX-License-Identifier: Apache-2.0
 # -------------------------------------------------------
@@ -67,31 +67,31 @@ curl --retry 3 -L ${cpackget_base}_linux_amd64.tar.gz  -o - | tar xzfO - --wildc
 curl --retry 3 -L ${cpackget_base}_windows_amd64.zip   -o temp.zip && unzip -p temp.zip '*/cpackget.exe' > ${distdir}/bin/cpackget.exe-amd64 && rm temp.zip
 curl --retry 3 -L ${cpackget_base}_darwin_amd64.tar.gz -o - | tar xzfO - --wildcards    '*cpackget'     > ${distdir}/bin/cpackget.mac-amd64
 curl --retry 3 -L ${cpackget_base}_linux_arm64.tar.gz  -o - | tar xzfO - --wildcards    '*cpackget'     > ${distdir}/bin/cpackget.lin-arm64
-#curl --retry 3 -L ${cpackget_base}_windows_arm64.zip   -o temp.zip && unzip -p temp.zip '*/cpackget.exe' > ${distdir}/bin/cpackget.exe-arm64 && rm temp.zip
-#curl --retry 3 -L ${cpackget_base}_darwin_arm64.tar.gz -o - | tar xzfO - --wildcards    '*cpackget'     > ${distdir}/bin/cpackget.mac-arm64
+curl --retry 3 -L ${cpackget_base}_windows_arm64.zip   -o temp.zip && unzip -p temp.zip '*/cpackget.exe' > ${distdir}/bin/cpackget.exe-arm64 && rm temp.zip
+curl --retry 3 -L ${cpackget_base}_darwin_arm64.tar.gz -o - | tar xzfO - --wildcards    '*cpackget'     > ${distdir}/bin/cpackget.mac-arm64
 
 # Get csolution
-csolution_version="1.5.0"
+csolution_version="1.6.0"
 csolution_base=https://github.com/Open-CMSIS-Pack/devtools/releases/download/tools%2Fprojmgr%2F${csolution_version}/projmgr.zip
 curl --retry 3 -L ${csolution_base} -o temp.zip && unzip -q -d temp temp.zip
 cp 'temp/bin/linux-amd64/csolution' ${distdir}/bin/csolution.lin-amd64
 cp 'temp/bin/windows-amd64/csolution.exe' ${distdir}/bin/csolution.exe-amd64
 cp 'temp/bin/darwin-amd64/csolution' ${distdir}/bin/csolution.mac-amd64
 cp 'temp/bin/linux-arm64/csolution' ${distdir}/bin/csolution.lin-arm64
-#cp 'temp/bin/windows-arm64/csolution.exe' ${distdir}/bin/csolution.exe-arm64
-#cp 'temp/bin/darwin-arm64/csolution' ${distdir}/bin/csolution.mac-arm64
+cp 'temp/bin/windows-arm64/csolution.exe' ${distdir}/bin/csolution.exe-arm64
+cp 'temp/bin/darwin-arm64/csolution' ${distdir}/bin/csolution.mac-arm64
 cp -r temp/etc/* ${distdir}/etc
 rm temp.zip && rm -rf temp
 
 # Get cbuild
-cbuild_version="1.5.0"
+cbuild_version="1.6.1"
 cbuild_base=https://github.com/Open-CMSIS-Pack/cbuild/releases/download/v${cbuild_version}/cbuild_${cbuild_version}
 curl --retry 3 -L ${cbuild_base}_linux_amd64.tar.gz  -o - | tar xzfO - --wildcards    '*cbuild'     > ${distdir}/bin/cbuild.lin-amd64
 curl --retry 3 -L ${cbuild_base}_windows_amd64.zip   -o temp.zip && unzip -p temp.zip '*/cbuild.exe' > ${distdir}/bin/cbuild.exe-amd64 && rm temp.zip
 curl --retry 3 -L ${cbuild_base}_darwin_amd64.tar.gz -o - | tar xzfO - --wildcards    '*cbuild'     > ${distdir}/bin/cbuild.mac-amd64
 curl --retry 3 -L ${cbuild_base}_linux_arm64.tar.gz  -o - | tar xzfO - --wildcards    '*cbuild'     > ${distdir}/bin/cbuild.lin-arm64
-#curl --retry 3 -L ${cbuild_base}_windows_arm64.zip   -o temp.zip && unzip -p temp.zip '*/cbuild.exe' > ${distdir}/bin/cbuild.exe-arm64 && rm temp.zip
-#curl --retry 3 -L ${cbuild_base}_darwin_arm64.tar.gz -o - | tar xzfO - --wildcards    '*cbuild'     > ${distdir}/bin/cbuild.mac-arm64
+curl --retry 3 -L ${cbuild_base}_windows_arm64.zip   -o temp.zip && unzip -p temp.zip '*/cbuild.exe' > ${distdir}/bin/cbuild.exe-arm64 && rm temp.zip
+curl --retry 3 -L ${cbuild_base}_darwin_arm64.tar.gz -o - | tar xzfO - --wildcards    '*cbuild'     > ${distdir}/bin/cbuild.mac-arm64
 
 arch=$(uname -m)
 case $arch in
