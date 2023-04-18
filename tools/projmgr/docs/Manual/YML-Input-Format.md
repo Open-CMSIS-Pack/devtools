@@ -479,6 +479,7 @@ The `solution:` node is the start of a `*.csolution.yml` file that collects rela
 :-----------------------------------------------------|:-------------|:------------------------------------
 &nbsp;&nbsp; `created-by:`                            |  Optional    | Identifies the tool that created this csolution project.
 &nbsp;&nbsp; `created-for:`                           |  Optional    | Specifies the tool for building this csolution project, i.e. **ctools@1.5.0**
+&nbsp;&nbsp; `description:`                           |  Optional    | Brief description text of the solution.
 &nbsp;&nbsp; [`output-dirs:`](#output-dirs)           |  Optional    | Control the output directories for the build output.
 &nbsp;&nbsp; [`generator-dir:`](#generator-dir)       |  Optional    | Control the directory for generator output.
 &nbsp;&nbsp; [`packs:`](#packs)                       |  Optional    | Defines local packs and/or scope of packs that are used.
@@ -526,7 +527,7 @@ The `project:` node is the start of a `*.cproject.yml` file and can contain the 
 
 `project:`                                          |              | Content
 :---------------------------------------------------|:-------------|:------------------------------------
-&nbsp;&nbsp; `description:`                         |  Optional    | Project description.
+&nbsp;&nbsp; `description:`                         |  Optional    | Brief description text of the project.
 &nbsp;&nbsp; [`output-type:`](#output-type)         |  Optional    | Generate executable (default) or library.
 &nbsp;&nbsp; [`generator-dir:`](#generator-dir)     |  Optional    | Control the directory for generator output.
 &nbsp;&nbsp; [`packs:`](#packs)                     |  Optional    | Defines packs that are required for this project.
@@ -575,8 +576,8 @@ The `layer:` node is the start of a `*.clayer.yml` file and defines a [Software 
 `layer:`                                               |              | Content
 :------------------------------------------------------|:-------------|:------------------------------------
 &nbsp;&nbsp; [`type:`](#layer---type)                  |  Optional    | Layer type for combining layers.
-&nbsp;&nbsp; `description:`                            |  Optional    | Brief layer description.
-&nbsp;&nbsp; [`generator-dir:`](#generator-dir)     |  Optional    | Control the directory for generator output.
+&nbsp;&nbsp; `description:`                            |  Optional    | Brief description text of the layer.
+&nbsp;&nbsp; [`generator-dir:`](#generator-dir)        |  Optional    | Control the directory for generator output.
 &nbsp;&nbsp; [`packs:`](#packs)                        |  Optional    | Defines packs that are required for this layer.
 &nbsp;&nbsp; [`for-device:`](#device-name-conventions) |  Optional    | Device information, used for consistency check (device selection is in `*.csolution.yml`).
 &nbsp;&nbsp; [`for-board:`](#board-name-conventions)   |  Optional    | Board information, used for consistency check (board selection is in `*.csolution.yml`).
