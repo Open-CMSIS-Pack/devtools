@@ -245,12 +245,6 @@ jobs:
           name: unit_test_result-linux-amd64
           path: tools/testreport/linux-amd64/
 
-      - name: Download test report linux-arm64
-        uses: actions/download-artifact@v3
-        with:
-          name: unit_test_result-linux-arm64
-          path: tools/testreport/linux-arm64/
-
       - name: Download test report macos-amd64
         if: ${{ !github.event.repository.private }}
         uses: actions/download-artifact@v3
