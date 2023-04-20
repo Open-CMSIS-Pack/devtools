@@ -176,27 +176,6 @@ const string& RteComponent::GetCbundleName() const
 
 string RteComponent::ConstructID()
 {
-  RtePackage* pack = GetPackage();
-  if (pack && pack->IsGenerated()) {
-    SetAttribute("generated", "1");
-  }
-
-  // inherit attributes from bundle
-  if (GetAttribute("Cclass").empty()) {
-    AddAttribute("Cclass", GetCclassName());
-  }
-  // ensure Cvendor Cversion and Cbundle for components, not for apis
-  if (!IsApi()) {
-    if (m_parent && GetAttribute("Cbundle").empty()) {
-      AddAttribute("Cbundle", m_parent->GetCbundleName(), false); // insert bundle ID if not empty
-    }
-    if (GetAttribute("Cvendor").empty()) {
-      AddAttribute("Cvendor", GetVendorString());
-    }
-    if (GetAttribute("Cversion").empty()) {
-      AddAttribute("Cversion", GetVersionString(), false);
-    }
-  }
   return GetComponentUniqueID(true);
 };
 
@@ -265,10 +244,29 @@ RteItem* RteComponent::CreateItem(const std::string& tag)
 
 void RteComponent::Construct()
 {
-  RteItem::Construct();
-  if (!HasAttribute("generator")) {
-    AddAttribute("generator", GetGeneratorName(), false);
+  RtePackage* pack = GetPackage();
+  if (pack && pack->IsGenerated()) {
+    SetAttribute("generated", "1");
   }
+
+  // inherit attributes from bundle
+  if (GetAttribute("Cclass").empty()) {
+    AddAttribute("Cclass", GetCclassName());
+  }
+  // ensure Cvendor Cversion and Cbundle for components, not for apis
+  if (!IsApi()) {
+    if (m_parent && GetAttribute("Cbundle").empty()) {
+      AddAttribute("Cbundle", m_parent->GetCbundleName(), false); // insert bundle ID if not empty
+    }
+    if (GetAttribute("Cvendor").empty()) {
+      AddAttribute("Cvendor", GetVendorString());
+    }
+    if (GetAttribute("Cversion").empty()) {
+      AddAttribute("Cversion", GetVersionString(), false);
+    }
+  }
+
+  RteItem::Construct();
 }
 
 

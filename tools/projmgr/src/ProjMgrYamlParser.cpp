@@ -277,6 +277,8 @@ bool ProjMgrYamlParser::ParseComponents(const YAML::Node& parent, vector<Compone
         return false;
       }
       ParseString(componentEntry, YAML_COMPONENT, componentItem.component);
+      ParseString(componentEntry, YAML_CONDITION, componentItem.condition);
+      ParseString(componentEntry, YAML_FROM_PACK, componentItem.fromPack);
       ParseBuildType(componentEntry, componentItem.build);
       components.push_back(componentItem);
     }
@@ -777,6 +779,8 @@ const set<string> packsKeys = {
 
 const set<string> componentsKeys = {
   YAML_COMPONENT,
+  YAML_CONDITION,
+  YAML_FROM_PACK,
   YAML_FORTYPE,
   YAML_FORCONTEXT,
   YAML_NOTFORTYPE,

@@ -80,6 +80,44 @@ string ProjMgrUtils::GetPartialComponentID(const RteItem* component) {
   return ConstructID(elements);
 }
 
+std::map<std::string, std::string> ProjMgrUtils::ComponentAttributesFromId(const std::string& componentId)
+{
+  XmlItem attributes;
+  string id = componentId;
+  if (componentId.find("::") != string::npos) {
+    string vendor = RteUtils::RemoveSuffixByString(id, SUFFIX_CVENDOR);
+    attributes.AddAttribute("Cvendor", vendor);
+    id = RteUtils::RemovePrefixByString(componentId, SUFFIX_CVENDOR);
+  }
+  attributes.AddAttribute("Cversion", RteUtils::GetSuffix(id, PREFIX_CVERSION_CHAR));
+  id = RteUtils::GetPrefix(id, PREFIX_CVERSION_CHAR);
+  list<string> segments;
+  RteUtils::SplitString(segments, id, ':');
+  size_t index = 0;
+  for (auto s : segments) {
+    switch (index) {
+      case 0: // Cclass[&Cbundle]
+        attributes.AddAttribute("Cclass", RteUtils::GetPrefix(s, PREFIX_CBUNDLE_CHAR));
+        attributes.AddAttribute("Cbundle", RteUtils::GetSuffix(s, PREFIX_CBUNDLE_CHAR), false);
+        break;
+      case 1: // Cgroup[&Cvariant]
+        attributes.AddAttribute("Cgroup", RteUtils::GetPrefix(s, PREFIX_CVARIANT_CHAR));
+        attributes.AddAttribute("Cvariant", RteUtils::GetSuffix(s, PREFIX_CVARIANT_CHAR), false);
+        break;
+      case 2: // Csub
+        attributes.AddAttribute("Csub", RteUtils::GetPrefix(s, PREFIX_CVARIANT_CHAR));
+        attributes.AddAttribute("Cvariant", RteUtils::GetSuffix(s, PREFIX_CVARIANT_CHAR), false);
+        break;
+      default:
+      break;
+    };
+    index++;
+  }
+
+  return attributes.GetAttributes();
+}
+
+
 string ProjMgrUtils::GetPackageID(const RteItem* pack) {
   if (!pack) {
     return RteUtils::EMPTY_STRING;

@@ -1,0 +1,10 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schemas/cproject.schema.json
+
+project:
+  description: ProjectEnforcedComponent
+  components:
+    - component: Startup
+    - component: CORE
+    - component: Board:Test:Rev2@2.2.2
+      condition: BoardTest2
+      from-pack: ARM::RteTest_DFP@0.2.0

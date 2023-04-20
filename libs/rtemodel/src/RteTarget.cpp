@@ -254,8 +254,6 @@ bool RteTarget::SelectComponent(RteComponent* c, int count, bool bUpdateDependen
   int maxInst = c->GetMaxInstances();
   if (count > maxInst)
     count = maxInst;
-  if (!IsComponentFiltered(c))
-    count = 0;
 
   RteComponentAggregate* a = GetComponentAggregate(c);
   if (!a)
@@ -1554,6 +1552,10 @@ RteComponent* RteTarget::ResolveComponent(RteComponentInstance* ci) const
   RteComponent* c = NULL;
   if (mode == VersionCmp::MatchMode::FIXED_VERSION) {
     c = GetComponent(ci->GetComponentID(true));
+    if (!c && ci->HasAttribute("condition")) { //  enforced component is specified
+      RteComponentList lst;
+      c = GetFilteredModel()->FindComponents(*ci, lst);
+    }
   } else {
     c = GetLatestComponent(ci);
   }

@@ -353,6 +353,23 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ConvertProject) {
     testinput_folder + "/TestSolution/TestProject4/test.cprj");
 }
 
+TEST_F(ProjMgrUnitTests, RunProjMgr_EnforcedComponent) {
+  char* argv[6];
+  string csolutionFile = testinput_folder + "/TestSolution/test.enforced_component.csolution.yml";
+
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolutionFile.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+
+  // Check generated CPRJ
+  //ProjMgrTestEnv::CompareFile(testoutput_folder + "/test.cprj",
+  //  testinput_folder + "/TestSolution/TestProject4/test.cprj");
+}
+
+
 TEST_F(ProjMgrUnitTests, RunProjMgr_LinkerScript) {
   char* argv[6];
   string csolutionFile = UpdateTestSolutionFile("./TestProject4/test_linker_script.cproject.yml");

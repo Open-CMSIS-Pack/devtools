@@ -286,6 +286,7 @@ void RteProject::AddCprjComponents(const list<RteItem*>& selItems, RteTarget* ta
     RteComponentInstance* ci = AddCprjComponent(item, target);
     RteComponent* component = ci->GetResolvedComponent(target->GetName());
     int instances = item->GetAttributeAsInt("instances", 1);
+    target->SetComponentUsed(ci, instances);
     if (component) {
       target->SelectComponent(component, instances, false, true);
       const list<RteItem*>& files = item->GetChildren();
@@ -302,7 +303,6 @@ void RteProject::AddCprjComponents(const list<RteItem*>& selItems, RteTarget* ta
         configFileVersions[name] = version;
       }
     } else {
-      target->SetComponentUsed(ci, instances);
       unresolvedComponents.insert(ci);
     }
   }

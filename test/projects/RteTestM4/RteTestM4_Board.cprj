@@ -59,6 +59,7 @@
       <file attr="config" category="header" name="Include/Config/ConfigInclude.h" path="Include" version="0.0.2"/>
     </component>
     <component Cclass="RteTest" Cgroup="LocalFile" Cvendor="ARM"/>
+    <component Cclass="Board" Cgroup="Test" Csub="Rev2" Cversion="2.2.2" condition="BoardTest2"/>
   </components>
 
   <files>

@@ -520,45 +520,59 @@ public:
   virtual bool MatchesHost() const;
 
   /**
- * @brief check if item provides data matching supplied host type
- * @param hostType host type to match, empty to match current host
- * @return true if item data matches host platform
-*/
+   * @brief check if item provides data matching supplied host type
+   * @param hostType host type to match, empty to match current host
+   * @return true if item data matches host platform
+  */
   virtual bool MatchesHost(const std::string& hostType) const;
 
+  /**
+   * @brief collect components matching supplied attributes
+   * @param item reference to RteItem containing component attributes to match
+   * @param components container for components
+   * @return pointer to first component found if any, null otherwise
+  */
+  virtual RteComponent* FindComponents(const RteItem& item, std::list<RteComponent*>& components) const;
 
- /**
-* @brief checks if the item contains all attributes matching those in the supplied map
-* @param attributes map of key-value pairs to match against component attributes
-* @return true if the item has all attributes found in the supplied map
-*/
+  /**
+   * @brief checks if the item contains all attributes matching those in the supplied map
+   * @param item reference to an RteItem containing component attributes to match
+   * @return true if the item has all attributes found in the supplied map
+  */
+  virtual bool MatchComponent(const RteItem& item) const;
+
+  /**
+  * @brief checks if the item contains all attributes matching those in the supplied map
+  * @param attributes map of key-value pairs to match against component attributes
+  * @return true if the item has all attributes found in the supplied map
+  */
   virtual bool MatchComponentAttributes(const std::map<std::string, std::string>& attributes) const;
 
- /**
-  * @brief check if the item matches supplied API attributes
-  * @param attributes collection of 'C' (API) attributes
-  * @return true if the item matches supplied API attributes
- */
+  /**
+   * @brief check if the item matches supplied API attributes
+   * @param attributes collection of 'C' (API) attributes
+   * @return true if the item matches supplied API attributes
+  */
   virtual bool MatchApiAttributes(const std::map<std::string, std::string>& attributes) const;
 
- /**
-  * @brief check if given collection of attributes contains the same values for "Dname", "Pname" and "Dvendor"
-  * @param attributes collection of attributes
-  * @return true if collection of attributes contains the same values for "Dname", "Pname" and "Dvendor"
- */
+  /**
+   * @brief check if given collection of attributes contains the same values for "Dname", "Pname" and "Dvendor"
+   * @param attributes collection of attributes
+   * @return true if collection of attributes contains the same values for "Dname", "Pname" and "Dvendor"
+  */
   virtual bool MatchDevice(const std::map<std::string, std::string>& attributes) const;
 
- /**
-  * @brief check if the item matches all supplied 'D' attributes stored in the instance
-  * @param attributes collection of 'D' device attributes
-  * @return true if given list contains all device attributes stored in the instance
- */
+  /**
+   * @brief check if the item matches all supplied 'D' attributes stored in the instance
+   * @param attributes collection of 'D' device attributes
+   * @return true if given list contains all device attributes stored in the instance
+  */
   virtual bool MatchDeviceAttributes(const std::map<std::string, std::string>& attributes) const;
 
   /**
- * @brief check if attribute "maxInstances" is not empty
- * @return true if attribute "maxInstances" is not empty
-*/
+   * @brief check if attribute "maxInstances" is not empty
+   * @return true if attribute "maxInstances" is not empty
+  */
   virtual bool HasMaxInstances() const;
   /**
    * @brief determine value of attribute "maxInstances" as integer, default value is 1

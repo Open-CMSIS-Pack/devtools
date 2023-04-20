@@ -90,10 +90,13 @@ public:
   static constexpr const char* COMPONENT_DELIMITERS = ":&@";
   static constexpr const char* SUFFIX_CVENDOR = "::";
   static constexpr const char* PREFIX_CBUNDLE = "&";
+  static constexpr const char  PREFIX_CBUNDLE_CHAR = '&';
   static constexpr const char* PREFIX_CGROUP = ":";
   static constexpr const char* PREFIX_CSUB = ":";
   static constexpr const char* PREFIX_CVARIANT = "&";
+  static constexpr const char  PREFIX_CVARIANT_CHAR = '&';
   static constexpr const char* PREFIX_CVERSION = "@";
+  static constexpr const char  PREFIX_CVERSION_CHAR = '@';
   static constexpr const char* SUFFIX_PACK_VENDOR = "::";
   static constexpr const char* PREFIX_PACK_VERSION = "@";
 
@@ -142,6 +145,13 @@ public:
    * @return string partial component identifier
   */
   static std::string GetPartialComponentID(const RteItem* component);
+
+  /**
+   * @brief get component attributes from supplied component ID
+   * @param componentId component id string
+   * @return map of key-value pairs of componentAttributes
+  */
+  static std::map<std::string, std::string> ComponentAttributesFromId(const std::string& componentId);
 
   /**
    * @brief get fully specified package identifier

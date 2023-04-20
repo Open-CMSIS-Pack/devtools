@@ -23,6 +23,12 @@ ProjMgrWorker::ProjMgrWorker(void) {
 
 ProjMgrWorker::~ProjMgrWorker(void) {
   ProjMgrKernel::Destroy();
+
+  for (auto context : m_contexts) {
+    for (auto componentItem : context.second.components) {
+      delete componentItem.second.instance;
+    }
+  }
 }
 
 void ProjMgrWorker::SetParser(ProjMgrParser* parser) {
@@ -1213,12 +1219,10 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
   }
 
   // Get installed components map
-  RteComponentMap installedComponents = context.rteActiveTarget->GetFilteredComponents();
+  const RteComponentMap& installedComponents = context.rteActiveTarget->GetFilteredComponents();
   RteComponentMap componentMap;
-  set<string> componentIds, filteredIds;
   for (auto& component : installedComponents) {
     const string& componentId = ProjMgrUtils::GetComponentID(component.second);
-    componentIds.insert(componentId);
     componentMap[componentId] = component.second;
   }
 
@@ -1226,130 +1230,61 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
     if (item.component.empty()) {
       continue;
     }
-    // Filter components
-    RteComponentMap filteredComponents;
-    vector<string> filteredIds;
-    string componentDescriptor = item.component;
-
-    set<string> filterSet;
-    if (componentDescriptor.find_first_of(ProjMgrUtils::COMPONENT_DELIMITERS) != string::npos) {
-      // Consider a full or partial component identifier was given
-      filterSet.insert(RteUtils::GetPrefix(componentDescriptor, *(ProjMgrUtils::PREFIX_CVERSION)));
-    } else {
-      // Consider free text was given
-      filterSet = SplitArgs(componentDescriptor);
-    }
-
-    vector<string> componentIdVec(componentIds.begin(), componentIds.end());
-    ApplyFilter(componentIdVec, filterSet, filteredIds);
-    for (const auto& filteredId : filteredIds) {
-      filteredComponents[filteredId] = componentMap[filteredId];
-    }
-
-    // Multiple matches, search best matched identifier
-    if (filteredComponents.size() > 1) {
-      RteComponentMap fullMatchedComponents;
-      for (const auto& component : filteredComponents) {
-        if (FullMatch(SplitArgs(component.first, ProjMgrUtils::COMPONENT_DELIMITERS), SplitArgs(componentDescriptor, ProjMgrUtils::COMPONENT_DELIMITERS))) {
-          fullMatchedComponents.insert(component);
-        }
-      }
-      if (fullMatchedComponents.size() > 0) {
-        filteredComponents = fullMatchedComponents;
-      }
-    }
-
-    // Multiple matches, check exact partial identifier
-    if (filteredComponents.size() > 1) {
-      RteComponentMap matchedComponents;
-      for (const auto& [id, component] : filteredComponents) {
-        // Get component id without vendor and version
-        const string& componentId = ProjMgrUtils::GetPartialComponentID(component);
-        string requiredComponentId = RteUtils::RemovePrefixByString(item.component, ProjMgrUtils::SUFFIX_CVENDOR);
-        requiredComponentId = RteUtils::GetPrefix(requiredComponentId, *ProjMgrUtils::PREFIX_CVERSION);
-        if (requiredComponentId.compare(componentId) == 0) {
-          matchedComponents[id] = component;
-        }
-      }
-      // Select unique exact match
-      if (matchedComponents.size() == 1) {
-        filteredComponents = matchedComponents;
-      }
-    }
-
-    // Evaluate filtered components
-    if (filteredComponents.empty()) {
+    RteComponent* matchedComponent = ProcessComponent(context, item, componentMap);
+    if (!matchedComponent) {
       // No match
       ProjMgrLogger::Error("no component was found with identifier '" + item.component + "'");
       return false;
     }
-    else {
-      // One or multiple matches found
-      set<string> availableComponentVersions;
-      for_each(filteredComponents.begin(), filteredComponents.end(),
-        [&](const pair<std::string, RteComponent*> &component) {
-          availableComponentVersions.insert(RteUtils::GetSuffix(component.first, *ProjMgrUtils::PREFIX_CVERSION));
-        });
-      const string& filterVersion = RteUtils::GetSuffix(item.component, *ProjMgrUtils::PREFIX_CVERSION, true);
-      const string& matchedVersion = VersionCmp::GetMatchingVersion(filterVersion, availableComponentVersions);
-      if (matchedVersion.empty()) {
-        ProjMgrLogger::Error("no component was found with identifier '" + item.component + "'");
-        return false;
-      }
-      auto itr = std::find_if(filteredComponents.begin(), filteredComponents.end(),
-        [&](const pair<std::string, RteComponent*>& item) {
-          return (item.first.find(matchedVersion) != string::npos);
-        });
-      auto matchedComponent = itr->second;
-      const auto& componentId = ProjMgrUtils::GetComponentID(matchedComponent);
-      UpdateMisc(item.build.misc, context.toolchain.name);
 
-      // Init matched component instance
-      RteComponentInstance* matchedComponentInstance = new RteComponentInstance(matchedComponent);
-      matchedComponentInstance->InitInstance(matchedComponent);
+    UpdateMisc(item.build.misc, context.toolchain.name);
 
-      // Set layer's rtePath attribute
-      if (!layer.empty() && context.csolution->directories.rte.empty()) {
-        error_code ec;
-        const string& rteDir = fs::relative(context.clayers[layer]->directory, context.cproject->directory, ec).append("RTE").generic_string();
-        matchedComponentInstance->AddAttribute("rtedir", rteDir);
-      }
+    const auto& componentId = ProjMgrUtils::GetComponentID(matchedComponent);
+    // Init matched component instance
+    RteComponentInstance* matchedComponentInstance = new RteComponentInstance(matchedComponent);
+    matchedComponentInstance->InitInstance(matchedComponent);
 
-      // Get generator
-      RteGenerator* generator = matchedComponent->GetGenerator();
-      const string generatorId = generator ? generator->GetID() : "";
-      if (generator) {
-        context.generators.insert({ generatorId, generator });
+    // Set layer's rtePath attribute
+    if (!layer.empty() && context.csolution->directories.rte.empty()) {
+      error_code ec;
+      const string& rteDir = fs::relative(context.clayers[layer]->directory, context.cproject->directory, ec).append("RTE").generic_string();
+      matchedComponentInstance->AddAttribute("rtedir", rteDir);
+    }
 
-        string genDir;
-        error_code ec;
-        if (!context.csolution->directories.gendir.empty()) {
-          // custom gendir
-          genDir = context.directories.gendir;
-        } else {
-          // original working dir
-          genDir = fs::relative(generator->GetExpandedWorkingDir(context.rteActiveTarget), context.cproject->directory, ec).generic_string();
-          if (!layer.empty()) {
-            // component belongs to layer
-            genDir = fs::relative(fs::path(context.clayers[layer]->directory).append(genDir), context.cproject->directory, ec).generic_string();
-          }
+    // Get generator
+    RteGenerator* generator = matchedComponent->GetGenerator();
+    const string generatorId = generator ? generator->GetID() : "";
+    if (generator) {
+      context.generators.insert({ generatorId, generator });
+
+      string genDir;
+      error_code ec;
+      if (!context.csolution->directories.gendir.empty()) {
+        // custom gendir
+        genDir = context.directories.gendir;
+      } else {
+        // original working dir
+        genDir = fs::relative(generator->GetExpandedWorkingDir(context.rteActiveTarget), context.cproject->directory, ec).generic_string();
+        if (!layer.empty()) {
+          // component belongs to layer
+          genDir = fs::relative(fs::path(context.clayers[layer]->directory).append(genDir), context.cproject->directory, ec).generic_string();
         }
-        matchedComponentInstance->AddAttribute("gendir", genDir);
-
-        const string& gpdsc = fs::weakly_canonical(generator->GetExpandedGpdsc(context.rteActiveTarget, genDir), ec).generic_string();
-        context.gpdscs.insert({ gpdsc, {componentId, generatorId, genDir} });
       }
+      matchedComponentInstance->AddAttribute("gendir", genDir);
 
-      // Insert matched component into context list
-      context.components.insert({ componentId, { matchedComponentInstance, &item, generatorId }});
-      const auto& componentPackage = matchedComponent->GetPackage();
-      context.packages.insert({ ProjMgrUtils::GetPackageID(componentPackage), componentPackage });
-      if (matchedComponent->HasApi(context.rteActiveTarget)) {
-        const auto& api = matchedComponent->GetApi(context.rteActiveTarget, false);
-        if (api) {
-          const auto& apiPackage = api->GetPackage();
-          context.packages.insert({ ProjMgrUtils::GetPackageID(apiPackage), apiPackage });
-        }
+      const string& gpdsc = fs::weakly_canonical(generator->GetExpandedGpdsc(context.rteActiveTarget, genDir), ec).generic_string();
+      context.gpdscs.insert({ gpdsc, {componentId, generatorId, genDir} });
+    }
+
+    // Insert matched component into context list
+    context.components.insert({ componentId, { matchedComponentInstance, &item, generatorId } });
+    const auto& componentPackage = matchedComponent->GetPackage();
+    context.packages.insert({ ProjMgrUtils::GetPackageID(componentPackage), componentPackage });
+    if (matchedComponent->HasApi(context.rteActiveTarget)) {
+      const auto& api = matchedComponent->GetApi(context.rteActiveTarget, false);
+      if (api) {
+        const auto& apiPackage = api->GetPackage();
+        context.packages.insert({ ProjMgrUtils::GetPackageID(apiPackage), apiPackage });
       }
     }
   }
@@ -1361,6 +1296,106 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
 
   return CheckRteErrors();
 }
+
+RteComponent* ProjMgrWorker::ProcessComponent(ContextItem& context, ComponentItem& item, RteComponentMap& componentMap)
+{
+
+  if (!item.condition.empty()) {
+    RteComponentInstance ci(nullptr);
+    ci.SetTag("component");
+
+    ci.SetAttributes(ProjMgrUtils::ComponentAttributesFromId(item.component));
+    ci.AddAttribute("condition", item.condition);
+    string packId = item.fromPack;
+    RteUtils::ReplaceAll(packId,"::", ".");
+    RteUtils::ReplaceAll(packId, "@", ".");
+    RtePackageInstanceInfo packInfo(nullptr, packId);
+    ci.SetPackageAttributes(packInfo);
+    list<RteComponent*> components;
+    RteComponent* enforced = context.rteActiveTarget->GetFilteredModel()->FindComponents(ci, components);
+    if (enforced) {
+      return enforced;
+    }
+  }
+
+  // Filter components
+  RteComponentMap filteredComponents;
+  vector<string> filteredIds;
+  string componentDescriptor = item.component;
+
+  set<string> filterSet;
+  if (componentDescriptor.find_first_of(ProjMgrUtils::COMPONENT_DELIMITERS) != string::npos) {
+    // Consider a full or partial component identifier was given
+    filterSet.insert(RteUtils::GetPrefix(componentDescriptor, *(ProjMgrUtils::PREFIX_CVERSION)));
+  } else {
+    // Consider free text was given
+    filterSet = SplitArgs(componentDescriptor);
+  }
+
+  vector<string> componentIdVec;
+  componentIdVec.reserve(componentMap.size());
+  for (auto [componentId, _] :componentMap) {
+    componentIdVec.push_back(componentId);
+  }
+  ApplyFilter(componentIdVec, filterSet, filteredIds);
+  for (const auto& filteredId : filteredIds) {
+    auto c = componentMap[filteredId];
+    filteredComponents[filteredId] = c;
+  }
+
+  // Multiple matches, search best matched identifier
+  if (filteredComponents.size() > 1) {
+    RteComponentMap fullMatchedComponents;
+    for (const auto& component : filteredComponents) {
+      if (FullMatch(SplitArgs(component.first, ProjMgrUtils::COMPONENT_DELIMITERS), SplitArgs(componentDescriptor, ProjMgrUtils::COMPONENT_DELIMITERS))) {
+        fullMatchedComponents.insert(component);
+      }
+    }
+    if (fullMatchedComponents.size() > 0) {
+      filteredComponents = fullMatchedComponents;
+    }
+  }
+
+  // Multiple matches, check exact partial identifier
+  if (filteredComponents.size() > 1) {
+    RteComponentMap matchedComponents;
+    for (const auto& [id, component] : filteredComponents) {
+      // Get component id without vendor and version
+      const string& componentId = ProjMgrUtils::GetPartialComponentID(component);
+      string requiredComponentId = RteUtils::RemovePrefixByString(item.component, ProjMgrUtils::SUFFIX_CVENDOR);
+      requiredComponentId = RteUtils::GetPrefix(requiredComponentId, *ProjMgrUtils::PREFIX_CVERSION);
+      if (requiredComponentId.compare(componentId) == 0) {
+        matchedComponents[id] = component;
+      }
+    }
+    // Select unique exact match
+    if (matchedComponents.size() == 1) {
+      filteredComponents = matchedComponents;
+    }
+  }
+  // Evaluate filtered components
+  if (filteredComponents.empty()) {
+    // No match
+    return nullptr;
+  }
+  // One or multiple matches found
+  set<string> availableComponentVersions;
+  for_each(filteredComponents.begin(), filteredComponents.end(),
+    [&](const pair<std::string, RteComponent*>& component) {
+      availableComponentVersions.insert(RteUtils::GetSuffix(component.first, *ProjMgrUtils::PREFIX_CVERSION));
+    });
+  const string& filterVersion = RteUtils::GetSuffix(item.component, *ProjMgrUtils::PREFIX_CVERSION, true);
+  const string& matchedVersion = VersionCmp::GetMatchingVersion(filterVersion, availableComponentVersions);
+  if (matchedVersion.empty()) {
+    return nullptr;
+  }
+  auto itr = std::find_if(filteredComponents.begin(), filteredComponents.end(),
+    [&](const pair<std::string, RteComponent*>& item) {
+      return (item.first.find(matchedVersion) != string::npos);
+    });
+  return itr->second;
+}
+
 
 bool ProjMgrWorker::AddRequiredComponents(ContextItem& context) {
   list<RteItem*> selItems;
