@@ -105,7 +105,7 @@
       "oneOf": [
         {"type": "string" },
         {"type": "object", "additionalProperties": {"type": "number"}}
-      ]      
+      ]
     },
     "VariablesType": {
       "type": "array",
@@ -516,7 +516,9 @@
     "ComponentType": {
       "type": "object",
       "properties": {
-        "component":    { "$ref": "#/definitions/ComponentID" },
+        "component":       { "$ref": "#/definitions/ComponentID" },
+        "condition":       { "$ref": "#/definitions/ConditionIDType" },
+        "from-pack":       { "$ref": "#/definitions/PackID"},
         "for-type":        { "$ref": "#/definitions/ForType", "description": "DEPRECATED use: for-context" },
         "for-context":     { "$ref": "#/definitions/ForContext" },
         "not-for-type":    { "$ref": "#/definitions/NotForType", "description": "DEPRECATED use: not-for-context" },

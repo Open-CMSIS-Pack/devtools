@@ -202,6 +202,19 @@ RteBoard* RteModel::FindCompatibleBoard(const string& displayName, RteDeviceItem
   return nullptr;
 }
 
+RteComponent* RteModel::FindComponents(const RteItem& item, std::list<RteComponent*>& components) const
+{
+  const string packId = item.GetPackageID(true);
+  if (!packId.empty()) {
+    RtePackage* pack = GetAvailablePackage(item.GetPackageID(true));
+    return pack ? pack->FindComponents(item, components) : nullptr;
+  }
+  for (auto [key, pack] : m_packages) {
+    pack->FindComponents(item, components);
+  }
+  return components.empty()? nullptr : *(components.begin());
+}
+
 RteComponent* RteModel::GetComponent(const string& uniqueID) const
 {
   // look in the APIs

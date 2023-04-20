@@ -191,6 +191,14 @@ public:
   RteBoard* FindCompatibleBoard(const std::string& displayName, RteDeviceItem* device, bool bOnlyMounted = false) const;
 
   /**
+   * @brief collect components matching supplied attributes
+   * @param item reference to RteItem containing component attributes to match
+   * @param components container for components
+   * @return pointer to first component found if any, null otherwise
+  */
+  RteComponent* FindComponents(const RteItem& item, std::list<RteComponent*>& components) const override;
+
+  /**
    * @brief check if this object has no children
    * @return true if this object has no children
   */

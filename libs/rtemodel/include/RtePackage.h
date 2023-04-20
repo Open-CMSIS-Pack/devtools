@@ -224,6 +224,14 @@ public:
   RteItem* GetComponents() const { return m_components; }
 
   /**
+   * @brief collect components matching supplied attributes
+   * @param item reference to RteItem containing component attributes to match
+   * @param components container for components
+   * @return pointer to first component found if any, null otherwise
+  */
+  RteComponent* FindComponents(const RteItem& item, std::list<RteComponent*>& components) const override;
+
+  /**
    * @brief get <apis> element
    * @return pointer to RteItem representing container for APIs
   */

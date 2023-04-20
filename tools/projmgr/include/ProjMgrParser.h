@@ -151,6 +151,8 @@ struct DirectoriesItem {
 */
 struct ComponentItem {
   std::string component;
+  std::string condition;
+  std::string fromPack;
   BuildType build;
   TypeFilter type;
 };

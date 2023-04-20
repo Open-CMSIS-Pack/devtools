@@ -534,6 +534,7 @@ protected:
   bool ProcessToolchain(ContextItem& context);
   bool ProcessPackages(ContextItem& context);
   bool ProcessComponents(ContextItem& context);
+  RteComponent* ProcessComponent(ContextItem& context, ComponentItem& item, RteComponentMap& componentMap);
   bool ProcessGpdsc(ContextItem& context);
   bool ProcessConfigFiles(ContextItem& context);
   bool ProcessComponentFiles(ContextItem& context);

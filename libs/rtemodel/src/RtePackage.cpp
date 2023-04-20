@@ -481,6 +481,13 @@ string RtePackage::GetDownloadUrl(bool withVersion, const char* extension) const
   return url;
 }
 
+RteComponent* RtePackage::FindComponents(const RteItem& item, list<RteComponent*>& components) const
+{
+  if (item.IsApi()) {
+    return m_apis ? m_apis->FindComponents(item, components) : nullptr;
+  }
+  return m_components ? m_components->FindComponents(item, components) : nullptr;
+}
 
 RteApi* RtePackage::GetApi(const map<string, string>& componentAttributes) const
 {

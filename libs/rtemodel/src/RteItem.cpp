@@ -197,7 +197,6 @@ string RteItem::ConstructComponentID(const string& prefix, bool bVariant, bool b
   string id = prefix;
   id += "::";
   id += ConcatenateCclassCgroupCsub(delimiter);
-
   if (bCondition && !GetConditionID().empty())
   {
     id += "(";
@@ -461,12 +460,10 @@ string RteItem::GetTaxonomyDescriptionID(const XmlItem& attributes)
 string RteItem::GetPackageID(bool withVersion) const
 {
   RtePackage* package = GetPackage();
-  if (package == this) {
+  if (!package || package == this) {
     return RtePackage::GetPackageIDfromAttributes(*this, withVersion);
-  } else if (package) {
-    return package->GetPackageID(withVersion);
   }
-  return EMPTY_STRING;
+  return package->GetPackageID(withVersion);
 }
 
 string RteItem::GetPackagePath(bool withVersion) const
@@ -504,6 +501,28 @@ bool RteItem::MatchesHost(const string& hostType) const
   const string& host = GetAttribute("host");
   return (host.empty() || host == "all" ||
           host == (hostType.empty() ? CrossPlatformUtils::GetHostType() : hostType));
+}
+
+RteComponent* RteItem::FindComponents(const RteItem& item, list<RteComponent*>& components) const
+{
+  for (auto child : GetChildren()) {
+    if (child->GetTag() == "bundle" && item.GetCbundleName() == child->GetCbundleName()) {
+      return child->FindComponents(item, components);
+    }
+    RteComponent* c = dynamic_cast<RteComponent*>(child);
+    if (c && c->MatchComponent(item)) {
+      components.push_back(c);
+    }
+  }
+  return components.empty() ? nullptr :  *(components.begin());
+}
+
+bool RteItem::MatchComponent(const RteItem& item) const
+{
+  if (!item.GetConditionID().empty() && item.GetConditionID() != GetConditionID()) {
+    return false;
+  }
+  return MatchComponentAttributes(item.GetAttributes());
 }
 
 
@@ -868,7 +887,7 @@ bool RteItem::Validate()
   m_bValid = true; // assume valid
   const string& conditionId = GetConditionID();
   if (!conditionId.empty()) {
-    if (!GetCondition(conditionId)) {
+    if (!GetCondition(conditionId) && GetPackage()) {
       string msg = " condition '";
       msg += conditionId;
       msg += "' not found";

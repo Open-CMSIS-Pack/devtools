@@ -68,6 +68,67 @@ TEST(RteModelTest, LoadPacks) {
   EXPECT_EQ(board->GetAlgorithms(algos).size(), 0);
   mems.clear();
   EXPECT_EQ(board->GetMemories(mems).size(), 2);
+  // find components
+  RteComponentInstance item(nullptr);
+  item.SetTag("component");
+  item.SetAttributes({ {"Cclass","RteTest" },
+                       {"Cgroup", "Check" },
+                       {"Csub", "Missing"},
+                       {"Cversion","0.9.9"},
+                       {"condition","Missing"}});
+  RtePackageInstanceInfo packInfo(nullptr, "ARM.RteTest.0.1.0");
+  item.SetPackageAttributes(packInfo);
+  list<RteComponent*> components;
+  RteComponent* c = rteModel->FindComponents(item, components);
+  EXPECT_EQ(components.size(), 1);
+  EXPECT_TRUE(c != nullptr);
+  components.clear();
+  packInfo.SetPackId("ARM.RteTest");
+  item.SetPackageAttributes(packInfo);
+  c = rteModel->FindComponents(item, components);
+  EXPECT_EQ(components.size(), 1);
+  EXPECT_TRUE(c != nullptr);
+
+  components.clear();
+  packInfo.SetPackId("ARM.RteTest");
+  item.SetPackageAttributes(packInfo);
+  item.RemoveAttribute("Csub");
+  item.RemoveAttribute("Cversion");
+  item.RemoveAttribute("condition");
+  c = rteModel->FindComponents(item, components);
+  EXPECT_EQ(components.size(), 3);
+  ASSERT_TRUE(c != nullptr);
+  EXPECT_EQ(c->GetCsubName(), "Incompatible"); // first with such attributes
+
+  components.clear();
+  item.SetAttribute("Cclass", "RteTestBundle");
+  item.SetAttribute("Cgroup", "G0");
+  c = rteModel->FindComponents(item, components);
+  EXPECT_EQ(components.size(), 1);
+  ASSERT_TRUE(c != nullptr);
+  EXPECT_EQ(c->GetVersionString(), "0.9.0");
+
+  components.clear();
+  item.SetAttribute("Cbundle", "BundleTwo");
+  item.SetAttribute("Cgroup", "G0");
+  c = rteModel->FindComponents(item, components);
+  EXPECT_EQ(components.size(), 1);
+  ASSERT_TRUE(c != nullptr);
+  EXPECT_EQ(c->GetVersionString(), "2.0.0");
+
+  components.clear();
+  item.SetAttribute("Cbundle", "BundleNone");
+  c = rteModel->FindComponents(item, components);
+  EXPECT_EQ(components.size(), 0);
+  EXPECT_FALSE(c != nullptr);
+
+  components.clear();
+  item.SetAttribute("Cbundle", "BundleTwo");
+  packInfo.SetPackId("ARM.RteTest.1.0");
+  item.SetPackageAttributes(packInfo);
+  c = rteModel->FindComponents(item, components);
+  EXPECT_EQ(components.size(), 0);
+  EXPECT_FALSE(c != nullptr);
 }
 
 class RteModelPrjTest : public RteModelTestConfig
@@ -700,6 +761,13 @@ TEST_F(RteModelPrjTest, LoadCprjM4_Board) {
   const string CompConfig_1_Base_Version = rteDir + "RteTest/" + "ComponentLevelConfig_1.h.base@0.0.1";
   EXPECT_TRUE(RteFsUtils::Exists(CompConfig_0_Base_Version));
   EXPECT_TRUE(RteFsUtils::Exists(CompConfig_1_Base_Version));
+
+  // expect enforced component is resolved
+  RteComponentInstance* ci = activeCprjProject->GetComponentInstance("ARM::Board.Test.Rev2(BoardTest2):2.2.2[]");
+  ASSERT_TRUE(ci != nullptr);
+  RteComponent* c = ci->GetResolvedComponent(activeTarget->GetName());
+  ASSERT_TRUE(c != nullptr);
+  EXPECT_FALSE(activeTarget->IsComponentFiltered(c));
 
   error_code ec;
   const fs::perms write_mask = fs::perms::owner_write | fs::perms::group_write | fs::perms::others_write;
