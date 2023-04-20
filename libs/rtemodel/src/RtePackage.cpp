@@ -1025,8 +1025,9 @@ const string& RtePackageInfo::GetReleaseAttributeValue(const string& attribute, 
 
 void RtePackageInfo::Init(RtePackage* pack, const string& version) {
   SetAttributes(pack->GetAttributes());
+  AddAttribute("description", pack->GetDescription());
   if (!version.empty()) {
-    SetAttribute("version", version.c_str());
+    AddAttribute("version", version);
   }
   m_ID = ConstructID();
   m_bValid = true;

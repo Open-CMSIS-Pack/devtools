@@ -61,6 +61,13 @@ TEST(RteModelTest, LoadPacks) {
   list<RteItem*> mems;
   EXPECT_EQ(board->GetMemories(mems).size(), 2);
 
+  RtePackage* pack = board->GetPackage();
+  ASSERT_TRUE(pack != nullptr);
+  RtePackageInfo pi(pack);
+  EXPECT_TRUE(pi.HasAttribute("description"));
+  EXPECT_EQ(pi.GetDescription(), pack->GetDescription());
+  EXPECT_EQ(pi.GetID(), "ARM.RteTestBoard.0.1.0");
+
   board = rteModel->FindBoard("RteTest NoMCU board");
   ASSERT_NE(board, nullptr);
   EXPECT_FALSE(board->HasMCU());
