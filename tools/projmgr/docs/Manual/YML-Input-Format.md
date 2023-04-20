@@ -684,7 +684,6 @@ generator-dir:
   Cube2: ./MyCubeFiles                   # relative path to the *.yml file that contains this setting
 ```
 
-
 ## Toolchain Options
 
 The following code translation options may be used at various places such as:
