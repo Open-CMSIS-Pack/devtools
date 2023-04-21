@@ -143,6 +143,7 @@ protected:
   std::string m_linkerCMscGlobal;
   std::string m_linkerCxxMscGlobal;
   std::string m_linkerScript;
+  std::string m_linkerRegionsFile;
   std::string m_toolchain;
   std::string m_toolchainVersion;
   std::string m_toolchainConfig;

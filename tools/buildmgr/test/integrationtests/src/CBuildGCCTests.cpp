@@ -287,6 +287,15 @@ TEST_F(CBuildGCCTests, Build_GCC_CustomRTE) {
   CheckRteDir(param, "Custom/RTEDIR");
 }
 
+// Validate project compilation with linker script pre-processing
+TEST_F(CBuildGCCTests, LinkerPreProcessing) {
+  TestParam param = { "GCC/LinkerPreProcessing", "MyProject" };
+
+  RunCBuildScriptClean(param);
+  RunCBuildScript(param);
+  CheckCMakeLists(param);
+}
+
 // Validate Branch Protection
 // TODO: Enable this test case after GCC 12.2.0 release and support completion
 /*

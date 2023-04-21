@@ -1109,6 +1109,14 @@ bool CbuildModel::EvalFlags() {
           }
         }
       }
+      m_linkerRegionsFile = ldflags->GetAttribute("regions");
+      if (!m_linkerRegionsFile.empty()) {
+        RteFsUtils::NormalizePath(m_linkerRegionsFile, m_prjFolder);
+        if (!RteFsUtils::Exists(m_linkerRegionsFile)) {
+          LogMsg("M204", PATH(m_linkerRegionsFile));
+          return false;
+        }
+      }
     }
     if (ldcflags != NULL)
     {

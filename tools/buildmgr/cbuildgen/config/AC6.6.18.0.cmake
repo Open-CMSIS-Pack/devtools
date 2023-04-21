@@ -12,6 +12,7 @@ set(TOOLCHAIN_VERSION "6.18.0")
 set(AS "armasm")
 set(CC "armclang")
 set(CXX "armclang")
+set(CPP "armclang")
 set(OC "fromelf")
 
 if(DEFINED REGISTERED_TOOLCHAIN_ROOT)
@@ -26,6 +27,7 @@ if(DEFINED TOOLCHAIN_ROOT AND NOT TOOLCHAIN_ROOT STREQUAL "")
   set(AS ${TOOLCHAIN_ROOT}/${AS}${EXT})
   set(CC ${TOOLCHAIN_ROOT}/${CC}${EXT})
   set(CXX ${TOOLCHAIN_ROOT}/${CXX}${EXT})
+  set(CPP ${TOOLCHAIN_ROOT}/${CPP}${EXT})
   set(OC ${TOOLCHAIN_ROOT}/${OC}${EXT})
 endif()
 
@@ -535,6 +537,12 @@ elseif(BYTE_ORDER STREQUAL "Big-endian")
 endif()
 set(AS_ARM_BYTE_ORDER "${AS_BYTE_ORDER}")
 set(AS_GNU_BYTE_ORDER "${AS_BYTE_ORDER}")
+
+# C Pre-Processor
+
+set(CPP_FLAGS "-E --target=arm-arm-none-eabi ${ARMCLANG_CPU} -xc")
+set(CPP_ARGS_LD_SCRIPT "${CPP_FLAGS} -include \"${LD_REGIONS}\" \"${LD_SCRIPT}\" -o \"${LD_SCRIPT_PP}\"")
+separate_arguments(CPP_ARGS_LD_SCRIPT NATIVE_COMMAND ${CPP_ARGS_LD_SCRIPT})
 
 # C Compiler
 
