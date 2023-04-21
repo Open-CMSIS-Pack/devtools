@@ -69,7 +69,7 @@ A typical directory structure of a `csolution` based application that uses commo
 
 `build-idx:`                                       | Content
 :--------------------------------------------------|:------------------------------------
-&nbsp;&nbsp; `generated-by:`                       | ToDo: Reference to csolution tool along with version information used to generate this application.
+&nbsp;&nbsp; `generated-by:`                       | Reference to csolution tool along with version information used to generate this application.
 &nbsp;&nbsp; `cdefault:`                           | Relative path and name of the [`*.cdefault.yml`](YML-Input-Format.md#default) input file used to generate this application.
 &nbsp;&nbsp; `csolution:`                          | Relative path and name of the [`*.csolution.yml`](YML-Input-Format.md#solution) input file used to generate this application.
 &nbsp;&nbsp; [`cprojects:`](#cprojects)            | List of `*.cproject.yml` and `*.clayer.yml` input files used to generate this application.
@@ -80,7 +80,7 @@ A typical directory structure of a `csolution` based application that uses commo
 
 ```yml  
 build-idx:
-  generated-by: csolution 1.4.0                # ToDo
+  generated-by: csolution 1.4.0
   cdefault: HelloWorld.cdefault.yml
   csolution: HelloWorld.csolution.yml
   cprojects:
@@ -102,7 +102,7 @@ The `cbuild.yml` file is structured into several sections.  The top-level struct
 
 `build:`                                           | Content
 :--------------------------------------------------|:------------------------------------
-&nbsp;&nbsp; `generated-by:`                       | ToDo: Reference to csolution tool along with version information used to generate this application.
+&nbsp;&nbsp; `generated-by:`                       | Reference to csolution tool along with version information used to generate this application.
 &nbsp;&nbsp; `context:`                            | Project [context](YML-Input-Format.md#context-name-conventions) of this build description.
 &nbsp;&nbsp; `compiler:`                           | [Compiler toolchain](YML-Input-Format.md#compiler) used for code generation.
 &nbsp;&nbsp; `board:`                              | [Board name](YML-Input-Format.md#board) used for this context.

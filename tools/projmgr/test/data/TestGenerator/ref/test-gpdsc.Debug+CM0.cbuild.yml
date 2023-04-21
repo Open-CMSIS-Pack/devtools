@@ -1,4 +1,5 @@
 build:
+  generated-by: csolution version 1.6.0
   solution: ../data/TestGenerator/test-gpdsc.csolution.yml
   project: ../data/TestGenerator/test-gpdsc.cproject.yml
   context: test-gpdsc.Debug+CM0

@@ -1,9 +1,10 @@
 /*
- * Copyright (c) 2020-2022 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2023 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "ProductInfo.h"
 #include "ProjMgrLogger.h"
 #include "ProjMgrYamlEmitter.h"
 #include "ProjMgrYamlParser.h"
@@ -48,10 +49,14 @@ private:
   void SetNodeValue(YAML::Node node, const string& value);
   void SetNodeValue(YAML::Node node, const vector<string>& vec);
   const string FormatPath(const string& original, const string& directory);
+  bool CompareFile(const string& filename, const YAML::Node& rootNode);
+  bool CompareNodes(const YAML::Node& lhs, const YAML::Node& rhs);
 };
 
 ProjMgrYamlCbuild::ProjMgrYamlCbuild(YAML::Node node, const vector<ContextItem*> processedContexts, ProjMgrParser& parser, const string& directory) {
   error_code ec;
+  SetNodeValue(node[YAML_GENERATED_BY], ORIGINAL_FILENAME + string(" version ") + VERSION_STRING);
+
   if (!parser.GetCdefault().path.empty()) {
     const string& cdefaultFilename = fs::relative(parser.GetCdefault().path, directory, ec).generic_string();
     SetNodeValue(node[YAML_CDEFAULT], cdefaultFilename);
@@ -107,6 +112,7 @@ ProjMgrYamlCbuild::ProjMgrYamlCbuild(YAML::Node node, const ContextItem* context
 }
 
 void ProjMgrYamlCbuild::SetContextNode(YAML::Node contextNode, const ContextItem* context) {
+  SetNodeValue(contextNode[YAML_GENERATED_BY], ORIGINAL_FILENAME + string(" version ") + VERSION_STRING);
   SetNodeValue(contextNode[YAML_SOLUTION], FormatPath(context->csolution->path, context->directories.cprj));
   SetNodeValue(contextNode[YAML_PROJECT], FormatPath(context->cproject->path, context->directories.cprj));
   SetNodeValue(contextNode[YAML_CONTEXT], context->name);
@@ -388,18 +394,54 @@ const string ProjMgrYamlCbuild::FormatPath(const string& original, const string&
   return path;
 }
 
-bool ProjMgrYamlEmitter::GenerateCbuildIndex(ProjMgrParser& parser, const vector<ContextItem*> contexts, const string& outputDir) {
+bool ProjMgrYamlCbuild::CompareFile(const string& filename, const YAML::Node& rootNode) {
+  if (!RteFsUtils::Exists(filename)) {
+    return false;
+  }
+  const YAML::Node& yamlRoot = YAML::LoadFile(filename);
+  return CompareNodes(yamlRoot, rootNode);
+}
 
+bool ProjMgrYamlCbuild::CompareNodes(const YAML::Node& lhs, const YAML::Node& rhs) {
+  auto eraseGenNode = [](const string& inStr) {
+    size_t startIndex, endIndex;
+    string outStr = inStr;
+    startIndex = outStr.find(YAML_GENERATED_BY, 0);
+    endIndex = outStr.find('\n', startIndex);
+    if (startIndex != std::string::npos && endIndex != std::string::npos) {
+      outStr = outStr.erase(startIndex, endIndex - startIndex);
+    }
+    return outStr;
+  };
+
+  YAML::Emitter lhsEmitter, rhsEmitter;
+  string lhsData, rhsData;
+
+  // convert nodes into string
+  lhsEmitter << lhs;
+  rhsEmitter << rhs;
+
+  // remove generated-by node from the string
+  lhsData = eraseGenNode(lhsEmitter.c_str());
+  rhsData = eraseGenNode(rhsEmitter.c_str());
+
+  return (lhsData == rhsData) ? true : false;
+}
+
+bool ProjMgrYamlEmitter::GenerateCbuildIndex(ProjMgrParser& parser, const vector<ContextItem*> contexts, const string& outputDir) {
   // generate cbuild-idx.yml
   const string& directory = outputDir.empty() ? parser.GetCsolution().directory : RteFsUtils::AbsolutePath(outputDir).generic_string();
   const string& filename = directory + "/" + parser.GetCsolution().name + ".cbuild-idx.yml";
-  ofstream fileStream(filename);
-  if (!fileStream) {
-    ProjMgrLogger::Error(filename, "file cannot be written");
-    return false;
-  } else {
-    YAML::Node rootNode;
-    ProjMgrYamlCbuild cbuild(rootNode[YAML_BUILD_IDX], contexts, parser, directory);
+
+  YAML::Node rootNode;
+  ProjMgrYamlCbuild cbuild(rootNode[YAML_BUILD_IDX], contexts, parser, directory);
+
+  if (!cbuild.CompareFile(filename, rootNode)) {
+    ofstream fileStream(filename);
+    if (!fileStream) {
+      ProjMgrLogger::Error(filename, "file cannot be written");
+      return false;
+    }
     YAML::Emitter emitter;
     emitter << rootNode;
     fileStream << emitter.c_str();
@@ -407,6 +449,9 @@ bool ProjMgrYamlEmitter::GenerateCbuildIndex(ProjMgrParser& parser, const vector
     fileStream << flush;
     fileStream.close();
     ProjMgrLogger::Info(filename, "file generated successfully");
+  }
+  else {
+    ProjMgrLogger::Info(filename, "file is already up-to-date");
   }
   return true;
 }
@@ -419,19 +464,26 @@ bool ProjMgrYamlEmitter::GenerateCbuild(ContextItem* context) {
   // Make sure $G (generator input file) is up to date
   context->rteActiveTarget->SetGeneratorInputFile(filename);
 
-  ofstream fileStream(filename);
-  if (!fileStream) {
-    ProjMgrLogger::Error(filename, "file cannot be written");
-    return false;
-  }
   YAML::Node rootNode;
   ProjMgrYamlCbuild cbuild(rootNode[YAML_BUILD], context);
-  YAML::Emitter emitter;
-  emitter << rootNode;
-  fileStream << emitter.c_str();
-  fileStream << endl;
-  fileStream << flush;
-  fileStream.close();
-  ProjMgrLogger::Info(filename, "file generated successfully");
+
+  // Compare yaml contents
+  if (!cbuild.CompareFile(filename, rootNode)) {
+    ofstream fileStream(filename);
+    if (!fileStream) {
+      ProjMgrLogger::Error(filename, "file cannot be written");
+      return false;
+    }
+    YAML::Emitter emitter;
+    emitter << rootNode;
+    fileStream << emitter.c_str();
+    fileStream << endl;
+    fileStream << flush;
+    fileStream.close();
+    ProjMgrLogger::Info(filename, "file generated successfully");
+  }
+  else {
+    ProjMgrLogger::Info(filename, "file is already up-to-date");
+  }
   return true;
 }

@@ -1,4 +1,5 @@
 build:
+  generated-by: csolution version 1.6.0
   solution: ../genfiles.csolution.yml
   project: TestProject3_1.cproject.yml
   context: TestProject3_1.Debug+TypeA

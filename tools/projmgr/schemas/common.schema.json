@@ -676,6 +676,10 @@
       "description": "The lock info that describes the resolved state of contexts and also can be used as input for generators",
       "type": "object",
       "properties": {
+        "generated-by": {
+          "type": "string",
+          "description": "Tool name along with version information used to generate this application"
+        },
         "solution": {
           "type": "string",
           "description": "Relative path to the csolution file for this context"
