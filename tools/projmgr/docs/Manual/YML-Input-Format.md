@@ -1314,8 +1314,8 @@ The following example uses three projects `Demo`, `TFM` and `Boot`. The project 
 It is possible to include or exclude *items* of a [*list node*] in the build process.
 
 - [`for-compiler:`](#for-compiler) includes *items* only for a compiler toolchain.
-- [`for-context:`](#for-context) includes *items* only for a *context* list.
-- [`not-for-context:`](#not-for-context) excludes *items* for a *context* list.
+- [`for-context:`](#for-context) includes *items* only for a [*context*](#context-name-conventions) list.
+- [`not-for-context:`](#not-for-context) excludes *items* for a [*context*](#context-name-conventions) list.
 
 > **Note:**
 > 
@@ -1338,7 +1338,7 @@ for-compiler:                        # add item
 
 ### `for-context:`
 
-A *context* list that adds a list-node for specific `target-types:` and/or `build-types:`.
+A [*context*](#context-name-conventions) list that adds a list-node for specific `target-types:` and/or `build-types:`.
 
 > **NOTE:**
 > 
@@ -1346,7 +1346,7 @@ A *context* list that adds a list-node for specific `target-types:` and/or `buil
 
 ### `not-for-context:`
 
-A *context* list that removes a list-node for specific `target-types:` and/or `build-types:`.
+A [*context*](#context-name-conventions) list that removes a list-node for specific `target-types:` and/or `build-types:`.
 
 > **NOTE:**
 > 
@@ -1388,7 +1388,7 @@ List Node                                  | Description
 [`- setup:`](#setups)                      | At `setups:` level it is define toolchain specific options that apply to the whole project.
 [`- file:`](#files)                        | At `files:` level it is possible to control inclusion of a file.
 
-The inclusion of a *list node* is processed for a given project *context* respecting its hierarchy from top to bottom:
+The inclusion of a *list node* is processed for a given project [*context*](#context-name-conventions) respecting its hierarchy from top to bottom:
 
 `project` --> `layer` --> `component`/`group` --> `file`
 
