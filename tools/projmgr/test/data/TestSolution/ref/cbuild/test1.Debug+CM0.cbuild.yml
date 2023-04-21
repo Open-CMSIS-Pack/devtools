@@ -1,4 +1,5 @@
 build:
+  generated-by: csolution version 1.6.0
   solution: ../data/TestSolution/test.csolution.yml
   project: ../data/TestSolution/TestProject1/test1.cproject.yml
   context: test1.Debug+CM0

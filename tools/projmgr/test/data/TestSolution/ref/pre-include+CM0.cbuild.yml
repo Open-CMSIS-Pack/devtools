@@ -1,4 +1,5 @@
 build:
+  generated-by: csolution version 1.6.0
   solution: ../data/TestSolution/pre-include.csolution.yml
   project: ../data/TestSolution/pre-include.cproject.yml
   context: pre-include+CM0

@@ -1,4 +1,5 @@
 build:
+  generated-by: csolution version 1.6.0
   solution: ../data/TestSolution/outputFiles.csolution.yml
   project: ../data/TestSolution/outputFiles.cproject.yml
   context: outputFiles.Debug+Target

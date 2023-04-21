@@ -1,4 +1,5 @@
 build-idx:
+  generated-by: csolution version 1.6.0
   csolution: ../data/TestGenerator/test-gpdsc.csolution.yml
   cprojects:
     - cproject: ../data/TestGenerator/test-gpdsc.cproject.yml

@@ -139,7 +139,9 @@ void ProjMgrTestEnv::CompareFile(const string& file1, const string& file2) {
       if ((!l1.empty() && (l1.find("timestamp=") != string::npos)) && (!l2.empty() && (l2.find("timestamp=") != string::npos))) {
         continue;
       }
-
+      if ((!l1.empty() && (l1.find("generated-by") != string::npos)) && (!l2.empty() && (l2.find("generated-by") != string::npos))) {
+        continue;
+      }
       FAIL() << "error: " << file1 << " is different from " << file2;
     }
   }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2023 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -61,6 +61,7 @@ static constexpr const char* YAML_FORCONTEXT = "for-context";
 static constexpr const char* YAML_FORDEVICE = "for-device";
 static constexpr const char* YAML_FORTYPE = "for-type";
 static constexpr const char* YAML_FPU = "fpu";
+static constexpr const char* YAML_GENERATED_BY = "generated-by";
 static constexpr const char* YAML_GENERATOR = "generator";
 static constexpr const char* YAML_GENERATORS = "generators";
 static constexpr const char* YAML_GPDSC = "gpdsc";
