@@ -14,6 +14,7 @@ The following chapter explains the YAML CBuild format that describes how to buil
   - [CBuild-specific Nodes](#cbuild-specific-nodes)
     - [`licenses:`](#licenses)
     - [`cprojects:`](#cprojects)
+    - [`context-set:`](#context-set)
     - [`packs:`](#packs)
     - [`generators:`](#generators)
   - [Source File Management](#source-file-management)
@@ -77,6 +78,7 @@ A typical directory structure of a `csolution` based application that uses commo
 &nbsp;&nbsp; [`cprojects:`](#cprojects)            | List of `*.cproject.yml` and `*.clayer.yml` input files used to generate this application.
 &nbsp;&nbsp; [`licenses:`](#licenses)              | ToDo: List of software license agreements used by this application.
 &nbsp;&nbsp; `cbuilds:`                            | List of `*.cbuild.yml` output files that are generated for this application.
+&nbsp;&nbsp; [`out:`](#out)                        | List of output files that are generated for this application.
 
 **Example:**
 
@@ -271,6 +273,34 @@ The `cprojects:` node lists all `*.cproject.yml` input files along with `*.claye
         - clayer: AWS_MQTT_MutualAuth_SW_Framework/Socket/WiFi/Socket.clayer.yml
         - clayer: AWS_MQTT_MutualAuth_SW_Framework/Socket/VSocket/Socket.clayer.yml
              :
+```
+
+### `context-set:`
+
+**ToDo: Proposal**
+
+The `context-set:` node contains a list of generated files.  Note that this depends on the `--context` parameters that are passed to `csolution`.
+
+The example below shows the content of the `DualCore` example with the following `csolution` invocation:
+
+```txt
+csolution convert HelloWorld.csolution.yml --context HelloWorld_cm0plus.Debug+FRDM-K32L3A6 --context -HelloWorld_cm4.Release+FRDM-K32L3A6 
+```
+
+```yml
+  context-set:
+    - context: HelloWorld_cm4.Release+FRDM-K32L3A6 
+      bin: ./out/FRDM-K32L3A6/HelloWorld_cm4.bin
+      hex: ./out/FRDM-K32L3A6/HelloWorld_cm4.hex
+      elf: ./out/FRDM-K32L3A6/HelloWorld_cm4.axf
+      map: ./out/FRDM-K32L3A6/HelloWorld_cm4.map
+      log: ./out/FRDM-K32L3A6/HelloWorld_cm4.Release+FRDM-K32L3A6.log
+    - context: HelloWorld_cm0plus.Debug+FRDM-K32L3A6 
+      bin: ./out/FRDM-K32L3A6/HelloWorld_cm0plus.bin
+      hex: ./out/FRDM-K32L3A6/HelloWorld_cm0plus.hex
+      elf: ./out/FRDM-K32L3A6/HelloWorld_cm0plus.axf
+      map: ./out/FRDM-K32L3A6/HelloWorld_cm0plus.map
+      log: ./out/FRDM-K32L3A6/HelloWorld_cm0plus.Debug+FRDM-K32L3A6.log
 ```
 
 ### `packs:`
