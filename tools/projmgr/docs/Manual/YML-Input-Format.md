@@ -304,13 +304,13 @@ Access Sequence                                | Description
 `$Bname$`                                      | [Bname](#board-name-conventions) of the selected board as specified in the [board](#board) node.
 `$Dname$`                                      | [Dname](#device-name-conventions) of the selected device as specified in the [`device:`](#device) node.
 `$Pname$`                                      | [Pname](#device-name-conventions) of the selected device as specified in the [`device:`](#device) node.
-`$BuildType$`                                  | [Build-type](#build-types) name of the currently process project.
-`$TargetType$`                                 | [Target-type](#target-types) name of the currently process project.
+`$BuildType$`                                  | [Build-type](#build-types) name of the currently processed project.
+`$TargetType$`                                 | [Target-type](#target-types) name of the currently processed project.
 `$Compiler$`                                   | [Compiler](#compiler) name of the compiler used in this project context as specified in the [compiler](#compiler) node.
 **YML Input**                                  | **Access to YML Input Directories and Files**       
 NEW: `$Solution$`                              | Solution name (base name of the *.csolution.yml file).
 NEW: `$SolutionDir$`                           | Path to the directory of the current processed `csolution.yml` file.
-`$Project$`                                    | Project name (base name of the *.cproject.yml file) of the currently process project.
+`$Project$`                                    | Project name (base name of the *.cproject.yml file) of the currently processed project.
 NEW: `$ProjectDir(context)$`                   | Path to the directory of a related `cproject.yml` file.
 NEW: `$ProjectDir$`                            | Path to the directory of the current processed `cproject.yml` file.
 DEPRECATE: `$CProject(context)$`               | Path to the directory of a related `cproject.yml` file.

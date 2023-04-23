@@ -78,7 +78,7 @@ A typical directory structure of a `csolution` based application that uses commo
 &nbsp;&nbsp; [`cprojects:`](#cprojects)            | List of `*.cproject.yml` and `*.clayer.yml` input files used to generate this application.
 &nbsp;&nbsp; [`licenses:`](#licenses)              | ToDo: List of software license agreements used by this application.
 &nbsp;&nbsp; `cbuilds:`                            | List of `*.cbuild.yml` output files that are generated for this application.
-&nbsp;&nbsp; [`out:`](#out)                        | List of output files that are generated for this application.
+&nbsp;&nbsp; [`context-set:`](#context-set)        | Selected context that is generated for this application.
 
 **Example:**
 
@@ -277,7 +277,7 @@ The `cprojects:` node lists all `*.cproject.yml` input files along with `*.claye
 
 ### `context-set:`
 
-**ToDo: Proposal**
+**ToDo: Proposal (would replace cbuild: node)**
 
 The `context-set:` node contains a list of generated files.  Note that this depends on the `--context` parameters that are passed to `csolution`.
 
