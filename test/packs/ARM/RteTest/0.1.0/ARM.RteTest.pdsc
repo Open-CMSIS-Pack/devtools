@@ -44,6 +44,13 @@
     <condition id="Missing">
       <require Cclass="RteTest" Cgroup="Dependency" Csub="Missing"/>
     </condition>
+    <condition id="GlobalFile">
+      <require Cclass="RteTest" Cgroup="GlobalFile"/>
+    </condition>      
+    <condition id="AcceptDependency">
+      <accept condition="GlobalFile"/>
+      <accept Cclass="RteTest" Cgroup="LocalFile"/>
+    </condition>
   </conditions>
 
   <apis>
@@ -201,6 +208,21 @@
         <file category="other" name="Dummy/DummyFile.txt"/>
       </files>
     </component>
+
+    <component Cclass="RteTest" Cgroup="AcceptDependency" condition="AcceptDependency" Cversion="0.9.9">
+      <description>Component that has accept dependencies</description>
+      <files>
+        <file category="other" name="Dummy/DummyFile.txt"/>
+      </files>
+    </component>
+
+    <component Cclass="RteTest" Cgroup="RequireDependency"  condition="GlobalFile" Cversion="0.9.9">
+      <description>Component that has only require dependencies</description>
+      <files>
+        <file category="other" name="Dummy/DummyFile.txt"/>
+      </files>
+    </component>
+
 
     <component Cclass="RteTest" Cgroup="Dependency" Csub="Incompatible_component" Cversion="0.9.9">
       <description>Component that is not compatible to another</description>
