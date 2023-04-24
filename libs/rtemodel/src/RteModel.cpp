@@ -131,7 +131,7 @@ RtePackage* RteModel::GetAvailablePackage(const string& id) const
   if (!pack)
     return nullptr;
   string packVer = RtePackage::VersionFromId(id);
-  if (VersionCmp::Compare(pack->GetVersionString(), packVer) > 0) {
+  if (VersionCmp::Compare(pack->GetVersionString(), packVer) >= 0) {
     return pack;
   }
   return nullptr;
@@ -206,7 +206,7 @@ RteComponent* RteModel::FindComponents(const RteItem& item, std::list<RteCompone
 {
   const string packId = item.GetPackageID(true);
   if (!packId.empty()) {
-    RtePackage* pack = GetAvailablePackage(item.GetPackageID(true));
+    RtePackage* pack = GetAvailablePackage(packId);
     return pack ? pack->FindComponents(item, components) : nullptr;
   }
   for (auto [key, pack] : m_packages) {

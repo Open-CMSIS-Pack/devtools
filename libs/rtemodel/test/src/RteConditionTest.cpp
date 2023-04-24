@@ -43,7 +43,7 @@ TEST(RteConditionValidateTest, Validate)
   EXPECT_FALSE(deviceExpression.Validate());
 }
 
-TEST_F(RteConditionTest, MissingIgnoredFulfilled) {
+TEST_F(RteConditionTest, MissingIgnoredFulfilledSelectable) {
   // load project to get a working target and condition contexts
   RteKernelSlim rteKernel;
   rteKernel.SetCmsisPackRoot(RteModelTestConfig::CMSIS_PACK_ROOT);
@@ -53,10 +53,59 @@ TEST_F(RteConditionTest, MissingIgnoredFulfilled) {
   ASSERT_NE(activeTarget, nullptr);
   RteConditionContext* filterContext = activeTarget->GetFilterContext();
   ASSERT_NE(filterContext, nullptr);
+  RteModel* rteModel = activeTarget->GetFilteredModel();
+  ASSERT_NE(rteModel, nullptr);
 
   RteDependencySolver* depSolver = activeTarget->GetDependencySolver();
   ASSERT_NE(depSolver, nullptr);
+  EXPECT_EQ(depSolver->GetConditionResult(), RteItem::FULFILLED);
+  // select component to check dependencies
+  RteComponentInstance item(nullptr);
+  item.SetTag("component");
+  item.SetAttributes({ {"Cclass","RteTest" },
+                       {"Cgroup", "AcceptDependency" },
+                       {"Cversion","0.9.9"},
+                       {"condition","AcceptDependency"} });
+  RtePackageInstanceInfo packInfo(nullptr, "ARM.RteTest.0.1.0");
+  item.SetPackageAttributes(packInfo);
+  list<RteComponent*> components;
+  RteComponent* c = rteModel->FindComponents(item, components);
+  ASSERT_NE(c, nullptr);
+  activeTarget->SelectComponent(c, 1, true);
+  EXPECT_EQ(depSolver->GetConditionResult(), RteItem::FULFILLED); // required dependency already selected
+  // manually deselect components satisfying dependency
+  item.SetAttributes({ {"Cclass","RteTest" },
+                       {"Cgroup", "LocalFile" },
+                       {"Cversion","0.0.3"} });
+  components.clear();
+  c = rteModel->FindComponents(item, components);
+  ASSERT_NE(c, nullptr);
+  activeTarget->SelectComponent(c, 0, true);
+  EXPECT_EQ(depSolver->GetConditionResult(), RteItem::FULFILLED); // still fulfilled
+  item.SetAttribute("Cgroup", "GlobalFile"),
+  components.clear();
+  c = rteModel->FindComponents(item, components);
+  ASSERT_NE(c, nullptr);
+  activeTarget->SelectComponent(c, 0, true);
+  EXPECT_EQ(depSolver->GetConditionResult(), RteItem::SELECTABLE);
 
+  // try to auto-resolve => no change (multiple variants for "AcceptDependency")
+  EXPECT_EQ(depSolver->ResolveDependencies(), RteItem::SELECTABLE);
+
+  // select component that directly depends on global file
+  item.SetAttributes({ {"Cclass","RteTest" },
+                     {"Cgroup", "RequireDependency" },
+                     {"Cversion","0.9.9"},
+                     {"condition", "GlobalFile"}});
+  components.clear();
+  c = rteModel->FindComponents(item, components);
+  ASSERT_NE(c, nullptr);
+  activeTarget->SelectComponent(c, 1, true);
+  EXPECT_EQ(depSolver->GetConditionResult(), RteItem::SELECTABLE);
+  // try to resolve = > FULFILED (multiple variants for "AcceptDependency" component, but only one for "RequireDependency")
+  EXPECT_EQ(depSolver->ResolveDependencies(), RteItem::FULFILLED);
+
+  // evaluate other condition  possibilities
   RteRequireExpression deviceExpression(nullptr);
   deviceExpression.AddAttribute("Dname", activeTarget->GetDeviceName());
   deviceExpression.ConstructID();

@@ -483,6 +483,19 @@ public:
   */
   std::string GetOutputMessage() const;
 
+  /**
+   * @brief check if this result contains multiple selection options due to parallel accept expressions
+   * @return true if multiple
+  */
+  bool IsMultiple() const {return m_bMultiple;}
+
+  /**
+   * @brief set this result contains multiple selection options due to parallel accept expressions
+   * @return set/reset flag that the result contains multiple selection options due to parallel accept expressions
+  */
+  void SetMultiple(bool bMuiltiple) { m_bMultiple = bMuiltiple; }
+
+
 public:
   /**
    * @brief add RteComponentAggregate to list of potential candidates to resolve a dependency
@@ -510,6 +523,7 @@ public:
   static RteItem::ConditionResult GetResult(const RteItem* item, const std::map<const RteItem*, RteDependencyResult>& results);
 
 private:
+  bool m_bMultiple; // flag indication that parallel accept expressions also contain components to select
   const RteItem* m_item; // an originating component, API, condition or condition expression
   RteItem::ConditionResult m_result; // overall condition result of this item and sub-items
   std::set<RteComponentAggregate*> m_aggregates; // multiple components in API, available or incompatible in expressions

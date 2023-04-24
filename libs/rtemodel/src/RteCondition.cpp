@@ -446,15 +446,28 @@ RteItem::ConditionResult RteCondition::GetDepsResult(map<const RteItem*, RteDepe
     }
 
     if (hasAcceptConditions) {
-      // now collect results of accept expresssions
+      // now collect results of accept expressions
       // select only those with the results equal to acceptResult or the condition result
+      map<const RteItem*, RteDependencyResult> acceptResults;
       for (it = m_children.begin(); it != m_children.end(); it++) {
         RteConditionExpression* expr = dynamic_cast<RteConditionExpression*>(*it);
         if (!expr || expr->GetExpressionType() != RteConditionExpression::ACCEPT)
           continue;
         ConditionResult res = solver->GetConditionResult(expr);
         if (res == resultAccept || res == conditionResult) {
-          expr->GetDepsResult(results, target);
+          expr->GetDepsResult(acceptResults, target);
+        }
+      }
+      size_t nTotalAggregates = 0; // check is multiple selection is possible
+      if (!acceptResults.empty()) {
+        for (auto& [item, depRes] : acceptResults) {
+          nTotalAggregates += depRes.GetComponentAggregates().size();
+        }
+        for (auto& [item, depRes] : acceptResults) {
+          if (nTotalAggregates > 1) {
+            depRes.SetMultiple(true);
+          }
+          results[item] = depRes;
         }
       }
     }
@@ -540,6 +553,7 @@ RteItem* RteConditionContainer::CreateItem(const std::string& tag)
 
 
 RteDependencyResult::RteDependencyResult(const RteItem* item, RteItem::ConditionResult result) :
+  m_bMultiple(false),
   m_item(item),
   m_result(result)
 {
@@ -667,7 +681,7 @@ string RteDependencyResult::GetMessageText() const
       message = "Conflict, select exactly one component from list";
       break;
     case RteItem::INCOMPATIBLE:
-      message = "Select compatible component or unselect incompatible one";
+      message = "Select compatible component or deselect incompatible one";
       break;
     case RteItem::INCOMPATIBLE_VERSION:
       message = "Select compatible component version";
@@ -881,7 +895,7 @@ void RteDependencySolver::Clear()
 
 RteItem::ConditionResult RteDependencySolver::EvaluateCondition(RteCondition* condition)
 {
-  // new behaviour - first check if filtering condition evaluates to FULFILLED or IGNORED
+  // new behavior - first check if filtering condition evaluates to FULFILLED or IGNORED
   RteConditionContext* filterContext = GetTarget()->GetFilterContext();
   RteItem::ConditionResult res = filterContext->Evaluate(condition);
   switch (res) {
@@ -937,7 +951,7 @@ RteItem::ConditionResult RteDependencySolver::CalculateDependencies(RteCondition
   } else {
     result = m_target->GetComponentAggregates(*expr, components);
     if (components.size() > 1) {
-      // leave only the component if it can be relsolved automatically (current bundle, DFP)
+      // leave only the component if it can be resolved automatically (current bundle, DFP)
       RteComponentAggregate* a = expr->GetSingleComponentAggregate(m_target, components);
       if (a) {
         components.clear();
@@ -1013,7 +1027,7 @@ bool RteDependencySolver::ResolveDependency(const RteDependencyResult& depsRes)
   for (it = results.begin(); it != results.end(); it++) {
     const RteDependencyResult& dRes = it->second;
     RteItem::ConditionResult r = dRes.GetResult();
-    if (r != RteItem::SELECTABLE) {
+    if (r != RteItem::SELECTABLE || dRes.IsMultiple()) {
       continue;
     }
     const RteItem* item = dRes.GetItem();
