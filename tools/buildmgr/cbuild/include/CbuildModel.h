@@ -225,6 +225,15 @@ public:
   }
 
   /**
+   * @brief get linker regions file
+   * @return string containing path to linker regions file
+  */
+  const std::string& GetLinkerRegionsFile() const
+  {
+    return m_linkerRegionsFile;
+  }
+
+  /**
    * @brief get compiler flags for C modules used for constructing the compiler command line
    * @return list of C flags
   */
@@ -518,6 +527,7 @@ protected:
   std::map<std::string, std::list<std::string>>     m_asmSourceFiles;
   std::set<std::string>                             m_packs;
   std::string                                       m_linkerScript;
+  std::string                                       m_linkerRegionsFile;
   std::vector<std::string>                          m_libraries;
   std::vector<std::string>                          m_objects;
   std::set<std::string>                             m_language;

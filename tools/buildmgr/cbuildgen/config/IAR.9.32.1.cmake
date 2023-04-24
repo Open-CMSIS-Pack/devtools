@@ -17,6 +17,7 @@ set(CC "iccarm")
 set(CXX "iccarm")
 set(LD "ilinkarm")
 set(AR "iarchive")
+set(CPP "iccarm")
 set(OC "ielftool")
 
 if(DEFINED REGISTERED_TOOLCHAIN_ROOT)
@@ -33,6 +34,7 @@ if(DEFINED TOOLCHAIN_ROOT)
   set(CXX ${TOOLCHAIN_ROOT}/${CXX}${EXT})
   set(LD ${TOOLCHAIN_ROOT}/${LD}${EXT})
   set(AR ${TOOLCHAIN_ROOT}/${AR}${EXT})
+  set(CPP ${TOOLCHAIN_ROOT}/${CPP}${EXT})
   set(OC ${TOOLCHAIN_ROOT}/${OC}${EXT})
 endif()
 
@@ -270,6 +272,11 @@ set(ASM_DEFINES ${DEFINES})
 cbuild_set_defines(ASM ASM_DEFINES)
 set(ASM_OPTIONS_FLAGS)
 cbuild_set_options_flags(ASM "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" ASM_OPTIONS_FLAGS)
+
+# C Pre-Processor
+
+set(CPP_ARGS_LD_SCRIPT "\"${LD_SCRIPT}\" --preinclude \"${LD_REGIONS}\" --preprocess=n \"${LD_SCRIPT_PP}\"")
+separate_arguments(CPP_ARGS_LD_SCRIPT NATIVE_COMMAND ${CPP_ARGS_LD_SCRIPT})
 
 # C Compiler
 

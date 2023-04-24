@@ -24,6 +24,7 @@
 #define CMEXT ".cmake"  // CMake extension
 #define TXTEXT ".txt"   // Text extension
 #define LOGEXT ".clog"  // Audit file extension
+#define PPEXT ".pp"     // Pre-processed extension
 #define ETCDIR "etc/"   // etc folder
 #define BINDIR "bin/"   // bin folder
 

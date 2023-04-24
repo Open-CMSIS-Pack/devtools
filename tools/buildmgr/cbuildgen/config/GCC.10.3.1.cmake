@@ -12,6 +12,7 @@ set(TOOLCHAIN_VERSION "10.3.1")
 set(AS "as")
 set(CC "gcc")
 set(CXX "g++")
+set(CPP "gcc")
 set(OC "objcopy")
 
 if(DEFINED REGISTERED_TOOLCHAIN_ROOT)
@@ -27,6 +28,7 @@ if(DEFINED TOOLCHAIN_ROOT)
   set(AS ${TOOLCHAIN_ROOT}/${PREFIX}${AS}${EXT})
   set(CC ${TOOLCHAIN_ROOT}/${PREFIX}${CC}${EXT})
   set(CXX ${TOOLCHAIN_ROOT}/${PREFIX}${CXX}${EXT})
+  set(CPP ${TOOLCHAIN_ROOT}/${PREFIX}${CPP}${EXT})
   set(OC ${TOOLCHAIN_ROOT}/${PREFIX}${OC}${EXT})
 endif()
 
@@ -244,6 +246,12 @@ elseif(BYTE_ORDER STREQUAL "Big-endian")
 endif()
 set(AS_LEG_BYTE_ORDER "${AS_BYTE_ORDER}")
 set(AS_GNU_BYTE_ORDER "${AS_BYTE_ORDER}")
+
+# C Pre-Processor
+
+set(CPP_FLAGS "-E -P -xc")
+set(CPP_ARGS_LD_SCRIPT "${CPP_FLAGS} -include \"${LD_REGIONS}\" \"${LD_SCRIPT}\" -o \"${LD_SCRIPT_PP}\"")
+separate_arguments(CPP_ARGS_LD_SCRIPT NATIVE_COMMAND ${CPP_ARGS_LD_SCRIPT})
 
 # C Compiler
 

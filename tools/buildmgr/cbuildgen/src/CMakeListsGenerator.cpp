@@ -58,7 +58,14 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
     }
     cmakelists << EOL << "set(LD_FLAGS_GLOBAL \"" << CbuildUtils::EscapeQuotes(m_linkerMscGlobal) << "\")";
   }
-  if (!m_linkerScript.empty())       cmakelists << EOL << "set(LD_SCRIPT \"" << m_linkerScript << "\")";
+  if (!m_linkerScript.empty()) {
+    cmakelists << EOL << "set(LD_SCRIPT \"" << m_linkerScript << "\")";
+    if (!m_linkerRegionsFile.empty()) {
+      cmakelists << EOL << "set(LD_REGIONS \"" << m_linkerRegionsFile << "\")";
+      const string linkerScriptPreProcessed = fs::path(m_intdir).append(fs::path(m_linkerScript).filename().generic_string()).concat(PPEXT).generic_string();
+      cmakelists << EOL << "set(LD_SCRIPT_PP \"" << linkerScriptPreProcessed << "\")";
+    }
+  }
 
   string outFile, outExt;
   fs::path outputPath;
@@ -469,7 +476,13 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
   if (!m_cxxFilesList.empty()) cmakelists << "CXX";
   else cmakelists << "C";
   cmakelists << "_LINK_FLAGS \"${LD_CPU}";
-  if (!m_linkerScript.empty() && !lib_output) cmakelists << " ${_LS}\\\"${LD_SCRIPT}\\\"";
+  if (!m_linkerScript.empty() && !lib_output) {
+    cmakelists << " ${_LS}\\\"${LD_SCRIPT";
+    if (!m_linkerRegionsFile.empty()) {
+      cmakelists << "_PP";
+    }
+    cmakelists << "}\\\"";
+  }
   if (!m_targetSecure.empty()) cmakelists << " ${LD_SECURE}";
   if (!m_linkerMscGlobal.empty()) cmakelists << " ${LD_FLAGS_GLOBAL}";
   if (target_options) cmakelists << " ${LD_OPTIONS_FLAGS}";
@@ -648,6 +661,13 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
     cmakelists << "target_link_libraries(${TARGET} ${LIB_FILES})" << EOL;
   }
 
+  // Linker script pre-processing
+  if (!m_linkerScript.empty() && !lib_output && !m_linkerRegionsFile.empty()) {
+    cmakelists << EOL << "# Linker script pre-processing" << EOL << EOL;
+    cmakelists << "add_custom_command(TARGET ${TARGET} PRE_LINK COMMAND ${CPP} ARGS ${CPP_ARGS_LD_SCRIPT} BYPRODUCTS ${LD_SCRIPT_PP})" << EOL;
+  }
+
+  // Bin and Hex Conversion
   if (!lib_output) {
     cmakelists << EOL << "# Bin and Hex Conversion" << EOL << EOL;
     cmakelists << "add_custom_command(TARGET ${TARGET} POST_BUILD COMMAND ${CMAKE_OBJCOPY} ${ELF2HEX})" << EOL;
