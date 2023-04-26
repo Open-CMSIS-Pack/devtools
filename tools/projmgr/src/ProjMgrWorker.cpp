@@ -1441,13 +1441,13 @@ bool ProjMgrWorker::ProcessConfigFiles(ContextItem& context) {
     }
   }
   // Linker script
-  if (context.linkerScript.empty()) {
+  if (context.linker.script.empty()) {
     const auto& groups = context.rteActiveTarget->GetProjectGroups();
     for (auto group : groups) {
       for (auto file : group.second) {
         if (file.second.m_cat == RteFile::Category::LINKER_SCRIPT) {
           error_code ec;
-          context.linkerScript = fs::relative(context.cproject->directory + "/" + file.first, context.directories.cprj, ec).generic_string();
+          context.linker.script = fs::relative(context.cproject->directory + "/" + file.first, context.directories.cprj, ec).generic_string();
           break;
         }
       }
@@ -1927,6 +1927,55 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
   return true;
 }
 
+bool ProjMgrWorker::ProcessLinkerOptions(ContextItem& context) {
+  StringCollection linkerScriptFile = {
+    &context.linker.script,
+  };
+  StringCollection linkerRegionsFile = {
+    &context.linker.regions,
+  };
+  for (LinkerItem& linker : context.cproject->linker) {
+    if (!ProcessLinkerOptions(context, linker, linkerScriptFile, linkerRegionsFile, context.cproject->directory)) {
+      return false;
+    }
+  }
+  for (auto& [_, clayer] : context.clayers) {
+    for (LinkerItem& linker : clayer->linker) {
+      if (!ProcessLinkerOptions(context, linker, linkerScriptFile, linkerRegionsFile, clayer->directory)) {
+        return false;
+      }
+    }
+  }
+  if (!ProcessPrecedence(linkerScriptFile)) {
+    return false;
+  }
+  if (!ProcessPrecedence(linkerRegionsFile)) {
+    return false;
+  }
+  return true;
+}
+
+bool ProjMgrWorker::ProcessLinkerOptions(ContextItem& context, LinkerItem& linker,
+  StringCollection& linkerScriptFile, StringCollection& linkerRegionsFile, const string& ref) {
+  if (CheckType(linker.typeFilter, context.type) &&
+    CheckCompiler(linker.forCompiler, context.compiler)) {
+    if (!linker.script.empty()) {
+      if (!ProcessSequenceRelative(context, linker.script, ref)) {
+        return false;
+      }
+      linkerScriptFile.elements.push_back(&linker.script);
+    }
+    if (!linker.regions.empty()) {
+      if (!ProcessSequenceRelative(context, linker.regions, ref)) {
+        return false;
+      }
+      linkerRegionsFile.elements.push_back(&linker.regions);
+    }
+  }
+  return true;
+}
+
+
 bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem& context) {
 
   // directories
@@ -2134,8 +2183,8 @@ bool ProjMgrWorker::AddFile(const FileNode& src, vector<FileNode>& dst, ContextI
     dst.push_back(srcNode);
 
     // Set linker script
-    if ((srcNode.category == "linkerScript") && (context.linkerScript.empty())) {
-      context.linkerScript = srcNode.file;
+    if ((srcNode.category == "linkerScript") && (context.linker.script.empty())) {
+      context.linker.script = srcNode.file;
     }
 
     // Store absolute file path
@@ -2238,6 +2287,9 @@ bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGpdsc, bool re
     return false;
   }
   if (!SetTargetAttributes(context, context.targetAttributes)) {
+    return false;
+  }
+  if (!ProcessLinkerOptions(context)) {
     return false;
   }
   if (!ProcessGroups(context)) {

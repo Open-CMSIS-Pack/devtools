@@ -203,7 +203,7 @@ struct TranslationControl {
  *        map of generators,
  *        map of compatible layers,
  *        valid connections,
- *        linker script,
+ *        linker options,
  *        map of variables,
  *        boolean processed precedences
 */
@@ -245,7 +245,7 @@ struct ContextItem {
   std::map<std::string, GpdscItem> gpdscs;
   StrVecMap compatibleLayers;
   std::vector<ConnectionsCollectionVec> validConnections;
-  std::string linkerScript;
+  LinkerItem linker;
   std::map<std::string, std::string> variables;
   bool precedences;
 };
@@ -544,6 +544,8 @@ protected:
   bool ProcessSequencesRelatives(ContextItem& context, BuildType& build, const std::string& ref = std::string());
   bool ProcessSequenceRelative(ContextItem& context, std::string& item, const std::string& ref = std::string());
   bool ProcessOutputFilenames(ContextItem& context);
+  bool ProcessLinkerOptions(ContextItem& context);
+  bool ProcessLinkerOptions(ContextItem& context, LinkerItem& linker, StringCollection& linkerScriptFile, StringCollection& linkerRegionsFile, const std::string& ref);
   bool AddContext(ProjMgrParser& parser, ContextDesc& descriptor, const TypePair& type, const std::string& cprojectFile, ContextItem& parentContext);
   bool ValidateContext(ContextItem& context);
   bool FormatValidationResults(std::set<std::string>& results, const ContextItem& context);

@@ -94,6 +94,8 @@ build:
             - ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0
             - ../../TestProject3_1.Debug+TypeA.cbuild.yml
             - --foo=bar
+  linker:
+    script: RTE/Device/RteTestGen_ARMCM0/gcc_arm.ld
   constructed-files:
     - file: RTE/_Debug_TypeA/RTE_Components.h
       category: header

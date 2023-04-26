@@ -136,6 +136,8 @@ bool ProjMgrYamlParser::ParseCproject(const string& input,
 
     ParseConnections(projectNode, cproject.connections);
 
+    ParseLinker(projectNode, cproject.linker);
+
   } catch (YAML::Exception& e) {
     ProjMgrLogger::Error(input, e.mark.line + 1, e.mark.column + 1, e.msg);
     return false;
@@ -197,6 +199,8 @@ bool ProjMgrYamlParser::ParseClayer(const string& input,
     }
 
     ParseConnections(layerNode, clayer.connections);
+
+    ParseLinker(layerNode, clayer.linker);
 
   }
   catch (YAML::Exception& e) {
@@ -539,6 +543,23 @@ void ProjMgrYamlParser::ParseConnections(const YAML::Node& parent, vector<Connec
   }
 }
 
+bool ProjMgrYamlParser::ParseLinker(const YAML::Node& parent, vector<LinkerItem>& linker) {
+  if (parent[YAML_LINKER].IsDefined()) {
+    const YAML::Node& linkerNode = parent[YAML_LINKER];
+    for (const auto& linkerEntry : linkerNode) {
+      LinkerItem linkerItem;
+      if (!ParseTypeFilter(linkerEntry, linkerItem.typeFilter)) {
+        return false;
+      }
+      ParseVectorOrString(linkerEntry, YAML_FORCOMPILER, linkerItem.forCompiler);
+      ParseString(linkerEntry, YAML_REGIONS, linkerItem.regions);
+      ParseString(linkerEntry, YAML_SCRIPT, linkerItem.script);
+      linker.push_back(linkerItem);
+    }
+  }
+  return true;
+}
+
 void ProjMgrYamlParser::ParseTargetTypes(const YAML::Node& parent, map<string, TargetType>& targetTypes) {
   if (parent[YAML_TARGETTYPES].IsDefined()) {
     const YAML::Node& targetTypesNode = parent[YAML_TARGETTYPES];
@@ -663,6 +684,7 @@ const set<string> projectKeys = {
   YAML_LAYERS,
   YAML_SETUPS,
   YAML_CONNECTIONS,
+  YAML_LINKER,
 };
 
 const set<string> layerKeys = {
@@ -691,6 +713,7 @@ const set<string> layerKeys = {
   YAML_COMPONENTS,
   YAML_GROUPS,
   YAML_CONNECTIONS,
+  YAML_LINKER,
 };
 
 const set<string> targetTypeKeys = {
@@ -808,6 +831,14 @@ const set<string> connectionsKeys = {
   YAML_CONSUMES,
 };
 
+const set<string> linkerKeys = {
+  YAML_REGIONS,
+  YAML_SCRIPT,
+  YAML_FORCOMPILER,
+  YAML_FORCONTEXT,
+  YAML_NOTFORCONTEXT,
+};
+
 const set<string> layersKeys = {
   YAML_LAYER,
   YAML_TYPE,
@@ -889,6 +920,7 @@ const map<string, set<string>> sequences = {
   {YAML_GROUPS, groupsKeys},
   {YAML_FILES, filesKeys},
   {YAML_OUTPUT, outputKeys},
+  {YAML_LINKER, linkerKeys},
 };
 
 const map<string, set<string>> mappings = {

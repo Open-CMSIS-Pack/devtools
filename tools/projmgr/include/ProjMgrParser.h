@@ -200,6 +200,20 @@ struct ConnectItem {
 };
 
 /**
+ * @brief linker item containing
+ *        regions file,
+ *        script file,
+ *        for compiler control,
+ *        type inclusion
+*/
+struct LinkerItem {
+  std::string regions;
+  std::string script;
+  std::vector<std::string> forCompiler;
+  TypeFilter typeFilter;
+};
+
+/**
  * @brief setup item containing
  *        setup description name,
  *        for compiler control,
@@ -326,6 +340,7 @@ struct CprojectItem {
   std::vector<ConnectItem> connections;
   std::vector<PackItem> packs;
   std::vector<OutputItem> outputFiles;
+  std::vector<LinkerItem> linker;
 };
 
 /**
@@ -353,6 +368,7 @@ struct ClayerItem {
   std::vector<GroupNode> groups;
   std::vector<ConnectItem> connections;
   std::vector<PackItem> packs;
+  std::vector<LinkerItem> linker;
   std::string forBoard;
   std::string forDevice;
 };

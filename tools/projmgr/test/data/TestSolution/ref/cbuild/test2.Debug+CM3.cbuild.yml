@@ -74,6 +74,8 @@ build:
       condition: Cortex-M Device
       from-pack: ARM::RteTest_DFP@0.2.0
       selected-by: RteTest:CORE@0.1.1
+  linker:
+    script: ../data/TestSolution/TestProject2/RTE/Device/RteTest_ARMCM3/ARMCM3_ac6.sct
   groups:
     - group: Sources
       files:

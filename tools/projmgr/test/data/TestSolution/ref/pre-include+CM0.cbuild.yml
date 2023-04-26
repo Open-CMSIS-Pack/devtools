@@ -85,6 +85,8 @@ build:
           category: header
           attr: config
           version: 0.0.2
+  linker:
+    script: ../data/TestSolution/RTE/Device/RteTest_ARMCM0/ARMCM0_ac6.sct
   constructed-files:
     - file: ../data/TestSolution/RTE/_CM0/Pre_Include_Global.h
       category: preIncludeGlobal

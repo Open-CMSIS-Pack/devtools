@@ -668,7 +668,8 @@
         "components":  { "$ref": "#/definitions/ComponentsType" },
         "layers":      { "$ref": "#/definitions/LayersType" },
         "setups":      { "$ref": "#/definitions/SetupsType" },
-        "connections": { "$ref": "#/definitions/ConnectionsType" }
+        "connections": { "$ref": "#/definitions/ConnectionsType" },
+        "linker":      { "$ref": "#/definitions/LinkersType" }
       },
       "additionalProperties": false
     },
@@ -699,6 +700,7 @@
         "output-type":       { "$ref": "#/definitions/OutputType" },
         "output-dirs":       { "$ref": "#/definitions/OutputDirectoriesType" },
         "components":        { "$ref": "#/definitions/ResolvedComponentsType" },
+        "linker":            { "$ref": "#/definitions/LinkerType" },
         "groups":            { "$ref": "#/definitions/GroupsType" },
         "generators":        { "$ref": "#/definitions/GeneratorsType" },
         "constructed-files": {
@@ -739,7 +741,8 @@
         "misc":        { "$ref": "#/definitions/MiscTypes" },
         "groups":      { "$ref": "#/definitions/GroupsType" },
         "components":  { "$ref": "#/definitions/ComponentsType" },
-        "connections": { "$ref": "#/definitions/ConnectionsType" }
+        "connections": { "$ref": "#/definitions/ConnectionsType" },
+        "linker":      { "$ref": "#/definitions/LinkersType" }
       },
       "additionalProperties": false
     },
@@ -866,6 +869,29 @@
       },
       "additionalProperties": false,
       "required": [ "connect" ]
+    },
+    "LinkersType": {
+      "description": "Linker Scripts and/or memory regions header files",
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/LinkerType" }
+    },
+    "LinkerType": {
+      "type": "object",
+      "properties": {
+        "regions": {
+          "type": "string",
+          "description": "Path and file name of regions_<device_or_board>.h, used to generate a Linker Script"
+        },
+        "script": {
+          "type": "string",
+          "description": "Explicit file name of the Linker Script, overrules files provided with file: or components"
+        },
+        "for-context":     { "$ref": "#/definitions/ForContext" },
+        "not-for-context": { "$ref": "#/definitions/NotForContext" },
+        "for-compiler":    { "$ref": "#/definitions/CompilersType" }
+      },
+      "additionalProperties": false
     }
   }
 }

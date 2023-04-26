@@ -5,3 +5,5 @@ build-idx:
     - cproject: ../data/TestSolution/pre-include.cproject.yml
   cbuilds:
     - cbuild: pre-include+CM0.cbuild.yml
+      project: pre-include
+      configuration: +CM0
