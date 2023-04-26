@@ -2909,3 +2909,43 @@ TEST_F(ProjMgrUnitTests, SelectToolchains) {
 
   RteFsUtils::RemoveFile(AC6_6_6_5);
 }
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_LinkerOptions) {
+  char* argv[7];
+  const string& csolution = testinput_folder + "/TestSolution/LinkerOptions/linker.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"-c";
+  argv[4] = (char*)"linker.Debug_*+RteTest_ARMCM3";
+  argv[5] = (char*)"-o";
+  argv[6] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(0, RunProjMgr(7, argv, 0));
+
+  // Check generated CPRJs
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/linker.Debug_AC6+RteTest_ARMCM3.cprj",
+    testinput_folder + "/TestSolution/LinkerOptions/ref/linker.Debug_AC6+RteTest_ARMCM3.cprj");
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/linker.Debug_GCC+RteTest_ARMCM3.cprj",
+    testinput_folder + "/TestSolution/LinkerOptions/ref/linker.Debug_GCC+RteTest_ARMCM3.cprj");
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_LinkerOptions_Redefinition) {
+  char* argv[7];
+  StdStreamRedirect streamRedirect;
+  const string& csolution = testinput_folder + "/TestSolution/LinkerOptions/linker.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"-c";
+  argv[4] = (char*)"linker.Redefinition+RteTest_ARMCM3";
+  argv[5] = (char*)"-o";
+  argv[6] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(1, RunProjMgr(7, argv, 0));
+
+  // Check error messages
+  const string expected = "\
+error csolution: redefinition from '.*/linkerScript.ld' into '.*/linkerScript2.ld' is not allowed\n\
+error csolution: processing context 'linker.Redefinition\\+RteTest_ARMCM3' failed\n\
+";
+
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_TRUE(regex_match(errStr, regex(expected)));
+}

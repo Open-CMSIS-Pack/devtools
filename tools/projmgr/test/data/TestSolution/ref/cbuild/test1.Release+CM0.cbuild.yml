@@ -62,6 +62,8 @@ build:
         - ../data/TestSolution/TestProject1/path/1/component
       del-path:
         - ../data/TestSolution/TestProject1/path/2/component
+  linker:
+    script: ../data/TestSolution/TestProject1/RTE/Device/RteTest_ARMCM0/gcc_arm.ld
   groups:
     - group: Sources
       misc:

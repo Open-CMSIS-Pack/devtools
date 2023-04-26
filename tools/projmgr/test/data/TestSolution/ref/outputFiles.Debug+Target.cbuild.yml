@@ -51,6 +51,8 @@ build:
       condition: Cortex-M Device
       from-pack: ARM::RteTest_DFP@0.2.0
       selected-by: CORE
+  linker:
+    script: ../data/TestSolution/RTE/Device/RteTest_ARMCM3/ARMCM3_ac6.sct
   constructed-files:
     - file: ../data/TestSolution/RTE/_Debug_Target/RTE_Components.h
       category: header

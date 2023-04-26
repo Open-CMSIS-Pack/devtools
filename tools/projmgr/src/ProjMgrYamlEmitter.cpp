@@ -42,6 +42,7 @@ private:
   void SetPacksNode(YAML::Node node, const ContextItem* context);
   void SetGroupsNode(YAML::Node node, const vector<GroupNode>& groups);
   void SetFilesNode(YAML::Node node, const vector<FileNode>& files);
+  void SetLinkerNode(YAML::Node node, const LinkerItem& files);
   void SetControlsNode(YAML::Node Node, const BuildType& controls);
   void SetProcessorNode(YAML::Node node, const map<string, string>& targetAttributes);
   void SetMiscNode(YAML::Node miscNode, const MiscItem& misc);
@@ -140,6 +141,7 @@ void ProjMgrYamlCbuild::SetContextNode(YAML::Node contextNode, const ContextItem
   SetNodeValue(contextNode[YAML_ADDPATH], includes);
   SetComponentsNode(contextNode[YAML_COMPONENTS], context);
   SetGeneratorsNode(contextNode[YAML_GENERATORS], context);
+  SetLinkerNode(contextNode[YAML_LINKER], context->linker);
   SetGroupsNode(contextNode[YAML_GROUPS], context->groups);
   SetConstructedFilesNode(contextNode[YAML_CONSTRUCTEDFILES], context);
 }
@@ -308,6 +310,11 @@ void ProjMgrYamlCbuild::SetOutputNode(YAML::Node node, const ContextItem* contex
     SetNodeValue(fileNode[YAML_FILE], file);
     node.push_back(fileNode);
   }
+}
+
+void ProjMgrYamlCbuild::SetLinkerNode(YAML::Node node, const LinkerItem& linker) {
+  SetNodeValue(node[YAML_SCRIPT], linker.script);
+  SetNodeValue(node[YAML_REGIONS], linker.regions);
 }
 
 void ProjMgrYamlCbuild::SetControlsNode(YAML::Node node, const BuildType& controls) {

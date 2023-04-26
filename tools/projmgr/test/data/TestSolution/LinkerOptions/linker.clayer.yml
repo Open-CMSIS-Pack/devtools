@@ -1,0 +1,13 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schemas/clayer.schema.json
+
+layer:
+
+  components:
+    - component: Board:Test:Rev1
+  
+  linker:
+    - script: ./linkerScript.ld
+      regions: ./linkerRegions.h
+      for-context: .Debug_GCC 
+    - script: ./linkerScript2.ld
+      for-context: .Redefinition

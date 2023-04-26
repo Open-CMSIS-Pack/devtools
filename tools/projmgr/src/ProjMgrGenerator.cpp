@@ -189,7 +189,7 @@ void ProjMgrGenerator::GenerateCprjTarget(XMLTreeElement* element, const Context
 
   GenerateCprjOptions(element, context.controls.processed);
   GenerateCprjMisc(element, context.controls.processed.misc);
-  GenerateCprjLinkerScript(element, context.toolchain.name, context.linkerScript);
+  GenerateCprjLinkerOptions(element, context.toolchain.name, context.linker);
   GenerateCprjVector(element, context.controls.processed.defines, "defines");
   GenerateCprjVector(element, context.controls.processed.addpaths, "includes");
 }
@@ -304,8 +304,8 @@ void ProjMgrGenerator::GenerateCprjMisc(XMLTreeElement* element, const MiscItem&
   }
 }
 
-void ProjMgrGenerator::GenerateCprjLinkerScript(XMLTreeElement* element, const string& compiler, const string& linkerScript) {
-  if (!linkerScript.empty()) {
+void ProjMgrGenerator::GenerateCprjLinkerOptions(XMLTreeElement* element, const string& compiler, const LinkerItem& linker) {
+  if (!linker.script.empty()) {
     XMLTreeElement* ldflagsElement = nullptr;
     for (auto& child : element->GetChildren()) {
       if (child->GetTag() == "ldflags") {
@@ -318,7 +318,10 @@ void ProjMgrGenerator::GenerateCprjLinkerScript(XMLTreeElement* element, const s
       ldflagsElement->AddAttribute("compiler", compiler);
     }
     if (ldflagsElement) {
-      ldflagsElement->AddAttribute("file", linkerScript);
+      ldflagsElement->AddAttribute("file", linker.script);
+      if (!linker.regions.empty()) {
+        ldflagsElement->AddAttribute("regions", linker.regions);
+      }
     }
   }
 }

@@ -1195,3 +1195,103 @@ TEST_F(ProjMgrWorkerUnitTests, RemoveRedundantSubsets) {
     }
   }
 };
+
+TEST_F(ProjMgrWorkerUnitTests, ProcessLinkerOptions) {
+  string linkerScriptFile = "path/to/linkerScript_$Compiler$.sct";
+  string linkerRegionsFile = "path/to/linkerRegions_$Compiler$.h";
+  ContextItem context;
+  CprojectItem cproject;
+  context.cproject = &cproject;
+  cproject.directory = testoutput_folder;
+  context.directories.cprj = cproject.directory;
+  LinkerItem linker;
+  linker.script = linkerScriptFile;
+  linker.regions = linkerRegionsFile;
+  cproject.linker.push_back(linker);
+  context.compiler = "AC6";
+  context.variables[ProjMgrUtils::AS_COMPILER] = context.compiler;
+  string expectedLinkerScriptFile = "path/to/linkerScript_AC6.sct";
+  string expectedLinkerRegionsFile = "path/to/linkerRegions_AC6.h";
+  EXPECT_TRUE(ProcessLinkerOptions(context));
+  EXPECT_EQ(expectedLinkerScriptFile, context.linker.script);
+  EXPECT_EQ(expectedLinkerRegionsFile, context.linker.regions);
+};
+
+TEST_F(ProjMgrWorkerUnitTests, ProcessLinkerOptions_MultipleCompilers) {
+  ContextItem context;
+  CprojectItem cproject;
+  context.cproject = &cproject;
+  ClayerItem clayer;
+  context.clayers.insert({ "layer", &clayer });
+  LinkerItem linker;
+
+  string linkerScriptFile = "path/to/linkerScript_AC6.sct";
+  string linkerRegionsFile = "path/to/linkerRegions_AC6.h";
+  linker.script = linkerScriptFile;
+  linker.regions = linkerRegionsFile;
+  linker.forCompiler = { "AC6" };
+  cproject.linker.push_back(linker);
+  clayer.linker.push_back(linker);
+
+  linkerScriptFile = "path/to/linkerScript_GCC.sct";
+  linkerRegionsFile = "path/to/linkerRegions_GCC.h";
+  linker.script = linkerScriptFile;
+  linker.regions = linkerRegionsFile;
+  linker.forCompiler = { "GCC" };
+  cproject.linker.push_back(linker);
+  clayer.linker.push_back(linker);
+
+  context.compiler = "AC6";
+  string expectedLinkerScriptFile = "path/to/linkerScript_AC6.sct";
+  string expectedLinkerRegionsFile = "path/to/linkerRegions_AC6.h";
+  EXPECT_TRUE(ProcessLinkerOptions(context));
+  EXPECT_EQ(expectedLinkerScriptFile, context.linker.script);
+  EXPECT_EQ(expectedLinkerRegionsFile, context.linker.regions);
+
+  context.linker.script.clear();
+  context.linker.regions.clear();
+  context.compiler = "GCC";
+  expectedLinkerScriptFile = "path/to/linkerScript_GCC.sct";
+  expectedLinkerRegionsFile = "path/to/linkerRegions_GCC.h";
+  EXPECT_TRUE(ProcessLinkerOptions(context));
+  EXPECT_EQ(expectedLinkerScriptFile, context.linker.script);
+  EXPECT_EQ(expectedLinkerRegionsFile, context.linker.regions);
+};
+
+TEST_F(ProjMgrWorkerUnitTests, ProcessLinkerOptions_Redefinition) {
+  string linkerScriptFile = "path/to/linkerScript.sct";
+  ContextItem context;
+  CprojectItem cproject;
+  context.cproject = &cproject;
+  cproject.directory = testoutput_folder;
+  context.directories.cprj = cproject.directory;
+  ClayerItem clayer;
+  context.clayers.insert({ "layer", &clayer });
+  clayer.directory = testoutput_folder + "/layer";
+  LinkerItem linker;
+  linker.script = linkerScriptFile;
+  cproject.linker.push_back(linker);
+  clayer.linker.push_back(linker);
+  StdStreamRedirect streamRedirect;
+
+  string expectedErrStr = "error csolution: redefinition from 'path/to/linkerScript.sct' into 'layer/path/to/linkerScript.sct' is not allowed\n";
+  EXPECT_FALSE(ProcessLinkerOptions(context));
+  string errStr = streamRedirect.GetErrorString();
+  EXPECT_TRUE(regex_match(errStr, regex(expectedErrStr)));
+
+  context.linker.script.clear();
+  context.linker.regions.clear();
+  string linkerRegionsFile = "path/to/linkerRegions.h";
+  linker.script.clear();
+  linker.regions = linkerRegionsFile;
+  cproject.linker.clear();
+  cproject.linker.push_back(linker);
+  clayer.linker.clear();
+  clayer.linker.push_back(linker);
+
+  streamRedirect.ClearStringStreams();
+  expectedErrStr = "error csolution: redefinition from 'path/to/linkerRegions.h' into 'layer/path/to/linkerRegions.h' is not allowed\n";
+  EXPECT_FALSE(ProcessLinkerOptions(context));
+  errStr = streamRedirect.GetErrorString();
+  EXPECT_TRUE(regex_match(errStr, regex(expectedErrStr)));
+};
