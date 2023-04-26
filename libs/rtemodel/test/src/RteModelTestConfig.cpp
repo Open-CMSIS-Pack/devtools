@@ -28,6 +28,7 @@ const std::string RteModelTestConfig::RteTestM3_PackPath_MultiplePdscs_cprj = pr
 const std::string RteModelTestConfig::RteTestM3_PackPath_NoPdsc_cprj = prjsDir + RteTestM3 + "/RteTestM3_PackPath_NoPdsc.cprj";
 const std::string RteModelTestConfig::RteTestM3_PackPath_Invalid_cprj = prjsDir + RteTestM3 + "/RteTestM3_PackPath_Invalid.cprj";
 const std::string RteModelTestConfig::RteTestM3_PrjPackPath = prjsDir + RteTestM3 + "/packs";
+const std::string RteModelTestConfig::RteTestM3_UpdateHeader_cprj = prjsDir + RteTestM3 + "/RteTestM3_Rte_Update_Header.cprj";
 
 const std::string RteModelTestConfig::RteTestM4 = "/RteTestM4";
 const std::string RteModelTestConfig::RteTestM4_cprj = prjsDir + RteTestM4 + "/RteTestM4.cprj";

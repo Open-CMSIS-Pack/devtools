@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "ProductInfo.h"
 #include "CbuildKernel.h"
 #include "CbuildCallback.h"
 
@@ -23,6 +24,10 @@ CbuildKernel::CbuildKernel(RteCallback* callback) : RteKernelSlim(callback) {
   if (m_callback) {
     m_callback->SetRteKernel(this);
   }
+  XmlItem attributes;
+  attributes.AddAttribute("name", ORIGINAL_FILENAME);
+  attributes.AddAttribute("version", VERSION_STRING);
+  SetToolInfo(attributes);
 }
 
 CbuildKernel::~CbuildKernel() {

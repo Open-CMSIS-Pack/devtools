@@ -46,6 +46,7 @@ public:
   static const std::string RteTestM3_PackPath_NoPdsc_cprj;
   static const std::string RteTestM3_PackPath_Invalid_cprj;
   static const std::string RteTestM3_PrjPackPath;
+  static const std::string RteTestM3_UpdateHeader_cprj;
 
   static const std::string RteTestM4;
   static const std::string RteTestM4_cprj;

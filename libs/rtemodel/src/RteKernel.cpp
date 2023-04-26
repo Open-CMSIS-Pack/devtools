@@ -51,6 +51,10 @@ m_rteCallback(rteCallback)
   if (m_rteCallback) {
     m_globalModel->SetCallback(m_rteCallback);
   }
+
+  // default attributes
+  m_toolInfo.AddAttribute("name", RteUtils::EMPTY_STRING);
+  m_toolInfo.AddAttribute("version", RteUtils::EMPTY_STRING);
 }
 
 
@@ -72,6 +76,12 @@ bool RteKernel::SetCmsisPackRoot(const string& cmsisPackRoot)
 RteCallback* RteKernel::GetRteCallback() const
 {
   return m_rteCallback ? m_rteCallback : RteCallback::GetGlobal();
+}
+
+void RteKernel::SetRteCallback(RteCallback* callback) 
+{
+  m_rteCallback = callback;
+  GetGlobalModel()->SetCallback(m_rteCallback);
 }
 
 RteProject* RteKernel::GetProject(int nPjNum) const
