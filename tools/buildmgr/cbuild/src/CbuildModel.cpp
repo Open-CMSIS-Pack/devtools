@@ -1117,6 +1117,15 @@ bool CbuildModel::EvalFlags() {
           return false;
         }
       }
+      const RteItem* defines = ldflags->GetItemByTag("defines");
+      if (defines) {
+        const vector<string>& definesList = SplitArgs(defines->GetText(), ";", false);
+        for (auto define : definesList) {
+          if (!define.empty()) {
+            m_linkerPreProcessorDefines.push_back(define);
+          }
+        }
+      }
     }
     if (ldcflags != NULL)
     {

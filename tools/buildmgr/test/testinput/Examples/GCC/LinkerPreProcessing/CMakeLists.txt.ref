@@ -24,6 +24,11 @@ set(OUT_NAME MyProject)
 set(HEX_FILE "${OUT_NAME}.hex")
 set(BIN_FILE "${OUT_NAME}.bin")
 
+set(LD_SCRIPT_PP_DEFINES
+  LD_PP_DEF0
+  LD_PP_DEF1=3U
+)
+
 set(DEFINES
   ARMCM3
   _RTE_

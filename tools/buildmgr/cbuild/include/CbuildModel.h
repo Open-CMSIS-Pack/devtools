@@ -151,6 +151,15 @@ public:
   }
 
   /**
+   * @brief get list of linker script pre-processor defines
+   * @return list of defines
+  */
+  const std::vector<std::string>& GetLinkerPreProcessorDefines() const
+  {
+    return m_linkerPreProcessorDefines;
+  }
+
+  /**
    * @brief get defines for components & project source files
    * @return list of key, value pair where
    *         key: component/file name,
@@ -542,6 +551,7 @@ protected:
   std::vector<std::string>                          m_targetLdCxxFlags;
   std::vector<std::string>                          m_targetIncludePaths;
   std::vector<std::string>                          m_targetDefines;
+  std::vector<std::string>                          m_linkerPreProcessorDefines;
   std::map<std::string, std::vector<std::string>>   m_includePaths;
   std::map<std::string, std::vector<std::string>>   m_defines;
   std::map<std::string, std::vector<std::string>>   m_CFlags;

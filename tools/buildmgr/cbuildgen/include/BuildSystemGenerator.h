@@ -116,6 +116,7 @@ protected:
   std::vector<std::string> m_incPathsList;
   std::vector<std::string> m_libFilesList;
   std::vector<std::string> m_definesList;
+  std::vector<std::string> m_linkerPreProcessorDefines;
   std::vector<std::string> m_preincGlobal;
   std::set<cfg> m_cfgFilesList;
   std::string m_targetName;
