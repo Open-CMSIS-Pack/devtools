@@ -112,6 +112,7 @@ bool BuildSystemGenerator::Collect(const string& inputFile, const CbuildModel *m
   m_linkerCMscGlobal = GetString(model->GetTargetLdCFlags());
   m_linkerCxxMscGlobal = GetString(model->GetTargetLdCxxFlags());
 
+  m_linkerPreProcessorDefines = model->GetLinkerPreProcessorDefines();
   MergeVecStr(model->GetTargetDefines(), m_definesList);
   MergeVecStrNorm(model->GetTargetIncludePaths(), m_incPathsList);
   MergeVecStrNorm(model->GetPreIncludeFilesGlobal(), m_preincGlobal);

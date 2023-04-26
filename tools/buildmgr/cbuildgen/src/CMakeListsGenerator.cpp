@@ -101,6 +101,16 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
 
   cmakelists << EOL << EOL;
 
+
+  // Linker script pre-processor defines
+  if (!m_linkerScript.empty() && !m_linkerPreProcessorDefines.empty()) {
+    cmakelists << "set(LD_SCRIPT_PP_DEFINES";
+    for (auto n : m_linkerPreProcessorDefines) {
+      cmakelists << EOL << "  " << n;
+    }
+    cmakelists << EOL << ")" << EOL << EOL;
+  }
+
   // Defines
   if (!m_definesList.empty()) {
     cmakelists << "set(DEFINES";

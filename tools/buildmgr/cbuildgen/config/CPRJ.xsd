@@ -17,14 +17,14 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 
-  $Date:        20. April 2023
+  $Date:        25. April 2023
   $Revision:    1.3.0
 
   $Project: Schema File for CMSIS Project Description File Format Specification
 
   SchemaVersion=1.3.0
 
-  1.3.0: Added linker script 'regions' file
+  1.3.0: Added linker script 'regions' file and 'defines' for pre-processing
 
   1.2.0: Added output attributes 'elf', 'hex', 'bin', 'lib'
          output 'type' to be deprecated
@@ -384,6 +384,9 @@
   </xs:complexType>
 
   <xs:complexType name="LinkerFlagsType">
+    <xs:sequence maxOccurs="unbounded">
+      <xs:element name="defines"  type="xs:string" minOccurs="0" />
+    </xs:sequence>
     <xs:attribute name="compiler" type="CompilerEnumType" use="required" />
     <xs:attribute name="file"     type="xs:string" />
     <xs:attribute name="regions"  type="xs:string" />

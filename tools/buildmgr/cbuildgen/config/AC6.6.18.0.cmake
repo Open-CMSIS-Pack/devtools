@@ -541,7 +541,9 @@ set(AS_GNU_BYTE_ORDER "${AS_BYTE_ORDER}")
 # C Pre-Processor
 
 set(CPP_FLAGS "-E --target=arm-arm-none-eabi ${ARMCLANG_CPU} -xc")
-set(CPP_ARGS_LD_SCRIPT "${CPP_FLAGS} -include \"${LD_REGIONS}\" \"${LD_SCRIPT}\" -o \"${LD_SCRIPT_PP}\"")
+set(CPP_DEFINES ${LD_SCRIPT_PP_DEFINES})
+cbuild_set_defines(CC CPP_DEFINES)
+set(CPP_ARGS_LD_SCRIPT "${CPP_FLAGS} ${CPP_DEFINES} -include \"${LD_REGIONS}\" \"${LD_SCRIPT}\" -o \"${LD_SCRIPT_PP}\"")
 separate_arguments(CPP_ARGS_LD_SCRIPT NATIVE_COMMAND ${CPP_ARGS_LD_SCRIPT})
 
 # C Compiler
