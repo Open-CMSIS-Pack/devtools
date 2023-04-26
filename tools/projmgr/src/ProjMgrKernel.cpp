@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "ProductInfo.h"
 #include "ProjMgrKernel.h"
 #include "ProjMgrCallback.h"
 #include "ProjMgrXmlParser.h"
@@ -24,6 +25,11 @@ ProjMgrKernel::ProjMgrKernel() :
   m_callback = make_unique<ProjMgrCallback>();
   SetRteCallback(m_callback.get());
   m_callback.get()->SetRteKernel(this);
+
+  XmlItem attributes;
+  attributes.AddAttribute("name", ORIGINAL_FILENAME);
+  attributes.AddAttribute("version", VERSION_STRING);
+  SetToolInfo(attributes);
 }
 
 ProjMgrKernel::~ProjMgrKernel() {

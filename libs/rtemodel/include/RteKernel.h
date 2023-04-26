@@ -67,7 +67,7 @@ public:
    * @brief setter for RteCallback object
    * @param callback pointer to RteCallback object to set
   */
-  void SetRteCallback(RteCallback* callback) { m_rteCallback = callback;}
+  void SetRteCallback(RteCallback* callback);
 
   /**
    * @brief getter for global CMSIS RTE model
@@ -229,6 +229,18 @@ public:
   */
   bool LoadPacks(const std::list<std::string>& pdscFiles, std::list<RtePackage*>& packs) const;
 
+  /**
+   * @brief getter for caller information (name & version)
+   * @return XmlItem reference
+  */
+  const XmlItem& GetToolInfo() const { return m_toolInfo; }
+
+  /**
+   * @brief set caller information
+   * @param attr attributes to set as XmlItem reference
+   * @return true if changed
+  */
+  void SetToolInfo(const XmlItem& attr) { m_toolInfo = attr; }
 protected:
 
   bool GetUrlFromIndex(const std::string& indexFile, const std::string& name, const std::string& vendor, const std::string& version, std::string& indexedUrl, std::string& indexedVersion) const;
@@ -247,7 +259,7 @@ protected:
   RteGlobalModel* m_globalModel;
   bool m_bOwnModel;
   RteCallback* m_rteCallback;
-
+  XmlItem m_toolInfo;
   std::string m_cmsisPackRoot;
 
   // null object to avoid crashes
