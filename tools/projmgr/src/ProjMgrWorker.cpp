@@ -1971,6 +1971,7 @@ bool ProjMgrWorker::ProcessLinkerOptions(ContextItem& context, LinkerItem& linke
       }
       linkerRegionsFile.elements.push_back(&linker.regions);
     }
+    AddStringItemsUniquely(context.linker.defines, linker.defines);
   }
   return true;
 }

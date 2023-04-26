@@ -322,6 +322,7 @@ void ProjMgrGenerator::GenerateCprjLinkerOptions(XMLTreeElement* element, const 
       if (!linker.regions.empty()) {
         ldflagsElement->AddAttribute("regions", linker.regions);
       }
+      GenerateCprjVector(ldflagsElement, linker.defines, "defines");
     }
   }
 }

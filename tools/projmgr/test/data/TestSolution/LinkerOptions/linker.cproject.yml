@@ -8,6 +8,9 @@ project:
       for-context: .Debug_AC6
     - script: ./linkerScript.ld
       regions: ./linkerRegions.h
+      define:
+       - LD_PP_GCC_CPROJECT_DEF0
+       - LD_PP_GCC_CPROJECT_DEF1
       for-compiler: GCC
 
   layers:

@@ -315,6 +315,7 @@ void ProjMgrYamlCbuild::SetOutputNode(YAML::Node node, const ContextItem* contex
 void ProjMgrYamlCbuild::SetLinkerNode(YAML::Node node, const LinkerItem& linker) {
   SetNodeValue(node[YAML_SCRIPT], linker.script);
   SetNodeValue(node[YAML_REGIONS], linker.regions);
+  SetNodeValue(node[YAML_DEFINE], linker.defines);
 }
 
 void ProjMgrYamlCbuild::SetControlsNode(YAML::Node node, const BuildType& controls) {

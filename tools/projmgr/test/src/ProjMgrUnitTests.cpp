@@ -2926,6 +2926,12 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_LinkerOptions) {
     testinput_folder + "/TestSolution/LinkerOptions/ref/linker.Debug_AC6+RteTest_ARMCM3.cprj");
   ProjMgrTestEnv::CompareFile(testoutput_folder + "/linker.Debug_GCC+RteTest_ARMCM3.cprj",
     testinput_folder + "/TestSolution/LinkerOptions/ref/linker.Debug_GCC+RteTest_ARMCM3.cprj");
+
+  // Check generated cbuild YMLs
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/linker.Debug_AC6+RteTest_ARMCM3.cbuild.yml",
+    testinput_folder + "/TestSolution/LinkerOptions/ref/linker.Debug_AC6+RteTest_ARMCM3.cbuild.yml");
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/linker.Debug_GCC+RteTest_ARMCM3.cbuild.yml",
+    testinput_folder + "/TestSolution/LinkerOptions/ref/linker.Debug_GCC+RteTest_ARMCM3.cbuild.yml");
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_LinkerOptions_Redefinition) {

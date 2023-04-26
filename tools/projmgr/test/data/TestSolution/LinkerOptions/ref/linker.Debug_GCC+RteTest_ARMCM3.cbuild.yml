@@ -1,0 +1,42 @@
+build:
+  generated-by: csolution version 0.0.0+ge3c3a1b8
+  solution: ../data/TestSolution/LinkerOptions/linker.csolution.yml
+  project: ../data/TestSolution/LinkerOptions/linker.cproject.yml
+  context: linker.Debug_GCC+RteTest_ARMCM3
+  compiler: GCC
+  device: RteTest_ARMCM3
+  processor:
+    fpu: off
+    trustzone: non-secure
+  packs:
+    - pack: ARM::RteTest_DFP@0.2.0
+      path: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0
+  define:
+    - ARMCM3
+    - _RTE_
+  add-path:
+    - ../data/TestSolution/LinkerOptions/RTE/_Debug_GCC_RteTest_ARMCM3
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM3/Include
+  output-type: exe
+  output-dirs:
+    gendir: ../data/TestSolution/LinkerOptions
+    intdir: tmp/linker/RteTest_ARMCM3/Debug_GCC
+    outdir: out/linker/RteTest_ARMCM3/Debug_GCC
+    rtedir: ../data/TestSolution/LinkerOptions/RTE
+  components:
+    - component: ARM::Board:Test:Rev1@1.1.1
+      condition: BoardTest1
+      from-pack: ARM::RteTest_DFP@0.2.0
+      selected-by: Board:Test:Rev1
+  linker:
+    script: ../data/TestSolution/LinkerOptions/linkerScript.ld
+    regions: ../data/TestSolution/LinkerOptions/linkerRegions.h
+    define:
+      - LD_PP_GCC_CPROJECT_DEF0
+      - LD_PP_GCC_CPROJECT_DEF1
+      - LD_PP_GCC_CLAYER_DEF0
+      - LD_PP_GCC_CLAYER_DEF1
+  constructed-files:
+    - file: ../data/TestSolution/LinkerOptions/RTE/_Debug_GCC_RteTest_ARMCM3/RTE_Components.h
+      category: header
