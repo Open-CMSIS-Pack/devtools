@@ -551,6 +551,7 @@ bool ProjMgrYamlParser::ParseLinker(const YAML::Node& parent, vector<LinkerItem>
       if (!ParseTypeFilter(linkerEntry, linkerItem.typeFilter)) {
         return false;
       }
+      ParseVector(linkerEntry, YAML_DEFINE, linkerItem.defines);
       ParseVectorOrString(linkerEntry, YAML_FORCOMPILER, linkerItem.forCompiler);
       ParseString(linkerEntry, YAML_REGIONS, linkerItem.regions);
       ParseString(linkerEntry, YAML_SCRIPT, linkerItem.script);
@@ -834,6 +835,7 @@ const set<string> connectionsKeys = {
 const set<string> linkerKeys = {
   YAML_REGIONS,
   YAML_SCRIPT,
+  YAML_DEFINE,
   YAML_FORCOMPILER,
   YAML_FORCONTEXT,
   YAML_NOTFORCONTEXT,

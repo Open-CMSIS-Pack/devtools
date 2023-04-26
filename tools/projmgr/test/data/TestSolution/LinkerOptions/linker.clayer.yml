@@ -8,6 +8,9 @@ layer:
   linker:
     - script: ./linkerScript.ld
       regions: ./linkerRegions.h
+      define:
+       - LD_PP_GCC_CLAYER_DEF0
+       - LD_PP_GCC_CLAYER_DEF1
       for-context: .Debug_GCC 
     - script: ./linkerScript2.ld
       for-context: .Redefinition

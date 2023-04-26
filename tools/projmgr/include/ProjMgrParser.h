@@ -203,12 +203,14 @@ struct ConnectItem {
  * @brief linker item containing
  *        regions file,
  *        script file,
+ *        preprocessor defines,
  *        for compiler control,
  *        type inclusion
 */
 struct LinkerItem {
   std::string regions;
   std::string script;
+  std::vector<std::string> defines;
   std::vector<std::string> forCompiler;
   TypeFilter typeFilter;
 };
