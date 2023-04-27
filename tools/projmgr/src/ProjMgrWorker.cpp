@@ -1453,7 +1453,32 @@ bool ProjMgrWorker::ProcessConfigFiles(ContextItem& context) {
       }
     }
   }
+  SetDefaultLinkerScript(context);
+
   return true;
+}
+
+void ProjMgrWorker::SetDefaultLinkerScript(ContextItem& context) {
+  if (context.linker.script.empty()) {
+    const string& compilerRoot = GetCompilerRoot();
+    string linkerScript;
+    error_code ec;
+    for (auto const& entry : fs::recursive_directory_iterator(compilerRoot, ec)) {
+      string stem = entry.path().stem().generic_string();
+      if (RteUtils::EqualNoCase(context.toolchain.name + "_linker_script", stem)) {
+        linkerScript = entry.path().generic_string();
+        break;
+      }
+    }
+    if (linkerScript.empty()) {
+      ProjMgrLogger::Warn("linker script template for compiler '" + context.toolchain.name + "' was not found");
+      return;
+    }
+    context.linker.script = fs::relative(linkerScript, context.directories.cprj).generic_string();
+    if (context.linker.regions.empty()) {
+      context.linker.regions = context.rteActiveTarget->GetRegionsHeader();
+    }
+  }
 }
 
 bool ProjMgrWorker::ProcessComponentFiles(ContextItem& context) {

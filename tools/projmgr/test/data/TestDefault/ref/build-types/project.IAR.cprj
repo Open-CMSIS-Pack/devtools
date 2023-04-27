@@ -16,6 +16,7 @@
 
   <target Dfpu="NO_FPU" Dname="RteTest_ARMCM0" Dsecure="Non-secure" Dvendor="ARM:82">
     <output intdir="tmp/project/IAR" name="project" outdir="out/project/IAR" rtedir="../../data/TestDefault/RTE" type="exe"/>
+    <ldflags compiler="IAR" file="../../data/TestToolchains/iar_linker_script.icf" regions="Device/RteTest_ARMCM0/regions_RteTest_ARMCM0.h"/>
   </target>
 
   <components>

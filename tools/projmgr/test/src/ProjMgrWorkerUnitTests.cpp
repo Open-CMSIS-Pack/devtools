@@ -1295,3 +1295,36 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessLinkerOptions_Redefinition) {
   errStr = streamRedirect.GetErrorString();
   EXPECT_TRUE(regex_match(errStr, regex(expectedErrStr)));
 };
+
+TEST_F(ProjMgrWorkerUnitTests, SetDefaultLinkerScript) {
+  ProjMgrParser parser;
+  ContextDesc descriptor;
+  const string& filename = testinput_folder + "/TestProject/test.cproject.yml";
+  EXPECT_TRUE(parser.ParseCproject(filename, true));
+  EXPECT_TRUE(AddContexts(parser, descriptor, filename));
+  map<string, ContextItem>* contexts;
+  GetContexts(contexts);
+  ContextItem context = contexts->begin()->second;
+  EXPECT_TRUE(LoadPacks(context));
+  EXPECT_TRUE(ProcessPrecedences(context));
+  EXPECT_TRUE(ProcessDevice(context));
+  EXPECT_TRUE(SetTargetAttributes(context, context.targetAttributes));
+  context.directories.cprj = testinput_folder;
+
+  string expectedLinkerScriptFile = "TestToolchains/ac6_linker_script.sct";
+  string expectedLinkerRegionsFile = "Device/RteTest_ARMCM0/regions_RteTest_ARMCM0.h";
+  SetDefaultLinkerScript(context);
+  EXPECT_EQ(expectedLinkerScriptFile, context.linker.script);
+  EXPECT_EQ(expectedLinkerRegionsFile, context.linker.regions);
+};
+
+TEST_F(ProjMgrWorkerUnitTests, SetDefaultLinkerScript_UnknownCompiler) {
+  StdStreamRedirect streamRedirect;
+  ContextItem context;
+  context.toolchain.name = "Unknown";
+  string expectedErrStr = "warning csolution: linker script template for compiler 'Unknown' was not found\n";
+  SetDefaultLinkerScript(context);
+  EXPECT_TRUE(context.linker.script.empty());
+  string errStr = streamRedirect.GetErrorString();
+  EXPECT_EQ(errStr, expectedErrStr);
+};
