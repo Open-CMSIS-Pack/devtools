@@ -296,6 +296,16 @@ TEST_F(CBuildGCCTests, LinkerPreProcessing) {
   CheckCMakeLists(param);
 }
 
+
+// Validate project compilation with standard library flags
+TEST_F(CBuildGCCTests, StandardLibrary) {
+  TestParam param = { "GCC/StandardLibrary", "MyProject" };
+
+  RunCBuildScriptClean(param);
+  RunCBuildScript(param);
+  CheckCMakeLists(param);
+}
+
 // Validate Branch Protection
 // TODO: Enable this test case after GCC 12.2.0 release and support completion
 /*

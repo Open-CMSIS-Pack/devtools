@@ -1135,6 +1135,11 @@ bool CbuildModel::EvalFlags() {
     {
       m_targetLdCxxFlags = SplitArgs(ldcxxflags->GetAttribute("add"));
     }
+    const RteItem* ldlibs = CbuildUtils::GetItemByTagAndAttribute(target->GetChildren(), "ldlibs", "compiler", m_compiler);
+    if (ldlibs != NULL)
+    {
+      m_targetLdLibs = SplitArgs(ldlibs->GetAttribute("add"));
+    }
   }
 
   // RTE group flags

@@ -2820,6 +2820,7 @@ void ProjMgrWorker::AddMiscUniquely(MiscItem& dst, vector<MiscItem>& vec) {
       AddStringItemsUniquely(dst.link_c, src.link_c);
       AddStringItemsUniquely(dst.link_cpp, src.link_cpp);
       AddStringItemsUniquely(dst.lib, src.lib);
+      AddStringItemsUniquely(dst.library, src.library);
       // Propagate C-CPP flags
       AddStringItemsUniquely(dst.c, dst.c_cpp);
       AddStringItemsUniquely(dst.cpp, dst.c_cpp);
@@ -2974,6 +2975,7 @@ bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem& context, BuildType& b
         !ProcessSequencesRelatives(context, misc.cpp)    ||
         !ProcessSequencesRelatives(context, misc.c_cpp)  ||
         !ProcessSequencesRelatives(context, misc.lib)    ||
+        !ProcessSequencesRelatives(context, misc.library)||
         !ProcessSequencesRelatives(context, misc.link)   ||
         !ProcessSequencesRelatives(context, misc.link_c) ||
         !ProcessSequencesRelatives(context, misc.link_cpp)) {

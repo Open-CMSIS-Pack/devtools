@@ -2955,3 +2955,23 @@ error csolution: processing context 'linker.Redefinition\\+RteTest_ARMCM3' faile
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_TRUE(regex_match(errStr, regex(expected)));
 }
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_StandardLibrary) {
+  char* argv[7];
+  const string& csolution = testinput_folder + "/TestSolution/StandardLibrary/library.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"-c";
+  argv[4] = (char*)"library.Debug+RteTest_ARMCM3";
+  argv[5] = (char*)"-o";
+  argv[6] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(0, RunProjMgr(7, argv, 0));
+
+  // Check generated CPRJs
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/library.Debug+RteTest_ARMCM3.cprj",
+    testinput_folder + "/TestSolution/StandardLibrary/ref/library.Debug+RteTest_ARMCM3.cprj");
+
+  // Check generated cbuild YMLs
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/library.Debug+RteTest_ARMCM3.cbuild.yml",
+    testinput_folder + "/TestSolution/StandardLibrary/ref/library.Debug+RteTest_ARMCM3.cbuild.yml");
+}
