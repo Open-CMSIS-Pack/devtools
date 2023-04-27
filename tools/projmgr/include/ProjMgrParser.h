@@ -55,6 +55,7 @@ struct MiscItem {
   std::vector<std::string> link_c;
   std::vector<std::string> link_cpp;
   std::vector<std::string> lib;
+  std::vector<std::string> library;
 };
 
 /**

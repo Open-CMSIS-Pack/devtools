@@ -58,6 +58,11 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
     }
     cmakelists << EOL << "set(LD_FLAGS_GLOBAL \"" << CbuildUtils::EscapeQuotes(m_linkerMscGlobal) << "\")";
   }
+  // Linker flags libraries
+  if (!(m_linkerLibsGlobal.empty())) {
+    cmakelists << EOL << "set(LD_FLAGS_LIBRARIES \"" << CbuildUtils::EscapeQuotes(m_linkerLibsGlobal) << "\")";
+  }
+
   if (!m_linkerScript.empty()) {
     cmakelists << EOL << "set(LD_SCRIPT \"" << m_linkerScript << "\")";
     if (!m_linkerRegionsFile.empty()) {
@@ -667,8 +672,15 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
   if (!m_incPathsList.empty()) {
     cmakelists << "target_include_directories(${TARGET} PUBLIC ${INC_PATHS})" << EOL;
   }
-  if (!m_libFilesList.empty()) {
-    cmakelists << "target_link_libraries(${TARGET} ${LIB_FILES})" << EOL;
+  if (!m_libFilesList.empty() || !m_linkerLibsGlobal.empty()) {
+    cmakelists << "target_link_libraries(${TARGET}";
+    if (!m_libFilesList.empty()) {
+      cmakelists << " ${LIB_FILES}";
+    }
+    if (!m_linkerLibsGlobal.empty()) {
+      cmakelists << " ${LD_FLAGS_LIBRARIES}";
+    }
+    cmakelists << ")" << EOL;
   }
 
   // Linker script pre-processing

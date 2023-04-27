@@ -295,6 +295,14 @@ public:
   }
 
   /**
+   * @brief get linker flags used for handling libraries in the linker command line
+   * @return list of libraries linker flags
+   */
+  const std::vector<std::string>& GetTargetLdLibs() const {
+    return m_targetLdLibs;
+  }
+
+  /**
    * @brief get optimize option
    * @return optimize option
   */
@@ -549,6 +557,7 @@ protected:
   std::vector<std::string>                          m_targetLdFlags;
   std::vector<std::string>                          m_targetLdCFlags;
   std::vector<std::string>                          m_targetLdCxxFlags;
+  std::vector<std::string>                          m_targetLdLibs;
   std::vector<std::string>                          m_targetIncludePaths;
   std::vector<std::string>                          m_targetDefines;
   std::vector<std::string>                          m_linkerPreProcessorDefines;

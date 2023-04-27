@@ -111,6 +111,7 @@ bool BuildSystemGenerator::Collect(const string& inputFile, const CbuildModel *m
   m_linkerMscGlobal = GetString(model->GetTargetLdFlags());
   m_linkerCMscGlobal = GetString(model->GetTargetLdCFlags());
   m_linkerCxxMscGlobal = GetString(model->GetTargetLdCxxFlags());
+  m_linkerLibsGlobal = GetString(model->GetTargetLdLibs());
 
   m_linkerPreProcessorDefines = model->GetLinkerPreProcessorDefines();
   MergeVecStr(model->GetTargetDefines(), m_definesList);
