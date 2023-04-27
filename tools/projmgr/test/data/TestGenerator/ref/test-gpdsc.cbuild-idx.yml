@@ -5,3 +5,5 @@ build-idx:
     - cproject: ../data/TestGenerator/test-gpdsc.cproject.yml
   cbuilds:
     - cbuild: test-gpdsc.Debug+CM0.cbuild.yml
+      project: test-gpdsc
+      configuration: .Debug+CM0

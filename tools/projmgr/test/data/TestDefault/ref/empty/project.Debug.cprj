@@ -17,6 +17,7 @@
   <target Dfpu="NO_FPU" Dname="RteTest_ARMCM0" Dsecure="Non-secure" Dvendor="ARM:82">
     <output intdir="tmp/project/Debug" name="project" outdir="out/project/Debug" rtedir="../../data/TestDefault/RTE" type="exe"/>
     <asflags add="defaultMiscASM-RteTest_ARMCM0" compiler="GCC"/>
+    <ldflags compiler="GCC" file="../../data/TestToolchains/gcc_linker_script.ld" regions="Device/RteTest_ARMCM0/regions_RteTest_ARMCM0.h"/>
   </target>
 
   <components>

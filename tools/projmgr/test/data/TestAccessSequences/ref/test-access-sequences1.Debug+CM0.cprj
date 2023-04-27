@@ -18,6 +18,7 @@
     <output intdir="tmp/test-access-sequences1/CM0/Debug" name="test-access-sequences1" outdir="out/test-access-sequences1/CM0/Debug" rtedir="../data/TestAccessSequences/RTE" type="exe"/>
     <cflags add="-O1 -g -C-CPP-RteTest_ARMCM0" compiler="AC6"/>
     <cxxflags add="-O1 -g -C-CPP-RteTest_ARMCM0" compiler="AC6"/>
+    <ldflags compiler="AC6" file="../data/TestToolchains/ac6_linker_script.sct" regions="Device/RteTest_ARMCM0/regions_RteTest_ARMCM0.h"/>
     <defines>DEF1-PROJ1-out/test-access-sequences2/CM0/Debug/test-access-sequences2;DEF2-PROJ1-out/test-access-sequences2/CM3/Debug/test-access-sequences2;DEF3-PROJ1-out/test-access-sequences2/CM0/Release/test-access-sequences2;DEF4-PROJ1-out/test-access-sequences2/CM0/Debug;DEF5-PROJ1-../data/TestAccessSequences;DEF-CM0-RteTest_ARMCM0-</defines>
     <includes>../data/TestAccessSequences/path/CM0/RteTest_ARMCM0</includes>
   </target>

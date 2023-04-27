@@ -593,6 +593,7 @@ protected:
   bool IsCollectionSubset(const ConnectionsCollectionVec& collectionSubset, const ConnectionsCollectionVec& collectionSuperset);
   void RemoveRedundantSubsets(std::vector<ConnectionsCollectionVec>& validConnections);
   StrSet GetValidSets(ContextItem& context, const std::string& clayer);
+  void SetDefaultLinkerScript(ContextItem& context);
 };
 
 #endif  // PROJMGRWORKER_H

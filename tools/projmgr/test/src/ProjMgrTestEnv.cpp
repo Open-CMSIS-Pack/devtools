@@ -16,6 +16,7 @@ string testinput_folder;
 string testoutput_folder;
 string testcmsispack_folder;
 string schema_folder;
+string templates_folder;
 
 StdStreamRedirect::StdStreamRedirect() :
   m_outbuffer(""), m_cerrbuffer(""),
@@ -46,6 +47,7 @@ StdStreamRedirect::~StdStreamRedirect() {
 void ProjMgrTestEnv::SetUp() {
   error_code ec;
   schema_folder        = string(TEST_FOLDER) + "../schemas";
+  templates_folder     = string(TEST_FOLDER) + "../templates";
   testinput_folder     = RteFsUtils::GetCurrentFolder() + "data";
   testoutput_folder    = RteFsUtils::GetCurrentFolder() + "output";
   testcmsispack_folder = string(CMAKE_SOURCE_DIR) + "test/packs";
@@ -106,6 +108,9 @@ void ProjMgrTestEnv::SetUp() {
   RteFsUtils::CreateFile(testdir + "/GCC.11.2.1.cmake", "");
   RteFsUtils::CreateFile(testdir + "/IAR.8.50.6.cmake", "");
   CrossPlatformUtils::SetEnv("CMSIS_COMPILER_ROOT", testdir);
+
+  // copy linker script template files
+  fs::copy(fs::path(templates_folder), fs::path(testdir), fs::copy_options::recursive, ec);
 }
 
 void ProjMgrTestEnv::TearDown() {
