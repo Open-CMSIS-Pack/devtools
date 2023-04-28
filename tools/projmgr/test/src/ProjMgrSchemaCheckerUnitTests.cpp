@@ -12,6 +12,8 @@
 #include "RteFsUtils.h"
 #include "gtest/gtest.h"
 
+#include <fstream>
+
 using namespace std;
 
 class ProjMgrSchemaCheckerUnitTests :
@@ -120,4 +122,69 @@ TEST_F(ProjMgrSchemaCheckerUnitTests, SchemaCheck_Pack_Selection) {
 
   EXPECT_TRUE(Validate(filename, FileType::SOLUTION));
   EXPECT_TRUE(GetErrors().empty());
+}
+
+TEST_F(ProjMgrSchemaCheckerUnitTests, CSolution_SchemaCheck_Fail) {
+  const char* invalid_schema_Ex1 = "\
+solution:\n\
+  created-by: test1.0.0\n\
+  created-for: test@1.2\n\
+";
+
+  const char* invalid_schema_Ex2 = "\
+solution:\n\
+  created-by: astro@1-0.0\n\
+  created-for: test@1.2.0.4\n\
+";
+
+  const char* invalid_schema_Ex3 = "\
+solution:\n\
+  created-by: test\n\
+  created-for: test@>=1\n\
+";
+
+  const char* valid_schema_Ex4 = "\
+solution:\n\
+  created-by: test@1.0.0\n\
+  created-for: test@1.2.3+ed5dsd73ks\n\
+";
+
+  vector<std::pair<int, int>> expectedErrPos = {
+    // line, col
+    {  2  ,  14 },
+    {  3  ,  15 },
+  };
+
+  vector<std::pair<const char*, bool>> vecTestData = {
+    {invalid_schema_Ex1, false},
+    {invalid_schema_Ex2, false },
+    {invalid_schema_Ex3, false },
+    {valid_schema_Ex4, true }
+  };
+
+  auto writeFile = [](const string& filePath, const char* data) {
+    ofstream fileStream(filePath);
+    fileStream << data;
+    fileStream << endl;
+    fileStream << flush;
+    fileStream.close();
+  };
+
+  const string& filename = testoutput_folder +
+    "/test.csolution_schema_validation.yml";
+  for (auto [data, expectError] : vecTestData) {
+    writeFile(filename, data);
+    EXPECT_EQ(expectError, Validate(filename, FileType::SOLUTION));
+
+    // Check errors
+    auto errList = GetErrors();
+    ASSERT_EQ(errList.size(), expectError ? 0 : expectedErrPos.size()) << "failed for: " << data;
+    for (auto& err : errList) {
+      auto errItr = find_if(expectedErrPos.begin(), expectedErrPos.end(),
+        [&](const std::pair<int,int>& errPos) {
+          return err.m_line == errPos.first && err.m_col == errPos.second;
+        });
+      EXPECT_TRUE(expectedErrPos.end() != errItr) << "failed for: " << data;
+    }
+  }
 }

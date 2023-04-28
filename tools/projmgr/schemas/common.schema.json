@@ -637,7 +637,16 @@
         "del-paths":    { "$ref": "#/definitions/DelpathsType", "description": "DEPRECATED use: del-path" },
         "del-path":     { "$ref": "#/definitions/DelpathsType" },
         "misc":         { "$ref": "#/definitions/MiscTypes" },
-        "variables":    { "$ref": "#/definitions/VariablesType" }
+        "variables":    { "$ref": "#/definitions/VariablesType" },
+        "created-by": {
+          "$ref": "#/definitions/CreatedInfoType",
+          "description": " The tool that creates this csolution project"
+        },
+        "created-for": {
+          "$ref": "#/definitions/CreatedInfoType",
+          "description": "The tool required to build this csolution project"
+        },
+        "description":  { "type": "string" }
       },
       "additionalProperties": false
     },
@@ -894,6 +903,10 @@
         "for-compiler":    { "$ref": "#/definitions/CompilersType" }
       },
       "additionalProperties": false
+    },
+    "CreatedInfoType": {
+      "type": "string",
+      "pattern": "^.*@\\d+\\.\\d+\\.\\d+(-[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?(\\+[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?$"
     }
   }
 }
