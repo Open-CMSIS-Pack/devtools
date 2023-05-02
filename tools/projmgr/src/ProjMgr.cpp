@@ -313,8 +313,20 @@ bool ProjMgr::PopulateContexts(void) {
     if (!m_parser.ParseCsolution(m_csolutionFile, m_checkSchema)) {
       return false;
     }
+    // Check cproject separate folders
+    const StrVec& cprojects = m_parser.GetCsolution().cprojects;
+    if (cprojects.size() > 1) {
+      multiset<string> dirs;
+      for (const auto& cproject : cprojects) {
+        error_code ec;
+        dirs.insert(fs::path(cproject).parent_path().generic_string());
+      }
+      if (adjacent_find(dirs.begin(), dirs.end()) != dirs.end()) {
+        ProjMgrLogger::Warn(m_csolutionFile, "cproject.yml files should be placed in separate sub-directories");
+      }
+    }
     // Parse cprojects
-    for (const auto& cproject : m_parser.GetCsolution().cprojects) {
+    for (const auto& cproject : cprojects) {
       error_code ec;
       string const& cprojectFile = fs::canonical(m_rootDir + "/" + cproject, ec).generic_string();
       if (cprojectFile.empty()) {
