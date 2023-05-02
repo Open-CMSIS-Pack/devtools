@@ -155,17 +155,15 @@ RtePackage* ProjMgrUtils::ReadGpdscFile(const string& gpdsc) {
   fs::path path(gpdsc);
   error_code ec;
   if (fs::exists(path, ec)) {
-    RteItemBuilder rteItemBuilder;
+    RteItemBuilder rteItemBuilder(nullptr, PackageState::PS_GENERATED);
     XMLTreeSlim tree(&rteItemBuilder);
     tree.Init();
     bool success = tree.AddFileName(gpdsc, true);
     RtePackage* gpdscPack = rteItemBuilder.GetPack();
-    if (!success || !gpdscPack) {
-      return nullptr;
-    }
-    if (gpdscPack->Validate()) {
-      gpdscPack->SetPackageState(PackageState::PS_GENERATED);
+    if (success && gpdscPack && gpdscPack->Validate()) {
       return gpdscPack;
+    } else if (gpdscPack) {
+      delete gpdscPack;
     }
   }
   return nullptr;

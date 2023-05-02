@@ -228,20 +228,18 @@ RtePackage* CbuildProject::ReadGpdscFile(const string& gpdsc)
     LogMsg("M204", PATH(gpdsc));
     return NULL;
   }
-  RteItemBuilder rteItemBuilder;
+  RteItemBuilder rteItemBuilder(nullptr, PackageState::PS_GENERATED);
   XMLTreeSlim tree(&rteItemBuilder);
   tree.Init();
   bool success = tree.AddFileName(gpdsc, true);
   RtePackage* gpdscPack = rteItemBuilder.GetPack();
-  if(!success || !gpdscPack) {
-      LogMsg("M203", PATH(gpdsc));
-      return nullptr;
-  }
-  if (gpdscPack->Validate()) {
-    gpdscPack->SetPackageState(PackageState::PS_GENERATED);
+
+  if (success && gpdscPack && gpdscPack->Validate()) {
     return gpdscPack;
+  } else if (gpdscPack)
+  if (!success || !gpdscPack) {
+    delete gpdscPack;
   }
   LogMsg("M203", PATH(gpdsc));
-  delete gpdscPack;
   return nullptr;
 } // end of CbuildProject.cpp
