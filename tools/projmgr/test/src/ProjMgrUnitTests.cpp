@@ -2563,7 +2563,7 @@ TEST_F(ProjMgrUnitTests, Convert_ValidationResults_Dependencies) {
     argv[5] = (char*)context.c_str();
     EXPECT_EQ(0, RunProjMgr(6, argv, 0));
     auto errorStr = streamRedirect.GetErrorString();
-    EXPECT_EQ(0, errorStr.find(expected));
+    EXPECT_NE(string::npos, errorStr.find(expected));
   }
 }
 
@@ -2974,4 +2974,23 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_StandardLibrary) {
   // Check generated cbuild YMLs
   ProjMgrTestEnv::CompareFile(testoutput_folder + "/library.Debug+RteTest_ARMCM3.cbuild.yml",
     testinput_folder + "/TestSolution/StandardLibrary/ref/library.Debug+RteTest_ARMCM3.cbuild.yml");
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_MultipleProject_SameFolder) {
+  char* argv[5];
+  StdStreamRedirect streamRedirect;
+  const string& csolution = testinput_folder + "/TestSolution/multiple.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"-o";
+  argv[4] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(1, RunProjMgr(5, argv, 0));
+
+  // Check warning message
+  const string expected = "\
+.*/TestSolution/multiple.csolution.yml - warning csolution: cproject.yml files should be placed in separate sub-directories\n\
+.*\n";
+
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_TRUE(regex_match(errStr, regex(expected)));
 }
