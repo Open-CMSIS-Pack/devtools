@@ -349,7 +349,12 @@ RteComponentInstance* RteProject::AddCprjComponent(RteItem* item, RteTarget* tar
   if (version.empty()) {
     info->SetVersionMatchMode(VersionCmp::MatchMode::LATEST_VERSION);
   } else {
-    info->SetVersionMatchMode(VersionCmp::MatchMode::FIXED_VERSION);
+    VersionCmp::MatchMode mode = VersionCmp::MatchModeFromString(item->GetAttribute("versionMatchMode"));
+    if (mode == VersionCmp::MatchMode::ENFORCED_VERSION) {
+      info->SetVersionMatchMode(VersionCmp::MatchMode::ENFORCED_VERSION);
+    } else {
+      info->SetVersionMatchMode(VersionCmp::MatchMode::FIXED_VERSION);
+    }
   }
   if (item->GetAttribute("instances").empty())
     instanceCount = -1;
@@ -697,7 +702,7 @@ bool RteProject::Apply()
         if (ci && c->IsGenerated()) {
           const string& gpdsc = c->GetPackage()->GetPackageFileName();
           RteGpdscInfo* gpdscInfo = GetGpdscInfo(gpdsc);
-          if (!gpdscInfo || !gpdscInfo->IsUsedByTarget(targetName)) {
+          if (!gpdscInfo) {
             ci->SetRemoved(true); // gpdsc is removed => all files are removed
             continue;
           }
@@ -1052,7 +1057,7 @@ RteGpdscInfo* RteProject::AddGpdscInfo(const string& gpdscFile, RtePackage* gpds
 
 RteGpdscInfo* RteProject::AddGpdscInfo(RteComponent* c, RteTarget* target)
 {
-  if (!c || c->IsGenerated()) // it is already generated => gpdsc info is present
+  if (!c)
     return NULL;
 
   RteGenerator* gen = c->GetGenerator();

@@ -1243,6 +1243,12 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
     // Init matched component instance
     RteComponentInstance* matchedComponentInstance = new RteComponentInstance(matchedComponent);
     matchedComponentInstance->InitInstance(matchedComponent);
+    if (!item.condition.empty()) {
+      auto ti = matchedComponentInstance->EnsureTargetInfo(context.rteActiveTarget->GetName());
+      ti->SetVersionMatchMode(VersionCmp::MatchMode::ENFORCED_VERSION);
+      matchedComponentInstance->AddAttribute("versionMatchMode",
+        VersionCmp::MatchModeToString(VersionCmp::MatchMode::ENFORCED_VERSION));
+    }
 
     // Set layer's rtePath attribute
     if (!layer.empty() && context.csolution->directories.rte.empty()) {
@@ -1299,13 +1305,14 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
 
 RteComponent* ProjMgrWorker::ProcessComponent(ContextItem& context, ComponentItem& item, RteComponentMap& componentMap)
 {
-
   if (!item.condition.empty()) {
     RteComponentInstance ci(nullptr);
     ci.SetTag("component");
 
     ci.SetAttributes(ProjMgrUtils::ComponentAttributesFromId(item.component));
     ci.AddAttribute("condition", item.condition);
+    auto ti = ci.EnsureTargetInfo(context.rteActiveTarget->GetName());
+    ti->SetVersionMatchMode(VersionCmp::MatchMode::ENFORCED_VERSION);
     string packId = item.fromPack;
     RteUtils::ReplaceAll(packId,"::", ".");
     RteUtils::ReplaceAll(packId, "@", ".");

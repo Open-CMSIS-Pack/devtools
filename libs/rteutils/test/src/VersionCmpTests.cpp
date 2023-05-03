@@ -11,12 +11,12 @@ using namespace std;
 
 TEST(VersionCmpTest, VersionMatchMode) {
 
-  EXPECT_EQ(VersionCmp::MatchModeFromString(""),         VersionCmp::MatchMode::ANY_VERSION);
+  EXPECT_EQ(VersionCmp::MatchModeFromString("enforced"), VersionCmp::MatchMode::ENFORCED_VERSION);
   EXPECT_EQ(VersionCmp::MatchModeFromString("fixed"),    VersionCmp::MatchMode::FIXED_VERSION);
   EXPECT_EQ(VersionCmp::MatchModeFromString("latest"),   VersionCmp::MatchMode::LATEST_VERSION);
   EXPECT_EQ(VersionCmp::MatchModeFromString("excluded"), VersionCmp::MatchMode::EXCLUDED_VERSION);
 
-  EXPECT_EQ(VersionCmp::MatchModeToString(VersionCmp::MatchMode::ANY_VERSION).empty(), true);
+  EXPECT_EQ(VersionCmp::MatchModeToString(VersionCmp::MatchMode::ENFORCED_VERSION), "enforced");
   EXPECT_EQ(VersionCmp::MatchModeToString(VersionCmp::MatchMode::FIXED_VERSION),"fixed");
   EXPECT_EQ(VersionCmp::MatchModeToString(VersionCmp::MatchMode::LATEST_VERSION), "latest");
   EXPECT_EQ(VersionCmp::MatchModeToString(VersionCmp::MatchMode::EXCLUDED_VERSION), "excluded");

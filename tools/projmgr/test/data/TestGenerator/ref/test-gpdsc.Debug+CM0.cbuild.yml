@@ -27,6 +27,9 @@ build:
       condition: RteDevice
       from-pack: ARM::RteTestGenerator@0.1.0
       selected-by: Device:RteTest Generated Component:RteTest
+      files:
+        - file: ../data/TestGenerator/RTE/Device/RteTestGen_ARMCM0/RteTest_Generated_Component.c
+          category: sourceC
       generator:
         id: RteTestGeneratorIdentifier
     - component: ARM::RteTest:CORE@0.1.1
