@@ -1483,7 +1483,7 @@ void ProjMgrWorker::SetDefaultLinkerScript(ContextItem& context) {
     }
     context.linker.script = fs::relative(linkerScript, context.directories.cprj).generic_string();
     if (context.linker.regions.empty()) {
-      context.linker.regions = context.rteActiveTarget->GetRegionsHeader();
+      context.linker.regions = fs::path(context.directories.rte).append(context.rteActiveTarget->GetRegionsHeader()).generic_string();
     }
   }
 }

@@ -67,7 +67,7 @@ build:
             - --foo=bar
   linker:
     script: ../data/TestToolchains/ac6_linker_script.sct
-    regions: Device/RteTestGen_ARMCM0/regions_RteTestGen_ARMCM0.h
+    regions: ../data/TestGenerator/RTE/Device/RteTestGen_ARMCM0/regions_RteTestGen_ARMCM0.h
   constructed-files:
     - file: ../data/TestGenerator/RTE/_Debug_CM0/RTE_Components.h
       category: header
