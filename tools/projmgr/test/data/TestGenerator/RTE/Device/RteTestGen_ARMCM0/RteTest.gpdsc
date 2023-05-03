@@ -26,10 +26,13 @@
   </conditions>
   <components>
     <component generator="RteTestGeneratorIdentifier" Cvendor="ARM" Cclass="Device" Cgroup="RteTest Generated Component" Csub="RteTest" Cversion="1.1.0" condition="RteTest">
-      <description>Configuration via STM32CubeMX</description>
+      <description>Configuration via STM32CubeMX test data</description>
       <RTE_Components_h>
-        #define RTE_TEST_GENERATOR
+        #define RTE_TEST_GENERATOR_FROM_GPDSC_PRE_CHECK
       </RTE_Components_h>
+      <files>
+        <file name="RteTest_Generated_Component.c" category="sourceC"/>
+      </files>
     </component>
   </components>
 </package>

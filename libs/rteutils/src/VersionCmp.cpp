@@ -193,12 +193,14 @@ VersionCmp::MatchMode VersionCmp::MatchModeFromString(const std::string& mode)
 {
   if (mode == "fixed")
     return MatchMode::FIXED_VERSION;
+  else if (mode == "enforced")
+    return MatchMode::ENFORCED_VERSION;
   else if (mode == "latest")
     return MatchMode::LATEST_VERSION;
   else if (mode == "excluded")
     return MatchMode::EXCLUDED_VERSION;
   // all other cases
-  return MatchMode::ANY_VERSION;
+  return MatchMode::LATEST_VERSION;
 }
 
 VersionCmp::MatchMode VersionCmp::MatchModeFromVersionString(const std::string& version)
@@ -230,8 +232,9 @@ std::string VersionCmp::MatchModeToString(VersionCmp::MatchMode mode)
   case MatchMode::HIGHER_OR_EQUAL:
     s = "latest";
     break;
-  case MatchMode::ANY_VERSION:
-    break; // no string
+  case MatchMode::ENFORCED_VERSION:
+    s = "enforced";
+    break;
   case MatchMode::EXCLUDED_VERSION:
     s = "excluded";
     break;

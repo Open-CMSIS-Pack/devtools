@@ -25,10 +25,10 @@ private:
 
 public:
 
-  enum class MatchMode {
-    ANY_VERSION,      // any installed version is accepted
+  enum MatchMode {
+    ENFORCED_VERSION, // strictly fixed version is required (pack and condition)
     FIXED_VERSION,    // fixed version is accepted
-    LATEST_VERSION,   // use the latest version
+    LATEST_VERSION,   // use the latest version (default)
     EXCLUDED_VERSION, // exclude specified version
     HIGHER_OR_EQUAL   // higher or equal version
   };

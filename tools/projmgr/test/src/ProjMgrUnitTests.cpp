@@ -1294,6 +1294,13 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Generator) {
   argv[5] = (char*)testoutput_folder.c_str();
   EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
+  string RTE_Components_h = testinput_folder + "/TestGenerator/RTE/_Debug_CM0/RTE_Components.h";
+
+  EXPECT_TRUE(RteFsUtils::Exists(RTE_Components_h));
+  string buf;
+  EXPECT_TRUE(RteFsUtils::ReadFile(RTE_Components_h, buf));
+  EXPECT_TRUE(buf.find("#define RTE_TEST_GENERATOR_FROM_GPDSC_PRE_CHECK") != string::npos);
+
   // Check generated CPRJs
  ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test-gpdsc.Debug+CM0.cprj",
     testinput_folder + "/TestGenerator/ref/test-gpdsc.Debug+CM0.cprj");
