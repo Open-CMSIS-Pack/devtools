@@ -1310,6 +1310,7 @@ TEST_F(ProjMgrWorkerUnitTests, SetDefaultLinkerScript) {
   EXPECT_TRUE(ProcessDevice(context));
   EXPECT_TRUE(SetTargetAttributes(context, context.targetAttributes));
   context.directories.cprj = testinput_folder;
+  context.directories.rte = "";
 
   string expectedLinkerScriptFile = "TestToolchains/ac6_linker_script.sct";
   string expectedLinkerRegionsFile = "Device/RteTest_ARMCM0/regions_RteTest_ARMCM0.h";
