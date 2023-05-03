@@ -1752,6 +1752,15 @@ std::string RteTarget::GenerateRegionsHeaderContent() const
     oss << GenerateMemoryRegionContent(mem, id, i >= nDeviceRW);
   }
   oss << "// </h>" << RteUtils::LF_STRING;
+  oss << RteUtils::LF_STRING;
+
+  oss << "// <h>Stack / Heap Configuration" << RteUtils::LF_STRING;
+  oss << "//   <o0> Stack Size (in Bytes) <0x0-0xFFFFFFFF:8>" << RteUtils::LF_STRING;
+  oss << "//   <o1> Heap Size (in Bytes) <0x0-0xFFFFFFFF:8>" << RteUtils::LF_STRING;
+  oss << "#define __STACK_SIZE 0x00000200" << RteUtils::LF_STRING;
+  oss << "#define __HEAP_SIZE 0x00000C00" << RteUtils::LF_STRING;
+  oss << "// </h>" << RteUtils::LF_STRING;
+
   return oss.str();
 }
 

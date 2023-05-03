@@ -30,26 +30,26 @@
  *----------------------------------------------------------------------------*/
 MEMORY
 {
+  ROM0  (rx)  : ORIGIN = __ROM0_BASE, LENGTH = __ROM0_SIZE
+#if __ROM1_SIZE > 0
   ROM1  (rx)  : ORIGIN = __ROM1_BASE, LENGTH = __ROM1_SIZE
+#endif
 #if __ROM2_SIZE > 0
   ROM2  (rx)  : ORIGIN = __ROM2_BASE, LENGTH = __ROM2_SIZE
 #endif
 #if __ROM3_SIZE > 0
   ROM3  (rx)  : ORIGIN = __ROM3_BASE, LENGTH = __ROM3_SIZE
 #endif
-#if __ROM4_SIZE > 0
-  ROM4  (rx)  : ORIGIN = __ROM4_BASE, LENGTH = __ROM4_SIZE
-#endif
 
+  RAM0  (rwx) : ORIGIN = __RAM0_BASE, LENGTH = __RAM0_SIZE
+#if __RAM1_SIZE > 0
   RAM1  (rwx) : ORIGIN = __RAM1_BASE, LENGTH = __RAM1_SIZE
+#endif
 #if __RAM2_SIZE > 0
   RAM2  (rwx) : ORIGIN = __RAM2_BASE, LENGTH = __RAM2_SIZE
 #endif
 #if __RAM3_SIZE > 0
   RAM3  (rwx) : ORIGIN = __RAM3_BASE, LENGTH = __RAM3_SIZE
-#endif
-#if __RAM4_SIZE > 0
-  RAM4  (rwx) : ORIGIN = __RAM4_BASE, LENGTH = __RAM4_SIZE
 #endif
 }
 
@@ -112,25 +112,25 @@ SECTIONS
     *(.rodata*)
 
     KEEP(*(.eh_frame*))
-  } > ROM1
+  } > ROM0
 
 #if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
   .gnu.sgstubs :
   {
     . = ALIGN(32);
-  } > ROM1
+  } > ROM0
 #endif
 
   .ARM.extab :
   {
     *(.ARM.extab* .gnu.linkonce.armextab.*)
-  } > ROM1
+  } > ROM0
 
   __exidx_start = .;
   .ARM.exidx :
   {
     *(.ARM.exidx* .gnu.linkonce.armexidx.*)
-  } > ROM1
+  } > ROM0
   __exidx_end = .;
 
   .copy.table :
@@ -149,7 +149,7 @@ SECTIONS
     LONG ((__data2_end__ - __data2_start__) / 4)
 */
     __copy_table_end__ = .;
-  } > ROM1
+  } > ROM0
 
   .zero.table :
   {
@@ -161,7 +161,7 @@ SECTIONS
     LONG ((__bss2_end__ - __bss2_start__) / 4)
 */
     __zero_table_end__ = .;
-  } > ROM1
+  } > ROM0
 
   /**
    * Location counter can end up 2byte aligned with narrow Thumb code but
@@ -202,7 +202,7 @@ SECTIONS
     /* All data end */
     __data_end__ = .;
 
-  } > RAM1
+  } > RAM0
 
   /*
    * Secondary data section, optional
@@ -223,7 +223,7 @@ SECTIONS
     . = ALIGN(4);
     __data2_end__ = .;
 
-  } > RAM2
+  } > RAM1
 */
 
   .bss :
@@ -235,7 +235,7 @@ SECTIONS
     *(COMMON)
     . = ALIGN(4);
     __bss_end__ = .;
-  } > RAM1 AT > RAM1
+  } > RAM0 AT > RAM0
 
   /*
    * Secondary bss section, optional
@@ -253,7 +253,7 @@ SECTIONS
     *(.bss2.*)
     . = ALIGN(4);
     __bss2_end__ = .;
-  } > RAM2 AT > RAM2
+  } > RAM1 AT > RAM1
 */
 
   .heap (COPY) :
@@ -264,26 +264,26 @@ SECTIONS
     . = . + __HEAP_SIZE;
     . = ALIGN(8);
     __HeapLimit = .;
-  } > RAM1
+  } > RAM0
 
-  .stack (ORIGIN(RAM1) + LENGTH(RAM1) - __STACK_SIZE - __STACKSEAL_SIZE) (COPY) :
+  .stack (ORIGIN(RAM0) + LENGTH(RAM0) - __STACK_SIZE - __STACKSEAL_SIZE) (COPY) :
   {
     . = ALIGN(8);
     __StackLimit = .;
     . = . + __STACK_SIZE;
     . = ALIGN(8);
     __StackTop = .;
-  } > RAM1
+  } > RAM0
   PROVIDE(__stack = __StackTop);
 
 #if __STACKSEAL_SIZE > 0
-  .stackseal (ORIGIN(RAM1) + LENGTH(RAM1) - __STACKSEAL_SIZE) (COPY) :
+  .stackseal (ORIGIN(RAM0) + LENGTH(RAM0) - __STACKSEAL_SIZE) (COPY) :
   {
     . = ALIGN(8);
     __StackSeal = .;
     . = . + 8;
     . = ALIGN(8);
-  } > RAM1
+  } > RAM0
 #endif
 
   /* Check if data + heap + stack exceeds RAM limit */

@@ -17,7 +17,7 @@
   <target Dfpu="NO_FPU" Dname="RteTest_ARMCM3" Dsecure="Non-secure" Dvendor="ARM:82">
     <output intdir="tmp/toolchain/Target/Debug" name="toolchain" outdir="out/toolchain/Target/Debug" rtedir="../data/TestSolution/RTE" type="exe"/>
     <cflags add="-DGCC@11.2.1" compiler="GCC"/>
-    <ldflags compiler="GCC" file="../data/TestToolchains/gcc_linker_script.ld" regions="Device/RteTest_ARMCM3/regions_RteTest_ARMCM3.h"/>
+    <ldflags compiler="GCC" file="../data/TestToolchains/gcc_linker_script.ld" regions="../data/TestSolution/RTE/Device/RteTest_ARMCM3/regions_RteTest_ARMCM3.h"/>
     <defines>CompilerDefinition:GCC</defines>
   </target>
 

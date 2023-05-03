@@ -29,10 +29,10 @@
   Scatter File Definitions definition
  *----------------------------------------------------------------------------*/
 
-LR_ROM1 __ROM1_BASE __ROM1_SIZE  {
+LR_ROM0 __ROM0_BASE __ROM0_SIZE  {
 
 #if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
-  ER_CMSE_VENEER __ROM1_BASE+__ROM1_SIZE -__ROM1_SIZE {
+  ER_CMSE_VENEER __ROM0_BASE+__ROM0_SIZE -__ROM0_SIZE {
    *(Veneer$$CMSE)
   }
   #define ER_CMSE_VENEER_SIZE AlignExpr(ImageLength(ER_CMSE_VENEER), 8)
@@ -40,17 +40,17 @@ LR_ROM1 __ROM1_BASE __ROM1_SIZE  {
   #define ER_CMSE_VENEER_SIZE 0
 #endif
 
-  ER_ROM1 __ROM1_BASE (__ROM1_SIZE - ER_CMSE_VENEER_SIZE) {
+  ER_ROM0 __ROM0_BASE (__ROM0_SIZE - ER_CMSE_VENEER_SIZE) {
    *.o (RESET, +First)
    *(InRoot$$Sections)
    *(+RO +XO)
   }
 
-  RW_NOINIT __RAM1_BASE UNINIT (__RAM1_SIZE - __HEAP_SIZE - __STACK_SIZE) {
+  RW_NOINIT __RAM0_BASE UNINIT (__RAM0_SIZE - __HEAP_SIZE - __STACK_SIZE) {
     *(.bss.noinit)
   }
 
-  RW_RAM1 AlignExpr(+0, 8) (__RAM1_SIZE - __HEAP_SIZE - __STACK_SIZE - AlignExpr(ImageLength(RW_NOINIT), 8)) {
+  RW_RAM0 AlignExpr(+0, 8) (__RAM0_SIZE - __HEAP_SIZE - __STACK_SIZE - AlignExpr(ImageLength(RW_NOINIT), 8)) {
     *(+RW +ZI)
   }
 
@@ -59,7 +59,7 @@ LR_ROM1 __ROM1_BASE __ROM1_SIZE  {
   }
 #endif
 
-  ARM_LIB_STACK (__RAM1_BASE + __RAM1_SIZE - __STACKSEAL_SIZE) EMPTY -__STACK_SIZE {   ; Reserve empty region for stack
+  ARM_LIB_STACK (__RAM0_BASE + __RAM0_SIZE - __STACKSEAL_SIZE) EMPTY -__STACK_SIZE {   ; Reserve empty region for stack
   }
 
 #if __STACKSEAL_SIZE > 0
@@ -67,8 +67,14 @@ LR_ROM1 __ROM1_BASE __ROM1_SIZE  {
   }
 #endif
 
+#if __RAM1_SIZE > 0
+  RW_RAM1 __RAM1_BASE __RAM1_SIZE  {
+   .ANY (+RW +ZI)
+  }
+#endif
+
 #if __RAM2_SIZE > 0
-  RW_RAM2 __RAM2_BASE __RAM2_SIZE
+  RW_RAM2 __RAM2_BASE __RAM2_SIZE  {
    .ANY (+RW +ZI)
   }
 #endif
@@ -78,13 +84,15 @@ LR_ROM1 __ROM1_BASE __ROM1_SIZE  {
    .ANY (+RW +ZI)
   }
 #endif
-
-#if __RAM4_SIZE > 0
-  RW_RAM4 __RAM4_BASE __RAM4_SIZE  {
-   .ANY (+RW +ZI)
-  }
-#endif
 }
+
+#if __ROM1_SIZE > 0
+LR_ROM1 __ROM1_BASE __ROM1_SIZE  {
+  ER_ROM1 +0 __ROM1_SIZE {
+   .ANY (+RO +XO)
+  }
+}
+#endif
 
 #if __ROM2_SIZE > 0
 LR_ROM2 __ROM2_BASE __ROM2_SIZE  {
@@ -97,14 +105,6 @@ LR_ROM2 __ROM2_BASE __ROM2_SIZE  {
 #if __ROM3_SIZE > 0
 LR_ROM3 __ROM3_BASE __ROM3_SIZE  {
   ER_ROM3 +0 __ROM3_SIZE {
-   .ANY (+RO +XO)
-  }
-}
-#endif
-
-#if __ROM4_SIZE > 0
-LR_ROM4 __ROM4_BASE __ROM4_SIZE  {
-  ER_ROM4 +0 __ROM4_SIZE {
    .ANY (+RO +XO)
   }
 }
