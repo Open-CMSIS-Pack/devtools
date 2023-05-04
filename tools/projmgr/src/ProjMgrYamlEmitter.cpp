@@ -313,10 +313,12 @@ void ProjMgrYamlCbuild::SetOutputNode(YAML::Node node, const ContextItem* contex
 }
 
 void ProjMgrYamlCbuild::SetLinkerNode(YAML::Node node, const ContextItem* context) {
-  string script = context->linker.script.empty() ? "" : context->directories.cprj + "/" + context->linker.script;
-  string regions = context->linker.regions.empty() ? "" : context->directories.cprj + "/" + context->linker.regions;
-  SetNodeValue(node[YAML_SCRIPT], FormatPath(script, context->directories.cprj));
-  SetNodeValue(node[YAML_REGIONS], FormatPath(regions, context->directories.cprj));
+  const string script = context->linker.script.empty() ? "" :
+    FormatPath(context->directories.cprj + "/" + context->linker.script, context->directories.cprj);
+  const string regions = context->linker.regions.empty() ? "" :
+    FormatPath(context->directories.cprj + "/" + context->linker.regions, context->directories.cprj);
+  SetNodeValue(node[YAML_SCRIPT], script);
+  SetNodeValue(node[YAML_REGIONS], regions);
   SetNodeValue(node[YAML_DEFINE], context->linker.defines);
 }
 
