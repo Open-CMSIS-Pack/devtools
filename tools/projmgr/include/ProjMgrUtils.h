@@ -225,6 +225,12 @@ public:
   */
   static void CompilersIntersect(const std::string& first, const std::string& second, std::string& intersection);
 
+  /**
+   * @brief get compiler root
+   * @param compilerRoot reference 
+  */
+  static void GetCompilerRoot(std::string& compilerRoot);
+
 protected:
   static std::string ConstructID(const std::vector<std::pair<const char*, const std::string&>>& elements);
 };

@@ -42,7 +42,7 @@ private:
   void SetPacksNode(YAML::Node node, const ContextItem* context);
   void SetGroupsNode(YAML::Node node, const vector<GroupNode>& groups);
   void SetFilesNode(YAML::Node node, const vector<FileNode>& files);
-  void SetLinkerNode(YAML::Node node, const LinkerItem& files);
+  void SetLinkerNode(YAML::Node node, const ContextItem* context);
   void SetControlsNode(YAML::Node Node, const BuildType& controls);
   void SetProcessorNode(YAML::Node node, const map<string, string>& targetAttributes);
   void SetMiscNode(YAML::Node miscNode, const MiscItem& misc);
@@ -141,7 +141,7 @@ void ProjMgrYamlCbuild::SetContextNode(YAML::Node contextNode, const ContextItem
   SetNodeValue(contextNode[YAML_ADDPATH], includes);
   SetComponentsNode(contextNode[YAML_COMPONENTS], context);
   SetGeneratorsNode(contextNode[YAML_GENERATORS], context);
-  SetLinkerNode(contextNode[YAML_LINKER], context->linker);
+  SetLinkerNode(contextNode[YAML_LINKER], context);
   SetGroupsNode(contextNode[YAML_GROUPS], context->groups);
   SetConstructedFilesNode(contextNode[YAML_CONSTRUCTEDFILES], context);
 }
@@ -312,10 +312,14 @@ void ProjMgrYamlCbuild::SetOutputNode(YAML::Node node, const ContextItem* contex
   }
 }
 
-void ProjMgrYamlCbuild::SetLinkerNode(YAML::Node node, const LinkerItem& linker) {
-  SetNodeValue(node[YAML_SCRIPT], linker.script);
-  SetNodeValue(node[YAML_REGIONS], linker.regions);
-  SetNodeValue(node[YAML_DEFINE], linker.defines);
+void ProjMgrYamlCbuild::SetLinkerNode(YAML::Node node, const ContextItem* context) {
+  const string script = context->linker.script.empty() ? "" :
+    FormatPath(context->directories.cprj + "/" + context->linker.script, context->directories.cprj);
+  const string regions = context->linker.regions.empty() ? "" :
+    FormatPath(context->directories.cprj + "/" + context->linker.regions, context->directories.cprj);
+  SetNodeValue(node[YAML_SCRIPT], script);
+  SetNodeValue(node[YAML_REGIONS], regions);
+  SetNodeValue(node[YAML_DEFINE], context->linker.defines);
 }
 
 void ProjMgrYamlCbuild::SetControlsNode(YAML::Node node, const BuildType& controls) {
@@ -398,7 +402,14 @@ const string ProjMgrYamlCbuild::FormatPath(const string& original, const string&
   if (index != string::npos) {
     path.replace(index, packRoot.length(), "${CMSIS_PACK_ROOT}");
   } else {
-    path = fs::relative(path, directory, ec).generic_string();
+    string compilerRoot;
+    ProjMgrUtils::GetCompilerRoot(compilerRoot);
+    index = path.find(compilerRoot);
+    if (index != string::npos) {
+      path.replace(index, compilerRoot.length(), "${CMSIS_COMPILER_ROOT}");
+    } else {
+      path = fs::relative(path, directory, ec).generic_string();
+    }
   }
   return path;
 }
