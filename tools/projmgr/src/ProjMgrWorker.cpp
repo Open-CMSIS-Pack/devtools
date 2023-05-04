@@ -3159,15 +3159,7 @@ bool ProjMgrWorker::GetToolchainConfig(const string& toolchainName, const string
 
 string ProjMgrWorker::GetCompilerRoot(void) {
   if (m_compilerRoot.empty()) {
-    m_compilerRoot = CrossPlatformUtils::GetEnv("CMSIS_COMPILER_ROOT");
-    if (m_compilerRoot.empty()) {
-      error_code ec;
-      string exePath = RteUtils::ExtractFilePath(CrossPlatformUtils::GetExecutablePath(ec), true);
-      m_compilerRoot = fs::path(exePath).parent_path().parent_path().append("etc").generic_string();
-      if (!RteFsUtils::Exists(m_compilerRoot)) {
-        m_compilerRoot.clear();
-      }
-    }
+    ProjMgrUtils::GetCompilerRoot(m_compilerRoot);
   }
   return m_compilerRoot;
 }

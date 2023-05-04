@@ -314,3 +314,19 @@ void ProjMgrUtils::CompilersIntersect(const string& first, const string& second,
     }
   }
 }
+
+void ProjMgrUtils::GetCompilerRoot(string& compilerRoot) {
+  compilerRoot = CrossPlatformUtils::GetEnv("CMSIS_COMPILER_ROOT");
+  if (compilerRoot.empty()) {
+    error_code ec;
+    string exePath = RteUtils::ExtractFilePath(CrossPlatformUtils::GetExecutablePath(ec), true);
+    compilerRoot = fs::path(exePath).parent_path().parent_path().append("etc").generic_string();
+    if (!RteFsUtils::Exists(compilerRoot)) {
+      compilerRoot.clear();
+    }
+  }
+  if (!compilerRoot.empty()) {
+    error_code ec;
+    compilerRoot = fs::weakly_canonical(fs::path(compilerRoot), ec).generic_string();
+  }
+}
