@@ -104,8 +104,10 @@ void RteCprjProject::Initialize()
   CprjFile* cprjFile = GetCprjFile();
   const string& cprjName = GetName();
   size_t lastDot = cprjName.find_last_of('.');
+  size_t lastPlus = cprjName.find_last_of('+');
   const string& targetName = (lastDot != string::npos) && ((lastDot+1) < cprjName.length()) ?
-    cprjName.substr(lastDot+1) : "Target 1";
+    cprjName.substr(lastDot+1) : (lastPlus != string::npos) && ((lastPlus+1) < cprjName.length()) ?
+    cprjName.substr(lastPlus+1) : "Target 1";
 
   XmlItem filterAttributes;
   CprjTargetElement* cprjTarget = cprjFile->GetTargetElement();
