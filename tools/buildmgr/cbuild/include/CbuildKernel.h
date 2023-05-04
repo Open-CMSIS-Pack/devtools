@@ -47,7 +47,7 @@ public:
    * @brief get callback
    * @return pointer to callback
   */
-  const CbuildCallback* GetCallback() {
+  CbuildCallback* GetCallback() const {
     return m_callback;
   }
 

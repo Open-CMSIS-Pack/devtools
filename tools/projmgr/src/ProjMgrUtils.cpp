@@ -151,21 +151,29 @@ string ProjMgrUtils::ConstructID(const std::vector<std::pair<const char*, const 
   return id;
 }
 
-RtePackage* ProjMgrUtils::ReadGpdscFile(const string& gpdsc) {
+RtePackage* ProjMgrUtils::ReadGpdscFile(const string& gpdsc, bool& valid) {
   fs::path path(gpdsc);
   error_code ec;
   if (fs::exists(path, ec)) {
-    RteItemBuilder rteItemBuilder(nullptr, PackageState::PS_GENERATED);
-    XMLTreeSlim tree(&rteItemBuilder);
-    tree.Init();
-    bool success = tree.AddFileName(gpdsc, true);
-    RtePackage* gpdscPack = rteItemBuilder.GetPack();
-    if (success && gpdscPack && gpdscPack->Validate()) {
-      return gpdscPack;
-    } else if (gpdscPack) {
+    RtePackage* gpdscPack = ProjMgrKernel::Get()->LoadPack(gpdsc, PackageState::PS_GENERATED);
+    if (gpdscPack) {
+      if (gpdscPack->Validate()) {
+        valid = true;
+        return gpdscPack;
+      } else {
+        ProjMgrCallback* callback = ProjMgrKernel::Get()->GetCallback();
+        RtePrintErrorVistior visitor(callback);
+        gpdscPack->AcceptVisitor(&visitor);
+        if (callback->GetErrorMessages().empty()) {
+          // validation failed but there are no errors, don't delete gpdscPack
+          valid = false;
+          return gpdscPack;
+        }
+      }
       delete gpdscPack;
     }
   }
+  valid = false;
   return nullptr;
 }
 

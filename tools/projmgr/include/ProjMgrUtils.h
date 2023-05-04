@@ -165,9 +165,10 @@ public:
    * @brief read gpdsc file
    * @param path to gpdsc file
    * @param pointer to rte generator model
+   * @param reference to validation result
    * @return pointer to created RtePackage if successful, nullptr otherwise
   */
-  static RtePackage* ReadGpdscFile(const std::string& gpdsc);
+  static RtePackage* ReadGpdscFile(const std::string& gpdsc, bool& valid);
 
   /**
    * @brief execute shell command
