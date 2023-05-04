@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2023 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -32,6 +32,7 @@ Usage:\n\
    list generators       Print list of code generators of a given context\n\
    list layers           Print list of available, referenced and compatible layers\n\
    list toolchains       Print list of supported toolchains\n\
+   list environment      Print list of environment configurations\n\
    convert               Convert *.csolution.yml input file in *.cprj files\n\
    run                   Run code generator\n\n\
  Options:\n\
@@ -80,10 +81,18 @@ bool ProjMgr::PrintUsage(const map<string, vector<cxxopts::Option>>& cmdOptionsD
   cout << signature << endl;
   string program = ORIGINAL_FILENAME + string(" ") + cmd +
     (subCmd.empty() ? "" : (string(" ") + subCmd));
+
   cxxopts::Options options(program);
-  for (auto& option : cmdOptionsDict.at(filter)) {
+  auto cmdOptions = cmdOptionsDict.at(filter);
+  for (auto& option : cmdOptions) {
     options.add_option(filter, option);
   }
+
+  if (cmdOptions.empty()) {
+    // overwrite default custom help
+    options.custom_help(RteUtils::EMPTY_STRING);
+  }
+
   cout << options.help() << endl;
   return true;
 }
@@ -130,6 +139,7 @@ int ProjMgr::RunProjMgr(int argc, char **argv, char** envp) {
     {"list generators",   {solution, context, load, verbose, debug, toolchain, schemaCheck}},
     {"list layers",       {solution, context, load, verbose, debug, toolchain, schemaCheck, clayerSearchPath}},
     {"list toolchains",   {solution, context, verbose, debug, toolchain}},
+    {"list environment",  {}},
   };
 
   try {
@@ -285,6 +295,8 @@ int ProjMgr::RunProjMgr(int argc, char **argv, char** envp) {
       if (!manager.RunListToolchains()) {
         return 1;
       }
+    } else if (manager.m_args == "environment") {
+      manager.RunListEnvironment();
     }
     else {
       ProjMgrLogger::Error("list <args> was not found");
@@ -670,6 +682,15 @@ bool ProjMgr::RunListToolchains(void) {
     cout << toolchainEntry;
   }
   return ret;
+}
+
+bool ProjMgr::RunListEnvironment(void) {
+  string notFound = "<Not Found>";
+  EnvironmentList env;
+  m_worker.ListEnvironment(env);
+  cout << "CMSIS_PACK_ROOT=" << (env.cmsis_pack_root.empty() ? notFound : env.cmsis_pack_root) << endl;
+  cout << "CMSIS_COMPILER_ROOT=" << (env.cmsis_compiler_root.empty() ? notFound : env.cmsis_compiler_root) << endl;
+  return true;
 }
 
 bool ProjMgr::GetCdefaultFile(void) {

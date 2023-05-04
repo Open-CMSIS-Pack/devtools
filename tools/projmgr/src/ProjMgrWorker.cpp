@@ -292,11 +292,19 @@ bool ProjMgrWorker::GetRequiredPdscFiles(ContextItem& context, const std::string
   return (0 == errMsgs.size());
 }
 
-bool ProjMgrWorker::InitializeModel() {
-  m_packRoot = CrossPlatformUtils::GetEnv("CMSIS_PACK_ROOT");
-  if (m_packRoot.empty()) {
-    m_packRoot = CrossPlatformUtils::GetDefaultCMSISPackRootDir();
+string ProjMgrWorker::GetPackRoot() {
+  error_code ec;
+  string packRoot;
+  packRoot = CrossPlatformUtils::GetEnv("CMSIS_PACK_ROOT");
+  if (packRoot.empty()) {
+    packRoot = CrossPlatformUtils::GetDefaultCMSISPackRootDir();
   }
+  packRoot = fs::weakly_canonical(fs::path(packRoot), ec).generic_string();
+  return packRoot;
+}
+
+bool ProjMgrWorker::InitializeModel() {
+  m_packRoot = GetPackRoot();
   m_kernel = ProjMgrKernel::Get();
   if (!m_kernel) {
     ProjMgrLogger::Error("initializing RTE Kernel failed");
@@ -307,8 +315,6 @@ bool ProjMgrWorker::InitializeModel() {
     ProjMgrLogger::Error("initializing RTE Model failed");
     return false;
   }
-  error_code ec;
-  m_packRoot = fs::weakly_canonical(fs::path(m_packRoot), ec).generic_string();
   m_kernel->SetCmsisPackRoot(m_packRoot);
   m_model->SetCallback(m_kernel->GetCallback());
   return true;
@@ -3073,6 +3079,12 @@ bool ProjMgrWorker::ListToolchains(vector<ToolchainItem>& toolchains) {
     }
   }
   return allSupported;
+}
+
+bool ProjMgrWorker::ListEnvironment(EnvironmentList& env) {
+  env.cmsis_pack_root = GetPackRoot();
+  env.cmsis_compiler_root = GetCompilerRoot();
+  return true;
 }
 
 void ProjMgrWorker::GetRegisteredToolchains(void) {

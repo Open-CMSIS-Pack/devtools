@@ -38,6 +38,16 @@ struct ConnectionsList {
 };
 
 /**
+ * @brief Environment list
+ *        cmsis_pack_root,
+ *        cmsis_compiler_root
+*/
+struct EnvironmentList {
+  std::string cmsis_pack_root;
+  std::string cmsis_compiler_root;
+};
+
+/**
  * @brief toolchain item containing
  *        toolchain name,
  *        toolchain version,
@@ -394,6 +404,13 @@ public:
   bool ListToolchains(std::vector<ToolchainItem>& toolchains);
 
   /**
+  * @brief list environment configurations
+  * @param reference to EnvironmentList struct
+  * @return true if executed successfully
+  */
+  bool ListEnvironment(EnvironmentList& env);
+
+  /**
    * @brief add contexts for a given descriptor
    * @param reference to parser
    * @param reference to descriptor
@@ -495,6 +512,11 @@ public:
   */
   std::string GetCompilerRoot(void);
 
+  /**
+   * @brief get pack root directory
+   * @return string pack root directory
+  */
+  std::string GetPackRoot(void);
 protected:
   ProjMgrParser* m_parser = nullptr;
   ProjMgrKernel* m_kernel = nullptr;

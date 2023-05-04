@@ -159,6 +159,7 @@ Usage:
    list generators       Print list of code generators of a given context
    list layers           Print list of available, referenced and compatible layers
    list toolchains       Print list of supported toolchains
+   list environment      Print list of environment configurations
    convert               Convert *.csolution.yml input file in *.cprj files
    run                   Run code generator
 

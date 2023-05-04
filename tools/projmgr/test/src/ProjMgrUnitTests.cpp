@@ -3001,3 +3001,54 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_MultipleProject_SameFolder) {
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_TRUE(regex_match(errStr, regex(expected)));
 }
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_ListEnvironment) {
+  auto GetValue = [](const string& inputStr, const string& subStr) -> string{
+    auto startPos = inputStr.find(subStr, 0);
+    if (startPos == string::npos) {
+      return RteUtils::EMPTY_STRING;
+    }
+    startPos += subStr.length();
+    auto endPos = inputStr.find_first_of("\n", startPos);
+    if (endPos == string::npos) {
+      return RteUtils::EMPTY_STRING;
+    }
+    return inputStr.substr(startPos, endPos - startPos);
+  };
+
+  //backup env variables
+  const auto pack_Root = CrossPlatformUtils::GetEnv("CMSIS_PACK_ROOT");
+  const auto compiler_Root = CrossPlatformUtils::GetEnv("CMSIS_COMPILER_ROOT");
+
+  char* argv[3];
+  StdStreamRedirect streamRedirect;
+  // list environment
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"environment";
+  EXPECT_EQ(0, RunProjMgr(3, argv, 0));
+
+  // Test 1
+  auto outStr = streamRedirect.GetOutString();
+  EXPECT_EQ(pack_Root, GetValue(outStr, "CMSIS_PACK_ROOT="));
+  EXPECT_EQ(compiler_Root, GetValue(outStr, "CMSIS_COMPILER_ROOT="));
+
+  // Test 2 :set CMSIS_PACK_ROOT & CMSIS_COMPILER_ROOT empty
+  CrossPlatformUtils::SetEnv("CMSIS_PACK_ROOT", RteUtils::EMPTY_STRING);
+  CrossPlatformUtils::SetEnv("CMSIS_COMPILER_ROOT", RteUtils::EMPTY_STRING);
+
+  error_code ec;
+  string localCompilerPath, defaultPackRoot;
+  streamRedirect.ClearStringStreams();
+  EXPECT_EQ(0, RunProjMgr(3, argv, 0));
+  outStr = streamRedirect.GetOutString();
+  localCompilerPath = string(PROJMGRUNITTESTS_BIN_PATH) + "/../etc";
+  localCompilerPath = fs::weakly_canonical(fs::path(localCompilerPath), ec).generic_string();
+  defaultPackRoot = CrossPlatformUtils::GetDefaultCMSISPackRootDir();
+  defaultPackRoot = fs::weakly_canonical(fs::path(defaultPackRoot), ec).generic_string();
+  EXPECT_EQ(defaultPackRoot, GetValue(outStr, "CMSIS_PACK_ROOT="));
+  EXPECT_EQ(localCompilerPath, GetValue(outStr, "CMSIS_COMPILER_ROOT="));
+
+  // Restore env variables
+  CrossPlatformUtils::SetEnv("CMSIS_PACK_ROOT", pack_Root);
+  CrossPlatformUtils::SetEnv("CMSIS_COMPILER_ROOT", compiler_Root);
+}
