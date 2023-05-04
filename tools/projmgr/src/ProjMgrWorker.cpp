@@ -1637,15 +1637,20 @@ bool ProjMgrWorker::ProcessGpdsc(ContextItem& context) {
   // Read gpdsc
   const map<string, RteGpdscInfo*>& gpdscInfos = context.rteActiveProject->GetGpdscInfos();
   for (const auto& [file, info] : gpdscInfos) {
-    RtePackage* gpdscPack = info->GetGpdscPack();
     error_code ec;
     const string gpdscFile = fs::weakly_canonical(file, ec).generic_string();
-    gpdscPack = ProjMgrUtils::ReadGpdscFile(gpdscFile);
+    bool validGpdsc;
+    RtePackage* gpdscPack = ProjMgrUtils::ReadGpdscFile(gpdscFile, validGpdsc);
     if (!gpdscPack) {
-      ProjMgrLogger::Error(gpdscFile, "generator '" + context.gpdscs.at(gpdscFile).generator +
+      ProjMgrLogger::Error(gpdscFile, "context '" + context.name + "' generator '" + context.gpdscs.at(gpdscFile).generator +
         "' from component '" + context.gpdscs.at(gpdscFile).component + "': reading gpdsc failed");
+      CheckRteErrors();
       return false;
     } else {
+      if (!validGpdsc) {
+        ProjMgrLogger::Warn(gpdscFile, "context '" + context.name + "' generator '" + context.gpdscs.at(gpdscFile).generator +
+          "' from component '" + context.gpdscs.at(gpdscFile).component + "': gpdsc validation failed");
+      }
       info->SetGpdscPack(gpdscPack);
     }
   }

@@ -60,11 +60,11 @@ bool CbuildProject::CreateTarget(const string& targetName, const CprjFile *cprj,
   for(auto itg = gpdscInfos.begin(); itg != gpdscInfos.end(); itg++ ) {
     RteGpdscInfo* gi = itg->second;
     const string& gpdscFile = gi->GetAbsolutePath();
-    RtePackage*  gpdscPack = ReadGpdscFile(gpdscFile);
-    gi->SetGpdscPack(gpdscPack);
+    RtePackage* gpdscPack = ReadGpdscFile(gpdscFile);
     if (!gpdscPack) {
       return false;
     }
+    gi->SetGpdscPack(gpdscPack);
   }
   if (!gpdscInfos.empty()) {
     // update target with gpdsc model
@@ -226,20 +226,23 @@ RtePackage* CbuildProject::ReadGpdscFile(const string& gpdsc)
   error_code ec;
   if (!fs::exists(path, ec)) {
     LogMsg("M204", PATH(gpdsc));
-    return NULL;
+    return nullptr;
   }
-  RteItemBuilder rteItemBuilder(nullptr, PackageState::PS_GENERATED);
-  XMLTreeSlim tree(&rteItemBuilder);
-  tree.Init();
-  bool success = tree.AddFileName(gpdsc, true);
-  RtePackage* gpdscPack = rteItemBuilder.GetPack();
-
-  if (success && gpdscPack && gpdscPack->Validate()) {
-    return gpdscPack;
-  } else if (gpdscPack)
-  if (!success || !gpdscPack) {
+  RtePackage* gpdscPack = CbuildKernel::Get()->LoadPack(gpdsc, PackageState::PS_GENERATED);
+  if (gpdscPack) {
+    if (gpdscPack->Validate()) {
+      return gpdscPack;
+    } else {
+      CbuildCallback* callback = CbuildKernel::Get()->GetCallback();
+      RtePrintErrorVistior visitor(callback);
+      gpdscPack->AcceptVisitor(&visitor);
+      if (callback->GetErrorMessages().empty()) {
+        // validation fails but there are no errors, don't delete gpdscPack
+        return gpdscPack;
+      }
+    }
     delete gpdscPack;
   }
   LogMsg("M203", PATH(gpdsc));
   return nullptr;
-} // end of CbuildProject.cpp
+}

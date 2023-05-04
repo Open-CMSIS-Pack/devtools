@@ -97,18 +97,42 @@ TEST_F(ProjMgrUtilsUnitTests, GetPackageID) {
 
 TEST_F(ProjMgrUtilsUnitTests, ReadGpdscFile) {
   const string& gpdscFile = testinput_folder + "/TestGenerator/RTE/Device/RteTestGen_ARMCM0/RteTest.gpdsc";
- RtePackage* gpdscPack = ProjMgrUtils::ReadGpdscFile(gpdscFile);
+  bool validGpdsc;
+  RtePackage* gpdscPack = ProjMgrUtils::ReadGpdscFile(gpdscFile, validGpdsc);
   ASSERT_NE(gpdscPack, nullptr);
+  EXPECT_TRUE(validGpdsc);
   RteGenerator* gen = gpdscPack->GetFirstGenerator();
   ASSERT_NE(gen, nullptr);
   EXPECT_EQ("RteTestGeneratorIdentifier", gen->GetName());
   delete gpdscPack;
 }
 
+TEST_F(ProjMgrUtilsUnitTests, ReadGpdscFile_Warning) {
+  const string& gpdscFile = testinput_folder + "/TestGenerator/RTE/Device/RteTestGen_ARMCM0/RteTest_Warning.gpdsc";
+  bool validGpdsc;
+  RtePackage* gpdscPack = ProjMgrUtils::ReadGpdscFile(gpdscFile, validGpdsc);
+  ASSERT_NE(gpdscPack, nullptr);
+  EXPECT_FALSE(validGpdsc);
+  RteGenerator* gen = gpdscPack->GetFirstGenerator();
+  ASSERT_NE(gen, nullptr);
+  EXPECT_EQ("RteTestGeneratorIdentifier", gen->GetName());
+  delete gpdscPack;
+}
+
+TEST_F(ProjMgrUtilsUnitTests, ReadGpdscFile_Invalid) {
+  const string& gpdscFile = testinput_folder + "/TestGenerator/RTE/Device/RteTestGen_ARMCM0/RteTest_Invalid.gpdsc";
+  bool validGpdsc;
+  RtePackage* gpdscPack = ProjMgrUtils::ReadGpdscFile(gpdscFile, validGpdsc);
+  ASSERT_EQ(gpdscPack, nullptr);
+  EXPECT_FALSE(validGpdsc);
+}
+
 TEST_F(ProjMgrUtilsUnitTests, ReadGpdscFileNoExists) {
   const string& gpdscFile = testinput_folder + "/TestGenerator/NonExisting.gpdsc";
-  RtePackage* gpdscPack = ProjMgrUtils::ReadGpdscFile(gpdscFile);
-  EXPECT_EQ(gpdscPack, nullptr);
+  bool validGpdsc;
+  RtePackage* gpdscPack = ProjMgrUtils::ReadGpdscFile(gpdscFile, validGpdsc);
+  ASSERT_EQ(gpdscPack, nullptr);
+  EXPECT_FALSE(validGpdsc);
 }
 
 TEST_F(ProjMgrUtilsUnitTests, ExecCommand) {
