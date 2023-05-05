@@ -119,4 +119,18 @@ bool CrossPlatformUtils::CanExecute(const std::string& file)
     _stricmp(ext.c_str(), "com") == 0 ||
     _stricmp(ext.c_str(), "bat") == 0;
 }
+
+CrossPlatformUtils::REG_STATUS CrossPlatformUtils::GetLongPathRegStatus()
+{
+  HKEY hRegKey = NULL;
+  DWORD dwValue, dwLength = sizeof(DWORD), dwType = REG_DWORD;
+
+  if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, "SYSTEM\\CurrentControlSet\\Control\\FileSystem", 0, KEY_READ, &hRegKey) == ERROR_SUCCESS) {
+    if (RegQueryValueEx(hRegKey, "LongPathsEnabled", NULL, &dwType, (LPBYTE)&dwValue, &dwLength) == ERROR_SUCCESS) {
+      RegCloseKey(hRegKey);
+      return (dwValue == 0) ? REG_STATUS::DISABLED : REG_STATUS::ENABLED;
+    }
+  }
+  return REG_STATUS::DISABLED;
+}
 // end of Utils.cpp
