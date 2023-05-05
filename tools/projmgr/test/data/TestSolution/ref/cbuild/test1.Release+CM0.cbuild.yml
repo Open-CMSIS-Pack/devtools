@@ -32,6 +32,9 @@ build:
     intdir: tmp/test1/CM0/Release
     outdir: out/test1/CM0/Release
     rtedir: ../data/TestSolution/TestProject1/RTE
+  output:
+    - type: elf
+      file: test1.elf
   components:
     - component: ARM::Device:Startup&RteTest Startup@2.0.3
       condition: ARMCM0 RteTest

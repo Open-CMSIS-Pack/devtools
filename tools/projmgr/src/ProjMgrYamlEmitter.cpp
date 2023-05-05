@@ -125,9 +125,7 @@ void ProjMgrYamlCbuild::SetContextNode(YAML::Node contextNode, const ContextItem
   SetControlsNode(contextNode, context->controls.processed);
   SetNodeValue(contextNode[YAML_OUTPUTTYPE], context->outputType);
   SetOutputDirsNode(contextNode[YAML_OUTPUTDIRS], context);
-  if (!context->outputFiles.empty()) {
-    SetOutputNode(contextNode[YAML_OUTPUT], context);
-  }
+  SetOutputNode(contextNode[YAML_OUTPUT], context);
   vector<string> defines;
   for (const auto& define : context->rteActiveTarget->GetDefines()) {
     ProjMgrUtils::PushBackUniquely(defines, define);
@@ -303,12 +301,37 @@ void ProjMgrYamlCbuild::SetOutputDirsNode(YAML::Node node, const ContextItem* co
 }
 
 void ProjMgrYamlCbuild::SetOutputNode(YAML::Node node, const ContextItem* context) {
-  const StrMap& files = context->outputFiles;
-  for (const auto& [type, file] : files) {
+  if (context->cproject->outputFiles.empty()) {
+    // TODO: after deprecation rework 'output' node
+    string type, file;
+    const vector<tuple<const string, const string, const string, const string>> typeMap = {
+      { "AC6", ".axf", "", ".lib" },
+      { "GCC", ".elf", "lib", ".a"},
+      { "IAR", ".out", "", ".a" },
+    };
+    for (const auto& [toolchainName, elfSuffix, libPrefix, libSuffix] : typeMap) {
+      if (context->toolchain.name == toolchainName) {
+        if (context->outputType == "exe") {
+          type = "elf";
+          file = context->cproject->name + elfSuffix;
+        } else {
+          type = "lib";
+          file = libPrefix + context->cproject->name + libSuffix;
+        }
+      }
+    }
     YAML::Node fileNode;
     SetNodeValue(fileNode[YAML_TYPE], type);
     SetNodeValue(fileNode[YAML_FILE], file);
     node.push_back(fileNode);
+  } else {
+    const StrMap& files = context->outputFiles;
+    for (const auto& [type, file] : files) {
+      YAML::Node fileNode;
+      SetNodeValue(fileNode[YAML_TYPE], type);
+      SetNodeValue(fileNode[YAML_FILE], file);
+      node.push_back(fileNode);
+    }
   }
 }
 

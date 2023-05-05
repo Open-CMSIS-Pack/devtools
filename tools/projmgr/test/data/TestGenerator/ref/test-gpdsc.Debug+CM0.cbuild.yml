@@ -22,6 +22,9 @@ build:
     intdir: tmp/test-gpdsc/CM0/Debug
     outdir: out/test-gpdsc/CM0/Debug
     rtedir: ../data/TestGenerator/RTE
+  output:
+    - type: elf
+      file: test-gpdsc.axf
   components:
     - component: ARM::Device:RteTest Generated Component:RteTest@1.1.0
       condition: RteDevice
