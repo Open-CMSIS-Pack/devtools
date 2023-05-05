@@ -82,6 +82,17 @@ public:
    * @return true if path provides effective execute permissions
   */
   static bool CanExecute(const std::string& file);
+
+  enum class REG_STATUS {
+    ENABLED,
+    DISABLED,
+    NOT_SUPPORTED
+  };
+  /**
+   * @brief Get status of LongPathsEnabled registry
+   * @return return ENABLED, DISABLED, NOT_SUPPORTED
+  */
+  static REG_STATUS GetLongPathRegStatus();
 };
 
 #endif  /* CROSSPLATFORM_UTILS_H */

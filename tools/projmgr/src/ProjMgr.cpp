@@ -690,6 +690,11 @@ bool ProjMgr::RunListEnvironment(void) {
   m_worker.ListEnvironment(env);
   cout << "CMSIS_PACK_ROOT=" << (env.cmsis_pack_root.empty() ? notFound : env.cmsis_pack_root) << endl;
   cout << "CMSIS_COMPILER_ROOT=" << (env.cmsis_compiler_root.empty() ? notFound : env.cmsis_compiler_root) << endl;
+  CrossPlatformUtils::REG_STATUS status = CrossPlatformUtils::GetLongPathRegStatus();
+  if (status != CrossPlatformUtils::REG_STATUS::NOT_SUPPORTED) {
+    cout << "Long pathname support=" << 
+      (status == CrossPlatformUtils::REG_STATUS::ENABLED ? "enabled" : "disabled") << endl;
+  }
   return true;
 }
 
