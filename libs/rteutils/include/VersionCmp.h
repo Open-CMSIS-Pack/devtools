@@ -29,6 +29,7 @@ public:
     ENFORCED_VERSION, // strictly fixed version is required (pack and condition)
     FIXED_VERSION,    // fixed version is accepted
     LATEST_VERSION,   // use the latest version (default)
+    ANY_VERSION,      // any version satisfies
     EXCLUDED_VERSION, // exclude specified version
     HIGHER_OR_EQUAL   // higher or equal version
   };
