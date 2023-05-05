@@ -24,6 +24,9 @@ build:
     intdir: tmp/linker/RteTest_ARMCM3/Debug_GCC
     outdir: out/linker/RteTest_ARMCM3/Debug_GCC
     rtedir: ../data/TestSolution/LinkerOptions/RTE
+  output:
+    - type: elf
+      file: linker.elf
   components:
     - component: ARM::Board:Test:Rev1@1.1.1
       condition: BoardTest1

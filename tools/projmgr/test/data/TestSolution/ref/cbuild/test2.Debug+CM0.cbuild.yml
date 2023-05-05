@@ -56,6 +56,9 @@ build:
     intdir: tmp/test2/CM0/Debug
     outdir: out/test2/CM0/Debug
     rtedir: ../data/TestSolution/TestProject2/RTE
+  output:
+    - type: elf
+      file: test2.axf
   components:
     - component: ARM::Device:Startup&RteTest Startup@2.0.3
       condition: ARMCM0 RteTest

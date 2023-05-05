@@ -29,6 +29,9 @@ build:
     intdir: tmp/pre-include/CM0
     outdir: out/pre-include/CM0
     rtedir: ../data/TestSolution/RTE
+  output:
+    - type: elf
+      file: pre-include.axf
   components:
     - component: ARM::Device:Startup&RteTest Startup@2.0.3
       condition: ARMCM0 RteTest

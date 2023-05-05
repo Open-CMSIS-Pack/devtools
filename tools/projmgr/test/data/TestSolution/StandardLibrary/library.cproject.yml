@@ -2,6 +2,8 @@
 
 project:
 
+  output-type: lib
+
   components:
     - component: CORE
     - component: Device:Startup

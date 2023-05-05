@@ -24,6 +24,9 @@ build:
     intdir: ../tmp/TestProject3_1/TypeA/Debug
     outdir: outdir/
     rtedir: RTE
+  output:
+    - type: elf
+      file: TestProject3_1.elf
   components:
     - component: ARM::Device:RteTest Generated Component:RteTestGenFiles@1.1.0
       from-pack: ARM::RteTestGenerator@0.1.0
