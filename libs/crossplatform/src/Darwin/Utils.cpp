@@ -62,4 +62,7 @@ bool CrossPlatformUtils::CanExecute(const std::string& file)
   return access(file.c_str(), X_OK) == 0;
 }
 
+CrossPlatformUtils::REG_STATUS CrossPlatformUtils::GetLongPathRegStatus() {
+  return REG_STATUS::NOT_SUPPORTED;
+}
 // end of Utils.cpp

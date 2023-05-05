@@ -80,7 +80,6 @@ TEST(CrossPlatformUnitTests, CanExecute) {
 }
 
 TEST(CrossPlatformUnitTests, GetRegistryString) {
-
   if (CrossPlatformUtils::GetHostType() == "win") {
     EXPECT_TRUE(CrossPlatformUtils::GetRegistryString("HKEY_CURRENT_USER\\DUMMY_KEY_\\DUMMY_VAL").empty());
     EXPECT_TRUE(CrossPlatformUtils::GetRegistryString("DUMMY_KEY_\\DUMMY_VAL").empty());
@@ -99,5 +98,13 @@ TEST(CrossPlatformUnitTests, GetRegistryString) {
   }
 }
 
-
+TEST(CrossPlatformUnitTests, GetLongPathRegStatus) {
+  CrossPlatformUtils::REG_STATUS status = CrossPlatformUtils::GetLongPathRegStatus();
+  if (CrossPlatformUtils::GetHostType() == "win") {
+    EXPECT_TRUE(CrossPlatformUtils::REG_STATUS::ENABLED == status || CrossPlatformUtils::REG_STATUS::DISABLED == status);
+  }
+  else {
+    EXPECT_EQ(CrossPlatformUtils::REG_STATUS::NOT_SUPPORTED, status);
+  }
+}
 // end of UnitTests.cpp
