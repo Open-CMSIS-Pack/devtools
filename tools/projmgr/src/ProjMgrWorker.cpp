@@ -443,7 +443,7 @@ bool ProjMgrWorker::InitializeTarget(ContextItem& context) {
       context.type.build.empty() ? context.type.target : context.type.build + (context.type.target.empty() ? "" : '+' + context.type.target);
     context.rteActiveProject->AddTarget(targetName, map<string, string>(), true, true);
     context.rteActiveProject->SetActiveTarget(targetName);
-    context.rteActiveProject->SetName(targetName);
+    context.rteActiveProject->SetName(context.name);
     context.rteActiveTarget = context.rteActiveProject->GetActiveTarget();
     context.rteFilteredModel = context.rteActiveTarget->GetFilteredModel();
   }
