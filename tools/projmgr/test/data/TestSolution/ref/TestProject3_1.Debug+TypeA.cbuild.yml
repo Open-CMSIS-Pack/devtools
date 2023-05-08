@@ -77,7 +77,7 @@ build:
           file: ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0/Generator/script.bat
           arguments:
             - RteTestGen_ARMCM0
-            - ../../Debug+TypeA.cprj
+            - ../../TestProject3_1.Debug+TypeA.cprj
             - ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0
             - ../../TestProject3_1.Debug+TypeA.cbuild.yml
             - /foo=bar
@@ -85,7 +85,7 @@ build:
           file: ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0/Generator/script.sh
           arguments:
             - RteTestGen_ARMCM0
-            - ../../Debug+TypeA.cprj
+            - ../../TestProject3_1.Debug+TypeA.cprj
             - ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0
             - ../../TestProject3_1.Debug+TypeA.cbuild.yml
             - --foo=bar
@@ -93,7 +93,7 @@ build:
           file: ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0/Generator/script.sh
           arguments:
             - RteTestGen_ARMCM0
-            - ../../Debug+TypeA.cprj
+            - ../../TestProject3_1.Debug+TypeA.cprj
             - ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0
             - ../../TestProject3_1.Debug+TypeA.cbuild.yml
             - --foo=bar
