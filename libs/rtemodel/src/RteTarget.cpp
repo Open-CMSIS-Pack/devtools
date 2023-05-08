@@ -1702,10 +1702,13 @@ std::string RteTarget::GenerateMemoryRegionContent(RteItem* memory, const std::s
 
 std::string RteTarget::GenerateRegionsHeaderContent() const
 {
-  vector<RteItem*> memRO;
-  vector<RteItem*> memRW;
   // collect device memory data
   RteDeviceItem* device = GetDevice();
+  if (!device) {
+    return EMPTY_STRING;
+  }
+  vector<RteItem*> memRO;
+  vector<RteItem*> memRW;
   auto& deviceMems = device->GetEffectiveProperties("memory", GetProcessorName());
   for (auto mem : deviceMems) {
     if (mem->IsWriteAccess()) {
@@ -1766,6 +1769,9 @@ std::string RteTarget::GenerateRegionsHeaderContent() const
 bool RteTarget::GenerateRegionsHeader()
 {
   string content = GenerateRegionsHeaderContent();
+  if (content.empty()) {
+    return false;
+  }
   return GenerateRteHeaderFile(GetRegionsHeader(), content, true);
 }
 
@@ -1835,7 +1841,7 @@ bool RteTarget::GenerateRteHeaderFile(const string& headerName, const string& co
   string headerFileName = RteUtils::ExtractFileName(headerName);
   for (string::size_type pos = 0; pos < headerFileName.length(); pos++) {
     char ch = toupper(headerFileName[pos]);
-    if (ch == '.')
+    if (ch == '.' || ch == '-')
       ch = '_';
     HEADER_H += ch;
   }
