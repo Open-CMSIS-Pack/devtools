@@ -428,7 +428,7 @@ const string ProjMgrYamlCbuild::FormatPath(const string& original, const string&
     string compilerRoot;
     ProjMgrUtils::GetCompilerRoot(compilerRoot);
     index = path.find(compilerRoot);
-    if (index != string::npos) {
+    if (!compilerRoot.empty() && index != string::npos) {
       path.replace(index, compilerRoot.length(), "${CMSIS_COMPILER_ROOT}");
     } else {
       path = fs::relative(path, directory, ec).generic_string();
