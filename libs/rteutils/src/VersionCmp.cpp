@@ -238,6 +238,9 @@ std::string VersionCmp::MatchModeToString(VersionCmp::MatchMode mode)
   case MatchMode::EXCLUDED_VERSION:
     s = "excluded";
     break;
+  case MatchMode::ANY_VERSION:
+  default:
+    break;
   }
   return s;
 }

@@ -547,9 +547,10 @@ public:
 
   /**
    * @brief generate region*.h header file according to selected device and board
+   * @param directory destination directory to write the header to
    * @return true if generation of the header file is successful
   */
-  bool GenerateRegionsHeader();
+  bool GenerateRegionsHeader(const std::string& directory = EMPTY_STRING);
 
   /**
    * @brief generate header files specific to selected components, e.g. Pre_Include_Global.h, RTE_Components.h
@@ -566,7 +567,8 @@ protected:
   std::string GenerateRegionsHeaderContent() const;
   std::string GenerateMemoryRegionContent(RteItem* memory, const std::string& id, bool bBoardMemory ) const;
   bool GenerateRTEComponentsH();
-  bool GenerateRteHeaderFile(const std::string& headerName, const std::string& content, bool bRegionsHeader = false);
+  bool GenerateRteHeaderFile(const std::string& headerName, const std::string& content,
+                              bool bRegionsHeader = false, const std::string& directory = EMPTY_STRING);
 
   // instance operations
 public:

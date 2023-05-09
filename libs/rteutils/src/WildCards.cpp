@@ -57,12 +57,12 @@ std::string WildCards::ToRegEx(const std::string& s)
   return str;
 }
 
-std::string WildCards::ToX(const std::string& s)
+std::string WildCards::ToX(const std::string& s, bool keepMinusAndDot)
 {
   std::string res = s;
   for (std::string::size_type pos = 0; pos < res.length(); pos++) {
     char ch = res[pos];
-    if (isalnum(ch) || ch == '-' || ch == '.') // allowed characters
+    if (isalnum(ch) || (keepMinusAndDot && (ch == '-' || ch == '.'))) // allowed characters
       continue;
     else if (ch == '*' || ch == '?') // wildcards
       res[pos] = 'x';
