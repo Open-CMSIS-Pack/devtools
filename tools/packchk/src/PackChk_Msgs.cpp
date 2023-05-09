@@ -72,9 +72,9 @@ const MsgTable PackChk::msgTable = {
   { "M102", { MsgLevel::LEVEL_ERROR,    CRLF_B, "" } },
   { "M103", { MsgLevel::LEVEL_ERROR,    CRLF_B, "Internal Error: %REF%" } },
   { "M104", { MsgLevel::LEVEL_ERROR,    CRLF_B, "Path empty when searching for other PDSC files" } },
-  { "M105", { MsgLevel::LEVEL_ERROR,    CRLF_B, "" } },
+  { "M105", { MsgLevel::LEVEL_ERROR,    CRLF_B, "Error while parsing command arguments" } },
   { "M106", { MsgLevel::LEVEL_ERROR,    CRLF_B, "" } },
-  { "M107", { MsgLevel::LEVEL_WARNING,  CRLF_B, "%FEATURE% is not supported by current version of %OS% packchk." } },
+  { "M107", { MsgLevel::LEVEL_WARNING,  CRLF_B, "" } },
   { "M108", { MsgLevel::LEVEL_ERROR,    CRLF_B, "Reading PDSC File failed!" } },
   { "M109", { MsgLevel::LEVEL_ERROR,    CRLF_B, "Constructing RTE Model failed!" } },
   { "M110", { MsgLevel::LEVEL_ERROR,    CRLF_B, "Verifying RTE Model failed" } },
@@ -99,8 +99,8 @@ const MsgTable PackChk::msgTable = {
   { "M214", { MsgLevel::LEVEL_ERROR,    CRLF_BE, "Invalid argument: %OPT%" } },
   { "M215", { MsgLevel::LEVEL_ERROR,    CRLF_BE, "" } },
   { "M216", { MsgLevel::LEVEL_ERROR,    CRLF_B, "Unable to get executable path %MSG%!"} },
-  { "M217", { MsgLevel::LEVEL_ERROR,    CRLF_B, "Unable to get executable path %MSG%!"} },
-  { "M218", { MsgLevel::LEVEL_ERROR,    CRLF_B, "Unable to find schema file '%PATH%' for validation"} },
+  { "M217", { MsgLevel::LEVEL_ERROR,    CRLF_B, ""} },
+  { "M218", { MsgLevel::LEVEL_ERROR,    CRLF_B, "Unable to find schema file for validation: '%PATH%'"} },
 
 // 300... Validation Errors
   { "M300", { MsgLevel::LEVEL_ERROR,    CRLF_B, "" } },
