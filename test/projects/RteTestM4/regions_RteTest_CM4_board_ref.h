@@ -6,7 +6,7 @@
 
 // <h>ROM Configuration
 // =======================
-// <h> FLASH
+// <h> FLASH=<__ROM0>
 //   <o> Base address <0x0-0xFFFFFFFF:8>
 //   <i> Defines base address of memory region.
 //   <i> Default: 0x00000000
@@ -23,7 +23,7 @@
 #define __ROM0_STARTUP 1
 // </h>
 
-// <h> BoardFLASH (board memory)
+// <h> BoardFLASH (board memory)=<__ROM1>
 //   <o> Base address <0x0-0xFFFFFFFF:8>
 //   <i> Defines base address of memory region.
 //   <i> Default: 0x30000000
@@ -44,7 +44,7 @@
 
 // <h>RAM Configuration
 // =======================
-// <h> SRAM
+// <h> SRAM=<__RAM0>
 //   <o> Base address <0x0-0xFFFFFFFF:8>
 //   <i> Defines base address of memory region.
 //   <i> Default: 0x20000000
@@ -61,7 +61,7 @@
 #define __RAM0_NOINIT 1
 // </h>
 
-// <h> BoardRAM (board memory)
+// <h> BoardRAM (board memory)=<__RAM1>
 //   <o> Base address <0x0-0xFFFFFFFF:8>
 //   <i> Defines base address of memory region.
 //   <i> Default: 0x40000000

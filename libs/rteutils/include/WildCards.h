@@ -51,9 +51,10 @@ public:
   /**
    * @brief converts '*' and '?' to 'x' All other non-alnum chars to '_', '.' remains unchanged
    * @param s string to be converted
+   * @param keepMinusAndDot flag to keep '-' and'.' chars unchanged (default is true)
    * @return converted string
   */
-  static std::string ToX(const std::string& s);
+  static std::string ToX(const std::string& s, bool keepMinusAndDot = true);
 
   /**
    * @brief checks if the supplied string contains any of wild-card matching symbols:

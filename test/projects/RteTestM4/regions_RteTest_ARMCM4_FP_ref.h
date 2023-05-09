@@ -6,7 +6,7 @@
 
 // <h>ROM Configuration
 // =======================
-// <h> FLASH
+// <h> FLASH=<__ROM0>
 //   <o> Base address <0x0-0xFFFFFFFF:8>
 //   <i> Defines base address of memory region.
 //   <i> Default: 0x00000000
@@ -27,7 +27,7 @@
 
 // <h>RAM Configuration
 // =======================
-// <h> SRAM
+// <h> SRAM=<__RAM0>
 //   <o> Base address <0x0-0xFFFFFFFF:8>
 //   <i> Defines base address of memory region.
 //   <i> Default: 0x20000000

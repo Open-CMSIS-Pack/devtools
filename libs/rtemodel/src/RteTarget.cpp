@@ -730,7 +730,6 @@ void RteTarget::CollectPreIncludeStrings(RteComponent* c, int count)
 }
 
 
-
 void RteTarget::CollectClassDocs()
 {
   if (!m_classes)
@@ -1652,9 +1651,10 @@ bool RteTarget::IsPackMissing(const string& pack)
 
 std::string RteTarget::GetRegionsHeader() const
 {
-  string deviceName = WildCards::ToX(GetFullDeviceName());
-  string boardName = WildCards::ToX(GetAttribute("Bname"));
-  return string("Device/") + deviceName + "/regions_" + (boardName.empty() ? deviceName : boardName) + ".h";
+  string deviceName = WildCards::ToX(GetFullDeviceName(), false);
+  string boardName = WildCards::ToX(GetAttribute("Bname"), false);
+  string filename = boardName.empty() ? deviceName : boardName;
+  return string("Device/") + deviceName + "/regions_" + filename + ".h";
 }
 
 std::string RteTarget::GenerateMemoryRegionContent(RteItem* memory, const std::string& id, bool bBoardMemory) const
@@ -1665,7 +1665,7 @@ std::string RteTarget::GenerateMemoryRegionContent(RteItem* memory, const std::s
     name += " (board memory)";
   }
   ostringstream oss;
-  oss << "// <h> " << name << RteUtils::LF_STRING;
+  oss << "// <h> " << name << "=<" << id << ">" << RteUtils::LF_STRING;
 
   string start = memory->GetAttribute("start");
   oss << "//   <o> Base address <0x0-0xFFFFFFFF:8>" << RteUtils::LF_STRING;
@@ -1766,13 +1766,13 @@ std::string RteTarget::GenerateRegionsHeaderContent() const
   return oss.str();
 }
 
-bool RteTarget::GenerateRegionsHeader()
+bool RteTarget::GenerateRegionsHeader(const string& directory)
 {
   string content = GenerateRegionsHeaderContent();
   if (content.empty()) {
     return false;
   }
-  return GenerateRteHeaderFile(GetRegionsHeader(), content, true);
+  return GenerateRteHeaderFile(GetRegionsHeader(), content, true, directory);
 }
 
 bool RteTarget::GenerateRteHeaders() {
@@ -1823,13 +1823,14 @@ bool RteTarget::GenerateRTEComponentsH() {
   return GenerateRteHeaderFile("RTE_Components.h", content);
 }
 
-bool RteTarget::GenerateRteHeaderFile(const string& headerName, const string& content, bool bRegionsHeader) {
+bool RteTarget::GenerateRteHeaderFile(const string& headerName, const string& content, bool bRegionsHeader, const std::string& directory) {
 
   RteProject *project = GetProject();
   if (!project)
     return false;
+  string path = !directory.empty() ? directory : project->GetProjectPath();
 
-  string headerFile = project->GetRteHeader(headerName, bRegionsHeader? RteUtils::EMPTY_STRING : GetName(), project->GetProjectPath());
+  string headerFile = project->GetRteHeader(headerName, bRegionsHeader? RteUtils::EMPTY_STRING : GetName(), path);
 
   if (bRegionsHeader && RteFsUtils::Exists(headerFile))
     return true; // nothing to do

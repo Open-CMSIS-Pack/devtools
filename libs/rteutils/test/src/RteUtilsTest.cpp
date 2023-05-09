@@ -131,13 +131,17 @@ TEST(RteUtilsTest, WildCardsTo) {
 
   string test_input = "This?? is a ${*}+test1* _string-!#.";
   string regex = "This.. is a \\$\\{.*\\}\\+test1.* _string-!#\\.";
-  string replaced = "Thisxx_is_a___x__test1x__string-__.";
+  string replacedKeep   = "Thisxx_is_a___x__test1x__string-__.";
+  string replacedNoKeep = "Thisxx_is_a___x__test1x__string____";
 
   string converted = WildCards::ToRegEx(test_input);
   EXPECT_EQ(converted, regex);
 
   converted = WildCards::ToX(test_input);
-  EXPECT_EQ(converted, replaced);
+  EXPECT_EQ(converted, replacedKeep);
+
+  converted = WildCards::ToX(test_input, false);
+  EXPECT_EQ(converted, replacedNoKeep);
 }
 
 TEST(RteUtilsTest, WildCardMatch) {
