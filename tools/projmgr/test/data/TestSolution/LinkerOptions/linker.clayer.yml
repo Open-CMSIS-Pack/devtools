@@ -4,13 +4,29 @@ layer:
 
   components:
     - component: Board:Test:Rev1
-  
+    - component: Device:Startup
+      for-context: [.PriorityRegions, .PriorityDefines]
+
+  groups:
+    - group: Linker
+      for-context: [.PriorityRegions, .PriorityDefines]
+      files:
+        - file: ./user/PriorityTest.sct
+
   linker:
     - script: ./linkerScript.ld
       regions: ./linkerRegions.h
       define:
        - LD_PP_GCC_CLAYER_DEF0
        - LD_PP_GCC_CLAYER_DEF1
-      for-context: .Debug_GCC 
+      for-context: .Debug_GCC
+
     - script: ./linkerScript2.ld
       for-context: .Redefinition
+    
+    - regions: ./linkerRegions.h
+      for-context: .PriorityRegions
+
+    - define:
+      - LD_PP_PRIORITY_DEF0
+      for-context: .PriorityDefines

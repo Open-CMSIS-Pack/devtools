@@ -2941,6 +2941,24 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_LinkerOptions) {
     testinput_folder + "/TestSolution/LinkerOptions/ref/linker.Debug_GCC+RteTest_ARMCM3.cbuild.yml");
 }
 
+TEST_F(ProjMgrUnitTests, RunProjMgr_LinkerPriority) {
+  char* argv[7];
+  const string& csolution = testinput_folder + "/TestSolution/LinkerOptions/linker.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"-c";
+  argv[4] = (char*)"linker.Priority*+RteTest_ARMCM3";
+  argv[5] = (char*)"-o";
+  argv[6] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(0, RunProjMgr(7, argv, 0));
+
+  // Check generated cbuild YMLs
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/linker.PriorityRegions+RteTest_ARMCM3.cbuild.yml",
+    testinput_folder + "/TestSolution/LinkerOptions/ref/linker.PriorityRegions+RteTest_ARMCM3.cbuild.yml");
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/linker.PriorityDefines+RteTest_ARMCM3.cbuild.yml",
+    testinput_folder + "/TestSolution/LinkerOptions/ref/linker.PriorityDefines+RteTest_ARMCM3.cbuild.yml");
+}
+
 TEST_F(ProjMgrUnitTests, RunProjMgr_LinkerOptions_Redefinition) {
   char* argv[7];
   StdStreamRedirect streamRedirect;

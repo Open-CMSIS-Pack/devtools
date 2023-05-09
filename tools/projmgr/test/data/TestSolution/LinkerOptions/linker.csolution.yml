@@ -9,6 +9,10 @@ solution:
       compiler: GCC
     - type: Redefinition
       compiler: GCC
+    - type: PriorityRegions
+      compiler: AC6
+    - type: PriorityDefines
+      compiler: AC6
 
   target-types:
     - type: RteTest_ARMCM3
