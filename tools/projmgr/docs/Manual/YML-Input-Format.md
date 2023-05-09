@@ -685,7 +685,7 @@ The `generator-dir:` node can be added various levels of the `*.yml` input files
 
 1. Use `generator-dir:` specification of the `*.csolution.yml` input file, if not exist:
 2. Use `generator-dir:` specification of the `*.cproject.yml` input file, if not exist:
-3. Use `generator-dir:` specification of the `*.clevel.yml` input file.
+3. Use `generator-dir:` specification of the `*.clayer.yml` input file.
 
 Only relative paths to the base directory of the `*.yml` input file are permitted.
 
