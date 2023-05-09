@@ -1454,7 +1454,7 @@ bool ProjMgrWorker::ProcessConfigFiles(ContextItem& context) {
     }
   }
   // Linker script
-  if (context.linker.script.empty()) {
+  if (context.linker.script.empty() && context.linker.regions.empty() && context.linker.defines.empty()) {
     const auto& groups = context.rteActiveTarget->GetProjectGroups();
     for (auto group : groups) {
       for (auto file : group.second) {
@@ -2227,7 +2227,7 @@ bool ProjMgrWorker::AddFile(const FileNode& src, vector<FileNode>& dst, ContextI
     dst.push_back(srcNode);
 
     // Set linker script
-    if ((srcNode.category == "linkerScript") && (context.linker.script.empty())) {
+    if ((srcNode.category == "linkerScript") && (context.linker.script.empty() && context.linker.regions.empty() && context.linker.defines.empty())) {
       context.linker.script = srcNode.file;
     }
 

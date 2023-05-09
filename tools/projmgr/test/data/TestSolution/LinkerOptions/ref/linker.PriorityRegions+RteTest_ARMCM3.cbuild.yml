@@ -1,0 +1,62 @@
+build:
+  generated-by: csolution version 0.0.0+g538e263a
+  solution: ../data/TestSolution/LinkerOptions/linker.csolution.yml
+  project: ../data/TestSolution/LinkerOptions/linker.cproject.yml
+  context: linker.PriorityRegions+RteTest_ARMCM3
+  compiler: AC6
+  device: RteTest_ARMCM3
+  processor:
+    fpu: off
+    trustzone: non-secure
+  packs:
+    - pack: ARM::RteTest_DFP@0.2.0
+      path: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0
+  define:
+    - ARMCM3
+    - _RTE_
+  add-path:
+    - ../data/TestSolution/LinkerOptions/RTE/_PriorityRegions_RteTest_ARMCM3
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM3/Include
+  output-type: exe
+  output-dirs:
+    gendir: ../data/TestSolution/LinkerOptions
+    intdir: tmp/linker/RteTest_ARMCM3/PriorityRegions
+    outdir: out/linker/RteTest_ARMCM3/PriorityRegions
+    rtedir: ../data/TestSolution/LinkerOptions/RTE
+  output:
+    - type: elf
+      file: linker.axf
+  components:
+    - component: ARM::Board:Test:Rev1@1.1.1
+      condition: BoardTest1
+      from-pack: ARM::RteTest_DFP@0.2.0
+      selected-by: Board:Test:Rev1
+    - component: ARM::Device:Startup&RteTest Startup@2.0.3
+      condition: ARMCM3 RteTest
+      from-pack: ARM::RteTest_DFP@0.2.0
+      selected-by: Device:Startup
+      files:
+        - file: ../data/TestSolution/LinkerOptions/RTE/Device/RteTest_ARMCM3/ARMCM3_ac6.sct
+          category: linkerScript
+          attr: config
+          version: 1.2.0
+        - file: ../data/TestSolution/LinkerOptions/RTE/Device/RteTest_ARMCM3/startup_ARMCM3.c
+          category: sourceC
+          attr: config
+          version: 2.0.3
+        - file: ../data/TestSolution/LinkerOptions/RTE/Device/RteTest_ARMCM3/system_ARMCM3.c
+          category: sourceC
+          attr: config
+          version: 1.2.2
+  linker:
+    script: ${CMSIS_COMPILER_ROOT}/ac6_linker_script.sct
+    regions: ../data/TestSolution/LinkerOptions/linkerRegions.h
+  groups:
+    - group: Linker
+      files:
+        - file: ../data/TestSolution/LinkerOptions/user/PriorityTest.sct
+          category: linkerScript
+  constructed-files:
+    - file: ../data/TestSolution/LinkerOptions/RTE/_PriorityRegions_RteTest_ARMCM3/RTE_Components.h
+      category: header
