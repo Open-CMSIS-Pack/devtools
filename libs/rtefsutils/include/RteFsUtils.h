@@ -222,6 +222,16 @@ public:
    * @return string containing the parent path
   */
   static std::string ParentPath(const std::string& path);
+
+  /**
+   * @brief determine relative path in respect to base directory
+   * @param path path to be processed
+   * @param base base directory
+   * @param withHeadingDot true if returned value should contain heading dot '.'
+   * @return relative path in respect to base directory
+  */
+  static std::string RelativePath(const std::string& path, const std::string& base, bool withHeadingDot = false);
+
   /**
    * @brief determine absolute path of the current working directory
    * @param withTrailingSlash true if returned value should contain trailing slash '/'

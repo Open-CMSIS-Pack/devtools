@@ -562,9 +562,9 @@ protected:
   bool ProcessComponentFiles(ContextItem& context);
   bool ProcessGroups(ContextItem& context);
   bool ProcessSequencesRelatives(ContextItem& context);
-  bool ProcessSequencesRelatives(ContextItem& context, std::vector<std::string>& src, const std::string& ref = std::string());
+  bool ProcessSequencesRelatives(ContextItem& context, std::vector<std::string>& src, const std::string& ref = std::string(), bool withHeadingDot = false);
   bool ProcessSequencesRelatives(ContextItem& context, BuildType& build, const std::string& ref = std::string());
-  bool ProcessSequenceRelative(ContextItem& context, std::string& item, const std::string& ref = std::string());
+  bool ProcessSequenceRelative(ContextItem& context, std::string& item, const std::string& ref = std::string(), bool withHeadingDot = false);
   bool ProcessOutputFilenames(ContextItem& context);
   bool ProcessLinkerOptions(ContextItem& context);
   bool ProcessLinkerOptions(ContextItem& context, LinkerItem& linker, StringCollection& linkerScriptFile, StringCollection& linkerRegionsFile, const std::string& ref);
