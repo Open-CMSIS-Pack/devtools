@@ -59,11 +59,9 @@ ProjMgrYamlCbuild::ProjMgrYamlCbuild(YAML::Node node, const vector<ContextItem*>
   SetNodeValue(node[YAML_GENERATED_BY], ORIGINAL_FILENAME + string(" version ") + VERSION_STRING);
 
   if (!parser.GetCdefault().path.empty()) {
-    const string& cdefaultFilename = fs::relative(parser.GetCdefault().path, directory, ec).generic_string();
-    SetNodeValue(node[YAML_CDEFAULT], cdefaultFilename);
+    SetNodeValue(node[YAML_CDEFAULT], FormatPath(parser.GetCdefault().path, directory));
   }
-  const string& csolutionFilename = fs::relative(parser.GetCsolution().path, directory, ec).generic_string();
-  SetNodeValue(node[YAML_CSOLUTION], csolutionFilename);
+  SetNodeValue(node[YAML_CSOLUTION], FormatPath(parser.GetCsolution().path, directory));
 
   const auto& cprojects = parser.GetCprojects();
   const auto& csolution = parser.GetCsolution();

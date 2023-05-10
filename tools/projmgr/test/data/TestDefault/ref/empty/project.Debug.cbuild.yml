@@ -1,0 +1,47 @@
+build:
+  generated-by: csolution version 0.0.0+g11955b66
+  solution: ../../data/TestDefault/empty.csolution.yml
+  project: ../../data/TestDefault/project.cproject.yml
+  context: project.Debug
+  compiler: GCC
+  device: RteTest_ARMCM0
+  processor:
+    fpu: off
+    trustzone: non-secure
+  packs:
+    - pack: ARM::RteTest_DFP@0.1.1
+      path: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.1.1
+  misc:
+    ASM:
+      - defaultMiscASM-RteTest_ARMCM0
+  define:
+    - ARMCM0
+    - _RTE_
+  add-path:
+    - ../../data/TestDefault/RTE/_Debug
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.1.1/Device/ARM/ARMCM0/Include
+  output-type: exe
+  output-dirs:
+    gendir: ../../data/TestDefault
+    intdir: tmp/project/Debug
+    outdir: out/project/Debug
+    rtedir: ../../data/TestDefault/RTE
+  output:
+    - type: elf
+      file: project.elf
+  components:
+    - component: ARM::RteTest:CORE@0.1.1
+      condition: Cortex-M Device
+      from-pack: ARM::RteTest_DFP@0.1.1
+      selected-by: CORE
+  linker:
+    script: ${CMSIS_COMPILER_ROOT}/gcc_linker_script.ld
+    regions: ../../data/TestDefault/RTE/Device/RteTest_ARMCM0/regions_RteTest_ARMCM0.h
+  groups:
+    - group: Sources
+      files:
+        - file: ../../data/TestDefault/main.c
+          category: sourceC
+  constructed-files:
+    - file: ../../data/TestDefault/RTE/_Debug/RTE_Components.h
+      category: header
