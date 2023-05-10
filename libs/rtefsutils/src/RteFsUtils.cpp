@@ -563,6 +563,9 @@ string RteFsUtils::ParentPath(const string& path) {
 }
 
 string RteFsUtils::RelativePath(const string& path, const string& base, bool withHeadingDot) {
+  if (path.empty() || base.empty()) {
+    return "";
+  }
   error_code ec;
   string relativePath = fs::relative(path, base, ec).generic_string();
   if (withHeadingDot) {
