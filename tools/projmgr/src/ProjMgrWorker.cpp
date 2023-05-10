@@ -2069,7 +2069,7 @@ bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem& context) {
   return true;
 }
 
-bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, const string& ref) {
+bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, const string& ref, bool withHeadingDot) {
   size_t offset = 0;
   bool pathReplace = false;
   // expand variables (static access sequences)
@@ -2115,8 +2115,8 @@ bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, 
             }
           }
           const string& depContextOutDir = depContext.directories.cprj + "/" + depContext.directories.outdir;
-          const string& relOutDir = fs::relative(depContextOutDir, context.directories.cprj, ec).generic_string();
-          const string& relSrcDir = fs::relative(depContext.cproject->directory, context.directories.cprj, ec).generic_string();
+          const string& relOutDir = RteFsUtils::RelativePath(depContextOutDir, context.directories.cprj, withHeadingDot);
+          const string& relSrcDir = RteFsUtils::RelativePath(depContext.cproject->directory, context.directories.cprj, withHeadingDot);
           if (regex_match(sequence, regex("^OutDir\\(.*"))) {
             regEx = regex("\\$OutDir\\(.*\\)\\$");
             replacement = relOutDir;
@@ -2971,9 +2971,9 @@ std::string ProjMgrWorker::GetBoardInfoString(const std::string& vendor,
     name + (revision.empty() ? "" : ":" + revision);
 }
 
-bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem& context, vector<string>& src, const string& ref) {
+bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem& context, vector<string>& src, const string& ref, bool withHeadingDot) {
   for (auto& item : src) {
-    if (!ProcessSequenceRelative(context, item, ref)) {
+    if (!ProcessSequenceRelative(context, item, ref, withHeadingDot)) {
       return false;
     }
   }
@@ -2988,15 +2988,15 @@ bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem& context, BuildType& b
     return false;
   }
   for (auto& misc : build.misc) {
-    if (!ProcessSequencesRelatives(context, misc.as)     ||
-        !ProcessSequencesRelatives(context, misc.c)      ||
-        !ProcessSequencesRelatives(context, misc.cpp)    ||
-        !ProcessSequencesRelatives(context, misc.c_cpp)  ||
-        !ProcessSequencesRelatives(context, misc.lib)    ||
-        !ProcessSequencesRelatives(context, misc.library)||
-        !ProcessSequencesRelatives(context, misc.link)   ||
-        !ProcessSequencesRelatives(context, misc.link_c) ||
-        !ProcessSequencesRelatives(context, misc.link_cpp)) {
+    if (!ProcessSequencesRelatives(context, misc.as,       "", true) ||
+        !ProcessSequencesRelatives(context, misc.c,        "", true) ||
+        !ProcessSequencesRelatives(context, misc.cpp,      "", true) ||
+        !ProcessSequencesRelatives(context, misc.c_cpp,    "", true) ||
+        !ProcessSequencesRelatives(context, misc.lib,      "", true) ||
+        !ProcessSequencesRelatives(context, misc.library,  "", true) ||
+        !ProcessSequencesRelatives(context, misc.link,     "", true) ||
+        !ProcessSequencesRelatives(context, misc.link_c,   "", true) ||
+        !ProcessSequencesRelatives(context, misc.link_cpp, "", true)) {
       return false;
     }
   }

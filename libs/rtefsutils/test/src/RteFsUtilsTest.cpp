@@ -905,6 +905,24 @@ TEST_F(RteFsUtilsTest, ParentPath) {
   EXPECT_EQ(filePath, dirnameSubdir);
 }
 
+TEST_F(RteFsUtilsTest, RelativePath) {
+  string relPath;
+  string absSubdir = RteFsUtils::AbsolutePath(dirnameSubdir).generic_string();
+  string absBase = RteFsUtils::AbsolutePath(dirnameBase).generic_string();
+
+  relPath = RteFsUtils::RelativePath(absSubdir, absBase);
+  EXPECT_EQ(relPath, "dir/subdir");
+
+  relPath = RteFsUtils::RelativePath(absSubdir, absBase, true);
+  EXPECT_EQ(relPath, "./dir/subdir");
+
+  relPath = RteFsUtils::RelativePath(absSubdir, "");
+  EXPECT_EQ(relPath, "");
+
+  relPath = RteFsUtils::RelativePath("", absBase);
+  EXPECT_EQ(relPath, "");
+}
+
 TEST_F(RteFsUtilsTest, CreateDirectories) {
   error_code ec;
   bool result;

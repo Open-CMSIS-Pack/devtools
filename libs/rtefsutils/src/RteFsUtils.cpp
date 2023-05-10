@@ -562,6 +562,17 @@ string RteFsUtils::ParentPath(const string& path) {
   return fs::path(path).parent_path().generic_string();
 }
 
+string RteFsUtils::RelativePath(const string& path, const string& base, bool withHeadingDot) {
+  error_code ec;
+  string relativePath = fs::relative(path, base, ec).generic_string();
+  if (withHeadingDot) {
+    if (!relativePath.empty() && relativePath.find("./") != 0) {
+      relativePath.insert(0, "./");
+    }
+  }
+  return relativePath;
+}
+
 string RteFsUtils::GetCurrentFolder(bool withTrailingSlash) {
   error_code ec;
   string f = fs::current_path(ec).generic_string();

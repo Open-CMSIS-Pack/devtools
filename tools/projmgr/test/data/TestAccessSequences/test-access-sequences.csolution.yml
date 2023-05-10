@@ -33,6 +33,8 @@ solution:
       misc:
         - C-CPP:
             - -O3
+          Link:
+            - --list=$OutDir()$/$Project$.map
   
   projects:
     - project: ./test-access-sequences1.cproject.yml
