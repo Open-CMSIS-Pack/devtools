@@ -2450,6 +2450,31 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_DefaultFile3) {
     testinput_folder + "/TestDefault/ref/build-types/project.IAR.cprj");
 }
 
+TEST_F(ProjMgrUnitTests, RunProjMgrSolution_DefaultFileInCompilerRoot) {
+  char* argv[6];
+  const string cdefault = testinput_folder + "/TestDefault/.cdefault.yml";
+  const string cdefaultInCompilerRoot = testcmsiscompiler_folder + "/.cdefault.yml";
+  RteFsUtils::MoveExistingFile(cdefault, cdefaultInCompilerRoot);
+  const string& csolution = testinput_folder + "/TestDefault/empty.csolution.yml";
+  const string& output = testoutput_folder + "/empty";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)output.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+
+  // Check generated cbuild YMLs
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/empty/empty.cbuild-idx.yml",
+    testinput_folder + "/TestDefault/ref/empty/empty.cbuild-idx.yml");
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/empty/project.Debug.cbuild.yml",
+    testinput_folder + "/TestDefault/ref/empty/project.Debug.cbuild.yml");
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/empty/project.Release.cbuild.yml",
+    testinput_folder + "/TestDefault/ref/empty/project.Release.cbuild.yml");
+
+  RteFsUtils::MoveExistingFile(cdefaultInCompilerRoot, cdefault);
+}
+
 TEST_F(ProjMgrUnitTests, RunProjMgr_NoUpdateRTEFiles) {
   char* argv[7];
   const string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject.yml");
