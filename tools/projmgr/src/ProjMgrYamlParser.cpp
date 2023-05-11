@@ -650,6 +650,8 @@ const set<string> solutionKeys = {
   YAML_DELPATH,
   YAML_MISC,
   YAML_VARIABLES,
+  YAML_CREATED_BY,
+  YAML_CREATED_FOR,
 };
 
 const set<string> projectsKeys = {
