@@ -33,8 +33,8 @@ build:
       from-pack: ARM::RteTest_DFP@0.2.0
       selected-by: Board:Test:Rev1
   linker:
-    script: ../data/TestSolution/LinkerOptions/linkerScript.ld
-    regions: ../data/TestSolution/LinkerOptions/linkerRegions.h
+    script: ../data/TestSolution/LinkerOptions/layer/linkerScript.ld
+    regions: ../data/TestSolution/LinkerOptions/layer/RTE/Device/RteTest_ARMCM3/regions_RteTest_ARMCM3.h
     define:
       - LD_PP_GCC_CPROJECT_DEF0
       - LD_PP_GCC_CPROJECT_DEF1

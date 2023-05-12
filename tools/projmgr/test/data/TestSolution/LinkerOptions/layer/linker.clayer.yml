@@ -6,6 +6,8 @@ layer:
     - component: Board:Test:Rev1
     - component: Device:Startup
       for-context: [.PriorityRegions, .PriorityDefines]
+    - component: RteTest:CORE
+      for-context: [.PriorityRegions, .PriorityDefines]
 
   groups:
     - group: Linker
@@ -15,7 +17,7 @@ layer:
 
   linker:
     - script: ./linkerScript.ld
-      regions: ./linkerRegions.h
+      regions: ./RTE/Device/RteTest_ARMCM3/regions_RteTest_ARMCM3.h
       define:
        - LD_PP_GCC_CLAYER_DEF0
        - LD_PP_GCC_CLAYER_DEF1
@@ -24,7 +26,7 @@ layer:
     - script: ./linkerScript2.ld
       for-context: .Redefinition
     
-    - regions: ./linkerRegions.h
+    - regions: ./RTE/Device/RteTest_ARMCM3/regions_RteTest_ARMCM3.h
       for-context: .PriorityRegions
 
     - define:

@@ -34,7 +34,7 @@ build:
       selected-by: Board:Test:Rev1
   linker:
     script: ../data/TestSolution/LinkerOptions/linkerScript.sct
-    regions: ../data/TestSolution/LinkerOptions/linkerRegions.h
+    regions: ../data/TestSolution/LinkerOptions/RTE/Device/RteTest_ARMCM3/regions_RteTest_ARMCM3.h
   constructed-files:
     - file: ../data/TestSolution/LinkerOptions/RTE/_Debug_AC6_RteTest_ARMCM3/RTE_Components.h
       category: header

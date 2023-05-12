@@ -4,14 +4,14 @@ project:
 
   linker:
     - script: ./linkerScript.sct
-      regions: ./linkerRegions.h
+      regions: ./RTE/Device/RteTest_ARMCM3/regions_RteTest_ARMCM3.h
       for-context: .Debug_AC6
-    - script: ./linkerScript.ld
-      regions: ./linkerRegions.h
+    - script: ./layer/linkerScript.ld
+      regions: ./layer/RTE/Device/RteTest_ARMCM3/regions_RteTest_ARMCM3.h
       define:
        - LD_PP_GCC_CPROJECT_DEF0
        - LD_PP_GCC_CPROJECT_DEF1
       for-compiler: GCC
 
   layers:
-    - layer: linker.clayer.yml
+    - layer: layer/linker.clayer.yml

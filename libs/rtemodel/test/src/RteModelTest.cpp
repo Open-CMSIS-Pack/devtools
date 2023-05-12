@@ -777,7 +777,8 @@ TEST_F(RteModelPrjTest, LoadCprjM4) {
 
   // test regions_h
   string regionsFile = deviceDir + "regions_RteTest_ARMCM4_FP.h";
-  EXPECT_EQ(activeCprjProject->GetRegionsHeader(activeTarget->GetName(), projDir), regionsFile);
+  EXPECT_EQ(activeCprjProject->GetRegionsHeader(activeTarget->GetName(), rteDir), regionsFile);
+  EXPECT_TRUE(activeTarget->GenerateRegionsHeader(rteDir));
   ASSERT_TRUE(RteFsUtils::Exists(regionsFile));
 
   string generatedContent;
@@ -851,7 +852,8 @@ TEST_F(RteModelPrjTest, LoadCprjM4_Board) {
 
   // test regions_h
   string regionsFile = deviceDir + "regions_RteTest_CM4_board.h";
-  EXPECT_EQ(activeCprjProject->GetRegionsHeader(activeTarget->GetName(), projDir), regionsFile);
+  EXPECT_EQ(activeCprjProject->GetRegionsHeader(activeTarget->GetName(), rteDir), regionsFile);
+  EXPECT_TRUE(activeTarget->GenerateRegionsHeader(rteDir));
   EXPECT_TRUE(RteFsUtils::Exists(regionsFile));
 
   string generatedContent;

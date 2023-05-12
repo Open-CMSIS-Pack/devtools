@@ -37,25 +37,29 @@ build:
       from-pack: ARM::RteTest_DFP@0.2.0
       selected-by: Device:Startup
       files:
-        - file: ../data/TestSolution/LinkerOptions/RTE/Device/RteTest_ARMCM3/ARMCM3_ac6.sct
+        - file: ../data/TestSolution/LinkerOptions/layer/RTE/Device/RteTest_ARMCM3/ARMCM3_ac6.sct
           category: linkerScript
           attr: config
           version: 1.2.0
-        - file: ../data/TestSolution/LinkerOptions/RTE/Device/RteTest_ARMCM3/startup_ARMCM3.c
+        - file: ../data/TestSolution/LinkerOptions/layer/RTE/Device/RteTest_ARMCM3/startup_ARMCM3.c
           category: sourceC
           attr: config
           version: 2.0.3
-        - file: ../data/TestSolution/LinkerOptions/RTE/Device/RteTest_ARMCM3/system_ARMCM3.c
+        - file: ../data/TestSolution/LinkerOptions/layer/RTE/Device/RteTest_ARMCM3/system_ARMCM3.c
           category: sourceC
           attr: config
           version: 1.2.2
+    - component: ARM::RteTest:CORE@0.1.1
+      condition: Cortex-M Device
+      from-pack: ARM::RteTest_DFP@0.2.0
+      selected-by: RteTest:CORE
   linker:
     script: ${CMSIS_COMPILER_ROOT}/ac6_linker_script.sct
-    regions: ../data/TestSolution/LinkerOptions/linkerRegions.h
+    regions: ../data/TestSolution/LinkerOptions/layer/RTE/Device/RteTest_ARMCM3/regions_RteTest_ARMCM3.h
   groups:
     - group: Linker
       files:
-        - file: ../data/TestSolution/LinkerOptions/user/PriorityTest.sct
+        - file: ../data/TestSolution/LinkerOptions/layer/user/PriorityTest.sct
           category: linkerScript
   constructed-files:
     - file: ../data/TestSolution/LinkerOptions/RTE/_PriorityRegions_RteTest_ARMCM3/RTE_Components.h
