@@ -1780,10 +1780,6 @@ bool RteTarget::GenerateRteHeaders() {
     return false;
   }
 
-  if (!GenerateRegionsHeader()) {
-    return false;
-  }
-
   string content;
   const set<string>& strings = GetGlobalPreIncludeStrings();
   for (auto s : strings) {
@@ -1830,7 +1826,7 @@ bool RteTarget::GenerateRteHeaderFile(const string& headerName, const string& co
     return false;
   string path = !directory.empty() ? directory : project->GetProjectPath();
 
-  string headerFile = project->GetRteHeader(headerName, bRegionsHeader? RteUtils::EMPTY_STRING : GetName(), path);
+  string headerFile = bRegionsHeader ? path + headerName : project->GetRteHeader(headerName, GetName(), path);
 
   if (bRegionsHeader && RteFsUtils::Exists(headerFile))
     return true; // nothing to do

@@ -1329,3 +1329,66 @@ TEST_F(ProjMgrWorkerUnitTests, SetDefaultLinkerScript_UnknownCompiler) {
   string errStr = streamRedirect.GetErrorString();
   EXPECT_EQ(errStr, expectedErrStr);
 };
+
+TEST_F(ProjMgrWorkerUnitTests, GenerateRegionsHeader) {
+  StdStreamRedirect streamRedirect;
+  ContextItem context;
+  LoadPacks(context);
+  InitializeTarget(context);
+
+  // Generation fails
+  string generatedRegionsFile;
+  EXPECT_FALSE(GenerateRegionsHeader(context, generatedRegionsFile));
+  EXPECT_TRUE(generatedRegionsFile.empty());
+  string expectedErrStr = "warning csolution: regions header file generation failed\n";
+  string errStr = streamRedirect.GetErrorString();
+  EXPECT_EQ(errStr, expectedErrStr);
+
+  // Generation succeeds
+  context.targetAttributes["Dvendor"] = "ARM";
+  context.targetAttributes["Dname"] = "RteTest_ARMCM0";
+  EXPECT_TRUE(SetTargetAttributes(context, context.targetAttributes));
+  context.directories.cprj = testoutput_folder;
+  context.directories.rte = "./RTE";
+  EXPECT_TRUE(GenerateRegionsHeader(context, generatedRegionsFile));
+  EXPECT_TRUE(fs::equivalent(generatedRegionsFile, testoutput_folder + "/RTE/Device/RteTest_ARMCM0/regions_RteTest_ARMCM0.h"));
+};
+
+TEST_F(ProjMgrWorkerUnitTests, CheckAndGenerateRegionsHeader) {
+  StdStreamRedirect streamRedirect;
+  string expectedErrStr, expectedOutStr, errStr, outStr;
+  ContextItem context;
+  LoadPacks(context);
+  InitializeTarget(context);
+
+  // Generation fails
+  context.directories.cprj = testoutput_folder;
+  context.linker.regions = "regions_RteTest_ARMCM0.h";
+  CheckAndGenerateRegionsHeader(context);
+  expectedErrStr = "\
+warning csolution: regions header file generation failed\n\
+.*/regions_RteTest_ARMCM0.h - warning csolution: specified regions header was not found\n\
+";
+  errStr = streamRedirect.GetErrorString();
+  EXPECT_TRUE(regex_match(errStr, regex(expectedErrStr)));
+
+  // Generation succeeds but specified file does not exist
+  context.targetAttributes["Dvendor"] = "ARM";
+  context.targetAttributes["Dname"] = "RteTest_ARMCM0";
+  EXPECT_TRUE(SetTargetAttributes(context, context.targetAttributes));
+  streamRedirect.ClearStringStreams();
+  CheckAndGenerateRegionsHeader(context);
+  expectedOutStr = ".*/Device/RteTest_ARMCM0/regions_RteTest_ARMCM0.h - info csolution: regions header generated successfully\n";
+  expectedErrStr = ".*/regions_RteTest_ARMCM0.h - warning csolution: specified regions header was not found\n";
+  outStr = streamRedirect.GetOutString();
+  errStr = streamRedirect.GetErrorString();
+  EXPECT_TRUE(regex_match(outStr, regex(expectedOutStr)));
+  EXPECT_TRUE(regex_match(errStr, regex(expectedErrStr)));
+
+  // Region header already exists, does nothing
+  streamRedirect.ClearStringStreams();
+  context.linker.regions = "./Device/RteTest_ARMCM0/regions_RteTest_ARMCM0.h";
+  CheckAndGenerateRegionsHeader(context);
+  EXPECT_TRUE(streamRedirect.GetOutString().empty());
+  EXPECT_TRUE(streamRedirect.GetErrorString().empty());
+};

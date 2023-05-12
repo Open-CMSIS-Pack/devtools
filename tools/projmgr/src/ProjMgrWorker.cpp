@@ -1430,6 +1430,49 @@ bool ProjMgrWorker::AddRequiredComponents(ContextItem& context) {
   // Generate RTE headers
   context.rteActiveProject->GenerateRteHeaders();
 
+  // Check regions header, generate it if needed
+  if (!context.linker.regions.empty()) {
+    CheckAndGenerateRegionsHeader(context);
+  }
+
+  return true;
+}
+
+void ProjMgrWorker::CheckAndGenerateRegionsHeader(ContextItem& context) {
+  error_code ec;
+  const string regionsHeader = fs::weakly_canonical(fs::path(context.directories.cprj).append(context.linker.regions), ec).generic_string();
+  if (!RteFsUtils::Exists(regionsHeader)) {
+    string generatedRegionsFile;
+    if (GenerateRegionsHeader(context, generatedRegionsFile)) {
+      ProjMgrLogger::Info(generatedRegionsFile, "regions header generated successfully");
+    }
+  }
+  if (!RteFsUtils::Exists(regionsHeader)) {
+    ProjMgrLogger::Warn(regionsHeader, "specified regions header was not found");
+  }
+}
+
+bool ProjMgrWorker::GenerateRegionsHeader(ContextItem& context, string& generatedRegionsFile) {
+  // get rte folder associated to 'Device' class
+  string rteFolder;
+  for (const auto& [_, component] : context.components) {
+    if (component.instance->GetCclassName() == "Device") {
+      rteFolder = component.instance->GetRteFolder().empty() ? "" :
+        fs::path(context.cproject->directory).append(component.instance->GetRteFolder()).generic_string();
+      break;
+    }
+  }
+  // get context's rte folder
+  if (rteFolder.empty()) {
+    rteFolder = fs::path(context.directories.cprj).append(context.directories.rte).generic_string();
+  }
+  // generate regions header
+  if (!context.rteActiveTarget->GenerateRegionsHeader(rteFolder + "/")) {
+    ProjMgrLogger::Warn("regions header file generation failed");
+    return false;
+  }
+  error_code ec;
+  generatedRegionsFile = fs::weakly_canonical(fs::path(rteFolder).append(context.rteActiveTarget->GetRegionsHeader()), ec).generic_string();
   return true;
 }
 
@@ -1489,7 +1532,10 @@ void ProjMgrWorker::SetDefaultLinkerScript(ContextItem& context) {
     }
     context.linker.script = fs::relative(linkerScript, context.directories.cprj).generic_string();
     if (context.linker.regions.empty()) {
-      context.linker.regions = fs::path(context.directories.rte).append(context.rteActiveTarget->GetRegionsHeader()).generic_string();
+      string generatedRegionsFile;
+      if (GenerateRegionsHeader(context, generatedRegionsFile)) {
+        context.linker.regions = fs::relative(generatedRegionsFile, context.directories.cprj).generic_string();
+      }
     }
   }
 }

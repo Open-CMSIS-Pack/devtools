@@ -616,6 +616,8 @@ protected:
   void RemoveRedundantSubsets(std::vector<ConnectionsCollectionVec>& validConnections);
   StrSet GetValidSets(ContextItem& context, const std::string& clayer);
   void SetDefaultLinkerScript(ContextItem& context);
+  void CheckAndGenerateRegionsHeader(ContextItem& context);
+  bool GenerateRegionsHeader(ContextItem& context, std::string& generatedRegionsFile);
 };
 
 #endif  // PROJMGRWORKER_H

@@ -1202,7 +1202,7 @@ string RteProject::GetRegionsHeader(const string& targetName, const string& pref
 {
   RteTarget* target = GetTarget(targetName);
   string regionsHeader = target ? target->GetRegionsHeader() : RteUtils::EMPTY_STRING;
-  return GetRteHeader(regionsHeader, RteUtils::EMPTY_STRING, prefix);
+  return prefix + regionsHeader;
 }
 
 
