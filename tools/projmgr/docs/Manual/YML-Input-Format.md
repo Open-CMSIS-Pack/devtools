@@ -29,7 +29,6 @@ Project Manager.
   - [`generator-dir:`](#generator-dir)
   - [Toolchain Options](#toolchain-options)
     - [`compiler:`](#compiler)
-    - [`output-type:`](#output-type)
     - [`output:`](#output)
     - [`linker:`](#linker)
   - [Translation Control](#translation-control)
@@ -312,7 +311,6 @@ NEW: `$Solution$`                              | Solution name (base name of the
 NEW: `$SolutionDir$`                           | Path to the directory of the current processed `csolution.yml` file.
 `$Project$`                                    | Project name (base name of the *.cproject.yml file) of the currently processed project.
 NEW: `$ProjectDir(context)$`                   | Path to the directory of a related `cproject.yml` file.
-NEW: `$ProjectDir$`                            | Path to the directory of the current processed `cproject.yml` file.
 DEPRECATE: `$CProject(context)$`               | Path to the directory of a related `cproject.yml` file.
 DEPRECATE: `$CProject$`                        | Path to the directory of the current processed `cproject.yml` file.
 NEW: `$GeneratorId$`                           | Name of the generator specified with `id` in the PDSC file (possible only in [`generator-dir:`](#generator-dir) node).
@@ -326,7 +324,7 @@ NEW: `$lib(context)$`                          | Path and filename of the librar
 DEPRECATE: `$Source(context)$`                 | Path to the source directory of a related project that is defined in the `*.csolution.yml` file.
 DEPRECATE: `$Out(context)$`                    | Path to the output directory of a related project that is defined in the `*.csolution.yml` file.
 
-For a [`context`](#context-name-conventions) the `project-name` must be specified. The `.build-type` and `+target-type` are optional; when omitted the `.build-type` and/or `+target-type` of the current processed context is used.
+For a [`context`](#context-name-conventions) the `project-name` must be specified. The `.build-type` and `+target-type` are optional; when omitted the `.build-type` and/or `+target-type` of the current processed context is used. Example: `$Project$` or `$Project()$` both get the based name of the current processed `cproject.yml` file.
 
 > **Note:** The access sequences below are not completed yet, as they require a change to CMSIS-Build.
 
@@ -450,7 +448,8 @@ Keyword                          | Description
 
 ### `default:`
 
-The **csolution - CMSIS Project Manager** uses a file with the name `*.cdefault.yml` or `*.cdefault.yaml` to setup the compiler along with some specific controls. The search order for this file is:
+When [`cdefault:`](#solution) is specified in the `csolution.yml` file, the **csolution - CMSIS Project Manager** uses a file with the name `*.cdefault.yml` or `*.cdefault.yaml` to setup 
+the compiler along with some specific controls. The search order for this file is:
 
 - An explicit file with the name `<solution-name>.cdefault.yml` in the same directory as the `<solution-name>.csolution.yml` file. 
 - Any `*.cdefault.yml` or `*.cdefault.yaml` file in the directory specified by the environment variable [`CMSIS_COMPILER_ROOT`](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/docs/installation.md#environment-variables).
@@ -491,12 +490,13 @@ The `solution:` node is the start of a `*.csolution.yml` file that collects rela
 &nbsp;&nbsp; `created-by:`                            |  Optional    | Identifies the tool that created this csolution project.
 &nbsp;&nbsp; `created-for:`                           |  Optional    | Specifies the tool for building this csolution project, i.e. **ctools@1.5.0**
 &nbsp;&nbsp; `description:`                           |  Optional    | Brief description text of the solution.
+&nbsp;&nbsp; `cdefault:`                              |  Optional    | When specified, the [`*.cdefault.yml`](#default) file is used to setup compiler specific controls. 
+&nbsp;&nbsp; [`compiler:`](#compiler)                 |  Optional    | Overall toolchain selection for the solution.
+&nbsp;&nbsp; [`language-C:`](#language-c)             |  Optional    | Set the language standard for C source file compilation.
+&nbsp;&nbsp; [`language-CPP:`](#language-cpp)         |  Optional    | Set the language standard for C++ source file compilation.
 &nbsp;&nbsp; [`output-dirs:`](#output-dirs)           |  Optional    | Control the output directories for the build output.
 &nbsp;&nbsp; [`generator-dir:`](#generator-dir)       |  Optional    | Control the directory for generator output.
 &nbsp;&nbsp; [`packs:`](#packs)                       |  Optional    | Defines local packs and/or scope of packs that are used.
-&nbsp;&nbsp; [`language-C:`](#language-c)             |  Optional    | Set the language standard for C source file compilation.
-&nbsp;&nbsp; [`language-CPP:`](#language-cpp)         |  Optional    | Set the language standard for C++ source file compilation.
-&nbsp;&nbsp; [`compiler:`](#compiler)                 |  Optional    | Overall toolchain selection for the solution.
 &nbsp;&nbsp; [`target-types:`](#target-types)         | **Required** | List of target-types that define the target system (device or board).
 &nbsp;&nbsp; [`build-types:`](#build-types)           |  Optional    | List of build-types (i.e. Release, Debug, Test).
 &nbsp;&nbsp; [`projects:`](#projects)                 | **Required** | List of projects that belong to the solution.
@@ -539,7 +539,7 @@ The `project:` node is the start of a `*.cproject.yml` file and can contain the 
 `project:`                                          |              | Content
 :---------------------------------------------------|:-------------|:------------------------------------
 &nbsp;&nbsp; `description:`                         |  Optional    | Brief description text of the project.
-&nbsp;&nbsp; [`output-type:`](#output-type)         |  Optional    | Generate executable (default) or library.
+&nbsp;&nbsp; [`output:`](#output)                   |  Optional    | Configure the generated output files.
 &nbsp;&nbsp; [`generator-dir:`](#generator-dir)     |  Optional    | Control the directory for generator output.
 &nbsp;&nbsp; [`packs:`](#packs)                     |  Optional    | Defines packs that are required for this project.
 &nbsp;&nbsp; [`language-C:`](#language-c)           |  Optional    | Set the language standard for C source file compilation.
@@ -733,45 +733,46 @@ compiler: GCC              # Select GCC Compiler
 compiler: AC6@6.18.0       # Select Arm Compiler version 6
 ```
 
-### `output-type:`
+### `output:`
 
-Selects the output type for code generation.
+Configure the generated output files.
 
-Value                                                 | Generated Output
-:-----------------------------------------------------|:------------------------------------
-`exe`                                                 | Executable in ELF format
-`lib`                                                 | Library or archive
+`output:`                        |            | Content
+:--------------------------------|:-----------|:--------------------------------
+&nbsp;&nbsp; `base-name:`        |  Optional  | Specify a base name for all output files.
+`- type:`                        |  Optional  | Select the output type for code generation (see list below).
+
+`type:` value   | Description
+:---------------|:-------------
+`lib`           | Library or archive. Note: GCC uses the prefix `lib` in the base name for archive files.
+`elf`           | Executable in ELF format. The file extension is toolchain specific.
+`hex`           | Intel HEX file in HEX-386 format.
+`bin`           | Binary image.
+
+The **default** setting for `output:` is:
+
+```yml
+output:
+  - base-name: $Project$ # used the base name of the `cproject.yml` file.
+  - type: elf            # Generate executeable file.
+```
 
 **Example:**
 
 ```yml
-output-type: lib            # Generate a library
+output:                  # configure output files
+  - base-name: MyProject # used for all output files, including linker map file.
+  - type: elf            # Generate executeable file.
+  - type: hex            # generate a HEX file 
+  - type: bin            # generate a BIN file 
 ```
 
-### `output:`
-
->**Proposal**  Already implemented in upcoming CMSIS-Toolbox 1.5 
-
-This is a proposal to replace `output-type` with a more flexible solution.  It allows to generate both a elf/dwarf and bin file. Optionally the filename including path could be specified.
+Gnerate a **library**:
 
 ```yml
-output:
-  - type: elf         # default
-    file: <path>/<file>.<ext>    # user define path with filename and extension (optional)
-    for-context:                 # (optional)
-
-  - type: hex
-    file: <path>/<file>.<ext>    # user define path with filename and extension
-
-  - type: bin
-    file: <path>/<file>.<ext>    # user define path with filename and extension
-    base-address:                # offset addresses   (out-of-scope for now)
-
-  - type: lib                    # when lib is used, an elf and bin file would be not possible
-    file: <path>/<file>.<ext>    # user define path with filename and extension
+output:                  # configure output files
+  - type: lib            # Generate executeable file.
 ```
-
-If accepted, we would need to extend also the access sequences.
 
 ### `linker:`
 
@@ -902,7 +903,7 @@ Contains a list of symbol #define statements that are passed via the command lin
 `define:`                                             | Content
 :-----------------------------------------------------|:------------------------------------
 &nbsp;&nbsp; `- <symbol-name>`                        | #define symbol passed via command line
-&nbsp;&nbsp; `- <symbol-name>: <value>`               | #define symbol with value passed via command line
+&nbsp;&nbsp; `- <symbol-name> = <value>`              | #define symbol with value passed via command line
 
 >**Note:**
 >
@@ -912,7 +913,7 @@ Contains a list of symbol #define statements that are passed via the command lin
 
 ```yml
 define:                    # Start a list of define statements
-  - TestValue: 12          # add symbol 'TestValue' with value 12
+  - TestValue = 12         # add symbol 'TestValue' with value 12
   - TestMode               # add symbol 'TestMode'
 ```
 
@@ -1037,6 +1038,7 @@ project. It is however possible to change that `setup:` settings on a [`group:`]
 &nbsp;&nbsp;&nbsp; [`for-context:`](#for-context)          |   Optional   | Include group for a list of *build* and *target* types.
 &nbsp;&nbsp;&nbsp; [`not-for-context:`](#not-for-context)  |   Optional   | Exclude group for a list of *build* and *target* types.
 &nbsp;&nbsp;&nbsp; [`for-compiler:`](#for-compiler)  |   Optional   | Include group for a list of compilers.
+&nbsp;&nbsp;&nbsp; [`output:`](#output)              |   Optional   | Configure the generated output files.
 &nbsp;&nbsp;&nbsp; [`optimize:`](#optimize)          |   Optional   | Optimize level for code generation.
 &nbsp;&nbsp;&nbsp; [`debug:`](#debug)                |   Optional   | Generation of debug information.
 &nbsp;&nbsp;&nbsp; [`warnings:`](#warnings)          |   Optional   | Control generation of compiler diagnostics.
@@ -1187,7 +1189,6 @@ The `target-types:` node may include [toolchain options](#toolchain-options), [t
 :--------------------------------------------------|--------------|:------------------------------------
 `- type:`                                          | **Required** | Name of the target-type.
 &nbsp;&nbsp;&nbsp; [`compiler:`](#compiler)        |   Optional   | Toolchain selection.
-&nbsp;&nbsp;&nbsp; [`output-type:`](#output-type)  |   Optional   | Generate executable (default) or library.
 &nbsp;&nbsp;&nbsp; [`optimize:`](#optimize)        |   Optional   | Optimize level for code generation.
 &nbsp;&nbsp;&nbsp; [`debug:`](#debug)              |   Optional   | Generation of debug information.
 &nbsp;&nbsp;&nbsp; [`warnings:`](#warnings)        |   Optional   | Control Generation of debug information.
@@ -1214,7 +1215,6 @@ The `build-types:` node may include [toolchain options](#toolchain-options):
 :--------------------------------------------------|--------------|:------------------------------------
 `- type:`                                          | **Required** | Name of the target-type.
 &nbsp;&nbsp;&nbsp; [`compiler:`](#compiler)        |   Optional   | Toolchain selection.
-&nbsp;&nbsp;&nbsp; [`output-type:`](#output-type)  |   Optional   | Generate executable (default) or library.
 &nbsp;&nbsp;&nbsp; [`optimize:`](#optimize)        |   Optional   | Optimize level for code generation.
 &nbsp;&nbsp;&nbsp; [`debug:`](#debug)              |   Optional   | Generation of debug information.
 &nbsp;&nbsp;&nbsp; [`define:`](#define)            |   Optional   | Preprocessor (#define) symbols for code generation.
