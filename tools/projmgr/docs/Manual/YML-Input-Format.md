@@ -902,7 +902,7 @@ Contains a list of symbol #define statements that are passed via the command lin
 `define:`                                             | Content
 :-----------------------------------------------------|:------------------------------------
 &nbsp;&nbsp; `- <symbol-name>`                        | #define symbol passed via command line
-&nbsp;&nbsp; `- <symbol-name> = <value>`              | #define symbol with value passed via command line
+&nbsp;&nbsp; `- <symbol-name>: <value>`               | #define symbol with value passed via command line
 
 >**Note:**
 >
@@ -912,7 +912,7 @@ Contains a list of symbol #define statements that are passed via the command lin
 
 ```yml
 define:                    # Start a list of define statements
-  - TestValue = 12         # add symbol 'TestValue' with value 12
+  - TestValue: 12          # add symbol 'TestValue' with value 12
   - TestMode               # add symbol 'TestMode'
 ```
 
