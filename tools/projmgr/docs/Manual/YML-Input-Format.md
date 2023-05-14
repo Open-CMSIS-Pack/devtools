@@ -782,7 +782,7 @@ The **default** setting for `output:` is:
 
 ```yml
 output:
-  - base-name: $Project$ # used the base name of the `cproject.yml` file.
+  base-name: $Project$   # used the base name of the `cproject.yml` file.
   - type: elf            # Generate executeable file.
 ```
 
@@ -790,7 +790,7 @@ output:
 
 ```yml
 output:                  # configure output files
-  - base-name: MyProject # used for all output files, including linker map file.
+  base-name: MyProject   # used for all output files, including linker map file.
   - type: elf            # Generate executeable file.
   - type: hex            # generate a HEX file 
   - type: bin            # generate a BIN file 
