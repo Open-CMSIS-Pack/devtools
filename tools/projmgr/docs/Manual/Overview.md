@@ -36,6 +36,7 @@ Manual Chapters                                         | Content
     - [Requirements](#requirements)
     - [Invocation](#invocation)
     - [Command Examples](#command-examples)
+      - [List Environment](#list-environment)
       - [List Installed Packs](#list-installed-packs)
       - [Install Missing Packs](#install-missing-packs)
       - [List Devices or Boards](#list-devices-or-boards)
@@ -98,7 +99,7 @@ Input Files              | Description
 [Generic Software Packs](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/cp_PackTutorial.html#cp_SWComponents) | Provide re-usable software components that are typically configurable  towards a user application.
 [DFP Software Packs](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/cp_PackTutorial.html#createPack_DFP)     | Device related information (including memory sizes) for the tool configuration.
 [BSP Software Packs](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/cp_PackTutorial.html#createPackBoard)    | Board specific configuration (i.e. additional memory resources).
-[*.cdefault.yml](YML-Input-Format.md#default)           | Setup of an environment (with toolchain specific controls) and pre-defined toolchains.
+[*.cdefault.yml](YML-Input-Format.md#default)           | When enabled with [`cdefault:`](YML-Input-Format.md#solution), setup of toolchain specific controls and pre-defined toolchains.
 [*.csolution.yml](YML-Input-Format.md#solution)         | Complete scope of the application with build order of sub-projects. Defines [target](YML-Input-Format.md#target-types) and [build](YML-Input-Format.md#build-types) types.
 [*.cproject.yml](YML-Input-Format.md#project)           | Content of an independent build (linker run) - directly relates to a `*.cprj` file.
 [*.clayer.yml](YML-Input-Format.md#layer)               | Set of source files along with pre-configured components for reuse in different applications.
@@ -143,7 +144,7 @@ The CMSIS-Pack repository must be present in the development environment.
 ### Invocation
 
 ```text
-CMSIS Project Manager 1.5.0 (C) 2023 Arm Ltd. and Contributors
+CMSIS Project Manager 1.7.0 (C) 2023 Arm Ltd. and Contributors
 
 Usage:
   csolution [-V] [--version] [-h] [--help]
@@ -183,6 +184,14 @@ Use 'csolution <command> -h' for more information about a command.
 ```
 
 ### Command Examples
+
+#### List Environment
+
+Print the current directory settings which allows to verify the correctness of the tool installation.
+
+```text
+csolution list environment
+```
 
 #### List Installed Packs
 
@@ -363,6 +372,7 @@ default:
 
 ```yml
 solution:
+  cdefault:                      # use default setup of toolchain specific controls
   compiler: AC6                  # explicit compiler selection (optional)
 
   packs:
@@ -471,6 +481,7 @@ Currently multi-target projects require the setup of a `*.csolution.yml` file to
 
 ```yml
 solution:
+  cdefault:                      # use default setup of toolchain specific controls
   compiler: AC6
 
   target-types:
