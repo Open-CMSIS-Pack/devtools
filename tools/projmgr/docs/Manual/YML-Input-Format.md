@@ -61,7 +61,7 @@ Project Manager.
     - [`for-compiler:`](#for-compiler)
     - [`for-context:`](#for-context)
     - [`not-for-context:`](#not-for-context)
-    - [Context list](#context-list)
+    - [Context List](#context-list)
     - [Usage](#usage)
   - [Multiple Projects](#multiple-projects)
     - [`projects:`](#projects)
@@ -327,7 +327,9 @@ DEPRECATE: `$Out(context)$`                    | Path to the output directory of
 
 For a [`context`](#context-name-conventions) the `project-name` must be specified. The `.build-type` and `+target-type` are optional; when omitted the `.build-type` and/or `+target-type` of the current processed context is used. Example: `$Project$` or `$Project()$` both get the based name of the current processed `cproject.yml` file.
 
-> **Note:** The access sequences below are not completed yet, as they require a change to CMSIS-Build.
+> **Note:**
+> 
+> The access sequences below are not completed yet, as they require a change to CMSIS-Build.
 
 Access Sequence                                | Description
 :----------------------------------------------|:--------------------------------------
@@ -371,23 +373,27 @@ the same `build-type` and `target-type` is used as for the `MQTT_AWS.cproject.ym
 
 ```yml
     files:
-    - file: `$Output(TFM)$`.o                             # use the symbol output file of the TFM Project
+    - file: $cmse-lib(TFM)$                              # use the symbol output file of the TFM Project
 ```
 
 The example below uses from the TFM project always `build-type: Debug` and the `target-type: Production-HW`.
 
 ```yml
     files:
-    - file: `$Output(TFM.Release+Production-HW)$`.o       # use the symbol output file of the TFM Project
+    - file: `$cmse-lib(TFM.Release+Production-HW)$`      # use the symbol output file of the TFM Project
 ```
 
 The example below uses the `build-type: Debug`. The `target-type` of the current processed context is used.
+
+> **Note:** 
+> 
+> `-execute` is scheduled for implementation in CMSIS-Toolbox 2.1 (Q3'23)
 
 ```yml
   - execute: Generate Image
     os: Windows                           # on Windows run from
     run: $DPack$/bin/gen_image.exe        # DFP the get_image tool
-    arg: -input $Output(TFM.Debug).axf -output $Output(TFM.Debug)
+    arg: -input $elf(TFM.Debug)$ -output $OutDir(TFM.Debug)$
 ```
 
 The example below creates a `define` that uses the device name.
@@ -468,14 +474,12 @@ Keyword                          | Description
 
 ### `default:`
 
-When [`cdefault:`](#solution) is specified in the `csolution.yml` file, the **csolution - CMSIS Project Manager** uses a file with the name `*.cdefault.yml` or `*.cdefault.yaml` to setup 
-the compiler along with some specific controls. The search order for this file is:
+When [`cdefault:`](#solution) is specified in the `*.csolution.yml` file, the **csolution - CMSIS Project Manager** uses a file with the name `cdefault.yml` or `cdefault.yaml` to setup 
+the compiler along with some specific default controls. The search order for this file is:
 
-> ToDo: what is used `<solution-name>.cdefault.yml` or just `.cdefault.yml`?
-
-- An explicit file with the name `<solution-name>.cdefault.yml` in the same directory as the `<solution-name>.csolution.yml` file. 
-- Any `*.cdefault.yml` or `*.cdefault.yaml` file in the directory specified by the environment variable [`CMSIS_COMPILER_ROOT`](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/docs/installation.md#environment-variables).
-- Any `*.cdefault.yml` or `*.cdefault.yaml` file in the directory [`<cmsis-toolbox-installation-dir>/etc`](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/docs/installation.md##etccmake).
+- A `cdefault.yml` or `cdefault.yaml` file in the same directory as the `<solution-name>.csolution.yml` file. 
+- A `cdefault.yml` or `cdefault.yaml` file in the directory specified by the environment variable [`CMSIS_COMPILER_ROOT`](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/docs/installation.md#environment-variables).
+- A `cdefault.yml` or `cdefault.yaml` file in the directory [`<cmsis-toolbox-installation-dir>/etc`](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/docs/installation.md##etccmake).
 
 The `default:` node is the start of a `*.cdefault.yml` or `*.cdefault.yaml` file and contains the following.
 
@@ -1085,7 +1089,7 @@ The `packs:` node can be specified in the `*.csolution.yml` file allows you to:
 The  [Pack Name Conventions](#pack-name-conventions) are used to specify the name of the software packs.
 The `pack:` definition may be specific to a [`context`](#context) that specifies `target-types:` and/or `build-types:` or provide a local path to a development repository of a software pack.
 
->**NOTES:** 
+>**Notes:** 
 >
 > - By default, the **csolution - CMSIS Project Manager** only loads the latest version of the installed software packs. It is however possible to request specific versions using the `- pack:` node.
 >
@@ -1371,7 +1375,7 @@ for-compiler:                        # add item
 
 A [*context*](#context-name-conventions) list that adds a list-node for specific `target-types:` and/or `build-types:`.
 
-> **NOTE:**
+> **Note:**
 > 
 > `for-type:` is identical to `for-context:`. `for-type:` will be deprecated and replaced by `for-context:` in future versions.
 
@@ -1379,11 +1383,11 @@ A [*context*](#context-name-conventions) list that adds a list-node for specific
 
 A [*context*](#context-name-conventions) list that removes a list-node for specific `target-types:` and/or `build-types:`.
 
-> **NOTE:**
+> **Note:**
 > 
 > `not-for-type:` is identical to `not-for-context:`. `not-for-type:` will be deprecated and replaced by `not-for-context:` in future versions.
 
-### Context list
+### Context List
 
 It is also possible to provide a [`context`](#context-name-conventions) list with:
 

@@ -16,7 +16,7 @@ Manual Chapters                                         | Content
 [Usage](#usage)                                         | Overall Concept, tool setup, and invocation commands.
 [Project Examples](#project-examples)                   | Various example projects to get started.
 [Project Structure](#project-structure)                 | Overall structure of projects.
-[YML Input Format](YML-Input-Format.md)                 | Format of the various YAML input files (`*.csolution.yml`, `*.cproject.yml`, `*.clayer.yml`, `*.cdefault.yml`).
+[YML Input Format](YML-Input-Format.md)                 | Format of the various YAML input files (`*.csolution.yml`, `*.cproject.yml`, `*.clayer.yml`, `cdefault.yml`).
 [Linker Script Management](Linker-Script-Management.md) | Specify the available memory and control the linker operation.
 [Build Operation](Build-Operation.md)                   | Build process overview and toolchain interface for adding additional compilers.
 [YML CBuild Format](YML-CBuild-Format.md)               | Format of the YAML CBuild output file.
@@ -99,7 +99,7 @@ Input Files              | Description
 [Generic Software Packs](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/cp_PackTutorial.html#cp_SWComponents) | Provide re-usable software components that are typically configurable  towards a user application.
 [DFP Software Packs](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/cp_PackTutorial.html#createPack_DFP)     | Device related information (including memory sizes) for the tool configuration.
 [BSP Software Packs](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/cp_PackTutorial.html#createPackBoard)    | Board specific configuration (i.e. additional memory resources).
-[*.cdefault.yml](YML-Input-Format.md#default)           | When enabled with [`cdefault:`](YML-Input-Format.md#solution), setup of toolchain specific controls and pre-defined toolchains.
+[cdefault.yml](YML-Input-Format.md#default)           | When enabled with [`cdefault:`](YML-Input-Format.md#solution), setup of toolchain specific controls and pre-defined toolchains.
 [*.csolution.yml](YML-Input-Format.md#solution)         | Complete scope of the application with build order of sub-projects. Defines [target](YML-Input-Format.md#target-types) and [build](YML-Input-Format.md#build-types) types.
 [*.cproject.yml](YML-Input-Format.md#project)           | Content of an independent build (linker run) - directly relates to a `*.cprj` file.
 [*.clayer.yml](YML-Input-Format.md#layer)               | Set of source files along with pre-configured components for reuse in different applications.
@@ -332,7 +332,7 @@ project:
 
 ### Compiler Agnostic Project
 
-With generic [**Translation Control**](YML-Input-Format.md#translation-control) settings it is possible to create projects that work across the range of supported compilers (AC6, GCC, IAR).  The compiler selection and potential compiler specific settings can be stored in the file `*.cdefault.yml`. By replacing the `*.cdefault.yml` file it is possible to re-target application projects.  [**Translation Control**](YML-Input-Format.md#translation-control) settings are mapped to specify compiler by the build tools.
+With generic [**Translation Control**](YML-Input-Format.md#translation-control) settings it is possible to create projects that work across the range of supported compilers (AC6, GCC, IAR).  The compiler selection and potential compiler specific settings can be stored in the file `cdefault.yml`. By replacing the `cdefault.yml` file it is possible to re-target application projects.  [**Translation Control**](YML-Input-Format.md#translation-control) settings are mapped to specify compiler by the build tools.
 
 **Default settings for multiple compiler toolchains**
 
@@ -598,10 +598,10 @@ solution:
       debug: on
     
   projects:
-    - project: /security/TFM.cproject.yml
+    - project: ./security/TFM.cproject.yml
       for-context: .Release
-    - project: /application/MQTT_AWS.cproject.yml
-    - project: /bootloader/Bootloader.cproject.yml
+    - project: ./application/MQTT_AWS.cproject.yml
+    - project: ./bootloader/Bootloader.cproject.yml
       not-for-context: +Virtual
 ```
 
