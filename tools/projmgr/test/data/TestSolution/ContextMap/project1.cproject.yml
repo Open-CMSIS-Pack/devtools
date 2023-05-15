@@ -1,0 +1,15 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schemas/cproject.schema.json
+
+project:
+
+  groups:
+    - group: Source
+      files:
+        - file: ./MappedDebug1.c
+          for-context: .MappedDebug1
+        - file: ./MappedDebug2.c
+          for-context: .MappedDebug2
+        - file: ./MappedTarget1.c
+          for-context: +MappedTarget
+        - file: ./MappedRelease1.c
+          not-for-context: .MappedDebug1

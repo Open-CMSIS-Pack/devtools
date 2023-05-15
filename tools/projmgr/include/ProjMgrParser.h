@@ -22,6 +22,18 @@ struct TypePair {
 };
 
 /**
+* @brief context name containing
+*        project name,
+*        build-type,
+*        target-type
+*/
+struct ContextName {
+  std::string project;
+  std::string build;
+  std::string target;
+};
+
+/**
  * @brief include/exclude types
  *        for-type (include)
  *        not-for-type (exclude)
@@ -93,6 +105,7 @@ struct ProcessorItem {
  *        exclude paths,
  *        misc compiler controls,
  *        platform processor
+ *        context map
 */
 struct BuildType {
   std::string compiler;
@@ -106,6 +119,7 @@ struct BuildType {
   std::vector<MiscItem> misc;
   ProcessorItem processor;
   std::vector<std::pair<std::string, std::string>> variables;
+  std::vector<ContextName> contextMap;
 };
 
 /**

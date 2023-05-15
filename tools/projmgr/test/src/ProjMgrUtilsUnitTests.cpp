@@ -241,3 +241,19 @@ TEST_F(ProjMgrUtilsUnitTests, AreCompilersCompatible) {
   EXPECT_FALSE(AreCompilersCompatible("GCC@6.16.0", "AC6@6.16.0"));
   EXPECT_FALSE(AreCompilersCompatible("GCC", "AC6"));
 };
+
+TEST_F(ProjMgrUtilsUnitTests, ParseContextEntry) {
+  auto compare = [](ContextName context, ContextName expected) {
+    return ((context.project == expected.project) && (context.build == expected.build) && (context.target == expected.target));
+  };
+  EXPECT_TRUE(compare(ParseContextEntry("project"             ), { "project", ""     , ""       }));
+  EXPECT_TRUE(compare(ParseContextEntry("project.build"       ), { "project", "build", ""       }));
+  EXPECT_TRUE(compare(ParseContextEntry("project+target"      ), { "project", ""     , "target" }));
+  EXPECT_TRUE(compare(ParseContextEntry("project.build+target"), { "project", "build", "target" }));
+  EXPECT_TRUE(compare(ParseContextEntry("project+target.build"), { "project", "build", "target" }));
+  EXPECT_TRUE(compare(ParseContextEntry(".build"              ), { ""       , "build", ""       }));
+  EXPECT_TRUE(compare(ParseContextEntry(".build+target"       ), { ""       , "build", "target" }));
+  EXPECT_TRUE(compare(ParseContextEntry("+target"             ), { ""       , ""     , "target" }));
+  EXPECT_TRUE(compare(ParseContextEntry("+target.build"       ), { ""       , "build", "target" }));
+  EXPECT_TRUE(compare(ParseContextEntry(""                    ), { ""       , ""     , ""       }));
+};

@@ -231,6 +231,13 @@ public:
   */
   static void GetCompilerRoot(std::string& compilerRoot);
 
+  /**
+   * @brief parse context entry
+   * @param contextEntry string in the format <project-name>.<build-type>+<target-type>
+   * @return ContextName structure with project name, build type and target type strings
+  */
+  static ContextName ParseContextEntry(const std::string& contextEntry);
+
 protected:
   static std::string ConstructID(const std::vector<std::pair<const char*, const std::string&>>& elements);
 };

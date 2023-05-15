@@ -131,6 +131,19 @@
       ],
       "description": "Include node for a list of compilers"
     },
+    "ArrayOfContextMapType": {
+      "type": "array",
+      "uniqueItems": true,
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/BuildContextWithProjectName" }
+    },
+    "ContextMapType": {
+      "oneOf": [
+        {"$ref": "#/definitions/ArrayOfContextMapType" },
+        {"$ref": "#/definitions/BuildContextWithProjectName" }
+      ],
+      "description": "Remapping of build contexts"
+    },
     "DeviceType": {
       "type": "string",
       "pattern": "^(([ -9;-~]+::)?[ -9;-~]+)?(:[ -9;-~]+)?$",
@@ -270,7 +283,8 @@
         "del-paths":  { "$ref": "#/definitions/DelpathsType", "description": "DEPRECATED use: del-path" },
         "del-path":   { "$ref": "#/definitions/DelpathsType" },
         "misc":       { "$ref": "#/definitions/MiscTypes" },
-        "variables":  { "$ref": "#/definitions/VariablesType" }
+        "variables":  { "$ref": "#/definitions/VariablesType" },
+        "context-map":{ "$ref": "#/definitions/ContextMapType" }
       },
       "additionalProperties": false,
       "required" : [ "type"]
@@ -303,7 +317,8 @@
         "del-paths":  { "$ref": "#/definitions/DelpathsType", "description": "DEPRECATED use: del-path" },
         "del-path":   { "$ref": "#/definitions/DelpathsType" },
         "misc":       { "$ref": "#/definitions/MiscTypes" },
-        "variables":  { "$ref": "#/definitions/VariablesType" }
+        "variables":  { "$ref": "#/definitions/VariablesType" },
+        "context-map":{ "$ref": "#/definitions/ContextMapType" }
       },
       "additionalProperties": false,
       "required" : [ "type"]

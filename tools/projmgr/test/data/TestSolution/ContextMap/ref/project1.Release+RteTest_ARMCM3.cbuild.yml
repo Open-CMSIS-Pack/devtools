@@ -1,0 +1,39 @@
+build:
+  generated-by: csolution version 0.0.0+g24802e38
+  solution: ../data/TestSolution/ContextMap/context-map.csolution.yml
+  project: ../data/TestSolution/ContextMap/project1.cproject.yml
+  context: project1.Release+RteTest_ARMCM3
+  compiler: AC6
+  device: RteTest_ARMCM3
+  processor:
+    fpu: off
+    trustzone: non-secure
+  packs:
+    - pack: ARM::RteTest_DFP@0.2.0
+      path: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0
+  define:
+    - ARMCM3
+  add-path:
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM3/Include
+  output-type: exe
+  output-dirs:
+    gendir: ../data/TestSolution/ContextMap
+    intdir: tmp/project1/RteTest_ARMCM3/Release
+    outdir: out/project1/RteTest_ARMCM3/Release
+    rtedir: ../data/TestSolution/ContextMap/RTE
+  output:
+    - type: elf
+      file: project1.axf
+  linker:
+    script: ${CMSIS_COMPILER_ROOT}/ac6_linker_script.sct
+    regions: ../data/TestSolution/ContextMap/RTE/Device/RteTest_ARMCM3/regions_RteTest_ARMCM3.h
+  groups:
+    - group: Source
+      files:
+        - file: ../data/TestSolution/ContextMap/MappedTarget1.c
+          category: sourceC
+        - file: ../data/TestSolution/ContextMap/MappedRelease1.c
+          category: sourceC
+  constructed-files:
+    - file: ../data/TestSolution/ContextMap/RTE/_Release_RteTest_ARMCM3/RTE_Components.h
+      category: header

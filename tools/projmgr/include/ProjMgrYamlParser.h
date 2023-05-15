@@ -43,6 +43,7 @@ static constexpr const char* YAML_CONNECTIONS = "connections";
 static constexpr const char* YAML_CONSTRUCTEDFILES = "constructed-files";
 static constexpr const char* YAML_CONTEXT = "context";
 static constexpr const char* YAML_CONTEXTS = "contexts";
+static constexpr const char* YAML_CONTEXT_MAP = "context-map";
 static constexpr const char* YAML_CREATED_BY = "created-by";
 static constexpr const char* YAML_CREATED_FOR = "created-for";
 static constexpr const char* YAML_DEBUG = "debug";
