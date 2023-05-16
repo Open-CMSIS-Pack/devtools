@@ -336,6 +336,11 @@ bool BuildSystemGenerator::CollectTranslationControls(const CbuildModel* model) 
 }
 
 bool BuildSystemGenerator::GenAuditFile(void) {
+  // Clean output directory
+  if (!CleanOutDir()) {
+    return false;
+  }
+
   // Create audit file
   string filename = m_outdir + m_projectName + LOGEXT;
   ofstream auditFile(filename);
@@ -516,3 +521,23 @@ void BuildSystemGenerator::CollectFileDefinesIncludes(
   FilesList[src].group = StrNorm(group + (group.empty() ? "" : SS));
   FilesList[src].includes = incPath;
  }
+
+bool BuildSystemGenerator::CleanOutDir() {
+  if ((m_outdir == m_projectDir) || RteFsUtils::Exists(m_outdir + "/" + m_projectName + LOGEXT)) {
+    return true;
+  }
+
+  // collect artifacts to be deleted
+  RteFsUtils::PathVec matchedFiles = RteFsUtils::GrepFiles(m_outdir, "*[\\/]" + m_targetName + "[.]*");
+  auto libFiles = RteFsUtils::GrepFiles(m_outdir, "*[\\/]lib" + m_targetName + "[.]*");
+  std::copy(libFiles.begin(), libFiles.end(), std::back_inserter(matchedFiles));
+
+  // remove existing redundant build artifacts (if any)
+  for (const fs::path& file : matchedFiles) {
+    if (!RteFsUtils::RemoveFile(file.generic_string())) {
+      LogMsg("M212", VAL("PATH", file.generic_string()));
+      return false;
+    }
+  }
+  return true;
+}

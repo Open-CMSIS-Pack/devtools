@@ -169,6 +169,7 @@ protected:
   void MergeVecStrNorm(const std::vector<std::string>& src, std::vector<std::string>& dest);
   bool CollectMiscDefinesIncludes(const CbuildModel* model);
   bool CollectTranslationControls(const CbuildModel* model);
+  bool CleanOutDir();
 };
 
 #endif  // BUILDSYSTEMGENERATOR_H

@@ -22,11 +22,42 @@ protected:
 
   void CheckBuildSystemGen_Collect(const TestParam& param,
     const string& inputDir = examples_folder);
+  void CheckBuildArtifacts(const string& outPath,
+    const vector<string>& testBuildArtifactNames, const bool& exist = false);
+
+  void CreateBuildArtifacts(const string& outPath,
+    const vector<string>& testBuildArtifactNames);
 
 private:
   const CbuildModel *m_model;
   void Init();
 };
+
+void BuildSystemGeneratorTests::CheckBuildArtifacts(const string& outPath,
+  const vector<string>& testBuildArtifactNames, const bool& exist)
+{
+  for (const auto& fileName : testBuildArtifactNames) {
+    string filePath = outPath + "/" + fileName;
+    EXPECT_EQ(exist, fs::exists(filePath))
+      << "file: '" + filePath + "' does" + (exist ? "" : "not") + "exist";
+  }
+}
+
+void BuildSystemGeneratorTests::CreateBuildArtifacts(const string& outPath,
+  const vector<string>& testBuildArtifactNames)
+{
+  error_code ec;
+  if (fs::exists(outPath, ec)) {
+    RteFsUtils::RemoveDir(outPath);
+  }
+
+  RteFsUtils::CreateDirectories(outPath);
+  for (const auto& fileName : testBuildArtifactNames) {
+    string filePath = outPath + "/" + fileName;
+    ASSERT_TRUE(RteFsUtils::CreateFile(filePath, RteUtils::EMPTY_STRING)) <<
+      "unable to create file '" + filePath + "'";
+  }
+}
 
 void BuildSystemGeneratorTests::Init() {
   m_outdir = testout_folder + "/";
@@ -119,4 +150,48 @@ TEST_F(BuildSystemGeneratorTests, GenAuditFile) {
 
   EXPECT_TRUE(GenAuditFile());
   EXPECT_TRUE(fs::exists(file, ec));
+}
+
+TEST_F(BuildSystemGeneratorTests, GenAuditFile_WithOut_Existing_Audit_File) {
+  error_code ec;
+  string file = testout_folder + "/ValidTarget.clog";
+  string targetName = m_targetName;
+
+  m_targetName = "ValidTarget";
+  vector<string> testBuildArtifactNames{
+  m_targetName + ".axf", m_targetName + ".axf.map",
+  m_targetName + ".bin", m_targetName + ".hex",
+  m_targetName + ".html", "libValidTarget.lib"
+  };
+
+  CreateBuildArtifacts(testout_folder, testBuildArtifactNames);
+  EXPECT_TRUE(GenAuditFile());
+  EXPECT_TRUE(fs::exists(file, ec));
+  CheckBuildArtifacts(testout_folder, testBuildArtifactNames);
+
+  // restore target name
+  m_targetName = targetName;
+}
+
+TEST_F(BuildSystemGeneratorTests, GenAuditFile_With_Existing_Audit_File) {
+  error_code ec;
+  string file = testout_folder + "/ValidTarget.clog";
+  string targetName = m_targetName;
+
+  m_targetName = "ValidTarget";
+  vector<string> testBuildArtifactNames{
+    m_targetName + ".axf", m_targetName + ".axf.map",
+    m_targetName + ".bin", m_targetName + ".hex",
+    m_targetName + ".html", "libValidTarget.lib"
+  };
+
+  CreateBuildArtifacts(testout_folder, testBuildArtifactNames);
+  RteFsUtils::CreateFile(file, RteUtils::EMPTY_STRING);
+
+  EXPECT_TRUE(GenAuditFile());
+  EXPECT_TRUE(fs::exists(file, ec));
+  CheckBuildArtifacts(testout_folder, testBuildArtifactNames, true);
+
+  // restore target name
+  m_targetName = targetName;
 }
