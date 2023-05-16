@@ -93,7 +93,7 @@ bool ProjMgrWorker::AddContexts(ProjMgrParser& parser, ContextDesc& descriptor, 
 }
 
 bool ProjMgrWorker::AddContext(ProjMgrParser& parser, ContextDesc& descriptor, const TypePair& type, const string& cprojectFile, ContextItem& parentContext) {
-  if (CheckType(descriptor.type, type)) {
+  if (CheckType(descriptor.type, {type})) {
     ContextItem context = parentContext;
     context.type.build = type.build;
     context.type.target = type.target;
@@ -153,7 +153,7 @@ bool ProjMgrWorker::AddContext(ProjMgrParser& parser, ContextDesc& descriptor, c
       if (clayer.layer.empty()) {
         continue;
       }
-      if (CheckType(clayer.typeFilter, type)) {
+      if (CheckContextFilters(clayer.typeFilter, context)) {
         string const& clayerRef = ExpandString(clayer.layer, context.variables);
         string const& clayerFile = fs::canonical(fs::path(cprojectFile).parent_path().append(clayerRef), ec).generic_string();
         if (clayerFile.empty()) {
@@ -576,7 +576,7 @@ bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context, const string& c
   // required layer types
   StrVec requiredLayerTypes;
   for (const auto& clayer : context.cproject->clayers) {
-    if (clayer.type.empty() || !CheckType(clayer.typeFilter, context.type) ||
+    if (clayer.type.empty() || !CheckContextFilters(clayer.typeFilter, context) ||
       (ExpandString(clayer.layer, context.variables) != clayer.layer)) {
       continue;
     }
@@ -1165,7 +1165,7 @@ bool ProjMgrWorker::ProcessPackages(ContextItem& context) {
   // Filter context specific package requirements
   vector<PackItem> packages;
   for (const auto& packItem : packRequirements) {
-    if (CheckType(packItem.type, context.type)) {
+    if (CheckContextFilters(packItem.type, context)) {
       packages.push_back(packItem);
     }
   }
@@ -2046,7 +2046,7 @@ bool ProjMgrWorker::ProcessLinkerOptions(ContextItem& context) {
 
 bool ProjMgrWorker::ProcessLinkerOptions(ContextItem& context, LinkerItem& linker,
   StringCollection& linkerScriptFile, StringCollection& linkerRegionsFile, const string& ref) {
-  if (CheckType(linker.typeFilter, context.type) &&
+  if (CheckContextFilters(linker.typeFilter, context) &&
     CheckCompiler(linker.forCompiler, context.compiler)) {
     if (!linker.script.empty()) {
       if (!ProcessSequenceRelative(context, linker.script, ref)) {
@@ -2092,7 +2092,7 @@ bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem& context) {
     if (!ProcessSequencesRelatives(context, component.build, context.cproject->directory)) {
       return false;
     }
-    if (!AddComponent(component, "", context.componentRequirements, context.type)) {
+    if (!AddComponent(component, "", context.componentRequirements, context.type, context)) {
       return false;
     }
   }
@@ -2107,7 +2107,7 @@ bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem& context) {
       if (!ProcessSequencesRelatives(context, component.build, clayer->directory)) {
         return false;
       }
-      if (!AddComponent(component, name, context.componentRequirements, context.type)) {
+      if (!AddComponent(component, name, context.componentRequirements, context.type, context)) {
         return false;
       }
     }
@@ -2220,7 +2220,7 @@ bool ProjMgrWorker::ProcessGroups(ContextItem& context) {
 }
 
 bool ProjMgrWorker::AddGroup(const GroupNode& src, vector<GroupNode>& dst, ContextItem& context, const string root) {
-  if (CheckType(src.type, context.type) && CheckCompiler(src.forCompiler, context.compiler)) {
+  if (CheckContextFilters(src.type, context) && CheckCompiler(src.forCompiler, context.compiler)) {
     std::vector<GroupNode> groups;
     for (const auto& group : src.groups) {
       if (!AddGroup(group, groups, context, root)) {
@@ -2251,7 +2251,7 @@ bool ProjMgrWorker::AddGroup(const GroupNode& src, vector<GroupNode>& dst, Conte
 }
 
 bool ProjMgrWorker::AddFile(const FileNode& src, vector<FileNode>& dst, ContextItem& context, const string root) {
-  if (CheckType(src.type, context.type) && CheckCompiler(src.forCompiler, context.compiler)) {
+  if (CheckContextFilters(src.type, context) && CheckCompiler(src.forCompiler, context.compiler)) {
     for (auto& dstNode : dst) {
       if (dstNode.file == src.file) {
         ProjMgrLogger::Error("conflict: file '" + dstNode.file + "' is declared multiple times");
@@ -2285,8 +2285,8 @@ bool ProjMgrWorker::AddFile(const FileNode& src, vector<FileNode>& dst, ContextI
   return true;
 }
 
-bool ProjMgrWorker::AddComponent(const ComponentItem& src, const string& layer, vector<pair<ComponentItem, string>>& dst, TypePair type) {
-  if (CheckType(src.type, type)) {
+bool ProjMgrWorker::AddComponent(const ComponentItem& src, const string& layer, vector<pair<ComponentItem, string>>& dst, TypePair type, ContextItem& context) {
+  if (CheckContextFilters(src.type, context)) {
     for (auto& [dstNode, layer] : dst) {
       if (dstNode.component == src.component) {
         ProjMgrLogger::Error("conflict: component '" + dstNode.component + "' is declared multiple times");
@@ -2334,35 +2334,60 @@ bool ProjMgrWorker::CheckCompiler(const vector<string>& forCompiler, const strin
   return false;
 }
 
-bool ProjMgrWorker::CheckType(const TypeFilter& typeFilter, const TypePair& type) {
+bool ProjMgrWorker::CheckType(const TypeFilter& typeFilter, const vector<TypePair>& typeVec) {
   const auto& exclude = typeFilter.exclude;
   const auto& include = typeFilter.include;
 
   if (include.empty()) {
     if (exclude.empty()) {
       return true;
-    } else {
+    }
+    else {
       // check not-for types
       for (const auto& excType : typeFilter.exclude) {
-        if (((excType.build == type.build) && excType.target.empty()) ||
-          ((excType.target == type.target) && excType.build.empty()) ||
-          ((excType.build == type.build) && (excType.target == type.target))) {
-          return false;
+        for (const auto& type : typeVec) {
+          if (((excType.build == type.build) && excType.target.empty()) ||
+            ((excType.target == type.target) && excType.build.empty()) ||
+            ((excType.build == type.build) && (excType.target == type.target))) {
+            return false;
+          }
         }
       }
       return true;
     }
-  } else {
+  }
+  else {
     // check for-types
     for (const auto& incType : typeFilter.include) {
-      if (((incType.build == type.build) && incType.target.empty()) ||
-        ((incType.target == type.target) && incType.build.empty()) ||
-        ((incType.build == type.build) && (incType.target == type.target))) {
-        return true;
+      for (const auto& type : typeVec) {
+        if (((incType.build == type.build) && incType.target.empty()) ||
+          ((incType.target == type.target) && incType.build.empty()) ||
+          ((incType.build == type.build) && (incType.target == type.target))) {
+          return true;
+        }
       }
     }
     return false;
   }
+}
+
+bool ProjMgrWorker::CheckContextFilters(const TypeFilter& typeFilter, const ContextItem& context) {
+  vector<TypePair> typeVec = { context.type };
+  if (context.csolution) {
+    // get mapped contexts types
+    vector<ContextName>& buildContextMap = context.csolution->buildTypes[context.type.build].contextMap;
+    vector<ContextName>& targetContextMap = context.csolution->targetTypes[context.type.target].build.contextMap;
+    for (const auto& contextMap : { buildContextMap, targetContextMap }) {
+      for (const auto& mappedContext : contextMap) {
+        if ((!mappedContext.project.empty()) && (mappedContext.project != context.cproject->name)) {
+          continue;
+        }
+        typeVec.push_back({ mappedContext.build.empty() ? context.type.build : mappedContext.build,
+            mappedContext.target.empty() ? context.type.target : mappedContext.target });
+      }
+    }
+  }
+  return CheckType(typeFilter, typeVec);
 }
 
 bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGpdsc, bool resolveDependencies, bool updateRteFiles) {
@@ -2849,7 +2874,7 @@ bool ProjMgrWorker::GetTypeContent(ContextItem& context) {
 
 bool ProjMgrWorker::GetProjectSetup(ContextItem& context) {
   for (const auto& setup : context.cproject->setups) {
-    if (CheckType(setup.type, context.type) && CheckCompiler(setup.forCompiler, context.compiler)) {
+    if (CheckContextFilters(setup.type, context) && CheckCompiler(setup.forCompiler, context.compiler)) {
       context.controls.setup = setup.build;
       break;
     }
@@ -3318,7 +3343,7 @@ bool ProjMgrWorker::ProcessOutputFilenames(ContextItem& context) {
       { "lib", false },
     };
     for (const auto& output : context.cproject->outputFiles) {
-      if (CheckType(output.typeFilter, context.type)) {
+      if (CheckContextFilters(output.typeFilter, context)) {
         string outputFile = ExpandString(output.file, context.variables);
         RteFsUtils::NormalizePath(outputFile);
         if ((context.outputFiles.find(output.type) != context.outputFiles.end()) &&

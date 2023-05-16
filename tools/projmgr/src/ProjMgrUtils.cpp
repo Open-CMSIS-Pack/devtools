@@ -330,3 +330,23 @@ void ProjMgrUtils::GetCompilerRoot(string& compilerRoot) {
     compilerRoot = fs::weakly_canonical(fs::path(compilerRoot), ec).generic_string();
   }
 }
+
+ContextName ProjMgrUtils::ParseContextEntry(const string& contextEntry) {
+  ContextName context;
+  vector<pair<const regex, string&>> regexMap = {
+    // "project name" may come before dot (.) or plus (+) or alone
+    {regex(R"(^(.*?)[.+].*$|^(.*)$)"), context.project},
+    // "build type" comes after dot (.) and may be succeeded by plus (+)
+    {regex(R"(^.*\.(.*)\+.*$|^.*\.(.*).*$)"), context.build},
+    // "target type" comes after plus (+) and may be succeeded by dot (.)
+    {regex(R"(^.*\+(.*)\..*$|^.*\+(.*).*$)"), context.target},
+  };
+  for (auto& [regEx, stringReference] : regexMap) {
+    smatch sm;
+    regex_match(contextEntry, sm, regEx);
+    // for every element 2 capture groups are exclusively possible - see above regex groups between brackets (.*)
+    // the stringReference (context.project, context.build or context.target) is set to the "matched" group
+    stringReference = sm.size() < 3 ? string() : sm[1].matched ? sm[1] : sm[2].matched ? sm[2] : string();
+  }
+  return context;
+}

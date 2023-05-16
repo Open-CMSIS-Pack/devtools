@@ -608,6 +608,12 @@ void ProjMgrYamlParser::ParseBuildType(const YAML::Node& parent, BuildType& buil
     ParseVector(parent, YAML_DELPATHS, buildType.delpaths);
   }
   ParseVectorOfStringPairs(parent, YAML_VARIABLES, buildType.variables);
+
+  std::vector<std::string> contextMap;
+  ParseVectorOrString(parent, YAML_CONTEXT_MAP, contextMap);
+  for (const auto& contextEntry : contextMap) {
+    buildType.contextMap.push_back(ProjMgrUtils::ParseContextEntry(contextEntry));
+  }
 }
 
 void ProjMgrYamlParser::ParseTargetType(const YAML::Node& parent, TargetType& targetType) {
@@ -739,6 +745,7 @@ const set<string> targetTypeKeys = {
   YAML_DELPATH,
   YAML_MISC,
   YAML_VARIABLES,
+  YAML_CONTEXT_MAP,
 };
 
 const set<string> buildTypeKeys = {
@@ -758,6 +765,7 @@ const set<string> buildTypeKeys = {
   YAML_DELPATH,
   YAML_MISC,
   YAML_VARIABLES,
+  YAML_CONTEXT_MAP,
 };
 
 const set<string> outputDirsKeys = {

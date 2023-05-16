@@ -542,7 +542,8 @@ protected:
   bool CheckRteErrors(void);
   bool CheckBoardDeviceInLayer(const ContextItem& context, const ClayerItem& clayer);
   bool CheckCompiler(const std::vector<std::string>& forCompiler, const std::string& selectedCompiler);
-  bool CheckType(const TypeFilter& typeFilter, const TypePair& type);
+  bool CheckType(const TypeFilter& typeFilter, const std::vector<TypePair>& typeVec);
+  bool CheckContextFilters(const TypeFilter& typeFilter, const ContextItem& context);
   bool GetTypeContent(ContextItem& context);
   bool GetProjectSetup(ContextItem& context);
   bool InitializeTarget(ContextItem& context);
@@ -580,7 +581,7 @@ protected:
   void MergeStringVector(StringVectorCollection& item);
   bool AddGroup(const GroupNode& src, std::vector<GroupNode>& dst, ContextItem& context, const std::string root);
   bool AddFile(const FileNode& src, std::vector<FileNode>& dst, ContextItem& context, const std::string root);
-  bool AddComponent(const ComponentItem& src, const std::string& layer, std::vector<std::pair<ComponentItem, std::string>>& dst, TypePair type);
+  bool AddComponent(const ComponentItem& src, const std::string& layer, std::vector<std::pair<ComponentItem, std::string>>& dst, TypePair type, ContextItem& context);
   static std::set<std::string> SplitArgs(const std::string& args, const std::string& delimiter = " ");
   static void ApplyFilter(const std::vector<std::string>& origin, const std::set<std::string>& filter, std::vector<std::string>& result);
   static bool FullMatch(const std::set<std::string>& installed, const std::set<std::string>& required);
