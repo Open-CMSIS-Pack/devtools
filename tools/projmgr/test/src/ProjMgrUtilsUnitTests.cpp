@@ -243,7 +243,7 @@ TEST_F(ProjMgrUtilsUnitTests, AreCompilersCompatible) {
 };
 
 TEST_F(ProjMgrUtilsUnitTests, ParseContextEntry) {
-  auto compare = [](ContextName context, ContextName expected) {
+  auto compare = [](const ContextName& context, const ContextName& expected) {
     return ((context.project == expected.project) && (context.build == expected.build) && (context.target == expected.target));
   };
   EXPECT_TRUE(compare(ParseContextEntry("project"             ), { "project", ""     , ""       }));

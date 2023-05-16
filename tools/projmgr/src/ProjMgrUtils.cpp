@@ -338,7 +338,7 @@ ContextName ProjMgrUtils::ParseContextEntry(const string& contextEntry) {
     {regex(R"(^(.*?)[.+].*$|^(.*)$)"), context.project},
     // "build type" comes after dot (.) and may be succeeded by plus (+)
     {regex(R"(^.*\.(.*)\+.*$|^.*\.(.*).*$)"), context.build},
-    // "target type" comes after plus (.) and may be succeeded by dot (.)
+    // "target type" comes after plus (+) and may be succeeded by dot (.)
     {regex(R"(^.*\+(.*)\..*$|^.*\+(.*).*$)"), context.target},
   };
   for (auto& [regEx, stringReference] : regexMap) {
