@@ -182,6 +182,7 @@ int PackChk::Check(int argc, const char* argv[], const char* envp[])
     case ParseOptions::Result::ExitNoError:
       return 0;
     case ParseOptions::Result::Error:
+      LogMsg("M105");
       return 1;
   }
 

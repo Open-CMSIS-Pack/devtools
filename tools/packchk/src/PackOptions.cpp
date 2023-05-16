@@ -247,6 +247,9 @@ bool CPackOptions::SetXsdFile()
       return true;
     }
   }
+
+  LogMsg("M218", PATH("./, ../etc/, ../../etc/"));
+
   return false;
 }
 
