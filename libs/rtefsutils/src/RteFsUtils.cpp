@@ -569,7 +569,7 @@ string RteFsUtils::RelativePath(const string& path, const string& base, bool wit
   error_code ec;
   string relativePath = fs::relative(path, base, ec).generic_string();
   if (withHeadingDot) {
-    if (!relativePath.empty() && relativePath.find("./") != 0) {
+    if (!relativePath.empty() && relativePath.find("./") != 0 && relativePath.find("../") != 0) {
       relativePath.insert(0, "./");
     }
   }

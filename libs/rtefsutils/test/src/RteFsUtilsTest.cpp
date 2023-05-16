@@ -22,6 +22,7 @@ protected:
 const string dirnameBase = "RteFsUtilsTest";
 const string dirnameDir = dirnameBase + "/dir";
 const string dirnameSubdir = dirnameBase + "/dir/subdir";
+const string dirnameSubdir2 = dirnameBase + "/dir/subdir2";
 const string dirnameSubdirBackslash = RteUtils::SlashesToOsSlashes(dirnameBase + "\\dir\\subdir");
 const string dirnameSubdirMixed = RteUtils::SlashesToOsSlashes(dirnameBase + "/dir\\subdir");
 const string dirnameSubdirWithTrailing = dirnameBase + "/dir/subdir/";
@@ -908,6 +909,7 @@ TEST_F(RteFsUtilsTest, ParentPath) {
 TEST_F(RteFsUtilsTest, RelativePath) {
   string relPath;
   string absSubdir = RteFsUtils::AbsolutePath(dirnameSubdir).generic_string();
+  string absSubdir2 = RteFsUtils::AbsolutePath(dirnameSubdir2).generic_string();
   string absBase = RteFsUtils::AbsolutePath(dirnameBase).generic_string();
 
   relPath = RteFsUtils::RelativePath(absSubdir, absBase);
@@ -915,6 +917,9 @@ TEST_F(RteFsUtilsTest, RelativePath) {
 
   relPath = RteFsUtils::RelativePath(absSubdir, absBase, true);
   EXPECT_EQ(relPath, "./dir/subdir");
+
+  relPath = RteFsUtils::RelativePath(absSubdir, absSubdir2, true);
+  EXPECT_EQ(relPath, "../subdir");
 
   relPath = RteFsUtils::RelativePath(absSubdir, "");
   EXPECT_EQ(relPath, "");

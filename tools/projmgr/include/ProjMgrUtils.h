@@ -100,6 +100,7 @@ public:
   static constexpr const char* SUFFIX_PACK_VENDOR = "::";
   static constexpr const char* PREFIX_PACK_VERSION = "@";
 
+  static constexpr const char* AS_SOLUTION = "Solution";
   static constexpr const char* AS_PROJECT = "Project";
   static constexpr const char* AS_COMPILER = "Compiler";
   static constexpr const char* AS_BUILD_TYPE = "BuildType";
@@ -107,6 +108,15 @@ public:
   static constexpr const char* AS_DNAME = "Dname";
   static constexpr const char* AS_PNAME = "Pname";
   static constexpr const char* AS_BNAME = "Bname";
+
+  static constexpr const char* AS_SOLUTION_DIR = "SolutionDir";
+  static constexpr const char* AS_PROJECT_DIR = "ProjectDir";
+  static constexpr const char* AS_OUT_DIR = "OutDir";
+  static constexpr const char* AS_BIN = "bin";
+  static constexpr const char* AS_ELF = "elf";
+  static constexpr const char* AS_HEX = "hex";
+  static constexpr const char* AS_LIB = "lib";
+  static constexpr const char* AS_CMSE = "cmse-lib";
 
   /**
    * @brief class constructor
