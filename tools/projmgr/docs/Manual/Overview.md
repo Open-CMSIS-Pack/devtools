@@ -656,8 +656,7 @@ Directory Structure                 | Content
 `<layer>/RTE/<Cclass>`              | Configurable files for each component `Cclass` have a common directory.
 `<layer>/RTE/<Cclass>/<device>`     | Configurable files for components that have a condition to a `device` are in a separate directory.
 
-- For CMSIS-Toolbox 1.4 and before: The `<context-dir>` has the following format: `_<project-name>.<build-type>_<target-type>`.
-- With CMSIS-Toolbox 1.5 and later: The `<context-dir>` has the following format: `_<build-type>_<target-type>`.
+- The `<context-dir>` has the following format: `_<build-type>_<target-type>`.
 
 > **Note:**
 >
