@@ -93,6 +93,7 @@ public:
     IGNORED               // condition/expression is irrelevant for the current context
   };
 
+  static const std::string& ConditionResultToString(RteItem::ConditionResult res);
 public:
 
   /**

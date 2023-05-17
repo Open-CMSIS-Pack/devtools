@@ -33,6 +33,8 @@ class RteConditionContext;
 #define CONDITION_EXPRESSION 'c'
 #define ERROR_EXPRESSION 'E'
 
+#define VERBOSE_FILTER 0x02
+#define VERBOSE_DEPENDENCY 0x04
 
 /**
  * @brief Abstract base class for accept, require and deny condition expressions
@@ -346,6 +348,17 @@ public:
   */
    ConditionResult GetConditionResult(RteConditionContext* context) const override;
 
+   /**
+    * @brief get static verbosity flags
+    * @return verbosity flags as unsigned integer
+   */
+   static unsigned GetVerboseFlags() { return s_uVerboseFlags; }
+
+   /**
+    * @brief set static verbosity flags
+    * @param flags verbosity flags to set
+   */
+   static void SetVerboseFlags(unsigned flags ) { s_uVerboseFlags = flags; }
 
 private:
   /**
@@ -387,6 +400,7 @@ private:
   int m_bBoardDependent; // cached board dependency flag
   bool m_bInCheck; // recursion protection flag for CalcDeviceAndBoardDependentFlags() and  ValidateRecursion()
   std::set<RteConditionContext*> m_evaluating; // recursion protection for Evaluate(RteConditionContext*)
+  static unsigned s_uVerboseFlags;
 };
 
 /**
@@ -547,6 +561,12 @@ public:
   virtual ~RteConditionContext();
 
   /**
+   * @brief check if this context calculates/solves dependencies
+   * @return the base returns false
+  */
+  virtual bool IsDependencyContext() const { return false; }
+
+  /**
    * @brief get RteTarget that owns this context and provides filtering attributes as well as methods to search for components
    * @return pointer to RteTarget
   */
@@ -571,6 +591,11 @@ public:
   virtual void Clear();
 
   /**
+   * @brief check if this context is verbose
+  */
+  virtual bool IsVerbose() const;
+
+  /**
    * @brief evaluate item if not yet done
    * @param item pointer RteItem to evaluate (RteComponent, RteFile, RteCondition, RteConditionExpression)
    * @return result of item evaluation as RteItem::ConditionResult value
@@ -591,9 +616,14 @@ public:
   virtual RteItem::ConditionResult EvaluateExpression(RteConditionExpression* expr);
 
 protected:
+  void virtual VerboseIn(RteItem* item);
+  void virtual VerboseOut(RteItem* item, RteItem::ConditionResult res);
+
+protected:
   RteTarget* m_target; // owning target
   RteItem::ConditionResult m_result; // overall result
   std::map<RteItem*, RteItem::ConditionResult> m_cachedResults; // collection of cached results
+  unsigned m_verboseIndent;
 };
 
 
@@ -614,11 +644,22 @@ public:
   */
    ~RteDependencySolver() override;
 
+   /**
+    * @brief check if this context calculates/solves dependencies
+    * @return true
+   */
+   bool IsDependencyContext() const override { return true; }
+
+
   /**
     * @brief clear internal data and caches
    */
    void Clear() override;
 
+  /**
+    * @brief check if this context is verbose
+   */
+   bool IsVerbose() const override;
 
   /**
   * @brief evaluate supplied condition, called from supplied condition
