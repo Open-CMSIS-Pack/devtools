@@ -59,21 +59,41 @@ TEST_F(RteConditionTest, MissingIgnoredFulfilledSelectable) {
   RteDependencySolver* depSolver = activeTarget->GetDependencySolver();
   ASSERT_NE(depSolver, nullptr);
   EXPECT_EQ(depSolver->GetConditionResult(), RteItem::FULFILLED);
+
+  RtePackageInstanceInfo packInfo(nullptr, "ARM.RteTest.0.1.0");
+  RtePackage* pack = rteModel->GetPackage(packInfo);
+  ASSERT_NE(pack, nullptr);
+  RteCondition* denyDependency = pack->GetCondition("DenyDependency");
+  ASSERT_NE(denyDependency, nullptr);
+  RteCondition* denyRequireDependency = pack->GetCondition("DenyRequireDependency");
+  ASSERT_NE(denyRequireDependency, nullptr);
+  RteCondition* denyAcceptDependency = pack->GetCondition("DenyAcceptDependency");
+  ASSERT_NE(denyAcceptDependency, nullptr);
+  RteCondition* denyDenyDependency = pack->GetCondition("DenyDenyDependency");
+  ASSERT_NE(denyDenyDependency, nullptr);
+
   // select component to check dependencies
+  list<RteComponent*> components;
   RteComponentInstance item(nullptr);
   item.SetTag("component");
   item.SetAttributes({ {"Cclass","RteTest" },
                        {"Cgroup", "AcceptDependency" },
                        {"Cversion","0.9.9"},
                        {"condition","AcceptDependency"} });
-  RtePackageInstanceInfo packInfo(nullptr, "ARM.RteTest.0.1.0");
   item.SetPackageAttributes(packInfo);
-  list<RteComponent*> components;
+
   RteComponent* c = rteModel->FindComponents(item, components);
   ASSERT_NE(c, nullptr);
   activeTarget->SelectComponent(c, 1, true);
   EXPECT_EQ(depSolver->GetConditionResult(), RteItem::FULFILLED); // required dependency already selected
-  // manually deselect components satisfying dependency
+
+ // check deny dependencies 1
+  EXPECT_EQ(denyDependency->Evaluate(depSolver), RteItem::INCOMPATIBLE);
+  EXPECT_EQ(denyRequireDependency->Evaluate(depSolver), RteItem::INCOMPATIBLE);
+  EXPECT_EQ(denyAcceptDependency->Evaluate(depSolver), RteItem::INCOMPATIBLE);
+  EXPECT_EQ(denyDenyDependency->Evaluate(depSolver), RteItem::FULFILLED);
+
+// manually deselect components satisfying dependency
   item.SetAttributes({ {"Cclass","RteTest" },
                        {"Cgroup", "LocalFile" },
                        {"Cversion","0.0.3"} });
@@ -82,6 +102,13 @@ TEST_F(RteConditionTest, MissingIgnoredFulfilledSelectable) {
   ASSERT_NE(c, nullptr);
   activeTarget->SelectComponent(c, 0, true);
   EXPECT_EQ(depSolver->GetConditionResult(), RteItem::FULFILLED); // still fulfilled
+
+   // check deny dependencies 2
+  EXPECT_EQ(denyDependency->Evaluate(depSolver), RteItem::INCOMPATIBLE);
+  EXPECT_EQ(denyRequireDependency->Evaluate(depSolver), RteItem::FULFILLED);
+  EXPECT_EQ(denyAcceptDependency->Evaluate(depSolver), RteItem::INCOMPATIBLE);
+  EXPECT_EQ(denyDenyDependency->Evaluate(depSolver), RteItem::FULFILLED);
+
   item.SetAttribute("Cgroup", "GlobalFile"),
   components.clear();
   c = rteModel->FindComponents(item, components);
@@ -91,6 +118,12 @@ TEST_F(RteConditionTest, MissingIgnoredFulfilledSelectable) {
 
   // try to auto-resolve => no change (multiple variants for "AcceptDependency")
   EXPECT_EQ(depSolver->ResolveDependencies(), RteItem::SELECTABLE);
+
+  // check deny dependencies 3
+  EXPECT_EQ(denyDependency->Evaluate(depSolver), RteItem::FULFILLED);
+  EXPECT_EQ(denyRequireDependency->Evaluate(depSolver), RteItem::FULFILLED);
+  EXPECT_EQ(denyAcceptDependency->Evaluate(depSolver), RteItem::FULFILLED);
+  EXPECT_EQ(denyDenyDependency->Evaluate(depSolver), RteItem::INCOMPATIBLE);
 
   // select component that directly depends on global file
   item.SetAttributes({ {"Cclass","RteTest" },
@@ -104,6 +137,12 @@ TEST_F(RteConditionTest, MissingIgnoredFulfilledSelectable) {
   EXPECT_EQ(depSolver->GetConditionResult(), RteItem::SELECTABLE);
   // try to resolve = > FULFILED (multiple variants for "AcceptDependency" component, but only one for "RequireDependency")
   EXPECT_EQ(depSolver->ResolveDependencies(), RteItem::FULFILLED);
+
+  // check deny dependencies 4
+  EXPECT_EQ(denyDependency->Evaluate(depSolver), RteItem::INCOMPATIBLE);
+  EXPECT_EQ(denyRequireDependency->Evaluate(depSolver), RteItem::FULFILLED);
+  EXPECT_EQ(denyAcceptDependency->Evaluate(depSolver), RteItem::INCOMPATIBLE);
+  EXPECT_EQ(denyDenyDependency->Evaluate(depSolver), RteItem::FULFILLED);
 
   // evaluate other condition  possibilities
   RteRequireExpression deviceExpression(nullptr);

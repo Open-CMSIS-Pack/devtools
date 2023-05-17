@@ -18,7 +18,10 @@
 
 #include "XMLTree.h"
 
+#include <sstream>
 using namespace std;
+
+unsigned RteCondition::s_uVerboseFlags = 0;
 
 RteConditionExpression::RteConditionExpression(RteCondition* parent) :
   RteItem(parent),
@@ -292,15 +295,38 @@ RteItem::ConditionResult RteDenyExpression::Evaluate(RteConditionContext* contex
 {
   ConditionResult result = RteConditionExpression::Evaluate(context);
   if (IsDependencyExpression()) {
-    return result;
-  } else if (result == R_ERROR) {
-    return result;
-  } else if (result == IGNORED) {
-    return result;
-  } else if (result == FAILED) {
-    result = FULFILLED;
-  } else {
-    result = FAILED;
+    return result; // already denied
+  }
+
+  if (context->IsDependencyContext()) {
+    switch (result) {
+    case FULFILLED:
+      return INCOMPATIBLE;
+
+    case INSTALLED:
+    case INCOMPATIBLE:
+    case SELECTABLE:
+    case UNAVAILABLE:
+    case UNAVAILABLE_PACK:
+    case MISSING:
+      return FULFILLED;
+    case R_ERROR:
+    case IGNORED:
+      break;
+    default:
+      return IGNORED;
+    };
+  } else { // filtering
+    switch (result) {
+    case FULFILLED:
+      return FAILED;
+    case FAILED:
+      return FULFILLED;
+    case R_ERROR:
+    case IGNORED:
+    default:
+      break;
+    };
   }
   return result;
 }
@@ -784,7 +810,8 @@ RteItem::ConditionResult RteDependencyResult::GetResult(const RteItem* item, con
 
 RteConditionContext::RteConditionContext(RteTarget* target) :
   m_target(target),
-  m_result(RteItem::UNDEFINED)
+  m_result(RteItem::UNDEFINED),
+  m_verboseIndent(0)
 {
 }
 
@@ -799,15 +826,43 @@ void RteConditionContext::Clear()
   m_cachedResults.clear();
 }
 
+
+bool RteConditionContext::IsVerbose() const
+{
+  return (RteCondition::GetVerboseFlags() & VERBOSE_FILTER) == VERBOSE_FILTER;
+}
+
+void RteConditionContext::VerboseIn(RteItem* item)
+{
+  if (IsVerbose()) {
+    m_verboseIndent++;
+    stringstream ss;
+    ss << RteUtils::GetIndent(m_verboseIndent) << item->GetID() << endl;
+    GetTarget()->GetCallback()->OutputMessage(ss.str());
+  }
+}
+
+void RteConditionContext::VerboseOut(RteItem* item, RteItem::ConditionResult res)
+{
+  if (IsVerbose()) {
+    stringstream ss;
+    ss << RteUtils::GetIndent(m_verboseIndent) << "<--- " <<
+      RteItem::ConditionResultToString(res) << " (" << item->GetID() << ")" << endl;
+    GetTarget()->GetCallback()->OutputMessage(ss.str());
+    m_verboseIndent--;
+  }
+}
+
 RteItem::ConditionResult RteConditionContext::Evaluate(RteItem* item)
 {
+  VerboseIn(item);
   RteItem::ConditionResult res = GetConditionResult(item);
   if (res == RteItem::UNDEFINED) {
     res = item->Evaluate(this);
     m_cachedResults[item] = res;
   }
+  VerboseOut(item, res);
   return res;
-
 }
 
 RteItem::ConditionResult RteConditionContext::GetConditionResult(RteItem* item) const
@@ -892,6 +947,12 @@ void RteDependencySolver::Clear()
   RteConditionContext::Clear();
   m_componentAggregates.clear();
 }
+
+bool RteDependencySolver::IsVerbose() const
+{
+  return (RteCondition::GetVerboseFlags() & VERBOSE_DEPENDENCY) == VERBOSE_DEPENDENCY;
+}
+
 
 RteItem::ConditionResult RteDependencySolver::EvaluateCondition(RteCondition* condition)
 {

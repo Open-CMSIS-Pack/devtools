@@ -27,6 +27,34 @@ using namespace std;
 
 RteItem RteItem::EMPTY_RTE_ITEM(nullptr);
 
+
+const std::string& RteItem::ConditionResultToString(RteItem::ConditionResult res)
+{
+  static vector<string> CONDITION_RESULT_STRINGS{
+      "UNDEFINED",            // not evaluated yet
+      "R_ERROR",              // error evaluating condition ( recursion detected, condition is missing)
+      "FAILED",               // HW or compiler not match
+      "MISSING",              // no component is installed
+      "MISSING_API",          // no required api is installed
+      "MISSING_API_VERSION",  // no api of required version is installed
+      "UNAVAILABLE",          // component is installed, but filtered out
+      "UNAVAILABLE_PACK",     // component is installed, pack is not selected
+      "INCOMPATIBLE",         // incompatible component is selected
+      "INCOMPATIBLE_VERSION", // incompatible version of component is selected
+      "INCOMPATIBLE_VARIANT", // incompatible variant of component is selected
+      "CONFLICT",             // more than one exclusive component selected
+      "INSTALLED",            // matching component is installed, but not selectable because not in active bundle
+      "SELECTABLE",           // matching component is installed, but not selected
+      "FULFILLED",            // required component selected or no dependency exists
+      "IGNORED"               // condition/expression is irrelevant for the current context
+  };
+  if (res < R_ERROR || res > IGNORED) {
+    res = UNDEFINED;
+  }
+  return CONDITION_RESULT_STRINGS[res];
+}
+
+
 RteItem::RteItem(RteItem* parent) :
   XmlTreeItem<RteItem>(parent),
   m_bValid(false)
@@ -806,8 +834,12 @@ bool RteItem::IsBoardDependent() const
 RteItem::ConditionResult RteItem::Evaluate(RteConditionContext* context)
 {
   RteCondition* condition = GetCondition();
-  if (condition)
+  if (condition) {
+    if (context->IsVerbose()) {
+      GetCallback()->OutputMessage(GetID());
+    }
     return context->Evaluate(condition);
+  }
   return IGNORED;
 }
 
