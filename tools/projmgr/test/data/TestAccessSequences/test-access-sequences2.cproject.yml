@@ -4,9 +4,9 @@ project:
   misc:
     - C-CPP: [PROJ2-D($Dname$)-B($Bname$)]
   define:
-    - $Output(test-access-sequences1)$
+    - $elf(test-access-sequences1)$
   add-path:
-    - $Output(test-access-sequences1)$
+    - $elf(test-access-sequences1)$
   components:
     - component: CORE
   groups:

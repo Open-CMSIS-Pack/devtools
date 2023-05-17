@@ -619,6 +619,8 @@ protected:
   void SetDefaultLinkerScript(ContextItem& context);
   void CheckAndGenerateRegionsHeader(ContextItem& context);
   bool GenerateRegionsHeader(ContextItem& context, std::string& generatedRegionsFile);
+  void UpdatePartialReferencedContext(ContextItem& context, std::string& contextName);
+  void ExpandAccessSequence(const ContextItem& context, const ContextItem& refContext, const std::string& sequence, std::string& item, bool withHeadingDot);
 };
 
 #endif  // PROJMGRWORKER_H
