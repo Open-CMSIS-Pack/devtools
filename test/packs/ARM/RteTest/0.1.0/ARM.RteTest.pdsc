@@ -71,6 +71,9 @@
     <condition id="DenyDenyDependency">
       <deny condition="DenyDependency"/>
     </condition>
+    <condition id="DenyIncompatibleVariant">
+      <deny condition="Incompatible Variant"/>
+    </condition>
 
   </conditions>
 

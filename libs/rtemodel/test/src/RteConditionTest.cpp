@@ -71,6 +71,8 @@ TEST_F(RteConditionTest, MissingIgnoredFulfilledSelectable) {
   ASSERT_NE(denyAcceptDependency, nullptr);
   RteCondition* denyDenyDependency = pack->GetCondition("DenyDenyDependency");
   ASSERT_NE(denyDenyDependency, nullptr);
+  RteCondition* denyIncompatibleVariant = pack->GetCondition("DenyIncompatibleVariant");
+  ASSERT_NE(denyIncompatibleVariant, nullptr);
 
   // select component to check dependencies
   list<RteComponent*> components;
@@ -143,6 +145,27 @@ TEST_F(RteConditionTest, MissingIgnoredFulfilledSelectable) {
   EXPECT_EQ(denyRequireDependency->Evaluate(depSolver), RteItem::FULFILLED);
   EXPECT_EQ(denyAcceptDependency->Evaluate(depSolver), RteItem::INCOMPATIBLE);
   EXPECT_EQ(denyDenyDependency->Evaluate(depSolver), RteItem::FULFILLED);
+
+  // check deny dependencies incompatible variant
+
+  EXPECT_EQ(denyIncompatibleVariant->Evaluate(depSolver), RteItem::FULFILLED);
+  item.SetAttributes({ {"Cclass","RteTest" },
+                       {"Cgroup", "Dependency" },
+                       {"Csub", "Variant" },
+                       {"Cvariant","Compatible"},
+                       {"Cversion","0.9.9"},
+                     });
+  components.clear();
+  c = rteModel->FindComponents(item, components);
+  ASSERT_NE(c, nullptr);
+  activeTarget->SelectComponent(c, 1, true);
+  EXPECT_EQ(denyIncompatibleVariant->Evaluate(depSolver), RteItem::INCOMPATIBLE);
+  item.SetAttribute("Cvariant", "Incompatible");
+  components.clear();
+  c = rteModel->FindComponents(item, components);
+  activeTarget->SelectComponent(c, 1, true);
+  ASSERT_NE(c, nullptr);
+  EXPECT_EQ(denyIncompatibleVariant->Evaluate(depSolver), RteItem::FULFILLED);
 
   // evaluate other condition  possibilities
   RteRequireExpression deviceExpression(nullptr);
