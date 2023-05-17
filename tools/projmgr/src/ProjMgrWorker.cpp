@@ -2196,7 +2196,7 @@ bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, 
       smatch asMatches;
       if (regex_match(sequence, asMatches, accessSequencesRegEx) && asMatches.size() == 3) {
         // get capture groups, see regex accessSequencesRegEx
-        const string sequence = asMatches[1];
+        const string sequenceName = asMatches[1];
         string contextName = asMatches[2];
         // access sequences with 'context' argument lead to path replacement
         pathReplace = true;
@@ -2213,10 +2213,10 @@ bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, 
             }
           }
           // expand access sequence
-          ExpandAccessSequence(context, refContext, sequence, item, withHeadingDot);
+          ExpandAccessSequence(context, refContext, sequenceName, item, withHeadingDot);
         } else {
           // full or partial context name cannot be resolved to a valid context
-          ProjMgrLogger::Error("context '" + contextName + "' referenced by access sequence '" + sequence + "' does not exist");
+          ProjMgrLogger::Error("context '" + contextName + "' referenced by access sequence '" + sequenceName + "' does not exist");
           return false;
         }
       } else {
