@@ -305,6 +305,8 @@ RteItem::ConditionResult RteDenyExpression::Evaluate(RteConditionContext* contex
 
     case INSTALLED:
     case INCOMPATIBLE:
+    case INCOMPATIBLE_VARIANT:
+    case INCOMPATIBLE_VERSION:
     case SELECTABLE:
     case UNAVAILABLE:
     case UNAVAILABLE_PACK:

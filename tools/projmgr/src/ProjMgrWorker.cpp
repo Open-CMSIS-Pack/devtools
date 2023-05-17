@@ -2751,25 +2751,7 @@ bool ProjMgrWorker::ListDependencies(vector<string>& dependencies, const string&
 
 bool ProjMgrWorker::FormatValidationResults(set<string>& results, const ContextItem& context) {
   for (const auto& [result, component, expressions, aggregates] : context.validationResults) {
-    static const map<RteItem::ConditionResult, string> RESULTS = {
-      { RteItem::UNDEFINED             , "UNDEFINED"            },
-      { RteItem::R_ERROR               , "R_ERROR"              },
-      { RteItem::FAILED                , "FAILED"               },
-      { RteItem::MISSING               , "MISSING"              },
-      { RteItem::MISSING_API           , "MISSING_API"          },
-      { RteItem::MISSING_API_VERSION   , "MISSING_API_VERSION"  },
-      { RteItem::UNAVAILABLE           , "UNAVAILABLE"          },
-      { RteItem::UNAVAILABLE_PACK      , "UNAVAILABLE_PACK"     },
-      { RteItem::INCOMPATIBLE          , "INCOMPATIBLE"         },
-      { RteItem::INCOMPATIBLE_VERSION  , "INCOMPATIBLE_VERSION" },
-      { RteItem::INCOMPATIBLE_VARIANT  , "INCOMPATIBLE_VARIANT" },
-      { RteItem::CONFLICT              , "CONFLICT"             },
-      { RteItem::INSTALLED             , "INSTALLED"            },
-      { RteItem::SELECTABLE            , "SELECTABLE"           },
-      { RteItem::FULFILLED             , "FULFILLED"            },
-      { RteItem::IGNORED               , "IGNORED"              },
-    };
-    string resultStr = (RESULTS.find(result) == RESULTS.end() ? RESULTS.at(RteItem::UNDEFINED) : RESULTS.at(result)) + " " + component;
+    string resultStr = RteItem::ConditionResultToString(result) + " " + component;
     for (const auto& expression : expressions) {
       resultStr += "\n  " + expression;
     }
