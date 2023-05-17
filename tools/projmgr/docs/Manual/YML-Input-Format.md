@@ -309,7 +309,7 @@ Access Sequence                                | Description
 `$Compiler$`                                   | [Compiler](#compiler) name of the compiler used in this project context as specified in the [`compiler:`](#compiler) node.
 **YML Input**                                  | **Access to YML Input Directories and Files**       
 NEW: `$Solution$`                              | Solution name (base name of the *.csolution.yml file).
-NEW: `$SolutionDir$`                           | Path to the directory of the current processed `csolution.yml` file.
+NEW: `$SolutionDir()$`                         | Path to the directory of the current processed `csolution.yml` file.
 `$Project$`                                    | Project name of the current processed `cproject.yml` file.
 NEW: `$ProjectDir(context)$`                   | Path to the directory of a related `cproject.yml` file.
 DEPRECATE: `$CProject(context)$`               | Path to the directory of a related `cproject.yml` file.
@@ -664,8 +664,8 @@ Allows to control the directory structure for build output files.
 The default setting for the `output-dirs:` are:
 
 ```yml
-  intdir:  $SolutionDir$/tmp/$Project$/$TargetType$/$BuildType$
-  outdir:  $SolutionDir$/out/$TargetType$
+  intdir:  $SolutionDir()$/tmp/$Project$/$TargetType$/$BuildType$
+  outdir:  $SolutionDir()$/out/$TargetType$
 ```
 
 **Example:**
@@ -703,7 +703,7 @@ Only relative paths to the base directory of the `*.yml` input file are permitte
 
 ```yml
 generator-dir:
-  base-dir: $SolutionDir$/MyGenerators        # Path for all generators
+  base-dir: $SolutionDir()$/MyGenerators      # Path for all generators
 
   - id: Cube2:                                # for the generator `Cube2` use this path
     path: ./Cube2Files                        # relative path to the *.yml file that contains this setting
