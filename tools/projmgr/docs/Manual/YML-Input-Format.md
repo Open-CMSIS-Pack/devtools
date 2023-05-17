@@ -310,7 +310,7 @@ Access Sequence                                | Description
 **YML Input**                                  | **Access to YML Input Directories and Files**       
 NEW: `$Solution$`                              | Solution name (base name of the *.csolution.yml file).
 NEW: `$SolutionDir$`                           | Path to the directory of the current processed `csolution.yml` file.
-`$Project(context)$`                           | Project name (base name of the *.cproject.yml file) of a project.
+`$Project$`                                    | Project name of the current processed `cproject.yml` file.
 NEW: `$ProjectDir(context)$`                   | Path to the directory of a related `cproject.yml` file.
 DEPRECATE: `$CProject(context)$`               | Path to the directory of a related `cproject.yml` file.
 DEPRECATE: `$CProject$`                        | Path to the directory of the current processed `cproject.yml` file.
@@ -324,7 +324,7 @@ NEW: `$lib(context)$`                          | Path and filename of the librar
 DEPRECATE: `$Source(context)$`                 | Path to the source directory of a related project that is defined in the `*.csolution.yml` file.
 DEPRECATE: `$Out(context)$`                    | Path to the output directory of a related project that is defined in the `*.csolution.yml` file.
 
-For a [`context`](#context-name-conventions) the `project-name` must be specified. The `.build-type` and `+target-type` are optional; when omitted the `.build-type` and/or `+target-type` of the current processed context is used. Example: `$Project$` or `$Project()$` both get the based name of the current processed `cproject.yml` file.
+For a [`context`](#context-name-conventions) the `project-name`, `.build-type`, and `+target-type` are optional; when omitted the current processed context is used. Example: `$ProjectDir()$` is the directory of the current processed `cproject.yml` file.
 
 > **Note:**
 > 
@@ -683,7 +683,7 @@ Allows to control the directory structure for generator output files.
 When no explicit `generator-dir:` is specified, the **CSolution** Project Manager uses as path:
 
 - The `workingDir` defined in the [generators element](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_generators_pg.html#element_generator) of the PDSC file.
-- When no `workingDir` is defined the default directory: `$ProjectDir$/generated/<id>` whereby `<id>` is the identifier of the generator tool, specified with `id` in the generators element of the PDSC file.
+- When no `workingDir` is defined the default directory: `$ProjectDir()$/generated/<id>` whereby `<id>` is the identifier of the generator tool, specified with `id` in the generators element of the PDSC file.
 
 The `generator-dir:` node can be added various levels of the `*.yml` input files. The following order is used:
 
@@ -695,7 +695,7 @@ Only relative paths to the base directory of the `*.yml` input file are permitte
 
 `generator-dir:`               |              | Content
 :------------------------------|--------------|:------------------------------------
-&nbsp;&nbsp;&nbsp; `base-dir:` | **Optional** | Base directory for generators; default: `$ProjectDir$/generated`.
+&nbsp;&nbsp;&nbsp; `base-dir:` | **Optional** | Base directory for generators; default: `$ProjectDir()$/generated`.
 `- id:`                        | **Optional** | Identifier of the generator tool, specified with `id` in the [generators element](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_generators_pg.html#element_generator) of the PDSC file.
 &nbsp;&nbsp;&nbsp; `path:`     |**Optional**  | Specifies the directory for generated files. Relative paths used the location of the `yml` file as base directory.
 
