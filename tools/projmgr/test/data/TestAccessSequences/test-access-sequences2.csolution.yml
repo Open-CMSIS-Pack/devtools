@@ -13,6 +13,8 @@ solution:
       misc:
         - C-CPP:
             - -O3
-  
+        - ASM:
+            - -DEF_SOLUTION=$SolutionDir()$/$Solution$
+
   projects:
     - project: ./test-access-sequences3.cproject.yml

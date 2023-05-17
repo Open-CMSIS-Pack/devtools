@@ -17,6 +17,18 @@
 
 using namespace std;
 
+static const regex accessSequencesRegEx = regex(string("^(") +
+  ProjMgrUtils::AS_SOLUTION_DIR + "|" +
+  ProjMgrUtils::AS_PROJECT_DIR  + "|" +
+  ProjMgrUtils::AS_OUT_DIR      + "|" +
+  ProjMgrUtils::AS_BIN          + "|" +
+  ProjMgrUtils::AS_ELF          + "|" +
+  ProjMgrUtils::AS_HEX          + "|" +
+  ProjMgrUtils::AS_LIB          + "|" +
+  ProjMgrUtils::AS_CMSE         + ")" +
+  "\\((.*)\\)$"
+);
+
 ProjMgrWorker::ProjMgrWorker(void) {
   m_loadPacksPolicy = LoadPacksPolicy::DEFAULT;
 }
@@ -129,6 +141,7 @@ bool ProjMgrWorker::AddContext(ProjMgrParser& parser, ContextDesc& descriptor, c
     context.directories.cprj = fs::weakly_canonical(RteFsUtils::AbsolutePath(context.directories.cprj), ec).generic_string();
 
     // context variables
+    context.variables[ProjMgrUtils::AS_SOLUTION] = context.csolution->name;
     context.variables[ProjMgrUtils::AS_PROJECT] = context.cproject->name;
     context.variables[ProjMgrUtils::AS_BUILD_TYPE] = context.type.build;
     context.variables[ProjMgrUtils::AS_TARGET_TYPE] = context.type.target;
@@ -2115,6 +2128,58 @@ bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem& context) {
   return true;
 }
 
+void ProjMgrWorker::UpdatePartialReferencedContext(ContextItem& context, string& contextName) {
+  if (contextName.find('+') == string::npos) {
+    if (!context.type.target.empty()) {
+      contextName.append('+' + context.type.target);
+    }
+  }
+  if (contextName.find('.') == string::npos) {
+    if (!context.type.build.empty()) {
+      const size_t targetDelim = contextName.find('+');
+      contextName.insert(targetDelim == string::npos ? contextName.length() : targetDelim, '.' + context.type.build);
+    }
+  }
+  if (contextName.empty() || (contextName.front() == '.') || (contextName.front() == '+')) {
+    contextName.insert(0, context.cproject->name);
+  }
+}
+
+void ProjMgrWorker::ExpandAccessSequence(const ContextItem & context, const ContextItem & refContext, const string & sequence, string & item, bool withHeadingDot) {
+  const string& refContextOutDir = refContext.directories.cprj + "/" + refContext.directories.outdir;
+  const string& relOutDir = RteFsUtils::RelativePath(refContextOutDir, context.directories.cprj, withHeadingDot);
+  string regExStr = "\\$";
+  string replacement;
+  if (sequence == ProjMgrUtils::AS_SOLUTION_DIR) {
+    regExStr += ProjMgrUtils::AS_SOLUTION_DIR;
+    replacement = RteFsUtils::RelativePath(refContext.csolution->directory, context.directories.cprj, withHeadingDot);
+  } else if (sequence == ProjMgrUtils::AS_PROJECT_DIR) {
+    regExStr += ProjMgrUtils::AS_PROJECT_DIR;
+    replacement = RteFsUtils::RelativePath(refContext.cproject->directory, context.directories.cprj, withHeadingDot);
+  } else if (sequence == ProjMgrUtils::AS_OUT_DIR) {
+    regExStr += ProjMgrUtils::AS_OUT_DIR;
+    replacement = relOutDir;
+  // TODO: the access sequences below must be refined after #895 (Rework `output` and `output-type` node)
+  } else if (sequence == ProjMgrUtils::AS_ELF) {
+    regExStr += ProjMgrUtils::AS_ELF;
+    replacement = relOutDir + "/" + (refContext.outputFiles.find("elf") != refContext.outputFiles.end() ? refContext.outputFiles.at("elf") : refContext.cproject->name);
+  } else if (sequence == ProjMgrUtils::AS_BIN) {
+    regExStr += ProjMgrUtils::AS_BIN;
+    replacement = relOutDir + "/" + refContext.cproject->name + ".bin";
+  } else if (sequence == ProjMgrUtils::AS_HEX) {
+    regExStr += ProjMgrUtils::AS_HEX;
+    replacement = relOutDir + "/" + refContext.cproject->name + ".hex";
+  } else if (sequence == ProjMgrUtils::AS_LIB) {
+    regExStr += ProjMgrUtils::AS_LIB;
+    replacement = relOutDir + "/" + refContext.cproject->name + ".lib";
+  } else if (sequence == ProjMgrUtils::AS_CMSE) {
+    regExStr += ProjMgrUtils::AS_CMSE;
+    replacement = relOutDir + "/" + refContext.cproject->name + "_CMSE_Lib.o";
+  }
+  regex regEx = regex(regExStr + "\\(.*\\)\\$");
+  item = regex_replace(item, regEx, replacement);
+}
+
 bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, const string& ref, bool withHeadingDot) {
   size_t offset = 0;
   bool pathReplace = false;
@@ -2128,66 +2193,37 @@ bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, 
       return false;
     }
     if (offset != string::npos) {
-      string replacement;
-      regex regEx;
-      if (regex_match(sequence, regex("(Output|OutDir|Source)\\(.*"))) {
-        // Output, OutDir and Source access sequences lead to path replacement
+      smatch asMatches;
+      if (regex_match(sequence, asMatches, accessSequencesRegEx) && asMatches.size() == 3) {
+        // get capture groups, see regex accessSequencesRegEx
+        const string sequenceName = asMatches[1];
+        string contextName = asMatches[2];
+        // access sequences with 'context' argument lead to path replacement
         pathReplace = true;
-        string contextName;
-        size_t offsetContext = 0;
-        if (!GetAccessSequence(offsetContext, sequence, contextName, '(', ')')) {
-          return false;
-        }
-        if (contextName.find('+') == string::npos) {
-          if (!context.type.target.empty()) {
-            contextName.append('+' + context.type.target);
-          }
-        }
-        if (contextName.find('.') == string::npos) {
-          if (!context.type.build.empty()) {
-            const size_t targetDelim = contextName.find('+');
-            contextName.insert(targetDelim == string::npos ? contextName.length() : targetDelim, '.' + context.type.build);
-          }
-        }
-        if (contextName.empty() || (contextName.front() == '.') || (contextName.front() == '+')) {
-           contextName.insert(0, context.cproject->name);
-        }
+        // update referenced context name when it's partially specified
+        UpdatePartialReferencedContext(context, contextName);
+        // find referenced context
         if (m_contexts.find(contextName) != m_contexts.end()) {
           error_code ec;
-          auto& depContext = m_contexts.at(contextName);
-          if (!depContext.precedences) {
-            if (!ProcessPrecedences(depContext)) {
+          auto& refContext = m_contexts.at(contextName);
+          // process referenced context precedences if needed
+          if (!refContext.precedences) {
+            if (!ProcessPrecedences(refContext)) {
               return false;
             }
           }
-          const string& depContextOutDir = depContext.directories.cprj + "/" + depContext.directories.outdir;
-          const string& relOutDir = RteFsUtils::RelativePath(depContextOutDir, context.directories.cprj, withHeadingDot);
-          const string& relSrcDir = RteFsUtils::RelativePath(depContext.cproject->directory, context.directories.cprj, withHeadingDot);
-          if (regex_match(sequence, regex("^OutDir\\(.*"))) {
-            regEx = regex("\\$OutDir\\(.*\\)\\$");
-            replacement = relOutDir;
-          }
-          else if (regex_match(sequence, regex("^Output\\(.*"))) {
-            regEx = regex("\\$Output\\(.*\\)\\$");
-            replacement = relOutDir + "/" + (depContext.outputFiles.find("elf") != depContext.outputFiles.end() ? depContext.outputFiles.at("elf") : depContext.cproject->name);
-          }
-          else if (regex_match(sequence, regex("^Source\\(.*"))) {
-            regEx = regex("\\$Source\\(.*\\)\\$");
-            replacement = relSrcDir;
-          }
-        }
-        else {
+          // expand access sequence
+          ExpandAccessSequence(context, refContext, sequenceName, item, withHeadingDot);
+        } else {
           // full or partial context name cannot be resolved to a valid context
-          ProjMgrLogger::Error("context '" + contextName + "' referenced by access sequence '" + sequence + "' does not exist");
+          ProjMgrLogger::Error("context '" + contextName + "' referenced by access sequence '" + sequenceName + "' does not exist");
           return false;
         }
-      }
-      else {
+      } else {
         // access sequence is unknown
         ProjMgrLogger::Warn("unknown access sequence: '" + sequence + "'");
         continue;
       }
-      item = regex_replace(item, regEx, replacement);
     }
   }
   if (!pathReplace && !ref.empty()) {
@@ -2195,7 +2231,7 @@ bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, 
     error_code ec;
     if (!fs::equivalent(context.directories.cprj, ref, ec)) {
       const string& absPath = fs::weakly_canonical(fs::path(item).is_relative() ? ref + "/" + item : item, ec).generic_string();
-      item = fs::relative(absPath, context.directories.cprj, ec).generic_string();
+      item = RteFsUtils::RelativePath(absPath, context.directories.cprj, withHeadingDot);
     }
   }
   return true;
@@ -2259,16 +2295,18 @@ bool ProjMgrWorker::AddFile(const FileNode& src, vector<FileNode>& dst, ContextI
       }
     }
 
-    // Set file category
+    // Get file node
     FileNode srcNode = src;
-    if (srcNode.category.empty()) {
-      srcNode.category = ProjMgrUtils::GetCategory(srcNode.file);
-    }
 
     // Replace sequences and/or adjust file relative paths
     ProcessSequenceRelative(context, srcNode.file, root);
     ProcessSequencesRelatives(context, srcNode.build, root);
     UpdateMisc(srcNode.build.misc, context.toolchain.name);
+
+    // Set file category
+    if (srcNode.category.empty()) {
+      srcNode.category = ProjMgrUtils::GetCategory(srcNode.file);
+    }
 
     dst.push_back(srcNode);
 
