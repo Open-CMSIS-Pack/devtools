@@ -253,17 +253,17 @@ A `context:` name combines `project-name`, `built-type`, and `target-type` and i
 [project-name][.build-type][+target-type]
 ```
 
-Element        |              | Description
-:--------------|--------------|:---------------------
-`project-name` |   Optional   | Project name of a project (base name of the *.cproject.yml file).
-`.build-type`  |   Optional   | The [`build-type`](#build-types) name that is currently processed.
-`+target-type` |   Optional   | The [`target-type`](#target-types) name that is currently processed.
+Element             |              | Description
+:-------------------|--------------|:---------------------
+`project-name`      |   Optional   | Project name of a project (base name of the *.cproject.yml file).
+`.build-type`       |   Optional   | The [`build-type`](#build-types) name that is currently processed (specified with `-type: name`).
+`+target-type`      |   Optional   | The [`target-type`](#target-types) name that is currently processed (specified with `-type: name`).
 
 - When `project-name` is omitted, the `project-name` is the base name of the `*.cproject.yml` file.
 - When `.build-type` is omitted, it matches with any possible `.build-type`.
 - When `+target-type` is omitted, it matches with any possible `+target-type`.
 
-By default the [`build-types:`](#build-types) and [`target-types:`](#target-types) specified in the `*.csolution.yml` file are directly mapped to the `context` name. 
+By default the specified `-type: name` of [`build-types:`](#build-types) and [`target-types:`](#target-types) nodes in the `*.csolution.yml` file are directly mapped to the `context` name. 
 
 Using the [`context-map:`](#context-map) node it is possible to assign a different `.build-type` and/or `+target-type` mapping for a specific `project-name`.
 
@@ -282,15 +282,6 @@ Demo.Release+WiFi
 ```
 
 The `context` name is also used in [`for-context:`](#for-context) and [`not-for-context:`](#not-for-context) nodes that allow to include or exclude items depending on the `context`. In many cases the `project-name` can be omitted as the `context` name is within a specific `*.cproject.yml` file or applied to a specific `*.cproject.yml` file.
-
-> **Note:**
->
-> In previous releases of the CMSIS-Toolbox `for-type:` and `not-for-type:` where used.  For backward  compatibility:
-> 
-> - `for-context:` is identical to `for-type:`
-> - `not-for-context:` is identical to `not-for-type:`.
-> 
-> It is however recommended to use the new `for-context:` and `not-for-context:` nodes as the older versions will be deprecated.
 
 ## Access Sequences
 
@@ -344,18 +335,18 @@ For the example below we assume the following `build-type`, `target-type`, and `
 ```yml
 solution:
   target-types:
-    - type: Board
+    - type: Board               # target-type: Board
       board: NUCLEO-L552ZE-Q    # specifies board
 
-    - type: Production-HW
+    - type: Production-HW       # target-type: Production-HW
       device: STM32U5X          # specifies device
       
   build-types:
-    - type: Debug
+    - type: Debug               # build-type: Debug
       optimize: none
       debug: on
 
-    - type: Release
+    - type: Release             # build-type: Release
       optimize: size
 
   projects:
@@ -534,7 +525,7 @@ solution:
     - pack: ST                    # add ST packs in 'cdefaults.yml'
 
   build-types:                    # additional build types
-    - type: Test
+    - type: Test                  # build-type: Test
       optimize: none
       debug: on
       packs:                      # with explicit pack specification
@@ -542,11 +533,11 @@ solution:
           path: ./MyDev/TestSW    
 
   target-types:
-    - type: Board
+    - type: Board                 # target-type: Board
       board: NUCLEO-L552ZE-Q
 
-    - type: Production-HW
-      device: STM32U5X             # specifies device
+    - type: Production-HW         # target-type: Production-HW
+      device: STM32U5X            # specifies device
       
   projects:
     - project: ./blinky/Bootloader.cproject.yml
@@ -608,7 +599,7 @@ The `layer:` node is the start of a `*.clayer.yml` file and defines a [Software 
 
 `layer:`                                               |              | Content
 :------------------------------------------------------|:-------------|:------------------------------------
-&nbsp;&nbsp; [`type:`](#layer---type)                  |  Optional    | Layer type for combining layers.
+&nbsp;&nbsp; [`type:`](#layer---type)                  |  Optional    | Layer type for combining layers; used to identify [compatible layers](Overview.md#list-compatible-layers).
 &nbsp;&nbsp; `description:`                            |  Optional    | Brief description text of the layer.
 &nbsp;&nbsp; [`generator-dir:`](#generator-dir)        |  Optional    | Control the directory for generator output.
 &nbsp;&nbsp; [`packs:`](#packs)                        |  Optional    | Defines packs that are required for this layer.
@@ -745,16 +736,16 @@ The `linker:` node specifies an explicit Linker Script and/or memory regions hea
 :-----------------------------------------------------|:-----------|:--------------------------------
 **`- regions:`**                                      |**Optional**|**Path and file name of `regions_<device_or_board>.h`, used to generate a Linker Script.**
 &nbsp;&nbsp; [`for-compiler:`](#for-compiler)         |  Optional  |  Include Linker Script for the specified toolchain.
-&nbsp;&nbsp; [`for-context:`](#for-context)           |  Optional  |  Include Linker Script for a list of *build* and *target* types.
-&nbsp;&nbsp; [`not-for-context:`](#not-for-context)   |  Optional  |  Exclude Linker Script for a list of *build* and *target* types.
+&nbsp;&nbsp; [`for-context:`](#for-context)           |  Optional  |  Include Linker Script for a list of *build* and *target* type names.
+&nbsp;&nbsp; [`not-for-context:`](#not-for-context)   |  Optional  |  Exclude Linker Script for a list of *build* and *target* type names.
 **`- script:`**                                       |**Optional**|**Explicit file name of the Linker Script, overrules files provided with [`file:`](#files) or components.**
 &nbsp;&nbsp; [`for-compiler:`](#for-compiler)         |  Optional  |  Include Linker Script for the specified toolchain.
-&nbsp;&nbsp; [`for-context:`](#for-context)           |  Optional  |  Include Linker Script for a list of *build* and *target* types.
-&nbsp;&nbsp; [`not-for-context:`](#not-for-context)   |  Optional  |  Exclude Linker Script for a list of *build* and *target* types.
+&nbsp;&nbsp; [`for-context:`](#for-context)           |  Optional  |  Include Linker Script for a list of *build* and *target* type names.
+&nbsp;&nbsp; [`not-for-context:`](#not-for-context)   |  Optional  |  Exclude Linker Script for a list of *build* and *target* type names.
 **[`- define:`](#define)**                            |**Optional**|**Define symbol settings for the linker script file preprocessor.**
 &nbsp;&nbsp; [`for-compiler:`](#for-compiler)         |  Optional  |  Apply define settings for the specified toolchain.
-&nbsp;&nbsp; [`for-context:`](#for-context)           |  Optional  |  Include define settings for a list of *build* and *target* types.
-&nbsp;&nbsp; [`not-for-context:`](#not-for-context)   |  Optional  |  Exclude define settings for a list of *build* and *target* types.
+&nbsp;&nbsp; [`for-context:`](#for-context)           |  Optional  |  Include define settings for a list of *build* and *target* type names.
+&nbsp;&nbsp; [`not-for-context:`](#not-for-context)   |  Optional  |  Exclude define settings for a list of *build* and *target* type names.
 
 > **Note:** 
 >
@@ -812,8 +803,7 @@ The following translation control options may be used at various places such as:
 
 > **Note:**
 > 
-> `define:`, `add-path:`, `del-path:`  and `misc:` are additive. All other keywords overwrite previous
-  settings.
+> `define:`, `add-path:`, `del-path:`  and `misc:` are additive. All other keywords overwrite previous settings.
 
 ### `language-C:`
 
@@ -989,8 +979,7 @@ Remove include paths (that are defined at the cproject level) from the command l
 
 ### `misc:`
 
-Add miscellaneous literal tool-specific controls that are directly passed to the individual tools depending on the file
-type.
+Add miscellaneous literal tool-specific controls that are directly passed to the individual tools depending on the file type.
 
 `misc:`                              |              | Content
 :------------------------------------|--------------|:------------------------------------
@@ -1189,7 +1178,7 @@ The `target-types:` node may include [toolchain options](#toolchain-options), [t
 
 `target-types:`                                    |              | Content
 :--------------------------------------------------|--------------|:------------------------------------
-`- type:`                                          | **Required** | Name of the target-type.
+`- type:`                                          | **Required** | The target-type name that is used to create the [context](#context-name-conventions) name.
 &nbsp;&nbsp;&nbsp; [`compiler:`](#compiler)        |   Optional   | Toolchain selection.
 &nbsp;&nbsp;&nbsp; [`optimize:`](#optimize)        |   Optional   | Optimize level for code generation.
 &nbsp;&nbsp;&nbsp; [`debug:`](#debug)              |   Optional   | Generation of debug information.
@@ -1215,7 +1204,7 @@ The `build-types:` node may include [toolchain options](#toolchain-options):
 
 `build-types:`                                     |              | Content
 :--------------------------------------------------|--------------|:------------------------------------
-`- type:`                                          | **Required** | Name of the target-type.
+`- type:`                                          | **Required** | The build-type name that is used to create the [context](#context-name-conventions) name.
 &nbsp;&nbsp;&nbsp; [`compiler:`](#compiler)        |   Optional   | Toolchain selection.
 &nbsp;&nbsp;&nbsp; [`optimize:`](#optimize)        |   Optional   | Optimize level for code generation.
 &nbsp;&nbsp;&nbsp; [`debug:`](#debug)              |   Optional   | Generation of debug information.
@@ -1231,18 +1220,18 @@ The `build-types:` node may include [toolchain options](#toolchain-options):
 
 ```yml
 target-types:
-  - type: Board
+  - type: Board                  # target-type name, used in context with: +Board
     board: NUCLEO-L552ZE-Q       # board specifies indirectly also the device
 
-  - type: Production-HW
+  - type: Production-HW          # target-type name, used in context with: +Production-HW
     device: STM32L552RC          # specifies device
       
 build-types:
-  - type: Debug
+  - type: Debug                  # build-type name, used in context with: .Debug
     optimize: none               # specifies code optimization level
     debug: on                    # generates debug information
 
-  - type: Test
+  - type: Test                   # build-type name, used in context with: .Test
     optimize: size
     debug: on
 ```
@@ -1295,7 +1284,7 @@ For the `context-map:` it is required to specify the `project-name` in the `cont
 
 **Example 1:**
 
-This application combines two projects for a multi-processor device, but the project `HelloCM7` requires a different setting for the build-type `.release` as this enables different settings within the `*.cproject.yml` file.
+This application combines two projects for a multi-processor device, but the project `HelloCM7` requires a different setting for the build-type name `Release` as this enables different settings within the `*.cproject.yml` file.
  
 ```yml
   target-types:
@@ -1303,9 +1292,9 @@ This application combines two projects for a multi-processor device, but the pro
       device: MyDualCoreDevice
 
   build-types:
-    - type: release                        # When applying build-type: 'release':
+    - type: Release                        # When applying build-type name 'release':
       context-map:
-        - context: HelloCM7.flex_release   # project HelloCM7 uses build-type "flex_release" instead of "release"
+        - context: HelloCM7.flex_release   # project HelloCM7 uses build-type name "flex_release" instead of "release"
      
   projects:
     - project: ./CM7/HelloCM7.cproject.yml
@@ -1314,7 +1303,7 @@ This application combines two projects for a multi-processor device, but the pro
 
 **Example 2:**
 
-The following example uses three projects `Demo`, `TFM` and `Boot`. The project `TFM` should be always build using the context `TFM.Release+LibMode`.  For the target-type: 'Board', the Boot project requires the `+Flash` target, but any build-type could be used.
+The following example uses three projects `Demo`, `TFM` and `Boot`. The project `TFM` should be always build using the context `TFM.Release+LibMode`.  For the target-type name `Board`, the Boot project requires the `+Flash` target, but any build-type could be used.
 
 ```yml
   target-types:
@@ -1363,19 +1352,11 @@ for-compiler:                        # add item
 
 ### `for-context:`
 
-A [*context*](#context-name-conventions) list that adds a list-node for specific `target-types:` and/or `build-types:`.
-
-> **Note:**
-> 
-> `for-type:` is identical to `for-context:`. `for-type:` will be deprecated and replaced by `for-context:` in future versions.
+A [*context*](#context-name-conventions) list that adds a list-node for specific `target-type` and/or `build-type` names.
 
 ### `not-for-context:`
 
 A [*context*](#context-name-conventions) list that removes a list-node for specific `target-types:` and/or `build-types:`.
-
-> **Note:**
-> 
-> `not-for-type:` is identical to `not-for-context:`. `not-for-type:` will be deprecated and replaced by `not-for-context:` in future versions.
 
 ### Context List
 
