@@ -314,7 +314,8 @@ struct CdefaultItem {
  *        target properties,
  *        list of cprojects,
  *        list of contexts descriptors,
- *        list of packs
+ *        list of packs,
+ *        cdefault enable switch
 */
 struct CsolutionItem {
   std::string name;
@@ -327,6 +328,7 @@ struct CsolutionItem {
   std::vector<std::string> cprojects;
   std::vector<ContextDesc> contexts;
   std::vector<PackItem> packs;
+  bool enableCdefault;
 };
 
 /**

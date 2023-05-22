@@ -660,7 +660,8 @@
           "$ref": "#/definitions/CreatedInfoType",
           "description": "The tool required to build this csolution project"
         },
-        "description":  { "type": "string" }
+        "description": { "type": "string" },
+        "cdefault": { "type": "null", "description": "Enable use of cdefault.yml file" }
       },
       "additionalProperties": false
     },
