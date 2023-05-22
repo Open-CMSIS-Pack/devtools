@@ -1269,7 +1269,7 @@ bool CbuildModel::EvalTargetOutput() {
   m_intDir = RteUtils::BackSlashesToSlashes(output->GetAttribute("intdir"));
   m_outputType = output->GetAttribute("type");
 
-  const string typeMap[] = { "elf", "hex", "bin", "lib" };
+  const string typeMap[] = { "elf", "hex", "bin", "lib", "cmse-lib" };
   for (const auto& type : typeMap) {
     const auto& file = output->GetAttribute(type);
     if (!file.empty()) {

@@ -19,9 +19,6 @@ set(AS_FLAGS_GLOBAL "-AS-flag-C:/Users/user1/AppData/Local/Arm/Packs/ARM/CMSIS/5
 set(CC_FLAGS_GLOBAL "-O -Wall -gdwarf-2 -mapcs-frame -mthumb -C-flag-C:/Users/user1/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0")
 set(LD_FLAGS_GLOBAL "--entry=Reset_Handler --specs=nosys.specs -mcpu=cortex-m3 -LD-flag-C:/Users/user1/AppData/Local/Arm/Packs/ARM/CMSIS/5.8.0")
 set(LD_SCRIPT "C:/Temp/devtools/tools/buildmgr/test/testinput/Examples/GCC/AccessSequence/RTE/Device/ARMCM3/gcc_arm.ld")
-set(OUT_NAME Project)
-set(HEX_FILE "${OUT_NAME}.hex")
-set(BIN_FILE "${OUT_NAME}.bin")
 
 set(DEFINES
   ARMCM3
@@ -219,11 +216,6 @@ add_custom_target(database COMMAND ${CMAKE_COMMAND} -E copy_if_different "${INT_
 # Setup Target
 
 add_executable(${TARGET} ${CC_SRC_FILES} ${CXX_SRC_FILES})
-set_target_properties(${TARGET} PROPERTIES PREFIX "" SUFFIX "${EXE_SUFFIX}" OUTPUT_NAME "${TARGET}")
+set_target_properties(${TARGET} PROPERTIES PREFIX "" OUTPUT_NAME "${TARGET}")
 set_target_properties(${TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${OUT_DIR} LINK_DEPENDS ${LD_SCRIPT})
 target_include_directories(${TARGET} PUBLIC ${INC_PATHS})
-
-# Bin and Hex Conversion
-
-add_custom_command(TARGET ${TARGET} POST_BUILD COMMAND ${CMAKE_OBJCOPY} ${ELF2HEX})
-add_custom_command(TARGET ${TARGET} POST_BUILD COMMAND ${CMAKE_OBJCOPY} ${ELF2BIN})

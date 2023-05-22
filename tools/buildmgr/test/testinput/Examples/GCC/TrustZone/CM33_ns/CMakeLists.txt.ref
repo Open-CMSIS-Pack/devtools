@@ -18,9 +18,6 @@ set(BYTE_ORDER Little-endian)
 set(CC_FLAGS_GLOBAL "-O -Wall -gdwarf-2 -mapcs-frame -mthumb")
 set(LD_FLAGS_GLOBAL "--entry=Reset_Handler -mthumb --specs=nosys.specs")
 set(LD_SCRIPT "C:/reference/devtools/build/TestOutput/TestData/Examples/GCC/TrustZone/CM33_ns/RTE/Device/ARMCM33_DSP_FP_TZ/gcc_arm.ld")
-set(OUT_NAME CM33_ns)
-set(HEX_FILE "${OUT_NAME}.hex")
-set(BIN_FILE "${OUT_NAME}.bin")
 
 set(DEFINES
   ARMCM33_DSP_FP_TZ
@@ -76,12 +73,7 @@ add_custom_target(database COMMAND ${CMAKE_COMMAND} -E copy_if_different "${INT_
 # Setup Target
 
 add_executable(${TARGET} ${CC_SRC_FILES})
-set_target_properties(${TARGET} PROPERTIES PREFIX "" SUFFIX "${EXE_SUFFIX}" OUTPUT_NAME "${TARGET}")
+set_target_properties(${TARGET} PROPERTIES PREFIX "" OUTPUT_NAME "${TARGET}")
 set_target_properties(${TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${OUT_DIR} LINK_DEPENDS ${LD_SCRIPT})
 target_include_directories(${TARGET} PUBLIC ${INC_PATHS})
 target_link_libraries(${TARGET} ${LIB_FILES})
-
-# Bin and Hex Conversion
-
-add_custom_command(TARGET ${TARGET} POST_BUILD COMMAND ${CMAKE_OBJCOPY} ${ELF2HEX})
-add_custom_command(TARGET ${TARGET} POST_BUILD COMMAND ${CMAKE_OBJCOPY} ${ELF2BIN})

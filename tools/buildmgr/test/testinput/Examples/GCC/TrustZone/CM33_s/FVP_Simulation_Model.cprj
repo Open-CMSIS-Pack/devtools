@@ -17,7 +17,7 @@
   </compilers>
 
   <target Ddsp="DSP" Dendian="Little-endian" Dfpu="SP_FPU" Dmve="NO_MVE" Dname="ARMCM33_DSP_FP_TZ" Dsecure="Secure" Dtz="TZ" Dvendor="ARM:82">
-    <output name="CM33_s" type="exe"/>
+    <output name="CM33_s" cmse-lib="CM33_s_CMSE_Lib.o"/>
     <ldflags add="--entry=Reset_Handler --specs=nosys.specs -Wl,--cmse-implib  -Wl,--out-implib=./OutDir/CM33_s_CMSE_Lib.o -Wl,--section-start=.gnu.sgstubs=0x10000 -mcpu=cortex-m33 -mfloat-abi=hard -mfpu=fpv5-sp-d16 -mthumb" compiler="GCC" file="./RTE/Device/ARMCM33_DSP_FP_TZ/gcc_arm.ld"/>
     <cflags add="-O -Wall -gdwarf-2 -mapcs-frame -mthumb" compiler="GCC"/>
     <asflags add="--gdwarf-2 -mthumb" compiler="GCC"/>

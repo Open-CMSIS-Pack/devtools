@@ -72,36 +72,29 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
     }
   }
 
-  string outFile, outExt;
   fs::path outputPath;
   if (m_outputFiles.find("elf") != m_outputFiles.end()) {
     outputPath = fs::path(StrNorm(m_outputFiles.at("elf")));
   } else if (m_outputFiles.find("lib") != m_outputFiles.end()) {
     outputPath = fs::path(StrNorm(m_outputFiles.at("lib")));
   }
-  if (!outputPath.empty()) {
-    outExt = outputPath.extension().generic_string();
-    outFile = outputPath.replace_extension().generic_string();
-    cmakelists << EOL << "set(OUT_NAME " << outFile << ")";
-  } else {
-    cmakelists << EOL << "set(OUT_NAME " << m_targetName << ")";
-  }
+  const string outExt = outputPath.extension().generic_string();
+  const string outFile = outputPath.replace_extension().generic_string();
 
   bool lib_output = (m_outputType.compare("lib") == 0) ? true :
     (m_outputFiles.find("lib") != m_outputFiles.end() ? true : false);
-  if (!lib_output) {
-    cmakelists << EOL << "set(HEX_FILE \"";
-    if (m_outputFiles.find("hex") != m_outputFiles.end()) {
-      cmakelists << StrNorm(m_outputFiles.at("hex")) << "\")";
-    } else {
-      cmakelists << "${OUT_NAME}.hex\")";
-    }
-    cmakelists << EOL << "set(BIN_FILE \"";
-    if (m_outputFiles.find("bin") != m_outputFiles.end()) {
-      cmakelists << StrNorm(m_outputFiles.at("bin")) << "\")";
-    } else {
-      cmakelists << "${OUT_NAME}.bin\")";
-    }
+  bool hex_output = m_outputFiles.find("hex") != m_outputFiles.end();
+  bool bin_output = m_outputFiles.find("bin") != m_outputFiles.end();
+  bool cmse_output = m_outputFiles.find("cmse-lib") != m_outputFiles.end();
+
+  if (hex_output) {
+    cmakelists << EOL << "set(HEX_FILE \"" << StrNorm(m_outputFiles.at("hex")) << "\")";
+  }
+  if (bin_output) {
+    cmakelists << EOL << "set(BIN_FILE \"" << StrNorm(m_outputFiles.at("bin")) << "\")";
+  }
+  if (cmse_output) {
+    cmakelists << EOL << "set(CMSE_LIB \"" << StrNorm(m_outputFiles.at("cmse-lib")) << "\")";
   }
 
   cmakelists << EOL << EOL;
@@ -648,21 +641,19 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
     cmakelists << " ${CXX_SRC_FILES}";
   }
   cmakelists << ")" << EOL;
+
+  cmakelists << "set_target_properties(${TARGET} PROPERTIES PREFIX \"\" ";
+  if (!outExt.empty()) {
+    cmakelists << "SUFFIX \"" << outExt << "\" ";
+  }
+  if (!outFile.empty()) {
+    cmakelists << "OUTPUT_NAME \"" << outFile << "\")" << EOL;
+  } else {
+    cmakelists << "OUTPUT_NAME \"${TARGET}\")" << EOL;
+  }
   if (lib_output) {
-    cmakelists << "set_target_properties(${TARGET} PROPERTIES ";
-    if (!outFile.empty()) {
-      cmakelists << "PREFIX \"\" SUFFIX \"" << outExt << "\" OUTPUT_NAME \"" << outFile << "\")" << EOL;
-    } else {
-      cmakelists << "PREFIX \"${LIB_PREFIX}\" SUFFIX \"${LIB_SUFFIX}\" OUTPUT_NAME \"${TARGET}\")" << EOL;
-    }
     cmakelists << "set_target_properties(${TARGET} PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${OUT_DIR})" << EOL;
   } else {
-    cmakelists << "set_target_properties(${TARGET} PROPERTIES PREFIX \"\" ";
-    if (!outFile.empty()) {
-      cmakelists << "SUFFIX \"" << outExt << "\" OUTPUT_NAME \"" << outFile << "\")" << EOL;
-    } else {
-      cmakelists << "SUFFIX \"${EXE_SUFFIX}\" OUTPUT_NAME \"${TARGET}\")" << EOL;
-    }
     cmakelists << "set_target_properties(${TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${OUT_DIR}";
     if (!m_linkerScript.empty()) {
       cmakelists << " LINK_DEPENDS ${LD_SCRIPT}";
@@ -690,9 +681,12 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
   }
 
   // Bin and Hex Conversion
-  if (!lib_output) {
-    cmakelists << EOL << "# Bin and Hex Conversion" << EOL << EOL;
+  if (hex_output) {
+    cmakelists << EOL << "# Hex Conversion" << EOL << EOL;
     cmakelists << "add_custom_command(TARGET ${TARGET} POST_BUILD COMMAND ${CMAKE_OBJCOPY} ${ELF2HEX})" << EOL;
+  }
+  if (bin_output) {
+    cmakelists << EOL << "# Bin Conversion" << EOL << EOL;
     cmakelists << "add_custom_command(TARGET ${TARGET} POST_BUILD COMMAND ${CMAKE_OBJCOPY} ${ELF2BIN})" << EOL;
   }
 

@@ -20,9 +20,6 @@ set(LD_FLAGS_GLOBAL "--entry=Reset_Handler --specs=nosys.specs -mcpu=cortex-m3 -
 set(LD_SCRIPT "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/LinkerPreProcessing/RTE/Device/ARMCM3/gcc_arm.ld")
 set(LD_REGIONS "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/LinkerPreProcessing/RTE/Device/ARMCM3/regions_ARMCM3.h")
 set(LD_SCRIPT_PP "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/LinkerPreProcessing/IntDir/gcc_arm.ld.pp")
-set(OUT_NAME MyProject)
-set(HEX_FILE "${OUT_NAME}.hex")
-set(BIN_FILE "${OUT_NAME}.bin")
 
 set(LD_SCRIPT_PP_DEFINES
   LD_PP_DEF0
@@ -72,15 +69,10 @@ add_custom_target(database COMMAND ${CMAKE_COMMAND} -E copy_if_different "${INT_
 # Setup Target
 
 add_executable(${TARGET} ${CC_SRC_FILES})
-set_target_properties(${TARGET} PROPERTIES PREFIX "" SUFFIX "${EXE_SUFFIX}" OUTPUT_NAME "${TARGET}")
+set_target_properties(${TARGET} PROPERTIES PREFIX "" OUTPUT_NAME "${TARGET}")
 set_target_properties(${TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${OUT_DIR} LINK_DEPENDS ${LD_SCRIPT})
 target_include_directories(${TARGET} PUBLIC ${INC_PATHS})
 
 # Linker script pre-processing
 
 add_custom_command(TARGET ${TARGET} PRE_LINK COMMAND ${CPP} ARGS ${CPP_ARGS_LD_SCRIPT} BYPRODUCTS ${LD_SCRIPT_PP})
-
-# Bin and Hex Conversion
-
-add_custom_command(TARGET ${TARGET} POST_BUILD COMMAND ${CMAKE_OBJCOPY} ${ELF2HEX})
-add_custom_command(TARGET ${TARGET} POST_BUILD COMMAND ${CMAKE_OBJCOPY} ${ELF2BIN})
