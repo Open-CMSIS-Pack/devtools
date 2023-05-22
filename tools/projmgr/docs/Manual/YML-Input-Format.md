@@ -27,7 +27,8 @@ Project Manager.
     - [`layer:`](#layer)
   - [Directory Control](#directory-control)
     - [`output-dirs:`](#output-dirs)
-    - [`generator-dir:`](#generator-dir)
+    - [`generators:`](#generators)
+      - [`generators: - options:`](#generators---options)
   - [Toolchain Options](#toolchain-options)
     - [`compiler:`](#compiler)
     - [`linker:`](#linker)
@@ -667,37 +668,48 @@ output-dirs:
   outdir: ./out/$Project$/$TargetType$   # $BuildType$ no longer part of the outdir    
 ```
 
-### `generator-dir:`
+### `generators:`
 
 Allows to control the directory structure for generator output files.  
 
-When no explicit `generator-dir:` is specified, the **CSolution** Project Manager uses as path:
+When no explicit `generators:` is specified, the **CSolution** Project Manager uses as path:
 
 - The `workingDir` defined in the [generators element](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_generators_pg.html#element_generator) of the PDSC file.
-- When no `workingDir` is defined the default directory: `$ProjectDir()$/generated/<id>` whereby `<id>` is the identifier of the generator tool, specified with `id` in the generators element of the PDSC file.
+- When no `workingDir` is defined the default directory `$ProjectDir()$/generated/<generator-id>` is used; `<generator-id>` is defined by the `id` in the generators element of the PDSC file.
 
-The `generator-dir:` node can be added various levels of the `*.yml` input files. The following order is used:
+The `generators:` node can be added at various levels of the `*.yml` input files. The following order is used:
 
-1. Use `generator-dir:` specification of the `*.csolution.yml` input file, if not exist:
-2. Use `generator-dir:` specification of the `*.cproject.yml` input file, if not exist:
-3. Use `generator-dir:` specification of the `*.clayer.yml` input file.
+1. Use `generators:` specification of the `*.clayer.yml` input file, if not exist:
+2. Use `generators:` specification of the `*.cproject.yml` input file, if not exist:
+3. Use `generators:` specification of the `*.csolution.yml` input file.
 
 Only relative paths to the base directory of the `*.yml` input file are permitted.
 
-`generator-dir:`               |              | Content
+`generators:`                  |              | Content
 :------------------------------|--------------|:------------------------------------
-&nbsp;&nbsp;&nbsp; `base-dir:` | **Optional** | Base directory for generators; default: `$ProjectDir()$/generated`.
-`- id:`                        | **Optional** | Identifier of the generator tool, specified with `id` in the [generators element](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_generators_pg.html#element_generator) of the PDSC file.
+&nbsp;&nbsp;&nbsp; `base-dir:` | **Optional** | Base directory for unspecified generators; default: `$ProjectDir()$/generated`.
+&nbsp;&nbsp;&nbsp; `options:`  | **Optional** | Specific generator options; allows explicit directory configuration for a generator.
+
+> **Note:**
+>
+> The base directory is extended for each generator with `/<generator-id>`; `<generator-id>` is defined by the `id` in the generators element of the PDSC file.
+
+#### `generators: - options:`
+
+`options:`                     |              | Content
+:------------------------------|--------------|:------------------------------------
+`- generator:`                 | **Optional** | Identifier of the generator tool, specified with `id` in the [generators element](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_generators_pg.html#element_generator) of the PDSC file.
 &nbsp;&nbsp;&nbsp; `path:`     |**Optional**  | Specifies the directory for generated files. Relative paths used the location of the `yml` file as base directory.
 
 **Example:**
 
 ```yml
-generator-dir:
-  base-dir: $SolutionDir()$/MyGenerators      # Path for all generators
+generators:
+  base-dir: $SolutionDir()$/MyGenerators      # Path for all generators extended by '/<generator-id>'
 
-  - id: Cube2:                                # for the generator `Cube2` use this path
-    path: ./Cube2Files                        # relative path to the *.yml file that contains this setting
+  options:
+  - generator: Cube                           # for the generator `Cube` use this path
+    path:  ./CubeFiles                        # relative path to the *.yml file that contains this setting
 ```
 
 ## Toolchain Options
