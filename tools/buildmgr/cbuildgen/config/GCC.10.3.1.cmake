@@ -325,6 +325,9 @@ set(LD_FLAGS)
 set(LD_OPTIONS_FLAGS)
 cbuild_set_options_flags(LD "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" LD_OPTIONS_FLAGS)
 
+# Group libraries for rescanning
+set(LIB_FILES -Wl,--start-group ${LIB_FILES} -Wl,--end-group)
+
 # ELF to HEX conversion
 set (ELF2HEX -O ihex "${OUT_DIR}/$<TARGET_PROPERTY:${TARGET},OUTPUT_NAME>$<TARGET_PROPERTY:${TARGET},SUFFIX>" "${OUT_DIR}/${HEX_FILE}")
 
