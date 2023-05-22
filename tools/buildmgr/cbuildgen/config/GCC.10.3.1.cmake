@@ -331,6 +331,9 @@ set (LIB_PREFIX "lib")
 set (LIB_SUFFIX ".a")
 set (EXE_SUFFIX ".elf")
 
+# Group libraries for rescanning
+set(LIB_FILES -Wl,--start-group ${LIB_FILES} -Wl,--end-group)
+
 # ELF to HEX conversion
 set (ELF2HEX -O ihex "${OUT_DIR}/$<TARGET_PROPERTY:${TARGET},OUTPUT_NAME>$<TARGET_PROPERTY:${TARGET},SUFFIX>" "${OUT_DIR}/${HEX_FILE}")
 
