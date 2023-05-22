@@ -81,6 +81,7 @@ bool ProjMgrYamlParser::ParseCsolution(const string& input,
     ParseOutputDirs(solutionNode, csolution.directories);
     ParseTargetType(solutionNode, csolution.target);
     ParsePacks(solutionNode, csolution.packs);
+    csolution.enableCdefault = solutionNode[YAML_CDEFAULT].IsDefined();
 
   } catch (YAML::Exception& e) {
     ProjMgrLogger::Error(input, e.mark.line + 1, e.mark.column + 1, e.msg);
@@ -647,6 +648,7 @@ const set<string> solutionKeys = {
   YAML_VARIABLES,
   YAML_CREATED_BY,
   YAML_CREATED_FOR,
+  YAML_CDEFAULT,
 };
 
 const set<string> projectsKeys = {

@@ -232,13 +232,6 @@ int ProjMgr::RunProjMgr(int argc, char **argv, char** envp) {
     return 1;
   }
 
-  // Parse cdefault
-  if (manager.GetCdefaultFile()) {
-    if (!manager.m_parser.ParseCdefault(manager.m_cdefaultFile, manager.m_checkSchema)) {
-      return false;
-    }
-  }
-
   if (parseResult.count("help")) {
     return manager.PrintUsage(optionsDict, manager.m_command, manager.m_args) ? 0 : 1;
   }
@@ -324,6 +317,12 @@ bool ProjMgr::PopulateContexts(void) {
     // Parse csolution
     if (!m_parser.ParseCsolution(m_csolutionFile, m_checkSchema)) {
       return false;
+    }
+    // Parse cdefault
+    if (m_parser.GetCsolution().enableCdefault && GetCdefaultFile()) {
+      if (!m_parser.ParseCdefault(m_cdefaultFile, m_checkSchema)) {
+        return false;
+      }
     }
     // Check cproject separate folders
     const StrVec& cprojects = m_parser.GetCsolution().cprojects;

@@ -4,3 +4,5 @@ solution:
 
   projects:
     - project: ./project.cproject.yml
+
+  cdefault:
