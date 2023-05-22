@@ -49,6 +49,7 @@ private:
   void SetMiscNode(YAML::Node miscNode, const vector<MiscItem>& misc);
   void SetNodeValue(YAML::Node node, const string& value);
   void SetNodeValue(YAML::Node node, const vector<string>& vec);
+  void SetDefineNode(YAML::Node node, const vector<string>& vec);
   const string FormatPath(const string& original, const string& directory);
   bool CompareFile(const string& filename, const YAML::Node& rootNode);
   bool CompareNodes(const YAML::Node& lhs, const YAML::Node& rhs);
@@ -127,7 +128,7 @@ void ProjMgrYamlCbuild::SetContextNode(YAML::Node contextNode, const ContextItem
   for (const auto& define : context->rteActiveTarget->GetDefines()) {
     ProjMgrUtils::PushBackUniquely(defines, define);
   }
-  SetNodeValue(contextNode[YAML_DEFINE], defines);
+  SetDefineNode(contextNode[YAML_DEFINE], defines);
   vector<string> includes;
   for (auto include : context->rteActiveTarget->GetIncludePaths()) {
     RteFsUtils::NormalizePath(include, context->cproject->directory);
@@ -323,7 +324,7 @@ void ProjMgrYamlCbuild::SetLinkerNode(YAML::Node node, const ContextItem* contex
     FormatPath(context->directories.cprj + "/" + context->linker.regions, context->directories.cprj);
   SetNodeValue(node[YAML_SCRIPT], script);
   SetNodeValue(node[YAML_REGIONS], regions);
-  SetNodeValue(node[YAML_DEFINE], context->linker.defines);
+  SetDefineNode(node[YAML_DEFINE], context->linker.defines);
 }
 
 void ProjMgrYamlCbuild::SetControlsNode(YAML::Node node, const BuildType& controls) {
@@ -331,7 +332,7 @@ void ProjMgrYamlCbuild::SetControlsNode(YAML::Node node, const BuildType& contro
   SetNodeValue(node[YAML_DEBUG], controls.debug);
   SetNodeValue(node[YAML_WARNINGS], controls.warnings);
   SetMiscNode(node[YAML_MISC], controls.misc);
-  SetNodeValue(node[YAML_DEFINE], controls.defines);
+  SetDefineNode(node[YAML_DEFINE], controls.defines);
   SetNodeValue(node[YAML_UNDEFINE], controls.undefines);
   SetNodeValue(node[YAML_ADDPATH], controls.addpaths);
   SetNodeValue(node[YAML_DELPATH], controls.delpaths);
@@ -392,6 +393,24 @@ void ProjMgrYamlCbuild::SetNodeValue(YAML::Node node, const vector<string>& vec)
   for (const string& value : vec) {
     if (!value.empty()) {
       node.push_back(value);
+    }
+  }
+}
+
+void ProjMgrYamlCbuild::SetDefineNode(YAML::Node define, const vector<string>& vec) {
+  for (const string& defineStr : vec) {
+    if (!defineStr.empty()) {
+      auto key = RteUtils::GetPrefix(defineStr, '=');
+      auto value = RteUtils::GetSuffix(defineStr, '=');
+      if (!value.empty()) {
+        // map define
+        YAML::Node defineNode;
+        SetNodeValue(defineNode[key], value);
+        define.push_back(defineNode);
+      } else {
+        // string define
+        define.push_back(key);
+      }
     }
   }
 }

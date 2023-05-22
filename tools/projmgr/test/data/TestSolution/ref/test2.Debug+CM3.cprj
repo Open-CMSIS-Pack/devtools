@@ -22,7 +22,7 @@
     <cflags add="-C-project -C-CPP-Debug-AC6 -C-CPP-type-CM3" compiler="AC6"/>
     <cxxflags add="-CPP-project -C-CPP-Debug-AC6 -C-CPP-type-CM3" compiler="AC6"/>
     <ldflags add="-Link-project -Link-type-CM3" compiler="AC6" file="../data/TestSolution/TestProject2/RTE/Device/RteTest_ARMCM3/ARMCM3_ac6.sct"/>
-    <defines>DEF-project;DEF-solution;DEF-CM3;DEF-Debug</defines>
+    <defines>DEF-project;DEF-solution;DEF-solution-value=25;DEF-CM3;DEF-Debug</defines>
     <includes>../data/TestSolution/TestProject2/path/project;../data/TestSolution/path/solution/;../data/TestSolution/path/CM3;../data/TestSolution/path/Debug</includes>
   </target>
 

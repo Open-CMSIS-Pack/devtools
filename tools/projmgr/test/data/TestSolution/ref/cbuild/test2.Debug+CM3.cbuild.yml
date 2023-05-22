@@ -35,6 +35,7 @@ build:
   define:
     - DEF-project
     - DEF-solution
+    - DEF-solution-value: 25
     - DEF-CM3
     - DEF-Debug
     - ARMCM3

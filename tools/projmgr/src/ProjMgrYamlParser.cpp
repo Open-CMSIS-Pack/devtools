@@ -223,6 +223,28 @@ void ProjMgrYamlParser::ParseVector(const YAML::Node& parent, const string& key,
   }
 }
 
+void ProjMgrYamlParser::ParseDefine(const YAML::Node& parent, vector<string>& define) {
+  if (parent[YAML_DEFINE].IsDefined() && parent[YAML_DEFINE].IsSequence()) {
+    for (const auto& item : parent[YAML_DEFINE]) {
+      // accept map elements <string, string> or a string
+      if (item.IsDefined()) {
+        if (item.IsMap()) {
+          const auto& elements = item.as<map<string, string>>();
+          for (auto element : elements) {
+            if (YAML::IsNullString(element.second)) {
+              element.second = "";
+            }
+            define.push_back(element.first + "=" + element.second);
+          }
+        }
+        else {
+          define.push_back(item.as<string>());
+        }
+      }
+    }
+  }
+}
+
 void ProjMgrYamlParser::ParseVectorOfStringPairs(const YAML::Node& parent, const string& key, vector<pair<string, string>>& value) {
   if (parent[key].IsDefined() && parent[key].IsSequence()) {
     for (const auto& item : parent[key]) {
@@ -542,7 +564,7 @@ bool ProjMgrYamlParser::ParseLinker(const YAML::Node& parent, vector<LinkerItem>
       if (!ParseTypeFilter(linkerEntry, linkerItem.typeFilter)) {
         return false;
       }
-      ParseVector(linkerEntry, YAML_DEFINE, linkerItem.defines);
+      ParseDefine(linkerEntry, linkerItem.defines);
       ParseVectorOrString(linkerEntry, YAML_FORCOMPILER, linkerItem.forCompiler);
       ParseString(linkerEntry, YAML_REGIONS, linkerItem.regions);
       ParseString(linkerEntry, YAML_SCRIPT, linkerItem.script);
@@ -577,7 +599,7 @@ void ProjMgrYamlParser::ParseBuildType(const YAML::Node& parent, BuildType& buil
   }
   ParseProcessor(parent, buildType.processor);
   ParseMisc(parent, buildType.misc);
-  ParseVector(parent, YAML_DEFINE, buildType.defines);
+  ParseDefine(parent, buildType.defines);
   if (buildType.defines.empty()) {
     // TODO: after deprecation remove 'defines' keyword parsing in benefit of 'define'
     ParseVector(parent, YAML_DEFINES, buildType.defines);

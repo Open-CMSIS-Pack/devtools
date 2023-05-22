@@ -176,6 +176,7 @@ public:
 
 protected:
   void ParseMisc(const YAML::Node& parent, std::vector<MiscItem>& misc);
+  void ParseDefine(const YAML::Node& parent, std::vector<std::string>& define);
   void ParsePacks(const YAML::Node& parent, std::vector<PackItem>& packs);
   void ParseProcessor(const YAML::Node& parent, ProcessorItem& processor);
   void ParseString(const YAML::Node& parent, const std::string& key, std::string& value);

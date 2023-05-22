@@ -18,7 +18,7 @@
     <output elf="toolchain.elf" intdir="tmp/toolchain/Target/Debug" name="toolchain" outdir="out/toolchain/Target/Debug" rtedir="../data/TestSolution/RTE"/>
     <cflags add="-DGCC@11.2.1" compiler="GCC"/>
     <ldflags compiler="GCC" file="../data/TestToolchains/gcc_linker_script.ld" regions="../data/TestSolution/RTE/Device/RteTest_ARMCM3/regions_RteTest_ARMCM3.h"/>
-    <defines>CompilerDefinition:GCC</defines>
+    <defines>CompilerDefinition=GCC</defines>
   </target>
 
   <components>

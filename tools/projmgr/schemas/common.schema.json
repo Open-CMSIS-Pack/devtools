@@ -207,7 +207,21 @@
       "description": "List of #define symbol settings for the code generation.",
       "uniqueItems": true,
       "minItems": 1,
-      "items": { "type": "string" }
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "key": { "type": "string" },
+              "value": { "type": ["number", "string"], "minLength": 1 }
+            }
+          },
+          {
+            "type": "string",
+            "pattern": "^([^=:]+)$"
+          }
+        ]
+      }
     },
     "UndefinesType": {
       "type": "array",

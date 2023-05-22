@@ -16,7 +16,7 @@ solution:
         - for-compiler: IAR@9.32.1
           C: [-DIAR@9.32.1]
       define:
-        - CompilerDefinition:$Compiler$
+        - CompilerDefinition: $Compiler$
 
   target-types:
     - type: Target
