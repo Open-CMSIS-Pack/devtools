@@ -188,3 +188,27 @@ solution:\n\
     }
   }
 }
+
+TEST_F(ProjMgrSchemaCheckerUnitTests, SchemaCheck_define) {
+  vector<std::pair<int, int>> expectedErrPos = {
+    // line, col
+    {  10  ,  10 },
+    {  11  ,  10 },
+    {  12  ,  10 }
+  };
+
+  const string& filename = testinput_folder +
+    "/TestSolution/test.csolution_validate_define_syntax.yml";
+  EXPECT_FALSE(Validate(filename, FileType::SOLUTION));
+
+  // Check errors
+  auto errList = GetErrors();
+  EXPECT_EQ(errList.size(), expectedErrPos.size());
+  for (auto& errPos : expectedErrPos) {
+    auto errItr = find_if(errList.begin(), errList.end(),
+      [&](const SchemaError& err) {
+        return err.m_line == errPos.first && err.m_col == errPos.second;
+      });
+    EXPECT_TRUE(errList.end() != errItr);
+  }
+}

@@ -1761,6 +1761,13 @@ bool ProjMgrWorker::ProcessCompilerPrecedence(StringCollection& item) {
   return true;
 }
 
+void ProjMgrWorker::MergeDefines(StringVectorCollection& item) {
+  for (const auto& element : item.pair) {
+    AddStringItemsUniquely(*item.assign, *element.add);
+    RemoveDefines(*item.assign, *element.remove);
+  }
+}
+
 void ProjMgrWorker::MergeStringVector(StringVectorCollection& item) {
   for (const auto& element : item.pair) {
     AddStringItemsUniquely(*item.assign, *element.add);
@@ -1963,7 +1970,7 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
       {&context.controls.build.defines, &context.controls.build.undefines},
     }
   };
-  MergeStringVector(defines);
+  MergeDefines(defines);
 
   // Includes
   vector<string> projectAddPaths, projectDelPaths;
@@ -2955,6 +2962,26 @@ void ProjMgrWorker::AddStringItemsUniquely(vector<string>& dst, const vector<str
   for (const auto& value : src) {
     if (find(dst.cbegin(), dst.cend(), value) == dst.cend()) {
       dst.push_back(value);
+    }
+  }
+}
+
+void ProjMgrWorker::RemoveDefines(vector<string>& dst, vector<string>& src) {
+  for (const auto& value : src) {
+    if (value == "*") {
+      dst.clear();
+      return;
+    }
+    const auto& valueIt = find_if(dst.cbegin(), dst.cend(),
+      [value](const string& defineStr) -> bool {
+        if (defineStr == value) {
+          return true;
+        }
+        auto defKey = RteUtils::GetPrefix(defineStr, '=');
+        return (defKey == value);
+      });
+    if (valueIt != dst.cend()) {
+      dst.erase(valueIt);
     }
   }
 }

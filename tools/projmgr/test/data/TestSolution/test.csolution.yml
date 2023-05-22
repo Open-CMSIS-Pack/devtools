@@ -12,11 +12,12 @@ solution:
           Link-C: [-Link-C-type-CM0]
           Link-CPP: [-Link-CPP-type-CM0]
           Lib: [-Lib-type-CM0]
-      define: 
+      define:
         - DEF-CM0
         - DEF-CM0-to-be-removed
       undefine:
         - DEF-solution-to-be-removed
+        - DEF-solution-value
       add-path:
         - ./path/CM0
         - ./path/CM0/to-be-removed
@@ -97,6 +98,7 @@ solution:
   define:
     - DEF-solution
     - DEF-solution-to-be-removed
+    - DEF-solution-value: 25
   undefine:
     - DEF-project-to-be-removed
   add-path:

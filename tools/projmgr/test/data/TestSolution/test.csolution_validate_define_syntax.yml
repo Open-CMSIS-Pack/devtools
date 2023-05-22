@@ -1,0 +1,31 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schemas/csolution.schema.json
+
+solution:
+  target-types:
+    - type: CM0
+      define: 
+        - DEF_TARGET_KEY_NUM_VALUE: 1
+        - DEF_TARGET_KEY_STRING_VALUE: value
+        - DEF_TARGET_NO_VALUE
+        - TEST = 1      # invalid
+        - 7             # invalid
+        - TEST_STRING:1 # invalid
+      undefine:
+        - DEF_SOLUTION_NUM_VALUE
+
+  build-types:
+    - type: Debug
+      compiler: AC6
+      define:
+        - DEF_Debug
+        - CompilerDefinition: $Compiler$
+  packs:
+    - pack: ARM::RteTest_DFP@0.2.0
+
+  projects:
+    - project: ./TestProject1/test1.cproject.yml
+      for-context: +CM0
+
+  define:
+    - DEF_SOLUTION
+    - DEF_SOLUTION_NUM_VALUE: 2

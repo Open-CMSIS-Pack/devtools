@@ -576,9 +576,11 @@ protected:
   void AddMiscUniquely(MiscItem& dst, std::vector<std::vector<MiscItem>*>& srcVec);
   void AddMiscUniquely(MiscItem& dst, std::vector<MiscItem>& srcVec);
   void AddStringItemsUniquely(std::vector<std::string>& dst, const std::vector<std::string>& src);
+  void RemoveDefines(std::vector<std::string>& dst, std::vector<std::string>& src);
   void RemoveStringItems(std::vector<std::string>& dst, std::vector<std::string>& src);
   bool GetAccessSequence(size_t& offset, const std::string& src, std::string& sequence, const char start, const char end);
   void MergeStringVector(StringVectorCollection& item);
+  void MergeDefines(StringVectorCollection& item);
   bool AddGroup(const GroupNode& src, std::vector<GroupNode>& dst, ContextItem& context, const std::string root);
   bool AddFile(const FileNode& src, std::vector<FileNode>& dst, ContextItem& context, const std::string root);
   bool AddComponent(const ComponentItem& src, const std::string& layer, std::vector<std::pair<ComponentItem, std::string>>& dst, TypePair type, ContextItem& context);
