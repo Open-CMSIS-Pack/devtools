@@ -14,13 +14,13 @@
     <compiler name="AC6" version="6.18.0"/>
   </compilers>
 
-  <target Dfpu="NO_FPU" Dname="RteTest_ARMCM3" Dsecure="Non-secure" Dvendor="ARM:82">
-    <output intdir="tmp/test-access-sequences2/CM3/Debug" name="test-access-sequences2" outdir="out/test-access-sequences2/CM3/Debug" rtedir="../data/TestAccessSequences/RTE" type="exe"/>
+  <target Dfpu="NO_FPU" Dname="RteTest_ARMCM3" Dsecure="Secure" Dvendor="ARM:82">
+    <output cmse-lib="test-access-sequences2_CMSE_Lib.o" elf="test-access-sequences2.axf" intdir="tmp/test-access-sequences2/CM3/Debug" name="test-access-sequences2" outdir="out/test-access-sequences2/CM3/Debug" rtedir="../data/TestAccessSequences/RTE"/>
     <cflags add="PROJ2-D(RteTest_ARMCM3)-B() -O1 -g -C-CPP-RteTest_ARMCM3" compiler="AC6"/>
     <cxxflags add="PROJ2-D(RteTest_ARMCM3)-B() -O1 -g -C-CPP-RteTest_ARMCM3" compiler="AC6"/>
     <ldflags compiler="AC6" file="../data/TestToolchains/ac6_linker_script.sct" regions="../data/TestAccessSequences/RTE/Device/RteTest_ARMCM3/regions_RteTest_ARMCM3.h"/>
-    <defines>out/test-access-sequences1/CM3/Debug/test-access-sequences1;DEF-CM3-RteTest_ARMCM3</defines>
-    <includes>out/test-access-sequences1/CM3/Debug/test-access-sequences1;../data/TestAccessSequences/path/CM3/RteTest_ARMCM3</includes>
+    <defines>out/test-access-sequences1/CM3/Debug/test-access-sequences1.axf;DEF-CM3-RteTest_ARMCM3</defines>
+    <includes>out/test-access-sequences1/CM3/Debug/test-access-sequences1.axf;../data/TestAccessSequences/path/CM3/RteTest_ARMCM3</includes>
   </target>
 
   <components>

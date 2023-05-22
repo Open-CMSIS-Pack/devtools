@@ -112,11 +112,8 @@ bool ProjMgrYamlParser::ParseCproject(const string& input,
 
     const YAML::Node& projectNode = root[YAML_PROJECT];
 
-    ParseOutputFiles(projectNode, cproject.outputFiles);
-    if (cproject.outputFiles.empty()) {
-      // TODO: after deprecation remove 'output-type' keyword parsing in benefit of 'output'
-      ParseString(projectNode, YAML_OUTPUTTYPE, cproject.outputType);
-    }
+    ParseOutput(projectNode, cproject.output);
+
     ParseTargetType(projectNode, cproject.target);
 
     ParsePacks(projectNode, cproject.packs);
@@ -180,7 +177,6 @@ bool ProjMgrYamlParser::ParseClayer(const string& input,
     map<const string, string&> projectChildren = {
       {YAML_FORBOARD, clayer.forBoard},
       {YAML_FORDEVICE, clayer.forDevice},
-      {YAML_OUTPUTTYPE, clayer.outputType},
       {YAML_TYPE, clayer.type},
     };
     for (const auto& item : projectChildren) {
@@ -290,20 +286,12 @@ bool ProjMgrYamlParser::ParseComponents(const YAML::Node& parent, vector<Compone
   return true;
 }
 
-bool ProjMgrYamlParser::ParseOutputFiles(const YAML::Node& parent, vector<OutputItem>& outputFiles) {
+void ProjMgrYamlParser::ParseOutput(const YAML::Node& parent, OutputItem& output) {
   if (parent[YAML_OUTPUT].IsDefined()) {
     const YAML::Node& outputNode = parent[YAML_OUTPUT];
-    for (const auto& outputEntry : outputNode) {
-      OutputItem outputItem;
-      if (!ParseTypeFilter(outputEntry, outputItem.typeFilter)) {
-        return false;
-      }
-      ParseString(outputEntry, YAML_TYPE, outputItem.type);
-      ParseString(outputEntry, YAML_FILE, outputItem.file);
-      outputFiles.push_back(outputItem);
-    }
+    ParseString(outputNode, YAML_BASE_NAME, output.baseName);
+    ParseVectorOrString(outputNode, YAML_TYPE, output.type);
   }
-  return true;
 }
 
 bool ProjMgrYamlParser::ParseTypeFilter(const YAML::Node& parent, TypeFilter& type) {
@@ -469,6 +457,7 @@ bool ProjMgrYamlParser::ParseSetups(const YAML::Node& parent, vector<SetupItem>&
       ParseString(setupEntry, YAML_SETUP, setupItem.description);
       ParseVectorOrString(setupEntry, YAML_FORCOMPILER, setupItem.forCompiler);
       ParseBuildType(setupEntry, setupItem.build);
+      ParseOutput(setupEntry, setupItem.output);
       setups.push_back(setupItem);
     }
   }
@@ -670,7 +659,6 @@ const set<string> projectsKeys = {
 
 const set<string> projectKeys = {
   YAML_DESCRIPTION,
-  YAML_OUTPUTTYPE,
   YAML_OUTPUT,
   YAML_PACKS,
   YAML_DEVICE,
@@ -697,12 +685,28 @@ const set<string> projectKeys = {
   YAML_LINKER,
 };
 
+const set<string> setupKeys = {
+  YAML_SETUP,
+  YAML_FORCONTEXT,
+  YAML_NOTFORCONTEXT,
+  YAML_FORCOMPILER,
+  YAML_OUTPUT,
+  YAML_OPTIMIZE,
+  YAML_DEBUG,
+  YAML_WARNINGS,
+  YAML_DEFINE,
+  YAML_UNDEFINE,
+  YAML_ADDPATH,
+  YAML_DELPATH,
+  YAML_MISC,
+  YAML_PROCESSOR,
+};
+
 const set<string> layerKeys = {
   YAML_DESCRIPTION,
   YAML_FORBOARD,
   YAML_FORDEVICE,
   YAML_TYPE,
-  YAML_OUTPUTTYPE,
   YAML_PACKS,
   YAML_DEVICE,
   YAML_BOARD,
@@ -777,10 +781,8 @@ const set<string> outputDirsKeys = {
 };
 
 const set<string> outputKeys = {
-  YAML_FORCONTEXT,
-  YAML_NOTFORCONTEXT,
+  YAML_BASE_NAME,
   YAML_TYPE,
-  YAML_FILE,
 };
 
 const set<string> processorKeys = {
@@ -933,13 +935,14 @@ const map<string, set<string>> sequences = {
   {YAML_LAYERS, layersKeys},
   {YAML_GROUPS, groupsKeys},
   {YAML_FILES, filesKeys},
-  {YAML_OUTPUT, outputKeys},
+  {YAML_SETUPS, setupKeys},
   {YAML_LINKER, linkerKeys},
 };
 
 const map<string, set<string>> mappings = {
   {YAML_PROCESSOR, processorKeys},
   {YAML_OUTPUTDIRS, outputDirsKeys},
+  {YAML_OUTPUT, outputKeys},
 };
 
 bool ProjMgrYamlParser::ValidateCdefault(const string& input, const YAML::Node& root) {

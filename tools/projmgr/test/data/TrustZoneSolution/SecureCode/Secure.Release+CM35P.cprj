@@ -15,7 +15,7 @@
   </compilers>
 
   <target Ddsp="DSP" Dfpu="SP_FPU" Dname="ARMCM35P_DSP_FP_TZ" Dsecure="Secure" Dtz="TZ" Dvendor="ARM:82">
-    <output intdir="Secure.Release+CM35P_IntDir/" name="Secure.Release+CM35P" outdir="Secure.Release+CM35P_OutDir/" type="exe"/>
+    <output intdir="Secure.Release+CM35P_IntDir/" name="Secure.Release+CM35P" outdir="Secure.Release+CM35P_OutDir/"
     <cflags add="-O3" compiler="AC6"/>
     <ldflags compiler="AC6" file="RTE/Device/ARMCM35P_DSP_FP_TZ/ARMCM35P_ac6_s.sct"/>
   </target>

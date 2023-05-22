@@ -2,7 +2,8 @@
 
 project:
 
-  output-type: lib
+  output:
+    type: lib
 
   components:
     - component: CORE

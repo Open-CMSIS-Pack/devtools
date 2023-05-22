@@ -16,7 +16,6 @@ build:
     - _RTE_
   add-path:
     - ../data/TestGenerator/RTE/_Debug_CM0
-  output-type: exe
   output-dirs:
     gendir: ../data/TestGenerator
     intdir: tmp/test-gpdsc/CM0/Debug

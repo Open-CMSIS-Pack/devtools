@@ -24,11 +24,11 @@ build:
     rtedir: ../data/TestSolution/RTE
   output:
     - type: bin
-      file: subfolder3/file.bin
+      file: executable.bin
     - type: elf
-      file: subfolder1/file.elf
+      file: executable.axf
     - type: hex
-      file: subfolder2/file.hex
+      file: executable.hex
   components:
     - component: ARM::Device:Startup&RteTest Startup@2.0.3
       condition: ARMCM3 RteTest

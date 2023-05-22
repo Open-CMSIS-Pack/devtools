@@ -46,7 +46,6 @@ build:
     - ../data/TestSolution/path/Debug
     - ../data/TestSolution/TestProject2/RTE/_Debug_CM3
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM3/Include
-  output-type: exe
   output-dirs:
     gendir: ../data/TestSolution
     intdir: tmp/test2/CM3/Debug

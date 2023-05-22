@@ -29,6 +29,13 @@ static const regex accessSequencesRegEx = regex(string("^(") +
   "\\((.*)\\)$"
 );
 
+static const map<const string, tuple<const string, const string, const string>> affixesMap = {
+  { ""   , {ProjMgrUtils::DEFAULT_ELF_SUFFIX, ProjMgrUtils::DEFAULT_LIB_PREFIX, ProjMgrUtils::DEFAULT_LIB_SUFFIX }},
+  { "AC6", {ProjMgrUtils::AC6_ELF_SUFFIX    , ProjMgrUtils::AC6_LIB_PREFIX    , ProjMgrUtils::AC6_LIB_SUFFIX     }},
+  { "GCC", {ProjMgrUtils::GCC_ELF_SUFFIX    , ProjMgrUtils::GCC_LIB_PREFIX    , ProjMgrUtils::GCC_LIB_SUFFIX     }},
+  { "IAR", {ProjMgrUtils::IAR_ELF_SUFFIX    , ProjMgrUtils::IAR_LIB_PREFIX    , ProjMgrUtils::IAR_LIB_SUFFIX     }},
+};
+
 ProjMgrWorker::ProjMgrWorker(void) {
   m_loadPacksPolicy = LoadPacksPolicy::DEFAULT;
 }
@@ -1843,6 +1850,16 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
       context.cdefault->misc.begin(), context.cdefault->misc.end());
   }
 
+  // Get build options content of project setup
+  if (!GetProjectSetup(context)) {
+    return false;
+  }
+
+  // Processor options
+  if (!ProcessProcessorOptions(context)) {
+    return false;
+  }
+
   // Output filenames must be processed after board, device and compiler precedences
   // but before processing other access sequences
   if (!ProcessOutputFilenames(context)) {
@@ -1854,62 +1871,6 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
   // after output filenames (due to $Output$)
   // but before processing misc, defines and includes precedences
   if (!ProcessSequencesRelatives(context)) {
-    return false;
-  }
-
-  // Get content of project setup
-  if (!GetProjectSetup(context)) {
-    return false;
-  }
-
-  StringCollection trustzone = {
-    &context.controls.processed.processor.trustzone,
-    {
-      &context.controls.cproject.processor.trustzone,
-      &context.controls.setup.processor.trustzone,
-      &context.controls.csolution.processor.trustzone,
-      &context.controls.target.processor.trustzone,
-      &context.controls.build.processor.trustzone,
-    },
-  };
-  for (auto& [_, clayer] : context.controls.clayers) {
-    trustzone.elements.push_back(&clayer.processor.trustzone);
-  }
-  if (!ProcessPrecedence(trustzone)) {
-    return false;
-  }
-
-  StringCollection fpu = {
-    &context.controls.processed.processor.fpu,
-    {
-      &context.controls.cproject.processor.fpu,
-      &context.controls.setup.processor.fpu,
-      &context.controls.csolution.processor.fpu,
-      &context.controls.target.processor.fpu,
-      &context.controls.build.processor.fpu,
-    },
-  };
-  for (auto& [_, clayer] : context.controls.clayers) {
-    fpu.elements.push_back(&clayer.processor.fpu);
-  }
-  if (!ProcessPrecedence(fpu)) {
-    return false;
-  }
-
-  StringCollection endian = {
-    &context.controls.processed.processor.endian,
-    {
-      &context.controls.cproject.processor.endian,
-      &context.controls.setup.processor.endian,
-      &context.controls.csolution.processor.endian,
-      &context.controls.target.processor.endian,
-      &context.controls.build.processor.endian,
-    },
-  };
-  for (auto& [_, clayer] : context.controls.clayers) {
-    endian.elements.push_back(&clayer.processor.endian);
-  }
-  if (!ProcessPrecedence(endian)) {
     return false;
   }
 
@@ -2026,6 +1987,60 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
   };
   MergeStringVector(includes);
 
+  return true;
+}
+
+bool ProjMgrWorker::ProcessProcessorOptions(ContextItem& context) {
+  StringCollection trustzone = {
+    &context.controls.processed.processor.trustzone,
+    {
+      &context.controls.cproject.processor.trustzone,
+      &context.controls.setup.processor.trustzone,
+      &context.controls.csolution.processor.trustzone,
+      &context.controls.target.processor.trustzone,
+      &context.controls.build.processor.trustzone,
+    },
+  };
+  for (auto& [_, clayer] : context.controls.clayers) {
+    trustzone.elements.push_back(&clayer.processor.trustzone);
+  }
+  if (!ProcessPrecedence(trustzone)) {
+    return false;
+  }
+
+  StringCollection fpu = {
+    &context.controls.processed.processor.fpu,
+    {
+      &context.controls.cproject.processor.fpu,
+      &context.controls.setup.processor.fpu,
+      &context.controls.csolution.processor.fpu,
+      &context.controls.target.processor.fpu,
+      &context.controls.build.processor.fpu,
+    },
+  };
+  for (auto& [_, clayer] : context.controls.clayers) {
+    fpu.elements.push_back(&clayer.processor.fpu);
+  }
+  if (!ProcessPrecedence(fpu)) {
+    return false;
+  }
+
+  StringCollection endian = {
+    &context.controls.processed.processor.endian,
+    {
+      &context.controls.cproject.processor.endian,
+      &context.controls.setup.processor.endian,
+      &context.controls.csolution.processor.endian,
+      &context.controls.target.processor.endian,
+      &context.controls.build.processor.endian,
+    },
+  };
+  for (auto& [_, clayer] : context.controls.clayers) {
+    endian.elements.push_back(&clayer.processor.endian);
+  }
+  if (!ProcessPrecedence(endian)) {
+    return false;
+  }
   return true;
 }
 
@@ -2159,22 +2174,21 @@ void ProjMgrWorker::ExpandAccessSequence(const ContextItem & context, const Cont
   } else if (sequence == ProjMgrUtils::AS_OUT_DIR) {
     regExStr += ProjMgrUtils::AS_OUT_DIR;
     replacement = relOutDir;
-  // TODO: the access sequences below must be refined after #895 (Rework `output` and `output-type` node)
   } else if (sequence == ProjMgrUtils::AS_ELF) {
     regExStr += ProjMgrUtils::AS_ELF;
-    replacement = relOutDir + "/" + (refContext.outputFiles.find("elf") != refContext.outputFiles.end() ? refContext.outputFiles.at("elf") : refContext.cproject->name);
+    replacement = refContext.outputTypes.elf.on ? relOutDir + "/" + refContext.outputTypes.elf.filename : "";
   } else if (sequence == ProjMgrUtils::AS_BIN) {
     regExStr += ProjMgrUtils::AS_BIN;
-    replacement = relOutDir + "/" + refContext.cproject->name + ".bin";
+    replacement = refContext.outputTypes.bin.on ? relOutDir + "/" + refContext.outputTypes.bin.filename : "";
   } else if (sequence == ProjMgrUtils::AS_HEX) {
     regExStr += ProjMgrUtils::AS_HEX;
-    replacement = relOutDir + "/" + refContext.cproject->name + ".hex";
+    replacement = refContext.outputTypes.hex.on ? relOutDir + "/" + refContext.outputTypes.hex.filename : "";
   } else if (sequence == ProjMgrUtils::AS_LIB) {
     regExStr += ProjMgrUtils::AS_LIB;
-    replacement = relOutDir + "/" + refContext.cproject->name + ".lib";
+    replacement = refContext.outputTypes.lib.on ? relOutDir + "/" + refContext.outputTypes.lib.filename : "";
   } else if (sequence == ProjMgrUtils::AS_CMSE) {
     regExStr += ProjMgrUtils::AS_CMSE;
-    replacement = relOutDir + "/" + refContext.cproject->name + "_CMSE_Lib.o";
+    replacement = refContext.outputTypes.cmse.on ? relOutDir + "/" + refContext.outputTypes.cmse.filename : "";
   }
   regex regEx = regex(regExStr + "\\(.*\\)\\$");
   item = regex_replace(item, regEx, replacement);
@@ -3352,34 +3366,68 @@ StrSet ProjMgrWorker::GetValidSets(ContextItem& context, const string& clayer) {
 }
 
 bool ProjMgrWorker::ProcessOutputFilenames(ContextItem& context) {
-  if (context.cproject->outputFiles.empty()) {
-    // TODO: after deprecation remove 'outputType' attribute
-    context.outputType = context.cproject->outputType.empty() ? "exe" : context.cproject->outputType;
-  } else {
-    map<const string, bool> typeMap = {
-      { "elf", false },
-      { "hex", false },
-      { "bin", false },
-      { "lib", false },
-    };
-    for (const auto& output : context.cproject->outputFiles) {
-      if (CheckContextFilters(output.typeFilter, context)) {
-        string outputFile = ExpandString(output.file, context.variables);
-        RteFsUtils::NormalizePath(outputFile);
-        if ((context.outputFiles.find(output.type) != context.outputFiles.end()) &&
-          (context.outputFiles.at(output.type) != outputFile)) {
-          ProjMgrLogger::Warn("output '" + output.type + "' redefined from '" + context.outputFiles.at(output.type) + "' to '" + outputFile + "'");
-        }
-        context.outputFiles[output.type] = outputFile;
-        if (typeMap.find(output.type) != typeMap.end()) {
-          typeMap[output.type] = true;
-        }
+  // get base name and output types from project and project setups
+  context.outputTypes = {};
+  context.cproject->output.baseName = ExpandString(context.cproject->output.baseName, context.variables);
+  string baseName;
+  StringCollection baseNameCollection = {
+    &baseName,
+    {
+      &context.cproject->output.baseName,
+    },
+  };
+  for (const auto& type : context.cproject->output.type) {
+    ProjMgrUtils::SetOutputType(type, context.outputTypes);
+  }
+  for (auto& setup : context.cproject->setups) {
+    if (CheckContextFilters(setup.type, context) && CheckCompiler(setup.forCompiler, context.compiler)) {
+      setup.output.baseName = ExpandString(setup.output.baseName, context.variables);
+      baseNameCollection.elements.push_back(&setup.output.baseName);
+      for (const auto& type : setup.output.type) {
+        ProjMgrUtils::SetOutputType(type, context.outputTypes);
       }
     }
-    if (typeMap["lib"] && (typeMap["elf"] || typeMap["bin"] || typeMap["hex"])) {
-      ProjMgrLogger::Error("output 'lib' is incompatible with other output types");
-      return false;
-    }
+  }
+  if (!ProcessPrecedence(baseNameCollection)) {
+    return false;
+  }
+  if (baseName.empty()) {
+    baseName = context.cproject->name;
+  }
+
+  // secure project requires cmse output type
+  if (context.controls.processed.processor.trustzone == "secure") {
+    context.outputTypes.cmse.on = true;
+  }
+
+  // check type conflict
+  if (context.outputTypes.lib.on &&
+    (context.outputTypes.elf.on || context.outputTypes.hex.on || context.outputTypes.bin.on)) {
+    ProjMgrLogger::Error("output 'lib' is incompatible with other output types");
+    return false;
+  }
+
+  // default: elf
+  if (!context.outputTypes.lib.on && !context.outputTypes.elf.on) {
+    context.outputTypes.elf.on = true;
+  }
+
+  // set output filename for each required output type
+  const string toolchain = affixesMap.find(context.toolchain.name) != affixesMap.end() ? context.toolchain.name : "";
+  if (context.outputTypes.elf.on) {
+    context.outputTypes.elf.filename = baseName + get<0>(affixesMap.at(toolchain));
+  }
+  if (context.outputTypes.lib.on) {
+    context.outputTypes.lib.filename = get<1>(affixesMap.at(toolchain)) + baseName + get<2>(affixesMap.at(toolchain));
+  }
+  if (context.outputTypes.hex.on) {
+    context.outputTypes.hex.filename = baseName + ".hex";
+  }
+  if (context.outputTypes.bin.on) {
+    context.outputTypes.bin.filename = baseName + ".bin";
+  }
+  if (context.outputTypes.cmse.on) {
+    context.outputTypes.cmse.filename = baseName + "_CMSE_Lib.o";
   }
   return true;
 }

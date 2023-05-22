@@ -15,7 +15,7 @@
   </compilers>
 
   <target Dendian="Little-endian" Dfpu="NO_FPU" Dname="RteTest_ARMCM0" Dsecure="Non-secure" Dvendor="ARM:82">
-    <output intdir="tmp/test1/CM0/Debug" name="test1" outdir="out/test1/CM0/Debug" rtedir="../data/TestSolution/TestProject1/RTE" type="exe"/>
+    <output elf="test1.axf" intdir="tmp/test1/CM0/Debug" name="test1" outdir="out/test1/CM0/Debug" rtedir="../data/TestSolution/TestProject1/RTE"/>
     <options debug="on" optimize="none"/>
     <arflags add="-Lib-type-CM0" compiler="AC6"/>
     <asflags add="-ASM-type-CM0" compiler="AC6"/>

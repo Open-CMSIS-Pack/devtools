@@ -2881,9 +2881,10 @@ TEST_F(ProjMgrUnitTests, RunProjMgrOutputFiles) {
 
   // Check error messages
   const string expected = "\
-warning csolution: output 'lib' redefined from 'conflict.lib' to 'renaming_conflict.lib'\n\
+error csolution: redefinition from 'conflict' into 'renaming_conflict' is not allowed\n\
+error csolution: processing context 'outputFiles.BaseNameConflict\\+Target' failed\n\
 error csolution: output 'lib' is incompatible with other output types\n\
-error csolution: processing context 'outputFiles.Conflict\\+Target' failed\n\
+error csolution: processing context 'outputFiles.TypeConflict\\+Target' failed\n\
 ";
 
   auto errStr = streamRedirect.GetErrorString();

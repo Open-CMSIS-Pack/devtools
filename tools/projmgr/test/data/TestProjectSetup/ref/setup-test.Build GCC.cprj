@@ -15,7 +15,7 @@
   </compilers>
 
   <target Dfpu="NO_FPU" Dname="RteTest_ARMCM0" Dsecure="Non-secure" Dvendor="ARM:82">
-    <output intdir="tmp/setup-test/Build GCC" name="setup-test" outdir="out/setup-test/Build GCC" rtedir="../data/TestProjectSetup/RTE" type="exe"/>
+    <output elf="setup-test.elf" intdir="tmp/setup-test/Build GCC" name="setup-test" outdir="out/setup-test/Build GCC" rtedir="../data/TestProjectSetup/RTE"/>
     <ldflags compiler="GCC" file="../data/TestToolchains/gcc_linker_script.ld" regions="../data/TestProjectSetup/RTE/Device/RteTest_ARMCM0/regions_RteTest_ARMCM0.h"/>
     <defines>SETUP_GCC</defines>
   </target>

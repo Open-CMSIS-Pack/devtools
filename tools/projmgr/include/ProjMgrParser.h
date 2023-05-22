@@ -174,14 +174,12 @@ struct ComponentItem {
 
 /**
  * @brief output item containing
- *        type [elf, hex, bin, lib],
- *        filename,
- *        context inclusion
+ *        base name,
+ *        list of types [elf, hex, bin, lib]
 */
 struct OutputItem {
-  std::string type;
-  std::string file;
-  TypeFilter typeFilter;
+  std::string baseName;
+  std::vector<std::string> type;
 };
 
 /**
@@ -235,13 +233,15 @@ struct LinkerItem {
  *        setup description name,
  *        for compiler control,
  *        setup build settings,
- *        type inclusion
+ *        type inclusion,
+ *        output name and type
 */
 struct SetupItem {
   std::string description;
   std::vector<std::string> forCompiler;
   BuildType build;
   TypeFilter type;
+  OutputItem output;
 };
 
 /**
@@ -334,20 +334,21 @@ struct CsolutionItem {
  *        project name,
  *        project path,
  *        project directory,
- *        project output type,
+ *        project output name and types,
  *        project target properties,
  *        list of required components,
  *        list of user groups,
  *        list of layers,
  *        list of setups,
- *        list of connections
- *        list of packs
+ *        list of connections,
+ *        list of packs,
+ *        list of linker entries
 */
 struct CprojectItem {
   std::string name;
   std::string path;
   std::string directory;
-  std::string outputType;
+  OutputItem output;
   TargetType target;
   std::vector<RteDirItem> rteDirs;
   std::vector<ComponentItem> components;
@@ -356,7 +357,6 @@ struct CprojectItem {
   std::vector<SetupItem> setups;
   std::vector<ConnectItem> connections;
   std::vector<PackItem> packs;
-  std::vector<OutputItem> outputFiles;
   std::vector<LinkerItem> linker;
 };
 

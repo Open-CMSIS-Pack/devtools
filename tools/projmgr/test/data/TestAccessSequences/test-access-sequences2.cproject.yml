@@ -1,6 +1,8 @@
 ### CMSIS Project Description ###
 
 project:
+  processor:
+    trustzone: secure
   misc:
     - C-CPP: [PROJ2-D($Dname$)-B($Bname$)]
   define:

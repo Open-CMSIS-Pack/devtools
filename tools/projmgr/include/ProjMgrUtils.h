@@ -30,6 +30,32 @@ struct ConnectionsCollection {
 };
 
 /**
+ * @brief output type item containing
+ *        on boolean
+ *        string filename
+*/
+struct OutputType {
+  bool on;
+  std::string filename;
+};
+
+/**
+ * @brief output types item containing
+ *        bin output type
+ *        elf output type
+ *        hex output type
+ *        lib output type
+ *        cmse output type
+*/
+struct OutputTypes {
+  OutputType bin;
+  OutputType elf;
+  OutputType hex;
+  OutputType lib;
+  OutputType cmse;
+};
+
+/**
  * @brief vector of ConnectionsCollection
 */
 typedef std::vector<ConnectionsCollection> ConnectionsCollectionVec;
@@ -87,6 +113,9 @@ public:
 
   typedef std::pair<std::string, int> Result;
 
+  /**
+   * @brief component and pack delimiters
+  */
   static constexpr const char* COMPONENT_DELIMITERS = ":&@";
   static constexpr const char* SUFFIX_CVENDOR = "::";
   static constexpr const char* PREFIX_CBUNDLE = "&";
@@ -100,6 +129,18 @@ public:
   static constexpr const char* SUFFIX_PACK_VENDOR = "::";
   static constexpr const char* PREFIX_PACK_VERSION = "@";
 
+  /**
+   * @brief output types
+  */
+  static constexpr const char* OUTPUT_TYPE_BIN = "bin";
+  static constexpr const char* OUTPUT_TYPE_ELF = "elf";
+  static constexpr const char* OUTPUT_TYPE_HEX = "hex";
+  static constexpr const char* OUTPUT_TYPE_LIB = "lib";
+  static constexpr const char* OUTPUT_TYPE_CMSE = "cmse-lib";
+
+  /**
+   * @brief access sequences
+  */
   static constexpr const char* AS_SOLUTION = "Solution";
   static constexpr const char* AS_PROJECT = "Project";
   static constexpr const char* AS_COMPILER = "Compiler";
@@ -112,11 +153,28 @@ public:
   static constexpr const char* AS_SOLUTION_DIR = "SolutionDir";
   static constexpr const char* AS_PROJECT_DIR = "ProjectDir";
   static constexpr const char* AS_OUT_DIR = "OutDir";
-  static constexpr const char* AS_BIN = "bin";
-  static constexpr const char* AS_ELF = "elf";
-  static constexpr const char* AS_HEX = "hex";
-  static constexpr const char* AS_LIB = "lib";
-  static constexpr const char* AS_CMSE = "cmse-lib";
+  static constexpr const char* AS_BIN = OUTPUT_TYPE_BIN;
+  static constexpr const char* AS_ELF = OUTPUT_TYPE_ELF;
+  static constexpr const char* AS_HEX = OUTPUT_TYPE_HEX;
+  static constexpr const char* AS_LIB = OUTPUT_TYPE_LIB;
+  static constexpr const char* AS_CMSE = OUTPUT_TYPE_CMSE;
+
+  /**
+   * @brief default and toolchain specific output affixes
+  */
+  static constexpr const char* DEFAULT_ELF_SUFFIX = ".elf";
+  static constexpr const char* DEFAULT_LIB_PREFIX = "";
+  static constexpr const char* DEFAULT_LIB_SUFFIX = ".a";
+
+  static constexpr const char* AC6_ELF_SUFFIX = ".axf";
+  static constexpr const char* GCC_ELF_SUFFIX = ".elf";
+  static constexpr const char* IAR_ELF_SUFFIX = ".out";
+  static constexpr const char* AC6_LIB_PREFIX = "";
+  static constexpr const char* GCC_LIB_PREFIX = "lib";
+  static constexpr const char* IAR_LIB_PREFIX = "";
+  static constexpr const char* AC6_LIB_SUFFIX = ".lib";
+  static constexpr const char* GCC_LIB_SUFFIX = ".a";
+  static constexpr const char* IAR_LIB_SUFFIX = ".a";
 
   /**
    * @brief class constructor
@@ -247,6 +305,13 @@ public:
    * @return ContextName structure with project name, build type and target type strings
   */
   static ContextName ParseContextEntry(const std::string& contextEntry);
+
+  /**
+   * @brief set output type
+   * @param typeString string with output type
+   * @param type reference to OutputTypes structure
+  */
+  static void SetOutputType(const std::string typeString, OutputTypes& type);
 
 protected:
   static std::string ConstructID(const std::vector<std::pair<const char*, const std::string&>>& elements);

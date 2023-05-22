@@ -15,7 +15,7 @@
   </compilers>
 
   <target Dfpu="NO_FPU" Dname="RteTest_ARMCM0" Dsecure="Non-secure" Dvendor="ARM:82">
-    <output intdir="tmp/setup-test/Build AC6" name="setup-test" outdir="out/setup-test/Build AC6" rtedir="../data/TestProjectSetup/RTE" type="exe"/>
+    <output elf="setup-test.axf" intdir="tmp/setup-test/Build AC6" name="setup-test" outdir="out/setup-test/Build AC6" rtedir="../data/TestProjectSetup/RTE"/>
     <ldflags compiler="AC6" file="../data/TestToolchains/ac6_linker_script.sct" regions="../data/TestProjectSetup/RTE/Device/RteTest_ARMCM0/regions_RteTest_ARMCM0.h"/>
     <defines>SETUP_AC6</defines>
   </target>

@@ -232,8 +232,7 @@ struct ContextItem {
   TypePair type;
   std::string name;
   std::string description;
-  std::string outputType;
-  StrMap outputFiles;
+  OutputTypes outputTypes;
   std::string device;
   std::string board;
   std::vector<PackageItem> packRequirements;
@@ -569,6 +568,7 @@ protected:
   bool ProcessOutputFilenames(ContextItem& context);
   bool ProcessLinkerOptions(ContextItem& context);
   bool ProcessLinkerOptions(ContextItem& context, LinkerItem& linker, StringCollection& linkerScriptFile, StringCollection& linkerRegionsFile, const std::string& ref);
+  bool ProcessProcessorOptions(ContextItem& context);
   bool AddContext(ProjMgrParser& parser, ContextDesc& descriptor, const TypePair& type, const std::string& cprojectFile, ContextItem& parentContext);
   bool ValidateContext(ContextItem& context);
   bool FormatValidationResults(std::set<std::string>& results, const ContextItem& context);

@@ -166,28 +166,27 @@
       "enum": [ "on", "off" ],
       "description": "Control warnings (on, off)."
     },
+    "ArrayOfArtifactType": {
+      "type": "array",
+      "uniqueItems": true,
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/ArtifactType" }
+    },
     "ArtifactType": {
       "enum": [ "elf", "hex", "bin", "lib" ],
       "description": "Output type: elf (default), hex, bin or lib"
     },
+    "ArtifactsType": {
+      "oneOf": [
+        {"$ref": "#/definitions/ArrayOfArtifactType" },
+        {"$ref": "#/definitions/ArtifactType" }
+      ]
+    },
     "OutputType": {
-      "enum": [ "exe", "lib" ],
-      "description": "Generate executable (default) or library (exe, lib)."
-    },
-    "OutputFilesType": {
-      "type": "array",
-      "description": "List of output artifacts",
-      "uniqueItems": true,
-      "minItems": 1,
-      "items": { "$ref": "#/definitions/OutputFileType" }
-    },
-    "OutputFileType": {
       "type": "object",
       "properties": {
-        "for-context":     { "$ref": "#/definitions/ForContext" },
-        "not-for-context": { "$ref": "#/definitions/NotForContext" },
-        "type":            { "$ref": "#/definitions/ArtifactType" },
-        "file":            { "type": "string" }
+        "base-name": { "type": "string", "description": "Base name for all output files" },
+        "type": { "$ref": "#/definitions/ArtifactsType" }
       },
       "additionalProperties": false,
       "required": ["type"]
@@ -669,9 +668,8 @@
       "type": ["object", "null"],
       "properties": {
         "description": { "type": "string" },
-        "output-type": { "$ref": "#/definitions/OutputType", "description": "DEPRECATED use: define" },
-        "output":      { "$ref": "#/definitions/OutputFilesType" },
         "packs":       { "$ref": "#/definitions/PacksType" },
+        "output":      { "$ref": "#/definitions/OutputType" },
         "output-dirs": { "$ref": "#/definitions/OutputDirectoriesType" },
         "board":       { "$ref": "#/definitions/BoardType" },
         "device":      { "$ref": "#/definitions/DeviceType" },
@@ -722,7 +720,6 @@
         "misc":              { "$ref": "#/definitions/MiscType" },
         "define":            { "$ref": "#/definitions/DefinesType" },
         "add-path":          { "$ref": "#/definitions/AddpathsType" },
-        "output-type":       { "$ref": "#/definitions/OutputType" },
         "output-dirs":       { "$ref": "#/definitions/OutputDirectoriesType" },
         "components":        { "$ref": "#/definitions/ResolvedComponentsType" },
         "linker":            { "$ref": "#/definitions/LinkerType" },
@@ -746,7 +743,6 @@
         },
         "for-board":   { "$ref": "#/definitions/BoardType" },
         "for-device":  { "$ref": "#/definitions/DeviceType" },
-        "output-type": { "$ref": "#/definitions/OutputType" },
         "packs":       { "$ref": "#/definitions/PacksType" },
         "board":       { "$ref": "#/definitions/BoardType" },
         "device":      { "$ref": "#/definitions/DeviceType" },
@@ -853,7 +849,8 @@
         "add-path":        { "$ref": "#/definitions/AddpathsType" },
         "del-paths":       { "$ref": "#/definitions/DelpathsType", "description": "DEPRECATED use: del-path" },
         "del-path":        { "$ref": "#/definitions/DelpathsType" },
-        "misc":            { "$ref": "#/definitions/MiscTypes" }
+        "misc":            { "$ref": "#/definitions/MiscTypes" },
+        "output":          { "$ref": "#/definitions/OutputType" }
       },
       "$ref": "#/definitions/TypeListMutualExclusion",
       "additionalProperties": false
