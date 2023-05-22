@@ -18,9 +18,7 @@ set(BYTE_ORDER Little-endian)
 set(CC_FLAGS_GLOBAL "-D__MICROLIB -O1 -Weverything -Wno-documentation -Wno-documentation-unknown-command -Wno-license-management -Wno-packed -Wno-parentheses-equality  -Wno-reserved-id-macro -Wno-unused-macros -ffunction-sections -fno-rtti -fshort-enums -fshort-wchar -funsigned-char -gdwarf-3 -mcmse -std=c99 -xc")
 set(LD_FLAGS_GLOBAL "--callgraph --entry=Reset_Handler --info sizes --info summarysizes --info totals --info unused --info veneers --load_addr_map_info --map --strict --summary_stderr --symbols --xref")
 set(LD_SCRIPT "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/TrustZone/CM33_s/RTE/Device/ARMCM33_DSP_FP_TZ/ARMCM33_ac6_s.sct")
-set(OUT_NAME CM33_s)
-set(HEX_FILE "${OUT_NAME}.hex")
-set(BIN_FILE "${OUT_NAME}.bin")
+set(CMSE_LIB "CM33_s_CMSE_Lib.o")
 
 set(DEFINES
   ARMCM33_DSP_FP_TZ
@@ -69,11 +67,6 @@ add_custom_target(database COMMAND ${CMAKE_COMMAND} -E copy_if_different "${INT_
 # Setup Target
 
 add_executable(${TARGET} ${CC_SRC_FILES})
-set_target_properties(${TARGET} PROPERTIES PREFIX "" SUFFIX "${EXE_SUFFIX}" OUTPUT_NAME "${TARGET}")
+set_target_properties(${TARGET} PROPERTIES PREFIX "" OUTPUT_NAME "${TARGET}")
 set_target_properties(${TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${OUT_DIR} LINK_DEPENDS ${LD_SCRIPT})
 target_include_directories(${TARGET} PUBLIC ${INC_PATHS})
-
-# Bin and Hex Conversion
-
-add_custom_command(TARGET ${TARGET} POST_BUILD COMMAND ${CMAKE_OBJCOPY} ${ELF2HEX})
-add_custom_command(TARGET ${TARGET} POST_BUILD COMMAND ${CMAKE_OBJCOPY} ${ELF2BIN})

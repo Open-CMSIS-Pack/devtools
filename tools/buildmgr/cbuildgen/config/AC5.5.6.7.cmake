@@ -171,12 +171,6 @@ set(LD_FLAGS "")
 set(LD_OPTIONS_FLAGS)
 cbuild_set_options_flags(LD "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" LD_OPTIONS_FLAGS)
 
-# Target Output
-
-set (LIB_PREFIX)
-set (LIB_SUFFIX ".lib")
-set (EXE_SUFFIX ".axf")
-
 # ELF to HEX conversion
 set (ELF2HEX --i32combined --output "${OUT_DIR}/${HEX_FILE}" "${OUT_DIR}/$<TARGET_PROPERTY:${TARGET},OUTPUT_NAME>$<TARGET_PROPERTY:${TARGET},SUFFIX>")
 

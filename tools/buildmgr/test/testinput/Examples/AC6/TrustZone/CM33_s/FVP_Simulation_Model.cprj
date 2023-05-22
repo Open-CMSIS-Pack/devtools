@@ -19,7 +19,7 @@
   </compilers>
 
   <target Ddsp="DSP" Dendian="Little-endian" Dfpu="SP_FPU" Dmve="NO_MVE" Dname="ARMCM33_DSP_FP_TZ" Dsecure="Secure" Dtz="TZ" Dvendor="ARM:82">
-    <output name="CM33_s" type="exe"/>
+    <output name="CM33_s" cmse-lib="CM33_s_CMSE_Lib.o"/>
     <ldflags add="--callgraph --entry=Reset_Handler --info sizes --info summarysizes --info totals --info unused --info veneers --load_addr_map_info --map --strict --summary_stderr --symbols --xref" compiler="AC6" file="./RTE/Device/ARMCM33_DSP_FP_TZ/ARMCM33_ac6_s.sct"/>
     <cflags add="-D__MICROLIB -O1 -Weverything -Wno-documentation -Wno-documentation-unknown-command -Wno-license-management -Wno-packed -Wno-parentheses-equality  -Wno-reserved-id-macro -Wno-unused-macros -ffunction-sections -fno-rtti -fshort-enums -fshort-wchar -funsigned-char -gdwarf-3 -mcmse -std=c99 -xc" compiler="AC6"/>
   </target>

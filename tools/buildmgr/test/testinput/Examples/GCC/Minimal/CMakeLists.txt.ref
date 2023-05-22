@@ -18,7 +18,6 @@ set(BYTE_ORDER Little-endian)
 set(CC_FLAGS_GLOBAL "-O -Wall -gdwarf-2 -mapcs-frame -mthumb")
 set(LD_FLAGS_GLOBAL "--entry=Reset_Handler --specs=nosys.specs -mcpu=cortex-m3 -mthumb")
 set(LD_SCRIPT "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/Minimal/RTE/Device/ARMCM3/gcc_arm.ld")
-set(OUT_NAME subfolder/MyElf)
 set(HEX_FILE "MyHex.hexadecimal")
 set(BIN_FILE "MyBin.binary")
 
@@ -69,7 +68,10 @@ set_target_properties(${TARGET} PROPERTIES PREFIX "" SUFFIX ".custom" OUTPUT_NAM
 set_target_properties(${TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${OUT_DIR} LINK_DEPENDS ${LD_SCRIPT})
 target_include_directories(${TARGET} PUBLIC ${INC_PATHS})
 
-# Bin and Hex Conversion
+# Hex Conversion
 
 add_custom_command(TARGET ${TARGET} POST_BUILD COMMAND ${CMAKE_OBJCOPY} ${ELF2HEX})
+
+# Bin Conversion
+
 add_custom_command(TARGET ${TARGET} POST_BUILD COMMAND ${CMAKE_OBJCOPY} ${ELF2BIN})

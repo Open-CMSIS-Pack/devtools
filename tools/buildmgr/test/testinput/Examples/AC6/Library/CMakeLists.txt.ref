@@ -16,7 +16,6 @@ set(SECURE Non-secure)
 set(MVE NO_MVE)
 set(BYTE_ORDER Little-endian)
 set(CXX_FLAGS_GLOBAL "-O1 -Wno-documentation -Wno-documentation-unknown-command -Wno-license-management -Wno-missing-noreturn -Wno-missing-prototypes -Wno-missing-variable-declarations -Wno-nonportable-include-path -Wno-packed -Wno-parentheses-equality  -Wno-reserved-id-macro -Wno-sign-conversion -Wno-unused-macros -ffunction-sections -fno-exceptions -fno-rtti -fshort-enums -fshort-wchar -funsigned-char -std=c++11 -xc++")
-set(OUT_NAME calc)
 
 set(DEFINES
   ARMCM3
@@ -61,6 +60,6 @@ add_custom_target(database COMMAND ${CMAKE_COMMAND} -E copy_if_different "${INT_
 # Setup Target
 
 add_library(${TARGET} ${CXX_SRC_FILES})
-set_target_properties(${TARGET} PROPERTIES PREFIX "${LIB_PREFIX}" SUFFIX "${LIB_SUFFIX}" OUTPUT_NAME "${TARGET}")
+set_target_properties(${TARGET} PROPERTIES PREFIX "" OUTPUT_NAME "${TARGET}")
 set_target_properties(${TARGET} PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${OUT_DIR})
 target_include_directories(${TARGET} PUBLIC ${INC_PATHS})

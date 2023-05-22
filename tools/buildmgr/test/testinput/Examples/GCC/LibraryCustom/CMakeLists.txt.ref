@@ -16,7 +16,6 @@ set(SECURE Non-secure)
 set(MVE NO_MVE)
 set(BYTE_ORDER Little-endian)
 set(CXX_FLAGS_GLOBAL "-O -Wall -ffunction-sections -gdwarf-2 -mapcs-frame -mthumb -mthumb-interwork")
-set(OUT_NAME MyLibrary)
 
 set(DEFINES
   ARMCM3
