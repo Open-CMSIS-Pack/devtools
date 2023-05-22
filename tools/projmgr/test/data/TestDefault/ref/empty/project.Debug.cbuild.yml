@@ -20,7 +20,6 @@ build:
   add-path:
     - ../../data/TestDefault/RTE/_Debug
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.1.1/Device/ARM/ARMCM0/Include
-  output-type: exe
   output-dirs:
     gendir: ../../data/TestDefault
     intdir: tmp/project/Debug

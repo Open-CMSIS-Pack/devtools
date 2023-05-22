@@ -15,7 +15,7 @@
   </compilers>
 
   <target Ddsp="DSP" Dfpu="SP_FPU" Dname="ARMCM33_DSP_FP_TZ" Dsecure="Secure" Dtz="TZ" Dvendor="ARM:82">
-    <output intdir="Secure.Debug+CM33_IntDir/" name="Secure.Debug+CM33" outdir="Secure.Debug+CM33_OutDir/" type="exe"/>
+    <output intdir="Secure.Debug+CM33_IntDir/" name="Secure.Debug+CM33" outdir="Secure.Debug+CM33_OutDir/"
     <cflags add="-O1 -g" compiler="AC6"/>
     <ldflags compiler="AC6" file="RTE/Device/ARMCM33_DSP_FP_TZ/ARMCM33_ac6_s.sct"/>
   </target>

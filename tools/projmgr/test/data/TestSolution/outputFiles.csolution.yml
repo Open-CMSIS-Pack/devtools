@@ -7,7 +7,8 @@ solution:
   build-types:
     - type: Debug
     - type: Library
-    - type: Conflict
+    - type: BaseNameConflict
+    - type: TypeConflict
 
   target-types:
     - type: Target  

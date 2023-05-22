@@ -23,7 +23,6 @@ build:
     - ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/GlobalLevel
     - ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/Include
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
-  output-type: exe
   output-dirs:
     gendir: ../data/TestSolution
     intdir: tmp/pre-include/CM0

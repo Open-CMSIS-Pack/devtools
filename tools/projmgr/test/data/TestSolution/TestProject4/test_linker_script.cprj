@@ -15,7 +15,7 @@
   </compilers>
 
   <target Dendian="Little-endian" Dfpu="NO_FPU" Dname="RteTest_ARMCM0" Dsecure="Non-secure" Dvendor="ARM:82">
-    <output intdir="tmp/test_linker_script" name="test_linker_script" outdir="out/test_linker_script" rtedir="../data/TestSolution/TestProject4/RTE" type="exe"/>
+    <output elf="test_linker_script.axf" intdir="tmp/test_linker_script" name="test_linker_script" outdir="out/test_linker_script" rtedir="../data/TestSolution/TestProject4/RTE"/>
     <ldflags compiler="AC6" file="../data/TestSolution/TestProject4/linker.sct"/>
   </target>
 

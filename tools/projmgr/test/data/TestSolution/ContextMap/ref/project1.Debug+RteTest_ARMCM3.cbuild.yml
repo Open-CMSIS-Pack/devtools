@@ -15,7 +15,6 @@ build:
     - ARMCM3
   add-path:
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM3/Include
-  output-type: exe
   output-dirs:
     gendir: ../data/TestSolution/ContextMap
     intdir: tmp/project1/RteTest_ARMCM3/Debug

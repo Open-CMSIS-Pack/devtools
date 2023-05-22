@@ -24,7 +24,7 @@ build:
     rtedir: ../data/TestSolution/RTE
   output:
     - type: lib
-      file: subfolder4/file-AC6.lib
+      file: library-AC6.lib
   components:
     - component: ARM::Device:Startup&RteTest Startup@2.0.3
       condition: ARMCM3 RteTest

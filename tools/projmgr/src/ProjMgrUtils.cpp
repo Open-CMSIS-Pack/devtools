@@ -350,3 +350,17 @@ ContextName ProjMgrUtils::ParseContextEntry(const string& contextEntry) {
   }
   return context;
 }
+
+void ProjMgrUtils::SetOutputType(const string typeString, OutputTypes& type) {
+  if (typeString == OUTPUT_TYPE_BIN) {
+    type.bin.on = true;
+  } else if (typeString == OUTPUT_TYPE_ELF) {
+    type.elf.on = true;
+  } else if (typeString == OUTPUT_TYPE_HEX) {
+    type.hex.on = true;
+  } else if (typeString == OUTPUT_TYPE_LIB) {
+    type.lib.on = true;
+  } else if (typeString == OUTPUT_TYPE_CMSE) {
+    type.cmse.on = true;
+  }
+}

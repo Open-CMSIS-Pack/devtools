@@ -121,7 +121,6 @@ void ProjMgrYamlCbuild::SetContextNode(YAML::Node contextNode, const ContextItem
   SetProcessorNode(contextNode[YAML_PROCESSOR], context->targetAttributes);
   SetPacksNode(contextNode[YAML_PACKS], context);
   SetControlsNode(contextNode, context->controls.processed);
-  SetNodeValue(contextNode[YAML_OUTPUTTYPE], context->outputType);
   SetOutputDirsNode(contextNode[YAML_OUTPUTDIRS], context);
   SetOutputNode(contextNode[YAML_OUTPUT], context);
   vector<string> defines;
@@ -299,32 +298,16 @@ void ProjMgrYamlCbuild::SetOutputDirsNode(YAML::Node node, const ContextItem* co
 }
 
 void ProjMgrYamlCbuild::SetOutputNode(YAML::Node node, const ContextItem* context) {
-  if (context->cproject->outputFiles.empty()) {
-    // TODO: after deprecation rework 'output' node
-    string type, file;
-    const vector<tuple<const string, const string, const string, const string>> typeMap = {
-      { "AC6", ".axf", "", ".lib" },
-      { "GCC", ".elf", "lib", ".a"},
-      { "IAR", ".out", "", ".a" },
-    };
-    for (const auto& [toolchainName, elfSuffix, libPrefix, libSuffix] : typeMap) {
-      if (context->toolchain.name == toolchainName) {
-        if (context->outputType == "exe") {
-          type = "elf";
-          file = context->cproject->name + elfSuffix;
-        } else {
-          type = "lib";
-          file = libPrefix + context->cproject->name + libSuffix;
-        }
-      }
-    }
-    YAML::Node fileNode;
-    SetNodeValue(fileNode[YAML_TYPE], type);
-    SetNodeValue(fileNode[YAML_FILE], file);
-    node.push_back(fileNode);
-  } else {
-    const StrMap& files = context->outputFiles;
-    for (const auto& [type, file] : files) {
+  const auto& types = context->outputTypes;
+  const vector<tuple<bool, const string, const string>> outputTypes = {
+    { types.bin.on, types.bin.filename, ProjMgrUtils::OUTPUT_TYPE_BIN },
+    { types.elf.on, types.elf.filename, ProjMgrUtils::OUTPUT_TYPE_ELF },
+    { types.hex.on, types.hex.filename, ProjMgrUtils::OUTPUT_TYPE_HEX },
+    { types.lib.on, types.lib.filename, ProjMgrUtils::OUTPUT_TYPE_LIB },
+    { types.cmse.on, types.cmse.filename, ProjMgrUtils::OUTPUT_TYPE_CMSE },
+  };
+  for (const auto& [on, file, type] : outputTypes) {
+    if (on) {
       YAML::Node fileNode;
       SetNodeValue(fileNode[YAML_TYPE], type);
       SetNodeValue(fileNode[YAML_FILE], file);

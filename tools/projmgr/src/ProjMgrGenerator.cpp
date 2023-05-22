@@ -178,12 +178,21 @@ void ProjMgrGenerator::GenerateCprjTarget(XMLTreeElement* element, const Context
   XMLTreeElement* targetOutputElement = element->CreateElement("output");
   if (targetOutputElement) {
     targetOutputElement->AddAttribute("name", context.cproject->name);
-    targetOutputElement->AddAttribute("type", context.outputType);
     targetOutputElement->AddAttribute("intdir", context.directories.intdir);
     targetOutputElement->AddAttribute("outdir", context.directories.outdir);
     targetOutputElement->AddAttribute("rtedir", context.directories.rte);
-    for (const auto& [type, file] : context.outputFiles) {
-      targetOutputElement->AddAttribute(type, file, false);
+    const auto& types = context.outputTypes;
+    const vector<tuple<bool, const string, const string>> outputTypes = {
+      { types.bin.on, types.bin.filename, ProjMgrUtils::OUTPUT_TYPE_BIN },
+      { types.elf.on, types.elf.filename, ProjMgrUtils::OUTPUT_TYPE_ELF },
+      { types.hex.on, types.hex.filename, ProjMgrUtils::OUTPUT_TYPE_HEX },
+      { types.lib.on, types.lib.filename, ProjMgrUtils::OUTPUT_TYPE_LIB },
+      { types.cmse.on, types.cmse.filename, ProjMgrUtils::OUTPUT_TYPE_CMSE },
+    };
+    for (const auto& [on, file, type] : outputTypes) {
+      if (on) {
+        targetOutputElement->AddAttribute(type, file, false);
+      }
     }
   }
 
