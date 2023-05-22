@@ -16,7 +16,6 @@ set(SECURE Non-secure)
 set(MVE NO_MVE)
 set(BYTE_ORDER Little-endian)
 set(CXX_FLAGS_GLOBAL "-O -Wall -ffunction-sections -gdwarf-2 -mapcs-frame -mthumb -mthumb-interwork")
-set(OUT_NAME Library)
 
 set(DEFINES
   ARMCM3
@@ -60,6 +59,6 @@ add_custom_target(database COMMAND ${CMAKE_COMMAND} -E copy_if_different "${INT_
 # Setup Target
 
 add_library(${TARGET} ${CXX_SRC_FILES})
-set_target_properties(${TARGET} PROPERTIES PREFIX "${LIB_PREFIX}" SUFFIX "${LIB_SUFFIX}" OUTPUT_NAME "${TARGET}")
+set_target_properties(${TARGET} PROPERTIES PREFIX "" OUTPUT_NAME "${TARGET}")
 set_target_properties(${TARGET} PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${OUT_DIR})
 target_include_directories(${TARGET} PUBLIC ${INC_PATHS})

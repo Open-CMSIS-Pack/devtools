@@ -318,18 +318,12 @@ set(LD_CPU ${GNUASM_CPU})
 set(_LS "-T ")
 
 if(SECURE STREQUAL "Secure")
-  set(LD_SECURE "-Wl,--cmse-implib -Wl,--out-implib=\"${OUT_DIR}/${OUT_NAME}_CMSE_Lib.o\"")
+  set(LD_SECURE "-Wl,--cmse-implib -Wl,--out-implib=\"${OUT_DIR}/${CMSE_LIB}\"")
 endif()
 
 set(LD_FLAGS)
 set(LD_OPTIONS_FLAGS)
 cbuild_set_options_flags(LD "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" LD_OPTIONS_FLAGS)
-
-# Target Output
-
-set (LIB_PREFIX "lib")
-set (LIB_SUFFIX ".a")
-set (EXE_SUFFIX ".elf")
 
 # Group libraries for rescanning
 set(LIB_FILES -Wl,--start-group ${LIB_FILES} -Wl,--end-group)

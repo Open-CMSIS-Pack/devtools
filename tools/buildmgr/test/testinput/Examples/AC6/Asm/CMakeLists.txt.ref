@@ -19,9 +19,6 @@ set(AS_FLAGS_GLOBAL "-gdwarf-3 -masm=auto")
 set(CC_FLAGS_GLOBAL "-Wno-documentation -Wno-documentation-unknown-command -Wno-license-management -Wno-missing-noreturn -Wno-missing-prototypes -Wno-missing-variable-declarations -Wno-nonportable-include-path -Wno-packed -Wno-parentheses-equality  -Wno-reserved-id-macro -Wno-sign-conversion -Wno-unused-macros -ffunction-sections -fno-rtti -fshort-enums -fshort-wchar -funsigned-char -gdwarf-3 -std=c99 -xc")
 set(LD_FLAGS_GLOBAL "--callgraph --entry=Reset_Handler --info sizes --info summarysizes --info totals --info unused --info veneers --load_addr_map_info --map --strict --summary_stderr --symbols --xref")
 set(LD_SCRIPT "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/Asm/RTE/Device/ARMCM3/ARMCM3_ac6.sct")
-set(OUT_NAME Blinky)
-set(HEX_FILE "${OUT_NAME}.hex")
-set(BIN_FILE "${OUT_NAME}.bin")
 
 set(DEFINES
   ARMCM3
@@ -233,12 +230,7 @@ add_custom_target(database COMMAND ${CMAKE_COMMAND} -E copy_if_different "${INT_
 # Setup Target
 
 add_executable(${TARGET} ${ASM_SRC_FILES} ${AS_ARM_SRC_FILES} ${AS_GNU_SRC_FILES} ${AS_LEG_SRC_FILES} ${CC_SRC_FILES})
-set_target_properties(${TARGET} PROPERTIES PREFIX "" SUFFIX "${EXE_SUFFIX}" OUTPUT_NAME "${TARGET}")
+set_target_properties(${TARGET} PROPERTIES PREFIX "" OUTPUT_NAME "${TARGET}")
 set_target_properties(${TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${OUT_DIR} LINK_DEPENDS ${LD_SCRIPT})
 target_include_directories(${TARGET} PUBLIC ${INC_PATHS})
 target_link_libraries(${TARGET} ${LIB_FILES})
-
-# Bin and Hex Conversion
-
-add_custom_command(TARGET ${TARGET} POST_BUILD COMMAND ${CMAKE_OBJCOPY} ${ELF2HEX})
-add_custom_command(TARGET ${TARGET} POST_BUILD COMMAND ${CMAKE_OBJCOPY} ${ELF2BIN})

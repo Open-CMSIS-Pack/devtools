@@ -20,9 +20,6 @@ set(DEBUG on)
 set(WARNINGS on)
 set(LD_FLAGS_GLOBAL "--entry=main --specs=nosys.specs -mthumb")
 set(LD_SCRIPT "C:/Sandbox/devtools-external/build/testoutput/GCC/TranslationControl/Project3/RTE/Device/ARMCM3/gcc_arm.ld")
-set(OUT_NAME Project)
-set(HEX_FILE "${OUT_NAME}.hex")
-set(BIN_FILE "${OUT_NAME}.bin")
 
 set(DEFINES
   ARMCM3
@@ -152,11 +149,6 @@ add_custom_target(database COMMAND ${CMAKE_COMMAND} -E copy_if_different "${INT_
 # Setup Target
 
 add_executable(${TARGET} ${AS_GNU_SRC_FILES} ${CC_SRC_FILES} ${CXX_SRC_FILES})
-set_target_properties(${TARGET} PROPERTIES PREFIX "" SUFFIX "${EXE_SUFFIX}" OUTPUT_NAME "${TARGET}")
+set_target_properties(${TARGET} PROPERTIES PREFIX "" OUTPUT_NAME "${TARGET}")
 set_target_properties(${TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${OUT_DIR} LINK_DEPENDS ${LD_SCRIPT})
 target_include_directories(${TARGET} PUBLIC ${INC_PATHS})
-
-# Bin and Hex Conversion
-
-add_custom_command(TARGET ${TARGET} POST_BUILD COMMAND ${CMAKE_OBJCOPY} ${ELF2HEX})
-add_custom_command(TARGET ${TARGET} POST_BUILD COMMAND ${CMAKE_OBJCOPY} ${ELF2BIN})
