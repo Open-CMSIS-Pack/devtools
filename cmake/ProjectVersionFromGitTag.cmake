@@ -36,7 +36,26 @@ function(get_version_from_git_tag _prefix)
             set(VERSION_PATCH "0")
         endif()
 
-        if(DESCRIBE MATCHES "^${_prefix}[0-9]+\\.[0-9]+\\.[0-9]+-[0-9]+-g([0-9a-f]+).*")
+        if(DESCRIBE MATCHES "(-[a-zA-Z0-9-\\.]+)(-[0-9]+-g[0-9a-f]+)?$")
+            # Version with PreRelease info
+            string(REGEX REPLACE "(-[0-9]+)(-g[0-9a-f]+)?$" "" TAG_SEGMENT_STR "${DESCRIBE}")
+            string(REGEX REPLACE "^${_prefix}[0-9]+\\.[0-9]+\\.[0-9]+-(.*)" "\\1" VERSION_PRE_RELEASE "${TAG_SEGMENT_STR}")
+
+            if(DESCRIBE MATCHES "(-[0-9]+-g[0-9a-f]+)$")
+              string(REGEX REPLACE "^.*-([0-9]+-g[0-9a-f]+)" "\\1" COMMIT_INFO "${DESCRIBE}")
+              string(REGEX REPLACE "^.*-g([0-9a-f]+)" "\\1" VERSION_HASH "${COMMIT_INFO}")
+              string(REGEX REPLACE "^([0-9]+).*" "\\1" VERSION_TWEAK "${COMMIT_INFO}")
+            endif()
+
+            if(DEFINED VERSION_HASH)
+                set(VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}.${VERSION_TWEAK}")
+                set(VERSION_FULL "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}-${VERSION_PRE_RELEASE}+p${VERSION_TWEAK}-g${VERSION_HASH}")
+            else()
+                set(VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
+                set(VERSION_FULL "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}-${VERSION_PRE_RELEASE}")
+            endif()
+
+        elseif(DESCRIBE MATCHES "^${_prefix}[0-9]+\\.[0-9]+\\.[0-9]+-[0-9]+-g([0-9a-f]+).*")
             string(REGEX REPLACE "^${_prefix}[0-9]+\\.[0-9]+\\.[0-9]+-([0-9]+).*" "\\1" VERSION_TWEAK "${DESCRIBE}")
             string(REGEX REPLACE "^${_prefix}[0-9]+\\.[0-9]+\\.[0-9]+-[0-9]+-g([0-9a-f]+).*" "\\1" VERSION_HASH "${DESCRIBE}")
             set(VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}.${VERSION_TWEAK}")
