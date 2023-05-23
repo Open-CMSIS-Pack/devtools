@@ -1454,6 +1454,8 @@ TEST_F(ProjMgrWorkerUnitTests, GetGeneratorDir) {
 
   clayer.generators.options[generatorId] = "$ProjectDir(UnknownContext)$";
   EXPECT_FALSE(GetGeneratorDir(generator, context, layerName, genDir));
+
+  m_contexts.clear();
 };
 
 TEST_F(ProjMgrWorkerUnitTests, GetGeneratorDirDefault) {
