@@ -132,9 +132,6 @@ bool ProjMgrWorker::AddContext(ProjMgrParser& parser, ContextDesc& descriptor, c
     if (m_outputDir.empty() && !context.csolution->directories.cprj.empty()) {
       context.directories.cprj = context.csolution->directory + "/" + context.csolution->directories.cprj;
     }
-    if (!context.csolution->directories.gendir.empty()) {
-      context.directories.gendir = context.csolution->directories.gendir;
-    }
     if (!context.csolution->directories.intdir.empty()) {
       context.directories.intdir = context.csolution->directories.intdir;
     }
@@ -1288,22 +1285,12 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
     const string generatorId = generator ? generator->GetID() : "";
     if (generator) {
       context.generators.insert({ generatorId, generator });
-
       string genDir;
-      error_code ec;
-      if (!context.csolution->directories.gendir.empty()) {
-        // custom gendir
-        genDir = context.directories.gendir;
-      } else {
-        // original working dir
-        genDir = fs::relative(generator->GetExpandedWorkingDir(context.rteActiveTarget), context.cproject->directory, ec).generic_string();
-        if (!layer.empty()) {
-          // component belongs to layer
-          genDir = fs::relative(fs::path(context.clayers[layer]->directory).append(genDir), context.cproject->directory, ec).generic_string();
-        }
+      if (!GetGeneratorDir(generator, context, layer, genDir)) {
+        return false;
       }
       matchedComponentInstance->AddAttribute("gendir", genDir);
-
+      error_code ec;
       const string& gpdsc = fs::weakly_canonical(generator->GetExpandedGpdsc(context.rteActiveTarget, genDir), ec).generic_string();
       context.gpdscs.insert({ gpdsc, {componentId, generatorId, genDir} });
     }
@@ -2107,7 +2094,6 @@ bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem& context) {
   const string ref = m_outputDir.empty() ? context.csolution->directory : RteFsUtils::AbsolutePath(m_outputDir).generic_string();
   if (!ProcessSequenceRelative(context, context.directories.cprj) ||
       !ProcessSequenceRelative(context, context.directories.rte, context.csolution->directory) ||
-      !ProcessSequenceRelative(context, context.directories.gendir, context.csolution->directory) ||
       !ProcessSequenceRelative(context, context.directories.outdir, ref) ||
       !ProcessSequenceRelative(context, context.directories.intdir, ref)) {
     return false;
@@ -3455,6 +3441,59 @@ bool ProjMgrWorker::ProcessOutputFilenames(ContextItem& context) {
   }
   if (context.outputTypes.cmse.on) {
     context.outputTypes.cmse.filename = baseName + "_CMSE_Lib.o";
+  }
+  return true;
+}
+
+bool ProjMgrWorker::GetGeneratorDir(const RteGenerator* generator, ContextItem& context, const string& layer, string& genDir) {
+  const string generatorId = generator->GetID();
+  genDir.clear();
+
+  // map with GeneratorsItem and base reference (clayer, cproject or csolution directory)
+  const vector<pair<GeneratorsItem, string>> generatorsList = {
+    layer.empty() ? pair<GeneratorsItem, string>() : make_pair(context.clayers.at(layer)->generators, context.clayers.at(layer)->directory),
+    { context.cproject->generators, context.cproject->directory },
+    { context.csolution->generators, context.csolution->directory }
+  };
+
+  // find first custom directory associated to generatorId in the order: clayer > cproject > csolution
+  for (const auto& [generators, ref] : generatorsList) {
+    if (generators.options.find(generatorId) != generators.options.end()) {
+      genDir = generators.options.at(generatorId);
+      if (!genDir.empty()) {
+        if (!ProcessSequenceRelative(context, genDir, ref)) {
+          return false;
+        }
+        genDir = RteFsUtils::RelativePath(fs::path(context.directories.cprj).append(genDir).generic_string(), context.cproject->directory);
+        break;
+      }
+    }
+  }
+  if (genDir.empty()) {
+    // find custom base directory in the order: clayer > cproject > csolution
+    for (const auto& [generators, ref] : generatorsList) {
+      if (!generators.baseDir.empty()) {
+        genDir = generators.baseDir;
+        if (!ProcessSequenceRelative(context, genDir, ref)) {
+          return false;
+        }
+        genDir = RteFsUtils::RelativePath(fs::path(context.directories.cprj).append(genDir).append(generatorId).generic_string(), context.cproject->directory);
+        break;
+      }
+    }
+  }
+  if (genDir.empty()) {
+    // original working dir from PDSC
+    if (!generator->GetWorkingDir().empty()) {
+      genDir = RteFsUtils::RelativePath(generator->GetExpandedWorkingDir(context.rteActiveTarget), context.cproject->directory);
+      if (!layer.empty()) {
+        // adjust genDir if component belongs to layer
+        genDir = RteFsUtils::RelativePath(fs::path(context.clayers.at(layer)->directory).append(genDir).generic_string(), context.cproject->directory);
+      }
+    } else {
+      // default: $ProjectDir()$/generated/<generator-id>
+      genDir = fs::path("generated").append(generatorId).generic_string();
+    }
   }
   return true;
 }

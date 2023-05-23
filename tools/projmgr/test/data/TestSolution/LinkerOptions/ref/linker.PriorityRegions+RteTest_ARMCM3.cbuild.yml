@@ -19,7 +19,6 @@ build:
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM3/Include
   output-dirs:
-    gendir: ../data/TestSolution/LinkerOptions
     intdir: tmp/linker/RteTest_ARMCM3/PriorityRegions
     outdir: out/linker/RteTest_ARMCM3/PriorityRegions
     rtedir: ../data/TestSolution/LinkerOptions/RTE

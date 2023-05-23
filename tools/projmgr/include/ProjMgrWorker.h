@@ -623,6 +623,7 @@ protected:
   bool GenerateRegionsHeader(ContextItem& context, std::string& generatedRegionsFile);
   void UpdatePartialReferencedContext(ContextItem& context, std::string& contextName);
   void ExpandAccessSequence(const ContextItem& context, const ContextItem& refContext, const std::string& sequence, std::string& item, bool withHeadingDot);
+  bool GetGeneratorDir(const RteGenerator* generator, ContextItem& context, const std::string& layer, std::string& genDir);
 };
 
 #endif  // PROJMGRWORKER_H

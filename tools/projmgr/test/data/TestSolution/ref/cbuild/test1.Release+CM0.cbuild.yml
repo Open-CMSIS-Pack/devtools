@@ -27,7 +27,6 @@ build:
     - ../data/TestSolution/TestProject1/RTE/_Release_CM0
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
   output-dirs:
-    gendir: ../data/TestSolution
     intdir: tmp/test1/CM0/Release
     outdir: out/test1/CM0/Release
     rtedir: ../data/TestSolution/TestProject1/RTE

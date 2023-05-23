@@ -1,8 +1,8 @@
 build:
-  generated-by: csolution version 1.6.0
-  solution: ../data/TestGenerator/test-gpdsc.csolution.yml
-  project: ../data/TestGenerator/test-gpdsc.cproject.yml
-  context: test-gpdsc.Debug+CM0
+  generated-by: csolution version 0.0.0+gf5c2ee9b
+  solution: ../data/TestGenerator/test-gpdsc-layer.csolution.yml
+  project: ../data/TestGenerator/test-gpdsc-layer.cproject.yml
+  context: test-gpdsc-layer.Debug+CM0
   compiler: AC6
   device: RteTestGen_ARMCM0
   processor:
@@ -17,19 +17,19 @@ build:
   add-path:
     - ../data/TestGenerator/RTE/_Debug_CM0
   output-dirs:
-    intdir: tmp/test-gpdsc/CM0/Debug
-    outdir: out/test-gpdsc/CM0/Debug
+    intdir: tmp/test-gpdsc-layer/CM0/Debug
+    outdir: out/test-gpdsc-layer/CM0/Debug
     rtedir: ../data/TestGenerator/RTE
   output:
     - type: elf
-      file: test-gpdsc.axf
+      file: test-gpdsc-layer.axf
   components:
     - component: ARM::Device:RteTest Generated Component:RteTest@1.1.0
       condition: RteDevice
       from-pack: ARM::RteTestGenerator@0.1.0
       selected-by: Device:RteTest Generated Component:RteTest
       files:
-        - file: ../data/TestGenerator/RTE/Device/RteTestGen_ARMCM0/RteTest_Generated_Component.c
+        - file: ../data/TestGenerator/layer/RTE/Device/RteTestGen_ARMCM0/RteTest_Generated_Component.c
           category: sourceC
       generator:
         id: RteTestGeneratorIdentifier
@@ -39,36 +39,36 @@ build:
       selected-by: RteTest:CORE
   generators:
     - generator: RteTestGeneratorIdentifier
-      path: ../data/TestGenerator/RTE/Device
-      gpdsc: ../data/TestGenerator/RTE/Device/RteTestGen_ARMCM0/RteTest.gpdsc
+      path: ../data/TestGenerator/layer/RTE/Device
+      gpdsc: ../data/TestGenerator/layer/RTE/Device/RteTestGen_ARMCM0/RteTest.gpdsc
       command:
         win:
           file: ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0/Generator/script.bat
           arguments:
             - RteTestGen_ARMCM0
-            - ../../test-gpdsc.Debug+CM0.cprj
+            - ../../../test-gpdsc-layer.Debug+CM0.cprj
             - ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0
-            - ../../../../output/test-gpdsc.Debug+CM0.cbuild.yml
+            - ../../../../../output/test-gpdsc-layer.Debug+CM0.cbuild.yml
             - /foo=bar
         linux:
           file: ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0/Generator/script.sh
           arguments:
             - RteTestGen_ARMCM0
-            - ../../test-gpdsc.Debug+CM0.cprj
+            - ../../../test-gpdsc-layer.Debug+CM0.cprj
             - ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0
-            - ../../../../output/test-gpdsc.Debug+CM0.cbuild.yml
+            - ../../../../../output/test-gpdsc-layer.Debug+CM0.cbuild.yml
             - --foo=bar
         mac:
           file: ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0/Generator/script.sh
           arguments:
             - RteTestGen_ARMCM0
-            - ../../test-gpdsc.Debug+CM0.cprj
+            - ../../../test-gpdsc-layer.Debug+CM0.cprj
             - ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0
-            - ../../../../output/test-gpdsc.Debug+CM0.cbuild.yml
+            - ../../../../../output/test-gpdsc-layer.Debug+CM0.cbuild.yml
             - --foo=bar
   linker:
     script: ${CMSIS_COMPILER_ROOT}/ac6_linker_script.sct
-    regions: ../data/TestGenerator/RTE/Device/RteTestGen_ARMCM0/regions_RteTestGen_ARMCM0.h
+    regions: ../data/TestGenerator/layer/RTE/Device/RteTestGen_ARMCM0/regions_RteTestGen_ARMCM0.h
   constructed-files:
     - file: ../data/TestGenerator/RTE/_Debug_CM0/RTE_Components.h
       category: header

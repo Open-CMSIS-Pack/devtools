@@ -194,9 +194,17 @@ void ProjMgrYamlCbuild::SetGeneratorFiles(YAML::Node node, const ContextItem* co
 void ProjMgrYamlCbuild::SetGeneratorsNode(YAML::Node node, const ContextItem* context) {
   for (const auto& [generatorId, generator] : context->generators) {
     YAML::Node genNode;
-    const string& workingDir = generator->GetExpandedWorkingDir(context->rteActiveTarget);
-    SetNodeValue(genNode[YAML_WORKING_DIR], FormatPath(workingDir, context->directories.cprj));
-    const string& gpdscFile = generator->GetExpandedGpdsc(context->rteActiveTarget);
+    SetNodeValue(genNode[YAML_GENERATOR], generatorId);
+
+    string workingDir, gpdscFile;
+    for (const auto& [gpdsc, item] : context->gpdscs) {
+      if (item.generator == generatorId) {
+        workingDir = fs::path(context->cproject->directory).append(item.workingDir).generic_string();
+        gpdscFile = fs::path(context->cproject->directory).append(gpdsc).generic_string();
+        break;
+      }
+    }
+    SetNodeValue(genNode[YAML_PATH], FormatPath(workingDir, context->directories.cprj));
     SetNodeValue(genNode[YAML_GPDSC], FormatPath(gpdscFile, context->directories.cprj));
 
     for (const string host : {"win", "linux", "mac", "other"}) {
@@ -223,7 +231,7 @@ void ProjMgrYamlCbuild::SetGeneratorsNode(YAML::Node node, const ContextItem* co
       genNode[YAML_COMMAND][host] = commandNode;
     }
 
-    node[generatorId] = genNode;
+    node.push_back(genNode);
   }
 }
 
@@ -288,7 +296,6 @@ void ProjMgrYamlCbuild::SetConstructedFilesNode(YAML::Node node, const ContextIt
 void ProjMgrYamlCbuild::SetOutputDirsNode(YAML::Node node, const ContextItem* context) {
   const DirectoriesItem& dirs = context->directories;
   map<const string, string> outputDirs = {
-    {YAML_OUTPUT_GENDIR, dirs.gendir},
     {YAML_OUTPUT_INTDIR, dirs.intdir},
     {YAML_OUTPUT_OUTDIR, dirs.outdir},
     {YAML_OUTPUT_RTEDIR, dirs.rte},

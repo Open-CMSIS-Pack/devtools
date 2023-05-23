@@ -14,4 +14,8 @@ solution:
 
   output-dirs:
     outdir: $Project$/outdir/
-    gendir: $Project$/gendir/
+
+  generators:
+    options:
+      - generator: RteTestGeneratorIdentifier
+        path: $Project$/gendir/

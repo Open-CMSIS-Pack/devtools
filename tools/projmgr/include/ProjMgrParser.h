@@ -151,7 +151,6 @@ struct RteDirItem {
  *        rte directory,
 */
 struct DirectoriesItem {
-  std::string gendir;
   std::string intdir;
   std::string outdir;
   std::string cprj;
@@ -180,6 +179,16 @@ struct ComponentItem {
 struct OutputItem {
   std::string baseName;
   std::vector<std::string> type;
+};
+
+/**
+ * @brief generators item containing
+ *        base directory,
+ *        options map
+*/
+struct GeneratorsItem {
+  std::string baseDir;
+  std::map<std::string, std::string> options;
 };
 
 /**
@@ -315,7 +324,8 @@ struct CdefaultItem {
  *        list of cprojects,
  *        list of contexts descriptors,
  *        list of packs,
- *        cdefault enable switch
+ *        cdefault enable switch,
+ *        generator options
 */
 struct CsolutionItem {
   std::string name;
@@ -329,6 +339,7 @@ struct CsolutionItem {
   std::vector<ContextDesc> contexts;
   std::vector<PackItem> packs;
   bool enableCdefault;
+  GeneratorsItem generators;
 };
 
 /**
@@ -344,7 +355,8 @@ struct CsolutionItem {
  *        list of setups,
  *        list of connections,
  *        list of packs,
- *        list of linker entries
+ *        list of linker entries,
+ *        generator options
 */
 struct CprojectItem {
   std::string name;
@@ -360,6 +372,7 @@ struct CprojectItem {
   std::vector<ConnectItem> connections;
   std::vector<PackItem> packs;
   std::vector<LinkerItem> linker;
+  GeneratorsItem generators;
 };
 
 /**
@@ -373,7 +386,8 @@ struct CprojectItem {
  *        list of required components,
  *        list of user groups,
  *        list of connections
- *        list of packs
+ *        list of packs,
+ *        generator options
 */
 struct ClayerItem {
   std::string name;
@@ -390,6 +404,7 @@ struct ClayerItem {
   std::vector<LinkerItem> linker;
   std::string forBoard;
   std::string forDevice;
+  GeneratorsItem generators;
 };
 
 /**

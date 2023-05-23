@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<package xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" schemaVersion="1.0" xs:noNamespaceSchemaLocation="PACK.xsd">
+  <vendor>ARM</vendor>
+  <name>RteTestGenerator</name>
+  <description>RteTest generated pack description</description>
+  <url>project-path</url>
+  <releases>
+    <release version="1.0.0">
+    </release>
+  </releases>
+  <generators>
+    <generator id="RteTestGeneratorIdentifier" Gvendor="ARM" Gtool="RteTest Script" Gversion="1.0.0">
+      <description>RteTest Generator Test Environment</description>
+      <select Dname="RteTestGen_ARMCM0" Dvendor="ARM:82"/>
+      <command host="win">Generator/script.bat</command>
+    </generator>
+  </generators>
+  <conditions>
+    <condition id="RteTest">
+      <description>Condition to include RteTest core</description>
+      <require Dname="RteTestGen_ARMCM*"/>
+      <require Cclass="RteTest"  Cgroup="CORE"/>
+    </condition>
+  </conditions>
+  <components>
+    <component generator="RteTestGeneratorIdentifier" Cvendor="ARM" Cclass="Device" Cgroup="RteTest Generated Component" Csub="RteTest" Cversion="1.1.0" condition="RteTest">
+      <description>Configuration via STM32CubeMX test data</description>
+      <RTE_Components_h>
+        #define RTE_TEST_GENERATOR_FROM_GPDSC_PRE_CHECK
+      </RTE_Components_h>
+      <files>
+        <file name="RteTest_Generated_Component.c" category="sourceC"/>
+      </files>
+    </component>
+  </components>
+</package>

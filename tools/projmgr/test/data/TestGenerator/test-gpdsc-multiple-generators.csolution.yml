@@ -2,20 +2,15 @@
 
 solution:
   target-types:
-    - type: TypeA
+    - type: CM0
       device: RteTestGen_ARMCM0
 
   build-types:
     - type: Debug
-      compiler: GCC@0.0.0
+      compiler: AC6
 
   projects:
-    - project: ./TestProject3_2/TestProject3_2.cproject.yml
-
-  output-dirs:
-    outdir: $Project$/outdir/
+    - project: ./test-gpdsc-multiple-generators.cproject.yml
 
   generators:
-    options:
-      - generator: RteTestGeneratorIdentifier
-        path: $Project$/gendir/
+    base-dir: GeneratedFiles

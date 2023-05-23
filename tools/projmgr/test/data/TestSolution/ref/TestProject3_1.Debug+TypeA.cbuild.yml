@@ -19,7 +19,6 @@ build:
     - ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0/Include
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
   output-dirs:
-    gendir: gendir/
     intdir: ../tmp/TestProject3_1/TypeA/Debug
     outdir: outdir/
     rtedir: RTE
@@ -68,33 +67,33 @@ build:
       from-pack: ARM::RteTest_DFP@0.2.0
       selected-by: CORE
   generators:
-    RteTestGeneratorIdentifier:
-      working-dir: RTE/Device
-      gpdsc: RTE/Device/RteTestGen_ARMCM0/RteTest.gpdsc
+    - generator: RteTestGeneratorIdentifier
+      path: gendir
+      gpdsc: gendir/RteTestGen_ARMCM0/RteTest.gpdsc
       command:
         win:
           file: ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0/Generator/script.bat
           arguments:
             - RteTestGen_ARMCM0
-            - ../../TestProject3_1.Debug+TypeA.cprj
+            - ../TestProject3_1.Debug+TypeA.cprj
             - ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0
-            - ../../TestProject3_1.Debug+TypeA.cbuild.yml
+            - ../TestProject3_1.Debug+TypeA.cbuild.yml
             - /foo=bar
         linux:
           file: ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0/Generator/script.sh
           arguments:
             - RteTestGen_ARMCM0
-            - ../../TestProject3_1.Debug+TypeA.cprj
+            - ../TestProject3_1.Debug+TypeA.cprj
             - ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0
-            - ../../TestProject3_1.Debug+TypeA.cbuild.yml
+            - ../TestProject3_1.Debug+TypeA.cbuild.yml
             - --foo=bar
         mac:
           file: ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0/Generator/script.sh
           arguments:
             - RteTestGen_ARMCM0
-            - ../../TestProject3_1.Debug+TypeA.cprj
+            - ../TestProject3_1.Debug+TypeA.cprj
             - ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0
-            - ../../TestProject3_1.Debug+TypeA.cbuild.yml
+            - ../TestProject3_1.Debug+TypeA.cbuild.yml
             - --foo=bar
   linker:
     script: RTE/Device/RteTestGen_ARMCM0/gcc_arm.ld

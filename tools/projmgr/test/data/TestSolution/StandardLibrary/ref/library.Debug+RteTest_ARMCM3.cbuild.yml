@@ -26,7 +26,6 @@ build:
     - ../data/TestSolution/StandardLibrary/RTE/_Debug_RteTest_ARMCM3
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM3/Include
   output-dirs:
-    gendir: ../data/TestSolution/StandardLibrary
     intdir: tmp/library/RteTest_ARMCM3/Debug
     outdir: out/library/RteTest_ARMCM3/Debug
     rtedir: ../data/TestSolution/StandardLibrary/RTE
