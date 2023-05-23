@@ -4,6 +4,12 @@
 
 //-------- <<< Use Configuration Wizard in Context Menu >>> --------------------
 
+// <n>Board pack:    ARM.RteTestBoard.0.1.0
+// <i>Board pack used to generate this file
+
+// <n>Device pack:   ARM.RteTest_DFP.0.2.0
+// <i>Device pack used to generate this file
+
 // <h>ROM Configuration
 // =======================
 // <h> FLASH=<__ROM0>
