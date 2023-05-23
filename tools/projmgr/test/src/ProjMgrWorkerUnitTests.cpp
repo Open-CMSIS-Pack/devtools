@@ -1392,3 +1392,90 @@ warning csolution: regions header file generation failed\n\
   EXPECT_TRUE(streamRedirect.GetOutString().empty());
   EXPECT_TRUE(streamRedirect.GetErrorString().empty());
 };
+
+TEST_F(ProjMgrWorkerUnitTests, GetGeneratorDir) {
+  const string& gpdscFile = testinput_folder + "/TestGenerator/RTE/Device/RteTestGen_ARMCM0/RteTest.gpdsc";
+  bool validGpdsc;
+  const RteGenerator* generator = ProjMgrUtils::ReadGpdscFile(gpdscFile, validGpdsc)->GetFirstGenerator();
+
+  m_contexts[""] = ContextItem();
+  ContextItem& context = m_contexts[""];
+  CsolutionItem csolution;
+  CprojectItem cproject;
+  ClayerItem clayer;
+  const string layerName = "layerName";
+  const string generatorId = "RteTestGeneratorIdentifier";
+  context.csolution = &csolution;
+  context.cproject = &cproject;
+  context.clayers[layerName] = &clayer;
+  csolution.directory = testoutput_folder + "/SolutionDirectory";
+  cproject.directory = csolution.directory + "/ProjectDirectory";
+  clayer.directory = cproject.directory + "/LayerDirectory";
+  context.directories.cprj = testoutput_folder;
+  context.variables["Compiler"] = context.compiler = "AC6";
+  string genDir;
+
+  // base directory
+  csolution.generators.baseDir = "BaseRelativeToSolution";
+  EXPECT_TRUE(GetGeneratorDir(generator, context, layerName, genDir));
+  EXPECT_EQ(genDir, "../BaseRelativeToSolution/RteTestGeneratorIdentifier");
+
+  cproject.generators.baseDir = "BaseRelativeToProject";
+  EXPECT_TRUE(GetGeneratorDir(generator, context, layerName, genDir));
+  EXPECT_EQ(genDir, "BaseRelativeToProject/RteTestGeneratorIdentifier");
+
+  clayer.generators.baseDir = "BaseRelativeToLayer";
+  EXPECT_TRUE(GetGeneratorDir(generator, context, layerName, genDir));
+  EXPECT_EQ(genDir, "LayerDirectory/BaseRelativeToLayer/RteTestGeneratorIdentifier");
+
+  clayer.generators.baseDir = "$SolutionDir()$/$Compiler$";
+  EXPECT_TRUE(GetGeneratorDir(generator, context, layerName, genDir));
+  EXPECT_EQ(genDir, "../AC6/RteTestGeneratorIdentifier");
+
+  clayer.generators.baseDir = "$ProjectDir(UnknownContext)$";
+  EXPECT_FALSE(GetGeneratorDir(generator, context, layerName, genDir));
+
+  // custom options directory
+  csolution.generators.options[generatorId] = "CustomRelativeToSolution";
+  EXPECT_TRUE(GetGeneratorDir(generator, context, layerName, genDir));
+  EXPECT_EQ(genDir, "../CustomRelativeToSolution");
+
+  cproject.generators.options[generatorId] = "CustomRelativeToProject";
+  EXPECT_TRUE(GetGeneratorDir(generator, context, layerName, genDir));
+  EXPECT_EQ(genDir, "CustomRelativeToProject");
+
+  clayer.generators.options[generatorId] = "CustomRelativeToLayer";
+  EXPECT_TRUE(GetGeneratorDir(generator, context, layerName, genDir));
+  EXPECT_EQ(genDir, "LayerDirectory/CustomRelativeToLayer");
+
+  clayer.generators.options[generatorId] = "$SolutionDir()$/$Compiler$";
+  EXPECT_TRUE(GetGeneratorDir(generator, context, layerName, genDir));
+  EXPECT_EQ(genDir, "../AC6");
+
+  clayer.generators.options[generatorId] = "$ProjectDir(UnknownContext)$";
+  EXPECT_FALSE(GetGeneratorDir(generator, context, layerName, genDir));
+};
+
+TEST_F(ProjMgrWorkerUnitTests, GetGeneratorDirDefault) {
+  ProjMgrParser parser;
+  ContextDesc descriptor;
+  const string& filename = testinput_folder + "/TestProject/test.cproject.yml";
+  EXPECT_TRUE(parser.ParseCproject(filename, true));
+  EXPECT_TRUE(AddContexts(parser, descriptor, filename));
+  map<string, ContextItem>* contexts;
+  GetContexts(contexts);
+  ContextItem context = contexts->begin()->second;
+  EXPECT_TRUE(LoadPacks(context));
+  EXPECT_TRUE(ProcessPrecedences(context));
+  EXPECT_TRUE(ProcessDevice(context));
+  EXPECT_TRUE(SetTargetAttributes(context, context.targetAttributes));
+
+  const string& gpdscFile = testinput_folder + "/TestGenerator/RTE/Device/RteTestGen_ARMCM0/RteTestNoWorkingDir.gpdsc";
+  bool validGpdsc;
+  const RteGenerator* generator = ProjMgrUtils::ReadGpdscFile(gpdscFile, validGpdsc)->GetFirstGenerator();
+  string genDir;
+
+  // default: $ProjectDir()$/generated/<generator-id>
+  EXPECT_TRUE(GetGeneratorDir(generator, context, "", genDir));
+  EXPECT_EQ(genDir, "generated/RteTestGeneratorIdentifier");
+};

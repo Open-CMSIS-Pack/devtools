@@ -194,13 +194,27 @@
     "OutputDirectoriesType": {
       "type": "object",
       "properties": {
-        "gendir":   { "type": "string" },
         "rtedir":   { "type": "string" },
         "intdir":   { "type": "string" },
         "outdir":   { "type": "string" },
         "cprjdir":  { "type": "string" }
       },
       "additionalProperties": false
+    },
+    "OutputFileType": {
+      "type": "object",
+      "properties": {
+        "file": { "type": "string" },
+        "type": { "$ref": "#/definitions/ArtifactsType" }
+      },
+      "additionalProperties": false,
+      "required": [ "file", "type" ]
+    },
+    "OutputFilesType": {
+      "type": "array",
+      "uniqueItems": true,
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/OutputFileType" }
     },
     "DefinesType": {
       "type": "array",
@@ -475,36 +489,32 @@
       "additionalProperties": false
     },
     "GeneratorsType": {
-      "type": "object",
-      "patternProperties": {
-        "\\w": { "$ref": "#/definitions/GeneratorType" }
-      }
+      "type": "array",
+      "description": "Information for calling generators",
+      "uniqueItems": true,
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/GeneratorType" }
     },
     "GeneratorType": {
       "description": "General generator info",
       "type": "object",
       "properties": {
-        "working-dir": {
-          "type": "string",
-          "description": "Path to the directory where the generator runs"
-        },
-        "gpdsc": {
-          "type": "string",
-          "description": "Path to GPDSC file to be created by the generator"
-        },
-        "command": { "$ref": "#/definitions/CommandType" }
+        "generator": { "type": "string", "description": "Section for a specific generator" },
+        "path":      { "type": "string", "description": "Path name for storing the files generated" },
+        "gpdsc":     { "type": "string", "description": "File name of the *.GDPSC file that stores the information in path" },
+        "command":   { "$ref": "#/definitions/CommandType" }
       },
-      "required": [ "working-dir", "gpdsc", "command" ]
+      "required": [ "generator", "path", "gpdsc", "command" ]
     },
     "CommandType": {
       "type": "object",
+      "description": "Section for invoking the generator on different Host operating systems",
       "properties": {
         "win":   { "$ref": "#/definitions/HostSpecificCommand" },
         "linux": { "$ref": "#/definitions/HostSpecificCommand" },
         "mac":   { "$ref": "#/definitions/HostSpecificCommand" },
         "other": { "$ref": "#/definitions/HostSpecificCommand" }
-      },
-      "required": [ "win", "linux", "mac", "other" ]
+      }
     },
     "HostSpecificCommand": {
       "type": "object",
@@ -570,6 +580,37 @@
         { "required": [ "component" ] }
       ],
       "additionalProperties": false
+    },
+    "GeneratorsOutputType": {
+      "type": ["object", "null"],
+      "description": "Allows to control the directory structure for generator output files",
+      "properties": {
+        "base-dir": {
+          "type": "string",
+          "description": "Base directory for unspecified generators; default: $ProjectDir()$/generated"
+        },
+        "options": { "$ref": "#/definitions/GeneratorOptionsType" }
+      }
+    },
+    "GeneratorOptionsType": {
+      "type": "array",
+      "description": "Specific generator options; allows explicit directory configuration for a generator",
+      "uniqueItems": true,
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/GeneratorOptionType" }
+    },
+    "GeneratorOptionType": {
+      "type": ["object", "null"],
+      "properties": {
+        "generator": {
+          "type": "string",
+          "description": "Identifier of the generator tool, specified with id in the generators element of the PDSC file"
+        },
+        "path":  {
+          "type": "string",
+          "description": "Specifies the directory for generated files. Relative paths used the location of the yml file as base directory"
+        }
+      }
     },
     "LayersType": {
       "type": "array",
@@ -675,7 +716,8 @@
           "description": "The tool required to build this csolution project"
         },
         "description": { "type": "string" },
-        "cdefault": { "type": "null", "description": "Enable use of cdefault.yml file" }
+        "cdefault":    { "type": "null", "description": "Enable use of cdefault.yml file" },
+        "generators":  { "$ref": "#/definitions/GeneratorsOutputType" }
       },
       "additionalProperties": false
     },
@@ -707,7 +749,8 @@
         "layers":      { "$ref": "#/definitions/LayersType" },
         "setups":      { "$ref": "#/definitions/SetupsType" },
         "connections": { "$ref": "#/definitions/ConnectionsType" },
-        "linker":      { "$ref": "#/definitions/LinkersType" }
+        "linker":      { "$ref": "#/definitions/LinkersType" },
+        "generators":  { "$ref": "#/definitions/GeneratorsOutputType" }
       },
       "additionalProperties": false
     },
@@ -736,6 +779,7 @@
         "define":            { "$ref": "#/definitions/DefinesType" },
         "add-path":          { "$ref": "#/definitions/AddpathsType" },
         "output-dirs":       { "$ref": "#/definitions/OutputDirectoriesType" },
+        "output":            { "$ref": "#/definitions/OutputFilesType" },
         "components":        { "$ref": "#/definitions/ResolvedComponentsType" },
         "linker":            { "$ref": "#/definitions/LinkerType" },
         "groups":            { "$ref": "#/definitions/GroupsType" },
@@ -778,7 +822,8 @@
         "groups":      { "$ref": "#/definitions/GroupsType" },
         "components":  { "$ref": "#/definitions/ComponentsType" },
         "connections": { "$ref": "#/definitions/ConnectionsType" },
-        "linker":      { "$ref": "#/definitions/LinkersType" }
+        "linker":      { "$ref": "#/definitions/LinkersType" },
+        "generators":  { "$ref": "#/definitions/GeneratorsOutputType" }
       },
       "additionalProperties": false
     },

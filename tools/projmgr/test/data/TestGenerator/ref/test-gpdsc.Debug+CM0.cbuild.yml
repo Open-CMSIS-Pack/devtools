@@ -17,7 +17,6 @@ build:
   add-path:
     - ../data/TestGenerator/RTE/_Debug_CM0
   output-dirs:
-    gendir: ../data/TestGenerator
     intdir: tmp/test-gpdsc/CM0/Debug
     outdir: out/test-gpdsc/CM0/Debug
     rtedir: ../data/TestGenerator/RTE
@@ -39,8 +38,8 @@ build:
       from-pack: ARM::RteTest_DFP@0.2.0
       selected-by: RteTest:CORE
   generators:
-    RteTestGeneratorIdentifier:
-      working-dir: ../data/TestGenerator/RTE/Device
+    - generator: RteTestGeneratorIdentifier
+      path: ../data/TestGenerator/RTE/Device
       gpdsc: ../data/TestGenerator/RTE/Device/RteTestGen_ARMCM0/RteTest.gpdsc
       command:
         win:

@@ -19,7 +19,8 @@ public:
     DEFAULT = 0,
     SOLUTION,
     PROJECT,
-    LAYER
+    LAYER,
+    BUILD
   };
   /**
    * @brief class constructor

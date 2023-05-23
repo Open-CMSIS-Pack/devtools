@@ -16,7 +16,6 @@ build:
   add-path:
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM3/Include
   output-dirs:
-    gendir: ../data/TestSolution/ContextMap
     intdir: tmp/project2/RteTest_ARMCM3/Debug
     outdir: out/project2/RteTest_ARMCM3/Debug
     rtedir: ../data/TestSolution/ContextMap/RTE

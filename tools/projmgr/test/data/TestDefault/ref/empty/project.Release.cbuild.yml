@@ -21,7 +21,6 @@ build:
     - ../../data/TestDefault/RTE/_Release
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.1.1/Device/ARM/ARMCM0/Include
   output-dirs:
-    gendir: ../../data/TestDefault
     intdir: tmp/project/Release
     outdir: out/project/Release
     rtedir: ../../data/TestDefault/RTE

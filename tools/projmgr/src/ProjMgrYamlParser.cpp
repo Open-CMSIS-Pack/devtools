@@ -82,6 +82,7 @@ bool ProjMgrYamlParser::ParseCsolution(const string& input,
     ParseTargetType(solutionNode, csolution.target);
     ParsePacks(solutionNode, csolution.packs);
     csolution.enableCdefault = solutionNode[YAML_CDEFAULT].IsDefined();
+    ParseGenerators(solutionNode, csolution.generators);
 
   } catch (YAML::Exception& e) {
     ProjMgrLogger::Error(input, e.mark.line + 1, e.mark.column + 1, e.msg);
@@ -317,6 +318,22 @@ void ProjMgrYamlParser::ParseOutput(const YAML::Node& parent, OutputItem& output
   }
 }
 
+void ProjMgrYamlParser::ParseGenerators(const YAML::Node& parent, GeneratorsItem& generators) {
+  if (parent[YAML_GENERATORS].IsDefined()) {
+    const YAML::Node& generatorsNode = parent[YAML_GENERATORS];
+    ParseString(generatorsNode, YAML_BASE_DIR, generators.baseDir);
+    if (generatorsNode[YAML_OPTIONS].IsDefined()) {
+      const YAML::Node& optionsNode = generatorsNode[YAML_OPTIONS];
+      for (const auto& optionsEntry : optionsNode) {
+        string generator, path;
+        ParseString(optionsEntry, YAML_GENERATOR, generator);
+        ParseString(optionsEntry, YAML_PATH, path);
+        generators.options[generator] = path;
+      }
+    }
+  }
+}
+
 bool ProjMgrYamlParser::ParseTypeFilter(const YAML::Node& parent, TypeFilter& type) {
   vector<string> include, exclude;
   ParseVectorOrString(parent, YAML_FORCONTEXT, include);
@@ -521,7 +538,6 @@ void ProjMgrYamlParser::ParseOutputDirs(const YAML::Node& parent, struct Directo
     const YAML::Node& outputDirsNode = parent[YAML_OUTPUTDIRS];
     map<const string, string&> outputDirsChildren = {
       {YAML_OUTPUT_CPRJDIR, directories.cprj},
-      {YAML_OUTPUT_GENDIR, directories.gendir},
       {YAML_OUTPUT_INTDIR, directories.intdir},
       {YAML_OUTPUT_OUTDIR, directories.outdir},
       {YAML_OUTPUT_RTEDIR, directories.rte},
@@ -671,6 +687,7 @@ const set<string> solutionKeys = {
   YAML_CREATED_BY,
   YAML_CREATED_FOR,
   YAML_CDEFAULT,
+  YAML_GENERATORS,
 };
 
 const set<string> projectsKeys = {
@@ -707,6 +724,7 @@ const set<string> projectKeys = {
   YAML_SETUPS,
   YAML_CONNECTIONS,
   YAML_LINKER,
+  YAML_GENERATORS,
 };
 
 const set<string> setupKeys = {
@@ -752,6 +770,7 @@ const set<string> layerKeys = {
   YAML_GROUPS,
   YAML_CONNECTIONS,
   YAML_LINKER,
+  YAML_GENERATORS,
 };
 
 const set<string> targetTypeKeys = {
@@ -798,7 +817,6 @@ const set<string> buildTypeKeys = {
 
 const set<string> outputDirsKeys = {
   YAML_OUTPUT_CPRJDIR,
-  YAML_OUTPUT_GENDIR,
   YAML_OUTPUT_INTDIR,
   YAML_OUTPUT_OUTDIR,
   YAML_OUTPUT_RTEDIR,
@@ -807,6 +825,11 @@ const set<string> outputDirsKeys = {
 const set<string> outputKeys = {
   YAML_BASE_NAME,
   YAML_TYPE,
+};
+
+const set<string> generatorsKeys = {
+  YAML_BASE_DIR,
+  YAML_OPTIONS,
 };
 
 const set<string> processorKeys = {
@@ -967,6 +990,7 @@ const map<string, set<string>> mappings = {
   {YAML_PROCESSOR, processorKeys},
   {YAML_OUTPUTDIRS, outputDirsKeys},
   {YAML_OUTPUT, outputKeys},
+  {YAML_GENERATORS, generatorsKeys},
 };
 
 bool ProjMgrYamlParser::ValidateCdefault(const string& input, const YAML::Node& root) {

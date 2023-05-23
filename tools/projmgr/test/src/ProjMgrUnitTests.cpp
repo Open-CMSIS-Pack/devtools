@@ -6,6 +6,7 @@
 
 #include "ProjMgr.h"
 #include "ProjMgrTestEnv.h"
+#include "ProjMgrYamlSchemaChecker.h"
 
 #include "RteFsUtils.h"
 
@@ -1310,6 +1311,9 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Generator) {
     testinput_folder + "/TestGenerator/ref/test-gpdsc.cbuild-idx.yml");
  ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test-gpdsc.Debug+CM0.cbuild.yml",
     testinput_folder + "/TestGenerator/ref/test-gpdsc.Debug+CM0.cbuild.yml");
+
+  // Check cbuild.yml schema
+  EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testoutput_folder + "/test-gpdsc.Debug+CM0.cbuild.yml", ProjMgrYamlSchemaChecker::FileType::BUILD));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_TargetOptions)
@@ -2083,6 +2087,38 @@ TEST_F(ProjMgrUnitTests, ListGenerators) {
   EXPECT_TRUE(m_worker.ParseContextSelection(m_context));
   EXPECT_TRUE(m_worker.ListGenerators(generators));
   EXPECT_EQ(expected, set<string>(generators.begin(), generators.end()));
+}
+
+TEST_F(ProjMgrUnitTests, ListMultipleGenerators) {
+  set<string> expected = {
+     "RteTestGeneratorIdentifier (RteTest Generator Description)",
+     "RteTestGeneratorWithKey (RteTest Generator with Key Description)",
+  };
+  vector<string> generators;
+  m_csolutionFile = testinput_folder + "/TestGenerator/test-gpdsc-multiple-generators.csolution.yml";
+  error_code ec;
+  m_rootDir = fs::path(m_csolutionFile).parent_path().generic_string();
+  m_context = "test-gpdsc-multiple-generators.Debug+CM0";
+  EXPECT_TRUE(PopulateContexts());
+  EXPECT_TRUE(m_worker.ParseContextSelection(m_context));
+  EXPECT_TRUE(m_worker.ListGenerators(generators));
+  EXPECT_EQ(expected, set<string>(generators.begin(), generators.end()));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_MultipleGenerators) {
+  char* argv[7];
+  // convert -s solution.yml
+  const string& csolution = testinput_folder + "/TestGenerator/test-gpdsc-multiple-generators.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+
+  // Check generated cbuild YML
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/test-gpdsc-multiple-generators.Debug+CM0.cbuild.yml",
+    testinput_folder + "/TestGenerator/ref/test-gpdsc-multiple-generators.Debug+CM0.cbuild.yml");
 }
 
 TEST_F(ProjMgrUnitTests, ExecuteGenerator) {
