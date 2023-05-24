@@ -314,7 +314,7 @@ void ProjMgrGenerator::GenerateCprjMisc(XMLTreeElement* element, const MiscItem&
   }
 }
 
-void ProjMgrGenerator::GenerateCprjLinkerOptions(XMLTreeElement* element, const string& compiler, const LinkerItem& linker) {
+void ProjMgrGenerator::GenerateCprjLinkerOptions(XMLTreeElement* element, const string& compiler, const LinkerContextItem& linker) {
   if (!linker.script.empty()) {
     XMLTreeElement* ldflagsElement = nullptr;
     for (auto& child : element->GetChildren()) {

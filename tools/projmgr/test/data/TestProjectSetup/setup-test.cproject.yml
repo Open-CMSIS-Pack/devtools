@@ -16,6 +16,8 @@ project:
       for-compiler: GCC
       define:
         - SETUP_GCC
+      processor:
+        trustzone: off
 
   groups:
     - group: Group for AC6

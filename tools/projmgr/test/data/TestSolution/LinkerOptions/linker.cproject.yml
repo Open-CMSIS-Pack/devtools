@@ -13,5 +13,12 @@ project:
        - LD_PP_GCC_CPROJECT_DEF1
       for-compiler: GCC
 
+  setups:
+    - linker:
+      - script: ./layer/linkerScript.ld
+        define:
+         - LD_PP_GCC_SETUP_DEF0
+      for-compiler: GCC
+
   layers:
     - layer: layer/linker.clayer.yml
