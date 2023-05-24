@@ -241,7 +241,8 @@ struct LinkerItem {
  *        for compiler control,
  *        setup build settings,
  *        type inclusion,
- *        output name and type
+ *        output name and type,
+ *        list of linker entries
 */
 struct SetupItem {
   std::string description;
@@ -249,6 +250,7 @@ struct SetupItem {
   BuildType build;
   TypeFilter type;
   OutputItem output;
+  std::vector<LinkerItem> linker;
 };
 
 /**

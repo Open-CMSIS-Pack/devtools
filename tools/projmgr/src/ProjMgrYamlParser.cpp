@@ -480,6 +480,8 @@ bool ProjMgrYamlParser::ParseSetups(const YAML::Node& parent, vector<SetupItem>&
       ParseVectorOrString(setupEntry, YAML_FORCOMPILER, setupItem.forCompiler);
       ParseBuildType(setupEntry, setupItem.build);
       ParseOutput(setupEntry, setupItem.output);
+      ParseLinker(setupEntry, setupItem.linker);
+      ParseProcessor(setupEntry, setupItem.build.processor);
       setups.push_back(setupItem);
     }
   }
@@ -695,6 +697,7 @@ const set<string> setupKeys = {
   YAML_ADDPATH,
   YAML_DELPATH,
   YAML_MISC,
+  YAML_LINKER,
   YAML_PROCESSOR,
 };
 

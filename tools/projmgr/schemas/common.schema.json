@@ -842,7 +842,9 @@
         "add-path":        { "$ref": "#/definitions/AddpathsType" },
         "del-path":        { "$ref": "#/definitions/DelpathsType" },
         "misc":            { "$ref": "#/definitions/MiscTypes" },
-        "output":          { "$ref": "#/definitions/OutputType" }
+        "output":          { "$ref": "#/definitions/OutputType" },
+        "linker":          { "$ref": "#/definitions/LinkersType" },
+        "processor":       { "$ref": "#/definitions/ProcessorType" }
       },
       "$ref": "#/definitions/TypeListMutualExclusion",
       "additionalProperties": false

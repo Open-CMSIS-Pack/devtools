@@ -1223,6 +1223,8 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessLinkerOptions_MultipleCompilers) {
   context.cproject = &cproject;
   ClayerItem clayer;
   context.clayers.insert({ "layer", &clayer });
+  SetupItem setup;
+  context.cproject->setups.push_back(setup);
   LinkerItem linker;
 
   string linkerScriptFile = "path/to/linkerScript_AC6.sct";
@@ -1231,6 +1233,7 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessLinkerOptions_MultipleCompilers) {
   linker.regions = linkerRegionsFile;
   linker.forCompiler = { "AC6" };
   cproject.linker.push_back(linker);
+  cproject.setups.front().linker.push_back(linker);
   clayer.linker.push_back(linker);
 
   linkerScriptFile = "path/to/linkerScript_GCC.sct";
@@ -1239,6 +1242,7 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessLinkerOptions_MultipleCompilers) {
   linker.regions = linkerRegionsFile;
   linker.forCompiler = { "GCC" };
   cproject.linker.push_back(linker);
+  cproject.setups.front().linker.push_back(linker);
   clayer.linker.push_back(linker);
 
   context.compiler = "AC6";
@@ -1268,9 +1272,12 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessLinkerOptions_Redefinition) {
   ClayerItem clayer;
   context.clayers.insert({ "layer", &clayer });
   clayer.directory = testoutput_folder + "/layer";
+  SetupItem setup;
+  context.cproject->setups.push_back(setup);
   LinkerItem linker;
   linker.script = linkerScriptFile;
   cproject.linker.push_back(linker);
+  cproject.setups.front().linker.push_back(linker);
   clayer.linker.push_back(linker);
   StdStreamRedirect streamRedirect;
 
