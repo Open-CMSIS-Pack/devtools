@@ -14,7 +14,7 @@
     <compiler name="AC6" version="6.18.0"/>
   </compilers>
 
-  <target Dendian="Little-endian" Dfpu="NO_FPU" Dname="RteTest_ARMCM0" Dsecure="Non-secure" Dvendor="ARM:82">
+  <target Dfpu="NO_FPU" Dname="RteTest_ARMCM0" Dsecure="Non-secure" Dvendor="ARM:82">
     <output elf="test.axf" intdir="tmp/test" name="test" outdir="out/test" rtedir="../data/TestSolution/TestProject4/RTE"/>
     <ldflags compiler="AC6" file="../data/TestSolution/TestProject4/RTE/Device/RteTest_ARMCM0/ARMCM0_ac6.sct"/>
   </target>

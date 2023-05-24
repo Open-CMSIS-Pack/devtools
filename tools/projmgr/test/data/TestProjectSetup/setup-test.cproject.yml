@@ -10,11 +10,11 @@ project:
   setups:
     - setup: Setup for AC6
       for-compiler: AC6
-      defines:
+      define:
         - SETUP_AC6
     - setup: Setup for GCC
       for-compiler: GCC
-      defines:
+      define:
         - SETUP_GCC
 
   groups:

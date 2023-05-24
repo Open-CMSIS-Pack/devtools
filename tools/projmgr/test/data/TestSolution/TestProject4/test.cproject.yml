@@ -4,8 +4,6 @@ project:
   device: RteTest_ARMCM0
   compiler: AC6@>=6.18.0
   processor:
-    fpu: off
-    endian: little
     trustzone: non-secure
   components:
     - component: Startup

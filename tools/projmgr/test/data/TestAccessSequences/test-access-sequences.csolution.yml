@@ -5,7 +5,7 @@ solution:
     - type: CM0
       device: RteTest_ARMCM0
       misc:
-        - compiler: AC6
+        - for-compiler: AC6
           C-CPP: [-C-CPP-$Dname$]
       define: 
         - DEF-CM0-$Dname$-$Bname$
@@ -14,7 +14,7 @@ solution:
     - type: CM3
       device: RteTest_ARMCM3
       misc:
-        - compiler: AC6
+        - for-compiler: AC6
           C-CPP: [-C-CPP-$Dname$]
       define:
         - DEF-CM3-$Dname$

@@ -66,15 +66,6 @@ bool ProjMgrWorker::AddContexts(ProjMgrParser& parser, ContextDesc& descriptor, 
   context.cdefault = &parser.GetCdefault();
   context.csolution = &parser.GetCsolution();
 
-  // Default build-types
-  if (context.cdefault) {
-    for (const auto& defaultBuildType : context.cdefault->buildTypes) {
-      if (context.csolution->buildTypes.find(defaultBuildType.first) == context.csolution->buildTypes.end()) {
-        context.csolution->buildTypes.insert(defaultBuildType);
-      }
-    }
-  }
-
   // No build/target-types
   if (context.csolution->buildTypes.empty() && context.csolution->targetTypes.empty()) {
     return AddContext(parser, descriptor, { "" }, cprojectFile, context);
@@ -1162,10 +1153,6 @@ bool ProjMgrWorker::ProcessDevicePrecedence(StringCollection& item) {
 bool ProjMgrWorker::ProcessPackages(ContextItem& context) {
   vector<PackItem> packRequirements;
 
-  // Default package requirements
-  if (context.cdefault) {
-    packRequirements.insert(packRequirements.end(), context.cdefault->packs.begin(), context.cdefault->packs.end());
-  }
   // Solution package requirements
   if (context.csolution) {
     packRequirements.insert(packRequirements.end(), context.csolution->packs.begin(), context.csolution->packs.end());
@@ -1934,7 +1921,7 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
     miscVec.push_back(&clayer.misc);
   }
   context.controls.processed.misc.push_back({});
-  context.controls.processed.misc.front().compiler = context.compiler;
+  context.controls.processed.misc.front().forCompiler = context.compiler;
   AddMiscUniquely(context.controls.processed.misc.front(), miscVec);
 
   // Defines
@@ -2912,7 +2899,7 @@ bool ProjMgrWorker::GetProjectSetup(ContextItem& context) {
 void ProjMgrWorker::UpdateMisc(vector<MiscItem>& vec, const string& compiler) {
   // Filter and adjust vector of MiscItem, leaving a single compiler compatible item
   MiscItem dst;
-  dst.compiler = compiler;
+  dst.forCompiler = compiler;
   AddMiscUniquely(dst, vec);
   vec.clear();
   vec.push_back(dst);
@@ -2926,7 +2913,7 @@ void ProjMgrWorker::AddMiscUniquely(MiscItem& dst, vector<vector<MiscItem>*>& ve
 
 void ProjMgrWorker::AddMiscUniquely(MiscItem& dst, vector<MiscItem>& vec) {
   for (auto& src : vec) {
-    if (ProjMgrUtils::AreCompilersCompatible(src.compiler, dst.compiler)) {
+    if (ProjMgrUtils::AreCompilersCompatible(src.forCompiler, dst.forCompiler)) {
       // Copy individual flags
       AddStringItemsUniquely(dst.as, src.as);
       AddStringItemsUniquely(dst.c, src.c);

@@ -83,7 +83,7 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDevice) {
     {"Dclock", "10000000"},
     {"Dcore", "Cortex-M0"},
     {"DcoreVersion", "r0p0"},
-    {"Dendian", "Little-endian"},
+    {"Dendian", "Configurable"},
     {"Dfpu", "NO_FPU"},
     {"Dmpu", "NO_MPU"},
     {"Dname", "RteTest_ARMCM0"},

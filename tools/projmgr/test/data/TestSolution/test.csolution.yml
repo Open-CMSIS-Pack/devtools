@@ -5,7 +5,7 @@ solution:
     - type: CM0
       device: RteTest_ARMCM0
       misc:
-        - compiler: AC6
+        - for-compiler: AC6
           C-CPP: [-C-CPP-type-CM0]
           ASM: [-ASM-type-CM0]
           Link: [-Link-type-CM0]
@@ -30,7 +30,7 @@ solution:
     - type: CM3
       device: RteTest_ARMCM3
       misc:
-        - compiler: AC6
+        - for-compiler: AC6
           C-CPP: [-C-CPP-type-CM3]
           ASM: [-ASM-type-CM3]
           Link: [-Link-type-CM3]
@@ -49,9 +49,9 @@ solution:
   build-types:
     - type: Debug
       misc:
-      - compiler: AC6
+      - for-compiler: AC6
         C-CPP: [-C-CPP-Debug-AC6]
-      - compiler: GCC
+      - for-compiler: GCC
         C-CPP: [-C-CPP-Debug-GCC]
       compiler: AC6
       optimize: none

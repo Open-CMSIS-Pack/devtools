@@ -5,8 +5,6 @@ project:
   device: RteTest_ARMCM0
   compiler: AC6@>=6.18.0
   processor:
-    fpu: off
-    endian: little
     trustzone: non-secure
   packages:
     - package: ARM::RteTest_DFP@0.1.1

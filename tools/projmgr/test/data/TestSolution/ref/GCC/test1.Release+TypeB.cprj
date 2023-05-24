@@ -14,9 +14,9 @@
     <compiler name="GCC" version="11.2.1"/>
   </compilers>
 
-  <target Dendian="Little-endian" Dfpu="NO_FPU" Dname="RteTest_ARMCM0" Dsecure="Non-secure" Dvendor="ARM:82">
-    <output elf="test1.elf" intdir="../test1/Release/TypeB" name="test1" outdir="../test1/Release" rtedir="../TestProject1/Custom/RTEDIR"/>
-    <ldflags compiler="GCC" file="../TestProject1/Custom/RTEDIR/Device/RteTest_ARMCM0/gcc_arm.ld"/>
+  <target Dfpu="NO_FPU" Dname="RteTest_ARMCM0" Dsecure="Non-secure" Dvendor="ARM:82">
+    <output elf="test1.elf" intdir="../test1/Release/TypeB" name="test1" outdir="../test1/Release" rtedir="../TestProject1/RTE"/>
+    <ldflags compiler="GCC" file="../TestProject1/RTE/Device/RteTest_ARMCM0/gcc_arm.ld"/>
   </target>
 
   <components>

@@ -11,14 +11,14 @@ solution:
     - type: Debug
       compiler: AC6
       misc:
-        - compiler: AC6
+        - for-compiler: AC6
           C:
             - -O1
             - -g
     - type: Release
       compiler: AC6
       misc:
-        - compiler: AC6
+        - for-compiler: AC6
           C:
             - -O3
 
