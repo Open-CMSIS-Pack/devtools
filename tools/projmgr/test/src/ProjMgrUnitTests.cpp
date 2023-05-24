@@ -88,9 +88,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks) {
     {{"TestSolution/test.csolution_no_packs.yml", "test1.Debug+CM0"},
       "ARM::RteTest@0.1.0 \\(.*\\)\nARM::RteTestBoard@0.1.0 \\(.*\\)\nARM::RteTestGenerator@0.1.0 \\(.*\\)\nARM::RteTest_DFP@0.2.0 \\(.*\\)\n"},
     {{"TestSolution/test.csolution_pack_selection.yml", "test2.Debug+CM0"},
-      "ARM::RteTest_DFP@0.2.0 \\(.*\\)\n"},
-    {{"TestDefault/build-types.csolution.yml", "project.Debug"},
-      "ARM::RteTest_DFP@0.1.1 \\(.*\\)\n" }
+      "ARM::RteTest_DFP@0.2.0 \\(.*\\)\n"}
   };
 
   // positive tests
@@ -2475,30 +2473,6 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_DefaultFile2) {
     testinput_folder + "/TestDefault/ref/full/project.Debug.cprj");
  ProjMgrTestEnv:: CompareFile(testoutput_folder + "/full/project.Release.cprj",
     testinput_folder + "/TestDefault/ref/full/project.Release.cprj");
-}
-
-TEST_F(ProjMgrUnitTests, RunProjMgrSolution_DefaultFile3) {
-  char* argv[6];
-  // convert -s solution.yml
-  // default build-types and default compiler are taken when applicable
-  const string& csolution = testinput_folder + "/TestDefault/build-types.csolution.yml";
-  const string& output = testoutput_folder + "/build-types";
-  argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
-  argv[3] = (char*)csolution.c_str();
-  argv[4] = (char*)"-o";
-  argv[5] = (char*)output.c_str();
-  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
-
-  // Check generated CPRJs
- ProjMgrTestEnv:: CompareFile(testoutput_folder + "/build-types/project.Debug.cprj",
-    testinput_folder + "/TestDefault/ref/build-types/project.Debug.cprj");
- ProjMgrTestEnv:: CompareFile(testoutput_folder + "/build-types/project.Release.cprj",
-    testinput_folder + "/TestDefault/ref/build-types/project.Release.cprj");
- ProjMgrTestEnv:: CompareFile(testoutput_folder + "/build-types/project.AC6.cprj",
-    testinput_folder + "/TestDefault/ref/build-types/project.AC6.cprj");
- ProjMgrTestEnv:: CompareFile(testoutput_folder + "/build-types/project.IAR.cprj",
-    testinput_folder + "/TestDefault/ref/build-types/project.IAR.cprj");
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution_DefaultFileInCompilerRoot) {

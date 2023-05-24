@@ -3,9 +3,6 @@
 project:
   description: Project 1
   device: RteTest_ARMCM0
-  processor:
-    fpu: off
-    endian: little
   components:
     - component: Startup
     - component: CORE
@@ -42,7 +39,7 @@ project:
           Link: [-Link-group]
           Link-CPP: [-Link-CPP-group]
           Lib: [-Lib-group]
-        - compiler: AC6
+        - for-compiler: AC6
           C-CPP: [-C-CPP-group-AC6]
       files: 
         - file: main.c
@@ -59,13 +56,13 @@ project:
             - ./path/main/3/file
             - ./path/main/4/file
           misc:
-            - compiler: AC6
+            - for-compiler: AC6
               C: [-C-file-AC6]
               CPP: [-CPP-file-AC6]
               ASM: [-ASM-file-AC6]
               Link: [-Link-file-AC6]
               Lib: [-Lib-file-AC6]
-            - compiler: GCC
+            - for-compiler: GCC
               C: [-C-file-GCC]
               CPP: [-CPP-file-GCC]
               ASM: [-ASM-file-GCC]

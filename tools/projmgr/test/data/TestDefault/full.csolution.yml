@@ -13,4 +13,12 @@ solution:
   projects:
     - project: ./project.cproject.yml
 
+  misc:
+    - for-compiler: GCC
+      ASM:
+        - solutionMiscASM-$Dname$
+    - for-compiler: AC6
+      C:
+        - solutionMiscC
+
   cdefault:

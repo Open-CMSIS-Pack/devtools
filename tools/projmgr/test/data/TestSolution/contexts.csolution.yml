@@ -14,11 +14,10 @@ solution:
     - pack: ARM::RteTest_DFP
 
   projects:
-    # for-type and not-for-type are deprecated
     - project: contexts.cproject.yml
-      for-type: [.B1+T1]
+      for-context: [.B1+T1]
     - project: contexts.cproject.yml
-      not-for-type: [.B1+T2]
+      not-for-context: [.B1+T2]
 
     - project: contexts.cproject.yml
       for-context: [.B2+T1]

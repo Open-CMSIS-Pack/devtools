@@ -2,7 +2,7 @@
 
 layer:
   misc:
-    - compiler: AC6
+    - for-compiler: AC6
       C: [-fshort-enums, -fshort-wchar]
   components:
     - component: Device:Startup

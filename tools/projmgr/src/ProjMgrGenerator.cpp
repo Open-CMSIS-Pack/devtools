@@ -308,7 +308,7 @@ void ProjMgrGenerator::GenerateCprjMisc(XMLTreeElement* element, const MiscItem&
       XMLTreeElement* flagsElement = element->CreateElement(flags.first);
       if (flagsElement) {
         flagsElement->AddAttribute("add", GetStringFromVector(flags.second, " "));
-        flagsElement->AddAttribute("compiler", RteUtils::GetPrefix(misc.compiler, '@'));
+        flagsElement->AddAttribute("compiler", RteUtils::GetPrefix(misc.forCompiler, '@'));
       }
     }
   }

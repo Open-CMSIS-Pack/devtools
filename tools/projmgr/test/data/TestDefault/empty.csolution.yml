@@ -2,6 +2,13 @@
 
 solution:
 
+  packs:
+    - pack: ARM::RteTest_DFP@0.1.1
+
+  build-types:
+    - type: Debug
+    - type: Release
+
   projects:
     - project: ./project.cproject.yml
 

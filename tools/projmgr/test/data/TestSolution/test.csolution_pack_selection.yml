@@ -5,7 +5,7 @@ solution:
     - type: CM0
       device: RteTest_ARMCM0_Dual:cm0_core1
       misc:
-        - compiler: AC6
+        - for-compiler: AC6
           C-CPP: [-C-CPP-type-CM0]
           ASM: [-ASM-type-CM0]
           Link: [-Link-type-CM0]
@@ -24,7 +24,7 @@ solution:
     - type: TestGen
       device: RteTestGen_ARMCM0
       misc:
-        - compiler: AC6
+        - for-compiler: AC6
           C-CPP: [-C-CPP-type-CM3]
           ASM: [-ASM-type-CM3]
           Link: [-Link-type-CM3]

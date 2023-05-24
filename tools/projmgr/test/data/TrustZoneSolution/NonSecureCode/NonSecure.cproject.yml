@@ -2,7 +2,7 @@
 
 project:
   misc:
-    - compiler: AC6
+    - for-compiler: AC6
       C: [-fshort-enums, -fshort-wchar]
   add-path:
     - $OutDir(Secure)$
