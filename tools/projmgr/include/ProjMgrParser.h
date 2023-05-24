@@ -45,7 +45,6 @@ struct TypeFilter {
 
 /**
  * @brief compiler misc controls
- *        compiler name (to be deprecated)
  *        for compiler control,
  *        options for assembler,
  *        options for c compiler,
@@ -57,7 +56,6 @@ struct TypeFilter {
  *        options for archiver
 */
 struct MiscItem {
-  std::string compiler;
   std::string forCompiler;
   std::vector<std::string> as;
   std::vector<std::string> c;
@@ -243,7 +241,8 @@ struct LinkerItem {
  *        for compiler control,
  *        setup build settings,
  *        type inclusion,
- *        output name and type
+ *        output name and type,
+ *        list of linker entries
 */
 struct SetupItem {
   std::string description;
@@ -251,6 +250,7 @@ struct SetupItem {
   BuildType build;
   TypeFilter type;
   OutputItem output;
+  std::vector<LinkerItem> linker;
 };
 
 /**
@@ -299,16 +299,13 @@ struct ContextDesc {
 
 /**
  * @brief default item containing
- *        cdefault path
- *        build types,
+ *        cdefault path,
  *        compiler,
- *        list of packs
+ *        misc
 */
 struct CdefaultItem {
   std::string path;
-  std::map<std::string, BuildType> buildTypes;
   std::string compiler;
-  std::vector<PackItem> packs;
   std::vector<MiscItem> misc;
 };
 

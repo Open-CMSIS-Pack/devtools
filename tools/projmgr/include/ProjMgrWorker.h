@@ -179,6 +179,22 @@ struct TranslationControl {
 };
 
 /**
+ * @brief linker context item containing
+ *        list of linker scripts for processing,
+ *        list of linker regions files for processing,
+ *        list of defines
+ *        processed regions file,
+ *        processed script file
+*/
+struct LinkerContextItem {
+  StrVec scriptList;
+  StrVec regionsList;
+  StrVec defines;
+  std::string regions;
+  std::string script;
+};
+
+/**
  * @brief project context item containing
  *        pointer to csolution,
  *        pointer to cproject,
@@ -254,7 +270,7 @@ struct ContextItem {
   std::map<std::string, GpdscItem> gpdscs;
   StrVecMap compatibleLayers;
   std::vector<ConnectionsCollectionVec> validConnections;
-  LinkerItem linker;
+  LinkerContextItem linker;
   std::map<std::string, std::string> variables;
   bool precedences;
 };
@@ -567,7 +583,7 @@ protected:
   bool ProcessSequenceRelative(ContextItem& context, std::string& item, const std::string& ref = std::string(), bool withHeadingDot = false);
   bool ProcessOutputFilenames(ContextItem& context);
   bool ProcessLinkerOptions(ContextItem& context);
-  bool ProcessLinkerOptions(ContextItem& context, LinkerItem& linker, StringCollection& linkerScriptFile, StringCollection& linkerRegionsFile, const std::string& ref);
+  bool ProcessLinkerOptions(ContextItem& context, const LinkerItem& linker, const std::string& ref);
   bool ProcessProcessorOptions(ContextItem& context);
   bool AddContext(ProjMgrParser& parser, ContextDesc& descriptor, const TypePair& type, const std::string& cprojectFile, ContextItem& parentContext);
   bool ValidateContext(ContextItem& context);

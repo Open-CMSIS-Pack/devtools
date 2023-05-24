@@ -10,12 +10,14 @@ project:
   setups:
     - setup: Setup for AC6
       for-compiler: AC6
-      defines:
+      define:
         - SETUP_AC6
     - setup: Setup for GCC
       for-compiler: GCC
-      defines:
+      define:
         - SETUP_GCC
+      processor:
+        trustzone: off
 
   groups:
     - group: Group for AC6

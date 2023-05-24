@@ -13,7 +13,6 @@
 /**
   * @brief YAML key definitions
 */
-static constexpr const char* YAML_ADDPATHS = "add-paths";
 static constexpr const char* YAML_ADDPATH = "add-path";
 static constexpr const char* YAML_ARGUMENT = "argument";
 static constexpr const char* YAML_ARGUMENTS = "arguments";
@@ -50,9 +49,7 @@ static constexpr const char* YAML_CREATED_BY = "created-by";
 static constexpr const char* YAML_CREATED_FOR = "created-for";
 static constexpr const char* YAML_DEBUG = "debug";
 static constexpr const char* YAML_DEFAULT = "default";
-static constexpr const char* YAML_DEFINES = "defines";
 static constexpr const char* YAML_DEFINE = "define";
-static constexpr const char* YAML_DELPATHS = "del-paths";
 static constexpr const char* YAML_DELPATH = "del-path";
 static constexpr const char* YAML_DESCRIPTION = "description";
 static constexpr const char* YAML_DEVICE = "device";
@@ -64,7 +61,6 @@ static constexpr const char* YAML_FORBOARD = "for-board";
 static constexpr const char* YAML_FORCOMPILER = "for-compiler";
 static constexpr const char* YAML_FORCONTEXT = "for-context";
 static constexpr const char* YAML_FORDEVICE = "for-device";
-static constexpr const char* YAML_FORTYPE = "for-type";
 static constexpr const char* YAML_FPU = "fpu";
 static constexpr const char* YAML_GENERATED_BY = "generated-by";
 static constexpr const char* YAML_GENERATOR = "generator";
@@ -83,13 +79,11 @@ static constexpr const char* YAML_MISC_ASM = "ASM";
 static constexpr const char* YAML_MISC_C = "C";
 static constexpr const char* YAML_MISC_CPP = "CPP";
 static constexpr const char* YAML_MISC_C_CPP = "C-CPP";
-static constexpr const char* YAML_MISC_C_STAR = "C*";
 static constexpr const char* YAML_MISC_LIB = "Lib";
 static constexpr const char* YAML_MISC_LIBRARY = "Library";
 static constexpr const char* YAML_MISC_LINK = "Link";
 static constexpr const char* YAML_MISC_LINK_C = "Link-C";
 static constexpr const char* YAML_MISC_LINK_CPP = "Link-CPP";
-static constexpr const char* YAML_NOTFORTYPE = "not-for-type";
 static constexpr const char* YAML_NOTFORCONTEXT = "not-for-context";
 static constexpr const char* YAML_OPTIMIZE = "optimize";
 static constexpr const char* YAML_OPTIONS = "options";
@@ -117,7 +111,6 @@ static constexpr const char* YAML_SWITCH = "switch";
 static constexpr const char* YAML_TARGETTYPES = "target-types";
 static constexpr const char* YAML_TRUSTZONE = "trustzone";
 static constexpr const char* YAML_TYPE = "type";
-static constexpr const char* YAML_UNDEFINES = "undefines";
 static constexpr const char* YAML_UNDEFINE = "undefine";
 static constexpr const char* YAML_VARIABLES = "variables";
 static constexpr const char* YAML_VERSION = "version";

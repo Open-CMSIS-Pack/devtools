@@ -40,9 +40,7 @@ bool ProjMgrYamlParser::ParseCdefault(const string& input,
     }
 
     const YAML::Node& defaultNode = root[YAML_DEFAULT];
-    ParseBuildTypes(defaultNode, cdefault.buildTypes);
     ParseString(defaultNode, YAML_COMPILER, cdefault.compiler);
-    ParsePacks(defaultNode, cdefault.packs);
     ParseMisc(defaultNode, cdefault.misc);
   }
   catch (YAML::Exception& e) {
@@ -337,15 +335,7 @@ void ProjMgrYamlParser::ParseGenerators(const YAML::Node& parent, GeneratorsItem
 bool ProjMgrYamlParser::ParseTypeFilter(const YAML::Node& parent, TypeFilter& type) {
   vector<string> include, exclude;
   ParseVectorOrString(parent, YAML_FORCONTEXT, include);
-  if (include.empty()) {
-    // TODO: after deprecation remove 'for-type' keyword parsing in benefit of 'for-context'
-    ParseVectorOrString(parent, YAML_FORTYPE, include);
-  }
   ParseVectorOrString(parent, YAML_NOTFORCONTEXT, exclude);
-  if (exclude.empty()) {
-    // TODO: after deprecation remove 'not-for-type' keyword parsing in benefit of 'not-for-context'
-    ParseVectorOrString(parent, YAML_NOTFORTYPE, exclude);
-  }
   if (!ParseTypePair(include, type.include) ||
       !ParseTypePair(exclude, type.exclude)) {
     return false;
@@ -394,18 +384,10 @@ void ProjMgrYamlParser::ParseMisc(const YAML::Node& parent, vector<MiscItem>& mi
     const YAML::Node& miscNode = parent[YAML_MISC];
     for (const auto& miscEntry : miscNode) {
       MiscItem miscItem;
-      ParseString(miscEntry, YAML_FORCOMPILER, miscItem.compiler);
-      if (miscItem.compiler.empty()) {
-        // TODO: after deprecation remove 'compiler' keyword parsing in benefit of 'for-compiler'
-        ParseString(miscEntry, YAML_COMPILER, miscItem.compiler);
-      }
+      ParseString(miscEntry, YAML_FORCOMPILER, miscItem.forCompiler);
       ParseVector(miscEntry, YAML_MISC_C, miscItem.c);
       ParseVector(miscEntry, YAML_MISC_CPP, miscItem.cpp);
       ParseVector(miscEntry, YAML_MISC_C_CPP, miscItem.c_cpp);
-      if (miscItem.c_cpp.empty()) {
-        // TODO: after deprecation remove 'C*' keyword parsing in benefit of 'C-CPP'
-        ParseVector(miscEntry, YAML_MISC_C_STAR, miscItem.c_cpp);
-      }
       ParseVector(miscEntry, YAML_MISC_ASM, miscItem.as);
       ParseVector(miscEntry, YAML_MISC_LINK, miscItem.link);
       ParseVector(miscEntry, YAML_MISC_LINK_C, miscItem.link_c);
@@ -498,6 +480,8 @@ bool ProjMgrYamlParser::ParseSetups(const YAML::Node& parent, vector<SetupItem>&
       ParseVectorOrString(setupEntry, YAML_FORCOMPILER, setupItem.forCompiler);
       ParseBuildType(setupEntry, setupItem.build);
       ParseOutput(setupEntry, setupItem.output);
+      ParseLinker(setupEntry, setupItem.linker);
+      ParseProcessor(setupEntry, setupItem.build.processor);
       setups.push_back(setupItem);
     }
   }
@@ -616,25 +600,9 @@ void ProjMgrYamlParser::ParseBuildType(const YAML::Node& parent, BuildType& buil
   ParseProcessor(parent, buildType.processor);
   ParseMisc(parent, buildType.misc);
   ParseDefine(parent, buildType.defines);
-  if (buildType.defines.empty()) {
-    // TODO: after deprecation remove 'defines' keyword parsing in benefit of 'define'
-    ParseVector(parent, YAML_DEFINES, buildType.defines);
-  }
   ParseVector(parent, YAML_UNDEFINE, buildType.undefines);
-  if (buildType.undefines.empty()) {
-    // TODO: after deprecation remove 'undefines' keyword parsing in benefit of 'undefine'
-    ParseVector(parent, YAML_UNDEFINES, buildType.undefines);
-  }
   ParseVector(parent, YAML_ADDPATH, buildType.addpaths);
-  if (buildType.addpaths.empty()) {
-    // TODO: after deprecation remove 'add-paths' keyword parsing in benefit of 'add-path'
-    ParseVector(parent, YAML_ADDPATHS, buildType.addpaths);
-  }
   ParseVector(parent, YAML_DELPATH, buildType.delpaths);
-  if (buildType.delpaths.empty()) {
-    // TODO: after deprecation remove 'del-paths' keyword parsing in benefit of 'del-path'
-    ParseVector(parent, YAML_DELPATHS, buildType.delpaths);
-  }
   ParseVectorOfStringPairs(parent, YAML_VARIABLES, buildType.variables);
 
   std::vector<std::string> contextMap;
@@ -657,9 +625,7 @@ void ProjMgrYamlParser::ParseTargetType(const YAML::Node& parent, TargetType& ta
 
 // Validation Maps
 const set<string> defaultKeys = {
-  YAML_BUILDTYPES,
   YAML_COMPILER,
-  YAML_PACKS,
   YAML_MISC,
 };
 
@@ -674,13 +640,9 @@ const set<string> solutionKeys = {
   YAML_OPTIMIZE,
   YAML_DEBUG,
   YAML_WARNINGS,
-  YAML_DEFINES,
   YAML_DEFINE,
-  YAML_UNDEFINES,
   YAML_UNDEFINE,
-  YAML_ADDPATHS,
   YAML_ADDPATH,
-  YAML_DELPATHS,
   YAML_DELPATH,
   YAML_MISC,
   YAML_VARIABLES,
@@ -692,9 +654,7 @@ const set<string> solutionKeys = {
 
 const set<string> projectsKeys = {
   YAML_PROJECT,
-  YAML_FORTYPE,
   YAML_FORCONTEXT,
-  YAML_NOTFORTYPE,
   YAML_NOTFORCONTEXT,
 };
 
@@ -709,13 +669,9 @@ const set<string> projectKeys = {
   YAML_OPTIMIZE,
   YAML_DEBUG,
   YAML_WARNINGS,
-  YAML_DEFINES,
   YAML_DEFINE,
-  YAML_UNDEFINES,
   YAML_UNDEFINE,
-  YAML_ADDPATHS,
   YAML_ADDPATH,
-  YAML_DELPATHS,
   YAML_DELPATH,
   YAML_MISC,
   YAML_COMPONENTS,
@@ -741,6 +697,7 @@ const set<string> setupKeys = {
   YAML_ADDPATH,
   YAML_DELPATH,
   YAML_MISC,
+  YAML_LINKER,
   YAML_PROCESSOR,
 };
 
@@ -757,13 +714,9 @@ const set<string> layerKeys = {
   YAML_OPTIMIZE,
   YAML_DEBUG,
   YAML_WARNINGS,
-  YAML_DEFINES,
   YAML_DEFINE,
-  YAML_UNDEFINES,
   YAML_UNDEFINE,
-  YAML_ADDPATHS,
   YAML_ADDPATH,
-  YAML_DELPATHS,
   YAML_DELPATH,
   YAML_MISC,
   YAML_COMPONENTS,
@@ -782,13 +735,9 @@ const set<string> targetTypeKeys = {
   YAML_OPTIMIZE,
   YAML_DEBUG,
   YAML_WARNINGS,
-  YAML_DEFINES,
   YAML_DEFINE,
-  YAML_UNDEFINES,
   YAML_UNDEFINE,
-  YAML_ADDPATHS,
   YAML_ADDPATH,
-  YAML_DELPATHS,
   YAML_DELPATH,
   YAML_MISC,
   YAML_VARIABLES,
@@ -802,13 +751,9 @@ const set<string> buildTypeKeys = {
   YAML_OPTIMIZE,
   YAML_DEBUG,
   YAML_WARNINGS,
-  YAML_DEFINES,
   YAML_DEFINE,
-  YAML_UNDEFINES,
   YAML_UNDEFINE,
-  YAML_ADDPATHS,
   YAML_ADDPATH,
-  YAML_DELPATHS,
   YAML_DELPATH,
   YAML_MISC,
   YAML_VARIABLES,
@@ -839,11 +784,9 @@ const set<string> processorKeys = {
 };
 
 const set<string> miscKeys = {
-  YAML_COMPILER,
   YAML_FORCOMPILER,
   YAML_MISC_C,
   YAML_MISC_CPP,
-  YAML_MISC_C_STAR,
   YAML_MISC_C_CPP,
   YAML_MISC_ASM,
   YAML_MISC_LINK,
@@ -856,9 +799,7 @@ const set<string> miscKeys = {
 const set<string> packsKeys = {
   YAML_PACK,
   YAML_PATH,
-  YAML_FORTYPE,
   YAML_FORCONTEXT,
-  YAML_NOTFORTYPE,
   YAML_NOTFORCONTEXT,
 };
 
@@ -866,21 +807,15 @@ const set<string> componentsKeys = {
   YAML_COMPONENT,
   YAML_CONDITION,
   YAML_FROM_PACK,
-  YAML_FORTYPE,
   YAML_FORCONTEXT,
-  YAML_NOTFORTYPE,
   YAML_NOTFORCONTEXT,
   YAML_COMPILER,
   YAML_OPTIMIZE,
   YAML_DEBUG,
   YAML_WARNINGS,
-  YAML_DEFINES,
   YAML_DEFINE,
-  YAML_UNDEFINES,
   YAML_UNDEFINE,
-  YAML_ADDPATHS,
   YAML_ADDPATH,
-  YAML_DELPATHS,
   YAML_DELPATH,
   YAML_MISC,
 };
@@ -905,30 +840,22 @@ const set<string> linkerKeys = {
 const set<string> layersKeys = {
   YAML_LAYER,
   YAML_TYPE,
-  YAML_FORTYPE,
   YAML_FORCONTEXT,
-  YAML_NOTFORTYPE,
   YAML_NOTFORCONTEXT,
   YAML_COMPILER,
   YAML_OPTIMIZE,
   YAML_DEBUG,
   YAML_WARNINGS,
-  YAML_DEFINES,
   YAML_DEFINE,
-  YAML_UNDEFINES,
   YAML_UNDEFINE,
-  YAML_ADDPATHS,
   YAML_ADDPATH,
-  YAML_DELPATHS,
   YAML_DELPATH,
   YAML_MISC,
 };
 
 const set<string> groupsKeys = {
   YAML_GROUP,
-  YAML_FORTYPE,
   YAML_FORCONTEXT,
-  YAML_NOTFORTYPE,
   YAML_NOTFORCONTEXT,
   YAML_FORCOMPILER,
   YAML_GROUPS,
@@ -937,22 +864,16 @@ const set<string> groupsKeys = {
   YAML_OPTIMIZE,
   YAML_DEBUG,
   YAML_WARNINGS,
-  YAML_DEFINES,
   YAML_DEFINE,
-  YAML_UNDEFINES,
   YAML_UNDEFINE,
-  YAML_ADDPATHS,
   YAML_ADDPATH,
-  YAML_DELPATHS,
   YAML_DELPATH,
   YAML_MISC,
 };
 
 const set<string> filesKeys = {
   YAML_FILE,
-  YAML_FORTYPE,
   YAML_FORCONTEXT,
-  YAML_NOTFORTYPE,
   YAML_NOTFORCONTEXT,
   YAML_FORCOMPILER,
   YAML_CATEGORY,
@@ -960,13 +881,9 @@ const set<string> filesKeys = {
   YAML_OPTIMIZE,
   YAML_DEBUG,
   YAML_WARNINGS,
-  YAML_DEFINES,
   YAML_DEFINE,
-  YAML_UNDEFINES,
   YAML_UNDEFINE,
-  YAML_ADDPATHS,
   YAML_ADDPATH,
-  YAML_DELPATHS,
   YAML_DELPATH,
   YAML_MISC,
 };

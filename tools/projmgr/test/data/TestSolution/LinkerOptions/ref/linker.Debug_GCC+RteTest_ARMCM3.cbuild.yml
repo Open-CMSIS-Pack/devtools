@@ -38,6 +38,7 @@ build:
       - LD_PP_GCC_CPROJECT_DEF1
       - LD_PP_GCC_CLAYER_DEF0
       - LD_PP_GCC_CLAYER_DEF1
+      - LD_PP_GCC_SETUP_DEF0
   constructed-files:
     - file: ../data/TestSolution/LinkerOptions/RTE/_Debug_GCC_RteTest_ARMCM3/RTE_Components.h
       category: header

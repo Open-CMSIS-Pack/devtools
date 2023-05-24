@@ -16,7 +16,7 @@
 
   <target Dfpu="NO_FPU" Dname="RteTest_ARMCM0" Dsecure="Non-secure" Dvendor="ARM:82">
     <output elf="project.axf" intdir="tmp/project/Debug" name="project" outdir="out/project/Debug" rtedir="../../data/TestDefault/RTE"/>
-    <cflags add="defaultMiscC" compiler="AC6"/>
+    <cflags add="solutionMiscC defaultMiscC" compiler="AC6"/>
     <ldflags compiler="AC6" file="../../data/TestToolchains/ac6_linker_script.sct" regions="../../data/TestDefault/RTE/Device/RteTest_ARMCM0/regions_RteTest_ARMCM0.h"/>
   </target>
 

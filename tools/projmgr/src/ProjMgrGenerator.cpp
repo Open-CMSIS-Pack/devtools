@@ -308,13 +308,13 @@ void ProjMgrGenerator::GenerateCprjMisc(XMLTreeElement* element, const MiscItem&
       XMLTreeElement* flagsElement = element->CreateElement(flags.first);
       if (flagsElement) {
         flagsElement->AddAttribute("add", GetStringFromVector(flags.second, " "));
-        flagsElement->AddAttribute("compiler", RteUtils::GetPrefix(misc.compiler, '@'));
+        flagsElement->AddAttribute("compiler", RteUtils::GetPrefix(misc.forCompiler, '@'));
       }
     }
   }
 }
 
-void ProjMgrGenerator::GenerateCprjLinkerOptions(XMLTreeElement* element, const string& compiler, const LinkerItem& linker) {
+void ProjMgrGenerator::GenerateCprjLinkerOptions(XMLTreeElement* element, const string& compiler, const LinkerContextItem& linker) {
   if (!linker.script.empty()) {
     XMLTreeElement* ldflagsElement = nullptr;
     for (auto& child : element->GetChildren()) {

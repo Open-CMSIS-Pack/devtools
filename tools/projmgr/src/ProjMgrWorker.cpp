@@ -66,15 +66,6 @@ bool ProjMgrWorker::AddContexts(ProjMgrParser& parser, ContextDesc& descriptor, 
   context.cdefault = &parser.GetCdefault();
   context.csolution = &parser.GetCsolution();
 
-  // Default build-types
-  if (context.cdefault) {
-    for (const auto& defaultBuildType : context.cdefault->buildTypes) {
-      if (context.csolution->buildTypes.find(defaultBuildType.first) == context.csolution->buildTypes.end()) {
-        context.csolution->buildTypes.insert(defaultBuildType);
-      }
-    }
-  }
-
   // No build/target-types
   if (context.csolution->buildTypes.empty() && context.csolution->targetTypes.empty()) {
     return AddContext(parser, descriptor, { "" }, cprojectFile, context);
@@ -1162,10 +1153,6 @@ bool ProjMgrWorker::ProcessDevicePrecedence(StringCollection& item) {
 bool ProjMgrWorker::ProcessPackages(ContextItem& context) {
   vector<PackItem> packRequirements;
 
-  // Default package requirements
-  if (context.cdefault) {
-    packRequirements.insert(packRequirements.end(), context.cdefault->packs.begin(), context.cdefault->packs.end());
-  }
   // Solution package requirements
   if (context.csolution) {
     packRequirements.insert(packRequirements.end(), context.csolution->packs.begin(), context.csolution->packs.end());
@@ -1934,7 +1921,7 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
     miscVec.push_back(&clayer.misc);
   }
   context.controls.processed.misc.push_back({});
-  context.controls.processed.misc.front().compiler = context.compiler;
+  context.controls.processed.misc.front().forCompiler = context.compiler;
   AddMiscUniquely(context.controls.processed.misc.front(), miscVec);
 
   // Defines
@@ -2039,23 +2026,46 @@ bool ProjMgrWorker::ProcessProcessorOptions(ContextItem& context) {
 }
 
 bool ProjMgrWorker::ProcessLinkerOptions(ContextItem& context) {
+  // clear processing lists
+  context.linker.scriptList.clear();
+  context.linker.regionsList.clear();
+
+  // linker options in cproject
+  for (const LinkerItem& linker : context.cproject->linker) {
+    if (!ProcessLinkerOptions(context, linker, context.cproject->directory)) {
+      return false;
+    }
+  }
+  // linker options in clayers
+  for (const auto& [_, clayer] : context.clayers) {
+    for (const LinkerItem& linker : clayer->linker) {
+      if (!ProcessLinkerOptions(context, linker, clayer->directory)) {
+        return false;
+      }
+    }
+  }
+  // linker options in setups
+  for (const auto& setup : context.cproject->setups) {
+    if (CheckContextFilters(setup.type, context) && CheckCompiler(setup.forCompiler, context.compiler)) {
+      for (const LinkerItem& linker : setup.linker) {
+        if (!ProcessLinkerOptions(context, linker, context.cproject->directory)) {
+          return false;
+        }
+      }
+    }
+  }
+  // check precedences
   StringCollection linkerScriptFile = {
     &context.linker.script,
   };
   StringCollection linkerRegionsFile = {
     &context.linker.regions,
   };
-  for (LinkerItem& linker : context.cproject->linker) {
-    if (!ProcessLinkerOptions(context, linker, linkerScriptFile, linkerRegionsFile, context.cproject->directory)) {
-      return false;
-    }
+  for (auto& script : context.linker.scriptList) {
+    linkerScriptFile.elements.push_back(&script);
   }
-  for (auto& [_, clayer] : context.clayers) {
-    for (LinkerItem& linker : clayer->linker) {
-      if (!ProcessLinkerOptions(context, linker, linkerScriptFile, linkerRegionsFile, clayer->directory)) {
-        return false;
-      }
-    }
+  for (auto& regions : context.linker.regionsList) {
+    linkerRegionsFile.elements.push_back(&regions);
   }
   if (!ProcessPrecedence(linkerScriptFile)) {
     return false;
@@ -2066,21 +2076,20 @@ bool ProjMgrWorker::ProcessLinkerOptions(ContextItem& context) {
   return true;
 }
 
-bool ProjMgrWorker::ProcessLinkerOptions(ContextItem& context, LinkerItem& linker,
-  StringCollection& linkerScriptFile, StringCollection& linkerRegionsFile, const string& ref) {
+bool ProjMgrWorker::ProcessLinkerOptions(ContextItem& context, const LinkerItem& linker, const string& ref) {
   if (CheckContextFilters(linker.typeFilter, context) &&
     CheckCompiler(linker.forCompiler, context.compiler)) {
     if (!linker.script.empty()) {
-      if (!ProcessSequenceRelative(context, linker.script, ref)) {
+      context.linker.scriptList.push_back(linker.script);
+      if (!ProcessSequenceRelative(context, context.linker.scriptList.back(), ref)) {
         return false;
       }
-      linkerScriptFile.elements.push_back(&linker.script);
     }
     if (!linker.regions.empty()) {
-      if (!ProcessSequenceRelative(context, linker.regions, ref)) {
+      context.linker.regionsList.push_back(linker.regions);
+      if (!ProcessSequenceRelative(context, context.linker.regionsList.back(), ref)) {
         return false;
       }
-      linkerRegionsFile.elements.push_back(&linker.regions);
     }
     AddStringItemsUniquely(context.linker.defines, linker.defines);
   }
@@ -2912,7 +2921,7 @@ bool ProjMgrWorker::GetProjectSetup(ContextItem& context) {
 void ProjMgrWorker::UpdateMisc(vector<MiscItem>& vec, const string& compiler) {
   // Filter and adjust vector of MiscItem, leaving a single compiler compatible item
   MiscItem dst;
-  dst.compiler = compiler;
+  dst.forCompiler = compiler;
   AddMiscUniquely(dst, vec);
   vec.clear();
   vec.push_back(dst);
@@ -2926,7 +2935,7 @@ void ProjMgrWorker::AddMiscUniquely(MiscItem& dst, vector<vector<MiscItem>*>& ve
 
 void ProjMgrWorker::AddMiscUniquely(MiscItem& dst, vector<MiscItem>& vec) {
   for (auto& src : vec) {
-    if (ProjMgrUtils::AreCompilersCompatible(src.compiler, dst.compiler)) {
+    if (ProjMgrUtils::AreCompilersCompatible(src.forCompiler, dst.forCompiler)) {
       // Copy individual flags
       AddStringItemsUniquely(dst.as, src.as);
       AddStringItemsUniquely(dst.c, src.c);
