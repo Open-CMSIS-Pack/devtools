@@ -126,7 +126,8 @@ Element      |              | Description
 
 ```yml
 - pack:   ARM::CMSIS@5.5.0                  # 'CMSIS' Pack (with version 5.5.0)
-- pack:   Keil::MDK-Middleware@>=7.13.0     # 'MDK-Middleware' Software Pack from vendor Keil (with version 7.13.0 or higher)
+- pack:   Keil::MDK-Middleware@>=7.13.0     # 'MDK-Middleware' Software Pack from vendor Keil (with version 7.13.0 or higher, latest available to the tool)
+- pack:   Keil::TFM                         # 'TFM' Software Pack from vendor Keil (with latest version available to the tool)
 - pack:   AWS                               # All Software Packs from vendor 'AWS'
 - pack:   Keil::STM*                        # All Software Packs that start with 'STM' from vendor 'Keil'
 ```
