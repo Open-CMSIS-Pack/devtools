@@ -335,17 +335,17 @@ The `generators:` node contains information for calling a generator.
 
 `generators:`                                                       | Content
 :-------------------------------------------------------------------|:------------------------------------
-`- <generator-id>:`                                                 | Section for a specific generator.
-&nbsp;&nbsp; [`generator-dir:`](YML-Input-Format.md#generator-dir)  | Path name for storing the files generated.
-&nbsp;&nbsp; `gdpsc:`                                               | File name of the *.GDPSC file that stores the information in `generator-dir:`.
+`- generator:`                                                      | Section for a specific generator.
+&nbsp;&nbsp; [`path:`](YML-Input-Format.md#generators)              | Path name for storing the files generated.
+&nbsp;&nbsp; `gdpsc:`                                               | File name of the *.GDPSC file that stores the information in `path:`.
 &nbsp;&nbsp; `command:`                                             | Section for invoking the generator on different Host operating systems.
 
 **Example:**
 
 ```yml
   generators:
-    - STM32CubeMX:
-      generator-dir: RTE/Device
+    - generator: STM32CubeMX
+      path: RTE/Device
       gpdsc: RTE/Device/STM32L475VGTx/FrameworkCubeMX.gpdsc
       command:
         win:
