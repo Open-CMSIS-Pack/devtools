@@ -71,7 +71,7 @@ curl --retry 3 -L ${cpackget_base}_windows_arm64.zip   -o temp.zip && unzip -p t
 curl --retry 3 -L ${cpackget_base}_darwin_arm64.tar.gz -o - | tar xzfO - --wildcards    '*cpackget'     > ${distdir}/bin/cpackget.mac-arm64
 
 # Get csolution
-csolution_version="1.7.0"
+csolution_version="2.0.0-dev0"
 csolution_base=https://github.com/Open-CMSIS-Pack/devtools/releases/download/tools%2Fprojmgr%2F${csolution_version}/projmgr.zip
 curl --retry 3 -L ${csolution_base} -o temp.zip && unzip -q -d temp temp.zip
 cp 'temp/bin/linux-amd64/csolution' ${distdir}/bin/csolution.lin-amd64
@@ -84,7 +84,7 @@ cp -r temp/etc/* ${distdir}/etc
 rm temp.zip && rm -rf temp
 
 # Get cbuild
-cbuild_version="1.6.2"
+cbuild_version="2.0.0-dev0"
 cbuild_base=https://github.com/Open-CMSIS-Pack/cbuild/releases/download/v${cbuild_version}/cbuild_${cbuild_version}
 curl --retry 3 -L ${cbuild_base}_linux_amd64.tar.gz  -o - | tar xzfO - --wildcards    '*cbuild'     > ${distdir}/bin/cbuild.lin-amd64
 curl --retry 3 -L ${cbuild_base}_windows_amd64.zip   -o temp.zip && unzip -p temp.zip '*/cbuild.exe' > ${distdir}/bin/cbuild.exe-amd64 && rm temp.zip
