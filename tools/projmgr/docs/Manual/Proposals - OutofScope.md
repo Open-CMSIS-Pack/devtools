@@ -6,6 +6,27 @@
 This document is a collection of proposals that are currently on hold and will not get implemented for CMSIS-Toolbox 2.0.
 The proposals in this document will be discussed and potentially progressed after release of CMSIS-Toolbox 2.0.
 
+## Implemented Features but not exposed to users
+
+For CMSIS-Toolbox 2.0 the goal is to have stable input YML formats. The following features are implemented already, but will be not exposed to users as (a) use cases are unclear, and/or (b) it is unclear if the feature set needs extensions.
+
+The `processor:` keyword defines attributes such as FPU register usage or endianness selection.
+
+`processor:`                   | Content
+:------------------------------|:------------------------------------
+&nbsp;&nbsp; `fpu:`            | Control usage of FPU registers (S-Register for MVE/Helium, float/double hardware FPU) (default: on for devices with FPU registers).
+&nbsp;&nbsp; `endian:`         | Select `endian:` little \| big (only available when devices are configurable).
+
+`output-dirs:`               |              | Content
+:----------------------------|--------------|:------------------------------------
+&nbsp;&nbsp; `rtedir:`       |  Optional    | Specifies the directory for the RTE files (component configuration files).
+
+The default setting for the `output-dirs:` are:
+
+```yml
+rtedir:  <csolution.yml base directory>/%Project$/RTE
+```
+
 ## Feature Overview (on hold)
 
 - Manage the resources (memory, peripherals, and user defined) across the entire application to:

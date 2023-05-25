@@ -27,7 +27,8 @@ Project Manager.
     - [`layer:`](#layer)
   - [Directory Control](#directory-control)
     - [`output-dirs:`](#output-dirs)
-    - [`generator-dir:`](#generator-dir)
+    - [`generators:`](#generators)
+      - [`generators: - options:`](#generators---options)
   - [Toolchain Options](#toolchain-options)
     - [`compiler:`](#compiler)
     - [`linker:`](#linker)
@@ -122,14 +123,18 @@ Element      |              | Description
 `pack-name`  | Optional     | Name of the software pack; wildcards (\*, ?) can be used.
 `version`    | Optional     | Version number of the software pack, with `@1.2.3` that must exactly match, `@~1.2`/`@~1` that matches with semantic versioning, or `@>=1.2.3` that allows any version higher or equal.
 
+> **Note:**
+>
+> When no version is specified, the **csolution - CMSIS Project Manager** only loads the latests version of a software pack. This also applies when wildcards are used in the `pack-name`.
+
 **Examples:**
 
 ```yml
 - pack:   ARM::CMSIS@5.5.0                  # 'CMSIS' Pack (with version 5.5.0)
 - pack:   Keil::MDK-Middleware@>=7.13.0     # 'MDK-Middleware' Software Pack from vendor Keil (with version 7.13.0 or higher, latest available to the tool)
 - pack:   Keil::TFM                         # 'TFM' Software Pack from vendor Keil (with latest version available to the tool)
-- pack:   AWS                               # All Software Packs from vendor 'AWS'
-- pack:   Keil::STM*                        # All Software Packs that start with 'STM' from vendor 'Keil'
+- pack:   AWS                               # All latest versions of Software Packs from vendor 'AWS'
+- pack:   Keil::STM*                        # All latest versions of Software Packs that start with 'STM' from vendor 'Keil'
 ```
 
 ### `component:` Name Conventions
@@ -254,17 +259,17 @@ A `context:` name combines `project-name`, `built-type`, and `target-type` and i
 [project-name][.build-type][+target-type]
 ```
 
-Element        |              | Description
-:--------------|--------------|:---------------------
-`project-name` |   Optional   | Project name of a project (base name of the *.cproject.yml file).
-`.build-type`  |   Optional   | The [`build-type`](#build-types) name that is currently processed.
-`+target-type` |   Optional   | The [`target-type`](#target-types) name that is currently processed.
+Element             |              | Description
+:-------------------|--------------|:---------------------
+`project-name`      |   Optional   | Project name of a project (base name of the *.cproject.yml file).
+`.build-type`       |   Optional   | The [`build-type`](#build-types) name that is currently processed (specified with `-type: name`).
+`+target-type`      |   Optional   | The [`target-type`](#target-types) name that is currently processed (specified with `-type: name`).
 
 - When `project-name` is omitted, the `project-name` is the base name of the `*.cproject.yml` file.
 - When `.build-type` is omitted, it matches with any possible `.build-type`.
 - When `+target-type` is omitted, it matches with any possible `+target-type`.
 
-By default the [`build-types:`](#build-types) and [`target-types:`](#target-types) specified in the `*.csolution.yml` file are directly mapped to the `context` name. 
+By default the specified `-type: name` of [`build-types:`](#build-types) and [`target-types:`](#target-types) nodes in the `*.csolution.yml` file are directly mapped to the `context` name. 
 
 Using the [`context-map:`](#context-map) node it is possible to assign a different `.build-type` and/or `+target-type` mapping for a specific `project-name`.
 
@@ -284,15 +289,6 @@ Demo.Release+WiFi
 
 The `context` name is also used in [`for-context:`](#for-context) and [`not-for-context:`](#not-for-context) nodes that allow to include or exclude items depending on the `context`. In many cases the `project-name` can be omitted as the `context` name is within a specific `*.cproject.yml` file or applied to a specific `*.cproject.yml` file.
 
-> **Note:**
->
-> In previous releases of the CMSIS-Toolbox `for-type:` and `not-for-type:` where used.  For backward  compatibility:
-> 
-> - `for-context:` is identical to `for-type:`
-> - `not-for-context:` is identical to `not-for-type:`.
-> 
-> It is however recommended to use the new `for-context:` and `not-for-context:` nodes as the older versions will be deprecated.
-
 ## Access Sequences
 
 The following **access sequences** allow to use arguments from the CMSIS Project Manager as arguments of the various
@@ -309,24 +305,19 @@ Access Sequence                                | Description
 `$TargetType$`                                 | [Target-type](#target-types) name of the currently processed project.
 `$Compiler$`                                   | [Compiler](#compiler) name of the compiler used in this project context as specified in the [`compiler:`](#compiler) node.
 **YML Input**                                  | **Access to YML Input Directories and Files**       
-NEW: `$Solution$`                              | Solution name (base name of the *.csolution.yml file).
-NEW: `$SolutionDir$`                           | Path to the directory of the current processed `csolution.yml` file.
-`$Project(context)$`                           | Project name (base name of the *.cproject.yml file) of a project.
-NEW: `$ProjectDir(context)$`                   | Path to the directory of a related `cproject.yml` file.
-DEPRECATE: `$CProject(context)$`               | Path to the directory of a related `cproject.yml` file.
-DEPRECATE: `$CProject$`                        | Path to the directory of the current processed `cproject.yml` file.
-NEW: `$GeneratorId$`                           | Name of the generator specified with `id` in the PDSC file (possible only in [`generator-dir:`](#generator-dir) node).
+`$Solution$`                              | Solution name (base name of the *.csolution.yml file).
+`$SolutionDir()$`                         | Path to the directory of the current processed `csolution.yml` file.
+`$Project$`                                    | Project name of the current processed `cproject.yml` file.
+`$ProjectDir(context)$`                   | Path to the directory of a related `cproject.yml` file.
 **Output**                                     | **Access to Output Directories and Files**
 `$OutDir(context)$`                            | Path to the output directory of a related project that is defined in the `*.csolution.yml` file.
-NEW: `$bin(context)$`                          | Path and filename of the binary output file generated by the related context.
-NEW: `$cmse-lib(context)$`                     | Path and filename of the object file with secure gateways of a TrustZone application generated by the related context.
-NEW: `$elf(context)$`                          | Path and filename of the ELF/DWARF output file generated by the related context.
-NEW: `$hex(context)$`                          | Path and filename of the HEX output file generated by the related context.
-NEW: `$lib(context)$`                          | Path and filename of the library file of the related context.
-DEPRECATE: `$Source(context)$`                 | Path to the source directory of a related project that is defined in the `*.csolution.yml` file.
-DEPRECATE: `$Out(context)$`                    | Path to the output directory of a related project that is defined in the `*.csolution.yml` file.
+`$bin(context)$`                          | Path and filename of the binary output file generated by the related context.
+`$cmse-lib(context)$`                     | Path and filename of the object file with secure gateways of a TrustZone application generated by the related context.
+`$elf(context)$`                          | Path and filename of the ELF/DWARF output file generated by the related context.
+`$hex(context)$`                          | Path and filename of the HEX output file generated by the related context.
+`$lib(context)$`                          | Path and filename of the library file of the related context.
 
-For a [`context`](#context-name-conventions) the `project-name` must be specified. The `.build-type` and `+target-type` are optional; when omitted the `.build-type` and/or `+target-type` of the current processed context is used. Example: `$Project$` or `$Project()$` both get the based name of the current processed `cproject.yml` file.
+For a [`context`](#context-name-conventions) the `project-name`, `.build-type`, and `+target-type` are optional; when omitted the current processed context is used. Example: `$ProjectDir()$` is the directory of the current processed `cproject.yml` file.
 
 > **Note:**
 > 
@@ -346,18 +337,18 @@ For the example below we assume the following `build-type`, `target-type`, and `
 ```yml
 solution:
   target-types:
-    - type: Board
+    - type: Board               # target-type: Board
       board: NUCLEO-L552ZE-Q    # specifies board
 
-    - type: Production-HW
+    - type: Production-HW       # target-type: Production-HW
       device: STM32U5X          # specifies device
       
   build-types:
-    - type: Debug
+    - type: Debug               # build-type: Debug
       optimize: none
       debug: on
 
-    - type: Release
+    - type: Release             # build-type: Release
       optimize: size
 
   projects:
@@ -528,7 +519,7 @@ The `solution:` node is the start of a `*.csolution.yml` file that collects rela
 
 ```yml
 solution:
-  created-for: cmsis-toolbox@1.7  # minimum CMSIS-Toolbox version required for project build
+  created-for: cmsis-toolbox@2.0  # minimum CMSIS-Toolbox version required for project build
   cdefault:                       # use default setup of toolchain specific controls.
   compiler: GCC                   # overwrite compiler definition in 'cdefaults.yml'
 
@@ -536,7 +527,7 @@ solution:
     - pack: ST                    # add ST packs in 'cdefaults.yml'
 
   build-types:                    # additional build types
-    - type: Test
+    - type: Test                  # build-type: Test
       optimize: none
       debug: on
       packs:                      # with explicit pack specification
@@ -544,11 +535,11 @@ solution:
           path: ./MyDev/TestSW    
 
   target-types:
-    - type: Board
+    - type: Board                 # target-type: Board
       board: NUCLEO-L552ZE-Q
 
-    - type: Production-HW
-      device: STM32U5X             # specifies device
+    - type: Production-HW         # target-type: Production-HW
+      device: STM32U5X            # specifies device
       
   projects:
     - project: ./blinky/Bootloader.cproject.yml
@@ -610,7 +601,7 @@ The `layer:` node is the start of a `*.clayer.yml` file and defines a [Software 
 
 `layer:`                                               |              | Content
 :------------------------------------------------------|:-------------|:------------------------------------
-&nbsp;&nbsp; [`type:`](#layer---type)                  |  Optional    | Layer type for combining layers.
+&nbsp;&nbsp; [`type:`](#layer---type)                  |  Optional    | Layer type for combining layers; used to identify [compatible layers](Overview.md#list-compatible-layers).
 &nbsp;&nbsp; `description:`                            |  Optional    | Brief description text of the layer.
 &nbsp;&nbsp; [`generator-dir:`](#generator-dir)        |  Optional    | Control the directory for generator output.
 &nbsp;&nbsp; [`packs:`](#packs)                        |  Optional    | Defines packs that are required for this layer.
@@ -660,60 +651,66 @@ Allows to control the directory structure for build output files.
 
 `output-dirs:`               |              | Content
 :----------------------------|--------------|:------------------------------------
-&nbsp;&nbsp; `rtedir:`       |  Optional    | Specifies the directory for the RTE files (component configuration files).
 &nbsp;&nbsp; `intdir:`       |  Optional    | Specifies the directory for the interim files (temporary or object files).
 &nbsp;&nbsp; `outdir:`       |  Optional    | Specifies the directory for the build output files (ELF, binary, MAP files).
 
-> ToDo: `rtedir:` may need some work depending on the use cases that we want to support.
- 
 The default setting for the `output-dirs:` are:
 
 ```yml
-rtedir:  <csolution.yml base directory>/%Project$/RTE
-intdir:  <csolution.yml base directory>/tmp/$Project$/$TargetType$/$BuildType$
-outdir:  <csolution.yml base directory>/out/$TargetType$
+  intdir:  $SolutionDir()$/tmp/$Project$/$TargetType$/$BuildType$
+  outdir:  $SolutionDir()$/out/$TargetType$
 ```
 
 **Example:**
 
 ```yml
 output-dirs:
-  cprjdir: ./cprj                        # relative path to csolution.yml file
-  rtedir: ./$Project$/RTE2               # alternative path for RTE files
+  intdir: ./tmp2                         # relative path to csolution.yml file
   outdir: ./out/$Project$/$TargetType$   # $BuildType$ no longer part of the outdir    
 ```
 
-### `generator-dir:`
+### `generators:`
 
 Allows to control the directory structure for generator output files.  
 
-When no explicit `generator-dir:` is specified, the **CSolution** Project Manager uses as path:
+When no explicit `generators:` is specified, the **CSolution** Project Manager uses as path:
 
 - The `workingDir` defined in the [generators element](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_generators_pg.html#element_generator) of the PDSC file.
-- When no `workingDir` is defined the default directory: `./$ProjectDir$/generated/$GeneratorId$>`.
+- When no `workingDir` is defined the default directory `$ProjectDir()$/generated/<generator-id>` is used; `<generator-id>` is defined by the `id` in the generators element of the PDSC file.
 
-The `generator-dir:` node can be added various levels of the `*.yml` input files. The following order is used:
+The `generators:` node can be added at various levels of the `*.yml` input files. The following order is used:
 
-1. Use `generator-dir:` specification of the `*.csolution.yml` input file, if not exist:
-2. Use `generator-dir:` specification of the `*.cproject.yml` input file, if not exist:
-3. Use `generator-dir:` specification of the `*.clayer.yml` input file.
+1. Use `generators:` specification of the `*.clayer.yml` input file, if not exist:
+2. Use `generators:` specification of the `*.cproject.yml` input file, if not exist:
+3. Use `generators:` specification of the `*.csolution.yml` input file.
 
 Only relative paths to the base directory of the `*.yml` input file are permitted.
 
-`generator-dir:`             |              | Content
-:----------------------------|--------------|:------------------------------------
-`- id:`                      |**Required**  | Identifier of the generator tool, specified with `id` in the [generators element](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_generators_pg.html#element_generator) of the PDSC file. `id: *` refers to all generators.
-&nbsp;&nbsp; `path:`                    |**Required**  | Specifies the directory for generated files. Relative paths used the location of the `yml` file as base directory.
+`generators:`                  |              | Content
+:------------------------------|--------------|:------------------------------------
+&nbsp;&nbsp;&nbsp; `base-dir:` | **Optional** | Base directory for unspecified generators; default: `$ProjectDir()$/generated`.
+&nbsp;&nbsp;&nbsp; `options:`  | **Optional** | Specific generator options; allows explicit directory configuration for a generator.
+
+> **Note:**
+>
+> The base directory is extended for each generator with `/<generator-id>`; `<generator-id>` is defined by the `id` in the generators element of the PDSC file.
+
+#### `generators: - options:`
+
+`options:`                     |              | Content
+:------------------------------|--------------|:------------------------------------
+`- generator:`                 | **Optional** | Identifier of the generator tool, specified with `id` in the [generators element](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_generators_pg.html#element_generator) of the PDSC file.
+&nbsp;&nbsp;&nbsp; `path:`     |**Optional**  | Specifies the directory for generated files. Relative paths used the location of the `yml` file as base directory.
 
 **Example:**
 
 ```yml
-generator-dir:
-  - id: Cube2:                                # for the generator `Cube2` use this path
-    path: ./Cube2Files                        # relative path to the *.yml file that contains this setting
+generators:
+  base-dir: $SolutionDir()$/MyGenerators      # Path for all generators extended by '/<generator-id>'
 
-  - id: *                                     # for all other generators use this path
-    path: ./generated/$GeneratorId$           
+  options:
+  - generator: Cube                           # for the generator `Cube` use this path
+    path:  ./CubeFiles                        # relative path to the *.yml file that contains this setting
 ```
 
 ## Toolchain Options
@@ -752,16 +749,16 @@ The `linker:` node specifies an explicit Linker Script and/or memory regions hea
 :-----------------------------------------------------|:-----------|:--------------------------------
 **`- regions:`**                                      |**Optional**|**Path and file name of `regions_<device_or_board>.h`, used to generate a Linker Script.**
 &nbsp;&nbsp; [`for-compiler:`](#for-compiler)         |  Optional  |  Include Linker Script for the specified toolchain.
-&nbsp;&nbsp; [`for-context:`](#for-context)           |  Optional  |  Include Linker Script for a list of *build* and *target* types.
-&nbsp;&nbsp; [`not-for-context:`](#not-for-context)   |  Optional  |  Exclude Linker Script for a list of *build* and *target* types.
+&nbsp;&nbsp; [`for-context:`](#for-context)           |  Optional  |  Include Linker Script for a list of *build* and *target* type names.
+&nbsp;&nbsp; [`not-for-context:`](#not-for-context)   |  Optional  |  Exclude Linker Script for a list of *build* and *target* type names.
 **`- script:`**                                       |**Optional**|**Explicit file name of the Linker Script, overrules files provided with [`file:`](#files) or components.**
 &nbsp;&nbsp; [`for-compiler:`](#for-compiler)         |  Optional  |  Include Linker Script for the specified toolchain.
-&nbsp;&nbsp; [`for-context:`](#for-context)           |  Optional  |  Include Linker Script for a list of *build* and *target* types.
-&nbsp;&nbsp; [`not-for-context:`](#not-for-context)   |  Optional  |  Exclude Linker Script for a list of *build* and *target* types.
+&nbsp;&nbsp; [`for-context:`](#for-context)           |  Optional  |  Include Linker Script for a list of *build* and *target* type names.
+&nbsp;&nbsp; [`not-for-context:`](#not-for-context)   |  Optional  |  Exclude Linker Script for a list of *build* and *target* type names.
 **[`- define:`](#define)**                            |**Optional**|**Define symbol settings for the linker script file preprocessor.**
 &nbsp;&nbsp; [`for-compiler:`](#for-compiler)         |  Optional  |  Apply define settings for the specified toolchain.
-&nbsp;&nbsp; [`for-context:`](#for-context)           |  Optional  |  Include define settings for a list of *build* and *target* types.
-&nbsp;&nbsp; [`not-for-context:`](#not-for-context)   |  Optional  |  Exclude define settings for a list of *build* and *target* types.
+&nbsp;&nbsp; [`for-context:`](#for-context)           |  Optional  |  Include define settings for a list of *build* and *target* type names.
+&nbsp;&nbsp; [`not-for-context:`](#not-for-context)   |  Optional  |  Exclude define settings for a list of *build* and *target* type names.
 
 > **Note:** 
 >
@@ -774,21 +771,21 @@ Configure the generated output files.
 `output:`                        |            | Content
 :--------------------------------|:-----------|:--------------------------------
 &nbsp;&nbsp; `base-name:`        |  Optional  | Specify a base name for all output files.
-`- type:`                        |  Optional  | Select the output type for code generation (see list below).
+&nbsp;&nbsp; `type:`             |  Optional  | A list of output types for code generation (see list below).
 
-`type:` value   | Description
-:---------------|:-------------
-`lib`           | Library or archive. Note: GCC uses the prefix `lib` in the base name for archive files.
-`elf`           | Executable in ELF format. The file extension is toolchain specific.
-`hex`           | Intel HEX file in HEX-386 format.
-`bin`           | Binary image.
+`type:`           | Description
+:-----------------|:-------------
+`- lib`           | Library or archive. Note: GCC uses the prefix `lib` in the base name for archive files.
+`- elf`           | Executable in ELF format. The file extension is toolchain specific.
+`- hex`           | Intel HEX file in HEX-386 format.
+`- bin`           | Binary image.
 
 The **default** setting for `output:` is:
 
 ```yml
 output:
   base-name: $Project$   # used the base name of the `cproject.yml` file.
-  - type: elf            # Generate executeable file.
+  type: elf              # Generate executeable file.
 ```
 
 **Example:**
@@ -796,16 +793,17 @@ output:
 ```yml
 output:                  # configure output files
   base-name: MyProject   # used for all output files, including linker map file.
-  - type: elf            # Generate executeable file.
-  - type: hex            # generate a HEX file 
-  - type: bin            # generate a BIN file 
+  type:
+  - elf                  # Generate executeable file.
+  - hex                  # generate a HEX file 
+  - bin                  # generate a BIN file 
 ```
 
 Gnerate a **library**:
 
 ```yml
 output:                  # configure output files
-  - type: lib            # Generate executeable file.
+  type: lib              # Generate executeable file.
 ```
 
 ## Translation Control
@@ -819,8 +817,7 @@ The following translation control options may be used at various places such as:
 
 > **Note:**
 > 
-> `define:`, `add-path:`, `del-path:`  and `misc:` are additive. All other keywords overwrite previous
-  settings.
+> `define:`, `add-path:`, `del-path:`  and `misc:` are additive. All other keywords overwrite previous settings.
 
 ### `language-C:`
 
@@ -996,8 +993,7 @@ Remove include paths (that are defined at the cproject level) from the command l
 
 ### `misc:`
 
-Add miscellaneous literal tool-specific controls that are directly passed to the individual tools depending on the file
-type.
+Add miscellaneous literal tool-specific controls that are directly passed to the individual tools depending on the file type.
 
 `misc:`                              |              | Content
 :------------------------------------|--------------|:------------------------------------
@@ -1157,28 +1153,24 @@ At the level of a `cproject.yml` file, only the `pname` can be specified as the 
 
 ### `processor:`
 
-The `processor:` keyword defines attributes such as TrustZone and FPU register usage or a processor core selection for multi-core devices.
+The `processor:` keyword specifies the TrustZone configuration for this project.
 
 `processor:`                   | Content
 :------------------------------|:------------------------------------
-&nbsp;&nbsp; `trustzone:`      | TrustZone mode: secure \| non-secure \| off.
-&nbsp;&nbsp; `fpu:`            | Control usage of FPU registers (S-Register for MVE/Helium, float/double hardware FPU) (default: on for devices with FPU registers).
-&nbsp;&nbsp; `endian:`         | Select endianness: little \| big (only available when devices are configurable).
+&nbsp;&nbsp; `trustzone:`      | TrustZone mode: `secure` \| `non-secure` \| `off`.
 
-> ToDo: Remove `fpu:` and `endian:` from documentation.
+The default setting for `trustzone:` is:
+
+- `off` for devices that support this option, but TrustZone is configurable.
+- `non-secure` for devices that have TrustZone enabled.
+
+**Example:**
 
 ```yml
 project:
   processor:
     trustzone: secure
 ```
-
-> **Note:**
->
-> Default for `trustzone:`
-> 
-> - `off` for devices that support this option.
-> - `non-secure` for devices that have TrustZone enabled.
 
 ## Context
 
@@ -1200,7 +1192,7 @@ The `target-types:` node may include [toolchain options](#toolchain-options), [t
 
 `target-types:`                                    |              | Content
 :--------------------------------------------------|--------------|:------------------------------------
-`- type:`                                          | **Required** | Name of the target-type.
+`- type:`                                          | **Required** | The target-type name that is used to create the [context](#context-name-conventions) name.
 &nbsp;&nbsp;&nbsp; [`compiler:`](#compiler)        |   Optional   | Toolchain selection.
 &nbsp;&nbsp;&nbsp; [`optimize:`](#optimize)        |   Optional   | Optimize level for code generation.
 &nbsp;&nbsp;&nbsp; [`debug:`](#debug)              |   Optional   | Generation of debug information.
@@ -1226,7 +1218,7 @@ The `build-types:` node may include [toolchain options](#toolchain-options):
 
 `build-types:`                                     |              | Content
 :--------------------------------------------------|--------------|:------------------------------------
-`- type:`                                          | **Required** | Name of the target-type.
+`- type:`                                          | **Required** | The build-type name that is used to create the [context](#context-name-conventions) name.
 &nbsp;&nbsp;&nbsp; [`compiler:`](#compiler)        |   Optional   | Toolchain selection.
 &nbsp;&nbsp;&nbsp; [`optimize:`](#optimize)        |   Optional   | Optimize level for code generation.
 &nbsp;&nbsp;&nbsp; [`debug:`](#debug)              |   Optional   | Generation of debug information.
@@ -1242,18 +1234,18 @@ The `build-types:` node may include [toolchain options](#toolchain-options):
 
 ```yml
 target-types:
-  - type: Board
+  - type: Board                  # target-type name, used in context with: +Board
     board: NUCLEO-L552ZE-Q       # board specifies indirectly also the device
 
-  - type: Production-HW
+  - type: Production-HW          # target-type name, used in context with: +Production-HW
     device: STM32L552RC          # specifies device
       
 build-types:
-  - type: Debug
+  - type: Debug                  # build-type name, used in context with: .Debug
     optimize: none               # specifies code optimization level
     debug: on                    # generates debug information
 
-  - type: Test
+  - type: Test                   # build-type name, used in context with: .Test
     optimize: size
     debug: on
 ```
@@ -1306,7 +1298,7 @@ For the `context-map:` it is required to specify the `project-name` in the `cont
 
 **Example 1:**
 
-This application combines two projects for a multi-processor device, but the project `HelloCM7` requires a different setting for the build-type `.release` as this enables different settings within the `*.cproject.yml` file.
+This application combines two projects for a multi-processor device, but the project `HelloCM7` requires a different setting for the build-type name `Release` as this enables different settings within the `*.cproject.yml` file.
  
 ```yml
   target-types:
@@ -1314,9 +1306,9 @@ This application combines two projects for a multi-processor device, but the pro
       device: MyDualCoreDevice
 
   build-types:
-    - type: release                        # When applying build-type: 'release':
+    - type: Release                        # When applying build-type name 'release':
       context-map:
-        - context: HelloCM7.flex_release   # project HelloCM7 uses build-type "flex_release" instead of "release"
+        - context: HelloCM7.flex_release   # project HelloCM7 uses build-type name "flex_release" instead of "release"
      
   projects:
     - project: ./CM7/HelloCM7.cproject.yml
@@ -1325,7 +1317,7 @@ This application combines two projects for a multi-processor device, but the pro
 
 **Example 2:**
 
-The following example uses three projects `Demo`, `TFM` and `Boot`. The project `TFM` should be always build using the context `TFM.Release+LibMode`.  For the target-type: 'Board', the Boot project requires the `+Flash` target, but any build-type could be used.
+The following example uses three projects `Demo`, `TFM` and `Boot`. The project `TFM` should be always build using the context `TFM.Release+LibMode`.  For the target-type name `Board`, the Boot project requires the `+Flash` target, but any build-type could be used.
 
 ```yml
   target-types:
@@ -1374,19 +1366,11 @@ for-compiler:                        # add item
 
 ### `for-context:`
 
-A [*context*](#context-name-conventions) list that adds a list-node for specific `target-types:` and/or `build-types:`.
-
-> **Note:**
-> 
-> `for-type:` is identical to `for-context:`. `for-type:` will be deprecated and replaced by `for-context:` in future versions.
+A [*context*](#context-name-conventions) list that adds a list-node for specific `target-type` and/or `build-type` names.
 
 ### `not-for-context:`
 
 A [*context*](#context-name-conventions) list that removes a list-node for specific `target-types:` and/or `build-types:`.
-
-> **Note:**
-> 
-> `not-for-type:` is identical to `not-for-context:`. `not-for-type:` will be deprecated and replaced by `not-for-context:` in future versions.
 
 ### Context List
 
