@@ -770,21 +770,21 @@ Configure the generated output files.
 `output:`                        |            | Content
 :--------------------------------|:-----------|:--------------------------------
 &nbsp;&nbsp; `base-name:`        |  Optional  | Specify a base name for all output files.
-`- type:`                        |  Optional  | Select the output type for code generation (see list below).
+&nbsp;&nbsp; `type:`             |  Optional  | A list of output types for code generation (see list below).
 
-`type:` value               | Description
-:---------------------------|:-------------
-&nbsp;&nbsp;`lib`           | Library or archive. Note: GCC uses the prefix `lib` in the base name for archive files.
-&nbsp;&nbsp;`elf`           | Executable in ELF format. The file extension is toolchain specific.
-&nbsp;&nbsp;`hex`           | Intel HEX file in HEX-386 format.
-&nbsp;&nbsp;`bin`           | Binary image.
+`type:`           | Description
+:-----------------|:-------------
+`- lib`           | Library or archive. Note: GCC uses the prefix `lib` in the base name for archive files.
+`- elf`           | Executable in ELF format. The file extension is toolchain specific.
+`- hex`           | Intel HEX file in HEX-386 format.
+`- bin`           | Binary image.
 
 The **default** setting for `output:` is:
 
 ```yml
 output:
   base-name: $Project$   # used the base name of the `cproject.yml` file.
-  - type: elf            # Generate executeable file.
+  type: elf              # Generate executeable file.
 ```
 
 **Example:**
@@ -792,16 +792,17 @@ output:
 ```yml
 output:                  # configure output files
   base-name: MyProject   # used for all output files, including linker map file.
-  - type: elf            # Generate executeable file.
-  - type: hex            # generate a HEX file 
-  - type: bin            # generate a BIN file 
+  type:
+  - elf                  # Generate executeable file.
+  - hex                  # generate a HEX file 
+  - bin                  # generate a BIN file 
 ```
 
 Gnerate a **library**:
 
 ```yml
 output:                  # configure output files
-  - type: lib            # Generate executeable file.
+  type: lib              # Generate executeable file.
 ```
 
 ## Translation Control
