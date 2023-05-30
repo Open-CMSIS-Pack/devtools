@@ -13,6 +13,7 @@ const MsgTable PackChk::msgTable = {
   { "M021", { MsgLevel::LEVEL_TEXT,     CRLF_NO,"" } },
   { "M022", { MsgLevel::LEVEL_TEXT,     CRLF_B, "Found %ERR% Error(s) and %WARN% Warning(s)." } },
   { "M023", { MsgLevel::LEVEL_TEXT,     CRLF_B, "\nPhase%CHECK%" } },
+  { "M024", { MsgLevel::LEVEL_TEXT,     CRLF_B, "Xerxes schema check: Found %ERR% Error(s)." } },
 
 // 50... Info Messages (INFO = verbose)
   { "M050", { MsgLevel::LEVEL_INFO,     CRLF_B, "" } },
@@ -49,7 +50,7 @@ const MsgTable PackChk::msgTable = {
   { "M081", { MsgLevel::LEVEL_PROGRESS, CRLF_B, "Checking File category '%CAT%' for '%COMP%' dependency: '%PATH%'" } },
   { "M082", { MsgLevel::LEVEL_PROGRESS, CRLF_B, "Checking defined Condition: '%COND%'" } },
   { "M083", { MsgLevel::LEVEL_PROGRESS, CRLF_B, "Checking used Condition: '%COND%'" } },
-  { "M084", { MsgLevel::LEVEL_INFO,     CRLF_B, "" } },
+  { "M084", { MsgLevel::LEVEL_INFO,     CRLF_B, "Xerxes schema check" } },
   { "M085", { MsgLevel::LEVEL_PROGRESS, CRLF_B, "Checking if Component has Condition: 'Cclass=%CCLASS%, Cgroup=%CGROUP%, Csub=%CSUB%, Cversion=%CVER%'" } },
   { "M086", { MsgLevel::LEVEL_PROGRESS, CRLF_B, "Checking if File has Version: '%PATH%'" } },
   { "M087", { MsgLevel::LEVEL_PROGRESS, CRLF_B, "Checking if Component declared as '%TYPE%' has reference to a device: 'Cclass=%CCLASS%, Cgroup=%CGROUP%, Cversion=%CVER%'" } },
@@ -223,6 +224,9 @@ const MsgTable PackChk::msgTable = {
   { "M504", { MsgLevel::LEVEL_TEXT,     CRLF_B, "RTE Model reports: MISSING:     -- %SPACE%%NAME%" } },
   { "M505", { MsgLevel::LEVEL_ERROR,    CRLF_B, "RTE Model reports: %MSG%" } },
   { "M506", { MsgLevel::LEVEL_WARNING,  CRLF_B, "RTE Model reports: %MSG%" } },
+
+  { "M510", { MsgLevel::LEVEL_WARNING,  CRLF_B, "Xerxes reports: %MSG%" } },
+  { "M511", { MsgLevel::LEVEL_ERROR,    CRLF_B, "Xerxes reports: %MSG%" } },
 };
 
 const MsgTableStrict PackChk::msgStrictTable = {

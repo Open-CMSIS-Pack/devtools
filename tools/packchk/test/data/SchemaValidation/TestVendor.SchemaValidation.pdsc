@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<package schemaVersion="1.4" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="PACK.xsd">
+  <vendor>TestVendor</vendor>
+  <url>http://www.testurl.com/pack/</url>
+  <name>SchemaValidation</name>
+  <descripton>Schema Validation</descripton>
+
+  <releases>
+    <release version="0.0.1" date="2021-09-06">>
+      Initial release of SchemaValidation.
+    </release>
+  </releases>
+
+  <keywords>
+    <keyword>SchemaValidation</keyword>
+  </keywords>
+
+  <conditions>
+    <condition id="Test_Condition">
+      <description>Test Device</description>
+      <require Dvendor="ARM:82"/>
+    </condition>
+    <conditon id="False_Condition">
+      <description>Test Device</description>
+      <require Dvendor="ARM:82"/>
+    </conditon>
+  </conditions>
+
+  <components>
+    <component Cclass="TestClass" Cgroup="TestGlobal" Cversion="1.0.0" condition="Test_Condition">
+      <description>TestGlobal</description>
+      <files>
+        <file category="source" name="Files/test1.c"/>
+        <file category="TestGlobal" name="Files/header1.h"/>
+      </files>
+    </component>
+  </components>
+
+</package>
