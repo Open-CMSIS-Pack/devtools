@@ -52,7 +52,7 @@ build:
             - RteTestGen_ARMCM0
             - ../../test-gpdsc-multiple-generators.Debug+CM0.cprj
             - ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0
-            - ../../../../output/test-gpdsc-multiple-generators.Debug+CM0.cbuild.yml
+            - ../../../../output/tmp/test-gpdsc-multiple-generators/CM0/Debug/test-gpdsc-multiple-generators.Debug+CM0.cbuild-gen.yml
             - /foo=bar
         linux:
           file: ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0/Generator/script.sh
@@ -60,7 +60,7 @@ build:
             - RteTestGen_ARMCM0
             - ../../test-gpdsc-multiple-generators.Debug+CM0.cprj
             - ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0
-            - ../../../../output/test-gpdsc-multiple-generators.Debug+CM0.cbuild.yml
+            - ../../../../output/tmp/test-gpdsc-multiple-generators/CM0/Debug/test-gpdsc-multiple-generators.Debug+CM0.cbuild-gen.yml
             - --foo=bar
         mac:
           file: ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0/Generator/script.sh
@@ -68,7 +68,7 @@ build:
             - RteTestGen_ARMCM0
             - ../../test-gpdsc-multiple-generators.Debug+CM0.cprj
             - ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0
-            - ../../../../output/test-gpdsc-multiple-generators.Debug+CM0.cbuild.yml
+            - ../../../../output/tmp/test-gpdsc-multiple-generators/CM0/Debug/test-gpdsc-multiple-generators.Debug+CM0.cbuild-gen.yml
             - --foo=bar
     - generator: RteTestGeneratorWithKey
       path: ../data/TestGenerator/GeneratedFiles/RteTestGeneratorWithKey
@@ -80,21 +80,21 @@ build:
             - RteTestGen_ARMCM0
             - ../../test-gpdsc-multiple-generators.Debug+CM0.cprj
             - ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0
-            - ../../../../output/test-gpdsc-multiple-generators.Debug+CM0.cbuild.yml
+            - ../../../../output/tmp/test-gpdsc-multiple-generators/CM0/Debug/test-gpdsc-multiple-generators.Debug+CM0.cbuild-gen.yml
         linux:
           file: ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0/script.sh
           arguments:
             - RteTestGen_ARMCM0
             - ../../test-gpdsc-multiple-generators.Debug+CM0.cprj
             - ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0
-            - ../../../../output/test-gpdsc-multiple-generators.Debug+CM0.cbuild.yml
+            - ../../../../output/tmp/test-gpdsc-multiple-generators/CM0/Debug/test-gpdsc-multiple-generators.Debug+CM0.cbuild-gen.yml
         mac:
           file: ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0/script.sh
           arguments:
             - RteTestGen_ARMCM0
             - ../../test-gpdsc-multiple-generators.Debug+CM0.cprj
             - ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0
-            - ../../../../output/test-gpdsc-multiple-generators.Debug+CM0.cbuild.yml
+            - ../../../../output/tmp/test-gpdsc-multiple-generators/CM0/Debug/test-gpdsc-multiple-generators.Debug+CM0.cbuild-gen.yml
   linker:
     script: ${CMSIS_COMPILER_ROOT}/ac6_linker_script.sct
     regions: ../data/TestGenerator/RTE/Device/RteTestGen_ARMCM0/regions_RteTestGen_ARMCM0.h

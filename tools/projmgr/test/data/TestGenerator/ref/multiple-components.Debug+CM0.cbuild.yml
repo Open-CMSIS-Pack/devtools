@@ -55,7 +55,7 @@ build:
             - RteTestGen_ARMCM0
             - ../../multiple-components.Debug+CM0.cprj
             - ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0
-            - ../../../../output/multiple-components.Debug+CM0.cbuild.yml
+            - ../../../../output/tmp/multiple-components/CM0/Debug/multiple-components.Debug+CM0.cbuild-gen.yml
             - /foo=bar
         linux:
           file: ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0/Generator/script.sh
@@ -63,7 +63,7 @@ build:
             - RteTestGen_ARMCM0
             - ../../multiple-components.Debug+CM0.cprj
             - ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0
-            - ../../../../output/multiple-components.Debug+CM0.cbuild.yml
+            - ../../../../output/tmp/multiple-components/CM0/Debug/multiple-components.Debug+CM0.cbuild-gen.yml
             - --foo=bar
         mac:
           file: ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0/Generator/script.sh
@@ -71,7 +71,7 @@ build:
             - RteTestGen_ARMCM0
             - ../../multiple-components.Debug+CM0.cprj
             - ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0
-            - ../../../../output/multiple-components.Debug+CM0.cbuild.yml
+            - ../../../../output/tmp/multiple-components/CM0/Debug/multiple-components.Debug+CM0.cbuild-gen.yml
             - --foo=bar
   linker:
     script: ${CMSIS_COMPILER_ROOT}/ac6_linker_script.sct

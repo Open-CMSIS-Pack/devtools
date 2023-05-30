@@ -18,7 +18,7 @@ build:
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
   output-dirs:
     intdir: ../tmp/TestProject3_1/TypeA/Debug
-    outdir: outdir/
+    outdir: outdir
     rtedir: RTE
   output:
     - type: elf
@@ -75,7 +75,7 @@ build:
             - RteTestGen_ARMCM0
             - ../TestProject3_1.Debug+TypeA.cprj
             - ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0
-            - ../TestProject3_1.Debug+TypeA.cbuild.yml
+            - ../../tmp/TestProject3_1/TypeA/Debug/TestProject3_1.Debug+TypeA.cbuild-gen.yml
             - /foo=bar
         linux:
           file: ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0/Generator/script.sh
@@ -83,7 +83,7 @@ build:
             - RteTestGen_ARMCM0
             - ../TestProject3_1.Debug+TypeA.cprj
             - ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0
-            - ../TestProject3_1.Debug+TypeA.cbuild.yml
+            - ../../tmp/TestProject3_1/TypeA/Debug/TestProject3_1.Debug+TypeA.cbuild-gen.yml
             - --foo=bar
         mac:
           file: ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0/Generator/script.sh
@@ -91,7 +91,7 @@ build:
             - RteTestGen_ARMCM0
             - ../TestProject3_1.Debug+TypeA.cprj
             - ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0
-            - ../TestProject3_1.Debug+TypeA.cbuild.yml
+            - ../../tmp/TestProject3_1/TypeA/Debug/TestProject3_1.Debug+TypeA.cbuild-gen.yml
             - --foo=bar
   linker:
     script: RTE/Device/RteTestGen_ARMCM0/gcc_arm.ld
