@@ -459,7 +459,7 @@ The table below explains the top-level elements in each of the different `*.yml`
 
 Keyword                          | Description
 :--------------------------------|:------------------------------------
-[`default:`](#default)           | Start of `*.cdefault.yml` file that is used to setup the compiler along with some compiler-specific controls.
+[`default:`](#default)           | Start of `cdefault.yml` file that is used to setup the compiler along with some compiler-specific controls.
 [`solution:`](#solution)         | Start of `*.csolution.yml` file that [collects related projects](Overview.md#solution-collection-of-related-projects) along with `build-types:` and `target-types:`.
 [`project:`](#project)           | Start of `*.cproject.yml` file that defines files, components, and layers which can be independently translated to a binary image or library.
 [`layer:`](#layer)               | Start of `*.clayer.yml` file that contains pre-configured software components along with source files.
@@ -473,7 +473,7 @@ the compiler along with some specific default controls. The search order for thi
 - A `cdefault.yml` or `cdefault.yaml` file in the directory specified by the environment variable [`CMSIS_COMPILER_ROOT`](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/docs/installation.md#environment-variables).
 - A `cdefault.yml` or `cdefault.yaml` file in the directory [`<cmsis-toolbox-installation-dir>/etc`](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/docs/installation.md##etccmake).
 
-The `default:` node is the start of a `*.cdefault.yml` or `*.cdefault.yaml` file and contains the following.
+The `default:` node is the start of a `cdefault.yml` or `cdefault.yaml` file and contains the following.
 
 `default:`                                            | Content
 :-----------------------------------------------------|:------------------------------------
@@ -499,21 +499,21 @@ default:
 The `solution:` node is the start of a `*.csolution.yml` file that collects related projects as described in the section
 ["Project setup for related projects"](Overview.md#project-setup-for-related-projects).
 
-`solution:`                                           |              | Content
-:-----------------------------------------------------|:-------------|:------------------------------------
-&nbsp;&nbsp; `created-by:`                            |  Optional    | Identifies the tool that created this csolution project.
-&nbsp;&nbsp; `created-for:`                           |  Optional    | Specifies the tool for building this csolution project, i.e. **ctools@1.5.0**
-&nbsp;&nbsp; `description:`                           |  Optional    | Brief description text of the solution.
-&nbsp;&nbsp; `cdefault:`                              |  Optional    | When specified, the [`*.cdefault.yml`](#default) file is used to setup compiler specific controls. 
-&nbsp;&nbsp; [`compiler:`](#compiler)                 |  Optional    | Overall toolchain selection for the solution.
-&nbsp;&nbsp; [`language-C:`](#language-c)             |  Optional    | Set the language standard for C source file compilation.
-&nbsp;&nbsp; [`language-CPP:`](#language-cpp)         |  Optional    | Set the language standard for C++ source file compilation.
-&nbsp;&nbsp; [`output-dirs:`](#output-dirs)           |  Optional    | Control the output directories for the build output.
-&nbsp;&nbsp; [`generator-dir:`](#generator-dir)       |  Optional    | Control the directory for generator output.
-&nbsp;&nbsp; [`packs:`](#packs)                       |  Optional    | Defines local packs and/or scope of packs that are used.
-&nbsp;&nbsp; [`target-types:`](#target-types)         | **Required** | List of target-types that define the target system (device or board).
-&nbsp;&nbsp; [`build-types:`](#build-types)           |  Optional    | List of build-types (i.e. Release, Debug, Test).
-&nbsp;&nbsp; [`projects:`](#projects)                 | **Required** | List of projects that belong to the solution.
+`solution:`                                           |            | Content
+:-----------------------------------------------------|:-----------|:------------------------------------
+&nbsp;&nbsp; `created-by:`                            |  Optional  | Identifies the tool that created this csolution project.
+&nbsp;&nbsp; `created-for:`                           |  Optional  | Specifies the tool for building this csolution project, i.e. **ctools@1.5.0**
+&nbsp;&nbsp; `description:`                           |  Optional  | Brief description text of the solution.
+&nbsp;&nbsp; `cdefault:`                              |  Optional  | When specified, the [`cdefault.yml`](#default) file is used to setup compiler specific controls. 
+&nbsp;&nbsp; [`compiler:`](#compiler)                 |  Optional  | Overall toolchain selection for the solution.
+&nbsp;&nbsp; [`language-C:`](#language-c)             |  Optional  | Set the language standard for C source file compilation.
+&nbsp;&nbsp; [`language-CPP:`](#language-cpp)         |  Optional  | Set the language standard for C++ source file compilation.
+&nbsp;&nbsp; [`output-dirs:`](#output-dirs)           |  Optional  | Control the output directories for the build output.
+&nbsp;&nbsp; [`generators:`](#generators)             |  Optional  | Control the directory structure for generator output.
+&nbsp;&nbsp; [`packs:`](#packs)                       |  Optional  | Defines local packs and/or scope of packs that are used.
+&nbsp;&nbsp; [`target-types:`](#target-types)         |**Required**| List of target-types that define the target system (device or board).
+&nbsp;&nbsp; [`build-types:`](#build-types)           |  Optional  | List of build-types (i.e. Release, Debug, Test).
+&nbsp;&nbsp; [`projects:`](#projects)                 |**Required**| List of projects that belong to the solution.
 
 **Example:**
 
@@ -551,28 +551,28 @@ solution:
 
 The `project:` node is the start of a `*.cproject.yml` file and can contain the following:
 
-`project:`                                          |              | Content
-:---------------------------------------------------|:-------------|:------------------------------------
-&nbsp;&nbsp; `description:`                         |  Optional    | Brief description text of the project.
-&nbsp;&nbsp; [`output:`](#output)                   |  Optional    | Configure the generated output files.
-&nbsp;&nbsp; [`generator-dir:`](#generator-dir)     |  Optional    | Control the directory for generator output.
-&nbsp;&nbsp; [`packs:`](#packs)                     |  Optional    | Defines packs that are required for this project.
-&nbsp;&nbsp; [`language-C:`](#language-c)           |  Optional    | Set the language standard for C source file compilation.
-&nbsp;&nbsp; [`language-CPP:`](#language-cpp)       |  Optional    | Set the language standard for C++ source file compilation.
-&nbsp;&nbsp; [`optimize:`](#optimize)               |  Optional    | Optimize level for code generation.
-&nbsp;&nbsp; [`linker:`](#linker)                   |  Optional    | Instructions for the linker.
-&nbsp;&nbsp; [`debug:`](#debug)                     |  Optional    | Generation of debug information.
-&nbsp;&nbsp; [`define:`](#define)                   |  Optional    | Preprocessor (#define) symbols for code generation.
-&nbsp;&nbsp; [`undefine:`](#undefine)               |  Optional    | Remove preprocessor (#define) symbols.
-&nbsp;&nbsp; [`add-path:`](#add-path)               |  Optional    | Additional include file paths.
-&nbsp;&nbsp; [`del-path:`](#del-path)               |  Optional    | Remove specific include file paths.
-&nbsp;&nbsp; [`misc:`](#misc)                       |  Optional    | Literal tool-specific controls.
-&nbsp;&nbsp; [`device:`](#device)                   |  Optional    | Device setting (specify processor core).
-&nbsp;&nbsp; [`processor:`](#processor)             |  Optional    | Processor specific settings.
-&nbsp;&nbsp; [`groups:`](#groups)                   | **Required** | List of source file groups along with source files.
-&nbsp;&nbsp; [`components:`](#components)           |  Optional    | List of software components used.
-&nbsp;&nbsp; [`layers:`](#layers)                   |  Optional    | List of software layers that belong to the project.
-&nbsp;&nbsp; [`connections:`](#connections)         |  Optional    | List of consumed and provided resources.
+`project:`                                          |            | Content
+:---------------------------------------------------|:-----------|:------------------------------------
+&nbsp;&nbsp; `description:`                         |  Optional  | Brief description text of the project.
+&nbsp;&nbsp; [`output:`](#output)                   |  Optional  | Configure the generated output files.
+&nbsp;&nbsp; [`generators:`](#generators)           |  Optional  | Control the directory structure for generator output.
+&nbsp;&nbsp; [`packs:`](#packs)                     |  Optional  | Defines packs that are required for this project.
+&nbsp;&nbsp; [`language-C:`](#language-c)           |  Optional  | Set the language standard for C source file compilation.
+&nbsp;&nbsp; [`language-CPP:`](#language-cpp)       |  Optional  | Set the language standard for C++ source file compilation.
+&nbsp;&nbsp; [`optimize:`](#optimize)               |  Optional  | Optimize level for code generation.
+&nbsp;&nbsp; [`linker:`](#linker)                   |  Optional  | Instructions for the linker.
+&nbsp;&nbsp; [`debug:`](#debug)                     |  Optional  | Generation of debug information.
+&nbsp;&nbsp; [`define:`](#define)                   |  Optional  | Preprocessor (#define) symbols for code generation.
+&nbsp;&nbsp; [`undefine:`](#undefine)               |  Optional  | Remove preprocessor (#define) symbols.
+&nbsp;&nbsp; [`add-path:`](#add-path)               |  Optional  | Additional include file paths.
+&nbsp;&nbsp; [`del-path:`](#del-path)               |  Optional  | Remove specific include file paths.
+&nbsp;&nbsp; [`misc:`](#misc)                       |  Optional  | Literal tool-specific controls.
+&nbsp;&nbsp; [`device:`](#device)                   |  Optional  | Device setting (specify processor core).
+&nbsp;&nbsp; [`processor:`](#processor)             |  Optional  | Processor specific settings.
+&nbsp;&nbsp; [`groups:`](#groups)                   |**Required**| List of source file groups along with source files.
+&nbsp;&nbsp; [`components:`](#components)           |  Optional  | List of software components used.
+&nbsp;&nbsp; [`layers:`](#layers)                   |  Optional  | List of software layers that belong to the project.
+&nbsp;&nbsp; [`connections:`](#connections)         |  Optional  | List of consumed and provided resources.
 
 **Example:**
 
@@ -599,19 +599,27 @@ project:
 
 The `layer:` node is the start of a `*.clayer.yml` file and defines a [Software Layer](./Overview.md#software-layers). It can contain the following nodes:
 
-`layer:`                                               |              | Content
-:------------------------------------------------------|:-------------|:------------------------------------
-&nbsp;&nbsp; [`type:`](#layer---type)                  |  Optional    | Layer type for combining layers; used to identify [compatible layers](Overview.md#list-compatible-layers).
-&nbsp;&nbsp; `description:`                            |  Optional    | Brief description text of the layer.
-&nbsp;&nbsp; [`generator-dir:`](#generator-dir)        |  Optional    | Control the directory for generator output.
-&nbsp;&nbsp; [`packs:`](#packs)                        |  Optional    | Defines packs that are required for this layer.
-&nbsp;&nbsp; [`for-device:`](#device-name-conventions) |  Optional    | Device information, used for consistency check (device selection is in `*.csolution.yml`).
-&nbsp;&nbsp; [`for-board:`](#board-name-conventions)   |  Optional    | Board information, used for consistency check (board selection is in `*.csolution.yml`).
-&nbsp;&nbsp; [`connections:`](#connections)            |  Optional    | List of consumed and provided resources.
-&nbsp;&nbsp; [`processor:`](#processor)                |  Optional    | Processor specific settings.
-&nbsp;&nbsp; [`linker:`](#linker)                      |  Optional    | Instructions for the linker.
-&nbsp;&nbsp; [`groups:`](#groups)                      |  Optional    | List of source file groups along with source files.
-&nbsp;&nbsp; [`components:`](#components)              |  Optional    | List of software components used.
+`layer:`                                               |            | Content
+:------------------------------------------------------|:-----------|:------------------------------------
+&nbsp;&nbsp; [`type:`](#layer---type)                  |  Optional  | Layer type for combining layers; used to identify [compatible layers](Overview.md#list-compatible-layers).
+&nbsp;&nbsp; `description:`                            |  Optional  | Brief description text of the layer.
+&nbsp;&nbsp; [`optimize:`](#optimize)                  |  Optional  | Optimize level for code generation.
+&nbsp;&nbsp; [`debug:`](#debug)                        |  Optional  | Generation of debug information.
+&nbsp;&nbsp; [`warnings:`](#warnings)                  |  Optional  | Control generation of compiler diagnostics.
+&nbsp;&nbsp; [`define:`](#define)                      |  Optional  | Define symbol settings for code generation.
+&nbsp;&nbsp; [`undefine:`](#undefine)                  |  Optional  | Remove define symbol settings for code generation.     
+&nbsp;&nbsp; [`add-path:`](#add-path)                  |  Optional  | Additional include file paths.
+&nbsp;&nbsp; [`del-path:`](#del-path)                  |  Optional  | Remove specific include file paths.
+&nbsp;&nbsp; [`misc:`](#misc)                          |  Optional  | Literal tool-specific controls.
+&nbsp;&nbsp; [`generators:`](#generators)              |  Optional  | Control the directory structure for generator output.
+&nbsp;&nbsp; [`packs:`](#packs)                        |  Optional  | Defines packs that are required for this layer.
+&nbsp;&nbsp; [`for-device:`](#device-name-conventions) |  Optional  | Device information, used for consistency check (device selection is in `*.csolution.yml`).
+&nbsp;&nbsp; [`for-board:`](#board-name-conventions)   |  Optional  | Board information, used for consistency check (board selection is in `*.csolution.yml`).
+&nbsp;&nbsp; [`connections:`](#connections)            |  Optional  | List of consumed and provided resources.
+&nbsp;&nbsp; [`processor:`](#processor)                |  Optional  | Processor specific settings.
+&nbsp;&nbsp; [`linker:`](#linker)                      |  Optional  | Instructions for the linker.
+&nbsp;&nbsp; [`groups:`](#groups)                      |  Optional  | List of source file groups along with source files.
+&nbsp;&nbsp; [`components:`](#components)              |  Optional  | List of software components used.
 
 **Example:**
 
@@ -686,10 +694,10 @@ The `generators:` node can be added at various levels of the `*.yml` input files
 
 Only relative paths to the base directory of the `*.yml` input file are permitted.
 
-`generators:`                  |              | Content
-:------------------------------|--------------|:------------------------------------
-&nbsp;&nbsp;&nbsp; `base-dir:` | **Optional** | Base directory for unspecified generators; default: `$ProjectDir()$/generated`.
-&nbsp;&nbsp;&nbsp; `options:`  | **Optional** | Specific generator options; allows explicit directory configuration for a generator.
+`generators:`                  |            | Content
+:------------------------------|------------|:------------------------------------
+&nbsp;&nbsp;&nbsp; `base-dir:` |  Optional  | Base directory for unspecified generators; default: `$ProjectDir()$/generated`.
+&nbsp;&nbsp;&nbsp; `options:`  |  Optional  | Specific generator options; allows explicit directory configuration for a generator.
 
 > **Note:**
 >
@@ -697,10 +705,10 @@ Only relative paths to the base directory of the `*.yml` input file are permitte
 
 #### `generators: - options:`
 
-`options:`                     |              | Content
-:------------------------------|--------------|:------------------------------------
-`- generator:`                 | **Optional** | Identifier of the generator tool, specified with `id` in the [generators element](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_generators_pg.html#element_generator) of the PDSC file.
-&nbsp;&nbsp;&nbsp; `path:`     |**Optional**  | Specifies the directory for generated files. Relative paths used the location of the `yml` file as base directory.
+`options:`                     |            | Content
+:------------------------------|------------|:------------------------------------
+`- generator:`                 |  Optional  | Identifier of the generator tool, specified with `id` in the [generators element](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_generators_pg.html#element_generator) of the PDSC file.
+&nbsp;&nbsp;&nbsp; `path:`     |  Optional  | Specifies the directory for generated files. Relative paths used the location of the `yml` file as base directory.
 
 **Example:**
 
@@ -1005,7 +1013,7 @@ Add miscellaneous literal tool-specific controls that are directly passed to the
 &nbsp;&nbsp; `Link:`                 |   Optional   | Applies to the linker (added before `Link-C:` or `Link-CPP:`).
 &nbsp;&nbsp; `Link-C:`               |   Optional   | Applies to the linker; added when no C++ files are part of the project.
 &nbsp;&nbsp; `Link-CPP:`             |   Optional   | Applies to the linker; added when C++ files are part of the project.
-&nbsp;&nbsp; `Lib:`                  |   Optional   | Applies to the library manager or archiver.
+&nbsp;&nbsp; `Library:`              |   Optional   | Applies to the library manager or archiver.
 
 **Example:**
 
@@ -1597,14 +1605,6 @@ Add a software layer to a project. Used in `*.cproject.yml` files.
 &nbsp;&nbsp; [`type:`](#layer---type)               |   Optional   | Refers to an expected layer type.
 &nbsp;&nbsp; [`for-context:`](#for-context)         |   Optional   | Include layer for a list of *build* and *target* types.
 &nbsp;&nbsp; [`not-for-context:`](#not-for-context) |   Optional   | Exclude layer for a list of *build* and *target* types.
-&nbsp;&nbsp; [`optimize:`](#optimize)               |   Optional   | Optimize level for code generation.
-&nbsp;&nbsp; [`debug:`](#debug)                     |   Optional   | Generation of debug information.
-&nbsp;&nbsp; [`warnings:`](#warnings)               |   Optional   | Control generation of compiler diagnostics.
-&nbsp;&nbsp; [`define:`](#define)                   |   Optional   | Define symbol settings for code generation.
-&nbsp;&nbsp; [`undefine:`](#undefine)               |   Optional   | Remove define symbol settings for code generation.     
-&nbsp;&nbsp; [`add-path:`](#add-path)               |   Optional   | Additional include file paths.
-&nbsp;&nbsp; [`del-path:`](#del-path)               |   Optional   | Remove specific include file paths.
-&nbsp;&nbsp; [`misc:`](#misc)                       |   Optional   | Literal tool-specific controls.
 
 **Example:**
 
