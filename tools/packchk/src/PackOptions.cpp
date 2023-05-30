@@ -19,7 +19,8 @@ using namespace std;
  * @brief class constructor
 */
 CPackOptions::CPackOptions() :
-  m_bIgnoreOtherPdscFiles(false)
+  m_bIgnoreOtherPdscFiles(false),
+  m_bDisableValidation(false)
 {
 }
 

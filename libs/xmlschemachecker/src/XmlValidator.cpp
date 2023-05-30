@@ -13,6 +13,9 @@
 #include "xercesc/sax/ErrorHandler.hpp"
 #include "xercesc/sax/SAXParseException.hpp"
 
+#include <sstream>
+#include "ErrLog.h"
+
 using namespace std;
 using namespace XERCES_CPP_NAMESPACE;
 
@@ -26,7 +29,7 @@ XmlValidator::XmlValidator()
   m_domParser->setValidationScheme(XercesDOMParser::Val_Always);
   m_domParser->setDoNamespaces(true);
   m_domParser->setDoSchema(true);
-  m_domParser->setValidationConstraintFatal(true);
+  m_domParser->setValidationConstraintFatal(false);   // report all errors
   m_domParser->setValidationSchemaFullChecking(true);
 }
 
@@ -45,22 +48,33 @@ XmlValidator::~XmlValidator()
  */
 bool XmlValidator::Validate(const string& xmlFile, const string& schemaFile)
 {
+  LogMsg("M084");
+
   try {
     m_domParser->setExternalNoNamespaceSchemaLocation(schemaFile.c_str());
     m_domParser->parse(xmlFile.c_str());
 
-    if (m_domParser->getErrorCount() == 0) {
+    auto errCnt = m_domParser->getErrorCount();
+
+    LogMsg("M016");
+    LogMsg("M024", ERR(errCnt));
+
+    if (errCnt == 0) {
       return true;
     } else {
       return false;
     }
   }
   catch (const XMLException& e) {
-    cerr << "Exception: " << e.getMessage() << endl;
+    stringstream ss;
+    ss << "Exception: " << e.getMessage();
+    LogMsg("M511", MSG(ss.str()));
     return false;
   }
   catch (const SAXException& e) {
-    cerr << "Exception: " << e.getMessage() << endl;
+    stringstream ss;
+    ss << "Exception: " << e.getMessage() << endl;
+    LogMsg("M511", MSG(ss.str()));
     return false;
   }
 }

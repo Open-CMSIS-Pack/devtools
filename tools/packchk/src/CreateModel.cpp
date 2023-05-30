@@ -118,7 +118,7 @@ bool CreateModel::AddPdsc(const string& pdscFile, bool bSkipCheckForOtherPdsc /*
 
   if(m_validatePdsc) {
     if(!XmlChecker::Validate(pdscFile, m_schemaFile)) {
-      return false;
+      ; // continue checking
     }
   }
 
