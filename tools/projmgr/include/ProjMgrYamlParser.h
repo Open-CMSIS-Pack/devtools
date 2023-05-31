@@ -184,7 +184,7 @@ protected:
   void ParseConnections(const YAML::Node& parent, std::vector<ConnectItem>& connects);
   void ParseTargetType(const YAML::Node& parent, TargetType& targetType);
   void ParseBuildTypes(const YAML::Node& parent, std::map<std::string, BuildType>& buildTypes);
-  void ParseTargetTypes(const YAML::Node& parent, std::map<std::string, TargetType>& targetTypes);
+  bool ParseTargetTypes(const YAML::Node& parent, std::map<std::string, TargetType>& targetTypes);
   bool ParseContexts(const YAML::Node& parent, CsolutionItem& contexts);
   bool ParseComponents(const YAML::Node& parent, std::vector<ComponentItem>& components);
   bool ParseFiles(const YAML::Node& parent, std::vector<FileNode>& files);

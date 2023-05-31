@@ -81,16 +81,6 @@ bool ProjMgrWorker::AddContexts(ProjMgrParser& parser, ContextDesc& descriptor, 
     return true;
   }
 
-  // No target-types
-  if (context.csolution->targetTypes.empty()) {
-    for (const auto& buildTypeItem : context.csolution->buildTypes) {
-      if (!AddContext(parser, descriptor, { buildTypeItem.first, "" }, cprojectFile, context)) {
-        return false;
-      }
-    }
-    return true;
-  }
-
   // Add contexts for project x build-type x target-type combinations
   for (const auto& buildTypeItem : context.csolution->buildTypes) {
     for (const auto& targetTypeItem : context.csolution->targetTypes) {

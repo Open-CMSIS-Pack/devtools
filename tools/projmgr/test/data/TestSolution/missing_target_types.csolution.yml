@@ -1,0 +1,15 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schemas/csolution.schema.json
+
+solution:
+  build-types:
+    - type: Debug
+      misc:
+      - for-compiler: AC6
+        C-CPP: [-C-CPP-Debug-AC6]
+      - for-compiler: GCC
+        C-CPP: [-C-CPP-Debug-GCC]
+      compiler: AC6
+
+  projects:
+    - project: ./TestProject1/test1.cproject.yml
+
