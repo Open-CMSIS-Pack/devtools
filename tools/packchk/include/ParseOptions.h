@@ -27,6 +27,7 @@ public:
 
 protected:
   bool SetWarnLevel(const std::string& warnLevel);
+  bool SetPedantic(const std::string& pedanticLevel);
   bool SetTestPdscFile(const std::string& filename);
   bool SetLogFile(const std::string& m_logFile);
   bool SetXsdFile();

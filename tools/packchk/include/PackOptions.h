@@ -16,8 +16,12 @@ public:
   CPackOptions();
   ~CPackOptions();
 
+  enum class PedanticLevel { NONE = 0, WARNING, INFO };
+
 
   bool SetWarnLevel(const uint32_t warnLevel);
+  bool SetPedantic(const PedanticLevel pedanticLevel);
+  PedanticLevel GetPedantic();
   bool SetLogFile(const std::string& m_logFile);
   bool SetXsdFile();
   bool SetXsdFile(const std::string& m_xsdFile);
@@ -54,6 +58,7 @@ public:
 private:
   bool m_bIgnoreOtherPdscFiles;
   bool m_bDisableValidation;
+  PedanticLevel m_pedanticLevel;
 
   std::string m_urlRef;    // package URL reference, check the URL of the PDSC against this value. if not std::set it is compared against the Keil Pack Server URL
   std::string m_packNamePath;

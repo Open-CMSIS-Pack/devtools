@@ -55,6 +55,19 @@ bool ParseOptions::SetWarnLevel(const string& warnLevel)
   return m_packOptions.SetWarnLevel(level);
 }
 
+bool ParseOptions::SetPedantic(const string& pedanticLevel)
+{
+  if(pedanticLevel.empty() || pedanticLevel == "info") {
+    return m_packOptions.SetPedantic(CPackOptions::PedanticLevel::INFO);
+  }
+  else if(pedanticLevel == "warning") {
+    return m_packOptions.SetPedantic(CPackOptions::PedanticLevel::WARNING);
+  }
+  else {
+    return false;
+  }
+}
+
 /**
  * @brief option "v,verbose"
  * @param bVerbose set verbose mode
@@ -208,6 +221,7 @@ ParseOptions::Result ParseOptions::Parse(int argc, const char* argv[])
         {"allow-suppress-error", "Allow to suppress error messages", cxxopts::value<bool>()->default_value("false")},
         {"break", "Debug halt after start", cxxopts::value<bool>()->default_value("false")},
         {"ignore-other-pdsc", "Ignores other PDSC files in working folder", cxxopts::value<bool>()->default_value("false")},
+        {"pedantic", "Return with error value on warning", cxxopts::value<bool>()->default_value("false")},
       });
 
     options.parse_positional({"input"});
@@ -280,6 +294,12 @@ ParseOptions::Result ParseOptions::Parse(int argc, const char* argv[])
 
     if(parseResult.count("w")) {
       if(!SetWarnLevel(parseResult["w"].as<string>())) {
+        bOk = false;
+      }
+    }
+
+    if(parseResult.count("pedantic")) {
+      if(!SetPedantic("warning")) {
         bOk = false;
       }
     }
