@@ -596,15 +596,7 @@
           "description": "Layer type for compatible layers matching"
         },
         "for-context":     { "$ref": "#/definitions/ForContext" },
-        "not-for-context": { "$ref": "#/definitions/NotForContext" },
-        "optimize":        { "$ref": "#/definitions/OptimizeType" },
-        "debug":           { "$ref": "#/definitions/DebugType" },
-        "warnings":        { "$ref": "#/definitions/WarningsType" },
-        "define":          { "$ref": "#/definitions/DefinesType" },
-        "undefine":        { "$ref": "#/definitions/UndefinesType" },
-        "add-path":        { "$ref": "#/definitions/AddpathsType" },
-        "del-path":        { "$ref": "#/definitions/DelpathsType" },
-        "misc":            { "$ref": "#/definitions/MiscTypes" }
+        "not-for-context": { "$ref": "#/definitions/NotForContext" }
       },
       "allOf": [
         { "$ref": "#/definitions/TypeListMutualExclusion" },
