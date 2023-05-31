@@ -74,7 +74,15 @@ bool ProjMgrYamlParser::ParseCsolution(const string& input,
       return false;
     }
 
-    ParseTargetTypes(solutionNode, csolution.targetTypes);
+    if (csolution.cprojects.size() == 0) {
+      ProjMgrLogger::Error(input, "projects not found");
+      return false;
+    }
+
+    if (!ParseTargetTypes(solutionNode, csolution.targetTypes)) {
+      ProjMgrLogger::Error(input, "target-types not found");
+      return false;
+    }
     ParseBuildTypes(solutionNode, csolution.buildTypes);
     ParseOutputDirs(solutionNode, csolution.directories);
     ParseTargetType(solutionNode, csolution.target);
@@ -573,17 +581,16 @@ bool ProjMgrYamlParser::ParseLinker(const YAML::Node& parent, vector<LinkerItem>
   return true;
 }
 
-void ProjMgrYamlParser::ParseTargetTypes(const YAML::Node& parent, map<string, TargetType>& targetTypes) {
-  if (parent[YAML_TARGETTYPES].IsDefined()) {
-    const YAML::Node& targetTypesNode = parent[YAML_TARGETTYPES];
-    for (const auto& typeEntry : targetTypesNode) {
-      string typeItem;
-      TargetType target;
-      ParseString(typeEntry, YAML_TYPE, typeItem);
-      ParseTargetType(typeEntry, target);
-      targetTypes[typeItem] = target;
-    }
+bool ProjMgrYamlParser::ParseTargetTypes(const YAML::Node& parent, map<string, TargetType>& targetTypes) {
+  const YAML::Node& targetTypesNode = parent[YAML_TARGETTYPES];
+  for (const auto& typeEntry : targetTypesNode) {
+    string typeItem;
+    TargetType target;
+    ParseString(typeEntry, YAML_TYPE, typeItem);
+    ParseTargetType(typeEntry, target);
+    targetTypes[typeItem] = target;
   }
+  return (targetTypes.size() == 0 ? false : true);
 }
 
 void ProjMgrYamlParser::ParseBuildType(const YAML::Node& parent, BuildType& buildType) {

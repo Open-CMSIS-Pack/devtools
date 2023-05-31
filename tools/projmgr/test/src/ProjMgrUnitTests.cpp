@@ -3144,3 +3144,37 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ContextMap) {
   ProjMgrTestEnv::CompareFile(testoutput_folder + "/project2.Release+RteTest_ARMCM3.cbuild.yml",
     testinput_folder + "/TestSolution/ContextMap/ref/project2.Release+RteTest_ARMCM3.cbuild.yml");
 }
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_No_target_Types) {
+  StdStreamRedirect streamRedirect;
+  char* argv[7];
+  const string& csolutionFile = testinput_folder + "/TestSolution/missing_target_types.csolution.yml";
+
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolutionFile.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  argv[6] = (char*)"-n";
+  EXPECT_EQ(1, RunProjMgr(7, argv, 0));
+
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find("target-types not found"));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_No_Projects) {
+  StdStreamRedirect streamRedirect;
+  char* argv[7];
+  const string& csolutionFile = testinput_folder + "/TestSolution/missing_projects.csolution.yml";
+
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolutionFile.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  argv[6] = (char*)"-n";
+  EXPECT_EQ(1, RunProjMgr(7, argv, 0));
+
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find("projects not found"));
+}
