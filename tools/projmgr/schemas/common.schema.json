@@ -619,23 +619,13 @@
       "additionalProperties": false
     },
     "SolutionDescType": {
-      "type": ["object", "null"],
+      "type": "object",
       "properties": {
-        "target-types": {
-          "$ref": "#/definitions/TargetTypes"
-        },
-        "build-types": {
-          "$ref": "#/definitions/BuildTypes"
-        },
-        "output-dirs": {
-          "$ref": "#/definitions/OutputDirectoriesType"
-        },
-        "packs": {
-           "$ref": "#/definitions/PacksType"
-        },
-        "projects": {
-          "$ref": "#/definitions/ProjectsType"
-        },
+        "target-types": { "$ref": "#/definitions/TargetTypes" },
+        "build-types":  { "$ref": "#/definitions/BuildTypes" },
+        "output-dirs":  { "$ref": "#/definitions/OutputDirectoriesType" },
+        "packs":        { "$ref": "#/definitions/PacksType" },
+        "projects":     { "$ref": "#/definitions/ProjectsType" },
         "processor":    { "$ref": "#/definitions/ProcessorType" },
         "compiler":     { "$ref": "#/definitions/CompilerType" },
         "optimize":     { "$ref": "#/definitions/OptimizeType" },
@@ -659,7 +649,8 @@
         "cdefault":    { "type": "null", "description": "Enable use of cdefault.yml file" },
         "generators":  { "$ref": "#/definitions/GeneratorsOutputType" }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "required": [ "target-types", "projects" ]
     },
     "ProjectDescType": {
       "type": ["object", "null"],

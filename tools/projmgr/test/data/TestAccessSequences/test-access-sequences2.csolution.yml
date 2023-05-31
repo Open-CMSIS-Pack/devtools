@@ -1,6 +1,7 @@
 ### CMSIS Project Description ###
 solution:
-
+  target-types:
+    - type: TEST_TARGET
   build-types:
     - type: Debug
       compiler: AC6

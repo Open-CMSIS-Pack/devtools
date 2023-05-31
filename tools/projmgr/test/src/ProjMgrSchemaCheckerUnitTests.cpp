@@ -129,37 +129,63 @@ TEST_F(ProjMgrSchemaCheckerUnitTests, CSolution_SchemaCheck_Fail) {
 solution:\n\
   created-by: test1.0.0\n\
   created-for: test@1.2\n\
+  target-types:\n\
+    - type: Test_Target\n\
+  projects:\n\
+    - project: config.cproject.yml\n\
 ";
 
   const char* invalid_schema_Ex2 = "\
 solution:\n\
   created-by: astro@1-0.0\n\
   created-for: test@1.2.0.4\n\
+  target-types:\n\
+    - type: Test_Target\n\
+  projects:\n\
+    - project: config.cproject.yml\n\
 ";
 
   const char* invalid_schema_Ex3 = "\
 solution:\n\
   created-by: test\n\
   created-for: test@>=1\n\
+  target-types:\n\
+    - type: Test_Target\n\
+  projects:\n\
+    - project: config.cproject.yml\n\
 ";
 
   const char* valid_schema_Ex4 = "\
 solution:\n\
   created-by: test@1.0.0\n\
   created-for: test@1.2.3+ed5dsd73ks\n\
+  target-types:\n\
+    - type: Test_Target\n\
+  projects:\n\
+    - project: config.cproject.yml\n\
 ";
 
-  vector<std::pair<int, int>> expectedErrPos = {
+  typedef std::pair<int, int> ErrInfo;
+
+  // missing required properties
+  const char* invalid_schema_Ex5 = "\
+solution:\n\
+  created-by: test@1.0.0\n\
+  created-for: test@1.2.3+ed5dsd73ks\n\
+";
+
+  vector<ErrInfo> expectedErrPos = {
     // line, col
     {  2  ,  14 },
     {  3  ,  15 },
   };
 
-  vector<std::pair<const char*, bool>> vecTestData = {
-    {invalid_schema_Ex1, false},
-    {invalid_schema_Ex2, false },
-    {invalid_schema_Ex3, false },
-    {valid_schema_Ex4, true }
+  vector<std::tuple<const char*, bool, vector<ErrInfo>>> vecTestData = {
+    {invalid_schema_Ex1, false, expectedErrPos},
+    {invalid_schema_Ex2, false, expectedErrPos },
+    {invalid_schema_Ex3, false, expectedErrPos },
+    {valid_schema_Ex4, true, vector<ErrInfo>{} },
+    {invalid_schema_Ex5, false, vector<ErrInfo>{ {2,2}, {2,2}} }
   };
 
   auto writeFile = [](const string& filePath, const char* data) {
@@ -172,19 +198,19 @@ solution:\n\
 
   const string& filename = testoutput_folder +
     "/test.csolution_schema_validation.yml";
-  for (auto [data, expectError] : vecTestData) {
+  for (auto [data, expectError, errorPos] : vecTestData) {
     writeFile(filename, data);
-    EXPECT_EQ(expectError, Validate(filename, FileType::SOLUTION));
+    EXPECT_EQ(expectError, Validate(filename, FileType::SOLUTION)) << "failed for: " << data;
 
     // Check errors
     auto errList = GetErrors();
-    ASSERT_EQ(errList.size(), expectError ? 0 : expectedErrPos.size()) << "failed for: " << data;
+    EXPECT_EQ(errList.size(), expectError ? 0 : errorPos.size()) << "failed for: " << data;
     for (auto& err : errList) {
-      auto errItr = find_if(expectedErrPos.begin(), expectedErrPos.end(),
+      auto errItr = find_if(errorPos.begin(), errorPos.end(),
         [&](const std::pair<int,int>& errPos) {
           return err.m_line == errPos.first && err.m_col == errPos.second;
         });
-      EXPECT_TRUE(expectedErrPos.end() != errItr) << "failed for: " << data;
+      EXPECT_TRUE(errorPos.end() != errItr) << "failed for: " << data;
     }
   }
 }

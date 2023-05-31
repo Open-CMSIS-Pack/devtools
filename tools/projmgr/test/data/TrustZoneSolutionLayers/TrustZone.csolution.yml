@@ -1,6 +1,9 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schemas/csolution.schema.json
 
 solution:
+  target-types:
+    - type: TEST_TARGET
+
   projects:
     - project: ./Secure_CM33_Debug.cproject.yml
     - project: ./Secure_CM33_Release.cproject.yml
