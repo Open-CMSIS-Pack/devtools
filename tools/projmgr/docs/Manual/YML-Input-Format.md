@@ -29,6 +29,7 @@ Project Manager.
     - [`output-dirs:`](#output-dirs)
     - [`generators:`](#generators)
       - [`generators: - options:`](#generators---options)
+    - [`rte:`](#rte)
   - [Toolchain Options](#toolchain-options)
     - [`compiler:`](#compiler)
     - [`linker:`](#linker)
@@ -719,6 +720,27 @@ generators:
   options:
   - generator: Cube                           # for the generator `Cube` use this path
     path:  ./CubeFiles                        # relative path to the *.yml file that contains this setting
+```
+
+### `rte:`
+
+Allows to control the directory structure for [RTE (run-time environment)](Overview.md#rte-directory-structure) files.  
+
+The `rte:` node can be added at various levels of the `*.yml` input files. The following order is used:
+
+1. Use `rte:` specification of the `*.clayer.yml` input file, if not exist:
+2. Use `rte:` specification of the `*.cproject.yml` input file, if not exist:
+3. Use `rte:` specification of the `*.csolution.yml` input file.
+
+Relative paths specify a directory that is relative to the `*.yml` input file.
+
+`rte:`                         |            | Content
+:------------------------------|------------|:------------------------------------
+&nbsp;&nbsp;&nbsp; `base-dir:` |  Optional  | Base directory for unspecified generators; default: `$ProjectDir()$/RTE`.
+
+```yml
+rte:
+  base-dir: $TargetType$/RTE      # Path for RTE extended with target-type
 ```
 
 ## Toolchain Options
