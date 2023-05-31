@@ -4,7 +4,7 @@ solution:
 
   build-types:
     - type: BuildType
-      compiler: AC6        
+      compiler: AC6
 
   target-types:
     - type: TargetType

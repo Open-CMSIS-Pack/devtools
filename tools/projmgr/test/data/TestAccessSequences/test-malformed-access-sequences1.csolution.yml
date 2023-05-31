@@ -1,4 +1,7 @@
 ### CMSIS Project Description ###
 solution:
+  target-types:
+    - type: TEST_TARGET
+
   projects:
     - project: ./malformed-access-sequences1.cproject.yml

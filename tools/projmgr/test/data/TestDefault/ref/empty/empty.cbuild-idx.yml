@@ -5,9 +5,9 @@ build-idx:
   cprojects:
     - cproject: ../../data/TestDefault/project.cproject.yml
   cbuilds:
-    - cbuild: project.Debug.cbuild.yml
+    - cbuild: project.Debug+TEST_TARGET.cbuild.yml
       project: project
-      configuration: .Debug+
-    - cbuild: project.Release.cbuild.yml
+      configuration: .Debug+TEST_TARGET
+    - cbuild: project.Release+TEST_TARGET.cbuild.yml
       project: project
-      configuration: .Release+
+      configuration: .Release+TEST_TARGET
