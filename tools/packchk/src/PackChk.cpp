@@ -201,5 +201,12 @@ int PackChk::Check(int argc, const char* argv[], const char* envp[])
     return 1;
   }
 
+  CPackOptions::PedanticLevel pedantic = m_packOptions.GetPedantic();
+  if(pedantic != CPackOptions::PedanticLevel::NONE) {
+    if(ErrLog::Get()->GetWarnCnt()) {
+      return 1;
+    }
+  }
+
   return 0;
 }

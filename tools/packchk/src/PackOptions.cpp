@@ -20,7 +20,8 @@ using namespace std;
 */
 CPackOptions::CPackOptions() :
   m_bIgnoreOtherPdscFiles(false),
-  m_bDisableValidation(false)
+  m_bDisableValidation(false),
+  m_pedanticLevel(PedanticLevel::NONE)
 {
 }
 
@@ -450,6 +451,29 @@ bool CPackOptions::SetWarnLevel(const uint32_t warnLevel)
   }
 
   return true;
+}
+
+
+/**
+ * @brief set the pedantic level to return with error flag
+ * @param warnLevel PEDANTIC_LEVEL pedantic level
+ * @return passed / failed
+ */
+bool CPackOptions::SetPedantic(const PedanticLevel pedanticLevel)
+{
+  m_pedanticLevel = pedanticLevel;
+
+  return true;
+}
+
+/**
+ * @brief get the pedantic level to return with error flag
+ * @param none
+ * @return level
+ */
+CPackOptions::PedanticLevel CPackOptions::GetPedantic()
+{
+  return m_pedanticLevel;
 }
 
 /**
