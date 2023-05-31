@@ -461,7 +461,6 @@ bool ProjMgrYamlParser::ParseLayers(const YAML::Node& parent, vector<LayerItem>&
       }
       ParseString(layerEntry, YAML_LAYER, layerItem.layer);
       ParseString(layerEntry, YAML_TYPE, layerItem.type);
-      ParseBuildType(layerEntry, layerItem.build);
       layers.push_back(layerItem);
     }
   }
@@ -842,15 +841,6 @@ const set<string> layersKeys = {
   YAML_TYPE,
   YAML_FORCONTEXT,
   YAML_NOTFORCONTEXT,
-  YAML_COMPILER,
-  YAML_OPTIMIZE,
-  YAML_DEBUG,
-  YAML_WARNINGS,
-  YAML_DEFINE,
-  YAML_UNDEFINE,
-  YAML_ADDPATH,
-  YAML_DELPATH,
-  YAML_MISC,
 };
 
 const set<string> groupsKeys = {

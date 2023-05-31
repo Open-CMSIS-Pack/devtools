@@ -193,13 +193,11 @@ struct GeneratorsItem {
  * @brief layer item containing
  *        layer name,
  *        layer type,
- *        layer build settings,
  *        type inclusion
 */
 struct LayerItem {
   std::string layer;
   std::string type;
-  BuildType build;
   TypeFilter typeFilter;
 };
 
