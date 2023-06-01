@@ -315,8 +315,9 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListComponents) {
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListDependencies) {
-  char* argv[5];
-  const std::string expected = "ARM::Device:Startup&RteTest Startup@2.0.3 require RteTest:CORE\n";
+  char* argv[6];
+  const std::string expectedOut = "ARM::Device:Startup&RteTest Startup@2.0.3 require RteTest:CORE\n";
+  const std::string expectedErr = "warning csolution: RTE Model reports:\n";
   StdStreamRedirect streamRedirect;
   string csolutionFile = UpdateTestSolutionFile("./TestProject4/test-dependency.cproject.yml");
   const std::string rteFolder = testinput_folder + "/TestProject/RTE";
@@ -328,13 +329,17 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListDependencies) {
   argv[2] = (char*)"dependencies";
   argv[3] = (char*)"-s";
   argv[4] = (char*)csolutionFile.c_str();
-  EXPECT_EQ(0, RunProjMgr(5, argv, 0));
+  argv[5] = (char*)"-d";
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   GetFilesInTree(rteFolder, rteFilesAfter);
   EXPECT_EQ(rteFilesBefore, rteFilesAfter);
 
   auto outStr = streamRedirect.GetOutString();
-  EXPECT_STREQ(outStr.c_str(), expected.c_str());
+  EXPECT_STREQ(outStr.c_str(), expectedOut.c_str());
+
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(errStr.find(expectedErr), string::npos);
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ConvertProject) {
@@ -2633,11 +2638,13 @@ TEST_F(ProjMgrUnitTests, Convert_ValidationResults_Filtering) {
 
   vector<tuple<string, int, string>> testData = {
     {"recursive", 1, "\
-warning csolution: ARM.RteTestRecursive.0.1.0: condition 'Recursive': error #503: direct or indirect recursion detected\n\
+warning csolution: RTE Model reports:\n\
+ARM.RteTestRecursive.0.1.0: condition 'Recursive': error #503: direct or indirect recursion detected\n\
 error csolution: no component was found with identifier 'RteTest:Check:Recursive'\n"},
     {"missing-condition", 0, "\
-warning csolution: ARM.RteTestMissingCondition.0.1.0: component 'ARM::RteTest.Check.MissingCondition(MissingCondition):0.9.9[]': error #501: error(s) in component definition:\n\
-warning csolution:  condition 'MissingCondition' not found\n"},
+warning csolution: RTE Model reports:\n\
+ARM.RteTestMissingCondition.0.1.0: component 'ARM::RteTest.Check.MissingCondition(MissingCondition):0.9.9[]': error #501: error(s) in component definition:\n\
+ condition 'MissingCondition' not found\n"},
   };
 
   for (const auto& [project, expectedReturn, expectedMessage] : testData) {

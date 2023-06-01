@@ -38,6 +38,7 @@ static const map<const string, tuple<const string, const string, const string>> 
 
 ProjMgrWorker::ProjMgrWorker(void) {
   m_loadPacksPolicy = LoadPacksPolicy::DEFAULT;
+  RteCondition::SetVerboseFlags(0);
 }
 
 ProjMgrWorker::~ProjMgrWorker(void) {
@@ -415,16 +416,20 @@ bool ProjMgrWorker::CheckRteErrors(void) {
   const auto& callback = m_kernel->GetCallback();
   const list<string>& rteWarningMessages = callback->GetWarningMessages();
   if (!rteWarningMessages.empty()) {
+    string warnMsg = "RTE Model reports:";
     for (const auto& rteWarningMessage : rteWarningMessages) {
-      ProjMgrLogger::Warn(rteWarningMessage);
+      warnMsg += "\n" + rteWarningMessage;
     }
+    ProjMgrLogger::Warn(warnMsg);
     callback->ClearWarningMessages();
   }
   const list<string>& rteErrorMessages = callback->GetErrorMessages();
   if (!rteErrorMessages.empty()) {
+    string errorMsg = "RTE Model reports:";
     for (const auto& rteErrorMessage : rteErrorMessages) {
-      ProjMgrLogger::Error(rteErrorMessage);
+      errorMsg += "\n" + rteErrorMessage;
     }
+    ProjMgrLogger::Error(errorMsg);
     return false;
   }
   return true;
@@ -2672,6 +2677,7 @@ bool ProjMgrWorker::ListDevices(vector<string>& devices, const string& filter) {
 }
 
 bool ProjMgrWorker::ListComponents(vector<string>& components, const string& filter) {
+  RteCondition::SetVerboseFlags(m_verbose ? VERBOSE_DEPENDENCY : m_debug ? VERBOSE_FILTER | VERBOSE_DEPENDENCY : 0);
   RteComponentMap componentMap;
   set<string> componentIds;
   for (const auto& selectedContext : m_selectedContexts) {
@@ -2723,6 +2729,7 @@ bool ProjMgrWorker::ListComponents(vector<string>& components, const string& fil
 }
 
 bool ProjMgrWorker::ListDependencies(vector<string>& dependencies, const string& filter) {
+  RteCondition::SetVerboseFlags(m_verbose ? VERBOSE_DEPENDENCY : m_debug ? VERBOSE_FILTER | VERBOSE_DEPENDENCY : 0);
   set<string>dependenciesSet;
   for (const auto& selectedContext : m_selectedContexts) {
     ContextItem& context = m_contexts[selectedContext];
