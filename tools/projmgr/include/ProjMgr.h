@@ -109,7 +109,9 @@ protected:
   bool m_debug;
   bool m_ymlOrder;
   GroupNode m_files;
+  std::vector<ContextItem*> m_processedContexts;
 
+  bool RunConfigure(bool printConfig = false);
   bool RunConvert(void);
   bool RunCodeGenerator(void);
   bool RunListPacks(void);

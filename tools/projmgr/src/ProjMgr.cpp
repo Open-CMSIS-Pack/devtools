@@ -33,6 +33,7 @@ Usage:\n\
    list layers           Print list of available, referenced and compatible layers\n\
    list toolchains       Print list of supported toolchains\n\
    list environment      Print list of environment configurations\n\
+   update-rte            Create/update configuration files and validate solution\n\
    convert               Convert *.csolution.yml input file in *.cprj files\n\
    run                   Run code generator\n\n\
  Options:\n\
@@ -128,6 +129,7 @@ int ProjMgr::RunProjMgr(int argc, char **argv, char** envp) {
 
   // command options dictionary
   map<string, vector<cxxopts::Option>> optionsDict = {
+    {"update-rte",        {solution, context, load, verbose, debug, toolchain, schemaCheck}},
     {"convert",           {solution, context, output, load, verbose, debug, exportSuffix, toolchain, schemaCheck, noUpdateRte}},
     {"run",               {solution, generator, context, load, verbose, debug, schemaCheck}},
     {"list packs",        {solution, context, filter, missing, load, verbose, debug, toolchain, schemaCheck}},
@@ -295,6 +297,11 @@ int ProjMgr::RunProjMgr(int argc, char **argv, char** envp) {
       ProjMgrLogger::Error("list <args> was not found");
       return 1;
     }
+  } else if (manager.m_command == "update-rte") {
+    // Process 'update-rte' command
+    if (!manager.RunConfigure(true)) {
+      return 1;
+    }
   } else if (manager.m_command == "convert") {
     // Process 'convert' command
     if (!manager.RunConvert()) {
@@ -386,7 +393,7 @@ bool ProjMgr::PopulateContexts(void) {
   return true;
 }
 
-bool ProjMgr::RunConvert(void) {
+bool ProjMgr::RunConfigure(bool printConfig) {
   // Parse all input files and populate contexts inputs
   if (!PopulateContexts()) {
     return false;
@@ -407,7 +414,7 @@ bool ProjMgr::RunConvert(void) {
   m_worker.GetYmlOrderedContexts(orderedContexts);
   // Process contexts
   bool error = false;
-  vector<ContextItem*> processedContexts;
+  m_processedContexts.clear();
   for (auto& contextName : orderedContexts) {
     auto& contextItem = (*contexts)[contextName];
     if (!m_worker.IsContextSelected(contextName)) {
@@ -417,11 +424,29 @@ bool ProjMgr::RunConvert(void) {
       ProjMgrLogger::Error("processing context '" + contextName + "' failed");
       error = true;
     } else {
-      processedContexts.push_back(&contextItem);
+      m_processedContexts.push_back(&contextItem);
     }
   }
+  if (m_verbose) {
+    // Print config files info
+    vector<string> configFiles;
+    m_worker.ListConfigFiles(configFiles);
+    if (!configFiles.empty()) {
+      string infoMsg = "config files for each component:";
+      for (const auto& configFile : configFiles) {
+        infoMsg += "\n  " + configFile;
+      }
+      ProjMgrLogger::Info(infoMsg);
+    }
+  }
+  return !error;
+}
+
+bool ProjMgr::RunConvert(void) {
+  // Configure
+  bool error = !RunConfigure();
   // Generate Cprjs
-  for (auto& contextItem : processedContexts) {
+  for (auto& contextItem : m_processedContexts) {
     error_code ec;
     const string& filename = fs::weakly_canonical(contextItem->directories.cprj + "/" + contextItem->name + ".cprj", ec).generic_string();
     RteFsUtils::CreateDirectories(contextItem->directories.cprj);
@@ -444,23 +469,19 @@ bool ProjMgr::RunConvert(void) {
   }
 
   // Generate cbuild files
-  for (auto& contextItem : processedContexts) {
+  for (auto& contextItem : m_processedContexts) {
     if (!m_emitter.GenerateCbuild(contextItem)) {
       return false;
     }
   }
 
   // Generate cbuild index
-  if (!processedContexts.empty()) {
-    if (!m_emitter.GenerateCbuildIndex(m_parser, processedContexts, m_outputDir)) {
+  if (!m_processedContexts.empty()) {
+    if (!m_emitter.GenerateCbuildIndex(m_parser, m_processedContexts, m_outputDir)) {
       return false;
     }
   }
-
-  if (error) {
-    return false;
-  }
-  return true;
+  return !error;
 }
 
 bool ProjMgr::RunListPacks(void) {
