@@ -3145,6 +3145,40 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ContextMap) {
     testinput_folder + "/TestSolution/ContextMap/ref/project2.Release+RteTest_ARMCM3.cbuild.yml");
 }
 
+TEST_F(ProjMgrUnitTests, RunProjMgr_UpdateRte) {
+  char* argv[8];
+  const string rteDir = testinput_folder + "/TestSolution/TestProject1/RTE/";
+  const string configFile = rteDir + "Device/RteTest_ARMCM0/startup_ARMCM0.c";
+  const string baseFile = configFile + ".base@1.1.1";
+  RteFsUtils::RemoveDir(rteDir);
+  RteFsUtils::CreateFile(configFile, "");
+  RteFsUtils::CreateFile(baseFile, "");
+
+  StdStreamRedirect streamRedirect;
+  string csolutionFile = testinput_folder + "/TestSolution/test.csolution.yml";
+  argv[1] = (char*)"update-rte";
+  argv[2] = (char*)csolutionFile.c_str();
+  argv[3] = (char*)"-c";
+  argv[4] = (char*)"test1.Debug+CM0";
+  argv[5] = (char*)"-o";
+  argv[6] = (char*)testoutput_folder.c_str();
+  argv[7] = (char*)"-v";
+  EXPECT_EQ(0, RunProjMgr(8, argv, 0));
+  EXPECT_TRUE(RteFsUtils::Exists(rteDir + "/_Debug_CM0/RTE_Components.h"));
+
+  // Check info message
+  const string expected = "\
+info csolution: config files for each component:\n\
+  ARM::Device:Startup&RteTest Startup@2.0.3:\n\
+    - .*/TestSolution/TestProject1/RTE/Device/RteTest_ARMCM0/ARMCM0_ac6.sct \\(base@1.0.0\\)\n\
+    - .*/TestSolution/TestProject1/RTE/Device/RteTest_ARMCM0/startup_ARMCM0.c \\(base@1.1.1\\) \\(update@2.0.3\\)\n\
+    - .*/TestSolution/TestProject1/RTE/Device/RteTest_ARMCM0/system_ARMCM0.c \\(base@1.0.0\\)\n\
+";
+
+  auto outStr = streamRedirect.GetOutString();
+  EXPECT_TRUE(regex_match(outStr, regex(expected)));
+}
+
 TEST_F(ProjMgrUnitTests, RunProjMgr_No_target_Types) {
   StdStreamRedirect streamRedirect;
   char* argv[7];

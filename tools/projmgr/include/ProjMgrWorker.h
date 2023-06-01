@@ -426,6 +426,13 @@ public:
   bool ListEnvironment(EnvironmentList& env);
 
   /**
+  * @brief list config files
+  * @param reference to vector of config files info
+  * @return true if executed successfully
+  */
+  bool ListConfigFiles(std::vector<std::string>& configFiles);
+
+  /**
    * @brief add contexts for a given descriptor
    * @param reference to parser
    * @param reference to descriptor

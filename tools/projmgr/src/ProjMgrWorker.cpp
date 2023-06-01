@@ -3494,3 +3494,29 @@ bool ProjMgrWorker::GetGeneratorDir(const RteGenerator* generator, ContextItem& 
   }
   return true;
 }
+
+bool ProjMgrWorker::ListConfigFiles(vector<string>& configFiles) {
+  for (const auto& contextName : m_selectedContexts) {
+    const auto& context = m_contexts.at(contextName);
+    if (!context.configFiles.empty()) {
+      for (const auto& [component, fileInstances] : context.configFiles) {
+        string configEntry = component + ":";
+        for (const auto& fi : fileInstances) {
+          // get absolute path to file instance
+          const string absFile = fs::path(context.cproject->directory).append(fi.second->GetInstanceName()).generic_string();
+          configEntry += "\n    - " + absFile;
+          // get base version
+          const string baseVersion = fi.second->GetVersionString();
+          configEntry += " (base@" + baseVersion + ")";
+          // get update version
+          const string updateVersion = fi.second->GetFile(context.rteActiveTarget->GetName())->GetVersionString();
+          if (updateVersion != baseVersion) {
+            configEntry += " (update@" + updateVersion + ")";
+          }
+        }
+        ProjMgrUtils::PushBackUniquely(configFiles, configEntry);
+      }
+    }
+  }
+  return true;
+}
