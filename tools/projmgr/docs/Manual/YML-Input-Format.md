@@ -726,13 +726,12 @@ generators:
 
 Allows to control the directory structure for [RTE (run-time environment)](Overview.md#rte-directory-structure) files.  
 
-The `rte:` node can be added at various levels of the `*.yml` input files. The following order is used:
+>**Note:**
+> 
+> This control is only possible at `cproject.yml` level.  
+>
+> The location of the `cproject.yml` file is the reference when relative paths are used.
 
-1. Use `rte:` specification of the `*.clayer.yml` input file, if not exist:
-2. Use `rte:` specification of the `*.cproject.yml` input file, if not exist:
-3. Use `rte:` specification of the `*.csolution.yml` input file.
-
-Relative paths specify a directory that is relative to the `*.yml` input file.
 
 `rte:`                         |            | Content
 :------------------------------|------------|:------------------------------------
@@ -740,7 +739,7 @@ Relative paths specify a directory that is relative to the `*.yml` input file.
 
 ```yml
 rte:
-  base-dir: $TargetType$/RTE      # Path for RTE extended with target-type
+  base-dir: $TargetType$/RTE      # Path extended with target-type, results in `$ProjectDir()$/$TargetType$/RTE`
 ```
 
 ## Toolchain Options
