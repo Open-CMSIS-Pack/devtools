@@ -297,7 +297,7 @@ The section below explains the the overall concepts consider by the **csolution 
 
 A minimal application requires two files:
 
-- `Sample.csolution.yml` that defines the device and selects the compiler.
+- `Sample.csolution.yml` that defines the a [target type](YML-Input-Format.md#target-types) with [device](YML-Input-Format.md#device) and selects the [compiler](YML-Input-Format.md#compiler).
 - `Sample.cproject.yml` that defines the files and software components that belong to the device.
 
 Simple applications require just one self-contained file.
