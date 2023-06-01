@@ -7,7 +7,6 @@ build:
   device: RteTest_ARMCM3
   processor:
     fpu: off
-    trustzone: non-secure
   packs:
     - pack: ARM::RteTest_DFP@0.2.0
       path: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0

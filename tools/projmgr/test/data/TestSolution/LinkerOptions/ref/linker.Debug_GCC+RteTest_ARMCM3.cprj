@@ -14,7 +14,7 @@
     <compiler name="GCC" version="11.2.1"/>
   </compilers>
 
-  <target Dfpu="NO_FPU" Dname="RteTest_ARMCM3" Dsecure="Non-secure" Dvendor="ARM:82">
+  <target Dfpu="NO_FPU" Dname="RteTest_ARMCM3" Dvendor="ARM:82">
     <output elf="linker.elf" intdir="tmp/linker/RteTest_ARMCM3/Debug_GCC" name="linker" outdir="out/linker/RteTest_ARMCM3/Debug_GCC" rtedir="../data/TestSolution/LinkerOptions/RTE"/>
     <ldflags compiler="GCC" file="../data/TestSolution/LinkerOptions/layer/linkerScript.ld" regions="../data/TestSolution/LinkerOptions/layer/RTE/Device/RteTest_ARMCM3/regions_RteTest_ARMCM3.h">
       <defines>LD_PP_GCC_CPROJECT_DEF0;LD_PP_GCC_CPROJECT_DEF1;LD_PP_GCC_CLAYER_DEF0;LD_PP_GCC_CLAYER_DEF1;LD_PP_GCC_SETUP_DEF0</defines>

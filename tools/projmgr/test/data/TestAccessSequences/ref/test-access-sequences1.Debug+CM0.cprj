@@ -14,7 +14,7 @@
     <compiler name="AC6" version="6.18.0"/>
   </compilers>
 
-  <target Dfpu="NO_FPU" Dname="RteTest_ARMCM0" Dsecure="Non-secure" Dvendor="ARM:82">
+  <target Dfpu="NO_FPU" Dname="RteTest_ARMCM0" Dvendor="ARM:82">
     <output elf="test-access-sequences1.axf" intdir="tmp/test-access-sequences1/CM0/Debug" name="test-access-sequences1" outdir="out/test-access-sequences1/CM0/Debug" rtedir="../data/TestAccessSequences/RTE"/>
     <cflags add="-O1 -g -C-CPP-RteTest_ARMCM0" compiler="AC6"/>
     <cxxflags add="-O1 -g -C-CPP-RteTest_ARMCM0" compiler="AC6"/>

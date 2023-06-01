@@ -14,7 +14,7 @@
     <compiler name="GCC" version="11.2.1"/>
   </compilers>
 
-  <target Dfpu="NO_FPU" Dname="RteTest_ARMCM0" Dsecure="Non-secure" Dvendor="ARM:82">
+  <target Dfpu="NO_FPU" Dname="RteTest_ARMCM0" Dvendor="ARM:82">
     <output elf="test1.elf" intdir="../test1/Release/TypeA" name="test1" outdir="../test1/Release" rtedir="../TestProject1/RTE"/>
     <ldflags compiler="GCC" file="../TestProject1/RTE/Device/RteTest_ARMCM0/gcc_arm.ld"/>
   </target>

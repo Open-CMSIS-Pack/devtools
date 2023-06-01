@@ -15,7 +15,7 @@
     <compiler name="AC6" version="6.18.0"/>
   </compilers>
 
-  <target Dname="RteTestGen_ARMCM0" Dsecure="Non-secure" Dvendor="ARM:82">
+  <target Dname="RteTestGen_ARMCM0" Dvendor="ARM:82">
     <output elf="test2.axf" intdir="tmp/test2/TestGen/Debug" name="test2" outdir="out/test2/TestGen/Debug" rtedir="../data/TestSolution/TestProject2/RTE"/>
     <options debug="on" optimize="none"/>
     <arflags add="-Lib-project -Lib-type-CM3" compiler="AC6"/>

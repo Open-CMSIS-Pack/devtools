@@ -14,7 +14,7 @@
     <compiler name="AC6" version="6.18.0"/>
   </compilers>
 
-  <target Dfpu="NO_FPU" Dname="RteTest_ARMCM3" Dsecure="Non-secure" Dvendor="ARM:82">
+  <target Dfpu="NO_FPU" Dname="RteTest_ARMCM3" Dvendor="ARM:82">
     <output elf="linker.axf" intdir="tmp/linker/RteTest_ARMCM3/Debug_AC6" name="linker" outdir="out/linker/RteTest_ARMCM3/Debug_AC6" rtedir="../data/TestSolution/LinkerOptions/RTE"/>
     <ldflags compiler="AC6" file="../data/TestSolution/LinkerOptions/linkerScript.sct" regions="../data/TestSolution/LinkerOptions/RTE/Device/RteTest_ARMCM3/regions_RteTest_ARMCM3.h"/>
   </target>

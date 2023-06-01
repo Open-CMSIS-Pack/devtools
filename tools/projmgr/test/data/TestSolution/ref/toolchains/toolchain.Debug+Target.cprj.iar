@@ -14,7 +14,7 @@
     <compiler name="IAR" version="9.32.1"/>
   </compilers>
 
-  <target Dfpu="NO_FPU" Dname="RteTest_ARMCM3" Dsecure="Non-secure" Dvendor="ARM:82">
+  <target Dfpu="NO_FPU" Dname="RteTest_ARMCM3" Dvendor="ARM:82">
     <output elf="toolchain.out" intdir="tmp/toolchain/Target/Debug" name="toolchain" outdir="out/toolchain/Target/Debug" rtedir="../data/TestSolution/RTE"/>
     <cflags add="-DIAR@9.32.1" compiler="IAR"/>
     <ldflags compiler="IAR" file="../data/TestToolchains/iar_linker_script.icf" regions="../data/TestSolution/RTE/Device/RteTest_ARMCM3/regions_RteTest_ARMCM3.h"/>

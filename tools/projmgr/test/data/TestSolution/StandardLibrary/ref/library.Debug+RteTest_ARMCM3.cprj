@@ -14,7 +14,7 @@
     <compiler name="GCC" version="11.2.1"/>
   </compilers>
 
-  <target Dfpu="NO_FPU" Dname="RteTest_ARMCM3" Dsecure="Non-secure" Dvendor="ARM:82">
+  <target Dfpu="NO_FPU" Dname="RteTest_ARMCM3" Dvendor="ARM:82">
     <output intdir="tmp/library/RteTest_ARMCM3/Debug" lib="liblibrary.a" name="library" outdir="out/library/RteTest_ARMCM3/Debug" rtedir="../data/TestSolution/StandardLibrary/RTE"/>
     <ldlibs add="-Wl,--start-group -lm -lc -lgcc -lnosys -Wl,--end-group" compiler="GCC"/>
     <ldflags compiler="GCC" file="../data/TestSolution/StandardLibrary/RTE/Device/RteTest_ARMCM3/gcc_arm.ld"/>

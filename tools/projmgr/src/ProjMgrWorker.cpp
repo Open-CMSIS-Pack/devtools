@@ -1098,8 +1098,6 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
     } else if (context.controls.processed.processor.trustzone == "off") {
       context.targetAttributes["Dsecure"] = "TZ-disabled";
     }
-  } else {
-    context.targetAttributes["Dsecure"] = "Non-secure";
   }
 
   context.packages.insert({ ProjMgrUtils::GetPackageID(matchedDevice->GetPackage()), matchedDevice->GetPackage() });
