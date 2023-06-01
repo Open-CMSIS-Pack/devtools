@@ -15,7 +15,7 @@
     <compiler name="AC6" version="6.18.0"/>
   </compilers>
 
-  <target Dfpu="NO_FPU" Dname="RteTest_ARMCM0" Dsecure="Non-secure" Dvendor="ARM:82">
+  <target Dfpu="NO_FPU" Dname="RteTest_ARMCM0" Dvendor="ARM:82">
     <output elf="pre-include.axf" intdir="tmp/pre-include/CM0" name="pre-include" outdir="out/pre-include/CM0" rtedir="../data/TestSolution/RTE"/>
     <ldflags compiler="AC6" file="../data/TestSolution/RTE/Device/RteTest_ARMCM0/ARMCM0_ac6.sct"/>
   </target>
