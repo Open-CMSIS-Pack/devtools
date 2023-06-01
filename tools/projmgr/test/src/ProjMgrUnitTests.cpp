@@ -3212,3 +3212,20 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_No_Projects) {
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_NE(string::npos, errStr.find("projects not found"));
 }
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_RteDir) {
+  char* argv[5];
+  const string& csolutionFile = testinput_folder + "/TestSolution/rtedir.csolution.yml";
+
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolutionFile.c_str();
+  argv[3] = (char*)"-o";
+  argv[4] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(0, RunProjMgr(5, argv, 0));
+
+  // Check generated cbuild YMLs
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/rtedir.Debug+CM0.cbuild.yml",
+    testinput_folder + "/TestSolution/ref/rtedir.Debug+CM0.cbuild.yml");
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/rtedir.Release+CM0.cbuild.yml",
+    testinput_folder + "/TestSolution/ref/rtedir.Release+CM0.cbuild.yml");
+}

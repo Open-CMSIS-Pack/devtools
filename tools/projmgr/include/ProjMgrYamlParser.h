@@ -101,6 +101,7 @@ static constexpr const char* YAML_PROJECT = "project";
 static constexpr const char* YAML_PROJECTS = "projects";
 static constexpr const char* YAML_PROVIDES = "provides";
 static constexpr const char* YAML_REGIONS = "regions";
+static constexpr const char* YAML_RTE = "rte";
 static constexpr const char* YAML_SCRIPT = "script";
 static constexpr const char* YAML_SOLUTION = "solution";
 static constexpr const char* YAML_SELECTED_BY = "selected-by";
@@ -194,6 +195,7 @@ protected:
   bool ParseTypeFilter(const YAML::Node& parent, TypeFilter& type);
   bool ParseTypePair(std::vector<std::string>& vec, std::vector<TypePair>& typeVec);
   bool ParseLinker(const YAML::Node& parent, std::vector<LinkerItem>& linker);
+  void ParseRte(const YAML::Node& parent, std::string& rteBaseDir);
   bool GetTypes(const std::string& type, std::string& buildType, std::string& targetType);
   bool ValidateCdefault(const std::string& input, const YAML::Node& root);
   bool ValidateCsolution(const std::string& input, const YAML::Node& root);

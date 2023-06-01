@@ -106,8 +106,7 @@ bool ProjMgrWorker::AddContext(ProjMgrParser& parser, ContextDesc& descriptor, c
     context.directories.cprj = m_outputDir.empty() ? context.cproject->directory : m_outputDir;
     context.directories.intdir = "tmp/" + context.cproject->name + (type.target.empty() ? "" : "/" + type.target) + (type.build.empty() ? "" : "/" + type.build);
     context.directories.outdir = "out/" + context.cproject->name + (type.target.empty() ? "" : "/" + type.target) + (type.build.empty() ? "" : "/" + type.build);
-    error_code ec;
-    context.directories.rte = fs::relative(context.cproject->directory + "/RTE", context.csolution->directory, ec).generic_string();
+    context.directories.rte = "RTE";
 
     // customized directories
     if (m_outputDir.empty() && !context.csolution->directories.cprj.empty()) {
@@ -119,10 +118,11 @@ bool ProjMgrWorker::AddContext(ProjMgrParser& parser, ContextDesc& descriptor, c
     if (!context.csolution->directories.outdir.empty()) {
       context.directories.outdir = context.csolution->directories.outdir;
     }
-    if (!context.csolution->directories.rte.empty()) {
-      context.directories.rte = context.csolution->directories.rte;
+    if (!context.cproject->rteBaseDir.empty()) {
+      context.directories.rte = context.cproject->rteBaseDir;
     }
 
+    error_code ec;
     context.directories.cprj = fs::weakly_canonical(RteFsUtils::AbsolutePath(context.directories.cprj), ec).generic_string();
 
     // context variables
@@ -1249,7 +1249,7 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
     }
 
     // Set layer's rtePath attribute
-    if (!layer.empty() && context.csolution->directories.rte.empty()) {
+    if (!layer.empty()) {
       error_code ec;
       const string& rteDir = fs::relative(context.clayers[layer]->directory, context.cproject->directory, ec).append("RTE").generic_string();
       matchedComponentInstance->AddAttribute("rtedir", rteDir);
@@ -2090,7 +2090,7 @@ bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem& context) {
   // directories
   const string ref = m_outputDir.empty() ? context.csolution->directory : RteFsUtils::AbsolutePath(m_outputDir).generic_string();
   if (!ProcessSequenceRelative(context, context.directories.cprj) ||
-      !ProcessSequenceRelative(context, context.directories.rte, context.csolution->directory) ||
+      !ProcessSequenceRelative(context, context.directories.rte, context.cproject->directory) ||
       !ProcessSequenceRelative(context, context.directories.outdir, ref) ||
       !ProcessSequenceRelative(context, context.directories.intdir, ref)) {
     return false;
