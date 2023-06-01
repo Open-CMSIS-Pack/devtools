@@ -557,6 +557,7 @@ The `project:` node is the start of a `*.cproject.yml` file and can contain the 
 &nbsp;&nbsp; `description:`                         |  Optional  | Brief description text of the project.
 &nbsp;&nbsp; [`output:`](#output)                   |  Optional  | Configure the generated output files.
 &nbsp;&nbsp; [`generators:`](#generators)           |  Optional  | Control the directory structure for generator output.
+&nbsp;&nbsp; [`rte:`](#rte)                         |  Optional  | Control the directory structure for [RTE (run-time environment)](Overview.md#rte-directory-structure) files.
 &nbsp;&nbsp; [`packs:`](#packs)                     |  Optional  | Defines packs that are required for this project.
 &nbsp;&nbsp; [`language-C:`](#language-c)           |  Optional  | Set the language standard for C source file compilation.
 &nbsp;&nbsp; [`language-CPP:`](#language-cpp)       |  Optional  | Set the language standard for C++ source file compilation.
@@ -693,7 +694,10 @@ The `generators:` node can be added at various levels of the `*.yml` input files
 2. Use `generators:` specification of the `*.cproject.yml` input file, if not exist:
 3. Use `generators:` specification of the `*.csolution.yml` input file.
 
-Only relative paths to the base directory of the `*.yml` input file are permitted.
+>**Notes:**
+> 
+> - Only relative paths are permitted to support portablity of projects.
+> - The location of the `*.yml` file that contains the `generators:` node is the reference for relative paths.
 
 `generators:`                  |            | Content
 :------------------------------|------------|:------------------------------------
@@ -726,12 +730,11 @@ generators:
 
 Allows to control the directory structure for [RTE (run-time environment)](Overview.md#rte-directory-structure) files.  
 
->**Note:**
+>**Notes:**
 > 
-> This control is only possible at `cproject.yml` level.  
->
-> The location of the `cproject.yml` file is the reference when relative paths are used.
-
+> - This control is only possible at `*.cproject.yml` level.  
+> - Only relative paths are permitted to support portablity of projects.
+> - The location of the `*.cproject.yml` file is the reference for relative paths.
 
 `rte:`                         |            | Content
 :------------------------------|------------|:------------------------------------
