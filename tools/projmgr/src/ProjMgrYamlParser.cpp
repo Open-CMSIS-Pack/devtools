@@ -143,6 +143,8 @@ bool ProjMgrYamlParser::ParseCproject(const string& input,
 
     ParseLinker(projectNode, cproject.linker);
 
+    ParseRte(projectNode, cproject.rteBaseDir);
+
   } catch (YAML::Exception& e) {
     ProjMgrLogger::Error(input, e.mark.line + 1, e.mark.column + 1, e.msg);
     return false;
@@ -340,6 +342,13 @@ void ProjMgrYamlParser::ParseGenerators(const YAML::Node& parent, GeneratorsItem
   }
 }
 
+void ProjMgrYamlParser::ParseRte(const YAML::Node& parent, string& rteBaseDir) {
+  if (parent[YAML_RTE].IsDefined()) {
+    const YAML::Node& rteNode = parent[YAML_RTE];
+    ParseString(rteNode, YAML_BASE_DIR, rteBaseDir);
+  }
+}
+
 bool ProjMgrYamlParser::ParseTypeFilter(const YAML::Node& parent, TypeFilter& type) {
   vector<string> include, exclude;
   ParseVectorOrString(parent, YAML_FORCONTEXT, include);
@@ -531,7 +540,6 @@ void ProjMgrYamlParser::ParseOutputDirs(const YAML::Node& parent, struct Directo
       {YAML_OUTPUT_CPRJDIR, directories.cprj},
       {YAML_OUTPUT_INTDIR, directories.intdir},
       {YAML_OUTPUT_OUTDIR, directories.outdir},
-      {YAML_OUTPUT_RTEDIR, directories.rte},
     };
     for (const auto& item : outputDirsChildren) {
       ParseString(outputDirsNode, item.first, item.second);
@@ -687,6 +695,7 @@ const set<string> projectKeys = {
   YAML_CONNECTIONS,
   YAML_LINKER,
   YAML_GENERATORS,
+  YAML_RTE,
 };
 
 const set<string> setupKeys = {
@@ -770,7 +779,6 @@ const set<string> outputDirsKeys = {
   YAML_OUTPUT_CPRJDIR,
   YAML_OUTPUT_INTDIR,
   YAML_OUTPUT_OUTDIR,
-  YAML_OUTPUT_RTEDIR,
 };
 
 const set<string> outputKeys = {
@@ -781,6 +789,10 @@ const set<string> outputKeys = {
 const set<string> generatorsKeys = {
   YAML_BASE_DIR,
   YAML_OPTIONS,
+};
+
+const set<string> rteKeys = {
+  YAML_BASE_DIR,
 };
 
 const set<string> processorKeys = {
@@ -905,6 +917,7 @@ const map<string, set<string>> mappings = {
   {YAML_OUTPUTDIRS, outputDirsKeys},
   {YAML_OUTPUT, outputKeys},
   {YAML_GENERATORS, generatorsKeys},
+  {YAML_RTE, rteKeys},
 };
 
 bool ProjMgrYamlParser::ValidateCdefault(const string& input, const YAML::Node& root) {

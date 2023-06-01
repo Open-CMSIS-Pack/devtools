@@ -548,6 +548,16 @@
       ],
       "additionalProperties": false
     },
+    "RteType": {
+      "type": ["object", "null"],
+      "description": "Allows to control the directory structure for RTE (run-time environment) files",
+      "properties": {
+        "base-dir": {
+          "type": "string",
+          "description": "Base directory for RTE files; default: $ProjectDir()$/RTE"
+        }
+      }
+    },
     "GeneratorsOutputType": {
       "type": ["object", "null"],
       "description": "Allows to control the directory structure for generator output files",
@@ -677,7 +687,8 @@
         "setups":      { "$ref": "#/definitions/SetupsType" },
         "connections": { "$ref": "#/definitions/ConnectionsType" },
         "linker":      { "$ref": "#/definitions/LinkersType" },
-        "generators":  { "$ref": "#/definitions/GeneratorsOutputType" }
+        "generators":  { "$ref": "#/definitions/GeneratorsOutputType" },
+        "rte":         { "$ref": "#/definitions/RteType" }
       },
       "additionalProperties": false
     },

@@ -132,16 +132,6 @@ struct TargetType {
 };
 
 /**
- * @brief rte directory item containing
- *        rte directory path,
- *        type inclusion
-*/
-struct RteDirItem {
-  std::string dir;
-  TypeFilter type;
-};
-
-/**
  * @brief directories item containing
  *        intdir directory,
  *        outdir directory,
@@ -342,6 +332,7 @@ struct CsolutionItem {
  *        project name,
  *        project path,
  *        project directory,
+ *        rte base directory,
  *        project output name and types,
  *        project target properties,
  *        list of required components,
@@ -357,9 +348,9 @@ struct CprojectItem {
   std::string name;
   std::string path;
   std::string directory;
+  std::string rteBaseDir;
   OutputItem output;
   TargetType target;
-  std::vector<RteDirItem> rteDirs;
   std::vector<ComponentItem> components;
   std::vector<GroupNode> groups;
   std::vector<LayerItem> clayers;
@@ -382,6 +373,9 @@ struct CprojectItem {
  *        list of user groups,
  *        list of connections
  *        list of packs,
+ *        list of linker entries,
+ *        board filter,
+ *        device filter,
  *        generator options
 */
 struct ClayerItem {
@@ -391,7 +385,6 @@ struct ClayerItem {
   std::string directory;
   std::string outputType;
   TargetType target;
-  std::vector<RteDirItem> rteDirs;
   std::vector<ComponentItem> components;
   std::vector<GroupNode> groups;
   std::vector<ConnectItem> connections;

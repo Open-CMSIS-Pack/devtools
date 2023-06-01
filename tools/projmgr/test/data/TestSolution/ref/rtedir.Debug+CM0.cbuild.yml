@@ -1,0 +1,48 @@
+build:
+  generated-by: csolution version 2.0.0-dev0+p11-g1563986
+  solution: ../data/TestSolution/rtedir.csolution.yml
+  project: ../data/TestSolution/rtedir.cproject.yml
+  context: rtedir.Debug+CM0
+  compiler: AC6
+  device: RteTest_ARMCM0
+  processor:
+    fpu: off
+  packs:
+    - pack: ARM::RteTest_DFP@0.2.0
+      path: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0
+  define:
+    - ARMCM0
+    - _RTE_
+  add-path:
+    - ../data/TestSolution/AC6/_Debug_CM0
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
+  output-dirs:
+    intdir: tmp/rtedir/CM0/Debug
+    outdir: out/rtedir/CM0/Debug
+    rtedir: ../data/TestSolution/AC6
+  output:
+    - type: elf
+      file: rtedir.axf
+  components:
+    - component: ARM::Device:Startup&RteTest Startup@2.0.3
+      condition: ARMCM0 RteTest
+      from-pack: ARM::RteTest_DFP@0.2.0
+      selected-by: Startup
+      files:
+        - file: ../data/TestSolution/AC6/Device/RteTest_ARMCM0/ARMCM0_ac6.sct
+          category: linkerScript
+          attr: config
+          version: 1.0.0
+        - file: ../data/TestSolution/AC6/Device/RteTest_ARMCM0/startup_ARMCM0.c
+          category: sourceC
+          attr: config
+          version: 2.0.3
+        - file: ../data/TestSolution/AC6/Device/RteTest_ARMCM0/system_ARMCM0.c
+          category: sourceC
+          attr: config
+          version: 1.0.0
+  linker:
+    script: ../data/TestSolution/AC6/Device/RteTest_ARMCM0/ARMCM0_ac6.sct
+  constructed-files:
+    - file: ../data/TestSolution/AC6/_Debug_CM0/RTE_Components.h
+      category: header
