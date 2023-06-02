@@ -2122,7 +2122,6 @@ bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem& context) {
 
   // layers translation controls
   for (const auto& [name, clayer] : context.clayers) {
-    context.controls.clayers[name] = clayer->target.build;
     if (!ProcessSequencesRelatives(context, context.controls.clayers[name], clayer->directory)) {
       return false;
     }
@@ -2900,6 +2899,9 @@ bool ProjMgrWorker::GetTypeContent(ContextItem& context) {
   }
   context.controls.cproject = context.cproject->target.build;
   context.controls.csolution = context.csolution->target.build;
+  for (const auto& [name, clayer] : context.clayers) {
+    context.controls.clayers[name] = clayer->target.build;
+  }
   return true;
 }
 

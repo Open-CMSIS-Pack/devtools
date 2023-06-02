@@ -1,8 +1,6 @@
 ### CMSIS Project Description ###
 
 project:
-  processor:
-    trustzone: secure
   output:
     type:
       - bin
@@ -23,3 +21,5 @@ project:
       files: 
         - file: $bin(test-access-sequences3)$
         - file: $hex(test-access-sequences3)$
+  layers:
+    - layer: test-access-sequences.clayer.yml
