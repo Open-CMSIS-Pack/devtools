@@ -3,6 +3,7 @@
 solution:
   target-types:
     - type: TEST_TARGET
+      compiler: GCC
 
   packs:
     - pack: ARM::RteTest_DFP@0.1.1

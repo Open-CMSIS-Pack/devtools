@@ -726,7 +726,7 @@ bool ProjMgr::GetCdefaultFile(void) {
     searchPaths.push_back(compilerRoot);
   }
   string cdefaultFile;
-  if (!RteFsUtils::FindFileRegEx(searchPaths, ".*\\.cdefault\\.(yml|yaml)", cdefaultFile)) {
+  if (!RteFsUtils::FindFileRegEx(searchPaths, ".*/cdefault\\.(yml|yaml)", cdefaultFile)) {
     if (!cdefaultFile.empty()) {
       ProjMgrLogger::Error(cdefaultFile, "multiple cdefault files were found");
     }
