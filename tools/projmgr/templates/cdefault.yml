@@ -1,0 +1,34 @@
+default:
+  
+  misc:
+    - for-compiler: AC6
+      C-CPP:
+        - -ffunction-sections
+        - -Wno-macro-redefined
+        - -Wno-pragma-pack
+        - -Wno-parentheses-equality
+        - -Wno-license-management
+      C:
+        - -std=gnu11
+      ASM:
+        - -masm=auto
+      Link:
+        - --entry=Reset_Handler
+        - --map
+        - --info summarysizes
+        - --diag_suppress=L6314W
+
+    - for-compiler: GCC
+      C:
+        - -std=gnu11
+      Link:
+        - --specs=nano.specs
+        - --specs=rdimon.specs
+        - -Wl,-Map=$elf()$.map
+
+    - for-compiler: IAR
+      C-CPP: 
+        - --dlib_config DLib_Config_Full.h
+      Link:
+        - --semihosting
+        - --map=$elf()$.map

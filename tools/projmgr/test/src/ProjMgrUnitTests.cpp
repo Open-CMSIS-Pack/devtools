@@ -2397,7 +2397,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_LoadPacksPolicy_All) {
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution_GetCdefaultFile1) {
   // Valid file search
   const string& testdir = testoutput_folder + "/FindFileRegEx";
-  const string& fileName = testdir + "/test.cdefault.yml";
+  const string& fileName = testdir + "/cdefault.yml";
   RteFsUtils::CreateDirectories(testdir);
   RteFsUtils::CreateFile(fileName, "");
   m_rootDir = testdir;
@@ -2418,26 +2418,29 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_GetCdefaultFile2) {
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution_GetCdefaultFile3) {
   // No cdefault file in the search path
   const string& testdir = testinput_folder + "/TestDefault/empty";
+  const string& cdefaultInCompilerRoot = testcmsiscompiler_folder + "/cdefault.yml";
   m_rootDir = testdir;
   m_cdefaultFile.clear();
+  RteFsUtils::MoveExistingFile(cdefaultInCompilerRoot, cdefaultInCompilerRoot + ".bak");
   EXPECT_FALSE(GetCdefaultFile());
+  RteFsUtils::MoveExistingFile(cdefaultInCompilerRoot + ".bak", cdefaultInCompilerRoot);
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution_ParseCdefault1) {
   // Valid cdefault file
-  const string& validCdefaultFile = testinput_folder + "/TestDefault/.cdefault.yml";
+  const string& validCdefaultFile = testinput_folder + "/TestDefault/cdefault.yml";
   EXPECT_TRUE(m_parser.ParseCdefault(validCdefaultFile, true));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution_ParseCdefault2) {
   // Wrong cdefault file and schema check enabled
-  const string& wrongCdefaultFile = testinput_folder + "/TestDefault/wrong/.cdefault.yml";
+  const string& wrongCdefaultFile = testinput_folder + "/TestDefault/wrong/cdefault.yml";
   EXPECT_FALSE(m_parser.ParseCdefault(wrongCdefaultFile, true));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution_ParseCdefault3) {
   // Wrong cdefault file and schema check disabled
-  const string& wrongCdefaultFile = testinput_folder + "/TestDefault/wrong/.cdefault.yml";
+  const string& wrongCdefaultFile = testinput_folder + "/TestDefault/wrong/cdefault.yml";
   EXPECT_TRUE(m_parser.ParseCdefault(wrongCdefaultFile, false));
 }
 
@@ -2483,8 +2486,9 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_DefaultFile2) {
 
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution_DefaultFileInCompilerRoot) {
   char* argv[6];
-  const string cdefault = testinput_folder + "/TestDefault/.cdefault.yml";
-  const string cdefaultInCompilerRoot = testcmsiscompiler_folder + "/.cdefault.yml";
+  const string cdefault = testinput_folder + "/TestDefault/cdefault.yml";
+  const string cdefaultInCompilerRoot = testcmsiscompiler_folder + "/cdefault.yml";
+  RteFsUtils::MoveExistingFile(cdefaultInCompilerRoot, cdefaultInCompilerRoot + ".bak");
   RteFsUtils::MoveExistingFile(cdefault, cdefaultInCompilerRoot);
   const string& csolution = testinput_folder + "/TestDefault/empty.csolution.yml";
   const string& output = testoutput_folder + "/empty";
@@ -2504,6 +2508,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_DefaultFileInCompilerRoot) {
     testinput_folder + "/TestDefault/ref/empty/project.Release+TEST_TARGET.cbuild.yml");
 
   RteFsUtils::MoveExistingFile(cdefaultInCompilerRoot, cdefault);
+  RteFsUtils::MoveExistingFile(cdefaultInCompilerRoot + ".bak", cdefaultInCompilerRoot);
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_NoUpdateRTEFiles) {
