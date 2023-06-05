@@ -51,6 +51,7 @@ RtePackage::RtePackage(RteItem* parent, PackageState ps) :
   m_nDominating(-1),
   m_nDeprecated(-1),
   m_releases(0),
+  m_licenseSets(0),
   m_conditions(0),
   m_components(0),
   m_apis(0),
@@ -69,6 +70,7 @@ RtePackage::RtePackage(RteItem* parent, const map<string, string>& attributes) :
   m_nDominating(-1),
   m_nDeprecated(-1),
   m_releases(0),
+  m_licenseSets(0),
   m_conditions(0),
   m_components(0),
   m_apis(0),
@@ -93,6 +95,7 @@ void RtePackage::Clear()
 {
   m_nDeprecated = -1;
   m_releases = 0;
+  m_licenseSets = 0;
   m_components = 0;
   m_requirements = 0,
   m_conditions = 0;
@@ -549,6 +552,25 @@ RteComponent* RtePackage::GetComponent(const string& id) const
 }
 
 
+RteItem* RtePackage::GetLicenseSet(const string& id) const
+{
+  if (m_licenseSets) {
+    if (id.empty()) {
+      return GetDefaultLicenseSet();
+    }
+    return m_licenseSets->GetItem(id);
+  }
+  return nullptr;
+}
+
+RteItem* RtePackage::GetDefaultLicenseSet() const
+{
+  if (m_licenseSets) {
+    return m_licenseSets->GetDefaultChild();
+  }
+  return nullptr;
+}
+
 RteCondition* RtePackage::GetCondition(const string& id) const
 {
   if (m_conditions)
@@ -621,6 +643,9 @@ RteItem* RtePackage::CreateItem(const std::string& tag)
   } else if (tag == "conditions") {
       m_conditions = new RteConditionContainer(this);
     return m_conditions;
+  } else if (tag == "liceseSets") {
+    m_licenseSets = new RteItem(this);
+    return m_licenseSets;
   } else if (tag == "releases") {
       m_releases = new RteReleaseContainer(this);
       return m_releases;

@@ -399,7 +399,11 @@ void RteItem::RemoveItem(RteItem* item)
 
 string RteItem::ConstructID()
 {
-  string id = GetName();
+  string id = GetAttribute("id");
+  if (!id.empty()) {
+    return id;
+  }
+  id = GetName();
   if (!GetVersionString().empty()) {
     id += ".";
     id += GetVersionString();
@@ -818,6 +822,25 @@ RteCondition* RteItem::GetCondition(const string& id) const
   return nullptr;
 }
 
+RteItem* RteItem::GetLicenseSet() const
+{
+  RtePackage* pack = GetPackage();
+  if(pack) {
+    return pack->GetLicenseSet(GetAttribute("licenseSet"));
+  }
+  return nullptr;
+}
+
+RteItem* RteItem::GetDefaultChild() const
+{
+  for (auto item : GetChildren()) {
+    if (item->IsDefault()) {
+      return item;
+    }
+  }
+  return nullptr;
+}
+
 bool RteItem::IsDeviceDependent() const
 {
   RteCondition *condition = GetCondition();
@@ -829,7 +852,6 @@ bool RteItem::IsBoardDependent() const
   RteCondition* condition = GetCondition();
   return condition && condition->IsBoardDependent();
 }
-
 
 RteItem::ConditionResult RteItem::Evaluate(RteConditionContext* context)
 {

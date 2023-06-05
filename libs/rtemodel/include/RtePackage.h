@@ -44,7 +44,6 @@ public:
   void Construct() override;
 };
 
-
 class RteGenerator;
 class RteDeviceFamilyContainer;
 
@@ -204,6 +203,12 @@ public:
    * @return pointer to RteItem representing container for releases
   */
   RteItem* GetReleases() const { return m_releases; }
+
+  /**
+   * @brief get <licensSets> element
+   * @return pointer to RteItem representing container for license sets
+  */
+  RteItem* GetLicenseSets() const { return m_licenseSets; }
 
   /**
    * @brief get <requirements> element
@@ -465,6 +470,19 @@ public:
   */
    std::string GetDownloadUrl(bool withVersion, const char* extension) const override;
 
+   /**
+    * @brief get license set with given ID
+    * @param id license set ID to search for
+    * @return pointer to RteItem if found, nullptr otherwise
+   */
+   RteItem* GetLicenseSet(const std::string& id) const;
+
+   /**
+    * @brief get default license set for the package items
+    * @return pointer to RteItem if found, nullptr otherwise
+   */
+   RteItem* GetDefaultLicenseSet() const;
+
   /**
    * @brief get condition with specified ID
    * @param id condition ID to search for
@@ -566,6 +584,7 @@ private:
   int m_nDominating;      // pack dominating flag (-1 if not set)
   int m_nDeprecated;      // pack deprecation flag (-1 if not set)
   RteItem* m_releases;    // <releases> element
+  RteItem* m_licenseSets; // <licenseSets> element
   RteItem* m_conditions;  // <conditions> element
   RteItem* m_components;  // <components> element
   RteItem* m_apis;        // <apis> element

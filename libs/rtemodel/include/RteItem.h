@@ -749,6 +749,12 @@ public:
   virtual RteCondition* GetCondition(const std::string& id) const;
 
   /**
+   * @brief get license set associated with the item
+   * @return pointer to RteItem if found, nullptr otherwise
+  */
+  virtual RteItem* GetLicenseSet() const;
+
+  /**
    * @brief check if item is associated with a condition that depends on selected device
    * @return true if item's condition depends on selected device
   */
@@ -787,11 +793,18 @@ public:
  * @return value of device attribute "remove" as boolean
 */
   virtual bool IsRemove() const { return GetAttributeAsBool("remove"); }
+
   /**
-   * @brief determine value of device attribute "default" as boolean
-   * @return value of device attribute "default" as boolean
+   * @brief determine value of attribute "default" as boolean
+   * @return value of attribute "default" as boolean
   */
   virtual bool IsDefault() const { return GetAttributeAsBool("default"); }
+
+  /**
+   * @brief find child with attribute "default" set to true
+   * @return pointer to RteItem if found, nullptr otherwise
+  */
+  virtual RteItem* GetDefaultChild() const;
 
   /**
  * @brief evaluate attribute "isDefaultVariant"
