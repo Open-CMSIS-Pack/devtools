@@ -23,10 +23,10 @@ TEST_F(SchemaChkTests, validate_clayer_yml_schema) {
 
   vector<std::pair<int, int>> expectedErrPos = {
     //line, col
-    {23,  0},   // additional property 'file_INVALID'
-    {19,  0},   // additional property 'fileXXXX'
-    { 9, 16},   // regex doesn't match
-    { 2,  8}    // unexpected instance type
+    {19, 11},   // additional property 'file_INVALID'
+    {23, 15},   // additional property 'fileXXXX'
+    { 9,  7},   // regex doesn't match
+    { 2,  3}    // unexpected instance type
   };
 
   SchemaErrors errList;
@@ -109,9 +109,9 @@ TEST_F(SchemaChkTests, SchemaChk_Missing_Required_Property) {
 
   vector<std::pair<int, int>> expectedErrPos = {
     //line, col
-    {1 , 0},    // required property 'temp' not found
-    {2 , 2},    // required property 'component' not found
-    {9 , 6}     // required property 'Link' not found
+    {1 , 1},    // required property 'temp' not found
+    {1 , 1},    // required property 'components' not found
+    {9 , 7}     // required property 'Link' not found
   };
 
   SchemaErrors errList;
@@ -132,10 +132,10 @@ TEST_F(SchemaChkTests, SchemaChk_Additional_Property) {
 
   vector<std::pair<int, int>> expectedErrPos = {
     //line,col
-    {8 , 0},    // additional property 'add-flag'
-    {10, 0},    // additional property 'add-prop'
-    {27, 0},    // additional property 'project'
-    {30, 0}     // additional property 'solution'
+    {8 , 3},    // additional property 'add-flag'
+    {9,  3},    // additional property 'add-prop'
+    {27, 1},    // additional property 'project'
+    {29, 1}     // additional property 'solution'
   };
 
   SchemaErrors errList;
@@ -155,10 +155,10 @@ TEST_F(SchemaChkTests, Schema_Invalid) {
 
   vector<std::pair<int, int>> expectedErrPos = {
     //line,col
-    {1, 0},     // required property 'layer'
-    {1, 0},     // required property 'temp'
-    {4, 0},     // additional property 'project'
-    {2, 0}      // additional property 'solution'
+    {1, 1},     // required property 'layer'
+    {1, 1},     // required property 'temp'
+    {3, 1},     // additional property 'project'
+    {1, 1}      // additional property 'solution'
   };
 
   SchemaErrors errList;
