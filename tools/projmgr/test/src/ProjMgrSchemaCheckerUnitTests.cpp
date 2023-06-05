@@ -40,7 +40,7 @@ TEST_F(ProjMgrSchemaCheckerUnitTests, SchemaCheck_Empty_Object) {
 TEST_F(ProjMgrSchemaCheckerUnitTests, SchemaCheck_Fail) {
   vector<std::pair<int, int>> expectedErrPos = {
     // line, col
-    {  5  ,  0 }
+    {  5  ,  3 }
   };
 
   const string& filename = testinput_folder +
@@ -176,8 +176,8 @@ solution:\n\
 
   vector<ErrInfo> expectedErrPos = {
     // line, col
-    {  2  ,  14 },
-    {  3  ,  15 },
+    {  2  ,  3 },
+    {  3  ,  3 },
   };
 
   vector<std::tuple<const char*, bool, vector<ErrInfo>>> vecTestData = {
@@ -185,7 +185,7 @@ solution:\n\
     {invalid_schema_Ex2, false, expectedErrPos },
     {invalid_schema_Ex3, false, expectedErrPos },
     {valid_schema_Ex4, true, vector<ErrInfo>{} },
-    {invalid_schema_Ex5, false, vector<ErrInfo>{ {2,2}, {2,2}} }
+    {invalid_schema_Ex5, false, vector<ErrInfo>{ {1,1}, {1,1}} }
   };
 
   auto writeFile = [](const string& filePath, const char* data) {
@@ -218,9 +218,9 @@ solution:\n\
 TEST_F(ProjMgrSchemaCheckerUnitTests, SchemaCheck_define) {
   vector<std::pair<int, int>> expectedErrPos = {
     // line, col
-    {  10  ,  10 },
-    {  11  ,  10 },
-    {  12  ,  10 }
+    {  10  ,  11 },
+    {  11  ,  11 },
+    {  12  ,  11 }
   };
 
   const string& filename = testinput_folder +
