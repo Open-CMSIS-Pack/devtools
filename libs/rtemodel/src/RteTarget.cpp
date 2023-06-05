@@ -677,8 +677,20 @@ void RteTarget::CollectComponentSettings(RteComponentInstance* ci)
     if (c->IsDeviceStartup())
       m_deviceStartupComponent = c;
     const string& doc = c->GetDocFile();
-    if (!doc.empty())
+    if (!doc.empty()) {
       m_docs.insert(doc);
+    }
+    // collect license files
+    RteItem* ls = c->GetLicenseSet();
+    if (ls) {
+      for (auto lic : ls->GetChildren()) {
+        const string& licFile = lic->GetDocFile();
+        if (!licFile.empty()) {
+          m_docs.insert(licFile);
+        }
+      }
+    }
+
     CollectPreIncludeStrings(c, count);
   }
   const set<RteFile*>& files = GetFilteredFiles(c);
