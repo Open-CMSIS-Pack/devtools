@@ -556,7 +556,8 @@
           "type": "string",
           "description": "Base directory for RTE files; default: $ProjectDir()$/RTE"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "GeneratorsOutputType": {
       "type": ["object", "null"],
@@ -567,7 +568,8 @@
           "description": "Base directory for unspecified generators; default: $ProjectDir()$/generated"
         },
         "options": { "$ref": "#/definitions/GeneratorOptionsType" }
-      }
+      },
+      "additionalProperties": false
     },
     "GeneratorOptionsType": {
       "type": "array",
@@ -587,7 +589,9 @@
           "type": "string",
           "description": "Specifies the directory for generated files. Relative paths used the location of the yml file as base directory"
         }
-      }
+      },
+      "additionalProperties": false,
+      "required": [ "generator" ]
     },
     "LayersType": {
       "type": "array",

@@ -143,6 +143,8 @@ bool ProjMgrYamlParser::ParseCproject(const string& input,
 
     ParseLinker(projectNode, cproject.linker);
 
+    ParseGenerators(projectNode, cproject.generators);
+
     ParseRte(projectNode, cproject.rteBaseDir);
 
   } catch (YAML::Exception& e) {
@@ -208,6 +210,7 @@ bool ProjMgrYamlParser::ParseClayer(const string& input,
 
     ParseLinker(layerNode, clayer.linker);
 
+    ParseGenerators(layerNode, clayer.generators);
   }
   catch (YAML::Exception& e) {
     ProjMgrLogger::Error(input, e.mark.line + 1, e.mark.column + 1, e.msg);
