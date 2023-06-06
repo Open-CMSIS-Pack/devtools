@@ -238,6 +238,11 @@ int ProjMgr::RunProjMgr(int argc, char **argv, char** envp) {
     return manager.PrintUsage(optionsDict, manager.m_command, manager.m_args) ? 0 : 1;
   }
 
+  // Set load packs policy
+  if (!manager.SetLoadPacksPolicy()) {
+    return 1;
+  }
+
   // Environment variables
   vector<string> envVars;
   if (envp) {
@@ -319,6 +324,23 @@ int ProjMgr::RunProjMgr(int argc, char **argv, char** envp) {
   return 0;
 }
 
+// Set load packs policy
+bool ProjMgr::SetLoadPacksPolicy(void) {
+  if (m_loadPacksPolicy.empty()) {
+    m_worker.SetLoadPacksPolicy(LoadPacksPolicy::DEFAULT);
+  } else if (m_loadPacksPolicy == "latest") {
+    m_worker.SetLoadPacksPolicy(LoadPacksPolicy::LATEST);
+  } else if (m_loadPacksPolicy == "all") {
+    m_worker.SetLoadPacksPolicy(LoadPacksPolicy::ALL);
+  } else if (m_loadPacksPolicy == "required") {
+    m_worker.SetLoadPacksPolicy(LoadPacksPolicy::REQUIRED);
+  } else {
+    ProjMgrLogger::Error("unknown load option: '" + m_loadPacksPolicy + "', it must be 'latest', 'all' or 'required'");
+    return false;
+  }
+  return true;
+}
+
 bool ProjMgr::PopulateContexts(void) {
   if (!m_csolutionFile.empty()) {
     // Parse csolution
@@ -360,25 +382,11 @@ bool ProjMgr::PopulateContexts(void) {
     return false;
   }
 
-  // Set output directory
+  // Set toolchain
   m_worker.SetSelectedToolchain(m_selectedToolchain);
 
   // Set output directory
   m_worker.SetOutputDir(m_outputDir);
-
-  // Set load packs policy
-  if (m_loadPacksPolicy.empty()) {
-    m_worker.SetLoadPacksPolicy(LoadPacksPolicy::DEFAULT);
-  } else if (m_loadPacksPolicy == "latest") {
-    m_worker.SetLoadPacksPolicy(LoadPacksPolicy::LATEST);
-  } else if (m_loadPacksPolicy == "all") {
-    m_worker.SetLoadPacksPolicy(LoadPacksPolicy::ALL);
-  } else if (m_loadPacksPolicy == "required") {
-    m_worker.SetLoadPacksPolicy(LoadPacksPolicy::REQUIRED);
-  } else {
-    ProjMgrLogger::Error("unknown load option: '" + m_loadPacksPolicy + "', it must be 'latest', 'all' or 'required'");
-    return false;
-  }
 
   // Add contexts
   for (auto& descriptor : m_parser.GetCsolution().contexts) {

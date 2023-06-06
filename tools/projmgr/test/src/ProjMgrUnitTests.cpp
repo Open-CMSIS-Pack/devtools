@@ -83,10 +83,16 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks) {
   map<std::pair<string, string>, string> testInputs = {
     {{"TestSolution/test.csolution.yml", "test1.Debug+CM0"},
       "ARM::RteTest_DFP@0.2.0 \\(.*\\)\n" },
+      // packs are specified only with vendor
     {{"TestSolution/test.csolution_filtered_pack_selection.yml", "test1.Debug+CM0"},
       "ARM::RteTest@0.1.0 \\(.*\\)\nARM::RteTestBoard@0.1.0 \\(.*\\)\nARM::RteTestGenerator@0.1.0 \\(.*\\)\nARM::RteTest_DFP@0.2.0 \\(.*\\)\n"},
+      // packs are specified with wildcards
+    {{"TestSolution/test.csolution_filtered_pack_selection.yml", "test1.Release+CM0"},
+      "ARM::RteTest_DFP@0.2.0 \\(.*\\)\n"},
+      // packs are not specified
     {{"TestSolution/test.csolution_no_packs.yml", "test1.Debug+CM0"},
       "ARM::RteTest@0.1.0 \\(.*\\)\nARM::RteTestBoard@0.1.0 \\(.*\\)\nARM::RteTestGenerator@0.1.0 \\(.*\\)\nARM::RteTest_DFP@0.2.0 \\(.*\\)\n"},
+      // packs are fully specified
     {{"TestSolution/test.csolution_pack_selection.yml", "test2.Debug+CM0"},
       "ARM::RteTest_DFP@0.2.0 \\(.*\\)\n"}
   };
@@ -210,6 +216,27 @@ ARM::RteTest_DFP@0.2.0 \\(.*\\)\n\
 ";
 
   outStr = streamRedirect.GetOutString();
+  EXPECT_TRUE(regex_match(outStr, regex(expectedAll)));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacksAll) {
+  char* argv[5];
+  StdStreamRedirect streamRedirect;
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"packs";
+  argv[3] = (char*)"-l";
+  argv[4] = (char*)"all";
+  EXPECT_EQ(0, RunProjMgr(5, argv, 0));
+
+  const string& expectedAll = "\
+ARM::RteTest@0.1.0 \\(.*\\)\n\
+ARM::RteTestBoard@0.1.0 \\(.*\\)\n\
+ARM::RteTestGenerator@0.1.0 \\(.*\\)\n\
+ARM::RteTest_DFP@0.1.1 \\(.*\\)\n\
+ARM::RteTest_DFP@0.2.0 \\(.*\\)\n\
+";
+
+  auto outStr = streamRedirect.GetOutString();
   EXPECT_TRUE(regex_match(outStr, regex(expectedAll)));
 }
 

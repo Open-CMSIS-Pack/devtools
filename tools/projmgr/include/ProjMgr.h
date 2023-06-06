@@ -125,6 +125,7 @@ protected:
   bool RunListToolchains(void);
   bool RunListEnvironment(void);
   bool PopulateContexts(void);
+  bool SetLoadPacksPolicy(void);
 };
 
 #endif  // PROJMGR_H
