@@ -174,25 +174,28 @@ bool PackChk::CheckPackage()
 */
 int PackChk::Check(int argc, const char* argv[], const char* envp[])
 {
+  const string header = m_packOptions.GetHeader();
+  LogMsg("M001", TXT(header));
+
   ParseOptions parseOptions(m_packOptions);
   ParseOptions::Result result = parseOptions.Parse(argc, argv);
+
+  // Add date and time to log file
+  if(!m_packOptions.GetLogPath().empty()) {
+    string dateTime = m_packOptions.GetCurrentDateTime();
+    LogMsg("M002", TXT("Log created on "), TXT2(dateTime));
+  }
+
   switch(result) {
     case ParseOptions::Result::Ok:
       break;
     case ParseOptions::Result::ExitNoError:
       return 0;
     case ParseOptions::Result::Error:
-      LogMsg("M105");
+      if(!ErrLog::Get()->GetErrCnt()) {
+        LogMsg("M105");
+      }
       return 1;
-  }
-
-  const string header = m_packOptions.GetHeader();
-  LogMsg("M001", TXT(header));
-
-  // Add date and time to log file
-  if(!m_packOptions.GetLogPath().empty()) {
-    string dateTime = m_packOptions.GetCurrentDateTime();
-    LogMsg("M002", TXT("Log created on "), TXT2(dateTime));
   }
 
   bool bOk = CheckPackage();
