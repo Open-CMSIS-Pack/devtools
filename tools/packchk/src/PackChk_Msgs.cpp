@@ -101,7 +101,8 @@ const MsgTable PackChk::msgTable = {
   { "M215", { MsgLevel::LEVEL_ERROR,    CRLF_BE, "" } },
   { "M216", { MsgLevel::LEVEL_ERROR,    CRLF_B, "Unable to get executable path %MSG%!"} },
   { "M217", { MsgLevel::LEVEL_ERROR,    CRLF_B, ""} },
-  { "M218", { MsgLevel::LEVEL_ERROR,    CRLF_B, "Unable to find schema file for validation: '%PATH%'"} },
+  { "M218", { MsgLevel::LEVEL_ERROR,    CRLF_B, "Unable to find PACK.xsd schema file. Searched in '%MSG%' relative to '%PATH%'.\n  Alternatively use --xsd to specify the location of the schema file. "} },
+  { "M219", { MsgLevel::LEVEL_ERROR,    CRLF_B, "Unable to find specified schema file '%PATH%'"} },
 
 // 300... Validation Errors
   { "M300", { MsgLevel::LEVEL_ERROR,    CRLF_B, "" } },

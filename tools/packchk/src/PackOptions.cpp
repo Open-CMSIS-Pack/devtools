@@ -235,11 +235,20 @@ bool CPackOptions::SetXsdFile()
     LogMsg("M216", MSG(ec.message()));
     return false;
   }
+
+  string msgPath;
+
   // Search schema in priority order
   vector<string> relSearchOrder = { "./", "../etc/", "../../etc/" };
   string schemaFilePath;
   for (auto& relPath : relSearchOrder) {
     schemaFilePath = exePath + relPath + "PACK.xsd";
+
+    if(!msgPath.empty()) {
+      msgPath += ", ";
+    }
+    msgPath += relPath;
+
     if (RteFsUtils::Exists(schemaFilePath)) {
       m_xsdPath = fs::canonical(schemaFilePath, ec).generic_string();
       if (m_xsdPath.empty()) {
@@ -250,7 +259,7 @@ bool CPackOptions::SetXsdFile()
     }
   }
 
-  LogMsg("M218", PATH("./, ../etc/, ../../etc/"));
+  LogMsg("M218", PATH(exePath), MSG(msgPath));
 
   return false;
 }
@@ -268,7 +277,7 @@ bool CPackOptions::SetXsdFile(const string& xsdFile)
 
   m_xsdPath = RteFsUtils::AbsolutePath(xsdFile).generic_string();
   if(!RteFsUtils::Exists(m_xsdPath)) {
-    LogMsg("M218", PATH(m_xsdPath));
+    LogMsg("M219", PATH(m_xsdPath));
     m_xsdPath.clear();
 
     return false;

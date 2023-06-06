@@ -157,7 +157,7 @@ bool CreateModel::SetPackXsd(const std::string& packXsdFile)
   }
 
   if(!RteFsUtils::Exists(packXsdFile)) {
-    LogMsg("M218", PATH(packXsdFile));
+    LogMsg("M219", PATH(packXsdFile));
     return false;
   }
 
