@@ -73,6 +73,9 @@ solution:
 
   packs:
     - pack: ARM
+      for-context: .Debug
+    - pack: ARM::*DFP
+      for-context: .Release
 
   projects:
     - project: ./TestProject1/test1.cproject.yml
