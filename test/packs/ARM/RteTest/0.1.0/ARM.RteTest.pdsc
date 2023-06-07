@@ -94,7 +94,7 @@
 
   <components>
 
-    <bundle Cbundle="BundleOne" Cclass="RteTestBundle" Cversion="1.1.0" Cvendor="ARM">
+    <bundle Cbundle="BundleOne" Cclass="RteTestBundle" Cversion="1.1.0" Cvendor="ARM" isDefaultVariant="1">
       <description>Test bundle one</description>
       <doc>https://arm-software.github.io/CMSIS_5/Pack/html/pdsc_components_pg.html#Component_Bundle</doc>
       <component Cgroup="G0" Cversion="1.0.0" >
@@ -109,6 +109,12 @@
           <file category="doc" name="https://arm-software.github.io/CMSIS_5/Pack/html/createPackUtil.html"/>
         </files>
       </component>
+      <component Cgroup="G2">
+        <description>Bundle One, component G2</description>
+        <files>
+          <file category="doc" name="https://arm-software.github.io/CMSIS_5/Pack/html/createPackUtil.html"/>
+        </files>
+      </component>
     </bundle>
 
     <bundle Cbundle="BundleTwo" Cclass="RteTestBundle" Cversion="1.2.0" Cvendor="ARM">
@@ -118,6 +124,12 @@
         <description>Bundle Two, component G, version differs from bundle</description>
         <files>
           <file category="doc" name="https://arm-software.github.io/CMSIS_5/Pack/html/pdsc_conditions_pg.html"/>
+        </files>
+      </component>
+      <component Cgroup="G2">
+        <description>Bundle Two, component G2</description>
+        <files>
+          <file category="doc" name="https://arm-software.github.io/CMSIS_5/Pack/html/createPackUtil.html"/>
         </files>
       </component>
     </bundle>
@@ -276,14 +288,21 @@
       </files>
     </component>
 
-    <component Cclass="RteTest" Cgroup="Dependency" Csub="Variant" Cvariant="Incompatible" Cversion="0.9.9">
-      <description>Component that has condition that checks for incompatible selection</description>
+    <component Cclass="RteTest" Cgroup="Dependency" Csub="Variant" Cversion="0.9.9" condition="CM3">
+      <description>Component without variant, only for M3</description>
       <files>
         <file category="other" name="Dummy/DummyFile.txt"/>
       </files>
     </component>
-    <component Cclass="RteTest" Cgroup="Dependency" Csub="Variant" Cvariant="Compatible" Cversion="0.9.9">
-      <description>Component that has condition that checks for incompatible selection</description>
+
+    <component Cclass="RteTest" Cgroup="Dependency" Csub="Variant" Cvariant="Incompatible" Cversion="1.9.9">
+      <description>Component that does not satisfy variant dependency</description>
+      <files>
+        <file category="other" name="Dummy/DummyFile.txt"/>
+      </files>
+    </component>
+    <component Cclass="RteTest" Cgroup="Dependency" Csub="Variant" Cvariant="Compatible" Cversion="0.9.9" isDefaultVariant="1">
+      <description>Component that satisfies variant dependency</description>
       <files>
         <file category="other" name="Dummy/DummyFile.txt"/>
       </files>

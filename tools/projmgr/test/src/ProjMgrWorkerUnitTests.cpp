@@ -183,6 +183,58 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessComponents_Cvariant2) {
   }
 }
 
+TEST_F(ProjMgrWorkerUnitTests, ProcessComponents_EmptyVariant) {
+  set<string> expected = {
+    "ARM::RteTest:Dependency:Variant@0.9.9",
+  };
+  ProjMgrParser parser;
+  ContextDesc descriptor;
+  // Test exact partial component identifier match with Cvendor
+  const string& filename = testinput_folder + "/TestProject/test_component_empty_variant_CM3.cproject.yml";
+  EXPECT_TRUE(parser.ParseCproject(filename, true));
+  EXPECT_TRUE(AddContexts(parser, descriptor, filename));
+  map<string, ContextItem>* contexts;
+  GetContexts(contexts);
+  ContextItem context = contexts->begin()->second;
+  EXPECT_TRUE(LoadPacks(context));
+  EXPECT_TRUE(ProcessPrecedences(context));
+  EXPECT_TRUE(ProcessDevice(context));
+  EXPECT_TRUE(SetTargetAttributes(context, context.targetAttributes));
+  EXPECT_TRUE(ProcessComponents(context));
+  ASSERT_EQ(expected.size(), context.components.size());
+  auto it = context.components.begin();
+  for (const auto& expectedComponent : expected) {
+    EXPECT_EQ(expectedComponent, (*it++).first);
+  }
+}
+
+TEST_F(ProjMgrWorkerUnitTests, ProcessComponents_EmptyVariantDefault) {
+  set<string> expected = {
+    "ARM::RteTest:Dependency:Variant&Compatible@0.9.9",
+  };
+  ProjMgrParser parser;
+  ContextDesc descriptor;
+  // Test exact partial component identifier match with Cvendor
+  const string& filename = testinput_folder + "/TestProject/test_component_empty_variant_CM0.cproject.yml";
+  EXPECT_TRUE(parser.ParseCproject(filename, true));
+  EXPECT_TRUE(AddContexts(parser, descriptor, filename));
+  map<string, ContextItem>* contexts;
+  GetContexts(contexts);
+  ContextItem context = contexts->begin()->second;
+  EXPECT_TRUE(LoadPacks(context));
+  EXPECT_TRUE(ProcessPrecedences(context));
+  EXPECT_TRUE(ProcessDevice(context));
+  EXPECT_TRUE(SetTargetAttributes(context, context.targetAttributes));
+  EXPECT_TRUE(ProcessComponents(context));
+  ASSERT_EQ(expected.size(), context.components.size());
+  auto it = context.components.begin();
+  for (const auto& expectedComponent : expected) {
+    EXPECT_EQ(expectedComponent, (*it++).first);
+  }
+}
+
+
+
 TEST_F(ProjMgrWorkerUnitTests, ProcessComponents_Latest_From_MultipleMatches1) {
   set<string> expected = {
     "ARM::Device:Test variant 2@3.3.3",
@@ -1083,7 +1135,7 @@ TEST_F(ProjMgrWorkerUnitTests, ListToolchains) {
   m_toolchains.clear();
   GetRegisteredToolchains();
   EXPECT_TRUE(m_toolchains.empty());
- 
+
   // list latest toolchains
   CrossPlatformUtils::SetEnv("CMSIS_COMPILER_ROOT", cmsisPackRoot);
   m_compilerRoot.clear();
