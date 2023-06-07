@@ -1357,13 +1357,12 @@ RteComponent* ProjMgrWorker::ProcessComponent(ContextItem& context, ComponentIte
   }
 
   // Multiple matches, check exact partial identifier
+  string requiredComponentId = RteUtils::RemovePrefixByString(item.component, ProjMgrUtils::SUFFIX_CVENDOR);
   if (filteredComponents.size() > 1) {
     RteComponentMap matchedComponents;
     for (const auto& [id, component] : filteredComponents) {
       // Get component id without vendor and version
       const string& componentId = ProjMgrUtils::GetPartialComponentID(component);
-      string requiredComponentId = RteUtils::RemovePrefixByString(item.component, ProjMgrUtils::SUFFIX_CVENDOR);
-      requiredComponentId = RteUtils::GetPrefix(requiredComponentId, *ProjMgrUtils::PREFIX_CVERSION);
       if (requiredComponentId.compare(componentId) == 0) {
         matchedComponents[id] = component;
       }
@@ -1379,13 +1378,20 @@ RteComponent* ProjMgrWorker::ProcessComponent(ContextItem& context, ComponentIte
     return nullptr;
   }
   // One or multiple matches found
+  // check for default variant if requested variant is empty
+  for (const auto& [id, component] : filteredComponents) {
+    if (component->IsDefaultVariant() && !component->GetCvariantName().empty()) {
+      return component;
+    }
+  }
+
   set<string> availableComponentVersions;
   for_each(filteredComponents.begin(), filteredComponents.end(),
     [&](const pair<std::string, RteComponent*>& component) {
       availableComponentVersions.insert(RteUtils::GetSuffix(component.first, *ProjMgrUtils::PREFIX_CVERSION));
     });
-  const string& filterVersion = RteUtils::GetSuffix(item.component, *ProjMgrUtils::PREFIX_CVERSION, true);
-  const string& matchedVersion = VersionCmp::GetMatchingVersion(filterVersion, availableComponentVersions);
+  const string filterVersion = RteUtils::GetSuffix(item.component, *ProjMgrUtils::PREFIX_CVERSION, true);
+  const string matchedVersion = VersionCmp::GetMatchingVersion(filterVersion, availableComponentVersions);
   if (matchedVersion.empty()) {
     return nullptr;
   }
@@ -2481,7 +2487,11 @@ bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGpdsc, bool re
       for (const auto& result : results) {
         msg += "\n" + result;
       }
-      ProjMgrLogger::Warn(msg);
+      if (context.cproject && !context.cproject->path.empty()) {
+        ProjMgrLogger::Warn(context.cproject->path, msg);
+      } else {
+        ProjMgrLogger::Warn(msg);
+      }
     }
   }
   return true;

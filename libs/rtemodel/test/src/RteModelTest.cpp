@@ -298,6 +298,17 @@ TEST_F(RteModelPrjTest, LoadCprj) {
   map<const RteItem*, RteDependencyResult> depResults;
   RteItem::ConditionResult res = activeTarget->GetDepsResult(depResults, activeTarget);
   EXPECT_EQ(res, RteItem::FULFILLED);
+ // component is resolved to empty variant
+  RteComponentAggregate* ca = activeTarget->GetComponentAggregate("ARM::RteTest.Dependency.Variant");
+  ASSERT_NE(ca, nullptr);
+  RteComponentInstance* ci = ca->GetComponentInstance();
+  ASSERT_NE(ci, nullptr);
+  RteComponent* c = ci->GetResolvedComponent(activeTarget->GetName());
+  ASSERT_NE(c, nullptr);
+  EXPECT_EQ(c, ca->GetComponent());
+  EXPECT_FALSE(c->IsDefaultVariant());
+  EXPECT_TRUE(c->GetCvariantName().empty());
+
   string boardName = activeTarget->GetAttribute("Bname");
   EXPECT_EQ(boardName, "RteTest Test board");
   // get layers
@@ -745,6 +756,16 @@ TEST_F(RteModelPrjTest, LoadCprjM4) {
   map<const RteItem*, RteDependencyResult> depResults;
   RteItem::ConditionResult res = activeTarget->GetDepsResult(depResults, activeTarget);
   EXPECT_EQ(res, RteItem::FULFILLED);
+ // component variant is resolved to the default one
+  RteComponentAggregate* ca= activeTarget->GetComponentAggregate("ARM::RteTest.Dependency.Variant");
+  ASSERT_NE(ca, nullptr);
+  RteComponentInstance* ci = ca->GetComponentInstance();
+  ASSERT_NE(ci, nullptr);
+  RteComponent* c = ci->GetResolvedComponent(activeTarget->GetName());
+  ASSERT_NE(c, nullptr);
+  EXPECT_EQ(c, ca->GetComponent());
+  EXPECT_TRUE(c->IsDefaultVariant());
+  EXPECT_EQ(c->GetCvariantName(), "Compatible");
   string boardName = activeTarget->GetAttribute("Bname");
   EXPECT_TRUE(boardName.empty());
   // get layers
