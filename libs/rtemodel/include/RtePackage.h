@@ -477,6 +477,7 @@ public:
    */
    RteItem* GetLicenseSet(const std::string& id) const;
 
+   using RteItem::GetLicenseSet; // that is also available
    /**
     * @brief get default license set for the package items
     * @return pointer to RteItem if found, nullptr otherwise
