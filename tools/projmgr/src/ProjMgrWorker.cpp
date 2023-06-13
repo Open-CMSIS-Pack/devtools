@@ -3140,29 +3140,9 @@ bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem& context, BuildType& b
 bool ProjMgrWorker::ParseContextSelection(const string& contextSelection) {
   vector<string> contexts;
   ListContexts(contexts);
-  m_selectedContexts.clear();
-  if (contextSelection.empty()) {
-    if (contexts.empty()) {
-      // default context
-      m_selectedContexts.push_back("");
-    } else {
-      // select all contexts
-      for (const auto& context : contexts) {
-        m_selectedContexts.push_back(context);
-      }
-    }
-  } else {
-    bool match = false;
-    for (const auto& context : contexts) {
-      if (WildCards::Match(context, contextSelection)) {
-        m_selectedContexts.push_back(context);
-        match = true;
-      }
-    }
-    if (!match) {
-      ProjMgrLogger::Error("context '" + contextSelection + "' was not found");
-      return false;
-    }
+  if (!ProjMgrUtils::GetSelectedContexts(m_selectedContexts, contexts, contextSelection)) {
+    ProjMgrLogger::Error("context '" + contextSelection + "' was not found");
+    return false;
   }
   return true;
 }

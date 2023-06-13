@@ -83,9 +83,13 @@ bool ProjMgrYamlParser::ParseCsolution(const string& input,
       ProjMgrLogger::Error(input, "target-types not found");
       return false;
     }
-    ParseBuildTypes(solutionNode, csolution.buildTypes);
+    if (!ParseBuildTypes(solutionNode, csolution.buildTypes)) {
+      return false;
+    }
     ParseOutputDirs(solutionNode, csolution.directories);
-    ParseTargetType(solutionNode, csolution.target);
+    if (!ParseTargetType(solutionNode, csolution.target)) {
+      return false;
+    }
     ParsePacks(solutionNode, csolution.packs);
     csolution.enableCdefault = solutionNode[YAML_CDEFAULT].IsDefined();
     ParseGenerators(solutionNode, csolution.generators);
@@ -314,7 +318,9 @@ bool ProjMgrYamlParser::ParseComponents(const YAML::Node& parent, vector<Compone
       ParseString(componentEntry, YAML_COMPONENT, componentItem.component);
       ParseString(componentEntry, YAML_CONDITION, componentItem.condition);
       ParseString(componentEntry, YAML_FROM_PACK, componentItem.fromPack);
-      ParseBuildType(componentEntry, componentItem.build);
+      if (!ParseBuildType(componentEntry, componentItem.build)) {
+        return false;
+      }
       components.push_back(componentItem);
     }
   }
@@ -443,7 +449,9 @@ bool ProjMgrYamlParser::ParseFiles(const YAML::Node& parent, vector<FileNode>& f
       ParseString(fileEntry, YAML_FILE, fileItem.file);
       ParseVectorOrString(fileEntry, YAML_FORCOMPILER, fileItem.forCompiler);
       ParseString(fileEntry, YAML_CATEGORY, fileItem.category);
-      ParseBuildType(fileEntry, fileItem.build);
+      if (!ParseBuildType(fileEntry, fileItem.build)) {
+        return false;
+      }
       files.push_back(fileItem);
     }
   }
@@ -463,7 +471,9 @@ bool ProjMgrYamlParser::ParseGroups(const YAML::Node& parent, vector<GroupNode>&
       }
       ParseString(groupEntry, YAML_GROUP, groupItem.group);
       ParseVectorOrString(groupEntry, YAML_FORCOMPILER, groupItem.forCompiler);
-      ParseBuildType(groupEntry, groupItem.build);
+      if (!ParseBuildType(groupEntry, groupItem.build)) {
+        return false;
+      }
       ParseGroups(groupEntry, groupItem.groups);
       groups.push_back(groupItem);
     }
@@ -497,7 +507,9 @@ bool ProjMgrYamlParser::ParseSetups(const YAML::Node& parent, vector<SetupItem>&
       }
       ParseString(setupEntry, YAML_SETUP, setupItem.description);
       ParseVectorOrString(setupEntry, YAML_FORCOMPILER, setupItem.forCompiler);
-      ParseBuildType(setupEntry, setupItem.build);
+      if (!ParseBuildType(setupEntry, setupItem.build)) {
+        return false;
+      }
       ParseOutput(setupEntry, setupItem.output);
       ParseLinker(setupEntry, setupItem.linker);
       ParseProcessor(setupEntry, setupItem.build.processor);
@@ -523,17 +535,20 @@ bool ProjMgrYamlParser::ParseContexts(const YAML::Node& parent, CsolutionItem& c
   return true;
 }
 
-void ProjMgrYamlParser::ParseBuildTypes(const YAML::Node& parent, map<string, BuildType>& buildTypes) {
+bool ProjMgrYamlParser::ParseBuildTypes(const YAML::Node& parent, map<string, BuildType>& buildTypes) {
   if (parent[YAML_BUILDTYPES].IsDefined()) {
     const YAML::Node& buildTypesNode = parent[YAML_BUILDTYPES];
     for (const auto& typeEntry : buildTypesNode) {
       string typeItem;
       BuildType build;
       ParseString(typeEntry, YAML_TYPE, typeItem);
-      ParseBuildType(typeEntry, build);
+      if (!ParseBuildType(typeEntry, build)) {
+        return false;
+      }
       buildTypes[typeItem] = build;
     }
   }
+  return true;
 }
 
 void ProjMgrYamlParser::ParseOutputDirs(const YAML::Node& parent, struct DirectoriesItem& directories) {
@@ -604,7 +619,7 @@ bool ProjMgrYamlParser::ParseTargetTypes(const YAML::Node& parent, map<string, T
   return (targetTypes.size() == 0 ? false : true);
 }
 
-void ProjMgrYamlParser::ParseBuildType(const YAML::Node& parent, BuildType& buildType) {
+bool ProjMgrYamlParser::ParseBuildType(const YAML::Node& parent, BuildType& buildType) {
   map<const string, string&> buildChildren = {
     {YAML_COMPILER, buildType.compiler},
     {YAML_OPTIMIZE, buildType.optimize},
@@ -622,14 +637,29 @@ void ProjMgrYamlParser::ParseBuildType(const YAML::Node& parent, BuildType& buil
   ParseVector(parent, YAML_DELPATH, buildType.delpaths);
   ParseVectorOfStringPairs(parent, YAML_VARIABLES, buildType.variables);
 
-  std::vector<std::string> contextMap;
+  std::vector<std::string> contextMap, invalidContexts;
   ParseVectorOrString(parent, YAML_CONTEXT_MAP, contextMap);
   for (const auto& contextEntry : contextMap) {
-    buildType.contextMap.push_back(ProjMgrUtils::ParseContextEntry(contextEntry));
+    ContextName context;
+    if (!ProjMgrUtils::ParseContextEntry(contextEntry, context)) {
+      invalidContexts.push_back(contextEntry);
+    }
+    buildType.contextMap.push_back(context);
   }
+
+  if (invalidContexts.size() > 0) {
+    string errMsg = "context-map specifies invalid context(s):\n";
+    for (const auto& context : invalidContexts) {
+      errMsg += "  " + context + "\n";
+    }
+    ProjMgrLogger::Error(errMsg);
+    return false;
+  }
+
+  return true;
 }
 
-void ProjMgrYamlParser::ParseTargetType(const YAML::Node& parent, TargetType& targetType) {
+bool ProjMgrYamlParser::ParseTargetType(const YAML::Node& parent, TargetType& targetType) {
   map<const string, string&> targetChildren = {
     {YAML_BOARD, targetType.board},
     {YAML_DEVICE, targetType.device},
@@ -637,7 +667,7 @@ void ProjMgrYamlParser::ParseTargetType(const YAML::Node& parent, TargetType& ta
   for (const auto& item : targetChildren) {
     ParseString(parent, item.first, item.second);
   }
-  ParseBuildType(parent, targetType.build);
+  return ParseBuildType(parent, targetType.build);
 }
 
 // Validation Maps

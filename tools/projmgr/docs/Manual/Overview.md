@@ -144,41 +144,41 @@ The CMSIS-Pack repository must be present in the development environment.
 ### Invocation
 
 ```text
-CMSIS Project Manager 1.7.0 (C) 2023 Arm Ltd. and Contributors
+CMSIS Project Manager 2.0.0 (C) 2023 Arm Ltd. and Contributors
 
 Usage:
   csolution [-V] [--version] [-h] [--help]
-            <command> [<arg>] [OPTIONS...]
+            <command> [csolution.yml] [OPTIONS...]
 
  Commands:
-   list packs            Print list of used packs from the pack repository
+   convert               Convert *.csolution.yml input file in *.cprj files
    list boards           Print list of available board names
-   list devices          Print list of available device names
+   list contexts         Print list of contexts in a csolution.yml
    list components       Print list of available components
    list dependencies     Print list of unresolved project dependencies
-   list contexts         Print list of contexts in a csolution.yml
+   list devices          Print list of available device names
+   list environment      Print list of environment configurations
    list generators       Print list of code generators of a given context
    list layers           Print list of available, referenced and compatible layers
+   list packs            Print list of used packs from the pack repository
    list toolchains       Print list of supported toolchains
-   list environment      Print list of environment configurations
-   convert               Convert *.csolution.yml input file in *.cprj files
    run                   Run code generator
+   update-rte            Create/update configuration files and validate solution
 
  Options:
-   -s, --solution arg    Input csolution.yml file
-   -c, --context arg     Input context name <cproject>[.<build-type>][+<target-type>]
+   -c, --context arg     Input context name [<cproject>][.<build-type>][+<target-type>]
+   -d, --debug           Enable debug messages
+   -e, --export arg      Set suffix for exporting <context><suffix>.cprj retaining only specified versions
    -f, --filter arg      Filter words
    -g, --generator arg   Code generator identifier
-   -m, --missing         List only required packs that are missing in the pack repository
    -l, --load arg        Set policy for packs loading [latest|all|required]
    -L, --clayer-path arg Set search path for external clayers
-   -e, --export arg      Set suffix for exporting <context><suffix>.cprj retaining only specified versions
-   -t, --toolchain arg   Selection of the toolchain used in the project optionally with version
+   -m, --missing         List only required packs that are missing in the pack repository
    -n, --no-check-schema Skip schema check
-   -U, --no-update-rte   Skip creation of RTE directory and files
-   -v, --verbose         Enable verbose messages
-   -d, --debug           Enable debug messages
+   -N, --no-update-rte   Skip creation of RTE directory and files
    -o, --output arg      Output directory
+   -t, --toolchain arg   Selection of the toolchain used in the project optionally with version
+   -v, --verbose         Enable verbose messages
 
 Use 'csolution <command> -h' for more information about a command.
 ```

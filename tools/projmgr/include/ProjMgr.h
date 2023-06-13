@@ -44,7 +44,8 @@ public:
    * @param subCmd subcommand for which usage is to be generated
    * @return true if successful, otherwise false
   */
-  bool PrintUsage(const std::map<std::string, std::vector<cxxopts::Option>>& cmdOptionsDict,
+  bool PrintUsage(const std::map<std::string,
+    std::pair<bool, std::vector<cxxopts::Option>>>& cmdOptionsDict,
     const std::string& cmd, const std::string & subCmd);
 
   /**

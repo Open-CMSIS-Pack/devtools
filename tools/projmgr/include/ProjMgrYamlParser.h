@@ -178,13 +178,13 @@ protected:
   void ParseVector(const YAML::Node& parent, const std::string& key, std::vector<std::string>& value);
   void ParseVectorOfStringPairs(const YAML::Node& parent, const std::string& key, std::vector<std::pair<std::string, std::string>>& value);
   void ParseVectorOrString(const YAML::Node& parent, const std::string& key, std::vector<std::string>& value);
-  void ParseBuildType(const YAML::Node& parent, BuildType& buildType);
+  bool ParseBuildType(const YAML::Node& parent, BuildType& buildType);
   void ParseOutput(const YAML::Node& parent, OutputItem& output);
   void ParseOutputDirs(const YAML::Node& parent, struct DirectoriesItem& directories);
   void ParseGenerators(const YAML::Node& parent, GeneratorsItem& generators);
   void ParseConnections(const YAML::Node& parent, std::vector<ConnectItem>& connects);
-  void ParseTargetType(const YAML::Node& parent, TargetType& targetType);
-  void ParseBuildTypes(const YAML::Node& parent, std::map<std::string, BuildType>& buildTypes);
+  bool ParseTargetType(const YAML::Node& parent, TargetType& targetType);
+  bool ParseBuildTypes(const YAML::Node& parent, std::map<std::string, BuildType>& buildTypes);
   bool ParseTargetTypes(const YAML::Node& parent, std::map<std::string, TargetType>& targetTypes);
   bool ParseContexts(const YAML::Node& parent, CsolutionItem& contexts);
   bool ParseComponents(const YAML::Node& parent, std::vector<ComponentItem>& components);

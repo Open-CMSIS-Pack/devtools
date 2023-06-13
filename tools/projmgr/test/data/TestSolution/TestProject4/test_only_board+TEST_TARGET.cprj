@@ -15,7 +15,7 @@
   </compilers>
 
   <target Bname="RteTest Test board-3" Brevision="1.1.1" Bvendor="Keil" Bversion="1.1.1" Dfpu="NO_FPU" Dname="RteTest_ARMCM0" Dsecure="Non-secure" Dvendor="ARM:82">
-    <output elf="test.axf" intdir="tmp/test/TEST_TARGET" name="test" outdir="out/test/TEST_TARGET" rtedir="../data/TestSolution/TestProject4/RTE"/>
+    <output elf="test_only_board.axf" intdir="tmp/test_only_board/TEST_TARGET" name="test_only_board" outdir="out/test_only_board/TEST_TARGET" rtedir="../data/TestSolution/TestProject4/RTE"/>
     <ldflags compiler="AC6" file="../data/TestSolution/TestProject4/RTE/Device/RteTest_ARMCM0/ARMCM0_ac6.sct"/>
   </target>
 

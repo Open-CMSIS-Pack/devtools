@@ -469,7 +469,7 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDeviceFailed) {
   ProjMgrParser parser;
   ContextDesc descriptor;
   const string& filename = testinput_folder +
-    "/TestSolution/TestProject4/test.cproject_device_pname_unavailable_in_board.yml";
+    "/TestSolution/TestProject4/test_device_pname_unavailable_in_board.cproject.yml";
   EXPECT_TRUE(parser.ParseCproject(filename, true));
   EXPECT_TRUE(AddContexts(parser, descriptor, filename));
   map<string, ContextItem>* contexts;
@@ -625,7 +625,7 @@ TEST_F(ProjMgrWorkerUnitTests, GetAccessSequence) {
 TEST_F(ProjMgrWorkerUnitTests, ProcessDevice_Invalid_Device_Name) {
   ProjMgrParser parser;
   ContextDesc descriptor;
-  const string& filename = testinput_folder + "/TestSolution/TestProject4/test.cproject_device_unknown.yml";
+  const string& filename = testinput_folder + "/TestSolution/TestProject4/test_device_unknown.cproject.yml";
   const string& expectedErrStr = R"(error csolution: specified device 'RteTest_ARM_UNKNOWN' was not found among the installed packs.
 use 'cpackget' utility to install software packs.
   cpackget add Vendor.PackName --pack-root ./Path/Packs)";
@@ -647,7 +647,7 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDevice_Invalid_Device_Vendor) {
   ProjMgrParser parser;
   ContextDesc descriptor;
   const string& filename = testinput_folder +
-    "/TestSolution/TestProject4/test.cproject_device_unknown_vendor.yml";
+    "/TestSolution/TestProject4/test_device_unknown_vendor.cproject.yml";
   const string& expectedErrStr = R"(error csolution: specified device 'RteTest_ARMCM0' was not found among the installed packs.
 use 'cpackget' utility to install software packs.
   cpackget add Vendor.PackName --pack-root ./Path/Packs)";
@@ -669,7 +669,7 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDevice_PName) {
   ProjMgrParser parser;
   ContextDesc descriptor;
   const string& filename = testinput_folder +
-    "/TestSolution/TestProject4/test.cproject_device_unknown_processor.yml";
+    "/TestSolution/TestProject4/test_device_unknown_processor.cproject.yml";
   const string& expected = "processor name 'NOT_AVAILABLE' was not found";
   StdStreamRedirect streamRedirect;
 
@@ -689,7 +689,7 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDevice_With_Board_And_Device_Info) {
   ProjMgrParser parser;
   ContextDesc descriptor;
   const string& filename = testinput_folder +
-    "/TestSolution/TestProject4/test.cproject_board_and_device.yml";
+    "/TestSolution/TestProject4/test_board_and_device.cproject.yml";
 
   EXPECT_TRUE(parser.ParseCproject(filename, true));
   EXPECT_TRUE(AddContexts(parser, descriptor, filename));
@@ -704,7 +704,7 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDevice_With_Board_And_Device_Info) {
 TEST_F(ProjMgrWorkerUnitTests, ProcessPrecedences_With_Only_Board) {
   ProjMgrParser parser;
   ContextDesc descriptor;
-  const string& filename = testinput_folder + "/TestSolution/TestProject4/test.cproject_only_board.yml";
+  const string& filename = testinput_folder + "/TestSolution/TestProject4/test_only_board.cproject.yml";
   EXPECT_TRUE(parser.ParseCproject(filename, true));
   EXPECT_TRUE(AddContexts(parser, descriptor, filename));
   map<string, ContextItem>* contexts;
@@ -719,7 +719,7 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDevice_Invalid_Board_Vendor) {
   ProjMgrParser parser;
   ContextDesc descriptor;
   const string& filename = testinput_folder +
-    "/TestSolution/TestProject4/test.cproject_board_vendor_invalid.yml";
+    "/TestSolution/TestProject4/test_board_vendor_invalid.cproject.yml";
   const string& expected = "board 'UNKNOWN::RteTest Dummy board' was not found";
   StdStreamRedirect streamRedirect;
 
@@ -739,7 +739,7 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDevice_Invalid_Board_Name) {
   ProjMgrParser parser;
   ContextDesc descriptor;
   const string& filename = testinput_folder +
-    "/TestSolution/TestProject4/test.cproject_board_name_invalid.yml";
+    "/TestSolution/TestProject4/test_board_name_invalid.cproject.yml";
   const string& expected = "board 'Keil::RteTest_unknown' was not found";
   StdStreamRedirect streamRedirect;
 
@@ -759,7 +759,7 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDevice_Exact_Board_From_Multiple_Matches) 
   ProjMgrParser parser;
   ContextDesc descriptor;
   const string& filename = testinput_folder +
-    "/TestProject/test.cproject_exact_board_match.yml";
+    "/TestProject/test_exact_board_match.cproject.yml";
   const string& expectedBoard = "Keil::RteTest board test revision:Rev1";
 
   EXPECT_TRUE(parser.ParseCproject(filename, true));
@@ -777,7 +777,7 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDevice_Board_Not_Found) {
   ProjMgrParser parser;
   ContextDesc descriptor;
   const string& filename = testinput_folder +
-    "/TestProject/test.cproject_board_not_found.yml";
+    "/TestProject/test_board_not_found.cproject.yml";
   const string& expected = "error csolution: board 'Keil::RteTest Dummy board:Rev10' was not found";
   StdStreamRedirect streamRedirect;
 
@@ -797,7 +797,7 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDevice_Multiple_Board_Matches) {
   ProjMgrParser parser;
   ContextDesc descriptor;
   const string& filename = testinput_folder +
-    "/TestProject/test.cproject_board_with_multiple_matches.yml";
+    "/TestProject/test_board_with_multiple_matches.cproject.yml";
   const string& expected = "error csolution: multiple boards were found for identifier 'Keil::RteTest board test revision'";
   StdStreamRedirect streamRedirect;
 
