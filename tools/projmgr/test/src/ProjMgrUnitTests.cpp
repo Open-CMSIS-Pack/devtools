@@ -37,7 +37,7 @@ protected:
 };
 
 string ProjMgrUnitTests::UpdateTestSolutionFile(const string& projectFilePath) {
-  string csolutionFile = testinput_folder + "/TestSolution/test.csolution_validate_project.yml";
+  string csolutionFile = testinput_folder + "/TestSolution/test_validate_project.csolution.yml";
   YAML::Node root = YAML::LoadFile(csolutionFile);
   root["solution"]["projects"][0]["project"] = projectFilePath;
   std::ofstream fout(csolutionFile);
@@ -78,29 +78,30 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Version) {
   EXPECT_EQ(0, RunProjMgr(2, argv, 0));
 }
 
+
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks) {
   char* argv[7];
   map<std::pair<string, string>, string> testInputs = {
     {{"TestSolution/test.csolution.yml", "test1.Debug+CM0"},
       "ARM::RteTest_DFP@0.2.0 \\(.*\\)\n" },
       // packs are specified only with vendor
-    {{"TestSolution/test.csolution_filtered_pack_selection.yml", "test1.Debug+CM0"},
+    {{"TestSolution/test_filtered_pack_selection.csolution.yml", "test1.Debug+CM0"},
       "ARM::RteTest@0.1.0 \\(.*\\)\nARM::RteTestBoard@0.1.0 \\(.*\\)\nARM::RteTestGenerator@0.1.0 \\(.*\\)\nARM::RteTest_DFP@0.2.0 \\(.*\\)\n"},
       // packs are specified with wildcards
-    {{"TestSolution/test.csolution_filtered_pack_selection.yml", "test1.Release+CM0"},
+    {{"TestSolution/test_filtered_pack_selection.csolution.yml", "test1.Release+CM0"},
       "ARM::RteTest_DFP@0.2.0 \\(.*\\)\n"},
       // packs are not specified
-    {{"TestSolution/test.csolution_no_packs.yml", "test1.Debug+CM0"},
+    {{"TestSolution/test_no_packs.csolution.yml", "test1.Debug+CM0"},
       "ARM::RteTest@0.1.0 \\(.*\\)\nARM::RteTestBoard@0.1.0 \\(.*\\)\nARM::RteTestGenerator@0.1.0 \\(.*\\)\nARM::RteTest_DFP@0.2.0 \\(.*\\)\n"},
       // packs are fully specified
-    {{"TestSolution/test.csolution_pack_selection.yml", "test2.Debug+CM0"},
+    {{"TestSolution/test_pack_selection.csolution.yml", "test2.Debug+CM0"},
       "ARM::RteTest_DFP@0.2.0 \\(.*\\)\n"}
   };
 
   // positive tests
   argv[1] = (char*)"list";
   argv[2] = (char*)"packs";
-  argv[3] = (char*)"-s";
+  argv[3] = (char*)"--solution";
   for (const auto& [input, expected] : testInputs) {
     StdStreamRedirect streamRedirect;
     const string& csolution = testinput_folder + "/" + input.first;
@@ -157,7 +158,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks_project) {
   // list packs
   argv[1] = (char*)"list";
   argv[2] = (char*)"packs";
-  argv[3] = (char*)"-s";
+  argv[3] = (char*)"--solution";
   argv[4] = (char*)csolution.c_str();
   argv[5] = (char*)"-c";
   argv[6] = (char*)"project.Debug+TEST_TARGET";
@@ -174,11 +175,11 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks_project) {
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks_MultiContext) {
   char* argv[9];
   StdStreamRedirect streamRedirect;
-  const string& csolution = testinput_folder + "/TestSolution/test.csolution_pack_selection.yml";
+  const string& csolution = testinput_folder + "/TestSolution/test_pack_selection.csolution.yml";
   // list packs
   argv[1] = (char*)"list";
   argv[2] = (char*)"packs";
-  argv[3] = (char*)"-s";
+  argv[3] = (char*)"--solution";
   argv[4] = (char*)csolution.c_str();
   argv[5] = (char*)"-c";
   argv[6] = (char*)"test2.*";
@@ -247,7 +248,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacksMissing) {
   // list packs
   argv[1] = (char*)"list";
   argv[2] = (char*)"packs";
-  argv[3] = (char*)"-s";
+  argv[3] = (char*)"--solution";
   argv[4] = (char*)csolution.c_str();
   argv[5] = (char*)"-c";
   argv[6] = (char*)"test1+CM0";
@@ -266,7 +267,7 @@ TEST_F(ProjMgrUnitTests, ListPacks_ProjectAndLayer) {
   // list packs
   argv[1] = (char*)"list";
   argv[2] = (char*)"packs";
-  argv[3] = (char*)"-s";
+  argv[3] = (char*)"--solution";
   argv[4] = (char*)csolution.c_str();
   EXPECT_EQ(0, RunProjMgr(5, argv, 0));
 
@@ -292,7 +293,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListBoards) {
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListBoardsProjectFiltered) {
   char* argv[7];
   StdStreamRedirect streamRedirect;
-  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject_board_and_device.yml");
+  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test_board_and_device.cproject.yml");
   const std::string rteFolder = testinput_folder + "/TestProject/RTE";
   set<string> rteFilesBefore, rteFilesAfter;
   GetFilesInTree(rteFolder, rteFilesBefore);
@@ -302,7 +303,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListBoardsProjectFiltered) {
   argv[2] = (char*)"boards";
   argv[3] = (char*)"--filter";
   argv[4] = (char*)"Dummy";
-  argv[5] = (char*)"-s";
+  argv[5] = (char*)"--solution";
   argv[6] = (char*)csolutionFile.c_str();
   EXPECT_EQ(0, RunProjMgr(7, argv, 0));
 
@@ -354,7 +355,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListDependencies) {
   // list dependencies
   argv[1] = (char*)"list";
   argv[2] = (char*)"dependencies";
-  argv[3] = (char*)"-s";
+  argv[3] = (char*)"--solution";
   argv[4] = (char*)csolutionFile.c_str();
   argv[5] = (char*)"-d";
   EXPECT_EQ(0, RunProjMgr(6, argv, 0));
@@ -374,7 +375,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ConvertProject) {
   string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject.yml");
 
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -387,10 +388,10 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ConvertProject) {
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_EnforcedComponent) {
   char* argv[6];
-  string csolutionFile = testinput_folder + "/TestSolution/test.enforced_component.csolution.yml";
+  string csolutionFile = testinput_folder + "/TestSolution/test_enforced_component.csolution.yml";
 
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -407,7 +408,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_LinkerScript) {
   string csolutionFile = UpdateTestSolutionFile("./TestProject4/test_linker_script.cproject.yml");
 
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -420,9 +421,9 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_LinkerScript) {
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_With_Schema_Check) {
   char* argv[6];
-  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject_invalid_schema.yml");
+  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test_invalid_schema.cproject.yml");
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -431,9 +432,9 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_With_Schema_Check) {
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_Skip_Schema_Check) {
   char* argv[7];
-  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject_invalid_schema.yml");
+  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test_invalid_schema.cproject.yml");
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -449,7 +450,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgrContextSolution) {
   char* argv[7];
   StdStreamRedirect streamRedirect;
 
-  // convert -s solution.yml
+  // convert --solution solution.yml
   const string& csolution = testinput_folder + "/TestSolution/test.csolution.yml";
   argv[1] = (char*)"list";
   argv[2] = (char*)"contexts";
@@ -494,10 +495,10 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_InvalidArgs) {
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution) {
   char* argv[7];
 
-  // convert -s solution.yml
+  // convert --solution solution.yml
   const string& csolution = testinput_folder + "/TestSolution/test.csolution.yml";
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -568,10 +569,10 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_PositionalArguments) {
 
 TEST_F(ProjMgrUnitTests, RunProjMgrSolutionContext) {
   char* argv[8];
-  // convert -s solution.yml
+  // convert --solution solution.yml
   const string& csolution = testinput_folder + "/TestSolution/test.csolution.yml";
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -582,10 +583,10 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolutionContext) {
 
 TEST_F(ProjMgrUnitTests, RunProjMgrSolutionNonExistentContext) {
   char* argv[8];
-  // convert -s solution.yml
+  // convert --solution solution.yml
   const string& csolution = testinput_folder + "/TestSolution/test.csolution.yml";
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -597,11 +598,11 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolutionNonExistentContext) {
 TEST_F(ProjMgrUnitTests, RunProjMgr_InvalidLayerSchema) {
   char* argv[7];
 
-  // convert -s solution.yml
-  const string& csolution = testinput_folder + "/TestLayers/testlayers.csolution_invalid_layer.yml";
+  // convert --solution solution.yml
+  const string& csolution = testinput_folder + "/TestLayers/testlayers_invalid_layer.csolution.yml";
   const string& output = testoutput_folder + "/testlayers";
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)output.c_str();
@@ -610,10 +611,10 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_InvalidLayerSchema) {
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_UnknownLayer) {
   char* argv[7];
-  const string& csolution = testinput_folder + "/TestLayers/testlayers.csolution_invalid_layer.yml";
+  const string& csolution = testinput_folder + "/TestLayers/testlayers_invalid_layer.csolution.yml";
   const string& output = testoutput_folder + "/testlayers";
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)output.c_str();
@@ -624,11 +625,11 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_UnknownLayer) {
 TEST_F(ProjMgrUnitTests, RunProjMgrLayers) {
   char* argv[7];
 
-  // convert -s solution.yml
+  // convert --solution solution.yml
   const string& csolution = testinput_folder + "/TestLayers/testlayers.csolution.yml";
   const string& output = testoutput_folder + "/testlayers";
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)output.c_str();
@@ -648,10 +649,10 @@ TEST_F(ProjMgrUnitTests, RunProjMgrLayers) {
 TEST_F(ProjMgrUnitTests, RunProjMgrLayers2) {
   char* argv[4];
 
-  // convert -s solution.yml
+  // convert --solution solution.yml
   const string& csolution = testinput_folder + "/TestLayers/testlayers.csolution.yml";
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
   EXPECT_EQ(0, RunProjMgr(4, argv, 0));
 
@@ -691,7 +692,7 @@ TEST_F(ProjMgrUnitTests, ListLayersCompatible) {
   const string& context = "genericlayers.CompatibleLayers+AnyBoard";
   argv[1] = (char*)"list";
   argv[2] = (char*)"layers";
-  argv[3] = (char*)"-s";
+  argv[3] = (char*)"--solution";
   argv[4] = (char*)csolution.c_str();
   argv[5] = (char*)"-c";
   argv[6] = (char*)context.c_str();
@@ -773,7 +774,7 @@ TEST_F(ProjMgrUnitTests, ListLayersConfigurations) {
   const string& csolution = testinput_folder + "/TestLayers/config.csolution.yml";
   argv[1] = (char*)"list";
   argv[2] = (char*)"layers";
-  argv[3] = (char*)"-s";
+  argv[3] = (char*)"--solution";
   argv[4] = (char*)csolution.c_str();
   argv[5] = (char*)"-v";
   EXPECT_EQ(0, RunProjMgr(6, argv, 0));
@@ -824,7 +825,7 @@ TEST_F(ProjMgrUnitTests, ListLayersMultipleSelect) {
   const string& csolution = testinput_folder + "/TestLayers/select.csolution.yml";
   argv[1] = (char*)"list";
   argv[2] = (char*)"layers";
-  argv[3] = (char*)"-s";
+  argv[3] = (char*)"--solution";
   argv[4] = (char*)csolution.c_str();
   argv[5] = (char*)"-v";
   EXPECT_EQ(0, RunProjMgr(6, argv, 0));
@@ -922,7 +923,7 @@ TEST_F(ProjMgrUnitTests, ListToolchainsSolution) {
   const string& csolution = testinput_folder + "/TestSolution/toolchain.csolution.yml";
   argv[1] = (char*)"list";
   argv[2] = (char*)"toolchains";
-  argv[3] = (char*)"-s";
+  argv[3] = (char*)"--solution";
   argv[4] = (char*)csolution.c_str();
 
   // Test listing required toolchains
@@ -946,7 +947,7 @@ TEST_F(ProjMgrUnitTests, ListLayersUniquelyCompatibleBoard) {
   const string& context = "genericlayers.CompatibleLayers+Board3";
   argv[1] = (char*)"list";
   argv[2] = (char*)"layers";
-  argv[3] = (char*)"-s";
+  argv[3] = (char*)"--solution";
   argv[4] = (char*)csolution.c_str();
   argv[5] = (char*)"-c";
   argv[6] = (char*)context.c_str();
@@ -997,7 +998,7 @@ TEST_F(ProjMgrUnitTests, ListLayersIncompatible) {
   const string& context = "genericlayers.IncompatibleLayers+AnyBoard";
   argv[1] = (char*)"list";
   argv[2] = (char*)"layers";
-  argv[3] = (char*)"-s";
+  argv[3] = (char*)"--solution";
   argv[4] = (char*)csolution.c_str();
   argv[5] = (char*)"-c";
   argv[6] = (char*)context.c_str();
@@ -1082,7 +1083,7 @@ TEST_F(ProjMgrUnitTests, ListLayersInvalidContext) {
   const string& context = "*.InvalidContext";
   argv[1] = (char*)"list";
   argv[2] = (char*)"layers";
-  argv[3] = (char*)"-s";
+  argv[3] = (char*)"--solution";
   argv[4] = (char*)csolution.c_str();
   argv[5] = (char*)"-c";
   argv[6] = (char*)context.c_str();
@@ -1094,7 +1095,7 @@ TEST_F(ProjMgrUnitTests, ListLayersAllContexts) {
   const string& csolution = testinput_folder + "/TestLayers/genericlayers.csolution.yml";
   argv[1] = (char*)"list";
   argv[2] = (char*)"layers";
-  argv[3] = (char*)"-s";
+  argv[3] = (char*)"--solution";
   argv[4] = (char*)csolution.c_str();
   EXPECT_EQ(1, RunProjMgr(5, argv, 0));
 }
@@ -1106,7 +1107,7 @@ TEST_F(ProjMgrUnitTests, ListLayersSearchPath) {
   const string& clayerSearchPath = testcmsispack_folder;
   argv[1] = (char*)"list";
   argv[2] = (char*)"layers";
-  argv[3] = (char*)"-s";
+  argv[3] = (char*)"--solution";
   argv[4] = (char*)csolution.c_str();
   argv[5] = (char*)"--clayer-path";
   argv[6] = (char*)clayerSearchPath.c_str();
@@ -1136,10 +1137,10 @@ check combined connections:\
 TEST_F(ProjMgrUnitTests, LayerVariables) {
   char* argv[6];
 
-  // convert -s solution.yml
+  // convert --solution solution.yml
   const string& csolution = testinput_folder + "/TestLayers/variables.csolution.yml";
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -1159,10 +1160,10 @@ TEST_F(ProjMgrUnitTests, LayerVariables) {
 TEST_F(ProjMgrUnitTests, LayerVariablesRedefinition) {
   char* argv[6];
   StdStreamRedirect streamRedirect;
-  // convert -s solution.yml
+  // convert --solution solution.yml
   const string& csolution = testinput_folder + "/TestLayers/variables-redefinition.csolution.yml";
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -1175,11 +1176,11 @@ TEST_F(ProjMgrUnitTests, LayerVariablesRedefinition) {
 TEST_F(ProjMgrUnitTests, LayerVariablesNotDefined) {
   char* argv[8];
   StdStreamRedirect streamRedirect;
-  // convert -s solution.yml
+  // convert --solution solution.yml
   const string& csolution = testinput_folder + "/TestLayers/variables-notdefined.csolution.yml";
   argv[1] = (char*)"list";
   argv[2] = (char*)"layers";
-  argv[3] = (char*)"-s";
+  argv[3] = (char*)"--solution";
   argv[4] = (char*)csolution.c_str();
   argv[5] = (char*)"-o";
   argv[6] = (char*)testoutput_folder.c_str();
@@ -1207,7 +1208,7 @@ TEST_F(ProjMgrUnitTests, LayerVariablesNotDefined_SearchPath) {
   const string& clayerSearchPath = testinput_folder + "/TestLayers/variables";
   argv[1] = (char*)"list";
   argv[2] = (char*)"layers";
-  argv[3] = (char*)"-s";
+  argv[3] = (char*)"--solution";
   argv[4] = (char*)csolution.c_str();
   argv[5] = (char*)"--clayer-path";
   argv[6] = (char*)clayerSearchPath.c_str();
@@ -1228,10 +1229,10 @@ clayer of type 'Board' was uniquely found:\
 TEST_F(ProjMgrUnitTests, AccessSequences) {
   char* argv[7];
 
-  // convert -s solution.yml
+  // convert --solution solution.yml
   const string& csolution = testinput_folder + "/TestAccessSequences/test-access-sequences.csolution.yml";
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -1259,10 +1260,10 @@ TEST_F(ProjMgrUnitTests, AccessSequences) {
 TEST_F(ProjMgrUnitTests, AccessSequences2) {
   char* argv[7];
 
-  // convert -s solution.yml
+  // convert --solution solution.yml
   const string& csolution = testinput_folder + "/TestAccessSequences/test-access-sequences2.csolution.yml";
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -1280,7 +1281,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_MalformedAccessSequences1) {
   const string& csolution = testinput_folder + "/TestAccessSequences/test-malformed-access-sequences1.csolution.yml";
 
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -1292,7 +1293,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_MalformedAccessSequences2) {
   const string& csolution = testinput_folder + "/TestAccessSequences/malformed-access-sequences2.cproject.yml";
 
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -1301,10 +1302,10 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_MalformedAccessSequences2) {
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_Multicore) {
   char* argv[7];
-  // convert -s solution.yml
+  // convert --solution solution.yml
   const string& csolution = testinput_folder + "/TestSolution/multicore.csolution.yml";
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -1317,10 +1318,10 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Multicore) {
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_Generator) {
   char* argv[7];
-  // convert -s solution.yml
+  // convert --solution solution.yml
   const string& csolution = testinput_folder + "/TestGenerator/test-gpdsc.csolution.yml";
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -1365,18 +1366,18 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_GeneratorLayer) {
 TEST_F(ProjMgrUnitTests, RunProjMgr_TargetOptions)
 {
   char *argv[7];
-  // convert -s solution.yml
-  const string &csolution = testinput_folder + "/TestSolution/test.target_options.csolution.yml";
+  // convert --solution solution.yml
+  const string &csolution = testinput_folder + "/TestSolution/test_target_options.csolution.yml";
   argv[1] = (char *)"convert";
-  argv[2] = (char *)"-s";
+  argv[2] = (char *)"--solution";
   argv[3] = (char *)csolution.c_str();
   argv[4] = (char *)"-o";
   argv[5] = (char *)testoutput_folder.c_str();
   EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   // Check generated CPRJs
- ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test.target_options+CM0.cprj",
-              testinput_folder + "/TestSolution/ref/test.target_options+CM0.cprj");
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test_target_options+CM0.cprj",
+              testinput_folder + "/TestSolution/ref/test_target_options+CM0.cprj");
 }
 
 TEST_F(ProjMgrUnitTests, ListPacks) {
@@ -1523,7 +1524,7 @@ TEST_F(ProjMgrUnitTests, RunListContexts_Ordered) {
     "test1.Release+CM0"
   };
   const string& dirInput = testinput_folder + "/TestSolution/";
-  const string& filenameInput = dirInput + "test.csolution_ordered.yml";
+  const string& filenameInput = dirInput + "test_ordered.csolution.yml";
   error_code ec;
   EXPECT_TRUE(m_parser.ParseCsolution(filenameInput, false));
   for (const auto& cproject : m_parser.GetCsolution().cprojects) {
@@ -1548,7 +1549,7 @@ TEST_F(ProjMgrUnitTests, RunListContexts_Without_BuildTypes) {
     "test2+Release"
   };
   const string& dirInput = testinput_folder + "/TestSolution/";
-  const string& filenameInput = dirInput + "test.csolution_no_buildtypes.yml";
+  const string& filenameInput = dirInput + "test_no_buildtypes.csolution.yml";
   error_code ec;
   EXPECT_TRUE(m_parser.ParseCsolution(filenameInput, false));
   for (const auto& cproject : m_parser.GetCsolution().cprojects) {
@@ -1566,7 +1567,7 @@ TEST_F(ProjMgrUnitTests, RunListContexts_Without_BuildTypes) {
 
 TEST_F(ProjMgrUnitTests, AddContextFailed) {
   ContextDesc descriptor;
-  const string& filenameInput = testinput_folder + "/TestSolution/test.csolution_missing_project.yml";
+  const string& filenameInput = testinput_folder + "/TestSolution/test_missing_project.csolution.yml";
   EXPECT_TRUE(m_parser.ParseCsolution(filenameInput, false));
   EXPECT_FALSE(m_worker.AddContexts(m_parser, descriptor, filenameInput));
 }
@@ -1591,10 +1592,10 @@ TEST_F(ProjMgrUnitTests, GetInstalledPacks) {
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution_processor) {
   char* argv[7];
 
-  // convert -s solution.yml
-  const string& csolution = testinput_folder + "/TestSolution/test.csolution_pname.yml";
+  // convert --solution solution.yml
+  const string& csolution = testinput_folder + "/TestSolution/test_pname.csolution.yml";
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -1611,9 +1612,9 @@ TEST_F(ProjMgrUnitTests, RunProjMgrLayers_missing_project_file) {
   char* argv[6];
   StdStreamRedirect streamRedirect;
   const string& expected = "./unknown.cproject.yml - error csolution: cproject file was not found\n";
-  const string& csolutionFile = testinput_folder + "/TestSolution/test.csolution_missing_project.yml";
+  const string& csolutionFile = testinput_folder + "/TestSolution/test_missing_project.csolution.yml";
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -1626,7 +1627,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgrLayers_pname) {
   char* argv[6];
   const string& csolutionFile = testinput_folder + "/TestLayers/testlayers.csolution.yml";
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -1635,9 +1636,9 @@ TEST_F(ProjMgrUnitTests, RunProjMgrLayers_pname) {
 
 TEST_F(ProjMgrUnitTests, RunProjMgrLayers_no_device_found) {
   char* argv[6];
-  const string& csolution = testinput_folder + "/TestLayers/testlayers.csolution_no_device_name.yml";
+  const string& csolution = testinput_folder + "/TestLayers/testlayers_no_device_name.csolution.yml";
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -1646,9 +1647,9 @@ TEST_F(ProjMgrUnitTests, RunProjMgrLayers_no_device_found) {
 
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution_No_Device_Name) {
   char* argv[4];
-  const string& csolution = testinput_folder + "/TestSolution/test.csolution_no_device_name.yml";
+  const string& csolution = testinput_folder + "/TestSolution/test_no_device_name.csolution.yml";
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
   EXPECT_EQ(1, RunProjMgr(4, argv, 0));
 }
@@ -1656,12 +1657,12 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_No_Device_Name) {
 TEST_F(ProjMgrUnitTests, RunProjMgr_No_Board_No_Device) {
   // Test with no board no device info
   char* argv[6];
-  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject_no_board_no_device.yml");
+  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test_no_board_no_device.cproject.yml");
   const string& expected = "missing device and/or board info";
   StdStreamRedirect streamRedirect;
 
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -1673,12 +1674,12 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_No_Board_No_Device) {
 TEST_F(ProjMgrUnitTests, RunProjMgr_Invalid_Board_Name) {
   // Test project with invalid board name
   char* argv[6];
-  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject_board_name_invalid.yml");
+  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test_board_name_invalid.cproject.yml");
   const string& expected = "board 'Keil::RteTest_unknown' was not found";
   StdStreamRedirect streamRedirect;
 
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -1690,12 +1691,12 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Invalid_Board_Name) {
 TEST_F(ProjMgrUnitTests, RunProjMgr_Invalid_Board_Vendor) {
   // Test project with invalid vendor name
   char* argv[6];
-  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject_board_vendor_invalid.yml");
+  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test_board_vendor_invalid.cproject.yml");
   const string& expected = "board 'UNKNOWN::RteTest Dummy board' was not found";
   StdStreamRedirect streamRedirect;
 
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -1707,25 +1708,25 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Invalid_Board_Vendor) {
 TEST_F(ProjMgrUnitTests, RunProjMgr_Only_Board_Info) {
   // Test project with only board info and missing device info
   char* argv[6];
-  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject_only_board.yml");
+  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test_only_board.cproject.yml");
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
   EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   // Check generated CPRJ
- ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test+TEST_TARGET.cprj",
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test_only_board+TEST_TARGET.cprj",
     testinput_folder + "/TestSolution/TestProject4/test_only_board+TEST_TARGET.cprj");
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_Only_Board_No_Pname) {
   // Test project with only board info and no pname
   char* argv[6];
-  const string& csolution = testinput_folder + "/TestProject/test.cproject_only_board_no_pname.yml";
+  const string& csolution = testinput_folder + "/TestProject/test_only_board_no_pname.cproject.yml";
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -1735,14 +1736,14 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Only_Board_No_Pname) {
 TEST_F(ProjMgrUnitTests, RunProjMgr_Device_Unknown) {
   // Test project with unknown device
   char* argv[6];
-  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject_device_unknown.yml");
+  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test_device_unknown.cproject.yml");
   const string& expectedErrStr = R"(error csolution: specified device 'RteTest_ARM_UNKNOWN' was not found among the installed packs.
 use 'cpackget' utility to install software packs.
   cpackget add Vendor.PackName --pack-root ./Path/Packs)";
   StdStreamRedirect streamRedirect;
 
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -1754,14 +1755,14 @@ use 'cpackget' utility to install software packs.
 TEST_F(ProjMgrUnitTests, RunProjMgr_Device_Unknown_Vendor) {
   // Test project with unknown device vendor
   char* argv[6];
-  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject_device_unknown_vendor.yml");
+  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test_device_unknown_vendor.cproject.yml");
   const string& expectedErrStr = R"(error csolution: specified device 'RteTest_ARMCM0' was not found among the installed packs.
 use 'cpackget' utility to install software packs.
   cpackget add Vendor.PackName --pack-root ./Path/Packs)";
   StdStreamRedirect streamRedirect;
 
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -1773,12 +1774,12 @@ use 'cpackget' utility to install software packs.
 TEST_F(ProjMgrUnitTests, RunProjMgr_Device_Unknown_Processor) {
   // Test project with unknown processor
   char* argv[6];
-  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject_device_unknown_processor.yml");
+  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test_device_unknown_processor.cproject.yml");
   const string& expected = "processor name 'NOT_AVAILABLE' was not found";
   StdStreamRedirect streamRedirect;
 
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -1790,14 +1791,14 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Device_Unknown_Processor) {
 TEST_F(ProjMgrUnitTests, RunProjMgr_Device_Unavailable_In_Board) {
   // Test project with device different from the board's mounted device
   char* argv[6];
-  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject_device_unavailable_in_board.yml");
+  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test_device_unavailable_in_board.cproject.yml");
   const string& expectedErrStr = R"(error csolution: specified device 'RteTest_ARMCM7' was not found among the installed packs.
 use 'cpackget' utility to install software packs.
   cpackget add Vendor.PackName --pack-root ./Path/Packs)";
   StdStreamRedirect streamRedirect;
 
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -1809,12 +1810,12 @@ use 'cpackget' utility to install software packs.
 TEST_F(ProjMgrUnitTests, RunProjMgr_Device_Pname_Unavailable_In_Board) {
   // Test project with device processor name different from the board's mounted device's processors
   char* argv[6];
-  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject_device_pname_unavailable_in_board.yml");
+  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test_device_pname_unavailable_in_board.cproject.yml");
   const string& expected = "processor name 'cm0_core7' was not found";
   StdStreamRedirect streamRedirect;
 
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -1828,7 +1829,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Only_Device_Info) {
   char* argv[6];
   string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject.yml");
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -1838,9 +1839,9 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Only_Device_Info) {
 TEST_F(ProjMgrUnitTests, RunProjMgr_Board_And_Device_Info) {
   // Test project with valid board and device info
   char* argv[6];
-  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject_board_and_device.yml");
+  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test_board_and_device.cproject.yml");
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -1850,14 +1851,14 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Board_And_Device_Info) {
 TEST_F(ProjMgrUnitTests, RunProjMgr_Correct_Board_Wrong_Device_Info) {
   // Test project with correct board info but wrong device info
   char* argv[6];
-  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject_correct_board_wrong_device.yml");
+  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test_correct_board_wrong_device.cproject.yml");
   const string& expectedErrStr = R"(error csolution: specified device 'RteTest_ARMCM_Unknown' was not found among the installed packs.
 use 'cpackget' utility to install software packs.
   cpackget add Vendor.PackName --pack-root ./Path/Packs)";
   StdStreamRedirect streamRedirect;
 
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -1869,12 +1870,12 @@ use 'cpackget' utility to install software packs.
 TEST_F(ProjMgrUnitTests, RunProjMgr_Correct_Device_Wrong_Board_Info) {
   // Test project with correct device info but wrong board info
   char* argv[6];
-  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject_correct_device_wrong_board.yml");
+  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test_correct_device_wrong_board.cproject.yml");
   const string& expected = "board 'Keil::RteTest unknown board' was not found";
   StdStreamRedirect streamRedirect;
 
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -1886,12 +1887,12 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Correct_Device_Wrong_Board_Info) {
 TEST_F(ProjMgrUnitTests, RunProjMgr_Board_Multi_Mounted_Devices) {
   // Test Project with only board info and multiple mounted devices
   char* argv[6];
-  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject_board_multi_mounted_device.yml");
+  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test_board_multi_mounted_device.cproject.yml");
   const string& expected = "found multiple mounted devices";
   StdStreamRedirect streamRedirect;
 
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -1903,10 +1904,10 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Board_Multi_Mounted_Devices) {
 TEST_F(ProjMgrUnitTests, RunProjMgr_Board_Device_Variant) {
   // Test Project with only board info and single mounted device with single variant
   char* argv[6];
-  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject_board_device_variant.yml");
+  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test_board_device_variant.cproject.yml");
 
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -1916,10 +1917,10 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Board_Device_Variant) {
 TEST_F(ProjMgrUnitTests, RunProjMgr_Board_Multi_Variants_And_Device) {
   // Test Project with device variant and board info and mounted device with multiple variants
   char* argv[6];
-  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject_board_multi_variant_and_device.yml");
+  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test_board_multi_variant_and_device.cproject.yml");
 
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -1929,12 +1930,12 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Board_Multi_Variants_And_Device) {
 TEST_F(ProjMgrUnitTests, RunProjMgr_Board_Multi_Variants) {
   // Test Project with only board info and mounted device with multiple variants
   char* argv[6];
-  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject_board_multi_variant.yml");
+  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test_board_multi_variant.cproject.yml");
   const string& expected = "found multiple device variants";
   StdStreamRedirect streamRedirect;
 
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -1946,12 +1947,12 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Board_Multi_Variants) {
 TEST_F(ProjMgrUnitTests, RunProjMgr_Board_No_Mounted_Devices) {
   // Test Project with only board info and no mounted devices
   char* argv[6];
-  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject_board_no_mounted_device.yml");
+  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test_board_no_mounted_device.cproject.yml");
   const string& expected = "found no mounted device";
   StdStreamRedirect streamRedirect;
 
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -1963,12 +1964,12 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Board_No_Mounted_Devices) {
 TEST_F(ProjMgrUnitTests, RunProjMgr_Board_Device_Info) {
   // Test Project with board mounted device different than selected devices
   char* argv[6];
-  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject_mounted_device_differs_selected_device.yml");
+  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test_mounted_device_differs_selected_device.cproject.yml");
   const string& expected = "warning csolution: specified device 'RteTest_ARMCM0' and board mounted device 'RteTest_ARMCM0_Dual' are different";
   StdStreamRedirect streamRedirect;
 
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -1986,7 +1987,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListGenerators) {
   const string& csolution = testinput_folder + "/TestGenerator/test-gpdsc.csolution.yml";
   argv[1] = (char*)"list";
   argv[2] = (char*)"generators";
-  argv[3] = (char*)"-s";
+  argv[3] = (char*)"--solution";
   argv[4] = (char*)csolution.c_str();
   argv[5] = (char*)"-c";
   argv[6] = (char*)"test-gpdsc.Debug+CM0";
@@ -2001,7 +2002,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListGeneratorsEmptyContext) {
   const string& csolution = testinput_folder + "/TestGenerator/test-gpdsc.csolution.yml";
   argv[1] = (char*)"list";
   argv[2] = (char*)"generators";
-  argv[3] = (char*)"-s";
+  argv[3] = (char*)"--solution";
   argv[4] = (char*)csolution.c_str();
   EXPECT_EQ(0, RunProjMgr(5, argv, 0));
 }
@@ -2011,7 +2012,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListGeneratorsEmptyContextMultipleTypes) {
   const string& csolution = testinput_folder + "/TestGenerator/test-gpdsc-multiple-types.csolution.yml";
   argv[1] = (char*)"list";
   argv[2] = (char*)"generators";
-  argv[3] = (char*)"-s";
+  argv[3] = (char*)"--solution";
   argv[4] = (char*)csolution.c_str();
   EXPECT_EQ(0, RunProjMgr(5, argv, 0));
 }
@@ -2021,7 +2022,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListGeneratorsNonExistentContext) {
   const string& csolution = testinput_folder + "/TestGenerator/test-gpdsc.csolution.yml";
   argv[1] = (char*)"list";
   argv[2] = (char*)"generators";
-  argv[3] = (char*)"-s";
+  argv[3] = (char*)"--solution";
   argv[4] = (char*)csolution.c_str();
   argv[5] = (char*)"-c";
   argv[6] = (char*)"NON-EXISTENT-CONTEXT";
@@ -2033,7 +2034,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListGeneratorsNonExistentSolution) {
   const string& csolution = testinput_folder + "/TestGenerator/NON-EXISTENT.csolution.yml";
   argv[1] = (char*)"list";
   argv[2] = (char*)"generators";
-  argv[3] = (char*)"-s";
+  argv[3] = (char*)"--solution";
   argv[4] = (char*)csolution.c_str();
   EXPECT_EQ(1, RunProjMgr(5, argv, 0));
 }
@@ -2044,7 +2045,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ExecuteGenerator) {
   argv[1] = (char*)"run";
   argv[2] = (char*)"-g";
   argv[3] = (char*)"RteTestGeneratorIdentifier";
-  argv[4] = (char*)"-s";
+  argv[4] = (char*)"--solution";
   argv[5] = (char*)csolution.c_str();
   argv[6] = (char*)"-c";
   argv[7] = (char*)"test-gpdsc.Debug+CM0";
@@ -2063,7 +2064,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ExecuteGeneratorEmptyContext) {
   argv[1] = (char*)"run";
   argv[2] = (char*)"-g";
   argv[3] = (char*)"RteTestGeneratorIdentifier";
-  argv[4] = (char*)"-s";
+  argv[4] = (char*)"--solution";
   argv[5] = (char*)csolution.c_str();
 
   const string& hostType = CrossPlatformUtils::GetHostType();
@@ -2080,7 +2081,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ExecuteGeneratorEmptyContextMultipleTypes) {
   argv[1] = (char*)"run";
   argv[2] = (char*)"-g";
   argv[3] = (char*)"RteTestGeneratorIdentifier";
-  argv[4] = (char*)"-s";
+  argv[4] = (char*)"--solution";
   argv[5] = (char*)csolution.c_str();
   // the project has multiple contexts but none is specified
   EXPECT_EQ(1, RunProjMgr(6, argv, 0));
@@ -2102,7 +2103,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ExecuteGeneratorNonExistentContext) {
   argv[1] = (char*)"run";
   argv[2] = (char*)"-g";
   argv[3] = (char*)"RteTestGeneratorIdentifier";
-  argv[4] = (char*)"-s";
+  argv[4] = (char*)"--solution";
   argv[5] = (char*)csolution.c_str();
   argv[6] = (char*)"-c";
   argv[7] = (char*)"NON-EXISTENT-CONTEXT";
@@ -2115,7 +2116,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ExecuteGeneratorNonExistentSolution) {
   argv[1] = (char*)"run";
   argv[2] = (char*)"-g";
   argv[3] = (char*)"RteTestGeneratorIdentifier";
-  argv[4] = (char*)"-s";
+  argv[4] = (char*)"--solution";
   argv[5] = (char*)csolution.c_str();
   EXPECT_EQ(1, RunProjMgr(6, argv, 0));
 }
@@ -2153,10 +2154,10 @@ TEST_F(ProjMgrUnitTests, ListMultipleGenerators) {
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_MultipleGenerators) {
   char* argv[7];
-  // convert -s solution.yml
+  // convert --solution solution.yml
   const string& csolution = testinput_folder + "/TestGenerator/test-gpdsc-multiple-generators.csolution.yml";
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -2208,10 +2209,10 @@ TEST_F(ProjMgrUnitTests, ExecuteGeneratorWithKey) {
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Filtered_Pack_Selection) {
   char* argv[7];
 
-  // convert -s solution.yml
-  const string& csolution = testinput_folder + "/TestSolution/test.csolution_filtered_pack_selection.yml";
+  // convert --solution solution.yml
+  const string& csolution = testinput_folder + "/TestSolution/test_filtered_pack_selection.csolution.yml";
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -2221,10 +2222,10 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Filtered_Pack_Selection) {
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Pack_Selection) {
   char* argv[7];
 
-  // convert -s solution.yml
-  const string& csolution = testinput_folder + "/TestSolution/test.csolution_pack_selection.yml";
+  // convert --solution solution.yml
+  const string& csolution = testinput_folder + "/TestSolution/test_pack_selection.csolution.yml";
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -2240,10 +2241,10 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Pack_Selection) {
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution_No_Packs) {
   char* argv[7];
 
-  // convert -s solution.yml
-  const string& csolution = testinput_folder + "/TestSolution/test.csolution_no_packs.yml";
+  // convert --solution solution.yml
+  const string& csolution = testinput_folder + "/TestSolution/test_no_packs.csolution.yml";
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -2255,10 +2256,10 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Invalid_Packs) {
   StdStreamRedirect streamRedirect;
   std::string errExpected = "required pack: ARM::RteTest_INVALID@0.2.0 not installed";
 
-  // convert -s solution.yml
-  const string& csolution = testinput_folder + "/TestSolution/test.csolution_invalid_pack.yml";
+  // convert --solution solution.yml
+  const string& csolution = testinput_folder + "/TestSolution/test_invalid_pack.csolution.yml";
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -2272,9 +2273,9 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Local_Pack) {
   char* argv[7];
   const string& csolution = testinput_folder + "/TestSolution/pack_path.csolution.yml";
 
-  // convert -s solution.yml
+  // convert --solution solution.yml
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -2288,7 +2289,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Local_Pack) {
 
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Local_Multiple_Pack_Files) {
   char* argv[7];
-  const string& csolution = testinput_folder + "/TestSolution/test.csolution_local_pack_path.yml";
+  const string& csolution = testinput_folder + "/TestSolution/test_local_pack_path.csolution.yml";
 
   // copy an additional pack file
   string srcPackFile, destPackFile;
@@ -2299,9 +2300,9 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Local_Multiple_Pack_Files) {
   }
   RteFsUtils::CopyCheckFile(srcPackFile, destPackFile, false);
 
-  // convert -s solution.yml
+  // convert --solution solution.yml
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -2315,11 +2316,11 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Local_Pack_Path_Not_Found) {
   char* argv[7];
   StdStreamRedirect streamRedirect;
   const string errExpected = "pack path: ./SolutionSpecificPack/ARM does not exist";
-  const string& csolution = testinput_folder + "/TestSolution/test.csolution_local_pack_path_not_found.yml";
+  const string& csolution = testinput_folder + "/TestSolution/test_local_pack_path_not_found.csolution.yml";
 
-  // convert -s solution.yml
+  // convert --solution solution.yml
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -2333,11 +2334,11 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Local_Pack_File_Not_Found) {
   char* argv[7];
   StdStreamRedirect streamRedirect;
   const string errExpected = "pdsc file was not found in: ../SolutionSpecificPack/Device";
-  const string& csolution = testinput_folder + "/TestSolution/test.csolution_local_pack_file_not_found.yml";
+  const string& csolution = testinput_folder + "/TestSolution/test_local_pack_file_not_found.csolution.yml";
 
-  // convert -s solution.yml
+  // convert --solution solution.yml
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -2349,11 +2350,11 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Local_Pack_File_Not_Found) {
 
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution_List_Board_Pack) {
   char* argv[7];
-  const string& csolution = testinput_folder + "/TestSolution/test.csolution_list_board_package.yml";
+  const string& csolution = testinput_folder + "/TestSolution/test_list_board_package.csolution.yml";
 
-  // convert -s solution.yml
+  // convert --solution solution.yml
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -2369,9 +2370,9 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_List_Board_Pack) {
 TEST_F(ProjMgrUnitTests, RunProjMgr_LoadPacksPolicy_Required) {
   char* argv[6];
   StdStreamRedirect streamRedirect;
-  const string& csolution = testinput_folder + "/TestSolution/test.csolution_no_packs.yml";
+  const string& csolution = testinput_folder + "/TestSolution/test_no_packs.csolution.yml";
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-l";
   argv[5] = (char*)"required";
@@ -2383,9 +2384,9 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_LoadPacksPolicy_Required) {
 TEST_F(ProjMgrUnitTests, RunProjMgr_LoadPacksPolicy_Invalid) {
   char* argv[6];
   StdStreamRedirect streamRedirect;
-  const string& csolution = testinput_folder + "/TestSolution/test.csolution_no_packs.yml";
+  const string& csolution = testinput_folder + "/TestSolution/test_no_packs.csolution.yml";
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-l";
   argv[5] = (char*)"invalid";
@@ -2397,9 +2398,9 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_LoadPacksPolicy_Invalid) {
 TEST_F(ProjMgrUnitTests, RunProjMgr_LoadPacksPolicy_Latest) {
   char* argv[6];
   StdStreamRedirect streamRedirect;
-  const string& csolution = testinput_folder + "/TestSolution/test.csolution_no_packs.yml";
+  const string& csolution = testinput_folder + "/TestSolution/test_no_packs.csolution.yml";
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-l";
   argv[5] = (char*)"latest";
@@ -2408,15 +2409,15 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_LoadPacksPolicy_Latest) {
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_LoadPacksPolicy_All) {
   char* argv[6];
-  const string& csolution = testinput_folder + "/TestSolution/test.csolution_no_packs.yml";
+  const string& csolution = testinput_folder + "/TestSolution/test_no_packs.csolution.yml";
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-l";
   argv[5] = (char*)"all";
   EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
-  const string& csolution2 = testinput_folder + "/TestSolution/test.csolution_pack_selection.yml";
+  const string& csolution2 = testinput_folder + "/TestSolution/test_pack_selection.csolution.yml";
   argv[3] = (char*)csolution2.c_str();
   EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 }
@@ -2473,12 +2474,12 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_ParseCdefault3) {
 
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution_DefaultFile1) {
   char* argv[6];
-  // convert -s solution.yml
+  // convert --solution solution.yml
   // csolution is empty, all information from cdefault.yml is taken
   const string& csolution = testinput_folder + "/TestDefault/empty.csolution.yml";
   const string& output = testoutput_folder + "/empty";
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)output.c_str();
@@ -2493,12 +2494,12 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_DefaultFile1) {
 
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution_DefaultFile2) {
   char* argv[6];
-  // convert -s solution.yml
+  // convert --solution solution.yml
   // csolution.yml is complete, no information from cdefault.yml is taken except from misc
   const string& csolution = testinput_folder + "/TestDefault/full.csolution.yml";
   const string& output = testoutput_folder + "/full";
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)output.c_str();
@@ -2520,7 +2521,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_DefaultFileInCompilerRoot) {
   const string& csolution = testinput_folder + "/TestDefault/empty.csolution.yml";
   const string& output = testoutput_folder + "/empty";
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)output.c_str();
@@ -2547,7 +2548,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_NoUpdateRTEFiles) {
   GetFilesInTree(rteFolder, rteFilesBefore);
 
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -2575,7 +2576,7 @@ TEST_F(ProjMgrUnitTests, LoadPacks_MultiplePackSelection) {
 }
 
 TEST_F(ProjMgrUnitTests, LoadPacks_MissingPackSelection) {
-  m_csolutionFile = testinput_folder + "/TestSolution/test.csolution_local_pack_path_not_found.yml";
+  m_csolutionFile = testinput_folder + "/TestSolution/test_local_pack_path_not_found.csolution.yml";
   m_rootDir = fs::path(m_csolutionFile).parent_path().generic_string();
   EXPECT_TRUE(PopulateContexts());
   map<string, ContextItem>* contexts = nullptr;
@@ -2641,7 +2642,7 @@ TEST_F(ProjMgrUnitTests, Convert_ValidationResults_Dependencies) {
   char* argv[6];
   const string& csolution = testinput_folder + "/Validation/dependencies.csolution.yml";
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-c";
 
@@ -2665,7 +2666,7 @@ TEST_F(ProjMgrUnitTests, Convert_ValidationResults_Dependencies) {
 TEST_F(ProjMgrUnitTests, Convert_ValidationResults_Filtering) {
   char* argv[6];
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[4] = (char*)"-c";
 
   vector<tuple<string, int, string>> testData = {
@@ -2693,7 +2694,7 @@ ARM.RteTestMissingCondition.0.1.0: component 'ARM::RteTest.Check.MissingConditio
 
 TEST_F(ProjMgrUnitTests, OutputDirs) {
   char* argv[4];
-  // convert -s solution.yml
+  // convert --solution solution.yml
   const string& csolution = testinput_folder + "/TestSolution/outdirs.csolution.yml";
   argv[1] = (char*)"convert";
   argv[2] = (char*)"--solution";
@@ -2726,7 +2727,7 @@ TEST_F(ProjMgrUnitTests, OutputDirsAbsolutePath) {
 
 TEST_F(ProjMgrUnitTests, ProjectSetup) {
   char* argv[6];
-  // convert -s solution.yml
+  // convert --solution solution.yml
   const string& csolution = testinput_folder + "/TestProjectSetup/setup-test.csolution.yml";
   const string& output = testoutput_folder;
   argv[1] = (char*)"convert";
@@ -2824,10 +2825,10 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_help) {
 TEST_F(ProjMgrUnitTests, RunProjMgr_ExportNonLockedCprj) {
   char* argv[10];
 
-  // convert -s solution.yml
-  const string& csolution = testinput_folder + "/TestSolution/test.csolution_pack_selection.yml";
+  // convert --solution solution.yml
+  const string& csolution = testinput_folder + "/TestSolution/test_pack_selection.csolution.yml";
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -2845,12 +2846,12 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ExportNonLockedCprj) {
 TEST_F(ProjMgrUnitTests, RunProjMgr_WriteCprjFail) {
   char* argv[10];
 
-  // convert -s solution.yml
-  const string& csolution = testinput_folder + "/TestSolution/test.csolution_pack_selection.yml";
+  // convert --solution solution.yml
+  const string& csolution = testinput_folder + "/TestSolution/test_pack_selection.csolution.yml";
   const string& outputFolder = testoutput_folder + "/outputFolder";
 
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)outputFolder.c_str();
@@ -2872,10 +2873,10 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_WriteCprjFail) {
 TEST_F(ProjMgrUnitTests, RunProjMgr_PreInclude) {
   char* argv[6];
 
-  // convert -s solution.yml
+  // convert --solution solution.yml
   const string& csolution = testinput_folder + "/TestSolution/pre-include.csolution.yml";
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -2974,7 +2975,7 @@ TEST_F(ProjMgrUnitTests, SelectToolchains) {
   char* argv[8];
   const string& csolution = testinput_folder + "/TestSolution/toolchain-selection.csolution.yml";
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -3224,7 +3225,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_No_target_Types) {
   const string& csolutionFile = testinput_folder + "/TestSolution/missing_target_types.csolution.yml";
 
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
@@ -3241,7 +3242,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_No_Projects) {
   const string& csolutionFile = testinput_folder + "/TestSolution/missing_projects.csolution.yml";
 
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"-s";
+  argv[2] = (char*)"--solution";
   argv[3] = (char*)csolutionFile.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();

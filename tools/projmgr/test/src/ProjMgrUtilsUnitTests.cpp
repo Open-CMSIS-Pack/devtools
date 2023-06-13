@@ -246,14 +246,85 @@ TEST_F(ProjMgrUtilsUnitTests, ParseContextEntry) {
   auto compare = [](const ContextName& context, const ContextName& expected) {
     return ((context.project == expected.project) && (context.build == expected.build) && (context.target == expected.target));
   };
-  EXPECT_TRUE(compare(ParseContextEntry("project"             ), { "project", ""     , ""       }));
-  EXPECT_TRUE(compare(ParseContextEntry("project.build"       ), { "project", "build", ""       }));
-  EXPECT_TRUE(compare(ParseContextEntry("project+target"      ), { "project", ""     , "target" }));
-  EXPECT_TRUE(compare(ParseContextEntry("project.build+target"), { "project", "build", "target" }));
-  EXPECT_TRUE(compare(ParseContextEntry("project+target.build"), { "project", "build", "target" }));
-  EXPECT_TRUE(compare(ParseContextEntry(".build"              ), { ""       , "build", ""       }));
-  EXPECT_TRUE(compare(ParseContextEntry(".build+target"       ), { ""       , "build", "target" }));
-  EXPECT_TRUE(compare(ParseContextEntry("+target"             ), { ""       , ""     , "target" }));
-  EXPECT_TRUE(compare(ParseContextEntry("+target.build"       ), { ""       , "build", "target" }));
-  EXPECT_TRUE(compare(ParseContextEntry(""                    ), { ""       , ""     , ""       }));
+
+  auto TestParseContextEntry = [&](const string& context, const ContextName& expected) -> bool {
+    ContextName outContext;
+    auto retVal = ParseContextEntry(context, outContext);
+    return retVal && compare(outContext, expected);
+  };
+
+  EXPECT_TRUE (TestParseContextEntry("project"               , { "project", "",      ""       }));
+  EXPECT_TRUE (TestParseContextEntry("project.build"         , { "project", "build", ""       }));
+  EXPECT_TRUE (TestParseContextEntry("project+target"        , { "project", ""     , "target" }));
+  EXPECT_TRUE (TestParseContextEntry("project.build+target"  , { "project", "build", "target" }));
+  EXPECT_TRUE (TestParseContextEntry("project+target.build"  , { "project", "build", "target" }));
+  EXPECT_TRUE (TestParseContextEntry(".build"                , { ""       , "build", ""       }));
+  EXPECT_TRUE (TestParseContextEntry(".build+target"         , { ""       , "build", "target" }));
+  EXPECT_TRUE (TestParseContextEntry("+target"               , { ""       , ""     , "target" }));
+  EXPECT_TRUE (TestParseContextEntry("+target.build"         , { ""       , "build", "target" }));
+  EXPECT_TRUE (TestParseContextEntry(""                      , { ""       , ""     , ""       }));
+  EXPECT_TRUE (TestParseContextEntry(".bu*d+tar*"            , { ""       , "bu*d" , "tar*"   }));
+  EXPECT_FALSE(TestParseContextEntry(".build1.build2+target" , { ""       , ""     , ""       }));
+  EXPECT_FALSE(TestParseContextEntry(".build1+target+target1", { ""       , ""     , ""       }));
 };
+
+TEST_F(ProjMgrUtilsUnitTests, GetSelectedContexts) {
+  const vector<string> allContexts = {
+    "Project1.Debug+Target",
+    "Project1.Release+Target",
+    "Project1.Debug+Target2",
+    "Project1.Release+Target2",
+    "Project2.Debug+Target",
+    "Project2.Release+Target",
+    "Project2.Debug+Target2",
+    "Project2.Release+Target2",
+  };
+
+  list<string> allContextsList;
+  allContextsList.assign(allContexts.begin(), allContexts.end());
+  vector<std::tuple<const string, bool, const list<string>>> vecTestData = {
+    // contextFilter, expectedRetval, expectedContexts
+    { "",                         true, allContextsList},
+    { "Project1",                 true, { "Project1.Debug+Target","Project1.Release+Target","Project1.Debug+Target2","Project1.Release+Target2"}},
+    { ".Debug",                   true, { "Project1.Debug+Target","Project1.Debug+Target2","Project2.Debug+Target","Project2.Debug+Target2"}},
+    { "+Target",                  true, { "Project1.Debug+Target", "Project1.Release+Target", "Project2.Debug+Target", "Project2.Release+Target"}},
+    { "Project1.Debug",           true, { "Project1.Debug+Target", "Project1.Debug+Target2" }},
+    { "Project1+Target",          true, { "Project1.Debug+Target", "Project1.Release+Target" }},
+    { ".Release+Target2",         true, { "Project1.Release+Target2", "Project2.Release+Target2" }},
+    { "Project1.Release+Target2", true, { "Project1.Release+Target2" }},
+
+    { "*",                        true, allContextsList},
+    { "*.*+*",                    true, allContextsList},
+    { "*.*",                      true, allContextsList},
+    { "Proj*",                    true, allContextsList},
+    { ".De*",                     true, { "Project1.Debug+Target","Project1.Debug+Target2","Project2.Debug+Target","Project2.Debug+Target2"}},
+    { "+Tar*",                    true, allContextsList},
+    { "Proj*.D*g",                true, { "Project1.Debug+Target","Project1.Debug+Target2","Project2.Debug+Target","Project2.Debug+Target2"}},
+    { "Proj*+Tar*",               true, allContextsList},
+    { "Project2.Rel*+Tar*",       true, {"Project2.Release+Target", "Project2.Release+Target2"}},
+    { ".Rel*+*2",                 true, {"Project1.Release+Target2", "Project2.Release+Target2"}},
+    { "Project*.Release+*",       true, {"Project1.Release+Target", "Project1.Release+Target2","Project2.Release+Target", "Project2.Release+Target2"}},
+
+    // negative tests
+    { "Unknown",                       false, {}},
+    { ".UnknownBuild",                 false, {}},
+    { "+UnknownTarget",                false, {}},
+    { "Project.UnknownBuild",          false, {}},
+    { "Project+UnknownTarget",         false, {}},
+    { ".UnknownBuild+Target",          false, {}},
+    { "TestProject*",                  false, {}},
+    { "Project.*Build",                false, {}},
+    { "Project.Debug+*H",              false, {}},
+    { "Project1.Release.Debug+Target", false, {}},
+    { "Project1.Debug+Target+Target2", false, {}},
+  };
+
+  list<string> selectedContexts;
+  for (const auto& [contextFilter, expectedRetval, expectedContexts] : vecTestData) {
+    selectedContexts.clear();
+    EXPECT_EQ(expectedRetval, GetSelectedContexts(selectedContexts, allContexts, contextFilter))
+      << "failed for input \"" << contextFilter << "\"";
+    ASSERT_EQ(selectedContexts.size(), expectedContexts.size());
+    EXPECT_EQ(selectedContexts, expectedContexts);
+  }
+}

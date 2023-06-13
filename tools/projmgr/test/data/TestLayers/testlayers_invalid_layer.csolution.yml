@@ -9,7 +9,7 @@ solution:
     - type: Release
 
   projects:
-    - project: testlayers.cproject_no_device_name.yml
+    - project: testlayers_invalid_layer.cproject.yml
 
   packs:
     - pack: ARM::RteTest

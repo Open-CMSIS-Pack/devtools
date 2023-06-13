@@ -278,7 +278,11 @@
     "TargetType": {
       "type": "object",
       "properties": {
-        "type":       { "type": "string", "description": "Name of the target type." },
+        "type": {
+          "type": "string",
+          "pattern": "^([^.+]+)$",
+          "description": "Name of the target type."
+        },
         "board":      { "$ref": "#/definitions/BoardType" },
         "device":     { "$ref": "#/definitions/DeviceType" },
         "processor":  { "$ref": "#/definitions/ProcessorType" },
@@ -309,6 +313,7 @@
       "properties": {
         "type": {
           "type": "string",
+          "pattern": "^([^.+]+)$",
           "description": "Name of build configuration type. (Debug | Test | Release)"
         },
         "processor":  { "$ref": "#/definitions/ProcessorType" },
@@ -339,6 +344,7 @@
       "properties": {
         "project": {
           "type": "string",
+          "pattern": "^.*[/]([^.+]*\\.cproject\\.(yml|yaml))$|^([^.+]+)\\.cproject\\.(yml|yaml)$",
           "description": "Path to the valid project file"
         },
         "for-context":     { "$ref": "#/definitions/ForContext" },
