@@ -3269,3 +3269,64 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_RteDir) {
   ProjMgrTestEnv::CompareFile(testoutput_folder + "/rtedir.Release+CM0.cbuild.yml",
     testinput_folder + "/TestSolution/ref/rtedir.Release+CM0.cbuild.yml");
 }
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_Invalid_Target_Build_Type) {
+  const char* invalid_target_types_Ex1 = "\
+solution:\n\
+  target-types:\n\
+    - type: CM0+Test\n\
+    - type: CM3.Test\n\
+  build-types:\n\
+    - type: Debug\n\
+    - type: Release\n\
+  projects:\n\
+    - project: ./TestProject2/test2.cproject.yml\n\
+    - project: ./TestProject1/test1.cproject.yml\n\
+";
+
+  const char* invalid_build_types_Ex2 = "\
+solution:\n\
+  target-types:\n\
+    - type: CM0\n\
+    - type: CM3\n\
+  build-types:\n\
+    - type: Debug.Test\n\
+    - type: Release+Test\n\
+  projects:\n\
+    - project: ./TestProject2/test2.cproject.yml\n\
+    - project: ./TestProject1/test1.cproject.yml\n\
+";
+
+  auto writeFile = [](const string& filePath, const char* data) {
+    ofstream fileStream(filePath);
+    fileStream << data;
+    fileStream << endl;
+    fileStream << flush;
+    fileStream.close();
+  };
+
+  vector<std::tuple<const char*, int, string>> vecTestData = {
+    // data, expectedRetVal, errorMsg
+    {invalid_target_types_Ex1,  1, "invalid target type(s)"},
+    {invalid_build_types_Ex2, 1, "invalid build type(s)"},
+  };
+
+  const string& csolutionFile = testinput_folder +
+    "/TestSolution/test_invalid_target_type.csolution.yml";
+
+  for (auto [data, expectRetVal, expectedErrMsg] : vecTestData) {
+    writeFile(csolutionFile, data);
+
+    StdStreamRedirect streamRedirect;
+    char* argv[5];
+    argv[1] = (char*)"list";
+    argv[2] = (char*)"contexts";
+    argv[3] = (char*)csolutionFile.c_str();
+    argv[4] = (char*)"-n";
+
+    EXPECT_EQ(expectRetVal, RunProjMgr(5, argv, 0));
+    auto errStr = streamRedirect.GetErrorString();
+    EXPECT_NE(string::npos, errStr.find(expectedErrMsg));
+  }
+}
+

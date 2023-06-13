@@ -536,17 +536,30 @@ bool ProjMgrYamlParser::ParseContexts(const YAML::Node& parent, CsolutionItem& c
 }
 
 bool ProjMgrYamlParser::ParseBuildTypes(const YAML::Node& parent, map<string, BuildType>& buildTypes) {
+  std::vector<std::string> invalidBuildTypes;
   if (parent[YAML_BUILDTYPES].IsDefined()) {
     const YAML::Node& buildTypesNode = parent[YAML_BUILDTYPES];
     for (const auto& typeEntry : buildTypesNode) {
       string typeItem;
       BuildType build;
       ParseString(typeEntry, YAML_TYPE, typeItem);
+      if (RteUtils::CountDelimiters(typeItem, ".") > 0 || RteUtils::CountDelimiters(typeItem, "+") > 0) {
+        invalidBuildTypes.push_back(typeItem);
+        continue;
+      }
       if (!ParseBuildType(typeEntry, build)) {
         return false;
       }
       buildTypes[typeItem] = build;
     }
+  }
+  if (invalidBuildTypes.size() > 0) {
+    string errMsg = "invalid build type(s):\n";
+    for (const auto& buildType : invalidBuildTypes) {
+      errMsg += "  " + buildType + "\n";
+    }
+    ProjMgrLogger::Error(errMsg);
+    return false;
   }
   return true;
 }
@@ -608,13 +621,26 @@ bool ProjMgrYamlParser::ParseLinker(const YAML::Node& parent, vector<LinkerItem>
 }
 
 bool ProjMgrYamlParser::ParseTargetTypes(const YAML::Node& parent, map<string, TargetType>& targetTypes) {
+  std::vector<std::string> invalidTargetTypes;
   const YAML::Node& targetTypesNode = parent[YAML_TARGETTYPES];
   for (const auto& typeEntry : targetTypesNode) {
     string typeItem;
     TargetType target;
     ParseString(typeEntry, YAML_TYPE, typeItem);
+    if (RteUtils::CountDelimiters(typeItem, ".") > 0 || RteUtils::CountDelimiters(typeItem, "+") > 0) {
+      invalidTargetTypes.push_back(typeItem);
+      continue;
+    }
     ParseTargetType(typeEntry, target);
     targetTypes[typeItem] = target;
+  }
+  if (invalidTargetTypes.size() > 0) {
+    string errMsg = "invalid target type(s):\n";
+    for (const auto& targetType : invalidTargetTypes) {
+      errMsg += "  " + targetType + "\n";
+    }
+    ProjMgrLogger::Error(errMsg);
+    return false;
   }
   return (targetTypes.size() == 0 ? false : true);
 }
