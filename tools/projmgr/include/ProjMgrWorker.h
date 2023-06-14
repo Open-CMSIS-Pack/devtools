@@ -163,18 +163,18 @@ struct GpdscItem {
  *        final context controls after processing,
  *        csolution controls,
  *        cproject controls,
- *        project setup controls,
  *        target-type controls,
  *        build-type controls,
- *        layers translation controls,
+ *        list of project setup controls,
+ *        map of layers translation controls,
 */
 struct TranslationControl {
   BuildType processed;
   BuildType csolution;
   BuildType cproject;
-  BuildType setup;
   BuildType target;
   BuildType build;
+  std::vector<BuildType> setups;
   std::map<std::string, BuildType> clayers;
 };
 

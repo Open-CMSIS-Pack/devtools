@@ -841,6 +841,7 @@
         "for-compiler":    { "$ref": "#/definitions/CompilersType" },
         "optimize":        { "$ref": "#/definitions/OptimizeType" },
         "debug":           { "$ref": "#/definitions/DebugType" },
+        "warnings":        { "$ref": "#/definitions/WarningsType" },
         "define":          { "$ref": "#/definitions/DefinesType" },
         "undefine":        { "$ref": "#/definitions/UndefinesType" },
         "add-path":        { "$ref": "#/definitions/AddpathsType" },
