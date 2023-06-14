@@ -1815,7 +1815,6 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
    &context.compiler,
    {
      &context.controls.cproject.compiler,
-     &context.controls.setup.compiler,
      &context.controls.csolution.compiler,
      &context.controls.target.compiler,
      &context.controls.build.compiler,
@@ -1875,12 +1874,14 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
     &context.controls.processed.optimize,
     {
       &context.controls.cproject.optimize,
-      &context.controls.setup.optimize,
       &context.controls.csolution.optimize,
       &context.controls.target.optimize,
       &context.controls.build.optimize,
     },
   };
+  for (auto& setup : context.controls.setups) {
+    optimize.elements.push_back(&setup.optimize);
+  }
   for (auto& [_, clayer] : context.controls.clayers) {
     optimize.elements.push_back(&clayer.optimize);
   }
@@ -1893,12 +1894,14 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
     &context.controls.processed.debug,
     {
       &context.controls.cproject.debug,
-      &context.controls.setup.debug,
       &context.controls.csolution.debug,
       &context.controls.target.debug,
       &context.controls.build.debug,
     },
   };
+  for (auto& setup : context.controls.setups) {
+    debug.elements.push_back(&setup.debug);
+  }
   for (auto& [_, clayer] : context.controls.clayers) {
     debug.elements.push_back(&clayer.debug);
   }
@@ -1911,12 +1914,14 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
     &context.controls.processed.warnings,
     {
       &context.controls.cproject.warnings,
-      &context.controls.setup.warnings,
       &context.controls.csolution.warnings,
       &context.controls.target.warnings,
       &context.controls.build.warnings,
     },
   };
+  for (auto& setup : context.controls.setups) {
+    warnings.elements.push_back(&setup.warnings);
+  }
   for (auto& [_, clayer] : context.controls.clayers) {
     warnings.elements.push_back(&clayer.warnings);
   }
@@ -1927,11 +1932,13 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
   // Misc
   vector<vector<MiscItem>*> miscVec = {
     &context.controls.cproject.misc,
-    &context.controls.setup.misc,
     &context.controls.csolution.misc,
     &context.controls.build.misc,
     &context.controls.target.misc,
   };
+  for (auto& setup : context.controls.setups) {
+    miscVec.push_back(&setup.misc);
+  }
   for (auto& [_, clayer] : context.controls.clayers) {
     miscVec.push_back(&clayer.misc);
   }
@@ -1945,15 +1952,20 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
   for (auto& [_, clayer] : context.controls.clayers) {
     AddStringItemsUniquely(projectDefines, clayer.defines);
   }
+  for (auto& setup : context.controls.setups) {
+    AddStringItemsUniquely(projectDefines, setup.defines);
+  }
   AddStringItemsUniquely(projectUndefines, context.controls.cproject.undefines);
   for (auto& [_, clayer] : context.controls.clayers) {
     AddStringItemsUniquely(projectUndefines, clayer.undefines);
+  }
+  for (auto& setup : context.controls.setups) {
+    AddStringItemsUniquely(projectUndefines, setup.undefines);
   }
   StringVectorCollection defines = {
     &context.controls.processed.defines,
     {
       {&projectDefines, &projectUndefines},
-      {&context.controls.setup.defines, &context.controls.setup.undefines},
       {&context.controls.csolution.defines, &context.controls.csolution.undefines},
       {&context.controls.target.defines, &context.controls.target.undefines},
       {&context.controls.build.defines, &context.controls.build.undefines},
@@ -1967,15 +1979,20 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
   for (auto& [_, clayer] : context.controls.clayers) {
     AddStringItemsUniquely(projectAddPaths, clayer.addpaths);
   }
+  for (auto& setup : context.controls.setups) {
+    AddStringItemsUniquely(projectAddPaths, setup.addpaths);
+  }
   AddStringItemsUniquely(projectDelPaths, context.controls.cproject.delpaths);
   for (auto& [_, clayer] : context.controls.clayers) {
     AddStringItemsUniquely(projectDelPaths, clayer.delpaths);
+  }
+  for (auto& setup : context.controls.setups) {
+    AddStringItemsUniquely(projectDelPaths, setup.delpaths);
   }
   StringVectorCollection includes = {
     &context.controls.processed.addpaths,
     {
       {&projectAddPaths, &projectDelPaths},
-      {&context.controls.setup.addpaths, &context.controls.setup.delpaths},
       {&context.controls.csolution.addpaths, &context.controls.csolution.delpaths},
       {&context.controls.target.addpaths, &context.controls.target.delpaths},
       {&context.controls.build.addpaths, &context.controls.build.delpaths},
@@ -1991,12 +2008,14 @@ bool ProjMgrWorker::ProcessProcessorOptions(ContextItem& context) {
     &context.controls.processed.processor.trustzone,
     {
       &context.controls.cproject.processor.trustzone,
-      &context.controls.setup.processor.trustzone,
       &context.controls.csolution.processor.trustzone,
       &context.controls.target.processor.trustzone,
       &context.controls.build.processor.trustzone,
     },
   };
+  for (auto& setup : context.controls.setups) {
+    trustzone.elements.push_back(&setup.processor.trustzone);
+  }
   for (auto& [_, clayer] : context.controls.clayers) {
     trustzone.elements.push_back(&clayer.processor.trustzone);
   }
@@ -2008,12 +2027,14 @@ bool ProjMgrWorker::ProcessProcessorOptions(ContextItem& context) {
     &context.controls.processed.processor.fpu,
     {
       &context.controls.cproject.processor.fpu,
-      &context.controls.setup.processor.fpu,
       &context.controls.csolution.processor.fpu,
       &context.controls.target.processor.fpu,
       &context.controls.build.processor.fpu,
     },
   };
+  for (auto& setup : context.controls.setups) {
+    fpu.elements.push_back(&setup.processor.fpu);
+  }
   for (auto& [_, clayer] : context.controls.clayers) {
     fpu.elements.push_back(&clayer.processor.fpu);
   }
@@ -2025,12 +2046,14 @@ bool ProjMgrWorker::ProcessProcessorOptions(ContextItem& context) {
     &context.controls.processed.processor.endian,
     {
       &context.controls.cproject.processor.endian,
-      &context.controls.setup.processor.endian,
       &context.controls.csolution.processor.endian,
       &context.controls.target.processor.endian,
       &context.controls.build.processor.endian,
     },
   };
+  for (auto& setup : context.controls.setups) {
+    endian.elements.push_back(&setup.processor.endian);
+  }
   for (auto& [_, clayer] : context.controls.clayers) {
     endian.elements.push_back(&clayer.processor.endian);
   }
@@ -2125,11 +2148,17 @@ bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem& context) {
 
   // project, solution, target-type and build-type translation controls
   if (!ProcessSequencesRelatives(context, context.controls.cproject, context.cproject->directory) ||
-      !ProcessSequencesRelatives(context, context.controls.setup, context.cproject->directory) ||
       !ProcessSequencesRelatives(context, context.controls.csolution, context.csolution->directory) ||
       !ProcessSequencesRelatives(context, context.controls.target, context.csolution->directory) ||
       !ProcessSequencesRelatives(context, context.controls.build, context.csolution->directory)) {
     return false;
+  }
+
+  // setups translation controls
+  for (auto& setup : context.controls.setups) {
+    if (!ProcessSequencesRelatives(context, setup, context.cproject->directory)) {
+      return false;
+    }
   }
 
   // components translation controls
@@ -2934,8 +2963,7 @@ bool ProjMgrWorker::GetTypeContent(ContextItem& context) {
 bool ProjMgrWorker::GetProjectSetup(ContextItem& context) {
   for (const auto& setup : context.cproject->setups) {
     if (CheckContextFilters(setup.type, context) && CheckCompiler(setup.forCompiler, context.compiler)) {
-      context.controls.setup = setup.build;
-      break;
+      context.controls.setups.push_back(setup.build);
     }
   }
   return true;
