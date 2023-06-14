@@ -207,6 +207,9 @@ void ProjMgrGenerator::GenerateCprjComponents(XMLTreeElement* element, const Con
   static constexpr const char* COMPONENT_ATTRIBUTES[] = { "Cbundle", "Cclass", "Cgroup", "Csub", "Cvariant", "Cvendor"};
   static constexpr const char* versionAttribute = "Cversion";
   for (const auto& [componentId, component] : context.components) {
+    if (component.instance->IsGenerated()) {
+      continue;
+    }
     XMLTreeElement* componentElement = element->CreateElement("component");
     if (componentElement) {
       for (const auto& name : COMPONENT_ATTRIBUTES) {

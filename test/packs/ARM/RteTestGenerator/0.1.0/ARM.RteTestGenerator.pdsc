@@ -157,6 +157,20 @@
         <file category="genAsset" name="Templates/RteTest.gpdsc.template" version ="1.0.0"/>
       </files>
     </component>
+    <bundle Cbundle="RteTestBundle" Cclass="Device" Cversion="1.0.0">
+      <component generator="RteTestGeneratorIdentifier" Cgroup="RteTest Generated Component" Cversion="1.1.0">
+        <description>Configuration via RteTest script</description>
+        <RTE_Components_h>
+          #define RTE_TEST_GENERATOR_GEN_FILES
+        </RTE_Components_h>
+        <files>
+          <file category="genSource" name="Templates/RteTestGen.c.template" version ="1.0.0"/>
+        </files>
+      </component>
+      <component Cgroup="Startup" Cversion="1.1.0">
+        <description>Configuration via RteTest script</description>
+      </component>
+    </bundle>
 
   </components>
 

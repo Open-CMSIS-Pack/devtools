@@ -1698,6 +1698,22 @@ bool ProjMgrWorker::ProcessGpdsc(ContextItem& context) {
       }
       info->SetGpdscPack(gpdscPack);
     }
+    // insert gpdsc components
+    for (const auto& gpdscComponent : gpdscPack->GetComponents()->GetChildren()) {
+      list<RteItem*> components;
+      if (gpdscComponent->GetTag() == "component") {
+        components.push_back(gpdscComponent);
+      } else if (gpdscComponent->GetTag() == "bundle") {
+        components = gpdscComponent->GetChildren();
+      }
+      for (const auto component : components) {
+        const auto& componentId = ProjMgrUtils::GetComponentID(component);
+        const auto& item = context.components[context.gpdscs.at(gpdscFile).component].item;
+        RteComponentInstance* componentInstance = new RteComponentInstance(component);
+        componentInstance->InitInstance(component);
+        context.components.insert({ componentId, { componentInstance, item, component->GetGeneratorName()}});
+      }
+    }
   }
   if (!gpdscInfos.empty()) {
     // Update target with gpdsc model
