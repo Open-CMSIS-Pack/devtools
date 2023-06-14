@@ -18,6 +18,7 @@ set_property(TARGET CbuildIntegTests PROPERTY
 add_definitions(-DTEST_SRC_FOLDER="${CMAKE_CURRENT_SOURCE_DIR}/../")
 add_definitions(-DTEST_BUILD_FOLDER="${CMAKE_CURRENT_BINARY_DIR}/")
 add_definitions(-DCBUILDGEN_BIN="$<TARGET_FILE:cbuildgen>")
+add_definitions(-DCMAKE_SOURCE_DIR="${CMAKE_SOURCE_DIR}/")
 
 add_dependencies(CbuildIntegTests cbuildgen)
 target_link_libraries(CbuildIntegTests cbuild cbuildgenlib gtest_main)

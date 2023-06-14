@@ -711,6 +711,9 @@ bool CbuildModel::EvalGeneratedSourceFiles() {
 
       // gpdsc <project_files> section
       const RteFileContainer* genFiles = gen->GetProjectFiles();
+      if (!genFiles) {
+        continue;
+      }
       string grpName = genFiles->GetHierarchicalGroupName();
       if (grpName.empty()) {
         grpName = "Common Sources";

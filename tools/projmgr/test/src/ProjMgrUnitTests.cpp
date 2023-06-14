@@ -1460,7 +1460,7 @@ TEST_F(ProjMgrUnitTests, ListComponents) {
   };
   vector<string> components;
   EXPECT_TRUE(m_worker.ParseContextSelection(""));
-  EXPECT_TRUE(m_worker.ListComponents(components, "Startup"));
+  EXPECT_TRUE(m_worker.ListComponents(components, "Device:Startup"));
   EXPECT_EQ(expected, set<string>(components.begin(), components.end()));
 }
 
@@ -1474,7 +1474,7 @@ TEST_F(ProjMgrUnitTests, ListComponentsDeviceFiltered) {
   EXPECT_TRUE(m_parser.ParseCproject(filenameInput, false, true));
   EXPECT_TRUE(m_worker.AddContexts(m_parser, descriptor, filenameInput));
   EXPECT_TRUE(m_worker.ParseContextSelection("test"));
-  EXPECT_TRUE(m_worker.ListComponents(components, "Startup"));
+  EXPECT_TRUE(m_worker.ListComponents(components, "Device:Startup"));
   EXPECT_EQ(expected, set<string>(components.begin(), components.end()));
 }
 
@@ -2168,6 +2168,25 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_MultipleGenerators) {
     testinput_folder + "/TestGenerator/ref/test-gpdsc-multiple-generators.Debug+CM0.cbuild.yml");
 }
 
+TEST_F(ProjMgrUnitTests, RunProjMgr_MultipleGeneratedComponents) {
+  char* argv[7];
+  // convert -s solution.yml
+  const string& csolution = testinput_folder + "/TestGenerator/multiple-components.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"-s";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+
+  // Check generated cbuild YML
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/multiple-components.Debug+CM0.cbuild.yml",
+    testinput_folder + "/TestGenerator/ref/multiple-components.Debug+CM0.cbuild.yml");
+  // Check generated CPRJ
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/multiple-components.Debug+CM0.cprj",
+    testinput_folder + "/TestGenerator/ref/multiple-components.Debug+CM0.cprj");
+}
+
 TEST_F(ProjMgrUnitTests, ExecuteGenerator) {
   m_csolutionFile = testinput_folder + "/TestGenerator/test-gpdsc.csolution.yml";
   error_code ec;
@@ -2617,6 +2636,8 @@ TEST_F(ProjMgrUnitTests, ListComponents_MultiplePackSelection) {
     "ARM::Device:Startup&RteTest Startup@2.0.3 (ARM::RteTest_DFP@0.2.0)"
   };
   set<string> expected_Gen = {
+    "ARM::Device&RteTestBundle:RteTest Generated Component@1.1.0 (ARM::RteTestGenerator@0.1.0)",
+    "ARM::Device&RteTestBundle:Startup@1.1.0 (ARM::RteTestGenerator@0.1.0)",
     "ARM::Device:RteTest Generated Component:RteTest@1.1.0 (ARM::RteTestGenerator@0.1.0)",
     "ARM::Device:RteTest Generated Component:RteTestGenFiles@1.1.0 (ARM::RteTestGenerator@0.1.0)",
     "ARM::Device:RteTest Generated Component:RteTestSimple@1.1.0 (ARM::RteTestGenerator@0.1.0)",
@@ -2630,7 +2651,7 @@ TEST_F(ProjMgrUnitTests, ListComponents_MultiplePackSelection) {
   EXPECT_TRUE(m_worker.InitializeModel());
   EXPECT_TRUE(m_worker.LoadAllRelevantPacks());
   EXPECT_TRUE(m_worker.ParseContextSelection("pack_contexts+CM0"));
-  EXPECT_TRUE(m_worker.ListComponents(components, "Startup"));
+  EXPECT_TRUE(m_worker.ListComponents(components, "Device:Startup"));
   EXPECT_EQ(expected_CM0, set<string>(components.begin(), components.end()));
   components.clear();
   EXPECT_TRUE(m_worker.ParseContextSelection("pack_contexts+Gen"));
