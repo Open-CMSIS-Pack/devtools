@@ -49,8 +49,10 @@ bool CbuildProject::CreateTarget(const string& targetName, const CprjFile *cprj,
 
   // update target with attributes
   RteItem* components = cprj->GetItemByTag("components");
-  if (!UpdateTarget(components, attributes, targetName)) {
-    return false;
+  if (components) {
+    if (!UpdateTarget(components, attributes, targetName)) {
+      return false;
+    }
   }
 
   // read gpdsc
