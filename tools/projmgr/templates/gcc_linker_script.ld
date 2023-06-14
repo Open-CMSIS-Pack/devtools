@@ -256,7 +256,7 @@ SECTIONS
   } > RAM1 AT > RAM1
 */
 
-  .heap (COPY) :
+  .heap (NOLOAD) :
   {
     . = ALIGN(8);
     __end__ = .;
@@ -266,7 +266,7 @@ SECTIONS
     __HeapLimit = .;
   } > RAM0
 
-  .stack (ORIGIN(RAM0) + LENGTH(RAM0) - __STACK_SIZE - __STACKSEAL_SIZE) (COPY) :
+  .stack (ORIGIN(RAM0) + LENGTH(RAM0) - __STACK_SIZE - __STACKSEAL_SIZE) (NOLOAD) :
   {
     . = ALIGN(8);
     __StackLimit = .;
@@ -277,7 +277,7 @@ SECTIONS
   PROVIDE(__stack = __StackTop);
 
 #if __STACKSEAL_SIZE > 0
-  .stackseal (ORIGIN(RAM0) + LENGTH(RAM0) - __STACKSEAL_SIZE) (COPY) :
+  .stackseal (ORIGIN(RAM0) + LENGTH(RAM0) - __STACKSEAL_SIZE) (NOLOAD) :
   {
     . = ALIGN(8);
     __StackSeal = .;
