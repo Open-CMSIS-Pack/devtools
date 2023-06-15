@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schemas/csolution.schema.json
+
+solution:
+
+  build-types:
+    - type: Debug_AC6
+      compiler: AC6
+
+  target-types:
+    - type: RteTest_ARMCM3
+      device: RteTest_ARMCM3
+
+  projects:
+    - project: filename.cproject.yml

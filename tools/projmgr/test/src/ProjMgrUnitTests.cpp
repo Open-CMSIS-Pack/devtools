@@ -3397,3 +3397,22 @@ TEST_F(ProjMgrUnitTests, RunProjMgrCovertMultipleContext) {
   EXPECT_EQ(string::npos, outStr.find("test2.Debug+CM3.cprj"));
 }
 
+/*
+* This test case runs the ProjMgrYamlEmitter with a solution
+* that references a project using different file name case.
+*/
+TEST_F(ProjMgrUnitTests, RunProjMgr_YamlEmitterFileCaseIssue) {
+  char* argv[7];
+  const string& csolution = testinput_folder + "/TestSolution/FilenameCase/filenbame.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[5] = (char*)"-o";
+  argv[6] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(0, RunProjMgr(7, argv, 0));
+
+  // Check generated cbuild YMLs
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/linker.PriorityRegions+RteTest_ARMCM3.cbuild.yml",
+    testinput_folder + "/TestSolution/LinkerOptions/ref/linker.PriorityRegions+RteTest_ARMCM3.cbuild.yml");
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/linker.PriorityDefines+RteTest_ARMCM3.cbuild.yml",
+    testinput_folder + "/TestSolution/LinkerOptions/ref/linker.PriorityDefines+RteTest_ARMCM3.cbuild.yml");
+}
