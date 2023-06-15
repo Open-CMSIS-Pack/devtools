@@ -369,50 +369,54 @@ void ProjMgrUtils::SetOutputType(const string typeString, OutputTypes& type) {
   }
 }
 
-bool ProjMgrUtils::GetSelectedContexts(list<string>& selectedContexts,
-   const vector<string>& allContexts, const string& contextFilter)
+vector<string> ProjMgrUtils::GetSelectedContexts(list<string>& selectedContexts,
+   const vector<string>& allContexts, const vector<string>& contextFilters)
 {
+  vector<string> errFilters;
   selectedContexts.clear();
-  if (contextFilter.empty()) {
+  if (contextFilters.empty()) {
     if (allContexts.empty()) {
       // default context
-      selectedContexts.push_back("");
+      ProjMgrUtils::PushBackUniquely(selectedContexts, "");
     }
     else {
       // select all contexts
       for (const auto& context : allContexts) {
-        selectedContexts.push_back(context);
+        ProjMgrUtils::PushBackUniquely(selectedContexts, context);
       }
     }
   }
   else {
-    bool match = false;
     string contextPattern;
     ContextName inputContext;
-    if (!ProjMgrUtils::ParseContextEntry(contextFilter, inputContext)) {
-      return false;
-    }
-    for (const auto& context : allContexts) {
-      if (context == contextFilter) {
-        selectedContexts.push_back(context);
-        match = true;
+    for (const auto& contextFilter : contextFilters) {
+      bool match = false;
+      if (!ProjMgrUtils::ParseContextEntry(contextFilter, inputContext)) {
+        errFilters.push_back(contextFilter);
         continue;
       }
-      ContextName contextItem;
-      ProjMgrUtils::ParseContextEntry(context, contextItem);
-      contextPattern = (inputContext.project != RteUtils::EMPTY_STRING ? inputContext.project : "*");
-      if (contextItem.build != RteUtils::EMPTY_STRING) {
-        contextPattern += "." + (inputContext.build != RteUtils::EMPTY_STRING ? inputContext.build : "*");
+      for (const auto& context : allContexts) {
+        if (context == contextFilter) {
+          ProjMgrUtils::PushBackUniquely(selectedContexts, context);
+          match = true;
+          continue;
+        }
+        ContextName contextItem;
+        ProjMgrUtils::ParseContextEntry(context, contextItem);
+        contextPattern = (inputContext.project != RteUtils::EMPTY_STRING ? inputContext.project : "*");
+        if (contextItem.build != RteUtils::EMPTY_STRING) {
+          contextPattern += "." + (inputContext.build != RteUtils::EMPTY_STRING ? inputContext.build : "*");
+        }
+        contextPattern += "+" + (inputContext.target != RteUtils::EMPTY_STRING ? inputContext.target : "*");
+        if (WildCards::Match(context, contextPattern)) {
+          ProjMgrUtils::PushBackUniquely(selectedContexts, context);
+          match = true;
+        }
       }
-      contextPattern += "+" + (inputContext.target != RteUtils::EMPTY_STRING ? inputContext.target : "*");
-      if (WildCards::Match(context, contextPattern)) {
-        selectedContexts.push_back(context);
-        match = true;
+      if (!match) {
+        errFilters.push_back(contextFilter);
       }
-    }
-    if (!match) {
-      return false;
     }
   }
-  return true;
+  return errFilters;
 }

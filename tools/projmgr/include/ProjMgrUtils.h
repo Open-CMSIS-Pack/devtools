@@ -319,12 +319,12 @@ public:
    * @param selectedContexts list of matched contexts
    * @param allAvailableContexts list of all available contexts
    * @param contextFilter filter criteria
-   * @return true if context match found, false otherwise
+   * @return list of filters for which match was not found, else empty list
   */
-  static bool GetSelectedContexts(
+  static std::vector<std::string> GetSelectedContexts(
     std::list<std::string>& selectedContexts,
     const std::vector<std::string>& allAvailableContexts,
-    const std::string& contextFilter);
+    const std::vector<std::string>& contextFilter);
 protected:
   static std::string ConstructID(const std::vector<std::pair<const char*, const std::string&>>& elements);
 };

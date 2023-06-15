@@ -117,7 +117,7 @@ int ProjMgr::RunProjMgr(int argc, char **argv, char** envp) {
   cxxopts::ParseResult parseResult;
 
   cxxopts::Option solution("s,solution", "Input csolution.yml file", cxxopts::value<string>());
-  cxxopts::Option context("c,context", "Input context name [<cproject>][.<build-type>][+<target-type>]", cxxopts::value<string>());
+  cxxopts::Option context("c,context", "Input context name [<cproject>][.<build-type>][+<target-type>]", cxxopts::value<std::vector<std::string>>());
   cxxopts::Option filter("f,filter", "Filter words", cxxopts::value<string>());
   cxxopts::Option help("h,help", "Print usage");
   cxxopts::Option generator("g,generator", "Code generator identifier", cxxopts::value<string>());
@@ -207,7 +207,7 @@ int ProjMgr::RunProjMgr(int argc, char **argv, char** envp) {
       manager.m_rootDir = fs::path(manager.m_csolutionFile).parent_path().generic_string();
     }
     if (parseResult.count("context")) {
-      manager.m_context = parseResult["context"].as<string>();
+      manager.m_context = parseResult["context"].as<vector<string>>();
     }
     if (parseResult.count("filter")) {
       manager.m_filter = parseResult["filter"].as<string>();
