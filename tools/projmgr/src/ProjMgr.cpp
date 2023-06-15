@@ -380,6 +380,10 @@ bool ProjMgr::PopulateContexts(void) {
       if (cprojectFile.empty()) {
         ProjMgrLogger::Error(cproject, "cproject file was not found");
         return false;
+      } else if (fs::path(cprojectFile).filename().string() != fs::path(cproject).filename().string()) {
+        ProjMgrLogger::Error(cproject, "cproject filename has case inconsistency");
+        ProjMgrLogger::Info(fs::path(cprojectFile).filename().string(), "should be used instead");
+        return false;
       }
       if (!m_parser.ParseCproject(cprojectFile, m_checkSchema)) {
         return false;

@@ -3402,15 +3402,17 @@ TEST_F(ProjMgrUnitTests, RunProjMgrCovertMultipleContext) {
 * that references a project using different file name case.
 */
 TEST_F(ProjMgrUnitTests, RunProjMgr_YamlEmitterFileCaseIssue) {
-  char* argv[5];
+  StdStreamRedirect streamRedirect;
   const string& csolution = testinput_folder + "/TestSolution/FilenameCase/filename.csolution.yml";
+  const string& expectedErrMsg = "cproject filename has case inconsistency";
+
+  char* argv[5];
   argv[1] = (char*)"convert";
   argv[2] = (char*)csolution.c_str();
   argv[3] = (char*)"-o";
   argv[4] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(0, RunProjMgr(5, argv, 0));
 
-  // Check generated cbuild YMLs
-  ProjMgrTestEnv::CompareFile(testoutput_folder + "/Filename.Debug_AC6+RteTest_ARMCM3.cbuild.yml",
-    testinput_folder + "/TestSolution/FilenameCase/ref/Filename.Debug_AC6+RteTest_ARMCM3.cbuild.yml");
+  EXPECT_EQ(1, RunProjMgr(5, argv, 0));
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find(expectedErrMsg));
 }
