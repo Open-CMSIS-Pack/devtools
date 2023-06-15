@@ -30,6 +30,7 @@ protected:
   ProjMgrUnitTests() {}
   virtual ~ProjMgrUnitTests() {}
 
+  void SetUp() { m_context.clear(); };
   void GetFilesInTree(const string& dir, set<string>& files);
   void CompareFileTree(const string& dir1, const string& dir2);
 
@@ -118,7 +119,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks) {
     {{"TestSolution/test.csolution_unknown_file.yml", "test1.Debug+CM0"},
       "error csolution: csolution file was not found"},
     {{"TestSolution/test.csolution.yml", "invalid.context"},
-      "error csolution: context 'invalid.context' was not found"}
+      "following context(s) was not found:\n  invalid.context"}
   };
   // negative tests
   for (const auto& [input, expected] : testFalseInputs) {
@@ -1389,7 +1390,7 @@ TEST_F(ProjMgrUnitTests, ListPacks) {
     "ARM::RteTest_DFP@0.2.0 \\(.*\\)"
   };
   vector<string> packs;
-  EXPECT_TRUE(m_worker.ParseContextSelection(""));
+  EXPECT_TRUE(m_worker.ParseContextSelection({}));
   m_worker.SetLoadPacksPolicy(LoadPacksPolicy::ALL);
   EXPECT_TRUE(m_worker.ListPacks(packs, false, "RteTest"));
   auto packIt = packs.begin();
@@ -1406,7 +1407,7 @@ TEST_F(ProjMgrUnitTests, ListPacksLatest) {
     "ARM::RteTest_DFP@0.2.0 \\(.*\\)"
   };
   vector<string> packs;
-  EXPECT_TRUE(m_worker.ParseContextSelection(""));
+  EXPECT_TRUE(m_worker.ParseContextSelection({}));
   m_worker.SetLoadPacksPolicy(LoadPacksPolicy::LATEST);
   EXPECT_TRUE(m_worker.ListPacks(packs, false, "RteTest"));
   auto packIt = packs.begin();
@@ -1420,7 +1421,7 @@ TEST_F(ProjMgrUnitTests, ListBoards) {
     "Keil::RteTest Dummy board:1.2.3 (ARM::RteTest_DFP@0.2.0)"
   };
   vector<string> devices;
-  EXPECT_TRUE(m_worker.ParseContextSelection(""));
+  EXPECT_TRUE(m_worker.ParseContextSelection({}));
   EXPECT_TRUE(m_worker.ListBoards(devices, "Dummy"));
   EXPECT_EQ(expected, set<string>(devices.begin(), devices.end()));
 }
@@ -1435,7 +1436,7 @@ TEST_F(ProjMgrUnitTests, ListDevices) {
     "ARM::RteTest_ARMCM0_Test (ARM::RteTest_DFP@0.2.0)"
   };
   vector<string> devices;
-  EXPECT_TRUE(m_worker.ParseContextSelection(""));
+  EXPECT_TRUE(m_worker.ParseContextSelection({}));
   EXPECT_TRUE(m_worker.ListDevices(devices, "CM0"));
   EXPECT_EQ(expected, set<string>(devices.begin(), devices.end()));
 }
@@ -1449,7 +1450,7 @@ TEST_F(ProjMgrUnitTests, ListDevicesPackageFiltered) {
   const string& filenameInput = testinput_folder + "/TestProject/test.cproject.yml";
   EXPECT_TRUE(m_parser.ParseCproject(filenameInput, false, true));
   EXPECT_TRUE(m_worker.AddContexts(m_parser, descriptor, filenameInput));
-  EXPECT_TRUE(m_worker.ParseContextSelection("test"));
+  EXPECT_TRUE(m_worker.ParseContextSelection({ "test" }));
   EXPECT_TRUE(m_worker.ListDevices(devices, "CM3"));
   EXPECT_EQ(expected, set<string>(devices.begin(), devices.end()));
 }
@@ -1459,7 +1460,7 @@ TEST_F(ProjMgrUnitTests, ListComponents) {
     "ARM::Device:Startup&RteTest Startup@2.0.3 (ARM::RteTest_DFP@0.2.0)",
   };
   vector<string> components;
-  EXPECT_TRUE(m_worker.ParseContextSelection(""));
+  EXPECT_TRUE(m_worker.ParseContextSelection({}));
   EXPECT_TRUE(m_worker.ListComponents(components, "Device:Startup"));
   EXPECT_EQ(expected, set<string>(components.begin(), components.end()));
 }
@@ -1473,7 +1474,7 @@ TEST_F(ProjMgrUnitTests, ListComponentsDeviceFiltered) {
   const string& filenameInput = testinput_folder + "/TestProject/test.cproject.yml";
   EXPECT_TRUE(m_parser.ParseCproject(filenameInput, false, true));
   EXPECT_TRUE(m_worker.AddContexts(m_parser, descriptor, filenameInput));
-  EXPECT_TRUE(m_worker.ParseContextSelection("test"));
+  EXPECT_TRUE(m_worker.ParseContextSelection({ "test" }));
   EXPECT_TRUE(m_worker.ListComponents(components, "Device:Startup"));
   EXPECT_EQ(expected, set<string>(components.begin(), components.end()));
 }
@@ -1487,7 +1488,7 @@ TEST_F(ProjMgrUnitTests, ListDependencies) {
   const string& filenameInput = testinput_folder + "/TestSolution/TestProject4/test-dependency.cproject.yml";
   EXPECT_TRUE(m_parser.ParseCproject(filenameInput, false, true));
   EXPECT_TRUE(m_worker.AddContexts(m_parser, descriptor, filenameInput));
-  EXPECT_TRUE(m_worker.ParseContextSelection("test-dependency"));
+  EXPECT_TRUE(m_worker.ParseContextSelection({ "test-dependency" }));
   EXPECT_TRUE(m_worker.ListDependencies(dependencies, "CORE"));
   EXPECT_EQ(expected, set<string>(dependencies.begin(), dependencies.end()));
 }
@@ -2129,7 +2130,7 @@ TEST_F(ProjMgrUnitTests, ListGenerators) {
   m_csolutionFile = testinput_folder + "/TestGenerator/test-gpdsc.csolution.yml";
   error_code ec;
   m_rootDir = fs::path(m_csolutionFile).parent_path().generic_string();
-  m_context = "test-gpdsc.Debug+CM0";
+  m_context.push_back("test-gpdsc.Debug+CM0");
   EXPECT_TRUE(PopulateContexts());
   EXPECT_TRUE(m_worker.ParseContextSelection(m_context));
   EXPECT_TRUE(m_worker.ListGenerators(generators));
@@ -2145,7 +2146,7 @@ TEST_F(ProjMgrUnitTests, ListMultipleGenerators) {
   m_csolutionFile = testinput_folder + "/TestGenerator/test-gpdsc-multiple-generators.csolution.yml";
   error_code ec;
   m_rootDir = fs::path(m_csolutionFile).parent_path().generic_string();
-  m_context = "test-gpdsc-multiple-generators.Debug+CM0";
+  m_context.push_back("test-gpdsc-multiple-generators.Debug+CM0");
   EXPECT_TRUE(PopulateContexts());
   EXPECT_TRUE(m_worker.ParseContextSelection(m_context));
   EXPECT_TRUE(m_worker.ListGenerators(generators));
@@ -2191,7 +2192,7 @@ TEST_F(ProjMgrUnitTests, ExecuteGenerator) {
   m_csolutionFile = testinput_folder + "/TestGenerator/test-gpdsc.csolution.yml";
   error_code ec;
   m_rootDir = fs::path(m_csolutionFile).parent_path().generic_string();
-  m_context = "test-gpdsc.Debug+CM0";
+  m_context.push_back("test-gpdsc.Debug+CM0");
   m_codeGenerator = "RteTestGeneratorIdentifier";
   EXPECT_TRUE(PopulateContexts());
   EXPECT_TRUE(m_worker.ParseContextSelection(m_context));
@@ -2208,7 +2209,7 @@ TEST_F(ProjMgrUnitTests, ExecuteGeneratorWithKey) {
   m_csolutionFile = testinput_folder + "/TestGenerator/test-gpdsc_with_key.csolution.yml";
   error_code ec;
   m_rootDir = fs::path(m_csolutionFile).parent_path().generic_string();
-  m_context = "test-gpdsc_with_key.Debug+CM0";
+  m_context.push_back("test-gpdsc_with_key.Debug+CM0");
   m_codeGenerator = "RteTestGeneratorWithKey";
   EXPECT_TRUE(PopulateContexts());
   EXPECT_TRUE(m_worker.ParseContextSelection(m_context));
@@ -2622,11 +2623,11 @@ TEST_F(ProjMgrUnitTests, ListDevices_MultiplePackSelection) {
   EXPECT_TRUE(PopulateContexts());
   EXPECT_TRUE(m_worker.InitializeModel());
   EXPECT_TRUE(m_worker.LoadAllRelevantPacks());
-  EXPECT_TRUE(m_worker.ParseContextSelection("pack_contexts+CM0"));
+  EXPECT_TRUE(m_worker.ParseContextSelection({ "pack_contexts+CM0" }));
   EXPECT_TRUE(m_worker.ListDevices(devices, "CM0"));
   EXPECT_EQ(expected_CM0, set<string>(devices.begin(), devices.end()));
   devices.clear();
-  EXPECT_TRUE(m_worker.ParseContextSelection("pack_contexts+Gen"));
+  EXPECT_TRUE(m_worker.ParseContextSelection({ "pack_contexts+Gen" }));
   EXPECT_TRUE(m_worker.ListDevices(devices, "CM0"));
   EXPECT_EQ(expected_Gen, set<string>(devices.begin(), devices.end()));
 }
@@ -2650,11 +2651,11 @@ TEST_F(ProjMgrUnitTests, ListComponents_MultiplePackSelection) {
   EXPECT_TRUE(PopulateContexts());
   EXPECT_TRUE(m_worker.InitializeModel());
   EXPECT_TRUE(m_worker.LoadAllRelevantPacks());
-  EXPECT_TRUE(m_worker.ParseContextSelection("pack_contexts+CM0"));
+  EXPECT_TRUE(m_worker.ParseContextSelection({ "pack_contexts+CM0" }));
   EXPECT_TRUE(m_worker.ListComponents(components, "Device:Startup"));
   EXPECT_EQ(expected_CM0, set<string>(components.begin(), components.end()));
   components.clear();
-  EXPECT_TRUE(m_worker.ParseContextSelection("pack_contexts+Gen"));
+  EXPECT_TRUE(m_worker.ParseContextSelection({ "pack_contexts+Gen" }));
   EXPECT_TRUE(m_worker.ListComponents(components));
   EXPECT_EQ(expected_Gen, set<string>(components.begin(), components.end()));
 }
@@ -3349,5 +3350,50 @@ solution:\n\
     auto errStr = streamRedirect.GetErrorString();
     EXPECT_NE(string::npos, errStr.find(expectedErrMsg));
   }
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgrInvalidContext) {
+  StdStreamRedirect streamRedirect;
+  char* argv[10];
+
+  // convert --solution solution.yml
+  const string& csolution = testinput_folder + "/TestSolution/test.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  argv[6] = (char*)"-c";
+  argv[7] = (char*)"test2.Debug+CM0";
+  argv[8] = (char*)"-c";
+  argv[9] = (char*)"test3*";
+
+  EXPECT_EQ(1, RunProjMgr(10, argv, 0));
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find("following context(s) was not found:\n  test3*"));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgrCovertMultipleContext) {
+  StdStreamRedirect streamRedirect;
+  char* argv[10];
+
+  // convert --solution solution.yml
+  const string& csolution = testinput_folder + "/TestSolution/test.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  argv[6] = (char*)"-c";
+  argv[7] = (char*)"test2.Debug+CM0";
+  argv[8] = (char*)"-c";
+  argv[9] = (char*)"test1.Release+CM0";
+
+  EXPECT_EQ(0, RunProjMgr(10, argv, 0));
+  auto outStr = streamRedirect.GetOutString();
+  EXPECT_NE(string::npos, outStr.find("test2.Debug+CM0.cprj"));
+  EXPECT_NE(string::npos, outStr.find("test1.Release+CM0.cprj"));
+  EXPECT_EQ(string::npos, outStr.find("test1.Debug+CM0.cprj"));
+  EXPECT_EQ(string::npos, outStr.find("test2.Debug+CM3.cprj"));
 }
 

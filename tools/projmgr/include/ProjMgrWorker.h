@@ -519,7 +519,7 @@ public:
    * @param contexts pattern (wildcards are allowed)
    * @return true if executed successfully
   */
-  bool ParseContextSelection(const std::string& contextSelection);
+  bool ParseContextSelection(const std::vector<std::string>& contextSelection);
 
   /**
    * @brief check if context is selected

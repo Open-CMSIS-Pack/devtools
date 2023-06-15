@@ -3181,11 +3181,16 @@ bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem& context, BuildType& b
   return true;
 }
 
-bool ProjMgrWorker::ParseContextSelection(const string& contextSelection) {
+bool ProjMgrWorker::ParseContextSelection(const vector<string>& contextSelection) {
   vector<string> contexts;
   ListContexts(contexts);
-  if (!ProjMgrUtils::GetSelectedContexts(m_selectedContexts, contexts, contextSelection)) {
-    ProjMgrLogger::Error("context '" + contextSelection + "' was not found");
+  const auto& errContextFilters = ProjMgrUtils::GetSelectedContexts(m_selectedContexts, contexts, contextSelection);
+  if (errContextFilters.size() != 0) {
+    string errMsg = "following context(s) was not found:\n";
+    for (const auto& filter : errContextFilters) {
+      errMsg += "  " + filter + "\n";
+    }
+    ProjMgrLogger::Error(errMsg);
     return false;
   }
   return true;

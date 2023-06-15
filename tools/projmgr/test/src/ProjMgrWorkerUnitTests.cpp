@@ -543,7 +543,7 @@ TEST_F(ProjMgrWorkerUnitTests, LoadFilteredPack_2) {
 
   // get list of available packs
   vector<string> availablePacks;
-  EXPECT_TRUE(ParseContextSelection("Test"));
+  EXPECT_TRUE(ParseContextSelection({ "Test" }));
   EXPECT_TRUE(ListPacks(availablePacks, false));
   ContextItem context;
   EXPECT_TRUE(LoadPacks(context));
@@ -565,7 +565,7 @@ TEST_F(ProjMgrWorkerUnitTests, LoadFilteredPack_4) {
 
   // get list of available packs
   vector<string> availablePacks;
-  EXPECT_TRUE(ParseContextSelection("Test"));
+  EXPECT_TRUE(ParseContextSelection({ "Test" }));
   EXPECT_TRUE(ListPacks(availablePacks, false));
   ContextItem context;
   EXPECT_TRUE(LoadPacks(context));
