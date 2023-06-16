@@ -16,7 +16,7 @@
   </compilers>
 
   <target Bname="RteTest board listing" Brevision="Rev.C" Bvendor="Keil" Bversion="Rev.C" Dfpu="NO_FPU" Dname="RteTest_ARMCM0" Dvendor="ARM:82">
-    <output elf="test1.elf" intdir="tmp/test1/CM0/Release" name="test1" outdir="out/test1/CM0/Release" rtedir="../data/TestSolution/TestProject1/RTE"/>
+    <output elf="test1.elf" intdir="tmp/test1/CM0/Release" name="test1" outdir="out/test1/CM0/Release" rtedir="../data/TestSolution/TestProject1/RTE" type="exe"/>
     <options debug="off" optimize="size"/>
     <ldflags compiler="GCC" file="../data/TestSolution/TestProject1/RTE/Device/RteTest_ARMCM0/gcc_arm.ld"/>
   </target>

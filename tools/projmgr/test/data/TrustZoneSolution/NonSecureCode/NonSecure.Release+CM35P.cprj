@@ -15,7 +15,7 @@
   </compilers>
 
   <target Ddsp="DSP" Dfpu="SP_FPU" Dname="ARMCM35P_DSP_FP_TZ" Dtz="TZ" Dvendor="ARM:82">
-    <output intdir="NonSecure.Release+CM35P_IntDir/" name="NonSecure.Release+CM35P" outdir="NonSecure.Release+CM35P_OutDir/"
+    <output intdir="NonSecure.Release+CM35P_IntDir/" name="NonSecure.Release+CM35P" outdir="NonSecure.Release+CM35P_OutDir/" type="exe"/>
     <cflags add="-fshort-enums -fshort-wchar -O3" compiler="AC6"/>
     <ldflags compiler="AC6" file="RTE/Device/ARMCM35P_DSP_FP_TZ/ARMCM35P_ac6.sct"/>
     <includes>../SecureCode/Secure.Release+CM35P_OutDir</includes>

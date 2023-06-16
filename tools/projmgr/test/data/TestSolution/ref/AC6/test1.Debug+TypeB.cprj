@@ -15,7 +15,7 @@
   </compilers>
 
   <target Dfpu="NO_FPU" Dname="RteTest_ARMCM0" Dvendor="ARM:82">
-    <output elf="test1.axf" intdir="../test1/Debug/TypeB" name="test1" outdir="../test1/Debug" rtedir="../TestProject1/RTE"/>
+    <output elf="test1.axf" intdir="../test1/Debug/TypeB" name="test1" outdir="../test1/Debug" rtedir="../TestProject1/RTE" type="exe"/>
     <ldflags compiler="AC6" file="../TestProject1/RTE/Device/RteTest_ARMCM0/ARMCM0_ac6.sct"/>
   </target>
 

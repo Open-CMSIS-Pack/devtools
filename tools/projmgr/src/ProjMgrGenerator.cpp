@@ -194,6 +194,7 @@ void ProjMgrGenerator::GenerateCprjTarget(XMLTreeElement* element, const Context
         targetOutputElement->AddAttribute(type, file, false);
       }
     }
+    targetOutputElement->AddAttribute("type", types.lib.on ? "lib" : "exe");
   }
 
   GenerateCprjOptions(element, context.controls.processed);

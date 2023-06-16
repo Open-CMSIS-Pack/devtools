@@ -15,7 +15,7 @@
   </compilers>
 
   <target Dfpu="NO_FPU" Dname="RteTest_ARMCM3" Dvendor="ARM:82">
-    <output elf="variables.axf" intdir="tmp/variables/TargetType2/BuildType1" name="variables" outdir="out/variables/TargetType2/BuildType1" rtedir="../data/TestLayers/RTE"/>
+    <output elf="variables.axf" intdir="tmp/variables/TargetType2/BuildType1" name="variables" outdir="out/variables/TargetType2/BuildType1" rtedir="../data/TestLayers/RTE" type="exe"/>
     <ldflags compiler="AC6" file="../data/TestLayers/variables/RTE/Device/RteTest_ARMCM3/ARMCM3_ac6.sct"/>
     <defines>App-Layer;Build1-Layer;Target2-Layer</defines>
   </target>

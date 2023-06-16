@@ -15,7 +15,7 @@
   </compilers>
 
   <target Dfpu="NO_FPU" Dname="RteTest_ARMCM0" Dvendor="ARM:82">
-    <output elf="project.axf" intdir="tmp/project/TEST_TARGET/Debug" name="project" outdir="out/project/TEST_TARGET/Debug" rtedir="../../data/TestDefault/RTE"/>
+    <output elf="project.axf" intdir="tmp/project/TEST_TARGET/Debug" name="project" outdir="out/project/TEST_TARGET/Debug" rtedir="../../data/TestDefault/RTE" type="exe"/>
     <cflags add="solutionMiscC defaultMiscC" compiler="AC6"/>
     <ldflags compiler="AC6" file="../../data/TestToolchains/ac6_linker_script.sct" regions="../../data/TestDefault/RTE/Device/RteTest_ARMCM0/regions_RteTest_ARMCM0.h"/>
   </target>
