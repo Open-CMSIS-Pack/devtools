@@ -1,9 +1,9 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/2.0.0-dev1/tools/projmgr/schemas/cbuild.schema.json",
+  "$id": "https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/2.0.0-dev2/tools/projmgr/schemas/cbuild.schema.json",
   "title": "CMSIS cbuild",
   "description": "defines a build description for a project",
-  "version": "2.0.0-dev1",
+  "version": "2.0.0-dev2",
   "properties": {
     "build": {
       "$ref": "./common.schema.json#/definitions/BuildDescType"
