@@ -15,7 +15,7 @@
   </compilers>
 
   <target Dfpu="NO_FPU" Dname="RteTest_ARMCM0" Dvendor="ARM:82">
-    <output elf="testlayers.axf" intdir="tmp/testlayers/TEST_TARGET/Debug" name="testlayers" outdir="out/testlayers/TEST_TARGET/Debug" rtedir="RTE"/>
+    <output elf="testlayers.axf" intdir="tmp/testlayers/TEST_TARGET/Debug" name="testlayers" outdir="out/testlayers/TEST_TARGET/Debug" rtedir="RTE" type="exe"/>
     <cflags add="--layer1-flag --layer2-flag" compiler="AC6"/>
     <ldflags compiler="AC6" file="Layer2/RTE/Device/RteTest_ARMCM0/ARMCM0_ac6.sct"/>
     <defines>DEF_LAYER1;DEF_LAYER2</defines>

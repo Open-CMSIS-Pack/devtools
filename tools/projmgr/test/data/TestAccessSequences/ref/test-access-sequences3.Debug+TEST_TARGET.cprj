@@ -15,7 +15,7 @@
   </compilers>
 
   <target Dfpu="NO_FPU" Dname="RteTest_ARMCM0_Dual" Dsecure="Secure" Dvendor="ARM:82" Pname="cm0_core0">
-    <output bin="test-access-sequences3.bin" cmse-lib="test-access-sequences3_CMSE_Lib.o" elf="test-access-sequences3.axf" hex="test-access-sequences3.hex" intdir="tmp/test-access-sequences3/TEST_TARGET/Debug" name="test-access-sequences3" outdir="out/test-access-sequences3/TEST_TARGET/Debug" rtedir="../data/TestAccessSequences/RTE"/>
+    <output bin="test-access-sequences3.bin" cmse-lib="test-access-sequences3_CMSE_Lib.o" elf="test-access-sequences3.axf" hex="test-access-sequences3.hex" intdir="tmp/test-access-sequences3/TEST_TARGET/Debug" name="test-access-sequences3" outdir="out/test-access-sequences3/TEST_TARGET/Debug" rtedir="../data/TestAccessSequences/RTE" type="exe"/>
     <cflags add="-O1 -g" compiler="AC6"/>
     <cxxflags add="-O1 -g" compiler="AC6"/>
     <ldflags compiler="AC6" file="../data/TestToolchains/ac6_linker_script.sct" regions="../data/TestAccessSequences/RTE/Device/RteTest_ARMCM0_Dual_cm0_core0/regions_RteTest_ARMCM0_Dual_cm0_core0.h"/>

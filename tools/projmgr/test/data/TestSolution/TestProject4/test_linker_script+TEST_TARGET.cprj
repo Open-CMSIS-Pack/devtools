@@ -15,7 +15,7 @@
   </compilers>
 
   <target Dfpu="NO_FPU" Dname="RteTest_ARMCM0" Dsecure="Non-secure" Dvendor="ARM:82">
-    <output elf="test_linker_script.axf" intdir="tmp/test_linker_script/TEST_TARGET" name="test_linker_script" outdir="out/test_linker_script/TEST_TARGET" rtedir="../data/TestSolution/TestProject4/RTE"/>
+    <output elf="test_linker_script.axf" intdir="tmp/test_linker_script/TEST_TARGET" name="test_linker_script" outdir="out/test_linker_script/TEST_TARGET" rtedir="../data/TestSolution/TestProject4/RTE" type="exe"/>
     <ldflags compiler="AC6" file="../data/TestSolution/TestProject4/linker.sct"/>
   </target>
 

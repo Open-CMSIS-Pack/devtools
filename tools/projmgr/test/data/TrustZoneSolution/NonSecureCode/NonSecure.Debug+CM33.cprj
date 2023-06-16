@@ -15,7 +15,7 @@
   </compilers>
 
   <target Ddsp="DSP" Dfpu="SP_FPU" Dname="ARMCM33_DSP_FP_TZ" Dtz="TZ" Dvendor="ARM:82">
-    <output intdir="NonSecure.Debug+CM33_IntDir/" name="NonSecure.Debug+CM33" outdir="NonSecure.Debug+CM33_OutDir/"
+    <output intdir="NonSecure.Debug+CM33_IntDir/" name="NonSecure.Debug+CM33" outdir="NonSecure.Debug+CM33_OutDir/" type="exe"/>
     <cflags add="-fshort-enums -fshort-wchar -O1 -g" compiler="AC6"/>
     <ldflags compiler="AC6" file="RTE/Device/ARMCM33_DSP_FP_TZ/ARMCM33_ac6.sct"/>
     <includes>../SecureCode/Secure.Debug+CM33_OutDir</includes>

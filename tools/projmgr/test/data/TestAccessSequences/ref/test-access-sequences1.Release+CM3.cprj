@@ -15,7 +15,7 @@
   </compilers>
 
   <target Dfpu="NO_FPU" Dname="RteTest_ARMCM3" Dvendor="ARM:82">
-    <output elf="test-access-sequences1.axf" intdir="tmp/test-access-sequences1/CM3/Release" name="test-access-sequences1" outdir="out/test-access-sequences1/CM3/Release" rtedir="../data/TestAccessSequences/RTE"/>
+    <output elf="test-access-sequences1.axf" intdir="tmp/test-access-sequences1/CM3/Release" name="test-access-sequences1" outdir="out/test-access-sequences1/CM3/Release" rtedir="../data/TestAccessSequences/RTE" type="exe"/>
     <cflags add="-O3 -C-CPP-RteTest_ARMCM3" compiler="AC6"/>
     <cxxflags add="-O3 -C-CPP-RteTest_ARMCM3" compiler="AC6"/>
     <ldflags add="--list=./out/test-access-sequences1/CM3/Release/test-access-sequences1.map" compiler="AC6" file="../data/TestToolchains/ac6_linker_script.sct" regions="../data/TestAccessSequences/RTE/Device/RteTest_ARMCM3/regions_RteTest_ARMCM3.h"/>
