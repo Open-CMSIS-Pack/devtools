@@ -73,4 +73,35 @@ bool CrossPlatformUtils::CanExecute(const std::string& file)
 CrossPlatformUtils::REG_STATUS CrossPlatformUtils::GetLongPathRegStatus() {
   return REG_STATUS::NOT_SUPPORTED;
 }
+
+std::filesystem::perms CrossPlatformUtils::GetCurrentUmask() {
+  // Only way to get current umask is to change it, so revert the possible change directly.
+  mode_t value = ::umask(0);
+  ::umask(value);
+
+  std::filesystem::perms perm = std::filesystem::perms::none;
+
+  // Map the mode_t value to coresponding fs::perms value
+  constexpr struct {
+    mode_t m;
+    std::filesystem::perms p;
+  } mode_to_perm_map[] = {
+    {S_IRUSR, std::filesystem::perms::owner_read},
+    {S_IWUSR, std::filesystem::perms::owner_write},
+    {S_IXUSR, std::filesystem::perms::owner_exec},
+    {S_IRGRP, std::filesystem::perms::group_read},
+    {S_IWGRP, std::filesystem::perms::group_write},
+    {S_IXGRP, std::filesystem::perms::group_exec},
+    {S_IROTH, std::filesystem::perms::others_read},
+    {S_IWOTH, std::filesystem::perms::others_write},
+    {S_IXOTH, std::filesystem::perms::others_exec}
+  };
+  for (auto [m, p] : mode_to_perm_map) {
+    if (value & m) {
+      perm |= p;
+    }
+  }
+
+  return perm;
+}
 // end of Utils.cpp

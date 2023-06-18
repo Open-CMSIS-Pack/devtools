@@ -8,6 +8,7 @@
 
 #include <string>
 #include <system_error>
+#include <filesystem>
 
 /**
  * @brief CrossPlatformUtils utility class provides proxy methods to call platform-specific functions
@@ -93,6 +94,12 @@ public:
    * @return return ENABLED, DISABLED, NOT_SUPPORTED
   */
   static REG_STATUS GetLongPathRegStatus();
+
+  /**
+   * @brief Get the current umask value
+   * @return The umask value as a std::filesystem::perms type
+  */
+  static std::filesystem::perms GetCurrentUmask();
 };
 
 #endif  /* CROSSPLATFORM_UTILS_H */

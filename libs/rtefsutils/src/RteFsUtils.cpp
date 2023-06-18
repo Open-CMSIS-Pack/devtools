@@ -269,15 +269,32 @@ bool RteFsUtils::SetFileReadOnly(const string& path, bool bReadOnly) {
  */
 
   error_code ec;
-  fs::perms perms;
+  constexpr fs::perms write_mask = fs::perms::owner_write | fs::perms::group_write | fs::perms::others_write;
 
-  // Set file permissions
   if (bReadOnly) {
-    perms = fs::perms::owner_read | fs::perms::group_read | fs::perms::others_read;
+    // Remove write bits
+    fs::permissions(fs::path(path), write_mask, fs::perm_options::remove | fs::perm_options::nofollow, ec);
   } else {
-    perms = fs::perms::all;
+    // Inherit write bits from parent directory
+    fs::perms perms = fs::status(fs::path(path).parent_path(), ec).permissions() & write_mask;
+    if (ec) {
+      return false;
+    }
+
+    // If parent directory is not writable, lets rely on current umask
+    if (perms == fs::perms::none) {
+      perms = (~CrossPlatformUtils::GetCurrentUmask()) & write_mask;
+    }
+
+    // Unable to find proper write permission to add, so let's error out.
+    if (perms == fs::perms::none) {
+      return false;
+    }
+
+    // Add write bits
+    fs::permissions(fs::path(path), perms, fs::perm_options::add | fs::perm_options::nofollow, ec);
   }
-  fs::permissions(fs::path(path), perms, ec);
+
   if (ec) {
     return false;
   }
@@ -299,21 +316,16 @@ bool RteFsUtils::SetTreeReadOnly(const string& path, bool bReadOnly) {
     return false;
   }
 
-  // Clear base dir restrictions
-  if (!SetFileReadOnly(path, false)) {
-    return false;
-  }
-  // Iterate over file tree
-  for(auto& p: fs::recursive_directory_iterator(path, ec)) {
-    if (fs::is_regular_file(p.path(), ec)) {
-      if (!SetFileReadOnly(p.path().generic_string(), bReadOnly)) {
-        return false;
-      }
-    }
-  }
-  // Set base dir
+  // Set permission on directory
   if (!SetFileReadOnly(path, bReadOnly)) {
     return false;
+  }
+
+  // Iterate over tree and change permission of files and directories
+  for(auto& p: fs::recursive_directory_iterator(path, ec)) {
+    if (!SetFileReadOnly(p.path().generic_string(), bReadOnly)) {
+      return false;
+    }
   }
 
   // Permissions updated
