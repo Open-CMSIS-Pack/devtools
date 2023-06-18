@@ -39,7 +39,11 @@ function(get_version_from_git_tag _prefix)
         if(DESCRIBE MATCHES "(-[a-zA-Z0-9-\\.]+)(-[0-9]+-g[0-9a-f]+)?$")
             # Version with PreRelease info
             string(REGEX REPLACE "(-[0-9]+)(-g[0-9a-f]+)?$" "" TAG_SEGMENT_STR "${DESCRIBE}")
-            string(REGEX REPLACE "^${_prefix}[0-9]+\\.[0-9]+\\.[0-9]+-(.*)" "\\1" VERSION_PRE_RELEASE "${TAG_SEGMENT_STR}")
+            string(REGEX REPLACE "^${_prefix}[0-9]+\\.[0-9]+\\.[0-9]+" "" VERSION_PRE_RELEASE "${TAG_SEGMENT_STR}")
+
+            if(VERSION_PRE_RELEASE MATCHES "^[^-]")
+                message(FATAL_ERROR "Invalid version string detected. ${VERSION_PRE_RELEASE} needs to start with a dash (${DESCRIBE})")
+            endif()
 
             if(DESCRIBE MATCHES "(-[0-9]+-g[0-9a-f]+)$")
               string(REGEX REPLACE "^.*-([0-9]+-g[0-9a-f]+)" "\\1" COMMIT_INFO "${DESCRIBE}")
@@ -49,10 +53,10 @@ function(get_version_from_git_tag _prefix)
 
             if(DEFINED VERSION_HASH)
                 set(VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}.${VERSION_TWEAK}")
-                set(VERSION_FULL "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}-${VERSION_PRE_RELEASE}+p${VERSION_TWEAK}-g${VERSION_HASH}")
+                set(VERSION_FULL "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}${VERSION_PRE_RELEASE}+p${VERSION_TWEAK}-g${VERSION_HASH}")
             else()
                 set(VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
-                set(VERSION_FULL "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}-${VERSION_PRE_RELEASE}")
+                set(VERSION_FULL "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}${VERSION_PRE_RELEASE}")
             endif()
 
         elseif(DESCRIBE MATCHES "^${_prefix}[0-9]+\\.[0-9]+\\.[0-9]+-[0-9]+-g([0-9a-f]+).*")
