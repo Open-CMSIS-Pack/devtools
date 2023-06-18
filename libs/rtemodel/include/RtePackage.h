@@ -448,6 +448,12 @@ public:
   void SetPackageState(PackageState packState) { m_packState = packState; }
 
   /**
+   * @brief get full pack ID in YAML format
+   * @return full pack ID in YAML format
+   */
+  std::string GetPackYamlID() const;
+
+  /**
    * @brief get full or common pack ID
    * @param withVersion flag to return full (true) or common (false) ID
    * @return full or common pack ID depending on argument

@@ -743,6 +743,26 @@ string RtePackage::ConstructID()
 }
 
 
+string RtePackage::GetPackYamlID() const
+{
+  string res;
+
+  const auto& vendor = GetVendorString().empty() ? "" : GetVendorString() + "::";
+  const vector<pair<const char*, const string&>> elements = {
+    {"",  vendor},
+    {"",  GetName()},
+    {"@", GetVersionString()},
+  };
+
+  for (const auto& element : elements) {
+    if (!element.second.empty()) {
+      res += element.first + element.second;
+    }
+  }
+  return res;
+}
+
+
 string RtePackage::GetPackageID(bool withVersion) const
 {
   if (withVersion)

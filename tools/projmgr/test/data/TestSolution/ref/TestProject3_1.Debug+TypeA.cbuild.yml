@@ -29,6 +29,7 @@ build:
       selected-by: Device:RteTest Generated Component:RteTestGenFiles
       generator:
         id: RteTestGeneratorIdentifier
+        from-pack: ARM::RteTestGenerator@0.1.0
         files:
           - file: ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0/Templates/RteTest.gpdsc.template
             category: genAsset
@@ -66,6 +67,7 @@ build:
       selected-by: CORE
   generators:
     - generator: RteTestGeneratorIdentifier
+      from-pack: ARM::RteTestGenerator@0.1.0
       path: gendir
       gpdsc: gendir/RteTestGen_ARMCM0/RteTest.gpdsc
       command:

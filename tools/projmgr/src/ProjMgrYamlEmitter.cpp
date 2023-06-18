@@ -157,8 +157,16 @@ void ProjMgrYamlCbuild::SetComponentsNode(YAML::Node node, const ContextItem* co
     }
     SetControlsNode(componentNode, componentItem->build);
     SetComponentFilesNode(componentNode[YAML_FILES], context, componentId);
-    SetNodeValue(componentNode[YAML_GENERATOR][YAML_ID], component.generator);
-    SetGeneratorFiles(componentNode[YAML_GENERATOR], context, componentId);
+    if (!component.generator.empty()) {
+      if (context->generators.find(component.generator) != context->generators.end()) {
+        const RteGenerator* rteGenerator = context->generators.at(component.generator);
+        SetNodeValue(componentNode[YAML_GENERATOR][YAML_ID], component.generator);
+        SetNodeValue(componentNode[YAML_GENERATOR][YAML_FROM_PACK], rteGenerator->GetPackage()->GetPackYamlID());
+        SetGeneratorFiles(componentNode[YAML_GENERATOR], context, componentId);
+      } else {
+        ProjMgrLogger::Warn(string("Component ") + componentId + " uses unknown generator " + component.generator);
+      }
+    }
     node.push_back(componentNode);
   }
 }
@@ -204,6 +212,7 @@ void ProjMgrYamlCbuild::SetGeneratorsNode(YAML::Node node, const ContextItem* co
         break;
       }
     }
+    SetNodeValue(genNode[YAML_FROM_PACK], generator->GetPackage()->GetPackYamlID());
     SetNodeValue(genNode[YAML_PATH], FormatPath(workingDir, context->directories.cprj));
     SetNodeValue(genNode[YAML_GPDSC], FormatPath(gpdscFile, context->directories.cprj));
 

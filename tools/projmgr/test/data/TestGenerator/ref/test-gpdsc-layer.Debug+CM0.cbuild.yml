@@ -31,12 +31,14 @@ build:
           category: sourceC
       generator:
         id: RteTestGeneratorIdentifier
+        from-pack: ARM::RteTestGenerator@0.1.0
     - component: ARM::RteTest:CORE@0.1.1
       condition: Cortex-M Device
       from-pack: ARM::RteTest_DFP@0.2.0
       selected-by: RteTest:CORE
   generators:
     - generator: RteTestGeneratorIdentifier
+      from-pack: ARM::RteTestGenerator@0.1.0
       path: ../data/TestGenerator/layer/RTE/Device
       gpdsc: ../data/TestGenerator/layer/RTE/Device/RteTestGen_ARMCM0/RteTest.gpdsc
       command:

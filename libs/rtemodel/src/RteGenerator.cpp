@@ -145,12 +145,18 @@ string RteGenerator::GetExecutable(RteTarget* target, const std::string& hostTyp
 vector<pair<string, string> > RteGenerator::GetExpandedArguments(RteTarget* target, const string& hostType) const
 {
   vector<pair<string, string> > args;
+  string packId = GetPackage()->GetPackYamlID();
+  string generatorId = GetGeneratorName();
+
   RteItem* argsItem = GetArgumentsItem("exe");
   if (argsItem) {
     for (auto arg : argsItem->GetChildren()) {
       if (arg->GetTag() != "argument" || !arg->MatchesHost(hostType))
         continue;
-      args.push_back({arg->GetAttribute("switch"), ExpandString(arg->GetText())});
+      string res = arg->GetText();
+      RteUtils::ReplaceAll(res, "$pack_id", packId);
+      RteUtils::ReplaceAll(res, "$generator_id", generatorId);
+      args.push_back({arg->GetAttribute("switch"), ExpandString(res)});
     }
   }
   return args;

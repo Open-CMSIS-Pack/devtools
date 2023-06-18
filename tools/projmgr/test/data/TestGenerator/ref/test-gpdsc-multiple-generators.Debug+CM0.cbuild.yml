@@ -31,18 +31,21 @@ build:
           category: sourceC
       generator:
         id: RteTestGeneratorIdentifier
+        from-pack: ARM::RteTestGenerator@0.1.0
     - component: ARM::Device:RteTest Generated Component:RteTestWithKey@1.1.0
       condition: RteDevice
       from-pack: ARM::RteTestGenerator@0.1.0
       selected-by: Device:RteTest Generated Component:RteTestWithKey
       generator:
         id: RteTestGeneratorWithKey
+        from-pack: ARM::RteTestGenerator@0.1.0
     - component: ARM::RteTest:CORE@0.1.1
       condition: Cortex-M Device
       from-pack: ARM::RteTest_DFP@0.2.0
       selected-by: RteTest:CORE
   generators:
     - generator: RteTestGeneratorIdentifier
+      from-pack: ARM::RteTestGenerator@0.1.0
       path: ../data/TestGenerator/GeneratedFiles/RteTestGeneratorIdentifier
       gpdsc: ../data/TestGenerator/GeneratedFiles/RteTestGeneratorIdentifier/RteTestGen_ARMCM0/RteTest.gpdsc
       command:
@@ -71,6 +74,7 @@ build:
             - ../../../../output/test-gpdsc-multiple-generators.Debug+CM0.cbuild.yml
             - --foo=bar
     - generator: RteTestGeneratorWithKey
+      from-pack: ARM::RteTestGenerator@0.1.0
       path: ../data/TestGenerator/GeneratedFiles/RteTestGeneratorWithKey
       gpdsc: ../data/TestGenerator/GeneratedFiles/RteTestGeneratorWithKey/RteTestGen_ARMCM0/RteTest.gpdsc
       command:

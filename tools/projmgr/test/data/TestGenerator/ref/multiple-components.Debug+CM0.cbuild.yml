@@ -30,6 +30,7 @@ build:
           category: sourceC
       generator:
         id: RteTestGeneratorIdentifier
+        from-pack: ARM::RteTestGenerator@0.1.0
         files:
           - file: ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0/Templates/RteTestGen.c.template
             category: genSource
@@ -46,6 +47,7 @@ build:
       selected-by: RteTest:CORE
   generators:
     - generator: RteTestGeneratorIdentifier
+      from-pack: ARM::RteTestGenerator@0.1.0
       path: ../data/TestGenerator/MultipleComponents/RteTestGeneratorIdentifier
       gpdsc: ../data/TestGenerator/MultipleComponents/RteTestGeneratorIdentifier/RteTestGen_ARMCM0/RteTest.gpdsc
       command:
