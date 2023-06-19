@@ -6,6 +6,7 @@
 
 #include "ProjMgr.h"
 #include "ProjMgrTestEnv.h"
+#include "RteFsUtils.h"
 #include "gtest/gtest.h"
 #include <regex>
 #include <filesystem>
@@ -97,4 +98,62 @@ TEST_F(ProjMgrGeneratorUnitTests, NoExeFiles) {
   const string generatedGPDSC = testinput_folder + "/TestSolution/TestProject3_2/gendir/RteTestGen_ARMCM0/RteTest.gpdsc";
   // but not gpdsc
   EXPECT_FALSE(std::filesystem::exists(generatedGPDSC));
+}
+
+TEST_F(ProjMgrGeneratorUnitTests, DryRunIncapableGenerator) {
+  char* argv[7];
+
+  StdStreamRedirect streamRedirect;
+  const string& csolution = testinput_folder + "/TestSolution/gen_nodryrun.csolution.yml";
+  argv[1] = (char*)"run";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-g";
+  argv[5] = (char*)"RteTestGeneratorNoDryRun";
+  argv[6] = (char*)"--dry-run";
+
+  EXPECT_NE(0, ProjMgr::RunProjMgr(7, argv, 0));
+  auto outStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, outStr.find("is not dry-run capable"));
+}
+
+TEST_F(ProjMgrGeneratorUnitTests, DryRun) {
+  char* argv[7];
+
+  StdStreamRedirect streamRedirect;
+  const string& csolution = testinput_folder + "/TestSolution/genfiles.csolution.yml";
+  argv[1] = (char*)"run";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-g";
+  argv[5] = (char*)"RteTestGeneratorIdentifier";
+  argv[6] = (char*)"--dry-run";
+
+  const string generatorInputFile = testinput_folder + "/TestSolution/TestProject3_1/TestProject3_1.Debug+TypeA.cbuild.yml";
+  const string targetGPDSC = testinput_folder + "/TestSolution/TestProject3_1/gendir/RteTestGen_ARMCM0/RteTest.gpdsc";
+
+  RteFsUtils::RemoveFile(targetGPDSC);
+
+  EXPECT_EQ(0, ProjMgr::RunProjMgr(7, argv, 0));
+
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/TestSolution/ref/TestProject3_1.Debug+TypeA.cbuild.yml",  generatorInputFile);
+
+  EXPECT_EQ(true, std::filesystem::exists(generatorInputFile));
+  EXPECT_EQ(false, std::filesystem::exists(targetGPDSC));
+
+  // Expect that the GPDSC content was printed to stdout, enclosed within the begin and end marks
+  auto outStr = streamRedirect.GetOutString();
+  string beginGpdscMark = "-----BEGIN GPDSC-----\n";
+  string endGpdscMark = "-----END GPDSC-----\n";
+  auto beginGpdscMarkIndex = outStr.find(beginGpdscMark);
+  auto endGpdscMarkIndex = outStr.find(endGpdscMark);
+  EXPECT_NE(string::npos, beginGpdscMarkIndex);
+  EXPECT_NE(string::npos, endGpdscMarkIndex);
+  auto gpdscContentIndex = beginGpdscMarkIndex + beginGpdscMark.size();
+  auto contentLength = endGpdscMarkIndex - gpdscContentIndex;
+  string gpdscContent = outStr.substr(gpdscContentIndex, contentLength);
+
+  // Check that the GPDSC content seems OK (the full reference GPDSC file is not easily available from the test for comparison)
+  EXPECT_EQ(0, gpdscContent.find("<?xml"));
+  EXPECT_NE(string::npos, gpdscContent.find("<component generator=\"RteTestGeneratorIdentifier\""));
 }

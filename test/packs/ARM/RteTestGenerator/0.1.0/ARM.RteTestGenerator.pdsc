@@ -53,6 +53,7 @@
         <argument>$S</argument>
         <!-- absolute path to the generator input file -->
         <argument>$G</argument>
+        <argument mode="dry-run">--dry-run</argument>
         <argument host="win" switch="/foo=">bar</argument>
         <argument host="linux" switch="--foo=">bar</argument>
         <argument host="mac" switch="--foo=">bar</argument>
@@ -91,6 +92,29 @@
       <workingDir>$PRTE/Device</workingDir>
       <exe>
       <command>Generator/noexe.sh</command>
+        <!-- path is specified either absolute or relative to PDSC or GPDSC file. If not specified it is the project directory configured by the environment -->
+        <!-- D = Device (Dname/Dvariant as configured by environment) -->
+        <argument>$D</argument>
+        <!-- Project path and project name (as configured by environment) -->
+        <argument>#P</argument>
+        <!-- absolute or relative to workingDir. $S = Device Family Pack base folder -->
+        <argument>$S</argument>
+        <!-- absolute path to the generator input file -->
+        <argument>$G</argument>
+      </exe>
+      <!-- path is either absolute or relative to working directory -->
+      <gpdsc name="$PRTE/Device/$D/RteTest.gpdsc"/>
+    </generator>
+
+    <!-- This generator is for testing of dry-running without "dry-run" support -->
+    <generator id="RteTestGeneratorNoDryRun">
+      <description>RteTest Generator Description</description>
+      <!-- path is specified either absolute or relative to PDSC or GPDSC file -->
+      <workingDir>$PRTE/Device</workingDir>
+      <exe>
+      <command host="win">Generator/script.bat</command>
+      <command host="linux">Generator/script.sh</command>
+      <command host="mac">Generator/script.sh</command>
         <!-- path is specified either absolute or relative to PDSC or GPDSC file. If not specified it is the project directory configured by the environment -->
         <!-- D = Device (Dname/Dvariant as configured by environment) -->
         <argument>$D</argument>
@@ -156,6 +180,9 @@
       <files>
         <file category="genAsset" name="Templates/RteTest.gpdsc.template" version ="1.0.0"/>
       </files>
+    </component>
+    <component generator="RteTestGeneratorNoDryRun" Cclass="Device" Cgroup="RteTest Generated Component" Csub="RteTestNoDryRun" Cversion="1.1.0">
+      <description>Configuration via RteTest script</description>
     </component>
     <bundle Cbundle="RteTestBundle" Cclass="Device" Cversion="1.0.0">
       <component generator="RteTestGeneratorIdentifier" Cgroup="RteTest Generated Component" Cversion="1.1.0">

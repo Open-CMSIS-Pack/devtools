@@ -38,6 +38,7 @@ Commands:\n\
 Options:\n\
   -c, --context arg [...]  Input context names [<project-name>][.<build-type>][+<target-type>]\n\
   -d, --debug              Enable debug messages\n\
+  -D, --dry-run            Enable dry-run\n\
   -e, --export arg         Set suffix for exporting <context><suffix>.cprj retaining only specified versions\n\
   -f, --filter arg         Filter words\n\
   -g, --generator arg      Code generator identifier\n\
@@ -130,6 +131,7 @@ int ProjMgr::RunProjMgr(int argc, char **argv, char** envp) {
   cxxopts::Option version("V,version", "Print version");
   cxxopts::Option verbose("v,verbose", "Enable verbose messages", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option debug("d,debug", "Enable debug messages", cxxopts::value<bool>()->default_value("false"));
+  cxxopts::Option dryRun("D,dry-run", "Enable dry-run", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option exportSuffix("e,export", "Set suffix for exporting <context><suffix>.cprj retaining only specified versions", cxxopts::value<string>());
   cxxopts::Option toolchain("t,toolchain","Selection of the toolchain used in the project optionally with version", cxxopts::value<string>());
   cxxopts::Option ymlOrder("yml-order", "Preserve order as specified in input yml", cxxopts::value<bool>()->default_value("false"));
@@ -139,7 +141,7 @@ int ProjMgr::RunProjMgr(int argc, char **argv, char** envp) {
     // command, optional args, options
     {"update-rte",        { false, {context, debug, load, schemaCheck, toolchain, verbose}}},
     {"convert",           { false, {context, debug, exportSuffix, load, schemaCheck, noUpdateRte, output, toolchain, verbose}}},
-    {"run",               { false, {context, debug, generator, load, schemaCheck, verbose}}},
+    {"run",               { false, {context, debug, generator, load, schemaCheck, verbose, dryRun}}},
     {"list packs",        { true,  {context, debug, filter, load, missing, schemaCheck, toolchain, verbose}}},
     {"list boards",       { true,  {context, debug, filter, load, schemaCheck, toolchain, verbose}}},
     {"list devices",      { true,  {context, debug, filter, load, schemaCheck, toolchain, verbose}}},
@@ -157,7 +159,7 @@ int ProjMgr::RunProjMgr(int argc, char **argv, char** envp) {
       {"positional", "", cxxopts::value<vector<string>>()},
       solution, context, filter, generator,
       load, clayerSearchPath, missing, schemaCheck, noUpdateRte, output,
-      help, version, verbose, debug, exportSuffix, toolchain, ymlOrder
+      help, version, verbose, debug, dryRun, exportSuffix, toolchain, ymlOrder
     });
     options.parse_positional({ "positional" });
 
@@ -169,7 +171,9 @@ int ProjMgr::RunProjMgr(int argc, char **argv, char** envp) {
     manager.m_verbose = parseResult.count("v");
     manager.m_worker.SetVerbose(manager.m_verbose);
     manager.m_debug = parseResult.count("d");
+    manager.m_dryRun = parseResult.count("D");
     manager.m_worker.SetDebug(manager.m_debug);
+    manager.m_worker.SetDryRun(manager.m_dryRun);
     manager.m_ymlOrder = parseResult.count("yml-order");
 
     vector<string> positionalArguments;

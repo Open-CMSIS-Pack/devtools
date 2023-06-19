@@ -482,6 +482,12 @@ public:
   void SetDebug(bool debug);
 
   /**
+   * @brief set dry-run mode
+   * @param boolean dryRun
+  */
+  void SetDryRun(bool dryRun);
+
+  /**
    * @brief set load packs policy
    * @param reference to load packs policy
   */
@@ -562,6 +568,7 @@ protected:
   bool m_checkSchema;
   bool m_verbose;
   bool m_debug;
+  bool m_dryRun;
 
   bool LoadPacks(ContextItem& context);
   bool GetRequiredPdscFiles(ContextItem& context, const std::string& packRoot, std::set<std::string>& errMsgs);

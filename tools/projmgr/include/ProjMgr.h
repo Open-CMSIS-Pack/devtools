@@ -108,6 +108,7 @@ protected:
   bool m_updateRteFiles;
   bool m_verbose;
   bool m_debug;
+  bool m_dryRun;
   bool m_ymlOrder;
   GroupNode m_files;
   std::vector<ContextItem*> m_processedContexts;

@@ -37,8 +37,13 @@ static const map<const string, tuple<const string, const string, const string>> 
   { "IAR",   {ProjMgrUtils::IAR_ELF_SUFFIX    , ProjMgrUtils::IAR_LIB_PREFIX    , ProjMgrUtils::IAR_LIB_SUFFIX     }},
 };
 
-ProjMgrWorker::ProjMgrWorker(void) {
-  m_loadPacksPolicy = LoadPacksPolicy::DEFAULT;
+ProjMgrWorker::ProjMgrWorker(void) :
+  m_loadPacksPolicy(LoadPacksPolicy::DEFAULT),
+  m_checkSchema(false),
+  m_verbose(false),
+  m_debug(false),
+  m_dryRun(false)
+{
   RteCondition::SetVerboseFlags(0);
 }
 
@@ -204,6 +209,10 @@ void ProjMgrWorker::SetVerbose(bool verbose) {
 
 void ProjMgrWorker::SetDebug(bool debug) {
   m_debug = debug;
+}
+
+void ProjMgrWorker::SetDryRun(bool dryRun) {
+  m_dryRun = dryRun;
 }
 
 void ProjMgrWorker::SetLoadPacksPolicy(const LoadPacksPolicy& policy) {
@@ -3190,7 +3199,11 @@ bool ProjMgrWorker::ExecuteGenerator(std::string& generatorId) {
     ProjMgrLogger::Error("generator file '" + generatorExe + "' cannot be executed, check permissions");
     return false;
   }
-  const string generatorCommand = generator->GetExpandedCommandLine(context.rteActiveTarget);
+  if (m_dryRun && !generator->IsDryRunCapable(generatorExe)) {
+    ProjMgrLogger::Error("generator '" + generatorId + "' is not dry-run capable");
+    return false;
+  }
+  const string generatorCommand = generator->GetExpandedCommandLine(context.rteActiveTarget, RteUtils::EMPTY_STRING, m_dryRun);
 
   error_code ec;
   const auto& workingDir = fs::current_path(ec);
