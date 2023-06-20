@@ -3404,8 +3404,17 @@ TEST_F(ProjMgrUnitTests, RunProjMgrCovertMultipleContext) {
 TEST_F(ProjMgrUnitTests, RunProjMgr_YamlEmitterFileCaseIssue) {
   StdStreamRedirect streamRedirect;
   const string& csolution = testinput_folder + "/TestSolution/FilenameCase/filename.csolution.yml";
-  const string& expectedErrMsg = "cproject filename has case inconsistency";
+  const string& cproject1 = testinput_folder + "/TestSolution/FilenameCase/filename.cproject.yml";
+  const string& cproject2 = testinput_folder + "/TestSolution/FilenameCase/Filename.cproject.yml";
 
+  string expectedErrMsg;
+
+  if (fs::exists(fs::path(cproject1)) && fs::exists(fs::path(cproject2))) {
+    expectedErrMsg = "cproject filename has case inconsistency";
+  } else {
+    expectedErrMsg = "cproject file was not found";
+  }
+  
   char* argv[5];
   argv[1] = (char*)"convert";
   argv[2] = (char*)csolution.c_str();
