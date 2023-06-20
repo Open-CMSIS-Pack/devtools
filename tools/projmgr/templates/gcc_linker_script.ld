@@ -155,6 +155,12 @@ SECTIONS
   {
     . = ALIGN(4);
     __zero_table_start__ = .;
+
+/*  .bss initialization to zero is already done during C Run-Time Startup.
+    LONG (__bss_start__)
+    LONG ((__bss_end__ - __bss_start__) / 4)
+*/
+
     /* Add each additional bss section here */
 /*
     LONG (__bss2_start__)
