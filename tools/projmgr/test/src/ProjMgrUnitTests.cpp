@@ -3397,3 +3397,31 @@ TEST_F(ProjMgrUnitTests, RunProjMgrCovertMultipleContext) {
   EXPECT_EQ(string::npos, outStr.find("test2.Debug+CM3.cprj"));
 }
 
+/*
+* This test case runs the ProjMgrYamlEmitter with a solution
+* that references a project using different file name case.
+*/
+TEST_F(ProjMgrUnitTests, RunProjMgr_YamlEmitterFileCaseIssue) {
+  StdStreamRedirect streamRedirect;
+  const string& csolution = testinput_folder + "/TestSolution/FilenameCase/filename.csolution.yml";
+  const string& cproject1 = testinput_folder + "/TestSolution/FilenameCase/filename.cproject.yml";
+  const string& cproject2 = testinput_folder + "/TestSolution/FilenameCase/Filename.cproject.yml";
+
+  string expectedErrMsg;
+
+  if (fs::exists(fs::path(cproject1)) && fs::exists(fs::path(cproject2))) {
+    expectedErrMsg = "cproject filename has case inconsistency";
+  } else {
+    expectedErrMsg = "cproject file was not found";
+  }
+  
+  char* argv[5];
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"-o";
+  argv[4] = (char*)testoutput_folder.c_str();
+
+  EXPECT_EQ(1, RunProjMgr(5, argv, 0));
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find(expectedErrMsg));
+}
