@@ -703,6 +703,7 @@ const set<string> defaultKeys = {
 };
 
 const set<string> solutionKeys = {
+  YAML_DESCRIPTION,
   YAML_PROJECTS,
   YAML_TARGETTYPES,
   YAML_BUILDTYPES,
