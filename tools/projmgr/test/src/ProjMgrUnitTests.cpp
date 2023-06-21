@@ -3425,3 +3425,27 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_YamlEmitterFileCaseIssue) {
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_NE(string::npos, errStr.find(expectedErrMsg));
 }
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_Reverse_Context_Syntax) {
+  StdStreamRedirect streamRedirect;
+  char* argv[10];
+
+  // convert --solution solution.yml
+  const string& csolution = testinput_folder + "/TestSolution/test.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  argv[6] = (char*)"-c";
+  argv[7] = (char*)"test2+CM0.Debug";
+  argv[8] = (char*)"-c";
+  argv[9] = (char*)"test1+CM0.Release";
+
+  EXPECT_EQ(0, RunProjMgr(10, argv, 0));
+  auto outStr = streamRedirect.GetOutString();
+  EXPECT_NE(string::npos, outStr.find("test2.Debug+CM0.cprj - info csolution: file generated successfully"));
+  EXPECT_NE(string::npos, outStr.find("test1.Release+CM0.cprj - info csolution: file generated successfully"));
+  EXPECT_EQ(string::npos, outStr.find("test1.Debug+CM0.cprj"));
+  EXPECT_EQ(string::npos, outStr.find("test2.Debug+CM3.cprj"));
+}
