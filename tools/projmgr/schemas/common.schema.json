@@ -641,6 +641,7 @@
     "SolutionDescType": {
       "type": "object",
       "properties": {
+        "description":  { "type": "string" },
         "target-types": { "$ref": "#/definitions/TargetTypes" },
         "build-types":  { "$ref": "#/definitions/BuildTypes" },
         "output-dirs":  { "$ref": "#/definitions/OutputDirectoriesType" },
@@ -665,7 +666,6 @@
           "$ref": "#/definitions/CreatedInfoType",
           "description": "The tool required to build this csolution project"
         },
-        "description": { "type": "string" },
         "cdefault":    { "type": "null", "description": "Enable use of cdefault.yml file" },
         "generators":  { "$ref": "#/definitions/GeneratorsOutputType" }
       },
