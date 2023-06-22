@@ -3449,3 +3449,19 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Reverse_Context_Syntax) {
   EXPECT_EQ(string::npos, outStr.find("test1.Debug+CM0.cprj"));
   EXPECT_EQ(string::npos, outStr.find("test2.Debug+CM3.cprj"));
 }
+
+TEST_F(ProjMgrUnitTests, FileLanguageAndScope) {
+  const string& csolution = testinput_folder + "/TestSolution/LanguageAndScope/lang-scope.csolution.yml";
+
+  char* argv[5];
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"-o";
+  argv[4] = (char*)testoutput_folder.c_str();
+
+  EXPECT_EQ(0, RunProjMgr(5, argv, 0));
+
+  // Check generated cbuild YMLs
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/lang-scope.Debug_AC6+RteTest_ARMCM3.cbuild.yml",
+    testinput_folder + "/TestSolution/LanguageAndScope/ref/lang-scope.Debug_AC6+RteTest_ARMCM3.cbuild.yml");
+}

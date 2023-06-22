@@ -38,7 +38,7 @@ build:
     - ARMCM0
     - _RTE_
   add-path:
-    - ../data/TestSolution/path/solution/
+    - ../data/TestSolution/path/solution
     - ../data/TestSolution/path/CM0
     - ../data/TestSolution/path/Debug
     - ../data/TestSolution/TestProject1/RTE/_Debug_CM0

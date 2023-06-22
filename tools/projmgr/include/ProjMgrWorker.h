@@ -137,12 +137,16 @@ struct SelectedComponentItem {
  *        file name
  *        file attribute
  *        file category
+ *        file language
+ *        file scope
  *        file version
 */
 struct ComponentFileItem {
   std::string name;
   std::string attr;
   std::string category;
+  std::string language;
+  std::string scope;
   std::string version;
 };
 
