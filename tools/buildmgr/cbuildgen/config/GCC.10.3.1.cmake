@@ -77,6 +77,10 @@ set(WARNINGS_AS_GNU_FLAGS ""       "-w")
 set(WARNINGS_CXX_FLAGS    ""       "-w")
 set(WARNINGS_LD_FLAGS     ""       "-w")
 
+set(LANGUAGE_VALUES       "c90"      "gnu90"      "c99"      "gnu99"      "c11"      "gnu11"      "c++98"      "gnu++98"      "c++03"      "gnu++03"      "c++11"      "gnu++11"      "c++14"      "gnu++14"      "c++17"      "gnu++17"      "c++20"      "gnu++20"     )
+set(LANGUAGE_CC_FLAGS     "-std=c90" "-std=gnu90" "-std=c99" "-std=gnu99" "-std=c11" "-std=gnu11" ""           ""             ""           ""             ""           ""             ""           ""             ""           ""             ""           ""            )
+set(LANGUAGE_CXX_FLAGS    ""         ""           ""         ""           ""         ""           "-std=c++98" "-std=gnu++98" "-std=c++03" "-std=gnu++03" "-std=c++11" "-std=gnu++11" "-std=c++14" "-std=gnu++14" "-std=c++17" "-std=gnu++17" "-std=c++20" "-std=gnu++20")
+
 function(cbuild_set_option_flags lang option value flags)
   if(NOT DEFINED ${option}_${lang}_FLAGS)
     return()
@@ -91,7 +95,7 @@ function(cbuild_set_option_flags lang option value flags)
   endif()
 endfunction()
 
-function(cbuild_set_options_flags lang optimize debug warnings flags)
+function(cbuild_set_options_flags lang optimize debug warnings language flags)
   set(opt_flags)
   # GCC provide a better optimization level for debug
   if ((debug STREQUAL "on") AND (optimize STREQUAL ""))
@@ -100,6 +104,7 @@ function(cbuild_set_options_flags lang optimize debug warnings flags)
   cbuild_set_option_flags(${lang} OPTIMIZE "${optimize}" opt_flags)
   cbuild_set_option_flags(${lang} DEBUG    "${debug}"    opt_flags)
   cbuild_set_option_flags(${lang} WARNINGS "${warnings}" opt_flags)
+  cbuild_set_option_flags(${lang} LANGUAGE "${language}" opt_flags)
   set(${flags} "${opt_flags} ${${flags}}" PARENT_SCOPE)
 endfunction()
 
@@ -233,11 +238,11 @@ set(ASM_DEFINES ${DEFINES})
 cbuild_set_defines(ASM ASM_DEFINES)
 
 set(AS_LEG_OPTIONS_FLAGS)
-cbuild_set_options_flags(AS_LEG "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" AS_LEG_OPTIONS_FLAGS)
+cbuild_set_options_flags(AS_LEG "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" "" AS_LEG_OPTIONS_FLAGS)
 set(AS_GNU_OPTIONS_FLAGS)
-cbuild_set_options_flags(AS_GNU "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" AS_GNU_OPTIONS_FLAGS)
+cbuild_set_options_flags(AS_GNU "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" "" AS_GNU_OPTIONS_FLAGS)
 set(ASM_OPTIONS_FLAGS)
-cbuild_set_options_flags(ASM "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" ASM_OPTIONS_FLAGS)
+cbuild_set_options_flags(ASM "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" "" ASM_OPTIONS_FLAGS)
 
 if(BYTE_ORDER STREQUAL "Little-endian")
   set(ASM_BYTE_ORDER "-mlittle-endian")
@@ -264,7 +269,7 @@ set(CC_FLAGS)
 set(_PI "-include ")
 set(_ISYS "-isystem ")
 set(CC_OPTIONS_FLAGS)
-cbuild_set_options_flags(CC "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" CC_OPTIONS_FLAGS)
+cbuild_set_options_flags(CC "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" "${LANGUAGE_CC}" CC_OPTIONS_FLAGS)
 
 if(SECURE STREQUAL "Secure")
   set(CC_SECURE "-mcmse")
@@ -299,7 +304,7 @@ set(CXX_SECURE "${CC_SECURE}")
 set(CXX_BRANCHPROT "${CC_BRANCHPROT}")
 set(CXX_FLAGS "${CC_FLAGS}")
 set(CXX_OPTIONS_FLAGS)
-cbuild_set_options_flags(CXX "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" CXX_OPTIONS_FLAGS)
+cbuild_set_options_flags(CXX "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" "${LANGUAGE_CXX}" CXX_OPTIONS_FLAGS)
 
 set (CXX_SYS_INC_PATHS_LIST
   "$\{TOOLCHAIN_ROOT}/../arm-none-eabi/include/c++/\${TOOLCHAIN_VERSION}"
@@ -323,7 +328,7 @@ endif()
 
 set(LD_FLAGS)
 set(LD_OPTIONS_FLAGS)
-cbuild_set_options_flags(LD "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" LD_OPTIONS_FLAGS)
+cbuild_set_options_flags(LD "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" "" LD_OPTIONS_FLAGS)
 
 # Group libraries for rescanning
 set(LIB_FILES -Wl,--start-group ${LIB_FILES} -Wl,--end-group)

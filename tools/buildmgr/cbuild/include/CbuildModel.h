@@ -330,6 +330,24 @@ public:
   }
 
   /**
+   * @brief get languageC option
+   * @return languageC option
+  */
+  const std::string& GetTargetLanguageC() const
+  {
+    return m_targetLanguageC;
+  }
+
+  /**
+   * @brief get languageC++ option
+   * @return languageC++ option
+  */
+  const std::string& GetTargetLanguageCpp() const
+  {
+    return m_targetLanguageCpp;
+  }
+
+  /**
    * @brief get optimize option for modules contained in the component
    * @return list of key, value pair where
    *         key: component name,
@@ -360,6 +378,28 @@ public:
   const std::map<std::string, std::string>& GetWarningsOption() const
   {
     return m_warnings;
+  }
+
+  /**
+   * @brief get languageC option for modules contained in the component
+   * @return list of key, value pair where
+   *         key: component name,
+   *         value: languageC option
+  */
+  const std::map<std::string, std::string>& GetLanguageCOption() const
+  {
+    return m_languageC;
+  }
+
+  /**
+   * @brief get languageCpp option for modules contained in the component
+   * @return list of key, value pair where
+   *         key: component name,
+   *         value: languageCpp option
+  */
+  const std::map<std::string, std::string>& GetLanguageCppOption() const
+  {
+    return m_languageCpp;
   }
 
   /**
@@ -518,7 +558,7 @@ protected:
   enum TranslationControlsKind {
     FLAGS,            // flags: asflags, cflags, ldflags ...
     DEFINES,          // defines
-    OPTIONS,          // options: optimize, debug, warnings
+    OPTIONS,          // options: optimize, debug, warnings, languageC, languageCpp
   };
 
 protected:
@@ -570,9 +610,13 @@ protected:
   std::string                                       m_targetOptimize;
   std::string                                       m_targetDebug;
   std::string                                       m_targetWarnings;
+  std::string                                       m_targetLanguageC;
+  std::string                                       m_targetLanguageCpp;
   std::map<std::string, std::string>                m_optimize;
   std::map<std::string, std::string>                m_debug;
   std::map<std::string, std::string>                m_warnings;
+  std::map<std::string, std::string>                m_languageC;
+  std::map<std::string, std::string>                m_languageCpp;
   std::string                                       m_outDir;
   std::string                                       m_intDir;
   std::string                                       m_outputType;

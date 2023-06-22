@@ -36,27 +36,32 @@ TEST_F(CBuildGCCTests, Build_GCC_Translation_Control_3) {
   RunCBuildScript            (param);
   CheckCMakeLists            (param);
 
-  // global options : optimize="size" debug="on" warnings="on"
+  // global options : optimize="size" debug="on" warnings="on" languageC="gnu99"
   CheckCompileCommand(param.name, "-Os");
   CheckCompileCommand(param.name, "-g3");
+  CheckCompileCommand(param.name, "-std=gnu99");
 
   // component 'Device::Startup' options
   //   explicit : optimize="none"
-  //   inherited : debug="on" warnings="on"
+  //   inherited : debug="on" warnings="on" languageC="gnu99"
   CheckCompileCommand(param.name, "-O0", "system_ARMCM3.c");
   CheckCompileCommand(param.name, "-g3", "system_ARMCM3.c");
+  CheckCompileCommand(param.name, "-std=gnu99", "system_ARMCM3.c");
 
   // do some random tests
   // File_1.c options
-  //   explicit : optimize="size" debug="off"
+  //   explicit : optimize="size" debug="off" languageC="c11"
   //   inherited : warnings="on"
   CheckCompileCommand(param.name, "-Os", "File_1.c");
   CheckCompileCommand(param.name, "-g0", "File_1.c");
+  CheckCompileCommand(param.name, "-std=c11", "File_1.c");
+
   // File_4.cpp options
-  // explicit : optimize="none" debug="off" warnings="off"
+  // explicit : optimize="none" debug="off" warnings="off" languageCpp="c++17"
   CheckCompileCommand(param.name, "-O0", "File_4.cpp");
   CheckCompileCommand(param.name, "-g0", "File_4.cpp");
   CheckCompileCommand(param.name, "-w", "File_4.cpp");
+  CheckCompileCommand(param.name, "-std=c++17", "File_4.cpp");
 }
 
 // Validate successful build of C example

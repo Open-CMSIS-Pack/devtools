@@ -240,6 +240,11 @@ set(WARNINGS_CC_FLAGS  ""   "--no_warnings")
 set(WARNINGS_CXX_FLAGS ""   "--no_warnings")
 set(WARNINGS_LD_FLAGS  ""   "--no_warnings")
 
+# IAR default "Standard C" supports C18/C11
+# The option --c89 enables support for ISO 9899:1990 also known as C94, C90, C89, and ANSI C instead of "Standard C" 
+set(LANGUAGE_VALUES       "c90"   "gnu90" "c99"   "gnu99" "c11" "gnu11" "c++98" "gnu++98" "c++03" "gnu++03" "c++11" "gnu++11" "c++14" "gnu++14" "c++17" "gnu++17" "c++20" "gnu++20")
+set(LANGUAGE_CC_FLAGS     "--c89" "--c89" "--c89" "--c89" ""    ""      ""      ""        ""      ""        ""      ""        ""      ""        ""      ""        ""      ""       )
+set(LANGUAGE_CXX_FLAGS    ""      ""      ""      ""      ""    ""      "--c89" "--c89"   "--c89" "--c89"   ""      ""        ""      ""        ""      ""        ""      ""       )
 
 function(cbuild_set_option_flags lang option value flags)
   if(NOT DEFINED ${option}_${lang}_FLAGS)
@@ -255,11 +260,12 @@ function(cbuild_set_option_flags lang option value flags)
   endif()
 endfunction()
 
-function(cbuild_set_options_flags lang optimize debug warnings flags)
+function(cbuild_set_options_flags lang optimize debug warnings language flags)
   set(opt_flags)
   cbuild_set_option_flags(${lang} OPTIMIZE "${optimize}" opt_flags)
   cbuild_set_option_flags(${lang} DEBUG    "${debug}"    opt_flags)
   cbuild_set_option_flags(${lang} WARNINGS "${warnings}" opt_flags)
+  cbuild_set_option_flags(${lang} LANGUAGE "${language}" opt_flags)
   set(${flags} "${opt_flags} ${${flags}}" PARENT_SCOPE)
 endfunction()
 
@@ -271,7 +277,7 @@ set(ASM_FLAGS)
 set(ASM_DEFINES ${DEFINES})
 cbuild_set_defines(ASM ASM_DEFINES)
 set(ASM_OPTIONS_FLAGS)
-cbuild_set_options_flags(ASM "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" ASM_OPTIONS_FLAGS)
+cbuild_set_options_flags(ASM "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" "" ASM_OPTIONS_FLAGS)
 
 # C Pre-Processor
 
@@ -288,7 +294,7 @@ set(CC_FLAGS)
 set(CC_DEFINES ${DEFINES})
 cbuild_set_defines(CC CC_DEFINES)
 set(CC_OPTIONS_FLAGS)
-cbuild_set_options_flags(CC "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" CC_OPTIONS_FLAGS)
+cbuild_set_options_flags(CC "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" "${LANGUAGE_CC}" CC_OPTIONS_FLAGS)
 set(_PI "--preinclude ")
 
 if((SECURE STREQUAL "Secure") AND 
@@ -302,7 +308,9 @@ endif()
 set(CXX_CPU "${CC_CPU}")
 set(CXX_BYTE_ORDER "${CC_BYTE_ORDER}")
 set(CXX_FLAGS "${CC_FLAGS}")
-set(CXX_OPTIONS_FLAGS "${CC_OPTIONS_FLAGS}")
+set(CXX_OPTIONS_FLAGS)
+cbuild_set_options_flags(CXX "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" "${LANGUAGE_CXX}" CXX_OPTIONS_FLAGS)
+
 set(CXX_DEFINES "${CC_DEFINES}")
 set(CXX_SECURE "${CC_SECURE}")
 
@@ -317,7 +325,7 @@ endif()
 
 set(LD_FLAGS)
 set(LD_OPTIONS_FLAGS)
-cbuild_set_options_flags(LD "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" LD_OPTIONS_FLAGS)
+cbuild_set_options_flags(LD "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" "" LD_OPTIONS_FLAGS)
 
 # ELF to HEX conversion
 set (ELF2HEX --silent --ihex "${OUT_DIR}/$<TARGET_PROPERTY:${TARGET},OUTPUT_NAME>$<TARGET_PROPERTY:${TARGET},SUFFIX>" "${OUT_DIR}/${HEX_FILE}")

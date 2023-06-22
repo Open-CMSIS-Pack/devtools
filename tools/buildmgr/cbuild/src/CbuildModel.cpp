@@ -954,6 +954,11 @@ bool CbuildModel::SetItemOptions(const RteItem* item, const string& name) {
   string warnings = options->GetAttribute("warnings");
   m_warnings.insert(pair<string, string>(name, warnings));
 
+  string languageC = options->GetAttribute("languageC");
+  m_languageC.insert(pair<string, string>(name, languageC));
+
+  string languageCpp = options->GetAttribute("languageCpp");
+  m_languageCpp.insert(pair<string, string>(name, languageCpp));
   return true;
 }
 
@@ -1177,6 +1182,8 @@ bool CbuildModel::EvalOptions() {
     m_targetOptimize = target->GetChildAttribute("options", "optimize");
     m_targetDebug = target->GetChildAttribute("options", "debug");
     m_targetWarnings = target->GetChildAttribute("options", "warnings");
+    m_targetLanguageC = target->GetChildAttribute("options", "languageC");
+    m_targetLanguageCpp = target->GetChildAttribute("options", "languageCpp");
   }
 
   // RTE group options
