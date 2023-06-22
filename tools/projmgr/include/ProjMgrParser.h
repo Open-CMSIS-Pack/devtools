@@ -97,6 +97,9 @@ struct ProcessorItem {
  *        toolchain,
  *        optimization level,
  *        debug information,
+ *        warnings,
+ *        language standard C,
+ *        language standard C++,
  *        preprocessor defines,
  *        preprocessor undefines,
  *        include paths,
@@ -110,6 +113,8 @@ struct BuildType {
   std::string optimize;
   std::string debug;
   std::string warnings;
+  std::string languageC;
+  std::string languageCpp;
   std::vector<std::string> defines;
   std::vector<std::string> undefines;
   std::vector<std::string> addpaths;

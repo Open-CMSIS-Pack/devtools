@@ -338,6 +338,8 @@ void ProjMgrYamlCbuild::SetControlsNode(YAML::Node node, const BuildType& contro
   SetNodeValue(node[YAML_OPTIMIZE], controls.optimize);
   SetNodeValue(node[YAML_DEBUG], controls.debug);
   SetNodeValue(node[YAML_WARNINGS], controls.warnings);
+  SetNodeValue(node[YAML_LANGUAGE_C], controls.languageC);
+  SetNodeValue(node[YAML_LANGUAGE_CPP], controls.languageCpp);
   SetMiscNode(node[YAML_MISC], controls.misc);
   SetDefineNode(node[YAML_DEFINE], controls.defines);
   SetNodeValue(node[YAML_UNDEFINE], controls.undefines);
