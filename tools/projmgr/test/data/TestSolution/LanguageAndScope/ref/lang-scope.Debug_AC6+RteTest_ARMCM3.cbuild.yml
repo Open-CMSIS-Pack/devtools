@@ -1,0 +1,53 @@
+build:
+  generated-by: csolution version 2.0.0-dev0+p45-gd14bd9b
+  solution: ../data/TestSolution/LanguageAndScope/lang-scope.csolution.yml
+  project: ../data/TestSolution/LanguageAndScope/lang-scope.cproject.yml
+  context: lang-scope.Debug_AC6+RteTest_ARMCM3
+  compiler: AC6
+  device: RteTest_ARMCM3
+  processor:
+    fpu: off
+  packs:
+    - pack: ARM::RteTest@0.1.0-alpha0
+      path: ../data/TestSolution/LanguageAndScope/pack
+    - pack: ARM::RteTest_DFP@0.2.0
+      path: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0
+  define:
+    - ARMCM3
+    - _RTE_
+  add-path:
+    - ../data/TestSolution/LanguageAndScope/pack/LanguageAndScope/Public
+    - ../data/TestSolution/LanguageAndScope/pack/LanguageAndScope/Visible
+    - ../data/TestSolution/LanguageAndScope/RTE/_Debug_AC6_RteTest_ARMCM3
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM3/Include
+  output-dirs:
+    intdir: tmp/lang-scope/RteTest_ARMCM3/Debug_AC6
+    outdir: out/lang-scope/RteTest_ARMCM3/Debug_AC6
+    rtedir: ../data/TestSolution/LanguageAndScope/RTE
+  output:
+    - type: elf
+      file: lang-scope.axf
+  components:
+    - component: ARM::RteTest:LanguageAndScope@0.9.9
+      from-pack: ARM::RteTest@0.1.0-alpha0
+      selected-by: RteTest:LanguageAndScope
+      add-path:
+        - ../data/TestSolution/LanguageAndScope/pack/LanguageAndScope/Private
+      files:
+        - file: ../data/TestSolution/LanguageAndScope/pack/LanguageAndScope/Dummy.c
+          category: source
+          language: c
+        - file: ../data/TestSolution/LanguageAndScope/pack/LanguageAndScope/Dummy.cpp
+          category: source
+          language: cpp
+        - file: ../data/TestSolution/LanguageAndScope/pack/LanguageAndScope/Hidden/Hidden.h
+          category: header
+          language: c-cpp
+          scope: hidden
+          version: 0.9.9
+  linker:
+    script: ${CMSIS_COMPILER_ROOT}/ac6_linker_script.sct
+    regions: ../data/TestSolution/LanguageAndScope/RTE/Device/RteTest_ARMCM3/regions_RteTest_ARMCM3.h
+  constructed-files:
+    - file: ../data/TestSolution/LanguageAndScope/RTE/_Debug_AC6_RteTest_ARMCM3/RTE_Components.h
+      category: header

@@ -1552,25 +1552,41 @@ bool ProjMgrWorker::ProcessComponentFiles(ContextItem& context) {
         if (componentFile) {
           const auto& attr = componentFile->GetAttribute("attr");
           const auto& category = componentFile->GetAttribute("category");
+          const auto& language = componentFile->GetAttribute("language");
+          const auto& scope = componentFile->GetAttribute("scope");
           const auto& version = attr == "config" ? componentFile->GetVersionString() : "";
-          context.componentFiles[ProjMgrUtils::GetComponentID(component)].push_back({ file, attr, category, version });
+          context.componentFiles[ProjMgrUtils::GetComponentID(component)].push_back({ file, attr, category, language, scope, version });
         }
       }
     }
   }
   // iterate over components
   for (const auto& [componentId, component] : context.components) {
-    const RteComponent* rteComponent = component.instance->GetParent()->GetComponent();
+    RteComponent* rteComponent = component.instance->GetParent()->GetComponent();
     const auto& files = rteComponent->GetFileContainer() ? rteComponent->GetFileContainer()->GetChildren() : list<RteItem*>();
-    // pre-include files from packs
+    // private includes
+    for (const auto& privateIncludes : {
+      context.rteActiveTarget->GetPrivateIncludePaths(rteComponent, RteFile::Language::LANGUAGE_C),
+      context.rteActiveTarget->GetPrivateIncludePaths(rteComponent, RteFile::Language::LANGUAGE_CPP),
+      context.rteActiveTarget->GetPrivateIncludePaths(rteComponent, RteFile::Language::LANGUAGE_C_CPP),
+      context.rteActiveTarget->GetPrivateIncludePaths(rteComponent, RteFile::Language::LANGUAGE_NONE)
+      }) {
+      for (const auto& privateInclude : privateIncludes) {
+        const string& include = fs::path(privateInclude).is_relative() ? fs::path(context.cproject->directory).append(privateInclude).generic_string() : privateInclude;
+        component.item->build.addpaths.push_back(RteFsUtils::RelativePath(include, context.directories.cprj));
+      }
+    }
+    // hidden files and pre-include files from packs
     for (const auto& componentFile : files) {
+      const auto& name = rteComponent->GetPackage()->GetAbsolutePackagePath() + componentFile->GetAttribute("name");
       const auto& category = componentFile->GetAttribute("category");
       const auto& attr = componentFile->GetAttribute("attr");
-      if (((category == "preIncludeGlobal") || (category == "preIncludeLocal")) && attr.empty()) {
-        const auto& preInclude = rteComponent->GetPackage()->GetAbsolutePackagePath() + componentFile->GetAttribute("name");
-        if (IsPreIncludeByTarget(context.rteActiveTarget, preInclude)) {
-          context.componentFiles[componentId].push_back({ preInclude, "", category, "" });
-        }
+      const auto& scope = componentFile->GetAttribute("scope");
+      const auto& language = componentFile->GetAttribute("language");
+      const auto& version = componentFile->GetVersionString();
+      if ((scope == "hidden") ||
+        ((((category == "preIncludeGlobal") || (category == "preIncludeLocal")) && attr.empty()) && (IsPreIncludeByTarget(context.rteActiveTarget, name)))){
+        context.componentFiles[componentId].push_back({ name, attr, category, language, scope, version });
       }
     }
     // config files
@@ -1583,6 +1599,8 @@ bool ProjMgrWorker::ProcessComponentFiles(ContextItem& context) {
           const auto& filename = configFile->GetAbsolutePath();
           configFilePaths[originalFile] = filename;
           const auto& category = configFile->GetAttribute("category");
+          const auto& language = configFile->GetAttribute("language");
+          const auto& scope = configFile->GetAttribute("scope");
           switch (RteFile::CategoryFromString(category)) {
           case RteFile::Category::GEN_SOURCE:
           case RteFile::Category::GEN_HEADER:
@@ -1593,7 +1611,7 @@ bool ProjMgrWorker::ProcessComponentFiles(ContextItem& context) {
             break;
           };
           const auto& version = originalFile->GetVersionString();
-          context.componentFiles[componentId].push_back({ filename, "config", category, version });
+          context.componentFiles[componentId].push_back({ filename, "config", category, language, scope, version });
         }
       }
     }
@@ -1612,9 +1630,11 @@ bool ProjMgrWorker::ProcessComponentFiles(ContextItem& context) {
         };
         const auto& version = rteFile->GetVersionString();
         const auto& attr = rteFile->GetAttribute("attr");
+        const auto& language = rteFile->GetAttribute("language");
+        const auto& scope = rteFile->GetAttribute("scope");
         const auto& filename = (attr == "config" && configFilePaths.find(rteFile) != configFilePaths.end()) ?
                                 configFilePaths[rteFile] : rteFile->GetOriginalAbsolutePath();
-        context.generatorInputFiles[componentId].push_back({ filename, attr, category, version });
+        context.generatorInputFiles[componentId].push_back({ filename, attr, category, language, scope, version });
       }
     }
   }
@@ -1628,7 +1648,7 @@ bool ProjMgrWorker::ProcessComponentFiles(ContextItem& context) {
           const string& filename = context.rteActiveProject->GetProjectPath() +
             context.rteActiveProject->GetRteHeader(file, context.rteActiveTarget->GetName(), "");
           const string& componentID = ProjMgrUtils::GetComponentID(component);
-          context.componentFiles[componentID].push_back({ filename, "", "preIncludeLocal", ""});
+          context.componentFiles[componentID].push_back({ filename, "", "preIncludeLocal", "", "", ""});
           break;
         }
       }
