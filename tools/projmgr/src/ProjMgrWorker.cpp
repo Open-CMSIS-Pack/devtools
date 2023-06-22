@@ -1929,6 +1929,46 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
     return false;
   }
 
+  // Language C
+  StringCollection languageC = {
+    &context.controls.processed.languageC,
+    {
+      &context.controls.cproject.languageC,
+      &context.controls.csolution.languageC,
+      &context.controls.target.languageC,
+      &context.controls.build.languageC,
+    },
+  };
+  for (auto& setup : context.controls.setups) {
+    languageC.elements.push_back(&setup.languageC);
+  }
+  for (auto& [_, clayer] : context.controls.clayers) {
+    languageC.elements.push_back(&clayer.languageC);
+  }
+  if (!ProcessPrecedence(languageC)) {
+    return false;
+  }
+
+  // Language C++
+  StringCollection languageCpp = {
+    &context.controls.processed.languageCpp,
+    {
+      &context.controls.cproject.languageCpp,
+      &context.controls.csolution.languageCpp,
+      &context.controls.target.languageCpp,
+      &context.controls.build.languageCpp,
+    },
+  };
+  for (auto& setup : context.controls.setups) {
+    languageCpp.elements.push_back(&setup.languageCpp);
+  }
+  for (auto& [_, clayer] : context.controls.clayers) {
+    languageCpp.elements.push_back(&clayer.languageCpp);
+  }
+  if (!ProcessPrecedence(languageCpp)) {
+    return false;
+  }
+
   // Misc
   vector<vector<MiscItem>*> miscVec = {
     &context.controls.cproject.misc,
