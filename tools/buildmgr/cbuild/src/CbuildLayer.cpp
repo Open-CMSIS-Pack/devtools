@@ -32,8 +32,6 @@ using namespace std;
 
 #define PDEXT ".cprj"             // Project description extension
 #define CLEXT ".clayer"           // Layer extension
-#define SCHEMA_FILE "CPRJ.xsd"    // XML schema file name
-#define SCHEMA_VERSION "0.0.9"    // XML schema version
 #define EOL "\n"                  // End of line
 
 CbuildLayer::CbuildLayer(void) {

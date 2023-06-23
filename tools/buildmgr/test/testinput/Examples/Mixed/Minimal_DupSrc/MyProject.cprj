@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no" ?>
-<cprj schemaVersion="0.0.9" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="CPRJ.xsd">
+<cprj schemaVersion="2.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="CPRJ.xsd">
   <created tool="µVision V5.29.0.13" timestamp="2020-01-21T11:38:01" />
 
   <info isLayer="false" >

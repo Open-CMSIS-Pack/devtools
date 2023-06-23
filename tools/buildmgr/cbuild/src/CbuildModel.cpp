@@ -57,6 +57,13 @@ bool CbuildModel::Create(const CbuildRteArgs& args) {
   // get cprj pack structure
   m_cprj = m_cprjProject->GetCprjFile();
 
+  // check cprj schema version
+  const string& schemaVersion = m_cprj->GetAttribute("schemaVersion");
+  if (VersionCmp::Compare(schemaVersion, SCHEMA_VERSION) < 0) {
+    LogMsg("M220", VAL("VER", schemaVersion), VAL("REQ", SCHEMA_VERSION));
+    return false;
+  }
+
   // check pack requirements (packlist command)
   if (args.checkPack) {
     vector<CbuildPackItem> packList;
