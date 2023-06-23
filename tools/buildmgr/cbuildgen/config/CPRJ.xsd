@@ -245,7 +245,6 @@
   <xs:simpleType name="CompilerEnumType">
     <xs:restriction base="xs:token">
       <xs:enumeration value="GCC" />
-      <xs:enumeration value="AC5" />
       <xs:enumeration value="AC6" />
       <xs:enumeration value="IAR" />
       <xs:enumeration value="Tasking" />

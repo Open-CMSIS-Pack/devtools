@@ -1206,7 +1206,7 @@ bool ProjMgrWorker::ProcessToolchain(ContextItem& context) {
       context.toolchain.version = RteUtils::GetPrefix(context.toolchain.range);
     }
   }
-  if (context.toolchain.name == "AC6" || context.toolchain.name == "AC5") {
+  if (context.toolchain.name == "AC6") {
     context.targetAttributes["Tcompiler"] = "ARMCC";
     context.targetAttributes["Toptions"] = context.toolchain.name;
   } else {

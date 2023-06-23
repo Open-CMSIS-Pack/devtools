@@ -129,7 +129,7 @@ bool CbuildProject::UpdateTarget(const RteItem* components, const map<string, st
 }
 
 void CbuildProject::SetToolchain(const string& toolchain, map<string, string> &attributes) {
-  if ((toolchain.compare("AC5") == 0) || (toolchain.compare("AC6") == 0)) {
+  if (toolchain.compare("AC6") == 0) {
     attributes["Tcompiler"] = "ARMCC";
     attributes["Toptions"] = toolchain;
   } else {
