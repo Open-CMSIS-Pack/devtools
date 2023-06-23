@@ -3031,6 +3031,34 @@ TEST_F(ProjMgrUnitTests, SelectToolchains) {
   RteFsUtils::RemoveFile(AC6_6_6_5);
 }
 
+TEST_F(ProjMgrUnitTests, ToolchainRedefinition) {
+  StdStreamRedirect streamRedirect;
+  char* argv[9];
+  const string& csolution = testinput_folder + "/TestSolution/toolchain-redefinition.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"-o";
+  argv[4] = (char*)testoutput_folder.c_str();
+  argv[5] = (char*)"-c";
+  argv[6] = (char*)".Error";
+  EXPECT_EQ(1, RunProjMgr(7, argv, 0));
+  const string err = streamRedirect.GetErrorString();
+  const string expectedErr =\
+    "error csolution: redefinition from 'AC6' into 'GCC' is not allowed\n"\
+    "error csolution: processing context 'toolchain.Error+RteTest_ARMCM3' failed\n";
+  EXPECT_EQ(err, expectedErr);
+
+  streamRedirect.ClearStringStreams();
+  argv[6] = (char*)".Warning";
+  argv[7] = (char*)"-t";
+  argv[8] = (char*)"GCC";
+  EXPECT_EQ(0, RunProjMgr(9, argv, 0));
+  const string warn = streamRedirect.GetErrorString();
+  const string expectedWarn =\
+    "warning csolution: redefinition from 'AC6' into 'GCC'\n";
+  EXPECT_EQ(warn, expectedWarn);
+}
+
 TEST_F(ProjMgrUnitTests, RunProjMgr_LinkerOptions) {
   char* argv[7];
   const string& csolution = testinput_folder + "/TestSolution/LinkerOptions/linker.csolution.yml";

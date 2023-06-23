@@ -1,5 +1,7 @@
 default:
-  
+
+  compiler: GCC
+
   misc:
     - for-compiler: AC6
       C-CPP:

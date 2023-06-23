@@ -1203,7 +1203,7 @@ bool ProjMgrWorker::ProcessToolchain(ContextItem& context) {
     // get compatible supported toolchain
     if (!GetToolchainConfig(context.toolchain.name, context.toolchain.range, context.toolchain.config, context.toolchain.version)) {
       ProjMgrLogger::Warn("cmake configuration file for toolchain '" + context.compiler + "' was not found");
-      context.toolchain.version = context.toolchain.range;
+      context.toolchain.version = RteUtils::GetPrefix(context.toolchain.range);
     }
   }
   if (context.toolchain.name == "AC6" || context.toolchain.name == "AC5") {
@@ -1757,12 +1757,16 @@ bool ProjMgrWorker::ProcessPrecedence(StringCollection& item) {
   return true;
 }
 
-bool ProjMgrWorker::ProcessCompilerPrecedence(StringCollection& item) {
+bool ProjMgrWorker::ProcessCompilerPrecedence(StringCollection& item, bool acceptRedefinition) {
   for (const auto& element : item.elements) {
     if (!element->empty()) {
       if (!ProjMgrUtils::AreCompilersCompatible(*item.assign, *element)) {
-        ProjMgrLogger::Error("redefinition from '" + *item.assign + "' into '" + *element + "' is not allowed");
-        return false;
+        if (acceptRedefinition) {
+          ProjMgrLogger::Warn("redefinition from '" + *item.assign + "' into '" + *element + "'");
+        } else {
+          ProjMgrLogger::Error("redefinition from '" + *item.assign + "' into '" + *element + "' is not allowed");
+          return false;
+        }
       }
       ProjMgrUtils::CompilersIntersect(*item.assign, *element, *item.assign);
     }
@@ -1838,13 +1842,17 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
      &context.controls.csolution.compiler,
      &context.controls.target.compiler,
      &context.controls.build.compiler,
-     &m_selectedToolchain,
    },
   };
   for (const auto& [_, clayer] : context.clayers) {
     compiler.elements.push_back(&clayer->target.build.compiler);
   }
   if (!ProcessCompilerPrecedence(compiler)) {
+    return false;
+  }
+  // accept compiler redefinition in the command line
+  compiler = { &context.compiler, { &m_selectedToolchain } };
+  if (!ProcessCompilerPrecedence(compiler, true)) {
     return false;
   }
   if (!ProcessToolchain(context)) {
