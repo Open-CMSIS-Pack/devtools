@@ -17,12 +17,15 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 
-  $Date:        21. June 2023
-  $Revision:    1.5.0
+  $Date:        22. June 2023
+  $Revision:    2.0.0
 
   $Project: Schema File for CMSIS Project Description File Format Specification
 
-  SchemaVersion=1.5.0
+  SchemaVersion=2.0.0
+
+  2.0.0: Increment major version to reflect 'output' attribute breaking changes
+         Added component 'gendir' attribute
 
   1.5.0: Added 'languageC' and 'languageCpp' options
 
@@ -575,6 +578,7 @@
           <xs:attribute name="instances"   type="InstancesType"        use="optional" default="1"/>
           <xs:attribute name="layer"       type="RestrictedString"     use="optional" />
           <xs:attribute name="rtedir"      type="xs:string"            use="optional" />
+          <xs:attribute name="gendir"      type="xs:string"            use="optional" />
         </xs:complexType>
       </xs:element>
     </xs:sequence>

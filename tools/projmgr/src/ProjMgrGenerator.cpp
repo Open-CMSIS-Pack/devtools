@@ -20,7 +20,7 @@
 using namespace std;
 
 static constexpr const char* SCHEMA_FILE = "CPRJ.xsd";    // XML schema file name
-static constexpr const char* SCHEMA_VERSION = "1.5.0";    // XML schema version
+static constexpr const char* SCHEMA_VERSION = "2.0.0";    // XML schema version
 
 
 ProjMgrGenerator::ProjMgrGenerator(void) {
