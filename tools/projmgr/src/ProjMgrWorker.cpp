@@ -1203,7 +1203,7 @@ bool ProjMgrWorker::ProcessToolchain(ContextItem& context) {
     // get compatible supported toolchain
     if (!GetToolchainConfig(context.toolchain.name, context.toolchain.range, context.toolchain.config, context.toolchain.version)) {
       ProjMgrLogger::Warn("cmake configuration file for toolchain '" + context.compiler + "' was not found");
-      context.toolchain.version = context.toolchain.range;
+      context.toolchain.version = RteUtils::GetPrefix(context.toolchain.range);
     }
   }
   if (context.toolchain.name == "AC6" || context.toolchain.name == "AC5") {
