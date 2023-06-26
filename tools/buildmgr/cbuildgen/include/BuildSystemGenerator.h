@@ -18,6 +18,8 @@
  *        optimize : optimize option
  *        debug : debug option
  *        warnings : warnings option
+ *        languageC : language standard C option
+ *        languageCpp : language standard C++ option
  *        as_msc: Assembler miscellaneous options and defines
  *        cc_msc: C Compiler miscellaneous options and defines
  *        cxx_msc: C++ Compiler miscellaneous options and defines
@@ -30,6 +32,8 @@ struct TranslationControls
   std::string optimize;
   std::string debug;
   std::string warnings;
+  std::string languageC;
+  std::string languageCpp;
   std::string asMsc;
   std::string ccMsc;
   std::string cxxMsc;
@@ -44,6 +48,8 @@ struct TranslationControls
  *        optimize : module optimize option
  *        debug : module debug option
  *        warnings : module warnings option
+ *        languageC : module languageC option
+ *        languageCpp : module languageC++ option
  *        flags: Assembler or C or C++ Compiler miscellaneous options and defines
  *        defines: module defines
  *        undefines: module undefines
@@ -56,6 +62,8 @@ struct module
   std::string optimize;
   std::string debug;
   std::string warnings;
+  std::string languageC;
+  std::string languageCpp;
   std::string flags;
   std::string defines;
   std::string undefines;
@@ -137,6 +145,8 @@ protected:
   std::string m_optimize;
   std::string m_debug;
   std::string m_warnings;
+  std::string m_languageC;
+  std::string m_languageCpp;
   std::string m_ccMscGlobal;
   std::string m_cxxMscGlobal;
   std::string m_asMscGlobal;

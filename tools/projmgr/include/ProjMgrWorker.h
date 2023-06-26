@@ -137,12 +137,16 @@ struct SelectedComponentItem {
  *        file name
  *        file attribute
  *        file category
+ *        file language
+ *        file scope
  *        file version
 */
 struct ComponentFileItem {
   std::string name;
   std::string attr;
   std::string category;
+  std::string language;
+  std::string scope;
   std::string version;
 };
 
@@ -572,7 +576,7 @@ protected:
   bool SetTargetAttributes(ContextItem& context, std::map<std::string, std::string>& attributes);
   bool ProcessPrecedences(ContextItem& context);
   bool ProcessPrecedence(StringCollection& item);
-  bool ProcessCompilerPrecedence(StringCollection& item);
+  bool ProcessCompilerPrecedence(StringCollection& item, bool acceptRedefinition = false);
   bool ProcessDevice(ContextItem& context);
   bool ProcessDevicePrecedence(StringCollection& item);
   bool ProcessBoardPrecedence(StringCollection& item);

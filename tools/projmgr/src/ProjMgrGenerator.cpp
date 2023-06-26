@@ -20,7 +20,7 @@
 using namespace std;
 
 static constexpr const char* SCHEMA_FILE = "CPRJ.xsd";    // XML schema file name
-static constexpr const char* SCHEMA_VERSION = "1.2.0";    // XML schema version
+static constexpr const char* SCHEMA_VERSION = "2.0.0";    // XML schema version
 
 
 ProjMgrGenerator::ProjMgrGenerator(void) {
@@ -277,7 +277,8 @@ void ProjMgrGenerator::GenerateCprjVector(XMLTreeElement* element, const vector<
 
 void ProjMgrGenerator::GenerateCprjOptions(XMLTreeElement* element, const BuildType& buildType) {
 
-  if (buildType.optimize.empty() && buildType.debug.empty() && buildType.warnings.empty()) {
+  if (buildType.optimize.empty() && buildType.debug.empty() && buildType.warnings.empty() &&
+    buildType.languageC.empty() && buildType.languageCpp.empty()) {
     return;
   }
 
@@ -287,6 +288,8 @@ void ProjMgrGenerator::GenerateCprjOptions(XMLTreeElement* element, const BuildT
     SetAttribute(optionsElement, "optimize", buildType.optimize);
     SetAttribute(optionsElement, "debug", buildType.debug);
     SetAttribute(optionsElement, "warnings", buildType.warnings);
+    SetAttribute(optionsElement, "languageC", buildType.languageC);
+    SetAttribute(optionsElement, "languageCpp", buildType.languageCpp);
   }
 }
 

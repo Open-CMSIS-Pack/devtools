@@ -45,7 +45,7 @@ build:
     - _RTE_
   add-path:
     - ../data/TestSolution/TestProject2/path/project
-    - ../data/TestSolution/path/solution/
+    - ../data/TestSolution/path/solution
     - ../data/TestSolution/path/CM0
     - ../data/TestSolution/path/Debug
     - ../data/TestSolution/TestProject2/RTE/_Debug_CM0

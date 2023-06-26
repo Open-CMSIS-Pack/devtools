@@ -44,6 +44,8 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
   if (!m_optimize.empty())           cmakelists << EOL << "set(OPTIMIZE " << m_optimize << ")";
   if (!m_debug.empty())              cmakelists << EOL << "set(DEBUG " << m_debug << ")";
   if (!m_warnings.empty())           cmakelists << EOL << "set(WARNINGS " << m_warnings << ")";
+  if (!m_languageC.empty())          cmakelists << EOL << "set(LANGUAGE_CC " << m_languageC << ")";
+  if (!m_languageCpp.empty())        cmakelists << EOL << "set(LANGUAGE_CXX " << m_languageCpp << ")";
   if (!m_asMscGlobal.empty())        cmakelists << EOL << "set(AS_FLAGS_GLOBAL \"" << CbuildUtils::EscapeQuotes(m_asMscGlobal) << "\")";
   if (!m_ccMscGlobal.empty())        cmakelists << EOL << "set(CC_FLAGS_GLOBAL \"" << CbuildUtils::EscapeQuotes(m_ccMscGlobal) << "\")";
   if (!m_cxxMscGlobal.empty())       cmakelists << EOL << "set(CXX_FLAGS_GLOBAL \"" << CbuildUtils::EscapeQuotes(m_cxxMscGlobal) << "\")";
@@ -161,7 +163,7 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
     }
   }
 
-  // file specific options (optimize, debug, warnings)
+  // file specific options (optimize, debug, warnings, languageC, languageCpp)
   bool file_specific_options = false;
   for (auto& filesList : filesLists) {
     for (const auto& [src, file] : *filesList) {
@@ -169,8 +171,14 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
         {"OPTIMIZE", file.optimize},
         {"DEBUG", file.debug},
         {"WARNINGS", file.warnings},
+        {"LANGUAGE_CC", file.languageC},
+        {"LANGUAGE_CXX", file.languageCpp},
       };
       for (const auto& [option, option_value] : file_options) {
+        if (((option == "LANGUAGE_CC") && (filesList != &m_ccFilesList)) ||
+          ((option == "LANGUAGE_CXX") && (filesList != &m_cxxFilesList))) {
+          continue;
+        }
         if (option_value.empty()) continue;
         cmakelists << "set(" << option << "_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src) << " \"" << CbuildUtils::EscapeQuotes(option_value) << "\")"<< EOL;
         file_specific_options = true;
@@ -178,23 +186,31 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
     }
   }
 
-  // group specific options (optimize, debug, warnings)
+  // group specific options (optimize, debug, warnings, languageC, languageCpp)
   bool group_specific_options = false;
   for (auto [group, controls] : m_groupsList) {
     map<string, string> group_options = {
       {"OPTIMIZE", controls.optimize},
       {"DEBUG", controls.debug},
       {"WARNINGS", controls.warnings},
+      {"LANGUAGE_CC", controls.languageC},
+      {"LANGUAGE_CXX", controls.languageCpp},
     };
     for (const auto& [option, group_option_value] : group_options) {
       if (group_option_value.empty()) continue;
       for (auto& filesList : filesLists) {
+        if (((option == "LANGUAGE_CC") && (filesList != &m_ccFilesList)) ||
+          ((option == "LANGUAGE_CXX") && (filesList != &m_cxxFilesList))) {
+          continue;
+        }
         for (auto [src, file] : *filesList) {
           if (fs::path(file.group).generic_string() != group) continue;
           map<string, string> file_options = {
             {"OPTIMIZE", file.optimize},
             {"DEBUG", file.debug},
             {"WARNINGS", file.warnings},
+            {"LANGUAGE_CC", file.languageC},
+            {"LANGUAGE_CXX", file.languageCpp},
           };
           if (!file_options.at(option).empty()) continue;
           cmakelists << "set(" << option << "_" << CbuildUtils::ReplaceSpacesByQuestionMarks(src)
@@ -439,7 +455,7 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
   cmakelists << "# Global Flags" << EOL << EOL;
 
   bool specific_defines = file_specific_defines || group_specific_defines;
-  bool target_options = !m_optimize.empty() || !m_debug.empty() || !m_warnings.empty();
+  bool target_options = !m_optimize.empty() || !m_debug.empty() || !m_warnings.empty() || !m_languageC.empty() || !m_languageCpp.empty();
   for (auto list : asFilesLists) {
     if (!list.second.empty()) {
       string prefix = list.first;
@@ -596,7 +612,11 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
           cmakelists << "  set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS \"${FILE_FLAGS}\")" << EOL;
         }
         if (specific_options) {
-          cmakelists << "  foreach(OPTION OPTIMIZE DEBUG WARNINGS)" << EOL;
+          cmakelists << "  foreach(OPTION OPTIMIZE DEBUG WARNINGS";
+          if ((lang == "CC" || lang == "CXX")) {
+            cmakelists << " LANGUAGE_" << lang;
+          }
+          cmakelists << ")" << EOL;
           cmakelists << "    if(DEFINED ${OPTION}_${S})" << EOL;
           cmakelists << "      set(${OPTION}_LOCAL \"${${OPTION}_${S}}\")" << EOL;
           cmakelists << "    else()" << EOL;
@@ -607,7 +627,12 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
           cmakelists << "  if(FILE_FLAGS STREQUAL \"NOTFOUND\")" << EOL;
           cmakelists << "    set(FILE_FLAGS)" << EOL;
           cmakelists << "  endif()" << EOL;
-          cmakelists << "  cbuild_set_options_flags(" << lang << " \"${OPTIMIZE_LOCAL}\" \"${DEBUG_LOCAL}\" \"${WARNINGS_LOCAL}\" FILE_FLAGS)" << EOL;
+          cmakelists << "  cbuild_set_options_flags(" << lang << " \"${OPTIMIZE_LOCAL}\" \"${DEBUG_LOCAL}\" \"${WARNINGS_LOCAL}\" \"";
+          if ((lang == "CC" || lang == "CXX")) {
+            cmakelists << "${LANGUAGE_" << lang << "_LOCAL}";
+          }
+          cmakelists << "\" FILE_FLAGS)" << EOL;
+          
           cmakelists << "  set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS \"${FILE_FLAGS}\")" << EOL;
         }
         cmakelists << "endforeach()" << EOL << EOL;

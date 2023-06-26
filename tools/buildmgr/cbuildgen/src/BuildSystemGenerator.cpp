@@ -104,6 +104,8 @@ bool BuildSystemGenerator::Collect(const string& inputFile, const CbuildModel *m
   m_optimize = model->GetTargetOptimize();
   m_debug = model->GetTargetDebug();
   m_warnings = model->GetTargetWarnings();
+  m_languageC = model->GetTargetLanguageC();
+  m_languageCpp = model->GetTargetLanguageCpp();
 
   m_ccMscGlobal = GetString(model->GetTargetCFlags());
   m_cxxMscGlobal = GetString(model->GetTargetCxxFlags());
@@ -130,7 +132,7 @@ bool BuildSystemGenerator::Collect(const string& inputFile, const CbuildModel *m
     return false;
   }
 
-  // Optimize, debug and warnings options
+  // Optimize, debug, warnings, languageC and languageCpp options
   if (!CollectTranslationControls(model)) {
     return false;
   }
@@ -258,7 +260,7 @@ bool BuildSystemGenerator::CollectMiscDefinesIncludes(const CbuildModel* model) 
 }
 
 bool BuildSystemGenerator::CollectTranslationControls(const CbuildModel* model) {
-  // Optimize, debug and warnings options
+  // Optimize, debug, warnings, languageC and languageCpp options
   vector<std::map<std::string, std::list<std::string>>> sourceFilesList = {
     model->GetAsmSourceFiles(), model->GetCSourceFiles(), model->GetCxxSourceFiles()
   };
@@ -270,11 +272,13 @@ bool BuildSystemGenerator::CollectTranslationControls(const CbuildModel* model) 
     const map<string, string>& optimizeOpt = model->GetOptimizeOption();
     const map<string, string>& debugOpt = model->GetDebugOption();
     const map<string, string>& warningsOpt = model->GetWarningsOption();
+    const map<string, string>& languageCOpt = model->GetLanguageCOption();
+    const map<string, string>& languageCppOpt = model->GetLanguageCppOption();
 
     for (const auto& [group, files] : sourceFiles)
     {
       string groupName;
-      string optGOptimize, optGDebug, optGWarnings;
+      string optGOptimize, optGDebug, optGWarnings, optGLanguageC, optGLanguageCpp;
 
       // optimize option
       groupName = group;
@@ -309,8 +313,30 @@ bool BuildSystemGenerator::CollectTranslationControls(const CbuildModel* model) 
       } while (!groupName.empty());
       m_groupsList[StrNorm(group)].warnings = optGWarnings;
 
+      // language C option
+      groupName = group;
+      do {
+        if (languageCOpt.find(groupName) != languageCOpt.end()) {
+          optGLanguageC = languageCOpt.at(groupName);
+          break;
+        }
+        groupName = fs::path(groupName).parent_path().generic_string();
+      } while (!groupName.empty());
+      m_groupsList[StrNorm(group)].languageC = optGLanguageC;
+
+      // language Cpp option
+      groupName = group;
+      do {
+        if (languageCppOpt.find(groupName) != languageCppOpt.end()) {
+          optGLanguageCpp = languageCppOpt.at(groupName);
+          break;
+        }
+        groupName = fs::path(groupName).parent_path().generic_string();
+      } while (!groupName.empty());
+      m_groupsList[StrNorm(group)].languageCpp = optGLanguageCpp;
+
       for (auto src : files) {
-        string optFOptimize, optFDebug, optFWarnings;
+        string optFOptimize, optFDebug, optFWarnings, optFLanguageC, optFLanguageCpp;
         src = StrNorm(src);
 
         std::map<std::string, module>* m_langFilesList;
@@ -329,6 +355,10 @@ bool BuildSystemGenerator::CollectTranslationControls(const CbuildModel* model) 
         (*m_langFilesList)[src].debug = optFDebug;
         if (warningsOpt.find(src) != warningsOpt.end()) optFWarnings = warningsOpt.at(src);
         (*m_langFilesList)[src].warnings = optFWarnings;
+        if (languageCOpt.find(src) != languageCOpt.end()) optFLanguageC = languageCOpt.at(src);
+        (*m_langFilesList)[src].languageC = optFLanguageC;
+        if (languageCppOpt.find(src) != languageCppOpt.end()) optFLanguageCpp = languageCppOpt.at(src);
+        (*m_langFilesList)[src].languageCpp = optFLanguageCpp;
       }
     }
   }

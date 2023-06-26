@@ -35,6 +35,8 @@ project:
       optimize: size
       debug: on
       warnings: on
+      language-C: c11
+      language-CPP: c++11
     - setup: Common Setup
       define:
         - SETUP_COMMON

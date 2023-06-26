@@ -104,7 +104,6 @@ void ProjMgrTestEnv::SetUp() {
 
   // create dummy cmsis compiler root
   RteFsUtils::CreateDirectories(testcmsiscompiler_folder);
-  RteFsUtils::CreateFile(testcmsiscompiler_folder + "/AC5.5.6.7.cmake", "");
   RteFsUtils::CreateFile(testcmsiscompiler_folder + "/AC6.6.18.0.cmake", "");
   RteFsUtils::CreateFile(testcmsiscompiler_folder + "/GCC.11.2.1.cmake", "");
   RteFsUtils::CreateFile(testcmsiscompiler_folder + "/IAR.8.50.6.cmake", "");

@@ -4,6 +4,8 @@ project:
   optimize: size
   debug: off
   warnings: off
+  language-C: c11
+  language-CPP: c++11
   components:
     - component: Startup
     - component: CORE
@@ -18,3 +20,5 @@ project:
         - file: file2.c
           warnings: on
         - file: file3.c
+          language-C: c99
+          language-CPP: c++98

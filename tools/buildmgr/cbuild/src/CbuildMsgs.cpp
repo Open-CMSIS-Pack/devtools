@@ -64,6 +64,7 @@ void InitMessageTable()
   table["M217"] = MessageEntry(MsgLevel::LEVEL_ERROR,    CRLF_B,   "Argument parsing error: %MSG%!"                                              );
   table["M218"] = MessageEntry(MsgLevel::LEVEL_ERROR,    CRLF_B,   "No arguments specified!"                                                     );
   table["M219"] = MessageEntry(MsgLevel::LEVEL_ERROR,    CRLF_B,   "'%CMD%' is not a valid command!"                                             );
+  table["M220"] = MessageEntry(MsgLevel::LEVEL_ERROR,    CRLF_B,   "CPRJ schema version '%VER%' is incompatible with required version '%REQ%'!"  );
 
   // 600... CMSIS Build Errors, warnings and messages
   table["M600"] = MessageEntry(MsgLevel::LEVEL_ERROR,    CRLF_B,   "Package index was not found in'%PATH%/.Web'!"                                );

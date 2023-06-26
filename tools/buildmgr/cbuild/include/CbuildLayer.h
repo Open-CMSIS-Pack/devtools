@@ -16,6 +16,12 @@
 #include <map>
 
 /**
+ * @brief CPRJ schema definitions
+*/
+#define SCHEMA_FILE "CPRJ.xsd"    // XML schema file name
+#define SCHEMA_VERSION "2.0.0"    // XML schema version
+
+/**
  * @brief xml_elements struct
 */
 struct xml_elements

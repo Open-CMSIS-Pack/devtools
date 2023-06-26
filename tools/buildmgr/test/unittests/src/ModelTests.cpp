@@ -119,3 +119,8 @@ TEST_F(ModelTests, CheckPackListLocalRepo) {
   vector<string> envVars;
   EXPECT_TRUE(CreateRte({ filename, rtePath, novalue, toolchain, novalue, novalue, envVars, true, false }));
 }
+
+TEST_F(ModelTests, OldCprjSchema) {
+  TestParam param = { "", "OldSchema", "", "", false };
+  CheckCreateRte    (param, testinput_folder);
+}
