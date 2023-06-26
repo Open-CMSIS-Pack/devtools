@@ -339,8 +339,16 @@ bool CbuildModel::EvaluateResult() {
   EvaluateResult:
   Extract result info
   */
-  if (m_updateRteFiles && !GenerateRteHeaders())
-    return false;
+  if (m_updateRteFiles) {
+    if (!GenerateRteHeaders()) {
+      return false;
+    }
+  } else {
+    const string rteComponents = m_cprjProject->GetRteHeader("RTE_Components.h", m_cprjTarget->GetName(), m_cprjProject->GetProjectPath());
+    if (!RteFsUtils::Exists(rteComponents)) {
+      LogMsg("M634", PATH(rteComponents));
+    }
+  }
   if (!EvalTargetOutput())
     return false;
   if (!EvalConfigFiles())
