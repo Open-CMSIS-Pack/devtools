@@ -1020,6 +1020,9 @@ string RtePackageInstanceInfo::ConstructID()
 
 string RtePackageInstanceInfo::GetPackageID(bool withVersion) const
 {
+  if (GetID().empty()) {
+    return RtePackage::GetPackageIDfromAttributes(*this, withVersion);
+  }
   if (withVersion)
     return GetID();
   return GetCommonID();
