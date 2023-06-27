@@ -65,7 +65,7 @@ MEMORY
  *   __copy_table_end__
  *   __zero_table_start__
  *   __zero_table_end__
- *   __etext
+ *   __etext          (deprecated)
  *   __data_start__
  *   __preinit_array_start
  *   __preinit_array_end
@@ -138,15 +138,15 @@ SECTIONS
     . = ALIGN(4);
     __copy_table_start__ = .;
 
-    LONG (__etext)
-    LONG (__data_start__)
-    LONG ((__data_end__ - __data_start__) / 4)
+    LONG (LOADADDR(.data))
+    LONG (ADDR(.data))
+    LONG (SIZEOF(.data) / 4)
 
     /* Add each additional data section here */
 /*
-    LONG (__etext2)
-    LONG (__data2_start__)
-    LONG ((__data2_end__ - __data2_start__) / 4)
+    LONG (LOADADDR(.data2))
+    LONG (ADDR(.data2))
+    LONG (SIZEOF(.data2) / 4)
 */
     __copy_table_end__ = .;
   } > ROM0
@@ -157,26 +157,25 @@ SECTIONS
     __zero_table_start__ = .;
 
 /*  .bss initialization to zero is already done during C Run-Time Startup.
-    LONG (__bss_start__)
-    LONG ((__bss_end__ - __bss_start__) / 4)
+    LONG (ADDR(.bss))
+    LONG (SIZEOF(.bss) / 4)
 */
 
     /* Add each additional bss section here */
 /*
-    LONG (__bss2_start__)
-    LONG ((__bss2_end__ - __bss2_start__) / 4)
+    LONG (ADDR(.bss2))
+    LONG (SIZEOF(.bss2) / 4)
 */
     __zero_table_end__ = .;
   } > ROM0
 
-  /**
-   * Location counter can end up 2byte aligned with narrow Thumb code but
-   * __etext is assumed by startup code to be the LMA of a section in RAM
-   * which must be 4byte aligned
+  /*
+   * This __etext variable is kept for backward compatibility with older,
+   * ASM based startup files.
    */
-  __etext = ALIGN (4);
+  PROVIDE(__etext = LOADADDR(.data));
 
-  .data : AT (__etext)
+  .data : ALIGN(4)
   {
     __data_start__ = .;
     *(vtable)
@@ -208,7 +207,7 @@ SECTIONS
     /* All data end */
     __data_end__ = .;
 
-  } > RAM0
+  } > RAM0 AT > ROM0
 
   /*
    * Secondary data section, optional
@@ -218,9 +217,7 @@ SECTIONS
    * initialization during startup.
    */
 /*
-  __etext2 = ALIGN (4);
-
-  .data2 : AT (__etext2)
+  .data2 : ALIGN(4)
   {
     . = ALIGN(4);
     __data2_start__ = .;
@@ -229,7 +226,7 @@ SECTIONS
     . = ALIGN(4);
     __data2_end__ = .;
 
-  } > RAM1
+  } > RAM1 AT > ROM0 
 */
 
   .bss :
