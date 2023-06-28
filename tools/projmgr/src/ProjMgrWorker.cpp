@@ -30,10 +30,11 @@ static const regex accessSequencesRegEx = regex(string("^(") +
 );
 
 static const map<const string, tuple<const string, const string, const string>> affixesMap = {
-  { ""   , {ProjMgrUtils::DEFAULT_ELF_SUFFIX, ProjMgrUtils::DEFAULT_LIB_PREFIX, ProjMgrUtils::DEFAULT_LIB_SUFFIX }},
-  { "AC6", {ProjMgrUtils::AC6_ELF_SUFFIX    , ProjMgrUtils::AC6_LIB_PREFIX    , ProjMgrUtils::AC6_LIB_SUFFIX     }},
-  { "GCC", {ProjMgrUtils::GCC_ELF_SUFFIX    , ProjMgrUtils::GCC_LIB_PREFIX    , ProjMgrUtils::GCC_LIB_SUFFIX     }},
-  { "IAR", {ProjMgrUtils::IAR_ELF_SUFFIX    , ProjMgrUtils::IAR_LIB_PREFIX    , ProjMgrUtils::IAR_LIB_SUFFIX     }},
+  { ""   ,   {ProjMgrUtils::DEFAULT_ELF_SUFFIX, ProjMgrUtils::DEFAULT_LIB_PREFIX, ProjMgrUtils::DEFAULT_LIB_SUFFIX }},
+  { "AC6",   {ProjMgrUtils::AC6_ELF_SUFFIX    , ProjMgrUtils::AC6_LIB_PREFIX    , ProjMgrUtils::AC6_LIB_SUFFIX     }},
+  { "GCC",   {ProjMgrUtils::GCC_ELF_SUFFIX    , ProjMgrUtils::GCC_LIB_PREFIX    , ProjMgrUtils::GCC_LIB_SUFFIX     }},
+  { "CLANG", {ProjMgrUtils::GCC_ELF_SUFFIX    , ProjMgrUtils::GCC_LIB_PREFIX    , ProjMgrUtils::GCC_LIB_SUFFIX     }},
+  { "IAR",   {ProjMgrUtils::IAR_ELF_SUFFIX    , ProjMgrUtils::IAR_LIB_PREFIX    , ProjMgrUtils::IAR_LIB_SUFFIX     }},
 };
 
 ProjMgrWorker::ProjMgrWorker(void) {

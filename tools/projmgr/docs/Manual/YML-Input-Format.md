@@ -759,8 +759,9 @@ Optionally the compiler can have a version number specification.
 
 Compiler Name                                         | Supported Compiler
 :-----------------------------------------------------|:------------------------------------
-`AC6`                                                 | Arm Compiler version 6
 `GCC`                                                 | GCC Compiler
+`CLANG`                                               | LLVM/Clang Compiler
+`AC6`                                                 | Arm Compiler version 6
 `IAR`                                                 | IAR Compiler
 
 **Example:**
