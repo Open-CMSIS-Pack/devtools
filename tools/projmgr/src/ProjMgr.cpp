@@ -20,37 +20,36 @@ using namespace std;
 
 static constexpr const char* USAGE = "\n\
 Usage:\n\
-  csolution [-V] [--version] [-h] [--help]\n\
-            <command> [<arg>] [OPTIONS...]\n\n\
- Commands:\n\
-   list packs            Print list of used packs from the pack repository\n\
-   list boards           Print list of available board names\n\
-   list devices          Print list of available device names\n\
-   list components       Print list of available components\n\
-   list dependencies     Print list of unresolved project dependencies\n\
-   list contexts         Print list of contexts in a csolution.yml\n\
-   list generators       Print list of code generators of a given context\n\
-   list layers           Print list of available, referenced and compatible layers\n\
-   list toolchains       Print list of supported toolchains\n\
-   list environment      Print list of environment configurations\n\
-   update-rte            Create/update configuration files and validate solution\n\
-   convert               Convert *.csolution.yml input file in *.cprj files\n\
-   run                   Run code generator\n\n\
- Options:\n\
-   -s, --solution arg    Input csolution.yml file\n\
-   -c, --context arg     Input context name <cproject>[.<build-type>][+<target-type>]\n\
-   -f, --filter arg      Filter words\n\
-   -g, --generator arg   Code generator identifier\n\
-   -m, --missing         List only required packs that are missing in the pack repository\n\
-   -l, --load arg        Set policy for packs loading [latest|all|required]\n\
-   -L, --clayer-path arg Set search path for external clayers\n\
-   -e, --export arg      Set suffix for exporting <context><suffix>.cprj retaining only specified versions\n\
-   -t, --toolchain arg   Selection of the toolchain used in the project optionally with version\n\
-   -n, --no-check-schema Skip schema check\n\
-   -U, --no-update-rte   Skip creation of RTE directory and files\n\
-   -v, --verbose         Enable verbose messages\n\
-   -d, --debug           Enable debug messages\n\
-   -o, --output arg      Output directory\n\n\
+  csolution <command> [<name>.csolution.yml] [options]\n\n\
+Commands:\n\
+  convert                  Convert user input *.yml files to *.cprj files\n\
+  list boards              Print list of available board names\n\
+  list contexts            Print list of contexts in a <name>.csolution.yml\n\
+  list components          Print list of available components\n\
+  list dependencies        Print list of unresolved project dependencies\n\
+  list devices             Print list of available device names\n\
+  list environment         Print list of environment configurations\n\
+  list generators          Print list of code generators of a given context\n\
+  list layers              Print list of available, referenced and compatible layers\n\
+  list packs               Print list of used packs from the pack repository\n\
+  list toolchains          Print list of supported toolchains\n\
+  run                      Run code generator\n\
+  update-rte               Create/update configuration files and validate solution\n\n\
+Options:\n\
+  -c, --context arg [,arg] Input context names [<project-name>][.<build-type>][+<target-type>]\n\
+  -d, --debug              Enable debug messages\n\
+  -e, --export arg         Set suffix for exporting <context><suffix>.cprj retaining only specified versions\n\
+  -f, --filter arg         Filter words\n\
+  -g, --generator arg      Code generator identifier\n\
+  -l, --load arg           Set policy for packs loading [latest | all | required]\n\
+  -L, --clayer-path arg    Set search path for external clayers\n\
+  -m, --missing            List only required packs that are missing in the pack repository\n\
+  -n, --no-check-schema    Skip schema check\n\
+  -N, --no-update-rte      Skip creation of RTE directory and files\n\
+  -o, --output arg         Output directory\n\
+  -t, --toolchain arg      Selection of the toolchain used in the project optionally with version\n\
+  -v, --verbose            Enable verbose messages\n\
+  -V, --version            Print version\n\n\
 Use 'csolution <command> -h' for more information about a command.\
 ";
 
@@ -62,8 +61,10 @@ ProjMgr::~ProjMgr(void) {
   // Reserved
 }
 
-bool ProjMgr::PrintUsage(const map<string, vector<cxxopts::Option>>& cmdOptionsDict,
-  const std::string& cmd, const std::string& subCmd) {
+bool ProjMgr::PrintUsage(
+  const map<string, pair<bool, vector<cxxopts::Option>>>& cmdOptionsDict,
+  const std::string& cmd, const std::string& subCmd)
+{
   string signature = PRODUCT_NAME + string(" ") + VERSION_STRING + string(" ") + COPYRIGHT_NOTICE;
   if (cmd.empty() && subCmd.empty()) {
     // print main help
@@ -80,11 +81,17 @@ bool ProjMgr::PrintUsage(const map<string, vector<cxxopts::Option>>& cmdOptionsD
 
   // print command help
   cout << signature << endl;
+  auto [optionalArg, cmdOptions] = cmdOptionsDict.at(filter);
+
   string program = ORIGINAL_FILENAME + string(" ") + cmd +
     (subCmd.empty() ? "" : (string(" ") + subCmd));
 
+  if (!cmdOptions.empty()) {
+    // Add positional help
+    program += (optionalArg ? " [" : " <") + string("csolution.yml") + (optionalArg ? "]" : ">");
+  }
+
   cxxopts::Options options(program);
-  auto cmdOptions = cmdOptionsDict.at(filter);
   for (auto& option : cmdOptions) {
     options.add_option(filter, option);
   }
@@ -110,15 +117,15 @@ int ProjMgr::RunProjMgr(int argc, char **argv, char** envp) {
   cxxopts::ParseResult parseResult;
 
   cxxopts::Option solution("s,solution", "Input csolution.yml file", cxxopts::value<string>());
-  cxxopts::Option context("c,context", "Input context name <cproject>[.<build-type>][+<target-type>]", cxxopts::value<string>());
+  cxxopts::Option context("c,context", "Input context names [<project-name>][.<build-type>][+<target-type>]", cxxopts::value<std::vector<std::string>>());
   cxxopts::Option filter("f,filter", "Filter words", cxxopts::value<string>());
   cxxopts::Option help("h,help", "Print usage");
   cxxopts::Option generator("g,generator", "Code generator identifier", cxxopts::value<string>());
-  cxxopts::Option load("l,load", "Set policy for packs loading [latest|all|required]", cxxopts::value<string>());
+  cxxopts::Option load("l,load", "Set policy for packs loading [latest | all | required]", cxxopts::value<string>());
   cxxopts::Option clayerSearchPath("L,clayer-path", "Set search path for external clayers", cxxopts::value<string>());
   cxxopts::Option missing("m,missing", "List only required packs that are missing in the pack repository", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option schemaCheck("n,no-check-schema", "Skip schema check", cxxopts::value<bool>()->default_value("false"));
-  cxxopts::Option noUpdateRte("U,no-update-rte", "Skip creation of RTE directory and files", cxxopts::value<bool>()->default_value("false"));
+  cxxopts::Option noUpdateRte("N,no-update-rte", "Skip creation of RTE directory and files", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option output("o,output", "Output directory", cxxopts::value<string>());
   cxxopts::Option version("V,version", "Print version");
   cxxopts::Option verbose("v,verbose", "Enable verbose messages", cxxopts::value<bool>()->default_value("false"));
@@ -128,20 +135,21 @@ int ProjMgr::RunProjMgr(int argc, char **argv, char** envp) {
   cxxopts::Option ymlOrder("yml-order", "Preserve order as specified in input yml", cxxopts::value<bool>()->default_value("false"));
 
   // command options dictionary
-  map<string, vector<cxxopts::Option>> optionsDict = {
-    {"update-rte",        {solution, context, load, verbose, debug, toolchain, schemaCheck}},
-    {"convert",           {solution, context, output, load, verbose, debug, exportSuffix, toolchain, schemaCheck, noUpdateRte}},
-    {"run",               {solution, generator, context, load, verbose, debug, schemaCheck}},
-    {"list packs",        {solution, context, filter, missing, load, verbose, debug, toolchain, schemaCheck}},
-    {"list boards",       {solution, context, filter, load, verbose, debug, toolchain, schemaCheck}},
-    {"list devices",      {solution, context, filter, load, verbose, debug, toolchain, schemaCheck}},
-    {"list components",   {solution, context, filter, load, verbose, debug, toolchain, schemaCheck}},
-    {"list dependencies", {solution, context, filter, load, verbose, debug, toolchain, schemaCheck}},
-    {"list contexts",     {solution, filter, verbose, debug, schemaCheck, ymlOrder}},
-    {"list generators",   {solution, context, load, verbose, debug, toolchain, schemaCheck}},
-    {"list layers",       {solution, context, load, verbose, debug, toolchain, schemaCheck, clayerSearchPath}},
-    {"list toolchains",   {solution, context, verbose, debug, toolchain}},
-    {"list environment",  {}},
+  map<string, std::pair<bool, vector<cxxopts::Option>>> optionsDict = {
+    // command, optional args, options
+    {"update-rte",        { false, {context, debug, load, schemaCheck, toolchain, verbose}}},
+    {"convert",           { false, {context, debug, exportSuffix, load, schemaCheck, noUpdateRte, output, toolchain, verbose}}},
+    {"run",               { false, {context, debug, generator, load, schemaCheck, verbose}}},
+    {"list packs",        { true,  {context, debug, filter, load, missing, schemaCheck, toolchain, verbose}}},
+    {"list boards",       { true,  {context, debug, filter, load, schemaCheck, toolchain, verbose}}},
+    {"list devices",      { true,  {context, debug, filter, load, schemaCheck, toolchain, verbose}}},
+    {"list components",   { true,  {context, debug, filter, load, schemaCheck, toolchain, verbose}}},
+    {"list dependencies", { false, {context, debug, filter, load, schemaCheck, toolchain, verbose}}},
+    {"list contexts",     { false, {debug, filter, schemaCheck, verbose, ymlOrder}}},
+    {"list generators",   { false, {context, debug, load, schemaCheck, toolchain, verbose}}},
+    {"list layers",       { false, {context, debug, load, clayerSearchPath, schemaCheck, toolchain, verbose}}},
+    {"list toolchains",   { false, {context, debug, toolchain, verbose}}},
+    {"list environment",  { true,  {}}},
   };
 
   try {
@@ -199,7 +207,7 @@ int ProjMgr::RunProjMgr(int argc, char **argv, char** envp) {
       manager.m_rootDir = fs::path(manager.m_csolutionFile).parent_path().generic_string();
     }
     if (parseResult.count("context")) {
-      manager.m_context = parseResult["context"].as<string>();
+      manager.m_context = parseResult["context"].as<vector<string>>();
     }
     if (parseResult.count("filter")) {
       manager.m_filter = parseResult["filter"].as<string>();
@@ -236,6 +244,11 @@ int ProjMgr::RunProjMgr(int argc, char **argv, char** envp) {
 
   if (parseResult.count("help")) {
     return manager.PrintUsage(optionsDict, manager.m_command, manager.m_args) ? 0 : 1;
+  }
+
+  // Set load packs policy
+  if (!manager.SetLoadPacksPolicy()) {
+    return 1;
   }
 
   // Environment variables
@@ -319,6 +332,23 @@ int ProjMgr::RunProjMgr(int argc, char **argv, char** envp) {
   return 0;
 }
 
+// Set load packs policy
+bool ProjMgr::SetLoadPacksPolicy(void) {
+  if (m_loadPacksPolicy.empty()) {
+    m_worker.SetLoadPacksPolicy(LoadPacksPolicy::DEFAULT);
+  } else if (m_loadPacksPolicy == "latest") {
+    m_worker.SetLoadPacksPolicy(LoadPacksPolicy::LATEST);
+  } else if (m_loadPacksPolicy == "all") {
+    m_worker.SetLoadPacksPolicy(LoadPacksPolicy::ALL);
+  } else if (m_loadPacksPolicy == "required") {
+    m_worker.SetLoadPacksPolicy(LoadPacksPolicy::REQUIRED);
+  } else {
+    ProjMgrLogger::Error("unknown load option: '" + m_loadPacksPolicy + "', it must be 'latest', 'all' or 'required'");
+    return false;
+  }
+  return true;
+}
+
 bool ProjMgr::PopulateContexts(void) {
   if (!m_csolutionFile.empty()) {
     // Parse csolution
@@ -350,6 +380,10 @@ bool ProjMgr::PopulateContexts(void) {
       if (cprojectFile.empty()) {
         ProjMgrLogger::Error(cproject, "cproject file was not found");
         return false;
+      } else if (fs::path(cprojectFile).filename().string() != fs::path(cproject).filename().string()) {
+        ProjMgrLogger::Error(cproject, "cproject filename has case inconsistency");
+        ProjMgrLogger::Info(fs::path(cprojectFile).filename().string(), "should be used instead");
+        return false;
       }
       if (!m_parser.ParseCproject(cprojectFile, m_checkSchema)) {
         return false;
@@ -360,25 +394,11 @@ bool ProjMgr::PopulateContexts(void) {
     return false;
   }
 
-  // Set output directory
+  // Set toolchain
   m_worker.SetSelectedToolchain(m_selectedToolchain);
 
   // Set output directory
   m_worker.SetOutputDir(m_outputDir);
-
-  // Set load packs policy
-  if (m_loadPacksPolicy.empty()) {
-    m_worker.SetLoadPacksPolicy(LoadPacksPolicy::DEFAULT);
-  } else if (m_loadPacksPolicy == "latest") {
-    m_worker.SetLoadPacksPolicy(LoadPacksPolicy::LATEST);
-  } else if (m_loadPacksPolicy == "all") {
-    m_worker.SetLoadPacksPolicy(LoadPacksPolicy::ALL);
-  } else if (m_loadPacksPolicy == "required") {
-    m_worker.SetLoadPacksPolicy(LoadPacksPolicy::REQUIRED);
-  } else {
-    ProjMgrLogger::Error("unknown load option: '" + m_loadPacksPolicy + "', it must be 'latest', 'all' or 'required'");
-    return false;
-  }
 
   // Add contexts
   for (auto& descriptor : m_parser.GetCsolution().contexts) {

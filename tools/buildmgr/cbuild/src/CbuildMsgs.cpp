@@ -64,6 +64,7 @@ void InitMessageTable()
   table["M217"] = MessageEntry(MsgLevel::LEVEL_ERROR,    CRLF_B,   "Argument parsing error: %MSG%!"                                              );
   table["M218"] = MessageEntry(MsgLevel::LEVEL_ERROR,    CRLF_B,   "No arguments specified!"                                                     );
   table["M219"] = MessageEntry(MsgLevel::LEVEL_ERROR,    CRLF_B,   "'%CMD%' is not a valid command!"                                             );
+  table["M220"] = MessageEntry(MsgLevel::LEVEL_ERROR,    CRLF_B,   "CPRJ schema version '%VER%' is incompatible with required version '%REQ%'!"  );
 
   // 600... CMSIS Build Errors, warnings and messages
   table["M600"] = MessageEntry(MsgLevel::LEVEL_ERROR,    CRLF_B,   "Package index was not found in'%PATH%/.Web'!"                                );
@@ -86,6 +87,7 @@ void InitMessageTable()
   table["M631"] = MessageEntry(MsgLevel::LEVEL_WARNING,  CRLF_B,   "Project must have exactly one target element!"                               );
   table["M632"] = MessageEntry(MsgLevel::LEVEL_WARNING,  CRLF_B,   "Attribute '%ATTR%' required by access sequence '%ACCSEQ%' was not found!"    );
   table["M633"] = MessageEntry(MsgLevel::LEVEL_WARNING,  CRLF_B,   "Unknown access sequence: '%ACCSEQ%'."                                        );
+  table["M634"] = MessageEntry(MsgLevel::LEVEL_WARNING,  CRLF_B,   "File '%PATH%' was not found, use the option '--update-rte' to generate it"   );
 
   table["M650"] = MessageEntry(MsgLevel::LEVEL_INFO,     CRLF_B,   "Command completed successfully."                                             );
   table["M652"] = MessageEntry(MsgLevel::LEVEL_INFO,     CRLF_B,   "Generated file for project build: '%NAME%'"                                  );

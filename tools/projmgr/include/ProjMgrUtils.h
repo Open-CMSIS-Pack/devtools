@@ -302,9 +302,10 @@ public:
   /**
    * @brief parse context entry
    * @param contextEntry string in the format <project-name>.<build-type>+<target-type>
-   * @return ContextName structure with project name, build type and target type strings
+   * @param context output structure with project name, build type and target type strings
+   * @return true if parse successfully, false otherwise
   */
-  static ContextName ParseContextEntry(const std::string& contextEntry);
+  static bool ParseContextEntry(const std::string& contextEntry, ContextName& context);
 
   /**
    * @brief set output type
@@ -313,6 +314,17 @@ public:
   */
   static void SetOutputType(const std::string typeString, OutputTypes& type);
 
+  /**
+   * @brief get filtered list of contexts
+   * @param selectedContexts list of matched contexts
+   * @param allAvailableContexts list of all available contexts
+   * @param contextFilter filter criteria
+   * @return list of filters for which match was not found, else empty list
+  */
+  static std::vector<std::string> GetSelectedContexts(
+    std::list<std::string>& selectedContexts,
+    const std::vector<std::string>& allAvailableContexts,
+    const std::vector<std::string>& contextFilter);
 protected:
   static std::string ConstructID(const std::vector<std::pair<const char*, const std::string&>>& elements);
 };

@@ -137,12 +137,16 @@ struct SelectedComponentItem {
  *        file name
  *        file attribute
  *        file category
+ *        file language
+ *        file scope
  *        file version
 */
 struct ComponentFileItem {
   std::string name;
   std::string attr;
   std::string category;
+  std::string language;
+  std::string scope;
   std::string version;
 };
 
@@ -163,18 +167,18 @@ struct GpdscItem {
  *        final context controls after processing,
  *        csolution controls,
  *        cproject controls,
- *        project setup controls,
  *        target-type controls,
  *        build-type controls,
- *        layers translation controls,
+ *        list of project setup controls,
+ *        map of layers translation controls,
 */
 struct TranslationControl {
   BuildType processed;
   BuildType csolution;
   BuildType cproject;
-  BuildType setup;
   BuildType target;
   BuildType build;
+  std::vector<BuildType> setups;
   std::map<std::string, BuildType> clayers;
 };
 
@@ -519,7 +523,7 @@ public:
    * @param contexts pattern (wildcards are allowed)
    * @return true if executed successfully
   */
-  bool ParseContextSelection(const std::string& contextSelection);
+  bool ParseContextSelection(const std::vector<std::string>& contextSelection);
 
   /**
    * @brief check if context is selected
@@ -572,7 +576,7 @@ protected:
   bool SetTargetAttributes(ContextItem& context, std::map<std::string, std::string>& attributes);
   bool ProcessPrecedences(ContextItem& context);
   bool ProcessPrecedence(StringCollection& item);
-  bool ProcessCompilerPrecedence(StringCollection& item);
+  bool ProcessCompilerPrecedence(StringCollection& item, bool acceptRedefinition = false);
   bool ProcessDevice(ContextItem& context);
   bool ProcessDevicePrecedence(StringCollection& item);
   bool ProcessBoardPrecedence(StringCollection& item);

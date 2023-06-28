@@ -49,7 +49,7 @@ json SchemaValidator::ReadData() {
       yamldata = YAML::LoadFile(m_dataFile);
     }
     catch (YAML::Exception& e) {
-      throw SchemaError(m_dataFile, e.what(), e.mark.line + 1, e.mark.column + 1);
+      throw SchemaError(m_dataFile, "schema check failed, verify syntax", e.mark.line + 1, e.mark.column + 1);
     }
 
     data = YamlToJson(yamldata);

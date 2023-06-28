@@ -8,6 +8,9 @@
 #include <cassert>
 #include <limits.h>
 #include <windows.h>
+#include <io.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 using namespace std;
 // windows-specific methods
@@ -132,5 +135,30 @@ CrossPlatformUtils::REG_STATUS CrossPlatformUtils::GetLongPathRegStatus()
     }
   }
   return REG_STATUS::DISABLED;
+}
+
+std::filesystem::perms CrossPlatformUtils::GetCurrentUmask() {
+  // Only way to get current umask is to change it, so revert the possible change directly.
+  unsigned int value = ::_umask(0);
+  ::_umask(value);
+
+  std::filesystem::perms perm = std::filesystem::perms::none;
+
+  // Map the mode_t value to coresponding fs::perms value
+  constexpr struct {
+    unsigned int m;
+    std::filesystem::perms p;
+  } mode_to_perm_map[] = {
+    {_S_IREAD, std::filesystem::perms::owner_read},
+    {_S_IWRITE, std::filesystem::perms::owner_write},
+    {_S_IEXEC, std::filesystem::perms::owner_exec}
+  };
+  for (auto [m, p] : mode_to_perm_map) {
+    if (value & m) {
+      perm |= p;
+    }
+  }
+
+  return perm;
 }
 // end of Utils.cpp

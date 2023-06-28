@@ -116,7 +116,6 @@ echo "${testoutdir}/cbuild" > ${install_config}
 echo "calling cbuild_install.sh with values:"
 setinstallconfig CMSIS_PACK_ROOT ${install_config}
 setinstallconfig AC6_TOOLCHAIN_ROOT ${install_config}
-setinstallconfig AC5_TOOLCHAIN_ROOT ${install_config}
 setinstallconfig GCC_TOOLCHAIN_ROOT ${install_config}
 setinstallconfig IAR_TOOLCHAIN_ROOT ${install_config}
 

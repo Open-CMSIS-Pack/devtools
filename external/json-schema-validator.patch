@@ -42,6 +42,15 @@ index 0beb613..7a344a3 100644
  			} catch (nlohmann::detail::out_of_range &) { // at() did not find it
  			}
  		}
+@@ -390,7 +394,7 @@ class logical_combination : public schema
+ 		// could accumulate esub details for anyOf and oneOf, but not clear how to select which subschema failure to report
+ 		// or how to report multiple such failures
+ 		if (count == 0)
+-			e.error(ptr, instance, "no subschema has succeeded, but one of them is required to validate");
++			e.error(ptr, instance, "schema check failed, verify syntax");
+ 	}
+ 
+ 	// specialized for each of the logical_combination_types
 @@ -576,6 +580,32 @@ public:
  		attr = sch.find("enum");
  		if (attr != sch.end()) {
@@ -73,6 +82,24 @@ index 0beb613..7a344a3 100644
 +
 +      enum_ = enumEx;
  			sch.erase(attr);
+ 		}
+ 
+@@ -693,7 +723,7 @@ class string : public schema
+ #ifndef NO_STD_REGEX
+ 		if (pattern_.first &&
+ 		    !REGEX_NAMESPACE::regex_search(instance.get<std::string>(), pattern_.second))
+-			e.error(ptr, instance, "instance does not match regex pattern: " + patternString_);
++			e.error(ptr, instance, "schema check failed, verify syntax");
+ #endif
+ 
+ 		if (format_.first) {
+@@ -973,7 +1003,7 @@ class object : public schema
+ 				first_error_handler additional_prop_err;
+ 				additionalProperties_->validate(ptr / p.key(), p.value(), patch, additional_prop_err);
+ 				if (additional_prop_err)
+-					e.error(ptr, instance, "validation failed for additional property '" + p.key() + "': " + additional_prop_err.message_);
++					e.error(ptr / p.key(), instance, "schema check failed, verify syntax");
+ 			}
  		}
  
 @@ -1256,17 +1286,24 @@ std::shared_ptr<schema> schema::make(json &schema,

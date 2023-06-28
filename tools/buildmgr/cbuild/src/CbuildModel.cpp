@@ -57,6 +57,13 @@ bool CbuildModel::Create(const CbuildRteArgs& args) {
   // get cprj pack structure
   m_cprj = m_cprjProject->GetCprjFile();
 
+  // check cprj schema version
+  const string& schemaVersion = m_cprj->GetAttribute("schemaVersion");
+  if (VersionCmp::Compare(schemaVersion, SCHEMA_VERSION) < 0) {
+    LogMsg("M220", VAL("VER", schemaVersion), VAL("REQ", SCHEMA_VERSION));
+    return false;
+  }
+
   // check pack requirements (packlist command)
   if (args.checkPack) {
     vector<CbuildPackItem> packList;
@@ -332,8 +339,16 @@ bool CbuildModel::EvaluateResult() {
   EvaluateResult:
   Extract result info
   */
-  if (m_updateRteFiles && !GenerateRteHeaders())
-    return false;
+  if (m_updateRteFiles) {
+    if (!GenerateRteHeaders()) {
+      return false;
+    }
+  } else {
+    const string rteComponents = m_cprjProject->GetRteHeader("RTE_Components.h", m_cprjTarget->GetName(), m_cprjProject->GetProjectPath());
+    if (!RteFsUtils::Exists(rteComponents)) {
+      LogMsg("M634", PATH(rteComponents));
+    }
+  }
   if (!EvalTargetOutput())
     return false;
   if (!EvalConfigFiles())
@@ -711,6 +726,9 @@ bool CbuildModel::EvalGeneratedSourceFiles() {
 
       // gpdsc <project_files> section
       const RteFileContainer* genFiles = gen->GetProjectFiles();
+      if (!genFiles) {
+        continue;
+      }
       string grpName = genFiles->GetHierarchicalGroupName();
       if (grpName.empty()) {
         grpName = "Common Sources";
@@ -951,6 +969,11 @@ bool CbuildModel::SetItemOptions(const RteItem* item, const string& name) {
   string warnings = options->GetAttribute("warnings");
   m_warnings.insert(pair<string, string>(name, warnings));
 
+  string languageC = options->GetAttribute("languageC");
+  m_languageC.insert(pair<string, string>(name, languageC));
+
+  string languageCpp = options->GetAttribute("languageCpp");
+  m_languageCpp.insert(pair<string, string>(name, languageCpp));
   return true;
 }
 
@@ -1174,6 +1197,8 @@ bool CbuildModel::EvalOptions() {
     m_targetOptimize = target->GetChildAttribute("options", "optimize");
     m_targetDebug = target->GetChildAttribute("options", "debug");
     m_targetWarnings = target->GetChildAttribute("options", "warnings");
+    m_targetLanguageC = target->GetChildAttribute("options", "languageC");
+    m_targetLanguageCpp = target->GetChildAttribute("options", "languageCpp");
   }
 
   // RTE group options

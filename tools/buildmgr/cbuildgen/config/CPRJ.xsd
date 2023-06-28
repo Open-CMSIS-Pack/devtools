@@ -17,12 +17,17 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 
-  $Date:        19. May 2023
-  $Revision:    1.4.0
+  $Date:        22. June 2023
+  $Revision:    2.0.0
 
   $Project: Schema File for CMSIS Project Description File Format Specification
 
-  SchemaVersion=1.4.0
+  SchemaVersion=2.0.0
+
+  2.0.0: Increment major version to reflect 'output' attribute breaking changes
+         Added component 'gendir' attribute
+
+  1.5.0: Added 'languageC' and 'languageCpp' options
 
   1.4.0: Added output attribute 'cmse-lib'
 
@@ -153,6 +158,36 @@
     </xs:restriction>
   </xs:simpleType>
 
+  <!-- Language C enumeration type -->
+  <xs:simpleType name="LanguageCEnum">
+    <xs:restriction base="xs:token">
+      <xs:enumeration value="c90" />
+      <xs:enumeration value="gnu90" />
+      <xs:enumeration value="c99" />
+      <xs:enumeration value="gnu99" />
+      <xs:enumeration value="c11" />
+      <xs:enumeration value="gnu11" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Language C++ enumeration type -->
+  <xs:simpleType name="LanguageCppEnum">
+    <xs:restriction base="xs:token">
+      <xs:enumeration value="c++98" />
+      <xs:enumeration value="gnu++98" />
+      <xs:enumeration value="c++03" />
+      <xs:enumeration value="gnu++03" />
+      <xs:enumeration value="c++11" />
+      <xs:enumeration value="gnu++11" />
+      <xs:enumeration value="c++14" />
+      <xs:enumeration value="gnu++14" />
+      <xs:enumeration value="c++17" />
+      <xs:enumeration value="gnu++17" />
+      <xs:enumeration value="c++20" />
+      <xs:enumeration value="gnu++20" />
+    </xs:restriction>
+  </xs:simpleType>
+
   <!-- Ddsp DSP extensions enumeration type -->
   <xs:simpleType name="DdspEnum">
     <xs:restriction base="xs:token">
@@ -210,7 +245,6 @@
   <xs:simpleType name="CompilerEnumType">
     <xs:restriction base="xs:token">
       <xs:enumeration value="GCC" />
-      <xs:enumeration value="AC5" />
       <xs:enumeration value="AC6" />
       <xs:enumeration value="IAR" />
       <xs:enumeration value="Tasking" />
@@ -414,9 +448,11 @@
   </xs:complexType>
 
   <xs:complexType name="AbstractOptionsType">
-    <xs:attribute name="optimize" type="OptimizeEnum" use="optional" />
-    <xs:attribute name="debug"    type="DebugEnum"    use="optional" />
-    <xs:attribute name="warnings" type="WarningsEnum" use="optional" />
+    <xs:attribute name="optimize"    type="OptimizeEnum"    use="optional" />
+    <xs:attribute name="debug"       type="DebugEnum"       use="optional" />
+    <xs:attribute name="warnings"    type="WarningsEnum"    use="optional" />
+    <xs:attribute name="languageC"   type="LanguageCEnum"   use="optional" />
+    <xs:attribute name="languageCpp" type="LanguageCppEnum" use="optional" />
   </xs:complexType>
 
   <xs:complexType name="UsedType">
@@ -541,6 +577,7 @@
           <xs:attribute name="instances"   type="InstancesType"        use="optional" default="1"/>
           <xs:attribute name="layer"       type="RestrictedString"     use="optional" />
           <xs:attribute name="rtedir"      type="xs:string"            use="optional" />
+          <xs:attribute name="gendir"      type="xs:string"            use="optional" />
         </xs:complexType>
       </xs:element>
     </xs:sequence>

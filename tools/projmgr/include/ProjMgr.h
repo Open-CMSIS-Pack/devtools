@@ -44,7 +44,8 @@ public:
    * @param subCmd subcommand for which usage is to be generated
    * @return true if successful, otherwise false
   */
-  bool PrintUsage(const std::map<std::string, std::vector<cxxopts::Option>>& cmdOptionsDict,
+  bool PrintUsage(const std::map<std::string,
+    std::pair<bool, std::vector<cxxopts::Option>>>& cmdOptionsDict,
     const std::string& cmd, const std::string & subCmd);
 
   /**
@@ -90,7 +91,7 @@ protected:
 
   std::string m_csolutionFile;
   std::string m_cdefaultFile;
-  std::string m_context;
+  std::vector<std::string> m_context;
   std::string m_filter;
   std::string m_codeGenerator;
   std::string m_command;
@@ -125,6 +126,7 @@ protected:
   bool RunListToolchains(void);
   bool RunListEnvironment(void);
   bool PopulateContexts(void);
+  bool SetLoadPacksPolicy(void);
 };
 
 #endif  // PROJMGR_H

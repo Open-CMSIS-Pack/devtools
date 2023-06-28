@@ -1,0 +1,16 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schemas/csolution.schema.json
+
+solution:
+  target-types:
+    - type: TEST_TARGET
+
+  build-types:
+    - type: Debug
+    - type: Release
+
+  projects:
+    - project: testlayers_no_device_name.cproject.yml
+
+  packs:
+    - pack: ARM::RteTest
+    - pack: ARM::RteTest_DFP

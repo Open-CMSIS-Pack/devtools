@@ -12,12 +12,45 @@ project:
       for-compiler: AC6
       define:
         - SETUP_AC6
+        - SETUP_AC6_2
+      add-path:
+        - ./setup/$Compiler$
+        - ./setup/AC6/2
+      misc:
+        - C:
+          - SETUP_AC6_MISC          
     - setup: Setup for GCC
       for-compiler: GCC
       define:
         - SETUP_GCC
+        - SETUP_GCC_2
+      add-path:
+        - ./setup/$Compiler$
+        - ./setup/GCC/2
+      misc:
+        - C:
+          - SETUP_GCC_MISC
       processor:
         trustzone: off
+      optimize: size
+      debug: on
+      warnings: on
+      language-C: c11
+      language-CPP: c++11
+    - setup: Common Setup
+      define:
+        - SETUP_COMMON
+      add-path:
+        - ./setup/common
+      undefine:
+        - SETUP_AC6_2
+        - SETUP_GCC_2
+      del-path:
+        - ./setup/AC6/2
+        - ./setup/GCC/2
+      misc:
+        - C:
+          - SETUP_COMMON_MISC
 
   groups:
     - group: Group for AC6

@@ -57,6 +57,21 @@ Software layers and Virtual I/O simplify these use cases:
     <th>Description</th>
   </tr>
   <tr>
+    <td>2.0.0-dev3</td>
+    <td>Release for review of initial development:
+      - updated cbuild utility v2.0.0-dev3
+      - removed AC5 support
+      - added support for standard language options
+      - added CPRJ schema version check
+    </td>
+    <td>2.0.0-dev2</td>
+    <td>Release for review of initial development:
+      - updated cbuild utility v2.0.0-dev2
+    </td>
+    <td>2.0.0-dev1</td>
+    <td>Release for review of initial development:
+      - updated cpackget utility v0.9.4
+    </td>
     <td>2.0.0-dev0</td>
     <td>Release for review of initial development:
       - updated cbuild utility v2.0.0-dev0

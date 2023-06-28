@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no" ?>
-<cprj schemaVersion="1.0.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="CPRJ.xsd">
+<cprj schemaVersion="2.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="CPRJ.xsd">
 
   <created timestamp="2022-09-06T00:57:42" tool="csolution 0.9.5+p86-g4d629a4"/>
 
@@ -18,7 +18,7 @@
 
   <target Ddsp="NO_DSP" Dendian="Little-endian" Dfpu="NO_FPU" Dmve="NO_MVE" Dname="ARMCM3" Dsecure="Non-secure" Dtz="NO_TZ" Dvendor="ARM:82">
     <output name="Project" type="exe"/>
-    <options optimize="size" debug="on" warnings="on"/>
+    <options optimize="size" debug="on" warnings="on" languageC="gnu99" languageCpp="c++14"/>
     <ldflags add="--entry=main --specs=nosys.specs -mthumb" compiler="GCC" file="./RTE/Device/ARMCM3/gcc_arm.ld"/>
   </target>
 
@@ -33,18 +33,18 @@
 
   <files>
     <group name="Source CC">
-      <options optimize="none"/>
+      <options optimize="none" languageC="gnu11"/>
       <file category="sourceC" name="File_1.c">
-        <options optimize="size" debug="off"/>
+        <options optimize="size" debug="off" languageC="c11"/>
       </file>
       <file category="sourceC" name="File_2.c">
         <options warnings="off" debug="off"/>
       </file>
     </group>
     <group name="Source Mixed">
-      <options optimize="speed" debug="on" warnings="on"/>
+      <options optimize="speed" debug="on" warnings="on" languageC="c90"/>
       <file category="sourceCpp" name="File_4.cpp">
-        <options optimize="none" debug="off" warnings="off"/>
+        <options optimize="none" debug="off" warnings="off" languageCpp="c++17"/>
       </file>
       <file category="sourceAsm" name="File_3.s">
         <options optimize="none" debug="off" warnings="off"/>

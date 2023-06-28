@@ -79,6 +79,18 @@ TEST_F(CBuildGenTests, GenCMake_BranchProtection) {
   CheckCMakeLists(param);
 }
 
+// Validate Gpdsc Bundle
+TEST_F(CBuildGenTests, GenCMake_GpdscBundle) {
+  const string packRoot = CrossPlatformUtils::GetEnv("CMSIS_PACK_ROOT");
+  CrossPlatformUtils::SetEnv("CMSIS_PACK_ROOT", string(CMAKE_SOURCE_DIR) + "/test/packs");
+  TestParam param = { "Mixed/GpdscBundle", "MultipleComponents", "", "cmake", true };
+  RunCBuildGen(param, examples_folder, false);
+  CheckCMakeLists(param);
+
+  // restore CMSIS_PACK_ROOT env variable
+  CrossPlatformUtils::SetEnv("CMSIS_PACK_ROOT", packRoot);
+}
+
 // Validate cbuildgen without build environment set up
 TEST_F(CBuildGenTests, RunWithoutEnvArgTest) {
   const string packRoot = CrossPlatformUtils::GetEnv("CMSIS_PACK_ROOT");

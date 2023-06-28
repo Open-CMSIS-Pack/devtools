@@ -31,7 +31,7 @@ TEST_F(ProjMgrSchemaCheckerUnitTests, SchemaCheck_Pass) {
 }
 
 TEST_F(ProjMgrSchemaCheckerUnitTests, SchemaCheck_Empty_Object) {
-  const string& filename = testinput_folder + "/TestProject/test.cproject_empty_object.yml";
+  const string& filename = testinput_folder + "/TestProject/test_empty_object.cproject.yml";
 
   EXPECT_TRUE(Validate(filename, FileType::PROJECT));
   EXPECT_TRUE(GetErrors().empty());
@@ -40,11 +40,11 @@ TEST_F(ProjMgrSchemaCheckerUnitTests, SchemaCheck_Empty_Object) {
 TEST_F(ProjMgrSchemaCheckerUnitTests, SchemaCheck_Fail) {
   vector<std::pair<int, int>> expectedErrPos = {
     // line, col
-    {  5  ,  0 }
+    {  5  ,  3 }
   };
 
   const string& filename = testinput_folder +
-    "/TestProject/test.cproject_schema_validation_failed.yml";
+    "/TestProject/test_schema_validation_failed.cproject.yml";
   EXPECT_FALSE(Validate(filename, FileType::PROJECT));
 
   // Check errors
@@ -118,7 +118,7 @@ TEST_F(ProjMgrSchemaCheckerUnitTests, Schema_Search_Path_2) {
 }
 
 TEST_F(ProjMgrSchemaCheckerUnitTests, SchemaCheck_Pack_Selection) {
-  const string& filename = testinput_folder + "/TestSolution/test.csolution_pack_selection.yml";
+  const string& filename = testinput_folder + "/TestSolution/test_pack_selection.csolution.yml";
 
   EXPECT_TRUE(Validate(filename, FileType::SOLUTION));
   EXPECT_TRUE(GetErrors().empty());
@@ -174,18 +174,51 @@ solution:\n\
   created-for: test@1.2.3+ed5dsd73ks\n\
 ";
 
-  vector<ErrInfo> expectedErrPos = {
+  // invalid targettypes, buildtypes and project names
+  // with "." character in the name
+  const char* invalid_schema_Ex6 = "\
+solution:\n\
+  target-types:\n\
+    # invalid targettype with .\n\
+    - type: CM0.Plus\n\
+  build-types:\n\
+    # invalid buildtype with .\n\
+    - type: Debug.Test\n\
+  projects:\n\
+    # invalid project name with .\n\
+    - project: ./TestProject1/test.project.cproject.yml\n\
+";
+
+  // invalid targettypes, buildtypes and project names
+  // with "+" character in the name
+  const char* invalid_schema_Ex7 = "\
+solution:\n\
+  target-types:\n\
+    # invalid targettype with +\n\
+    - type: CM0+Plus\n\
+  build-types:\n\
+    # invalid buildtype with +\n\
+    - type: Debug+Test\n\
+  projects:\n\
+    # invalid project name with +\n\
+    - project: test+project.cproject.yml\n\
+";
+
+vector<ErrInfo> expectedErrPos = {
     // line, col
-    {  2  ,  14 },
-    {  3  ,  15 },
+    {  2  ,  3 },
+    {  3  ,  3 },
   };
 
   vector<std::tuple<const char*, bool, vector<ErrInfo>>> vecTestData = {
+    // data, expectedRetVal, errorPos
     {invalid_schema_Ex1, false, expectedErrPos},
     {invalid_schema_Ex2, false, expectedErrPos },
     {invalid_schema_Ex3, false, expectedErrPos },
-    {valid_schema_Ex4, true, vector<ErrInfo>{} },
-    {invalid_schema_Ex5, false, vector<ErrInfo>{ {2,2}, {2,2}} }
+    {valid_schema_Ex4,   true,  vector<ErrInfo>{} },
+    {invalid_schema_Ex5, false, vector<ErrInfo>{ {1,1}, {1,1}} },
+    {invalid_schema_Ex6, false, vector<ErrInfo>{ {4,7}, {7,7}, {10,7}} },
+    {invalid_schema_Ex7, false, vector<ErrInfo>{ {4,7}, {7,7}, {10,7}} }
   };
 
   auto writeFile = [](const string& filePath, const char* data) {
@@ -198,13 +231,13 @@ solution:\n\
 
   const string& filename = testoutput_folder +
     "/test.csolution_schema_validation.yml";
-  for (auto [data, expectError, errorPos] : vecTestData) {
+  for (auto [data, expectRetVal, errorPos] : vecTestData) {
     writeFile(filename, data);
-    EXPECT_EQ(expectError, Validate(filename, FileType::SOLUTION)) << "failed for: " << data;
+    EXPECT_EQ(expectRetVal, Validate(filename, FileType::SOLUTION)) << "failed for: " << data;
 
     // Check errors
     auto errList = GetErrors();
-    EXPECT_EQ(errList.size(), expectError ? 0 : errorPos.size()) << "failed for: " << data;
+    EXPECT_EQ(errList.size(), expectRetVal ? 0 : errorPos.size()) << "failed for: " << data;
     for (auto& err : errList) {
       auto errItr = find_if(errorPos.begin(), errorPos.end(),
         [&](const std::pair<int,int>& errPos) {
@@ -218,13 +251,13 @@ solution:\n\
 TEST_F(ProjMgrSchemaCheckerUnitTests, SchemaCheck_define) {
   vector<std::pair<int, int>> expectedErrPos = {
     // line, col
-    {  10  ,  10 },
-    {  11  ,  10 },
-    {  12  ,  10 }
+    {  10  ,  11 },
+    {  11  ,  11 },
+    {  12  ,  11 }
   };
 
   const string& filename = testinput_folder +
-    "/TestSolution/test.csolution_validate_define_syntax.yml";
+    "/TestSolution/test_validate_define_syntax.csolution.yml";
   EXPECT_FALSE(Validate(filename, FileType::SOLUTION));
 
   // Check errors

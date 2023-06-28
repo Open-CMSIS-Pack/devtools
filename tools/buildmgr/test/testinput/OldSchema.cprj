@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<cprj schemaVersion="1.9.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="CPRJ.xsd">
+  <created tool="µVision V5.29.0.13" timestamp="2020-01-21T11:38:01" />
+
+  <info isLayer="false" >
+    <description></description>
+    <category></category>
+    <keywords></keywords>
+    <license></license>
+    <!-- <url></url> -->
+  </info>
+
+  <packages>
+    <package vendor="ARM" name="CMSIS"/>
+  </packages>
+  
+  <compilers>
+    <compiler name="AC6" version="6.0.0"/>
+  </compilers>
+
+  <target Dvendor="ARM:82" Dname="ARMCM0">
+    <output name="Minimal" type="exe"/>
+  </target>
+
+  <components>
+    <component Cvendor="ARM" Cclass="CMSIS" Cgroup="CORE"/>
+    <component Cvendor="ARM" Cclass="Device" Cgroup="Startup" Cvariant="C Startup"/>
+  </components>
+
+</cprj>

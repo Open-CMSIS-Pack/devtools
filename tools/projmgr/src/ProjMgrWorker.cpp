@@ -1203,10 +1203,10 @@ bool ProjMgrWorker::ProcessToolchain(ContextItem& context) {
     // get compatible supported toolchain
     if (!GetToolchainConfig(context.toolchain.name, context.toolchain.range, context.toolchain.config, context.toolchain.version)) {
       ProjMgrLogger::Warn("cmake configuration file for toolchain '" + context.compiler + "' was not found");
-      context.toolchain.version = context.toolchain.range;
+      context.toolchain.version = RteUtils::GetPrefix(context.toolchain.range);
     }
   }
-  if (context.toolchain.name == "AC6" || context.toolchain.name == "AC5") {
+  if (context.toolchain.name == "AC6") {
     context.targetAttributes["Tcompiler"] = "ARMCC";
     context.targetAttributes["Toptions"] = context.toolchain.name;
   } else {
@@ -1357,13 +1357,12 @@ RteComponent* ProjMgrWorker::ProcessComponent(ContextItem& context, ComponentIte
   }
 
   // Multiple matches, check exact partial identifier
+  string requiredComponentId = RteUtils::RemovePrefixByString(item.component, ProjMgrUtils::SUFFIX_CVENDOR);
   if (filteredComponents.size() > 1) {
     RteComponentMap matchedComponents;
     for (const auto& [id, component] : filteredComponents) {
       // Get component id without vendor and version
       const string& componentId = ProjMgrUtils::GetPartialComponentID(component);
-      string requiredComponentId = RteUtils::RemovePrefixByString(item.component, ProjMgrUtils::SUFFIX_CVENDOR);
-      requiredComponentId = RteUtils::GetPrefix(requiredComponentId, *ProjMgrUtils::PREFIX_CVERSION);
       if (requiredComponentId.compare(componentId) == 0) {
         matchedComponents[id] = component;
       }
@@ -1379,13 +1378,20 @@ RteComponent* ProjMgrWorker::ProcessComponent(ContextItem& context, ComponentIte
     return nullptr;
   }
   // One or multiple matches found
+  // check for default variant if requested variant is empty
+  for (const auto& [id, component] : filteredComponents) {
+    if (component->IsDefaultVariant() && !component->GetCvariantName().empty()) {
+      return component;
+    }
+  }
+
   set<string> availableComponentVersions;
   for_each(filteredComponents.begin(), filteredComponents.end(),
     [&](const pair<std::string, RteComponent*>& component) {
       availableComponentVersions.insert(RteUtils::GetSuffix(component.first, *ProjMgrUtils::PREFIX_CVERSION));
     });
-  const string& filterVersion = RteUtils::GetSuffix(item.component, *ProjMgrUtils::PREFIX_CVERSION, true);
-  const string& matchedVersion = VersionCmp::GetMatchingVersion(filterVersion, availableComponentVersions);
+  const string filterVersion = RteUtils::GetSuffix(item.component, *ProjMgrUtils::PREFIX_CVERSION, true);
+  const string matchedVersion = VersionCmp::GetMatchingVersion(filterVersion, availableComponentVersions);
   if (matchedVersion.empty()) {
     return nullptr;
   }
@@ -1546,25 +1552,41 @@ bool ProjMgrWorker::ProcessComponentFiles(ContextItem& context) {
         if (componentFile) {
           const auto& attr = componentFile->GetAttribute("attr");
           const auto& category = componentFile->GetAttribute("category");
+          const auto& language = componentFile->GetAttribute("language");
+          const auto& scope = componentFile->GetAttribute("scope");
           const auto& version = attr == "config" ? componentFile->GetVersionString() : "";
-          context.componentFiles[ProjMgrUtils::GetComponentID(component)].push_back({ file, attr, category, version });
+          context.componentFiles[ProjMgrUtils::GetComponentID(component)].push_back({ file, attr, category, language, scope, version });
         }
       }
     }
   }
   // iterate over components
   for (const auto& [componentId, component] : context.components) {
-    const RteComponent* rteComponent = component.instance->GetParent()->GetComponent();
+    RteComponent* rteComponent = component.instance->GetParent()->GetComponent();
     const auto& files = rteComponent->GetFileContainer() ? rteComponent->GetFileContainer()->GetChildren() : list<RteItem*>();
-    // pre-include files from packs
+    // private includes
+    for (const auto& privateIncludes : {
+      context.rteActiveTarget->GetPrivateIncludePaths(rteComponent, RteFile::Language::LANGUAGE_C),
+      context.rteActiveTarget->GetPrivateIncludePaths(rteComponent, RteFile::Language::LANGUAGE_CPP),
+      context.rteActiveTarget->GetPrivateIncludePaths(rteComponent, RteFile::Language::LANGUAGE_C_CPP),
+      context.rteActiveTarget->GetPrivateIncludePaths(rteComponent, RteFile::Language::LANGUAGE_NONE)
+      }) {
+      for (const auto& privateInclude : privateIncludes) {
+        const string& include = fs::path(privateInclude).is_relative() ? fs::path(context.cproject->directory).append(privateInclude).generic_string() : privateInclude;
+        component.item->build.addpaths.push_back(RteFsUtils::RelativePath(include, context.directories.cprj));
+      }
+    }
+    // hidden files and pre-include files from packs
     for (const auto& componentFile : files) {
+      const auto& name = rteComponent->GetPackage()->GetAbsolutePackagePath() + componentFile->GetAttribute("name");
       const auto& category = componentFile->GetAttribute("category");
       const auto& attr = componentFile->GetAttribute("attr");
-      if (((category == "preIncludeGlobal") || (category == "preIncludeLocal")) && attr.empty()) {
-        const auto& preInclude = rteComponent->GetPackage()->GetAbsolutePackagePath() + componentFile->GetAttribute("name");
-        if (IsPreIncludeByTarget(context.rteActiveTarget, preInclude)) {
-          context.componentFiles[componentId].push_back({ preInclude, "", category, "" });
-        }
+      const auto& scope = componentFile->GetAttribute("scope");
+      const auto& language = componentFile->GetAttribute("language");
+      const auto& version = componentFile->GetVersionString();
+      if ((scope == "hidden") ||
+        ((((category == "preIncludeGlobal") || (category == "preIncludeLocal")) && attr.empty()) && (IsPreIncludeByTarget(context.rteActiveTarget, name)))){
+        context.componentFiles[componentId].push_back({ name, attr, category, language, scope, version });
       }
     }
     // config files
@@ -1577,6 +1599,8 @@ bool ProjMgrWorker::ProcessComponentFiles(ContextItem& context) {
           const auto& filename = configFile->GetAbsolutePath();
           configFilePaths[originalFile] = filename;
           const auto& category = configFile->GetAttribute("category");
+          const auto& language = configFile->GetAttribute("language");
+          const auto& scope = configFile->GetAttribute("scope");
           switch (RteFile::CategoryFromString(category)) {
           case RteFile::Category::GEN_SOURCE:
           case RteFile::Category::GEN_HEADER:
@@ -1587,7 +1611,7 @@ bool ProjMgrWorker::ProcessComponentFiles(ContextItem& context) {
             break;
           };
           const auto& version = originalFile->GetVersionString();
-          context.componentFiles[componentId].push_back({ filename, "config", category, version });
+          context.componentFiles[componentId].push_back({ filename, "config", category, language, scope, version });
         }
       }
     }
@@ -1606,9 +1630,11 @@ bool ProjMgrWorker::ProcessComponentFiles(ContextItem& context) {
         };
         const auto& version = rteFile->GetVersionString();
         const auto& attr = rteFile->GetAttribute("attr");
+        const auto& language = rteFile->GetAttribute("language");
+        const auto& scope = rteFile->GetAttribute("scope");
         const auto& filename = (attr == "config" && configFilePaths.find(rteFile) != configFilePaths.end()) ?
                                 configFilePaths[rteFile] : rteFile->GetOriginalAbsolutePath();
-        context.generatorInputFiles[componentId].push_back({ filename, attr, category, version });
+        context.generatorInputFiles[componentId].push_back({ filename, attr, category, language, scope, version });
       }
     }
   }
@@ -1622,7 +1648,7 @@ bool ProjMgrWorker::ProcessComponentFiles(ContextItem& context) {
           const string& filename = context.rteActiveProject->GetProjectPath() +
             context.rteActiveProject->GetRteHeader(file, context.rteActiveTarget->GetName(), "");
           const string& componentID = ProjMgrUtils::GetComponentID(component);
-          context.componentFiles[componentID].push_back({ filename, "", "preIncludeLocal", ""});
+          context.componentFiles[componentID].push_back({ filename, "", "preIncludeLocal", "", "", ""});
           break;
         }
       }
@@ -1692,6 +1718,22 @@ bool ProjMgrWorker::ProcessGpdsc(ContextItem& context) {
       }
       info->SetGpdscPack(gpdscPack);
     }
+    // insert gpdsc components
+    for (const auto& gpdscComponent : gpdscPack->GetComponents()->GetChildren()) {
+      list<RteItem*> components;
+      if (gpdscComponent->GetTag() == "component") {
+        components.push_back(gpdscComponent);
+      } else if (gpdscComponent->GetTag() == "bundle") {
+        components = gpdscComponent->GetChildren();
+      }
+      for (const auto component : components) {
+        const auto& componentId = ProjMgrUtils::GetComponentID(component);
+        const auto& item = context.components[context.gpdscs.at(gpdscFile).component].item;
+        RteComponentInstance* componentInstance = new RteComponentInstance(component);
+        componentInstance->InitInstance(component);
+        context.components.insert({ componentId, { componentInstance, item, component->GetGeneratorName()}});
+      }
+    }
   }
   if (!gpdscInfos.empty()) {
     // Update target with gpdsc model
@@ -1715,12 +1757,16 @@ bool ProjMgrWorker::ProcessPrecedence(StringCollection& item) {
   return true;
 }
 
-bool ProjMgrWorker::ProcessCompilerPrecedence(StringCollection& item) {
+bool ProjMgrWorker::ProcessCompilerPrecedence(StringCollection& item, bool acceptRedefinition) {
   for (const auto& element : item.elements) {
     if (!element->empty()) {
       if (!ProjMgrUtils::AreCompilersCompatible(*item.assign, *element)) {
-        ProjMgrLogger::Error("redefinition from '" + *item.assign + "' into '" + *element + "' is not allowed");
-        return false;
+        if (acceptRedefinition) {
+          ProjMgrLogger::Warn("redefinition from '" + *item.assign + "' into '" + *element + "'");
+        } else {
+          ProjMgrLogger::Error("redefinition from '" + *item.assign + "' into '" + *element + "' is not allowed");
+          return false;
+        }
       }
       ProjMgrUtils::CompilersIntersect(*item.assign, *element, *item.assign);
     }
@@ -1793,17 +1839,20 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
    &context.compiler,
    {
      &context.controls.cproject.compiler,
-     &context.controls.setup.compiler,
      &context.controls.csolution.compiler,
      &context.controls.target.compiler,
      &context.controls.build.compiler,
-     &m_selectedToolchain,
    },
   };
   for (const auto& [_, clayer] : context.clayers) {
     compiler.elements.push_back(&clayer->target.build.compiler);
   }
   if (!ProcessCompilerPrecedence(compiler)) {
+    return false;
+  }
+  // accept compiler redefinition in the command line
+  compiler = { &context.compiler, { &m_selectedToolchain } };
+  if (!ProcessCompilerPrecedence(compiler, true)) {
     return false;
   }
   if (!ProcessToolchain(context)) {
@@ -1853,12 +1902,14 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
     &context.controls.processed.optimize,
     {
       &context.controls.cproject.optimize,
-      &context.controls.setup.optimize,
       &context.controls.csolution.optimize,
       &context.controls.target.optimize,
       &context.controls.build.optimize,
     },
   };
+  for (auto& setup : context.controls.setups) {
+    optimize.elements.push_back(&setup.optimize);
+  }
   for (auto& [_, clayer] : context.controls.clayers) {
     optimize.elements.push_back(&clayer.optimize);
   }
@@ -1871,12 +1922,14 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
     &context.controls.processed.debug,
     {
       &context.controls.cproject.debug,
-      &context.controls.setup.debug,
       &context.controls.csolution.debug,
       &context.controls.target.debug,
       &context.controls.build.debug,
     },
   };
+  for (auto& setup : context.controls.setups) {
+    debug.elements.push_back(&setup.debug);
+  }
   for (auto& [_, clayer] : context.controls.clayers) {
     debug.elements.push_back(&clayer.debug);
   }
@@ -1889,12 +1942,14 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
     &context.controls.processed.warnings,
     {
       &context.controls.cproject.warnings,
-      &context.controls.setup.warnings,
       &context.controls.csolution.warnings,
       &context.controls.target.warnings,
       &context.controls.build.warnings,
     },
   };
+  for (auto& setup : context.controls.setups) {
+    warnings.elements.push_back(&setup.warnings);
+  }
   for (auto& [_, clayer] : context.controls.clayers) {
     warnings.elements.push_back(&clayer.warnings);
   }
@@ -1902,14 +1957,56 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
     return false;
   }
 
+  // Language C
+  StringCollection languageC = {
+    &context.controls.processed.languageC,
+    {
+      &context.controls.cproject.languageC,
+      &context.controls.csolution.languageC,
+      &context.controls.target.languageC,
+      &context.controls.build.languageC,
+    },
+  };
+  for (auto& setup : context.controls.setups) {
+    languageC.elements.push_back(&setup.languageC);
+  }
+  for (auto& [_, clayer] : context.controls.clayers) {
+    languageC.elements.push_back(&clayer.languageC);
+  }
+  if (!ProcessPrecedence(languageC)) {
+    return false;
+  }
+
+  // Language C++
+  StringCollection languageCpp = {
+    &context.controls.processed.languageCpp,
+    {
+      &context.controls.cproject.languageCpp,
+      &context.controls.csolution.languageCpp,
+      &context.controls.target.languageCpp,
+      &context.controls.build.languageCpp,
+    },
+  };
+  for (auto& setup : context.controls.setups) {
+    languageCpp.elements.push_back(&setup.languageCpp);
+  }
+  for (auto& [_, clayer] : context.controls.clayers) {
+    languageCpp.elements.push_back(&clayer.languageCpp);
+  }
+  if (!ProcessPrecedence(languageCpp)) {
+    return false;
+  }
+
   // Misc
   vector<vector<MiscItem>*> miscVec = {
     &context.controls.cproject.misc,
-    &context.controls.setup.misc,
     &context.controls.csolution.misc,
     &context.controls.build.misc,
     &context.controls.target.misc,
   };
+  for (auto& setup : context.controls.setups) {
+    miscVec.push_back(&setup.misc);
+  }
   for (auto& [_, clayer] : context.controls.clayers) {
     miscVec.push_back(&clayer.misc);
   }
@@ -1923,15 +2020,20 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
   for (auto& [_, clayer] : context.controls.clayers) {
     AddStringItemsUniquely(projectDefines, clayer.defines);
   }
+  for (auto& setup : context.controls.setups) {
+    AddStringItemsUniquely(projectDefines, setup.defines);
+  }
   AddStringItemsUniquely(projectUndefines, context.controls.cproject.undefines);
   for (auto& [_, clayer] : context.controls.clayers) {
     AddStringItemsUniquely(projectUndefines, clayer.undefines);
+  }
+  for (auto& setup : context.controls.setups) {
+    AddStringItemsUniquely(projectUndefines, setup.undefines);
   }
   StringVectorCollection defines = {
     &context.controls.processed.defines,
     {
       {&projectDefines, &projectUndefines},
-      {&context.controls.setup.defines, &context.controls.setup.undefines},
       {&context.controls.csolution.defines, &context.controls.csolution.undefines},
       {&context.controls.target.defines, &context.controls.target.undefines},
       {&context.controls.build.defines, &context.controls.build.undefines},
@@ -1945,15 +2047,20 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
   for (auto& [_, clayer] : context.controls.clayers) {
     AddStringItemsUniquely(projectAddPaths, clayer.addpaths);
   }
+  for (auto& setup : context.controls.setups) {
+    AddStringItemsUniquely(projectAddPaths, setup.addpaths);
+  }
   AddStringItemsUniquely(projectDelPaths, context.controls.cproject.delpaths);
   for (auto& [_, clayer] : context.controls.clayers) {
     AddStringItemsUniquely(projectDelPaths, clayer.delpaths);
+  }
+  for (auto& setup : context.controls.setups) {
+    AddStringItemsUniquely(projectDelPaths, setup.delpaths);
   }
   StringVectorCollection includes = {
     &context.controls.processed.addpaths,
     {
       {&projectAddPaths, &projectDelPaths},
-      {&context.controls.setup.addpaths, &context.controls.setup.delpaths},
       {&context.controls.csolution.addpaths, &context.controls.csolution.delpaths},
       {&context.controls.target.addpaths, &context.controls.target.delpaths},
       {&context.controls.build.addpaths, &context.controls.build.delpaths},
@@ -1969,12 +2076,14 @@ bool ProjMgrWorker::ProcessProcessorOptions(ContextItem& context) {
     &context.controls.processed.processor.trustzone,
     {
       &context.controls.cproject.processor.trustzone,
-      &context.controls.setup.processor.trustzone,
       &context.controls.csolution.processor.trustzone,
       &context.controls.target.processor.trustzone,
       &context.controls.build.processor.trustzone,
     },
   };
+  for (auto& setup : context.controls.setups) {
+    trustzone.elements.push_back(&setup.processor.trustzone);
+  }
   for (auto& [_, clayer] : context.controls.clayers) {
     trustzone.elements.push_back(&clayer.processor.trustzone);
   }
@@ -1986,12 +2095,14 @@ bool ProjMgrWorker::ProcessProcessorOptions(ContextItem& context) {
     &context.controls.processed.processor.fpu,
     {
       &context.controls.cproject.processor.fpu,
-      &context.controls.setup.processor.fpu,
       &context.controls.csolution.processor.fpu,
       &context.controls.target.processor.fpu,
       &context.controls.build.processor.fpu,
     },
   };
+  for (auto& setup : context.controls.setups) {
+    fpu.elements.push_back(&setup.processor.fpu);
+  }
   for (auto& [_, clayer] : context.controls.clayers) {
     fpu.elements.push_back(&clayer.processor.fpu);
   }
@@ -2003,12 +2114,14 @@ bool ProjMgrWorker::ProcessProcessorOptions(ContextItem& context) {
     &context.controls.processed.processor.endian,
     {
       &context.controls.cproject.processor.endian,
-      &context.controls.setup.processor.endian,
       &context.controls.csolution.processor.endian,
       &context.controls.target.processor.endian,
       &context.controls.build.processor.endian,
     },
   };
+  for (auto& setup : context.controls.setups) {
+    endian.elements.push_back(&setup.processor.endian);
+  }
   for (auto& [_, clayer] : context.controls.clayers) {
     endian.elements.push_back(&clayer.processor.endian);
   }
@@ -2103,11 +2216,17 @@ bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem& context) {
 
   // project, solution, target-type and build-type translation controls
   if (!ProcessSequencesRelatives(context, context.controls.cproject, context.cproject->directory) ||
-      !ProcessSequencesRelatives(context, context.controls.setup, context.cproject->directory) ||
       !ProcessSequencesRelatives(context, context.controls.csolution, context.csolution->directory) ||
       !ProcessSequencesRelatives(context, context.controls.target, context.csolution->directory) ||
       !ProcessSequencesRelatives(context, context.controls.build, context.csolution->directory)) {
     return false;
+  }
+
+  // setups translation controls
+  for (auto& setup : context.controls.setups) {
+    if (!ProcessSequencesRelatives(context, setup, context.cproject->directory)) {
+      return false;
+    }
   }
 
   // components translation controls
@@ -2481,7 +2600,11 @@ bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGpdsc, bool re
       for (const auto& result : results) {
         msg += "\n" + result;
       }
-      ProjMgrLogger::Warn(msg);
+      if (context.cproject && !context.cproject->path.empty()) {
+        ProjMgrLogger::Warn(context.cproject->path, msg);
+      } else {
+        ProjMgrLogger::Warn(msg);
+      }
     }
   }
   return true;
@@ -2908,8 +3031,7 @@ bool ProjMgrWorker::GetTypeContent(ContextItem& context) {
 bool ProjMgrWorker::GetProjectSetup(ContextItem& context) {
   for (const auto& setup : context.cproject->setups) {
     if (CheckContextFilters(setup.type, context) && CheckCompiler(setup.forCompiler, context.compiler)) {
-      context.controls.setup = setup.build;
-      break;
+      context.controls.setups.push_back(setup.build);
     }
   }
   return true;
@@ -3127,32 +3249,17 @@ bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem& context, BuildType& b
   return true;
 }
 
-bool ProjMgrWorker::ParseContextSelection(const string& contextSelection) {
+bool ProjMgrWorker::ParseContextSelection(const vector<string>& contextSelection) {
   vector<string> contexts;
   ListContexts(contexts);
-  m_selectedContexts.clear();
-  if (contextSelection.empty()) {
-    if (contexts.empty()) {
-      // default context
-      m_selectedContexts.push_back("");
-    } else {
-      // select all contexts
-      for (const auto& context : contexts) {
-        m_selectedContexts.push_back(context);
-      }
+  const auto& errContextFilters = ProjMgrUtils::GetSelectedContexts(m_selectedContexts, contexts, contextSelection);
+  if (errContextFilters.size() != 0) {
+    string errMsg = "following context(s) was not found:\n";
+    for (const auto& filter : errContextFilters) {
+      errMsg += "  " + filter + "\n";
     }
-  } else {
-    bool match = false;
-    for (const auto& context : contexts) {
-      if (WildCards::Match(context, contextSelection)) {
-        m_selectedContexts.push_back(context);
-        match = true;
-      }
-    }
-    if (!match) {
-      ProjMgrLogger::Error("context '" + contextSelection + "' was not found");
-      return false;
-    }
+    ProjMgrLogger::Error(errMsg);
+    return false;
   }
   return true;
 }

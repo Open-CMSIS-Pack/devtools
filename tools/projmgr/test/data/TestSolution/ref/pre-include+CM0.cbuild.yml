@@ -59,6 +59,7 @@ build:
           category: sourceC
         - file: ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/ComponentLevel/ComponentLevel.h
           category: preIncludeLocal
+          version: 0.0.1
         - file: ../data/TestSolution/RTE/RteTest/ComponentLevelConfig_0.h
           category: preIncludeLocal
           attr: config
@@ -77,6 +78,7 @@ build:
           category: sourceC
         - file: ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/GlobalLevel/GlobalLevel.h
           category: preIncludeGlobal
+          version: 0.0.2
         - file: ../data/TestSolution/RTE/RteTest/GlobalLevelConfig.h
           category: preIncludeGlobal
           attr: config

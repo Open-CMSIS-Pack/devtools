@@ -331,8 +331,12 @@ void ProjMgrUtils::GetCompilerRoot(string& compilerRoot) {
   }
 }
 
-ContextName ProjMgrUtils::ParseContextEntry(const string& contextEntry) {
-  ContextName context;
+bool ProjMgrUtils::ParseContextEntry(const string& contextEntry, ContextName& context) {
+  // validate context
+  if (RteUtils::CountDelimiters(contextEntry, ".") > 1 ||
+    RteUtils::CountDelimiters(contextEntry, "+") > 1) {
+    return false;
+  }
   vector<pair<const regex, string&>> regexMap = {
     // "project name" may come before dot (.) or plus (+) or alone
     {regex(R"(^(.*?)[.+].*$|^(.*)$)"), context.project},
@@ -348,7 +352,7 @@ ContextName ProjMgrUtils::ParseContextEntry(const string& contextEntry) {
     // the stringReference (context.project, context.build or context.target) is set to the "matched" group
     stringReference = sm.size() < 3 ? string() : sm[1].matched ? sm[1] : sm[2].matched ? sm[2] : string();
   }
-  return context;
+  return true;
 }
 
 void ProjMgrUtils::SetOutputType(const string typeString, OutputTypes& type) {
@@ -363,4 +367,56 @@ void ProjMgrUtils::SetOutputType(const string typeString, OutputTypes& type) {
   } else if (typeString == OUTPUT_TYPE_CMSE) {
     type.cmse.on = true;
   }
+}
+
+vector<string> ProjMgrUtils::GetSelectedContexts(list<string>& selectedContexts,
+   const vector<string>& allContexts, const vector<string>& contextFilters)
+{
+  vector<string> errFilters;
+  selectedContexts.clear();
+  if (contextFilters.empty()) {
+    if (allContexts.empty()) {
+      // default context
+      ProjMgrUtils::PushBackUniquely(selectedContexts, "");
+    }
+    else {
+      // select all contexts
+      for (const auto& context : allContexts) {
+        ProjMgrUtils::PushBackUniquely(selectedContexts, context);
+      }
+    }
+  }
+  else {
+    string contextPattern;
+    ContextName inputContext;
+    for (const auto& contextFilter : contextFilters) {
+      bool match = false;
+      if (!ProjMgrUtils::ParseContextEntry(contextFilter, inputContext)) {
+        errFilters.push_back(contextFilter);
+        continue;
+      }
+      for (const auto& context : allContexts) {
+        if (context == contextFilter) {
+          ProjMgrUtils::PushBackUniquely(selectedContexts, context);
+          match = true;
+          continue;
+        }
+        ContextName contextItem;
+        ProjMgrUtils::ParseContextEntry(context, contextItem);
+        contextPattern = (inputContext.project != RteUtils::EMPTY_STRING ? inputContext.project : "*");
+        if (contextItem.build != RteUtils::EMPTY_STRING) {
+          contextPattern += "." + (inputContext.build != RteUtils::EMPTY_STRING ? inputContext.build : "*");
+        }
+        contextPattern += "+" + (inputContext.target != RteUtils::EMPTY_STRING ? inputContext.target : "*");
+        if (WildCards::Match(context, contextPattern)) {
+          ProjMgrUtils::PushBackUniquely(selectedContexts, context);
+          match = true;
+        }
+      }
+      if (!match) {
+        errFilters.push_back(contextFilter);
+      }
+    }
+  }
+  return errFilters;
 }

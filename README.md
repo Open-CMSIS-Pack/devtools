@@ -168,6 +168,13 @@ As usual, the actual build steps vary by platform.
     cmake -A x64 ..
     ```
 
+- **Windows cross-compiling:**\
+    For cross-compiling win32 you need to generate with `-DCMAKE_TOOLCHAIN_FILE=../cmake/TC-win32-posix.cmake`:
+
+    ```bash
+    cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=../cmake/TC-win32-posix.cmake ..
+    ```
+
 ### Run build
 
 One can trigger a build for all CMake targets or specific targets from the command line.

@@ -1,9 +1,9 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/2.0.0-dev0/tools/projmgr/schemas/common.schema.json",
+  "$id": "https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/2.0.0-dev3/tools/projmgr/schemas/common.schema.json",
   "title": "CMSIS common",
   "description": "common and reusable properties from other schemas",
-  "version": "2.0.0-dev0",
+  "version": "2.0.0-dev3",
   "definitions": {
     "ArrayOfStrings": {
       "type": "array",
@@ -144,6 +144,14 @@
       "enum": [ "on", "off" ],
       "description": "Control warnings (on, off)."
     },
+    "LanguageCType": {
+      "enum": [ "c90", "gnu90", "c99", "gnu99", "c11", "gnu11" ],
+      "description": "Language standard for C (c90, gnu90, c99, gnu99, c11, gnu11)."
+    },
+    "LanguageCppType": {
+      "enum": [ "c++98", "gnu++98", "c++03", "gnu++03", "c++11", "gnu++11", "c++14", "gnu++14", "c++17", "gnu++17", "c++20", "gnu++20" ],
+      "description": "Language standard for C++ (c++98, gnu++98, c++03, gnu++03, c++11, gnu++11, c++14, gnu++14, c++17, gnu++17, c++20, gnu++20)."
+    },
     "ArrayOfArtifactType": {
       "type": "array",
       "uniqueItems": true,
@@ -278,21 +286,27 @@
     "TargetType": {
       "type": "object",
       "properties": {
-        "type":       { "type": "string", "description": "Name of the target type." },
-        "board":      { "$ref": "#/definitions/BoardType" },
-        "device":     { "$ref": "#/definitions/DeviceType" },
-        "processor":  { "$ref": "#/definitions/ProcessorType" },
-        "compiler":   { "$ref": "#/definitions/CompilerType" },
-        "optimize":   { "$ref": "#/definitions/OptimizeType" },
-        "debug":      { "$ref": "#/definitions/DebugType" },
-        "warnings":   { "$ref": "#/definitions/WarningsType" },
-        "define":     { "$ref": "#/definitions/DefinesType" },
-        "undefine":   { "$ref": "#/definitions/UndefinesType" },
-        "add-path":   { "$ref": "#/definitions/AddpathsType" },
-        "del-path":   { "$ref": "#/definitions/DelpathsType" },
-        "misc":       { "$ref": "#/definitions/MiscTypes" },
-        "variables":  { "$ref": "#/definitions/VariablesType" },
-        "context-map":{ "$ref": "#/definitions/ContextMapType" }
+        "type": {
+          "type": "string",
+          "pattern": "^([^.+]+)$",
+          "description": "Name of the target type."
+        },
+        "board":        { "$ref": "#/definitions/BoardType" },
+        "device":       { "$ref": "#/definitions/DeviceType" },
+        "processor":    { "$ref": "#/definitions/ProcessorType" },
+        "compiler":     { "$ref": "#/definitions/CompilerType" },
+        "optimize":     { "$ref": "#/definitions/OptimizeType" },
+        "debug":        { "$ref": "#/definitions/DebugType" },
+        "warnings":     { "$ref": "#/definitions/WarningsType" },
+        "language-C":   { "$ref": "#/definitions/LanguageCType" },
+        "language-CPP": { "$ref": "#/definitions/LanguageCppType" },
+        "define":       { "$ref": "#/definitions/DefinesType" },
+        "undefine":     { "$ref": "#/definitions/UndefinesType" },
+        "add-path":     { "$ref": "#/definitions/AddpathsType" },
+        "del-path":     { "$ref": "#/definitions/DelpathsType" },
+        "misc":         { "$ref": "#/definitions/MiscTypes" },
+        "variables":    { "$ref": "#/definitions/VariablesType" },
+        "context-map":  { "$ref": "#/definitions/ContextMapType" }
       },
       "additionalProperties": false,
       "required" : [ "type"]
@@ -309,20 +323,23 @@
       "properties": {
         "type": {
           "type": "string",
+          "pattern": "^([^.+]+)$",
           "description": "Name of build configuration type. (Debug | Test | Release)"
         },
-        "processor":  { "$ref": "#/definitions/ProcessorType" },
-        "compiler":   { "$ref": "#/definitions/CompilerType" },
-        "optimize":   { "$ref": "#/definitions/OptimizeType" },
-        "debug":      { "$ref": "#/definitions/DebugType" },
-        "warnings":   { "$ref": "#/definitions/WarningsType" },
-        "define":     { "$ref": "#/definitions/DefinesType" },
-        "undefine":   { "$ref": "#/definitions/UndefinesType" },
-        "add-path":   { "$ref": "#/definitions/AddpathsType" },
-        "del-path":   { "$ref": "#/definitions/DelpathsType" },
-        "misc":       { "$ref": "#/definitions/MiscTypes" },
-        "variables":  { "$ref": "#/definitions/VariablesType" },
-        "context-map":{ "$ref": "#/definitions/ContextMapType" }
+        "processor":    { "$ref": "#/definitions/ProcessorType" },
+        "compiler":     { "$ref": "#/definitions/CompilerType" },
+        "optimize":     { "$ref": "#/definitions/OptimizeType" },
+        "debug":        { "$ref": "#/definitions/DebugType" },
+        "warnings":     { "$ref": "#/definitions/WarningsType" },
+        "language-C":   { "$ref": "#/definitions/LanguageCType" },
+        "language-CPP": { "$ref": "#/definitions/LanguageCppType" },
+        "define":       { "$ref": "#/definitions/DefinesType" },
+        "undefine":     { "$ref": "#/definitions/UndefinesType" },
+        "add-path":     { "$ref": "#/definitions/AddpathsType" },
+        "del-path":     { "$ref": "#/definitions/DelpathsType" },
+        "misc":         { "$ref": "#/definitions/MiscTypes" },
+        "variables":    { "$ref": "#/definitions/VariablesType" },
+        "context-map":  { "$ref": "#/definitions/ContextMapType" }
       },
       "additionalProperties": false,
       "required" : [ "type"]
@@ -339,6 +356,7 @@
       "properties": {
         "project": {
           "type": "string",
+          "pattern": "^.*[/]([^.+]*\\.cproject\\.(yml|yaml))$|^([^.+]+)\\.cproject\\.(yml|yaml)$",
           "description": "Path to the valid project file"
         },
         "for-context":     { "$ref": "#/definitions/ForContext" },
@@ -395,6 +413,8 @@
         "optimize":        { "$ref": "#/definitions/OptimizeType" },
         "debug":           { "$ref": "#/definitions/DebugType" },
         "warnings":        { "$ref": "#/definitions/WarningsType" },
+        "language-C":      { "$ref": "#/definitions/LanguageCType" },
+        "language-CPP":    { "$ref": "#/definitions/LanguageCppType" },
         "define":          { "$ref": "#/definitions/DefinesType" },
         "undefine":        { "$ref": "#/definitions/UndefinesType" },
         "add-path":        { "$ref": "#/definitions/AddpathsType" },
@@ -449,6 +469,8 @@
         "optimize":        { "$ref": "#/definitions/OptimizeType" },
         "debug":           { "$ref": "#/definitions/DebugType" },
         "warnings":        { "$ref": "#/definitions/WarningsType" },
+        "language-C":      { "$ref": "#/definitions/LanguageCType" },
+        "language-CPP":    { "$ref": "#/definitions/LanguageCppType" },
         "define":          { "$ref": "#/definitions/DefinesType" },
         "undefine":        { "$ref": "#/definitions/UndefinesType" },
         "add-path":        { "$ref": "#/definitions/AddpathsType" },
@@ -536,6 +558,8 @@
         "optimize":        { "$ref": "#/definitions/OptimizeType" },
         "debug":           { "$ref": "#/definitions/DebugType" },
         "warnings":        { "$ref": "#/definitions/WarningsType" },
+        "language-C":      { "$ref": "#/definitions/LanguageCType" },
+        "language-CPP":    { "$ref": "#/definitions/LanguageCppType" },
         "define":          { "$ref": "#/definitions/DefinesType" },
         "undefine":        { "$ref": "#/definitions/UndefinesType" },
         "add-path":        { "$ref": "#/definitions/AddpathsType" },
@@ -556,7 +580,8 @@
           "type": "string",
           "description": "Base directory for RTE files; default: $ProjectDir()$/RTE"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "GeneratorsOutputType": {
       "type": ["object", "null"],
@@ -567,7 +592,8 @@
           "description": "Base directory for unspecified generators; default: $ProjectDir()$/generated"
         },
         "options": { "$ref": "#/definitions/GeneratorOptionsType" }
-      }
+      },
+      "additionalProperties": false
     },
     "GeneratorOptionsType": {
       "type": "array",
@@ -587,7 +613,9 @@
           "type": "string",
           "description": "Specifies the directory for generated files. Relative paths used the location of the yml file as base directory"
         }
-      }
+      },
+      "additionalProperties": false,
+      "required": [ "generator" ]
     },
     "LayersType": {
       "type": "array",
@@ -631,6 +659,7 @@
     "SolutionDescType": {
       "type": "object",
       "properties": {
+        "description":  { "type": "string" },
         "target-types": { "$ref": "#/definitions/TargetTypes" },
         "build-types":  { "$ref": "#/definitions/BuildTypes" },
         "output-dirs":  { "$ref": "#/definitions/OutputDirectoriesType" },
@@ -641,6 +670,8 @@
         "optimize":     { "$ref": "#/definitions/OptimizeType" },
         "debug":        { "$ref": "#/definitions/DebugType" },
         "warnings":     { "$ref": "#/definitions/WarningsType" },
+        "language-C":   { "$ref": "#/definitions/LanguageCType" },
+        "language-CPP": { "$ref": "#/definitions/LanguageCppType" },
         "define":       { "$ref": "#/definitions/DefinesType" },
         "undefine":     { "$ref": "#/definitions/UndefinesType" },
         "add-path":     { "$ref": "#/definitions/AddpathsType" },
@@ -655,7 +686,6 @@
           "$ref": "#/definitions/CreatedInfoType",
           "description": "The tool required to build this csolution project"
         },
-        "description": { "type": "string" },
         "cdefault":    { "type": "null", "description": "Enable use of cdefault.yml file" },
         "generators":  { "$ref": "#/definitions/GeneratorsOutputType" }
       },
@@ -665,30 +695,32 @@
     "ProjectDescType": {
       "type": ["object", "null"],
       "properties": {
-        "description": { "type": "string" },
-        "packs":       { "$ref": "#/definitions/PacksType" },
-        "output":      { "$ref": "#/definitions/OutputType" },
-        "output-dirs": { "$ref": "#/definitions/OutputDirectoriesType" },
-        "board":       { "$ref": "#/definitions/BoardType" },
-        "device":      { "$ref": "#/definitions/DeviceType" },
-        "compiler":    { "$ref": "#/definitions/CompilerType" },
-        "optimize":    { "$ref": "#/definitions/OptimizeType" },
-        "debug":       { "$ref": "#/definitions/DebugType" },
-        "warnings":    { "$ref": "#/definitions/WarningsType" },
-        "processor":   { "$ref": "#/definitions/ProcessorType" },
-        "define":      { "$ref": "#/definitions/DefinesType" },
-        "undefine":    { "$ref": "#/definitions/UndefinesType" },
-        "add-path":    { "$ref": "#/definitions/AddpathsType" },
-        "del-path":    { "$ref": "#/definitions/DelpathsType" },
-        "misc":        { "$ref": "#/definitions/MiscTypes" },
-        "groups":      { "$ref": "#/definitions/GroupsType" },
-        "components":  { "$ref": "#/definitions/ComponentsType" },
-        "layers":      { "$ref": "#/definitions/LayersType" },
-        "setups":      { "$ref": "#/definitions/SetupsType" },
-        "connections": { "$ref": "#/definitions/ConnectionsType" },
-        "linker":      { "$ref": "#/definitions/LinkersType" },
-        "generators":  { "$ref": "#/definitions/GeneratorsOutputType" },
-        "rte":         { "$ref": "#/definitions/RteType" }
+        "description":  { "type": "string" },
+        "packs":        { "$ref": "#/definitions/PacksType" },
+        "output":       { "$ref": "#/definitions/OutputType" },
+        "output-dirs":  { "$ref": "#/definitions/OutputDirectoriesType" },
+        "board":        { "$ref": "#/definitions/BoardType" },
+        "device":       { "$ref": "#/definitions/DeviceType" },
+        "compiler":     { "$ref": "#/definitions/CompilerType" },
+        "optimize":     { "$ref": "#/definitions/OptimizeType" },
+        "debug":        { "$ref": "#/definitions/DebugType" },
+        "warnings":     { "$ref": "#/definitions/WarningsType" },
+        "language-C":   { "$ref": "#/definitions/LanguageCType" },
+        "language-CPP": { "$ref": "#/definitions/LanguageCppType" },
+        "processor":    { "$ref": "#/definitions/ProcessorType" },
+        "define":       { "$ref": "#/definitions/DefinesType" },
+        "undefine":     { "$ref": "#/definitions/UndefinesType" },
+        "add-path":     { "$ref": "#/definitions/AddpathsType" },
+        "del-path":     { "$ref": "#/definitions/DelpathsType" },
+        "misc":         { "$ref": "#/definitions/MiscTypes" },
+        "groups":       { "$ref": "#/definitions/GroupsType" },
+        "components":   { "$ref": "#/definitions/ComponentsType" },
+        "layers":       { "$ref": "#/definitions/LayersType" },
+        "setups":       { "$ref": "#/definitions/SetupsType" },
+        "connections":  { "$ref": "#/definitions/ConnectionsType" },
+        "linker":       { "$ref": "#/definitions/LinkersType" },
+        "generators":   { "$ref": "#/definitions/GeneratorsOutputType" },
+        "rte":          { "$ref": "#/definitions/RteType" }
       },
       "additionalProperties": false
     },
@@ -738,26 +770,28 @@
           "type": "string",
           "description": "Layer type for compatible layers matching"
         },
-        "for-board":   { "$ref": "#/definitions/BoardType" },
-        "for-device":  { "$ref": "#/definitions/DeviceType" },
-        "packs":       { "$ref": "#/definitions/PacksType" },
-        "board":       { "$ref": "#/definitions/BoardType" },
-        "device":      { "$ref": "#/definitions/DeviceType" },
-        "compiler":    { "$ref": "#/definitions/CompilerType" },
-        "optimize":    { "$ref": "#/definitions/OptimizeType" },
-        "debug":       { "$ref": "#/definitions/DebugType" },
-        "warnings":    { "$ref": "#/definitions/WarningsType" },
-        "processor":   { "$ref": "#/definitions/ProcessorType" },
-        "define":      { "$ref": "#/definitions/DefinesType" },
-        "undefine":    { "$ref": "#/definitions/UndefinesType" },
-        "add-path":    { "$ref": "#/definitions/AddpathsType" },
-        "del-path":    { "$ref": "#/definitions/DelpathsType" },
-        "misc":        { "$ref": "#/definitions/MiscTypes" },
-        "groups":      { "$ref": "#/definitions/GroupsType" },
-        "components":  { "$ref": "#/definitions/ComponentsType" },
-        "connections": { "$ref": "#/definitions/ConnectionsType" },
-        "linker":      { "$ref": "#/definitions/LinkersType" },
-        "generators":  { "$ref": "#/definitions/GeneratorsOutputType" }
+        "for-board":    { "$ref": "#/definitions/BoardType" },
+        "for-device":   { "$ref": "#/definitions/DeviceType" },
+        "packs":        { "$ref": "#/definitions/PacksType" },
+        "board":        { "$ref": "#/definitions/BoardType" },
+        "device":       { "$ref": "#/definitions/DeviceType" },
+        "compiler":     { "$ref": "#/definitions/CompilerType" },
+        "optimize":     { "$ref": "#/definitions/OptimizeType" },
+        "debug":        { "$ref": "#/definitions/DebugType" },
+        "warnings":     { "$ref": "#/definitions/WarningsType" },
+        "language-C":   { "$ref": "#/definitions/LanguageCType" },
+        "language-CPP": { "$ref": "#/definitions/LanguageCppType" },
+        "processor":    { "$ref": "#/definitions/ProcessorType" },
+        "define":       { "$ref": "#/definitions/DefinesType" },
+        "undefine":     { "$ref": "#/definitions/UndefinesType" },
+        "add-path":     { "$ref": "#/definitions/AddpathsType" },
+        "del-path":     { "$ref": "#/definitions/DelpathsType" },
+        "misc":         { "$ref": "#/definitions/MiscTypes" },
+        "groups":       { "$ref": "#/definitions/GroupsType" },
+        "components":   { "$ref": "#/definitions/ComponentsType" },
+        "connections":  { "$ref": "#/definitions/ConnectionsType" },
+        "linker":       { "$ref": "#/definitions/LinkersType" },
+        "generators":   { "$ref": "#/definitions/GeneratorsOutputType" }
       },
       "additionalProperties": false
     },
@@ -798,21 +832,23 @@
       "type": "object",
       "description": "Software component in its resolved state",
       "properties": {
-        "component":   { "$ref": "#/definitions/ComponentID" },
-        "condition":   { "$ref": "#/definitions/ConditionIDType" },
-        "selected-by": { "$ref": "#/definitions/ComponentID" },
-        "rtedir":      { "type": "string" },
-        "optimize":    { "$ref": "#/definitions/OptimizeType" },
-        "debug":       { "$ref": "#/definitions/DebugType" },
-        "warnings":    { "$ref": "#/definitions/WarningsType" },
-        "define":      { "$ref": "#/definitions/DefinesType" },
-        "undefine":    { "$ref": "#/definitions/UndefinesType" },
-        "add-path":    { "$ref": "#/definitions/AddpathsType" },
-        "del-path":    { "$ref": "#/definitions/DelpathsType" },
-        "misc":        { "$ref": "#/definitions/MiscTypes" },
-        "files":       { "$ref": "#/definitions/FilesType" },
-        "generator":   { "$ref": "#/definitions/ComponentGeneratorType" },
-        "from-pack":   { "$ref": "#/definitions/PackID" }
+        "component":    { "$ref": "#/definitions/ComponentID" },
+        "condition":    { "$ref": "#/definitions/ConditionIDType" },
+        "selected-by":  { "$ref": "#/definitions/ComponentID" },
+        "rtedir":       { "type": "string" },
+        "optimize":     { "$ref": "#/definitions/OptimizeType" },
+        "debug":        { "$ref": "#/definitions/DebugType" },
+        "warnings":     { "$ref": "#/definitions/WarningsType" },
+        "language-C":   { "$ref": "#/definitions/LanguageCType" },
+        "language-CPP": { "$ref": "#/definitions/LanguageCppType" },
+        "define":       { "$ref": "#/definitions/DefinesType" },
+        "undefine":     { "$ref": "#/definitions/UndefinesType" },
+        "add-path":     { "$ref": "#/definitions/AddpathsType" },
+        "del-path":     { "$ref": "#/definitions/DelpathsType" },
+        "misc":         { "$ref": "#/definitions/MiscTypes" },
+        "files":        { "$ref": "#/definitions/FilesType" },
+        "generator":    { "$ref": "#/definitions/ComponentGeneratorType" },
+        "from-pack":    { "$ref": "#/definitions/PackID" }
       },
       "additionalProperties": false
     },
@@ -831,6 +867,9 @@
         "for-compiler":    { "$ref": "#/definitions/CompilersType" },
         "optimize":        { "$ref": "#/definitions/OptimizeType" },
         "debug":           { "$ref": "#/definitions/DebugType" },
+        "warnings":        { "$ref": "#/definitions/WarningsType" },
+        "language-C":      { "$ref": "#/definitions/LanguageCType" },
+        "language-CPP":    { "$ref": "#/definitions/LanguageCppType" },
         "define":          { "$ref": "#/definitions/DefinesType" },
         "undefine":        { "$ref": "#/definitions/UndefinesType" },
         "add-path":        { "$ref": "#/definitions/AddpathsType" },
