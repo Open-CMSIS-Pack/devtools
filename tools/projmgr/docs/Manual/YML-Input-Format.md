@@ -1036,7 +1036,7 @@ Add miscellaneous literal tool-specific controls that are directly passed to the
 &nbsp;&nbsp;&nbsp; `Link:`                 |   Optional   | Applies to the linker (added before `Link-C:` or `Link-CPP:`).
 &nbsp;&nbsp;&nbsp; `Link-C:`               |   Optional   | Applies to the linker; added when no C++ files are part of the project.
 &nbsp;&nbsp;&nbsp; `Link-CPP:`             |   Optional   | Applies to the linker; added when C++ files are part of the project.
-&nbsp;&nbsp;&nbsp; `Library:`              |   Optional   | Applies to the library manager or arch&nbsp;iver.
+&nbsp;&nbsp;&nbsp; `Library:`              |   Optional   | Applies to the library manager or archiver.
 
 **Example:**
 
@@ -1057,6 +1057,15 @@ Add miscellaneous literal tool-specific controls that are directly passed to the
       misc:
         - C:
           - -O3
+
+    - type: GCC-LibDebug
+      compiler: GCC
+      misc:
+        - Library:
+          - -lm
+          - -lc
+          - -lgcc
+          - -lnosys
 ```
 
 ## Project Setups
