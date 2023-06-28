@@ -1523,7 +1523,8 @@ void ProjMgrWorker::SetDefaultLinkerScript(ContextItem& context) {
       ProjMgrLogger::Warn("linker script template for compiler '" + context.toolchain.name + "' was not found");
       return;
     }
-    context.linker.script = fs::relative(linkerScript, context.directories.cprj).generic_string();
+    const string relativeLinkerScript = fs::relative(linkerScript, context.directories.cprj).generic_string();
+    context.linker.script = relativeLinkerScript.empty() ? linkerScript : relativeLinkerScript;
     if (context.linker.regions.empty()) {
       string generatedRegionsFile;
       if (GenerateRegionsHeader(context, generatedRegionsFile)) {
