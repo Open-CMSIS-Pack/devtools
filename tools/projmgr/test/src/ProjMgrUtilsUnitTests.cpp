@@ -280,12 +280,10 @@ TEST_F(ProjMgrUtilsUnitTests, GetSelectedContexts) {
     "Project2.Release+Target2",
   };
 
-  list<string> allContextsList;
-  allContextsList.assign(allContexts.begin(), allContexts.end());
   vector<string> emptyResult{};
-  vector<std::tuple<vector<string>, vector<string>, const list<string>>> vecTestData = {
+  vector<std::tuple<vector<string>, vector<string>, const vector<string>>> vecTestData = {
     // contextFilter, expectedRetval, expectedContexts
-    { {""},                         emptyResult, allContextsList},
+    { {""},                         emptyResult, allContexts},
     { {"Project1"},                 emptyResult, { "Project1.Debug+Target","Project1.Release+Target","Project1.Debug+Target2","Project1.Release+Target2"}},
     { {".Debug"},                   emptyResult, { "Project1.Debug+Target","Project1.Debug+Target2","Project2.Debug+Target","Project2.Debug+Target2"}},
     { {"+Target"},                  emptyResult, { "Project1.Debug+Target", "Project1.Release+Target", "Project2.Debug+Target", "Project2.Release+Target"}},
@@ -294,14 +292,14 @@ TEST_F(ProjMgrUtilsUnitTests, GetSelectedContexts) {
     { {".Release+Target2"},         emptyResult, { "Project1.Release+Target2", "Project2.Release+Target2" }},
     { {"Project1.Release+Target2"}, emptyResult, { "Project1.Release+Target2" }},
 
-    { {"*"},                        emptyResult, allContextsList},
-    { {"*.*+*"},                    emptyResult, allContextsList},
-    { {"*.*"},                      emptyResult, allContextsList},
-    { {"Proj*"},                    emptyResult, allContextsList},
+    { {"*"},                        emptyResult, allContexts},
+    { {"*.*+*"},                    emptyResult, allContexts},
+    { {"*.*"},                      emptyResult, allContexts},
+    { {"Proj*"},                    emptyResult, allContexts},
     { {".De*"},                     emptyResult, { "Project1.Debug+Target","Project1.Debug+Target2","Project2.Debug+Target","Project2.Debug+Target2"}},
-    { {"+Tar*"},                    emptyResult, allContextsList},
+    { {"+Tar*"},                    emptyResult, allContexts},
     { {"Proj*.D*g"},                emptyResult, { "Project1.Debug+Target","Project1.Debug+Target2","Project2.Debug+Target","Project2.Debug+Target2"}},
-    { {"Proj*+Tar*"},               emptyResult, allContextsList},
+    { {"Proj*+Tar*"},               emptyResult, allContexts},
     { {"Project2.Rel*+Tar*"},       emptyResult, {"Project2.Release+Target", "Project2.Release+Target2"}},
     { {".Rel*+*2"},                 emptyResult, {"Project1.Release+Target2", "Project2.Release+Target2"}},
     { {"Project*.Release+*"},       emptyResult, {"Project1.Release+Target", "Project1.Release+Target2","Project2.Release+Target", "Project2.Release+Target2"}},
@@ -320,15 +318,128 @@ TEST_F(ProjMgrUtilsUnitTests, GetSelectedContexts) {
     { {"Project1.Debug+Target+Target2"}, {"Project1.Debug+Target+Target2"}, {}},
   };
 
-  list<string> selectedContexts;
+  vector<string> selectedContexts;
   for (const auto& [contextFilters, expectedRetval, expectedContexts] : vecTestData) {
     string input;
     selectedContexts.clear();
     std::for_each(contextFilters.begin(), contextFilters.end(),
       [&](const std::string& item) { input += item + " "; });
-    EXPECT_EQ(expectedRetval, GetSelectedContexts(selectedContexts, allContexts, contextFilters)) <<
-      "failed for input \"" << input << "\"";
+    const auto& outError = GetSelectedContexts(selectedContexts, allContexts, contextFilters, RteUtils::EMPTY_STRING);
+    EXPECT_EQ(expectedRetval, outError.unmatchedFilter) << "failed for input \"" << input << "\"";
+    EXPECT_FALSE(outError.unmatchedReplaceError) << "failed for input \"" << input << "\"";
     ASSERT_EQ(selectedContexts.size(), expectedContexts.size());
     EXPECT_EQ(selectedContexts, expectedContexts);
+  }
+}
+
+TEST_F(ProjMgrUtilsUnitTests, GetSelectedContexts_with_context_replace) {
+  const vector<string> allContexts = {
+    "Project1.Debug+Target",
+    "Project1.Release+Target",
+    "Project1.Debug+Target2",
+    "Project1.Release+Target2",
+    "Project2.Debug+Target",
+    "Project2.Release+Target",
+    "Project2.Debug+Target2",
+    "Project2.Release+Target2",
+  };
+
+  struct TestCase {
+    vector<string>        contextFilters;
+    string                contextReplacement;
+    vector<string>        expectedSelectedContexts;
+    ContextSelectionError expectedOutError;
+
+    string toString() const {
+      string input;
+      std::for_each(contextFilters.begin(), contextFilters.end(),
+        [&](const std::string& item) { input += "--context " + item + " "; });
+      return input + "--context-replacement " + contextReplacement;
+    }
+  };
+
+  vector<TestCase> vecTestCase = {
+    // Positive tests
+    { {""},                      "", allContexts, {}},
+    { {"Proj*"},                 "Proj*", allContexts, {}},
+    { {".Release"},              ".Release", {"Project1.Release+Target", "Project1.Release+Target2", "Project2.Release+Target", "Project2.Release+Target2"}, {}},
+    { {"Project2.Debug+Target"}, "Project2.Release+Target", {"Project2.Release+Target"}, {}},
+    { {".Debug"},                "Project2.Release", {"Project1.Debug+Target","Project1.Debug+Target2","Project2.Release+Target","Project2.Release+Target2"}, {}},
+    { {"Project1.Debug"},        "Project1.Release", {"Project1.Release+Target","Project1.Release+Target2"}, {}},
+    { {"+Target2"},              "+Target", {"Project1.Debug+Target","Project1.Release+Target", "Project2.Debug+Target","Project2.Release+Target"}, {}},
+    { {".Debug", ".Release"},    ".Release", {"Project1.Release+Target","Project1.Release+Target2", "Project2.Release+Target", "Project2.Release+Target2"}, {}},
+    { {"*.Debug", "*.Release"},  "*+Target*", {"Project1.Debug+Target", "Project1.Debug+Target2", "Project2.Debug+Target", "Project2.Debug+Target2", "Project1.Release+Target", "Project1.Release+Target2", "Project2.Release+Target", "Project2.Release+Target2" }, {}},
+
+    // Negative tests
+    { {"Project1"},              ".Release", {}, {{}, true}},
+    { {"Project2"},              "Project1.Release", {}, {{}, true}},
+    { {"Project2+Target2"},      "+Target2", {}, {{}, true}},
+    { {"Project2.Debug+Target"}, "Project2.Release+Target2", {}, {{}, true}},
+    { {"Project1.Debug"},        "Project1.UnknownBuildType", {}, {{"Project1.UnknownBuildType"}, false}},
+  };
+
+  vector<string> selectedContexts;
+  for (const auto& test: vecTestCase) {
+    selectedContexts.clear();
+    const auto& outError = GetSelectedContexts(selectedContexts, allContexts, test.contextFilters, test.contextReplacement);
+    EXPECT_EQ(test.expectedOutError.unmatchedFilter, outError.unmatchedFilter) << "failed for input \"" << test.toString() << "\"";
+    EXPECT_EQ(test.expectedOutError.unmatchedReplaceError, outError.unmatchedReplaceError) << "failed for input \"" << test.toString() << "\"";
+    EXPECT_EQ(test.expectedSelectedContexts.size(), selectedContexts.size()) << "failed for input \"" << test.toString() << "\"";
+    EXPECT_EQ(test.expectedSelectedContexts, selectedContexts) << "failed for input \"" << test.toString() << "\"";
+  }
+}
+
+TEST_F(ProjMgrUtilsUnitTests, GetFilteredContexts) {
+  const vector<string> allContexts = {
+    "Project1.Debug+Target",
+    "Project1.Release+Target",
+    "Project1.Debug+Target2",
+    "Project1.Release+Target2",
+    "Project2.Debug+Target",
+    "Project2.Release+Target",
+    "Project2.Debug+Target2",
+    "Project2.Release+Target2",
+  };
+
+  vector<std::pair<string, const vector<string>>> vecTestData = {
+    // contextFilter, expectedContexts
+    { "",                         allContexts},
+    { "Project1",                 { "Project1.Debug+Target","Project1.Release+Target","Project1.Debug+Target2","Project1.Release+Target2"}},
+    { ".Debug",                   { "Project1.Debug+Target","Project1.Debug+Target2","Project2.Debug+Target","Project2.Debug+Target2"}},
+    { "+Target",                  { "Project1.Debug+Target", "Project1.Release+Target", "Project2.Debug+Target", "Project2.Release+Target"}},
+    { "Project1.Debug",           { "Project1.Debug+Target", "Project1.Debug+Target2" }},
+    { "Project1+Target",          { "Project1.Debug+Target", "Project1.Release+Target" }},
+    { ".Release+Target2",         { "Project1.Release+Target2", "Project2.Release+Target2" }},
+    { "Project1.Release+Target2", { "Project1.Release+Target2" }},
+
+    { "*",                        allContexts},
+    { "*.*+*",                    allContexts},
+    { "*.*",                      allContexts},
+    { "Proj*",                    allContexts},
+    { ".De*",                     { "Project1.Debug+Target","Project1.Debug+Target2","Project2.Debug+Target","Project2.Debug+Target2"}},
+    { "+Tar*",                    allContexts},
+    { "Proj*.D*g",                { "Project1.Debug+Target","Project1.Debug+Target2","Project2.Debug+Target","Project2.Debug+Target2"}},
+    { "Proj*+Tar*",               allContexts},
+    { "Project2.Rel*+Tar*",       {"Project2.Release+Target", "Project2.Release+Target2"}},
+    { ".Rel*+*2",                 {"Project1.Release+Target2", "Project2.Release+Target2"}},
+    { "Project*.Release+*",       {"Project1.Release+Target", "Project1.Release+Target2","Project2.Release+Target", "Project2.Release+Target2"}},
+
+    // negative tests
+    { "Unknown",                       RteUtils::EMPTY_STRING_VECTOR},
+    { ".UnknownBuild",                 RteUtils::EMPTY_STRING_VECTOR},
+    { "+UnknownTarget",                RteUtils::EMPTY_STRING_VECTOR},
+    { "Project.UnknownBuild",          RteUtils::EMPTY_STRING_VECTOR},
+    { "Project+UnknownTarget",         RteUtils::EMPTY_STRING_VECTOR},
+    { ".UnknownBuild+Target",          RteUtils::EMPTY_STRING_VECTOR},
+    { "TestProject*",                  RteUtils::EMPTY_STRING_VECTOR},
+    { "Project.*Build",                RteUtils::EMPTY_STRING_VECTOR},
+    { "Project.Debug+*H",              RteUtils::EMPTY_STRING_VECTOR},
+    { "Project1.Release.Debug+Target", RteUtils::EMPTY_STRING_VECTOR},
+    { "Project1.Debug+Target+Target2", RteUtils::EMPTY_STRING_VECTOR},
+  };
+
+  for (const auto& [contextFilter, expectedContexts] : vecTestData) {
+    EXPECT_EQ(expectedContexts, GetFilteredContexts(allContexts, contextFilter)) <<
+      "failed for input \"" << contextFilter << "\"";
   }
 }

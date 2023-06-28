@@ -369,10 +369,12 @@ void ProjMgrUtils::SetOutputType(const string typeString, OutputTypes& type) {
   }
 }
 
-vector<string> ProjMgrUtils::GetSelectedContexts(list<string>& selectedContexts,
-   const vector<string>& allContexts, const vector<string>& contextFilters)
+ProjMgrUtils::ContextSelectionError ProjMgrUtils::GetSelectedContexts(
+  vector<string>& selectedContexts, const vector<string>& allContexts,
+  const vector<string>& contextFilters, const string& contextReplace)
 {
-  vector<string> errFilters;
+  ContextSelectionError error;
+  //vector<string> errFilters;
   selectedContexts.clear();
   if (contextFilters.empty()) {
     if (allContexts.empty()) {
@@ -387,36 +389,144 @@ vector<string> ProjMgrUtils::GetSelectedContexts(list<string>& selectedContexts,
     }
   }
   else {
-    string contextPattern;
-    ContextName inputContext;
     for (const auto& contextFilter : contextFilters) {
-      bool match = false;
-      if (!ProjMgrUtils::ParseContextEntry(contextFilter, inputContext)) {
-        errFilters.push_back(contextFilter);
+      auto filteredContexts = GetFilteredContexts(allContexts, contextFilter);
+      if (filteredContexts.size() == 0) {
+        error.unmatchedFilter.push_back(contextFilter);
         continue;
       }
-      for (const auto& context : allContexts) {
-        if (context == contextFilter) {
-          ProjMgrUtils::PushBackUniquely(selectedContexts, context);
-          match = true;
-          continue;
-        }
-        ContextName contextItem;
-        ProjMgrUtils::ParseContextEntry(context, contextItem);
-        contextPattern = (inputContext.project != RteUtils::EMPTY_STRING ? inputContext.project : "*");
-        if (contextItem.build != RteUtils::EMPTY_STRING) {
-          contextPattern += "." + (inputContext.build != RteUtils::EMPTY_STRING ? inputContext.build : "*");
-        }
-        contextPattern += "+" + (inputContext.target != RteUtils::EMPTY_STRING ? inputContext.target : "*");
-        if (WildCards::Match(context, contextPattern)) {
-          ProjMgrUtils::PushBackUniquely(selectedContexts, context);
-          match = true;
-        }
+
+      // append element to the output list
+      for_each(filteredContexts.begin(), filteredContexts.end(), [&](const string& context) {
+        ProjMgrUtils::PushBackUniquely(selectedContexts, context);
+       });
+    }
+  }
+
+  if (contextReplace == RteUtils::EMPTY_STRING || error.unmatchedFilter.size() != 0) {
+    return error;
+  }
+
+  // validate if the replace filter is valid
+  auto replaceContexts = GetFilteredContexts(allContexts, contextReplace);
+  if (replaceContexts.size() == 0) {
+    selectedContexts.clear();
+    error.unmatchedFilter.push_back(contextReplace);
+    return error;
+  }
+
+  // no replacement needed when replacement contexts list
+  // is same as selected contexts list
+  if (selectedContexts.size() == replaceContexts.size()) {
+    auto selectedContextsList = selectedContexts;
+    auto replaceContextsList = replaceContexts;
+    sort(selectedContextsList.begin(), selectedContextsList.end());
+    sort(replaceContextsList.begin(), replaceContextsList.end());
+    if (selectedContextsList == replaceContextsList) {
+      // no replacement needed
+      return error;
+    }
+  }
+
+  // validate if replace filter requests more contexts than the selected contexts
+  if (selectedContexts.size() < replaceContexts.size()) {
+    selectedContexts.clear();
+    error.unmatchedReplaceError = true;
+    return error;
+  }
+
+  // validate if the replace filter has contexts which are not matching with selected context list
+  ContextName repContextItem, selContextItem;
+  for (const auto& replaceContext : replaceContexts) {
+    bool found = false;
+    ProjMgrUtils::ParseContextEntry(replaceContext, repContextItem);
+    for (auto& selectedContext : selectedContexts) {
+      ProjMgrUtils::ParseContextEntry(selectedContext, selContextItem);
+      if (selContextItem.project == repContextItem.project) {
+        found = true;
+        break;
       }
-      if (!match) {
-        errFilters.push_back(contextFilter);
+    }
+    if (!found) {
+      selectedContexts.clear();
+      error.unmatchedReplaceError = true;
+      return error;
+    }
+  }
+
+  // get a list of contexts needs to be replaced
+  map<string, string> replacementMap;
+  for (const auto& replaceContext : replaceContexts) {
+    ProjMgrUtils::ParseContextEntry(replaceContext, repContextItem);
+    for (auto& selectedContext : selectedContexts) {
+      ProjMgrUtils::ParseContextEntry(selectedContext, selContextItem);
+      if (!WildCards::Match(selContextItem.project, repContextItem.project)) {
+        continue;
+      }
+
+      if (WildCards::Match(selContextItem.target, repContextItem.target)) {
+        replacementMap[selectedContext] = replaceContext;
+        break;
+      } else if (WildCards::Match(selContextItem.build, repContextItem.build)) {
+        replacementMap[selectedContext] = replaceContext;
+        break;
       }
     }
   }
-  return errFilters;
+
+  if (replacementMap.size() == 0) {
+    selectedContexts.clear();
+    error.unmatchedReplaceError = true;
+    return error;
+  }
+
+  // replace contexts
+  for (const auto& item : replacementMap) {
+    selectedContexts.erase(
+      std::remove_if(selectedContexts.begin(), selectedContexts.end(),
+        [&](const string& context) {
+          return context == item.second;
+        }),
+      selectedContexts.end());
+
+    auto itr = find(selectedContexts.begin(), selectedContexts.end(), item.first);
+    if (itr == selectedContexts.end()) {
+      selectedContexts.clear();
+      error.unmatchedReplaceError = true;
+      return error;
+    }
+    *itr = item.second;
+  }
+  return error;
+}
+
+vector<string> ProjMgrUtils::GetFilteredContexts(
+  const vector<string>& allContexts, const string& contextFilter)
+{
+  vector<string> selectedContexts;
+  string contextPattern;
+  ContextName inputContext;
+
+  if (ProjMgrUtils::ParseContextEntry(contextFilter, inputContext)) {
+    for (const auto& context : allContexts) {
+      //  add context to output list if exact match
+      if (context == contextFilter) {
+        ProjMgrUtils::PushBackUniquely(selectedContexts, context);
+        continue;
+      }
+
+      // match contexts
+      ContextName contextItem;
+      ProjMgrUtils::ParseContextEntry(context, contextItem);
+      contextPattern = (inputContext.project != RteUtils::EMPTY_STRING ? inputContext.project : "*");
+      if (contextItem.build != RteUtils::EMPTY_STRING) {
+        contextPattern += "." + (inputContext.build != RteUtils::EMPTY_STRING ? inputContext.build : "*");
+      }
+      contextPattern += "+" + (inputContext.target != RteUtils::EMPTY_STRING ? inputContext.target : "*");
+      if (WildCards::Match(context, contextPattern)) {
+        ProjMgrUtils::PushBackUniquely(selectedContexts, context);
+      }
+    }
+  }
+  return selectedContexts;
 }

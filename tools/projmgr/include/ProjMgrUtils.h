@@ -314,19 +314,35 @@ public:
   */
   static void SetOutputType(const std::string typeString, OutputTypes& type);
 
+  struct ContextSelectionError {
+    std::vector<std::string> unmatchedFilter;
+    bool unmatchedReplaceError = false;
+  };
   /**
-   * @brief get filtered list of contexts
+   * @brief get selected list of contexts
    * @param selectedContexts list of matched contexts
    * @param allAvailableContexts list of all available contexts
    * @param contextFilter filter criteria
    * @return list of filters for which match was not found, else empty list
   */
-  static std::vector<std::string> GetSelectedContexts(
-    std::list<std::string>& selectedContexts,
+  static ContextSelectionError GetSelectedContexts(
+    std::vector<std::string>& selectedContexts,
     const std::vector<std::string>& allAvailableContexts,
-    const std::vector<std::string>& contextFilter);
+    const std::vector<std::string>& contextFilters,
+    const std::string& contextReplace);
+
 protected:
   static std::string ConstructID(const std::vector<std::pair<const char*, const std::string&>>& elements);
+
+  /**
+   * @brief get filtered list of contexts
+   * @param allContexts list of all available contexts
+   * @param contextFilter filter criteria
+   * @return list of filters for which match was not found, else empty list
+  */
+  static std::vector<std::string> GetFilteredContexts(
+    const std::vector<std::string>& allContexts,
+    const std::string& contextFilter);
 };
 
 #endif  // PROJMGRUTILS_H

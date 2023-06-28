@@ -3250,16 +3250,20 @@ bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem& context, BuildType& b
   return true;
 }
 
-bool ProjMgrWorker::ParseContextSelection(const vector<string>& contextSelection) {
+bool ProjMgrWorker::ParseContextSelection(const vector<string>& contextSelection, const string& contextReplace) {
   vector<string> contexts;
   ListContexts(contexts);
-  const auto& errContextFilters = ProjMgrUtils::GetSelectedContexts(m_selectedContexts, contexts, contextSelection);
-  if (errContextFilters.size() != 0) {
+  const auto& filterError = ProjMgrUtils::GetSelectedContexts(m_selectedContexts, contexts, contextSelection, contextReplace);
+  if (filterError.unmatchedFilter.size() != 0) {
     string errMsg = "following context(s) was not found:\n";
-    for (const auto& filter : errContextFilters) {
+    for (const auto& filter : filterError.unmatchedFilter) {
       errMsg += "  " + filter + "\n";
     }
     ProjMgrLogger::Error(errMsg);
+    return false;
+  }
+  if (filterError.unmatchedReplaceError) {
+    ProjMgrLogger::Error("no suitable replacement was found for \"" + contextReplace + "\" in the selected contexts");
     return false;
   }
   return true;

@@ -521,9 +521,12 @@ public:
   /**
    * @brief parse context selection
    * @param contexts pattern (wildcards are allowed)
+   * @param context replacement pattern (wildcards are allowed)
    * @return true if executed successfully
   */
-  bool ParseContextSelection(const std::vector<std::string>& contextSelection);
+  bool ParseContextSelection(
+    const std::vector<std::string>& contextSelection,
+    const std::string& contextReplace = RteUtils::EMPTY_STRING);
 
   /**
    * @brief check if context is selected
@@ -553,7 +556,7 @@ protected:
   std::vector<std::string> m_ymlOrderedContexts;
   std::map<std::string, ContextItem> m_contexts;
   std::map<std::string, ContextItem>* m_contextsPtr;
-  std::list<std::string> m_selectedContexts;
+  std::vector<std::string> m_selectedContexts;
   std::string m_outputDir;
   std::string m_packRoot;
   std::string m_compilerRoot;

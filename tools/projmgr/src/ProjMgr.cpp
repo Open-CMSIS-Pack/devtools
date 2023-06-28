@@ -22,34 +22,35 @@ static constexpr const char* USAGE = "\n\
 Usage:\n\
   csolution <command> [<name>.csolution.yml] [options]\n\n\
 Commands:\n\
-  convert                  Convert user input *.yml files to *.cprj files\n\
-  list boards              Print list of available board names\n\
-  list contexts            Print list of contexts in a <name>.csolution.yml\n\
-  list components          Print list of available components\n\
-  list dependencies        Print list of unresolved project dependencies\n\
-  list devices             Print list of available device names\n\
-  list environment         Print list of environment configurations\n\
-  list generators          Print list of code generators of a given context\n\
-  list layers              Print list of available, referenced and compatible layers\n\
-  list packs               Print list of used packs from the pack repository\n\
-  list toolchains          Print list of supported toolchains\n\
-  run                      Run code generator\n\
-  update-rte               Create/update configuration files and validate solution\n\n\
+  convert                       Convert user input *.yml files to *.cprj files\n\
+  list boards                   Print list of available board names\n\
+  list contexts                 Print list of contexts in a <name>.csolution.yml\n\
+  list components               Print list of available components\n\
+  list dependencies             Print list of unresolved project dependencies\n\
+  list devices                  Print list of available device names\n\
+  list environment              Print list of environment configurations\n\
+  list generators               Print list of code generators of a given context\n\
+  list layers                   Print list of available, referenced and compatible layers\n\
+  list packs                    Print list of used packs from the pack repository\n\
+  list toolchains               Print list of supported toolchains\n\
+  run                           Run code generator\n\
+  update-rte                    Create/update configuration files and validate solution\n\n\
 Options:\n\
-  -c, --context arg [,arg] Input context names [<project-name>][.<build-type>][+<target-type>]\n\
-  -d, --debug              Enable debug messages\n\
-  -e, --export arg         Set suffix for exporting <context><suffix>.cprj retaining only specified versions\n\
-  -f, --filter arg         Filter words\n\
-  -g, --generator arg      Code generator identifier\n\
-  -l, --load arg           Set policy for packs loading [latest | all | required]\n\
-  -L, --clayer-path arg    Set search path for external clayers\n\
-  -m, --missing            List only required packs that are missing in the pack repository\n\
-  -n, --no-check-schema    Skip schema check\n\
-  -N, --no-update-rte      Skip creation of RTE directory and files\n\
-  -o, --output arg         Output directory\n\
-  -t, --toolchain arg      Selection of the toolchain used in the project optionally with version\n\
-  -v, --verbose            Enable verbose messages\n\
-  -V, --version            Print version\n\n\
+  -c, --context arg [...]       Input context names [<project-name>][.<build-type>][+<target-type>]\n\
+      --context-replacement arg Input context replacement name [<project-name>][.<build-type>][+<target-type>]\n\
+  -d, --debug                   Enable debug messages\n\
+  -e, --export arg              Set suffix for exporting <context><suffix>.cprj retaining only specified versions\n\
+  -f, --filter arg              Filter words\n\
+  -g, --generator arg           Code generator identifier\n\
+  -l, --load arg                Set policy for packs loading [latest | all | required]\n\
+  -L, --clayer-path arg         Set search path for external clayers\n\
+  -m, --missing                 List only required packs that are missing in the pack repository\n\
+  -n, --no-check-schema         Skip schema check\n\
+  -N, --no-update-rte           Skip creation of RTE directory and files\n\
+  -o, --output arg              Output directory\n\
+  -t, --toolchain arg           Selection of the toolchain used in the project optionally with version\n\
+  -v, --verbose                 Enable verbose messages\n\
+  -V, --version                 Print version\n\n\
 Use 'csolution <command> -h' for more information about a command.\
 ";
 
@@ -118,6 +119,7 @@ int ProjMgr::RunProjMgr(int argc, char **argv, char** envp) {
 
   cxxopts::Option solution("s,solution", "Input csolution.yml file", cxxopts::value<string>());
   cxxopts::Option context("c,context", "Input context names [<project-name>][.<build-type>][+<target-type>]", cxxopts::value<std::vector<std::string>>());
+  cxxopts::Option contextReplacement("context-replacement", "Input context replacement name [<project-name>][.<build-type>][+<target-type>]", cxxopts::value<std::string>());
   cxxopts::Option filter("f,filter", "Filter words", cxxopts::value<string>());
   cxxopts::Option help("h,help", "Print usage");
   cxxopts::Option generator("g,generator", "Code generator identifier", cxxopts::value<string>());
@@ -137,18 +139,19 @@ int ProjMgr::RunProjMgr(int argc, char **argv, char** envp) {
   // command options dictionary
   map<string, std::pair<bool, vector<cxxopts::Option>>> optionsDict = {
     // command, optional args, options
-    {"update-rte",        { false, {context, debug, load, schemaCheck, toolchain, verbose}}},
-    {"convert",           { false, {context, debug, exportSuffix, load, schemaCheck, noUpdateRte, output, toolchain, verbose}}},
-    {"run",               { false, {context, debug, generator, load, schemaCheck, verbose}}},
-    {"list packs",        { true,  {context, debug, filter, load, missing, schemaCheck, toolchain, verbose}}},
-    {"list boards",       { true,  {context, debug, filter, load, schemaCheck, toolchain, verbose}}},
-    {"list devices",      { true,  {context, debug, filter, load, schemaCheck, toolchain, verbose}}},
-    {"list components",   { true,  {context, debug, filter, load, schemaCheck, toolchain, verbose}}},
-    {"list dependencies", { false, {context, debug, filter, load, schemaCheck, toolchain, verbose}}},
+    {"update-rte",        { false, {context, contextReplacement, debug, load, schemaCheck, toolchain, verbose}}},
+    {"convert",           { false, {context, contextReplacement, debug, exportSuffix, load,
+                            schemaCheck, noUpdateRte, output, toolchain, verbose}}},
+    {"run",               { false, {context, contextReplacement, debug, generator, load, schemaCheck, verbose}}},
+    {"list packs",        { true,  {context, contextReplacement, debug, filter, load, missing, schemaCheck, toolchain, verbose}}},
+    {"list boards",       { true,  {context, contextReplacement, debug, filter, load, schemaCheck, toolchain, verbose}}},
+    {"list devices",      { true,  {context, contextReplacement, debug, filter, load, schemaCheck, toolchain, verbose}}},
+    {"list components",   { true,  {context, contextReplacement, debug, filter, load, schemaCheck, toolchain, verbose}}},
+    {"list dependencies", { false, {context, contextReplacement, debug, filter, load, schemaCheck, toolchain, verbose}}},
     {"list contexts",     { false, {debug, filter, schemaCheck, verbose, ymlOrder}}},
-    {"list generators",   { false, {context, debug, load, schemaCheck, toolchain, verbose}}},
-    {"list layers",       { false, {context, debug, load, clayerSearchPath, schemaCheck, toolchain, verbose}}},
-    {"list toolchains",   { false, {context, debug, toolchain, verbose}}},
+    {"list generators",   { false, {context, contextReplacement, debug, load, schemaCheck, toolchain, verbose}}},
+    {"list layers",       { false, {context, contextReplacement, debug, load, clayerSearchPath, schemaCheck, toolchain, verbose}}},
+    {"list toolchains",   { false, {context, contextReplacement, debug, toolchain, verbose}}},
     {"list environment",  { true,  {}}},
   };
 
@@ -208,6 +211,9 @@ int ProjMgr::RunProjMgr(int argc, char **argv, char** envp) {
     }
     if (parseResult.count("context")) {
       manager.m_context = parseResult["context"].as<vector<string>>();
+    }
+    if (parseResult.count("context-replacement")) {
+      manager.m_contextReplacement = parseResult["context-replacement"].as<string>();
     }
     if (parseResult.count("filter")) {
       manager.m_filter = parseResult["filter"].as<string>();
@@ -419,7 +425,7 @@ bool ProjMgr::RunConfigure(bool printConfig) {
     return false;
   }
   // Parse context selection
-  if (!m_worker.ParseContextSelection(m_context)) {
+  if (!m_worker.ParseContextSelection(m_context, m_contextReplacement)) {
     return false;
   }
   // Get context pointers
@@ -512,7 +518,7 @@ bool ProjMgr::RunListPacks(void) {
     }
   }
   // Parse context selection
-  if (!m_worker.ParseContextSelection(m_context)) {
+  if (!m_worker.ParseContextSelection(m_context, m_contextReplacement)) {
     return false;
   }
   vector<string> packs;
@@ -531,7 +537,7 @@ bool ProjMgr::RunListBoards(void) {
     }
   }
   // Parse context selection
-  if (!m_worker.ParseContextSelection(m_context)) {
+  if (!m_worker.ParseContextSelection(m_context, m_contextReplacement)) {
     return false;
   }
   vector<string> boards;
@@ -553,7 +559,7 @@ bool ProjMgr::RunListDevices(void) {
     }
   }
   // Parse context selection
-  if (!m_worker.ParseContextSelection(m_context)) {
+  if (!m_worker.ParseContextSelection(m_context, m_contextReplacement)) {
     return false;
   }
   vector<string> devices;
@@ -575,7 +581,7 @@ bool ProjMgr::RunListComponents(void) {
     }
   }
   // Parse context selection
-  if (!m_worker.ParseContextSelection(m_context)) {
+  if (!m_worker.ParseContextSelection(m_context, m_contextReplacement)) {
     return false;
   }
   vector<string> components;
@@ -595,7 +601,7 @@ bool ProjMgr::RunListDependencies(void) {
     return false;
   }
   // Parse context selection
-  if (!m_worker.ParseContextSelection(m_context)) {
+  if (!m_worker.ParseContextSelection(m_context, m_contextReplacement)) {
     return false;
   }
   vector<string> dependencies;
@@ -631,7 +637,7 @@ bool ProjMgr::RunListGenerators(void) {
     return false;
   }
   // Parse context selection
-  if (!m_worker.ParseContextSelection(m_context)) {
+  if (!m_worker.ParseContextSelection(m_context, m_contextReplacement)) {
     return false;
   }
   // Get generators
@@ -653,7 +659,7 @@ bool ProjMgr::RunListLayers(void) {
     }
   }
   // Parse context selection
-  if (!m_worker.ParseContextSelection(m_context)) {
+  if (!m_worker.ParseContextSelection(m_context, m_contextReplacement)) {
     return false;
   }
   // Get layers
@@ -678,7 +684,7 @@ bool ProjMgr::RunCodeGenerator(void) {
     return false;
   }
   // Parse context selection
-  if (!m_worker.ParseContextSelection(m_context)) {
+  if (!m_worker.ParseContextSelection(m_context, m_contextReplacement)) {
     return false;
   }
   // Run code generator
@@ -696,7 +702,7 @@ bool ProjMgr::RunListToolchains(void) {
     }
   }
   // Parse context selection
-  if (!m_worker.ParseContextSelection(m_context)) {
+  if (!m_worker.ParseContextSelection(m_context, m_contextReplacement)) {
     return false;
   }
   vector<ToolchainItem> toolchains;
