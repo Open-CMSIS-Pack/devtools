@@ -20,36 +20,36 @@ using namespace std;
 
 static constexpr const char* USAGE = "\n\
 Usage:\n\
-  csolution [-V] [--version] [-h] [--help]\n\
-            <command> [csolution.yml] [OPTIONS...]\n\n\
- Commands:\n\
-   convert               Convert *.csolution.yml input file in *.cprj files\n\
-   list boards           Print list of available board names\n\
-   list contexts         Print list of contexts in a csolution.yml\n\
-   list components       Print list of available components\n\
-   list dependencies     Print list of unresolved project dependencies\n\
-   list devices          Print list of available device names\n\
-   list environment      Print list of environment configurations\n\
-   list generators       Print list of code generators of a given context\n\
-   list layers           Print list of available, referenced and compatible layers\n\
-   list packs            Print list of used packs from the pack repository\n\
-   list toolchains       Print list of supported toolchains\n\
-   run                   Run code generator\n\
-   update-rte            Create/update configuration files and validate solution\n\n\
- Options:\n\
-   -c, --context arg     Input context name [<cproject>][.<build-type>][+<target-type>]\n\
-   -d, --debug           Enable debug messages\n\
-   -e, --export arg      Set suffix for exporting <context><suffix>.cprj retaining only specified versions\n\
-   -f, --filter arg      Filter words\n\
-   -g, --generator arg   Code generator identifier\n\
-   -l, --load arg        Set policy for packs loading [latest|all|required]\n\
-   -L, --clayer-path arg Set search path for external clayers\n\
-   -m, --missing         List only required packs that are missing in the pack repository\n\
-   -n, --no-check-schema Skip schema check\n\
-   -N, --no-update-rte   Skip creation of RTE directory and files\n\
-   -o, --output arg      Output directory\n\
-   -t, --toolchain arg   Selection of the toolchain used in the project optionally with version\n\
-   -v, --verbose         Enable verbose messages\n\n\
+  csolution <command> [<name>.csolution.yml] [options]\n\n\
+Commands:\n\
+  convert                  Convert user input *.yml files to *.cprj files\n\
+  list boards              Print list of available board names\n\
+  list contexts            Print list of contexts in a <name>.csolution.yml\n\
+  list components          Print list of available components\n\
+  list dependencies        Print list of unresolved project dependencies\n\
+  list devices             Print list of available device names\n\
+  list environment         Print list of environment configurations\n\
+  list generators          Print list of code generators of a given context\n\
+  list layers              Print list of available, referenced and compatible layers\n\
+  list packs               Print list of used packs from the pack repository\n\
+  list toolchains          Print list of supported toolchains\n\
+  run                      Run code generator\n\
+  update-rte               Create/update configuration files and validate solution\n\n\
+Options:\n\
+  -c, --context arg [,arg] Input context names [<project-name>][.<build-type>][+<target-type>]\n\
+  -d, --debug              Enable debug messages\n\
+  -e, --export arg         Set suffix for exporting <context><suffix>.cprj retaining only specified versions\n\
+  -f, --filter arg         Filter words\n\
+  -g, --generator arg      Code generator identifier\n\
+  -l, --load arg           Set policy for packs loading [latest | all | required]\n\
+  -L, --clayer-path arg    Set search path for external clayers\n\
+  -m, --missing            List only required packs that are missing in the pack repository\n\
+  -n, --no-check-schema    Skip schema check\n\
+  -N, --no-update-rte      Skip creation of RTE directory and files\n\
+  -o, --output arg         Output directory\n\
+  -t, --toolchain arg      Selection of the toolchain used in the project optionally with version\n\
+  -v, --verbose            Enable verbose messages\n\
+  -V, --version            Print version\n\n\
 Use 'csolution <command> -h' for more information about a command.\
 ";
 
@@ -117,11 +117,11 @@ int ProjMgr::RunProjMgr(int argc, char **argv, char** envp) {
   cxxopts::ParseResult parseResult;
 
   cxxopts::Option solution("s,solution", "Input csolution.yml file", cxxopts::value<string>());
-  cxxopts::Option context("c,context", "Input context name [<cproject>][.<build-type>][+<target-type>]", cxxopts::value<std::vector<std::string>>());
+  cxxopts::Option context("c,context", "Input context names [<project-name>][.<build-type>][+<target-type>]", cxxopts::value<std::vector<std::string>>());
   cxxopts::Option filter("f,filter", "Filter words", cxxopts::value<string>());
   cxxopts::Option help("h,help", "Print usage");
   cxxopts::Option generator("g,generator", "Code generator identifier", cxxopts::value<string>());
-  cxxopts::Option load("l,load", "Set policy for packs loading [latest|all|required]", cxxopts::value<string>());
+  cxxopts::Option load("l,load", "Set policy for packs loading [latest | all | required]", cxxopts::value<string>());
   cxxopts::Option clayerSearchPath("L,clayer-path", "Set search path for external clayers", cxxopts::value<string>());
   cxxopts::Option missing("m,missing", "List only required packs that are missing in the pack repository", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option schemaCheck("n,no-check-schema", "Skip schema check", cxxopts::value<bool>()->default_value("false"));
