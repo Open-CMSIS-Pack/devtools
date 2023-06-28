@@ -853,8 +853,6 @@ The following translation control options may be used at various places such as:
 
 ### `language-C:`
 
->**Scheduled for CMSIS-Toolbox 2.0 - Q2**
-
 Set the language standard for C source file compilation.
 
 Value                                                 | Select C Language Standard
@@ -867,8 +865,6 @@ Value                                                 | Select C Language Standa
 `gnu11`                                               | same as `c11` but with additional GNU extensions.
 
 ### `language-CPP:`
-
->**Scheduled for CMSIS-Toolbox 2.0 - Q2**
 
 Set the language standard for C++ source file compilation.
 
@@ -944,6 +940,7 @@ Contains a list of symbol #define statements that are passed via the command lin
 :-----------------------------------------------------|:------------------------------------
 &nbsp;&nbsp; `- <symbol-name>`                        | #define symbol passed via command line
 &nbsp;&nbsp; `- <symbol-name>: <value>`               | #define symbol with value passed via command line
+&nbsp;&nbsp; `- <symbol-name>: \"<string>\"`          | #define symbol with string value passed via command line
 
 >**Note:**
 >
@@ -1151,7 +1148,7 @@ packs:                                  # start section that specifics software 
   - pack: NXP::*K32L*                   # use packs from NXP relating to K32L series (would match K32L3A60_DFP + FRDM-K32L3A6_BSP)
   - pack: ARM                           # use packs from Arm
 
-  - pack: Keil::Arm_Compiler            # add always Keil::Arm_Compiler pack
+  - pack: Keil::Arm_Compiler            # add latest version of Keil::Arm_Compiler pack
   - pack: Keil::MDK-Middleware@7.13.0   # add Keil::MDK-Middleware pack at version 7.13.0
   - pack: ARM::CMSIS-FreeRTOS@~10.4     # add CMSIS-FreeRTOS with version 10.4.x
 
@@ -1160,7 +1157,7 @@ packs:                                  # start section that specifics software 
 
   - pack: AWS::coreHTTP                 # add pack
     path: ./development/AWS/coreHTTP    # with path to development source directory
-    for-context: +DevTest                  # pack is only used for target-type "DevTest"
+    for-context: +DevTest               # pack is only used for target-type "DevTest"
 ```
 
 ## Target Selection
@@ -1429,12 +1426,17 @@ not-for-context:  .Release+Virtual   # remove item for build-type: Release with 
 
 ### Usage
 
-The keyword `for-context:`, `not-for-context:`, and `for-compiler:` can be applied to the following *list nodes*:
+The keyword `for-context:` and `not-for-context:` can be applied to the following *list nodes*:
 
 List Node                                  | Description
 :------------------------------------------|:------------------------------------
 [`- project:`](#projects)                  | At `projects:` level it is possible to control inclusion of project.
 [`- layer:`](#layers)                      | At `layers:` level it is possible to control inclusion of a software layer.
+
+The keyword `for-context:`, `not-for-context:`, and `for-compiler:` can be applied to the following *list nodes*:
+
+List Node                                  | Description
+:------------------------------------------|:------------------------------------
 [`- component:`](#components)              | At `components:` level it is possible to control inclusion of a software component.
 [`- group:`](#groups)                      | At `groups:` level it is possible to control inclusion of a file group.
 [`- setup:`](#setups)                      | At `setups:` level it is define toolchain specific options that apply to the whole project.
@@ -1445,8 +1447,6 @@ The inclusion of a *list node* is processed for a given project [*context*](#con
 `project` --> `layer` --> `component`/`group` --> `file`
 
 In other words, the restrictions specified by `for-context:` or `not-for-context` for a *list node* are automatically applied to its children nodes. Children *list nodes* inherit the restrictions from their parent.
-
-> ToDo: Question: is `for-compiler` possible for projects and layers?
 
 ## Multiple Projects
 

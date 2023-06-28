@@ -3,14 +3,6 @@
 <!-- markdownlint-disable MD013 -->
 <!-- markdownlint-disable MD036 -->
 
->**Important Note:**
->
->
->The **csolution - CMSIS Project Manager** is currently under development and part of the
-  **[Open-CMSIS-Pack](https://www.open-cmsis-pack.org/index.html)** open source project.
->
->While the [CMSIS-Toolbox](https://github.com/Open-CMSIS-Pack/cmsis-toolbox) is already version 1.0.0 or higher, several aspects of the tools are still under review.  The sections that are market with `Proposal` are features that are not implemented or subject to change in the final implementation.  All other features are considered as stable and changes that are not upward compatible are avoided whenever possible.
-
 Manual Chapters                                         | Content
 :-------------------------------------------------------|:-------------------------
 [Usage](#usage)                                         | Overall Concept, tool setup, and invocation commands.
@@ -31,7 +23,7 @@ Manual Chapters                                         | Content
 - [csolution: CMSIS Project Manager - Users Manual (Draft)](#csolution-cmsis-project-manager---users-manual-draft)
   - [Revision History](#revision-history)
   - [Overview of Operation](#overview-of-operation)
-    - [Convert Command](#convert-command)
+    - [Theory of Operation](#theory-of-operation)
   - [Usage](#usage)
     - [Requirements](#requirements)
     - [Invocation](#invocation)
@@ -41,13 +33,14 @@ Manual Chapters                                         | Content
       - [Install Missing Packs](#install-missing-packs)
       - [List Devices or Boards](#list-devices-or-boards)
       - [List Unresolved Dependencies](#list-unresolved-dependencies)
-      - [Build Projects](#build-projects)
+      - [Create Build Information](#create-build-information)
       - [Select a Toolchain](#select-a-toolchain)
       - [List Compatible Layers](#list-compatible-layers)
       - [Use Generators (i.e. CubeMX)](#use-generators-ie-cubemx)
   - [Project Examples](#project-examples)
     - [GitHub repositories](#github-repositories)
     - [Minimal Project Setup](#minimal-project-setup)
+    - [Project Templates](#project-templates)
     - [Compiler Agnostic Project](#compiler-agnostic-project)
     - [Software Layers](#software-layers)
       - [Configuration Settings](#configuration-settings)
@@ -88,7 +81,7 @@ The **csolution - CMSIS Project Manager** supports the user with the following f
 - Manage multiple build types to support software verification (debug build, test build, release build, ect.)
 - Support multiple compiler toolchains (GCC, Arm Compiler 6, IAR, etc.) for project deployment.
 
-### Convert Command
+### Theory of Operation
 
 The diagram below outlines the operation of the `csolution convert` command. It processes one or more [`context`](YML-Input-Format.md#context) configurations of the application project (called solution). Refer to ["Project Examples"](#project-examples) for more information.
 
@@ -144,41 +137,41 @@ The CMSIS-Pack repository must be present in the development environment.
 ### Invocation
 
 ```text
-CMSIS Project Manager 1.7.0 (C) 2023 Arm Ltd. and Contributors
+csolution: Project Manager 2.0.0 (C) 2023 Arm Ltd. and Contributors
 
 Usage:
-  csolution [-V] [--version] [-h] [--help]
-            <command> [<arg>] [OPTIONS...]
+  csolution <command> [<name>.csolution.yml] [options]
 
- Commands:
-   list packs            Print list of used packs from the pack repository
-   list boards           Print list of available board names
-   list devices          Print list of available device names
-   list components       Print list of available components
-   list dependencies     Print list of unresolved project dependencies
-   list contexts         Print list of contexts in a csolution.yml
-   list generators       Print list of code generators of a given context
-   list layers           Print list of available, referenced and compatible layers
-   list toolchains       Print list of supported toolchains
-   list environment      Print list of environment configurations
-   convert               Convert *.csolution.yml input file in *.cprj files
-   run                   Run code generator
+Commands:
+  convert                  Convert user input *.yml files to *.cprj files
+  list boards              Print list of available board names
+  list contexts            Print list of contexts in a <name>.csolution.yml
+  list components          Print list of available components
+  list dependencies        Print list of unresolved project dependencies
+  list devices             Print list of available device names
+  list environment         Print list of environment configurations
+  list generators          Print list of code generators of a given context
+  list layers              Print list of available, referenced and compatible layers
+  list packs               Print list of used packs from the pack repository
+  list toolchains          Print list of supported toolchains
+  run                      Run code generator
+  update-rte               Create/update configuration files and validate solution
 
- Options:
-   -s, --solution arg    Input csolution.yml file
-   -c, --context arg     Input context name <cproject>[.<build-type>][+<target-type>]
-   -f, --filter arg      Filter words
-   -g, --generator arg   Code generator identifier
-   -m, --missing         List only required packs that are missing in the pack repository
-   -l, --load arg        Set policy for packs loading [latest|all|required]
-   -L, --clayer-path arg Set search path for external clayers
-   -e, --export arg      Set suffix for exporting <context><suffix>.cprj retaining only specified versions
-   -t, --toolchain arg   Selection of the toolchain used in the project optionally with version
-   -n, --no-check-schema Skip schema check
-   -U, --no-update-rte   Skip creation of RTE directory and files
-   -v, --verbose         Enable verbose messages
-   -d, --debug           Enable debug messages
-   -o, --output arg      Output directory
+Options:
+  -c, --context arg [...]  Input context names [<project-name>][.<build-type>][+<target-type>]
+  -d, --debug              Enable debug messages
+  -e, --export arg         Set suffix for exporting <context><suffix>.cprj retaining only specified versions
+  -f, --filter arg         Filter words
+  -g, --generator arg      Code generator identifier
+  -l, --load arg           Set policy for packs loading [latest | all | required]
+  -L, --clayer-path arg    Set search path for external clayers
+  -m, --missing            List only required packs that are missing in the pack repository
+  -n, --no-check-schema    Skip schema check
+  -N, --no-update-rte      Skip creation of RTE directory and files
+  -o, --output arg         Output directory
+  -t, --toolchain arg      Selection of the toolchain used in the project optionally with version
+  -v, --verbose            Enable verbose messages
+  -V, --version            Print version
 
 Use 'csolution <command> -h' for more information about a command.
 ```
@@ -204,7 +197,7 @@ csolution list packs [--filter "<filter words>"]
 Print list of packs that are required by the `<example.csolution.yml>`.
 
 ```text
-csolution list packs -s <example.csolution.yml>
+csolution list packs example.csolution.yml
 ```
 
 #### Install Missing Packs
@@ -234,16 +227,21 @@ Print list of unresolved project dependencies. Device, board, and software compo
 `*.csolution.yml` and `*.cproject.yml` files. The list may be filtered by words provided with the option `--filter`:
 
 ```text
-csolution list dependencies -s mysolution.csolution.yml [-f "<filter words>"]
+csolution list dependencies mysolution.csolution.yml [-f "<filter words>"]
 ```
 
-#### Build Projects
+#### Create Build Information
 
-Convert `example.csolution.yml` into `*.cprj` file(s). This `*.cprj` file can be compiled using the `cbuild` command.
+Convert `example.csolution.yml` into build information files.
 
 ```text
 csolution convert -s example.csolution.yml
-cbuild example.debug.cprj
+```
+
+Convert specific contexts of a `*.csolution.yml` file into build information files.
+
+```text
+csolution convert SimpleTZ.csolution.yml -c CM33_s.Debug -c CM33_ns.Release+AVH
 ```
 
 #### Select a Toolchain
@@ -260,7 +258,7 @@ csolution convert -s example.csolution.yml -t AC6
 List compatible layers for `./fxls8962_normal_spi.csolution.yml` and the context `*+frdmk22f_agmp03`. This contains also setup information.
 
 ```text
-csolution list layers -s ./fxls8962_normal_spi.csolution.yml -c *+frdmk22f_agmp03
+csolution list layers ./fxls8962_normal_spi.csolution.yml -c *+frdmk22f_agmp03
 ```
 
 Refer to [Working with Layers](RefApp-Framework.md#working-with-layers) for more information.
@@ -271,13 +269,13 @@ List external code generators that are used to create software components in `*.
 ID that is required for the `run` command.
 
 ```text
-csolution list generators -s mysolution.csolution.yml
+csolution list generators mysolution.csolution.yml
 ```
 
 Run a generator (in this case STCubeMX) for a specific project context.
 
 ```text
-csolution run -g STCubeMX -s mysolution.csolution.yml -c Blinky.Debug+STM32L4
+csolution run -g STCubeMX mysolution.csolution.yml -c Blinky.Debug+STM32L4
 ```
 
 ## Project Examples
@@ -300,17 +298,45 @@ A minimal application requires two files:
 - `Sample.csolution.yml` that defines the a [target type](YML-Input-Format.md#target-types) with [device](YML-Input-Format.md#device) and selects the [compiler](YML-Input-Format.md#compiler).
 - `Sample.cproject.yml` that defines the files and software components that belong to the device.
 
-Simple applications require just one self-contained file.
+### Project Templates
+
+The following `*.csolution.yml` templates may be used to create own embedded applications.
+
+Template    | Description
+:-----------|:------------------------------
+[Simple](https://github.com/Open-CMSIS-Pack/csolution-examples/tree/main/Templates/Simple)        | A csolution.yml template with a single cproject.yml.
+[Multicore](https://github.com/Open-CMSIS-Pack/csolution-examples/tree/main/Templates/Multicore)  | A csolution.yml template with multiuple cproject.yml each targeting one processor of a multicore device.
+[TrustZone](https://github.com/Open-CMSIS-Pack/csolution-examples/tree/main/Templates/TrustZone)  | A csolution.yml template with a non-secure cproject.yml and an optional secure cproject.yml.
+[UnitTest](https://github.com/Open-CMSIS-Pack/csolution-examples/tree/main/Templates/UnitTest)    | A csolution.yml template that shares one HAL clayer.yml with multiple cproject.yml files for unit testing.
+
+To use these templates, copy the content of the folder to your own application folder. Then adapt the names accordingly and add missing information.
+
+Refer to [Overall Workflow](https://github.com/Open-CMSIS-Pack/csolution-examples/tree/main/Templates#overall-workflow) for more details.
 
 **Simple Project: `Sample.csolution.yml`**
 
 ```yml
 solution:
-  compiler: AC6                   # explicit compiler selection (optional)
+  created-for: CMSIS-Toolbox@2.0.0
+  cdefault:
+  compiler: AC6                               # explicit selection of compiler
+  
+  packs:
+    - pack: NXP::K32L3A60_DFP@16.0.0          # specify DFP
+    - pack: NXP::FRDM-K32L3A6_BSP@16.0.0 
 
   target-types:
-    - type: MyHardware
-      device: NXP::LPC1768
+    - type: FRDM-K32L3A6
+      board: FRDM-K32L3A6
+
+  build-types:                                # defines toolchain options for 'debug' and 'release'
+    - type: Debug
+      debug: on
+      optimize: none
+
+    - type: Release
+      debug: off
+      optimize: balanced
 
   projects:
     - project: ./Sample.cproject.yml
@@ -320,6 +346,9 @@ solution:
 
 ```yml
 project:
+  packs:
+    - pack: ARM::CMSIS                        # specify additional packs
+
   groups:
     - group: App
       files:
@@ -481,18 +510,20 @@ Currently multi-target projects require the setup of a `*.csolution.yml` file to
 
 ```yml
 solution:
-  cdefault:                      # use default setup of toolchain specific controls
+  cdefault:                        # use default setup of toolchain specific controls
   compiler: AC6
+
+    :                              # pack definition not shown
 
   target-types:
     - type: Board
       board: NUCLEO-L552ZE-Q
 
     - type: Production-HW
-      device: STM32L552XY         # specifies device
+      device: STM32L552XY          # specifies device
 
     - type: Virtual
-      board: VHT-Corstone-300     # Virtual Hardware platform (appears as board)
+      board: VHT-Corstone-300      # Virtual Hardware platform (appears as board)
       
   build-types:
     - type: Debug
@@ -581,6 +612,8 @@ solution level).
 
 ```yml
 solution:
+   :                            # setup not shown
+
   target-types:
     - type: Board
       board: NUCLEO-L552ZE-Q
