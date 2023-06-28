@@ -337,6 +337,7 @@ void ProjMgrYamlCbuild::SetOutputNode(YAML::Node node, const ContextItem* contex
 
 void ProjMgrYamlCbuild::SetLinkerNode(YAML::Node node, const ContextItem* context) {
   const string script = context->linker.script.empty() ? "" :
+    fs::path(context->linker.script).is_absolute() ? FormatPath(context->linker.script, "") :
     FormatPath(context->directories.cprj + "/" + context->linker.script, context->directories.cprj);
   const string regions = context->linker.regions.empty() ? "" :
     FormatPath(context->directories.cprj + "/" + context->linker.regions, context->directories.cprj);
