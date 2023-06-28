@@ -207,7 +207,7 @@ in the pack repository. This missing packs might be installed using the
 [`cpackget`](../../../cpackget/docs/cpackget.md) tool.
 
 ```text
-csolution list packs -s <example.csolution.yml> -m >packs.txt
+csolution list packs example.csolution.yml -m >packs.txt
 cpackget update-index               // optional to ensure that pack index is up-to-date
 cpackget add -f packs.txt
 ```
@@ -235,7 +235,7 @@ csolution list dependencies mysolution.csolution.yml [-f "<filter words>"]
 Convert `example.csolution.yml` into build information files.
 
 ```text
-csolution convert -s example.csolution.yml
+csolution convert example.csolution.yml
 ```
 
 Convert specific contexts of a `*.csolution.yml` file into build information files.
@@ -250,7 +250,7 @@ List and select a specific toolchain (in this case AC6 for Arm Compiler version 
 
 ```text
 csolution list toolchains --verbose
-csolution convert -s example.csolution.yml -t AC6
+csolution convert example.csolution.yml -t AC6
 ```
 
 #### List Compatible Layers
