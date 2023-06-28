@@ -374,7 +374,6 @@ ProjMgrUtils::ContextSelectionError ProjMgrUtils::GetSelectedContexts(
   const vector<string>& contextFilters, const string& contextReplace)
 {
   ContextSelectionError error;
-  //vector<string> errFilters;
   selectedContexts.clear();
   if (contextFilters.empty()) {
     if (allContexts.empty()) {
