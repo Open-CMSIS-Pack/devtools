@@ -941,6 +941,7 @@
         "not-for-context": { "$ref": "#/definitions/NotForContext" },
         "for-compiler":    { "$ref": "#/definitions/CompilersType" }
       },
+      "$ref": "#/definitions/TypeListMutualExclusion",
       "additionalProperties": false
     },
     "CreatedInfoType": {
