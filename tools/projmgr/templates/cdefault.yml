@@ -28,6 +28,14 @@ default:
         - --specs=rdimon.specs
         - -Wl,-Map=$elf()$.map
 
+    - for-compiler: CLANG
+      C:
+        - -std=gnu11
+      Link:
+        - -lcrt0-semihost
+        - -lsemihost
+        - -Wl,-Map=$elf()$.map
+
     - for-compiler: IAR
       C-CPP: 
         - --dlib_config DLib_Config_Full.h
