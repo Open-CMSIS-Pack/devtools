@@ -260,7 +260,10 @@ endif()
 set(CPP_FLAGS "-E -P -xc")
 set(CPP_DEFINES ${LD_SCRIPT_PP_DEFINES})
 cbuild_set_defines(CC CPP_DEFINES)
-set(CPP_ARGS_LD_SCRIPT "${CPP_FLAGS} ${CPP_DEFINES} -include \"${LD_REGIONS}\" \"${LD_SCRIPT}\" -o \"${LD_SCRIPT_PP}\"")
+if(DEFINED LD_REGIONS AND NOT LD_REGIONS STREQUAL "")
+  set(CPP_INCLUDES "-include \"${LD_REGIONS}\"")
+endif()
+set(CPP_ARGS_LD_SCRIPT "${CPP_FLAGS} ${CPP_DEFINES} ${CPP_INCLUDES} \"${LD_SCRIPT}\" -o \"${LD_SCRIPT_PP}\"")
 separate_arguments(CPP_ARGS_LD_SCRIPT NATIVE_COMMAND ${CPP_ARGS_LD_SCRIPT})
 
 # C Compiler

@@ -1,0 +1,95 @@
+# CMSIS Build CMakeLists generated on 2023-04-20T16:51:09
+
+cmake_minimum_required(VERSION 3.22)
+
+# Target options
+
+set(TARGET MyProject)
+set(CPU Cortex-M3)
+set(PRJ_DIR "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/LinkerPreProcessing")
+set(OUT_DIR "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/LinkerPreProcessing/OutDir")
+set(INT_DIR "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/LinkerPreProcessing/IntDir")
+set(FPU NO_FPU)
+set(DSP NO_DSP)
+set(TZ NO_TZ)
+set(SECURE Non-secure)
+set(MVE NO_MVE)
+set(BYTE_ORDER Little-endian)
+set(CC_FLAGS_GLOBAL "-O -Wall -gdwarf-2 -mapcs-frame -mthumb")
+set(LD_FLAGS_GLOBAL "--entry=Reset_Handler --specs=nosys.specs -mcpu=cortex-m3 -mthumb")
+set(LD_SCRIPT "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/LinkerPreProcessing/RTE/Device/ARMCM3/gcc_arm.ld")
+set(LD_SCRIPT_PP "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/LinkerPreProcessing/IntDir/gcc_arm.ld.pp")
+
+set(LD_SCRIPT_PP_DEFINES
+  LD_PP_DEF0
+  LD_PP_DEF1=3U
+  __ROM1_BASE=0x00000000
+  __ROM1_SIZE=0x00080000
+  __ROM2_BASE=0x00000000
+  __ROM2_SIZE=0x00000000
+  __ROM3_BASE=0x00000000
+  __ROM3_SIZE=0x00000000
+  __ROM4_BASE=0x00000000
+  __ROM4_SIZE=0x00000000
+  __RAM1_BASE=0x20000000
+  __RAM1_SIZE=0x00040000
+  __RAM2_BASE=0x00000000
+  __RAM2_SIZE=0x00000000
+  __RAM3_BASE=0x00000000
+  __RAM3_SIZE=0x00000000
+  __RAM4_BASE=0x00000000
+  __RAM4_SIZE=0x00000000
+  __STACK_SIZE=0x00000200
+  __HEAP_SIZE=0x00000C00
+)
+
+set(DEFINES
+  ARMCM3
+  _RTE_
+)
+
+set(INC_PATHS
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/LinkerPreProcessing/RTE/_Target_1"
+  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.9.0/CMSIS/Core/Include"
+  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.9.0/Device/ARM/ARMCM3/Include"
+)
+
+set(CC_SRC_FILES
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/LinkerPreProcessing/MyMain.c"
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/LinkerPreProcessing/RTE/Device/ARMCM3/startup_ARMCM3.c"
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/LinkerPreProcessing/RTE/Device/ARMCM3/system_ARMCM3.c"
+)
+
+# Toolchain config map
+
+set(TOOLCHAIN_VERSION_MIN "9.2.1")
+include ("C:/sandbox/cbuild/etc/GCC.10.3.1.cmake")
+include ("C:/sandbox/cbuild/etc/CMSIS-Build-Utils.cmake")
+
+# Setup project
+
+project(${TARGET} LANGUAGES C)
+
+cbuild_get_running_toolchain(TOOLCHAIN_ROOT TOOLCHAIN_VERSION C)
+
+# Global Flags
+
+cbuild_get_system_includes(CC_SYS_INC_PATHS_LIST CC_SYS_INC_PATHS)
+set(CMAKE_C_FLAGS "${CC_CPU} ${CC_BYTE_ORDER} ${CC_DEFINES} ${CC_SECURE} ${CC_FLAGS} ${CC_FLAGS_GLOBAL} ${CC_SYS_INC_PATHS}")
+set(CMAKE_C_LINK_FLAGS "${LD_CPU} ${_LS}\"${LD_SCRIPT_PP}\" ${LD_SECURE} ${LD_FLAGS_GLOBAL} ${LD_FLAGS}")
+
+# Compilation Database
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+add_custom_target(database COMMAND ${CMAKE_COMMAND} -E copy_if_different "${INT_DIR}/compile_commands.json" "${OUT_DIR}")
+
+# Setup Target
+
+add_executable(${TARGET} ${CC_SRC_FILES})
+set_target_properties(${TARGET} PROPERTIES PREFIX "" OUTPUT_NAME "${TARGET}")
+set_target_properties(${TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${OUT_DIR} LINK_DEPENDS ${LD_SCRIPT})
+target_include_directories(${TARGET} PUBLIC ${INC_PATHS})
+
+# Linker script pre-processing
+
+add_custom_command(TARGET ${TARGET} PRE_LINK COMMAND ${CPP} ARGS ${CPP_ARGS_LD_SCRIPT} BYPRODUCTS ${LD_SCRIPT_PP})
