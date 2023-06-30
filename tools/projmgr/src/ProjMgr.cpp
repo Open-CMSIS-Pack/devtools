@@ -36,7 +36,7 @@ Commands:\n\
   run                      Run code generator\n\
   update-rte               Create/update configuration files and validate solution\n\n\
 Options:\n\
-  -c, --context arg [,arg] Input context names [<project-name>][.<build-type>][+<target-type>]\n\
+  -c, --context arg [...]  Input context names [<project-name>][.<build-type>][+<target-type>]\n\
   -d, --debug              Enable debug messages\n\
   -e, --export arg         Set suffix for exporting <context><suffix>.cprj retaining only specified versions\n\
   -f, --filter arg         Filter words\n\
