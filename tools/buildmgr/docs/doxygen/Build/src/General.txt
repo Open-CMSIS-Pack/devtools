@@ -57,6 +57,14 @@ Software layers and Virtual I/O simplify these use cases:
     <th>Description</th>
   </tr>
   <tr>
+    <td>2.0.0</td>
+    <td>Release notes:
+      - updated cbuild utility v2.0.0
+      - updated cpackget utility v1.0.0
+      - added support for LLVM/Clang
+      - enabled linker defines as trigger for preprocessing
+      - set initial CMake flags for AC6 compiler check
+    </td>
     <td>2.0.0-dev3</td>
     <td>Release for review of initial development:
       - updated cbuild utility v2.0.0-dev3
