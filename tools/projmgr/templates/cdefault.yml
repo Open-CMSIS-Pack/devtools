@@ -21,6 +21,8 @@ default:
         - --diag_suppress=L6314W
 
     - for-compiler: GCC
+      C-CPP:
+        - -masm-syntax-unified
       C:
         - -std=gnu11
       Link:
