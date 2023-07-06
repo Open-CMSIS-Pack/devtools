@@ -81,6 +81,16 @@ struct PackItem {
 };
 
 /**
+ * @brief resolved pack item containing,
+ *        pack ID,
+ *        list of selected-by expressions (original expressions causing this pack to be added)
+*/
+struct ResolvedPackItem {
+  std::string pack;
+  std::vector<std::string> selectedBy;
+};
+
+/**
  * @brief processor item containing
  *        processor fpu,
  *        processor dsp,
@@ -303,6 +313,21 @@ struct ContextDesc {
 };
 
 /**
+ * @brief cbuild pack descriptor containing
+ *        filename,
+ *        full path to cbuild pack file,
+ *        containing directory,
+ *        list of resolved packs
+*/
+struct CbuildPackItem {
+  std::string name;
+  std::string path;
+  std::string directory;
+
+  std::vector<ResolvedPackItem> packs;
+};
+
+/**
  * @brief default item containing
  *        cdefault path,
  *        compiler,
@@ -342,6 +367,7 @@ struct CsolutionItem {
   std::vector<PackItem> packs;
   bool enableCdefault;
   GeneratorsItem generators;
+  CbuildPackItem cbuildPack;
 };
 
 /**

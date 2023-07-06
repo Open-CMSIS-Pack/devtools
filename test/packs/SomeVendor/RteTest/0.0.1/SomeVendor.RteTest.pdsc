@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<package schemaVersion="1.4" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="PACK.xsd">
+  <vendor>SomeVendor</vendor>
+  <name>RteTest</name>
+  <url>www.keil.com/pack/</url>
+  <description>
+    Testing pack reader and RTE model features.
+    Some PackChk warnings are expected: missing version of config file
+  </description>
+
+  <releases>
+    <release version="0.0.1" date="2023-11-20">
+      initial version copied from ARM.RteTest pack
+    </release>
+  </releases>
+
+  <requirements>
+    <packages>
+      <package vendor="ARM" name="RteTest_DFP" version="0.1.1:0.2.0"/>
+    </packages>
+  </requirements>
+
+  <components>
+
+    <component Cclass="RteTest" Cgroup="LocalFile" Cversion="0.0.3">
+      <description>This component adds a pre-include file</description>
+      <files>
+        <file category="preIncludeLocal" name="PreInclude/MyLocalPreInclude.h"/>
+        <file category="sourceC" name="PreInclude/MyLocalPreInclude.c" />
+      </files>
+    </component>
+  </components>
+
+</package>

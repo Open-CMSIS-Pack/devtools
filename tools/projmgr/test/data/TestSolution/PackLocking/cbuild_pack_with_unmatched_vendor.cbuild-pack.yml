@@ -1,0 +1,5 @@
+cbuild-pack:
+  resolved-packs:
+    - resolved-pack: SomeVendor::RteTest_DFP@0.1.1
+      selected-by:
+        - SomeVendor::RteTest_DFP

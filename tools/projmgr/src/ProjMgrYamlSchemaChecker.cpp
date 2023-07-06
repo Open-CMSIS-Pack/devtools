@@ -73,6 +73,9 @@ bool ProjMgrYamlSchemaChecker::GetSchemaFile(string& schemaFile, const ProjMgrYa
   case ProjMgrYamlSchemaChecker::FileType::BUILDIDX:
     schemaFileName = "cbuild-idx.schema.json";
     break;
+  case ProjMgrYamlSchemaChecker::FileType::BUILD_PACK:
+    schemaFileName = "cbuild-pack.schema.json";
+    break;
   case ProjMgrYamlSchemaChecker::FileType::BUILDSET:
     schemaFileName = "cbuild-set.schema.json";
     break;

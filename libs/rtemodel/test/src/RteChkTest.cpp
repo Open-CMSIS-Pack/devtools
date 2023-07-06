@@ -15,7 +15,7 @@ using namespace std;
 
 TEST(RteChkTest, Summary) {
 
-const string summary = "Collecting pdsc files 7 files found\n\
+const string summary = "Collecting pdsc files 8 files found\n\
 Parsing XML passed\n\
 \n\
 Constructing Model passed\n\
@@ -25,13 +25,13 @@ Cleaning XML data\n\
 Validating Model passed\n\
 \n\
 Summary:\n\
-Packs: 7\n\
-Generic: 3\n\
+Packs: 8\n\
+Generic: 4\n\
 DFP: 3\n\
 BSP: 1\n\
 \n\
-Components: 55\n\
-From generic packs: 33\n\
+Components: 56\n\
+From generic packs: 34\n\
 From DFP: 22\n\
 From BSP: 0\n\
 \n\
@@ -50,8 +50,8 @@ completed\n";
   rteChk.AddFileDir(RteModelTestConfig::CMSIS_PACK_ROOT);
   int res = rteChk.RunCheckRte();
   EXPECT_EQ(res, 0);
-  EXPECT_EQ(rteChk.GetPackCount(), 7);
-  EXPECT_EQ(rteChk.GetComponentCount(), 55);
+  EXPECT_EQ(rteChk.GetPackCount(), 8);
+  EXPECT_EQ(rteChk.GetComponentCount(), 56);
   EXPECT_EQ(rteChk.GetDeviceCount(), 10);
   EXPECT_EQ(rteChk.GetBoardCount(), 13);
 

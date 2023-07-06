@@ -222,21 +222,14 @@ void ProjMgrWorker::SetEnvironmentVariables(const StrVec& envVars) {
 }
 
 bool ProjMgrWorker::GetRequiredPdscFiles(ContextItem& context, const std::string& packRoot, std::set<std::string>& errMsgs) {
-  if (!ProcessPackages(context)) {
+  if (!ProcessPackages(context, packRoot)) {
     return false;
   }
   for (auto packItem : context.packRequirements) {
     // parse required version range
     const auto& pack = packItem.pack;
     const auto& reqVersion = pack.version;
-    string reqVersionRange;
-    if (!reqVersion.empty()) {
-      if (reqVersion.find(">=") != string::npos) {
-        reqVersionRange = reqVersion.substr(2);
-      } else {
-        reqVersionRange = reqVersion + ":" + reqVersion;
-      }
-    }
+    string reqVersionRange = ProjMgrUtils::ConvertToVersionRange(reqVersion);
 
     if (packItem.path.empty()) {
       bool bPackFilter = (pack.name.empty() || WildCards::IsWildcardPattern(pack.name));
@@ -1336,7 +1329,74 @@ bool ProjMgrWorker::ProcessDevicePrecedence(StringCollection& item) {
   return true;
 }
 
-bool ProjMgrWorker::ProcessPackages(ContextItem& context) {
+/**
+ * @brief Takes a loosely defined needle pack id and tries to match it to a number of
+ * resolved pack items from the `cbuild-pack.yml` file.
+ * Project local packs are ignored.
+ *
+ * @param needle The loosely defined pack id
+ * @param resolvedPacks The cbuild-pack.yml resolved items
+ * @return The list of matched resolved packIds
+ */
+vector<string> ProjMgrWorker::FindMatchingPackIdsInCbuildPack(const PackItem& needle, const vector<ResolvedPackItem>& resolvedPacks) {
+  // This should never happen, assuming that the parser validates the pack ID
+  if (needle.pack.empty()) {
+    return {};
+  }
+
+  // Only consider non-project-local packs
+  if (!needle.path.empty()) {
+    return {};
+  }
+
+  PackInfo needleInfo;
+  ProjMgrUtils::ConvertToPackInfo(needle.pack, needleInfo);
+
+  vector<string> matches;
+  for (const auto& resolvedPack : resolvedPacks) {
+    // First try exact matching
+    if (find(resolvedPack.selectedBy.cbegin(), resolvedPack.selectedBy.cend(), needle.pack) != resolvedPack.selectedBy.end()) {
+      if (!needleInfo.name.empty() && !WildCards::IsWildcardPattern(needle.pack)) {
+        // Exact match means only one result
+        return {resolvedPack.pack};
+      }
+
+      // Needle is a wildcard, so just collect and continue
+      matches.push_back(resolvedPack.pack);
+    } else {
+      // Next, try fuzzy matching
+      PackInfo resolvedInfo;
+      ProjMgrUtils::ConvertToPackInfo(resolvedPack.pack, resolvedInfo);
+
+      if (ProjMgrUtils::IsMatchingPackInfo(resolvedInfo, needleInfo)) {
+        matches.push_back(resolvedPack.pack);
+      }
+    }
+  }
+
+  if (matches.size() <= 1) {
+    return matches;
+  }
+
+  // If wildcard, allow it to match more than one pack id
+  if (needleInfo.name.empty() || WildCards::IsWildcardPattern(needle.pack)) {
+    return matches;
+  }
+
+  // Order latest version first
+  std::sort(matches.begin(), matches.end(), [](const string &packId1, const string &packId2) {
+    PackInfo packInfo1, packInfo2;
+    ProjMgrUtils::ConvertToPackInfo(packId1, packInfo1);
+    ProjMgrUtils::ConvertToPackInfo(packId2, packInfo2);
+    return VersionCmp::Compare(packInfo1.version, packInfo2.version) > 0;
+  });
+
+  // Non-wildcard returns the pack id with the highest version.
+  // This should only happen the first time the needle is not included in the selected-by-list.
+  return {matches[0]};
+}
+
+bool ProjMgrWorker::ProcessPackages(ContextItem& context, const string& packRoot) {
   vector<PackItem> packRequirements;
 
   // Solution package requirements
@@ -1351,8 +1411,7 @@ bool ProjMgrWorker::ProcessPackages(ContextItem& context) {
   for (const auto& [_, clayer] : context.clayers) {
     InsertPackRequirements(clayer->packs, packRequirements, clayer->directory);
   }
-  AddPackRequirements(context, packRequirements);
-  return true;
+  return AddPackRequirements(context, packRequirements);
 }
 
 void ProjMgrWorker::InsertPackRequirements(const vector<PackItem>& src, vector<PackItem>& dst, string base) {
@@ -1364,7 +1423,18 @@ void ProjMgrWorker::InsertPackRequirements(const vector<PackItem>& src, vector<P
   }
 }
 
+/**
+ * @brief Add the required packs for the project context to the list of packages to import into the RTE model.
+ * The list of input pack items will be filtered for the currently select build-type/target-type/for-context context.
+ * cbuild-pack information will be considered and prefered to select version of a pack.
+ *
+ * @param context The currently active context that will be filled with pack requirements
+ * @param packRequirements List of pack items
+ * @return True if sucessful
+ */
 bool ProjMgrWorker::AddPackRequirements(ContextItem& context, const vector<PackItem> packRequirements) {
+  const vector<ResolvedPackItem>& resolvedPacks = context.csolution ? context.csolution->cbuildPack.packs : vector<ResolvedPackItem>();
+
   // Filter context specific package requirements
   vector<PackItem> packages;
   for (const auto& packItem : packRequirements) {
@@ -1372,22 +1442,85 @@ bool ProjMgrWorker::AddPackRequirements(ContextItem& context, const vector<PackI
       packages.push_back(packItem);
     }
   }
+
   // Process packages
+  for (const auto& packageEntry : packages) {
+    if (packageEntry.path.empty()) {
+      // System wide package
+      vector<string> matchedPackIds = FindMatchingPackIdsInCbuildPack(packageEntry, resolvedPacks);
+      if (matchedPackIds.size()) {
+        // Cbuild pack content matches, so use it
+        for (const auto& resolvedPackId : matchedPackIds) {
+          PackageItem package;
+          ProjMgrUtils::ConvertToPackInfo(resolvedPackId, package.pack);
+          context.userInputToResolvedPackIdMap[packageEntry.pack].insert(resolvedPackId);
+          context.packRequirements.push_back(package);
+        }
+      } else {
+        // Not matching cbuild pack, add it unless a wildcard entry
+        PackageItem package;
+        ProjMgrUtils::ConvertToPackInfo(packageEntry.pack, package.pack);
+
+        // Resolve version range using installed packs
+        if (!package.pack.name.empty() && !WildCards::IsWildcardPattern(package.pack.name)) {
+          string reqVersionRange = ProjMgrUtils::ConvertToVersionRange(package.pack.version);
+          string path = m_packRoot + '/' + package.pack.vendor + '/' + package.pack.name;
+          string installedVersion = RteFsUtils::GetInstalledPackVersion(path, reqVersionRange);
+
+          // Only remember the version of the pack if we had it installed
+          // Will be used when serializing the cbuild-pack.yml file later
+          if (!installedVersion.empty()) {
+            const string newPackId = RtePackage::ComposePackageID(package.pack.vendor, package.pack.name, installedVersion);
+            context.userInputToResolvedPackIdMap[packageEntry.pack].insert(newPackId);
+            package.pack.version = installedVersion;
+          } else {
+            // Remember that we had the user input, but it does not match any installed pack
+            context.userInputToResolvedPackIdMap[packageEntry.pack] = {};
+          }
+          context.packRequirements.push_back(package);
+        }
+      }
+    } else {
+      // Project local pack - add as-is
+      PackageItem package;
+      package.path = packageEntry.path;
+      RteFsUtils::NormalizePath(package.path, context.csolution->directory + "/");
+      if (!RteFsUtils::Exists(package.path)) {
+        ProjMgrLogger::Error("pack path: " + packageEntry.path + " does not exist");
+        return false;
+      }
+      ProjMgrUtils::ConvertToPackInfo(packageEntry.pack, package.pack);
+      string pdscFile = package.pack.vendor + '.' + package.pack.name + ".pdsc";
+      RteFsUtils::NormalizePath(pdscFile, package.path + "/");
+      if (!RteFsUtils::Exists(pdscFile)) {
+        ProjMgrLogger::Error("pdsc file was not found in: " + packageEntry.path);
+        return false;
+      }
+      context.packRequirements.push_back(package);
+      context.localPackPaths.insert(package.path);
+    }
+  }
+
+  // Add wildcard entries last so that they can be re-expanded if needed
   for (const auto& packageEntry : packages) {
     PackageItem package;
     package.path = packageEntry.path;
-    auto& pack = package.pack;
-    string packInfoStr = packageEntry.pack;
-    if (packInfoStr.find("::") != string::npos) {
-      pack.vendor = RteUtils::RemoveSuffixByString(packInfoStr, "::");
-      packInfoStr = RteUtils::RemovePrefixByString(packInfoStr, "::");
-      pack.name   = RteUtils::GetPrefix(packInfoStr, '@');
-    } else {
-      pack.vendor = RteUtils::GetPrefix(packInfoStr, '@');
+    ProjMgrUtils::ConvertToPackInfo(packageEntry.pack, package.pack);
+
+    if (package.pack.name.empty() || WildCards::IsWildcardPattern(package.pack.name)) {
+      context.packRequirements.push_back(package);
     }
-    pack.version = RteUtils::GetSuffix(packInfoStr, '@');
-    context.packRequirements.push_back(package);
   }
+
+  // In case there is no packs-list in the project files, reduce the scope to the locked pack list
+  if (context.packRequirements.empty()) {
+    for (const auto& resolvedPack : resolvedPacks) {
+      PackageItem package;
+      ProjMgrUtils::ConvertToPackInfo(resolvedPack.pack, package.pack);
+      context.packRequirements.push_back(package);
+    }
+  }
+
   return true;
 }
 

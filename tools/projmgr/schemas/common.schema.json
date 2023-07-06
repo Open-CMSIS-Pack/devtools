@@ -939,6 +939,32 @@
         }
       }
     },
+    "BuildPackDescType": {
+      "type": "object",
+      "properties": {
+        "resolved-packs": { "$ref": "#/definitions/ResolvedPacksType" }
+      },
+      "additionalProperties": false,
+      "required": [ "resolved-packs" ]
+    },
+    "ResolvedPacksType": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/ResolvedPackType" }
+    },
+    "ResolvedPackType": {
+      "type": "object",
+      "properties": {
+        "resolved-pack": { "$ref": "#/definitions/PackID" },
+        "selected-by": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/definitions/PackID" }
+        }
+      },
+      "additionalProperties": false,
+      "required": [ "resolved-pack" ]
+    },
     "BuildPacksType": {
       "type": "array",
       "uniqueItems": true,

@@ -92,6 +92,13 @@ void ProjMgrTestEnv::SetUp() {
   }
   RteFsUtils::CreateDirectories(destPackPath);
   fs::copy(fs::path(srcPackPath), fs::path(destPackPath), fs::copy_options::recursive, ec);
+  srcPackPath  = testcmsispack_folder + "/ARM/RteTest/0.1.0";
+  destPackPath = testinput_folder + "/SolutionSpecificPack2";
+  if (RteFsUtils::Exists(destPackPath)) {
+    RteFsUtils::RemoveDir(destPackPath);
+  }
+  RteFsUtils::CreateDirectories(destPackPath);
+  fs::copy(fs::path(srcPackPath), fs::path(destPackPath), fs::copy_options::recursive, ec);
 
   // copy invalid packs
   string srcInvalidPacks, destInvalidPacks;

@@ -87,18 +87,6 @@ struct ToolchainItem {
 };
 
 /**
- * @brief pack info containing
- *        pack name,
- *        pack vendor,
- *        pack version
-*/
-struct PackInfo {
-  std::string name;
-  std::string vendor;
-  std::string version;
-};
-
-/**
  * @brief package item containing
  *        pack information pack,
  *        path to pack     path
@@ -277,6 +265,8 @@ struct ContextTypesItem {
  *        device pack,
  *        board pack,
  *        boolean processed precedences
+ *        map of user inputed pack ID to resolved pack ID
+ *        set of absolute file paths of project local packs
 */
 struct ContextItem {
   CdefaultItem* cdefault = nullptr;
@@ -322,6 +312,8 @@ struct ContextItem {
   RtePackage* devicePack;
   RtePackage* boardPack;
   bool precedences;
+  std::map<std::string, std::set<std::string>> userInputToResolvedPackIdMap;
+  std::set<std::string> localPackPaths;
 };
 
 /**
@@ -677,7 +669,7 @@ protected:
   bool ProcessDevicePrecedence(StringCollection& item);
   bool ProcessBoardPrecedence(StringCollection& item);
   bool ProcessToolchain(ContextItem& context);
-  bool ProcessPackages(ContextItem& context);
+  bool ProcessPackages(ContextItem& context, const std::string& packRoot);
   bool ProcessComponents(ContextItem& context);
   RteComponent* ProcessComponent(ContextItem& context, ComponentItem& item, RteComponentMap& componentMap);
   bool ProcessGpdsc(ContextItem& context);
@@ -762,6 +754,7 @@ protected:
   bool ProcessGeneratedLayers(ContextItem& context);
   void CheckDeviceAttributes(const std::string& device, const ProcessorItem& userSelection, const StrMap& targetAttributes);
   std::string GetContextRteFolder(ContextItem& context);
+  std::vector<std::string> FindMatchingPackIdsInCbuildPack(const PackItem& needle, const std::vector<ResolvedPackItem>& resolvedPacks);
 };
 
 #endif  // PROJMGRWORKER_H

@@ -322,3 +322,174 @@ TEST_F(ProjMgrUtilsUnitTests, GetFilteredContexts) {
       "failed for input \"" << contextFilter << "\"";
   }
 }
+
+TEST_F(ProjMgrUtilsUnitTests, ConvertToPackInfo) {
+  PackInfo packInfo;
+
+  packInfo = {"", "", ""};
+  EXPECT_TRUE(ProjMgrUtils::ConvertToPackInfo("", packInfo));
+  EXPECT_EQ("", packInfo.vendor);
+  EXPECT_EQ("", packInfo.name);
+  EXPECT_EQ("", packInfo.version);
+
+  packInfo = {"", "", ""};
+  EXPECT_TRUE(ProjMgrUtils::ConvertToPackInfo("ARM", packInfo));
+  EXPECT_EQ("ARM", packInfo.vendor);
+  EXPECT_EQ("", packInfo.name);
+  EXPECT_EQ("", packInfo.version);
+
+  packInfo = {"", "", ""};
+  EXPECT_TRUE(ProjMgrUtils::ConvertToPackInfo("ARM@5.8.0", packInfo));
+  EXPECT_EQ("ARM", packInfo.vendor);
+  EXPECT_EQ("", packInfo.name);
+  EXPECT_EQ("5.8.0", packInfo.version);
+
+  packInfo = {"", "", ""};
+  EXPECT_TRUE(ProjMgrUtils::ConvertToPackInfo("ARM@>=5.8.0", packInfo));
+  EXPECT_EQ("ARM", packInfo.vendor);
+  EXPECT_EQ("", packInfo.name);
+  EXPECT_EQ(">=5.8.0", packInfo.version);
+
+  packInfo = {"", "", ""};
+  EXPECT_TRUE(ProjMgrUtils::ConvertToPackInfo("ARM::CMSIS", packInfo));
+  EXPECT_EQ("ARM", packInfo.vendor);
+  EXPECT_EQ("CMSIS", packInfo.name);
+  EXPECT_EQ("", packInfo.version);
+
+  packInfo = {"", "", ""};
+  EXPECT_TRUE(ProjMgrUtils::ConvertToPackInfo("ARM::CMSIS@5.8.0", packInfo));
+  EXPECT_EQ("ARM", packInfo.vendor);
+  EXPECT_EQ("CMSIS", packInfo.name);
+  EXPECT_EQ("5.8.0", packInfo.version);
+
+  packInfo = {"", "", ""};
+  EXPECT_TRUE(ProjMgrUtils::ConvertToPackInfo("ARM::CMSIS@>=5.8.0", packInfo));
+  EXPECT_EQ("ARM", packInfo.vendor);
+  EXPECT_EQ("CMSIS", packInfo.name);
+  EXPECT_EQ(">=5.8.0", packInfo.version);
+}
+
+TEST_F(ProjMgrUtilsUnitTests, IsMatchingPackInfo) {
+
+  // Vendor
+  EXPECT_TRUE (ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"", "ARM", ""}));
+
+  // Wrong name
+  EXPECT_FALSE(ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"Test", "ARM", ""}));
+
+  // Vendor + exact version
+  EXPECT_FALSE(ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"", "ARM", "5.7.0"}));
+  EXPECT_TRUE (ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"", "ARM", "5.8.0"}));
+  EXPECT_FALSE(ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"", "ARM", "5.9.0"}));
+
+  // Vendor + ranges
+  EXPECT_TRUE (ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"", "ARM", ">=5.7.0"}));
+  EXPECT_TRUE (ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"", "ARM", ">=5.8.0"}));
+  EXPECT_FALSE(ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"", "ARM", ">=5.9.0"}));
+
+  // Vendor + wildcard name
+  EXPECT_TRUE (ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"CM*", "ARM", ""}));
+
+  // Vendor + wildcard name + exact version
+  EXPECT_FALSE(ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"CM*", "ARM", "5.7.0"}));
+  EXPECT_TRUE (ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"CM*", "ARM", "5.8.0"}));
+  EXPECT_FALSE(ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"CM*", "ARM", "5.9.0"}));
+  EXPECT_FALSE(ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"CMSI.", "ARM", "5.8.0"}));
+  EXPECT_FALSE(ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"CMSIS", "AR.", "5.8.0"}));
+
+  // Vendor + wildcard name + ranges
+  EXPECT_TRUE (ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"CM*", "ARM", ">=5.7.0"}));
+  EXPECT_TRUE (ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"CM*", "ARM", ">=5.8.0"}));
+  EXPECT_FALSE(ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"CM*", "ARM", ">=5.9.0"}));
+
+  // Vendor + wrong wildcard name
+  EXPECT_FALSE(ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"Test*", "ARM", ""}));
+
+  // Vendor + wrong wildcard name + exact version
+  EXPECT_FALSE(ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"Test*", "ARM", "5.7.0"}));
+  EXPECT_FALSE(ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"Test*", "ARM", "5.8.0"}));
+  EXPECT_FALSE(ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"Test*", "ARM", "5.9.0"}));
+
+  // Vendor + wrong wildcard name + ranges
+  EXPECT_FALSE(ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"Test*", "ARM", ">=5.7.0"}));
+  EXPECT_FALSE(ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"Test*", "ARM", ">=5.8.0"}));
+  EXPECT_FALSE(ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"Test*", "ARM", ">=5.9.0"}));
+
+  // Vendor + name
+  EXPECT_TRUE (ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"CMSIS", "ARM", ""}));
+
+  // Vendor + name + exact version
+  EXPECT_FALSE(ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"CMSIS", "ARM", "5.7.0"}));
+  EXPECT_TRUE (ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"CMSIS", "ARM", "5.8.0"}));
+  EXPECT_FALSE(ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"CMSIS", "ARM", "5.9.0"}));
+
+  // Vendor + name + ranges
+  EXPECT_TRUE (ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"CMSIS", "ARM", ">=5.7.0"}));
+  EXPECT_TRUE (ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"CMSIS", "ARM", ">=5.8.0"}));
+  EXPECT_FALSE(ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"CMSIS", "ARM", ">=5.9.0"}));
+
+
+
+  // Wrong vendor
+  EXPECT_FALSE(ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"", "Test", ""}));
+
+  // Wrong vendor + wrong name
+  EXPECT_FALSE(ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"Test", "Test", ""}));
+
+  // Wrong vendor + exact version
+  EXPECT_FALSE(ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"", "Test", "5.7.0"}));
+  EXPECT_FALSE(ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"", "Test", "5.8.0"}));
+  EXPECT_FALSE(ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"", "Test", "5.9.0"}));
+
+  // Wrong vendor + ranges
+  EXPECT_FALSE(ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"", "Test", ">=5.7.0"}));
+  EXPECT_FALSE(ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"", "Test", ">=5.8.0"}));
+  EXPECT_FALSE(ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"", "Test", ">=5.9.0"}));
+
+  // Wrong vendor + wildcard name
+  EXPECT_FALSE(ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"CM*", "Test", ""}));
+
+  // Wrong vendor + wildcard name + exact version
+  EXPECT_FALSE(ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"CM*", "Test", "5.7.0"}));
+  EXPECT_FALSE(ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"CM*", "Test", "5.8.0"}));
+  EXPECT_FALSE(ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"CM*", "Test", "5.9.0"}));
+  EXPECT_FALSE(ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"CMSI.", "Test", "5.8.0"}));
+  EXPECT_FALSE(ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"CMSIS", "Tes.", "5.8.0"}));
+
+  // Wrong vendor + wildcard name + ranges
+  EXPECT_FALSE(ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"CM*", "Test", ">=5.7.0"}));
+  EXPECT_FALSE(ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"CM*", "Test", ">=5.8.0"}));
+  EXPECT_FALSE(ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"CM*", "Test", ">=5.9.0"}));
+
+  // Wrong vendor + wrong wildcard name
+  EXPECT_FALSE(ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"Test*", "Test", ""}));
+
+  // Wrong vendor + wrong wildcard name + exact version
+  EXPECT_FALSE(ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"Test*", "Test", "5.7.0"}));
+  EXPECT_FALSE(ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"Test*", "Test", "5.8.0"}));
+  EXPECT_FALSE(ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"Test*", "Test", "5.9.0"}));
+
+  // Wrong vendor + wrong wildcard name + ranges
+  EXPECT_FALSE(ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"Test*", "Test", ">=5.7.0"}));
+  EXPECT_FALSE(ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"Test*", "Test", ">=5.8.0"}));
+  EXPECT_FALSE(ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"Test*", "Test", ">=5.9.0"}));
+
+  // Wrong vendor + name
+  EXPECT_FALSE(ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"CMSIS", "Test", ""}));
+
+  // Wrong vendor + name + exact version
+  EXPECT_FALSE(ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"CMSIS", "Test", "5.7.0"}));
+  EXPECT_FALSE(ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"CMSIS", "Test", "5.8.0"}));
+  EXPECT_FALSE(ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"CMSIS", "Test", "5.9.0"}));
+
+  // Wrong vendor + name + ranges
+  EXPECT_FALSE(ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"CMSIS", "Test", ">=5.7.0"}));
+  EXPECT_FALSE(ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"CMSIS", "Test", ">=5.8.0"}));
+  EXPECT_FALSE(ProjMgrUtils::IsMatchingPackInfo({"CMSIS", "ARM", "5.8.0"}, {"CMSIS", "Test", ">=5.9.0"}));
+}
+
+TEST_F(ProjMgrUtilsUnitTests, ConvertToVersionRange) {
+  EXPECT_EQ("", ProjMgrUtils::ConvertToVersionRange(""));
+  EXPECT_EQ("1.2.3:1.2.3", ProjMgrUtils::ConvertToVersionRange("1.2.3"));
+  EXPECT_EQ("1.2.3", ProjMgrUtils::ConvertToVersionRange(">=1.2.3"));
+}

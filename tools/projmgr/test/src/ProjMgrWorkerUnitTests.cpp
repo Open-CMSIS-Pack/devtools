@@ -551,7 +551,7 @@ TEST_F(ProjMgrWorkerUnitTests, LoadPacksNoPackage) {
   ContextItem context;
   EXPECT_TRUE(LoadPacks(context));
   // by default latest packs available should be loaded
-  EXPECT_EQ(6, m_loadedPacks.size());
+  EXPECT_EQ(7, m_loadedPacks.size());
 }
 
 TEST_F(ProjMgrWorkerUnitTests, LoadFilteredPack_1) {
@@ -1589,3 +1589,63 @@ TEST_F(ProjMgrWorkerUnitTests, CheckDeviceAttributes) {
   EXPECT_TRUE(errStr.find("warning csolution: device 'TestDevice' does not support 'trustzone: secure'") != string::npos);
   EXPECT_TRUE(errStr.find("warning csolution: device 'TestDevice' does not support 'branch-protection: bti'") != string::npos);
 };
+
+TEST_F(ProjMgrWorkerUnitTests, FindMatchingPacksInCbuildPack) {
+  ResolvedPackItem match;
+
+  const ResolvedPackItem pack1 = {"ARM::CMSIS@5.8.0", {"ARM::CMSIS@5.8.0", "ARM::CMSIS", "ARM", "ARM::CMSIS@>=5.7.0"}};
+  const ResolvedPackItem pack2 = {"Test::PackTest@1.2.3", {"Test::PackTest@1.2.3"}};
+  const ResolvedPackItem pack3 = {"Test::PackTest@2.0.0", {"Test::PackTest"}};
+  const ResolvedPackItem pack4 = {"Test::Pack4@0.9.0", {"Test::Pack4"}};
+  const ResolvedPackItem pack5 = {"SomeVendor::Pack5@0.9.0", {"SomeVendor::Pack5@0.9.0"}};
+  const ResolvedPackItem pack6 = {"SomeVendor::Pack6@0.9.1", {"SomeVendor::Pack6@0.9.1"}};
+  const vector<ResolvedPackItem> resolvedPacks = {pack1, pack2, pack3, pack4, pack5, pack6};
+  vector<string> matches;
+
+  // Should not match anything if pack name is empty
+  matches = FindMatchingPackIdsInCbuildPack({}, resolvedPacks);
+  EXPECT_EQ(0, matches.size());
+
+  // Project local pack should never match anything
+  matches = FindMatchingPackIdsInCbuildPack({"ARM::CMSIS", "/path/to/pack"}, resolvedPacks);
+  EXPECT_EQ(0, matches.size());
+
+  // Should match one entry in "selected-by"
+  matches = FindMatchingPackIdsInCbuildPack({"ARM::CMSIS"}, resolvedPacks);
+  EXPECT_EQ(1, matches.size());
+  EXPECT_EQ(matches[0], pack1.pack);
+
+  // Should match one entry (wildcard)
+  matches = FindMatchingPackIdsInCbuildPack({"ARM::CM*"}, resolvedPacks);
+  EXPECT_EQ(1, matches.size());
+  EXPECT_EQ(matches[0], pack1.pack);
+
+  // Vendor matching should match all entries for that vendor
+  matches = FindMatchingPackIdsInCbuildPack({"Test"}, resolvedPacks);
+  EXPECT_EQ(3, matches.size());
+  EXPECT_EQ(matches[0], pack2.pack);
+  EXPECT_EQ(matches[1], pack3.pack);
+  EXPECT_EQ(matches[2], pack4.pack);
+
+  // Vendor matching with version range should match 2 entries for that vendor
+  matches = FindMatchingPackIdsInCbuildPack({"Test@>=1.0.0"}, resolvedPacks);
+  EXPECT_EQ(2, matches.size());
+  EXPECT_EQ(matches[0], pack2.pack);
+  EXPECT_EQ(matches[1], pack3.pack);
+
+  // No pack matches this needle
+  matches = FindMatchingPackIdsInCbuildPack({"Test@>=3.0.0"}, resolvedPacks);
+  EXPECT_EQ(0, matches.size());
+
+  // More than one match on wildcard that is not in selected-by-list
+  matches = FindMatchingPackIdsInCbuildPack({"SomeVendor"}, resolvedPacks);
+  EXPECT_EQ(2, matches.size());
+  EXPECT_EQ(matches[0], pack5.pack);
+  EXPECT_EQ(matches[1], pack6.pack);
+
+  // More than one match on wildcard that is not in selected-by-list
+  matches = FindMatchingPackIdsInCbuildPack({"SomeVendor::Pack*"}, resolvedPacks);
+  EXPECT_EQ(2, matches.size());
+  EXPECT_EQ(matches[0], pack5.pack);
+  EXPECT_EQ(matches[1], pack6.pack);
+}
