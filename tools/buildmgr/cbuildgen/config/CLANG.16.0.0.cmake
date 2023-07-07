@@ -276,6 +276,7 @@ set(CC_CPU "${CLANG_CPU}")
 set(CC_DEFINES ${ASM_DEFINES})
 set(CC_BYTE_ORDER ${ASM_BYTE_ORDER})
 set(CC_FLAGS "--target=${CLANG_ARCH}-none-eabi --sysroot=${TOOLCHAIN_ROOT}/../lib/clang-runtimes/arm-none-eabi/${CLANG_ARCH}${CLANG_ARCH_SUFFIX}")
+set(_PI "-include ")
 set(CC_OPTIONS_FLAGS)
 cbuild_set_options_flags(CC "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" "${LANGUAGE_CC}" CC_OPTIONS_FLAGS)
 
