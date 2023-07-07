@@ -182,23 +182,23 @@ protected:
   void ParseVector(const YAML::Node& parent, const std::string& key, std::vector<std::string>& value);
   void ParseVectorOfStringPairs(const YAML::Node& parent, const std::string& key, std::vector<std::pair<std::string, std::string>>& value);
   void ParseVectorOrString(const YAML::Node& parent, const std::string& key, std::vector<std::string>& value);
-  bool ParseBuildType(const YAML::Node& parent, BuildType& buildType);
-  void ParseOutput(const YAML::Node& parent, OutputItem& output);
-  void ParseOutputDirs(const YAML::Node& parent, struct DirectoriesItem& directories);
-  void ParseGenerators(const YAML::Node& parent, GeneratorsItem& generators);
+  bool ParseBuildType(const YAML::Node& parent, const std::string& file, BuildType& buildType);
+  void ParseOutput(const YAML::Node& parent, const std::string& file, OutputItem& output);
+  void ParseOutputDirs(const YAML::Node& parent, const std::string& file, struct DirectoriesItem& directories);
+  void ParseGenerators(const YAML::Node& parent, const std::string& file, GeneratorsItem& generators);
   void ParseConnections(const YAML::Node& parent, std::vector<ConnectItem>& connects);
-  bool ParseTargetType(const YAML::Node& parent, TargetType& targetType);
-  bool ParseBuildTypes(const YAML::Node& parent, std::map<std::string, BuildType>& buildTypes);
-  bool ParseTargetTypes(const YAML::Node& parent, std::map<std::string, TargetType>& targetTypes);
+  bool ParseTargetType(const YAML::Node& parent, const std::string& file, TargetType& targetType);
+  bool ParseBuildTypes(const YAML::Node& parent, const std::string& file, std::map<std::string, BuildType>& buildTypes);
+  bool ParseTargetTypes(const YAML::Node& parent, const std::string& file, std::map<std::string, TargetType>& targetTypes);
   bool ParseContexts(const YAML::Node& parent, CsolutionItem& contexts);
-  bool ParseComponents(const YAML::Node& parent, std::vector<ComponentItem>& components);
-  bool ParseFiles(const YAML::Node& parent, std::vector<FileNode>& files);
-  bool ParseGroups(const YAML::Node& parent, std::vector<GroupNode>& groups);
-  bool ParseLayers(const YAML::Node& parent, std::vector<LayerItem>& layers);
-  bool ParseSetups(const YAML::Node& parent, std::vector<SetupItem>& setups);
+  bool ParseComponents(const YAML::Node& parent, const std::string& file, std::vector<ComponentItem>& components);
+  bool ParseFiles(const YAML::Node& parent, const std::string& file, std::vector<FileNode>& files);
+  bool ParseGroups(const YAML::Node& parent, const std::string& file, std::vector<GroupNode>& groups);
+  bool ParseLayers(const YAML::Node& parent, const std::string& file, std::vector<LayerItem>& layers);
+  bool ParseSetups(const YAML::Node& parent, const std::string& file, std::vector<SetupItem>& setups);
   bool ParseTypeFilter(const YAML::Node& parent, TypeFilter& type);
   bool ParseTypePair(std::vector<std::string>& vec, std::vector<TypePair>& typeVec);
-  bool ParseLinker(const YAML::Node& parent, std::vector<LinkerItem>& linker);
+  bool ParseLinker(const YAML::Node& parent, const std::string& file, std::vector<LinkerItem>& linker);
   void ParseRte(const YAML::Node& parent, std::string& rteBaseDir);
   bool GetTypes(const std::string& type, std::string& buildType, std::string& targetType);
   bool ValidateCdefault(const std::string& input, const YAML::Node& root);
@@ -208,6 +208,9 @@ protected:
   bool ValidateKeys(const std::string& input, const YAML::Node& parent, const std::set<std::string>& keys);
   bool ValidateSequence(const std::string& input, const YAML::Node& parent, const std::string& seqKey);
   bool ValidateMapping(const std::string& input, const YAML::Node& parent, const std::string& seqKey);
+  void ParsePortablePath(const YAML::Node& parent, const std::string& file, const std::string& key, std::string& value, bool checkExist = true);
+  void ParsePortablePaths(const YAML::Node& parent, const std::string& file, const std::string& key, std::vector<std::string>& value);
+  void CheckPortability(const std::string& file, const YAML::Mark& mark, const std::string& key, const std::string& value, bool checkExist);
 
 };
 

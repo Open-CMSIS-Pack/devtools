@@ -1,0 +1,16 @@
+project:
+
+  linker:
+    - script: ../linker_Script.ld
+    
+  layers:
+    - layer: ../laYer.clayer.yml
+
+  output:
+    base-name: ../Artifact.elf
+
+  generators:
+    base-dir: ../../PortAbility
+    options:
+      - generator: GeneratorID
+        path: ../../PortAbility

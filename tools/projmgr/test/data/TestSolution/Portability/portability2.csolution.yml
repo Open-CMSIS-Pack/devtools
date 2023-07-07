@@ -1,0 +1,10 @@
+solution:
+  compiler: AC6
+  
+  target-types:
+    - type: RteTest_ARMCM3
+      device: RteTest_ARMCM3
+
+  projects:
+    - project: ./Case/caSe.cproject.yml
+    - project: .\bs\bs.cproject.yml

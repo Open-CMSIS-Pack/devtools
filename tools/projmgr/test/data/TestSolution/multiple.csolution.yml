@@ -9,6 +9,6 @@ solution:
     - type: Debug
       compiler: AC6
   projects:
-    - project: project1.cproject.yml
-    - project: subfolder/project2.cproject.yml
-    - project: project3.cproject.yml
+    - project: TestProject4/test.cproject.yml
+    - project: TestProject1/test1.cproject.yml
+    - project: TestProject4/test_board_and_device.cproject.yml

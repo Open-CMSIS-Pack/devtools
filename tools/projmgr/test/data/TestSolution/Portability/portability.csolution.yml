@@ -1,0 +1,20 @@
+solution:
+  compiler: AC6
+  
+  target-types:
+    - type: RteTest_ARMCM3
+      device: RteTest_ARMCM3
+
+  projects:
+    - project: case/case.cproject.yml
+    - project: bs/bs.cproject.yml
+
+  add-path:
+    - ../PortAbility
+    - ..\Portability
+    - /absolute/path/unix
+    - C:/absolute/path/win
+
+  output-dirs:
+    intdir: ../PortAbility
+    outdir: ..\Portability
