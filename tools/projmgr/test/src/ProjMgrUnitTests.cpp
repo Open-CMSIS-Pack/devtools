@@ -3576,7 +3576,7 @@ TEST_F(ProjMgrUnitTests, CheckPortability) {
     expectedVec.insert(expectedVec.end(), expectedAbsPathUnix.begin(), expectedAbsPathUnix.end());
   }
   argv[2] = (char*)csolution.c_str();
-  EXPECT_EQ(host == "linux" ? 1 : 0, RunProjMgr(6, argv, 0));
+  EXPECT_EQ(host != "win" ? 1 : 0, RunProjMgr(6, argv, 0));
   argv[2] = (char*)csolution2.c_str();
   EXPECT_EQ(host == "linux" ? 1 : 0, RunProjMgr(6, argv, 0));
 
