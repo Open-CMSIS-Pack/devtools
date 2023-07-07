@@ -545,7 +545,11 @@ set(AS_GNU_BYTE_ORDER "${AS_BYTE_ORDER}")
 
 # C Pre-Processor
 
-set(CPP_FLAGS "-E --target=arm-arm-none-eabi ${ARMCLANG_CPU} -xc")
+if(SECURE STREQUAL "Secure")
+  set(CC_SECURE "-mcmse")
+endif()
+
+set(CPP_FLAGS "-E --target=arm-arm-none-eabi ${ARMCLANG_CPU} -xc ${CC_SECURE}")
 set(CPP_DEFINES ${LD_SCRIPT_PP_DEFINES})
 cbuild_set_defines(CC CPP_DEFINES)
 if(DEFINED LD_REGIONS AND NOT LD_REGIONS STREQUAL "")
@@ -564,10 +568,6 @@ set(_PI "-include ")
 set(_ISYS "-isystem ")
 set(CC_OPTIONS_FLAGS)
 cbuild_set_options_flags(CC "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" "${LANGUAGE_CC}" CC_OPTIONS_FLAGS)
-
-if(SECURE STREQUAL "Secure")
-  set(CC_SECURE "-mcmse")
-endif()
 
 if(BRANCHPROT STREQUAL "NO_BRANCHPROT")
   set(CC_BRANCHPROT "-mbranch-protection=none")

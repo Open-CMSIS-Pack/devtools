@@ -281,12 +281,19 @@ cbuild_set_options_flags(ASM "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" "" ASM_OPTIO
 
 # C Pre-Processor
 
+if((SECURE STREQUAL "Secure") AND 
+        (TZ STREQUAL "NO_TZ") AND 
+              ${SUPPORTS_TZ}     )
+  set(CC_SECURE "--cmse")
+endif()
+
+set(CPP_FLAGS "--cpu=${IAR_CPU} --fpu=${IAR_FPU} ${CC_SECURE}")
 set(CPP_DEFINES ${LD_SCRIPT_PP_DEFINES})
 cbuild_set_defines(CC CPP_DEFINES)
 if(DEFINED LD_REGIONS AND NOT LD_REGIONS STREQUAL "")
   set(CPP_INCLUDES "--preinclude \"${LD_REGIONS}\"")
 endif()
-set(CPP_ARGS_LD_SCRIPT "${CPP_DEFINES} \"${LD_SCRIPT}\" ${CPP_INCLUDES} --preprocess=ns \"${LD_SCRIPT_PP}\"")
+set(CPP_ARGS_LD_SCRIPT "${CPP_FLAGS} ${CPP_DEFINES} \"${LD_SCRIPT}\" ${CPP_INCLUDES} --preprocess=ns \"${LD_SCRIPT_PP}\"")
 separate_arguments(CPP_ARGS_LD_SCRIPT NATIVE_COMMAND ${CPP_ARGS_LD_SCRIPT})
 
 # C Compiler
@@ -299,12 +306,6 @@ cbuild_set_defines(CC CC_DEFINES)
 set(CC_OPTIONS_FLAGS)
 cbuild_set_options_flags(CC "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" "${LANGUAGE_CC}" CC_OPTIONS_FLAGS)
 set(_PI "--preinclude ")
-
-if((SECURE STREQUAL "Secure") AND 
-        (TZ STREQUAL "NO_TZ") AND 
-              ${SUPPORTS_TZ}     )
-  set(CC_SECURE "--cmse")
-endif()
 
 # C++ Compiler
 
