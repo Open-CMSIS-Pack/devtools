@@ -1765,6 +1765,7 @@ bool ProjMgrWorker::ProcessCompilerPrecedence(StringCollection& item, bool accep
       if (!ProjMgrUtils::AreCompilersCompatible(*item.assign, *element)) {
         if (acceptRedefinition) {
           ProjMgrLogger::Warn("redefinition from '" + *item.assign + "' into '" + *element + "'");
+          *item.assign = *element;
         } else {
           ProjMgrLogger::Error("redefinition from '" + *item.assign + "' into '" + *element + "' is not allowed");
           return false;
