@@ -3063,6 +3063,9 @@ TEST_F(ProjMgrUnitTests, ToolchainRedefinition) {
   const string expectedWarn =\
     "warning csolution: redefinition from 'AC6' into 'GCC'\n";
   EXPECT_EQ(warn, expectedWarn);
+
+  const YAML::Node& cbuild = YAML::LoadFile(testoutput_folder + "/toolchain.Warning+RteTest_ARMCM3.cbuild.yml");
+  EXPECT_EQ(cbuild["build"]["compiler"].as<string>(), "GCC");
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_LinkerOptions) {
