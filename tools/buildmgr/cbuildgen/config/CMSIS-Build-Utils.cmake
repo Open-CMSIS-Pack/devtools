@@ -29,9 +29,11 @@ endfunction()
 # Get system includes
 # Replace TOOLCHAIN_ROOT and TOOLCHAIN_VERSION variables
 function(cbuild_get_system_includes input output)
+  string(REGEX MATCH "^[0-9]+" TOOLCHAIN_MAJOR_VERSION ${TOOLCHAIN_VERSION})
   foreach(ENTRY ${${input}})
     string(REGEX REPLACE "\\\${TOOLCHAIN_ROOT}" ${TOOLCHAIN_ROOT} ENTRY ${ENTRY})
     string(REGEX REPLACE "\\\${TOOLCHAIN_VERSION}" ${TOOLCHAIN_VERSION} ENTRY ${ENTRY})
+    string(REGEX REPLACE "\\\${TOOLCHAIN_MAJOR_VERSION}" ${TOOLCHAIN_MAJOR_VERSION} ENTRY ${ENTRY})
     cmake_path(NORMAL_PATH ENTRY OUTPUT_VARIABLE NORMAL_ENTRY)
     string(APPEND ${output} "${_ISYS}\"${NORMAL_ENTRY}\" ")
   endforeach()

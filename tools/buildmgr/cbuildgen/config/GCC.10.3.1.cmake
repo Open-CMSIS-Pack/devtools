@@ -291,10 +291,6 @@ set (CC_SYS_INC_PATHS_LIST
   "$\{TOOLCHAIN_ROOT}/../lib/gcc/arm-none-eabi/\${TOOLCHAIN_VERSION}/include-fixed"
   "$\{TOOLCHAIN_ROOT}/../arm-none-eabi/include"
 )
-function(cbuild_get_c_system_includes includes)
-  cbuild_get_system_includes(CC_SYS_INC_PATHS_LIST ${includes})
-  set(${includes} ${${includes}} PARENT_SCOPE)
-endfunction()
 
 # C++ Compiler
 
@@ -313,10 +309,6 @@ set (CXX_SYS_INC_PATHS_LIST
   "$\{TOOLCHAIN_ROOT}/../arm-none-eabi/include/c++/\${TOOLCHAIN_VERSION}/backward"
   "${CC_SYS_INC_PATHS_LIST}"
 )
-function(cbuild_get_cxx_system_includes includes)
-  cbuild_get_system_includes(CXX_SYS_INC_PATHS_LIST ${includes})
-  set(${includes} ${${includes}} PARENT_SCOPE)
-endfunction()
 
 # Linker
 
