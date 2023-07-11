@@ -431,6 +431,25 @@ cmake --build . --target buildmgr-docs
 The documentation is generated into the CMake binary directory of the enclosing
 component.
 
+## Visual Studio Code Dev Containers
+
+Using Visual Studio Code in combination with Docker one can use Dev Containers to build,
+run and debug, instead of using a local toolchain installation,
+see <https://code.visualstudio.com/docs/devcontainers/containers>.
+
+Reference devcontainers are defined in `.devcontainer` folder. To use them from within
+Code click the *remote window* button on the lower left, choose *Open folder in container*,
+and select one of the configurations from the list.
+
+On the first use the Docker image is built from the configurations `Dockerfile`. Once the
+image is cached, a new container is launched and the Code window is connected to it. The
+workspace is mounted into the container so that one can work with the files right way.
+
+It is also possible to spawn multiple instances of code connected to different dev containers
+in parallel. All containers share the same workspace with the host. This way, one can run
+the build using one configuration and run/debug the binaries with another system
+configuration.
+
 ## License
 
 Open-CMSIS-Pack is licensed under Apache 2.0.
