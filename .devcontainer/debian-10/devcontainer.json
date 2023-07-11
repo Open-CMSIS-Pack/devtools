@@ -1,0 +1,13 @@
+{
+    "name": "Debian-10",
+    "build": { "dockerfile": "Dockerfile" },
+  
+    "customizations": {
+      "vscode": {
+        "extensions": [
+			    "ms-vscode.cpptools",
+			    "ms-vscode.cpptools-extension-pack"
+        ]
+      }
+    }
+  }
