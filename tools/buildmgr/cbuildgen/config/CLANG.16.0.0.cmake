@@ -261,7 +261,7 @@ if(SECURE STREQUAL "Secure")
   set(CC_SECURE "-mcmse")
 endif()
 
-set(CPP_FLAGS "-E -P ${CLANG_CPU} -xc ${CC_SECURE}")
+set(CPP_FLAGS "-E -P --target=${CLANG_ARCH}-none-eabi ${CLANG_CPU} -xc ${CC_SECURE}")
 set(CPP_DEFINES ${LD_SCRIPT_PP_DEFINES})
 cbuild_set_defines(CC CPP_DEFINES)
 if(DEFINED LD_REGIONS AND NOT LD_REGIONS STREQUAL "")
@@ -277,6 +277,7 @@ set(CC_DEFINES ${ASM_DEFINES})
 set(CC_BYTE_ORDER ${ASM_BYTE_ORDER})
 set(CC_FLAGS "--target=${CLANG_ARCH}-none-eabi --sysroot=${TOOLCHAIN_ROOT}/../lib/clang-runtimes/arm-none-eabi/${CLANG_ARCH}${CLANG_ARCH_SUFFIX}")
 set(_PI "-include ")
+set(_ISYS "-isystem ")
 set(CC_OPTIONS_FLAGS)
 cbuild_set_options_flags(CC "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" "${LANGUAGE_CC}" CC_OPTIONS_FLAGS)
 
@@ -288,6 +289,10 @@ elseif(BRANCHPROT STREQUAL "BTI_SIGNRET")
   set(CC_BRANCHPROT "-mbranch-protection=bti+pac-ret")
 endif()
 
+set (CC_SYS_INC_PATHS_LIST
+  "$\{TOOLCHAIN_ROOT}/../lib/clang/\${TOOLCHAIN_MAJOR_VERSION}/include"
+)
+
 # C++ Compiler
 
 set(CXX_CPU "${CC_CPU}")
@@ -298,6 +303,10 @@ set(CXX_BRANCHPROT "${CC_BRANCHPROT}")
 set(CXX_FLAGS "${CC_FLAGS}")
 set(CXX_OPTIONS_FLAGS)
 cbuild_set_options_flags(CXX "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" "${LANGUAGE_CXX}" CXX_OPTIONS_FLAGS)
+
+set (CXX_SYS_INC_PATHS_LIST
+  "${CC_SYS_INC_PATHS_LIST}"
+)
 
 # Linker
 
