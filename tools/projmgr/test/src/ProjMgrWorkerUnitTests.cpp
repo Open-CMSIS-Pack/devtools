@@ -498,6 +498,30 @@ TEST_F(ProjMgrWorkerUnitTests, LoadDuplicatePacks) {
   EXPECT_EQ("ARM.RteTest_DFP.0.2.0", (*m_loadedPacks.begin())->GetPackageID());
 }
 
+TEST_F(ProjMgrWorkerUnitTests, LoadDuplicatePacksFromDifferentPaths) {
+  std::list<std::string> pdscFiles = { // Important that these 2 files contain the *same* vendor/name/version!
+    testcmsispack_folder + "/ARM/RteTest_DFP/0.2.0/ARM.RteTest_DFP.pdsc",
+    testinput_folder + "/SolutionSpecificPack/ARM.RteTest_DFP.pdsc"
+  };
+
+  m_kernel = ProjMgrKernel::Get();
+  ASSERT_TRUE(m_kernel);
+  m_model = m_kernel->GetGlobalModel();
+  ASSERT_TRUE(m_kernel);
+
+  EXPECT_TRUE(m_kernel->LoadAndInsertPacks(m_loadedPacks, pdscFiles));
+
+  // Check if only one pack is loaded
+  ASSERT_EQ(1, m_loadedPacks.size());
+  EXPECT_EQ("ARM.RteTest_DFP.0.2.0", (*m_loadedPacks.begin())->GetPackageID());
+
+  // Check that warning is issued
+  EXPECT_FALSE(m_model->Validate());
+  const auto& errors = m_model->GetErrors();
+  EXPECT_EQ(errors.size(), 1);
+  EXPECT_NE(string::npos, errors.front().find("warning #500:"));
+}
+
 TEST_F(ProjMgrWorkerUnitTests, LoadRequiredPacks) {
   CsolutionItem csolution;
   SetCsolutionPacks(&csolution, { "ARM::RteTest_DFP@0.2.0"}, "Test");

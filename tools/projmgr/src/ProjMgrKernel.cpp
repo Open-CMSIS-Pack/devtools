@@ -127,6 +127,11 @@ bool ProjMgrKernel::LoadAndInsertPacks(std::list<RtePackage*>& packs, std::list<
   }
 
   globalModel->InsertPacks(newPacks);
-  packs.insert(packs.end(), newPacks.begin(), newPacks.end());
+
+  // Track only packs that were actually inserted into the model
+  packs.clear();
+  for (const auto& [_, pack] : globalModel->GetPackages()) {
+    packs.push_back(pack);
+  }
   return true;
 }
