@@ -3500,7 +3500,7 @@ TEST_F(ProjMgrUnitTests, FileLanguageAndScope) {
     testinput_folder + "/TestSolution/LanguageAndScope/ref/lang-scope.Debug_AC6+RteTest_ARMCM3.cbuild.yml");
 }
 
-TEST_F(ProjMgrUnitTests, CheckPortability) {
+TEST_F(ProjMgrUnitTests, EnsurePortability) {
   const string host = CrossPlatformUtils::GetHostType();
   const string cproject1 = testinput_folder + "/TestSolution/Portability/case/case.cproject.yml";
   const string cproject2 = testinput_folder + "/TestSolution/Portability/CASE/CASE.cproject.yml";
