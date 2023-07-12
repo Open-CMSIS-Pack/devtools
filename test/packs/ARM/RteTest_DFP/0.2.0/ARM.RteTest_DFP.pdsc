@@ -281,6 +281,15 @@
       <accept condition="BoardTest2"/>
       <accept condition="BoardTest3"/>
     </condition>
+    
+    <condition id="Test_Components_exist">
+      <description>Test if components specified by expressions can be found</description>
+      <accept Cclass="RteTest" Cgroup="GlobalFile"/>
+      <accept Cclass="RteTest" Cgroup="LocalFile"/>
+      <require Cclass="RteTest" Cgroup="Dependency" Csub="Variant" Cvariant="Compatible"/>
+      <deny Cclass="RteTest" Cgroup="Dependency" Csub="Incompatible_component"/>
+    </condition>
+    
   </conditions>
 
   <apis>
@@ -353,7 +362,7 @@
     </component>
 
     <!-- Component variants -->
-    <component Cclass="Device" Cgroup="Test variant" Cvariant="" Cversion="1.1.1" condition="ARMCM0 RteTest">
+    <component Cclass="Device" Cgroup="Test variant" Cversion="1.1.1" condition="ARMCM0 RteTest">
       <description>Test variant without variant name</description>
       <files>
         <file category="header"  name="Device/ARM/ARMCM0/Include/ARMCM0.h"/>
@@ -367,21 +376,21 @@
       </files>
     </component>
 
-    <component Cclass="Device" Cgroup="Test variant" Csub="Sub" Cvariant="" Cversion="1.1.1" condition="ARMCM0 RteTest">
+    <component Cclass="Device" Cgroup="Test variant" Csub="Sub" Cversion="1.1.1" condition="ARMCM0 RteTest">
       <description>Test variant with Csub</description>
       <files>
         <file category="header"  name="Device/ARM/ARMCM0/Include/ARMCM0.h"/>
       </files>
     </component>
 
-    <component Cclass="Device" Cgroup="Test variant 2" Cvariant="" Cversion="2.2.2" condition="ARMCM0 RteTest">
+    <component Cclass="Device" Cgroup="Test variant 2" Cversion="2.2.2" condition="ARMCM0 RteTest">
       <description>Test variant 2 without variant name, version 2.2.2</description>
       <files>
         <file category="header"  name="Device/ARM/ARMCM0/Include/ARMCM0.h"/>
       </files>
     </component>
 
-    <component Cclass="Device" Cgroup="Test variant 2" Cvariant="" Cversion="3.3.3" condition="ARMCM0 RteTest">
+    <component Cclass="Device" Cgroup="Test variant 2" Cversion="3.3.3" condition="ARMCM0 RteTest">
       <description>Test variant 2 without variant name, version 3.3.3</description>
       <files>
         <file category="header"  name="Device/ARM/ARMCM0/Include/ARMCM0.h"/>

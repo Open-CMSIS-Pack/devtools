@@ -791,5 +791,76 @@ TEST_F(PackChkIntegTests, CheckSchemaValidation) {
 }
 
 
+TEST_F(PackChkIntegTests, CheckConditionComponentDependency_Neg) {
+  const char* argv[5];
+
+  const string& pdscFile = PackChkIntegTestEnv::globaltestdata_dir +
+    "/packs/ARM/RteTest_DFP/0.2.0/ARM.RteTest_DFP.pdsc";
+  const string& refFile = PackChkIntegTestEnv::globaltestdata_dir +
+    "/packs/ARM/RteTest/0.1.0/ARM.RteTest.pdsc";
+  ASSERT_TRUE(RteFsUtils::Exists(pdscFile));
+  ASSERT_TRUE(RteFsUtils::Exists(refFile));
+
+  argv[0] = (char*)"";
+  argv[1] = (char*)pdscFile.c_str();
+  argv[2] = (char*)"-x";
+  argv[3] = (char*)"!M317";
+  argv[4] = (char*)"--disable-validation";
+
+  PackChk packChk;
+  EXPECT_EQ(0, packChk.Check(5, argv, nullptr));
+
+  auto errMsgs = ErrLog::Get()->GetLogMessages();
+  int M317_foundCnt = 0;
+  for (const string& msg : errMsgs) {
+    size_t s;
+    if ((s = msg.find("M317", 0)) != string::npos) {
+      M317_foundCnt++;
+    }
+  }
+
+  if(M317_foundCnt != 4) {
+    FAIL() << "error: warning M317 count != 4";
+  }
+}
+
+TEST_F(PackChkIntegTests, CheckConditionComponentDependency_Pos) {
+  const char* argv[7];
+
+  const string& pdscFile = PackChkIntegTestEnv::globaltestdata_dir +
+    "/packs/ARM/RteTest_DFP/0.2.0/ARM.RteTest_DFP.pdsc";
+  const string& refFile = PackChkIntegTestEnv::globaltestdata_dir +
+    "/packs/ARM/RteTest/0.1.0/ARM.RteTest.pdsc";
+  ASSERT_TRUE(RteFsUtils::Exists(pdscFile));
+  ASSERT_TRUE(RteFsUtils::Exists(refFile));
+
+  argv[0] = (char*)"";
+  argv[1] = (char*)pdscFile.c_str();
+  argv[2] = (char*)"-i";
+  argv[3] = (char*)refFile.c_str();
+  argv[4] = (char*)"-x";
+  argv[5] = (char*)"!M317";
+  argv[6] = (char*)"--disable-validation";
+
+  PackChk packChk;
+  EXPECT_EQ(0, packChk.Check(7, argv, nullptr));
+
+  auto errMsgs = ErrLog::Get()->GetLogMessages();
+  int M317_foundCnt = 0;
+  for (const string& msg : errMsgs) {
+    size_t s;
+    if ((s = msg.find("M317", 0)) != string::npos) {
+      M317_foundCnt++;
+    }
+  }
+
+  if(M317_foundCnt) {
+    FAIL() << "error: warning M317 found";
+  }
+}
+
+
+
+
 
 
