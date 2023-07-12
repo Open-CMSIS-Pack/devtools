@@ -60,13 +60,7 @@ bool RteFsUtils::MoveExistingFile(const string& existing, const string& newFile)
   }
 
   // Set destination file permissions
-  fs::permissions(newFile, fs::perms::all, ec);
-  if (ec) {
-    return false;
-  }
-
-  // File was moved
-  return true;
+  return SetFileReadOnly(newFile, false);
 }
 
 bool RteFsUtils::CopyCheckFile(const string& src, const string& dst, bool backup) {
@@ -91,13 +85,7 @@ bool RteFsUtils::CopyCheckFile(const string& src, const string& dst, bool backup
   }
 
   // Set destination file permissions
-  fs::permissions(dst, fs::perms::all, ec);
-  if (ec) {
-    return false;
-  }
-
-  // File was copied
-  return true;
+  return SetFileReadOnly(dst, false);
 }
 
 bool RteFsUtils::ReadFile(const string& fileName, string& buffer) {
@@ -464,11 +452,11 @@ bool RteFsUtils::DeleteTree(const string& path) {
   if (!fs::is_directory(path, ec)) {
     return false;
   }
-
+  SetFileReadOnly(path, false);
   // Remove files
   for (auto& p : fs::recursive_directory_iterator(path, ec)) {
     if (fs::is_regular_file(p, ec)) {
-      fs::permissions(p, fs::perms::all, ec);
+      SetFileReadOnly(p.path().generic_string(), false);
       fs::remove(p, ec);
       if (ec) {
         return false;
@@ -490,7 +478,7 @@ bool RteFsUtils::RemoveFile(const string& file) {
   // Remove file
   error_code ec;
   if (fs::exists(file, ec) && fs::is_regular_file(file, ec)) {
-    fs::permissions(file, fs::perms::all, ec);
+    SetFileReadOnly(file, false);
     fs::remove(file, ec);
     if (ec) {
       return false;
@@ -504,7 +492,7 @@ bool RteFsUtils::RemoveDir(const string& dir) {
   if (fs::exists(dir, ec)) {
     // Remove files
     for (auto& p : fs::recursive_directory_iterator(dir, ec)) {
-      fs::permissions(p, fs::perms::all, ec);
+      SetFileReadOnly(p.path().generic_string(), false);
       if (fs::is_regular_file(p, ec)) {
         fs::remove(p, ec);
       }
@@ -513,7 +501,7 @@ bool RteFsUtils::RemoveDir(const string& dir) {
       }
     }
     // Remove empty directories
-    fs::permissions(dir, fs::perms::all, ec);
+    SetFileReadOnly(dir, false);
     fs::remove_all(dir, ec);
     if (ec) {
       return false;

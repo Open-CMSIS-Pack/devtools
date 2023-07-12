@@ -828,7 +828,7 @@ TEST_F(RteFsUtilsTest, MakePathCanonical) {
   const string filenameCanonical = fs::current_path(ec).append(filenameRegular).generic_string();
   const string dirnameCanonical = fs::current_path(ec).append(dirnameSubdir).generic_string();
 
-  // create file and with parent directories for relialability of the tests
+  // create file and with parent directories for reliability of the tests
   RteFsUtils::CreateFile(filenameRegular, "foo");
 
   // Test filename with regular separators, file exists
