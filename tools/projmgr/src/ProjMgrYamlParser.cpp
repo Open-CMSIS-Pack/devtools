@@ -224,13 +224,16 @@ bool ProjMgrYamlParser::ParseClayer(const string& input,
   return true;
 }
 
-void ProjMgrYamlParser::CheckPortability(const string& file, const YAML::Mark& mark, const string& key, const string& value, bool checkExist) {
+// EnsurePortability checks the presence of backslash, case inconsistency and absolute path
+// It clears the string 'value' when it is an absolute path
+void ProjMgrYamlParser::EnsurePortability(const string& file, const YAML::Mark& mark, const string& key, string& value, bool checkExist) {
   if (value.find('\\') != string::npos) {
     ProjMgrLogger::Warn(file, mark.line + 1, mark.column + 1, "'" + value + "' contains non-portable backslash, use forward slash instead");
   }
   if (!value.empty()) {
     if (fs::path(value).is_absolute()) {
       ProjMgrLogger::Warn(file, mark.line + 1, mark.column + 1, "absolute path '" + value + "' is not portable, use relative path instead");
+      value.clear();
     } else {
       const string parentDir = RteFsUtils::ParentPath(file);
       const string original = fs::path(parentDir).append(value).lexically_normal().generic_string();
@@ -250,15 +253,15 @@ void ProjMgrYamlParser::CheckPortability(const string& file, const YAML::Mark& m
 void ProjMgrYamlParser::ParsePortablePath(const YAML::Node& parent, const string& file, const string& key, string& value, bool checkExist) {
   ParseString(parent, key, value);
   YAML::Mark mark = parent[key].IsDefined() ? parent[key].Mark() : YAML::Mark();
-  CheckPortability(file, mark, key, value, checkExist);
+  EnsurePortability(file, mark, key, value, checkExist);
 }
 
 void ProjMgrYamlParser::ParsePortablePaths(const YAML::Node& parent, const string& file, const string& key, vector<string>& value) {
   ParseVector(parent, key, value);
   auto node = parent[key].begin();
-  for (const auto& item : value) {
+  for (auto& item : value) {
     YAML::Mark mark = (*node++).Mark();
-    CheckPortability(file, mark, key, item, true);
+    EnsurePortability(file, mark, key, item, true);
   }
 }
 
