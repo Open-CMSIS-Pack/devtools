@@ -20,7 +20,9 @@ DefinedConditionsVisitor::DefinedConditionsVisitor(CheckConditions* conditions) 
 {
   static const map<string, string> EMPTY_MAP;
   m_filteredModel = new RteModel();
-  m_target = new RteTarget(nullptr, m_filteredModel, "CondTest", EMPTY_MAP);
+  m_target = new RteTarget(&conditions->GetModel(), m_filteredModel, "CondTest", EMPTY_MAP);
+  m_target->SetTargetSupported(true);
+  m_target->UpdateFilterModel();
 };
 
 /**
@@ -53,6 +55,18 @@ VISIT_RESULT DefinedConditionsVisitor::Visit(RteItem* item)
     }
 
     m_Conditions->AddDefinedCondition(cond);
+
+    return VISIT_RESULT::CONTINUE_VISIT;
+  }
+
+
+  RteConditionExpression* expr = dynamic_cast<RteConditionExpression*>(item);
+  if(expr && expr->IsDependencyExpression()) {
+    set<RteComponentAggregate*> components;
+    m_target->GetComponentAggregates(*expr, components);
+    if (components.empty()) {
+      LogMsg("M317", NAME(expr->GetParent()->GetID()), NAME2(expr->GetID()), expr->GetLineNumber());
+    }
   }
 
   return VISIT_RESULT::CONTINUE_VISIT;

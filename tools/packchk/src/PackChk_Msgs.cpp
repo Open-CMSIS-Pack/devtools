@@ -130,7 +130,7 @@ const MsgTable PackChk::msgTable = {
   { "M314", { MsgLevel::LEVEL_WARNING,  CRLF_B, "Filename '%NAME%' contains whitespaces, this is not recommended" } },
   { "M315", { MsgLevel::LEVEL_ERROR,    CRLF_B, "Invalid URL / Paths to Drives are not allowed in Package URL: '%URL%'" } },
   { "M316", { MsgLevel::LEVEL_WARNING,  CRLF_B, "URL must end with slash '/': '%URL%'" } },
-  { "M317", { MsgLevel::LEVEL_ERROR,    CRLF_B, "" } },
+  { "M317", { MsgLevel::LEVEL_WARNING,  CRLF_B, "Condition '%NAME%': No component found for '%NAME2%'" } },
   { "M318", { MsgLevel::LEVEL_ERROR,    CRLF_B, "" } },
   { "M319", { MsgLevel::LEVEL_ERROR,    CRLF_B, "" } },
   { "M320", { MsgLevel::LEVEL_ERROR,    CRLF_B, "" } },
