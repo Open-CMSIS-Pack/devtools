@@ -3,7 +3,7 @@ project(RteUtils VERSION 1.0.0)
 add_subdirectory("test")
 
 SET(SOURCE_FILES AlnumCmp.cpp DeviceVendor.cpp RteUtils.cpp VersionCmp.cpp WildCards.cpp)
-SET(HEADER_FILES AlnumCmp.h DeviceVendor.h RteUtils.h VersionCmp.h WildCards.h)
+SET(HEADER_FILES AlnumCmp.h DeviceVendor.h RteConstants.h RteUtils.h VersionCmp.h WildCards.h)
 
 list(TRANSFORM SOURCE_FILES PREPEND src/)
 list(TRANSFORM HEADER_FILES PREPEND include/)

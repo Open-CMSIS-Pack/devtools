@@ -235,7 +235,7 @@ void ProjMgrGenerator::GenerateCprjComponents(XMLTreeElement* element, const Con
       }
 
       // Check whether non-locked option is not set or component version is required from user
-      if (!nonLocked || !RteUtils::GetSuffix(component.item->component, *ProjMgrUtils::PREFIX_CVERSION, true).empty()) {
+      if (!nonLocked || !RteUtils::GetSuffix(component.item->component, RteConstants::PREFIX_CVERSION_CHAR, true).empty()) {
 
         // Set Cversion attribute
         SetAttribute(componentElement, versionAttribute, component.instance->GetAttribute(versionAttribute));

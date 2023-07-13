@@ -1325,9 +1325,9 @@ RteComponent* ProjMgrWorker::ProcessComponent(ContextItem& context, ComponentIte
   string componentDescriptor = item.component;
 
   set<string> filterSet;
-  if (componentDescriptor.find_first_of(ProjMgrUtils::COMPONENT_DELIMITERS) != string::npos) {
+  if (componentDescriptor.find_first_of(RteConstants::COMPONENT_DELIMITERS) != string::npos) {
     // Consider a full or partial component identifier was given
-    filterSet.insert(RteUtils::GetPrefix(componentDescriptor, *(ProjMgrUtils::PREFIX_CVERSION)));
+    filterSet.insert(RteUtils::GetPrefix(componentDescriptor, RteConstants::PREFIX_CVERSION_CHAR));
   } else {
     // Consider free text was given
     filterSet = SplitArgs(componentDescriptor);
@@ -1348,7 +1348,7 @@ RteComponent* ProjMgrWorker::ProcessComponent(ContextItem& context, ComponentIte
   if (filteredComponents.size() > 1) {
     RteComponentMap fullMatchedComponents;
     for (const auto& component : filteredComponents) {
-      if (FullMatch(SplitArgs(component.first, ProjMgrUtils::COMPONENT_DELIMITERS), SplitArgs(componentDescriptor, ProjMgrUtils::COMPONENT_DELIMITERS))) {
+      if (FullMatch(SplitArgs(component.first, RteConstants::COMPONENT_DELIMITERS), SplitArgs(componentDescriptor, RteConstants::COMPONENT_DELIMITERS))) {
         fullMatchedComponents.insert(component);
       }
     }
@@ -1358,7 +1358,7 @@ RteComponent* ProjMgrWorker::ProcessComponent(ContextItem& context, ComponentIte
   }
 
   // Multiple matches, check exact partial identifier
-  string requiredComponentId = RteUtils::RemovePrefixByString(item.component, ProjMgrUtils::SUFFIX_CVENDOR);
+  string requiredComponentId = RteUtils::RemovePrefixByString(item.component, RteConstants::SUFFIX_CVENDOR);
   if (filteredComponents.size() > 1) {
     RteComponentMap matchedComponents;
     for (const auto& [id, component] : filteredComponents) {
@@ -1389,9 +1389,9 @@ RteComponent* ProjMgrWorker::ProcessComponent(ContextItem& context, ComponentIte
   set<string> availableComponentVersions;
   for_each(filteredComponents.begin(), filteredComponents.end(),
     [&](const pair<std::string, RteComponent*>& component) {
-      availableComponentVersions.insert(RteUtils::GetSuffix(component.first, *ProjMgrUtils::PREFIX_CVERSION));
+      availableComponentVersions.insert(RteUtils::GetSuffix(component.first, RteConstants::PREFIX_CVERSION_CHAR));
     });
-  const string filterVersion = RteUtils::GetSuffix(item.component, *ProjMgrUtils::PREFIX_CVERSION, true);
+  const string filterVersion = RteUtils::GetSuffix(item.component, RteConstants::PREFIX_CVERSION_CHAR, true);
   const string matchedVersion = VersionCmp::GetMatchingVersion(filterVersion, availableComponentVersions);
   if (matchedVersion.empty()) {
     return nullptr;
