@@ -19,27 +19,19 @@
 
 using namespace std;
 
-ProjMgrUtils::ProjMgrUtils(void) {
-  // Reserved
-}
-
-ProjMgrUtils::~ProjMgrUtils(void) {
-  // Reserved
-}
-
 string ProjMgrUtils::GetComponentID(const RteItem* component) {
   if (!component) {
     return RteUtils::EMPTY_STRING;
   }
-  const auto& vendor = component->GetVendorString().empty() ? "" : component->GetVendorString() + SUFFIX_CVENDOR;
+  const auto& vendor = component->GetVendorString().empty() ? "" : component->GetVendorString() + RteConstants::SUFFIX_CVENDOR;
   const vector<pair<const char*, const string&>> elements = {
     {"",              vendor},
     {"",              component->GetCclassName()},
-    {PREFIX_CBUNDLE,  component->GetCbundleName()},
-    {PREFIX_CGROUP,   component->GetCgroupName()},
-    {PREFIX_CSUB,     component->GetCsubName()},
-    {PREFIX_CVARIANT, component->GetCvariantName()},
-    {PREFIX_CVERSION, component->GetVersionString()},
+    {RteConstants::PREFIX_CBUNDLE,  component->GetCbundleName()},
+    {RteConstants::PREFIX_CGROUP,   component->GetCgroupName()},
+    {RteConstants::PREFIX_CSUB,     component->GetCsubName()},
+    {RteConstants::PREFIX_CVARIANT, component->GetCvariantName()},
+    {RteConstants::PREFIX_CVERSION, component->GetVersionString()},
   };
   return ConstructID(elements);
 }
@@ -55,13 +47,13 @@ string ProjMgrUtils::GetComponentAggregateID(const RteItem* component) {
   if (!component) {
     return RteUtils::EMPTY_STRING;
   }
-  const auto& vendor = component->GetVendorString().empty() ? "" : component->GetVendorString() + SUFFIX_CVENDOR;
+  const auto& vendor = component->GetVendorString().empty() ? "" : component->GetVendorString() + RteConstants::SUFFIX_CVENDOR;
   const vector<pair<const char*, const string&>> elements = {
     {"",              vendor},
     {"",              component->GetCclassName()},
-    {PREFIX_CBUNDLE,  component->GetCbundleName()},
-    {PREFIX_CGROUP,   component->GetCgroupName()},
-    {PREFIX_CSUB,     component->GetCsubName()},
+    {RteConstants::PREFIX_CBUNDLE,  component->GetCbundleName()},
+    {RteConstants::PREFIX_CGROUP,   component->GetCgroupName()},
+    {RteConstants::PREFIX_CSUB,     component->GetCsubName()},
   };
   return ConstructID(elements);
 }
@@ -72,10 +64,10 @@ string ProjMgrUtils::GetPartialComponentID(const RteItem* component) {
   }
   const vector<pair<const char*, const string&>> elements = {
     {"",              component->GetCclassName()},
-    {PREFIX_CBUNDLE,  component->GetCbundleName()},
-    {PREFIX_CGROUP,   component->GetCgroupName()},
-    {PREFIX_CSUB,     component->GetCsubName()},
-    {PREFIX_CVARIANT, component->GetCvariantName()},
+    {RteConstants::PREFIX_CBUNDLE,  component->GetCbundleName()},
+    {RteConstants::PREFIX_CGROUP,   component->GetCgroupName()},
+    {RteConstants::PREFIX_CSUB,     component->GetCsubName()},
+    {RteConstants::PREFIX_CVARIANT, component->GetCvariantName()},
   };
   return ConstructID(elements);
 }
@@ -85,28 +77,28 @@ std::map<std::string, std::string> ProjMgrUtils::ComponentAttributesFromId(const
   XmlItem attributes;
   string id = componentId;
   if (componentId.find("::") != string::npos) {
-    string vendor = RteUtils::RemoveSuffixByString(id, SUFFIX_CVENDOR);
+    string vendor = RteUtils::RemoveSuffixByString(id, RteConstants::SUFFIX_CVENDOR);
     attributes.AddAttribute("Cvendor", vendor);
-    id = RteUtils::RemovePrefixByString(componentId, SUFFIX_CVENDOR);
+    id = RteUtils::RemovePrefixByString(componentId, RteConstants::SUFFIX_CVENDOR);
   }
-  attributes.AddAttribute("Cversion", RteUtils::GetSuffix(id, PREFIX_CVERSION_CHAR));
-  id = RteUtils::GetPrefix(id, PREFIX_CVERSION_CHAR);
+  attributes.AddAttribute("Cversion", RteUtils::GetSuffix(id, RteConstants::PREFIX_CVERSION_CHAR));
+  id = RteUtils::GetPrefix(id, RteConstants::PREFIX_CVERSION_CHAR);
   list<string> segments;
   RteUtils::SplitString(segments, id, ':');
   size_t index = 0;
   for (auto s : segments) {
     switch (index) {
       case 0: // Cclass[&Cbundle]
-        attributes.AddAttribute("Cclass", RteUtils::GetPrefix(s, PREFIX_CBUNDLE_CHAR));
-        attributes.AddAttribute("Cbundle", RteUtils::GetSuffix(s, PREFIX_CBUNDLE_CHAR), false);
+        attributes.AddAttribute("Cclass", RteUtils::GetPrefix(s, RteConstants::PREFIX_CBUNDLE_CHAR));
+        attributes.AddAttribute("Cbundle", RteUtils::GetSuffix(s, RteConstants::PREFIX_CBUNDLE_CHAR), false);
         break;
       case 1: // Cgroup[&Cvariant]
-        attributes.AddAttribute("Cgroup", RteUtils::GetPrefix(s, PREFIX_CVARIANT_CHAR));
-        attributes.AddAttribute("Cvariant", RteUtils::GetSuffix(s, PREFIX_CVARIANT_CHAR), false);
+        attributes.AddAttribute("Cgroup", RteUtils::GetPrefix(s, RteConstants::PREFIX_CVARIANT_CHAR));
+        attributes.AddAttribute("Cvariant", RteUtils::GetSuffix(s, RteConstants::PREFIX_CVARIANT_CHAR), false);
         break;
       case 2: // Csub
-        attributes.AddAttribute("Csub", RteUtils::GetPrefix(s, PREFIX_CVARIANT_CHAR));
-        attributes.AddAttribute("Cvariant", RteUtils::GetSuffix(s, PREFIX_CVARIANT_CHAR), false);
+        attributes.AddAttribute("Csub", RteUtils::GetPrefix(s, RteConstants::PREFIX_CVARIANT_CHAR));
+        attributes.AddAttribute("Cvariant", RteUtils::GetSuffix(s, RteConstants::PREFIX_CVARIANT_CHAR), false);
         break;
       default:
       break;
@@ -122,21 +114,21 @@ string ProjMgrUtils::GetPackageID(const RteItem* pack) {
   if (!pack) {
     return RteUtils::EMPTY_STRING;
   }
-  const auto& vendor = pack->GetVendorString().empty() ? "" : pack->GetVendorString() + SUFFIX_PACK_VENDOR;
+  const auto& vendor = pack->GetVendorString().empty() ? "" : pack->GetVendorString() + RteConstants::SUFFIX_PACK_VENDOR;
   const vector<pair<const char*, const string&>> elements = {
     {"",                  vendor},
     {"",                  pack->GetName()},
-    {PREFIX_PACK_VERSION, pack->GetVersionString()},
+    {RteConstants::PREFIX_PACK_VERSION, pack->GetVersionString()},
   };
   return ConstructID(elements);
 }
 
 string ProjMgrUtils::GetPackageID(const string& packVendor, const string& packName, const string& packVersion) {
-  const auto& vendor = packVendor + SUFFIX_PACK_VENDOR;
+  const auto& vendor = packVendor + RteConstants::SUFFIX_PACK_VENDOR;
   const vector<pair<const char*, const string&>> elements = {
     {"",                  vendor},
     {"",                  packName},
-    {PREFIX_PACK_VERSION, packVersion},
+    {RteConstants::PREFIX_PACK_VERSION, packVersion},
   };
   return ConstructID(elements);
 }

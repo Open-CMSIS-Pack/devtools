@@ -10,6 +10,8 @@
 #include "ProjMgrKernel.h"
 #include "ProjMgrParser.h"
 
+#include "RteConstants.h"
+
  /**
  * @brief vector of ConnectItem pointers
  */
@@ -106,28 +108,19 @@ typedef std::map<std::string, int> IntMap;
 typedef std::map<std::string, std::string> StrMap;
 
 /**
- * @brief projmgr utils class
+ * @brief project manager utility class
 */
 class ProjMgrUtils {
+
+protected:
+  /**
+   * @brief protected class constructor to avoid instantiation
+  */
+  ProjMgrUtils() {};
+
 public:
 
   typedef std::pair<std::string, int> Result;
-
-  /**
-   * @brief component and pack delimiters
-  */
-  static constexpr const char* COMPONENT_DELIMITERS = ":&@";
-  static constexpr const char* SUFFIX_CVENDOR = "::";
-  static constexpr const char* PREFIX_CBUNDLE = "&";
-  static constexpr const char  PREFIX_CBUNDLE_CHAR = '&';
-  static constexpr const char* PREFIX_CGROUP = ":";
-  static constexpr const char* PREFIX_CSUB = ":";
-  static constexpr const char* PREFIX_CVARIANT = "&";
-  static constexpr const char  PREFIX_CVARIANT_CHAR = '&';
-  static constexpr const char* PREFIX_CVERSION = "@";
-  static constexpr const char  PREFIX_CVERSION_CHAR = '@';
-  static constexpr const char* SUFFIX_PACK_VENDOR = "::";
-  static constexpr const char* PREFIX_PACK_VERSION = "@";
 
   /**
    * @brief output types
@@ -175,16 +168,6 @@ public:
   static constexpr const char* AC6_LIB_SUFFIX = ".lib";
   static constexpr const char* GCC_LIB_SUFFIX = ".a";
   static constexpr const char* IAR_LIB_SUFFIX = ".a";
-
-  /**
-   * @brief class constructor
-  */
-  ProjMgrUtils(void);
-
-  /**
-   * @brief class destructor
-  */
-  ~ProjMgrUtils(void);
 
   /**
    * @brief get fully specified component identifier
@@ -295,7 +278,7 @@ public:
 
   /**
    * @brief get compiler root
-   * @param compilerRoot reference 
+   * @param compilerRoot reference
   */
   static void GetCompilerRoot(std::string& compilerRoot);
 
