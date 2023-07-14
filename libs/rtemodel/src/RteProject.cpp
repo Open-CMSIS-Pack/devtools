@@ -2266,7 +2266,7 @@ void RteProject::CreateXmlTreeElementContent(XMLTreeElement* parentElement) cons
   e->SetTag("components");
   for (itc = m_components.begin(); itc != m_components.end(); itc++) {
     RteComponentInstance* ci = itc->second;
-    if (ci && !ci->IsApi() && !ci->IsGenerated())
+    if (ci && ci->IsSelectable() && !ci->IsApi())
       ci->CreateXmlTreeElement(e);
   }
   e = new XMLTreeElement(parentElement);

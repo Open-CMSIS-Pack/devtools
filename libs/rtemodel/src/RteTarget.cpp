@@ -1197,13 +1197,18 @@ void RteTarget::AddFilteredComponent(RteComponent* c)
       if (inserted->HasAttribute("generator") || c->HasAttribute("generator") || c->GetGpdscFile(this) == inserted->GetGpdscFile(this)) {
         string packPath = inserted->GetPackage()->GetAbsolutePackagePath();
         if (packPath != GetProject()->GetProjectPath()) // default gpdsc cannot be un-selected
-          inserted->SetAttribute("selectable", "1"); // sets selecatble attribute to allow un-selection of a generated bootsrtrap component
+          inserted->SetAttribute("selectable", "1"); // sets selectable attribute to allow un-selection of a generated bootstrap component
           // for boot-strap components add doc file and description
         if (inserted->GetDescription().empty()) {
           inserted->SetText(c->GetDescription());
         } if (inserted->GetDocFile().empty()) {
           inserted->AddAttribute("doc", c->GetDocFile(), false);
         }
+        // add pack info
+        inserted->RemoveChild("package", true);
+        RteItem* packInfo = new RteItem("package", inserted);
+        packInfo->SetAttributes(pack->GetAttributes());
+        inserted->AddChild(packInfo); // add bootstrap pack info as a child.
       }
       return; // generated component always has priority
     }

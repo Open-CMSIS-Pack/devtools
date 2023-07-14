@@ -1295,7 +1295,15 @@ void RteComponentInstance::Init(RteComponent* c)
   RemoveAttribute("isDefaultVariant");
   m_ID = c->GetID();
 
-  // get package info
+  // use the original pack of bootstrap component if available
+  if (c->HasAttribute("selectable") ) {
+    RteItem* packInfo = c->GetFirstChild("package");
+    if (packInfo) {
+      m_packageAttributes.SetAttributes(packInfo->GetAttributes());
+    }
+    return;
+  }
+  // get package info from the component itself
   RtePackage* package = c->GetPackage();
   if (package) {
     m_packageAttributes.SetAttributes(package->GetAttributes());
