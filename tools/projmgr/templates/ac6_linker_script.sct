@@ -20,9 +20,9 @@
   Stack seal size definition
  *----------------------------------------------------------------------------*/
 #if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
-#define __STACKSEAL_SIZE   ( 8 )
+#define __STACKSEAL_SIZE 8
 #else
-#define __STACKSEAL_SIZE   ( 0 )
+#define __STACKSEAL_SIZE 0
 #endif
 
 /*----------------------------------------------------------------------------
@@ -31,26 +31,23 @@
 
 LR_ROM0 __ROM0_BASE __ROM0_SIZE  {
 
-#if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
-  ER_CMSE_VENEER __ROM0_BASE+__ROM0_SIZE -__ROM0_SIZE {
-   *(Veneer$$CMSE)
+  ER_ROM0 __ROM0_BASE __ROM0_SIZE {
+    *.o (RESET, +First)
+    *(InRoot$$Sections)
+    *(+RO +XO)
   }
-  #define ER_CMSE_VENEER_SIZE AlignExpr(ImageLength(ER_CMSE_VENEER), 8)
-#else
-  #define ER_CMSE_VENEER_SIZE 0
+
+#if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
+  ER_CMSE_VENEER AlignExpr(+0, 32) (__ROM0_SIZE - AlignExpr(ImageLength(ER_ROM0), 32)) {
+    *(Veneer$$CMSE)
+  }
 #endif
 
-  ER_ROM0 __ROM0_BASE (__ROM0_SIZE - ER_CMSE_VENEER_SIZE) {
-   *.o (RESET, +First)
-   *(InRoot$$Sections)
-   *(+RO +XO)
-  }
-
-  RW_NOINIT __RAM0_BASE UNINIT (__RAM0_SIZE - __HEAP_SIZE - __STACK_SIZE) {
+  RW_NOINIT __RAM0_BASE UNINIT (__RAM0_SIZE - __HEAP_SIZE - __STACK_SIZE - __STACKSEAL_SIZE) {
     *(.bss.noinit)
   }
 
-  RW_RAM0 AlignExpr(+0, 8) (__RAM0_SIZE - __HEAP_SIZE - __STACK_SIZE - AlignExpr(ImageLength(RW_NOINIT), 8)) {
+  RW_RAM0 AlignExpr(+0, 8) (__RAM0_SIZE - __HEAP_SIZE - __STACK_SIZE - __STACKSEAL_SIZE - AlignExpr(ImageLength(RW_NOINIT), 8)) {
     *(+RW +ZI)
   }
 
@@ -63,7 +60,7 @@ LR_ROM0 __ROM0_BASE __ROM0_SIZE  {
   }
 
 #if __STACKSEAL_SIZE > 0
-  STACKSEAL +0 EMPTY 8 {             ; Reserve empty region for stack seal immediately after stack
+  STACKSEAL +0 EMPTY __STACKSEAL_SIZE {             ; Reserve empty region for stack seal immediately after stack
   }
 #endif
 

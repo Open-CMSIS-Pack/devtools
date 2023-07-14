@@ -136,6 +136,14 @@ SECTIONS
 
 	} >ROM0 AT>ROM0 :text
 
+#if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
+	.veneers :
+	{
+		. = ALIGN(32);
+		KEEP(*(.gnu.sgstubs))
+	} > ROM0 AT>ROM0 :text
+#endif
+
 	.toc : {
 		*(.toc .toc.*)
 	} >ROM0 AT>ROM0 :text
@@ -277,7 +285,7 @@ SECTIONS
 	} >RAM0 :ram
 
 #if __STACKSEAL_SIZE > 0
-	PROVIDE(__stack_seal = __stack)
+	PROVIDE(__stack_seal = __stack);
   	.stackseal (__stack) (NOLOAD) :
   	{
     	. += __STACKSEAL_SIZE;
