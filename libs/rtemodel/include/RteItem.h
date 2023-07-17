@@ -338,26 +338,32 @@ public:
    * @brief get item's ID created by ConstructID() called from Construct()
    * @return item ID string
   */
-  virtual const std::string& GetID() const { return m_ID; }
+   virtual const std::string& GetID() const;
 
   /**
-   * @brief get unique ID of parent or this RteComponent
-   * @param withVersion flag to include version information into ID
+   * @brief get unique component ID: "Vendor::Class&Bundle:Group:Sub&Variant@1.2.3(condition)[pack]"
    * @return component unique ID
   */
-  virtual std::string GetComponentUniqueID(bool withVersion) const;
+  virtual std::string GetComponentUniqueID() const;
 
-  /**
- * @brief determine component ID
- * @param withVersion true if version is considered as part of component ID
- * @return full component ID
-*/
+ /**
+  * @brief get full component ID: "Vendor::Class&Bundle:Group:Sub&Variant@1.2.3"
+  * @param withVersion true to append version as "@1.2.3"
+  * @return full component ID
+ */
   virtual std::string GetComponentID(bool withVersion) const;
 
   /**
- * @brief get component aggregate ID for this item
- * @return component aggregate ID if this item is an RteComponent or has RteComponent parent
-*/
+   * @brief construct partial component ID: "Class&Bundle:Group:Sub&Variant"
+   * @param bWithBundle flag to include bundle in the ID
+   * @return partial component ID
+  */
+  virtual std::string GetPartialComponentID(bool bWithBundle) const;
+
+  /**
+   * @brief get component aggregate ID: "Vendor::Class&Bundle:Group:Sub"
+   * @return component aggregate ID
+  */
   virtual std::string GetComponentAggregateID() const;
 
   /**
@@ -366,6 +372,12 @@ public:
    * @return API ID
   */
   virtual std::string GetApiID(bool withVersion) const;
+
+  /**
+   * @brief get ID of a condition expression for dependency search: tag + component ID
+   * @return dependency expression ID
+  */
+  virtual std::string GetDependencyExpressionID() const;
 
   /**
    * @brief get item's name to display to user
@@ -410,18 +422,20 @@ public:
  * @param delimiter character between attributes "Cclass" "Cgroup" and "Csub"
  * @return component ID
 */
-  std::string ConcatenateCclassCgroupCsub(char delimiter = '.') const;
+  std::string ConcatenateCclassCgroupCsub(char delimiter = ':') const;
 
   /**
- * @brief construct component ID
- * @param prefix component ID prefix (empty for API, Cvendor[.Cbundle] for components)
- * @param bVariant true if value of attribute "Cvariant" should be included
- * @param bVersion true if value of attribute related to version should be included
- * @param bCondition true if condition ID should be included
- * @param delimiter character between attributes "Cclass" "Cgroup" and "Csub"
- * @return component ID
-*/
-  std::string ConstructComponentID(const std::string& prefix, bool bVariant, bool bVersion, bool bCondition, char delimiter = '.') const;
+   * @brief sets attributes to this by parsing supplied component ID
+   * @param componentId component ID string
+  */
+  void SetAttributesFomComponentId(const std::string& componentId);
+
+  /**
+   * @brief construct component ID
+   * @param bVersion true if value of attribute related to version should be included
+   * @return component ID
+  */
+  std::string ConstructComponentID( bool bVersion) const;
 
   /**
    * @brief construct component display name
@@ -432,12 +446,6 @@ public:
    * @return
   */
   virtual std::string ConstructComponentDisplayName(bool bClass = false, bool bVariant = false, bool bVersion = false, char delimiter = ':') const;
-
-  /**
- * @brief only if not an API, determine value of vendor and bundle attribute (if any, separated by a blank)
- * @return value of vendor and bundle attribute
-*/
-  virtual std::string GetVendorAndBundle() const;
 
   /**
    * @brief determine value of component attribute "Cclass" with "::" as prefix included

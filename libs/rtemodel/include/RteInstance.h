@@ -935,13 +935,7 @@ public:
   */
   virtual std::string GetFullDisplayName() const;
 
-  /**
-   * @brief get component aggregate name to display
-   * @return string in the format Cvendor.Cbundle::Cclass:Cgroup[:Csub]
-  */
-  virtual std::string GetAggregateDisplayName() const;
-
-  /**
+ /**
    * @brief get component name to display
    * @return string in the format Cvendor.Cbundle::Cclass:Cgroup[:Csub]
   */
@@ -963,13 +957,6 @@ public:
    * @return constructed ID string
   */
    std::string ConstructID() override;
-
-  /**
-   * @brief construct component ID (including pack) or API ID (without pack)
-   * @param withVersion flag to get component ID with version, for API always evaluates to false
-   * @return component unique ID string in the format Cvendor.Cbundle::Cclass:Cgroup:Csub(conditionID):Cvariant:Cversion[FullPackID]
-  */
-   std::string GetComponentUniqueID(bool withVersion) const override;
 
   /**
    * @brief check if this component instance has the same aggregate ID as supplied one
@@ -1568,10 +1555,9 @@ public:
 
   /**
    * @brief get full component ID including originating pack
-   * @param withVersion flag to include component version to ID
    * @return full  component ID
   */
-   std::string GetComponentUniqueID(bool withVersion) const override;
+   std::string GetComponentUniqueID() const override;
 
   /**
    * @brief get component aggregate ID

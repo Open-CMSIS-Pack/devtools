@@ -121,8 +121,9 @@ string RteFile::GetHeaderComment() const
 {
   string comment;
   RteComponent* c = GetComponent();
-  if (c)
-    comment = c->GetFullDisplayName();
+  if (c) {
+    comment = c->GetPartialComponentID(false);
+  }
   return comment;
 }
 

@@ -25,6 +25,8 @@ TEST(RteConditionValidateTest, Validate)
   EXPECT_FALSE(componentExpression.Validate());
   componentExpression.AddAttribute("Cgroup", "MyGroup");
   EXPECT_TRUE(componentExpression.Validate());
+  EXPECT_EQ("accept MyClass:MyGroup", componentExpression.ConstructID());
+
   componentExpression.AddAttribute("c", "contId");
   EXPECT_FALSE(componentExpression.Validate());
   componentExpression.RemoveAttribute("Cclass");
@@ -34,6 +36,8 @@ TEST(RteConditionValidateTest, Validate)
   deviceExpression.AddAttribute("Dname", "MyDevice");
   deviceExpression.AddAttribute("Dcore", "MyCore");
   EXPECT_TRUE(deviceExpression.Validate());
+  EXPECT_EQ("deny Dcore=MyCore Dname=MyDevice", deviceExpression.ConstructID());
+
   deviceExpression.AddAttribute("Bname", "MyBoard");
   EXPECT_FALSE(deviceExpression.Validate());
   deviceExpression.RemoveAttribute("Bname");

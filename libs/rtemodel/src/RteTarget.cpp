@@ -832,7 +832,7 @@ void RteTarget::AddFile(RteFile* f, RteComponentInstance* ci)
     } else {
       pathName = f->GetOriginalAbsolutePath();
     }
-    AddFile(pathName, cat, c->GetAggregateDisplayName(), c, f);
+    AddFile(pathName, cat, f->GetHeaderComment(), c, f);
     if (cat == RteFile::Category::LIBRARY)
       f->GetAbsoluteSourcePaths(m_librarySourcePaths);
   }
@@ -1563,7 +1563,7 @@ string RteTarget::GetCMSISCoreIncludePath() const
 RteComponent* RteTarget::ResolveComponent(RteComponentInstance* ci) const
 {
   if (ci->IsApi())
-    return m_filteredModel->GetApi(ci->GetComponentUniqueID(true));
+    return m_filteredModel->GetApi(ci->GetComponentUniqueID());
 
   VersionCmp::MatchMode mode = ci->GetVersionMatchMode(GetName());
   RteComponent* c = NULL;
@@ -1598,7 +1598,7 @@ RteComponent* RteTarget::GetPotentialComponent(RteComponentInstance* ci) const
     return NULL; // required pack is not available => no need to resolve it
 
   if (ci->IsApi())
-    return GetModel()->GetApi(ci->GetComponentUniqueID(true));
+    return GetModel()->GetApi(ci->GetComponentUniqueID());
 
   VersionCmp::MatchMode mode = ci->GetVersionMatchMode(GetName());
   RteComponent* c = NULL;

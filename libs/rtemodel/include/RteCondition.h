@@ -58,6 +58,14 @@ public:
    * @param parent pointer to RteCondition parent
   */
   RteConditionExpression(RteCondition* parent);
+
+  /**
+   * @brief constructor
+   * @param tag expression tag
+   * @param parent pointer to RteCondition parent
+  */
+  RteConditionExpression(const std::string& tag, RteCondition* parent = nullptr);
+
   /**
    * @brief virtual destructor
   */
@@ -190,6 +198,11 @@ protected:
 
 protected:
   char m_domain; // expression domain
+
+public:
+  static const std::string ACCEPT_TAG;
+  static const std::string DENY_TAG;
+  static const std::string REQUIRE_TAG;
 };
 
 /**
@@ -202,7 +215,7 @@ public:
     * @brief constructor
     * @param parent pointer to RteCondition parent
   */
-  RteAcceptExpression(RteCondition* parent) :RteConditionExpression(parent) {};
+  RteAcceptExpression(RteCondition* parent) :RteConditionExpression(ACCEPT_TAG, parent) {};
 
 public:
   /**
@@ -222,7 +235,7 @@ public:
     * @brief constructor
     * @param parent pointer to RteCondition parent
   */
-  RteRequireExpression(RteCondition* parent) :RteConditionExpression(parent) {};
+  RteRequireExpression(RteCondition* parent) :RteConditionExpression(REQUIRE_TAG, parent) {};
 
 public:
   /**
@@ -242,7 +255,7 @@ public:
     * @brief constructor
     * @param parent pointer to RteCondition parent
   */
-  RteDenyExpression(RteCondition* parent) :RteConditionExpression(parent) {};
+  RteDenyExpression(RteCondition* parent) :RteConditionExpression(DENY_TAG, parent) {};
 
 public:
   /**

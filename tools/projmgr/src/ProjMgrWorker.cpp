@@ -1226,7 +1226,7 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
   const RteComponentMap& installedComponents = context.rteActiveTarget->GetFilteredComponents();
   RteComponentMap componentMap;
   for (auto& component : installedComponents) {
-    const string& componentId = ProjMgrUtils::GetComponentID(component.second);
+    const string& componentId = component.second->GetComponentID(true);
     componentMap[componentId] = component.second;
   }
 
@@ -1243,7 +1243,7 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
 
     UpdateMisc(item.build.misc, context.toolchain.name);
 
-    const auto& componentId = ProjMgrUtils::GetComponentID(matchedComponent);
+    const auto& componentId = matchedComponent->GetComponentID(true);
     // Init matched component instance
     RteComponentInstance* matchedComponentInstance = new RteComponentInstance(matchedComponent);
     matchedComponentInstance->InitInstance(matchedComponent);
@@ -1303,7 +1303,7 @@ RteComponent* ProjMgrWorker::ProcessComponent(ContextItem& context, ComponentIte
     RteComponentInstance ci(nullptr);
     ci.SetTag("component");
 
-    ci.SetAttributes(ProjMgrUtils::ComponentAttributesFromId(item.component));
+    ci.SetAttributesFomComponentId(item.component);
     ci.AddAttribute("condition", item.condition);
     auto ti = ci.EnsureTargetInfo(context.rteActiveTarget->GetName());
     ti->SetVersionMatchMode(VersionCmp::MatchMode::ENFORCED_VERSION);
@@ -1363,7 +1363,7 @@ RteComponent* ProjMgrWorker::ProcessComponent(ContextItem& context, ComponentIte
     RteComponentMap matchedComponents;
     for (const auto& [id, component] : filteredComponents) {
       // Get component id without vendor and version
-      const string& componentId = ProjMgrUtils::GetPartialComponentID(component);
+      const string& componentId = component->GetPartialComponentID(true);
       if (requiredComponentId.compare(componentId) == 0) {
         matchedComponents[id] = component;
       }
@@ -1414,7 +1414,7 @@ bool ProjMgrWorker::AddRequiredComponents(ContextItem& context) {
   if (!unresolvedComponents.empty()) {
     string msg = "unresolved components:";
     for (const auto& component : unresolvedComponents) {
-      msg += "\n" + ProjMgrUtils::GetComponentID(component);
+      msg += "\n" + component->GetComponentID(true);
     }
     ProjMgrLogger::Error(msg);
     return false;
@@ -1484,7 +1484,7 @@ bool ProjMgrWorker::ProcessConfigFiles(ContextItem& context) {
     map<string, RteFileInstance*> configFiles;
     context.rteActiveProject->GetFileInstances(ci, context.rteActiveTarget->GetName(), configFiles);
     if (!configFiles.empty()) {
-      const string& componentID = ProjMgrUtils::GetComponentID(ci);
+      const string& componentID = ci->GetComponentID(true);
       for (auto fi : configFiles) {
         context.configFiles[componentID].insert(fi);
       }
@@ -1557,7 +1557,7 @@ bool ProjMgrWorker::ProcessComponentFiles(ContextItem& context) {
           const auto& language = componentFile->GetAttribute("language");
           const auto& scope = componentFile->GetAttribute("scope");
           const auto& version = attr == "config" ? componentFile->GetVersionString() : "";
-          context.componentFiles[ProjMgrUtils::GetComponentID(component)].push_back({ file, attr, category, language, scope, version });
+          context.componentFiles[component->GetComponentID(true)].push_back({ file, attr, category, language, scope, version });
         }
       }
     }
@@ -1649,7 +1649,7 @@ bool ProjMgrWorker::ProcessComponentFiles(ContextItem& context) {
         if (file == preIncludeLocal) {
           const string& filename = context.rteActiveProject->GetProjectPath() +
             context.rteActiveProject->GetRteHeader(file, context.rteActiveTarget->GetName(), "");
-          const string& componentID = ProjMgrUtils::GetComponentID(component);
+          const string& componentID = component->GetComponentID(true);
           context.componentFiles[componentID].push_back({ filename, "", "preIncludeLocal", "", "", ""});
           break;
         }
@@ -1679,17 +1679,17 @@ bool ProjMgrWorker::ValidateContext(ContextItem& context) {
 
   for (const auto& [component, result] : results) {
     RteItem::ConditionResult validationResult = result.GetResult();
-    const auto& componentID = ProjMgrUtils::GetComponentID(component);
-    const auto& conditions = result.GetResults();
+    const auto& componentID = component->GetComponentID(true);
+    const auto& depResults = result.GetResults();
     const auto& aggregates = result.GetComponentAggregates();
 
     set<string> aggregatesSet;
     for (const auto& aggregate : aggregates) {
-      aggregatesSet.insert(ProjMgrUtils::GetComponentAggregateID(aggregate));
+      aggregatesSet.insert(aggregate->GetComponentAggregateID());
     }
     set<string> expressionsSet;
-    for (const auto& [condition, _] : conditions) {
-      expressionsSet.insert(ProjMgrUtils::GetConditionID(condition));
+    for (const auto& [item, _] : depResults) {
+      expressionsSet.insert(item->GetDependencyExpressionID());
     }
     context.validationResults.push_back({ validationResult, componentID, expressionsSet, aggregatesSet });
   }
@@ -1729,7 +1729,7 @@ bool ProjMgrWorker::ProcessGpdsc(ContextItem& context) {
         components = gpdscComponent->GetChildren();
       }
       for (const auto component : components) {
-        const auto& componentId = ProjMgrUtils::GetComponentID(component);
+        const auto& componentId = component->GetComponentID(true);
         const auto& item = context.components[context.gpdscs.at(gpdscFile).component].item;
         RteComponentInstance* componentInstance = new RteComponentInstance(component);
         componentInstance->InitInstance(component);
@@ -2832,7 +2832,7 @@ bool ProjMgrWorker::ListComponents(vector<string>& components, const string& fil
       return false;
     }
     for (auto& component : installedComponents) {
-      const string& componentId = ProjMgrUtils::GetComponentID(component.second);
+      const string& componentId = component.second->GetComponentID(true);
       componentIds.insert(componentId);
       componentMap[componentId] = component.second;
     }

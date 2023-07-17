@@ -16,9 +16,9 @@
  */
 #define CMSIS_device_header "ARMCM3.h"
 
-/* ARM::RteTest:ComponentLevel:0.0.1 */
+/* ARM::RteTest:ComponentLevel@0.0.1 */
 #define COMPONENT_LEVEL 1
-/* ARM::RteTest:GlobalLevel:0.0.2 */
+/* ARM::RteTest:GlobalLevel@0.0.2 */
 #define GLOBAL_LEVEL 1
 
 #define GLOBAL_TEST_LEVEL 1

@@ -114,6 +114,13 @@ public:
   static std::string NameFromPackageId(const std::string &packageId);
 
   /**
+   * @brief construct an ID string from a vector of key-value pairs
+   * @param elements vector with key-value pairs
+   * @return constructed ID
+  */
+  static std::string ConstructID(const std::vector<std::pair<const char*, const std::string&>>& elements);
+
+  /**
    * @brief remove trailing backslash(s)
    * @param s string to be manipulated
    * @return string without trailing backslash(s)
@@ -245,7 +252,6 @@ public:
   */
   static std::string AppendFileUpdateVersion(const std::string& fileName, const std::string& version);
 
-
   /**
    * @brief extract first file segments
    * @param fileName fully qualified file name
@@ -346,7 +352,6 @@ public:
    * @return trimmed string without whitespace characters
   */
   static std::string Trim(const std::string& s);
-
 
   /**
    * @brief fill a buffer with blanks

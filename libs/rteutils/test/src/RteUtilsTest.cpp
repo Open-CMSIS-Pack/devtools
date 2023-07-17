@@ -380,4 +380,19 @@ TEST(RteUtils, EnsureLf)
   EXPECT_EQ(replaced, expected);
 }
 
+TEST(RteUtils, ReplaceAll)
+{
+  const string singleAmp("a&b&c");
+  const string doubleAmp("a&&b&&c");
+
+  string replaced = doubleAmp;
+  string expected = singleAmp;
+  RteUtils::ReplaceAll(replaced, "&&", "&");
+  EXPECT_EQ(replaced, expected);
+
+  replaced = singleAmp;
+  expected = doubleAmp;
+  RteUtils::ReplaceAll(replaced, "&", "&&");
+  EXPECT_EQ(replaced, expected);
+}
 // end of RteUtilsTest.cpp

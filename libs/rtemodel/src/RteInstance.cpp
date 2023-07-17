@@ -795,14 +795,9 @@ RteComponentInstance* RteFileInstance::GetComponentInstance(const string& target
 }
 
 
-string RteFileInstance::GetComponentUniqueID(bool withVersion) const
+string RteFileInstance::GetComponentUniqueID() const
 {
-  string id = m_componentAttributes.GetComponentUniqueID(withVersion);
-  // append pack common ID
-  id += "[";
-  id += GetPackageID(false);
-  id += "]";
-  return id;
+  return m_componentAttributes.GetComponentUniqueID();
 }
 
 string RteFileInstance::GetComponentID(bool withVersion) const
@@ -853,14 +848,8 @@ string RteFileInstance::GetFileComment() const
 
 string RteFileInstance::GetHeaderComment() const
 {
-  string prefix;
-  if (!m_componentAttributes.IsApi())
-    prefix = GetVendorAndBundle();
-  string comment = m_componentAttributes.ConstructComponentID(prefix, false, false, false, ':');
-
-  return comment;
+  return m_componentAttributes.GetPartialComponentID(false);
 }
-
 
 string RteFileInstance::GetAbsolutePath() const
 {
@@ -1399,18 +1388,6 @@ bool RteComponentInstance::IsVersionMatchLatest() const
   return GetAttribute("versionMatchMode") == "latest";
 }
 
-
-string RteComponentInstance::GetComponentUniqueID(bool withVersion) const
-{
-  string id = RteItem::GetComponentUniqueID(withVersion);
-  if (!IsApi()) {
-    id += "[";
-    id += GetPackageID(false);
-    id += "]";
-  }
-  return id;
-}
-
 bool RteComponentInstance::HasAggregateID(const string& aggregateId) const
 {
   string id = GetComponentAggregateID();
@@ -1438,7 +1415,7 @@ string RteComponentInstance::ConstructID()
   } else if (GetAttribute("Cvendor").empty()) {
     AddAttribute("Cvendor", m_packageAttributes.GetAttribute("vendor"));
   }
-  m_ID = GetComponentUniqueID(true);
+  m_ID = GetComponentUniqueID();
   return m_ID;
 }
 
@@ -1629,27 +1606,12 @@ RteComponent* RteComponentInstance::ResolveComponent(const string& targetName)
 
 string RteComponentInstance::GetFullDisplayName() const
 {
-  string prefix;
-  if (!IsApi())
-    prefix = GetVendorAndBundle();
-  return ConstructComponentID(prefix, true, true, false, ':');
-}
-
-
-string RteComponentInstance::GetAggregateDisplayName() const
-{
-  string prefix;
-  if (!IsApi())
-    prefix = GetVendorAndBundle();
-  return ConstructComponentID(prefix, false, false, false, ':');
+  return GetComponentID(true);
 }
 
 string RteComponentInstance::GetDisplayName() const
 {
-  string prefix;
-  if (!IsApi())
-    prefix = GetVendorAndBundle();
-  return ConstructComponentID(prefix, false, false, false, ':');
+  return GetComponentAggregateID();;
 }
 
 string RteComponentInstance::GetShortDisplayName() const
@@ -1807,7 +1769,7 @@ void RteComponentInstanceAggregate::AddComponentInstance(RteComponentInstance* c
     return;
   if (GetChildCount() == 0) {
     m_ID = ci->GetComponentAggregateID();
-    m_fullDisplayName = ci->GetAggregateDisplayName();
+    m_fullDisplayName = ci->GetComponentAggregateID();
     ClearAttributes();
     AddAttribute("Cclass", ci->GetCclassName());
     AddAttribute("Cgroup", ci->GetCgroupName());

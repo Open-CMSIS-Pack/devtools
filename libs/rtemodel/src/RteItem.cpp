@@ -18,6 +18,7 @@
 #include "RtePackage.h"
 #include "RteProject.h"
 #include "RteModel.h"
+#include "RteConstants.h"
 
 #include "RteFsUtils.h"
 #include "XMLTree.h"
@@ -145,17 +146,14 @@ RteComponent* RteItem::GetComponent() const
   return nullptr;
 }
 
-string RteItem::GetComponentUniqueID(bool withVersion) const
+const string& RteItem::GetID() const
 {
-  RteComponent* c = GetComponent();
-  if (c && c != this) {
-    return c->GetComponentUniqueID(withVersion);
-  }
-  if (IsApi()) {
-    withVersion = false; // api ID is always without version (the latest is used)
-    return GetApiID(false);
-  }
-  return ConstructComponentID(GetVendorAndBundle(), true, withVersion, true);
+  return m_ID;
+}
+
+string RteItem::GetDependencyExpressionID() const
+{
+  return GetTag() + " " + GetComponentID(true);
 }
 
 string RteItem::GetComponentID(bool withVersion) const // to use in filtered list
@@ -164,48 +162,68 @@ string RteItem::GetComponentID(bool withVersion) const // to use in filtered lis
     withVersion = false; // api ID is always without version (the latest is used)
     return GetApiID(false);
   }
-  return ConstructComponentID(GetVendorAndBundle(), true, withVersion, false);
+  return ConstructComponentID(withVersion);
 }
 
-string RteItem::GetComponentAggregateID() const
+string RteItem::GetComponentUniqueID() const
 {
-  RteComponent* c = GetComponent();
-  if (c && c != this) {
-    return c->GetComponentAggregateID();
+  if (IsApi()) {
+    return GetApiID(false); // api ID is always without version (the latest is used)
   }
-  return ConstructComponentID(GetVendorAndBundle(), false, false, false);
-}
-
-string RteItem::GetApiID(bool withVersion) const
-{
-  string id = "::";
-  id += GetCclassName();
-  id += ".";
-  id += GetCgroupName();
-
-  if (withVersion) {
-    const string& ver = GetAttribute("Capiversion");
-    if (!ver.empty()) {
-      id += ":";
-      id += ver;
-    }
-  }
-  id += "(API)";
+  string id = ConstructComponentID(true);
+  id += RteConstants::OBRACE_STR;
+  id += GetConditionID();
+  id += RteConstants::CBRACE_STR;
+  id += RteConstants::OSQBRACE_STR;
+  id += GetPackageID(false);
+  id += RteConstants::CSQBRACE_STR;
   return id;
 }
 
-string RteItem::GetVendorAndBundle() const
+
+string RteItem::GetComponentAggregateID() const
 {
-  string s;
-  if (!IsApi()) {
-    s = GetVendorName();
-    if (!GetCbundleName().empty()) {
-      s += ".";
-      s += GetCbundleName();
+  const auto& vendor = GetVendorString();
+  const vector<pair<const char*, const string&>> elements = {
+    {"",              vendor},
+    {vendor.empty() ? "" :
+     RteConstants::SUFFIX_CVENDOR,  GetCclassName()},
+    {RteConstants::PREFIX_CBUNDLE,  GetCbundleName()},
+    {RteConstants::PREFIX_CGROUP,   GetCgroupName()},
+    {RteConstants::PREFIX_CSUB,     GetCsubName()},
+  };
+  return RteUtils::ConstructID(elements);
+}
+
+string RteItem::GetPartialComponentID(bool bWithBundle) const {
+  const vector<pair<const char*, const string&>> elements = {
+    {"",                            GetCclassName()},
+    {RteConstants::PREFIX_CBUNDLE,  bWithBundle ? GetCbundleName() : RteUtils::EMPTY_STRING},
+    {RteConstants::PREFIX_CGROUP,   GetCgroupName()},
+    {RteConstants::PREFIX_CSUB,     GetCsubName()},
+    {RteConstants::PREFIX_CVARIANT, GetCvariantName()},
+  };
+  return RteUtils::ConstructID(elements);
+}
+
+
+string RteItem::GetApiID(bool withVersion) const
+{
+  string id = RteConstants::SUFFIX_CVENDOR;
+  id += GetCclassName();
+  id += RteConstants::PREFIX_CGROUP;
+  id += GetCgroupName();
+
+  id += "(API)";
+  if (withVersion) {
+    const string& ver = GetAttribute("Capiversion");
+    if (!ver.empty()) {
+      id += RteConstants::PREFIX_CVERSION;
+      id += ver;
     }
   }
-  return s;
-};
+  return id;
+}
 
 string RteItem::ConcatenateCclassCgroupCsub(char delimiter) const
 {
@@ -220,34 +238,62 @@ string RteItem::ConcatenateCclassCgroupCsub(char delimiter) const
   return str;
 }
 
-string RteItem::ConstructComponentID(const string& prefix, bool bVariant, bool bVersion, bool bCondition, char delimiter) const
+
+void RteItem::SetAttributesFomComponentId(const std::string& componentId)
 {
-  string id = prefix;
-  id += "::";
-  id += ConcatenateCclassCgroupCsub(delimiter);
-  if (bCondition && !GetConditionID().empty())
-  {
-    id += "(";
-    id += GetConditionID();
-    id += ")";
+  ClearAttributes();
+  if (componentId.empty()) {
+    return;
   }
-
-  // optional variant
-  if (bVariant && !GetCvariantName().empty()) {
-    id += ":";
-    id += GetCvariantName();
+  string id = componentId;
+  if (componentId.find(RteConstants::SUFFIX_CVENDOR) != string::npos) {
+    string vendor = RteUtils::RemoveSuffixByString(id, RteConstants::SUFFIX_CVENDOR);
+    AddAttribute("Cvendor", vendor);
+    id = RteUtils::RemovePrefixByString(componentId, RteConstants::SUFFIX_CVENDOR);
   }
-
-  if (bVersion) {
-    const string& ver = GetVersionString();
-    if (!ver.empty()) {
-      id += ":";
-      id += ver;
-    }
+  AddAttribute("Cversion", RteUtils::GetSuffix(id, RteConstants::PREFIX_CVERSION_CHAR));
+  id = RteUtils::GetPrefix(id, RteConstants::PREFIX_CVERSION_CHAR);
+  list<string> segments;
+  RteUtils::SplitString(segments, id, RteConstants::COLON_CHAR);
+  size_t index = 0;
+  for (auto s : segments) {
+    switch (index) {
+    case 0: // Cclass[&Cbundle]
+      AddAttribute("Cclass", RteUtils::GetPrefix(s, RteConstants::PREFIX_CBUNDLE_CHAR));
+      AddAttribute("Cbundle", RteUtils::GetSuffix(s, RteConstants::PREFIX_CBUNDLE_CHAR), false);
+      break;
+    case 1: // Cgroup[&Cvariant]
+      AddAttribute("Cgroup", RteUtils::GetPrefix(s, RteConstants::PREFIX_CVARIANT_CHAR));
+      AddAttribute("Cvariant", RteUtils::GetSuffix(s, RteConstants::PREFIX_CVARIANT_CHAR), false);
+      break;
+    case 2: // Csub
+      AddAttribute("Csub", RteUtils::GetPrefix(s, RteConstants::PREFIX_CVARIANT_CHAR));
+      AddAttribute("Cvariant", RteUtils::GetSuffix(s, RteConstants::PREFIX_CVARIANT_CHAR), false);
+      break;
+    default:
+      break;
+    };
+    index++;
   }
-  return id;
 }
 
+
+string RteItem::ConstructComponentID(bool bVersion) const
+{
+  const auto& vendor = GetVendorString();
+  const auto& version = bVersion ? GetVersionString() : EMPTY_STRING;
+  const vector<pair<const char*, const string&>> elements = {
+    {"",                            vendor},
+    {vendor.empty() ? "" :
+     RteConstants::SUFFIX_CVENDOR,  GetCclassName()},
+    {RteConstants::PREFIX_CBUNDLE,  GetCbundleName()},
+    {RteConstants::PREFIX_CGROUP,   GetCgroupName()},
+    {RteConstants::PREFIX_CSUB,     GetCsubName()},
+    {RteConstants::PREFIX_CVARIANT, GetCvariantName()},
+    {RteConstants::PREFIX_CVERSION, version},
+  };
+  return RteUtils::ConstructID(elements);
+}
 
 string RteItem::ConstructComponentDisplayName(bool bClass, bool bVariant, bool bVersion, char delimiter) const
 {
@@ -265,14 +311,14 @@ string RteItem::ConstructComponentDisplayName(bool bClass, bool bVariant, bool b
 
   // optional variant
   if (bVariant && !GetCvariantName().empty()) {
-    id += ":";
+    id += RteConstants::PREFIX_CVARIANT;
     id += GetCvariantName();
   }
 
   if (bVersion) {
     const string& ver = GetVersionString();
     if (!ver.empty()) {
-      id += ":";
+      id += RteConstants::PREFIX_CVERSION;
       id += ver;
     }
   }
@@ -441,26 +487,24 @@ string RteItem::GetFullDeviceName() const
 
 string RteItem::GetProjectGroupName() const
 {
-  return string("::") + GetCclassName();
+  return string(RteConstants::SUFFIX_CVENDOR) + GetCclassName();
 }
 
 string RteItem::GetBundleShortID() const
 {
-  string s;
-  if (!GetCbundleName().empty()) {
-    s = GetVendorAndBundle();
-  }
-  return s;
+  return GetBundleID(false);
 };
 
 string RteItem::GetBundleID(bool bWithVersion) const
 {
   if (!GetCbundleName().empty()) {
-    string s = GetVendorAndBundle();
-    s += "::";
-    s += GetCclassName();
+    string s = GetVendorString();
+    if (!s.empty()) {
+      s += RteConstants::SUFFIX_CVENDOR;
+    }
+    s += GetCclassName() + RteConstants::PREFIX_CBUNDLE + GetCbundleName();
     if (bWithVersion && !GetVersionString().empty()) {
-      s += ":";
+      s += RteConstants::PREFIX_CVERSION;
       s += GetVersionString();
     }
     return s;
@@ -479,10 +523,10 @@ string RteItem::GetTaxonomyDescriptionID(const XmlItem& attributes)
   if (!taxonomyId.empty()) {
     const string& group = attributes.GetAttribute("Cgroup");
     if (!group.empty()) {
-      taxonomyId += "." + group;
+      taxonomyId += RteConstants::PREFIX_CGROUP + group;
       const string& sub = attributes.GetAttribute("Csub");
       if (!sub.empty()) {
-        taxonomyId += "." + sub;
+        taxonomyId += RteConstants::PREFIX_CSUB + sub;
       }
     }
   }
@@ -983,7 +1027,7 @@ bool RteItem::CompareComponents(RteItem* c0, RteItem* c1)
   if (!res)
     res = AlnumCmp::Compare(c0->GetVendorString(), c1->GetVendorString());
   if (!res)
-    res = AlnumCmp::Compare(c0->GetComponentUniqueID(true), c1->GetComponentUniqueID(true));
+    res = AlnumCmp::Compare(c0->GetComponentUniqueID(), c1->GetComponentUniqueID());
   return res < 0;
 }
 

@@ -10,7 +10,7 @@
 #ifndef PRE_INCLUDE_RTETEST_COMPONENTLEVEL_H
 #define PRE_INCLUDE_RTETEST_COMPONENTLEVEL_H
 
-/* ARM::RteTest:ComponentLevel:0.0.1 */
+/* ARM::RteTest:ComponentLevel@0.0.1 */
 #define LOCAL_PRE_INCLUDE 1
 
 #define LOCAL_TEST_PRE_INCLUDE 1

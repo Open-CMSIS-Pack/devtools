@@ -147,7 +147,7 @@ bool RteUtils::CheckCMSISName(const string& s)
 
 std::string& RteUtils::ReplaceAll(std::string& str, const string& toReplace, const string& with)
 {
-  for (size_t pos = str.find(toReplace); pos != string::npos; pos = str.find(toReplace, pos + toReplace.size())) {
+  for (size_t pos = str.find(toReplace); pos != string::npos; pos = str.find(toReplace, pos + with.size())) {
     str.replace(pos, toReplace.size(), with);
   }
   return str;
@@ -555,6 +555,16 @@ string RteUtils::NameFromPackageId(const std::string &packageId) {
   // assumed packageId format is conform
   size_t pos = packageId.find_first_of(".");
   return std::string(packageId.substr(pos + 1, packageId.find('.', pos+1) - pos - 1));
+}
+
+string RteUtils::ConstructID(const std::vector<std::pair<const char*, const std::string&>>& elements) {
+  string id;
+  for (const auto& element : elements) {
+    if (!element.second.empty()) {
+      id += element.first + element.second;
+    }
+  }
+  return id;
 }
 
 // End of RteUtils.cpp
