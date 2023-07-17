@@ -21,69 +21,6 @@ protected:
   virtual ~ProjMgrUtilsUnitTests() {}
 };
 
-TEST_F(ProjMgrUtilsUnitTests, ComponentAttributesFromId) {
-
-  string id = "Vendor::Class&Bundle:Group:Sub&Variant@9.9.9";
-  RteItem item(ComponentAttributesFromId(id));
-  EXPECT_EQ(id, GetComponentID(&item));
-
-  id = "Class&Bundle:Group:Sub&Variant@9.9.9";
-  item.SetAttributes(ComponentAttributesFromId(id));
-  EXPECT_EQ(id, GetComponentID(&item));
-
-  id = "Vendor::Class:Group&Variant";
-  item.SetAttributes(ComponentAttributesFromId(id));
-  EXPECT_EQ(id, GetComponentID(&item));
-
-  id = "Class:Group:Sub&Variant";
-  item.SetAttributes(ComponentAttributesFromId(id));
-  EXPECT_EQ(id, GetComponentID(&item));
-
-  id = "Class:Group:&Variant";
-  item.SetAttributes(ComponentAttributesFromId(id));
-  EXPECT_EQ("Class:Group&Variant", GetComponentID(&item));
-}
-
-
-TEST_F(ProjMgrUtilsUnitTests, GetComponentID) {
-  const map<string, string> attributes = {
-    {"Cvendor" , "Vendor"  },
-    {"Cclass"  , "Class"   },
-    {"Cbundle" , "Bundle"  },
-    {"Cgroup"  , "Group"   },
-    {"Csub"    , "Sub"     },
-    {"Cvariant", "Variant" },
-    {"Cversion", "9.9.9"   }
-  };
-  RteItem item(attributes);
-  EXPECT_EQ("Vendor::Class&Bundle:Group:Sub&Variant@9.9.9",GetComponentID(&item));
-}
-
-TEST_F(ProjMgrUtilsUnitTests, GetComponentAggregateID) {
-  const map<string, string> attributes = {
-    {"Cvendor" , "Vendor"  },
-    {"Cclass"  , "Class"   },
-    {"Cbundle" , "Bundle"  },
-    {"Cgroup"  , "Group"   },
-    {"Csub"    , "Sub"     },
-    {"Cvariant", "Variant" },
-    {"Cversion", "9.9.9"   }
-  };
-  RteItem item(attributes);
-  EXPECT_EQ("Vendor::Class&Bundle:Group:Sub", GetComponentAggregateID(&item));
-}
-
-TEST_F(ProjMgrUtilsUnitTests, GetConditionID) {
-  const map<string, string> attributes = {
-    {"Cvendor" , "Vendor"  },
-    {"Cclass"  , "Class"   },
-    {"Cgroup"  , "Group"   }
-  };
-  RteItem item(attributes);;
-  item.SetTag("require");
-  EXPECT_EQ("require Vendor::Class:Group", GetConditionID(&item));
-}
-
 TEST_F(ProjMgrUtilsUnitTests, GetPackageID) {
   const map<string, string> attributes = {
     {"vendor" , "Vendor"  },

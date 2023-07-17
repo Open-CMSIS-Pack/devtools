@@ -1,4 +1,4 @@
-SET(TEST_SOURCE_FILES src/RteConditionTest.cpp src/RteModelTest.cpp src/RteExampleTest.cpp
+SET(TEST_SOURCE_FILES src/RteConditionTest.cpp src/RteItemTest.cpp src/RteModelTest.cpp src/RteExampleTest.cpp
  src/RteModelTestConfig.h src/RteModelTestConfig.cpp src/RteChk.cpp src/RteChkTest.cpp )
 
  SET(RTE_CHK_HEADER_FILES src/RteChk.h)

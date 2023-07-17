@@ -170,41 +170,6 @@ public:
   static constexpr const char* IAR_LIB_SUFFIX = ".a";
 
   /**
-   * @brief get fully specified component identifier
-   * @param rte component
-   * @return string component identifier
-  */
-  static std::string GetComponentID(const RteItem* component);
-
-  /**
-   * @brief get fully specified condition identifier
-   * @param rte condition
-   * @return string condition identifier
-  */
-  static std::string GetConditionID(const RteItem* condition);
-
-  /**
-   * @brief get fully specified component aggregate identifier
-   * @param rte component aggregate
-   * @return string component aggregate identifier
-  */
-  static std::string GetComponentAggregateID(const RteItem* component);
-
-  /**
-   * @brief get partial component identifier (without vendor and version)
-   * @param rte component
-   * @return string partial component identifier
-  */
-  static std::string GetPartialComponentID(const RteItem* component);
-
-  /**
-   * @brief get component attributes from supplied component ID
-   * @param componentId component id string
-   * @return map of key-value pairs of componentAttributes
-  */
-  static std::map<std::string, std::string> ComponentAttributesFromId(const std::string& componentId);
-
-  /**
    * @brief get fully specified package identifier
    * @param rte package
    * @return string package identifier
@@ -308,8 +273,6 @@ public:
     std::list<std::string>& selectedContexts,
     const std::vector<std::string>& allAvailableContexts,
     const std::vector<std::string>& contextFilter);
-protected:
-  static std::string ConstructID(const std::vector<std::pair<const char*, const std::string&>>& elements);
 };
 
 #endif  // PROJMGRUTILS_H

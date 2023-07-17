@@ -171,12 +171,6 @@ public:
   virtual std::string GetFullDisplayName() const;
 
   /**
-   * @brief get component aggregate display name
-   * @return string in the format Cvendor[.Cbundle]::Cclass:Cgroup[:Csub]
-  */
-  virtual std::string GetAggregateDisplayName() const;
-
-  /**
    * @brief get "Cclass" attribute value from this item or parent bundle
    * @return "Cclass" attribute value
   */
@@ -205,13 +199,6 @@ public:
    * @return an URL or absolute filename to doc file if any
   */
    std::string GetDocFile() const override;
-
-  /**
-   * @brief get unique component ID
-   * @param withVersion flag to include version to the ID
-   * @return constructed component ID
-  */
-   std::string GetComponentUniqueID(bool withVersion) const override;
 
   /**
    * @brief get parent component
@@ -305,10 +292,9 @@ public:
 
   /**
    * @brief get API ID
-   * @param withVersion ignored argument, treated as false
    * @return API ID
   */
-   std::string GetComponentUniqueID(bool withVersion) const override;
+   std::string GetComponentUniqueID() const override;
 
   /**
    * @brief get API ID

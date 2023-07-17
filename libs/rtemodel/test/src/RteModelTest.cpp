@@ -299,7 +299,7 @@ TEST_F(RteModelPrjTest, LoadCprj) {
   RteItem::ConditionResult res = activeTarget->GetDepsResult(depResults, activeTarget);
   EXPECT_EQ(res, RteItem::FULFILLED);
  // component is resolved to empty variant
-  RteComponentAggregate* ca = activeTarget->GetComponentAggregate("ARM::RteTest.Dependency.Variant");
+  RteComponentAggregate* ca = activeTarget->GetComponentAggregate("ARM::RteTest:Dependency:Variant");
   ASSERT_NE(ca, nullptr);
   RteComponentInstance* ci = ca->GetComponentInstance();
   ASSERT_NE(ci, nullptr);
@@ -757,7 +757,7 @@ TEST_F(RteModelPrjTest, LoadCprjM4) {
   RteItem::ConditionResult res = activeTarget->GetDepsResult(depResults, activeTarget);
   EXPECT_EQ(res, RteItem::FULFILLED);
  // component variant is resolved to the default one
-  RteComponentAggregate* ca= activeTarget->GetComponentAggregate("ARM::RteTest.Dependency.Variant");
+  RteComponentAggregate* ca= activeTarget->GetComponentAggregate("ARM::RteTest:Dependency:Variant");
   ASSERT_NE(ca, nullptr);
   RteComponentInstance* ci = ca->GetComponentInstance();
   ASSERT_NE(ci, nullptr);
@@ -850,7 +850,7 @@ TEST_F(RteModelPrjTest, LoadCprjM4_Board) {
   EXPECT_TRUE(RteFsUtils::Exists(CompConfig_1_Base_Version));
 
   // expect enforced component is resolved
-  RteComponentInstance* ci = activeCprjProject->GetComponentInstance("ARM::Board.Test.Rev2(BoardTest2):2.2.2[]");
+  RteComponentInstance* ci = activeCprjProject->GetComponentInstance("ARM::Board:Test:Rev2@2.2.2(BoardTest2)[]");
   ASSERT_TRUE(ci != nullptr);
   RteComponent* c = ci->GetResolvedComponent(activeTarget->GetName());
   ASSERT_TRUE(c != nullptr);

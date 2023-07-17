@@ -176,9 +176,8 @@ const string& RteComponent::GetCbundleName() const
 
 string RteComponent::ConstructID()
 {
-  return GetComponentUniqueID(true);
+  return GetComponentUniqueID();
 };
-
 
 
 string RteComponent::GetDisplayName() const
@@ -196,20 +195,8 @@ string RteComponent::GetDisplayName() const
 
 string RteComponent::GetFullDisplayName() const
 {
-  string prefix;
-  if (!IsApi())
-    prefix = GetVendorAndBundle();
-  return ConstructComponentID(prefix, true, true, false, ':');
+  return GetComponentID(true);
 }
-
-string RteComponent::GetAggregateDisplayName() const
-{
-  string prefix;
-  if (!IsApi())
-    prefix = GetVendorAndBundle();
-  return ConstructComponentID(prefix, false, false, false, ':');
-}
-
 
 string RteComponent::GetDocFile() const
 {
@@ -381,19 +368,6 @@ void RteComponent::InsertInModel(RteModel* model)
   }
 }
 
-string RteComponent::GetComponentUniqueID(bool withVersion) const // full unique component ID
-{
-  if (IsApi()) {
-    return GetApiID(false);
-  }
-  string id = ConstructComponentID(GetVendorAndBundle(), true, withVersion, true);
-  // append pack common ID
-  id += "[";
-  id += GetPackageID(false);
-  id += "]";
-  return id;
-}
-
 RteApi::RteApi(RteItem* parent) :
   RteComponent(parent)
 {
@@ -415,10 +389,9 @@ string RteApi::GetFullDisplayName() const
   return id;
 }
 
-string RteApi::GetComponentUniqueID(bool withVersion) const
+string RteApi::GetComponentUniqueID() const
 {
-  withVersion = false; // api ID is always without version (the latest is used)
-  return GetApiID(withVersion);
+  return GetApiID(false); // api ID is always without version (the latest is used)
 }
 
 string RteApi::GetComponentID(bool withVersion) const
@@ -541,7 +514,7 @@ void RteComponentAggregate::AddComponent(RteComponent* c)
     return; // aggregate with generator can only contain generated components
   if (m_components.empty()) {
     m_ID = c->GetComponentAggregateID();
-    m_fullDisplayName = c->GetAggregateDisplayName();
+    m_fullDisplayName = c->GetComponentAggregateID();
     m_maxInstances = c->GetMaxInstances();
     m_bHasMaxInstances = c->HasMaxInstances();
     ClearAttributes();
@@ -639,11 +612,11 @@ void RteComponentAggregate::SetComponentInstance(RteComponentInstance* ci, int c
   if (m_components.empty()) {
     if (c) {
       AddComponent(c);
-      m_fullDisplayName = c->GetAggregateDisplayName();
+      m_fullDisplayName = c->GetComponentAggregateID();
       m_maxInstances = c->GetMaxInstances();
       m_bHasMaxInstances = c->HasMaxInstances();
     } else {
-      m_fullDisplayName = ci->GetAggregateDisplayName();
+      m_fullDisplayName = ci->GetComponentAggregateID();
       m_maxInstances = ci->GetMaxInstances();
       m_bHasMaxInstances = ci->HasMaxInstances();
     }

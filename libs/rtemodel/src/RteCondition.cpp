@@ -21,13 +21,25 @@
 #include <sstream>
 using namespace std;
 
+const std::string RteConditionExpression::ACCEPT_TAG("accept");
+const std::string RteConditionExpression::DENY_TAG("deny");
+const std::string RteConditionExpression::REQUIRE_TAG("require");
 unsigned RteCondition::s_uVerboseFlags = 0;
+
+
 
 RteConditionExpression::RteConditionExpression(RteCondition* parent) :
   RteItem(parent),
   m_domain(0)
 {
 };
+
+RteConditionExpression::RteConditionExpression(const string& tag, RteCondition* parent) :
+  RteItem(tag, parent),
+  m_domain(0)
+{
+};
+
 
 RteConditionExpression::~RteConditionExpression()
 {
@@ -84,19 +96,11 @@ string RteConditionExpression::ConstructID()
       m_domain = DEVICE_EXPRESSION;
     }
   }
-
-  string id = GetTag() + " ";
   if (IsDependencyExpression()) {
-    for (int i = 0; it != m_attributes.end(); it++, i++) {
-      if (i)
-        id += ":";
-      id += it->second;
-    }
+    return GetDependencyExpressionID();
   } else {
-    id += GetAttributesString();
+    return GetTag() + " " + GetAttributesString();
   }
-
-  return id;
 }
 
 
@@ -607,7 +611,7 @@ string RteDependencyResult::GetDisplayName() const
   const RteComponentInstance* ci = dynamic_cast<const RteComponentInstance*>(m_item);
   const RteComponentAggregate* a = dynamic_cast<const RteComponentAggregate*>(m_item);
   if (c) {
-    name = c->GetAggregateDisplayName();
+    name = c->GetComponentAggregateID();
   } else if (a) {
     name = a->GetFullDisplayName();
   } else if (ci) {

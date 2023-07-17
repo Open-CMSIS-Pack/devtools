@@ -35,10 +35,25 @@ public:
 
   static constexpr const char* AND_STR  = "&";
   static constexpr const char  AND_CHAR = '&';
+
   static constexpr const char* AT_STR   = "@";
   static constexpr const char  AT_CHAR  = '@';
+
   static constexpr const char* COLON_STR  = ":";
   static constexpr const char  COLON_CHAR = ':';
+
+  static constexpr const char* OBRACE_STR = "(";
+  static constexpr const char  OBRACE_CHAR= '(';
+
+  static constexpr const char* CBRACE_STR = ")";
+  static constexpr const char  CBRACE_CHAR = ')';
+
+  static constexpr const char* OSQBRACE_STR = "[";
+  static constexpr const char  OSQBRACE_CHAR = '[';
+
+  static constexpr const char* CSQBRACE_STR = "]";
+  static constexpr const char  CSQBRACE_CHAR = ']';
+
 
   static constexpr const char* COMPONENT_DELIMITERS = ":&@";
 

@@ -10,7 +10,7 @@
 #ifndef PRE_INCLUDE_GLOBAL_H
 #define PRE_INCLUDE_GLOBAL_H
 
-/* ARM::RteTest:GlobalLevel:0.0.2 */
+/* ARM::RteTest:GlobalLevel@0.0.2 */
 #define GLOBAL_PRE_INCLUDE 1
 
 

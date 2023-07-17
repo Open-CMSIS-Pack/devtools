@@ -2675,11 +2675,11 @@ TEST_F(ProjMgrUnitTests, Convert_ValidationResults_Dependencies) {
   argv[4] = (char*)"-c";
 
   map<string, string> testData = {
-    {"selectable+CM0",           "warning csolution: dependency validation for context 'selectable+CM0' failed:\nSELECTABLE ARM::Device:Startup&RteTest Startup@2.0.3\n  require RteTest:CORE" },
-    {"missing+CM0",              "warning csolution: dependency validation for context 'missing+CM0' failed:\nMISSING ARM::RteTest:Check:Missing@0.9.9\n  require RteTest:Dependency:Missing" },
-    {"conflict+CM0",             "warning csolution: dependency validation for context 'conflict+CM0' failed:\nCONFLICT RteTest:ApiExclusive@1.0.0\n  ARM::RteTest:ApiExclusive:S1\n  ARM::RteTest:ApiExclusive:S2" },
+    {"conflict+CM0",             "warning csolution: dependency validation for context 'conflict+CM0' failed:\nCONFLICT ::RteTest:ApiExclusive(API)\n  ARM::RteTest:ApiExclusive:S1\n  ARM::RteTest:ApiExclusive:S2" },
     {"incompatible+CM0",         "warning csolution: dependency validation for context 'incompatible+CM0' failed:\nINCOMPATIBLE ARM::RteTest:Check:Incompatible@0.9.9\n  deny RteTest:Dependency:Incompatible_component" },
     {"incompatible-variant+CM0", "warning csolution: dependency validation for context 'incompatible-variant+CM0' failed:\nINCOMPATIBLE_VARIANT ARM::RteTest:Check:IncompatibleVariant@0.9.9\n  require RteTest:Dependency:Variant&Compatible" },
+    {"missing+CM0",              "warning csolution: dependency validation for context 'missing+CM0' failed:\nMISSING ARM::RteTest:Check:Missing@0.9.9\n  require RteTest:Dependency:Missing" },
+    {"selectable+CM0",           "warning csolution: dependency validation for context 'selectable+CM0' failed:\nSELECTABLE ARM::Device:Startup&RteTest Startup@2.0.3\n  require RteTest:CORE" }
   };
 
   for (const auto& [context, expected] : testData) {
@@ -2704,7 +2704,7 @@ ARM.RteTestRecursive.0.1.0: condition 'Recursive': error #503: direct or indirec
 error csolution: no component was found with identifier 'RteTest:Check:Recursive'\n"},
     {"missing-condition", 0, "\
 warning csolution: RTE Model reports:\n\
-ARM.RteTestMissingCondition.0.1.0: component 'ARM::RteTest.Check.MissingCondition(MissingCondition):0.9.9[]': error #501: error(s) in component definition:\n\
+ARM.RteTestMissingCondition.0.1.0: component 'ARM::RteTest:Check:MissingCondition@0.9.9(MissingCondition)[]': error #501: error(s) in component definition:\n\
  condition 'MissingCondition' not found\n"},
   };
 
@@ -3448,7 +3448,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_YamlEmitterFileCaseIssue) {
   const string expectedErrMsg = cprojectsExist ?
     "warning csolution: 'filename.cproject.yml' has case inconsistency, use 'Filename.cproject.yml' instead" :
     "error csolution: projects not found";
-  
+
   char* argv[5];
   argv[1] = (char*)"convert";
   argv[2] = (char*)csolution.c_str();
