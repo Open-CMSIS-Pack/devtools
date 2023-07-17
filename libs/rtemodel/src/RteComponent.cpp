@@ -384,9 +384,7 @@ bool RteApi::IsExclusive() const
 
 string RteApi::GetFullDisplayName() const
 {
-  string id = RteComponent::GetFullDisplayName();
-  id += " (API)";
-  return id;
+  return GetApiID(true);
 }
 
 string RteApi::GetComponentUniqueID() const
