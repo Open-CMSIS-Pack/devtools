@@ -7,6 +7,7 @@
 #ifndef SvdOptions_H
 #define SvdOptions_H
 
+#include <cstdint>
 #include <string>
 #include <set>
 

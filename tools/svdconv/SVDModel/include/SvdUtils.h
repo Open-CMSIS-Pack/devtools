@@ -6,6 +6,7 @@
 #ifndef SvdUtils_H
 #define SvdUtils_H
 
+#include <cstdint>
 #include <string>
 #include <list>
 #include <set>

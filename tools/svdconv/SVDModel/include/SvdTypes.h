@@ -6,6 +6,7 @@
 #ifndef SvdTypes_H
 #define SvdTypes_H
 
+#include <cstdint>
 #include <string>
 #include <vector>
 #include <set>
