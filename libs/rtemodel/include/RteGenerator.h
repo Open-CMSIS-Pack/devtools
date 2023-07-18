@@ -130,17 +130,19 @@ public:
  * @brief get all arguments as vector for the given host type
  * @param target pointer to RteTarget
  * @param hostType host type, empty to match current host
+ * @param dryRun include dry-run arguments
  * @return vector of arguments consisting of switch and value in pairs
 */
-  std::vector<std::pair<std::string, std::string> > GetExpandedArguments(RteTarget* target, const std::string& hostType = EMPTY_STRING) const;
+  std::vector<std::pair<std::string, std::string> > GetExpandedArguments(RteTarget* target, const std::string& hostType = EMPTY_STRING, bool dryRun = false) const;
 
  /**
    * @brief get full command line with arguments and expanded key sequences for specified target
    * @param target pointer to RteTarget
    * @param hostType host type, empty to match current host
+   * @param dryRun include dry-run arguments
    * @return expanded command line with arguments, properly quoted
   */
-  std::string GetExpandedCommandLine(RteTarget* target, const std::string& hostType = EMPTY_STRING) const;
+  std::string GetExpandedCommandLine(RteTarget* target, const std::string& hostType = EMPTY_STRING, bool dryRun = false) const;
 
   /**
    * @brief get absolute path to gpdsc file for specified target
@@ -207,6 +209,13 @@ public:
    * @return pointer to instance of type RteItem
   */
   RteItem* CreateItem(const std::string& tag) override;
+
+ /**
+  * @brief check whether the generator can be run in dry-run mode
+  * @param hostType host type, empty to match current host
+  * @return true if the generator is dry-run capable, false otherwise
+  */
+  bool IsDryRunCapable(const std::string& hostType = EMPTY_STRING) const;
 
 protected:
   /**

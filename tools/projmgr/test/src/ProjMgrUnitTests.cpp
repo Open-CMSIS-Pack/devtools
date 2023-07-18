@@ -2647,6 +2647,7 @@ TEST_F(ProjMgrUnitTests, ListComponents_MultiplePackSelection) {
     "ARM::Device&RteTestBundle:Startup@1.1.0 (ARM::RteTestGenerator@0.1.0)",
     "ARM::Device:RteTest Generated Component:RteTest@1.1.0 (ARM::RteTestGenerator@0.1.0)",
     "ARM::Device:RteTest Generated Component:RteTestGenFiles@1.1.0 (ARM::RteTestGenerator@0.1.0)",
+    "ARM::Device:RteTest Generated Component:RteTestNoDryRun@1.1.0 (ARM::RteTestGenerator@0.1.0)",
     "ARM::Device:RteTest Generated Component:RteTestSimple@1.1.0 (ARM::RteTestGenerator@0.1.0)",
     "ARM::Device:RteTest Generated Component:RteTestWithKey@1.1.0 (ARM::RteTestGenerator@0.1.0)",
     "ARM::Device:RteTest Generated Component:RteTestNoExe@1.1.0 (ARM::RteTestGenerator@0.1.0)"

@@ -142,7 +142,7 @@ string RteGenerator::GetExecutable(RteTarget* target, const std::string& hostTyp
 }
 
 
-vector<pair<string, string> > RteGenerator::GetExpandedArguments(RteTarget* target, const string& hostType) const
+vector<pair<string, string> > RteGenerator::GetExpandedArguments(RteTarget* target, const string& hostType, bool dryRun) const
 {
   vector<pair<string, string> > args;
   RteItem* argsItem = GetArgumentsItem("exe");
@@ -150,15 +150,17 @@ vector<pair<string, string> > RteGenerator::GetExpandedArguments(RteTarget* targ
     for (auto arg : argsItem->GetChildren()) {
       if (arg->GetTag() != "argument" || !arg->MatchesHost(hostType))
         continue;
+      if (!dryRun && arg->GetAttribute("mode") == "dry-run")
+        continue;
       args.push_back({arg->GetAttribute("switch"), ExpandString(arg->GetText())});
     }
   }
   return args;
 }
 
-string RteGenerator::GetExpandedCommandLine(RteTarget* target, const string& hostType) const
+string RteGenerator::GetExpandedCommandLine(RteTarget* target, const string& hostType, bool dryRun) const
 {
-  const vector<pair<string, string> > args = GetExpandedArguments(target, hostType);
+  const vector<pair<string, string> > args = GetExpandedArguments(target, hostType, dryRun);
   string fullCmd = GetExecutable(target, hostType);
   for (size_t i = 0; i < args.size(); i++) {
     fullCmd += ' ' + RteUtils::AddQuotesIfSpace(args[i].first + args[i].second);
@@ -264,6 +266,20 @@ RteItem* RteGenerator::CreateItem(const std::string& tag)
   return RteItem::CreateItem(tag);
 }
 
+
+bool RteGenerator::IsDryRunCapable(const std::string& hostType) const
+{
+  RteItem* argsItem = GetArgumentsItem("exe");
+  if (argsItem) {
+    for (auto arg : argsItem->GetChildren()) {
+      if (arg->GetTag() != "argument" || !arg->MatchesHost(hostType))
+        continue;
+      if (arg->GetAttribute("mode") == "dry-run")
+        return true;
+    }
+  }
+  return false;
+}
 
 RteGeneratorContainer::RteGeneratorContainer(RteItem* parent) :
   RteItem(parent)
