@@ -7,6 +7,7 @@
 #ifndef PACKOPTIONS_H
 #define PACKOPTIONS_H
 
+#include <cstdint>
 #include <string>
 #include <set>
 
