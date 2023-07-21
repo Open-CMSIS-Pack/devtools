@@ -3265,17 +3265,33 @@ bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem& context, BuildType& b
   return true;
 }
 
-bool ProjMgrWorker::ParseContextSelection(const vector<string>& contextSelection) {
+bool ProjMgrWorker::ParseContextSelection(const vector<string>& contextSelection, const string& contextReplace) {
   vector<string> contexts;
   ListContexts(contexts);
-  const auto& errContextFilters = ProjMgrUtils::GetSelectedContexts(m_selectedContexts, contexts, contextSelection);
-  if (errContextFilters.size() != 0) {
-    string errMsg = "following context(s) was not found:\n";
-    for (const auto& filter : errContextFilters) {
-      errMsg += "  " + filter + "\n";
-    }
-    ProjMgrLogger::Error(errMsg);
+  const auto& filterError = ProjMgrUtils::GetSelectedContexts(m_selectedContexts, contexts, contextSelection);
+  if (filterError) {
+    ProjMgrLogger::Error(filterError.m_errMsg);
     return false;
+  }
+
+  auto selectedContexts = m_selectedContexts;
+  if (contextReplace != RteUtils::EMPTY_STRING) {
+    const auto& replaceError = ProjMgrUtils::ReplaceContexts(m_selectedContexts, contexts, contextReplace);
+    if (replaceError) {
+      ProjMgrLogger::Error(replaceError.m_errMsg);
+      return false;
+    }
+  }
+
+  if (m_verbose && contextReplace != RteUtils::EMPTY_STRING) {
+    cout << "selected context(s):" << endl;
+    for (const auto& context : selectedContexts) {
+      cout << "  " + context << endl;
+    }
+    cout << "is replaced with:" << endl;
+    for (const auto& context : m_selectedContexts) {
+      cout << "  " + context << endl;
+    }
   }
   return true;
 }
