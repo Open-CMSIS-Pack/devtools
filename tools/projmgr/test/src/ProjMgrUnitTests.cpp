@@ -119,7 +119,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks) {
     {{"TestSolution/test.csolution_unknown_file.yml", "test1.Debug+CM0"},
       "error csolution: csolution file was not found"},
     {{"TestSolution/test.csolution.yml", "invalid.context"},
-      "following context(s) was not found:\n  invalid.context"}
+      "Following context name(s) was not found:\n  invalid.context"}
   };
   // negative tests
   for (const auto& [input, expected] : testFalseInputs) {
@@ -131,6 +131,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks) {
     EXPECT_EQ(1, RunProjMgr(7, argv, 0));
 
     auto errStr = streamRedirect.GetErrorString();
+    auto outStr = streamRedirect.GetOutString();
     EXPECT_NE(string::npos, errStr.find(expected)) << "error listing pack for " << csolution << endl;
   }
 }
@@ -3408,7 +3409,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgrInvalidContext) {
 
   EXPECT_EQ(1, RunProjMgr(10, argv, 0));
   auto errStr = streamRedirect.GetErrorString();
-  EXPECT_NE(string::npos, errStr.find("following context(s) was not found:\n  test3*"));
+  EXPECT_NE(string::npos, errStr.find("Following context name(s) was not found:\n  test3*"));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgrCovertMultipleContext) {
@@ -3588,4 +3589,27 @@ TEST_F(ProjMgrUnitTests, EnsurePortability) {
   for (const auto& expected : expectedVec) {
     EXPECT_TRUE(errStr.find(expected) != string::npos) << " Missing Expected: " + expected;
   }
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgrSolution_context_replacement) {
+  char* argv[10];
+  StdStreamRedirect streamRedirect;
+  // convert --solution solution.yml
+  const string& csolution = testinput_folder + "/TestSolution/test.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-c";
+  argv[5] = (char*)"test1.Release";
+  argv[6] = (char*)"--context-replacement";
+  argv[7] = (char*)"test1.Debug";
+  argv[8] = (char*)testoutput_folder.c_str();
+  argv[9] = (char*)"-v";
+  EXPECT_EQ(0, RunProjMgr(10, argv, 0));
+
+  auto outStr = streamRedirect.GetOutString();
+  EXPECT_NE(string::npos, outStr.find("test1.Debug+CM0.cprj - info csolution: file generated successfully"));
+  EXPECT_EQ(string::npos, outStr.find("test1.Release+CM0.cprj - info csolution: file generated successfully"));
+  EXPECT_EQ(string::npos, outStr.find("test2.Debug+CM0.cprj - info csolution: file generated successfully"));
+  EXPECT_EQ(string::npos, outStr.find("test2.Debug+CM3.cprj - info csolution: file generated successfully"));
 }
