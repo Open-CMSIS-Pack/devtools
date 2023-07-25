@@ -385,6 +385,14 @@ public:
   bool ListComponents(std::vector<std::string>& components, const std::string& filter = RteUtils::EMPTY_STRING);
 
   /**
+   * @brief list configuration files
+   * @param reference to list of file description strings
+   * @param filter words to filter results
+   * @return true if executed successfully
+  */
+  bool ListConfigs(std::vector<std::string>& dependencies, const std::string& filter = RteUtils::EMPTY_STRING);
+
+  /**
    * @brief list available dependencies
    * @param reference to list of dependencies
    * @param filter words to filter results

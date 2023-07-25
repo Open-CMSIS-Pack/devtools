@@ -54,6 +54,9 @@ public:
   static constexpr const char* CSQBRACE_STR = "]";
   static constexpr const char  CSQBRACE_CHAR = ']';
 
+  static constexpr const char* SPACE_STR = " ";
+  static constexpr const char  SPACE_CHAR = ' ';
+
 
   static constexpr const char* COMPONENT_DELIMITERS = ":&@";
 

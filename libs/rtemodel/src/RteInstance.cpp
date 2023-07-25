@@ -18,6 +18,7 @@
 #include "RteModel.h"
 #include "RteProject.h"
 
+#include "RteConstants.h"
 #include "RteFsUtils.h"
 #include "XMLTree.h"
 
@@ -777,6 +778,47 @@ int RteFileInstance::HasNewVersion() const
     }
   }
   return newVersion;
+}
+
+std::string RteFileInstance::GetInfoString(const std::string& targetName, const string& relativeTo) const
+{
+  string info;
+  string absPath = GetAbsolutePath();
+  if (!relativeTo.empty()) {
+    info = RteFsUtils::RelativePath(absPath, relativeTo);
+  } else {
+    info = GetInstanceName();
+  }
+
+  const string& baseVersion = GetAttribute("version"); // explicitly check the file instance version
+  if (!baseVersion.empty()) {
+    info += RteConstants::PREFIX_CVERSION;
+    info += baseVersion;
+  }
+  RteFile* f = GetFile(targetName);
+  const string& updateVersion = f ? f->GetVersionString() : RteUtils::EMPTY_STRING;
+
+  string state;
+  if (!RteFsUtils::Exists(absPath)) {
+    state = "not exist";
+  } else if (!updateVersion.empty()) {
+    if (VersionCmp::Compare(baseVersion, updateVersion) == 0) {
+      state = "up to date";
+    } else {
+      state = "update";
+      state += RteConstants::PREFIX_CVERSION;
+      state += updateVersion;
+    }
+  }
+  if (!state.empty()) {
+    info += RteConstants::SPACE_STR;
+    info += RteConstants::OBRACE_STR;
+    info += state;
+    info += RteConstants::CBRACE_STR;
+  }
+  info += " from ";
+  info += GetComponentID(true);
+  return info;
 }
 
 RteComponentInstance* RteFileInstance::GetComponentInstance(const string& targetName) const

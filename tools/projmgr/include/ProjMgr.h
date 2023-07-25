@@ -121,6 +121,7 @@ protected:
   bool RunListBoards(void);
   bool RunListDevices(void);
   bool RunListComponents(void);
+  bool RunListConfigs(void);
   bool RunListDependencies(void);
   bool RunListContexts(void);
   bool RunListGenerators(void);

@@ -3264,16 +3264,17 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ContextMap) {
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_UpdateRte) {
-  char* argv[8];
   const string rteDir = testinput_folder + "/TestSolution/TestProject1/RTE/";
   const string configFile = rteDir + "Device/RteTest_ARMCM0/startup_ARMCM0.c";
   const string baseFile = configFile + ".base@1.1.1";
   RteFsUtils::RemoveDir(rteDir);
-  RteFsUtils::CreateFile(configFile, "");
-  RteFsUtils::CreateFile(baseFile, "");
+  RteFsUtils::CreateFile(configFile, "// config file");
+  RteFsUtils::CreateFile(baseFile, "// config file@base");
 
   StdStreamRedirect streamRedirect;
   string csolutionFile = testinput_folder + "/TestSolution/test.csolution.yml";
+  char* argv[9];
+  argv[0] = (char*)"";
   argv[1] = (char*)"update-rte";
   argv[2] = (char*)csolutionFile.c_str();
   argv[3] = (char*)"-c";
@@ -3295,6 +3296,24 @@ info csolution: config files for each component:\n\
 
   auto outStr = streamRedirect.GetOutString();
   EXPECT_TRUE(regex_match(outStr, regex(expected)));
+
+  streamRedirect.ClearStringStreams();
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"configs";
+  argv[3] = (char*)csolutionFile.c_str();
+  argv[4] = (char*)"-c";
+  argv[5] = (char*)"test1.Debug+CM0";
+  argv[6] = (char*)"-o";
+  argv[7] = (char*)testoutput_folder.c_str();
+  argv[8] = (char*)"-v";
+  EXPECT_EQ(0, RunProjMgr(9, argv, 0));
+
+  outStr = streamRedirect.GetOutString();
+  const string expected1 =
+ "../TestProject1/RTE/Device/RteTest_ARMCM0/ARMCM0_ac6.sct@1.0.0 (up to date) from ARM::Device:Startup&RteTest Startup@2.0.3\n"\
+ "../TestProject1/RTE/Device/RteTest_ARMCM0/startup_ARMCM0.c@1.1.1 (update@2.0.3) from ARM::Device:Startup&RteTest Startup@2.0.3\n"\
+ "../TestProject1/RTE/Device/RteTest_ARMCM0/system_ARMCM0.c@1.0.0 (up to date) from ARM::Device:Startup&RteTest Startup@2.0.3\n";
+  EXPECT_EQ(outStr, expected1);
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_No_target_Types) {
