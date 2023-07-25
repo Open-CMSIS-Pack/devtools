@@ -18,3 +18,9 @@ solution:
   output-dirs:
     intdir: ../PortAbility
     outdir: ..\Portability
+
+  packs:
+    - pack: ARM::RteTest_DFP
+      path: ../../solutionspecificpack
+    - pack: ARM::RteTest_DFP
+      path: ..\..\SolutionSpecificPack

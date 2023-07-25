@@ -3525,6 +3525,7 @@ TEST_F(ProjMgrUnitTests, EnsurePortability) {
   const vector<string> expectedSeparator = {
 {"portability.csolution.yml:20:13 - warning csolution: '..\\Portability' contains non-portable backslash, use forward slash instead"},
 {"portability.csolution.yml:14:7 - warning csolution: '..\\Portability' contains non-portable backslash, use forward slash instead"},
+{"portability.csolution.yml:26:13 - warning csolution: '..\\..\\SolutionSpecificPack' contains non-portable backslash, use forward slash instead"},
 {"bs/bs.cproject.yml:10:16 - warning csolution: '..\\artifact.elf' contains non-portable backslash, use forward slash instead"},
 {"bs/bs.cproject.yml:7:14 - warning csolution: '..\\layer.clayer.yml' contains non-portable backslash, use forward slash instead"},
 {"bs/bs.cproject.yml:4:15 - warning csolution: '..\\linker_script.ld' contains non-portable backslash, use forward slash instead"},
@@ -3536,6 +3537,7 @@ TEST_F(ProjMgrUnitTests, EnsurePortability) {
   const vector<string> expectedCase = {
 {"portability.csolution.yml:19:13 - warning csolution: '../PortAbility' has case inconsistency, use '.' instead"},
 {"portability.csolution.yml:13:7 - warning csolution: '../PortAbility' has case inconsistency, use '.' instead"},
+{"portability.csolution.yml:24:13 - warning csolution: '../../solutionspecificpack' has case inconsistency, use '../../SolutionSpecificPack' instead"},
 {"case/case.cproject.yml:10:16 - warning csolution: '../Artifact.elf' has case inconsistency, use '../artifact.elf' instead"},
 {"case/case.cproject.yml:7:14 - warning csolution: '../laYer.clayer.yml' has case inconsistency, use '../layer.clayer.yml' instead"},
 {"case/case.cproject.yml:4:15 - warning csolution: '../linker_Script.ld' has case inconsistency, use '../linker_script.ld' instead"},
@@ -3547,6 +3549,7 @@ TEST_F(ProjMgrUnitTests, EnsurePortability) {
   const vector<string> expectedNotFound = {
 {"portability.csolution.yml:13:7 - warning csolution: path '../PortAbility' was not found"},
 {"portability.csolution.yml:14:7 - warning csolution: path '..\\Portability' was not found"},
+{"portability.csolution.yml:26:13 - warning csolution: path '..\\..\\SolutionSpecificPack' was not found"},
 {"bs/bs.cproject.yml:7:14 - warning csolution: path '..\\layer.clayer.yml' was not found"},
 {"bs/bs.cproject.yml:4:15 - warning csolution: path '..\\linker_script.ld' was not found"},
 {"bs/bs.cproject.yml:13:15 - warning csolution: path '..\\..\\Portability' was not found"},
