@@ -370,13 +370,19 @@ bool ProjMgr::PopulateContexts(void) {
         return false;
       }
     }
-    // Check cproject separate folders
+    // Check cproject separate folders and unique names
     const StrVec& cprojects = m_parser.GetCsolution().cprojects;
     if (cprojects.size() > 1) {
       multiset<string> dirs;
+      multiset<string> names;
       for (const auto& cproject : cprojects) {
         error_code ec;
         dirs.insert(fs::path(cproject).parent_path().generic_string());
+        names.insert(fs::path(cproject).filename().generic_string());
+      }
+      if (adjacent_find(names.begin(), names.end()) != names.end()) {
+        ProjMgrLogger::Error(m_csolutionFile, "cproject.yml filenames must be unique");
+        return false;
       }
       if (adjacent_find(dirs.begin(), dirs.end()) != dirs.end()) {
         ProjMgrLogger::Warn(m_csolutionFile, "cproject.yml files should be placed in separate sub-directories");

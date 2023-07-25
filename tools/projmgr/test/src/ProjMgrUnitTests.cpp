@@ -3173,6 +3173,23 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_MultipleProject_SameFolder) {
   EXPECT_TRUE(regex_search(errStr, regex(expected)));
 }
 
+TEST_F(ProjMgrUnitTests, RunProjMgr_MultipleProject_SameFilename) {
+  char* argv[5];
+  StdStreamRedirect streamRedirect;
+  const string& csolution = testinput_folder + "/TestSolution/multiple2.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"-o";
+  argv[4] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(1, RunProjMgr(5, argv, 0));
+
+  // Check error message
+  const string expected = ".*/TestSolution/multiple2.csolution.yml - error csolution: cproject.yml filenames must be unique";
+
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_TRUE(regex_search(errStr, regex(expected)));
+}
+
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListEnvironment) {
   auto GetValue = [](const string& inputStr, const string& subStr) -> string{
     auto startPos = inputStr.find(subStr, 0);
