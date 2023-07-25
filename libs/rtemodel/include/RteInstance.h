@@ -1424,6 +1424,15 @@ public:
   int HasNewVersion() const;
 
   /**
+   * @brief creates an info string of the config file (for specified target)
+     RTE folder path used for placing files is taken from target's parent project
+   * @param targetName target name
+   * @param relativeTo calculate relative path to the supplied if not empty, otherwise to project
+   * @return info string
+  */
+  std::string GetInfoString(const std::string& targetName, const std::string& relativeTo = RteUtils::EMPTY_STRING) const;
+
+  /**
    * @brief get file category
    * @return RteFile::Category value
   */

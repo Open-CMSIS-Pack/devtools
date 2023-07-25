@@ -24,6 +24,7 @@ Usage:\n\
 Commands:\n\
   convert                       Convert user input *.yml files to *.cprj files\n\
   list boards                   Print list of available board names\n\
+  list configs                  Print list of configuration files\n\
   list contexts                 Print list of contexts in a <name>.csolution.yml\n\
   list components               Print list of available components\n\
   list dependencies             Print list of unresolved project dependencies\n\
@@ -147,6 +148,7 @@ int ProjMgr::RunProjMgr(int argc, char **argv, char** envp) {
     {"list packs",        { true,  {context, debug, filter, load, missing, schemaCheck, toolchain, verbose}}},
     {"list boards",       { true,  {context, debug, filter, load, schemaCheck, toolchain, verbose}}},
     {"list devices",      { true,  {context, debug, filter, load, schemaCheck, toolchain, verbose}}},
+    {"list configs",      { true,  {context, debug, filter, load, schemaCheck, toolchain, verbose}}},
     {"list components",   { true,  {context, debug, filter, load, schemaCheck, toolchain, verbose}}},
     {"list dependencies", { false, {context, debug, filter, load, schemaCheck, toolchain, verbose}}},
     {"list contexts",     { false, {debug, filter, schemaCheck, verbose, ymlOrder}}},
@@ -290,6 +292,10 @@ int ProjMgr::RunProjMgr(int argc, char **argv, char** envp) {
       }
     } else if (manager.m_args == "components") {
       if (!manager.RunListComponents()) {
+        return 1;
+      }
+    } else if (manager.m_args == "configs") {
+      if (!manager.RunListConfigs()) {
         return 1;
       }
     } else if (manager.m_args == "dependencies") {
@@ -600,6 +606,28 @@ bool ProjMgr::RunListComponents(void) {
   return true;
 }
 
+bool ProjMgr::RunListConfigs() {
+  if (!m_csolutionFile.empty()) {
+    // Parse all input files and create contexts
+    if (!PopulateContexts()) {
+      return false;
+    }
+  }
+  // Parse context selection
+  if (!m_worker.ParseContextSelection(m_context, m_contextReplacement)) {
+    return false;
+  }
+  vector<string> configFiles;
+  if (!m_worker.ListConfigs(configFiles, m_filter)) {
+    ProjMgrLogger::Error("processing config list failed");
+    return false;
+  }
+  for (const auto& configFile : configFiles) {
+    cout << configFile << endl;
+  }
+  return true;
+}
+
 bool ProjMgr::RunListDependencies(void) {
   // Parse all input files and create contexts
   if (!PopulateContexts()) {
@@ -743,7 +771,7 @@ bool ProjMgr::RunListEnvironment(void) {
   cout << "CMSIS_COMPILER_ROOT=" << (env.cmsis_compiler_root.empty() ? notFound : env.cmsis_compiler_root) << endl;
   CrossPlatformUtils::REG_STATUS status = CrossPlatformUtils::GetLongPathRegStatus();
   if (status != CrossPlatformUtils::REG_STATUS::NOT_SUPPORTED) {
-    cout << "Long pathname support=" << 
+    cout << "Long pathname support=" <<
       (status == CrossPlatformUtils::REG_STATUS::ENABLED ? "enabled" : "disabled") << endl;
   }
   return true;

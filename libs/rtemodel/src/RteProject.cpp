@@ -463,9 +463,7 @@ void RteProject::InitFileInstance(RteFileInstance* fi, RteFile* f, int index, Rt
   fi->SetRemoved(false);
   string absPath = fi->GetAbsolutePath();
   bool bExists = RteFsUtils::Exists(absPath);
-  if (!bExists) {
-    UpdateFileInstance(fi, f, false, false);
-  } else {
+  if (bExists) {
     UpdateFileInstanceVersion(fi, savedVersion);
   }
   UpdateConfigFileBackups(fi, f);
@@ -943,25 +941,30 @@ void RteProject::Update()
     }
   }
 
-  // add forced copy files
-  for (auto itf = forcedFiles.begin(); itf != forcedFiles.end(); itf++) {
-    RteFile* f = *itf;
-    string dst = GetProjectPath() + f->GetInstancePathName(EMPTY_STRING, 0, GetRteFolder());
+  // copy files if update is enabled
+  if (ShouldUpdateRte()) {
+    for (auto itt = m_targets.begin(); itt != m_targets.end(); itt++) {
+      WriteInstanceFiles(itt->first);
+    }
+    // add forced copy files
+    for (auto itf = forcedFiles.begin(); itf != forcedFiles.end(); itf++) {
+      RteFile* f = *itf;
+      string dst = GetProjectPath() + f->GetInstancePathName(EMPTY_STRING, 0, GetRteFolder());
 
-    error_code ec;
-    if (fs::exists(dst, ec))
-      continue;
-    string src = f->GetOriginalAbsolutePath();
-    if (!RteFsUtils::CopyCheckFile(src, dst, false)) {
-      string str = "Error: cannot copy file\n";
-      str += src;
-      str += "\n to\n";
-      str += dst;
-      str += "\nOperation failed\n";
-      GetCallback()->OutputErrMessage(str);
+      error_code ec;
+      if (fs::exists(dst, ec))
+        continue;
+      string src = f->GetOriginalAbsolutePath();
+      if (!RteFsUtils::CopyCheckFile(src, dst, false)) {
+        string str = "Error: cannot copy file\n";
+        str += src;
+        str += "\n to\n";
+        str += dst;
+        str += "\nOperation failed\n";
+        GetCallback()->OutputErrMessage(str);
+      }
     }
   }
-
   CollectSettings();
 }
 

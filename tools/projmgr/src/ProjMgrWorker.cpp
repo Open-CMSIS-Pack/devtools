@@ -2862,6 +2862,32 @@ bool ProjMgrWorker::ListComponents(vector<string>& components, const string& fil
   return true;
 }
 
+bool ProjMgrWorker::ListConfigs(vector<string>& configFiles, const string& filter) {
+  set<string>configSet;
+  for (const auto& selectedContext : m_selectedContexts) {
+    ContextItem& context = m_contexts[selectedContext];
+    if (!ProcessContext(context, true, false, false)) {
+      return false;
+    }
+    const string& targetName = context.rteActiveTarget->GetName();
+    for (auto [_, fi] : context.rteActiveProject->GetFileInstances()) {
+      configSet.insert(fi->GetInfoString(targetName, context.csolution->path));
+    }
+  }
+  vector<string> configVec(configSet.begin(), configSet.end());
+  if (!filter.empty()) {
+    vector<string> filteredConfigs;
+    ApplyFilter(configVec, SplitArgs(filter), filteredConfigs);
+    if (filteredConfigs.empty()) {
+      ProjMgrLogger::Error("no unresolved dependency was found with filter '" + filter + "'");
+      return false;
+    }
+    configVec = filteredConfigs;
+  }
+  configFiles.assign(configVec.begin(), configVec.end());
+  return true;
+}
+
 bool ProjMgrWorker::ListDependencies(vector<string>& dependencies, const string& filter) {
   RteCondition::SetVerboseFlags(m_verbose ? VERBOSE_DEPENDENCY : m_debug ? VERBOSE_FILTER | VERBOSE_DEPENDENCY : 0);
   set<string>dependenciesSet;

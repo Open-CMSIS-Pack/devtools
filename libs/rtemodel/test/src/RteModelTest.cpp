@@ -322,7 +322,17 @@ TEST_F(RteModelPrjTest, LoadCprj) {
   const string CompConfig_1_Base_Version = rteDir + "RteTest/" + "ComponentLevelConfig_1.h.base@0.0.1";
   EXPECT_TRUE(RteFsUtils::Exists(CompConfig_0_Base_Version));
   EXPECT_TRUE(RteFsUtils::Exists(CompConfig_1_Base_Version));
+  RteFileInstance * fi = activeCprjProject->GetFileInstance("RTE/RteTest/ComponentLevelConfig_0.h");
+  ASSERT_NE(fi, nullptr);
+  EXPECT_EQ(fi->GetInfoString(activeTarget->GetName()),
+    "RTE/RteTest/ComponentLevelConfig_0.h@0.0.1 (up to date) from ARM::RteTest:ComponentLevel@0.0.1");
+  EXPECT_EQ(fi->GetInfoString(activeTarget->GetName(), prjsDir),
+    "RteTestM3/RTE/RteTest/ComponentLevelConfig_0.h@0.0.1 (up to date) from ARM::RteTest:ComponentLevel@0.0.1");
 
+  ASSERT_NE(fi, nullptr);
+  fi = activeCprjProject->GetFileInstance("RTE/RteTest/ComponentLevelConfig_1.h");
+  EXPECT_EQ(fi->GetInfoString(activeTarget->GetName()),
+    "RTE/RteTest/ComponentLevelConfig_1.h@0.0.1 (up to date) from ARM::RteTest:ComponentLevel@0.0.1");
   error_code ec;
   const fs::perms write_mask = fs::perms::owner_write | fs::perms::group_write | fs::perms::others_write;
   // check config file PLM: existence and permissions
@@ -337,6 +347,10 @@ TEST_F(RteModelPrjTest, LoadCprj) {
   EXPECT_EQ((fs::status(deviceDir + "startup_ARMCM3.c.base@2.0.3", ec).permissions() & write_mask), fs::perms::none);
 
   EXPECT_FALSE(RteFsUtils::Exists(deviceDir + "system_ARMCM3.c.update@1.2.2"));
+  fi = activeCprjProject->GetFileInstance("RTE/Device/RteTest_ARMCM3/system_ARMCM3.c");
+  ASSERT_NE(fi, nullptr);
+  EXPECT_EQ(fi->GetInfoString(activeTarget->GetName()),
+    "RTE/Device/RteTest_ARMCM3/system_ARMCM3.c@1.0.1 (update@1.2.2) from ARM::Device:Startup&RteTest Startup@2.0.3");
 }
 
 TEST_F(RteModelPrjTest, LoadCprj_NoRTEFileCreation) {
@@ -345,30 +359,40 @@ TEST_F(RteModelPrjTest, LoadCprj_NoRTEFileCreation) {
   rteKernel.SetCmsisPackRoot(RteModelTestConfig::CMSIS_PACK_ROOT);
   RteCprjProject* loadedCprjProject = rteKernel.LoadCprj(RteTestM3_cprj, RteUtils::EMPTY_STRING, true, false);
   ASSERT_NE(loadedCprjProject, nullptr);
+  RteTarget* activeTarget = loadedCprjProject->GetActiveTarget();
+  ASSERT_NE(activeTarget, nullptr);
 
   const string rteDir = RteUtils::ExtractFilePath(RteTestM3_cprj, true) + "RTE/";
   const string CompConfig_0_Base_Version = rteDir + "RteTest/" + "ComponentLevelConfig_0.h.base@0.0.1";
   const string CompConfig_1_Base_Version = rteDir + "RteTest/" + "ComponentLevelConfig_1.h.base@0.0.1";
   EXPECT_FALSE(RteFsUtils::Exists(CompConfig_0_Base_Version));
   EXPECT_FALSE(RteFsUtils::Exists(CompConfig_1_Base_Version));
+  RteFileInstance* fi = loadedCprjProject->GetFileInstance("RTE/RteTest/ComponentLevelConfig_0.h");
+  ASSERT_NE(fi, nullptr);
+  EXPECT_EQ(fi->GetInfoString(activeTarget->GetName()),
+    "RTE/RteTest/ComponentLevelConfig_0.h@0.0.1 (up to date) from ARM::RteTest:ComponentLevel@0.0.1");
 
   const string deviceDir = rteDir + "Device/RteTest_ARMCM3/";
   EXPECT_FALSE(RteFsUtils::Exists(deviceDir + "ARMCM3_ac6.sct.update@1.2.0"));
   EXPECT_FALSE(RteFsUtils::Exists(deviceDir + "startup_ARMCM3.c.base@2.0.3"));
   EXPECT_FALSE(RteFsUtils::Exists(deviceDir + "system_ARMCM3.c.update@1.2.2"));
 
-  // additionally test support for RTE folder with spaces
-  auto& fileInstances= loadedCprjProject->GetFileInstances();
-  // take existing file instance
-  auto it = fileInstances.find("RTE/Device/RteTest_ARMCM3/startup_ARMCM3.c");
-  RteFileInstance* fi = it != fileInstances.end() ? it->second : nullptr;
+  fi = loadedCprjProject->GetFileInstance("RTE/Device/RteTest_ARMCM3/system_ARMCM3.c");
   ASSERT_NE(fi, nullptr);
+  EXPECT_EQ(fi->GetInfoString(activeTarget->GetName()),
+    "RTE/Device/RteTest_ARMCM3/system_ARMCM3.c@1.0.1 (update@1.2.2) from ARM::Device:Startup&RteTest Startup@2.0.3");
+  RteFsUtils::RemoveFile(fi->GetAbsolutePath());
+  EXPECT_EQ(fi->GetInfoString(activeTarget->GetName()),
+    "RTE/Device/RteTest_ARMCM3/system_ARMCM3.c@1.0.1 (not exist) from ARM::Device:Startup&RteTest Startup@2.0.3");
+
+  // additionally test support for RTE folder with spaces
+  // take existing file instance
   // use its file to create path with another RTE directory
   RteFile* f = fi ? fi->GetFile(loadedCprjProject->GetActiveTargetName()) : nullptr ;
   ASSERT_NE(f, nullptr);
   const string& deviceName = loadedCprjProject->GetActiveTarget()->GetDeviceName();
   string pathName = f->GetInstancePathName(deviceName, 0 , "RTE With Spaces");
-  EXPECT_EQ(pathName, "RTE With Spaces/Device/RteTest_ARMCM3/startup_ARMCM3.c");
+  EXPECT_EQ(pathName, "RTE With Spaces/Device/RteTest_ARMCM3/system_ARMCM3.c");
 }
 
 TEST_F(RteModelPrjTest, LoadCprj_PackPath) {
