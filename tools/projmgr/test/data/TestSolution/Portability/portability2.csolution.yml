@@ -8,3 +8,6 @@ solution:
   projects:
     - project: ./Case/caSe.cproject.yml
     - project: .\bs\bs.cproject.yml
+
+  add-path:
+    - ./$Compiler$

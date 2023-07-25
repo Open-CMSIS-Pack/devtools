@@ -10,6 +10,7 @@
 #include "ProjMgrYamlSchemaChecker.h"
 
 #include "RteFsUtils.h"
+#include <regex>
 #include <string>
 
 using namespace std;
@@ -90,7 +91,7 @@ bool ProjMgrYamlParser::ParseCsolution(const string& input,
     if (!ParseTargetType(solutionNode, csolution.path, csolution.target)) {
       return false;
     }
-    ParsePacks(solutionNode, csolution.packs);
+    ParsePacks(solutionNode, csolution.path, csolution.packs);
     csolution.enableCdefault = solutionNode[YAML_CDEFAULT].IsDefined();
     ParseGenerators(solutionNode, csolution.path, csolution.generators);
 
@@ -128,7 +129,7 @@ bool ProjMgrYamlParser::ParseCproject(const string& input,
 
     ParseTargetType(projectNode, cproject.path, cproject.target);
 
-    ParsePacks(projectNode, cproject.packs);
+    ParsePacks(projectNode, cproject.path, cproject.packs);
 
     if (!ParseComponents(projectNode, cproject.path, cproject.components)) {
       return false;
@@ -201,7 +202,7 @@ bool ProjMgrYamlParser::ParseClayer(const string& input,
 
     ParseTargetType(layerNode, clayer.path, clayer.target);
 
-    ParsePacks(layerNode, clayer.packs);
+    ParsePacks(layerNode, clayer.path, clayer.packs);
 
     if (!ParseComponents(layerNode, clayer.path, clayer.components)) {
       return false;
@@ -243,7 +244,7 @@ void ProjMgrYamlParser::EnsurePortability(const string& file, const YAML::Mark& 
         if (!canonical.empty() && (original != canonical)) {
           ProjMgrLogger::Warn(file, mark.line + 1, mark.column + 1, "'" + value + "' has case inconsistency, use '" + RteFsUtils::RelativePath(canonical, parentDir) + "' instead");
         }
-      } else if (checkExist) {
+      } else if (checkExist && !regex_match(value, regex(".*\\$.*\\$.*"))) {
         ProjMgrLogger::Warn(file, mark.line + 1, mark.column + 1, "path '" + value + "' was not found");
       }
     }
@@ -466,13 +467,13 @@ void ProjMgrYamlParser::ParseMisc(const YAML::Node& parent, vector<MiscItem>& mi
   }
 }
 
-void ProjMgrYamlParser::ParsePacks(const YAML::Node& parent, vector<PackItem>& packs) {
+void ProjMgrYamlParser::ParsePacks(const YAML::Node& parent, const string& file, vector<PackItem>& packs) {
   if (parent[YAML_PACKS].IsDefined()) {
     const YAML::Node& packNode = parent[YAML_PACKS];
     for (const auto& packEntry : packNode) {
       PackItem packItem;
       ParseString(packEntry, YAML_PACK, packItem.pack);
-      ParseString(packEntry, YAML_PATH, packItem.path);
+      ParsePortablePath(packEntry, file, YAML_PATH, packItem.path);
       ParseTypeFilter(packEntry, packItem.type);
       packs.push_back(packItem);
     }
