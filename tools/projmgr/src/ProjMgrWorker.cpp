@@ -75,15 +75,14 @@ bool ProjMgrWorker::AddContexts(ProjMgrParser& parser, ContextDesc& descriptor, 
 
   // No build/target-types
   if (context.csolution->buildTypes.empty() && context.csolution->targetTypes.empty()) {
-    return AddContext(parser, descriptor, { "" }, cprojectFile, context);
+    AddContext(descriptor, { "" }, context);
+    return true;
   }
 
   // No build-types
   if (context.csolution->buildTypes.empty()) {
     for (const auto& targetTypeItem : context.csolution->targetTypes) {
-      if (!AddContext(parser, descriptor, {"", targetTypeItem.first}, cprojectFile, context)) {
-        return false;
-      }
+      AddContext(descriptor, { "", targetTypeItem.first }, context);
     }
     return true;
   }
@@ -91,15 +90,13 @@ bool ProjMgrWorker::AddContexts(ProjMgrParser& parser, ContextDesc& descriptor, 
   // Add contexts for project x build-type x target-type combinations
   for (const auto& buildTypeItem : context.csolution->buildTypes) {
     for (const auto& targetTypeItem : context.csolution->targetTypes) {
-      if (!AddContext(parser, descriptor, {buildTypeItem.first, targetTypeItem.first}, cprojectFile, context)) {
-        return false;
-      }
+      AddContext(descriptor, { buildTypeItem.first, targetTypeItem.first }, context);
     }
   }
   return true;
 }
 
-bool ProjMgrWorker::AddContext(ProjMgrParser& parser, ContextDesc& descriptor, const TypePair& type, const string& cprojectFile, ContextItem& parentContext) {
+void ProjMgrWorker::AddContext(ContextDesc& descriptor, const TypePair& type, ContextItem& parentContext) {
   if (CheckType(descriptor.type, {type})) {
     ContextItem context = parentContext;
     context.type.build = type.build;
@@ -138,46 +135,49 @@ bool ProjMgrWorker::AddContext(ProjMgrParser& parser, ContextDesc& descriptor, c
     context.variables[ProjMgrUtils::AS_BUILD_TYPE] = context.type.build;
     context.variables[ProjMgrUtils::AS_TARGET_TYPE] = context.type.target;
 
-    // user defined variables
-    auto userVariablesList = {
-      context.csolution->target.build.variables,
-      context.csolution->buildTypes[type.build].variables,
-      context.csolution->targetTypes[type.target].build.variables,
-    };
-    for (const auto& var : userVariablesList) {
-      for (const auto& [key, value] : var) {
-        if ((context.variables.find(key) != context.variables.end()) && (context.variables.at(key) != value)) {
-          ProjMgrLogger::Warn("variable '" + key + "' redefined from '" + context.variables.at(key) + "' to '" + value + "'");
-        }
-        context.variables[key] = value;
-      }
-    }
-
-    // parse clayers
-    for (const auto& clayer : context.cproject->clayers) {
-      if (clayer.layer.empty()) {
-        continue;
-      }
-      if (CheckContextFilters(clayer.typeFilter, context)) {
-        string const& clayerRef = ExpandString(clayer.layer, context.variables);
-        string const& clayerFile = fs::canonical(fs::path(cprojectFile).parent_path().append(clayerRef), ec).generic_string();
-        if (clayerFile.empty()) {
-          if (regex_match(clayer.layer, regex(".*\\$.*\\$.*"))) {
-            ProjMgrLogger::Warn(clayer.layer, "variable was not defined for context '" + context.name +"'");
-          } else {
-            ProjMgrLogger::Error(clayer.layer, "clayer file was not found");
-            return false;
-          }
-        } else {
-          if (!parser.ParseClayer(clayerFile, m_checkSchema)) {
-            return false;
-          }
-          context.clayers[clayerFile] = &parser.GetClayers().at(clayerFile);
-        }
-      }
-    }
     ProjMgrUtils::PushBackUniquely(m_ymlOrderedContexts, context.name);
     m_contexts[context.name] = context;
+  }
+}
+
+bool ProjMgrWorker::ParseContextLayers(ContextItem& context) {
+  // user defined variables
+  auto userVariablesList = {
+    context.csolution->target.build.variables,
+    context.csolution->buildTypes[context.type.build].variables,
+    context.csolution->targetTypes[context.type.target].build.variables,
+  };
+  for (const auto& var : userVariablesList) {
+    for (const auto& [key, value] : var) {
+      if ((context.variables.find(key) != context.variables.end()) && (context.variables.at(key) != value)) {
+        ProjMgrLogger::Warn("variable '" + key + "' redefined from '" + context.variables.at(key) + "' to '" + value + "'");
+      }
+      context.variables[key] = value;
+    }
+  }
+  // parse clayers
+  for (const auto& clayer : context.cproject->clayers) {
+    if (clayer.layer.empty()) {
+      continue;
+    }
+    if (CheckContextFilters(clayer.typeFilter, context)) {
+      error_code ec;
+      string const& clayerRef = ExpandString(clayer.layer, context.variables);
+      string const& clayerFile = fs::canonical(fs::path(context.cproject->directory).append(clayerRef), ec).generic_string();
+      if (clayerFile.empty()) {
+        if (regex_match(clayer.layer, regex(".*\\$.*\\$.*"))) {
+          ProjMgrLogger::Warn(clayer.layer, "variable was not defined for context '" + context.name +"'");
+        } else {
+          ProjMgrLogger::Error(clayer.layer, "clayer file was not found");
+          return false;
+        }
+      } else {
+        if (!m_parser->ParseClayer(clayerFile, m_checkSchema)) {
+          return false;
+        }
+        context.clayers[clayerFile] = &m_parser->GetClayers().at(clayerFile);
+      }
+    }
   }
   return true;
 }
@@ -3317,6 +3317,14 @@ bool ProjMgrWorker::ParseContextSelection(const vector<string>& contextSelection
     cout << "is replaced with:" << endl;
     for (const auto& context : m_selectedContexts) {
       cout << "  " + context << endl;
+    }
+  }
+
+  if (!((m_selectedContexts.size() == 1) && (m_selectedContexts.front() == RteUtils::EMPTY_STRING))) {
+    for (const auto& context : m_selectedContexts) {
+      if (!ParseContextLayers(m_contexts[context])) {
+        return false;
+      }
     }
   }
   return true;

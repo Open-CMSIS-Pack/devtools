@@ -1,3 +1,10 @@
 project:
+  device: RteTest_ARMCM0
+  compiler: AC6
+
   components:
     - component: CORE
+
+  layers:
+    - layer: $LayerVar$
+      type: LayerType
