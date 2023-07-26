@@ -75,15 +75,14 @@ bool ProjMgrWorker::AddContexts(ProjMgrParser& parser, ContextDesc& descriptor, 
 
   // No build/target-types
   if (context.csolution->buildTypes.empty() && context.csolution->targetTypes.empty()) {
-    return AddContext(descriptor, { "" }, context);
+    AddContext(descriptor, { "" }, context);
+    return true;
   }
 
   // No build-types
   if (context.csolution->buildTypes.empty()) {
     for (const auto& targetTypeItem : context.csolution->targetTypes) {
-      if (!AddContext(descriptor, {"", targetTypeItem.first}, context)) {
-        return false;
-      }
+      AddContext(descriptor, { "", targetTypeItem.first }, context);
     }
     return true;
   }
@@ -91,15 +90,13 @@ bool ProjMgrWorker::AddContexts(ProjMgrParser& parser, ContextDesc& descriptor, 
   // Add contexts for project x build-type x target-type combinations
   for (const auto& buildTypeItem : context.csolution->buildTypes) {
     for (const auto& targetTypeItem : context.csolution->targetTypes) {
-      if (!AddContext(descriptor, {buildTypeItem.first, targetTypeItem.first}, context)) {
-        return false;
-      }
+      AddContext(descriptor, { buildTypeItem.first, targetTypeItem.first }, context);
     }
   }
   return true;
 }
 
-bool ProjMgrWorker::AddContext(ContextDesc& descriptor, const TypePair& type, ContextItem& parentContext) {
+void ProjMgrWorker::AddContext(ContextDesc& descriptor, const TypePair& type, ContextItem& parentContext) {
   if (CheckType(descriptor.type, {type})) {
     ContextItem context = parentContext;
     context.type.build = type.build;
@@ -141,7 +138,6 @@ bool ProjMgrWorker::AddContext(ContextDesc& descriptor, const TypePair& type, Co
     ProjMgrUtils::PushBackUniquely(m_ymlOrderedContexts, context.name);
     m_contexts[context.name] = context;
   }
-  return true;
 }
 
 bool ProjMgrWorker::ParseContextLayers(ContextItem& context) {

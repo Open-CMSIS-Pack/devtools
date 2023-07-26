@@ -614,7 +614,7 @@ protected:
   bool ProcessLinkerOptions(ContextItem& context);
   bool ProcessLinkerOptions(ContextItem& context, const LinkerItem& linker, const std::string& ref);
   bool ProcessProcessorOptions(ContextItem& context);
-  bool AddContext(ContextDesc& descriptor, const TypePair& type, ContextItem& parentContext);
+  void AddContext(ContextDesc& descriptor, const TypePair& type, ContextItem& parentContext);
   bool ValidateContext(ContextItem& context);
   bool FormatValidationResults(std::set<std::string>& results, const ContextItem& context);
   void UpdateMisc(std::vector<MiscItem>& vec, const std::string& compiler);
