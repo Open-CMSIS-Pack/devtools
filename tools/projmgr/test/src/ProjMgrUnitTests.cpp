@@ -2951,6 +2951,30 @@ TEST_F(ProjMgrUnitTests, RunCheckForContext) {
   }
 }
 
+TEST_F(ProjMgrUnitTests, RunCheckContextProcessing) {
+  char* argv[7];
+  StdStreamRedirect streamRedirect;
+  const string& csolution = testinput_folder + "/TestSolution/contexts.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"-c";
+  argv[4] = (char*)"contexts.B1+T1";
+  argv[5] = (char*)"-o";
+  argv[6] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(0, RunProjMgr(7, argv, 0));
+
+  // Check warning for processed context
+  const string expected = "$LayerVar$ - warning csolution: variable was not defined for context 'contexts.B1+T1'";
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_TRUE(errStr.find(expected) != string::npos);
+
+  // Contexts not being processed don't trigger warnings
+  const vector<string> absenceExpectedList = { "'contexts.B1+T2'", "'contexts.B2+T1'", "'contexts.B2+T2'" };
+  for (const auto& absenceExpected : absenceExpectedList) {
+    EXPECT_TRUE(errStr.find(absenceExpected) == string::npos);
+  }
+}
+
 TEST_F(ProjMgrUnitTests, RunProjMgrOutputFiles) {
   char* argv[5];
   StdStreamRedirect streamRedirect;

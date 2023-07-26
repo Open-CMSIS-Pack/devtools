@@ -25,6 +25,8 @@ protected:
 
 void ProjMgrWorkerUnitTests::SetCsolutionPacks(CsolutionItem* csolution, std::vector<std::string> packs, std::string targetType) {
   ContextItem context;
+  static CprojectItem cproject;
+  context.cproject = &cproject;
   for (auto& pack : packs) {
     csolution->packs.push_back(PackItem{pack, {}});
   }

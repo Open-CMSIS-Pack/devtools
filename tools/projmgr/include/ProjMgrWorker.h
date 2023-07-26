@@ -614,7 +614,7 @@ protected:
   bool ProcessLinkerOptions(ContextItem& context);
   bool ProcessLinkerOptions(ContextItem& context, const LinkerItem& linker, const std::string& ref);
   bool ProcessProcessorOptions(ContextItem& context);
-  bool AddContext(ProjMgrParser& parser, ContextDesc& descriptor, const TypePair& type, const std::string& cprojectFile, ContextItem& parentContext);
+  bool AddContext(ContextDesc& descriptor, const TypePair& type, ContextItem& parentContext);
   bool ValidateContext(ContextItem& context);
   bool FormatValidationResults(std::set<std::string>& results, const ContextItem& context);
   void UpdateMisc(std::vector<MiscItem>& vec, const std::string& compiler);
@@ -669,6 +669,7 @@ protected:
   void UpdatePartialReferencedContext(ContextItem& context, std::string& contextName);
   void ExpandAccessSequence(const ContextItem& context, const ContextItem& refContext, const std::string& sequence, std::string& item, bool withHeadingDot);
   bool GetGeneratorDir(const RteGenerator* generator, ContextItem& context, const std::string& layer, std::string& genDir);
+  bool ParseContextLayers(ContextItem& context);
 };
 
 #endif  // PROJMGRWORKER_H
