@@ -562,6 +562,15 @@ string RteFsUtils::ParentPath(const string& path) {
   return fs::path(path).parent_path().generic_string();
 }
 
+string RteFsUtils::LexicallyNormal(const string& path) {
+  string lexicallyNormal = fs::path(path).lexically_normal().generic_string();
+  if ((lexicallyNormal.length() > 1) && (lexicallyNormal.back() == '/')) {
+    // remove trailing separator for alignment with canonical behaviour
+    lexicallyNormal.pop_back();
+  }
+  return lexicallyNormal;
+}
+
 string RteFsUtils::RelativePath(const string& path, const string& base, bool withHeadingDot) {
   if (path.empty() || base.empty()) {
     return "";

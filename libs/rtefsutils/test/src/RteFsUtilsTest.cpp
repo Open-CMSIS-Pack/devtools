@@ -920,6 +920,19 @@ TEST_F(RteFsUtilsTest, ParentPath) {
   EXPECT_EQ(filePath, dirnameSubdir);
 }
 
+TEST_F(RteFsUtilsTest, LexicallyNormal) {
+  string dirPath;
+
+  dirPath = RteFsUtils::LexicallyNormal(dirnameDotDotSubdir);
+  EXPECT_EQ(dirPath, dirnameSubdir);
+
+  dirPath = RteFsUtils::LexicallyNormal(dirnameDotSubdir);
+  EXPECT_EQ(dirPath, dirnameSubdir);
+
+  dirPath = RteFsUtils::LexicallyNormal(dirnameSubdirWithTrailing);
+  EXPECT_EQ(dirPath, dirnameSubdir);
+}
+
 TEST_F(RteFsUtilsTest, RelativePath) {
   string relPath;
   string absSubdir = RteFsUtils::AbsolutePath(dirnameSubdir).generic_string();
