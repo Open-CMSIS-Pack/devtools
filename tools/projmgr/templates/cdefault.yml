@@ -23,6 +23,7 @@ default:
     - for-compiler: GCC
       C-CPP:
         - -masm-syntax-unified
+        - -fomit-frame-pointer
       C:
         - -std=gnu11
       Link:
@@ -31,6 +32,8 @@ default:
         - -Wl,-Map=$elf()$.map
 
     - for-compiler: CLANG
+      C-CPP:
+        - -fomit-frame-pointer
       C:
         - -std=gnu11
       Link:
