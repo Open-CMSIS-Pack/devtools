@@ -224,6 +224,13 @@ public:
   static std::string ParentPath(const std::string& path);
 
   /**
+   * @brief get lexically normalized path
+   * @param path path to be processed
+   * @return string containing the lexically normalized path
+  */
+  static std::string LexicallyNormal(const std::string& path);
+
+  /**
    * @brief determine relative path in respect to base directory
    * @param path path to be processed
    * @param base base directory

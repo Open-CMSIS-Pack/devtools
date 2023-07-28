@@ -237,7 +237,7 @@ void ProjMgrYamlParser::EnsurePortability(const string& file, const YAML::Mark& 
       value.clear();
     } else {
       const string parentDir = RteFsUtils::ParentPath(file);
-      const string original = fs::path(parentDir).append(value).lexically_normal().generic_string();
+      const string original = RteFsUtils::LexicallyNormal(fs::path(parentDir).append(value).generic_string());
       if (RteFsUtils::Exists(original)) {
         error_code ec;
         string canonical = fs::canonical(original, ec).generic_string();
