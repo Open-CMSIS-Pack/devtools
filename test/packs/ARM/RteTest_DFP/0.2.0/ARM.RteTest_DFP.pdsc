@@ -4,7 +4,7 @@
   <name>RteTest_DFP</name>
   <description>RTE test of DFP pack, extraction from ARM.CMSIS</description>
   <vendor>ARM</vendor>
-  <!-- <license>license.txt</license> -->
+  <license>Doc/license.txt</license>
   <url>http://www.keil.com/pack/</url>
 
   <releases>

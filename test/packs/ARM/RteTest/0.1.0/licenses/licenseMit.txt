@@ -1,0 +1,6 @@
+Copyright 2023 Arm Ltd.
+MIT License
+
+File to test licenseSets pdsc element:
+https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_licenseSets_pg.html
+in fact, all files in this repo are under apache-2.0. license 

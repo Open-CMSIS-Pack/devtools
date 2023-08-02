@@ -497,7 +497,7 @@ TEST_F(ProjMgrWorkerUnitTests, LoadDuplicatePacks) {
   EXPECT_TRUE(LoadPacks(context));
   // Check if only one pack is loaded
   ASSERT_EQ(1, m_loadedPacks.size());
-  EXPECT_EQ("ARM.RteTest_DFP.0.2.0", (*m_loadedPacks.begin())->GetPackageID());
+  EXPECT_EQ("ARM::RteTest_DFP@0.2.0", (*m_loadedPacks.begin())->GetPackageID());
 }
 
 TEST_F(ProjMgrWorkerUnitTests, LoadDuplicatePacksFromDifferentPaths) {
@@ -515,7 +515,7 @@ TEST_F(ProjMgrWorkerUnitTests, LoadDuplicatePacksFromDifferentPaths) {
 
   // Check if only one pack is loaded
   ASSERT_EQ(1, m_loadedPacks.size());
-  EXPECT_EQ("ARM.RteTest_DFP.0.2.0", (*m_loadedPacks.begin())->GetPackageID());
+  EXPECT_EQ("ARM::RteTest_DFP@0.2.0", (*m_loadedPacks.begin())->GetPackageID());
 
   // Check that warning is issued
   EXPECT_FALSE(m_model->Validate());
@@ -531,7 +531,7 @@ TEST_F(ProjMgrWorkerUnitTests, LoadRequiredPacks) {
   EXPECT_TRUE(LoadPacks(context));
   // Check if only one pack is loaded
   ASSERT_EQ(1, m_loadedPacks.size());
-  EXPECT_EQ("ARM.RteTest_DFP.0.2.0", (*m_loadedPacks.begin())->GetPackageID());
+  EXPECT_EQ("ARM::RteTest_DFP@0.2.0", (*m_loadedPacks.begin())->GetPackageID());
 }
 
 TEST_F(ProjMgrWorkerUnitTests, LoadExactPackVersion) {
@@ -541,7 +541,7 @@ TEST_F(ProjMgrWorkerUnitTests, LoadExactPackVersion) {
   EXPECT_TRUE(LoadPacks(context));
   // Check if only one pack is loaded
   ASSERT_EQ(1, m_loadedPacks.size());
-  EXPECT_EQ("ARM.RteTest_DFP.0.1.1", (*m_loadedPacks.begin())->GetPackageID());
+  EXPECT_EQ("ARM::RteTest_DFP@0.1.1", (*m_loadedPacks.begin())->GetPackageID());
 }
 
 TEST_F(ProjMgrWorkerUnitTests, LoadPacksNoPackage) {
@@ -560,7 +560,7 @@ TEST_F(ProjMgrWorkerUnitTests, LoadFilteredPack_1) {
   EXPECT_TRUE(LoadPacks(context));
   // Check if only one pack is loaded
   ASSERT_EQ(1, m_loadedPacks.size());
-  EXPECT_EQ("ARM.RteTestGenerator.0.1.0", (*m_loadedPacks.begin())->GetPackageID());
+  EXPECT_EQ("ARM::RteTestGenerator@0.1.0", (*m_loadedPacks.begin())->GetPackageID());
 }
 
 TEST_F(ProjMgrWorkerUnitTests, LoadFilteredPack_2) {
@@ -582,7 +582,7 @@ TEST_F(ProjMgrWorkerUnitTests, LoadFilteredPack_3) {
   ContextItem context;
   EXPECT_TRUE(LoadPacks(context));
   ASSERT_EQ(1, m_loadedPacks.size());
-  EXPECT_EQ("ARM.RteTest_DFP.0.2.0", (*m_loadedPacks.begin())->GetPackageID());
+  EXPECT_EQ("ARM::RteTest_DFP@0.2.0", (*m_loadedPacks.begin())->GetPackageID());
 }
 
 TEST_F(ProjMgrWorkerUnitTests, LoadFilteredPack_4) {
@@ -604,7 +604,7 @@ TEST_F(ProjMgrWorkerUnitTests, LoadFilteredPack_5) {
   ContextItem context;
   EXPECT_TRUE(LoadPacks(context));
   ASSERT_EQ(1, m_loadedPacks.size());
-  EXPECT_EQ("ARM.RteTest_DFP.0.2.0", (*m_loadedPacks.begin())->GetPackageID());
+  EXPECT_EQ("ARM::RteTest_DFP@0.2.0", (*m_loadedPacks.begin())->GetPackageID());
 }
 
 TEST_F(ProjMgrWorkerUnitTests, LoadPack_Filter_Unknown) {

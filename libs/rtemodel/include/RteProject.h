@@ -32,6 +32,123 @@ class RteTarget;
 class CprjTargetElement;
 
 /**
+ * @brief class to represent aggregated license info
+*/
+class RteLicenseInfo :public RteItem
+{
+public:
+  /**
+   * @brief default constructor
+   * @param parent
+  */
+  RteLicenseInfo(RteItem* parent = nullptr);
+
+ /**
+  * @brief add component ID to the internal collection
+  * @param componentID component ID string
+ */
+  void AddComponentId(const std::string& componentID) { m_componentIDs.insert(componentID); }
+
+  /**
+   * @brief add pack ID to the internal collection
+   * @param packID pack ID string
+  */
+  void AddPackId(const std::string& packID) { m_packIDs.insert(packID); }
+
+
+  /**
+   * @brief return collection of component IDs associated with the license
+   * @return set of component IDs
+  */
+  const std::set<std::string>& GetComponentIDs() const { return m_componentIDs; }
+
+  /**
+   * @brief return collection of pack IDs associated with the license
+   * @return set of pack IDs
+  */
+  const std::set<std::string>& GetPackIDs() const { return m_packIDs; };
+
+  /**
+   * @brief return collection package IDs associated with the license
+   * @return pack ID string
+  */
+  std::string GetPackageID(bool withVersion = true) const override { return GetAttribute("pack"); };
+
+  /**
+   * @brief convert info content to yml-like text
+   * @return yml formatted text
+  */
+  std::string ToString(unsigned indent = 0);
+
+  /**
+   * @brief construct license title
+   * @param license pointer to RteItem representing <license> element
+   * @return license ID string : spdx or combination of title and type
+  */
+  static std::string ConstructLicenseTitle(const RteItem* license);
+
+  /**
+   * @brief construct license internal ID
+   * @param license pointer to RteItem representing <license> element
+   * @return license ID string : spdx or combination of title, type and pack ID
+  */
+  static std::string ConstructLicenseID(const RteItem* license);
+
+protected:
+  std::set<std::string> m_componentIDs;
+  std::set<std::string> m_packIDs;
+};
+
+class RteLicenseInfoCollection
+{
+public:
+  /**
+   * @brief  default constructor
+  */
+  RteLicenseInfoCollection() {};
+
+  /**
+   * @brief virtual destructor
+  */
+  virtual ~RteLicenseInfoCollection();
+
+  /**
+   * @brief clear internal structures
+  */
+  void Clear();
+
+  /**
+   * @brief add license info to the collection
+   * @param item pointer to RteItem (RteComponent, RteApi, RtePackage)
+  */
+  void AddLicenseInfo(RteItem* item);
+
+  /**
+   * @brief convert collection content to yml-like text
+   * @return yml formatted text
+  */
+  std::string ToString();
+
+protected:
+  /**
+   * @brief Ensure collection contains RteLicenseInfo object for specified object
+   * @param item RteItem* object to add
+   * @param license RteItem* pointing to license element, may be NULL
+   * @return pointer to RteLicenseInfo object
+  */
+  RteLicenseInfo* EnsureLicensInfo(RteItem* item, RteItem* licenseElement);
+
+  /**
+   * @brief Ensure collection contains RteLicenseInfo object for specified ID
+   * @param licId internal license ID
+   * @return reference to RteLicenseInfo object
+  */
+  RteLicenseInfo* EnsureLicensInfo(const std::string& licId);
+
+  std::map<std::string, RteLicenseInfo*> m_LicensInfos;
+};
+
+/**
  * @brief class representing project consuming CMSIS RTE data
 */
 class RteProject : public RteRootItem
@@ -431,7 +548,12 @@ public:
   */
   const RteFileInfo* GetFileInfo(const std::string& groupName, const std::string& file, const std::string& target) const;
 
-public:
+  /**
+   * @brief collect license info used in project
+   * @param collection of license infos
+  */
+  void CollectLicenseInfos(RteLicenseInfoCollection& licenseInfos) const;
+
   /**
    * @brief update CMSIS RTE data such as components, boards, gpdsc information, project files in project.
    * @return true if CMSIS RTE data is updated otherwise false

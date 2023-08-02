@@ -531,32 +531,6 @@ std::string RteUtils::Trim(const std::string& str) {
   return str.substr(begin, range);
 }
 
-
-string RteUtils::GetPackID(const string &path) {
-  string res;
-  size_t pos = path.find_last_of('/') + 1; // string::npos + 1 = 0 in case of file name without path
-  size_t pos2 = path.find_last_of('.');
-  if (pos2 != string::npos) {
-    res = path.substr(pos, pos2 - pos);   // res := vendor.name.majv.minv.minv2
-    if (res.find('.') != string::npos)
-      res.replace(res.find('.'), 1, "::");
-    if (res.find('.') != string::npos)
-      res.replace(res.find('.'), 1, "::");
-  }
-  return res;
-}
-
-string RteUtils::VendorFromPackageId(const std::string &packageId) {
-  // assumed packageId format is conform
-  return std::string(packageId.substr(0, packageId.find_first_of('.')));
-}
-
-string RteUtils::NameFromPackageId(const std::string &packageId) {
-  // assumed packageId format is conform
-  size_t pos = packageId.find_first_of(".");
-  return std::string(packageId.substr(pos + 1, packageId.find('.', pos+1) - pos - 1));
-}
-
 string RteUtils::ConstructID(const std::vector<std::pair<const char*, const std::string&>>& elements) {
   string id;
   for (const auto& element : elements) {

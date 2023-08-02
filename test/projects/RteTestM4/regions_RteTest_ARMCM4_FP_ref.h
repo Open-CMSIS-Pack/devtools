@@ -4,7 +4,7 @@
 
 //-------- <<< Use Configuration Wizard in Context Menu >>> --------------------
 
-// <n>Device pack:   ARM.RteTest_DFP.0.2.0
+// <n>Device pack:   ARM::RteTest_DFP@0.2.0
 // <i>Device pack used to generate this file
 
 // <h>ROM Configuration

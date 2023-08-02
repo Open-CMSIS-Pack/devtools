@@ -989,7 +989,7 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
     }
 
     const auto& boardPackage = matchedBoard->GetPackage();
-    context.packages.insert({ ProjMgrUtils::GetPackageID(boardPackage), boardPackage });
+    context.packages.insert({ boardPackage->GetID(), boardPackage });
     context.targetAttributes["Bname"]    = matchedBoard->GetName();
     context.targetAttributes["Bvendor"]  = matchedBoard->GetVendorName();
     context.targetAttributes["Brevision"] = matchedBoard->GetRevision();
@@ -1115,7 +1115,7 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
     }
   }
 
-  context.packages.insert({ ProjMgrUtils::GetPackageID(matchedDevice->GetPackage()), matchedDevice->GetPackage() });
+  context.packages.insert({ matchedDevice->GetPackageID(true), matchedDevice->GetPackage() });
   return true;
 }
 
@@ -1288,12 +1288,12 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
     // Insert matched component into context list
     context.components.insert({ componentId, { matchedComponentInstance, &item, generatorId } });
     const auto& componentPackage = matchedComponent->GetPackage();
-    context.packages.insert({ ProjMgrUtils::GetPackageID(componentPackage), componentPackage });
+    context.packages.insert({ componentPackage->GetID(), componentPackage });
     if (matchedComponent->HasApi(context.rteActiveTarget)) {
       const auto& api = matchedComponent->GetApi(context.rteActiveTarget, false);
       if (api) {
         const auto& apiPackage = api->GetPackage();
-        context.packages.insert({ ProjMgrUtils::GetPackageID(apiPackage), apiPackage });
+        context.packages.insert({ apiPackage->GetID(), apiPackage });
       }
     }
   }
@@ -2687,7 +2687,7 @@ bool ProjMgrWorker::ListPacks(vector<string>&packs, bool missingPacks, const str
     GetRequiredPdscFiles(context, m_packRoot, errMsgs);
     // Get missing packs identifiers
     for (const auto& pack : context.missingPacks) {
-      packsSet.insert(ProjMgrUtils::GetPackageID(pack.vendor, pack.name, pack.version));
+      packsSet.insert(RtePackage::ComposePackageID(pack.vendor, pack.name, pack.version));
     }
     if (!missingPacks) {
       if (context.packRequirements.size() > 0) {
@@ -2713,7 +2713,7 @@ bool ProjMgrWorker::ListPacks(vector<string>&packs, bool missingPacks, const str
       // Load packs and get loaded packs identifiers
       m_kernel->LoadAndInsertPacks(m_loadedPacks, pdscFiles);
       for (const auto& pack : m_loadedPacks) {
-        packsSet.insert(ProjMgrUtils::GetPackageID(pack) + " (" + pack->GetPackageFileName() + ")");
+        packsSet.insert(pack->GetID() + " (" + pack->GetPackageFileName() + ")");
       }
     }
     if (errMsgs.size() > 0) {
@@ -2747,7 +2747,7 @@ bool ProjMgrWorker::ListBoards(vector<string>& boards, const string& filter) {
       const string& boardVendor = board->GetVendorName();
       const string& boardName = board->GetName();
       const string& boardRevision = board->GetRevision();
-      const string& boardPack = ProjMgrUtils::GetPackageID(board->GetPackage());
+      const string& boardPack = board->GetPackageID(true);
       boardsSet.insert(boardVendor + "::" + boardName + (!boardRevision.empty() ? ":" + boardRevision : "") + " (" + boardPack + ")");
     }
   }
@@ -2781,7 +2781,7 @@ bool ProjMgrWorker::ListDevices(vector<string>& devices, const string& filter) {
     for (const auto& deviceItem : filteredModelDevices) {
       const string& deviceVendor = deviceItem->GetVendorName();
       const string& deviceName = deviceItem->GetFullDeviceName();
-      const string& devicePack = ProjMgrUtils::GetPackageID(deviceItem->GetPackage());
+      const string& devicePack = deviceItem->GetPackageID();
       if (deviceItem->GetProcessorCount() > 1) {
         const auto& processors = deviceItem->GetProcessors();
         for (const auto& processor : processors) {
@@ -2857,7 +2857,7 @@ bool ProjMgrWorker::ListComponents(vector<string>& components, const string& fil
     componentIdsVec = filteredIds;
   }
   for (const auto& componentId : componentIdsVec) {
-    components.push_back(componentId + " (" + ProjMgrUtils::GetPackageID(componentMap[componentId]->GetPackage()) + ")");
+    components.push_back(componentId + " (" + componentMap[componentId]->GetPackageID() + ")");
   }
   return true;
 }

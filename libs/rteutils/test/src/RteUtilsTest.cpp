@@ -69,6 +69,26 @@ TEST(RteUtilsTest, GetSuffix) {
   EXPECT_EQ(RteUtils::GetSuffix("prefix-suffix", '-'), "suffix");
 }
 
+TEST(RteUtilsTest, RemoveSuffixByString) {
+
+  EXPECT_EQ(RteUtils::RemoveSuffixByString("prefix:suffix"), "prefix");
+  EXPECT_TRUE(RteUtils::RemoveSuffixByString("prefix:suffix", "-").empty());
+  EXPECT_EQ(RteUtils::RemoveSuffixByString("prefix::suffix", "::"), "prefix");
+
+  EXPECT_TRUE(RteUtils::RemoveSuffixByString("prefix-suffix").empty());
+  EXPECT_EQ(RteUtils::RemoveSuffixByString("prefix-suffix", "-"), "prefix");
+}
+
+TEST(RteUtilsTest, RemovePrefixByString) {
+
+  EXPECT_EQ(RteUtils::RemovePrefixByString("prefix:suffix"), "suffix");
+  EXPECT_EQ(RteUtils::RemovePrefixByString("prefix:suffix", "-"), "prefix:suffix");
+  EXPECT_EQ(RteUtils::RemovePrefixByString("prefix::suffix", "::"), "suffix");
+
+  EXPECT_EQ(RteUtils::RemovePrefixByString("prefix-suffix"), "prefix-suffix");
+  EXPECT_EQ(RteUtils::RemovePrefixByString("prefix-suffix", "-"), "suffix");
+}
+
 TEST(RteUtilsTest, ExtractFileExtension) {
 
   EXPECT_TRUE(RteUtils::ExtractFileExtension("myfile").empty());
@@ -300,30 +320,6 @@ TEST(RteUtilsTest, GetFullVendorString)
   EXPECT_EQ("Cypress:19", DeviceVendor::GetFullVendorString("Spansion::100"));
 
   EXPECT_EQ("Silicon Labs:21", DeviceVendor::GetFullVendorString("EnergyMicro::97"));
-}
-
-TEST(RteUtilsTest, VendorFromPackageId)
-{
-  string packageId, vendor;
-  packageId = "Vendor.Name.version";
-  vendor =  RteUtils::VendorFromPackageId(packageId);
-  EXPECT_EQ(vendor, "Vendor");
-
-  packageId = "VendorNameversion";
-  vendor = RteUtils::VendorFromPackageId(packageId);
-  EXPECT_EQ(false, (0 == vendor.compare("vendor")) ? true : false);
-}
-
-TEST(RteUtilsTest, NameFromPackageId)
-{
-  string packageId, name;
-  packageId = "Vendor.Name.Version";
-  name = RteUtils::NameFromPackageId(packageId);
-  EXPECT_EQ(name, "Name");
-
-  packageId = "VendorNameversion";
-  name = RteUtils::NameFromPackageId(packageId);
-  EXPECT_EQ(false, (0 == name.compare("Name")) ? true : false);
 }
 
 TEST(RteUtils, AppendFileVersion)

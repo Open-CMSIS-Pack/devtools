@@ -78,7 +78,7 @@ RteCallback* RteKernel::GetRteCallback() const
   return m_rteCallback ? m_rteCallback : RteCallback::GetGlobal();
 }
 
-void RteKernel::SetRteCallback(RteCallback* callback) 
+void RteKernel::SetRteCallback(RteCallback* callback)
 {
   m_rteCallback = callback;
   GetGlobalModel()->SetCallback(m_rteCallback);
@@ -342,10 +342,9 @@ string RteKernel::GetInstalledPdscFile(const XmlItem& attributes, const string& 
   string path(rtePath);
   path += '/' + vendor + '/' + name;
 
-
   string installedVersion = RteFsUtils::GetInstalledPackVersion(path, versionRange);
   if (!installedVersion.empty()) {
-    packId = vendor + '.' + name + '.' + installedVersion;
+    packId = RtePackage::ComposePackageID(vendor, name, installedVersion);
     return path + '/' + installedVersion + '/' + vendor + '.' + name + ".pdsc";
   }
 

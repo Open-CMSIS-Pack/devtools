@@ -72,6 +72,7 @@ public:
   static constexpr const char  PREFIX_CVERSION_CHAR = *PREFIX_CVERSION;
   static constexpr const char* SUFFIX_PACK_VENDOR = "::";
   static constexpr const char* PREFIX_PACK_VERSION = "@";
+  static constexpr const char  PREFIX_PACK_VERSION_CHAR = '@';
 
 };
 

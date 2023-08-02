@@ -8,6 +8,7 @@
 
 #include "RteItem.h"
 #include "RteCondition.h"
+#include "RtePackage.h"
 #include <map>
 using namespace std;
 
@@ -89,5 +90,38 @@ TEST(RteItemTest, ComponentAttributesFromId) {
   EXPECT_EQ("Class:Group&Variant", item.GetComponentID(true));
 }
 
+TEST(RteItemTest, PackageID) {
+
+  RteItem pack;
+  pack.AddAttribute("name", "Name");
+  pack.AddAttribute("vendor", "Vendor");
+  pack.AddAttribute("version", "1.2.3-alpha+build");
+
+  string id = RtePackage::GetPackageIDfromAttributes(pack, true);
+  EXPECT_EQ(id, "Vendor::Name@1.2.3-alpha");
+
+  string commonId = RtePackage::CommonIdFromId(id);
+  EXPECT_EQ(commonId,"Vendor::Name");
+  EXPECT_EQ(commonId, RtePackage::CommonIdFromId(commonId));
+  EXPECT_EQ(commonId, RtePackage::GetPackageIDfromAttributes(pack, false));
+
+  EXPECT_EQ(RtePackage::VendorFromId(id), "Vendor");
+  EXPECT_EQ(RtePackage::VendorFromId(commonId), "Vendor");
+
+  EXPECT_EQ(RtePackage::NameFromId(id), "Name");
+  EXPECT_EQ(RtePackage::NameFromId(commonId), "Name");
+
+  EXPECT_EQ(RtePackage::VersionFromId("Vendor::Name@1.2.3-alpha+build"), "1.2.3-alpha");
+  EXPECT_EQ(RtePackage::VersionFromId(id), "1.2.3-alpha");
+  EXPECT_TRUE(RtePackage::VersionFromId(commonId).empty());
+
+  EXPECT_EQ(RtePackage::ReleaseVersionFromId(id), "1.2.3");
+  EXPECT_EQ(RtePackage::ReleaseIdFromId(id), "Vendor::Name@1.2.3");
+
+  EXPECT_EQ(RtePackage::PackIdFromPath("Vendor.Name.1.2.3-alpha.pdsc"), id);
+  EXPECT_EQ(RtePackage::PackIdFromPath("Vendor.Name.pdsc"), commonId);
+  EXPECT_EQ(RtePackage::PackIdFromPath("Vendor/Name/1.2.3-alpha/Vendor.Name.pdsc"), id);
+  EXPECT_EQ(RtePackage::PackIdFromPath(".Web/Vendor.Name.pdsc"), commonId);
+}
 
 // end of RteItemTest.cpp

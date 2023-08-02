@@ -66,7 +66,7 @@ TEST(RteModelTest, LoadPacks) {
   RtePackageInfo pi(pack);
   EXPECT_TRUE(pi.HasAttribute("description"));
   EXPECT_EQ(pi.GetDescription(), pack->GetDescription());
-  EXPECT_EQ(pi.GetID(), "ARM.RteTestBoard.0.1.0");
+  EXPECT_EQ(pi.GetID(), "ARM::RteTestBoard@0.1.0");
 
   board = rteModel->FindBoard("RteTest NoMCU board");
   ASSERT_NE(board, nullptr);
@@ -83,21 +83,21 @@ TEST(RteModelTest, LoadPacks) {
                        {"Csub", "Missing"},
                        {"Cversion","0.9.9"},
                        {"condition","Missing"}});
-  RtePackageInstanceInfo packInfo(nullptr, "ARM.RteTest.0.1.0");
+  RtePackageInstanceInfo packInfo(nullptr, "ARM::RteTest@0.1.0");
   item.SetPackageAttributes(packInfo);
   list<RteComponent*> components;
   RteComponent* c = rteModel->FindComponents(item, components);
   EXPECT_EQ(components.size(), 1);
   EXPECT_TRUE(c != nullptr);
   components.clear();
-  packInfo.SetPackId("ARM.RteTest");
+  packInfo.SetPackId("ARM::RteTest");
   item.SetPackageAttributes(packInfo);
   c = rteModel->FindComponents(item, components);
   EXPECT_EQ(components.size(), 1);
   EXPECT_TRUE(c != nullptr);
 
   components.clear();
-  packInfo.SetPackId("ARM.RteTest");
+  packInfo.SetPackId("ARM::RteTest");
   item.SetPackageAttributes(packInfo);
   item.RemoveAttribute("Csub");
   item.RemoveAttribute("Cversion");
@@ -131,7 +131,7 @@ TEST(RteModelTest, LoadPacks) {
 
   components.clear();
   item.SetAttribute("Cbundle", "BundleTwo");
-  packInfo.SetPackId("ARM.RteTest.1.0");
+  packInfo.SetPackId("ARM::RteTest@1.0");
   item.SetPackageAttributes(packInfo);
   c = rteModel->FindComponents(item, components);
   EXPECT_EQ(components.size(), 0);
@@ -281,6 +281,13 @@ TEST_F(RteModelPrjTest, LoadCprj) {
   rteKernel.SetCmsisPackRoot(RteModelTestConfig::CMSIS_PACK_ROOT);
   RteCprjProject* loadedCprjProject = rteKernel.LoadCprj(RteTestM3_cprj);
   ASSERT_NE(loadedCprjProject, nullptr);
+
+  RteLicenseInfoCollection licences;
+  loadedCprjProject->CollectLicenseInfos(licences);
+  string licenseText = licences.ToString();
+
+  string licRefFile = prjsDir + RteTestM3 + "/license_info_ref.txt";
+  EXPECT_TRUE(RteFsUtils::CmpFileMem(licRefFile, licenseText));
 
   // check if active project is set
   RteCprjProject* activeCprjProject = rteKernel.GetActiveCprjProject();

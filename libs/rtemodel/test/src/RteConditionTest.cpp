@@ -64,7 +64,7 @@ TEST_F(RteConditionTest, MissingIgnoredFulfilledSelectable) {
   ASSERT_NE(depSolver, nullptr);
   EXPECT_EQ(depSolver->GetConditionResult(), RteItem::FULFILLED);
 
-  RtePackageInstanceInfo packInfo(nullptr, "ARM.RteTest.0.1.0");
+  RtePackageInstanceInfo packInfo(nullptr, "ARM::RteTest@0.1.0");
   RtePackage* pack = rteModel->GetPackage(packInfo);
   ASSERT_NE(pack, nullptr);
   RteCondition* denyDependency = pack->GetCondition("DenyDependency");

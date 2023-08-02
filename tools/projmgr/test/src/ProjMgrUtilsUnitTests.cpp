@@ -29,7 +29,7 @@ TEST_F(ProjMgrUtilsUnitTests, GetPackageID) {
   };
   RteItem item(attributes);
   item.SetTag("require");
-  EXPECT_EQ("Vendor::Name@8.8.8", GetPackageID(&item));
+  EXPECT_EQ("Vendor::Name@8.8.8", item.GetPackageID());
 }
 
 TEST_F(ProjMgrUtilsUnitTests, ReadGpdscFile) {

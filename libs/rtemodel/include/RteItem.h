@@ -341,14 +341,14 @@ public:
    virtual const std::string& GetID() const;
 
   /**
-   * @brief get unique component ID: "Vendor::Class&Bundle:Group:Sub&Variant@1.2.3(condition)[pack]"
+   * @brief get unique component ID: "Vendor::Class&Bundle:Group:Sub&Variant\@1.2.3(condition)[pack]"
    * @return component unique ID
   */
   virtual std::string GetComponentUniqueID() const;
 
  /**
-  * @brief get full component ID: "Vendor::Class&Bundle:Group:Sub&Variant@1.2.3"
-  * @param withVersion true to append version as "@1.2.3"
+  * @brief get full component ID: "Vendor::Class&Bundle:Group:Sub&Variant\@1.2.3"
+  * @param withVersion true to append version as "\@1.2.3"
   * @return full component ID
  */
   virtual std::string GetComponentID(bool withVersion) const;

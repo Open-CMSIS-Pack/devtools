@@ -23,8 +23,11 @@
 #include "RteGenerator.h"
 #include "RteBoard.h"
 
+#include "RteConstants.h"
+
 #include "XMLTree.h"
 
+#include <cstring>
 using namespace std;
 
 
@@ -144,51 +147,18 @@ string RtePackage::GetDisplayName() const
 
 string RtePackage::CommonIdFromId(const string& id)
 {
-  string::size_type pos = 0;
-  pos = id.find('.');
-  if (pos == string::npos)
-    return id;
-  pos++;
-  pos = id.find('.', pos);
-  if (pos == string::npos)
-    return id;
-  return id.substr(0, pos);
+  return RteUtils::GetPrefix(id, RteConstants::PREFIX_PACK_VERSION_CHAR);
 }
 
 
 string RtePackage::DisplayNameFromId(const string& id)
 {
-  string displayName;
-  string::size_type vendorPos = 0;
-  string::size_type namePos = 0;
-  vendorPos = id.find('.');
-  if (vendorPos == string::npos)
-    return id;
-  displayName = id.substr(0, vendorPos);
-  vendorPos++;
-  namePos = id.find('.', vendorPos);
-  if (namePos == string::npos)
-    return id;
-  displayName += "::";
-  displayName += id.substr(vendorPos, namePos - vendorPos);
-  return displayName;
-
+  return CommonIdFromId(id);
 }
 
 string RtePackage::VersionFromId(const string& id)
 {
-  string version;
-  string::size_type pos = 0;
-  pos = id.find('.');
-  if (pos == string::npos)
-    return version;
-  pos++;
-  pos = id.find('.', pos);
-  if (pos == string::npos)
-    return version;
-  pos++;
-  version = id.substr(pos);
-  return VersionCmp::RemoveVersionMeta(version);
+  return VersionCmp::RemoveVersionMeta(RteUtils::GetSuffix(id, RteConstants::PREFIX_PACK_VERSION_CHAR));
 }
 
 string RtePackage::ReleaseVersionFromId(const string& id)
@@ -231,24 +201,13 @@ string RtePackage::ReleaseIdFromId(const string& id)
   string version = ReleaseVersionFromId(id);
   if (version.empty())
     return id;
-  string releaseId = CommonIdFromId(id);
-  releaseId += ".";
-  releaseId += version;
-  return releaseId;
+  return CommonIdFromId(id) + RteConstants::PREFIX_PACK_VERSION + version;
 }
 
 
 string RtePackage::VendorFromId(const string& id)
 {
-  string vendor;
-
-  string::size_type pos = 0;
-  pos = id.find('.');
-  if (pos == string::npos)
-    return vendor;
-  vendor = id.substr(0, pos);
-  return vendor;
-
+  return RteUtils::RemoveSuffixByString(id, RteConstants::SUFFIX_PACK_VENDOR);
 }
 
 string RtePackage::NameFromId(const string& id)
@@ -256,16 +215,46 @@ string RtePackage::NameFromId(const string& id)
   string name;
   string::size_type pos = 0;
   string::size_type posEnd = 0;
-  pos = id.find('.');
+  pos = id.find(RteConstants::SUFFIX_PACK_VENDOR);
   if (pos == string::npos) {
     return name;
   }
-  pos++;
-  posEnd = id.find('.', pos);
+  pos+= strlen(RteConstants::SUFFIX_PACK_VENDOR);
+  posEnd = id.find(RteConstants::PREFIX_PACK_VERSION_CHAR, pos);
   if (posEnd == string::npos) {
     return id.substr(pos);
   }
   return id.substr(pos, posEnd - pos);
+}
+
+std::string RtePackage::PackIdFromPath(const std::string& path)
+{
+  string baseName = RteUtils::ExtractFileBaseName(path);
+  list<string> segments;
+  RteUtils::SplitString(segments, baseName, '.');
+  string commonID;
+  string version;
+  unsigned i = 0;
+  for (string s : segments) {
+    if (i == 0) {
+      commonID = s;
+    } else if (i == 1) {
+      commonID += RteConstants::SUFFIX_PACK_VENDOR + s;
+    } else if (i == 2) {
+      version = RteConstants::PREFIX_PACK_VERSION + s;
+    } else {
+      version += '.' + s;
+    }
+    i++;
+  }
+  if (version.empty()) {
+    // try upper directory
+    string dir = RteUtils::ExtractFileName(RteUtils::ExtractFilePath(path, false));
+    if (!dir.empty() && isdigit(dir.at(0))) {
+      version = RteConstants::PREFIX_PACK_VERSION + dir;
+    }
+  }
+  return commonID + version;
 }
 
 int RtePackage::ComparePackageIDs(const string& a, const string& b)
@@ -643,7 +632,7 @@ RteItem* RtePackage::CreateItem(const std::string& tag)
   } else if (tag == "conditions") {
       m_conditions = new RteConditionContainer(this);
     return m_conditions;
-  } else if (tag == "liceseSets") {
+  } else if (tag == "licenseSets") {
     m_licenseSets = new RteItem(this);
     return m_licenseSets;
   } else if (tag == "releases") {
@@ -750,24 +739,24 @@ string RtePackage::GetPackageID(bool withVersion) const
   return GetCommonID();
 }
 
-
 string RtePackage::GetPackageIDfromAttributes(const XmlItem& attr, bool withVersion)
 {
-  string id = attr.GetAttribute("vendor");
-  if (!id.empty())
-    id += ".";
-  id += attr.GetAttribute("name");
+  const auto& vendor = attr.GetAttribute("vendor");
+  const string version = withVersion ?
+    VersionCmp::RemoveVersionMeta(attr.GetAttribute("version")) : EMPTY_STRING;
 
-  if (withVersion) {
-    const string& version = attr.GetAttribute("version");
-    if (!version.empty()) {
-      id += ".";
-      id += VersionCmp::RemoveVersionMeta(version);
-    }
-  }
-  return id;
+  return ComposePackageID(vendor, attr.GetAttribute("name"), version);
 }
 
+string RtePackage::ComposePackageID(const string& vendor, const string& name, const string& version) {
+  const vector<pair<const char*, const string&>> elements = {
+    {"",                  vendor},
+    {vendor.empty() ? "" :
+     RteConstants::SUFFIX_PACK_VENDOR,  name},
+    {RteConstants::PREFIX_PACK_VERSION, version},
+  };
+  return RteUtils::ConstructID(elements);
+};
 
 string RtePackage::GetPackagePath(bool withVersion) const
 {

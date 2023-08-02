@@ -2702,11 +2702,11 @@ TEST_F(ProjMgrUnitTests, Convert_ValidationResults_Filtering) {
   vector<tuple<string, int, string>> testData = {
     {"recursive", 1, "\
 warning csolution: RTE Model reports:\n\
-ARM.RteTestRecursive.0.1.0: condition 'Recursive': error #503: direct or indirect recursion detected\n\
+ARM::RteTestRecursive@0.1.0: condition 'Recursive': error #503: direct or indirect recursion detected\n\
 error csolution: no component was found with identifier 'RteTest:Check:Recursive'\n"},
     {"missing-condition", 0, "\
 warning csolution: RTE Model reports:\n\
-ARM.RteTestMissingCondition.0.1.0: component 'ARM::RteTest:Check:MissingCondition@0.9.9(MissingCondition)[]': error #501: error(s) in component definition:\n\
+ARM::RteTestMissingCondition@0.1.0: component 'ARM::RteTest:Check:MissingCondition@0.9.9(MissingCondition)[]': error #501: error(s) in component definition:\n\
  condition 'MissingCondition' not found\n"},
   };
 

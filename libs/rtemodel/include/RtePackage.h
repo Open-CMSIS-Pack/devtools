@@ -134,6 +134,13 @@ public:
   static std::string NameFromId(const std::string& id);
 
   /**
+   * @brief helper static method to construct pack ID from supplied path
+   * @param path pack absolute or relative path
+   * @return pack ID string
+  */
+  static std::string PackIdFromPath(const std::string& path);
+
+  /**
    * @brief helper static method to compare pack IDs.
    * Alpha-numeric comparison for vendor and name.
    * Semantic version comparison for pack version.
@@ -463,6 +470,16 @@ public:
   static std::string GetPackageIDfromAttributes(const XmlItem& attr, bool withVersion = true);
 
   /**
+   * @brief get fully specified package identifier composed from individual strings
+   * @param vendor pack vendor
+   * @param name pack name
+   * @param version pack version
+   * @return string package identifier
+  */
+  static std::string ComposePackageID(const std::string& vendor, const std::string& name, const std::string& version);
+
+
+  /**
    * @brief get URL to download this pack from
    * @param withVersion flag to return url with this version, otherwise without
    * @param extension file extension (with dot), usually ".pack"
@@ -483,6 +500,12 @@ public:
     * @return pointer to RteItem if found, nullptr otherwise
    */
    RteItem* GetDefaultLicenseSet() const;
+
+   /**
+    * @brief get relative path to default license file agreement
+    * @return text of <license> element if any
+   */
+   const std::string& GetPackLicenseFile() const { return GetChildText("license");}
 
   /**
    * @brief get condition with specified ID

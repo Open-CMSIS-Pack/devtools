@@ -156,7 +156,7 @@ void ProjMgrYamlCbuild::SetComponentsNode(YAML::Node node, const ContextItem* co
     YAML::Node componentNode;
     SetNodeValue(componentNode[YAML_COMPONENT], componentId);
     SetNodeValue(componentNode[YAML_CONDITION], rteComponent->GetConditionID());
-    SetNodeValue(componentNode[YAML_FROM_PACK], ProjMgrUtils::GetPackageID(rteComponent->GetPackage()));
+    SetNodeValue(componentNode[YAML_FROM_PACK], rteComponent->GetPackageID());
     SetNodeValue(componentNode[YAML_SELECTED_BY], componentItem->component);
     const string& rteDir = rteComponent->GetAttribute("rtedir");
     if (!rteDir.empty()) {
@@ -296,7 +296,7 @@ void ProjMgrYamlCbuild::SetConstructedFilesNode(YAML::Node node, const ContextIt
     }
   }
   // constructed RTE_Components.h
-  const auto& rteComponents = context->rteActiveProject->GetProjectPath() + 
+  const auto& rteComponents = context->rteActiveProject->GetProjectPath() +
     context->rteActiveProject->GetRteComponentsH(context->rteActiveTarget->GetName(), "");
   YAML::Node rteComponentsNode;
   SetNodeValue(rteComponentsNode[YAML_FILE], FormatPath(rteComponents, context->directories.cprj));
