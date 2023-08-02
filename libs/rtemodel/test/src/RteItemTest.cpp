@@ -92,18 +92,18 @@ TEST(RteItemTest, ComponentAttributesFromId) {
 
 TEST(RteItemTest, PackageID) {
 
-  RteItem pack;
-  pack.AddAttribute("name", "Name");
-  pack.AddAttribute("vendor", "Vendor");
-  pack.AddAttribute("version", "1.2.3-alpha+build");
+  RteItem packInfo;
+  packInfo.AddAttribute("name", "Name");
+  packInfo.AddAttribute("vendor", "Vendor");
+  packInfo.AddAttribute("version", "1.2.3-alpha+build");
 
-  string id = RtePackage::GetPackageIDfromAttributes(pack, true);
+  string id = RtePackage::GetPackageIDfromAttributes(packInfo, true);
   EXPECT_EQ(id, "Vendor::Name@1.2.3-alpha");
 
   string commonId = RtePackage::CommonIdFromId(id);
   EXPECT_EQ(commonId,"Vendor::Name");
   EXPECT_EQ(commonId, RtePackage::CommonIdFromId(commonId));
-  EXPECT_EQ(commonId, RtePackage::GetPackageIDfromAttributes(pack, false));
+  EXPECT_EQ(commonId, RtePackage::GetPackageIDfromAttributes(packInfo, false));
 
   EXPECT_EQ(RtePackage::VendorFromId(id), "Vendor");
   EXPECT_EQ(RtePackage::VendorFromId(commonId), "Vendor");
@@ -122,6 +122,12 @@ TEST(RteItemTest, PackageID) {
   EXPECT_EQ(RtePackage::PackIdFromPath("Vendor.Name.pdsc"), commonId);
   EXPECT_EQ(RtePackage::PackIdFromPath("Vendor/Name/1.2.3-alpha/Vendor.Name.pdsc"), id);
   EXPECT_EQ(RtePackage::PackIdFromPath(".Web/Vendor.Name.pdsc"), commonId);
+
+  RtePackage pack(nullptr, packInfo.GetAttributes());
+  pack.AddAttribute("url", "https://www.keil.com/pack/");
+  EXPECT_EQ(RtePackage::GetPackageFileNameFromAttributes(pack, true, ".pack"), "Vendor.Name.1.2.3-alpha.pack");
+  EXPECT_EQ(RtePackage::GetPackageFileNameFromAttributes(pack, false, ".pdsc"), "Vendor.Name.pdsc");
+  EXPECT_EQ(pack.GetDownloadUrl(false, ".pack"), "https://www.keil.com/pack/Vendor.Name.pack");
 }
 
 // end of RteItemTest.cpp

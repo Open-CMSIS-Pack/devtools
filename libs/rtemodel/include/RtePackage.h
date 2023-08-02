@@ -465,19 +465,30 @@ public:
    * @brief determine package ID by given list of attributes
    * @param attr list of attributes
    * @param withVersion true if version string should included
+   * @param useDots flag to use only dots as delimiters
    * @return package ID
   */
-  static std::string GetPackageIDfromAttributes(const XmlItem& attr, bool withVersion = true);
+  static std::string GetPackageIDfromAttributes(const XmlItem& attr, bool withVersion = true, bool useDots = false);
 
   /**
    * @brief get fully specified package identifier composed from individual strings
    * @param vendor pack vendor
    * @param name pack name
    * @param version pack version
+   * @param useDots flag to use only dots as delimiters
    * @return string package identifier
+   *
   */
-  static std::string ComposePackageID(const std::string& vendor, const std::string& name, const std::string& version);
+  static std::string ComposePackageID(const std::string& vendor, const std::string& name,
+                                      const std::string& version, bool useDots = false);
 
+  /**
+   * @brief get pack file name in the format Vendor.Name.1.2.3.ext or Vendor.Name.ext
+   * @param withVersion flag to return the path with version segment
+   * @param extension file extension to use: ".pdsc" or ".pack"
+   * @return package file name in format: Vendor.Name[.1.2.3].ext
+  */
+  static std::string GetPackageFileNameFromAttributes(const XmlItem& attr, bool withVersion, const char* extension);
 
   /**
    * @brief get URL to download this pack from
