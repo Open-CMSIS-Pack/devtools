@@ -283,6 +283,9 @@ TEST_F(RteModelPrjTest, LoadCprj) {
   ASSERT_NE(loadedCprjProject, nullptr);
 
   RteLicenseInfoCollection licences;
+  licences.AddLicenseInfo(nullptr);
+  EXPECT_TRUE(licences.ToString().empty());
+
   loadedCprjProject->CollectLicenseInfos(licences);
   string licenseText = licences.ToString();
 

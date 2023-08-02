@@ -136,7 +136,7 @@ protected:
    * @param license RteItem* pointing to license element, may be NULL
    * @return pointer to RteLicenseInfo object
   */
-  RteLicenseInfo* EnsureLicensInfo(RteItem* item, RteItem* licenseElement);
+  RteLicenseInfo* EnsureLicenseInfo(RteItem* item, RteItem* licenseElement);
 
   /**
    * @brief Ensure collection contains RteLicenseInfo object for specified ID

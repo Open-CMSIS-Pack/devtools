@@ -94,6 +94,9 @@ void RteLicenseInfoCollection::Clear()
 
 std::string RteLicenseInfoCollection::ToString()
 {
+  if (m_LicensInfos.empty()) {
+    return RteUtils::EMPTY_STRING;
+  }
   stringstream ss;
   ss << "licenses:" << endl;
   for (auto& [key, info] : m_LicensInfos) {
@@ -111,16 +114,19 @@ void RteLicenseInfoCollection::AddLicenseInfo(RteItem* item)
   RteItem* licenseSet = item->GetLicenseSet();
   if (licenseSet) {
     for (RteItem* license : licenseSet->GetChildren()) {
-      EnsureLicensInfo(item, license);
+      EnsureLicenseInfo(item, license);
     }
   } else {
-    EnsureLicensInfo(item, nullptr);
+    EnsureLicenseInfo(item, nullptr);
   }
 }
 
-RteLicenseInfo* RteLicenseInfoCollection::EnsureLicensInfo(RteItem* item, RteItem* license)
+RteLicenseInfo* RteLicenseInfoCollection::EnsureLicenseInfo(RteItem* item, RteItem* license)
 {
   RtePackage* pack = item->GetPackage();
+  if (!pack) {
+    return nullptr;
+  }
   string licId = license? RteLicenseInfo::ConstructLicenseID(license) : RteLicenseInfo::ConstructLicenseID(pack);
 
   auto it = m_LicensInfos.find(licId);

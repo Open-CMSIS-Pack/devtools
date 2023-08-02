@@ -453,7 +453,6 @@ const list<RteItem*>& RtePackage::GetCompilerRequirements() const
 
 string RtePackage::GetDownloadUrl(bool withVersion, const char* extension) const
 {
-  string url = EMPTY_STRING;
   string packurl = GetAttribute("url");
   if (packurl.empty()) {
     return EMPTY_STRING;
@@ -461,16 +460,7 @@ string RtePackage::GetDownloadUrl(bool withVersion, const char* extension) const
   if (packurl[packurl.size() - 1] != '/') {
     packurl += "/";
   }
-  url = packurl;
-  if (withVersion) {
-    url += GetID();
-  } else {
-    url += GetCommonID();
-  }
-  if (extension != nullptr) {
-    url += extension;
-  }
-  return url;
+  return packurl + GetPackageFileNameFromAttributes(*this, withVersion, extension);
 }
 
 RteComponent* RtePackage::FindComponents(const RteItem& item, list<RteComponent*>& components) const
@@ -739,21 +729,21 @@ string RtePackage::GetPackageID(bool withVersion) const
   return GetCommonID();
 }
 
-string RtePackage::GetPackageIDfromAttributes(const XmlItem& attr, bool withVersion)
+string RtePackage::GetPackageIDfromAttributes(const XmlItem& attr, bool withVersion, bool useDots)
 {
   const auto& vendor = attr.GetAttribute("vendor");
   const string version = withVersion ?
     VersionCmp::RemoveVersionMeta(attr.GetAttribute("version")) : EMPTY_STRING;
 
-  return ComposePackageID(vendor, attr.GetAttribute("name"), version);
+  return ComposePackageID(vendor, attr.GetAttribute("name"), version, useDots);
 }
 
-string RtePackage::ComposePackageID(const string& vendor, const string& name, const string& version) {
+string RtePackage::ComposePackageID(const string& vendor, const string& name, const string& version, bool useDots) {
   const vector<pair<const char*, const string&>> elements = {
     {"",                  vendor},
     {vendor.empty() ? "" :
-     RteConstants::SUFFIX_PACK_VENDOR,  name},
-    {RteConstants::PREFIX_PACK_VERSION, version},
+     useDots ? RteConstants::DOT_STR : RteConstants::SUFFIX_PACK_VENDOR,  name},
+    {useDots ? RteConstants::DOT_STR : RteConstants::PREFIX_PACK_VERSION, version},
   };
   return RteUtils::ConstructID(elements);
 };
@@ -770,6 +760,15 @@ string RtePackage::GetPackagePath(bool withVersion) const
     path += "/";
   }
   return path;
+}
+
+std::string RtePackage::GetPackageFileNameFromAttributes(const XmlItem& attr, bool withVersion, const char* extension)
+{
+  string filename = GetPackageIDfromAttributes(attr, withVersion, true);
+  if (extension) {
+    filename += extension;
+  }
+  return filename;
 }
 
 
