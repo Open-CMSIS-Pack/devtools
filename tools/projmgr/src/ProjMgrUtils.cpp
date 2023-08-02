@@ -19,29 +19,6 @@
 
 using namespace std;
 
-string ProjMgrUtils::GetPackageID(const RteItem* pack) {
-  if (!pack) {
-    return RteUtils::EMPTY_STRING;
-  }
-  const auto& vendor = pack->GetVendorString().empty() ? "" : pack->GetVendorString() + RteConstants::SUFFIX_PACK_VENDOR;
-  const vector<pair<const char*, const string&>> elements = {
-    {"",                  vendor},
-    {"",                  pack->GetName()},
-    {RteConstants::PREFIX_PACK_VERSION, pack->GetVersionString()},
-  };
-  return RteUtils::ConstructID(elements);
-}
-
-string ProjMgrUtils::GetPackageID(const string& packVendor, const string& packName, const string& packVersion) {
-  const auto& vendor = packVendor + RteConstants::SUFFIX_PACK_VENDOR;
-  const vector<pair<const char*, const string&>> elements = {
-    {"",                  vendor},
-    {"",                  packName},
-    {RteConstants::PREFIX_PACK_VERSION, packVersion},
-  };
-  return RteUtils::ConstructID(elements);
-}
-
 RtePackage* ProjMgrUtils::ReadGpdscFile(const string& gpdsc, bool& valid) {
   fs::path path(gpdsc);
   error_code ec;

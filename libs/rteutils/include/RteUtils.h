@@ -34,13 +34,6 @@ private:
 
 public:
   /**
-   * @brief determine Pack ID specific to Pack Manager
-   * @param path must have the following convention:
-   *        [path][\\]<vendor>.<name>.<major version>.<minor version 1>.<minor version 2>.(pack|pdsc)
-   * @return Pack ID specific to Pack Manager
-  */
-  static std::string GetPackID(const std::string &path);
-  /**
    * @brief determine prefix of a string
    * @param s string containing the prefix
    * @param delimiter delimiter after the prefix
@@ -99,19 +92,6 @@ public:
    * @return true if equal
   */
   static bool EqualNoCase(const std::string& a, const std::string& b);
-
-  /**
-   * @brief extract vendor name from package ID
-   * @param packageId package ID
-   * @return vendor name
-  */
-  static std::string VendorFromPackageId(const std::string &packageId);
-  /**
-   * @brief determine package name from package ID
-   * @param packageId package ID
-   * @return package name from package ID
-  */
-  static std::string NameFromPackageId(const std::string &packageId);
 
   /**
    * @brief construct an ID string from a vector of key-value pairs

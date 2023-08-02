@@ -57,7 +57,7 @@ void RteExampleTest::TearDown() {
 
 
 TEST_F(RteExampleTest, TestExamplePaths) {
-  const string testPackID = "ARM.RteTest.0.1.0";
+  const string testPackID = "ARM::RteTest@0.1.0";
 
   // Expected results
   const int exampleCountExp = 2;

@@ -1456,18 +1456,7 @@ bool CbuildModel::EvalAccessSequence() {
             if (!GetAccessSequence(offsetContext, sequence, packStr, '(', ')')) {
               return false;
             }
-            string packInfoStr = packStr;
-            if (packInfoStr.find("::") != string::npos) {
-              vendor = RteUtils::RemoveSuffixByString(packInfoStr, "::");
-              packInfoStr = RteUtils::RemovePrefixByString(packInfoStr, "::");
-              name = RteUtils::GetPrefix(packInfoStr, '@');
-            }
-            else {
-              vendor = RteUtils::GetPrefix(packInfoStr, '@');
-            }
-            version = RteUtils::GetSuffix(packInfoStr, '@');
-
-            string packId = vendor + "." + name + (version.empty() ? "" : "." + version);
+            string packId = packStr;
             auto packages = m_cprjTarget->GetModel()->GetPackages();
             for (const auto& pack : packages) {
               if (pack.second->GetPackageID(false) == packId || pack.second->GetPackageID() == packId) {

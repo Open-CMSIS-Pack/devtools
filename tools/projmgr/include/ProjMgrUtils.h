@@ -170,14 +170,6 @@ public:
   static constexpr const char* IAR_LIB_SUFFIX = ".a";
 
   /**
-   * @brief get fully specified package identifier
-   * @param rte package
-   * @return string package identifier
-  */
-  static std::string GetPackageID(const RteItem* pack);
-  static std::string GetPackageID(const std::string& vendor, const std::string& name, const std::string& version);
-
-  /**
    * @brief read gpdsc file
    * @param path to gpdsc file
    * @param pointer to rte generator model

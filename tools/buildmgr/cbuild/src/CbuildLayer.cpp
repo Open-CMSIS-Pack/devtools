@@ -95,7 +95,7 @@ bool CbuildLayer::Extract(const CbuildLayerArgs& args) {
   set<string> cprjPackIDList;
   const auto cprjPacks = m_cprj->packages->GetChildren();
   for (auto cprjPack : cprjPacks) {
-    cprjPackIDList.insert(cprjPack->GetAttribute("vendor") + '.' + cprjPack->GetAttribute("name") + "." + cprjPack->GetAttribute("version"));
+    cprjPackIDList.insert(RtePackage::GetPackageIDfromAttributes(*cprjPack));
   }
 
   // Set absolute output path
@@ -148,11 +148,11 @@ bool CbuildLayer::Extract(const CbuildLayerArgs& args) {
     XMLTreeElement* packagesElement = rootElement->CreateElement("packages");
     for (auto layerPack : m_layerPackages[layerName]) {
       const bool fixedVersion = cprjPackIDList.find(layerPack) != cprjPackIDList.end();
-      if (!fixedVersion) layerPack = layerPack.substr(0, layerPack.find('.', layerPack.find('.')+1));
+      if (!fixedVersion) {
+        layerPack = RtePackage::CommonIdFromId(layerPack);
+      }
       for (auto cprjPack : cprjPacks) {
-        string cprjPackID = cprjPack->GetAttribute("vendor") + '.' + cprjPack->GetAttribute("name");
-        const string& cprjPackVersion = cprjPack->GetAttribute("version");
-        if (fixedVersion) cprjPackID += '.' + cprjPackVersion;
+        string cprjPackID = RtePackage::GetPackageIDfromAttributes(*cprjPack, fixedVersion);
         if (layerPack == cprjPackID) {
           CopyElement(packagesElement, cprjPack);
           break;
@@ -658,7 +658,7 @@ bool CbuildLayer::Remove(const CbuildLayerArgs& args) {
   set<string> cprjPackIDList;
   auto cprjPacks = m_cprj->packages->GetChildren();
   for (auto cprjPack : cprjPacks) {
-    cprjPackIDList.insert(cprjPack->GetAttribute("vendor") + '.' + cprjPack->GetAttribute("name") + "." + cprjPack->GetAttribute("version"));
+    cprjPackIDList.insert(RtePackage::GetPackageIDfromAttributes(*cprjPack));
   }
 
   // Iterate over list of layers
@@ -691,11 +691,9 @@ bool CbuildLayer::Remove(const CbuildLayerArgs& args) {
       bool fixedVersion = cprjPackIDList.find(packTobeRemoved) != cprjPackIDList.end();
       cprjPacks = m_cprj->packages->GetChildren();
       for (auto cprjPack : cprjPacks) {
-        string cprjPackID = cprjPack->GetAttribute("vendor") + '.' + cprjPack->GetAttribute("name");
-        const string& cprjPackVersion = cprjPack->GetAttribute("version");
-        if (fixedVersion) cprjPackID += '.' + cprjPackVersion;
+        string cprjPackID = RtePackage::GetPackageIDfromAttributes(*cprjPack, fixedVersion);
         if ((fixedVersion && (packTobeRemoved == cprjPackID)) ||
-           (!fixedVersion && (packTobeRemoved.find(cprjPackID) != string::npos) && cprjPackVersion.empty())) {
+           (!fixedVersion && (packTobeRemoved.find(cprjPackID) != string::npos))) {
           m_cprj->packages->RemoveChild(cprjPack, true);
         }
       }

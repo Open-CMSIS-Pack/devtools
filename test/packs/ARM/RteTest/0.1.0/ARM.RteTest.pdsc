@@ -8,6 +8,19 @@
     Testing pack reader and RTE model features.
     Some PackChk warnings are expected: missing version of config file
   </description>
+ 
+  <licenseSets>
+    <licenseSet id="APIlicense">
+    <license name="licenses/apache2.0.txt" title="Apache 2.0 open-source license" spdx="Apache-2.0" url="https://www.apache.org/licenses/LICENSE-2.0"/>
+  </licenseSet>
+  <licenseSet id="TestPropLicense">
+    <license name="licenses/ProprietaryLicense.txt" title="Proprietary Test License" url="https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_licenseSets_pg.html"/>
+  </licenseSet>
+  <licenseSet id="TestDefLicenses" default="true" gating="true">
+    <license name="licenses/licenseBsd.txt" title="BSD-3 Clause License for components" spdx="BSD-3-Clause" url="https://opensource.org/license/bsd-3-clause/"/>
+    <license name="licenses/licenseMit.txt" title="MIT License for device support" spdx="MIT" url="https://opensource.org/license/mit/"/>
+  </licenseSet>
+  </licenseSets>
 
   <releases>
     <release version="0.1.0" date="2021-02-17">
@@ -78,13 +91,13 @@
   </conditions>
 
   <apis>
-    <api Cclass="RteTest" Cgroup="ApiExclusive" Capiversion="1.0.0" exclusive="1">
+    <api Cclass="RteTest" Cgroup="ApiExclusive" Capiversion="1.0.0" exclusive="1" licenseSet="APIlicense">
       <description>RteTest Exclusive API</description>
       <files>
         <file category="header" name="API/Exclusive.h"/>
       </files>
     </api>
-    <api Cclass="RteTest" Cgroup="ApiNonExclusive" Capiversion="1.0.0" exclusive="0">
+    <api Cclass="RteTest" Cgroup="ApiNonExclusive" Capiversion="1.0.0" exclusive="0" licenseSet="TestPropLicense">
       <description>RteTes Non-Exclusive API</description>
       <files>
         <file category="header" name="API/NonExclusive.h"/>
@@ -94,7 +107,7 @@
 
   <components>
 
-    <bundle Cbundle="BundleOne" Cclass="RteTestBundle" Cversion="1.1.0" Cvendor="ARM" isDefaultVariant="1">
+    <bundle Cbundle="BundleOne" Cclass="RteTestBundle" Cversion="1.1.0" Cvendor="ARM" isDefaultVariant="1" licenseSet="TestPropLicense">
       <description>Test bundle one</description>
       <doc>https://arm-software.github.io/CMSIS_5/Pack/html/pdsc_components_pg.html#Component_Bundle</doc>
       <component Cgroup="G0" Cversion="1.0.0" >
@@ -153,7 +166,7 @@
         <file category="doc" name="https://arm-software.github.io/CMSIS_5/Pack/html/pdsc_components_pg.html#element_components"/>
       </files>
     </component>
-    <component Cclass="RteTest" Cgroup="ComponentLevel" Cversion="0.0.1" maxInstances="2">
+    <component Cclass="RteTest" Cgroup="ComponentLevel" Cversion="0.0.1" maxInstances="2" licenseSet="TestPropLicense">
       <description>Adding PreInclude on component level</description>
       <RTE_Components_h>
         #define COMPONENT_LEVEL 1

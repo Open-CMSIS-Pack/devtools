@@ -36,6 +36,10 @@ TEST(VersionCmpTest, VersionCompare) {
   EXPECT_EQ(  2, VersionCmp::Compare("6.6.0", "6.5.0"));
   EXPECT_EQ(  3, VersionCmp::Compare("7.5.0", "6.5.0"));
   EXPECT_EQ(-1, VersionCmp::Compare("6.5.0-", "6.5.0-a", true));
+  EXPECT_EQ(0, VersionCmp::Compare("6.5.0-a+b", "6.5.0-a+B", true));
+
+  EXPECT_EQ(VersionCmp::RemoveVersionMeta("1.2.3-a+b"), "1.2.3-a");
+  EXPECT_EQ(VersionCmp::RemoveVersionMeta("1.2.3+b"), "1.2.3");
 
   /*Ideally It should fail as the input
   given is not compliant to Semantic versioning*/

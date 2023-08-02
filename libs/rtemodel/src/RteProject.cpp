@@ -23,9 +23,134 @@
 #include "RteFsUtils.h"
 #include "XMLTree.h"
 
+#include <sstream>
 using namespace std;
 
 const std::string RteProject::DEFAULT_RTE_FOLDER = "RTE";
+
+
+RteLicenseInfo::RteLicenseInfo(RteItem* parent) :
+  RteItem("license", parent)
+{
+}
+
+std::string RteLicenseInfo::ToString(unsigned indent)
+{
+  stringstream ss;
+  ss << RteUtils::GetIndent(indent) << "- license: " << ConstructLicenseTitle(this) << endl;
+  indent += 2;
+  const string& license_agreement = GetAttribute("agreement");
+  if (!license_agreement.empty()) {
+    ss << RteUtils::GetIndent(indent) << "license-agreement: " << license_agreement << endl;
+  }
+  ss << RteUtils::GetIndent(indent) << "packs:" << endl;
+  for (auto& packId : m_packIDs) {
+    ss << RteUtils::GetIndent(indent) << "- pack: " << packId << endl;
+  }
+  if (!m_componentIDs.empty()) {
+    ss << RteUtils::GetIndent(indent) << "components:" << endl;
+    for (auto& compId : m_componentIDs) {
+      ss << RteUtils::GetIndent(indent) << "- component: " << compId << endl;
+    }
+  }
+  return ss.str();
+}
+
+std::string RteLicenseInfo::ConstructLicenseTitle(const RteItem* license)
+{
+  string name = license->GetAttribute("spdx");
+  if (name.empty()) {
+    name = license->GetAttribute("title");
+    if (!name.empty()) {
+      name = "<proprietary> " + name;
+    } else {
+      name = "<unknown>";
+    }
+  }
+  return name;
+}
+
+std::string RteLicenseInfo::ConstructLicenseID(const RteItem* license)
+{
+  string id = license->GetAttribute("spdx");
+  if (id.empty()) {
+    id = ConstructLicenseTitle(license) + "(" + license->GetPackageID()+ ")";
+  }
+  return id;
+}
+
+RteLicenseInfoCollection::~RteLicenseInfoCollection()
+{
+  Clear();
+}
+
+void RteLicenseInfoCollection::Clear()
+{
+  for (auto [_, ptr] : m_LicensInfos) {
+    delete ptr;
+  }
+  m_LicensInfos.clear();
+}
+
+std::string RteLicenseInfoCollection::ToString()
+{
+  stringstream ss;
+  ss << "licenses:" << endl;
+  for (auto& [key, info] : m_LicensInfos) {
+    ss << info->ToString(2) << endl;
+  }
+  return ss.str();
+}
+
+
+void RteLicenseInfoCollection::AddLicenseInfo(RteItem* item)
+{
+  if (!item) {
+    return;
+  }
+  RteItem* licenseSet = item->GetLicenseSet();
+  if (licenseSet) {
+    for (RteItem* license : licenseSet->GetChildren()) {
+      EnsureLicensInfo(item, license);
+    }
+  } else {
+    EnsureLicensInfo(item, nullptr);
+  }
+}
+
+RteLicenseInfo* RteLicenseInfoCollection::EnsureLicensInfo(RteItem* item, RteItem* license)
+{
+  RtePackage* pack = item->GetPackage();
+  string licId = license? RteLicenseInfo::ConstructLicenseID(license) : RteLicenseInfo::ConstructLicenseID(pack);
+
+  auto it = m_LicensInfos.find(licId);
+  RteLicenseInfo* info = nullptr;;
+  if (it == m_LicensInfos.end()) {
+    info = new RteLicenseInfo();
+    m_LicensInfos[licId] = info;
+    string licFile;
+    if (license) {
+      info->SetAttributes(*license);
+      if(!info->HasAttribute("spdx")) {
+        licFile = license->GetName();
+      }
+    } else {
+      info->AddAttribute("pack", pack->GetID());
+      licFile = pack->GetChildText("license");
+    }
+      if (!licFile.empty()) {
+      info->AddAttribute("agreement", "%CMSIS_PACK_ROOT%/" + pack->GetPackagePath(true) + licFile);
+    }
+  } else {
+    info = it->second;
+  }
+  info->AddPackId(pack->GetID());
+  if (dynamic_cast<RteComponent*>(item)) {
+    info->AddComponentId(item->GetComponentID(true));
+  }
+  return info;
+}
+
 
 ////////////////////////////
 RteProject::RteProject() :
@@ -538,6 +663,9 @@ void RteProject::UpdateConfigFileBackups(RteFileInstance* fi, RteFile* f)
 {
   if (!ShouldUpdateRte())
     return;
+  if (!f || !fi) {
+    return;
+  }
 
   string src = f->GetOriginalAbsolutePath();
   string absPath = RteFsUtils::AbsolutePath(fi->GetAbsolutePath()).generic_string();
@@ -2458,6 +2586,29 @@ const RteFileInfo* RteProject::GetFileInfo(const string& groupName, const string
     return t->GetFileInfo(groupName, file);
   }
   return NULL;
+}
+
+void RteProject::CollectLicenseInfos(RteLicenseInfoCollection& licenseInfos) const
+{
+  //collect all components, APIs, DFPs and BSPs
+  set<RteComponent*> components;
+  set<RtePackage*> packs;
+  for (auto [targetName, t] : GetTargets()) {
+    packs.insert(t->GetDevicePackage());
+    packs.insert(t->GetBoardPackage());
+    for (auto [_c, ci] : m_components) {
+      RteComponent* c = ci->GetResolvedComponent(targetName);
+      if (c) {
+        components.insert(c);
+      }
+    }
+  }
+  for (auto c : components) {
+    licenseInfos.AddLicenseInfo(c);
+  }
+  for (auto p : packs) {
+    licenseInfos.AddLicenseInfo(p);
+  }
 }
 
 // End of RteProject.cpp
