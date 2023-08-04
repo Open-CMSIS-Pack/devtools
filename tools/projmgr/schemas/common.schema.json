@@ -757,6 +757,10 @@
         "constructed-files": {
           "type": "array",
           "items": { "$ref": "#/definitions/FileType" }
+        },
+        "licenses": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/LicenseInfoType" }
         }
       },
       "additionalProperties": false
@@ -794,6 +798,41 @@
         "generators":   { "$ref": "#/definitions/GeneratorsOutputType" }
       },
       "additionalProperties": false
+    },
+    "LicenseInfoPackType": {
+      "type": "object",
+      "properties": {
+        "pack": { "$ref": "#/definitions/PackID" }
+      }
+    },
+    "LicenseInfoComponentType": {
+      "type": "object",
+      "properties": {
+        "component": { "type": "string" }
+      }
+    },
+    "LicenseInfoType": {
+      "type": "object",
+      "description": "License information about packs and components",
+      "properties": {
+        "license": {
+          "type": "string",
+          "description": "License SPDX name or title"
+        },
+        "license-agreement": {
+          "type": "string",
+          "description": "Path to license agreement file"
+        },
+        "packs": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/LicenseInfoPackType" }
+        },
+        "components": {
+          "type": "array",
+          "description": "List of components or APIs component to license agreement file",
+          "items": { "$ref": "#/definitions/LicenseInfoComponentType" }
+        }
+      }
     },
     "PacksType": {
       "type": "array",

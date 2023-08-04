@@ -124,6 +124,11 @@ public:
   void AddLicenseInfo(RteItem* item);
 
   /**
+   * @brief return collection of collected license infos
+  */
+  const std::map<std::string, RteLicenseInfo*>& GetLicensInfos() const { return m_LicensInfos; }
+
+  /**
    * @brief convert collection content to yml-like text
    * @return yml formatted text
   */
@@ -553,6 +558,14 @@ public:
    * @param collection of license infos
   */
   void CollectLicenseInfos(RteLicenseInfoCollection& licenseInfos) const;
+
+  /**
+   * @brief collect license info used in project target
+   * @param collection of license infos
+   * @param targetName target name to collect info, empty string for active one
+  */
+  void CollectLicenseInfosForTarget(RteLicenseInfoCollection& licenseInfos, const std::string& targetName) const;
+
 
   /**
    * @brief update CMSIS RTE data such as components, boards, gpdsc information, project files in project.
