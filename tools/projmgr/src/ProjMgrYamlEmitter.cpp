@@ -43,6 +43,7 @@ private:
   void SetGroupsNode(YAML::Node node, const ContextItem* context, const vector<GroupNode>& groups);
   void SetFilesNode(YAML::Node node, const ContextItem* context, const vector<FileNode>& files);
   void SetLinkerNode(YAML::Node node, const ContextItem* context);
+  void SetLicenseInfoNode(YAML::Node node, const ContextItem* context);
   void SetControlsNode(YAML::Node Node, const ContextItem* context, const BuildType& controls);
   void SetProcessorNode(YAML::Node node, const map<string, string>& targetAttributes);
   void SetMiscNode(YAML::Node miscNode, const MiscItem& misc);
@@ -147,6 +148,7 @@ void ProjMgrYamlCbuild::SetContextNode(YAML::Node contextNode, const ContextItem
   SetLinkerNode(contextNode[YAML_LINKER], context);
   SetGroupsNode(contextNode[YAML_GROUPS], context, context->groups);
   SetConstructedFilesNode(contextNode[YAML_CONSTRUCTEDFILES], context);
+  SetLicenseInfoNode(contextNode[YAML_LICENSES], context);
 }
 
 void ProjMgrYamlCbuild::SetComponentsNode(YAML::Node node, const ContextItem* context) {
@@ -345,6 +347,35 @@ void ProjMgrYamlCbuild::SetLinkerNode(YAML::Node node, const ContextItem* contex
   SetNodeValue(node[YAML_REGIONS], regions);
   SetDefineNode(node[YAML_DEFINE], context->linker.defines);
 }
+
+void ProjMgrYamlCbuild::SetLicenseInfoNode(YAML::Node node, const ContextItem* context) {
+  // add licensing info for active target
+  RteLicenseInfoCollection licenseInfos;
+  context->rteActiveProject->CollectLicenseInfosForTarget(licenseInfos, context->rteActiveTarget->GetName());
+  for (auto [id, licInfo] : licenseInfos.GetLicensInfos()) {
+
+    YAML::Node licNode;
+    SetNodeValue(licNode[YAML_LICENSE], RteLicenseInfo::ConstructLicenseTitle(licInfo));
+    const string& license_agreement = licInfo->GetAttribute("agreement");
+    if (!license_agreement.empty()) {
+      SetNodeValue(licNode[YAML_LICENSE_AGREEMENT], license_agreement);
+    }
+    YAML::Node packsNode = licNode[YAML_PACKS];
+    for (auto pack : licInfo->GetPackIDs()) {
+      YAML::Node packNode;
+      SetNodeValue(packNode[YAML_PACK], pack);
+      packsNode.push_back(packNode);
+    }
+    YAML::Node componentsNode = licNode[YAML_COMPONENTS];
+    for (auto compID : licInfo->GetComponentIDs()) {
+      YAML::Node componentNode;
+      SetNodeValue(componentNode[YAML_COMPONENT], compID);
+      componentsNode.push_back(componentNode);
+    }
+    node.push_back(licNode);
+  }
+}
+
 
 void ProjMgrYamlCbuild::SetControlsNode(YAML::Node node, const ContextItem* context, const BuildType& controls) {
   SetNodeValue(node[YAML_OPTIMIZE], controls.optimize);

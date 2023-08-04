@@ -1,13 +1,13 @@
 licenses:
   - license: <proprietary> Proprietary Test License
-    license-agreement: %CMSIS_PACK_ROOT%/ARM/RteTest/0.1.0/licenses/ProprietaryLicense.txt
+    license-agreement: ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/licenses/ProprietaryLicense.txt
     packs:
     - pack: ARM::RteTest@0.1.0
     components:
     - component: ARM::RteTest:ComponentLevel@0.0.1
 
   - license: <unknown>
-    license-agreement: %CMSIS_PACK_ROOT%/ARM/RteTest_DFP/0.2.0/Doc/license.txt
+    license-agreement: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Doc/license.txt
     packs:
     - pack: ARM::RteTest_DFP@0.2.0
     components:

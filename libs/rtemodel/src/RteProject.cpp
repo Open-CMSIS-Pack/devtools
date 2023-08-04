@@ -145,7 +145,7 @@ RteLicenseInfo* RteLicenseInfoCollection::EnsureLicenseInfo(RteItem* item, RteIt
       licFile = pack->GetChildText("license");
     }
       if (!licFile.empty()) {
-      info->AddAttribute("agreement", "%CMSIS_PACK_ROOT%/" + pack->GetPackagePath(true) + licFile);
+        info->AddAttribute("agreement", "${CMSIS_PACK_ROOT}/" + pack->GetPackagePath(true) + licFile);
     }
   } else {
     info = it->second;
@@ -2600,13 +2600,24 @@ void RteProject::CollectLicenseInfos(RteLicenseInfoCollection& licenseInfos) con
   set<RteComponent*> components;
   set<RtePackage*> packs;
   for (auto [targetName, t] : GetTargets()) {
-    packs.insert(t->GetDevicePackage());
-    packs.insert(t->GetBoardPackage());
-    for (auto [_c, ci] : m_components) {
-      RteComponent* c = ci->GetResolvedComponent(targetName);
-      if (c) {
-        components.insert(c);
-      }
+    CollectLicenseInfosForTarget(licenseInfos, targetName);
+  }
+}
+
+void RteProject::CollectLicenseInfosForTarget(RteLicenseInfoCollection& licenseInfos, const std::string& targetName) const
+{
+  RteTarget* t = GetTarget(targetName); // returns active one if targetName is empty
+  if (!t) {
+    return; // no such target
+  }
+  set<RteComponent*> components;
+  set<RtePackage*> packs;
+  packs.insert(t->GetDevicePackage());
+  packs.insert(t->GetBoardPackage());
+  for (auto [_c, ci] : m_components) {
+    RteComponent* c = ci->GetResolvedComponent(targetName);
+    if (c) {
+      components.insert(c);
     }
   }
   for (auto c : components) {
@@ -2616,5 +2627,4 @@ void RteProject::CollectLicenseInfos(RteLicenseInfoCollection& licenseInfos) con
     licenseInfos.AddLicenseInfo(p);
   }
 }
-
 // End of RteProject.cpp
