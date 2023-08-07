@@ -1316,10 +1316,7 @@ RteComponent* ProjMgrWorker::ProcessComponent(ContextItem& context, ComponentIte
     ci.AddAttribute("condition", item.condition);
     auto ti = ci.EnsureTargetInfo(context.rteActiveTarget->GetName());
     ti->SetVersionMatchMode(VersionCmp::MatchMode::ENFORCED_VERSION);
-    string packId = item.fromPack;
-    RteUtils::ReplaceAll(packId,"::", ".");
-    RteUtils::ReplaceAll(packId, "@", ".");
-    RtePackageInstanceInfo packInfo(nullptr, packId);
+    RtePackageInstanceInfo packInfo(nullptr, item.fromPack);
     ci.SetPackageAttributes(packInfo);
     list<RteComponent*> components;
     RteComponent* enforced = context.rteActiveTarget->GetFilteredModel()->FindComponents(ci, components);
