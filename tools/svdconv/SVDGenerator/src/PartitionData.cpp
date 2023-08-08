@@ -39,11 +39,11 @@ PartitionData::PartitionData(const FileHeaderInfo& fileHeaderInfo, const SvdOpti
   m_genH(nullptr),
   m_genSfd(nullptr),
   m_numOfItns(0)
-{  
+{
   m_fileIo  = new FileIo();
   m_genH    = new HeaderGenerator(m_fileIo);
   m_genSfd  = new SfdGenerator(m_fileIo);
-    
+
   m_fileIo->SetSvdFileName        (fileHeaderInfo.svdFileName);
   m_fileIo->SetProgramDescription (fileHeaderInfo.descr);
   m_fileIo->SetCopyrightString    (fileHeaderInfo.copyright);
@@ -107,7 +107,7 @@ bool PartitionData::CreateHeadingBegin(const string& text)
   CreateCCommentBegin();
   m_genSfd->Generate<sfd::HEADING|sfd::BEGIN>(text.c_str());
   CreateCCommentEnd();
-  
+
   return true;
 }
 
@@ -117,7 +117,7 @@ bool PartitionData::CreateHeadingEnd()
   m_genSfd->Generate<sfd::HEADING|sfd::END>("");
   CreateCCommentEnd();
   m_genH->Generate<c_header::DIRECT>("");
- 
+
   return true;
 }
 
@@ -126,12 +126,12 @@ bool PartitionData::CreateHeadingEnableBegin(const string& text)
   CreateCCommentBegin();
   m_genSfd->Generate<sfd::HEADINGENABLE|sfd::BEGIN>(text.c_str());
   CreateCCommentEnd();
-  
+
   return true;
 }
 
 bool PartitionData::CreateHeadingEnableEnd()
-{  
+{
   CreateCCommentBegin();
   m_genSfd->Generate<sfd::HEADINGENABLE|sfd::END>("");
   CreateCCommentEnd();
@@ -177,7 +177,7 @@ bool PartitionData::CreatePartitionStart(SvdDevice *device)
   const auto& name    = device->GetName();
   const auto& vendor  = device->GetVendor();
   string headerDef    = name;
-  
+
   SvdUtils::ToUpper(headerDef);
   CreateConfWizStart();
 
@@ -205,7 +205,7 @@ bool PartitionData::CreatePartitionEnd(SvdDevice *device)
   m_genH->Generate<c_header::MAKE|c_header::MK_DOXYENDGROUP         >("%s",           name.c_str());
   m_genH->Generate<c_header::MAKE|c_header::MK_DOXYENDGROUP         >("%s",           vendor.c_str());
   m_genH->Generate<c_header::DIRECT                                 >("");
-  
+
   return true;
 }
 
@@ -217,7 +217,7 @@ bool PartitionData::CreateSauRegionsConfig(SvdCpu *cpu)
 
   m_genH->Generate<c_header::DESCR|c_header::PART>("SAU Regions Config");
 
-  CreateHeadingBegin      ("Initialize Secure Attribute Unit (SAU) Address Regions");  
+  CreateHeadingBegin      ("Initialize Secure Attribute Unit (SAU) Address Regions");
   CreateMaxNumSauRegions  (cpu);
   CreateInitSauRegions    (cpu);
   CreateHeadingEnd        ();
@@ -234,6 +234,11 @@ bool PartitionData::CreateMaxNumSauRegions(SvdCpu *cpu)
   uint32_t value = cpu->GetSauNumRegions();
   const string name  = "SAU_REGIONS_MAX";
   const string descr = "Max. number of SAU regions";
+
+  if(value == SvdItem::VALUE32_NOT_INIT) {
+    m_genH->Generate<c_header::C_ERROR>("SAU Regions Config: Number of SAU regions not set", cpu->GetLineNumber());
+    value = 0;
+  }
 
   m_genH->Generate<c_header::MAKE|c_header::MK_DEFINE>("%s", value, 10, -1, descr.c_str(), name.c_str());
 
@@ -252,7 +257,7 @@ bool PartitionData::CreateSauGlobalConfig(SvdCpu *cpu)
   CreateSauInitControlEnable  (cpu);
   CreateSauAllNonSecure       (cpu);
   CreateHeadingEnableEnd      ();
-  
+
   return true;
 }
 
@@ -286,7 +291,7 @@ bool PartitionData::CreateSauInitControlEnable(SvdCpu *cpu)
   bool value = sauRegionsCfg->GetEnabled();
   const string name = "SAU_INIT_CTRL_ENABLE";
   const string descr = "SAU->CTRL register bit ENABLE";
-  
+
   CreateCCommentBegin();
   m_genSfd->Generate<sfd::QOPTION|sfd::SINGLE             >("Enable SAU");
   m_genSfd->Generate<sfd::INFO|sfd::SINGLE                >("%s", descr.c_str());
@@ -339,7 +344,7 @@ bool PartitionData::CreateInitSauRegions(SvdCpu *cpu)
   if(!sauRegionsCfg) {
     return true;
   }
-  
+
   const auto& childs = sauRegionsCfg->GetChildren();
   if(childs.empty()) {
     return true;
@@ -469,7 +474,7 @@ bool PartitionData::CreateSleepAndExceptionBegin(SvdCpu *cpu)
 }
 
 bool PartitionData::CreateDeepSleep(SvdCpu *cpu)
-{  
+{
   if(!cpu) {
     return false;
   }
@@ -489,7 +494,7 @@ bool PartitionData::CreateDeepSleep(SvdCpu *cpu)
 }
 
 bool PartitionData::CreateSystemReset(SvdCpu *cpu)
-{  
+{
   if(!cpu) {
     return false;
   }
@@ -509,7 +514,7 @@ bool PartitionData::CreateSystemReset(SvdCpu *cpu)
 }
 
 bool PartitionData::CreatePriorityExceptions(SvdCpu *cpu)
-{  
+{
   if(!cpu) {
     return false;
   }
@@ -529,7 +534,7 @@ bool PartitionData::CreatePriorityExceptions(SvdCpu *cpu)
 }
 
 bool PartitionData::CreateFault(SvdCpu *cpu)
-{  
+{
   if(!cpu) {
     return false;
   }
@@ -653,7 +658,7 @@ bool PartitionData::CreateFloatingPointUnitNsacrCp10Cp11(SvdCpu *cpu)
   CreateCCommentBegin();
   m_genSfd->Generate<sfd::OPTION|sfd::SINGLE              >("Floating Point Unit usage");
   m_genSfd->Generate<sfd::MAKE|sfd::MK_OPTSEL             >("Secure state only", 0);
-  m_genSfd->Generate<sfd::MAKE|sfd::MK_OPTSEL             >("Secure and Non-Secure state", 3);  
+  m_genSfd->Generate<sfd::MAKE|sfd::MK_OPTSEL             >("Secure and Non-Secure state", 3);
   m_genSfd->Generate<sfd::INFO|sfd::SINGLE                >("Value for SCB->NSACR register bits CP10, CP11");
   CreateCCommentEnd();
   m_genH->Generate<c_header::MAKE|c_header::MK_DEFINE     >("%s",                                       value, 10, -1, descr.c_str(), name.c_str());
@@ -751,7 +756,7 @@ bool PartitionData::CreateSetupInterruptTarget(SvdDevice *device)
     CreateInterruptBlock(interrupt, num);
     m_numOfItns++;
   }
-    
+
   CreateHeadingEnd();
 
   return true;
@@ -782,7 +787,7 @@ bool PartitionData::CreateInterruptBlock(const map<int32_t, SvdInterrupt*>& inte
 
   CreateInterruptBlockBegin(num);
   CreateCCommentBegin();
-  
+
   for(const auto& [key, interrupt] : interrupts) {
     if(!interrupt) {
       continue;
@@ -819,7 +824,7 @@ bool PartitionData::CreateSetupInterruptTargetItem(SvdInterrupt *interrupt)
   m_genSfd->Generate<sfd::OBIT_NORANGE                    >("%s", num, name.c_str());
   m_genSfd->Generate<sfd::INFO|sfd::SINGLE                >("%s", descr.c_str());
   m_genSfd->Generate<sfd::MAKE|sfd::MK_ENABLEDISABLE      >("", "Secure state", "Non-Secure state");
-  
+
   return true;
 }
 
@@ -833,7 +838,7 @@ bool PartitionData::CreateSauRegions(SvdCpu *cpu)
 
   CreateSauRegionMacro  (cpu);
   CreateSauSetup        (cpu);
-  
+
   return true;
 }
 
@@ -875,11 +880,17 @@ bool PartitionData::CreateSauSetup(SvdCpu *cpu)
   m_genH->Generate<c_header::DIRECT                      >("");
 
   uint32_t numOfSauRegions = cpu->GetSauNumRegions();
-  for(uint32_t i=0; i<numOfSauRegions; i++) {
-    m_genH->Generate<c_header::DIRECT                    >("    #if defined (SAU_INIT_REGION%i) && (SAU_INIT_REGION%i == 1U)", i, i);
-    m_genH->Generate<c_header::DIRECT                    >("      SAU_INIT_REGION(%i);", i);
-    m_genH->Generate<c_header::DIRECT                    >("    #endif");
+  if(numOfSauRegions == SvdItem::VALUE32_NOT_INIT) {
+    m_genH->Generate<c_header::C_ERROR>("SAU Setup: Number of SAU regions not set", cpu->GetLineNumber());
   }
+  else {
+    for(uint32_t i=0; i<numOfSauRegions; i++) {
+      m_genH->Generate<c_header::DIRECT                    >("    #if defined (SAU_INIT_REGION%i) && (SAU_INIT_REGION%i == 1U)", i, i);
+      m_genH->Generate<c_header::DIRECT                    >("      SAU_INIT_REGION(%i);", i);
+      m_genH->Generate<c_header::DIRECT                    >("    #endif");
+    }
+  }
+
   m_genH->Generate<c_header::DIRECT                      >("");
   m_genH->Generate<c_header::DIRECT                      >("  #endif /* defined (__SAUREGION_PRESENT) && (__SAUREGION_PRESENT == 1U) */");
 
@@ -930,7 +941,7 @@ bool PartitionData::CreateSauSetup(SvdCpu *cpu)
     m_genH->Generate<c_header::DIRECT                    >("  #endif");
     m_genH->Generate<c_header::DIRECT                    >("");
   }
-  
+
   m_genH->Generate<c_header::DIRECT                      >("}");
 
   return true;
