@@ -605,12 +605,11 @@ void RteProject::WriteInstanceFiles(const std::string& targetName)
   for (auto it = m_files.begin(); it != m_files.end(); ++it) {
     const string& fileID = it->first;
     RteFileInstance* fi = it->second;
-    RteFile* f = fi->GetFile(targetName);
-
     if (fi->IsRemoved() || fi->GetTargetCount() == 0) {
       RemoveFileInstance(fileID);
-    } else {
-      if (!RteFsUtils::Exists(fi->GetAbsolutePath())) {
+    } else if (fi->IsUsedByTarget(targetName)){
+      RteFile* f = fi->GetFile(targetName);
+      if (f && !RteFsUtils::Exists(fi->GetAbsolutePath())) {
         UpdateFileInstance(fi, f, false, false);
       }
       UpdateConfigFileBackups(fi, f);
