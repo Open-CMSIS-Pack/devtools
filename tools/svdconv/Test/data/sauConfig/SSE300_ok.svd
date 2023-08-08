@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Copyright (C) 2012-2022 ARM Limited. All rights reserved.
+
+  Purpose: System Viewer Description (SVD) Example (Schema Version 1.1)
+           This is a description of a none-existent and incomplete device
+       for demonstration purposes only.
+
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions are met:
+   - Redistributions of source code must retain the above copyright
+     notice, this list of conditions and the following disclaimer.
+   - Redistributions in binary form must reproduce the above copyright
+     notice, this list of conditions and the following disclaimer in the
+     documentation and/or other materials provided with the distribution.
+   - Neither the name of ARM nor the names of its contributors may be used
+     to endorse or promote products derived from this software without
+     specific prior written permission.
+
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+  ARE DISCLAIMED. IN NO EVENT SHALL COPYRIGHT HOLDERS AND CONTRIBUTORS BE
+  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+  POSSIBILITY OF SUCH DAMAGE.
+ -->
+<!-- This file is derivative from IOTKit_CM33.svd -->
+<device schemaVersion="1.3" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="CMSIS-SVD.xsd">
+    <vendor>ARM Ltd.</vendor>
+    <vendorID>ARM</vendorID>
+    <name>SSE300_ok</name>
+    <series>ARMv8.1-M Mainline</series>
+    <version>1.0</version>
+    <description>ARM 32-bit v8.1-M Mainline based device</description>
+    <licenseText>
+        ARM Limited (ARM) is supplying this software for use with Cortex-M\n
+    processor based microcontroller, but can be equally used for other\n
+    suitable  processor architectures. This file can be freely distributed.\n
+    Modifications to this file shall be clearly marked.\n
+    \n
+    THIS SOFTWARE IS PROVIDED "AS IS".  NO WARRANTIES, WHETHER EXPRESS, IMPLIED\n
+    OR STATUTORY, INCLUDING, BUT NOT LIMITED TO, IMPLIED WARRANTIES OF\n
+    MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE APPLY TO THIS SOFTWARE.\n
+    ARM SHALL NOT, IN ANY CIRCUMSTANCES, BE LIABLE FOR SPECIAL, INCIDENTAL, OR\n
+    CONSEQUENTIAL DAMAGES, FOR ANY REASON WHATSOEVER.
+    </licenseText>
+    <cpu>
+        <name>CM55</name>
+        <revision>r0p0</revision>
+        <endian>little</endian>
+        <mpuPresent>true</mpuPresent>
+        <fpuPresent>true</fpuPresent>
+        <nvicPrioBits>3</nvicPrioBits>
+        <vendorSystickConfig>false</vendorSystickConfig>
+        <sauNumRegions>8</sauNumRegions>
+    </cpu>
+    <addressUnitBits>8</addressUnitBits>
+    <width>32</width>
+    <size>32</size>
+    <access>read-write</access>
+    <resetValue>0x00000000</resetValue>
+    <resetMask>0xFFFFFFFF</resetMask>
+    <peripherals>
+        <peripheral>
+            <name>SYSCOUNTER_CNTRL</name>
+            <description>System counter control</description>
+            <baseAddress>0x58100000</baseAddress>
+            <size>32</size>
+            <access>read-write</access>
+            <addressBlock>
+                <offset>0</offset>
+                <size>0x1000</size>
+                <usage>registers</usage>
+            </addressBlock>
+            <interrupt>
+                <name>System_Timestamp_Counter</name>
+                <description>System Timestamp Counter Interrupt</description>
+                <value>1</value>
+            </interrupt>
+            <registers>
+                <register>
+                    <name>CNTSR</name>
+                    <description>Counter frequency status information</description>
+                    <addressOffset>0x4</addressOffset>
+                    <size>32</size>
+                    <access>read-only</access>
+                </register>
+                <register>
+                    <name>CNTCV</name>
+                    <description>Current count value</description>
+                    <addressOffset>0x8</addressOffset>
+                    <size>64</size>
+                    <access>read-write</access>
+                </register>
+                <register>
+                    <name>CNTSCR</name>
+                    <description>Stores the Counter Scaling value</description>
+                    <addressOffset>0x10</addressOffset>
+                    <size>32</size>
+                    <access>read-write</access>
+                    <resetValue>0x01000000</resetValue>
+                </register>
+            </registers>
+        </peripheral>
+    </peripherals>
+</device>
