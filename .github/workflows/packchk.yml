@@ -104,6 +104,12 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Testspace client install & config
+        if: ${{ !github.event.repository.private }}
+        uses: testspace-com/setup-testspace@v1
+        with:
+          domain: ${{github.repository_owner}}
+
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build PackChkUnitTests
         uses: Open-CMSIS-Pack/devtools-build-action@arm64
@@ -150,11 +156,17 @@ jobs:
           if-no-files-found: error
           retention-days: ${{ needs.setup.outputs.retention_days }}
 
+      - name: Testspace push test content
+        if: ${{ (!github.event.repository.private) && always() && (matrix.arch != 'arm64') }}
+        run: |
+          testspace "[${{ github.workflow }} / Test Report/ ${{ matrix.target }}-${{ matrix.arch }}]./build/test_reports/packchkunittests-*.xml"
+          testspace "[${{ github.workflow }} / Test Report/ ${{ matrix.target }}-${{ matrix.arch }}]./build/test_reports/packchkintegtests-*.xml"
+
   coverage:
     if: |
-        (github.event_name == 'pull_request') ||
+        ((github.event_name == 'pull_request') ||
         (github.event_name == 'push') ||
-        (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/packchk/')) ||
+        (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/packchk/'))) &&
         ((github.event.schedule != '') && (!github.event.repository.private))
     env:
         lcov_base: https://github.com/linux-test-project/lcov/releases/download/v1.15/
@@ -172,6 +184,11 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: recursive
+
+      - name: Testspace client install & config
+        uses: testspace-com/setup-testspace@v1
+        with:
+          domain: ${{github.repository_owner}}
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build PackChkUnitTests
@@ -236,8 +253,24 @@ jobs:
           genhtml coverage_packchk.info --output-directory coverage_packchk --branch-coverage
         working-directory: ./build/tools/packchk
 
+      # testspace changes start
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install lcov_cobertura
+      - name: Convert to xml
+        run: |
+          lcov_cobertura ./build/tools/packchk/coverage_packchk.info
+      - name: Testspace push coverage
+        run: |
+          testspace "[${{ github.workflow }} / Code Coverage]./coverage.xml"
+      # testspace changes start
+
       - name: Upload Report to Codecov
-        if: ${{ !github.event.repository.private }}
         uses: Wandalen/wretry.action@v1.0.41
         with:
           action: codecov/codecov-action@v3
