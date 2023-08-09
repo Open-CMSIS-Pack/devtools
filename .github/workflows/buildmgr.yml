@@ -333,6 +333,12 @@ jobs:
         with:
           submodules: true
 
+      - name: Testspace client install & config
+        if: ${{ !github.event.repository.private }}
+        uses: testspace-com/setup-testspace@v1
+        with:
+          domain: ${{github.repository_owner}}
+
       - name: Cache ARM GCC
         uses: actions/cache@v3
         with:
@@ -440,11 +446,21 @@ jobs:
           retention-days: ${{ needs.setup.outputs.retention_days }}
           if-no-files-found: error
 
+      - name: Testspace push unit test content
+        if: ${{ always() && (matrix.arch != 'arm64') && (!github.event.repository.private) }}
+        run: |
+          testspace "[${{ github.workflow }} / Test Report/ ${{ matrix.target }}-${{ matrix.arch }}]./build/test_reports/cbuildunittests-*.xml"
+
+      - name: Testspace push integration test content
+        if: ${{ (!github.event.repository.private) && always() && ((matrix.arch == 'amd64') || (startsWith(matrix.runs_on, 'ubuntu'))) }}
+        run: |
+          testspace "[${{ github.workflow }} / Test Report/ ${{ matrix.target }}-${{ matrix.arch }}]./build/test_reports/cbuildintegtests-*.xml"
+
   coverage:
     if: |
-        (github.event_name == 'pull_request') ||
+        ((github.event_name == 'pull_request') ||
         (github.event_name == 'push') ||
-        (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/buildmgr/')) ||
+        (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/buildmgr/'))) &&
         ((github.event.schedule != '') && (!github.event.repository.private))
     env:
         installer_name: "gcc-arm-11.2-2022.02-x86_64-arm-none-eabi.tar.xz"
@@ -471,6 +487,11 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: recursive
+
+      - name: Testspace client install & config
+        uses: testspace-com/setup-testspace@v1
+        with:
+          domain: ${{github.repository_owner}}
 
       - name: Create build folder
         run: mkdir build
@@ -542,8 +563,23 @@ jobs:
           genhtml coverage_buildmgr.info --output-directory coverage_buildmgr --branch-coverage
         working-directory: ./build/tools/buildmgr
 
+      # testspace changes start
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install lcov_cobertura
+      - name: Convert to xml
+        run: |
+          lcov_cobertura ./build/tools/buildmgr/coverage_buildmgr.info
+      - name: Testspace push coverage
+        run: testspace "[${{ github.workflow }} / Code Coverage]./coverage.xml"
+      # testspace changes end
+
       - name: Upload Report to Codecov
-        if: ${{ !github.event.repository.private }}
         uses: Wandalen/wretry.action@v1.0.41
         with:
           action: codecov/codecov-action@v3
