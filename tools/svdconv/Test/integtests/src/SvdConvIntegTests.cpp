@@ -113,3 +113,47 @@ TEST_F(SvdConvIntegTests, CheckOption_n) {
   ASSERT_TRUE(RteFsUtils::Exists(outNameTest));
 }
 
+TEST_F(SvdConvIntegTests, CheckSauNumRegions_Ok) {
+  const string& inFile = SvdConvIntegTestEnv::localtestdata_dir + "/sauConfig/SSE300_ok.svd";
+  const string testOut = SvdConvIntegTestEnv::testoutput_dir + "/sauConfig";
+  ASSERT_TRUE(RteFsUtils::Exists(inFile));
+
+  Arguments args("SVDConv.exe", inFile);
+  args.add({ "-o", testOut, "--generate=partition", "--create-folder" });
+
+  SvdConv svdConv;
+  EXPECT_FALSE(svdConv.Check(args, args, nullptr));
+}
+
+TEST_F(SvdConvIntegTests, CheckSauNumRegions_Errors) {
+  const string& inFile = SvdConvIntegTestEnv::localtestdata_dir + "/sauConfig/SSE300_errs.svd";
+  const string testOut = SvdConvIntegTestEnv::testoutput_dir + "/sauConfig";
+  ASSERT_TRUE(RteFsUtils::Exists(inFile));
+
+  Arguments args("SVDConv.exe", inFile);
+  args.add({ "-o", testOut, "--generate=partition", "--create-folder" });
+
+  SvdConv svdConv;
+  EXPECT_EQ(2, svdConv.Check(args, args, nullptr));
+
+  struct {
+    int M219 = 0;
+    int M364 = 0;
+  } cnt;
+
+  auto errMsgs = ErrLog::Get()->GetLogMessages();
+  for (const string& msg : errMsgs) {
+    size_t s;
+
+    if ((s = msg.find("M219", 0)) != string::npos) {
+      cnt.M219++;
+    }
+    if ((s = msg.find("M364", 0)) != string::npos) {
+      cnt.M364++;
+    }
+  }
+
+  if(cnt.M219 != 2 || cnt.M364 != 1) {
+    FAIL() << "Occurrences of M219, M364 are wrong.";
+  }
+}
