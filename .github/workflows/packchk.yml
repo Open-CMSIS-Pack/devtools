@@ -164,9 +164,9 @@ jobs:
 
   coverage:
     if: |
-        ((github.event_name == 'pull_request') ||
+        (github.event_name == 'pull_request') ||
         (github.event_name == 'push') ||
-        (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/packchk/'))) &&
+        (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/packchk/')) ||
         ((github.event.schedule != '') && (!github.event.repository.private))
     env:
         lcov_base: https://github.com/linux-test-project/lcov/releases/download/v1.15/
@@ -186,6 +186,7 @@ jobs:
           submodules: recursive
 
       - name: Testspace client install & config
+        if: ${{ !github.event.repository.private }}
         uses: testspace-com/setup-testspace@v1
         with:
           domain: ${{github.repository_owner}}
@@ -255,22 +256,27 @@ jobs:
 
       # testspace changes start
       - name: Set up Python
+        if: ${{ !github.event.repository.private }}
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
       - name: Install dependencies
+        if: ${{ !github.event.repository.private }}
         run: |
           python -m pip install --upgrade pip
           pip install lcov_cobertura
       - name: Convert to xml
+        if: ${{ !github.event.repository.private }}
         run: |
           lcov_cobertura ./build/tools/packchk/coverage_packchk.info
       - name: Testspace push coverage
+        if: ${{ !github.event.repository.private }}
         run: |
           testspace "[${{ github.workflow }} / Code Coverage]./coverage.xml"
       # testspace changes start
 
       - name: Upload Report to Codecov
+        if: ${{ !github.event.repository.private }}
         uses: Wandalen/wretry.action@v1.0.41
         with:
           action: codecov/codecov-action@v3
