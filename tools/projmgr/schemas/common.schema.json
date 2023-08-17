@@ -174,7 +174,6 @@
         "base-name": { "type": "string", "description": "Base name for all output files" },
         "type": { "$ref": "#/definitions/ArtifactsType" }
       },
-      "additionalProperties": false,
       "required": ["type"]
     },
     "OutputDirectoriesType": {
@@ -183,8 +182,7 @@
         "intdir":   { "type": "string" },
         "outdir":   { "type": "string" },
         "cprjdir":  { "type": "string" }
-      },
-      "additionalProperties": false
+      }
     },
     "BuildOutputDirectoriesType": {
       "type": "object",
@@ -193,8 +191,7 @@
         "intdir":   { "type": "string" },
         "outdir":   { "type": "string" },
         "cprjdir":  { "type": "string" }
-      },
-      "additionalProperties": false
+      }
     },
     "OutputFileType": {
       "type": "object",
@@ -202,7 +199,6 @@
         "file": { "type": "string" },
         "type": { "$ref": "#/definitions/ArtifactsType" }
       },
-      "additionalProperties": false,
       "required": [ "file", "type" ]
     },
     "OutputFilesType": {
@@ -273,8 +269,7 @@
         "Link-CPP":     { "$ref": "#/definitions/ArrayOfStrings", "description": "List of Linker flags for project with C++ files" },
         "Library":      { "$ref": "#/definitions/ArrayOfStrings", "description": "List of Linker flags for libraries handling" },
         "Lib":          { "$ref": "#/definitions/ArrayOfStrings", "description": "List of Library Manager or Archiver flags" }
-      },
-      "additionalProperties": false
+      }
     },
     "TargetTypes": {
       "type": "array",
@@ -308,7 +303,6 @@
         "variables":    { "$ref": "#/definitions/VariablesType" },
         "context-map":  { "$ref": "#/definitions/ContextMapType" }
       },
-      "additionalProperties": false,
       "required" : [ "type"]
     },
     "BuildTypes": {
@@ -341,7 +335,6 @@
         "variables":    { "$ref": "#/definitions/VariablesType" },
         "context-map":  { "$ref": "#/definitions/ContextMapType" }
       },
-      "additionalProperties": false,
       "required" : [ "type"]
     },
     "ProjectsType": {
@@ -362,7 +355,6 @@
         "for-context":     { "$ref": "#/definitions/ForContext" },
         "not-for-context": { "$ref": "#/definitions/NotForContext" }
       },
-      "additionalProperties": false,
       "allOf": [
         { "$ref": "#/definitions/TypeListMutualExclusion"},
         { "required": [ "project" ] }
@@ -430,8 +422,7 @@
             {"required" : ["groups"]}
           ]
         }
-      ],
-      "additionalProperties": false
+      ]
     },
     "FilesType": {
       "type": "array",
@@ -480,8 +471,7 @@
       "allOf": [
         { "$ref": "#/definitions/TypeListMutualExclusion" },
         { "required": [ "file" ] }
-      ],
-      "additionalProperties": false
+      ]
     },
     "GeneratorsType": {
       "type": "array",
@@ -569,8 +559,7 @@
       "allOf": [
         { "$ref": "#/definitions/TypeListMutualExclusion" },
         { "required": [ "component" ] }
-      ],
-      "additionalProperties": false
+      ]
     },
     "RteType": {
       "type": ["object", "null"],
@@ -580,8 +569,7 @@
           "type": "string",
           "description": "Base directory for RTE files; default: $ProjectDir()$/RTE"
         }
-      },
-      "additionalProperties": false
+      }
     },
     "GeneratorsOutputType": {
       "type": ["object", "null"],
@@ -592,8 +580,7 @@
           "description": "Base directory for unspecified generators; default: $ProjectDir()$/generated"
         },
         "options": { "$ref": "#/definitions/GeneratorOptionsType" }
-      },
-      "additionalProperties": false
+      }
     },
     "GeneratorOptionsType": {
       "type": "array",
@@ -614,7 +601,6 @@
           "description": "Specifies the directory for generated files. Relative paths used the location of the yml file as base directory"
         }
       },
-      "additionalProperties": false,
       "required": [ "generator" ]
     },
     "LayersType": {
@@ -643,8 +629,7 @@
             { "required": ["type"]  }
           ]
         }
-      ],
-      "additionalProperties": false
+      ]
     },
     "DefaultDescType": {
       "type": "object",
@@ -653,8 +638,7 @@
           "$ref": "#/definitions/CompilerType"
         },
         "misc": { "$ref": "#/definitions/MiscTypes" }
-      },
-      "additionalProperties": false
+      }
     },
     "SolutionDescType": {
       "type": "object",
@@ -689,7 +673,6 @@
         "cdefault":    { "type": "null", "description": "Enable use of cdefault.yml file" },
         "generators":  { "$ref": "#/definitions/GeneratorsOutputType" }
       },
-      "additionalProperties": false,
       "required": [ "target-types", "projects" ]
     },
     "ProjectDescType": {
@@ -721,8 +704,7 @@
         "linker":       { "$ref": "#/definitions/LinkersType" },
         "generators":   { "$ref": "#/definitions/GeneratorsOutputType" },
         "rte":          { "$ref": "#/definitions/RteType" }
-      },
-      "additionalProperties": false
+      }
     },
     "BuildDescType": {
       "description": "The lock info that describes the resolved state of contexts and also can be used as input for generators",
@@ -762,8 +744,7 @@
           "type": "array",
           "items": { "$ref": "#/definitions/LicenseInfoType" }
         }
-      },
-      "additionalProperties": false
+      }
     },
     "LayerDescType": {
       "type": "object",
@@ -796,8 +777,7 @@
         "connections":  { "$ref": "#/definitions/ConnectionsType" },
         "linker":       { "$ref": "#/definitions/LinkersType" },
         "generators":   { "$ref": "#/definitions/GeneratorsOutputType" }
-      },
-      "additionalProperties": false
+      }
     },
     "LicenseInfoPackType": {
       "type": "object",
@@ -858,8 +838,7 @@
       "allOf": [
         { "$ref": "#/definitions/TypeListMutualExclusion" },
         { "required": [ "pack" ] }
-      ],
-      "additionalProperties": false
+      ]
     },
     "ResolvedComponentsType": {
       "type": "array",
@@ -888,8 +867,7 @@
         "files":        { "$ref": "#/definitions/FilesType" },
         "generator":    { "$ref": "#/definitions/ComponentGeneratorType" },
         "from-pack":    { "$ref": "#/definitions/PackID" }
-      },
-      "additionalProperties": false
+      }
     },
     "SetupsType": {
       "type": "array",
@@ -918,8 +896,7 @@
         "linker":          { "$ref": "#/definitions/LinkersType" },
         "processor":       { "$ref": "#/definitions/ProcessorType" }
       },
-      "$ref": "#/definitions/TypeListMutualExclusion",
-      "additionalProperties": false
+      "$ref": "#/definitions/TypeListMutualExclusion"
     },
     "ConnectionsType": {
       "description": "List of consumed and provided connections compatibility",
@@ -955,7 +932,6 @@
           "items": { "$ref": "#/definitions/ConsumesProvidesType" }
         }
       },
-      "additionalProperties": false,
       "required": [ "connect" ]
     },
     "LinkersType": {
@@ -980,8 +956,7 @@
         "not-for-context": { "$ref": "#/definitions/NotForContext" },
         "for-compiler":    { "$ref": "#/definitions/CompilersType" }
       },
-      "$ref": "#/definitions/TypeListMutualExclusion",
-      "additionalProperties": false
+      "$ref": "#/definitions/TypeListMutualExclusion"
     },
     "CreatedInfoType": {
       "type": "string",

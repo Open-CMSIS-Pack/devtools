@@ -1,13 +1,14 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schemas/cproject.schema.json
 
 project:
-  #invalid name field
-  name: Project 1
   description: Project 1
   device: RteTest_ARMCM0
   compiler: AC6@>=6.18.0
   processor:
     trustzone: non-secure
+  # output object missing required type field
+  output:
+    base-name: foo
   packages:
     - package: ARM::RteTest_DFP
   components:
