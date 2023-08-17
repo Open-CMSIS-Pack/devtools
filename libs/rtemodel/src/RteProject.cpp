@@ -406,7 +406,7 @@ RteComponentInstance* RteProject::AddComponent(RteComponent* c, int instanceCoun
   return ci;
 }
 
-void RteProject::AddCprjComponents(const list<RteItem*>& selItems, RteTarget* target,
+void RteProject::AddCprjComponents(const Collection<RteItem*>& selItems, RteTarget* target,
                                   set<RteComponentInstance*>& unresolvedComponents)
 {
   map<string, string> configFileVersions;
@@ -420,9 +420,7 @@ void RteProject::AddCprjComponents(const list<RteItem*>& selItems, RteTarget* ta
     target->SetComponentUsed(ci, instances);
     if (component) {
       target->SelectComponent(component, instances, false, true);
-      const list<RteItem*>& files = item->GetChildren();
-      for (auto itf = files.begin(); itf != files.end(); itf++) {
-        RteItem* f = *itf;
+      for (auto f : item->GetChildren()) {
         if (f->GetTag() != "file")
           continue;
         const string& name = f->GetName();
@@ -900,9 +898,8 @@ bool RteProject::ApplyInstanceChanges()
     // we have here several situations
     if (copy->IsRemoved()) {
       // item is removed => remove it for all targets
-      const list<RteItem*>& children = a->GetChildren();
-      for (auto itc = children.begin(); itc != children.end(); itc++) {
-        RteComponentInstance* ci = dynamic_cast<RteComponentInstance*>(*itc);
+      for (auto child : a->GetChildren()) {
+        RteComponentInstance* ci = dynamic_cast<RteComponentInstance*>(child);
         if (ci) {
           ci->SetRemoved(true);
         }
@@ -929,9 +926,8 @@ bool RteProject::ApplyInstanceChanges()
     }
     RteComponentInstance* ciNew = AddComponent(c, instanceCount, activeTarget, copy);
 
-    const list<RteItem*>& children = a->GetChildren();
-    for (auto itc = children.begin(); itc != children.end(); itc++) {
-      RteComponentInstance* ci = dynamic_cast<RteComponentInstance*>(*itc);
+    for (auto child : a->GetChildren()) {
+      RteComponentInstance* ci = dynamic_cast<RteComponentInstance*>(child);
       if (!ci)
         continue;
       if (targetSpecific) {
@@ -1392,9 +1388,8 @@ void RteProject::CollectSettings(const string& targetName)
       string comment = gen->GetName();
       comment += ":Common Sources";
 
-      const list<RteItem*>& children = projectFiles->GetChildren();
-      for (auto itf = children.begin(); itf != children.end(); itf++) {
-        RteFile* f = dynamic_cast<RteFile*>(*itf);
+      for (auto child : projectFiles->GetChildren()) {
+        RteFile* f = dynamic_cast<RteFile*>(child);
         if (!f)
           continue;
         RteFile::Category cat = f->GetCategory();

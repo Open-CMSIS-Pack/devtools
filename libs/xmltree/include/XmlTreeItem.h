@@ -47,6 +47,12 @@ public:
   virtual VISIT_RESULT Visit(TV* item) = 0;
 };
 
+/**
+ * @brief Alias for std::list
+ * @param TC collection element type
+*/
+template<class TC>
+using Collection = std::list<TC>;
 
 /**
  * @brief class that represents tree structure of XmlItem elements
@@ -89,10 +95,10 @@ public:
   */
   void Clear() override
   {
-    for (auto it = m_children.begin(); it != m_children.end(); it++) {
-      delete *it;
+    for (auto child : Children()) {
+      delete child;
     }
-    m_children.clear();
+    Children().clear();
     XmlItem::Clear();
   }
 
@@ -151,11 +157,8 @@ public:
     newItem->Clear();
     newItem->SetText(GetText());
     newItem->SetAttributes(GetAttributes());
-    for (auto it = m_children.begin(); it != m_children.end(); it++) {
-      TITEM* child = (*it);
-      if (child) {
-        child->Clone(newItem);
-      }
+    for (auto child : GetChildren()) {
+      child->Clone(newItem);
     }
   }
 
@@ -186,26 +189,26 @@ public:
    * @brief getter for a static list of pointer to instances of template type TITEM
    * @return static list of pointer to instances of template type TITEM
   */
-  const std::list<TITEM*>& GetEmptyList() const { static const std::list<TITEM*> sEmptyList; return sEmptyList; }
+  const Collection<TITEM*>& GetEmptyList() const { static const Collection<TITEM*> sEmptyList; return sEmptyList; }
 
   /**
   * @brief get number of children
   * @return number of children
   */
-  size_t GetChildCount() const { return m_children.size(); }
+  size_t GetChildCount() const { return GetChildren().size(); }
 
   /**
-   * @brief  getter for member m_children
+   * @brief const getter for member m_children
    * @return list of pointer to instances of template type TITEM
   */
-  const std::list<TITEM*>& GetChildren() const { return m_children; }
+  const Collection<TITEM*>& GetChildren() const { return m_children; }
 
   /**
    * @brief getter for grand children of a child specified by tag
    * @param tag name of child tag
    * @return list of pointer to instances of template type TITEM or empty list if child does not exist
   */
-  const std::list<TITEM*>& GetGrandChildren(const std::string& tag) const {
+  const Collection<TITEM*>& GetGrandChildren(const std::string& tag) const {
     TITEM* child = GetFirstChild(tag);
     if (child)
       return child->GetChildren();
@@ -216,7 +219,7 @@ public:
    * @brief check if instance has children
    * @return true if instance has children, otherwise false
   */
-  bool HasChildren() const { return !m_children.empty(); }
+  bool HasChildren() const { return !GetChildren().empty(); }
 
   /**
    * @brief add a new child to the instance
@@ -226,9 +229,9 @@ public:
   */
   virtual TITEM* AddChild(TITEM* child, bool prepend) {
     if (prepend) {
-      m_children.push_front(child);
+      Children().push_front(child);
     } else {
-      m_children.push_back(child);
+      Children().push_back(child);
     }
     return child;
   }
@@ -239,7 +242,7 @@ public:
    * @return pointer to the new child
   */
   virtual TITEM* AddChild(TITEM* child) {
-    m_children.push_back(child);
+    Children().push_back(child);
     return child;
   }
 
@@ -249,8 +252,8 @@ public:
   */
   virtual TITEM* GetFirstChild() const
   {
-    auto it = m_children.begin();
-    if (it != m_children.end())
+    auto it = GetChildren().begin();
+    if (it != GetChildren().end())
       return *it;
     return nullptr;
   }
@@ -262,9 +265,8 @@ public:
   */
   virtual TITEM* GetFirstChild(const std::string& tag) const
   {
-    for (auto it = m_children.begin(); it != m_children.end(); it++) {
-      TITEM* child = (*it);
-      if (child && tag == child->GetTag()) {
+    for (auto child : GetChildren()) {
+      if (tag == child->GetTag()) {
         return child;
       }
     }
@@ -308,10 +310,10 @@ public:
   */
   virtual void RemoveChild(TITEM* childToDelete, bool bDelete)
   {
-    for (auto it = m_children.begin(); it != m_children.end(); it++) {
+    for (auto it = Children().begin(); it != Children().end(); it++) {
       TITEM* child = (*it);
       if (child == childToDelete) {
-        m_children.erase(it);
+        Children().erase(it);
         if (bDelete)
           delete childToDelete;
         return;
@@ -327,10 +329,10 @@ public:
   */
   virtual void RemoveChild(const std::string& tag, bool bDelete)
   {
-    for (auto it = m_children.begin(); it != m_children.end(); it++) {
+    for (auto it = Children().begin(); it != Children().end(); it++) {
       TITEM* child = (*it);
-      if (child && tag == child->GetTag()) {
-        m_children.erase(it);
+      if (tag == child->GetTag()) {
+        Children().erase(it);
         if (bDelete)
           delete child;
         return;
@@ -350,8 +352,8 @@ public:
       if (!text.empty() || GetText() == text)
         return GetThis();
     }
-    for (auto it = m_children.begin(); it != m_children.end(); it++) {
-      TITEM* e = (*it)->FindItem(tag, text);
+    for (auto child : GetChildren()) {
+      TITEM* e = child->FindItem(tag, text);
       if (e)
         return e;
     }
@@ -382,8 +384,8 @@ public:
         return false;
       }
       if (res == VISIT_RESULT::CONTINUE_VISIT) {
-        for (auto it = m_children.begin(); it != m_children.end(); it++) {
-          if (!(*it)->AcceptVisitor(visitor))
+        for (auto child : Children()) {
+          if (!child->AcceptVisitor(visitor))
             return false;
         }
       }
@@ -506,14 +508,22 @@ public:
     }
   }
 
-
 protected:
-  // set new parent without changing the hierarchy. use with care!
+  /**
+   * @brief non-const getter for member m_children
+   * @return list of pointer to instances of template type TITEM
+  */
+  Collection<TITEM*>& Children() { return m_children; }
+
+  /**
+   * @brief set new parent without changing the hierarchy. use with care!
+   * @param parent new parent item
+  */
   void SetParent(TITEM* parent) { m_parent = parent; }
 
 protected:
   TITEM* m_parent;
-  std::list<TITEM*> m_children; // child elements
+  Collection<TITEM*> m_children; // child elements
 };
 
 #endif // XmlTreeItem_H

@@ -200,9 +200,8 @@ void CprjTargetElement::CollectEffectiveProperties(RteItem* item, const string& 
   }
   // assemble effective properties
   // add memories and algos in specified order
-  const list<RteItem*>& children = item->GetChildren();
-  for (auto it = children.begin(); it != children.end(); it++) {
-    RteDeviceProperty* pc = dynamic_cast<RteDeviceProperty*>(*it);
+  for (auto child : item->GetChildren()) {
+    RteDeviceProperty* pc = dynamic_cast<RteDeviceProperty*>(child);
     if (!pc)
       continue;
     const string& propType = pc->GetTag(); // algorithm, memory, etc.
@@ -395,22 +394,22 @@ const std::string& CprjFile::GetRteFolder() const
   return RteUtils::EMPTY_STRING;
 }
 
-const list<RteItem*>& CprjFile::GetProjectComponents() const
+const Collection<RteItem*>& CprjFile::GetProjectComponents() const
 {
   return GetGrandChildren("components");
 }
 
-const list<RteItem*>& CprjFile::GetProjectLayers() const
+const Collection<RteItem*>& CprjFile::GetProjectLayers() const
 {
   return GetGrandChildren("layers");
 }
 
-const list<RteItem*>& CprjFile::GetPackRequirements() const
+const Collection<RteItem*>& CprjFile::GetPackRequirements() const
 {
   return GetGrandChildren("packages");
 }
 
-const list<RteItem*>& CprjFile::GetCompilerRequirements() const
+const Collection<RteItem*>& CprjFile::GetCompilerRequirements() const
 {
   return GetGrandChildren("compilers");
 }

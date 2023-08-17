@@ -286,25 +286,25 @@ public:
   * @brief get collection of <cimage> elements
   * @return list of pointers RteItem representing cimage elements
   */
-  const std::list<RteItem*>& GetImageDescriptors() const { return GetGrandChildren("cimage"); }
+  const Collection<RteItem*>& GetImageDescriptors() const { return GetGrandChildren("cimage"); }
 
   /**
   * @brief get collection of <clayer> elements
   * @return list of pointers RteItem representing clayer elements
   */
-  const std::list<RteItem*>& GetLayerDescriptors() const { return GetGrandChildren("clayers"); }
+  const Collection<RteItem*>& GetLayerDescriptors() const { return GetGrandChildren("clayers"); }
 
   /**
   * @brief get collection of <cproject> elements
   * @return list of pointers RteItem representing cproject elements
   */
-  const std::list<RteItem*>& GetProjectDescriptors() const { return GetGrandChildren("cprojects"); }
+  const Collection<RteItem*>& GetProjectDescriptors() const { return GetGrandChildren("cprojects"); }
 
   /**
    * @brief get collection of <csolution> elements
    * @return list of pointers RteItem representing csolution elements
   */
-  const std::list<RteItem*>& GetSolutionDescriptors() const { return GetGrandChildren("csolutions"); }
+  const Collection<RteItem*>& GetSolutionDescriptors() const { return GetGrandChildren("csolutions"); }
 
   /**
   * @brief get <generators> element
@@ -421,19 +421,19 @@ public:
    * @brief get list of packs required by this one
    * @return list of pointers to RteItem objects with pack requirement information
   */
-  virtual const std::list<RteItem*>& GetPackRequirements() const;
+  virtual const Collection<RteItem*>& GetPackRequirements() const;
 
   /**
    * @brief get list of language requirements imposed by this pack
    * @return list of pointers to RteItem objects with language requirement information
   */
-  virtual const std::list<RteItem*>& GetLanguageRequirements() const;
+  virtual const Collection<RteItem*>& GetLanguageRequirements() const;
 
   /**
    * @brief get list of compiler requirements imposed by this pack
    * @return list of pointers to RteItem objects with compiler requirement information
   */
-  virtual const std::list<RteItem*>& GetCompilerRequirements() const;
+  virtual const Collection<RteItem*>& GetCompilerRequirements() const;
 
   /**
    * @brief get path to directory where this pack is or will be installed

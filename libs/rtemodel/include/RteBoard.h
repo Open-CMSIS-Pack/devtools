@@ -86,17 +86,17 @@ public:
    * @param bCMounted boolean flag to collect mounted devices
    * @param devices list of RteItem pointers to fill
   */
-  virtual void GetDevices(std::list<RteItem*>& devices, bool bCompatible = true, bool bMounted = true ) const;
+  virtual void GetDevices(Collection<RteItem*>& devices, bool bCompatible = true, bool bMounted = true ) const;
   /**
    * @brief collect list of all mounted devices
    * @param mountedDevices list of RteItem pointers to fill
   */
-  virtual void GetMountedDevices(std::list<RteItem*>& mountedDevices) const;
+  virtual void GetMountedDevices(Collection<RteItem*>& mountedDevices) const;
   /**
    * @brief collect list of all compatible devices
    * @param compatibleDevices list of RteItem pointers to fill
   */
-  virtual void GetCompatibleDevices(std::list<RteItem*>& compatibleDevices) const;
+  virtual void GetCompatibleDevices(Collection<RteItem*>& compatibleDevices) const;
 
   /**
    * @brief get vendor name for a mounted/compatible device, e.g. when device information is not available (a DFP pack is not installed)
@@ -153,14 +153,14 @@ public:
    * @param algos list of RteItem pointers to fill
    * @return reference to algos parameter
   */
-  std::list<RteItem*>& GetAlgorithms(std::list<RteItem*>& algos) const;
+  Collection<RteItem*>& GetAlgorithms(Collection<RteItem*>& algos) const;
 
   /**
  * @brief collect list of memory provided by the board
  * @param mems list of RteItem pointers to fill
  * @return reference to mems parameter
  */
-  std::list<RteItem*>& GetMemories(std::list<RteItem*>& mems) const;
+  Collection<RteItem*>& GetMemories(Collection<RteItem*>& mems) const;
 
 public:
   /**

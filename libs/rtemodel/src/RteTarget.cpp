@@ -563,7 +563,7 @@ void RteTarget::AddBoadProperties(RteDeviceItem* device, const string& processor
     return;
 
   // for now only algorithms are added
-  list<RteItem*> algos;
+  Collection<RteItem*> algos;
   for (RteItem* item : board->GetAlgorithms(algos)) {
     const string& pname = item->GetProcessorName();
     if (pname.empty() || pname == processorName) {
@@ -1546,9 +1546,8 @@ string RteTarget::GetCMSISCoreIncludePath() const
   if (c) {
     RteFileContainer* fc = c->GetFileContainer();
     if (fc) {
-      const list<RteItem*>& files = fc->GetChildren();
-      for (auto itf = files.begin(); itf != files.end(); itf++) {
-        RteFile* f = dynamic_cast<RteFile*>(*itf);
+      for (auto child : fc->GetChildren()) {
+        RteFile* f = dynamic_cast<RteFile*>(child);
         if (f && f->GetCategory() == RteFile::Category::INCLUDE) {
           string inc = f->GetOriginalAbsolutePath();
           return inc;
@@ -1738,7 +1737,7 @@ std::string RteTarget::GenerateRegionsHeaderContent() const
   size_t nDeviceRW = memRW.size();
   RteBoard* board = GetBoard();
   if (board) {
-    list <RteItem*> boardMemCollection;
+    Collection<RteItem*> boardMemCollection;
     for( auto mem : board->GetMemories(boardMemCollection)) {
       if (mem->IsWriteAccess()) {
         memRW.push_back(mem);

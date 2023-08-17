@@ -278,7 +278,7 @@ bool RteKernel::LoadRequiredPdscFiles(CprjFile* cprjFile)
     return false;
   }
 
-  const list<RteItem*>& packRequirements =  cprjFile->GetPackRequirements();
+  auto& packRequirements =  cprjFile->GetPackRequirements();
   if (packRequirements.empty()) {
     GetRteCallback()->Err("R820", R820, cprjFile->GetPackageFileName());
     return false; // it is an error: malformed cprj file
@@ -395,7 +395,7 @@ bool RteKernel::GetUrlFromIndex(const string& rtePath, const string& name, const
                                string& indexedUrl, string& indexedVersion) const
 {
   unique_ptr<XMLTree> xmlTree = CreateUniqueXmlTree(nullptr);
-  list<XMLTreeElement*> indexList;
+  Collection<XMLTreeElement*> indexList;
   if (!GetLocalPacks(rtePath, xmlTree, indexList)) {
     return false;
   }
@@ -428,7 +428,7 @@ bool RteKernel::GetUrlFromIndex(const string& rtePath, const string& name, const
   return false;
 }
 
-bool RteKernel::GetLocalPacks(const string& rtePath, unique_ptr<XMLTree>& xmlTree, list<XMLTreeElement*>& packs) const
+bool RteKernel::GetLocalPacks(const string& rtePath, unique_ptr<XMLTree>& xmlTree, Collection<XMLTreeElement*>& packs) const
 {
   // Parse local repository index file
   const string& indexPath = string(rtePath) + "/.Local/local_repository.pidx";
@@ -454,7 +454,7 @@ bool RteKernel::GetLocalPacks(const string& rtePath, unique_ptr<XMLTree>& xmlTre
 bool RteKernel::GetLocalPacksUrls(const string& rtePath, list<string>& urls) const
 {
   unique_ptr<XMLTree> xmlTree = CreateUniqueXmlTree(nullptr);
-  list<XMLTreeElement*> indexList;
+  Collection<XMLTreeElement*> indexList;
   if (!GetLocalPacks(rtePath, xmlTree, indexList)) {
     return false;
   }

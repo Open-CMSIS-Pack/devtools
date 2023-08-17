@@ -218,9 +218,8 @@ void RteDevicePropertyGroup::CollectEffectiveContent(RteDeviceProperty* dp)
     return;
   RteDevicePropertyGroup* pg = dynamic_cast<RteDevicePropertyGroup*>(dp);
   if (pg) {
-    const list<RteItem*>& children = pg->GetChildren();
-    for (auto it = children.begin(); it != children.end(); it++) {
-      RteDeviceProperty* p = dynamic_cast<RteDeviceProperty*>(*it);
+    for (auto child : pg->GetChildren()) {
+      RteDeviceProperty* p = dynamic_cast<RteDeviceProperty*>(child);
       if (p) {
         const string& id = p->GetID();
         RteDeviceProperty* pInserted = RteDeviceProperty::GetPropertyFromList(id, m_effectiveContent);
@@ -474,9 +473,8 @@ void RteDeviceItem::GetEffectiveProcessors(list<RteDeviceProperty*>& processors)
   static const string PROCESSOR_TAG = "processor";
   RteDevicePropertyGroup* props = GetProperties(PROCESSOR_TAG);
   if (props) {
-    const list<RteItem*>& children = props->GetChildren();
-    for (auto it = children.begin(); it != children.end(); it++) {
-      RteDeviceProperty* p = dynamic_cast<RteDeviceProperty*>(*it);
+    for (auto child : props->GetChildren()) {
+      RteDeviceProperty* p = dynamic_cast<RteDeviceProperty*>(child);
       if (!p)
         continue;
       const string& id = p->GetID();
@@ -531,9 +529,8 @@ bool RteDeviceItem::Validate()
     if (it->first == "processor")
       continue;
     RteDevicePropertyGroup* props = it->second;
-    const list<RteItem*>& children = props->GetChildren();
-    for (auto itp = children.begin(); itp != children.end(); itp++) {
-      RteDeviceProperty* p = dynamic_cast<RteDeviceProperty*>(*itp);
+    for (auto child : props->GetChildren()) {
+      RteDeviceProperty* p = dynamic_cast<RteDeviceProperty*>(child);
       if (p) {
         const string& procName = p->GetProcessorName();
         if (!procName.empty() && m_processors.find(procName) == m_processors.end()) {
@@ -683,9 +680,8 @@ void RteDeviceItem::GetProperties(RteDevicePropertyMap& properties) const
       properties[tag] = v;
       dstIt = properties.find(srcIt->first);
     }
-    const list<RteItem*>& children = props->GetChildren();
-    for (auto itp = children.begin(); itp != children.end(); itp++) {
-      RteDeviceProperty* p = dynamic_cast<RteDeviceProperty*>(*itp);
+    for (auto child : props->GetChildren()) {
+      RteDeviceProperty* p = dynamic_cast<RteDeviceProperty*>(child);
       if (p)
       {
         dstIt->second.push_back(p);
@@ -712,9 +708,8 @@ void RteDeviceItem::CollectEffectiveProperties(const string& tag, list<RteDevice
 {
   RteDevicePropertyGroup* props = GetProperties(tag);
   if (props) {
-    const list<RteItem*>& children = props->GetChildren();
-    for (auto itp = children.begin(); itp != children.end(); itp++) {
-      RteDeviceProperty* p = dynamic_cast<RteDeviceProperty*>(*itp);
+    for (auto child : props->GetChildren()) {
+      RteDeviceProperty* p = dynamic_cast<RteDeviceProperty*>(child);
       if (p) {
         const string& propPname = p->GetProcessorName();
         if (pName.empty() || propPname.empty() || propPname == pName) {

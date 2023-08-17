@@ -596,10 +596,13 @@ bool CbuildLayer::Add(const CbuildLayerArgs& args) {
   }
 
   // Sort first level sections
-  list<XMLTreeElement*> sections = m_cprj->root->GetChildren();
+  auto sections = m_cprj->root->GetChildren();
   sections.sort(CompareSections);
-  for (auto section : sections) m_cprj->root->RemoveChild(section, false);
-  for (auto section : sections) m_cprj->root->AddChild(section);
+
+  for (auto section : sections)
+    m_cprj->root->RemoveChild(section, false);
+  for (auto section : sections)
+    m_cprj->root->AddChild(section);
 
   // Write Xml file
   if (!WriteXmlFile(args.file, m_cprjTree, true)) {
@@ -788,8 +791,7 @@ void CbuildLayer::CopyMatchedChildren(const XMLTreeElement* origin, XMLTreeEleme
   XMLTreeElement* copy = destination->CreateElement(origin->GetTag());
   copy->SetText(origin->GetText());
   copy->SetAttributes(origin->GetAttributes());
-  const list<XMLTreeElement*> children = origin->GetChildren();
-  for (auto child : children) {
+  for (auto child : origin->GetChildren()) {
     CopyMatchedChildren(child, copy, layer, effectiveLayer);
   }
 
@@ -805,7 +807,7 @@ void CbuildLayer::RemoveMatchedChildren(const string& layer, XMLTreeElement* ite
   Recursively remove children elements if the children's layer attribute matches
   Remove the element itself if it becomes an empty 'files' or 'group' element
   */
-  const list<XMLTreeElement*> children = item->GetChildren();
+  auto children = item->GetChildren();
   for (auto child : children) {
     if (child->GetAttribute("layer") == layer) {
       item->RemoveChild(child, true);

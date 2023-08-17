@@ -93,9 +93,7 @@ const string RteGenerator::GetCommand(const std::string& hostType) const {
 
   RteItem* exe = GetItemByTag("exe");
   if (exe != NULL) {
-    const list<RteItem*>& children = exe->GetChildren();
-    for (auto it = children.begin(); it != children.end(); it++) {
-      RteItem* cmd = *it;
+    for (auto cmd : exe->GetChildren()) {
       if (cmd->GetTag() != "command" || !cmd->MatchesHost(hostType)) {
         continue;
       }
@@ -185,9 +183,7 @@ string RteGenerator::GetExpandedWebLine(RteTarget* target) const
   RteItem* argsItem = GetArgumentsItem("web");
   if (argsItem) {
     char delimiter = '?'; // first delimiter after URL base
-    const list<RteItem*>& args = argsItem->GetChildren();
-    for (auto it = args.begin(); it != args.end(); it++) {
-      RteItem* arg = *it;
+    for (auto arg : argsItem->GetChildren()) {
       if (arg->GetTag() != "argument")
         continue;
       if (!arg->MatchesHost()) // should always match, added just for consistency

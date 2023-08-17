@@ -153,7 +153,7 @@ protected:
   RteItem* m_board; // development board the example refers to
   std::set<std::string> m_keywords; // example keywords
   std::set<std::string> m_categories; // example categories
-  std::list<RteItem*> m_componentAttributes; // component attributes of a component this example refers
+  Collection<RteItem*> m_componentAttributes; // component attributes of a component this example refers
   // Note: RteItem::m_children contain project files for different environments
 };
 /**

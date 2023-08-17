@@ -244,7 +244,7 @@ public:
 protected:
 
   bool GetUrlFromIndex(const std::string& indexFile, const std::string& name, const std::string& vendor, const std::string& version, std::string& indexedUrl, std::string& indexedVersion) const;
-  bool GetLocalPacks(const std::string& rtePath, std::unique_ptr<XMLTree>& xmlTree, std::list<XMLTreeElement*>& packs) const;
+  bool GetLocalPacks(const std::string& rtePath, std::unique_ptr<XMLTree>& xmlTree, Collection<XMLTreeElement*>& packs) const;
   bool GetLocalPacksUrls(const std::string& rtePath, std::list<std::string>& urls) const;
 
   virtual XMLTree* CreateXmlTree(IXmlItemBuilder* itemBuilder) const { return nullptr; } // creates new XMLTree implementation

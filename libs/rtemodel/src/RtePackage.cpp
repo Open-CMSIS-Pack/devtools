@@ -288,18 +288,11 @@ RteItem* RtePackage::GetRelease(const string& version) const
     return nullptr;
   }
 
-  const list<RteItem*>& children = m_releases->GetChildren();
-  for (auto it = children.begin(); it != children.end(); it++) {
-    RteItem *pItem = *it;
-    if (pItem == nullptr) {
-      continue;
-    }
-
-    if (VersionCmp::Compare(pItem->GetVersionString(), version) == 0) {
+  for (auto pItem : m_releases->GetChildren()) {
+     if (VersionCmp::Compare(pItem->GetVersionString(), version) == 0) {
       return pItem;
     }
   }
-
   return nullptr;
 }
 
@@ -319,14 +312,7 @@ RteItem* RtePackage::GetLatestRelease() const
   if (m_releases == nullptr) {
     return nullptr;
   }
-
-  const list<RteItem*>& children = m_releases->GetChildren();
-  for (auto it = children.begin(); it != children.end(); it++) {
-    RteItem *pItem = *it;
-    if (pItem == nullptr) {
-      continue;
-    }
-
+  for (auto pItem : m_releases->GetChildren()) {
     const string &relVersion = pItem->GetVersionString();
     const string &packVersion = GetVersionString();
     if (VersionCmp::Compare(relVersion, packVersion) == 0) { // case sensitive
@@ -351,12 +337,7 @@ bool RtePackage::ReleaseVersionExists(const string& version) {
   if (m_releases == nullptr) {
     return false;
   }
-  const list<RteItem*>& children = m_releases->GetChildren();
-  for (auto it = children.begin(); it != children.end(); it++) {
-    RteItem *pItem = *it;
-    if (pItem == nullptr) {
-      continue;
-    }
+  for (auto pItem : m_releases->GetChildren()) {
     if (VersionCmp::Compare(version, pItem->GetVersionString()) == 0) {
       return true;
     }
@@ -436,17 +417,17 @@ XMLTreeElement* RtePackage::CreatePackXmlTreeElement(XMLTreeElement* parent) con
   return package;
 }
 
-const list<RteItem*>& RtePackage::GetPackRequirements() const
+const Collection<RteItem*>& RtePackage::GetPackRequirements() const
 {
   return GetItemGrandChildren(m_requirements, "packages");
 }
 
-const list<RteItem*>& RtePackage::GetLanguageRequirements() const
+const Collection<RteItem*>& RtePackage::GetLanguageRequirements() const
 {
   return GetItemGrandChildren(m_requirements, "languages");
 }
 
-const list<RteItem*>& RtePackage::GetCompilerRequirements() const
+const Collection<RteItem*>& RtePackage::GetCompilerRequirements() const
 {
   return GetItemGrandChildren(m_requirements, "compilers");
 }
@@ -508,7 +489,7 @@ RteGenerator* RtePackage::GetGenerator(const string& id) const
 RteGenerator* RtePackage::GetFirstGenerator() const
 {
   if (m_generators) {
-    const list<RteItem*>& gens = m_generators->GetChildren();
+    auto& gens = m_generators->GetChildren();
     auto it = gens.begin();
     if (it != gens.end())
       return dynamic_cast<RteGenerator*>(*it);
@@ -520,9 +501,8 @@ RteGenerator* RtePackage::GetFirstGenerator() const
 RteComponent* RtePackage::GetComponent(const string& id) const
 {
   if (m_components) {
-    const list<RteItem*>& comps = m_components->GetChildren();
-    for (auto it = comps.begin(); it != comps.end(); it++) {
-      RteComponent* c = dynamic_cast<RteComponent*>(*it);
+    for (auto child : m_components->GetChildren()) {
+      RteComponent* c = dynamic_cast<RteComponent*>(child);
       if (c && c->GetID() == id)
         return c;
     }
@@ -590,12 +570,11 @@ const std::string RtePackage::GetTaxonomyDoc(const std::string& id) const
 
 void RtePackage::GetEffectiveDeviceItems(list<RteDeviceItem*>& devices) const
 {
-  if (!m_deviceFamilies || m_deviceFamilies->GetChildCount() == 0)
+  if (!m_deviceFamilies) {
     return;
-
-  const list<RteItem*>& children = m_deviceFamilies->GetChildren();
-  for (auto itfam = children.begin(); itfam != children.end(); itfam++) {
-    RteDeviceFamily* fam = dynamic_cast<RteDeviceFamily*>(*itfam);
+  }
+  for (auto child : m_deviceFamilies->GetChildren()) {
+    RteDeviceFamily* fam = dynamic_cast<RteDeviceFamily*>(child);
     if (fam) {
       fam->GetEffectiveDeviceItems(devices);
     }
@@ -667,9 +646,8 @@ bool RtePackage::Validate()
     m_bValid = false;
   if (m_conditions) {
     map<string, bool> conditionIDs;
-    const list<RteItem*>& conds = m_conditions->GetChildren();
-    for (auto it = conds.begin(); it != conds.end(); it++) {
-      RteCondition* cond = dynamic_cast<RteCondition*>(*it);
+    for (auto child : m_conditions->GetChildren()) {
+      RteCondition* cond = dynamic_cast<RteCondition*>(child);
       if (!cond)
         continue;
 

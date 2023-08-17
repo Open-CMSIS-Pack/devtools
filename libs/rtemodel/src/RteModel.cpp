@@ -457,9 +457,7 @@ void RteModel::AddItemsFromPack(RtePackage* pack)
   RteItem* taxonomy = pack->GetTaxonomy();
   if (taxonomy) {
     // fill in taxonomy
-    const list<RteItem*>& children = taxonomy->GetChildren();
-    for (auto it = children.begin(); it != children.end(); it++) {
-      RteItem* t = *it;
+    for (auto t : taxonomy->GetChildren()) {
       string id = t->GetTaxonomyDescriptionID();
       if (GetTaxonomyItem(id) == NULL && IsFiltered(t)) {// do not overwrite the newest
         m_taxonomy[id] = t;
@@ -479,7 +477,7 @@ void RteModel::AddItemsFromPack(RtePackage* pack)
   pack->InsertInModel(this);
 }
 
-void RteModel::AddPackItemsToList(const std::list<RteItem*>& srcCollection, std::list<RteItem*>& dstCollection)
+void RteModel::AddPackItemsToList(const Collection<RteItem*>& srcCollection, Collection<RteItem*>& dstCollection)
 {
   for (auto item : srcCollection) {
     if (IsFiltered(item)) {
@@ -743,9 +741,8 @@ void RteModel::FillDeviceTree(RtePackage* package)
 {
   RteDeviceFamilyContainer* families = package->GetDeviceFamiles();
   if (families) {
-    const list<RteItem*>& children = families->GetChildren();
-    for (auto itfam = children.begin(); itfam != children.end(); itfam++) {
-      RteDeviceFamily* fam = dynamic_cast<RteDeviceFamily*>(*itfam);
+    for (auto child : families->GetChildren()) {
+      RteDeviceFamily* fam = dynamic_cast<RteDeviceFamily*>(child);
       if (fam) {
         bool bInserted = AddDeviceItem(fam);
         if (!bInserted)
@@ -758,9 +755,8 @@ void RteModel::FillDeviceTree(RtePackage* package)
   }
   RteItem* boards = package->GetBoards();
   if (boards) {
-    const list<RteItem*>& children = boards->GetChildren();
-    for (auto it = children.begin(); it != children.end(); it++) {
-      RteBoard* b = dynamic_cast<RteBoard*>(*it);
+    for (auto child : boards->GetChildren()) {
+      RteBoard* b = dynamic_cast<RteBoard*>(child);
       if (b == 0)
         continue;
       const string& id = b->GetID();

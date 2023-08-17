@@ -393,19 +393,12 @@ void RteChk::DumpConditions(RtePackage* pack)
   RteItem* conditions = pack->GetConditions();
   if (!conditions)
     return;
-  const list<RteItem*>& conditionList = conditions->GetChildren();
-  for (auto itcond = conditionList.begin(); itcond != conditionList.end(); itcond++) {
-    RteItem *pCond = *itcond;
-    if (pCond == NULL) {
-      continue;
-    }
-
+  for (auto pCond : conditions->GetChildren() ) {
     m_os << " Condition " << pCond->GetName() << endl;
     m_os << " Desc: " << pCond->GetDescription() << endl;
     // condition expressions
-    const list<RteItem*>& exprlist = pCond->GetChildren();
-    for (auto itexpr = exprlist.begin(); itexpr != exprlist.end(); itexpr++) {
-      RteConditionExpression* expr = dynamic_cast<RteConditionExpression*>(*itexpr);
+    for (auto child : pCond->GetChildren()) {
+      RteConditionExpression* expr = dynamic_cast<RteConditionExpression*>(child);
       if (!expr)
         continue;
       m_os << " " << expr->GetName() << " " << expr->GetAttributesAsXmlString() << endl;
@@ -418,9 +411,8 @@ void RteChk::DumpComponents(RtePackage* pack)
   // components
   RteItem* components = pack->GetComponents();
   if (components) {
-    const list<RteItem*>& compList = components->GetChildren();
-    for (auto itc = compList.begin(); itc != compList.end(); itc++) {
-      RteComponent *pComp = dynamic_cast<RteComponent*>(*itc);
+    for (auto child : components->GetChildren()) {
+      RteComponent *pComp = dynamic_cast<RteComponent*>(child);
       if (pComp == NULL) {
         continue;
       }
@@ -436,9 +428,8 @@ void RteChk::DumpExamples(RtePackage* pack)
   RteItem* examples = pack->GetExamples();
 
   if (examples) {
-    const list<RteItem*>& exampleList = examples->GetChildren();
-    for (auto itexmp = exampleList.begin(); itexmp != exampleList.end(); itexmp++) {
-      RteExample *pExmp = dynamic_cast<RteExample*>(*itexmp);
+    for (auto child : examples->GetChildren()) {
+      RteExample *pExmp = dynamic_cast<RteExample*>(child);
       if (pExmp == NULL) {
         continue;
       }
@@ -490,7 +481,7 @@ void RteChk::DumpModel()
 {
   if (m_rteModel->IsEmpty())
     return;
-  const list<RteItem*>& packs = m_rteModel->GetChildren();
+  auto& packs = m_rteModel->GetChildren();
   int i = 0;
   for (auto it = packs.begin(); it != packs.end(); it++, i++) {
     RtePackage* pack = dynamic_cast<RtePackage*>(*it);
@@ -556,10 +547,8 @@ void RteChk::ListPacks()
 
 void RteChk::CollectPacks(RtePackageMap& packs, PACK_TYPE packType)
 {
-  const list<RteItem*>& children = m_rteModel->GetChildren();
-  int i = 0;
-  for (auto it = children.begin(); it != children.end(); it++, i++) {
-    RtePackage* pack = dynamic_cast<RtePackage*>(*it);
+  for (auto child : m_rteModel->GetChildren()) {
+    RtePackage* pack = dynamic_cast<RtePackage*>(child);
     if (pack == NULL) {
       continue;
     }
@@ -657,9 +646,8 @@ void RteChk::PrintComponent(RteComponent* pComp, bool bFiles)
   if (fileContainer && bFiles) {
     // files
     m_os << " --- Files --- " << endl;
-    const list<RteItem*>& files = fileContainer->GetChildren();
-    for (auto itf = files.begin(); itf != files.end(); itf++) {
-      RteFile *pFile = dynamic_cast<RteFile*>(*itf);
+    for (auto child : fileContainer->GetChildren()) {
+      RteFile *pFile = dynamic_cast<RteFile*>(child);
       if (pFile == NULL) {
         continue;
       }
