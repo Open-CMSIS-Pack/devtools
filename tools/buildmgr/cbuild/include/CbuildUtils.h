@@ -103,7 +103,7 @@ public:
    * @param value attribute value to be looked for
    * @return Rte item corresponding to tag, attribute and value
   */
-  static const RteItem* GetItemByTagAndAttribute(const std::list<RteItem*>& children, const std::string& tag, const std::string& attribute, const std::string& value);
+  static const RteItem* GetItemByTagAndAttribute(const Collection<RteItem*>& children, const std::string& tag, const std::string& attribute, const std::string& value);
 
   /**
    * @brief get local timestamp

@@ -204,9 +204,8 @@ string RteComponent::GetDocFile() const
   if (!m_files)
     return doc;
   RteFile* fDoc = nullptr;
-  const list<RteItem*>& files = m_files->GetChildren();
-  for (auto it = files.begin(); it != files.end(); it++) {
-    RteFile* f = dynamic_cast<RteFile*>(*it);
+  for (auto child : m_files->GetChildren()) {
+    RteFile* f = dynamic_cast<RteFile*>(child);
     if (f && !f->IsConfig() && f->GetCategory() == RteFile::Category::DOC) {
       fDoc = f;
       break;
@@ -341,9 +340,8 @@ void RteComponent::FilterFiles(RteTarget* target)
     return;
   // iterate through full list selecting files that pass target.
   set<RteFile*> s;
-  const list<RteItem*>& files = m_files->GetChildren();
-  for (auto it = files.begin(); it != files.end(); it++) {
-    RteFile* f = dynamic_cast<RteFile*>(*it);
+  for (auto child : m_files->GetChildren()) {
+    RteFile* f = dynamic_cast<RteFile*>(child);
     if (!f)
       continue;
 

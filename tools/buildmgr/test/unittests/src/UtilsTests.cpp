@@ -70,7 +70,7 @@ TEST_F(CbuildUtilsTests, ReplaceColon) {
 
 TEST_F(CbuildUtilsTests, GetItemByTagAndAttribute) {
   bool result;
-  list<RteItem*> list;
+  Collection<RteItem*> list;
   string compiler = "AC6", use = "armasm", name = "Test";
   RteItem compilerItem(nullptr);
   compilerItem.SetTag("cflags");

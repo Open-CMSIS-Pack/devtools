@@ -326,16 +326,16 @@ string RteItem::ConstructComponentDisplayName(bool bClass, bool bVariant, bool b
 }
 
 
-const list<RteItem*>& RteItem::GetItemChildren(RteItem* item)
+const Collection<RteItem*>& RteItem::GetItemChildren(RteItem* item)
 {
   if (item && item->GetChildCount() > 0)
     return item->GetChildren();
 
-  static const list<RteItem*> EMPTY_ITEM_LIST;
+  static const Collection<RteItem*> EMPTY_ITEM_LIST;
   return EMPTY_ITEM_LIST;
 }
 
-const list<RteItem*>& RteItem::GetItemGrandChildren(RteItem* item, const string& tag)
+const Collection<RteItem*>& RteItem::GetItemGrandChildren(RteItem* item, const string& tag)
 {
   RteItem* child = 0;
   if (item) {
@@ -353,7 +353,7 @@ RteItem* RteItem::GetChildByTagAndAttribute(const string& tag, const string& att
   return nullptr;
 }
 
-list<RteItem*>& RteItem::GetChildrenByTag(const std::string& tag, list<RteItem*>& items) const
+Collection<RteItem*>& RteItem::GetChildrenByTag(const std::string& tag, Collection<RteItem*>& items) const
 {
   for (auto child : GetChildren()) {
     if ((child->GetTag() == tag)) {

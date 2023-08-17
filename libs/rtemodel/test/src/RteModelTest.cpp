@@ -56,9 +56,9 @@ TEST(RteModelTest, LoadPacks) {
   RteBoard* board = rteModel->FindBoard("RteTest board listing (Rev.C)");
   ASSERT_NE(board, nullptr);
   EXPECT_TRUE(board->HasMCU());
-  list<RteItem*> algos;
+  Collection<RteItem*> algos;
   EXPECT_EQ(board->GetAlgorithms(algos).size(), 2);
-  list<RteItem*> mems;
+  Collection<RteItem*> mems;
   EXPECT_EQ(board->GetMemories(mems).size(), 2);
 
   RtePackage* pack = board->GetPackage();

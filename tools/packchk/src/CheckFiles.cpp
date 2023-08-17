@@ -514,7 +514,7 @@ bool CheckFiles::CheckFileHasVersion(RteItem* item)
  * @param exList list to add condition to
  * @return
 */
-bool CheckFiles::FilterConditions(const string& filter, RteCondition* cond, list<RteItem*>* exList)
+bool CheckFiles::FilterConditions(const string& filter, RteCondition* cond, Collection<RteItem*>* exList)
 {
   if(!cond || !cond->IsValid() || !exList) {
     return true;
@@ -611,7 +611,7 @@ bool CheckFiles::CheckForCondition(RteItem* item, const string& parentName, cons
       }
     }
 
-    list<RteItem*> exList;
+    Collection<RteItem*> exList;
     FilterConditions(condFilter, cond, &exList);
     for(auto exItem : exList) {
       RteConditionExpression* expression = dynamic_cast<RteConditionExpression*> (exItem);
@@ -663,7 +663,7 @@ bool CheckFiles::CheckAsmGccCompilerDependency(RteItem* item)
   }
 
   string filter = "Tcompiler";
-  list<RteItem*> exList;
+  Collection<RteItem*> exList;
   FilterConditions(filter, cond, &exList);
 
   bool ok = true;

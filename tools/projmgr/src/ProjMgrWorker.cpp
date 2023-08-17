@@ -996,7 +996,7 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
     context.targetAttributes["Bversion"] = matchedBoard->GetRevision(); // deprecated
 
     // find device from the matched board
-    list<RteItem*> mountedDevices;
+    Collection<RteItem*> mountedDevices;
     matchedBoard->GetMountedDevices(mountedDevices);
     if (mountedDevices.size() > 1) {
       ProjMgrLogger::Error("found multiple mounted devices");
@@ -1411,7 +1411,7 @@ RteComponent* ProjMgrWorker::ProcessComponent(ContextItem& context, ComponentIte
 
 
 bool ProjMgrWorker::AddRequiredComponents(ContextItem& context) {
-  list<RteItem*> selItems;
+  Collection<RteItem*> selItems;
   for (auto& [_, component] : context.components) {
     selItems.push_back(component.instance);
   }
@@ -1571,7 +1571,7 @@ bool ProjMgrWorker::ProcessComponentFiles(ContextItem& context) {
   // iterate over components
   for (const auto& [componentId, component] : context.components) {
     RteComponent* rteComponent = component.instance->GetParent()->GetComponent();
-    const auto& files = rteComponent->GetFileContainer() ? rteComponent->GetFileContainer()->GetChildren() : list<RteItem*>();
+    const auto& files = rteComponent->GetFileContainer() ? rteComponent->GetFileContainer()->GetChildren() : Collection<RteItem*>();
     // private includes
     for (const auto& privateIncludes : {
       context.rteActiveTarget->GetPrivateIncludePaths(rteComponent, RteFile::Language::LANGUAGE_C),
@@ -1728,7 +1728,7 @@ bool ProjMgrWorker::ProcessGpdsc(ContextItem& context) {
     }
     // insert gpdsc components
     for (const auto& gpdscComponent : gpdscPack->GetComponents()->GetChildren()) {
-      list<RteItem*> components;
+      Collection<RteItem*> components;
       if (gpdscComponent->GetTag() == "component") {
         components.push_back(gpdscComponent);
       } else if (gpdscComponent->GetTag() == "bundle") {

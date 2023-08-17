@@ -386,9 +386,8 @@ bool RteCondition::ValidateRecursion()
   }
   m_bInCheck = true;
   bool noRecursion = true;
-  list<RteItem*>::const_iterator it;
-  for (it = m_children.begin(); it != m_children.end(); it++) {
-    RteConditionExpression* expr = dynamic_cast<RteConditionExpression*>(*it);
+  for (auto child : GetChildren()) {
+    RteConditionExpression* expr = dynamic_cast<RteConditionExpression*>(child);
     if (!expr)
       continue;
 
@@ -414,9 +413,8 @@ void RteCondition::CalcDeviceAndBoardDependentFlags()
       return;
     }
     m_bInCheck = true;
-    list<RteItem*>::const_iterator it;
-    for (it = m_children.begin(); it != m_children.end(); it++) {
-      RteConditionExpression* expr = dynamic_cast<RteConditionExpression*>(*it);
+    for (auto child : GetChildren()) {
+      RteConditionExpression* expr = dynamic_cast<RteConditionExpression*>(child);
       if (!expr) {
         continue;
       }
@@ -460,10 +458,9 @@ RteItem::ConditionResult RteCondition::GetDepsResult(map<const RteItem*, RteDepe
   ConditionResult resultAccept = FAILED;
   if (conditionResult < FULFILLED && conditionResult > FAILED) {
     bool hasAcceptConditions = false;
-    list<RteItem*>::const_iterator it;
     // first collect all results from require and deny expressions
-    for (it = m_children.begin(); it != m_children.end(); it++) {
-      RteConditionExpression* expr = dynamic_cast<RteConditionExpression*>(*it);
+    for (auto child : GetChildren()) {
+      RteConditionExpression* expr = dynamic_cast<RteConditionExpression*>(child);
       if (!expr)
         continue;
       if (expr->GetExpressionType() == RteConditionExpression::ACCEPT) {
@@ -481,8 +478,8 @@ RteItem::ConditionResult RteCondition::GetDepsResult(map<const RteItem*, RteDepe
       // now collect results of accept expressions
       // select only those with the results equal to acceptResult or the condition result
       map<const RteItem*, RteDependencyResult> acceptResults;
-      for (it = m_children.begin(); it != m_children.end(); it++) {
-        RteConditionExpression* expr = dynamic_cast<RteConditionExpression*>(*it);
+      for (auto child : GetChildren()) {
+        RteConditionExpression* expr = dynamic_cast<RteConditionExpression*>(child);
         if (!expr || expr->GetExpressionType() != RteConditionExpression::ACCEPT)
           continue;
         ConditionResult res = solver->GetConditionResult(expr);
@@ -886,9 +883,8 @@ RteItem::ConditionResult RteConditionContext::EvaluateCondition(RteCondition* co
   RteItem::ConditionResult resultRequire = RteItem::IGNORED;
   RteItem::ConditionResult resultAccept = RteItem::UNDEFINED;
   // first check require and deny expressions
-  const list<RteItem*>& children = condition->GetChildren();
-  for (auto it = children.begin(); it != children.end(); it++) {
-    RteConditionExpression* expr = dynamic_cast<RteConditionExpression*>(*it);
+  for (auto child : condition->GetChildren()) {
+    RteConditionExpression* expr = dynamic_cast<RteConditionExpression*>(child);
     if (!expr)
       continue;
     RteItem::ConditionResult res = Evaluate(expr);

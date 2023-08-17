@@ -215,7 +215,7 @@ bool ValidateSyntax::CheckInfo(RtePackage* pKg)
     return false;
   }
 
-  const list<RteItem*> releases = release->GetChildren();
+  const Collection<RteItem*> releases = release->GetChildren();
   if(releases.empty()) {
     LogMsg("M305");
     bInfoComplete = false;
@@ -1595,7 +1595,7 @@ bool ValidateSyntax::CheckBoards(RtePackage* pKg)
     const string& boardName = board->GetName();
 
     // ----------  mounted device(s)  --------------
-    list<RteItem*> mountedDevices;
+    Collection<RteItem*> mountedDevices;
     board->GetMountedDevices(mountedDevices);
 
     if(mountedDevices.empty()) {
@@ -1650,7 +1650,7 @@ bool ValidateSyntax::CheckBoards(RtePackage* pKg)
     }
 
     // ------------  compatible devices  ------------------
-    list<RteItem*> compatibleDevices;
+    Collection<RteItem*> compatibleDevices;
     board->GetCompatibleDevices(compatibleDevices);
 
     for(auto device : compatibleDevices) {
@@ -1904,7 +1904,7 @@ bool ValidateSyntax::CheckRequirements_Packages(RteItem* requirement)
     const string& version = package->GetVersionString();
 
     bool found = false;
-    list<RteItem*> foundPackages;
+    Collection<RteItem*> foundPackages;
     for(auto pack : GetModel().GetChildren()) {
       RtePackage* pKg = dynamic_cast<RtePackage*>(pack);
       if(!pKg) {

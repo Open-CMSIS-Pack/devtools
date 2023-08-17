@@ -143,13 +143,6 @@ protected:
   */
   RteLicenseInfo* EnsureLicenseInfo(RteItem* item, RteItem* licenseElement);
 
-  /**
-   * @brief Ensure collection contains RteLicenseInfo object for specified ID
-   * @param licId internal license ID
-   * @return reference to RteLicenseInfo object
-  */
-  RteLicenseInfo* EnsureLicensInfo(const std::string& licId);
-
   std::map<std::string, RteLicenseInfo*> m_LicensInfos;
 };
 
@@ -602,7 +595,7 @@ public:
    * @param target given RteTarget object
    * @param unresolvedComponents (out) collection of component instance that cannot be resolved
   */
-  void AddCprjComponents(const std::list<RteItem*>& selItems, RteTarget* target, std::set<RteComponentInstance*>& unresolvedComponents);
+  void AddCprjComponents(const Collection<RteItem*>& selItems, RteTarget* target, std::set<RteComponentInstance*>& unresolvedComponents);
 
   /**
    * @brief update CMSIS RTE data such as components, boards, gpdsc information, project files in project

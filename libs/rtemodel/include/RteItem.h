@@ -161,14 +161,14 @@ public:
   * @param items collection of RteItem* to fill
   * @reture reference to items
   */
-  std::list<RteItem*>& GetChildrenByTag(const std::string& tag, std::list<RteItem*>&items) const;
+  Collection<RteItem*>& GetChildrenByTag(const std::string& tag, Collection<RteItem*>&items) const;
 
   /**
    * @brief static method to query children of RteItem
    * @param item RteItem whose children to query
    * @return list of RteItem pointers
   */
-  static const std::list<RteItem*>& GetItemChildren(RteItem* item);
+  static const Collection<RteItem*>& GetItemChildren(RteItem* item);
 
   /**
    * @brief static method to query grandchildren of RteItem for specified child tag
@@ -176,7 +176,7 @@ public:
    * @param tag child's tag
    * @return list of RteItem pointers
   */
-  static const std::list<RteItem*>& GetItemGrandChildren(RteItem* item, const std::string& tag);
+  static const Collection<RteItem*>& GetItemGrandChildren(RteItem* item, const std::string& tag);
 
   /**
    * @brief checks if this item is in valid state

@@ -202,8 +202,7 @@ bool CbuildModel::GenerateFixedCprj(const string& update) {
   elements->created->SetAttributes(createdAttributes);
 
   // Compare pack attributes
-  const list<XMLTreeElement*> cprjPacks = elements->packages->GetChildren();
-  for (auto cprjPack : cprjPacks) {
+  for (auto cprjPack : elements->packages->GetChildren()) {
     map<string, string> cprjPackAttributes = cprjPack->GetAttributes();
     for (auto pack : packs) {
       map<string, string> packAttributes = pack.second->GetAttributes();
@@ -219,7 +218,7 @@ bool CbuildModel::GenerateFixedCprj(const string& update) {
   }
 
   // Get list of CPRJ components
-  const list<XMLTreeElement*> cprjComponents = elements->components->GetChildren();
+  auto& cprjComponents = elements->components->GetChildren();
 
   // Iterate over used componentes
   const RteComponentMap components = m_cprjTarget->GetFilteredComponents();
@@ -254,9 +253,8 @@ bool CbuildModel::GenerateFixedCprj(const string& update) {
                 fileAttributes["name"] = RteUtils::BackSlashesToSlashes(fileAttributes["name"]);
 
                 // Iterate over component files
-                list<XMLTreeElement*> filesElement = cprjComponent->GetChildren();
                 bool found = false;
-                for (auto file : filesElement) {
+                for (auto file : cprjComponent->GetChildren()) {
                   map<string, string> cprjFileAttributes = file->GetAttributes();
                   if (fileAttributes["name"] == cprjFileAttributes["name"]) {
                     found = true;
@@ -700,12 +698,12 @@ bool CbuildModel::EvalGeneratedSourceFiles() {
       // gpdsc <components> section
       if (components) {
         for (const RteItem* item : components->GetChildren()) {
-          std::list<RteItem*> files;
+          Collection<RteItem*> files;
           if (item->GetTag() == "component") {
             files = item->GetGrandChildren("files");
           } else if (item->GetTag() == "bundle") {
             for (const RteItem* bundledComponent : item->GetChildren()) {
-              const std::list<RteItem*>& bundledComponentFiles = bundledComponent->GetGrandChildren("files");
+              const Collection<RteItem*>& bundledComponentFiles = bundledComponent->GetGrandChildren("files");
               files.insert(files.end(), bundledComponentFiles.begin(), bundledComponentFiles.end());
             }
           }

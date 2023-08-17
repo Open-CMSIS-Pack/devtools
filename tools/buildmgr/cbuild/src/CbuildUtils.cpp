@@ -128,7 +128,7 @@ const string CbuildUtils::EscapeSpaces(const string& path) {
   return result;
 }
 
-const RteItem* CbuildUtils::GetItemByTagAndAttribute(const list<RteItem*>& children, const string& tag, const string& attribute, const string& value)
+const RteItem* CbuildUtils::GetItemByTagAndAttribute(const Collection<RteItem*>& children, const string& tag, const string& attribute, const string& value)
 {
   for(auto it = children.begin(); it != children.end(); it++){
     RteItem* item = *it;

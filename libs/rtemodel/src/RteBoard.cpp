@@ -63,7 +63,7 @@ const string& RteBoard::GetRevision() const {
   return GetAttribute("revision");
 }
 
-void RteBoard::GetDevices(list<RteItem*>& devices, bool bCompatible, bool bMounted) const {
+void RteBoard::GetDevices(Collection<RteItem*>& devices, bool bCompatible, bool bMounted) const {
   for (auto rteItem : m_children) {
     const string& tag = rteItem->GetTag();
     if ((bMounted && tag == "mountedDevice") || (bCompatible && tag == "compatibleDevice")) {
@@ -72,11 +72,11 @@ void RteBoard::GetDevices(list<RteItem*>& devices, bool bCompatible, bool bMount
   }
 }
 
-void RteBoard::GetMountedDevices(list<RteItem*>& mountedDevices) const {
+void RteBoard::GetMountedDevices(Collection<RteItem*>& mountedDevices) const {
   GetDevices(mountedDevices, false, true);
 }
 
-void RteBoard::GetCompatibleDevices(list<RteItem*>& compatibleDevices) const {
+void RteBoard::GetCompatibleDevices(Collection<RteItem*>& compatibleDevices) const {
   GetDevices(compatibleDevices, true, false);
 }
 
@@ -87,7 +87,7 @@ string RteBoard::GetDeviceVendorName(const string& devName) const
     return (EMPTY_STRING);
   }
 
-  list <RteItem*> devices;
+  Collection<RteItem*> devices;
   GetDevices(devices);
   for (auto item: devices) {
     if (item == 0) {
@@ -181,12 +181,12 @@ RteItem* RteBoard::GetDebugProbe(const string& pname, int deviceIndex)
   return nullptr;
 }
 
-list<RteItem*>& RteBoard::GetAlgorithms(std::list<RteItem*>& algos) const
+Collection<RteItem*>& RteBoard::GetAlgorithms(Collection<RteItem*>& algos) const
 {
   return GetChildrenByTag("algorithm", algos);
 }
 
-list<RteItem*>& RteBoard::GetMemories(std::list<RteItem*>& mems) const
+Collection<RteItem*>& RteBoard::GetMemories(Collection<RteItem*>& mems) const
 {
   return GetChildrenByTag("memory", mems);
 }

@@ -40,7 +40,7 @@ public:
   bool CheckAsmGccCompilerDependency(RteItem* item);
   bool CheckTemplate(RteItem* item);
   bool CheckCompilerDependency(RteItem* item);
-  bool FilterConditions(const std::string& filter, RteCondition* cond, std::list<RteItem*>* exList);
+  bool FilterConditions(const std::string& filter, RteCondition* cond, Collection<RteItem*>* exList);
   bool CheckForCondition(RteItem* item, const std::string& parentName, const std::string& condFilter, const std::string& condValue = "");
   const std::string& GetFolder(RteItem* item) const;
   bool GetFileName(RteItem* item, std::string& filename, FileType& fileType) const;

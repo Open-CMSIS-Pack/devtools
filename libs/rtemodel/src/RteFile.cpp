@@ -373,9 +373,7 @@ string RteFileContainer::GetHierarchicalGroupName() const
 }
 
 void RteFileContainer::GetIncludePaths(set<string>& incPaths) const {
-  const list<RteItem*>& children = GetChildren();
-  for (auto itf = children.begin(); itf != children.end(); itf++) {
-    RteItem* child = *itf;
+  for (auto child : GetChildren()) {
     RteFile* f = dynamic_cast<RteFile*>(child);
     if (f) {
       RteFile::Category cat = f->GetCategory();
@@ -398,9 +396,7 @@ void RteFileContainer::GetIncludePaths(set<string>& incPaths) const {
 }
 
 void RteFileContainer::GetLinkerScripts(set<RteFile*>& linkerScripts) const {
-  const list<RteItem*>& children = GetChildren();
-  for (auto itf = children.begin(); itf != children.end(); itf++) {
-    RteItem* child = *itf;
+  for (auto child : GetChildren()) {
     RteFile* f = dynamic_cast<RteFile*>(child);
     if (f) {
       RteFile::Category cat = f->GetCategory();

@@ -64,7 +64,7 @@ bool RteCprjProject::SetToolchain(const string& toolchain, const std::string& to
 {
   CprjFile* cprjFile = GetCprjFile();
 
-  const list<RteItem*>& compilersList = cprjFile->GetCompilerRequirements();
+  auto& compilersList = cprjFile->GetCompilerRequirements();
   if(toolchain.empty() && compilersList.size() > 1) {
     GetCallback()->Err("R816", "Project supports more than one toolchain, select one to use", cprjFile->GetRootFileName());
     return false;

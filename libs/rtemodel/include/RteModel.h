@@ -506,22 +506,22 @@ public:
   * @brief get collection of filtered <cimage> elements collected from the packs
   * @return list of pointers RteItem representing cimage elements
   */
-  const std::list<RteItem*>& GetImageDescriptors() const { return m_imageDescriptors; }
+  const Collection<RteItem*>& GetImageDescriptors() const { return m_imageDescriptors; }
   /**
   * @brief get collection of filtered <clayer> elements collected from the packs
   * @return list of pointers RteItem representing clayer elements
   */
-  const std::list<RteItem*>& GetLayerDescriptors() const { return  m_layerDescriptors; }
+  const Collection<RteItem*>& GetLayerDescriptors() const { return  m_layerDescriptors; }
   /**
   * @brief get collection of filtered <cproject> elements collected from the packs
   * @return list of pointers RteItem representing cproject elements
   */
-  const std::list<RteItem*>& GetProjectDescriptors() const { return  m_projectDescriptors; }
+  const Collection<RteItem*>& GetProjectDescriptors() const { return  m_projectDescriptors; }
   /**
   * @brief get collection of filtered <csolution> elements collected from the packs
   * @return list of pointers RteItem representing csolution elements
   */
-  const std::list<RteItem*>& GetSolutionDescriptors() const { return  m_solutionDescriptors; }
+  const Collection<RteItem*>& GetSolutionDescriptors() const { return  m_solutionDescriptors; }
 
 protected:
 
@@ -533,7 +533,7 @@ protected:
   virtual void FillDeviceTree();
   virtual void FillDeviceTree(RtePackage* pack);
 
-  void AddPackItemsToList(const std::list<RteItem*>& srcCollection, std::list<RteItem*>& dstCollection);
+  void AddPackItemsToList(const Collection<RteItem*>& srcCollection, Collection<RteItem*>& dstCollection);
 
   bool IsApiDominatingOrNewer(RteApi* a);
 
@@ -564,10 +564,10 @@ protected:
   RtePackageFilter m_packageFilter;
 
   // csolution-related collections
-  std::list<RteItem*> m_imageDescriptors;
-  std::list<RteItem*> m_layerDescriptors;
-  std::list<RteItem*> m_projectDescriptors;
-  std::list<RteItem*> m_solutionDescriptors;
+  Collection<RteItem*> m_imageDescriptors;
+  Collection<RteItem*> m_layerDescriptors;
+  Collection<RteItem*> m_projectDescriptors;
+  Collection<RteItem*> m_solutionDescriptors;
 
   RteConditionContext* m_filterContext; // constructed, updated and deleted by target
 

@@ -60,7 +60,7 @@ void XmlFormatter::FormatXmlElement(ostringstream& xmlStream, XMLTreeElement* el
     xmlStream << attribute.first << "=\"" << EscapeSpecialChars(attribute.second) << "\"";
   }
   if (element->HasChildren()) {
-    list<XMLTreeElement*> children = element->GetChildren();
+    auto& children = element->GetChildren();
     xmlStream << '>' << EOL_STRING;
     for (auto it = children.begin(); it != children.end(); it++) {
       // insert extra space between children on the level 0
