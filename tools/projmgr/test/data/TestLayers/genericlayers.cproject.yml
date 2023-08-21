@@ -23,8 +23,8 @@ project:
         - EmptyValues                         # key exact match, both values empty
         - AddedValueLessThanProvided: 99      # added consumed values are less than provided
         - AddedValueEqualToProvided: 998      # added consumed values are equal to provided
-        - MultipleProvided                    # same connection is provided multiple times with identical values
         # incompatible connections
+        - MultipleProvided                    # same connection is provided multiple times with identical values
         - MultipleProvidedNonIdentical0: 222  # same connection is provided multiple times with non identical values
         - MultipleProvidedNonIdentical1       # same connection is provided multiple times with non identical values
         - ProvidedDontMatch: 0                # consumed connection doesn't match provided one

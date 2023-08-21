@@ -10,6 +10,7 @@ layer:
   connections:
     - connect: Incompatible Connections
       provides:
+        - MultipleProvided                     # same connection is provided multiple times with identical values
         - MultipleProvidedNonIdentical0: 111   # same connection is provided multiple times with non identical values
         - MultipleProvidedNonIdentical1: 222   # same connection is provided multiple times with non identical values
       consumes:

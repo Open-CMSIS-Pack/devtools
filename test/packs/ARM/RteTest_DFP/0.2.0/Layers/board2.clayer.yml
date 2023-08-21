@@ -9,8 +9,6 @@ layer:
   
   connections:
     - connect: Board2 Connections
-      provides:
-        - MultipleProvided                 # same connection is provided multiple times with identical values
       consumes:
         - ExactMatch: 42                   # both key and value exact match
         - EmptyConsumedValue               # key exact match, consumed value is empty
