@@ -17,6 +17,7 @@
  *        conflicted connections,
  *        overflowed connections,
  *        incompatible connections,
+ *        missed provided combined connections,
  *        provided connections
 */
 struct ConnectionsValidationResult {
@@ -24,6 +25,7 @@ struct ConnectionsValidationResult {
   StrVec conflicts;
   StrPairVec overflows;
   StrPairVec incompatibles;
+  std::vector<ConnectionsCollection> missedCollections;
   StrPairPtrVec provides;
 };
 
@@ -648,7 +650,7 @@ protected:
   void CollectConnections(ContextItem& context, ConnectionsCollectionVec& connections);
   void GetConsumesProvides(const ConnectionsCollectionVec& collection, ConnectionsList& connections);
   ConnectionsCollectionMap ClassifyConnections(const ConnectionsCollectionVec& connections);
-  ConnectionsValidationResult ValidateConnections(ConnectionsList& connections);
+  ConnectionsValidationResult ValidateConnections(ConnectionsCollectionVec combination);
   void GetAllCombinations(const ConnectionsCollectionMap& src, const ConnectionsCollectionMap::iterator& it,
     std::vector<ConnectionsCollectionVec>& combinations, const ConnectionsCollectionVec& previous = ConnectionsCollectionVec());
   void GetAllSelectCombinations(const ConnectPtrVec& src, const ConnectPtrVec::iterator& it,
@@ -662,6 +664,7 @@ protected:
   bool IsConnectionSubset(const ConnectionsCollection& connectionSubset, const ConnectionsCollection& connectionSuperset);
   bool IsCollectionSubset(const ConnectionsCollectionVec& collectionSubset, const ConnectionsCollectionVec& collectionSuperset);
   void RemoveRedundantSubsets(std::vector<ConnectionsCollectionVec>& validConnections);
+  bool ProvidedConnectionsMatch(ConnectionsCollection collection, ConnectionsList connections);
   StrSet GetValidSets(ContextItem& context, const std::string& clayer);
   void SetDefaultLinkerScript(ContextItem& context);
   void CheckAndGenerateRegionsHeader(ContextItem& context);

@@ -1026,7 +1026,6 @@ TEST_F(ProjMgrWorkerUnitTests, GetAllSelectCombinations) {
 
 TEST_F(ProjMgrWorkerUnitTests, ValidateConnections) {
   ConnectionsValidationResult result;
-  ConnectionsList connections;
 
   // valid connections
   StrPairVec consumedList = {
@@ -1038,26 +1037,20 @@ TEST_F(ProjMgrWorkerUnitTests, ValidateConnections) {
     {"Lemon", "+150"},
     {"Lemon", "+20"},
   };
-  for (const auto& item : consumedList) {
-    connections.consumes.push_back(&item);
-  }
   StrPairVec providedList = {
     {"Orange", "3"},                  // both key and value exact match
     {"Grape Fruit", "999"},           // key exact match, consumed value is empty
     {"Peach", ""},                    // key exact match, both values empty
     {"Lemon", "200"},                 // added consumed values are less than provided
     {"Lime", "100"},                  // added consumed values are equal to provided
-    {"Ananas", "2"}, {"Ananas", "2"}, // same interface is provided multiple times with identical values
   };
-  for (const auto& item : providedList) {
-    connections.provides.push_back(&item);
-  }
-  result = ValidateConnections(connections);
+
+  ConnectItem validConnectItem = { RteUtils::EMPTY_STRING, RteUtils::EMPTY_STRING, RteUtils::EMPTY_STRING, providedList, consumedList };
+  ConnectionsCollection validCollection = { RteUtils::EMPTY_STRING, RteUtils::EMPTY_STRING, {&validConnectItem} };
+  result = ValidateConnections({ validCollection });
   EXPECT_TRUE(result.valid);
 
   // invalid connections
-  connections.consumes.clear();
-  connections.provides.clear();
   // same interface is provided multiple times with non identical values
   consumedList = {
     {"Lemon", "+150"},
@@ -1065,23 +1058,20 @@ TEST_F(ProjMgrWorkerUnitTests, ValidateConnections) {
     {"Ananas", "98"},
     {"Grape Fruit", "1"},
   };
-  for (const auto& item : consumedList) {
-    connections.consumes.push_back(&item);
-  }
   providedList = {
     {"Ananas", "97"},                 // consumed interface doesn't match provided one
     {"Grape Fruit", ""},              // consumed interface doesn't match empty provided one
     {"Lemon", "160"},                 // sum of consumed added values is higher than provided value
+    {"Ananas", "2"}, {"Ananas", "2"}, // same interface is provided multiple times with identical values
     {"Orange", "3"}, {"Orange", "4"}, // same interface is provided multiple times with non identical values
     {"Banana", ""}, {"Banana", "0"},  // same interface is provided multiple times with non identical values
   };
-  for (const auto& item : providedList) {
-    connections.provides.push_back(&item);
-  }
-  StrVec expectedConflicts = { "Orange", "Banana" };
+  StrVec expectedConflicts = { "Ananas", "Orange", "Banana" };
   StrPairVec expectedOverflow = {{"Lemon", "170 > 160"}};
   StrPairVec expectedIncompatibles = {{"Ananas", "98"}, {"Grape Fruit", "1"}};
-  result = ValidateConnections(connections);
+  ConnectItem invalidConnectItem = { RteUtils::EMPTY_STRING, RteUtils::EMPTY_STRING, RteUtils::EMPTY_STRING, providedList, consumedList };
+  ConnectionsCollection invalidCollection = { RteUtils::EMPTY_STRING, RteUtils::EMPTY_STRING, {&invalidConnectItem} };
+  result = ValidateConnections({ invalidCollection });
   EXPECT_FALSE(result.valid);
   EXPECT_EQ(result.conflicts, expectedConflicts);
   EXPECT_EQ(result.overflows, expectedOverflow);

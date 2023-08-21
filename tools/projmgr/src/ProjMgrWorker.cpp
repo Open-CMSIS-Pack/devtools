@@ -677,15 +677,15 @@ bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context, const string& c
       debugMsg += "\n";
     }
     // validate connections
-    ConnectionsList connections;
-    GetConsumesProvides(combination, connections);
-    ConnectionsValidationResult result = ValidateConnections(connections);
+    ConnectionsValidationResult result = ValidateConnections(combination);
+
+    // update list of compatible layers
     if (result.valid) {
       context.validConnections.push_back(combination);
       for (const auto& [type, _] : matchedTypeClayers) {
-        for (const auto& item : combination) {
-          if (item.type == type) {
-            ProjMgrUtils::PushBackUniquely(context.compatibleLayers[type], item.filename);
+        for (const auto& collection : combination) {
+          if (collection.type == type) {
+            ProjMgrUtils::PushBackUniquely(context.compatibleLayers[type], collection.filename);
           }
         }
       }
@@ -775,7 +775,7 @@ bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context, const string& c
 void ProjMgrWorker::PrintConnectionsValidation(ConnectionsValidationResult result, string& msg) {
   if (!result.valid) {
     if (!result.conflicts.empty()) {
-      msg += "connections provided with multiple different values:";
+      msg += "connections provided multiple times:";
       for (const auto& id : result.conflicts) {
         msg += "\n  " + id;
       }
@@ -795,6 +795,20 @@ void ProjMgrWorker::PrintConnectionsValidation(ConnectionsValidationResult resul
       }
       msg += "\n";
     }
+    
+    if (!result.missedCollections.empty()) {
+      msg += "provided combined connections not consumed:";
+      for (const auto& missedCollection : result.missedCollections) {
+        msg += "\n  " + missedCollection.filename + (missedCollection.type.empty() ? "" : " (layer type: " + missedCollection.type + ")");
+        for (const auto& connect : missedCollection.connections) {
+          for (const auto& provided : connect->provides) {
+            msg += "\n    " + provided.first;
+          }
+        }
+      }
+      msg += "\n";
+    }
+    
   }
 }
 
@@ -870,8 +884,13 @@ ConnectionsCollectionMap ProjMgrWorker::ClassifyConnections(const ConnectionsCol
 
 void ProjMgrWorker::GetConsumesProvides(const ConnectionsCollectionVec& collection, ConnectionsList& connections) {
   // collect consumed and provided connections
+  ConnectPtrVec visitedConnect;
   for (const auto& item : collection) {
     for (const auto& connect : item.connections) {
+      if (find(visitedConnect.begin(), visitedConnect.end(), connect) != visitedConnect.end()) {
+        continue;
+      }
+      visitedConnect.push_back(connect);
       for (const auto& consumed : connect->consumes) {
         connections.consumes.push_back(&consumed);
       }
@@ -882,15 +901,40 @@ void ProjMgrWorker::GetConsumesProvides(const ConnectionsCollectionVec& collecti
   }
 }
 
-ConnectionsValidationResult ProjMgrWorker::ValidateConnections(ConnectionsList& connections) {
+bool ProjMgrWorker::ProvidedConnectionsMatch(ConnectionsCollection collection, ConnectionsList connections) {
+  // for a given collection check if provided connections match at least a consumed one
+  if (collection.connections.size() == 0) {
+    return true;
+  }
+  for (const auto& connect : collection.connections) {
+    if (connect->provides.size() == 0) {
+      return true;
+    }
+    for (const auto& provided : connect->provides) {
+      for (const auto& consumed : connections.consumes) {
+        if (provided.first == (*consumed).first) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+ConnectionsValidationResult ProjMgrWorker::ValidateConnections(ConnectionsCollectionVec combination) {
+  // get connections
+  ConnectionsList connections;
+  GetConsumesProvides(combination, connections);
+
   // elaborate provided list
   StrMap providedValues;
   StrVec conflicts;
+  vector<ConnectionsCollection> missedCollections;
   for (const auto& provided : connections.provides) {
     const auto& key = provided->first;
     const auto& value = provided->second;
-    if ((providedValues.find(key) != providedValues.end()) && (providedValues.at(key) != value)) {
-      // interface is provided with multiple different values
+    if ((providedValues.find(key) != providedValues.end())) {
+      // connection is provided multiple times
       ProjMgrUtils::PushBackUniquely(conflicts, key);
       continue;
     }
@@ -930,10 +974,16 @@ ConnectionsValidationResult ProjMgrWorker::ValidateConnections(ConnectionsList& 
       incompatibles.push_back({ consumedKey, consumed->second });
     }
   }
+  // validate provided connections of each combination match at least one consumed
+  for (const auto& collection : combination) {
+    if (!ProvidedConnectionsMatch(collection, connections)) {
+      missedCollections.push_back(collection);
+    }
+  }
 
   // set results
-  bool result = !conflicts.empty() || !overflows.empty() || !incompatibles.empty() ? false : true;
-  return { result, conflicts, overflows, incompatibles, connections.provides };
+  bool result = !conflicts.empty() || !overflows.empty() || !incompatibles.empty() || !missedCollections.empty() ? false : true;
+  return { result, conflicts, overflows, incompatibles, missedCollections, connections.provides };
 }
 
 bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
