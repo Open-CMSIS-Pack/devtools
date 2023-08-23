@@ -1097,6 +1097,44 @@ no valid combination of clayers was found\n\
   EXPECT_TRUE(regex_match(outStr, regex(expectedOutStr)));
 }
 
+TEST_F(ProjMgrUnitTests, ListLayersOptionalLayerType) {
+  StdStreamRedirect streamRedirect;
+  char* argv[8];
+  const string& csolution = testinput_folder + "/TestLayers/genericlayers.csolution.yml";
+  const string& context = "genericlayers.OptionalLayerType+AnyBoard";
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"layers";
+  argv[3] = (char*)"--solution";
+  argv[4] = (char*)csolution.c_str();
+  argv[5] = (char*)"-c";
+  argv[6] = (char*)context.c_str();
+  argv[7] = (char*)"-d";
+  EXPECT_EQ(0, RunProjMgr(8, argv, 0));
+
+  const string& expected ="\
+check combined connections:\n\
+  .*/TestLayers/genericlayers.cproject.yml\n\
+    \\(Project Connections\\)\n\
+provided combined connections not consumed:\n\
+  .*/TestLayers/genericlayers.cproject.yml\n\
+    ExactMatch\n\
+    EmptyConsumedValue\n\
+    EmptyValues\n\
+    AddedValueLessThanProvided\n\
+    AddedValueEqualToProvided\n\
+    MultipleProvided\n\
+    MultipleProvidedNonIdentical0\n\
+    MultipleProvidedNonIdentical1\n\
+    ProvidedDontMatch\n\
+    ProvidedEmpty\n\
+    AddedValueHigherThanProvided\n\
+connections are invalid\n\
+";
+
+  const string& errStr = streamRedirect.GetErrorString();
+  EXPECT_TRUE(regex_search(errStr, regex(expected)));
+}
+
 TEST_F(ProjMgrUnitTests, ListLayersInvalidContext) {
   char* argv[7];
   const string& csolution = testinput_folder + "/TestLayers/genericlayers.csolution.yml";

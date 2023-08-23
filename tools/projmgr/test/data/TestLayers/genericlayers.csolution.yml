@@ -5,7 +5,7 @@ solution:
   build-types:
     - type: CompatibleLayers
     - type: IncompatibleLayers
-    - type: PdscTypeMismatch
+    - type: OptionalLayerType
 
   target-types:
     - type: Board3

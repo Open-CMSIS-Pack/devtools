@@ -5,14 +5,23 @@ project:
 
   layers:
     - type: Board
+      optional: false
+      not-for-context: .OptionalLayerType
     - type: TestVariant
+      optional: false
       for-context: .CompatibleLayers
     - type: Incompatible
+      optional: false
       for-context: .IncompatibleLayers
     - type: UnknownType
+      optional: false
       for-context: .IncompatibleLayers
     - type: PdscType
+      optional: false
       for-context: .IncompatibleLayers
+    - type: Board
+      optional: true
+      for-context: .OptionalLayerType
 
   connections:
     - connect: Project Connections

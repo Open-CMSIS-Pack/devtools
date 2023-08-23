@@ -633,13 +633,17 @@
           "type": "string",
           "description": "Layer type for compatible layers matching"
         },
+        "optional": {
+          "type": "boolean",
+          "description": "Set optional to 'false' to require the layer type when searching compatible layers; default: 'true'"
+        },
         "for-context":     { "$ref": "#/definitions/ForContext" },
         "not-for-context": { "$ref": "#/definitions/NotForContext" }
       },
       "allOf": [
         { "$ref": "#/definitions/TypeListMutualExclusion" },
         { "anyOf": [
-            { "required": ["layer"] },
+            { "required": ["layer"], "not": {"required": ["optional"]} },
             { "required": ["type"]  }
           ]
         }
