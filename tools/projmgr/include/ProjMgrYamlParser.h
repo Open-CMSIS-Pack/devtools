@@ -92,6 +92,7 @@ static constexpr const char* YAML_MISC_LINK_C = "Link-C";
 static constexpr const char* YAML_MISC_LINK_CPP = "Link-CPP";
 static constexpr const char* YAML_NOTFORCONTEXT = "not-for-context";
 static constexpr const char* YAML_OPTIMIZE = "optimize";
+static constexpr const char* YAML_OPTIONAL = "optional";
 static constexpr const char* YAML_OPTIONS = "options";
 static constexpr const char* YAML_OUTPUT = "output";
 static constexpr const char* YAML_OUTPUTDIRS = "output-dirs";
@@ -181,6 +182,7 @@ protected:
   void ParseDefine(const YAML::Node& parent, std::vector<std::string>& define);
   void ParsePacks(const YAML::Node& parent, const std::string& file, std::vector<PackItem>& packs);
   void ParseProcessor(const YAML::Node& parent, ProcessorItem& processor);
+  void ParseBoolean(const YAML::Node& parent, const std::string& key, bool& value, bool def);
   void ParseString(const YAML::Node& parent, const std::string& key, std::string& value);
   void ParseVector(const YAML::Node& parent, const std::string& key, std::vector<std::string>& value);
   void ParseVectorOfStringPairs(const YAML::Node& parent, const std::string& key, std::vector<std::pair<std::string, std::string>>& value);

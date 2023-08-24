@@ -521,7 +521,9 @@ void ProjMgrWorker::GetAllCombinations(const ConnectionsCollectionMap& src, cons
   // iterate over the input columns
   for (const auto& item : it->second) {
     ConnectionsCollectionVec combination = previous;
-    combination.push_back(item);
+    if (!item.filename.empty()) {
+      combination.push_back(item);
+    }
     if (nextIt != src.end()) {
       // run recursively over the next item
       GetAllCombinations(src, nextIt, combinations, combination);
@@ -533,9 +535,9 @@ void ProjMgrWorker::GetAllCombinations(const ConnectionsCollectionMap& src, cons
 }
 
 void ProjMgrWorker::GetAllSelectCombinations(const ConnectPtrVec& src, const ConnectPtrVec::iterator& it,
+  std::vector<ConnectPtrVec>& combinations) {
   // combine items from a vector of 'select' nodes
   // see an example in the test case ProjMgrWorkerUnitTests.GetAllSelectCombinations
-  std::vector<ConnectPtrVec>& combinations) {
   // for every past combination add a new combination containing additionally the current item
   for (auto combination : vector<ConnectPtrVec>(combinations)) {
     combination.push_back(*it);
@@ -588,12 +590,14 @@ bool ProjMgrWorker::CollectLayersFromSearchPath(const string& clayerSearchPath, 
 bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context, const string& clayerSearchPath) {
   // required layer types
   StrVec requiredLayerTypes;
+  map<string, bool> optionalTypeFlags;
   for (const auto& clayer : context.cproject->clayers) {
     if (clayer.type.empty() || !CheckContextFilters(clayer.typeFilter, context) ||
       (ExpandString(clayer.layer, context.variables) != clayer.layer)) {
       continue;
     }
     requiredLayerTypes.push_back(clayer.type);
+    optionalTypeFlags[clayer.type] = clayer.optional;
   }
 
   // debug message
@@ -653,7 +657,7 @@ bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context, const string& c
   CollectConnections(context, allConnections);
 
   // classify connections according to layer types and set config-ids
-  ConnectionsCollectionMap classifiedConnections = ClassifyConnections(allConnections);
+  ConnectionsCollectionMap classifiedConnections = ClassifyConnections(allConnections, optionalTypeFlags);
 
   // cross classified connections to get all combinations to be validated
   vector<ConnectionsCollectionVec> combinations;
@@ -828,7 +832,7 @@ void ProjMgrWorker::CollectConnections(ContextItem& context, ConnectionsCollecti
   }
 }
 
-ConnectionsCollectionMap ProjMgrWorker::ClassifyConnections(const ConnectionsCollectionVec& connections) {
+ConnectionsCollectionMap ProjMgrWorker::ClassifyConnections(const ConnectionsCollectionVec& connections, map<string, bool> optionalTypeFlags) {
   // classify connections according to layer types and set config-ids
   ConnectionsCollectionMap classifiedConnections;
   for (const auto& collectionEntry : connections) {
@@ -879,6 +883,13 @@ ConnectionsCollectionMap ProjMgrWorker::ClassifyConnections(const ConnectionsCol
       classifiedConnections[classifiedType].push_back(collection);
     }
   }
+  // add empty connection for optional handling in combinatory flow, unless differently specified
+  for (auto& [type, collectionVec] : classifiedConnections) {
+    if (optionalTypeFlags[type]) {
+      collectionVec.push_back({ RteUtils::EMPTY_STRING, RteUtils::EMPTY_STRING });
+    }
+  }
+
   return classifiedConnections;
 }
 

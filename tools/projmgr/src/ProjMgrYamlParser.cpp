@@ -266,6 +266,15 @@ void ProjMgrYamlParser::ParsePortablePaths(const YAML::Node& parent, const strin
   }
 }
 
+void ProjMgrYamlParser::ParseBoolean(const YAML::Node& parent, const string& key, bool& value, bool def) {
+  if (parent[key].IsDefined()) {
+    value = parent[key].as<bool>();
+    if (parent[key].Type() == YAML::NodeType::Null) {
+      value = def;
+    }
+  }
+}
+
 void ProjMgrYamlParser::ParseString(const YAML::Node& parent, const string& key, string& value) {
   if (parent[key].IsDefined()) {
     value = parent[key].as<string>();
@@ -533,6 +542,7 @@ bool ProjMgrYamlParser::ParseLayers(const YAML::Node& parent, const string& file
       }
       ParsePortablePath(layerEntry, file, YAML_LAYER, layerItem.layer);
       ParseString(layerEntry, YAML_TYPE, layerItem.type);
+      ParseBoolean(layerEntry, YAML_OPTIONAL, layerItem.optional, true);
       layers.push_back(layerItem);
     }
   }
@@ -976,6 +986,7 @@ const set<string> linkerKeys = {
 const set<string> layersKeys = {
   YAML_LAYER,
   YAML_TYPE,
+  YAML_OPTIONAL,
   YAML_FORCONTEXT,
   YAML_NOTFORCONTEXT,
 };

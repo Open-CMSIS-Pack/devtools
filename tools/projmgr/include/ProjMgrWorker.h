@@ -649,7 +649,7 @@ protected:
   bool DiscoverMatchingLayers(ContextItem& context, const std::string& clayerSearchPath);
   void CollectConnections(ContextItem& context, ConnectionsCollectionVec& connections);
   void GetConsumesProvides(const ConnectionsCollectionVec& collection, ConnectionsList& connections);
-  ConnectionsCollectionMap ClassifyConnections(const ConnectionsCollectionVec& connections);
+  ConnectionsCollectionMap ClassifyConnections(const ConnectionsCollectionVec& connections, std::map<std::string, bool> optionalTypeFlags);
   ConnectionsValidationResult ValidateConnections(ConnectionsCollectionVec combination);
   void GetAllCombinations(const ConnectionsCollectionMap& src, const ConnectionsCollectionMap::iterator& it,
     std::vector<ConnectionsCollectionVec>& combinations, const ConnectionsCollectionVec& previous = ConnectionsCollectionVec());
