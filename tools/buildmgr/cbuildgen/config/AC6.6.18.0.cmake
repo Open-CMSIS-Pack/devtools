@@ -632,3 +632,6 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/CMakeASM")
 # Set CMake flags for compiler identification
 set(CMAKE_C_FLAGS_INIT ${CC_CPU})
 set(CMAKE_CXX_FLAGS_INIT ${CXX_CPU})
+
+# Set Link command for Arm Assembler variant
+set(CMAKE_AS_ARM_LINK_EXECUTABLE "armlink <CMAKE_AS_ARM_LINK_FLAGS> <LINK_FLAGS> <LINK_LIBRARIES> <OBJECTS> -o <TARGET>")
