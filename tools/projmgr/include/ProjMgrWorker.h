@@ -30,6 +30,24 @@ struct ConnectionsValidationResult {
 };
 
 /**
+ * @brief layers discovering variables
+ *        required layer types,
+ *        missed required types,
+ *        optional type flags,
+ *        generic clayers from search path,
+ *        generic clayers from packs,
+ *        candidate layers,
+*/
+struct LayersDiscovering {
+  StrVec requiredLayerTypes;
+  StrVec missedRequiredTypes;
+  BoolMap optionalTypeFlags;
+  StrVecMap genericClayersFromSearchPath;
+  StrVecMap genericClayersFromPacks;
+  StrVecMap candidateClayers;
+};
+
+/**
  * @brief connections lists
  *        list of consumes
  *        list of provides
@@ -646,10 +664,14 @@ protected:
   void PrintConnectionsValidation(ConnectionsValidationResult result, std::string& msg);
   bool CollectLayersFromPacks(ContextItem& context, StrVecMap& clayers);
   bool CollectLayersFromSearchPath(const std::string& clayerSearchPath, StrVecMap& clayers);
-  bool DiscoverMatchingLayers(ContextItem& context, const std::string& clayerSearchPath);
+  void GetRequiredLayerTypes(ContextItem& context, LayersDiscovering& discover);
+  bool GetCandidateLayers(LayersDiscovering& discover);
+  bool ProcessCandidateLayers(ContextItem& context, LayersDiscovering& discover);
+  bool ProcessLayerCombinations(ContextItem& context, LayersDiscovering& discover);
+  bool DiscoverMatchingLayers(ContextItem& context, std::string clayerSearchPath);
   void CollectConnections(ContextItem& context, ConnectionsCollectionVec& connections);
   void GetConsumesProvides(const ConnectionsCollectionVec& collection, ConnectionsList& connections);
-  ConnectionsCollectionMap ClassifyConnections(const ConnectionsCollectionVec& connections, std::map<std::string, bool> optionalTypeFlags);
+  ConnectionsCollectionMap ClassifyConnections(const ConnectionsCollectionVec& connections, BoolMap optionalTypeFlags);
   ConnectionsValidationResult ValidateConnections(ConnectionsCollectionVec combination);
   void GetAllCombinations(const ConnectionsCollectionMap& src, const ConnectionsCollectionMap::iterator& it,
     std::vector<ConnectionsCollectionVec>& combinations, const ConnectionsCollectionVec& previous = ConnectionsCollectionVec());
@@ -673,6 +695,7 @@ protected:
   void ExpandAccessSequence(const ContextItem& context, const ContextItem& refContext, const std::string& sequence, std::string& item, bool withHeadingDot);
   bool GetGeneratorDir(const RteGenerator* generator, ContextItem& context, const std::string& layer, std::string& genDir);
   bool ParseContextLayers(ContextItem& context);
+  bool AddPackRequirements(ContextItem& context, const std::vector<PackItem> packRequirements);
 };
 
 #endif  // PROJMGRWORKER_H

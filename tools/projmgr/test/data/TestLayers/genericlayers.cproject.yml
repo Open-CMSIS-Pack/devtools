@@ -22,6 +22,9 @@ project:
     - type: Board
       optional: true
       for-context: .OptionalLayerType
+    - type: BoardSpecific
+      for-context: +BoardSpecific
+      
 
   connections:
     - connect: Project Connections

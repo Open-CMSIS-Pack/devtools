@@ -105,6 +105,12 @@ void ProjMgrUtils::PushBackUniquely(StrPairVec& vec, const StrPair& value) {
   vec.push_back(value);
 }
 
+StrVecMap ProjMgrUtils::MergeStrVecMap(const StrVecMap& map1, const StrVecMap& map2) {
+  StrVecMap mergedMap(map1);
+  mergedMap.insert(map2.begin(), map2.end());
+  return mergedMap;
+}
+
 int ProjMgrUtils::StringToInt(const string& value) {
   int intValue = 0;
   smatch sm;

@@ -1,0 +1,22 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schemas/clayer.schema.json
+
+layer:
+
+  packs:
+    - pack: ARM::RteTestBoard@0.1.0
+
+  type: BoardSpecific
+  
+  for-board: RteTest board listing
+  
+  components:
+    - component: Board:Test:Rev1
+  
+  connections:
+    - connect: Board1 Connections
+      consumes:
+        - ExactMatch: 42                   # both key and value exact match
+        - EmptyConsumedValue               # key exact match, consumed value is empty
+        - EmptyValues                      # key exact match, both values empty
+        - AddedValueLessThanProvided: +49  # added consumed values are less than provided
+        - AddedValueEqualToProvided: +499  # added consumed values are equal to provided

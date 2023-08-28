@@ -673,6 +673,7 @@ TEST_F(ProjMgrUnitTests, ListLayersAll) {
   EXPECT_EQ(0, RunProjMgr(3, argv, 0));
 
   const string& expected = "\
+.*/ARM/RteTest_DFP/0.2.0/Layers/board-specific.clayer.yml \\(layer type: BoardSpecific\\)\n\
 .*/ARM/RteTest_DFP/0.2.0/Layers/board1.clayer.yml \\(layer type: Board\\)\n\
 .*/ARM/RteTest_DFP/0.2.0/Layers/board2.clayer.yml \\(layer type: Board\\)\n\
 .*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml \\(layer type: Board\\)\n\
@@ -1129,6 +1130,29 @@ provided combined connections not consumed:\n\
     ProvidedEmpty\n\
     AddedValueHigherThanProvided\n\
 connections are invalid\n\
+";
+
+  const string& errStr = streamRedirect.GetErrorString();
+  EXPECT_TRUE(regex_search(errStr, regex(expected)));
+}
+
+TEST_F(ProjMgrUnitTests, ListLayersWithBoardSpecificPack) {
+  StdStreamRedirect streamRedirect;
+  char* argv[8];
+  const string& csolution = testinput_folder + "/TestLayers/genericlayers.csolution.yml";
+  const string& context = "genericlayers.OptionalLayerType+BoardSpecific";
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"layers";
+  argv[3] = (char*)"--solution";
+  argv[4] = (char*)csolution.c_str();
+  argv[5] = (char*)"-c";
+  argv[6] = (char*)context.c_str();
+  argv[7] = (char*)"-d";
+  EXPECT_EQ(0, RunProjMgr(8, argv, 0));
+
+  const string& expected = "\
+clayer of type 'BoardSpecific' was uniquely found:\n\
+  .*/ARM/RteTest_DFP/0.2.0/Layers/board-specific.clayer.yml\n\
 ";
 
   const string& errStr = streamRedirect.GetErrorString();
