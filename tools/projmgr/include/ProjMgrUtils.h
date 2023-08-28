@@ -103,6 +103,11 @@ typedef std::map<std::string, StrVec> StrVecMap;
 typedef std::map<std::string, int> IntMap;
 
 /**
+ * @brief map of bool
+*/
+typedef std::map<std::string, bool> BoolMap;
+
+/**
  * @brief map of string
 */
 typedef std::map<std::string, std::string> StrMap;
@@ -200,6 +205,14 @@ public:
   static void PushBackUniquely(std::vector<std::string>& vec, const std::string& value);
   static void PushBackUniquely(std::list<std::string>& lst, const std::string& value);
   static void PushBackUniquely(StrPairVec& vec, const StrPair& value);
+
+  /**
+   * @brief merge two string vector maps
+   * @param map1 first string vector map
+   * @param map2 second string vector map
+   * @return StrVecMap merged map
+  */
+ static StrVecMap MergeStrVecMap(const StrVecMap& map1, const StrVecMap& map2);
 
   /**
    * @brief convert string to int, return 0 if it's empty or not convertible

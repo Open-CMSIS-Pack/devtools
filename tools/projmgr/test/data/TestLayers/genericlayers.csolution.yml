@@ -13,6 +13,8 @@ solution:
       device: :cm0_core0
     - type: AnyBoard
       device: RteTest_ARMCM3
+    - type: BoardSpecific
+      board: RteTest board listing
 
   projects:
     - project: genericlayers.cproject.yml

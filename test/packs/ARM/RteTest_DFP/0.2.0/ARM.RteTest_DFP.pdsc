@@ -518,6 +518,10 @@
     <clayer name="Config2" type="Config2" file="Layers/config2.clayer.yml">
       <description>"Test board layer with shield"</description>
     </clayer>
+    <clayer name="BoardSpecific" type="BoardSpecific" file="Layers/board-specific.clayer.yml">
+      <description>"Test board layer with board specific pack"</description>
+    </clayer>
+    
   </clayers>
 
 </package>

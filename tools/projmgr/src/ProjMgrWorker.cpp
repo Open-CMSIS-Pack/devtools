@@ -587,53 +587,118 @@ bool ProjMgrWorker::CollectLayersFromSearchPath(const string& clayerSearchPath, 
   return true;
 }
 
-bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context, const string& clayerSearchPath) {
-  // required layer types
-  StrVec requiredLayerTypes;
-  map<string, bool> optionalTypeFlags;
+void ProjMgrWorker::GetRequiredLayerTypes(ContextItem& context, LayersDiscovering& discover) {
   for (const auto& clayer : context.cproject->clayers) {
     if (clayer.type.empty() || !CheckContextFilters(clayer.typeFilter, context) ||
       (ExpandString(clayer.layer, context.variables) != clayer.layer)) {
       continue;
     }
-    requiredLayerTypes.push_back(clayer.type);
-    optionalTypeFlags[clayer.type] = clayer.optional;
+    discover.requiredLayerTypes.push_back(clayer.type);
+    discover.optionalTypeFlags[clayer.type] = clayer.optional;
   }
+}
 
+bool ProjMgrWorker::ProcessCandidateLayers(ContextItem& context, LayersDiscovering& discover) {
+  // get all candidate layers
+  if (!GetCandidateLayers(discover)) {
+    return false;
+  }
+  // load device/board specific packs specified in candidate layers
+  vector<PackItem> packRequirements;
+  for (const auto& [type, clayers] : discover.candidateClayers) {
+    for (const auto& clayer : clayers) {
+      const ClayerItem& clayerItem = m_parser->GetGenericClayers()[clayer];
+      if (!clayerItem.forBoard.empty() || !clayerItem.forDevice.empty()) {
+        packRequirements.insert(packRequirements.end(), clayerItem.packs.begin(), clayerItem.packs.end());
+      }
+    }
+  }
+  if (packRequirements.size() > 0) {
+    AddPackRequirements(context, packRequirements);
+    if (!LoadAllRelevantPacks() || !LoadPacks(context)) {
+      return false;
+    }
+  }
+  // process board/device filtering
+  if (!ProcessDevice(context)) {
+    return false;
+  }
+  if (!SetTargetAttributes(context, context.targetAttributes)) {
+    return false;
+  }
+  // recollect layers from packs after filtering
+  discover.genericClayersFromPacks.clear();
+  if (!CollectLayersFromPacks(context, discover.genericClayersFromPacks)) {
+    return false;
+  }
+  discover.candidateClayers.clear();
+  if (!GetCandidateLayers(discover)) {
+    return false;
+  }
+  return true;
+}
+
+bool ProjMgrWorker::GetCandidateLayers(LayersDiscovering& discover) {
+  // clayers matching required types
+  StrVecMap genericClayers = ProjMgrUtils::MergeStrVecMap(discover.genericClayersFromSearchPath, discover.genericClayersFromPacks);
+  for (const auto& requiredType : discover.requiredLayerTypes) {
+    if (genericClayers.find(requiredType) != genericClayers.end()) {
+      for (const auto& clayer : genericClayers.at(requiredType)) {
+        discover.candidateClayers[requiredType].push_back(clayer);
+      }
+    } else {
+      ProjMgrUtils::PushBackUniquely(discover.missedRequiredTypes, requiredType);
+    }
+  }
+  // parse matched type layers
+  for (const auto& [type, clayers] : discover.candidateClayers) {
+    for (const auto& clayer : clayers) {
+      if (!m_parser->ParseGenericClayer(clayer, m_checkSchema)) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context, string clayerSearchPath) {
+  // get all layers from packs and from search path
+  LayersDiscovering discover;
+  if (!CollectLayersFromPacks(context, discover.genericClayersFromPacks)) {
+    return false;
+  }
+  if (!CollectLayersFromSearchPath(clayerSearchPath, discover.genericClayersFromSearchPath)) {
+    return false;
+  }
+  // get required layer types
+  GetRequiredLayerTypes(context, discover);
+  // process candidate layers
+  if (!ProcessCandidateLayers(context, discover)) {
+    return false;
+  }
+  // process layer combinations
+  if (!ProcessLayerCombinations(context, discover)) {
+    return false;
+  }
+  return true;
+}
+
+bool ProjMgrWorker::ProcessLayerCombinations(ContextItem& context, LayersDiscovering& discover) {
   // debug message
   string debugMsg;
   if (m_debug) {
     debugMsg = "check for context '" + context.name + "'\n";
+
+    for (const auto& missedRequiredType : discover.missedRequiredTypes) {
+      debugMsg += "no clayer matches type '" + missedRequiredType + "'\n";
+    }
   }
 
+  // collect connections from candidate layers
   ConnectionsCollectionVec allConnections;
-  StrVecMap matchedTypeClayers;
-
-  if (!requiredLayerTypes.empty()) {
-    // collect generic clayers from loaded packs and from search path
-    StrVecMap genericClayers;
-    if (!CollectLayersFromPacks(context, genericClayers) ||
-        !CollectLayersFromSearchPath(clayerSearchPath, genericClayers)) {
-      return false;
-    }
-    // clayers matching required types
-    for (const auto& requiredType : requiredLayerTypes) {
-      if (genericClayers.find(requiredType) != genericClayers.end()) {
-        for (const auto& clayer : genericClayers.at(requiredType)) {
-          matchedTypeClayers[requiredType].push_back(clayer);
-        }
-      } else {
-        if (m_debug) {
-          debugMsg += "no clayer matches type '" + requiredType + "'\n";
-        }
-      }
-    }
-    // parse matched type layers and collect connections
-    for (const auto& [type, clayers] : matchedTypeClayers) {
+  if (!discover.requiredLayerTypes.empty()) {
+    for (const auto& [type, clayers] : discover.candidateClayers) {
       for (const auto& clayer : clayers) {
-        if (!m_parser->ParseGenericClayer(clayer, m_checkSchema)) {
-          return false;
-        }
         const ClayerItem& clayerItem = m_parser->GetGenericClayers()[clayer];
         if (type != clayerItem.type) {
           if (m_debug) {
@@ -657,7 +722,7 @@ bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context, const string& c
   CollectConnections(context, allConnections);
 
   // classify connections according to layer types and set config-ids
-  ConnectionsCollectionMap classifiedConnections = ClassifyConnections(allConnections, optionalTypeFlags);
+  ConnectionsCollectionMap classifiedConnections = ClassifyConnections(allConnections, discover.optionalTypeFlags);
 
   // cross classified connections to get all combinations to be validated
   vector<ConnectionsCollectionVec> combinations;
@@ -686,7 +751,7 @@ bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context, const string& c
     // update list of compatible layers
     if (result.valid) {
       context.validConnections.push_back(combination);
-      for (const auto& [type, _] : matchedTypeClayers) {
+      for (const auto& [type, _] : discover.candidateClayers) {
         for (const auto& collection : combination) {
           if (collection.type == type) {
             ProjMgrUtils::PushBackUniquely(context.compatibleLayers[type], collection.filename);
@@ -703,9 +768,9 @@ bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context, const string& c
   }
 
   // assess generic layers validation results
-  if (!matchedTypeClayers.empty()) {
+  if (!discover.candidateClayers.empty()) {
     if (!context.compatibleLayers.empty()) {
-      for (const auto& [type, _] : matchedTypeClayers) {
+      for (const auto& [type, _] : discover.candidateClayers) {
         if (context.compatibleLayers[type].size() == 1) {
           // unique match
           const auto& clayer = context.compatibleLayers[type].front();
@@ -735,7 +800,7 @@ bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context, const string& c
     ProjMgrLogger::Debug(debugMsg);
   }
 
-  if (!matchedTypeClayers.empty() && context.compatibleLayers.empty()) {
+  if (!discover.candidateClayers.empty() && context.compatibleLayers.empty()) {
     return false;
   }
 
@@ -1229,7 +1294,11 @@ bool ProjMgrWorker::ProcessPackages(ContextItem& context) {
   for (const auto& [_, clayer] : context.clayers) {
     packRequirements.insert(packRequirements.end(), clayer->packs.begin(), clayer->packs.end());
   }
+  AddPackRequirements(context, packRequirements);
+  return true;
+}
 
+bool ProjMgrWorker::AddPackRequirements(ContextItem& context, const vector<PackItem> packRequirements) {
   // Filter context specific package requirements
   vector<PackItem> packages;
   for (const auto& packItem : packRequirements) {
@@ -3049,14 +3118,8 @@ bool ProjMgrWorker::ListLayers(vector<string>& layers, const string& clayerSearc
         }
       }
     } else {
-      // process board/device filtering
+      // process precedences
       if (!ProcessPrecedences(context)) {
-        return false;
-      }
-      if (!ProcessDevice(context)) {
-        return false;
-      }
-      if (!SetTargetAttributes(context, context.targetAttributes)) {
         return false;
       }
       // get matching layers for selected context
