@@ -1,0 +1,70 @@
+# CMSIS Build CMakeLists generated on 2023-08-29T15:26:15
+
+cmake_minimum_required(VERSION 3.22)
+
+# Target options
+
+set(TARGET Blinky)
+set(CPU Cortex-M3)
+set(PRJ_DIR "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/ArmAsm")
+set(OUT_DIR "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/ArmAsm/OutDir")
+set(INT_DIR "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/ArmAsm/IntDir")
+set(FPU NO_FPU)
+set(DSP NO_DSP)
+set(TZ NO_TZ)
+set(SECURE Non-secure)
+set(MVE NO_MVE)
+set(BYTE_ORDER Little-endian)
+set(AS_FLAGS_GLOBAL "-masm=auto")
+set(LD_SCRIPT "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/ArmAsm/LinkerScript.sct")
+
+set(DEFINES
+  ARMCM3
+  _RTE_
+)
+
+set(INC_PATHS
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/ArmAsm/RTE/_Target_1"
+  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.9.0/CMSIS/Core/Include"
+  "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.9.0/Device/ARM/ARMCM3/Include"
+)
+
+set(AS_ARM_SRC_FILES
+  "C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/ArmAsm/ArmSyntax.s"
+)
+
+# Toolchain config map
+
+set(TOOLCHAIN_VERSION_MIN "6.0.0")
+set(TOOLCHAIN_VERSION_MAX "6.99.99")
+include ("C:/sandbox/cbuild/etc/AC6.6.18.0.cmake")
+include ("C:/sandbox/cbuild/etc/CMSIS-Build-Utils.cmake")
+
+# Setup project
+
+project(${TARGET} LANGUAGES AS_ARM)
+
+cbuild_get_running_toolchain(TOOLCHAIN_ROOT TOOLCHAIN_VERSION AS_ARM)
+
+# Global Flags
+
+set(CMAKE_AS_ARM_FLAGS "${AS_ARM_CPU} ${AS_ARM_BYTE_ORDER} ${AS_ARM_DEFINES} ${AS_ARM_FLAGS} ${AS_FLAGS_GLOBAL}")
+set(CMAKE_C_LINK_FLAGS "${LD_CPU} ${_LS}\"${LD_SCRIPT}\" ${LD_SECURE} ${LD_FLAGS}")
+
+# Local Flags
+
+foreach(SRC ${AS_ARM_SRC_FILES})
+  set_source_files_properties(${SRC} PROPERTIES LANGUAGE AS_ARM)
+endforeach()
+
+# Compilation Database
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+add_custom_target(database COMMAND ${CMAKE_COMMAND} -E copy_if_different "${INT_DIR}/compile_commands.json" "${OUT_DIR}")
+
+# Setup Target
+
+add_executable(${TARGET} ${AS_ARM_SRC_FILES})
+set_target_properties(${TARGET} PROPERTIES PREFIX "" SUFFIX ".axf" OUTPUT_NAME "Blinky")
+set_target_properties(${TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${OUT_DIR} LINK_DEPENDS ${LD_SCRIPT})
+target_include_directories(${TARGET} PUBLIC ${INC_PATHS})

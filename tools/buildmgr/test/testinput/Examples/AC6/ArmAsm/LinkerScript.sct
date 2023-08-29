@@ -1,0 +1,9 @@
+
+LR_IROM1 0x08000000 0x00080000  {    ; load region size_region
+  ER_IROM1 0x08000000 0x00080000  {  ; load address = execution address
+   .ANY (+RO)
+  }
+  RW_IRAM1 0x20000000 0x00001000  {  ; RW data
+   .ANY (+RW +ZI)
+  }
+}
