@@ -92,6 +92,17 @@ TEST_F(CBuildAC6Tests, Asm) {
   CheckCMakeLists            (param);
 }
 
+// Verify and build project with single legacy assembly file
+TEST_F(CBuildAC6Tests, ArmAsm) {
+  TestParam param = { "AC6/ArmAsm", "Target" };
+
+  RunCBuildScriptClean(param);
+  RunCBuildScript(param);
+  CheckCMakeLists(param);
+  const string outputFile = examples_folder + "/" + param.name + "/OutDir/Blinky.axf";
+  ASSERT_TRUE(fs::exists(outputFile));
+}
+
 // Validate project compilation having minimal configurations
 TEST_F(CBuildAC6Tests, Minimal) {
   TestParam param = { "AC6/Minimal", "MyProject" };
