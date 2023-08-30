@@ -18,6 +18,7 @@ default:
         - --entry=Reset_Handler
         - --map
         - --info summarysizes
+        - --summary_stderr
         - --diag_suppress=L6314W
 
     - for-compiler: GCC
