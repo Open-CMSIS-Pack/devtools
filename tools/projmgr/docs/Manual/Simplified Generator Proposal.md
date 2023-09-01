@@ -96,6 +96,7 @@ generators:
   - generator: CubeMX    # potentially with version added by `@` notation
     download-url: https://www.st.com/en/development-tools/stm32cubemx.html
     exe: ../bin/CubeMX2cgen
+    build-info: abs      # default setting is relative
     args:
       - arg: <access-sequence> 
       - arg: <access-sequence> 
@@ -112,6 +113,8 @@ generators:
   - generator: Renesas...
 ```
 
+With `build-info: abs`, it is required for generate absolute paths for the build invocation files.  In this case `<context>.cbuild-gen.yml` files are written by csolution prior to calling the generator and passed as file reference to generator via `$G` command line argument. This file follows the `cbuild.yml` schema but contains absolute paths.
+
 ## Impact to PDSC files and Packs
 
 The following changes might be implemented in the PDSC files:
@@ -127,6 +130,7 @@ The following changes might be implemented in the PDSC files:
 ```xml
   <component Cclass="Device" Cgroup="STM32CubeMX" generator="CubeMX">
     <description>Run STM32CubeMX for device configuration</description>
+  </component>
 ```
 
 The proposed changes allow to use:
