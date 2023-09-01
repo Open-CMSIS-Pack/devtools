@@ -57,6 +57,14 @@ Software layers and Virtual I/O simplify these use cases:
     <th>Description</th>
   </tr>
   <tr>
+    <td>2.1.0</td>
+    <td>Release notes:
+      - updated cbuild utility v2.1.0
+      - updated cpackget utility v1.0.1
+      - updated csolution utility v2.1.0
+      - added linker file pre-processor secure flags 
+      - fixed handling of AC6 projects with only legacy assembly files
+    </td>
     <td>2.0.0</td>
     <td>Release notes:
       - updated cbuild utility v2.0.0
