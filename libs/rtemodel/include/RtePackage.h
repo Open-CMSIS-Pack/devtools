@@ -20,10 +20,15 @@
 
 class RteTarget;
 class RtePackage;
+class RtePackageComparator;
 class RteExample;
 class RteGeneratorContainer;
 class RteGeneratorProject;
 class RteBoard;
+
+
+typedef std::map<std::string, RtePackage*, RtePackageComparator > RtePackageMap;
+typedef std::map<std::string, RteItem*, RtePackageComparator > RteItemPackageMap;
 
 /**
  * @brief class representing <releases> element in *.pdsc files
@@ -149,6 +154,16 @@ public:
    * @return 0 if both IDs are equal, less than 0 if id1 < id 2, greater than 0 if id1 > id2
   */
   static int ComparePackageIDs(const std::string& id1, const std::string& id2);
+
+  /**
+   * @brief helper static method to compare pack filenames.
+   * Alpha-numeric comparison for vendor and name.
+   * Semantic version comparison for pack version.
+   * @param pdsc1 first pdsc file path
+   * @param pdsc2 second pdsc file path
+   * @return 0 if both files are equal, less than 0 if pdsc1 < pdsc2, greater than 0 if pdsc1 > pdsc2
+  */
+  static int ComparePdscFileNames(const std::string& pdsc1, const std::string& pdsc2);
 
   /**
    * @brief get pack display name
@@ -418,10 +433,26 @@ public:
 public:
 
   /**
+   * @brief get collection of packs required by this one
+   * @param map of id to RtePackage pointers to fill
+   * @param model pointer to RteModel to resolve requirement
+  */
+  void GetRequiredPacks(RtePackageMap& packs, RteModel* model) const;
+
+  /**
    * @brief get list of packs required by this one
    * @return list of pointers to RteItem objects with pack requirement information
   */
   virtual const Collection<RteItem*>& GetPackRequirements() const;
+
+ /**
+  * @brief resolve packs for specified requirements
+  * @param originatingItem RteItem* supplying requirements, can be NULL
+  * @param requirements collection of RteItem pointers representing requirements
+  * @param RtePackageMap to fill
+  * @param model pointer to RteModel to resolve requirement
+ */
+  static void ResolveRequiredPacks(const RteItem* originatingItem, const Collection<RteItem*>& requirements, RtePackageMap& packs, RteModel* model);
 
   /**
    * @brief get list of language requirements imposed by this pack
@@ -651,9 +682,22 @@ public:
   bool operator()(const std::string& a, const std::string& b) const { return RtePackage::ComparePackageIDs(a, b) < 0; }
 };
 
+/**
+ * @brief helper compare class for sorted pack maps
+ * compares common ID alpha-numerically in ascending order and version semantically in descending order
+*/
+class RtePdscComparator
+{
+public:
+  /**
+   * @brief compare two pdsc file names by their pack IDs
+   * @param a first absolute pdsc file name
+   * @param b second absolute pdsc file name
+   * @return true if first pack is 'less' than the second one
+  */
+  bool operator()(const std::string& a, const std::string& b) const { return RtePackage::ComparePdscFileNames(a, b) < 0; }
+};
 
-typedef std::map<std::string, RtePackage*, RtePackageComparator > RtePackageMap;
-typedef std::map<std::string, RteItem*, RtePackageComparator > RteItemPackageMap;
 
 /**
  * @brief class that replicates frequently used information of a pack object or a pack release.

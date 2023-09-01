@@ -396,6 +396,20 @@ bool ProjMgrWorker::LoadPacks(ContextItem& context) {
     context.rteActiveTarget->SetPackageFilter(filter);
     context.rteActiveTarget->UpdateFilterModel();
   }
+  RtePackageMap allRequiredPacks;
+  // check if all pack requirements are fulfilled
+  for (auto pack : m_loadedPacks) {
+    pack->GetRequiredPacks(allRequiredPacks, m_model);
+  }
+  for (auto [id, pack] : allRequiredPacks) {
+    if (!pack) {
+      string msg("context '");
+      msg += context.name;
+      msg += "': required pack '";
+      msg += id + "' is not loaded";
+      ProjMgrLogger::Warn(msg);
+    }
+  }
   return CheckRteErrors();
 }
 
@@ -864,7 +878,7 @@ void ProjMgrWorker::PrintConnectionsValidation(ConnectionsValidationResult resul
       }
       msg += "\n";
     }
-    
+
     if (!result.missedCollections.empty()) {
       msg += "provided combined connections not consumed:";
       for (const auto& missedCollection : result.missedCollections) {
@@ -877,7 +891,7 @@ void ProjMgrWorker::PrintConnectionsValidation(ConnectionsValidationResult resul
       }
       msg += "\n";
     }
-    
+
   }
 }
 
@@ -2802,7 +2816,7 @@ set<string> ProjMgrWorker::SplitArgs(const string& args, const string& delimiter
 }
 
 bool ProjMgrWorker::ListPacks(vector<string>&packs, bool missingPacks, const string& filter) {
-  set<string> packsSet;
+  map<string, string, RtePackageComparator> packsMap;
   list<string> pdscFiles;
   std::set<std::string> errMsgs;
   bool reqOk = true;
@@ -2814,7 +2828,8 @@ bool ProjMgrWorker::ListPacks(vector<string>&packs, bool missingPacks, const str
     GetRequiredPdscFiles(context, m_packRoot, errMsgs);
     // Get missing packs identifiers
     for (const auto& pack : context.missingPacks) {
-      packsSet.insert(RtePackage::ComposePackageID(pack.vendor, pack.name, pack.version));
+      string packID = RtePackage::ComposePackageID(pack.vendor, pack.name, pack.version);
+      packsMap[packID] = RteUtils::EMPTY_STRING;
     }
     if (!missingPacks) {
       if (context.packRequirements.size() > 0) {
@@ -2840,7 +2855,7 @@ bool ProjMgrWorker::ListPacks(vector<string>&packs, bool missingPacks, const str
       // Load packs and get loaded packs identifiers
       m_kernel->LoadAndInsertPacks(m_loadedPacks, pdscFiles);
       for (const auto& pack : m_loadedPacks) {
-        packsSet.insert(pack->GetID() + " (" + pack->GetPackageFileName() + ")");
+        packsMap[pack->GetID()] = pack->GetPackageFileName();
       }
     }
     if (errMsgs.size() > 0) {
@@ -2848,7 +2863,16 @@ bool ProjMgrWorker::ListPacks(vector<string>&packs, bool missingPacks, const str
       reqOk = false;
     }
   }
-  vector<string> packsVec(packsSet.begin(), packsSet.end());
+
+  vector<string> packsVec;
+  packsVec.reserve(packsMap.size());
+  for (auto [id, fileName] : packsMap) {
+    string s = id;
+    if (!fileName.empty()) {
+      s += " (" + fileName + ")";
+    }
+    packsVec.push_back(s);
+  }
   if (!filter.empty()) {
     vector<string> filteredPacks;
     ApplyFilter(packsVec, SplitArgs(filter), filteredPacks);

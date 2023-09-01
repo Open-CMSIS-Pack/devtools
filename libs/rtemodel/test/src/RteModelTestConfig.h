@@ -40,6 +40,7 @@ public:
   static const std::string localRepoDir;
   static const std::string RteTestM3;
   static const std::string RteTestM3_cprj;
+  static const std::string RteTestM3PackReq_cprj;
   static const std::string RteTestM3_ConfigFolder_cprj;
   static const std::string RteTestM3_PackPath_cprj;
   static const std::string RteTestM3_PackPath_MultiplePdscs_cprj;

@@ -66,6 +66,13 @@ public:
   */
    void Initialize() override;
 
+   /**
+    * @brief get all packs required in the specified target
+    * @param packs collection of package IDs mapped to RtePackage pointers to fill
+    * @param targetName target name
+   */
+   void GetRequiredPacks(RtePackageMap& packs, const std::string& targetName) const override;
+
 public:
   /**
    * @brief set toolchain for the project

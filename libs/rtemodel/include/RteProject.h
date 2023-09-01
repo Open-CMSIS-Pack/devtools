@@ -411,6 +411,13 @@ public:
   void GetUsedPacks(RtePackageMap& packs, const std::string& targetName) const;
 
   /**
+   * @brief get all packs required in the specified target
+   * @param packs collection of package IDs mapped to RtePackage pointers to fill
+   * @param targetName target name
+  */
+  virtual void GetRequiredPacks(RtePackageMap& packs, const std::string& targetName) const;
+
+  /**
    * @brief get collection of RteGpdscInfo objects
    * @return collection of gpdsc files mapped to associated RteGpdscInfo pointers
   */

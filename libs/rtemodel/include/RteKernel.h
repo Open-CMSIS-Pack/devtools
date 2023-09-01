@@ -174,6 +174,29 @@ public:
   static RteKernel* GetNullKernel() { return &NULL_RTE_KERNEL; }
 
   /**
+   * @brief get installed packs
+   * @param pdscFiles list of installed packs
+   * @param bool latest get only latest versions (default true)
+  */
+  bool GetInstalledPacks(std::list<std::string>& pdscFiles, bool latest = true);
+
+  /**
+   * @brief load and insert pack into global model
+   * @param packs list of loaded packages
+   * @param pdscFiles list of packs to be loaded
+   * @return true if executed successfully
+  */
+  bool LoadAndInsertPacks(std::list<RtePackage*>& packs, std::list<std::string>& pdscFiles);
+
+  /**
+   * @brief get list of installed pdsc files
+   * @param files collection to fill with absolute pdsc filenames;
+   * @param bool latest get only latest versions (default true)
+   * @param rtePath pack path
+  */
+  static void GetInstalledPdscFiles(std::list<std::string>& files, const std::string& rtePath, bool latest = true);
+
+  /**
    * @brief getter for pdsc file determined by pack ID, pack path and pack attributes
    * @param attributes pack attributes
    * @param rtePath pack path

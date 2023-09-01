@@ -26,9 +26,17 @@ using namespace std;
 TEST(RteModelTest, LoadPacks) {
 
   RteKernelSlim rteKernel;  // here just to instantiate XMLTree parser
+  list<string> latestFiles;
+  EXPECT_FALSE(rteKernel.GetInstalledPacks(latestFiles, true));
+
+  rteKernel.SetCmsisPackRoot(RteModelTestConfig::CMSIS_PACK_ROOT);
+
+  EXPECT_TRUE(rteKernel.GetInstalledPacks(latestFiles, true));
+  EXPECT_EQ(latestFiles.size(), 6);
+
   list<string> files;
-  RteFsUtils::GetPackageDescriptionFiles(files, RteModelTestConfig::CMSIS_PACK_ROOT, 3);
-  EXPECT_TRUE(files.size() > 0);
+  rteKernel.GetInstalledPacks(files, false);
+  EXPECT_EQ(files.size(), 7);
 
   RteModel* rteModel = rteKernel.GetGlobalModel();
   ASSERT_NE(rteModel, nullptr);
@@ -40,6 +48,18 @@ TEST(RteModelTest, LoadPacks) {
 
   bool rteModelValidateResult = rteModel->Validate();
   EXPECT_TRUE(rteModelValidateResult);
+
+  RtePackage* pack = rteModel->GetPackage("ARM::RteTest@0.1.0");
+  ASSERT_TRUE(pack != nullptr);
+  RtePackageMap requiredPacks;
+  pack->GetRequiredPacks(requiredPacks, rteModel);
+  EXPECT_EQ(requiredPacks.size(), 1);
+
+  // do not clean requiredPacks
+  pack = rteModel->GetPackage("ARM::RteTestRequired@1.0.0");
+  ASSERT_TRUE(pack != nullptr);
+  pack->GetRequiredPacks(requiredPacks, rteModel);
+  EXPECT_EQ(requiredPacks.size(), 4);
 
   RteDeviceItemAggregate* da = rteModel->GetDeviceAggregate("RteTest_ARMCM3", "ARM:82");
   ASSERT_NE(da, nullptr);
@@ -61,7 +81,7 @@ TEST(RteModelTest, LoadPacks) {
   Collection<RteItem*> mems;
   EXPECT_EQ(board->GetMemories(mems).size(), 2);
 
-  RtePackage* pack = board->GetPackage();
+  pack = board->GetPackage();
   ASSERT_TRUE(pack != nullptr);
   RtePackageInfo pi(pack);
   EXPECT_TRUE(pi.HasAttribute("description"));
@@ -361,6 +381,34 @@ TEST_F(RteModelPrjTest, LoadCprj) {
   ASSERT_NE(fi, nullptr);
   EXPECT_EQ(fi->GetInfoString(activeTarget->GetName()),
     "RTE/Device/RteTest_ARMCM3/system_ARMCM3.c@1.0.1 (update@1.2.2) from ARM::Device:Startup&RteTest Startup@2.0.3");
+
+  RtePackageMap usedPacks;
+  activeCprjProject->GetUsedPacks(usedPacks, activeTarget->GetName());
+  EXPECT_EQ(usedPacks.size(), 2);
+
+  RtePackageMap requiredPacks;
+  activeCprjProject->GetRequiredPacks(requiredPacks, activeTarget->GetName());
+  // requirements overlap => more than used
+  EXPECT_EQ(requiredPacks.size(), 3);
+}
+
+TEST_F(RteModelPrjTest, LoadCprjPacReq) {
+
+  RteKernelSlim rteKernel;
+  rteKernel.SetCmsisPackRoot(RteModelTestConfig::CMSIS_PACK_ROOT);
+  RteCprjProject* loadedCprjProject = rteKernel.LoadCprj(RteTestM3PackReq_cprj);
+  ASSERT_NE(loadedCprjProject, nullptr);
+  RteTarget* activeTarget = loadedCprjProject->GetActiveTarget();
+  ASSERT_NE(activeTarget, nullptr);
+
+  RtePackageMap usedPacks;
+  loadedCprjProject->GetUsedPacks(usedPacks, activeTarget->GetName());
+  EXPECT_EQ(usedPacks.size(), 2);
+
+  RtePackageMap requiredPacks;
+  loadedCprjProject->GetRequiredPacks(requiredPacks, activeTarget->GetName());
+  // requirements overlap and not all loaded => more than used
+  EXPECT_EQ(requiredPacks.size(), 6);
 }
 
 TEST_F(RteModelPrjTest, LoadCprj_NoRTEFileCreation) {

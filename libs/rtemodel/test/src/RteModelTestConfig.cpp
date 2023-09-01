@@ -22,6 +22,7 @@ const std::string RteModelTestConfig::prjsDir = "RteModelTestProjects";
 const std::string RteModelTestConfig::localRepoDir = "RteModelLocalRepo";
 const std::string RteModelTestConfig::RteTestM3 = "/RteTestM3";
 const std::string RteModelTestConfig::RteTestM3_cprj = prjsDir + RteTestM3 + "/RteTestM3.cprj";
+const std::string RteModelTestConfig::RteTestM3PackReq_cprj = prjsDir + RteTestM3 + "/RteTestM3_PackReq.cprj";
 const std::string RteModelTestConfig::RteTestM3_ConfigFolder_cprj = prjsDir + RteTestM3 + "/RteTestM3_ConfigFolder.cprj";
 const std::string RteModelTestConfig::RteTestM3_PackPath_cprj = prjsDir + RteTestM3 + "/RteTestM3_PackPath.cprj";
 const std::string RteModelTestConfig::RteTestM3_PackPath_MultiplePdscs_cprj = prjsDir + RteTestM3 + "/RteTestM3_PackPath_MultiplePdscs.cprj";
