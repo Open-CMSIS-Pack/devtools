@@ -11,7 +11,6 @@
   - [Impact to PDSC files and Packs](#impact-to-pdsc-files-and-packs)
   - [Other](#other)
 
-
 >**NOTE:**
 >
 > This document is a refined [Generator Proposal](https://github.com/Open-CMSIS-Pack/devtools/blob/main/tools/projmgr/docs/Manual/Generator%20\(Proposal\).md). It focuses on existing generators such as STM32CubeMX.
@@ -47,7 +46,7 @@ CubeMX generates:
 
 ## Project Scenarios
 
-The following in an analysis of the different project scenarios, again exemplified with STM32CubeMX. 
+The following in an analysis of the different project scenarios, again exemplified with STM32CubeMX.
 Note that the directory structure can be controlled already using the key [`generators:`](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/docs/YML-Input-Format.md#generators). Hence the following is just a proposal for changing default locations.
 
 ### Single-Core
@@ -65,7 +64,7 @@ All generator files belong to only one `cproject.yml` or `clayer.yml` file.  A p
 
 Generator files belong to `csolution.yml` or to a `clayer-idx.yml` file.
 
-- When all components with **GenID** are in `cproject.yml` files: 
+- When all components with **GenID** are in `cproject.yml` files:
   - Base Directory: `$SolutionDir()$/generated.$GenID$`
   - multiple `cgen.yml` files: `$ProjectDir()$/RTE/Device/$Dname$`
 - When all components with **GenID** are in `clayer.yml`:
@@ -76,7 +75,7 @@ Generator files belong to `csolution.yml` or to a `clayer-idx.yml` file.
 >
 > - New Access Sequences are introduced: $GenID$, $LayerDir()$, $LayerIdxDir()$.
 > - For using layers with Multi-Core and TrustZone projects
-> - When components with **GenID** are intermixed (some in `*.clayer.yml``, some in `*.cproject.yml`) an error is displayed with the request to use explicit [`generators:`](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/docs/YML-Input-Format.md#generators) settings.
+> - When components with **GenID** are intermixed (some in `*.clayer.yml`, some in `*.cproject.yml`) an error is displayed with the request to use explicit [`generators:`](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/docs/YML-Input-Format.md#generators) settings.
 
 ```txt
 error: <context> requires explicit generator base directory, use key generator: 
@@ -123,7 +122,7 @@ The following changes might be implemented in the PDSC files:
 - Element [`<component>`](https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/pdsc_components_pg.html#element_component)
   - Attribute `generator` checks if a `cgen.yml` or `*.gpdsc` file is present.
   - Add new attribute `generator-type` with option `single` (default) and `multi` to define the [project scenarios](Project Scenarios). As a `<component>` can have conditions, it is possible to use a `single` structure when for example TrustZone is disabled.
-  - Allow that a <component> with a <generator> can be empty (has no source files).
+  - Allow that a `<component>` with a `<generator>` can be empty (has no source files).
 
 **Example component for CubeMX:**
 
