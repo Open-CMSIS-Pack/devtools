@@ -31,37 +31,32 @@ protected:
   virtual ~ProjMgrUnitTests() {}
 
   void SetUp() { m_context.clear(); };
-  void GetFilesInTree(const string& dir, set<string>& files);
-  void CompareFileTree(const string& dir1, const string& dir2);
-
-  string UpdateTestSolutionFile(const string& projectFilePath);
-};
-
-string ProjMgrUnitTests::UpdateTestSolutionFile(const string& projectFilePath) {
-  string csolutionFile = testinput_folder + "/TestSolution/test_validate_project.csolution.yml";
-  YAML::Node root = YAML::LoadFile(csolutionFile);
-  root["solution"]["projects"][0]["project"] = projectFilePath;
-  std::ofstream fout(csolutionFile);
-  fout << root;
-  fout.close();
-  return csolutionFile;
-}
-
-void ProjMgrUnitTests::GetFilesInTree(const string& dir, set<string>& files) {
-  error_code ec;
-  if (RteFsUtils::Exists(dir)) {
-    for (auto& p : fs::recursive_directory_iterator(dir, ec)) {
-      files.insert(p.path().filename().generic_string());
+  void GetFilesInTree(const string& dir, set<string>& files) {
+    error_code ec;
+    if (RteFsUtils::Exists(dir)) {
+      for (auto& p : fs::recursive_directory_iterator(dir, ec)) {
+        files.insert(p.path().filename().generic_string());
+      }
     }
   }
-}
 
-void ProjMgrUnitTests::CompareFileTree(const string& dir1, const string& dir2) {
-  set<string> tree1, tree2;
-  GetFilesInTree(dir1, tree1);
-  GetFilesInTree(dir2, tree2);
-  EXPECT_EQ(tree1, tree2);
-}
+  void CompareFileTree(const string& dir1, const string& dir2) {
+    set<string> tree1, tree2;
+    GetFilesInTree(dir1, tree1);
+    GetFilesInTree(dir2, tree2);
+    EXPECT_EQ(tree1, tree2);
+  }
+
+  string UpdateTestSolutionFile(const string& projectFilePath) {
+    string csolutionFile = testinput_folder + "/TestSolution/test_validate_project.csolution.yml";
+    YAML::Node root = YAML::LoadFile(csolutionFile);
+    root["solution"]["projects"][0]["project"] = projectFilePath;
+    std::ofstream fout(csolutionFile);
+    fout << root;
+    fout.close();
+    return csolutionFile;
+  }
+};
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_EmptyOptions) {
   char* argv[1];
@@ -79,31 +74,62 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Version) {
   EXPECT_EQ(0, RunProjMgr(2, argv, 0));
 }
 
+TEST_F(ProjMgrUnitTests, RunProjMgr_Packs_Required_Warning) {
+  StdStreamRedirect streamRedirect;
+  const string csolution = testinput_folder + "/TestSolution/test_pack_requirements.csolution.yml";
+  char* argv[9];
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  argv[6] = (char*)"-c";
+  argv[7] = (char*)"test1.Debug+CM0";
+  EXPECT_EQ(1, RunProjMgr(8, argv, 0)); //fails because DFP is not loaded
+
+  auto errStr = streamRedirect.GetErrorString();
+
+  auto pos = errStr.find("required pack 'ARM::RteTestRequiredRecursive@1.0.0:2.0.0' is not loaded");
+  EXPECT_TRUE(pos != string::npos);
+  pos = errStr.find("required pack 'ARM::RteTest_DFP@0.1.1:0.2.0' is not loaded");
+  EXPECT_TRUE(pos != string::npos);
+  pos = errStr.find("required pack 'ARM::RteTest@0.1.0:0.2.0' is not loaded");
+  EXPECT_FALSE(pos != string::npos);
+
+  streamRedirect.ClearStringStreams();
+  argv[7] = (char*)"test1.Release+CM0";
+  EXPECT_EQ(0, RunProjMgr(8, argv, 0)); // succeeds regardless of warnings
+
+  errStr = streamRedirect.GetErrorString();
+  pos = errStr.find("required pack 'ARM::RteTest@0.1.0:0.2.0' is not loaded");
+  EXPECT_TRUE(pos != string::npos);
+  pos = errStr.find("required pack 'ARM::RteTestRequiredRecursive@1.0.0:2.0.0' is not loaded");
+  EXPECT_TRUE(pos != string::npos);
+  pos = errStr.find("required pack 'ARM::RteTest_DFP@0.1.1:0.2.0' is not loaded");
+  EXPECT_FALSE(pos != string::npos);
+}
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks) {
-  char* argv[7];
   map<std::pair<string, string>, string> testInputs = {
-    {{"TestSolution/test.csolution.yml", "test1.Debug+CM0"},
-      "ARM::RteTest_DFP@0.2.0 \\(.*\\)\n" },
+    {{"TestSolution/test.csolution.yml", "test1.Debug+CM0"}, "ARM::RteTest_DFP@0.2.0" },
       // packs are specified only with vendor
-    {{"TestSolution/test_filtered_pack_selection.csolution.yml", "test1.Debug+CM0"},
-      "ARM::RteTest@0.1.0 \\(.*\\)\nARM::RteTestBoard@0.1.0 \\(.*\\)\nARM::RteTestGenerator@0.1.0 \\(.*\\)\nARM::RteTest_DFP@0.2.0 \\(.*\\)\n"},
+    {{"TestSolution/test_filtered_pack_selection.csolution.yml", "test1.Debug+CM0"},  "*"},
       // packs are specified with wildcards
-    {{"TestSolution/test_filtered_pack_selection.csolution.yml", "test1.Release+CM0"},
-      "ARM::RteTest_DFP@0.2.0 \\(.*\\)\n"},
+    {{"TestSolution/test_filtered_pack_selection.csolution.yml", "test1.Release+CM0"}, "ARM::RteTest_DFP@0.2.0"},
       // packs are not specified
-    {{"TestSolution/test_no_packs.csolution.yml", "test1.Debug+CM0"},
-      "ARM::RteTest@0.1.0 \\(.*\\)\nARM::RteTestBoard@0.1.0 \\(.*\\)\nARM::RteTestGenerator@0.1.0 \\(.*\\)\nARM::RteTest_DFP@0.2.0 \\(.*\\)\n"},
+    {{"TestSolution/test_no_packs.csolution.yml", "test1.Debug+CM0"}, "*"},
       // packs are fully specified
-    {{"TestSolution/test_pack_selection.csolution.yml", "test2.Debug+CM0"},
-      "ARM::RteTest_DFP@0.2.0 \\(.*\\)\n"}
+    {{"TestSolution/test_pack_selection.csolution.yml", "test2.Debug+CM0"}, "ARM::RteTest_DFP@0.2.0"}
   };
+  auto pdscFiles = ProjMgrTestEnv::GetInstalledPdscFiles(true);
 
   // positive tests
+  char* argv[7];
   argv[1] = (char*)"list";
   argv[2] = (char*)"packs";
   argv[3] = (char*)"--solution";
-  for (const auto& [input, expected] : testInputs) {
+
+  for (const auto& [input, ids] : testInputs) {
     StdStreamRedirect streamRedirect;
     const string& csolution = testinput_folder + "/" + input.first;
     argv[4] = (char*)csolution.c_str();
@@ -112,7 +138,9 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks) {
     EXPECT_EQ(0, RunProjMgr(7, argv, 0));
 
     auto outStr = streamRedirect.GetOutString();
-    EXPECT_TRUE(regex_match(outStr, regex(expected.c_str()))) << "error listing pack for " << csolution << endl;
+    string expected = ProjMgrTestEnv::GetFilteredPacksString(pdscFiles, ids);
+
+    EXPECT_TRUE(outStr == expected) << "error listing pack for " << csolution << endl;
   }
 
   map<std::pair<string, string>, string> testFalseInputs = {
@@ -139,14 +167,15 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks) {
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks_1) {
   char* argv[3];
   StdStreamRedirect streamRedirect;
-  const string& expected = "ARM::RteTest@0.1.0 \\(.*\\)\nARM::RteTestBoard@0.1.0 \\(.*\\)\nARM::RteTestGenerator@0.1.0 \\(.*\\)\nARM::RteTest_DFP@0.2.0 \\(.*\\)\n";
+  auto pdscFiles = ProjMgrTestEnv::GetInstalledPdscFiles(true);
+  string expected = ProjMgrTestEnv::GetFilteredPacksString(pdscFiles, "*");
   // list packs
   argv[1] = (char*)"list";
   argv[2] = (char*)"packs";
   EXPECT_EQ(0, RunProjMgr(3, argv, 0));
 
   auto outStr = streamRedirect.GetOutString();
-  EXPECT_TRUE(regex_match(outStr, regex(expected.c_str())));
+  EXPECT_EQ(outStr, expected);
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks_project) {
@@ -187,39 +216,32 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks_MultiContext) {
   argv[6] = (char*)"test2.*";
   EXPECT_EQ(0, RunProjMgr(7, argv, 0));
 
+  auto pdscFiles = ProjMgrTestEnv::GetInstalledPdscFiles(true);
+  string expected = ProjMgrTestEnv::GetFilteredPacksString(pdscFiles, "ARM::RteTestGenerator@0.1.0;ARM::RteTest_DFP@0.2.0");
+
   auto outStr = streamRedirect.GetOutString();
-  EXPECT_TRUE(regex_match(outStr.c_str(), regex("ARM::RteTestGenerator@0.1.0 \\(.*\\)\nARM::RteTest_DFP@0.2.0 \\(.*\\)\n")));
+  EXPECT_EQ(outStr, expected);
 
   argv[7] = (char*)"-l";
   argv[8] = (char*)"latest";
   streamRedirect.ClearStringStreams();
   EXPECT_EQ(0, RunProjMgr(9, argv, 0));
 
-  const string& expectedLatest = "\
-ARM::RteTest@0.1.0 \\(.*\\)\n\
-ARM::RteTestBoard@0.1.0 \\(.*\\)\n\
-ARM::RteTestGenerator@0.1.0 \\(.*\\)\n\
-ARM::RteTest_DFP@0.2.0 \\(.*\\)\n\
-";
+  string expectedLatest = ProjMgrTestEnv::GetFilteredPacksString(pdscFiles, "*");
 
   outStr = streamRedirect.GetOutString();
-  EXPECT_TRUE(regex_match(outStr, regex(expectedLatest)));
+  EXPECT_EQ(outStr, expectedLatest);
 
   argv[7] = (char*)"-l";
   argv[8] = (char*)"all";
   streamRedirect.ClearStringStreams();
   EXPECT_EQ(0, RunProjMgr(9, argv, 0));
 
-  const string& expectedAll = "\
-ARM::RteTest@0.1.0 \\(.*\\)\n\
-ARM::RteTestBoard@0.1.0 \\(.*\\)\n\
-ARM::RteTestGenerator@0.1.0 \\(.*\\)\n\
-ARM::RteTest_DFP@0.1.1 \\(.*\\)\n\
-ARM::RteTest_DFP@0.2.0 \\(.*\\)\n\
-";
+  pdscFiles = ProjMgrTestEnv::GetInstalledPdscFiles(false);
+  string expectedAll = ProjMgrTestEnv::GetFilteredPacksString(pdscFiles, "*");
 
   outStr = streamRedirect.GetOutString();
-  EXPECT_TRUE(regex_match(outStr, regex(expectedAll)));
+  EXPECT_EQ(outStr, expectedAll);
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacksAll) {
@@ -231,16 +253,11 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacksAll) {
   argv[4] = (char*)"all";
   EXPECT_EQ(0, RunProjMgr(5, argv, 0));
 
-  const string& expectedAll = "\
-ARM::RteTest@0.1.0 \\(.*\\)\n\
-ARM::RteTestBoard@0.1.0 \\(.*\\)\n\
-ARM::RteTestGenerator@0.1.0 \\(.*\\)\n\
-ARM::RteTest_DFP@0.1.1 \\(.*\\)\n\
-ARM::RteTest_DFP@0.2.0 \\(.*\\)\n\
-";
+  auto pdscFiles = ProjMgrTestEnv::GetInstalledPdscFiles(false);
+  string expectedAll = ProjMgrTestEnv::GetFilteredPacksString(pdscFiles, "*");
 
   auto outStr = streamRedirect.GetOutString();
-  EXPECT_TRUE(regex_match(outStr, regex(expectedAll)));
+  EXPECT_EQ(outStr, expectedAll);
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacksMissing) {
@@ -265,7 +282,7 @@ TEST_F(ProjMgrUnitTests, ListPacks_ProjectAndLayer) {
   char* argv[5];
   StdStreamRedirect streamRedirect;
   const string& csolution = testinput_folder + "/TestLayers/packs.csolution.yml";
-  const string& expected = "ARM::RteTest@0.1.0 \\(.*\\)\nARM::RteTestBoard@0.1.0 \\(.*\\)\nARM::RteTest_DFP@0.2.0 \\(.*\\)\n";
+
   // list packs
   argv[1] = (char*)"list";
   argv[2] = (char*)"packs";
@@ -273,8 +290,11 @@ TEST_F(ProjMgrUnitTests, ListPacks_ProjectAndLayer) {
   argv[4] = (char*)csolution.c_str();
   EXPECT_EQ(0, RunProjMgr(5, argv, 0));
 
+  auto pdscFiles = ProjMgrTestEnv::GetInstalledPdscFiles(false);
+  string expected = ProjMgrTestEnv::GetFilteredPacksString(pdscFiles, "ARM::RteTest@0.1.0;ARM::RteTestBoard@0.1.0;ARM::RteTest_DFP@0.2.0");
+
   auto outStr = streamRedirect.GetOutString();
-  EXPECT_TRUE(regex_match(outStr, regex(expected.c_str())));
+  EXPECT_EQ(outStr, expected);
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListBoards) {
@@ -1474,10 +1494,14 @@ TEST_F(ProjMgrUnitTests, ListPacks) {
   EXPECT_TRUE(m_worker.ParseContextSelection({}));
   m_worker.SetLoadPacksPolicy(LoadPacksPolicy::ALL);
   EXPECT_TRUE(m_worker.ListPacks(packs, false, "RteTest"));
-  auto packIt = packs.begin();
-  for (const auto& expected : expectedPacks) {
-    EXPECT_TRUE(regex_match(*packIt++, regex(expected)));
+  string allPacks;
+  for (auto& pack : packs) {
+    allPacks += pack + "\n";
   }
+
+  auto pdscFiles = ProjMgrTestEnv::GetInstalledPdscFiles(false);
+  string expected = ProjMgrTestEnv::GetFilteredPacksString(pdscFiles, "*");
+  EXPECT_EQ(allPacks, expected);
 }
 
 TEST_F(ProjMgrUnitTests, ListPacksLatest) {
@@ -1491,10 +1515,13 @@ TEST_F(ProjMgrUnitTests, ListPacksLatest) {
   EXPECT_TRUE(m_worker.ParseContextSelection({}));
   m_worker.SetLoadPacksPolicy(LoadPacksPolicy::LATEST);
   EXPECT_TRUE(m_worker.ListPacks(packs, false, "RteTest"));
-  auto packIt = packs.begin();
-  for (const auto& expected : expectedPacks) {
-    EXPECT_TRUE(regex_match(*packIt++, regex(expected)));
+  string latestPacks;
+  for (auto& pack : packs) {
+    latestPacks += pack + "\n";
   }
+  auto pdscFiles = ProjMgrTestEnv::GetInstalledPdscFiles(true);
+  string expected = ProjMgrTestEnv::GetFilteredPacksString(pdscFiles, "*");
+  EXPECT_EQ(latestPacks, expected);
 }
 
 TEST_F(ProjMgrUnitTests, ListBoards) {

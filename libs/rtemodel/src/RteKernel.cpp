@@ -305,12 +305,6 @@ bool RteKernel::LoadRequiredPdscFiles(CprjFile* cprjFile)
 
       msg += packRequirement->GetPackageID(true);
 
-      const string& name = packRequirement->GetAttribute("name");
-      const string& vendor = packRequirement->GetAttribute("vendor");
-      const string& version = packRequirement->GetAttribute("version");
-      msg += vendor + "." + name;
-      if (!version.empty())
-        msg += "." + version;
       GetRteCallback()->Err("R821", msg, cprjFile->GetPackageFileName());
       // TODO: install missing pack (not needed for web version)
       return false;
@@ -332,7 +326,85 @@ bool RteKernel::LoadRequiredPdscFiles(CprjFile* cprjFile)
   return true;
 }
 
+bool RteKernel::GetInstalledPacks(std::list<std::string>& pdscFiles, bool latest)
+{
+   auto& cmsisPackRoot = GetCmsisPackRoot();
+   if (cmsisPackRoot.empty()) {
+     return false;
+   }
+   RteKernel::GetInstalledPdscFiles(pdscFiles, GetCmsisPackRoot(), latest);
 
+  // Find pdsc files from local repository
+  list<string> localPdscUrls;
+  if (!GetLocalPacksUrls(GetCmsisPackRoot(), localPdscUrls)) {
+    return false;
+  }
+  for (const auto& localPdscUrl : localPdscUrls) {
+    list<string> localPdscFiles;
+    RteFsUtils::GetPackageDescriptionFiles(localPdscFiles, localPdscUrl, 1);
+    // Insert local pdsc files first
+    pdscFiles.insert(pdscFiles.begin(), localPdscFiles.begin(), localPdscFiles.end());
+  }
+  return true;
+}
+
+bool RteKernel::LoadAndInsertPacks(std::list<RtePackage*>& packs, std::list<std::string>& pdscFiles) {
+  RteGlobalModel* globalModel = GetGlobalModel();
+  if (!globalModel) {
+    return false;
+  }
+  std::list<RtePackage*> newPacks;
+  pdscFiles.unique();
+  for (const auto& pdscFile : pdscFiles) {
+    RtePackage* pack = LoadPack(pdscFile);
+    if (!pack) {
+      return false;
+    }
+    bool loaded = false;
+    for (const auto& loadedPack : packs) {
+      if (pack->GetPackageID() == loadedPack->GetPackageID()) {
+        loaded = true;
+        break;
+      }
+    }
+    if (!loaded) {
+      newPacks.push_back(pack);
+    } else {
+      delete pack;
+    }
+  }
+
+  globalModel->InsertPacks(newPacks);
+
+  // Track only packs that were actually inserted into the model
+  packs.clear();
+  for (const auto& [_, pack] : globalModel->GetPackages()) {
+    packs.push_back(pack);
+  }
+  return true;
+}
+
+
+void RteKernel::GetInstalledPdscFiles(list<string>& files, const std::string& rtePath, bool latest)
+{
+  if (!latest) {
+    RteFsUtils::GetPackageDescriptionFiles(files, rtePath, 3);
+    files.sort(RtePdscComparator());
+  } else {
+    list<string> allFiles;
+    RteFsUtils::GetPackageDescriptionFiles(allFiles, rtePath, 3);
+    allFiles.sort(RtePdscComparator());
+    string commonId;
+    for (auto& f : allFiles) {
+      string id = RtePackage::CommonIdFromId(RtePackage::PackIdFromPath(f));
+      if (id == commonId) {
+        continue; // skip packs with the same common ID
+      }
+      commonId = id;
+      files.push_back(f);
+    }
+  }
+}
 string RteKernel::GetInstalledPdscFile(const XmlItem& attributes, const string& rtePath, string& packId)
 {
   const string& name = attributes.GetAttribute("name");
@@ -347,7 +419,6 @@ string RteKernel::GetInstalledPdscFile(const XmlItem& attributes, const string& 
     packId = RtePackage::ComposePackageID(vendor, name, installedVersion);
     return path + '/' + installedVersion + '/' + vendor + '.' + name + ".pdsc";
   }
-
   return RteUtils::EMPTY_STRING;
 }
 

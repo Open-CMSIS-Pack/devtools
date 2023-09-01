@@ -282,6 +282,11 @@ int RtePackage::ComparePackageIDs(const string& a, const string& b)
   return VersionCmp::Compare(verB, verA); // reverse comparison!
 }
 
+int RtePackage::ComparePdscFileNames(const std::string& pdsc1, const std::string& pdsc2)
+{
+  return ComparePackageIDs(PackIdFromPath(pdsc1), PackIdFromPath(pdsc2));
+}
+
 RteItem* RtePackage::GetRelease(const string& version) const
 {
   if (m_releases == nullptr) {
@@ -416,6 +421,28 @@ XMLTreeElement* RtePackage::CreatePackXmlTreeElement(XMLTreeElement* parent) con
   }
   return package;
 }
+
+void RtePackage::GetRequiredPacks(RtePackageMap& packs, RteModel* model) const
+{
+  RtePackage::ResolveRequiredPacks(this, GetPackRequirements(), packs, model);
+}
+
+void RtePackage::ResolveRequiredPacks(const RteItem* originatingItem,
+        const Collection<RteItem*>& requirements, RtePackageMap& packs, RteModel* model)
+{
+  for (auto item : requirements) {
+    string id = RtePackage::GetPackageIDfromAttributes(*item);
+    if (packs.find(id) != packs.end()) {
+      continue; // already in the map
+    }
+    RtePackage* pack = model ? model->GetPackage(*item) : nullptr;
+    packs[id] = pack;
+    if (pack && pack != originatingItem) {
+      pack->GetRequiredPacks(packs, model);
+    }
+  }
+}
+
 
 const Collection<RteItem*>& RtePackage::GetPackRequirements() const
 {

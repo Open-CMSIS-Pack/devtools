@@ -550,7 +550,7 @@ TEST_F(ProjMgrWorkerUnitTests, LoadPacksNoPackage) {
   ContextItem context;
   EXPECT_TRUE(LoadPacks(context));
   // by default latest packs available should be loaded
-  EXPECT_EQ(4, m_loadedPacks.size());
+  EXPECT_EQ(6, m_loadedPacks.size());
 }
 
 TEST_F(ProjMgrWorkerUnitTests, LoadFilteredPack_1) {

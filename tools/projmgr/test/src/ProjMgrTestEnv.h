@@ -9,6 +9,8 @@
 
 #include "gtest/gtest.h"
 
+#include <list>
+
 extern std::string testoutput_folder;
 extern std::string testinput_folder;
 extern std::string testcmsispack_folder;
@@ -42,7 +44,10 @@ public:
   void SetUp() override;
   void TearDown() override;
   static void CompareFile(const std::string& file1, const std::string& file2);
-
+  static const std::string& GetCmsisPackRoot();
+  static std::list<std::string> GetInstalledPdscFiles(bool bLatestsOnly = false);
+  static std::string GetFilteredPacksString(const std::list<std::string>& pdscFiles, const std::string& includeIds);
+  static bool FilterId(const std::string& id, const std::string& includeIds);
 };
 
 #endif  // PROJMGRTESTENV_H

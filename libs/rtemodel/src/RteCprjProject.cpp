@@ -134,6 +134,17 @@ void RteCprjProject::Initialize()
   }
 }
 
+void RteCprjProject::GetRequiredPacks(RtePackageMap& packs, const std::string& targetName) const
+{
+  RteTarget* t = GetTarget(targetName);
+  if (!t)
+    return;
+  CprjFile* cprjFile = GetCprjFile();
+
+  RtePackage::ResolveRequiredPacks(nullptr, cprjFile->GetPackRequirements(), packs, t->GetFilteredModel());
+  RteProject::GetRequiredPacks(packs, targetName);
+}
+
 
 void RteCprjProject::FillToolchainAttributes(XmlItem &attributes) const{
   if (m_toolchain == "AC5" || m_toolchain == "AC6") {

@@ -2493,16 +2493,30 @@ void RteProject::GetUsedPacks(RtePackageMap& packs, const string& targetName) co
     }
   }
 
-
-  for (auto it = m_components.begin(); it != m_components.end(); it++) {
-    RteComponentInstance* ci = it->second;
+  for (auto [_, ci] : m_components) {
     if (!ci->IsUsedByTarget(targetName))
       continue;
     RtePackage* pack = ci->GetEffectivePackage(targetName);
     if (pack) {
       const string& id = pack->GetID();
-      packs[id] = pack;
+      if (packs.find(id) == packs.end()) {
+        packs[id] = pack;
+      }
     }
+  }
+}
+
+void RteProject::GetRequiredPacks(RtePackageMap& packs, const std::string& targetName) const
+{
+  RteTarget* t = GetTarget(targetName);
+  if (!t)
+    return;
+  RtePackageMap usedPacks;
+  GetUsedPacks(usedPacks, targetName); // get all used packs
+  // add required packs
+  RteModel* model = t->GetFilteredModel();
+  for (auto [_, pack] : usedPacks) {
+    pack->GetRequiredPacks(packs, model);
   }
 }
 

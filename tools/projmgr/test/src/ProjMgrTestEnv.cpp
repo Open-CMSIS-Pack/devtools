@@ -5,10 +5,13 @@
  */
 
 #include "ProjMgrTestEnv.h"
+#include "RteKernel.h"
 #include "RteFsUtils.h"
+
 #include "CrossPlatformUtils.h"
 
 #include <fstream>
+#include <sstream>
 
 using namespace std;
 
@@ -155,7 +158,44 @@ void ProjMgrTestEnv::CompareFile(const string& file1, const string& file2) {
   f2.close();
 }
 
+const std::string& ProjMgrTestEnv::GetCmsisPackRoot()
+{
+  return testcmsispack_folder;
+}
 
+std::list<std::string> ProjMgrTestEnv::GetInstalledPdscFiles( bool bLatestsOnly)
+{
+  list<string> files;
+  RteKernel::GetInstalledPdscFiles(files, GetCmsisPackRoot(), bLatestsOnly);
+  return files;
+}
+
+std::string ProjMgrTestEnv::GetFilteredPacksString(const std::list<std::string>& pdscFiles, const std::string& includeIds)
+{
+  stringstream ss;
+  for (auto& f : pdscFiles) {
+    string id = RtePackage::PackIdFromPath(f);
+    if(FilterId(id, includeIds)) {
+      ss << id << " (" << f << ")\n";
+    }
+  }
+  return ss.str();
+}
+
+bool ProjMgrTestEnv::FilterId(const std::string& id, const std::string& includeIds)
+{
+  if (!includeIds.empty()) {
+    list<string> segments;
+    RteUtils::SplitString(segments, includeIds, ';');
+    for (auto& s : segments) {
+      if (WildCards::Match(id, s)) {
+        return true;
+      }
+    }
+    return false;
+  }
+  return true;
+}
 
 int main(int argc, char **argv) {
   try {
