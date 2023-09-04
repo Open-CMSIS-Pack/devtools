@@ -46,7 +46,7 @@ CubeMX/CubeMXBridge generates:
 
 ## Project Scenarios
 
-The following in an analysis of the different project scenarios, again exemplified with STM32CubeMX.
+The following is an analysis of the different project scenarios, again exemplified with STM32CubeMX.
 Note that the directory structure can be controlled already using the key [`generators:`](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/docs/YML-Input-Format.md#generators). Hence the following is just a proposal for default locations.
 
 ### Single-Core
@@ -100,10 +100,10 @@ generators:
       - arg: <access-sequence>
     dirs:
       - generator-type: single    # for single-core project
-        work-dir: $GenBaseDir()$/generated.STCube/$Dname$
+        work-dir: $GenBaseDir()$/generated.STM32CubeMX
         gen-dir: ./RTE/Device/$Dname$
       - generator-type: multi     # for multi-core or TrustZone enabled projects
-        work-dir: $GenBaseDir()$/generated.STCube/$Dname$
+        work-dir: $GenBaseDir()$/generated.STM32CubeMX
         gen-dir: ./RTE/Device/$Dname$
   - generator: MCUxpresso
      :
@@ -123,15 +123,15 @@ The following changes might be implemented in the PDSC files:
 **Example component for CubeMX:**
 
 ```xml
-  <component Cclass="Device" Cgroup="STM32CubeMX" generator="CubeMX">
+  <component Cclass="Device" Cgroup="STM32CubeMX" generator="STM32CubeMX">
     <description>Run STM32CubeMX for device configuration</description>
   </component>
 ```
 
 The proposed changes allow to use:
 
-- Standard STM32CubeMX device and board firmware packs. There is special work in the Packs required and reformatting of the STM32CubeMX firmware is not longer required.
-- It is possible to start from a `device` or `board` which utilizes the feature set of CubeMX.
+- Standard STM32CubeMX device and board firmware packs. Except adding the STM32CubeMX component shown above, there is **no special work** in the Packs required. Specifically the reformatting of the STM32CubeMX firmware in components is not longer required.
+- It is possible to start from a `device` or `board` which utilizes the feature set of STM32CubeMX.
 
 ## Other
 
