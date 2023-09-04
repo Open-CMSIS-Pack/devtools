@@ -3783,3 +3783,25 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_context_replacement) {
   EXPECT_EQ(string::npos, outStr.find("test2.Debug+CM0.cprj - info csolution: file generated successfully"));
   EXPECT_EQ(string::npos, outStr.find("test2.Debug+CM3.cprj - info csolution: file generated successfully"));
 }
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_NonUniqueMapKeys) {
+  StdStreamRedirect streamRedirect;
+  char* argv[6];
+  const string& csolutionFile = testinput_folder + "/TestSolution/non-unique-map-keys.csolution.yml";
+
+  // verify schema check
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolutionFile.c_str();
+  argv[3] = (char*)"-o";
+  argv[4] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(1, RunProjMgr(5, argv, 0));
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find("error csolution: schema check failed, verify syntax"));
+
+  // run with schema check disabled
+  streamRedirect.ClearStringStreams();
+  argv[5] = (char*)"-n";
+  EXPECT_EQ(1, RunProjMgr(6, argv, 0));
+  errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find("error csolution: map keys must be unique"));
+}

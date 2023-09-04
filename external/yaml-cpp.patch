@@ -1,0 +1,113 @@
+diff --git a/include/yaml-cpp/exceptions.h b/include/yaml-cpp/exceptions.h
+index f6b2602..a4c5537 100644
+--- a/include/yaml-cpp/exceptions.h
++++ b/include/yaml-cpp/exceptions.h
+@@ -87,6 +87,7 @@ const char* const INVALID_ANCHOR = "invalid anchor";
+ const char* const INVALID_ALIAS = "invalid alias";
+ const char* const INVALID_TAG = "invalid tag";
+ const char* const BAD_FILE = "bad file";
++const char* const NON_UNIQUE_MAP_KEY = "map keys must be unique";
+ 
+ template <typename T>
+ inline const std::string KEY_NOT_FOUND_WITH_KEY(
+@@ -298,6 +299,16 @@ class YAML_CPP_API BadFile : public Exception {
+   BadFile(const BadFile&) = default;
+   ~BadFile() YAML_CPP_NOEXCEPT override;
+ };
++
++class YAML_CPP_API NonUniqueMapKey : public RepresentationException {
++ public:
++  template <typename Key>
++  NonUniqueMapKey(const Mark& mark_, const Key& key)
++      : RepresentationException(mark_, ErrorMsg::NON_UNIQUE_MAP_KEY) {}
++  NonUniqueMapKey(const NonUniqueMapKey&) = default;
++  ~NonUniqueMapKey() YAML_CPP_NOEXCEPT override;
++};
++
+ }  // namespace YAML
+ 
+ #endif  // EXCEPTIONS_H_62B23520_7C8E_11DE_8A39_0800200C9A66
+diff --git a/include/yaml-cpp/node/detail/impl.h b/include/yaml-cpp/node/detail/impl.h
+index b38038d..9138fe6 100644
+--- a/include/yaml-cpp/node/detail/impl.h
++++ b/include/yaml-cpp/node/detail/impl.h
+@@ -218,7 +218,7 @@ inline void node_data::force_insert(const Key& key, const Value& value,
+ 
+   node& k = convert_to_node(key, pMemory);
+   node& v = convert_to_node(value, pMemory);
+-  insert_map_pair(k, v);
++  insert_map_pair(k, v, true);
+ }
+ 
+ template <typename T>
+diff --git a/include/yaml-cpp/node/detail/node_data.h b/include/yaml-cpp/node/detail/node_data.h
+index 07cf81a..ed7d9cd 100644
+--- a/include/yaml-cpp/node/detail/node_data.h
++++ b/include/yaml-cpp/node/detail/node_data.h
+@@ -90,7 +90,7 @@ class YAML_CPP_API node_data {
+   void reset_sequence();
+   void reset_map();
+ 
+-  void insert_map_pair(node& key, node& value);
++  void insert_map_pair(node& key, node& value, bool force = false);
+   void convert_to_map(const shared_memory_holder& pMemory);
+   void convert_sequence_to_map(const shared_memory_holder& pMemory);
+ 
+diff --git a/src/exceptions.cpp b/src/exceptions.cpp
+index 43a7976..af99fd6 100644
+--- a/src/exceptions.cpp
++++ b/src/exceptions.cpp
+@@ -17,4 +17,5 @@ BadPushback::~BadPushback() YAML_CPP_NOEXCEPT = default;
+ BadInsert::~BadInsert() YAML_CPP_NOEXCEPT = default;
+ EmitterException::~EmitterException() YAML_CPP_NOEXCEPT = default;
+ BadFile::~BadFile() YAML_CPP_NOEXCEPT = default;
++NonUniqueMapKey::~NonUniqueMapKey() YAML_CPP_NOEXCEPT = default;
+ }  // namespace YAML
+diff --git a/src/exp.h b/src/exp.h
+index c8837f0..5db3ee4 100644
+--- a/src/exp.h
++++ b/src/exp.h
+@@ -118,7 +118,7 @@ inline const RegEx& ValueInJSONFlow() {
+   return e;
+ }
+ inline const RegEx& Ampersand() {
+-  static const RegEx e = RegEx('&');
++  static const RegEx e = RegEx("^&| &");
+   return e;
+ }
+ inline const RegEx Comment() {
+diff --git a/src/node_data.cpp b/src/node_data.cpp
+index 8f5422a..23ad892 100644
+--- a/src/node_data.cpp
++++ b/src/node_data.cpp
+@@ -279,7 +279,12 @@ void node_data::reset_map() {
+   m_undefinedPairs.clear();
+ }
+ 
+-void node_data::insert_map_pair(node& key, node& value) {
++void node_data::insert_map_pair(node& key, node& value, bool force) {
++  if (!force && !key.scalar().empty())
++    for (const auto& mapEntry : m_map)
++      if (mapEntry.first->scalar() == key.scalar())
++        throw NonUniqueMapKey(m_mark, key);
++
+   m_map.emplace_back(&key, &value);
+ 
+   if (!key.is_defined() || !value.is_defined())
+diff --git a/test/integration/load_node_test.cpp b/test/integration/load_node_test.cpp
+index 9d0c790..37355aa 100644
+--- a/test/integration/load_node_test.cpp
++++ b/test/integration/load_node_test.cpp
+@@ -360,5 +360,9 @@ TEST(LoadNodeTest, BlockCRNLEncoded) {
+   EXPECT_EQ(1, node["followup"].as<int>());
+ }
+ 
++TEST(LoadNodeTest, NonUniqueMapKey) {
++  EXPECT_THROW(Load("{a: A, b: B, a: A}"), NonUniqueMapKey);
++}
++
+ }  // namespace
+ }  // namespace YAML
+-- 
+2.34.1.windows.1
+
