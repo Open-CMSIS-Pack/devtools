@@ -63,7 +63,7 @@ jobs:
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
     steps:
       - name: Checkout devtools
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: true
 
@@ -94,7 +94,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Checkout devtools
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: true
           fetch-depth: ${{ github.event_name == 'push' && '0' || '1' }}
@@ -138,7 +138,7 @@ jobs:
         run: tar -cvjf /tmp/doc.tbz2 .
         working-directory: ./build/tools/buildmgr/docs/doxygen/output/html/
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         if: ${{ github.event_name == 'push' || github.event_name == 'release' }}
         with:
           ref: gh-pages
@@ -192,7 +192,7 @@ jobs:
             python3
 
       - name: Checkout devtools
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Create distribution folders
         run: |
@@ -329,7 +329,7 @@ jobs:
         run: choco install -y unzip wget ninja
 
       - name: Checkout devtools
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: true
 
@@ -484,7 +484,7 @@ jobs:
             lcov
 
       - name: Checkout devtools
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: recursive
 
