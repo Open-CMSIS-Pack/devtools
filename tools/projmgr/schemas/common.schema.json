@@ -748,7 +748,7 @@
         "compiler":          { "$ref": "#/definitions/CompilerType" },
         "device":            { "$ref": "#/definitions/DeviceType" },
         "processor":         { "$ref": "#/definitions/BuildProcessorType" },
-        "packs":             { "$ref": "#/definitions/PacksType" },
+        "packs":             { "$ref": "#/definitions/BuildPacksType" },
         "misc":              { "$ref": "#/definitions/MiscType" },
         "define":            { "$ref": "#/definitions/DefinesType" },
         "add-path":          { "$ref": "#/definitions/AddpathsType" },
@@ -838,30 +838,64 @@
         }
       }
     },
+    "BuildPacksType": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/BuildPackType" }
+    },
+    "BuildPackType": {
+      "type": "object",
+      "properties": {
+        "pack": { "$ref": "#/definitions/PackID" },
+        "path": { "type": "string", "description": "Path to software pack" }
+      },
+      "required": [ "pack", "path" ],
+      "additionalProperties": false
+    },
     "PacksType": {
       "type": "array",
       "uniqueItems": true,
-      "items": { "$ref": "#/definitions/PackType" }
+      "items": { 
+        "oneOf": [
+          {"$ref": "#/definitions/PackType" },
+          {"$ref": "#/definitions/PackPathType" }
+        ]
+      }
     },
     "PackID": {
       "type": "string",
       "pattern": "^([\\w .-]+)((::[\\w .*-]+)(@(>=)?(\\d+\\.\\d+\\.\\d+((\\+|\\-)[\\w.+-]+)?))?)?$",
       "description": "Name of a required Software Pack in the format Vendor [:: Pack [@[>=] version]]"
     },
+    "VersionlessPackID": {
+      "type": "string",
+      "pattern": "^([\\w .-]+)(::[\\w .*-]+)?$",
+      "description": "Name of a required Software Pack in the format Vendor [:: Pack]"
+    },
     "PackType": {
       "type": "object",
       "properties": {
         "pack": { "$ref": "#/definitions/PackID" },
-        "path": {
-          "type": "string",
-          "description": "Path to software pack"
-        },
         "for-context":     { "$ref": "#/definitions/ForContext" },
         "not-for-context": { "$ref": "#/definitions/NotForContext" }
       },
       "allOf": [
         { "$ref": "#/definitions/TypeListMutualExclusion" },
         { "required": [ "pack" ] }
+      ],
+      "additionalProperties": false
+    },
+    "PackPathType": {
+      "type": "object",
+      "properties": {
+        "pack": { "$ref": "#/definitions/VersionlessPackID" },
+        "path": { "type": "string", "description": "Path to software pack" },
+        "for-context":     { "$ref": "#/definitions/ForContext" },
+        "not-for-context": { "$ref": "#/definitions/NotForContext" }
+      },
+      "allOf": [
+        { "$ref": "#/definitions/TypeListMutualExclusion" },
+        { "required": [ "pack", "path" ] }
       ],
       "additionalProperties": false
     },

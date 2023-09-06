@@ -6,7 +6,7 @@ solution:
 
   packs:
     - pack: ARM::RteTest_DFP@0.2.0
-    - pack: ARM::RteTestRecursive@0.1.0
+    - pack: ARM::RteTestRecursive
       path: ../InvalidPacks/ARM/RteTestRecursive/0.1.0
 
   target-types:

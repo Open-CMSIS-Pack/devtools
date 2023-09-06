@@ -71,7 +71,7 @@ solution:
         - ./path/CM3/to-be-removed
 
   packs:
-    - pack: ARM::RteTest_DFP@0.2.0
+    - pack: ARM::RteTest_DFP
       path: ../SolutionSpecificPack/Device
 
   projects:

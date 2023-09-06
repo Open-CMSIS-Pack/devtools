@@ -2416,9 +2416,30 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Local_Pack) {
   EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   // Check generated CPRJ
- ProjMgrTestEnv:: CompareFile(testoutput_folder + "/pack_path+CM0.cprj",
+  ProjMgrTestEnv:: CompareFile(testoutput_folder + "/pack_path+CM0.cprj",
     testinput_folder + "/TestSolution/ref/pack_path+CM0.cprj");
+}
 
+TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Local_Pack_Invalid) {
+  StdStreamRedirect streamRedirect;
+  char* argv[6];
+
+  // verify schema check
+  const string& csolution = testinput_folder + "/TestSolution/pack_path_invalid.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"-o";
+  argv[4] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(1, RunProjMgr(5, argv, 0));
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find("error csolution: schema check failed, verify syntax"));
+
+  // run with schema check disabled
+  streamRedirect.ClearStringStreams();
+  argv[5] = (char*)"-n";
+  EXPECT_EQ(1, RunProjMgr(6, argv, 0));
+  errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find("error csolution: pack 'ARM::RteTest_DFP' specified with 'path' must not have a version"));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Local_Multiple_Pack_Files) {
