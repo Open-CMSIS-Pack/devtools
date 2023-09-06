@@ -282,6 +282,10 @@ bool ProjMgrWorker::GetRequiredPdscFiles(ContextItem& context, const std::string
         errMsgs.insert("no match found for pack filter: " + filterStr);
       }
     } else {
+      if (!reqVersion.empty()) {
+        errMsgs.insert("pack '" + (pack.vendor.empty() ? "" : pack.vendor + "::") + pack.name
+          + "' specified with 'path' must not have a version");
+      }
       string packPath = packItem.path;
       RteFsUtils::NormalizePath(packPath, context.csolution->directory + "/");
       if (!RteFsUtils::Exists(packPath)) {

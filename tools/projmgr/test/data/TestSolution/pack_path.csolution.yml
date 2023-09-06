@@ -6,7 +6,7 @@ solution:
       device: RteTest_ARMCM0
 
   packs:
-    - pack: ARM::RteTest_DFP@0.2.0
+    - pack: ARM::RteTest_DFP
       path: ../SolutionSpecificPack
 
   projects:
