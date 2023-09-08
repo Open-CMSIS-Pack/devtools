@@ -61,7 +61,7 @@ CubeMX requires a generator output directory (that stores the *.ioc project alon
 >
 > The generator output directory can be controlled at `csolution` level with [`generators:`](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/docs/YML-Input-Format.md#generators).
 
-To integrate the generated files in a `csolution` based project a `<genID>.cgen.yml` is generated. As the generator is associated with one `generator component``, the location of this file is in the [`RTE` directory](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/docs/build-overview.md#rte-directory-structure) of the related `Cclass`.  The `<generator-id>.cgen.yml` should use relative paths, which requires that the relationship to the generator output directory is somewhat defined.
+To integrate the generated files in a `csolution` based project a `<generator-id>.cgen.yml` is generated. As the generator is associated with one `generator component`, the location of this file is in the [`RTE` directory](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/docs/build-overview.md#rte-directory-structure) of the related `Cclass`.  The `<generator-id>.cgen.yml` should use relative paths, which requires that the relationship to the generator output directory is somewhat defined.
 
 > **Note:**
 >
@@ -104,7 +104,7 @@ The `generator component` belongs to `clayer.yml`. A fixed directory structure i
 
 ## Generator Start via `generator component`
 
-This proposal requires that only one `generator component` with the same `<genrator-id>` is defined. There is more work required to allow multiple components using the same `<genrator-id>`. For the first csolution implementation no checks for consistency are required, but a warning could be issued when on attempt to run a generator with multiple `generator component` definitions.
+This proposal requires that only one `generator component` with the same `<genrator-id>` is defined. There is more work required to allow multiple components using the same `<genrator-id>`. For the first `csolution` implementation no checks for consistency are required, but a warning could be issued when on attempt to run a generator with multiple `generator component` definitions.
 
 **Example component for CubeMX:**
 
@@ -139,7 +139,7 @@ generator:
 
 > **Note:**
 >
-> A reason for making this configurable is to support backwards compatiblity with uVision
+> A reason for making output directories configurable is to support backwards compatibility with uVision.
 
 The format of `*.generator.yml` supports the following keys:
 
@@ -153,13 +153,14 @@ Key              | Description
 
 `output:`        | Description
 :----------------|:------------------
-`base-dir:`      | Base directory location when not overwritten by `generator:` in the csolution.yml file. `RTE` uses the RTE directory, `solution` uses the base directory of the csolution.yml file (or `..\clayer.`sub-dir:`       | Additional directory extension
+`base-dir:`      | Base directory location when not overwritten by `generator:` in the csolution.yml file. `RTE` uses the RTE directory, `solution` uses the base directory of the csolution.yml file (or `..\clayer).
+`sub-dir:`       | Additional directory extension; could be used to achieve backward compatibility with uVision.
 
 The argument to the Bridge Program is the filename of `<csolution-name>.cbuild-gen-idx.yml`.
 
 ## Additions to `.cbuild-gen-idx.yml` and `.cbuild-idx.yml`
 
-It might make that `csolution`` lists the following information for the user and the bridge program:
+It might make that `csolution` lists the following information for the user and the bridge program:
 
 - `project-type:` with values `single-core`, `multi-core`, `trustzone`
 - `generator:` with directory structure
@@ -192,6 +193,10 @@ It might make that `csolution`` lists the following information for the user and
         - path: .\nosecure-project\RTE\Device\STM32U585AIIx
           for-project-part: non-secure
 ```
+
+> **Note:**
+>
+> Providing the `generator:` information in `.cbuild-idx.yml` gives the user a protocol file that shows how generators are used in the `csolution` project.
 
 ## Impact to PDSC files and Packs
 
