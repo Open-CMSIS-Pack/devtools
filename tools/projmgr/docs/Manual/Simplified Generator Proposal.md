@@ -78,7 +78,7 @@ The `generator component` belongs to `cproject.yml`:
 - `CubeMX.cgen.yml` file: `$ProjectDir()$/RTE/Device/$Dname$`
 - Generator output files: `$ProjectDir()$/RTE/Device/$Dname$/generated/CubeMX`
 
-The `generator component` belongs to `clayer.yml` (<layer-dir> refers to the directory that contains the `clayer.yml` file):
+The `generator component` belongs to `clayer.yml` (`<layer-dir>` refers to the directory that contains the `clayer.yml` file):
 
 - `CubeMX.cgen.yml` file: `<layer-dir>/RTE/Device/$Dname$`
 - Generator output files: `<layer-dir>/RTE/Device/$Dname$/generated/CubeMX`
@@ -93,11 +93,13 @@ The `generator component` belongs to `cproject.yml`:
 - Generator output files: `$SolutionDir()$/RTE/Device/$Dname$/generated/CubeMX`
 
 The `generator component` belongs to `clayer.yml`. A fixed directory structure is assumed with:
-```
+
+```txt
 <layer-base-dir>            # stores multiple layers
 <layer-base-dir>/layer1     # stores multiple layer1
 <layer-base-dir>/layer2     # stores multiple layer2
 ```
+
 > **Note:**
 >
 > The directory structure for multiple related layers needs potentially more work.
