@@ -27,6 +27,7 @@ add_executable(cbuildgen ${SOURCE_FILES} ${HEADER_FILES})
 
 if("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
   set(EXT "-${CPU_ARCH}")
+  target_sources(cbuildgen PRIVATE src/cbuildgen.manifest)
 elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
   set(EXT ".lin-${CPU_ARCH}")
 elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")

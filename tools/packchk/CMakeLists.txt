@@ -46,6 +46,10 @@ if(MSVC)
 	target_sources(packchk PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/PackChk.rc)
 endif()
 
+if("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
+  target_sources(packchk PRIVATE src/packchk.manifest)
+endif()
+
 set_property(TARGET packchk PROPERTY
   MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
