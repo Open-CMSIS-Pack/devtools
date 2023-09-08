@@ -49,6 +49,9 @@ else()
   endif()
   target_link_libraries(projmgr projmgrlib)
   target_include_directories(projmgr PRIVATE include)
+  if("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
+    target_sources(projmgr PRIVATE src/csolution.manifest)
+  endif()
 endif()
 
 # projmgr test

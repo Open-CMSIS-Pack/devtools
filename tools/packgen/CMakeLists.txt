@@ -20,6 +20,11 @@ add_executable(packgen src/PackGenMain.cpp include/PackGen.h)
 if(MSVC)
   target_link_options(packgen PUBLIC "$<$<CONFIG:Debug>:/SAFESEH:NO>")
 endif(MSVC)
+
+if("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
+  target_sources(packgen PRIVATE src/packgen.manifest)
+endif()
+
 set_property(TARGET packgen PROPERTY
   MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR

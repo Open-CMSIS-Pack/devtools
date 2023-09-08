@@ -43,6 +43,10 @@ if(MSVC)
 	target_sources(svdconv PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/SVDConv.rc)
 endif()
 
+if("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
+  target_sources(svdconv PRIVATE src/svdconv.manifest)
+endif()
+
 set_property(TARGET svdconv PROPERTY
   MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
