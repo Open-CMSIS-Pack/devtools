@@ -155,7 +155,7 @@ Key              | Description
 
 `output:`        | Description
 :----------------|:------------------
-`base-dir:`      | Base directory location when not overwritten by `generator:` in the csolution.yml file. `RTE` uses the RTE directory, `solution` uses the base directory of the csolution.yml file (or `..\clayer).
+`base-dir:`      | Base directory location when not overwritten by `generator:` in the csolution.yml file. `RTE` uses the RTE directory, `solution` uses the base directory of the csolution.yml file (or `..\clayer`).
 `sub-dir:`       | Additional directory extension; could be used to achieve backward compatibility with uVision.
 
 The argument to the Bridge Program is the filename of `<csolution-name>.cbuild-gen-idx.yml`.
