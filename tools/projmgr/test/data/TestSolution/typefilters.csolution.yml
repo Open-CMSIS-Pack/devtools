@@ -1,0 +1,24 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schemas/csolution.schema.json
+
+solution:
+
+  build-types:
+    - type: Debug
+      compiler: AC6
+      context-map:
+        - project1.MappedDebug
+    - type: Release
+      compiler: AC6
+
+  target-types:
+    - type: Target
+      device: RteTest_ARMCM3
+      context-map:
+        - project1+MappedTarget
+
+  projects:
+    - project: typefilters.cproject.yml
+
+  packs:
+    - pack: ARM::RteTest
+    - pack: ARM::RteTest_DFP

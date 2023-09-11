@@ -219,6 +219,20 @@ struct LinkerContextItem {
 };
 
 /**
+ * @brief context type item containing
+ *        list of all build types including mapped ones
+ *        list of all target types including mapped ones
+ *        map of missing build types
+ *        map of missing target types
+*/
+struct ContextTypesItem {
+  StrVec allBuildTypes;
+  StrVec allTargetTypes;
+  BoolMap missingBuildTypes;
+  BoolMap missingTargetTypes;
+};
+
+/**
  * @brief project context item containing
  *        pointer to csolution,
  *        pointer to cproject,
@@ -580,12 +594,24 @@ public:
    * @return string pack root directory
   */
   std::string GetPackRoot(void);
+
+  /**
+   * @brief retrieve all context types, including mapped ones
+  */
+  void RetrieveAllContextTypes(void);
+
+  /**
+   * @brief print missing filters
+  */
+  void PrintMissingFilters(void);
+
 protected:
   ProjMgrParser* m_parser = nullptr;
   ProjMgrKernel* m_kernel = nullptr;
   RteGlobalModel* m_model = nullptr;
   std::list<RtePackage*> m_loadedPacks;
   std::vector<ToolchainItem> m_toolchains;
+  StrVec m_missingToolchains;
   StrVec m_envVars;
   std::vector<std::string> m_ymlOrderedContexts;
   std::map<std::string, ContextItem> m_contexts;
@@ -596,6 +622,7 @@ protected:
   std::string m_compilerRoot;
   std::string m_selectedToolchain;
   LoadPacksPolicy m_loadPacksPolicy;
+  ContextTypesItem m_types;
   bool m_checkSchema;
   bool m_verbose;
   bool m_debug;
@@ -696,6 +723,8 @@ protected:
   bool GetGeneratorDir(const RteGenerator* generator, ContextItem& context, const std::string& layer, std::string& genDir);
   bool ParseContextLayers(ContextItem& context);
   bool AddPackRequirements(ContextItem& context, const std::vector<PackItem> packRequirements);
+  void CheckTypeFilterSpelling(const TypeFilter& typeFilter);
+  void CheckCompilerFilterSpelling(const std::string& compiler);
 };
 
 #endif  // PROJMGRWORKER_H

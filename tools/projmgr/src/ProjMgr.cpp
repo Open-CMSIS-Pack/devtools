@@ -427,6 +427,9 @@ bool ProjMgr::PopulateContexts(void) {
     }
   }
 
+  // Retrieve all context types
+  m_worker.RetrieveAllContextTypes();
+
   return true;
 }
 
@@ -464,6 +467,8 @@ bool ProjMgr::RunConfigure(bool printConfig) {
       m_processedContexts.push_back(&contextItem);
     }
   }
+  // Print warnings for missing filters
+  m_worker.PrintMissingFilters();
   if (m_verbose) {
     // Print config files info
     vector<string> configFiles;
