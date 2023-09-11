@@ -305,13 +305,18 @@ RteApi* RteComponent::GetApi(RteTarget* target, bool matchVersion) const
 
 RteGenerator* RteComponent::GetGenerator() const
 {
+  RteGenerator* generator = nullptr;
   const string& generatorName = GetGeneratorName();
   if (!generatorName.empty()) {
     RtePackage* pack = GetPackage();
-    if (pack)
-      return pack->GetGenerator(generatorName);
+    if (pack) {
+      generator = pack->GetGenerator(generatorName);
+    }
+    if (!generator && GetCallback()) {
+      generator = GetCallback()->GetGenerator(generatorName);
+    }
   }
-  return nullptr;
+  return generator;
 }
 
 string RteComponent::GetGpdscFile(RteTarget* target) const

@@ -2779,7 +2779,8 @@ TEST_F(ProjMgrUnitTests, ListComponents_MultiplePackSelection) {
     "ARM::Device:RteTest Generated Component:RteTestNoDryRun@1.1.0 (ARM::RteTestGenerator@0.1.0)",
     "ARM::Device:RteTest Generated Component:RteTestSimple@1.1.0 (ARM::RteTestGenerator@0.1.0)",
     "ARM::Device:RteTest Generated Component:RteTestWithKey@1.1.0 (ARM::RteTestGenerator@0.1.0)",
-    "ARM::Device:RteTest Generated Component:RteTestNoExe@1.1.0 (ARM::RteTestGenerator@0.1.0)"
+    "ARM::Device:RteTest Generated Component:RteTestNoExe@1.1.0 (ARM::RteTestGenerator@0.1.0)",
+    "ARM::RteTestGenerator:Check Global Generator@0.9.0 (ARM::RteTestGenerator@0.1.0)"
   };
   vector<string> components;
   m_csolutionFile = testinput_folder + "/TestSolution/pack_contexts.csolution.yml";

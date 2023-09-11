@@ -39,6 +39,7 @@ static const unsigned int RTE_MB_ICONEXCLAMATION = 0x00000030;
 static const unsigned int RTE_MB_ICONASTERISK    = 0x00000040;
 
 class RteKernel;
+class RteGenerator;
 /**
  * @brief Class to allow RTE to call application or API functions, defaults do nothing
 */
@@ -179,6 +180,12 @@ public:
     MergeFiles(curFile, newFile);
   };
 
+  /**
+   * @brief obtains globally defined generator
+   * @param id generator id
+   * @return pointer to RteGenerator if found, nullptr otherwise
+  */
+  virtual RteGenerator* GetGenerator(const std::string& id) const { return nullptr; }
 
   /**
    * @brief get global RteCallback object
