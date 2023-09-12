@@ -23,6 +23,30 @@
 
 using namespace std;
 
+
+class ExtGenRteCallback : public RteCallback
+{
+
+public:
+  ExtGenRteCallback() :m_pExtGenerator(nullptr) {
+    m_pExtGenerator = new RteGenerator(nullptr);
+    m_pExtGenerator->SetTag("generator");
+    m_pExtGenerator->AddAttribute("id", "RteTestExternalGenerator");
+    m_pExtGenerator->Construct();
+  }
+  ~ExtGenRteCallback() override{
+    delete m_pExtGenerator;
+  }
+  RteGenerator* GetGenerator(const std::string& id) const override {
+     if (m_pExtGenerator->GetID() == "RteTestExternalGenerator") {
+       return m_pExtGenerator;
+     }
+     return nullptr;
+   }
+
+  RteGenerator* m_pExtGenerator;
+};
+
 TEST(RteModelTest, LoadPacks) {
 
   RteKernelSlim rteKernel;  // here just to instantiate XMLTree parser
@@ -156,6 +180,23 @@ TEST(RteModelTest, LoadPacks) {
   c = rteModel->FindComponents(item, components);
   EXPECT_EQ(components.size(), 0);
   EXPECT_FALSE(c != nullptr);
+
+  item.SetAttributes({ {"Cclass","RteTestGenerator" },
+                       {"Cgroup", "Check Global Generator" },
+                       {"Cversion","0.9.0"}});
+  packInfo.SetPackId("ARM::RteTestGenerator");
+  item.SetPackageAttributes(packInfo);
+  components.clear();
+  c = rteModel->FindComponents(item, components);
+  ASSERT_TRUE(c != nullptr);
+  RteGenerator* gen = c->GetGenerator();
+  EXPECT_FALSE(gen != nullptr);
+
+  ExtGenRteCallback extGenRteCallback;
+  rteKernel.SetRteCallback(&extGenRteCallback);
+  gen = c->GetGenerator();
+  EXPECT_TRUE(gen != nullptr);
+  EXPECT_TRUE(gen == extGenRteCallback.m_pExtGenerator);
 }
 
 class RteModelPrjTest : public RteModelTestConfig

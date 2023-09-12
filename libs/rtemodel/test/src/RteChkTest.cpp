@@ -30,9 +30,9 @@ Generic: 3\n\
 DFP: 3\n\
 BSP: 1\n\
 \n\
-Components: 52\n\
+Components: 53\n\
 From generic packs: 31\n\
-From DFP: 21\n\
+From DFP: 22\n\
 From BSP: 0\n\
 \n\
 Devices: 10\n\
@@ -51,7 +51,7 @@ completed\n";
   int res = rteChk.RunCheckRte();
   EXPECT_EQ(res, 0);
   EXPECT_EQ(rteChk.GetPackCount(), 7);
-  EXPECT_EQ(rteChk.GetComponentCount(), 52);
+  EXPECT_EQ(rteChk.GetComponentCount(), 53);
   EXPECT_EQ(rteChk.GetDeviceCount(), 10);
   EXPECT_EQ(rteChk.GetBoardCount(), 13);
 

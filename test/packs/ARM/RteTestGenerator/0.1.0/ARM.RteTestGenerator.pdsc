@@ -184,6 +184,10 @@
     <component generator="RteTestGeneratorNoDryRun" Cclass="Device" Cgroup="RteTest Generated Component" Csub="RteTestNoDryRun" Cversion="1.1.0">
       <description>Configuration via RteTest script</description>
     </component>
+    <component generator="RteTestExternalGenerator" Cclass="RteTestGenerator" Cgroup="Check Global Generator" Cversion="0.9.0">
+      <description>Component addressing external</description>
+    </component>
+
     <bundle Cbundle="RteTestBundle" Cclass="Device" Cversion="1.0.0">
       <component generator="RteTestGeneratorIdentifier" Cgroup="RteTest Generated Component" Cversion="1.1.0">
         <description>Configuration via RteTest script</description>
