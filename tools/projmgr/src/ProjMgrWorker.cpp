@@ -2649,11 +2649,22 @@ bool ProjMgrWorker::CheckCompiler(const vector<string>& forCompiler, const strin
     return true;
   }
   for (const auto& compiler : forCompiler) {
+    CheckCompilerFilterSpelling(compiler);
     if (ProjMgrUtils::AreCompilersCompatible(compiler, selectedCompiler)) {
       return true;
     }
   }
   return false;
+}
+
+void ProjMgrWorker::CheckCompilerFilterSpelling(const string& compiler) {
+  const string compilerName = RteUtils::GetPrefix(compiler, '@');
+  for (const auto& registeredToolchain : m_toolchains) {
+    if (registeredToolchain.name == compilerName) {
+      return;
+    }
+  }
+  ProjMgrUtils::PushBackUniquely(m_missingToolchains, compilerName);
 }
 
 bool ProjMgrWorker::CheckType(const TypeFilter& typeFilter, const vector<TypePair>& typeVec) {
@@ -2709,7 +2720,67 @@ bool ProjMgrWorker::CheckContextFilters(const TypeFilter& typeFilter, const Cont
       }
     }
   }
+
+  CheckTypeFilterSpelling(typeFilter);
+
   return CheckType(typeFilter, typeVec);
+}
+
+void ProjMgrWorker::RetrieveAllContextTypes(void) {
+  const auto& csolution = m_parser->GetCsolution();
+  for (const auto& [buildType, item] : csolution.buildTypes) {
+    ProjMgrUtils::PushBackUniquely(m_types.allBuildTypes, buildType);
+    for (const auto& mappedContext : item.contextMap) {
+      if (!mappedContext.build.empty()) {
+        ProjMgrUtils::PushBackUniquely(m_types.allBuildTypes, mappedContext.build);
+      }
+      if (!mappedContext.target.empty()) {
+        ProjMgrUtils::PushBackUniquely(m_types.allTargetTypes, mappedContext.target);
+      }
+    }
+  }
+  for (const auto& [targetType, item] : csolution.targetTypes) {
+    ProjMgrUtils::PushBackUniquely(m_types.allTargetTypes, targetType);
+    for (const auto& mappedContext : item.build.contextMap) {
+      if (!mappedContext.build.empty()) {
+        ProjMgrUtils::PushBackUniquely(m_types.allBuildTypes, mappedContext.build);
+      }
+      if (!mappedContext.target.empty()) {
+        ProjMgrUtils::PushBackUniquely(m_types.allTargetTypes, mappedContext.target);
+      }
+    }
+  }
+}
+
+void ProjMgrWorker::CheckTypeFilterSpelling(const TypeFilter& typeFilter) {
+  for (const auto& typePairs : { typeFilter.include, typeFilter.exclude }) {
+    for (const auto& typePair : typePairs) {
+      if (!typePair.build.empty() &&
+        find(m_types.allBuildTypes.begin(), m_types.allBuildTypes.end(), typePair.build) == m_types.allBuildTypes.end()) {
+        bool misspelled = find(m_types.allTargetTypes.begin(), m_types.allTargetTypes.end(), typePair.build) != m_types.allTargetTypes.end();
+        m_types.missingBuildTypes[typePair.build] = misspelled;
+      }
+      if (!typePair.target.empty() &&
+        find(m_types.allTargetTypes.begin(), m_types.allTargetTypes.end(), typePair.target) == m_types.allTargetTypes.end()) {
+        bool misspelled = find(m_types.allBuildTypes.begin(), m_types.allBuildTypes.end(), typePair.target) != m_types.allBuildTypes.end();
+        m_types.missingTargetTypes[typePair.target] = misspelled;
+      }
+    }
+  }
+}
+
+void ProjMgrWorker::PrintMissingFilters(void) {
+  for (const auto& [type, misspelled] : m_types.missingBuildTypes) {
+    ProjMgrLogger::Warn("build-type '." + type + "' does not exist in solution" +
+      (misspelled ? ", did you mean '+" + type + "'?" : ""));
+  }
+  for (const auto& [type, misspelled] : m_types.missingTargetTypes) {
+    ProjMgrLogger::Warn("target-type '+" + type + "' does not exist in solution" +
+      (misspelled ? ", did you mean '." + type + "'?" : ""));
+  }
+  for (const auto& toolchain : m_missingToolchains) {
+    ProjMgrLogger::Warn("compiler '+" + toolchain + "' is not registered or is not supported");
+  }
 }
 
 bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGpdsc, bool resolveDependencies, bool updateRteFiles) {

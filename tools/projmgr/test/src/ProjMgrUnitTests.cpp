@@ -3827,3 +3827,27 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_NonUniqueMapKeys) {
   errStr = streamRedirect.GetErrorString();
   EXPECT_NE(string::npos, errStr.find("error csolution: map keys must be unique"));
 }
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_MissingFilters) {
+  char* argv[6];
+  StdStreamRedirect streamRedirect;
+  const string& csolution = testinput_folder + "/TestSolution/typefilters.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"-o";
+  argv[4] = (char*)testoutput_folder.c_str();
+  argv[5] = (char*)"-n";
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+
+  const string expected = "\
+warning csolution: build-type '.MappedTarget' does not exist in solution, did you mean '+MappedTarget'?\n\
+warning csolution: build-type '.Target' does not exist in solution, did you mean '+Target'?\n\
+warning csolution: build-type '.UnknownBuild' does not exist in solution\n\
+warning csolution: target-type '+Debug' does not exist in solution, did you mean '.Debug'?\n\
+warning csolution: target-type '+MappedDebug' does not exist in solution, did you mean '.MappedDebug'?\n\
+warning csolution: target-type '+UnknownTarget' does not exist in solution\n\
+warning csolution: compiler '+Ac6' is not registered or is not supported\n\
+";
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_TRUE(errStr.find(expected) != string::npos);
+}

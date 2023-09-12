@@ -1,0 +1,19 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schemas/cproject.schema.json
+
+project:
+
+  groups:
+    - group: Source
+      files:
+        - file: ./MappedDebug.c
+          for-context: +MappedDebug
+        - file: ./MappedTarget.c
+          for-context: .MappedTarget
+        - file: ./Release.c
+          not-for-context: .Target
+        - file: ./Target.c
+          not-for-context: +Debug
+        - file: ./Unknown.c
+          for-context: .UnknownBuild+UnknownTarget
+        - file: ./AC6.c
+          for-compiler: Ac6@>=6.18.0
