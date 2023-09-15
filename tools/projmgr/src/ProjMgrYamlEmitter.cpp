@@ -29,19 +29,20 @@ ProjMgrYamlEmitter::~ProjMgrYamlEmitter(void) {
 class ProjMgrYamlBase {
 protected:
   friend class ProjMgrYamlEmitter;
-  ProjMgrYamlBase();
+  ProjMgrYamlBase(bool useAbsolutePaths = false);
   void SetNodeValue(YAML::Node node, const string& value);
   void SetNodeValue(YAML::Node node, const vector<string>& vec);
   const string FormatPath(const string& original, const string& directory);
   bool CompareFile(const string& filename, const YAML::Node& rootNode);
   bool CompareNodes(const YAML::Node& lhs, const YAML::Node& rhs);
   bool WriteFile(YAML::Node& rootNode, const std::string& filename);
+  const bool m_useAbsolutePaths;
 };
 
 class ProjMgrYamlCbuild : public ProjMgrYamlBase {
 private:
   friend class ProjMgrYamlEmitter;
-  ProjMgrYamlCbuild(YAML::Node node, const ContextItem* context);
+  ProjMgrYamlCbuild(YAML::Node node, const ContextItem* context, const RteGenerator* generator);
   void SetContextNode(YAML::Node node, const ContextItem* context);
   void SetComponentsNode(YAML::Node node, const ContextItem* context);
   void SetComponentFilesNode(YAML::Node node, const ContextItem* context, const string& componentId);
@@ -60,6 +61,7 @@ private:
   void SetMiscNode(YAML::Node miscNode, const MiscItem& misc);
   void SetMiscNode(YAML::Node miscNode, const vector<MiscItem>& misc);
   void SetDefineNode(YAML::Node node, const vector<string>& vec);
+  const RteGenerator* m_generator;
 };
 
 class ProjMgrYamlCbuildIdx : public ProjMgrYamlBase {
@@ -68,11 +70,11 @@ private:
   ProjMgrYamlCbuildIdx(YAML::Node node, const vector<ContextItem*> processedContexts, ProjMgrParser& parser, const string& directory);
 };
 
-ProjMgrYamlBase::ProjMgrYamlBase() {
+ProjMgrYamlBase::ProjMgrYamlBase(bool useAbsolutePaths) : m_useAbsolutePaths(useAbsolutePaths) {
 }
 
 ProjMgrYamlCbuildIdx::ProjMgrYamlCbuildIdx(YAML::Node node, const vector<ContextItem*> processedContexts, ProjMgrParser& parser, const string& directory) :
-  ProjMgrYamlBase()
+  ProjMgrYamlBase(false)
 {
   error_code ec;
   SetNodeValue(node[YAML_GENERATED_BY], ORIGINAL_FILENAME + string(" version ") + VERSION_STRING);
@@ -123,8 +125,9 @@ ProjMgrYamlCbuildIdx::ProjMgrYamlCbuildIdx(YAML::Node node, const vector<Context
   }
 }
 
-ProjMgrYamlCbuild::ProjMgrYamlCbuild(YAML::Node node, const ContextItem* context) :
-  ProjMgrYamlBase()
+ProjMgrYamlCbuild::ProjMgrYamlCbuild(YAML::Node node, const ContextItem* context, const RteGenerator* generator) :
+  ProjMgrYamlBase(generator != nullptr),
+  m_generator(generator)
 {
   if (context) {
     SetContextNode(node, context);
@@ -133,6 +136,13 @@ ProjMgrYamlCbuild::ProjMgrYamlCbuild(YAML::Node node, const ContextItem* context
 
 void ProjMgrYamlCbuild::SetContextNode(YAML::Node contextNode, const ContextItem* context) {
   SetNodeValue(contextNode[YAML_GENERATED_BY], ORIGINAL_FILENAME + string(" version ") + VERSION_STRING);
+
+  if (m_generator) {
+    YAML::Node node = contextNode[YAML_CURRENT_GENERATOR];
+    SetNodeValue(node[YAML_ID], m_generator->GetGeneratorName());
+    SetNodeValue(node[YAML_FROM_PACK], RtePackage::GetPackageIDfromAttributes(*m_generator->GetPackage()));
+  }
+
   SetNodeValue(contextNode[YAML_SOLUTION], FormatPath(context->csolution->path, context->directories.cprj));
   SetNodeValue(contextNode[YAML_PROJECT], FormatPath(context->cproject->path, context->directories.cprj));
   SetNodeValue(contextNode[YAML_CONTEXT], context->name);
@@ -185,8 +195,16 @@ void ProjMgrYamlCbuild::SetComponentsNode(YAML::Node node, const ContextItem* co
     }
     SetControlsNode(componentNode, context, componentItem->build);
     SetComponentFilesNode(componentNode[YAML_FILES], context, componentId);
-    SetNodeValue(componentNode[YAML_GENERATOR][YAML_ID], component.generator);
-    SetGeneratorFiles(componentNode[YAML_GENERATOR], context, componentId);
+    if (!component.generator.empty()) {
+      if (context->generators.find(component.generator) != context->generators.end()) {
+        const RteGenerator* rteGenerator = context->generators.at(component.generator);
+        SetNodeValue(componentNode[YAML_GENERATOR][YAML_ID], component.generator);
+        SetNodeValue(componentNode[YAML_GENERATOR][YAML_FROM_PACK], RtePackage::GetPackageIDfromAttributes(*rteGenerator->GetPackage()));
+        SetGeneratorFiles(componentNode[YAML_GENERATOR], context, componentId);
+      } else {
+        ProjMgrLogger::Warn(string("Component ") + componentId + " uses unknown generator " + component.generator);
+      }
+    }
     node.push_back(componentNode);
   }
 }
@@ -236,6 +254,7 @@ void ProjMgrYamlCbuild::SetGeneratorsNode(YAML::Node node, const ContextItem* co
         break;
       }
     }
+    SetNodeValue(genNode[YAML_FROM_PACK], RtePackage::GetPackageIDfromAttributes(*generator->GetPackage()));
     SetNodeValue(genNode[YAML_PATH], FormatPath(workingDir, context->directories.cprj));
     SetNodeValue(genNode[YAML_GPDSC], FormatPath(gpdscFile, context->directories.cprj));
 
@@ -496,17 +515,19 @@ const string ProjMgrYamlBase::FormatPath(const string& original, const string& d
   RteFsUtils::NormalizePath(path);
   error_code ec;
   path = fs::weakly_canonical(fs::path(path), ec).generic_string();
-  size_t index = path.find(packRoot);
-  if (index != string::npos) {
-    path.replace(index, packRoot.length(), "${CMSIS_PACK_ROOT}");
-  } else {
-    string compilerRoot;
-    ProjMgrUtils::GetCompilerRoot(compilerRoot);
-    index = path.find(compilerRoot);
-    if (!compilerRoot.empty() && index != string::npos) {
-      path.replace(index, compilerRoot.length(), "${CMSIS_COMPILER_ROOT}");
+  if (!m_useAbsolutePaths) {
+    size_t index = path.find(packRoot);
+    if (index != string::npos) {
+      path.replace(index, packRoot.length(), "${CMSIS_PACK_ROOT}");
     } else {
-      path = fs::relative(path, directory, ec).generic_string();
+      string compilerRoot;
+      ProjMgrUtils::GetCompilerRoot(compilerRoot);
+      index = path.find(compilerRoot);
+      if (!compilerRoot.empty() && index != string::npos) {
+        path.replace(index, compilerRoot.length(), "${CMSIS_COMPILER_ROOT}");
+      } else {
+        path = fs::relative(path, directory, ec).generic_string();
+      }
     }
   }
   return path;
@@ -550,7 +571,7 @@ bool ProjMgrYamlBase::WriteFile(YAML::Node& rootNode, const std::string& filenam
   // Compare yaml contents
   if (!CompareFile(filename, rootNode)) {
     if (!RteFsUtils::MakeSureFilePath(filename)) {
-      ProjMgrLogger::Error(filename, "containing directory can not be created");
+      ProjMgrLogger::Error(filename, "destination directory can not be created");
       return false;
     }
     ofstream fileStream(filename);
@@ -583,15 +604,20 @@ bool ProjMgrYamlEmitter::GenerateCbuildIndex(ProjMgrParser& parser, const vector
   return cbuild.WriteFile(rootNode, filename);
 }
 
-bool ProjMgrYamlEmitter::GenerateCbuild(ContextItem* context) {
+bool ProjMgrYamlEmitter::GenerateCbuild(ContextItem* context, const RteGenerator* generator) {
   // generate cbuild.yml for each context
-  const string& filename = context->directories.cprj + "/" + context->name + ".cbuild.yml";
+
+  // intdir is relative to cprjdir, which in turn is absolute
+  string genInputFileDir = context->directories.intdir;
+  RteFsUtils::NormalizePath(genInputFileDir, context->directories.cprj);
+  const string generatorInputFilename = genInputFileDir + "/" + context->name + ".cbuild-gen.yml";
+  const string filename = generator ? generatorInputFilename : context->directories.cprj + "/" + context->name + ".cbuild.yml";
 
   // Make sure $G (generator input file) is up to date
-  context->rteActiveTarget->SetGeneratorInputFile(filename);
+  context->rteActiveTarget->SetGeneratorInputFile(generatorInputFilename);
 
   YAML::Node rootNode;
-  ProjMgrYamlCbuild cbuild(rootNode[YAML_BUILD], context);
+  ProjMgrYamlCbuild cbuild(rootNode[YAML_BUILD], context, generator);
 
   return cbuild.WriteFile(rootNode, filename);
 }

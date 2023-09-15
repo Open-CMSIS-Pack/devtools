@@ -36,6 +36,8 @@ private:
   std::streambuf*   m_stdcerrStreamBuf;
 };
 
+typedef std::string (*LineReplaceFunc_t)(const std::string&);
+
 /**
  * @brief global test environment for all the test suites
 */
@@ -43,7 +45,7 @@ class ProjMgrTestEnv : public ::testing::Environment {
 public:
   void SetUp() override;
   void TearDown() override;
-  static void CompareFile(const std::string& file1, const std::string& file2);
+  static void CompareFile(const std::string& file1, const std::string& file2, LineReplaceFunc_t file2LineReplaceFunc = nullptr);
   static const std::string& GetCmsisPackRoot();
   static std::list<std::string> GetInstalledPdscFiles(bool bLatestsOnly = false);
   static std::string GetFilteredPacksString(const std::list<std::string>& pdscFiles, const std::string& includeIds);

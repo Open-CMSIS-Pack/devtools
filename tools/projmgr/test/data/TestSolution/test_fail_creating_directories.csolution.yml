@@ -1,0 +1,21 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/1.0.0/tools/projmgr/schemas/csolution.schema.json
+
+solution:
+  target-types:
+    - type: TypeA
+      device: RteTestGen_ARMCM0
+
+  build-types:
+    - type: Debug
+      compiler: GCC@0.0.0
+
+  projects:
+    - project: ./TestProject3_4/TestProject3_4.cproject.yml
+
+  output-dirs:
+    outdir: $Project$/outdir/
+
+  generators:
+    options:
+      - generator: RteTestGeneratorIdentifier
+        path: $Project$/gendir/
