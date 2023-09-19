@@ -3846,7 +3846,7 @@ warning csolution: build-type '.UnknownBuild' does not exist in solution\n\
 warning csolution: target-type '+Debug' does not exist in solution, did you mean '.Debug'?\n\
 warning csolution: target-type '+MappedDebug' does not exist in solution, did you mean '.MappedDebug'?\n\
 warning csolution: target-type '+UnknownTarget' does not exist in solution\n\
-warning csolution: compiler '+Ac6' is not registered or is not supported\n\
+warning csolution: compiler 'Ac6' is not supported\n\
 ";
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_TRUE(errStr.find(expected) != string::npos);

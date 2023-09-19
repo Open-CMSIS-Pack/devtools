@@ -2659,8 +2659,8 @@ bool ProjMgrWorker::CheckCompiler(const vector<string>& forCompiler, const strin
 
 void ProjMgrWorker::CheckCompilerFilterSpelling(const string& compiler) {
   const string compilerName = RteUtils::GetPrefix(compiler, '@');
-  for (const auto& registeredToolchain : m_toolchains) {
-    if (registeredToolchain.name == compilerName) {
+  for (const auto& m_toolchainConfigFile : m_toolchainConfigFiles) {
+    if (fs::path(m_toolchainConfigFile).stem().generic_string().find(compilerName) == 0) {
       return;
     }
   }
@@ -2779,7 +2779,7 @@ void ProjMgrWorker::PrintMissingFilters(void) {
       (misspelled ? ", did you mean '." + type + "'?" : ""));
   }
   for (const auto& toolchain : m_missingToolchains) {
-    ProjMgrLogger::Warn("compiler '+" + toolchain + "' is not registered or is not supported");
+    ProjMgrLogger::Warn("compiler '" + toolchain + "' is not supported");
   }
 }
 
@@ -3652,20 +3652,21 @@ bool ProjMgrWorker::GetLatestToolchain(ToolchainItem& toolchain) {
 
 bool ProjMgrWorker::GetToolchainConfig(const string& toolchainName, const string& toolchainVersion, string& configPath, string& selectedConfigVersion) {
   // get toolchain configuration files
-  const string& compilerRoot = GetCompilerRoot();
-  StrVec toolchainConfigFiles;
-  error_code ec;
-  for (auto const& entry : fs::recursive_directory_iterator(compilerRoot, ec)) {
-    string extn = entry.path().extension().string();
-    if (entry.path().extension().string() != ".cmake") {
-      continue;
+  if (m_toolchainConfigFiles.empty()) {
+    const string& compilerRoot = GetCompilerRoot();
+    error_code ec;
+    for (auto const& entry : fs::recursive_directory_iterator(compilerRoot, ec)) {
+      string extn = entry.path().extension().string();
+      if (entry.path().extension().string() != ".cmake") {
+        continue;
+      }
+      m_toolchainConfigFiles.push_back(entry.path().generic_string());
     }
-    toolchainConfigFiles.push_back(entry.path().generic_string());
   }
   // find greatest compatible file
   bool found = false;
   static const regex regEx = regex("(\\w+)\\.(\\d+\\.\\d+\\.\\d+)");
-  for (const auto& file : toolchainConfigFiles) {
+  for (const auto& file : m_toolchainConfigFiles) {
     smatch sm;
     const string& stem = fs::path(file).stem().generic_string();
     try {

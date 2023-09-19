@@ -611,6 +611,7 @@ protected:
   RteGlobalModel* m_model = nullptr;
   std::list<RtePackage*> m_loadedPacks;
   std::vector<ToolchainItem> m_toolchains;
+  StrVec m_toolchainConfigFiles;
   StrVec m_missingToolchains;
   StrVec m_envVars;
   std::vector<std::string> m_ymlOrderedContexts;
