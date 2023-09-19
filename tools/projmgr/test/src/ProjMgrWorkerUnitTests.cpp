@@ -1149,6 +1149,7 @@ TEST_F(ProjMgrWorkerUnitTests, ListToolchains) {
   CrossPlatformUtils::SetEnv("CMSIS_COMPILER_ROOT", "");
   m_compilerRoot.clear();
   m_toolchains.clear();
+  m_toolchainConfigFiles.clear();
   GetRegisteredToolchains();
   EXPECT_TRUE(m_toolchains.empty());
 
@@ -1156,6 +1157,7 @@ TEST_F(ProjMgrWorkerUnitTests, ListToolchains) {
   CrossPlatformUtils::SetEnv("CMSIS_COMPILER_ROOT", cmsisPackRoot);
   m_compilerRoot.clear();
   m_toolchains.clear();
+  m_toolchainConfigFiles.clear();
   ToolchainItem latestToolchainInfo;
   latestToolchainInfo.name = "AC6";
   GetLatestToolchain(latestToolchainInfo);
