@@ -101,3 +101,21 @@ build:
   constructed-files:
     - file: ../data/TestGenerator/RTE/_Debug_CM0/RTE_Components.h
       category: header
+  licenses:
+    - license: <unknown>
+      packs:
+        - pack: ARM::RteTestGenerator@0.1.0
+      components:
+        - component: ARM::Device:RteTest Generated Component:RteTestWithKey@1.1.0
+    - license: <unknown>
+      packs:
+        - pack: ARM::RteTestGenerator@1.0.0
+      components:
+        - component: ARM::Device:RteTest Generated Component:RteTest@1.1.0
+    - license: <unknown>
+      license-agreement: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Doc/license.txt
+      packs:
+        - pack: ARM::RteTest_DFP@0.2.0
+      components:
+        - component: ::RteTest:CORE(API)
+        - component: ARM::RteTest:CORE@0.1.1

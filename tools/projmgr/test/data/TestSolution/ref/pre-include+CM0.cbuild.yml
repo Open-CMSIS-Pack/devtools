@@ -94,3 +94,28 @@ build:
       category: preIncludeGlobal
     - file: ../data/TestSolution/RTE/_CM0/RTE_Components.h
       category: header
+  licenses:
+    - license: <proprietary> Proprietary Test License
+      license-agreement: ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/licenses/ProprietaryLicense.txt
+      packs:
+        - pack: ARM::RteTest@0.1.0
+      components:
+        - component: ARM::RteTest:ComponentLevel@0.0.1
+    - license: <unknown>
+      license-agreement: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Doc/license.txt
+      packs:
+        - pack: ARM::RteTest_DFP@0.2.0
+      components:
+        - component: ::RteTest:CORE(API)
+        - component: ARM::Device:Startup&RteTest Startup@2.0.3
+        - component: ARM::RteTest:CORE@0.1.1
+    - license: BSD-3-Clause
+      packs:
+        - pack: ARM::RteTest@0.1.0
+      components:
+        - component: ARM::RteTest:GlobalLevel@0.0.2
+    - license: MIT
+      packs:
+        - pack: ARM::RteTest@0.1.0
+      components:
+        - component: ARM::RteTest:GlobalLevel@0.0.2

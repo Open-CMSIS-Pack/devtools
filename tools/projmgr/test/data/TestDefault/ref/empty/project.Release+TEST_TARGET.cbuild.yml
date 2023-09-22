@@ -42,3 +42,10 @@ build:
   constructed-files:
     - file: ../../data/TestDefault/RTE/_Release_TEST_TARGET/RTE_Components.h
       category: header
+  licenses:
+    - license: <unknown>
+      packs:
+        - pack: ARM::RteTest_DFP@0.1.1
+      components:
+        - component: ::RteTest:CORE(API)
+        - component: ARM::RteTest:CORE@0.1.1

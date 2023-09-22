@@ -133,7 +133,16 @@ void ProjMgrTestEnv::CompareFile(const string& file1, const string& file2) {
   ret_val = f2.is_open();
   ASSERT_EQ(ret_val, true) << "Failed to open " << file2;
 
-  while (getline(f1, l1) && getline(f2, l2)) {
+  while (true) {
+    if (getline(f1, l1)) {
+      if (!getline(f2, l2)) {
+        FAIL() << "error: " << file1 << " is longer than " << file2 << "\nLine not in " << file2 << ":" << l1;
+      }
+    } else if (getline(f2, l2)) {
+        FAIL() << "error: " << file1 << " is shorter than " << file2 << "\nLine not in " << file1 << ": " << l2;
+    } else {
+      break;
+    }
     if (!l1.empty() && l1.rfind('\r') == l1.length() - 1) {
       l1.pop_back();
     }
