@@ -431,7 +431,7 @@ public:
   RteItem* CreateItem(const std::string& tag) override;
 };
 
-
+typedef std::map<std::string, RteApi*, VersionCmp::Greater > RteApiMap;
 typedef std::map<std::string, RteComponent*> RteComponentMap;
 typedef std::map<std::string, RteComponent*, VersionCmp::Greater> RteComponentVersionMap;
 typedef std::list<RteComponent*> RteComponentList;
@@ -637,9 +637,10 @@ public:
   /**
    * @brief checks if the aggregate contains at least one component whose attributes match those in the supplied map
    * @param attributes map of key-value pairs to match against component attributes
+   * @param bRespectVersion flag to consider Cversion and Capiversion attributes, default is true
    * @return true if at least one component has all attributes found in the supplied map
   */
-   bool MatchComponentAttributes(const std::map<std::string, std::string>& attributes) const override;
+  bool MatchComponentAttributes(const std::map<std::string, std::string>& attributes, bool bRespectVersion = true) const override;
 
   /**
    * @brief get short component aggregate display name to use in a tree view

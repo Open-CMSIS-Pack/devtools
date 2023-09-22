@@ -199,17 +199,31 @@ public:
   RteComponent* FindComponents(const RteItem& item, std::list<RteComponent*>& components) const override;
 
   /**
+ * @brief find first component  matching supplied attributes
+ * @param item reference to RteItem containing component attributes to match
+ * @return pointer to first component found if any, null otherwise
+*/
+  RteComponent* FindFirstComponent(const RteItem& item) const;
+
+  /**
    * @brief check if this object has no children
    * @return true if this object has no children
   */
   bool IsEmpty() const override { return m_children.size() == 0; }
 
   /**
-   * @brief getter for component by given component ID
+   * @brief getter for component by given unique component ID
    * @param uniqueID component ID
    * @return RteComponent pointer
   */
   RteComponent* GetComponent(const std::string& uniqueID) const;
+
+  /**
+   * @brief getter for component by given component ID
+   * @param id component ID with oe without version
+   * @return RteComponent pointer
+  */
+  RteComponent* FindComponent(const std::string& id) const;
 
   /**
    * @brief getter for component by given RteComponentInstance and version to be matched
@@ -240,10 +254,18 @@ public:
   RteApi* GetApi(const std::string& id) const;
 
   /**
+   * @brief get latest available API version
+   * @param id API ID (can be with or without version)
+   * @return RteApi pointer
+  */
+  RteApi* GetLatestApi(const std::string& id) const;
+
+
+  /**
    * @brief getter for collection of APIs
    * @return collection of api ID mapped to RteApi object pointer
   */
-  const std::map<std::string, RteApi* >& GetApiList() const { return m_apiList; }
+  const RteApiMap& GetApiList() const { return m_apiList; }
 
   /**
    * @brief getter for bundles
@@ -544,7 +566,7 @@ protected:
   RteCallback* m_callback; // pointer to callback
 
   // components, APIs, taxonomy
-  std::map<std::string, RteApi* > m_apiList; // collection of available APIs
+  RteApiMap m_apiList; // collection of available APIs
   RteComponentMap m_componentList; // full collection of unique components
   std::map<std::string, RteItem*> m_taxonomy; // collection of standard Class descriptions
   RteBundleMap m_bundles; // collection of available bundles

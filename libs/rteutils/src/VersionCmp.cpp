@@ -161,7 +161,7 @@ int VersionCmp::Compare(const string& v1, const string& v2, bool cs) {
   return res;
 }
 
-int VersionCmp::RangeCompare(const string& version, const string& versionRange)
+int VersionCmp::RangeCompare(const string& version, const string& versionRange, bool bCompatible)
 {
   if (version == versionRange) {
     return 0;
@@ -169,8 +169,9 @@ int VersionCmp::RangeCompare(const string& version, const string& versionRange)
 
   string verMin = RteUtils::GetPrefix(versionRange);
   string verMax = RteUtils::GetSuffix(versionRange);
+  int resMin = 0;
   if (!verMin.empty()) {
-    int resMin = Compare(version, verMin);
+    resMin = Compare(version, verMin);
     if (resMin < 0 || verMin == verMax) // lower than min or exact match is required?
       return resMin;
   }
@@ -178,6 +179,8 @@ int VersionCmp::RangeCompare(const string& version, const string& versionRange)
     int resMax = Compare(version, verMax);
     if (resMax > 0)
       return resMax;
+  }else if(bCompatible && resMin > 2) {
+    return resMin; // semantic version: major version change -> incompatible
   }
   return 0;
 }
@@ -188,6 +191,26 @@ string VersionCmp::RemoveVersionMeta(const string& v) {
     return v.substr(0, pos);
   return v;
 }
+
+std::string VersionCmp::Ceil(const std::string& v, bool bMinus)
+{
+  int major = RteUtils::StringToInt(RteUtils::GetPrefix(v, '.'));
+  if (major < 0) {
+    major = 0;
+  }
+  std::string majorVer = RteUtils::LongToString(major + 1, 10);
+  majorVer += ".0.0";
+  if (bMinus) {
+    majorVer += "-";
+  }
+  return majorVer;
+}
+
+std::string VersionCmp::Floor(const std::string& v)
+{
+  return RteUtils::GetPrefix(v, '.') + ".0.0";
+}
+
 
 VersionCmp::MatchMode VersionCmp::MatchModeFromString(const std::string& mode)
 {
@@ -245,13 +268,15 @@ std::string VersionCmp::MatchModeToString(VersionCmp::MatchMode mode)
   return s;
 }
 
-const std::string VersionCmp::GetMatchingVersion(const std::string& filter, const std::set<std::string> availableVersions) {
+const std::string VersionCmp::GetMatchingVersion(const std::string& filter,
+  const std::set<std::string>& availableVersions, bool bCompatible)
+{
   string matchedVersion;
   if (std::string::npos == filter.find('@')) {
     // version range
     vector<std::string> matchedVersions;
     for (auto& version : availableVersions) {
-      if (0 == RangeCompare(version, filter)) {
+      if (0 == RangeCompare(version, filter, bCompatible)) {
         matchedVersions.push_back(version);
       }
     }
@@ -289,6 +314,18 @@ const std::string VersionCmp::GetMatchingVersion(const std::string& filter, cons
     }
   }
   return matchedVersion;
+}
+
+int VersionCmp::ComparatorBase::Compare(const std::string& v1, const std::string& v2, bool cs) const
+{
+  if (m_delimiter) {
+    int res = AlnumCmp::CompareLen(RteUtils::GetPrefix(v1, m_delimiter), RteUtils::GetPrefix(v2, m_delimiter), cs);
+    if (res == 0) {
+      res = VersionCmp::Compare(RteUtils::GetSuffix(v1, m_delimiter), RteUtils::GetSuffix(v2, m_delimiter), cs);
+    }
+    return res;
+  }
+  return VersionCmp::Compare(v1, v2, cs);
 }
 
 // End of VersionCmp.cpp

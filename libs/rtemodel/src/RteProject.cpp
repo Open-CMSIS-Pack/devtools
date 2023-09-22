@@ -2215,30 +2215,51 @@ bool RteProject::Validate()
         target->AddMissingPackId(packId, url);
       }
     } else if (!c->IsApi()) {
-      RteItem::ConditionResult apiResult = c->IsApiAvailable(target);
+      RteItem::ConditionResult apiResult = c->GetConditionResult(target->GetDependencySolver());
+      if (apiResult >= RteItem::FULFILLED) {
+        continue;
+      }
+      string apiVer = c->GetApiVersionString();
       if (apiResult == RteItem::MISSING_API) {
         bValid = false;
         string msg = "Error #542: Component '";
         msg += c->GetFullDisplayName();
         msg += "': API version '";
-        msg += c->GetApiVersionString();
-        msg += "' or higher is required. ";
+        msg += apiVer;
+        msg += "' or compatible is required.";
         msg += "API definition is missing (no pack ID is available)";
         m_errors.push_back(msg);
       } else if (apiResult == RteItem::MISSING_API_VERSION) {
         bValid = false;
-        RteApi* api = c->GetApi(target, false);
         string msg = "Error #552: Component '";
         msg += c->GetFullDisplayName();
         msg += "': API version '";
-        msg += c->GetApiVersionString();
-        msg += "' or higher is required.";
-        if (api) {
+        msg += apiVer;
+        msg += "' or compatible is required.";
+        RteApi* availableApi = c->GetApi(target, false);
+        if (availableApi) {
+          string availableApiVer = availableApi->GetApiVersionString();
           msg += " (Version '";
-          msg += api->GetApiVersionString();
+          msg += availableApiVer;
           msg += "' is found in pack '";
-          msg += api->GetPackageID(true);
-          msg += "').";
+          msg += availableApi->GetPackageID(true);
+          msg += "', install ";
+          msg += VersionCmp::Compare(apiVer, availableApiVer) < 0 ? "previous" : "next";
+          msg += " pack version).";
+        }
+        m_errors.push_back(msg);
+      } else if (apiResult == RteItem::CONFLICT) {
+        bValid = false;
+        RteApi* api = c->GetApi(target, true);
+        apiVer = api->GetVersionString();
+        string msg = "Error #553: Component '";
+        msg += c->GetFullDisplayName();
+        if (api->IsExclusive()) {
+          msg += "': conflicts with other components of the same API";
+          msg += ": select only one component";
+        } else {
+          msg += "': uses API version '" + apiVer + "' that conflicts with other components of the same API";
+          msg += ": select only components with compatible API versions";
         }
         m_errors.push_back(msg);
       }
