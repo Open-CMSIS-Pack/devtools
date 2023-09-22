@@ -1280,6 +1280,12 @@ public:
   */
   bool HasUnresolvedComponents(const std::string& targetName, bool bCopy = false) const;
 
+  /**
+   * @brief get condition result for this item (least from children)
+   * @param context condition evaluation context
+   * @return cached ConditionResult
+  */
+  ConditionResult GetConditionResult(RteConditionContext* context) const override;
 
   /**
    * @brief check if group or its sub-groups contain instance aggregates used by specified target

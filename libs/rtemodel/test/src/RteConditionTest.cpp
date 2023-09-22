@@ -187,9 +187,12 @@ TEST_F(RteConditionTest, MissingIgnoredFulfilledSelectable) {
   activeTarget->SelectComponent(c, 1, true);
   loadedCprjProject->Apply();
   EXPECT_FALSE(loadedCprjProject->Validate());
+  EXPECT_EQ(loadedCprjProject->GetClasses()->GetConditionResult(depSolver), RteItem::MISSING_API_VERSION);
+
   activeTarget->SelectComponent(c, 0, true);
   loadedCprjProject->Apply();
   EXPECT_TRUE(loadedCprjProject->Validate());
+  EXPECT_EQ(loadedCprjProject->GetClasses()->GetConditionResult(depSolver), RteItem::FULFILLED);
 
   item.SetAttribute("Csub", "MissingApiVersionMin");
   c = rteModel->FindFirstComponent(item);
@@ -211,12 +214,14 @@ TEST_F(RteConditionTest, MissingIgnoredFulfilledSelectable) {
   EXPECT_EQ(c->GetConditionResult(depSolver), RteItem::CONFLICT);
   EXPECT_EQ(c2->GetConditionResult(depSolver), RteItem::CONFLICT);
   loadedCprjProject->Apply();
+  EXPECT_EQ(loadedCprjProject->GetClasses()->GetConditionResult(depSolver), RteItem::CONFLICT);
   EXPECT_FALSE(loadedCprjProject->Validate());
   activeTarget->SelectComponent(c2, 0, true);
   EXPECT_EQ(c->GetConditionResult(depSolver), RteItem::IGNORED);
   EXPECT_EQ(c2->GetConditionResult(depSolver), RteItem::IGNORED);
   loadedCprjProject->Apply();
   EXPECT_TRUE(loadedCprjProject->Validate());
+  EXPECT_EQ(loadedCprjProject->GetClasses()->GetConditionResult(depSolver), RteItem::FULFILLED);
 
   // API version conflict
   item.SetAttributes({ {"Cclass","RteTest" },
