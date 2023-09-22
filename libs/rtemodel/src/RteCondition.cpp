@@ -706,6 +706,9 @@ string RteDependencyResult::GetMessageText() const
     case RteItem::MISSING_API:
       message = "API is missing";
       break;
+    case RteItem::MISSING_API_VERSION:
+      message = "API with required or compatible version is missing";
+      break;
     case RteItem::CONFLICT:
       message = "Conflict, select exactly one component from list";
       break;

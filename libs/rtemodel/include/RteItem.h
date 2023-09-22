@@ -553,16 +553,18 @@ public:
   /**
   * @brief checks if the item contains all attributes matching those in the supplied map
   * @param attributes map of key-value pairs to match against component attributes
+  * @param bRespectVersion flag to consider Cversion and Capiversion attributes, default is true
   * @return true if the item has all attributes found in the supplied map
   */
-  virtual bool MatchComponentAttributes(const std::map<std::string, std::string>& attributes) const;
+  virtual bool MatchComponentAttributes(const std::map<std::string, std::string>& attributes, bool bRespectVersion = true) const;
 
   /**
    * @brief check if the item matches supplied API attributes
    * @param attributes collection of 'C' (API) attributes
+   * @param bRespectVersion flag to consider Capiversion attribute, default is true
    * @return true if the item matches supplied API attributes
   */
-  virtual bool MatchApiAttributes(const std::map<std::string, std::string>& attributes) const;
+  virtual bool MatchApiAttributes(const std::map<std::string, std::string>& attributes, bool bRespectVersion = true) const;
 
   /**
    * @brief check if given collection of attributes contains the same values for "Dname", "Pname" and "Dvendor"

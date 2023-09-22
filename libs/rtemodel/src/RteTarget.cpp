@@ -331,8 +331,7 @@ RteItem::ConditionResult RteTarget::GetDepsResult(map<const RteItem*, RteDepende
     if (r == CONFLICT) {
       apiResult = r;
       RteDependencyResult depRes(api, r);
-      for (set<RteComponent*>::iterator itc = components.begin(); itc != components.end(); itc++) {
-        RteComponent* c = *itc;
+      for (RteComponent* c : components) {
         if (c && IsComponentFiltered(c)) {
           RteComponentAggregate* a = GetComponentAggregate(c);
           if (a)
@@ -1561,8 +1560,9 @@ string RteTarget::GetCMSISCoreIncludePath() const
 
 RteComponent* RteTarget::ResolveComponent(RteComponentInstance* ci) const
 {
-  if (ci->IsApi())
-    return m_filteredModel->GetApi(ci->GetComponentUniqueID());
+  if (ci->IsApi()) {
+    return m_filteredModel->GetApi(ci->GetAttributes());
+  }
 
   VersionCmp::MatchMode mode = ci->GetVersionMatchMode(GetName());
   RteComponent* c = NULL;
@@ -1611,36 +1611,27 @@ RteComponent* RteTarget::GetPotentialComponent(RteComponentInstance* ci) const
 
 RteItem::ConditionResult RteTarget::GetComponentsForApi(RteApi* api, set<RteComponent*>& components, bool selectedOnly) const
 {
-  ConditionResult result = MISSING;
-  if (api) {
-    // make copy of the attributes to remove api version
-    map<string, string> apiAttributes = api->GetAttributes();
-    if (selectedOnly) {
-      auto it = apiAttributes.find("Capiversion");
-      if (it != apiAttributes.end())
-        apiAttributes.erase(it);
-    }
-    return GetComponentsForApi(api, apiAttributes, components, selectedOnly);
+  if (!api) {
+    return MISSING_API;
   }
-  return result;
-}
-
-
-RteItem::ConditionResult RteTarget::GetComponentsForApi(RteApi* api, const map<string, string>& componentAttributes, set<RteComponent*>& components, bool selectedOnly) const
-{
-  bool exclusive = api != NULL && api->IsExclusive();
+  set<RteApi*> apiVersions;
+  bool exclusive = api->IsExclusive();
   ConditionResult result = MISSING;
+  auto& apiAttributes = api->GetAttributes();
   int nSelected = 0;
-  for (auto it = m_filteredComponents.begin(); it != m_filteredComponents.end(); it++) {
-    RteComponent* c = it->second;
-    if (c->MatchComponentAttributes(componentAttributes)) {
+  for (auto [id, c] : m_filteredComponents) {
+    if (c->MatchComponentAttributes(apiAttributes, false)) {
       if (IsComponentSelected(c)) {
         components.insert(c);
         nSelected++;
-        if (exclusive && nSelected > 1)
+        apiVersions.insert(GetApi(c->GetAttributes()));
+        if (exclusive && nSelected > 1) {
           result = CONFLICT;
-        else
+        } else if (apiVersions.size() > 1) { //effectively means different API version
+          result = CONFLICT;
+        } else if (result == MISSING) {
           result = FULFILLED;
+        }
       } else if (result == MISSING) {
         result = INSTALLED;
         if (!selectedOnly)

@@ -19,6 +19,8 @@
 #include "CprjFile.h"
 
 #include "RteFsUtils.h"
+#include "RteConstants.h"
+
 #include "XMLTree.h"
 
 using namespace std;
@@ -28,6 +30,7 @@ RteModel::RteModel(RteItem* parent, PackageState packageState) :
   RteItem(parent),
   m_packageState(packageState),
   m_callback(NULL),
+  m_apiList(VersionCmp::Greater(RteConstants::PREFIX_CVERSION_CHAR)),
   m_bUseDeviceTree(true),
   m_filterContext(NULL)
 {
@@ -215,6 +218,12 @@ RteComponent* RteModel::FindComponents(const RteItem& item, std::list<RteCompone
   return components.empty()? nullptr : *(components.begin());
 }
 
+RteComponent* RteModel::FindFirstComponent(const RteItem& item) const
+{
+  std::list<RteComponent*> components;
+  return FindComponents(item, components);
+}
+
 RteComponent* RteModel::GetComponent(const string& uniqueID) const
 {
   // look in the APIs
@@ -231,19 +240,23 @@ RteComponent* RteModel::GetComponent(const string& uniqueID) const
   return NULL;
 }
 
+RteComponent* RteModel::FindComponent(const std::string& id) const
+{
+  bool withVersion = id.find(RteConstants::PREFIX_CVERSION_CHAR) != string::npos;
+  for (auto [_, c] : m_componentList) {
+    if (c->GetComponentID(withVersion) == id) {
+      return c;
+    }
+  }
+  return nullptr;
+}
+
 RteComponent* RteModel::GetComponent(RteComponentInstance* ci, bool matchVersion) const
 {
-  if (ci->IsApi() || matchVersion)
+  if (ci->IsApi() || matchVersion) {
     return GetComponent(ci->GetID());
-
-  string id = ci->GetComponentID(false);
-
-  for (auto it = m_componentList.begin(); it != m_componentList.end(); it++) {
-    RteComponent* c = it->second;
-    if (c->GetComponentID(false) == id)
-      return c;
   }
-  return NULL;
+  return FindComponent(ci->GetComponentID(false));
 }
 
 
@@ -255,25 +268,41 @@ RteApi* RteModel::GetApi(const map<string, string>& componentAttributes) const
     if (a && a->MatchApiAttributes(componentAttributes))
       return a;
   }
-  return NULL;
+  return nullptr;
 }
 
 RteApi* RteModel::GetApi(const string& id) const
 {
-  map<string, RteApi*>::const_iterator it = m_apiList.find(id);
-  if (it != m_apiList.end()) {
-    RteApi* a = it->second;
-    return a;
+  if (id.find(RteConstants::PREFIX_CVERSION_CHAR) != string::npos) {
+    auto it = m_apiList.find(id);
+    if (it != m_apiList.end()) {
+      RteApi* api = it->second;
+      return api;
+    }
+    return nullptr;
   }
-  return NULL;
+  return GetLatestApi(id);
 }
+
+RteApi* RteModel::GetLatestApi(const string& id) const
+{
+  string commonId = RteUtils::GetPrefix(id, RteConstants::PREFIX_CVERSION_CHAR);
+  // get highest API version
+  for (auto [key, api] : m_apiList) {
+    if (RteUtils::GetPrefix(key, RteConstants::PREFIX_CVERSION_CHAR) == commonId) {
+      return api;
+    }
+  }
+  return nullptr;
+}
+
 
 RteBundle* RteModel::GetBundle(const string& id) const
 {
   auto it = m_bundles.find(id);
   if (it != m_bundles.end())
     return it->second;
-  return NULL;
+  return nullptr;
 }
 
 RteBundle* RteModel::GetLatestBundle(const string& id) const

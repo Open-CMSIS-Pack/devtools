@@ -43,7 +43,7 @@ const std::string& RteItem::ConditionResultToString(RteItem::ConditionResult res
       "INCOMPATIBLE",         // incompatible component is selected
       "INCOMPATIBLE_VERSION", // incompatible version of component is selected
       "INCOMPATIBLE_VARIANT", // incompatible variant of component is selected
-      "CONFLICT",             // more than one exclusive component selected
+      "CONFLICT",             // several exclusive or incompatible components are selected
       "INSTALLED",            // matching component is installed, but not selectable because not in active bundle
       "SELECTABLE",           // matching component is installed, but not selected
       "FULFILLED",            // required component selected or no dependency exists
@@ -159,8 +159,7 @@ string RteItem::GetDependencyExpressionID() const
 string RteItem::GetComponentID(bool withVersion) const // to use in filtered list
 {
   if (IsApi()) {
-    withVersion = false; // api ID is always without version (the latest is used)
-    return GetApiID(false);
+    return GetApiID(withVersion);
   }
   return ConstructComponentID(withVersion);
 }
@@ -168,7 +167,7 @@ string RteItem::GetComponentID(bool withVersion) const // to use in filtered lis
 string RteItem::GetComponentUniqueID() const
 {
   if (IsApi()) {
-    return GetApiID(false); // api ID is always without version (the latest is used)
+    return GetApiID(true);
   }
   string id = ConstructComponentID(true);
   id += RteConstants::OBRACE_STR;
@@ -602,7 +601,7 @@ bool RteItem::MatchComponent(const RteItem& item) const
 }
 
 
-bool RteItem::MatchComponentAttributes(const map<string, string>& attributes) const
+bool RteItem::MatchComponentAttributes(const map<string, string>& attributes, bool bRespectVersion) const
 {
   if (attributes.empty()) // no limiting attributes
     return true;
@@ -621,7 +620,7 @@ bool RteItem::MatchComponentAttributes(const map<string, string>& attributes) co
         return false;
     }
     if (a == "Cversion" || a == "Capiversion") { // version of this component should match supplied version range
-      int verCompareResult = VersionCmp::RangeCompare(it->second, v);
+      int verCompareResult = bRespectVersion? VersionCmp::CompatibleRangeCompare(it->second, v) : 0;
       if (verCompareResult != 0)
         return false;
     } else {
@@ -633,7 +632,7 @@ bool RteItem::MatchComponentAttributes(const map<string, string>& attributes) co
 }
 
 
-bool RteItem::MatchApiAttributes(const map<string, string>& attributes) const
+bool RteItem::MatchApiAttributes(const map<string, string>& attributes, bool bRespectVersion) const
 {
   if (attributes.empty())
     return false;
@@ -644,10 +643,10 @@ bool RteItem::MatchApiAttributes(const map<string, string>& attributes) const
     if (!a.empty() && a[0] == 'C' && a != "Cvendor") {
       const string& v = itm->second;
       ita = attributes.find(a);
-      if (a == "Capiversion") { // version of this api should be >= supplied version
+      if (a == "Capiversion") { // version of this api should be >= supplied version, but less than next major
         if (ita == attributes.end())
           continue; // version is not set => accept any
-        if (VersionCmp::RangeCompare(v, ita->second) != 0) // this version is within supplied range
+        if (bRespectVersion && VersionCmp::CompatibleRangeCompare(v, ita->second) != 0) // this version is within supplied range
           return false;
       } else {
         if (ita == attributes.end()) // no api attribute in supplied map

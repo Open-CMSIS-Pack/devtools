@@ -119,22 +119,26 @@ size_t RteComponent::GetFileCount() const
   return m_files ? m_files->GetChildCount() : 0;
 }
 
-
 RteItem::ConditionResult RteComponent::GetConditionResult(RteConditionContext* context) const
 {
   ConditionResult result = RteItem::GetConditionResult(context);
   if (result < INSTALLED)
     return result;
   RteTarget* target = context->GetTarget();
-  RteApi* api = GetApi(target, false);
-  if (api && api->IsExclusive()) {
+  RteItem::ConditionResult apiRes = IsApiAvailable(target);
+  if (apiRes < FULFILLED) {
+    return apiRes;
+  } else if(apiRes == FULFILLED) { // api exists
+    RteApi* thisApi = GetApi(target, true); // no need to check for NULL
     set<RteComponent*> components;
-    target->GetComponentsForApi(api, components, true);
-    if (components.size() > 1)
-      return CONFLICT;
+    apiRes = target->GetComponentsForApi(thisApi, components, true);
+    if (apiRes == CONFLICT) {
+      return apiRes;
+    }
   }
   return result;
 }
+
 
 
 const string& RteComponent::GetVendorString() const
@@ -277,18 +281,18 @@ RteItem::ConditionResult RteComponent::IsApiAvailable(RteTarget* target) const
   if (!HasApi(target)) {
     return IGNORED;
   }
-  RteApi* api = target->GetApi(GetApiID(false));
+  RteApi* api = GetApi(target, true);
+  if (api) {
+    return FULFILLED;
+  }
+  api = GetApi(target, false);
   if (!api) {
     return MISSING_API;
   }
-  string availableApiVersion = api->GetApiVersionString();
-  if (availableApiVersion.empty())
+  if (api->GetApiVersionString().empty()) {
     return FULFILLED; // API without version - deprecated case that we still need to support
-  string requiredApiVersion = GetApiVersionString();
-  if (!requiredApiVersion.empty() && VersionCmp::RangeCompare(availableApiVersion, requiredApiVersion) < 0) {
-    return MISSING_API_VERSION;
   }
-  return FULFILLED;
+  return MISSING_API_VERSION;
 }
 
 
@@ -392,7 +396,7 @@ string RteApi::GetFullDisplayName() const
 
 string RteApi::GetComponentUniqueID() const
 {
-  return GetApiID(false); // api ID is always without version (the latest is used)
+  return GetApiID(true);
 }
 
 string RteApi::GetComponentID(bool withVersion) const
@@ -459,20 +463,20 @@ bool RteComponentAggregate::SetSelected(int nSel)
   return false;
 }
 
-bool RteComponentAggregate::MatchComponentAttributes(const map<string, string>& attributes) const
+bool RteComponentAggregate::MatchComponentAttributes(const map<string, string>& attributes, bool bRespectVersion) const
 {
   if (!m_components.empty()) {
     for (auto itvar = m_components.begin(); itvar != m_components.end(); itvar++) {
       const RteComponentVersionMap& versionMap = itvar->second;
       for (auto it = versionMap.begin(); it != versionMap.end(); it++) {
         RteComponent* c = it->second;
-        if (c && c->MatchComponentAttributes(attributes))
+        if (c && c->MatchComponentAttributes(attributes, bRespectVersion))
           return true;
       }
     }
     return false;
   } else if (m_instance)
-    return m_instance->MatchComponentAttributes(attributes);
+    return m_instance->MatchComponentAttributes(attributes, bRespectVersion);
   return false;
 }
 

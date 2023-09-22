@@ -53,6 +53,7 @@ TEST_F(RteConditionTest, MissingIgnoredFulfilledSelectable) {
   rteKernel.SetCmsisPackRoot(RteModelTestConfig::CMSIS_PACK_ROOT);
   RteCprjProject* loadedCprjProject = rteKernel.LoadCprj(RteTestM3_cprj);
   ASSERT_NE(loadedCprjProject, nullptr);
+  EXPECT_TRUE(loadedCprjProject->Validate());
   RteTarget* activeTarget = loadedCprjProject->GetActiveTarget();
   ASSERT_NE(activeTarget, nullptr);
   RteConditionContext* filterContext = activeTarget->GetFilterContext();
@@ -79,7 +80,6 @@ TEST_F(RteConditionTest, MissingIgnoredFulfilledSelectable) {
   ASSERT_NE(denyIncompatibleVariant, nullptr);
 
   // select component to check dependencies
-  list<RteComponent*> components;
   RteComponentInstance item(nullptr);
   item.SetTag("component");
   item.SetAttributes({ {"Cclass","RteTest" },
@@ -88,7 +88,7 @@ TEST_F(RteConditionTest, MissingIgnoredFulfilledSelectable) {
                        {"condition","AcceptDependency"} });
   item.SetPackageAttributes(packInfo);
 
-  RteComponent* c = rteModel->FindComponents(item, components);
+  RteComponent* c = rteModel->FindFirstComponent(item);
   ASSERT_NE(c, nullptr);
   activeTarget->SelectComponent(c, 1, true);
   EXPECT_EQ(depSolver->GetConditionResult(), RteItem::FULFILLED); // required dependency already selected
@@ -103,8 +103,7 @@ TEST_F(RteConditionTest, MissingIgnoredFulfilledSelectable) {
   item.SetAttributes({ {"Cclass","RteTest" },
                        {"Cgroup", "LocalFile" },
                        {"Cversion","0.0.3"} });
-  components.clear();
-  c = rteModel->FindComponents(item, components);
+  c = rteModel->FindFirstComponent(item);
   ASSERT_NE(c, nullptr);
   activeTarget->SelectComponent(c, 0, true);
   EXPECT_EQ(depSolver->GetConditionResult(), RteItem::FULFILLED); // still fulfilled
@@ -116,8 +115,7 @@ TEST_F(RteConditionTest, MissingIgnoredFulfilledSelectable) {
   EXPECT_EQ(denyDenyDependency->Evaluate(depSolver), RteItem::FULFILLED);
 
   item.SetAttribute("Cgroup", "GlobalFile"),
-  components.clear();
-  c = rteModel->FindComponents(item, components);
+  c = rteModel->FindFirstComponent(item);
   ASSERT_NE(c, nullptr);
   activeTarget->SelectComponent(c, 0, true);
   EXPECT_EQ(depSolver->GetConditionResult(), RteItem::SELECTABLE);
@@ -136,8 +134,7 @@ TEST_F(RteConditionTest, MissingIgnoredFulfilledSelectable) {
                      {"Cgroup", "RequireDependency" },
                      {"Cversion","0.9.9"},
                      {"condition", "GlobalFile"}});
-  components.clear();
-  c = rteModel->FindComponents(item, components);
+  c = rteModel->FindFirstComponent(item);
   ASSERT_NE(c, nullptr);
   activeTarget->SelectComponent(c, 1, true);
   EXPECT_EQ(depSolver->GetConditionResult(), RteItem::SELECTABLE);
@@ -156,20 +153,107 @@ TEST_F(RteConditionTest, MissingIgnoredFulfilledSelectable) {
   item.SetAttributes({ {"Cclass","RteTest" },
                        {"Cgroup", "Dependency" },
                        {"Csub", "Variant" },
-                       {"Cvariant","Compatible"},
-                       {"Cversion","0.9.9"},
+                       {"Cvariant","Compatible"}
                      });
-  components.clear();
-  c = rteModel->FindComponents(item, components);
+  c = rteModel->FindFirstComponent(item);
   ASSERT_NE(c, nullptr);
   activeTarget->SelectComponent(c, 1, true);
   EXPECT_EQ(denyIncompatibleVariant->Evaluate(depSolver), RteItem::INCOMPATIBLE);
   item.SetAttribute("Cvariant", "Incompatible");
-  components.clear();
-  c = rteModel->FindComponents(item, components);
+  c = rteModel->FindFirstComponent(item);
   activeTarget->SelectComponent(c, 1, true);
   ASSERT_NE(c, nullptr);
   EXPECT_EQ(denyIncompatibleVariant->Evaluate(depSolver), RteItem::FULFILLED);
+
+  // API
+  item.SetAttributes({ {"Cclass","RteTest" },
+                       {"Cgroup", "MissingApi" } });
+  c = rteModel->FindFirstComponent(item);
+  ASSERT_NE(c, nullptr);
+  EXPECT_EQ(c->GetConditionResult(depSolver), RteItem::MISSING_API);
+  activeTarget->SelectComponent(c, 1, true);
+  loadedCprjProject->Apply();
+  EXPECT_FALSE(loadedCprjProject->Validate());
+  activeTarget->SelectComponent(c, 0, true);
+  loadedCprjProject->Apply();
+  EXPECT_TRUE(loadedCprjProject->Validate());
+
+  item.SetAttributes({ {"Cclass","RteTest" },
+                     {"Cgroup", "ApiNonExclusive" },
+                     {"Csub", "MissingApiVersion"} });
+  c = rteModel->FindFirstComponent(item);
+  ASSERT_NE(c, nullptr);
+  EXPECT_EQ(c->GetConditionResult(depSolver), RteItem::MISSING_API_VERSION);
+  activeTarget->SelectComponent(c, 1, true);
+  loadedCprjProject->Apply();
+  EXPECT_FALSE(loadedCprjProject->Validate());
+  activeTarget->SelectComponent(c, 0, true);
+  loadedCprjProject->Apply();
+  EXPECT_TRUE(loadedCprjProject->Validate());
+
+  item.SetAttribute("Csub", "MissingApiVersionMin");
+  c = rteModel->FindFirstComponent(item);
+  ASSERT_NE(c, nullptr);
+  EXPECT_EQ(c->GetConditionResult(depSolver), RteItem::MISSING_API_VERSION);
+
+// Exclusive API conflict
+  item.SetAttributes({ {"Cclass","RteTest" },
+                       {"Cgroup", "ApiExclusive" },
+                       {"Csub", "S1" } });
+  c = rteModel->FindFirstComponent(item);
+  ASSERT_NE(c, nullptr);
+  activeTarget->SelectComponent(c, 1, true);
+  EXPECT_EQ(c->GetConditionResult(depSolver), RteItem::IGNORED);
+  item.SetAttribute("Csub", "S2");
+  RteComponent* c2 = rteModel->FindFirstComponent(item);
+  ASSERT_NE(c2, nullptr);
+  activeTarget->SelectComponent(c2, 1, true);
+  EXPECT_EQ(c->GetConditionResult(depSolver), RteItem::CONFLICT);
+  EXPECT_EQ(c2->GetConditionResult(depSolver), RteItem::CONFLICT);
+  loadedCprjProject->Apply();
+  EXPECT_FALSE(loadedCprjProject->Validate());
+  activeTarget->SelectComponent(c2, 0, true);
+  EXPECT_EQ(c->GetConditionResult(depSolver), RteItem::IGNORED);
+  EXPECT_EQ(c2->GetConditionResult(depSolver), RteItem::IGNORED);
+  loadedCprjProject->Apply();
+  EXPECT_TRUE(loadedCprjProject->Validate());
+
+  // API version conflict
+  item.SetAttributes({ {"Cclass","RteTest" },
+                       {"Cgroup", "ApiNonExclusive" },
+                       {"Csub", "SN1" }});
+  c = rteModel->FindFirstComponent(item);
+  ASSERT_NE(c, nullptr);
+  RteApi* api = c->GetApi(activeTarget, true);
+  ASSERT_NE(api, nullptr);
+  EXPECT_EQ(api->GetVersionString(), "1.1.0");
+  activeTarget->SelectComponent(c, 1, true);
+  EXPECT_EQ(c->GetConditionResult(depSolver), RteItem::IGNORED);
+  item.SetAttribute("Csub", "SN2");
+
+  c2 = rteModel->FindFirstComponent(item);
+  ASSERT_NE(c2, nullptr);
+  api = c2->GetApi(activeTarget, true);
+  EXPECT_EQ(api->GetVersionString(), "1.1.0");
+  activeTarget->SelectComponent(c2, 1, true);
+  EXPECT_EQ(c2->GetConditionResult(depSolver), RteItem::IGNORED);
+
+  item.SetAttribute("Csub", "SN3");
+  RteComponent* c3 = rteModel->FindFirstComponent(item);
+  ASSERT_NE(c3, nullptr);
+  api = c3->GetApi(activeTarget, true);
+  EXPECT_EQ(api->GetVersionString(), "2.0.0");
+  activeTarget->SelectComponent(c3, 1, true);
+  loadedCprjProject->Apply();
+  EXPECT_EQ(c3->GetConditionResult(depSolver), RteItem::CONFLICT);
+  EXPECT_EQ(c2->GetConditionResult(depSolver), RteItem::CONFLICT);
+  EXPECT_EQ(c->GetConditionResult(depSolver), RteItem::CONFLICT);
+  EXPECT_FALSE(loadedCprjProject->Validate());
+  activeTarget->SelectComponent(c3, 0, true);
+  loadedCprjProject->Apply();
+  EXPECT_EQ(c2->GetConditionResult(depSolver), RteItem::IGNORED);
+  EXPECT_EQ(c->GetConditionResult(depSolver), RteItem::IGNORED);
+  EXPECT_TRUE(loadedCprjProject->Validate());
 
   // evaluate other condition  possibilities
   RteRequireExpression deviceExpression(nullptr);

@@ -98,9 +98,21 @@
       </files>
     </api>
     <api Cclass="RteTest" Cgroup="ApiNonExclusive" Capiversion="1.0.0" exclusive="0" licenseSet="TestPropLicense">
-      <description>RteTes Non-Exclusive API</description>
+      <description>RteTest Non-Exclusive API</description>
       <files>
         <file category="header" name="API/NonExclusive.h"/>
+      </files>
+    </api>
+    <api Cclass="RteTest" Cgroup="ApiNonExclusive" Capiversion="1.1.0" exclusive="0" licenseSet="TestPropLicense">
+      <description>RteTest Non-Exclusive API 1.1.0</description>
+      <files>
+        <file category="header" name="API1/NonExclusive.h"/>
+      </files>
+    </api>
+    <api Cclass="RteTest" Cgroup="ApiNonExclusive" Capiversion="2.0.0" exclusive="0" licenseSet="TestPropLicense">
+      <description>RteTest Non-Exclusive API 2.0.0</description>
+      <files>
+        <file category="header" name="API2/NonExclusive.h"/>
       </files>
     </api>
   </apis>
@@ -237,14 +249,21 @@
       </files>
     </component>
 
-    <component Cclass="RteTest" Cgroup="ApiNonExclusive" Csub="MissingApiVersion" Cversion="0.9.9" Capiversion="2.0.0">
+    <component Cclass="RteTest" Cgroup="ApiNonExclusive" Csub="MissingApiVersion" Cversion="1.9.9" Capiversion="3.0.0">
       <description>Tests Missing API version</description>
       <files>
         <file category="other" name="Dummy/DummyFile.txt"/>
       </files>
     </component>
 
-    <component Cclass="RteTest" Cgroup="ApiNonExclusive" Csub="SN1" Cversion="0.9.9" Capiversion="1.0.0">
+    <component Cclass="RteTest" Cgroup="ApiNonExclusive" Csub="MissingApiVersionMin" Cversion="0.9.9" Capiversion="0.1.0">
+      <description>Tests Missing API version min range</description>
+      <files>
+        <file category="other" name="Dummy/DummyFile.txt"/>
+      </files>
+    </component>
+
+    <component Cclass="RteTest" Cgroup="ApiNonExclusive" Csub="SN1" Cversion="0.9.9" Capiversion="1.1.0">
       <description>Tests Non-Exclusive API component SN1</description>
       <files>
         <file category="other" name="Dummy/DummyFile.txt"/>
@@ -257,6 +276,14 @@
         <file category="other" name="Dummy/DummyFile.txt"/>
       </files>
     </component>
+
+    <component Cclass="RteTest" Cgroup="ApiNonExclusive" Csub="SN3" Cversion="1.9.9" Capiversion="2.0.0">
+      <description>Tests Non-Exclusive API component SN3</description>
+      <files>
+        <file category="other" name="Dummy/DummyFile.txt"/>
+      </files>
+    </component>
+
 
     <component Cclass="RteTest" Cgroup="AcceptDependency" condition="AcceptDependency" Cversion="0.9.9">
       <description>Component that has accept dependencies</description>
@@ -308,7 +335,7 @@
       </files>
     </component>
 
-    <component Cclass="RteTest" Cgroup="Dependency" Csub="Variant" Cvariant="Incompatible" Cversion="1.9.9">
+    <component Cclass="RteTest" Cgroup="Dependency" Csub="Variant" Cvariant="Incompatible" Cversion="0.9.9">
       <description>Component that does not satisfy variant dependency</description>
       <files>
         <file category="other" name="Dummy/DummyFile.txt"/>
