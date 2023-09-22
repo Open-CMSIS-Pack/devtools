@@ -2057,6 +2057,33 @@ bool RteComponentInstanceGroup::HasUnresolvedComponents(const string& targetName
   return false;
 }
 
+RteItem::ConditionResult RteComponentInstanceGroup::GetConditionResult(RteConditionContext* context) const
+{
+  const RteTarget* t = context->GetTarget();
+  const string& targetName = t->GetName();
+  RteItem::ConditionResult result = RteItem::ConditionResult::IGNORED;
+  for (auto ita = m_children.begin(); ita != m_children.end(); ita++) {
+    RteComponentInstanceAggregate* a = dynamic_cast<RteComponentInstanceAggregate*>(*ita);
+    RteComponentAggregate* ca = a? a->GetComponentAggregate(targetName): nullptr;
+    if (!ca) {
+      continue;
+    }
+    auto res = ca->GetConditionResult(context);
+    if (result > res) {
+      result = res;
+    }
+  }
+  map<string, RteComponentInstanceGroup*>::const_iterator it;
+  for (it = m_groups.begin(); it != m_groups.end(); it++) {
+    RteComponentInstanceGroup* g = it->second;
+    auto res = g->GetConditionResult(context);
+    if (result > res) {
+      result = res;
+    }
+  }
+  return result;
+}
+
 bool RteComponentInstanceGroup::IsUsedByTarget(const string& targetName) const
 {
   for (auto ita = m_children.begin(); ita != m_children.end(); ita++) {
