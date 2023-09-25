@@ -5,7 +5,6 @@ default:
   misc:
     - for-compiler: AC6
       C-CPP:
-        - -ffunction-sections
         - -Wno-macro-redefined
         - -Wno-pragma-pack
         - -Wno-parentheses-equality
@@ -25,22 +24,28 @@ default:
       C-CPP:
         - -masm-syntax-unified
         - -fomit-frame-pointer
+        - -ffunction-sections
+        - -fdata-sections
       C:
         - -std=gnu11
       Link:
         - --specs=nano.specs
         - --specs=rdimon.specs
         - -Wl,-Map=$elf()$.map
+        - -Wl,--gc-sections
 
     - for-compiler: CLANG
       C-CPP:
         - -fomit-frame-pointer
+        - -ffunction-sections
+        - -fdata-sections
       C:
         - -std=gnu11
       Link:
         - -lcrt0-semihost
         - -lsemihost
         - -Wl,-Map=$elf()$.map
+        - -Wl,--gc-sections
 
     - for-compiler: IAR
       C-CPP: 
