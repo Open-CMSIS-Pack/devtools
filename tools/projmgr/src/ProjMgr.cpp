@@ -450,6 +450,7 @@ bool ProjMgr::RunConfigure(bool printConfig) {
   if (!m_worker.InitializeModel()) {
     return false;
   }
+  vector<ContextItem*> allContexts;
   vector<string> orderedContexts;
   m_worker.GetYmlOrderedContexts(orderedContexts);
   // Process contexts
@@ -457,6 +458,7 @@ bool ProjMgr::RunConfigure(bool printConfig) {
   m_processedContexts.clear();
   for (auto& contextName : orderedContexts) {
     auto& contextItem = (*contexts)[contextName];
+    allContexts.push_back(&contextItem);
     if (!m_worker.IsContextSelected(contextName)) {
       continue;
     }
@@ -481,6 +483,14 @@ bool ProjMgr::RunConfigure(bool printConfig) {
       ProjMgrLogger::Info(infoMsg);
     }
   }
+
+  // Generate cbuild index
+  if (!allContexts.empty()) {
+    if (!m_emitter.GenerateCbuildIndex(m_parser, allContexts, m_outputDir)) {
+      return false;
+    }
+  }
+
   return !error;
 }
 
@@ -513,13 +523,6 @@ bool ProjMgr::RunConvert(void) {
   // Generate cbuild files
   for (auto& contextItem : m_processedContexts) {
     if (!m_emitter.GenerateCbuild(contextItem)) {
-      return false;
-    }
-  }
-
-  // Generate cbuild index
-  if (!m_processedContexts.empty()) {
-    if (!m_emitter.GenerateCbuildIndex(m_parser, m_processedContexts, m_outputDir)) {
       return false;
     }
   }
