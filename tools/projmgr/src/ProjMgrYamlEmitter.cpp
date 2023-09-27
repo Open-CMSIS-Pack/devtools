@@ -536,6 +536,9 @@ bool ProjMgrYamlEmitter::GenerateCbuildIndex(ProjMgrParser& parser, const vector
   ProjMgrYamlCbuild cbuild(rootNode[YAML_BUILD_IDX], contexts, parser, directory);
 
   if (!cbuild.CompareFile(filename, rootNode)) {
+    if (!RteFsUtils::Exists(directory)) {
+      RteFsUtils::CreateDirectories(directory);
+    }
     ofstream fileStream(filename);
     if (!fileStream) {
       ProjMgrLogger::Error(filename, "file cannot be written");
