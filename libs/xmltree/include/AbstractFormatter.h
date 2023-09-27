@@ -10,6 +10,7 @@
 
 #include <sstream>
 #include <string>
+#include <vector>
 
 /**
  * @brief base abstract class to generate formatted text from XMLTreeElement items in a buffer of type string
@@ -43,12 +44,12 @@ public:
 
   /**
    * @brief generate formatted text
-   * @param parentElement pointer to an instance of type XMLTreeElement
+   * @param rootElement pointer to an instance of type XMLTreeElement
    * @param schemaFile name of a schema file
    * @param schemaVersion version of a schema file
    * @return string containing instance content as XML formatted text
   */
-  virtual std::string FormatElement(XMLTreeElement* parentElement,
+  virtual std::string FormatElement(XMLTreeElement* rootElement,
     const std::string& schemaFile = XmlItem::EMPTY_STRING,
     const std::string& schemaVersion = XmlItem::EMPTY_STRING);
 
@@ -65,7 +66,8 @@ public:
   virtual std::string GetIndentString(int level) const;
 
 protected:
-  virtual void FormatXmlElement(std::ostringstream& outStream, XMLTreeElement* element, int level = 0) = 0;
+  virtual void FormatXmlElement(std::ostringstream& outStream, XMLTreeElement* element, int level = 0) {}; // default does nothing
+  static void CollectSortedChildren(XMLTreeElement* element, std::vector< std::pair<std::string, std::vector<XMLTreeElement*> > >& sortedChildren);
 
 protected:
   std::string m_Content;

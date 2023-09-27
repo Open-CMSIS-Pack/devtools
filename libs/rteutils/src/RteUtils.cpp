@@ -21,18 +21,20 @@
 using namespace std;
 
 const string RteUtils::EMPTY_STRING("");
-const string RteUtils::BASE_STRING("base");
-const string RteUtils::UPDATE_STRING("update");
+const string RteUtils::DASH_STRING("-");
 
 const string RteUtils::CRLF_STRING(RteConstants::CRLF);
 const string RteUtils::CR_STRING(RteConstants::CR);
 const string RteUtils::LF_STRING(RteConstants::LF);
 
+const string RteUtils::ERROR_STRING("<ERROR>");
+const string RteUtils::BASE_STRING("base");
+const string RteUtils::UPDATE_STRING("update");
+
 const set<string> RteUtils::EMPTY_STRING_SET;
 const list<string> RteUtils::EMPTY_STRING_LIST;
 const vector<string> RteUtils::EMPTY_STRING_VECTOR;
 
-const string RteUtils::ERROR_STRING("<ERROR>");
 const char RteUtils::CatalogName[] = "pack.idx";
 
 string RteUtils::GetPrefix(const string& s, char delimiter, bool withDelimiter)

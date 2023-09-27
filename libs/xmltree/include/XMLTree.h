@@ -233,10 +233,10 @@ public:
   void SetXmlValueAdjuster(XmlValueAdjuster* adjuster) { m_XmlValueAdjuster = adjuster; }
 
   /**
-   * @brief getter for associated XML schema file name
-   * @return associated XML schema file name
+   * @brief getter for associated schema file name
+   * @return associated schema file name
   */
-  const std::string& GetSchemaFileName() const { return m_xsdFile; }
+  const std::string& GetSchemaFileName() const { return m_schemaFile; }
 
   /**
    * @brief getter for associated XML file name
@@ -388,7 +388,7 @@ protected:
   bool DoParse(const std::string& fileName, const std::string& xmlString);
 
 protected:
-  std::string m_xsdFile; // schema file with path
+  std::string m_schemaFile; // schema file with path
 
   std::list<std::string> m_fileNames; // XML files to parse
   // errors for all docs

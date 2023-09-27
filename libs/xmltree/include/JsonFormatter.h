@@ -9,8 +9,6 @@
 #include "AbstractFormatter.h"
 #include "XMLTree.h"
 
-#include <vector>
-
 /**
  * @brief class to generate XML formatted text from XMLTreeElement items in a buffer of type string
 */
@@ -27,8 +25,6 @@ protected:
   void FormatXmlElementBody(std::ostringstream& outStream, XMLTreeElement* element, int level, bool outputTag);
 
   void FormatXmlElements(std::ostringstream& outStream, const std::string& tag, const std::vector<XMLTreeElement*>& elements, int level);
-  static void CollectSortedChildern(XMLTreeElement* element, std::vector< std::pair<std::string, std::vector<XMLTreeElement*> > >& sortedChildren);
-
 };
 
 #endif /* JSONFORMATTER_H */

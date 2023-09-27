@@ -12,16 +12,19 @@
 
 using namespace std;
 
-const string XMLHEADER = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\" ?>";
 const string SCHEMAATTR = "xmlns:xsi";
 const string SCHEMAINSTANCE = "http://www.w3.org/2001/XMLSchema-instance";
 const string OWNNAMESPACE = "xsi:noNamespaceSchemaLocation";
 const string VERSIONATTR = "schemaVersion";
 
-XmlFormatter::XmlFormatter() {
+const string XmlFormatter::XMLHEADER = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\" ?>";
+XmlFormatter::XmlFormatter(bool bInsertEmptyLines):
+ m_bInsertEmptyLines(bInsertEmptyLines)
+{
 }
 
-XmlFormatter::XmlFormatter(XMLTree* xmlTree, const string& schemaFile, const string& schemaVersion)
+XmlFormatter::XmlFormatter(XMLTree* xmlTree, const string& schemaFile, const string& schemaVersion, bool bInsertEmptyLines):
+  m_bInsertEmptyLines(bInsertEmptyLines)
 {
   m_Content = XmlFormatter::Format(xmlTree, schemaFile, schemaVersion);
 }
@@ -33,9 +36,11 @@ string XmlFormatter::FormatElement(XMLTreeElement* rootElement, const string& sc
     return XMLTree::EMPTY_STRING;
   }
   // Add xml header attributes
-  rootElement->AddAttribute(SCHEMAATTR, SCHEMAINSTANCE);
-  rootElement->AddAttribute(OWNNAMESPACE, schemaFile);
-  rootElement->AddAttribute(VERSIONATTR, schemaVersion);
+  if (!schemaFile.empty()) {
+    rootElement->AddAttribute(SCHEMAATTR, SCHEMAINSTANCE);
+    rootElement->AddAttribute(OWNNAMESPACE, schemaFile);
+    rootElement->AddAttribute(VERSIONATTR, schemaVersion);
+  }
   // Format elements recursively
   ostringstream xmlStream;
   xmlStream << XMLHEADER << EOL_STRING;
@@ -64,7 +69,7 @@ void XmlFormatter::FormatXmlElement(ostringstream& xmlStream, XMLTreeElement* el
     xmlStream << '>' << EOL_STRING;
     for (auto it = children.begin(); it != children.end(); it++) {
       // insert extra space between children on the level 0
-      if ((level == 0) && (it != children.begin())) {
+      if (m_bInsertEmptyLines && (level == 0) && (it != children.begin())) {
         xmlStream << EOL_STRING;
       }
       FormatXmlElement(xmlStream, *it, level + 1);

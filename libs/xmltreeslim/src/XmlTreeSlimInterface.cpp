@@ -98,7 +98,7 @@ void XMLTreeSlimInterface::InitMessageTable()
 
 void XMLTreeSlimInterface::Clear() // does not destroy XML parser!
 {
- // does nothing for undelying XML_Parser
+ // does nothing for underlying XML_Parser
 }
 
 bool XMLTreeSlimInterface::Parse(const std::string& fileName, const std::string& xmlString)

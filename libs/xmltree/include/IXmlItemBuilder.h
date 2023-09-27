@@ -3,7 +3,7 @@
 /******************************************************************************/
 /*
  * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
- * 
+ *
  * SPDX-License-Identifier: Apache-2.0
  */
 /******************************************************************************/
@@ -14,7 +14,7 @@
  * @brief abstract factory interface class to create XmlItem derived objects
 */
 class IXmlItemBuilder {
-public: 
+public:
   /**
    * @brief destructor
   */
@@ -44,6 +44,12 @@ public:
    * @return true if item is successfully created
   */
   virtual bool CreateItem(const std::string& tag) = 0;
+
+  /**
+   * @brief check if the interface created member root item
+   * @return true if root item has been already created
+  */
+  virtual bool HasRoot() const = 0;
 
   /**
    * @brief pure virtual function to add created item to parent's children

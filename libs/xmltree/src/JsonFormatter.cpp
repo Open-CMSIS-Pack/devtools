@@ -70,7 +70,7 @@ void JsonFormatter::FormatXmlElement(ostringstream& outStream, XMLTreeElement* e
     outStream << indent << "  \"#text\": \"" << text << "\"" << EOL_STRING;
   } else if (element->HasChildren()) {
       vector< pair<string, vector<XMLTreeElement*> > > sortedChildren;
-      CollectSortedChildern(element, sortedChildren);
+      CollectSortedChildren(element, sortedChildren);
       std::size_t count = sortedChildren.size() - 1;
       for (auto [k, v] : sortedChildren) {
         FormatXmlElements(outStream, k, v, level + 1);
@@ -110,27 +110,6 @@ void JsonFormatter::FormatXmlElements(ostringstream& outStream, const string& ta
   if (!bSingleElement) {
     outStream << EOL_STRING;
     outStream << indent << ']';
-  }
-}
-
-void JsonFormatter::CollectSortedChildern(XMLTreeElement* element, std::vector< std::pair<std::string, std::vector<XMLTreeElement*> > >& sortedChildren)
-{
-  if (!element || !element->HasChildren()) {
-    return;
-  }
-  auto& children = element->GetChildren();
-  for (auto child : children) {
-    const string& tag = child->GetTag();
-    auto it = sortedChildren.begin();
-    for (; it != sortedChildren.end(); it++) {
-      if (it->first == tag) {
-        break;
-      }
-    }
-    if (it == sortedChildren.end()) {
-      it = sortedChildren.insert(sortedChildren.end(), make_pair(tag, vector<XMLTreeElement*>()));
-    }
-    it->second.push_back(child);
   }
 }
 

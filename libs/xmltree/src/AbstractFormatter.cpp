@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "XMLTree.h"
 #include "AbstractFormatter.h"
 
 using namespace std;
@@ -42,6 +41,28 @@ string AbstractFormatter::GetIndentString(int level) const
 
   return string(((std::size_t)level) << 1, ' ');
 }
+
+void AbstractFormatter::CollectSortedChildren(XMLTreeElement* element, std::vector< std::pair<std::string, std::vector<XMLTreeElement*> > >& sortedChildren)
+{
+  if (!element || !element->HasChildren()) {
+    return;
+  }
+  auto& children = element->GetChildren();
+  for (auto child : children) {
+    const string& tag = child->GetTag();
+    auto it = sortedChildren.begin();
+    for (; it != sortedChildren.end(); it++) {
+      if (it->first == tag) {
+        break;
+      }
+    }
+    if (it == sortedChildren.end()) {
+      it = sortedChildren.insert(sortedChildren.end(), make_pair(tag, vector<XMLTreeElement*>()));
+    }
+    it->second.push_back(child);
+  }
+}
+
 
 
 // end of AbstractFormatter.cpp
