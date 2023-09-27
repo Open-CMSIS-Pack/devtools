@@ -17,16 +17,18 @@ class XmlFormatter : public AbstractFormatter
 public:
   /**
    * @brief default constructor
+   * @param bInsertEmptyLines insert extra space between children on the level 0
   */
-  XmlFormatter();
+  XmlFormatter(bool bInsertEmptyLines = true);
 
   /**
    * @brief constructor which generates XML formatted text
    * @param xmlTree pointer to an instance derived from XMLTreeElement
    * @param schemaFile name of XML schema file
    * @param schemaVersion version of XML schema file
+   * @param bInsertEmptyLines insert extra space between children on the level 0
   */
-  XmlFormatter(XMLTree* xmlTree, const std::string& schemaFile, const std::string& schemaVersion);
+  XmlFormatter(XMLTree* xmlTree, const std::string& schemaFile, const std::string& schemaVersion, bool bInsertEmptyLines = true);
 
   /**
    * @brief generate XML formatted text
@@ -54,8 +56,12 @@ public:
   */
   static std::string ConvertSpecialChars(const std::string& input);
 
+  static const std::string XMLHEADER;
+
 protected:
   void FormatXmlElement(std::ostringstream& xmlStream, XMLTreeElement* element, int level=0) override;
+
+  bool m_bInsertEmptyLines;
 };
 
 #endif /* XMLFORMATTER_H */

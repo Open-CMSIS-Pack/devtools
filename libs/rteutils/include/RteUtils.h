@@ -359,12 +359,14 @@ public:
   }
 
   static const std::string EMPTY_STRING;
-  static const std::string ERROR_STRING;
-  static const std::string BASE_STRING;
-  static const std::string UPDATE_STRING;
+  static const std::string DASH_STRING;
   static const std::string CRLF_STRING;
   static const std::string CR_STRING;
   static const std::string LF_STRING;
+
+  static const std::string ERROR_STRING;
+  static const std::string BASE_STRING;
+  static const std::string UPDATE_STRING;
 
   static const char CatalogName[];
   static const std::set<std::string> EMPTY_STRING_SET;

@@ -59,7 +59,7 @@ public:
    * @brief check member m_pRoot
    * @return true if member m_pRoot not equal 0
   */
-  virtual bool HasRoot() const { return m_pRoot != 0; }
+  bool HasRoot() const override { return m_pRoot != 0; }
 
   /**
    * @brief add child specified by member m_pCurrent to parent

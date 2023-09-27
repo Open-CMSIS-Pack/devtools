@@ -128,6 +128,7 @@ add_subdirectory(libs/rteutils)
 add_subdirectory(libs/xmlreader)
 add_subdirectory(libs/xmltree)
 add_subdirectory(libs/xmltreeslim)
+add_subdirectory(libs/ymltree)
 add_subdirectory(libs/ymlschemachecker)
 add_subdirectory(libs/xmlschemachecker)
 

@@ -103,12 +103,12 @@ void XMLTree::SetXmlItemBuilder(IXmlItemBuilder* itemBuilder, bool takeOnerschip
 }
 
 
-void XMLTree::SetSchemaFileName(const char* xsdFile)
+void XMLTree::SetSchemaFileName(const char* schemaFile)
 {
-  if (xsdFile) {
-    m_xsdFile = XmlValueAdjuster::SlashesToOsSlashes(xsdFile);
+  if (schemaFile) {
+    m_schemaFile = XmlValueAdjuster::SlashesToOsSlashes(schemaFile);
   } else {
-    m_xsdFile.clear();
+    m_schemaFile.clear();
   }
 }
 
