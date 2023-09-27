@@ -108,6 +108,8 @@ RteDeviceProperty* RteDeviceElement::CreateProperty(const string& tag)
     return new RteAccessPortV1(this);
   } else if (tag == "accessportV2") {
     return new RteAccessPortV2(this);
+  } else if (tag == "sequence") {
+    return new RteSequence(this);
   }
   return new RteDeviceProperty(this);
 }
@@ -273,15 +275,6 @@ RteDeviceProperty* RteSequence::CreateProperty(const string& tag)
   }
   return new RteDeviceProperty(this);
 }
-
-RteDeviceProperty* RteSequences::CreateProperty(const string& tag)
-{
-  if (tag == "sequence") {
-    return new RteSequence(this);
-  }
-  return new RteDeviceProperty(this);
-}
-
 
 string RteDatapatch::ConstructID()
 {
@@ -547,6 +540,11 @@ bool RteDeviceItem::Validate()
 
 RteItem* RteDeviceItem::CreateItem(const std::string& tag)
 {
+  if (tag == "sequences") {
+    // ignore sequences element because effective properties work on directly on "sequence" properties
+    return this;
+  }
+
   if (tag == "subFamily" || tag == "device" || tag == "variant") {
     RteDeviceItem* di = CreateDeviceItem(tag);
     if (di) {
@@ -565,15 +563,6 @@ RteItem* RteDeviceItem::CreateItem(const std::string& tag)
   props->AddItem(deviceProperty);
   return deviceProperty;
 }
-
-RteDeviceProperty* RteDeviceItem::CreateProperty(const string& tag)
-{
-  if (tag == "sequences") {
-    return new RteSequences(this);
-  }
-  return RteDeviceElement::CreateProperty(tag);
-}
-
 
 RteDeviceItem* RteDeviceItem::CreateDeviceItem(const string& tag)
 {
@@ -763,7 +752,7 @@ void RteDeviceItem::CollectEffectiveProperties(const string& pName)
 {
   m_effectiveProperties[pName] = RteEffectiveProperties();
   auto it = m_effectiveProperties.find(pName);
-  RteDevicePropertyMap& pmap = it->second.m_properties;
+  RteDevicePropertyMap& pmap = it->second.m_propertyMap;
   CollectEffectiveProperties(pmap, pName);
   for (auto itp = pmap.begin(); itp != pmap.end(); itp++) {
     auto l = itp->second;
@@ -776,8 +765,8 @@ void RteDeviceItem::CollectEffectiveProperties(const string& pName)
 
 
 const list<RteDeviceProperty*>& RteEffectiveProperties::GetProperties(const string& tag) const {
-  auto it = m_properties.find(tag);
-  if (it != m_properties.end()) {
+  auto it = m_propertyMap.find(tag);
+  if (it != m_propertyMap.end()) {
     return it->second;
   }
   return EMPTY_PROPERTY_LIST;
@@ -795,7 +784,7 @@ const RteDevicePropertyMap& RteDeviceItem::GetEffectiveProperties(const string& 
 
   auto itp = m_effectiveProperties.find(pName);
   if (itp != m_effectiveProperties.end()) {
-    return itp->second.m_properties;
+    return itp->second.m_propertyMap;
   }
 
   static const RteDevicePropertyMap EMPTY_PROPERTY_MAP;
