@@ -651,11 +651,12 @@ RteItem* RtePackage::CreateItem(const std::string& tag)
 void RtePackage::Construct()
 {
   // remove attributes that we do not need:
-  RemoveAttribute("xmlns:xs");
-  RemoveAttribute("xs:noNamespaceSchemaLocation");
+  EraseAttributes("xmlns:*");
+  EraseAttributes("xs:*");
   // some XML readers strip namespaces
   RemoveAttribute("xs");
   RemoveAttribute("noNamespaceSchemaLocation");
+  RemoveAttribute("schemaLocation");
 
   if (m_releases) {
     AddAttribute("version", m_releases->GetVersionString());

@@ -180,6 +180,14 @@ public:
   bool RemoveAttribute(const std::string& name);
 
   /**
+   * @brief removes several attributes matching given pattern
+   * @param pattern attribute pattern to remove
+   * @return true if at least one attribute is removed, false otherwise
+  */
+  bool EraseAttributes(const std::string& pattern);
+
+
+  /**
    * @brief getter for attribute
    * @param name pointer to attribute name
    * @return string containing attribute value or empty string if attribute does not exist
