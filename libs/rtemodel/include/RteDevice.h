@@ -432,39 +432,6 @@ protected:
 };
 
 /**
- * @brief class to support <sequence> device property
-*/
-class RteSequences : public RteDevicePropertyGroup
-{
-public:
-  /**
-   * @brief constructor
-   * @param parent pointer to parent RteItem
-  */
-  RteSequences(RteItem* parent) : RteDevicePropertyGroup(parent) {};
-public:
-  /**
-    * @brief indicate the property is unique, a sequence with the same name can be listed only once per device
-    * @return true
-  */
-  bool IsUnique() const override { return true; }
-
-  /**
-   * @brief indicate that this property type provides effective content to collect
-   * @return true
-  */
-  bool IsCollectEffectiveContent() const override { return true; }
-
-protected:
-  /**
-   * @brief create an RteDeviceProperty for given tag
-   * @param tag XML tag
-   * @return pointer to RteDeviceProperty-derived class, never null
-  */
-  RteDeviceProperty* CreateProperty(const std::string& tag) override;
-};
-
-/**
  * @brief class to support <datapatch> device property
 */
 class RteDatapatch : public RteDeviceProperty
@@ -924,7 +891,7 @@ struct RteEffectiveProperties
   /**
    * @brief full property collection: map of tag to list of RteDeviceProperty pointers
   */
-  RteDevicePropertyMap m_properties;
+  RteDevicePropertyMap m_propertyMap;
 };
 
 
@@ -1113,13 +1080,6 @@ protected:
    * @param properties list of properties to convert
   */
   void CreateEffectiveXmlTreeElements(XMLTreeElement* parent, const std::list<RteDeviceProperty*>& properties);
-
-  /**
-   * @brief create an RteDeviceProperty for given tag
-   * @param tag XML tag
-   * @return pointer to RteDeviceProperty-derived class, never null
-  */
-  RteDeviceProperty* CreateProperty(const std::string& tag) override;
 
   /**
    * @brief create a device item derived from RteDeviceItem class for given tag
