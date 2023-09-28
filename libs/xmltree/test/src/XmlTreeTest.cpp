@@ -6,6 +6,7 @@
 #include "gtest/gtest.h"
 
 #include "XMLTree.h"
+#include "RteUtils.h"
 
 TEST(XmlTreeTest, GetAttribute) {
 
@@ -51,4 +52,24 @@ TEST(XmlTreeTest, GetAttribute) {
   EXPECT_EQ(e.GetAttributeAsUnsigned("ten"), 10U);
   EXPECT_EQ(e.GetAttributeAsUnsigned("zeroTen"), 8); // treated as octal
   EXPECT_EQ(e.GetAttributeAsUnsigned("minusOne"), 0xFFFFFFFF);
+
+  // remove and erase
+  EXPECT_TRUE(e.HasValue("strVal"));
+  e.RemoveAttribute("string");
+  EXPECT_FALSE(e.HasValue("strVal"));
+  EXPECT_FALSE(e.HasAttribute("string"));
+
+  for (long i = 100; i < 103; i++) {
+    std::string val = RteUtils::LongToString(i);
+    std::string key = "attr_" + val;
+    e.SetAttribute(key.c_str(), i);
+    EXPECT_TRUE(e.HasValue(val));
+  }
+  EXPECT_TRUE(e.EraseAttributes("attr*"));
+  for (long i = 100; i < 103; i++) {
+    std::string val = RteUtils::LongToString(i);
+    EXPECT_FALSE(e.HasValue(val));
+  }
+  EXPECT_FALSE(e.EraseAttributes("attr*"));
 }
+// end of XmlTreeTest.cpp

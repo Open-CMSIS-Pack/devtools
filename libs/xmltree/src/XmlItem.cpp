@@ -122,6 +122,22 @@ bool XmlItem::RemoveAttribute(const char* name)
   return false;
 }
 
+bool XmlItem::EraseAttributes(const std::string& pattern)
+{
+  set<string> attributesToErase;
+  for (const auto [key, _] : m_attributes) {
+    if (WildCards::Match(pattern, key)) {
+      attributesToErase.insert(key);
+    }
+  }
+  if (attributesToErase.empty()) {
+    return false;
+  }
+  for (const auto& key : attributesToErase) {
+    RemoveAttribute(key);
+  }
+  return true;
+}
 
 const string& XmlItem::GetAttribute(const char* name) const
 {
