@@ -41,3 +41,10 @@ build:
   constructed-files:
     - file: ../data/TestSolution/LinkerOptions/RTE/_Debug_GCC_RteTest_ARMCM3/RTE_Components.h
       category: header
+  licenses:
+    - license: <unknown>
+      license-agreement: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Doc/license.txt
+      packs:
+        - pack: ARM::RteTest_DFP@0.2.0
+      components:
+        - component: ARM::Board:Test:Rev1@1.1.1

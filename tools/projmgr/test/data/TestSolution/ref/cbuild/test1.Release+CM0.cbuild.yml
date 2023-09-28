@@ -137,3 +137,12 @@ build:
   constructed-files:
     - file: ../data/TestSolution/TestProject1/RTE/_Release_CM0/RTE_Components.h
       category: header
+  licenses:
+    - license: <unknown>
+      license-agreement: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Doc/license.txt
+      packs:
+        - pack: ARM::RteTest_DFP@0.2.0
+      components:
+        - component: ::RteTest:CORE(API)
+        - component: ARM::Device:Startup&RteTest Startup@2.0.3
+        - component: ARM::RteTest:CORE@0.1.1

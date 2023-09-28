@@ -51,3 +51,13 @@ build:
   constructed-files:
     - file: ../data/TestSolution/LanguageAndScope/RTE/_Debug_AC6_RteTest_ARMCM3/RTE_Components.h
       category: header
+  licenses:
+    - license: <unknown>
+      packs:
+        - pack: ARM::RteTest@0.1.0-alpha0
+      components:
+        - component: ARM::RteTest:LanguageAndScope@0.9.9
+    - license: <unknown>
+      license-agreement: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Doc/license.txt
+      packs:
+        - pack: ARM::RteTest_DFP@0.2.0
