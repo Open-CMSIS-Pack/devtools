@@ -120,7 +120,7 @@ void ProjMgrTestEnv::TearDown() {
   // Reserved
 }
 
-void ProjMgrTestEnv::CompareFile(const string& file1, const string& file2) {
+void ProjMgrTestEnv::CompareFile(const string& file1, const string& file2, LineReplaceFunc_t file2LineReplaceFunc) {
   ifstream f1, f2;
   string l1, l2;
   bool ret_val;
@@ -151,6 +151,10 @@ void ProjMgrTestEnv::CompareFile(const string& file1, const string& file2) {
       l2.pop_back();
     }
 
+    if (file2LineReplaceFunc) {
+      l2 = file2LineReplaceFunc(l2);
+    }
+
     if (l1 != l2) {
       // ignore 'timestamp'
       if ((!l1.empty() && (l1.find("timestamp=") != string::npos)) && (!l2.empty() && (l2.find("timestamp=") != string::npos))) {
@@ -159,7 +163,7 @@ void ProjMgrTestEnv::CompareFile(const string& file1, const string& file2) {
       if ((!l1.empty() && (l1.find("generated-by") != string::npos)) && (!l2.empty() && (l2.find("generated-by") != string::npos))) {
         continue;
       }
-      FAIL() << "error: " << file1 << " is different from " << file2;
+      FAIL() << "error: " << file1 << " is different from " << file2 << "\nLine1: " << l1 << "\nLine2: " << l2;
     }
   }
 

@@ -494,12 +494,13 @@
       "description": "General generator info",
       "type": "object",
       "properties": {
+        "from-pack": { "$ref": "#/definitions/PackID" },
         "generator": { "type": "string", "description": "Section for a specific generator" },
         "path":      { "type": "string", "description": "Path name for storing the files generated" },
         "gpdsc":     { "type": "string", "description": "File name of the *.GDPSC file that stores the information in path" },
         "command":   { "$ref": "#/definitions/CommandType" }
       },
-      "required": [ "generator", "path", "gpdsc", "command" ]
+      "required": [ "generator", "from-pack", "path", "gpdsc", "command" ]
     },
     "CommandType": {
       "type": "object",
@@ -531,9 +532,10 @@
       "type": "object",
       "properties": {
         "id": { "type": "string" },
+        "from-pack": { "$ref": "#/definitions/PackID"},
         "files": { "$ref": "#/definitions/FilesType" }
       },
-      "required": [ "id" ]
+      "required": [ "id", "from-pack" ]
     },
     "ComponentID": {
       "type": "string",
@@ -735,6 +737,16 @@
         "generated-by": {
           "type": "string",
           "description": "Tool name along with version information used to generate this application"
+        },
+        "current-generator": {
+          "type": "object",
+          "description": "What generator configuration to use",
+          "prorperties": {
+            "from-pack": { "$ref": "#/definitions/PackID" },
+            "id":        { "type": "string" }
+          },
+          "additionalProperties": false,
+          "required": [ "from-pack", "id" ]
         },
         "solution": {
           "type": "string",
