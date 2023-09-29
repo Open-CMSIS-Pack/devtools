@@ -2094,6 +2094,8 @@ bool RteProject::Validate()
   RteTarget* target = GetActiveTarget();
   if (!target)
     return true; // nothing to do
+  RteModel* rteModel = target->GetFilteredModel();
+
   target->ClearMissingPacks();
 
   // check if all required gpdsc files are available
@@ -2236,18 +2238,21 @@ bool RteProject::Validate()
         msg += "': API version '";
         msg += apiVer;
         msg += "' or compatible is required.";
-        RteApi* availableApi = c->GetApi(target, false);
-        if (availableApi) {
+        m_errors.push_back(msg);
+        list<RteApi*> availableApis = rteModel->GetAvailableApis(c->GetApiID(false));
+        for(RteApi* availableApi :  availableApis) {
           string availableApiVer = availableApi->GetApiVersionString();
-          msg += " (Version '";
+          msg = "   Version '";
           msg += availableApiVer;
           msg += "' is found in pack '";
           msg += availableApi->GetPackageID(true);
-          msg += "', install ";
-          msg += VersionCmp::Compare(apiVer, availableApiVer) < 0 ? "previous" : "next";
-          msg += " pack version).";
+          if (availableApis.size() == 1) {
+            msg += "', install ";
+            msg += VersionCmp::Compare(apiVer, availableApiVer) < 0 ? "previous" : "next";
+            msg += " pack version.";
+          }
+          m_errors.push_back(msg);
         }
-        m_errors.push_back(msg);
       } else if (apiResult == RteItem::CONFLICT) {
         bValid = false;
         RteApi* api = c->GetApi(target, true);

@@ -183,6 +183,8 @@ TEST_F(RteConditionTest, MissingIgnoredFulfilledSelectable) {
                      {"Csub", "MissingApiVersion"} });
   c = rteModel->FindFirstComponent(item);
   ASSERT_NE(c, nullptr);
+  auto apis = rteModel->GetAvailableApis(c->GetApiID(true));
+  EXPECT_EQ(apis.size(), 3);
   EXPECT_EQ(c->GetConditionResult(depSolver), RteItem::MISSING_API_VERSION);
   activeTarget->SelectComponent(c, 1, true);
   loadedCprjProject->Apply();

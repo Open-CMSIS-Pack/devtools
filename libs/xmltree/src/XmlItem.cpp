@@ -125,7 +125,7 @@ bool XmlItem::RemoveAttribute(const char* name)
 bool XmlItem::EraseAttributes(const std::string& pattern)
 {
   set<string> attributesToErase;
-  for (const auto [key, _] : m_attributes) {
+  for ( auto [key, _] : m_attributes) {
     if (WildCards::Match(pattern, key)) {
       attributesToErase.insert(key);
     }
@@ -133,7 +133,7 @@ bool XmlItem::EraseAttributes(const std::string& pattern)
   if (attributesToErase.empty()) {
     return false;
   }
-  for (const auto& key : attributesToErase) {
+  for ( auto& key : attributesToErase) {
     RemoveAttribute(key);
   }
   return true;

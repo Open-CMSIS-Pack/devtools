@@ -296,6 +296,17 @@ RteApi* RteModel::GetLatestApi(const string& id) const
   return nullptr;
 }
 
+std::list<RteApi*> RteModel::GetAvailableApis(const std::string& id) const
+{
+  std::list<RteApi*> apis;
+  string commonId = RteUtils::GetPrefix(id, RteConstants::PREFIX_CVERSION_CHAR);
+  for (auto [key, api] : m_apiList) {
+    if (RteUtils::GetPrefix(key, RteConstants::PREFIX_CVERSION_CHAR) == commonId) {
+      apis.push_back(api);
+    }
+  }
+  return apis;
+}
 
 RteBundle* RteModel::GetBundle(const string& id) const
 {

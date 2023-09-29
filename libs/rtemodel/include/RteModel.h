@@ -260,6 +260,12 @@ public:
   */
   RteApi* GetLatestApi(const std::string& id) const;
 
+  /**
+   * @brief get available API versions for given common ID
+   * @param id API ID (version is ignored)
+   * @return list of available RteApi objects
+  */
+  std::list<RteApi*> GetAvailableApis(const std::string& id) const;
 
   /**
    * @brief getter for collection of APIs
