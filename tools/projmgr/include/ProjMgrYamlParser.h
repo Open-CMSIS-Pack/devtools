@@ -32,6 +32,7 @@ static constexpr const char* YAML_CLAYER = "clayer";
 static constexpr const char* YAML_CPROJECTS = "cprojects";
 static constexpr const char* YAML_CPROJECT = "cproject";
 static constexpr const char* YAML_CSOLUTION = "csolution";
+static constexpr const char* YAML_CURRENT_GENERATOR = "current-generator";
 static constexpr const char* YAML_CONSUMES = "consumes";
 static constexpr const char* YAML_COMMAND = "command";
 static constexpr const char* YAML_COMPILER = "compiler";

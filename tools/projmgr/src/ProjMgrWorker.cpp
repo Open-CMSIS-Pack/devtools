@@ -3423,7 +3423,7 @@ bool ProjMgrWorker::ExecuteGenerator(std::string& generatorId) {
     generatorDestination += '/';
   }
 
-  if (!ProjMgrYamlEmitter::GenerateCbuild(&context)) {
+  if (!ProjMgrYamlEmitter::GenerateCbuild(&context, generator)) {
     return false;
   }
 

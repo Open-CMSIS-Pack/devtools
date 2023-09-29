@@ -29,6 +29,7 @@ build:
       selected-by: Device:RteTest Generated Component:RteTestGenFiles
       generator:
         id: RteTestGeneratorIdentifier
+        from-pack: ARM::RteTestGenerator@0.1.0
         files:
           - file: ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0/Templates/RteTest.gpdsc.template
             category: genAsset
@@ -66,6 +67,7 @@ build:
       selected-by: CORE
   generators:
     - generator: RteTestGeneratorIdentifier
+      from-pack: ARM::RteTestGenerator@0.1.0
       path: gendir
       gpdsc: gendir/RteTestGen_ARMCM0/RteTest.gpdsc
       command:
@@ -75,7 +77,7 @@ build:
             - RteTestGen_ARMCM0
             - ../TestProject3_1.Debug+TypeA.cprj
             - ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0
-            - ../TestProject3_1.Debug+TypeA.cbuild.yml
+            - ../../tmp/TestProject3_1/TypeA/Debug/TestProject3_1.Debug+TypeA.cbuild-gen.yml
             - /foo=bar
         linux:
           file: ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0/Generator/script.sh
@@ -83,7 +85,7 @@ build:
             - RteTestGen_ARMCM0
             - ../TestProject3_1.Debug+TypeA.cprj
             - ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0
-            - ../TestProject3_1.Debug+TypeA.cbuild.yml
+            - ../../tmp/TestProject3_1/TypeA/Debug/TestProject3_1.Debug+TypeA.cbuild-gen.yml
             - --foo=bar
         mac:
           file: ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0/Generator/script.sh
@@ -91,7 +93,7 @@ build:
             - RteTestGen_ARMCM0
             - ../TestProject3_1.Debug+TypeA.cprj
             - ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0
-            - ../TestProject3_1.Debug+TypeA.cbuild.yml
+            - ../../tmp/TestProject3_1/TypeA/Debug/TestProject3_1.Debug+TypeA.cbuild-gen.yml
             - --foo=bar
   linker:
     script: RTE/Device/RteTestGen_ARMCM0/gcc_arm.ld

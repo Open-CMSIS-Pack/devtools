@@ -1,0 +1,119 @@
+build:
+  generated-by: csolution version 2.1.0+p16-gf314eb6d
+  current-generator:
+    id: RteTestGeneratorIdentifier
+    from-pack: ARM::RteTestGenerator@0.1.0
+  solution: ${DEVTOOLS(data)}/TestSolution/genfiles.csolution.yml
+  project: ${DEVTOOLS(data)}/TestSolution/TestProject3_1/TestProject3_1.cproject.yml
+  context: TestProject3_1.Debug+TypeA
+  compiler: GCC@0.0.0
+  device: RteTestGen_ARMCM0
+  packs:
+    - pack: ARM::RteTestGenerator@0.1.0
+      path: ${DEVTOOLS(packs)}/ARM/RteTestGenerator/0.1.0
+    - pack: ARM::RteTest_DFP@0.2.0
+      path: ${DEVTOOLS(packs)}/ARM/RteTest_DFP/0.2.0
+  define:
+    - _RTE_
+  add-path:
+    - ${DEVTOOLS(data)}/TestSolution/TestProject3_1/RTE/_Debug_TypeA
+    - ${DEVTOOLS(packs)}/ARM/RteTestGenerator/0.1.0/Include
+    - ${DEVTOOLS(packs)}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
+  output-dirs:
+    intdir: ../tmp/TestProject3_1/TypeA/Debug
+    outdir: outdir/
+    rtedir: RTE
+  output:
+    - type: elf
+      file: TestProject3_1.elf
+  components:
+    - component: ARM::Device:RteTest Generated Component:RteTestGenFiles@1.1.0
+      from-pack: ARM::RteTestGenerator@0.1.0
+      selected-by: Device:RteTest Generated Component:RteTestGenFiles
+      generator:
+        id: RteTestGeneratorIdentifier
+        from-pack: ARM::RteTestGenerator@0.1.0
+        files:
+          - file: ${DEVTOOLS(packs)}/ARM/RteTestGenerator/0.1.0/Templates/RteTest.gpdsc.template
+            category: genAsset
+            version: 1.0.0
+          - file: ${DEVTOOLS(packs)}/ARM/RteTestGenerator/0.1.0/Templates/RteTestGen.h.template
+            category: genHeader
+            version: 1.0.0
+          - file: ${DEVTOOLS(packs)}/ARM/RteTestGenerator/0.1.0/Templates/RteTestGen.c.template
+            category: genSource
+            version: 1.0.0
+          - file: ${DEVTOOLS(data)}/TestSolution/TestProject3_1/RTE/Device/RteTestGen_ARMCM0/RteTestGen.params
+            category: genParams
+            attr: config
+            version: 0.9.0
+    - component: ARM::Device:Startup&RteTest Startup@2.0.3
+      condition: ARMCM0 RteTest
+      from-pack: ARM::RteTest_DFP@0.2.0
+      selected-by: Startup
+      files:
+        - file: ${DEVTOOLS(data)}/TestSolution/TestProject3_1/RTE/Device/RteTestGen_ARMCM0/gcc_arm.ld
+          category: linkerScript
+          attr: config
+          version: 2.0.0
+        - file: ${DEVTOOLS(data)}/TestSolution/TestProject3_1/RTE/Device/RteTestGen_ARMCM0/startup_ARMCM0.c
+          category: sourceC
+          attr: config
+          version: 2.0.3
+        - file: ${DEVTOOLS(data)}/TestSolution/TestProject3_1/RTE/Device/RteTestGen_ARMCM0/system_ARMCM0.c
+          category: sourceC
+          attr: config
+          version: 1.0.0
+    - component: ARM::RteTest:CORE@0.1.1
+      condition: Cortex-M Device
+      from-pack: ARM::RteTest_DFP@0.2.0
+      selected-by: CORE
+  generators:
+    - generator: RteTestGeneratorIdentifier
+      from-pack: ARM::RteTestGenerator@0.1.0
+      path: ${DEVTOOLS(data)}/TestSolution/TestProject3_1/gendir
+      gpdsc: ${DEVTOOLS(data)}/TestSolution/TestProject3_1/gendir/RteTestGen_ARMCM0/RteTest.gpdsc
+      command:
+        win:
+          file: ${DEVTOOLS(packs)}/ARM/RteTestGenerator/0.1.0/Generator/script.bat
+          arguments:
+            - RteTestGen_ARMCM0
+            - ${DEVTOOLS(data)}/TestSolution/TestProject3_1/TestProject3_1.Debug+TypeA.cprj
+            - ${DEVTOOLS(packs)}/ARM/RteTestGenerator/0.1.0
+            - ${DEVTOOLS(data)}/TestSolution/tmp/TestProject3_1/TypeA/Debug/TestProject3_1.Debug+TypeA.cbuild-gen.yml
+            - /foo=bar
+        linux:
+          file: ${DEVTOOLS(packs)}/ARM/RteTestGenerator/0.1.0/Generator/script.sh
+          arguments:
+            - RteTestGen_ARMCM0
+            - ${DEVTOOLS(data)}/TestSolution/TestProject3_1/TestProject3_1.Debug+TypeA.cprj
+            - ${DEVTOOLS(packs)}/ARM/RteTestGenerator/0.1.0
+            - ${DEVTOOLS(data)}/TestSolution/tmp/TestProject3_1/TypeA/Debug/TestProject3_1.Debug+TypeA.cbuild-gen.yml
+            - --foo=bar
+        mac:
+          file: ${DEVTOOLS(packs)}/ARM/RteTestGenerator/0.1.0/Generator/script.sh
+          arguments:
+            - RteTestGen_ARMCM0
+            - ${DEVTOOLS(data)}/TestSolution/TestProject3_1/TestProject3_1.Debug+TypeA.cprj
+            - ${DEVTOOLS(packs)}/ARM/RteTestGenerator/0.1.0
+            - ${DEVTOOLS(data)}/TestSolution/tmp/TestProject3_1/TypeA/Debug/TestProject3_1.Debug+TypeA.cbuild-gen.yml
+            - --foo=bar
+  linker:
+    script: ${DEVTOOLS(data)}/TestSolution/TestProject3_1/RTE/Device/RteTestGen_ARMCM0/gcc_arm.ld
+  constructed-files:
+    - file: ${DEVTOOLS(data)}/TestSolution/TestProject3_1/RTE/_Debug_TypeA/RTE_Components.h
+      category: header
+  licenses:
+    - license: <unknown>
+      packs:
+        - pack: ARM::RteTestGenerator@0.1.0
+      components:
+        - component: ARM::Device:RteTest Generated Component:RteTestGenFiles@1.1.0
+    - license: <unknown>
+      license-agreement: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Doc/license.txt
+      packs:
+        - pack: ARM::RteTest_DFP@0.2.0
+      components:
+        - component: ::RteTest:CORE(API)
+        - component: ARM::Device:Startup&RteTest Startup@2.0.3
+        - component: ARM::RteTest:CORE@0.1.1

@@ -38,7 +38,7 @@ public:
    * @param context pointer to the context
    * @return true if executed successfully
   */
-  static bool GenerateCbuild(ContextItem* context);
+  static bool GenerateCbuild(ContextItem* context, const RteGenerator* generator = nullptr);
 };
 
 #endif  // PROJMGRYAMLEMITTER_H
