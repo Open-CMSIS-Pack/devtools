@@ -15,4 +15,4 @@ set_property(TARGET YmlTree PROPERTY
 
 target_include_directories(YmlTree PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-target_link_libraries(YmlTree ErrLog XmlTree RteFsUtils RteUtils yaml-cpp YmlSchemaChecker)
+target_link_libraries(YmlTree XmlTree RteFsUtils RteUtils yaml-cpp YmlSchemaChecker)
