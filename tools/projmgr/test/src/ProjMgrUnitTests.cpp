@@ -47,8 +47,20 @@ protected:
     EXPECT_EQ(tree1, tree2);
   }
 
+  void RemoveCbuildSetFile(const string& csolutionFile) {
+    string fileName = fs::path(csolutionFile).filename().generic_string();
+    fileName = RteUtils::RemoveSuffixByString(fileName, ".csolution.");
+    const string& cbuildSetFile = fs::path(csolutionFile).parent_path().generic_string() +
+      "/" + fileName + ".cbuild-set.yml";
+    if (RteFsUtils::Exists(cbuildSetFile)) {
+      RteFsUtils::RemoveFile(cbuildSetFile);
+    }
+  }
+
   string UpdateTestSolutionFile(const string& projectFilePath) {
     string csolutionFile = testinput_folder + "/TestSolution/test_validate_project.csolution.yml";
+    RemoveCbuildSetFile(csolutionFile);
+
     YAML::Node root = YAML::LoadFile(csolutionFile);
     root["solution"]["projects"][0]["project"] = projectFilePath;
     std::ofstream fout(csolutionFile);
@@ -607,6 +619,8 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolutionNonExistentContext) {
   char* argv[8];
   // convert --solution solution.yml
   const string& csolution = testinput_folder + "/TestSolution/test.csolution.yml";
+  RemoveCbuildSetFile(csolution);
+
   argv[1] = (char*)"convert";
   argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
@@ -2800,6 +2814,8 @@ TEST_F(ProjMgrUnitTests, ListComponents_MultiplePackSelection) {
 TEST_F(ProjMgrUnitTests, Convert_ValidationResults_Dependencies) {
   char* argv[6];
   const string& csolution = testinput_folder + "/Validation/dependencies.csolution.yml";
+  RemoveCbuildSetFile(csolution);
+
   argv[1] = (char*)"convert";
   argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
@@ -2814,6 +2830,7 @@ TEST_F(ProjMgrUnitTests, Convert_ValidationResults_Dependencies) {
   };
 
   for (const auto& [context, expected] : testData) {
+    RemoveCbuildSetFile(csolution);
     StdStreamRedirect streamRedirect;
     argv[5] = (char*)context.c_str();
     EXPECT_EQ(0, RunProjMgr(6, argv, 0));
@@ -3165,26 +3182,31 @@ TEST_F(ProjMgrUnitTests, SelectToolchains) {
   argv[6] = (char*)"-t";
 
   argv[7] = (char*)"AC6@6.20.0";
+  RemoveCbuildSetFile(csolution);
   EXPECT_EQ(0, RunProjMgr(8, argv, envp));
   ProjMgrTestEnv::CompareFile(testoutput_folder + "/toolchain.Debug+Target.cprj",
     testinput_folder + "/TestSolution/ref/toolchains/toolchain.Debug+Target.cprj.ac6_6_20_0");
 
   argv[7] = (char*)"AC6@6.16.1";
+  RemoveCbuildSetFile(csolution);
   EXPECT_EQ(0, RunProjMgr(8, argv, envp));
   ProjMgrTestEnv::CompareFile(testoutput_folder + "/toolchain.Debug+Target.cprj",
     testinput_folder + "/TestSolution/ref/toolchains/toolchain.Debug+Target.cprj.ac6_6_16_1");
 
   argv[7] = (char*)"AC6@6.6.5";
+  RemoveCbuildSetFile(csolution);
   EXPECT_EQ(0, RunProjMgr(8, argv, envp));
   ProjMgrTestEnv::CompareFile(testoutput_folder + "/toolchain.Debug+Target.cprj",
     testinput_folder + "/TestSolution/ref/toolchains/toolchain.Debug+Target.cprj.ac6_6_6_5");
 
   argv[7] = (char*)"GCC";
+  RemoveCbuildSetFile(csolution);
   EXPECT_EQ(0, RunProjMgr(8, argv, envp));
   ProjMgrTestEnv::CompareFile(testoutput_folder + "/toolchain.Debug+Target.cprj",
     testinput_folder + "/TestSolution/ref/toolchains/toolchain.Debug+Target.cprj.gcc");
 
   argv[7] = (char*)"IAR";
+  RemoveCbuildSetFile(csolution);
   EXPECT_EQ(0, RunProjMgr(8, argv, envp));
   ProjMgrTestEnv::CompareFile(testoutput_folder + "/toolchain.Debug+Target.cprj",
     testinput_folder + "/TestSolution/ref/toolchains/toolchain.Debug+Target.cprj.iar");
@@ -3226,6 +3248,8 @@ TEST_F(ProjMgrUnitTests, ToolchainRedefinition) {
 TEST_F(ProjMgrUnitTests, RunProjMgr_LinkerOptions) {
   char* argv[7];
   const string& csolution = testinput_folder + "/TestSolution/LinkerOptions/linker.csolution.yml";
+  RemoveCbuildSetFile(csolution);
+
   argv[1] = (char*)"convert";
   argv[2] = (char*)csolution.c_str();
   argv[3] = (char*)"-c";
@@ -3250,6 +3274,8 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_LinkerOptions) {
 TEST_F(ProjMgrUnitTests, RunProjMgr_LinkerPriority) {
   char* argv[7];
   const string& csolution = testinput_folder + "/TestSolution/LinkerOptions/linker.csolution.yml";
+  RemoveCbuildSetFile(csolution);
+
   argv[1] = (char*)"convert";
   argv[2] = (char*)csolution.c_str();
   argv[3] = (char*)"-c";
@@ -3269,6 +3295,8 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_LinkerOptions_Redefinition) {
   char* argv[7];
   StdStreamRedirect streamRedirect;
   const string& csolution = testinput_folder + "/TestSolution/LinkerOptions/linker.csolution.yml";
+  RemoveCbuildSetFile(csolution);
+
   argv[1] = (char*)"convert";
   argv[2] = (char*)csolution.c_str();
   argv[3] = (char*)"-c";
@@ -3428,6 +3456,8 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_UpdateRte) {
 
   StdStreamRedirect streamRedirect;
   string csolutionFile = testinput_folder + "/TestSolution/test.csolution.yml";
+  RemoveCbuildSetFile(csolutionFile);
+
   char* argv[9];
   argv[0] = (char*)"";
   argv[1] = (char*)"update-rte";
@@ -3448,6 +3478,7 @@ info csolution: config files for each component:\n\
     - .*/TestSolution/TestProject1/RTE/Device/RteTest_ARMCM0/startup_ARMCM0.c \\(base@1.1.1\\) \\(update@2.0.3\\)\n\
     - .*/TestSolution/TestProject1/RTE/Device/RteTest_ARMCM0/system_ARMCM0.c \\(base@1.0.0\\)\n\
 .*/test.cbuild-idx.yml - info csolution: file generated successfully\n\
+.*/test.cbuild-set.yml - info csolution: file generated successfully\n\
 ";
 
   auto outStr = streamRedirect.GetOutString();
@@ -3792,6 +3823,8 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_context_replacement) {
   StdStreamRedirect streamRedirect;
   // convert --solution solution.yml
   const string& csolution = testinput_folder + "/TestSolution/test.csolution.yml";
+  RemoveCbuildSetFile(csolution);
+
   argv[1] = (char*)"convert";
   argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
@@ -3854,4 +3887,97 @@ warning csolution: compiler 'Ac6' is not supported\n\
 ";
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_TRUE(errStr.find(expected) != string::npos);
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgrSolution_cbuildset_file) {
+  char* argv[12];
+
+  const string& csolutionDir  = testinput_folder + "/TestSolution";
+  const string& csolution     = csolutionDir + "/test.csolution.yml";
+  const string& cbuildSetFile = csolutionDir + "/test.cbuild-set.yml";
+  const string& outputDir     = testoutput_folder + "/cbuildset";
+
+  auto CleanUp = [&]() {
+    // Clean residual (if any)
+    if (RteFsUtils::Exists(outputDir)) {
+      RteFsUtils::RemoveDir(outputDir);
+    }
+    if (RteFsUtils::Exists(cbuildSetFile)) {
+      RteFsUtils::RemoveFile(cbuildSetFile);
+    }
+  };
+
+  // Test 1: Run with only specified contexts and no cbuild-set file
+  CleanUp();
+  argv[1]  = (char*)"convert";
+  argv[2]  = (char*)"--solution";
+  argv[3]  = (char*)csolution.c_str();
+  argv[4]  = (char*)"-c";
+  argv[5]  = (char*)"test2.Debug+CM0";
+  argv[6]  = (char*)"-c";
+  argv[7]  = (char*)"test1.Debug+CM0";
+  argv[8]  = (char*)"-o";
+  argv[9]  = (char*)outputDir.c_str();
+  argv[10] = (char*)"-t";
+  argv[11] = (char*)"GCC";
+  EXPECT_EQ(0, RunProjMgr(12, argv, 0));
+
+  // Check cbuild-set file
+  EXPECT_TRUE(RteFsUtils::Exists(cbuildSetFile));
+  ProjMgrTestEnv::CompareFile(cbuildSetFile, testinput_folder + "/TestSolution/ref/cbuild/specific_contexts_test.cbuild-set.yml");
+  EXPECT_TRUE(RteFsUtils::Exists(outputDir + "/test2.Debug+CM0.cbuild.yml"));
+  EXPECT_TRUE(RteFsUtils::Exists(outputDir + "/test1.Debug+CM0.cbuild.yml"));
+  EXPECT_FALSE(RteFsUtils::Exists(outputDir + "/test2.Debug+CM3.cbuild.yml"));
+  EXPECT_FALSE(RteFsUtils::Exists(outputDir + "/test1.Release+CM0.cbuild.yml"));
+
+  // Test 2: Run without contexts specified (with existing cbuild-set file)
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)outputDir.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+
+  // Check cbuild-set file
+  EXPECT_TRUE(RteFsUtils::Exists(cbuildSetFile));
+  ProjMgrTestEnv::CompareFile(cbuildSetFile, testinput_folder + "/TestSolution/ref/cbuild/specific_contexts_test.cbuild-set.yml");
+  EXPECT_TRUE(RteFsUtils::Exists(outputDir + "/test2.Debug+CM0.cbuild.yml"));
+  EXPECT_TRUE(RteFsUtils::Exists(outputDir + "/test1.Debug+CM0.cbuild.yml"));
+  EXPECT_FALSE(RteFsUtils::Exists(outputDir + "/test2.Debug+CM3.cbuild.yml"));
+  EXPECT_FALSE(RteFsUtils::Exists(outputDir + "/test1.Release+CM0.cbuild.yml"));
+
+  // Test 3: Run without contexts specified (without existing cbuild-set file)
+  CleanUp();
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)outputDir.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+
+  // Check cbuild-set file
+  EXPECT_TRUE(RteFsUtils::Exists(cbuildSetFile));
+  ProjMgrTestEnv::CompareFile(cbuildSetFile, testinput_folder + "/TestSolution/ref/cbuild/all_contexts_test.cbuild-set.yml");
+  EXPECT_TRUE(RteFsUtils::Exists(outputDir + "/test2.Debug+CM0.cbuild.yml"));
+  EXPECT_TRUE(RteFsUtils::Exists(outputDir + "/test1.Debug+CM0.cbuild.yml"));
+  EXPECT_TRUE(RteFsUtils::Exists(outputDir + "/test2.Debug+CM3.cbuild.yml"));
+  EXPECT_TRUE(RteFsUtils::Exists(outputDir + "/test1.Release+CM0.cbuild.yml"));
+
+  // Test 4: Run with only toolchain specified
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)outputDir.c_str();
+  argv[6] = (char*)"-t";
+  argv[7] = (char*)"AC6";
+  EXPECT_EQ(0, RunProjMgr(8, argv, 0));
+
+  // Check cbuild-set file
+  EXPECT_TRUE(RteFsUtils::Exists(cbuildSetFile));
+  ProjMgrTestEnv::CompareFile(cbuildSetFile, testinput_folder + "/TestSolution/ref/cbuild/all_contexts_test_with_AC6.cbuild-set.yml");
+  EXPECT_TRUE(RteFsUtils::Exists(outputDir + "/test2.Debug+CM0.cbuild.yml"));
+  EXPECT_TRUE(RteFsUtils::Exists(outputDir + "/test1.Debug+CM0.cbuild.yml"));
+  EXPECT_TRUE(RteFsUtils::Exists(outputDir + "/test2.Debug+CM3.cbuild.yml"));
+  EXPECT_TRUE(RteFsUtils::Exists(outputDir + "/test1.Release+CM0.cbuild.yml"));
 }

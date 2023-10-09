@@ -566,6 +566,8 @@ TEST_F(ProjMgrWorkerUnitTests, LoadFilteredPack_1) {
 TEST_F(ProjMgrWorkerUnitTests, LoadFilteredPack_2) {
   CsolutionItem csolution;
   SetCsolutionPacks(&csolution, { "ARM" }, "Test");
+  ProjMgrParser parser;
+  SetParser(&parser);
 
   // get list of available packs
   vector<string> availablePacks;
@@ -588,6 +590,8 @@ TEST_F(ProjMgrWorkerUnitTests, LoadFilteredPack_3) {
 TEST_F(ProjMgrWorkerUnitTests, LoadFilteredPack_4) {
   CsolutionItem csolution;
   SetCsolutionPacks(&csolution, { "ARM::*" }, "Test");
+  ProjMgrParser parser;
+  SetParser(&parser);
 
   // get list of available packs
   vector<string> availablePacks;

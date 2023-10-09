@@ -1036,6 +1036,16 @@
     "CreatedInfoType": {
       "type": "string",
       "pattern": "^.*@\\d+\\.\\d+\\.\\d+(-[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?(\\+[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?$"
+    },
+    "BuildSetDescType": {
+      "type": "object",
+      "properties": {
+        "generated-by": { "type": "string", "description": "Tool name along with version information used to generate this application" },
+        "contexts": { "$ref": "#/definitions/ArrayOfStrings", "description": "List of fully specified contexts" },
+        "compiler": { "type": "string", "description": "Selection of compiler used" }
+      },
+      "additionalProperties": false,
+      "required": ["generated-by", "contexts"]
     }
   }
 }

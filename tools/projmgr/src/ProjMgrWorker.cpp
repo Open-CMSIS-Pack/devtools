@@ -3511,15 +3511,29 @@ bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem& context, BuildType& b
   return true;
 }
 
-bool ProjMgrWorker::ParseContextSelection(const vector<string>& contextSelection, const string& contextReplace) {
+bool ProjMgrWorker::ParseContextSelection(const vector<string>& contextSelection,
+  const string& contextReplace, const bool checkCbuildSet) {
   vector<string> contexts;
   ListContexts(contexts);
-  const auto& filterError = ProjMgrUtils::GetSelectedContexts(m_selectedContexts, contexts, contextSelection);
-  if (filterError) {
-    ProjMgrLogger::Error(filterError.m_errMsg);
-    return false;
-  }
 
+  auto csolutionItem = m_parser->GetCsolution();
+  string cbuildSetFile = csolutionItem.directory + "/" + csolutionItem.name + ".cbuild-set.yml";
+  if (checkCbuildSet && RteFsUtils::Exists(cbuildSetFile)) {
+    if (!m_parser->ParseCbuildSet(cbuildSetFile)) {
+      return false;
+    }
+    const auto& cbuildSetItem = m_parser->GetCbuildSetItem();
+    m_selectedContexts = cbuildSetItem.contexts;
+    m_selectedToolchain = cbuildSetItem.compiler;
+  }
+  else {
+    const auto& filterError = ProjMgrUtils::GetSelectedContexts(
+      m_selectedContexts, contexts, contextSelection);
+    if (filterError) {
+      ProjMgrLogger::Error(filterError.m_errMsg);
+      return false;
+    }
+  }
   auto selectedContexts = m_selectedContexts;
   if (contextReplace != RteUtils::EMPTY_STRING) {
     const auto& replaceError = ProjMgrUtils::ReplaceContexts(m_selectedContexts, contexts, contextReplace);
@@ -3922,4 +3936,8 @@ bool ProjMgrWorker::ListConfigFiles(vector<string>& configFiles) {
     }
   }
   return true;
+}
+
+std::string ProjMgrWorker::GetSelectedToochain(void) {
+  return m_selectedToolchain;
 }

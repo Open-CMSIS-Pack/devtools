@@ -42,6 +42,7 @@ protected:
 class ProjMgrYamlCbuild : public ProjMgrYamlBase {
 private:
   friend class ProjMgrYamlEmitter;
+  ProjMgrYamlCbuild(YAML::Node node, const vector<ContextItem*> processedContexts, const string& selectedCompiler);
   ProjMgrYamlCbuild(YAML::Node node, const ContextItem* context, const RteGenerator* generator);
   void SetContextNode(YAML::Node node, const ContextItem* context);
   void SetComponentsNode(YAML::Node node, const ContextItem* context);
@@ -131,6 +132,22 @@ ProjMgrYamlCbuild::ProjMgrYamlCbuild(YAML::Node node, const ContextItem* context
 {
   if (context) {
     SetContextNode(node, context);
+  }
+}
+
+ProjMgrYamlCbuild::ProjMgrYamlCbuild(YAML::Node node,
+  const vector<ContextItem*> processedContexts, const string& selectedCompiler)
+{
+  vector<string> contexts;
+  for (const auto& context : processedContexts) {
+    if (context) {
+      contexts.push_back(context->name);
+    }
+  }
+  SetNodeValue(node[YAML_GENERATED_BY], ORIGINAL_FILENAME + string(" version ") + VERSION_STRING);
+  SetNodeValue(node[YAML_CONTEXTS], contexts);
+  if (!selectedCompiler.empty()) {
+    SetNodeValue(node[YAML_COMPILER], selectedCompiler);
   }
 }
 
@@ -414,7 +431,6 @@ void ProjMgrYamlCbuild::SetLicenseInfoNode(YAML::Node node, const ContextItem* c
   }
 }
 
-
 void ProjMgrYamlCbuild::SetControlsNode(YAML::Node node, const ContextItem* context, const BuildType& controls) {
   SetNodeValue(node[YAML_OPTIMIZE], controls.optimize);
   SetNodeValue(node[YAML_DEBUG], controls.debug);
@@ -620,4 +636,34 @@ bool ProjMgrYamlEmitter::GenerateCbuild(ContextItem* context, const RteGenerator
   ProjMgrYamlCbuild cbuild(rootNode[YAML_BUILD], context, generator);
 
   return cbuild.WriteFile(rootNode, filename);
+}
+
+bool ProjMgrYamlEmitter::GenerateCbuildSet(ProjMgrParser& parser,
+  const std::vector<ContextItem*> contexts, const string& selectedCompiler)
+{
+  const string& filename = parser.GetCsolution().directory + "/" +
+    parser.GetCsolution().name + ".cbuild-set.yml";
+
+  YAML::Node rootNode;
+  ProjMgrYamlCbuild cbuild(rootNode[YAML_CBUILD_SET], contexts, selectedCompiler);
+
+  // Compare yaml contents
+  if (!cbuild.CompareFile(filename, rootNode)) {
+    ofstream fileStream(filename);
+    if (!fileStream) {
+      ProjMgrLogger::Error(filename, "file cannot be written");
+      return false;
+    }
+    YAML::Emitter emitter;
+    emitter << rootNode;
+    fileStream << emitter.c_str();
+    fileStream << endl;
+    fileStream << flush;
+    fileStream.close();
+    ProjMgrLogger::Info(filename, "file generated successfully");
+  }
+  else {
+    ProjMgrLogger::Info(filename, "file is already up-to-date");
+  }
+  return true;
 }

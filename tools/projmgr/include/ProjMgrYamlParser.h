@@ -26,6 +26,7 @@ static constexpr const char* YAML_BUILDTYPES = "build-types";
 static constexpr const char* YAML_CATEGORY = "category";
 static constexpr const char* YAML_CBUILDS = "cbuilds";
 static constexpr const char* YAML_CBUILD = "cbuild";
+static constexpr const char* YAML_CBUILD_SET = "cbuild-set";
 static constexpr const char* YAML_CDEFAULT = "cdefault";
 static constexpr const char* YAML_CLAYERS = "clayers";
 static constexpr const char* YAML_CLAYER = "clayer";
@@ -178,6 +179,13 @@ public:
   bool ParseClayer(const std::string& input, std::map<std::string,
     ClayerItem>& clayers, bool checkSchema);
 
+  /**
+   * @brief parse cbuild-set
+   * @param input path to cbuild-set.yml file
+   * @param reference to store parsed cbuildset item
+   * @return true if executed successfully
+  */
+  bool ParseCbuildSet(const std::string& input, CbuildSetItem& cbuildSet);
 protected:
   void ParseMisc(const YAML::Node& parent, std::vector<MiscItem>& misc);
   void ParseDefine(const YAML::Node& parent, std::vector<std::string>& define);
@@ -211,6 +219,7 @@ protected:
   bool ValidateCsolution(const std::string& input, const YAML::Node& root);
   bool ValidateCproject(const std::string& input, const YAML::Node& root);
   bool ValidateClayer(const std::string& input, const YAML::Node& root);
+  bool ValidateCbuildSet(const std::string& input, const YAML::Node& root);
   bool ValidateKeys(const std::string& input, const YAML::Node& parent, const std::set<std::string>& keys);
   bool ValidateSequence(const std::string& input, const YAML::Node& parent, const std::string& seqKey);
   bool ValidateMapping(const std::string& input, const YAML::Node& parent, const std::string& seqKey);

@@ -39,6 +39,13 @@ public:
    * @return true if executed successfully
   */
   static bool GenerateCbuild(ContextItem* context, const RteGenerator* generator = nullptr);
+
+  /**
+   * @brief generate cbuild set file
+   * @param contexts vector with pointers to contexts
+   * @return true if executed successfully
+  */
+  static bool GenerateCbuildSet(ProjMgrParser& parser, const std::vector<ContextItem*> contexts, const std::string& selectedCompiler);
 };
 
 #endif  // PROJMGRYAMLEMITTER_H

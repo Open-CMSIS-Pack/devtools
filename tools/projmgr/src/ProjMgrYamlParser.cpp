@@ -225,6 +225,31 @@ bool ProjMgrYamlParser::ParseClayer(const string& input,
   return true;
 }
 
+bool ProjMgrYamlParser::ParseCbuildSet(const string& input, CbuildSetItem& cbuildSet) {
+  // Validate file schema
+  if (!ProjMgrYamlSchemaChecker().Validate(
+    input, ProjMgrYamlSchemaChecker::FileType::BUILDSET)) {
+    return false;
+  }
+
+  try {
+    const YAML::Node& root = YAML::LoadFile(input);
+    if (!ValidateCbuildSet(input, root)) {
+      return false;
+    }
+
+    const YAML::Node& cbuildSetNode = root[YAML_CBUILD_SET];
+    ParseString(cbuildSetNode, YAML_GENERATED_BY, cbuildSet.generatedBy);
+    ParseVector(cbuildSetNode, YAML_CONTEXTS, cbuildSet.contexts);
+    ParseString(cbuildSetNode, YAML_COMPILER, cbuildSet.compiler);
+  }
+  catch (YAML::Exception& e) {
+    ProjMgrLogger::Error(input, e.mark.line + 1, e.mark.column + 1, e.msg);
+    return false;
+  }
+  return true;
+}
+
 // EnsurePortability checks the presence of backslash, case inconsistency and absolute path
 // It clears the string 'value' when it is an absolute path
 void ProjMgrYamlParser::EnsurePortability(const string& file, const YAML::Mark& mark, const string& key, string& value, bool checkExist) {
@@ -863,6 +888,12 @@ const set<string> layerKeys = {
   YAML_GENERATORS,
 };
 
+const set<string> cbuildSetKeys = {
+  YAML_GENERATED_BY,
+  YAML_CONTEXTS,
+  YAML_COMPILER,
+};
+
 const set<string> targetTypeKeys = {
   YAML_TYPE,
   YAML_DEVICE,
@@ -1104,6 +1135,20 @@ bool ProjMgrYamlParser::ValidateClayer(const string& input, const YAML::Node& ro
   }
   const YAML::Node& layerNode = root[YAML_LAYER];
   if (!ValidateKeys(input, layerNode, layerKeys)) {
+    return false;
+  }
+  return true;
+}
+
+bool ProjMgrYamlParser::ValidateCbuildSet(const string& input, const YAML::Node& root) {
+  const set<string> rootKeys = {
+    YAML_CBUILD_SET,
+  };
+  if (!ValidateKeys(input, root, rootKeys)) {
+    return false;
+  }
+  const YAML::Node& contextSetNode = root[YAML_CBUILD_SET];
+  if (!ValidateKeys(input, contextSetNode, cbuildSetKeys)) {
     return false;
   }
   return true;
