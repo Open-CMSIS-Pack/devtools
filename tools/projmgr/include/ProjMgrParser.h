@@ -403,6 +403,17 @@ struct ClayerItem {
 };
 
 /**
+ * @brief cbuildset item containing
+ *        list of contexts,
+ *        toochain used,
+*/
+struct CbuildSetItem {
+  std::string generatedBy;
+  std::vector<std::string> contexts;
+  std::string compiler;
+};
+
+/**
  * @brief projmgr parser class for public interfacing
 */
 class ProjMgrParser {
@@ -449,6 +460,12 @@ public:
   bool ParseGenericClayer(const std::string& input, bool checkSchema);
 
   /**
+   * @brief parse cbuild set file
+   * @param input path to *.cbuild-set.yml file
+  */
+  bool ParseCbuildSet(const std::string& input);
+
+  /**
    * @brief get cdefault
    * @return cdefault item
   */
@@ -478,9 +495,15 @@ public:
   */
   std::map<std::string, ClayerItem>& GetGenericClayers(void);
 
+  /**
+   * @brief get cbuildset
+   * @return cbuildset item
+  */
+  CbuildSetItem& GetCbuildSetItem(void);
 protected:
   CdefaultItem m_cdefault;
   CsolutionItem m_csolution;
+  CbuildSetItem m_cbuildSet;
   std::map<std::string, CprojectItem> m_cprojects;
   std::map<std::string, ClayerItem> m_clayers;
   std::map<std::string, ClayerItem> m_genericClayers;

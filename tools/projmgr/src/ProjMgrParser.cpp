@@ -49,6 +49,11 @@ bool ProjMgrParser::ParseGenericClayer(const string& input, bool checkSchema) {
   return ProjMgrYamlParser().ParseClayer(input, m_genericClayers, checkSchema);
 }
 
+bool ProjMgrParser::ParseCbuildSet(const string& input) {
+  // Parse cbuild-set file
+  return ProjMgrYamlParser().ParseCbuildSet(input, m_cbuildSet);
+}
+
 CdefaultItem& ProjMgrParser::GetCdefault(void) {
   return m_cdefault;
 }
@@ -67,4 +72,8 @@ map<string, ClayerItem>& ProjMgrParser::GetClayers(void) {
 
 map<string, ClayerItem>& ProjMgrParser::GetGenericClayers(void) {
   return m_genericClayers;
+}
+
+CbuildSetItem& ProjMgrParser::GetCbuildSetItem(void) {
+  return m_cbuildSet;
 }

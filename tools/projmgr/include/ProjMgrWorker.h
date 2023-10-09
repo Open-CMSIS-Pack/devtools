@@ -574,7 +574,8 @@ public:
   */
   bool ParseContextSelection(
     const std::vector<std::string>& contextSelection,
-    const std::string& contextReplace = RteUtils::EMPTY_STRING);
+    const std::string& contextReplace = RteUtils::EMPTY_STRING,
+    const bool checkCbuildSet = false);
 
   /**
    * @brief check if context is selected
@@ -604,6 +605,12 @@ public:
    * @brief print missing filters
   */
   void PrintMissingFilters(void);
+
+  /**
+   * @brief get selected toolchain
+   * @return string selected toolchain
+  */
+  std::string GetSelectedToochain(void);
 
 protected:
   ProjMgrParser* m_parser = nullptr;

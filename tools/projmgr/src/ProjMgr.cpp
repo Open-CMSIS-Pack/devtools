@@ -438,8 +438,10 @@ bool ProjMgr::RunConfigure(bool printConfig) {
   if (!PopulateContexts()) {
     return false;
   }
+
+  bool checkCbuildSet = ((m_context.size() > 0) || (!m_selectedToolchain.empty()) ? false : true);
   // Parse context selection
-  if (!m_worker.ParseContextSelection(m_context, m_contextReplacement)) {
+  if (!m_worker.ParseContextSelection(m_context, m_contextReplacement, checkCbuildSet)) {
     return false;
   }
   // Get context pointers
@@ -469,6 +471,7 @@ bool ProjMgr::RunConfigure(bool printConfig) {
       m_processedContexts.push_back(&contextItem);
     }
   }
+  m_selectedToolchain = m_worker.GetSelectedToochain();
   // Print warnings for missing filters
   m_worker.PrintMissingFilters();
   if (m_verbose) {
@@ -487,6 +490,13 @@ bool ProjMgr::RunConfigure(bool printConfig) {
   // Generate cbuild index
   if (!allContexts.empty()) {
     if (!m_emitter.GenerateCbuildIndex(m_parser, allContexts, m_outputDir)) {
+      return false;
+    }
+  }
+
+  // Generate cbuild-set file
+  if (!m_processedContexts.empty()) {
+    if (!m_emitter.GenerateCbuildSet(m_parser, m_processedContexts, m_selectedToolchain)) {
       return false;
     }
   }
@@ -526,6 +536,7 @@ bool ProjMgr::RunConvert(void) {
       return false;
     }
   }
+
   return !error;
 }
 

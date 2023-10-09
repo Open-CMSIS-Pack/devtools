@@ -20,7 +20,8 @@ public:
     SOLUTION,
     PROJECT,
     LAYER,
-    BUILD
+    BUILD,
+    BUILDSET
   };
   /**
    * @brief class constructor
