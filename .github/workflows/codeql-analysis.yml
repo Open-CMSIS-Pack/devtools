@@ -13,6 +13,9 @@ on:
       - '**/CMakeLists.txt'
   push:
     branches: [ main ]
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   analyze:
@@ -22,6 +25,10 @@ jobs:
       actions: read
       contents: read
       security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'c-cpp' ]
 
     steps:
       - name: Install packages
@@ -36,7 +43,7 @@ jobs:
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v2
         with:
-          languages: cpp
+          languages: ${{ matrix.language }}
           queries: security-and-quality
           
       - name: Create build folder
@@ -50,3 +57,5 @@ jobs:
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v2
+        with:
+          category: "/language:${{matrix.language}}"
