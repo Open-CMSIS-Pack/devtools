@@ -25,9 +25,6 @@ jobs:
       actions: read
       contents: read
       security-events: write
-    strategy:
-      matrix:
-        language: [ 'c-cpp' ]
 
     steps:
       - name: Install packages
