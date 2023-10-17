@@ -1,0 +1,91 @@
+name: cpp-linter
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/cpp-linter.yml'
+      - '**/*.c'
+      - '**/*.cpp'
+      - '**/*.h'
+      - '**/*.in'
+      - '**/CMakeLists.txt'
+      - '!**/docs/**/*'
+      - '!**/*.md'
+
+jobs:
+  build:
+    name: cppcheck
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: read
+      checks: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start Json File
+        run:  |
+          echo "[" >> ./cppcheck_annotation.json
+
+      - name: cppcheck
+        uses: deep5050/cppcheck-action@main
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          enable: performance,portability,unusedFunction
+          exclude_check: ./external
+          check_library: disable
+          skip_preprocessor: disable
+          inconclusive: disable
+          inline_suppression: disable
+          force_language: c++
+          force: enable
+          max_ctu_depth: 12
+          std: c++17
+          platform: disable
+          other_options: --verbose --std=c++17 -i./tools/buildmgr/test -i./tools/packchk/test -i./tools/packgen/test -i./tools/projmgr/test -i./tools/svdconv/Test -i./test --template={\n"file":"{file}",\n"line":{line},\n"title":"Error",\n"message":"{message}",\n"annotation_level":"failure"\n},
+          output_file: ./cppcheck_annotation.json
+
+      - name: Append Json file
+        run:  |
+          echo -n "[" | cat - ./cppcheck_annotation.json > ./tmpfile
+          mv ./tmpfile ./cppcheck_annotation.json
+          sed -i '$ s/.$//' ./cppcheck_annotation.json
+          echo "]" >> ./cppcheck_annotation.json
+
+      - name: Archive cppcheck results
+        uses: actions/upload-artifact@v3
+        with:
+          name: cppcheck
+          path: ./cppcheck_annotation.json
+          retention-days: 1
+          if-no-files-found: error
+
+      - name: Annotate
+        uses: yuzutech/annotations-action@v0.4.0
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          title: 'cppcheck'
+          input: './cppcheck_annotation.json'
+
+      - name: Count errors
+        id: count_errors
+        run: |
+          errors=$( jq '. | length' ./cppcheck_annotation.json )
+          echo "ERRORS=$errors" >> $GITHUB_OUTPUT
+
+      # - name: Dump GitHub context
+      #   env:
+      #     GITHUB_CONTEXT: ${{ toJson(github) }}
+      #   run: echo "$GITHUB_CONTEXT"
+
+      - name: Comment PR with execution number
+        uses: thollander/actions-comment-pull-request@v2
+        with:
+          message: |
+            ## Linter Results
+            Found **${{ steps.count_errors.outputs.ERRORS }}** error(s).
+            [Click here](${{ github.event.pull_request.head.repo.html_url }}/actions/runs/${{ github.run_id }}) to find out more details.
+
+          comment_tag: execution
