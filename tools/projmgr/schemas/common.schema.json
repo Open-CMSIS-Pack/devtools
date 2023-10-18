@@ -159,8 +159,8 @@
       "items": { "$ref": "#/definitions/ArtifactType" }
     },
     "ArtifactType": {
-      "enum": [ "elf", "hex", "bin", "lib" ],
-      "description": "Output type: elf (default), hex, bin or lib"
+      "enum": [ "elf", "hex", "bin", "lib", "cmse-lib" ],
+      "description": "Output type: elf (default), hex, bin, lib or cmse-lib"
     },
     "ArtifactsType": {
       "oneOf": [
@@ -254,11 +254,16 @@
       "items": { "type": "string" }
     },
     "MiscTypes": {
-      "type": "array",
-      "description": "List of miscellaneous literal tool-specific controls that are passed directly to the tools depending on the file type",
-      "uniqueItems": true,
-      "minItems": 1,
-      "items": { "$ref": "#/definitions/MiscType" }
+      "oneOf": [
+        {
+          "type": "array",
+          "description": "List of miscellaneous literal tool-specific controls that are passed directly to the tools depending on the file type",
+          "uniqueItems": true,
+          "minItems": 1,
+          "items": { "$ref": "#/definitions/MiscType" }
+        },
+        { "$ref": "#/definitions/MiscType" }
+      ]
     },
     "MiscType": {
       "type": ["object", "null"],
@@ -730,6 +735,47 @@
       },
       "additionalProperties": false
     },
+    "BuildIdxDescType": {
+      "type": "object",
+      "properties": {
+        "generated-by": { "type": "string", "description": "Tool name along with version information used to generate this file" },
+        "csolution": { "type": "string", "description": "Path to csolution.yml file" },
+        "cprojects": { "$ref": "#/definitions/BuildProjectsType" },
+        "cbuilds": { "$ref": "#/definitions/BuildContextsType" }
+      },
+      "additionalProperties": false,
+      "required": ["generated-by", "csolution", "cprojects"]
+    },
+    "BuildProjectsType": {
+      "type": "array",
+      "uniqueItems": true,
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/BuildProjectType", "description": "Paths to cproject.yml files" }
+    },
+    "BuildProjectType": {
+      "type": "object",
+      "properties": {
+        "cproject": { "type": "string", "description": "Path to cproject.yml file" }
+      },
+      "additionalProperties": false,
+      "required": ["cproject"]
+    },
+    "BuildContextsType": {
+      "type": "array",
+      "uniqueItems": true,
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/BuildContextType", "description": "List of context related build information" }
+    },
+    "BuildContextType": {
+      "type": "object",
+      "properties": {
+        "cbuild": { "type": "string", "description": "Path to <context>.cbuild.yml file" },
+        "project": { "type": "string", "description": "Project name" },
+        "configuration": { "$ref": "#/definitions/BuildContext" }
+      },
+      "additionalProperties": false,
+      "required": ["cproject"]
+    },
     "BuildDescType": {
       "description": "The lock info that describes the resolved state of contexts and also can be used as input for generators",
       "type": "object",
@@ -741,12 +787,12 @@
         "current-generator": {
           "type": "object",
           "description": "What generator configuration to use",
-          "prorperties": {
+          "properties": {
             "from-pack": { "$ref": "#/definitions/PackID" },
             "id":        { "type": "string" }
           },
           "additionalProperties": false,
-          "required": [ "from-pack", "id" ]
+          "required": [ "id" ]
         },
         "solution": {
           "type": "string",
@@ -761,6 +807,9 @@
         "device":            { "$ref": "#/definitions/DeviceType" },
         "processor":         { "$ref": "#/definitions/BuildProcessorType" },
         "packs":             { "$ref": "#/definitions/BuildPacksType" },
+        "optimize":          { "$ref": "#/definitions/OptimizeType" },
+        "debug":             { "$ref": "#/definitions/DebugType" },
+        "warnings":          { "$ref": "#/definitions/WarningsType" },
         "misc":              { "$ref": "#/definitions/MiscType" },
         "define":            { "$ref": "#/definitions/DefinesType" },
         "add-path":          { "$ref": "#/definitions/AddpathsType" },
@@ -1046,6 +1095,90 @@
       },
       "additionalProperties": false,
       "required": ["generated-by", "contexts"]
+    },
+    "GeneratorRegistryDescType": {
+      "type": "array",
+      "uniqueItems": true,
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/GeneratorRegistryType", "description": "List of global generator description" }
+    },
+    "GeneratorRegistryType": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Generator identifier" },
+        "download-url": { "type": "string", "description": "URL for downloading generator tool" },
+        "run": { "type": "string", "description": "Related bridge program" },
+        "path": { "type": "string", "description": "Specifies the directory for generated files" }
+      },
+      "additionalProperties": false,
+      "required": ["id", "run", "path"]
+    },
+    "BuildGenIdxDescType": {
+      "type": "object",
+      "properties": {
+        "generated-by": { "type": "string", "description": "Tool name along with version information used to generate this file" },
+        "generators": { "$ref": "#/definitions/BuildGeneratorsType", "description": "List of generators to be run" },
+        "compiler": { "type": "string", "description": "Selection of compiler used" }
+      },
+      "additionalProperties": false,
+      "required": ["generated-by", "generators"]
+    },
+    "BuildGeneratorsType": {
+      "type": "array",
+      "uniqueItems": true,
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/BuildGeneratorType", "description": "Build Generator solution related information" }
+    },
+    "BuildGeneratorType": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Generator identifier" },
+        "output": { "type": "string", "description": "Specifies the directory for generated files" },
+        "board": { "$ref": "#/definitions/BoardType" },
+        "device": { "$ref": "#/definitions/DeviceType" },
+        "project-type": { "$ref": "#/definitions/BuildGeneratorProjectType" },
+        "cbuild-gens": { "$ref": "#/definitions/BuildGeneratorContextsType" }
+      },
+      "additionalProperties": false,
+      "required": ["id", "output", "project-type", "cbuild-gens"]
+    },
+    "BuildGeneratorProjectType": {
+      "enum": [ "single-core", "multi-core", "trustzone" ],
+      "description": "Project type (single-core, multi-core, trustzone)."
+    },
+    "BuildGeneratorContextsType": {
+      "type": "array",
+      "uniqueItems": true,
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/BuildGeneratorContextType", "description": "Build Generator context related information" }
+    },
+    "BuildGeneratorContextType": {
+      "type": "object",
+      "properties": {
+        "cbuild-gen": { "type": "string", "description": "Path to <context>.cbuild-gen.yml file" },
+        "project": { "type": "string", "description": "Project name" },
+        "configuration": { "$ref": "#/definitions/BuildContext" },
+        "for-project-part": { "type": "string", "description": "For project part (secure, non-secure, <processor>)" }
+      },
+      "additionalProperties": false,
+      "required": ["id", "output", "project-type", "cbuild-gens"]
+    },
+    "GeneratorImportDescType": {
+      "type": "object",
+      "description": "This section describes generated contents",
+      "properties": {
+        "generated-by": { "type": "string", "description": "Tool name along with version information used to generate this file" },
+        "for-board":    { "$ref": "#/definitions/BoardType" },
+        "for-device":   { "$ref": "#/definitions/DeviceType" },
+        "packs":        { "$ref": "#/definitions/PacksType" },
+        "define":       { "$ref": "#/definitions/DefinesType" },
+        "undefine":     { "$ref": "#/definitions/UndefinesType" },
+        "add-path":     { "$ref": "#/definitions/AddpathsType" },
+        "del-path":     { "$ref": "#/definitions/DelpathsType" },
+        "groups":       { "$ref": "#/definitions/GroupsType" },
+        "components":   { "$ref": "#/definitions/ComponentsType" }
+      },
+      "additionalProperties": false
     }
   }
 }

@@ -560,6 +560,20 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution) {
     testinput_folder + "/TestSolution/ref/cbuild/test2.Debug+CM0.cbuild.yml");
  ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test2.Debug+CM3.cbuild.yml",
     testinput_folder + "/TestSolution/ref/cbuild/test2.Debug+CM3.cbuild.yml");
+
+   // Check schema
+   EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testoutput_folder + "/test.cbuild-idx.yml",
+     ProjMgrYamlSchemaChecker::FileType::BUILDIDX));
+   EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testoutput_folder + "/test1.Debug+CM0.cbuild.yml",
+     ProjMgrYamlSchemaChecker::FileType::BUILD));
+   EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testoutput_folder + "/test1.Release+CM0.cbuild.yml",
+     ProjMgrYamlSchemaChecker::FileType::BUILD));
+   EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testoutput_folder + "/test1.Debug+CM0.cbuild.yml",
+     ProjMgrYamlSchemaChecker::FileType::BUILD));
+   EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testoutput_folder + "/test2.Debug+CM0.cbuild.yml",
+     ProjMgrYamlSchemaChecker::FileType::BUILD));
+   EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testoutput_folder + "/test2.Debug+CM3.cbuild.yml",
+     ProjMgrYamlSchemaChecker::FileType::BUILD));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution_PositionalArguments) {
@@ -2484,7 +2498,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Local_Multiple_Pack_Files) {
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Local_Pack_Path_Not_Found) {
   char* argv[7];
   StdStreamRedirect streamRedirect;
-  const string errExpected = "pack path: ./SolutionSpecificPack/ARM does not exist";
+  const string errExpected = "/SolutionSpecificPack/ARM does not exist";
   const string& csolution = testinput_folder + "/TestSolution/test_local_pack_path_not_found.csolution.yml";
 
   // convert --solution solution.yml
@@ -2502,7 +2516,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Local_Pack_Path_Not_Found) {
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Local_Pack_File_Not_Found) {
   char* argv[7];
   StdStreamRedirect streamRedirect;
-  const string errExpected = "pdsc file was not found in: ../SolutionSpecificPack/Device";
+  const string errExpected = "pdsc file was not found in: .*/SolutionSpecificPack/Device";
   const string& csolution = testinput_folder + "/TestSolution/test_local_pack_file_not_found.csolution.yml";
 
   // convert --solution solution.yml
@@ -2514,7 +2528,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Local_Pack_File_Not_Found) {
   EXPECT_EQ(1, RunProjMgr(6, argv, 0));
 
   auto errStr = streamRedirect.GetErrorString();
-  EXPECT_NE(string::npos, errStr.find(errExpected));
+  EXPECT_TRUE(regex_search(errStr, regex(errExpected)));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution_List_Board_Pack) {
@@ -3980,4 +3994,246 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_cbuildset_file) {
   EXPECT_TRUE(RteFsUtils::Exists(outputDir + "/test1.Debug+CM0.cbuild.yml"));
   EXPECT_TRUE(RteFsUtils::Exists(outputDir + "/test2.Debug+CM3.cbuild.yml"));
   EXPECT_TRUE(RteFsUtils::Exists(outputDir + "/test1.Release+CM0.cbuild.yml"));
+}
+
+TEST_F(ProjMgrUnitTests, ExternalGenerator) {
+  const string& srcGlobalGenerator = testinput_folder + "/ExternalGenerator/global.generator.yml";
+  const string& dstGlobalGenerator = testcmsiscompiler_folder + "/global.generator.yml";
+  RteFsUtils::CopyCheckFile(srcGlobalGenerator, dstGlobalGenerator, false);
+  
+  const string& srcBridgeTool = testinput_folder + "/ExternalGenerator/bridge.sh";
+  const string& dstBridgeTool = testcmsiscompiler_folder + "/bridge.sh";
+  RteFsUtils::CopyCheckFile(srcBridgeTool, dstBridgeTool, false);
+  
+  // list generators
+  char* argv[7];
+  const string& csolution = testinput_folder + "/ExternalGenerator/extgen.csolution.yml";
+  argv[1] = (char*)csolution.c_str();
+  argv[2] = (char*)"list";
+  argv[3] = (char*)"generators";
+  EXPECT_EQ(0, RunProjMgr(4, argv, 0));
+  
+  // run multi-core
+  argv[1] = (char*)csolution.c_str();
+  argv[2] = (char*)"run";
+  argv[3] = (char*)"-g";
+  argv[4] = (char*)"RteTestExternalGenerator";
+  argv[5] = (char*)"-c";
+  argv[6] = (char*)"core0.Debug+MultiCore";
+  EXPECT_EQ(0, RunProjMgr(7, argv, 0));
+
+  EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/ExternalGenerator/tmp/core0/MultiCore/Debug/extgen.cbuild-gen-idx.yml",
+    ProjMgrYamlSchemaChecker::FileType::BUILDGENIDX));
+  EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/ExternalGenerator/tmp/core0/MultiCore/Debug/core0.Debug+MultiCore.cbuild-gen.yml",
+    ProjMgrYamlSchemaChecker::FileType::BUILDGEN));
+  EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/ExternalGenerator/tmp/core1/MultiCore/Debug/core1.Debug+MultiCore.cbuild-gen.yml",
+    ProjMgrYamlSchemaChecker::FileType::BUILDGEN));
+
+  auto stripAbsoluteFunc = [](const std::string& in) {
+    std::string str = in;
+    RteUtils::ReplaceAll(str, testinput_folder, "${DEVTOOLS(data)}");
+    RteUtils::ReplaceAll(str, testcmsispack_folder, "${DEVTOOLS(packs)}");
+    return str;
+  };
+
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/ExternalGenerator/ref/MultiCore/extgen.cbuild-gen-idx.yml",
+    testinput_folder + "/ExternalGenerator/tmp/core0/MultiCore/Debug/extgen.cbuild-gen-idx.yml", stripAbsoluteFunc);
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/ExternalGenerator/ref/MultiCore/core0.Debug+MultiCore.cbuild-gen.yml",
+    testinput_folder + "/ExternalGenerator/tmp/core0/MultiCore/Debug/core0.Debug+MultiCore.cbuild-gen.yml", stripAbsoluteFunc);
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/ExternalGenerator/ref/MultiCore/core1.Debug+MultiCore.cbuild-gen.yml",
+    testinput_folder + "/ExternalGenerator/tmp/core1/MultiCore/Debug/core1.Debug+MultiCore.cbuild-gen.yml", stripAbsoluteFunc);
+
+  // run single-core
+  argv[6] = (char*)"single-core.Debug+CM0";
+  EXPECT_EQ(0, RunProjMgr(7, argv, 0));
+
+  EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/ExternalGenerator/tmp/single-core/CM0/Debug/extgen.cbuild-gen-idx.yml",
+    ProjMgrYamlSchemaChecker::FileType::BUILDGENIDX));
+  EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/ExternalGenerator/tmp/single-core/CM0/Debug/single-core.Debug+CM0.cbuild-gen.yml",
+    ProjMgrYamlSchemaChecker::FileType::BUILDGEN));
+
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/ExternalGenerator/ref/SingleCore/extgen.cbuild-gen-idx.yml",
+    testinput_folder + "/ExternalGenerator/tmp/single-core/CM0/Debug/extgen.cbuild-gen-idx.yml", stripAbsoluteFunc);
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/ExternalGenerator/ref/SingleCore/single-core.Debug+CM0.cbuild-gen.yml",
+    testinput_folder + "/ExternalGenerator/tmp/single-core/CM0/Debug/single-core.Debug+CM0.cbuild-gen.yml", stripAbsoluteFunc);
+
+  // run trustzone
+  argv[6] = (char*)"ns.Debug+CM0";
+  EXPECT_EQ(0, RunProjMgr(7, argv, 0));
+
+  EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/ExternalGenerator/tmp/ns/CM0/Debug/extgen.cbuild-gen-idx.yml",
+    ProjMgrYamlSchemaChecker::FileType::BUILDGENIDX));
+  EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/ExternalGenerator/tmp/ns/CM0/Debug/ns.Debug+CM0.cbuild-gen.yml",
+    ProjMgrYamlSchemaChecker::FileType::BUILDGEN));
+  EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/ExternalGenerator/tmp/s/CM0/Debug/s.Debug+CM0.cbuild-gen.yml",
+    ProjMgrYamlSchemaChecker::FileType::BUILDGEN));
+
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/ExternalGenerator/ref/TrustZone/extgen.cbuild-gen-idx.yml",
+    testinput_folder + "/ExternalGenerator/tmp/ns/CM0/Debug/extgen.cbuild-gen-idx.yml", stripAbsoluteFunc);
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/ExternalGenerator/ref/TrustZone/ns.Debug+CM0.cbuild-gen.yml",
+    testinput_folder + "/ExternalGenerator/tmp/ns/CM0/Debug/ns.Debug+CM0.cbuild-gen.yml", stripAbsoluteFunc);
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/ExternalGenerator/ref/TrustZone/s.Debug+CM0.cbuild-gen.yml",
+    testinput_folder + "/ExternalGenerator/tmp/s/CM0/Debug/s.Debug+CM0.cbuild-gen.yml", stripAbsoluteFunc);
+
+  // convert single core
+  argv[2] = (char*)"convert";
+  argv[3] = (char*)"-c";
+  argv[4] = (char*)"single-core.Debug+CM0";
+  EXPECT_EQ(0, RunProjMgr(5, argv, 0));
+
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/ExternalGenerator/single/single-core.Debug+CM0.cbuild.yml",
+    testinput_folder + "/ExternalGenerator/ref/SingleCore/single-core.Debug+CM0.cbuild.yml");
+
+  RteFsUtils::RemoveFile(dstGlobalGenerator);
+  RteFsUtils::RemoveFile(dstBridgeTool);
+}
+
+TEST_F(ProjMgrUnitTests, ExternalGenerator_NotRegistered) {
+  StdStreamRedirect streamRedirect;
+  char* argv[7];
+  const string& csolution = testinput_folder + "/ExternalGenerator/extgen.csolution.yml";
+  argv[1] = (char*)csolution.c_str();
+  argv[2] = (char*)"run";
+  argv[3] = (char*)"-g";
+  argv[4] = (char*)"RteTestExternalGenerator";
+  argv[5] = (char*)"-c";
+  argv[6] = (char*)"single-core.Debug+CM0";
+  EXPECT_EQ(1, RunProjMgr(7, argv, 0));
+
+  const string expected = "\
+error csolution: generator 'RteTestExternalGenerator' required by component 'ARM::RteTestGenerator:Check Global Generator@0.9.0' was not found in global register\n\
+";
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_TRUE(errStr.find(expected) != string::npos);
+}
+
+TEST_F(ProjMgrUnitTests, ExternalGenerator_WrongGenDir) {
+  const string& srcGlobalGenerator = testinput_folder + "/ExternalGenerator/wrong-gendir.generator.yml";
+  const string& dstGlobalGenerator = testcmsiscompiler_folder + "/global.generator.yml";
+  RteFsUtils::CopyCheckFile(srcGlobalGenerator, dstGlobalGenerator, false);
+
+  StdStreamRedirect streamRedirect;
+  char* argv[8];
+  const string& csolution = testinput_folder + "/ExternalGenerator/extgen.csolution.yml";
+  argv[1] = (char*)csolution.c_str();
+  argv[2] = (char*)"run";
+  argv[3] = (char*)"-g";
+  argv[4] = (char*)"RteTestExternalGenerator";
+  argv[5] = (char*)"-c";
+  argv[6] = (char*)"core0.Debug+MultiCore";
+  argv[7] = (char*)"-n";
+  EXPECT_EQ(1, RunProjMgr(8, argv, 0));
+
+  const string expected = "\
+warning csolution: unknown access sequence: 'UnknownAccessSequence()'\n\
+";
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_TRUE(errStr.find(expected) != string::npos);
+
+  RteFsUtils::RemoveFile(dstGlobalGenerator);
+}
+
+TEST_F(ProjMgrUnitTests, ExternalGenerator_NoGenDir) {
+  const string& srcGlobalGenerator = testinput_folder + "/ExternalGenerator/no-gendir.generator.yml";
+  const string& dstGlobalGenerator = testcmsiscompiler_folder + "/global.generator.yml";
+  RteFsUtils::CopyCheckFile(srcGlobalGenerator, dstGlobalGenerator, false);
+
+  StdStreamRedirect streamRedirect;
+  const string expected = "\
+error csolution: generator output directory was not set\n\
+";
+  char* argv[8];
+  const string& csolution = testinput_folder + "/ExternalGenerator/extgen.csolution.yml";
+  argv[1] = (char*)csolution.c_str();
+  argv[2] = (char*)"-c";
+  argv[3] = (char*)"core0.Debug+MultiCore";
+  argv[4] = (char*)"-n";
+  argv[5] = (char*)"run";
+  argv[6] = (char*)"-g";
+  argv[7] = (char*)"RteTestExternalGenerator";
+  EXPECT_EQ(1, RunProjMgr(8, argv, 0));
+
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_TRUE(errStr.find(expected) != string::npos);
+
+  RteFsUtils::RemoveFile(dstGlobalGenerator);
+}
+
+TEST_F(ProjMgrUnitTests, ExternalGenerator_MultipleContexts) {
+  StdStreamRedirect streamRedirect;
+  char* argv[7];
+  const string& csolution = testinput_folder + "/ExternalGenerator/extgen.csolution.yml";
+  argv[1] = (char*)csolution.c_str();
+  argv[2] = (char*)"run";
+  argv[3] = (char*)"-g";
+  argv[4] = (char*)"RteTestExternalGenerator";
+  argv[5] = (char*)"-c";
+  argv[6] = (char*)"+MultiCore";
+  EXPECT_EQ(1, RunProjMgr(7, argv, 0));
+
+  const string expected = "\
+error csolution: a single context must be specified\n\
+";
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_TRUE(errStr.find(expected) != string::npos);
+}
+
+TEST_F(ProjMgrUnitTests, ExternalGenerator_WrongGeneratedData) {
+  const string& srcGlobalGenerator = testinput_folder + "/ExternalGenerator/global.generator.yml";
+  const string& dstGlobalGenerator = testcmsiscompiler_folder + "/global.generator.yml";
+  RteFsUtils::CopyCheckFile(srcGlobalGenerator, dstGlobalGenerator, false);
+
+  StdStreamRedirect streamRedirect;
+  char* argv[5];
+  const string& csolution = testinput_folder + "/ExternalGenerator/wrong.csolution.yml";
+  argv[1] = (char*)csolution.c_str();
+  argv[2] = (char*)"convert";
+  argv[3] = (char*)"-c";
+  argv[4] = (char*)"wrong.WrongPack+CM0";
+  EXPECT_EQ(1, RunProjMgr(5, argv, 0));
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_TRUE(errStr.find("error csolution: required pack: UnknownVendor::UnknownPack not installed") != string::npos);
+
+  streamRedirect.ClearStringStreams();
+  argv[4] = (char*)"wrong.WrongComponent+CM0";
+  EXPECT_EQ(1, RunProjMgr(5, argv, 0));
+  errStr = streamRedirect.GetErrorString();
+  EXPECT_TRUE(errStr.find("error csolution: no component was found with identifier 'UnknownVendor::UnknownComponent'") != string::npos);
+
+  streamRedirect.ClearStringStreams();
+  argv[4] = (char*)"wrong.WrongGroup+CM0";
+  EXPECT_EQ(1, RunProjMgr(5, argv, 0));
+  errStr = streamRedirect.GetErrorString();
+  EXPECT_TRUE(errStr.find("error csolution: conflict: group 'sources' is declared multiple times") != string::npos);
+
+  streamRedirect.ClearStringStreams();
+  argv[4] = (char*)"wrong.Debug+WrongDevice";
+  EXPECT_EQ(1, RunProjMgr(5, argv, 0));
+  errStr = streamRedirect.GetErrorString();
+
+  RteFsUtils::RemoveFile(dstGlobalGenerator);
+}
+
+TEST_F(ProjMgrUnitTests, ExternalGenerator_NoCgenFile) {
+  const string& srcGlobalGenerator = testinput_folder + "/ExternalGenerator/global.generator.yml";
+  const string& dstGlobalGenerator = testcmsiscompiler_folder + "/global.generator.yml";
+  RteFsUtils::CopyCheckFile(srcGlobalGenerator, dstGlobalGenerator, false);
+
+  const string genDir = m_extGenerator.GetGlobalGenDir("RteTestExternalGenerator");
+  if (!genDir.empty()) {
+    RteFsUtils::RemoveDir(genDir);
+  }
+
+  StdStreamRedirect streamRedirect;
+  char* argv[5];
+  const string& csolution = testinput_folder + "/ExternalGenerator/extgen.csolution.yml";
+  argv[1] = (char*)csolution.c_str();
+  argv[2] = (char*)"convert";
+  argv[3] = (char*)"-c";
+  argv[4] = (char*)"core0.Debug+MultiCore";
+  EXPECT_EQ(1, RunProjMgr(5, argv, 0));
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_TRUE(errStr.find("error csolution: cgen file was not found, run generator 'RteTestExternalGenerator' for context 'core0.Debug+MultiCore'") != string::npos);
+
+  RteFsUtils::RemoveFile(dstGlobalGenerator);
 }

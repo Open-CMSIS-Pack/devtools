@@ -1,0 +1,5 @@
+generator:
+  - id: CubeMX
+    download-url: https://www.st.com/en/development-tools/stm32cubemx.html#st-get-software
+    run: ../bin/cbridge
+    path: $SolutionDir()$/STM32CubeMX/$Dname$

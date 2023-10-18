@@ -1,4 +1,4 @@
-build:
+build-gen:
   generated-by: csolution version 2.1.0+p16-gf314eb6d
   current-generator:
     id: RteTestGeneratorIdentifier
@@ -8,6 +8,8 @@ build:
   context: TestProject3_1.Debug+TypeA
   compiler: GCC@0.0.0
   device: RteTestGen_ARMCM0
+  processor:
+    core: Cortex-M0
   packs:
     - pack: ARM::RteTestGenerator@0.1.0
       path: ${DEVTOOLS(packs)}/ARM/RteTestGenerator/0.1.0
@@ -20,9 +22,9 @@ build:
     - ${DEVTOOLS(packs)}/ARM/RteTestGenerator/0.1.0/Include
     - ${DEVTOOLS(packs)}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
   output-dirs:
-    intdir: ../tmp/TestProject3_1/TypeA/Debug
-    outdir: outdir/
-    rtedir: RTE
+    intdir: ${DEVTOOLS(data)}/TestSolution/tmp/TestProject3_1/TypeA/Debug
+    outdir: ${DEVTOOLS(data)}/TestSolution/TestProject3_1/outdir
+    rtedir: ${DEVTOOLS(data)}/TestSolution/TestProject3_1/RTE
   output:
     - type: elf
       file: TestProject3_1.elf

@@ -1,0 +1,16 @@
+build-gen-idx:
+  generated-by: csolution version 0.0.0+gf14e09a4
+  generators:
+    - id: RteTestExternalGenerator
+      output: ${DEVTOOLS(data)}/ExternalGenerator/generated/CM0
+      device: RteTestGen_ARMCM0
+      project-type: trustzone
+      cbuild-gens:
+        - cbuild-gen: ${DEVTOOLS(data)}/ExternalGenerator/tmp/ns/CM0/Debug/ns.Debug+CM0.cbuild-gen.yml
+          project: ns
+          configuration: .Debug+CM0
+          for-project-part: non-secure
+        - cbuild-gen: ${DEVTOOLS(data)}/ExternalGenerator/tmp/s/CM0/Debug/s.Debug+CM0.cbuild-gen.yml
+          project: s
+          configuration: .Debug+CM0
+          for-project-part: secure

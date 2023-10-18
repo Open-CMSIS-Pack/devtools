@@ -99,6 +99,11 @@ cpackget_version="1.0.1"
 cpackget_base=https://github.com/Open-CMSIS-Pack/cpackget/releases/download/v${cpackget_version}/cpackget_${cpackget_version}
 curl --retry 3 -L ${cpackget_base}_linux_amd64.tar.gz -o - | tar xzfO - --wildcards '*cpackget' > ${input}/bin/cpackget.lin-amd64
 
+# Get generator-bridge
+# cbridge_version="0.9.0"
+# cbridge_base=https://github.com/Open-CMSIS-Pack/generator-bridge/releases/download/${cbridge_version}/cbridge_${cbridge_version}
+# curl --retry 3 -L ${cbridge_base}_linux_amd64.tar.gz -o - | tar xzfO - --wildcards '*cpackget' > ${input}/bin/cbridge.lin-amd64
+
 # Get csolution
 csolution_version="2.1.0"
 csolution_base=https://github.com/Open-CMSIS-Pack/devtools/releases/download/tools%2Fprojmgr%2F${csolution_version}/projmgr.zip

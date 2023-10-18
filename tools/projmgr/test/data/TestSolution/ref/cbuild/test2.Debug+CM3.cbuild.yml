@@ -9,6 +9,7 @@ build:
     fpu: off
     endian: little
     trustzone: non-secure
+    core: Cortex-M3
   packs:
     - pack: ARM::RteTest_DFP@0.2.0
       path: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0

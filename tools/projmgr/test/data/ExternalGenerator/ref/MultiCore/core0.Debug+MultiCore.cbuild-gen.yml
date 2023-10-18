@@ -1,0 +1,50 @@
+build-gen:
+  generated-by: csolution version 0.0.0+g8b0e14a8
+  current-generator:
+    id: RteTestExternalGenerator
+  solution: ${DEVTOOLS(data)}/ExternalGenerator/extgen.csolution.yml
+  project: ${DEVTOOLS(data)}/ExternalGenerator/multi_0/core0.cproject.yml
+  context: core0.Debug+MultiCore
+  compiler: AC6
+  device: RteTest_ARMCM0_Dual:cm0_core0
+  processor:
+    fpu: off
+    core: Cortex-M0
+  packs:
+    - pack: ARM::RteTestGenerator@0.1.0
+      path: ${DEVTOOLS(packs)}/ARM/RteTestGenerator/0.1.0
+    - pack: ARM::RteTest_DFP@0.2.0
+      path: ${DEVTOOLS(packs)}/ARM/RteTest_DFP/0.2.0
+  define:
+    - ARMCM0
+    - _RTE_
+  add-path:
+    - ${DEVTOOLS(data)}/ExternalGenerator/multi_0/RTE/_Debug_MultiCore
+    - ${DEVTOOLS(packs)}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
+  output-dirs:
+    intdir: ${DEVTOOLS(data)}/ExternalGenerator/tmp/core0/MultiCore/Debug
+    outdir: ${DEVTOOLS(data)}/ExternalGenerator/out/core0/MultiCore/Debug
+    rtedir: ${DEVTOOLS(data)}/ExternalGenerator/multi_0/RTE
+  output:
+    - type: elf
+      file: core0.axf
+  components:
+    - component: ARM::RteTestGenerator:Check Global Generator@0.9.0
+      from-pack: ARM::RteTestGenerator@0.1.0
+      selected-by: RteTestGenerator:Check Global Generator
+  linker:
+    script: ${DEVTOOLS(data)}/TestToolchains/ac6_linker_script.sct
+    regions: ${DEVTOOLS(data)}/ExternalGenerator/multi_0/RTE/Device/RteTest_ARMCM0_Dual_cm0_core0/regions_RteTest_ARMCM0_Dual_cm0_core0.h
+  constructed-files:
+    - file: ${DEVTOOLS(data)}/ExternalGenerator/multi_0/RTE/_Debug_MultiCore/RTE_Components.h
+      category: header
+  licenses:
+    - license: <unknown>
+      packs:
+        - pack: ARM::RteTestGenerator@0.1.0
+      components:
+        - component: ARM::RteTestGenerator:Check Global Generator@0.9.0
+    - license: <unknown>
+      license-agreement: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Doc/license.txt
+      packs:
+        - pack: ARM::RteTest_DFP@0.2.0

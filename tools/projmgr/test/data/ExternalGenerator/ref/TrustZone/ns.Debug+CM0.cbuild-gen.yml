@@ -1,0 +1,42 @@
+build-gen:
+  generated-by: csolution version 0.0.0+g8b0e14a8
+  current-generator:
+    id: RteTestExternalGenerator
+  solution: ${DEVTOOLS(data)}/ExternalGenerator/extgen.csolution.yml
+  project: ${DEVTOOLS(data)}/ExternalGenerator/tz_ns/ns.cproject.yml
+  context: ns.Debug+CM0
+  compiler: AC6
+  device: RteTestGen_ARMCM0
+  processor:
+    trustzone: non-secure
+    core: Cortex-M0
+  packs:
+    - pack: ARM::RteTestGenerator@0.1.0
+      path: ${DEVTOOLS(packs)}/ARM/RteTestGenerator/0.1.0
+  define:
+    - _RTE_
+  add-path:
+    - ${DEVTOOLS(data)}/ExternalGenerator/tz_ns/RTE/_Debug_CM0
+  output-dirs:
+    intdir: ${DEVTOOLS(data)}/ExternalGenerator/tmp/ns/CM0/Debug
+    outdir: ${DEVTOOLS(data)}/ExternalGenerator/out/ns/CM0/Debug
+    rtedir: ${DEVTOOLS(data)}/ExternalGenerator/tz_ns/RTE
+  output:
+    - type: elf
+      file: ns.axf
+  components:
+    - component: ARM::RteTestGenerator:Check Global Generator@0.9.0
+      from-pack: ARM::RteTestGenerator@0.1.0
+      selected-by: RteTestGenerator:Check Global Generator
+  linker:
+    script: ${DEVTOOLS(data)}/TestToolchains/ac6_linker_script.sct
+    regions: ${DEVTOOLS(data)}/ExternalGenerator/tz_ns/RTE/Device/RteTestGen_ARMCM0/regions_RteTestGen_ARMCM0.h
+  constructed-files:
+    - file: ${DEVTOOLS(data)}/ExternalGenerator/tz_ns/RTE/_Debug_CM0/RTE_Components.h
+      category: header
+  licenses:
+    - license: <unknown>
+      packs:
+        - pack: ARM::RteTestGenerator@0.1.0
+      components:
+        - component: ARM::RteTestGenerator:Check Global Generator@0.9.0

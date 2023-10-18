@@ -17,7 +17,8 @@ using namespace std;
 
 class ProjMgrWorkerUnitTests : public ProjMgrWorker, public ::testing::Test {
 protected:
-  ProjMgrWorkerUnitTests() {}
+  ProjMgrParser parser;
+  ProjMgrWorkerUnitTests() : ProjMgrWorker(&parser, nullptr) {}
   virtual ~ProjMgrWorkerUnitTests() {}
 
   void SetCsolutionPacks(CsolutionItem* csolution, std::vector<std::string> packs, std::string targetType);
@@ -566,8 +567,6 @@ TEST_F(ProjMgrWorkerUnitTests, LoadFilteredPack_1) {
 TEST_F(ProjMgrWorkerUnitTests, LoadFilteredPack_2) {
   CsolutionItem csolution;
   SetCsolutionPacks(&csolution, { "ARM" }, "Test");
-  ProjMgrParser parser;
-  SetParser(&parser);
 
   // get list of available packs
   vector<string> availablePacks;
@@ -590,8 +589,6 @@ TEST_F(ProjMgrWorkerUnitTests, LoadFilteredPack_3) {
 TEST_F(ProjMgrWorkerUnitTests, LoadFilteredPack_4) {
   CsolutionItem csolution;
   SetCsolutionPacks(&csolution, { "ARM::*" }, "Test");
-  ProjMgrParser parser;
-  SetParser(&parser);
 
   // get list of available packs
   vector<string> availablePacks;

@@ -21,7 +21,12 @@ public:
     PROJECT,
     LAYER,
     BUILD,
-    BUILDSET
+    BUILDIDX,
+    BUILDSET,
+    GENERATOR,
+    BUILDGEN,
+    BUILDGENIDX,
+    GENERATOR_IMPORT
   };
   /**
    * @brief class constructor

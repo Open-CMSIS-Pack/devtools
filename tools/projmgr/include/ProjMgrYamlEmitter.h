@@ -34,11 +34,25 @@ public:
   static bool GenerateCbuildIndex(ProjMgrParser& parser, const std::vector<ContextItem*> contexts, const std::string& outputDir);
 
   /**
-   * @brief generate cbuild.yml file
-   * @param context pointer to the context
+   * @brief generate cbuild-gen-idx.yml file
+   * @param parser reference
+   * @param contexts vector with pointers to sibling contexts
+   * @param type project type
+   * @param outdir output directory
+   * @param gendir generated files directory
    * @return true if executed successfully
   */
-  static bool GenerateCbuild(ContextItem* context, const RteGenerator* generator = nullptr);
+  static bool GenerateCbuildGenIndex(ProjMgrParser& parser, const std::vector<ContextItem*> siblings,
+    const std::string& type, const std::string& outdir, const std::string& gendir);
+
+  /**
+   * @brief generate cbuild.yml or cbuild-gen.yml file
+   * @param context pointer to the context
+   * @param reference to generator identifier
+   * @param reference to generator pack
+   * @return true if executed successfully
+  */
+  static bool GenerateCbuild(ContextItem* context, const std::string& generatorId = std::string(), const std::string& generatorPack = std::string());
 
   /**
    * @brief generate cbuild set file

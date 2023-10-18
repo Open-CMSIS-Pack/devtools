@@ -1,0 +1,30 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schemas/csolution.schema.json
+
+solution:
+  compiler: AC6
+
+  packs:
+    - pack: ARM::RteTestGenerator@0.1.0
+    - pack: ARM::RteTest_DFP@0.2.0
+
+  target-types:
+    - type: CM0
+      device: RteTestGen_ARMCM0
+    - type: MultiCore
+      device: RteTest_ARMCM0_Dual
+      
+  build-types:
+    - type: Debug
+    - type: Release
+
+  projects:
+    - project: single/single-core.cproject.yml
+      for-context: +CM0
+    - project: tz_s/s.cproject.yml
+      for-context: +CM0
+    - project: tz_ns/ns.cproject.yml
+      for-context: +CM0
+    - project: multi_0/core0.cproject.yml
+      for-context: +MultiCore
+    - project: multi_1/core1.cproject.yml
+      for-context: +MultiCore

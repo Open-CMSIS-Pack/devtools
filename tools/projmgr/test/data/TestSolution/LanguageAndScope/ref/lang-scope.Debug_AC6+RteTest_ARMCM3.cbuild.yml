@@ -7,6 +7,7 @@ build:
   device: RteTest_ARMCM3
   processor:
     fpu: off
+    core: Cortex-M3
   packs:
     - pack: ARM::RteTest@0.1.0-alpha0
       path: ../data/TestSolution/LanguageAndScope/pack

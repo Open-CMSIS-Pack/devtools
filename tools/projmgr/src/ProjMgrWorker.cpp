@@ -37,7 +37,9 @@ static const map<const string, tuple<const string, const string, const string>> 
   { "IAR",   {ProjMgrUtils::IAR_ELF_SUFFIX    , ProjMgrUtils::IAR_LIB_PREFIX    , ProjMgrUtils::IAR_LIB_SUFFIX     }},
 };
 
-ProjMgrWorker::ProjMgrWorker(void) :
+ProjMgrWorker::ProjMgrWorker(ProjMgrParser* parser, ProjMgrExtGenerator* extGenerator) :
+  m_parser(parser),
+  m_extGenerator(extGenerator),
   m_loadPacksPolicy(LoadPacksPolicy::DEFAULT),
   m_checkSchema(false),
   m_verbose(false),
@@ -55,10 +57,6 @@ ProjMgrWorker::~ProjMgrWorker(void) {
       delete componentItem.second.instance;
     }
   }
-}
-
-void ProjMgrWorker::SetParser(ProjMgrParser* parser) {
-  m_parser = parser;
 }
 
 bool ProjMgrWorker::AddContexts(ProjMgrParser& parser, ContextDesc& descriptor, const string& cprojectFile) {
@@ -287,7 +285,6 @@ bool ProjMgrWorker::GetRequiredPdscFiles(ContextItem& context, const std::string
           + "' specified with 'path' must not have a version");
       }
       string packPath = packItem.path;
-      RteFsUtils::NormalizePath(packPath, context.csolution->directory + "/");
       if (!RteFsUtils::Exists(packPath)) {
         errMsgs.insert("pack path: " + packItem.path + " does not exist");
         break;
@@ -627,7 +624,7 @@ bool ProjMgrWorker::ProcessCandidateLayers(ContextItem& context, LayersDiscoveri
     for (const auto& clayer : clayers) {
       const ClayerItem& clayerItem = m_parser->GetGenericClayers()[clayer];
       if (!clayerItem.forBoard.empty() || !clayerItem.forDevice.empty()) {
-        packRequirements.insert(packRequirements.end(), clayerItem.packs.begin(), clayerItem.packs.end());
+        InsertPackRequirements(clayerItem.packs, packRequirements, clayerItem.directory);
       }
     }
   }
@@ -1260,6 +1257,9 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
   }
 
   context.packages.insert({ matchedDevice->GetPackageID(true), matchedDevice->GetPackage() });
+  GetDeviceItem(context.device, context.deviceItem);
+  context.variables[ProjMgrUtils::AS_DNAME] = context.deviceItem.name;
+  context.variables[ProjMgrUtils::AS_PNAME] = context.deviceItem.pname;
   return true;
 }
 
@@ -1302,18 +1302,27 @@ bool ProjMgrWorker::ProcessPackages(ContextItem& context) {
 
   // Solution package requirements
   if (context.csolution) {
-    packRequirements.insert(packRequirements.end(), context.csolution->packs.begin(), context.csolution->packs.end());
+    InsertPackRequirements(context.csolution->packs, packRequirements, context.csolution->directory);
   }
   // Project package requirements
   if (context.cproject) {
-    packRequirements.insert(packRequirements.end(), context.cproject->packs.begin(), context.cproject->packs.end());
+    InsertPackRequirements(context.cproject->packs, packRequirements, context.cproject->directory);
   }
   // Layers package requirements
   for (const auto& [_, clayer] : context.clayers) {
-    packRequirements.insert(packRequirements.end(), clayer->packs.begin(), clayer->packs.end());
+    InsertPackRequirements(clayer->packs, packRequirements, clayer->directory);
   }
   AddPackRequirements(context, packRequirements);
   return true;
+}
+
+void ProjMgrWorker::InsertPackRequirements(const vector<PackItem>& src, vector<PackItem>& dst, string base) {
+  for (auto item : src) {
+    if (!item.path.empty()) {
+      RteFsUtils::NormalizePath(item.path, base);
+    }
+    dst.push_back(item);
+  }
 }
 
 bool ProjMgrWorker::AddPackRequirements(ContextItem& context, const vector<PackItem> packRequirements) {
@@ -1431,6 +1440,22 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
       error_code ec;
       const string& gpdsc = fs::weakly_canonical(generator->GetExpandedGpdsc(context.rteActiveTarget, genDir), ec).generic_string();
       context.gpdscs.insert({ gpdsc, {componentId, generatorId, genDir} });
+    } else {
+      // Get external generator id
+      const string extGenId = matchedComponent->GetGeneratorName();
+      if (!extGenId.empty()) {
+        // check if required global generator is registered
+        if (!m_extGenerator->CheckGeneratorId(extGenId, componentId)) {
+          return false;
+        }
+        string genDir;
+        if (!GetExtGeneratorDir(extGenId, context, layer, genDir)) {
+          return false;
+        }
+        // keep track of used generators
+        m_extGenerator->AddUsedGenerator(extGenId, genDir, context.name);
+        context.extGenDir[extGenId] = genDir;
+      }
     }
 
     // Insert matched component into context list
@@ -1945,17 +1970,20 @@ void ProjMgrWorker::MergeStringVector(StringVectorCollection& item) {
   }
 }
 
-bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
+bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, bool rerun) {
   // Notes: defines, includes and misc are additive. All other keywords overwrite previous settings.
   // The target-type and build-type definitions are additive, but an attempt to
   // redefine an already existing type results in an error.
   // The settings of the target-type are processed first; then the settings of the
   // build-type that potentially overwrite the target-type settings.
 
-  if (context.precedences) {
+  if (!rerun && context.precedences) {
     return true;
   }
   context.precedences = true;
+  context.components.clear();
+  context.componentRequirements.clear();
+  context.groups.clear();
 
   // Get content of build and target types
   if (!GetTypeContent(context)) {
@@ -2050,7 +2078,7 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context) {
   // after board, device and compiler precedences (due to $Bname$, $Dname$ and $Compiler$)
   // after output filenames (due to $Output$)
   // but before processing misc, defines and includes precedences
-  if (!ProcessSequencesRelatives(context)) {
+  if (!ProcessSequencesRelatives(context, rerun)) {
     return false;
   }
 
@@ -2359,16 +2387,16 @@ bool ProjMgrWorker::ProcessLinkerOptions(ContextItem& context, const LinkerItem&
   return true;
 }
 
-
-bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem& context) {
-
-  // directories
-  const string ref = m_outputDir.empty() ? context.csolution->directory : RteFsUtils::AbsolutePath(m_outputDir).generic_string();
-  if (!ProcessSequenceRelative(context, context.directories.cprj) ||
+bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem & context, bool rerun) {
+  if (!rerun) {
+    // directories
+    const string ref = m_outputDir.empty() ? context.csolution->directory : RteFsUtils::AbsolutePath(m_outputDir).generic_string();
+    if (!ProcessSequenceRelative(context, context.directories.cprj) ||
       !ProcessSequenceRelative(context, context.directories.rte, context.cproject->directory) ||
       !ProcessSequenceRelative(context, context.directories.outdir, ref) ||
       !ProcessSequenceRelative(context, context.directories.intdir, ref)) {
-    return false;
+      return false;
+    }
   }
 
   // project, solution, target-type and build-type translation controls
@@ -2492,6 +2520,9 @@ bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, 
           auto& refContext = m_contexts.at(contextName);
           // process referenced context precedences if needed
           if (!refContext.precedences) {
+            if (!ParseContextLayers(refContext)) {
+              return false;
+            }
             if (!ProcessPrecedences(refContext)) {
               return false;
             }
@@ -2783,7 +2814,7 @@ void ProjMgrWorker::PrintMissingFilters(void) {
   }
 }
 
-bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGpdsc, bool resolveDependencies, bool updateRteFiles) {
+bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGenFiles, bool resolveDependencies, bool updateRteFiles) {
   if (!LoadPacks(context)) {
     return false;
   }
@@ -2806,8 +2837,11 @@ bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGpdsc, bool re
   if (!ProcessComponents(context)) {
     return false;
   }
-  if (loadGpdsc) {
+  if (loadGenFiles) {
     if (!ProcessGpdsc(context)) {
+      return false;
+    }
+    if (!ProcessGeneratedLayers(context)) {
       return false;
     }
   }
@@ -3193,6 +3227,9 @@ bool ProjMgrWorker::ListGenerators(vector<string>& generators) {
       generatorsSet.insert(id + " (" + generator->GetDescription() + ")");
     }
   }
+  for (const auto& [id, _] : m_extGenerator->GetUsedGenerators()) {
+    generatorsSet.insert(id + " (Global Registered Generator)");
+  }
   generators.assign(generatorsSet.begin(), generatorsSet.end());
   return true;
 }
@@ -3423,7 +3460,8 @@ bool ProjMgrWorker::ExecuteGenerator(std::string& generatorId) {
     generatorDestination += '/';
   }
 
-  if (!ProjMgrYamlEmitter::GenerateCbuild(&context, generator)) {
+  if (!ProjMgrYamlEmitter::GenerateCbuild(&context, generator->GetGeneratorName(),
+    RtePackage::GetPackageIDfromAttributes(*generator->GetPackage()))) {
     return false;
   }
 
@@ -3519,7 +3557,7 @@ bool ProjMgrWorker::ParseContextSelection(const vector<string>& contextSelection
   auto csolutionItem = m_parser->GetCsolution();
   string cbuildSetFile = csolutionItem.directory + "/" + csolutionItem.name + ".cbuild-set.yml";
   if (checkCbuildSet && RteFsUtils::Exists(cbuildSetFile)) {
-    if (!m_parser->ParseCbuildSet(cbuildSetFile)) {
+    if (!m_parser->ParseCbuildSet(cbuildSetFile, m_checkSchema)) {
       return false;
     }
     const auto& cbuildSetItem = m_parser->GetCbuildSetItem();
@@ -3863,6 +3901,50 @@ bool ProjMgrWorker::GetGeneratorDir(const RteGenerator* generator, ContextItem& 
   const string generatorId = generator->GetID();
   genDir.clear();
 
+  // from 'generators' node
+  if (!GetGeneratorDir(generatorId, context, layer, genDir)) {
+    return false;
+  }
+
+  if (!genDir.empty()) {
+    genDir = RteFsUtils::RelativePath(genDir, context.cproject->directory);
+  } else {
+    // original working dir from PDSC
+    if (!generator->GetWorkingDir().empty()) {
+      genDir = RteFsUtils::RelativePath(generator->GetExpandedWorkingDir(context.rteActiveTarget), context.cproject->directory);
+      if (!layer.empty()) {
+        // adjust genDir if component belongs to layer
+        genDir = RteFsUtils::RelativePath(fs::path(context.clayers.at(layer)->directory).append(genDir).generic_string(), context.cproject->directory);
+      }
+    } else {
+      // default: $ProjectDir()$/generated/<generator-id>
+      genDir = fs::path("generated").append(generatorId).generic_string();
+    }
+  }
+  return true;
+}
+
+bool ProjMgrWorker::GetExtGeneratorDir(const string& generatorId, ContextItem& context, const string& layer, string& genDir) {
+  // from 'generators' node
+  if (!GetGeneratorDir(generatorId, context, layer, genDir)) {
+    return false;
+  }
+  if (genDir.empty()) {
+    // from global register
+    genDir = m_extGenerator->GetGlobalGenDir(generatorId);
+    if (!ProcessSequenceRelative(context, genDir, layer.empty() ? context.cproject->directory : context.clayers.at(layer)->directory)) {
+      return false;
+    }
+  }
+  if (genDir.empty()) {
+    ProjMgrLogger::Error("generator output directory was not set");
+    return false;
+  }
+  RteFsUtils::NormalizePath(genDir, context.directories.cprj);
+  return true;
+}
+
+bool ProjMgrWorker::GetGeneratorDir(const string& generatorId, ContextItem& context, const string& layer, string& genDir) {
   // map with GeneratorsItem and base reference (clayer, cproject or csolution directory)
   const vector<pair<GeneratorsItem, string>> generatorsList = {
     layer.empty() ? pair<GeneratorsItem, string>() : make_pair(context.clayers.at(layer)->generators, context.clayers.at(layer)->directory),
@@ -3878,7 +3960,7 @@ bool ProjMgrWorker::GetGeneratorDir(const RteGenerator* generator, ContextItem& 
         if (!ProcessSequenceRelative(context, genDir, ref)) {
           return false;
         }
-        genDir = RteFsUtils::RelativePath(fs::path(context.directories.cprj).append(genDir).generic_string(), context.cproject->directory);
+        RteFsUtils::NormalizePath(genDir, context.directories.cprj);
         break;
       }
     }
@@ -3891,22 +3973,10 @@ bool ProjMgrWorker::GetGeneratorDir(const RteGenerator* generator, ContextItem& 
         if (!ProcessSequenceRelative(context, genDir, ref)) {
           return false;
         }
-        genDir = RteFsUtils::RelativePath(fs::path(context.directories.cprj).append(genDir).append(generatorId).generic_string(), context.cproject->directory);
+        genDir = fs::path(genDir).append(generatorId).generic_string();
+        RteFsUtils::NormalizePath(genDir, context.directories.cprj);
         break;
       }
-    }
-  }
-  if (genDir.empty()) {
-    // original working dir from PDSC
-    if (!generator->GetWorkingDir().empty()) {
-      genDir = RteFsUtils::RelativePath(generator->GetExpandedWorkingDir(context.rteActiveTarget), context.cproject->directory);
-      if (!layer.empty()) {
-        // adjust genDir if component belongs to layer
-        genDir = RteFsUtils::RelativePath(fs::path(context.clayers.at(layer)->directory).append(genDir).generic_string(), context.cproject->directory);
-      }
-    } else {
-      // default: $ProjectDir()$/generated/<generator-id>
-      genDir = fs::path("generated").append(generatorId).generic_string();
     }
   }
   return true;
@@ -3940,4 +4010,136 @@ bool ProjMgrWorker::ListConfigFiles(vector<string>& configFiles) {
 
 std::string ProjMgrWorker::GetSelectedToochain(void) {
   return m_selectedToolchain;
+}
+
+bool ProjMgrWorker::ProcessGlobalGenerators(ContextItem* selectedContext, const string& generatorId,
+  string& projectType, StrVec& siblings) {
+
+  // iterate over contexts with same build and target types
+  for (auto& [_, context] : m_contexts) {
+    if ((context.type.build != selectedContext->type.build) ||
+      (context.type.target != selectedContext->type.target)) {
+      continue;
+    }
+    if (!ParseContextLayers(context)) {
+      return false;
+    }
+    if (!ProcessContext(context, false, true, false)) {
+      return false;
+    }
+  }
+  const string& genDir = selectedContext->extGenDir[generatorId];
+  const auto& contextVec = m_extGenerator->GetUsedGenerators().at(generatorId).at(genDir);
+
+  // classify generator contexts according to device, processor and project name
+  map<string, map<string, StrMap>> classifiedMap;
+  for (const auto& contextId : contextVec) {
+    auto& context = m_contexts[contextId];
+    DeviceItem deviceItem;
+    GetDeviceItem(context.device, deviceItem);
+    classifiedMap[deviceItem.name][deviceItem.pname][context.cproject->name] = contextId;
+  }
+
+  // find project-type related contexts
+  StrVecMap projectTypeMap;
+  for (const auto& [device, processors] : classifiedMap) {
+    for (const auto& [processor, projects] : processors) {
+      for (const auto& [project, context] : projects) {
+        string type;
+        if (processors.size() >= 2) {
+          type = TYPE_MULTI_CORE;
+        } else {
+          const auto& trustzone = m_contexts[context].controls.processed.processor.trustzone;
+          type = (trustzone.empty() || trustzone == "off") ? TYPE_SINGLE_CORE : TYPE_TRUSTZONE;
+        }
+        projectTypeMap[type].push_back(context);
+      }
+    }
+  }
+
+  // get selected context project-type and siblings
+  for (const auto& [type, contexts] : projectTypeMap) {
+    if (find(contexts.begin(), contexts.end(), selectedContext->name) != contexts.end()) {
+      projectType = type;
+      siblings = contexts;
+      return true;
+    }
+  }
+  return false;
+}
+
+bool ProjMgrWorker::ExecuteExtGenerator(std::string& generatorId) {
+  if (m_selectedContexts.size() != 1) {
+    ProjMgrLogger::Error("a single context must be specified");
+    return false;
+  }
+  const string& selectedContextId = m_selectedContexts.front();
+  ContextItem* selectedContext = &m_contexts[selectedContextId];
+  string projectType;
+  StrVec siblings;
+  if (!ProcessGlobalGenerators(selectedContext, generatorId, projectType, siblings)) {
+    return false;
+  }
+  const string& genDir = selectedContext->extGenDir[generatorId];
+  vector<ContextItem*> siblingContexts;
+  for (const auto& sibling : siblings) {
+    siblingContexts.push_back(&m_contexts[sibling]);
+  }
+
+  // Generate cbuild-gen files
+  string cbuildgenOutput = selectedContext->directories.intdir;
+  RteFsUtils::NormalizePath(cbuildgenOutput, selectedContext->directories.cprj);
+  if (!ProjMgrYamlEmitter::GenerateCbuildGenIndex(*m_parser, siblingContexts, projectType, cbuildgenOutput, genDir)) {
+    return false;
+  }
+  for (const auto& siblingContext : siblingContexts) {
+    if (!ProjMgrYamlEmitter::GenerateCbuild(siblingContext, generatorId)) {
+      return false;
+    }
+  }
+
+  // Execute generator command
+  string runCmd = m_extGenerator->GetGlobalGenRunCmd(generatorId);
+  RteFsUtils::NormalizePath(runCmd, m_compilerRoot);
+  runCmd += " " + fs::path(cbuildgenOutput).append(m_parser->GetCsolution().name + ".cbuild-gen-idx.yml").generic_string();
+  error_code ec;
+  const auto& workingDir = fs::current_path(ec);
+  fs::current_path(genDir, ec);
+  ProjMgrUtils::Result result = ProjMgrUtils::ExecCommand(runCmd);
+  fs::current_path(workingDir, ec);
+  ProjMgrLogger::Info("generator '" + generatorId + "' for context '" + selectedContextId + "' reported:\n" + result.first);
+  if (result.second) {
+    ProjMgrLogger::Error("executing generator '" + generatorId + "' for context '" + selectedContextId + "' failed");
+    return false;
+  }
+  return true;
+}
+
+bool ProjMgrWorker::ProcessGeneratedLayers(ContextItem& context) {
+  bool success;
+  ClayerItem* cgen = m_extGenerator->GetGeneratorImport(context.name, success);
+  if (!success) {
+    return false;
+  }
+  if (cgen) {
+    context.clayers[cgen->path] = cgen;
+    if (cgen->packs.size() > 0) {
+      vector<PackItem> packRequirements;
+      InsertPackRequirements(cgen->packs, packRequirements, cgen->directory);
+      AddPackRequirements(context, packRequirements);
+      if (!LoadAllRelevantPacks() || !LoadPacks(context)) {
+        return false;
+      }
+    }
+    if (!ProcessPrecedences(context, true)) {
+      return false;
+    }
+    if (!ProcessGroups(context)) {
+      return false;
+    }
+    if (!ProcessComponents(context)) {
+      return false;
+    }
+  }
+  return true;
 }
