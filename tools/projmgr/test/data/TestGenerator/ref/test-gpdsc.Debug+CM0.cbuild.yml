@@ -5,6 +5,8 @@ build:
   context: test-gpdsc.Debug+CM0
   compiler: AC6
   device: RteTestGen_ARMCM0
+  processor:
+    core: Cortex-M0
   packs:
     - pack: ARM::RteTestGenerator@0.1.0
       path: ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0

@@ -56,8 +56,13 @@ Options:\n\
 Use 'csolution <command> -h' for more information about a command.\n\
 ";
 
-ProjMgr::ProjMgr(void) : m_checkSchema(false), m_updateRteFiles(true) {
-  m_worker.SetParser(&m_parser);
+ProjMgr::ProjMgr(void) :
+  m_parser(),
+  m_extGenerator(&m_parser),
+  m_worker(&m_parser, &m_extGenerator),
+  m_checkSchema(false),
+  m_updateRteFiles(true) {
+  // Reserved
 }
 
 ProjMgr::~ProjMgr(void) {
@@ -170,6 +175,7 @@ int ProjMgr::RunProjMgr(int argc, char **argv, char** envp) {
     parseResult = options.parse(argc, argv);
     manager.m_checkSchema = !parseResult.count("n");
     manager.m_worker.SetCheckSchema(manager.m_checkSchema);
+    manager.m_extGenerator.SetCheckSchema(manager.m_checkSchema);
     manager.m_missingPacks = parseResult.count("m");
     manager.m_updateRteFiles = !parseResult.count("no-update-rte");
     manager.m_verbose = parseResult.count("v");
@@ -429,6 +435,11 @@ bool ProjMgr::PopulateContexts(void) {
 
   // Retrieve all context types
   m_worker.RetrieveAllContextTypes();
+
+  // Retrieve global generators
+  if (!m_extGenerator.RetrieveGlobalGenerators()) {
+    return false;
+  }
 
   return true;
 }
@@ -739,9 +750,16 @@ bool ProjMgr::RunCodeGenerator(void) {
   if (!m_worker.ParseContextSelection(m_context, m_contextReplacement)) {
     return false;
   }
-  // Run code generator
-  if (!m_worker.ExecuteGenerator(m_codeGenerator)) {
-    return false;
+  if (m_extGenerator.IsGlobalGenerator(m_codeGenerator)) {
+    // Run global code generator
+    if (!m_worker.ExecuteExtGenerator(m_codeGenerator)) {
+      return false;
+    }
+  } else {
+    // Run legacy code generator
+    if (!m_worker.ExecuteGenerator(m_codeGenerator)) {
+      return false;
+    }
   }
   return true;
 }

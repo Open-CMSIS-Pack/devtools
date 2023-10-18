@@ -21,16 +21,16 @@ protected:
 TEST_F(ProjMgrYamlParserUnitTests, ParseCbuildSet) {
   string cbuildSetFile = testinput_folder + "/TestSolution/invalid_test.cbuild-set.yml";
   CbuildSetItem buildSetItem;
-  EXPECT_FALSE(ParseCbuildSet(cbuildSetFile, buildSetItem));
+  EXPECT_FALSE(ParseCbuildSet(cbuildSetFile, buildSetItem, true));
 
   cbuildSetFile = testinput_folder + "/TestSolution/ref/cbuild/specific_contexts_test.cbuild-set.yml";
-  EXPECT_TRUE(ParseCbuildSet(cbuildSetFile, buildSetItem));
+  EXPECT_TRUE(ParseCbuildSet(cbuildSetFile, buildSetItem, true));
   EXPECT_EQ(buildSetItem.contexts.size(), 2);
   EXPECT_EQ(buildSetItem.contexts[0], "test2.Debug+CM0");
   EXPECT_EQ(buildSetItem.contexts[1], "test1.Debug+CM0");
   EXPECT_EQ(buildSetItem.compiler, "GCC");
 
-  EXPECT_FALSE(ParseCbuildSet("unkownfile.cbuild-set.yml", buildSetItem));
+  EXPECT_FALSE(ParseCbuildSet("unkownfile.cbuild-set.yml", buildSetItem, true));
 }
 
 TEST_F(ProjMgrYamlParserUnitTests, ValidateCbuildSet) {

@@ -175,14 +175,17 @@ bool ProjMgrYamlParser::ParseClayer(const string& input,
   ClayerItem clayer;
   try {
     // Validate file schema
-    if (checkSchema &&
-      !ProjMgrYamlSchemaChecker().Validate(
-        input, ProjMgrYamlSchemaChecker::FileType::LAYER)) {
-      return false;
+    const bool cgen = fs::path(input).stem().extension().generic_string() == ".cgen";
+    if (checkSchema) {
+      if (!ProjMgrYamlSchemaChecker().Validate(input, cgen  ?
+        ProjMgrYamlSchemaChecker::FileType::GENERATOR_IMPORT :
+        ProjMgrYamlSchemaChecker::FileType::LAYER)) {
+        return false;
+      }
     }
 
     const YAML::Node& root = YAML::LoadFile(input);
-    if (!ValidateClayer(input, root)) {
+    if (!cgen && !ValidateClayer(input, root)) {
       return false;
     }
 
@@ -190,7 +193,7 @@ bool ProjMgrYamlParser::ParseClayer(const string& input,
     clayer.directory = RteFsUtils::ParentPath(clayer.path);
     clayer.name = fs::path(input).stem().stem().generic_string();
 
-    const YAML::Node& layerNode = root[YAML_LAYER];
+    const YAML::Node& layerNode = root[cgen ? YAML_GENERATOR_IMPORT : YAML_LAYER];
     map<const string, string&> projectChildren = {
       {YAML_FORBOARD, clayer.forBoard},
       {YAML_FORDEVICE, clayer.forDevice},
@@ -225,7 +228,7 @@ bool ProjMgrYamlParser::ParseClayer(const string& input,
   return true;
 }
 
-bool ProjMgrYamlParser::ParseCbuildSet(const string& input, CbuildSetItem& cbuildSet) {
+bool ProjMgrYamlParser::ParseCbuildSet(const string& input, CbuildSetItem& cbuildSet, bool checkSchema) {
   // Validate file schema
   if (!ProjMgrYamlSchemaChecker().Validate(
     input, ProjMgrYamlSchemaChecker::FileType::BUILDSET)) {
@@ -234,7 +237,7 @@ bool ProjMgrYamlParser::ParseCbuildSet(const string& input, CbuildSetItem& cbuil
 
   try {
     const YAML::Node& root = YAML::LoadFile(input);
-    if (!ValidateCbuildSet(input, root)) {
+    if (checkSchema && !ValidateCbuildSet(input, root)) {
       return false;
     }
 
@@ -242,6 +245,39 @@ bool ProjMgrYamlParser::ParseCbuildSet(const string& input, CbuildSetItem& cbuil
     ParseString(cbuildSetNode, YAML_GENERATED_BY, cbuildSet.generatedBy);
     ParseVector(cbuildSetNode, YAML_CONTEXTS, cbuildSet.contexts);
     ParseString(cbuildSetNode, YAML_COMPILER, cbuildSet.compiler);
+  }
+  catch (YAML::Exception& e) {
+    ProjMgrLogger::Error(input, e.mark.line + 1, e.mark.column + 1, e.msg);
+    return false;
+  }
+  return true;
+}
+
+bool ProjMgrYamlParser::ParseGlobalGenerator(const string& input,
+  std::map<std::string, GlobalGeneratorItem>& generators, bool checkSchema) {
+
+  try {
+    // Validate file schema
+    if (checkSchema && !ProjMgrYamlSchemaChecker().Validate(
+      input, ProjMgrYamlSchemaChecker::FileType::GENERATOR)) {
+      return false;
+    }
+
+    const YAML::Node& root = YAML::LoadFile(input);
+    const YAML::Node& generatorNode = root[YAML_GENERATOR];
+    for (const auto& generatorEntry : generatorNode) {
+      GlobalGeneratorItem generator;
+      map<const string, string&> generatorChildren = {
+        {YAML_ID, generator.id},
+        {YAML_DOWNLOAD_URL, generator.downloadUrl},
+        {YAML_RUN, generator.run},
+      };
+      for (const auto& item : generatorChildren) {
+        ParseString(generatorEntry, item.first, item.second);
+      }
+      ParsePortablePath(generatorEntry, input, YAML_PATH, generator.path, false);
+      generators[generator.id] = generator;
+    }
   }
   catch (YAML::Exception& e) {
     ProjMgrLogger::Error(input, e.mark.line + 1, e.mark.column + 1, e.msg);

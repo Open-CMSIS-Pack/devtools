@@ -1,0 +1,11 @@
+build-gen-idx:
+  generated-by: csolution version 0.0.0+gf14e09a4
+  generators:
+    - id: RteTestExternalGenerator
+      output: ${DEVTOOLS(data)}/ExternalGenerator/single/generated
+      device: RteTestGen_ARMCM0
+      project-type: single-core
+      cbuild-gens:
+        - cbuild-gen: ${DEVTOOLS(data)}/ExternalGenerator/tmp/single-core/CM0/Debug/single-core.Debug+CM0.cbuild-gen.yml
+          project: single-core
+          configuration: .Debug+CM0

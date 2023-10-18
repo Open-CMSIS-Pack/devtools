@@ -85,6 +85,7 @@ public:
 
 protected:
   ProjMgrParser m_parser;
+  ProjMgrExtGenerator m_extGenerator;
   ProjMgrWorker m_worker;
   ProjMgrGenerator m_generator;
   ProjMgrYamlEmitter m_emitter;

@@ -1,0 +1,82 @@
+build:
+  generated-by: csolution version 0.0.0+gf14e09a4
+  solution: ../extgen.csolution.yml
+  project: single-core.cproject.yml
+  context: single-core.Debug+CM0
+  compiler: AC6
+  device: RteTestGen_ARMCM0
+  processor:
+    core: Cortex-M0
+  packs:
+    - pack: ARM::RteTest@0.1.0
+      path: ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0
+    - pack: ARM::RteTestGenerator@0.1.0
+      path: ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0
+  define:
+    - _RTE_
+  add-path:
+    - RTE/_Debug_CM0
+    - generated/RTE/RteTest
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/GlobalLevel
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/Include
+  output-dirs:
+    intdir: ../tmp/single-core/CM0/Debug
+    outdir: ../out/single-core/CM0/Debug
+    rtedir: RTE
+  output:
+    - type: elf
+      file: single-core.axf
+  components:
+    - component: ARM::RteTest:GlobalLevel@0.0.2
+      from-pack: ARM::RteTest@0.1.0
+      selected-by: RteTest:GlobalLevel
+      files:
+        - file: ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/GlobalLevel/GlobalLevel.c
+          category: sourceC
+        - file: ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/GlobalLevel/GlobalLevel.h
+          category: preIncludeGlobal
+          version: 0.0.2
+        - file: generated/RTE/RteTest/GlobalLevelConfig.h
+          category: preIncludeGlobal
+          attr: config
+          version: 0.0.2
+        - file: generated/RTE/RteTest/Config/ConfigInclude.h
+          category: header
+          attr: config
+          version: 0.0.2
+    - component: ARM::RteTestGenerator:Check Global Generator@0.9.0
+      from-pack: ARM::RteTestGenerator@0.1.0
+      selected-by: RteTestGenerator:Check Global Generator
+  linker:
+    script: ${CMSIS_COMPILER_ROOT}/ac6_linker_script.sct
+    regions: RTE/Device/RteTestGen_ARMCM0/regions_RteTestGen_ARMCM0.h
+  groups:
+    - group: sources
+      files:
+        - file: main.c
+          category: sourceC
+    - group: generated sources
+      files:
+        - file: generated/generated.c
+          category: sourceC
+  constructed-files:
+    - file: RTE/_Debug_CM0/Pre_Include_Global.h
+      category: preIncludeGlobal
+    - file: RTE/_Debug_CM0/RTE_Components.h
+      category: header
+  licenses:
+    - license: <unknown>
+      packs:
+        - pack: ARM::RteTestGenerator@0.1.0
+      components:
+        - component: ARM::RteTestGenerator:Check Global Generator@0.9.0
+    - license: BSD-3-Clause
+      packs:
+        - pack: ARM::RteTest@0.1.0
+      components:
+        - component: ARM::RteTest:GlobalLevel@0.0.2
+    - license: MIT
+      packs:
+        - pack: ARM::RteTest@0.1.0
+      components:
+        - component: ARM::RteTest:GlobalLevel@0.0.2

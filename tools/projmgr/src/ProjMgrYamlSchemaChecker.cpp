@@ -74,8 +74,23 @@ bool ProjMgrYamlSchemaChecker::GetSchemaFile(string& schemaFile, const ProjMgrYa
   case ProjMgrYamlSchemaChecker::FileType::BUILD:
     schemaFileName = "cbuild.schema.json";
     break;
+  case ProjMgrYamlSchemaChecker::FileType::BUILDIDX:
+    schemaFileName = "cbuild-idx.schema.json";
+    break;
   case ProjMgrYamlSchemaChecker::FileType::BUILDSET:
     schemaFileName = "cbuildset.schema.json";
+    break;
+  case ProjMgrYamlSchemaChecker::FileType::GENERATOR:
+    schemaFileName = "generator.schema.json";
+    break;
+  case ProjMgrYamlSchemaChecker::FileType::BUILDGEN:
+    schemaFileName = "cbuild-gen.schema.json";
+    break;
+  case ProjMgrYamlSchemaChecker::FileType::BUILDGENIDX:
+    schemaFileName = "cbuild-gen-idx.schema.json";
+    break;
+  case ProjMgrYamlSchemaChecker::FileType::GENERATOR_IMPORT:
+    schemaFileName = "cgen.schema.json";
     break;
   default:
     ProjMgrLogger::Error("Unknown file type");

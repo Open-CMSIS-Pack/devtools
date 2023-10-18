@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schemas/cgen.schema.json
+
+generator-import:
+  
+  packs:
+    - pack: ARM::RteTest@0.1.0
+
+  components:
+    - component: RteTest:GlobalLevel
+
+  groups:
+    - group: generated sources
+      files: 
+        - file: generated.c

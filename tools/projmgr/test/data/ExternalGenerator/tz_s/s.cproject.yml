@@ -1,0 +1,7 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schemas/cproject.schema.json
+
+project:
+  processor:
+    trustzone: secure
+  components:
+    - component: RteTestGenerator:Check Global Generator

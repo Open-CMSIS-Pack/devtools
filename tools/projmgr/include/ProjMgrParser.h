@@ -140,12 +140,14 @@ struct TargetType {
  * @brief directories item containing
  *        intdir directory,
  *        outdir directory,
+ *        cbuild directory,
  *        cprj directory,
  *        rte directory,
 */
 struct DirectoriesItem {
   std::string intdir;
   std::string outdir;
+  std::string cbuild;
   std::string cprj;
   std::string rte;
 };
@@ -414,6 +416,20 @@ struct CbuildSetItem {
 };
 
 /**
+ * @brief global generator item containing
+ *        generator id,
+ *        download url,
+ *        bridge program,
+ *        path for generated files
+*/
+struct GlobalGeneratorItem {
+  std::string id;
+  std::string downloadUrl;
+  std::string run;
+  std::string path;
+};
+
+/**
  * @brief projmgr parser class for public interfacing
 */
 class ProjMgrParser {
@@ -430,6 +446,7 @@ public:
 
   /**
    * @brief parse cdefault
+   * @param checkSchema false to skip schema validation
    * @param input cdefault.yml file
   */
   bool ParseCdefault(const std::string& input, bool checkSchema);
@@ -437,33 +454,45 @@ public:
   /**
    * @brief parse cproject
    * @param input cproject.yml file
+   * @param checkSchema false to skip schema validation
    * @param boolean parse single project, default false
   */
   bool ParseCproject(const std::string& input, bool checkSchema, bool single = false);
 
   /**
    * @brief parse csolution
+   * @param checkSchema false to skip schema validation
    * @param input csolution.yml file
   */
   bool ParseCsolution(const std::string& input, bool checkSchema);
 
   /**
    * @brief parse clayer
+   * @param checkSchema false to skip schema validation
    * @param input clayer.yml file
   */
   bool ParseClayer(const std::string& input, bool checkSchema);
 
   /**
    * @brief parse generic clayer files
+   * @param checkSchema false to skip schema validation
    * @param input clayer.yml file
   */
   bool ParseGenericClayer(const std::string& input, bool checkSchema);
 
   /**
    * @brief parse cbuild set file
+   * @param checkSchema false to skip schema validation
    * @param input path to *.cbuild-set.yml file
   */
-  bool ParseCbuildSet(const std::string& input);
+  bool ParseCbuildSet(const std::string& input, bool checkSchema);
+
+  /**
+   * @brief parse global generator
+   * @param input generator.yml file
+   * @param checkSchema false to skip schema validation
+  */
+  bool ParseGlobalGenerator(const std::string& input, bool checkSchema);
 
   /**
    * @brief get cdefault
@@ -500,6 +529,13 @@ public:
    * @return cbuildset item
   */
   CbuildSetItem& GetCbuildSetItem(void);
+
+  /**
+   * @brief get global generators
+   * @return global generators map
+  */
+  std::map<std::string, GlobalGeneratorItem>& GetGlobalGenerators(void);
+
 protected:
   CdefaultItem m_cdefault;
   CsolutionItem m_csolution;
@@ -507,6 +543,7 @@ protected:
   std::map<std::string, CprojectItem> m_cprojects;
   std::map<std::string, ClayerItem> m_clayers;
   std::map<std::string, ClayerItem> m_genericClayers;
+  std::map<std::string, GlobalGeneratorItem> m_globalGenerators;
 };
 
 #endif  // PROJMGRPARSER_H
