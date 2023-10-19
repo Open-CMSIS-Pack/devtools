@@ -1130,7 +1130,9 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
     }
 
     context.boardPack = matchedBoard->GetPackage();
-    context.packages.insert({ context.boardPack->GetID(), context.boardPack });
+    if (context.boardPack) {
+      context.packages.insert({ context.boardPack->GetID(), context.boardPack });
+    }
     context.targetAttributes["Bname"]    = matchedBoard->GetName();
     context.targetAttributes["Bvendor"]  = matchedBoard->GetVendorName();
     context.targetAttributes["Brevision"] = matchedBoard->GetRevision();
@@ -1257,7 +1259,9 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
   }
 
   context.devicePack = matchedDevice->GetPackage();
-  context.packages.insert({ context.devicePack->GetID(), context.devicePack });
+  if (context.devicePack) {
+    context.packages.insert({ context.devicePack->GetID(), context.devicePack });
+  }
   GetDeviceItem(context.device, context.deviceItem);
   context.variables[ProjMgrUtils::AS_DNAME] = context.deviceItem.name;
   context.variables[ProjMgrUtils::AS_PNAME] = context.deviceItem.pname;
