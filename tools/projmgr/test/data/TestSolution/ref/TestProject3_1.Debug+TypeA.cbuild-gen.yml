@@ -8,6 +8,7 @@ build-gen:
   context: TestProject3_1.Debug+TypeA
   compiler: GCC@0.0.0
   device: RteTestGen_ARMCM0
+  device-pack: ARM::RteTestGenerator@0.1.0
   processor:
     core: Cortex-M0
   packs:

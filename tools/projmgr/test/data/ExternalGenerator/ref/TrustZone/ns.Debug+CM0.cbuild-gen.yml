@@ -7,6 +7,7 @@ build-gen:
   context: ns.Debug+CM0
   compiler: AC6
   device: RteTestGen_ARMCM0
+  device-pack: ARM::RteTestGenerator@0.1.0
   processor:
     trustzone: non-secure
     core: Cortex-M0
