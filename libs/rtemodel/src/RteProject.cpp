@@ -190,13 +190,13 @@ void RteProject::Clear()
   m_files.clear();
   ClearFilteredPackages();
 
-  for (auto it = m_gpdscInfos.begin(); it != m_gpdscInfos.end(); it++) {
-    delete it->second;
+  for (auto [_, gi] : m_gpdscInfos) {
+    delete gi;
   }
   m_gpdscInfos.clear();
 
-  for (auto itb = m_boardInfos.begin(); itb != m_boardInfos.end(); itb++) {
-    delete itb->second;
+  for (auto [_, bi] : m_boardInfos) {
+    delete bi;
   }
   m_boardInfos.clear();
 
@@ -261,9 +261,7 @@ void RteProject::UpdateClasses()
 {
   ClearClasses();
   m_classes = new RteComponentInstanceGroup(this);
-  for (auto it = m_components.begin(); it != m_components.end(); it++)
-  {
-    RteComponentInstance* ci = it->second;
+  for (auto [_, ci] : m_components) {
     CategorizeComponentInstance(ci);
   }
 }
@@ -318,8 +316,7 @@ RteComponentInstance* RteProject::GetComponentInstance(const string& id) const
 
 RteComponentInstance* RteProject::GetApiInstance(const map<string, string>& componentAttributes) const
 {
-  for (auto itc = m_components.begin(); itc != m_components.end(); itc++) {
-    RteComponentInstance* ci = itc->second;
+  for (auto [_, ci] : m_components) {
     if (ci && ci->IsApi() && ci->MatchApiAttributes(componentAttributes))
       return ci;
   }
@@ -334,7 +331,7 @@ RteFileInstance* RteProject::GetFileInstance(const string& id) const
     return it->second;
   }
   // try to compare case insensitive
-  for (it = m_files.begin(); it != m_files.end(); it++) {
+  for (it = m_files.begin(); it != m_files.end(); ++it) {
     if ( RteUtils::EqualNoCase(id, it->first)) {
       return it->second;
     }
@@ -344,8 +341,7 @@ RteFileInstance* RteProject::GetFileInstance(const string& id) const
 
 void RteProject::GetFileInstances(RteComponentInstance* ci, const string& targetName, map<string, RteFileInstance*>& configFiles) const
 {
-  for (auto itf = m_files.begin(); itf != m_files.end(); itf++) {
-    RteFileInstance* fi = itf->second;
+  for (auto [id, fi] : m_files) {
     if (!fi->IsUsedByTarget(targetName))
       continue;
     if (fi->GetComponentInstance(targetName) != ci)
@@ -411,8 +407,7 @@ void RteProject::AddCprjComponents(const Collection<RteItem*>& selItems, RteTarg
 {
   map<string, string> configFileVersions;
   // first try to resolve the components
-  for (auto its = selItems.begin(); its != selItems.end(); its++) {
-    RteItem* item = *its;
+  for (auto item : selItems) {
     // Resolve component
     RteComponentInstance* ci = AddCprjComponent(item, target);
     RteComponent* component = ci->GetResolvedComponent(target->GetName());
@@ -438,9 +433,7 @@ void RteProject::AddCprjComponents(const Collection<RteItem*>& selItems, RteTarg
   Apply();
 
   // update file versions
-  for (auto itf = m_files.begin(); itf != m_files.end(); itf++) {
-    const string& instanceName = itf->first;
-    RteFileInstance* fi = itf->second;
+  for (auto [instanceName, fi] : m_files) {
     string version;
     auto itver = configFileVersions.find(instanceName); // file in cprj can be specified by its instance name
     if (itver == configFileVersions.end())
@@ -528,8 +521,7 @@ void RteProject::AddComponentFiles(RteComponentInstance* ci, RteTarget* target, 
   bool excluded = ci->IsExcluded(targetName);
   // add files
   const set<RteFile*>& files = target->GetFilteredFiles(c);
-  for (auto itf = files.begin(); itf != files.end(); itf++) {
-    RteFile* f = *itf;
+  for (auto f : files) {
     if (!f)
       continue;
     if (f->IsConfig()) {
@@ -600,9 +592,7 @@ void RteProject::InitFileInstance(RteFileInstance* fi, RteFile* f, int index, Rt
 
 void RteProject::WriteInstanceFiles(const std::string& targetName)
 {
-  for (auto it = m_files.begin(); it != m_files.end(); ++it) {
-    const string& fileID = it->first;
-    RteFileInstance* fi = it->second;
+  for (auto [fileID, fi] : m_files) {
     if (fi->IsRemoved() || fi->GetTargetCount() == 0) {
       RemoveFileInstance(fileID);
     } else if (fi->IsUsedByTarget(targetName)){
@@ -756,16 +746,13 @@ void RteProject::DeleteFileInstance(RteFileInstance* fi) {
 
 void RteProject::AddGeneratedComponents()
 {
-  for (auto itg = m_gpdscInfos.begin(); itg != m_gpdscInfos.end(); itg++) {
-    RteGpdscInfo* gi = itg->second;
+  for (auto [_, gi] : m_gpdscInfos) {
     RtePackage* gpdscPack = gi->GetGpdscPack();
     if (!gpdscPack || !gpdscPack->GetComponents())
       continue;
-    for (auto itt = m_targets.begin(); itt != m_targets.end(); itt++) {
-      const string& targetName = itt->first;
+    for (auto [targetName, target] : m_targets) {
       if (!gi->IsUsedByTarget(targetName))
         continue;
-      RteTarget* target = itt->second;
       for (auto item : gpdscPack->GetComponents()->GetChildren()) {
         RteComponent* c = dynamic_cast<RteComponent*>(item);
         AddComponent(c, 1, target, nullptr);
@@ -776,9 +763,8 @@ void RteProject::AddGeneratedComponents()
 
 void RteProject::RemoveGeneratedComponents() {
   // mark all generated components as removed (flag will be reset later, but only for those that remain in the list)
-  for (auto it = m_components.begin(); it != m_components.end(); it++)
+  for (auto [_, ci] : m_components)
   {
-    RteComponentInstance* ci = it->second;
     if (ci->IsGenerated())
       ci->SetRemoved(true);
   }
@@ -792,22 +778,18 @@ bool RteProject::Apply()
     return false;
 
   // mark all components as removed (flag will be reset later, but only for those that remain in the list)
-  for (auto it = m_components.begin(); it != m_components.end(); it++)
+  for (auto [_, ci] : m_components)
   {
-    RteComponentInstance* ci = it->second;
     ci->SetRemoved(true);
   }
 
   // add/update components
-  for (auto itt = m_targets.begin(); itt != m_targets.end(); itt++) {
-    const string& targetName = itt->first;
-    RteTarget* target = itt->second;
+  for (auto [targetName, target] : m_targets) {
 
     //// check for removed generated components
     set<RteComponentAggregate*> unselectedGpdscCompoinents;
     target->GetUnSelectedGpdscAggregates(unselectedGpdscCompoinents);
-    for (auto itu = unselectedGpdscCompoinents.begin(); itu != unselectedGpdscCompoinents.end(); itu++) {
-      RteComponentAggregate* ua = *itu;
+    for (auto ua : unselectedGpdscCompoinents) {
       RteComponent* c = ua->GetComponent();
       if (!c)
         continue;
@@ -821,9 +803,7 @@ bool RteProject::Apply()
     }
 
     const map<RteComponentAggregate*, int>& components = target->CollectSelectedComponentAggregates();
-    for (auto itc = components.begin(); itc != components.end(); itc++) {
-      RteComponentAggregate* a = itc->first;
-      int count = itc->second;
+    for (auto [a, count] : components) {
       RteComponent* c = a->GetComponent();
       RteComponentInstance* ci = a->GetComponentInstance();
 
@@ -857,9 +837,8 @@ bool RteProject::Apply()
       }
     }
     // check if gpdsc infos are actual
-    for (auto itgi = m_gpdscInfos.begin(); itgi != m_gpdscInfos.end(); itgi++) {
-      if (!target->IsGpdscUsed(itgi->first)) {
-        RteGpdscInfo* gpdscInfo = itgi->second;
+    for (auto [gpdscFile , gpdscInfo] : m_gpdscInfos) {
+      if (!target->IsGpdscUsed(gpdscFile)) {
         gpdscInfo->RemoveTargetInfo(targetName);
       }
     }
@@ -882,9 +861,7 @@ bool RteProject::ApplyInstanceChanges()
 
   RteTarget* activeTarget = GetActiveTarget();
   const string& activeTargetName = activeTarget->GetName();
-  for (auto it = modifiedAggregates.begin(); it != modifiedAggregates.end(); it++) {
-    RteComponentInstanceAggregate* a = *it;
-
+  for (auto a : modifiedAggregates) {
     RteComponentInstance* orig = a->GetModifiedInstance();
     if (!orig)
       continue;
@@ -939,10 +916,8 @@ bool RteProject::ApplyInstanceChanges()
       } else { // apply to all targets
       // remove all other components
         const RteInstanceTargetInfoMap& infos = ci->GetTargetInfos();
-        for (auto iti = infos.begin(); iti != infos.end(); iti++) {
-          const string& targetName = iti->first;
+        for (auto [targetName, info] : infos) {
           if (targetName != activeTargetName) {
-            RteInstanceTargetInfo* info = iti->second;
             RteTarget* t = GetTarget(targetName);
             // will effectively add target info and files for new target
             AddComponent(c, copy->GetInstanceCount(activeTargetName), t, copy);
@@ -1062,9 +1037,9 @@ void RteProject::Update()
 
   // add files
   set<RteFile*> forcedFiles;
-  for (auto itt = m_targets.begin(); itt != m_targets.end(); itt++) {
+  for (auto itt = m_targets.begin(); itt != m_targets.end(); ++itt) {
     RteTarget* target = itt->second;
-    for (auto itc = m_components.begin(); itc != m_components.end(); itc++) {
+    for (auto itc = m_components.begin(); itc != m_components.end(); ++itc) {
       RteComponentInstance* ci = itc->second;
       AddComponentFiles(ci, target, forcedFiles);
     }
@@ -1072,11 +1047,11 @@ void RteProject::Update()
 
   // copy files if update is enabled
   if (ShouldUpdateRte()) {
-    for (auto itt = m_targets.begin(); itt != m_targets.end(); itt++) {
+    for (auto itt = m_targets.begin(); itt != m_targets.end(); ++itt) {
       WriteInstanceFiles(itt->first);
     }
     // add forced copy files
-    for (auto itf = forcedFiles.begin(); itf != forcedFiles.end(); itf++) {
+    for (auto itf = forcedFiles.begin(); itf != forcedFiles.end(); ++itf) {
       RteFile* f = *itf;
       string dst = GetProjectPath() + f->GetInstancePathName(EMPTY_STRING, 0, GetRteFolder());
 
@@ -1112,8 +1087,7 @@ void RteProject::GenerateRteHeaders() {
 
 void RteProject::ResolvePacks()
 {
-  for (auto itpi = m_filteredPackages.begin(); itpi != m_filteredPackages.end(); itpi++) {
-    RtePackageInstanceInfo* pi = itpi->second;
+  for (auto [_, pi] : m_filteredPackages) {
     pi->ResolvePack();
   }
 }
@@ -1135,10 +1109,9 @@ RtePackageInstanceInfo* RteProject::GetLatestPackageInfo(const string& packId) c
 {
   RtePackageInstanceInfo* latestPi = NULL;
   string commonId = RtePackage::CommonIdFromId(packId);
-  for (auto it = m_filteredPackages.begin(); it != m_filteredPackages.end(); it++) {
-    if (commonId == RtePackage::CommonIdFromId(it->first)) {
-      string version = RtePackage::VersionFromId(it->first);
-      RtePackageInstanceInfo* pi = it->second;
+  for (auto [id, pi] : m_filteredPackages) {
+    if (commonId == RtePackage::CommonIdFromId(id)) {
+      string version = RtePackage::VersionFromId(id);
       if (!latestPi || VersionCmp::Compare(latestPi->GetVersionString(), version) < 0)
         latestPi = pi;
     }
@@ -1250,8 +1223,7 @@ bool RteProject::HasMissingGpdscPacks() const
 {
   if (m_gpdscInfos.empty())
     return false;
-  for (auto itg = m_gpdscInfos.begin(); itg != m_gpdscInfos.end(); itg++) {
-    RteGpdscInfo* gi = itg->second;
+  for (auto [_, gi] : m_gpdscInfos) {
     if (!gi->GetGpdscPack())
       return true;
   }
@@ -1269,8 +1241,7 @@ RteBoardInfo* RteProject::GetBoardInfo(const string& boardId) const
 
 RteBoardInfo* RteProject::GetTargetBoardInfo(const string& targetName) const
 {
-  for (auto itb = m_boardInfos.begin(); itb != m_boardInfos.end(); itb++) {
-    RteBoardInfo* bi = itb->second;
+  for (auto [_, bi] : m_boardInfos) {
     if (bi->IsUsedByTarget(targetName)) {
       return bi;
     }
@@ -1318,7 +1289,7 @@ RteBoardInfo* RteProject::CreateBoardInfo(RteTarget* target, CprjTargetElement* 
 
 void RteProject::CollectSettings()
 {
-  for (auto it = m_targets.begin(); it != m_targets.end(); it++) {
+  for (auto it = m_targets.begin(); it != m_targets.end(); ++it) {
     CollectSettings(it->first);
   }
 }
@@ -1363,23 +1334,19 @@ void RteProject::CollectSettings(const string& targetName)
   t->ClearCollections();
 
   // collect includes, libs and RTE_Components_h defines for active target
-  for (auto itc = m_components.begin(); itc != m_components.end(); itc++) {
-    RteComponentInstance* ci = itc->second;
+  for (auto [_,ci] : m_components) {
     t->CollectComponentSettings(ci);
   }
   t->CollectClassDocs();
 
   // collect copied files and sources
-  for (auto itf = m_files.begin(); itf != m_files.end(); itf++)
-  {
-    RteFileInstance* fi = itf->second;
+  for (auto [_,fi] : m_files) {
     t->AddFileInstance(fi);
   }
 
   // add generator headers and include paths
 
-  for (auto itg = m_gpdscInfos.begin(); itg != m_gpdscInfos.end(); itg++) {
-    RteGpdscInfo* gi = itg->second;
+  for (auto [_, gi] : m_gpdscInfos) {
     RteGenerator* gen = gi->GetGenerator();
     if (!gen)
       continue;
@@ -1440,8 +1407,7 @@ RteItem::ConditionResult RteProject::ResolveComponents(bool bFindReplacementForA
   if (!t)
     return res;
   const string& activeTargetName = t->GetName();
-  for (auto itc = m_components.begin(); itc != m_components.end(); itc++) {
-    RteComponentInstance* ci = itc->second;
+  for (auto [_, ci] : m_components) {
     ci->ResolveComponent();
     if (!bFindReplacementForActiveTarget || ci->IsApi())
       continue;
@@ -1536,12 +1502,10 @@ RteModel* RteProject::EnsureTargetModel(const string& targetName)
 void RteProject::CreateTargetModels()
 {
   // create all models for target mentioned in instance infos
-  for (auto itpi = m_filteredPackages.begin(); itpi != m_filteredPackages.end(); itpi++) {
-    RtePackageInstanceInfo* pi = itpi->second;
+  for (auto [_, pi] : m_filteredPackages) {
     CreateTargetModels(pi);
   }
-  for (auto itc = m_components.begin(); itc != m_components.end(); itc++) {
-    RteComponentInstance* ci = itc->second;
+  for (auto [id, ci] : m_components) {
     CreateTargetModels(ci);
   }
 
@@ -1553,8 +1517,7 @@ void RteProject::CreateTargetModels(RteItemInstance* instance) {
   if (!instance)
     return;
   auto targetInfos = instance->GetTargetInfos();
-  for (auto itt = targetInfos.begin(); itt != targetInfos.end(); itt++) {
-    const string& targetName = itt->first;
+  for (auto [targetName, ti] : targetInfos) {
     EnsureTargetModel(targetName);
   }
 }
@@ -1683,21 +1646,19 @@ bool RteProject::SetActiveTarget(const string& targetName)
 
 void RteProject::ClearTargets()
 {
-  for (auto it = m_targets.begin(); it != m_targets.end(); it++) {
-    delete it->second;
+  for (auto [_ , t] : m_targets) {
+    delete t;
   }
-  for (auto itm = m_targetModels.begin(); itm != m_targetModels.end(); itm++) {
-    delete itm->second;
+  for (auto [_, m ] : m_targetModels) {
+    delete m;
   }
 
 
-  for (auto itc = m_components.begin(); itc != m_components.end(); itc++) {
-    RteComponentInstance* ci = itc->second;
+  for (auto [_, ci] : m_components) {
     ci->ClearResolved();
   }
 
-  for (auto itp = m_filteredPackages.begin(); itp != m_filteredPackages.end(); itp++) {
-    RtePackageInstanceInfo* pi = itp->second;
+  for (auto [_, pi] : m_filteredPackages) {
     pi->ClearResolved();
   }
 
@@ -1714,30 +1675,26 @@ void RteProject::AddTargetInfo(const string& targetName)
   const string& activeTarget = GetActiveTargetName();
   m_packFilterInfos->AddTargetInfo(targetName, activeTarget);
 
-  for (auto itp = m_filteredPackages.begin(); itp != m_filteredPackages.end(); itp++) {
+  for (auto itp = m_filteredPackages.begin(); itp != m_filteredPackages.end(); ++itp) {
     RtePackageInstanceInfo* pi = itp->second;
     pi->AddTargetInfo(targetName, activeTarget);
   }
 
-  for (auto itg = m_gpdscInfos.begin(); itg != m_gpdscInfos.end(); itg++) {
-    RteGpdscInfo* pi = itg->second;
-    pi->AddTargetInfo(targetName, activeTarget);
+  for (auto [_, gi] : m_gpdscInfos) {
+    gi->AddTargetInfo(targetName, activeTarget);
   }
 
-  for (auto itb = m_boardInfos.begin(); itb != m_boardInfos.end(); itb++) {
-    RteBoardInfo* bi = itb->second;
+  for (auto [_, bi] : m_boardInfos) {
     if (bi->IsUsedByTarget(activeTarget) && bi->ResolveBoard(targetName)) {
       bi->AddTargetInfo(targetName, activeTarget);
     }
   }
 
-  for (auto itc = m_components.begin(); itc != m_components.end(); itc++) {
-    RteComponentInstance* ci = itc->second;
+  for (auto [_, ci] : m_components) {
     ci->AddTargetInfo(targetName, activeTarget);
   }
 
-  for (auto itf = m_files.begin(); itf != m_files.end(); itf++) {
-    RteFileInstance* fi = itf->second;
+  for (auto [_, fi] : m_files) {
     fi->AddTargetInfo(targetName, activeTarget);
   }
 }
@@ -1749,33 +1706,27 @@ bool RteProject::RemoveTargetInfo(const string& targetName)
   if (m_packFilterInfos->RemoveTargetInfo(targetName))
     changed = true;
 
-  for (auto itp = m_filteredPackages.begin(); itp != m_filteredPackages.end(); itp++) {
-    RtePackageInstanceInfo* pi = itp->second;
+  for (auto [_, pi] : m_filteredPackages) {
     if (pi->RemoveTargetInfo(targetName))
       changed = true;
   }
 
-  for (auto itg = m_gpdscInfos.begin(); itg != m_gpdscInfos.end(); itg++) {
-    RteGpdscInfo* pi = itg->second;
-    if (pi->RemoveTargetInfo(targetName))
+  for (auto [_, gi] : m_gpdscInfos) {
+    if (gi->RemoveTargetInfo(targetName))
       changed = true;
   }
 
-  for (auto itb = m_boardInfos.begin(); itb != m_boardInfos.end(); itb++) {
-    RteBoardInfo* bi = itb->second;
+  for (auto [_, bi] : m_boardInfos) {
     if (bi->RemoveTargetInfo(targetName))
       changed = true;
   }
 
-
-  for (auto itc = m_components.begin(); itc != m_components.end(); itc++) {
-    RteComponentInstance* ci = itc->second;
+  for (auto [_, ci] : m_components) {
     if (ci->RemoveTargetInfo(targetName))
       changed = true;
   }
 
-  for (auto itf = m_files.begin(); itf != m_files.end(); itf++) {
-    RteFileInstance* fi = itf->second;
+  for (auto [_, fi] : m_files) {
     if (fi->RemoveTargetInfo(targetName))
       changed = true;
   }
@@ -1788,32 +1739,28 @@ bool RteProject::RenameTargetInfo(const string& oldName, const string& newName)
   if (m_packFilterInfos->RenameTargetInfo(oldName, newName))
     changed = true;
 
-  for (auto itp = m_filteredPackages.begin(); itp != m_filteredPackages.end(); itp++) {
-    RtePackageInstanceInfo* pi = itp->second;
+  for (auto [_, pi] : m_filteredPackages) {
     if (pi->RenameTargetInfo(oldName, newName))
       changed = true;
   }
 
-  for (auto itg = m_gpdscInfos.begin(); itg != m_gpdscInfos.end(); itg++) {
-    RteGpdscInfo* pi = itg->second;
-    if (pi->RenameTargetInfo(oldName, newName))
+  for (auto [_, gi] : m_gpdscInfos) {
+    if (gi->RenameTargetInfo(oldName, newName))
       changed = true;
   }
-  for (auto itb = m_boardInfos.begin(); itb != m_boardInfos.end(); itb++) {
-    RteBoardInfo* bi = itb->second;
+
+  for (auto [_, bi] : m_boardInfos) {
     if (bi->RenameTargetInfo(oldName, newName)) {
       changed = true;
     }
   }
 
-  for (auto itc = m_components.begin(); itc != m_components.end(); itc++) {
-    RteComponentInstance* ci = itc->second;
+  for (auto [_, ci] : m_components) {
     if (ci->RenameTargetInfo(oldName, newName))
       changed = true;
   }
 
-  for (auto itf = m_files.begin(); itf != m_files.end(); itf++) {
-    RteFileInstance* fi = itf->second;
+  for (auto [_, fi] : m_files) {
     if (fi->RenameTargetInfo(oldName, newName))
       changed = true;
   }
@@ -1824,7 +1771,7 @@ void RteProject::FilterComponents()
 {
   RteTarget* activeTarget = GetActiveTarget();
   // iterate through full list selecting components that pass target filter
-  for (auto it = m_targets.begin(); it != m_targets.end(); it++) {
+  for (auto it = m_targets.begin(); it != m_targets.end(); ++it) {
     if (it->second == activeTarget) // skip active target, evaluate it at the end
       continue;
     FilterComponents(it->second);
@@ -1835,7 +1782,7 @@ void RteProject::FilterComponents()
 
 void RteProject::ClearFilteredPackages()
 {
-  for (auto it = m_filteredPackages.begin(); it != m_filteredPackages.end(); it++) {
+  for (auto it = m_filteredPackages.begin(); it != m_filteredPackages.end(); ++it) {
     delete it->second;
   }
   m_packFilterInfos->Clear();
@@ -1845,7 +1792,7 @@ void RteProject::ClearFilteredPackages()
 
 void RteProject::PropagateFilteredPackagesToTargetModels()
 {
-  for (auto it = m_targetModels.begin(); it != m_targetModels.end(); it++) {
+  for (auto it = m_targetModels.begin(); it != m_targetModels.end(); ++it) {
     const string& targetName = it->first;
     PropagateFilteredPackagesToTargetModel(targetName);
   }
@@ -1896,9 +1843,7 @@ bool RteProject::CollectFilteredPackagesFromTargets()
     auto itcurrent = itpi++;
     const string& id = itcurrent->first;
     RtePackageInstanceInfo* pi = itcurrent->second;
-    for (auto it = m_targets.begin(); it != m_targets.end(); it++) {
-      RteTarget* target = it->second;
-      const string& targetName = it->first;
+    for (auto [targetName, target] : m_targets) {
       const RtePackageFilter& filter = target->GetPackageFilter();
 
       if (filter.IsUseAllPacks()) {
@@ -1928,9 +1873,7 @@ bool RteProject::CollectFilteredPackagesFromTargets()
     }
   }
   // add new
-  for (auto it = m_targets.begin(); it != m_targets.end(); it++) {
-    RteTarget* target = it->second;
-    const string& targetName = it->first;
+  for (auto [targetName, target] : m_targets) {
     const RtePackageFilter& filter = target->GetPackageFilter();
     if (filter.AreAllExcluded()) {
       RteInstanceTargetInfo* info = m_packFilterInfos->EnsureTargetInfo(targetName);
@@ -1959,8 +1902,7 @@ bool RteProject::CollectFilteredPackagesFromTargets()
     }
 
     const set<string>& packs = filter.GetSelectedPackages();
-    for (auto itp = packs.begin(); itp != packs.end(); itp++) {
-      const string& id = *itp;
+    for (auto id : packs) {
       auto itpi = m_filteredPackages.find(id);
       RtePackageInstanceInfo* pi = NULL;
       if (itpi != m_filteredPackages.end()) {
@@ -2022,7 +1964,7 @@ bool RteProject::ResolveDependencies(RteTarget* target)
 void RteProject::ClearSelected()
 {
   map<string, RteTarget*>::iterator it;
-  for (it = m_targets.begin(); it != m_targets.end(); it++) {
+  for (it = m_targets.begin(); it != m_targets.end(); ++it) {
     RteTarget* target = it->second;
     target->ClearSelectedComponents();
   }
@@ -2031,7 +1973,7 @@ void RteProject::ClearSelected()
 void RteProject::ClearUsedComponents()
 {
   map<string, RteTarget*>::iterator it;
-  for (it = m_targets.begin(); it != m_targets.end(); it++) {
+  for (it = m_targets.begin(); it != m_targets.end(); ++it) {
     RteTarget* target = it->second;
     target->ClearUsedComponents();
   }
@@ -2041,7 +1983,7 @@ void RteProject::PropagateActiveSelectionToAllTargets()
 {
   RteTarget* activeTarget = GetActiveTarget();
   map<string, RteTarget*>::iterator it;
-  for (it = m_targets.begin(); it != m_targets.end(); it++) {
+  for (it = m_targets.begin(); it != m_targets.end(); ++it) {
     RteTarget* target = it->second;
     if (target != activeTarget && target->IsTargetSupported())
       target->SetSelectionFromTarget(activeTarget);
@@ -2058,7 +2000,7 @@ void RteProject::CollectMissingPacks(RteItemInstance* inst)
 
 
   const RteInstanceTargetInfoMap& tiMap = inst->GetTargetInfos();
-  for (auto it = tiMap.begin(); it != tiMap.end(); it++) {
+  for (auto it = tiMap.begin(); it != tiMap.end(); ++it) {
     const string& targetName = it->first;
     RtePackage* pack = inst->GetEffectivePackage(targetName);
     if (pack != NULL)
@@ -2074,11 +2016,11 @@ void RteProject::CollectMissingPacks(RteItemInstance* inst)
 void RteProject::CollectMissingPacks()
 {
   ClearMissingPacks();
-  for (auto itpi = m_filteredPackages.begin(); itpi != m_filteredPackages.end(); itpi++) {
+  for (auto itpi = m_filteredPackages.begin(); itpi != m_filteredPackages.end(); ++itpi) {
     CollectMissingPacks(itpi->second);
   }
   // collect missing pack from components
-  for (auto itc = m_components.begin(); itc != m_components.end(); itc++) {
+  for (auto itc = m_components.begin(); itc != m_components.end(); ++itc) {
     CollectMissingPacks(itc->second);
   }
 }
@@ -2099,7 +2041,7 @@ bool RteProject::Validate()
   target->ClearMissingPacks();
 
   // check if all required gpdsc files are available
-  for (auto itg = m_gpdscInfos.begin(); itg != m_gpdscInfos.end(); itg++) {
+  for (auto itg = m_gpdscInfos.begin(); itg != m_gpdscInfos.end(); ++itg) {
     RteGpdscInfo* gi = itg->second;
     if (gi->GetGpdscPack()) {
       continue; // loaded
@@ -2122,7 +2064,7 @@ bool RteProject::Validate()
 
 
   // check if all fixed packs are installed
-  for (auto itpi = m_filteredPackages.begin(); itpi != m_filteredPackages.end(); itpi++) {
+  for (auto itpi = m_filteredPackages.begin(); itpi != m_filteredPackages.end(); ++itpi) {
     RtePackageInstanceInfo* pi = itpi->second;
     if (!pi->IsUsedByTarget(targetName))
       continue;
@@ -2168,7 +2110,7 @@ bool RteProject::Validate()
 
   // it is enough to check if all components and APIs are available
   map<string, RteComponentInstance*>::const_iterator itc;
-  for (itc = m_components.begin(); itc != m_components.end(); itc++) {
+  for (itc = m_components.begin(); itc != m_components.end(); ++itc) {
     RteComponentInstance* ci = itc->second;
     if (!ci || !ci->IsUsedByTarget(targetName))
       continue;
@@ -2281,11 +2223,11 @@ void RteProject::UpdateModel()
   ClearUsedComponents();
   ClearSelected();
   map<string, RteComponentInstance*>::iterator itc;
-  for (itc = m_components.begin(); itc != m_components.end(); itc++) {
+  for (itc = m_components.begin(); itc != m_components.end(); ++itc) {
     RteComponentInstance* ci = itc->second;
 
     const RteInstanceTargetInfoMap& targetInfos = ci->GetTargetInfos();
-    for (auto it = targetInfos.begin(); it != targetInfos.end(); it++) {
+    for (auto it = targetInfos.begin(); it != targetInfos.end(); ++it) {
       const string& targetName = it->first;
       RteTarget* target = GetTarget(targetName);
       if (target) {
@@ -2294,7 +2236,7 @@ void RteProject::UpdateModel()
       }
     }
   }
-  for (auto it = m_targets.begin(); it != m_targets.end(); it++) {
+  for (auto it = m_targets.begin(); it != m_targets.end(); ++it) {
     RteTarget* target = it->second;
     target->CollectSelectedComponentAggregates();
     EvaluateComponentDependencies(target);
@@ -2377,7 +2319,7 @@ void RteProject::CreateXmlTreeElementContent(XMLTreeElement* parentElement) cons
 
     m_packFilterInfos->CreateXmlTreeElement(e);
 
-    for (auto itp = m_filteredPackages.begin(); itp != m_filteredPackages.end(); itp++) {
+    for (auto itp = m_filteredPackages.begin(); itp != m_filteredPackages.end(); ++itp) {
       RtePackageInstanceInfo* pi = itp->second;
       // store only fixed and excluded
       if (pi && !pi->IsExcludedForAllTargets()) {
@@ -2390,7 +2332,7 @@ void RteProject::CreateXmlTreeElementContent(XMLTreeElement* parentElement) cons
   if (!m_gpdscInfos.empty()) {
     e = new XMLTreeElement(parentElement);
     e->SetTag("gpdscs");
-    for (auto itp = m_gpdscInfos.begin(); itp != m_gpdscInfos.end(); itp++) {
+    for (auto itp = m_gpdscInfos.begin(); itp != m_gpdscInfos.end(); ++itp) {
       RteGpdscInfo* pi = itp->second;
       if (pi) {
         pi->SetTag("gpdsc");
@@ -2402,7 +2344,7 @@ void RteProject::CreateXmlTreeElementContent(XMLTreeElement* parentElement) cons
   if (!m_boardInfos.empty()) {
     e = new XMLTreeElement(parentElement);
     e->SetTag("boards");
-    for (auto itb = m_boardInfos.begin(); itb != m_boardInfos.end(); itb++) {
+    for (auto itb = m_boardInfos.begin(); itb != m_boardInfos.end(); ++itb) {
       RteBoardInfo* bi = itb->second;
       if (bi && bi->GetTargetCount() > 0) {
         bi->SetTag("board");
@@ -2414,14 +2356,14 @@ void RteProject::CreateXmlTreeElementContent(XMLTreeElement* parentElement) cons
   e = new XMLTreeElement(parentElement);
   e->SetTag("apis");
   map<string, RteComponentInstance*>::const_iterator itc;
-  for (itc = m_components.begin(); itc != m_components.end(); itc++) {
+  for (itc = m_components.begin(); itc != m_components.end(); ++itc) {
     RteComponentInstance* ci = itc->second;
     if (ci && ci->IsApi())
       ci->CreateXmlTreeElement(e);
   }
   e = new XMLTreeElement(parentElement);
   e->SetTag("components");
-  for (itc = m_components.begin(); itc != m_components.end(); itc++) {
+  for (itc = m_components.begin(); itc != m_components.end(); ++itc) {
     RteComponentInstance* ci = itc->second;
     if (ci && ci->IsSelectable() && !ci->IsApi())
       ci->CreateXmlTreeElement(e);
@@ -2429,7 +2371,7 @@ void RteProject::CreateXmlTreeElementContent(XMLTreeElement* parentElement) cons
   e = new XMLTreeElement(parentElement);
   e->SetTag("files");
   map<string, RteFileInstance*>::const_iterator itf;
-  for (itf = m_files.begin(); itf != m_files.end(); itf++) {
+  for (itf = m_files.begin(); itf != m_files.end(); ++itf) {
     RteFileInstance* fi = itf->second;
     fi->CreateXmlTreeElement(e);
   }
@@ -2437,7 +2379,7 @@ void RteProject::CreateXmlTreeElementContent(XMLTreeElement* parentElement) cons
 
 void RteProject::GetUsedComponents(RteComponentMap & components, const string& targetName) const
 {
-  for (auto it = m_components.begin(); it != m_components.end(); it++) {
+  for (auto it = m_components.begin(); it != m_components.end(); ++it) {
     RteComponentInstance* ci = it->second;
     RteComponent* c = ci->GetResolvedComponent(targetName);
     if (c) {
@@ -2450,7 +2392,7 @@ void RteProject::GetUsedComponents(RteComponentMap & components, const string& t
 // returns used components for the entire project
 void RteProject::GetUsedComponents(RteComponentMap& components) const
 {
-  for (auto it = m_targets.begin(); it != m_targets.end(); it++) {
+  for (auto it = m_targets.begin(); it != m_targets.end(); ++it) {
     const string& targetName = it->first;
     GetUsedComponents(components, targetName);
   }
@@ -2458,7 +2400,7 @@ void RteProject::GetUsedComponents(RteComponentMap& components) const
 
 bool RteProject::IsComponentUsed(const string& aggregateId, const string& targetName) const
 {
-  for (auto it = m_components.begin(); it != m_components.end(); it++) {
+  for (auto it = m_components.begin(); it != m_components.end(); ++it) {
     RteComponentInstance* ci = it->second;
     if (ci->GetComponentAggregateID() == aggregateId)
       if (ci->IsUsedByTarget(targetName))
@@ -2481,7 +2423,7 @@ bool RteProject::IsPackageUsed(const string& packId, const string& targetName, b
     }
   }
 
-  for (auto it = m_components.begin(); it != m_components.end(); it++) {
+  for (auto it = m_components.begin(); it != m_components.end(); ++it) {
     RteComponentInstance* ci = it->second;
     if (ci->IsUsedByTarget(targetName)) {
       RteComponent* c = ci->GetResolvedComponent(targetName);
@@ -2549,7 +2491,7 @@ void RteProject::GetRequiredPacks(RtePackageMap& packs, const std::string& targe
 bool RteProject::HasProjectGroup(const string& group) const
 {
   map<string, RteTarget*>::const_iterator it;
-  for (it = m_targets.begin(); it != m_targets.end(); it++) {
+  for (it = m_targets.begin(); it != m_targets.end(); ++it) {
     RteTarget* t = it->second;
     if (t->HasProjectGroup(group))
       return true;
@@ -2585,7 +2527,7 @@ bool RteProject::IsProjectGroupEnabled(const string& group, const string& target
 bool RteProject::HasFileInProjectGroup(const string& group, const string& file) const
 {
   map<string, RteTarget*>::const_iterator it;
-  for (it = m_targets.begin(); it != m_targets.end(); it++) {
+  for (it = m_targets.begin(); it != m_targets.end(); ++it) {
     RteTarget* t = it->second;
     if (t->HasFileInProjectGroup(group, file))
       return true;
@@ -2605,7 +2547,7 @@ bool RteProject::HasFileInProjectGroup(const string& group, const string& file, 
 string RteProject::GetFileComment(const string& group, const string& file) const
 {
   map<string, RteTarget*>::const_iterator it;
-  for (it = m_targets.begin(); it != m_targets.end(); it++) {
+  for (it = m_targets.begin(); it != m_targets.end(); ++it) {
     RteTarget* t = it->second;
     string comment = t->GetFileComment(group, file);
     if (!comment.empty())

@@ -68,13 +68,13 @@ private:
 class ProjMgrYamlCbuildIdx : public ProjMgrYamlBase {
 private:
   friend class ProjMgrYamlEmitter;
-  ProjMgrYamlCbuildIdx(YAML::Node node, const vector<ContextItem*> processedContexts, ProjMgrParser& parser, const string& directory);
+  ProjMgrYamlCbuildIdx(YAML::Node node, const vector<ContextItem*>& processedContexts, ProjMgrParser& parser, const string& directory);
 };
 
 ProjMgrYamlBase::ProjMgrYamlBase(bool useAbsolutePaths) : m_useAbsolutePaths(useAbsolutePaths) {
 }
 
-ProjMgrYamlCbuildIdx::ProjMgrYamlCbuildIdx(YAML::Node node, const vector<ContextItem*> processedContexts, ProjMgrParser& parser, const string& directory) :
+ProjMgrYamlCbuildIdx::ProjMgrYamlCbuildIdx(YAML::Node node, const vector<ContextItem*>& processedContexts, ProjMgrParser& parser, const string& directory) :
   ProjMgrYamlBase(false)
 {
   error_code ec;

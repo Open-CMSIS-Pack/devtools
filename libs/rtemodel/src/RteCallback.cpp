@@ -33,8 +33,8 @@ m_rteKernel(nullptr)
 
 void RteCallback::OutputMessages(const std::list<string>& messages)
 {
-    for (std::list<string>::const_iterator it = messages.begin(); it != messages.end(); it++) {
-      OutputMessage(*it);
+    for (auto& msg: messages) {
+      OutputMessage(msg);
     }
 };
 

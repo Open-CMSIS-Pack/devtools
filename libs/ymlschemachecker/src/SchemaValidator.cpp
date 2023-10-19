@@ -15,10 +15,10 @@ using nlohmann::json_schema::json_validator;
 
 SchemaValidator::SchemaValidator(
   const std::string& dataFilePath,
-  const std::string& schemaFilePath)
+  const std::string& schemaFilePath):
+  m_dataFile(dataFilePath),
+  m_schemaFile(schemaFilePath)
 {
-  m_dataFile   = dataFilePath;
-  m_schemaFile = schemaFilePath;
 }
 
 SchemaValidator::~SchemaValidator()
@@ -87,7 +87,7 @@ json SchemaValidator::ReadSchema() {
  * This function is part of https://github.com/mircodezorzi/tojson
  * which is released under MIT License.
  * go to https://github.com/mircodezorzi/tojson/blob/master/LICENSE
- * for full license details.  
+ * for full license details.
 */
 nlohmann::json SchemaValidator::YamlToJson(const YAML::Node& root) {
   nlohmann::json jsonObj{};
@@ -129,7 +129,7 @@ nlohmann::json SchemaValidator::YamlToJson(const YAML::Node& root) {
  * This function is part of https://github.com/mircodezorzi/tojson
  * which is released under MIT License.
  * go to https://github.com/mircodezorzi/tojson/blob/master/LICENSE
- * for full license details.  
+ * for full license details.
 */
 nlohmann::json SchemaValidator::ParseScalar(const YAML::Node& node) {
   int intVal;

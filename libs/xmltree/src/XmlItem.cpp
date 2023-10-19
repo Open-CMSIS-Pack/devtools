@@ -36,9 +36,9 @@ bool XmlItem::AddAttributes(const map<string, string>& attributes, bool replaceE
     bChanged = true;
     SetAttributes(attributes);
   } else {
-    for (auto it = attributes.begin(); it != attributes.end(); it++) {
-      if (replaceExisting || !HasAttribute(it->first)) {
-        if (AddAttribute(it->first, it->second))
+    for (auto [a, v] : attributes) {
+      if (replaceExisting || !HasAttribute(a)) {
+        if (AddAttribute(a, v))
           bChanged = true;
       }
     }
@@ -169,8 +169,8 @@ bool XmlItem::HasAttribute(const std::string& name) const
 
 bool XmlItem::HasValue(const string& pattern) const
 {
-  for (auto itm = m_attributes.begin(); itm != m_attributes.end(); itm++) {
-    if (WildCards::Match(pattern, itm->second))
+  for (auto [a, v] : m_attributes) {
+    if (WildCards::Match(pattern, v))
       return true;
   }
   return false;
@@ -283,15 +283,15 @@ string XmlItem::GetAttributesString(bool quote) const
 {
   string s;
   map<string, string>::const_iterator it;
-  for (it = m_attributes.begin(); it != m_attributes.end(); it++) {
+  for (auto [a, v] : m_attributes) {
     if (!s.empty())
       s += " ";
-    s += it->first;
+    s += a;
     s += "=";
     if (quote) {
       s += "\"";
     }
-    s += it->second;
+    s += v;
     if (quote) {
       s += "\"";
     }
@@ -307,11 +307,8 @@ string XmlItem::GetAttributesAsXmlString() const
 bool XmlItem::EqualAttributes(const map<string, string>& attributes) const
 {
   // all supplied attributes must exist in this ones
-  map<string, string>::const_iterator itm, ita;
-  for (ita = attributes.begin(); ita != attributes.end(); ita++) {
-    const string& a = ita->first;
-    const string& v = ita->second;
-    itm = m_attributes.find(a);
+  for (auto [a, v] : attributes) {
+    auto itm = m_attributes.find(a);
     if (itm != m_attributes.end()) {
       const string& va = itm->second;
       if (va != v)
@@ -341,11 +338,8 @@ bool XmlItem::EqualAttributes(const XmlItem* other) const
 bool XmlItem::CompareAttributes(const map<string, string>& attributes) const
 {
   // all supplied attributes must exist in this ones
-  map<string, string>::const_iterator itm, ita;
-  for (ita = attributes.begin(); ita != attributes.end(); ita++) {
-    const string& a = ita->first;
-    const string& v = ita->second;
-    itm = m_attributes.find(a);
+  for (auto [a, v] : attributes) {
+    auto itm = m_attributes.find(a);
     if (itm != m_attributes.end()) {
       const string& va = itm->second;
       if (a == "Dvendor" || a == "vendor") {

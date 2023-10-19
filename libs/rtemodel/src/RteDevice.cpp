@@ -151,8 +151,7 @@ const list<RteDeviceProperty*>& RteDeviceProperty::GetEffectiveContent() const
 
 RteDeviceProperty* RteDeviceProperty::GetEffectiveContentProperty(const string& tag) const
 {
-  for (auto it = GetEffectiveContent().begin(); it != GetEffectiveContent().end(); it++) {
-    RteDeviceProperty* p = *it;
+  for (auto p : GetEffectiveContent()) {
     if (p->GetTag() == tag)
       return p;
   }
@@ -164,8 +163,7 @@ RteDeviceProperty* RteDeviceProperty::GetPropertyFromList(const string& id, cons
 {
   if (id.empty())
     return nullptr;
-  for (auto it = properties.begin(); it != properties.end(); it++) {
-    RteDeviceProperty* pr = *it;
+  for (auto pr : properties) {
     if (pr) {
       const string& pid = pr->GetID();
       if (pid == id)
@@ -405,8 +403,7 @@ RteFlashInfo::RteFlashInfo(RteItem* parent) : RteDevicePropertyGroup(parent)
 void RteFlashInfo::CalculateCachedValues()
 {
   RteFlashInfoBlock* previous = nullptr;
-  for (auto it = m_blocks.begin(); it != m_blocks.end(); it++) {
-    RteFlashInfoBlock* b = *it;
+  for (auto b : m_blocks) {
     b->CalculateCachedValuesForBlock(previous);
     previous = b;
   }
@@ -449,8 +446,7 @@ void RteDeviceItem::Clear()
 
 void RteDeviceItem::GetDevices(list<RteDevice*>& devices, const string& searchPattern) const
 {
-  for (auto it = m_deviceItems.begin(); it != m_deviceItems.end(); it++) {
-    RteDeviceItem* item = *it;
+  for (auto item : m_deviceItems) {
     item->GetDevices(devices, searchPattern);
   }
 }
@@ -495,8 +491,7 @@ void RteDeviceItem::GetEffectiveDeviceItems(list<RteDeviceItem*>& devices) const
     }
     return;
   }
-  for (auto its = m_deviceItems.begin(); its != m_deviceItems.end(); its++) {
-    RteDeviceItem* item = *its;
+  for (auto item : m_deviceItems) {
     if (item->GetType() > SUBFAMILY && item->GetDeviceItemCount() == 0)
       devices.push_back(item);
     else
@@ -518,10 +513,9 @@ bool RteDeviceItem::Validate()
   }
 
   // are there properties for unknown processor?
-  for (auto it = m_properties.begin(); it != m_properties.end(); it++) {
-    if (it->first == "processor")
+  for (auto [tag, props] : m_properties) {
+    if (tag == "processor")
       continue;
-    RteDevicePropertyGroup* props = it->second;
     for (auto child : props->GetChildren()) {
       RteDeviceProperty* p = dynamic_cast<RteDeviceProperty*>(child);
       if (p) {
@@ -587,8 +581,7 @@ void RteDeviceItem::Construct()
   // get processor names
   list<RteDeviceProperty*> processors;
   GetEffectiveProcessors(processors);
-  for (auto it = processors.begin(); it != processors.end(); it++) {
-    RteDeviceProperty* p = *it;
+  for (auto p : processors) {
     m_processors[p->GetProcessorName()] = p;
   }
 }
@@ -657,17 +650,13 @@ RteDevicePropertyGroup* RteDeviceItem::GetProperties(const string& tag) const
 // more complicated, but for complete - gets all available properties
 void RteDeviceItem::GetProperties(RteDevicePropertyMap& properties) const
 {
-  map<string, RteDevicePropertyGroup*>::const_iterator srcIt;
-  RteDevicePropertyMap::iterator dstIt;
-  for (srcIt = m_properties.begin(); srcIt != m_properties.end(); srcIt++) {
-    const string& tag = srcIt->first;
-    RteDevicePropertyGroup* props = srcIt->second;
-    dstIt = properties.find(tag);
+  for (auto [tag, props] : m_properties) {
+    auto dstIt = properties.find(tag);
     // first add top containers if not yet exist
     if (dstIt == properties.end()) {
       list<RteDeviceProperty*> v;
       properties[tag] = v;
-      dstIt = properties.find(srcIt->first);
+      dstIt = properties.find(tag);
     }
     for (auto child : props->GetChildren()) {
       RteDeviceProperty* p = dynamic_cast<RteDeviceProperty*>(child);
@@ -728,16 +717,14 @@ void RteDeviceItem::CollectEffectiveProperties(const string& tag, list<RteDevice
 // more complicated - gets all available properties
 void RteDeviceItem::CollectEffectiveProperties(RteDevicePropertyMap& properties, const string& pName) const
 {
-  map<string, RteDevicePropertyGroup*>::const_iterator srcIt;
   RteDevicePropertyMap::iterator dstIt;
-  for (srcIt = m_properties.begin(); srcIt != m_properties.end(); srcIt++) {
-    const string& tag = srcIt->first;
-    dstIt = properties.find(tag);
+  for (auto [tag, props] : m_properties) {
+    auto dstIt = properties.find(tag);
     // add top containers if not yet exist
     if (dstIt == properties.end()) {
       list<RteDeviceProperty*> v;
       properties[tag] = v;
-      dstIt = properties.find(srcIt->first);
+      dstIt = properties.find(tag);
     }
     CollectEffectiveProperties(tag, dstIt->second, pName, false);
   }
@@ -754,10 +741,8 @@ void RteDeviceItem::CollectEffectiveProperties(const string& pName)
   auto it = m_effectiveProperties.find(pName);
   RteDevicePropertyMap& pmap = it->second.m_propertyMap;
   CollectEffectiveProperties(pmap, pName);
-  for (auto itp = pmap.begin(); itp != pmap.end(); itp++) {
-    auto l = itp->second;
-    for (auto itl = l.begin(); itl != l.end(); itl++) {
-      RteDeviceProperty* p = *itl;
+  for (auto [_, l] : pmap) {
+    for (auto p : l) {
       p->CalculateCachedValues();
     }
   }
@@ -776,8 +761,7 @@ const list<RteDeviceProperty*>& RteEffectiveProperties::GetProperties(const stri
 const RteDevicePropertyMap& RteDeviceItem::GetEffectiveProperties(const string& pName)
 {
   if (m_effectiveProperties.empty()) {
-    for (auto it = m_processors.begin(); it != m_processors.end(); it++) {
-      const string& pn = it->first;
+    for (auto [pn, p] : m_processors) {
       CollectEffectiveProperties(pn);
     }
   }
@@ -863,7 +847,7 @@ XMLTreeElement* RteDeviceItem::CreateEffectiveXmlTree(const string& pname, XMLTr
     CreateEffectiveXmlTreeElements(device, it->second);
   }
   // all remaining properties
-  for(it = effectivePropMap.begin(); it != effectivePropMap.end() ; it++) {
+  for(it = effectivePropMap.begin(); it != effectivePropMap.end() ; ++it) {
     const auto& propGroupName = it->first;
     if(propGroupName == "processor" || propGroupName == "debugconfig"){
       continue; // already inserted
@@ -894,8 +878,7 @@ void RteDevice::GetDevices(list<RteDevice*>& devices, const string& searchPatter
     devices.push_back(d);
   } else {
     // any of variants matches?
-    for (auto it = m_deviceItems.begin(); it != m_deviceItems.end(); it++) {
-      RteDeviceItem* variant = *it;
+    for (auto variant : m_deviceItems) {
       if (WildCards::Match(searchPattern, variant->GetName())) {
         devices.push_back(d);
         return;
@@ -947,8 +930,8 @@ RteDeviceItemAggregate::~RteDeviceItemAggregate()
 void RteDeviceItemAggregate::Clear()
 {
   m_deviceItems.clear(); // not allocated in the class
-  for (auto it = m_children.begin(); it != m_children.end(); it++) { // child aggregates
-    delete it->second;
+  for (auto [_, child] : m_children) { // child aggregates
+    delete child;
   }
   m_children.clear();
 }
@@ -977,7 +960,7 @@ RteDeviceItemAggregate* RteDeviceItemAggregate::GetDeviceAggregate(const string&
     if (da && da->GetType() > RteDeviceItem::SUBFAMILY) {
       return da;
     }
-    for (auto it = m_children.begin(); it != m_children.end(); it++) {
+    for (auto it = m_children.begin(); it != m_children.end(); ++it) {
       da = it->second->GetDeviceAggregate(deviceName, vendor);
       if (da && da->GetType() > RteDeviceItem::SUBFAMILY) {
         return da;
@@ -1002,7 +985,7 @@ RteDeviceItemAggregate* RteDeviceItemAggregate::GetDeviceItemAggregate(const str
     if (da) {
       return da;
     }
-    for (auto it = m_children.begin(); it != m_children.end(); it++) {
+    for (auto it = m_children.begin(); it != m_children.end(); ++it) {
       da = it->second->GetDeviceItemAggregate(name, vendor);
       if (da) {
         return da;
@@ -1015,7 +998,7 @@ RteDeviceItemAggregate* RteDeviceItemAggregate::GetDeviceItemAggregate(const str
 
 RteDeviceItem* RteDeviceItemAggregate::GetDeviceItem() const
 {
-  for (auto it = m_deviceItems.begin(); it != m_deviceItems.end(); it++) {
+  for (auto it = m_deviceItems.begin(); it != m_deviceItems.end(); ++it) {
     RteDeviceItem* device = it->second;
     if (device->GetPackageState() == PackageState::PS_INSTALLED
       || device->GetPackageState() == PackageState::PS_GENERATED) {
@@ -1060,8 +1043,7 @@ void RteDeviceItemAggregate::GetDevices(list<RteDevice*>& devices, const string&
     }
   }
 
-  for (auto it = m_children.begin(); it != m_children.end(); it++) {
-    RteDeviceItemAggregate* da = it->second;
+  for (auto [_, da] : m_children) {
     da->GetDevices(devices, namePattern, vendor, depth);
   }
 }
@@ -1103,13 +1085,13 @@ void RteDeviceItemAggregate::AddDeviceItem(RteDeviceItem* item)
     int n = item->GetDeviceItemCount();
     if (n) {
       const list<RteDeviceItem*>& subItems = item->GetDeviceItems();
-      for (auto its = subItems.begin(); its != subItems.end(); its++) {
-        AddDeviceItem(*its);
+      for (auto di : subItems) {
+        AddDeviceItem(di);
       }
     } else if (type >= RteDeviceItem::DEVICE && item->GetProcessorCount() > 1) {
       // add processor leaves
       const map<string, RteDeviceProperty*>& processors = item->GetProcessors();
-      for (auto it = processors.begin(); it != processors.end(); it++) {
+      for (auto it = processors.begin(); it != processors.end(); ++it) {
         string name = item->GetName() + ':' + it->first;
         dia = GetDeviceAggregate(name);
         if (!dia) {
@@ -1148,7 +1130,7 @@ size_t RteDeviceItemAggregate::GetChildCount(RteDeviceItem::TYPE type) const
 {
   size_t cnt = 0;
   auto& childmap = GetChildren();
-  for (auto it = childmap.begin(); it != childmap.end(); it++) {
+  for (auto it = childmap.begin(); it != childmap.end(); ++it) {
     if (it->second && it->second->GetType() == type) {
       cnt++;
     }
@@ -1179,7 +1161,7 @@ string RteDeviceItemAggregate::GetSummaryString() const
   list<RteDeviceProperty*> mems = item->GetEffectiveProperties("memory", RteUtils::EMPTY_STRING);
 
   // Iterate over processors
-  for (auto it = processors.begin(); it != processors.end(); it++) {
+  for (auto it = processors.begin(); it != processors.end(); ++it) {
     procProperties = *it;
     if (procProperties == 0) {
       continue;
@@ -1209,9 +1191,9 @@ string RteDeviceItemAggregate::GetSummaryString() const
     // Collect unique memory attributes
     const list<RteDeviceProperty*>& procMems = item->GetEffectiveProperties("memory", procProperties->GetAttribute("Pname"));
     list<RteDeviceProperty*> addMems;
-    for (auto procMemIt = procMems.begin(); procMemIt != procMems.end(); procMemIt++) {
+    for (auto procMemIt = procMems.begin(); procMemIt != procMems.end(); ++procMemIt) {
       auto memsIt = mems.begin();
-      for (; memsIt != mems.end(); memsIt++) {
+      for (; memsIt != mems.end(); ++memsIt) {
         if ((*memsIt) == (*procMemIt)) {
           break;
         }
@@ -1229,7 +1211,7 @@ string RteDeviceItemAggregate::GetSummaryString() const
   // Memory (RAM/ROM)
   unsigned int ramSize = 0, romSize = 0;
 
-  for (auto memsIt = mems.begin(); memsIt != mems.end(); memsIt++) {
+  for (auto memsIt = mems.begin(); memsIt != mems.end(); ++memsIt) {
     RteDeviceMemory* mem = dynamic_cast<RteDeviceMemory*>(*memsIt);
     if (!mem) {
       continue;
@@ -1343,7 +1325,7 @@ bool RteDeviceVendor::HasDevice(const string& fullDeviceName) const
 
 void RteDeviceVendor::GetDevices(list<RteDevice*>& devices, const string& namePattern) const
 {
-  for (auto it = m_devices.begin(); it != m_devices.end(); it++) {
+  for (auto it = m_devices.begin(); it != m_devices.end(); ++it) {
     if (namePattern.empty() || WildCards::Match(namePattern, it->first)) {
       devices.push_back(it->second);
     }
@@ -1359,8 +1341,8 @@ bool RteDeviceVendor::AddDeviceItem(RteDeviceItem* item)
   if (n) {
     bool bInserted = false;
     const list<RteDeviceItem*>& subItems = item->GetDeviceItems();
-    for (auto its = subItems.begin(); its != subItems.end(); its++) {
-      if (AddDeviceItem(*its))
+    for (auto its : subItems) {
+      if (AddDeviceItem(its))
         bInserted = true;
     }
     return bInserted; // return true if at least one item has been inserted
@@ -1389,7 +1371,7 @@ bool RteDeviceVendor::AddDevice(RteDevice* item)
   if (item->GetProcessorCount() > 1) {
     // add processor leaves
     const map<string, RteDeviceProperty*>& processors = item->GetProcessors();
-    for (auto it = processors.begin(); it != processors.end(); it++) {
+    for (auto it = processors.begin(); it != processors.end(); ++it) {
       string fullDeviceName = item->GetName() + ':' + it->first;
       if (m_devices.find(fullDeviceName) == m_devices.end()) {
         m_devices[fullDeviceName] = item;

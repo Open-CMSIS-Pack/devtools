@@ -127,8 +127,8 @@ bool XMLTree::AddFileName(const string& fileName, bool bParse)
 {
   if (fileName.empty())
     return true;
-  for (list<string>::iterator it = m_fileNames.begin(); it != m_fileNames.end(); it++) {
-    if ((*it) == fileName)
+  for (auto f : m_fileNames) {
+    if (f == fileName)
       return true;
   }
   m_fileNames.push_back(fileName);
@@ -158,12 +158,12 @@ bool XMLTree::ParseAll()
   bool success = true;
   m_p->Clear();
   // parse all documents
-  for (list<string>::iterator it = m_fileNames.begin(); it != m_fileNames.end(); it++) {
-    bool ok = DoParse(*it, EMPTY_STRING);
+  for (auto f : m_fileNames) {
+    bool ok = DoParse(f, EMPTY_STRING);
     if (!ok)
       success = false;
     if (m_callback) {
-      if (m_callback->FileParsed(*it, ok) == false)
+      if (m_callback->FileParsed(f, ok) == false)
         break;
     }
   }

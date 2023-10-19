@@ -252,8 +252,8 @@ void RteItemInstance::Clear()
 
 void RteItemInstance::ClearTargets()
 {
-  for (auto it = m_targetInfos.begin(); it != m_targetInfos.end(); it++) {
-    delete it->second;
+  for (auto [_, ti] : m_targetInfos) {
+    delete ti;
   }
   m_targetInfos.clear();
 }
@@ -275,9 +275,9 @@ void RteItemInstance::PurgeTargets()
 
 void RteItemInstance::SetTargets(const RteInstanceTargetInfoMap& infos)
 {
-  for (auto it = infos.begin(); it != infos.end(); it++) {
-    RteInstanceTargetInfo* copy = new RteInstanceTargetInfo(*(it->second));
-    m_targetInfos[it->first] = copy;
+  for (auto [targetName, ti] : infos) {
+    RteInstanceTargetInfo* copy = new RteInstanceTargetInfo(*(ti));
+    m_targetInfos[targetName] = copy;
   }
 }
 
@@ -364,8 +364,7 @@ bool RteItemInstance::IsIncludeInLib(const string& targetName) const
 
 bool RteItemInstance::IsExcludedForAllTargets()
 {
-  for (auto it = m_targetInfos.begin(); it != m_targetInfos.end(); it++) {
-    RteInstanceTargetInfo* ti = it->second;
+  for (auto [_, ti]  : m_targetInfos) {
     if (!ti->IsExcluded())
       return false;
   }
@@ -379,8 +378,6 @@ void RteItemInstance::CopyTargetSettings(const RteInstanceTargetInfo& other, con
     ti->CopySettings(other);
   }
 }
-
-
 
 RteTarget* RteItemInstance::GetTarget(const string& targetName) const
 {
@@ -612,8 +609,7 @@ void RteItemInstance::CreateXmlTreeElementContent(XMLTreeElement* parentElement)
   e = new XMLTreeElement(parentElement);
   e->SetTag("targetInfos");
 
-  for (auto it = m_targetInfos.begin(); it != m_targetInfos.end(); it++) {
-    RteInstanceTargetInfo* ti = it->second;
+  for (auto [_, ti] : m_targetInfos) {
     ti->CreateXmlTreeElement(e);
   }
 }
@@ -693,8 +689,8 @@ void RteFileInstance::Update(RteFile* f, bool bUpdateComponent)
   }
 
   if (bUpdateComponent) {
-    for (auto it = m_targetInfos.begin(); it != m_targetInfos.end(); it++) {
-      RteComponentInstance* ci = GetComponentInstance(it->first);
+    for (auto [targetName, ti] : m_targetInfos) {
+      RteComponentInstance* ci = GetComponentInstance(targetName);
       if (ci) {
         ci->SetAttributes(m_componentAttributes);
         ci->SetPackageAttributes(m_packageAttributes);
@@ -769,8 +765,8 @@ int RteFileInstance::HasNewVersion(const string& targetName) const
 int RteFileInstance::HasNewVersion() const
 {
   int newVersion = 0;
-  for (auto it = m_targetInfos.begin(); it != m_targetInfos.end(); it++) {
-    int newVer = HasNewVersion(it->first);
+  for (auto [targetName, ti] : m_targetInfos) {
+    int newVer = HasNewVersion(targetName);
     if (newVer > newVersion) {
       newVersion = newVer;
       if (newVersion > 2)
@@ -1085,8 +1081,8 @@ bool RtePackageInstanceInfo::ResolvePack()
 {
   bool resolved = true;
   m_resolvedPacks.clear();
-  for (auto it = m_targetInfos.begin(); it != m_targetInfos.end(); it++) {
-    if (!ResolvePack(it->first))
+  for (auto [targetName, ti] : m_targetInfos) {
+    if (!ResolvePack(targetName))
       resolved = false;
   }
   return resolved;
@@ -1221,8 +1217,8 @@ string RteBoardInfo::ConstructID()
 void RteBoardInfo::ResolveBoard()
 {
   m_board = nullptr;
-  for (auto it = m_targetInfos.begin(); it != m_targetInfos.end(); it++) {
-    RteBoard* board = ResolveBoard(it->first);
+  for (auto [targetName, ti] : m_targetInfos) {
+    RteBoard* board = ResolveBoard(targetName);
     if (board) {
       m_board = board;
       return;
@@ -1384,9 +1380,9 @@ bool RteComponentInstance::Equals(RteComponentInstance* ci) const
   if (IsRemoved() != ci->IsRemoved())
     return false;
 
-  for (auto it = m_targetInfos.begin(); it != m_targetInfos.end(); it++) {
-    RteInstanceTargetInfo* tiThis = it->second;
-    RteInstanceTargetInfo* tiThat = ci->GetTargetInfo(it->first);
+  for (auto [targetName, ti] : m_targetInfos) {
+    RteInstanceTargetInfo* tiThis = ti;
+    RteInstanceTargetInfo* tiThat = ci->GetTargetInfo(targetName);
     if (!tiThat)
       return false;
 
@@ -1436,8 +1432,7 @@ bool RteComponentInstance::HasAggregateID(const string& aggregateId) const
   if (id == aggregateId)
     return true;
   // check resolved components : they could have resolved components with bundles
-  for (auto it = m_resolvedComponents.begin(); it != m_resolvedComponents.end(); it++) {
-    RteComponent* c = it->second;
+  for (auto [_, c] : m_resolvedComponents) {
     if (!c)
       continue;
     id = c->GetComponentAggregateID();
@@ -1477,8 +1472,7 @@ void RteComponentInstance::SetRemoved(bool removed)
   RteItemInstance::SetRemoved(removed);
   if (removed) {
     ClearResolved();
-    for (auto it = m_targetInfos.begin(); it != m_targetInfos.end(); it++) {
-      RteInstanceTargetInfo* ti = it->second;
+    for (auto [targetName, ti] : m_targetInfos) {
       ti->SetInstanceCount(0);
     }
   }
@@ -1490,8 +1484,7 @@ bool RteComponentInstance::IsRemoved() const
     return true;
   if (m_targetInfos.empty())
     return true;
-  for (auto it = m_targetInfos.begin(); it != m_targetInfos.end(); it++) {
-    RteInstanceTargetInfo* ti = it->second;
+  for (auto [targetName, ti] : m_targetInfos) {
     if (ti->GetInstanceCount() != 0)
       return false;
   }
@@ -1618,8 +1611,8 @@ RteItem::ConditionResult RteComponentInstance::GetResolveResult(const string& ta
 void RteComponentInstance::ResolveComponent()
 {
   ClearResolved();
-  for (auto it = m_targetInfos.begin(); it != m_targetInfos.end(); it++) {
-    ResolveComponent(it->first);
+  for (auto [targetName, ti] : m_targetInfos) {
+    ResolveComponent(targetName);
   }
 }
 
@@ -1701,8 +1694,8 @@ void RteComponentInstanceAggregate::Clear()
 
 RteComponentInstance* RteComponentInstanceAggregate::GetComponentInstance(const string& targetName) const
 {
-  for (auto it = m_children.begin(); it != m_children.end(); it++) {
-    RteComponentInstance* ci = dynamic_cast<RteComponentInstance*>(*it);
+  for (auto child : m_children) {
+    RteComponentInstance* ci = dynamic_cast<RteComponentInstance*>(child);
     if (ci && ci->IsFilteredByTarget(targetName))
       return ci;
   }
@@ -1723,8 +1716,8 @@ RteComponentAggregate* RteComponentInstanceAggregate::GetComponentAggregate(cons
 
 bool RteComponentInstanceAggregate::IsModified() const
 {
-  for (auto it = m_children.begin(); it != m_children.end(); it++) {
-    RteComponentInstance* ci = dynamic_cast<RteComponentInstance*>(*it);
+  for (auto child : m_children) {
+    RteComponentInstance* ci = dynamic_cast<RteComponentInstance*>(child);
     if (ci && ci->IsModified())
       return true;
   }
@@ -1733,8 +1726,8 @@ bool RteComponentInstanceAggregate::IsModified() const
 
 RteComponentInstance* RteComponentInstanceAggregate::GetModifiedInstance() const
 {
-  for (auto it = m_children.begin(); it != m_children.end(); it++) {
-    RteComponentInstance* ci = dynamic_cast<RteComponentInstance*>(*it);
+  for (auto child : m_children) {
+    RteComponentInstance* ci = dynamic_cast<RteComponentInstance*>(child);
     if (ci && ci->IsModified())
       return ci;
   }
@@ -1789,8 +1782,8 @@ bool RteComponentInstanceAggregate::IsTargetSpecific() const
 {
   if (GetChildCount() > 1)
     return true;
-  for (auto it = m_children.begin(); it != m_children.end(); it++) {
-    RteComponentInstance* ci = dynamic_cast<RteComponentInstance*>(*it);
+  for (auto child : m_children) {
+    RteComponentInstance* ci = dynamic_cast<RteComponentInstance*>(child);
     if (ci && ci->IsTargetSpecific())
       return true;
   }
@@ -1840,8 +1833,8 @@ bool RteComponentInstanceAggregate::HasAggregateID(const string& aggregateId) co
 {
   if (m_ID == aggregateId)
     return true;
-  for (auto it = m_children.begin(); it != m_children.end(); it++) {
-    RteComponentInstance* ci = dynamic_cast<RteComponentInstance*>(*it);
+  for (auto child : m_children) {
+    RteComponentInstance* ci = dynamic_cast<RteComponentInstance*>(child);
     if (ci && ci->HasAggregateID(aggregateId))
       return true;
   }
@@ -1850,8 +1843,8 @@ bool RteComponentInstanceAggregate::HasAggregateID(const string& aggregateId) co
 
 bool RteComponentInstanceAggregate::HasComponentInstance(RteComponentInstance* ci) const
 {
-  for (auto it = m_children.begin(); it != m_children.end(); it++) {
-    if (ci == *it)
+  for (auto child : m_children) {
+    if (ci == child)
       return true;
   }
   return false;
@@ -1871,10 +1864,9 @@ RteComponentInstanceGroup::~RteComponentInstanceGroup()
 
 void RteComponentInstanceGroup::Clear()
 {
-  map<string, RteComponentInstanceGroup*>::iterator it = m_groups.begin();
-  for (; it != m_groups.end(); it++)
+  for (auto [_, g] : m_groups)
   {
-    delete it->second;
+    delete g;
   }
   m_apiInstance = 0;
   m_groups.clear();
@@ -1900,8 +1892,8 @@ RteComponentInstanceAggregate* RteComponentInstanceGroup::GetSingleComponentInst
 
 RteComponentInstanceAggregate* RteComponentInstanceGroup::GetComponentInstanceAggregate(const string& id) const
 {
-  for (auto ita = m_children.begin(); ita != m_children.end(); ita++) {
-    RteComponentInstanceAggregate* a = dynamic_cast<RteComponentInstanceAggregate*>(*ita);
+  for (auto child : m_children) {
+    RteComponentInstanceAggregate* a = dynamic_cast<RteComponentInstanceAggregate*>(child);
     if (!a) {
       continue; // should not happen
     }
@@ -1909,9 +1901,7 @@ RteComponentInstanceAggregate* RteComponentInstanceGroup::GetComponentInstanceAg
       return a;
     }
   }
-  map<string, RteComponentInstanceGroup*>::const_iterator it;
-  for (it = m_groups.begin(); it != m_groups.end(); it++) {
-    RteComponentInstanceGroup* g = it->second;
+  for (auto [_, g] :  m_groups) {
     RteComponentInstanceAggregate* a = g->GetComponentInstanceAggregate(id);
     if (a)
       return a;
@@ -1921,15 +1911,13 @@ RteComponentInstanceAggregate* RteComponentInstanceGroup::GetComponentInstanceAg
 
 RteComponentInstanceAggregate* RteComponentInstanceGroup::GetComponentInstanceAggregate(RteComponentInstance* ci) const
 {
-  for (auto ita = m_children.begin(); ita != m_children.end(); ita++) {
-    RteComponentInstanceAggregate* a = dynamic_cast<RteComponentInstanceAggregate*>(*ita);
+  for (auto child : m_children) {
+    RteComponentInstanceAggregate* a = dynamic_cast<RteComponentInstanceAggregate*>(child);
     if (a && a->HasComponentInstance(ci)) {
       return a;
     }
   }
-  map<string, RteComponentInstanceGroup*>::const_iterator it;
-  for (it = m_groups.begin(); it != m_groups.end(); it++) {
-    RteComponentInstanceGroup* g = it->second;
+  for (auto [_, g] : m_groups) {
     RteComponentInstanceAggregate* a = g->GetComponentInstanceAggregate(ci);
     if (a)
       return a;
@@ -1943,21 +1931,19 @@ RteComponentInstanceGroup* RteComponentInstanceGroup::GetComponentInstanceGroup(
   if (GetApiInstance() == ci)
     return const_cast<RteComponentInstanceGroup*>(this);
 
-  for (auto ita = m_children.begin(); ita != m_children.end(); ita++) {
-    RteComponentInstanceAggregate* a = dynamic_cast<RteComponentInstanceAggregate*>(*ita);
+  for (auto child : m_children) {
+    RteComponentInstanceAggregate* a = dynamic_cast<RteComponentInstanceAggregate*>(child);
     if (a && a->HasComponentInstance(ci)) {
       return const_cast<RteComponentInstanceGroup*>(this);
     }
   }
-  map<string, RteComponentInstanceGroup*>::const_iterator it;
-  for (it = m_groups.begin(); it != m_groups.end(); it++) {
-    RteComponentInstanceGroup* g = it->second->GetComponentInstanceGroup(ci);
-    if (g)
-      return g;
+  for (auto [_, g] : m_groups) {
+    RteComponentInstanceGroup* cig = g->GetComponentInstanceGroup(ci);
+    if (cig)
+      return cig;
   }
   return NULL;
 }
-
 
 
 string RteComponentInstanceGroup::GetDisplayName() const
@@ -2008,14 +1994,12 @@ void RteComponentInstanceGroup::AddComponentInstance(RteComponentInstance* ci)
 
 void RteComponentInstanceGroup::GetInstanceAggregates(set<RteComponentInstanceAggregate*>& aggregates) const
 {
-  for (auto ita = m_children.begin(); ita != m_children.end(); ita++) {
-    RteComponentInstanceAggregate* a = dynamic_cast<RteComponentInstanceAggregate*>(*ita);
+  for (auto child : m_children) {
+    RteComponentInstanceAggregate* a = dynamic_cast<RteComponentInstanceAggregate*>(child);
     aggregates.insert(a);
   }
 
-  map<string, RteComponentInstanceGroup*>::const_iterator it;
-  for (it = m_groups.begin(); it != m_groups.end(); it++) {
-    RteComponentInstanceGroup* g = it->second;
+  for (auto [_, g] : m_groups) {
     g->GetInstanceAggregates(aggregates);
   }
 }
@@ -2023,15 +2007,13 @@ void RteComponentInstanceGroup::GetInstanceAggregates(set<RteComponentInstanceAg
 
 void RteComponentInstanceGroup::GetModifiedInstanceAggregates(set<RteComponentInstanceAggregate*>& modifiedAggregates) const
 {
-  for (auto ita = m_children.begin(); ita != m_children.end(); ita++) {
-    RteComponentInstanceAggregate* a = dynamic_cast<RteComponentInstanceAggregate*>(*ita);
+  for (auto child : m_children) {
+    RteComponentInstanceAggregate* a = dynamic_cast<RteComponentInstanceAggregate*>(child);
     if (a && a->IsModified())
       modifiedAggregates.insert(a);
   }
 
-  map<string, RteComponentInstanceGroup*>::const_iterator it;
-  for (it = m_groups.begin(); it != m_groups.end(); it++) {
-    RteComponentInstanceGroup* g = it->second;
+  for (auto [_, g] : m_groups) {
     g->GetModifiedInstanceAggregates(modifiedAggregates);
   }
 }
@@ -2042,15 +2024,13 @@ bool RteComponentInstanceGroup::HasUnresolvedComponents(const string& targetName
   if (m_apiInstance && !m_apiInstance->GetResolvedComponent(targetName))
     return true;
 
-  for (auto ita = m_children.begin(); ita != m_children.end(); ita++) {
-    RteComponentInstanceAggregate* a = dynamic_cast<RteComponentInstanceAggregate*>(*ita);
+  for (auto child : m_children) {
+    RteComponentInstanceAggregate* a = dynamic_cast<RteComponentInstanceAggregate*>(child);
     if (a && a->IsUnresolved(targetName, bCopy))
       return true;
   }
 
-  map<string, RteComponentInstanceGroup*>::const_iterator it;
-  for (it = m_groups.begin(); it != m_groups.end(); it++) {
-    RteComponentInstanceGroup* g = it->second;
+  for (auto [_, g] : m_groups) {
     if (g->HasUnresolvedComponents(targetName, bCopy))
       return true;
   }
@@ -2062,8 +2042,8 @@ RteItem::ConditionResult RteComponentInstanceGroup::GetConditionResult(RteCondit
   const RteTarget* t = context->GetTarget();
   const string& targetName = t->GetName();
   RteItem::ConditionResult result = RteItem::ConditionResult::IGNORED;
-  for (auto ita = m_children.begin(); ita != m_children.end(); ita++) {
-    RteComponentInstanceAggregate* a = dynamic_cast<RteComponentInstanceAggregate*>(*ita);
+  for (auto child : m_children) {
+    RteComponentInstanceAggregate* a = dynamic_cast<RteComponentInstanceAggregate*>(child);
     RteComponentAggregate* ca = a? a->GetComponentAggregate(targetName): nullptr;
     if (!ca) {
       continue;
@@ -2073,9 +2053,7 @@ RteItem::ConditionResult RteComponentInstanceGroup::GetConditionResult(RteCondit
       result = res;
     }
   }
-  map<string, RteComponentInstanceGroup*>::const_iterator it;
-  for (it = m_groups.begin(); it != m_groups.end(); it++) {
-    RteComponentInstanceGroup* g = it->second;
+  for (auto [_, g] : m_groups) {
     auto res = g->GetConditionResult(context);
     if (result > res) {
       result = res;
@@ -2086,15 +2064,13 @@ RteItem::ConditionResult RteComponentInstanceGroup::GetConditionResult(RteCondit
 
 bool RteComponentInstanceGroup::IsUsedByTarget(const string& targetName) const
 {
-  for (auto ita = m_children.begin(); ita != m_children.end(); ita++) {
-    RteComponentInstanceAggregate* a = dynamic_cast<RteComponentInstanceAggregate*>(*ita);
+  for (auto child : m_children) {
+    RteComponentInstanceAggregate* a = dynamic_cast<RteComponentInstanceAggregate*>(child);
     if (a && a->IsUsedByTarget(targetName))
       return true;
   }
 
-  map<string, RteComponentInstanceGroup*>::const_iterator it;
-  for (it = m_groups.begin(); it != m_groups.end(); it++) {
-    RteComponentInstanceGroup* g = it->second;
+  for (auto [_, g] : m_groups) {
     if (g->IsUsedByTarget(targetName))
       return true;
   }

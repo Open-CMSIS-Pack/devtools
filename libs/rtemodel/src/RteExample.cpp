@@ -157,8 +157,8 @@ bool RteExample::HasKeyword(const string& keyword) const
     return true;
 
   // search keywords
-  for (auto itm = m_keywords.begin(); itm != m_keywords.end(); itm++) {
-    if (WildCards::Match(keyword, *itm)) {
+  for (auto kw : m_keywords) {
+    if (WildCards::Match(keyword, kw)) {
       return true;
     }
   }
@@ -167,8 +167,8 @@ bool RteExample::HasKeyword(const string& keyword) const
 
 bool RteExample::HasKeywords(const set<string>& keywords) const
 {
-  for (auto it = keywords.begin(); it != keywords.end(); it++) {
-    if (!HasKeyword(*it))
+  for (auto kw  : keywords) {
+    if (!HasKeyword(kw))
       return false;
   }
   return true;
@@ -182,8 +182,8 @@ bool RteExample::HasCategory(const string& category) const
 
 bool RteExample::HasCategories(const set<string>& categories) const
 {
-  for (auto it = categories.begin(); it != categories.end(); it++) {
-    if (m_categories.find(*it) == m_categories.end())
+  for (auto cat : categories) {
+    if (m_categories.find(cat) == m_categories.end())
       return false;
   }
   return true;

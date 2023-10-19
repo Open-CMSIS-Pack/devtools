@@ -130,8 +130,7 @@ RteComponentAggregate* RteConditionExpression::GetSingleComponentAggregate(RteTa
   RteComponentAggregate* singleAggregate = nullptr;
   RtePackage* singleAggregatePack = nullptr;
   int nAggregates = 0;
-  for (auto it = components.begin(); it != components.end(); it++) {
-    RteComponentAggregate* a = *it;
+  for (auto a : components) {
     if (a->IsFiltered()) {
       RtePackage* aPack = a->GetPackage();
       if (!singleAggregate) {
@@ -171,8 +170,7 @@ bool RteConditionExpression::Validate()
 
   set<char> domains;
   bool bComponent = false;
-  for (auto it = m_attributes.begin(); it != m_attributes.end(); it++) {
-    string a = it->first;
+  for (auto [a, v] : m_attributes) {
     char ch = a.at(0);
     if (ch == COMPONENT_EXPRESSION) {
       bComponent = true;
@@ -211,11 +209,8 @@ RteItem::ConditionResult RteConditionExpression::EvaluateExpression(RteTarget* t
 {
   if (!target)
     return FAILED;
-  map<string, string>::const_iterator it, ita;
   const map<string, string>& attributes = target->GetAttributes();
-  for (it = m_attributes.begin(); it != m_attributes.end(); it++) {
-    const string& a = it->first;
-    const string& v = it->second;
+  for (auto [a, v] : m_attributes) {
     if (a.empty())
       continue;
     if (a.at(0) == 'C') {
@@ -224,7 +219,7 @@ RteItem::ConditionResult RteConditionExpression::EvaluateExpression(RteTarget* t
     if (a == "condition") {
       continue; // special handling for referred condition
     }
-    ita = attributes.find(a);
+    auto ita = attributes.find(a);
     if (ita != attributes.end()) {
       const string& va = ita->second;
       if (a == "Dvendor" || a == "Bvendor" || a == "vendor") {
@@ -266,10 +261,10 @@ RteItem::ConditionResult RteConditionExpression::GetDepsResult(map<const RteItem
         return result;
       RteDependencyResult depRes(this, result);
       const set<RteComponentAggregate*>& components = GetComponentAggregates(target);
-      for (set<RteComponentAggregate*>::const_iterator it = components.begin(); it != components.end(); it++) {
-        RteComponentAggregate* a = *it;
-        if (a)
+      for (auto a : components) {
+        if(a) {
           depRes.AddComponentAggregate(a);
+        }
       }
       results[this] = depRes;
     }
@@ -285,8 +280,7 @@ bool RteConditionExpression::HasDepsResult(map<const RteItem*, RteDependencyResu
   if (results.find(this) != results.end())
     return true;
 
-  for (auto it = results.begin(); it != results.end(); it++) {
-    const RteItem* item = it->first;
+  for (auto [item, res] : results) {
     if (item->GetTag() == GetTag() && item->EqualAttributes(this))
       return true;
   }
@@ -632,8 +626,7 @@ string RteDependencyResult::GetMessageText() const
     // check is we have several types of errors/warnings
     bool unresolved = false;
     bool conflicted = false;
-    for (auto it = m_results.begin(); it != m_results.end(); it++) {
-      const RteDependencyResult& depRes = it->second;
+    for (auto [item, depRes] : m_results) {
       RteItem::ConditionResult res = depRes.GetResult();
       switch (res) {
       case RteItem::INSTALLED:
@@ -1004,8 +997,7 @@ RteItem::ConditionResult RteDependencySolver::CalculateDependencies(RteCondition
   if (expr->IsDenyExpression()) {
     result = RteItem::FULFILLED;
     const map<RteComponentAggregate*, int>& selectedComponents = m_target->GetSelectedComponentAggregates();
-    for (auto it = selectedComponents.begin(); it != selectedComponents.end(); it++) {
-      RteComponentAggregate* a = it->first;
+    for (auto [a, n] : selectedComponents) {
       RteItem* c = a->GetComponent();
       if (!c)
         c = a->GetComponentInstance();
@@ -1044,8 +1036,7 @@ RteItem::ConditionResult RteDependencySolver::EvaluateDependencies()
 {
   Clear();
   const map<RteComponentAggregate*, int>& selectedComponents = m_target->GetSelectedComponentAggregates();
-  for (auto it = selectedComponents.begin(); it != selectedComponents.end(); it++) {
-    RteComponentAggregate* a = it->first;
+  for (auto [a, n] : selectedComponents) {
     RteItem::ConditionResult res = a->Evaluate(this);
     if (res > RteItem::UNDEFINED && m_result > res)
       m_result = res;
@@ -1073,8 +1064,7 @@ bool RteDependencySolver::ResolveIteration()
   map<const RteItem*, RteDependencyResult> results;
   m_target->GetSelectedDepsResult(results, m_target);
 
-  for (auto it = results.begin(); it != results.end(); it++) {
-    const RteDependencyResult& depsRes = it->second;
+  for (auto [item, depsRes] : results) {
     RteItem::ConditionResult r = depsRes.GetResult();
     if (r != RteItem::SELECTABLE)
       continue;
@@ -1087,11 +1077,9 @@ bool RteDependencySolver::ResolveIteration()
 
 bool RteDependencySolver::ResolveDependency(const RteDependencyResult& depsRes)
 {
-  // add subitems if any
+  // add sub-items if any
   const map<const RteItem*, RteDependencyResult>& results = depsRes.GetResults();
-  map<const RteItem*, RteDependencyResult>::const_iterator it;
-  for (it = results.begin(); it != results.end(); it++) {
-    const RteDependencyResult& dRes = it->second;
+  for (auto [_, dRes] : results) {
     RteItem::ConditionResult r = dRes.GetResult();
     if (r != RteItem::SELECTABLE || dRes.IsMultiple()) {
       continue;

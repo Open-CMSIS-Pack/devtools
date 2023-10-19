@@ -1219,7 +1219,7 @@ RteItem* RtePackageAggregate::GetLatestEntry() const
 
 RtePackage* RtePackageAggregate::GetLatestPackage() const
 {
-  for (auto it = m_packages.begin(); it != m_packages.end(); it++) {
+  for (auto it = m_packages.begin(); it != m_packages.end(); ++it) {
     RtePackage* p = dynamic_cast<RtePackage*>(it->second);
     if (p)
       return p;
@@ -1325,8 +1325,7 @@ const string& RtePackageAggregate::GetURL() const
   if (!url.empty())
     return url;
 
-  for (auto it = m_packages.begin(); it != m_packages.end(); it++) {
-    RteItem* p = it->second;
+  for (auto [_, p] : m_packages) {
     if (p)
       return p->GetAttribute("url");
   }

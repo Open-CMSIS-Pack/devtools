@@ -16,37 +16,33 @@ using namespace XERCES_CPP_NAMESPACE;
 
 void XmlErrorHandler::error(const SAXParseException &exc)
 {
-  char* file = xercesc::XMLString::transcode(exc.getSystemId());
-  char* msg = xercesc::XMLString::transcode(exc.getMessage());
-  ErrLog::Get()->SetFileName(file);
-  LogMsg("M511", MSG(msg), exc.getLineNumber());
-  ErrLog::Get()->SetFileName("");
-  xercesc::XMLString::release(&file);
-  xercesc::XMLString::release(&msg);
+  message("M511", exc);
 }
 
 void XmlErrorHandler::warning(const SAXParseException &exc)
 {
-  char* file = xercesc::XMLString::transcode(exc.getSystemId());
-  char* msg = xercesc::XMLString::transcode(exc.getMessage());
-  ErrLog::Get()->SetFileName(file);
-  LogMsg("M510", MSG(msg), exc.getLineNumber());
-  ErrLog::Get()->SetFileName("");
-  xercesc::XMLString::release(&file);
-  xercesc::XMLString::release(&msg);
+  message("M510", exc);
 }
 
 void XmlErrorHandler::fatalError(const SAXParseException &exc)
 {
+  message("M511", exc);
+}
+
+void XmlErrorHandler::resetErrors()
+{
+  //does nothing
+}
+
+void XmlErrorHandler::message(const std::string& msgId, const XERCES_CPP_NAMESPACE::SAXParseException& exc)
+{
   char* file = xercesc::XMLString::transcode(exc.getSystemId());
   char* msg = xercesc::XMLString::transcode(exc.getMessage());
   ErrLog::Get()->SetFileName(file);
-  LogMsg("M511", MSG(msg), exc.getLineNumber());
+  LogMsg(msgId, MSG(msg), exc.getLineNumber());
   ErrLog::Get()->SetFileName("");
   xercesc::XMLString::release(&file);
   xercesc::XMLString::release(&msg);
 }
 
-void XmlErrorHandler::resetErrors() {
-  cerr.flush();
-}
+// end of XmlErrorHandler.cpp
