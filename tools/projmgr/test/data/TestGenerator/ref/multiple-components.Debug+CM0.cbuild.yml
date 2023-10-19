@@ -5,6 +5,7 @@ build:
   context: multiple-components.Debug+CM0
   compiler: AC6
   device: RteTestGen_ARMCM0
+  device-pack: ARM::RteTestGenerator@0.1.0
   processor:
     core: Cortex-M0
   packs:

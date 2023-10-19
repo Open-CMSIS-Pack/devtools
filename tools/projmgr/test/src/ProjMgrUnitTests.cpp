@@ -1989,6 +1989,10 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Board_And_Device_Info) {
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
   EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+
+  // Check generated cbuild YML
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/test_board_and_device+TEST_TARGET.cbuild.yml",
+    testinput_folder + "/TestSolution/TestProject4/test_board_and_device+TEST_TARGET.cbuild.yml");
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_Correct_Board_Wrong_Device_Info) {

@@ -272,6 +272,8 @@ struct ContextTypesItem {
  *        linker options,
  *        map of variables,
  *        external generator directory,
+ *        device pack,
+ *        board pack,
  *        boolean processed precedences
 */
 struct ContextItem {
@@ -315,6 +317,8 @@ struct ContextItem {
   LinkerContextItem linker;
   std::map<std::string, std::string> variables;
   StrMap extGenDir;
+  RtePackage* devicePack;
+  RtePackage* boardPack;
   bool precedences;
 };
 

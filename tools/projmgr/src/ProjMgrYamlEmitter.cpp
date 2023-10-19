@@ -160,8 +160,12 @@ void ProjMgrYamlCbuild::SetContextNode(YAML::Node contextNode, const ContextItem
   SetNodeValue(contextNode[YAML_PROJECT], FormatPath(context->cproject->path, context->directories.cbuild));
   SetNodeValue(contextNode[YAML_CONTEXT], context->name);
   SetNodeValue(contextNode[YAML_COMPILER], context->compiler);
-  SetNodeValue(contextNode[YAML_BOARD], context->board);
+  if (!context->board.empty()) {
+    SetNodeValue(contextNode[YAML_BOARD], context->board);
+    SetNodeValue(contextNode[YAML_BOARD_PACK], context->boardPack->GetID());
+  }
   SetNodeValue(contextNode[YAML_DEVICE], context->device);
+  SetNodeValue(contextNode[YAML_DEVICE_PACK], context->devicePack->GetID());
   SetProcessorNode(contextNode[YAML_PROCESSOR], context->targetAttributes);
   SetPacksNode(contextNode[YAML_PACKS], context);
   SetControlsNode(contextNode, context, context->controls.processed);

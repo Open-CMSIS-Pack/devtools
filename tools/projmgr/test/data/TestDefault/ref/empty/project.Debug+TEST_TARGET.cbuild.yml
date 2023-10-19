@@ -5,6 +5,7 @@ build:
   context: project.Debug+TEST_TARGET
   compiler: GCC
   device: RteTest_ARMCM0
+  device-pack: ARM::RteTest_DFP@0.1.1
   processor:
     fpu: off
     core: Cortex-M0
