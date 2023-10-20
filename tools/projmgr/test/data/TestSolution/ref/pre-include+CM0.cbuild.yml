@@ -5,6 +5,7 @@ build:
   context: pre-include+CM0
   compiler: AC6
   device: RteTest_ARMCM0
+  device-pack: ARM::RteTest_DFP@0.2.0
   processor:
     fpu: off
     core: Cortex-M0

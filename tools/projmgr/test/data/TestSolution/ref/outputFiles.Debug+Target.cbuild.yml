@@ -5,6 +5,7 @@ build:
   context: outputFiles.Debug+Target
   compiler: AC6
   device: RteTest_ARMCM3
+  device-pack: ARM::RteTest_DFP@0.2.0
   processor:
     fpu: off
     core: Cortex-M3
