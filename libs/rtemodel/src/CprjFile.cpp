@@ -102,10 +102,9 @@ int CprjTargetElement::GetStartupMemoryIndex() const
   if (!m_startupMemory)
     return -1;
 
-  for (auto itm = m_assignedMemory.begin(); itm != m_assignedMemory.end(); itm++) {
-    RteItem* mem = itm->second;
+  for (auto [idx, mem] : m_assignedMemory) {
     if (mem == m_startupMemory)
-      return itm->first;
+      return idx;
   }
   return -1;
 }
@@ -166,8 +165,7 @@ void CprjTargetElement::CollectEffectiveProperties(const string& procName)
       m_effectiveProperties[propType] = list<RteDeviceProperty*>();
     }
     list<RteDeviceProperty*>& effectiveProps = m_effectiveProperties[propType];
-    for (auto itp = props.begin(); itp != props.end(); itp++) {
-      RteDeviceProperty* p = *itp;
+    for (auto p : props) {
       const string& id = p->GetID();
       RteDeviceProperty* pc = GetDeviceOption(id);
       if (propType == "prosessor") {

@@ -81,7 +81,7 @@ bool SvdUtils::TrimWhitespace(string &name)
   // Trim back
   auto to = name.length();
   const string::reverse_iterator rend = name.rend();
-  for(string::reverse_iterator it = name.rbegin(); it != rend; it++) {
+  for(string::reverse_iterator it = name.rbegin(); it != rend; ++it) {
     if(*it == ' ' || *it == '\t' || *it == '\r' || *it == '\n') {
       to--;
     }

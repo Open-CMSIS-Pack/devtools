@@ -365,8 +365,7 @@ Collection<RteItem*>& RteItem::GetChildrenByTag(const std::string& tag, Collecti
 
 RteItem* RteItem::GetItem(const string& id) const
 {
-  for (auto it = m_children.begin(); it != m_children.end(); it++) {
-    RteItem* item = *it;
+  for (auto item : m_children) {
     if (item->GetID() == id)
       return item;
   }
@@ -375,8 +374,8 @@ RteItem* RteItem::GetItem(const string& id) const
 
 bool RteItem::HasItem(RteItem* item) const
 {
-  for (auto it = m_children.begin(); it != m_children.end(); it++) {
-    if (item == *it)
+  for (auto child : m_children) {
+    if (item == child)
       return true;
   }
   return false;
@@ -606,13 +605,10 @@ bool RteItem::MatchComponentAttributes(const map<string, string>& attributes, bo
   if (attributes.empty()) // no limiting attributes
     return true;
 
-  map<string, string>::const_iterator it, ita;
-  for (ita = attributes.begin(); ita != attributes.end(); ita++) {
-    const string& a = ita->first;
-    const string& v = ita->second;
+  for (auto [ a, v] : attributes) {
     if (a.empty() || a.at(0) != 'C')
       continue; // we are interested only in Cclass, Cgroup, etc.
-    it = m_attributes.find(a);
+    auto it = m_attributes.find(a);
     if (it == m_attributes.end()) { // no such attribute in the component
       if (v.empty() || a == "Capiversion")
         continue; // ok: it is required that this attribute is not set or empty
@@ -637,12 +633,9 @@ bool RteItem::MatchApiAttributes(const map<string, string>& attributes, bool bRe
   if (attributes.empty())
     return false;
 
-  map<string, string>::const_iterator itm, ita;
-  for (itm = m_attributes.begin(); itm != m_attributes.end(); itm++) {
-    const string& a = itm->first;
+  for (auto [a, v] : m_attributes) {
     if (!a.empty() && a[0] == 'C' && a != "Cvendor") {
-      const string& v = itm->second;
-      ita = attributes.find(a);
+      auto ita = attributes.find(a);
       if (a == "Capiversion") { // version of this api should be >= supplied version, but less than next major
         if (ita == attributes.end())
           continue; // version is not set => accept any
@@ -666,11 +659,9 @@ bool RteItem::MatchDeviceAttributes(const map<string, string>& attributes) const
     return false;
 
   map<string, string>::const_iterator itm, ita;
-  for (itm = m_attributes.begin(); itm != m_attributes.end(); itm++) {
-    const string& a = itm->first;
+  for (auto [a, v] : m_attributes) {
     if (!a.empty() && a[0] == 'D') {
-      const string& v = itm->second;
-      ita = attributes.find(a);
+      auto ita = attributes.find(a);
       if (ita == attributes.end()) // no attribute in supplied map
         return false;
       const string& va = ita->second;
@@ -690,12 +681,9 @@ bool RteItem::MatchDevice(const map<string, string>& attributes) const
   if (attributes.empty())
     return false;
 
-  map<string, string>::const_iterator itm, ita;
-  for (itm = m_attributes.begin(); itm != m_attributes.end(); itm++) {
-    const string& a = itm->first;
+  for (auto [a, v] : m_attributes) {
     if (a == "Dname" || a == "Pname" || a == "Dvendor") {
-      const string& v = itm->second;
-      ita = attributes.find(a);
+      auto ita = attributes.find(a);
       if (ita == attributes.end()) // no attribute in supplied map
         return false;
       const string& va = ita->second;
@@ -962,8 +950,7 @@ XMLTreeElement* RteItem::CreateXmlTreeElement(XMLTreeElement* parentElement, boo
 
 void RteItem::CreateXmlTreeElementContent(XMLTreeElement* parentElement) const
 {
-  for (auto it = m_children.begin(); it != m_children.end(); it++) {
-    RteItem* item = *it;
+  for (auto item : m_children) {
     item->CreateXmlTreeElement(parentElement);
   }
 }
@@ -992,8 +979,8 @@ bool RteItem::Validate()
       m_bValid = false;
     }
   }
-  for (auto it = m_children.begin(); it != m_children.end(); it++) {
-    if (!(*it)->Validate())
+  for (auto item : m_children) {
+    if (!item->Validate())
       m_bValid = false;
   }
   return m_bValid;
@@ -1002,8 +989,8 @@ bool RteItem::Validate()
 void RteItem::InsertInModel(RteModel* model)
 {
   // default just iterates over children asking them to insert themselves
-  for (auto it = m_children.begin(); it != m_children.end(); it++) {
-    (*it)->InsertInModel(model);
+  for (auto item : m_children) {
+    item->InsertInModel(model);
   }
 }
 

@@ -161,7 +161,7 @@ bool RteTarget::IsComponentFiltered(RteComponent* c) const {
   if (c->IsApi())
     return true;
 
-  for (auto it = m_filteredComponents.begin(); it != m_filteredComponents.end(); it++) {
+  for (auto it = m_filteredComponents.begin(); it != m_filteredComponents.end(); ++it) {
     if (it->second == c)
       return true;
   }
@@ -171,7 +171,7 @@ bool RteTarget::IsComponentFiltered(RteComponent* c) const {
 RteItem::ConditionResult RteTarget::GetComponents(const map<string, string>& componentAttributes, set<RteComponent*>& components) const
 {
   RteItem::ConditionResult result = RteItem::MISSING;
-  for (auto it = m_filteredComponents.begin(); it != m_filteredComponents.end(); it++) {
+  for (auto it = m_filteredComponents.begin(); it != m_filteredComponents.end(); ++it) {
     RteComponent* c = it->second;
     if (c->MatchComponentAttributes(componentAttributes)) {
       components.insert(c);
@@ -322,7 +322,7 @@ RteItem::ConditionResult RteTarget::GetDepsResult(map<const RteItem*, RteDepende
 
   RteItem::ConditionResult apiResult = FULFILLED;
   // iterate over APIs for conflicts
-  for (auto ita = m_filteredApis.begin(); ita != m_filteredApis.end(); ita++) {
+  for (auto ita = m_filteredApis.begin(); ita != m_filteredApis.end(); ++ita) {
     RteApi* api = ita->second;
     if (!api)
       continue;
@@ -351,7 +351,7 @@ RteItem::ConditionResult RteTarget::GetDepsResult(map<const RteItem*, RteDepende
 RteItem::ConditionResult RteTarget::GetSelectedDepsResult(map<const RteItem*, RteDependencyResult>& results, RteTarget* target) const
 {
   RteItem::ConditionResult res = RteItem::IGNORED;
-  for (auto ita = m_selectedAggregates.begin(); ita != m_selectedAggregates.end(); ita++) {
+  for (auto ita = m_selectedAggregates.begin(); ita != m_selectedAggregates.end(); ++ita) {
     RteComponentAggregate* a = ita->first;
     if (a && a->IsFiltered() && a->IsSelected()) {
       ConditionResult r = a->GetDepsResult(results, target);
@@ -382,7 +382,7 @@ const map<RteComponentAggregate*, int>& RteTarget::CollectSelectedComponentAggre
   m_gpdscFileNames.clear();
   CollectSelectedComponentAggregates(m_selectedAggregates);
   // update collection of gpdsc file names
-  for (auto it = m_selectedAggregates.begin(); it != m_selectedAggregates.end(); it++) {
+  for (auto it = m_selectedAggregates.begin(); it != m_selectedAggregates.end(); ++it) {
     RteComponentAggregate* a = it->first;
     RteComponent* c = a->GetComponent();
     if (c) {
@@ -413,7 +413,7 @@ void RteTarget::ClearSelectedComponents()
 
 void RteTarget::GetSpecificBundledClasses(const map<RteComponentAggregate*, int>& aggregates, map<string, string>& specificClasses)
 {
-  for (auto it = aggregates.begin(); it != aggregates.end(); it++) {
+  for (auto it = aggregates.begin(); it != aggregates.end(); ++it) {
     RteComponentAggregate* a = it->first;
     RteComponentInstance* ci = a->GetComponentInstance();
     if (ci && ci->IsTargetSpecific()) {
@@ -441,7 +441,7 @@ void RteTarget::SetSelectionFromTarget(RteTarget* otherTarget)
 
   ClearSelectedComponents();
 
-  for (auto it = otherAggregates.begin(); it != otherAggregates.end(); it++) {
+  for (auto it = otherAggregates.begin(); it != otherAggregates.end(); ++it) {
     RteComponentAggregate* other = it->first;
     RteComponentInstance* ci = other->GetComponentInstance();
     if (ci && ci->IsTargetSpecific()) {
@@ -464,7 +464,7 @@ void RteTarget::SetSelectionFromTarget(RteTarget* otherTarget)
     }
   }
 
-  for (auto it = savedAggregates.begin(); it != savedAggregates.end(); it++) {
+  for (auto it = savedAggregates.begin(); it != savedAggregates.end(); ++it) {
     RteComponentAggregate* a = it->first;
     int count = it->second;
     if (!count)
@@ -505,7 +505,7 @@ void RteTarget::ClearCollections()
 
   m_svd.clear();
 
-  for (auto it = m_availableTemplates.begin(); it != m_availableTemplates.end(); it++) {
+  for (auto it = m_availableTemplates.begin(); it != m_availableTemplates.end(); ++it) {
     delete it->second;
   }
   m_availableTemplates.clear();
@@ -591,7 +591,7 @@ void RteTarget::AddDeviceProperties(RteDeviceItem* d, const string& processorNam
   for (auto itpm = propMap.begin(); itpm != propMap.end(); ++itpm) {
     const string& propType = itpm->first; // processor, feature, mamory, etc.
     const list<RteDeviceProperty*>& props = itpm->second;
-    for (auto itp = props.begin(); itp != props.end(); itp++) {
+    for (auto itp = props.begin(); itp != props.end(); ++itp) {
       RteDeviceProperty *p = *itp;
       if (propType == "compile") { // get any attributes, for example compile
         const string& header = p->GetAttribute("header");
@@ -697,7 +697,7 @@ void RteTarget::CollectComponentSettings(RteComponentInstance* ci)
     return;
   string deviceName = GetFullDeviceName();
   const string& rteFolder = GetRteFolder(ci);
-  for (auto itf = files.begin(); itf != files.end(); itf++) {
+  for (auto itf = files.begin(); itf != files.end(); ++itf) {
     RteFile* f = *itf;
     if (!f)
       continue;
@@ -746,7 +746,7 @@ void RteTarget::CollectClassDocs()
   if (!m_classes)
     return;
   const map<string, RteComponentGroup*>& classes = m_classes->GetGroups();
-  for (auto it = classes.begin(); it != classes.end(); it++) {
+  for (auto it = classes.begin(); it != classes.end(); ++it) {
     RteComponentGroup* g = it->second;
     if (g->IsSelected()) {
       const string& doc = g->GetDocFile();
@@ -1114,7 +1114,7 @@ RteComponent* RteTarget::GetPotentialComponent(const string& id) const
 
 RteComponent* RteTarget::GetLatestPotentialComponent(const string& id) const
 {
-  for (auto it = m_potentialComponents.begin(); it != m_potentialComponents.end(); it++) {
+  for (auto it = m_potentialComponents.begin(); it != m_potentialComponents.end(); ++it) {
     RteComponent* c = it->second;
     if (c->GetComponentID(false) == id)
       return c;
@@ -1127,7 +1127,7 @@ RteApi* RteTarget::GetApi(const map<string, string>& componentAttributes) const
   RteProject* p = GetProject();
   if (p) {
     const map<string, RteGpdscInfo*>& gpdscInfos = p->GetGpdscInfos();
-    for (auto itg = gpdscInfos.begin(); itg != gpdscInfos.end(); itg++) {
+    for (auto itg = gpdscInfos.begin(); itg != gpdscInfos.end(); ++itg) {
       RteGpdscInfo* gi = itg->second;
       RtePackage* gpdscPack = gi->GetGpdscPack();
       if (!gpdscPack)
@@ -1145,7 +1145,7 @@ RteApi* RteTarget::GetApi(const string& id) const
   RteProject* p = GetProject();
   if (p) {
     const map<string, RteGpdscInfo*>& gpdscInfos = p->GetGpdscInfos();
-    for (auto itg = gpdscInfos.begin(); itg != gpdscInfos.end(); itg++) {
+    for (auto itg = gpdscInfos.begin(); itg != gpdscInfos.end(); ++itg) {
       RteGpdscInfo* gi = itg->second;
       RtePackage* gpdscPack = gi->GetGpdscPack();
       if (!gpdscPack)
@@ -1288,7 +1288,7 @@ void RteTarget::FilterComponents()
   RteProject* p = GetProject();
   if (p) {
     const map<string, RteGpdscInfo*>& gpdscInfos = p->GetGpdscInfos();
-    for (auto itg = gpdscInfos.begin(); itg != gpdscInfos.end(); itg++) {
+    for (auto itg = gpdscInfos.begin(); itg != gpdscInfos.end(); ++itg) {
       RteGpdscInfo* gi = itg->second;
       if (!gi->IsUsedByTarget(GetName()))
         continue;
@@ -1302,7 +1302,7 @@ void RteTarget::FilterComponents()
   // fill unique filtered list from filtered model
   const RteComponentMap& componentList = m_filteredModel->GetComponentList();
   RteComponentMap::const_iterator itc;
-  for (itc = componentList.begin(); itc != componentList.end(); itc++) {
+  for (itc = componentList.begin(); itc != componentList.end(); ++itc) {
     RteComponent* c = itc->second;
     if (deviceStartup && c->IsDeviceStartup())
       continue; // always take device startup from generated project
@@ -1312,7 +1312,7 @@ void RteTarget::FilterComponents()
     }
   }
   // categorize component and filter files
-  for (itc = m_filteredComponents.begin(); itc != m_filteredComponents.end(); itc++) {
+  for (itc = m_filteredComponents.begin(); itc != m_filteredComponents.end(); ++itc) {
     RteComponent* c = itc->second;
     RteApi* a = GetApi(c->GetAttributes());
     if (a && m_filteredApis.find(a->GetID()) == m_filteredApis.end()) { // component has an API and the API is not inserted yet
@@ -1327,7 +1327,7 @@ void RteTarget::FilterComponents()
 
   const RteComponentMap& allComponents = globalModel->GetComponentList();
   // fill unique filtered list
-  for (itc = allComponents.begin(); itc != allComponents.end(); itc++) {
+  for (itc = allComponents.begin(); itc != allComponents.end(); ++itc) {
     RteComponent* c = itc->second;
     RtePackage* pack = c->GetPackage();
     if (GetPackageFilter().IsPackageFiltered(pack))
@@ -1359,7 +1359,7 @@ RteFile* RteTarget::GetFile(const string& name, RteComponent* c) const
 {
   // returns file if it is filtered for given target
   const set<RteFile*>& filteredFiles = GetFilteredFiles(c);
-  for (auto itf = filteredFiles.begin(); itf != filteredFiles.end(); itf++) {
+  for (auto itf = filteredFiles.begin(); itf != filteredFiles.end(); ++itf) {
     RteFile* f = *itf;
     if (f && f->GetName() == name)
       return f;
@@ -1370,7 +1370,7 @@ RteFile* RteTarget::GetFile(const string& name, RteComponent* c) const
 RteFile* RteTarget::FindFile(const string& fileName, RteComponent* c) const
 {
   const set<RteFile*>& filteredFiles = GetFilteredFiles(c);
-  for (auto itf = filteredFiles.begin(); itf != filteredFiles.end(); itf++) {
+  for (auto itf = filteredFiles.begin(); itf != filteredFiles.end(); ++itf) {
     RteFile* f = *itf;
     if (f && RteUtils::ExtractFileName(f->GetName()) == fileName)
       return f;
@@ -1408,7 +1408,7 @@ RteFile* RteTarget::GetFile(const RteFileInstance* fi, RteComponent* c, const st
   const string& deviceName = GetFullDeviceName();
   int index = fi->GetInstanceIndex();
   const string& instanceName = fi->GetInstanceName();
-  for (auto itf = filteredFiles.begin(); itf != filteredFiles.end(); itf++) {
+  for (auto itf = filteredFiles.begin(); itf != filteredFiles.end(); ++itf) {
     RteFile* f = *itf;
     if (f && f->GetInstancePathName(deviceName, index, rteFolder) == instanceName) {
       return f;
@@ -1429,7 +1429,7 @@ void RteTarget::CollectFilteredFiles()
   m_filteredFiles.clear(); // filtered files can depend on selected components
   map<RteComponentAggregate*, int> components;
   CollectSelectedComponentAggregates(components);
-  for (auto itc = components.begin(); itc != components.end(); itc++) {
+  for (auto itc = components.begin(); itc != components.end(); ++itc) {
     RteComponentAggregate* a = itc->first;
     RteComponent* c = a->GetComponent();
     if (c) {

@@ -466,10 +466,8 @@ bool RteComponentAggregate::SetSelected(int nSel)
 bool RteComponentAggregate::MatchComponentAttributes(const map<string, string>& attributes, bool bRespectVersion) const
 {
   if (!m_components.empty()) {
-    for (auto itvar = m_components.begin(); itvar != m_components.end(); itvar++) {
-      const RteComponentVersionMap& versionMap = itvar->second;
-      for (auto it = versionMap.begin(); it != versionMap.end(); it++) {
-        RteComponent* c = it->second;
+    for (auto [_, versionMap] : m_components) {
+      for (auto [_, c] : versionMap) {
         if (c && c->MatchComponentAttributes(attributes, bRespectVersion))
           return true;
       }
@@ -486,12 +484,9 @@ bool RteComponentAggregate::MatchComponentInstance(RteComponentInstance* ci) con
     return false;
   const map<string, string>& attributes = ci->GetAttributes();
 
-  map<string, string>::const_iterator itm, ita;
-  for (itm = m_attributes.begin(); itm != m_attributes.end(); itm++) {
-    const string& a = itm->first;
-    const string& v = itm->second;
+  for (auto [a, v] : m_attributes) {
     if (!a.empty() && a[0] == 'C') {
-      ita = attributes.find(a);
+      auto ita = attributes.find(a);
       if (ita == attributes.end()) { // no attribute in supplied map
         if (a == "Cbundle" || v.empty())
           continue;
@@ -696,12 +691,9 @@ void RteComponentAggregate::Purge()
 
 bool RteComponentAggregate::HasComponent(RteComponent* c) const
 {
-  map<string, RteComponentVersionMap>::const_iterator itvar;
-  for (itvar = m_components.begin(); itvar != m_components.end(); itvar++) {
-    const RteComponentVersionMap& versionMap = itvar->second;
-    RteComponentVersionMap::const_iterator it;
-    for (it = versionMap.begin(); it != versionMap.end(); it++) {
-      if (c == it->second)
+  for (auto [_, versionMap] : m_components) {
+    for (auto [_, component] : versionMap) {
+      if (c == component)
         return true;
     }
   }
@@ -811,9 +803,8 @@ const RteComponentVersionMap* RteComponentAggregate::GetComponentVersions(const 
 int RteComponentAggregate::GetComponentCount() const
 {
   int count = 0;
-  map<string, RteComponentVersionMap>::const_iterator itvar;
-  for (itvar = m_components.begin(); itvar != m_components.end(); itvar++) {
-    count += (int)itvar->second.size();
+  for (auto [_, versionMap] : m_components) {
+    count += (int)versionMap.size();
   }
   return count;
 }
@@ -850,8 +841,8 @@ RteComponent* RteComponentAggregate::GetLatestComponent(const string& variant) c
 
 RteComponent* RteComponentAggregate::FindComponentMatch(const string& variant, const string& pattern) const
 {
-  map<string, RteComponentVersionMap>::const_iterator itvar = m_components.begin();
-  for (; itvar != m_components.end(); itvar++) {
+  auto itvar = m_components.begin();
+  for (; itvar != m_components.end(); ++itvar) {
     if (WildCards::Match(variant, itvar->first))
       break;
   }
@@ -860,24 +851,23 @@ RteComponent* RteComponentAggregate::FindComponentMatch(const string& variant, c
     return nullptr;
 
   const RteComponentVersionMap& versionMap = itvar->second;
-  RteComponentVersionMap::const_iterator it;
-  for (it = versionMap.begin(); it != versionMap.end(); it++) {
-    if (WildCards::Match(pattern, it->first))
-      return it->second;
+  for (auto [ver, component] : versionMap) {
+    if (WildCards::Match(pattern, ver))
+      return component;
   }
   return nullptr;
 }
 
 RteComponent* RteComponentAggregate::FindComponent(const map<string, string>& attributes) const
 {
-  RteComponent* c = GetComponent();
-  if (c && c->MatchComponentAttributes(attributes))
-    return c;
+  {
+    RteComponent* c = GetComponent();
+    if(c && c->MatchComponentAttributes(attributes))
+      return c;
+  }
 
-  for (auto itvar = m_components.begin(); itvar != m_components.end(); itvar++) {
-    const RteComponentVersionMap& versionMap = itvar->second;
-    for (auto it = versionMap.begin(); it != versionMap.end(); it++) {
-      c = it->second;
+  for (auto [_, versionMap] : m_components) {
+    for (auto [_, c] : versionMap) {
       if (c && c->MatchComponentAttributes(attributes))
         return c;
     }
@@ -891,9 +881,8 @@ list<string> RteComponentAggregate::GetVersions(const string& variant) const
   auto itvar = m_components.find(variant);
   if (itvar != m_components.end()) {
     const RteComponentVersionMap& versionMap = itvar->second;
-    RteComponentVersionMap::const_iterator it;
-    for (it = versionMap.begin(); it != versionMap.end(); it++) {
-      versions.push_back(it->first);
+    for (auto [ver, c] : versionMap) {
+      versions.push_back(ver);
     }
   }
   return versions;
@@ -914,8 +903,8 @@ list<string> RteComponentAggregate::GetVariants() const
     }
   }
 
-  for (auto itvar = m_components.begin(); itvar != m_components.end(); itvar++) {
-    variants.push_back(itvar->first);
+  for (auto [var, versionMap] : m_components) {
+    variants.push_back(var);
   }
   return variants;
 }
@@ -1145,10 +1134,8 @@ RteComponentGroup::~RteComponentGroup()
 
 void RteComponentGroup::Clear()
 {
-  map<string, RteComponentGroup*>::iterator it = m_groups.begin();
-  for (; it != m_groups.end(); it++)
-  {
-    delete it->second;
+  for ( auto [_, g] : m_groups) {
+    delete g;
   }
   m_api = 0;
   m_apiInstance = 0;
@@ -1181,15 +1168,13 @@ RteComponentAggregate* RteComponentGroup::GetSingleComponentAggregate() const
 
 RteComponentAggregate* RteComponentGroup::GetComponentAggregate(const string& id) const
 {
-  for (auto ita = m_children.begin(); ita != m_children.end(); ita++) {
-    RteComponentAggregate* a = dynamic_cast<RteComponentAggregate*>(*ita);
+  for (auto child : m_children) {
+    RteComponentAggregate* a = dynamic_cast<RteComponentAggregate*>(child);
     if (a && a->GetID() == id) {
       return a;
     }
   }
-  map<string, RteComponentGroup*>::const_iterator it;
-  for (it = m_groups.begin(); it != m_groups.end(); it++) {
-    RteComponentGroup* g = it->second;
+  for (auto [_, g] : m_groups)   {
     RteComponentAggregate* a = g->GetComponentAggregate(id);
     if (a)
       return a;
@@ -1199,16 +1184,14 @@ RteComponentAggregate* RteComponentGroup::GetComponentAggregate(const string& id
 
 RteComponentAggregate* RteComponentGroup::FindComponentAggregate(RteComponentInstance* ci) const
 {
-  for (auto ita = m_children.begin(); ita != m_children.end(); ita++) {
-    RteComponentAggregate* a = dynamic_cast<RteComponentAggregate*>(*ita);
+  for (auto child : m_children) {
+    RteComponentAggregate* a = dynamic_cast<RteComponentAggregate*>(child);
     if (a && a->MatchComponentInstance(ci)) {
       return a;
     }
   }
-  map<string, RteComponentGroup*>::const_iterator it;
-  for (it = m_groups.begin(); it != m_groups.end(); it++) {
-    RteComponentGroup* g = it->second;
-    RteComponentAggregate* a = g->FindComponentAggregate(ci);
+  for (auto [_, g] : m_groups) {
+    RteComponentAggregate* a = g ? g->FindComponentAggregate(ci) : nullptr;
     if (a)
       return a;
   }
@@ -1218,15 +1201,14 @@ RteComponentAggregate* RteComponentGroup::FindComponentAggregate(RteComponentIns
 
 int RteComponentGroup::IsSelected() const
 {
-  for (auto ita = m_children.begin(); ita != m_children.end(); ita++) {
-    RteComponentAggregate* a = dynamic_cast<RteComponentAggregate*>(*ita);
+  for (auto child : m_children) {
+    RteComponentAggregate* a = dynamic_cast<RteComponentAggregate*>(child);
     if (a && a->IsSelected()) {
       return 1;
     }
   }
-  map<string, RteComponentGroup*>::const_iterator it;
-  for (it = m_groups.begin(); it != m_groups.end(); it++) {
-    RteComponentGroup* g = it->second;
+
+  for (auto [_, g] : m_groups) {
     if (g->IsSelected())
       return 1;
   }
@@ -1244,17 +1226,15 @@ RteItem::ConditionResult RteComponentGroup::Evaluate(RteConditionContext* contex
 
   ConditionResult res = FULFILLED;
 
-  for (auto ita = m_children.begin(); ita != m_children.end(); ita++) {
-    RteComponentAggregate* a = dynamic_cast<RteComponentAggregate*>(*ita);
+  for (auto child : m_children) {
+    RteComponentAggregate* a = dynamic_cast<RteComponentAggregate*>(child);
     if (a && a->IsFiltered() && a->IsSelected()) {
       ConditionResult r = a->Evaluate(context);
       if (r < res && r > UNDEFINED)
         res = r;
     }
   }
-  map<string, RteComponentGroup*>::const_iterator it;
-  for (it = m_groups.begin(); it != m_groups.end(); it++) {
-    RteComponentGroup* g = it->second;
+  for (auto [_, g] : m_groups) {
     ConditionResult r = g->Evaluate(context);
     if (r < res && r > UNDEFINED)
       res = r;
@@ -1286,17 +1266,15 @@ RteItem::ConditionResult RteComponentGroup::GetConditionResult(RteConditionConte
 
   ConditionResult res = FULFILLED;
 
-  for (auto ita = m_children.begin(); ita != m_children.end(); ita++) {
-    RteComponentAggregate* a = dynamic_cast<RteComponentAggregate*>(*ita);
+  for (auto child : m_children) {
+    RteComponentAggregate* a = dynamic_cast<RteComponentAggregate*>(child);
     if (a && a->IsFiltered() && a->IsSelected()) {
       ConditionResult r = a->GetConditionResult(context);
       if (r < res && r > UNDEFINED)
         res = r;
     }
   }
-  map<string, RteComponentGroup*>::const_iterator it;
-  for (it = m_groups.begin(); it != m_groups.end(); it++) {
-    RteComponentGroup* g = it->second;
+  for (auto [_, g] : m_groups) {
     ConditionResult r = g->GetConditionResult(context);
     if (r < res && r > UNDEFINED)
       res = r;
@@ -1323,17 +1301,15 @@ RteItem::ConditionResult RteComponentGroup::GetDepsResult(map<const RteItem*, Rt
     results[this] = depRes;
   }
 
-  for (auto ita = m_children.begin(); ita != m_children.end(); ita++) {
-    RteComponentAggregate* a = dynamic_cast<RteComponentAggregate*>(*ita);
+  for (auto child : m_children) {
+    RteComponentAggregate* a = dynamic_cast<RteComponentAggregate*>(child);
     if (a && a->IsFiltered() && a->IsSelected()) {
       r = a->GetDepsResult(results, target);
       if (r < res && r > UNDEFINED)
         res = r;
     }
   }
-  map<string, RteComponentGroup*>::const_iterator it;
-  for (it = m_groups.begin(); it != m_groups.end(); it++) {
-    RteComponentGroup* g = it->second;
+  for (auto [_, g] : m_groups) {
     r = g->GetDepsResult(results, target);
     if (r < res && r > UNDEFINED)
       res = r;
@@ -1344,16 +1320,14 @@ RteItem::ConditionResult RteComponentGroup::GetDepsResult(map<const RteItem*, Rt
 
 RteComponentAggregate* RteComponentGroup::GetComponentAggregate(RteComponent* c) const
 {
-  for (auto ita = m_children.begin(); ita != m_children.end(); ita++) {
-    RteComponentAggregate* a = dynamic_cast<RteComponentAggregate*>(*ita);
+  for (auto child : m_children) {
+    RteComponentAggregate* a = dynamic_cast<RteComponentAggregate*>(child);
     if (a && a->HasComponent(c)) {
       return a;
     }
   }
-  map<string, RteComponentGroup*>::const_iterator it;
-  for (it = m_groups.begin(); it != m_groups.end(); it++) {
-    RteComponentGroup* g = it->second;
-    RteComponentAggregate* a = g->GetComponentAggregate(c);
+  for (auto [_, g] : m_groups) {
+    RteComponentAggregate* a = g ? g->GetComponentAggregate(c) : nullptr;
     if (a)
       return a;
   }
@@ -1362,15 +1336,13 @@ RteComponentAggregate* RteComponentGroup::GetComponentAggregate(RteComponent* c)
 
 void RteComponentGroup::CollectSelectedComponentAggregates(map<RteComponentAggregate*, int>& selectedAggregates) const
 {
-  for (auto ita = m_children.begin(); ita != m_children.end(); ita++) {
-    RteComponentAggregate* a = dynamic_cast<RteComponentAggregate*>(*ita);
+  for (auto child : m_children) {
+    RteComponentAggregate* a = dynamic_cast<RteComponentAggregate*>(child);
     if (a && a->IsSelected() && a->IsFiltered()) {
       selectedAggregates[a] = a->IsSelected();
     }
   }
-  map<string, RteComponentGroup*>::const_iterator it;
-  for (it = m_groups.begin(); it != m_groups.end(); it++) {
-    RteComponentGroup* g = it->second;
+  for (auto [_, g] : m_groups) {
     if (g)
       g->CollectSelectedComponentAggregates(selectedAggregates);
   }
@@ -1379,15 +1351,13 @@ void RteComponentGroup::CollectSelectedComponentAggregates(map<RteComponentAggre
 
 void RteComponentGroup::GetUnSelectedGpdscAggregates(set<RteComponentAggregate*>& unSelectedGpdscAggregates) const
 {
-  for (auto ita = m_children.begin(); ita != m_children.end(); ita++) {
-    RteComponentAggregate* a = dynamic_cast<RteComponentAggregate*>(*ita);
+  for (auto child : m_children) {
+    RteComponentAggregate* a = dynamic_cast<RteComponentAggregate*>(child);
     if (a && !a->IsSelected() && a->IsFiltered() && !a->GetGeneratorName().empty()) {
       unSelectedGpdscAggregates.insert(a);
     }
   }
-  map<string, RteComponentGroup*>::const_iterator it;
-  for (it = m_groups.begin(); it != m_groups.end(); it++) {
-    RteComponentGroup* g = it->second;
+  for (auto [_, g] : m_groups) {
     if (g)
       g->GetUnSelectedGpdscAggregates(unSelectedGpdscAggregates);
   }
@@ -1395,15 +1365,13 @@ void RteComponentGroup::GetUnSelectedGpdscAggregates(set<RteComponentAggregate*>
 
 void RteComponentGroup::ClearSelectedComponents()
 {
-  for (auto ita = m_children.begin(); ita != m_children.end(); ita++) {
-    RteComponentAggregate* a = dynamic_cast<RteComponentAggregate*>(*ita);
+  for (auto child : m_children) {
+    RteComponentAggregate* a = dynamic_cast<RteComponentAggregate*>(child);
     if (a && a->IsSelected()) {
       a->SetSelected(0);
     }
   }
-  map<string, RteComponentGroup*>::const_iterator it;
-  for (it = m_groups.begin(); it != m_groups.end(); it++) {
-    RteComponentGroup* g = it->second;
+  for (auto [_, g] : m_groups) {
     if (g)
       g->ClearSelectedComponents();
   }
@@ -1412,15 +1380,13 @@ void RteComponentGroup::ClearSelectedComponents()
 void RteComponentGroup::ClearUsedComponents()
 {
   m_apiInstance = 0;
-  for (auto ita = m_children.begin(); ita != m_children.end(); ita++) {
-    RteComponentAggregate* a = dynamic_cast<RteComponentAggregate*>(*ita);
+  for (auto child : m_children) {
+    RteComponentAggregate* a = dynamic_cast<RteComponentAggregate*>(child);
     if (a) {
       a->SetComponentInstance(0, -1);
     }
   }
-  map<string, RteComponentGroup*>::const_iterator it;
-  for (it = m_groups.begin(); it != m_groups.end(); it++) {
-    RteComponentGroup* g = it->second;
+  for (auto [_, g] : m_groups) {
     if (g)
       g->ClearUsedComponents();
   }
@@ -1429,26 +1395,23 @@ void RteComponentGroup::ClearUsedComponents()
 void RteComponentGroup::Purge()
 {
   set<RteComponentAggregate*> toDelete;
-  for (auto ita = m_children.begin(); ita != m_children.end(); ita++) {
-    RteComponentAggregate* a = dynamic_cast<RteComponentAggregate*>(*ita);
+  for (auto child : m_children) {
+    RteComponentAggregate* a = dynamic_cast<RteComponentAggregate*>(child);
     if (a && a->IsEmpty()) {
       toDelete.insert(a);
     }
   }
-  for (auto itd = toDelete.begin(); itd != toDelete.end(); itd++) {
-    RteComponentAggregate* a = *itd;
+  for (auto a : toDelete) {
     RemoveItem(a);
     delete a;
   }
 
-  map<string, RteComponentGroup*>::iterator it;
-  for (it = m_groups.begin(); it != m_groups.end(); it++) {
-    RteComponentGroup* g = it->second;
+  for (auto [_, g] :m_groups) {
     if (g)
       g->Purge();
   }
 
-  for (it = m_groups.begin(); it != m_groups.end(); ) {
+  for (auto it = m_groups.begin(); it != m_groups.end(); ) {
     map<string, RteComponentGroup*>::iterator itcurrent = it++;
     RteComponentGroup* g = itcurrent->second;
     if (g && g->IsEmpty()) {
@@ -1462,15 +1425,13 @@ bool RteComponentGroup::IsEmpty() const
 {
   if (m_apiInstance)
     return false;
-  for (auto ita = m_children.begin(); ita != m_children.end(); ita++) {
-    RteComponentAggregate* a = dynamic_cast<RteComponentAggregate*>(*ita);
+  for (auto child : m_children) {
+    RteComponentAggregate* a = dynamic_cast<RteComponentAggregate*>(child);
     if (a && !a->IsEmpty()) {
       return false;
     }
   }
-  map<string, RteComponentGroup*>::const_iterator it;
-  for (it = m_groups.begin(); it != m_groups.end(); it++) {
-    RteComponentGroup* g = it->second;
+  for (auto [_, g] : m_groups) {
     if (g && !g->IsEmpty())
       return false;
   }
@@ -1483,17 +1444,16 @@ RteComponentGroup* RteComponentGroup::GetComponentGroup(RteComponent* c) const
   if (GetApi() == c)
     return const_cast<RteComponentGroup*>(this);
 
-  for (auto ita = m_children.begin(); ita != m_children.end(); ita++) {
-    RteComponentAggregate* a = dynamic_cast<RteComponentAggregate*>(*ita);
+  for (auto child : m_children) {
+    RteComponentAggregate* a = dynamic_cast<RteComponentAggregate*>(child);
     if (a && a->HasComponent(c)) {
       return const_cast<RteComponentGroup*>(this);
     }
   }
-  map<string, RteComponentGroup*>::const_iterator it;
-  for (it = m_groups.begin(); it != m_groups.end(); it++) {
-    RteComponentGroup* g = it->second->GetComponentGroup(c);
-    if (g)
-      return g;
+  for (auto [_, g] :  m_groups) {
+    RteComponentGroup* cg = g->GetComponentGroup(c);
+    if (cg)
+      return cg;
   }
   return nullptr;
 }
@@ -1620,8 +1580,8 @@ bool RteComponentGroup::HasMissingComponents() const
   if (m_apiInstance && !m_api)
     return true;
 
-  for (auto ita = m_children.begin(); ita != m_children.end(); ita++) {
-    RteComponentAggregate* a = dynamic_cast<RteComponentAggregate*>(*ita);
+  for (auto child : m_children) {
+    RteComponentAggregate* a = dynamic_cast<RteComponentAggregate*>(child);
     if (!a || !a->IsSelected())
       continue;
     RteComponent* c = a->GetComponent();
@@ -1634,9 +1594,7 @@ bool RteComponentGroup::HasMissingComponents() const
     }
   }
 
-  map<string, RteComponentGroup*>::const_iterator it;
-  for (it = m_groups.begin(); it != m_groups.end(); it++) {
-    RteComponentGroup* g = it->second;
+  for (auto [_, g] : m_groups)   {
     if (g->HasMissingComponents())
       return true;
   }
@@ -1680,9 +1638,8 @@ const string& RteComponentGroup::GetDescription() const
   RteProject* project = GetProject();
   if (project && target) {
     const map<string, RteGpdscInfo*>& gpdscInfos = project->GetGpdscInfos();
-    for (auto itg = gpdscInfos.begin(); itg != gpdscInfos.end(); itg++) {
-      RteGpdscInfo* gi = itg->second;
-      if (!gi->IsUsedByTarget(target->GetName()))
+    for (auto [ _, gi] : gpdscInfos) {
+      if (!gi || !gi->IsUsedByTarget(target->GetName()))
         continue;
       RtePackage* gpdscPack = gi->GetGpdscPack();
       if (gpdscPack) {
@@ -1714,8 +1671,7 @@ string RteComponentGroup::GetDocFile() const
   RteProject* project = GetProject();
   if (project && target) {
     const map<string, RteGpdscInfo*>& gpdscInfos = project->GetGpdscInfos();
-    for (auto itg = gpdscInfos.begin(); itg != gpdscInfos.end(); itg++) {
-      RteGpdscInfo* gi = itg->second;
+    for (auto [_, gi] : gpdscInfos) {
       if (!gi->IsUsedByTarget(target->GetName()))
         continue;
       RtePackage* gpdscPack = gi->GetGpdscPack();
@@ -1739,8 +1695,8 @@ RteItem::ConditionResult RteComponentGroup::GetComponentAggregates(const XmlItem
 {
   ConditionResult res = MISSING;
 
-  for (auto ita = m_children.begin(); ita != m_children.end(); ita++) {
-    RteComponentAggregate* a = dynamic_cast<RteComponentAggregate*>(*ita);
+  for (auto child : m_children) {
+    RteComponentAggregate* a = dynamic_cast<RteComponentAggregate*>(child);
     if (a && a->MatchComponentAttributes(componentAttributes.GetAttributes())) {
       aggregates.insert(a);
       ConditionResult r = INSTALLED;
@@ -1767,9 +1723,7 @@ RteItem::ConditionResult RteComponentGroup::GetComponentAggregates(const XmlItem
         res = r;
     }
   }
-  map<string, RteComponentGroup*>::const_iterator it;
-  for (it = m_groups.begin(); it != m_groups.end(); it++) {
-    RteComponentGroup* g = it->second;
+  for (auto [_, g] : m_groups) {
     if (g) {
       ConditionResult r = g->GetComponentAggregates(componentAttributes, aggregates);
       if (res < r)
@@ -1782,8 +1736,8 @@ RteItem::ConditionResult RteComponentGroup::GetComponentAggregates(const XmlItem
 
 void RteComponentGroup::AdjustComponentSelection(const string& newBundleName)
 {
-  for (auto ita = m_children.begin(); ita != m_children.end(); ita++) {
-    RteComponentAggregate* a = dynamic_cast<RteComponentAggregate*>(*ita);
+  for (auto child : m_children) {
+    RteComponentAggregate* a = dynamic_cast<RteComponentAggregate*>(child);
     if (!a || !a->IsFiltered())
       continue;
     int nsel = a->IsSelected();
@@ -1795,8 +1749,7 @@ void RteComponentGroup::AdjustComponentSelection(const string& newBundleName)
     attr.AddAttribute("Cvendor", "*");
     set<RteComponentAggregate*> aggregates;
     GetComponentAggregates(attr, aggregates);
-    for (auto it = aggregates.begin(); it != aggregates.end(); it++) {
-      RteComponentAggregate* aggr = *it;
+    for (auto aggr : aggregates) {
       aggr->SetSelected(nsel);
       if (nsel && aggr->HasVariant(variant))
         aggr->SetSelectedVariant(variant);
@@ -1834,9 +1787,7 @@ void RteComponentClass::SetSelectedBundleName(const string& name, bool updateSel
 void RteComponentClass::AdjustComponentSelection(const string& newBundleName)
 {
   RteComponentGroup::AdjustComponentSelection(newBundleName);
-  map<string, RteComponentGroup*>::const_iterator it;
-  for (it = m_groups.begin(); it != m_groups.end(); it++) {
-    RteComponentGroup* g = it->second;
+  for (auto [_, g] : m_groups)   {
     g->AdjustComponentSelection(newBundleName);
   }
 }

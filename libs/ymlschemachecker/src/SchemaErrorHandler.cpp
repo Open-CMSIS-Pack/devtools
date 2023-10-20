@@ -12,8 +12,9 @@
 
 using namespace std;
 
-CustomErrorHandler::CustomErrorHandler(const std::string& filePath) {
-  m_yamlFile = filePath;
+CustomErrorHandler::CustomErrorHandler(const std::string& filePath) :
+  m_yamlFile(filePath)
+{
   m_yamlData = YAML::LoadFile(m_yamlFile);
   m_errList.clear();
 }

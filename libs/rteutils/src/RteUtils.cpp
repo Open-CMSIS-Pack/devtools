@@ -139,8 +139,7 @@ bool RteUtils::EqualNoCase(const std::string& a, const std::string& b)
 
 bool RteUtils::CheckCMSISName(const string& s)
 {
-  for (auto it = s.begin(); it != s.end(); it++) {
-    char ch = *it;
+  for (auto ch : s) {
     if (!isalnum(ch) && ch != '-' && ch != '_' && ch != '/') // allowed characters
       return false;
   }
@@ -398,13 +397,12 @@ const char* RteUtils::GetIndent(unsigned indent)
 string RteUtils::ToXmlString(const map<string, string>& attributes)
 {
   string s;
-  map<string, string>::const_iterator it;
-  for (it = attributes.begin(); it != attributes.end(); it++) {
+  for (auto [a, v] : attributes) {
     if (!s.empty())
       s += " ";
-    s += it->first;
+    s += a;
     s += "=\"";
-    s += it->second;
+    s += v;
     s += "\"";
   }
   return s;

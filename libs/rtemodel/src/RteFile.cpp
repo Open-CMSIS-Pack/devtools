@@ -335,8 +335,8 @@ RteFileContainer::RteFileContainer(RteItem* parent) :
 
 RteFile* RteFileContainer::GetFile(const string& name) const
 {
-  for (auto itf = m_children.begin(); itf != m_children.end(); itf++) {
-    RteFile* f = dynamic_cast<RteFile*>(*itf);
+  for (auto itf : m_children) {
+    RteFile* f = dynamic_cast<RteFile*>(itf);
     if (f && f->GetName() == name)
       return f;
   }
@@ -345,8 +345,8 @@ RteFile* RteFileContainer::GetFile(const string& name) const
 
 RteFile* RteFileContainer::GetFileByOriginalAbsolutePath(const string& absPathName) const
 {
-  for (auto itf = m_children.begin(); itf != m_children.end(); itf++) {
-    RteFile* f = dynamic_cast<RteFile*>(*itf);
+  for (auto itf : m_children) {
+    RteFile* f = dynamic_cast<RteFile*>(itf);
     if (f && f->GetOriginalAbsolutePath() == absPathName)
       return f;
   }
@@ -444,7 +444,7 @@ RteFileTemplateCollection::RteFileTemplateCollection(RteComponent* c) :
 
 RteFileTemplateCollection::~RteFileTemplateCollection()
 {
-  for (auto it = m_templates.begin(); it != m_templates.end(); it++) {
+  for (auto it = m_templates.begin(); it != m_templates.end(); ++it) {
     delete it->second;
   }
   m_templates.clear();

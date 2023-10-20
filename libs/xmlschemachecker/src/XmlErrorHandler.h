@@ -9,6 +9,8 @@
 
 #include "xercesc/sax/ErrorHandler.hpp"
 
+#include <string>
+
 class XmlErrorHandler : public XERCES_CPP_NAMESPACE::ErrorHandler {
 public:
     XmlErrorHandler() {}
@@ -18,6 +20,9 @@ public:
     void warning(const XERCES_CPP_NAMESPACE::SAXParseException& exc);
     void fatalError(const XERCES_CPP_NAMESPACE::SAXParseException& exc);
     void resetErrors();
+
+protected:
+  void message(const std::string& msgId, const XERCES_CPP_NAMESPACE::SAXParseException& exc);
 
 };
 
