@@ -22,3 +22,4 @@ project:
         - file: file3.c
           language-C: c99
           language-CPP: c++98
+          warnings: all

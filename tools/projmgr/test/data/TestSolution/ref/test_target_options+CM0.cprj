@@ -40,7 +40,7 @@
         <options warnings="on"/>
       </file>
       <file category="sourceC" name="../data/TestSolution/file3.c">
-        <options languageC="c99" languageCpp="c++98"/>
+        <options languageC="c99" languageCpp="c++98" warnings="all"/>
       </file>
     </group>
   </files>

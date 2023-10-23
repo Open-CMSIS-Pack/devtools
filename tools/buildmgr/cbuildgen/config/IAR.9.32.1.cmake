@@ -234,11 +234,11 @@ set(DEBUG_ASM_FLAGS    "-r"      "")
 set(DEBUG_CC_FLAGS     "--debug" "")
 set(DEBUG_CXX_FLAGS    "--debug" "")
 
-set(WARNINGS_VALUES    "on" "off")
-set(WARNINGS_ASM_FLAGS ""   "-w")
-set(WARNINGS_CC_FLAGS  ""   "--no_warnings")
-set(WARNINGS_CXX_FLAGS ""   "--no_warnings")
-set(WARNINGS_LD_FLAGS  ""   "--no_warnings")
+set(WARNINGS_VALUES    "on" "off"           "all")
+set(WARNINGS_ASM_FLAGS ""   "-w"            "-w+")
+set(WARNINGS_CC_FLAGS  ""   "--no_warnings" "--remarks")
+set(WARNINGS_CXX_FLAGS ""   "--no_warnings" "--remarks")
+set(WARNINGS_LD_FLAGS  ""   "--no_warnings" "--remarks")
 
 # IAR default "Standard C" supports C18/C11
 # The option --c89 enables support for ISO 9899:1990 also known as C94, C90, C89, and ANSI C instead of "Standard C" 

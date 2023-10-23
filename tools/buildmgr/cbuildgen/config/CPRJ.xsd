@@ -17,12 +17,14 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 
-  $Date:        22. June 2023
-  $Revision:    2.0.0
+  $Date:        20. October 2023
+  $Revision:    2.1.0
 
   $Project: Schema File for CMSIS Project Description File Format Specification
 
-  SchemaVersion=2.0.0
+  SchemaVersion=2.1.0
+
+  2.1.0: Added 'all' value to 'WarningsEnum' and 'CLANG' to 'CompilerEnumType'
 
   2.0.0: Increment major version to reflect 'output' attribute breaking changes
          Added component 'gendir' attribute
@@ -155,6 +157,7 @@
     <xs:restriction base="xs:token">
       <xs:enumeration value="on" />
       <xs:enumeration value="off" />
+      <xs:enumeration value="all" />
     </xs:restriction>
   </xs:simpleType>
 
@@ -247,6 +250,7 @@
       <xs:enumeration value="GCC" />
       <xs:enumeration value="AC6" />
       <xs:enumeration value="IAR" />
+      <xs:enumeration value="CLANG" />
       <xs:enumeration value="Tasking" />
       <xs:enumeration value="GHS" />
       <xs:enumeration value="Cosmic" />
