@@ -472,6 +472,13 @@ void ProjMgrYamlCbuild::SetProcessorNode(YAML::Node node, const map<string, stri
     const string& core = targetAttributes.at("Dcore");
     SetNodeValue(node[YAML_CORE], core);
   }
+  if (targetAttributes.find("DbranchProt") != targetAttributes.end()) {
+    const string& attribute = targetAttributes.at("DbranchProt");
+    const string& value = (attribute == "BTI") ? "bti" :
+                          (attribute == "BTI_SIGNRET") ? "bti-signret" :
+                          (attribute == "NO_BRANCHPROT") ? "off" : "";
+    SetNodeValue(node[YAML_BRANCH_PROTECTION], value);
+  }
 }
 
 void ProjMgrYamlCbuild::SetMiscNode(YAML::Node miscNode, const vector<MiscItem>& miscVec) {

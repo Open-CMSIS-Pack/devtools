@@ -4241,3 +4241,33 @@ TEST_F(ProjMgrUnitTests, ExternalGenerator_NoCgenFile) {
 
   RteFsUtils::RemoveFile(dstGlobalGenerator);
 }
+
+TEST_F(ProjMgrUnitTests, DeviceAttributes_BranchProtection) {
+  StdStreamRedirect streamRedirect;
+  char* argv[7];
+  const string& csolution = testinput_folder + "/TestSolution/DeviceAttributes/solution.csolution.yml";
+  argv[1] = (char*)csolution.c_str();
+  argv[2] = (char*)"convert";
+  argv[3] = (char*)"-o";
+  argv[4] = (char*)testoutput_folder.c_str();
+  argv[5] = (char*)"-c";
+  argv[6] = (char*)"branch-protection.Debug";
+  EXPECT_EQ(0, RunProjMgr(7, argv, 0));
+
+  // Test branch protection cases
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/branch-protection.Debug+bti.cbuild.yml",
+    testinput_folder + "/TestSolution/DeviceAttributes/ref/branch-protection.Debug+bti.cbuild.yml");
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/branch-protection.Debug+bti-signret.cbuild.yml",
+    testinput_folder + "/TestSolution/DeviceAttributes/ref/branch-protection.Debug+bti-signret.cbuild.yml");
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/branch-protection.Debug+no-bp.cbuild.yml",
+    testinput_folder + "/TestSolution/DeviceAttributes/ref/branch-protection.Debug+no-bp.cbuild.yml");
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_TRUE(errStr.find("warning csolution: device 'RteTest_ARMCM0' does not support branch protection") != string::npos);
+
+  // Test branch protection redefinition
+  streamRedirect.ClearStringStreams();
+  argv[6] = (char*)"branch-protection.Fail+bti-signret";
+  EXPECT_EQ(1, RunProjMgr(7, argv, 0));
+  errStr = streamRedirect.GetErrorString();
+  EXPECT_TRUE(errStr.find("error csolution: redefinition from 'bti-signret' into 'bti' is not allowed") != string::npos);
+}
