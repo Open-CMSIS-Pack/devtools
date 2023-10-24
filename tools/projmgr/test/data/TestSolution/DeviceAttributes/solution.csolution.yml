@@ -1,0 +1,25 @@
+# yaml-language-server: $schema=D:\work\devtools-wip\tools\projmgr\schemas\csolution.schema.json
+#$schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schemas/csolution.schema.json
+
+solution:
+  target-types:
+    - type: bti
+      processor:
+        branch-protection: bti
+    - type: bti-signret
+      processor:
+        branch-protection: bti-signret
+    - type: no-bp
+      processor:
+        branch-protection: off
+
+  build-types:
+    - type: Debug
+    - type: Fail
+
+  packs:
+    - pack: ARM::RteTest_DFP@0.2.0
+
+  projects:
+    - project: ./branch-protection/branch-protection.cproject.yml
+      for-context: [+bti, +bti-signret, +no-bp]

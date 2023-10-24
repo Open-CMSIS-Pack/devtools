@@ -1257,6 +1257,19 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
       context.targetAttributes["Dsecure"] = "TZ-disabled";
     }
   }
+  if (!context.controls.processed.processor.branchProtection.empty()) {
+    if ((context.targetAttributes.find("Dpacbti") == context.targetAttributes.end()) ||
+      (context.targetAttributes.at("Dpacbti") == "NO_PACBTI")) {
+      ProjMgrLogger::Warn("device '" + context.device + "' does not support branch protection");
+    }
+    if (context.controls.processed.processor.branchProtection == "bti") {
+      context.targetAttributes["DbranchProt"] = "BTI";
+    } else if (context.controls.processed.processor.branchProtection == "bti-signret") {
+      context.targetAttributes["DbranchProt"] = "BTI_SIGNRET";
+    } else if (context.controls.processed.processor.branchProtection == "off") {
+      context.targetAttributes["DbranchProt"] = "NO_BRANCHPROT";
+    }
+  }
 
   context.devicePack = matchedDevice->GetPackage();
   if (context.devicePack) {
@@ -2316,6 +2329,25 @@ bool ProjMgrWorker::ProcessProcessorOptions(ContextItem& context) {
     endian.elements.push_back(&clayer.processor.endian);
   }
   if (!ProcessPrecedence(endian)) {
+    return false;
+  }
+
+  StringCollection branchProtection = {
+  &context.controls.processed.processor.branchProtection,
+  {
+    &context.controls.cproject.processor.branchProtection,
+    &context.controls.csolution.processor.branchProtection,
+    &context.controls.target.processor.branchProtection,
+    &context.controls.build.processor.branchProtection,
+  },
+  };
+  for (auto& setup : context.controls.setups) {
+    branchProtection.elements.push_back(&setup.processor.branchProtection);
+  }
+  for (auto& [_, clayer] : context.controls.clayers) {
+    branchProtection.elements.push_back(&clayer.processor.branchProtection);
+  }
+  if (!ProcessPrecedence(branchProtection)) {
     return false;
   }
   return true;

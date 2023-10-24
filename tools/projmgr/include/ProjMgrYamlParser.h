@@ -21,6 +21,7 @@ static constexpr const char* YAML_BASE_DIR = "base-dir";
 static constexpr const char* YAML_BASE_NAME = "base-name";
 static constexpr const char* YAML_BOARD = "board";
 static constexpr const char* YAML_BOARD_PACK = "board-pack";
+static constexpr const char* YAML_BRANCH_PROTECTION = "branch-protection";
 static constexpr const char* YAML_BUILD = "build";
 static constexpr const char* YAML_BUILD_GEN = "build-gen";
 static constexpr const char* YAML_BUILD_IDX = "build-idx";

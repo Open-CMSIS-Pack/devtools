@@ -380,6 +380,10 @@
         "trustzone": {
           "enum": [ "secure", "non-secure", "off" ],
           "description": "Select TrustZone mode: secure | non-secure | off"
+        },
+        "branch-protection": {
+          "enum": [ "bti", "bti-signret", "off" ],
+          "description": "Select Branch Protection mode: bti | bit-signret | off"
         }
       }
     },
@@ -398,6 +402,10 @@
         "endian": {
           "enum": [ "little", "big" ],
           "description": "Controls endianess"
+        },
+        "branch-protection": {
+          "enum": [ "bti", "bti-signret", "off" ],
+          "description": "Select Branch Protection mode: bti | bit-signret | off"
         }
       }
     },

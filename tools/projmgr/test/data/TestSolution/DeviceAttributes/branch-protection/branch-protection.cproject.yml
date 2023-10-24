@@ -1,0 +1,34 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schemas/cproject.schema.json
+
+project:
+  device: RteTest_ARMCM0
+  compiler: AC6
+  components:
+    - component: Startup
+    - component: CORE
+
+  layers:
+    - layer: ./bti.clayer.yml
+      for-context: +bti
+    - layer: ./bti-signret.clayer.yml
+      for-context: +bti-signret
+    - layer: ./no-bp.clayer.yml
+      for-context: +no-bp
+
+  setups:
+    - setup: bti
+      for-context: +bti
+      processor:
+        branch-protection: bti
+    - setup: bti-signret
+      for-context: +bti-signret
+      processor:
+        branch-protection: bti-signret
+    - setup: no-bp
+      for-context: +no-bp
+      processor:
+        branch-protection: off
+    - setup: fail
+      for-context: .Fail
+      processor:
+        branch-protection: bti
