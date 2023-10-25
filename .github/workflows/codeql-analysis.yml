@@ -38,7 +38,7 @@ jobs:
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v2
         with:
-          languages: c-cpp
+          languages: cpp
           queries: security-and-quality
           
       - name: Create build folder
@@ -53,4 +53,4 @@ jobs:
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v2
         with:
-          category: "/language:c-cpp"
+          category: "/language:cpp"
