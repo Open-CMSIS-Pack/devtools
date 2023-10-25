@@ -3,6 +3,7 @@ name: "CodeQL"
 on:
   workflow_dispatch:
   pull_request:
+    branches: [ main ]
     paths:
       - '.github/workflows/codeql-analysis.yml'
       - '**/*.c'
@@ -12,6 +13,7 @@ on:
       - '**/CMakeLists.txt'
   push:
     branches: [ main ]
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -52,5 +54,3 @@ jobs:
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v2
-        with:
-          category: "/language:cpp"
