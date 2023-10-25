@@ -1479,12 +1479,16 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
     // Insert matched component into context list
     context.components.insert({ componentId, { matchedComponentInstance, &item, generatorId } });
     const auto& componentPackage = matchedComponent->GetPackage();
-    context.packages.insert({ componentPackage->GetID(), componentPackage });
+    if (componentPackage) {
+      context.packages.insert({ componentPackage->GetID(), componentPackage });
+    }
     if (matchedComponent->HasApi(context.rteActiveTarget)) {
       const auto& api = matchedComponent->GetApi(context.rteActiveTarget, false);
       if (api) {
         const auto& apiPackage = api->GetPackage();
-        context.packages.insert({ apiPackage->GetID(), apiPackage });
+        if (apiPackage) {
+          context.packages.insert({ apiPackage->GetID(), apiPackage });
+        }
       }
     }
   }
