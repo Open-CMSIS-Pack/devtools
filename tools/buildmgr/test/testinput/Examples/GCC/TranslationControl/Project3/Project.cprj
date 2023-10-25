@@ -47,7 +47,7 @@
         <options optimize="none" debug="off" warnings="off" languageCpp="c++17"/>
       </file>
       <file category="sourceAsm" name="File_3.s">
-        <options optimize="none" debug="off" warnings="off"/>
+        <options optimize="none" debug="off" warnings="all"/>
       </file>
     </group>
   </files>

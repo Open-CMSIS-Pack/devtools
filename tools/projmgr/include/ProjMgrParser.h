@@ -84,12 +84,14 @@ struct PackItem {
  * @brief processor item containing
  *        processor fpu,
  *        processor trustzone,
- *        processor endianess
+ *        processor endianess,
+ *        branch protection
 */
 struct ProcessorItem {
   std::string fpu;
   std::string trustzone;
   std::string endian;
+  std::string branchProtection;
 };
 
 /**

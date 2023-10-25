@@ -412,6 +412,7 @@ void ProjMgrYamlParser::ParseProcessor(const YAML::Node& parent, ProcessorItem& 
       {YAML_TRUSTZONE, processor.trustzone},
       {YAML_FPU, processor.fpu},
       {YAML_ENDIAN, processor.endian},
+      {YAML_BRANCH_PROTECTION, processor.branchProtection},
     };
     for (const auto& item : processorChildren) {
       ParseString(processorNode, item.first, item.second);
@@ -992,6 +993,7 @@ const set<string> processorKeys = {
   YAML_TRUSTZONE,
   YAML_FPU,
   YAML_ENDIAN,
+  YAML_BRANCH_PROTECTION,
 };
 
 const set<string> miscKeys = {

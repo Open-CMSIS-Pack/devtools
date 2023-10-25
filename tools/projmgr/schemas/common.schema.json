@@ -141,8 +141,8 @@
       "description": "Generic control for the generation of debug information (on, off)."
     },
     "WarningsType": {
-      "enum": [ "on", "off" ],
-      "description": "Control warnings (on, off)."
+      "enum": [ "on", "off", "all" ],
+      "description": "Control warnings (on, off, all)."
     },
     "LanguageCType": {
       "enum": [ "c90", "gnu90", "c99", "gnu99", "c11", "gnu11" ],
@@ -380,6 +380,10 @@
         "trustzone": {
           "enum": [ "secure", "non-secure", "off" ],
           "description": "Select TrustZone mode: secure | non-secure | off"
+        },
+        "branch-protection": {
+          "enum": [ "bti", "bti-signret", "off" ],
+          "description": "Select Branch Protection mode: bti | bit-signret | off"
         }
       }
     },
@@ -398,6 +402,10 @@
         "endian": {
           "enum": [ "little", "big" ],
           "description": "Controls endianess"
+        },
+        "branch-protection": {
+          "enum": [ "bti", "bti-signret", "off" ],
+          "description": "Select Branch Protection mode: bti | bit-signret | off"
         }
       }
     },
