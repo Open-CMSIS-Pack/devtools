@@ -738,7 +738,7 @@ bool CbuildModel::EvalGeneratedSourceFiles() {
         string filepath;
         if (!EvalFile(file, CbuildUtils::ReplaceColon(grpName), gpdscPath, filepath))
           return false;
-        m_layerFiles[layer].insert(filepath.substr(m_prjFolder.length(), string::npos));
+        m_layerFiles[layer].insert(RteFsUtils::RelativePath(filepath, m_prjFolder));
       }
     }
   }

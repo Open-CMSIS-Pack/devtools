@@ -1,0 +1,16 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schemas/csolution.schema.json
+
+solution:
+  target-types:
+    - type: CM0
+      device: RteTestGen_ARMCM0
+
+  build-types:
+    - type: Debug
+      compiler: AC6
+
+  projects:
+    - project: ./test-gpdsc-without-components.cproject.yml
+
+  generators:
+    base-dir: GpdscWithoutComponents

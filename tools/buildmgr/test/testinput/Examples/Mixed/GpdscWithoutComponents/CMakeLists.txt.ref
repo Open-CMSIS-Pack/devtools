@@ -1,0 +1,53 @@
+# CMSIS Build CMakeLists generated on 2023-10-25T13:45:31
+
+cmake_minimum_required(VERSION 3.22)
+
+# Target options
+
+set(TARGET test-gpdsc-without-components)
+set(CPU Cortex-M0)
+set(PRJ_DIR "D:/sandbox/Mixed/GpdscWithoutComponents")
+set(OUT_DIR "D:/sandbox/Mixed/GpdscWithoutComponents/OutDir")
+set(INT_DIR "D:/sandbox/Mixed/GpdscWithoutComponents/IntDir")
+
+set(DEFINES
+  _RTE_
+)
+
+set(INC_PATHS
+  "D:/sandbox/Mixed/GpdscWithoutComponents/RTE/_Target_1"
+)
+
+set(CC_SRC_FILES
+  "D:/sandbox/Mixed/GpdscWithoutComponents/main.c"
+)
+
+# Toolchain config map
+
+set(TOOLCHAIN_VERSION_MIN "6.18.0")
+include ("D:/sandbox/cbuild/etc/AC6.6.18.0.cmake")
+include ("D:/sandbox/cbuild/etc/CMSIS-Build-Utils.cmake")
+
+# Setup project
+
+project(${TARGET} LANGUAGES C)
+
+cbuild_get_running_toolchain(TOOLCHAIN_ROOT TOOLCHAIN_VERSION C)
+
+# Global Flags
+
+cbuild_get_system_includes(CC_SYS_INC_PATHS_LIST CC_SYS_INC_PATHS)
+set(CMAKE_C_FLAGS "${CC_CPU} ${CC_DEFINES} ${CC_FLAGS} ${CC_SYS_INC_PATHS}")
+set(CMAKE_C_LINK_FLAGS "${LD_CPU} ${LD_FLAGS}")
+
+# Compilation Database
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+add_custom_target(database COMMAND ${CMAKE_COMMAND} -E copy_if_different "${INT_DIR}/compile_commands.json" "${OUT_DIR}")
+
+# Setup Target
+
+add_executable(${TARGET} ${CC_SRC_FILES})
+set_target_properties(${TARGET} PROPERTIES PREFIX "" SUFFIX ".axf" OUTPUT_NAME "test-gpdsc-without-components")
+set_target_properties(${TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${OUT_DIR})
+target_include_directories(${TARGET} PUBLIC ${INC_PATHS})
