@@ -11,6 +11,7 @@ on:
       - '**/*.h'
       - '**/*.in'
       - '**/CMakeLists.txt'
+      - '!**/*.md'
   push:
     branches: [ main ]
 
