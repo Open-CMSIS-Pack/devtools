@@ -1922,19 +1922,22 @@ bool ProjMgrWorker::ProcessGpdsc(ContextItem& context) {
       info->SetGpdscPack(gpdscPack);
     }
     // insert gpdsc components
-    for (const auto& gpdscComponent : gpdscPack->GetComponents()->GetChildren()) {
-      Collection<RteItem*> components;
-      if (gpdscComponent->GetTag() == "component") {
-        components.push_back(gpdscComponent);
-      } else if (gpdscComponent->GetTag() == "bundle") {
-        components = gpdscComponent->GetChildren();
-      }
-      for (const auto component : components) {
-        const auto& componentId = component->GetComponentID(true);
-        const auto& item = context.components[context.gpdscs.at(gpdscFile).component].item;
-        RteComponentInstance* componentInstance = new RteComponentInstance(component);
-        componentInstance->InitInstance(component);
-        context.components.insert({ componentId, { componentInstance, item, component->GetGeneratorName()}});
+    const auto& gpdscComponents = gpdscPack->GetComponents();
+    if (gpdscComponents) {
+      for (const auto& gpdscComponent : gpdscComponents->GetChildren()) {
+        Collection<RteItem*> components;
+        if (gpdscComponent->GetTag() == "component") {
+          components.push_back(gpdscComponent);
+        } else if (gpdscComponent->GetTag() == "bundle") {
+          components = gpdscComponent->GetChildren();
+        }
+        for (const auto component : components) {
+          const auto& componentId = component->GetComponentID(true);
+          const auto& item = context.components[context.gpdscs.at(gpdscFile).component].item;
+          RteComponentInstance* componentInstance = new RteComponentInstance(component);
+          componentInstance->InitInstance(component);
+          context.components.insert({ componentId, { componentInstance, item, component->GetGeneratorName()} });
+        }
       }
     }
   }

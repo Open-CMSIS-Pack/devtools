@@ -68,13 +68,15 @@ bool CbuildProject::CreateTarget(const string& targetName, const CprjFile *cprj,
     }
     gi->SetGpdscPack(gpdscPack);
     // add gpdsc components
-    const auto& gpdscComponents = gpdscPack->GetComponents()->GetChildren();
-    for (const auto& gpdscComponent : gpdscComponents) {
-      if (gpdscComponent->GetTag() == "component") {
-        components->AddChild(gpdscComponent);
-      } else if (gpdscComponent->GetTag() == "bundle") {
-        for (const auto component : gpdscComponent->GetChildren()) {
-          components->AddChild(component);
+    const auto& gpdscComponents = gpdscPack->GetComponents();
+    if (gpdscComponents) {
+      for (const auto& gpdscComponent : gpdscComponents->GetChildren()) {
+        if (gpdscComponent->GetTag() == "component") {
+          components->AddChild(gpdscComponent);
+        } else if (gpdscComponent->GetTag() == "bundle") {
+          for (const auto component : gpdscComponent->GetChildren()) {
+            components->AddChild(component);
+          }
         }
       }
     }
