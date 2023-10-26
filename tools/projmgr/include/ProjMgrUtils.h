@@ -23,14 +23,14 @@ typedef std::vector<const ConnectItem*> ConnectPtrVec;
  *        layer type pointer
  *        vector of ConnectItem pointers
  *        copy assignment operator
- *        forbid copy constructor
+ *        default copy constructor
 */
 struct ConnectionsCollection {
   const std::string& filename;
   const std::string& type;
   ConnectPtrVec connections;
   ConnectionsCollection& operator=(const ConnectionsCollection& c) { return *this; };
-  ConnectionsCollection() = delete;
+  ConnectionsCollection(const ConnectionsCollection& c) = default;
 };
 
 /**
