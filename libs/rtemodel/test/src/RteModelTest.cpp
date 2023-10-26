@@ -612,7 +612,7 @@ TEST_F(RteModelPrjTest, GetLocalPdscFile) {
   string pdsc = rteKernel.GetLocalPdscFile(attributes, localRepoDir, packId);
 
   // check returned packId
-  EXPECT_EQ(packId, "LocalVendor.LocalPack.0.1.0");
+  EXPECT_EQ(packId, "LocalVendor::LocalPack@0.1.0");
 
   // check returned pdsc
   error_code ec;
