@@ -11,8 +11,13 @@ on:
       - '**/*.h'
       - '**/*.in'
       - '**/CMakeLists.txt'
+      - '!**/*.md'
   push:
     branches: [ main ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   analyze:
@@ -38,6 +43,7 @@ jobs:
         with:
           languages: cpp
           queries: security-and-quality
+          config-file: ./.github/codeql-config.yml
           
       - name: Create build folder
         run: mkdir build
