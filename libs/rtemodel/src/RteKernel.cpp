@@ -430,7 +430,7 @@ string RteKernel::GetLocalPdscFile(const XmlItem& attributes, const string& rteP
 
   string url, version;
   if (GetUrlFromIndex(rtePath, name, vendor, versionRange, url, version)) {
-    packId = vendor + '.' + name + '.' + version;
+    packId = RtePackage::ComposePackageID(vendor, name, version);
     return url;
   }
 
