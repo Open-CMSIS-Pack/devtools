@@ -4,10 +4,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#ifndef SCHEMACHECKERERROR_H
-#define SCHEMACHECKERERROR_H
+#ifndef YML_SCHEMA_ERROR_HANLERD_H
+#define YML_SCHEMA_ERROR_HANLERD_H
 
-#include "SchemaError.h"
+#include "RteError.h"
 
 #include <nlohmann/json-schema.hpp>
 #include <string>
@@ -15,11 +15,11 @@
 
 using nlohmann::json;
 
-class CustomErrorHandler : public nlohmann::json_schema::basic_error_handler
+class YmlSchemaErrorHandler : public nlohmann::json_schema::basic_error_handler
 {
 public:
-  CustomErrorHandler(const std::string& filePath);
-  ~CustomErrorHandler();
+  YmlSchemaErrorHandler(const std::string& filePath);
+  ~YmlSchemaErrorHandler();
 
   /**
    * @brief callback to process error data
@@ -34,12 +34,12 @@ public:
    * @brief get list of all errors
    * @return list of all errors
   */
-  SchemaErrors& GetAllErrors();
+  const std::list<RteError>& GetAllErrors() const { return m_errList; };
 
 private:
   std::string  m_yamlFile;
-  SchemaErrors m_errList;
   YAML::Node m_yamlData;
+  std::list<RteError> m_errList;
 
   /**
    * @brief get error location string
@@ -51,4 +51,4 @@ private:
     const std::string& message) noexcept;
 };
 
-#endif // SCHEMACHECKERERROR_H
+#endif // YML_SCHEMA_ERROR_HANLERD_H

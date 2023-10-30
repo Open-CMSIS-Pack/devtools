@@ -1,10 +1,11 @@
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2023 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "SchemaErrorHandler.h"
+#include "YmlSchemaErrorHandler.h"
+
 #include "RteUtils.h"
 
 #include <regex>
@@ -12,18 +13,17 @@
 
 using namespace std;
 
-CustomErrorHandler::CustomErrorHandler(const std::string& filePath) :
-  m_yamlFile(filePath)
-{
+YmlSchemaErrorHandler::YmlSchemaErrorHandler(const std::string& filePath) {
+  m_yamlFile = filePath;
   m_yamlData = YAML::LoadFile(m_yamlFile);
   m_errList.clear();
 }
 
-CustomErrorHandler::~CustomErrorHandler() {
+YmlSchemaErrorHandler::~YmlSchemaErrorHandler() {
   // Reserved
 }
 
-void CustomErrorHandler::error(const nlohmann::json::json_pointer& ptr,
+void YmlSchemaErrorHandler::error(const nlohmann::json::json_pointer& ptr,
   const json& instance, const std::string& message)
 {
   std::list<std::string> segments;
@@ -49,11 +49,7 @@ void CustomErrorHandler::error(const nlohmann::json::json_pointer& ptr,
     }
   }
 
-  m_errList.push_back(
-    SchemaError(m_yamlFile, message,
-      mark.line + 1, mark.column + 1));
+  m_errList.push_back( RteError(m_yamlFile, message,  mark.line + 1, mark.column + 1));
 }
 
-SchemaErrors& CustomErrorHandler::GetAllErrors() {
-  return m_errList;
-}
+// end of YmlSchemaErrorHandler.cpp

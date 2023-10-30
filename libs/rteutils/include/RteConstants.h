@@ -42,9 +42,14 @@ public:
   static constexpr const char* COLON_STR  = ":";
   static constexpr const char  COLON_CHAR = ':';
 
+  static constexpr const char* SEMI_COLON_STR = ";";
+  static constexpr const char  SEM_COLON_CHAR = ';';
+
+  static constexpr const char* COMMA_STR  = ",";
+  static constexpr const char  COMMA_CHAR = ',';
+
   static constexpr const char* DOT_STR = ".";
   static constexpr const char  DOT_CHAR = '.';
-
 
   static constexpr const char* OBRACE_STR = "(";
   static constexpr const char  OBRACE_CHAR= '(';

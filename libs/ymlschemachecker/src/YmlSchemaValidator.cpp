@@ -1,11 +1,11 @@
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2023 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "SchemaValidator.h"
-#include "SchemaErrorHandler.h"
+#include "YmlSchemaValidator.h"
+#include "YmlSchemaErrorHandler.h"
 #include "RteUtils.h"
 
 #include <fstream>
@@ -13,7 +13,7 @@
 
 using nlohmann::json_schema::json_validator;
 
-SchemaValidator::SchemaValidator(
+YmlSchemaValidator::YmlSchemaValidator(
   const std::string& dataFilePath,
   const std::string& schemaFilePath):
   m_dataFile(dataFilePath),
@@ -21,17 +21,17 @@ SchemaValidator::SchemaValidator(
 {
 }
 
-SchemaValidator::~SchemaValidator()
+YmlSchemaValidator::~YmlSchemaValidator()
 {}
 
-json SchemaValidator::ReadData() {
+json YmlSchemaValidator::ReadData() {
   json data;
 
   std::string extn = RteUtils::ExtractFileExtension(m_dataFile, false);
   if (extn == "json") {
     std::ifstream file(m_dataFile);
     if (!file.good()) {
-      throw SchemaError(m_dataFile, "could not open file", 0, 0 );
+      throw RteError(m_dataFile, "could not open file", 0, 0 );
     }
 
     try {
@@ -39,7 +39,7 @@ json SchemaValidator::ReadData() {
     }
     catch (const std::exception& e) {
       file.close();
-      throw SchemaError(m_dataFile, e.what(), 0, 0);
+      throw RteError(m_dataFile, e.what(), 0, 0);
     }
     file.close();
   }
@@ -49,7 +49,7 @@ json SchemaValidator::ReadData() {
       yamldata = YAML::LoadFile(m_dataFile);
     }
     catch (YAML::Exception& e) {
-      throw SchemaError(m_dataFile, "schema check failed, verify syntax", e.mark.line + 1, e.mark.column + 1);
+      throw RteError(m_dataFile, "schema check failed, verify syntax", e.mark.line + 1, e.mark.column + 1);
     }
 
     data = YamlToJson(yamldata);
@@ -58,11 +58,11 @@ json SchemaValidator::ReadData() {
   return data;
 }
 
-json SchemaValidator::ReadSchema() {
+json YmlSchemaValidator::ReadSchema() {
   json schema;
   std::ifstream file(m_schemaFile);
   if (!file.good()) {
-    throw SchemaError(m_schemaFile, "could not open file", 0, 0);
+    throw RteError(m_schemaFile, "could not open file", 0, 0);
   }
 
   try {
@@ -70,11 +70,11 @@ json SchemaValidator::ReadSchema() {
   }
   catch (const nlohmann::detail::parse_error& e) {
     file.close();
-    throw SchemaError(m_schemaFile, e.what(), e.pos.lines_read, e.pos.chars_read_current_line);
+    throw RteError(m_schemaFile, e.what(), e.pos.lines_read, e.pos.chars_read_current_line);
   }
   catch (const std::exception& e) {
     file.close();
-    throw SchemaError(m_schemaFile, e.what(), 0, 0);
+    throw RteError(m_schemaFile, e.what(), 0, 0);
   }
 
   file.close();
@@ -89,7 +89,7 @@ json SchemaValidator::ReadSchema() {
  * go to https://github.com/mircodezorzi/tojson/blob/master/LICENSE
  * for full license details.
 */
-nlohmann::json SchemaValidator::YamlToJson(const YAML::Node& root) {
+nlohmann::json YmlSchemaValidator::YamlToJson(const YAML::Node& root) {
   nlohmann::json jsonObj{};
 
   switch (root.Type())
@@ -131,7 +131,7 @@ nlohmann::json SchemaValidator::YamlToJson(const YAML::Node& root) {
  * go to https://github.com/mircodezorzi/tojson/blob/master/LICENSE
  * for full license details.
 */
-nlohmann::json SchemaValidator::ParseScalar(const YAML::Node& node) {
+nlohmann::json YmlSchemaValidator::ParseScalar(const YAML::Node& node) {
   int intVal;
   double doubleVal;
   bool boolVal;
@@ -153,7 +153,7 @@ nlohmann::json SchemaValidator::ParseScalar(const YAML::Node& node) {
   return nullptr;
 }
 
-bool SchemaValidator::Validate(SchemaErrors& errList) {
+bool YmlSchemaValidator::Validate(std::list<RteError>& errList) {
   json data, schema;
 
   // 1) Read the data and schema for the document you want to validate
@@ -161,13 +161,13 @@ bool SchemaValidator::Validate(SchemaErrors& errList) {
     data = ReadData();
     schema = ReadSchema();
   }
-  catch (const SchemaError& err) {
+  catch (const RteError& err) {
     errList.push_back(err);
     return false;
   }
   // 2) create the validator
   nlohmann::json_schema::schema_loader loader =
-    std::bind(&SchemaValidator::Loader, this, std::placeholders::_1, std::placeholders::_2);
+    std::bind(&YmlSchemaValidator::Loader, this, std::placeholders::_1, std::placeholders::_2);
   json_validator validator(loader, nlohmann::json_schema::default_string_format_check);
 
   try {
@@ -176,24 +176,24 @@ bool SchemaValidator::Validate(SchemaErrors& errList) {
     validator.set_root_schema(schema);
   }
   catch (const std::exception& e) {
-    errList.push_back(SchemaError(m_schemaFile, e.what(), 0, 0));
+    errList.push_back(RteError(m_schemaFile, e.what(), 0, 0));
     return false;
   }
 
   // 3) do the actual validation of the data
-  CustomErrorHandler handler(m_dataFile);
+  YmlSchemaErrorHandler handler(m_dataFile);
   validator.validate(data, handler);
 
   errList = handler.GetAllErrors();
   return (errList.size() == 0) ? true : false;
 }
 
-void SchemaValidator::Loader(const json_uri& uri, json& schema)
+void YmlSchemaValidator::Loader(const json_uri& uri, json& schema)
 {
   std::string filename = RteUtils::ExtractFilePath(m_schemaFile, true) + uri.path();
   std::ifstream lf(filename);
   if (!lf.good()) {
-    throw SchemaError(filename, "could not open " + uri.url(), 0, 0);
+    throw RteError(filename, "could not open " + uri.url(), 0, 0);
   }
 
   try {
@@ -201,7 +201,8 @@ void SchemaValidator::Loader(const json_uri& uri, json& schema)
   }
   catch (const std::exception& e) {
     lf.close();
-    throw SchemaError(filename, e.what(), 0, 0);
+    throw RteError(filename, e.what(), 0, 0);
   }
   lf.close();
 }
+// end of YmlSchemaValidator.cpp

@@ -18,6 +18,7 @@
 /******************************************************************************/
 #include "XmlTreeItem.h"
 #include "IXmlItemBuilder.h"
+#include "ISchemaChecker.h"
 
 #include <string>
 #include <list>
@@ -239,6 +240,20 @@ public:
   const std::string& GetSchemaFileName() const { return m_schemaFile; }
 
   /**
+   * @brief sets schema checker to validate input files
+   * @param schemaChecker schema checker implementing ISchemaChecker interface
+  */
+  void SetSchemaChecker (ISchemaChecker* schemaChecker) {
+    m_schemaChecker = schemaChecker;
+  }
+
+  /**
+   * @brief getter for schema checker set by SetSchemaChecker method
+   * @return schema checker implementing ISchemaChecker interface or nullptr
+  */
+  ISchemaChecker* GetSchemaChecker() const { return m_schemaChecker;}
+
+  /**
    * @brief getter for associated XML file name
    * @return associated XML file name
   */
@@ -248,7 +263,7 @@ public:
    * @brief setter for associated XML schema file name
    * @param xsdFile associated XML schema file name
   */
-  void SetSchemaFileName(const char* xsdFile);
+  void SetSchemaFileName(const std::string& xsdFile);
 
   /**
    * @brief setter for list of tags to be ignored
@@ -400,6 +415,7 @@ protected:
   IXmlItemBuilder* m_XmlItemBuilder;    // the builders is managed externally unless m_bInternal builder is specified
   bool m_bInternalBuilder; // flag is set if default builder is allocated internally or the builder is set with takeOnership flag
   XmlValueAdjuster* m_XmlValueAdjuster; // the adjuster is managed externally
+  ISchemaChecker* m_schemaChecker; // schema checker is managed externally
   XMLTreeParserInterface* m_p; // internal implementation to hide XML parser like xerces from client
 };
 

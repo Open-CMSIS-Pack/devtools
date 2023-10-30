@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 #include "RteUtils.h"
+#include "RteError.h"
 
 #include "gtest/gtest.h"
 
@@ -391,4 +392,27 @@ TEST(RteUtils, ReplaceAll)
   RteUtils::ReplaceAll(replaced, "&", "&&");
   EXPECT_EQ(replaced, expected);
 }
+
+TEST(RteUtils, RteError)
+{
+  RteError emptyError;
+  EXPECT_EQ(emptyError.ToString(), "Error: ");
+
+  EXPECT_TRUE(RteError::FormatError("","").empty());
+
+  EXPECT_EQ(RteError::FormatError("","Message only"), "Message only");
+  EXPECT_EQ(RteError::FormatError("MyFile", "none"), "MyFile: none");
+  EXPECT_EQ(RteError::FormatError(RteError::SevINFO, "MyFile", "info"), "MyFile: Info: info");
+  EXPECT_EQ(RteError::FormatError(RteError::SevINFO, "MyFile", "line col", 1, 2), "MyFile(1,2): Info: line col");
+  EXPECT_EQ(RteError::FormatError(RteError::SevWARNING, "MyFile", "line only", 1), "MyFile(1): Warning: line only");
+  EXPECT_EQ(RteError::FormatError(RteError::SevERROR, "MyFile", "column only", 0, 1), "MyFile: Error: column only");
+  EXPECT_EQ(RteError::FormatError(RteError::SevFATAL, "", "fatal severity only",1,2), "Fatal error: fatal severity only");
+
+  RteError  msg("MyFile", "message", 1, 2);
+  EXPECT_EQ(msg.ToString(), "MyFile(1,2): Error: message");
+
+  RteError  err(RteError::SevNONE,"MyFile", "message", 1, 2);
+  EXPECT_EQ(err.ToString(), "MyFile(1,2): message");
+}
+
 // end of RteUtilsTest.cpp
