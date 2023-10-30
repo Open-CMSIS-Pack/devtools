@@ -65,6 +65,7 @@ XMLTree::XMLTree(IXmlItemBuilder* itemBuilder) :
   m_XmlItemBuilder(itemBuilder),
   m_bInternalBuilder(false),
   m_XmlValueAdjuster(nullptr),
+  m_schemaChecker(nullptr),
   m_p(0)
 {
   if (!m_XmlItemBuilder) {
@@ -103,9 +104,9 @@ void XMLTree::SetXmlItemBuilder(IXmlItemBuilder* itemBuilder, bool takeOnerschip
 }
 
 
-void XMLTree::SetSchemaFileName(const char* schemaFile)
+void XMLTree::SetSchemaFileName(const string& schemaFile)
 {
-  if (schemaFile) {
+  if (!schemaFile.empty()) {
     m_schemaFile = XmlValueAdjuster::SlashesToOsSlashes(schemaFile);
   } else {
     m_schemaFile.clear();
@@ -172,6 +173,20 @@ bool XMLTree::ParseAll()
 
 bool XMLTree::ParseFile(const string& fileName)
 {
+  if(m_schemaChecker && !m_schemaFile.empty()) {
+    m_schemaChecker->ClearErrors();
+    if(!m_schemaChecker->ValidateFile(fileName, m_schemaFile)) {
+      for(auto& err : m_schemaChecker->GetErrors()) {
+        if(err.m_severity == RteError::SevERROR) {
+          m_nErrors++;
+        } else if(err.m_severity == RteError::SevWARNING) {
+          m_nWarnings++;
+        }
+        m_errorStrings.push_back(err.ToString());
+      }
+      return false;
+    }
+  }
   return Parse(fileName, EMPTY_STRING);
 }
 

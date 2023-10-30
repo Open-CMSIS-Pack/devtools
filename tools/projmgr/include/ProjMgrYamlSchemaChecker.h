@@ -7,12 +7,12 @@
 #ifndef PROJMGRYAMLSCHEMACHECKER_H
 #define PROJMGRYAMLSCHEMACHECKER_H
 
-#include "SchemaChecker.h"
+#include "YmlSchemaChecker.h"
 
 /**
   * @brief projmgr schema checker implementation class, directly coupled to underlying YamlSchemaChecker library
 */
-class ProjMgrYamlSchemaChecker {
+class ProjMgrYamlSchemaChecker : public YmlSchemaChecker {
 public:
   enum class FileType
   {
@@ -46,14 +46,8 @@ public:
   */
   bool Validate(const std::string& input, ProjMgrYamlSchemaChecker::FileType type);
 
-  /**
-   * @brief get list of errors found
-   * @return list of errors
-  */
-  SchemaErrors& GetErrors();
-
 protected:
-  SchemaErrors m_errList;
+
   bool GetSchemaFile(std::string& schemaFile, const ProjMgrYamlSchemaChecker::FileType& type);
 };
 
