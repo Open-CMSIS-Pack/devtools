@@ -9,6 +9,6 @@
 
 bool XmlChecker::Validate(const std::string& xmlfile, const std::string& schemafile)
 {
-  XmlValidator* validator = new XmlValidator();
-  return validator->Validate(xmlfile, schemafile);
+  XmlValidator validator;
+  return validator.Validate(xmlfile, schemafile);
 }

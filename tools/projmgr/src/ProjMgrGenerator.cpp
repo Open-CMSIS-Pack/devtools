@@ -361,8 +361,8 @@ void ProjMgrGenerator::GenerateCprjGroups(XMLTreeElement* element, const vector<
 
       for (const auto& fileNode : groupNode.files) {
         XMLTreeElement* fileElement = groupElement->CreateElement("file");
-        fileElement->AddAttribute("name", fileNode.file);
         if (fileElement) {
+          fileElement->AddAttribute("name", fileNode.file);
           fileElement->AddAttribute("category", fileNode.category);
 
           GenerateCprjOptions(fileElement, fileNode.build);
