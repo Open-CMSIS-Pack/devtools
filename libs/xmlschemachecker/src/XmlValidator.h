@@ -16,6 +16,11 @@ public:
     XmlValidator();
     ~XmlValidator();
 
+    // Object is not copyable and movable
+    XmlValidator(const XmlValidator&) = delete;
+    XmlValidator& operator=(const XmlValidator&) = delete;
+    XmlValidator& operator=(XmlValidator&&) noexcept = delete;
+
     bool Validate(const std::string& xmlFile, const std::string& schemaFile);
 
 private:
