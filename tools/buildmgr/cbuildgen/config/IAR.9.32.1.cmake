@@ -104,13 +104,13 @@ elseif(CPU STREQUAL "Cortex-M35P")
 
 elseif(CPU STREQUAL "Cortex-M55")
   set(IAR_CPU      "Cortex-M55")
-  set(FPU_FLAGS    "none" "ERROR" "VFPv5_d16" "VFPv5_d16")
+  set(FPU_FLAGS    "none" "VFPv5_d16" "VFPv5_d16" "VFPv5_d16")
   set(SUPPORTS_MVE TRUE)
   set(SUPPORTS_TZ  TRUE)
 
 elseif(CPU STREQUAL "Cortex-M85")
   set(IAR_CPU             "Cortex-M85")
-  set(FPU_FLAGS           "none" "ERROR" "VFPv5_d16" "VFPv5_d16")
+  set(FPU_FLAGS           "none" "VFPv5_d16" "VFPv5_d16" "VFPv5_d16")
   set(SUPPORTS_BRANCHPROT TRUE)
   set(SUPPORTS_MVE        TRUE)
   set(SUPPORTS_TZ         TRUE)
@@ -162,7 +162,8 @@ if("${FPU}" STREQUAL "FPU")
 else()
   set(IAR_CPU             "Cortex-R52")
 endif()
-set(FPU_FLAGS           "none" "VFPv5sp" "VFPv5_d16" "VFPv5")
+# No sp libraries yet
+set(FPU_FLAGS           "none" "ERROR" "VFPv5_d16" "VFPv5")
 
 elseif(CPU STREQUAL "Cortex-R52+")
 if("${FPU}" STREQUAL "FPU")
@@ -170,7 +171,8 @@ if("${FPU}" STREQUAL "FPU")
 else()
   set(IAR_CPU             "Cortex-R52+")
 endif()
-set(FPU_FLAGS           "none" "VFPv5sp" "VFPv5_d16" "VFPv5")
+# No sp libraries yet
+set(FPU_FLAGS           "none" "ERROR" "VFPv5_d16" "VFPv5")
 
 endif()
 
