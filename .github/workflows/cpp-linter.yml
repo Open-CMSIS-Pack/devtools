@@ -3,17 +3,16 @@ name: cpp-linter
 on:
   workflow_dispatch:
   pull_request_target:
-    types: [opened, reopened, synchronize, edited]
-  pull_request:
-    paths:
-      - '.github/workflows/cpp-linter.yml'
-      - '**/*.cpp'
-      - '**/*.h'
-      - '**/*.hpp'
-      - '**/*.in'
-      - '**/CMakeLists.txt'
-      - '!**/docs/**/*'
-      - '!**/*.md'
+  # pull_request:
+    # paths:
+      # - '.github/workflows/cpp-linter.yml'
+      # - '**/*.cpp'
+      # - '**/*.h'
+      # - '**/*.hpp'
+      # - '**/*.in'
+      # - '**/CMakeLists.txt'
+      # - '!**/docs/**/*'
+      # - '!**/*.md'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
