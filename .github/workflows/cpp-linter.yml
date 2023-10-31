@@ -1,9 +1,17 @@
 name: cpp-linter
 
 on:
-  pull_request_target:
-    branches:
-      - 'main'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/cpp-linter.yml'
+      - '**/*.cpp'
+      - '**/*.h'
+      - '**/*.hpp'
+      - '**/*.in'
+      - '**/CMakeLists.txt'
+      - '!**/docs/**/*'
+      - '!**/*.md'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -65,25 +73,6 @@ jobs:
         run: |
           errors=$( jq '. | length' ./${{ env.linter_report }} )
           echo "ERRORS=$errors" >> $GITHUB_OUTPUT
-
-      - name: Comment PR with linting result
-        if: steps.count_errors.outputs.ERRORS > 0
-        uses: thollander/actions-comment-pull-request@v2
-        with:
-          message: |
-            ## [Cppcheck](https://cppcheck.sourceforge.io/) Linter Results
-            :boom: Found **${{ steps.count_errors.outputs.ERRORS }}** error(s).
-            [Click annotations](${{ github.event.pull_request.html_url }}/checks) to find out more details.
-          comment_tag: linting
-
-      - name: Comment PR with linting result
-        if: steps.count_errors.outputs.ERRORS == 0
-        uses: thollander/actions-comment-pull-request@v2
-        with:
-          message: |
-            ## [Cppcheck](https://cppcheck.sourceforge.io/) Linter Results
-            :thumbsup: No linting issues detected.
-          comment_tag: linting
 
       - name: Annotate code
         if: steps.count_errors.outputs.ERRORS > 0
