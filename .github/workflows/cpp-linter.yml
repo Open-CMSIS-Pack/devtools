@@ -33,8 +33,6 @@ jobs:
     steps:
       - name: Checkout devtools
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Install dependencies
         run: |
@@ -73,6 +71,25 @@ jobs:
         run: |
           errors=$( jq '. | length' ./${{ env.linter_report }} )
           echo "ERRORS=$errors" >> $GITHUB_OUTPUT
+
+      - name: Comment PR with linting result
+        if: steps.count_errors.outputs.ERRORS > 0
+        uses: thollander/actions-comment-pull-request@v2
+        with:
+          message: |
+            ## [Cppcheck](https://cppcheck.sourceforge.io/) Linter Results
+            :boom: Found **${{ steps.count_errors.outputs.ERRORS }}** error(s).
+            [Click annotations](${{ github.event.pull_request.html_url }}/checks) to find out more details.
+          comment_tag: linting
+
+      - name: Comment PR with linting result
+        if: steps.count_errors.outputs.ERRORS == 0
+        uses: thollander/actions-comment-pull-request@v2
+        with:
+          message: |
+            ## [Cppcheck](https://cppcheck.sourceforge.io/) Linter Results
+            :thumbsup: No linting issues detected.
+          comment_tag: linting
 
       - name: Annotate code
         if: steps.count_errors.outputs.ERRORS > 0
