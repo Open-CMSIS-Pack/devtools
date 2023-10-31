@@ -3,6 +3,7 @@ name: cpp-linter
 on:
   workflow_dispatch:
   pull_request_target:
+    types: [opened, reopened, synchronize, edited]
   pull_request:
     paths:
       - '.github/workflows/cpp-linter.yml'
