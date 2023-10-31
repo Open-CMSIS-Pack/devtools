@@ -1,0 +1,100 @@
+name: cpp-linter
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/cpp-linter.yml'
+      - '**/*.cpp'
+      - '**/*.h'
+      - '**/*.hpp'
+      - '**/*.in'
+      - '**/CMakeLists.txt'
+      - '!**/docs/**/*'
+      - '!**/*.md'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  linter_report: "cppcheck_annotation.json"
+
+jobs:
+
+  lint:
+    name: cppcheck
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+      issues: read
+      checks: write
+      pull-requests: write
+    steps:
+      - name: Checkout devtools
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install cppcheck
+
+      - name: Run cppcheck
+        run: |
+          cppcheck --enable=performance,portability,unusedFunction,warning \
+          --library=.github/cppcheck_googletest.cfg --suppressions-list=.github/.cppcheck_suppressions \
+          --force -i./external --language=c++ --max-ctu-depth=20 \
+          --platform=unix64 --std=c++17 --verbose --std=c++17 \
+          -i./tools/buildmgr/test -i./tools/packchk/test \
+          -i./tools/packgen/test -i./tools/projmgr/test \
+          -i./tools/svdconv/Test -i./test \
+          --template=\\n\{\\n\"file\":\"{file}\",\\n\"line\":\{line\},\\n\"title\":\"{severity}\",\\n\"message\":\"{message}\",\\n\"annotation_level\":\"failure\"\\n\}, \
+          --output-file=./${{ env.linter_report }} .
+
+      - name: Append JSON report
+        run: |
+          echo -e -n "[\n\n" | cat - ./${{ env.linter_report }} > ./tmpfile
+          mv ./tmpfile ./${{ env.linter_report }}
+          sed -i '$ s/.$//' ./${{ env.linter_report }}
+          echo "]" >> ./${{ env.linter_report }}
+
+      - name: Archive cppcheck results
+        uses: actions/upload-artifact@v3
+        with:
+          name: cppcheck-report
+          path: ./${{ env.linter_report }}
+          retention-days: 1
+          if-no-files-found: error
+
+      - name: Get error count
+        id: count_errors
+        run: |
+          errors=$( jq '. | length' ./${{ env.linter_report }} )
+          echo "ERRORS=$errors" >> $GITHUB_OUTPUT
+
+      - name: Comment PR with linting result
+        if: steps.count_errors.outputs.ERRORS > 0
+        uses: thollander/actions-comment-pull-request@v2
+        with:
+          message: |
+            ## [Cppcheck](https://cppcheck.sourceforge.io/) Linter Results
+            :boom: Found **${{ steps.count_errors.outputs.ERRORS }}** error(s).
+            [Click annotations](${{ github.event.pull_request.html_url }}/checks) to find out more details.
+          comment_tag: linting
+
+      - name: Comment PR with linting result
+        if: steps.count_errors.outputs.ERRORS == 0
+        uses: thollander/actions-comment-pull-request@v2
+        with:
+          message: |
+            ## [Cppcheck](https://cppcheck.sourceforge.io/) Linter Results
+            :thumbsup: No linting issues detected.
+          comment_tag: linting
+
+      - name: Annotate code
+        if: steps.count_errors.outputs.ERRORS > 0
+        uses: yuzutech/annotations-action@v0.4.0
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          title: CPP Linter Errors
+          input: ./${{ env.linter_report }}
