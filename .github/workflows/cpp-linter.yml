@@ -18,18 +18,14 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  linter_report: "cppcheck_annotation.json"
+  linter_report: "cppcheck_report.md"
 
 jobs:
 
   lint:
     name: cppcheck
     runs-on: ubuntu-22.04
-    permissions:
-      contents: read
-      issues: read
-      checks: write
-      pull-requests: write
+
     steps:
       - name: Checkout devtools
         uses: actions/checkout@v4
@@ -48,17 +44,25 @@ jobs:
           -i./tools/buildmgr/test -i./tools/packchk/test \
           -i./tools/packgen/test -i./tools/projmgr/test \
           -i./tools/svdconv/Test -i./test \
-          --template=\\n\{\\n\"file\":\"{file}\",\\n\"line\":\{line\},\\n\"title\":\"{severity}\",\\n\"message\":\"{message}\",\\n\"annotation_level\":\"failure\"\\n\}, \
+          --template="|{file}|{line}|{severity}|{message}|" \
           --output-file=./${{ env.linter_report }} .
 
-      - name: Append JSON report
-        run: |
-          echo -e -n "[\n\n" | cat - ./${{ env.linter_report }} > ./tmpfile
-          mv ./tmpfile ./${{ env.linter_report }}
-          sed -i '$ s/.$//' ./${{ env.linter_report }}
-          echo "]" >> ./${{ env.linter_report }}
+      - name: Check errors
+        uses: haya14busa/action-cond@v1
+        id: errors
+        with:
+          cond: test ! -s ./${{ env.linter_report }}
+          if_true: 'true'
+          if_false: 'false'
 
-      - name: Archive cppcheck results
+      - name: Append JSON report
+        if: ${{ steps.errors.outputs.value }}
+        run: |
+          echo -e -n "## :boom: [Linter Results](https://cppcheck.sourceforge.io/)\\n|File|Line|Severity|Message|\n|:--|:--|:--|--|\n" | cat - ./${{ env.linter_report }} > ./tmpfile
+          mv ./tmpfile ./${{ env.linter_report }}
+
+      - name: Archive Cppcheck results
+        if: ${{ steps.errors.outputs.value }}
         uses: actions/upload-artifact@v3
         with:
           name: cppcheck-report
@@ -66,35 +70,15 @@ jobs:
           retention-days: 1
           if-no-files-found: error
 
-      - name: Get error count
-        id: count_errors
+      - name: Print Linter Summary
+        if: ${{ steps.errors.outputs.value }}
+        run: cat ${{ env.linter_report }} >> $GITHUB_STEP_SUMMARY
+
+      - name: Validate results
         run: |
-          errors=$( jq '. | length' ./${{ env.linter_report }} )
-          echo "ERRORS=$errors" >> $GITHUB_OUTPUT
-
-      - name: Comment PR with linting result
-        if: steps.count_errors.outputs.ERRORS > 0
-        uses: thollander/actions-comment-pull-request@v2
-        with:
-          message: |
-            ## [Cppcheck](https://cppcheck.sourceforge.io/) Linter Results
-            :boom: Found **${{ steps.count_errors.outputs.ERRORS }}** error(s).
-            [Click annotations](${{ github.event.pull_request.html_url }}/checks) to find out more details.
-          comment_tag: linting
-
-      - name: Comment PR with linting result
-        if: steps.count_errors.outputs.ERRORS == 0
-        uses: thollander/actions-comment-pull-request@v2
-        with:
-          message: |
-            ## [Cppcheck](https://cppcheck.sourceforge.io/) Linter Results
-            :thumbsup: No linting issues detected.
-          comment_tag: linting
-
-      - name: Annotate code
-        if: steps.count_errors.outputs.ERRORS > 0
-        uses: yuzutech/annotations-action@v0.4.0
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          title: CPP Linter Errors
-          input: ./${{ env.linter_report }}
+          if [[ ${{ steps.errors.outputs.value }} ]]; then
+            echo "💥 Issue(s) detected. Check summary: ${{ github.event.pull_request.head.repo.html_url }}/actions/runs/${{ github.run_id }}"
+            exit 1
+          else
+            echo "👍 No issues detected."
+          fi
