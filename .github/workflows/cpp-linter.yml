@@ -48,21 +48,18 @@ jobs:
           --output-file=./${{ env.linter_report }} .
 
       - name: Check errors
-        uses: haya14busa/action-cond@v1
+        run: |
+          echo "value=$(test ! -s ${{ env.linter_report}} &>/dev/null ; echo $?)" >> $GITHUB_OUTPUT
         id: errors
-        with:
-          cond: echo 'test ! -s ./$env.linter_report'
-          if_true: 'true'
-          if_false: 'false'
 
       - name: Append report
-        if: ${{ steps.errors.outputs.value == 'false' }}
+        if: ${{ steps.errors.outputs.value == '1' }}
         run: |
           echo -e -n "## :boom: [Linter Results](https://cppcheck.sourceforge.io/)\\n|File|Line|Severity|Message|\n|:--|:--|:--|--|\n" | cat - ./${{ env.linter_report }} > ./tmpfile
           mv ./tmpfile ./${{ env.linter_report }}
 
       - name: Archive Cppcheck results
-        if: ${{ steps.errors.outputs.value == 'false' }}
+        if: ${{ steps.errors.outputs.value == '1' }}
         uses: actions/upload-artifact@v3
         with:
           name: cppcheck-report
@@ -71,12 +68,12 @@ jobs:
           if-no-files-found: error
 
       - name: Print Linter Summary
-        if: ${{ steps.errors.outputs.value == 'false' }}
+        if: ${{ steps.errors.outputs.value == '1' }}
         run: cat ${{ env.linter_report }} >> $GITHUB_STEP_SUMMARY
 
       - name: Validate results
         run: |
-          if [ "${{ steps.errors.outputs.value}}" = "false" ]; then
+          if [ "${{ steps.errors.outputs.value}}" = "1" ]; then
             echo "💥 Issue(s) detected. Check summary: ${{ github.event.pull_request.head.repo.html_url }}/actions/runs/${{ github.run_id }}"
             exit 1
           else
