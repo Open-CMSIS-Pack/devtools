@@ -56,13 +56,13 @@ jobs:
           if_false: 'false'
 
       - name: Append report
-        if: ${{ steps.errors.outputs.value }}
+        if: ${{ steps.errors.outputs.value == 'false' }}
         run: |
           echo -e -n "## :boom: [Linter Results](https://cppcheck.sourceforge.io/)\\n|File|Line|Severity|Message|\n|:--|:--|:--|--|\n" | cat - ./${{ env.linter_report }} > ./tmpfile
           mv ./tmpfile ./${{ env.linter_report }}
 
       - name: Archive Cppcheck results
-        if: ${{ steps.errors.outputs.value }}
+        if: ${{ steps.errors.outputs.value == 'false' }}
         uses: actions/upload-artifact@v3
         with:
           name: cppcheck-report
@@ -71,12 +71,12 @@ jobs:
           if-no-files-found: error
 
       - name: Print Linter Summary
-        if: ${{ steps.errors.outputs.value }}
+        if: ${{ steps.errors.outputs.value == 'false' }}
         run: cat ${{ env.linter_report }} >> $GITHUB_STEP_SUMMARY
 
       - name: Validate results
         run: |
-          if [ "${{ steps.errors.outputs.value}}" = "false" ]]; then
+          if [ "${{ steps.errors.outputs.value}}" = "false" ]; then
             echo "💥 Issue(s) detected. Check summary: ${{ github.event.pull_request.head.repo.html_url }}/actions/runs/${{ github.run_id }}"
             exit 1
           else
