@@ -2,15 +2,8 @@ name: cpp-linter
 
 on:
   pull_request_target:
-    paths:
-      - '.github/workflows/cpp-linter.yml'
-      - '**/*.cpp'
-      - '**/*.h'
-      - '**/*.hpp'
-      - '**/*.in'
-      - '**/CMakeLists.txt'
-      - '!**/docs/**/*'
-      - '!**/*.md'
+    branches:
+      - 'main'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
