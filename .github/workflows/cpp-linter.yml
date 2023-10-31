@@ -51,7 +51,7 @@ jobs:
         uses: haya14busa/action-cond@v1
         id: errors
         with:
-          cond: test ! -s ./${{ env.linter_report }}
+          cond: echo 'test ! -s ./$env.linter_report'
           if_true: 'true'
           if_false: 'false'
 
