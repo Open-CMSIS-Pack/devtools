@@ -4,10 +4,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#ifndef SCHEMAVALIDATOR_H
-#define SCHEMAVALIDATOR_H
+#ifndef YML_SCHEMAVALIDATOR_H
+#define YML_SCHEMAVALIDATOR_H
 
-#include "SchemaChecker.h"
+#include "YmlSchemaChecker.h"
 
 #include "yaml-cpp/yaml.h"
 #include <nlohmann/json-schema.hpp>
@@ -17,18 +17,18 @@
 using nlohmann::json;
 using nlohmann::json_uri;
 
-class SchemaValidator {
+class YmlSchemaValidator {
 public:
-  SchemaValidator(const std::string& dataFilePath,
+  YmlSchemaValidator(const std::string& dataFilePath,
     const std::string& schemaFilePath);
-  ~SchemaValidator();
+  ~YmlSchemaValidator();
 
   /**
    * @brief Validate yaml data with json schema provided
    * @param errList list of errors found
    * @return true if the validation pass, otherwise false
   */
-  bool Validate(SchemaErrors& errList);
+  bool Validate(std::list<RteError>& errList);
 
 private:
   json ReadData();
@@ -43,4 +43,4 @@ private:
   std::string m_schemaFile;
 };
 
-#endif // SCHEMAVALIDATOR_H
+#endif // YML_SCHEMAVALIDATOR_H

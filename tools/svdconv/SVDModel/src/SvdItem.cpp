@@ -506,7 +506,7 @@ string SvdItem::GetHierarchicalName()
     }
 
     parent = parent->GetParent();
-    if(parent->GetSvdLevel() == L_Device) {
+    if(parent && (parent->GetSvdLevel() == L_Device)) {
       break;
     }
   }
@@ -566,7 +566,7 @@ string SvdItem::GetHierarchicalNameResulting()
         parent = parent->GetParent();
       }
     }
-    if(parent->GetSvdLevel() == L_Device) {
+    if(parent && (parent->GetSvdLevel() == L_Device)) {
       break;
     }
   }

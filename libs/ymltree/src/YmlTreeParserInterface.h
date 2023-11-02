@@ -50,8 +50,6 @@ public:
   bool Parse(const std::string& fileName, const std::string& inputString) override;
 
 protected:
-  bool ValidateSchema(const std::string& fileName);
-
   virtual bool ParseNode(const YAML::Node& node, const std::string& tag);
   virtual bool DoParseNode(const YAML::Node& node, const std::string& tag);
   virtual bool ParseMapNode(const YAML::Node& node);

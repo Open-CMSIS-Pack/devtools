@@ -9,7 +9,6 @@
 #include "YmlTreeParserInterface.h"
 #include "RteFsUtils.h"
 
-#include "SchemaChecker.h"
 #include <sstream>
 
 using namespace std;
@@ -37,30 +36,6 @@ void YmlTreeParserInterface::Clear() // does not destroy YAML parser!
  // does nothing for underlying YAML Parser
 }
 
-bool YmlTreeParserInterface::ValidateSchema(const std::string& fileName)
-{
-  const string& schemaFile = m_tree->GetSchemaFileName();
-  if (schemaFile.empty()) {
-    return true; // no validation requested
-  }
-  if (!RteFsUtils::Exists(schemaFile)) {
-    stringstream ss;
-    ss << "Warning: schema file '" << schemaFile << "' not found, file cannot be validated";
-    m_errorStrings.push_back(ss.str());
-    m_nWarnings++;
-    return true;  // still success
-  }
-  SchemaErrors errList;
-  bool result = SchemaChecker::Validate(fileName, schemaFile, errList);
-  for (auto& err : errList) {
-    stringstream ss;
-    ss << err.m_file << "(" << err.m_line << "," << err.m_col << "): error: " << err.m_msg;
-    m_errorStrings.push_back(ss.str());
-    m_nErrors++;
-  }
-  return result;
-}
-
 
 bool YmlTreeParserInterface::Parse(const std::string& fileName, const std::string& inputString)
 {
@@ -75,9 +50,6 @@ bool YmlTreeParserInterface::Parse(const std::string& fileName, const std::strin
     if (!inputString.empty()) {
       root = YAML::Load(inputString);
     } else {
-      if (!ValidateSchema(m_xmlFile)) {
-        return false;
-      }
       root = YAML::LoadFile(m_xmlFile);
     }
     success = ParseNode(root, RteUtils::EMPTY_STRING);

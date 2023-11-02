@@ -20,7 +20,7 @@
 #include "XMLTree.h"
 
 class IXmlItemBuilder;
-
+class ISchemaChecker;
 /**
  * @brief a simple YAML interface that reads data into a tree structure
 */
@@ -33,7 +33,7 @@ public:
    * @param bRedirectErrLog true to direct errors
    * @param bIgnoreAttributePrefixes true to ignore attribute prefixes otherwise false
   */
-  YmlTree(IXmlItemBuilder* itemBuilder = NULL);
+  YmlTree(IXmlItemBuilder* itemBuilder = nullptr);
 };
 
 #endif // YMLTree_H

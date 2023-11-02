@@ -1,5 +1,5 @@
-SET(TEST_SOURCE_FILES SchemaChkTestEnv.cpp
-  SchemaChkTestEnv.h SchemaChkTests.cpp)
+SET(TEST_SOURCE_FILES YmlSchemaChkTestEnv.cpp
+  YmlSchemaChkTestEnv.h YmlSchemaChkTests.cpp)
 
 list(TRANSFORM TEST_SOURCE_FILES PREPEND src/)
 
@@ -12,7 +12,7 @@ set_property(TARGET YmlSchemaChkTests PROPERTY
   VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 
 target_link_libraries(YmlSchemaChkTests
-  PUBLIC YmlSchemaChecker RteFsUtils gtest_main)
+  PUBLIC YmlSchemaChecker YmlTree RteFsUtils gtest_main)
 
 add_test(NAME YmlSchemaChkTests
          COMMAND YmlSchemaChkTests --gtest_output=xml:test_reports/ymlschemachktests-report-${SYSTEM}-${CPU_ARCH}.xml

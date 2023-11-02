@@ -42,9 +42,9 @@ protected:
 class ProjMgrYamlCbuild : public ProjMgrYamlBase {
 private:
   friend class ProjMgrYamlEmitter;
-  ProjMgrYamlCbuild(YAML::Node node, const vector<ContextItem*> processedContexts, const string& selectedCompiler);
+  ProjMgrYamlCbuild(YAML::Node node, const vector<ContextItem*>& processedContexts, const string& selectedCompiler);
   ProjMgrYamlCbuild(YAML::Node node, const ContextItem* context, const string& generatorId, const string& generatorPack);
-  ProjMgrYamlCbuild(YAML::Node node, const vector<ContextItem*> siblings, const string& type, const string& output, const string& gendir);
+  ProjMgrYamlCbuild(YAML::Node node, const vector<ContextItem*>& siblings, const string& type, const string& output, const string& gendir);
   void SetContextNode(YAML::Node node, const ContextItem* context, const string& generatorId, const string& generatorPack);
   void SetComponentsNode(YAML::Node node, const ContextItem* context);
   void SetComponentFilesNode(YAML::Node node, const ContextItem* context, const string& componentId);
@@ -126,7 +126,8 @@ ProjMgrYamlCbuildIdx::ProjMgrYamlCbuildIdx(YAML::Node node, const vector<Context
   }
 }
 
-ProjMgrYamlCbuild::ProjMgrYamlCbuild(YAML::Node node, const ContextItem* context, const string& generatorId, const string& generatorPack) :
+ProjMgrYamlCbuild::ProjMgrYamlCbuild(YAML::Node node, const ContextItem* context,
+  const string& generatorId, const string& generatorPack) :
   ProjMgrYamlBase(!generatorId.empty()) {
   if (context) {
     SetContextNode(node, context, generatorId, generatorPack);
@@ -134,7 +135,7 @@ ProjMgrYamlCbuild::ProjMgrYamlCbuild(YAML::Node node, const ContextItem* context
 }
 
 ProjMgrYamlCbuild::ProjMgrYamlCbuild(YAML::Node node,
-  const vector<ContextItem*> processedContexts, const string& selectedCompiler)
+  const vector<ContextItem*>& processedContexts, const string& selectedCompiler)
 {
   vector<string> contexts;
   for (const auto& context : processedContexts) {
@@ -668,8 +669,9 @@ bool ProjMgrYamlEmitter::GenerateCbuildSet(ProjMgrParser& parser,
   return cbuild.WriteFile(rootNode, filename);
 }
 
-ProjMgrYamlCbuild::ProjMgrYamlCbuild(YAML::Node node, const vector<ContextItem*> siblings,
-  const string& type, const string& output, const string& gendir) : ProjMgrYamlBase(true) {
+ProjMgrYamlCbuild::ProjMgrYamlCbuild(YAML::Node node, const vector<ContextItem*>& siblings,
+  const string& type, const string& output, const string& gendir) : ProjMgrYamlBase(true)
+{
   // construct cbuild-gen-idx.yml content
   SetNodeValue(node[YAML_GENERATED_BY], ORIGINAL_FILENAME + string(" version ") + VERSION_STRING);
   const auto& context = siblings.front();

@@ -38,18 +38,14 @@ bool ProjMgrYamlSchemaChecker::Validate(const string& input,
     return true;
   }
 
-  m_errList.clear();
+  ClearErrors();
   // Validate schema
-  bool result = SchemaChecker::Validate(input, schemaFile, m_errList);
-  for (auto err : m_errList) {
+  bool result = ValidateFile(input, schemaFile);
+  for (auto& err : GetErrors()) {
     ProjMgrLogger::Error(err.m_file, err.m_line, err.m_col, err.m_msg);
   }
 
   return result;
-}
-
-SchemaErrors& ProjMgrYamlSchemaChecker::GetErrors() {
-  return m_errList;
 }
 
 bool ProjMgrYamlSchemaChecker::GetSchemaFile(string& schemaFile, const ProjMgrYamlSchemaChecker::FileType& type) {
@@ -122,3 +118,4 @@ bool ProjMgrYamlSchemaChecker::GetSchemaFile(string& schemaFile, const ProjMgrYa
   }
   return false;
 }
+// end of ProjMgrYamlSchemaChecker
