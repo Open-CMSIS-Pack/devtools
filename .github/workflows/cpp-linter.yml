@@ -5,6 +5,8 @@ on:
   pull_request:
     paths:
       - '.github/workflows/cpp-linter.yml'
+      - '.github/.cppcheck_suppressions'
+      - '.github/cppcheck_googletest.cfg'
       - '**/*.cpp'
       - '**/*.h'
       - '**/*.hpp'
