@@ -13,8 +13,9 @@
 
 using namespace std;
 
-YmlSchemaErrorHandler::YmlSchemaErrorHandler(const std::string& filePath) {
-  m_yamlFile = filePath;
+YmlSchemaErrorHandler::YmlSchemaErrorHandler(const std::string& filePath) :
+  m_yamlFile(filePath)
+{
   m_yamlData = YAML::LoadFile(m_yamlFile);
   m_errList.clear();
 }
