@@ -3,3 +3,4 @@ cbuild-set:
   contexts:
     - test2.Debug+CM0
     - test1.Debug+CM0
+  compiler: AC6
