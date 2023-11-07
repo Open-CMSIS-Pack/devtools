@@ -3606,7 +3606,9 @@ bool ProjMgrWorker::ParseContextSelection(const vector<string>& contextSelection
     }
     const auto& cbuildSetItem = m_parser->GetCbuildSetItem();
     m_selectedContexts = cbuildSetItem.contexts;
-    m_selectedToolchain = cbuildSetItem.compiler;
+    if (m_selectedToolchain.empty()) {
+      m_selectedToolchain = cbuildSetItem.compiler;
+    }
   }
   else {
     const auto& filterError = ProjMgrUtils::GetSelectedContexts(

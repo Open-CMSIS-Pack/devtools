@@ -3496,7 +3496,6 @@ info csolution: config files for each component:\n\
     - .*/TestSolution/TestProject1/RTE/Device/RteTest_ARMCM0/startup_ARMCM0.c \\(base@1.1.1\\) \\(update@2.0.3\\)\n\
     - .*/TestSolution/TestProject1/RTE/Device/RteTest_ARMCM0/system_ARMCM0.c \\(base@1.0.0\\)\n\
 .*/test.cbuild-idx.yml - info csolution: file generated successfully\n\
-.*/test.cbuild-set.yml - info csolution: file generated successfully\n\
 ";
 
   auto outStr = streamRedirect.GetOutString();
@@ -3908,7 +3907,7 @@ warning csolution: compiler 'Ac6' is not supported\n\
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution_cbuildset_file) {
-  char* argv[12];
+  char* argv[13];
 
   const string& csolutionDir  = testinput_folder + "/TestSolution";
   const string& csolution     = csolutionDir + "/test.csolution.yml";
@@ -3925,79 +3924,150 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_cbuildset_file) {
     }
   };
 
-  // Test 1: Run with only specified contexts and no cbuild-set file
-  CleanUp();
-  argv[1]  = (char*)"convert";
-  argv[2]  = (char*)"--solution";
-  argv[3]  = (char*)csolution.c_str();
-  argv[4]  = (char*)"-c";
-  argv[5]  = (char*)"test2.Debug+CM0";
-  argv[6]  = (char*)"-c";
-  argv[7]  = (char*)"test1.Debug+CM0";
-  argv[8]  = (char*)"-o";
-  argv[9]  = (char*)outputDir.c_str();
-  argv[10] = (char*)"-t";
-  argv[11] = (char*)"GCC";
-  EXPECT_EQ(0, RunProjMgr(12, argv, 0));
+  {
+    CleanUp();
+    // Test 1: Run without contexts specified (no existing cbuild-set file without -S)
+    // Expectations: All available contexts should be processed and cbuild-set
+    //               file not generated.
+    argv[1] = (char*)"convert";
+    argv[2] = (char*)"--solution";
+    argv[3] = (char*)csolution.c_str();
+    argv[4] = (char*)"-o";
+    argv[5] = (char*)outputDir.c_str();
 
-  // Check cbuild-set file
-  EXPECT_TRUE(RteFsUtils::Exists(cbuildSetFile));
-  ProjMgrTestEnv::CompareFile(cbuildSetFile, testinput_folder + "/TestSolution/ref/cbuild/specific_contexts_test.cbuild-set.yml");
-  EXPECT_TRUE(RteFsUtils::Exists(outputDir + "/test2.Debug+CM0.cbuild.yml"));
-  EXPECT_TRUE(RteFsUtils::Exists(outputDir + "/test1.Debug+CM0.cbuild.yml"));
-  EXPECT_FALSE(RteFsUtils::Exists(outputDir + "/test2.Debug+CM3.cbuild.yml"));
-  EXPECT_FALSE(RteFsUtils::Exists(outputDir + "/test1.Release+CM0.cbuild.yml"));
+    EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+    EXPECT_FALSE(RteFsUtils::Exists(cbuildSetFile));
+    EXPECT_TRUE(RteFsUtils::Exists(outputDir + "/test2.Debug+CM0.cbuild.yml"));
+    EXPECT_TRUE(RteFsUtils::Exists(outputDir + "/test1.Debug+CM0.cbuild.yml"));
+    EXPECT_TRUE(RteFsUtils::Exists(outputDir + "/test2.Debug+CM3.cbuild.yml"));
+    EXPECT_TRUE(RteFsUtils::Exists(outputDir + "/test1.Release+CM0.cbuild.yml"));
+  }
 
-  // Test 2: Run without contexts specified (with existing cbuild-set file)
-  argv[1] = (char*)"convert";
-  argv[2] = (char*)"--solution";
-  argv[3] = (char*)csolution.c_str();
-  argv[4] = (char*)"-o";
-  argv[5] = (char*)outputDir.c_str();
-  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+  {
+    CleanUp();
+    // Test 2: Run without contexts specified (no existing cbuild-set file with -S)
+    // Expectation: *.cbuild-set.yml file should be generated and all available
+    //              contexts should be processed
+    argv[1] = (char*)"convert";
+    argv[2] = (char*)"--solution";
+    argv[3] = (char*)csolution.c_str();
+    argv[4] = (char*)"-o";
+    argv[5] = (char*)outputDir.c_str();
+    argv[6] = (char*)"-S";
 
-  // Check cbuild-set file
-  EXPECT_TRUE(RteFsUtils::Exists(cbuildSetFile));
-  ProjMgrTestEnv::CompareFile(cbuildSetFile, testinput_folder + "/TestSolution/ref/cbuild/specific_contexts_test.cbuild-set.yml");
-  EXPECT_TRUE(RteFsUtils::Exists(outputDir + "/test2.Debug+CM0.cbuild.yml"));
-  EXPECT_TRUE(RteFsUtils::Exists(outputDir + "/test1.Debug+CM0.cbuild.yml"));
-  EXPECT_FALSE(RteFsUtils::Exists(outputDir + "/test2.Debug+CM3.cbuild.yml"));
-  EXPECT_FALSE(RteFsUtils::Exists(outputDir + "/test1.Release+CM0.cbuild.yml"));
+    EXPECT_EQ(0, RunProjMgr(7, argv, 0));
+    EXPECT_TRUE(RteFsUtils::Exists(cbuildSetFile));
+    ProjMgrTestEnv::CompareFile(cbuildSetFile, testinput_folder + "/TestSolution/ref/cbuild/all_contexts_test.cbuild-set.yml");
+    EXPECT_TRUE(RteFsUtils::Exists(outputDir + "/test2.Debug+CM0.cbuild.yml"));
+    EXPECT_TRUE(RteFsUtils::Exists(outputDir + "/test1.Debug+CM0.cbuild.yml"));
+    EXPECT_TRUE(RteFsUtils::Exists(outputDir + "/test2.Debug+CM3.cbuild.yml"));
+    EXPECT_TRUE(RteFsUtils::Exists(outputDir + "/test1.Release+CM0.cbuild.yml"));
+  }
 
-  // Test 3: Run without contexts specified (without existing cbuild-set file)
-  CleanUp();
-  argv[1] = (char*)"convert";
-  argv[2] = (char*)"--solution";
-  argv[3] = (char*)csolution.c_str();
-  argv[4] = (char*)"-o";
-  argv[5] = (char*)outputDir.c_str();
-  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+  {
+    // Test 3: Run with only specified contexts and no cbuild-set file but with -S
+    // Expectation: *.cbuild-set.yml file should be generated and only
+    //               specified contexts should be processed
+    CleanUp();
+    argv[1] = (char*)"convert";
+    argv[2] = (char*)"--solution";
+    argv[3] = (char*)csolution.c_str();
+    argv[4] = (char*)"-c";
+    argv[5] = (char*)"test2.Debug+CM0";
+    argv[6] = (char*)"-c";
+    argv[7] = (char*)"test1.Debug+CM0";
+    argv[8] = (char*)"-o";
+    argv[9] = (char*)outputDir.c_str();
+    argv[10] = (char*)"-t";
+    argv[11] = (char*)"GCC";
+    argv[12] = (char*)"-S";
 
-  // Check cbuild-set file
-  EXPECT_TRUE(RteFsUtils::Exists(cbuildSetFile));
-  ProjMgrTestEnv::CompareFile(cbuildSetFile, testinput_folder + "/TestSolution/ref/cbuild/all_contexts_test.cbuild-set.yml");
-  EXPECT_TRUE(RteFsUtils::Exists(outputDir + "/test2.Debug+CM0.cbuild.yml"));
-  EXPECT_TRUE(RteFsUtils::Exists(outputDir + "/test1.Debug+CM0.cbuild.yml"));
-  EXPECT_TRUE(RteFsUtils::Exists(outputDir + "/test2.Debug+CM3.cbuild.yml"));
-  EXPECT_TRUE(RteFsUtils::Exists(outputDir + "/test1.Release+CM0.cbuild.yml"));
+    EXPECT_EQ(0, RunProjMgr(13, argv, 0));
+    EXPECT_TRUE(RteFsUtils::Exists(cbuildSetFile));
+    ProjMgrTestEnv::CompareFile(cbuildSetFile, testinput_folder + "/TestSolution/ref/cbuild/specific_contexts_test.cbuild-set.yml");
+    EXPECT_TRUE(RteFsUtils::Exists(outputDir + "/test2.Debug+CM0.cbuild.yml"));
+    EXPECT_TRUE(RteFsUtils::Exists(outputDir + "/test1.Debug+CM0.cbuild.yml"));
+  }
 
-  // Test 4: Run with only toolchain specified
-  argv[1] = (char*)"convert";
-  argv[2] = (char*)"--solution";
-  argv[3] = (char*)csolution.c_str();
-  argv[4] = (char*)"-o";
-  argv[5] = (char*)outputDir.c_str();
-  argv[6] = (char*)"-t";
-  argv[7] = (char*)"AC6";
-  EXPECT_EQ(0, RunProjMgr(8, argv, 0));
+  {
+    // Test 4: Run with contexts specified (with existing cbuild-set file)
+    // Expectations: All specified contexts should be processed and cbuild-set
+    //               file remains unchanged.
+    argv[1] = (char*)"convert";
+    argv[2] = (char*)"--solution";
+    argv[3] = (char*)csolution.c_str();
+    argv[4] = (char*)"-o";
+    argv[5] = (char*)outputDir.c_str();
+    argv[6] = (char*)"-c";
+    argv[7] = (char*)"test1.Release+CM0";
 
-  // Check cbuild-set file
-  EXPECT_TRUE(RteFsUtils::Exists(cbuildSetFile));
-  ProjMgrTestEnv::CompareFile(cbuildSetFile, testinput_folder + "/TestSolution/ref/cbuild/all_contexts_test_with_AC6.cbuild-set.yml");
-  EXPECT_TRUE(RteFsUtils::Exists(outputDir + "/test2.Debug+CM0.cbuild.yml"));
-  EXPECT_TRUE(RteFsUtils::Exists(outputDir + "/test1.Debug+CM0.cbuild.yml"));
-  EXPECT_TRUE(RteFsUtils::Exists(outputDir + "/test2.Debug+CM3.cbuild.yml"));
-  EXPECT_TRUE(RteFsUtils::Exists(outputDir + "/test1.Release+CM0.cbuild.yml"));
+    EXPECT_EQ(0, RunProjMgr(8, argv, 0));
+    EXPECT_TRUE(RteFsUtils::Exists(cbuildSetFile));
+    ProjMgrTestEnv::CompareFile(cbuildSetFile, testinput_folder + "/TestSolution/ref/cbuild/specific_contexts_test.cbuild-set.yml");
+  }
+
+  {
+    // Test 5: Run without contexts specified (with existing cbuild-set file with -S)
+    // Expectations: Contexts from cbuild-set should be processed
+    argv[1] = (char*)"convert";
+    argv[2] = (char*)"--solution";
+    argv[3] = (char*)csolution.c_str();
+    argv[4] = (char*)"-o";
+    argv[5] = (char*)outputDir.c_str();
+    argv[6] = (char*)"-S";
+
+    EXPECT_EQ(0, RunProjMgr(7, argv, 0));
+    EXPECT_TRUE(RteFsUtils::Exists(cbuildSetFile));
+    ProjMgrTestEnv::CompareFile(cbuildSetFile, testinput_folder + "/TestSolution/ref/cbuild/specific_contexts_test.cbuild-set.yml");
+  }
+
+  {
+    // Test 6: Run with no contexts but toolchain AC6 specified (with existing cbuild-set file with -S)
+    // Expectations: Contexts from cbuild-set should be processed with selected toolchain
+    argv[1] = (char*)"convert";
+    argv[2] = (char*)"--solution";
+    argv[3] = (char*)csolution.c_str();
+    argv[4] = (char*)"-o";
+    argv[5] = (char*)outputDir.c_str();
+    argv[6] = (char*)"-S";
+    argv[7] = (char*)"-t";
+    argv[8] = (char*)"AC6";
+
+    EXPECT_EQ(0, RunProjMgr(9, argv, 0));
+    EXPECT_TRUE(RteFsUtils::Exists(cbuildSetFile));
+    ProjMgrTestEnv::CompareFile(cbuildSetFile, testinput_folder + "/TestSolution/ref/cbuild/specific_contexts_test_AC6.cbuild-set.yml");
+  }
+
+  {
+    // Test 7: Run with no contexts but toolchain GCC specified (with existing cbuild-set file with -S)
+    // Expectations: Contexts from cbuild-set should be processed with selected toolchain
+    argv[1] = (char*)"convert";
+    argv[2] = (char*)"--solution";
+    argv[3] = (char*)csolution.c_str();
+    argv[4] = (char*)"-o";
+    argv[5] = (char*)outputDir.c_str();
+    argv[6] = (char*)"-S";
+    argv[7] = (char*)"-t";
+    argv[8] = (char*)"GCC";
+
+    EXPECT_EQ(0, RunProjMgr(9, argv, 0));
+    EXPECT_TRUE(RteFsUtils::Exists(cbuildSetFile));
+    ProjMgrTestEnv::CompareFile(cbuildSetFile, testinput_folder + "/TestSolution/ref/cbuild/specific_contexts_test.cbuild-set.yml");
+  }
+
+  {
+    // Test 8: Run with invalid conversion with -S
+    // Expectations: Conversion should fail and cbuild-set file should not be generated
+    const string& csolutionFile = testinput_folder + "/TestSolution/novalid_context.csolution.yml";
+    argv[1] = (char*)"convert";
+    argv[2] = (char*)csolutionFile.c_str();
+    argv[3] = (char*)"-o";
+    argv[4] = (char*)outputDir.c_str();
+    argv[5] = (char*)"-S";
+
+    EXPECT_EQ(1, RunProjMgr(6, argv, 0));
+    EXPECT_FALSE(RteFsUtils::Exists(csolutionDir + "/novalid_context.cbuild-set.yml"));
+  }
 }
 
 TEST_F(ProjMgrUnitTests, ExternalGenerator) {
