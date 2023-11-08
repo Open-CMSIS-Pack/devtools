@@ -7,8 +7,8 @@ build:
   device: RteTest_ARMCM3
   device-pack: ARM::RteTest_DFP@0.2.0
   processor:
-    fpu: off
     endian: little
+    fpu: off
     trustzone: non-secure
     core: Cortex-M3
   packs:

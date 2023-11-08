@@ -1,0 +1,34 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schemas/cproject.schema.json
+
+project:
+  device: RteTest_ARMCM0
+  compiler: AC6
+  components:
+    - component: Startup
+    - component: CORE
+
+  layers:
+    - layer: ./fpu-dp.clayer.yml
+      for-context: +fpu-dp
+    - layer: ./fpu-sp.clayer.yml
+      for-context: +fpu-sp
+    - layer: ./no-fpu.clayer.yml
+      for-context: +no-fpu
+
+  setups:
+    - setup: fpu-dp
+      for-context: +fpu-dp
+      processor:
+        fpu: dp
+    - setup: fpu-sp
+      for-context: +fpu-sp
+      processor:
+        fpu: sp
+    - setup: no-fpu
+      for-context: +no-fpu
+      processor:
+        fpu: off
+    - setup: fail
+      for-context: .Fail
+      processor:
+        fpu: dp

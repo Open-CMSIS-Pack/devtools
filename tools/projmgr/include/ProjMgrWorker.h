@@ -759,6 +759,7 @@ protected:
   void CheckTypeFilterSpelling(const TypeFilter& typeFilter);
   void CheckCompilerFilterSpelling(const std::string& compiler);
   bool ProcessGeneratedLayers(ContextItem& context);
+  void CheckDeviceAttributes(const std::string& device, const ProcessorItem& userSelection, const StrMap& targetAttributes);
 };
 
 #endif  // PROJMGRWORKER_H

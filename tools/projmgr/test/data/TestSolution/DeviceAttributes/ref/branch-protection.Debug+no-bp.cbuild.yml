@@ -7,9 +7,9 @@ build:
   device: RteTest_ARMCM0
   device-pack: ARM::RteTest_DFP@0.2.0
   processor:
+    branch-protection: off
     fpu: off
     core: Cortex-M0
-    branch-protection: off
   packs:
     - pack: ARM::RteTest_DFP@0.2.0
       path: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0

@@ -451,34 +451,18 @@ void ProjMgrYamlCbuild::SetControlsNode(YAML::Node node, const ContextItem* cont
 }
 
 void ProjMgrYamlCbuild::SetProcessorNode(YAML::Node node, const map<string, string>& targetAttributes) {
-  if (targetAttributes.find("Dfpu") != targetAttributes.end()) {
-    const string& attribute = targetAttributes.at("Dfpu");
-    const string& value = (attribute == "NO_FPU") ? "off" : "on";
-    SetNodeValue(node[YAML_FPU], value);
-  }
-  if (targetAttributes.find("Dendian") != targetAttributes.end()) {
-    const string& attribute = targetAttributes.at("Dendian");
-    const string& value = (attribute == "Big-endian") ? "big" :
-                          (attribute == "Little-endian") ? "little" : "";
-    SetNodeValue(node[YAML_ENDIAN], value);
-  }
-  if (targetAttributes.find("Dsecure") != targetAttributes.end()) {
-    const string& attribute = targetAttributes.at("Dsecure");
-    const string& value = (attribute == "Secure") ? "secure" :
-                          (attribute == "Non-secure") ? "non-secure" :
-                          (attribute == "TZ-disabled") ? "off" : "";
-    SetNodeValue(node[YAML_TRUSTZONE], value);
+  for (const auto& [rteKey, yamlKey]: ProjMgrUtils::DeviceAttributesKeys) {
+    if (targetAttributes.find(rteKey) != targetAttributes.end()) {
+      const auto& rteValue = targetAttributes.at(rteKey);
+      const auto& yamlValue = ProjMgrUtils::GetDeviceAttribute(rteKey, rteValue);
+      if (!yamlValue.empty()) {
+        SetNodeValue(node[yamlKey], yamlValue);
+      }
+    }
   }
   if (targetAttributes.find("Dcore") != targetAttributes.end()) {
     const string& core = targetAttributes.at("Dcore");
     SetNodeValue(node[YAML_CORE], core);
-  }
-  if (targetAttributes.find("DbranchProt") != targetAttributes.end()) {
-    const string& attribute = targetAttributes.at("DbranchProt");
-    const string& value = (attribute == "BTI") ? "bti" :
-                          (attribute == "BTI_SIGNRET") ? "bti-signret" :
-                          (attribute == "NO_BRANCHPROT") ? "off" : "";
-    SetNodeValue(node[YAML_BRANCH_PROTECTION], value);
   }
 }
 

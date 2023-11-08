@@ -19,6 +19,46 @@
 
 using namespace std;
 
+const StrMap ProjMgrUtils::DeviceAttributesKeys = {
+  { RTE_DFPU       , YAML_FPU               },
+  { RTE_DDSP       , YAML_DSP               },
+  { RTE_DMVE       , YAML_MVE               },
+  { RTE_DENDIAN    , YAML_ENDIAN            },
+  { RTE_DSECURE    , YAML_TRUSTZONE         },
+  { RTE_DBRANCHPROT, YAML_BRANCH_PROTECTION },
+};
+
+const StrPairVecMap ProjMgrUtils::DeviceAttributesValues = {
+  { RTE_DFPU       , {{ RTE_DP_FPU       , YAML_FPU_DP         },
+                      { RTE_SP_FPU       , YAML_FPU_SP         },
+                      { RTE_NO_FPU       , YAML_OFF            }}},
+  { RTE_DDSP       , {{ RTE_DSP          , YAML_ON             },
+                      { RTE_NO_DSP       , YAML_OFF            }}},
+  { RTE_DMVE       , {{ RTE_FP_MVE       , YAML_MVE_FP         },
+                      { RTE_MVE          , YAML_MVE_INT        },
+                      { RTE_NO_MVE       , YAML_OFF            }}},
+  { RTE_DENDIAN    , {{ RTE_ENDIAN_BIG   , YAML_ENDIAN_BIG     },
+                      { RTE_ENDIAN_LITTLE, YAML_ENDIAN_LITTLE  }}},
+  { RTE_DSECURE    , {{ RTE_SECURE       , YAML_TZ_SECURE      },
+                      { RTE_NON_SECURE   , YAML_TZ_NON_SECURE  },
+                      { RTE_TZ_DISABLED  , YAML_OFF            }}},
+  { RTE_DBRANCHPROT, {{ RTE_BTI          , YAML_BP_BTI         },
+                      { RTE_BTI_SIGNRET  , YAML_BP_BTI_SIGNRET },
+                      { RTE_NO_BRANCHPROT, YAML_OFF            }}},
+};
+
+const string& ProjMgrUtils::GetDeviceAttribute(const string& key, const string& value) {
+  const auto& values = DeviceAttributesValues.at(key);
+  for (const auto& [rte, yaml] : values) {
+    if (value == rte) {
+      return yaml;
+    } else if  (value == yaml) {
+      return rte;
+    }
+  }
+  return RteUtils::EMPTY_STRING;
+}
+
 RtePackage* ProjMgrUtils::ReadGpdscFile(const string& gpdsc, bool& valid) {
   fs::path path(gpdsc);
   error_code ec;

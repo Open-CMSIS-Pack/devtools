@@ -3,6 +3,50 @@
 
 solution:
   target-types:
+    - type: fpu-dp
+      processor:
+        fpu: dp
+    - type: fpu-sp
+      processor:
+        fpu: sp
+    - type: no-fpu
+      processor:
+        fpu: off
+
+    - type: dsp
+      processor:
+        dsp: on
+    - type: no-dsp
+      processor:
+        dsp: off
+
+    - type: mve-fp
+      processor:
+        mve: fp
+    - type: mve-int
+      processor:
+        mve: int
+    - type: no-mve
+      processor:
+        mve: off
+
+    - type: big
+      processor:
+        endian: big
+    - type: little
+      processor:
+        endian: little
+
+    - type: secure
+      processor:
+        trustzone: secure
+    - type: non-secure
+      processor:
+        trustzone: non-secure
+    - type: tz-disabled
+      processor:
+        trustzone: off
+
     - type: bti
       processor:
         branch-protection: bti
@@ -21,5 +65,15 @@ solution:
     - pack: ARM::RteTest_DFP@0.2.0
 
   projects:
+    - project: ./fpu/fpu.cproject.yml
+      for-context: [+fpu-dp, +fpu-sp, +no-fpu]
+    - project: ./dsp/dsp.cproject.yml
+      for-context: [+dsp, +no-dsp]
+    - project: ./mve/mve.cproject.yml
+      for-context: [+mve-fp, +mve-int, +no-mve]
+    - project: ./endian/endian.cproject.yml
+      for-context: [+big, +little]
+    - project: ./trustzone/trustzone.cproject.yml
+      for-context: [+secure, +non-secure, +tz-disabled]
     - project: ./branch-protection/branch-protection.cproject.yml
       for-context: [+bti, +bti-signret, +no-bp]
