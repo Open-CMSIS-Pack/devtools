@@ -1,0 +1,5 @@
+# we are not calling these methods directly
+# false positive
+unusedFunction:libs/xmltree/src/XMLTree.cpp:47
+unusedFunction:libs/xmlschemachecker/src/XmlErrorHandler.cpp:27
+unusedFunction:libs/xmlschemachecker/src/XmlErrorHandler.cpp:32

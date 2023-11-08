@@ -112,6 +112,7 @@ protected:
   bool m_debug;
   bool m_dryRun;
   bool m_ymlOrder;
+  bool m_contextSet;
   GroupNode m_files;
   std::vector<ContextItem*> m_processedContexts;
 

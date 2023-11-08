@@ -7,6 +7,7 @@ on:
 
 jobs:
   buildmgr:
+    if: github.repository == 'Open-CMSIS-Pack/devtools'
     uses: Open-CMSIS-Pack/devtools/.github/workflows/buildmgr.yml@main
   packchk:
     needs: [buildmgr]

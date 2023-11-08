@@ -50,6 +50,7 @@ Options:\n\
   -n, --no-check-schema         Skip schema check\n\
   -N, --no-update-rte           Skip creation of RTE directory and files\n\
   -o, --output arg              Output directory\n\
+  -S, --context-set             Use context set\n\
   -t, --toolchain arg           Selection of the toolchain used in the project optionally with version\n\
   -v, --verbose                 Enable verbose messages\n\
   -V, --version                 Print version\n\n\
@@ -143,12 +144,13 @@ int ProjMgr::RunProjMgr(int argc, char **argv, char** envp) {
   cxxopts::Option exportSuffix("e,export", "Set suffix for exporting <context><suffix>.cprj retaining only specified versions", cxxopts::value<string>());
   cxxopts::Option toolchain("t,toolchain","Selection of the toolchain used in the project optionally with version", cxxopts::value<string>());
   cxxopts::Option ymlOrder("yml-order", "Preserve order as specified in input yml", cxxopts::value<bool>()->default_value("false"));
+  cxxopts::Option contextSet("S,context-set", "Use context set", cxxopts::value<bool>()->default_value("false"));
 
   // command options dictionary
   map<string, std::pair<bool, vector<cxxopts::Option>>> optionsDict = {
     // command, optional args, options
-    {"update-rte",        { false, {context, debug, load, schemaCheck, toolchain, verbose}}},
-    {"convert",           { false, {context, debug, exportSuffix, load, schemaCheck, noUpdateRte, output, toolchain, verbose}}},
+    {"update-rte",        { false, {context, contextSet, debug, load, schemaCheck, toolchain, verbose}}},
+    {"convert",           { false, {context, contextSet, debug, exportSuffix, load, schemaCheck, noUpdateRte, output, toolchain, verbose}}},
     {"run",               { false, {context, debug, generator, load, schemaCheck, verbose, dryRun}}},
     {"list packs",        { true,  {context, debug, filter, load, missing, schemaCheck, toolchain, verbose}}},
     {"list boards",       { true,  {context, debug, filter, load, schemaCheck, toolchain, verbose}}},
@@ -166,7 +168,7 @@ int ProjMgr::RunProjMgr(int argc, char **argv, char** envp) {
   try {
     options.add_options("", {
       {"positional", "", cxxopts::value<vector<string>>()},
-      solution, context, contextReplacement, filter, generator,
+      solution, context, contextReplacement, contextSet, filter, generator,
       load, clayerSearchPath, missing, schemaCheck, noUpdateRte, output,
       help, version, verbose, debug, dryRun, exportSuffix, toolchain, ymlOrder
     });
@@ -185,6 +187,7 @@ int ProjMgr::RunProjMgr(int argc, char **argv, char** envp) {
     manager.m_worker.SetDebug(manager.m_debug);
     manager.m_worker.SetDryRun(manager.m_dryRun);
     manager.m_ymlOrder = parseResult.count("yml-order");
+    manager.m_contextSet = parseResult.count("context-set");
 
     vector<string> positionalArguments;
     if (parseResult.count("positional")) {
@@ -450,7 +453,7 @@ bool ProjMgr::RunConfigure(bool printConfig) {
     return false;
   }
 
-  bool checkCbuildSet = ((m_context.size() > 0) || (!m_selectedToolchain.empty()) ? false : true);
+  bool checkCbuildSet = (m_context.size() == 0) && m_contextSet;
   // Parse context selection
   if (!m_worker.ParseContextSelection(m_context, m_contextReplacement, checkCbuildSet)) {
     return false;
@@ -506,7 +509,7 @@ bool ProjMgr::RunConfigure(bool printConfig) {
   }
 
   // Generate cbuild-set file
-  if (!m_processedContexts.empty()) {
+  if (m_contextSet && (!m_processedContexts.empty())) {
     if (!m_emitter.GenerateCbuildSet(m_parser, m_processedContexts, m_selectedToolchain)) {
       return false;
     }
