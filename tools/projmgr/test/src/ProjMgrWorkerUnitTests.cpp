@@ -1559,3 +1559,33 @@ TEST_F(ProjMgrWorkerUnitTests, GetGeneratorDirDefault) {
   EXPECT_TRUE(GetGeneratorDir(generator, context, "", genDir));
   EXPECT_EQ(genDir, "generated/RteTestGeneratorIdentifier");
 };
+
+TEST_F(ProjMgrWorkerUnitTests, CheckDeviceAttributes) {
+  const string device = "TestDevice";
+  ProcessorItem userSelection;
+  StrMap targetAttributes;
+  StdStreamRedirect streamRedirect;
+
+  userSelection.branchProtection = ProjMgrUtils::YAML_BP_BTI;
+  userSelection.dsp = ProjMgrUtils::YAML_ON;
+  userSelection.endian = ProjMgrUtils::YAML_ENDIAN_BIG;
+  userSelection.fpu = ProjMgrUtils::YAML_FPU_DP;
+  userSelection.mve = ProjMgrUtils::YAML_MVE_FP;
+  userSelection.trustzone = ProjMgrUtils::YAML_TZ_SECURE;
+  targetAttributes[ProjMgrUtils::RTE_DPACBTI] = ProjMgrUtils::RTE_NO_PACBTI;
+  targetAttributes[ProjMgrUtils::RTE_DDSP] = ProjMgrUtils::RTE_NO_DSP;
+  targetAttributes[ProjMgrUtils::RTE_DENDIAN] = ProjMgrUtils::RTE_ENDIAN_LITTLE;
+  targetAttributes[ProjMgrUtils::RTE_DFPU] = ProjMgrUtils::RTE_SP_FPU;
+  targetAttributes[ProjMgrUtils::RTE_DMVE] = ProjMgrUtils::RTE_NO_MVE;
+  targetAttributes[ProjMgrUtils::RTE_DTZ] = ProjMgrUtils::RTE_NO_TZ;
+
+  CheckDeviceAttributes(device, userSelection, targetAttributes);
+  auto errStr = streamRedirect.GetErrorString();
+  
+  EXPECT_TRUE(errStr.find("warning csolution: device 'TestDevice' does not support 'endian: big'") != string::npos);
+  EXPECT_TRUE(errStr.find("warning csolution: device 'TestDevice' does not support 'fpu: dp'") != string::npos);
+  EXPECT_TRUE(errStr.find("warning csolution: device 'TestDevice' does not support 'dsp: on'") != string::npos);
+  EXPECT_TRUE(errStr.find("warning csolution: device 'TestDevice' does not support 'mve: fp'") != string::npos);
+  EXPECT_TRUE(errStr.find("warning csolution: device 'TestDevice' does not support 'trustzone: secure'") != string::npos);
+  EXPECT_TRUE(errStr.find("warning csolution: device 'TestDevice' does not support 'branch-protection: bti'") != string::npos);
+};

@@ -411,6 +411,8 @@ void ProjMgrYamlParser::ParseProcessor(const YAML::Node& parent, ProcessorItem& 
     map<const string, string&> processorChildren = {
       {YAML_TRUSTZONE, processor.trustzone},
       {YAML_FPU, processor.fpu},
+      {YAML_DSP, processor.dsp},
+      {YAML_MVE, processor.mve},
       {YAML_ENDIAN, processor.endian},
       {YAML_BRANCH_PROTECTION, processor.branchProtection},
     };
@@ -992,6 +994,8 @@ const set<string> rteKeys = {
 const set<string> processorKeys = {
   YAML_TRUSTZONE,
   YAML_FPU,
+  YAML_DSP,
+  YAML_MVE,
   YAML_ENDIAN,
   YAML_BRANCH_PROTECTION,
 };

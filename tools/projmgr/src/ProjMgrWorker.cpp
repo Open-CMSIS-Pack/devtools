@@ -1234,40 +1234,26 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
   context.targetAttributes["Dvendor"] = matchedDevice->GetEffectiveAttribute("Dvendor");
   context.targetAttributes["Dname"] = matchedDevice->GetFullDeviceName();
 
-  if (!context.controls.processed.processor.fpu.empty()) {
-    if (context.controls.processed.processor.fpu == "on") {
-      context.targetAttributes["Dfpu"] = "FPU";
-    } else if (context.controls.processed.processor.fpu == "off") {
-      context.targetAttributes["Dfpu"] = "NO_FPU";
-    }
-  }
-  if (!context.controls.processed.processor.endian.empty()) {
-    if (context.controls.processed.processor.endian == "big") {
-      context.targetAttributes["Dendian"] = "Big-endian";
-    } else if (context.controls.processed.processor.endian == "little") {
-      context.targetAttributes["Dendian"] = "Little-endian";
-    }
-  }
-  if (!context.controls.processed.processor.trustzone.empty()) {
-    if (context.controls.processed.processor.trustzone == "secure") {
-      context.targetAttributes["Dsecure"] = "Secure";
-    } else if (context.controls.processed.processor.trustzone == "non-secure") {
-      context.targetAttributes["Dsecure"] = "Non-secure";
-    } else if (context.controls.processed.processor.trustzone == "off") {
-      context.targetAttributes["Dsecure"] = "TZ-disabled";
-    }
-  }
-  if (!context.controls.processed.processor.branchProtection.empty()) {
-    if ((context.targetAttributes.find("Dpacbti") == context.targetAttributes.end()) ||
-      (context.targetAttributes.at("Dpacbti") == "NO_PACBTI")) {
-      ProjMgrLogger::Warn("device '" + context.device + "' does not support branch protection");
-    }
-    if (context.controls.processed.processor.branchProtection == "bti") {
-      context.targetAttributes["DbranchProt"] = "BTI";
-    } else if (context.controls.processed.processor.branchProtection == "bti-signret") {
-      context.targetAttributes["DbranchProt"] = "BTI_SIGNRET";
-    } else if (context.controls.processed.processor.branchProtection == "off") {
-      context.targetAttributes["DbranchProt"] = "NO_BRANCHPROT";
+  const auto& attr = context.controls.processed.processor;
+
+  // Check attributes support compatibility
+  CheckDeviceAttributes(context.device, attr, context.targetAttributes);
+
+  // Set or update target attributes
+  const StrMap attrMap = {
+    { attr.fpu,              ProjMgrUtils::RTE_DFPU        },
+    { attr.dsp,              ProjMgrUtils::RTE_DDSP        },
+    { attr.mve,              ProjMgrUtils::RTE_DMVE        },
+    { attr.endian,           ProjMgrUtils::RTE_DENDIAN     },
+    { attr.trustzone,        ProjMgrUtils::RTE_DSECURE     },
+    { attr.branchProtection, ProjMgrUtils::RTE_DBRANCHPROT },
+  };
+  for (const auto& [yamlValue, rteKey] : attrMap) {
+    if (!yamlValue.empty()) {
+      const auto& rteValue = ProjMgrUtils::GetDeviceAttribute(rteKey, yamlValue);
+      if (!rteValue.empty()) {
+        context.targetAttributes[rteKey] = rteValue;
+      }
     }
   }
 
@@ -1295,6 +1281,41 @@ bool ProjMgrWorker::ProcessBoardPrecedence(StringCollection& item) {
   }
   *item.assign = GetBoardInfoString(boardVendor, boardName, boardRevision);
   return true;
+}
+
+void ProjMgrWorker::CheckDeviceAttributes(const string& device, const ProcessorItem& userSelection, const StrMap& targetAttributes) {
+  // check endian compatibility
+  if (!userSelection.endian.empty()) {
+    if (targetAttributes.find(ProjMgrUtils::RTE_DENDIAN) != targetAttributes.end()) {
+      const auto& endian = targetAttributes.at(ProjMgrUtils::RTE_DENDIAN);
+      if ((endian != ProjMgrUtils::RTE_ENDIAN_CONFIGURABLE) &&
+        (endian != ProjMgrUtils::GetDeviceAttribute(ProjMgrUtils::RTE_DENDIAN, userSelection.endian))) {
+        ProjMgrLogger::Warn("device '" + device + "' does not support '" + ProjMgrUtils::YAML_ENDIAN + ": " + userSelection.endian + "'");
+      }
+    }
+  }
+  // check dp vs sp fpu
+  if ((userSelection.fpu == ProjMgrUtils::YAML_FPU_DP) &&
+    (targetAttributes.find(ProjMgrUtils::RTE_DFPU) != targetAttributes.end()) &&
+    (targetAttributes.at(ProjMgrUtils::RTE_DFPU) == ProjMgrUtils::RTE_SP_FPU)) {
+    ProjMgrLogger::Warn("device '" + device + "' does not support '" + ProjMgrUtils::YAML_FPU + ": " + userSelection.fpu + "'");
+  }
+  // check disabled capabilities
+  const vector<tuple<string, string, string, string>> attrMapCompatibility = {
+    { ProjMgrUtils::YAML_FPU              , userSelection.fpu,              ProjMgrUtils::RTE_DFPU,    ProjMgrUtils::RTE_NO_FPU    },
+    { ProjMgrUtils::YAML_DSP              , userSelection.dsp,              ProjMgrUtils::RTE_DDSP,    ProjMgrUtils::RTE_NO_DSP    },
+    { ProjMgrUtils::YAML_MVE              , userSelection.mve,              ProjMgrUtils::RTE_DMVE,    ProjMgrUtils::RTE_NO_MVE    },
+    { ProjMgrUtils::YAML_TRUSTZONE        , userSelection.trustzone,        ProjMgrUtils::RTE_DTZ,     ProjMgrUtils::RTE_NO_TZ     },
+    { ProjMgrUtils::YAML_BRANCH_PROTECTION, userSelection.branchProtection, ProjMgrUtils::RTE_DPACBTI, ProjMgrUtils::RTE_NO_PACBTI },
+  };
+  for (const auto& [yamlKey, yamlValue, rteKey, rteValue] : attrMapCompatibility) {
+    if (!yamlValue.empty() && (yamlValue != ProjMgrUtils::YAML_OFF)) {
+      if ((targetAttributes.find(rteKey) == targetAttributes.end()) ||
+        (targetAttributes.at(rteKey) == rteValue)) {
+        ProjMgrLogger::Warn("device '" + device + "' does not support '" + yamlKey + ": " + yamlValue + "'");
+      }
+    }
+  }
 }
 
 bool ProjMgrWorker::ProcessDevicePrecedence(StringCollection& item) {
@@ -2317,6 +2338,44 @@ bool ProjMgrWorker::ProcessProcessorOptions(ContextItem& context) {
     fpu.elements.push_back(&clayer.processor.fpu);
   }
   if (!ProcessPrecedence(fpu)) {
+    return false;
+  }
+
+  StringCollection dsp = {
+    &context.controls.processed.processor.dsp,
+    {
+      &context.controls.cproject.processor.dsp,
+      &context.controls.csolution.processor.dsp,
+      &context.controls.target.processor.dsp,
+      &context.controls.build.processor.dsp,
+    },
+  };
+  for (auto& setup : context.controls.setups) {
+    dsp.elements.push_back(&setup.processor.dsp);
+  }
+  for (auto& [_, clayer] : context.controls.clayers) {
+    dsp.elements.push_back(&clayer.processor.dsp);
+  }
+  if (!ProcessPrecedence(dsp)) {
+    return false;
+  }
+
+  StringCollection mve = {
+    &context.controls.processed.processor.mve,
+    {
+      &context.controls.cproject.processor.mve,
+      &context.controls.csolution.processor.mve,
+      &context.controls.target.processor.mve,
+      &context.controls.build.processor.mve,
+    },
+  };
+  for (auto& setup : context.controls.setups) {
+    mve.elements.push_back(&setup.processor.mve);
+  }
+  for (auto& [_, clayer] : context.controls.clayers) {
+    mve.elements.push_back(&clayer.processor.mve);
+  }
+  if (!ProcessPrecedence(mve)) {
     return false;
   }
 

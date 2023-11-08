@@ -1,0 +1,28 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schemas/cproject.schema.json
+
+project:
+  device: RteTest_ARMCM0
+  compiler: AC6
+  components:
+    - component: Startup
+    - component: CORE
+
+  layers:
+    - layer: ./dsp.clayer.yml
+      for-context: +dsp
+    - layer: ./no-dsp.clayer.yml
+      for-context: +no-dsp
+
+  setups:
+    - setup: dsp
+      for-context: +dsp
+      processor:
+        dsp: on
+    - setup: no-dsp
+      for-context: +no-dsp
+      processor:
+        dsp: off
+    - setup: fail
+      for-context: .Fail
+      processor:
+        dsp: on

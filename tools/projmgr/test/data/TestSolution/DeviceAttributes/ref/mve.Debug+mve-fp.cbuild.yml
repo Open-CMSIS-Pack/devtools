@@ -1,0 +1,64 @@
+build:
+  generated-by: csolution version 0.0.0+g717ddf88
+  solution: ../data/TestSolution/DeviceAttributes/solution.csolution.yml
+  project: ../data/TestSolution/DeviceAttributes/mve/mve.cproject.yml
+  context: mve.Debug+mve-fp
+  compiler: AC6
+  device: RteTest_ARMCM0
+  device-pack: ARM::RteTest_DFP@0.2.0
+  processor:
+    fpu: off
+    mve: fp
+    core: Cortex-M0
+  packs:
+    - pack: ARM::RteTest_DFP@0.2.0
+      path: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0
+  define:
+    - ARMCM0
+    - _RTE_
+  add-path:
+    - ../data/TestSolution/DeviceAttributes/mve/RTE/_Debug_mve-fp
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
+  output-dirs:
+    intdir: tmp/mve/mve-fp/Debug
+    outdir: out/mve/mve-fp/Debug
+    rtedir: ../data/TestSolution/DeviceAttributes/mve/RTE
+  output:
+    - type: elf
+      file: mve.axf
+  components:
+    - component: ARM::Device:Startup&RteTest Startup@2.0.3
+      condition: ARMCM0 RteTest
+      from-pack: ARM::RteTest_DFP@0.2.0
+      selected-by: Startup
+      files:
+        - file: ../data/TestSolution/DeviceAttributes/mve/RTE/Device/RteTest_ARMCM0/ARMCM0_ac6.sct
+          category: linkerScript
+          attr: config
+          version: 1.0.0
+        - file: ../data/TestSolution/DeviceAttributes/mve/RTE/Device/RteTest_ARMCM0/startup_ARMCM0.c
+          category: sourceC
+          attr: config
+          version: 2.0.3
+        - file: ../data/TestSolution/DeviceAttributes/mve/RTE/Device/RteTest_ARMCM0/system_ARMCM0.c
+          category: sourceC
+          attr: config
+          version: 1.0.0
+    - component: ARM::RteTest:CORE@0.1.1
+      condition: Cortex-M Device
+      from-pack: ARM::RteTest_DFP@0.2.0
+      selected-by: CORE
+  linker:
+    script: ../data/TestSolution/DeviceAttributes/mve/RTE/Device/RteTest_ARMCM0/ARMCM0_ac6.sct
+  constructed-files:
+    - file: ../data/TestSolution/DeviceAttributes/mve/RTE/_Debug_mve-fp/RTE_Components.h
+      category: header
+  licenses:
+    - license: <unknown>
+      license-agreement: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Doc/license.txt
+      packs:
+        - pack: ARM::RteTest_DFP@0.2.0
+      components:
+        - component: ::RteTest:CORE(API)
+        - component: ARM::Device:Startup&RteTest Startup@2.0.3
+        - component: ARM::RteTest:CORE@0.1.1

@@ -373,41 +373,56 @@
         { "required": [ "project" ] }
       ]
     },
+    "ProcessorTrustzone": {
+      "enum": [ "secure", "non-secure", "off" ],
+      "description": "Select TrustZone mode: secure | non-secure | off"
+    },
+    "ProcessorFpu": {
+      "enum": [ "dp", "sp", "off" ],
+      "description": "Controls usage of FPU registers (S-Registers that are used for Helium and FPU hardware): dp (double precision) | sp (single precision) | off (disabled)"
+    },
+    "ProcessorDsp": {
+      "enum": [ "on", "off" ],
+      "description": "Controls usage of DSP: on (enabled) | off (disabled)"
+    },
+    "ProcessorMve": {
+      "enum": [ "fp", "int", "off" ],
+      "description": "Controls usage of M-Profile Vector Extension Instructions: fp (floating point and integer instructions) | int (integer instructions) | off (disabled)"
+    },
+    "ProcessorEndian": {
+      "enum": [ "little", "big" ],
+      "description": "Controls endianess: little | big"
+    },
+    "ProcessorBranchProtection": {
+      "enum": [ "bti", "bti-signret", "off" ],
+      "description": "Select Branch Protection mode: bti (branch target identification) | bit-signret (branch target identification and pointer authentication) | off (disabled)"
+    },
     "ProcessorType": {
       "type": ["object", "null"],
       "description": "Processor specific settings",
       "properties": {
-        "trustzone": {
-          "enum": [ "secure", "non-secure", "off" ],
-          "description": "Select TrustZone mode: secure | non-secure | off"
-        },
-        "branch-protection": {
-          "enum": [ "bti", "bti-signret", "off" ],
-          "description": "Select Branch Protection mode: bti | bit-signret | off"
-        }
-      }
+        "trustzone": { "$ref": "#/definitions/ProcessorTrustzone" },
+        "fpu": { "$ref": "#/definitions/ProcessorFpu" },
+        "dsp": { "$ref": "#/definitions/ProcessorDsp" },
+        "mve": { "$ref": "#/definitions/ProcessorMve" },
+        "endian": { "$ref": "#/definitions/ProcessorEndian" },
+        "branch-protection": { "$ref": "#/definitions/ProcessorBranchProtection" }
+      },      
+      "additionalProperties": false
     },
     "BuildProcessorType": {
       "type": ["object", "null"],
       "description": "Processor specific settings",
       "properties": {
-        "trustzone": {
-          "enum": [ "secure", "non-secure", "off" ],
-          "description": "Select TrustZone mode: secure | non-secure | off"
-        },
-        "fpu": {
-          "enum": [ "on", "off" ],
-          "description": "Controls usage of FPU registers (S-Registers that are used for Helium and FPU hardware): on | off"
-        },
-        "endian": {
-          "enum": [ "little", "big" ],
-          "description": "Controls endianess"
-        },
-        "branch-protection": {
-          "enum": [ "bti", "bti-signret", "off" ],
-          "description": "Select Branch Protection mode: bti | bit-signret | off"
-        }
-      }
+        "trustzone": { "$ref": "#/definitions/ProcessorTrustzone" },
+        "fpu": { "$ref": "#/definitions/ProcessorFpu" },
+        "dsp": { "$ref": "#/definitions/ProcessorDsp" },
+        "mve": { "$ref": "#/definitions/ProcessorMve" },
+        "endian": { "$ref": "#/definitions/ProcessorEndian" },
+        "branch-protection": { "$ref": "#/definitions/ProcessorBranchProtection" },
+        "core": {"type": "string", "description": "Processor core"}
+      },      
+      "additionalProperties": false
     },
     "GroupsType": {
       "type": "array",

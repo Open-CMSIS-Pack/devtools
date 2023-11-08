@@ -1,0 +1,34 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schemas/cproject.schema.json
+
+project:
+  device: RteTest_ARMCM0
+  compiler: AC6
+  components:
+    - component: Startup
+    - component: CORE
+
+  layers:
+    - layer: ./mve-fp.clayer.yml
+      for-context: +mve-fp
+    - layer: ./mve-int.clayer.yml
+      for-context: +mve-int
+    - layer: ./no-mve.clayer.yml
+      for-context: +no-mve
+
+  setups:
+    - setup: mve-fp
+      for-context: +mve-fp
+      processor:
+        mve: fp
+    - setup: mve-int
+      for-context: +mve-int
+      processor:
+        mve: int
+    - setup: no-mve
+      for-context: +no-mve
+      processor:
+        mve: off
+    - setup: fail
+      for-context: .Fail
+      processor:
+        mve: fp
