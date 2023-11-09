@@ -271,3 +271,24 @@ TEST_F(ProjMgrSchemaCheckerUnitTests, SchemaCheck_define) {
     EXPECT_TRUE(errList.end() != errItr);
   }
 }
+
+TEST_F(ProjMgrSchemaCheckerUnitTests, SchemaCheck_Output_Type) {
+  vector<std::pair<int, int>> expectedErrPos = {
+    // line, col
+    {  4  ,  7 },
+    {  6  ,  7 }
+  };
+  const string& filename = testinput_folder + "/TestProject/incomplete_output_type.cproject.yml";
+  EXPECT_FALSE(Validate(filename, FileType::PROJECT));
+
+  // Check errors
+  auto errList = GetErrors();
+  EXPECT_EQ(errList.size(), expectedErrPos.size());
+  for (auto& errPos : expectedErrPos) {
+    auto errItr = find_if(errList.begin(), errList.end(),
+      [&](const RteError& err) {
+        return err.m_line == errPos.first && err.m_col == errPos.second;
+      });
+    EXPECT_TRUE(errList.end() != errItr);
+  }
+}
