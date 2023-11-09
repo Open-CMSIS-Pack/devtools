@@ -76,7 +76,7 @@ jobs:
       - name: Validate results
         run: |
           if [ "${{ steps.errors.outputs.value}}" = "1" ]; then
-            echo "💥 Issue(s) detected. Check summary: ${{ github.event.pull_request.head.repo.html_url }}/actions/runs/${{ github.run_id }}"
+            echo "💥 Issue(s) detected. Check summary: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             exit 1
           else
             echo "👍 No issues detected."
