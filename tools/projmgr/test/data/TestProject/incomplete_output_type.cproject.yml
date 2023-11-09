@@ -1,0 +1,25 @@
+project:
+  setups:
+    # invalid output node, at least one property should be declared
+    - output:
+    # invalid output node, for-context and not-for-context implement mutual exclusion
+    - output:
+        base-name: library-$Compiler$
+      for-context: .library
+      not-for-context: .BaseNameConflict
+    - output:
+        type: elf
+  device: RteTest_ARMCM0
+  compiler: AC6@>=6.18.0
+  processor:
+    trustzone: non-secure
+  components:
+    - component: Startup
+    - component: CORE
+  groups:
+    - group: Sources
+      files: 
+        - file: main.c
+
+  output:
+    type: elf
