@@ -424,12 +424,14 @@ struct CbuildSetItem {
 /**
  * @brief global generator item containing
  *        generator id,
+ *        generator description,
  *        download url,
  *        bridge program,
  *        path for generated files
 */
 struct GlobalGeneratorItem {
   std::string id;
+  std::string description;
   std::string downloadUrl;
   std::string run;
   std::string path;

@@ -1136,6 +1136,7 @@
       "type": "object",
       "properties": {
         "id": { "type": "string", "description": "Generator identifier" },
+        "description": { "type": "string", "description": "Generator description" },
         "download-url": { "type": "string", "description": "URL for downloading generator tool" },
         "run": { "type": "string", "description": "Related bridge program" },
         "path": { "type": "string", "description": "Specifies the directory for generated files" }
