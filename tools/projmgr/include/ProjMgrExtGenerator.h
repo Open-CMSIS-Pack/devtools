@@ -92,6 +92,13 @@ public:
   const std::string& GetGlobalGenRunCmd(const std::string& generatorId);
 
   /**
+   * @brief get generator description
+   * @param generatorId generator identifier
+   * @return string with generator description
+  */
+  const std::string& GetGlobalDescription(const std::string& generatorId);
+
+  /**
    * @brief add generator to the list of used generators of a given context
    * @param generatorId generator identifier
    * @param genDir directory for generated files

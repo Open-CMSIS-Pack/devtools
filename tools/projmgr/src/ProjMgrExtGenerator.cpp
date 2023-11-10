@@ -72,6 +72,9 @@ const string& ProjMgrExtGenerator::GetGlobalGenRunCmd(const string& generatorId)
   return(m_globalGenerators[generatorId].run);
 }
 
+const string& ProjMgrExtGenerator::GetGlobalDescription(const string& generatorId) {
+  return(m_globalGenerators[generatorId].description);
+}
 
 void ProjMgrExtGenerator::AddUsedGenerator(const string& generatorId, const string& genDir, const string& contextId) {
   m_usedGenerators[generatorId][genDir].push_back(contextId);

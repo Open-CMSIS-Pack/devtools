@@ -3321,17 +3321,38 @@ bool ProjMgrWorker::ListContexts(vector<string>& contexts, const string& filter,
 
 bool ProjMgrWorker::ListGenerators(vector<string>& generators) {
   set<string> generatorsSet;
+  GeneratorContextVecMap generatorsMap;
+  StrMap generatorsDescription;
   for (const auto& selectedContext : m_selectedContexts) {
     ContextItem& context = m_contexts[selectedContext];
     if (!ProcessContext(context, false, true, false)) {
       return false;
     }
     for (const auto& [id, generator] : context.generators) {
-      generatorsSet.insert(id + " (" + generator->GetDescription() + ")");
+      for (const auto& [_, item] : context.gpdscs) {
+        if (item.generator == id) {
+          const string workingDir = fs::path(context.cproject->directory).append(item.workingDir).generic_string();
+          generatorsMap[id][workingDir].push_back(context.name);
+          generatorsDescription[id] = generator->GetDescription();
+          break;
+        }
+      }
     }
   }
-  for (const auto& [id, _] : m_extGenerator->GetUsedGenerators()) {
-    generatorsSet.insert(id + " (Global Registered Generator)");
+  GeneratorContextVecMap extGeneratorsMap(m_extGenerator->GetUsedGenerators());
+  generatorsMap.insert(extGeneratorsMap.begin(), extGeneratorsMap.end());
+  for (const auto& [id, dirs] : generatorsMap) {
+    string generatorEntry = id + " (" + (m_extGenerator->IsGlobalGenerator(id) ?
+      m_extGenerator->GetGlobalDescription(id) : generatorsDescription[id]) + ")";
+    if (m_verbose) {
+      for (const auto& [dir, contexts] : dirs) {
+        generatorEntry += "\n  base-dir: " + RteFsUtils::RelativePath(dir, m_parser->GetCsolution().directory);
+        for (const auto& context : contexts) {
+          generatorEntry += "\n    context: " + context;
+        }
+      }
+    }
+    generatorsSet.insert(generatorEntry);
   }
   generators.assign(generatorsSet.begin(), generatorsSet.end());
   return true;

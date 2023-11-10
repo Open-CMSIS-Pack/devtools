@@ -269,6 +269,7 @@ bool ProjMgrYamlParser::ParseGlobalGenerator(const string& input,
       GlobalGeneratorItem generator;
       map<const string, string&> generatorChildren = {
         {YAML_ID, generator.id},
+        {YAML_DESCRIPTION, generator.description},
         {YAML_DOWNLOAD_URL, generator.downloadUrl},
         {YAML_RUN, generator.run},
       };
