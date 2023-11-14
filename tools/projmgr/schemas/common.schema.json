@@ -25,6 +25,12 @@
       "minItems": 1,
       "items": { "$ref": "#/definitions/BuildContext" }
     },
+    "ArrayOfBuildContextWithProjectName": {
+      "type": "array",
+      "uniqueItems": true,
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/BuildContextWithProjectName" }
+    },
     "ConditionIDType": {
       "type": "string"
     },
@@ -1120,7 +1126,7 @@
       "type": "object",
       "properties": {
         "generated-by": { "type": "string", "description": "Tool name along with version information used to generate this application" },
-        "contexts": { "$ref": "#/definitions/ArrayOfStrings", "description": "List of fully specified contexts" },
+        "contexts": { "$ref": "#/definitions/ArrayOfBuildContextWithProjectName", "description": "List of fully specified contexts" },
         "compiler": { "type": "string", "description": "Selection of compiler used" }
       },
       "additionalProperties": false,
