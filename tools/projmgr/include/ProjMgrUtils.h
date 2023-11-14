@@ -350,18 +350,6 @@ public:
     const std::vector<std::string>& contextFilters);
 
   /**
-   * @brief replace list of contexts
-   * @param selectedContexts list of matched contexts
-   * @param allContexts list of all available contexts
-   * @param contextReplace filter criteria
-   * @return Error object with error message (if any)
-  */
-  static Error ReplaceContexts(
-    std::vector<std::string>& selectedContexts,
-    const std::vector<std::string>& allContexts,
-    const std::string& contextReplace);
-
-  /**
    * @brief get equivalent device attribute
    * @param key device attribute rte key
    * @param value device attribute value (rte or yaml)

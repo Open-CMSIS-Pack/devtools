@@ -3835,31 +3835,6 @@ TEST_F(ProjMgrUnitTests, EnsurePortability) {
   }
 }
 
-TEST_F(ProjMgrUnitTests, RunProjMgrSolution_context_replacement) {
-  char* argv[10];
-  StdStreamRedirect streamRedirect;
-  // convert --solution solution.yml
-  const string& csolution = testinput_folder + "/TestSolution/test.csolution.yml";
-  RemoveCbuildSetFile(csolution);
-
-  argv[1] = (char*)"convert";
-  argv[2] = (char*)"--solution";
-  argv[3] = (char*)csolution.c_str();
-  argv[4] = (char*)"-c";
-  argv[5] = (char*)"test1.Release";
-  argv[6] = (char*)"--context-replacement";
-  argv[7] = (char*)"test1.Debug";
-  argv[8] = (char*)testoutput_folder.c_str();
-  argv[9] = (char*)"-v";
-  EXPECT_EQ(0, RunProjMgr(10, argv, 0));
-
-  auto outStr = streamRedirect.GetOutString();
-  EXPECT_NE(string::npos, outStr.find("test1.Debug+CM0.cprj - info csolution: file generated successfully"));
-  EXPECT_EQ(string::npos, outStr.find("test1.Release+CM0.cprj - info csolution: file generated successfully"));
-  EXPECT_EQ(string::npos, outStr.find("test2.Debug+CM0.cprj - info csolution: file generated successfully"));
-  EXPECT_EQ(string::npos, outStr.find("test2.Debug+CM3.cprj - info csolution: file generated successfully"));
-}
-
 TEST_F(ProjMgrUnitTests, RunProjMgr_NonUniqueMapKeys) {
   StdStreamRedirect streamRedirect;
   char* argv[6];

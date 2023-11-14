@@ -38,7 +38,6 @@ Commands:\n\
   update-rte                    Create/update configuration files and validate solution\n\n\
 Options:\n\
   -c, --context arg [...]       Input context names [<project-name>][.<build-type>][+<target-type>]\n\
-      --context-replacement arg Input context replacement name [<project-name>][.<build-type>][+<target-type>]\n\
   -d, --debug                   Enable debug messages\n\
   -D, --dry-run                 Enable dry-run\n\
   -e, --export arg              Set suffix for exporting <context><suffix>.cprj retaining only specified versions\n\
@@ -127,7 +126,6 @@ int ProjMgr::RunProjMgr(int argc, char **argv, char** envp) {
 
   cxxopts::Option solution("s,solution", "Input csolution.yml file", cxxopts::value<string>());
   cxxopts::Option context("c,context", "Input context names [<project-name>][.<build-type>][+<target-type>]", cxxopts::value<std::vector<std::string>>());
-  cxxopts::Option contextReplacement("context-replacement", "Input context replacement name [<cproject>][.<build-type>][+<target-type>]", cxxopts::value<std::string>());
   cxxopts::Option filter("f,filter", "Filter words", cxxopts::value<string>());
   cxxopts::Option help("h,help", "Print usage");
   cxxopts::Option generator("g,generator", "Code generator identifier", cxxopts::value<string>());
@@ -159,16 +157,16 @@ int ProjMgr::RunProjMgr(int argc, char **argv, char** envp) {
     {"list components",   { true,  {context, debug, filter, load, schemaCheck, toolchain, verbose}}},
     {"list dependencies", { false, {context, debug, filter, load, schemaCheck, toolchain, verbose}}},
     {"list contexts",     { false, {debug, filter, schemaCheck, verbose, ymlOrder}}},
-    {"list generators",   { false, {context, contextReplacement, debug, load, schemaCheck, toolchain, verbose}}},
-    {"list layers",       { false, {context, contextReplacement, debug, load, clayerSearchPath, schemaCheck, toolchain, verbose}}},
-    {"list toolchains",   { false, {context, contextReplacement, debug, toolchain, verbose}}},
+    {"list generators",   { false, {context, debug, load, schemaCheck, toolchain, verbose}}},
+    {"list layers",       { false, {context, debug, load, clayerSearchPath, schemaCheck, toolchain, verbose}}},
+    {"list toolchains",   { false, {context, debug, toolchain, verbose}}},
     {"list environment",  { true,  {}}},
   };
 
   try {
     options.add_options("", {
       {"positional", "", cxxopts::value<vector<string>>()},
-      solution, context, contextReplacement, contextSet, filter, generator,
+      solution, context, contextSet, filter, generator,
       load, clayerSearchPath, missing, schemaCheck, noUpdateRte, output,
       help, version, verbose, debug, dryRun, exportSuffix, toolchain, ymlOrder
     });
@@ -225,9 +223,6 @@ int ProjMgr::RunProjMgr(int argc, char **argv, char** envp) {
     }
     if (parseResult.count("context")) {
       manager.m_context = parseResult["context"].as<vector<string>>();
-    }
-    if (parseResult.count("context-replacement")) {
-      manager.m_contextReplacement = parseResult["context-replacement"].as<string>();
     }
     if (parseResult.count("filter")) {
       manager.m_filter = parseResult["filter"].as<string>();
@@ -455,7 +450,7 @@ bool ProjMgr::RunConfigure(bool printConfig) {
 
   bool checkCbuildSet = (m_context.size() == 0) && m_contextSet;
   // Parse context selection
-  if (!m_worker.ParseContextSelection(m_context, m_contextReplacement, checkCbuildSet)) {
+  if (!m_worker.ParseContextSelection(m_context, checkCbuildSet)) {
     return false;
   }
   // Get context pointers
@@ -562,7 +557,7 @@ bool ProjMgr::RunListPacks(void) {
     }
   }
   // Parse context selection
-  if (!m_worker.ParseContextSelection(m_context, m_contextReplacement)) {
+  if (!m_worker.ParseContextSelection(m_context)) {
     return false;
   }
   vector<string> packs;
@@ -581,7 +576,7 @@ bool ProjMgr::RunListBoards(void) {
     }
   }
   // Parse context selection
-  if (!m_worker.ParseContextSelection(m_context, m_contextReplacement)) {
+  if (!m_worker.ParseContextSelection(m_context)) {
     return false;
   }
   vector<string> boards;
@@ -603,7 +598,7 @@ bool ProjMgr::RunListDevices(void) {
     }
   }
   // Parse context selection
-  if (!m_worker.ParseContextSelection(m_context, m_contextReplacement)) {
+  if (!m_worker.ParseContextSelection(m_context)) {
     return false;
   }
   vector<string> devices;
@@ -625,7 +620,7 @@ bool ProjMgr::RunListComponents(void) {
     }
   }
   // Parse context selection
-  if (!m_worker.ParseContextSelection(m_context, m_contextReplacement)) {
+  if (!m_worker.ParseContextSelection(m_context)) {
     return false;
   }
   vector<string> components;
@@ -647,7 +642,7 @@ bool ProjMgr::RunListConfigs() {
     }
   }
   // Parse context selection
-  if (!m_worker.ParseContextSelection(m_context, m_contextReplacement)) {
+  if (!m_worker.ParseContextSelection(m_context)) {
     return false;
   }
   vector<string> configFiles;
@@ -667,7 +662,7 @@ bool ProjMgr::RunListDependencies(void) {
     return false;
   }
   // Parse context selection
-  if (!m_worker.ParseContextSelection(m_context, m_contextReplacement)) {
+  if (!m_worker.ParseContextSelection(m_context)) {
     return false;
   }
   vector<string> dependencies;
@@ -703,7 +698,7 @@ bool ProjMgr::RunListGenerators(void) {
     return false;
   }
   // Parse context selection
-  if (!m_worker.ParseContextSelection(m_context, m_contextReplacement)) {
+  if (!m_worker.ParseContextSelection(m_context)) {
     return false;
   }
   // Get generators
@@ -725,7 +720,7 @@ bool ProjMgr::RunListLayers(void) {
     }
   }
   // Parse context selection
-  if (!m_worker.ParseContextSelection(m_context, m_contextReplacement)) {
+  if (!m_worker.ParseContextSelection(m_context)) {
     return false;
   }
   // Get layers
@@ -750,7 +745,7 @@ bool ProjMgr::RunCodeGenerator(void) {
     return false;
   }
   // Parse context selection
-  if (!m_worker.ParseContextSelection(m_context, m_contextReplacement)) {
+  if (!m_worker.ParseContextSelection(m_context)) {
     return false;
   }
   if (m_extGenerator.IsGlobalGenerator(m_codeGenerator)) {
@@ -775,7 +770,7 @@ bool ProjMgr::RunListToolchains(void) {
     }
   }
   // Parse context selection
-  if (!m_worker.ParseContextSelection(m_context, m_contextReplacement)) {
+  if (!m_worker.ParseContextSelection(m_context)) {
     return false;
   }
   vector<ToolchainItem> toolchains;
