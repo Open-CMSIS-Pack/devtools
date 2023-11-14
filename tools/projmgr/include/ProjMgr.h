@@ -93,7 +93,6 @@ protected:
   std::string m_csolutionFile;
   std::string m_cdefaultFile;
   std::vector<std::string> m_context;
-  std::string m_contextReplacement;
   std::string m_filter;
   std::string m_codeGenerator;
   std::string m_command;
