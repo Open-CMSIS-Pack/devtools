@@ -503,10 +503,18 @@ bool ProjMgr::RunConfigure(bool printConfig) {
     }
   }
 
-  // Generate cbuild-set file
-  if (m_contextSet && (!m_processedContexts.empty())) {
-    if (!m_emitter.GenerateCbuildSet(m_parser, m_processedContexts, m_selectedToolchain)) {
-      return false;
+  if (m_contextSet) {
+    const string& cbuildSetFile = m_parser.GetCsolution().directory + "/" +
+      m_parser.GetCsolution().name + ".cbuild-set.yml";
+
+    if ((m_context.size() == 0) && (RteFsUtils::Exists(cbuildSetFile) == false)) {
+      ProjMgrLogger::Warn("unable to locate " + cbuildSetFile + " file.");
+    }
+    else if (!m_processedContexts.empty()) {
+      // Generate cbuild-set file
+      if (!m_emitter.GenerateCbuildSet(m_processedContexts, m_selectedToolchain, cbuildSetFile)) {
+        return false;
+      }
     }
   }
 

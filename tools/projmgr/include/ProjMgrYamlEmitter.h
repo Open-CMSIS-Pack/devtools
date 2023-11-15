@@ -57,9 +57,12 @@ public:
   /**
    * @brief generate cbuild set file
    * @param contexts vector with pointers to contexts
+   * @param selectedCompiler name of the selected compiler
+   * @param cbuildSetFile path to *.cbuild-set file to be generated
    * @return true if executed successfully
   */
-  static bool GenerateCbuildSet(ProjMgrParser& parser, const std::vector<ContextItem*> contexts, const std::string& selectedCompiler);
+  static bool GenerateCbuildSet(const std::vector<ContextItem*> contexts,
+    const std::string& selectedCompiler, const std::string& cbuildSetFile);
 };
 
 #endif  // PROJMGRYAMLEMITTER_H
