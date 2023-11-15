@@ -4,6 +4,7 @@
   "title": "CMSIS cbuild-idx",
   "description": "defines a build description for a solution",
   "version": "2.1.0",
+  "type": "object",
   "properties": {
     "build-idx": {
       "$ref": "./common.schema.json#/definitions/BuildIdxDescType"

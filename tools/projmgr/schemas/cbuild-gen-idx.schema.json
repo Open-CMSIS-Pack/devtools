@@ -4,6 +4,7 @@
   "title": "CMSIS cbuild-gen-idx",
   "description": "defines sibling contexts description for a generator call",
   "version": "2.1.0",
+  "type": "object",
   "properties": {
     "build-gen-idx": {
       "$ref": "./common.schema.json#/definitions/BuildGenIdxDescType"

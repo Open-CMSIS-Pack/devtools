@@ -4,6 +4,7 @@
   "title": "CMSIS cbuild",
   "description": "defines a build description for a project",
   "version": "2.1.0",
+  "type": "object",
   "properties": {
     "build": {
       "$ref": "./common.schema.json#/definitions/BuildDescType"

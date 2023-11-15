@@ -4,6 +4,7 @@
   "title": "CMSIS cdefault",
   "description": "setup of a build environment with toolchain specific controls; defines a default compiler",
   "version": "2.1.0",
+  "type": "object",
   "properties": {
     "default": {
       "$ref": "./common.schema.json#/definitions/DefaultDescType"

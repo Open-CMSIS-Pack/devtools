@@ -4,6 +4,7 @@
   "title": "CMSIS clayer",
   "description": "set of source files and pre-configured components for reuse in different applications",
   "version": "2.1.0",
+  "type": "object",
   "properties": {
     "layer": {
       "$ref": "./common.schema.json#/definitions/LayerDescType"

@@ -4,6 +4,7 @@
   "title": "CMSIS cbuild-gen",
   "description": "defines an individual context description for a generator call",
   "version": "2.1.0",
+  "type": "object",
   "properties": {
     "build-gen": {
       "$ref": "./common.schema.json#/definitions/BuildDescType"
