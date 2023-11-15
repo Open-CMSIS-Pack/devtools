@@ -4,10 +4,12 @@
   "title": "CMSIS cbuild-set",
   "description": "defines a selected set of build configuration",
   "version": "2.1.0",
+  "type": "object",
   "properties": {
     "cbuild-set": {
       "$ref": "./common.schema.json#/definitions/BuildSetDescType"
     }
   },
+  "additionalProperties": false,
   "required": [ "cbuild-set" ]
 }

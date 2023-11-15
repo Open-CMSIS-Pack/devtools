@@ -4,10 +4,12 @@
   "title": "CMSIS csolution",
   "description": "complete scope of an application composed of sub-projects; defines a target and build types",
   "version": "2.1.0",
+  "type": "object",
   "properties": {
     "solution": {
       "$ref": "./common.schema.json#/definitions/SolutionDescType"
     }
   },
+  "additionalProperties": false,
   "required": [ "solution" ]
 }

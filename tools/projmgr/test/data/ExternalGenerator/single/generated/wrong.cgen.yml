@@ -9,7 +9,7 @@ generator-import:
 
   components:
     - component: RteTest:GlobalLevel
-    - component: UnknownVendor::UnknownComponent
+    - component: UnknownVendor:UnknownComponent
       for-context: .WrongComponent
 
   groups:

@@ -4,10 +4,12 @@
   "title": "CMSIS cproject",
   "description": "source files and pre-configured components of a sub-project that builds independently",
   "version": "2.1.0",
+  "type": "object",
   "properties": {
     "project": {
       "$ref": "./common.schema.json#/definitions/ProjectDescType"
     }
   },
+  "additionalProperties": false,
   "required": [ "project" ]
 }

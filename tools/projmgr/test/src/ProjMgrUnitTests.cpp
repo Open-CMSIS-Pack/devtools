@@ -4249,7 +4249,7 @@ TEST_F(ProjMgrUnitTests, ExternalGenerator_WrongGeneratedData) {
   argv[4] = (char*)"wrong.WrongComponent+CM0";
   EXPECT_EQ(1, RunProjMgr(5, argv, 0));
   errStr = streamRedirect.GetErrorString();
-  EXPECT_TRUE(errStr.find("error csolution: no component was found with identifier 'UnknownVendor::UnknownComponent'") != string::npos);
+  EXPECT_TRUE(errStr.find("error csolution: no component was found with identifier 'UnknownVendor:UnknownComponent'") != string::npos);
 
   streamRedirect.ClearStringStreams();
   argv[4] = (char*)"wrong.WrongGroup+CM0";

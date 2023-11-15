@@ -4,10 +4,12 @@
   "title": "CMSIS generator registry",
   "description": "defines global generator registry",
   "version": "2.1.0",
+  "type": "object",
   "properties": {
     "generator": {
       "$ref": "./common.schema.json#/definitions/GeneratorRegistryDescType"
     }
   },
+  "additionalProperties": false,
   "required": [ "generator" ]
 }
