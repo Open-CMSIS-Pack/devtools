@@ -73,7 +73,7 @@ bool ProjMgr::PrintUsage(
   const map<string, pair<bool, vector<cxxopts::Option>>>& cmdOptionsDict,
   const std::string& cmd, const std::string& subCmd)
 {
-  string signature = PRODUCT_NAME + string(" ") + VERSION_STRING + string(" ") + COPYRIGHT_NOTICE;
+  string signature = string("csolution: Project Manager ") + VERSION_STRING + string(" ") + COPYRIGHT_NOTICE;
   if (cmd.empty() && subCmd.empty()) {
     // print main help
     cout << signature << endl;
