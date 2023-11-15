@@ -803,7 +803,7 @@
         "configuration": { "$ref": "#/definitions/BuildContext" }
       },
       "additionalProperties": false,
-      "required": ["cproject"]
+      "required": ["cbuild", "project", "configuration"]
     },
     "BuildDescType": {
       "description": "The lock info that describes the resolved state of contexts and also can be used as input for generators",
@@ -1198,7 +1198,7 @@
         "for-project-part": { "type": "string", "description": "For project part (secure, non-secure, <processor>)" }
       },
       "additionalProperties": false,
-      "required": ["id", "output", "project-type", "cbuild-gens"]
+      "required": ["cbuild-gen", "project", "configuration"]
     },
     "GeneratorImportDescType": {
       "type": "object",

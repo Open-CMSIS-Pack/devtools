@@ -5,9 +5,10 @@
   "description": "defines a build description for a solution",
   "version": "2.1.0",
   "properties": {
-    "build": {
+    "build-idx": {
       "$ref": "./common.schema.json#/definitions/BuildIdxDescType"
     }
   },
+  "additionalProperties": false,
   "required": [ "build-idx" ]
 }

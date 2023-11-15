@@ -9,5 +9,6 @@
       "$ref": "./common.schema.json#/definitions/ProjectDescType"
     }
   },
+  "additionalProperties": false,
   "required": [ "project" ]
 }

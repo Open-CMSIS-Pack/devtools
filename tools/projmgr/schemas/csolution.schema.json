@@ -9,5 +9,6 @@
       "$ref": "./common.schema.json#/definitions/SolutionDescType"
     }
   },
+  "additionalProperties": false,
   "required": [ "solution" ]
 }

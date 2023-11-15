@@ -9,5 +9,6 @@
       "$ref": "./common.schema.json#/definitions/BuildDescType"
     }
   },
+  "additionalProperties": false,
   "required": [ "build" ]
 }
