@@ -641,16 +641,13 @@ bool ProjMgrYamlEmitter::GenerateCbuild(ContextItem* context, const string& gene
   return cbuild.WriteFile(rootNode, filename);
 }
 
-bool ProjMgrYamlEmitter::GenerateCbuildSet(ProjMgrParser& parser,
-  const std::vector<ContextItem*> contexts, const string& selectedCompiler)
+bool ProjMgrYamlEmitter::GenerateCbuildSet(const std::vector<ContextItem*> contexts,
+  const string& selectedCompiler, const string& cbuildSetFile)
 {
-  const string& filename = parser.GetCsolution().directory + "/" +
-    parser.GetCsolution().name + ".cbuild-set.yml";
-
   YAML::Node rootNode;
   ProjMgrYamlCbuild cbuild(rootNode[YAML_CBUILD_SET], contexts, selectedCompiler);
 
-  return cbuild.WriteFile(rootNode, filename);
+  return cbuild.WriteFile(rootNode, cbuildSetFile);
 }
 
 ProjMgrYamlCbuild::ProjMgrYamlCbuild(YAML::Node node, const vector<ContextItem*>& siblings,

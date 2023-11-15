@@ -3920,8 +3920,9 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_cbuildset_file) {
 
   {
     CleanUp();
+    StdStreamRedirect streamRedirect;
     // Test 2: Run without contexts specified (no existing cbuild-set file with -S)
-    // Expectation: *.cbuild-set.yml file should be generated and all available
+    // Expectation: *.cbuild-set.yml file should not be generated and all available
     //              contexts should be processed
     argv[1] = (char*)"convert";
     argv[2] = (char*)"--solution";
@@ -3931,12 +3932,13 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_cbuildset_file) {
     argv[6] = (char*)"-S";
 
     EXPECT_EQ(0, RunProjMgr(7, argv, 0));
-    EXPECT_TRUE(RteFsUtils::Exists(cbuildSetFile));
-    ProjMgrTestEnv::CompareFile(cbuildSetFile, testinput_folder + "/TestSolution/ref/cbuild/all_contexts_test.cbuild-set.yml");
+    EXPECT_FALSE(RteFsUtils::Exists(cbuildSetFile));
     EXPECT_TRUE(RteFsUtils::Exists(outputDir + "/test2.Debug+CM0.cbuild.yml"));
     EXPECT_TRUE(RteFsUtils::Exists(outputDir + "/test1.Debug+CM0.cbuild.yml"));
     EXPECT_TRUE(RteFsUtils::Exists(outputDir + "/test2.Debug+CM3.cbuild.yml"));
     EXPECT_TRUE(RteFsUtils::Exists(outputDir + "/test1.Release+CM0.cbuild.yml"));
+    const auto& errStr = streamRedirect.GetErrorString();
+    EXPECT_NE(string::npos, errStr.find("warning csolution: unable to locate " + cbuildSetFile + " file."));
   }
 
   {
