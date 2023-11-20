@@ -70,7 +70,7 @@ build:
             - ../../../../output/tmp/test-gpdsc/CM0/Debug/test-gpdsc.Debug+CM0.cbuild-gen.yml
             - --foo=bar
   linker:
-    script: ${CMSIS_COMPILER_ROOT}/ac6_linker_script.sct
+    script: ../data/TestGenerator/RTE/Device/RteTestGen_ARMCM0/ac6_linker_script.sct.src
     regions: ../data/TestGenerator/RTE/Device/RteTestGen_ARMCM0/regions_RteTestGen_ARMCM0.h
   constructed-files:
     - file: ../data/TestGenerator/RTE/_Debug_CM0/RTE_Components.h

@@ -70,8 +70,12 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
     if (!m_linkerRegionsFile.empty()) {
       cmakelists << EOL << "set(LD_REGIONS \"" << m_linkerRegionsFile << "\")";
     }
-    if (!m_linkerRegionsFile.empty() || !m_linkerPreProcessorDefines.empty()) {
-      const string linkerScriptPreProcessed = fs::path(m_intdir).append(fs::path(m_linkerScript).filename().generic_string()).concat(PPEXT).generic_string();
+    const string linkerExt = fs::path(m_linkerScript).extension().generic_string();
+    if ((linkerExt == SRCPPEXT) || !m_linkerRegionsFile.empty() || !m_linkerPreProcessorDefines.empty()) {
+      string absLinkerScript = fs::path(m_linkerScript).filename().generic_string();
+      RteFsUtils::NormalizePath(absLinkerScript, m_intdir);
+      const string linkerScriptPreProcessed = (linkerExt == SRCPPEXT) ? fs::path(absLinkerScript).replace_extension("").generic_string() :
+        fs::path(absLinkerScript).concat(PPEXT).generic_string();
       cmakelists << EOL << "set(LD_SCRIPT_PP \"" << linkerScriptPreProcessed << "\")";
     }
   }

@@ -205,6 +205,7 @@ struct TranslationControl {
 
 /**
  * @brief linker context item containing
+ *        auto linker script generation
  *        list of linker scripts for processing,
  *        list of linker regions files for processing,
  *        list of defines
@@ -212,6 +213,7 @@ struct TranslationControl {
  *        processed script file
 */
 struct LinkerContextItem {
+  bool autoGen;
   StrVec scriptList;
   StrVec regionsList;
   StrVec defines;
@@ -759,6 +761,7 @@ protected:
   void CheckCompilerFilterSpelling(const std::string& compiler);
   bool ProcessGeneratedLayers(ContextItem& context);
   void CheckDeviceAttributes(const std::string& device, const ProcessorItem& userSelection, const StrMap& targetAttributes);
+  std::string GetContextRteFolder(ContextItem& context);
 };
 
 #endif  // PROJMGRWORKER_H

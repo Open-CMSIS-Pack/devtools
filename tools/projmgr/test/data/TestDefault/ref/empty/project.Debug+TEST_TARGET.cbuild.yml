@@ -34,7 +34,7 @@ build:
       from-pack: ARM::RteTest_DFP@0.1.1
       selected-by: CORE
   linker:
-    script: ${CMSIS_COMPILER_ROOT}/gcc_linker_script.ld
+    script: ../../data/TestDefault/RTE/Device/RteTest_ARMCM0/gcc_linker_script.ld.src
     regions: ../../data/TestDefault/RTE/Device/RteTest_ARMCM0/regions_RteTest_ARMCM0.h
   groups:
     - group: Sources

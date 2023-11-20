@@ -540,6 +540,12 @@ public:
   void CollectFilteredFiles();
 
   /**
+   * @brief get device folder relative to RTE folder
+   * @return string containing folder
+  */
+  std::string GetDeviceFolder() const;
+
+  /**
    * @brief get file name regions*.h relative to RTE folder
    * @return string containing file name
   */

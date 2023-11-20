@@ -1,0 +1,64 @@
+build:
+  generated-by: csolution version 0.0.0+gab7ac463
+  solution: ../data/TestSolution/LinkerOptions/linker.csolution.yml
+  project: ../data/TestSolution/LinkerOptions/linker.cproject.yml
+  context: linker.AutoGen+RteTest_ARMCM3
+  compiler: AC6
+  device: RteTest_ARMCM3
+  device-pack: ARM::RteTest_DFP@0.2.0
+  processor:
+    fpu: off
+    core: Cortex-M3
+  packs:
+    - pack: ARM::RteTest_DFP@0.2.0
+      path: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0
+  define:
+    - ARMCM3
+    - _RTE_
+  add-path:
+    - ../data/TestSolution/LinkerOptions/RTE/_AutoGen_RteTest_ARMCM3
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM3/Include
+  output-dirs:
+    intdir: tmp/linker/RteTest_ARMCM3/AutoGen
+    outdir: out/linker/RteTest_ARMCM3/AutoGen
+    rtedir: ../data/TestSolution/LinkerOptions/RTE
+  output:
+    - type: elf
+      file: linker.axf
+  components:
+    - component: ARM::Board:Test:Rev1@1.1.1
+      condition: BoardTest1
+      from-pack: ARM::RteTest_DFP@0.2.0
+      selected-by: Board:Test:Rev1
+    - component: ARM::Device:Startup&RteTest Startup@2.0.3
+      condition: ARMCM3 RteTest
+      from-pack: ARM::RteTest_DFP@0.2.0
+      selected-by: Device:Startup
+      files:
+        - file: ../data/TestSolution/LinkerOptions/RTE/Device/RteTest_ARMCM3/ARMCM3_ac6.sct
+          category: linkerScript
+          attr: config
+          version: 1.2.0
+        - file: ../data/TestSolution/LinkerOptions/RTE/Device/RteTest_ARMCM3/startup_ARMCM3.c
+          category: sourceC
+          attr: config
+          version: 2.0.3
+        - file: ../data/TestSolution/LinkerOptions/RTE/Device/RteTest_ARMCM3/system_ARMCM3.c
+          category: sourceC
+          attr: config
+          version: 1.2.2
+  linker:
+    script: ../data/TestSolution/LinkerOptions/RTE/Device/RteTest_ARMCM3/ac6_linker_script.sct.src
+    regions: ../data/TestSolution/LinkerOptions/RTE/Device/RteTest_ARMCM3/regions_RteTest_ARMCM3.h
+  constructed-files:
+    - file: ../data/TestSolution/LinkerOptions/RTE/_AutoGen_RteTest_ARMCM3/RTE_Components.h
+      category: header
+  licenses:
+    - license: <unknown>
+      license-agreement: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Doc/license.txt
+      packs:
+        - pack: ARM::RteTest_DFP@0.2.0
+      components:
+        - component: ARM::Board:Test:Rev1@1.1.1
+        - component: ARM::Device:Startup&RteTest Startup@2.0.3

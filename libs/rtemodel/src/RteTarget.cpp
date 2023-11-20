@@ -1656,12 +1656,18 @@ bool RteTarget::IsPackMissing(const string& pack)
   return t_missingPackIds.find(pack) != t_missingPackIds.end();
 }
 
+std::string RteTarget::GetDeviceFolder() const
+{
+  string deviceName = WildCards::ToX(GetFullDeviceName(), false);
+  return string("Device/") + deviceName;
+}
+
 std::string RteTarget::GetRegionsHeader() const
 {
   string deviceName = WildCards::ToX(GetFullDeviceName(), false);
   string boardName = WildCards::ToX(GetAttribute("Bname"), false);
   string filename = boardName.empty() ? deviceName : boardName;
-  return string("Device/") + deviceName + "/regions_" + filename + ".h";
+  return GetDeviceFolder() + "/regions_" + filename + ".h";
 }
 
 std::string RteTarget::GenerateMemoryRegionContent(RteItem* memory, const std::string& id, bool bBoardMemory) const

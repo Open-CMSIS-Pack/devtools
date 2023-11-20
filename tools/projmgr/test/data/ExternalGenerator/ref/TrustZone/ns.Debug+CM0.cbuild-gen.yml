@@ -30,7 +30,7 @@ build-gen:
       from-pack: ARM::RteTestGenerator@0.1.0
       selected-by: RteTestGenerator:Check Global Generator
   linker:
-    script: ${DEVTOOLS(data)}/TestToolchains/ac6_linker_script.sct
+    script: ${DEVTOOLS(data)}/ExternalGenerator/tz_ns/RTE/Device/RteTestGen_ARMCM0/ac6_linker_script.sct.src
     regions: ${DEVTOOLS(data)}/ExternalGenerator/tz_ns/RTE/Device/RteTestGen_ARMCM0/regions_RteTestGen_ARMCM0.h
   constructed-files:
     - file: ${DEVTOOLS(data)}/ExternalGenerator/tz_ns/RTE/_Debug_CM0/RTE_Components.h
