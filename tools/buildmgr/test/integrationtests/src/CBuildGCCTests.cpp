@@ -316,6 +316,15 @@ TEST_F(CBuildGCCTests, LinkerPreProcessingDefines) {
   CheckCMakeLists(param);
 }
 
+// Validate project compilation with linker script ".src" file
+TEST_F(CBuildGCCTests, LinkerPreProcessingSrcFile) {
+  TestParam param = { "GCC/LinkerPreProcessingSrcFile", "MyProject" };
+
+  RunCBuildScriptClean(param);
+  RunCBuildScript(param);
+  CheckCMakeLists(param);
+}
+
 // Validate project compilation with standard library flags
 TEST_F(CBuildGCCTests, StandardLibrary) {
   TestParam param = { "GCC/StandardLibrary", "MyProject" };

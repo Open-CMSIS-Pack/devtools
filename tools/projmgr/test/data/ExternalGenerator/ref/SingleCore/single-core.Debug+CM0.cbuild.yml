@@ -49,7 +49,7 @@ build:
       from-pack: ARM::RteTestGenerator@0.1.0
       selected-by: RteTestGenerator:Check Global Generator
   linker:
-    script: ${CMSIS_COMPILER_ROOT}/ac6_linker_script.sct
+    script: RTE/Device/RteTestGen_ARMCM0/ac6_linker_script.sct.src
     regions: RTE/Device/RteTestGen_ARMCM0/regions_RteTestGen_ARMCM0.h
   groups:
     - group: sources

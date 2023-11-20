@@ -13,6 +13,12 @@ solution:
       compiler: AC6
     - type: PriorityDefines
       compiler: AC6
+    - type: FromComponent
+      compiler: AC6
+    - type: AutoGen
+      compiler: AC6
+    - type: AutoGenWarning
+      compiler: AC6
 
   target-types:
     - type: RteTest_ARMCM3

@@ -18,7 +18,7 @@
     <output cmse-lib="test-access-sequences2_CMSE_Lib.o" elf="test-access-sequences2.axf" intdir="tmp/test-access-sequences2/CM0/Release" name="test-access-sequences2" outdir="out/test-access-sequences2/CM0/Release" rtedir="../data/TestAccessSequences/RTE" type="exe"/>
     <cflags add="PROJ2-D(RteTest_ARMCM0)-B() -O3 -C-CPP-RteTest_ARMCM0" compiler="AC6"/>
     <cxxflags add="PROJ2-D(RteTest_ARMCM0)-B() -O3 -C-CPP-RteTest_ARMCM0" compiler="AC6"/>
-    <ldflags add="--list=./out/test-access-sequences2/CM0/Release/test-access-sequences2.map" compiler="AC6" file="../data/TestToolchains/ac6_linker_script.sct" regions="../data/TestAccessSequences/RTE/Device/RteTest_ARMCM0/regions_RteTest_ARMCM0.h"/>
+    <ldflags add="--list=./out/test-access-sequences2/CM0/Release/test-access-sequences2.map" compiler="AC6" file="../data/TestAccessSequences/RTE/Device/RteTest_ARMCM0/ac6_linker_script.sct.src" regions="../data/TestAccessSequences/RTE/Device/RteTest_ARMCM0/regions_RteTest_ARMCM0.h"/>
     <defines>out/test-access-sequences1/CM0/Release/test-access-sequences1.axf;DEF-CM0-RteTest_ARMCM0-</defines>
     <includes>out/test-access-sequences1/CM0/Release/test-access-sequences1.axf;../data/TestAccessSequences/path/CM0/RteTest_ARMCM0</includes>
   </target>

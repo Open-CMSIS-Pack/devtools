@@ -17,7 +17,7 @@
   <target Dfpu="NO_FPU" Dname="RteTest_ARMCM0_Dual" Dvendor="ARM:82" Pname="cm0_core1">
     <output elf="test_target_options.out" intdir="tmp/test_target_options/CM0" name="test_target_options" outdir="out/test_target_options/CM0" rtedir="../data/TestSolution/RTE" type="exe"/>
     <options debug="off" languageC="c11" languageCpp="c++11" optimize="size" warnings="off"/>
-    <ldflags compiler="IAR" file="../data/TestToolchains/iar_linker_script.icf" regions="../data/TestSolution/RTE/Device/RteTest_ARMCM0_Dual_cm0_core1/regions_RteTest_ARMCM0_Dual_cm0_core1.h"/>
+    <ldflags compiler="IAR" file="../data/TestSolution/RTE/Device/RteTest_ARMCM0_Dual_cm0_core1/iar_linker_script.icf.src" regions="../data/TestSolution/RTE/Device/RteTest_ARMCM0_Dual_cm0_core1/regions_RteTest_ARMCM0_Dual_cm0_core1.h"/>
   </target>
 
   <components>

@@ -224,6 +224,7 @@ struct ConnectItem {
 
 /**
  * @brief linker item containing
+ *        auto linker script generation,
  *        regions file,
  *        script file,
  *        preprocessor defines,
@@ -231,6 +232,7 @@ struct ConnectItem {
  *        type inclusion
 */
 struct LinkerItem {
+  bool autoGen;
   std::string regions;
   std::string script;
   std::vector<std::string> defines;

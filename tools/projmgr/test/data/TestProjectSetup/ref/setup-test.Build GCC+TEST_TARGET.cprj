@@ -18,7 +18,7 @@
     <output elf="setup-test.elf" intdir="tmp/setup-test/TEST_TARGET/Build GCC" name="setup-test" outdir="out/setup-test/TEST_TARGET/Build GCC" rtedir="../data/TestProjectSetup/RTE" type="exe"/>
     <options debug="on" languageC="c11" languageCpp="c++11" optimize="size" warnings="on"/>
     <cflags add="SETUP_GCC_MISC SETUP_COMMON_MISC" compiler="GCC"/>
-    <ldflags compiler="GCC" file="../data/TestToolchains/gcc_linker_script.ld" regions="../data/TestProjectSetup/RTE/Device/RteTest_ARMCM0/regions_RteTest_ARMCM0.h"/>
+    <ldflags compiler="GCC" file="../data/TestProjectSetup/RTE/Device/RteTest_ARMCM0/gcc_linker_script.ld.src" regions="../data/TestProjectSetup/RTE/Device/RteTest_ARMCM0/regions_RteTest_ARMCM0.h"/>
     <defines>SETUP_GCC;SETUP_COMMON</defines>
     <includes>../data/TestProjectSetup/setup/GCC;../data/TestProjectSetup/setup/common</includes>
   </target>

@@ -16,7 +16,7 @@
 
   <target Dfpu="NO_FPU" Dname="RteTest_ARMCM0" Dvendor="ARM:82">
     <output elf="project.out" intdir="tmp/project/TEST_TARGET/Release" name="project" outdir="out/project/TEST_TARGET/Release" rtedir="../../data/TestDefault/RTE" type="exe"/>
-    <ldflags compiler="IAR" file="../../data/TestToolchains/iar_linker_script.icf" regions="../../data/TestDefault/RTE/Device/RteTest_ARMCM0/regions_RteTest_ARMCM0.h"/>
+    <ldflags compiler="IAR" file="../../data/TestDefault/RTE/Device/RteTest_ARMCM0/iar_linker_script.icf.src" regions="../../data/TestDefault/RTE/Device/RteTest_ARMCM0/regions_RteTest_ARMCM0.h"/>
   </target>
 
   <components>

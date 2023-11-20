@@ -25,6 +25,7 @@
 #define TXTEXT ".txt"   // Text extension
 #define LOGEXT ".clog"  // Audit file extension
 #define PPEXT ".pp"     // Pre-processed extension
+#define SRCPPEXT ".src" // Source for pre-processing extension
 #define ETCDIR "etc/"   // etc folder
 #define BINDIR "bin/"   // bin folder
 

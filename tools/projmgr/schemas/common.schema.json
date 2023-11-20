@@ -1100,6 +1100,7 @@
     "LinkerType": {
       "type": "object",
       "properties": {
+        "auto": { "type": "null", "description": "Use automatic linker script generation" },
         "regions": {
           "type": "string",
           "description": "Path and file name of regions_<device_or_board>.h, used to generate a Linker Script"

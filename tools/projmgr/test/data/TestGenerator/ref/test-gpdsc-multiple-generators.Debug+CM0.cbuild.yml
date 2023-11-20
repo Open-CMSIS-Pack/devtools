@@ -103,7 +103,7 @@ build:
             - ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0
             - ../../../../output/tmp/test-gpdsc-multiple-generators/CM0/Debug/test-gpdsc-multiple-generators.Debug+CM0.cbuild-gen.yml
   linker:
-    script: ${CMSIS_COMPILER_ROOT}/ac6_linker_script.sct
+    script: ../data/TestGenerator/RTE/Device/RteTestGen_ARMCM0/ac6_linker_script.sct.src
     regions: ../data/TestGenerator/RTE/Device/RteTestGen_ARMCM0/regions_RteTestGen_ARMCM0.h
   constructed-files:
     - file: ../data/TestGenerator/RTE/_Debug_CM0/RTE_Components.h

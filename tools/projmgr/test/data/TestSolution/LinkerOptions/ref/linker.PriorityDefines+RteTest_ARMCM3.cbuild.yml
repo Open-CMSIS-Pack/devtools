@@ -53,7 +53,7 @@ build:
       from-pack: ARM::RteTest_DFP@0.2.0
       selected-by: RteTest:CORE
   linker:
-    script: ${CMSIS_COMPILER_ROOT}/ac6_linker_script.sct
+    script: ../data/TestSolution/LinkerOptions/layer/RTE/Device/RteTest_ARMCM3/ac6_linker_script.sct.src
     regions: ../data/TestSolution/LinkerOptions/layer/RTE/Device/RteTest_ARMCM3/regions_RteTest_ARMCM3.h
     define:
       - LD_PP_PRIORITY_DEF0

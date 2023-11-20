@@ -112,7 +112,7 @@ const string ProjMgrUtils::GetCategory(const string& file) {
     {"header", {".h", ".hpp"}},
     {"library", {".a", ".lib"}},
     {"object", {".o"}},
-    {"linkerScript", {".sct", ".scf", ".ld", ".icf"}},
+    {"linkerScript", {".sct", ".scf", ".ld", ".icf", ".src"}},
     {"doc", {".txt", ".md", ".pdf", ".htm", ".html"}},
   };
   fs::path ext((fs::path(file)).extension());

@@ -3289,6 +3289,45 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_LinkerOptions) {
     testinput_folder + "/TestSolution/LinkerOptions/ref/linker.Debug_GCC+RteTest_ARMCM3.cbuild.yml");
 }
 
+TEST_F(ProjMgrUnitTests, RunProjMgr_LinkerOptions_Auto) {
+  char* argv[7];
+  const string& csolution = testinput_folder + "/TestSolution/LinkerOptions/linker.csolution.yml";
+  RemoveCbuildSetFile(csolution);
+
+  // linker script from component
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"-c";
+  argv[4] = (char*)"linker.FromComponent+RteTest_ARMCM3";
+  argv[5] = (char*)"-o";
+  argv[6] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(0, RunProjMgr(7, argv, 0));
+
+  // check generated files
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/linker.FromComponent+RteTest_ARMCM3.cprj",
+    testinput_folder + "/TestSolution/LinkerOptions/ref/linker.FromComponent+RteTest_ARMCM3.cprj");
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/linker.FromComponent+RteTest_ARMCM3.cbuild.yml",
+    testinput_folder + "/TestSolution/LinkerOptions/ref/linker.FromComponent+RteTest_ARMCM3.cbuild.yml");
+
+  // 'auto' enabled
+  argv[4] = (char*)"linker.AutoGen+RteTest_ARMCM3";
+  EXPECT_EQ(0, RunProjMgr(7, argv, 0));
+
+  // check generated files
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/linker.AutoGen+RteTest_ARMCM3.cprj",
+    testinput_folder + "/TestSolution/LinkerOptions/ref/linker.AutoGen+RteTest_ARMCM3.cprj");
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/linker.AutoGen+RteTest_ARMCM3.cbuild.yml",
+    testinput_folder + "/TestSolution/LinkerOptions/ref/linker.AutoGen+RteTest_ARMCM3.cbuild.yml");
+
+  // 'auto' enabled warning
+  StdStreamRedirect streamRedirect;
+  argv[4] = (char*)"linker.AutoGenWarning+RteTest_ARMCM3";
+  EXPECT_EQ(0, RunProjMgr(7, argv, 0));
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_TRUE(errStr.find("warning csolution: conflict: automatic linker script generation overrules specified script\
+ '../data/TestSolution/LinkerOptions/layer/linkerScript.ld'") != string::npos);
+}
+
 TEST_F(ProjMgrUnitTests, RunProjMgr_LinkerPriority) {
   char* argv[7];
   const string& csolution = testinput_folder + "/TestSolution/LinkerOptions/linker.csolution.yml";

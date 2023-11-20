@@ -48,7 +48,7 @@ build:
           scope: hidden
           version: 0.9.9
   linker:
-    script: ${CMSIS_COMPILER_ROOT}/ac6_linker_script.sct
+    script: ../data/TestSolution/LanguageAndScope/RTE/Device/RteTest_ARMCM3/ac6_linker_script.sct.src
     regions: ../data/TestSolution/LanguageAndScope/RTE/Device/RteTest_ARMCM3/regions_RteTest_ARMCM3.h
   constructed-files:
     - file: ../data/TestSolution/LanguageAndScope/RTE/_Debug_AC6_RteTest_ARMCM3/RTE_Components.h

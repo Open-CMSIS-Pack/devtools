@@ -19,6 +19,15 @@ project:
         define:
          - LD_PP_GCC_SETUP_DEF0
       for-compiler: GCC
-
+    - linker:
+      - auto:
+        for-context: .AutoGen
+      - auto:
+        script: ./layer/linkerScript.ld
+        for-context: .AutoGenWarning
   layers:
     - layer: layer/linker.clayer.yml
+
+  components:
+    - component: Device:Startup
+      for-context: [.FromComponent, .AutoGen]

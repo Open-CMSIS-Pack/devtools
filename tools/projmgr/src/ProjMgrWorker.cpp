@@ -1668,7 +1668,7 @@ void ProjMgrWorker::CheckAndGenerateRegionsHeader(ContextItem& context) {
   }
 }
 
-bool ProjMgrWorker::GenerateRegionsHeader(ContextItem& context, string& generatedRegionsFile) {
+string ProjMgrWorker::GetContextRteFolder(ContextItem& context) {
   // get rte folder associated to 'Device' class
   string rteFolder;
   for (const auto& [_, component] : context.components) {
@@ -1682,7 +1682,12 @@ bool ProjMgrWorker::GenerateRegionsHeader(ContextItem& context, string& generate
   if (rteFolder.empty()) {
     rteFolder = fs::path(context.directories.cprj).append(context.directories.rte).generic_string();
   }
+  return rteFolder;
+}
+
+bool ProjMgrWorker::GenerateRegionsHeader(ContextItem& context, string& generatedRegionsFile) {
   // generate regions header
+  const auto& rteFolder = GetContextRteFolder(context);
   if (!context.rteActiveTarget->GenerateRegionsHeader(rteFolder + "/")) {
     ProjMgrLogger::Warn("regions header file generation failed");
     return false;
@@ -1713,7 +1718,11 @@ bool ProjMgrWorker::ProcessConfigFiles(ContextItem& context) {
     }
   }
   // Linker script
-  if (context.linker.script.empty() && context.linker.regions.empty() && context.linker.defines.empty()) {
+  if (context.linker.autoGen) {
+    if (!context.linker.script.empty()) {
+      ProjMgrLogger::Warn("conflict: automatic linker script generation overrules specified script '" + context.linker.script + "'");
+    }
+  } else if (context.linker.script.empty() && context.linker.regions.empty() && context.linker.defines.empty()) {
     const auto& groups = context.rteActiveTarget->GetProjectGroups();
     for (auto group : groups) {
       for (auto file : group.second) {
@@ -1736,7 +1745,7 @@ void ProjMgrWorker::SetDefaultLinkerScript(ContextItem& context) {
     string linkerScript;
     error_code ec;
     for (auto const& entry : fs::recursive_directory_iterator(compilerRoot, ec)) {
-      string stem = entry.path().stem().generic_string();
+      string stem = entry.path().stem().stem().generic_string();
       if (RteUtils::EqualNoCase(context.toolchain.name + "_linker_script", stem)) {
         linkerScript = entry.path().generic_string();
         break;
@@ -1746,8 +1755,18 @@ void ProjMgrWorker::SetDefaultLinkerScript(ContextItem& context) {
       ProjMgrLogger::Warn("linker script template for compiler '" + context.toolchain.name + "' was not found");
       return;
     }
-    const string relativeLinkerScript = fs::relative(linkerScript, context.directories.cprj).generic_string();
-    context.linker.script = relativeLinkerScript.empty() ? linkerScript : relativeLinkerScript;
+    const string& rteFolder = GetContextRteFolder(context);
+    const string& deviceFolder = context.rteActiveTarget->GetDeviceFolder();
+    string linkerScriptDestination = fs::path(linkerScript).filename().generic_string();
+    RteFsUtils::NormalizePath(linkerScriptDestination, fs::path(rteFolder).append(deviceFolder).generic_string());
+
+    // Copy default linker script into device folder if it does not exist
+    if (!RteFsUtils::Exists(linkerScriptDestination)) {
+      RteFsUtils::CopyCheckFile(linkerScript, linkerScriptDestination, false);
+    }
+    context.linker.script = fs::relative(linkerScriptDestination, context.directories.cprj).generic_string();
+
+    // Generate regions file if it is not set
     if (context.linker.regions.empty()) {
       string generatedRegionsFile;
       if (GenerateRegionsHeader(context, generatedRegionsFile)) {
@@ -2423,6 +2442,7 @@ bool ProjMgrWorker::ProcessLinkerOptions(ContextItem& context) {
   // clear processing lists
   context.linker.scriptList.clear();
   context.linker.regionsList.clear();
+  context.linker.autoGen = false;
 
   // linker options in cproject
   for (const LinkerItem& linker : context.cproject->linker) {
@@ -2486,6 +2506,9 @@ bool ProjMgrWorker::ProcessLinkerOptions(ContextItem& context, const LinkerItem&
       }
     }
     AddStringItemsUniquely(context.linker.defines, linker.defines);
+    if (linker.autoGen) {
+      context.linker.autoGen = true;
+    }
   }
   return true;
 }
@@ -2729,7 +2752,8 @@ bool ProjMgrWorker::AddFile(const FileNode& src, vector<FileNode>& dst, ContextI
     dst.push_back(srcNode);
 
     // Set linker script
-    if ((srcNode.category == "linkerScript") && (context.linker.script.empty() && context.linker.regions.empty() && context.linker.defines.empty())) {
+    if ((srcNode.category == "linkerScript") && (!context.linker.autoGen &&
+      context.linker.script.empty() && context.linker.regions.empty() && context.linker.defines.empty())) {
       context.linker.script = srcNode.file;
     }
 

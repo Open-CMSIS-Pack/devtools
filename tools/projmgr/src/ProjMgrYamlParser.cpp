@@ -727,6 +727,7 @@ bool ProjMgrYamlParser::ParseLinker(const YAML::Node& parent, const string& file
       if (!ParseTypeFilter(linkerEntry, linkerItem.typeFilter)) {
         return false;
       }
+      linkerItem.autoGen = linkerEntry[YAML_AUTO].IsDefined();
       ParseDefine(linkerEntry, linkerItem.defines);
       ParseVectorOrString(linkerEntry, YAML_FORCOMPILER, linkerItem.forCompiler);
       ParsePortablePath(linkerEntry, file, YAML_REGIONS, linkerItem.regions);
@@ -1049,6 +1050,7 @@ const set<string> connectionsKeys = {
 };
 
 const set<string> linkerKeys = {
+  YAML_AUTO,
   YAML_REGIONS,
   YAML_SCRIPT,
   YAML_DEFINE,

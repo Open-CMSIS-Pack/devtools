@@ -17,6 +17,7 @@ static constexpr const char* YAML_ADDPATH = "add-path";
 static constexpr const char* YAML_ARGUMENT = "argument";
 static constexpr const char* YAML_ARGUMENTS = "arguments";
 static constexpr const char* YAML_ATTR = "attr";
+static constexpr const char* YAML_AUTO = "auto";
 static constexpr const char* YAML_BASE_DIR = "base-dir";
 static constexpr const char* YAML_BASE_NAME = "base-name";
 static constexpr const char* YAML_BOARD = "board";
