@@ -4,8 +4,8 @@ cbuild-set:
   # invalid data
   output: test1
   contexts:
-    - test2.Debug+CM0
-    - test2.Debug+CM3
-    - test1.Debug+CM0
-    - test1.Release+CM0
+    - context: test2.Debug+CM0
+    - context: test2.Debug+CM3
+    - context: test1.Debug+CM0
+    - context: test1.Release+CM0
 

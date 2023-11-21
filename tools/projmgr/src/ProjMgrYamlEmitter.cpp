@@ -137,14 +137,15 @@ ProjMgrYamlCbuild::ProjMgrYamlCbuild(YAML::Node node, const ContextItem* context
 ProjMgrYamlCbuild::ProjMgrYamlCbuild(YAML::Node node,
   const vector<ContextItem*>& processedContexts, const string& selectedCompiler)
 {
-  vector<string> contexts;
+  SetNodeValue(node[YAML_GENERATED_BY], ORIGINAL_FILENAME + string(" version ") + VERSION_STRING);
+  YAML::Node contextsNode = node[YAML_CONTEXTS];
   for (const auto& context : processedContexts) {
     if (context) {
-      contexts.push_back(context->name);
+      YAML::Node contextNode;
+      SetNodeValue(contextNode[YAML_CONTEXT], context->name);
+      contextsNode.push_back(contextNode);
     }
   }
-  SetNodeValue(node[YAML_GENERATED_BY], ORIGINAL_FILENAME + string(" version ") + VERSION_STRING);
-  SetNodeValue(node[YAML_CONTEXTS], contexts);
   if (!selectedCompiler.empty()) {
     SetNodeValue(node[YAML_COMPILER], selectedCompiler);
   }

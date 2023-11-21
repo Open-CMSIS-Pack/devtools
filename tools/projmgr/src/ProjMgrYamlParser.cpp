@@ -243,7 +243,14 @@ bool ProjMgrYamlParser::ParseCbuildSet(const string& input, CbuildSetItem& cbuil
 
     const YAML::Node& cbuildSetNode = root[YAML_CBUILD_SET];
     ParseString(cbuildSetNode, YAML_GENERATED_BY, cbuildSet.generatedBy);
-    ParseVector(cbuildSetNode, YAML_CONTEXTS, cbuildSet.contexts);
+    if (cbuildSetNode[YAML_CONTEXTS].IsDefined()) {
+      const YAML::Node& contextsNode = cbuildSetNode[YAML_CONTEXTS];
+      for (const auto& contextEntry : contextsNode) {
+        string contextName;
+        ParseString(contextEntry, YAML_CONTEXT, contextName);
+        cbuildSet.contexts.push_back(contextName);
+      }
+    }
     ParseString(cbuildSetNode, YAML_COMPILER, cbuildSet.compiler);
   }
   catch (YAML::Exception& e) {

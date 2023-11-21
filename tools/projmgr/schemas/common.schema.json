@@ -25,11 +25,19 @@
       "minItems": 1,
       "items": { "$ref": "#/definitions/BuildContext" }
     },
-    "ArrayOfBuildContextWithProjectName": {
+    "BuildSetContextsType": {
       "type": "array",
       "uniqueItems": true,
       "minItems": 1,
-      "items": { "$ref": "#/definitions/BuildContextWithProjectName" }
+      "items": { "$ref": "#/definitions/BuildSetContextType" }
+    },
+    "BuildSetContextType": {
+      "type": "object",
+      "properties": {
+        "context": { "$ref": "#/definitions/BuildContextWithProjectName" }
+      },
+      "required": [ "context" ],
+      "additionalProperties": false
     },
     "ConditionIDType": {
       "type": "string"
@@ -1127,7 +1135,7 @@
       "type": "object",
       "properties": {
         "generated-by": { "type": "string", "description": "Tool name along with version information used to generate this application" },
-        "contexts": { "$ref": "#/definitions/ArrayOfBuildContextWithProjectName", "description": "List of fully specified contexts" },
+        "contexts": { "$ref": "#/definitions/BuildSetContextsType", "description": "List of fully specified contexts" },
         "compiler": { "type": "string", "description": "Selection of compiler used" }
       },
       "additionalProperties": false,
