@@ -2322,6 +2322,7 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, bool rerun) {
 }
 
 bool ProjMgrWorker::ProcessProcessorOptions(ContextItem& context) {
+  // process precedences of 'trustzone' options
   StringCollection trustzone = {
     &context.controls.processed.processor.trustzone,
     {
@@ -2341,6 +2342,7 @@ bool ProjMgrWorker::ProcessProcessorOptions(ContextItem& context) {
     return false;
   }
 
+  // process precedences of 'fpu' options
   StringCollection fpu = {
     &context.controls.processed.processor.fpu,
     {
@@ -2360,6 +2362,7 @@ bool ProjMgrWorker::ProcessProcessorOptions(ContextItem& context) {
     return false;
   }
 
+  // process precedences of 'dsp' options
   StringCollection dsp = {
     &context.controls.processed.processor.dsp,
     {
@@ -2379,6 +2382,7 @@ bool ProjMgrWorker::ProcessProcessorOptions(ContextItem& context) {
     return false;
   }
 
+  // process precedences of 'mve' options
   StringCollection mve = {
     &context.controls.processed.processor.mve,
     {
@@ -2398,6 +2402,7 @@ bool ProjMgrWorker::ProcessProcessorOptions(ContextItem& context) {
     return false;
   }
 
+  // process precedences of 'endian' options
   StringCollection endian = {
     &context.controls.processed.processor.endian,
     {
@@ -2417,6 +2422,7 @@ bool ProjMgrWorker::ProcessProcessorOptions(ContextItem& context) {
     return false;
   }
 
+  // process precedences of 'branchProtection' options
   StringCollection branchProtection = {
   &context.controls.processed.processor.branchProtection,
   {
