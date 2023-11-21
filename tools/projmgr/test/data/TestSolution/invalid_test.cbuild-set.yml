@@ -5,8 +5,8 @@ cbuild-set:
   toolchain: test
 
   contexts:
-    - test2.Debug+CM0
-    - test2.Debug+CM3
-    - test1.Debug+CM0
-    - test1.Release+CM0
+    - context: test2.Debug+CM0
+    - context: test2.Debug+CM3
+    - context: test1.Debug+CM0
+    - context: test1.Release+CM0
   compiler: AC6
