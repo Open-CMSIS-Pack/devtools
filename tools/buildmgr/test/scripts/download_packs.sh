@@ -49,6 +49,6 @@ echo https://www.keil.com/pack/ARM.CMSIS.5.9.0.pack >> ${packlist}
 echo https://www.keil.com/pack/Keil.ARM_Compiler.1.7.2.pack >> ${packlist}
 echo http://www.keil.com/pack/Keil.STM32F4xx_DFP.2.14.0.pack >> ${packlist}
 echo http://www.keil.com/pack/Keil.MDK-Middleware.7.11.1.pack >> ${packlist}
-cpackget pack add -a -f ${packlist}
+cpackget add -a -f ${packlist}
 
 exit 0

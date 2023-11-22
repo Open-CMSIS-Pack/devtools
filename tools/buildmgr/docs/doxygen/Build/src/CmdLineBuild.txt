@@ -650,7 +650,7 @@ be downloaded and installed.
 \b cpackget is called from the \b Bash command line with the following syntax:
 
 \code
-cpackget pack add -f <pack-list-file>
+cpackget add -f <pack-list-file>
 \endcode
 
 <b>Where:</b>
@@ -705,11 +705,11 @@ The error messages that the cpackget prints are mostly self explanatory. Here ar
 
 \code
   # Trying to install a pack without specifying a pack root
-  $ cpackget pack add -f Simulation.cpinstall
+  $ cpackget add -f Simulation.cpinstall
   E: pack root not found
 
   # Trying to install a pack using an invalid pack url
-  $ cpackget pack add not-a-pack-path --pack-root packroot
+  $ cpackget add not-a-pack-path --pack-root packroot
   E: bad pack name: pack extension should be "pdsc", "pack" or "zip"
 \endcode
 

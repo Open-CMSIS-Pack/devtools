@@ -44,7 +44,7 @@ void CPackGetTests::RunPackAdd(const TestParam& param, bool env) {
   int ret_val;
   // "-a" means "agree with embedded license"
   // "-f" means "filename with pack list"
-  RunCPackGet(" pack add -a -f ", param, env, &ret_val);
+  RunCPackGet(" add -a -f ", param, env, &ret_val);
   ASSERT_EQ(param.expect, (ret_val == 0) ? true : false);
 }
 
