@@ -111,7 +111,7 @@ $(document).ready(function(){initNavTree('cpackget.html','');});
 <h1><a class="anchor" id="cpackget_invocation"></a>
 Invocation</h1>
 <p><b>cpackget</b> is called from the <b>Bash</b> command line with the following syntax:</p>
-<div class="fragment"><div class="line">cpackget pack add -f &lt;pack-list-file&gt;</div>
+<div class="fragment"><div class="line">cpackget add -f &lt;pack-list-file&gt;</div>
 </div><!-- fragment --><p><b>Where:</b></p>
 <p><code>cpackget</code> is the name of the program.</p>
 <p><code>pack</code> add invokes the subcommand that handles pack download and installation.</p>
@@ -153,11 +153,11 @@ Downloading Keil.ARM_Compiler.1.6.1.pack 100% |███████████
 Error Messages</h1>
 <p>The error messages that the cpackget prints are mostly self explanatory. Here are some examples</p>
 <div class="fragment"><div class="line"><span class="preprocessor"># Trying to install a pack without specifying a pack root</span></div>
-<div class="line"><span class="preprocessor"></span>$ cpackget pack add -f Simulation.cpinstall</div>
+<div class="line"><span class="preprocessor"></span>$ cpackget add -f Simulation.cpinstall</div>
 <div class="line">E: pack root not found</div>
 <div class="line"></div>
 <div class="line"><span class="preprocessor"># Trying to install a pack using an invalid pack url</span></div>
-<div class="line"><span class="preprocessor"></span>$ cpackget pack add not-a-pack-path --pack-root packroot</div>
+<div class="line"><span class="preprocessor"></span>$ cpackget add not-a-pack-path --pack-root packroot</div>
 <div class="line">E: bad pack name: pack extension should be <span class="stringliteral">&quot;pdsc&quot;</span>, <span class="stringliteral">&quot;pack&quot;</span> or <span class="stringliteral">&quot;zip&quot;</span></div>
 </div><!-- fragment --><p>There are a few generic error messages that can be easily debugged by passing the verbose flag to cpackget "-vv". </p>
 </div></div><!-- contents -->
