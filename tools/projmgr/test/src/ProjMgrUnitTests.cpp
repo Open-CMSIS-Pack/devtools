@@ -849,7 +849,6 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_LockPackCleanup) {
 
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution_LockPackNoPackList) {
   char* argv[6];
-  string buf1, buf2;
 
   // convert --solution solution.yml
   const string csolution = testinput_folder + "/TestSolution/PackLocking/project_pack_lock_no_pack_list.csolution.yml";
@@ -869,6 +868,91 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_LockPackNoPackList) {
   // 2nd run to verify that the cbuild-pack.yml content is stable
   EXPECT_EQ(0, RunProjMgr(6, argv, 0));
   ProjMgrTestEnv::CompareFile(expectedCbuildPack, cbuildPack);
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgrSolution_LockPackFrozen) {
+  char* argv[7];
+  StdStreamRedirect streamRedirect;
+
+  // convert --solution solution.yml
+  const string csolution = testinput_folder + "/TestSolution/PackLocking/cbuild_pack_frozen.csolution.yml";
+  const string cbuildPack = testinput_folder + "/TestSolution/PackLocking/cbuild_pack_frozen.cbuild-pack.yml";
+  const string expectedCbuildPackRef = testinput_folder + "/TestSolution/PackLocking/ref/cbuild_pack_frozen.cbuild-pack.yml";
+  const string rtePath = testinput_folder + "/TestSolution/PackLocking/RTE/";
+  const string expectedCbuildPack = RteFsUtils::BackupFile(cbuildPack);
+  const string output = testoutput_folder + "/testpacklock";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)output.c_str();
+  argv[6] = (char*)"--frozen-packs";
+
+  // Ensure clean state when starting test
+  ASSERT_TRUE(RteFsUtils::RemoveDir(rtePath));
+
+  // 1st run to verify that the cbuild-pack.yml content is stable
+  EXPECT_NE(0, RunProjMgr(7, argv, 0));
+  EXPECT_NE(streamRedirect.GetErrorString().find(cbuildPack + " - error csolution: file not allowed to be updated"), string::npos);
+  ProjMgrTestEnv::CompareFile(expectedCbuildPack, cbuildPack);
+  EXPECT_FALSE(RteFsUtils::Exists(rtePath));
+
+  // 2nd run to verify that the cbuild-pack.yml content is stable
+  streamRedirect.ClearStringStreams();
+  EXPECT_NE(0, RunProjMgr(7, argv, 0));
+  EXPECT_NE(streamRedirect.GetErrorString().find(cbuildPack + " - error csolution: file not allowed to be updated"), string::npos);
+  ProjMgrTestEnv::CompareFile(expectedCbuildPack, cbuildPack);
+  EXPECT_FALSE(RteFsUtils::Exists(rtePath));
+
+  // 3rd run without --frozen-packs to verify that the list can be updated
+  streamRedirect.ClearStringStreams();
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+  EXPECT_NE(streamRedirect.GetOutString().find(cbuildPack + " - info csolution: file generated successfully"), string::npos);
+  ProjMgrTestEnv::CompareFile(expectedCbuildPackRef, cbuildPack);
+  EXPECT_TRUE(RteFsUtils::Exists(rtePath));
+
+  EXPECT_TRUE(RteFsUtils::Exists(testinput_folder + "/TestSolution/PackLocking/RTE/_CM3/RTE_Components.h"));
+  EXPECT_TRUE(RteFsUtils::Exists(testinput_folder + "/TestSolution/PackLocking/RTE/Device/RteTest_ARMCM3/gcc_arm.ld"));
+  EXPECT_FALSE(RteFsUtils::Exists(testinput_folder + "/TestSolution/PackLocking/RTE/Device/RteTest_ARMCM3/gcc_arm.ld.base@2.0.0")); // From Arm::RteTest_DFP@0.1.1
+  EXPECT_TRUE(RteFsUtils::Exists(testinput_folder + "/TestSolution/PackLocking/RTE/Device/RteTest_ARMCM3/gcc_arm.ld.base@2.2.0"));
+  EXPECT_TRUE(RteFsUtils::Exists(testinput_folder + "/TestSolution/PackLocking/RTE/Device/RteTest_ARMCM3/startup_ARMCM3.c"));
+  EXPECT_TRUE(RteFsUtils::Exists(testinput_folder + "/TestSolution/PackLocking/RTE/Device/RteTest_ARMCM3/startup_ARMCM3.c.base@2.0.3"));
+  EXPECT_TRUE(RteFsUtils::Exists(testinput_folder + "/TestSolution/PackLocking/RTE/Device/RteTest_ARMCM3/system_ARMCM3.c"));
+  EXPECT_FALSE(RteFsUtils::Exists(testinput_folder + "/TestSolution/PackLocking/RTE/Device/RteTest_ARMCM3/system_ARMCM3.c.base@1.0.1")); // From Arm::RteTest_DFP@0.1.1
+  EXPECT_TRUE(RteFsUtils::Exists(testinput_folder + "/TestSolution/PackLocking/RTE/Device/RteTest_ARMCM3/system_ARMCM3.c.base@1.2.2"));
+
+  // 4th run with --frozen-packs to verify that RTE directory can be generated
+  ASSERT_TRUE(RteFsUtils::RemoveDir(rtePath));
+  streamRedirect.ClearStringStreams();
+  EXPECT_EQ(0, RunProjMgr(7, argv, 0));
+  EXPECT_NE(streamRedirect.GetOutString().find(cbuildPack + " - info csolution: file is already up-to-date"), string::npos);
+  ProjMgrTestEnv::CompareFile(expectedCbuildPackRef, cbuildPack);
+
+  EXPECT_TRUE(RteFsUtils::Exists(testinput_folder + "/TestSolution/PackLocking/RTE/_CM3/RTE_Components.h"));
+  EXPECT_TRUE(RteFsUtils::Exists(testinput_folder + "/TestSolution/PackLocking/RTE/Device/RteTest_ARMCM3/gcc_arm.ld"));
+  EXPECT_TRUE(RteFsUtils::Exists(testinput_folder + "/TestSolution/PackLocking/RTE/Device/RteTest_ARMCM3/gcc_arm.ld.base@2.2.0"));
+  EXPECT_TRUE(RteFsUtils::Exists(testinput_folder + "/TestSolution/PackLocking/RTE/Device/RteTest_ARMCM3/startup_ARMCM3.c"));
+  EXPECT_TRUE(RteFsUtils::Exists(testinput_folder + "/TestSolution/PackLocking/RTE/Device/RteTest_ARMCM3/startup_ARMCM3.c.base@2.0.3"));
+  EXPECT_TRUE(RteFsUtils::Exists(testinput_folder + "/TestSolution/PackLocking/RTE/Device/RteTest_ARMCM3/system_ARMCM3.c"));
+  EXPECT_TRUE(RteFsUtils::Exists(testinput_folder + "/TestSolution/PackLocking/RTE/Device/RteTest_ARMCM3/system_ARMCM3.c.base@1.2.2"));
+
+  RteFsUtils::RemoveFile(expectedCbuildPack);
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgrSolution_LockPackFrozenNoPackFile) {
+  char* argv[7];
+
+  // convert --solution solution.yml
+  const string csolution = testinput_folder + "/TestSolution/PackLocking/cbuild_pack_frozen_no_pack_file.csolution.yml";
+  const string output = testoutput_folder + "/testpacklock";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)output.c_str();
+  argv[6] = (char*)"--frozen-packs";
+
+  EXPECT_NE(0, RunProjMgr(7, argv, 0));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution_LockPackReselectSelectedBy) {
@@ -2074,7 +2158,7 @@ TEST_F(ProjMgrUnitTests, RunListContexts) {
   const string& dirInput = testinput_folder + "/TestSolution/";
   const string& filenameInput = dirInput + "test.csolution.yml";
   error_code ec;
-  EXPECT_TRUE(m_parser.ParseCsolution(filenameInput, false));
+  EXPECT_TRUE(m_parser.ParseCsolution(filenameInput, false, false));
   for (const auto& cproject : m_parser.GetCsolution().cprojects) {
     string const& cprojectFile = fs::canonical(dirInput + cproject, ec).generic_string();
     EXPECT_TRUE(m_parser.ParseCproject(cprojectFile, false, false));
@@ -2098,7 +2182,7 @@ TEST_F(ProjMgrUnitTests, RunListContexts_Ordered) {
   const string& dirInput = testinput_folder + "/TestSolution/";
   const string& filenameInput = dirInput + "test_ordered.csolution.yml";
   error_code ec;
-  EXPECT_TRUE(m_parser.ParseCsolution(filenameInput, false));
+  EXPECT_TRUE(m_parser.ParseCsolution(filenameInput, false, false));
   for (const auto& cproject : m_parser.GetCsolution().cprojects) {
     string const& cprojectFile = fs::canonical(dirInput + cproject, ec).generic_string();
     EXPECT_TRUE(m_parser.ParseCproject(cprojectFile, false, false));
@@ -2123,7 +2207,7 @@ TEST_F(ProjMgrUnitTests, RunListContexts_Without_BuildTypes) {
   const string& dirInput = testinput_folder + "/TestSolution/";
   const string& filenameInput = dirInput + "test_no_buildtypes.csolution.yml";
   error_code ec;
-  EXPECT_TRUE(m_parser.ParseCsolution(filenameInput, false));
+  EXPECT_TRUE(m_parser.ParseCsolution(filenameInput, false, false));
   for (const auto& cproject : m_parser.GetCsolution().cprojects) {
     string const& cprojectFile = fs::canonical(dirInput + cproject, ec).generic_string();
     EXPECT_TRUE(m_parser.ParseCproject(cprojectFile, false, false));
@@ -2140,7 +2224,7 @@ TEST_F(ProjMgrUnitTests, RunListContexts_Without_BuildTypes) {
 TEST_F(ProjMgrUnitTests, AddContextFailed) {
   ContextDesc descriptor;
   const string& filenameInput = testinput_folder + "/TestSolution/test_missing_project.csolution.yml";
-  EXPECT_FALSE(m_parser.ParseCsolution(filenameInput, false));
+  EXPECT_FALSE(m_parser.ParseCsolution(filenameInput, false, false));
   EXPECT_FALSE(m_worker.AddContexts(m_parser, descriptor, filenameInput));
 }
 
@@ -3540,7 +3624,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_PreInclude) {
 
 TEST_F(ProjMgrUnitTests, RunCheckForContext) {
   const string& filenameInput = testinput_folder + "/TestSolution/contexts.csolution.yml";
-  EXPECT_TRUE(m_parser.ParseCsolution(filenameInput, false));
+  EXPECT_TRUE(m_parser.ParseCsolution(filenameInput, false, false));
   const CsolutionItem csolutionItem = m_parser.GetCsolution();
   const auto& contexts = csolutionItem.contexts;
   const string& cproject = "contexts.cproject.yml";

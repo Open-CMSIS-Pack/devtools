@@ -69,7 +69,8 @@ ProjMgr::ProjMgr() :
   m_dryRun(false),
   m_ymlOrder(false),
   m_contextSet(false),
-  m_relativePaths(false)
+  m_relativePaths(false),
+  m_frozenPacks(false)
 {
 }
 
@@ -151,12 +152,13 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
   cxxopts::Option ymlOrder("yml-order", "Preserve order as specified in input yml", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option contextSet("S,context-set", "Use context set", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option relativePaths("R,relative-paths", "Output paths relative to project or to CMSIS_PACK_ROOT", cxxopts::value<bool>()->default_value("false"));
+  cxxopts::Option frozenPacks("frozen-packs", "The list of packs from cbuild-pack.yml is frozen and raises error if not up-to-date", cxxopts::value<bool>()->default_value("false"));
 
   // command options dictionary
   map<string, std::pair<bool, vector<cxxopts::Option>>> optionsDict = {
     // command, optional args, options
-    {"update-rte",        { false, {context, contextSet, debug, load, schemaCheck, toolchain, verbose}}},
-    {"convert",           { false, {context, contextSet, debug, exportSuffix, load, schemaCheck, noUpdateRte, output, toolchain, verbose}}},
+    {"update-rte",        { false, {context, contextSet, debug, load, schemaCheck, toolchain, verbose, frozenPacks}}},
+    {"convert",           { false, {context, contextSet, debug, exportSuffix, load, schemaCheck, noUpdateRte, output, toolchain, verbose, frozenPacks}}},
     {"run",               { false, {context, debug, generator, load, schemaCheck, verbose, dryRun}}},
     {"list packs",        { true,  {context, debug, filter, load, missing, schemaCheck, toolchain, verbose, relativePaths}}},
     {"list boards",       { true,  {context, debug, filter, load, schemaCheck, toolchain, verbose}}},
@@ -176,7 +178,7 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
       {"positional", "", cxxopts::value<vector<string>>()},
       solution, context, contextSet, filter, generator,
       load, clayerSearchPath, missing, schemaCheck, noUpdateRte, output,
-      help, version, verbose, debug, dryRun, exportSuffix, toolchain, ymlOrder, relativePaths
+      help, version, verbose, debug, dryRun, exportSuffix, toolchain, ymlOrder, relativePaths, frozenPacks
     });
     options.parse_positional({ "positional" });
 
@@ -196,6 +198,7 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
     m_contextSet = parseResult.count("context-set");
     m_relativePaths = parseResult.count("relative-paths");
     m_worker.SetPrintRelativePaths(m_relativePaths);
+    m_frozenPacks = parseResult.count("frozen-packs");
 
     vector<string> positionalArguments;
     if (parseResult.count("positional")) {
@@ -398,7 +401,7 @@ bool ProjMgr::SetLoadPacksPolicy(void) {
 bool ProjMgr::PopulateContexts(void) {
   if (!m_csolutionFile.empty()) {
     // Parse csolution
-    if (!m_parser.ParseCsolution(m_csolutionFile, m_checkSchema)) {
+    if (!m_parser.ParseCsolution(m_csolutionFile, m_checkSchema, m_frozenPacks)) {
       return false;
     }
     // Parse cdefault
@@ -552,12 +555,13 @@ bool ProjMgr::RunConfigure(bool printConfig) {
     if (!m_emitter.GenerateCbuild(contextItem)) {
       return false;
     }
-
   }
 
   // Generate cbuild-pack file
   const bool isUsingContexts = m_contextSet || m_context.size() != 0;
-  m_emitter.GenerateCbuildPack(m_parser, m_processedContexts, isUsingContexts);
+  if (!m_emitter.GenerateCbuildPack(m_parser, m_processedContexts, isUsingContexts, m_frozenPacks)) {
+    return false;
+  }
 
   // Update the RTE files
   if (m_updateRteFiles) {

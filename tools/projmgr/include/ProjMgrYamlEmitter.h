@@ -68,9 +68,10 @@ public:
    * @brief generate cbuild pack file
    * @param contexts vector with pointers to contexts
    * @param keepExistingPackContent if true, all entries from existing cbuild-pack should be preserved
+   * @param cbuildPackFrozen if true, reject updates to cbuild pack file
    * @return true if executed successfully
   */
-  static bool GenerateCbuildPack(ProjMgrParser& parser, const std::vector<ContextItem*> contexts, bool keepExistingPackContent);
+  static bool GenerateCbuildPack(ProjMgrParser& parser, const std::vector<ContextItem*> contexts, bool keepExistingPackContent, bool cbuildPackFrozen);
 };
 
 #endif  // PROJMGRYAMLEMITTER_H
