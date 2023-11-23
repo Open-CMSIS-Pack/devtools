@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<package schemaVersion="1.3" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="PACK.xsd">
+  <name>RteTestRequired</name>
+  <description>Local pack 1.1</description>
+  <vendor>ARM</vendor>
+
+  <releases>
+    <release version="1.1.0" date="2023-08-23">
+      Local version
+    </release>
+  </releases>
+
+  <requirements>
+    <packages>
+      <package vendor="ARM" name="RteTestRequiredRecursive" version="1.0.0:2.0.0"/>
+    </packages>
+  </requirements>
+
+</package>

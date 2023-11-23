@@ -634,6 +634,12 @@ public:
   */
    void SetCallback(RteCallback* callback) override;
 
+   /**
+   * @brief get global pack registry object
+   * @return  pointer to RtePackRegistry
+  */
+  RtePackRegistry* GetPackRegistry() const { return m_packRegistry; }
+
 public:
   /**
    * @brief getter for collection of loaded projects
@@ -703,6 +709,7 @@ protected:
 
 protected:
 
+  RtePackRegistry* m_packRegistry;
   std::map<int, RteProject*> m_projects;
   int m_nActiveProjectId; // 1-based project id
 };

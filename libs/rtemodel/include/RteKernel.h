@@ -237,6 +237,12 @@ public:
   bool SaveActiveCprjFile(const std::string& file = RteUtils::EMPTY_STRING) const;
 
   /**
+   * @brief get global pack registry object
+   * @return  pointer to RtePackRegistry
+  */
+  RtePackRegistry* GetPackRegistry() const { return GetGlobalModel()->GetPackRegistry(); }
+
+  /**
    * @brief load pdsc or gpdsc file and construct it
    * @param pdscFile pathname to load
    * @param packState PackageState to assign to a loaded pack
@@ -264,11 +270,12 @@ public:
    * @return true if changed
   */
   void SetToolInfo(const XmlItem& attr) { m_toolInfo = attr; }
+
 protected:
 
   bool GetUrlFromIndex(const std::string& indexFile, const std::string& name, const std::string& vendor, const std::string& version, std::string& indexedUrl, std::string& indexedVersion) const;
-  bool GetLocalPacks(const std::string& rtePath, std::unique_ptr<XMLTree>& xmlTree, Collection<XMLTreeElement*>& packs) const;
   bool GetLocalPacksUrls(const std::string& rtePath, std::list<std::string>& urls) const;
+  XMLTreeElement* ParseLocalRepositoryIdx(const std::string& rtePath) const;
 
   virtual XMLTree* CreateXmlTree(IXmlItemBuilder* itemBuilder) const { return nullptr; } // creates new XMLTree implementation
 

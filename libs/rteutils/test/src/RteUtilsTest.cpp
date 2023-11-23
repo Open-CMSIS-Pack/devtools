@@ -415,4 +415,27 @@ TEST(RteUtils, RteError)
   EXPECT_EQ(err.ToString(), "MyFile(1,2): message");
 }
 
+TEST(RteUtils, CollectionUtils)
+{
+  map<int, int> intToInt = {{1,10},{2,20}};
+  EXPECT_TRUE(contains_key(intToInt, 2));
+  EXPECT_FALSE(contains_key(intToInt, 0));
+
+  EXPECT_EQ(get_or_default(intToInt, 2, -1), 20);
+  EXPECT_EQ(get_or_default(intToInt, 0, -1), -1);
+
+  static const char* s = "12";
+  static const char* sDefault = "d";
+  map<string, const char*> strToPtr = {{"one", s},{"two", s+1}};
+
+  EXPECT_TRUE(contains_key(strToPtr, "two"));
+  EXPECT_FALSE(contains_key(strToPtr, "four"));
+
+  EXPECT_EQ(get_or_null(strToPtr, "two"), s+1);
+  EXPECT_EQ(get_or_null(strToPtr, "four"), nullptr);
+
+  EXPECT_EQ(*get_or_default(strToPtr, "two", sDefault), '2');
+  EXPECT_EQ(*get_or_default(strToPtr, "four", sDefault), 'd');
+}
+
 // end of RteUtilsTest.cpp

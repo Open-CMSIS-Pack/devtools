@@ -385,11 +385,11 @@ public:
   /**
    * @brief list available packs
    * @param reference to list of packs
-   * @param list only missing packs
+   * @param bListMissingPacksOnly only missing packs
    * @param filter words to filter results
    * @return true if executed successfully
   */
-  bool ListPacks(std::vector<std::string>& packs, bool missingPacks, const std::string& filter = RteUtils::EMPTY_STRING);
+  bool ListPacks(std::vector<std::string>& packs, bool bListMissingPacksOnly, const std::string& filter = RteUtils::EMPTY_STRING);
 
   /**
    * @brief list available boards
@@ -503,6 +503,12 @@ public:
   void SetOutputDir(const std::string& outputDir);
 
   /**
+   * @brief set root directory (csolution directory)
+   * @param reference to root directory
+  */
+  void SetRootDir(const std::string& rootDir);
+
+  /**
    * @brief set check schema
    * @param boolean check schema
   */
@@ -525,6 +531,12 @@ public:
    * @param boolean dryRun
   */
   void SetDryRun(bool dryRun);
+
+  /**
+   * @brief set printing paths relative to project or ${CMSSIS_PACK_ROOT}
+   * @param boolean bRelativePaths
+  */
+  void SetPrintRelativePaths(bool bRelativePaths);
 
   /**
    * @brief set load packs policy
@@ -644,15 +656,17 @@ protected:
   std::string m_packRoot;
   std::string m_compilerRoot;
   std::string m_selectedToolchain;
+  std::string m_rootDir;
   LoadPacksPolicy m_loadPacksPolicy;
   ContextTypesItem m_types;
   bool m_checkSchema;
   bool m_verbose;
   bool m_debug;
   bool m_dryRun;
+  bool m_relativePaths;
 
   bool LoadPacks(ContextItem& context);
-  bool GetRequiredPdscFiles(ContextItem& context, const std::string& packRoot, std::set<std::string>& errMsgs);
+  bool CollectRequiredPdscFiles(ContextItem& context, const std::string& packRoot, std::set<std::string>& errMsgs);
   bool CheckRteErrors(void);
   bool CheckBoardDeviceInLayer(const ContextItem& context, const ClayerItem& clayer);
   bool CheckCompiler(const std::vector<std::string>& forCompiler, const std::string& selectedCompiler);
@@ -747,7 +761,7 @@ protected:
   bool GetGeneratorDir(const std::string& generatorId, ContextItem& context, const std::string& layer, std::string& genDir);
   bool GetExtGeneratorDir(const std::string& generatorId, ContextItem& context, const std::string& layer, std::string& genDir);
   bool ParseContextLayers(ContextItem& context);
-  bool AddPackRequirements(ContextItem& context, const std::vector<PackItem> packRequirements);
+  bool AddPackRequirements(ContextItem& context, const std::vector<PackItem>& packRequirements);
   void InsertPackRequirements(const std::vector<PackItem>& src, std::vector<PackItem>& dst, std::string base);
   void CheckTypeFilterSpelling(const TypeFilter& typeFilter);
   void CheckCompilerFilterSpelling(const std::string& compiler);
