@@ -61,7 +61,7 @@ cp -R ../config/. ${distdir}/etc
 cp ../../docs/LICENSE.txt ${distdir}
 
 # Get cpackget
-cpackget_version="1.1.0"
+cpackget_version="2.0.0"
 cpackget_base=https://github.com/Open-CMSIS-Pack/cpackget/releases/download/v${cpackget_version}/cpackget_${cpackget_version}
 curl --retry 3 -L ${cpackget_base}_linux_amd64.tar.gz  -o - | tar xzfO - --wildcards    '*cpackget'     > ${distdir}/bin/cpackget.lin-amd64
 curl --retry 3 -L ${cpackget_base}_windows_amd64.zip   -o temp.zip && unzip -p temp.zip '*/cpackget.exe' > ${distdir}/bin/cpackget.exe-amd64 && rm temp.zip
@@ -71,14 +71,14 @@ curl --retry 3 -L ${cpackget_base}_windows_arm64.zip   -o temp.zip && unzip -p t
 curl --retry 3 -L ${cpackget_base}_darwin_arm64.tar.gz -o - | tar xzfO - --wildcards    '*cpackget'     > ${distdir}/bin/cpackget.mac-arm64
 
 # Get cbridge
-# cbridge_version="0.9.0"
-# cbridge_base=https://github.com/Open-CMSIS-Pack/generator-bridge/releases/download/${cbridge_version}/cbridge_${cbridge_version}
-# curl --retry 3 -L ${cbridge_base}_linux_amd64.tar.gz  -o - | tar xzfO - --wildcards    '*cbridge'     > ${distdir}/bin/cbridge.lin-amd64
-# curl --retry 3 -L ${cbridge_base}_windows_amd64.zip   -o temp.zip && unzip -p temp.zip '*/cbridge.exe' > ${distdir}/bin/cbridge.exe-amd64 && rm temp.zip
-# curl --retry 3 -L ${cbridge_base}_darwin_amd64.tar.gz -o - | tar xzfO - --wildcards    '*cbridge'     > ${distdir}/bin/cbridge.mac-amd64
-# curl --retry 3 -L ${cbridge_base}_linux_arm64.tar.gz  -o - | tar xzfO - --wildcards    '*cbridge'     > ${distdir}/bin/cbridge.lin-arm64
-# curl --retry 3 -L ${cbridge_base}_windows_arm64.zip   -o temp.zip && unzip -p temp.zip '*/cbridge.exe' > ${distdir}/bin/cbridge.exe-arm64 && rm temp.zip
-# curl --retry 3 -L ${cbridge_base}_darwin_arm64.tar.gz -o - | tar xzfO - --wildcards    '*cbridge'     > ${distdir}/bin/cbridge.mac-arm64
+cbridge_version="0.9.1"
+cbridge_base=https://github.com/Open-CMSIS-Pack/generator-bridge/releases/download/v${cbridge_version}/cbridge_${cbridge_version}
+curl --retry 3 -L ${cbridge_base}_linux_amd64.tar.gz  -o - | tar xzfO - --wildcards    '*cbridge'     > ${distdir}/bin/cbridge.lin-amd64
+curl --retry 3 -L ${cbridge_base}_windows_amd64.zip   -o temp.zip && unzip -p temp.zip '*/cbridge.exe' > ${distdir}/bin/cbridge.exe-amd64 && rm temp.zip
+curl --retry 3 -L ${cbridge_base}_darwin_amd64.tar.gz -o - | tar xzfO - --wildcards    '*cbridge'     > ${distdir}/bin/cbridge.mac-amd64
+curl --retry 3 -L ${cbridge_base}_linux_arm64.tar.gz  -o - | tar xzfO - --wildcards    '*cbridge'     > ${distdir}/bin/cbridge.lin-arm64
+curl --retry 3 -L ${cbridge_base}_windows_arm64.zip   -o temp.zip && unzip -p temp.zip '*/cbridge.exe' > ${distdir}/bin/cbridge.exe-arm64 && rm temp.zip
+curl --retry 3 -L ${cbridge_base}_darwin_arm64.tar.gz -o - | tar xzfO - --wildcards    '*cbridge'     > ${distdir}/bin/cbridge.mac-arm64
 
 # Get csolution
 csolution_version="2.1.0"
