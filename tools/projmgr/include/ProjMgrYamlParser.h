@@ -176,9 +176,10 @@ public:
    * @param input csolution.yml file
    * @param reference to store parsed csolution item
    * @param checkSchema false to skip schema validation
+   * @param frozenPacks false to allow missing cbuild-packs.yml file
   */
   bool ParseCsolution(const std::string& input, CsolutionItem& csolution,
-    bool checkSchema);
+    bool checkSchema, bool frozenPacks);
 
   /**
    * @brief parse cproject

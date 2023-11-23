@@ -52,13 +52,16 @@ bool ProjMgrYamlParser::ParseCdefault(const string& input,
 }
 
 bool ProjMgrYamlParser::ParseCsolution(const string& input,
-  CsolutionItem& csolution, bool checkSchema) {
+  CsolutionItem& csolution, bool checkSchema, bool frozenPacks) {
 
   string cbuildPackFile = RteUtils::RemoveSuffixByString(input, ".csolution.yml") + ".cbuild-pack.yml";
   if (fs::exists(cbuildPackFile)) {
     if (!ParseCbuildPack(cbuildPackFile, csolution.cbuildPack, checkSchema)) {
       return false;
     }
+  } else if (frozenPacks) {
+    ProjMgrLogger::Error(cbuildPackFile, "file is missing and required due to use of --frozen-packs option");
+    return false;
   }
 
   try {

@@ -28,9 +28,9 @@ bool ProjMgrParser::ParseCdefault(const string& input, bool checkSchema) {
   return ProjMgrYamlParser().ParseCdefault(input, m_cdefault, checkSchema);
 }
 
-bool ProjMgrParser::ParseCsolution(const string& input, bool checkSchema) {
+bool ProjMgrParser::ParseCsolution(const string& input, bool checkSchema, bool frozenPacks) {
   // Parse solution file
-  return ProjMgrYamlParser().ParseCsolution(input, m_csolution, checkSchema);
+  return ProjMgrYamlParser().ParseCsolution(input, m_csolution, checkSchema, frozenPacks);
 }
 
 bool ProjMgrParser::ParseCproject(const string& input, bool checkSchema, bool single) {

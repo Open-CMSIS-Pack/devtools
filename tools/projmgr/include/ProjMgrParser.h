@@ -499,8 +499,9 @@ public:
    * @brief parse csolution
    * @param checkSchema false to skip schema validation
    * @param input csolution.yml file
+   * @param frozenPacks false to allow missing cbuild-packs.yml file
   */
-  bool ParseCsolution(const std::string& input, bool checkSchema);
+  bool ParseCsolution(const std::string& input, bool checkSchema, bool frozenPacks);
 
   /**
    * @brief parse clayer

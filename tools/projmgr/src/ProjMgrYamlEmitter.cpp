@@ -35,7 +35,7 @@ protected:
   const string FormatPath(const string& original, const string& directory);
   bool CompareFile(const string& filename, const YAML::Node& rootNode);
   bool CompareNodes(const YAML::Node& lhs, const YAML::Node& rhs);
-  bool WriteFile(YAML::Node& rootNode, const std::string& filename);
+  bool WriteFile(YAML::Node& rootNode, const std::string& filename, bool allowUpdate = true);
   const bool m_useAbsolutePaths;
 };
 
@@ -705,7 +705,7 @@ bool ProjMgrYamlBase::CompareNodes(const YAML::Node& lhs, const YAML::Node& rhs)
   return (lhsData == rhsData) ? true : false;
 }
 
-bool ProjMgrYamlBase::WriteFile(YAML::Node& rootNode, const std::string& filename) {
+bool ProjMgrYamlBase::WriteFile(YAML::Node& rootNode, const std::string& filename, bool allowUpdate) {
   // Compare yaml contents
   if (RteFsUtils::IsDirectory(filename)) {
     ProjMgrLogger::Error(filename, "file cannot be written");
@@ -721,6 +721,10 @@ bool ProjMgrYamlBase::WriteFile(YAML::Node& rootNode, const std::string& filenam
     }
   }
   else if (!CompareFile(filename, rootNode)) {
+    if (!allowUpdate) {
+      ProjMgrLogger::Error(filename, "file not allowed to be updated");
+      return false;
+    }
     if (!RteFsUtils::MakeSureFilePath(filename)) {
       ProjMgrLogger::Error(filename, "destination directory can not be created");
       return false;
@@ -829,12 +833,12 @@ bool ProjMgrYamlEmitter::GenerateCbuildGenIndex(ProjMgrParser& parser, const vec
   return cbuild.WriteFile(rootNode, filename);
 }
 
-bool ProjMgrYamlEmitter::GenerateCbuildPack(ProjMgrParser& parser, const vector<ContextItem*> contexts, bool keepExistingPackContent) {
+bool ProjMgrYamlEmitter::GenerateCbuildPack(ProjMgrParser& parser, const vector<ContextItem*> contexts, bool keepExistingPackContent, bool cbuildPackFrozen) {
   // generate cbuild-pack.yml
   const string& filename = parser.GetCsolution().directory + "/" + parser.GetCsolution().name + ".cbuild-pack.yml";
 
   YAML::Node rootNode;
   ProjMgrYamlCbuildPack cbuildPack(rootNode[YAML_CBUILD_PACK], contexts, parser, keepExistingPackContent);
 
-  return cbuildPack.WriteFile(rootNode, filename);
+  return cbuildPack.WriteFile(rootNode, filename, !cbuildPackFrozen);
 }
