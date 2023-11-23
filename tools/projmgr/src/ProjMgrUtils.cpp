@@ -356,3 +356,61 @@ vector<string> ProjMgrUtils::GetFilteredContexts(
   }
   return selectedContexts;
 }
+
+bool ProjMgrUtils::ConvertToPackInfo(const string& packId, PackInfo& packInfo) {
+  string packInfoStr = packId;
+  if (packInfoStr.find("::") != string::npos) {
+    packInfo.vendor = RteUtils::RemoveSuffixByString(packInfoStr, "::");
+    packInfoStr = RteUtils::RemovePrefixByString(packInfoStr, "::");
+    packInfo.name   = RteUtils::GetPrefix(packInfoStr, '@');
+  } else {
+    packInfo.vendor = RteUtils::GetPrefix(packInfoStr, '@');
+  }
+  packInfo.version = RteUtils::GetSuffix(packInfoStr, '@');
+
+  return true;
+}
+
+bool ProjMgrUtils::IsMatchingPackInfo(const PackInfo& exactPackInfo, const PackInfo& packInfoToMatch) {
+  // Check if vendor matches
+  if (packInfoToMatch.vendor != exactPackInfo.vendor) {
+    // Not same vendor
+    return false;
+  }
+
+  // Check if pack name matches
+  if (!packInfoToMatch.name.empty()) {
+    if (WildCards::IsWildcardPattern(packInfoToMatch.name)) {
+      // Check if filter matches
+      if (!WildCards::Match(packInfoToMatch.name, exactPackInfo.name)) {
+        // Name filter does not match needle
+        return false;
+      }
+    } else if (packInfoToMatch.name != exactPackInfo.name) {
+      // Not same pack name
+      return false;
+    }
+  }
+
+  // Check if version matches
+  string reqVersionRange = ConvertToVersionRange(packInfoToMatch.version);
+  if (!reqVersionRange.empty() && VersionCmp::RangeCompare(exactPackInfo.version, reqVersionRange) != 0) {
+    // Version out of range
+    return false;
+  }
+
+  // Needle matches this resolved pack
+  return true;
+}
+
+string ProjMgrUtils::ConvertToVersionRange(const string& version) {
+  string versionRange = version;
+  if (!versionRange.empty()) {
+    if (versionRange.find(">=") != string::npos) {
+      versionRange = versionRange.substr(2);
+    } else {
+      versionRange = versionRange + ":" + versionRange;
+    }
+  }
+  return versionRange;
+}

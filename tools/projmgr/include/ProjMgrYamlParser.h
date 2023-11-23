@@ -33,6 +33,7 @@ static constexpr const char* YAML_CBUILDS = "cbuilds";
 static constexpr const char* YAML_CBUILD = "cbuild";
 static constexpr const char* YAML_CBUILD_GENS = "cbuild-gens";
 static constexpr const char* YAML_CBUILD_GEN = "cbuild-gen";
+static constexpr const char* YAML_CBUILD_PACK = "cbuild-pack";
 static constexpr const char* YAML_CBUILD_SET = "cbuild-set";
 static constexpr const char* YAML_CDEFAULT = "cdefault";
 static constexpr const char* YAML_CLAYERS = "clayers";
@@ -124,6 +125,8 @@ static constexpr const char* YAML_PROJECTS = "projects";
 static constexpr const char* YAML_PROJECT_TYPE = "project-type";
 static constexpr const char* YAML_PROVIDES = "provides";
 static constexpr const char* YAML_REGIONS = "regions";
+static constexpr const char* YAML_RESOLVED_PACK = "resolved-pack";
+static constexpr const char* YAML_RESOLVED_PACKS = "resolved-packs";
 static constexpr const char* YAML_RTE = "rte";
 static constexpr const char* YAML_RUN = "run";
 static constexpr const char* YAML_SCOPE = "scope";
@@ -215,9 +218,11 @@ public:
     std::map<std::string, GlobalGeneratorItem>& generators, bool checkSchema);
 
 protected:
+  bool ParseCbuildPack(const std::string& input, CbuildPackItem& cbuildPack, bool checkSchema);
   void ParseMisc(const YAML::Node& parent, std::vector<MiscItem>& misc);
   void ParseDefine(const YAML::Node& parent, std::vector<std::string>& define);
   void ParsePacks(const YAML::Node& parent, const std::string& file, std::vector<PackItem>& packs);
+  void ParseResolvedPacks(const YAML::Node& parent, std::vector<ResolvedPackItem>& resolvedPacks);
   void ParseProcessor(const YAML::Node& parent, ProcessorItem& processor);
   void ParseBoolean(const YAML::Node& parent, const std::string& key, bool& value, bool def);
   void ParseString(const YAML::Node& parent, const std::string& key, std::string& value);
@@ -247,6 +252,7 @@ protected:
   bool ValidateCsolution(const std::string& input, const YAML::Node& root);
   bool ValidateCproject(const std::string& input, const YAML::Node& root);
   bool ValidateClayer(const std::string& input, const YAML::Node& root);
+  bool ValidateCbuildPack(const std::string& input, const YAML::Node& root);
   bool ValidateCbuildSet(const std::string& input, const YAML::Node& root);
   bool ValidateKeys(const std::string& input, const YAML::Node& parent, const std::set<std::string>& keys);
   bool ValidateSequence(const std::string& input, const YAML::Node& parent, const std::string& seqKey);

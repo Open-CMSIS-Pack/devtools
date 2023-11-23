@@ -53,6 +53,14 @@ bool ProjMgrYamlParser::ParseCdefault(const string& input,
 
 bool ProjMgrYamlParser::ParseCsolution(const string& input,
   CsolutionItem& csolution, bool checkSchema) {
+
+  string cbuildPackFile = RteUtils::RemoveSuffixByString(input, ".csolution.yml") + ".cbuild-pack.yml";
+  if (fs::exists(cbuildPackFile)) {
+    if (!ParseCbuildPack(cbuildPackFile, csolution.cbuildPack, checkSchema)) {
+      return false;
+    }
+  }
+
   try {
     // Validate file schema
     if (checkSchema &&
@@ -94,6 +102,36 @@ bool ProjMgrYamlParser::ParseCsolution(const string& input,
     ParsePacks(solutionNode, csolution.path, csolution.packs);
     csolution.enableCdefault = solutionNode[YAML_CDEFAULT].IsDefined();
     ParseGenerators(solutionNode, csolution.path, csolution.generators);
+
+  } catch (YAML::Exception& e) {
+    ProjMgrLogger::Error(input, e.mark.line + 1, e.mark.column + 1, e.msg);
+    return false;
+  }
+  return true;
+}
+
+bool ProjMgrYamlParser::ParseCbuildPack(const string& input,
+  CbuildPackItem& cbuildPack, bool checkSchema) {
+  try {
+    // Validate file schema
+    if (checkSchema &&
+      !ProjMgrYamlSchemaChecker().Validate(
+        input, ProjMgrYamlSchemaChecker::FileType::BUILD_PACK)) {
+      return false;
+    }
+
+    cbuildPack.path = RteFsUtils::MakePathCanonical(input);
+    cbuildPack.directory = RteFsUtils::ParentPath(cbuildPack.path);
+    cbuildPack.name = fs::path(input).stem().stem().stem().generic_string();
+
+    const YAML::Node& root = YAML::LoadFile(input);
+    if (!ValidateCbuildPack(input, root)) {
+      return false;
+    }
+
+    const YAML::Node& cbuildPackNode = root[YAML_CBUILD_PACK];
+
+    ParseResolvedPacks(cbuildPackNode, cbuildPack.packs);
 
   } catch (YAML::Exception& e) {
     ProjMgrLogger::Error(input, e.mark.line + 1, e.mark.column + 1, e.msg);
@@ -548,6 +586,18 @@ void ProjMgrYamlParser::ParseMisc(const YAML::Node& parent, vector<MiscItem>& mi
   }
 }
 
+void ProjMgrYamlParser::ParseResolvedPacks(const YAML::Node& parent, vector<ResolvedPackItem>& packs) {
+  if (parent[YAML_RESOLVED_PACKS].IsDefined()) {
+    const YAML::Node& packsNode = parent[YAML_RESOLVED_PACKS];
+    for (const auto& packEntry : packsNode) {
+      ResolvedPackItem packItem;
+      ParseString(packEntry, YAML_RESOLVED_PACK, packItem.pack);
+      ParseVector(packEntry, YAML_SELECTED_BY, packItem.selectedBy);
+      packs.push_back(packItem);
+    }
+  }
+}
+
 void ProjMgrYamlParser::ParsePacks(const YAML::Node& parent, const string& file, vector<PackItem>& packs) {
   if (parent[YAML_PACKS].IsDefined()) {
     const YAML::Node& packNode = parent[YAML_PACKS];
@@ -942,6 +992,10 @@ const set<string> cbuildSetKeys = {
   YAML_COMPILER,
 };
 
+const set<string> cbuildPackKeys = {
+  YAML_RESOLVED_PACKS,
+};
+
 const set<string> targetTypeKeys = {
   YAML_TYPE,
   YAML_DEVICE,
@@ -1027,6 +1081,11 @@ const set<string> packsKeys = {
   YAML_PATH,
   YAML_FORCONTEXT,
   YAML_NOTFORCONTEXT,
+};
+
+const set<string> resolvedPacksKeys = {
+  YAML_RESOLVED_PACK,
+  YAML_SELECTED_BY,
 };
 
 const set<string> componentsKeys = {
@@ -1119,6 +1178,7 @@ const map<string, set<string>> sequences = {
   {YAML_BUILDTYPES, buildTypeKeys},
   {YAML_MISC, miscKeys},
   {YAML_PACKS, packsKeys},
+  {YAML_RESOLVED_PACKS, resolvedPacksKeys},
   {YAML_COMPONENTS, componentsKeys},
   {YAML_CONNECTIONS, connectionsKeys},
   {YAML_LAYERS, layersKeys},
@@ -1187,6 +1247,20 @@ bool ProjMgrYamlParser::ValidateClayer(const string& input, const YAML::Node& ro
   }
   const YAML::Node& layerNode = root[YAML_LAYER];
   if (!ValidateKeys(input, layerNode, layerKeys)) {
+    return false;
+  }
+  return true;
+}
+
+bool ProjMgrYamlParser::ValidateCbuildPack(const string& input, const YAML::Node& root) {
+  const set<string> rootKeys = {
+    YAML_CBUILD_PACK,
+  };
+  if (!ValidateKeys(input, root, rootKeys)) {
+    return false;
+  }
+  const YAML::Node& cbuildPackNode = root[YAML_CBUILD_PACK];
+  if (!ValidateKeys(input, cbuildPackNode, cbuildPackKeys)) {
     return false;
   }
   return true;

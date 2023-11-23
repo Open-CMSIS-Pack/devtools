@@ -71,6 +71,130 @@ private:
   ProjMgrYamlCbuildIdx(YAML::Node node, const vector<ContextItem*>& processedContexts, ProjMgrParser& parser, const string& directory);
 };
 
+class ProjMgrYamlCbuildPack : public ProjMgrYamlBase {
+private:
+  friend class ProjMgrYamlEmitter;
+  ProjMgrYamlCbuildPack(YAML::Node node, const vector<ContextItem*>& processedContexts, ProjMgrParser& parser, bool keepExistingPackContent);
+};
+
+
+ProjMgrYamlCbuildPack::ProjMgrYamlCbuildPack(YAML::Node node, const vector<ContextItem*>& processedContexts, ProjMgrParser& parser, bool keepExistingPackContent) :
+  ProjMgrYamlBase(false)
+{
+  const auto& csolution = parser.GetCsolution();
+
+  struct ModelItem {
+    PackInfo info;
+    ResolvedPackItem resolvedPack;
+  };
+
+  map<string, ModelItem> model;
+
+  // Stage 1: Add all known items from the current cbuild pack file, if considering all contexts
+  if (keepExistingPackContent) {
+    for (const auto& resolvedItem : csolution.cbuildPack.packs) {
+      ModelItem modelItem;
+      ProjMgrUtils::ConvertToPackInfo(resolvedItem.pack, modelItem.info);
+      modelItem.resolvedPack.pack = resolvedItem.pack;
+      modelItem.resolvedPack.selectedBy = resolvedItem.selectedBy;
+      model[resolvedItem.pack] = modelItem;
+    }
+  }
+
+  // Stage 2: Process packs that are required by used components
+  for (const auto& context : processedContexts) {
+    for (const auto& [packId, package] : context->packages) {
+      // Skip project local packs
+      const string& packPath = package->GetRootFilePath(false);
+      if (context->localPackPaths.find(packPath) != context->localPackPaths.end()) {
+        continue;
+      }
+
+      if (model.find(packId) == model.end()) {
+        // Add pack
+        ModelItem modelItem;
+        ProjMgrUtils::ConvertToPackInfo(packId, modelItem.info);
+        modelItem.resolvedPack.pack = packId;
+        model[packId] = modelItem;
+      }
+    }
+  }
+
+  // Stage 3: Add all user input expression on the matching resolved pack
+  for (const auto& context : processedContexts) {
+    for (const auto& [userInput, resolvedPacks] : context->userInputToResolvedPackIdMap) {
+      for (const auto& resolvedPack : resolvedPacks) {
+        if (model.find(resolvedPack) == model.end()) {
+          ModelItem modelItem;
+          ProjMgrUtils::ConvertToPackInfo(resolvedPack, modelItem.info);
+          modelItem.resolvedPack.pack = resolvedPack;
+          model[resolvedPack] = modelItem;
+        }
+
+        ProjMgrUtils::PushBackUniquely(model[resolvedPack].resolvedPack.selectedBy, userInput);
+      }
+    }
+  }
+
+  // Stage 4: Process all wildcard patterns from user and add to selected-by list
+  for (const auto& context : processedContexts) {
+    for (const auto& packItem : context->packRequirements) {
+      // Skip project local packs
+      if (!packItem.path.empty()) {
+        continue;
+      }
+
+      const PackInfo& reqInfo = packItem.pack;
+      if (reqInfo.name.empty() || WildCards::IsWildcardPattern(reqInfo.name)) {
+        const string packId = RtePackage::ComposePackageID(reqInfo.vendor, reqInfo.name, reqInfo.version);
+
+        for (auto& [_, item] : model) {
+          if (ProjMgrUtils::IsMatchingPackInfo(item.info, reqInfo)) {
+            ProjMgrUtils::PushBackUniquely(item.resolvedPack.selectedBy, packId);
+          }
+        }
+      }
+    }
+  }
+
+  // Sort model before saving to ensure stable cbuild-pack.yml content
+  vector<pair<string, ModelItem>> sortedModel;
+  for (const auto& item : model) {
+    sortedModel.push_back(item);
+  }
+  std::sort(sortedModel.begin(), sortedModel.end(), [](const pair<string, ModelItem> &item1, const pair<string, ModelItem> &item2) {
+    PackInfo packInfo1, packInfo2;
+    ProjMgrUtils::ConvertToPackInfo(item1.first, packInfo1);
+    ProjMgrUtils::ConvertToPackInfo(item2.first, packInfo2);
+
+    if (packInfo1.vendor == packInfo2.vendor) {
+      if (packInfo1.name == packInfo2.name) {
+        // Order by pack version
+        return VersionCmp::Compare(packInfo1.version, packInfo2.version) < 0;
+      }
+
+      // Order by pack name
+      return packInfo1.name < packInfo2.name;
+    }
+
+    // Order by vendor name
+    return packInfo1.vendor < packInfo2.vendor;
+  });
+
+  // Produce the yml output
+  for (auto& [packId, modelItem] : sortedModel) {
+    YAML::Node resolvedPackNode;
+    auto& packItem = modelItem.resolvedPack;
+
+    SetNodeValue(resolvedPackNode[YAML_RESOLVED_PACK], packId);
+
+    sort(packItem.selectedBy.begin(), packItem.selectedBy.end());
+    SetNodeValue(resolvedPackNode[YAML_SELECTED_BY], packItem.selectedBy);
+
+    node[YAML_RESOLVED_PACKS].push_back(resolvedPackNode);
+  }
+}
+
 ProjMgrYamlBase::ProjMgrYamlBase(bool useAbsolutePaths) : m_useAbsolutePaths(useAbsolutePaths) {
 }
 
@@ -583,7 +707,20 @@ bool ProjMgrYamlBase::CompareNodes(const YAML::Node& lhs, const YAML::Node& rhs)
 
 bool ProjMgrYamlBase::WriteFile(YAML::Node& rootNode, const std::string& filename) {
   // Compare yaml contents
-  if (!CompareFile(filename, rootNode)) {
+  if (RteFsUtils::IsDirectory(filename)) {
+    ProjMgrLogger::Error(filename, "file cannot be written");
+    return false;
+  }
+  else if (rootNode.size() == 0) {
+    // Remove file as nothing to write.
+    if (RteFsUtils::Exists(filename)) {
+      RteFsUtils::RemoveFile(filename);
+      ProjMgrLogger::Info(filename, "file has been removed");
+    } else {
+      ProjMgrLogger::Info(filename, "file skipped");
+    }
+  }
+  else if (!CompareFile(filename, rootNode)) {
     if (!RteFsUtils::MakeSureFilePath(filename)) {
       ProjMgrLogger::Error(filename, "destination directory can not be created");
       return false;
@@ -690,4 +827,14 @@ bool ProjMgrYamlEmitter::GenerateCbuildGenIndex(ProjMgrParser& parser, const vec
   YAML::Node rootNode;
   ProjMgrYamlCbuild cbuild(rootNode[YAML_BUILD_GEN_IDX], siblings, type, output, gendir);
   return cbuild.WriteFile(rootNode, filename);
+}
+
+bool ProjMgrYamlEmitter::GenerateCbuildPack(ProjMgrParser& parser, const vector<ContextItem*> contexts, bool keepExistingPackContent) {
+  // generate cbuild-pack.yml
+  const string& filename = parser.GetCsolution().directory + "/" + parser.GetCsolution().name + ".cbuild-pack.yml";
+
+  YAML::Node rootNode;
+  ProjMgrYamlCbuildPack cbuildPack(rootNode[YAML_CBUILD_PACK], contexts, parser, keepExistingPackContent);
+
+  return cbuildPack.WriteFile(rootNode, filename);
 }

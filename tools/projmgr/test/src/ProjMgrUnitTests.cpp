@@ -125,7 +125,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks) {
   map<std::pair<string, string>, string> testInputs = {
     {{"TestSolution/test.csolution.yml", "test1.Debug+CM0"}, "ARM::RteTest_DFP@0.2.0" },
       // packs are specified only with vendor
-    {{"TestSolution/test_filtered_pack_selection.csolution.yml", "test1.Debug+CM0"},  "*"},
+    {{"TestSolution/test_filtered_pack_selection.csolution.yml", "test1.Debug+CM0"},  "ARM::*"},
       // packs are specified with wildcards
     {{"TestSolution/test_filtered_pack_selection.csolution.yml", "test1.Release+CM0"}, "ARM::RteTest_DFP@0.2.0"},
       // packs are not specified
@@ -574,6 +574,10 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution) {
      ProjMgrYamlSchemaChecker::FileType::BUILD));
    EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testoutput_folder + "/test2.Debug+CM3.cbuild.yml",
      ProjMgrYamlSchemaChecker::FileType::BUILD));
+
+  // Check generated cbuild-pack file
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/TestSolution/test.cbuild-pack.yml",
+    testinput_folder + "/TestSolution/ref/test.cbuild-pack.yml");
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution_PositionalArguments) {
@@ -694,6 +698,414 @@ TEST_F(ProjMgrUnitTests, RunProjMgrLayers) {
   // Check creation of layers rte folders
   EXPECT_TRUE(RteFsUtils::Exists(testinput_folder + "/TestLayers/Layer2/RTE/Device/RteTest_ARMCM0"));
   EXPECT_TRUE(RteFsUtils::Exists(testinput_folder + "/TestLayers/Layer3/RTE/RteTest/MyDir"));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgrSolution_CbuildFailedToCreate) {
+  char* argv[6];
+  StdStreamRedirect streamRedirect;
+
+  // convert --solution solution.yml
+  const string csolution = testinput_folder + "/TestSolution/fail_create_cbuild.csolution.yml";
+  const string output = testoutput_folder + "/testpacklock";
+  const string cbuild = output + "/fail_create_cbuild+CM0.cbuild.yml";
+
+  // Create a directory with same name where cbuild.yml will be attempted to be created
+  EXPECT_TRUE(RteFsUtils::CreateDirectories(cbuild));
+
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)output.c_str();
+
+  EXPECT_EQ(1, RunProjMgr(6, argv, 0));
+  EXPECT_TRUE(RteFsUtils::IsDirectory(cbuild));
+
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find(cbuild + " - error csolution: file cannot be written"));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgrSolution_LockPackVersion) {
+  char* argv[6];
+
+  // convert --solution solution.yml
+  const string csolution = testinput_folder + "/TestSolution/PackLocking/lock_pack_version.csolution.yml";
+  const string cbuildPack = testinput_folder + "/TestSolution/PackLocking/lock_pack_version.cbuild-pack.yml";
+  const string cbuildPackBackup = RteFsUtils::BackupFile(cbuildPack);
+  const string output = testoutput_folder + "/testpacklock";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)output.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+
+  // Check in the generated CPRJ that RteTest_DFP::0.1.1 is still used, even if 0.2.0 is available
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/testpacklock/project_with_dfp_components+CM0.cprj",
+    testinput_folder + "/TestSolution/PackLocking/ref/project_with_dfp_components+CM0.cprj");
+
+  // Check that the cbuild-pack file hasn't been modified by this operation
+  ProjMgrTestEnv::CompareFile(cbuildPackBackup, cbuildPack);
+  RteFsUtils::RemoveFile(cbuildPackBackup);
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgrSolution_LockPackKeepExistingForContextSelections) {
+  char* argv[8];
+  string buf1, buf2, buf3;
+
+  // convert --solution solution.yml
+  const string csolution = testinput_folder + "/TestSolution/PackLocking/project_pack_lock_with_for_context.csolution.yml";
+  const string cbuildPack = testinput_folder + "/TestSolution/PackLocking/project_pack_lock_with_for_context.cbuild-pack.yml";
+  const string output = testoutput_folder + "/testpacklock";
+
+  // Ensure clean state for the test case.
+  RteFsUtils::RemoveFile(cbuildPack);
+
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)output.c_str();
+  argv[6] = (char*)"-c";
+
+  // First create initial cbuild-pack.yml file without optional pack
+  argv[7] = (char*)".withoutComponents";
+  EXPECT_EQ(0, RunProjMgr(8, argv, 0));
+  EXPECT_TRUE(RteFsUtils::Exists(cbuildPack));
+  EXPECT_TRUE(RteFsUtils::ReadFile(cbuildPack, buf1));
+  EXPECT_TRUE(buf1.find("- resolved-pack: ARM::RteTest_DFP@") != string::npos);
+  EXPECT_FALSE(buf1.find("- resolved-pack: ARM::RteTest@") != string::npos); // Should not have been added yet
+
+  // Update the cbuild-pack.yml to contain the optional pack
+  argv[7] = (char*)".withComponents";
+  EXPECT_EQ(0, RunProjMgr(8, argv, 0));
+  EXPECT_TRUE(RteFsUtils::Exists(cbuildPack));
+  EXPECT_TRUE(RteFsUtils::ReadFile(cbuildPack, buf2));
+  EXPECT_TRUE(buf2.find("- resolved-pack: ARM::RteTest_DFP@") != string::npos);
+  EXPECT_TRUE(buf2.find("- resolved-pack: ARM::RteTest@") != string::npos); // Should have been added.
+  EXPECT_NE(buf1, buf2);
+
+  // Re-run without the optional pack and ensure it's still present in the cbuild-pack.yml file
+  argv[7] = (char*)".withoutComponents";
+  EXPECT_EQ(0, RunProjMgr(8, argv, 0));
+  EXPECT_TRUE(RteFsUtils::Exists(cbuildPack));
+  EXPECT_TRUE(RteFsUtils::ReadFile(cbuildPack, buf3));
+  EXPECT_TRUE(buf3.find("- resolved-pack: ARM::RteTest_DFP@") != string::npos);
+  EXPECT_TRUE(buf3.find("- resolved-pack: ARM::RteTest@") != string::npos); // Should still be here even with -c flag.
+  EXPECT_EQ(buf2, buf3);
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgrSolution_LockPackCleanup) {
+  char* argv[6];
+  string buf1, buf2;
+
+  // convert --solution solution.yml
+  const string csolution = testinput_folder + "/TestSolution/PackLocking/project_pack_lock_cleanup.csolution.yml";
+  const string cbuildPack = testinput_folder + "/TestSolution/PackLocking/project_pack_lock_cleanup.cbuild-pack.yml";
+  const string output = testoutput_folder + "/testpacklock";
+
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)output.c_str();
+
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+  EXPECT_TRUE(RteFsUtils::Exists(cbuildPack));
+  EXPECT_TRUE(RteFsUtils::ReadFile(cbuildPack, buf1));
+  EXPECT_FALSE(buf1.find("- resolved-pack: ARM::RteTest_DFP@0.1.1") != string::npos);
+  EXPECT_TRUE(buf1.find("- resolved-pack: ARM::RteTest_DFP@0.2.0") != string::npos);
+  EXPECT_TRUE(buf1.find("- ARM::RteTest_DFP") != string::npos);
+
+  // 2nd run to verify that the cbuild-pack.yml content is stable
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+  EXPECT_TRUE(RteFsUtils::Exists(cbuildPack));
+  EXPECT_TRUE(RteFsUtils::ReadFile(cbuildPack, buf2));
+  EXPECT_EQ(buf1, buf2);
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgrSolution_LockPackNoPackList) {
+  char* argv[6];
+  string buf1, buf2;
+
+  // convert --solution solution.yml
+  const string csolution = testinput_folder + "/TestSolution/PackLocking/project_pack_lock_no_pack_list.csolution.yml";
+  const string cbuildPack = testinput_folder + "/TestSolution/PackLocking/ref/project_pack_lock_no_pack_list.cbuild-pack.yml";
+  const string expectedCbuildPack = testinput_folder + "/TestSolution/PackLocking/ref/project_pack_lock_no_pack_list.cbuild-pack.yml";
+  const string output = testoutput_folder + "/testpacklock";
+
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)output.c_str();
+
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+  ProjMgrTestEnv::CompareFile(expectedCbuildPack, cbuildPack);
+
+  // 2nd run to verify that the cbuild-pack.yml content is stable
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+  ProjMgrTestEnv::CompareFile(expectedCbuildPack, cbuildPack);
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgrSolution_LockPackReselectSelectedBy) {
+  char* argv[6];
+
+  // convert --solution solution.yml
+  const string csolution = testinput_folder + "/TestSolution/PackLocking/project_pack_lock_reselect_selected-by.csolution.yml";
+  const string cbuildPack = testinput_folder + "/TestSolution/PackLocking/project_pack_lock_reselect_selected-by.cbuild-pack.yml";
+  const string expectedCbuildPack = testinput_folder + "/TestSolution/PackLocking/ref/project_pack_lock_reselect_selected-by.cbuild-pack.yml";
+  const string output = testoutput_folder + "/testpacklock";
+
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)output.c_str();
+
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+  ProjMgrTestEnv::CompareFile(expectedCbuildPack, cbuildPack);
+
+  // 2nd run to verify that the cbuild-pack.yml content is stable
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+  ProjMgrTestEnv::CompareFile(expectedCbuildPack, cbuildPack);
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgrSolution_CbuildPackLocalPackIgnored) {
+  char* argv[6];
+
+  // convert --solution solution.yml
+  const string csolution1 = testinput_folder + "/TestSolution/PackLocking/cbuild_pack_unused_local_pack_ignored.csolution.yml";
+  const string cbuildPack1 = testinput_folder + "/TestSolution/PackLocking/cbuild_pack_unused_local_pack_ignored.cbuild-pack.yml";
+  const string csolution2 = testinput_folder + "/TestSolution/PackLocking/cbuild_pack_used_local_pack_ignored.csolution.yml";
+  const string cbuildPack2 = testinput_folder + "/TestSolution/PackLocking/cbuild_pack_used_local_pack_ignored.cbuild-pack.yml";
+  const string output = testoutput_folder + "/testpacklock";
+
+  EXPECT_FALSE(RteFsUtils::Exists(cbuildPack1));
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution1.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)output.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+
+  EXPECT_FALSE(RteFsUtils::Exists(cbuildPack2));
+  argv[3] = (char*)csolution2.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+
+  // Check that the cbuild-pack files contains the system wide pack but not the local
+  string buf1;
+  EXPECT_TRUE(RteFsUtils::ReadFile(cbuildPack1, buf1));
+  EXPECT_TRUE(buf1.find("- resolved-pack: ARM::RteTest_DFP@") != string::npos);
+  EXPECT_FALSE(buf1.find("- resolved-pack: ARM::RteTest@") != string::npos);
+  string buf2;
+  EXPECT_TRUE(RteFsUtils::ReadFile(cbuildPack2, buf2));
+  EXPECT_TRUE(buf2.find("- resolved-pack: ARM::RteTest_DFP@") != string::npos);
+  EXPECT_FALSE(buf2.find("- resolved-pack: ARM::RteTest@") != string::npos);
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgrSolution_CbuildPackInvalidContent) {
+  char* argv[7];
+  StdStreamRedirect streamRedirect;
+
+  // convert --solution solution.yml
+  const string csolution = testinput_folder + "/TestSolution/PackLocking/cbuild_pack_invalid_content.csolution.yml";
+  const string csolution2 = testinput_folder + "/TestSolution/PackLocking/cbuild_pack_invalid_content2.csolution.yml";
+  const string output = testoutput_folder + "/testpacklock";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)output.c_str();
+  argv[6] = (char*)"--no-check-schema";
+  EXPECT_NE(0, RunProjMgr(6, argv, 0));
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find(" error csolution: required property 'resolved-packs' not found in object"));
+
+  streamRedirect.ClearStringStreams();
+  argv[3] = (char*)csolution2.c_str();
+  EXPECT_NE(0, RunProjMgr(6, argv, 0));
+  errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find(" error csolution: unexpected instance type"));
+
+  streamRedirect.ClearStringStreams();
+  EXPECT_NE(0, RunProjMgr(7, argv, 0));
+  errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find(" error csolution: operator[] call on a scalar (key: \"cbuild-pack\")"));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgrSolution_CbuildPackWithDisallowedField) {
+  char* argv[7];
+  StdStreamRedirect streamRedirect;
+
+  // convert --solution solution.yml
+  const string csolution = testinput_folder + "/TestSolution/PackLocking/cbuild_pack_with_disallowed_field.csolution.yml";
+  const string csolution2 = testinput_folder + "/TestSolution/PackLocking/cbuild_pack_with_disallowed_field2.csolution.yml";
+  const string output = testoutput_folder + "/testpacklock";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)output.c_str();
+  argv[6] = (char*)"--no-check-schema";
+
+  // Run without "--no-check-schema"
+  EXPECT_NE(0, RunProjMgr(6, argv, 0));
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find("error csolution: schema check failed, verify syntax"));
+
+  // Run with "--no-check-schema"
+  streamRedirect.ClearStringStreams();
+  EXPECT_NE(0, RunProjMgr(7, argv, 0));
+  errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find("warning csolution: key 'misc' was not recognized"));
+  EXPECT_NE(string::npos, errStr.find("error csolution: node 'misc' shall contain sequence elements"));
+
+  streamRedirect.ClearStringStreams();
+  argv[3] = (char*)csolution2.c_str();
+  EXPECT_NE(0, RunProjMgr(7, argv, 0));
+  errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find("warning csolution: key 'misc' was not recognized"));
+  EXPECT_NE(string::npos, errStr.find("error csolution: node 'misc' shall contain sequence elements"));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgrSolution_CbuildPackWithUnmatchedVendor) {
+  char* argv[6];
+
+  // convert --solution solution.yml
+  const string csolution = testinput_folder + "/TestSolution/PackLocking/cbuild_pack_with_unmatched_vendor.csolution.yml";
+  const string output = testoutput_folder + "/testpacklock";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)output.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgrSolution_CbuildPackWithoutUsedComponents) {
+  char* argv[6];
+
+  // convert --solution solution.yml
+  const string csolution = testinput_folder + "/TestSolution/PackLocking/cbuild_pack_without_used_components.csolution.yml";
+  const string cbuildPack = testinput_folder + "/TestSolution/PackLocking/cbuild_pack_without_used_components.cbuild-pack.yml";
+  const string output = testoutput_folder + "/testpacklock";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)output.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+
+  string buf;
+  EXPECT_TRUE(RteFsUtils::Exists(cbuildPack));
+  EXPECT_TRUE(RteFsUtils::ReadFile(cbuildPack, buf));
+  EXPECT_TRUE(buf.find("- resolved-pack: ARM::RteTest@0.1.0") != string::npos);
+  EXPECT_TRUE(buf.find("- ARM::RteTest@0.1.0") != string::npos);
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgrSolution_LockedPackVersionNotChangedByAddedPack) {
+  char* argv[6];
+
+  // convert --solution solution.yml
+  const string csolution = testinput_folder + "/TestSolution/PackLocking/pack_lock_with_added_pack.csolution.yml";
+  const string cbuildPack = testinput_folder + "/TestSolution/PackLocking/pack_lock_with_added_pack.cbuild-pack.yml";
+  const string output = testoutput_folder + "/testpacklock";
+
+  // Check that there is a newer version of the locked pack
+  vector<string> packs;
+  m_worker.SetLoadPacksPolicy(LoadPacksPolicy::ALL);
+  EXPECT_TRUE(m_worker.ListPacks(packs, false, "ARM::RteTest_DFP@0.1.1"));
+  EXPECT_TRUE(m_worker.ListPacks(packs, false, "ARM::RteTest_DFP@0.2.0"));
+
+  // Check that the cbuild-pack file contains the first pack (locked to an old version) but not the second
+  string buf;
+  EXPECT_TRUE(RteFsUtils::ReadFile(cbuildPack, buf));
+  EXPECT_TRUE(buf.find("- resolved-pack: ARM::RteTest_DFP@0.1.1") != string::npos);
+  EXPECT_FALSE(buf.find("- resolved-pack: ARM::RteTest@") != string::npos);
+
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)output.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+
+  // Check that the cbuild-pack file contains both packs and that the first still has the same version
+  EXPECT_TRUE(RteFsUtils::ReadFile(cbuildPack, buf));
+  EXPECT_TRUE(buf.find("- resolved-pack: ARM::RteTest_DFP@0.1.1") != string::npos);
+  EXPECT_TRUE(buf.find("- resolved-pack: ARM::RteTest@") != string::npos);
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgrSolution_LockedProjectPackVersionNotChangedByAddedPack) {
+  char* argv[6];
+
+  // Same as previous test but with packs listed in project
+  // convert --solution solution.yml
+  const string csolution = testinput_folder + "/TestSolution/PackLocking/project_pack_lock_with_added_pack.csolution.yml";
+  const string cbuildPack = testinput_folder + "/TestSolution/PackLocking/project_pack_lock_with_added_pack.cbuild-pack.yml";
+  const string output = testoutput_folder + "/testpacklock";
+
+  // Check that there is a newer version of the locked pack
+  vector<string> packs;
+  m_worker.SetLoadPacksPolicy(LoadPacksPolicy::ALL);
+  EXPECT_TRUE(m_worker.ListPacks(packs, false, "ARM::RteTest_DFP@0.1.1"));
+  EXPECT_TRUE(m_worker.ListPacks(packs, false, "ARM::RteTest_DFP@0.2.0"));
+
+  // Check that the cbuild-pack file contains the first pack (locked to an old version) but not the second
+  string buf;
+  EXPECT_TRUE(RteFsUtils::ReadFile(cbuildPack, buf));
+  EXPECT_TRUE(buf.find("- resolved-pack: ARM::RteTest_DFP@0.1.1") != string::npos);
+  EXPECT_FALSE(buf.find("- resolved-pack: ARM::RteTest@") != string::npos);
+
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)output.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+
+  // Check that the cbuild-pack file contains both packs and that the first still has the same version
+  EXPECT_TRUE(RteFsUtils::ReadFile(cbuildPack, buf));
+  EXPECT_TRUE(buf.find("- resolved-pack: ARM::RteTest_DFP@0.1.1") != string::npos);
+  EXPECT_TRUE(buf.find("- resolved-pack: ARM::RteTest@") != string::npos);
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgrSolution_LockPackWithVersionRange) {
+  char* argv[6];
+
+  // convert --solution solution.yml
+  const string csolution = testinput_folder + "/TestSolution/PackLocking/pack_lock_with_version_range.csolution.yml";
+  const string output = testoutput_folder + "/testpacklock";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)output.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+
+  // Check the generated cbuild-pack file
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/TestSolution/PackLocking/pack_lock_with_version_range.cbuild-pack.yml",
+    testinput_folder + "/TestSolution/PackLocking/ref/pack_lock_with_version_range.cbuild-pack.yml");
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgrSolution_LockProjectPackWithVersionRange) {
+  char* argv[6];
+
+  // Same as previous test but with packs listed in project
+  // convert --solution solution.yml
+  const string csolution = testinput_folder + "/TestSolution/PackLocking/project_pack_lock_with_version_range.csolution.yml";
+  const string output = testoutput_folder + "/testpacklock";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)output.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+
+  // Check the generated cbuild-pack file
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/TestSolution/PackLocking/project_pack_lock_with_version_range.cbuild-pack.yml",
+    testinput_folder + "/TestSolution/PackLocking/ref/project_pack_lock_with_version_range.cbuild-pack.yml");
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgrLayers2) {
@@ -2402,6 +2814,10 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Pack_Selection) {
     testinput_folder + "/TestSolution/ref/test2.Debug+CM0_pack_selection.cprj");
  ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test2.Debug+TestGen.cprj",
     testinput_folder + "/TestSolution/ref/test2.Debug+TestGen.cprj");
+
+  // Check generated cbuild-pack file
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/TestSolution/test_pack_selection.cbuild-pack.yml",
+    testinput_folder + "/TestSolution/ref/test_pack_selection.cbuild-pack.yml");
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution_No_Packs) {
@@ -2558,6 +2974,8 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_LoadPacksPolicy_Required) {
   char* argv[6];
   StdStreamRedirect streamRedirect;
   const string& csolution = testinput_folder + "/TestSolution/test_no_packs.csolution.yml";
+  const string& cbuildPack = testinput_folder + "/TestSolution/test_no_packs.cbuild-pack.yml";
+  EXPECT_TRUE(RteFsUtils::RemoveFile(cbuildPack));
   argv[1] = (char*)"convert";
   argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
@@ -2572,6 +2990,8 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_LoadPacksPolicy_Invalid) {
   char* argv[6];
   StdStreamRedirect streamRedirect;
   const string& csolution = testinput_folder + "/TestSolution/test_no_packs.csolution.yml";
+  const string& cbuildPack = testinput_folder + "/TestSolution/test_no_packs.cbuild-pack.yml";
+  EXPECT_TRUE(RteFsUtils::RemoveFile(cbuildPack));
   argv[1] = (char*)"convert";
   argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
@@ -2586,6 +3006,8 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_LoadPacksPolicy_Latest) {
   char* argv[6];
   StdStreamRedirect streamRedirect;
   const string& csolution = testinput_folder + "/TestSolution/test_no_packs.csolution.yml";
+  const string& cbuildPack = testinput_folder + "/TestSolution/test_no_packs.cbuild-pack.yml";
+  EXPECT_TRUE(RteFsUtils::RemoveFile(cbuildPack));
   argv[1] = (char*)"convert";
   argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
@@ -2597,6 +3019,8 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_LoadPacksPolicy_Latest) {
 TEST_F(ProjMgrUnitTests, RunProjMgr_LoadPacksPolicy_All) {
   char* argv[6];
   const string& csolution = testinput_folder + "/TestSolution/test_no_packs.csolution.yml";
+  const string& cbuildPack = testinput_folder + "/TestSolution/test_no_packs.cbuild-pack.yml";
+  EXPECT_TRUE(RteFsUtils::RemoveFile(cbuildPack));
   argv[1] = (char*)"convert";
   argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
@@ -3535,6 +3959,8 @@ info csolution: config files for each component:\n\
     - .*/TestSolution/TestProject1/RTE/Device/RteTest_ARMCM0/startup_ARMCM0.c \\(base@1.1.1\\) \\(update@2.0.3\\)\n\
     - .*/TestSolution/TestProject1/RTE/Device/RteTest_ARMCM0/system_ARMCM0.c \\(base@1.0.0\\)\n\
 .*/test.cbuild-idx.yml - info csolution: file generated successfully\n\
+.*/test1.*.cbuild.yml - info csolution: file generated successfully\n\
+.*/test.cbuild-pack.yml - info csolution: file (generated successfully|is already up-to-date)\n\
 ";
 
   auto outStr = streamRedirect.GetOutString();

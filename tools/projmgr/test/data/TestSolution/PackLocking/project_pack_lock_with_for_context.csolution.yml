@@ -1,0 +1,11 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schemas/csolution.schema.json
+
+solution:
+  target-types:
+    - type: CM0
+      device: RteTest_ARMCM0
+  build-types:
+    - type: withComponents
+    - type: withoutComponents
+  projects:
+    - project: ./project_pack_lock_with_for_context.cproject.yml

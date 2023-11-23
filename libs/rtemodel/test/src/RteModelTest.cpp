@@ -56,11 +56,11 @@ TEST(RteModelTest, LoadPacks) {
   rteKernel.SetCmsisPackRoot(RteModelTestConfig::CMSIS_PACK_ROOT);
 
   EXPECT_TRUE(rteKernel.GetInstalledPacks(latestFiles, true));
-  EXPECT_EQ(latestFiles.size(), 6);
+  EXPECT_EQ(latestFiles.size(), 7);
 
   list<string> files;
   rteKernel.GetInstalledPacks(files, false);
-  EXPECT_EQ(files.size(), 7);
+  EXPECT_EQ(files.size(), 8);
 
   RteModel* rteModel = rteKernel.GetGlobalModel();
   ASSERT_NE(rteModel, nullptr);

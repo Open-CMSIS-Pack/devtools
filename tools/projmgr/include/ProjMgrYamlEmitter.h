@@ -63,6 +63,14 @@ public:
   */
   static bool GenerateCbuildSet(const std::vector<ContextItem*> contexts,
     const std::string& selectedCompiler, const std::string& cbuildSetFile);
+
+  /**
+   * @brief generate cbuild pack file
+   * @param contexts vector with pointers to contexts
+   * @param keepExistingPackContent if true, all entries from existing cbuild-pack should be preserved
+   * @return true if executed successfully
+  */
+  static bool GenerateCbuildPack(ProjMgrParser& parser, const std::vector<ContextItem*> contexts, bool keepExistingPackContent);
 };
 
 #endif  // PROJMGRYAMLEMITTER_H

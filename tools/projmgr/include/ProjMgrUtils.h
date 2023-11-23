@@ -60,6 +60,18 @@ struct OutputTypes {
 };
 
 /**
+ * @brief pack info containing
+ *        pack name,
+ *        pack vendor,
+ *        pack version
+*/
+struct PackInfo {
+  std::string name;
+  std::string vendor;
+  std::string version;
+};
+
+/**
  * @brief vector of ConnectionsCollection
 */
 typedef std::vector<ConnectionsCollection> ConnectionsCollectionVec;
@@ -356,6 +368,29 @@ public:
    * @return rte or yaml equivalent device value
   */
   static const std::string& GetDeviceAttribute(const std::string& key, const std::string& value);
+
+  /**
+   * @brief convert a pack ID to a pack info
+   * @param packId the pack id (YML format)
+   * @param packInfo the pack info struct
+   * @return true on success
+  */
+  static bool ConvertToPackInfo(const std::string& packId, PackInfo& packInfo);
+
+  /**
+   * @brief check if the two pack info structs match
+   * @param exactPackInfo fully qualified pack ID, without wildcards or ranges
+   * @param packInfoToMatch pack ID, may include wildcards or ranges
+   * @return true if match
+  */
+  static bool IsMatchingPackInfo(const PackInfo& exactPackInfo, const PackInfo& packInfoToMatch);
+
+  /**
+   * @brief convert version in YML format to CPRJ range format
+   * @param version version in YML format
+   * @return version in CPRJ range format
+  */
+  static std::string ConvertToVersionRange(const std::string& version);
 
 protected:
   static std::string ConstructID(const std::vector<std::pair<const char*, const std::string&>>& elements);

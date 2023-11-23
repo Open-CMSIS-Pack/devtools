@@ -21,6 +21,7 @@ public:
     PROJECT,
     LAYER,
     BUILD,
+    BUILD_PACK,
     BUILDIDX,
     BUILDSET,
     GENERATOR,

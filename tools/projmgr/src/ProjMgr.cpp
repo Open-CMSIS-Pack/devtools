@@ -518,6 +518,18 @@ bool ProjMgr::RunConfigure(bool printConfig) {
     }
   }
 
+  // Generate cbuild files
+  for (auto& contextItem : m_processedContexts) {
+    if (!m_emitter.GenerateCbuild(contextItem)) {
+      return false;
+    }
+
+  }
+
+  // Generate cbuild-pack file
+  const bool isUsingContexts = m_contextSet || m_context.size() != 0;
+  m_emitter.GenerateCbuildPack(m_parser, m_processedContexts, isUsingContexts);
+
   return !error;
 }
 
@@ -544,13 +556,6 @@ bool ProjMgr::RunConvert(void) {
         ProjMgrLogger::Error(exportfilename, "export file cannot be written");
         return false;
       }
-    }
-  }
-
-  // Generate cbuild files
-  for (auto& contextItem : m_processedContexts) {
-    if (!m_emitter.GenerateCbuild(contextItem)) {
-      return false;
     }
   }
 
