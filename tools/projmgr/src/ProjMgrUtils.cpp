@@ -240,8 +240,7 @@ void ProjMgrUtils::GetCompilerRoot(string& compilerRoot) {
     }
   }
   if (!compilerRoot.empty()) {
-    error_code ec;
-    compilerRoot = fs::weakly_canonical(fs::path(compilerRoot), ec).generic_string();
+    compilerRoot = RteFsUtils::MakePathCanonical(compilerRoot);
   }
 }
 

@@ -15,6 +15,7 @@
 /******************************************************************************/
 
 #include "AlnumCmp.h"
+#include "CollectionUtils.h"
 #include "DeviceVendor.h"
 #include "VersionCmp.h"
 #include "WildCards.h"

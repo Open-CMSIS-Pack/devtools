@@ -284,7 +284,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacksMissing) {
   argv[5] = (char*)"-c";
   argv[6] = (char*)"test1+CM0";
   argv[7] = (char*)"-m";
-  EXPECT_EQ(0, RunProjMgr(8, argv, 0));
+  EXPECT_EQ(0, RunProjMgr(8, argv, 0)); // code should return success because of "-m" option
 
   auto outStr = streamRedirect.GetOutString();
   EXPECT_STREQ(outStr.c_str(), "ARM::Missing_DFP@0.0.9\n");
@@ -308,6 +308,29 @@ TEST_F(ProjMgrUnitTests, ListPacks_ProjectAndLayer) {
   auto outStr = streamRedirect.GetOutString();
   EXPECT_EQ(outStr, expected);
 }
+
+TEST_F(ProjMgrUnitTests, ListPacks_Path) {
+  char* argv[6];
+  StdStreamRedirect streamRedirect;
+  const string& csolution = testinput_folder + "/TestSolution/test_pack_path.csolution.yml";
+
+  // list packs
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"packs";
+  argv[3] = (char*)"--solution";
+  argv[4] = (char*)csolution.c_str();
+  argv[5] = (char*)"-R";
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+
+  const string expected =
+    "ARM::RteTest@0.1.0 (${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/ARM.RteTest.pdsc)\n" \
+    "ARM::RteTestRequired@1.1.0 (./Packs/RteTestRequired1/ARM.RteTestRequired.pdsc)\n" \
+    "ARM::RteTestRequired@1.0.0 (./Packs/RteTestRequired/ARM.RteTestRequired.pdsc)\n" \
+    "ARM::RteTest_DFP@0.2.0 (${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/ARM.RteTest_DFP.pdsc)\n";
+  auto outStr = streamRedirect.GetOutString();
+  EXPECT_EQ(outStr, expected);
+}
+
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListBoards) {
   char* argv[5];
@@ -2124,16 +2147,20 @@ TEST_F(ProjMgrUnitTests, AddContextFailed) {
 TEST_F(ProjMgrUnitTests, GetInstalledPacks) {
   EXPECT_TRUE(m_worker.InitializeModel());
   auto kernel = ProjMgrKernel::Get();
-  const auto& cmsisPackRoot = kernel->GetCmsisPackRoot();
+  const string cmsisPackRoot = kernel->GetCmsisPackRoot();
   std::list<std::string> pdscFiles;
 
+  // correct file, but no packs
   kernel->SetCmsisPackRoot(string(CMAKE_SOURCE_DIR) + "test/local");
   EXPECT_TRUE(kernel->GetInstalledPacks(pdscFiles));
+  EXPECT_TRUE(pdscFiles.empty());
 
+  // incorrect file
   kernel->SetCmsisPackRoot(string(CMAKE_SOURCE_DIR) + "test/local-malformed");
-  EXPECT_FALSE(kernel->GetInstalledPacks(pdscFiles));
+  EXPECT_TRUE(kernel->GetInstalledPacks(pdscFiles));
+  EXPECT_TRUE(pdscFiles.empty());
 
-  EXPECT_FALSE(m_worker.LoadAllRelevantPacks());
+  EXPECT_TRUE(m_worker.LoadAllRelevantPacks());
 
   kernel->SetCmsisPackRoot(cmsisPackRoot);
 }
@@ -3886,15 +3913,14 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListEnvironment) {
   CrossPlatformUtils::SetEnv("CMSIS_PACK_ROOT", RteUtils::EMPTY_STRING);
   CrossPlatformUtils::SetEnv("CMSIS_COMPILER_ROOT", RteUtils::EMPTY_STRING);
 
-  error_code ec;
   string localCompilerPath, defaultPackRoot;
   streamRedirect.ClearStringStreams();
   EXPECT_EQ(0, RunProjMgr(3, argv, 0));
   outStr = streamRedirect.GetOutString();
   localCompilerPath = string(PROJMGRUNITTESTS_BIN_PATH) + "/../etc";
-  localCompilerPath = fs::weakly_canonical(fs::path(localCompilerPath), ec).generic_string();
+  localCompilerPath = RteFsUtils::MakePathCanonical(localCompilerPath);
   defaultPackRoot = CrossPlatformUtils::GetDefaultCMSISPackRootDir();
-  defaultPackRoot = fs::weakly_canonical(fs::path(defaultPackRoot), ec).generic_string();
+  defaultPackRoot = RteFsUtils::MakePathCanonical(defaultPackRoot);
   EXPECT_EQ(defaultPackRoot, GetValue(outStr, "CMSIS_PACK_ROOT="));
   EXPECT_EQ(localCompilerPath, GetValue(outStr, "CMSIS_COMPILER_ROOT="));
 
@@ -4516,11 +4542,11 @@ TEST_F(ProjMgrUnitTests, ExternalGenerator) {
   const string& srcGlobalGenerator = testinput_folder + "/ExternalGenerator/global.generator.yml";
   const string& dstGlobalGenerator = testcmsiscompiler_folder + "/global.generator.yml";
   RteFsUtils::CopyCheckFile(srcGlobalGenerator, dstGlobalGenerator, false);
-  
+
   const string& srcBridgeTool = testinput_folder + "/ExternalGenerator/bridge.sh";
   const string& dstBridgeTool = testcmsiscompiler_folder + "/bridge.sh";
   RteFsUtils::CopyCheckFile(srcBridgeTool, dstBridgeTool, false);
-  
+
   // list generators
   char* argv[7];
   const string& csolution = testinput_folder + "/ExternalGenerator/extgen.csolution.yml";
@@ -4528,7 +4554,7 @@ TEST_F(ProjMgrUnitTests, ExternalGenerator) {
   argv[2] = (char*)"list";
   argv[3] = (char*)"generators";
   EXPECT_EQ(0, RunProjMgr(4, argv, 0));
-  
+
   // run multi-core
   argv[1] = (char*)csolution.c_str();
   argv[2] = (char*)"run";

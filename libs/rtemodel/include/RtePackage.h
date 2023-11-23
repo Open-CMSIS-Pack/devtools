@@ -20,6 +20,7 @@
 
 class RteTarget;
 class RtePackage;
+class RtePackageAggregate;
 class RtePackageComparator;
 class RteExample;
 class RteGeneratorContainer;
@@ -29,6 +30,7 @@ class RteBoard;
 
 typedef std::map<std::string, RtePackage*, RtePackageComparator > RtePackageMap;
 typedef std::map<std::string, RteItem*, RtePackageComparator > RteItemPackageMap;
+typedef std::map<std::string, RtePackageAggregate*, RtePackageComparator > RtePackAggregateMap;
 
 /**
  * @brief class representing <releases> element in *.pdsc files
@@ -164,6 +166,14 @@ public:
    * @return 0 if both files are equal, less than 0 if pdsc1 < pdsc2, greater than 0 if pdsc1 > pdsc2
   */
   static int ComparePdscFileNames(const std::string& pdsc1, const std::string& pdsc2);
+
+  /**
+   * @brief finds a pack with given id in provided list
+   * @param packID full package ID
+   * @param packs collection with packs
+   * @return pointer to RtePackage if found, nullptr otherwise
+  */
+  static RtePackage* GetPackFromList(const std::string& packID, const std::list<RtePackage*>& packs);
 
   /**
    * @brief get pack display name
@@ -893,169 +903,6 @@ private:
 typedef std::map<std::string, RtePackageInfo*, VersionCmp::Greater > RtePackageInfoMap;
 typedef std::map<std::string, RtePackageInfo* > RtePackageInfoMapStdComp;
 
-
-
-/**
- * @brief class to aggregate package versions to manage pack selection in projects and to support pack filtering.
-*/
-class RtePackageAggregate : public RteItem
-{
-public:
-  /**
-   * @brief constructor
-   * @param parent pointer parent RteItem
-  */
-  RtePackageAggregate(RteItem* parent);
-
-  /**
-   * @brief virtual destructor
-  */
-    ~RtePackageAggregate() override;
-
-public:
-  /**
-   * @brief clear internal data
-  */
-   void Clear() override;
-
-  /**
-   * @brief get display name for this aggregate
-   * @return display name constructed from common pack ID
-  */
-   std::string GetDisplayName() const override { return m_displayName; }
-
-  /**
-   * @brief get sorted package collection
-   * @return reference to RteItemPackageMap map
-  */
-  const RteItemPackageMap& GetPackages() const { return m_packages; }
-
-  /**
-   * @brief check if a pack from aggregate is used in the project
-   * @return true if at least one version of the pack is used in the project
-  */
-  bool IsUsed() const { return !m_usedPackages.empty(); }
-
-  /**
-   * @brief check if aggregate uses selection of pack version
-   * @return
-  */
-  bool HasFixedSelection() const { return !m_selectedPackages.empty(); }
-
-  /**
-   * @brief get  version mode this pack aggregate uses
-   * @return VersionCmp::MatchMode value
-  */
-  VersionCmp::MatchMode GetVersionMatchMode() const { return m_mode; }
-
-  /**
-   * @brief set version mode to use
-   * @param mode VersionCmp::MatchMode to use
-  */
-  void SetVersionMatchMode(VersionCmp::MatchMode mode);
-
-  /**
-   * @brief adjust version mode according to pack usage
-  */
-  void AdjustVersionMatchMode();
-
-  /**
-   * @brief get pointer to parent RtePackage item
-   * @return nullptr since this item does not have pack parent
-  */
-   RtePackage* GetPackage() const override { return nullptr;}
-
-  /**
-   * @brief get pack for specified ID
-   * @param id full pack ID
-   * @return pointer to RteItem representing RtePackage or RtePackageInstanceInfo
-  */
-  RteItem* GetPackage(const std::string& id) const;
-
-  /**
-   * @brief get the latest pack or its instance
-   * @return pointer to RteItem representing RtePackage or RtePackageInstanceInfo
-  */
-  RteItem* GetLatestEntry() const;
-
-  /**
-   * @brief get the latest installed pack
-   * @return pointer to RteItem representing RtePackage or nullptr if no pack is installed
-  */
-  RtePackage* GetLatestPackage() const;
-
-  /**
-   * @brief get latest pack ID
-   * @return full Id of the latest pack
-  */
-  const std::string& GetLatestPackageID() const;
-
-  /**
-   * @brief check if pack specified pack release is used in the project target
-   * @param id full pack ID
-   * @return true if pack is used
-  */
-  bool IsPackageUsed(const std::string& id) const;
-
-  /**
-   * @brief check id specified pack release is selected for the project target
-   * @param id full pack ID
-   * @return true if pack is selected
-  */
-  bool IsPackageSelected(const std::string& id) const;
-
-  /**
-   * @brief set is a pack is used in the project
-   * @param id full pack ID
-   * @param bUsed usage flag to set/remove
-  */
-  void SetPackageUsed(const std::string& id, bool bUsed);
-
-  /**
-   * @brief set is a pack is selected in the project
-   * @param id full pack ID
-   * @param bSelected selection flag to set/remove
-  */
-  void SetPackageSelected(const std::string& id, bool bSelected);
-
-  /**
-   * @brief add pack to this aggregate
-   * @param pack pointer to RtePackage to add
-  */
-  void AddPackage(RtePackage* pack);
-
-  /**
-   * @brief add package instance to the aggregate
-   * @param packID full pack ID
-   * @param pi pointer to RteItem representing RtePackInstance
-  */
-  void AddPackage(const std::string& packID, RteItem* pi);
-
-  /**
-   * @brief get latest pack description
-   * @return pack description
-  */
-   const std::string& GetDescription() const override;
-
-  /**
-   * @brief get latest pack URL
-   * @return  URL string
-  */
-   const std::string& GetURL() const override;
-
-protected:
-  /**
-   * @brief map collection of packs sorted by full ID (newest first)
-   * an entry can be either an RtePackage or RtePackageInstanceInfo (package is required by a target, but not installed)
-  */
-  RteItemPackageMap m_packages; // packages sorted by full ID (newest first)
-
-  VersionCmp::MatchMode m_mode; // version match mode to use
-  std::set<std::string> m_selectedPackages; // packs selected to be used in the project target
-  std::set<std::string> m_usedPackages;     // packs used in the project target
-  std::string m_displayName;                // cached display name of this aggregate
-};
-
 /**
  * @brief class to perform pack filtering in the project
 */
@@ -1184,5 +1031,317 @@ protected:
 
   std::set<std::string> m_latestInstalledPacks; // IDs of global latest packs, used when m_selectedPacks and m_latestPacks are empty
 };
+
+
+/**
+ * @brief class to aggregate package versions to manage pack selection in projects and to support pack filtering.
+*/
+class RtePackageAggregate : public RteItem
+{
+public:
+  /**
+   * @brief default constructor
+   * @param parent pointer parent RteItem
+  */
+  RtePackageAggregate(RteItem* parent = nullptr);
+
+  /**
+   * @brief constructor
+   * @param commonID pack common ID
+  */
+  RtePackageAggregate(const std::string& commonID);
+
+  /**
+   * @brief virtual destructor
+  */
+    ~RtePackageAggregate() override;
+
+public:
+  /**
+   * @brief clear internal data
+  */
+   void Clear() override;
+
+  /**
+   * @brief get display name for this aggregate
+   * @return display name constructed from common pack ID
+  */
+   std::string GetDisplayName() const override { return GetID(); }
+
+  /**
+   * @brief get sorted package collection
+   * @return reference to RteItemPackageMap map
+  */
+  const RteItemPackageMap& GetPackages() const { return m_packages; }
+
+  /**
+   * @brief check if a pack from aggregate is used in the project
+   * @return true if at least one version of the pack is used in the project
+  */
+  bool IsUsed() const { return !m_usedPackages.empty(); }
+
+  /**
+   * @brief check if aggregate uses selection of pack version
+   * @return
+  */
+  bool HasFixedSelection() const { return !m_selectedPackages.empty(); }
+
+  /**
+   * @brief get  version mode this pack aggregate uses
+   * @return VersionCmp::MatchMode value
+  */
+  VersionCmp::MatchMode GetVersionMatchMode() const { return m_mode; }
+
+  /**
+   * @brief set version mode to use
+   * @param mode VersionCmp::MatchMode to use
+  */
+  void SetVersionMatchMode(VersionCmp::MatchMode mode);
+
+  /**
+   * @brief adjust version mode according to pack usage
+  */
+  void AdjustVersionMatchMode();
+
+  /**
+   * @brief get pointer to the latest RtePackage item
+   * @return pointer to RtePackage* or nullptr
+  */
+   RtePackage* GetPackage() const override { return GetLatestPackage();}
+
+  /**
+   * @brief get pack for specified ID
+   * @param id full pack ID
+   * @return pointer to RtePackage  or null
+  */
+  RtePackage* GetPackage(const std::string& id) const;
+
+  /**
+   * @brief get pack for specified ID
+   * @param id full pack ID
+   * @return pointer to RteItem representing RtePackage or RtePackageInstanceInfo
+  */
+  RteItem* GetPackageEntry(const std::string& id) const;
+
+  /**
+   * @brief get the latest pack or its instance
+   * @return pointer to RteItem representing RtePackage or RtePackageInstanceInfo
+  */
+  RteItem* GetLatestEntry() const;
+
+  /**
+   * @brief get the latest installed pack
+   * @return pointer to RteItem representing RtePackage or nullptr if no pack is installed
+  */
+  RtePackage* GetLatestPackage() const;
+
+  /**
+   * @brief get latest pack ID
+   * @return full Id of the latest pack
+  */
+  const std::string& GetLatestPackageID() const;
+
+  /**
+   * @brief check if pack specified pack release is used in the project target
+   * @param id full pack ID
+   * @return true if pack is used
+  */
+  bool IsPackageUsed(const std::string& id) const;
+
+  /**
+   * @brief check id specified pack release is selected for the project target
+   * @param id full pack ID
+   * @return true if pack is selected
+  */
+  bool IsPackageSelected(const std::string& id) const;
+
+  /**
+   * @brief set is a pack is used in the project
+   * @param id full pack ID
+   * @param bUsed usage flag to set/remove
+  */
+  void SetPackageUsed(const std::string& id, bool bUsed);
+
+  /**
+   * @brief set is a pack is selected in the project
+   * @param id full pack ID
+   * @param bSelected selection flag to set/remove
+  */
+  void SetPackageSelected(const std::string& id, bool bSelected);
+
+  /**
+   * @brief add pack to this aggregate
+   * @param overwrite boolean flag to overwrite existing entry, default false
+   * @return true if pack has been added
+  */
+  bool AddPackage(RtePackage* pack, bool overwrite = false);
+
+  /**
+   * @brief add package instance to the aggregate
+   * @param packID full pack ID
+   * @param pi pointer to RteItem representing RtePackInstance
+  */
+  void AddPackage(const std::string& packID, RteItem* pi);
+
+  /**
+   * @brief get latest pack description
+   * @return pack description
+  */
+   const std::string& GetDescription() const override;
+
+  /**
+   * @brief get latest pack URL
+   * @return  URL string
+  */
+   const std::string& GetURL() const override;
+
+protected:
+  /**
+   * @brief map collection of packs sorted by full ID (newest first)
+   * an entry can be either an RtePackage or RtePackageInstanceInfo (package is required by a target, but not installed)
+  */
+  RteItemPackageMap m_packages; // packages sorted by full ID (newest first)
+
+  VersionCmp::MatchMode m_mode; // version match mode to use
+  std::set<std::string> m_selectedPackages; // packs selected to be used in the project target
+  std::set<std::string> m_usedPackages;     // packs used in the project target
+};
+
+/**
+ * @brief class containing collection of pack aggregates sorted by their common id
+*/
+class RtePackFamilyCollection
+{
+public:
+  /**
+   * @brief default constructor
+  */
+  RtePackFamilyCollection();
+
+  /**
+   * @brief virtual destructor
+  */
+  virtual ~RtePackFamilyCollection();
+
+  /**
+   * @brief clears internal collection and deletes packs
+  */
+  void Clear();
+
+  /**
+   * @brief get pack for given ID
+   * @param packID full pack ID
+   * @return pointer to RtePackage if found
+  */
+  RtePackage* GetPackage(const std::string& packID) const;
+
+  /**
+   * @brief get the latest pack or its instance
+   * @param packID common pack ID
+   * @return pointer to RteItem representing RtePackage or RtePackageInstanceInfo
+  */
+  RteItem* GetLatestEntry(const std::string& packID) const;
+
+  /**
+   * @brief get the latest installed pack
+   * @param packID common pack ID
+   * @return pointer to RteItem representing RtePackage or nullptr if no pack is installed
+  */
+  RtePackage* GetLatestPackage(const std::string& packID) const;
+
+  /**
+   * @brief get latest pack ID for given common ID
+   * @param commonId common pack ID
+   * @return full Id of the latest pack
+  */
+  const std::string& GetLatestPackageID(const std::string& commonId) const;
+
+  /**
+   * @brief add pack to this collection
+   * @param pack pointer to RtePackage to add
+   * @param overwrite boolean flag to overwrite existing entry, default false
+   * @return true if pack has been added
+  */
+  bool AddPackage(RtePackage* pack, bool overwrite = false);
+
+  /**
+   * @brief add package instance to the aggregate if no pack has been added
+   * @param packID full pack ID
+   * @param pi pointer to RteItem representing RtePackInstance or pack revision or NULL
+  */
+  void AddPackageEnry(const std::string& packID, RteItem* pi);
+
+  /**
+   * @brief get collection of package aggregates
+   * @return map of common ID to RtePackageAggregate pointer pairs
+  */
+  const RtePackAggregateMap& GetgPackAggregates() const { return m_aggregates; }
+
+  /**
+   * @brief get package for given common id
+   * @param commonId pack common id
+   * @return pointer to RtePackageAggregate if exists, nullptr otherwise
+  */
+  RtePackageAggregate* GetPackageAggregate(const std::string& commonId) const;
+
+protected:
+
+  /**
+   * @brief get package for given common id or create one if not exists
+   * @param commonId pack common id
+   * @return pointer to RtePackageAggregate, never nullptr
+  */
+  RtePackageAggregate* EnsurePackageAggregate(const std::string& commonId);
+
+protected:
+  /**
+   * @brief sorted collection of pack aggregates
+  */
+  RtePackAggregateMap m_aggregates;
+};
+
+
+/**
+ * @brief class containing collection of loaded packs
+*/
+class RtePackRegistry
+{
+public:
+  /**
+   * @brief default constructor
+  */
+  RtePackRegistry();
+
+  /**
+   * @brief virtual destructor
+  */
+  virtual ~RtePackRegistry();
+
+  /**
+   * @brief clears internal collection and deletes packs
+  */
+  void Clear();
+
+  /**
+   * @brief get loaded pack by its absolute filename
+   * @param pdscFile absolute pdsc filename
+   * @return pointer to RtePackage if found
+  */
+  RtePackage* GetPack(const std::string& pdscFile) const;
+
+  /**
+   * @brief add pack to this collection
+   * @param pack pointer to RtePackage to add
+   * @return true if pack has been added
+  */
+  bool AddPack(RtePackage* pack);
+
+protected:
+  /**
+   * @brief collection of loaded packs: absolute pdsc filename -> RtePackage*
+  */
+  std::map<std::string, RtePackage*> m_loadedPacks;
+};
+
 
 #endif // RtePackage_H

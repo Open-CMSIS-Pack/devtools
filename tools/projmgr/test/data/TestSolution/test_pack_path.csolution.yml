@@ -1,0 +1,22 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schemas/csolution.schema.json
+
+solution:
+  target-types:
+    - type: CM0
+      device: RteTest_ARMCM0
+
+  build-types:
+    - type: Debug
+      compiler: AC6
+
+  packs:
+    - pack: ARM::RteTest
+    - pack: ARM::RteTest_DFP
+    - pack: ARM::RteTestRequired@1.0.0 #regular pack should be ignored
+    - pack: ARM::RteTestRequired
+      path: ./Packs/RteTestRequired
+    - pack: ARM::RteTestRequired
+      path: ./Packs/RteTestRequired1
+
+  projects:
+    - project: ./TestProject1/test1.cproject.yml

@@ -76,14 +76,11 @@ void RteModel::ClearModel()
   m_projectDescriptors.clear();
   m_solutionDescriptors.clear();
 
-  list<RtePackage*>::iterator it;
-  for (auto pack : m_packageDuplicates) {
-    delete pack;
-  }
   m_packageDuplicates.clear();
   m_packages.clear();
   m_latestPackages.clear();
 
+  m_children.clear(); // clear children here, the packs are deleted by RtePackRegistry
   RteItem::Clear();
 }
 
@@ -381,6 +378,9 @@ void RteModel::InsertPack(RtePackage* package)
   const string& id = package->GetID();
   RtePackage* insertedPack = GetPackage(id);
   if (insertedPack) {
+    if(insertedPack == package) {
+      return; // already inserted
+    }
     string pdscPath = RteFsUtils::MakePathCanonical(package->GetAbsolutePackagePath());
     if (pdscPath.find(m_rtePath) == 0) { // regular installed pack => error
     // duplicate, kept it in a temporary collection till validate;
@@ -394,7 +394,7 @@ void RteModel::InsertPack(RtePackage* package)
     }
   }
 
-  // OK, add to normal children
+  // OK, add to normal children, but do not forget to remove before deletion!
   AddItem(package);
   // add to general sorted package map
   m_packages[id] = package;
@@ -407,7 +407,6 @@ void RteModel::InsertPack(RtePackage* package)
   if (insertedPack) {
     // remove inserted pack as replaced
     RemoveItem(insertedPack);
-    delete insertedPack;
   }
 }
 
@@ -426,7 +425,6 @@ bool RteModel::Validate()
       msg += ": warning #500: pack '" + duplicate->GetID() + "' is already defined in file " + orig->GetPackageFileName();
       msg += " - duplicate is ignored";
       m_errors.push_back(msg);
-      delete duplicate;
     }
 
     m_packageDuplicates.clear();
@@ -810,12 +808,14 @@ void RteModel::GetBoardBooks(map<string, string>& books, const map<string, strin
 
 RteGlobalModel::RteGlobalModel() :
   RteModel(NULL, PackageState::PS_INSTALLED),
+  m_packRegistry(new RtePackRegistry()),
   m_nActiveProjectId(-1)
 {
 }
 RteGlobalModel::~RteGlobalModel()
 {
   RteGlobalModel::Clear();
+  delete m_packRegistry;
 }
 
 void RteGlobalModel::Clear()
@@ -828,6 +828,7 @@ void RteGlobalModel::ClearModel()
 {
   ClearProjectTargets();
   RteModel::ClearModel();
+  m_packRegistry->Clear();
 }
 
 

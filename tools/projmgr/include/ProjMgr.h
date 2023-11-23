@@ -22,12 +22,12 @@ public:
   /**
    * @brief class constructor
   */
-  ProjMgr(void);
+  ProjMgr();
 
   /**
    * @brief class destructor
   */
-  ~ProjMgr(void);
+  ~ProjMgr();
 
   /**
    * @brief entry point for running projmgr
@@ -112,6 +112,7 @@ protected:
   bool m_dryRun;
   bool m_ymlOrder;
   bool m_contextSet;
+  bool m_relativePaths;
   GroupNode m_files;
   std::vector<ContextItem*> m_processedContexts;
 

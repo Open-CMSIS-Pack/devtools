@@ -49,6 +49,7 @@ Options:\n\
   -n, --no-check-schema         Skip schema check\n\
   -N, --no-update-rte           Skip creation of RTE directory and files\n\
   -o, --output arg              Output directory\n\
+  -R, --relative-paths          Print paths relative to project or ${CMSIS_PACK_ROOT}\n\
   -S, --context-set             Use context set\n\
   -t, --toolchain arg           Selection of the toolchain used in the project optionally with version\n\
   -v, --verbose                 Enable verbose messages\n\
@@ -56,16 +57,23 @@ Options:\n\
 Use 'csolution <command> -h' for more information about a command.\n\
 ";
 
-ProjMgr::ProjMgr(void) :
+ProjMgr::ProjMgr() :
   m_parser(),
   m_extGenerator(&m_parser),
   m_worker(&m_parser, &m_extGenerator),
   m_checkSchema(false),
-  m_updateRteFiles(true) {
-  // Reserved
+  m_missingPacks(false),
+  m_updateRteFiles(true),
+  m_verbose(false),
+  m_debug(false),
+  m_dryRun(false),
+  m_ymlOrder(false),
+  m_contextSet(false),
+  m_relativePaths(false)
+{
 }
 
-ProjMgr::~ProjMgr(void) {
+ProjMgr::~ProjMgr() {
   // Reserved
 }
 
@@ -143,6 +151,7 @@ int ProjMgr::RunProjMgr(int argc, char **argv, char** envp) {
   cxxopts::Option toolchain("t,toolchain","Selection of the toolchain used in the project optionally with version", cxxopts::value<string>());
   cxxopts::Option ymlOrder("yml-order", "Preserve order as specified in input yml", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option contextSet("S,context-set", "Use context set", cxxopts::value<bool>()->default_value("false"));
+  cxxopts::Option relativePaths("R,relative-paths", "Output paths relative to project or to CMSIS_PACK_ROOT", cxxopts::value<bool>()->default_value("false"));
 
   // command options dictionary
   map<string, std::pair<bool, vector<cxxopts::Option>>> optionsDict = {
@@ -150,7 +159,7 @@ int ProjMgr::RunProjMgr(int argc, char **argv, char** envp) {
     {"update-rte",        { false, {context, contextSet, debug, load, schemaCheck, toolchain, verbose}}},
     {"convert",           { false, {context, contextSet, debug, exportSuffix, load, schemaCheck, noUpdateRte, output, toolchain, verbose}}},
     {"run",               { false, {context, debug, generator, load, schemaCheck, verbose, dryRun}}},
-    {"list packs",        { true,  {context, debug, filter, load, missing, schemaCheck, toolchain, verbose}}},
+    {"list packs",        { true,  {context, debug, filter, load, missing, schemaCheck, toolchain, verbose, relativePaths}}},
     {"list boards",       { true,  {context, debug, filter, load, schemaCheck, toolchain, verbose}}},
     {"list devices",      { true,  {context, debug, filter, load, schemaCheck, toolchain, verbose}}},
     {"list configs",      { true,  {context, debug, filter, load, schemaCheck, toolchain, verbose}}},
@@ -168,7 +177,7 @@ int ProjMgr::RunProjMgr(int argc, char **argv, char** envp) {
       {"positional", "", cxxopts::value<vector<string>>()},
       solution, context, contextSet, filter, generator,
       load, clayerSearchPath, missing, schemaCheck, noUpdateRte, output,
-      help, version, verbose, debug, dryRun, exportSuffix, toolchain, ymlOrder
+      help, version, verbose, debug, dryRun, exportSuffix, toolchain, ymlOrder, relativePaths
     });
     options.parse_positional({ "positional" });
 
@@ -186,6 +195,8 @@ int ProjMgr::RunProjMgr(int argc, char **argv, char** envp) {
     manager.m_worker.SetDryRun(manager.m_dryRun);
     manager.m_ymlOrder = parseResult.count("yml-order");
     manager.m_contextSet = parseResult.count("context-set");
+    manager.m_relativePaths = parseResult.count("relative-paths");
+    manager.m_worker.SetPrintRelativePaths(manager.m_relativePaths);
 
     vector<string> positionalArguments;
     if (parseResult.count("positional")) {
@@ -213,13 +224,13 @@ int ProjMgr::RunProjMgr(int argc, char **argv, char** envp) {
       manager.m_csolutionFile = parseResult["solution"].as<string>();
     }
     if (!manager.m_csolutionFile.empty()) {
-      error_code ec;
-      if (!fs::exists(manager.m_csolutionFile, ec)) {
+      if (!RteFsUtils::Exists(manager.m_csolutionFile)) {
         ProjMgrLogger::Error(manager.m_csolutionFile, "csolution file was not found");
         return 1;
       }
-      manager.m_csolutionFile = fs::canonical(manager.m_csolutionFile, ec).generic_string();
-      manager.m_rootDir = fs::path(manager.m_csolutionFile).parent_path().generic_string();
+      manager.m_csolutionFile = RteFsUtils::MakePathCanonical(manager.m_csolutionFile);
+      manager.m_rootDir = RteUtils::ExtractFilePath(manager.m_csolutionFile, false);
+      manager.m_worker.SetRootDir(manager.m_rootDir);
     }
     if (parseResult.count("context")) {
       manager.m_context = parseResult["context"].as<vector<string>>();
@@ -421,6 +432,8 @@ bool ProjMgr::PopulateContexts(void) {
   // Set output directory
   m_worker.SetOutputDir(m_outputDir);
 
+  m_worker.SetRootDir(m_rootDir);
+
   // Add contexts
   for (auto& descriptor : m_parser.GetCsolution().contexts) {
     error_code ec;
@@ -538,8 +551,7 @@ bool ProjMgr::RunConvert(void) {
   bool error = !RunConfigure();
   // Generate Cprjs
   for (auto& contextItem : m_processedContexts) {
-    error_code ec;
-    const string& filename = fs::weakly_canonical(contextItem->directories.cprj + "/" + contextItem->name + ".cprj", ec).generic_string();
+    const string filename = RteFsUtils::MakePathCanonical(contextItem->directories.cprj + "/" + contextItem->name + ".cprj");
     RteFsUtils::CreateDirectories(contextItem->directories.cprj);
     if (m_generator.GenerateCprj(*contextItem, filename)) {
       ProjMgrLogger::Info(filename, "file generated successfully");
@@ -549,7 +561,7 @@ bool ProjMgr::RunConvert(void) {
     }
     if (!m_export.empty()) {
       // Generate non-locked Cprj
-      const string& exportfilename = fs::weakly_canonical(contextItem->directories.cprj + "/" + contextItem->name + m_export + ".cprj", ec).generic_string();
+      const string exportfilename = RteFsUtils::MakePathCanonical(contextItem->directories.cprj + "/" + contextItem->name + m_export + ".cprj");
       if (m_generator.GenerateCprj(*contextItem, exportfilename, true)) {
         ProjMgrLogger::Info(exportfilename, "export file generated successfully");
       } else {

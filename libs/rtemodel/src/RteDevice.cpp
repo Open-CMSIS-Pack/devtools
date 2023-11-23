@@ -1000,8 +1000,9 @@ RteDeviceItem* RteDeviceItemAggregate::GetDeviceItem() const
 {
   for (auto it = m_deviceItems.begin(); it != m_deviceItems.end(); ++it) {
     RteDeviceItem* device = it->second;
-    if (device->GetPackageState() == PackageState::PS_INSTALLED
-      || device->GetPackageState() == PackageState::PS_GENERATED) {
+    auto ps = device->GetPackageState();
+    if (ps == PackageState::PS_INSTALLED || ps == PackageState::PS_GENERATED ||
+        ps == PackageState::PS_EXPLICIT_PATH) {
       return device;
     }
   }

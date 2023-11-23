@@ -44,7 +44,9 @@ ProjMgrWorker::ProjMgrWorker(ProjMgrParser* parser, ProjMgrExtGenerator* extGene
   m_checkSchema(false),
   m_verbose(false),
   m_debug(false),
-  m_dryRun(false)
+  m_dryRun(false),
+  m_relativePaths(false)
+
 {
   RteCondition::SetVerboseFlags(0);
 }
@@ -124,8 +126,7 @@ void ProjMgrWorker::AddContext(ContextDesc& descriptor, const TypePair& type, Co
       context.directories.rte = context.cproject->rteBaseDir;
     }
 
-    error_code ec;
-    context.directories.cprj = fs::weakly_canonical(RteFsUtils::AbsolutePath(context.directories.cprj), ec).generic_string();
+    context.directories.cprj = RteFsUtils::MakePathCanonical(RteFsUtils::AbsolutePath(context.directories.cprj).generic_string());
 
     // context variables
     context.variables[ProjMgrUtils::AS_SOLUTION] = context.csolution->name;
@@ -193,6 +194,10 @@ void ProjMgrWorker::SetOutputDir(const std::string& outputDir) {
   m_outputDir = outputDir;
 }
 
+void ProjMgrWorker::SetRootDir(const std::string& rootDir) {
+  m_rootDir = rootDir;
+}
+
 void ProjMgrWorker::SetSelectedToolchain(const std::string& selectedToolchain) {
   m_selectedToolchain = selectedToolchain;
 }
@@ -213,6 +218,11 @@ void ProjMgrWorker::SetDryRun(bool dryRun) {
   m_dryRun = dryRun;
 }
 
+void ProjMgrWorker::SetPrintRelativePaths(bool bRelativePaths) {
+  m_relativePaths = bRelativePaths;
+}
+
+
 void ProjMgrWorker::SetLoadPacksPolicy(const LoadPacksPolicy& policy) {
   m_loadPacksPolicy = policy;
 }
@@ -221,7 +231,7 @@ void ProjMgrWorker::SetEnvironmentVariables(const StrVec& envVars) {
   m_envVars = envVars;
 }
 
-bool ProjMgrWorker::GetRequiredPdscFiles(ContextItem& context, const std::string& packRoot, std::set<std::string>& errMsgs) {
+bool ProjMgrWorker::CollectRequiredPdscFiles(ContextItem& context, const std::string& packRoot, std::set<std::string>& errMsgs) {
   if (!ProcessPackages(context, packRoot)) {
     return false;
   }
@@ -292,17 +302,16 @@ bool ProjMgrWorker::GetRequiredPdscFiles(ContextItem& context, const std::string
       }
     }
   }
-  return (0 == errMsgs.size());
+  return (errMsgs.empty());
 }
 
 string ProjMgrWorker::GetPackRoot() {
-  error_code ec;
   string packRoot;
   packRoot = CrossPlatformUtils::GetEnv("CMSIS_PACK_ROOT");
   if (packRoot.empty()) {
     packRoot = CrossPlatformUtils::GetDefaultCMSISPackRootDir();
   }
-  packRoot = fs::weakly_canonical(fs::path(packRoot), ec).generic_string();
+  packRoot = RteFsUtils::MakePathCanonical(packRoot);
   return packRoot;
 }
 
@@ -334,13 +343,23 @@ bool ProjMgrWorker::LoadAllRelevantPacks() {
   }
   for (const auto& context : m_selectedContexts) {
     auto& contextItem = m_contexts.at(context);
-    if (!GetRequiredPdscFiles(contextItem, m_packRoot, errMsgs)) {
+    if (!CollectRequiredPdscFiles(contextItem, m_packRoot, errMsgs)) {
       std::for_each(errMsgs.begin(), errMsgs.end(), [](const auto& errMsg) {ProjMgrLogger::Error(errMsg); });
       return false;
     }
-    for (const auto& [pdscFile, _] : contextItem.pdscFiles) {
-      ProjMgrUtils::PushBackUniquely(pdscFiles, pdscFile);
-    }
+      for(const auto& [pdscFile, pathVer] : contextItem.pdscFiles) {
+        const string& path = pathVer.first;
+        if(!path.empty()) {
+          ProjMgrUtils::PushBackUniquely(pdscFiles, pdscFile);
+        }
+      }
+      // then all others
+      for(const auto& [pdscFile, pathVer] : contextItem.pdscFiles) {
+        const string& path = pathVer.first;
+        if(path.empty()) {
+          ProjMgrUtils::PushBackUniquely(pdscFiles, pdscFile);
+        }
+      }
   }
   // Check load packs policy
   if (pdscFiles.empty() && (m_loadPacksPolicy == LoadPacksPolicy::REQUIRED)) {
@@ -1432,10 +1451,9 @@ void ProjMgrWorker::InsertPackRequirements(const vector<PackItem>& src, vector<P
  * @param packRequirements List of pack items
  * @return True if sucessful
  */
-bool ProjMgrWorker::AddPackRequirements(ContextItem& context, const vector<PackItem> packRequirements) {
+bool ProjMgrWorker::AddPackRequirements(ContextItem& context, const vector<PackItem>& packRequirements) {
   const vector<ResolvedPackItem>& resolvedPacks = context.csolution ? context.csolution->cbuildPack.packs : vector<ResolvedPackItem>();
-
-  // Filter context specific package requirements
+ // Filter context specific package requirements
   vector<PackItem> packages;
   for (const auto& packItem : packRequirements) {
     if (CheckContextFilters(packItem.type, context)) {
@@ -1609,8 +1627,7 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
         return false;
       }
       matchedComponentInstance->AddAttribute("gendir", genDir);
-      error_code ec;
-      const string& gpdsc = fs::weakly_canonical(generator->GetExpandedGpdsc(context.rteActiveTarget, genDir), ec).generic_string();
+      const string gpdsc = RteFsUtils::MakePathCanonical(generator->GetExpandedGpdsc(context.rteActiveTarget, genDir));
       context.gpdscs.insert({ gpdsc, {componentId, generatorId, genDir} });
     } else {
       // Get external generator id
@@ -1788,8 +1805,7 @@ bool ProjMgrWorker::AddRequiredComponents(ContextItem& context) {
 }
 
 void ProjMgrWorker::CheckAndGenerateRegionsHeader(ContextItem& context) {
-  error_code ec;
-  const string regionsHeader = fs::weakly_canonical(fs::path(context.directories.cprj).append(context.linker.regions), ec).generic_string();
+  const string regionsHeader = RteFsUtils::MakePathCanonical(fs::path(context.directories.cprj).append(context.linker.regions).generic_string());
   if (!RteFsUtils::Exists(regionsHeader)) {
     string generatedRegionsFile;
     if (GenerateRegionsHeader(context, generatedRegionsFile)) {
@@ -1825,8 +1841,7 @@ bool ProjMgrWorker::GenerateRegionsHeader(ContextItem& context, string& generate
     ProjMgrLogger::Warn("regions header file generation failed");
     return false;
   }
-  error_code ec;
-  generatedRegionsFile = fs::weakly_canonical(fs::path(rteFolder).append(context.rteActiveTarget->GetRegionsHeader()), ec).generic_string();
+  generatedRegionsFile = RteFsUtils::MakePathCanonical(fs::path(rteFolder).append(context.rteActiveTarget->GetRegionsHeader()).generic_string());
   return true;
 }
 
@@ -2079,7 +2094,7 @@ bool ProjMgrWorker::ProcessGpdsc(ContextItem& context) {
   const map<string, RteGpdscInfo*>& gpdscInfos = context.rteActiveProject->GetGpdscInfos();
   for (const auto& [file, info] : gpdscInfos) {
     error_code ec;
-    const string gpdscFile = fs::weakly_canonical(file, ec).generic_string();
+    const string gpdscFile = RteFsUtils::MakePathCanonical(file);
     bool validGpdsc;
     RtePackage* gpdscPack = ProjMgrUtils::ReadGpdscFile(gpdscFile, validGpdsc);
     if (!gpdscPack) {
@@ -2724,8 +2739,8 @@ void ProjMgrWorker::UpdatePartialReferencedContext(ContextItem& context, string&
 }
 
 void ProjMgrWorker::ExpandAccessSequence(const ContextItem & context, const ContextItem & refContext, const string & sequence, string & item, bool withHeadingDot) {
-  const string& refContextOutDir = refContext.directories.cprj + "/" + refContext.directories.outdir;
-  const string& relOutDir = RteFsUtils::RelativePath(refContextOutDir, context.directories.cprj, withHeadingDot);
+  const string refContextOutDir = refContext.directories.cprj + "/" + refContext.directories.outdir;
+  const string relOutDir = RteFsUtils::RelativePath(refContextOutDir, context.directories.cprj, withHeadingDot);
   string regExStr = "\\$";
   string replacement;
   if (sequence == ProjMgrUtils::AS_SOLUTION_DIR) {
@@ -2807,10 +2822,10 @@ bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, 
     }
   }
   if (!pathReplace && !ref.empty()) {
+     error_code ec;
     // adjust relative path according to the given reference
-    error_code ec;
     if (!fs::equivalent(context.directories.cprj, ref, ec)) {
-      const string& absPath = fs::weakly_canonical(fs::path(item).is_relative() ? ref + "/" + item : item, ec).generic_string();
+      const string absPath = RteFsUtils::MakePathCanonical(fs::path(item).is_relative() ? ref + "/" + item : item);
       item = RteFsUtils::RelativePath(absPath, context.directories.cprj, withHeadingDot);
     }
   }
@@ -2897,8 +2912,7 @@ bool ProjMgrWorker::AddFile(const FileNode& src, vector<FileNode>& dst, ContextI
     }
 
     // Store absolute file path
-    error_code ec;
-    const string& filePath = fs::weakly_canonical(root + "/" + srcNode.file, ec).generic_string();
+    const string filePath = RteFsUtils::MakePathCanonical(root + "/" + srcNode.file);
     context.filePaths.insert({ srcNode.file, filePath });
   }
   return true;
@@ -3190,32 +3204,49 @@ set<string> ProjMgrWorker::SplitArgs(const string& args, const string& delimiter
   return s;
 }
 
-bool ProjMgrWorker::ListPacks(vector<string>&packs, bool missingPacks, const string& filter) {
+bool ProjMgrWorker::ListPacks(vector<string>&packs, bool bListMissingPacksOnly, const string& filter) {
   map<string, string, RtePackageComparator> packsMap;
   list<string> pdscFiles;
   std::set<std::string> errMsgs;
-  bool reqOk = true;
   if (!InitializeModel()) {
     return false;
   }
+  bool reqOk = true;
   for (const auto& selectedContext : m_selectedContexts) {
     ContextItem& context = m_contexts[selectedContext];
-    GetRequiredPdscFiles(context, m_packRoot, errMsgs);
+    if(!CollectRequiredPdscFiles(context, m_packRoot, errMsgs)) {
+      // in case of explicit query for missing pack list,
+      // the method should return true unless other errors occur
+      // That should keep the calling code happy:
+      // https://github.com/Open-CMSIS-Pack/cbuild/blob/main/pkg/builder/csolution/builder.go#L90
+      reqOk = bListMissingPacksOnly ? // explicit query for missing packs (-m)
+        !context.missingPacks.empty() // missing packs found (expected error)
+        : false;  // some other kind of error, return false
+    }
     // Get missing packs identifiers
     for (const auto& pack : context.missingPacks) {
       string packID = RtePackage::ComposePackageID(pack.vendor, pack.name, pack.version);
       packsMap[packID] = RteUtils::EMPTY_STRING;
     }
-    if (!missingPacks) {
-      if (context.packRequirements.size() > 0) {
-        // Get context required packs
-        for (const auto& [pdscFile, _] : context.pdscFiles) {
+    if(!bListMissingPacksOnly && !context.packRequirements.empty()) {
+      // Get context required packs
+      // first the packs with explicit paths
+      for(const auto& [pdscFile, pathVer] : context.pdscFiles) {
+        const string& path = pathVer.first;
+        if(!path.empty()) {
+          ProjMgrUtils::PushBackUniquely(pdscFiles, pdscFile);
+        }
+      }
+      // then all others
+      for(const auto& [pdscFile, pathVer] : context.pdscFiles) {
+        const string& path = pathVer.first;
+        if(path.empty()) {
           ProjMgrUtils::PushBackUniquely(pdscFiles, pdscFile);
         }
       }
     }
   }
-  if (!missingPacks) {
+  if (!bListMissingPacksOnly) {
     // Check load packs policy
     if (pdscFiles.empty() && (m_loadPacksPolicy == LoadPacksPolicy::REQUIRED)) {
       ProjMgrLogger::Error("required packs must be specified");
@@ -3233,7 +3264,7 @@ bool ProjMgrWorker::ListPacks(vector<string>&packs, bool missingPacks, const str
         packsMap[pack->GetID()] = pack->GetPackageFileName();
       }
     }
-    if (errMsgs.size() > 0) {
+    if (!errMsgs.empty()) {
       std::for_each(errMsgs.begin(), errMsgs.end(), [](const auto& errMsg) {ProjMgrLogger::Error(errMsg); });
       reqOk = false;
     }
@@ -3244,7 +3275,15 @@ bool ProjMgrWorker::ListPacks(vector<string>&packs, bool missingPacks, const str
   for (auto [id, fileName] : packsMap) {
     string s = id;
     if (!fileName.empty()) {
-      s += " (" + fileName + ")";
+      string str = fileName;
+      if(m_relativePaths) {
+        if(str.find(m_packRoot) == 0) {
+           str.replace(0, m_packRoot.size(), "${CMSIS_PACK_ROOT}");
+        } else {
+          str = RteFsUtils::RelativePath(str, m_rootDir, true);
+        }
+      }
+      s += " (" + str + ")";
     }
     packsVec.push_back(s);
   }

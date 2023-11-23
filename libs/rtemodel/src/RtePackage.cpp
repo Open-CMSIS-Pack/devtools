@@ -287,6 +287,16 @@ int RtePackage::ComparePdscFileNames(const std::string& pdsc1, const std::string
   return ComparePackageIDs(PackIdFromPath(pdsc1), PackIdFromPath(pdsc2));
 }
 
+RtePackage* RtePackage::GetPackFromList(const std::string& packID, const std::list<RtePackage*>& packs)
+{
+  for(auto& pack : packs) {
+    if(pack && pack->GetID() == packID) {
+      return pack;
+    }
+  }
+  return nullptr;
+}
+
 RteItem* RtePackage::GetRelease(const string& version) const
 {
   if (m_releases == nullptr) {
@@ -897,7 +907,9 @@ RteDeviceFamilyContainer* RtePackageInfo::GetDeviceFamiles() const
 string RtePackageInfo::GetAbsolutePackagePath() const
 {
   RtePackage* pack = GetPackage();
-  if (pack && pack->GetPackageState() == PackageState::PS_INSTALLED) {
+  auto ps = pack ? pack->GetPackageState() : PackageState::PS_UNKNOWN;
+  if(ps == PackageState::PS_INSTALLED || ps == PackageState::PS_GENERATED ||
+     ps == PackageState::PS_EXPLICIT_PATH) {
     return pack->GetAbsolutePackagePath();
   }
   // No sense in returning this path if not installed
@@ -1169,11 +1181,17 @@ bool RtePackageFilter::IsPackageFiltered(const string& packId) const
 }
 
 
-
 RtePackageAggregate::RtePackageAggregate(RteItem* parent) :
   RteItem(parent),
   m_mode(VersionCmp::MatchMode::EXCLUDED_VERSION)
 {
+}
+
+RtePackageAggregate::RtePackageAggregate(const std::string& commonId) :
+  RteItem(nullptr),
+  m_mode(VersionCmp::MatchMode::LATEST_VERSION)
+{
+  m_ID = commonId;
 }
 
 RtePackageAggregate::~RtePackageAggregate()
@@ -1190,13 +1208,19 @@ void RtePackageAggregate::Clear()
   RteItem::Clear();
 }
 
-RteItem* RtePackageAggregate::GetPackage(const string& id) const
+
+RtePackage* RtePackageAggregate::GetPackage(const std::string& id) const
 {
-  auto it = m_packages.find(id);
-  if (it != m_packages.end()) {
-    return it->second;
+  RteItem* entry = GetPackageEntry(id);
+  if(entry) {
+    return entry->GetPackage();
   }
   return nullptr;
+}
+
+RteItem* RtePackageAggregate::GetPackageEntry(const string& id) const
+{
+  return get_or_null(m_packages, id);
 }
 
 const string& RtePackageAggregate::GetLatestPackageID() const
@@ -1219,10 +1243,13 @@ RteItem* RtePackageAggregate::GetLatestEntry() const
 
 RtePackage* RtePackageAggregate::GetLatestPackage() const
 {
-  for (auto it = m_packages.begin(); it != m_packages.end(); ++it) {
-    RtePackage* p = dynamic_cast<RtePackage*>(it->second);
-    if (p)
-      return p;
+  for (auto [_, p] : m_packages) {
+    if(p) {
+      RtePackage* pack = p->GetPackage();
+      if(pack == p) { // only consider packs themselves
+        return pack;
+      }
+    }
   }
   return nullptr;
 }
@@ -1287,13 +1314,19 @@ void RtePackageAggregate::AdjustVersionMatchMode()
   }
 }
 
-void RtePackageAggregate::AddPackage(RtePackage* pack)
+bool RtePackageAggregate::AddPackage(RtePackage* pack, bool overwrite)
 {
-  if (pack) {
-    m_packages[pack->GetID()] = pack;
-    if (m_displayName.empty())
-      m_displayName = pack->GetDisplayName();
+  if(!pack) {
+    return false;
   }
+  if(overwrite || !GetPackage(pack->GetID())) {
+    m_packages[pack->GetID()] = pack;
+    if(m_ID.empty()) {
+      m_ID = pack->GetCommonID();
+    }
+    return true;
+  }
+  return false;
 }
 
 void RtePackageAggregate::AddPackage(const string& packID, RteItem* pi)
@@ -1304,16 +1337,17 @@ void RtePackageAggregate::AddPackage(const string& packID, RteItem* pi)
     if (it == m_packages.end())
       m_packages[packID] = pi;
   }
-  if (m_displayName.empty())
-    m_displayName = RtePackage::DisplayNameFromId(packID);
+  if (m_ID.empty())
+    m_ID = RtePackage::CommonIdFromId(packID);
 
 }
 
 const string& RtePackageAggregate::GetDescription() const
 {
   RtePackage* p = GetLatestPackage();
-  if (p)
+  if(p) {
     return p->GetDescription();
+  }
 
   static string NO_PACK("Pack is not installed");
   return NO_PACK;
@@ -1330,6 +1364,134 @@ const string& RtePackageAggregate::GetURL() const
       return p->GetAttribute("url");
   }
   return EMPTY_STRING;
+}
+// -------------------------------------
+RtePackFamilyCollection::RtePackFamilyCollection()
+{
+}
+
+RtePackFamilyCollection::~RtePackFamilyCollection()
+{
+
+  m_aggregates.clear();
+}
+
+
+void RtePackFamilyCollection::Clear()
+{
+  for(auto [_, pa] : m_aggregates) {
+    delete pa;
+  }
+  m_aggregates.clear();
+}
+
+RtePackage* RtePackFamilyCollection::GetPackage(const std::string& packID) const
+{
+  auto pa = GetPackageAggregate(packID);
+  if(pa) {
+    return pa->GetPackage(packID);
+  }
+  return nullptr;
+}
+
+
+ RteItem* RtePackFamilyCollection::GetLatestEntry(const std::string& packID) const
+{
+  auto pa = GetPackageAggregate(packID);
+  if(pa) {
+    return pa->GetLatestEntry();
+  }
+  return nullptr;
+}
+
+RtePackage* RtePackFamilyCollection::GetLatestPackage(const std::string& packID) const
+{
+  auto pa = GetPackageAggregate(packID);
+  if(pa) {
+    return pa->GetLatestPackage();
+  }
+  return nullptr;
+}
+
+const std::string& RtePackFamilyCollection::GetLatestPackageID(const std::string& commonId) const
+{
+  auto pa = GetPackageAggregate(commonId);
+  if(pa) {
+    return pa->GetLatestPackageID();
+  }
+  return RteUtils::EMPTY_STRING;
+}
+
+bool RtePackFamilyCollection::AddPackage(RtePackage* pack, bool overwrite )
+{
+  if(!pack) {
+    return false;
+  }
+  RtePackageAggregate* pa = EnsurePackageAggregate(pack->GetCommonID());
+  if(!pa->GetPackage(pack->GetID())) {
+    pa->AddPackage(pack, overwrite);
+  }
+  return true;
+}
+
+void RtePackFamilyCollection::AddPackageEnry(const std::string& packID, RteItem* pi)
+{
+  RtePackageAggregate* pa = EnsurePackageAggregate(packID);
+  pa->AddPackage(packID, pi);
+}
+
+RtePackageAggregate* RtePackFamilyCollection::GetPackageAggregate(const std::string& packID) const
+{
+  return get_or_null(m_aggregates, RtePackage::CommonIdFromId(packID));
+}
+
+RtePackageAggregate* RtePackFamilyCollection::EnsurePackageAggregate(const std::string& commonId)
+{
+  RtePackageAggregate* pa = GetPackageAggregate(commonId);
+  if(!pa) {
+    pa = new RtePackageAggregate(commonId);
+    m_aggregates[commonId] = pa;
+  }
+  return pa;
+}
+
+
+// -------------------------------------
+RtePackRegistry::RtePackRegistry()
+{
+}
+
+RtePackRegistry::~RtePackRegistry()
+{
+  Clear();
+}
+
+
+void RtePackRegistry::Clear()
+{
+  for(auto [_, p] : m_loadedPacks) {
+    delete p;
+  }
+  m_loadedPacks.clear();
+}
+
+
+RtePackage* RtePackRegistry::GetPack(const std::string& pdscFile) const
+{
+  return get_or_null(m_loadedPacks, pdscFile);
+}
+
+bool RtePackRegistry::AddPack(RtePackage* pack)
+{
+  if(!pack) {
+    return false;
+  }
+  auto& fileName = pack->GetPackageFileName();
+  if(GetPack(fileName)) {
+    return false;
+  }
+  m_loadedPacks[fileName] = pack;
+  return true;
 }
 
 // End of RtePackage.cpp

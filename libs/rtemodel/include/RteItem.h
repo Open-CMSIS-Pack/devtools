@@ -28,12 +28,13 @@
  * @brief state of a pack
 */
 enum PackageState {
-  PS_INSTALLED,  // pack is installed
-  PS_AVAILABLE,  // pack is listed in .web folder (available to download)
-  PS_DOWNLOADED, // pack is downloaded to .download folder
-  PS_UNKNOWN,    // state is unknown
+  PS_INSTALLED,          // pack is installed or redirected to local
+  PS_AVAILABLE,          // pack is listed in .web folder (available to download)
+  PS_DOWNLOADED,         // pack is downloaded to .download folder
+  PS_UNKNOWN,            // state is unknown
   PS_COUNT = PS_UNKNOWN, // count of automatic states
-  PS_GENERATED   // generated pack
+  PS_EXPLICIT_PATH,      // packs specified with explicitly set path
+  PS_GENERATED           // generated pack (*.gpdsc)
 };
 
 
