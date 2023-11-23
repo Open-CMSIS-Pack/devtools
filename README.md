@@ -1,3 +1,5 @@
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/Open-CMSIS-Pack/devtools/badge)](https://securityscorecards.dev/viewer/?uri=github.com/Open-CMSIS-Pack/devtools)
+
 # CMSIS-Pack Development Tools and Libraries
 
 <!-- markdownlint-disable MD013 -->
