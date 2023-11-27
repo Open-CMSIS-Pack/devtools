@@ -57,6 +57,18 @@ Software layers and Virtual I/O simplify these use cases:
     <th>Description</th>
   </tr>
   <tr>
+    <td>2.2.0</td>
+    <td>Release notes:
+      - updated cbuild utility v2.2.0
+      - updated cpackget utility v2.0.0
+      - updated csolution utility v2.2.0
+      - updated alpha clang support to v17.0.1
+      - added cbridge utility v0.9.1
+      - added 'warnings' option 'all'
+      - added '*.src' file extension as linker script source for pre-processing
+      - fixed GPDSC without components
+      - fixed IAR single precision FPU error
+    </td>
     <td>2.1.0</td>
     <td>Release notes:
       - updated cbuild utility v2.1.0
