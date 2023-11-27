@@ -44,7 +44,8 @@ LR_ROM0 __ROM0_BASE __ROM0_SIZE  {
 #endif
 
   RW_NOINIT __RAM0_BASE UNINIT (__RAM0_SIZE - __HEAP_SIZE - __STACK_SIZE - __STACKSEAL_SIZE) {
-    *(.bss.noinit)
+    *.o(.noinit)
+    *.o(.noinit.*)
   }
 
   RW_RAM0 AlignExpr(+0, 8) (__RAM0_SIZE - __HEAP_SIZE - __STACK_SIZE - __STACKSEAL_SIZE - AlignExpr(ImageLength(RW_NOINIT), 8)) {
