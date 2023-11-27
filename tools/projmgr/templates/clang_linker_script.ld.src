@@ -1,4 +1,4 @@
-/*
+﻿/*
  * SPDX-License-Identifier: BSD-3-Clause
  *
  * Copyright © 2019 Keith Packard
@@ -254,15 +254,28 @@ SECTIONS
 		*(.gnu.linkonce.b.*)
 		*(COMMON)
 
-		/* Align the heap */
+		/* Align the end of this section, so next can start on aligned address */
 		. = ALIGN(8);
 		__bss_end = .;
 	} >RAM0 AT>RAM0 :ram
 	PROVIDE( __non_tls_bss_start = ADDR(.bss) );
-	PROVIDE( __end = __bss_end );
-	PROVIDE( _end = __bss_end );
-	PROVIDE( end = __bss_end );
 	PROVIDE( __bss_size = __bss_end - __bss_start );
+
+    /* This section contains data that is not initialized during load,
+       or during the application's initialization sequence. */
+    .noinit (NOLOAD) : {
+		__noinit_start__ = .;
+		*(.noinit)
+		*(.noinit.*)
+
+		/* Align the end of this section, so next (heap) can start on aligned address */
+		. = ALIGN(8);
+		__noinit_end__ = .;
+	} >RAM0 AT>RAM0 :ram
+
+	PROVIDE( __end = . );
+	PROVIDE( _end = . );
+	PROVIDE( end = . );
 
 	/* Make the rest of memory available for heap storage */
 	PROVIDE (__heap_start = __end);

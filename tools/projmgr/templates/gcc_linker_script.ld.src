@@ -76,6 +76,8 @@ MEMORY
  *   __data_end__
  *   __bss_start__
  *   __bss_end__
+ *   __noinit_start
+ *   __noinit_end
  *   __end__
  *   end
  *   __HeapLimit
@@ -258,6 +260,18 @@ SECTIONS
     __bss2_end__ = .;
   } > RAM1 AT > RAM1
 */
+
+  /* This section contains data that is not initialized during load,
+     or during the application's initialization sequence. */
+  .noinit (NOLOAD) :
+  {
+    . = ALIGN(4);
+    __noinit_start = .;
+    *(.noinit)
+    *(.noinit.*)
+    . = ALIGN(4);
+    __noinit_end = .;
+  } > RAM0
 
   .heap (NOLOAD) :
   {
