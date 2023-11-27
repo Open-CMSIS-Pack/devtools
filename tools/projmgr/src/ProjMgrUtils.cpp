@@ -344,11 +344,10 @@ vector<string> ProjMgrUtils::GetFilteredContexts(
       ContextName contextItem;
       ProjMgrUtils::ParseContextEntry(context, contextItem);
       contextPattern = (inputContext.project != RteUtils::EMPTY_STRING ? inputContext.project : "*");
-      if (contextItem.build != RteUtils::EMPTY_STRING) {
-        contextPattern += "." + (inputContext.build != RteUtils::EMPTY_STRING ? inputContext.build : "*");
-      }
+      contextPattern += "." + (inputContext.build != RteUtils::EMPTY_STRING ? inputContext.build : "*");
       contextPattern += "+" + (inputContext.target != RteUtils::EMPTY_STRING ? inputContext.target : "*");
-      if (WildCards::Match(context, contextPattern)) {
+      const string fullContextItem = contextItem.project + "." + contextItem.build + "+" + contextItem.target;
+      if (WildCards::Match(fullContextItem, contextPattern)) {
         ProjMgrUtils::PushBackUniquely(selectedContexts, context);
       }
     }
