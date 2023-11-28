@@ -20,11 +20,6 @@ set(LD_FLAGS_GLOBAL "--entry=Reset_Handler --specs=nosys.specs -mcpu=cortex-m3 -
 set(LD_SCRIPT "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/LinkerPreProcessing/RTE/Device/ARMCM3/gcc_arm.ld.src")
 set(LD_SCRIPT_PP "C:/sandbox/devtools/build/TestOutput/TestData/Examples/GCC/LinkerPreProcessing/IntDir/gcc_arm.ld")
 
-set(LD_SCRIPT_PP_DEFINES
-  LD_PP_DEF0
-  LD_PP_DEF1=3U
-)
-
 set(DEFINES
   ARMCM3
   _RTE_

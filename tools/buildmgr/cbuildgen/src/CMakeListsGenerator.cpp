@@ -65,12 +65,12 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
     cmakelists << EOL << "set(LD_FLAGS_LIBRARIES \"" << CbuildUtils::EscapeQuotes(m_linkerLibsGlobal) << "\")";
   }
 
+  const string linkerExt = fs::path(m_linkerScript).extension().generic_string();
   if (!m_linkerScript.empty()) {
     cmakelists << EOL << "set(LD_SCRIPT \"" << m_linkerScript << "\")";
     if (!m_linkerRegionsFile.empty()) {
       cmakelists << EOL << "set(LD_REGIONS \"" << m_linkerRegionsFile << "\")";
     }
-    const string linkerExt = fs::path(m_linkerScript).extension().generic_string();
     if ((linkerExt == SRCPPEXT) || !m_linkerRegionsFile.empty() || !m_linkerPreProcessorDefines.empty()) {
       string absLinkerScript = fs::path(m_linkerScript).filename().generic_string();
       RteFsUtils::NormalizePath(absLinkerScript, m_intdir);
@@ -508,7 +508,7 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
   cmakelists << "_LINK_FLAGS \"${LD_CPU}";
   if (!m_linkerScript.empty() && !lib_output) {
     cmakelists << " ${_LS}\\\"${LD_SCRIPT";
-    if (!m_linkerRegionsFile.empty() || !m_linkerPreProcessorDefines.empty()) {
+    if ((linkerExt == SRCPPEXT) || !m_linkerRegionsFile.empty() || !m_linkerPreProcessorDefines.empty()) {
       cmakelists << "_PP";
     }
     cmakelists << "}\\\"";
@@ -706,7 +706,7 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
   }
 
   // Linker script pre-processing
-  if (!m_linkerScript.empty() && !lib_output && (!m_linkerRegionsFile.empty() || !m_linkerPreProcessorDefines.empty())) {
+  if (!m_linkerScript.empty() && !lib_output && ((linkerExt == SRCPPEXT) || !m_linkerRegionsFile.empty() || !m_linkerPreProcessorDefines.empty())) {
     cmakelists << EOL << "# Linker script pre-processing" << EOL << EOL;
     cmakelists << "add_custom_command(TARGET ${TARGET} PRE_LINK COMMAND ${CPP} ARGS ${CPP_ARGS_LD_SCRIPT} BYPRODUCTS ${LD_SCRIPT_PP})" << EOL;
   }

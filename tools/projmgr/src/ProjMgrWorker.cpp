@@ -1869,6 +1869,7 @@ bool ProjMgrWorker::ProcessConfigFiles(ContextItem& context) {
   if (context.linker.autoGen) {
     if (!context.linker.script.empty()) {
       ProjMgrLogger::Warn("conflict: automatic linker script generation overrules specified script '" + context.linker.script + "'");
+      context.linker.script.clear();
     }
   } else if (context.linker.script.empty() && context.linker.regions.empty() && context.linker.defines.empty()) {
     const auto& groups = context.rteActiveTarget->GetProjectGroups();
