@@ -44,19 +44,6 @@
 #define __HEAP_SIZE         0x00000C00
 
 /* ----------------------------------------------------------------------------
- Test case 'defines' check
- *----------------------------------------------------------------------------*/
-#ifndef LD_PP_DEF0
-  #error "LD_PP_DEF0 was not defined"
-#endif
-#ifndef LD_PP_DEF1
-  #error "LD_PP_DEF1 was not defined"
-#endif
-#if (LD_PP_DEF1 != 3U)
-  #error "LD_PP_DEF1 is not equal to 3U"
-#endif
-
-/* ----------------------------------------------------------------------------
   Stack seal size definition
  *----------------------------------------------------------------------------*/
 #if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)

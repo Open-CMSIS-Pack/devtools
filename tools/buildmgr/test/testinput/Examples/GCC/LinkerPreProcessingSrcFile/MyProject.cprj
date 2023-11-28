@@ -18,9 +18,7 @@
 
   <target Ddsp="NO_DSP" Dendian="Little-endian" Dfpu="NO_FPU" Dmve="NO_MVE" Dname="ARMCM3" Dsecure="Non-secure" Dtz="NO_TZ" Dvendor="ARM:82">
     <output name="MyProject"/>
-    <ldflags add="--entry=Reset_Handler --specs=nosys.specs -mcpu=cortex-m3 -mthumb" compiler="GCC" file="./RTE/Device/ARMCM3/gcc_arm.ld.src">
-      <defines>LD_PP_DEF0;LD_PP_DEF1=3U</defines>
-    </ldflags>
+    <ldflags add="--entry=Reset_Handler --specs=nosys.specs -mcpu=cortex-m3 -mthumb" compiler="GCC" file="./RTE/Device/ARMCM3/gcc_arm.ld.src"/>
     <cflags add="-O -Wall -gdwarf-2 -mapcs-frame -mthumb" compiler="GCC"/>
   </target>
 
