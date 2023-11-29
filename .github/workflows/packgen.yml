@@ -56,20 +56,20 @@ jobs:
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
     steps:
       - name: Checkout devtools
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           submodules: true
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build
-        uses: Open-CMSIS-Pack/devtools-build-action@arm64
+        uses: Open-CMSIS-Pack/devtools-build-action@79c0fc7d7bc834eb12aa1e319756deab0dda773f # arm64
         id: devtools-build
         with:
           target: packgen
           arch: ${{ matrix.arch }}
 
       - name: Archive packgen
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
         with:
           name: packgen-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/tools/packgen/${{ matrix.target }}-${{ matrix.arch }}/Release/${{ matrix.binary }}
@@ -86,7 +86,7 @@ jobs:
 
     steps:
       - name: Checkout devtools
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Create distribution folders
         run: |
@@ -97,37 +97,37 @@ jobs:
           cp -r tools/packgen/test/data/CMakeTestMultipleBuilds/ tools/packgen/distribution/doc/examples/
 
       - name: Download packgen linux-amd64
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: packgen-linux-amd64
           path: tools/packgen/distribution/bin/linux-amd64/
 
       - name: Download packgen linux arm64
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: packgen-linux-arm64
           path: tools/packgen/distribution/bin/linux-arm64/
 
       - name: Download packgen macos-amd64
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: packgen-darwin-amd64
           path: tools/packgen/distribution/bin/darwin-amd64/
 
       - name: Download packgen macos-arm64
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: packgen-darwin-arm64
           path: tools/packgen/distribution/bin/darwin-arm64/
 
       - name: Download packgen windows-amd64
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: packgen-windows-amd64
           path: tools/packgen/distribution/bin/windows-amd64/
 
       - name: Download packgen windows-arm64
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: packgen-windows-arm64
           path: tools/packgen/distribution/bin/windows-arm64/
@@ -137,7 +137,7 @@ jobs:
         working-directory: tools/packgen/distribution
 
       - name: Attach zip archive to release assets
-        uses: svenstaro/upload-release-action@v2
+        uses: svenstaro/upload-release-action@1beeb572c19a9242f4361f4cee78f8e0d9aec5df # v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: tools/packgen/distribution/packgen.zip
@@ -154,13 +154,13 @@ jobs:
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
     steps:
       - name: Checkout devtools
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           submodules: true
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build PackGenUnitTests
-        uses: Open-CMSIS-Pack/devtools-build-action@arm64
+        uses: Open-CMSIS-Pack/devtools-build-action@79c0fc7d7bc834eb12aa1e319756deab0dda773f # arm64
         with:
           target: PackGenUnitTests
           build_type: Debug
@@ -174,7 +174,7 @@ jobs:
 
       - name: Archive unit tests results
         if: always() && (matrix.arch != 'arm64')
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
         with:
           name: unit_test_result-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/packgenunittests-*.xml
@@ -200,13 +200,13 @@ jobs:
             lcov
 
       - name: Checkout devtools
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           submodules: true
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build PackGenUnitTests
-        uses: Open-CMSIS-Pack/devtools-build-action@arm64
+        uses: Open-CMSIS-Pack/devtools-build-action@79c0fc7d7bc834eb12aa1e319756deab0dda773f # arm64
         with:
           add_cmake_variables: -DCOVERAGE=ON
           arch: amd64
@@ -225,7 +225,7 @@ jobs:
 
       - name: Archive unit tests results
         if: (github.event_name == 'push')
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
         with:
           name: unit_test_result-linux-amd64
           path: ./build/test_reports/packgenunittests-*.xml
@@ -250,7 +250,7 @@ jobs:
 
       - name: Upload Report to Codecov
         if: ${{ !github.event.repository.private }}
-        uses: Wandalen/wretry.action@v1.3.0
+        uses: Wandalen/wretry.action@a163f62ae554a8f3cbe27b23db15b60c0ae2e93c # v1.3.0
         with:
           action: codecov/codecov-action@v3
           with: |
@@ -262,7 +262,7 @@ jobs:
           attempt_delay: 5000
 
       - name: Archive coverage report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
         with:
           name: coverage-report
           path: |
@@ -277,7 +277,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Event File
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
         with:
           name: Event File
           path: ${{ github.event_path }}
