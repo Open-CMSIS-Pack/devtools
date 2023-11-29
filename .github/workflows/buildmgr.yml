@@ -63,20 +63,20 @@ jobs:
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
     steps:
       - name: Checkout devtools
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           submodules: true
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build
-        uses: Open-CMSIS-Pack/devtools-build-action@arm64
+        uses: Open-CMSIS-Pack/devtools-build-action@79c0fc7d7bc834eb12aa1e319756deab0dda773f # arm64
         id: devtools-build
         with:
           target: cbuildgen
           arch: ${{ matrix.arch }}
 
       - name: Archive cbuildgen
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
         with:
           name: cbuildgen-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/tools/buildmgr/cbuildgen/${{ matrix.target }}-${{ matrix.arch }}/Release/cbuildgen${{ matrix.binary_extension }}
@@ -93,7 +93,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Checkout devtools
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           submodules: true
           fetch-depth: ${{ github.event_name == 'push' && '0' || '1' }}
@@ -130,7 +130,7 @@ jobs:
           echo "retention_days=$(echo '${{ (!github.event.repository.private && (github.event_name == 'push' || github.event.schedule != '')) && '7' || '1' }}')" >> $GITHUB_OUTPUT
           
       - name: Upload documentation
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
         with:
           name: documentation
           path: ./build/tools/buildmgr/docs/doxygen/output/
@@ -142,7 +142,7 @@ jobs:
         run: tar -cvjf /tmp/doc.tbz2 .
         working-directory: ./build/tools/buildmgr/docs/doxygen/output/html/
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         if: ${{ github.event_name == 'push' || github.event_name == 'release' }}
         with:
           ref: gh-pages
@@ -196,7 +196,7 @@ jobs:
             python3
 
       - name: Checkout devtools
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Create distribution folders
         run: |
@@ -204,39 +204,39 @@ jobs:
           mkdir -p tools/buildmgr/cbuildgen/distribution/doc
 
       - name: Download cbuildgen linux-amd64
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: cbuildgen-linux-amd64
           path: tools/buildmgr/cbuildgen/distribution/bin/
 
       - name: Download cbuildgen linux-arm64
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: cbuildgen-linux-arm64
           path: tools/buildmgr/cbuildgen/distribution/bin/
 
       - name: Download cbuildgen macos-amd64
         if: ${{ !github.event.repository.private }}
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: cbuildgen-darwin-amd64
           path: tools/buildmgr/cbuildgen/distribution/bin/
 
       - name: Download cbuildgen macos-arm64
         if: ${{ !github.event.repository.private }}
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: cbuildgen-darwin-arm64
           path: tools/buildmgr/cbuildgen/distribution/bin/
 
       - name: Download cbuildgen windows-amd64
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: cbuildgen-windows-amd64
           path: tools/buildmgr/cbuildgen/distribution/bin/
 
       - name: Download cbuildgen windows-arm64
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: cbuildgen-windows-arm64
           path: tools/buildmgr/cbuildgen/distribution/bin/
@@ -247,7 +247,7 @@ jobs:
         working-directory: tools/buildmgr/cbuildgen/distribution/bin
 
       - name: Download documentation
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: documentation
           path: tools/buildmgr/cbuildgen/distribution/doc/
@@ -261,7 +261,7 @@ jobs:
         working-directory: tools/buildmgr/cbuildgen/installer
 
       - name: Archive cbuild_install.sh
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
         with:
           name: cbuild_install
           path: tools/buildmgr/cbuildgen/installer/cbuild_install.sh
@@ -269,7 +269,7 @@ jobs:
           if-no-files-found: error
 
       - name: Archive deb package
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
         with:
           name: deb_package
           path: tools/buildmgr/cbuildgen/installer/cmsis-build*.deb
@@ -278,7 +278,7 @@ jobs:
 
       - name: Attach installer to release
         if: ${{ github.event_name == 'release' }}
-        uses: svenstaro/upload-release-action@v2
+        uses: svenstaro/upload-release-action@1beeb572c19a9242f4361f4cee78f8e0d9aec5df # v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: tools/buildmgr/cbuildgen/installer/cbuild_install.sh
@@ -288,7 +288,7 @@ jobs:
 
       - name: Attach debian installer to release
         if: ${{ github.event_name == 'release' }}
-        uses: svenstaro/upload-release-action@v2
+        uses: svenstaro/upload-release-action@1beeb572c19a9242f4361f4cee78f8e0d9aec5df # v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: tools/buildmgr/cbuildgen/installer/cmsis-build*.deb
@@ -333,12 +333,12 @@ jobs:
         run: choco install -y unzip wget ninja
 
       - name: Checkout devtools
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           submodules: true
 
       - name: Cache ARM GCC
-        uses: actions/cache@v3
+        uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84 # v3.3.2
         with:
           key: "${{ matrix.arm_gcc_install_base }}/${{ matrix.installer_name }}"
           path: ${{ matrix.installer_name }}
@@ -362,7 +362,7 @@ jobs:
           unzip -o $Env:installer_name
 
       - name: Cache CMSIS Pack
-        uses: actions/cache@v3
+        uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84 # v3.3.2
         env:
           CACHE_NAME: cmsis_pack
         with:
@@ -370,13 +370,13 @@ jobs:
           path: ${{ env.CMSIS_PACK_ROOT }}
 
       - name: Download cbuild_install
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: cbuild_install
           path: ${{ github.workspace }}
 
       - name: Download deb_package
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: deb_package
           path: ${{ github.workspace }}
@@ -387,7 +387,7 @@ jobs:
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build CbuildUnitTests
-        uses: Open-CMSIS-Pack/devtools-build-action@arm64
+        uses: Open-CMSIS-Pack/devtools-build-action@79c0fc7d7bc834eb12aa1e319756deab0dda773f # arm64
         with:
           target: CbuildUnitTests
           build_type: Debug
@@ -400,7 +400,7 @@ jobs:
 
       - name: Archive unittest
         if: always() && (matrix.arch != 'arm64')
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
         with:
           name: unit_test_result-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/cbuildunittests-*.xml
@@ -409,7 +409,7 @@ jobs:
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build CbuildIntegTests
-        uses: Open-CMSIS-Pack/devtools-build-action@arm64
+        uses: Open-CMSIS-Pack/devtools-build-action@79c0fc7d7bc834eb12aa1e319756deab0dda773f # arm64
         with:
           target: CbuildIntegTests
           build_type: Debug
@@ -437,7 +437,7 @@ jobs:
 
       - name: Archive Cbuild Integration Tests
         if: always() && ((matrix.arch == 'amd64') || (startsWith(matrix.runs_on, 'ubuntu')))
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
         with:
           name: integ_test_result-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/cbuildintegtests-report-${{ matrix.target }}-${{ matrix.arch }}.xml
@@ -472,7 +472,7 @@ jobs:
             lcov
 
       - name: Checkout devtools
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           submodules: recursive
 
@@ -480,7 +480,7 @@ jobs:
         run: mkdir build
 
       - name: Cache ARM GCC
-        uses: actions/cache@v3
+        uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84 # v3.3.2
         with:
           key: "${{ env.arm_gcc_install_base }}/${{ env.installer_name }}"
           path: ${{ env.installer_name }}
@@ -491,7 +491,7 @@ jobs:
           tar -xvf ${{ env.installer_name }}
 
       - name: Cache CMSIS Pack
-        uses: actions/cache@v3
+        uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84 # v3.3.2
         env:
           CACHE_NAME: cmsis_pack
         with:
@@ -514,7 +514,7 @@ jobs:
 
       - name: Archive unittest
         if: (github.event_name == 'push')
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
         with:
           name: unit_test_result-linux-amd64
           path: ./build/test_reports/cbuildunittests-*.xml
@@ -523,7 +523,7 @@ jobs:
 
       - name: Archive Cbuild Integration Tests
         if: (github.event_name == 'push')
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
         with:
           name: integ_test_result-linux-amd64
           path: ./build/test_reports/cbuildintegtests-*.xml
@@ -548,7 +548,7 @@ jobs:
 
       - name: Upload Report to Codecov
         if: ${{ !github.event.repository.private }}
-        uses: Wandalen/wretry.action@v1.3.0
+        uses: Wandalen/wretry.action@a163f62ae554a8f3cbe27b23db15b60c0ae2e93c # v1.3.0
         with:
           action: codecov/codecov-action@v3
           with: |
@@ -560,7 +560,7 @@ jobs:
           attempt_delay: 5000
 
       - name: Archive coverage report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
         with:
           name: coverage-report
           path: |
@@ -583,7 +583,7 @@ jobs:
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
     steps:
       - name: Download cbuild_install
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: cbuild_install
           path: ${{ github.workspace }}
@@ -624,7 +624,7 @@ jobs:
         image: [ "debian:buster" ]
     steps:
       - name: Download cbuild_install
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: cbuild_install
           path: ${{ github.workspace }}
@@ -653,7 +653,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Event File
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
         with:
           name: Event File
           path: ${{ github.event_path }}

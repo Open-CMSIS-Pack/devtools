@@ -1,3 +1,5 @@
+
+
 name: matrix_prep
 
 on:
@@ -24,7 +26,7 @@ jobs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - name: Check out repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - id: set-matrix
         run: |
           publicRepo=$(echo '${{ github.event.repository.private && 'privateRepo' || 'publicRepo' }}')

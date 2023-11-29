@@ -1,3 +1,5 @@
+
+
 name: test_libs
 on:
   workflow_call:
@@ -43,13 +45,13 @@ jobs:
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
     steps:
       - name: Checkout devtools
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           submodules: true
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build all libs
-        uses: Open-CMSIS-Pack/devtools-build-action@arm64
+        uses: Open-CMSIS-Pack/devtools-build-action@79c0fc7d7bc834eb12aa1e319756deab0dda773f # arm64
         id: devtools-build
         with:
           add_cmake_variables: '-DLIBS_ONLY=ON'
@@ -80,7 +82,7 @@ jobs:
 
       - name: Archive libs unittest reports
         if: always() && (matrix.arch != 'arm64')
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
         with:
           name: unit_test_result-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/*${{ matrix.target }}-${{ matrix.arch }}.xml
@@ -93,7 +95,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Event File
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
         with:
           name: Event File
           path: ${{ github.event_path }}
