@@ -1,0 +1,6 @@
+[
+{"vendor": "ARM", "name": "CMSIS"},
+{"vendor": "Keil", "name": "ARM_Compiler"},
+{"vendor": "lwIP", "name": "lwIP", "version": "2.1.2"},
+{"vendor": "Keil", "name": "STM32L5xx_DFP", "version": "1.2.0"}
+]

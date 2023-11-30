@@ -369,6 +369,31 @@ TEST_F(CBuildGenTests, GeneratePackListTest) {
   CheckCPInstallFile    (param, true);  // .cpinstall.json
 }
 
+// Validate listing of missing packs in a packlist file with invalid pack repository
+TEST_F(CBuildGenTests, GeneratePackListTest_InvalidRepository) {
+  TestParam param = {
+    "ModelTest", "InvalidPackRepo",
+    "", "packlist", true
+  };
+
+  auto outFile = fs::path(
+    testdata_folder + "/" + param.name + "/" + param.targetArg + ".cpinstall");
+  error_code ec;
+
+  if (fs::exists(outFile, ec)) {
+    fs::remove(outFile, ec);
+  }
+
+  const string packRoot = CrossPlatformUtils::GetEnv("CMSIS_PACK_ROOT");
+  CrossPlatformUtils::SetEnv("CMSIS_PACK_ROOT", string(CMAKE_SOURCE_DIR) + "/test/packs-invalid");
+  RunCBuildGen(param, testdata_folder, false);
+  CheckCPInstallFile(param, false); // .cpinstall
+  CheckCPInstallFile(param, true);  // .cpinstall.json
+
+  // restore CMSIS_PACK_ROOT env variable
+  CrossPlatformUtils::SetEnv("CMSIS_PACK_ROOT", packRoot);
+}
+
 // Validate listing of missing packs in a packlist file
 TEST_F(CBuildGenTests, GeneratePackListDirTest) {
   TestParam param = {

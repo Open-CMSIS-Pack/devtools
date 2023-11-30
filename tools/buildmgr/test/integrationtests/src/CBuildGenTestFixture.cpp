@@ -78,7 +78,7 @@ void CBuildGenTestFixture::RunCBuildGen(const TestParam& param, string projpath,
       param.command + (param.options.empty() ? "" : " ") + param.options;
   }
   else {
-    cmd = "bash -c \"source " + testout_folder +
+    cmd = SH + string(" \"source ") + testout_folder +
       "/cbuild/etc/setup && cbuildgen \"" + workingDir +
       '/' + param.targetArg + ".cprj\" " + param.command +
       (param.options.empty() ? "" : " ") + param.options + "\"";
@@ -89,7 +89,7 @@ void CBuildGenTestFixture::RunCBuildGen(const TestParam& param, string projpath,
 }
 
 void CBuildGenTestFixture::RunCBuildGenAux(const string& cmd, bool expect) {
-  string command = "bash -c \"source " + testout_folder +
+  string command = SH + string(" \"source ") + testout_folder +
     "/cbuild/etc/setup && cbuildgen " + cmd + "\"";
   int ret_val = system(command.c_str());
   ASSERT_EQ(expect, (ret_val == 0) ? true : false);
