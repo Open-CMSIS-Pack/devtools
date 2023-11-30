@@ -477,7 +477,7 @@ bool RteKernel::GetUrlFromIndex(const string& rtePath, const string& name, const
 {
   unique_ptr<XMLTreeElement> pIndex(ParseLocalRepositoryIdx(rtePath));
   if (!pIndex) {
-    return true;
+    return false;
   }
   map<string, string> pdscMap;
   // Populate map with items matching name, vendor and version range
