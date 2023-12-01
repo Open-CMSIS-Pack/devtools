@@ -18,6 +18,8 @@ on:
       matrix:
         value: ${{ jobs.matrix_prep.outputs.matrix }}
 
+permissions: read-all
+
 jobs:
   matrix_prep:
     runs-on: ubuntu-22.04

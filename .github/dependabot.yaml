@@ -6,3 +6,18 @@ updates:
       interval: "weekly"
     open-pull-requests-limit: 10
     rebase-strategy: disabled
+
+  - package-ecosystem: docker
+    directory: /.devcontainer/debian-10
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: docker
+    directory: /.devcontainer/ubuntu-20.04
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: docker
+    directory: /.devcontainer/ubuntu-22.04
+    schedule:
+      interval: weekly

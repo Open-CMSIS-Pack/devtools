@@ -5,6 +5,8 @@ on:
   schedule:
     - cron: '0 0 * * *'
 
+permissions: read-all
+
 jobs:
   buildmgr:
     if: github.repository == 'Open-CMSIS-Pack/devtools'

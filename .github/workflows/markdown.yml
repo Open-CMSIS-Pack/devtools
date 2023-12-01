@@ -6,6 +6,9 @@ on:
       - '.github/markdownlint.json'
       - '.github/markdownlint.jsonc'
       - '**/*.md'
+
+permissions: read-all
+
 jobs:
   markdown-lint:
     name: Lint markdown files

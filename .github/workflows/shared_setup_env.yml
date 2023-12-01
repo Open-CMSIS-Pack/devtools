@@ -16,6 +16,8 @@ on:
         description: 'Artifact retention days 7 when nightly, else 1'
         value: ${{ jobs.config.outputs.retention_days }}
 
+permissions: read-all
+
 jobs:
   config:
     runs-on: ubuntu-22.04

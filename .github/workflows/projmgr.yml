@@ -32,6 +32,8 @@ on:
   release:
     types: [published]
 
+permissions: read-all
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
