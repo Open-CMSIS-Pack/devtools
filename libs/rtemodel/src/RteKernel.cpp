@@ -37,8 +37,6 @@ static constexpr const char* R822 = "Pack 'path' was not found";
 static constexpr const char* R823 = "No PDSC file was found";
 static constexpr const char* R824 = "Multiple PDSC files were found";
 
-RteKernel RteKernel::NULL_RTE_KERNEL;
-
 RteKernel::RteKernel(RteCallback* rteCallback, RteGlobalModel* globalModel) :
 m_globalModel(globalModel),
 m_bOwnModel(false),
@@ -265,10 +263,13 @@ RtePackage* RteKernel::LoadPack(const string& pdscFile, PackageState packState) 
   return pack;
 }
 
-bool RteKernel::LoadPacks(const std::list<std::string>& pdscFiles, std::list<RtePackage*>& packs) const
+bool RteKernel::LoadPacks(const std::list<std::string>& pdscFiles, std::list<RtePackage*>& packs, RteModel* model) const
 {
   if (!pdscFiles.empty()) {
-    RteItemBuilder rteItemBuilder(GetGlobalModel(), GetGlobalModel()->GetPackageState());
+    if(!model) {
+      model = GetGlobalModel();
+    }
+    RteItemBuilder rteItemBuilder(model, model->GetPackageState());
     unique_ptr<XMLTree> xmlTree = CreateUniqueXmlTree(&rteItemBuilder);
     bool success = xmlTree->SetFileNames(pdscFiles, true);
     if (success) {

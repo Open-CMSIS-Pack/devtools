@@ -168,12 +168,6 @@ public:
   virtual CprjFile* GetActiveCprjFile() const;
 
   /**
-   * @brief getter for "empty" RteKernel object
-   * @return RteKernel::NULL_RTE_KERNEL
-  */
-  static RteKernel* GetNullKernel() { return &NULL_RTE_KERNEL; }
-
-  /**
    * @brief get installed packs
    * @param pdscFiles list of installed packs
    * @param bool latest get only latest versions (default true)
@@ -254,9 +248,11 @@ public:
    * @brief load specified pdsc files, but does not insert them in the model
    * @param pdscFiles list of pathnames to load
    * @param packs list to receive loaded packs
+   * @param model RteModel to get state and serve as parent
    * @return true if successful
   */
-  bool LoadPacks(const std::list<std::string>& pdscFiles, std::list<RtePackage*>& packs) const;
+  bool LoadPacks(const std::list<std::string>& pdscFiles, std::list<RtePackage*>& packs,
+                 RteModel* model = nullptr) const;
 
   /**
    * @brief getter for caller information (name & version)
@@ -291,9 +287,5 @@ protected:
   RteCallback* m_rteCallback;
   XmlItem m_toolInfo;
   std::string m_cmsisPackRoot;
-
-  // null object to avoid crashes
-  static RteKernel NULL_RTE_KERNEL;
-
 };
 #endif // RteKernel_H
