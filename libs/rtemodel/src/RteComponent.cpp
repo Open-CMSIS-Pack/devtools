@@ -1824,8 +1824,6 @@ RteBundle* RteComponentClass::GetSelectedBundle() const
 {
   if (!m_selectedBundleName.empty()) {
     string bundleId = GetSelectedBundleShortID();
-    bundleId += "::";
-    bundleId += GetName();
     return GetTarget()->GetFilteredModel()->GetLatestBundle(bundleId);
   }
   return nullptr;

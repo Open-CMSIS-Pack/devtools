@@ -366,6 +366,13 @@ TEST_F(RteModelPrjTest, LoadCprj) {
 
   RteTarget* activeTarget = activeCprjProject->GetActiveTarget();
   ASSERT_NE(activeTarget, nullptr);
+
+  auto componentClass = activeTarget->GetComponentClass("RteTestBundle");
+  ASSERT_NE(componentClass, nullptr);
+  RteBundle* bundle = componentClass->GetSelectedBundle();
+  ASSERT_NE(bundle, nullptr);
+  EXPECT_EQ(bundle->GetCbundleName(), componentClass->GetSelectedBundleName());
+
   map<const RteItem*, RteDependencyResult> depResults;
   RteItem::ConditionResult res = activeTarget->GetDepsResult(depResults, activeTarget);
   EXPECT_EQ(res, RteItem::FULFILLED);
