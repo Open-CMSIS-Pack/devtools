@@ -125,8 +125,7 @@ void ProjMgr::ShowVersion(void) {
   cout << ORIGINAL_FILENAME << " " << VERSION_STRING << " " << COPYRIGHT_NOTICE << endl;
 }
 
-int ProjMgr::RunProjMgr(int argc, char **argv, char** envp) {
-  ProjMgr manager;
+int ProjMgr::ParseCommandLine(int argc, char** argv) {
 
   // Command line options
   cxxopts::Options options(ORIGINAL_FILENAME);
@@ -182,80 +181,80 @@ int ProjMgr::RunProjMgr(int argc, char **argv, char** envp) {
     options.parse_positional({ "positional" });
 
     parseResult = options.parse(argc, argv);
-    manager.m_checkSchema = !parseResult.count("n");
-    manager.m_worker.SetCheckSchema(manager.m_checkSchema);
-    manager.m_extGenerator.SetCheckSchema(manager.m_checkSchema);
-    manager.m_missingPacks = parseResult.count("m");
-    manager.m_updateRteFiles = !parseResult.count("no-update-rte");
-    manager.m_verbose = parseResult.count("v");
-    manager.m_worker.SetVerbose(manager.m_verbose);
-    manager.m_debug = parseResult.count("d");
-    manager.m_dryRun = parseResult.count("D");
-    manager.m_worker.SetDebug(manager.m_debug);
-    manager.m_worker.SetDryRun(manager.m_dryRun);
-    manager.m_ymlOrder = parseResult.count("yml-order");
-    manager.m_contextSet = parseResult.count("context-set");
-    manager.m_relativePaths = parseResult.count("relative-paths");
-    manager.m_worker.SetPrintRelativePaths(manager.m_relativePaths);
+    m_checkSchema = !parseResult.count("n");
+    m_worker.SetCheckSchema(m_checkSchema);
+    m_extGenerator.SetCheckSchema(m_checkSchema);
+    m_missingPacks = parseResult.count("m");
+    m_updateRteFiles = !parseResult.count("no-update-rte");
+    m_verbose = parseResult.count("v");
+    m_worker.SetVerbose(m_verbose);
+    m_debug = parseResult.count("d");
+    m_dryRun = parseResult.count("D");
+    m_worker.SetDebug(m_debug);
+    m_worker.SetDryRun(m_dryRun);
+    m_ymlOrder = parseResult.count("yml-order");
+    m_contextSet = parseResult.count("context-set");
+    m_relativePaths = parseResult.count("relative-paths");
+    m_worker.SetPrintRelativePaths(m_relativePaths);
 
     vector<string> positionalArguments;
     if (parseResult.count("positional")) {
       positionalArguments = parseResult["positional"].as<vector<string>>();
     }
     else if (parseResult.count("version")) {
-      manager.ShowVersion();
-      return 0;
+      ShowVersion();
+      return -1;
     }
     else {
       // No command was given, print usage and return success
-      return manager.PrintUsage(optionsDict, "", "") ? 0 : 1;
+      return PrintUsage(optionsDict, "", "") ? -1 : 1;
     }
 
     for (auto it = positionalArguments.begin(); it != positionalArguments.end(); it++) {
       if (regex_match(*it, regex(".*\\.csolution\\.(yml|yaml)"))) {
-        manager.m_csolutionFile = *it;
-      } else if (manager.m_command.empty()) {
-        manager.m_command = *it;
-      } else if (manager.m_args.empty()) {
-        manager.m_args = *it;
+        m_csolutionFile = *it;
+      } else if (m_command.empty()) {
+        m_command = *it;
+      } else if (m_args.empty()) {
+        m_args = *it;
       }
     }
     if (parseResult.count("solution")) {
-      manager.m_csolutionFile = parseResult["solution"].as<string>();
+      m_csolutionFile = parseResult["solution"].as<string>();
     }
-    if (!manager.m_csolutionFile.empty()) {
-      if (!RteFsUtils::Exists(manager.m_csolutionFile)) {
-        ProjMgrLogger::Error(manager.m_csolutionFile, "csolution file was not found");
+    if (!m_csolutionFile.empty()) {
+      if (!RteFsUtils::Exists(m_csolutionFile)) {
+        ProjMgrLogger::Error(m_csolutionFile, "csolution file was not found");
         return 1;
       }
-      manager.m_csolutionFile = RteFsUtils::MakePathCanonical(manager.m_csolutionFile);
-      manager.m_rootDir = RteUtils::ExtractFilePath(manager.m_csolutionFile, false);
-      manager.m_worker.SetRootDir(manager.m_rootDir);
+      m_csolutionFile = RteFsUtils::MakePathCanonical(m_csolutionFile);
+      m_rootDir = RteUtils::ExtractFilePath(m_csolutionFile, false);
+      m_worker.SetRootDir(m_rootDir);
     }
     if (parseResult.count("context")) {
-      manager.m_context = parseResult["context"].as<vector<string>>();
+      m_context = parseResult["context"].as<vector<string>>();
     }
     if (parseResult.count("filter")) {
-      manager.m_filter = parseResult["filter"].as<string>();
+      m_filter = parseResult["filter"].as<string>();
     }
     if (parseResult.count("generator")) {
-      manager.m_codeGenerator = parseResult["generator"].as<string>();
+      m_codeGenerator = parseResult["generator"].as<string>();
     }
     if (parseResult.count("load")) {
-      manager.m_loadPacksPolicy = parseResult["load"].as<string>();
+      m_loadPacksPolicy = parseResult["load"].as<string>();
     }
     if (parseResult.count("clayer-path")) {
-      manager.m_clayerSearchPath = parseResult["clayer-path"].as<string>();
+      m_clayerSearchPath = parseResult["clayer-path"].as<string>();
     }
     if (parseResult.count("export")) {
-      manager.m_export = parseResult["export"].as<string>();
+      m_export = parseResult["export"].as<string>();
     }
     if (parseResult.count("toolchain")) {
-      manager.m_selectedToolchain = parseResult["toolchain"].as<string>();
+      m_selectedToolchain = parseResult["toolchain"].as<string>();
     }
     if (parseResult.count("output")) {
-      manager.m_outputDir = parseResult["output"].as<string>();
-      manager.m_outputDir = fs::path(manager.m_outputDir).generic_string();
+      m_outputDir = parseResult["output"].as<string>();
+      m_outputDir = fs::path(m_outputDir).generic_string();
     }
   } catch (cxxopts::OptionException& e) {
     ProjMgrLogger::Error(e.what());
@@ -269,90 +268,107 @@ int ProjMgr::RunProjMgr(int argc, char **argv, char** envp) {
   }
 
   if (parseResult.count("help")) {
-    return manager.PrintUsage(optionsDict, manager.m_command, manager.m_args) ? 0 : 1;
+    return PrintUsage(optionsDict, m_command, m_args) ? -1 : 1;
   }
 
   // Set load packs policy
-  if (!manager.SetLoadPacksPolicy()) {
+  if (!SetLoadPacksPolicy()) {
     return 1;
+  }
+  return 0;
+}
+
+
+int ProjMgr::RunProjMgr(int argc, char** argv, char** envp) {
+  ProjMgr manager;
+
+  int res = manager.ParseCommandLine(argc, argv);
+  if(res != 0) {
+    // res == -1  means help or version is requested => program success
+    return res > 0 ? res : 0;
   }
 
   // Environment variables
   vector<string> envVars;
-  if (envp) {
-    for (char** env = envp; *env != 0; env++) {
+  if(envp) {
+    for(char** env = envp; *env != 0; env++) {
       envVars.push_back(string(*env));
     }
   }
   manager.m_worker.SetEnvironmentVariables(envVars);
 
-  if (manager.m_command == "list") {
+  res = manager.ProcessCommands();
+  return res;
+}
+
+int ProjMgr::ProcessCommands() {
+  if (m_command == "list") {
     // Process 'list' command
-    if (manager.m_args.empty()) {
+    if (m_args.empty()) {
       ProjMgrLogger::Error("list <args> was not specified");
       return 1;
     }
     // Process argument
-    if (manager.m_args == "packs") {
-      if (!manager.RunListPacks()) {
+    if (m_args == "packs") {
+      if (!RunListPacks()) {
         return 1;
       }
-    } else if (manager.m_args == "boards") {
-      if (!manager.RunListBoards()) {
+    } else if (m_args == "boards") {
+      if (!RunListBoards()) {
         return 1;
       }
-    } else if (manager.m_args == "devices") {
-      if (!manager.RunListDevices()) {
+    } else if (m_args == "devices") {
+      if (!RunListDevices()) {
         return 1;
       }
-    } else if (manager.m_args == "components") {
-      if (!manager.RunListComponents()) {
+    } else if (m_args == "components") {
+      if (!RunListComponents()) {
         return 1;
       }
-    } else if (manager.m_args == "configs") {
-      if (!manager.RunListConfigs()) {
+    } else if (m_args == "configs") {
+      if (!RunListConfigs()) {
         return 1;
       }
-    } else if (manager.m_args == "dependencies") {
-      if (!manager.RunListDependencies()) {
+    } else if (m_args == "dependencies") {
+      if (!RunListDependencies()) {
         return 1;
       }
-    } else if (manager.m_args == "contexts") {
-      if (!manager.RunListContexts()) {
+    } else if (m_args == "contexts") {
+      if (!RunListContexts()) {
         return 1;
       }
-    } else if (manager.m_args == "generators") {
-      if (!manager.RunListGenerators()) {
+    } else if (m_args == "generators") {
+      if (!RunListGenerators()) {
         return 1;
       }
-    } else if (manager.m_args == "layers") {
-      if (!manager.RunListLayers()) {
+    } else if (m_args == "layers") {
+      if (!RunListLayers()) {
         return 1;
       }
-    } else if (manager.m_args == "toolchains") {
-      if (!manager.RunListToolchains()) {
+    } else if (m_args == "toolchains") {
+      if (!RunListToolchains()) {
         return 1;
       }
-    } else if (manager.m_args == "environment") {
-      manager.RunListEnvironment();
+    } else if (m_args == "environment") {
+      RunListEnvironment();
     }
     else {
       ProjMgrLogger::Error("list <args> was not found");
       return 1;
     }
-  } else if (manager.m_command == "update-rte") {
+  } else if (m_command == "update-rte") {
     // Process 'update-rte' command
-    if (!manager.RunConfigure(true)) {
+    if (!RunConfigure(true)) {
       return 1;
     }
-  } else if (manager.m_command == "convert") {
+  } else if (m_command == "convert") {
     // Process 'convert' command
-    if (!manager.RunConvert()) {
+    if (!RunConvert()) {
       return 1;
     }
-  } else if (manager.m_command == "run") {
+  } else if (m_command == "run") {
     // Process 'run' command
-    if (!manager.RunCodeGenerator()) {
+    if (!RunCodeGenerator()) {
       return 1;
     }
   } else {
