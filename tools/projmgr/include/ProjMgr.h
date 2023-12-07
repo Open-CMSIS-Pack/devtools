@@ -34,8 +34,25 @@ public:
    * @param argc command line argument count
    * @param argv command line argument vector
    * @param envp environment variables
+   * @return program exit code as an integer, 0 for success
   */
   static int RunProjMgr(int argc, char **argv, char** envp);
+
+
+protected:
+  /**
+   * @brief parse command line options
+   * @param argc command line argument count
+   * @param argv command line argument vector
+   * @return parsing result as an integer: 0 success, 1 error, -1 version or help requested
+  */
+  int ParseCommandLine(int argc, char **argv);
+
+  /**
+   * @brief process requested commands specified in command line
+   * @return program exit code as an integer, 0 for success
+  */
+  int ProcessCommands();
 
   /**
    * @brief print usage
@@ -51,37 +68,37 @@ public:
   /**
    * @brief show version
   */
-  void ShowVersion(void);
+  void ShowVersion();
 
   /**
    * @brief get parser object
    * @return reference to m_parser
   */
-  ProjMgrParser& GetParser(void) { return m_parser; };
+  ProjMgrParser& GetParser() { return m_parser; };
 
   /**
    * @brief get worker object
    * @return reference to m_worker
   */
-  ProjMgrWorker& GetWorker(void) { return m_worker; };
+  ProjMgrWorker& GetWorker() { return m_worker; };
 
   /**
    * @brief get generator object
    * @return reference to m_generator
   */
-  ProjMgrGenerator& GetGenerator(void) { return m_generator; };
+  ProjMgrGenerator& GetGenerator() { return m_generator; };
 
   /**
    * @brief get emitter object
    * @return reference to m_emitter
   */
-  ProjMgrYamlEmitter& GetEmitter(void) { return m_emitter; };
+  ProjMgrYamlEmitter& GetEmitter() { return m_emitter; };
 
   /**
    * @brief get cdefault file in solution/project or in installation directory
    * @return true if file is found successfully, false otherwise
   */
-  bool GetCdefaultFile(void);
+  bool GetCdefaultFile();
 
 protected:
   ProjMgrParser m_parser;
@@ -117,21 +134,21 @@ protected:
   std::vector<ContextItem*> m_processedContexts;
 
   bool RunConfigure(bool printConfig = false);
-  bool RunConvert(void);
-  bool RunCodeGenerator(void);
-  bool RunListPacks(void);
-  bool RunListBoards(void);
-  bool RunListDevices(void);
-  bool RunListComponents(void);
-  bool RunListConfigs(void);
-  bool RunListDependencies(void);
-  bool RunListContexts(void);
-  bool RunListGenerators(void);
-  bool RunListLayers(void);
-  bool RunListToolchains(void);
-  bool RunListEnvironment(void);
-  bool PopulateContexts(void);
-  bool SetLoadPacksPolicy(void);
+  bool RunConvert();
+  bool RunCodeGenerator();
+  bool RunListPacks();
+  bool RunListBoards();
+  bool RunListDevices();
+  bool RunListComponents();
+  bool RunListConfigs();
+  bool RunListDependencies();
+  bool RunListContexts();
+  bool RunListGenerators();
+  bool RunListLayers();
+  bool RunListToolchains();
+  bool RunListEnvironment();
+  bool PopulateContexts();
+  bool SetLoadPacksPolicy();
 };
 
 #endif  // PROJMGR_H
