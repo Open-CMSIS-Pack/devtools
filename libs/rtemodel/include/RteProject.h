@@ -878,6 +878,12 @@ public:
   */
   bool ShouldUpdateRte() const;
 
+ /**
+   * @brief update RTE folder content should be updated with config files
+  */
+  void UpdateRte();
+
+
 protected:
   virtual RteTarget* CreateTarget(RteModel* filteredModel, const std::string& name, const std::map<std::string, std::string>& attributes);
   void AddTargetInfo(const std::string& targetName);
@@ -898,7 +904,7 @@ protected:
   RteComponentInstance* AddComponent(const std::string& id);
   bool RemoveComponent(const std::string& id);
 
-  void AddComponentFiles(RteComponentInstance* ci, RteTarget* target, std::set<RteFile*>& forcedFiles);
+  void AddComponentFiles(RteComponentInstance* ci, RteTarget* target);
   RteFileInstance* AddFileInstance(RteComponentInstance* ci, RteFile* f, int index, RteTarget* target);
   bool RemoveFileInstance(const std::string& id);
   void DeleteFileInstance(RteFileInstance* fi);
@@ -934,7 +940,6 @@ protected:
   std::map<std::string, std::string> t_missingPackIds; // std::list of missing packs for all targets
   std::set<std::string> t_missingPackTargets; // names of targets that have missing packs
 
-protected:
   int m_nID; // project ID
   bool m_bInitialized;
   bool t_bGpdscListModified;
@@ -943,6 +948,8 @@ protected:
   std::map<int, std::string> m_targetIDs;
   std::string m_sActiveTarget;
   std::string m_rteFolder;
+
+  std::set<RteFile*> m_forcedFiles; // files with a deprecated attr="copy", need to be copied to RTE folder
 
 public:
   static const std::string DEFAULT_RTE_FOLDER;

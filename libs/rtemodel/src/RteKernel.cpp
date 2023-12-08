@@ -229,7 +229,6 @@ bool RteKernel::InitializeCprj(RteCprjProject* cprjProject, const string& toolch
     return false;
   }
   cprjProject->Initialize();
-  cprjProject->GenerateRteHeaders();
   return true;
 }
 

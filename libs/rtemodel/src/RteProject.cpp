@@ -188,6 +188,7 @@ void RteProject::Clear()
   m_components.clear();
   m_projectPath.clear();
   m_files.clear();
+  m_forcedFiles.clear();
   ClearFilteredPackages();
 
   for (auto [_, gi] : m_gpdscInfos) {
@@ -511,7 +512,7 @@ bool RteProject::RemoveComponent(const string& id)
 }
 
 
-void RteProject::AddComponentFiles(RteComponentInstance* ci, RteTarget* target, set<RteFile*>& forcedFiles)
+void RteProject::AddComponentFiles(RteComponentInstance* ci, RteTarget* target)
 {
   const string& targetName = target->GetName();
   RteComponent* c = ci->GetResolvedComponent(targetName);
@@ -530,7 +531,7 @@ void RteProject::AddComponentFiles(RteComponentInstance* ci, RteTarget* target, 
         fi->SetExcluded(excluded, targetName);
       }
     } else if (f->IsForcedCopy()) {
-      forcedFiles.insert(f);
+      m_forcedFiles.insert(f);
     } else {
       target->AddComponentInstanceForFile(f->GetOriginalAbsolutePath(), ci);
     }
@@ -1034,42 +1035,43 @@ void RteProject::Update()
       RemoveFileInstance(itcurrent->first);
   }
 
-
   // add files
-  set<RteFile*> forcedFiles;
+  m_forcedFiles.clear();
   for (auto itt = m_targets.begin(); itt != m_targets.end(); ++itt) {
     RteTarget* target = itt->second;
     for (auto itc = m_components.begin(); itc != m_components.end(); ++itc) {
       RteComponentInstance* ci = itc->second;
-      AddComponentFiles(ci, target, forcedFiles);
+      AddComponentFiles(ci, target);
     }
   }
 
-  // copy files if update is enabled
-  if (ShouldUpdateRte()) {
-    for (auto itt = m_targets.begin(); itt != m_targets.end(); ++itt) {
-      WriteInstanceFiles(itt->first);
-    }
-    // add forced copy files
-    for (auto itf = forcedFiles.begin(); itf != forcedFiles.end(); ++itf) {
-      RteFile* f = *itf;
-      string dst = GetProjectPath() + f->GetInstancePathName(EMPTY_STRING, 0, GetRteFolder());
-
-      error_code ec;
-      if (fs::exists(dst, ec))
-        continue;
-      string src = f->GetOriginalAbsolutePath();
-      if (!RteFsUtils::CopyCheckFile(src, dst, false)) {
-        string str = "Error: cannot copy file\n";
-        str += src;
-        str += "\n to\n";
-        str += dst;
-        str += "\nOperation failed\n";
-        GetCallback()->OutputErrMessage(str);
-      }
-    }
-  }
   CollectSettings();
+  // copy files and create headers if update is enabled
+  UpdateRte();
+}
+
+void RteProject::UpdateRte() {
+  if (!ShouldUpdateRte())
+    return;
+  GenerateRteHeaders();
+  for(auto itt = m_targets.begin(); itt != m_targets.end(); ++itt) {
+    WriteInstanceFiles(itt->first);
+  }
+  // add forced copy files
+  for(auto f : m_forcedFiles) {
+    string dst = GetProjectPath() + f->GetInstancePathName(EMPTY_STRING, 0, GetRteFolder());
+    if(RteFsUtils::Exists(dst))
+      continue;
+    string src = f->GetOriginalAbsolutePath();
+    if(!RteFsUtils::CopyCheckFile(src, dst, false)) {
+      string str = "Error: cannot copy file\n";
+      str += src;
+      str += "\n to\n";
+      str += dst;
+      str += "\nOperation failed\n";
+      GetCallback()->OutputErrMessage(str);
+    }
+  }
 }
 
 void RteProject::GenerateRteHeaders() {

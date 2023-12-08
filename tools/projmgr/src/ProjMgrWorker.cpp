@@ -1791,11 +1791,6 @@ bool ProjMgrWorker::AddRequiredComponents(ContextItem& context) {
     ProjMgrLogger::Error(msg);
     return false;
   }
-  context.rteActiveProject->CollectSettings();
-
-  // Generate RTE headers
-  context.rteActiveProject->GenerateRteHeaders();
-
   // Check regions header, generate it if needed
   if (!context.linker.regions.empty()) {
     CheckAndGenerateRegionsHeader(context);
