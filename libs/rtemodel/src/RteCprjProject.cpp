@@ -119,7 +119,6 @@ void RteCprjProject::Initialize()
   AddTarget(targetName, filterAttributes.GetAttributes(), true, true);
   m_targetIDs.insert(make_pair(1, targetName)); // for now cprj project contains only one target with ID == 1
   SetActiveTarget(targetName);
-  RteProject::Initialize();
 
   // add components
   set<RteComponentInstance*> unresolvedComponents;
