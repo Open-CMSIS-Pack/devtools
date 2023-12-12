@@ -502,7 +502,7 @@ bool ProjMgr::RunConfigure(bool printConfig) {
     if (!m_worker.IsContextSelected(contextName)) {
       continue;
     }
-    if (!m_worker.ProcessContext(contextItem, true, true, m_updateRteFiles)) {
+    if (!m_worker.ProcessContext(contextItem, true, true, false)) {
       ProjMgrLogger::Error("processing context '" + contextName + "' failed");
       error = true;
     } else {
@@ -558,6 +558,14 @@ bool ProjMgr::RunConfigure(bool printConfig) {
   // Generate cbuild-pack file
   const bool isUsingContexts = m_contextSet || m_context.size() != 0;
   m_emitter.GenerateCbuildPack(m_parser, m_processedContexts, isUsingContexts);
+
+  // Update the RTE files
+  if (m_updateRteFiles) {
+    for (auto& contextItem : m_processedContexts) {
+      contextItem->rteActiveProject->SetAttribute("update-rte-files", "1");
+      contextItem->rteActiveProject->UpdateRte();
+    }
+  }
 
   return !error;
 }

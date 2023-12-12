@@ -436,14 +436,18 @@ void RteProject::AddCprjComponents(const Collection<RteItem*>& selItems, RteTarg
   // update file versions
   for (auto [instanceName, fi] : m_files) {
     string version;
+    auto rteFile = fi->GetFile(target->GetName());
     auto itver = configFileVersions.find(instanceName); // file in cprj can be specified by its instance name
     if (itver == configFileVersions.end())
       itver = configFileVersions.find(fi->GetName()); // or by original name
     if (itver != configFileVersions.end()) {
       version = itver->second;
+    } else {
+      // Fall back to the version noted in the pack
+      version = rteFile->GetVersionString();
     }
     UpdateFileInstanceVersion(fi, version);
-    UpdateConfigFileBackups(fi, fi->GetFile(target->GetName()));
+    UpdateConfigFileBackups(fi, rteFile);
   }
 }
 
