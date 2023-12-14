@@ -71,7 +71,7 @@ curl --retry 3 -L ${cpackget_base}_windows_arm64.zip   -o temp.zip && unzip -p t
 curl --retry 3 -L ${cpackget_base}_darwin_arm64.tar.gz -o - | tar xzfO - --wildcards    '*cpackget'     > ${distdir}/bin/cpackget.mac-arm64
 
 # Get cbridge
-cbridge_version="0.9.1"
+cbridge_version="0.9.2"
 cbridge_base=https://github.com/Open-CMSIS-Pack/generator-bridge/releases/download/v${cbridge_version}/cbridge_${cbridge_version}
 curl --retry 3 -L ${cbridge_base}_linux_amd64.tar.gz  -o - | tar xzfO - --wildcards    '*cbridge'     > ${distdir}/bin/cbridge.lin-amd64
 curl --retry 3 -L ${cbridge_base}_windows_amd64.zip   -o temp.zip && unzip -p temp.zip '*/cbridge.exe' > ${distdir}/bin/cbridge.exe-amd64 && rm temp.zip
@@ -81,7 +81,7 @@ curl --retry 3 -L ${cbridge_base}_windows_arm64.zip   -o temp.zip && unzip -p te
 curl --retry 3 -L ${cbridge_base}_darwin_arm64.tar.gz -o - | tar xzfO - --wildcards    '*cbridge'     > ${distdir}/bin/cbridge.mac-arm64
 
 # Get csolution
-csolution_version="2.2.0"
+csolution_version="2.2.1"
 csolution_base=https://github.com/Open-CMSIS-Pack/devtools/releases/download/tools%2Fprojmgr%2F${csolution_version}/projmgr.zip
 curl --retry 3 -L ${csolution_base} -o temp.zip && unzip -q -d temp temp.zip
 cp 'temp/bin/linux-amd64/csolution' ${distdir}/bin/csolution.lin-amd64
@@ -94,7 +94,7 @@ cp -r temp/etc/* ${distdir}/etc
 rm temp.zip && rm -rf temp
 
 # Get cbuild
-cbuild_version="2.2.0"
+cbuild_version="2.2.1"
 cbuild_base=https://github.com/Open-CMSIS-Pack/cbuild/releases/download/v${cbuild_version}/cbuild_${cbuild_version}
 curl --retry 3 -L ${cbuild_base}_linux_amd64.tar.gz  -o - | tar xzfO - --wildcards    '*cbuild'     > ${distdir}/bin/cbuild.lin-amd64
 curl --retry 3 -L ${cbuild_base}_windows_amd64.zip   -o temp.zip && unzip -p temp.zip '*/cbuild.exe' > ${distdir}/bin/cbuild.exe-amd64 && rm temp.zip
