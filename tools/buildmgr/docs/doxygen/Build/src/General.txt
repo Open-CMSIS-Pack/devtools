@@ -57,6 +57,13 @@ Software layers and Virtual I/O simplify these use cases:
     <th>Description</th>
   </tr>
   <tr>
+    <td>2.2.1</td>
+    <td>Release notes:
+      - updated cbuild utility v2.2.1
+      - updated csolution utility v2.2.1
+      - updated cbridge utility v0.9.2
+      - restored 'RteKernel::GetUrlFromIndex' return value when local pack repo is absent
+    </td>
     <td>2.2.0</td>
     <td>Release notes:
       - updated cbuild utility v2.2.0
