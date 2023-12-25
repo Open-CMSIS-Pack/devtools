@@ -97,37 +97,37 @@ jobs:
           cp -r tools/packgen/test/data/CMakeTestMultipleBuilds/ tools/packgen/distribution/doc/examples/
 
       - name: Download packgen linux-amd64
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
+        uses: actions/download-artifact@f44cd7b40bfd40b6aa1cc1b9b5b7bf03d3c67110 # v4.1.0
         with:
           name: packgen-linux-amd64
           path: tools/packgen/distribution/bin/linux-amd64/
 
       - name: Download packgen linux arm64
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
+        uses: actions/download-artifact@f44cd7b40bfd40b6aa1cc1b9b5b7bf03d3c67110 # v4.1.0
         with:
           name: packgen-linux-arm64
           path: tools/packgen/distribution/bin/linux-arm64/
 
       - name: Download packgen macos-amd64
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
+        uses: actions/download-artifact@f44cd7b40bfd40b6aa1cc1b9b5b7bf03d3c67110 # v4.1.0
         with:
           name: packgen-darwin-amd64
           path: tools/packgen/distribution/bin/darwin-amd64/
 
       - name: Download packgen macos-arm64
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
+        uses: actions/download-artifact@f44cd7b40bfd40b6aa1cc1b9b5b7bf03d3c67110 # v4.1.0
         with:
           name: packgen-darwin-arm64
           path: tools/packgen/distribution/bin/darwin-arm64/
 
       - name: Download packgen windows-amd64
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
+        uses: actions/download-artifact@f44cd7b40bfd40b6aa1cc1b9b5b7bf03d3c67110 # v4.1.0
         with:
           name: packgen-windows-amd64
           path: tools/packgen/distribution/bin/windows-amd64/
 
       - name: Download packgen windows-arm64
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
+        uses: actions/download-artifact@f44cd7b40bfd40b6aa1cc1b9b5b7bf03d3c67110 # v4.1.0
         with:
           name: packgen-windows-arm64
           path: tools/packgen/distribution/bin/windows-arm64/
