@@ -1332,9 +1332,23 @@ public:
   /**
    * @brief add pack to this collection
    * @param pack pointer to RtePackage to add
+   * @param bReplace boolean flag to replace existing entry in the registry
    * @return true if pack has been added
   */
-  bool AddPack(RtePackage* pack);
+  bool AddPack(RtePackage* pack, bool bReplace = false);
+
+  /**
+   * @brief erases and deletes pack if exists
+   * @param pdscFile absolute pdsc filename
+   * @return true if pack is found and deleted
+  */
+  bool ErasePack(const std::string& pdscFile);
+
+  /**
+   * @brief get collection of loaded packs
+   * @return const map of loaded packs (filename to RtePackage)
+  */
+  const std::map<std::string, RtePackage*>& GetLoadedPacks() const { return m_loadedPacks;}
 
 protected:
   /**

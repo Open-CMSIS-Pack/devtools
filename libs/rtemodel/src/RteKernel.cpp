@@ -262,31 +262,39 @@ RtePackage* RteKernel::LoadPack(const string& pdscFile, PackageState packState) 
   return pack;
 }
 
-bool RteKernel::LoadPacks(const std::list<std::string>& pdscFiles, std::list<RtePackage*>& packs, RteModel* model) const
+bool RteKernel::LoadPacks(const std::list<std::string>& pdscFiles, std::list<RtePackage*>& packs, RteModel* model, bool bReplace) const
 {
-  if (!pdscFiles.empty()) {
-    if(!model) {
-      model = GetGlobalModel();
-    }
-    RteItemBuilder rteItemBuilder(model, model->GetPackageState());
-    unique_ptr<XMLTree> xmlTree = CreateUniqueXmlTree(&rteItemBuilder);
-    bool success = xmlTree->SetFileNames(pdscFiles, true);
-    if (success) {
-      RtePackRegistry* packRegistry = GetPackRegistry();
-      auto& loadedPacks = rteItemBuilder.GetPacks();
-      for(auto pack : loadedPacks) {
-        if(packRegistry->AddPack(pack)) {
-          packs.push_back(pack);
-        } else {
-          delete pack;
-        }
-      }
-      return true;
-    }
-    GetRteCallback()->Err("R802", R802);
-    GetRteCallback()->OutputMessages(xmlTree->GetErrorStrings());
+  bool success = true;
+  if(pdscFiles.empty()) {
+    return success;
   }
-  return false;
+  if(!model) {
+    model = GetGlobalModel();
+  }
+  RtePackRegistry* packRegistry = GetPackRegistry();
+  unique_ptr<XMLTree> xmlTree = CreateUniqueXmlTree();
+  for(auto& pdscFile : pdscFiles) {
+    RteItemBuilder rteItemBuilder(model, model->GetPackageState());
+    xmlTree->SetXmlItemBuilder(&rteItemBuilder);
+    if(bReplace) {
+      packRegistry->ErasePack(pdscFile);
+    }
+    bool result = xmlTree->AddFileName(pdscFile, true);
+    RtePackage* pack = rteItemBuilder.GetPack();
+    if(!result || !pack) {
+      GetRteCallback()->Err("R802", R802, pdscFile);
+      GetRteCallback()->OutputMessages(xmlTree->GetErrorStrings());
+      success = false;
+    } else {
+      if(packRegistry->AddPack(pack, bReplace)) {
+        packs.push_back(pack);
+      } else {
+        delete pack;
+      }
+    }
+    GetRteCallback()->PackProcessed(pdscFile, result);
+  }
+  return success;
 }
 
 
