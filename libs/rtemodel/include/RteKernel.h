@@ -249,10 +249,11 @@ public:
    * @param pdscFiles list of pathnames to load
    * @param packs list to receive loaded packs
    * @param model RteModel to get state and serve as parent
+   * @param bReplace boolean flag to replace existing entries in the registry
    * @return true if successful
   */
   bool LoadPacks(const std::list<std::string>& pdscFiles, std::list<RtePackage*>& packs,
-                 RteModel* model = nullptr) const;
+                 RteModel* model = nullptr, bool bReplace = false) const;
 
   /**
    * @brief getter for caller information (name & version)
