@@ -11,7 +11,7 @@
   </info>
 
   <packages>
-    <package vendor="ARM" name="CMSIS"/>
+    <package name="CMSIS" vendor="ARM" version="5.9.0:5.9.0"/>
   </packages>
   
   <compilers>
