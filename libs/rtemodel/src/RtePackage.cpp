@@ -1481,17 +1481,34 @@ RtePackage* RtePackRegistry::GetPack(const std::string& pdscFile) const
   return get_or_null(m_loadedPacks, pdscFile);
 }
 
-bool RtePackRegistry::AddPack(RtePackage* pack)
+bool RtePackRegistry::AddPack(RtePackage* pack, bool bReplace)
 {
   if(!pack) {
     return false;
   }
   auto& fileName = pack->GetPackageFileName();
-  if(GetPack(fileName)) {
-    return false;
+  auto existing = GetPack(fileName);
+  if(existing) {
+    if(bReplace) {
+      delete existing;
+    } else {
+      return false;
+    }
   }
   m_loadedPacks[fileName] = pack;
   return true;
 }
+
+bool RtePackRegistry::ErasePack(const std::string& pdscFile)
+{
+  auto it = m_loadedPacks.find(pdscFile);
+  if(it != m_loadedPacks.end()) {
+    delete it->second;
+    m_loadedPacks.erase(it);
+    return true;
+  }
+  return false;
+}
+
 
 // End of RtePackage.cpp

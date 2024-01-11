@@ -47,6 +47,62 @@ public:
   RteGenerator* m_pExtGenerator;
 };
 
+TEST(RteModelTest, PackRegistry) {
+
+  // tests for pack registry
+  RteKernelSlim rteKernel;  // here just to instantiate XMLTree parser
+  rteKernel.SetCmsisPackRoot(RteModelTestConfig::CMSIS_PACK_ROOT);
+
+  RtePackRegistry* packRegistry = rteKernel.GetPackRegistry();
+  ASSERT_TRUE(packRegistry != nullptr);
+  RteModel testModel(PackageState::PS_AVAILABLE);
+
+  RtePackage* pack = new RtePackage(&testModel);
+  pack->SetAttribute("name", "foo");
+  pack->SetRootFileName("foo");
+  EXPECT_TRUE(packRegistry->AddPack(pack));
+  EXPECT_FALSE(packRegistry->AddPack(pack)); // not second time
+  EXPECT_EQ(packRegistry->GetPack("foo"), pack);
+  pack = new RtePackage(&testModel);
+  pack->SetAttribute("name", "bar");
+  pack->SetRootFileName("foo");
+  EXPECT_TRUE(packRegistry->AddPack(pack, true));
+  EXPECT_EQ(packRegistry->GetPack("foo"), pack);
+  EXPECT_EQ(packRegistry->GetLoadedPacks().size(), 1);
+
+  EXPECT_TRUE(packRegistry->ErasePack("foo"));
+  EXPECT_EQ(packRegistry->GetPack("foo"), nullptr);
+  EXPECT_FALSE(packRegistry->ErasePack("foo")); // already erased
+  EXPECT_EQ(packRegistry->GetLoadedPacks().size(), 0);
+
+  list<string> files;
+  rteKernel.GetInstalledPacks(files, false);
+  EXPECT_FALSE(files.empty());
+  list<RtePackage*> packs;
+  EXPECT_TRUE(rteKernel.LoadPacks(files, packs, &testModel));
+  EXPECT_FALSE(packs.empty());
+  EXPECT_EQ(packs.size(), files.size());
+  EXPECT_EQ(packRegistry->GetLoadedPacks().size(), packs.size());
+  // no reload of the same files
+  packs.clear();
+  EXPECT_TRUE(rteKernel.LoadPacks(files, packs, &testModel));
+  EXPECT_TRUE(packs.empty()); // no new packs inserted
+  EXPECT_EQ(packRegistry->GetLoadedPacks().size(), files.size());
+  const string& firstFile = *files.begin();
+  pack = packRegistry->GetPack(firstFile);
+  ASSERT_TRUE(pack != nullptr);
+  EXPECT_EQ(pack->GetPackageState(), PackageState::PS_AVAILABLE);
+  EXPECT_TRUE(packRegistry->ErasePack(firstFile));
+  EXPECT_FALSE(packRegistry->GetPack(firstFile) != nullptr);
+  EXPECT_FALSE(packRegistry->ErasePack(firstFile)); // already not in collection
+
+  EXPECT_TRUE(rteKernel.LoadPacks(files, packs, &testModel));
+  EXPECT_EQ(packs.size(), 1); //only one pack is loaded
+  packs.clear();
+  EXPECT_TRUE(rteKernel.LoadPacks(files, packs, &testModel, true));
+  EXPECT_EQ(packs.size(), files.size()); // pack reloaded
+}
+
 TEST(RteModelTest, LoadPacks) {
 
   RteKernelSlim rteKernel;  // here just to instantiate XMLTree parser

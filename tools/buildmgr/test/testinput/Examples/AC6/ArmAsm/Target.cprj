@@ -4,7 +4,7 @@
   <created timestamp="2020-09-04T10:07:24" tool="uVision V5.31.0.0"/>
 
   <packages>
-    <package name="CMSIS" vendor="ARM"/>
+    <package name="CMSIS" vendor="ARM" version="5.9.0:5.9.0"/>
     <package name="ARM_Compiler" vendor="Keil"/>
   </packages>
 
