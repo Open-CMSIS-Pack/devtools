@@ -676,7 +676,7 @@ void RteProject::UpdateConfigFileBackups(RteFileInstance* fi, RteFile* f)
     // create base file if possible
     if (baseVersion == updateVersion) {
       // we can use current version as base one
-      RteFsUtils::CopyCheckFile(src, baseFile, false);
+      RteFsUtils::CopyMergeFile(src, baseFile, fi->GetInstanceIndex(), false);
       RteFsUtils::SetFileReadOnly(baseFile, true);
     } else {
       baseFile.clear(); //no such file
@@ -685,7 +685,7 @@ void RteProject::UpdateConfigFileBackups(RteFileInstance* fi, RteFile* f)
   // copy current file if version differs
   string updateFile = RteUtils::AppendFileUpdateVersion(absPath, updateVersion);
   if (!baseFile.empty() && baseVersion != updateVersion)  { // only copy update if base exists
-    RteFsUtils::CopyCheckFile(src, updateFile, false);
+    RteFsUtils::CopyMergeFile(src, updateFile, fi->GetInstanceIndex(), false);
     RteFsUtils::SetFileReadOnly(updateFile, true);
   } else {
     updateFile.clear(); // no need in that
