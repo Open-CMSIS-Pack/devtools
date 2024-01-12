@@ -395,6 +395,10 @@
       "enum": [ "dp", "sp", "off" ],
       "description": "Controls usage of FPU registers (S-Registers that are used for Helium and FPU hardware): dp (double precision) | sp (single precision) | off (disabled)"
     },
+    "BuildProcessorFpu": {
+      "enum": [ "on", "dp", "sp", "off" ],
+      "description": "Controls usage of FPU registers (S-Registers that are used for Helium and FPU hardware): on (enabled) | dp (double precision) | sp (single precision) | off (disabled)"
+    },
     "ProcessorDsp": {
       "enum": [ "on", "off" ],
       "description": "Controls usage of DSP: on (enabled) | off (disabled)"
@@ -429,7 +433,7 @@
       "description": "Processor specific settings",
       "properties": {
         "trustzone": { "$ref": "#/definitions/ProcessorTrustzone" },
-        "fpu": { "$ref": "#/definitions/ProcessorFpu" },
+        "fpu": { "$ref": "#/definitions/BuildProcessorFpu" },
         "dsp": { "$ref": "#/definitions/ProcessorDsp" },
         "mve": { "$ref": "#/definitions/ProcessorMve" },
         "endian": { "$ref": "#/definitions/ProcessorEndian" },
