@@ -623,10 +623,24 @@ TEST_F(RteModelPrjTest, LoadCprjConfigVer) {
   ASSERT_NE(loadedCprjProject, nullptr);
 
   const string rteDir = RteUtils::ExtractFilePath(RteTestM3_cprj, true) + loadedCprjProject->GetRteFolder() + "/";
-  const string CompConfig_0_Base_Version = rteDir + "RteTest/" + "ComponentLevelConfig_0.h.base@0.0.1";
-  const string CompConfig_1_Base_Version = rteDir + "RteTest/" + "ComponentLevelConfig_1.h.base@0.0.1";
+  const string CompConfig_0 = rteDir + "RteTest/" + "ComponentLevelConfig_0.h";
+  const string CompConfig_0_Base_Version = CompConfig_0 + ".base@0.0.1";
+  EXPECT_TRUE(RteFsUtils::Exists(CompConfig_0));
   EXPECT_TRUE(RteFsUtils::Exists(CompConfig_0_Base_Version));
+  const string CompConfig_1 = rteDir + "RteTest/" + "ComponentLevelConfig_1.h";
+  const string CompConfig_1_Base_Version = CompConfig_1 + ".base@0.0.1";
+  EXPECT_TRUE(RteFsUtils::Exists(CompConfig_1));
   EXPECT_TRUE(RteFsUtils::Exists(CompConfig_1_Base_Version));
+  // check if freshly copied files match their base
+  // that also checks if base files expand %Instance% with correct instance
+  string buf, bufBase;
+  EXPECT_TRUE(RteFsUtils::ReadFile(CompConfig_0, buf));
+  EXPECT_TRUE(RteFsUtils::ReadFile(CompConfig_0_Base_Version, bufBase));
+  EXPECT_EQ(buf, bufBase);
+
+  EXPECT_TRUE(RteFsUtils::ReadFile(CompConfig_1, buf));
+  EXPECT_TRUE(RteFsUtils::ReadFile(CompConfig_1_Base_Version, bufBase));
+  EXPECT_EQ(buf, bufBase);
 
   const string deviceDir = rteDir + "Device/RteTest_ARMCM3/";
   EXPECT_TRUE(RteFsUtils::Exists(deviceDir + "ARMCM3_ac6.sct"));
