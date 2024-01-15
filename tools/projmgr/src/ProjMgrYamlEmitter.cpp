@@ -245,6 +245,7 @@ ProjMgrYamlCbuildIdx::ProjMgrYamlCbuildIdx(YAML::Node node, const vector<Context
           (context->type.build.empty() ? "" : ("." + context->type.build)) +
           "+" + context->type.target);
       }
+      SetNodeValue(cbuildNode[YAML_DEPENDS_ON], context->dependsOn);
       node[YAML_CBUILDS].push_back(cbuildNode);
     }
   }

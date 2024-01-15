@@ -123,7 +123,7 @@
       ],
       "description": "Include node for a list of compilers"
     },
-    "ArrayOfContextMapType": {
+    "ArrayOfBuildContextWithProjectName": {
       "type": "array",
       "uniqueItems": true,
       "minItems": 1,
@@ -131,7 +131,7 @@
     },
     "ContextMapType": {
       "oneOf": [
-        {"$ref": "#/definitions/ArrayOfContextMapType" },
+        {"$ref": "#/definitions/ArrayOfBuildContextWithProjectName" },
         {"$ref": "#/definitions/BuildContextWithProjectName" }
       ],
       "description": "Remapping of build contexts"
@@ -812,7 +812,8 @@
       "properties": {
         "cbuild": { "type": "string", "description": "Path to <context>.cbuild.yml file" },
         "project": { "type": "string", "description": "Project name" },
-        "configuration": { "$ref": "#/definitions/BuildContext" }
+        "configuration": { "$ref": "#/definitions/BuildContext" },
+        "depends-on": { "$ref": "#/definitions/ArrayOfBuildContextWithProjectName" }
       },
       "additionalProperties": false,
       "required": ["cbuild", "project", "configuration"]
