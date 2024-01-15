@@ -61,6 +61,7 @@ static constexpr const char* YAML_DEBUG = "debug";
 static constexpr const char* YAML_DEFAULT = "default";
 static constexpr const char* YAML_DEFINE = "define";
 static constexpr const char* YAML_DELPATH = "del-path";
+static constexpr const char* YAML_DEPENDS_ON = "depends-on";
 static constexpr const char* YAML_DESCRIPTION = "description";
 static constexpr const char* YAML_DEVICE = "device";
 static constexpr const char* YAML_DEVICE_PACK = "device-pack";

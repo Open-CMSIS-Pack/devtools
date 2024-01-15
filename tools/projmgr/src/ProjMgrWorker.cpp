@@ -2805,6 +2805,10 @@ bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, 
           }
           // expand access sequence
           ExpandAccessSequence(context, refContext, sequenceName, item, withHeadingDot);
+          // store dependency information
+          if (refContext.name != context.name) {
+            ProjMgrUtils::PushBackUniquely(context.dependsOn, refContext.name);
+          }
         } else {
           // full or partial context name cannot be resolved to a valid context
           ProjMgrLogger::Error("context '" + contextName + "' referenced by access sequence '" + sequenceName + "' does not exist");

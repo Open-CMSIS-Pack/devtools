@@ -1,0 +1,18 @@
+build-idx:
+  generated-by: csolution version 0.0.0+gcc58b54e
+  csolution: ../data/TestAccessSequences/test-access-sequences2.csolution.yml
+  cprojects:
+    - cproject: ../data/TestAccessSequences/test-access-sequences3.cproject.yml
+      clayers:
+        - clayer: ../data/TestAccessSequences/test-access-sequences.clayer.yml
+  cbuilds:
+    - cbuild: test-access-sequences3.Debug+TEST_TARGET.cbuild.yml
+      project: test-access-sequences3
+      configuration: .Debug+TEST_TARGET
+      depends-on:
+        - test-access-sequences3.Release+TEST_TARGET
+    - cbuild: test-access-sequences3.Release+TEST_TARGET.cbuild.yml
+      project: test-access-sequences3
+      configuration: .Release+TEST_TARGET
+      depends-on:
+        - test-access-sequences3.Debug+TEST_TARGET

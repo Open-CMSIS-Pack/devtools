@@ -1923,6 +1923,10 @@ TEST_F(ProjMgrUnitTests, AccessSequences2) {
     testinput_folder + "/TestAccessSequences/ref/test-access-sequences3.Debug+TEST_TARGET.cprj");
  ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test-access-sequences3.Release+TEST_TARGET.cprj",
     testinput_folder + "/TestAccessSequences/ref/test-access-sequences3.Release+TEST_TARGET.cprj");
+
+  // Check generated cbuild-idx
+ ProjMgrTestEnv::CompareFile(testoutput_folder + "/test-access-sequences2.cbuild-idx.yml",
+   testinput_folder + "/TestAccessSequences/ref/test-access-sequences2.cbuild-idx.yml");
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_MalformedAccessSequences1) {

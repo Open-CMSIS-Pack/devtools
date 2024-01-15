@@ -267,6 +267,7 @@ struct ContextTypesItem {
  *        boolean processed precedences
  *        map of user inputed pack ID to resolved pack ID
  *        set of absolute file paths of project local packs
+ *        vector of dependent contexts
 */
 struct ContextItem {
   CdefaultItem* cdefault = nullptr;
@@ -313,7 +314,8 @@ struct ContextItem {
   RtePackage* boardPack;
   bool precedences;
   std::map<std::string, std::set<std::string>> userInputToResolvedPackIdMap;
-  std::set<std::string> localPackPaths;
+  StrSet localPackPaths;
+  StrVec dependsOn;
 };
 
 /**
