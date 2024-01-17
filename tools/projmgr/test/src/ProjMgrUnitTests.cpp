@@ -2888,7 +2888,7 @@ TEST_F(ProjMgrUnitTests, ExecuteGeneratorWithKey) {
   EXPECT_TRUE(m_worker.ParseContextSelection(m_context));
 
   const string& hostType = CrossPlatformUtils::GetHostType();
-  string genFolder = testcmsispack_folder + "/ARM/RteTestGenerator/0.1.0/Generator";
+  string genFolder = testcmsispack_folder + "/ARM/RteTestGenerator/0.1.0/Generator with spaces";
   // we use environment variable to test on all pl since it is reliable
   CrossPlatformUtils::SetEnv("RTE_GENERATOR_WITH_KEY", genFolder);
   if (shouldHaveGeneratorForHostType(hostType)) {

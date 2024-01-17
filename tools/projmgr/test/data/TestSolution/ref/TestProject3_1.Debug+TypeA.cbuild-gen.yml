@@ -78,7 +78,7 @@ build-gen:
       gpdsc: ${DEVTOOLS(data)}/TestSolution/TestProject3_1/gendir/RteTestGen_ARMCM0/RteTest.gpdsc
       command:
         win:
-          file: ${DEVTOOLS(packs)}/ARM/RteTestGenerator/0.1.0/Generator/script.bat
+          file: ${DEVTOOLS(packs)}/ARM/RteTestGenerator/0.1.0/Generator with spaces/script.bat
           arguments:
             - RteTestGen_ARMCM0
             - ${DEVTOOLS(data)}/TestSolution/TestProject3_1/TestProject3_1.Debug+TypeA.cprj
@@ -86,7 +86,7 @@ build-gen:
             - ${DEVTOOLS(data)}/TestSolution/tmp/TestProject3_1/TypeA/Debug/TestProject3_1.Debug+TypeA.cbuild-gen.yml
             - /foo=bar
         linux:
-          file: ${DEVTOOLS(packs)}/ARM/RteTestGenerator/0.1.0/Generator/script.sh
+          file: ${DEVTOOLS(packs)}/ARM/RteTestGenerator/0.1.0/Generator with spaces/script.sh
           arguments:
             - RteTestGen_ARMCM0
             - ${DEVTOOLS(data)}/TestSolution/TestProject3_1/TestProject3_1.Debug+TypeA.cprj
@@ -94,7 +94,7 @@ build-gen:
             - ${DEVTOOLS(data)}/TestSolution/tmp/TestProject3_1/TypeA/Debug/TestProject3_1.Debug+TypeA.cbuild-gen.yml
             - --foo=bar
         mac:
-          file: ${DEVTOOLS(packs)}/ARM/RteTestGenerator/0.1.0/Generator/script.sh
+          file: ${DEVTOOLS(packs)}/ARM/RteTestGenerator/0.1.0/Generator with spaces/script.sh
           arguments:
             - RteTestGen_ARMCM0
             - ${DEVTOOLS(data)}/TestSolution/TestProject3_1/TestProject3_1.Debug+TypeA.cprj

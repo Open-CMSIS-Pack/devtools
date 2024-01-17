@@ -74,7 +74,7 @@ build:
       gpdsc: gendir/RteTestGen_ARMCM0/RteTest.gpdsc
       command:
         win:
-          file: ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0/Generator/script.bat
+          file: ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0/Generator with spaces/script.bat
           arguments:
             - RteTestGen_ARMCM0
             - ../TestProject3_1.Debug+TypeA.cprj
@@ -82,7 +82,7 @@ build:
             - ../../tmp/TestProject3_1/TypeA/Debug/TestProject3_1.Debug+TypeA.cbuild-gen.yml
             - /foo=bar
         linux:
-          file: ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0/Generator/script.sh
+          file: ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0/Generator with spaces/script.sh
           arguments:
             - RteTestGen_ARMCM0
             - ../TestProject3_1.Debug+TypeA.cprj
@@ -90,7 +90,7 @@ build:
             - ../../tmp/TestProject3_1/TypeA/Debug/TestProject3_1.Debug+TypeA.cbuild-gen.yml
             - --foo=bar
         mac:
-          file: ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0/Generator/script.sh
+          file: ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0/Generator with spaces/script.sh
           arguments:
             - RteTestGen_ARMCM0
             - ../TestProject3_1.Debug+TypeA.cprj
