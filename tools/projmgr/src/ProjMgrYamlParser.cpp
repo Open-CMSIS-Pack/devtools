@@ -595,7 +595,7 @@ void ProjMgrYamlParser::ParseResolvedPacks(const YAML::Node& parent, vector<Reso
     for (const auto& packEntry : packsNode) {
       ResolvedPackItem packItem;
       ParseString(packEntry, YAML_RESOLVED_PACK, packItem.pack);
-      ParseVector(packEntry, YAML_SELECTED_BY, packItem.selectedBy);
+      ParseVector(packEntry, YAML_SELECTED_BY_PACK, packItem.selectedByPack);
       packs.push_back(packItem);
     }
   }
@@ -1088,7 +1088,7 @@ const set<string> packsKeys = {
 
 const set<string> resolvedPacksKeys = {
   YAML_RESOLVED_PACK,
-  YAML_SELECTED_BY,
+  YAML_SELECTED_BY_PACK,
 };
 
 const set<string> componentsKeys = {

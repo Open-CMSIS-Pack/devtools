@@ -96,7 +96,7 @@ ProjMgrYamlCbuildPack::ProjMgrYamlCbuildPack(YAML::Node node, const vector<Conte
       ModelItem modelItem;
       ProjMgrUtils::ConvertToPackInfo(resolvedItem.pack, modelItem.info);
       modelItem.resolvedPack.pack = resolvedItem.pack;
-      modelItem.resolvedPack.selectedBy = resolvedItem.selectedBy;
+      modelItem.resolvedPack.selectedByPack = resolvedItem.selectedByPack;
       model[resolvedItem.pack] = modelItem;
     }
   }
@@ -131,12 +131,12 @@ ProjMgrYamlCbuildPack::ProjMgrYamlCbuildPack(YAML::Node node, const vector<Conte
           model[resolvedPack] = modelItem;
         }
 
-        ProjMgrUtils::PushBackUniquely(model[resolvedPack].resolvedPack.selectedBy, userInput);
+        ProjMgrUtils::PushBackUniquely(model[resolvedPack].resolvedPack.selectedByPack, userInput);
       }
     }
   }
 
-  // Stage 4: Process all wildcard patterns from user and add to selected-by list
+  // Stage 4: Process all wildcard patterns from user and add to selected-by-pack list
   for (const auto& context : processedContexts) {
     for (const auto& packItem : context->packRequirements) {
       // Skip project local packs
@@ -150,7 +150,7 @@ ProjMgrYamlCbuildPack::ProjMgrYamlCbuildPack(YAML::Node node, const vector<Conte
 
         for (auto& [_, item] : model) {
           if (ProjMgrUtils::IsMatchingPackInfo(item.info, reqInfo)) {
-            ProjMgrUtils::PushBackUniquely(item.resolvedPack.selectedBy, packId);
+            ProjMgrUtils::PushBackUniquely(item.resolvedPack.selectedByPack, packId);
           }
         }
       }
@@ -188,8 +188,8 @@ ProjMgrYamlCbuildPack::ProjMgrYamlCbuildPack(YAML::Node node, const vector<Conte
 
     SetNodeValue(resolvedPackNode[YAML_RESOLVED_PACK], packId);
 
-    sort(packItem.selectedBy.begin(), packItem.selectedBy.end());
-    SetNodeValue(resolvedPackNode[YAML_SELECTED_BY], packItem.selectedBy);
+    sort(packItem.selectedByPack.begin(), packItem.selectedByPack.end());
+    SetNodeValue(resolvedPackNode[YAML_SELECTED_BY_PACK], packItem.selectedByPack);
 
     node[YAML_RESOLVED_PACKS].push_back(resolvedPackNode);
   }

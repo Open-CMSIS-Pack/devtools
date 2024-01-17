@@ -1,8 +1,8 @@
 cbuild-pack:
   resolved-packs:
     - resolved-pack: ARM::RteTestGenerator@0.1.0
-      selected-by:
+      selected-by-pack:
         - ARM::RteTestGenerator@0.1.0
     - resolved-pack: ARM::RteTest_DFP@0.2.0
-      selected-by:
+      selected-by-pack:
         - ARM::RteTest_DFP@>=0.2.0
