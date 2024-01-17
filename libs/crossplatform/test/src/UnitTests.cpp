@@ -72,7 +72,7 @@ TEST(CrossPlatformUnitTests, GetExecutablePath) {
 
 TEST(CrossPlatformUnitTests, CanExecute) {
   EXPECT_TRUE(CrossPlatformUtils::CanExecute(TEST_BIN_PATH));
-  std::string genFolder = std::string(GLOBAL_TEST_DIR) + std::string("/packs/ARM/RteTestGenerator/0.1.0/Generator/");
+  std::string genFolder = std::string(GLOBAL_TEST_DIR) + std::string("/packs/ARM/RteTestGenerator/0.1.0/Generator with spaces/");
   std::string genExe = genFolder + ((CrossPlatformUtils::GetHostType() == "win") ? string("script.bat") : string("script.sh"));
   EXPECT_TRUE(CrossPlatformUtils::CanExecute(genExe));
   std::string noExe = genFolder + string("noexe.sh");
