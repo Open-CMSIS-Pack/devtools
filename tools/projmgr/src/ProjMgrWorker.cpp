@@ -1374,7 +1374,7 @@ vector<string> ProjMgrWorker::FindMatchingPackIdsInCbuildPack(const PackItem& ne
   vector<string> matches;
   for (const auto& resolvedPack : resolvedPacks) {
     // First try exact matching
-    if (find(resolvedPack.selectedBy.cbegin(), resolvedPack.selectedBy.cend(), needle.pack) != resolvedPack.selectedBy.end()) {
+    if (find(resolvedPack.selectedByPack.cbegin(), resolvedPack.selectedByPack.cend(), needle.pack) != resolvedPack.selectedByPack.end()) {
       if (!needleInfo.name.empty() && !WildCards::IsWildcardPattern(needle.pack)) {
         // Exact match means only one result
         return {resolvedPack.pack};
@@ -1411,7 +1411,7 @@ vector<string> ProjMgrWorker::FindMatchingPackIdsInCbuildPack(const PackItem& ne
   });
 
   // Non-wildcard returns the pack id with the highest version.
-  // This should only happen the first time the needle is not included in the selected-by-list.
+  // This should only happen the first time the needle is not included in the selected-by-pack-list.
   return {matches[0]};
 }
 

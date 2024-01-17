@@ -961,7 +961,7 @@
       "type": "object",
       "properties": {
         "resolved-pack": { "$ref": "#/definitions/PackID" },
-        "selected-by": {
+        "selected-by-pack": {
           "type": "array",
           "uniqueItems": true,
           "items": { "$ref": "#/definitions/PackID" }

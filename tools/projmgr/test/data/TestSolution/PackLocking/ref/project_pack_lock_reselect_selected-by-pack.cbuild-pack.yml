@@ -1,15 +1,15 @@
 cbuild-pack:
   resolved-packs:
     - resolved-pack: ARM::RteTest@0.1.0
-      selected-by:
+      selected-by-pack:
         - ARM::Rte*st
     - resolved-pack: ARM::RteTest_DFP@0.1.1
-      selected-by:
+      selected-by-pack:
         - ARM::RteTest_DFP@0.1.1
     - resolved-pack: ARM::RteTest_DFP@0.2.0
-      selected-by:
+      selected-by-pack:
         - ARM::RteTest_DFP
     - resolved-pack: SomeVendor::RteTest@0.0.1
-      selected-by:
+      selected-by-pack:
         - SomeVendor
         - SomeVendor::*@0.0.1

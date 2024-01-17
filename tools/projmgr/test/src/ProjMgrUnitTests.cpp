@@ -955,13 +955,13 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_LockPackFrozenNoPackFile) {
   EXPECT_NE(0, RunProjMgr(7, argv, 0));
 }
 
-TEST_F(ProjMgrUnitTests, RunProjMgrSolution_LockPackReselectSelectedBy) {
+TEST_F(ProjMgrUnitTests, RunProjMgrSolution_LockPackReselectSelectedByPack) {
   char* argv[6];
 
   // convert --solution solution.yml
-  const string csolution = testinput_folder + "/TestSolution/PackLocking/project_pack_lock_reselect_selected-by.csolution.yml";
-  const string cbuildPack = testinput_folder + "/TestSolution/PackLocking/project_pack_lock_reselect_selected-by.cbuild-pack.yml";
-  const string expectedCbuildPack = testinput_folder + "/TestSolution/PackLocking/ref/project_pack_lock_reselect_selected-by.cbuild-pack.yml";
+  const string csolution = testinput_folder + "/TestSolution/PackLocking/project_pack_lock_reselect_selected-by-pack.csolution.yml";
+  const string cbuildPack = testinput_folder + "/TestSolution/PackLocking/project_pack_lock_reselect_selected-by-pack.cbuild-pack.yml";
+  const string expectedCbuildPack = testinput_folder + "/TestSolution/PackLocking/ref/project_pack_lock_reselect_selected-by-pack.cbuild-pack.yml";
   const string output = testoutput_folder + "/testpacklock";
 
   argv[1] = (char*)"convert";
