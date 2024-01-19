@@ -31,6 +31,9 @@ build-gen:
     - component: ARM::RteTestGenerator:Check Global Generator@0.9.0
       from-pack: ARM::RteTestGenerator@0.1.0
       selected-by: RteTestGenerator:Check Global Generator
+      generator:
+        id: RteTestExternalGenerator
+        path: ${DEVTOOLS(data)}/ExternalGenerator/generated/CM0/s.cgen.yml
   linker:
     script: ${DEVTOOLS(data)}/ExternalGenerator/tz_s/RTE/Device/RteTestGen_ARMCM0/ac6_linker_script.sct.src
     regions: ${DEVTOOLS(data)}/ExternalGenerator/tz_s/RTE/Device/RteTestGen_ARMCM0/regions_RteTestGen_ARMCM0.h

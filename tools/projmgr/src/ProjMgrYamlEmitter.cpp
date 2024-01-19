@@ -345,6 +345,11 @@ void ProjMgrYamlCbuild::SetComponentsNode(YAML::Node node, const ContextItem* co
         SetNodeValue(componentNode[YAML_GENERATOR][YAML_ID], component.generator);
         SetNodeValue(componentNode[YAML_GENERATOR][YAML_FROM_PACK], RtePackage::GetPackageIDfromAttributes(*rteGenerator->GetPackage()));
         SetGeneratorFiles(componentNode[YAML_GENERATOR], context, componentId);
+      } else if (context->extGenDir.find(component.generator) != context->extGenDir.end()) {
+        SetNodeValue(componentNode[YAML_GENERATOR][YAML_ID], component.generator);
+        SetNodeValue(componentNode[YAML_GENERATOR][YAML_PATH],
+          FormatPath(fs::path(context->extGenDir.at(component.generator)).append(context->cproject->name + ".cgen.yml").generic_string(),
+          context->directories.cbuild));
       } else {
         ProjMgrLogger::Warn(string("Component ") + componentId + " uses unknown generator " + component.generator);
       }
