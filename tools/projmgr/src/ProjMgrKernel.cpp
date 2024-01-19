@@ -12,6 +12,8 @@
 #include "RteFsUtils.h"
 #include "RteKernel.h"
 
+#include "CrossPlatformUtils.h"
+
 #include <iostream>
 
 using namespace std;
@@ -30,6 +32,13 @@ ProjMgrKernel::ProjMgrKernel() :
   attributes.AddAttribute("name", ORIGINAL_FILENAME);
   attributes.AddAttribute("version", VERSION_STRING);
   SetToolInfo(attributes);
+  std::error_code ec;
+  string exePath = RteUtils::ExtractFilePath( CrossPlatformUtils::GetExecutablePath(ec), true);
+  if (!ec) {
+    string cmsisToolboxDir = RteFsUtils::MakePathCanonical(exePath + "..");
+    SetCmsisToolboxDir(cmsisToolboxDir);
+  }
+
 }
 
 ProjMgrKernel::~ProjMgrKernel() {

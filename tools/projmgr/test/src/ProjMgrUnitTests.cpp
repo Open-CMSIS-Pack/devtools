@@ -585,18 +585,12 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution) {
     testinput_folder + "/TestSolution/ref/cbuild/test2.Debug+CM3.cbuild.yml");
 
    // Check schema
-   EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testoutput_folder + "/test.cbuild-idx.yml",
-     ProjMgrYamlSchemaChecker::FileType::BUILDIDX));
-   EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testoutput_folder + "/test1.Debug+CM0.cbuild.yml",
-     ProjMgrYamlSchemaChecker::FileType::BUILD));
-   EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testoutput_folder + "/test1.Release+CM0.cbuild.yml",
-     ProjMgrYamlSchemaChecker::FileType::BUILD));
-   EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testoutput_folder + "/test1.Debug+CM0.cbuild.yml",
-     ProjMgrYamlSchemaChecker::FileType::BUILD));
-   EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testoutput_folder + "/test2.Debug+CM0.cbuild.yml",
-     ProjMgrYamlSchemaChecker::FileType::BUILD));
-   EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testoutput_folder + "/test2.Debug+CM3.cbuild.yml",
-     ProjMgrYamlSchemaChecker::FileType::BUILD));
+   EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testoutput_folder + "/test.cbuild-idx.yml"));
+   EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testoutput_folder + "/test1.Debug+CM0.cbuild.yml"));
+   EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testoutput_folder + "/test1.Release+CM0.cbuild.yml"));
+   EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testoutput_folder + "/test1.Debug+CM0.cbuild.yml"));
+   EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testoutput_folder + "/test2.Debug+CM0.cbuild.yml"));
+   EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testoutput_folder + "/test2.Debug+CM3.cbuild.yml"));
 
   // Check generated cbuild-pack file
   ProjMgrTestEnv::CompareFile(testinput_folder + "/TestSolution/test.cbuild-pack.yml",
@@ -1998,7 +1992,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Generator) {
     testinput_folder + "/TestGenerator/ref/test-gpdsc.Debug+CM0.cbuild.yml");
 
   // Check cbuild.yml schema
-  EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testoutput_folder + "/test-gpdsc.Debug+CM0.cbuild.yml", ProjMgrYamlSchemaChecker::FileType::BUILD));
+  EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testoutput_folder + "/test-gpdsc.Debug+CM0.cbuild.yml"));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_GeneratorLayer) {
@@ -4652,12 +4646,9 @@ TEST_F(ProjMgrUnitTests, ExternalGenerator) {
   argv[6] = (char*)"core0.Debug+MultiCore";
   EXPECT_EQ(0, RunProjMgr(7, argv, 0));
 
-  EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/ExternalGenerator/tmp/core0/MultiCore/Debug/extgen.cbuild-gen-idx.yml",
-    ProjMgrYamlSchemaChecker::FileType::BUILDGENIDX));
-  EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/ExternalGenerator/tmp/core0/MultiCore/Debug/core0.Debug+MultiCore.cbuild-gen.yml",
-    ProjMgrYamlSchemaChecker::FileType::BUILDGEN));
-  EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/ExternalGenerator/tmp/core1/MultiCore/Debug/core1.Debug+MultiCore.cbuild-gen.yml",
-    ProjMgrYamlSchemaChecker::FileType::BUILDGEN));
+  EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/ExternalGenerator/tmp/core0/MultiCore/Debug/extgen.cbuild-gen-idx.yml"));
+  EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/ExternalGenerator/tmp/core0/MultiCore/Debug/core0.Debug+MultiCore.cbuild-gen.yml"));
+  EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/ExternalGenerator/tmp/core1/MultiCore/Debug/core1.Debug+MultiCore.cbuild-gen.yml"));
 
   auto stripAbsoluteFunc = [](const std::string& in) {
     std::string str = in;
@@ -4677,10 +4668,8 @@ TEST_F(ProjMgrUnitTests, ExternalGenerator) {
   argv[6] = (char*)"single-core.Debug+CM0";
   EXPECT_EQ(0, RunProjMgr(7, argv, 0));
 
-  EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/ExternalGenerator/tmp/single-core/CM0/Debug/extgen.cbuild-gen-idx.yml",
-    ProjMgrYamlSchemaChecker::FileType::BUILDGENIDX));
-  EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/ExternalGenerator/tmp/single-core/CM0/Debug/single-core.Debug+CM0.cbuild-gen.yml",
-    ProjMgrYamlSchemaChecker::FileType::BUILDGEN));
+  EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/ExternalGenerator/tmp/single-core/CM0/Debug/extgen.cbuild-gen-idx.yml"));
+  EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/ExternalGenerator/tmp/single-core/CM0/Debug/single-core.Debug+CM0.cbuild-gen.yml"));
 
   ProjMgrTestEnv::CompareFile(testinput_folder + "/ExternalGenerator/ref/SingleCore/extgen.cbuild-gen-idx.yml",
     testinput_folder + "/ExternalGenerator/tmp/single-core/CM0/Debug/extgen.cbuild-gen-idx.yml", stripAbsoluteFunc);
@@ -4691,12 +4680,9 @@ TEST_F(ProjMgrUnitTests, ExternalGenerator) {
   argv[6] = (char*)"ns.Debug+CM0";
   EXPECT_EQ(0, RunProjMgr(7, argv, 0));
 
-  EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/ExternalGenerator/tmp/ns/CM0/Debug/extgen.cbuild-gen-idx.yml",
-    ProjMgrYamlSchemaChecker::FileType::BUILDGENIDX));
-  EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/ExternalGenerator/tmp/ns/CM0/Debug/ns.Debug+CM0.cbuild-gen.yml",
-    ProjMgrYamlSchemaChecker::FileType::BUILDGEN));
-  EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/ExternalGenerator/tmp/s/CM0/Debug/s.Debug+CM0.cbuild-gen.yml",
-    ProjMgrYamlSchemaChecker::FileType::BUILDGEN));
+  EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/ExternalGenerator/tmp/ns/CM0/Debug/extgen.cbuild-gen-idx.yml"));
+  EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/ExternalGenerator/tmp/ns/CM0/Debug/ns.Debug+CM0.cbuild-gen.yml"));
+  EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/ExternalGenerator/tmp/s/CM0/Debug/s.Debug+CM0.cbuild-gen.yml"));
 
   ProjMgrTestEnv::CompareFile(testinput_folder + "/ExternalGenerator/ref/TrustZone/extgen.cbuild-gen-idx.yml",
     testinput_folder + "/ExternalGenerator/tmp/ns/CM0/Debug/extgen.cbuild-gen-idx.yml", stripAbsoluteFunc);

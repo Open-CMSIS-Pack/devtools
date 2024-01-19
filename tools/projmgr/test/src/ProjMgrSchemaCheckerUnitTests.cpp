@@ -26,14 +26,14 @@ protected:
 TEST_F(ProjMgrSchemaCheckerUnitTests, SchemaCheck_Pass) {
   const string& filename = testinput_folder + "/TestProject/test.cproject.yml";
 
-  EXPECT_TRUE(Validate(filename, FileType::PROJECT));
+  EXPECT_TRUE(Validate(filename));
   EXPECT_TRUE(GetErrors().empty());
 }
 
 TEST_F(ProjMgrSchemaCheckerUnitTests, SchemaCheck_Empty_Object) {
   const string& filename = testinput_folder + "/TestProject/test_empty_object.cproject.yml";
 
-  EXPECT_TRUE(Validate(filename, FileType::PROJECT));
+  EXPECT_TRUE(Validate(filename));
   EXPECT_TRUE(GetErrors().empty());
 }
 
@@ -45,7 +45,7 @@ TEST_F(ProjMgrSchemaCheckerUnitTests, SchemaCheck_Fail) {
 
   const string& filename = testinput_folder +
     "/TestProject/test_schema_validation_failed.cproject.yml";
-  EXPECT_FALSE(Validate(filename, FileType::PROJECT));
+  EXPECT_FALSE(Validate(filename));
 
   // Check errors
   auto errList = GetErrors();
@@ -60,7 +60,7 @@ TEST_F(ProjMgrSchemaCheckerUnitTests, SchemaCheck_Fail) {
 }
 
 TEST_F(ProjMgrSchemaCheckerUnitTests, SchemaCheck_Yaml_File_Not_Found) {
-  EXPECT_FALSE(Validate("UNKNOWN.yml", FileType::PROJECT));
+  EXPECT_FALSE(Validate("UNKNOWN.yml"));
 }
 
 TEST_F(ProjMgrSchemaCheckerUnitTests, Schema_Not_Available) {
@@ -72,7 +72,7 @@ TEST_F(ProjMgrSchemaCheckerUnitTests, Schema_Not_Available) {
   StdStreamRedirect streamRedirect;
   const string& expected = "yaml schemas were not found, file cannot be validated";
   const string& filename = testinput_folder + "/TestProject/test.cproject.yml";
-  EXPECT_TRUE(Validate(filename, FileType::PROJECT));
+  EXPECT_TRUE(Validate(filename));
   auto outStr = streamRedirect.GetOutString();
   EXPECT_NE(0, outStr.find(expected));
 
@@ -90,7 +90,7 @@ TEST_F(ProjMgrSchemaCheckerUnitTests, Schema_Search_Path_1) {
   // Test schema check
   StdStreamRedirect streamRedirect;
   const string& filename = testinput_folder + "/TestProject/test.cproject.yml";
-  EXPECT_TRUE(Validate(filename, FileType::PROJECT));
+  EXPECT_TRUE(Validate(filename));
   EXPECT_EQ(GetErrors().size(), 0);
 
   // restoring schema file
@@ -108,7 +108,7 @@ TEST_F(ProjMgrSchemaCheckerUnitTests, Schema_Search_Path_2) {
   // Test schema check
   StdStreamRedirect streamRedirect;
   const string& filename = testinput_folder + "/TestProject/test.cproject.yml";
-  EXPECT_TRUE(Validate(filename, FileType::PROJECT));
+  EXPECT_TRUE(Validate(filename));
   EXPECT_EQ(GetErrors().size(), 0);
 
   // restoring schema file
@@ -120,7 +120,7 @@ TEST_F(ProjMgrSchemaCheckerUnitTests, Schema_Search_Path_2) {
 TEST_F(ProjMgrSchemaCheckerUnitTests, SchemaCheck_Pack_Selection) {
   const string& filename = testinput_folder + "/TestSolution/test_pack_selection.csolution.yml";
 
-  EXPECT_TRUE(Validate(filename, FileType::SOLUTION));
+  EXPECT_TRUE(Validate(filename));
   EXPECT_TRUE(GetErrors().empty());
 }
 
@@ -230,10 +230,10 @@ vector<ErrInfo> expectedErrPos = {
   };
 
   const string& filename = testoutput_folder +
-    "/test.csolution_schema_validation.yml";
+    "/test_schema_validation.csolution.yml";
   for (auto [data, expectRetVal, errorPos] : vecTestData) {
     writeFile(filename, data);
-    EXPECT_EQ(expectRetVal, Validate(filename, FileType::SOLUTION)) << "failed for: " << data;
+    EXPECT_EQ(expectRetVal, Validate(filename)) << "failed for: " << data;
 
     // Check errors
     auto errList = GetErrors();
@@ -258,7 +258,7 @@ TEST_F(ProjMgrSchemaCheckerUnitTests, SchemaCheck_define) {
 
   const string& filename = testinput_folder +
     "/TestSolution/test_validate_define_syntax.csolution.yml";
-  EXPECT_FALSE(Validate(filename, FileType::SOLUTION));
+  EXPECT_FALSE(Validate(filename));
 
   // Check errors
   auto errList = GetErrors();
@@ -279,7 +279,7 @@ TEST_F(ProjMgrSchemaCheckerUnitTests, SchemaCheck_Output_Type) {
     {  6  ,  7 }
   };
   const string& filename = testinput_folder + "/TestProject/incomplete_output_type.cproject.yml";
-  EXPECT_FALSE(Validate(filename, FileType::PROJECT));
+  EXPECT_FALSE(Validate(filename));
 
   // Check errors
   auto errList = GetErrors();

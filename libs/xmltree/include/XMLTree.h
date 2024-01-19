@@ -11,7 +11,7 @@
 */
 /******************************************************************************/
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -347,7 +347,7 @@ public:
    * @param xmlString buffer containing XML formatted text
    * @return true if buffer is successfully parsed
   */
-  bool ParseXmlString(const std::string& xmlString);
+  bool ParseString(const std::string& xmlString);
 
   /**
    * @brief parse either file or buffer containing XML formatted text
@@ -401,6 +401,11 @@ public:
 protected:
   // parses file or XML sting (fileName can be used to associate parsed document with the file)
   bool DoParse(const std::string& fileName, const std::string& xmlString);
+  /**
+   * @brief creates underling parser interface
+   * @return XMLTreeParserInterface;
+  */
+  virtual XMLTreeParserInterface* CreateParserInterface() = 0;
 
 protected:
   std::string m_schemaFile; // schema file with path

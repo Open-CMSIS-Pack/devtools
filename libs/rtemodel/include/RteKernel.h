@@ -18,7 +18,7 @@
 #include "RteTarget.h"
 #include "RteUtils.h"
 
-#include "XMLTree.h"
+#include "YmlTree.h"
 
 #include <memory>
 
@@ -56,6 +56,19 @@ public:
    * @return true if root folder is changed, otherwise false
   */
   bool SetCmsisPackRoot(const std::string& cmsisPackRoot);
+
+  /**
+   * @brief getter for CMSIS-Toolbox installation directory
+   * @return CMSIS-Toolbox installation directory if available
+  */
+  const std::string& GetCmsisToolboxDir() const { return m_cmsisToolboxDir; }
+
+  /**
+   * @brief setter for CMSIS-Toolbox installation directory
+   * @param cmsisToolboxDir CMSIS-Toolbox installation directory to set
+  */
+  void SetCmsisToolboxDir(const std::string& cmsisToolboxDir) { m_cmsisToolboxDir = cmsisToolboxDir; }
+
 
   /**
    * @brief getter for RteCallback object
@@ -218,10 +231,18 @@ public:
   std::string GetPdscFileFromPath(const XmlItem& attributes, const std::string& cprjPath, std::string& packId);
 
   /**
-   * @brief create a smart pointer holding a XMLTree pointer
-   * @return a std::unique_ptr object holding a XMLTree pointer which is nullptr in the default implementation
+   * @brief create a smart pointer holding an XMLTree pointer to parse XML files
+   * @param itemBuilder pointer to IXmlItemBuilder item factory
+   * @return a std::unique_ptr object holding an XMLTree-derived pointer which is nullptr in the default implementation
   */
   virtual std::unique_ptr<XMLTree> CreateUniqueXmlTree(IXmlItemBuilder* itemBuilder = nullptr) const;
+
+  /**
+   * @brief create a smart pointer holding a YmlTree pointer to parse YAML files
+   * @param itemBuilder pointer to IXmlItemBuilder item factory
+   * @return a std::unique_ptr object holding a YmlTree-derived pointer which is nullptr in the default implementation
+  */
+  virtual std::unique_ptr<YmlTree> CreateUniqueYmlTree(IXmlItemBuilder* itemBuilder = nullptr) const;
 
   /**
    * @brief save active project into cprj file
@@ -274,7 +295,19 @@ protected:
   bool GetLocalPacksUrls(const std::string& rtePath, std::list<std::string>& urls) const;
   XMLTreeElement* ParseLocalRepositoryIdx(const std::string& rtePath) const;
 
-  virtual XMLTree* CreateXmlTree(IXmlItemBuilder* itemBuilder) const { return nullptr; } // creates new XMLTree implementation
+  /**
+   * @brief create an XMLTree object to parse XML files
+   * @param itemBuilder pointer to IXmlItemBuilder item factory
+   * @return XMLTree-derived pointer which is nullptr in the default implementation
+  */
+  virtual XMLTree* CreateXmlTree(IXmlItemBuilder* itemBuilder) const { return nullptr; }
+
+  /**
+   * @brief create a YmlTree object to parse YAML files
+   * @param itemBuilder pointer to IXmlItemBuilder item factory
+   * @return YmlTree-derived pointer
+  */
+  virtual YmlTree* CreateYmlTree(IXmlItemBuilder* itemBuilder) const;
 
 protected:
   /**
@@ -288,5 +321,6 @@ protected:
   RteCallback* m_rteCallback;
   XmlItem m_toolInfo;
   std::string m_cmsisPackRoot;
+  std::string m_cmsisToolboxDir;
 };
 #endif // RteKernel_H

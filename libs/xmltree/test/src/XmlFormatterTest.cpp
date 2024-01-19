@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -14,6 +14,8 @@ class XMLTreeDummy : public  XMLTree
 {
 public:
   XMLTreeDummy(IXmlItemBuilder* itemBuilder = NULL) : XMLTree(itemBuilder) {}
+protected:
+  XMLTreeParserInterface* CreateParserInterface() override { return nullptr; }
 };
 
 static const string xmlSchemaFile = "CPRJ.xsd";
@@ -84,6 +86,10 @@ static const string jsonResExpected = string("{\n") +
 "}\n";
 
 
+TEST(XMLTree, CannotParseWithoutInterface) {
+  auto tree = make_unique<XMLTreeDummy>();
+  EXPECT_FALSE(tree->ParseString(xmlResExpected));
+}
 
 
 TEST(XMLFormatterTest, HeaderAndContentTest)
