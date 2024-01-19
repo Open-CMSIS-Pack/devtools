@@ -359,6 +359,24 @@ public:
    * @return string containing the absolute path
   */
   static std::string GetAbsPathFromLocalUrl(const std::string& url);
+
+  /**
+   * @brief finds file in directories relative to the base path
+   * @param fileName file name to search for
+   * @param baseDir path to look in
+   * @param relSearchOrder vector of relative directories to look in
+   * @return absolute file name if found, empty string otherwise
+  */
+  static std::string FindFile(const std::string& fileName, const std::string& baseDir,
+    const std::vector<std::string>& relSearchOrder);
+
+  /**
+   * @brief finds file in  ./, ../etc/, and ../../etc directories relative to the base
+   * @param fileName file name to search for
+   * @param baseDir path to look in
+   * @return absolute file name if found, empty string otherwise
+  */
+  static std::string FindFileInEtc(const std::string& fileName, const std::string& baseDir);
 };
 
 #endif // RteFsUtils_H

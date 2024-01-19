@@ -21,6 +21,7 @@
 #include "RteUtils.h"
 #include "RteFsUtils.h"
 #include "XmlFormatter.h"
+#include "YmlFormatter.h"
 
 using namespace std;
 
@@ -558,6 +559,17 @@ unique_ptr<XMLTree> RteKernel::CreateUniqueXmlTree(IXmlItemBuilder* itemBuilder)
     xmlTree->Init();
   }
   return xmlTree;
+}
+
+unique_ptr<YmlTree> RteKernel::CreateUniqueYmlTree(IXmlItemBuilder* itemBuilder) const
+{
+  unique_ptr<YmlTree> ymlTree(CreateYmlTree(itemBuilder));
+  return ymlTree;
+}
+
+YmlTree* RteKernel::CreateYmlTree(IXmlItemBuilder* itemBuilder) const
+{
+  return new YmlTree(itemBuilder);
 }
 
 // End of RteKernel.cpp

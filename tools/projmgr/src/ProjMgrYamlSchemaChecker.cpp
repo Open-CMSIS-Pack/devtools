@@ -14,111 +14,46 @@
 
 using namespace std;
 
-ProjMgrYamlSchemaChecker::ProjMgrYamlSchemaChecker(void) {
-  // Reserved
-}
 
-ProjMgrYamlSchemaChecker::~ProjMgrYamlSchemaChecker(void) {
-  // Reserved
-}
-
-bool ProjMgrYamlSchemaChecker::Validate(const string& input,
-  ProjMgrYamlSchemaChecker::FileType type)
+bool ProjMgrYamlSchemaChecker::Validate(const std::string& file)
 {
   // Check if the input file exist
-  if (!RteFsUtils::Exists(input)) {
-    ProjMgrLogger::Error(input, " file doesn't exist");
+  if (!RteFsUtils::Exists(file)) {
+    ProjMgrLogger::Error(file, " file doesn't exist");
     return false;
   }
 
-  // Get schema file path
-  string schemaFile;
-  if(!GetSchemaFile(schemaFile, type)) {
-    ProjMgrLogger::Warn(input, "yaml schemas were not found, file cannot be validated");
+  string schemaFile = FindSchema(file);
+  if(schemaFile.empty()) {
+    ProjMgrLogger::Warn(file, "yaml schemas were not found, file cannot be validated");
     return true;
   }
 
   ClearErrors();
   // Validate schema
-  bool result = ValidateFile(input, schemaFile);
+  bool result = ValidateFile(file, schemaFile);
   for (auto& err : GetErrors()) {
     ProjMgrLogger::Error(err.m_file, err.m_line, err.m_col, err.m_msg);
   }
-
-  return result;
+    return result;
 }
 
-bool ProjMgrYamlSchemaChecker::GetSchemaFile(string& schemaFile, const ProjMgrYamlSchemaChecker::FileType& type) {
-  schemaFile = RteUtils::EMPTY_STRING;
-
-  // Get the schema file name
-  string schemaFileName;
-  switch (type)
-  {
-  case ProjMgrYamlSchemaChecker::FileType::DEFAULT:
-    schemaFileName = "cdefault.schema.json";
-    break;
-  case ProjMgrYamlSchemaChecker::FileType::SOLUTION:
-    schemaFileName = "csolution.schema.json";
-    break;
-  case ProjMgrYamlSchemaChecker::FileType::PROJECT:
-    schemaFileName = "cproject.schema.json";
-    break;
-  case ProjMgrYamlSchemaChecker::FileType::LAYER:
-    schemaFileName = "clayer.schema.json";
-    break;
-  case ProjMgrYamlSchemaChecker::FileType::BUILD:
-    schemaFileName = "cbuild.schema.json";
-    break;
-  case ProjMgrYamlSchemaChecker::FileType::BUILDIDX:
-    schemaFileName = "cbuild-idx.schema.json";
-    break;
-  case ProjMgrYamlSchemaChecker::FileType::BUILD_PACK:
-    schemaFileName = "cbuild-pack.schema.json";
-    break;
-  case ProjMgrYamlSchemaChecker::FileType::BUILDSET:
-    schemaFileName = "cbuild-set.schema.json";
-    break;
-  case ProjMgrYamlSchemaChecker::FileType::GENERATOR:
-    schemaFileName = "generator.schema.json";
-    break;
-  case ProjMgrYamlSchemaChecker::FileType::BUILDGEN:
-    schemaFileName = "cbuild-gen.schema.json";
-    break;
-  case ProjMgrYamlSchemaChecker::FileType::BUILDGENIDX:
-    schemaFileName = "cbuild-gen-idx.schema.json";
-    break;
-  case ProjMgrYamlSchemaChecker::FileType::GENERATOR_IMPORT:
-    schemaFileName = "cgen.schema.json";
-    break;
-  default:
-    ProjMgrLogger::Error("Unknown file type");
-    return false;
-  }
-
+std::string ProjMgrYamlSchemaChecker::FindSchema(const std::string& file) const
+{
   // Get current exe path
   std::error_code ec;
-  string exePath = RteUtils::ExtractFilePath(
-    CrossPlatformUtils::GetExecutablePath(ec), true);
+  string exePath = RteUtils::ExtractFilePath( CrossPlatformUtils::GetExecutablePath(ec), true);
   if (ec) {
     ProjMgrLogger::Error(ec.message());
-    return false;
+    return RteUtils::EMPTY_STRING;
   }
-
-  // Search schema in priority order
-  vector<string> relSearchOrder = { "./", "../etc/", "../../etc/" };
-  string schemaFilePath;
-  for (auto& relPath : relSearchOrder) {
-    schemaFilePath = exePath + relPath + schemaFileName;
-    if (RteFsUtils::Exists(schemaFilePath)) {
-      schemaFile = fs::canonical(schemaFilePath, ec).generic_string();
-      if (ec) {
-        ProjMgrLogger::Error(ec.message());
-        return false;
-      }
-      return true;
-    }
+  string baseFileName = RteUtils::ExtractFileBaseName(file); // remove .yml
+  string schemaFileName = RteUtils::ExtractFileExtension(baseFileName);  // remove prefix
+  if(schemaFileName.empty()) { // cdefault.yml case
+    schemaFileName = baseFileName;
   }
-  return false;
+  schemaFileName += ".schema.json";
+  return RteFsUtils::FindFileInEtc(schemaFileName, exePath);
 }
+
 // end of ProjMgrYamlSchemaChecker

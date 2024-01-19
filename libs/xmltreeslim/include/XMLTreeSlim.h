@@ -3,8 +3,8 @@
 /******************************************************************************/
 /** @file  XmlTreeSlim.h
   * @brief A simple XML interface that reads data into a tree structure
-  * @uses XmlReader  	
-*/ 
+  * @uses XmlReader
+*/
 /******************************************************************************/
 /*
   * The reader should be kept semantics-free:
@@ -12,8 +12,8 @@
 */
 /******************************************************************************/
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
- * 
+ * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
+ *
  * SPDX-License-Identifier: Apache-2.0
  */
 /******************************************************************************/
@@ -35,6 +35,12 @@ public:
    * @param bIgnoreAttributePrefixes true to ignore attribute prefixes otherwise false
   */
   XMLTreeSlim(IXmlItemBuilder* itemBuilder = NULL, bool bRedirectErrLog = false, bool bIgnoreAttributePrefixes = true);
+
+protected:
+  XMLTreeParserInterface* CreateParserInterface() override;
+  bool m_bRedirectErrLog;
+  bool m_bIgnoreAttributePrefixes;
+
 };
 
 #endif // XMLTreeSlim_H

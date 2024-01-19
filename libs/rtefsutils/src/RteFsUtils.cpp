@@ -822,4 +822,22 @@ string RteFsUtils::GetAbsPathFromLocalUrl(const string& url) {
   return filepath;
 }
 
+std::string RteFsUtils::FindFile(const std::string& fileName, const std::string& baseDir,
+  const std::vector<std::string>& relSearchOrder)
+{
+  for(auto& relPath : relSearchOrder) {
+    string file = baseDir + relPath + fileName;
+    if(RteFsUtils::Exists(file)) {
+      return MakePathCanonical(file);
+    }
+  }
+  return RteUtils::EMPTY_STRING;
+}
+
+std::string RteFsUtils::FindFileInEtc(const std::string& fileName, const std::string& baseDir)
+{
+  static const std::vector<std::string>& relSearchOrder = { "./", "../etc/", "../../etc/" };
+  return FindFile(fileName, baseDir, relSearchOrder);
+}
+
 // End of RteFsUtils.cpp

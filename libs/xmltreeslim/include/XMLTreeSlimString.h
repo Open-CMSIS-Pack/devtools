@@ -12,20 +12,20 @@
 */
 /******************************************************************************/
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
 /******************************************************************************/
 
-#include "XMLTree.h"
+#include "XMLTreeSlim.h"
 
 class IXmlItemBuilder;
 
 /**
  * @brief XML interface that reads data into a tree structure
 */
-class XMLTreeSlimString : public  XMLTree
+class XMLTreeSlimString : public  XMLTreeSlim
 {
 public:
   /**
