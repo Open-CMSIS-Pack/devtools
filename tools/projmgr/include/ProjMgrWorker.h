@@ -310,8 +310,8 @@ struct ContextItem {
   LinkerContextItem linker;
   std::map<std::string, std::string> variables;
   StrMap extGenDir;
-  RtePackage* devicePack;
-  RtePackage* boardPack;
+  RtePackage* devicePack = nullptr;
+  RtePackage* boardPack = nullptr;
   bool precedences;
   std::map<std::string, std::set<std::string>> userInputToResolvedPackIdMap;
   StrSet localPackPaths;

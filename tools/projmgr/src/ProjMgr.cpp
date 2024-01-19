@@ -508,9 +508,8 @@ bool ProjMgr::RunConfigure(bool printConfig) {
     if (!m_worker.ProcessContext(contextItem, true, true, false)) {
       ProjMgrLogger::Error("processing context '" + contextName + "' failed");
       error = true;
-    } else {
-      m_processedContexts.push_back(&contextItem);
     }
+    m_processedContexts.push_back(&contextItem);
   }
   m_selectedToolchain = m_worker.GetSelectedToochain();
   // Print warnings for missing filters
@@ -566,8 +565,10 @@ bool ProjMgr::RunConfigure(bool printConfig) {
   // Update the RTE files
   if (m_updateRteFiles) {
     for (auto& contextItem : m_processedContexts) {
-      contextItem->rteActiveProject->SetAttribute("update-rte-files", "1");
-      contextItem->rteActiveProject->UpdateRte();
+      if (contextItem->rteActiveProject != nullptr) {
+        contextItem->rteActiveProject->SetAttribute("update-rte-files", "1");
+        contextItem->rteActiveProject->UpdateRte();
+      }
     }
   }
 

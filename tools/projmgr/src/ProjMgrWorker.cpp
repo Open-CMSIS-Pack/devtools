@@ -1573,6 +1573,8 @@ bool ProjMgrWorker::ProcessToolchain(ContextItem& context) {
 }
 
 bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
+  bool error = false;
+
   if (!context.rteActiveTarget) {
     ProjMgrLogger::Error("missing RTE target");
     return false;
@@ -1594,7 +1596,8 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
     if (!matchedComponent) {
       // No match
       ProjMgrLogger::Error("no component was found with identifier '" + item.component + "'");
-      return false;
+      error = true;
+      continue;
     }
 
     UpdateMisc(item.build.misc, context.toolchain.name);
@@ -1669,7 +1672,11 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
     return false;
   }
 
-  return CheckRteErrors();
+  if (!CheckRteErrors()) {
+    return false;
+  }
+
+  return !error;
 }
 
 RteComponent* ProjMgrWorker::ProcessComponent(ContextItem& context, ComponentItem& item, RteComponentMap& componentMap)
@@ -3095,6 +3102,7 @@ void ProjMgrWorker::PrintMissingFilters(void) {
 }
 
 bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGenFiles, bool resolveDependencies, bool updateRteFiles) {
+  bool ret = true;
   if (!LoadPacks(context)) {
     return false;
   }
@@ -3108,29 +3116,15 @@ bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGenFiles, bool
   if (!SetTargetAttributes(context, context.targetAttributes)) {
     return false;
   }
-  if (!ProcessLinkerOptions(context)) {
-    return false;
-  }
-  if (!ProcessGroups(context)) {
-    return false;
-  }
-  if (!ProcessComponents(context)) {
-    return false;
-  }
+  ret &= ProcessLinkerOptions(context);
+  ret &= ProcessGroups(context);
+  ret &= ProcessComponents(context);
   if (loadGenFiles) {
-    if (!ProcessGpdsc(context)) {
-      return false;
-    }
-    if (!ProcessGeneratedLayers(context)) {
-      return false;
-    }
+    ret &= ProcessGpdsc(context);
+    ret &= ProcessGeneratedLayers(context);
   }
-  if (!ProcessConfigFiles(context)) {
-    return false;
-  }
-  if (!ProcessComponentFiles(context)) {
-    return false;
-  }
+  ret &= ProcessConfigFiles(context);
+  ret &= ProcessComponentFiles(context);
   if (resolveDependencies) {
     // TODO: Add uniquely identified missing dependencies to RTE Model
 
@@ -3149,7 +3143,7 @@ bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGenFiles, bool
       }
     }
   }
-  return true;
+  return ret;
 }
 
 void ProjMgrWorker::ApplyFilter(const vector<string>& origin, const set<string>& filter, vector<string>& result) {

@@ -289,28 +289,36 @@ void ProjMgrYamlCbuild::SetContextNode(YAML::Node contextNode, const ContextItem
   SetNodeValue(contextNode[YAML_COMPILER], context->compiler);
   if (!context->board.empty()) {
     SetNodeValue(contextNode[YAML_BOARD], context->board);
-    SetNodeValue(contextNode[YAML_BOARD_PACK], context->boardPack->GetID());
+    if (context->boardPack != nullptr) {
+      SetNodeValue(contextNode[YAML_BOARD_PACK], context->boardPack->GetID());
+    }
   }
   SetNodeValue(contextNode[YAML_DEVICE], context->device);
-  SetNodeValue(contextNode[YAML_DEVICE_PACK], context->devicePack->GetID());
+  if (context->devicePack != nullptr) {
+    SetNodeValue(contextNode[YAML_DEVICE_PACK], context->devicePack->GetID());
+  }
   SetProcessorNode(contextNode[YAML_PROCESSOR], context->targetAttributes);
   SetPacksNode(contextNode[YAML_PACKS], context);
   SetControlsNode(contextNode, context, context->controls.processed);
   vector<string> defines;
-  for (const auto& define : context->rteActiveTarget->GetDefines()) {
-    ProjMgrUtils::PushBackUniquely(defines, define);
+  if (context->rteActiveTarget != nullptr) {
+    for (const auto& define : context->rteActiveTarget->GetDefines()) {
+      ProjMgrUtils::PushBackUniquely(defines, define);
+    }
   }
   SetDefineNode(contextNode[YAML_DEFINE], defines);
   vector<string> includes;
-  for (const auto& targetIncludes : {
-    context->rteActiveTarget->GetIncludePaths(RteFile::Language::LANGUAGE_C),
-    context->rteActiveTarget->GetIncludePaths(RteFile::Language::LANGUAGE_CPP),
-    context->rteActiveTarget->GetIncludePaths(RteFile::Language::LANGUAGE_C_CPP),
-    context->rteActiveTarget->GetIncludePaths(RteFile::Language::LANGUAGE_NONE)
-    }) {
-    for (auto include : targetIncludes) {
-      RteFsUtils::NormalizePath(include, context->cproject->directory);
-      ProjMgrUtils::PushBackUniquely(includes, FormatPath(include, context->directories.cbuild));
+  if (context->rteActiveTarget != nullptr) {
+    for (const auto& targetIncludes : {
+      context->rteActiveTarget->GetIncludePaths(RteFile::Language::LANGUAGE_C),
+      context->rteActiveTarget->GetIncludePaths(RteFile::Language::LANGUAGE_CPP),
+      context->rteActiveTarget->GetIncludePaths(RteFile::Language::LANGUAGE_C_CPP),
+      context->rteActiveTarget->GetIncludePaths(RteFile::Language::LANGUAGE_NONE)
+      }) {
+      for (auto include : targetIncludes) {
+        RteFsUtils::NormalizePath(include, context->cproject->directory);
+        ProjMgrUtils::PushBackUniquely(includes, FormatPath(include, context->directories.cbuild));
+      }
     }
   }
   SetNodeValue(contextNode[YAML_ADDPATH], includes);
@@ -464,28 +472,30 @@ void ProjMgrYamlCbuild::SetFilesNode(YAML::Node node, const ContextItem* context
 void ProjMgrYamlCbuild::SetConstructedFilesNode(YAML::Node node, const ContextItem* context) {
   // constructed preIncludeLocal don't appear here because they come under the component they belong to
   // constructed preIncludeGlobal
-  const auto& preIncludeFiles = context->rteActiveTarget->GetPreIncludeFiles();
-  for (const auto& [component, fileSet] : preIncludeFiles) {
-    if (!component) {
-      for (const auto& file : fileSet) {
-        if (file == "Pre_Include_Global.h") {
-          const string& filename = context->rteActiveProject->GetProjectPath() +
-            context->rteActiveProject->GetRteHeader(file, context->rteActiveTarget->GetName(), "");
-          YAML::Node fileNode;
-          SetNodeValue(fileNode[YAML_FILE], FormatPath(filename, context->directories.cbuild));
-          SetNodeValue(fileNode[YAML_CATEGORY], "preIncludeGlobal");
-          node.push_back(fileNode);
+  if (context->rteActiveTarget != nullptr) {
+    const auto& preIncludeFiles = context->rteActiveTarget->GetPreIncludeFiles();
+    for (const auto& [component, fileSet] : preIncludeFiles) {
+      if (!component) {
+        for (const auto& file : fileSet) {
+          if (file == "Pre_Include_Global.h") {
+            const string& filename = context->rteActiveProject->GetProjectPath() +
+              context->rteActiveProject->GetRteHeader(file, context->rteActiveTarget->GetName(), "");
+            YAML::Node fileNode;
+            SetNodeValue(fileNode[YAML_FILE], FormatPath(filename, context->directories.cbuild));
+            SetNodeValue(fileNode[YAML_CATEGORY], "preIncludeGlobal");
+            node.push_back(fileNode);
+          }
         }
       }
     }
+    // constructed RTE_Components.h
+    const auto& rteComponents = context->rteActiveProject->GetProjectPath() +
+      context->rteActiveProject->GetRteComponentsH(context->rteActiveTarget->GetName(), "");
+    YAML::Node rteComponentsNode;
+    SetNodeValue(rteComponentsNode[YAML_FILE], FormatPath(rteComponents, context->directories.cbuild));
+    SetNodeValue(rteComponentsNode[YAML_CATEGORY], "header");
+    node.push_back(rteComponentsNode);
   }
-  // constructed RTE_Components.h
-  const auto& rteComponents = context->rteActiveProject->GetProjectPath() +
-    context->rteActiveProject->GetRteComponentsH(context->rteActiveTarget->GetName(), "");
-  YAML::Node rteComponentsNode;
-  SetNodeValue(rteComponentsNode[YAML_FILE], FormatPath(rteComponents, context->directories.cbuild));
-  SetNodeValue(rteComponentsNode[YAML_CATEGORY], "header");
-  node.push_back(rteComponentsNode);
 }
 
 void ProjMgrYamlCbuild::SetOutputDirsNode(YAML::Node node, const ContextItem* context) {
@@ -533,29 +543,31 @@ void ProjMgrYamlCbuild::SetLinkerNode(YAML::Node node, const ContextItem* contex
 
 void ProjMgrYamlCbuild::SetLicenseInfoNode(YAML::Node node, const ContextItem* context) {
   // add licensing info for active target
-  RteLicenseInfoCollection licenseInfos;
-  context->rteActiveProject->CollectLicenseInfosForTarget(licenseInfos, context->rteActiveTarget->GetName());
-  for (auto [id, licInfo] : licenseInfos.GetLicensInfos()) {
+  if (context->rteActiveProject != nullptr) {
+    RteLicenseInfoCollection licenseInfos;
+    context->rteActiveProject->CollectLicenseInfosForTarget(licenseInfos, context->rteActiveTarget->GetName());
+    for (auto [id, licInfo] : licenseInfos.GetLicensInfos()) {
 
-    YAML::Node licNode;
-    SetNodeValue(licNode[YAML_LICENSE], RteLicenseInfo::ConstructLicenseTitle(licInfo));
-    const string& license_agreement = licInfo->GetAttribute("agreement");
-    if (!license_agreement.empty()) {
-      SetNodeValue(licNode[YAML_LICENSE_AGREEMENT], license_agreement);
+      YAML::Node licNode;
+      SetNodeValue(licNode[YAML_LICENSE], RteLicenseInfo::ConstructLicenseTitle(licInfo));
+      const string& license_agreement = licInfo->GetAttribute("agreement");
+      if (!license_agreement.empty()) {
+        SetNodeValue(licNode[YAML_LICENSE_AGREEMENT], license_agreement);
+      }
+      YAML::Node packsNode = licNode[YAML_PACKS];
+      for (auto pack : licInfo->GetPackIDs()) {
+        YAML::Node packNode;
+        SetNodeValue(packNode[YAML_PACK], pack);
+        packsNode.push_back(packNode);
+      }
+      YAML::Node componentsNode = licNode[YAML_COMPONENTS];
+      for (auto compID : licInfo->GetComponentIDs()) {
+        YAML::Node componentNode;
+        SetNodeValue(componentNode[YAML_COMPONENT], compID);
+        componentsNode.push_back(componentNode);
+      }
+      node.push_back(licNode);
     }
-    YAML::Node packsNode = licNode[YAML_PACKS];
-    for (auto pack : licInfo->GetPackIDs()) {
-      YAML::Node packNode;
-      SetNodeValue(packNode[YAML_PACK], pack);
-      packsNode.push_back(packNode);
-    }
-    YAML::Node componentsNode = licNode[YAML_COMPONENTS];
-    for (auto compID : licInfo->GetComponentIDs()) {
-      YAML::Node componentNode;
-      SetNodeValue(componentNode[YAML_COMPONENT], compID);
-      componentsNode.push_back(componentNode);
-    }
-    node.push_back(licNode);
   }
 }
 
@@ -768,7 +780,9 @@ bool ProjMgrYamlEmitter::GenerateCbuild(ContextItem* context, const string& gene
   const string cbuildGenFilename = fs::path(tmpDir).append(context->name + ".cbuild-gen.yml").generic_string();
 
   // Make sure $G (generator input file) is up to date
-  context->rteActiveTarget->SetGeneratorInputFile(cbuildGenFilename);
+  if (context->rteActiveTarget != nullptr) {
+    context->rteActiveTarget->SetGeneratorInputFile(cbuildGenFilename);
+  }
 
   string filename, rootKey;
   if (generatorId.empty()) {
