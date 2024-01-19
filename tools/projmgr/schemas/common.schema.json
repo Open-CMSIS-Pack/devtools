@@ -577,11 +577,12 @@
       "description": "Component specific generator info. Any field in this object overrides the corresponding value from the general GeneratorType",
       "type": "object",
       "properties": {
-        "id": { "type": "string" },
+        "id": { "type": "string", "description": "Generator identifier" },
+        "path": { "type": "string", "description": "Path name for storing the files generated" },
         "from-pack": { "$ref": "#/definitions/PackID"},
         "files": { "$ref": "#/definitions/FilesType" }
       },
-      "required": [ "id", "from-pack" ]
+      "required": [ "id" ]
     },
     "ComponentID": {
       "type": "string",

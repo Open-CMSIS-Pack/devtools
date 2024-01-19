@@ -1622,7 +1622,7 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
 
     // Get generator
     RteGenerator* generator = matchedComponent->GetGenerator();
-    const string generatorId = generator ? generator->GetID() : "";
+    string generatorId = generator ? generator->GetID() : "";
     if (generator) {
       context.generators.insert({ generatorId, generator });
       string genDir;
@@ -1647,6 +1647,7 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
         // keep track of used generators
         m_extGenerator->AddUsedGenerator(extGenId, genDir, context.name);
         context.extGenDir[extGenId] = genDir;
+        generatorId = extGenId;
       }
     }
 
