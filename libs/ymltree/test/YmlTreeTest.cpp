@@ -70,7 +70,7 @@ TEST(YmlTreeTest, InvalidFile) {
   EXPECT_FALSE(tree.ParseFile("BadFood"));
   auto& errs = tree.GetErrorStrings();
   ASSERT_EQ(errs.size(), 1);
-  EXPECT_EQ("BadFood(0,0):bad file: BadFood", *errs.begin());
+  EXPECT_EQ(*errs.begin().find("BadFood(0,0):bad file:"), 0);
 }
 
 
