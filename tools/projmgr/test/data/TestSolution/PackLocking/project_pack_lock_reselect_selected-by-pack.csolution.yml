@@ -11,4 +11,4 @@ solution:
     - pack: SomeVendor
     - pack: SomeVendor::*@0.0.1
   projects:
-    - project: ./project_pack_lock_reselect_selected-by.cproject.yml
+    - project: ./project_pack_lock_reselect_selected-by-pack.cproject.yml

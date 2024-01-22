@@ -1374,7 +1374,7 @@ vector<string> ProjMgrWorker::FindMatchingPackIdsInCbuildPack(const PackItem& ne
   vector<string> matches;
   for (const auto& resolvedPack : resolvedPacks) {
     // First try exact matching
-    if (find(resolvedPack.selectedBy.cbegin(), resolvedPack.selectedBy.cend(), needle.pack) != resolvedPack.selectedBy.end()) {
+    if (find(resolvedPack.selectedByPack.cbegin(), resolvedPack.selectedByPack.cend(), needle.pack) != resolvedPack.selectedByPack.end()) {
       if (!needleInfo.name.empty() && !WildCards::IsWildcardPattern(needle.pack)) {
         // Exact match means only one result
         return {resolvedPack.pack};
@@ -1411,7 +1411,7 @@ vector<string> ProjMgrWorker::FindMatchingPackIdsInCbuildPack(const PackItem& ne
   });
 
   // Non-wildcard returns the pack id with the highest version.
-  // This should only happen the first time the needle is not included in the selected-by-list.
+  // This should only happen the first time the needle is not included in the selected-by-pack-list.
   return {matches[0]};
 }
 
@@ -1573,6 +1573,8 @@ bool ProjMgrWorker::ProcessToolchain(ContextItem& context) {
 }
 
 bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
+  bool error = false;
+
   if (!context.rteActiveTarget) {
     ProjMgrLogger::Error("missing RTE target");
     return false;
@@ -1594,7 +1596,8 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
     if (!matchedComponent) {
       // No match
       ProjMgrLogger::Error("no component was found with identifier '" + item.component + "'");
-      return false;
+      error = true;
+      continue;
     }
 
     UpdateMisc(item.build.misc, context.toolchain.name);
@@ -1619,7 +1622,7 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
 
     // Get generator
     RteGenerator* generator = matchedComponent->GetGenerator();
-    const string generatorId = generator ? generator->GetID() : "";
+    string generatorId = generator ? generator->GetID() : "";
     if (generator) {
       context.generators.insert({ generatorId, generator });
       string genDir;
@@ -1644,6 +1647,7 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
         // keep track of used generators
         m_extGenerator->AddUsedGenerator(extGenId, genDir, context.name);
         context.extGenDir[extGenId] = genDir;
+        generatorId = extGenId;
       }
     }
 
@@ -1669,7 +1673,11 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
     return false;
   }
 
-  return CheckRteErrors();
+  if (!CheckRteErrors()) {
+    return false;
+  }
+
+  return !error;
 }
 
 RteComponent* ProjMgrWorker::ProcessComponent(ContextItem& context, ComponentItem& item, RteComponentMap& componentMap)
@@ -3095,6 +3103,7 @@ void ProjMgrWorker::PrintMissingFilters(void) {
 }
 
 bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGenFiles, bool resolveDependencies, bool updateRteFiles) {
+  bool ret = true;
   if (!LoadPacks(context)) {
     return false;
   }
@@ -3108,29 +3117,15 @@ bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGenFiles, bool
   if (!SetTargetAttributes(context, context.targetAttributes)) {
     return false;
   }
-  if (!ProcessLinkerOptions(context)) {
-    return false;
-  }
-  if (!ProcessGroups(context)) {
-    return false;
-  }
-  if (!ProcessComponents(context)) {
-    return false;
-  }
+  ret &= ProcessLinkerOptions(context);
+  ret &= ProcessGroups(context);
+  ret &= ProcessComponents(context);
   if (loadGenFiles) {
-    if (!ProcessGpdsc(context)) {
-      return false;
-    }
-    if (!ProcessGeneratedLayers(context)) {
-      return false;
-    }
+    ret &= ProcessGpdsc(context);
+    ret &= ProcessGeneratedLayers(context);
   }
-  if (!ProcessConfigFiles(context)) {
-    return false;
-  }
-  if (!ProcessComponentFiles(context)) {
-    return false;
-  }
+  ret &= ProcessConfigFiles(context);
+  ret &= ProcessComponentFiles(context);
   if (resolveDependencies) {
     // TODO: Add uniquely identified missing dependencies to RTE Model
 
@@ -3149,7 +3144,7 @@ bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGenFiles, bool
       }
     }
   }
-  return true;
+  return ret;
 }
 
 void ProjMgrWorker::ApplyFilter(const vector<string>& origin, const set<string>& filter, vector<string>& result) {

@@ -49,6 +49,12 @@ public:
   */
   bool Parse(const std::string& fileName, const std::string& inputString) override;
 
+  /**
+   * @brief return root node corresponding currently parsed file
+   * @return valid YAML::Node if parsing was successful
+  */
+  const YAML::Node& GetRootNode() const { return m_root; }
+
 protected:
   virtual bool ParseNode(const YAML::Node& node, const std::string& tag);
   virtual bool DoParseNode(const YAML::Node& node, const std::string& tag);
@@ -56,6 +62,8 @@ protected:
   virtual bool ParseSequenceNode(const YAML::Node& node);
   virtual bool ParseScalarNode(const YAML::Node& node);
   virtual bool CreateItem(const std::string& tag, int line);
+
+  YAML::Node m_root; // current root node
 };
 
 #endif //YML_TREE_PARSER_INTERFACE_H

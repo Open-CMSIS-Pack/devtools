@@ -11,7 +11,7 @@
 */
 /******************************************************************************/
 /*
- * Copyright (c) 2020-2023 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -21,6 +21,7 @@
 
 class IXmlItemBuilder;
 class ISchemaChecker;
+class YmlTreeParserInterface;
 /**
  * @brief a simple YAML interface that reads data into a tree structure
 */
@@ -34,6 +35,24 @@ public:
    * @param bIgnoreAttributePrefixes true to ignore attribute prefixes otherwise false
   */
   YmlTree(IXmlItemBuilder* itemBuilder = nullptr);
+
+protected:
+  /**
+   * @brief creates underling YML parser interface
+   * @return XMLTreeParserInterface;
+  */
+  XMLTreeParserInterface* CreateParserInterface() override;
+
+  /**
+   * @brief return underling YAML parser interface
+   * @return YmlTreeParserInterface
+  */
+  YmlTreeParserInterface* GetYmlParserInterface() const { return m_pYmlInterface; }
+
+  /**
+   * @brief to provide direct access to YAML data is needed
+  */
+  YmlTreeParserInterface* m_pYmlInterface;
 };
 
 #endif // YMLTree_H

@@ -28,8 +28,7 @@ bool ProjMgrYamlParser::ParseCdefault(const string& input,
   try {
     // Validate file schema
     if (checkSchema &&
-      !ProjMgrYamlSchemaChecker().Validate(
-        input, ProjMgrYamlSchemaChecker::FileType::DEFAULT)) {
+      !ProjMgrYamlSchemaChecker().Validate(input)) {
       return false;
     }
 
@@ -67,8 +66,7 @@ bool ProjMgrYamlParser::ParseCsolution(const string& input,
   try {
     // Validate file schema
     if (checkSchema &&
-      !ProjMgrYamlSchemaChecker().Validate(
-        input, ProjMgrYamlSchemaChecker::FileType::SOLUTION)) {
+      !ProjMgrYamlSchemaChecker().Validate(input)) {
       return false;
     }
 
@@ -118,8 +116,7 @@ bool ProjMgrYamlParser::ParseCbuildPack(const string& input,
   try {
     // Validate file schema
     if (checkSchema &&
-      !ProjMgrYamlSchemaChecker().Validate(
-        input, ProjMgrYamlSchemaChecker::FileType::BUILD_PACK)) {
+      !ProjMgrYamlSchemaChecker().Validate(input)) {
       return false;
     }
 
@@ -150,8 +147,7 @@ bool ProjMgrYamlParser::ParseCproject(const string& input,
   try {
     // Validate file schema
     if (checkSchema &&
-      !ProjMgrYamlSchemaChecker().Validate(
-        input, ProjMgrYamlSchemaChecker::FileType::PROJECT)) {
+      !ProjMgrYamlSchemaChecker().Validate(input)) {
       return false;
     }
 
@@ -216,16 +212,14 @@ bool ProjMgrYamlParser::ParseClayer(const string& input,
   ClayerItem clayer;
   try {
     // Validate file schema
-    const bool cgen = fs::path(input).stem().extension().generic_string() == ".cgen";
     if (checkSchema) {
-      if (!ProjMgrYamlSchemaChecker().Validate(input, cgen  ?
-        ProjMgrYamlSchemaChecker::FileType::GENERATOR_IMPORT :
-        ProjMgrYamlSchemaChecker::FileType::LAYER)) {
+      if (!ProjMgrYamlSchemaChecker().Validate(input)) {
         return false;
       }
     }
 
     const YAML::Node& root = YAML::LoadFile(input);
+    const bool cgen = fs::path(input).stem().extension().generic_string() == ".cgen";
     if (!cgen && !ValidateClayer(input, root)) {
       return false;
     }
@@ -271,8 +265,7 @@ bool ProjMgrYamlParser::ParseClayer(const string& input,
 
 bool ProjMgrYamlParser::ParseCbuildSet(const string& input, CbuildSetItem& cbuildSet, bool checkSchema) {
   // Validate file schema
-  if (!ProjMgrYamlSchemaChecker().Validate(
-    input, ProjMgrYamlSchemaChecker::FileType::BUILDSET)) {
+  if (!ProjMgrYamlSchemaChecker().Validate(input)) {
     return false;
   }
 
@@ -306,8 +299,7 @@ bool ProjMgrYamlParser::ParseGlobalGenerator(const string& input,
 
   try {
     // Validate file schema
-    if (checkSchema && !ProjMgrYamlSchemaChecker().Validate(
-      input, ProjMgrYamlSchemaChecker::FileType::GENERATOR)) {
+    if (checkSchema && !ProjMgrYamlSchemaChecker().Validate(input)) {
       return false;
     }
 
@@ -595,7 +587,7 @@ void ProjMgrYamlParser::ParseResolvedPacks(const YAML::Node& parent, vector<Reso
     for (const auto& packEntry : packsNode) {
       ResolvedPackItem packItem;
       ParseString(packEntry, YAML_RESOLVED_PACK, packItem.pack);
-      ParseVector(packEntry, YAML_SELECTED_BY, packItem.selectedBy);
+      ParseVector(packEntry, YAML_SELECTED_BY_PACK, packItem.selectedByPack);
       packs.push_back(packItem);
     }
   }
@@ -1088,7 +1080,7 @@ const set<string> packsKeys = {
 
 const set<string> resolvedPacksKeys = {
   YAML_RESOLVED_PACK,
-  YAML_SELECTED_BY,
+  YAML_SELECTED_BY_PACK,
 };
 
 const set<string> componentsKeys = {

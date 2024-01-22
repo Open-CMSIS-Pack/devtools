@@ -1,7 +1,7 @@
 /******************************************************************************/
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
- * 
+ * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
+ *
  * SPDX-License-Identifier: Apache-2.0
  */
 /******************************************************************************/
@@ -12,7 +12,7 @@
 #include "ErrLog.h"
 
 XMLTreeSlimString::XMLTreeSlimString(IXmlItemBuilder* itemBuilder, bool bRedirectErrLog, bool bIgnoreAttributePrefixes) :
-  XMLTree(itemBuilder)
+  XMLTreeSlim(itemBuilder, bRedirectErrLog, bIgnoreAttributePrefixes)
 {
   m_p = new XMLTreeSlimInterface(this, bRedirectErrLog, bIgnoreAttributePrefixes);
 }

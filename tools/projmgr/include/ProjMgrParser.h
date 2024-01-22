@@ -83,11 +83,11 @@ struct PackItem {
 /**
  * @brief resolved pack item containing,
  *        pack ID,
- *        list of selected-by expressions (original expressions causing this pack to be added)
+ *        list of selected-by-pack expressions (original expressions causing this pack to be added)
 */
 struct ResolvedPackItem {
   std::string pack;
-  std::vector<std::string> selectedBy;
+  std::vector<std::string> selectedByPack;
 };
 
 /**

@@ -33,7 +33,11 @@ bool YmlTreeParserInterface::Init()
 
 void YmlTreeParserInterface::Clear() // does not destroy YAML parser!
 {
- // does nothing for underlying YAML Parser
+  try {
+    m_root.reset();
+  } catch(YAML::Exception& e) {
+    // do nothing
+  }
 }
 
 
@@ -46,13 +50,12 @@ bool YmlTreeParserInterface::Parse(const std::string& fileName, const std::strin
 
   m_xmlFile = RteFsUtils::MakePathCanonical(fileName);
   try {
-    YAML::Node root;
     if (!inputString.empty()) {
-      root = YAML::Load(inputString);
+      m_root = YAML::Load(inputString);
     } else {
-      root = YAML::LoadFile(m_xmlFile);
+      m_root = YAML::LoadFile(m_xmlFile);
     }
-    success = ParseNode(root, RteUtils::EMPTY_STRING);
+    success = ParseNode(m_root, RteUtils::EMPTY_STRING);
 
   } catch (YAML::Exception& e) {
     stringstream ss;
@@ -61,7 +64,7 @@ bool YmlTreeParserInterface::Parse(const std::string& fileName, const std::strin
     m_nErrors++;
     success = false;
   }
-  m_xmlFile = "";
+  m_xmlFile.clear();
   return success;
 }
 

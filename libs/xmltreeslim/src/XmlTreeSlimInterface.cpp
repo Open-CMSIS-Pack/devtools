@@ -86,7 +86,7 @@ XMLTreeSlimInterface::~XMLTreeSlimInterface()
 
 bool XMLTreeSlimInterface::Init()
 {
-  // does nothing for undelying XML_Parser
+  // does nothing for underlying XML_Parser
   return true;
 }
 

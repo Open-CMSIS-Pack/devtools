@@ -159,7 +159,7 @@ vector<pair<string, string> > RteGenerator::GetExpandedArguments(RteTarget* targ
 string RteGenerator::GetExpandedCommandLine(RteTarget* target, const string& hostType, bool dryRun) const
 {
   const vector<pair<string, string> > args = GetExpandedArguments(target, hostType, dryRun);
-  string fullCmd = GetExecutable(target, hostType);
+  string fullCmd = RteUtils::AddQuotesIfSpace(GetExecutable(target, hostType));
   for (size_t i = 0; i < args.size(); i++) {
     fullCmd += ' ' + RteUtils::AddQuotesIfSpace(args[i].first + args[i].second);
   }

@@ -14,42 +14,20 @@
 */
 class ProjMgrYamlSchemaChecker : public YmlSchemaChecker {
 public:
-  enum class FileType
-  {
-    DEFAULT = 0,
-    SOLUTION,
-    PROJECT,
-    LAYER,
-    BUILD,
-    BUILD_PACK,
-    BUILDIDX,
-    BUILDSET,
-    GENERATOR,
-    BUILDGEN,
-    BUILDGENIDX,
-    GENERATOR_IMPORT
-  };
-  /**
-   * @brief class constructor
-  */
-  ProjMgrYamlSchemaChecker(void);
 
   /**
-   * @brief class destructor
+   * @brief Validates a file against schema obtained by FindSchema() method
+   * @param fileName file to validate
+   * @return true if successful
   */
-  ~ProjMgrYamlSchemaChecker(void);
+  bool Validate(const std::string& file) override;
 
-  /**
-   * @brief Validate file data with schemas
-   * @param input data to be validated
-   * @param type File type
-   * @return true if the validation pass otherwise false
+   /**
+   * @brief Finds schema for given file to validate
+   * @param fileName file to validate
+   * @return schema file name if found, empty string otherwise
   */
-  bool Validate(const std::string& input, ProjMgrYamlSchemaChecker::FileType type);
-
-protected:
-
-  bool GetSchemaFile(std::string& schemaFile, const ProjMgrYamlSchemaChecker::FileType& type);
+  std::string FindSchema(const std::string& file) const override;
 };
 
 #endif  // PROJMGRYAMLSCHEMACHECKER_H

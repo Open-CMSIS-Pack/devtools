@@ -118,7 +118,7 @@ TEST_F(XmlTreeSlimTest, ReadFileXmlns) {
 TEST_F(XmlTreeSlimTest, ReadFileStringXmlns) {
 
   XMLTreeSlim tree(nullptr, true, false); // default builder, redirect errors, do not ignore attribute prefixes
-  bool success = tree.ParseXmlString(theXmlString);
+  bool success = tree.ParseString(theXmlString);
   EXPECT_TRUE(success);
   EXPECT_TRUE(tree.GetRoot());
   XMLTreeElement* root = tree.GetRoot() ? tree.GetRoot()->GetFirstChild() : nullptr;
@@ -136,7 +136,7 @@ TEST_F(XmlTreeSlimTest, ReadFileStringXmlns) {
 TEST_F(XmlTreeSlimTest, ReadStringXmlns) {
 
   XMLTreeSlimString tree(nullptr, true, false); // default builder, redirect errors, do not ignore attribute prefixes
-  bool success = tree.ParseXmlString(theXmlString);
+  bool success = tree.ParseString(theXmlString);
   EXPECT_TRUE(success);
   EXPECT_TRUE(tree.GetRoot());
   XMLTreeElement* root = tree.GetRoot() ? tree.GetRoot()->GetFirstChild() : nullptr;

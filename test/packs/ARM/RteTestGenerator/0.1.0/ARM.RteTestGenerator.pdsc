@@ -41,9 +41,9 @@
       <!-- path is specified either absolute or relative to PDSC or GPDSC file -->
       <workingDir>$PRTE/Device</workingDir>
       <exe>
-      <command host="win">Generator/script.bat</command>
-      <command host="linux">Generator/script.sh</command>
-      <command host="mac">Generator/script.sh</command>
+      <command host="win">Generator with spaces/script.bat</command>
+      <command host="linux">Generator with spaces/script.sh</command>
+      <command host="mac">Generator with spaces/script.sh</command>
         <!-- path is specified either absolute or relative to PDSC or GPDSC file. If not specified it is the project directory configured by the environment -->
         <!-- D = Device (Dname/Dvariant as configured by environment) -->
         <argument>$D</argument>
@@ -91,7 +91,7 @@
       <!-- path is specified either absolute or relative to PDSC or GPDSC file -->
       <workingDir>$PRTE/Device</workingDir>
       <exe>
-      <command>Generator/noexe.sh</command>
+      <command>Generator with spaces/noexe.sh</command>
         <!-- path is specified either absolute or relative to PDSC or GPDSC file. If not specified it is the project directory configured by the environment -->
         <!-- D = Device (Dname/Dvariant as configured by environment) -->
         <argument>$D</argument>
@@ -112,9 +112,9 @@
       <!-- path is specified either absolute or relative to PDSC or GPDSC file -->
       <workingDir>$PRTE/Device</workingDir>
       <exe>
-      <command host="win">Generator/script.bat</command>
-      <command host="linux">Generator/script.sh</command>
-      <command host="mac">Generator/script.sh</command>
+      <command host="win">Generator with spaces/script.bat</command>
+      <command host="linux">Generator with spaces/script.sh</command>
+      <command host="mac">Generator with spaces/script.sh</command>
         <!-- path is specified either absolute or relative to PDSC or GPDSC file. If not specified it is the project directory configured by the environment -->
         <!-- D = Device (Dname/Dvariant as configured by environment) -->
         <argument>$D</argument>

@@ -1,6 +1,6 @@
 /******************************************************************************/
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -120,7 +120,13 @@ void XMLTree::SetIgnoreTags(const set<string>& ignoreTags)
 
 bool XMLTree::Init()
 {
-  return m_p->Init();
+  if(!m_p) {
+    m_p = CreateParserInterface();
+  }
+  if(m_p) {
+    return m_p->Init();
+  }
+  return false;
 }
 
 
@@ -173,30 +179,36 @@ bool XMLTree::ParseAll()
 
 bool XMLTree::ParseFile(const string& fileName)
 {
-  if(m_schemaChecker && !m_schemaFile.empty()) {
-    m_schemaChecker->ClearErrors();
-    if(!m_schemaChecker->ValidateFile(fileName, m_schemaFile)) {
-      for(auto& err : m_schemaChecker->GetErrors()) {
-        if(err.m_severity == RteError::SevERROR) {
-          m_nErrors++;
-        } else if(err.m_severity == RteError::SevWARNING) {
-          m_nWarnings++;
+  if(m_schemaChecker ) {
+    const string& schema = m_schemaFile.empty() ? m_schemaChecker->FindSchema(fileName) : m_schemaFile;
+    if(!schema.empty()) {
+      m_schemaChecker->ClearErrors();
+      if(!m_schemaChecker->ValidateFile(fileName, m_schemaFile)) {
+        for(auto& err : m_schemaChecker->GetErrors()) {
+          if(err.m_severity == RteError::SevERROR) {
+            m_nErrors++;
+          } else if(err.m_severity == RteError::SevWARNING) {
+            m_nWarnings++;
+          }
+          m_errorStrings.push_back(err.ToString());
         }
-        m_errorStrings.push_back(err.ToString());
+        return false;
       }
-      return false;
     }
   }
   return Parse(fileName, EMPTY_STRING);
 }
 
 
-bool XMLTree::ParseXmlString(const std::string& xmlString) {
+bool XMLTree::ParseString(const std::string& xmlString) {
   return Parse(EMPTY_STRING, xmlString);
 }
 
 bool XMLTree::Parse(const std::string& fileName, const std::string& xmlString)
 {
+  if(!Init()) {
+    return false;
+  }
   m_p->Clear();
   return DoParse(fileName, xmlString);
 }

@@ -1610,7 +1610,7 @@ TEST_F(ProjMgrWorkerUnitTests, FindMatchingPacksInCbuildPack) {
   matches = FindMatchingPackIdsInCbuildPack({"ARM::CMSIS", "/path/to/pack"}, resolvedPacks);
   EXPECT_EQ(0, matches.size());
 
-  // Should match one entry in "selected-by"
+  // Should match one entry in "selected-by-pack"
   matches = FindMatchingPackIdsInCbuildPack({"ARM::CMSIS"}, resolvedPacks);
   EXPECT_EQ(1, matches.size());
   EXPECT_EQ(matches[0], pack1.pack);
@@ -1637,13 +1637,13 @@ TEST_F(ProjMgrWorkerUnitTests, FindMatchingPacksInCbuildPack) {
   matches = FindMatchingPackIdsInCbuildPack({"Test@>=3.0.0"}, resolvedPacks);
   EXPECT_EQ(0, matches.size());
 
-  // More than one match on wildcard that is not in selected-by-list
+  // More than one match on wildcard that is not in selected-by-pack-list
   matches = FindMatchingPackIdsInCbuildPack({"SomeVendor"}, resolvedPacks);
   EXPECT_EQ(2, matches.size());
   EXPECT_EQ(matches[0], pack5.pack);
   EXPECT_EQ(matches[1], pack6.pack);
 
-  // More than one match on wildcard that is not in selected-by-list
+  // More than one match on wildcard that is not in selected-by-pack-list
   matches = FindMatchingPackIdsInCbuildPack({"SomeVendor::Pack*"}, resolvedPacks);
   EXPECT_EQ(2, matches.size());
   EXPECT_EQ(matches[0], pack5.pack);

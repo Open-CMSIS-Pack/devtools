@@ -33,6 +33,9 @@ build-gen:
     - component: ARM::RteTestGenerator:Check Global Generator@0.9.0
       from-pack: ARM::RteTestGenerator@0.1.0
       selected-by: RteTestGenerator:Check Global Generator
+      generator:
+        id: RteTestExternalGenerator
+        path: ${DEVTOOLS(data)}/ExternalGenerator/generated/MultiCore/core0.cgen.yml
   linker:
     script: ${DEVTOOLS(data)}/ExternalGenerator/multi_0/RTE/Device/RteTest_ARMCM0_Dual_cm0_core0/ac6_linker_script.sct.src
     regions: ${DEVTOOLS(data)}/ExternalGenerator/multi_0/RTE/Device/RteTest_ARMCM0_Dual_cm0_core0/regions_RteTest_ARMCM0_Dual_cm0_core0.h
