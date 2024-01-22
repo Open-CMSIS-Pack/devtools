@@ -76,7 +76,7 @@ jobs:
           arch: ${{ matrix.arch }}
 
       - name: Archive cbuildgen
-        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 # v4.0.0
+        uses: actions/upload-artifact@1eb3cb2b3e0f29609092a73eb033bb759a334595 # v4.1.0
         with:
           name: cbuildgen-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/tools/buildmgr/cbuildgen/${{ matrix.target }}-${{ matrix.arch }}/Release/cbuildgen${{ matrix.binary_extension }}
@@ -130,7 +130,7 @@ jobs:
           echo "retention_days=$(echo '${{ (!github.event.repository.private && (github.event_name == 'push' || github.event.schedule != '')) && '7' || '1' }}')" >> $GITHUB_OUTPUT
           
       - name: Upload documentation
-        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 # v4.0.0
+        uses: actions/upload-artifact@1eb3cb2b3e0f29609092a73eb033bb759a334595 # v4.1.0
         with:
           name: documentation
           path: ./build/tools/buildmgr/docs/doxygen/output/
@@ -261,7 +261,7 @@ jobs:
         working-directory: tools/buildmgr/cbuildgen/installer
 
       - name: Archive cbuild_install.sh
-        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 # v4.0.0
+        uses: actions/upload-artifact@1eb3cb2b3e0f29609092a73eb033bb759a334595 # v4.1.0
         with:
           name: cbuild_install
           path: tools/buildmgr/cbuildgen/installer/cbuild_install.sh
@@ -269,7 +269,7 @@ jobs:
           if-no-files-found: error
 
       - name: Archive deb package
-        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 # v4.0.0
+        uses: actions/upload-artifact@1eb3cb2b3e0f29609092a73eb033bb759a334595 # v4.1.0
         with:
           name: deb_package
           path: tools/buildmgr/cbuildgen/installer/cmsis-build*.deb
@@ -338,7 +338,7 @@ jobs:
           submodules: true
 
       - name: Cache ARM GCC
-        uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84 # v3.3.2
+        uses: actions/cache@e12d46a63a90f2fae62d114769bbf2a179198b5c # v3.3.3
         with:
           key: "${{ matrix.arm_gcc_install_base }}/${{ matrix.installer_name }}"
           path: ${{ matrix.installer_name }}
@@ -362,7 +362,7 @@ jobs:
           unzip -o $Env:installer_name
 
       - name: Cache CMSIS Pack
-        uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84 # v3.3.2
+        uses: actions/cache@e12d46a63a90f2fae62d114769bbf2a179198b5c # v3.3.3
         env:
           CACHE_NAME: cmsis_pack
         with:
@@ -400,7 +400,7 @@ jobs:
 
       - name: Archive unittest
         if: always() && (matrix.arch != 'arm64')
-        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 # v4.0.0
+        uses: actions/upload-artifact@1eb3cb2b3e0f29609092a73eb033bb759a334595 # v4.1.0
         with:
           name: unit_test_result-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/cbuildunittests-*.xml
@@ -437,7 +437,7 @@ jobs:
 
       - name: Archive Cbuild Integration Tests
         if: always() && ((matrix.arch == 'amd64') || (startsWith(matrix.runs_on, 'ubuntu')))
-        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 # v4.0.0
+        uses: actions/upload-artifact@1eb3cb2b3e0f29609092a73eb033bb759a334595 # v4.1.0
         with:
           name: integ_test_result-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/cbuildintegtests-report-${{ matrix.target }}-${{ matrix.arch }}.xml
@@ -480,7 +480,7 @@ jobs:
         run: mkdir build
 
       - name: Cache ARM GCC
-        uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84 # v3.3.2
+        uses: actions/cache@e12d46a63a90f2fae62d114769bbf2a179198b5c # v3.3.3
         with:
           key: "${{ env.arm_gcc_install_base }}/${{ env.installer_name }}"
           path: ${{ env.installer_name }}
@@ -491,7 +491,7 @@ jobs:
           tar -xvf ${{ env.installer_name }}
 
       - name: Cache CMSIS Pack
-        uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84 # v3.3.2
+        uses: actions/cache@e12d46a63a90f2fae62d114769bbf2a179198b5c # v3.3.3
         env:
           CACHE_NAME: cmsis_pack
         with:
@@ -514,7 +514,7 @@ jobs:
 
       - name: Archive unittest
         if: (github.event_name == 'push')
-        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 # v4.0.0
+        uses: actions/upload-artifact@1eb3cb2b3e0f29609092a73eb033bb759a334595 # v4.1.0
         with:
           name: unit_test_result-linux-amd64
           path: ./build/test_reports/cbuildunittests-*.xml
@@ -523,7 +523,7 @@ jobs:
 
       - name: Archive Cbuild Integration Tests
         if: (github.event_name == 'push')
-        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 # v4.0.0
+        uses: actions/upload-artifact@1eb3cb2b3e0f29609092a73eb033bb759a334595 # v4.1.0
         with:
           name: integ_test_result-linux-amd64
           path: ./build/test_reports/cbuildintegtests-*.xml
@@ -560,7 +560,7 @@ jobs:
           attempt_delay: 5000
 
       - name: Archive coverage report
-        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 # v4.0.0
+        uses: actions/upload-artifact@1eb3cb2b3e0f29609092a73eb033bb759a334595 # v4.1.0
         with:
           name: coverage-report
           path: |
@@ -653,7 +653,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Event File
-        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 # v4.0.0
+        uses: actions/upload-artifact@1eb3cb2b3e0f29609092a73eb033bb759a334595 # v4.1.0
         with:
           name: Event File
           path: ${{ github.event_path }}
