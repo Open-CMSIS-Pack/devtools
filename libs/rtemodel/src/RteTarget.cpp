@@ -1085,6 +1085,7 @@ void RteTarget::ClearFilteredComponents()
 {
   m_potentialComponents.clear();
   m_filteredComponents.clear();
+  m_filteredBundles.clear();
   m_filteredApis.clear();
   m_filteredFiles.clear();
   m_selectedAggregates.clear();
@@ -1311,13 +1312,18 @@ void RteTarget::FilterComponents()
       AddFilteredComponent(c);
     }
   }
-  // categorize component and filter files
-  for (itc = m_filteredComponents.begin(); itc != m_filteredComponents.end(); ++itc) {
-    RteComponent* c = itc->second;
+  // categorize component, add bundle and filter files
+  for (auto [_, c] : m_filteredComponents) {
     RteApi* a = GetApi(c->GetAttributes());
     if (a && m_filteredApis.find(a->GetID()) == m_filteredApis.end()) { // component has an API and the API is not inserted yet
       m_filteredApis[a->GetID()] = a;
       CategorizeComponent(a);
+    }
+    RteBundle* b = c->GetParentBundle();
+    if (b) {
+      string id = b->GetBundleShortID();
+      if(!contains_key(m_filteredBundles, id))
+        m_filteredBundles[id] = b;
     }
     CategorizeComponent(c);
   }

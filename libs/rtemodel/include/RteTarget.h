@@ -186,6 +186,12 @@ public:
   const RteComponentMap& GetFilteredComponents() const { return m_filteredComponents; }
 
   /**
+   * @brief get collection of filtered bundles
+   * @return map of ID to RteBundle pairs
+  */
+  const RteBundleMap& GetFilteredBundles() const { return m_filteredBundles; }
+
+  /**
    * @brief add list of files associated with the given component
    * @param c component associated with the given files
    * @param files list of files of type
@@ -1025,6 +1031,7 @@ protected:
   bool m_bTargetSupported; // target is supported by RTE, can only be defined from outside
   RteComponentMap m_filteredComponents; // components filtered for this target
   RteComponentMap m_potentialComponents; // components filtered for this target regardless pack filter
+  RteBundleMap m_filteredBundles; // collection of bundles with at least one filtered component
 
   std::map<std::string, RteApi* > m_filteredApis;
   RteComponentClassContainer* m_classes; // contains only filtered components
