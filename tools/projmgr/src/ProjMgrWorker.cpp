@@ -397,18 +397,18 @@ bool ProjMgrWorker::LoadPacks(ContextItem& context) {
     return false;
   }
   // Filter context specific packs
-  if (!context.pdscFiles.empty() && (m_loadPacksPolicy != LoadPacksPolicy::ALL) && (m_loadPacksPolicy != LoadPacksPolicy::LATEST)) {
-    set<string> selectedPacks;
-    for (const auto& pack : m_loadedPacks) {
-      if (context.pdscFiles.find(pack->GetPackageFileName()) != context.pdscFiles.end()) {
-        selectedPacks.insert( pack->GetPackageID());
-      }
+  set<string> selectedPacks;
+  const bool allOrLatest = (m_loadPacksPolicy == LoadPacksPolicy::ALL) || (m_loadPacksPolicy == LoadPacksPolicy::LATEST);
+  for (const auto& pack : m_loadedPacks) {
+    if (allOrLatest || (context.pdscFiles.find(pack->GetPackageFileName()) != context.pdscFiles.end())) {
+      selectedPacks.insert(pack->GetPackageID());
     }
-    RtePackageFilter filter;
-    filter.SetSelectedPackages(selectedPacks);
-    context.rteActiveTarget->SetPackageFilter(filter);
-    context.rteActiveTarget->UpdateFilterModel();
   }
+  RtePackageFilter filter;
+  filter.SetSelectedPackages(selectedPacks);
+  context.rteActiveTarget->SetPackageFilter(filter);
+  context.rteActiveTarget->UpdateFilterModel();
+
   RtePackageMap allRequiredPacks;
   // check if all pack requirements are fulfilled
   for (auto pack : m_loadedPacks) {
