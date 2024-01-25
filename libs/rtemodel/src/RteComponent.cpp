@@ -1823,8 +1823,8 @@ const string& RteComponentClass::EnsureSelectedBundleName()
 RteBundle* RteComponentClass::GetSelectedBundle() const
 {
   if (!m_selectedBundleName.empty()) {
-    string bundleId = GetSelectedBundleShortID();
-    return GetTarget()->GetFilteredModel()->GetLatestBundle(bundleId);
+    const string& bundleId = GetSelectedBundleShortID();
+    return get_or_null(GetTarget()->GetFilteredBundles(), bundleId);
   }
   return nullptr;
 }
