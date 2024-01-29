@@ -127,7 +127,7 @@ jobs:
         if: always() && (matrix.arch != 'arm64')
         uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
         with:
-          name: unit_test_result-${{ matrix.target }}-${{ matrix.arch }}
+          name: unit_test_result_svdconv-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/svdconvunittests-*.xml
           if-no-files-found: error
           retention-days: ${{ needs.setup.outputs.retention_days }}
@@ -136,7 +136,7 @@ jobs:
         if: always() && (matrix.arch != 'arm64')
         uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
         with:
-          name: integ_test_result-${{ matrix.target }}-${{ matrix.arch }}
+          name: integ_test_result_svdconv-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/svdconvintegtests-*.xml
           if-no-files-found: error
           retention-days: ${{ needs.setup.outputs.retention_days }}
@@ -197,7 +197,7 @@ jobs:
         if: (github.event_name == 'push')
         uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
         with:
-          name: unit_test_report-linux-amd64
+          name: unit_test_report_svdconv-linux-amd64
           path: ./build/test_reports/svdconvunittests-*.xml
           if-no-files-found: error
           retention-days: ${{ steps.var.outputs.retention_days }}
@@ -206,7 +206,7 @@ jobs:
         if: (github.event_name == 'push')
         uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
         with:
-          name: integ_test_report-linux-amd64
+          name: integ_test_report_svdconv-linux-amd64
           path: ./build/test_reports/svdconvintegtests-*.xml
           if-no-files-found: error
           retention-days: ${{ steps.var.outputs.retention_days }}
@@ -250,7 +250,7 @@ jobs:
       - name: Archive coverage report
         uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
         with:
-          name: coverage-report
+          name: coverage-report-svdconv
           path: |
             ./build/tools/svdconv/coverage_svdconv/
             ./build/tools/svdconv/coverage_svdconv.info
@@ -276,7 +276,7 @@ jobs:
       - name: Download coverage report
         uses: actions/download-artifact@6b208ae046db98c579e8a3aa621ab581ff575935 # v4.1.1
         with:
-          name: coverage-report
+          name: coverage-report-svdconv
           path: tools/svdconv/distribution/coverage/
 
       - name: Zip distribution folder
@@ -300,5 +300,5 @@ jobs:
       - name: Event File
         uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
         with:
-          name: Event File
+          name: Event File svdconv
           path: ${{ github.event_path }}

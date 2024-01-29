@@ -136,7 +136,7 @@ jobs:
         if: always() && (matrix.arch != 'arm64')
         uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
         with:
-          name: unit_test_result-${{ matrix.target }}-${{ matrix.arch }}
+          name: unit_test_result_packchk-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/packchkunittests-*.xml
           if-no-files-found: error
           retention-days: ${{ needs.setup.outputs.retention_days }}
@@ -145,7 +145,7 @@ jobs:
         if: always() && (matrix.arch != 'arm64')
         uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
         with:
-          name: integ_test_result-${{ matrix.target }}-${{ matrix.arch }}
+          name: integ_test_result_packchk-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/packchkintegtests-*.xml
           if-no-files-found: error
           retention-days: ${{ needs.setup.outputs.retention_days }}
@@ -206,7 +206,7 @@ jobs:
         if: (github.event_name == 'push')
         uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
         with:
-          name: unit_test_result-linux-amd64
+          name: unit_test_result_packchk-linux-amd64
           path: ./build/test_reports/packchkunittests-*.xml
           if-no-files-found: error
           retention-days: ${{ steps.var.outputs.retention_days }}
@@ -215,7 +215,7 @@ jobs:
         if: (github.event_name == 'push')
         uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
         with:
-          name: integ_test_result-linux-amd64
+          name: integ_test_result_packchk-linux-amd64
           path: ./build/test_reports/packchkintegtests-*.xml
           if-no-files-found: error
           retention-days: ${{ steps.var.outputs.retention_days }}
@@ -252,7 +252,7 @@ jobs:
       - name: Archive coverage report
         uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
         with:
-          name: coverage-report
+          name: coverage-report-packchk
           path: |
             ./build/tools/packchk/coverage_packchk/
             ./build/tools/packchk/coverage_packchk.info
@@ -278,7 +278,7 @@ jobs:
       - name: Download coverage report
         uses: actions/download-artifact@6b208ae046db98c579e8a3aa621ab581ff575935 # v4.1.1
         with:
-          name: coverage-report
+          name: coverage-report-packchk
           path: tools/packchk/distribution/coverage/
 
       - name: Zip distribution folder
@@ -302,5 +302,5 @@ jobs:
       - name: Event File
         uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
         with:
-          name: Event File
+          name: Event File packchk
           path: ${{ github.event_path }}

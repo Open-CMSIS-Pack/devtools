@@ -176,7 +176,7 @@ jobs:
         if: always() && (matrix.arch != 'arm64')
         uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
         with:
-          name: unit_test_result-${{ matrix.target }}-${{ matrix.arch }}
+          name: unit_test_result_packgen-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/packgenunittests-*.xml
           retention-days: ${{ needs.setup.outputs.retention_days }}
           if-no-files-found: error
@@ -227,7 +227,7 @@ jobs:
         if: (github.event_name == 'push')
         uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
         with:
-          name: unit_test_result-linux-amd64
+          name: unit_test_result_packgen-linux-amd64
           path: ./build/test_reports/packgenunittests-*.xml
           retention-days: ${{ steps.var.outputs.retention_days }}
           if-no-files-found: error
@@ -264,7 +264,7 @@ jobs:
       - name: Archive coverage report
         uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
         with:
-          name: coverage-report
+          name: coverage-report-packgen
           path: |
             ./build/tools/packgen/coverage_packgen/
             ./build/tools/packgen/coverage_packgen.info
@@ -279,5 +279,5 @@ jobs:
       - name: Event File
         uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
         with:
-          name: Event File
+          name: Event File packgen
           path: ${{ github.event_path }}
