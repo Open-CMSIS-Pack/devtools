@@ -37,7 +37,7 @@ jobs:
       - name: Download coverage report
         uses: actions/download-artifact@6b208ae046db98c579e8a3aa621ab581ff575935 # v4.1.1
         with:
-          name: coverage-report
+          pattern: coverage-report-*
           path: coverage/
 
       - name: Consolidate coverage data

@@ -237,20 +237,20 @@ jobs:
       - name: Download test report windows-amd64
         uses: actions/download-artifact@6b208ae046db98c579e8a3aa621ab581ff575935 # v4.1.1
         with:
-          name: unit_test_result-windows-amd64
+          name: unit_test_result_projmgr-windows-amd64
           path: tools/testreport/windows-amd64/
 
       - name: Download test report linux-amd64
         uses: actions/download-artifact@6b208ae046db98c579e8a3aa621ab581ff575935 # v4.1.1
         with:
-          name: unit_test_result-linux-amd64
+          name: unit_test_result_projmgr-linux-amd64
           path: tools/testreport/linux-amd64/
 
       - name: Download test report macos-amd64
         if: ${{ !github.event.repository.private }}
         uses: actions/download-artifact@6b208ae046db98c579e8a3aa621ab581ff575935 # v4.1.1
         with:
-          name: unit_test_result-darwin-amd64
+          name: unit_test_result_projmgr-darwin-amd64
           path: tools/testreport/darwin-amd64/
 
       - name: Zip test reports
@@ -269,7 +269,7 @@ jobs:
       - name: Download coverage report
         uses: actions/download-artifact@6b208ae046db98c579e8a3aa621ab581ff575935 # v4.1.1
         with:
-          name: coverage-report
+          name: coverage-report-projmgr
           path: tools/coverage/
 
       - name: Zip coverage reports
@@ -326,7 +326,7 @@ jobs:
         if: always() && (matrix.arch != 'arm64')
         uses: actions/upload-artifact@694cdabd8bdb0f10b2cea11669e1bf5453eed0a6 # v4.2.0
         with:
-          name: unit_test_result-${{ matrix.target }}-${{ matrix.arch }}
+          name: unit_test_result_projmgr-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/projmgrunittests-*.xml
           retention-days: ${{ needs.setup.outputs.retention_days }}
           if-no-files-found: error
@@ -377,7 +377,7 @@ jobs:
         if: (github.event_name == 'push')
         uses: actions/upload-artifact@694cdabd8bdb0f10b2cea11669e1bf5453eed0a6 # v4.2.0
         with:
-          name: unit_test_result-linux-amd64
+          name: unit_test_result_projmgr-linux-amd64
           path: ./build/test_reports/projmgrunittests-*.xml
           retention-days: ${{ steps.var.outputs.retention_days }}
           if-no-files-found: error
@@ -414,7 +414,7 @@ jobs:
       - name: Archive coverage report
         uses: actions/upload-artifact@694cdabd8bdb0f10b2cea11669e1bf5453eed0a6 # v4.2.0
         with:
-          name: coverage-report
+          name: coverage-report-projmgr
           path: |
             ./build/tools/projmgr/coverage_projmgr/
             ./build/tools/projmgr/coverage_projmgr.info
@@ -429,5 +429,5 @@ jobs:
       - name: Event File
         uses: actions/upload-artifact@694cdabd8bdb0f10b2cea11669e1bf5453eed0a6 # v4.2.0
         with:
-          name: Event File
+          name: Event File projmgr
           path: ${{ github.event_path }}

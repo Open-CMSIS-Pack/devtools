@@ -84,7 +84,7 @@ jobs:
         if: always() && (matrix.arch != 'arm64')
         uses: actions/upload-artifact@694cdabd8bdb0f10b2cea11669e1bf5453eed0a6 # v4.2.0
         with:
-          name: unit_test_result-${{ matrix.target }}-${{ matrix.arch }}
+          name: unit_test_result_test_libs-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/*${{ matrix.target }}-${{ matrix.arch }}.xml
           retention-days: ${{ needs.setup.outputs.retention_days }}
           if-no-files-found: error
@@ -97,5 +97,5 @@ jobs:
       - name: Event File
         uses: actions/upload-artifact@694cdabd8bdb0f10b2cea11669e1bf5453eed0a6 # v4.2.0
         with:
-          name: Event File
+          name: Event File test_libs
           path: ${{ github.event_path }}

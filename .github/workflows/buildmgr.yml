@@ -402,7 +402,7 @@ jobs:
         if: always() && (matrix.arch != 'arm64')
         uses: actions/upload-artifact@694cdabd8bdb0f10b2cea11669e1bf5453eed0a6 # v4.2.0
         with:
-          name: unit_test_result-${{ matrix.target }}-${{ matrix.arch }}
+          name: unit_test_result_buildmgr-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/cbuildunittests-*.xml
           retention-days: ${{ needs.setup.outputs.retention_days }}
           if-no-files-found: error
@@ -439,7 +439,7 @@ jobs:
         if: always() && ((matrix.arch == 'amd64') || (startsWith(matrix.runs_on, 'ubuntu')))
         uses: actions/upload-artifact@694cdabd8bdb0f10b2cea11669e1bf5453eed0a6 # v4.2.0
         with:
-          name: integ_test_result-${{ matrix.target }}-${{ matrix.arch }}
+          name: integ_test_result_buildmgr-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/cbuildintegtests-report-${{ matrix.target }}-${{ matrix.arch }}.xml
           retention-days: ${{ needs.setup.outputs.retention_days }}
           if-no-files-found: error
@@ -516,7 +516,7 @@ jobs:
         if: (github.event_name == 'push')
         uses: actions/upload-artifact@694cdabd8bdb0f10b2cea11669e1bf5453eed0a6 # v4.2.0
         with:
-          name: unit_test_result-linux-amd64
+          name: unit_test_result_buildmgr-linux-amd64
           path: ./build/test_reports/cbuildunittests-*.xml
           retention-days: ${{ steps.var.outputs.retention_days }}
           if-no-files-found: error
@@ -525,7 +525,7 @@ jobs:
         if: (github.event_name == 'push')
         uses: actions/upload-artifact@694cdabd8bdb0f10b2cea11669e1bf5453eed0a6 # v4.2.0
         with:
-          name: integ_test_result-linux-amd64
+          name: integ_test_result_buildmgr-linux-amd64
           path: ./build/test_reports/cbuildintegtests-*.xml
           retention-days: ${{ steps.var.outputs.retention_days }}
           if-no-files-found: error
@@ -562,7 +562,7 @@ jobs:
       - name: Archive coverage report
         uses: actions/upload-artifact@694cdabd8bdb0f10b2cea11669e1bf5453eed0a6 # v4.2.0
         with:
-          name: coverage-report
+          name: coverage-report-buildmgr
           path: |
             ./build/tools/buildmgr/coverage_buildmgr/
             ./build/tools/buildmgr/coverage_buildmgr.info
@@ -655,5 +655,5 @@ jobs:
       - name: Event File
         uses: actions/upload-artifact@694cdabd8bdb0f10b2cea11669e1bf5453eed0a6 # v4.2.0
         with:
-          name: Event File
+          name: Event File buildmgr
           path: ${{ github.event_path }}

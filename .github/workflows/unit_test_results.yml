@@ -28,6 +28,9 @@ jobs:
            gh api "$artifacts_url" -q '.artifacts[] | [.name, .archive_download_url] | @tsv' | while read artifact
            do
              IFS=$'\t' read name url <<< "$artifact"
+             if  [[ $name == "Event File"* ]]; then
+                 name="Event File"
+             fi
              gh api $url > "$name.zip"
              unzip -d "$name" "$name.zip"
            done
