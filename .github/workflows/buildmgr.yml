@@ -76,7 +76,7 @@ jobs:
           arch: ${{ matrix.arch }}
 
       - name: Archive cbuildgen
-        uses: actions/upload-artifact@694cdabd8bdb0f10b2cea11669e1bf5453eed0a6 # v4.2.0
+        uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
         with:
           name: cbuildgen-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/tools/buildmgr/cbuildgen/${{ matrix.target }}-${{ matrix.arch }}/Release/cbuildgen${{ matrix.binary_extension }}
@@ -130,7 +130,7 @@ jobs:
           echo "retention_days=$(echo '${{ (!github.event.repository.private && (github.event_name == 'push' || github.event.schedule != '')) && '7' || '1' }}')" >> $GITHUB_OUTPUT
           
       - name: Upload documentation
-        uses: actions/upload-artifact@694cdabd8bdb0f10b2cea11669e1bf5453eed0a6 # v4.2.0
+        uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
         with:
           name: documentation
           path: ./build/tools/buildmgr/docs/doxygen/output/
@@ -261,7 +261,7 @@ jobs:
         working-directory: tools/buildmgr/cbuildgen/installer
 
       - name: Archive cbuild_install.sh
-        uses: actions/upload-artifact@694cdabd8bdb0f10b2cea11669e1bf5453eed0a6 # v4.2.0
+        uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
         with:
           name: cbuild_install
           path: tools/buildmgr/cbuildgen/installer/cbuild_install.sh
@@ -269,7 +269,7 @@ jobs:
           if-no-files-found: error
 
       - name: Archive deb package
-        uses: actions/upload-artifact@694cdabd8bdb0f10b2cea11669e1bf5453eed0a6 # v4.2.0
+        uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
         with:
           name: deb_package
           path: tools/buildmgr/cbuildgen/installer/cmsis-build*.deb
@@ -400,7 +400,7 @@ jobs:
 
       - name: Archive unittest
         if: always() && (matrix.arch != 'arm64')
-        uses: actions/upload-artifact@694cdabd8bdb0f10b2cea11669e1bf5453eed0a6 # v4.2.0
+        uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
         with:
           name: unit_test_result_buildmgr-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/cbuildunittests-*.xml
@@ -437,7 +437,7 @@ jobs:
 
       - name: Archive Cbuild Integration Tests
         if: always() && ((matrix.arch == 'amd64') || (startsWith(matrix.runs_on, 'ubuntu')))
-        uses: actions/upload-artifact@694cdabd8bdb0f10b2cea11669e1bf5453eed0a6 # v4.2.0
+        uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
         with:
           name: integ_test_result_buildmgr-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/cbuildintegtests-report-${{ matrix.target }}-${{ matrix.arch }}.xml
@@ -514,7 +514,7 @@ jobs:
 
       - name: Archive unittest
         if: (github.event_name == 'push')
-        uses: actions/upload-artifact@694cdabd8bdb0f10b2cea11669e1bf5453eed0a6 # v4.2.0
+        uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
         with:
           name: unit_test_result_buildmgr-linux-amd64
           path: ./build/test_reports/cbuildunittests-*.xml
@@ -523,7 +523,7 @@ jobs:
 
       - name: Archive Cbuild Integration Tests
         if: (github.event_name == 'push')
-        uses: actions/upload-artifact@694cdabd8bdb0f10b2cea11669e1bf5453eed0a6 # v4.2.0
+        uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
         with:
           name: integ_test_result_buildmgr-linux-amd64
           path: ./build/test_reports/cbuildintegtests-*.xml
@@ -560,7 +560,7 @@ jobs:
           attempt_delay: 5000
 
       - name: Archive coverage report
-        uses: actions/upload-artifact@694cdabd8bdb0f10b2cea11669e1bf5453eed0a6 # v4.2.0
+        uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
         with:
           name: coverage-report-buildmgr
           path: |
@@ -653,7 +653,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Event File
-        uses: actions/upload-artifact@694cdabd8bdb0f10b2cea11669e1bf5453eed0a6 # v4.2.0
+        uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
         with:
           name: Event File buildmgr
           path: ${{ github.event_path }}
