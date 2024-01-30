@@ -39,6 +39,7 @@ jobs:
         with:
           pattern: coverage-report-*
           path: coverage/
+          merge-multiple: true
 
       - name: Consolidate coverage data
         run: |
