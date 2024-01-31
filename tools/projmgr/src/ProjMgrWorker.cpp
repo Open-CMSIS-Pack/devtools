@@ -1452,7 +1452,8 @@ void ProjMgrWorker::InsertPackRequirements(const vector<PackItem>& src, vector<P
  * @return True if sucessful
  */
 bool ProjMgrWorker::AddPackRequirements(ContextItem& context, const vector<PackItem>& packRequirements) {
-  const vector<ResolvedPackItem>& resolvedPacks = context.csolution ? context.csolution->cbuildPack.packs : vector<ResolvedPackItem>();
+  const bool ignoreCBuildPack = m_loadPacksPolicy == LoadPacksPolicy::ALL || m_loadPacksPolicy == LoadPacksPolicy::LATEST;
+  const vector<ResolvedPackItem>& resolvedPacks = context.csolution && !ignoreCBuildPack ? context.csolution->cbuildPack.packs : vector<ResolvedPackItem>();
  // Filter context specific package requirements
   vector<PackItem> packages;
   for (const auto& packItem : packRequirements) {

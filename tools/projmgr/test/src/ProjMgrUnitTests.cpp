@@ -972,6 +972,177 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_LockPackReselectSelectedByPack) {
   ProjMgrTestEnv::CompareFile(expectedCbuildPack, cbuildPack);
 }
 
+TEST_F(ProjMgrUnitTests, RunProjMgrSolution_LockPackLoadArgument) {
+  error_code ec;
+  char* argv[8];
+  StdStreamRedirect streamRedirect;
+
+  // convert --solution solution.yml
+  const string csolution = testinput_folder + "/TestSolution/PackLocking/project_pack_lock_using_load_argument.csolution.yml";
+  const string cbuildPack = testinput_folder + "/TestSolution/PackLocking/project_pack_lock_using_load_argument.cbuild-pack.yml";
+  const string expectedCbuildPackAll = testinput_folder + "/TestSolution/PackLocking/ref/project_pack_lock_using_load_argument-all.cbuild-pack.yml";
+  const string expectedCbuildPackLatest = testinput_folder + "/TestSolution/PackLocking/ref/project_pack_lock_using_load_argument-latest.cbuild-pack.yml";
+  const string expectedCbuildPackRequired = testinput_folder + "/TestSolution/PackLocking/ref/project_pack_lock_using_load_argument-required.cbuild-pack.yml";
+  const string output = testoutput_folder + "/testpacklock";
+
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)output.c_str();
+  argv[6] = (char*)"--load";
+
+  // Test with --load all and without cbuild-pack.yml file
+  argv[7] = (char*)"all";
+  RteFsUtils::RemoveFile(cbuildPack);
+  streamRedirect.ClearStringStreams();
+  EXPECT_EQ(0, RunProjMgr(8, argv, 0));
+  EXPECT_NE(streamRedirect.GetOutString().find(cbuildPack + " - info csolution: file generated successfully"), string::npos);
+  ProjMgrTestEnv::CompareFile(expectedCbuildPackAll, cbuildPack);
+
+  // Test with --load all and with cbuild-pack.yml file
+  argv[7] = (char*)"all";
+  fs::copy(fs::path(expectedCbuildPackRequired), fs::path(cbuildPack), fs::copy_options::overwrite_existing, ec);
+  streamRedirect.ClearStringStreams();
+  EXPECT_EQ(0, RunProjMgr(8, argv, 0));
+  EXPECT_NE(streamRedirect.GetOutString().find(cbuildPack + " - info csolution: file generated successfully"), string::npos);
+  ProjMgrTestEnv::CompareFile(expectedCbuildPackAll, cbuildPack);
+
+  // Test with --load latest and without cbuild-pack.yml file
+  argv[7] = (char*)"latest";
+  RteFsUtils::RemoveFile(cbuildPack);
+  streamRedirect.ClearStringStreams();
+  EXPECT_EQ(0, RunProjMgr(8, argv, 0));
+  EXPECT_NE(streamRedirect.GetOutString().find(cbuildPack + " - info csolution: file generated successfully"), string::npos);
+  ProjMgrTestEnv::CompareFile(expectedCbuildPackLatest, cbuildPack);
+
+  // Test with --load latest and with cbuild-pack.yml file
+  argv[7] = (char*)"latest";
+  fs::copy(fs::path(expectedCbuildPackRequired), fs::path(cbuildPack), fs::copy_options::overwrite_existing, ec);
+  streamRedirect.ClearStringStreams();
+  EXPECT_EQ(0, RunProjMgr(8, argv, 0));
+  EXPECT_NE(streamRedirect.GetOutString().find(cbuildPack + " - info csolution: file generated successfully"), string::npos);
+  ProjMgrTestEnv::CompareFile(expectedCbuildPackLatest, cbuildPack);
+
+  // Test with --load required and without cbuild-pack.yml file
+  argv[7] = (char*)"required";
+  RteFsUtils::RemoveFile(cbuildPack);
+  streamRedirect.ClearStringStreams();
+  EXPECT_EQ(0, RunProjMgr(8, argv, 0));
+  EXPECT_NE(streamRedirect.GetOutString().find(cbuildPack + " - info csolution: file generated successfully"), string::npos);
+  ProjMgrTestEnv::CompareFile(expectedCbuildPackLatest, cbuildPack);
+
+  // Test with --load required and with cbuild-pack.yml file
+  argv[7] = (char*)"required";
+  fs::copy(fs::path(expectedCbuildPackRequired), fs::path(cbuildPack), fs::copy_options::overwrite_existing, ec);
+  streamRedirect.ClearStringStreams();
+  EXPECT_EQ(0, RunProjMgr(8, argv, 0));
+  EXPECT_NE(streamRedirect.GetOutString().find(cbuildPack + " - info csolution: file is already up-to-date"), string::npos);
+  ProjMgrTestEnv::CompareFile(expectedCbuildPackRequired, cbuildPack);
+
+  // Test without --load and without cbuild-pack.yml file
+  RteFsUtils::RemoveFile(cbuildPack);
+  streamRedirect.ClearStringStreams();
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+  EXPECT_NE(streamRedirect.GetOutString().find(cbuildPack + " - info csolution: file generated successfully"), string::npos);
+  ProjMgrTestEnv::CompareFile(expectedCbuildPackLatest, cbuildPack);
+
+  // Test without --load but with cbuild-pack.yml file
+  fs::copy(fs::path(expectedCbuildPackRequired), fs::path(cbuildPack), fs::copy_options::overwrite_existing, ec);
+  streamRedirect.ClearStringStreams();
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+  EXPECT_NE(streamRedirect.GetOutString().find(cbuildPack + " - info csolution: file is already up-to-date"), string::npos);
+  ProjMgrTestEnv::CompareFile(expectedCbuildPackRequired, cbuildPack);
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgrSolution_LockPackFindUnspecifiedPackUsingLoadArgument) {
+  error_code ec;
+  char* argv[8];
+  StdStreamRedirect streamRedirect;
+
+  // convert --solution solution.yml
+  const string csolution = testinput_folder + "/TestSolution/PackLocking/project_pack_lock_find_unspecified_pack_using_load_argument.csolution.yml";
+  const string cbuildPack = testinput_folder + "/TestSolution/PackLocking/project_pack_lock_find_unspecified_pack_using_load_argument.cbuild-pack.yml";
+  const string expectedCbuildPackAll = testinput_folder + "/TestSolution/PackLocking/ref/project_pack_lock_find_unspecified_pack_using_load_argument-all.cbuild-pack.yml";
+  const string expectedCbuildPackLatest = testinput_folder + "/TestSolution/PackLocking/ref/project_pack_lock_find_unspecified_pack_using_load_argument-latest.cbuild-pack.yml";
+  const string expectedCbuildPackRequired = testinput_folder + "/TestSolution/PackLocking/ref/project_pack_lock_find_unspecified_pack_using_load_argument-required.cbuild-pack.yml";
+  const string expectedCbuildPackRequiredUpdated = testinput_folder + "/TestSolution/PackLocking/ref/project_pack_lock_find_unspecified_pack_using_load_argument-required_updated.cbuild-pack.yml";
+  const string output = testoutput_folder + "/testpacklock";
+
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)output.c_str();
+  argv[6] = (char*)"--load";
+
+  // Test with --load all and without cbuild-pack.yml file
+  argv[7] = (char*)"all";
+  RteFsUtils::RemoveFile(cbuildPack);
+  streamRedirect.ClearStringStreams();
+  EXPECT_EQ(0, RunProjMgr(8, argv, 0));
+  EXPECT_NE(streamRedirect.GetOutString().find(cbuildPack + " - info csolution: file generated successfully"), string::npos);
+  ProjMgrTestEnv::CompareFile(expectedCbuildPackAll, cbuildPack);
+
+  // Test with --load all and with cbuild-pack.yml file
+  argv[7] = (char*)"all";
+  fs::copy(fs::path(expectedCbuildPackRequired), fs::path(cbuildPack), fs::copy_options::overwrite_existing, ec);
+  streamRedirect.ClearStringStreams();
+  EXPECT_EQ(0, RunProjMgr(8, argv, 0));
+  EXPECT_NE(streamRedirect.GetOutString().find(cbuildPack + " - info csolution: file generated successfully"), string::npos);
+  ProjMgrTestEnv::CompareFile(expectedCbuildPackAll, cbuildPack);
+
+  // Test with --load latest and without cbuild-pack.yml file
+  argv[7] = (char*)"latest";
+  RteFsUtils::RemoveFile(cbuildPack);
+  streamRedirect.ClearStringStreams();
+  EXPECT_EQ(0, RunProjMgr(8, argv, 0));
+  EXPECT_NE(streamRedirect.GetOutString().find(cbuildPack + " - info csolution: file generated successfully"), string::npos);
+  ProjMgrTestEnv::CompareFile(expectedCbuildPackLatest, cbuildPack);
+
+  // Test with --load latest and with cbuild-pack.yml file
+  argv[7] = (char*)"latest";
+  fs::copy(fs::path(expectedCbuildPackRequired), fs::path(cbuildPack), fs::copy_options::overwrite_existing, ec);
+  streamRedirect.ClearStringStreams();
+  EXPECT_EQ(0, RunProjMgr(8, argv, 0));
+  EXPECT_NE(streamRedirect.GetOutString().find(cbuildPack + " - info csolution: file generated successfully"), string::npos);
+  ProjMgrTestEnv::CompareFile(expectedCbuildPackLatest, cbuildPack);
+
+  // Test with --load required and without cbuild-pack.yml file
+  argv[7] = (char*)"required";
+  RteFsUtils::RemoveFile(cbuildPack);
+  streamRedirect.ClearStringStreams();
+  EXPECT_EQ(1, RunProjMgr(8, argv, 0));
+  EXPECT_NE(streamRedirect.GetOutString().find(cbuildPack + " - info csolution: file generated successfully"), string::npos);
+  EXPECT_NE(streamRedirect.GetErrorString().find("error csolution: no component was found with identifier 'RteTest:ComponentLevel'"), string::npos);
+  ProjMgrTestEnv::CompareFile(expectedCbuildPackRequiredUpdated, cbuildPack);
+
+  // Test with --load required and with cbuild-pack.yml file
+  argv[7] = (char*)"required";
+  fs::copy(fs::path(expectedCbuildPackRequired), fs::path(cbuildPack), fs::copy_options::overwrite_existing, ec);
+  streamRedirect.ClearStringStreams();
+  EXPECT_EQ(1, RunProjMgr(8, argv, 0));
+  EXPECT_NE(streamRedirect.GetOutString().find(cbuildPack + " - info csolution: file is already up-to-date"), string::npos);
+  EXPECT_NE(streamRedirect.GetErrorString().find("error csolution: no component was found with identifier 'RteTest:ComponentLevel'"), string::npos);
+  ProjMgrTestEnv::CompareFile(expectedCbuildPackRequired, cbuildPack);
+
+  // Test without --load and without cbuild-pack.yml file
+  RteFsUtils::RemoveFile(cbuildPack);
+  streamRedirect.ClearStringStreams();
+  EXPECT_EQ(1, RunProjMgr(6, argv, 0));
+  EXPECT_NE(streamRedirect.GetOutString().find(cbuildPack + " - info csolution: file generated successfully"), string::npos);
+  EXPECT_NE(streamRedirect.GetErrorString().find("error csolution: no component was found with identifier 'RteTest:ComponentLevel'"), string::npos);
+  ProjMgrTestEnv::CompareFile(expectedCbuildPackRequiredUpdated, cbuildPack);
+
+  // Test without --load but with cbuild-pack.yml file
+  fs::copy(fs::path(expectedCbuildPackRequired), fs::path(cbuildPack), fs::copy_options::overwrite_existing, ec);
+  streamRedirect.ClearStringStreams();
+  EXPECT_EQ(1, RunProjMgr(6, argv, 0));
+  EXPECT_NE(streamRedirect.GetOutString().find(cbuildPack + " - info csolution: file is already up-to-date"), string::npos);
+  EXPECT_NE(streamRedirect.GetErrorString().find("error csolution: no component was found with identifier 'RteTest:ComponentLevel'"), string::npos);
+  ProjMgrTestEnv::CompareFile(expectedCbuildPackRequired, cbuildPack);
+}
+
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution_CbuildPackLocalPackIgnored) {
   char* argv[6];
 
