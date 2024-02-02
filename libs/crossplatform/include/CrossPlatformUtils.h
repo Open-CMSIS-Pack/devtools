@@ -84,6 +84,13 @@ public:
   */
   static bool CanExecute(const std::string& file);
 
+  /**
+   * @brief execute shell command
+   * @param cmd string shell command to be executed
+   * @return command execution result <string, error_code>
+  */
+  static const std::pair<std::string, int> ExecCommand(const std::string& cmd);
+
   enum class REG_STATUS {
     ENABLED,
     DISABLED,

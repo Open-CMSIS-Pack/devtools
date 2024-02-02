@@ -299,8 +299,11 @@ int ProjMgr::RunProjMgr(int argc, char** argv, char** envp) {
     }
   }
   manager.m_worker.SetEnvironmentVariables(envVars);
-
-  res = manager.ProcessCommands();
+  if(manager.m_worker.InitializeModel()) {
+    res = manager.ProcessCommands();
+  } else {
+    res = 1;
+  }
   return res;
 }
 
@@ -466,11 +469,6 @@ bool ProjMgr::PopulateContexts(void) {
   // Retrieve all context types
   m_worker.RetrieveAllContextTypes();
 
-  // Retrieve global generators
-  if (!m_extGenerator.RetrieveGlobalGenerators()) {
-    return false;
-  }
-
   return true;
 }
 
@@ -489,10 +487,6 @@ bool ProjMgr::RunConfigure(bool printConfig) {
   map<string, ContextItem>* contexts = nullptr;
   m_worker.GetContexts(contexts);
 
-  // Initialize model
-  if (!m_worker.InitializeModel()) {
-    return false;
-  }
   vector<ContextItem*> allContexts;
   vector<string> orderedContexts;
   m_worker.GetYmlOrderedContexts(orderedContexts);

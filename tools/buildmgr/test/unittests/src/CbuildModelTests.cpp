@@ -50,9 +50,9 @@ TEST_F(CbuildModelTests, GetCompatibleToolchain_Select_Latest) {
 
   // Select latest compatible toolchain
   ASSERT_TRUE(RteFsUtils::CreateDirectories(toolchainDir));
-  ASSERT_TRUE(RteFsUtils::CreateFile(toolchainDir + "/AC6.6.6.4.cmake", ""));
-  ASSERT_TRUE(RteFsUtils::CreateFile(toolchainDir + "/AC6.6.16.0.cmake", ""));
-  ASSERT_TRUE(RteFsUtils::CreateFile(toolchainDir + "/GCC.6.19.0.cmake", ""));
+  ASSERT_TRUE(RteFsUtils::CreateTextFile(toolchainDir + "/AC6.6.6.4.cmake", ""));
+  ASSERT_TRUE(RteFsUtils::CreateTextFile(toolchainDir + "/AC6.6.16.0.cmake", ""));
+  ASSERT_TRUE(RteFsUtils::CreateTextFile(toolchainDir + "/GCC.6.19.0.cmake", ""));
   EXPECT_TRUE(GetCompatibleToolchain(name, versionRange, toolchainDir, envVars));
   EXPECT_EQ(m_toolchainConfigVersion, expectedToolchainVersion);
   EXPECT_EQ(m_toolchainConfig, expectedToolchainConfig);
@@ -79,8 +79,8 @@ TEST_F(CbuildModelTests, GetCompatibleToolchain_Invalid_Files) {
 
   // No .cmake file found
   ASSERT_TRUE(RteFsUtils::CreateDirectories(toolchainDir));
-  ASSERT_TRUE(RteFsUtils::CreateFile(toolchainDir + "/test.info", ""));
-  ASSERT_TRUE(RteFsUtils::CreateFile(toolchainDir + "/AC6.info", ""));
+  ASSERT_TRUE(RteFsUtils::CreateTextFile(toolchainDir + "/test.info", ""));
+  ASSERT_TRUE(RteFsUtils::CreateTextFile(toolchainDir + "/AC6.info", ""));
   EXPECT_FALSE(GetCompatibleToolchain(name, versionRange, toolchainDir, envVars));
   EXPECT_EQ(m_toolchainConfigVersion, RteUtils::EMPTY_STRING);
   EXPECT_EQ(m_toolchainConfig, RteUtils::EMPTY_STRING);
@@ -97,9 +97,9 @@ TEST_F(CbuildModelTests, GetCompatibleToolchain_Select_Latest_recursively) {
 
   // Select latest compatible toolchain
   ASSERT_TRUE(RteFsUtils::CreateDirectories(toolchainDir+"/Test"));
-  ASSERT_TRUE(RteFsUtils::CreateFile(toolchainDir + "/Test/AC6.6.6.4.cmake", ""));
-  ASSERT_TRUE(RteFsUtils::CreateFile(toolchainDir + "/Test/AC6.6.16.0.cmake", ""));
-  ASSERT_TRUE(RteFsUtils::CreateFile(toolchainDir + "/Test/GCC.6.19.0.cmake", ""));
+  ASSERT_TRUE(RteFsUtils::CreateTextFile(toolchainDir + "/Test/AC6.6.6.4.cmake", ""));
+  ASSERT_TRUE(RteFsUtils::CreateTextFile(toolchainDir + "/Test/AC6.6.16.0.cmake", ""));
+  ASSERT_TRUE(RteFsUtils::CreateTextFile(toolchainDir + "/Test/GCC.6.19.0.cmake", ""));
   EXPECT_TRUE(GetCompatibleToolchain(name, versionRange, toolchainDir, envVars));
   EXPECT_EQ(m_toolchainConfigVersion, expectedToolchainVersion);
   EXPECT_EQ(m_toolchainConfig, expectedToolchainConfig);
@@ -124,9 +124,9 @@ TEST_F(CbuildModelTests, GetCompatibleToolchain_Registered) {
 
   // Select latest compatible toolchain
   ASSERT_TRUE(RteFsUtils::CreateDirectories(toolchainDir + "/Test"));
-  ASSERT_TRUE(RteFsUtils::CreateFile(toolchainDir + "/Test/AC6.6.6.4.cmake", ""));
-  ASSERT_TRUE(RteFsUtils::CreateFile(toolchainDir + "/Test/AC6.6.16.0.cmake", ""));
-  ASSERT_TRUE(RteFsUtils::CreateFile(toolchainDir + "/Test/GCC.6.19.0.cmake", ""));
+  ASSERT_TRUE(RteFsUtils::CreateTextFile(toolchainDir + "/Test/AC6.6.6.4.cmake", ""));
+  ASSERT_TRUE(RteFsUtils::CreateTextFile(toolchainDir + "/Test/AC6.6.16.0.cmake", ""));
+  ASSERT_TRUE(RteFsUtils::CreateTextFile(toolchainDir + "/Test/GCC.6.19.0.cmake", ""));
   EXPECT_TRUE(GetCompatibleToolchain(name, versionRange, toolchainDir, envVars));
   EXPECT_EQ(m_toolchainConfigVersion, expectedToolchainVersion);
   EXPECT_EQ(m_toolchainConfig, expectedToolchainConfig);

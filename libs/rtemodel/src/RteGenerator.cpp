@@ -25,10 +25,11 @@
 
 using namespace std;
 
-RteGenerator::RteGenerator(RteItem* parent) :
+RteGenerator::RteGenerator(RteItem* parent, bool bExternal) :
   RteItem(parent),
   m_pDeviceAttributes(nullptr),
-  m_files(nullptr)
+  m_files(nullptr),
+  m_bExternal(bExternal)
 {
   RteGenerator::Clear();
 }
@@ -74,6 +75,14 @@ const string& RteGenerator::GetGpdsc() const
   return EMPTY_STRING;
 }
 
+const std::string& RteGenerator::GetWorkingDir() const
+{
+  if(IsExternal()) {
+    return GetPathAttribute();
+  }
+  return GetItemValue("workingDir");
+}
+
 RteItem* RteGenerator::GetArgumentsItem(const string& type) const
 {
   if (type.empty() || type == "exe") {
@@ -89,7 +98,11 @@ RteItem* RteGenerator::GetArgumentsItem(const string& type) const
   return args;
 }
 
-const string RteGenerator::GetCommand(const std::string& hostType) const {
+const string RteGenerator::GetCommand(const std::string& hostType) const
+{
+  if(IsExternal()) {
+    return GetRunAttribute();
+  }
 
   RteItem* exe = GetItemByTag("exe");
   if (exe != NULL) {
@@ -119,7 +132,7 @@ const string RteGenerator::GetCommand(const std::string& hostType) const {
   return GetItemValue("command");
 }
 
-string RteGenerator::GetExecutable(RteTarget* target, const std::string& hostType) const
+string RteGenerator::GetExecutable(const std::string& hostType) const
 {
   string cmd = GetCommand(hostType);
   if (cmd.empty())
@@ -129,18 +142,15 @@ string RteGenerator::GetExecutable(RteTarget* target, const std::string& hostTyp
     return EMPTY_STRING; // return empty string here , GetExpandedWebLine() will return URL then
 
   cmd = ExpandString(cmd);
-  fs::path path(cmd);
 
-  if (target && path.is_relative()) {
-    RtePackage* p = GetPackage();
-    if (p)
-      cmd = p->GetAbsolutePackagePath() + cmd;
+  if (RteFsUtils::IsRelative(cmd)) {
+     cmd = GetAbsolutePackagePath() + cmd;
   }
   return cmd;
 }
 
 
-vector<pair<string, string> > RteGenerator::GetExpandedArguments(RteTarget* target, const string& hostType, bool dryRun) const
+vector<pair<string, string> > RteGenerator::GetExpandedArguments(const string& hostType, bool dryRun) const
 {
   vector<pair<string, string> > args;
   RteItem* argsItem = GetArgumentsItem("exe");
@@ -156,10 +166,10 @@ vector<pair<string, string> > RteGenerator::GetExpandedArguments(RteTarget* targ
   return args;
 }
 
-string RteGenerator::GetExpandedCommandLine(RteTarget* target, const string& hostType, bool dryRun) const
+string RteGenerator::GetExpandedCommandLine(const string& hostType, bool dryRun) const
 {
-  const vector<pair<string, string> > args = GetExpandedArguments(target, hostType, dryRun);
-  string fullCmd = RteUtils::AddQuotesIfSpace(GetExecutable(target, hostType));
+  const vector<pair<string, string> > args = GetExpandedArguments(hostType, dryRun);
+  string fullCmd = RteUtils::AddQuotesIfSpace(GetExecutable(hostType));
   for (size_t i = 0; i < args.size(); i++) {
     fullCmd += ' ' + RteUtils::AddQuotesIfSpace(args[i].first + args[i].second);
   }
@@ -281,7 +291,6 @@ RteGeneratorContainer::RteGeneratorContainer(RteItem* parent) :
   RteItem(parent)
 {
 }
-
 
 RteGenerator* RteGeneratorContainer::GetGenerator(const string& id) const
 {

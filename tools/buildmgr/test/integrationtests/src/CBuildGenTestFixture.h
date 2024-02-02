@@ -22,7 +22,7 @@ protected:
   void CheckCMakeIntermediateDir (const TestParam& param, const std::string& intdir);
   void CheckCPInstallFile        (const TestParam& param, bool json=false);
 
-  void GetDirectoryItems         (const std::string& inPath, std::set<std::string> &Result, const std::string& ignoreDir);
+  void GetDirectoryItems         (const std::string& inPath, std::set<std::string> &result, const std::string& ignoreDir);
 
   std::string stdoutStr;
 };

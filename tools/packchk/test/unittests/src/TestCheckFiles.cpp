@@ -118,7 +118,7 @@ TEST_F(TestCheckFiles, CheckFileExtension_IncludeNoSlash) {
 TEST_F(TestCheckFiles, CheckFileExtension_IncludeNotADir) {
   // GIVEN an existing header file
   const string checkFile = "CheckFileExtension/TheIncludeDir/header.h";
-  ASSERT_TRUE(RteFsUtils::CreateFile(string(BUILD_FOLDER)+checkFile, ""));
+  ASSERT_TRUE(RteFsUtils::CreateTextFile(string(BUILD_FOLDER)+checkFile, ""));
 
   // ... AND an item refering to this file as category include
   RteItem item(NULL);
@@ -157,10 +157,10 @@ TEST_F(TestCheckFiles, CheckCaseSense)
     RteFsUtils::RemoveDir(testDataFolder);
   }
   ASSERT_TRUE(RteFsUtils::CreateDirectories(testApiFolder));
-  ASSERT_TRUE(RteFsUtils::CreateFile(
+  ASSERT_TRUE(RteFsUtils::CreateTextFile(
     testApiFolder + "/Exclusive.h", RteUtils::EMPTY_STRING));
   ASSERT_TRUE(RteFsUtils::CreateDirectories(testDataFolder + "/.test1"));
-  ASSERT_TRUE(RteFsUtils::CreateFile(
+  ASSERT_TRUE(RteFsUtils::CreateTextFile(
     testDataFolder + "/.test1/NonExclusive.h", RteUtils::EMPTY_STRING));
   checkFiles.SetPackagePath(testDataFolder);
 

@@ -181,11 +181,11 @@ public:
   };
 
   /**
-   * @brief obtains globally defined generator
+   * @brief obtains globally defined external generator
    * @param id generator id
    * @return pointer to RteGenerator if found, nullptr otherwise
   */
-  virtual RteGenerator* GetGenerator(const std::string& id) const { return nullptr; }
+  virtual RteGenerator* GetExternalGenerator(const std::string& id) const;
 
   /**
    * @brief get global RteCallback object

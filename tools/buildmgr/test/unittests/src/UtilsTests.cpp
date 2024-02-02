@@ -165,23 +165,6 @@ TEST_F(CbuildUtilsTests, StrPathAbsolute) {
   // Restore CWD
   fs::current_path(cwd, ec);
 }
-
-TEST_F(CbuildUtilsTests, ExecCommand) {
-  auto result = CbuildUtils::ExecCommand("invalid command");
-  EXPECT_EQ(false, (0 == result.second) ? true : false) << result.first;
-
-  string testdir = "mkdir_test_dir";
-  fs::current_path(testout_folder);
-  if (fs::exists(testdir)) RemoveDir(testdir);
-
-  result = CbuildUtils::ExecCommand("mkdir " + testdir);
-  EXPECT_TRUE(fs::exists(testdir));
-  EXPECT_EQ(true, (0 == result.second) ? true : false) << result.first;
-
-  fs::current_path(CBuildUnitTestEnv::workingDir);
-  RemoveDir(testdir);
-}
-
 TEST_F(CbuildUtilsTests, EscapeQuotes) {
   string result = CbuildUtils::EscapeQuotes("-DFILE=\"config.h\"");
   EXPECT_EQ(result, "-DFILE=\\\"config.h\\\"");

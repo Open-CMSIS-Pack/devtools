@@ -54,7 +54,7 @@ void BuildSystemGeneratorTests::CreateBuildArtifacts(const string& outPath,
   RteFsUtils::CreateDirectories(outPath);
   for (const auto& fileName : testBuildArtifactNames) {
     string filePath = outPath + "/" + fileName;
-    ASSERT_TRUE(RteFsUtils::CreateFile(filePath, RteUtils::EMPTY_STRING)) <<
+    ASSERT_TRUE(RteFsUtils::CreateTextFile(filePath, RteUtils::EMPTY_STRING)) <<
       "unable to create file '" + filePath + "'";
   }
 }
@@ -186,7 +186,7 @@ TEST_F(BuildSystemGeneratorTests, GenAuditFile_With_Existing_Audit_File) {
   };
 
   CreateBuildArtifacts(testout_folder, testBuildArtifactNames);
-  RteFsUtils::CreateFile(file, RteUtils::EMPTY_STRING);
+  RteFsUtils::CreateTextFile(file, RteUtils::EMPTY_STRING);
 
   EXPECT_TRUE(GenAuditFile());
   EXPECT_TRUE(fs::exists(file, ec));

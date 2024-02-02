@@ -18,6 +18,7 @@
 #include "RtePackage.h"
 #include "RteProject.h"
 #include "RteModel.h"
+#include "RteGenerator.h"
 #include "RteConstants.h"
 
 #include "RteFsUtils.h"
@@ -1021,5 +1022,16 @@ void RteItem::SortChildren(CompareRteItemType cmp)
 {
   m_children.sort(cmp);
 }
+
+
+RteItem* RteRootItem::CreateItem(const std::string& tag)
+{
+  // for YAML files create corresponding items depending on the root itself
+  if(GetTag() == "generator") {
+    return new RteGenerator(this, true);
+  }
+  return RteItem::CreateItem(tag);
+}
+
 
 // End of RteItem.cpp

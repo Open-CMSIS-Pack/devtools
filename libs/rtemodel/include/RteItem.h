@@ -960,6 +960,13 @@ public:
     m_rootFileName = rootFileName;
   }
 
+  /**
+   * @brief create a new instance of type RteItem
+   * @param tag name of tag
+   * @return pointer to instance of type RteItem
+  */
+   RteItem* CreateItem(const std::string& tag) override;
+
 protected:
   std::string m_rootFileName; // absolute filename of this item's file
 };

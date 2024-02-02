@@ -71,5 +71,19 @@ TEST(XmlTreeTest, GetAttribute) {
     EXPECT_FALSE(e.HasValue(val));
   }
   EXPECT_FALSE(e.EraseAttributes("attr*"));
+
+  EXPECT_TRUE(e.GetRootFileName().empty());
+  e.SetRootFileName("e/foo.bar");
+  EXPECT_EQ(e.GetRootFileName(), "e/foo.bar");
+  EXPECT_EQ(e.GetRootFilePath(true), "e/");
+  EXPECT_EQ(e.GetRootFilePath(false), "e");
+
+  XMLTreeElement* e1 = new XMLTreeElement(e);
+  XMLTreeElement* e2 = new XMLTreeElement(e1);
+  EXPECT_EQ(e1->GetRootFileName(), "e/foo.bar");
+  EXPECT_EQ(e2->GetRootFileName(), "e/foo.bar");
+  e1->SetRootFileName("e1/foo.bar");
+  EXPECT_EQ(e1->GetRootFileName(), "e1/foo.bar");
+  EXPECT_EQ(e2->GetRootFileName(), "e1/foo.bar");
 }
 // end of XmlTreeTest.cpp

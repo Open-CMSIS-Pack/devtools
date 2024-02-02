@@ -23,6 +23,8 @@
 #include "XmlFormatter.h"
 #include "YmlFormatter.h"
 
+#include "CollectionUtils.h"
+
 using namespace std;
 
 static string schemaFile = "CPRJ.xsd";
@@ -62,6 +64,13 @@ RteKernel::~RteKernel()
   if (m_bOwnModel) {
     delete m_globalModel;
   }
+  ClearExternalGenerators();
+}
+
+bool RteKernel::Init()
+{
+  LoadExternalGenerators();
+  return true;
 }
 
 bool RteKernel::SetCmsisPackRoot(const string& cmsisPackRoot)
@@ -81,6 +90,11 @@ void RteKernel::SetRteCallback(RteCallback* callback)
 {
   m_rteCallback = callback;
   GetGlobalModel()->SetCallback(m_rteCallback);
+}
+
+RteGenerator* RteKernel::GetExternalGenerator(const std::string& id) const
+{
+  return get_or_null(m_externalGenerators, id);
 }
 
 RteProject* RteKernel::GetProject(int nPjNum) const
@@ -233,6 +247,42 @@ bool RteKernel::InitializeCprj(RteCprjProject* cprjProject, const string& toolch
   return true;
 }
 
+void RteKernel::LoadExternalGenerators()
+{
+  ClearExternalGenerators();
+  string etcDir = GetCmsisToolboxDir() + "/etc";
+  list<string> files;
+  RteFsUtils::GetMatchingFiles(files, ".generator.yml", etcDir, 1, true);
+  RteGlobalModel* globalModel = GetGlobalModel();
+  RteItemBuilder rteBuilder(globalModel);
+  unique_ptr<YmlTree> ymlTree = CreateUniqueYmlTree(&rteBuilder);
+  for(auto& f : files) {
+    if(contains_key(m_externalGeneratorFiles, f)) {
+      continue;
+    }
+    bool result = ymlTree->ParseFile(f);
+    RteItem* rootItem = rteBuilder.GetRoot();
+    if(result && rootItem) {
+      m_externalGeneratorFiles[f] = rootItem;
+      for(auto item : rootItem->GetChildren()) {
+        RteGenerator* g = dynamic_cast<RteGenerator*>(item);
+        if(g) {
+          m_externalGenerators[g->GetID()] = g;
+        }
+      }
+    }
+    rteBuilder.Clear(false);
+  }
+}
+
+void RteKernel::ClearExternalGenerators()
+{
+  m_externalGenerators.clear();
+  for(auto [_, g] : m_externalGeneratorFiles) {
+    delete g;
+  }
+  m_externalGeneratorFiles.clear();
+}
 
 RtePackage* RteKernel::LoadPack(const string& pdscFile, PackageState packState) const
 {
@@ -556,6 +606,7 @@ unique_ptr<XMLTree> RteKernel::CreateUniqueXmlTree(IXmlItemBuilder* itemBuilder)
 {
   unique_ptr<XMLTree> xmlTree(CreateXmlTree(itemBuilder));
   if (xmlTree.get() != nullptr) {
+    xmlTree->SetCallback(GetRteCallback());
     xmlTree->Init();
   }
   return xmlTree;
@@ -564,6 +615,10 @@ unique_ptr<XMLTree> RteKernel::CreateUniqueXmlTree(IXmlItemBuilder* itemBuilder)
 unique_ptr<YmlTree> RteKernel::CreateUniqueYmlTree(IXmlItemBuilder* itemBuilder) const
 {
   unique_ptr<YmlTree> ymlTree(CreateYmlTree(itemBuilder));
+  if (ymlTree.get() != nullptr) {
+    ymlTree->SetCallback(GetRteCallback());
+    ymlTree->Init();
+  }
   return ymlTree;
 }
 

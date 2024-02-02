@@ -9,6 +9,7 @@
 
 #include "RteFsUtils.h"
 #include "XmlFormatter.h"
+#include "CrossPlatformUtils.h"
 #include "CrossPlatform.h"
 
 #include <cxxopts.hpp>
@@ -33,7 +34,7 @@ PackGen::~PackGen(void) {
 }
 
 int PackGen::RunPackGen(int argc, char **argv) {
-  PackGen::Result result;
+  StrIntPair result;
   PackGen generator;
   error_code ec;
 
@@ -110,7 +111,7 @@ int PackGen::RunPackGen(int argc, char **argv) {
   if (!generator.m_noComponents || generator.m_verbose) {
 
     // Check CMake
-    result = generator.ExecCommand("cmake --version");
+    result = CrossPlatformUtils::ExecCommand("cmake --version");
     if (result.second) {
       cerr << "packgen error: CMake was not found" << endl;
       return 1;
@@ -958,7 +959,7 @@ void PackGen::CreatePackComponentsAndConditions(XMLTreeElement* rootElement, pac
 }
 
 bool PackGen::CheckPack(void) {
-  PackGen::Result result;
+  StrIntPair result;
   error_code ec;
   const auto& workingDir = fs::current_path(ec);
 
@@ -985,7 +986,7 @@ bool PackGen::CheckPack(void) {
     }
 
     // packchk
-    result = ExecCommand("packchk \"" + pack.vendor + "." + pack.name + ".pdsc\"" + pdscList);
+    result = CrossPlatformUtils::ExecCommand("packchk \"" + pack.vendor + "." + pack.name + ".pdsc\"" + pdscList);
     if (result.second) {
       cerr << "packgen error: packchk failed" << endl << result.first << endl;
       return false;
@@ -1001,7 +1002,7 @@ bool PackGen::CheckPack(void) {
 }
 
 bool PackGen::CompressPack(void) {
-  PackGen::Result result;
+  StrIntPair result;
   error_code ec;
   const auto& workingDir = fs::current_path(ec);
 
@@ -1012,7 +1013,7 @@ bool PackGen::CompressPack(void) {
     fs::current_path(pack.outputDir, ec);
 
     // 7zip
-    result = ExecCommand("7z a \"" + pack.vendor + "." + pack.name + "." + pack.version + ".pack\" -tzip");
+    result = CrossPlatformUtils::ExecCommand("7z a \"" + pack.vendor + "." + pack.name + "." + pack.version + ".pack\" -tzip");
     if (result.second) {
       cerr << "packgen error: 7zip failed\n" << result.first << endl;
       return false;
@@ -1067,7 +1068,7 @@ bool PackGen::CreateQuery() {
 
     // Run CMake
     const string cmd = build.options + " -S \"" + fs::path(m_manifest).parent_path().generic_string() + "\" -B \"" + buildRoot + "\"";
-    PackGen::Result result = ExecCommand(cmd);
+    auto result = CrossPlatformUtils::ExecCommand(cmd);
     if (result.second) {
       cerr << "packgen error: CMake failed\n" << result.first << endl;
       return false;
@@ -1075,25 +1076,6 @@ bool PackGen::CreateQuery() {
   }
 
   return true;
-}
-
-const PackGen::Result PackGen::ExecCommand(const string& cmd) {
-  array<char, 128> buffer;
-  string result;
-  int ret_code = -1;
-  std::function<int(FILE*)> close = _pclose;
-  std::function<FILE*(const char*, const char*)> open = _popen;
-
-  auto deleter = [&close, &ret_code](FILE* cmd) { ret_code = close(cmd); };
-  {
-    const unique_ptr<FILE, decltype(deleter)> pipe(open(cmd.c_str(), "r"), deleter);
-    if (pipe) {
-      while (fgets(buffer.data(), static_cast<int>(buffer.size()), pipe.get()) != nullptr) {
-        result += buffer.data();
-      }
-    }
-  }
-  return make_pair(result, ret_code);
 }
 
 bool PackGen::CopyItem(const string& src, const string& dst, list<string>& ext) {

@@ -185,32 +185,6 @@ const string CbuildUtils::StrPathAbsolute(const string& flagText, const string& 
   return result.replace(offset, string::npos, "\"" + path + "\"");
 }
 
-
-const CbuildUtils::Result CbuildUtils::ExecCommand(const string& cmd) {
-  array<char, 128> buffer;
-  string result;
-  int ret_code = -1;
-  std::function<int(FILE*)> close = _pclose;
-  std::function<FILE*(const char*, const char*)> open = _popen;
-
-  auto deleter = [&close, &ret_code](FILE* cmd) { ret_code = close(cmd); };
-  {
-    const unique_ptr<FILE, decltype(deleter)> pipe(open(cmd.c_str(), "r"), deleter);
-    if (pipe) {
-      while (fgets(buffer.data(), static_cast<int>(buffer.size()), pipe.get()) != nullptr) {
-        result += buffer.data();
-      }
-    }
-  }
-  return make_pair(result, ret_code);
-}
-
-void CbuildUtils::PushBackUniquely(std::vector<std::string>& vec, const std::string& value) {
-  if (find(vec.cbegin(), vec.cend(), value) == vec.cend()) {
-    vec.push_back(value);
-  }
-}
-
 string CbuildUtils::GenerateJsonPackList(const std::vector<CbuildPackItem>& packList) {
   string json;
   if (!packList.empty()) {

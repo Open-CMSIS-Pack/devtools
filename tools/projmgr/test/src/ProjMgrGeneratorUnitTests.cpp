@@ -99,7 +99,7 @@ TEST_F(ProjMgrGeneratorUnitTests, FailCreatingDirectories) {
 
   // Create a file with same name as parent directory where cbuild-gen.yml will be attempted to be created
   EXPECT_TRUE(RteFsUtils::CreateDirectories(folder));
-  EXPECT_TRUE(RteFsUtils::CreateFile(folder + "/TypeA", ""));
+  EXPECT_TRUE(RteFsUtils::CreateTextFile(folder + "/TypeA", ""));
 
   EXPECT_EQ(1, ProjMgr::RunProjMgr(6, argv, 0));
 

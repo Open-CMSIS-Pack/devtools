@@ -17,6 +17,7 @@
 
 #include <cstring>
 #include <sstream>
+#include <regex>
 
 using namespace std;
 
@@ -154,6 +155,19 @@ std::string& RteUtils::ReplaceAll(std::string& str, const string& toReplace, con
   return str;
 }
 
+string RteUtils::ExpandString(const string& src, const StrMap& variables) {
+  string ret = src;
+  if (regex_match(ret, regex(".*\\$.*\\$.*"))) {
+    for (const auto& [varName, replacement] : variables) {
+      const string var = "$" + varName + "$";
+      size_t index = 0;
+      while ((index = ret.find(var)) != string::npos) {
+        ret.replace(index, var.length(), replacement);
+      }
+    }
+  }
+  return ret;
+}
 
 string RteUtils::SpacesToUnderscore(const string& s)
 {
@@ -238,9 +252,6 @@ string RteUtils::EnsureLf(const std::string& s)
   return ReplaceAll(tmp, RteUtils::CR_STRING, RteUtils::LF_STRING);
 }
 
-
-
-
 string RteUtils::ExpandInstancePlaceholders(const string& s, int count)
 {
   static string INSTANCE = "%Instance%";
@@ -261,7 +272,6 @@ string RteUtils::ExpandInstancePlaceholders(const string& s, int count)
   }
   return result;
 }
-
 
 string RteUtils::ExtractFileName(const string& fileName)
 {

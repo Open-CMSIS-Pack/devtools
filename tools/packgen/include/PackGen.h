@@ -195,7 +195,6 @@ YAML::Emitter& operator << (YAML::Emitter& out, const queryRequests& req);
 
 class PackGen {
 public:
-  typedef std::pair<std::string, int> Result;
 
   /**
    * @brief class constructor
@@ -255,13 +254,6 @@ public:
    * @return true if no errors happened, false otherwise
   */
   bool CompressPack(void);
-
-  /**
-   * @brief execute external command in the underlying shell
-   * @param cmd command to be executed
-   * @return command execution result <string, error_code>
-  */
-  static const Result ExecCommand(const std::string& cmd);
 
 protected:
   std::string m_manifest;

@@ -701,7 +701,7 @@ bool ProjMgrYamlParser::ParseContexts(const YAML::Node& parent, CsolutionItem& c
       descriptor.cproject = RteFsUtils::RelativePath(fs::canonical(fs::path(csolution.directory).append(descriptor.cproject), ec).generic_string(), csolution.directory);
       if (!descriptor.cproject.empty()) {
         csolution.contexts.push_back(descriptor);
-        ProjMgrUtils::PushBackUniquely(csolution.cprojects, descriptor.cproject);
+        CollectionUtils::PushBackUniquely(csolution.cprojects, descriptor.cproject);
       }
     }
   }
