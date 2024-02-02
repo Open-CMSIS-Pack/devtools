@@ -351,7 +351,6 @@ void ProjMgrYamlCbuild::SetComponentsNode(YAML::Node node, const ContextItem* co
       SetNodeValue(componentNode[YAML_GENERATOR][YAML_ID], component.generator);
       const RteGenerator* rteGenerator = get_or_null(context->generators, component.generator);
       if(rteGenerator && !rteGenerator->IsExternal()) {
-        const RteGenerator* rteGenerator = context->generators.at(component.generator);
         SetNodeValue(componentNode[YAML_GENERATOR][YAML_FROM_PACK], rteGenerator->GetPackageID());
         SetGeneratorFiles(componentNode[YAML_GENERATOR], context, componentId);
       } else if (contains_key(context->extGenDir, component.generator)) {
