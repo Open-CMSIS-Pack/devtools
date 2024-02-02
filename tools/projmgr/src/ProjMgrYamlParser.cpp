@@ -294,39 +294,6 @@ bool ProjMgrYamlParser::ParseCbuildSet(const string& input, CbuildSetItem& cbuil
   return true;
 }
 
-bool ProjMgrYamlParser::ParseGlobalGenerator(const string& input,
-  std::map<std::string, GlobalGeneratorItem>& generators, bool checkSchema) {
-
-  try {
-    // Validate file schema
-    if (checkSchema && !ProjMgrYamlSchemaChecker().Validate(input)) {
-      return false;
-    }
-
-    const YAML::Node& root = YAML::LoadFile(input);
-    const YAML::Node& generatorNode = root[YAML_GENERATOR];
-    for (const auto& generatorEntry : generatorNode) {
-      GlobalGeneratorItem generator;
-      map<const string, string&> generatorChildren = {
-        {YAML_ID, generator.id},
-        {YAML_DESCRIPTION, generator.description},
-        {YAML_DOWNLOAD_URL, generator.downloadUrl},
-        {YAML_RUN, generator.run},
-      };
-      for (const auto& item : generatorChildren) {
-        ParseString(generatorEntry, item.first, item.second);
-      }
-      ParsePortablePath(generatorEntry, input, YAML_PATH, generator.path, false);
-      generators[generator.id] = generator;
-    }
-  }
-  catch (YAML::Exception& e) {
-    ProjMgrLogger::Error(input, e.mark.line + 1, e.mark.column + 1, e.msg);
-    return false;
-  }
-  return true;
-}
-
 // EnsurePortability checks the presence of backslash, case inconsistency and absolute path
 // It clears the string 'value' when it is an absolute path
 void ProjMgrYamlParser::EnsurePortability(const string& file, const YAML::Mark& mark, const string& key, string& value, bool checkExist) {

@@ -449,21 +449,6 @@ struct CbuildSetItem {
   std::string compiler;
 };
 
-/**
- * @brief global generator item containing
- *        generator id,
- *        generator description,
- *        download url,
- *        bridge program,
- *        path for generated files
-*/
-struct GlobalGeneratorItem {
-  std::string id;
-  std::string description;
-  std::string downloadUrl;
-  std::string run;
-  std::string path;
-};
 
 /**
  * @brief projmgr parser class for public interfacing
@@ -525,13 +510,6 @@ public:
   bool ParseCbuildSet(const std::string& input, bool checkSchema);
 
   /**
-   * @brief parse global generator
-   * @param input generator.yml file
-   * @param checkSchema false to skip schema validation
-  */
-  bool ParseGlobalGenerator(const std::string& input, bool checkSchema);
-
-  /**
    * @brief get cdefault
    * @return cdefault item
   */
@@ -567,12 +545,6 @@ public:
   */
   CbuildSetItem& GetCbuildSetItem(void);
 
-  /**
-   * @brief get global generators
-   * @return global generators map
-  */
-  std::map<std::string, GlobalGeneratorItem>& GetGlobalGenerators(void);
-
 protected:
   CdefaultItem m_cdefault;
   CsolutionItem m_csolution;
@@ -580,7 +552,6 @@ protected:
   std::map<std::string, CprojectItem> m_cprojects;
   std::map<std::string, ClayerItem> m_clayers;
   std::map<std::string, ClayerItem> m_genericClayers;
-  std::map<std::string, GlobalGeneratorItem> m_globalGenerators;
 };
 
 #endif  // PROJMGRPARSER_H
