@@ -7,6 +7,7 @@
 #include "ProjMgrExtGenerator.h"
 #include "ProjMgrLogger.h"
 #include "ProjMgrYamlEmitter.h"
+#include "ProjMgrKernel.h"
 
 #include "RteFsUtils.h"
 
@@ -17,7 +18,7 @@ ProjMgrExtGenerator::ProjMgrExtGenerator(ProjMgrParser* parser) :
   m_checkSchema(false) {
 }
 
-ProjMgrExtGenerator::~ProjMgrExtGenerator(void) {
+ProjMgrExtGenerator::~ProjMgrExtGenerator() {
   // Reserved
 }
 
@@ -25,34 +26,8 @@ void ProjMgrExtGenerator::SetCheckSchema(bool checkSchema) {
   m_checkSchema = checkSchema;
 }
 
-bool ProjMgrExtGenerator::RetrieveGlobalGenerators(void) {
-  if (m_globalGeneratorFiles.empty()) {
-    // get global generator files
-    ProjMgrUtils::GetCompilerRoot(m_compilerRoot);
-    StrVec toolchainConfigFiles;
-    error_code ec;
-    for (auto const& entry : fs::recursive_directory_iterator(m_compilerRoot, ec)) {
-      if (entry.path().filename().string().find(".generator.yml") == string::npos) {
-        continue;
-      }
-      m_globalGeneratorFiles.push_back(entry.path().generic_string());
-    }
-    // parse global generator files
-    for (auto const& generatorFile : m_globalGeneratorFiles) {
-      if (!m_parser->ParseGlobalGenerator(generatorFile, m_checkSchema)) {
-        return false;
-      }
-    }
-    m_globalGenerators = m_parser->GetGlobalGenerators();
-  }
-  return true;
-}
-
 bool ProjMgrExtGenerator::IsGlobalGenerator(const string& generatorId) {
-  if (m_globalGenerators.find(generatorId) == m_globalGenerators.end()) {
-    return false;
-  }
-  return true;
+  return ProjMgrKernel::Get()->GetExternalGenerator(generatorId) != nullptr;
 }
 
 bool ProjMgrExtGenerator::CheckGeneratorId(const string& generatorId, const string& componentId) {
@@ -65,15 +40,18 @@ bool ProjMgrExtGenerator::CheckGeneratorId(const string& generatorId, const stri
 }
 
 const string& ProjMgrExtGenerator::GetGlobalGenDir(const string& generatorId) {
-  return(m_globalGenerators[generatorId].path);
+  RteGenerator* g = ProjMgrKernel::Get()->GetExternalGenerator(generatorId);
+  return g ? g->GetPathAttribute() : RteUtils::EMPTY_STRING;
 }
 
 const string& ProjMgrExtGenerator::GetGlobalGenRunCmd(const string& generatorId) {
-  return(m_globalGenerators[generatorId].run);
+  RteGenerator* g = ProjMgrKernel::Get()->GetExternalGenerator(generatorId);
+  return g ? g->GetRunAttribute() : RteUtils::EMPTY_STRING;
 }
 
 const string& ProjMgrExtGenerator::GetGlobalDescription(const string& generatorId) {
-  return(m_globalGenerators[generatorId].description);
+  RteGenerator* g = ProjMgrKernel::Get()->GetExternalGenerator(generatorId);
+  return g ? g->GetDescription() : RteUtils::EMPTY_STRING;
 }
 
 void ProjMgrExtGenerator::AddUsedGenerator(const string& generatorId, const string& genDir, const string& contextId) {

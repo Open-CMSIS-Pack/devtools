@@ -1172,7 +1172,7 @@ RteGpdscInfo* RteProject::AddGpdscInfo(RteComponent* c, RteTarget* target)
     return NULL;
 
   RteGenerator* gen = c->GetGenerator();
-  if (!gen)
+  if (!gen || gen->IsExternal()) // TODO : remove external check when implemented
     return NULL; // nothing to insert
 
 

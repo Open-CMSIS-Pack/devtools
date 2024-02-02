@@ -37,7 +37,7 @@ public:
   ~ExtGenRteCallback() override{
     delete m_pExtGenerator;
   }
-  RteGenerator* GetGenerator(const std::string& id) const override {
+  RteGenerator* GetExternalGenerator(const std::string& id) const override {
      if (m_pExtGenerator->GetID() == "RteTestExternalGenerator") {
        return m_pExtGenerator;
      }

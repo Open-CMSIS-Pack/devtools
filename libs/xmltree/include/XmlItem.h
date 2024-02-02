@@ -469,14 +469,14 @@ public:
    * @param rootFileName absolute file name string
   */
   virtual void SetRootFileName(const std::string& rootFileName) {
-    // default does nothing
+    AddAttribute(".", rootFileName, false);  // default adds "." attribute
   }
 
   /**
    * @brief get absolute filename associated with the root item this instance belongs to
-   * @return file name string, empty if no file is associated (default)
+   * @return file name string, empty if no file is associated
   */
-  virtual const std::string& GetRootFileName() const { return EMPTY_STRING; }
+  virtual const std::string& GetRootFileName() const { return GetAttribute("."); }
 
   /**
    * @brief return absolute path of the file this item is read from or associated with

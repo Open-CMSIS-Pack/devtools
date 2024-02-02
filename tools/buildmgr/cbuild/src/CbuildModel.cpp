@@ -1478,17 +1478,17 @@ bool CbuildModel::EvalAccessSequence() {
   // remove duplicates
   for (auto& itemList : fieldList) {
     for (auto& [_, item] : *itemList) {
-      RteUtils::RemoveVectorDuplicates<string>(item);
+      CollectionUtils::RemoveVectorDuplicates<string>(item);
     }
   }
-  RteUtils::RemoveVectorDuplicates<string>(m_targetDefines);
-  RteUtils::RemoveVectorDuplicates<string>(m_targetIncludePaths);
-  RteUtils::RemoveVectorDuplicates<string>(m_targetCFlags);
-  RteUtils::RemoveVectorDuplicates<string>(m_targetCxxFlags);
-  RteUtils::RemoveVectorDuplicates<string>(m_targetAsFlags);
-  RteUtils::RemoveVectorDuplicates<string>(m_targetLdFlags);
-  RteUtils::RemoveVectorDuplicates<string>(m_targetLdCFlags);
-  RteUtils::RemoveVectorDuplicates<string>(m_targetLdCxxFlags);
+  CollectionUtils::RemoveVectorDuplicates<string>(m_targetDefines);
+  CollectionUtils::RemoveVectorDuplicates<string>(m_targetIncludePaths);
+  CollectionUtils::RemoveVectorDuplicates<string>(m_targetCFlags);
+  CollectionUtils::RemoveVectorDuplicates<string>(m_targetCxxFlags);
+  CollectionUtils::RemoveVectorDuplicates<string>(m_targetAsFlags);
+  CollectionUtils::RemoveVectorDuplicates<string>(m_targetLdFlags);
+  CollectionUtils::RemoveVectorDuplicates<string>(m_targetLdCFlags);
+  CollectionUtils::RemoveVectorDuplicates<string>(m_targetLdCxxFlags);
 
   return true;
 }

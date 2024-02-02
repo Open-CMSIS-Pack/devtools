@@ -183,11 +183,11 @@ void ProjMgrGenerator::GenerateCprjTarget(XMLTreeElement* element, const Context
     targetOutputElement->AddAttribute("rtedir", context.directories.rte);
     const auto& types = context.outputTypes;
     const vector<tuple<bool, const string, const string>> outputTypes = {
-      { types.bin.on, types.bin.filename, ProjMgrUtils::OUTPUT_TYPE_BIN },
-      { types.elf.on, types.elf.filename, ProjMgrUtils::OUTPUT_TYPE_ELF },
-      { types.hex.on, types.hex.filename, ProjMgrUtils::OUTPUT_TYPE_HEX },
-      { types.lib.on, types.lib.filename, ProjMgrUtils::OUTPUT_TYPE_LIB },
-      { types.cmse.on, types.cmse.filename, ProjMgrUtils::OUTPUT_TYPE_CMSE },
+      { types.bin.on, types.bin.filename, RteConstants::OUTPUT_TYPE_BIN },
+      { types.elf.on, types.elf.filename, RteConstants::OUTPUT_TYPE_ELF },
+      { types.hex.on, types.hex.filename, RteConstants::OUTPUT_TYPE_HEX },
+      { types.lib.on, types.lib.filename, RteConstants::OUTPUT_TYPE_LIB },
+      { types.cmse.on, types.cmse.filename, RteConstants::OUTPUT_TYPE_CMSE },
     };
     for (const auto& [on, file, type] : outputTypes) {
       if (on) {

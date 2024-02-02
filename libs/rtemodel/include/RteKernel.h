@@ -45,6 +45,12 @@ public:
   virtual ~RteKernel();
 
   /**
+   * @brief initialize kernel
+   * @return true if successful
+  */
+  virtual bool Init();
+
+  /**
    * @brief getter for CMSIS pack root folder
    * @return CMSIS pack root folder
   */
@@ -81,6 +87,29 @@ public:
    * @param callback pointer to RteCallback object to set
   */
   void SetRteCallback(RteCallback* callback);
+
+  /**
+   * @brief get collection of externals generators
+   * @return map of id to RteGenerator pointer
+  */
+  const std::map<std::string, RteGenerator*>& GetExternalGenerators() const { return  m_externalGenerators; }
+
+  /**
+   * @brief get global external generator for given ID
+   * @param id generator ID string
+   * @return pointer to RteGenerator if found, nullptr otherwise
+  */
+  RteGenerator* GetExternalGenerator(const std::string& id) const;
+
+  /**
+   * @brief loads external generators
+  */
+  void LoadExternalGenerators();
+
+  /**
+   * @brief clear and deletes external generators
+  */
+  void ClearExternalGenerators();
 
   /**
    * @brief getter for global CMSIS RTE model
@@ -290,7 +319,6 @@ public:
   void SetToolInfo(const XmlItem& attr) { m_toolInfo = attr; }
 
 protected:
-
   bool GetUrlFromIndex(const std::string& indexFile, const std::string& name, const std::string& vendor, const std::string& version, std::string& indexedUrl, std::string& indexedVersion) const;
   bool GetLocalPacksUrls(const std::string& rtePath, std::list<std::string>& urls) const;
   XMLTreeElement* ParseLocalRepositoryIdx(const std::string& rtePath) const;
@@ -309,12 +337,15 @@ protected:
   */
   virtual YmlTree* CreateYmlTree(IXmlItemBuilder* itemBuilder) const;
 
-protected:
   /**
    * @brief get this pointer to use in const methods
    * @return this
   */
   RteKernel* GetThisKernel() const { return const_cast<RteKernel*>(this); }
+
+
+// data
+protected:
 
   RteGlobalModel* m_globalModel;
   bool m_bOwnModel;
@@ -322,5 +353,8 @@ protected:
   XmlItem m_toolInfo;
   std::string m_cmsisPackRoot;
   std::string m_cmsisToolboxDir;
+  std::map<std::string, RteItem*> m_externalGeneratorFiles;
+  std::map<std::string, RteGenerator*> m_externalGenerators;
+
 };
 #endif // RteKernel_H

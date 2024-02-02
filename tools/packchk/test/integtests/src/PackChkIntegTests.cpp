@@ -295,11 +295,11 @@ TEST_F(PackChkIntegTests, AddRefPacks) {
   refPack3 = outDir + refPack3;
   refPack4 = outDir + refPack4;
 
-  ASSERT_TRUE(RteFsUtils::CreateFile(refPackTest, contentBegin + refNameTest + contentEnd));
-  ASSERT_TRUE(RteFsUtils::CreateFile(refPack1, contentBegin + refName1 + contentEnd));
-  ASSERT_TRUE(RteFsUtils::CreateFile(refPack2, contentBegin + refName2 + contentEnd));
-  ASSERT_TRUE(RteFsUtils::CreateFile(refPack3, contentBegin + refName3 + contentEnd));
-  ASSERT_TRUE(RteFsUtils::CreateFile(refPack4, contentBegin + refName4 + contentEnd));
+  ASSERT_TRUE(RteFsUtils::CreateTextFile(refPackTest, contentBegin + refNameTest + contentEnd));
+  ASSERT_TRUE(RteFsUtils::CreateTextFile(refPack1, contentBegin + refName1 + contentEnd));
+  ASSERT_TRUE(RteFsUtils::CreateTextFile(refPack2, contentBegin + refName2 + contentEnd));
+  ASSERT_TRUE(RteFsUtils::CreateTextFile(refPack3, contentBegin + refName3 + contentEnd));
+  ASSERT_TRUE(RteFsUtils::CreateTextFile(refPack4, contentBegin + refName4 + contentEnd));
 
   ASSERT_TRUE(RteFsUtils::Exists(refPackTest));
   ASSERT_TRUE(RteFsUtils::Exists(refPack1));

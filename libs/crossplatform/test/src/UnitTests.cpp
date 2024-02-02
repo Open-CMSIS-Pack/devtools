@@ -107,4 +107,19 @@ TEST(CrossPlatformUnitTests, GetLongPathRegStatus) {
     EXPECT_EQ(CrossPlatformUtils::REG_STATUS::NOT_SUPPORTED, status);
   }
 }
+
+TEST(CrossPlatformUnitTests, ExecCommand) {
+  auto result = CrossPlatformUtils::ExecCommand("invalid command");
+  EXPECT_EQ(false, (0 == result.second) ? true : false) << result.first;
+
+  string testdir = "mkdir_test_dir";
+  error_code ec;
+  if (filesystem::exists(testdir)) {
+    filesystem::remove(testdir);
+  }
+  result = CrossPlatformUtils::ExecCommand("mkdir " + testdir);
+  EXPECT_TRUE(filesystem::exists(testdir));
+  EXPECT_EQ(true, (0 == result.second) ? true : false) << result.first;
+}
+
 // end of UnitTests.cpp

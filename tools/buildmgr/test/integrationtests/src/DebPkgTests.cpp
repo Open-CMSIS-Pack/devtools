@@ -33,14 +33,14 @@ void DebPkgTests::SetUp() {
 
 string DebPkgTests::FindPackage(const string& path) {
   string cmd = "find " + path + " -name *.deb";
-  string pkgfile = CbuildUtils::ExecCommand(cmd.c_str()).first;
+  string pkgfile = CrossPlatformUtils::ExecCommand(cmd.c_str()).first;
   pkgfile.erase(pkgfile.find_last_not_of(" \f\n\r\t\v") + 1);
   return pkgfile;
 }
 
 void DebPkgTests::ExtractPackage(const string& pkg, const string& extPath) {
   string cmd = "dpkg-deb -xv " + pkg + " " + extPath;
-  auto res = CbuildUtils::ExecCommand(cmd.c_str());
+  auto res = CrossPlatformUtils::ExecCommand(cmd.c_str());
 
   ASSERT_FALSE(res.first.empty());
   ASSERT_EQ(res.second, 0);
@@ -93,13 +93,13 @@ TEST_F(DebPkgTests, CheckMetadata) {
 
   cmd = "find " + debpkgpath + " -name *.deb";
 
-  auto result = CbuildUtils::ExecCommand(cmd.c_str());
+  auto result = CrossPlatformUtils::ExecCommand(cmd.c_str());
   ASSERT_FALSE(result.first.empty());
   ASSERT_EQ(result.second, 0);
 
   string pkgfile = result.first;
   cmd = "dpkg-deb --info " + pkgfile;
-  auto res = CbuildUtils::ExecCommand(cmd.c_str());
+  auto res = CrossPlatformUtils::ExecCommand(cmd.c_str());
   ASSERT_FALSE(res.first.empty());
   ASSERT_EQ(res.second, 0);
 

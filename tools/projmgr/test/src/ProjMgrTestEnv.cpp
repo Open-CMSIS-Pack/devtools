@@ -21,6 +21,8 @@ string testcmsispack_folder;
 string testcmsiscompiler_folder;
 string schema_folder;
 string templates_folder;
+string etc_folder;
+string bin_folder;
 
 StdStreamRedirect::StdStreamRedirect() :
   m_outbuffer(""), m_cerrbuffer(""),
@@ -56,6 +58,11 @@ void ProjMgrTestEnv::SetUp() {
   testoutput_folder    = RteFsUtils::GetCurrentFolder() + "output";
   testcmsispack_folder = string(CMAKE_SOURCE_DIR) + "test/packs";
   testcmsiscompiler_folder = testinput_folder + "/TestToolchains";
+  etc_folder = string(PROJMGRUNITTESTS_BIN_PATH) + "/../etc";
+  RteFsUtils::NormalizePath(etc_folder);
+  bin_folder = string(PROJMGRUNITTESTS_BIN_PATH) + "/../bin";
+  RteFsUtils::NormalizePath(bin_folder);
+
   if (RteFsUtils::Exists(testoutput_folder)) {
     RteFsUtils::RemoveDir(testoutput_folder);
   }
@@ -69,12 +76,11 @@ void ProjMgrTestEnv::SetUp() {
   ASSERT_FALSE(schema_folder.empty());
 
   // copy schemas
-  std::string schemaDestDir = string(PROJMGRUNITTESTS_BIN_PATH) + "/../etc";
-  if (RteFsUtils::Exists(schemaDestDir)) {
-    RteFsUtils::RemoveDir(schemaDestDir);
+  if (RteFsUtils::Exists(etc_folder)) {
+    RteFsUtils::RemoveDir(etc_folder);
   }
-  RteFsUtils::CreateDirectories(schemaDestDir);
-  fs::copy(fs::path(schema_folder), fs::path(schemaDestDir), fs::copy_options::recursive, ec);
+  RteFsUtils::CreateDirectories(etc_folder);
+  fs::copy(fs::path(schema_folder), fs::path(etc_folder), fs::copy_options::recursive, ec);
 
   //copy test input data
   if (RteFsUtils::Exists(testinput_folder)) {
@@ -82,6 +88,11 @@ void ProjMgrTestEnv::SetUp() {
   }
   RteFsUtils::CreateDirectories(testinput_folder);
   fs::copy(fs::path(testdata_folder), fs::path(testinput_folder), fs::copy_options::recursive, ec);
+
+  if (RteFsUtils::Exists(bin_folder)) {
+    RteFsUtils::RemoveDir(bin_folder);
+  }
+  RteFsUtils::CreateDirectories(bin_folder);
 
   // copy local pack
   string srcPackPath, destPackPath;
@@ -114,9 +125,9 @@ void ProjMgrTestEnv::SetUp() {
 
   // create dummy cmsis compiler root
   RteFsUtils::CreateDirectories(testcmsiscompiler_folder);
-  RteFsUtils::CreateFile(testcmsiscompiler_folder + "/AC6.6.18.0.cmake", "");
-  RteFsUtils::CreateFile(testcmsiscompiler_folder + "/GCC.11.2.1.cmake", "");
-  RteFsUtils::CreateFile(testcmsiscompiler_folder + "/IAR.8.50.6.cmake", "");
+  RteFsUtils::CreateTextFile(testcmsiscompiler_folder + "/AC6.6.18.0.cmake", "");
+  RteFsUtils::CreateTextFile(testcmsiscompiler_folder + "/GCC.11.2.1.cmake", "");
+  RteFsUtils::CreateTextFile(testcmsiscompiler_folder + "/IAR.8.50.6.cmake", "");
   CrossPlatformUtils::SetEnv("CMSIS_COMPILER_ROOT", testcmsiscompiler_folder);
 
   // copy linker script template files

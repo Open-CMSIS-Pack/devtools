@@ -20,14 +20,6 @@
 #include "VersionCmp.h"
 #include "WildCards.h"
 
-#include <string>
-#include <list>
-#include <map>
-#include <set>
-#include <vector>
-#include <algorithm>
-
-
 class RteUtils
 {
 private:
@@ -37,7 +29,7 @@ public:
   /**
    * @brief determine prefix of a string
    * @param s string containing the prefix
-   * @param delimiter delimiter after the prefix
+   * @param delimiter char delimiter after the prefix
    * @param withDelimiter true if returned string should contain delimiter, otherwise false
    * @return return prefix of a string with or without delimiter
   */
@@ -45,7 +37,7 @@ public:
   /**
    * @brief determine suffix of a string
    * @param s string containing the suffix
-   * @param delimiter delimiter ahead of the suffix
+   * @param delimiter char delimiter before suffix
    * @param withDelimiter true if returned string should contain delimiter, otherwise false
    * @return return suffix of a string with or without delimiter
   */
@@ -53,21 +45,21 @@ public:
   /**
    * @brief determine suffix as integer
    * @param s string containing the suffix
-   * @param delimiter delimiter ahead of the suffix
+   * @param delimiter char delimiter before suffix
    * @return return suffix as integer
   */
   static int    GetSuffixAsInt(const std::string& s, char delimiter = ':');
   /**
    * @brief determine string after a delimiter
    * @param s string containing delimiter
-   * @param delimiter delimiter to look for
+   * @param delimiter string delimiter to look for
    * @return return string after delimiter
   */
   static std::string RemovePrefixByString(const std::string& s, const char* delimiter = ":");
   /**
    * @brief determine string ahead of a delimiter
    * @param s string containing delimiter
-   * @param delimiter delimiter to look for
+   * @param delimiter string delimiter to look for
    * @return return string ahead of delimiter
   */
   static std::string RemoveSuffixByString(const std::string& s, const char* delimiter = ":");
@@ -135,6 +127,14 @@ public:
    * @return reference supplied string
    */
   static std::string& ReplaceAll(std::string& str, const std::string& toReplace, const std::string& with);
+
+  /**
+   * @brief expand string by replacing $keyword$ with corresponding values
+   * @param source string to expand
+   * @param variables string to string map with keyword values
+   * @return expanded string
+  */
+  static std::string ExpandString(const std::string& src, const StrMap& variables);
 
   /**
    * @brief replace blank(s) with underscore(s)
@@ -346,18 +346,7 @@ public:
    * @return XML specification of attributes
   */
   static std::string ToXmlString(const std::map<std::string, std::string>& attributes);
-  /**
-   * @brief remove duplicate elements from vector without changing the order of elements
-   * @param input vector to be processed
-  */
-  template <typename T>
-  static void RemoveVectorDuplicates(std::vector<T>& elemVec) {
-    auto end = elemVec.end();
-    for (auto itr = elemVec.begin(); itr != end; ++itr) {
-      end = std::remove(itr + 1, end, *itr);
-    }
-    elemVec.erase(end, elemVec.end());
-  }
+
 
   static const std::string EMPTY_STRING;
   static const std::string DASH_STRING;

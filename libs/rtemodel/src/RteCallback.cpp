@@ -50,6 +50,14 @@ long RteCallback::ShowMessageBox(const string& title, const string& message, uns
   return defaultVal;
 }
 
+RteGenerator* RteCallback::GetExternalGenerator(const std::string& id) const
+{
+  if(GetRteKernel()) {
+    return GetRteKernel()->GetExternalGenerator(id);
+  }
+  return nullptr;
+}
+
 RteCallback* RteCallback::GetGlobal()
 {
   if(theGlobalCallback) {

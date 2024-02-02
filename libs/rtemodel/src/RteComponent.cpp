@@ -317,7 +317,7 @@ RteGenerator* RteComponent::GetGenerator() const
       generator = pack->GetGenerator(generatorName);
     }
     if (!generator && GetCallback()) {
-      generator = GetCallback()->GetGenerator(generatorName);
+      generator = GetCallback()->GetExternalGenerator(generatorName);
     }
   }
   return generator;

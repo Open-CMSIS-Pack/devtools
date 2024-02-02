@@ -41,7 +41,6 @@ struct CbuildPackItem
 
 class CbuildUtils {
 public:
-  typedef std::pair<std::string, int> Result;
 
   CbuildUtils();
   ~CbuildUtils();
@@ -120,13 +119,6 @@ public:
   static const std::string StrPathConv(const std::string& path);
 
   /**
-   * @brief execute shell command
-   * @param cmd string shell command to be executed
-   * @return command execution result <string, error_code>
-  */
-  static const Result ExecCommand(const std::string& cmd);
-
-  /**
    * @brief convert path to absolute if it's unambiguously recognized as relative
    *        accept toolchain flag as input (e.g. key=./relative/path)
    * @param path string relative path to concatenate to base
@@ -134,13 +126,6 @@ public:
    * @return an absolute path from a relative path and a fully qualified base path
   */
   static const std::string StrPathAbsolute(const std::string& path, const std::string& base);
-
-  /**
-   * @brief Add a value into a vector if it does not already exist in the vector
-   * @param vec The vector to add the value into
-   * @param value the value to add
-  */
-  static void PushBackUniquely(std::vector<std::string>& vec, const std::string& value);
 
   /**
    * @brief generate json packlist file

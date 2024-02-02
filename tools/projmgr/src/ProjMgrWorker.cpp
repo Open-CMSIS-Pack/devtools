@@ -18,23 +18,23 @@
 using namespace std;
 
 static const regex accessSequencesRegEx = regex(string("^(") +
-  ProjMgrUtils::AS_SOLUTION_DIR + "|" +
-  ProjMgrUtils::AS_PROJECT_DIR  + "|" +
-  ProjMgrUtils::AS_OUT_DIR      + "|" +
-  ProjMgrUtils::AS_BIN          + "|" +
-  ProjMgrUtils::AS_ELF          + "|" +
-  ProjMgrUtils::AS_HEX          + "|" +
-  ProjMgrUtils::AS_LIB          + "|" +
-  ProjMgrUtils::AS_CMSE         + ")" +
+  RteConstants::AS_SOLUTION_DIR + "|" +
+  RteConstants::AS_PROJECT_DIR  + "|" +
+  RteConstants::AS_OUT_DIR      + "|" +
+  RteConstants::AS_BIN          + "|" +
+  RteConstants::AS_ELF          + "|" +
+  RteConstants::AS_HEX          + "|" +
+  RteConstants::AS_LIB          + "|" +
+  RteConstants::AS_CMSE         + ")" +
   "\\((.*)\\)$"
 );
 
 static const map<const string, tuple<const string, const string, const string>> affixesMap = {
-  { ""   ,   {ProjMgrUtils::DEFAULT_ELF_SUFFIX, ProjMgrUtils::DEFAULT_LIB_PREFIX, ProjMgrUtils::DEFAULT_LIB_SUFFIX }},
-  { "AC6",   {ProjMgrUtils::AC6_ELF_SUFFIX    , ProjMgrUtils::AC6_LIB_PREFIX    , ProjMgrUtils::AC6_LIB_SUFFIX     }},
-  { "GCC",   {ProjMgrUtils::GCC_ELF_SUFFIX    , ProjMgrUtils::GCC_LIB_PREFIX    , ProjMgrUtils::GCC_LIB_SUFFIX     }},
-  { "CLANG", {ProjMgrUtils::GCC_ELF_SUFFIX    , ProjMgrUtils::GCC_LIB_PREFIX    , ProjMgrUtils::GCC_LIB_SUFFIX     }},
-  { "IAR",   {ProjMgrUtils::IAR_ELF_SUFFIX    , ProjMgrUtils::IAR_LIB_PREFIX    , ProjMgrUtils::IAR_LIB_SUFFIX     }},
+  { ""   ,   {RteConstants::DEFAULT_ELF_SUFFIX, RteConstants::DEFAULT_LIB_PREFIX, RteConstants::DEFAULT_LIB_SUFFIX }},
+  { "AC6",   {RteConstants::AC6_ELF_SUFFIX    , RteConstants::AC6_LIB_PREFIX    , RteConstants::AC6_LIB_SUFFIX     }},
+  { "GCC",   {RteConstants::GCC_ELF_SUFFIX    , RteConstants::GCC_LIB_PREFIX    , RteConstants::GCC_LIB_SUFFIX     }},
+  { "CLANG", {RteConstants::GCC_ELF_SUFFIX    , RteConstants::GCC_LIB_PREFIX    , RteConstants::GCC_LIB_SUFFIX     }},
+  { "IAR",   {RteConstants::IAR_ELF_SUFFIX    , RteConstants::IAR_LIB_PREFIX    , RteConstants::IAR_LIB_SUFFIX     }},
 };
 
 ProjMgrWorker::ProjMgrWorker(ProjMgrParser* parser, ProjMgrExtGenerator* extGenerator) :
@@ -129,12 +129,12 @@ void ProjMgrWorker::AddContext(ContextDesc& descriptor, const TypePair& type, Co
     context.directories.cprj = RteFsUtils::MakePathCanonical(RteFsUtils::AbsolutePath(context.directories.cprj).generic_string());
 
     // context variables
-    context.variables[ProjMgrUtils::AS_SOLUTION] = context.csolution->name;
-    context.variables[ProjMgrUtils::AS_PROJECT] = context.cproject->name;
-    context.variables[ProjMgrUtils::AS_BUILD_TYPE] = context.type.build;
-    context.variables[ProjMgrUtils::AS_TARGET_TYPE] = context.type.target;
+    context.variables[RteConstants::AS_SOLUTION] = context.csolution->name;
+    context.variables[RteConstants::AS_PROJECT] = context.cproject->name;
+    context.variables[RteConstants::AS_BUILD_TYPE] = context.type.build;
+    context.variables[RteConstants::AS_TARGET_TYPE] = context.type.target;
 
-    ProjMgrUtils::PushBackUniquely(m_ymlOrderedContexts, context.name);
+    CollectionUtils::PushBackUniquely(m_ymlOrderedContexts, context.name);
     m_contexts[context.name] = context;
   }
 }
@@ -161,7 +161,7 @@ bool ProjMgrWorker::ParseContextLayers(ContextItem& context) {
     }
     if (CheckContextFilters(clayer.typeFilter, context)) {
       error_code ec;
-      string const& clayerRef = ExpandString(clayer.layer, context.variables);
+      string const& clayerRef = RteUtils::ExpandString(clayer.layer, context.variables);
       string const& clayerFile = fs::canonical(fs::path(context.cproject->directory).append(clayerRef), ec).generic_string();
       if (clayerFile.empty()) {
         if (regex_match(clayer.layer, regex(".*\\$.*\\$.*"))) {
@@ -316,6 +316,9 @@ string ProjMgrWorker::GetPackRoot() {
 }
 
 bool ProjMgrWorker::InitializeModel() {
+  if(m_kernel) {
+    return true; // already initialized;
+  }
   m_packRoot = GetPackRoot();
   m_kernel = ProjMgrKernel::Get();
   if (!m_kernel) {
@@ -329,7 +332,7 @@ bool ProjMgrWorker::InitializeModel() {
   }
   m_kernel->SetCmsisPackRoot(m_packRoot);
   m_model->SetCallback(m_kernel->GetCallback());
-  return true;
+  return m_kernel->Init();
 }
 
 bool ProjMgrWorker::LoadAllRelevantPacks() {
@@ -350,14 +353,14 @@ bool ProjMgrWorker::LoadAllRelevantPacks() {
       for(const auto& [pdscFile, pathVer] : contextItem.pdscFiles) {
         const string& path = pathVer.first;
         if(!path.empty()) {
-          ProjMgrUtils::PushBackUniquely(pdscFiles, pdscFile);
+          CollectionUtils::PushBackUniquely(pdscFiles, pdscFile);
         }
       }
       // then all others
       for(const auto& [pdscFile, pathVer] : contextItem.pdscFiles) {
         const string& path = pathVer.first;
         if(path.empty()) {
-          ProjMgrUtils::PushBackUniquely(pdscFiles, pdscFile);
+          CollectionUtils::PushBackUniquely(pdscFiles, pdscFile);
         }
       }
   }
@@ -585,7 +588,7 @@ bool ProjMgrWorker::CollectLayersFromPacks(ContextItem& context, StrVecMap& clay
     if (!RteFsUtils::Exists(clayerFile)) {
       return false;
     }
-    ProjMgrUtils::PushBackUniquely(clayers[clayerItem->GetTypeString()], clayerFile);
+    CollectionUtils::PushBackUniquely(clayers[clayerItem->GetTypeString()], clayerFile);
   }
   return true;
 }
@@ -606,7 +609,7 @@ bool ProjMgrWorker::CollectLayersFromSearchPath(const string& clayerSearchPath, 
             return false;
           }
           ClayerItem* clayer = &m_parser->GetGenericClayers()[clayerFile];
-          ProjMgrUtils::PushBackUniquely(clayers[clayer->type], clayerFile);
+          CollectionUtils::PushBackUniquely(clayers[clayer->type], clayerFile);
         }
       }
     }
@@ -617,7 +620,7 @@ bool ProjMgrWorker::CollectLayersFromSearchPath(const string& clayerSearchPath, 
 void ProjMgrWorker::GetRequiredLayerTypes(ContextItem& context, LayersDiscovering& discover) {
   for (const auto& clayer : context.cproject->clayers) {
     if (clayer.type.empty() || !CheckContextFilters(clayer.typeFilter, context) ||
-      (ExpandString(clayer.layer, context.variables) != clayer.layer)) {
+      (RteUtils::ExpandString(clayer.layer, context.variables) != clayer.layer)) {
       continue;
     }
     discover.requiredLayerTypes.push_back(clayer.type);
@@ -667,14 +670,14 @@ bool ProjMgrWorker::ProcessCandidateLayers(ContextItem& context, LayersDiscoveri
 
 bool ProjMgrWorker::GetCandidateLayers(LayersDiscovering& discover) {
   // clayers matching required types
-  StrVecMap genericClayers = ProjMgrUtils::MergeStrVecMap(discover.genericClayersFromSearchPath, discover.genericClayersFromPacks);
+  StrVecMap genericClayers = CollectionUtils::MergeStrVecMap(discover.genericClayersFromSearchPath, discover.genericClayersFromPacks);
   for (const auto& requiredType : discover.requiredLayerTypes) {
     if (genericClayers.find(requiredType) != genericClayers.end()) {
       for (const auto& clayer : genericClayers.at(requiredType)) {
         discover.candidateClayers[requiredType].push_back(clayer);
       }
     } else {
-      ProjMgrUtils::PushBackUniquely(discover.missedRequiredTypes, requiredType);
+      CollectionUtils::PushBackUniquely(discover.missedRequiredTypes, requiredType);
     }
   }
   // parse matched type layers
@@ -781,7 +784,7 @@ bool ProjMgrWorker::ProcessLayerCombinations(ContextItem& context, LayersDiscove
       for (const auto& [type, _] : discover.candidateClayers) {
         for (const auto& collection : combination) {
           if (collection.type == type) {
-            ProjMgrUtils::PushBackUniquely(context.compatibleLayers[type], collection.filename);
+            CollectionUtils::PushBackUniquely(context.compatibleLayers[type], collection.filename);
           }
         }
       }
@@ -1038,7 +1041,7 @@ ConnectionsValidationResult ProjMgrWorker::ValidateConnections(ConnectionsCollec
     const auto& value = provided->second;
     if ((providedValues.find(key) != providedValues.end())) {
       // connection is provided multiple times
-      ProjMgrUtils::PushBackUniquely(conflicts, key);
+      CollectionUtils::PushBackUniquely(conflicts, key);
       continue;
     }
     // new entry
@@ -1052,7 +1055,7 @@ ConnectionsValidationResult ProjMgrWorker::ValidateConnections(ConnectionsCollec
     const auto& value = (*it)->second;
     if (value.find_first_of('+') == 0) {
       // move entry to the consumedAddedValues map
-      consumedAddedValues[id] += ProjMgrUtils::StringToInt(value);
+      consumedAddedValues[id] += RteUtils::StringToInt(value, 0);
       it = connections.consumes.erase(it);
     } else {
       it++;
@@ -1063,7 +1066,7 @@ ConnectionsValidationResult ProjMgrWorker::ValidateConnections(ConnectionsCollec
   StrPairVec overflows;
   for (const auto& [consumedKey, consumedValue] : consumedAddedValues) {
     const int providedValue = providedValues.find(consumedKey) == providedValues.end() ? 0 :
-      ProjMgrUtils::StringToInt(providedValues.at(consumedKey));
+      RteUtils::StringToInt(providedValues.at(consumedKey), 0);
     if (consumedValue > providedValue) {
       overflows.push_back({ consumedKey, to_string(consumedValue) + " > " + to_string(providedValue) });
     }
@@ -1253,16 +1256,16 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
 
   // Set or update target attributes
   const StrMap attrMap = {
-    { attr.fpu,              ProjMgrUtils::RTE_DFPU        },
-    { attr.dsp,              ProjMgrUtils::RTE_DDSP        },
-    { attr.mve,              ProjMgrUtils::RTE_DMVE        },
-    { attr.endian,           ProjMgrUtils::RTE_DENDIAN     },
-    { attr.trustzone,        ProjMgrUtils::RTE_DSECURE     },
-    { attr.branchProtection, ProjMgrUtils::RTE_DBRANCHPROT },
+    { attr.fpu,              RteConstants::RTE_DFPU        },
+    { attr.dsp,              RteConstants::RTE_DDSP        },
+    { attr.mve,              RteConstants::RTE_DMVE        },
+    { attr.endian,           RteConstants::RTE_DENDIAN     },
+    { attr.trustzone,        RteConstants::RTE_DSECURE     },
+    { attr.branchProtection, RteConstants::RTE_DBRANCHPROT },
   };
   for (const auto& [yamlValue, rteKey] : attrMap) {
     if (!yamlValue.empty()) {
-      const auto& rteValue = ProjMgrUtils::GetDeviceAttribute(rteKey, yamlValue);
+      const auto& rteValue = RteConstants::GetDeviceAttribute(rteKey, yamlValue);
       if (!rteValue.empty()) {
         context.targetAttributes[rteKey] = rteValue;
       }
@@ -1274,8 +1277,8 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
     context.packages.insert({ context.devicePack->GetID(), context.devicePack });
   }
   GetDeviceItem(context.device, context.deviceItem);
-  context.variables[ProjMgrUtils::AS_DNAME] = context.deviceItem.name;
-  context.variables[ProjMgrUtils::AS_PNAME] = context.deviceItem.pname;
+  context.variables[RteConstants::AS_DNAME] = context.deviceItem.name;
+  context.variables[RteConstants::AS_PNAME] = context.deviceItem.pname;
   return true;
 }
 
@@ -1298,30 +1301,30 @@ bool ProjMgrWorker::ProcessBoardPrecedence(StringCollection& item) {
 void ProjMgrWorker::CheckDeviceAttributes(const string& device, const ProcessorItem& userSelection, const StrMap& targetAttributes) {
   // check endian compatibility
   if (!userSelection.endian.empty()) {
-    if (targetAttributes.find(ProjMgrUtils::RTE_DENDIAN) != targetAttributes.end()) {
-      const auto& endian = targetAttributes.at(ProjMgrUtils::RTE_DENDIAN);
-      if ((endian != ProjMgrUtils::RTE_ENDIAN_CONFIGURABLE) &&
-        (endian != ProjMgrUtils::GetDeviceAttribute(ProjMgrUtils::RTE_DENDIAN, userSelection.endian))) {
-        ProjMgrLogger::Warn("device '" + device + "' does not support '" + ProjMgrUtils::YAML_ENDIAN + ": " + userSelection.endian + "'");
+    if (targetAttributes.find(RteConstants::RTE_DENDIAN) != targetAttributes.end()) {
+      const auto& endian = targetAttributes.at(RteConstants::RTE_DENDIAN);
+      if ((endian != RteConstants::RTE_ENDIAN_CONFIGURABLE) &&
+        (endian != RteConstants::GetDeviceAttribute(RteConstants::RTE_DENDIAN, userSelection.endian))) {
+        ProjMgrLogger::Warn("device '" + device + "' does not support '" + RteConstants::YAML_ENDIAN + ": " + userSelection.endian + "'");
       }
     }
   }
   // check dp vs sp fpu
-  if ((userSelection.fpu == ProjMgrUtils::YAML_FPU_DP) &&
-    (targetAttributes.find(ProjMgrUtils::RTE_DFPU) != targetAttributes.end()) &&
-    (targetAttributes.at(ProjMgrUtils::RTE_DFPU) == ProjMgrUtils::RTE_SP_FPU)) {
-    ProjMgrLogger::Warn("device '" + device + "' does not support '" + ProjMgrUtils::YAML_FPU + ": " + userSelection.fpu + "'");
+  if ((userSelection.fpu == RteConstants::YAML_FPU_DP) &&
+    (targetAttributes.find(RteConstants::RTE_DFPU) != targetAttributes.end()) &&
+    (targetAttributes.at(RteConstants::RTE_DFPU) == RteConstants::RTE_SP_FPU)) {
+    ProjMgrLogger::Warn("device '" + device + "' does not support '" + RteConstants::YAML_FPU + ": " + userSelection.fpu + "'");
   }
   // check disabled capabilities
   const vector<tuple<string, string, string, string>> attrMapCompatibility = {
-    { ProjMgrUtils::YAML_FPU              , userSelection.fpu,              ProjMgrUtils::RTE_DFPU,    ProjMgrUtils::RTE_NO_FPU    },
-    { ProjMgrUtils::YAML_DSP              , userSelection.dsp,              ProjMgrUtils::RTE_DDSP,    ProjMgrUtils::RTE_NO_DSP    },
-    { ProjMgrUtils::YAML_MVE              , userSelection.mve,              ProjMgrUtils::RTE_DMVE,    ProjMgrUtils::RTE_NO_MVE    },
-    { ProjMgrUtils::YAML_TRUSTZONE        , userSelection.trustzone,        ProjMgrUtils::RTE_DTZ,     ProjMgrUtils::RTE_NO_TZ     },
-    { ProjMgrUtils::YAML_BRANCH_PROTECTION, userSelection.branchProtection, ProjMgrUtils::RTE_DPACBTI, ProjMgrUtils::RTE_NO_PACBTI },
+    { RteConstants::YAML_FPU              , userSelection.fpu,              RteConstants::RTE_DFPU,    RteConstants::RTE_NO_FPU    },
+    { RteConstants::YAML_DSP              , userSelection.dsp,              RteConstants::RTE_DDSP,    RteConstants::RTE_NO_DSP    },
+    { RteConstants::YAML_MVE              , userSelection.mve,              RteConstants::RTE_DMVE,    RteConstants::RTE_NO_MVE    },
+    { RteConstants::YAML_TRUSTZONE        , userSelection.trustzone,        RteConstants::RTE_DTZ,     RteConstants::RTE_NO_TZ     },
+    { RteConstants::YAML_BRANCH_PROTECTION, userSelection.branchProtection, RteConstants::RTE_DPACBTI, RteConstants::RTE_NO_PACBTI },
   };
   for (const auto& [yamlKey, yamlValue, rteKey, rteValue] : attrMapCompatibility) {
-    if (!yamlValue.empty() && (yamlValue != ProjMgrUtils::YAML_OFF)) {
+    if (!yamlValue.empty() && (yamlValue != RteConstants::YAML_OFF)) {
       if ((targetAttributes.find(rteKey) == targetAttributes.end()) ||
         (targetAttributes.at(rteKey) == rteValue)) {
         ProjMgrLogger::Warn("device '" + device + "' does not support '" + yamlKey + ": " + yamlValue + "'");
@@ -1622,9 +1625,9 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
     }
 
     // Get generator
+    string generatorId = matchedComponent->GetGeneratorName();
     RteGenerator* generator = matchedComponent->GetGenerator();
-    string generatorId = generator ? generator->GetID() : "";
-    if (generator) {
+    if (generator && !generator->IsExternal()) {
       context.generators.insert({ generatorId, generator });
       string genDir;
       if (!GetGeneratorDir(generator, context, layer, genDir)) {
@@ -1635,20 +1638,18 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
       context.gpdscs.insert({ gpdsc, {componentId, generatorId, genDir} });
     } else {
       // Get external generator id
-      const string extGenId = matchedComponent->GetGeneratorName();
-      if (!extGenId.empty()) {
+      if (!generatorId.empty()) {
         // check if required global generator is registered
-        if (!m_extGenerator->CheckGeneratorId(extGenId, componentId)) {
+        if (!m_extGenerator->CheckGeneratorId(generatorId, componentId)) {
           return false;
         }
         string genDir;
-        if (!GetExtGeneratorDir(extGenId, context, layer, genDir)) {
+        if (!GetExtGeneratorDir(generatorId, context, layer, genDir)) {
           return false;
         }
         // keep track of used generators
-        m_extGenerator->AddUsedGenerator(extGenId, genDir, context.name);
-        context.extGenDir[extGenId] = genDir;
-        generatorId = extGenId;
+        m_extGenerator->AddUsedGenerator(generatorId, genDir, context.name);
+        context.extGenDir[generatorId] = genDir;
       }
     }
 
@@ -2265,10 +2266,10 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, bool rerun) {
   // set context variables (static access sequences)
   DeviceItem deviceItem;
   GetDeviceItem(context.device, deviceItem);
-  context.variables[ProjMgrUtils::AS_DNAME] = deviceItem.name;
-  context.variables[ProjMgrUtils::AS_PNAME] = deviceItem.pname;
-  context.variables[ProjMgrUtils::AS_BNAME] = context.board;
-  context.variables[ProjMgrUtils::AS_COMPILER] = context.toolchain.name;
+  context.variables[RteConstants::AS_DNAME] = deviceItem.name;
+  context.variables[RteConstants::AS_PNAME] = deviceItem.pname;
+  context.variables[RteConstants::AS_BNAME] = context.board;
+  context.variables[RteConstants::AS_COMPILER] = context.toolchain.name;
 
   // Add cdefault misc into csolution
   if (context.cdefault) {
@@ -2748,29 +2749,29 @@ void ProjMgrWorker::ExpandAccessSequence(const ContextItem & context, const Cont
   const string relOutDir = RteFsUtils::RelativePath(refContextOutDir, context.directories.cprj, withHeadingDot);
   string regExStr = "\\$";
   string replacement;
-  if (sequence == ProjMgrUtils::AS_SOLUTION_DIR) {
-    regExStr += ProjMgrUtils::AS_SOLUTION_DIR;
+  if (sequence == RteConstants::AS_SOLUTION_DIR) {
+    regExStr += RteConstants::AS_SOLUTION_DIR;
     replacement = RteFsUtils::RelativePath(refContext.csolution->directory, context.directories.cprj, withHeadingDot);
-  } else if (sequence == ProjMgrUtils::AS_PROJECT_DIR) {
-    regExStr += ProjMgrUtils::AS_PROJECT_DIR;
+  } else if (sequence == RteConstants::AS_PROJECT_DIR) {
+    regExStr += RteConstants::AS_PROJECT_DIR;
     replacement = RteFsUtils::RelativePath(refContext.cproject->directory, context.directories.cprj, withHeadingDot);
-  } else if (sequence == ProjMgrUtils::AS_OUT_DIR) {
-    regExStr += ProjMgrUtils::AS_OUT_DIR;
+  } else if (sequence == RteConstants::AS_OUT_DIR) {
+    regExStr += RteConstants::AS_OUT_DIR;
     replacement = relOutDir;
-  } else if (sequence == ProjMgrUtils::AS_ELF) {
-    regExStr += ProjMgrUtils::AS_ELF;
+  } else if (sequence == RteConstants::AS_ELF) {
+    regExStr += RteConstants::AS_ELF;
     replacement = refContext.outputTypes.elf.on ? relOutDir + "/" + refContext.outputTypes.elf.filename : "";
-  } else if (sequence == ProjMgrUtils::AS_BIN) {
-    regExStr += ProjMgrUtils::AS_BIN;
+  } else if (sequence == RteConstants::AS_BIN) {
+    regExStr += RteConstants::AS_BIN;
     replacement = refContext.outputTypes.bin.on ? relOutDir + "/" + refContext.outputTypes.bin.filename : "";
-  } else if (sequence == ProjMgrUtils::AS_HEX) {
-    regExStr += ProjMgrUtils::AS_HEX;
+  } else if (sequence == RteConstants::AS_HEX) {
+    regExStr += RteConstants::AS_HEX;
     replacement = refContext.outputTypes.hex.on ? relOutDir + "/" + refContext.outputTypes.hex.filename : "";
-  } else if (sequence == ProjMgrUtils::AS_LIB) {
-    regExStr += ProjMgrUtils::AS_LIB;
+  } else if (sequence == RteConstants::AS_LIB) {
+    regExStr += RteConstants::AS_LIB;
     replacement = refContext.outputTypes.lib.on ? relOutDir + "/" + refContext.outputTypes.lib.filename : "";
-  } else if (sequence == ProjMgrUtils::AS_CMSE) {
-    regExStr += ProjMgrUtils::AS_CMSE;
+  } else if (sequence == RteConstants::AS_CMSE) {
+    regExStr += RteConstants::AS_CMSE;
     replacement = refContext.outputTypes.cmse.on ? relOutDir + "/" + refContext.outputTypes.cmse.filename : "";
   }
   regex regEx = regex(regExStr + "\\(.*\\)\\$");
@@ -2781,7 +2782,7 @@ bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, 
   size_t offset = 0;
   bool pathReplace = false;
   // expand variables (static access sequences)
-  const string input = item = ExpandString(item, context.variables);
+  const string input = item = RteUtils::ExpandString(item, context.variables);
   // expand dynamic access sequences
   while (offset != string::npos) {
     string sequence;
@@ -2816,7 +2817,7 @@ bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, 
           ExpandAccessSequence(context, refContext, sequenceName, item, withHeadingDot);
           // store dependency information
           if (refContext.name != context.name) {
-            ProjMgrUtils::PushBackUniquely(context.dependsOn, refContext.name);
+            CollectionUtils::PushBackUniquely(context.dependsOn, refContext.name);
           }
         } else {
           // full or partial context name cannot be resolved to a valid context
@@ -2909,7 +2910,7 @@ bool ProjMgrWorker::AddFile(const FileNode& src, vector<FileNode>& dst, ContextI
 
     // Set file category
     if (srcNode.category.empty()) {
-      srcNode.category = ProjMgrUtils::GetCategory(srcNode.file);
+      srcNode.category = RteFsUtils::FileCategoryFromExtension(srcNode.file);
     }
 
     dst.push_back(srcNode);
@@ -2984,7 +2985,7 @@ void ProjMgrWorker::CheckCompilerFilterSpelling(const string& compiler) {
       return;
     }
   }
-  ProjMgrUtils::PushBackUniquely(m_missingToolchains, compilerName);
+  CollectionUtils::PushBackUniquely(m_missingToolchains, compilerName);
 }
 
 bool ProjMgrWorker::CheckType(const TypeFilter& typeFilter, const vector<TypePair>& typeVec) {
@@ -3049,24 +3050,24 @@ bool ProjMgrWorker::CheckContextFilters(const TypeFilter& typeFilter, const Cont
 void ProjMgrWorker::RetrieveAllContextTypes(void) {
   const auto& csolution = m_parser->GetCsolution();
   for (const auto& [buildType, item] : csolution.buildTypes) {
-    ProjMgrUtils::PushBackUniquely(m_types.allBuildTypes, buildType);
+    CollectionUtils::PushBackUniquely(m_types.allBuildTypes, buildType);
     for (const auto& mappedContext : item.contextMap) {
       if (!mappedContext.build.empty()) {
-        ProjMgrUtils::PushBackUniquely(m_types.allBuildTypes, mappedContext.build);
+        CollectionUtils::PushBackUniquely(m_types.allBuildTypes, mappedContext.build);
       }
       if (!mappedContext.target.empty()) {
-        ProjMgrUtils::PushBackUniquely(m_types.allTargetTypes, mappedContext.target);
+        CollectionUtils::PushBackUniquely(m_types.allTargetTypes, mappedContext.target);
       }
     }
   }
   for (const auto& [targetType, item] : csolution.targetTypes) {
-    ProjMgrUtils::PushBackUniquely(m_types.allTargetTypes, targetType);
+    CollectionUtils::PushBackUniquely(m_types.allTargetTypes, targetType);
     for (const auto& mappedContext : item.build.contextMap) {
       if (!mappedContext.build.empty()) {
-        ProjMgrUtils::PushBackUniquely(m_types.allBuildTypes, mappedContext.build);
+        CollectionUtils::PushBackUniquely(m_types.allBuildTypes, mappedContext.build);
       }
       if (!mappedContext.target.empty()) {
-        ProjMgrUtils::PushBackUniquely(m_types.allTargetTypes, mappedContext.target);
+        CollectionUtils::PushBackUniquely(m_types.allTargetTypes, mappedContext.target);
       }
     }
   }
@@ -3162,7 +3163,7 @@ void ProjMgrWorker::ApplyFilter(const vector<string>& origin, const set<string>&
       }
     }
     if (match) {
-      ProjMgrUtils::PushBackUniquely(result, item);
+      CollectionUtils::PushBackUniquely(result, item);
     }
   }
 }
@@ -3230,14 +3231,14 @@ bool ProjMgrWorker::ListPacks(vector<string>&packs, bool bListMissingPacksOnly, 
       for(const auto& [pdscFile, pathVer] : context.pdscFiles) {
         const string& path = pathVer.first;
         if(!path.empty()) {
-          ProjMgrUtils::PushBackUniquely(pdscFiles, pdscFile);
+          CollectionUtils::PushBackUniquely(pdscFiles, pdscFile);
         }
       }
       // then all others
       for(const auto& [pdscFile, pathVer] : context.pdscFiles) {
         const string& path = pathVer.first;
         if(path.empty()) {
-          ProjMgrUtils::PushBackUniquely(pdscFiles, pdscFile);
+          CollectionUtils::PushBackUniquely(pdscFiles, pdscFile);
         }
       }
     }
@@ -3604,7 +3605,7 @@ bool ProjMgrWorker::ListLayers(vector<string>& layers, const string& clayerSearc
     for (const auto& validSet : validSets) {
       layerEntry += "\n  set: " + validSet;
     }
-    ProjMgrUtils::PushBackUniquely(layers, layerEntry);
+    CollectionUtils::PushBackUniquely(layers, layerEntry);
   }
   return true;
 }
@@ -3791,7 +3792,7 @@ bool ProjMgrWorker::ExecuteGenerator(std::string& generatorId) {
   //const string generatorCommand = m_kernel->GetCmsisPackRoot() + "/" + generator->GetPackagePath() + generator->GetCommand();
 
   // check if generator executable has execute permissions
-  const string generatorExe = generator->GetExecutable(context.rteActiveTarget);
+  const string generatorExe = generator->GetExecutable();
   if (generatorExe.empty()) {
     ProjMgrLogger::Error("generator executable '" + generatorId + "' was not found");
     return false;
@@ -3809,13 +3810,13 @@ bool ProjMgrWorker::ExecuteGenerator(std::string& generatorId) {
     ProjMgrLogger::Error("generator '" + generatorId + "' is not dry-run capable");
     return false;
   }
-  const string generatorCommand = generator->GetExpandedCommandLine(context.rteActiveTarget, RteUtils::EMPTY_STRING, m_dryRun);
+  const string generatorCommand = generator->GetExpandedCommandLine(RteUtils::EMPTY_STRING, m_dryRun);
 
   error_code ec;
   const auto& workingDir = fs::current_path(ec);
   RteFsUtils::CreateDirectories(generatorDestination);
   fs::current_path(generatorDestination, ec);
-  ProjMgrUtils::Result result = ProjMgrUtils::ExecCommand(generatorCommand);
+  StrIntPair result = CrossPlatformUtils::ExecCommand(generatorCommand);
   fs::current_path(workingDir, ec);
 
   ProjMgrLogger::Info("generator '" + generatorId + "' for context '" + selectedContext + "' reported:\n" + result.first);
@@ -3913,20 +3914,6 @@ bool ProjMgrWorker::IsContextSelected(const string& context) {
     return true;
   }
   return false;
-}
-
-string ProjMgrWorker::ExpandString(const string& src, const StrMap& variables) {
-  string ret = src;
-  if (regex_match(ret, regex(".*\\$.*\\$.*"))) {
-    for (const auto& [varName, replacement] : variables) {
-      const string var = "$" + varName + "$";
-      size_t index = 0;
-      while ((index = ret.find(var)) != string::npos) {
-        ret.replace(index, var.length(), replacement);
-      }
-    }
-  }
-  return ret;
 }
 
 bool ProjMgrWorker::ListToolchains(vector<ToolchainItem>& toolchains) {
@@ -4139,7 +4126,7 @@ StrSet ProjMgrWorker::GetValidSets(ContextItem& context, const string& clayer) {
 bool ProjMgrWorker::ProcessOutputFilenames(ContextItem& context) {
   // get base name and output types from project and project setups
   context.outputTypes = {};
-  context.cproject->output.baseName = ExpandString(context.cproject->output.baseName, context.variables);
+  context.cproject->output.baseName = RteUtils::ExpandString(context.cproject->output.baseName, context.variables);
   string baseName;
   StringCollection baseNameCollection = {
     &baseName,
@@ -4152,7 +4139,7 @@ bool ProjMgrWorker::ProcessOutputFilenames(ContextItem& context) {
   }
   for (auto& setup : context.cproject->setups) {
     if (CheckContextFilters(setup.type, context) && CheckCompiler(setup.forCompiler, context.compiler)) {
-      setup.output.baseName = ExpandString(setup.output.baseName, context.variables);
+      setup.output.baseName = RteUtils::ExpandString(setup.output.baseName, context.variables);
       baseNameCollection.elements.push_back(&setup.output.baseName);
       for (const auto& type : setup.output.type) {
         ProjMgrUtils::SetOutputType(type, context.outputTypes);
@@ -4307,7 +4294,7 @@ bool ProjMgrWorker::ListConfigFiles(vector<string>& configFiles) {
             configEntry += " (update@" + updateVersion + ")";
           }
         }
-        ProjMgrUtils::PushBackUniquely(configFiles, configEntry);
+        CollectionUtils::PushBackUniquely(configFiles, configEntry);
       }
     }
   }
@@ -4405,13 +4392,14 @@ bool ProjMgrWorker::ExecuteExtGenerator(std::string& generatorId) {
   }
 
   // Execute generator command
+  string binDir = ProjMgrKernel::Get()->GetCmsisToolboxDir() + "/bin";
   string runCmd = m_extGenerator->GetGlobalGenRunCmd(generatorId);
-  RteFsUtils::NormalizePath(runCmd, m_compilerRoot);
+  RteFsUtils::NormalizePath(runCmd, binDir);
   runCmd += " " + fs::path(cbuildgenOutput).append(m_parser->GetCsolution().name + ".cbuild-gen-idx.yml").generic_string();
   error_code ec;
   const auto& workingDir = fs::current_path(ec);
   fs::current_path(genDir, ec);
-  ProjMgrUtils::Result result = ProjMgrUtils::ExecCommand(runCmd);
+  StrIntPair result = CrossPlatformUtils::ExecCommand(runCmd);
   fs::current_path(workingDir, ec);
   ProjMgrLogger::Info("generator '" + generatorId + "' for context '" + selectedContextId + "' reported:\n" + result.first);
   if (result.second) {

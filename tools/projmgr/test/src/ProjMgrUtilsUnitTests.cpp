@@ -72,59 +72,6 @@ TEST_F(ProjMgrUtilsUnitTests, ReadGpdscFileNoExists) {
   EXPECT_FALSE(validGpdsc);
 }
 
-TEST_F(ProjMgrUtilsUnitTests, ExecCommand) {
-  auto result = ProjMgrUtils::ExecCommand("invalid command");
-  EXPECT_EQ(false, (0 == result.second) ? true : false) << result.first;
-
-  string testdir = "mkdir_test_dir";
-  error_code ec;
-  const auto& workingDir = fs::current_path(ec);
-  fs::current_path(testoutput_folder, ec);
-  if (fs::exists(testdir)) {
-    RteFsUtils::RemoveDir(testdir);
-  }
-  result = ProjMgrUtils::ExecCommand("mkdir " + testdir);
-  EXPECT_TRUE(fs::exists(testdir));
-  EXPECT_EQ(true, (0 == result.second) ? true : false) << result.first;
-
-  fs::current_path(workingDir, ec);
-  RteFsUtils::RemoveDir(testdir);
-}
-
-TEST_F(ProjMgrUtilsUnitTests, StrToInt) {
-  map<string, int> testDataVec = {
-    { "0", 0 },
-    { " ", 0 },
-    { "", 0 },
-    { "alphanum012345", 0 },
-    { "000", 0 },
-    { "123", 123 },
-    { "+456", 456 },
-  };
-  for (const auto& [input, expected] : testDataVec) {
-    EXPECT_EQ(ProjMgrUtils::StringToInt(input), expected);
-  }
-}
-
-TEST_F(ProjMgrUtilsUnitTests, GetCategory) {
-  map<string, vector<string>> testDataVec = {
-    {"sourceC",      {"sourceFile.c", "sourceFile.C"}},
-    {"sourceCpp",    {"sourceFile.cpp", "sourceFile.c++", "sourceFile.C++", "sourceFile.cxx", "sourceFile.cc", "sourceFile.CC"}},
-    {"sourceAsm",    {"sourceFile.asm", "sourceFile.s", "sourceFile.S"}},
-    {"header",       {"headerFile.h", "headerFile.hpp"}},
-    {"library",      {"libraryFile.a", "libraryFile.lib"}},
-    {"object",       {"objectFile.o"}},
-    {"linkerScript", {"linkerFile.sct", "linkerFile.scf", "linkerFile.ld", "linkerFile.icf"}},
-    {"doc",          {"documentFile.txt", "documentFile.md", "documentFile.pdf", "documentFile.htm", "documentFile.html"}},
-  };
-  for (const auto& [expected, files] : testDataVec) {
-    for (const auto& file : files) {
-      EXPECT_EQ(ProjMgrUtils::GetCategory(file), expected);
-    }
-  }
-}
-
-
 TEST_F(ProjMgrUtilsUnitTests, CompilersIntersect) {
   string intersection;
   CompilersIntersect("AC6@6.16.0", "AC6", intersection);

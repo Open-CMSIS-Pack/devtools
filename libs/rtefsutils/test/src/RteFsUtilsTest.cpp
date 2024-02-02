@@ -83,7 +83,7 @@ void RteFsUtilsTest::CreateInputFiles(const string& dir) {
   // Create dummy test files
   for (auto fileName : sortedFileSet) {
     string filePath = dir + "/" + fileName;
-    RteFsUtils::CreateFile(filePath, fileName);
+    RteFsUtils::CreateTextFile(filePath, fileName);
   }
 }
 
@@ -111,7 +111,7 @@ TEST_F(RteFsUtilsTest, BackupFile) {
   string ret;
   error_code ec;
 
-  RteFsUtils::CreateFile(filenameRegular, "foo");
+  RteFsUtils::CreateTextFile(filenameRegular, "foo");
 
   // Test filename with regular separators and multiple backup
   ret = RteUtils::SlashesToOsSlashes(RteFsUtils::BackupFile(filenameRegular));
@@ -161,7 +161,7 @@ TEST_F(RteFsUtilsTest, BackupFile) {
 TEST_F(RteFsUtilsTest, CmpFileMem) {
   bool ret;
 
-  RteFsUtils::CreateFile(filenameRegular, bufferFoo);
+  RteFsUtils::CreateTextFile(filenameRegular, bufferFoo);
 
   // Test filename with regular separators
   ret = RteFsUtils::CmpFileMem(filenameRegular, bufferFoo);
@@ -231,7 +231,7 @@ TEST_F(RteFsUtilsTest, CopyBufferToFile) {
   RteFsUtils::RemoveFile(filenameRegular);
 
   // Test existent file with same content
-  RteFsUtils::CreateFile(filenameRegular, "foo");
+  RteFsUtils::CreateTextFile(filenameRegular, "foo");
   ret = RteFsUtils::CopyBufferToFile(filenameRegular, bufferFoo, false);
   EXPECT_EQ(ret, true);
   EXPECT_EQ(RteFsUtils::Exists(filenameRegular), true);
@@ -239,7 +239,7 @@ TEST_F(RteFsUtilsTest, CopyBufferToFile) {
   RteFsUtils::RemoveFile(filenameRegular);
 
   // Test existent file with different content and backup argument
-  RteFsUtils::CreateFile(filenameRegular, bufferFoo);
+  RteFsUtils::CreateTextFile(filenameRegular, bufferFoo);
   ret = RteFsUtils::CopyBufferToFile(filenameRegular, bufferBar, true);
   EXPECT_EQ(ret, true);
   EXPECT_EQ(RteFsUtils::Exists(filenameRegular), true);
@@ -254,7 +254,7 @@ TEST_F(RteFsUtilsTest, CopyCheckFile) {
   bool ret;
   error_code ec;
 
-  RteFsUtils::CreateFile(filenameRegular, bufferFoo);
+  RteFsUtils::CreateTextFile(filenameRegular, bufferFoo);
 
   // Test filename with regular separators
   ret = RteFsUtils::CopyCheckFile(filenameRegular, filenameRegularCopy, false);
@@ -305,7 +305,7 @@ TEST_F(RteFsUtilsTest, ExpandFile) {
   bool ret;
   string buffer;
 
-  RteFsUtils::CreateFile(filenameRegular, "%Instance%");
+  RteFsUtils::CreateTextFile(filenameRegular, "%Instance%");
 
   // Test filename with regular separators
   ret = RteFsUtils::ExpandFile(filenameRegular, 1, buffer);
@@ -337,7 +337,7 @@ TEST_F(RteFsUtilsTest, CopyMergeFile) {
   bool ret;
   error_code ec;
 
-  RteFsUtils::CreateFile(filenameRegular, "%Instance%");
+  RteFsUtils::CreateTextFile(filenameRegular, "%Instance%");
 
   // Test filename with regular separators
   ret = RteFsUtils::CopyMergeFile(filenameRegular, filenameRegularCopy, 1, false);
@@ -391,8 +391,8 @@ TEST_F(RteFsUtilsTest, CopyTree) {
   // use CountFilesInFolder if additionall test
   EXPECT_EQ(RteFsUtils::CountFilesInFolder(dirnameBase), 0);
 
-  RteFsUtils::CreateFile(filenameRegular, "foo");
-  RteFsUtils::CreateFile(filenameRegularCopy, "bar");
+  RteFsUtils::CreateTextFile(filenameRegular, "foo");
+  RteFsUtils::CreateTextFile(filenameRegularCopy, "bar");
 
   EXPECT_EQ(RteFsUtils::CountFilesInFolder(dirnameBase), 2);
 
@@ -470,19 +470,19 @@ TEST_F(RteFsUtilsTest, DeleteFileAutoRetry) {
   error_code ec;
 
   // Test filename with regular separators
-  RteFsUtils::CreateFile(filenameRegular, "foo");
+  RteFsUtils::CreateTextFile(filenameRegular, "foo");
   ret = RteFsUtils::DeleteFileAutoRetry(filenameRegular);
   EXPECT_EQ(ret, true);
   EXPECT_EQ(RteFsUtils::Exists(filenameRegular), false);
 
   // Test filename with backslashes separators
-  RteFsUtils::CreateFile(filenameRegular, "foo");
+  RteFsUtils::CreateTextFile(filenameRegular, "foo");
   ret = RteFsUtils::DeleteFileAutoRetry(filenameBackslash);
   EXPECT_EQ(ret, true);
   EXPECT_EQ(RteFsUtils::Exists(filenameRegular), false);
 
   // Test filename with mixed separators
-  RteFsUtils::CreateFile(filenameRegular, "foo");
+  RteFsUtils::CreateTextFile(filenameRegular, "foo");
   ret = RteFsUtils::DeleteFileAutoRetry(filenameMixed);
   EXPECT_EQ(ret, true);
   EXPECT_EQ(RteFsUtils::Exists(filenameRegular), false);
@@ -496,13 +496,13 @@ TEST_F(RteFsUtilsTest, DeleteFileAutoRetry) {
   EXPECT_EQ(ret, true);
 
   // Test delay argument equal to zero
-  RteFsUtils::CreateFile(filenameRegular, "foo");
+  RteFsUtils::CreateTextFile(filenameRegular, "foo");
   ret = RteFsUtils::DeleteFileAutoRetry(filenameRegular, 5U, 0U);
   EXPECT_EQ(ret, true);
   EXPECT_EQ(RteFsUtils::Exists(filenameRegular), false);
 
   // Test retry argument equal to zero
-  RteFsUtils::CreateFile(filenameRegular, "foo");
+  RteFsUtils::CreateTextFile(filenameRegular, "foo");
   ret = RteFsUtils::DeleteFileAutoRetry(filenameRegular, 0U, 1U);
   EXPECT_EQ(ret, false);
   RteFsUtils::RemoveFile(filenameRegular);
@@ -513,37 +513,37 @@ TEST_F(RteFsUtilsTest, DeleteTree) {
   error_code ec;
 
   // Test dirname with regular separators
-  RteFsUtils::CreateFile(filenameRegular, "foo");
+  RteFsUtils::CreateTextFile(filenameRegular, "foo");
   ret = RteFsUtils::DeleteTree(dirnameSubdir);
   EXPECT_EQ(ret, true);
   EXPECT_EQ(RteFsUtils::Exists(dirnameSubdir), false);
 
   // Test dirname with backslashes separators
-  RteFsUtils::CreateFile(filenameRegular, "foo");
+  RteFsUtils::CreateTextFile(filenameRegular, "foo");
   ret = RteFsUtils::DeleteTree(dirnameSubdirBackslash);
   EXPECT_EQ(ret, true);
   EXPECT_EQ(RteFsUtils::Exists(dirnameSubdir), false);
 
   // Test dirname with mixed separators
-  RteFsUtils::CreateFile(filenameRegular, "foo");
+  RteFsUtils::CreateTextFile(filenameRegular, "foo");
   ret = RteFsUtils::DeleteTree(dirnameSubdirMixed);
   EXPECT_EQ(ret, true);
   EXPECT_EQ(RteFsUtils::Exists(dirnameSubdir), false);
 
   // Test dirname with regular separators and trailing
-  RteFsUtils::CreateFile(filenameRegular, "foo");
+  RteFsUtils::CreateTextFile(filenameRegular, "foo");
   ret = RteFsUtils::DeleteTree(dirnameSubdirWithTrailing);
   EXPECT_EQ(ret, true);
   EXPECT_EQ(RteFsUtils::Exists(dirnameSubdir), false);
 
   // Test dirname with backslashes separators and trailing
-  RteFsUtils::CreateFile(filenameRegular, "foo");
+  RteFsUtils::CreateTextFile(filenameRegular, "foo");
   ret = RteFsUtils::DeleteTree(dirnameBackslashWithTrailing);
   EXPECT_EQ(ret, true);
   EXPECT_EQ(RteFsUtils::Exists(dirnameSubdir), false);
 
   // Test dirname with mixed separators and trailing
-  RteFsUtils::CreateFile(filenameRegular, "foo");
+  RteFsUtils::CreateTextFile(filenameRegular, "foo");
   ret = RteFsUtils::DeleteTree(dirnameMixedWithTrailing);
   EXPECT_EQ(ret, true);
   EXPECT_EQ(RteFsUtils::Exists(dirnameSubdir), false);
@@ -557,7 +557,7 @@ TEST_F(RteFsUtilsTest, DeleteTree) {
   EXPECT_EQ(ret, true);
 
   // Test source not a directory
-  RteFsUtils::CreateFile(filenameRegular, "foo");
+  RteFsUtils::CreateTextFile(filenameRegular, "foo");
   ret = RteFsUtils::DeleteTree(filenameRegular);
   EXPECT_EQ(ret, false);
   RteFsUtils::RemoveFile(filenameRegular);
@@ -568,7 +568,7 @@ TEST_F(RteFsUtilsTest, MoveExistingFile) {
   error_code ec;
 
   // Test filename with regular separators
-  RteFsUtils::CreateFile(filenameRegular, "foo");
+  RteFsUtils::CreateTextFile(filenameRegular, "foo");
   ret = RteFsUtils::MoveExistingFile(filenameRegular, filenameRegularCopy);
   EXPECT_EQ(ret, true);
   EXPECT_EQ(RteFsUtils::Exists(filenameRegular), false);
@@ -576,7 +576,7 @@ TEST_F(RteFsUtilsTest, MoveExistingFile) {
   RteFsUtils::RemoveFile(filenameRegularCopy);
 
   // Test filename with backslashes separators
-  RteFsUtils::CreateFile(filenameRegular, "foo");
+  RteFsUtils::CreateTextFile(filenameRegular, "foo");
   ret = RteFsUtils::MoveExistingFile(filenameBackslash, filenameBackslashCopy);
   EXPECT_EQ(ret, true);
   EXPECT_EQ(RteFsUtils::Exists(filenameRegular), false);
@@ -584,7 +584,7 @@ TEST_F(RteFsUtilsTest, MoveExistingFile) {
   RteFsUtils::RemoveFile(filenameRegularCopy);
 
   // Test filename with mixed separators
-  RteFsUtils::CreateFile(filenameRegular, "foo");
+  RteFsUtils::CreateTextFile(filenameRegular, "foo");
   ret = RteFsUtils::MoveExistingFile(filenameMixed, filenameMixedCopy);
   EXPECT_EQ(ret, true);
   EXPECT_EQ(RteFsUtils::Exists(filenameRegular), false);
@@ -605,7 +605,7 @@ TEST_F(RteFsUtilsTest, MoveExistingFile) {
 TEST_F(RteFsUtilsTest, MoveFileExAutoRetry) {
   bool ret;
   // Test filename with default retry and delay arguments
-  RteFsUtils::CreateFile(filenameRegular, "foo");
+  RteFsUtils::CreateTextFile(filenameRegular, "foo");
   ret = RteFsUtils::MoveFileExAutoRetry(filenameRegular, filenameRegularCopy);
   EXPECT_EQ(ret, true);
   EXPECT_EQ(RteFsUtils::Exists(filenameRegular), false);
@@ -613,7 +613,7 @@ TEST_F(RteFsUtilsTest, MoveFileExAutoRetry) {
   RteFsUtils::RemoveFile(filenameRegularCopy);
 
   // Test filename with delay argument equal to 0
-  RteFsUtils::CreateFile(filenameRegular, "foo");
+  RteFsUtils::CreateTextFile(filenameRegular, "foo");
   ret = RteFsUtils::MoveFileExAutoRetry(filenameRegular, filenameRegularCopy, 5U, 0U);
   EXPECT_EQ(ret, true);
   EXPECT_EQ(RteFsUtils::Exists(filenameRegular), false);
@@ -621,7 +621,7 @@ TEST_F(RteFsUtilsTest, MoveFileExAutoRetry) {
   RteFsUtils::RemoveFile(filenameRegularCopy);
 
   // Test filename with retry argument equal to 0
-  RteFsUtils::CreateFile(filenameRegular, "foo");
+  RteFsUtils::CreateTextFile(filenameRegular, "foo");
   ret = RteFsUtils::MoveFileExAutoRetry(filenameRegular, filenameRegularCopy, 0U, 1U);
   EXPECT_EQ(ret, false);
   RteFsUtils::RemoveFile(filenameRegular);
@@ -642,7 +642,7 @@ TEST_F(RteFsUtilsTest, CopyFileExAutoRetry) {
   EXPECT_FALSE(RteFsUtils::Exists(filenameRegularCopy));
 
   // Test filename with default retry and delay arguments
-  RteFsUtils::CreateFile(filenameRegular, "foo");
+  RteFsUtils::CreateTextFile(filenameRegular, "foo");
   ret = RteFsUtils::CopyFileExAutoRetry(filenameRegular, filenameRegularCopy);
   EXPECT_EQ(ret, true);
   EXPECT_EQ(RteFsUtils::Exists(filenameRegular), true);
@@ -706,7 +706,7 @@ TEST_F(RteFsUtilsTest, RemoveDirectoryAutoRetry) {
   EXPECT_EQ(ret, true);
 
   // Test path is not a directory
-  RteFsUtils::CreateFile(filenameRegular, "foo");
+  RteFsUtils::CreateTextFile(filenameRegular, "foo");
   ret = RteFsUtils::RemoveDirectoryAutoRetry(filenameRegular);
   EXPECT_EQ(ret, false);
   RteFsUtils::RemoveFile(filenameRegular);
@@ -729,7 +729,7 @@ TEST_F(RteFsUtilsTest, SetFileReadOnly) {
   error_code ec;
   constexpr fs::perms write_mask = fs::perms::owner_write | fs::perms::group_write | fs::perms::others_write;
 
-  RteFsUtils::CreateFile(filenameRegular, "foo");
+  RteFsUtils::CreateTextFile(filenameRegular, "foo");
   const fs::perms initial_perm = fs::status(filenameRegular, ec).permissions();
 
   // Test filename with regular separators
@@ -775,7 +775,7 @@ TEST_F(RteFsUtilsTest, SetTreeReadOnly) {
   constexpr fs::perms write_mask = fs::perms::owner_write | fs::perms::group_write | fs::perms::others_write;
 
   const string validationDir = dirnameSubdir + "/foo/bar";
-  RteFsUtils::CreateFile(validationDir + "/baz.txt", "foo");
+  RteFsUtils::CreateTextFile(validationDir + "/baz.txt", "foo");
   const fs::perms initial_perm = fs::status(validationDir, ec).permissions();
 
   // Set parent directory read-only for the reminder of the test
@@ -829,7 +829,7 @@ TEST_F(RteFsUtilsTest, MakePathCanonical) {
   const string dirnameCanonical = fs::current_path(ec).append(dirnameSubdir).generic_string();
 
   // create file and with parent directories for reliability of the tests
-  RteFsUtils::CreateFile(filenameRegular, "foo");
+  RteFsUtils::CreateTextFile(filenameRegular, "foo");
 
   // Test filename with regular separators, file exists
   ret = RteFsUtils::MakePathCanonical(filenameRegular);
@@ -885,7 +885,7 @@ TEST_F(RteFsUtilsTest, GetCurrentFolder) {
   const string expectedDir = fs::current_path(ec).append(dirnameSubdir).generic_string() + "/";
   string curDir = RteFsUtils::GetCurrentFolder();
 
-  RteFsUtils::CreateFile(filenameRegular, "");
+  RteFsUtils::CreateTextFile(filenameRegular, "");
   fs::current_path(dirnameSubdir, ec);
   currDir = RteFsUtils::GetCurrentFolder();
   EXPECT_EQ(expectedDir, currDir);
@@ -1064,6 +1064,10 @@ TEST_F(RteFsUtilsTest, GetMatchingFiles) {
   RteFsUtils::GetMatchingFiles(files, ".h", dirnameDir, 3, false);
   EXPECT_EQ(files.size(), 3);
 
+  files.clear();
+  RteFsUtils::GetMatchingFiles(files, ".bar.h", dirnameDir, 3, true);
+  EXPECT_EQ(files.size(), 4);
+
   RteFsUtils::RemoveDir(dirnameDir);
 }
 
@@ -1083,15 +1087,15 @@ TEST_F(RteFsUtilsTest, GetFilesSorted) {
 
 TEST_F(RteFsUtilsTest, CreateExtendedName) {
 
-  RteFsUtils::CreateFile(filenameRegular, bufferFoo);
+  RteFsUtils::CreateTextFile(filenameRegular, bufferFoo);
 
   string backup = RteFsUtils::CreateExtendedName(filenameRegular, "backup");
   EXPECT_EQ(backup, filenameRegular + "_backup_0");
-  RteFsUtils::CreateFile(backup, "0");
+  RteFsUtils::CreateTextFile(backup, "0");
 
   backup = RteFsUtils::CreateExtendedName(filenameRegular, "backup");
   EXPECT_EQ(backup, filenameRegular + "_backup_1");
-  RteFsUtils::CreateFile(backup, "1");
+  RteFsUtils::CreateTextFile(backup, "1");
 
   backup = RteFsUtils::CreateExtendedName(filenameRegular, "backup");
   EXPECT_EQ(backup, filenameRegular + "_backup_2");
@@ -1104,7 +1108,7 @@ TEST_F(RteFsUtilsTest, AbsolutePath) {
   error_code ec;
   const string absFilePath = fs::current_path(ec).append(filenameRegular).generic_string();
 
-  RteFsUtils::CreateFile(filenameRegular, "foo");
+  RteFsUtils::CreateTextFile(filenameRegular, "foo");
 
   // Test empty path
   path = RteFsUtils::AbsolutePath("");
@@ -1123,7 +1127,7 @@ TEST_F(RteFsUtilsTest, FindFileRegEx) {
   const string& testdir = dirnameBase + "/FindFileRegEx";
   const string& fileName = testdir + "/test.cdefault.yml";
   RteFsUtils::CreateDirectories(testdir);
-  RteFsUtils::CreateFile(fileName, "");
+  RteFsUtils::CreateTextFile(fileName, "");
   string discoveredFile;
   vector<string> searchPaths = { testdir };
   EXPECT_EQ(true, RteFsUtils::FindFileRegEx(searchPaths, ".*\\.cdefault\\.yml", discoveredFile));
@@ -1136,8 +1140,8 @@ TEST_F(RteFsUtilsTest, FindFileRegEx_MultipleMatches) {
   const string& fileName1 = testdir + "/test1.cdefault.yml";
   const string& fileName2 = testdir + "/test2.cdefault.yml";
   RteFsUtils::CreateDirectories(testdir);
-  RteFsUtils::CreateFile(fileName1, "");
-  RteFsUtils::CreateFile(fileName2, "");
+  RteFsUtils::CreateTextFile(fileName1, "");
+  RteFsUtils::CreateTextFile(fileName2, "");
   string finding;
   vector<string> searchPaths = { testdir };
   EXPECT_EQ(false, RteFsUtils::FindFileRegEx(searchPaths, ".*\\.cdefault\\.yml", finding));
@@ -1151,6 +1155,24 @@ TEST_F(RteFsUtilsTest, FindFileRegEx_NoMatch) {
   vector<string> searchPaths = { testdir };
   EXPECT_EQ(false, RteFsUtils::FindFileRegEx(searchPaths, ".*\\.cdefault\\.yml", finding));
   RteFsUtils::RemoveDir(testdir);
+}
+
+TEST_F(RteFsUtilsTest, FileCategoryFromExtension) {
+  map<string, vector<string>> testDataVec = {
+    {"sourceC",      {"sourceFile.c", "sourceFile.C"}},
+    {"sourceCpp",    {"sourceFile.cpp", "sourceFile.c++", "sourceFile.C++", "sourceFile.cxx", "sourceFile.cc", "sourceFile.CC"}},
+    {"sourceAsm",    {"sourceFile.asm", "sourceFile.s", "sourceFile.S"}},
+    {"header",       {"headerFile.h", "headerFile.hpp"}},
+    {"library",      {"libraryFile.a", "libraryFile.lib"}},
+    {"object",       {"objectFile.o"}},
+    {"linkerScript", {"linkerFile.sct", "linkerFile.scf", "linkerFile.ld", "linkerFile.icf"}},
+    {"doc",          {"documentFile.txt", "documentFile.md", "documentFile.pdf", "documentFile.htm", "documentFile.html"}},
+  };
+  for (const auto& [expected, files] : testDataVec) {
+    for (const auto& file : files) {
+      EXPECT_EQ(RteFsUtils::FileCategoryFromExtension(file), expected);
+    }
+  }
 }
 
 TEST_F(RteFsUtilsTest, GetAbsPathFromLocalUrl) {
@@ -1186,4 +1208,7 @@ TEST_F(RteFsUtilsTest, GetAbsPathFromLocalUrl) {
   const string& testUrlOmittedHost = "file:" + absoluteFilename;
   EXPECT_EQ(absoluteFilename, RteFsUtils::GetAbsPathFromLocalUrl(testUrlOmittedHost));
 #endif
+
 }
+
+// end of RteFsUtilsTest.cpp

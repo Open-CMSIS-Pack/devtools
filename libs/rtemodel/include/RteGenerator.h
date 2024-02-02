@@ -36,7 +36,7 @@ public:
   * @brief constructor
   * @param parent pointer to RteItem parent
   */
-  RteGenerator(RteItem* parent);
+  RteGenerator(RteItem* parent, bool bExternal = false);
 
   /**
    * @brief virtual destructor
@@ -44,25 +44,30 @@ public:
    ~RteGenerator() override;
 
   /**
-   * @brief get generator commands for all host types without expansion
-   * @return map with host type ("win", "linux", "mac", "other", or "all") as key and generator command as value
+   * @brief get generator "run" attribute
+   * @return generator run command
   */
-  std::map<std::string, std::string> GetCommands() const;
+   const std::string& GetRunAttribute() const { return GetAttribute("run"); }
+
+  /**
+   * @brief get generator "path" attribute
+   * @return generator path
+  */
+   const std::string& GetPathAttribute() const { return GetAttribute("path"); }
 
   /**
    * @brief get generator command without expansion
    * @param hostType host type to match, empty to match current host
    * @return generator command for specified host type
   */
-  const std::string GetCommand(const std::string& hostType = EMPTY_STRING ) const;
+  virtual const std::string GetCommand(const std::string& hostType = EMPTY_STRING ) const;
 
   /**
   * @brief get expanded generator executable command
-  * @param target pointer to RteTarget
   * @param hostType host type to match, empty to match current host
   * @return generator command for specified host type
  */
-  std::string GetExecutable(RteTarget* target, const std::string& hostType = EMPTY_STRING) const;
+  virtual std::string GetExecutable(const std::string& hostType = EMPTY_STRING) const;
 
   /**
    * @brief get item containing command line arguments
@@ -124,25 +129,29 @@ public:
   * @brief get generator working directory
   * @return working directory value
  */
-  const std::string& GetWorkingDir() const { return GetItemValue("workingDir"); }
+  const std::string& GetWorkingDir() const;
+
+ /**
+  * @brief return value of attribute "download-url"
+  * @return value of attribute "download-url"
+  */
+  const std::string& GetURL() const override { return GetAttribute("download-url"); }
 
  /**
  * @brief get all arguments as vector for the given host type
- * @param target pointer to RteTarget
  * @param hostType host type, empty to match current host
  * @param dryRun include dry-run arguments
  * @return vector of arguments consisting of switch and value in pairs
 */
-  std::vector<std::pair<std::string, std::string> > GetExpandedArguments(RteTarget* target, const std::string& hostType = EMPTY_STRING, bool dryRun = false) const;
+  std::vector<std::pair<std::string, std::string> > GetExpandedArguments(const std::string& hostType = EMPTY_STRING, bool dryRun = false) const;
 
  /**
    * @brief get full command line with arguments and expanded key sequences for specified target
-   * @param target pointer to RteTarget
    * @param hostType host type, empty to match current host
    * @param dryRun include dry-run arguments
    * @return expanded command line with arguments, properly quoted
   */
-  std::string GetExpandedCommandLine(RteTarget* target, const std::string& hostType = EMPTY_STRING, bool dryRun = false) const;
+  std::string GetExpandedCommandLine(const std::string& hostType = EMPTY_STRING, bool dryRun = false) const;
 
   /**
    * @brief get absolute path to gpdsc file for specified target
@@ -217,6 +226,13 @@ public:
   */
   bool IsDryRunCapable(const std::string& hostType = EMPTY_STRING) const;
 
+ /**
+  * @brief check if the generator is external
+  * @return true if the generator is external, default returns false
+  */
+  bool IsExternal() const { return m_bExternal; }
+
+
 protected:
   /**
    * @brief construct generator ID
@@ -227,8 +243,8 @@ protected:
 private:
   RteItem* m_pDeviceAttributes;
   RteFileContainer* m_files;
+  bool m_bExternal;
 };
-
 
 /**
  * @brief class to support <generator> element in *.pdsc files

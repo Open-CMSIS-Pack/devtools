@@ -8,7 +8,7 @@
 */
 /******************************************************************************/
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -66,7 +66,7 @@ public:
    * @param content string to be stored in the created file
    * @return true if file is created
   */
-  static bool CreateFile(const std::string& file, const std::string& content);
+  static bool CreateTextFile(const std::string& file, const std::string& content);
   /**
    * @brief copy string to file in binary mode. Previous content of file is destroyed.
    * @param fileName name of file
@@ -377,6 +377,14 @@ public:
    * @return absolute file name if found, empty string otherwise
   */
   static std::string FindFileInEtc(const std::string& fileName, const std::string& baseDir);
+
+   /**
+   * @brief get file category according to file extension
+   * @param filename with extension
+   * @return string category
+  */
+  static const std::string& FileCategoryFromExtension(const std::string& file);
+
 };
 
 #endif // RteFsUtils_H

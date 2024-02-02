@@ -33,7 +33,7 @@ void ProjMgrWorkerUnitTests::SetCsolutionPacks(CsolutionItem* csolution, std::ve
   }
   context.csolution = csolution;
   context.type.target = targetType;
-  ProjMgrUtils::PushBackUniquely(m_ymlOrderedContexts, targetType);
+  CollectionUtils::PushBackUniquely(m_ymlOrderedContexts, targetType);
   m_contexts.insert(std::pair<string, ContextItem>(string(targetType), context));
 }
 
@@ -1105,21 +1105,6 @@ TEST_F(ProjMgrWorkerUnitTests, CollectLayersFromPacks) {
   EXPECT_FALSE(CollectLayersFromPacks(context, clayers));
 }
 
-TEST_F(ProjMgrWorkerUnitTests, ExpandString) {
-  ContextItem context;
-  context.variables = {
-    {"Foo", "./foo"},
-    {"Bar", "./bar"},
-    {"Foo Bar", "./foo-bar"},
-  };
-
-  EXPECT_EQ(ExpandString("path1: $Foo$/bar", context.variables), "path1: ./foo/bar");
-  EXPECT_EQ(ExpandString("path2: $Bar$/foo", context.variables), "path2: ./bar/foo");
-  EXPECT_EQ(ExpandString("$Foo$ $Bar$", context.variables), "./foo ./bar");
-  EXPECT_EQ(ExpandString("$Foo Bar$", context.variables), "./foo-bar");
-  EXPECT_EQ(ExpandString("$Foo$ $Foo$ $Foo$", context.variables), "./foo ./foo ./foo");
-}
-
 TEST_F(ProjMgrWorkerUnitTests, ListToolchains) {
   const string& cmsisPackRoot = CrossPlatformUtils::GetEnv("CMSIS_COMPILER_ROOT");
 
@@ -1280,7 +1265,7 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessLinkerOptions) {
   linker.regions = linkerRegionsFile;
   cproject.linker.push_back(linker);
   context.compiler = "AC6";
-  context.variables[ProjMgrUtils::AS_COMPILER] = context.compiler;
+  context.variables[RteConstants::AS_COMPILER] = context.compiler;
   string expectedLinkerScriptFile = "path/to/linkerScript_AC6.sct";
   string expectedLinkerRegionsFile = "path/to/linkerRegions_AC6.h";
   EXPECT_TRUE(ProcessLinkerOptions(context));
@@ -1566,22 +1551,22 @@ TEST_F(ProjMgrWorkerUnitTests, CheckDeviceAttributes) {
   StrMap targetAttributes;
   StdStreamRedirect streamRedirect;
 
-  userSelection.branchProtection = ProjMgrUtils::YAML_BP_BTI;
-  userSelection.dsp = ProjMgrUtils::YAML_ON;
-  userSelection.endian = ProjMgrUtils::YAML_ENDIAN_BIG;
-  userSelection.fpu = ProjMgrUtils::YAML_FPU_DP;
-  userSelection.mve = ProjMgrUtils::YAML_MVE_FP;
-  userSelection.trustzone = ProjMgrUtils::YAML_TZ_SECURE;
-  targetAttributes[ProjMgrUtils::RTE_DPACBTI] = ProjMgrUtils::RTE_NO_PACBTI;
-  targetAttributes[ProjMgrUtils::RTE_DDSP] = ProjMgrUtils::RTE_NO_DSP;
-  targetAttributes[ProjMgrUtils::RTE_DENDIAN] = ProjMgrUtils::RTE_ENDIAN_LITTLE;
-  targetAttributes[ProjMgrUtils::RTE_DFPU] = ProjMgrUtils::RTE_SP_FPU;
-  targetAttributes[ProjMgrUtils::RTE_DMVE] = ProjMgrUtils::RTE_NO_MVE;
-  targetAttributes[ProjMgrUtils::RTE_DTZ] = ProjMgrUtils::RTE_NO_TZ;
+  userSelection.branchProtection = RteConstants::YAML_BP_BTI;
+  userSelection.dsp = RteConstants::YAML_ON;
+  userSelection.endian = RteConstants::YAML_ENDIAN_BIG;
+  userSelection.fpu = RteConstants::YAML_FPU_DP;
+  userSelection.mve = RteConstants::YAML_MVE_FP;
+  userSelection.trustzone = RteConstants::YAML_TZ_SECURE;
+  targetAttributes[RteConstants::RTE_DPACBTI] = RteConstants::RTE_NO_PACBTI;
+  targetAttributes[RteConstants::RTE_DDSP] = RteConstants::RTE_NO_DSP;
+  targetAttributes[RteConstants::RTE_DENDIAN] = RteConstants::RTE_ENDIAN_LITTLE;
+  targetAttributes[RteConstants::RTE_DFPU] = RteConstants::RTE_SP_FPU;
+  targetAttributes[RteConstants::RTE_DMVE] = RteConstants::RTE_NO_MVE;
+  targetAttributes[RteConstants::RTE_DTZ] = RteConstants::RTE_NO_TZ;
 
   CheckDeviceAttributes(device, userSelection, targetAttributes);
   auto errStr = streamRedirect.GetErrorString();
-  
+
   EXPECT_TRUE(errStr.find("warning csolution: device 'TestDevice' does not support 'endian: big'") != string::npos);
   EXPECT_TRUE(errStr.find("warning csolution: device 'TestDevice' does not support 'fpu: dp'") != string::npos);
   EXPECT_TRUE(errStr.find("warning csolution: device 'TestDevice' does not support 'dsp: on'") != string::npos);

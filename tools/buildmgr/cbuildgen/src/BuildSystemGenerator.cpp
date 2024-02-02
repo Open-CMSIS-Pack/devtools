@@ -396,14 +396,14 @@ bool BuildSystemGenerator::GenAuditFile(void) {
 void BuildSystemGenerator::MergeVecStr(const std::vector<std::string>& src, std::vector<std::string>& dest) {
   for (const auto& item : src)
   {
-    CbuildUtils::PushBackUniquely(dest, item);
+    CollectionUtils::PushBackUniquely(dest, item);
   }
 }
 
 void BuildSystemGenerator::MergeVecStrNorm(const std::vector<std::string>& src, std::vector<std::string>& dest) {
   for (const auto& item : src)
   {
-    CbuildUtils::PushBackUniquely(dest, StrNorm(item));
+    CollectionUtils::PushBackUniquely(dest, StrNorm(item));
   }
 }
 

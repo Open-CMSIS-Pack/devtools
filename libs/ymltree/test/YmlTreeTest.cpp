@@ -217,13 +217,13 @@ TEST_F(YmlTreeTestF, ReadFileDefault) {
   EXPECT_TRUE(success);
   EXPECT_TRUE(tree.GetRoot());
   XMLTreeElement* root = tree.GetRoot() ? tree.GetRoot()->GetFirstChild() : nullptr;
-  EXPECT_TRUE(root);
+  ASSERT_TRUE(root);
+  EXPECT_EQ(root->GetRootFileName(), ymlIn);
 
   XmlFormatter xmlFormatter;
   string xmlContent = xmlFormatter.FormatElement(root);
 
   tree.Clear();
-
 }
 
 // end of YmlTreeTest.cpp

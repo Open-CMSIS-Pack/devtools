@@ -366,9 +366,14 @@ public:
   */
   const std::string& GetRootFileName() const override
   {
-    TITEM* root = GetRoot();
-    if (root && root != this) // to protect recursion
-      return root->GetRootFileName();
+    const std::string& rootFileName = XmlItem::GetRootFileName();
+    if(!rootFileName.empty()) {
+      return rootFileName;
+    }
+    TITEM* parent = GetParent();
+    if(parent) {
+      return parent->GetRootFileName();
+    }
     return EMPTY_STRING;
   }
 

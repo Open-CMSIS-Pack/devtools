@@ -3318,7 +3318,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_GetCdefaultFile1) {
   const string& testdir = testoutput_folder + "/FindFileRegEx";
   const string& fileName = testdir + "/cdefault.yml";
   RteFsUtils::CreateDirectories(testdir);
-  RteFsUtils::CreateFile(fileName, "");
+  RteFsUtils::CreateTextFile(fileName, "");
   m_rootDir = testdir;
   m_cdefaultFile.clear();
   EXPECT_TRUE(GetCdefaultFile());
@@ -3759,7 +3759,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_WriteCprjFail) {
   argv[9] = (char*)"_export";
 
   // Fail to write export cprj file
-  RteFsUtils::CreateFile(outputFolder + "/test2.Debug+CM0_export.cprj", "");
+  RteFsUtils::CreateTextFile(outputFolder + "/test2.Debug+CM0_export.cprj", "");
   RteFsUtils::SetTreeReadOnly(outputFolder);
   EXPECT_EQ(1, RunProjMgr(10, argv, 0));
 
@@ -3881,7 +3881,7 @@ error csolution: processing context 'outputFiles.TypeConflict\\+Target' failed\n
 
 TEST_F(ProjMgrUnitTests, SelectToolchains) {
   const string& AC6_6_6_5 = testinput_folder + "/TestToolchains/AC6.6.6.5.cmake";
-  RteFsUtils::CreateFile(AC6_6_6_5, "");
+  RteFsUtils::CreateTextFile(AC6_6_6_5, "");
   char* envp[6];
   string ac6_0 = "AC6_TOOLCHAIN_6_20_0=" + testinput_folder;
   string ac6_1 = "AC6_TOOLCHAIN_6_16_1=" + testinput_folder;
@@ -4211,8 +4211,8 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_UpdateRte) {
   const string& testdir = testoutput_folder + "/OutputDir";
   RteFsUtils::RemoveDir(rteDir);
   RteFsUtils::RemoveDir(testdir);
-  RteFsUtils::CreateFile(configFile, "// config file");
-  RteFsUtils::CreateFile(baseFile, "// config file@base");
+  RteFsUtils::CreateTextFile(configFile, "// config file");
+  RteFsUtils::CreateTextFile(baseFile, "// config file@base");
 
   StdStreamRedirect streamRedirect;
   string csolutionFile = testinput_folder + "/TestSolution/test.csolution.yml";
@@ -4792,12 +4792,13 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_cbuildset_file) {
 }
 
 TEST_F(ProjMgrUnitTests, ExternalGenerator) {
+
   const string& srcGlobalGenerator = testinput_folder + "/ExternalGenerator/global.generator.yml";
-  const string& dstGlobalGenerator = testcmsiscompiler_folder + "/global.generator.yml";
+  const string& dstGlobalGenerator = etc_folder + "/global.generator.yml";
   RteFsUtils::CopyCheckFile(srcGlobalGenerator, dstGlobalGenerator, false);
 
   const string& srcBridgeTool = testinput_folder + "/ExternalGenerator/bridge.sh";
-  const string& dstBridgeTool = testcmsiscompiler_folder + "/bridge.sh";
+  const string& dstBridgeTool = bin_folder + "/bridge.sh";
   RteFsUtils::CopyCheckFile(srcBridgeTool, dstBridgeTool, false);
 
   // list generators
@@ -4896,7 +4897,7 @@ error csolution: generator 'RteTestExternalGenerator' required by component 'ARM
 
 TEST_F(ProjMgrUnitTests, ExternalGenerator_WrongGenDir) {
   const string& srcGlobalGenerator = testinput_folder + "/ExternalGenerator/wrong-gendir.generator.yml";
-  const string& dstGlobalGenerator = testcmsiscompiler_folder + "/global.generator.yml";
+  const string& dstGlobalGenerator = etc_folder + "/global.generator.yml";
   RteFsUtils::CopyCheckFile(srcGlobalGenerator, dstGlobalGenerator, false);
 
   StdStreamRedirect streamRedirect;
@@ -4922,7 +4923,7 @@ warning csolution: unknown access sequence: 'UnknownAccessSequence()'\n\
 
 TEST_F(ProjMgrUnitTests, ExternalGenerator_NoGenDir) {
   const string& srcGlobalGenerator = testinput_folder + "/ExternalGenerator/no-gendir.generator.yml";
-  const string& dstGlobalGenerator = testcmsiscompiler_folder + "/global.generator.yml";
+  const string& dstGlobalGenerator = etc_folder + "/global.generator.yml";
   RteFsUtils::CopyCheckFile(srcGlobalGenerator, dstGlobalGenerator, false);
 
   StdStreamRedirect streamRedirect;
@@ -4967,7 +4968,7 @@ error csolution: a single context must be specified\n\
 
 TEST_F(ProjMgrUnitTests, ExternalGenerator_WrongGeneratedData) {
   const string& srcGlobalGenerator = testinput_folder + "/ExternalGenerator/global.generator.yml";
-  const string& dstGlobalGenerator = testcmsiscompiler_folder + "/global.generator.yml";
+  const string& dstGlobalGenerator = etc_folder + "/global.generator.yml";
   RteFsUtils::CopyCheckFile(srcGlobalGenerator, dstGlobalGenerator, false);
 
   StdStreamRedirect streamRedirect;
@@ -5003,7 +5004,7 @@ TEST_F(ProjMgrUnitTests, ExternalGenerator_WrongGeneratedData) {
 
 TEST_F(ProjMgrUnitTests, ExternalGenerator_NoCgenFile) {
   const string& srcGlobalGenerator = testinput_folder + "/ExternalGenerator/global.generator.yml";
-  const string& dstGlobalGenerator = testcmsiscompiler_folder + "/global.generator.yml";
+  const string& dstGlobalGenerator = etc_folder + "/global.generator.yml";
   RteFsUtils::CopyCheckFile(srcGlobalGenerator, dstGlobalGenerator, false);
 
   const string genDir = m_extGenerator.GetGlobalGenDir("RteTestExternalGenerator");
@@ -5027,7 +5028,7 @@ TEST_F(ProjMgrUnitTests, ExternalGenerator_NoCgenFile) {
 
 TEST_F(ProjMgrUnitTests, ExternalGeneratorListVerbose) {
   const string& srcGlobalGenerator = testinput_folder + "/ExternalGenerator/global.generator.yml";
-  const string& dstGlobalGenerator = testcmsiscompiler_folder + "/global.generator.yml";
+  const string& dstGlobalGenerator = etc_folder + "/global.generator.yml";
   RteFsUtils::CopyCheckFile(srcGlobalGenerator, dstGlobalGenerator, false);
   StdStreamRedirect streamRedirect;
 

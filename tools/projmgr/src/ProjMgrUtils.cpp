@@ -13,51 +13,10 @@
 #include "CrossPlatform.h"
 #include "CrossPlatformUtils.h"
 
-#include <array>
-#include <functional>
 #include <regex>
 
 using namespace std;
 
-const StrMap ProjMgrUtils::DeviceAttributesKeys = {
-  { RTE_DFPU       , YAML_FPU               },
-  { RTE_DDSP       , YAML_DSP               },
-  { RTE_DMVE       , YAML_MVE               },
-  { RTE_DENDIAN    , YAML_ENDIAN            },
-  { RTE_DSECURE    , YAML_TRUSTZONE         },
-  { RTE_DBRANCHPROT, YAML_BRANCH_PROTECTION },
-};
-
-const StrPairVecMap ProjMgrUtils::DeviceAttributesValues = {
-  { RTE_DFPU       , {{ RTE_DP_FPU       , YAML_FPU_DP         },
-                      { RTE_SP_FPU       , YAML_FPU_SP         },
-                      { RTE_NO_FPU       , YAML_OFF            }}},
-  { RTE_DDSP       , {{ RTE_DSP          , YAML_ON             },
-                      { RTE_NO_DSP       , YAML_OFF            }}},
-  { RTE_DMVE       , {{ RTE_FP_MVE       , YAML_MVE_FP         },
-                      { RTE_MVE          , YAML_MVE_INT        },
-                      { RTE_NO_MVE       , YAML_OFF            }}},
-  { RTE_DENDIAN    , {{ RTE_ENDIAN_BIG   , YAML_ENDIAN_BIG     },
-                      { RTE_ENDIAN_LITTLE, YAML_ENDIAN_LITTLE  }}},
-  { RTE_DSECURE    , {{ RTE_SECURE       , YAML_TZ_SECURE      },
-                      { RTE_NON_SECURE   , YAML_TZ_NON_SECURE  },
-                      { RTE_TZ_DISABLED  , YAML_OFF            }}},
-  { RTE_DBRANCHPROT, {{ RTE_BTI          , YAML_BP_BTI         },
-                      { RTE_BTI_SIGNRET  , YAML_BP_BTI_SIGNRET },
-                      { RTE_NO_BRANCHPROT, YAML_OFF            }}},
-};
-
-const string& ProjMgrUtils::GetDeviceAttribute(const string& key, const string& value) {
-  const auto& values = DeviceAttributesValues.at(key);
-  for (const auto& [rte, yaml] : values) {
-    if (value == rte) {
-      return yaml;
-    } else if  (value == yaml) {
-      return rte;
-    }
-  }
-  return RteUtils::EMPTY_STRING;
-}
 
 RtePackage* ProjMgrUtils::ReadGpdscFile(const string& gpdsc, bool& valid) {
   fs::path path(gpdsc);
@@ -84,85 +43,6 @@ RtePackage* ProjMgrUtils::ReadGpdscFile(const string& gpdsc, bool& valid) {
   valid = false;
   return nullptr;
 }
-
-const ProjMgrUtils::Result ProjMgrUtils::ExecCommand(const string& cmd) {
-  array<char, 128> buffer;
-  string result;
-  int ret_code = -1;
-  std::function<int(FILE*)> close = _pclose;
-  std::function<FILE* (const char*, const char*)> open = _popen;
-
-  auto deleter = [&close, &ret_code](FILE* cmd) { ret_code = close(cmd); };
-  {
-    const unique_ptr<FILE, decltype(deleter)> pipe(open(cmd.c_str(), "r"), deleter);
-    if (pipe) {
-      while (fgets(buffer.data(), static_cast<int>(buffer.size()), pipe.get()) != nullptr) {
-        result += buffer.data();
-      }
-    }
-  }
-  return make_pair(result, ret_code);
-}
-
-const string ProjMgrUtils::GetCategory(const string& file) {
-  static const map<string, vector<string>> CATEGORIES = {
-    {"sourceC", {".c", ".C"}},
-    {"sourceCpp", {".cpp", ".c++", ".C++", ".cxx", ".cc", ".CC"}},
-    {"sourceAsm", {".asm", ".s", ".S"}},
-    {"header", {".h", ".hpp"}},
-    {"library", {".a", ".lib"}},
-    {"object", {".o"}},
-    {"linkerScript", {".sct", ".scf", ".ld", ".icf", ".src"}},
-    {"doc", {".txt", ".md", ".pdf", ".htm", ".html"}},
-  };
-  fs::path ext((fs::path(file)).extension());
-  for (const auto& category : CATEGORIES) {
-    if (find(category.second.begin(), category.second.end(), ext) != category.second.end()) {
-      return category.first;
-    }
-  }
-  return "other";
-}
-
-void ProjMgrUtils::PushBackUniquely(vector<string>& vec, const string& value) {
-  if (find(vec.cbegin(), vec.cend(), value) == vec.cend()) {
-    vec.push_back(value);
-  }
-}
-
-void ProjMgrUtils::PushBackUniquely(list<string>& list, const string& value) {
-  if (find(list.cbegin(), list.cend(), value) == list.cend()) {
-    list.push_back(value);
-  }
-}
-
-void ProjMgrUtils::PushBackUniquely(StrPairVec& vec, const StrPair& value) {
-  for (const auto& item : vec) {
-    if ((value.first == item.first) && (value.second == item.second)) {
-      return;
-    }
-  }
-  vec.push_back(value);
-}
-
-StrVecMap ProjMgrUtils::MergeStrVecMap(const StrVecMap& map1, const StrVecMap& map2) {
-  StrVecMap mergedMap(map1);
-  mergedMap.insert(map2.begin(), map2.end());
-  return mergedMap;
-}
-
-int ProjMgrUtils::StringToInt(const string& value) {
-  int intValue = 0;
-  smatch sm;
-  if (regex_match(value, sm, regex("^[\\+]?([0-9]+)$"))) {
-    try {
-      intValue = stoi(sm[1]);
-    }
-    catch (exception&) {};
-  }
-  return intValue;
-}
-
 
 void ProjMgrUtils::ExpandCompilerId(const string& compiler, string& name, string& minVer, string& maxVer) {
   name = RteUtils::GetPrefix(compiler, '@');
@@ -269,15 +149,15 @@ bool ProjMgrUtils::ParseContextEntry(const string& contextEntry, ContextName& co
 }
 
 void ProjMgrUtils::SetOutputType(const string typeString, OutputTypes& type) {
-  if (typeString == OUTPUT_TYPE_BIN) {
+  if (typeString == RteConstants::OUTPUT_TYPE_BIN) {
     type.bin.on = true;
-  } else if (typeString == OUTPUT_TYPE_ELF) {
+  } else if (typeString == RteConstants::OUTPUT_TYPE_ELF) {
     type.elf.on = true;
-  } else if (typeString == OUTPUT_TYPE_HEX) {
+  } else if (typeString == RteConstants::OUTPUT_TYPE_HEX) {
     type.hex.on = true;
-  } else if (typeString == OUTPUT_TYPE_LIB) {
+  } else if (typeString == RteConstants::OUTPUT_TYPE_LIB) {
     type.lib.on = true;
-  } else if (typeString == OUTPUT_TYPE_CMSE) {
+  } else if (typeString == RteConstants::OUTPUT_TYPE_CMSE) {
     type.cmse.on = true;
   }
 }
@@ -292,12 +172,12 @@ ProjMgrUtils::Error ProjMgrUtils::GetSelectedContexts(vector<string>& selectedCo
   if (contextFilters.empty()) {
     if (allContexts.empty()) {
       // default context
-      ProjMgrUtils::PushBackUniquely(selectedContexts, "");
+      CollectionUtils::PushBackUniquely(selectedContexts, "");
     }
     else {
       // select all contexts
       for (const auto& context : allContexts) {
-        ProjMgrUtils::PushBackUniquely(selectedContexts, context);
+        CollectionUtils::PushBackUniquely(selectedContexts, context);
       }
     }
   }
@@ -311,7 +191,7 @@ ProjMgrUtils::Error ProjMgrUtils::GetSelectedContexts(vector<string>& selectedCo
 
       // append element to the output list
       for_each(filteredContexts.begin(), filteredContexts.end(), [&](const string& context) {
-        ProjMgrUtils::PushBackUniquely(selectedContexts, context);
+        CollectionUtils::PushBackUniquely(selectedContexts, context);
         });
     }
   }
@@ -336,7 +216,7 @@ vector<string> ProjMgrUtils::GetFilteredContexts(
     for (const auto& context : allContexts) {
       //  add context to output list if exact match
       if (context == contextFilter) {
-        ProjMgrUtils::PushBackUniquely(selectedContexts, context);
+        CollectionUtils::PushBackUniquely(selectedContexts, context);
         continue;
       }
 
@@ -348,7 +228,7 @@ vector<string> ProjMgrUtils::GetFilteredContexts(
       contextPattern += "+" + (inputContext.target != RteUtils::EMPTY_STRING ? inputContext.target : "*");
       const string fullContextItem = contextItem.project + "." + contextItem.build + "+" + contextItem.target;
       if (WildCards::Match(fullContextItem, contextPattern)) {
-        ProjMgrUtils::PushBackUniquely(selectedContexts, context);
+        CollectionUtils::PushBackUniquely(selectedContexts, context);
       }
     }
   }

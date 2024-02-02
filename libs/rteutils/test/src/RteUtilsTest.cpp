@@ -27,6 +27,21 @@ TEST(RteUtilsTest, StringToFrom) {
   EXPECT_EQ(RteUtils::LongToString(32,16), "0x20");
 }
 
+TEST(RteUtilsTest, StringToInt) {
+  map<string, int> testDataVec = {
+    { "0", 0 },
+    { " ", 0 },
+    { "", 0 },
+    { "alphanum012345", 0 },
+    { "000", 0 },
+    { "123", 123 },
+    { "+456", 456 },
+  };
+  for (const auto& [input, expected] : testDataVec) {
+    EXPECT_EQ(RteUtils::StringToInt(input, 0), expected);
+  }
+}
+
 TEST(RteUtilsTest, Trim) {
   EXPECT_EQ(RteUtils::Trim("").empty(), true);
   EXPECT_EQ(RteUtils::Trim(" \t\n\r").empty(), true);
@@ -333,22 +348,22 @@ TEST(RteUtilsTest, RemoveVectorDuplicates)
 {
   vector<int> testInput = { 1,2,3,2,4,5,3,6 };
   vector<int> expected  = { 1,2,3,4,5,6 };
-  RteUtils::RemoveVectorDuplicates<int>(testInput);
+  CollectionUtils::RemoveVectorDuplicates<int>(testInput);
   EXPECT_EQ(testInput, expected);
 
   testInput = { 1,1,3,3,1,2,2 };
   expected = { 1,3,2 };
-  RteUtils::RemoveVectorDuplicates<int>(testInput);
+  CollectionUtils::RemoveVectorDuplicates<int>(testInput);
   EXPECT_EQ(testInput, expected);
 
   testInput = { 1,1,1,1,1,1,1,1,1 };
   expected = { 1 };
-  RteUtils::RemoveVectorDuplicates<int>(testInput);
+  CollectionUtils::RemoveVectorDuplicates<int>(testInput);
   EXPECT_EQ(testInput, expected);
 
   testInput = { };
   expected = { };
-  RteUtils::RemoveVectorDuplicates<int>(testInput);
+  CollectionUtils::RemoveVectorDuplicates<int>(testInput);
   EXPECT_EQ(testInput, expected);
 }
 
@@ -436,6 +451,20 @@ TEST(RteUtils, CollectionUtils)
 
   EXPECT_EQ(*get_or_default(strToPtr, "two", sDefault), '2');
   EXPECT_EQ(*get_or_default(strToPtr, "four", sDefault), 'd');
+}
+
+TEST(RteUtils, ExpandString) {
+  StrMap variables = {
+    {"Foo", "./foo"},
+    {"Bar", "./bar"},
+    {"Foo Bar", "./foo-bar"},
+  };
+  EXPECT_EQ(RteUtils::ExpandString("path1: $Foo/bar", variables), "path1: $Foo/bar");
+  EXPECT_EQ(RteUtils::ExpandString("path1: $Foo$/bar", variables), "path1: ./foo/bar");
+  EXPECT_EQ(RteUtils::ExpandString("path2: $Bar$/foo", variables), "path2: ./bar/foo");
+  EXPECT_EQ(RteUtils::ExpandString("$Foo$ $Bar$", variables), "./foo ./bar");
+  EXPECT_EQ(RteUtils::ExpandString("$Foo Bar$", variables), "./foo-bar");
+  EXPECT_EQ(RteUtils::ExpandString("$Foo$ $Foo$ $Foo$", variables), "./foo ./foo ./foo");
 }
 
 // end of RteUtilsTest.cpp

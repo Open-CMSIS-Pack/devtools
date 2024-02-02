@@ -16,7 +16,8 @@ extern std::string testinput_folder;
 extern std::string testcmsispack_folder;
 extern std::string testcmsiscompiler_folder;
 extern std::string schema_folder;
-
+extern std::string etc_folder;
+extern std::string bin_folder;
 /**
  * @brief direct console output to string
 */

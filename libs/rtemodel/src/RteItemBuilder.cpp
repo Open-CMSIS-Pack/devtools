@@ -39,8 +39,6 @@ RteItem* RteItemBuilder::CreateRootItem(const string& tag)
   } else if (tag == "cprj") {
     m_cprjFile = new CprjFile(m_rootParent);
     pRoot = m_cprjFile;
-  } else if (m_rootParent) {
-    pRoot = m_rootParent;
   } else {
     pRoot = new RteRootItem(m_rootParent);
   }

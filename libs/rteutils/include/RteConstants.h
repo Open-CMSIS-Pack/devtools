@@ -17,6 +17,7 @@
 #include <list>
 #include <vector>
 #include <set>
+#include "CollectionUtils.h"
 
 class RteConstants
 {
@@ -82,6 +83,116 @@ public:
   static constexpr const char* SUFFIX_PACK_VENDOR = "::";
   static constexpr const char* PREFIX_PACK_VERSION = "@";
   static constexpr const char  PREFIX_PACK_VERSION_CHAR = '@';
+
+  /**
+   * @brief output types
+  */
+  static constexpr const char* OUTPUT_TYPE_BIN = "bin";
+  static constexpr const char* OUTPUT_TYPE_ELF = "elf";
+  static constexpr const char* OUTPUT_TYPE_HEX = "hex";
+  static constexpr const char* OUTPUT_TYPE_LIB = "lib";
+  static constexpr const char* OUTPUT_TYPE_CMSE = "cmse-lib";
+
+  /**
+   * @brief access sequences
+  */
+  static constexpr const char* AS_SOLUTION = "Solution";
+  static constexpr const char* AS_PROJECT = "Project";
+  static constexpr const char* AS_COMPILER = "Compiler";
+  static constexpr const char* AS_BUILD_TYPE = "BuildType";
+  static constexpr const char* AS_TARGET_TYPE = "TargetType";
+  static constexpr const char* AS_DNAME = "Dname";
+  static constexpr const char* AS_PNAME = "Pname";
+  static constexpr const char* AS_BNAME = "Bname";
+
+  static constexpr const char* AS_SOLUTION_DIR = "SolutionDir";
+  static constexpr const char* AS_PROJECT_DIR = "ProjectDir";
+  static constexpr const char* AS_OUT_DIR = "OutDir";
+  static constexpr const char* AS_BIN = OUTPUT_TYPE_BIN;
+  static constexpr const char* AS_ELF = OUTPUT_TYPE_ELF;
+  static constexpr const char* AS_HEX = OUTPUT_TYPE_HEX;
+  static constexpr const char* AS_LIB = OUTPUT_TYPE_LIB;
+  static constexpr const char* AS_CMSE = OUTPUT_TYPE_CMSE;
+
+  /**
+   * @brief default and toolchain specific output affixes
+  */
+  static constexpr const char* DEFAULT_ELF_SUFFIX = ".elf";
+  static constexpr const char* DEFAULT_LIB_PREFIX = "";
+  static constexpr const char* DEFAULT_LIB_SUFFIX = ".a";
+
+  static constexpr const char* AC6_ELF_SUFFIX = ".axf";
+  static constexpr const char* GCC_ELF_SUFFIX = ".elf";
+  static constexpr const char* IAR_ELF_SUFFIX = ".out";
+  static constexpr const char* AC6_LIB_PREFIX = "";
+  static constexpr const char* GCC_LIB_PREFIX = "lib";
+  static constexpr const char* IAR_LIB_PREFIX = "";
+  static constexpr const char* AC6_LIB_SUFFIX = ".lib";
+  static constexpr const char* GCC_LIB_SUFFIX = ".a";
+  static constexpr const char* IAR_LIB_SUFFIX = ".a";
+
+  /**
+   * @brief device attributes maps
+  */
+  static constexpr const char* YAML_FPU = "fpu";
+  static constexpr const char* YAML_DSP = "dsp";
+  static constexpr const char* YAML_MVE = "mve";
+  static constexpr const char* YAML_ENDIAN = "endian";
+  static constexpr const char* YAML_TRUSTZONE = "trustzone";
+  static constexpr const char* YAML_BRANCH_PROTECTION = "branch-protection";
+
+  static constexpr const char* YAML_ON = "on";
+  static constexpr const char* YAML_OFF = "off";
+  static constexpr const char* YAML_FPU_DP = "dp";
+  static constexpr const char* YAML_FPU_SP = "sp";
+  static constexpr const char* YAML_MVE_FP = "fp";
+  static constexpr const char* YAML_MVE_INT = "int";
+  static constexpr const char* YAML_ENDIAN_BIG = "big";
+  static constexpr const char* YAML_ENDIAN_LITTLE = "little";
+  static constexpr const char* YAML_BP_BTI = "bti";
+  static constexpr const char* YAML_BP_BTI_SIGNRET = "bti-signret";
+  static constexpr const char* YAML_TZ_SECURE = "secure";
+  static constexpr const char* YAML_TZ_NON_SECURE = "non-secure";
+
+  static constexpr const char* RTE_DFPU = "Dfpu";
+  static constexpr const char* RTE_DDSP = "Ddsp";
+  static constexpr const char* RTE_DMVE = "Dmve";
+  static constexpr const char* RTE_DENDIAN = "Dendian";
+  static constexpr const char* RTE_DSECURE = "Dsecure";
+  static constexpr const char* RTE_DTZ = "Dtz";
+  static constexpr const char* RTE_DBRANCHPROT = "DbranchProt";
+  static constexpr const char* RTE_DPACBTI = "Dpacbti";
+
+  static constexpr const char* RTE_DP_FPU = "DP_FPU";
+  static constexpr const char* RTE_SP_FPU = "SP_FPU";
+  static constexpr const char* RTE_NO_FPU = "NO_FPU";
+  static constexpr const char* RTE_DSP = "DSP";
+  static constexpr const char* RTE_NO_DSP = "NO_DSP";
+  static constexpr const char* RTE_MVE = "MVE";
+  static constexpr const char* RTE_FP_MVE = "FP_FVE";
+  static constexpr const char* RTE_NO_MVE = "NO_MVE";
+  static constexpr const char* RTE_ENDIAN_BIG = "Big-endian";
+  static constexpr const char* RTE_ENDIAN_LITTLE = "Little-endian";
+  static constexpr const char* RTE_ENDIAN_CONFIGURABLE = "Configurable";
+  static constexpr const char* RTE_SECURE = "Secure";
+  static constexpr const char* RTE_NON_SECURE = "Non-secure";
+  static constexpr const char* RTE_TZ_DISABLED = "TZ-disabled";
+  static constexpr const char* RTE_NO_TZ = "NO_TZ";
+  static constexpr const char* RTE_BTI = "BTI";
+  static constexpr const char* RTE_BTI_SIGNRET = "BTI_SIGNRET";
+  static constexpr const char* RTE_NO_BRANCHPROT = "NO_BRANCHPROT";
+  static constexpr const char* RTE_NO_PACBTI = "NO_PACBTI";
+
+  static const StrMap        DeviceAttributesKeys;
+  static const StrPairVecMap DeviceAttributesValues;
+
+  /**
+   * @brief get equivalent device attribute
+   * @param key device attribute rte key
+   * @param value device attribute value (rte or yaml)
+   * @return rte or yaml equivalent device value
+  */
+  static const std::string& GetDeviceAttribute(const std::string& key, const std::string& value);
 
 };
 

@@ -83,7 +83,7 @@ void CBuildGenTestFixture::RunCBuildGen(const TestParam& param, string projpath,
       '/' + param.targetArg + ".cprj\" " + param.command +
       (param.options.empty() ? "" : " ") + param.options + "\"";
   }
-  const auto& ret_val = CbuildUtils::ExecCommand(cmd.c_str());
+  const auto& ret_val = CrossPlatformUtils::ExecCommand(cmd.c_str());
   stdoutStr = ret_val.first;
   ASSERT_EQ(param.expect, (ret_val.second == 0) ? true : false);
 }
@@ -209,17 +209,17 @@ void CBuildGenTestFixture::CheckDescriptionFiles(const string& filename1, const 
 }
 
 
-void CBuildGenTestFixture::GetDirectoryItems(const string& inPath, set<string> &Result, const string& ignoreDir) {
+void CBuildGenTestFixture::GetDirectoryItems(const string& inPath, set<string> &result, const string& ignoreDir) {
   string itemPath;
   for (auto& item : fs::directory_iterator(inPath)) {
     if (fs::is_directory(fs::status(item))) {
       if (item.path().filename().compare(ignoreDir) == 0) {
         continue;
       }
-      GetDirectoryItems(item.path().generic_string(), Result, ignoreDir);
+      GetDirectoryItems(item.path().generic_string(), result, ignoreDir);
     }
     itemPath = item.path().generic_string();
-    Result.insert(itemPath.substr(inPath.length() + 1, itemPath.length()));
+    result.insert(itemPath.substr(inPath.length() + 1, itemPath.length()));
   }
 }
 

@@ -203,7 +203,7 @@ string RteFsUtils::BackupFile(const string& fileName, bool bDeleteExisting) {
   return RteUtils::ERROR_STRING;
 }
 
-bool RteFsUtils::CreateFile(const string& file, const string& content) {
+bool RteFsUtils::CreateTextFile(const string& file, const string& content) {
   // Create file and directories
   error_code ec;
   fs::create_directories(fs::path(file).parent_path(), ec);
@@ -233,7 +233,7 @@ bool RteFsUtils::CopyBufferToFile(const string& fileName, const string& buffer, 
     }
   }
 
-  return CreateFile(fileName, buffer);
+  return CreateTextFile(fileName, buffer);
 }
 
 bool RteFsUtils::CopyMergeFile(const string& src, const string& dst, int nInstance, bool backup) {
@@ -729,7 +729,8 @@ void RteFsUtils::GetMatchingFiles(list<string>& files, const string& extension, 
     const fs::path& p = entry.path();
     string filename = p.filename().generic_string();
     if (fs::is_regular_file(p)) {
-      if (p.extension() == extension) {
+      auto pos = filename.rfind(extension);
+      if (pos != string::npos && pos == (filename.size() - extension.size())) {
         files.push_back(p.generic_string()); // insert full absolute path
         bFound = true;
       }
@@ -838,6 +839,27 @@ std::string RteFsUtils::FindFileInEtc(const std::string& fileName, const std::st
 {
   static const std::vector<std::string>& relSearchOrder = { "./", "../etc/", "../../etc/" };
   return FindFile(fileName, baseDir, relSearchOrder);
+}
+
+const string& RteFsUtils::FileCategoryFromExtension(const string& file) {
+  static const string& OTHER = "other";
+  static const map<string, vector<string>> CATEGORIES = {
+    {"sourceC", {".c", ".C"}},
+    {"sourceCpp", {".cpp", ".c++", ".C++", ".cxx", ".cc", ".CC"}},
+    {"sourceAsm", {".asm", ".s", ".S"}},
+    {"header", {".h", ".hpp"}},
+    {"library", {".a", ".lib"}},
+    {"object", {".o"}},
+    {"linkerScript", {".sct", ".scf", ".ld", ".icf", ".src"}},
+    {"doc", {".txt", ".md", ".pdf", ".htm", ".html"}},
+  };
+  fs::path ext((fs::path(file)).extension());
+  for (const auto& category : CATEGORIES) {
+    if (find(category.second.begin(), category.second.end(), ext) != category.second.end()) {
+      return category.first;
+    }
+  }
+  return OTHER;
 }
 
 // End of RteFsUtils.cpp

@@ -75,7 +75,7 @@ bool PackChk::CreatePacknameFile(const string& filename, RtePackage* pKg)
 
   string absPath = RteFsUtils::AbsolutePath(filename).generic_string();
   string content = pdscRef + "." + pkgVendor + "." + pkgVersion + PKG_FEXT;
-  if(!RteFsUtils::CreateFile(absPath, content)) {
+  if(!RteFsUtils::CreateTextFile(absPath, content)) {
     LogMsg("M205", PATH(absPath));
     return false;
   }

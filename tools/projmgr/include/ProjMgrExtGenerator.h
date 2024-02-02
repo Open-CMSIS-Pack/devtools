@@ -48,19 +48,13 @@ public:
   /**
    * @brief class destructor
   */
-  ~ProjMgrExtGenerator(void);
+  ~ProjMgrExtGenerator();
 
   /**
    * @brief set check schema
    * @param boolean check schema
   */
   void SetCheckSchema(bool checkSchema);
-
-  /**
-   * @brief retrieve globally registered generators
-   * @return true if successful
-  */
-  bool RetrieveGlobalGenerators(void);
 
   /**
    * @brief verify if generator is global
@@ -122,11 +116,8 @@ public:
 
 protected:
   ProjMgrParser* m_parser = nullptr;
-  StrVec m_globalGeneratorFiles;
-  std::map<std::string, GlobalGeneratorItem> m_globalGenerators;
   GeneratorContextVecMap m_usedGenerators;
   bool m_checkSchema;
-  std::string m_compilerRoot;
 };
 
 #endif  // PROJMGREXTGENERATOR_H

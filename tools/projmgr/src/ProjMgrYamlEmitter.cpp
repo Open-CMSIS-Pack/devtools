@@ -131,7 +131,7 @@ ProjMgrYamlCbuildPack::ProjMgrYamlCbuildPack(YAML::Node node, const vector<Conte
           model[resolvedPack] = modelItem;
         }
 
-        ProjMgrUtils::PushBackUniquely(model[resolvedPack].resolvedPack.selectedByPack, userInput);
+        CollectionUtils::PushBackUniquely(model[resolvedPack].resolvedPack.selectedByPack, userInput);
       }
     }
   }
@@ -150,7 +150,7 @@ ProjMgrYamlCbuildPack::ProjMgrYamlCbuildPack(YAML::Node node, const vector<Conte
 
         for (auto& [_, item] : model) {
           if (ProjMgrUtils::IsMatchingPackInfo(item.info, reqInfo)) {
-            ProjMgrUtils::PushBackUniquely(item.resolvedPack.selectedByPack, packId);
+            CollectionUtils::PushBackUniquely(item.resolvedPack.selectedByPack, packId);
           }
         }
       }
@@ -303,7 +303,7 @@ void ProjMgrYamlCbuild::SetContextNode(YAML::Node contextNode, const ContextItem
   vector<string> defines;
   if (context->rteActiveTarget != nullptr) {
     for (const auto& define : context->rteActiveTarget->GetDefines()) {
-      ProjMgrUtils::PushBackUniquely(defines, define);
+      CollectionUtils::PushBackUniquely(defines, define);
     }
   }
   SetDefineNode(contextNode[YAML_DEFINE], defines);
@@ -317,7 +317,7 @@ void ProjMgrYamlCbuild::SetContextNode(YAML::Node contextNode, const ContextItem
       }) {
       for (auto include : targetIncludes) {
         RteFsUtils::NormalizePath(include, context->cproject->directory);
-        ProjMgrUtils::PushBackUniquely(includes, FormatPath(include, context->directories.cbuild));
+        CollectionUtils::PushBackUniquely(includes, FormatPath(include, context->directories.cbuild));
       }
     }
   }
@@ -348,14 +348,14 @@ void ProjMgrYamlCbuild::SetComponentsNode(YAML::Node node, const ContextItem* co
     SetControlsNode(componentNode, context, componentItem->build);
     SetComponentFilesNode(componentNode[YAML_FILES], context, componentId);
     if (!component.generator.empty()) {
-      if (context->generators.find(component.generator) != context->generators.end()) {
+      SetNodeValue(componentNode[YAML_GENERATOR][YAML_ID], component.generator);
+      const RteGenerator* rteGenerator = get_or_null(context->generators, component.generator);
+      if(rteGenerator && !rteGenerator->IsExternal()) {
         const RteGenerator* rteGenerator = context->generators.at(component.generator);
-        SetNodeValue(componentNode[YAML_GENERATOR][YAML_ID], component.generator);
-        SetNodeValue(componentNode[YAML_GENERATOR][YAML_FROM_PACK], RtePackage::GetPackageIDfromAttributes(*rteGenerator->GetPackage()));
+        SetNodeValue(componentNode[YAML_GENERATOR][YAML_FROM_PACK], rteGenerator->GetPackageID());
         SetGeneratorFiles(componentNode[YAML_GENERATOR], context, componentId);
-      } else if (context->extGenDir.find(component.generator) != context->extGenDir.end()) {
-        SetNodeValue(componentNode[YAML_GENERATOR][YAML_ID], component.generator);
-        SetNodeValue(componentNode[YAML_GENERATOR][YAML_PATH],
+      } else if (contains_key(context->extGenDir, component.generator)) {
+          SetNodeValue(componentNode[YAML_GENERATOR][YAML_PATH],
           FormatPath(fs::path(context->extGenDir.at(component.generator)).append(context->cproject->name + ".cgen.yml").generic_string(),
           context->directories.cbuild));
       } else {
@@ -400,6 +400,9 @@ void ProjMgrYamlCbuild::SetGeneratorFiles(YAML::Node node, const ContextItem* co
 
 void ProjMgrYamlCbuild::SetGeneratorsNode(YAML::Node node, const ContextItem* context) {
   for (const auto& [generatorId, generator] : context->generators) {
+    if(generator->IsExternal()) {
+      continue;
+    }
     YAML::Node genNode;
     SetNodeValue(genNode[YAML_GENERATOR], generatorId);
 
@@ -411,7 +414,7 @@ void ProjMgrYamlCbuild::SetGeneratorsNode(YAML::Node node, const ContextItem* co
         break;
       }
     }
-    SetNodeValue(genNode[YAML_FROM_PACK], RtePackage::GetPackageIDfromAttributes(*generator->GetPackage()));
+    SetNodeValue(genNode[YAML_FROM_PACK], generator->GetPackageID());
     SetNodeValue(genNode[YAML_PATH], FormatPath(workingDir, context->directories.cbuild));
     SetNodeValue(genNode[YAML_GPDSC], FormatPath(gpdscFile, context->directories.cbuild));
 
@@ -419,14 +422,14 @@ void ProjMgrYamlCbuild::SetGeneratorsNode(YAML::Node node, const ContextItem* co
       YAML::Node commandNode;
 
       // Executable file
-      const string exe = generator->GetExecutable(context->rteActiveTarget, host);
+      const string exe = generator->GetExecutable(host);
       if (exe.empty())
         continue;
       commandNode[YAML_FILE] = FormatPath(exe, context->directories.cbuild);
 
       // Arguments
       YAML::Node argumentsNode;
-      const vector<pair<string, string> >& args = generator->GetExpandedArguments(context->rteActiveTarget, host);
+      const vector<pair<string, string> >& args = generator->GetExpandedArguments(host);
       for (auto [swtch, value] : args) {
         // If the argument is recognized as an absolute path, make sure to reformat
         // it to use CMSIS_PACK_ROOT or to be relative the working directory
@@ -468,7 +471,7 @@ void ProjMgrYamlCbuild::SetFilesNode(YAML::Node node, const ContextItem* context
   for (const auto& file : files) {
     YAML::Node fileNode;
     SetNodeValue(fileNode[YAML_FILE], file.file);
-    SetNodeValue(fileNode[YAML_CATEGORY], ProjMgrUtils::GetCategory(file.file));
+    SetNodeValue(fileNode[YAML_CATEGORY], RteFsUtils::FileCategoryFromExtension(file.file));
     SetControlsNode(fileNode, context, file.build);
     node.push_back(fileNode);
   }
@@ -519,11 +522,11 @@ void ProjMgrYamlCbuild::SetOutputDirsNode(YAML::Node node, const ContextItem* co
 void ProjMgrYamlCbuild::SetOutputNode(YAML::Node node, const ContextItem* context) {
   const auto& types = context->outputTypes;
   const vector<tuple<bool, const string, const string>> outputTypes = {
-    { types.bin.on, types.bin.filename, ProjMgrUtils::OUTPUT_TYPE_BIN },
-    { types.elf.on, types.elf.filename, ProjMgrUtils::OUTPUT_TYPE_ELF },
-    { types.hex.on, types.hex.filename, ProjMgrUtils::OUTPUT_TYPE_HEX },
-    { types.lib.on, types.lib.filename, ProjMgrUtils::OUTPUT_TYPE_LIB },
-    { types.cmse.on, types.cmse.filename, ProjMgrUtils::OUTPUT_TYPE_CMSE },
+    { types.bin.on, types.bin.filename, RteConstants::OUTPUT_TYPE_BIN },
+    { types.elf.on, types.elf.filename, RteConstants::OUTPUT_TYPE_ELF },
+    { types.hex.on, types.hex.filename, RteConstants::OUTPUT_TYPE_HEX },
+    { types.lib.on, types.lib.filename, RteConstants::OUTPUT_TYPE_LIB },
+    { types.cmse.on, types.cmse.filename, RteConstants::OUTPUT_TYPE_CMSE },
   };
   for (const auto& [on, file, type] : outputTypes) {
     if (on) {
@@ -594,10 +597,10 @@ void ProjMgrYamlCbuild::SetControlsNode(YAML::Node node, const ContextItem* cont
 }
 
 void ProjMgrYamlCbuild::SetProcessorNode(YAML::Node node, const map<string, string>& targetAttributes) {
-  for (const auto& [rteKey, yamlKey]: ProjMgrUtils::DeviceAttributesKeys) {
+  for (const auto& [rteKey, yamlKey]: RteConstants::DeviceAttributesKeys) {
     if (targetAttributes.find(rteKey) != targetAttributes.end()) {
       const auto& rteValue = targetAttributes.at(rteKey);
-      const auto& yamlValue = ProjMgrUtils::GetDeviceAttribute(rteKey, rteValue);
+      const auto& yamlValue = RteConstants::GetDeviceAttribute(rteKey, rteValue);
       if (!yamlValue.empty()) {
         SetNodeValue(node[yamlKey], yamlValue);
       }
