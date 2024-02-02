@@ -210,15 +210,6 @@ public:
   */
   bool ParseCbuildSet(const std::string& input, CbuildSetItem& cbuildSet, bool checkSchema);
 
-  /**
-   * @brief parse global generator registry
-   * @param input generator.yml file
-   * @param reference to store parsed generator items
-   * @param checkSchema false to skip schema validation
-   * @return true if executed successfully
-  */
-  bool ParseGlobalGenerator(const std::string& input,
-    std::map<std::string, GlobalGeneratorItem>& generators, bool checkSchema);
 
 protected:
   bool ParseCbuildPack(const std::string& input, CbuildPackItem& cbuildPack, bool checkSchema);

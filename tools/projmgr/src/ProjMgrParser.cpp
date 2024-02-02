@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -54,11 +54,6 @@ bool ProjMgrParser::ParseCbuildSet(const string& input, bool checkSchema) {
   return ProjMgrYamlParser().ParseCbuildSet(input, m_cbuildSet, checkSchema);
 }
 
-bool ProjMgrParser::ParseGlobalGenerator(const string& input, bool checkSchema) {
-  // Parse generic layer file
-  return ProjMgrYamlParser().ParseGlobalGenerator(input, m_globalGenerators, checkSchema);
-}
-
 CdefaultItem& ProjMgrParser::GetCdefault(void) {
   return m_cdefault;
 }
@@ -83,6 +78,4 @@ CbuildSetItem& ProjMgrParser::GetCbuildSetItem(void) {
   return m_cbuildSet;
 }
 
-map<string, GlobalGeneratorItem>& ProjMgrParser::GetGlobalGenerators(void) {
-  return m_globalGenerators;
-}
+// end of ProjMgrParser.cpp
