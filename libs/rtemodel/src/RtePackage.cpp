@@ -733,7 +733,7 @@ string RtePackage::ConstructID()
   m_commonID = RtePackage::GetPackageIDfromAttributes(*this, false);
 
   m_nDeprecated = IsDeprecated() ? 1 : 0;
-  m_nDominating = IsDominating() ? 1 : 0;
+  m_nDominating = !m_nDeprecated && GetItemByTag("dominate") != nullptr;
   return id;
 }
 
