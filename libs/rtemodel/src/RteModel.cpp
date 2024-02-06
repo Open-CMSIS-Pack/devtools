@@ -254,11 +254,17 @@ RteComponent* RteModel::GetComponent(RteComponentInstance* ci, bool matchVersion
 
 RteApi* RteModel::GetApi(const map<string, string>& componentAttributes) const
 {
+  RteApi* api = nullptr;
   for (auto [_, a] : m_apiList) {
-    if (a && a->MatchApiAttributes(componentAttributes))
-      return a;
+    if(a && a->MatchApiAttributes(componentAttributes)) {
+      if(a->GetPackage()->IsDominating()) {
+        return a; // first dominating API wins
+      } else if(!api) {
+        api = a; // keep latest
+      }
+    }
   }
-  return nullptr;
+  return api;
 }
 
 RteApi* RteModel::GetApi(const string& id) const
@@ -277,13 +283,18 @@ RteApi* RteModel::GetApi(const string& id) const
 RteApi* RteModel::GetLatestApi(const string& id) const
 {
   string commonId = RteUtils::GetPrefix(id, RteConstants::PREFIX_CVERSION_CHAR);
+  RteApi* api = nullptr;
   // get highest API version
-  for (auto [key, api] : m_apiList) {
+  for (auto [key, a] : m_apiList) {
     if (RteUtils::GetPrefix(key, RteConstants::PREFIX_CVERSION_CHAR) == commonId) {
-      return api;
+      if(a->GetPackage()->IsDominating()) {
+        return a; // first dominating API wins
+      } else if(!api) {
+        api = a; // keep latest
+      }
     }
   }
-  return nullptr;
+  return api;
 }
 
 std::list<RteApi*> RteModel::GetAvailableApis(const std::string& id) const

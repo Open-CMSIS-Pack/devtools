@@ -292,7 +292,7 @@
   </conditions>
 
   <apis>
-    <api Cclass="RteTest" Cgroup="CORE" Capiversion="1.1.1" exclusive="1">
+    <api Cclass="RteTest" Cgroup="CORE" Capiversion="1.1.2" exclusive="1">
       <description>RteTest CORE API</description>
       <files>
         <!-- CPU independent -->

@@ -248,6 +248,24 @@ TEST(RteModelTest, LoadPacks) {
   RteGenerator* gen = c->GetGenerator();
   EXPECT_FALSE(gen != nullptr);
 
+  // get API
+  const string& apiId = "::RteTest:CORE(API)";
+  RteApi* api = rteModel->GetLatestApi(apiId);
+  ASSERT_TRUE(api);
+  EXPECT_EQ(api->GetID(),  "::RteTest:CORE(API)@1.1.2");
+  EXPECT_EQ(api->GetPackageID(), "ARM::RteTest_DFP@0.2.0");
+
+  // make pack "dominant"
+  pack = rteModel->GetPackage("ARM::RteTest_DFP@0.1.1");
+  ASSERT_TRUE(pack);
+  RteItem* dominateItem = new RteItem("dominate", pack);
+  pack->AddChild(dominateItem);
+  pack->Construct(); // refresh internal state
+  api = rteModel->GetLatestApi(apiId);
+  ASSERT_TRUE(api);
+  EXPECT_EQ(api->GetID(),  "::RteTest:CORE(API)@1.1.1");
+  EXPECT_EQ(api->GetPackageID(), "ARM::RteTest_DFP@0.1.1");
+
   ExtGenRteCallback extGenRteCallback;
   rteKernel.SetRteCallback(&extGenRteCallback);
   gen = c->GetGenerator();
