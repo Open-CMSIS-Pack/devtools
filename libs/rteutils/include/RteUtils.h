@@ -8,7 +8,7 @@
 */
 /******************************************************************************/
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -78,6 +78,15 @@ public:
    * @return number of resulting segments
   */
   static int    SplitString(std::list<std::string>& segments, const std::string& s, const char delimiter);
+
+  /**
+   * @brief split string into a set of unique substrings
+   * @param args string to split
+   * @param delimiter string with one or more delimiters separating substrings
+   * @return set of substrings strings
+  */
+  static std::set<std::string> SplitStringToSet(const std::string& args, const std::string& delimiter = RteUtils::SPACE_STRING);
+
   /**
    * @brief checks if two std::string objects are case insensitive equal
    * @param a string to be compared
@@ -347,8 +356,29 @@ public:
   */
   static std::string ToXmlString(const std::map<std::string, std::string>& attributes);
 
+  /**
+   * @brief get next access sequence text and its position in supplier string
+   * @param offset (in/out) to start search for first delimiter, on output position after end delimiter
+   * @param src (in) source string to search in
+   * @param sequence (out) found sequence string
+   * @param start leading delimiter
+   * @param end trailing delimiter
+   * @return false if delimiters do not match, true otherwise
+  */
+  static bool GetAccessSequence(size_t& offset, const std::string& src, std::string& sequence, const char start, const char end);
 
+  /**
+   * @brief selectively copy strings from source vector to a destination vector
+   * @param origin source vector
+   * @param filter set of substrings to match (all must match)
+   * @param result destination vector
+  */
+  static void ApplyFilter(const std::vector<std::string>& origin, const std::set<std::string>& filter, std::vector<std::string>& result);
+
+// static constants
+public:
   static const std::string EMPTY_STRING;
+  static const std::string SPACE_STRING;
   static const std::string DASH_STRING;
   static const std::string CRLF_STRING;
   static const std::string CR_STRING;
