@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -1712,7 +1712,7 @@ RteComponent* ProjMgrWorker::ProcessComponent(ContextItem& context, ComponentIte
     filterSet.insert(RteUtils::GetPrefix(componentDescriptor, RteConstants::PREFIX_CVERSION_CHAR));
   } else {
     // Consider free text was given
-    filterSet = SplitArgs(componentDescriptor);
+    filterSet = RteUtils::SplitStringToSet(componentDescriptor);
   }
 
   vector<string> componentIdVec;
@@ -1720,7 +1720,7 @@ RteComponent* ProjMgrWorker::ProcessComponent(ContextItem& context, ComponentIte
   for (auto [componentId, _] :componentMap) {
     componentIdVec.push_back(componentId);
   }
-  ApplyFilter(componentIdVec, filterSet, filteredIds);
+  RteUtils::ApplyFilter(componentIdVec, filterSet, filteredIds);
   for (const auto& filteredId : filteredIds) {
     auto c = componentMap[filteredId];
     filteredComponents[filteredId] = c;
@@ -1730,7 +1730,8 @@ RteComponent* ProjMgrWorker::ProcessComponent(ContextItem& context, ComponentIte
   if (filteredComponents.size() > 1) {
     RteComponentMap fullMatchedComponents;
     for (const auto& component : filteredComponents) {
-      if (FullMatch(SplitArgs(component.first, RteConstants::COMPONENT_DELIMITERS), SplitArgs(componentDescriptor, RteConstants::COMPONENT_DELIMITERS))) {
+      if (RteUtils::SplitStringToSet(component.first, RteConstants::COMPONENT_DELIMITERS) ==
+          RteUtils::SplitStringToSet(componentDescriptor, RteConstants::COMPONENT_DELIMITERS)) {
         fullMatchedComponents.insert(component);
       }
     }
@@ -2175,19 +2176,6 @@ bool ProjMgrWorker::ProcessCompilerPrecedence(StringCollection& item, bool accep
   return true;
 }
 
-void ProjMgrWorker::MergeDefines(StringVectorCollection& item) {
-  for (const auto& element : item.pair) {
-    AddStringItemsUniquely(*item.assign, *element.add);
-    RemoveDefines(*item.assign, *element.remove);
-  }
-}
-
-void ProjMgrWorker::MergeStringVector(StringVectorCollection& item) {
-  for (const auto& element : item.pair) {
-    AddStringItemsUniquely(*item.assign, *element.add);
-    RemoveStringItems(*item.assign, *element.remove);
-  }
-}
 
 bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, bool rerun) {
   // Notes: defines, includes and misc are additive. All other keywords overwrite previous settings.
@@ -2420,19 +2408,19 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, bool rerun) {
 
   // Defines
   vector<string> projectDefines, projectUndefines;
-  AddStringItemsUniquely(projectDefines, context.controls.cproject.defines);
+  CollectionUtils::AddStringItemsUniquely(projectDefines, context.controls.cproject.defines);
   for (auto& [_, clayer] : context.controls.clayers) {
-    AddStringItemsUniquely(projectDefines, clayer.defines);
+    CollectionUtils::AddStringItemsUniquely(projectDefines, clayer.defines);
   }
   for (auto& setup : context.controls.setups) {
-    AddStringItemsUniquely(projectDefines, setup.defines);
+    CollectionUtils::AddStringItemsUniquely(projectDefines, setup.defines);
   }
-  AddStringItemsUniquely(projectUndefines, context.controls.cproject.undefines);
+  CollectionUtils::AddStringItemsUniquely(projectUndefines, context.controls.cproject.undefines);
   for (auto& [_, clayer] : context.controls.clayers) {
-    AddStringItemsUniquely(projectUndefines, clayer.undefines);
+    CollectionUtils::AddStringItemsUniquely(projectUndefines, clayer.undefines);
   }
   for (auto& setup : context.controls.setups) {
-    AddStringItemsUniquely(projectUndefines, setup.undefines);
+    CollectionUtils::AddStringItemsUniquely(projectUndefines, setup.undefines);
   }
   StringVectorCollection defines = {
     &context.controls.processed.defines,
@@ -2443,23 +2431,23 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, bool rerun) {
       {&context.controls.build.defines, &context.controls.build.undefines},
     }
   };
-  MergeDefines(defines);
+  CollectionUtils::MergeDefines(defines);
 
   // Includes
   vector<string> projectAddPaths, projectDelPaths;
-  AddStringItemsUniquely(projectAddPaths, context.controls.cproject.addpaths);
+  CollectionUtils::AddStringItemsUniquely(projectAddPaths, context.controls.cproject.addpaths);
   for (auto& [_, clayer] : context.controls.clayers) {
-    AddStringItemsUniquely(projectAddPaths, clayer.addpaths);
+    CollectionUtils::AddStringItemsUniquely(projectAddPaths, clayer.addpaths);
   }
   for (auto& setup : context.controls.setups) {
-    AddStringItemsUniquely(projectAddPaths, setup.addpaths);
+    CollectionUtils::AddStringItemsUniquely(projectAddPaths, setup.addpaths);
   }
-  AddStringItemsUniquely(projectDelPaths, context.controls.cproject.delpaths);
+  CollectionUtils::AddStringItemsUniquely(projectDelPaths, context.controls.cproject.delpaths);
   for (auto& [_, clayer] : context.controls.clayers) {
-    AddStringItemsUniquely(projectDelPaths, clayer.delpaths);
+    CollectionUtils::AddStringItemsUniquely(projectDelPaths, clayer.delpaths);
   }
   for (auto& setup : context.controls.setups) {
-    AddStringItemsUniquely(projectDelPaths, setup.delpaths);
+    CollectionUtils::AddStringItemsUniquely(projectDelPaths, setup.delpaths);
   }
   StringVectorCollection includes = {
     &context.controls.processed.addpaths,
@@ -2470,7 +2458,7 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, bool rerun) {
       {&context.controls.build.addpaths, &context.controls.build.delpaths},
     }
   };
-  MergeStringVector(includes);
+  CollectionUtils::MergeStringVector(includes);
 
   return true;
 }
@@ -2665,7 +2653,7 @@ bool ProjMgrWorker::ProcessLinkerOptions(ContextItem& context, const LinkerItem&
         return false;
       }
     }
-    AddStringItemsUniquely(context.linker.defines, linker.defines);
+    CollectionUtils::AddStringItemsUniquely(context.linker.defines, linker.defines);
     if (linker.autoGen) {
       context.linker.autoGen = true;
     }
@@ -2787,7 +2775,7 @@ bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, 
   while (offset != string::npos) {
     string sequence;
     // get next access sequence
-    if (!GetAccessSequence(offset, input, sequence, '$', '$')) {
+    if (!RteUtils::GetAccessSequence(offset, input, sequence, '$', '$')) {
       return false;
     }
     if (offset != string::npos) {
@@ -3149,58 +3137,6 @@ bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGenFiles, bool
   return ret;
 }
 
-void ProjMgrWorker::ApplyFilter(const vector<string>& origin, const set<string>& filter, vector<string>& result) {
-  result.clear();
-  for (const auto& item : origin) {
-    bool match = true;
-    for (const auto& word : filter) {
-      if (word.empty()) {
-        continue;
-      }
-      if (item.find(word) == string::npos) {
-        match = false;
-        break;
-      }
-    }
-    if (match) {
-      CollectionUtils::PushBackUniquely(result, item);
-    }
-  }
-}
-
-bool ProjMgrWorker::FullMatch(const set<string>& installed, const set<string>& required) {
-  for (const auto& requiredWord : required) {
-    if (requiredWord.empty()) {
-      continue;
-    }
-    bool fullMatch = false;
-    for (const auto& installedWord : installed) {
-      if (installedWord.empty()) {
-        continue;
-      }
-      if (requiredWord.compare(installedWord) == 0) {
-        fullMatch = true;
-        break;
-      }
-    }
-    if (!fullMatch) {
-      return false;
-    }
-  }
-  return true;
-}
-
-set<string> ProjMgrWorker::SplitArgs(const string& args, const string& delimiter) {
-  set<string> s;
-  size_t end = 0, start = 0, len = args.length();
-  while (end < len) {
-    if ((end = args.find_first_of(delimiter, start)) == string::npos) end = len;
-    s.insert(args.substr(start, end - start));
-    start = end + 1;
-  }
-  return s;
-}
-
 bool ProjMgrWorker::ListPacks(vector<string>&packs, bool bListMissingPacksOnly, const string& filter) {
   map<string, string, RtePackageComparator> packsMap;
   list<string> pdscFiles;
@@ -3286,7 +3222,7 @@ bool ProjMgrWorker::ListPacks(vector<string>&packs, bool bListMissingPacksOnly, 
   }
   if (!filter.empty()) {
     vector<string> filteredPacks;
-    ApplyFilter(packsVec, SplitArgs(filter), filteredPacks);
+    RteUtils::ApplyFilter(packsVec, RteUtils::SplitStringToSet(filter), filteredPacks);
     if (filteredPacks.empty()) {
       ProjMgrLogger::Error("no pack was found with filter '" + filter + "'");
       return false;
@@ -3320,7 +3256,7 @@ bool ProjMgrWorker::ListBoards(vector<string>& boards, const string& filter) {
   vector<string> boardsVec(boardsSet.begin(), boardsSet.end());
   if (!filter.empty()) {
     vector<string> matchedBoards;
-    ApplyFilter(boardsVec, SplitArgs(filter), matchedBoards);
+    RteUtils::ApplyFilter(boardsVec, RteUtils::SplitStringToSet(filter), matchedBoards);
     if (matchedBoards.empty()) {
       ProjMgrLogger::Error("no board was found with filter '" + filter + "'");
       return false;
@@ -3361,7 +3297,7 @@ bool ProjMgrWorker::ListDevices(vector<string>& devices, const string& filter) {
   vector<string> devicesVec(devicesSet.begin(), devicesSet.end());
   if (!filter.empty()) {
     vector<string> matchedDevices;
-    ApplyFilter(devicesVec, SplitArgs(filter), matchedDevices);
+    RteUtils::ApplyFilter(devicesVec, RteUtils::SplitStringToSet(filter), matchedDevices);
     if (matchedDevices.empty()) {
       ProjMgrLogger::Error("no device was found with filter '" + filter + "'");
       return false;
@@ -3411,7 +3347,7 @@ bool ProjMgrWorker::ListComponents(vector<string>& components, const string& fil
   vector<string> componentIdsVec(componentIds.begin(), componentIds.end());
   if (!filter.empty()) {
     vector<string> filteredIds;
-    ApplyFilter(componentIdsVec, SplitArgs(filter), filteredIds);
+    RteUtils::ApplyFilter(componentIdsVec, RteUtils::SplitStringToSet(filter), filteredIds);
     if (filteredIds.empty()) {
       ProjMgrLogger::Error("no component was found with filter '" + filter + "'");
       return false;
@@ -3439,7 +3375,7 @@ bool ProjMgrWorker::ListConfigs(vector<string>& configFiles, const string& filte
   vector<string> configVec(configSet.begin(), configSet.end());
   if (!filter.empty()) {
     vector<string> filteredConfigs;
-    ApplyFilter(configVec, SplitArgs(filter), filteredConfigs);
+    RteUtils::ApplyFilter(configVec, RteUtils::SplitStringToSet(filter), filteredConfigs);
     if (filteredConfigs.empty()) {
       ProjMgrLogger::Error("no unresolved dependency was found with filter '" + filter + "'");
       return false;
@@ -3471,7 +3407,7 @@ bool ProjMgrWorker::ListDependencies(vector<string>& dependencies, const string&
   vector<string> dependenciesVec(dependenciesSet.begin(), dependenciesSet.end());
   if (!filter.empty()) {
     vector<string> filteredDependencies;
-    ApplyFilter(dependenciesVec, SplitArgs(filter), filteredDependencies);
+    RteUtils::ApplyFilter(dependenciesVec, RteUtils::SplitStringToSet(filter), filteredDependencies);
     if (filteredDependencies.empty()) {
       ProjMgrLogger::Error("no unresolved dependency was found with filter '" + filter + "'");
       return false;
@@ -3503,7 +3439,7 @@ bool ProjMgrWorker::ListContexts(vector<string>& contexts, const string& filter,
   vector<string> contextsVec = m_ymlOrderedContexts;
   if (!filter.empty()) {
     vector<string> filteredContexts;
-    ApplyFilter(contextsVec, SplitArgs(filter), filteredContexts);
+    RteUtils::ApplyFilter(contextsVec, RteUtils::SplitStringToSet(filter), filteredContexts);
     if (filteredContexts.empty()) {
       ProjMgrLogger::Error("no context was found with filter '" + filter + "'");
       return false;
@@ -3674,78 +3610,20 @@ void ProjMgrWorker::AddMiscUniquely(MiscItem& dst, vector<MiscItem>& vec) {
   for (auto& src : vec) {
     if (ProjMgrUtils::AreCompilersCompatible(src.forCompiler, dst.forCompiler)) {
       // Copy individual flags
-      AddStringItemsUniquely(dst.as, src.as);
-      AddStringItemsUniquely(dst.c, src.c);
-      AddStringItemsUniquely(dst.cpp, src.cpp);
-      AddStringItemsUniquely(dst.c_cpp, src.c_cpp);
-      AddStringItemsUniquely(dst.link, src.link);
-      AddStringItemsUniquely(dst.link_c, src.link_c);
-      AddStringItemsUniquely(dst.link_cpp, src.link_cpp);
-      AddStringItemsUniquely(dst.lib, src.lib);
-      AddStringItemsUniquely(dst.library, src.library);
+      CollectionUtils::AddStringItemsUniquely(dst.as, src.as);
+      CollectionUtils::AddStringItemsUniquely(dst.c, src.c);
+      CollectionUtils::AddStringItemsUniquely(dst.cpp, src.cpp);
+      CollectionUtils::AddStringItemsUniquely(dst.c_cpp, src.c_cpp);
+      CollectionUtils::AddStringItemsUniquely(dst.link, src.link);
+      CollectionUtils::AddStringItemsUniquely(dst.link_c, src.link_c);
+      CollectionUtils::AddStringItemsUniquely(dst.link_cpp, src.link_cpp);
+      CollectionUtils::AddStringItemsUniquely(dst.lib, src.lib);
+      CollectionUtils::AddStringItemsUniquely(dst.library, src.library);
       // Propagate C-CPP flags
-      AddStringItemsUniquely(dst.c, dst.c_cpp);
-      AddStringItemsUniquely(dst.cpp, dst.c_cpp);
+      CollectionUtils::AddStringItemsUniquely(dst.c, dst.c_cpp);
+      CollectionUtils::AddStringItemsUniquely(dst.cpp, dst.c_cpp);
     }
   }
-}
-
-void ProjMgrWorker::AddStringItemsUniquely(vector<string>& dst, const vector<string>& src) {
-  for (const auto& value : src) {
-    if (find(dst.cbegin(), dst.cend(), value) == dst.cend()) {
-      dst.push_back(value);
-    }
-  }
-}
-
-void ProjMgrWorker::RemoveDefines(vector<string>& dst, vector<string>& src) {
-  for (const auto& value : src) {
-    if (value == "*") {
-      dst.clear();
-      return;
-    }
-    const auto& valueIt = find_if(dst.cbegin(), dst.cend(),
-      [value](const string& defineStr) -> bool {
-        if (defineStr == value) {
-          return true;
-        }
-        auto defKey = RteUtils::GetPrefix(defineStr, '=');
-        return (defKey == value);
-      });
-    if (valueIt != dst.cend()) {
-      dst.erase(valueIt);
-    }
-  }
-}
-
-void ProjMgrWorker::RemoveStringItems(vector<string>& dst, vector<string>& src) {
-  for (const auto& value : src) {
-    if (value == "*") {
-      dst.clear();
-      return;
-    }
-    const auto& valueIt = find(dst.cbegin(), dst.cend(), value);
-    if (valueIt != dst.cend()) {
-      dst.erase(valueIt);
-    }
-  }
-}
-
-bool ProjMgrWorker::GetAccessSequence(size_t& offset, const string& src, string& sequence, const char start, const char end) {
-  size_t delimStart = src.find_first_of(start, offset);
-  if (delimStart != string::npos) {
-    size_t delimEnd = src.find_first_of(end, ++delimStart);
-    if (delimEnd != string::npos) {
-      sequence = src.substr(delimStart, delimEnd - delimStart);
-      offset = ++delimEnd;
-      return true;
-    } else {
-      ProjMgrLogger::Error("missing access sequence delimiter: " + src);
-      return false;
-    }
-  }
-  offset = string::npos;
-  return true;
 }
 
 bool ProjMgrWorker::ExecuteGenerator(std::string& generatorId) {

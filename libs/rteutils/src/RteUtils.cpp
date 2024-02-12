@@ -6,7 +6,7 @@
 */
 /******************************************************************************/
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -22,6 +22,7 @@
 using namespace std;
 
 const string RteUtils::EMPTY_STRING("");
+const string RteUtils::SPACE_STRING(" ");
 const string RteUtils::DASH_STRING("-");
 
 const string RteUtils::CRLF_STRING(RteConstants::CRLF);
@@ -126,6 +127,23 @@ int RteUtils::SplitString(list<string>& segments, const string& s, const char de
   return (int)segments.size();
 }
 
+set<string> RteUtils::SplitStringToSet(const string& args, const string& delimiter) {
+  set<string> s;
+  if(args.empty()) {
+    return s;
+  }
+  if(delimiter.empty()) {
+    s.insert(args);
+    return s;
+  }
+  size_t end = 0, start = 0, len = args.length();
+  while(end < len) {
+    if((end = args.find_first_of(delimiter, start)) == string::npos) end = len;
+    s.insert(args.substr(start, end - start));
+    start = end + 1;
+  }
+  return s;
+}
 
 bool RteUtils::EqualNoCase(const std::string& a, const std::string& b)
 {
@@ -549,6 +567,41 @@ string RteUtils::ConstructID(const std::vector<std::pair<const char*, const std:
     }
   }
   return id;
+}
+
+bool RteUtils::GetAccessSequence(size_t& offset, const string& src, string& sequence, const char start, const char end) {
+  size_t delimStart = src.find_first_of(start, offset);
+  if (delimStart != string::npos) {
+    size_t delimEnd = src.find_first_of(end, ++delimStart);
+    if (delimEnd != string::npos) {
+      sequence = src.substr(delimStart, delimEnd - delimStart);
+      offset = ++delimEnd;
+      return true;
+    } else {
+      return false;
+    }
+  }
+  offset = string::npos;
+  return true;
+}
+
+void RteUtils::ApplyFilter(const vector<string>& origin, const set<string>& filter, vector<string>& result) {
+  result.clear();
+  for (const auto& item : origin) {
+    bool match = true;
+    for (const auto& word : filter) {
+      if (word.empty()) {
+        continue;
+      }
+      if (item.find(word) == string::npos) {
+        match = false;
+        break;
+      }
+    }
+    if (match) {
+      CollectionUtils::PushBackUniquely(result, item);
+    }
+  }
 }
 
 // End of RteUtils.cpp
