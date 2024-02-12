@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -661,7 +661,6 @@ protected:
   std::vector<std::string> SplitArgs(const std::string& args, const std::string& delim=std::string(" -"), bool relativePath=true);
   static std::vector<std::string> MergeArgs(const std::vector<std::string>& add, const std::vector<std::string>& remove, const std::vector<std::string>& reference, bool front = false);
   static std::string GetExtendedRteGroupName(RteItem* ci, const std::string& rteFolder);
-  bool GetAccessSequence(size_t& offset, std::string& src, std::string& sequence, const char start, const char end);
   void InsertVectorPointers(std::vector<std::string*>& dst, std::vector<std::string>& src);
 };
 

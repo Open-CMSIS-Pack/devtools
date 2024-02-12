@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -1362,24 +1362,6 @@ string CbuildModel::GetExtendedRteGroupName(RteItem* ci, const string& rteFolder
   return rteGroupName;
 }
 
-bool CbuildModel::GetAccessSequence(size_t& offset, string& src, string& sequence, const char start, const char end) {
-  size_t delimStart = src.find_first_of(start, offset);
-  if (delimStart != string::npos) {
-    size_t delimEnd = src.find_first_of(end, ++delimStart);
-    if (delimEnd != string::npos) {
-      sequence = src.substr(delimStart, delimEnd - delimStart);
-      offset = ++delimEnd;
-      return true;
-    }
-    else {
-      LogMsg("M614", VAL("ACCSEQDELIM", src));
-      return false;
-    }
-  }
-  offset = string::npos;
-  return true;
-}
-
 void CbuildModel::InsertVectorPointers(vector<string*>& dst, vector<string>& src) {
   for (auto& item : src) {
     dst.push_back(&item);
@@ -1413,7 +1395,7 @@ bool CbuildModel::EvalAccessSequence() {
       size_t offset = 0;
       while (offset != string::npos) {
         string sequence;
-        if (!GetAccessSequence(offset, *item, sequence, '$', '$')) {
+        if (!RteUtils::GetAccessSequence(offset, *item, sequence, '$', '$')) {
           return false;
         }
         if (offset != string::npos) {
@@ -1451,7 +1433,7 @@ bool CbuildModel::EvalAccessSequence() {
             string packStr, vendor, name, version;
             size_t offsetContext = 0;
             regEx = regex("\\$Pack\\(.*");
-            if (!GetAccessSequence(offsetContext, sequence, packStr, '(', ')')) {
+            if (!RteUtils::GetAccessSequence(offsetContext, sequence, packStr, '(', ')')) {
               return false;
             }
             string packId = packStr;

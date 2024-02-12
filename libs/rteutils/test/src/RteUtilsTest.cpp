@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -466,5 +466,83 @@ TEST(RteUtils, ExpandString) {
   EXPECT_EQ(RteUtils::ExpandString("$Foo Bar$", variables), "./foo-bar");
   EXPECT_EQ(RteUtils::ExpandString("$Foo$ $Foo$ $Foo$", variables), "./foo ./foo ./foo");
 }
+
+TEST(RteUtils, GetAccessSequence) {
+  string src, sequence;
+  size_t offset = 0;
+
+  src = "$Bpack$";
+  EXPECT_TRUE(RteUtils::GetAccessSequence(offset, src, sequence, '$', '$'));
+  EXPECT_EQ(offset, 7);
+  EXPECT_EQ(sequence, "Bpack");
+  EXPECT_TRUE(RteUtils::GetAccessSequence(offset, src, sequence, '$', '$'));
+  EXPECT_EQ(offset, string::npos);
+
+  src = "$Pack(vendor.name)$";
+  offset = 0;
+  EXPECT_TRUE(RteUtils::GetAccessSequence(offset, src, sequence, '$', '$'));
+  EXPECT_EQ(offset, 19);
+  EXPECT_EQ(sequence, "Pack(vendor.name)");
+  offset = 0;
+  EXPECT_TRUE(RteUtils::GetAccessSequence(offset, sequence, sequence, '(', ')'));
+  EXPECT_EQ(offset, 17);
+  EXPECT_EQ(sequence, "vendor.name");
+
+  src = "$Dpack";
+  offset = 0;
+  EXPECT_FALSE(RteUtils::GetAccessSequence(offset, src, sequence, '$', '$'));
+
+  src = "Option=$Dname$ - $Dboard$";
+  offset = 0;
+  EXPECT_TRUE(RteUtils::GetAccessSequence(offset, src, sequence, '$', '$'));
+  EXPECT_EQ(offset, 14);
+  EXPECT_EQ(sequence, "Dname");
+  EXPECT_TRUE(RteUtils::GetAccessSequence(offset, src, sequence, '$', '$'));
+  EXPECT_EQ(offset, 25);
+  EXPECT_EQ(sequence, "Dboard");
+  EXPECT_TRUE(RteUtils::GetAccessSequence(offset, src, sequence, '$', '$'));
+  EXPECT_EQ(offset, string::npos);
+
+  src = "DEF=$Output(project)$";
+  offset = 0;
+  EXPECT_TRUE(RteUtils::GetAccessSequence(offset, src, sequence, '$', '$'));
+  EXPECT_EQ(offset, 21);
+  EXPECT_EQ(sequence, "Output(project)");
+  offset = 0;
+  EXPECT_TRUE(RteUtils::GetAccessSequence(offset, sequence, sequence, '(', ')'));
+  EXPECT_EQ(offset, 15);
+  EXPECT_EQ(sequence, "project");
+  src = "Option=$Dname";
+  offset = 0;
+  EXPECT_FALSE(RteUtils::GetAccessSequence(offset, src, sequence, '$', '$'));
+}
+
+TEST(RteUtils, SplitStringToSet) {
+  set<string> args = RteUtils::SplitStringToSet("");
+  EXPECT_EQ(args.size(), 0);
+
+  args = RteUtils::SplitStringToSet("", "");
+  EXPECT_EQ(args.size(), 0);
+
+  args = RteUtils::SplitStringToSet("CMSIS, CORE, ARM, device");
+  EXPECT_EQ(args.size(), 4);
+
+  args = RteUtils::SplitStringToSet("device,startup");
+  EXPECT_EQ(args.size(), 1);
+
+  args = RteUtils::SplitStringToSet("device,startup", "");
+  EXPECT_EQ(args.size(), 1);
+
+}
+
+TEST(RteUtils, ApplyFilter) {
+  std::vector<std::string> input = { "TestString1", "FilteredString", "TestString2" };
+  std::set<std::string> filter = { "String", "Filtered", "" };
+  std::vector<std::string> expected = { "FilteredString" };
+  std::vector<std::string> result;
+  RteUtils::ApplyFilter(input, filter, result);
+  EXPECT_EQ(expected, result);
+}
+
 
 // end of RteUtilsTest.cpp

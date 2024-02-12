@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -316,36 +316,6 @@ struct ContextItem {
   std::map<std::string, std::set<std::string>> userInputToResolvedPackIdMap;
   StrSet localPackPaths;
   StrVec dependsOn;
-};
-
-/**
- * @brief string collection containing
- *        pointer to destination element
- *        vector with pointers to source elements
-*/
-struct StringCollection {
-  std::string* assign;
-  std::vector<std::string*> elements;
-};
-
-/**
- * @brief string vector pair containing
- *        items to add
- *        items to remove
-*/
-struct StringVectorPair {
-  std::vector<std::string>* add;
-  std::vector<std::string>* remove;
-};
-
-/**
- * @brief string vector collection containing
- *        pointer to destination
- *        vector with items to add/remove
-*/
-struct StringVectorCollection {
-  std::vector<std::string>* assign;
-  std::vector <StringVectorPair> pair;
 };
 
 /**
@@ -706,18 +676,9 @@ protected:
   void UpdateMisc(std::vector<MiscItem>& vec, const std::string& compiler);
   void AddMiscUniquely(MiscItem& dst, std::vector<std::vector<MiscItem>*>& srcVec);
   void AddMiscUniquely(MiscItem& dst, std::vector<MiscItem>& srcVec);
-  void AddStringItemsUniquely(std::vector<std::string>& dst, const std::vector<std::string>& src);
-  void RemoveDefines(std::vector<std::string>& dst, std::vector<std::string>& src);
-  void RemoveStringItems(std::vector<std::string>& dst, std::vector<std::string>& src);
-  bool GetAccessSequence(size_t& offset, const std::string& src, std::string& sequence, const char start, const char end);
-  void MergeStringVector(StringVectorCollection& item);
-  void MergeDefines(StringVectorCollection& item);
   bool AddGroup(const GroupNode& src, std::vector<GroupNode>& dst, ContextItem& context, const std::string root);
   bool AddFile(const FileNode& src, std::vector<FileNode>& dst, ContextItem& context, const std::string root);
   bool AddComponent(const ComponentItem& src, const std::string& layer, std::vector<std::pair<ComponentItem, std::string>>& dst, TypePair type, ContextItem& context);
-  static std::set<std::string> SplitArgs(const std::string& args, const std::string& delimiter = " ");
-  static void ApplyFilter(const std::vector<std::string>& origin, const std::set<std::string>& filter, std::vector<std::string>& result);
-  static bool FullMatch(const std::set<std::string>& installed, const std::set<std::string>& required);
   bool AddRequiredComponents(ContextItem& context);
   void GetDeviceItem(const std::string& element, DeviceItem& device) const;
   void GetBoardItem (const std::string& element, BoardItem& board) const;
