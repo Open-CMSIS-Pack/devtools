@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -110,6 +110,38 @@ typedef std::map<std::string, bool> BoolMap;
 */
 typedef std::map<std::string, std::string> StrMap;
 
+/**
+ * @brief string collection containing
+ *        pointer to destination element
+ *        vector with pointers to source elements
+*/
+struct StringCollection {
+  std::string* assign;
+  std::vector<std::string*> elements;
+};
+
+/**
+ * @brief string vector pair containing
+ *        items to add
+ *        items to remove
+*/
+struct StringVectorPair {
+  std::vector<std::string>* add;
+  std::vector<std::string>* remove;
+};
+
+/**
+ * @brief string vector collection containing
+ *        pointer to destination
+ *        vector with items to add/remove
+*/
+struct StringVectorCollection {
+  std::vector<std::string>* assign;
+  std::vector <StringVectorPair> pair;
+};
+
+
+
 class CollectionUtils
 {
 private:
@@ -138,6 +170,27 @@ public:
   static void PushBackUniquely(StrPairVec& vec, const StrPair& value);
 
   /**
+   * @brief add all items from source vector to destination avoiding duplicates
+   * @param dst destination vector to modify
+   * @param src source vector
+  */
+  static void AddStringItemsUniquely(std::vector<std::string>& dst, const std::vector<std::string>& src);
+
+  /**
+   * @brief remove strings found in source vector from destination vector
+   * @param dst destination vector to modify
+   * @param src source vector
+  */
+  static void RemoveStringItems(std::vector<std::string>& dst, const std::vector<std::string>& src);
+
+  /**
+   * @brief remove define[=value] strings found in source vector from destination vector
+   * @param dst destination vector to modify
+   * @param src source vector
+  */
+  static void RemoveDefines(std::vector<std::string>& dst, std::vector<std::string>& src);
+
+  /**
    * @brief merge two string vector maps
    * @param map1 first string vector map
    * @param map2 second string vector map
@@ -145,7 +198,7 @@ public:
   */
  static StrVecMap MergeStrVecMap(const StrVecMap& map1, const StrVecMap& map2);
 
-   /**
+  /**
    * @brief remove duplicate elements from vector without changing the order of elements
    * @param input vector to be processed
   */
@@ -157,6 +210,17 @@ public:
     }
     elemVec.erase(end, elemVec.end());
   }
+  /**
+   * @brief merge string from vectors in to one
+   * @param item StringVectorCollection to modify
+  */
+  static void MergeStringVector(StringVectorCollection& item);
+
+  /**
+   * @brief merge define strings from vectors in one
+   * @param item StringVectorCollection to modify
+  */
+  static void MergeDefines(StringVectorCollection& item);
 };
 
 #endif // COLLECTION_UTILS_H
