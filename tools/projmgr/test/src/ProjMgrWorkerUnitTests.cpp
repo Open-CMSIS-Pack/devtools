@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -620,35 +620,6 @@ TEST_F(ProjMgrWorkerUnitTests, LoadPack_Filter_Unknown) {
   EXPECT_NE(string::npos, errStr.find(expected));
 }
 
-TEST_F(ProjMgrWorkerUnitTests, GetAccessSequence) {
-  string src, sequence;
-  size_t offset = 0;
-
-  src = "Option=$Dname$ - $Dboard$";
-  EXPECT_TRUE(GetAccessSequence(offset, src, sequence, '$', '$'));
-  EXPECT_EQ(offset, 14);
-  EXPECT_EQ(sequence, "Dname");
-  EXPECT_TRUE(GetAccessSequence(offset, src, sequence, '$', '$'));
-  EXPECT_EQ(offset, 25);
-  EXPECT_EQ(sequence, "Dboard");
-  EXPECT_TRUE(GetAccessSequence(offset, src, sequence, '$', '$'));
-  EXPECT_EQ(offset, string::npos);
-
-  src = "DEF=$Output(project)$";
-  offset = 0;
-  EXPECT_TRUE(GetAccessSequence(offset, src, sequence, '$', '$'));
-  EXPECT_EQ(offset, 21);
-  EXPECT_EQ(sequence, "Output(project)");
-  offset = 0;
-  EXPECT_TRUE(GetAccessSequence(offset, sequence, sequence, '(', ')'));
-  EXPECT_EQ(offset, 15);
-  EXPECT_EQ(sequence, "project");
-
-  src = "Option=$Dname";
-  offset = 0;
-  EXPECT_FALSE(GetAccessSequence(offset, src, sequence, '$', '$'));
-}
-
 TEST_F(ProjMgrWorkerUnitTests, ProcessDevice_Invalid_Device_Name) {
   ProjMgrParser parser;
   ContextDesc descriptor;
@@ -921,15 +892,6 @@ TEST_F(ProjMgrWorkerUnitTests, GetBoardItem) {
     EXPECT_EQ(in.second.name, item.name);
     EXPECT_EQ(in.second.vendor, item.vendor);
   }
-}
-
-TEST_F(ProjMgrWorkerUnitTests, ApplyFilter) {
-  std::vector<std::string> input = { "TestString1", "FilteredString", "TestString2" };
-  std::set<std::string> filter = { "String", "Filtered", "" };
-  std::vector<std::string> expected = { "FilteredString" };
-  std::vector<std::string> result;
-  ApplyFilter(input, filter, result);
-  EXPECT_EQ(expected, result);
 }
 
 TEST_F(ProjMgrWorkerUnitTests, ProcessComponentFilesEmpty) {

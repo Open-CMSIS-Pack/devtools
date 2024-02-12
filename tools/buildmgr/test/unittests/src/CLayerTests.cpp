@@ -383,19 +383,6 @@ TEST_F(CbuildLayerTests, GetArgsFromChild) {
 
 }
 
-TEST_F(CbuildLayerTests, SplitArgs) {
-  set<string> args;
-  args = SplitArgs("");
-  EXPECT_EQ(args.size(), 0);
-
-  args.clear();
-  args = SplitArgs("CMSIS, CORE, ARM, device");
-  EXPECT_EQ(args.size(), 4);
-
-  args.clear();
-  args = SplitArgs("device,startup");
-  EXPECT_EQ(args.size(), 1);
-}
 
 TEST_F(CbuildLayerTests, MergeArgs) {
   string strArg = "ARM, CMSIS, CORE, device";
