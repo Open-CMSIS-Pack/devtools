@@ -479,6 +479,35 @@
       ],
       "additionalProperties": false
     },
+    "BuildGroupsType": {
+      "type": "array",
+      "description": "List of source groups.",
+      "uniqueItems": true,
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/BuildGroupType" }
+    },
+    "BuildGroupType": {
+      "type": "object",
+      "properties": {
+        "group":           { "type": "string", "description": "Name of the group." },
+        "for-context":     { "$ref": "#/definitions/ForContext" },
+        "not-for-context": { "$ref": "#/definitions/NotForContext" },
+        "for-compiler":    { "$ref": "#/definitions/CompilersType" },
+        "optimize":        { "$ref": "#/definitions/OptimizeType" },
+        "debug":           { "$ref": "#/definitions/DebugType" },
+        "warnings":        { "$ref": "#/definitions/WarningsType" },
+        "language-C":      { "$ref": "#/definitions/LanguageCType" },
+        "language-CPP":    { "$ref": "#/definitions/LanguageCppType" },
+        "define":          { "$ref": "#/definitions/DefinesType" },
+        "undefine":        { "$ref": "#/definitions/UndefinesType" },
+        "add-path":        { "$ref": "#/definitions/AddpathsType" },
+        "del-path":        { "$ref": "#/definitions/DelpathsType" },
+        "misc":            { "$ref": "#/definitions/MiscTypes" },
+        "groups":          { "$ref": "#/definitions/BuildGroupsType" },
+        "files":           { "$ref": "#/definitions/FilesType" }
+      },
+      "additionalProperties": false
+    },
     "FilesType": {
       "type": "array",
       "description": "List of source files to be added to a project or layer.",
@@ -863,7 +892,7 @@
         "output":            { "$ref": "#/definitions/OutputFilesType" },
         "components":        { "$ref": "#/definitions/ResolvedComponentsType" },
         "linker":            { "$ref": "#/definitions/LinkerType" },
-        "groups":            { "$ref": "#/definitions/GroupsType" },
+        "groups":            { "$ref": "#/definitions/BuildGroupsType" },
         "generators":        { "$ref": "#/definitions/GeneratorsType" },
         "constructed-files": {
           "type": "array",
