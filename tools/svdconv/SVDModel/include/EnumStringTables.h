@@ -29,6 +29,7 @@
   
   // China
   CPUTYPE(SMC1             , "SMC1"     )
+  CPUTYPE(CM52             , "CM52"     )
 
   // Types not supported by SVDConv
   CPUTYPE(CA5              , "CA5"      )
