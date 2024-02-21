@@ -1837,7 +1837,7 @@ string ProjMgrWorker::GetContextRteFolder(ContextItem& context) {
   if (rteFolder.empty()) {
     rteFolder = fs::path(context.directories.cprj).append(context.directories.rte).generic_string();
   }
-  return rteFolder;
+  return RteFsUtils::MakePathCanonical(rteFolder);
 }
 
 bool ProjMgrWorker::GenerateRegionsHeader(ContextItem& context, string& generatedRegionsFile) {
