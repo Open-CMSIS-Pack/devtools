@@ -246,6 +246,27 @@
         ]
       }
     },
+    "BuildDefinesType": {
+      "type": "array",
+      "description": "List of #define symbol settings for the code generation.",
+      "uniqueItems": false,
+      "minItems": 1,
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "key": { "type": "string" },
+              "value": { "type": ["number", "string"], "minLength": 1 }
+            }
+          },
+          {
+            "type": "string",
+            "pattern": "^([^=:]+)$"
+          }
+        ]
+      }
+    },
     "UndefinesType": {
       "type": "array",
       "description": "List of #define symbol settings to be removed for the code generation.",
@@ -886,7 +907,7 @@
         "debug":             { "$ref": "#/definitions/DebugType" },
         "warnings":          { "$ref": "#/definitions/WarningsType" },
         "misc":              { "$ref": "#/definitions/MiscType" },
-        "define":            { "$ref": "#/definitions/DefinesType" },
+        "define":            { "$ref": "#/definitions/BuildDefinesType" },
         "add-path":          { "$ref": "#/definitions/AddpathsType" },
         "output-dirs":       { "$ref": "#/definitions/BuildOutputDirectoriesType" },
         "output":            { "$ref": "#/definitions/OutputFilesType" },
