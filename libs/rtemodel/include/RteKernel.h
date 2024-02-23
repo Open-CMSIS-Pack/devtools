@@ -13,6 +13,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 /******************************************************************************/
+#include "RteItemBuilder.h"
 #include "RteModel.h"
 #include "RteProject.h"
 #include "RteTarget.h"
@@ -260,18 +261,23 @@ public:
   std::string GetPdscFileFromPath(const XmlItem& attributes, const std::string& cprjPath, std::string& packId);
 
   /**
-   * @brief create a smart pointer holding an XMLTree pointer to parse XML files
+   * @brief create a smart pointer holding an XMLTree pointer to parse XML or YAML files
    * @param itemBuilder pointer to IXmlItemBuilder item factory
+   * @param ext file extension to define which parser is required: XML (default) or YAML (".yml" or ".yaml")
    * @return a std::unique_ptr object holding an XMLTree-derived pointer which is nullptr in the default implementation
   */
-  virtual std::unique_ptr<XMLTree> CreateUniqueXmlTree(IXmlItemBuilder* itemBuilder = nullptr) const;
+  virtual std::unique_ptr<XMLTree> CreateUniqueXmlTree(IXmlItemBuilder* itemBuilder = nullptr, const std::string& ext= RteUtils::EMPTY_STRING) const;
 
   /**
-   * @brief create a smart pointer holding a YmlTree pointer to parse YAML files
-   * @param itemBuilder pointer to IXmlItemBuilder item factory
-   * @return a std::unique_ptr object holding a YmlTree-derived pointer which is nullptr in the default implementation
+   * @brief create a smart pointer holding an IXmlItemBuilder pointer to be used by XMLTree or YmlTree
+   * @param rootParent pointer to RteItem to be parent for root items (optional)
+   * @param packState PackageState value
+   * @param option pointer to RteItem with options to pass
+   * @return a std::unique_ptr object holding an RteItemBuilder-derived pointer
   */
-  virtual std::unique_ptr<YmlTree> CreateUniqueYmlTree(IXmlItemBuilder* itemBuilder = nullptr) const;
+  virtual std::unique_ptr<RteItemBuilder> CreateUniqueRteItemBuilder(RteItem* rootParent = nullptr, PackageState packState = PackageState::PS_UNKNOWN,
+                                                                     const RteItem& options = RteItem::EMPTY_RTE_ITEM) const;
+
 
   /**
    * @brief save active project into cprj file

@@ -593,11 +593,14 @@ public:
   virtual int GetMaxInstances() const;
 
   /**
-   * @brief expands key sequences ("@L", "%L", etc.) in the supplied string.
+   * @brief expands key sequences ("@L", "%L", etc.) or access sequences in the supplied string.
    * @param str string to expand
+   * @param bUseAccessSequences expand access sequences instead of key sequences, default is false
+   * @param context pointer to RteItem representing expansion context (optional)
    * @return expanded string
   */
-  virtual std::string ExpandString(const std::string& str) const;
+  virtual std::string ExpandString(const std::string& str,
+    bool bUseAccessSequences = false, RteItem* context = nullptr) const;
 
   /**
    * @brief get item's description

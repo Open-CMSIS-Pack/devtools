@@ -821,11 +821,13 @@ string RteItem::GetOriginalAbsolutePath(const string& name) const
   return RteFsUtils::MakePathCanonical(absPath);
 }
 
-string RteItem::ExpandString(const string& str) const
+string RteItem::ExpandString(const string& str, bool bUseAccessSequences, RteItem* context) const
 {
   if (str.empty())
     return str;
-
+  if(context && context != this) {
+    return context->ExpandString(str, bUseAccessSequences, context);
+  }
   RteCallback* pCallback = GetCallback();
   if (pCallback)
     return pCallback->ExpandString(str);

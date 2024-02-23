@@ -32,7 +32,7 @@ RteItemBuilder::RteItemBuilder(RteItem* rootParent, PackageState packState) :
 RteItem* RteItemBuilder::CreateRootItem(const string& tag)
 {
   RteItem* pRoot = nullptr;
-  if (tag == "package") {
+  if (tag == "package" || tag == "generator-import") {
     RtePackage* pack = new RtePackage(m_rootParent, m_packState);
     m_packs.push_back(pack);
     pRoot = pack;

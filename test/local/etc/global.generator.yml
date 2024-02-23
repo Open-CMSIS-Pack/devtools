@@ -1,0 +1,6 @@
+generator:
+  - id: RteTestExternalGenerator
+    description: Global Registered Generator
+    download-url: https://raw.githubusercontent.com/Open-CMSIS-Pack
+    run: ../bin/RunTestGen
+    path: $SolutionDir()$/$TargetType$/$Dname$

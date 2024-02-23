@@ -161,7 +161,7 @@ bool ProjMgrWorker::ParseContextLayers(ContextItem& context) {
     }
     if (CheckContextFilters(clayer.typeFilter, context)) {
       error_code ec;
-      string const& clayerRef = RteUtils::ExpandString(clayer.layer, context.variables);
+      string const& clayerRef = RteUtils::ExpandAccessSequences(clayer.layer, context.variables);
       string const& clayerFile = fs::canonical(fs::path(context.cproject->directory).append(clayerRef), ec).generic_string();
       if (clayerFile.empty()) {
         if (regex_match(clayer.layer, regex(".*\\$.*\\$.*"))) {
@@ -620,7 +620,7 @@ bool ProjMgrWorker::CollectLayersFromSearchPath(const string& clayerSearchPath, 
 void ProjMgrWorker::GetRequiredLayerTypes(ContextItem& context, LayersDiscovering& discover) {
   for (const auto& clayer : context.cproject->clayers) {
     if (clayer.type.empty() || !CheckContextFilters(clayer.typeFilter, context) ||
-      (RteUtils::ExpandString(clayer.layer, context.variables) != clayer.layer)) {
+      (RteUtils::ExpandAccessSequences(clayer.layer, context.variables) != clayer.layer)) {
       continue;
     }
     discover.requiredLayerTypes.push_back(clayer.type);
@@ -2770,7 +2770,7 @@ bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, 
   size_t offset = 0;
   bool pathReplace = false;
   // expand variables (static access sequences)
-  const string input = item = RteUtils::ExpandString(item, context.variables);
+  const string input = item = RteUtils::ExpandAccessSequences(item, context.variables);
   // expand dynamic access sequences
   while (offset != string::npos) {
     string sequence;
@@ -3670,7 +3670,7 @@ bool ProjMgrWorker::ExecuteGenerator(std::string& generatorId) {
   //const string generatorCommand = m_kernel->GetCmsisPackRoot() + "/" + generator->GetPackagePath() + generator->GetCommand();
 
   // check if generator executable has execute permissions
-  const string generatorExe = generator->GetExecutable();
+  const string generatorExe = generator->GetExecutable(context.rteActiveTarget);
   if (generatorExe.empty()) {
     ProjMgrLogger::Error("generator executable '" + generatorId + "' was not found");
     return false;
@@ -3688,7 +3688,7 @@ bool ProjMgrWorker::ExecuteGenerator(std::string& generatorId) {
     ProjMgrLogger::Error("generator '" + generatorId + "' is not dry-run capable");
     return false;
   }
-  const string generatorCommand = generator->GetExpandedCommandLine(RteUtils::EMPTY_STRING, m_dryRun);
+  const string generatorCommand = generator->GetExpandedCommandLine(context.rteActiveTarget, RteUtils::EMPTY_STRING, m_dryRun);
 
   error_code ec;
   const auto& workingDir = fs::current_path(ec);
@@ -4004,7 +4004,8 @@ StrSet ProjMgrWorker::GetValidSets(ContextItem& context, const string& clayer) {
 bool ProjMgrWorker::ProcessOutputFilenames(ContextItem& context) {
   // get base name and output types from project and project setups
   context.outputTypes = {};
-  context.cproject->output.baseName = RteUtils::ExpandString(context.cproject->output.baseName, context.variables);
+  context.cproject->output.baseName =
+    RteUtils::ExpandAccessSequences(context.cproject->output.baseName, context.variables);
   string baseName;
   StringCollection baseNameCollection = {
     &baseName,
@@ -4017,7 +4018,7 @@ bool ProjMgrWorker::ProcessOutputFilenames(ContextItem& context) {
   }
   for (auto& setup : context.cproject->setups) {
     if (CheckContextFilters(setup.type, context) && CheckCompiler(setup.forCompiler, context.compiler)) {
-      setup.output.baseName = RteUtils::ExpandString(setup.output.baseName, context.variables);
+      setup.output.baseName = RteUtils::ExpandAccessSequences(setup.output.baseName, context.variables);
       baseNameCollection.elements.push_back(&setup.output.baseName);
       for (const auto& type : setup.output.type) {
         ProjMgrUtils::SetOutputType(type, context.outputTypes);

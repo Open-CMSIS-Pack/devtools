@@ -18,6 +18,7 @@
 #include "RteInstance.h"
 #include "RteModel.h"
 #include "RteFsUtils.h"
+#include "RteConstants.h"
 
 #include <fstream>
 #include <sstream>
@@ -108,6 +109,51 @@ void RteTarget::Clear()
   m_effectiveDevicePackage = NULL;
   m_device = 0;
 
+}
+
+string RteTarget::ExpandString(const string& str, bool bUseAccessSequences, RteItem* context) const
+{
+  if(bUseAccessSequences && context == this) {
+    return ExpandAccessSequences(str);
+  }
+  return RteItem::ExpandString(str, bUseAccessSequences, context);
+}
+
+std::string RteTarget::ExpandAccessSequences(const std::string& src) const
+{
+  XmlItem attributes;
+  // device and board
+  attributes.AddAttribute(RteConstants::AS_DNAME, GetAttribute(RteConstants::AS_DNAME));
+  attributes.AddAttribute(RteConstants::AS_BNAME, GetAttribute(RteConstants::AS_BNAME));
+  attributes.AddAttribute(RteConstants::AS_PNAME, GetAttribute(RteConstants::AS_PNAME));
+  // compiler
+  const string& compiler = GetAttribute("Tcompiler");
+  attributes.AddAttribute(RteConstants::AS_COMPILER, (compiler == "ARMCC") ? "AC6" : compiler);
+  // target name as target type
+  attributes.AddAttribute(RteConstants::AS_TARGET_TYPE, GetName());
+  attributes.AddAttribute(RteConstants::AS_BUILD_TYPE, RteUtils::EMPTY_STRING);
+
+  // project and solution
+  RteProject* project = GetProject();
+  string projectName = project->GetName();
+  attributes.AddAttribute(RteConstants::AS_PROJECT, projectName);
+  string projectDir = RteUtils::RemoveTrailingBackslash(project->GetProjectPath());
+
+  RteModel* globalModel = GetModel();
+  string solutionDir = globalModel->GetRootFilePath(false); // solution filename
+  if(solutionDir.empty()) {
+    solutionDir = projectDir;
+    projectDir = ".";
+  } else {
+    projectDir = RteFsUtils::RelativePath(projectDir, solutionDir);
+  }
+
+  attributes.AddAttribute(RteConstants::AS_PROJECT_DIR, projectDir);
+  attributes.AddAttribute(RteConstants::AS_PROJECT_DIR_BR, projectDir);
+  attributes.AddAttribute(RteConstants::AS_SOLUTION_DIR, solutionDir);
+  attributes.AddAttribute(RteConstants::AS_SOLUTION_DIR_BR, solutionDir);
+
+  return RteUtils::ExpandAccessSequences(src, attributes.GetAttributes());
 }
 
 void RteTarget::ClearMissingPacks()

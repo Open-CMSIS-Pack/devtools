@@ -117,6 +117,24 @@ public:
   */
   void SetTargetSupported(bool supported) { m_bTargetSupported = supported; }
 
+
+  /**
+   * @brief expands key sequences ("@L", "%L", etc.) or access sequences in the supplied string.
+   * @param str string to expand
+   * @param bUseAccessSequences expand access sequences instead of key sequences, default is false
+   * @param context pointer to RteItem representing expansion context (optional)
+   * @return expanded string
+  */
+  std::string ExpandString(const std::string& str,
+    bool bUseAccessSequences = false, RteItem* context = nullptr) const override;
+
+  /**
+   * @brief expand string by replacing $keyword$ with corresponding values
+   * @param src source string to expand
+   * @return expanded string
+  */
+  std::string ExpandAccessSequences(const std::string& src) const;
+
   /**
    * @brief return pointer to a filter object of type RteConditionContext
    * @return pointer to a filter object of type RteConditionContext

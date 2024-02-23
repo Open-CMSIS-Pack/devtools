@@ -178,7 +178,7 @@ protected:
   */
   virtual T* CreateRootItem(const std::string& tag) = 0;
 
-private:
+protected:
   T* m_pRoot;
   T* m_pCurrent;
   T* m_pParent;

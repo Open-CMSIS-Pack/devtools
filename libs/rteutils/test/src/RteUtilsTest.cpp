@@ -453,18 +453,18 @@ TEST(RteUtils, CollectionUtils)
   EXPECT_EQ(*get_or_default(strToPtr, "four", sDefault), 'd');
 }
 
-TEST(RteUtils, ExpandString) {
+TEST(RteUtils, ExpandAccessSequences) {
   StrMap variables = {
     {"Foo", "./foo"},
     {"Bar", "./bar"},
     {"Foo Bar", "./foo-bar"},
   };
-  EXPECT_EQ(RteUtils::ExpandString("path1: $Foo/bar", variables), "path1: $Foo/bar");
-  EXPECT_EQ(RteUtils::ExpandString("path1: $Foo$/bar", variables), "path1: ./foo/bar");
-  EXPECT_EQ(RteUtils::ExpandString("path2: $Bar$/foo", variables), "path2: ./bar/foo");
-  EXPECT_EQ(RteUtils::ExpandString("$Foo$ $Bar$", variables), "./foo ./bar");
-  EXPECT_EQ(RteUtils::ExpandString("$Foo Bar$", variables), "./foo-bar");
-  EXPECT_EQ(RteUtils::ExpandString("$Foo$ $Foo$ $Foo$", variables), "./foo ./foo ./foo");
+  EXPECT_EQ(RteUtils::ExpandAccessSequences("path1: $Foo/bar", variables), "path1: $Foo/bar");
+  EXPECT_EQ(RteUtils::ExpandAccessSequences("path1: $Foo$/bar", variables), "path1: ./foo/bar");
+  EXPECT_EQ(RteUtils::ExpandAccessSequences("path2: $Bar$/foo", variables), "path2: ./bar/foo");
+  EXPECT_EQ(RteUtils::ExpandAccessSequences("$Foo$ $Bar$", variables), "./foo ./bar");
+  EXPECT_EQ(RteUtils::ExpandAccessSequences("$Foo Bar$", variables), "./foo-bar");
+  EXPECT_EQ(RteUtils::ExpandAccessSequences("$Foo$ $Foo$ $Foo$", variables), "./foo ./foo ./foo");
 }
 
 TEST(RteUtils, GetAccessSequence) {

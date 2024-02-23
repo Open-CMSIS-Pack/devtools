@@ -107,6 +107,8 @@ public:
 
   static constexpr const char* AS_SOLUTION_DIR = "SolutionDir";
   static constexpr const char* AS_PROJECT_DIR = "ProjectDir";
+  static constexpr const char* AS_SOLUTION_DIR_BR = "SolutionDir()";
+  static constexpr const char* AS_PROJECT_DIR_BR = "ProjectDir()";
   static constexpr const char* AS_OUT_DIR = "OutDir";
   static constexpr const char* AS_BIN = OUTPUT_TYPE_BIN;
   static constexpr const char* AS_ELF = OUTPUT_TYPE_ELF;

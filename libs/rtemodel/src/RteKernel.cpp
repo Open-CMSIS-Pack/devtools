@@ -210,14 +210,14 @@ CprjFile* RteKernel::ParseCprj(const string& cprjFile)
 {
   string msg = "Loading '" + cprjFile + "'";
   GetRteCallback()->OutputInfoMessage(msg);
-  RteItemBuilder rteItemBuilder;
-  unique_ptr<XMLTree> xmlTree = CreateUniqueXmlTree(&rteItemBuilder);
+  auto rteItemBuilder = CreateUniqueRteItemBuilder();
+  unique_ptr<XMLTree> xmlTree = CreateUniqueXmlTree(rteItemBuilder.get());
   if (!xmlTree->AddFileName(cprjFile, true)) {
     GetRteCallback()->Err("R811", R811, cprjFile);
     GetRteCallback()->OutputMessages(xmlTree->GetErrorStrings());
     return nullptr;
   }
-  CprjFile* cprj = rteItemBuilder.GetCprjFile();
+  CprjFile* cprj = rteItemBuilder->GetCprjFile();
 
   if (!cprj || !cprj->Validate()) {
     GetRteCallback()->Err("R812", R812, cprjFile);
@@ -254,14 +254,14 @@ void RteKernel::LoadExternalGenerators()
   list<string> files;
   RteFsUtils::GetMatchingFiles(files, ".generator.yml", etcDir, 1, true);
   RteGlobalModel* globalModel = GetGlobalModel();
-  RteItemBuilder rteBuilder(globalModel);
-  unique_ptr<YmlTree> ymlTree = CreateUniqueYmlTree(&rteBuilder);
+  auto rteItemBuilder = CreateUniqueRteItemBuilder(globalModel);
+  unique_ptr<XMLTree> ymlTree = CreateUniqueXmlTree(rteItemBuilder.get(), ".yml");
   for(auto& f : files) {
     if(contains_key(m_externalGeneratorFiles, f)) {
       continue;
     }
     bool result = ymlTree->ParseFile(f);
-    RteItem* rootItem = rteBuilder.GetRoot();
+    RteItem* rootItem = rteItemBuilder->GetRoot();
     if(result && rootItem) {
       m_externalGeneratorFiles[f] = rootItem;
       for(auto item : rootItem->GetChildren()) {
@@ -271,7 +271,7 @@ void RteKernel::LoadExternalGenerators()
         }
       }
     }
-    rteBuilder.Clear(false);
+    rteItemBuilder->Clear(false);
   }
 }
 
@@ -295,10 +295,10 @@ RtePackage* RteKernel::LoadPack(const string& pdscFile, PackageState packState) 
     return pack;
   }
 
-  RteItemBuilder rteItemBuilder(GetGlobalModel(), packState);
-  unique_ptr<XMLTree> xmlTree = CreateUniqueXmlTree(&rteItemBuilder);
+  auto rteItemBuilder= CreateUniqueRteItemBuilder(GetGlobalModel(), packState);
+  unique_ptr<XMLTree> xmlTree = CreateUniqueXmlTree(rteItemBuilder.get());
   bool success = xmlTree->AddFileName(pdscFile, true);
-  pack = rteItemBuilder.GetPack();
+  pack = rteItemBuilder->GetPack();
   if (!success || !pack) {
     GetRteCallback()->Err("R802", R802, pdscFile);
     GetRteCallback()->OutputMessages(xmlTree->GetErrorStrings());
@@ -325,13 +325,13 @@ bool RteKernel::LoadPacks(const std::list<std::string>& pdscFiles, std::list<Rte
   RtePackRegistry* packRegistry = GetPackRegistry();
   unique_ptr<XMLTree> xmlTree = CreateUniqueXmlTree();
   for(auto& pdscFile : pdscFiles) {
-    RteItemBuilder rteItemBuilder(model, model->GetPackageState());
-    xmlTree->SetXmlItemBuilder(&rteItemBuilder);
+    auto rteItemBuilder = CreateUniqueRteItemBuilder(model, model->GetPackageState());
+    xmlTree->SetXmlItemBuilder(rteItemBuilder.get());
     if(bReplace) {
       packRegistry->ErasePack(pdscFile);
     }
     bool result = xmlTree->AddFileName(pdscFile, true);
-    RtePackage* pack = rteItemBuilder.GetPack();
+    RtePackage* pack = rteItemBuilder->GetPack();
     if(!result || !pack) {
       GetRteCallback()->Err("R802", R802, pdscFile);
       GetRteCallback()->OutputMessages(xmlTree->GetErrorStrings());
@@ -602,9 +602,11 @@ bool RteKernel::GetLocalPacksUrls(const string& rtePath, list<string>& urls) con
   return true;
 }
 
-unique_ptr<XMLTree> RteKernel::CreateUniqueXmlTree(IXmlItemBuilder* itemBuilder) const
+unique_ptr<XMLTree> RteKernel::CreateUniqueXmlTree(IXmlItemBuilder* itemBuilder, const std::string& ext) const
 {
-  unique_ptr<XMLTree> xmlTree(CreateXmlTree(itemBuilder));
+  bool bYaml = !ext.empty() && (ext == ".yml" || ext == ".yaml");
+  XMLTree* pXmlTree = bYaml ? CreateYmlTree(itemBuilder) : CreateXmlTree(itemBuilder);
+  unique_ptr<XMLTree> xmlTree(pXmlTree);
   if (xmlTree.get() != nullptr) {
     xmlTree->SetCallback(GetRteCallback());
     xmlTree->Init();
@@ -612,14 +614,13 @@ unique_ptr<XMLTree> RteKernel::CreateUniqueXmlTree(IXmlItemBuilder* itemBuilder)
   return xmlTree;
 }
 
-unique_ptr<YmlTree> RteKernel::CreateUniqueYmlTree(IXmlItemBuilder* itemBuilder) const
+unique_ptr<RteItemBuilder> RteKernel::CreateUniqueRteItemBuilder(RteItem* rootParent, PackageState packState, const RteItem& options) const
 {
-  unique_ptr<YmlTree> ymlTree(CreateYmlTree(itemBuilder));
-  if (ymlTree.get() != nullptr) {
-    ymlTree->SetCallback(GetRteCallback());
-    ymlTree->Init();
+  unique_ptr<RteItemBuilder> builder( new RteItemBuilder(rootParent, packState));
+  if(!options.IsEmpty()) {
+    builder->SetAttributes(options);
   }
-  return ymlTree;
+  return builder;
 }
 
 YmlTree* RteKernel::CreateYmlTree(IXmlItemBuilder* itemBuilder) const
