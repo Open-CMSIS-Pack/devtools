@@ -23,30 +23,6 @@
 
 using namespace std;
 
-
-class ExtGenRteCallback : public RteCallback
-{
-
-public:
-  ExtGenRteCallback() :m_pExtGenerator(nullptr) {
-    m_pExtGenerator = new RteGenerator(nullptr);
-    m_pExtGenerator->SetTag("generator");
-    m_pExtGenerator->AddAttribute("id", "RteTestExternalGenerator");
-    m_pExtGenerator->Construct();
-  }
-  ~ExtGenRteCallback() override{
-    delete m_pExtGenerator;
-  }
-  RteGenerator* GetExternalGenerator(const std::string& id) const override {
-     if (m_pExtGenerator->GetID() == "RteTestExternalGenerator") {
-       return m_pExtGenerator;
-     }
-     return nullptr;
-   }
-
-  RteGenerator* m_pExtGenerator;
-};
-
 TEST(RteModelTest, PackRegistry) {
 
   // tests for pack registry
@@ -237,17 +213,6 @@ TEST(RteModelTest, LoadPacks) {
   EXPECT_EQ(components.size(), 0);
   EXPECT_FALSE(c != nullptr);
 
-  item.SetAttributes({ {"Cclass","RteTestGenerator" },
-                       {"Cgroup", "Check Global Generator" },
-                       {"Cversion","0.9.0"}});
-  packInfo.SetPackId("ARM::RteTestGenerator");
-  item.SetPackageAttributes(packInfo);
-  components.clear();
-  c = rteModel->FindComponents(item, components);
-  ASSERT_TRUE(c != nullptr);
-  RteGenerator* gen = c->GetGenerator();
-  EXPECT_FALSE(gen != nullptr);
-
   // get API
   const string& apiId = "::RteTest:CORE(API)";
   RteApi* api = rteModel->GetLatestApi(apiId);
@@ -265,12 +230,6 @@ TEST(RteModelTest, LoadPacks) {
   ASSERT_TRUE(api);
   EXPECT_EQ(api->GetID(),  "::RteTest:CORE(API)@1.1.1");
   EXPECT_EQ(api->GetPackageID(), "ARM::RteTest_DFP@0.1.1");
-
-  ExtGenRteCallback extGenRteCallback;
-  rteKernel.SetRteCallback(&extGenRteCallback);
-  gen = c->GetGenerator();
-  EXPECT_TRUE(gen != nullptr);
-  EXPECT_TRUE(gen == extGenRteCallback.m_pExtGenerator);
 }
 
 class RteModelPrjTest : public RteModelTestConfig
@@ -512,6 +471,65 @@ TEST_F(RteModelPrjTest, LoadCprj) {
   activeCprjProject->GetRequiredPacks(requiredPacks, activeTarget->GetName());
   // requirements overlap => more than used
   EXPECT_EQ(requiredPacks.size(), 3);
+}
+
+TEST_F(RteModelPrjTest, ExtGenAndAccessSeq) {
+
+  RteCallback callback;
+  RteKernelSlim rteKernel(&callback);
+  callback.SetRteKernel(&rteKernel);
+  rteKernel.SetCmsisPackRoot(RteModelTestConfig::CMSIS_PACK_ROOT);
+  rteKernel.SetCmsisToolboxDir(RteModelTestConfig::localRepoDir);
+  rteKernel.Init();
+
+  // load all installed packs
+  list<string> files;
+  rteKernel.GetInstalledPacks(files, false);
+  RteModel* rteModel = rteKernel.GetGlobalModel();
+  ASSERT_TRUE(rteModel);
+  rteModel->SetUseDeviceTree(true);
+  list<RtePackage*> packs;
+  EXPECT_TRUE(rteKernel.LoadPacks(files, packs));
+  rteModel->InsertPacks(packs);
+
+  RteCprjProject* loadedCprjProject = rteKernel.LoadCprj(RteTestM3_cprj);
+  ASSERT_TRUE(loadedCprjProject);
+
+  RteTarget* activeTarget = rteKernel.GetActiveTarget();
+  ASSERT_TRUE(activeTarget);
+
+  RteComponentInstance item(nullptr);
+  item.SetAttributes({ {"Cclass","RteTestGenerator" },
+                       {"Cgroup", "Check Global Generator" },
+                       {"Cversion","0.9.0"}});
+  RtePackageInstanceInfo packInfo(nullptr, "ARM::RteTestGenerator");
+  item.SetPackageAttributes(packInfo);
+  list<RteComponent*> components;
+  RteComponent* c = rteModel->FindComponents(item, components);
+  ASSERT_TRUE(c);
+  RteGenerator* gen = c->GetGenerator();
+  ASSERT_TRUE(gen);
+
+  string absPath = RteFsUtils::AbsolutePath(RteModelTestConfig::localRepoDir).generic_string();
+
+  string path = gen->GetExpandedWorkingDir(activeTarget);
+  EXPECT_EQ(path, "RteModelTestProjects/RteTestM3/Target 1/RteTest_ARMCM3/");
+
+
+  string cmd = gen->GetExpandedCommandLine(activeTarget);
+  cmd = RteUtils::ReplaceAll(cmd, absPath, "$(CMSIS_TOOLBOX)");
+  const string expectedCmd =
+    "$(CMSIS_TOOLBOX)/bin/RunTestGen \"RteModelTestProjects/RteTestM3/RteTestM3.Target 1.cbuild-gen-idx.yml\"";
+  EXPECT_EQ(cmd, expectedCmd);
+
+  // test additional expansions
+  const string src = "$SolutionDir()$/$ProjectDir()$/$Bname$/";
+  string res = activeTarget->ExpandAccessSequences(src);
+  EXPECT_EQ(res, "RteModelTestProjects/RteTestM3/./RteTest Test board/");
+  // set solution dir to  RteModelTestProjects
+  rteModel->SetRootFileName("RteModelTestProjects/dummy.csolution.yml");
+  res = activeTarget->ExpandAccessSequences(src);
+  EXPECT_EQ(res, "RteModelTestProjects/RteTestM3/RteTest Test board/");
 }
 
 TEST_F(RteModelPrjTest, LoadCprjPacReq) {

@@ -66,7 +66,7 @@ public:
   */
   void SetPackageState(PackageState packState) { m_packState = packState; }
 
-private:
+protected:
   RteItem* m_rootParent;
   PackageState m_packState;
 

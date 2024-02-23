@@ -64,10 +64,11 @@ public:
 
   /**
   * @brief get expanded generator executable command
+  * @param target pointer to RteTarget
   * @param hostType host type to match, empty to match current host
   * @return generator command for specified host type
  */
-  virtual std::string GetExecutable(const std::string& hostType = EMPTY_STRING) const;
+   std::string GetExecutable(RteTarget* target, const std::string& hostType = EMPTY_STRING) const;
 
   /**
    * @brief get item containing command line arguments
@@ -139,19 +140,21 @@ public:
 
  /**
  * @brief get all arguments as vector for the given host type
+ * @param target pointer to RteTarget
  * @param hostType host type, empty to match current host
  * @param dryRun include dry-run arguments
  * @return vector of arguments consisting of switch and value in pairs
 */
-  std::vector<std::pair<std::string, std::string> > GetExpandedArguments(const std::string& hostType = EMPTY_STRING, bool dryRun = false) const;
+  std::vector<std::pair<std::string, std::string> > GetExpandedArguments(RteTarget* target,const std::string& hostType = EMPTY_STRING, bool dryRun = false) const;
 
  /**
    * @brief get full command line with arguments and expanded key sequences for specified target
+   * @param target pointer to RteTarget
    * @param hostType host type, empty to match current host
    * @param dryRun include dry-run arguments
    * @return expanded command line with arguments, properly quoted
   */
-  std::string GetExpandedCommandLine(const std::string& hostType = EMPTY_STRING, bool dryRun = false) const;
+  std::string GetExpandedCommandLine(RteTarget* target, const std::string& hostType = EMPTY_STRING, bool dryRun = false) const;
 
   /**
    * @brief get absolute path to gpdsc file for specified target

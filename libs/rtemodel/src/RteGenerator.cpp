@@ -132,7 +132,7 @@ const string RteGenerator::GetCommand(const std::string& hostType) const
   return GetItemValue("command");
 }
 
-string RteGenerator::GetExecutable(const std::string& hostType) const
+string RteGenerator::GetExecutable(RteTarget* target, const std::string& hostType) const
 {
   string cmd = GetCommand(hostType);
   if (cmd.empty())
@@ -141,18 +141,29 @@ string RteGenerator::GetExecutable(const std::string& hostType) const
   if (cmd.find("http:") == 0 || cmd.find("https:") == 0) // a URL?
     return EMPTY_STRING; // return empty string here , GetExpandedWebLine() will return URL then
 
-  cmd = ExpandString(cmd);
+  if(target && IsExternal()) {
+    cmd = target->ExpandAccessSequences(cmd);
+  }else {
+    cmd = ExpandString(cmd);
+  }
 
   if (RteFsUtils::IsRelative(cmd)) {
-     cmd = GetAbsolutePackagePath() + cmd;
+     cmd = RteFsUtils::MakePathCanonical(GetAbsolutePackagePath() + cmd);
   }
   return cmd;
 }
 
 
-vector<pair<string, string> > RteGenerator::GetExpandedArguments(const string& hostType, bool dryRun) const
+vector<pair<string, string> > RteGenerator::GetExpandedArguments(RteTarget* target, const string& hostType, bool dryRun) const
 {
   vector<pair<string, string> > args;
+  if(IsExternal()) {
+  // add cbuild-gen-idx.yml
+    string idxFile = target->ExpandAccessSequences("$SolutionDir$/$Project$.$TargetType$.cbuild-gen-idx.yml");
+    args.push_back({RteUtils::EMPTY_STRING, idxFile});
+    return args;
+  }
+
   RteItem* argsItem = GetArgumentsItem("exe");
   if (argsItem) {
     for (auto arg : argsItem->GetChildren()) {
@@ -166,10 +177,10 @@ vector<pair<string, string> > RteGenerator::GetExpandedArguments(const string& h
   return args;
 }
 
-string RteGenerator::GetExpandedCommandLine(const string& hostType, bool dryRun) const
+string RteGenerator::GetExpandedCommandLine(RteTarget* target, const string& hostType, bool dryRun) const
 {
-  const vector<pair<string, string> > args = GetExpandedArguments(hostType, dryRun);
-  string fullCmd = RteUtils::AddQuotesIfSpace(GetExecutable(hostType));
+  string fullCmd = RteUtils::AddQuotesIfSpace(GetExecutable(target, hostType));
+  const vector<pair<string, string> > args = GetExpandedArguments(target, hostType, dryRun);
   for (size_t i = 0; i < args.size(); i++) {
     fullCmd += ' ' + RteUtils::AddQuotesIfSpace(args[i].first + args[i].second);
   }
@@ -215,11 +226,16 @@ string RteGenerator::GetExpandedWebLine(RteTarget* target) const
 
 string RteGenerator::GetExpandedGpdsc(RteTarget* target, const string& genDir) const
 {
-  string gpdsc = GetGpdsc();
-  if (gpdsc.empty()) {
-    gpdsc = target->GetProject()->GetName() + ".gpdsc";
+  string gpdsc;
+  if(IsExternal()) {
+    gpdsc = target->GetName() + ".cgen.yml";
   } else {
-    gpdsc = ExpandString(gpdsc);
+    gpdsc = GetGpdsc();
+    if(gpdsc.empty()) {
+      gpdsc = target->GetProject()->GetName() + ".gpdsc";
+    } else {
+      gpdsc = ExpandString(gpdsc);
+    }
   }
 
   if (!genDir.empty() && fs::path(gpdsc).is_absolute()) {
@@ -236,9 +252,9 @@ string RteGenerator::GetExpandedGpdsc(RteTarget* target, const string& genDir) c
 
 string RteGenerator::GetExpandedWorkingDir(RteTarget* target, const string& genDir) const
 {
-  string wd = genDir.empty() ? ExpandString(GetWorkingDir()) : genDir;
+  string wd = genDir.empty() ? ExpandString(GetWorkingDir(), IsExternal(), target) : genDir;
   fs::path path(wd);
-  if (wd.empty() || path.is_relative()) {
+  if (wd.empty() || (path.is_relative() && !IsExternal())) {
     // use project directory
     wd = target->GetProject()->GetProjectPath() + wd;
   }

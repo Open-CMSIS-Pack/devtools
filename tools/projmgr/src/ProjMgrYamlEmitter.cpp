@@ -421,14 +421,14 @@ void ProjMgrYamlCbuild::SetGeneratorsNode(YAML::Node node, const ContextItem* co
       YAML::Node commandNode;
 
       // Executable file
-      const string exe = generator->GetExecutable(host);
+      const string exe = generator->GetExecutable(context->rteActiveTarget, host);
       if (exe.empty())
         continue;
       commandNode[YAML_FILE] = FormatPath(exe, context->directories.cbuild);
 
       // Arguments
       YAML::Node argumentsNode;
-      const vector<pair<string, string> >& args = generator->GetExpandedArguments(host);
+      const vector<pair<string, string> >& args = generator->GetExpandedArguments(context->rteActiveTarget, host);
       for (auto [swtch, value] : args) {
         // If the argument is recognized as an absolute path, make sure to reformat
         // it to use CMSIS_PACK_ROOT or to be relative the working directory

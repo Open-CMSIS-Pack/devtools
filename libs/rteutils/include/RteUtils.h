@@ -139,11 +139,11 @@ public:
 
   /**
    * @brief expand string by replacing $keyword$ with corresponding values
-   * @param source string to expand
+   * @param src source string to expand
    * @param variables string to string map with keyword values
    * @return expanded string
   */
-  static std::string ExpandString(const std::string& src, const StrMap& variables);
+  static std::string ExpandAccessSequences(const std::string& src, const StrMap& variables);
 
   /**
    * @brief replace blank(s) with underscore(s)

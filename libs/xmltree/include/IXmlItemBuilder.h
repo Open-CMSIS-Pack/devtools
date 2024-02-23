@@ -8,17 +8,14 @@
  */
 /******************************************************************************/
 
+#include "XmlItem.h"
 #include <string>
 
 /**
  * @brief abstract factory interface class to create XmlItem derived objects
 */
-class IXmlItemBuilder {
+class IXmlItemBuilder : public XmlItem {
 public:
-  /**
-   * @brief destructor
-  */
-  virtual ~IXmlItemBuilder(){};
 
   /**
    * @brief clears and initializes builder

@@ -173,7 +173,7 @@ std::string& RteUtils::ReplaceAll(std::string& str, const string& toReplace, con
   return str;
 }
 
-string RteUtils::ExpandString(const string& src, const StrMap& variables) {
+string RteUtils::ExpandAccessSequences(const string& src, const StrMap& variables) {
   string ret = src;
   if (regex_match(ret, regex(".*\\$.*\\$.*"))) {
     for (const auto& [varName, replacement] : variables) {
