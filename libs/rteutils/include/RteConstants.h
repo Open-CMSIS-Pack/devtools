@@ -171,7 +171,7 @@ public:
   static constexpr const char* RTE_DSP = "DSP";
   static constexpr const char* RTE_NO_DSP = "NO_DSP";
   static constexpr const char* RTE_MVE = "MVE";
-  static constexpr const char* RTE_FP_MVE = "FP_FVE";
+  static constexpr const char* RTE_FP_MVE = "FP_MVE";
   static constexpr const char* RTE_NO_MVE = "NO_MVE";
   static constexpr const char* RTE_ENDIAN_BIG = "Big-endian";
   static constexpr const char* RTE_ENDIAN_LITTLE = "Little-endian";
