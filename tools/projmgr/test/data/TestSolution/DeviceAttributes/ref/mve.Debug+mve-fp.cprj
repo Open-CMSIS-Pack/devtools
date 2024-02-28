@@ -14,7 +14,7 @@
     <compiler name="AC6" version="6.18.0"/>
   </compilers>
 
-  <target Dfpu="NO_FPU" Dmve="FP_FVE" Dname="RteTest_ARMCM0" Dvendor="ARM:82">
+  <target Dfpu="NO_FPU" Dmve="FP_MVE" Dname="RteTest_ARMCM0" Dvendor="ARM:82">
     <output elf="mve.axf" intdir="tmp/mve/mve-fp/Debug" name="mve" outdir="out/mve/mve-fp/Debug" rtedir="../data/TestSolution/DeviceAttributes/mve/RTE" type="exe"/>
     <ldflags compiler="AC6" file="../data/TestSolution/DeviceAttributes/mve/RTE/Device/RteTest_ARMCM0/ARMCM0_ac6.sct"/>
   </target>
