@@ -5,6 +5,7 @@
  */
 #include "RteUtils.h"
 #include "RteError.h"
+#include "RteConstants.h"
 
 #include "gtest/gtest.h"
 
@@ -543,6 +544,19 @@ TEST(RteUtils, ApplyFilter) {
   RteUtils::ApplyFilter(input, filter, result);
   EXPECT_EQ(expected, result);
 }
+TEST(RteUtils, GetDeviceAttribute) {
 
+  EXPECT_TRUE(RteConstants::GetDeviceAttribute("unknown", "unknown").empty());
+  EXPECT_TRUE(RteConstants::GetDeviceAttribute(RteConstants::RTE_DFPU, "unknown").empty());
+
+  for(const auto& [rteKey, yamlKey] : RteConstants::DeviceAttributesKeys) {
+    for(const auto& values : RteConstants::DeviceAttributesValues.at(rteKey)) {
+      const auto& rteValue = RteConstants::GetDeviceAttribute(rteKey, values.second);
+      const auto& ymlValue = RteConstants::GetDeviceAttribute(rteKey, values.first);
+      EXPECT_EQ(rteValue, RteConstants::GetDeviceAttribute(rteKey, ymlValue));
+      EXPECT_EQ(ymlValue, RteConstants::GetDeviceAttribute(rteKey, rteValue));
+    }
+  }
+}
 
 // end of RteUtilsTest.cpp

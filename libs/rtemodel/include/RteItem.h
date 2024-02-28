@@ -685,8 +685,17 @@ public:
    * @brief return value of attribute "Pname"
    * @return value of attribute "Pname"
   */
-
   virtual const std::string& GetProcessorName() const { return GetAttribute("Pname"); }
+
+  /**
+   * @brief return device attribute value in YAML format used in csolution
+   * @param rteName attribute name in pdsc format
+   * @param defaultValue YAML value to be returned if attribute is not found, default is empty string
+   * @return YAML value if attribute exists or default
+  */
+  const std::string& GetYamlDeviceAttribute(const std::string& rteName,
+    const std::string& defaultValue=RteUtils::EMPTY_STRING);
+
   /**
  * @brief return value of memory attribute "alias"
  * @return value of memory attribute "alias"

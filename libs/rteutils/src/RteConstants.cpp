@@ -46,12 +46,14 @@ const StrPairVecMap RteConstants::DeviceAttributesValues = {
 };
 
 const string& RteConstants::GetDeviceAttribute(const string& key, const string& value) {
-  const auto& values = DeviceAttributesValues.at(key);
-  for (const auto& [rte, yaml] : values) {
-    if (value == rte) {
-      return yaml;
-    } else if  (value == yaml) {
-      return rte;
+  auto it = DeviceAttributesValues.find(key);
+  if(it != DeviceAttributesValues.end()) {
+    for(const auto& [rte, yaml] : it->second) {
+      if(value == rte) {
+        return yaml;
+      } else if(value == yaml) {
+        return rte;
+      }
     }
   }
   return RteUtils::EMPTY_STRING;

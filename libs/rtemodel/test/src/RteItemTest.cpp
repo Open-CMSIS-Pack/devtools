@@ -130,4 +130,24 @@ TEST(RteItemTest, PackageID) {
   EXPECT_EQ(pack.GetDownloadUrl(false, ".pack"), "https://www.keil.com/pack/Vendor.Name.pack");
 }
 
+TEST(RteItemTest, GetYamlDeviceAttribute) {
+  const map<string, string> attributes = {
+    {"Dfpu"    , "DP_FPU" },
+    {"Dendian" , "Little-endian" },
+    {"Dsecure" , "TZ-disabled"},
+    {"Dcore" , "Cortex-M7"},
+    {"Ddsp"    , ""   }};
+
+  RteItem item(attributes);
+  EXPECT_EQ(item.GetYamlDeviceAttribute("Dfpu"), "dp");
+  EXPECT_EQ(item.GetYamlDeviceAttribute("Dendian"), "little");
+  EXPECT_EQ(item.GetYamlDeviceAttribute("Dsecure"), "off");
+  EXPECT_EQ(item.GetYamlDeviceAttribute("Dcore"), "Cortex-M7");
+  EXPECT_EQ(item.GetYamlDeviceAttribute("Ddsp", "off"), "off");
+  EXPECT_EQ(item.GetYamlDeviceAttribute("Dmve", "off"), "off");
+
+  EXPECT_TRUE(item.GetYamlDeviceAttribute("Ddsp").empty());
+  EXPECT_TRUE(item.GetYamlDeviceAttribute("Dmve").empty());
+  EXPECT_TRUE(item.GetYamlDeviceAttribute("unknown").empty());
+}
 // end of RteItemTest.cpp
