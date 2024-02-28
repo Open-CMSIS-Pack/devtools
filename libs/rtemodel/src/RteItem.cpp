@@ -484,6 +484,16 @@ string RteItem::GetFullDeviceName() const
   return fullDeviceName;
 }
 
+const std::string& RteItem::GetYamlDeviceAttribute(const string& rteName, const string& defaultValue)
+{
+  const string& rteValue = GetAttribute(rteName);
+  if(rteValue.empty()) {
+    return defaultValue;
+  }
+  const string& yamlValue = RteConstants::GetDeviceAttribute(rteName, rteValue);
+  return !yamlValue.empty() ? yamlValue : rteValue;
+}
+
 string RteItem::GetProjectGroupName() const
 {
   return string(RteConstants::SUFFIX_CVENDOR) + GetCclassName();
@@ -1025,7 +1035,6 @@ void RteItem::SortChildren(CompareRteItemType cmp)
   m_children.sort(cmp);
 }
 
-
 RteItem* RteRootItem::CreateItem(const std::string& tag)
 {
   // for YAML files create corresponding items depending on the root itself
@@ -1034,6 +1043,5 @@ RteItem* RteRootItem::CreateItem(const std::string& tag)
   }
   return RteItem::CreateItem(tag);
 }
-
 
 // End of RteItem.cpp
