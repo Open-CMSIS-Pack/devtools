@@ -228,7 +228,7 @@ string RteGenerator::GetExpandedGpdsc(RteTarget* target, const string& genDir) c
 {
   string gpdsc;
   if(IsExternal()) {
-    gpdsc = target->GetName() + ".cgen.yml";
+    gpdsc = target->GetProject()->GetName() + ".cgen.yml";
   } else {
     gpdsc = GetGpdsc();
     if(gpdsc.empty()) {
