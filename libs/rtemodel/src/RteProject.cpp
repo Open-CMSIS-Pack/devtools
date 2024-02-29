@@ -1172,11 +1172,10 @@ RteGpdscInfo* RteProject::AddGpdscInfo(RteComponent* c, RteTarget* target)
     return NULL;
 
   RteGenerator* gen = c->GetGenerator();
-  if (!gen || gen->IsExternal()) // TODO : remove external check when implemented
+  if (!gen )
     return NULL; // nothing to insert
 
-
-    // get absolute gpdsc file name
+  // get absolute gpdsc file name
   string gpdsc = c->GetGpdscFile(target);
   if (gpdsc.empty())
     return NULL;
@@ -1188,12 +1187,8 @@ RteGpdscInfo* RteProject::AddGpdscInfo(RteComponent* c, RteTarget* target)
     if (ShouldUpdateRte() && !fs::exists(gpdsc, ec)) { // file not exists
     // create destination directory
       string dir = RteUtils::ExtractFilePath(gpdsc, true);
-      // we need the to directory to exist for modification watch
-      while (true) {
-        fs::create_directories(dir, ec);
-        if (fs::exists(dir, ec)) {
-          break;
-        }
+      // directory need to exist for modification watch
+      while (!RteFsUtils::CreateDirectories(dir)) {
         // Display the error message and exit the process
         string str = "Error: cannot create directory: ";
         str += dir;

@@ -2100,8 +2100,11 @@ bool ProjMgrWorker::ProcessGpdsc(ContextItem& context) {
   // Read gpdsc
   const map<string, RteGpdscInfo*>& gpdscInfos = context.rteActiveProject->GetGpdscInfos();
   for (const auto& [file, info] : gpdscInfos) {
-    error_code ec;
     const string gpdscFile = RteFsUtils::MakePathCanonical(file);
+    if(!contains_key(context.gpdscs, gpdscFile)) {
+      // skip external cgen.yml files, they are processed separately
+      continue;
+    }
     bool validGpdsc;
     RtePackage* gpdscPack = ProjMgrUtils::ReadGpdscFile(gpdscFile, validGpdsc);
     if (!gpdscPack) {
