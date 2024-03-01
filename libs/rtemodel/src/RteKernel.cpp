@@ -617,9 +617,6 @@ unique_ptr<XMLTree> RteKernel::CreateUniqueXmlTree(IXmlItemBuilder* itemBuilder,
 unique_ptr<RteItemBuilder> RteKernel::CreateUniqueRteItemBuilder(RteItem* rootParent, PackageState packState, const RteItem& options) const
 {
   unique_ptr<RteItemBuilder> builder( new RteItemBuilder(rootParent, packState));
-  if(!options.IsEmpty()) {
-    builder->SetAttributes(options);
-  }
   return builder;
 }
 
