@@ -130,13 +130,19 @@ string RteFile::GetHeaderComment() const
 string RteFile::ConstructID()
 {
   string id = GetName();
-  SetAttribute("name", id.c_str());
-
   if (!GetVersionString().empty()) {
     id += ".";
     id += GetVersionString();
   }
   return id;
+}
+
+const std::string& RteFile::GetName() const
+{
+  if(HasAttribute("file")) {
+    return GetAttribute("file");
+  }
+  return RteItem::GetName();
 }
 
 string RteFile::GetIncludePath() const
@@ -358,18 +364,27 @@ RteFileContainer* RteFileContainer::GetParentContainer() const
   return dynamic_cast<RteFileContainer*>(GetParent());
 }
 
+const std::string& RteFileContainer::GetName() const
+{
+  if(HasAttribute("group")) {
+    return GetAttribute("group");
+  }
+  return GetAttribute("name");
+}
+
+
 string RteFileContainer::GetHierarchicalGroupName() const
 {
-  string groupName;
+  const string& name = GetName();
   RteFileContainer* parentGroup = GetParentContainer();
-  const string& name = GetAttribute("name");
   if (parentGroup) {
-    groupName = parentGroup->GetHierarchicalGroupName();
-    if (!groupName.empty())
-      groupName += ":";
+    string groupName = parentGroup->GetHierarchicalGroupName();
+    if(!name.empty() && !groupName.empty()) {
+      groupName += ":" + name;
+    }
+    return groupName;
   }
-  groupName += name;
-  return groupName;
+  return name;
 }
 
 void RteFileContainer::GetIncludePaths(set<string>& incPaths) const {
@@ -417,12 +432,17 @@ RteItem* RteFileContainer::CreateItem(const std::string& tag)
 {
   if (tag == "file") {
     return new RteFile(this);
-  } else if (tag == "group") {
+  } else if (tag == "group" || tag == "groups" || tag == "files") {
     return new RteFileContainer(this);
+  } else if(tag == "-") {
+    if(GetTag() == "files") {
+      return new RteFile(this);
+    } else {
+      return new RteFileContainer(this);
+    }
   }
   return RteItem::CreateItem(tag);
 }
-
 
 RteFileTemplate::RteFileTemplate(const string& select) :
   m_select(select),

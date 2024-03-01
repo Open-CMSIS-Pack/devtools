@@ -63,6 +63,7 @@ RtePackage::RtePackage(RteItem* parent, PackageState ps) :
   m_boards(0),
   m_requirements(0),
   m_generators(0),
+  m_groups(0),
   m_deviceFamilies(0)
 {
 }
@@ -82,6 +83,7 @@ RtePackage::RtePackage(RteItem* parent, const map<string, string>& attributes) :
   m_boards(0),
   m_requirements(0),
   m_generators(0),
+  m_groups(0),
   m_deviceFamilies(0)
 {
   SetAttributes(attributes);
@@ -107,6 +109,7 @@ void RtePackage::Clear()
   m_taxonomy = 0;
   m_boards = 0;
   m_generators = 0;
+  m_groups = 0;
   m_deviceFamilies = 0;
   m_nDominating = -1;
   m_keywords.clear();
@@ -629,6 +632,9 @@ RteItem* RtePackage::CreateItem(const std::string& tag)
   } else if (tag == "generators") {
       m_generators = new RteGeneratorContainer(this);
     return m_generators;
+  } else if (tag == "groups") {
+      m_groups = new RteFileContainer(this);
+    return m_groups;
   } else if (tag == "devices") {
       m_deviceFamilies = new RteDeviceFamilyContainer(this);
     return m_deviceFamilies;

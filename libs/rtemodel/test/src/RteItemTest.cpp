@@ -8,6 +8,7 @@
 
 #include "RteItem.h"
 #include "RteCondition.h"
+#include "RteFile.h"
 #include "RtePackage.h"
 #include <map>
 using namespace std;
@@ -149,5 +150,23 @@ TEST(RteItemTest, GetYamlDeviceAttribute) {
   EXPECT_TRUE(item.GetYamlDeviceAttribute("Ddsp").empty());
   EXPECT_TRUE(item.GetYamlDeviceAttribute("Dmve").empty());
   EXPECT_TRUE(item.GetYamlDeviceAttribute("unknown").empty());
+}
+
+TEST(RteItemTest, GetHierarchicalGroupName) {
+  unique_ptr<RteFileContainer> g0(new RteFileContainer(nullptr));
+  g0->AddAttribute("group", "G0");
+  RteFileContainer* g1 = new RteFileContainer(g0.get());
+  g1->AddAttribute("name", "G1");
+  g0->AddChild(g1);
+  RteFileContainer* g2 = new RteFileContainer(g1);   // no name
+  g1->AddChild(g2);
+  RteFileContainer* g3 = new RteFileContainer(g2);
+  g3->AddAttribute("name", "G3");
+  g2->AddChild(g3);
+
+  RteFileContainer* g4 = new RteFileContainer(g3);
+  g3->AddChild(g4);
+
+  EXPECT_EQ(g4->GetHierarchicalGroupName(), "G0:G1:G3");
 }
 // end of RteItemTest.cpp

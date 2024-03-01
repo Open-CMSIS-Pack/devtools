@@ -1114,11 +1114,9 @@ bool RtePackageInstanceInfo::ResolvePack(const string& targetName)
 RteGpdscInfo::RteGpdscInfo(RteItem* parent, RtePackage* gpdscPack) :
   RteItemInstance(parent),
   m_gpdscPack(gpdscPack),
-  m_generator(gpdscPack ? gpdscPack->GetFirstGenerator() : nullptr)
+  m_generator(nullptr)
 {
-  if (gpdscPack) {
-    gpdscPack->Reparent(this, false); //  set parent chain, but not add as a child
-  }
+  SetGpdscPack(gpdscPack);
 };
 
 RteGpdscInfo::~RteGpdscInfo()
@@ -1127,20 +1125,46 @@ RteGpdscInfo::~RteGpdscInfo()
     delete m_gpdscPack;
 }
 
+RteFileContainer* RteGpdscInfo::GetProjectFiles() const
+{
+  RteFileContainer* projectFiles = nullptr;
+  RtePackage* pack = GetGpdscPack();
+  if(pack) {
+    // external generator case
+    projectFiles = pack->GetGroups();
+    if(projectFiles && HasAttribute("generator") ) {
+      string name = ":" + GetAttribute("generator");
+      projectFiles->AddAttribute("name", name);
+    }
+  }
+  if(!projectFiles && GetGenerator()) {
+    projectFiles = GetGenerator()->GetProjectFiles();
+  }
+  return projectFiles;
+}
+
 void RteGpdscInfo::SetGpdscPack(RtePackage* gpdscPack)
 {
+  if(m_gpdscPack == gpdscPack) {
+    return;
+  }
   if (m_gpdscPack) {
+    if(m_generator->GetPackage() == m_gpdscPack) {
+      m_generator = nullptr;
+    }
     delete m_gpdscPack;
   }
   m_gpdscPack = gpdscPack;
   if (gpdscPack) {
     gpdscPack->Reparent(this, false); //  set parent chain, but not add as a child
-    m_generator = gpdscPack->GetFirstGenerator();
-  } else {
-    m_generator = nullptr;
+    RteGenerator* gen = gpdscPack->GetFirstGenerator();
+    if(!gen && HasAttribute("generator")) {
+      // query global generator
+      gen = GetCallback()->GetExternalGenerator(GetAttribute("generator")) ;
+    }
+    SetGenerator(gen);
   }
 }
-
 
 string RteGpdscInfo::GetAbsolutePath() const
 {

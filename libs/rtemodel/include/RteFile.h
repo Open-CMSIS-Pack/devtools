@@ -156,6 +156,13 @@ public:
    std::string ConstructID() override;
 
   /**
+   * @brief get file name
+   * @return file name
+   */
+  const std::string& GetName() const override;
+
+
+  /**
    * @brief get file version string
    * @return "version" attribute value if set, otherwise parent component version
   */
@@ -259,6 +266,13 @@ public:
    * @return pointer to RteFileContainer if has parent container or nullptr otherwise
   */
   RteFileContainer* GetParentContainer() const;
+
+  /**
+   * @brief get group name
+   * @return group name
+  */
+  const std::string& GetName() const override;
+
   /**
    * @brief construct hierarchical group name in the format TopGroup:SubGroup:SubSubGroup
    * @return combined group hierarchical group name with ':' as delimiter

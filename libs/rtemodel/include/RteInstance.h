@@ -680,6 +680,18 @@ public:
   RteGenerator* GetGenerator() const { return m_generator; }
 
   /**
+   * @brief set associated generator if any
+   * @param pointer to RteGenerator
+  */
+  void SetGenerator(RteGenerator* generator) { m_generator = generator; }
+
+  /**
+   * @brief get files to add to project when using the generator
+   * @return pointer to RteFileContainer containing file items, nullptr if no files need to be added
+  */
+  RteFileContainer* GetProjectFiles() const;
+
+  /**
    * @brief get associated generator model
    * @return pointer to generator RtePackage
   */

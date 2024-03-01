@@ -62,7 +62,9 @@ string RteGenerator::GetGeneratorGroupName() const
 {
   string generatorGroup(":");
   generatorGroup += GetName();
-  generatorGroup += ":Common Sources";
+  if(!IsExternal()) {
+    generatorGroup += ":Common Sources";
+  }
   return generatorGroup;
 }
 

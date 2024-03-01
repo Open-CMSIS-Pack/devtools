@@ -1201,6 +1201,8 @@ RteGpdscInfo* RteProject::AddGpdscInfo(RteComponent* c, RteTarget* target)
     }
   }
   if (gi) {
+    gi->AddAttribute("generator", gen->GetID());
+    gi->SetGenerator(gen);
     gi->AddTargetInfo(target->GetName());
   }
   return gi;
