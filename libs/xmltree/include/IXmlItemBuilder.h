@@ -2,7 +2,7 @@
 #define IXmlItemBuilder_H
 /******************************************************************************/
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -14,8 +14,13 @@
 /**
  * @brief abstract factory interface class to create XmlItem derived objects
 */
-class IXmlItemBuilder : public XmlItem {
+class IXmlItemBuilder
+{
 public:
+  /**
+   * @brief virtual destructor
+  */
+  virtual ~IXmlItemBuilder(){};
 
   /**
    * @brief clears and initializes builder
