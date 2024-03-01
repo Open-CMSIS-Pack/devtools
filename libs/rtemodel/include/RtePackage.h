@@ -26,7 +26,7 @@ class RteExample;
 class RteGeneratorContainer;
 class RteGeneratorProject;
 class RteBoard;
-
+class RteFileContainer;
 
 typedef std::map<std::string, RtePackage*, RtePackageComparator > RtePackageMap;
 typedef std::map<std::string, RteItem*, RtePackageComparator > RteItemPackageMap;
@@ -336,6 +336,12 @@ public:
   * @return pointer to RteGeneratorContainer representing container for generators
   */
   RteGeneratorContainer* GetGenerators() const { return m_generators; }
+
+  /**
+  * @brief get <groups> element
+  * @return pointer to RteFileContainer representing container for project files
+  */
+  RteFileContainer* GetGroups() const { return m_groups; }
 
   /**
    * @brief get generator item for specified ID
@@ -670,6 +676,7 @@ private:
   RteItem* m_requirements;// <requirements> element
 
   RteGeneratorContainer* m_generators;        // <generators> element
+  RteFileContainer* m_groups;                 // <groups> element
   RteDeviceFamilyContainer* m_deviceFamilies; // <devices> element
 
   std::set<std::string> m_keywords; // collected keyword

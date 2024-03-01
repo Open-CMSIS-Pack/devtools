@@ -294,9 +294,9 @@ RtePackage* RteKernel::LoadPack(const string& pdscFile, PackageState packState) 
   if(pack) {
     return pack;
   }
-
+  const string ext = RteUtils::ExtractFileExtension(pdscFile, true);
   auto rteItemBuilder= CreateUniqueRteItemBuilder(GetGlobalModel(), packState);
-  unique_ptr<XMLTree> xmlTree = CreateUniqueXmlTree(rteItemBuilder.get());
+  unique_ptr<XMLTree> xmlTree = CreateUniqueXmlTree(rteItemBuilder.get(), ext);
   bool success = xmlTree->AddFileName(pdscFile, true);
   pack = rteItemBuilder->GetPack();
   if (!success || !pack) {
