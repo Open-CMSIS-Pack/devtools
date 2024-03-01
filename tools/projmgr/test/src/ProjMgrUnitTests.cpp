@@ -287,6 +287,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacksMissing) {
   EXPECT_EQ(0, RunProjMgr(8, argv, 0)); // code should return success because of "-m" option
 
   auto outStr = streamRedirect.GetOutString();
+  auto errStr = streamRedirect.GetErrorString();
   EXPECT_STREQ(outStr.c_str(), "ARM::Missing_DFP@0.0.9\n");
 }
 
@@ -5139,4 +5140,21 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_GpdscWithoutComponents) {
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
   EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_ValidateContextSpecificPacksMissing) {
+  char* argv[8];
+  StdStreamRedirect streamRedirect;
+  const string& csolution = testinput_folder + "/TestSolution/pack_missing.csolution.yml";
+  string expectedErr = "\
+error csolution: required pack: ARM::Missing_DFP@0.0.9 not installed\n\
+error csolution: processing context 'test1+CM0' failed\n\
+error csolution: required pack: ARM::Missing_PACK@0.0.1 not installed\n\
+error csolution: processing context 'test1+Gen' failed\n";
+
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  EXPECT_EQ(1, RunProjMgr(4, argv, 0));
+  EXPECT_NE(string::npos, streamRedirect.GetErrorString().find(expectedErr));
 }

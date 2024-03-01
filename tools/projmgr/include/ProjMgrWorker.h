@@ -623,6 +623,7 @@ protected:
   std::vector<std::string> m_ymlOrderedContexts;
   std::map<std::string, ContextItem> m_contexts;
   std::map<std::string, ContextItem>* m_contextsPtr;
+  std::map<std::string, std::set<std::string>> m_contextErrMap;
   std::vector<std::string> m_selectedContexts;
   std::string m_outputDir;
   std::string m_packRoot;
@@ -638,7 +639,7 @@ protected:
   bool m_relativePaths;
 
   bool LoadPacks(ContextItem& context);
-  bool CollectRequiredPdscFiles(ContextItem& context, const std::string& packRoot, std::set<std::string>& errMsgs);
+  bool CollectRequiredPdscFiles(ContextItem& context, const std::string& packRoot);
   bool CheckRteErrors(void);
   bool CheckBoardDeviceInLayer(const ContextItem& context, const ClayerItem& clayer);
   bool CheckCompiler(const std::vector<std::string>& forCompiler, const std::string& selectedCompiler);
@@ -731,6 +732,7 @@ protected:
   void CheckDeviceAttributes(const std::string& device, const ProcessorItem& userSelection, const StrMap& targetAttributes);
   std::string GetContextRteFolder(ContextItem& context);
   std::vector<std::string> FindMatchingPackIdsInCbuildPack(const PackItem& needle, const std::vector<ResolvedPackItem>& resolvedPacks);
+  void PrintContextErrors(const std::string& contextName);
 };
 
 #endif  // PROJMGRWORKER_H

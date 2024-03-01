@@ -231,7 +231,8 @@ void ProjMgrWorker::SetEnvironmentVariables(const StrVec& envVars) {
   m_envVars = envVars;
 }
 
-bool ProjMgrWorker::CollectRequiredPdscFiles(ContextItem& context, const std::string& packRoot, std::set<std::string>& errMsgs) {
+bool ProjMgrWorker::CollectRequiredPdscFiles(ContextItem& context, const std::string& packRoot)
+{
   if (!ProcessPackages(context, packRoot)) {
     return false;
   }
@@ -269,40 +270,42 @@ bool ProjMgrWorker::CollectRequiredPdscFiles(ContextItem& context, const std::st
               (filteredPack.vendor.empty() ? "" : filteredPack.vendor + "::") +
               filteredPack.name +
               (reqVersion.empty() ? "" : "@" + reqVersion);
-            errMsgs.insert("required pack: " + packageName + " not installed");
+            m_contextErrMap[context.name].insert("required pack: " + packageName + " not installed");
             context.missingPacks.push_back(filteredPack);
           }
           continue;
         }
-        context.pdscFiles.insert({ pdscFile, {"", reqVersionRange }});
+        context.pdscFiles.insert({ pdscFile, {"", reqVersionRange } });
       }
       if (bPackFilter && context.pdscFiles.empty()) {
         std::string filterStr = pack.vendor +
           (pack.name.empty() ? "" : "::" + pack.name) +
           (reqVersion.empty() ? "" : "@" + reqVersion);
-        errMsgs.insert("no match found for pack filter: " + filterStr);
+        m_contextErrMap[context.name].insert("no match found for pack filter: " + filterStr);
       }
-    } else {
+    }
+    else {
       if (!reqVersion.empty()) {
-        errMsgs.insert("pack '" + (pack.vendor.empty() ? "" : pack.vendor + "::") + pack.name
+        m_contextErrMap[context.name].insert("pack '" + (pack.vendor.empty() ? "" : pack.vendor + "::") + pack.name
           + "' specified with 'path' must not have a version");
       }
       string packPath = packItem.path;
       if (!RteFsUtils::Exists(packPath)) {
-        errMsgs.insert("pack path: " + packItem.path + " does not exist");
+        m_contextErrMap[context.name].insert("pack path: " + packItem.path + " does not exist");
         break;
       }
       string pdscFile = pack.vendor + '.' + pack.name + ".pdsc";
       RteFsUtils::NormalizePath(pdscFile, packPath + "/");
       if (!RteFsUtils::Exists(pdscFile)) {
-        errMsgs.insert("pdsc file was not found in: " + packItem.path);
+        m_contextErrMap[context.name].insert("pdsc file was not found in: " + packItem.path);
         break;
-      } else {
-        context.pdscFiles.insert({ pdscFile, {packPath, reqVersionRange}});
+      }
+      else {
+        context.pdscFiles.insert({ pdscFile, {packPath, reqVersionRange} });
       }
     }
   }
-  return (errMsgs.empty());
+  return (m_contextErrMap.empty());
 }
 
 string ProjMgrWorker::GetPackRoot() {
@@ -338,31 +341,35 @@ bool ProjMgrWorker::InitializeModel() {
 bool ProjMgrWorker::LoadAllRelevantPacks() {
   // Get required pdsc files
   std::list<std::string> pdscFiles;
-  std::set<std::string> errMsgs;
   if (m_selectedContexts.empty()) {
     for (const auto& [context,_] : m_contexts) {
       m_selectedContexts.push_back(context);
     }
   }
+  bool success = true;
+  m_contextErrMap.clear();
   for (const auto& context : m_selectedContexts) {
     auto& contextItem = m_contexts.at(context);
-    if (!CollectRequiredPdscFiles(contextItem, m_packRoot, errMsgs)) {
-      std::for_each(errMsgs.begin(), errMsgs.end(), [](const auto& errMsg) {ProjMgrLogger::Error(errMsg); });
-      return false;
+    if (!CollectRequiredPdscFiles(contextItem, m_packRoot)) {
+      success &= false;
+      continue;
     }
-      for(const auto& [pdscFile, pathVer] : contextItem.pdscFiles) {
-        const string& path = pathVer.first;
-        if(!path.empty()) {
-          CollectionUtils::PushBackUniquely(pdscFiles, pdscFile);
-        }
+    for (const auto& [pdscFile, pathVer] : contextItem.pdscFiles) {
+      const string& path = pathVer.first;
+      if (!path.empty()) {
+        CollectionUtils::PushBackUniquely(pdscFiles, pdscFile);
       }
-      // then all others
-      for(const auto& [pdscFile, pathVer] : contextItem.pdscFiles) {
-        const string& path = pathVer.first;
-        if(path.empty()) {
-          CollectionUtils::PushBackUniquely(pdscFiles, pdscFile);
-        }
+    }
+    // then all others
+    for (const auto& [pdscFile, pathVer] : contextItem.pdscFiles) {
+      const string& path = pathVer.first;
+      if (path.empty()) {
+        CollectionUtils::PushBackUniquely(pdscFiles, pdscFile);
       }
+    }
+  }
+  if (!success) {
+    return false;
   }
   // Check load packs policy
   if (pdscFiles.empty() && (m_loadPacksPolicy == LoadPacksPolicy::REQUIRED)) {
@@ -394,6 +401,7 @@ bool ProjMgrWorker::LoadPacks(ContextItem& context) {
     return false;
   }
   if (m_loadedPacks.empty() && !LoadAllRelevantPacks()) {
+    PrintContextErrors(context.name);
     return false;
   }
   if (!InitializeTarget(context)) {
@@ -646,6 +654,7 @@ bool ProjMgrWorker::ProcessCandidateLayers(ContextItem& context, LayersDiscoveri
   if (packRequirements.size() > 0) {
     AddPackRequirements(context, packRequirements);
     if (!LoadAllRelevantPacks() || !LoadPacks(context)) {
+      PrintContextErrors(context.name);
       return false;
     }
   }
@@ -3143,14 +3152,14 @@ bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGenFiles, bool
 bool ProjMgrWorker::ListPacks(vector<string>&packs, bool bListMissingPacksOnly, const string& filter) {
   map<string, string, RtePackageComparator> packsMap;
   list<string> pdscFiles;
-  std::set<std::string> errMsgs;
   if (!InitializeModel()) {
     return false;
   }
   bool reqOk = true;
+  m_contextErrMap.clear();
   for (const auto& selectedContext : m_selectedContexts) {
     ContextItem& context = m_contexts[selectedContext];
-    if(!CollectRequiredPdscFiles(context, m_packRoot, errMsgs)) {
+    if(!CollectRequiredPdscFiles(context, m_packRoot)) {
       // in case of explicit query for missing pack list,
       // the method should return true unless other errors occur
       // That should keep the calling code happy:
@@ -3200,8 +3209,11 @@ bool ProjMgrWorker::ListPacks(vector<string>&packs, bool bListMissingPacksOnly, 
         packsMap[pack->GetID()] = pack->GetPackageFileName();
       }
     }
-    if (!errMsgs.empty()) {
-      std::for_each(errMsgs.begin(), errMsgs.end(), [](const auto& errMsg) {ProjMgrLogger::Error(errMsg); });
+
+    if (!m_contextErrMap.empty()) {
+      for (const auto& selectedContext : m_selectedContexts) {
+        PrintContextErrors(selectedContext);
+      }
       reqOk = false;
     }
   }
@@ -4304,6 +4316,7 @@ bool ProjMgrWorker::ProcessGeneratedLayers(ContextItem& context) {
       InsertPackRequirements(cgen->packs, packRequirements, cgen->directory);
       AddPackRequirements(context, packRequirements);
       if (!LoadAllRelevantPacks() || !LoadPacks(context)) {
+        PrintContextErrors(context.name);
         return false;
       }
     }
@@ -4318,4 +4331,14 @@ bool ProjMgrWorker::ProcessGeneratedLayers(ContextItem& context) {
     }
   }
   return true;
+}
+
+void ProjMgrWorker::PrintContextErrors(const string& contextName) {
+  auto elem = m_contextErrMap.find(contextName);
+  if (elem != m_contextErrMap.end()) {
+    std::for_each(elem->second.begin(), elem->second.end(),
+      [](const auto& errMsg) {
+        ProjMgrLogger::Error(errMsg);
+      });
+  }
 }

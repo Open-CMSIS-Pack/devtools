@@ -1596,3 +1596,25 @@ TEST_F(ProjMgrWorkerUnitTests, FindMatchingPacksInCbuildPack) {
   EXPECT_EQ(matches[0], pack5.pack);
   EXPECT_EQ(matches[1], pack6.pack);
 }
+
+TEST_F(ProjMgrWorkerUnitTests, PrintContextErrors) {
+  StdStreamRedirect streamRedirect;
+  string context1("project.build+target1"), context2("project.build+target2");
+
+  // print errors message specific to context
+  m_contextErrMap["project.build+target1"].insert("error test pack 1 missing");
+  m_contextErrMap["project.build+target1"].insert("error test pack 1.1 missing");
+  m_contextErrMap["project.build+target2"].insert("error test pack 2 missing");
+  PrintContextErrors(context1);
+  PrintContextErrors(context2);
+  auto errMsg = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errMsg.find("error test pack 1 missing"));
+  EXPECT_NE(string::npos, errMsg.find("error test pack 1.1 missing"));
+  EXPECT_NE(string::npos, errMsg.find("error test pack 2 missing"));
+
+  // when no errors occur, print no error messages
+  streamRedirect.ClearStringStreams();
+  m_contextErrMap.clear();
+  PrintContextErrors(context1);
+  EXPECT_TRUE(streamRedirect.GetErrorString().empty());
+}
