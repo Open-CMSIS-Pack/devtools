@@ -237,7 +237,7 @@ jobs:
 
       - name: Upload Report to Codecov
         if: ${{ !github.event.repository.private }}
-        uses: Wandalen/wretry.action@62451a214c01d1b0136b4f87289d840b30d67b98 # v1.4.4
+        uses: Wandalen/wretry.action@0ef67d343938e879e0a9bb37c107a55731e8ed35 # v1.4.5
         with:
           action: codecov/codecov-action@v3
           with: |
@@ -275,7 +275,7 @@ jobs:
           mkdir -p tools/svdconv/distribution/
 
       - name: Download coverage report
-        uses: actions/download-artifact@eaceaf801fd36c7dee90939fad912460b18a1ffe # v4.1.2
+        uses: actions/download-artifact@c850b930e6ba138125429b7e5c93fc707a7f8427 # v4.1.4
         with:
           name: coverage-report-svdconv
           path: tools/svdconv/distribution/coverage/
