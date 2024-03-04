@@ -1,0 +1,19 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schemas/csolution.schema.json
+
+solution:
+  target-types:
+    - type: CM0
+      device: RteTest_ARMCM0
+    - type: Gen
+      device: RteTest_ARMCM3
+
+  packs:
+    - pack: ARM::Missing_DFP@0.0.9
+      for-context: +CM0
+    - pack: ARM::Missing_PACK@0.0.1
+      for-context: +Gen
+
+  projects:
+    - project: ./project.cproject.yml
+
+

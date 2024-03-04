@@ -922,9 +922,25 @@
         "licenses": {
           "type": "array",
           "items": { "$ref": "#/definitions/LicenseInfoType" }
-        }
+        },
+        "errors": { "type": "boolean", "description": "Indicates error(s) during conversion" },
+        "packs-missing": { "$ref": "#/definitions/BuildPacksMissingType" }
       },
       "additionalProperties": false
+    },
+    "BuildPacksMissingType": {
+      "type": "array",
+      "uniqueItems": true,
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/BuildPackMissingType", "description": "Names of the missing packs" }
+    },
+    "BuildPackMissingType": {
+      "type": "object",
+      "properties": {
+        "pack": { "type": "string", "description": "Name of the missing pack" }
+      },
+      "additionalProperties": false,
+      "required": ["pack"]
     },
     "LayerDescType": {
       "type": "object",

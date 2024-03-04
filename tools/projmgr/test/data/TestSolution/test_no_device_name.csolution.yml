@@ -76,13 +76,13 @@ solution:
     - project: ./TestProject2/test2.cproject.yml
       not-for-context: .Release
 
-    define:
-      - DEF-solution
-      - DEF-solution-to-be-removed
-    undefine:
-      - DEF-project-to-be-removed
-    add-path:
-      - ./path/solution/
-      - ./path/solution/to-be-removed
-    del-path:
-      - ./path/project/to-be-removed
+  define:
+    - DEF-solution
+    - DEF-solution-to-be-removed
+  undefine:
+    - DEF-project-to-be-removed
+  add-path:
+    - ./path/solution/
+    - ./path/solution/to-be-removed
+  del-path:
+    - ./path/project/to-be-removed

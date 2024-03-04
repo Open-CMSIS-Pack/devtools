@@ -31,7 +31,8 @@ public:
    * @param outputDir directory
    * @return true if executed successfully
   */
-  static bool GenerateCbuildIndex(ProjMgrParser& parser, const std::vector<ContextItem*> contexts, const std::string& outputDir);
+  static bool GenerateCbuildIndex(ProjMgrParser& parser,
+    const std::vector<ContextItem*> contexts, const std::string& outputDir);
 
   /**
    * @brief generate cbuild-gen-idx.yml file
@@ -48,11 +49,15 @@ public:
   /**
    * @brief generate cbuild.yml or cbuild-gen.yml file
    * @param context pointer to the context
+   * @param boolean indicates if context has conversion error(s)
    * @param reference to generator identifier
    * @param reference to generator pack
    * @return true if executed successfully
   */
-  static bool GenerateCbuild(ContextItem* context, const std::string& generatorId = std::string(), const std::string& generatorPack = std::string());
+  static bool GenerateCbuild(ContextItem* context,
+    const bool convError = false,
+    const std::string& generatorId = std::string(),
+    const std::string& generatorPack = std::string());
 
   /**
    * @brief generate cbuild set file

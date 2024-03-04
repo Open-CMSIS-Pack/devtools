@@ -133,8 +133,10 @@ protected:
   bool m_frozenPacks;
   GroupNode m_files;
   std::vector<ContextItem*> m_processedContexts;
+  std::vector<ContextItem*> m_allContexts;
+  std::set<std::string> m_failedContext;
 
-  bool RunConfigure(bool printConfig = false);
+  bool RunConfigure();
   bool RunConvert();
   bool RunCodeGenerator();
   bool RunListPacks();
@@ -150,6 +152,10 @@ protected:
   bool RunListEnvironment();
   bool PopulateContexts();
   bool SetLoadPacksPolicy();
+
+  bool Configure();
+  bool GenerateYMLConfigurationFiles();
+  void updateRte();
 };
 
 #endif  // PROJMGR_H

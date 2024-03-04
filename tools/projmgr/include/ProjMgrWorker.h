@@ -290,7 +290,7 @@ struct ContextItem {
   DeviceItem deviceItem;
   std::vector<PackageItem> packRequirements;
   std::map<std::string, std::pair<std::string, std::string>> pdscFiles;
-  std::vector<PackInfo>missingPacks;
+  std::vector<PackInfo> missingPacks;
   std::vector<std::pair<ComponentItem, std::string>> componentRequirements;
   std::string compiler;
   ToolchainItem toolchain;
