@@ -43,9 +43,9 @@ class ProjMgrYamlCbuild : public ProjMgrYamlBase {
 private:
   friend class ProjMgrYamlEmitter;
   ProjMgrYamlCbuild(YAML::Node node, const vector<ContextItem*>& processedContexts, const string& selectedCompiler);
-  ProjMgrYamlCbuild(YAML::Node node, const ContextItem* context, const string& generatorId, const string& generatorPack);
+  ProjMgrYamlCbuild(YAML::Node node, const ContextItem* context, const string& generatorId, const string& generatorPack, const bool convError);
   ProjMgrYamlCbuild(YAML::Node node, const vector<ContextItem*>& siblings, const string& type, const string& output, const string& gendir);
-  void SetContextNode(YAML::Node node, const ContextItem* context, const string& generatorId, const string& generatorPack);
+  void SetContextNode(YAML::Node node, const ContextItem* context, const string& generatorId, const string& generatorPack, const bool convError);
   void SetComponentsNode(YAML::Node node, const ContextItem* context);
   void SetComponentFilesNode(YAML::Node node, const ContextItem* context, const string& componentId);
   void SetGeneratorsNode(YAML::Node node, const ContextItem* context);
@@ -68,13 +68,17 @@ private:
 class ProjMgrYamlCbuildIdx : public ProjMgrYamlBase {
 private:
   friend class ProjMgrYamlEmitter;
-  ProjMgrYamlCbuildIdx(YAML::Node node, const vector<ContextItem*>& processedContexts, ProjMgrParser& parser, const string& directory);
+  ProjMgrYamlCbuildIdx(
+    YAML::Node node, const vector<ContextItem*>& processedContexts,
+    ProjMgrParser& parser, const string& directory);
 };
 
 class ProjMgrYamlCbuildPack : public ProjMgrYamlBase {
 private:
   friend class ProjMgrYamlEmitter;
-  ProjMgrYamlCbuildPack(YAML::Node node, const vector<ContextItem*>& processedContexts, ProjMgrParser& parser, bool keepExistingPackContent);
+  ProjMgrYamlCbuildPack(
+    YAML::Node node, const vector<ContextItem*>& processedContexts,
+    ProjMgrParser& parser, bool keepExistingPackContent);
 };
 
 
@@ -198,8 +202,9 @@ ProjMgrYamlCbuildPack::ProjMgrYamlCbuildPack(YAML::Node node, const vector<Conte
 ProjMgrYamlBase::ProjMgrYamlBase(bool useAbsolutePaths) : m_useAbsolutePaths(useAbsolutePaths) {
 }
 
-ProjMgrYamlCbuildIdx::ProjMgrYamlCbuildIdx(YAML::Node node, const vector<ContextItem*>& processedContexts, ProjMgrParser& parser, const string& directory) :
-  ProjMgrYamlBase(false)
+ProjMgrYamlCbuildIdx::ProjMgrYamlCbuildIdx(YAML::Node node,
+  const vector<ContextItem*>& processedContexts, ProjMgrParser& parser,
+  const string& directory) : ProjMgrYamlBase(false)
 {
   error_code ec;
   SetNodeValue(node[YAML_GENERATED_BY], ORIGINAL_FILENAME + string(" version ") + VERSION_STRING);
@@ -252,10 +257,10 @@ ProjMgrYamlCbuildIdx::ProjMgrYamlCbuildIdx(YAML::Node node, const vector<Context
 }
 
 ProjMgrYamlCbuild::ProjMgrYamlCbuild(YAML::Node node, const ContextItem* context,
-  const string& generatorId, const string& generatorPack) :
-  ProjMgrYamlBase(!generatorId.empty()) {
+  const string& generatorId, const string& generatorPack,const bool convError) : ProjMgrYamlBase(!generatorId.empty())
+{
   if (context) {
-    SetContextNode(node, context, generatorId, generatorPack);
+    SetContextNode(node, context, generatorId, generatorPack, convError);
   }
 }
 
@@ -276,7 +281,9 @@ ProjMgrYamlCbuild::ProjMgrYamlCbuild(YAML::Node node,
   }
 }
 
-void ProjMgrYamlCbuild::SetContextNode(YAML::Node contextNode, const ContextItem* context, const string& generatorId, const string& generatorPack) {
+void ProjMgrYamlCbuild::SetContextNode(YAML::Node contextNode, const ContextItem* context,
+  const string& generatorId, const string& generatorPack, const bool convError)
+{
   SetNodeValue(contextNode[YAML_GENERATED_BY], ORIGINAL_FILENAME + string(" version ") + VERSION_STRING);
   if (!generatorId.empty()) {
     YAML::Node generatorNode = contextNode[YAML_CURRENT_GENERATOR];
@@ -330,6 +337,23 @@ void ProjMgrYamlCbuild::SetContextNode(YAML::Node contextNode, const ContextItem
   SetGroupsNode(contextNode[YAML_GROUPS], context, context->groups);
   SetConstructedFilesNode(contextNode[YAML_CONSTRUCTEDFILES], context);
   SetLicenseInfoNode(contextNode[YAML_LICENSES], context);
+
+  vector<string> missingPacks;
+  for (const auto& packInfo : context->missingPacks) {
+    std::string missingPackName =
+      (packInfo.vendor.empty() ? "" : packInfo.vendor + "::") +
+      packInfo.name +
+      (packInfo.version.empty() ? "" : "@" + packInfo.version);
+    CollectionUtils::PushBackUniquely(missingPacks, missingPackName);
+  }
+  if (convError) {
+    contextNode[YAML_ERRORS] = true;
+  }
+  for (const auto& pack : missingPacks) {
+    YAML::Node packNode;
+    SetNodeValue(packNode[YAML_PACK], pack);
+    contextNode[YAML_PACKS_MISSING].push_back(packNode);
+  }
 }
 
 void ProjMgrYamlCbuild::SetComponentsNode(YAML::Node node, const ContextItem* context) {
@@ -768,18 +792,22 @@ bool ProjMgrYamlBase::WriteFile(YAML::Node& rootNode, const std::string& filenam
   return true;
 }
 
-bool ProjMgrYamlEmitter::GenerateCbuildIndex(ProjMgrParser& parser, const vector<ContextItem*> contexts, const string& outputDir) {
+bool ProjMgrYamlEmitter::GenerateCbuildIndex(ProjMgrParser& parser,
+  const vector<ContextItem*> contexts, const string& outputDir) {
   // generate cbuild-idx.yml
   const string& directory = outputDir.empty() ? parser.GetCsolution().directory : RteFsUtils::AbsolutePath(outputDir).generic_string();
   const string& filename = directory + "/" + parser.GetCsolution().name + ".cbuild-idx.yml";
 
   YAML::Node rootNode;
-  ProjMgrYamlCbuildIdx cbuild(rootNode[YAML_BUILD_IDX], contexts, parser, directory);
+  ProjMgrYamlCbuildIdx cbuild(
+    rootNode[YAML_BUILD_IDX], contexts, parser, directory);
 
   return cbuild.WriteFile(rootNode, filename);
 }
 
-bool ProjMgrYamlEmitter::GenerateCbuild(ContextItem* context, const string& generatorId, const string& generatorPack) {
+bool ProjMgrYamlEmitter::GenerateCbuild(ContextItem* context,
+  const bool convError, const string& generatorId, const string& generatorPack)
+{
   // generate cbuild.yml or cbuild-gen.yml for each context
   context->directories.cbuild = context->directories.cprj;
   string tmpDir = context->directories.intdir;
@@ -800,7 +828,7 @@ bool ProjMgrYamlEmitter::GenerateCbuild(ContextItem* context, const string& gene
     filename = cbuildGenFilename;
   }
   YAML::Node rootNode;
-  ProjMgrYamlCbuild cbuild(rootNode[rootKey], context, generatorId, generatorPack);
+  ProjMgrYamlCbuild cbuild(rootNode[rootKey], context, generatorId, generatorPack, convError);
   RteFsUtils::CreateDirectories(RteFsUtils::ParentPath(filename));
   return cbuild.WriteFile(rootNode, filename);
 }

@@ -1,0 +1,39 @@
+build:
+  generated-by: csolution version 0.0.0+g55b0abb7
+  solution: ../data/TestSolution/test_no_device_name.csolution.yml
+  project: ../data/TestSolution/TestProject1/test1.cproject.yml
+  context: test1.Debug+CM0
+  compiler: AC6
+  device: RteTest_ARMCM0:cm0_core0
+  optimize: none
+  debug: on
+  misc:
+    ASM:
+      - -ASM-type-CM0
+    C:
+      - -C-CPP-type-CM0
+    CPP:
+      - -C-CPP-type-CM0
+    Lib:
+      - -Lib-type-CM0
+    Link:
+      - -Link-type-CM0
+  define:
+    - DEF-solution
+    - DEF-CM0
+    - DEF-Debug
+  add-path:
+    - ../data/TestSolution/path/solution
+    - ../data/TestSolution/path/CM0
+    - ../data/TestSolution/path/Debug
+  output-dirs:
+    intdir: tmp/test1/CM0/Debug
+    outdir: out/test1/CM0/Debug
+    rtedir: ../data/TestSolution/TestProject1/RTE
+  output:
+    - type: elf
+      file: test1.axf
+  constructed-files:
+    - file: ../RTE/_Debug_CM0/RTE_Components.h
+      category: header
+  errors: true

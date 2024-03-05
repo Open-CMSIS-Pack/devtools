@@ -1,0 +1,12 @@
+build:
+  generated-by: csolution version 0.0.0+g658d82cc
+  solution: ../data/TestSolution/PackMissing/missing_pack.csolution.yml
+  project: ../data/TestSolution/PackMissing/project.cproject.yml
+  context: project+CM0
+  output-dirs:
+    intdir: tmp/project/CM0
+    outdir: out/project/CM0
+    rtedir: RTE
+  errors: true
+  packs-missing:
+    - pack: ARM::Missing_DFP@0.0.9

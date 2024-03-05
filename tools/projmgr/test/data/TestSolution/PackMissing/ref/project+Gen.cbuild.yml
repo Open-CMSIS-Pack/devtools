@@ -1,0 +1,12 @@
+build:
+  generated-by: csolution version 0.0.0+g658d82cc
+  solution: ../data/TestSolution/PackMissing/missing_pack.csolution.yml
+  project: ../data/TestSolution/PackMissing/project.cproject.yml
+  context: project+Gen
+  output-dirs:
+    intdir: tmp/project/Gen
+    outdir: out/project/Gen
+    rtedir: RTE
+  errors: true
+  packs-missing:
+    - pack: ARM::Missing_PACK@0.0.1
