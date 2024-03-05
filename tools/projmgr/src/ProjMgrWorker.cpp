@@ -3682,7 +3682,7 @@ bool ProjMgrWorker::ExecuteGenerator(std::string& generatorId) {
     generatorDestination += '/';
   }
 
-  if (!ProjMgrYamlEmitter::GenerateCbuild(&context, generator->GetGeneratorName(),
+  if (!ProjMgrYamlEmitter::GenerateCbuild(&context, false, generator->GetGeneratorName(),
     RtePackage::GetPackageIDfromAttributes(*generator->GetPackage()))) {
     return false;
   }
@@ -4286,7 +4286,7 @@ bool ProjMgrWorker::ExecuteExtGenerator(std::string& generatorId) {
     return false;
   }
   for (const auto& siblingContext : siblingContexts) {
-    if (!ProjMgrYamlEmitter::GenerateCbuild(siblingContext, generatorId)) {
+    if (!ProjMgrYamlEmitter::GenerateCbuild(siblingContext, false, generatorId)) {
       return false;
     }
   }

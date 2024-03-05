@@ -364,7 +364,7 @@ int ProjMgr::ProcessCommands() {
     }
   } else if (m_command == "update-rte") {
     // Process 'update-rte' command
-    if (!RunConfigure(true)) {
+    if (!RunConfigure()) {
       return 1;
     }
   } else if (m_command == "convert") {
@@ -472,62 +472,15 @@ bool ProjMgr::PopulateContexts(void) {
   return true;
 }
 
-bool ProjMgr::RunConfigure(bool printConfig) {
-  // Parse all input files and populate contexts inputs
-  if (!PopulateContexts()) {
-    return false;
-  }
-
-  bool checkCbuildSet = (m_context.size() == 0) && m_contextSet;
-  // Parse context selection
-  if (!m_worker.ParseContextSelection(m_context, checkCbuildSet)) {
-    return false;
-  }
-  // Get context pointers
-  map<string, ContextItem>* contexts = nullptr;
-  m_worker.GetContexts(contexts);
-
-  vector<ContextItem*> allContexts;
-  vector<string> orderedContexts;
-  m_worker.GetYmlOrderedContexts(orderedContexts);
-  // Process contexts
-  bool error = false;
-  m_processedContexts.clear();
-  for (auto& contextName : orderedContexts) {
-    auto& contextItem = (*contexts)[contextName];
-    allContexts.push_back(&contextItem);
-    if (!m_worker.IsContextSelected(contextName)) {
-      continue;
-    }
-    if (!m_worker.ProcessContext(contextItem, true, true, false)) {
-      ProjMgrLogger::Error("processing context '" + contextName + "' failed");
-      error = true;
-    }
-    m_processedContexts.push_back(&contextItem);
-  }
-  m_selectedToolchain = m_worker.GetSelectedToochain();
-  // Print warnings for missing filters
-  m_worker.PrintMissingFilters();
-  if (m_verbose) {
-    // Print config files info
-    vector<string> configFiles;
-    m_worker.ListConfigFiles(configFiles);
-    if (!configFiles.empty()) {
-      string infoMsg = "config files for each component:";
-      for (const auto& configFile : configFiles) {
-        infoMsg += "\n  " + configFile;
-      }
-      ProjMgrLogger::Info(infoMsg);
-    }
-  }
-
-  // Generate cbuild index
-  if (!allContexts.empty()) {
-    if (!m_emitter.GenerateCbuildIndex(m_parser, allContexts, m_outputDir)) {
+bool ProjMgr::GenerateYMLConfigurationFiles() {
+  // Generate cbuild index file
+  if (!m_allContexts.empty()) {
+    if (!m_emitter.GenerateCbuildIndex(m_parser, m_allContexts, m_outputDir)) {
       return false;
     }
   }
 
+  // Generate cbuild set file
   if (m_contextSet) {
     const string& cbuildSetFile = m_parser.GetCsolution().directory + "/" +
       m_parser.GetCsolution().name + ".cbuild-set.yml";
@@ -545,17 +498,81 @@ bool ProjMgr::RunConfigure(bool printConfig) {
 
   // Generate cbuild files
   for (auto& contextItem : m_processedContexts) {
-    if (!m_emitter.GenerateCbuild(contextItem)) {
+    auto item = m_failedContext.find(contextItem->name);
+    bool convError = (item != m_failedContext.end() ? true : false);
+    if (!m_emitter.GenerateCbuild(contextItem, convError)) {
       return false;
     }
   }
 
-  // Generate cbuild-pack file
+  // Generate cbuild pack file
   const bool isUsingContexts = m_contextSet || m_context.size() != 0;
   if (!m_emitter.GenerateCbuildPack(m_parser, m_processedContexts, isUsingContexts, m_frozenPacks)) {
     return false;
   }
 
+  // Update the RTE files
+  updateRte();
+  return true;
+}
+
+bool ProjMgr::Configure() {
+  // Parse all input files and populate contexts inputs
+  if (!PopulateContexts()) {
+    return false;
+  }
+
+  bool checkCbuildSet = (m_context.size() == 0) && m_contextSet;
+  // Parse context selection
+  if (!m_worker.ParseContextSelection(m_context, checkCbuildSet)) {
+    return false;
+  }
+  // Get context pointers
+  map<string, ContextItem>* contexts = nullptr;
+  m_worker.GetContexts(contexts);
+
+  vector<string> orderedContexts;
+  m_worker.GetYmlOrderedContexts(orderedContexts);
+
+  // Process contexts
+  bool error = false;
+  m_allContexts.clear();
+  m_processedContexts.clear();
+  m_failedContext.clear();
+  for (auto& contextName : orderedContexts) {
+    auto& contextItem = (*contexts)[contextName];
+    m_allContexts.push_back(&contextItem);
+    if (!m_worker.IsContextSelected(contextName)) {
+      continue;
+    }
+    if (!m_worker.ProcessContext(contextItem, true, true, false)) {
+      ProjMgrLogger::Error("processing context '" + contextName + "' failed");
+      m_failedContext.insert(contextItem.name);
+      error = true;
+    }
+    m_processedContexts.push_back(&contextItem);
+  }
+  m_selectedToolchain = m_worker.GetSelectedToochain();
+
+  // Print warnings for missing filters
+  m_worker.PrintMissingFilters();
+  if (m_verbose) {
+    // Print config files info
+    vector<string> configFiles;
+    m_worker.ListConfigFiles(configFiles);
+    if (!configFiles.empty()) {
+      string infoMsg = "config files for each component:";
+      for (const auto& configFile : configFiles) {
+        infoMsg += "\n  " + configFile;
+      }
+      ProjMgrLogger::Info(infoMsg);
+    }
+  }
+
+  return !error;
+}
+
+void ProjMgr::updateRte() {
   // Update the RTE files
   if (m_updateRteFiles) {
     for (auto& contextItem : m_processedContexts) {
@@ -565,13 +582,21 @@ bool ProjMgr::RunConfigure(bool printConfig) {
       }
     }
   }
+}
 
-  return !error;
+bool ProjMgr::RunConfigure() {
+  bool success = Configure();
+  updateRte();
+  return success;
 }
 
 bool ProjMgr::RunConvert(void) {
   // Configure
-  bool error = !RunConfigure();
+  bool Success = Configure();
+
+  // Generate YML build configuration files
+  Success &= GenerateYMLConfigurationFiles();
+
   // Generate Cprjs
   for (auto& contextItem : m_processedContexts) {
     const string filename = RteFsUtils::MakePathCanonical(contextItem->directories.cprj + "/" + contextItem->name + ".cprj");
@@ -594,7 +619,7 @@ bool ProjMgr::RunConvert(void) {
     }
   }
 
-  return !error;
+  return Success;
 }
 
 bool ProjMgr::RunListPacks(void) {

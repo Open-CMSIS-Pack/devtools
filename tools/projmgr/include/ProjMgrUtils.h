@@ -41,6 +41,9 @@ struct ConnectionsCollection {
 struct OutputType {
   bool on;
   std::string filename;
+
+  OutputType() : on(false), filename(RteUtils::EMPTY_STRING)
+  {}
 };
 
 /**

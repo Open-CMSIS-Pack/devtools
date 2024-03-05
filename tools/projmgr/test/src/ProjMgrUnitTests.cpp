@@ -2498,11 +2498,14 @@ TEST_F(ProjMgrUnitTests, RunProjMgrLayers_no_device_found) {
 
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution_No_Device_Name) {
   char* argv[4];
+  StdStreamRedirect streamRedirect;
   const string& csolution = testinput_folder + "/TestSolution/test_no_device_name.csolution.yml";
   argv[1] = (char*)"convert";
   argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
+
   EXPECT_EQ(1, RunProjMgr(4, argv, 0));
+  EXPECT_NE(string::npos, streamRedirect.GetErrorString().find("error csolution: processor name 'cm0_core0' was not found"));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_No_Board_No_Device) {
@@ -4253,9 +4256,6 @@ info csolution: config files for each component:\n\
     - .*/TestSolution/TestProject1/RTE/Device/RteTest_ARMCM0/ARMCM0_ac6.sct \\(base@1.0.0\\)\n\
     - .*/TestSolution/TestProject1/RTE/Device/RteTest_ARMCM0/startup_ARMCM0.c \\(base@1.1.1\\) \\(update@2.0.3\\)\n\
     - .*/TestSolution/TestProject1/RTE/Device/RteTest_ARMCM0/system_ARMCM0.c \\(base@1.0.0\\)\n\
-.*/test.cbuild-idx.yml - info csolution: file generated successfully\n\
-.*/test1.*.cbuild.yml - info csolution: file generated successfully\n\
-.*/test.cbuild-pack.yml - info csolution: file (generated successfully|is already up-to-date)\n\
 ";
 
   auto outStr = streamRedirect.GetOutString();
@@ -5158,7 +5158,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_GpdscWithoutComponents) {
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ValidateContextSpecificPacksMissing) {
-  char* argv[8];
+  char* argv[4];
   StdStreamRedirect streamRedirect;
   const string& csolution = testinput_folder + "/TestSolution/pack_missing.csolution.yml";
   string expectedErr = "\
@@ -5172,4 +5172,43 @@ error csolution: processing context 'test1+Gen' failed\n";
   argv[3] = (char*)csolution.c_str();
   EXPECT_EQ(1, RunProjMgr(4, argv, 0));
   EXPECT_NE(string::npos, streamRedirect.GetErrorString().find(expectedErr));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_cbuild_files_with_errors_node) {
+  char* argv[7];
+  StdStreamRedirect streamRedirect;
+  string expectedErr = "error csolution: processor name 'cm0_core0' was not found";
+  const string& csolution = testinput_folder + "/TestSolution/test_no_device_name.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"-o";
+  argv[4] = (char*)testoutput_folder.c_str();
+  argv[5] = (char*)"-c";
+  argv[6] = (char*)"test1.Debug+CM0";
+
+  EXPECT_EQ(1, RunProjMgr(7, argv, 0));
+  EXPECT_NE(string::npos, streamRedirect.GetErrorString().find(expectedErr));
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/test1.Debug+CM0.cbuild.yml",
+    testinput_folder + "/TestSolution/TestProject1/ref/test1.Debug+CM0.cbuild.yml");
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_cbuild_files_with_packs_missing) {
+  char* argv[5];
+  StdStreamRedirect streamRedirect;
+  string expectedErr1 = "error csolution: required pack: ARM::Missing_DFP@0.0.9 not installed";
+  string expectedErr2 = "error csolution: required pack: ARM::Missing_PACK@0.0.1 not installed";
+  const string& csolution = testinput_folder + "/TestSolution/PackMissing/missing_pack.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"-o";
+  argv[4] = (char*)testoutput_folder.c_str();
+
+  EXPECT_EQ(1, RunProjMgr(5, argv, 0));
+  auto err = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, streamRedirect.GetErrorString().find(expectedErr1));
+  EXPECT_NE(string::npos, streamRedirect.GetErrorString().find(expectedErr2));
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/project+CM0.cbuild.yml",
+    testinput_folder + "/TestSolution/PackMissing/ref/project+CM0.cbuild.yml");
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/project+Gen.cbuild.yml",
+    testinput_folder + "/TestSolution/PackMissing/ref/project+Gen.cbuild.yml");
 }
