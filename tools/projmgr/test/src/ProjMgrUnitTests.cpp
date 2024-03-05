@@ -272,7 +272,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacksAll) {
   EXPECT_EQ(outStr, expectedAll);
 }
 
-TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacksMissing) {
+TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacksMissing_1) {
   char* argv[8];
   StdStreamRedirect streamRedirect;
   const string& csolution = testinput_folder + "/TestSolution/pack_missing.csolution.yml";
@@ -287,7 +287,22 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacksMissing) {
   EXPECT_EQ(0, RunProjMgr(8, argv, 0)); // code should return success because of "-m" option
 
   auto outStr = streamRedirect.GetOutString();
-  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_STREQ(outStr.c_str(), "ARM::Missing_DFP@0.0.9\n");
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacksMissing_2) {
+  char* argv[6];
+  StdStreamRedirect streamRedirect;
+  const string& csolution = testinput_folder + "/TestSolution/pack_missing_for_context.csolution.yml";
+  // list packs
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"packs";
+  argv[3] = (char*)"--solution";
+  argv[4] = (char*)csolution.c_str();
+  argv[5] = (char*)"-m";
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0)); // code should return success because of "-m" option
+
+  auto outStr = streamRedirect.GetOutString();
   EXPECT_STREQ(outStr.c_str(), "ARM::Missing_DFP@0.0.9\n");
 }
 

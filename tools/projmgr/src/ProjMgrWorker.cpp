@@ -236,6 +236,7 @@ bool ProjMgrWorker::CollectRequiredPdscFiles(ContextItem& context, const std::st
   if (!ProcessPackages(context, packRoot)) {
     return false;
   }
+  bool errFound = false;
   for (auto packItem : context.packRequirements) {
     // parse required version range
     const auto& pack = packItem.pack;
@@ -270,6 +271,7 @@ bool ProjMgrWorker::CollectRequiredPdscFiles(ContextItem& context, const std::st
               (filteredPack.vendor.empty() ? "" : filteredPack.vendor + "::") +
               filteredPack.name +
               (reqVersion.empty() ? "" : "@" + reqVersion);
+            errFound = true;
             m_contextErrMap[context.name].insert("required pack: " + packageName + " not installed");
             context.missingPacks.push_back(filteredPack);
           }
@@ -282,22 +284,26 @@ bool ProjMgrWorker::CollectRequiredPdscFiles(ContextItem& context, const std::st
           (pack.name.empty() ? "" : "::" + pack.name) +
           (reqVersion.empty() ? "" : "@" + reqVersion);
         m_contextErrMap[context.name].insert("no match found for pack filter: " + filterStr);
+        errFound = true;
       }
     }
     else {
       if (!reqVersion.empty()) {
         m_contextErrMap[context.name].insert("pack '" + (pack.vendor.empty() ? "" : pack.vendor + "::") + pack.name
           + "' specified with 'path' must not have a version");
+        errFound = true;
       }
       string packPath = packItem.path;
       if (!RteFsUtils::Exists(packPath)) {
         m_contextErrMap[context.name].insert("pack path: " + packItem.path + " does not exist");
+        errFound = true;
         break;
       }
       string pdscFile = pack.vendor + '.' + pack.name + ".pdsc";
       RteFsUtils::NormalizePath(pdscFile, packPath + "/");
       if (!RteFsUtils::Exists(pdscFile)) {
         m_contextErrMap[context.name].insert("pdsc file was not found in: " + packItem.path);
+        errFound = true;
         break;
       }
       else {
@@ -305,7 +311,7 @@ bool ProjMgrWorker::CollectRequiredPdscFiles(ContextItem& context, const std::st
       }
     }
   }
-  return (m_contextErrMap.empty());
+  return !errFound;
 }
 
 string ProjMgrWorker::GetPackRoot() {
