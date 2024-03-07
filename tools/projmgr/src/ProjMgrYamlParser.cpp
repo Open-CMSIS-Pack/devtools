@@ -353,6 +353,15 @@ void ProjMgrYamlParser::ParseString(const YAML::Node& parent, const string& key,
   }
 }
 
+void ProjMgrYamlParser::ParseInt(const YAML::Node& parent, const string& key, int& value) {
+  if (parent[key].IsDefined()) {
+    value = parent[key].as<int>();
+    if (parent[key].Type() == YAML::NodeType::Null) {
+      value = 0;
+    }
+  }
+}
+
 void ProjMgrYamlParser::ParseVector(const YAML::Node& parent, const string& key, vector<string>& value) {
   if (parent[key].IsDefined() && parent[key].IsSequence()) {
     value = parent[key].as<vector<string>>();
@@ -444,6 +453,7 @@ bool ProjMgrYamlParser::ParseComponents(const YAML::Node& parent, const string& 
       if (!ParseBuildType(componentEntry, file, componentItem.build)) {
         return false;
       }
+      ParseInt(componentEntry, YAML_INSTANCES, componentItem.instances);
       components.push_back(componentItem);
     }
   }
@@ -1067,6 +1077,7 @@ const set<string> componentsKeys = {
   YAML_ADDPATH,
   YAML_DELPATH,
   YAML_MISC,
+  YAML_INSTANCES,
 };
 
 const set<string> connectionsKeys = {

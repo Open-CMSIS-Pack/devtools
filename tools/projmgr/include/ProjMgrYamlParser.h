@@ -88,6 +88,7 @@ static constexpr const char* YAML_GROUPS = "groups";
 static constexpr const char* YAML_HOST = "host";
 static constexpr const char* YAML_ID = "id";
 static constexpr const char* YAML_INFO = "info";
+static constexpr const char* YAML_INSTANCES = "instances";
 static constexpr const char* YAML_LANGUAGE = "language";
 static constexpr const char* YAML_LANGUAGE_C = "language-C";
 static constexpr const char* YAML_LANGUAGE_CPP = "language-CPP";
@@ -222,6 +223,7 @@ protected:
   void ParseProcessor(const YAML::Node& parent, ProcessorItem& processor);
   void ParseBoolean(const YAML::Node& parent, const std::string& key, bool& value, bool def);
   void ParseString(const YAML::Node& parent, const std::string& key, std::string& value);
+  void ParseInt(const YAML::Node& parent, const std::string& key, int& value);
   void ParseVector(const YAML::Node& parent, const std::string& key, std::vector<std::string>& value);
   void ParseVectorOfStringPairs(const YAML::Node& parent, const std::string& key, std::vector<std::pair<std::string, std::string>>& value);
   void ParseVectorOrString(const YAML::Node& parent, const std::string& key, std::vector<std::string>& value);

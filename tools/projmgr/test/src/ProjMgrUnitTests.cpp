@@ -5212,3 +5212,30 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_cbuild_files_with_packs_missing) {
   ProjMgrTestEnv::CompareFile(testoutput_folder + "/project+Gen.cbuild.yml",
     testinput_folder + "/TestSolution/PackMissing/ref/project+Gen.cbuild.yml");
 }
+
+TEST_F(ProjMgrUnitTests, ComponentInstances) {
+  char* argv[8];
+  StdStreamRedirect streamRedirect;
+  const string& csolution = testinput_folder + "/TestSolution/Instances/instances.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  argv[6] = (char*)"-c";
+  argv[7] = (char*)".Debug";
+  EXPECT_EQ(0, RunProjMgr(8, argv, 0));
+
+  // Check generated files
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/instances.Debug+RteTest_ARMCM3.cprj",
+    testinput_folder + "/TestSolution/Instances/ref/instances.Debug+RteTest_ARMCM3.cprj");
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/instances.Debug+RteTest_ARMCM3.cbuild.yml",
+    testinput_folder + "/TestSolution/Instances/ref/instances.Debug+RteTest_ARMCM3.cbuild.yml");
+
+  // Check error message
+  argv[6] = (char*)"-c";
+  argv[7] = (char*)".Error";
+  EXPECT_EQ(1, RunProjMgr(8, argv, 0));
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find("error csolution: component 'Device:Startup' does not accept more than 1 instance(s)"));
+}

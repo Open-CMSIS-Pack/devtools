@@ -173,6 +173,7 @@ struct DirectoriesItem {
  *        component identifier,
  *        component build settings,
  *        type inclusion
+ *        component instances
 */
 struct ComponentItem {
   std::string component;
@@ -180,6 +181,7 @@ struct ComponentItem {
   std::string fromPack;
   BuildType build;
   TypeFilter type;
+  int instances = 1;
 };
 
 /**

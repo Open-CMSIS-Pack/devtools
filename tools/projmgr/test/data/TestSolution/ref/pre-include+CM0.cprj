@@ -32,8 +32,8 @@
       <file attr="config" category="header" name="ComponentLevel/Include/MyDir/RelativeComponentLevelConfig.h" version="0.0.1"/>
     </component>
     <component Cclass="RteTest" Cgroup="GlobalLevel" Cvendor="ARM" Cversion="0.0.2">
-      <file attr="config" category="preIncludeGlobal" name="GlobalLevel/GlobalLevelConfig.h" version="0.0.2"/>
       <file attr="config" category="header" name="Include/Config/ConfigInclude.h" version="0.0.2"/>
+      <file attr="config" category="preIncludeGlobal" name="GlobalLevel/GlobalLevelConfig.h" version="0.0.2"/>
     </component>
   </components>
 </cprj>

@@ -1,0 +1,77 @@
+build:
+  generated-by: csolution version 0.0.0+ga6f431fb
+  solution: ../data/TestSolution/Instances/instances.csolution.yml
+  project: ../data/TestSolution/Instances/instances.cproject.yml
+  context: instances.Debug+RteTest_ARMCM3
+  compiler: AC6
+  device: RteTest_ARMCM3
+  device-pack: ARM::RteTest_DFP@0.2.0
+  processor:
+    fpu: off
+    core: Cortex-M3
+  packs:
+    - pack: ARM::RteTest@0.1.0
+      path: ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0
+    - pack: ARM::RteTest_DFP@0.2.0
+      path: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0
+  define:
+    - ARMCM3
+    - _RTE_
+  add-path:
+    - ../data/TestSolution/Instances/RTE/RteTest
+    - ../data/TestSolution/Instances/RTE/_Debug_RteTest_ARMCM3
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/ComponentLevel/Include
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM3/Include
+  output-dirs:
+    intdir: tmp/instances/RteTest_ARMCM3/Debug
+    outdir: out/instances/RteTest_ARMCM3/Debug
+    rtedir: ../data/TestSolution/Instances/RTE
+  output:
+    - type: elf
+      file: instances.axf
+  components:
+    - component: ARM::RteTest:ComponentLevel@0.0.1
+      instances: 2
+      from-pack: ARM::RteTest@0.1.0
+      selected-by: RteTest:ComponentLevel
+      files:
+        - file: ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/ComponentLevel/ComponentLevel.c
+          category: sourceC
+        - file: ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/ComponentLevel/ComponentLevel.h
+          category: preIncludeLocal
+          version: 0.0.1
+        - file: ../data/TestSolution/Instances/RTE/RteTest/ComponentLevelConfig_0.h
+          category: preIncludeLocal
+          attr: config
+          version: 0.0.1
+        - file: ../data/TestSolution/Instances/RTE/RteTest/ComponentLevelConfig_1.h
+          category: preIncludeLocal
+          attr: config
+          version: 0.0.1
+        - file: ../data/TestSolution/Instances/RTE/RteTest/MyDir/RelativeComponentLevelConfig_0.h
+          category: header
+          attr: config
+          version: 0.0.1
+        - file: ../data/TestSolution/Instances/RTE/RteTest/MyDir/RelativeComponentLevelConfig_1.h
+          category: header
+          attr: config
+          version: 0.0.1
+        - file: ../data/TestSolution/Instances/RTE/_Debug_RteTest_ARMCM3/Pre_Include_RteTest_ComponentLevel.h
+          category: preIncludeLocal
+  linker:
+    script: ../data/TestSolution/Instances/RTE/Device/RteTest_ARMCM3/ac6_linker_script.sct.src
+    regions: ../data/TestSolution/Instances/RTE/Device/RteTest_ARMCM3/regions_RteTest_ARMCM3.h
+  constructed-files:
+    - file: ../data/TestSolution/Instances/RTE/_Debug_RteTest_ARMCM3/RTE_Components.h
+      category: header
+  licenses:
+    - license: <proprietary> Proprietary Test License
+      license-agreement: ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/licenses/ProprietaryLicense.txt
+      packs:
+        - pack: ARM::RteTest@0.1.0
+      components:
+        - component: ARM::RteTest:ComponentLevel@0.0.1
+    - license: <unknown>
+      license-agreement: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Doc/license.txt
+      packs:
+        - pack: ARM::RteTest_DFP@0.2.0
