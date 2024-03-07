@@ -37,12 +37,12 @@ build:
         - file: ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/GlobalLevel/GlobalLevel.h
           category: preIncludeGlobal
           version: 0.0.2
-        - file: generated/RTE/RteTest/GlobalLevelConfig.h
-          category: preIncludeGlobal
-          attr: config
-          version: 0.0.2
         - file: generated/RTE/RteTest/Config/ConfigInclude.h
           category: header
+          attr: config
+          version: 0.0.2
+        - file: generated/RTE/RteTest/GlobalLevelConfig.h
+          category: preIncludeGlobal
           attr: config
           version: 0.0.2
     - component: ARM::RteTestGenerator:Check Global Generator@0.9.0

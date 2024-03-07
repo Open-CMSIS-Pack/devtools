@@ -362,6 +362,9 @@ void ProjMgrYamlCbuild::SetComponentsNode(YAML::Node node, const ContextItem* co
     const ComponentItem* componentItem = component.item;
     YAML::Node componentNode;
     SetNodeValue(componentNode[YAML_COMPONENT], componentId);
+    if (component.item->instances > 1) {
+      SetNodeValue(componentNode[YAML_INSTANCES], to_string(component.item->instances));
+    }
     SetNodeValue(componentNode[YAML_CONDITION], rteComponent->GetConditionID());
     SetNodeValue(componentNode[YAML_FROM_PACK], rteComponent->GetPackageID());
     SetNodeValue(componentNode[YAML_SELECTED_BY], componentItem->component);

@@ -233,6 +233,9 @@ void ProjMgrGenerator::GenerateCprjComponents(XMLTreeElement* element, const Con
           SetAttribute(componentElement, "gendir", fs::relative(context.cproject->directory + "/" + genDir, context.directories.cprj, ec).generic_string());
         }
       }
+      if (component.item->instances > 1) {
+        SetAttribute(componentElement, "instances", to_string(component.item->instances));
+      }
 
       // Check whether non-locked option is not set or component version is required from user
       if (!nonLocked || !RteUtils::GetSuffix(component.item->component, RteConstants::PREFIX_CVERSION_CHAR, true).empty()) {
@@ -243,14 +246,16 @@ void ProjMgrGenerator::GenerateCprjComponents(XMLTreeElement* element, const Con
         // Config files
         for (const auto& configFileMap : context.configFiles) {
           if (configFileMap.first == componentId) {
-            for (const auto& [configFileId, configFile] : configFileMap.second) {
-              XMLTreeElement* fileElement = componentElement->CreateElement("file");
-              if (fileElement) {
-                SetAttribute(fileElement, "attr", "config");
-                SetAttribute(fileElement, "name", configFileId);
-                SetAttribute(fileElement, "category", configFile->GetAttribute("category"));
-                const auto originalFile = configFile->GetFile(context.rteActiveTarget->GetName());
-                SetAttribute(fileElement, "version", originalFile->GetVersionString());
+            for (const auto& [_, configFile] : configFileMap.second) {
+              if (configFile->GetInstanceIndex() == 0) {
+                XMLTreeElement* fileElement = componentElement->CreateElement("file");
+                if (fileElement) {
+                  SetAttribute(fileElement, "attr", "config");
+                  SetAttribute(fileElement, "name", configFile->GetOriginalFileName());
+                  SetAttribute(fileElement, "category", configFile->GetAttribute("category"));
+                  const auto originalFile = configFile->GetFile(context.rteActiveTarget->GetName());
+                  SetAttribute(fileElement, "version", originalFile->GetVersionString());
+                }
               }
             }
           }

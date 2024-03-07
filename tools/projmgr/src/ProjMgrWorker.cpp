@@ -1668,6 +1668,14 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
       }
     }
 
+    // Component instances
+    if (item.instances > matchedComponentInstance->GetMaxInstances()) {
+      ProjMgrLogger::Error("component '" + item.component + "' does not accept more than " + to_string(matchedComponentInstance->GetMaxInstances()) + " instance(s)");
+      error = true;
+    } else if (item.instances > 1) {
+      matchedComponentInstance->AddAttribute("instances", to_string(item.instances));
+    }
+
     // Insert matched component into context list
     context.components.insert({ componentId, { matchedComponentInstance, &item, generatorId } });
     const auto& componentPackage = matchedComponent->GetPackage();
@@ -1871,19 +1879,11 @@ bool ProjMgrWorker::ProcessConfigFiles(ContextItem& context) {
     ProjMgrLogger::Error("missing RTE target");
     return false;
   }
-  const auto& components = context.rteActiveProject->GetComponentInstances();
-  if (!components.empty()) for (const auto& itc : components) {
-    RteComponentInstance* ci = itc.second;
-    if (!ci || !ci->IsUsedByTarget(context.rteActiveTarget->GetName())) {
-      continue;
-    }
-    map<string, RteFileInstance*> configFiles;
-    context.rteActiveProject->GetFileInstances(ci, context.rteActiveTarget->GetName(), configFiles);
-    if (!configFiles.empty()) {
-      const string& componentID = ci->GetComponentID(true);
-      for (auto fi : configFiles) {
-        context.configFiles[componentID].insert(fi);
-      }
+  map<string, RteFileInstance*> configFiles = context.rteActiveProject->GetFileInstances();
+  if (!configFiles.empty()) {
+    for (auto fi : configFiles) {
+      const string& componentID = fi.second->GetComponentID(true);
+      context.configFiles[componentID].insert(fi);
     }
   }
   // Linker script
