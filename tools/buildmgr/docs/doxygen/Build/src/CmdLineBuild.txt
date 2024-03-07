@@ -121,8 +121,7 @@ Download the following ZIP files:
   - <b>libxmlsec-1.2.18.win32.zip</b>
   - <b>zlib-1.2.5.win32.zip</b>
 
-Extract the \b /bin directory of each ZIP file to a directory, for example \b C:\\xmllint and add this directory to the Windows
-<a href="https://answers.microsoft.com/en-us/windows/forum/all/adding-path-variable/97300613-20cb-4d85-8d0e-cc9d3549ba23" target="_blank"><b>PATH</b></a> environment variable.
+Extract the \b /bin directory of each ZIP file to a directory, for example \b C:\\xmllint and add this directory to the Windows <b>PATH</b> environment variable.
 
 \note Restart the <b>Git Bash</b> after changing the <b>PATH</b> environment variable.
 \note When <b>xmllint</b> is not installed, the XML schema verification is skipped by the \ref cbuild "cbuild.sh" script.
