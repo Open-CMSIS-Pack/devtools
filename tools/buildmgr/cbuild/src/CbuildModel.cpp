@@ -562,7 +562,7 @@ bool CbuildModel::EvalConfigFiles() {
       continue;
 
     map<string, RteFileInstance*> compConfigFiles;
-    m_cprjProject->GetFileInstances(ci, m_targetName, compConfigFiles);
+    m_cprjProject->GetFileInstancesForComponent(ci, m_targetName, compConfigFiles);
     const string& layer = ci->GetAttribute("layer");
     if (!ci->IsGenerated()) m_layerPackages[layer].insert(ci->GetPackage()->GetID());
     const RteComponentInstance* api = ci->GetApiInstance();

@@ -340,7 +340,7 @@ RteFileInstance* RteProject::GetFileInstance(const string& id) const
   return NULL;
 }
 
-void RteProject::GetFileInstances(RteComponentInstance* ci, const string& targetName, map<string, RteFileInstance*>& configFiles) const
+void RteProject::GetFileInstancesForComponent(RteComponentInstance* ci, const string& targetName, map<string, RteFileInstance*>& configFiles) const
 {
   for (auto [id, fi] : m_files) {
     if (!fi->IsUsedByTarget(targetName))
