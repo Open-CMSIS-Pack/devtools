@@ -254,7 +254,7 @@ void RteCprjProject::ApplySelectedComponentsToCprjFile() {
 
 void RteCprjProject::ApplyComponentFilesToCprjFile(RteComponentInstance* ci, RteItem* cprjComponent) {
   map<string, RteFileInstance*> files;
-  GetFileInstances(ci, GetActiveTargetName(), files);
+  GetFileInstancesForComponent(ci, GetActiveTargetName(), files);
   for (auto [id, fi] : files) {
     if (fi->GetAttribute("attr") == "config") {
       RteItem* item = new RteItem(cprjComponent);

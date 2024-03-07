@@ -317,13 +317,12 @@ public:
   const std::map<std::string, RteFileInstance*>& GetFileInstances() const { return m_files; }
 
   /**
-   * @brief get collection of file paths mapped to associated RteFileInstance objects
-   * determined by target name and associated RteComponentInstance object
+   * @brief get collection of file instances for a given component instance and target
    * @param ci given RteComponentInstance object
    * @param targetName given target name
-   * @param configFiles collection of file paths mapped to associated RteFileInstance objects to fill
+   * @param configFiles collection to fill: the original file path to RteFileInstance (one entry per multi-instance component),
   */
-  void GetFileInstances(RteComponentInstance* ci, const std::string& targetName, std::map<std::string, RteFileInstance*>& configFiles) const;
+  void GetFileInstancesForComponent(RteComponentInstance* ci, const std::string& targetName, std::map<std::string, RteFileInstance*>& configFiles) const;
 
   /**
    * @brief get RteComponentInstanceGroup object
