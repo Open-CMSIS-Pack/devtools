@@ -88,8 +88,26 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Version) {
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_Packs_Required_Warning) {
   StdStreamRedirect streamRedirect;
+  const vector<string> warnings = {
+    "pack 'ARM::RteTest_DFP@0.1.1:0.2.0' required by pack 'ARM::RteTest@0.1.0' is not specified",
+    "pack 'ARM::RteTestRequiredRecursive@1.0.0:2.0.0' required by pack 'ARM::RteTestRequired@1.0.0' is not specified",
+    "pack 'ARM::RteTest_DFP@0.1.1:0.2.0' required by pack 'ARM::RteTestRequired@1.0.0' is not specified"
+  };
+
   const string csolution = testinput_folder + "/TestSolution/test_pack_requirements.csolution.yml";
   char* argv[9];
+
+  //  list packs
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"packs";
+  argv[3] = (char*)"--solution";
+  argv[4] = (char*)csolution.c_str();
+  EXPECT_EQ(0, RunProjMgr(5, argv, 0));
+
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_TRUE(errStr.find(warnings[1]) != string::npos);
+
+// convert
   argv[1] = (char*)"convert";
   argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
@@ -97,28 +115,20 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Packs_Required_Warning) {
   argv[5] = (char*)testoutput_folder.c_str();
   argv[6] = (char*)"-c";
   argv[7] = (char*)"test1.Debug+CM0";
-  EXPECT_EQ(1, RunProjMgr(8, argv, 0)); //fails because DFP is not loaded
-
-  auto errStr = streamRedirect.GetErrorString();
-
-  auto pos = errStr.find("required pack 'ARM::RteTestRequiredRecursive@1.0.0:2.0.0' is not loaded");
-  EXPECT_TRUE(pos != string::npos);
-  pos = errStr.find("required pack 'ARM::RteTest_DFP@0.1.1:0.2.0' is not loaded");
-  EXPECT_TRUE(pos != string::npos);
-  pos = errStr.find("required pack 'ARM::RteTest@0.1.0:0.2.0' is not loaded");
-  EXPECT_FALSE(pos != string::npos);
+  EXPECT_EQ(1, RunProjMgr(8, argv, 0)); //fails because DFP is not loaded => pack warnings
+  errStr = streamRedirect.GetErrorString();
+  // pack warnings are printed
+  for(auto& w : warnings) {
+    EXPECT_TRUE(errStr.find(w) != string::npos);
+  }
 
   streamRedirect.ClearStringStreams();
   argv[7] = (char*)"test1.Release+CM0";
-  EXPECT_EQ(0, RunProjMgr(8, argv, 0)); // succeeds regardless of warnings
-
+  EXPECT_EQ(0, RunProjMgr(8, argv, 0)); // succeeds regardless missing pack requirement  => no pack warnings
   errStr = streamRedirect.GetErrorString();
-  pos = errStr.find("required pack 'ARM::RteTest@0.1.0:0.2.0' is not loaded");
-  EXPECT_TRUE(pos != string::npos);
-  pos = errStr.find("required pack 'ARM::RteTestRequiredRecursive@1.0.0:2.0.0' is not loaded");
-  EXPECT_TRUE(pos != string::npos);
-  pos = errStr.find("required pack 'ARM::RteTest_DFP@0.1.1:0.2.0' is not loaded");
-  EXPECT_FALSE(pos != string::npos);
+  for(auto& w : warnings) {
+    EXPECT_FALSE(errStr.find(w) != string::npos);
+  }
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks) {

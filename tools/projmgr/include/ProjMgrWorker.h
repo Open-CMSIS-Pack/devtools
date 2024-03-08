@@ -639,6 +639,7 @@ protected:
   bool m_relativePaths;
 
   bool LoadPacks(ContextItem& context);
+  bool CheckMissingPackRequirements(const std::string& contextName);
   bool CollectRequiredPdscFiles(ContextItem& context, const std::string& packRoot);
   bool CheckRteErrors(void);
   bool CheckBoardDeviceInLayer(const ContextItem& context, const ClayerItem& clayer);

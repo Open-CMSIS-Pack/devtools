@@ -425,22 +425,33 @@ bool ProjMgrWorker::LoadPacks(ContextItem& context) {
   filter.SetSelectedPackages(selectedPacks);
   context.rteActiveTarget->SetPackageFilter(filter);
   context.rteActiveTarget->UpdateFilterModel();
+  return CheckRteErrors();
+}
 
-  RtePackageMap allRequiredPacks;
+bool ProjMgrWorker::CheckMissingPackRequirements(const std::string& contextName)
+{
+  bool bRequiredPacksLoaded = true;
   // check if all pack requirements are fulfilled
-  for (auto pack : m_loadedPacks) {
+  for(auto pack : m_loadedPacks) {
+    RtePackageMap allRequiredPacks;
     pack->GetRequiredPacks(allRequiredPacks, m_model);
-  }
-  for (auto [id, pack] : allRequiredPacks) {
-    if (!pack) {
-      string msg("context '");
-      msg += context.name;
-      msg += "': required pack '";
-      msg += id + "' is not loaded";
-      ProjMgrLogger::Warn(msg);
+    for(auto [id, p] : allRequiredPacks) {
+      if(!p) {
+        bRequiredPacksLoaded = false;
+        string msg;
+        if(!contextName.empty()) {
+          msg += "context '";
+          msg += contextName;
+          msg += "': ";
+        }
+        msg += "pack '";
+        msg += id + "' required by pack '";
+        msg += pack->GetID() + "' is not specified";
+        ProjMgrLogger::Warn(msg);
+      }
     }
   }
-  return CheckRteErrors();
+  return bRequiredPacksLoaded;
 }
 
 std::vector<PackageItem> ProjMgrWorker::GetFilteredPacks(const PackageItem& packItem, const string& rtePath) const
@@ -3120,6 +3131,7 @@ bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGenFiles, bool
     return false;
   }
   if (!ProcessDevice(context)) {
+    CheckMissingPackRequirements(context.name);
     return false;
   }
   if (!SetTargetAttributes(context, context.targetAttributes)) {
@@ -3134,11 +3146,13 @@ bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGenFiles, bool
   }
   ret &= ProcessConfigFiles(context);
   ret &= ProcessComponentFiles(context);
+  bool bUnresolvedDependencies = false;
   if (resolveDependencies) {
     // TODO: Add uniquely identified missing dependencies to RTE Model
 
     // Get dependency validation results
     if (!ValidateContext(context)) {
+      bUnresolvedDependencies = true;
       string msg = "dependency validation for context '" + context.name + "' failed:";
       set<string> results;
       FormatValidationResults(results, context);
@@ -3151,6 +3165,9 @@ bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGenFiles, bool
         ProjMgrLogger::Warn(msg);
       }
     }
+  }
+  if(!ret || bUnresolvedDependencies) {
+    CheckMissingPackRequirements(context.name);
   }
   return ret;
 }
@@ -3213,6 +3230,10 @@ bool ProjMgrWorker::ListPacks(vector<string>&packs, bool bListMissingPacksOnly, 
       m_kernel->LoadAndInsertPacks(m_loadedPacks, pdscFiles);
       for (const auto& pack : m_loadedPacks) {
         packsMap[pack->GetID()] = pack->GetPackageFileName();
+      }
+      if(m_loadPacksPolicy == LoadPacksPolicy::REQUIRED || m_loadPacksPolicy == LoadPacksPolicy::DEFAULT) {
+        // check if additional dependencies must be added
+        CheckMissingPackRequirements(RteUtils::EMPTY_STRING);
       }
     }
 
