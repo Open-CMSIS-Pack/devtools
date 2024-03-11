@@ -2044,22 +2044,24 @@ bool RteProject::Validate()
   target->ClearMissingPacks();
 
   // check if all required gpdsc files are available
-  for (auto itg = m_gpdscInfos.begin(); itg != m_gpdscInfos.end(); ++itg) {
-    RteGpdscInfo* gi = itg->second;
+  for (auto [_, gi] : m_gpdscInfos) {
     if (gi->GetGpdscPack()) {
       continue; // loaded
     }
+
     bValid = false;
-    string fileName = gi->GetAbsolutePath();
+    const string& generatorID = gi->GetGeneratorName();
+    const string fileName = gi->GetAbsolutePath();
     error_code ec;
+    const string msgBody = "Required input file from generator " + generatorID + ": '" + fileName + "'";
     if (!fs::exists(fileName, ec)) {
-      string msg = "Error #545: Required gpdsc file '";
-      msg += fileName;
-      msg += "' is missing";
+      string msg = "Error #545: ";
+      msg += msgBody;
+      msg += " is missing";
       m_errors.push_back(msg);
     } else {
-      string msg = "Error #546: Required gpdsc file '";
-      msg += fileName;
+      string msg = "Error #546: ";
+      msg += msgBody;
       msg += "' is not loaded, errors by load";
       m_errors.push_back(msg);
     }
