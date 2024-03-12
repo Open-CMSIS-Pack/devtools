@@ -1,0 +1,94 @@
+build:
+  generated-by: csolution version 0.0.0+g32c58528
+  solution: ../data/TestGenerator/test-gpdsc-project-files.csolution.yml
+  project: ../data/TestGenerator/test-gpdsc-project-files.cproject.yml
+  context: test-gpdsc-project-files.Debug+CM0
+  compiler: AC6
+  device: RteTestGen_ARMCM0
+  device-pack: ARM::RteTestGenerator@0.1.0
+  processor:
+    core: Cortex-M0
+  packs:
+    - pack: ARM::RteTestGenerator@0.1.0
+      path: ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0
+    - pack: ARM::RteTest_DFP@0.2.0
+      path: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0
+  define:
+    - _RTE_
+  add-path:
+    - ../data/TestGenerator/RTE/_Debug_CM0
+  output-dirs:
+    intdir: tmp/test-gpdsc-project-files/CM0/Debug
+    outdir: out/test-gpdsc-project-files/CM0/Debug
+    rtedir: ../data/TestGenerator/RTE
+  output:
+    - type: elf
+      file: test-gpdsc-project-files.axf
+  components:
+    - component: ARM::Device:RteTest Generated Component:RteTest@1.1.0
+      condition: RteDevice
+      from-pack: ARM::RteTestGenerator@0.1.0
+      selected-by: Device:RteTest Generated Component:RteTest
+      generator:
+        id: RteTestGeneratorIdentifier
+        from-pack: ARM::RteTestGenerator@0.1.0
+    - component: ARM::RteTest:CORE@0.1.1
+      condition: Cortex-M Device
+      from-pack: ARM::RteTest_DFP@0.2.0
+      selected-by: RteTest:CORE
+  generators:
+    - generator: RteTestGeneratorIdentifier
+      from-pack: ARM::RteTestGenerator@0.1.0
+      path: ../data/TestGenerator/GpdscWithProjectFiles/RteTestGeneratorIdentifier
+      gpdsc: ../data/TestGenerator/GpdscWithProjectFiles/RteTestGeneratorIdentifier/RteTestGen_ARMCM0/RteTest.gpdsc
+      command:
+        win:
+          file: ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0/Generator with spaces/script.bat
+          arguments:
+            - RteTestGen_ARMCM0
+            - ../../test-gpdsc-project-files.Debug+CM0.cprj
+            - ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0
+            - ../../../../output/tmp/test-gpdsc-project-files/CM0/Debug/test-gpdsc-project-files.Debug+CM0.cbuild-gen.yml
+            - /foo=bar
+        linux:
+          file: ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0/Generator with spaces/script.sh
+          arguments:
+            - RteTestGen_ARMCM0
+            - ../../test-gpdsc-project-files.Debug+CM0.cprj
+            - ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0
+            - ../../../../output/tmp/test-gpdsc-project-files/CM0/Debug/test-gpdsc-project-files.Debug+CM0.cbuild-gen.yml
+            - --foo=bar
+        mac:
+          file: ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0/Generator with spaces/script.sh
+          arguments:
+            - RteTestGen_ARMCM0
+            - ../../test-gpdsc-project-files.Debug+CM0.cprj
+            - ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0
+            - ../../../../output/tmp/test-gpdsc-project-files/CM0/Debug/test-gpdsc-project-files.Debug+CM0.cbuild-gen.yml
+            - --foo=bar
+  linker:
+    script: ../data/TestGenerator/RTE/Device/RteTestGen_ARMCM0/ac6_linker_script.sct.src
+    regions: ../data/TestGenerator/RTE/Device/RteTestGen_ARMCM0/regions_RteTestGen_ARMCM0.h
+  groups:
+    - group: RteTestGeneratorIdentifier Common Sources
+      files:
+        - file: ../data/TestGenerator/GpdscWithProjectFiles/RteTestGeneratorIdentifier/RteTestGen_ARMCM0/Src/main.c
+          category: source
+        - file: ../data/TestGenerator/GpdscWithProjectFiles/RteTestGeneratorIdentifier/RteTestGen_ARMCM0/Inc/device.h
+          category: header
+  constructed-files:
+    - file: ../data/TestGenerator/RTE/_Debug_CM0/RTE_Components.h
+      category: header
+  licenses:
+    - license: <unknown>
+      packs:
+        - pack: ARM::RteTestGenerator@0.1.0
+      components:
+        - component: ARM::Device:RteTest Generated Component:RteTest@1.1.0
+    - license: <unknown>
+      license-agreement: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Doc/license.txt
+      packs:
+        - pack: ARM::RteTest_DFP@0.2.0
+      components:
+        - component: ::RteTest:CORE(API)
+        - component: ARM::RteTest:CORE@0.1.1
