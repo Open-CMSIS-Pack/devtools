@@ -394,7 +394,7 @@ void ProjMgrYamlCbuild::SetComponentsNode(YAML::Node node, const ContextItem* co
 
 void ProjMgrYamlCbuild::SetComponentFilesNode(YAML::Node node, const ContextItem* context, const string& componentId) {
   if (context->componentFiles.find(componentId) != context->componentFiles.end()) {
-    for (const auto& [file, attr, category, language, scope, version] : context->componentFiles.at(componentId)) {
+    for (const auto& [file, attr, category, language, scope, version, select] : context->componentFiles.at(componentId)) {
       YAML::Node fileNode;
       SetNodeValue(fileNode[YAML_FILE], FormatPath(file, context->directories.cbuild));
       SetNodeValue(fileNode[YAML_CATEGORY], category);
@@ -402,6 +402,7 @@ void ProjMgrYamlCbuild::SetComponentFilesNode(YAML::Node node, const ContextItem
       SetNodeValue(fileNode[YAML_LANGUAGE], language);
       SetNodeValue(fileNode[YAML_SCOPE], scope);
       SetNodeValue(fileNode[YAML_VERSION], version);
+      SetNodeValue(fileNode[YAML_SELECT], select);
       node.push_back(fileNode);
     }
   }
@@ -410,7 +411,7 @@ void ProjMgrYamlCbuild::SetComponentFilesNode(YAML::Node node, const ContextItem
 void ProjMgrYamlCbuild::SetGeneratorFiles(YAML::Node node, const ContextItem* context, const string& componentId) {
   if (context->generatorInputFiles.find(componentId) != context->generatorInputFiles.end()) {
     YAML::Node filesNode;
-    for (const auto& [file, attr, category, language, scope, version] : context->generatorInputFiles.at(componentId)) {
+    for (const auto& [file, attr, category, language, scope, version, select] : context->generatorInputFiles.at(componentId)) {
       YAML::Node fileNode;
       SetNodeValue(fileNode[YAML_FILE], FormatPath(file, context->directories.cbuild));
       SetNodeValue(fileNode[YAML_CATEGORY], category);
@@ -418,6 +419,7 @@ void ProjMgrYamlCbuild::SetGeneratorFiles(YAML::Node node, const ContextItem* co
       SetNodeValue(fileNode[YAML_LANGUAGE], language);
       SetNodeValue(fileNode[YAML_SCOPE], scope);
       SetNodeValue(fileNode[YAML_VERSION], version);
+      SetNodeValue(fileNode[YAML_SELECT], select);
       filesNode.push_back(fileNode);
     }
     node[YAML_FILES] = filesNode;

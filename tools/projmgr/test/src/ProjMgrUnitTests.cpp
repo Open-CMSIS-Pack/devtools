@@ -5249,3 +5249,20 @@ TEST_F(ProjMgrUnitTests, ComponentInstances) {
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_NE(string::npos, errStr.find("error csolution: component 'Device:Startup' does not accept more than 1 instance(s)"));
 }
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_Cbuild_Template_API_Node) {
+  char* argv[6];
+  StdStreamRedirect streamRedirect;
+  const string& csolutionFile = testinput_folder + "/TestSolution/TemplateAndApi/template_api.csolution.yml";
+
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolutionFile.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+
+  // Check generated cbuild yml files
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/template_api.Debug+RteTest_ARMCM3.cbuild.yml",
+    testinput_folder + "/TestSolution/TemplateAndApi/ref/template_api.Debug+RteTest_ARMCM3.cbuild.yml");
+}

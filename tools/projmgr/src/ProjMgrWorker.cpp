@@ -2000,17 +2000,32 @@ bool ProjMgrWorker::ProcessComponentFiles(ContextItem& context) {
         component.item->build.addpaths.push_back(RteFsUtils::RelativePath(include, context.directories.cprj));
       }
     }
-    // hidden files and pre-include files from packs
+
+    // component based API files
+    const auto& api = rteComponent->GetApi(context.rteActiveTarget, true);
+    if (api) {
+      const auto& apiFiles = api->GetFileContainer() ? api->GetFileContainer()->GetChildren() : Collection<RteItem*>();
+      for (const auto& apiFile : apiFiles) {
+        const auto& name = api->GetPackage()->GetAbsolutePackagePath() + apiFile->GetAttribute("name");
+        const auto& category = apiFile->GetAttribute("category");
+        if (category == "header") {
+          context.componentFiles[componentId].push_back({ name, "", "api" });
+        }
+      }
+    }
+
+    // hidden files, pre-include and template files from packs
     for (const auto& componentFile : files) {
       const auto& name = rteComponent->GetPackage()->GetAbsolutePackagePath() + componentFile->GetAttribute("name");
       const auto& category = componentFile->GetAttribute("category");
       const auto& attr = componentFile->GetAttribute("attr");
       const auto& scope = componentFile->GetAttribute("scope");
       const auto& language = componentFile->GetAttribute("language");
+      const auto& select = componentFile->GetAttribute("select");
       const auto& version = componentFile->GetVersionString();
-      if ((scope == "hidden") ||
+      if ((scope == "hidden") || (attr == "template") || (category == "header" && (!select.empty())) ||
         ((((category == "preIncludeGlobal") || (category == "preIncludeLocal")) && attr.empty()) && (IsPreIncludeByTarget(context.rteActiveTarget, name)))){
-        context.componentFiles[componentId].push_back({ name, attr, category, language, scope, version });
+        context.componentFiles[componentId].push_back({ name, attr, category, language, scope, version, select });
       }
     }
     // config files

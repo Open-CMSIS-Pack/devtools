@@ -136,6 +136,7 @@ static constexpr const char* YAML_RUN = "run";
 static constexpr const char* YAML_SCOPE = "scope";
 static constexpr const char* YAML_SCRIPT = "script";
 static constexpr const char* YAML_SOLUTION = "solution";
+static constexpr const char* YAML_SELECT = "select";
 static constexpr const char* YAML_SELECTED_BY = "selected-by";
 static constexpr const char* YAML_SELECTED_BY_PACK = "selected-by-pack";
 static constexpr const char* YAML_SETUPS = "setups";
