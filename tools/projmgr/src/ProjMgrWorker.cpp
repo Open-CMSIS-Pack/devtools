@@ -2148,15 +2148,16 @@ bool ProjMgrWorker::ProcessGpdsc(ContextItem& context) {
     }
     bool validGpdsc;
     RtePackage* gpdscPack = ProjMgrUtils::ReadGpdscFile(gpdscFile, validGpdsc);
+    const auto& contextGpdsc = context.gpdscs.at(gpdscFile);
     if (!gpdscPack) {
-      ProjMgrLogger::Error(gpdscFile, "context '" + context.name + "' generator '" + context.gpdscs.at(gpdscFile).generator +
-        "' from component '" + context.gpdscs.at(gpdscFile).component + "': reading gpdsc failed");
+      ProjMgrLogger::Error(gpdscFile, "context '" + context.name + "' generator '" + contextGpdsc.generator +
+        "' from component '" + contextGpdsc.component + "': reading gpdsc failed");
       CheckRteErrors();
       return false;
     } else {
       if (!validGpdsc) {
-        ProjMgrLogger::Warn(gpdscFile, "context '" + context.name + "' generator '" + context.gpdscs.at(gpdscFile).generator +
-          "' from component '" + context.gpdscs.at(gpdscFile).component + "': gpdsc validation failed");
+        ProjMgrLogger::Warn(gpdscFile, "context '" + context.name + "' generator '" + contextGpdsc.generator +
+          "' from component '" + contextGpdsc.component + "': gpdsc validation failed");
       }
       info->SetGpdscPack(gpdscPack);
     }
@@ -2177,6 +2178,24 @@ bool ProjMgrWorker::ProcessGpdsc(ContextItem& context) {
           componentInstance->InitInstance(component);
           context.components.insert({ componentId, { componentInstance, item, component->GetGeneratorName()} });
         }
+      }
+    }
+    // gpdsc <project_files> section
+    const RteFileContainer* genFiles = info->GetProjectFiles();
+    if (genFiles) {
+      GroupNode group;
+      for (auto file : genFiles->GetChildren()) {
+        if (file->GetTag() == "file") {
+          FileNode fileNode;
+          string filename = file->GetOriginalAbsolutePath();
+          fileNode.file = RteFsUtils::RelativePath(filename, context.directories.cprj);
+          fileNode.category = file->GetAttribute("category");
+          group.files.push_back(fileNode);
+        }
+      }
+      if (!group.files.empty()) {
+        group.group = contextGpdsc.generator + " Common Sources";
+        context.groups.push_back(group);
       }
     }
   }

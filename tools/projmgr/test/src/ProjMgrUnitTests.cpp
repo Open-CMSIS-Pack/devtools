@@ -5167,6 +5167,21 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_GpdscWithoutComponents) {
   EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 }
 
+TEST_F(ProjMgrUnitTests, RunProjMgr_GpdscWithProjectFiles) {
+  char* argv[7];
+  const string& csolution = testinput_folder + "/TestGenerator/test-gpdsc-project-files.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+
+  // Check generated cbuild YML
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/test-gpdsc-project-files.Debug+CM0.cbuild.yml",
+    testinput_folder + "/TestGenerator/ref/test-gpdsc-project-files.Debug+CM0.cbuild.yml");
+}
+
 TEST_F(ProjMgrUnitTests, RunProjMgr_ValidateContextSpecificPacksMissing) {
   char* argv[4];
   StdStreamRedirect streamRedirect;

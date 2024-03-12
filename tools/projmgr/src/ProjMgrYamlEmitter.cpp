@@ -499,7 +499,7 @@ void ProjMgrYamlCbuild::SetFilesNode(YAML::Node node, const ContextItem* context
   for (const auto& file : files) {
     YAML::Node fileNode;
     SetNodeValue(fileNode[YAML_FILE], file.file);
-    SetNodeValue(fileNode[YAML_CATEGORY], RteFsUtils::FileCategoryFromExtension(file.file));
+    SetNodeValue(fileNode[YAML_CATEGORY], file.category.empty() ? RteFsUtils::FileCategoryFromExtension(file.file) : file.category);
     SetControlsNode(fileNode, context, file.build);
     node.push_back(fileNode);
   }
