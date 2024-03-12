@@ -12,6 +12,7 @@ on:
       - 'libs/**'
       - '!**/docs/**/*'
       - '!**/*.md'
+      - 'test/**'
   pull_request:
     paths:
       - '.github/workflows/test_libs.yml'
@@ -19,6 +20,7 @@ on:
       - 'libs/**'
       - '!**/docs/**/*'
       - '!**/*.md'
+      - 'test/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

@@ -34,7 +34,6 @@
     </packages>
   </requirements>
 
-
   <conditions>
     <condition id="CM4">
       <description>Conditional dependency, only for Cortex-M4 devices</description>
@@ -113,6 +112,12 @@
       <description>RteTest Non-Exclusive API 2.0.0</description>
       <files>
         <file category="header" name="API2/NonExclusive.h"/>
+      </files>
+    </api>
+    <api Cclass="RteTest" Cgroup="TemplateFile" Capiversion="1.0.0" exclusive="1" licenseSet="TestPropLicense">
+      <description>RteTest Test API 2.0.0</description>
+      <files>
+        <file category="header" name="API/IConfig.h"/>
       </files>
     </api>
   </apis>
@@ -374,6 +379,14 @@
       <files>
         <file category="sourceC" name="Dummy/dummy.c"/>
         <file category="sourceC" name="Dummy/Subfolder/dummy.c"/>
+      </files>
+    </component>
+    <component Cclass="RteTest" Cgroup="TemplateFile" Capiversion="1.0.0" Cversion="0.9.9">
+      <description>Component having source files with the same filename</description>
+      <files>
+        <file category="sourceC" name="Dummy/dummy.c"/>
+        <file category="header" name="Include/Config/ConfigInclude.h" select="config include file"/>
+        <file category="header" attr="template" name="Template/template.h" select="dummy template file"/>
       </files>
     </component>
   </components>

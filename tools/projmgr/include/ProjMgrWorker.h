@@ -149,6 +149,7 @@ struct SelectedComponentItem {
  *        file language
  *        file scope
  *        file version
+ *        file select
 */
 struct ComponentFileItem {
   std::string name;
@@ -157,6 +158,7 @@ struct ComponentFileItem {
   std::string language;
   std::string scope;
   std::string version;
+  std::string select;
 };
 
 /**

@@ -1,0 +1,76 @@
+build:
+  generated-by: csolution version 0.0.0
+  solution: ../data/TestSolution/TemplateAndApi/template_api.csolution.yml
+  project: ../data/TestSolution/TemplateAndApi/template_api.cproject.yml
+  context: template_api.Debug+RteTest_ARMCM3
+  compiler: AC6
+  device: RteTest_ARMCM3
+  device-pack: ARM::RteTest_DFP@0.2.0
+  processor:
+    fpu: off
+    core: Cortex-M3
+  packs:
+    - pack: ARM::RteTest@0.1.0
+      path: ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0
+    - pack: ARM::RteTest_DFP@0.2.0
+      path: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0
+  define:
+    - ARMCM3
+    - _RTE_
+  add-path:
+    - ../data/TestSolution/TemplateAndApi/RTE/_Debug_RteTest_ARMCM3
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/API
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/Include/Config
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM3/Include
+  output-dirs:
+    intdir: tmp/template_api/RteTest_ARMCM3/Debug
+    outdir: out/template_api/RteTest_ARMCM3/Debug
+    rtedir: ../data/TestSolution/TemplateAndApi/RTE
+  output:
+    - type: elf
+      file: template_api.axf
+  components:
+    - component: ARM::RteTest:TemplateFile@0.9.9
+      from-pack: ARM::RteTest@0.1.0
+      selected-by: RteTest:TemplateFile
+      files:
+        - file: ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/Dummy/dummy.c
+          category: sourceC
+        - file: ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/API/IConfig.h
+          category: api
+        - file: ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/Include/Config/ConfigInclude.h
+          category: header
+          version: 0.9.9
+          select: config include file
+        - file: ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/Template/template.h
+          category: header
+          attr: template
+          version: 0.9.9
+          select: dummy template file
+  linker:
+    script: ../data/TestSolution/TemplateAndApi/RTE/Device/RteTest_ARMCM3/ac6_linker_script.sct.src
+    regions: ../data/TestSolution/TemplateAndApi/RTE/Device/RteTest_ARMCM3/regions_RteTest_ARMCM3.h
+  constructed-files:
+    - file: ../data/TestSolution/TemplateAndApi/RTE/_Debug_RteTest_ARMCM3/RTE_Components.h
+      category: header
+  licenses:
+    - license: <proprietary> Proprietary Test License
+      license-agreement: ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/licenses/ProprietaryLicense.txt
+      packs:
+        - pack: ARM::RteTest@0.1.0
+      components:
+        - component: ::RteTest:TemplateFile(API)
+    - license: <unknown>
+      license-agreement: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Doc/license.txt
+      packs:
+        - pack: ARM::RteTest_DFP@0.2.0
+    - license: BSD-3-Clause
+      packs:
+        - pack: ARM::RteTest@0.1.0
+      components:
+        - component: ARM::RteTest:TemplateFile@0.9.9
+    - license: MIT
+      packs:
+        - pack: ARM::RteTest@0.1.0
+      components:
+        - component: ARM::RteTest:TemplateFile@0.9.9
