@@ -403,6 +403,40 @@ void ProjMgrYamlCbuild::SetComponentFilesNode(YAML::Node node, const ContextItem
       SetNodeValue(fileNode[YAML_SCOPE], scope);
       SetNodeValue(fileNode[YAML_VERSION], version);
       SetNodeValue(fileNode[YAML_SELECT], select);
+      if (attr == "config") {
+        string directory = RteUtils::ExtractFilePath(file, false);
+        string name = RteUtils::ExtractFileName(file);
+
+        // lambda to get backup file with specified file filter
+        auto GetBackupFile = [&](const string& fileFilter) {
+          list<string> backupFiles;
+          RteFsUtils::GrepFileNames(backupFiles, directory, fileFilter + "@*");
+
+          // Return empty string if no backup files found
+          if (backupFiles.size() == 0) {
+            return RteUtils::EMPTY_STRING;
+          }
+
+          // Warn if multiple backup files are found
+          //This is a safeguard. however, this condition should never be triggered
+          if (backupFiles.size() > 1){
+            ProjMgrLogger::Warn(
+              "Multiple \'"+ fileFilter + "\' files detected within the \'" + directory + "\' directory.");
+          }
+
+          return FormatPath(backupFiles.front().c_str(), context->directories.cbuild);
+        };
+
+        // Get base and update backup files
+        string baseFile = GetBackupFile(name + '.' + RteUtils::BASE_STRING);
+        string updateFile = GetBackupFile(name + '.' + RteUtils::UPDATE_STRING);
+
+        // Add nodes if both base and update files exist
+        if (!baseFile.empty() && !updateFile.empty()) {
+          SetNodeValue(fileNode[YAML_BASE], baseFile);
+          SetNodeValue(fileNode[YAML_UPDATE], updateFile);
+        }
+      }
       node.push_back(fileNode);
     }
   }

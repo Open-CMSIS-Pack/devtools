@@ -5281,3 +5281,20 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Cbuild_Template_API_Node) {
   ProjMgrTestEnv::CompareFile(testoutput_folder + "/template_api.Debug+RteTest_ARMCM3.cbuild.yml",
     testinput_folder + "/TestSolution/TemplateAndApi/ref/template_api.Debug+RteTest_ARMCM3.cbuild.yml");
 }
+
+TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Config_Base_Update_File) {
+  char* argv[7];
+  StdStreamRedirect streamRedirect;
+
+  const string& csolution = testinput_folder + "/TestSolution/TestBaseUpdate/test.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+
+  EXPECT_FALSE(regex_match(streamRedirect.GetOutString(), regex("Multiple(.*)files detected(.*)")));
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/project.Debug+CM0.cbuild.yml",
+    testinput_folder + "/TestSolution/TestBaseUpdate/ref/project.Debug+CM0.cbuild.yml");
+}

@@ -473,6 +473,15 @@ bool ProjMgr::PopulateContexts(void) {
 }
 
 bool ProjMgr::GenerateYMLConfigurationFiles() {
+  // Generate cbuild pack file
+  const bool isUsingContexts = m_contextSet || m_context.size() != 0;
+  if (!m_emitter.GenerateCbuildPack(m_parser, m_processedContexts, isUsingContexts, m_frozenPacks)) {
+    return false;
+  }
+
+  // Update the RTE files
+  updateRte();
+
   // Generate cbuild index file
   if (!m_allContexts.empty()) {
     if (!m_emitter.GenerateCbuildIndex(m_parser, m_allContexts, m_outputDir)) {
@@ -505,14 +514,6 @@ bool ProjMgr::GenerateYMLConfigurationFiles() {
     }
   }
 
-  // Generate cbuild pack file
-  const bool isUsingContexts = m_contextSet || m_context.size() != 0;
-  if (!m_emitter.GenerateCbuildPack(m_parser, m_processedContexts, isUsingContexts, m_frozenPacks)) {
-    return false;
-  }
-
-  // Update the RTE files
-  updateRte();
   return true;
 }
 
