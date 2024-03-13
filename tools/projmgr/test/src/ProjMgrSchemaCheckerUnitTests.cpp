@@ -292,3 +292,10 @@ TEST_F(ProjMgrSchemaCheckerUnitTests, SchemaCheck_Output_Type) {
     EXPECT_TRUE(errList.end() != errItr);
   }
 }
+
+TEST_F(ProjMgrSchemaCheckerUnitTests, SchemaCheck_ConfigFile_Base_Update) {
+  const string& filename = testinput_folder + "/TestSolution/TestBaseUpdate/ref/project.Debug+CM0.cbuild.yml";
+
+  EXPECT_TRUE(Validate(filename));
+  EXPECT_TRUE(GetErrors().empty());
+}

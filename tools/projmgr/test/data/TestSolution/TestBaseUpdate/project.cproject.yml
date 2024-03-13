@@ -1,0 +1,12 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schemas/cproject.schema.json
+
+project:
+  description: Project
+  compiler: AC6
+  components:
+    - component: Startup
+    - component: RteTest:CORE
+  groups:
+    - group: Sources
+      files: 
+        - file: main.c

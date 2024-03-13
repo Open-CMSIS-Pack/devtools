@@ -576,7 +576,9 @@
         "add-path":        { "$ref": "#/definitions/AddpathsType" },
         "del-path":        { "$ref": "#/definitions/DelpathsType" },
         "misc":            { "$ref": "#/definitions/MiscTypes" },
-        "select":          { "type": "string", "description": "Description and purpose of the file" }
+        "select":          { "type": "string", "description": "Description and purpose of the file" },
+        "base":            { "type": "string", "description": "Current configuration file with version" },
+        "update":          { "type": "string", "description": "New configuration file used for merge utility" }
       },
       "allOf": [
         { "$ref": "#/definitions/TypeListMutualExclusion" },
