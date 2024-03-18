@@ -71,16 +71,21 @@ bool ProjMgrGenerator::GenerateCprj(ContextItem& context, const string& filename
   // Components
   if (componentsElement) {
     GenerateCprjComponents(componentsElement, context, nonLocked);
+
+    // Remove empty components element
+    if (!componentsElement->HasChildren()) {
+      rootElement->RemoveChild("components", true);
+    }
   }
 
   // Files
   if (filesElement) {
     GenerateCprjGroups(filesElement, context.groups, context.toolchain.name);
-  }
 
-  // Remove empty files element
-  if (!filesElement->HasChildren()) {
-    rootElement->RemoveChild("files", true);
+    // Remove empty files element
+    if (!filesElement->HasChildren()) {
+      rootElement->RemoveChild("files", true);
+    }
   }
 
   // Save CPRJ
@@ -351,6 +356,9 @@ void ProjMgrGenerator::GenerateCprjLinkerOptions(XMLTreeElement* element, const 
 
 void ProjMgrGenerator::GenerateCprjGroups(XMLTreeElement* element, const vector<GroupNode>& groups, const string& compiler) {
   for (const auto& groupNode : groups) {
+    if (groupNode.files.empty() && groupNode.groups.empty()) {
+      continue;
+    }
     XMLTreeElement* groupElement = element->CreateElement("group");
     if (groupElement) {
       if (!groupNode.group.empty()) {
