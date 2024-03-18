@@ -399,6 +399,14 @@ bool ProjMgrWorker::LoadAllRelevantPacks() {
     m_model->AcceptVisitor(&visitor);
     return CheckRteErrors();
   }
+  // Check loaded pack versions metadata
+  for (const auto& loadedPack : m_loadedPacks) {
+    const auto& loadedPackID = loadedPack->GetPackageID(true);
+    if (m_packMetadata.find(loadedPackID) != m_packMetadata.end()) {
+      ProjMgrLogger::Warn("loaded pack '" + loadedPack->GetPackageID(false) + loadedPack->GetVersionString() +
+      "' does not match specified metadata '" + m_packMetadata.at(loadedPackID) + "'");
+    }
+  }
   return true;
 }
 
@@ -1494,6 +1502,11 @@ bool ProjMgrWorker::AddPackRequirements(ContextItem& context, const vector<PackI
   // Process packages
   for (const auto& packageEntry : packages) {
     if (packageEntry.path.empty()) {
+      // Store specified pack metadata
+      const auto& specifiedMetadata = RteUtils::GetSuffix(packageEntry.pack, '+');
+      if (!specifiedMetadata.empty()) {
+        m_packMetadata[RteUtils::RemoveSuffixByString(packageEntry.pack, "+")] = specifiedMetadata;
+      }
       // System wide package
       vector<string> matchedPackIds = FindMatchingPackIdsInCbuildPack(packageEntry, resolvedPacks);
       if (matchedPackIds.size()) {
@@ -1513,7 +1526,7 @@ bool ProjMgrWorker::AddPackRequirements(ContextItem& context, const vector<PackI
         if (!package.pack.name.empty() && !WildCards::IsWildcardPattern(package.pack.name)) {
           string reqVersionRange = ProjMgrUtils::ConvertToVersionRange(package.pack.version);
           string path = m_packRoot + '/' + package.pack.vendor + '/' + package.pack.name;
-          string installedVersion = RteFsUtils::GetInstalledPackVersion(path, reqVersionRange);
+          string installedVersion = VersionCmp::RemoveVersionMeta(RteFsUtils::GetInstalledPackVersion(path, reqVersionRange));
 
           // Only remember the version of the pack if we had it installed
           // Will be used when serializing the cbuild-pack.yml file later
