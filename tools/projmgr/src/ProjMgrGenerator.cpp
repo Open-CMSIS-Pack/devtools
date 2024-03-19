@@ -71,16 +71,21 @@ bool ProjMgrGenerator::GenerateCprj(ContextItem& context, const string& filename
   // Components
   if (componentsElement) {
     GenerateCprjComponents(componentsElement, context, nonLocked);
+
+    // Remove empty components element
+    if (!componentsElement->HasChildren()) {
+      rootElement->RemoveChild("components", true);
+    }
   }
 
   // Files
   if (filesElement) {
     GenerateCprjGroups(filesElement, context.groups, context.toolchain.name);
-  }
 
-  // Remove empty files element
-  if (!filesElement->HasChildren()) {
-    rootElement->RemoveChild("files", true);
+    // Remove empty files element
+    if (!filesElement->HasChildren()) {
+      rootElement->RemoveChild("files", true);
+    }
   }
 
   // Save CPRJ
@@ -121,8 +126,8 @@ void ProjMgrGenerator::GenerateCprjPackages(XMLTreeElement* element, const Conte
       packageElement->AddAttribute("vendor", package.second->GetVendorString());
       const string& pdscFile = package.second->GetPackageFileName();
       if (!nonLocked) {
-        const string& version = package.second->GetVersionString() + ":" + package.second->GetVersionString();
-        packageElement->AddAttribute("version", version);
+        const string& version = VersionCmp::RemoveVersionMeta(package.second->GetVersionString());
+        packageElement->AddAttribute("version", version + ":" + version);
       }
       if (context.pdscFiles.find(pdscFile) != context.pdscFiles.end()) {
         if (nonLocked) {
@@ -351,6 +356,9 @@ void ProjMgrGenerator::GenerateCprjLinkerOptions(XMLTreeElement* element, const 
 
 void ProjMgrGenerator::GenerateCprjGroups(XMLTreeElement* element, const vector<GroupNode>& groups, const string& compiler) {
   for (const auto& groupNode : groups) {
+    if (groupNode.files.empty() && groupNode.groups.empty()) {
+      continue;
+    }
     XMLTreeElement* groupElement = element->CreateElement("group");
     if (groupElement) {
       if (!groupNode.group.empty()) {
