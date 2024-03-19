@@ -36,6 +36,20 @@ TEST_F(ProjMgrGeneratorUnitTests, GetLocalTimestamp) {
   std::regex("^([0-9]){4}(-([0-9]){2}){2}T([0-9]){2}(:([0-9]){2}){2}$")));
 }
 
+TEST_F(ProjMgrGeneratorUnitTests, EmptyCprjElements) {
+  ContextItem context;
+  CprojectItem cproject;
+  context.cproject = &cproject;
+  context.groups = { GroupNode() };
+  const string cprj = testoutput_folder + "/empty.cprj";
+  EXPECT_TRUE(ProjMgrGenerator().GenerateCprj(context, cprj, true));
+  string content;
+  EXPECT_TRUE(RteFsUtils::ReadFile(cprj, content));
+  EXPECT_TRUE(content.find("component") == string::npos);
+  EXPECT_TRUE(content.find("files") == string::npos);
+  EXPECT_TRUE(content.find("group") == string::npos);
+}
+
 TEST_F(ProjMgrGeneratorUnitTests, GenDir) {
   char* argv[6];
 
