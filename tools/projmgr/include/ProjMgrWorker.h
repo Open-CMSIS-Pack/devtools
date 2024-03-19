@@ -639,6 +639,7 @@ protected:
   bool m_debug;
   bool m_dryRun;
   bool m_relativePaths;
+  StrMap m_packMetadata;
 
   bool LoadPacks(ContextItem& context);
   bool CheckMissingPackRequirements(const std::string& contextName);
