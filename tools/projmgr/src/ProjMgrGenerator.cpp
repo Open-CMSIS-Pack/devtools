@@ -126,8 +126,8 @@ void ProjMgrGenerator::GenerateCprjPackages(XMLTreeElement* element, const Conte
       packageElement->AddAttribute("vendor", package.second->GetVendorString());
       const string& pdscFile = package.second->GetPackageFileName();
       if (!nonLocked) {
-        const string& version = package.second->GetVersionString() + ":" + package.second->GetVersionString();
-        packageElement->AddAttribute("version", version);
+        const string& version = VersionCmp::RemoveVersionMeta(package.second->GetVersionString());
+        packageElement->AddAttribute("version", version + ":" + version);
       }
       if (context.pdscFiles.find(pdscFile) != context.pdscFiles.end()) {
         if (nonLocked) {

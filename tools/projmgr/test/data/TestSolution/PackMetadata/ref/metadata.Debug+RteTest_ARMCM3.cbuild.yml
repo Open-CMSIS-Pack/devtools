@@ -1,0 +1,62 @@
+build:
+  generated-by: csolution version 0.0.0+gd3ed8151
+  solution: ../data/TestSolution/PackMetadata/metadata.csolution.yml
+  project: ../data/TestSolution/PackMetadata/metadata.cproject.yml
+  context: metadata.Debug+RteTest_ARMCM3
+  compiler: AC6
+  device: RteTest_ARMCM3
+  device-pack: ARM::RteTest_DFP@0.1.1
+  processor:
+    fpu: off
+    core: Cortex-M3
+  packs:
+    - pack: ARM::RteTest_DFP@0.1.1
+      path: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.1.1
+  define:
+    - ARMCM3
+    - _RTE_
+  add-path:
+    - ../data/TestSolution/PackMetadata/RTE/_Debug_RteTest_ARMCM3
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.1.1/Device/ARM/ARMCM3/Include
+  output-dirs:
+    intdir: tmp/metadata/RteTest_ARMCM3/Debug
+    outdir: out/metadata/RteTest_ARMCM3/Debug
+    rtedir: ../data/TestSolution/PackMetadata/RTE
+  output:
+    - type: elf
+      file: metadata.axf
+  components:
+    - component: ARM::Device:Startup&RteTest Startup@2.0.3
+      condition: ARMCM3 RteTest
+      from-pack: ARM::RteTest_DFP@0.1.1
+      selected-by: Device:Startup
+      files:
+        - file: ../data/TestSolution/PackMetadata/RTE/Device/RteTest_ARMCM3/ARMCM3_ac6.sct
+          category: linkerScript
+          attr: config
+          version: 1.0.0
+        - file: ../data/TestSolution/PackMetadata/RTE/Device/RteTest_ARMCM3/startup_ARMCM3.c
+          category: sourceC
+          attr: config
+          version: 2.0.3
+        - file: ../data/TestSolution/PackMetadata/RTE/Device/RteTest_ARMCM3/system_ARMCM3.c
+          category: sourceC
+          attr: config
+          version: 1.0.1
+    - component: ARM::RteTest:CORE@0.1.1
+      condition: Cortex-M Device
+      from-pack: ARM::RteTest_DFP@0.1.1
+      selected-by: CORE
+  linker:
+    script: ../data/TestSolution/PackMetadata/RTE/Device/RteTest_ARMCM3/ARMCM3_ac6.sct
+  constructed-files:
+    - file: ../data/TestSolution/PackMetadata/RTE/_Debug_RteTest_ARMCM3/RTE_Components.h
+      category: header
+  licenses:
+    - license: <unknown>
+      packs:
+        - pack: ARM::RteTest_DFP@0.1.1
+      components:
+        - component: ::RteTest:CORE(API)
+        - component: ARM::Device:Startup&RteTest Startup@2.0.3
+        - component: ARM::RteTest:CORE@0.1.1

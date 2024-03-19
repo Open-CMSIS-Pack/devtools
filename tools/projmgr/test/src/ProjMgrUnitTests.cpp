@@ -5298,3 +5298,27 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Config_Base_Update_File) {
   ProjMgrTestEnv::CompareFile(testoutput_folder + "/project.Debug+CM0.cbuild.yml",
     testinput_folder + "/TestSolution/TestBaseUpdate/ref/project.Debug+CM0.cbuild.yml");
 }
+
+TEST_F(ProjMgrUnitTests, CheckPackMetadata) {
+  char* argv[6];
+  StdStreamRedirect streamRedirect;
+  const string& csolution = testinput_folder + "/TestSolution/PackMetadata/metadata.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+
+  // Check generated files
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/metadata.Debug+RteTest_ARMCM3.cprj",
+    testinput_folder + "/TestSolution/PackMetadata/ref/metadata.Debug+RteTest_ARMCM3.cprj");
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/metadata.Debug+RteTest_ARMCM3.cbuild.yml",
+    testinput_folder + "/TestSolution/PackMetadata/ref/metadata.Debug+RteTest_ARMCM3.cbuild.yml");
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/TestSolution/PackMetadata/metadata.cbuild-pack.yml",
+    testinput_folder + "/TestSolution/PackMetadata/ref/metadata.cbuild-pack.yml");
+
+  // Check warning message
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find("warning csolution: loaded pack 'ARM::RteTest_DFP0.1.1+metadata' does not match specified metadata 'user_metadata'"));
+}

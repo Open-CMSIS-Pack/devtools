@@ -11,7 +11,7 @@
     <release version="0.1.0" date="2021-02-16">
       Tag to check that the latest release item version is picked up even if it is below
     </release>
-    <release version="0.1.1" date="2021-02-17">
+    <release version="0.1.1+metadata" date="2021-02-17">
       Initial copy from ARM.CMSIS pack
     </release>
   </releases>
