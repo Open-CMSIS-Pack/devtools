@@ -5300,7 +5300,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Config_Base_Update_File) {
 }
 
 TEST_F(ProjMgrUnitTests, CheckPackMetadata) {
-  char* argv[6];
+  char* argv[8];
   StdStreamRedirect streamRedirect;
   const string& csolution = testinput_folder + "/TestSolution/PackMetadata/metadata.csolution.yml";
   argv[1] = (char*)"convert";
@@ -5308,7 +5308,9 @@ TEST_F(ProjMgrUnitTests, CheckPackMetadata) {
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+  argv[6] = (char*)"-c";
+  argv[7] = (char*)".Debug";
+  EXPECT_EQ(0, RunProjMgr(8, argv, 0));
 
   // Check generated files
   ProjMgrTestEnv::CompareFile(testoutput_folder + "/metadata.Debug+RteTest_ARMCM3.cprj",
@@ -5321,4 +5323,11 @@ TEST_F(ProjMgrUnitTests, CheckPackMetadata) {
   // Check warning message
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_NE(string::npos, errStr.find("warning csolution: loaded pack 'ARM::RteTest_DFP0.1.1+metadata' does not match specified metadata 'user_metadata'"));
+
+  // Check matching metadata, no warning should be issued
+  streamRedirect.ClearStringStreams();
+  argv[6] = (char*)"-c";
+  argv[7] = (char*)".Match";  
+  EXPECT_EQ(0, RunProjMgr(8, argv, 0));
+  EXPECT_TRUE(streamRedirect.GetErrorString().empty());
 }
