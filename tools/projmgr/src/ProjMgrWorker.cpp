@@ -402,7 +402,8 @@ bool ProjMgrWorker::LoadAllRelevantPacks() {
   // Check loaded pack versions metadata
   for (const auto& loadedPack : m_loadedPacks) {
     const auto& loadedPackID = loadedPack->GetPackageID(true);
-    if (m_packMetadata.find(loadedPackID) != m_packMetadata.end()) {
+    if ((m_packMetadata.find(loadedPackID) != m_packMetadata.end()) &&
+      (m_packMetadata.at(loadedPackID) != RteUtils::GetSuffix(loadedPack->GetVersionString(), '+'))) {
       ProjMgrLogger::Warn("loaded pack '" + loadedPack->GetPackageID(false) + loadedPack->GetVersionString() +
       "' does not match specified metadata '" + m_packMetadata.at(loadedPackID) + "'");
     }

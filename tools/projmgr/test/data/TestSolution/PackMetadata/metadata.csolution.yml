@@ -4,6 +4,7 @@ solution:
 
   build-types:
     - type: Debug
+    - type: Match
 
   target-types:
     - type: RteTest_ARMCM3
@@ -16,3 +17,6 @@ solution:
 
   packs:
     - pack: ARM::RteTest_DFP@0.1.1+user_metadata
+      for-context: .Debug 
+    - pack: ARM::RteTest_DFP@0.1.1+metadata
+      for-context: .Match
