@@ -1174,7 +1174,7 @@ string RteGpdscInfo::GetAbsolutePath() const
     return name;// absolute
   if (project && !project->GetProjectPath().empty()) {
     string abs = project->GetProjectPath() + name;
-    return RteUtils::BackSlashesToSlashes(abs);
+    return RteFsUtils::MakePathCanonical(abs);
   }
   return RteUtils::BackSlashesToSlashes(name);// absolute
 }

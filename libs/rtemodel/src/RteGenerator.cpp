@@ -161,7 +161,7 @@ vector<pair<string, string> > RteGenerator::GetExpandedArguments(RteTarget* targ
   vector<pair<string, string> > args;
   if(IsExternal()) {
   // add cbuild-gen-idx.yml
-    string idxFile = target->ExpandAccessSequences("$SolutionDir$/$Project$.$TargetType$.cbuild-gen-idx.yml");
+    string idxFile = target->ExpandAccessSequences("$SolutionDir$/$TargetType$.cbuild-gen-idx.yml");
     args.push_back({RteUtils::EMPTY_STRING, idxFile});
     return args;
   }

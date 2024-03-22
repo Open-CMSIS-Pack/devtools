@@ -1149,8 +1149,8 @@ string RteProject::GetEffectivePackageID(const string& packId, const string& tar
 RteGpdscInfo* RteProject::AddGpdscInfo(const string& gpdscFile, RtePackage* gpdscPack)
 {
   string name = gpdscFile;
-  if (!m_projectPath.empty() && name.find(m_projectPath) == 0) {
-    name = name.substr(m_projectPath.size());
+  if (!m_projectPath.empty()) {
+    name = RteFsUtils::RelativePath(gpdscFile,m_projectPath);
   }
 
   RteGpdscInfo* gi = GetGpdscInfo(gpdscFile);

@@ -519,7 +519,7 @@ TEST_F(RteModelPrjTest, ExtGenAndAccessSeq) {
   string cmd = gen->GetExpandedCommandLine(activeTarget);
   cmd = RteUtils::ReplaceAll(cmd, absPath, "$(CMSIS_TOOLBOX)");
   const string expectedCmd =
-    "$(CMSIS_TOOLBOX)/bin/RunTestGen \"RteModelTestProjects/RteTestM3/RteTestM3.Target 1.cbuild-gen-idx.yml\"";
+    "$(CMSIS_TOOLBOX)/bin/RunTestGen \"RteModelTestProjects/RteTestM3/Target 1.cbuild-gen-idx.yml\"";
   EXPECT_EQ(cmd, expectedCmd);
 
   // test additional expansions
