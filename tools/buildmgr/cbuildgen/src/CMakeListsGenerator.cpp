@@ -475,7 +475,8 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
     }
   }
   if (!m_ccFilesList.empty()) {
-    cmakelists << "cbuild_get_system_includes(CC_SYS_INC_PATHS_LIST CC_SYS_INC_PATHS)" << EOL;
+    cmakelists << "cbuild_get_system_includes(" <<
+      (m_toolchain == "CLANG" ? "CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES" : "CC_SYS_INC_PATHS_LIST") << " CC_SYS_INC_PATHS)" << EOL;
     cmakelists << "set(CMAKE_C_FLAGS \"${CC_CPU}";
     if (!m_byteOrder.empty()) cmakelists << " ${CC_BYTE_ORDER}";
     if (!specific_defines && !m_definesList.empty()) cmakelists << " ${CC_DEFINES}";
@@ -488,7 +489,8 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
     cmakelists << "\")" << EOL;
   }
   if (!m_cxxFilesList.empty()) {
-    cmakelists << "cbuild_get_system_includes(CXX_SYS_INC_PATHS_LIST CXX_SYS_INC_PATHS)" << EOL;
+    cmakelists << "cbuild_get_system_includes(" <<
+      (m_toolchain == "CLANG" ? "CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES" : "CXX_SYS_INC_PATHS_LIST") << " CXX_SYS_INC_PATHS)" << EOL; 
     cmakelists << "set(CMAKE_CXX_FLAGS \"${CXX_CPU}";
     if (!m_byteOrder.empty()) cmakelists << " ${CXX_BYTE_ORDER}";
     if (!specific_defines && !m_definesList.empty()) cmakelists << " ${CXX_DEFINES}";

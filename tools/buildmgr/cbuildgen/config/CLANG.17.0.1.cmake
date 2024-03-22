@@ -270,7 +270,7 @@ if(CLANG_MFLOATABI STREQUAL "hard")
 else()
   set(CLANG_TARGET "${CLANG_ARCH}-none-unknown-eabi")
 endif()
-set(CLANG_CPU "--target=${CLANG_TARGET} -mcpu=${CLANG_MCPU} -mfpu=${CLANG_MFPU} -mfloat-abi=${CLANG_MFLOATABI}")
+set(CLANG_CPU "--target=${CLANG_TARGET} -mcpu=${CLANG_MCPU} -mfloat-abi=${CLANG_MFLOATABI}")
 
 # Assembler
 
@@ -321,11 +321,6 @@ elseif(BRANCHPROT STREQUAL "BTI_SIGNRET")
   set(CC_BRANCHPROT "-mbranch-protection=bti+pac-ret")
 endif()
 
-set (CC_SYS_INC_PATHS_LIST
-  "\${TOOLCHAIN_ROOT}/../lib/clang/\${TOOLCHAIN_MAJOR_VERSION}/include"
-  "\${TOOLCHAIN_ROOT}/../lib/clang-runtimes/arm-none-eabi/${CLANG_ARCH}${CLANG_ARCH_SUFFIX}/include"
-)
-
 # C++ Compiler
 
 set(CXX_CPU "${CC_CPU}")
@@ -336,11 +331,6 @@ set(CXX_BRANCHPROT "${CC_BRANCHPROT}")
 set(CXX_FLAGS "${CC_FLAGS}")
 set(CXX_OPTIONS_FLAGS)
 cbuild_set_options_flags(CXX "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" "${LANGUAGE_CXX}" CXX_OPTIONS_FLAGS)
-
-set (CXX_SYS_INC_PATHS_LIST
-  "${CC_SYS_INC_PATHS_LIST}"
-  "\${TOOLCHAIN_ROOT}/../lib/clang-runtimes/arm-none-eabi/${CLANG_ARCH}${CLANG_ARCH_SUFFIX}/include/c++/v1/"
-)
 
 # Linker
 
@@ -365,6 +355,8 @@ set (ELF2HEX -O ihex "${OUT_DIR}/$<TARGET_PROPERTY:${TARGET},OUTPUT_NAME>$<TARGE
 set (ELF2BIN -O binary "${OUT_DIR}/$<TARGET_PROPERTY:${TARGET},OUTPUT_NAME>$<TARGET_PROPERTY:${TARGET},SUFFIX>" "${OUT_DIR}/${BIN_FILE}")
 
 # Set CMake variables for toolchain initialization
+set(CMAKE_C_FLAGS_INIT "${CC_CPU}")
+set(CMAKE_CXX_FLAGS_INIT "${CXX_CPU}")
 set(CMAKE_SYSTEM_NAME Generic)
 set(CMAKE_CROSSCOMPILING TRUE)
 set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
