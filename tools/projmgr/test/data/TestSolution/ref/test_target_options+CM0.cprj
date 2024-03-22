@@ -26,7 +26,7 @@
       <file attr="config" category="sourceC" name="Device/ARM/ARMCM0/Source/system_ARMCM0.c" version="1.0.0"/>
     </component>
     <component Cclass="RteTest" Cgroup="CORE" Cvendor="ARM" Cversion="0.1.1">
-      <options debug="on" optimize="none"/>
+      <options debug="on" optimize="debug"/>
     </component>
   </components>
 

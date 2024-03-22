@@ -97,10 +97,6 @@ endfunction()
 
 function(cbuild_set_options_flags lang optimize debug warnings language flags)
   set(opt_flags)
-  # GCC provide a better optimization level for debug
-  if ((debug STREQUAL "on") AND (optimize STREQUAL ""))
-    set(optimize "debug")
-  endif()
   cbuild_set_option_flags(${lang} OPTIMIZE "${optimize}" opt_flags)
   cbuild_set_option_flags(${lang} DEBUG    "${debug}"    opt_flags)
   cbuild_set_option_flags(${lang} WARNINGS "${warnings}" opt_flags)
