@@ -63,8 +63,8 @@ TEST_F(CBuildGCCTests, Build_GCC_Translation_Control_3) {
   CheckCompileCommand(param.name, "-Wall", "File_3.s");
 
   // File_4.cpp options
-  // explicit : optimize="none" debug="off" warnings="off" languageCpp="c++17"
-  CheckCompileCommand(param.name, "-O0", "File_4.cpp");
+  // explicit : optimize="debug" debug="off" warnings="off" languageCpp="c++17"
+  CheckCompileCommand(param.name, "-Og", "File_4.cpp");
   CheckCompileCommand(param.name, "-g0", "File_4.cpp");
   CheckCompileCommand(param.name, "-w", "File_4.cpp");
   CheckCompileCommand(param.name, "-std=c++17", "File_4.cpp");

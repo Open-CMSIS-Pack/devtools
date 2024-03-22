@@ -147,8 +147,8 @@
       "description": "Unique board name, optionally preceded by board vendor and succeeded by board revision string, in the format [vendor::]board[:revision]"
     },
     "OptimizeType": {
-      "enum": [ "size", "speed", "balanced", "none" ],
-      "description": "Generic optimize levels (size, speed, balanced, none) for code generation."
+      "enum": [ "size", "speed", "balanced", "none", "debug" ],
+      "description": "Generic optimize levels (size, speed, balanced, none, debug) for code generation."
     },
     "DebugType": {
       "enum": [ "on", "off" ],

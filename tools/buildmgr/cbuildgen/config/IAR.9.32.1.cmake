@@ -227,8 +227,8 @@ function(cbuild_set_defines lang defines)
   set(${defines} ${TMP_DEFINES} PARENT_SCOPE)
 endfunction()
 
-set(OPTIMIZE_VALUES    "none" "balanced" "size" "speed")
-set(OPTIMIZE_CC_FLAGS  "-On"  "-Oh"      "-Ohz" "-Ohs")
+set(OPTIMIZE_VALUES    "debug" "none" "balanced" "size" "speed")
+set(OPTIMIZE_CC_FLAGS  "-On"   "-On"  "-Oh"      "-Ohz" "-Ohs")
 set(OPTIMIZE_CXX_FLAGS ${OPTIMIZE_CC_FLAGS})
 
 set(DEBUG_VALUES       "on"      "off")

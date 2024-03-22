@@ -35,7 +35,7 @@ set(DEBUG_C:/Sandbox/devtools-external/build/testoutput/GCC/TranslationControl/P
 set(WARNINGS_C:/Sandbox/devtools-external/build/testoutput/GCC/TranslationControl/Project3/File_2.c "off")
 set(DEBUG_C:/Sandbox/devtools-external/build/testoutput/GCC/TranslationControl/Project3/File_4.cpp "off")
 set(LANGUAGE_CXX_C:/Sandbox/devtools-external/build/testoutput/GCC/TranslationControl/Project3/File_4.cpp "c++17")
-set(OPTIMIZE_C:/Sandbox/devtools-external/build/testoutput/GCC/TranslationControl/Project3/File_4.cpp "none")
+set(OPTIMIZE_C:/Sandbox/devtools-external/build/testoutput/GCC/TranslationControl/Project3/File_4.cpp "debug")
 set(WARNINGS_C:/Sandbox/devtools-external/build/testoutput/GCC/TranslationControl/Project3/File_4.cpp "off")
 set(DEBUG_C:/Sandbox/devtools-external/build/testoutput/GCC/TranslationControl/Project3/File_3.s "off")
 set(OPTIMIZE_C:/Sandbox/devtools-external/build/testoutput/GCC/TranslationControl/Project3/File_3.s "none")

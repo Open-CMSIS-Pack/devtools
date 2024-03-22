@@ -44,7 +44,7 @@
     <group name="Source Mixed">
       <options optimize="speed" debug="on" warnings="on" languageC="c90"/>
       <file category="sourceCpp" name="File_4.cpp">
-        <options optimize="none" debug="off" warnings="off" languageCpp="c++17"/>
+        <options optimize="debug" debug="off" warnings="off" languageCpp="c++17"/>
       </file>
       <file category="sourceAsm" name="File_3.s">
         <options optimize="none" debug="off" warnings="all"/>

@@ -10,7 +10,7 @@ project:
     - component: Startup
     - component: CORE
       debug: on
-      optimize: none
+      optimize: debug
   groups:
     - group: Generated Code
       optimize: speed
