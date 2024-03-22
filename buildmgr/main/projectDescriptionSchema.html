@@ -110,7 +110,7 @@ $(document).ready(function(){initNavTree('projectDescriptionSchema.html','');});
 <div class="textblock"><pre class="fragment">&lt;?xml version="1.0" encoding="UTF-8"?&gt;
 &lt;!--
 
-  Copyright (c) 2020-2023 ARM Limited. All rights reserved.
+  Copyright (c) 2020-2024 ARM Limited. All rights reserved.
 
   SPDX-License-Identifier: Apache-2.0
 
@@ -126,12 +126,14 @@ $(document).ready(function(){initNavTree('projectDescriptionSchema.html','');});
   See the License for the specific language governing permissions and
   limitations under the License.
 
-  $Date:        20. October 2023
-  $Revision:    2.1.0
+  $Date:        21. March 2024
+  $Revision:    2.2.0
 
   $Project: Schema File for CMSIS Project Description File Format Specification
 
-  SchemaVersion=2.1.0
+  SchemaVersion=2.2.0
+
+  2.2.0: Added 'debug' value to 'OptimizeEnum'
 
   2.1.0: Added 'all' value to 'WarningsEnum' and 'CLANG' to 'CompilerEnumType'
 
@@ -250,6 +252,7 @@ $(document).ready(function(){initNavTree('projectDescriptionSchema.html','');});
       &lt;xs:enumeration value="speed" /&gt;
       &lt;xs:enumeration value="balanced" /&gt;
       &lt;xs:enumeration value="none" /&gt;
+      &lt;xs:enumeration value="debug" /&gt;
     &lt;/xs:restriction&gt;
   &lt;/xs:simpleType&gt;
 
