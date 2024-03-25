@@ -70,7 +70,8 @@ ProjMgr::ProjMgr() :
   m_ymlOrder(false),
   m_contextSet(false),
   m_relativePaths(false),
-  m_frozenPacks(false)
+  m_frozenPacks(false),
+  m_updateIdx(false)
 {
 }
 
@@ -153,6 +154,7 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
   cxxopts::Option contextSet("S,context-set", "Use context set", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option relativePaths("R,relative-paths", "Output paths relative to project or to CMSIS_PACK_ROOT", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option frozenPacks("frozen-packs", "The list of packs from cbuild-pack.yml is frozen and raises error if not up-to-date", cxxopts::value<bool>()->default_value("false"));
+  cxxopts::Option updateIdx("update-idx", "Update cbuild-idx file with layer info", cxxopts::value<bool>()->default_value("false"));
 
   // command options dictionary
   map<string, std::pair<bool, vector<cxxopts::Option>>> optionsDict = {
@@ -168,7 +170,7 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
     {"list dependencies", { false, {context, debug, filter, load, schemaCheck, toolchain, verbose}}},
     {"list contexts",     { false, {debug, filter, schemaCheck, verbose, ymlOrder}}},
     {"list generators",   { false, {context, debug, load, schemaCheck, toolchain, verbose}}},
-    {"list layers",       { false, {context, debug, load, clayerSearchPath, schemaCheck, toolchain, verbose}}},
+    {"list layers",       { false, {context, debug, load, clayerSearchPath, schemaCheck, toolchain, verbose, updateIdx}}},
     {"list toolchains",   { false, {context, debug, toolchain, verbose}}},
     {"list environment",  { true,  {}}},
   };
@@ -178,7 +180,8 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
       {"positional", "", cxxopts::value<vector<string>>()},
       solution, context, contextSet, filter, generator,
       load, clayerSearchPath, missing, schemaCheck, noUpdateRte, output,
-      help, version, verbose, debug, dryRun, exportSuffix, toolchain, ymlOrder, relativePaths, frozenPacks
+      help, version, verbose, debug, dryRun, exportSuffix, toolchain, ymlOrder,
+      relativePaths, frozenPacks, updateIdx
     });
     options.parse_positional({ "positional" });
 
@@ -195,6 +198,7 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
     m_worker.SetDebug(m_debug);
     m_worker.SetDryRun(m_dryRun);
     m_ymlOrder = parseResult.count("yml-order");
+    m_updateIdx = parseResult.count("update-idx");
     m_contextSet = parseResult.count("context-set");
     m_relativePaths = parseResult.count("relative-paths");
     m_worker.SetPrintRelativePaths(m_relativePaths);
@@ -228,7 +232,7 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
     if (!m_csolutionFile.empty()) {
       if (!RteFsUtils::Exists(m_csolutionFile)) {
         ProjMgrLogger::Error(m_csolutionFile, "csolution file was not found");
-        return 1;
+        return ErrorCode::ERROR;
       }
       m_csolutionFile = RteFsUtils::MakePathCanonical(m_csolutionFile);
       m_rootDir = RteUtils::ExtractFilePath(m_csolutionFile, false);
@@ -261,13 +265,13 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
     }
   } catch (cxxopts::OptionException& e) {
     ProjMgrLogger::Error(e.what());
-    return 1;
+    return ErrorCode::ERROR;
   }
 
   // Unmatched items in the parse result
   if (!parseResult.unmatched().empty()) {
     ProjMgrLogger::Error("too many command line arguments");
-    return 1;
+    return ErrorCode::ERROR;
   }
 
   if (parseResult.count("help")) {
@@ -276,9 +280,9 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
 
   // Set load packs policy
   if (!SetLoadPacksPolicy()) {
-    return 1;
+    return ErrorCode::ERROR;
   }
-  return 0;
+  return ErrorCode::SUCCESS;
 }
 
 
@@ -288,7 +292,7 @@ int ProjMgr::RunProjMgr(int argc, char** argv, char** envp) {
   int res = manager.ParseCommandLine(argc, argv);
   if(res != 0) {
     // res == -1  means help or version is requested => program success
-    return res > 0 ? res : 0;
+    return res > 0 ? res : ErrorCode::SUCCESS;
   }
 
   // Environment variables
@@ -302,7 +306,7 @@ int ProjMgr::RunProjMgr(int argc, char** argv, char** envp) {
   if(manager.m_worker.InitializeModel()) {
     res = manager.ProcessCommands();
   } else {
-    res = 1;
+    res = ErrorCode::ERROR;
   }
   return res;
 }
@@ -312,76 +316,79 @@ int ProjMgr::ProcessCommands() {
     // Process 'list' command
     if (m_args.empty()) {
       ProjMgrLogger::Error("list <args> was not specified");
-      return 1;
+      return ErrorCode::ERROR;
     }
     // Process argument
     if (m_args == "packs") {
       if (!RunListPacks()) {
-        return 1;
+        return ErrorCode::ERROR;
       }
     } else if (m_args == "boards") {
       if (!RunListBoards()) {
-        return 1;
+        return ErrorCode::ERROR;
       }
     } else if (m_args == "devices") {
       if (!RunListDevices()) {
-        return 1;
+        return ErrorCode::ERROR;
       }
     } else if (m_args == "components") {
       if (!RunListComponents()) {
-        return 1;
+        return ErrorCode::ERROR;
       }
     } else if (m_args == "configs") {
       if (!RunListConfigs()) {
-        return 1;
+        return ErrorCode::ERROR;
       }
     } else if (m_args == "dependencies") {
       if (!RunListDependencies()) {
-        return 1;
+        return ErrorCode::ERROR;
       }
     } else if (m_args == "contexts") {
       if (!RunListContexts()) {
-        return 1;
+        return ErrorCode::ERROR;
       }
     } else if (m_args == "generators") {
       if (!RunListGenerators()) {
-        return 1;
+        return ErrorCode::ERROR;
       }
     } else if (m_args == "layers") {
       if (!RunListLayers()) {
-        return 1;
+        return ErrorCode::ERROR;
       }
     } else if (m_args == "toolchains") {
       if (!RunListToolchains()) {
-        return 1;
+        return ErrorCode::ERROR;
       }
     } else if (m_args == "environment") {
       RunListEnvironment();
     }
     else {
       ProjMgrLogger::Error("list <args> was not found");
-      return 1;
+      return ErrorCode::ERROR;
     }
   } else if (m_command == "update-rte") {
     // Process 'update-rte' command
     if (!RunConfigure()) {
-      return 1;
+      return ErrorCode::ERROR;
     }
   } else if (m_command == "convert") {
     // Process 'convert' command
     if (!RunConvert()) {
-      return 1;
+      return ErrorCode::ERROR;
+    }
+    if (m_worker.HasVarDefineError()) {
+      return ErrorCode::VARIABLE_NOT_DEFINED;
     }
   } else if (m_command == "run") {
     // Process 'run' command
     if (!RunCodeGenerator()) {
-      return 1;
+      return ErrorCode::ERROR;
     }
   } else {
     ProjMgrLogger::Error("<command> was not found");
-    return 1;
+    return ErrorCode::ERROR;
   }
-  return 0;
+  return ErrorCode::SUCCESS;
 }
 
 // Set load packs policy
@@ -802,8 +809,30 @@ bool ProjMgr::RunListLayers(void) {
   if (!m_worker.ListLayers(layers, m_clayerSearchPath)) {
     return false;
   }
-  for (const auto& layer : layers) {
-    cout << layer << endl;
+  if (!m_updateIdx) {
+    for (const auto& layer : layers) {
+      cout << layer << endl;
+    }
+  }
+
+  // Update the cbuild-idx.yml file with layer information
+  // only when the update-idx flag is set to true.
+  if (m_updateIdx) {
+    vector<string> orderedContexts;
+    map<string, ContextItem>* contexts = nullptr;
+    m_worker.GetYmlOrderedContexts(orderedContexts);
+    m_worker.GetContexts(contexts);
+
+    for (auto& contextName : orderedContexts) {
+      auto& contextItem = (*contexts)[contextName];
+      m_allContexts.push_back(&contextItem);
+    }
+
+    if (!m_allContexts.empty()) {
+      if (!m_emitter.GenerateCbuildIndex(m_parser, m_allContexts, m_outputDir)) {
+        return false;
+      }
+    }
   }
   return true;
 }

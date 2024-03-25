@@ -1529,6 +1529,38 @@ info csolution: valid configuration #3: \\(context 'genericlayers.CompatibleLaye
   EXPECT_TRUE(regex_match(outStr, regex(expectedOutStr)));
 }
 
+
+TEST_F(ProjMgrUnitTests, ListLayersConfigurations_update_idx) {
+  StdStreamRedirect streamRedirect;
+  char* argv[6];
+  const string& csolution = testinput_folder + "/TestLayers/config.csolution.yml";
+  string expectedOutStr = ".*config.cbuild-idx.yml - info csolution: file generated successfully\\n";
+
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"layers";
+  argv[3] = (char*)"--solution";
+  argv[4] = (char*)csolution.c_str();
+  argv[5] = (char*)"--update-idx";
+
+  auto replacePackPathFunc = [](const std::string& in) {
+    std::string str = in, packPathEnd = "/test/packs", packPathStart = "-Layer: ";
+    auto endPos = str.find(packPathEnd);
+    if (endPos != string::npos) {
+      auto startPos = str.find(packPathStart);
+      startPos += packPathStart.length();
+      auto packPath = str.substr(startPos, endPos + packPathEnd.length() - startPos);
+      RteUtils::ReplaceAll(str, packPath, "../../../../../../test/packs");
+    }
+    return str;
+  };
+
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+  EXPECT_TRUE(regex_match(streamRedirect.GetOutString(), regex(expectedOutStr)));
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/TestLayers/ref/config.cbuild-idx.yml",
+    testinput_folder + "/TestLayers/config.cbuild-idx.yml", replacePackPathFunc);
+  EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/TestLayers/config.cbuild-idx.yml"));
+}
+
 TEST_F(ProjMgrUnitTests, ListLayersConfigurations) {
   StdStreamRedirect streamRedirect;
   char* argv[6];
@@ -1593,17 +1625,17 @@ TEST_F(ProjMgrUnitTests, ListLayersMultipleSelect) {
 
   const string& expectedOutStr = "\
 info csolution: valid configuration #1: \\(context 'select\\+RteTest_ARMCM3'\\)\n\
-  .*/TestLayers/select.clayer.yml\n\
   .*/TestLayers/select.cproject.yml\n\
     set: set1.select1 \\(project X - set 1 select 1\\)\n\
+  .*/TestLayers/select.clayer.yml \\(layer type: Board\\)\n\
 \n\
 info csolution: valid configuration #2: \\(context 'select\\+RteTest_ARMCM3'\\)\n\
-  .*/TestLayers/select.clayer.yml\n\
   .*/TestLayers/select.cproject.yml\n\
     set: set1.select2 \\(project Y - set 1 select 2\\)\n\
     set: set1.select2 \\(project Z - set 1 select 2\\)\n\
+  .*/TestLayers/select.clayer.yml \\(layer type: Board\\)\n\
 \n\
-.*/TestLayers/select.clayer.yml\n\
+.*/TestLayers/select.clayer.yml \\(layer type: Board\\)\n\
 ";
 
   const string& outStr = streamRedirect.GetOutString();
@@ -3858,7 +3890,7 @@ TEST_F(ProjMgrUnitTests, RunCheckContextProcessing) {
   argv[4] = (char*)"contexts.B1+T1";
   argv[5] = (char*)"-o";
   argv[6] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(0, RunProjMgr(7, argv, 0));
+  EXPECT_EQ(2, RunProjMgr(7, argv, 0));
 
   // Check warning for processed context
   const string expected = "$LayerVar$ - warning csolution: variable was not defined for context 'contexts.B1+T1'";

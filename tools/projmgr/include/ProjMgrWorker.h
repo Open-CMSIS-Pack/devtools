@@ -612,6 +612,7 @@ public:
   bool ProcessGlobalGenerators(ContextItem* context, const std::string& generatorId,
     std::string& projectType, StrVec& siblings);
 
+  bool HasVarDefineError();
 protected:
   ProjMgrParser* m_parser = nullptr;
   ProjMgrKernel* m_kernel = nullptr;
@@ -639,6 +640,7 @@ protected:
   bool m_debug;
   bool m_dryRun;
   bool m_relativePaths;
+  bool m_varDefineError;
   StrMap m_packMetadata;
 
   bool LoadPacks(ContextItem& context);

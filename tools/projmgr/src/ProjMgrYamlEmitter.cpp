@@ -71,6 +71,8 @@ private:
   ProjMgrYamlCbuildIdx(
     YAML::Node node, const vector<ContextItem*>& processedContexts,
     ProjMgrParser& parser, const string& directory);
+
+  void SetVariablesNode(YAML::Node node, const string& csolutionDir, const map<string, map<string, set<const ConnectItem*>>>& layerTypes);
 };
 
 class ProjMgrYamlCbuildPack : public ProjMgrYamlBase {
@@ -214,6 +216,45 @@ ProjMgrYamlCbuildIdx::ProjMgrYamlCbuildIdx(YAML::Node node,
   }
   SetNodeValue(node[YAML_CSOLUTION], FormatPath(parser.GetCsolution().path, directory));
 
+  // Generate layer info for each target
+  vector<string> configTargets;
+  for (const auto& context : processedContexts) {
+    // Retrieve layer information for a single target exclusively
+    if (std::find(configTargets.begin(), configTargets.end(), context->type.target) != configTargets.end()) {
+      continue;
+    }
+
+    // Collect layer connection info specific to each target
+    if (context->validConnections.size() > 0) {
+      configTargets.push_back(context->type.target);
+      map<int, map<string, map<string, set<const ConnectItem*>>>> configurations;
+      int index = 0;
+      for (const auto& combination : context->validConnections) {
+        index++;
+        for (const auto& item : combination) {
+          if (item.type.empty())
+            continue;
+          for (const auto& connect : item.connections) {
+            configurations[index][item.type][item.filename].insert(connect);
+          }
+        }
+      }
+
+      // Process connection info and generate nodes
+      if (configurations.size() > 0) {
+        YAML::Node targetTypeNode;
+        SetNodeValue(targetTypeNode[YAML_TARGETTYPE], context->type.target);
+        for (const auto& [index, types] : configurations) {
+          YAML::Node configurationsNode, variablesNode;
+          SetVariablesNode(variablesNode[YAML_VARIABLES], context->csolution->directory, types);
+          configurationsNode[YAML_CONFIGURATION].push_back(variablesNode);
+          targetTypeNode[YAML_TARGET_CONFIGURATIONS].push_back(configurationsNode);
+        }
+        node[YAML_CONFIGURATIONS].push_back(targetTypeNode);
+      }
+    }
+  }
+
   const auto& cprojects = parser.GetCprojects();
   const auto& csolution = parser.GetCsolution();
 
@@ -253,6 +294,26 @@ ProjMgrYamlCbuildIdx::ProjMgrYamlCbuildIdx(YAML::Node node,
       SetNodeValue(cbuildNode[YAML_DEPENDS_ON], context->dependsOn);
       node[YAML_CBUILDS].push_back(cbuildNode);
     }
+  }
+}
+
+void ProjMgrYamlCbuildIdx::SetVariablesNode(YAML::Node node, const string& csolutionDir, const map<string, map<string, set<const ConnectItem*>>>& layerTypes) {
+  for (const auto& [type, filenames] : layerTypes) {
+    if (type.empty()) {
+      continue;
+    }
+    YAML::Node layerNode;
+    for (const auto& [filename, options] : filenames) {
+      SetNodeValue(layerNode[type + "-Layer"], RteFsUtils::RelativePath(filename, csolutionDir));
+      for (const auto& connect : options) {
+        if (!connect->set.empty()) {
+          YAML::Node setNode;
+          SetNodeValue(setNode[YAML_SET], connect->set + " (" + connect->connect + (connect->info.empty() ? "" : " - " + connect->info) + ")");
+          layerNode[YAML_SETTINGS].push_back(setNode);
+        }
+      }
+    }
+    node.push_back(layerNode);
   }
 }
 

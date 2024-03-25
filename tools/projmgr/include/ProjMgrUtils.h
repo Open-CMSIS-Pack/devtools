@@ -27,7 +27,7 @@ typedef std::vector<const ConnectItem*> ConnectPtrVec;
 */
 struct ConnectionsCollection {
   const std::string& filename;
-  const std::string& type;
+  const std::string type;
   ConnectPtrVec connections;
   ConnectionsCollection& operator=(const ConnectionsCollection& c) { return *this; };
   ConnectionsCollection(const ConnectionsCollection& c) = default;

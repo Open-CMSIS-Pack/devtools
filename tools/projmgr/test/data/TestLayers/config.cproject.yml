@@ -4,9 +4,9 @@ project:
   compiler: AC6
 
   layers:
-    - type: Config1
     - type: Config2
     - layer: config.clayer.yml
+      type: Config1
 
   connections:
     - connect: project X

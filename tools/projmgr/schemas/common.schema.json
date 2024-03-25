@@ -1,9 +1,9 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/2.2.1/tools/projmgr/schemas/common.schema.json",
+  "$id": "https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/2.3.0-dev0/tools/projmgr/schemas/common.schema.json",
   "title": "CMSIS common",
   "description": "common and reusable properties from other schemas",
-  "version": "2.2.1",
+  "version": "2.3.0-dev0",
   "definitions": {
     "ArrayOfStrings": {
       "type": "array",
@@ -841,7 +841,8 @@
         "generated-by": { "type": "string", "description": "Tool name along with version information used to generate this file" },
         "csolution": { "type": "string", "description": "Path to csolution.yml file" },
         "cprojects": { "$ref": "#/definitions/BuildProjectsType" },
-        "cbuilds": { "$ref": "#/definitions/BuildContextsType" }
+        "cbuilds": { "$ref": "#/definitions/BuildContextsType" },
+        "configurations": { "$ref": "#/definitions/BuildConfigurationsType" }
       },
       "additionalProperties": false,
       "required": ["generated-by", "csolution", "cprojects"]
@@ -855,10 +856,25 @@
     "BuildProjectType": {
       "type": "object",
       "properties": {
-        "cproject": { "type": "string", "description": "Path to cproject.yml file" }
+        "cproject": { "type": "string", "description": "Path to cproject.yml file" },
+        "clayers": { "$ref": "#/definitions/BuildLayersType" }
       },
       "additionalProperties": false,
       "required": ["cproject"]
+    },
+    "BuildLayersType": {
+      "type": "array",
+      "uniqueItems": true,
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/BuildLayerType", "description": "List of clayers" }
+    },
+    "BuildLayerType": {
+      "type": "object",
+      "properties": {
+        "clayer": { "type": "string", "description": "Path to clayer.yml file" }
+      },
+      "additionalProperties": false,
+      "required": ["clayer"]
     },
     "BuildContextsType": {
       "type": "array",
@@ -876,6 +892,77 @@
       },
       "additionalProperties": false,
       "required": ["cbuild", "project", "configuration"]
+    },
+    "BuildConfigurationsType": {
+      "type": "array",
+      "uniqueItems": true,
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/BuildConfigurationType", "description": "Target specific layer configurations" }
+    },
+    "BuildConfigurationType": {
+      "type": "object",
+      "properties": {
+        "target-type": { "type": "string", "description": "Name of the target" },
+        "target-configurations" : { "$ref": "#/definitions/BuildTargetConfigurationsType" }
+      },
+      "additionalProperties": false,
+      "required": ["target-type", "target-configurations"]
+    },
+    "BuildTargetConfigurationsType": {
+      "type": "array",
+      "uniqueItems": true,
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/BuildTargetConfigurationType", "description": "Target compatible configurations" }
+    },
+    "BuildTargetConfigurationType": {
+      "type": "object",
+      "properties": {
+        "configuration": { "$ref": "#/definitions/BuildLayerConfigurationsType" }
+      },
+      "additionalProperties": false,
+      "required": ["configuration"]
+    },
+    "BuildLayerConfigurationsType": {
+      "type": "array",
+      "uniqueItems": true,
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/BuildLayerConfigurationType" }
+    },
+    "BuildLayerConfigurationType": {
+      "type": "object",
+      "properties": {
+        "variables": { "$ref": "#/definitions/BuildLayerVariablesType", "description": "List of layer variables" }
+      },
+      "additionalProperties": false,
+      "required": ["variables"]
+    },
+    "BuildLayerVariablesType": {
+      "type": "array",
+      "uniqueItems": true,
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/BuildLayerVariableType" }
+    },
+    "BuildLayerVariableType": {
+      "type": "object",
+      "patternProperties": {
+        "^.*-Layer$": { "type": "string", "description": "Unique variable name for the layer" },
+        "settings": { "$ref": "#/definitions/BuildConnectionSettingsType" }
+      },
+      "additionalProperties": false
+    },
+    "BuildConnectionSettingsType": {
+      "type": "array",
+      "uniqueItems": true,
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/BuildConnectionSetType", "description": "List of connection sets" }
+    },
+    "BuildConnectionSetType": {
+      "type": "object",
+      "properties": {
+        "set": { "type": "string", "description": "Connection set configurations" }
+      },
+      "additionalProperties": false,
+      "required": ["set"]
     },
     "BuildDescType": {
       "description": "The lock info that describes the resolved state of contexts and also can be used as input for generators",

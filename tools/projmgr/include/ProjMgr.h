@@ -14,6 +14,16 @@
 
 #include <cxxopts.hpp>
 
+/**
+  * @brief Error return codes
+*/
+enum ErrorCode
+{
+  SUCCESS = 0,
+  ERROR = 1,
+  VARIABLE_NOT_DEFINED
+};
+
  /**
   * @brief projmgr class
  */
@@ -131,6 +141,7 @@ protected:
   bool m_contextSet;
   bool m_relativePaths;
   bool m_frozenPacks;
+  bool m_updateIdx;
   GroupNode m_files;
   std::vector<ContextItem*> m_processedContexts;
   std::vector<ContextItem*> m_allContexts;
