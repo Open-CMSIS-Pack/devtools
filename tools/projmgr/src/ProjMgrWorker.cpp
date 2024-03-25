@@ -45,8 +45,8 @@ ProjMgrWorker::ProjMgrWorker(ProjMgrParser* parser, ProjMgrExtGenerator* extGene
   m_verbose(false),
   m_debug(false),
   m_dryRun(false),
-  m_relativePaths(false)
-
+  m_relativePaths(false),
+  m_varDefineError(false)
 {
   RteCondition::SetVerboseFlags(0);
 }
@@ -166,6 +166,7 @@ bool ProjMgrWorker::ParseContextLayers(ContextItem& context) {
       if (clayerFile.empty()) {
         if (regex_match(clayer.layer, regex(".*\\$.*\\$.*"))) {
           ProjMgrLogger::Warn(clayer.layer, "variable was not defined for context '" + context.name +"'");
+          m_varDefineError = true;
         } else {
           ProjMgrLogger::Error(clayer.layer, "clayer file was not found");
           return false;
@@ -4416,4 +4417,8 @@ void ProjMgrWorker::PrintContextErrors(const string& contextName) {
         ProjMgrLogger::Error(errMsg);
       });
   }
+}
+
+bool ProjMgrWorker::HasVarDefineError() {
+  return m_varDefineError;
 }

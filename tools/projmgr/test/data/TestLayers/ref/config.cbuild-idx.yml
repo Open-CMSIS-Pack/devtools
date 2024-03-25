@@ -1,0 +1,33 @@
+build-idx:
+  generated-by: csolution version 0.0.0+ga3f9f5af
+  csolution: config.csolution.yml
+  configurations:
+    - target-type: RteTest_ARMCM3
+      target-configurations:
+        - configuration:
+            - variables:
+                - Config1-Layer: ../../../../../../test/packs/ARM/RteTest_DFP/0.2.0/Layers/config1.clayer.yml
+                  settings:
+                    - set: set1.select1 (connect A - set 1 select 1)
+                    - set: set2.select1 (connect C - set 2 select 1)
+                - Config2-Layer: ../../../../../../test/packs/ARM/RteTest_DFP/0.2.0/Layers/config2.clayer.yml
+                  settings:
+                    - set: set1.select1 (connect F - set 1 select 1)
+        - configuration:
+            - variables:
+                - Config1-Layer: ../../../../../../test/packs/ARM/RteTest_DFP/0.2.0/Layers/config1.clayer.yml
+                  settings:
+                    - set: set1.select2 (connect B - set 1 select 2)
+                    - set: set2.select2 (connect D - set 2 select 2)
+                - Config2-Layer: ../../../../../../test/packs/ARM/RteTest_DFP/0.2.0/Layers/config2.clayer.yml
+                  settings:
+                    - set: set1.select2 (connect G - set 1 select 2)
+  cprojects:
+    - cproject: config.cproject.yml
+      clayers:
+        - clayer: .
+        - clayer: config.clayer.yml
+  cbuilds:
+    - cbuild: config.CompatibleLayers+RteTest_ARMCM3.cbuild.yml
+      project: config
+      configuration: .CompatibleLayers+RteTest_ARMCM3
