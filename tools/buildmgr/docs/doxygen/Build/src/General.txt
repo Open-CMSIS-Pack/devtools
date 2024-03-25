@@ -57,6 +57,16 @@ Software layers and Virtual I/O simplify these use cases:
     <th>Description</th>
   </tr>
   <tr>
+    <td>2.3.0-dev0</td>
+    <td>Release candidate:
+      - added cbuild2cmake utility v0.9.0-dev0 (alpha support)
+      - added `optimize` option `debug`
+      - fixed CLANG system includes and mfpu
+      - updated cbuild utility v2.3.0-dev0
+      - updated cpackget utility v2.1.0
+      - updated csolution utility v2.3.0-dev0
+      - updated cbridge utility v0.9.3
+    </td>
     <td>2.2.1</td>
     <td>Release notes:
       - updated cbuild utility v2.2.1
