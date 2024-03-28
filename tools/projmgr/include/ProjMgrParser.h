@@ -346,6 +346,7 @@ struct CdefaultItem {
  *        csolution name,
  *        csolution path,
  *        csolution directory,
+ *        csolution description,
  *        output directories,
  *        build types,
  *        target types,
@@ -359,6 +360,7 @@ struct CdefaultItem {
 struct CsolutionItem {
   std::string name;
   std::string path;
+  std::string description;
   std::string directory;
   DirectoriesItem directories;
   std::map<std::string, BuildType> buildTypes;

@@ -838,6 +838,7 @@
     "BuildIdxDescType": {
       "type": "object",
       "properties": {
+        "description":  { "type": "string" },
         "generated-by": { "type": "string", "description": "Tool name along with version information used to generate this file" },
         "csolution": { "type": "string", "description": "Path to csolution.yml file" },
         "cprojects": { "$ref": "#/definitions/BuildProjectsType" },

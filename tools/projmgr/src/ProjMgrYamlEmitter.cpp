@@ -210,7 +210,9 @@ ProjMgrYamlCbuildIdx::ProjMgrYamlCbuildIdx(YAML::Node node,
 {
   error_code ec;
   SetNodeValue(node[YAML_GENERATED_BY], ORIGINAL_FILENAME + string(" version ") + VERSION_STRING);
-
+  if (processedContexts.size() > 0) {
+    SetNodeValue(node[YAML_DESCRIPTION], processedContexts[0]->csolution->description);
+  }
   if (!parser.GetCdefault().path.empty()) {
     SetNodeValue(node[YAML_CDEFAULT], FormatPath(parser.GetCdefault().path, directory));
   }
