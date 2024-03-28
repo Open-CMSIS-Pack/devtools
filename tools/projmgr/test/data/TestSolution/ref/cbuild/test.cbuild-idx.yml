@@ -1,5 +1,6 @@
 build-idx:
   generated-by: csolution version 1.1.1
+  description: test description string
   csolution: ../data/TestSolution/test.csolution.yml
   cprojects:
     - cproject: ../data/TestSolution/TestProject2/test2.cproject.yml
