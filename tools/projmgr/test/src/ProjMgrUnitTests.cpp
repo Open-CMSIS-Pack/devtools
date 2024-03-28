@@ -103,10 +103,17 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Packs_Required_Warning) {
   argv[3] = (char*)"--solution";
   argv[4] = (char*)csolution.c_str();
   EXPECT_EQ(0, RunProjMgr(5, argv, 0));
-
+  // no warnings by default
   auto errStr = streamRedirect.GetErrorString();
-  EXPECT_TRUE(errStr.find(warnings[1]) != string::npos);
+  EXPECT_FALSE(errStr.find(warnings[1]) != string::npos);
+  streamRedirect.ClearStringStreams();
 
+  argv[5] = (char*)"-d";
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+  // warnings in debug mode
+  errStr = streamRedirect.GetErrorString();
+  EXPECT_TRUE(errStr.find(warnings[1]) != string::npos);
+  streamRedirect.ClearStringStreams();
 // convert
   argv[1] = (char*)"convert";
   argv[2] = (char*)"--solution";
@@ -115,16 +122,23 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Packs_Required_Warning) {
   argv[5] = (char*)testoutput_folder.c_str();
   argv[6] = (char*)"-c";
   argv[7] = (char*)"test1.Debug+CM0";
-  EXPECT_EQ(1, RunProjMgr(8, argv, 0)); //fails because DFP is not loaded => pack warnings
+  EXPECT_EQ(1, RunProjMgr(8, argv, 0)); //fails because DFP is not loaded => pack warnings (disabled)
+  errStr = streamRedirect.GetErrorString();
+  // pack warnings are not printed
+  for(auto& w : warnings) {
+    EXPECT_FALSE(errStr.find(w) != string::npos);
+  }
+  streamRedirect.ClearStringStreams();
+  argv[8] = (char*)"-d";
+  EXPECT_EQ(1, RunProjMgr(9, argv, 0)); //fails because DFP is not loaded => pack warnings (enabled)
   errStr = streamRedirect.GetErrorString();
   // pack warnings are printed
   for(auto& w : warnings) {
     EXPECT_TRUE(errStr.find(w) != string::npos);
   }
-
   streamRedirect.ClearStringStreams();
   argv[7] = (char*)"test1.Release+CM0";
-  EXPECT_EQ(0, RunProjMgr(8, argv, 0)); // succeeds regardless missing pack requirement  => no pack warnings
+  EXPECT_EQ(0, RunProjMgr(9, argv, 0)); // succeeds regardless missing pack requirement  => no pack warnings
   errStr = streamRedirect.GetErrorString();
   for(auto& w : warnings) {
     EXPECT_FALSE(errStr.find(w) != string::npos);
@@ -5382,7 +5396,7 @@ TEST_F(ProjMgrUnitTests, CheckPackMetadata) {
   // Check matching metadata, no warning should be issued
   streamRedirect.ClearStringStreams();
   argv[6] = (char*)"-c";
-  argv[7] = (char*)".Match";  
+  argv[7] = (char*)".Match";
   EXPECT_EQ(0, RunProjMgr(8, argv, 0));
   EXPECT_TRUE(streamRedirect.GetErrorString().empty());
 }
