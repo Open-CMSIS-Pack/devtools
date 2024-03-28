@@ -32,7 +32,8 @@ public:
    * @return true if executed successfully
   */
   static bool GenerateCbuildIndex(ProjMgrParser& parser,
-    const std::vector<ContextItem*> contexts, const std::string& outputDir);
+    const std::vector<ContextItem*>& contexts, const std::string& outputDir,
+    const std::set<std::string>& failedContexts);
 
   /**
    * @brief generate cbuild-gen-idx.yml file
@@ -55,7 +56,6 @@ public:
    * @return true if executed successfully
   */
   static bool GenerateCbuild(ContextItem* context,
-    const bool convError = false,
     const std::string& generatorId = std::string(),
     const std::string& generatorPack = std::string());
 

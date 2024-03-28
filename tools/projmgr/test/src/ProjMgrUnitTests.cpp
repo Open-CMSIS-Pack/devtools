@@ -5245,8 +5245,8 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_cbuild_files_with_errors_node) {
 
   EXPECT_EQ(1, RunProjMgr(7, argv, 0));
   EXPECT_NE(string::npos, streamRedirect.GetErrorString().find(expectedErr));
-  ProjMgrTestEnv::CompareFile(testoutput_folder + "/test1.Debug+CM0.cbuild.yml",
-    testinput_folder + "/TestSolution/TestProject1/ref/test1.Debug+CM0.cbuild.yml");
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/test_no_device_name.cbuild-idx.yml",
+    testinput_folder + "/TestSolution/TestProject1/ref/test_no_device_name.cbuild-idx.yml");
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_cbuild_files_with_packs_missing) {
@@ -5268,6 +5268,29 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_cbuild_files_with_packs_missing) {
     testinput_folder + "/TestSolution/PackMissing/ref/project+CM0.cbuild.yml");
   ProjMgrTestEnv::CompareFile(testoutput_folder + "/project+Gen.cbuild.yml",
     testinput_folder + "/TestSolution/PackMissing/ref/project+Gen.cbuild.yml");
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/missing_pack.cbuild-idx.yml",
+    testinput_folder + "/TestSolution/PackMissing/ref/missing_pack.cbuild-idx.yml");
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_cbuild_files_with_packs_missing_specific_context) {
+  char* argv[7];
+  StdStreamRedirect streamRedirect;
+  string expectedErr1 = "error csolution: required pack: ARM::Missing_DFP@0.0.9 not installed";
+  string expectedErr2 = "error csolution: required pack: ARM::Missing_PACK@0.0.1 not installed";
+  const string& csolution = testinput_folder + "/TestSolution/PackMissing/missing_pack.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"-o";
+  argv[4] = (char*)testoutput_folder.c_str();
+  argv[5] = (char*)"-c";
+  argv[6] = (char*)"project+CM0";
+
+  EXPECT_EQ(1, RunProjMgr(7, argv, 0));
+  auto err = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, streamRedirect.GetErrorString().find(expectedErr1));
+  EXPECT_EQ(string::npos, streamRedirect.GetErrorString().find(expectedErr2));
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/missing_pack.cbuild-idx.yml",
+    testinput_folder + "/TestSolution/PackMissing/ref/missing_pack_specific_context.cbuild-idx.yml");
 }
 
 TEST_F(ProjMgrUnitTests, ComponentInstances) {

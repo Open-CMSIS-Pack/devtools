@@ -7,6 +7,3 @@ build:
     intdir: tmp/project/Gen
     outdir: out/project/Gen
     rtedir: RTE
-  errors: true
-  packs-missing:
-    - pack: ARM::Missing_PACK@0.0.1

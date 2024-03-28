@@ -491,7 +491,7 @@ bool ProjMgr::GenerateYMLConfigurationFiles() {
 
   // Generate cbuild index file
   if (!m_allContexts.empty()) {
-    if (!m_emitter.GenerateCbuildIndex(m_parser, m_allContexts, m_outputDir)) {
+    if (!m_emitter.GenerateCbuildIndex(m_parser, m_allContexts, m_outputDir, m_failedContext)) {
       return false;
     }
   }
@@ -514,9 +514,7 @@ bool ProjMgr::GenerateYMLConfigurationFiles() {
 
   // Generate cbuild files
   for (auto& contextItem : m_processedContexts) {
-    auto item = m_failedContext.find(contextItem->name);
-    bool convError = (item != m_failedContext.end() ? true : false);
-    if (!m_emitter.GenerateCbuild(contextItem, convError)) {
+    if (!m_emitter.GenerateCbuild(contextItem)) {
       return false;
     }
   }
@@ -829,7 +827,7 @@ bool ProjMgr::RunListLayers(void) {
     }
 
     if (!m_allContexts.empty()) {
-      if (!m_emitter.GenerateCbuildIndex(m_parser, m_allContexts, m_outputDir)) {
+      if (!m_emitter.GenerateCbuildIndex(m_parser, m_allContexts, m_outputDir, m_failedContext)) {
         return false;
       }
     }
