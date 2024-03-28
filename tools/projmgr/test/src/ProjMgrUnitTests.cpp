@@ -5270,6 +5270,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_cbuild_files_with_packs_missing) {
     testinput_folder + "/TestSolution/PackMissing/ref/project+Gen.cbuild.yml");
   ProjMgrTestEnv::CompareFile(testoutput_folder + "/missing_pack.cbuild-idx.yml",
     testinput_folder + "/TestSolution/PackMissing/ref/missing_pack.cbuild-idx.yml");
+  EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testoutput_folder + "/missing_pack.cbuild-idx.yml"));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_cbuild_files_with_packs_missing_specific_context) {
