@@ -27,6 +27,7 @@ project:
     - setup: no-mve
       for-context: +no-mve
       processor:
+        fpu: off
         mve: off
     - setup: fail
       for-context: .Fail

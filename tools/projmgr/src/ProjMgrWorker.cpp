@@ -1292,14 +1292,14 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
 
   // Set or update target attributes
   const StrMap attrMap = {
-    { attr.fpu,              RteConstants::RTE_DFPU        },
-    { attr.dsp,              RteConstants::RTE_DDSP        },
-    { attr.mve,              RteConstants::RTE_DMVE        },
-    { attr.endian,           RteConstants::RTE_DENDIAN     },
-    { attr.trustzone,        RteConstants::RTE_DSECURE     },
-    { attr.branchProtection, RteConstants::RTE_DBRANCHPROT },
+    { RteConstants::RTE_DFPU       , attr.fpu              },
+    { RteConstants::RTE_DDSP       , attr.dsp              },
+    { RteConstants::RTE_DMVE       , attr.mve              },
+    { RteConstants::RTE_DENDIAN    , attr.endian           },
+    { RteConstants::RTE_DSECURE    , attr.trustzone        },
+    { RteConstants::RTE_DBRANCHPROT, attr.branchProtection },
   };
-  for (const auto& [yamlValue, rteKey] : attrMap) {
+  for (const auto& [rteKey, yamlValue] : attrMap) {
     if (!yamlValue.empty()) {
       const auto& rteValue = RteConstants::GetDeviceAttribute(rteKey, yamlValue);
       if (!rteValue.empty()) {
