@@ -1548,8 +1548,8 @@ TEST_F(ProjMgrUnitTests, ListLayersConfigurations_update_idx) {
     if (endPos != string::npos) {
       auto startPos = str.find(packPathStart);
       startPos += packPathStart.length();
-      auto packPath = str.substr(startPos, endPos + packPathEnd.length() - startPos);
-      RteUtils::ReplaceAll(str, packPath, "../../../../../../test/packs");
+      auto packPath = str.substr(startPos, endPos - startPos);
+      RteUtils::ReplaceAll(str, packPath, "<TEST_DIR>");
     }
     return str;
   };

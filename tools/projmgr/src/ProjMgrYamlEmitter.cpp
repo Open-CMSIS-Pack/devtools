@@ -305,8 +305,11 @@ void ProjMgrYamlCbuildIdx::SetVariablesNode(YAML::Node node, const string& csolu
       continue;
     }
     YAML::Node layerNode;
+    string layerFile;
     for (const auto& [filename, options] : filenames) {
-      SetNodeValue(layerNode[type + "-Layer"], RteFsUtils::RelativePath(filename, csolutionDir));
+      layerFile = filename;
+      RteFsUtils::NormalizePath(layerFile);
+      SetNodeValue(layerNode[type + "-Layer"], layerFile);
       for (const auto& connect : options) {
         if (!connect->set.empty()) {
           YAML::Node setNode;

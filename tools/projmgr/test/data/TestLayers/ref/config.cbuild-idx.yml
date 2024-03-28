@@ -6,20 +6,20 @@ build-idx:
       target-configurations:
         - configuration:
             - variables:
-                - Config1-Layer: ../../../../../../test/packs/ARM/RteTest_DFP/0.2.0/Layers/config1.clayer.yml
+                - Config1-Layer: <TEST_DIR>/test/packs/ARM/RteTest_DFP/0.2.0/Layers/config1.clayer.yml
                   settings:
                     - set: set1.select1 (connect A - set 1 select 1)
                     - set: set2.select1 (connect C - set 2 select 1)
-                - Config2-Layer: ../../../../../../test/packs/ARM/RteTest_DFP/0.2.0/Layers/config2.clayer.yml
+                - Config2-Layer: <TEST_DIR>/test/packs/ARM/RteTest_DFP/0.2.0/Layers/config2.clayer.yml
                   settings:
                     - set: set1.select1 (connect F - set 1 select 1)
         - configuration:
             - variables:
-                - Config1-Layer: ../../../../../../test/packs/ARM/RteTest_DFP/0.2.0/Layers/config1.clayer.yml
+                - Config1-Layer: <TEST_DIR>/test/packs/ARM/RteTest_DFP/0.2.0/Layers/config1.clayer.yml
                   settings:
                     - set: set1.select2 (connect B - set 1 select 2)
                     - set: set2.select2 (connect D - set 2 select 2)
-                - Config2-Layer: ../../../../../../test/packs/ARM/RteTest_DFP/0.2.0/Layers/config2.clayer.yml
+                - Config2-Layer: <TEST_DIR>/test/packs/ARM/RteTest_DFP/0.2.0/Layers/config2.clayer.yml
                   settings:
                     - set: set1.select2 (connect G - set 1 select 2)
   cprojects:
