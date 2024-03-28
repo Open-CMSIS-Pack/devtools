@@ -1,0 +1,18 @@
+build-idx:
+  generated-by: csolution version 0.0.0+g74cb4601
+  csolution: ../data/TestSolution/PackMissing/missing_pack.csolution.yml
+  cprojects:
+    - cproject: ../data/TestSolution/PackMissing/project.cproject.yml
+  cbuilds:
+    - cbuild: project+CM0.cbuild.yml
+      project: project
+      configuration: +CM0
+      errors: true
+      packs-missing:
+        - pack: ARM::Missing_DFP@0.0.9
+    - cbuild: project+Gen.cbuild.yml
+      project: project
+      configuration: +Gen
+      errors: true
+      packs-missing:
+        - pack: ARM::Missing_PACK@0.0.1

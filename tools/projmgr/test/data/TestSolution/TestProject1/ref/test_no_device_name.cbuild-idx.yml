@@ -1,0 +1,20 @@
+build-idx:
+  generated-by: csolution version 0.0.0+g74cb4601
+  csolution: ../data/TestSolution/test_no_device_name.csolution.yml
+  cprojects:
+    - cproject: ../data/TestSolution/TestProject1/test1.cproject.yml
+    - cproject: ../data/TestSolution/TestProject2/test2.cproject.yml
+  cbuilds:
+    - cbuild: test1.Debug+CM0.cbuild.yml
+      project: test1
+      configuration: .Debug+CM0
+      errors: true
+    - cbuild: test1.Release+CM0.cbuild.yml
+      project: test1
+      configuration: .Release+CM0
+    - cbuild: test2.Debug+CM0.cbuild.yml
+      project: test2
+      configuration: .Debug+CM0
+    - cbuild: test2.Debug+CM3.cbuild.yml
+      project: test2
+      configuration: .Debug+CM3

@@ -7,6 +7,3 @@ build:
     intdir: tmp/project/CM0
     outdir: out/project/CM0
     rtedir: RTE
-  errors: true
-  packs-missing:
-    - pack: ARM::Missing_DFP@0.0.9
