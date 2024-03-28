@@ -440,6 +440,10 @@ bool ProjMgrWorker::LoadPacks(ContextItem& context) {
 
 bool ProjMgrWorker::CheckMissingPackRequirements(const std::string& contextName)
 {
+  if(!m_debug) {
+    // perform check only in debug mode
+    return true;
+  }
   bool bRequiredPacksLoaded = true;
   // check if all pack requirements are fulfilled
   for(auto pack : m_loadedPacks) {
