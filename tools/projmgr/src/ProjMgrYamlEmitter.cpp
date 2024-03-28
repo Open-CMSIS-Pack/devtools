@@ -897,7 +897,7 @@ bool ProjMgrYamlBase::WriteFile(YAML::Node& rootNode, const std::string& filenam
 }
 
 bool ProjMgrYamlEmitter::GenerateCbuildIndex(ProjMgrParser& parser,
-  const vector<ContextItem*> contexts, const string& outputDir,
+  const vector<ContextItem*>& contexts, const string& outputDir,
   const set<std::string>& failedContexts) {
   // generate cbuild-idx.yml
   const string& directory = outputDir.empty() ? parser.GetCsolution().directory : RteFsUtils::AbsolutePath(outputDir).generic_string();

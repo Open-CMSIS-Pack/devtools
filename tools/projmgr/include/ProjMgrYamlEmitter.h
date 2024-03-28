@@ -32,7 +32,7 @@ public:
    * @return true if executed successfully
   */
   static bool GenerateCbuildIndex(ProjMgrParser& parser,
-    const std::vector<ContextItem*> contexts, const std::string& outputDir,
+    const std::vector<ContextItem*>& contexts, const std::string& outputDir,
     const std::set<std::string>& failedContexts);
 
   /**
