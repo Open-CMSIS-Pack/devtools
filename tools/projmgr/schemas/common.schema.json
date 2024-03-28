@@ -889,7 +889,9 @@
         "cbuild": { "type": "string", "description": "Path to <context>.cbuild.yml file" },
         "project": { "type": "string", "description": "Project name" },
         "configuration": { "$ref": "#/definitions/BuildContext" },
-        "depends-on": { "$ref": "#/definitions/ArrayOfBuildContextWithProjectName" }
+        "depends-on": { "$ref": "#/definitions/ArrayOfBuildContextWithProjectName" },
+        "errors": { "type": "boolean", "description": "Indicates error(s) during conversion" },
+        "packs-missing": { "$ref": "#/definitions/BuildPacksMissingType" }
       },
       "additionalProperties": false,
       "required": ["cbuild", "project", "configuration"]
@@ -1018,9 +1020,7 @@
         "licenses": {
           "type": "array",
           "items": { "$ref": "#/definitions/LicenseInfoType" }
-        },
-        "errors": { "type": "boolean", "description": "Indicates error(s) during conversion" },
-        "packs-missing": { "$ref": "#/definitions/BuildPacksMissingType" }
+        }
       },
       "additionalProperties": false
     },
