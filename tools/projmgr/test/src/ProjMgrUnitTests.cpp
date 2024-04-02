@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -5399,5 +5399,19 @@ TEST_F(ProjMgrUnitTests, CheckPackMetadata) {
   argv[6] = (char*)"-c";
   argv[7] = (char*)".Match";
   EXPECT_EQ(0, RunProjMgr(8, argv, 0));
+  EXPECT_TRUE(streamRedirect.GetErrorString().empty());
+}
+
+TEST_F(ProjMgrUnitTests, CbuildPackSelectBy) {
+  // Accept "selected-by" for backward compatibility 
+  char* argv[6];
+  StdStreamRedirect streamRedirect;
+  const string& csolution = testinput_folder + "/TestSolution/PackLocking/selected-by.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
   EXPECT_TRUE(streamRedirect.GetErrorString().empty());
 }

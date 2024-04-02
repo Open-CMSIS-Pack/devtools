@@ -1128,6 +1128,11 @@
           "type": "array",
           "uniqueItems": true,
           "items": { "$ref": "#/definitions/PackID" }
+        },
+        "selected-by": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/definitions/PackID" }
         }
       },
       "additionalProperties": false,
