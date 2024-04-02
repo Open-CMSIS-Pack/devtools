@@ -50,7 +50,7 @@ Options:\n\
   -N, --no-update-rte           Skip creation of RTE directory and files\n\
   -o, --output arg              Output directory\n\
   -R, --relative-paths          Print paths relative to project or ${CMSIS_PACK_ROOT}\n\
-  -S, --context-set             Use context set\n\
+  -S, --context-set             Select the context names from cbuild-set.yml for generating the target application\n\
   -t, --toolchain arg           Selection of the toolchain used in the project optionally with version\n\
   -v, --verbose                 Enable verbose messages\n\
   -V, --version                 Print version\n\n\
@@ -151,7 +151,7 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
   cxxopts::Option exportSuffix("e,export", "Set suffix for exporting <context><suffix>.cprj retaining only specified versions", cxxopts::value<string>());
   cxxopts::Option toolchain("t,toolchain","Selection of the toolchain used in the project optionally with version", cxxopts::value<string>());
   cxxopts::Option ymlOrder("yml-order", "Preserve order as specified in input yml", cxxopts::value<bool>()->default_value("false"));
-  cxxopts::Option contextSet("S,context-set", "Use context set", cxxopts::value<bool>()->default_value("false"));
+  cxxopts::Option contextSet("S,context-set", "Select the context names from cbuild-set.yml for generating the target application", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option relativePaths("R,relative-paths", "Output paths relative to project or to CMSIS_PACK_ROOT", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option frozenPacks("frozen-packs", "The list of packs from cbuild-pack.yml is frozen and raises error if not up-to-date", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option updateIdx("update-idx", "Update cbuild-idx file with layer info", cxxopts::value<bool>()->default_value("false"));
