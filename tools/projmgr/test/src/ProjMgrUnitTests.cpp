@@ -3501,6 +3501,9 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_DefaultFileInCompilerRoot) {
   ProjMgrTestEnv::CompareFile(testoutput_folder + "/empty/project.Release+TEST_TARGET.cbuild.yml",
     testinput_folder + "/TestDefault/ref/empty/project.Release+TEST_TARGET.cbuild.yml");
 
+  // Check cbuild-idx.yml schema
+  EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testoutput_folder + "/empty/empty.cbuild-idx.yml"));
+
   RteFsUtils::MoveExistingFile(cdefaultInCompilerRoot, cdefault);
   RteFsUtils::MoveExistingFile(cdefaultInCompilerRoot + ".bak", cdefaultInCompilerRoot);
 }
