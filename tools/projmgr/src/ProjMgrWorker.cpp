@@ -3756,7 +3756,7 @@ bool ProjMgrWorker::ExecuteGenerator(std::string& generatorId) {
     generatorDestination += '/';
   }
 
-  if (!ProjMgrYamlEmitter::GenerateCbuild(&context, generator->GetGeneratorName(),
+  if (!ProjMgrYamlEmitter::GenerateCbuild(&context, m_checkSchema, generator->GetGeneratorName(),
     RtePackage::GetPackageIDfromAttributes(*generator->GetPackage()))) {
     return false;
   }
@@ -4356,11 +4356,11 @@ bool ProjMgrWorker::ExecuteExtGenerator(std::string& generatorId) {
   // Generate cbuild-gen files
   string cbuildgenOutput = selectedContext->directories.intdir;
   RteFsUtils::NormalizePath(cbuildgenOutput, selectedContext->directories.cprj);
-  if (!ProjMgrYamlEmitter::GenerateCbuildGenIndex(*m_parser, siblingContexts, projectType, cbuildgenOutput, genDir)) {
+  if (!ProjMgrYamlEmitter::GenerateCbuildGenIndex(*m_parser, siblingContexts, projectType, cbuildgenOutput, genDir, m_checkSchema)) {
     return false;
   }
   for (const auto& siblingContext : siblingContexts) {
-    if (!ProjMgrYamlEmitter::GenerateCbuild(siblingContext, generatorId)) {
+    if (!ProjMgrYamlEmitter::GenerateCbuild(siblingContext, m_checkSchema, generatorId)) {
       return false;
     }
   }

@@ -3954,7 +3954,7 @@ error csolution: processing context 'outputFiles.TypeConflict\\+Target' failed\n
 ";
 
   auto errStr = streamRedirect.GetErrorString();
-  EXPECT_TRUE(regex_match(errStr, regex(expected)));
+  EXPECT_TRUE(regex_search(errStr, regex(expected)));
 }
 
 TEST_F(ProjMgrUnitTests, SelectToolchains) {
