@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -482,7 +482,7 @@ bool ProjMgr::PopulateContexts(void) {
 bool ProjMgr::GenerateYMLConfigurationFiles() {
   // Generate cbuild pack file
   const bool isUsingContexts = m_contextSet || m_context.size() != 0;
-  if (!m_emitter.GenerateCbuildPack(m_parser, m_processedContexts, isUsingContexts, m_frozenPacks)) {
+  if (!m_emitter.GenerateCbuildPack(m_parser, m_processedContexts, isUsingContexts, m_frozenPacks, m_checkSchema)) {
     return false;
   }
 
@@ -491,7 +491,7 @@ bool ProjMgr::GenerateYMLConfigurationFiles() {
 
   // Generate cbuild index file
   if (!m_allContexts.empty()) {
-    if (!m_emitter.GenerateCbuildIndex(m_parser, m_allContexts, m_outputDir, m_failedContext)) {
+    if (!m_emitter.GenerateCbuildIndex(m_parser, m_allContexts, m_outputDir, m_failedContext, m_checkSchema)) {
       return false;
     }
   }
@@ -506,20 +506,21 @@ bool ProjMgr::GenerateYMLConfigurationFiles() {
     }
     else if (!m_processedContexts.empty()) {
       // Generate cbuild-set file
-      if (!m_emitter.GenerateCbuildSet(m_processedContexts, m_selectedToolchain, cbuildSetFile)) {
+      if (!m_emitter.GenerateCbuildSet(m_processedContexts, m_selectedToolchain, cbuildSetFile, m_checkSchema)) {
         return false;
       }
     }
   }
 
   // Generate cbuild files
+  bool result = true;
   for (auto& contextItem : m_processedContexts) {
-    if (!m_emitter.GenerateCbuild(contextItem)) {
-      return false;
+    if (!m_emitter.GenerateCbuild(contextItem, m_checkSchema)) {
+      result = false;
     }
   }
 
-  return true;
+  return result;
 }
 
 bool ProjMgr::Configure() {
@@ -827,7 +828,7 @@ bool ProjMgr::RunListLayers(void) {
     }
 
     if (!m_allContexts.empty()) {
-      if (!m_emitter.GenerateCbuildIndex(m_parser, m_allContexts, m_outputDir, m_failedContext)) {
+      if (!m_emitter.GenerateCbuildIndex(m_parser, m_allContexts, m_outputDir, m_failedContext, m_checkSchema)) {
         return false;
       }
     }

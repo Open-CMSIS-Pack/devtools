@@ -13,11 +13,11 @@
     },
     "BuildContext": {
       "type": "string",
-      "pattern": "^(((^[.][^.+\\s]*)|(^[+][^.+\\s]*))|((^[.][^.+\\s]*)[+][^.+\\s]*|(^[+][^.+\\s]*)[.][^.+\\s]*))$"
+      "pattern": "^(((^[.][^.+]*)|(^[+][^.+]*))|((^[.][^.+]*)[+][^.+]*|(^[+][^.+]*)[.][^.+]*))$"
     },
     "BuildContextWithProjectName": {
       "type": "string",
-      "pattern": "^([^.+\\s]+|[^.+\\s]*\\.[^.+\\s]+(\\+[^.+\\s]+)?|[^.+\\s]*\\+[^.+\\s]+(\\.[^.+\\s]+)?)$"
+      "pattern": "^([^.+]+|[^.+]*\\.[^.+]+(\\+[^.+]+)?|[^.+]*\\+[^.+]+(\\.[^.+]+)?)$"
     },
     "ArrayOfBuildContext": {
       "type": "array",
@@ -562,6 +562,8 @@
         "file":            { "type": "string", "description": "File name along with the path." },
         "category":        { "$ref": "#/definitions/FileCategoryType" },
         "attr":            { "$ref": "#/definitions/FileAttributeType" },
+        "language":        { "$ref": "#/definitions/FileLanguageType" },
+        "scope":           { "$ref": "#/definitions/FileScopeType" },
         "version":         { "$ref": "#/definitions/VersionType" },
         "for-context":     { "$ref": "#/definitions/ForContext" },
         "not-for-context": { "$ref": "#/definitions/NotForContext" },
@@ -1005,6 +1007,8 @@
         "optimize":          { "$ref": "#/definitions/OptimizeType" },
         "debug":             { "$ref": "#/definitions/DebugType" },
         "warnings":          { "$ref": "#/definitions/WarningsType" },
+        "language-C":        { "$ref": "#/definitions/LanguageCType" },
+        "language-CPP":      { "$ref": "#/definitions/LanguageCppType" },
         "misc":              { "$ref": "#/definitions/MiscType" },
         "define":            { "$ref": "#/definitions/BuildDefinesType" },
         "add-path":          { "$ref": "#/definitions/AddpathsType" },
