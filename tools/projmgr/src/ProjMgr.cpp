@@ -373,11 +373,13 @@ int ProjMgr::ProcessCommands() {
     }
   } else if (m_command == "convert") {
     // Process 'convert' command
-    if (!RunConvert()) {
-      return ErrorCode::ERROR;
-    }
+    bool convSuccess = RunConvert();
+    // Check if layer variable not defined (regardless of conversion status)
     if (m_worker.HasVarDefineError()) {
       return ErrorCode::VARIABLE_NOT_DEFINED;
+    }
+    if (!convSuccess) {
+      return ErrorCode::ERROR;
     }
   } else if (m_command == "run") {
     // Process 'run' command
