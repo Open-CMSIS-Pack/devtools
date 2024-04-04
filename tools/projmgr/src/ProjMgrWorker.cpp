@@ -2042,7 +2042,7 @@ bool ProjMgrWorker::ProcessComponentFiles(ContextItem& context) {
       const auto& language = componentFile->GetAttribute("language");
       const auto& select = componentFile->GetAttribute("select");
       const auto& version = componentFile->GetVersionString();
-      if ((scope == "hidden") || (attr == "template") || (category == "header" && (!select.empty())) ||
+      if ((scope == "hidden") || (attr == "template") || (category == "doc") || (category == "header" && (!select.empty())) ||
         ((((category == "preIncludeGlobal") || (category == "preIncludeLocal")) && attr.empty()) && (IsPreIncludeByTarget(context.rteActiveTarget, name)))){
         context.componentFiles[componentId].push_back({ name, attr, category, language, scope, version, select });
       }

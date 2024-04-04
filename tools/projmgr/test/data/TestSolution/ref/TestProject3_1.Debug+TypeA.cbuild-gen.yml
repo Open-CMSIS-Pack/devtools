@@ -55,6 +55,9 @@ build-gen:
       from-pack: ARM::RteTest_DFP@0.2.0
       selected-by: Startup
       files:
+        - file: ${DEVTOOLS(packs)}/ARM/RteTest_DFP/0.2.0/https:/arm-software.github.io/CMSIS_5/Core_A/html/startup_c_pg.html
+          category: doc
+          version: 2.0.3
         - file: ${DEVTOOLS(data)}/TestSolution/TestProject3_1/RTE/Device/RteTestGen_ARMCM0/gcc_arm.ld
           category: linkerScript
           attr: config
@@ -71,6 +74,10 @@ build-gen:
       condition: Cortex-M Device
       from-pack: ARM::RteTest_DFP@0.2.0
       selected-by: CORE
+      files:
+        - file: ${DEVTOOLS(packs)}/ARM/RteTest_DFP/0.2.0/Doc/html/index.html
+          category: doc
+          version: 0.1.1
   generators:
     - generator: RteTestGeneratorIdentifier
       from-pack: ARM::RteTestGenerator@0.1.0

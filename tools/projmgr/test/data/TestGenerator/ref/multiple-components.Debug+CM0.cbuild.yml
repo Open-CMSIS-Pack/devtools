@@ -48,6 +48,10 @@ build:
       condition: Cortex-M Device
       from-pack: ARM::RteTest_DFP@0.2.0
       selected-by: RteTest:CORE
+      files:
+        - file: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Doc/html/index.html
+          category: doc
+          version: 0.1.1
   generators:
     - generator: RteTestGeneratorIdentifier
       from-pack: ARM::RteTestGenerator@0.1.0

@@ -33,6 +33,10 @@ build:
       condition: Cortex-M Device
       from-pack: ARM::RteTest_DFP@0.1.1
       selected-by: CORE
+      files:
+        - file: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.1.1/Doc/html/index.html
+          category: doc
+          version: 0.1.1
   linker:
     script: ../../data/TestDefault/RTE/Device/RteTest_ARMCM0/gcc_linker_script.ld.src
     regions: ../../data/TestDefault/RTE/Device/RteTest_ARMCM0/regions_RteTest_ARMCM0.h

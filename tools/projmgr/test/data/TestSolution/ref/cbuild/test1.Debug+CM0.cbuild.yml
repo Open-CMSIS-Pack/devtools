@@ -58,6 +58,9 @@ build:
       from-pack: ARM::RteTest_DFP@0.2.0
       selected-by: Startup
       files:
+        - file: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/https:/arm-software.github.io/CMSIS_5/Core_A/html/startup_c_pg.html
+          category: doc
+          version: 2.0.3
         - file: ../data/TestSolution/TestProject1/RTE/Device/RteTest_ARMCM0/ARMCM0_ac6.sct
           category: linkerScript
           attr: config
@@ -82,6 +85,10 @@ build:
         - ../data/TestSolution/TestProject1/path/1/component
       del-path:
         - ../data/TestSolution/TestProject1/path/2/component
+      files:
+        - file: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Doc/html/index.html
+          category: doc
+          version: 0.1.1
   linker:
     script: ../data/TestSolution/TestProject1/RTE/Device/RteTest_ARMCM0/ARMCM0_ac6.sct
   groups:

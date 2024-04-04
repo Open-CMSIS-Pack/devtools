@@ -36,6 +36,9 @@ build:
       from-pack: ARM::RteTest_DFP@0.2.0
       selected-by: Device:Startup
       files:
+        - file: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/https:/arm-software.github.io/CMSIS_5/Core_A/html/startup_c_pg.html
+          category: doc
+          version: 2.0.3
         - file: ../data/TestSolution/LinkerOptions/layer/RTE/Device/RteTest_ARMCM3/ARMCM3_ac6.sct
           category: linkerScript
           attr: config
@@ -52,6 +55,10 @@ build:
       condition: Cortex-M Device
       from-pack: ARM::RteTest_DFP@0.2.0
       selected-by: RteTest:CORE
+      files:
+        - file: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Doc/html/index.html
+          category: doc
+          version: 0.1.1
   linker:
     script: ../data/TestSolution/LinkerOptions/layer/RTE/Device/RteTest_ARMCM3/ac6_linker_script.sct.src
     regions: ../data/TestSolution/LinkerOptions/layer/RTE/Device/RteTest_ARMCM3/regions_RteTest_ARMCM3.h
