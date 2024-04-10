@@ -37,6 +37,9 @@ build:
       from-pack: ARM::RteTest_DFP@0.2.0
       selected-by: Startup
       files:
+        - file: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include/ARMCM0.h
+          category: header
+          version: 2.0.3
         - file: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/https:/arm-software.github.io/CMSIS_5/Core_A/html/startup_c_pg.html
           category: doc
           version: 2.0.3
@@ -66,8 +69,12 @@ build:
       files:
         - file: ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/ComponentLevel/ComponentLevel.c
           category: sourceC
+          version: 0.0.1
         - file: ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/ComponentLevel/ComponentLevel.h
           category: preIncludeLocal
+          version: 0.0.1
+        - file: ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/ComponentLevel/Include/AbsoluteInclude.h
+          category: header
           version: 0.0.1
         - file: ../data/TestSolution/RTE/RteTest/ComponentLevelConfig_0.h
           category: preIncludeLocal
@@ -85,8 +92,15 @@ build:
       files:
         - file: ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/GlobalLevel/GlobalLevel.c
           category: sourceC
+          version: 0.0.2
         - file: ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/GlobalLevel/GlobalLevel.h
           category: preIncludeGlobal
+          version: 0.0.2
+        - file: ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/GlobalLevel/Include/RelativeInclude.h
+          category: header
+          version: 0.0.2
+        - file: ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/Include/Outside/OutsideInclude.h
+          category: header
           version: 0.0.2
         - file: ../data/TestSolution/RTE/RteTest/Config/ConfigInclude.h
           category: header

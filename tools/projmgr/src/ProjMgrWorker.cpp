@@ -1681,6 +1681,7 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
       matchedComponentInstance->AddAttribute("gendir", genDir);
       const string gpdsc = RteFsUtils::MakePathCanonical(generator->GetExpandedGpdsc(context.rteActiveTarget, genDir));
       context.gpdscs.insert({ gpdsc, {componentId, generatorId, genDir} });
+      context.bootstrapComponents.insert({ componentId, { matchedComponentInstance, &item, generatorId } });
     } else {
       // Get external generator id
       if (!generatorId.empty()) {
@@ -1981,45 +1982,9 @@ bool ProjMgrWorker::ProcessComponentFiles(ContextItem& context) {
     ProjMgrLogger::Error("missing RTE target");
     return false;
   }
-  // files belonging to project groups, except config files
-  const auto& groups = context.rteActiveTarget->GetProjectGroups();
-  for (const auto& [_, group] : groups) {
-    for (auto& [file, fileInfo] : group) {
-      const auto& ci = context.rteActiveTarget->GetComponentInstanceForFile(file);
-      const auto& component = ci->GetResolvedComponent(context.rteActiveTarget->GetName());
-      if (!fileInfo.m_fi) {
-        const auto& absPackPath = component->GetPackage()->GetAbsolutePackagePath();
-        error_code ec;
-        const auto& relFilename = fs::relative(file, absPackPath, ec).generic_string();
-        const auto& componentFile = context.rteActiveTarget->GetFile(relFilename, component);
-        if (componentFile) {
-          const auto& attr = componentFile->GetAttribute("attr");
-          const auto& category = componentFile->GetAttribute("category");
-          const auto& language = componentFile->GetAttribute("language");
-          const auto& scope = componentFile->GetAttribute("scope");
-          const auto& version = attr == "config" ? componentFile->GetVersionString() : "";
-          context.componentFiles[component->GetComponentID(true)].push_back({ file, attr, category, language, scope, version });
-        }
-      }
-    }
-  }
   // iterate over components
   for (const auto& [componentId, component] : context.components) {
     RteComponent* rteComponent = component.instance->GetParent()->GetComponent();
-    const auto& files = rteComponent->GetFileContainer() ? rteComponent->GetFileContainer()->GetChildren() : Collection<RteItem*>();
-    // private includes
-    for (const auto& privateIncludes : {
-      context.rteActiveTarget->GetPrivateIncludePaths(rteComponent, RteFile::Language::LANGUAGE_C),
-      context.rteActiveTarget->GetPrivateIncludePaths(rteComponent, RteFile::Language::LANGUAGE_CPP),
-      context.rteActiveTarget->GetPrivateIncludePaths(rteComponent, RteFile::Language::LANGUAGE_C_CPP),
-      context.rteActiveTarget->GetPrivateIncludePaths(rteComponent, RteFile::Language::LANGUAGE_NONE)
-      }) {
-      for (const auto& privateInclude : privateIncludes) {
-        const string& include = fs::path(privateInclude).is_relative() ? fs::path(context.cproject->directory).append(privateInclude).generic_string() : privateInclude;
-        component.item->build.addpaths.push_back(RteFsUtils::RelativePath(include, context.directories.cprj));
-      }
-    }
-
     // component based API files
     const auto& api = rteComponent->GetApi(context.rteActiveTarget, true);
     if (api) {
@@ -2032,18 +1997,24 @@ bool ProjMgrWorker::ProcessComponentFiles(ContextItem& context) {
         }
       }
     }
-
-    // hidden files, pre-include and template files from packs
-    for (const auto& componentFile : files) {
-      const auto& name = rteComponent->GetPackage()->GetAbsolutePackagePath() + componentFile->GetAttribute("name");
-      const auto& category = componentFile->GetAttribute("category");
-      const auto& attr = componentFile->GetAttribute("attr");
-      const auto& scope = componentFile->GetAttribute("scope");
-      const auto& language = componentFile->GetAttribute("language");
-      const auto& select = componentFile->GetAttribute("select");
-      const auto& version = componentFile->GetVersionString();
-      if ((scope == "hidden") || (attr == "template") || (category == "doc") || (category == "header" && (!select.empty())) ||
-        ((((category == "preIncludeGlobal") || (category == "preIncludeLocal")) && attr.empty()) && (IsPreIncludeByTarget(context.rteActiveTarget, name)))){
+    // all filtered files from packs except bootstrap and config files
+    const bool bootstrap = rteComponent->GetGenerator() && !rteComponent->IsGenerated();
+    if (!bootstrap) {
+      const set<RteFile*>& filteredfilesSet = context.rteActiveTarget->GetFilteredFiles(rteComponent);
+      auto cmp = [](RteFile* a, RteFile* b) { return a->GetName() < b->GetName(); };
+      set<RteFile*, decltype(cmp)> filteredfiles(cmp);
+      filteredfiles.insert(filteredfilesSet.begin(), filteredfilesSet.end());
+      for (const auto& componentFile : filteredfiles) {
+        const auto& attr = componentFile->GetAttribute("attr");
+        if (attr == "config") {
+          continue;
+        }
+        const auto& name = rteComponent->GetPackage()->GetAbsolutePackagePath() + componentFile->GetAttribute("name");
+        const auto& category = componentFile->GetAttribute("category");
+        const auto& scope = componentFile->GetAttribute("scope");
+        const auto& language = componentFile->GetAttribute("language");
+        const auto& select = componentFile->GetAttribute("select");
+        const auto& version = componentFile->GetVersionString();
         context.componentFiles[componentId].push_back({ name, attr, category, language, scope, version, select });
       }
     }
@@ -2074,8 +2045,13 @@ bool ProjMgrWorker::ProcessComponentFiles(ContextItem& context) {
       }
     }
     // input files for component generator. This list of files is directly fetched from the PDSC.
-    if (rteComponent->GetGenerator()) {
-      for (const RteItem* rteFile: files) {
+    RteComponentInstance* rteBootstrapInstance = context.bootstrapComponents.find(componentId) != context.bootstrapComponents.end() ?
+      context.bootstrapMap.find(componentId) != context.bootstrapMap.end() ? context.bootstrapComponents.at(context.bootstrapMap.at(componentId)).instance :
+      context.bootstrapComponents.at(componentId).instance : nullptr;
+    if (rteBootstrapInstance != nullptr) {
+      RteComponent* rteBootstrapComponent = rteBootstrapInstance->GetParent()->GetComponent();
+      const auto& files = rteBootstrapComponent->GetFileContainer() ? rteBootstrapComponent->GetFileContainer()->GetChildren() : Collection<RteItem*>();
+      for (const RteItem* rteFile : files) {
         const auto& category = rteFile->GetAttribute("category");
         switch (RteFile::CategoryFromString(category)) {
         case RteFile::Category::GEN_SOURCE:
@@ -2180,6 +2156,8 @@ bool ProjMgrWorker::ProcessGpdsc(ContextItem& context) {
       }
       info->SetGpdscPack(gpdscPack);
     }
+    // bootstrap instance
+    const auto& bootstrap = context.bootstrapComponents[contextGpdsc.component];
     // insert gpdsc components
     const auto& gpdscComponents = gpdscPack->GetComponents();
     if (gpdscComponents) {
@@ -2192,10 +2170,12 @@ bool ProjMgrWorker::ProcessGpdsc(ContextItem& context) {
         }
         for (const auto component : components) {
           const auto& componentId = component->GetComponentID(true);
-          const auto& item = context.components[context.gpdscs.at(gpdscFile).component].item;
           RteComponentInstance* componentInstance = new RteComponentInstance(component);
           componentInstance->InitInstance(component);
-          context.components.insert({ componentId, { componentInstance, item, component->GetGeneratorName()} });
+          componentInstance->AddAttribute("gendir", bootstrap.instance->GetAttribute("gendir"));
+          componentInstance->AddAttribute("rtedir", bootstrap.instance->GetAttribute("rtedir"));
+          context.components[componentId] = { componentInstance, bootstrap.item, component->GetGeneratorName() };
+          context.bootstrapMap[componentId] = contextGpdsc.component;
         }
       }
     }

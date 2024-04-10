@@ -26,19 +26,24 @@ build:
       file: test-gpdsc-multiple-generators.axf
   components:
     - component: ARM::Device:RteTest Generated Component:RteTest@1.1.0
-      condition: RteDevice
-      from-pack: ARM::RteTestGenerator@0.1.0
+      condition: RteTest
+      from-pack: ARM::RteTestGenerator@1.0.0
       selected-by: Device:RteTest Generated Component:RteTest
       files:
-        - file: ../data/TestGenerator/GeneratedFiles/RteTestGeneratorWithKey/RteTestGen_ARMCM0/RteTest_Generated_Component.c
+        - file: ../data/TestGenerator/GeneratedFiles/RteTestGeneratorIdentifier/RteTestGen_ARMCM0/RteTest_Generated_Component.c
           category: sourceC
+          version: 1.1.0
       generator:
         id: RteTestGeneratorIdentifier
         from-pack: ARM::RteTestGenerator@0.1.0
     - component: ARM::Device:RteTest Generated Component:RteTestWithKey@1.1.0
-      condition: RteDevice
-      from-pack: ARM::RteTestGenerator@0.1.0
+      condition: RteTest
+      from-pack: ARM::RteTestGenerator@1.0.0
       selected-by: Device:RteTest Generated Component:RteTestWithKey
+      files:
+        - file: ../data/TestGenerator/GeneratedFiles/RteTestGeneratorWithKey/RteTestGen_ARMCM0/RteTest_Generated_Component.c
+          category: sourceC
+          version: 1.1.0
       generator:
         id: RteTestGeneratorWithKey
         from-pack: ARM::RteTestGenerator@0.1.0
@@ -116,13 +121,12 @@ build:
     - license: <unknown>
       packs:
         - pack: ARM::RteTestGenerator@0.1.0
-      components:
-        - component: ARM::Device:RteTest Generated Component:RteTestWithKey@1.1.0
     - license: <unknown>
       packs:
         - pack: ARM::RteTestGenerator@1.0.0
       components:
         - component: ARM::Device:RteTest Generated Component:RteTest@1.1.0
+        - component: ARM::Device:RteTest Generated Component:RteTestWithKey@1.1.0
     - license: <unknown>
       license-agreement: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Doc/license.txt
       packs:

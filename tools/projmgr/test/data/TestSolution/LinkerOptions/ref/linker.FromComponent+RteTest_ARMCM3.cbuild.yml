@@ -31,11 +31,18 @@ build:
       condition: BoardTest1
       from-pack: ARM::RteTest_DFP@0.2.0
       selected-by: Board:Test:Rev1
+      files:
+        - file: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include/ARMCM0.h
+          category: header
+          version: 1.1.1
     - component: ARM::Device:Startup&RteTest Startup@2.0.3
       condition: ARMCM3 RteTest
       from-pack: ARM::RteTest_DFP@0.2.0
       selected-by: Device:Startup
       files:
+        - file: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM3/Include/ARMCM3.h
+          category: header
+          version: 2.0.3
         - file: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/https:/arm-software.github.io/CMSIS_5/Core_A/html/startup_c_pg.html
           category: doc
           version: 2.0.3
