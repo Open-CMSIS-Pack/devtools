@@ -405,7 +405,7 @@ jobs:
         if: ${{ !github.event.repository.private }}
         uses: Wandalen/wretry.action@7e3e094b56685165ba2fb92f14c86f900907663a # v3.0.0
         with:
-          action: codecov/codecov-action@v4.3.0
+          action: codecov/codecov-action@v4
           with: |
             files: ./build/tools/projmgr/coverage_projmgr.info
             fail_ci_if_error: true
