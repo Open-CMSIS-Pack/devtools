@@ -58,6 +58,9 @@ build:
       from-pack: ARM::RteTest_DFP@0.2.0
       selected-by: Startup
       files:
+        - file: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include/ARMCM0.h
+          category: header
+          version: 2.0.3
         - file: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/https:/arm-software.github.io/CMSIS_5/Core_A/html/startup_c_pg.html
           category: doc
           version: 2.0.3

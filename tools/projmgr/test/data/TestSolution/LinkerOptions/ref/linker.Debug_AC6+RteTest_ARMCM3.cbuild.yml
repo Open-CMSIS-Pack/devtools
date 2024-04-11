@@ -31,6 +31,10 @@ build:
       condition: BoardTest1
       from-pack: ARM::RteTest_DFP@0.2.0
       selected-by: Board:Test:Rev1
+      files:
+        - file: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include/ARMCM0.h
+          category: header
+          version: 1.1.1
   linker:
     script: ../data/TestSolution/LinkerOptions/linkerScript.sct
     regions: ../data/TestSolution/LinkerOptions/RTE/Device/RteTest_ARMCM3/regions_RteTest_ARMCM3.h

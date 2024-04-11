@@ -18,8 +18,6 @@ build:
     - ARMCM3
     - _RTE_
   add-path:
-    - ../data/TestSolution/LanguageAndScope/pack/LanguageAndScope/Public
-    - ../data/TestSolution/LanguageAndScope/pack/LanguageAndScope/Visible
     - ../data/TestSolution/LanguageAndScope/RTE/_Debug_AC6_RteTest_ARMCM3
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM3/Include
   output-dirs:
@@ -33,19 +31,34 @@ build:
     - component: ARM::RteTest:LanguageAndScope@0.9.9
       from-pack: ARM::RteTest@0.1.0-alpha0
       selected-by: RteTest:LanguageAndScope
-      add-path:
-        - ../data/TestSolution/LanguageAndScope/pack/LanguageAndScope/Private
       files:
         - file: ../data/TestSolution/LanguageAndScope/pack/LanguageAndScope/Dummy.c
           category: source
           language: c
+          version: 0.9.9
         - file: ../data/TestSolution/LanguageAndScope/pack/LanguageAndScope/Dummy.cpp
           category: source
           language: cpp
+          version: 0.9.9
         - file: ../data/TestSolution/LanguageAndScope/pack/LanguageAndScope/Hidden/Hidden.h
           category: header
           language: c-cpp
           scope: hidden
+          version: 0.9.9
+        - file: ../data/TestSolution/LanguageAndScope/pack/LanguageAndScope/Private
+          category: include
+          language: c-cpp
+          scope: private
+          version: 0.9.9
+        - file: ../data/TestSolution/LanguageAndScope/pack/LanguageAndScope/Public
+          category: include
+          language: c-cpp
+          scope: public
+          version: 0.9.9
+        - file: ../data/TestSolution/LanguageAndScope/pack/LanguageAndScope/Visible/Visible.h
+          category: header
+          language: c-cpp
+          scope: visible
           version: 0.9.9
   linker:
     script: ../data/TestSolution/LanguageAndScope/RTE/Device/RteTest_ARMCM3/ac6_linker_script.sct.src

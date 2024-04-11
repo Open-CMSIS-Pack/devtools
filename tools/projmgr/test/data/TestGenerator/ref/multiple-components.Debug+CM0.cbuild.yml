@@ -26,11 +26,13 @@ build:
       file: multiple-components.axf
   components:
     - component: ARM::Device&RteTestBundle:RteTest Generated Component@1.1.0
-      from-pack: ARM::RteTestGenerator@0.1.0
+      condition: RteTest
+      from-pack: ARM::RteTestGenerator@1.0.0
       selected-by: Device&RteTestBundle:RteTest Generated Component
       files:
         - file: ../data/TestGenerator/MultipleComponents/RteTestGeneratorIdentifier/RteTestGen_ARMCM0/RteTest_Generated_Component1.c
           category: sourceC
+          version: 1.1.0
       generator:
         id: RteTestGeneratorIdentifier
         from-pack: ARM::RteTestGenerator@0.1.0
@@ -44,6 +46,7 @@ build:
       files:
         - file: ../data/TestGenerator/MultipleComponents/RteTestGeneratorIdentifier/RteTestGen_ARMCM0/RteTest_Generated_Component2.c
           category: source
+          version: 1.0.0
     - component: ARM::RteTest:CORE@0.1.1
       condition: Cortex-M Device
       from-pack: ARM::RteTest_DFP@0.2.0
