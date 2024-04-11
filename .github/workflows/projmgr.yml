@@ -410,6 +410,7 @@ jobs:
             files: ./build/tools/projmgr/coverage_projmgr.info
             fail_ci_if_error: true
             flags: projmgr-cov
+            token: ${{ secrets.CODECOV_TOKEN }}
             verbose: true
           attempt_limit: 3
           attempt_delay: 5000
