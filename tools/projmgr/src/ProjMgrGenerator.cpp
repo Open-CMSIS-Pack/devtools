@@ -52,6 +52,7 @@ bool ProjMgrGenerator::GenerateCprj(ContextItem& context, const string& filename
   XMLTreeElement* targetElement = rootElement->CreateElement("target");
   XMLTreeElement* componentsElement = rootElement->CreateElement("components");
   XMLTreeElement* filesElement = rootElement->CreateElement("files");
+  XMLTreeElement* executesElement = rootElement->CreateElement("executes");
 
   // Packages
   if (packagesElement) {
@@ -85,6 +86,15 @@ bool ProjMgrGenerator::GenerateCprj(ContextItem& context, const string& filename
     // Remove empty files element
     if (!filesElement->HasChildren()) {
       rootElement->RemoveChild("files", true);
+    }
+  }
+
+  if (executesElement) {
+    GenerateCprjExecutes(executesElement, context.cproject->executes);
+
+    // Remove empty executes element
+    if (!executesElement->HasChildren()) {
+      rootElement->RemoveChild("executes", true);
     }
   }
 
@@ -386,6 +396,34 @@ void ProjMgrGenerator::GenerateCprjGroups(XMLTreeElement* element, const vector<
 
       }
       GenerateCprjGroups(groupElement, groupNode.groups, compiler);
+    }
+  }
+}
+
+void ProjMgrGenerator::GenerateCprjExecutes(XMLTreeElement* element, const vector<ExecutesItem>& executes) {
+  for (const auto& executesItem : executes) {
+    XMLTreeElement* executeElement = element->CreateElement("execute");
+    if (executeElement) {
+      executeElement->AddAttribute("name", executesItem.execute);
+      executeElement->AddAttribute("run", executesItem.run);
+      if (executesItem.always) {
+        executeElement->AddAttribute("always", "true");
+      }
+
+      for (const auto& input : executesItem.input) {
+        XMLTreeElement* inputElement = executeElement->CreateElement("input");
+        inputElement->SetText(input);
+      }
+
+      for (const auto& output : executesItem.output) {
+        XMLTreeElement* outputElement = executeElement->CreateElement("output");
+        outputElement->SetText(output);
+      }
+
+      for (const auto& dependency : executesItem.dependsOn) {
+        XMLTreeElement* dependencyElement = executeElement->CreateElement("dependency");
+        dependencyElement->SetText(dependency);
+      }
     }
   }
 }

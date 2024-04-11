@@ -42,6 +42,7 @@ protected:
   void GenerateCprjTarget(XMLTreeElement* element, const ContextItem& context);
   void GenerateCprjComponents(XMLTreeElement* element, const ContextItem& context, bool nonLocked = false);
   void GenerateCprjGroups(XMLTreeElement* element, const std::vector<GroupNode>& groups, const std::string& compiler);
+  void GenerateCprjExecutes(XMLTreeElement* element, const std::vector<ExecutesItem>& executes);
   void GenerateCprjOptions(XMLTreeElement* element, const BuildType& buildType);
   void GenerateCprjMisc(XMLTreeElement* element, const std::vector<MiscItem>& miscVec);
   void GenerateCprjMisc(XMLTreeElement* element, const MiscItem& misc);

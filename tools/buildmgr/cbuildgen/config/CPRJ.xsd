@@ -545,6 +545,24 @@
     </xs:choice>
   </xs:complexType>
 
+  <!-- Executes section within the project section -->
+  <xs:complexType name="ExecuteType">
+    <xs:choice maxOccurs="unbounded">
+      <xs:element name="input"        type="xs:string" />
+      <xs:element name="output"       type="xs:string" />
+      <xs:element name="dependency"   type="xs:string" />
+    </xs:choice>
+    <xs:attribute name="name"         type="xs:string"         use="required" />
+    <xs:attribute name="run"          type="xs:string"         use="required" />
+    <xs:attribute name="always"       type="xs:boolean"        use="optional" default="false" />
+  </xs:complexType>
+
+  <xs:complexType name="ExecutesType">
+    <xs:sequence maxOccurs="unbounded">
+      <xs:element name="execute" type="ExecuteType" />
+    </xs:sequence>
+  </xs:complexType>
+
   <!-- Component selection section -->
   <xs:complexType name="ComponentsType">
     <xs:sequence>
@@ -666,7 +684,8 @@
             <xs:field xpath="@name"/>
           </xs:unique>
         </xs:element>
-        </xs:all>
+        <xs:element name="executes"       type="ExecutesType"     minOccurs="0" />
+      </xs:all>
       <!-- schema version used by writer -->
       <xs:attribute name="schemaVersion"  type="SchemaVersionType" use="required" />
     </xs:complexType>
