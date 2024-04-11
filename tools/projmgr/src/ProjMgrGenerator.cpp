@@ -212,69 +212,70 @@ void ProjMgrGenerator::GenerateCprjTarget(XMLTreeElement* element, const Context
 void ProjMgrGenerator::GenerateCprjComponents(XMLTreeElement* element, const ContextItem& context, bool nonLocked) {
   static constexpr const char* COMPONENT_ATTRIBUTES[] = { "Cbundle", "Cclass", "Cgroup", "Csub", "Cvariant", "Cvendor"};
   static constexpr const char* versionAttribute = "Cversion";
-  for (const auto& [componentId, component] : context.components) {
-    if (component.instance->IsGenerated()) {
-      continue;
-    }
-    XMLTreeElement* componentElement = element->CreateElement("component");
-    if (componentElement) {
-      for (const auto& name : COMPONENT_ATTRIBUTES) {
-        const string& value = component.instance->GetAttribute(name);
-        SetAttribute(componentElement, name, value);
+  for (const auto& components : { context.bootstrapComponents, context.components }) {
+    for (const auto& [componentId, component] : components) {
+      if (component.instance->IsGenerated()) {
+        continue;
       }
-      if (context.configFiles.find(componentId) != context.configFiles.end()) {
-        const string& rteDir = component.instance->GetAttribute("rtedir");
-        if (!rteDir.empty()) {
-          error_code ec;
-          // Adjust component's rtePath relative to cprj
-          SetAttribute(componentElement, "rtedir", fs::relative(context.cproject->directory + "/" + rteDir, context.directories.cprj, ec).generic_string());
+      XMLTreeElement* componentElement = element->CreateElement("component");
+      if (componentElement) {
+        for (const auto& name : COMPONENT_ATTRIBUTES) {
+          const string& value = component.instance->GetAttribute(name);
+          SetAttribute(componentElement, name, value);
         }
-      }
-      if (!component.generator.empty()) {
-        const string& genDir = component.instance->GetAttribute("gendir");
-        if (!genDir.empty()) {
-          error_code ec;
-          // Adjust component's genDir relative to cprj
-          SetAttribute(componentElement, "gendir", fs::relative(context.cproject->directory + "/" + genDir, context.directories.cprj, ec).generic_string());
+        if (context.configFiles.find(componentId) != context.configFiles.end()) {
+          const string& rteDir = component.instance->GetAttribute("rtedir");
+          if (!rteDir.empty()) {
+            error_code ec;
+            // Adjust component's rtePath relative to cprj
+            SetAttribute(componentElement, "rtedir", fs::relative(context.cproject->directory + "/" + rteDir, context.directories.cprj, ec).generic_string());
+          }
         }
-      }
-      if (component.item->instances > 1) {
-        SetAttribute(componentElement, "instances", to_string(component.item->instances));
-      }
+        if (!component.generator.empty()) {
+          const string& genDir = component.instance->GetAttribute("gendir");
+          if (!genDir.empty()) {
+            error_code ec;
+            // Adjust component's genDir relative to cprj
+            SetAttribute(componentElement, "gendir", fs::relative(context.cproject->directory + "/" + genDir, context.directories.cprj, ec).generic_string());
+          }
+        }
+        if (component.item->instances > 1) {
+          SetAttribute(componentElement, "instances", to_string(component.item->instances));
+        }
 
-      // Check whether non-locked option is not set or component version is required from user
-      if (!nonLocked || !RteUtils::GetSuffix(component.item->component, RteConstants::PREFIX_CVERSION_CHAR, true).empty()) {
+        // Check whether non-locked option is not set or component version is required from user
+        if (!nonLocked || !RteUtils::GetSuffix(component.item->component, RteConstants::PREFIX_CVERSION_CHAR, true).empty()) {
 
-        // Set Cversion attribute
-        SetAttribute(componentElement, versionAttribute, component.instance->GetAttribute(versionAttribute));
+          // Set Cversion attribute
+          SetAttribute(componentElement, versionAttribute, component.instance->GetAttribute(versionAttribute));
 
-        // Config files
-        for (const auto& configFileMap : context.configFiles) {
-          if (configFileMap.first == componentId) {
-            for (const auto& [_, configFile] : configFileMap.second) {
-              if (configFile->GetInstanceIndex() == 0) {
-                XMLTreeElement* fileElement = componentElement->CreateElement("file");
-                if (fileElement) {
-                  SetAttribute(fileElement, "attr", "config");
-                  SetAttribute(fileElement, "name", configFile->GetOriginalFileName());
-                  SetAttribute(fileElement, "category", configFile->GetAttribute("category"));
-                  const auto originalFile = configFile->GetFile(context.rteActiveTarget->GetName());
-                  SetAttribute(fileElement, "version", originalFile->GetVersionString());
+          // Config files
+          for (const auto& configFileMap : context.configFiles) {
+            if (configFileMap.first == componentId) {
+              for (const auto& [_, configFile] : configFileMap.second) {
+                if (configFile->GetInstanceIndex() == 0) {
+                  XMLTreeElement* fileElement = componentElement->CreateElement("file");
+                  if (fileElement) {
+                    SetAttribute(fileElement, "attr", "config");
+                    SetAttribute(fileElement, "name", configFile->GetOriginalFileName());
+                    SetAttribute(fileElement, "category", configFile->GetAttribute("category"));
+                    const auto originalFile = configFile->GetFile(context.rteActiveTarget->GetName());
+                    SetAttribute(fileElement, "version", originalFile->GetVersionString());
+                  }
                 }
               }
             }
           }
         }
+
+        GenerateCprjOptions(componentElement, component.item->build);
+        GenerateCprjMisc(componentElement, component.item->build.misc);
+        GenerateCprjVector(componentElement, component.item->build.defines, "defines");
+        GenerateCprjVector(componentElement, component.item->build.undefines, "undefines");
+        GenerateCprjVector(componentElement, component.item->build.addpaths, "includes");
+        GenerateCprjVector(componentElement, component.item->build.delpaths, "excludes");
       }
-
-      GenerateCprjOptions(componentElement, component.item->build);
-      GenerateCprjMisc(componentElement, component.item->build.misc);
-      GenerateCprjVector(componentElement, component.item->build.defines, "defines");
-      GenerateCprjVector(componentElement, component.item->build.undefines, "undefines");
-      GenerateCprjVector(componentElement, component.item->build.addpaths, "includes");
-      GenerateCprjVector(componentElement, component.item->build.delpaths, "excludes");
     }
-
   }
 }
 

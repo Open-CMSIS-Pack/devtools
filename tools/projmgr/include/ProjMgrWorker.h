@@ -299,6 +299,8 @@ struct ContextItem {
   std::map<std::string, std::string> targetAttributes;
   std::map<std::string, RtePackage*> packages;
   std::map<std::string, SelectedComponentItem> components;
+  std::map<std::string, SelectedComponentItem> bootstrapComponents;
+  StrMap bootstrapMap;
   std::vector<std::tuple<RteItem::ConditionResult, std::string, std::set<std::string>, std::set<std::string>>> validationResults;
   std::map<std::string, std::map<std::string, RteFileInstance*>> configFiles;
   std::map<std::string, std::vector<ComponentFileItem>> componentFiles;

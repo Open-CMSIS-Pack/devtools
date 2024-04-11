@@ -37,8 +37,12 @@ build:
       files:
         - file: ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/ComponentLevel/ComponentLevel.c
           category: sourceC
+          version: 0.0.1
         - file: ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/ComponentLevel/ComponentLevel.h
           category: preIncludeLocal
+          version: 0.0.1
+        - file: ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/ComponentLevel/Include/AbsoluteInclude.h
+          category: header
           version: 0.0.1
         - file: ../data/TestSolution/Instances/RTE/RteTest/ComponentLevelConfig_0.h
           category: preIncludeLocal

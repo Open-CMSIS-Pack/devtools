@@ -403,16 +403,9 @@ void ProjMgrYamlCbuild::SetContextNode(YAML::Node contextNode, const ContextItem
   SetDefineNode(contextNode[YAML_DEFINE], defines);
   vector<string> includes;
   if (context->rteActiveTarget != nullptr) {
-    for (const auto& targetIncludes : {
-      context->rteActiveTarget->GetIncludePaths(RteFile::Language::LANGUAGE_C),
-      context->rteActiveTarget->GetIncludePaths(RteFile::Language::LANGUAGE_CPP),
-      context->rteActiveTarget->GetIncludePaths(RteFile::Language::LANGUAGE_C_CPP),
-      context->rteActiveTarget->GetIncludePaths(RteFile::Language::LANGUAGE_NONE)
-      }) {
-      for (auto include : targetIncludes) {
-        RteFsUtils::NormalizePath(include, context->cproject->directory);
-        CollectionUtils::PushBackUniquely(includes, FormatPath(include, context->directories.cbuild));
-      }
+    for (auto include : context->rteActiveTarget->GetIncludePaths(RteFile::Language::LANGUAGE_NONE)) {
+      RteFsUtils::NormalizePath(include, context->cproject->directory);
+      CollectionUtils::PushBackUniquely(includes, FormatPath(include, context->directories.cbuild));
     }
   }
   SetNodeValue(contextNode[YAML_ADDPATH], includes);

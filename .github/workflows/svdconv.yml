@@ -239,12 +239,13 @@ jobs:
         if: ${{ !github.event.repository.private }}
         uses: Wandalen/wretry.action@42af9d415b6e955870e984489d2c9b97aabc949f # v3.1.0
         with:
-          action: codecov/codecov-action@v3
+          action: codecov/codecov-action@v4
           with: |
             files: ./build/tools/svdconv/coverage_svdconv.info
             fail_ci_if_error: true
             flags: svdconv-cov
-            functionalities: fix
+            token: ${{ secrets.CODECOV_TOKEN }}
+            verbose: true
           attempt_limit: 3
           attempt_delay: 5000
 

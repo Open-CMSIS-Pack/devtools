@@ -34,10 +34,11 @@ build:
       from-pack: ARM::RteTest@0.1.0
       selected-by: RteTest:TemplateFile
       files:
-        - file: ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/Dummy/dummy.c
-          category: sourceC
         - file: ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/API/IConfig.h
           category: api
+        - file: ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/Dummy/dummy.c
+          category: sourceC
+          version: 0.9.9
         - file: ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/Include/Config/ConfigInclude.h
           category: header
           version: 0.9.9
