@@ -90,8 +90,8 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Packs_Required_Warning) {
   StdStreamRedirect streamRedirect;
   const vector<string> warnings = {
     "pack 'ARM::RteTest_DFP@0.1.1:0.2.0' required by pack 'ARM::RteTest@0.1.0' is not specified",
-    "pack 'ARM::RteTestRequiredRecursive@1.0.0:2.0.0' required by pack 'ARM::RteTestRequired@1.0.0' is not specified",
-    "pack 'ARM::RteTest_DFP@0.1.1:0.2.0' required by pack 'ARM::RteTestRequired@1.0.0' is not specified"
+    "pack 'ARM::RteTestRequiredRecursive@1.0.0:2.0.0' required by pack 'ARM::RteTestRequired@1.0.1-local' is not specified",
+    "pack 'ARM::RteTest_DFP@0.1.1:0.2.0' required by pack 'ARM::RteTestRequired@1.0.1-local' is not specified"
   };
 
   const string csolution = testinput_folder + "/TestSolution/test_pack_requirements.csolution.yml";
