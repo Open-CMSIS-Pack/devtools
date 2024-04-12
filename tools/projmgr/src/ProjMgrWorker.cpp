@@ -1519,18 +1519,20 @@ bool ProjMgrWorker::AddPackRequirements(ContextItem& context, const vector<PackI
         PackageItem package;
         ProjMgrUtils::ConvertToPackInfo(packageEntry.pack, package.pack);
 
-        // Resolve version range using installed packs
+        // Resolve version range using installed/local packs
         if (!package.pack.name.empty() && !WildCards::IsWildcardPattern(package.pack.name)) {
-          string reqVersionRange = ProjMgrUtils::ConvertToVersionRange(package.pack.version);
-          string path = m_packRoot + '/' + package.pack.vendor + '/' + package.pack.name;
-          string installedVersion = VersionCmp::RemoveVersionMeta(RteFsUtils::GetInstalledPackVersion(path, reqVersionRange));
-
-          // Only remember the version of the pack if we had it installed
+          XmlItem attributes({
+          {"name",    package.pack.name},
+          {"vendor",  package.pack.vendor},
+          {"version", ProjMgrUtils::ConvertToVersionRange(package.pack.version)},
+          });
+          auto pdsc = m_kernel->GetEffectivePdscFile(attributes);
+          // Only remember the version of the pack if we had it installed or local
           // Will be used when serializing the cbuild-pack.yml file later
-          if (!installedVersion.empty()) {
-            const string newPackId = RtePackage::ComposePackageID(package.pack.vendor, package.pack.name, installedVersion);
-            context.userInputToResolvedPackIdMap[packageEntry.pack].insert(newPackId);
-            package.pack.version = installedVersion;
+          if (!pdsc.first.empty()) {
+            context.userInputToResolvedPackIdMap[packageEntry.pack].insert(pdsc.first);
+            string installedVersion = RtePackage::VersionFromId(pdsc.first);
+            package.pack.version = VersionCmp::RemoveVersionMeta(installedVersion);
           } else {
             // Remember that we had the user input, but it does not match any installed pack
             context.userInputToResolvedPackIdMap[packageEntry.pack] = {};
