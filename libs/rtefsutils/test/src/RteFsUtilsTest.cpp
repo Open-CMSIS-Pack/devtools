@@ -1176,39 +1176,30 @@ TEST_F(RteFsUtilsTest, FileCategoryFromExtension) {
 }
 
 TEST_F(RteFsUtilsTest, GetAbsPathFromLocalUrl) {
+
+  // Absolute dummy path
 #ifdef _WIN32
-  // Absolute dummy path
-  const string& absoluteFilename = "C:/path/to/file.txt";
-
-  // Local host
-  const string& testUrlLocalHost = "file://localhost/" + absoluteFilename;
-  EXPECT_EQ(absoluteFilename, RteFsUtils::GetAbsPathFromLocalUrl(testUrlLocalHost));
-
-  // Empty host
-  const string& testUrlEmptyHost = "file:///" + absoluteFilename;
-  EXPECT_EQ(absoluteFilename, RteFsUtils::GetAbsPathFromLocalUrl(testUrlEmptyHost));
-
-  // Omitted host
-  const string& testUrlOmittedHost = "file:/" + absoluteFilename;
-  EXPECT_EQ(absoluteFilename, RteFsUtils::GetAbsPathFromLocalUrl(testUrlOmittedHost));
-
+  const string absoluteFilename = "C:/path/to/file.txt";
 #else
-  // Absolute dummy path
-  const string& absoluteFilename = "/path/to/file.txt";
+  const string absoluteFilename = "/path/to/file.txt";
+#endif
+  vector<string> files = {absoluteFilename, "relative/file", "./relative/file", "../relative/file"};
+  for(auto fileName : files) {
+    // file itself always passes: relative or absolute
+    EXPECT_EQ(fileName, RteFsUtils::GetAbsPathFromLocalUrl(fileName));
+  }
 
-  // Local host
-  const string& testUrlLocalHost = "file://localhost" + absoluteFilename;
+  //other support cases only  absolute file names
+  const string testUrlLocalHost = "file://localhost/" + absoluteFilename;
   EXPECT_EQ(absoluteFilename, RteFsUtils::GetAbsPathFromLocalUrl(testUrlLocalHost));
 
   // Empty host
-  const string& testUrlEmptyHost = "file://" + absoluteFilename;
+  const string testUrlEmptyHost = "file:///" + absoluteFilename;
   EXPECT_EQ(absoluteFilename, RteFsUtils::GetAbsPathFromLocalUrl(testUrlEmptyHost));
 
   // Omitted host
-  const string& testUrlOmittedHost = "file:" + absoluteFilename;
+  const string testUrlOmittedHost = "file:/" + absoluteFilename;
   EXPECT_EQ(absoluteFilename, RteFsUtils::GetAbsPathFromLocalUrl(testUrlOmittedHost));
-#endif
-
 }
 
 // end of RteFsUtilsTest.cpp

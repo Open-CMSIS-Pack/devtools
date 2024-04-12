@@ -20,6 +20,8 @@
 
 #include "RteUtils.h"
 #include "RteFsUtils.h"
+#include "RteConstants.h"
+
 #include "XmlFormatter.h"
 #include "YmlFormatter.h"
 
@@ -327,11 +329,15 @@ bool RteKernel::LoadPacks(const std::list<std::string>& pdscFiles, std::list<Rte
   for(auto& pdscFile : pdscFiles) {
     auto rteItemBuilder = CreateUniqueRteItemBuilder(model, model->GetPackageState());
     xmlTree->SetXmlItemBuilder(rteItemBuilder.get());
+    RtePackage* pack = packRegistry->GetPack(pdscFile);
     if(bReplace) {
       packRegistry->ErasePack(pdscFile);
+    } else if(pack) {
+      packs.push_back(pack);
+      continue;
     }
-    bool result = xmlTree->AddFileName(pdscFile, true);
-    RtePackage* pack = rteItemBuilder->GetPack();
+    bool result = xmlTree->ParseFile(pdscFile);
+    pack = rteItemBuilder->GetPack();
     if(!result || !pack) {
       GetRteCallback()->Err("R802", R802, pdscFile);
       GetRteCallback()->OutputMessages(xmlTree->GetErrorStrings());
@@ -365,20 +371,17 @@ bool RteKernel::LoadRequiredPdscFiles(CprjFile* cprjFile)
   list<RtePackage*> packs;
   set<string> processedFiles;
   for (RteItem *packRequirement : packRequirements) {
-    string packId, pdscFile;
+    pair<string,string> pdscFile;
     // Get pdsc from pack 'path' attribute
     if (packRequirement->HasAttribute("path")) {
       const string& absCprjPath = RteFsUtils::AbsolutePath(cprjFile->GetPackageFileName()).generic_string();
-      pdscFile = GetPdscFileFromPath(*packRequirement, RteFsUtils::ParentPath(absCprjPath), packId);
+      pdscFile = GetPdscFileFromPath(*packRequirement, RteFsUtils::ParentPath(absCprjPath));
     }
-    // Get local repo version
-    if (pdscFile.empty()) {
-      pdscFile = GetLocalPdscFile(*packRequirement, GetCmsisPackRoot(), packId);
+    // Get installed or local repo version
+    if (pdscFile.second.empty()) {
+      pdscFile = GetEffectivePdscFile(*packRequirement);
     }
-    if(pdscFile.empty()) {
-      pdscFile = GetInstalledPdscFile(*packRequirement, GetCmsisPackRoot(), packId);
-    }
-    if(pdscFile.empty()) {
+    if(pdscFile.second.empty()) {
       string msg= R821;
 
       msg += packRequirement->GetPackageID(true);
@@ -387,14 +390,14 @@ bool RteKernel::LoadRequiredPdscFiles(CprjFile* cprjFile)
       // TODO: install missing pack (not needed for web version)
       return false;
     }
-    if(processedFiles.find(pdscFile) != processedFiles.end()) {
+    if(processedFiles.find(pdscFile.second) != processedFiles.end()) {
       continue; // already processed
     }
-    processedFiles.insert(pdscFile);
-    if(GetGlobalModel()->GetPackage(packId) ){
+    processedFiles.insert(pdscFile.second);
+    if(GetGlobalModel()->GetPackage(pdscFile.first) ){
        continue; // already installed
     }
-    RtePackage* pack = LoadPack(pdscFile);
+    RtePackage* pack = LoadPack(pdscFile.second);
     if (!pack) {
       return false; // error already reported
     }
@@ -404,27 +407,48 @@ bool RteKernel::LoadRequiredPdscFiles(CprjFile* cprjFile)
   return true;
 }
 
-bool RteKernel::GetInstalledPacks(std::list<std::string>& pdscFiles, bool latest)
+bool RteKernel::GetEffectivePdscFilesAsMap(map<string, string, RtePackageComparator>& pdscMap, bool latest) const
 {
-   auto& cmsisPackRoot = GetCmsisPackRoot();
-   if (cmsisPackRoot.empty()) {
-     return false;
-   }
-   RteKernel::GetInstalledPdscFiles(pdscFiles, GetCmsisPackRoot(), latest);
-
-  // Find pdsc files from local repository
-  list<string> localPdscUrls;
-  if (!GetLocalPacksUrls(GetCmsisPackRoot(), localPdscUrls)) {
+  auto& cmsisPackRoot = GetCmsisPackRoot();
+  if(cmsisPackRoot.empty()) {
     return false;
   }
-  for (const auto& localPdscUrl : localPdscUrls) {
-    list<string> localPdscFiles;
-    RteFsUtils::GetPackageDescriptionFiles(localPdscFiles, localPdscUrl, 1);
-    // Insert local pdsc files first
-    pdscFiles.insert(pdscFiles.begin(), localPdscFiles.begin(), localPdscFiles.end());
+  // Get all installed files
+  RteKernel::GetInstalledPdscFiles(pdscMap);
+
+  // Overwrite entries with local pdsc files if any
+  XmlItem emptyAttributes;
+  GetLocalPdscFiles(emptyAttributes, pdscMap);
+
+  // purge entries if only latest are required
+  if(latest) {
+    string processedCommonId;
+    for(auto it = pdscMap.begin(); it != pdscMap.end();) {
+      auto itcur = it++;
+      string commonId = RtePackage::CommonIdFromId(itcur->first);
+      if(commonId == processedCommonId) {
+        pdscMap.erase(itcur);
+      } else {
+        processedCommonId = commonId;
+      }
+    }
   }
   return true;
 }
+
+
+bool RteKernel::GetEffectivePdscFiles(std::list<std::string>& pdscFiles, bool latest) const
+{
+  map<string, string, RtePackageComparator> pdscMap;
+  if(!GetEffectivePdscFilesAsMap(pdscMap, latest)) {
+    return false;
+  }
+  for(auto& [id, f] : pdscMap) {
+    pdscFiles.push_back(f);
+  }
+  return true;
+}
+
 
 bool RteKernel::LoadAndInsertPacks(std::list<RtePackage*>& packs, std::list<std::string>& pdscFiles) {
   RteGlobalModel* globalModel = GetGlobalModel();
@@ -454,66 +478,64 @@ bool RteKernel::LoadAndInsertPacks(std::list<RtePackage*>& packs, std::list<std:
 }
 
 
-void RteKernel::GetInstalledPdscFiles(list<string>& files, const std::string& rtePath, bool latest)
+void RteKernel::GetInstalledPdscFiles(std::map<std::string, std::string, RtePackageComparator>& pdscMap) const
 {
-  if (!latest) {
-    RteFsUtils::GetPackageDescriptionFiles(files, rtePath, 3);
-    files.sort(RtePdscComparator());
-  } else {
-    list<string> allFiles;
-    RteFsUtils::GetPackageDescriptionFiles(allFiles, rtePath, 3);
-    allFiles.sort(RtePdscComparator());
-    string commonId;
-    for (auto& f : allFiles) {
-      string id = RtePackage::CommonIdFromId(RtePackage::PackIdFromPath(f));
-      if (id == commonId) {
-        continue; // skip packs with the same common ID
-      }
-      commonId = id;
-      files.push_back(f);
+  list<string> allFiles;
+  RteFsUtils::GetPackageDescriptionFiles(allFiles, GetCmsisPackRoot(), 3);
+  for(auto& f : allFiles) {
+    string id = RtePackage::PackIdFromPath(f);
+    pdscMap[id] = f;
+  }
+}
+
+pair<string, string> RteKernel::GetInstalledPdscFile(const XmlItem& attributes) const
+{
+  const string& name = attributes.GetAttribute("name");
+  const string& vendor = attributes.GetAttribute("vendor");
+  if(!name.empty() && !vendor.empty()) {
+    string path = GetCmsisPackRoot() + '/' + vendor + '/' + name;
+    const string& versionRange = attributes.GetAttribute("version");
+    string installedVersion = RteFsUtils::GetInstalledPackVersion(path, versionRange);
+    if(!installedVersion.empty()) {
+      string packId = RtePackage::ComposePackageID(vendor, name, installedVersion);
+      path += '/' + installedVersion + '/' + vendor + '.' + name + ".pdsc";
+      return make_pair(packId, path);
     }
   }
+  return make_pair(RteUtils::EMPTY_STRING, RteUtils::EMPTY_STRING);
 }
-string RteKernel::GetInstalledPdscFile(const XmlItem& attributes, const string& rtePath, string& packId)
+
+pair<string, string> RteKernel::GetLocalPdscFile(const XmlItem& attributes) const
 {
-  const string& name = attributes.GetAttribute("name");
-  const string& vendor = attributes.GetAttribute("vendor");
-  const string& versionRange = attributes.GetAttribute("version");
-
-  string path(rtePath);
-  path += '/' + vendor + '/' + name;
-
-  string installedVersion = RteFsUtils::GetInstalledPackVersion(path, versionRange);
-  if (!installedVersion.empty()) {
-    packId = RtePackage::ComposePackageID(vendor, name, installedVersion);
-    return path + '/' + installedVersion + '/' + vendor + '.' + name + ".pdsc";
+  map<string, string, RtePackageComparator> pdscMap;
+  if(!attributes.IsEmpty() && GetLocalPdscFiles(attributes, pdscMap)) {
+    return *pdscMap.begin();
   }
-  return RteUtils::EMPTY_STRING;
+  return make_pair(RteUtils::EMPTY_STRING, RteUtils::EMPTY_STRING);
 }
 
-string RteKernel::GetLocalPdscFile(const XmlItem& attributes, const string& rtePath, string& packId)
+pair<string, string> RteKernel::GetEffectivePdscFile(const XmlItem& attributes) const
 {
-  const string& name = attributes.GetAttribute("name");
-  const string& vendor = attributes.GetAttribute("vendor");
-  const string& versionRange = attributes.GetAttribute("version");
+  auto localPdsc = GetLocalPdscFile(attributes);
+  auto installedPdsc = GetInstalledPdscFile(attributes);
 
-  string url, version;
-  if (GetUrlFromIndex(rtePath, name, vendor, versionRange, url, version)) {
-    packId = RtePackage::ComposePackageID(vendor, name, version);
-    return url;
+  string localVersion = RtePackage::VersionFromId(localPdsc.first);
+  string installedVersion = RtePackage::VersionFromId(installedPdsc.first);
+  if(!localVersion.empty() && VersionCmp::Compare(localVersion, installedVersion) >= 0) {
+    return localPdsc;
   }
-
-  return RteUtils::EMPTY_STRING;
+  return installedPdsc;
 }
 
-string RteKernel::GetPdscFileFromPath(const XmlItem& attributes, const string& cprjPath, string& packId)
+
+pair<string, string> RteKernel::GetPdscFileFromPath(const XmlItem& attributes, const string& prjPath) const
 {
   const string& name = attributes.GetAttribute("name");
   const string& vendor = attributes.GetAttribute("vendor");
   const string& version = attributes.GetAttribute("version");
 
   string packPath = attributes.GetAttribute("path");
-  RteFsUtils::NormalizePath(packPath, cprjPath + '/');
+  RteFsUtils::NormalizePath(packPath, prjPath + '/');
   if (!RteFsUtils::Exists(packPath)) {
     GetRteCallback()->Err("R822", R822, packPath);
   } else {
@@ -523,54 +545,54 @@ string RteKernel::GetPdscFileFromPath(const XmlItem& attributes, const string& c
     } else if (pdscFilesList.size() > 1) {
       GetRteCallback()->Err("R824", R824, packPath);
     } else {
-      packId = vendor + '.' + name + (version.empty() ? "" : '.' + version);
-      return pdscFilesList.front().generic_string();
+      string packId = vendor + '.' + name + (version.empty() ? "" : '.' + version);
+      string pdscFile = pdscFilesList.front().generic_string();
+      return make_pair(packId, pdscFile);
     }
   }
 
-  return RteUtils::EMPTY_STRING;
+  return make_pair(RteUtils::EMPTY_STRING, RteUtils::EMPTY_STRING);
 }
 
-bool RteKernel::GetUrlFromIndex(const string& rtePath, const string& name, const string& vendor, const string& versionRange,
-                               string& indexedUrl, string& indexedVersion) const
+bool RteKernel::GetLocalPdscFiles(const XmlItem& attr, std::map<std::string, std::string, RtePackageComparator>& pdscMap) const
 {
-  unique_ptr<XMLTreeElement> pIndex(ParseLocalRepositoryIdx(rtePath));
-  if (!pIndex) {
+  unique_ptr<XMLTreeElement> pIndex(ParseLocalRepositoryIdx());
+  if(!pIndex) {
     return false;
   }
-  map<string, string> pdscMap;
+  const string& name = attr.GetAttribute("name");
+  const string& vendor = attr.GetAttribute("vendor");
+  const string& versionRange = attr.GetAttribute("version");
+  bool found = false;
   // Populate map with items matching name, vendor and version range
-  for (const auto& item : pIndex->GetChildren()) {
-    if ((name == item->GetAttribute("name")) && (vendor == item->GetAttribute("vendor"))) {
+  for (auto& item : pIndex->GetChildren()) {
+    if ((name.empty() || name == item->GetAttribute("name"))
+        && (vendor.empty() || vendor == item->GetAttribute("vendor")))
+    {
       // Load the local pack to get its version. The 'version' attribute in the local repository index is ignored.
-      list<string> localPdscFiles;
-      RteFsUtils::GetPackageDescriptionFiles(localPdscFiles, RteFsUtils::GetAbsPathFromLocalUrl(item->GetAttribute("url")), 1);
-      for (const auto& localPdscFile : localPdscFiles) {
-        RtePackage* pack = LoadPack(localPdscFile);
-        if (pack) {
-          const string& version = pack->GetVersionString();
-          if (versionRange.empty() || VersionCmp::RangeCompare(version, versionRange) == 0) {
-            pdscMap[version] = localPdscFile;
-          }
+      string url = RteFsUtils::GetAbsPathFromLocalUrl(item->GetAttribute("url"));
+      if(RteFsUtils::IsRelative(url)) {
+        url = RteFsUtils::MakePathCanonical(item->GetRootFilePath() + url) + '/';
+      }
+      const string localPdscFile = url + item->GetAttribute("vendor") + '.' + item->GetAttribute("name") + ".pdsc";
+      RtePackage* pack = LoadPack(localPdscFile);
+      if(pack) {
+        const string& version = pack->GetVersionString();
+        if(versionRange.empty() || VersionCmp::RangeCompare(version, versionRange) == 0) {
+          pdscMap[pack->GetID()] = localPdscFile;
+          found = true;
         }
       }
     }
   }
-
-  // Return last element from the map
-  if (!pdscMap.empty()) {
-    indexedVersion = pdscMap.rbegin()->first;
-    indexedUrl = pdscMap.rbegin()->second;
-    return true;
-  }
-
-  return false;
+  return found;
 }
 
-XMLTreeElement* RteKernel::ParseLocalRepositoryIdx(const string& rtePath) const
+
+XMLTreeElement* RteKernel::ParseLocalRepositoryIdx() const
 {
   // Parse local repository index file
-  const string& indexPath = string(rtePath) + "/.Local/local_repository.pidx";
+  const string indexPath = GetCmsisPackRoot() + "/.Local/local_repository.pidx";
 
   if (!RteFsUtils::Exists(indexPath)) {
     return nullptr;
@@ -579,28 +601,18 @@ XMLTreeElement* RteKernel::ParseLocalRepositoryIdx(const string& rtePath) const
   if (!xmlTree->AddFileName(indexPath, true) || xmlTree->GetChildren().empty()) {
     return nullptr;
   }
-
   // Parse index file
   XMLTreeElement* indexChild = xmlTree->GetFirstChild("index");
   XMLTreeElement* pIndexChild = indexChild ? indexChild->GetFirstChild("pindex") : nullptr;
   if (!pIndexChild) {
     return nullptr;
   }
+  // save filename to process relative paths
+  pIndexChild->SetRootFileName(indexPath);
   pIndexChild->Reparent(nullptr); // detach from parent to avoid deletion
   return pIndexChild;
 }
 
-bool RteKernel::GetLocalPacksUrls(const string& rtePath, list<string>& urls) const
-{
-  unique_ptr<XMLTreeElement> pIndex(ParseLocalRepositoryIdx(rtePath));
-  if(pIndex) {
-    for(const auto& item : pIndex->GetChildren()) {
-      const string& url = RteFsUtils::GetAbsPathFromLocalUrl(item->GetAttribute("url"));
-      urls.push_back(url);
-    }
-  }
-  return true;
-}
 
 unique_ptr<XMLTree> RteKernel::CreateUniqueXmlTree(IXmlItemBuilder* itemBuilder, const std::string& ext) const
 {

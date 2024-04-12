@@ -52,17 +52,30 @@ TEST(RteModelTest, PackRegistry) {
   EXPECT_EQ(packRegistry->GetLoadedPacks().size(), 0);
 
   list<string> files;
-  rteKernel.GetInstalledPacks(files, false);
+  rteKernel.GetEffectivePdscFiles(files, false);
   EXPECT_FALSE(files.empty());
   list<RtePackage*> packs;
   EXPECT_TRUE(rteKernel.LoadPacks(files, packs, &testModel));
   EXPECT_FALSE(packs.empty());
   EXPECT_EQ(packs.size(), files.size());
   EXPECT_EQ(packRegistry->GetLoadedPacks().size(), packs.size());
-  // no reload of the same files
-  packs.clear();
-  EXPECT_TRUE(rteKernel.LoadPacks(files, packs, &testModel));
-  EXPECT_TRUE(packs.empty()); // no new packs inserted
+ // to check if packs are the same or reloaded, modify the first pack
+  pack = *(packs.begin());
+  RteItem* dummyChild = new RteItem("dummy_child", pack);
+  pack->AddItem(dummyChild);
+  // no reload of the same files by default
+  list<RtePackage*> packs1;
+  EXPECT_TRUE(rteKernel.LoadPacks(files, packs1, &testModel));
+  EXPECT_EQ(packs1.size(), files.size());
+  EXPECT_EQ(packs, packs1); // no new packs loaded
+  auto pack1 = *packs1.begin();
+  EXPECT_EQ(pack1->GetFirstChild("dummy_child"), dummyChild);
+  // but replace if requested
+  packs1.clear();
+  EXPECT_TRUE(rteKernel.LoadPacks(files, packs1, &testModel, true));
+  EXPECT_EQ(packs1.size(), files.size());
+  EXPECT_EQ(pack1->GetFirstChild("dummy_child"), nullptr); // pack got loaded again => no added child
+
   EXPECT_EQ(packRegistry->GetLoadedPacks().size(), files.size());
   const string& firstFile = *files.begin();
   pack = packRegistry->GetPack(firstFile);
@@ -71,28 +84,26 @@ TEST(RteModelTest, PackRegistry) {
   EXPECT_TRUE(packRegistry->ErasePack(firstFile));
   EXPECT_FALSE(packRegistry->GetPack(firstFile) != nullptr);
   EXPECT_FALSE(packRegistry->ErasePack(firstFile)); // already not in collection
-
-  EXPECT_TRUE(rteKernel.LoadPacks(files, packs, &testModel));
-  EXPECT_EQ(packs.size(), 1); //only one pack is loaded
   packs.clear();
-  EXPECT_TRUE(rteKernel.LoadPacks(files, packs, &testModel, true));
-  EXPECT_EQ(packs.size(), files.size()); // pack reloaded
+  EXPECT_TRUE(rteKernel.LoadPacks(files, packs, &testModel));
+  EXPECT_EQ(packs.size(), packs1.size()); //only one pack is loaded
+  packs.clear();
 }
 
 TEST(RteModelTest, LoadPacks) {
 
   RteKernelSlim rteKernel;  // here just to instantiate XMLTree parser
   list<string> latestFiles;
-  EXPECT_FALSE(rteKernel.GetInstalledPacks(latestFiles, true));
+  EXPECT_FALSE(rteKernel.GetEffectivePdscFiles(latestFiles, true));
 
   rteKernel.SetCmsisPackRoot(RteModelTestConfig::CMSIS_PACK_ROOT);
 
-  EXPECT_TRUE(rteKernel.GetInstalledPacks(latestFiles, true));
-  EXPECT_EQ(latestFiles.size(), 7);
+  EXPECT_TRUE(rteKernel.GetEffectivePdscFiles(latestFiles, true));
+  EXPECT_EQ(latestFiles.size(), 8);
 
   list<string> files;
-  rteKernel.GetInstalledPacks(files, false);
-  EXPECT_EQ(files.size(), 8);
+  rteKernel.GetEffectivePdscFiles(files, false);
+  EXPECT_EQ(files.size(), 11);
 
   RteModel* rteModel = rteKernel.GetGlobalModel();
   ASSERT_NE(rteModel, nullptr);
@@ -241,7 +252,6 @@ protected:
   } m_toolInfo;
 
   bool HeaderContainsToolInfo(const string& fileName);
-  string UpdateLocalIndex();
   void GenerateHeadersTest(const string& project, const string& rteFolder,
     const bool& removeExistingHeaders = false, const bool& expectHeaderUpdate = false);
 
@@ -265,31 +275,6 @@ bool RteModelPrjTest::HeaderContainsToolInfo(const string& fileName) {
   pos1 = fileBuffer.find(expectHeaderInfo1, 0);
   pos2 = fileBuffer.find(expectHeaderInfo2, pos1);
   return ((pos1 != std::string::npos && pos2 != std::string::npos)) ? true : false;
-}
-
-string RteModelPrjTest::UpdateLocalIndex() {
-  const string index = localRepoDir + "/.Local/local_repository.pidx";
-  const string pdsc = RteModelTestConfig::CMSIS_PACK_ROOT + "/ARM/RteTest/0.1.0/ARM.RteTest.pdsc";
-  const string original = "file://localhost/packs/LocalVendor/LocalPack/";
-  const string replace = "file://localhost/" + RteModelTestConfig::CMSIS_PACK_ROOT + "/ARM/RteTest/0.1.0/";
-  string line;
-  vector<string> buffer;
-
-  ifstream in(index);
-  while (getline(in, line)) {
-    size_t pos = line.find(original);
-    if (pos != string::npos) {
-      line.replace(pos, original.length(), replace);
-    }
-    buffer.push_back(line);
-  }
-  in.close();
-
-  ofstream out(index);
-  for (vector<string>::iterator it = buffer.begin(); it != buffer.end(); it++) {
-    out << *it << endl;
-  }
-  return pdsc;
 }
 
 void RteModelPrjTest::GenerateHeadersTest(const string& project, const string& rteFolder,
@@ -479,12 +464,13 @@ TEST_F(RteModelPrjTest, ExtGenAndAccessSeq) {
   RteKernelSlim rteKernel(&callback);
   callback.SetRteKernel(&rteKernel);
   rteKernel.SetCmsisPackRoot(RteModelTestConfig::CMSIS_PACK_ROOT);
-  rteKernel.SetCmsisToolboxDir(RteModelTestConfig::localRepoDir);
+  string absPath = RteFsUtils::MakePathCanonical(RteFsUtils::AbsolutePath(RteModelTestConfig::LOCAL_REPO_DIR).generic_string());
+  rteKernel.SetCmsisToolboxDir(absPath);
   rteKernel.Init();
 
   // load all installed packs
   list<string> files;
-  rteKernel.GetInstalledPacks(files, false);
+  rteKernel.GetEffectivePdscFiles(files, false);
   RteModel* rteModel = rteKernel.GetGlobalModel();
   ASSERT_TRUE(rteModel);
   rteModel->SetUseDeviceTree(true);
@@ -510,16 +496,12 @@ TEST_F(RteModelPrjTest, ExtGenAndAccessSeq) {
   RteGenerator* gen = c->GetGenerator();
   ASSERT_TRUE(gen);
 
-  string absPath = RteFsUtils::AbsolutePath(RteModelTestConfig::localRepoDir).generic_string();
-
   string path = gen->GetExpandedWorkingDir(activeTarget);
   EXPECT_EQ(path, "RteModelTestProjects/RteTestM3/Target 1/RteTest_ARMCM3/");
-
-
   string cmd = gen->GetExpandedCommandLine(activeTarget);
-  cmd = RteUtils::ReplaceAll(cmd, absPath, "$(CMSIS_TOOLBOX)");
-  const string expectedCmd =
-    "$(CMSIS_TOOLBOX)/bin/RunTestGen \"RteModelTestProjects/RteTestM3/Target 1.cbuild-gen-idx.yml\"";
+
+  EXPECT_EQ(rteKernel.GetCmsisToolboxDir(), absPath);
+  const string expectedCmd = absPath + "/bin/RunTestGen \"RteModelTestProjects/RteTestM3/Target 1.cbuild-gen-idx.yml\"";
   EXPECT_EQ(cmd, expectedCmd);
 
   // test additional expansions
@@ -715,22 +697,112 @@ TEST_F(RteModelPrjTest, LoadCprjConfigVer) {
 
 TEST_F(RteModelPrjTest, GetLocalPdscFile) {
   RteKernelSlim rteKernel;
-  const string& expectedPdsc = UpdateLocalIndex();
+  rteKernel.SetCmsisPackRoot(packsDir);
 
   XmlItem attributes;
+  auto pdsc = rteKernel.GetLocalPdscFile(attributes);
+  EXPECT_TRUE(pdsc.first.empty());
+  EXPECT_TRUE(pdsc.second.empty());
+
   attributes.AddAttribute("name", "LocalPack");
   attributes.AddAttribute("vendor", "LocalVendor");
-  attributes.AddAttribute("version", "0.1.0");
-  string packId;
-  string pdsc = rteKernel.GetLocalPdscFile(attributes, localRepoDir, packId);
+  pdsc = rteKernel.GetLocalPdscFile(attributes);
 
   // check returned packId
-  EXPECT_EQ(packId, "LocalVendor::LocalPack@0.1.0");
+  EXPECT_EQ(pdsc.first, "LocalVendor::LocalPack@1.0.1");
 
   // check returned pdsc
+  const string expectedPdsc =
+    RteFsUtils::MakePathCanonical(RteFsUtils::AbsolutePath(localPacks + "/L/LocalVendor.LocalPack.pdsc").generic_string());
   error_code ec;
-  EXPECT_TRUE(fs::equivalent(pdsc, expectedPdsc, ec));
+  EXPECT_TRUE(fs::equivalent(pdsc.second, expectedPdsc, ec));
 }
+
+TEST_F(RteModelPrjTest, GetInstalledPdscFile) {
+  RteKernelSlim rteKernel;
+  rteKernel.SetCmsisPackRoot(packsDir);
+
+  XmlItem attributes;
+  auto pdsc = rteKernel.GetInstalledPdscFile(attributes);
+  EXPECT_TRUE(pdsc.first.empty());
+  EXPECT_TRUE(pdsc.second.empty());
+
+  attributes.AddAttribute("name", "RteTestRequired");
+  attributes.AddAttribute("vendor", "ARM");
+  pdsc = rteKernel.GetInstalledPdscFile(attributes);
+
+  // check returned packId
+  EXPECT_EQ(pdsc.first, "ARM::RteTestRequired@1.0.0");
+
+  // check returned pdsc
+  const string expectedPdsc =
+    RteFsUtils::MakePathCanonical(RteFsUtils::AbsolutePath(packsDir +
+      "/ARM/RteTestRequired/1.0.0/ARM.RteTestRequired.pdsc").generic_string());
+  error_code ec;
+  EXPECT_TRUE(fs::equivalent(pdsc.second, expectedPdsc, ec));
+}
+
+TEST_F(RteModelPrjTest, GetEffectivePdscFile) {
+  RteKernelSlim rteKernel;
+  rteKernel.SetCmsisPackRoot(packsDir);
+  XmlItem attributes;
+
+  // nothing has found for empty attributes
+  auto pdsc = rteKernel.GetInstalledPdscFile(attributes);
+  EXPECT_TRUE(pdsc.first.empty());
+  EXPECT_TRUE(pdsc.second.empty());
+
+  // local and installed equal => local
+  attributes.AddAttribute("name", "RteTest");
+  attributes.AddAttribute("vendor", "SomeVendor");
+  pdsc = rteKernel.GetEffectivePdscFile(attributes);
+  EXPECT_EQ(pdsc.first, "SomeVendor::RteTest@0.0.1");
+  string expectedPdsc =
+    RteFsUtils::MakePathCanonical(RteFsUtils::AbsolutePath(localPacks + "/S/SomeVendor.RteTest.pdsc").generic_string());
+  error_code ec;
+  EXPECT_TRUE(fs::equivalent(pdsc.second, expectedPdsc, ec));
+
+  // local is newer
+  attributes.AddAttribute("name", "RteTestRequired");
+  attributes.AddAttribute("vendor", "ARM");
+  pdsc = rteKernel.GetEffectivePdscFile(attributes);
+
+  EXPECT_EQ(pdsc.first, "ARM::RteTestRequired@1.0.1-local");
+  expectedPdsc =
+    RteFsUtils::MakePathCanonical(RteFsUtils::AbsolutePath(localPacks + "/A/ARM.RteTestRequired.pdsc").generic_string());
+  EXPECT_TRUE(fs::equivalent(pdsc.second, expectedPdsc, ec));
+
+  // installed is newer
+  attributes.AddAttribute("name", "RteTestRequiredRecursive");
+  pdsc = rteKernel.GetEffectivePdscFile(attributes);
+  EXPECT_EQ(pdsc.first, "ARM::RteTestRequiredRecursive@1.0.0");
+  expectedPdsc =
+    RteFsUtils::MakePathCanonical(RteFsUtils::AbsolutePath(packsDir +
+      "/ARM/RteTestRequiredRecursive/1.0.0/ARM.RteTestRequiredRecursive.pdsc").generic_string());
+  EXPECT_TRUE(fs::equivalent(pdsc.second, expectedPdsc, ec));
+
+  // specific version
+  attributes.AddAttribute("version", "1.0.0-local:1.0.0-local");
+  pdsc = rteKernel.GetEffectivePdscFile(attributes);
+  EXPECT_EQ(pdsc.first, "ARM::RteTestRequiredRecursive@1.0.0-local");
+  expectedPdsc =
+    RteFsUtils::MakePathCanonical(RteFsUtils::AbsolutePath(localPacks + "/R/ARM.RteTestRequiredRecursive.pdsc").generic_string());
+  EXPECT_TRUE(fs::equivalent(pdsc.second, expectedPdsc, ec));
+
+  // outside range
+  attributes.AddAttribute("version", "2.0.0");
+  pdsc = rteKernel.GetInstalledPdscFile(attributes);
+  EXPECT_TRUE(pdsc.first.empty());
+  EXPECT_TRUE(pdsc.second.empty());
+
+  // unknown name
+  attributes.RemoveAttribute("version");
+  attributes.AddAttribute("name", "Unknown");
+  pdsc = rteKernel.GetInstalledPdscFile(attributes);
+  EXPECT_TRUE(pdsc.first.empty());
+  EXPECT_TRUE(pdsc.second.empty());
+}
+
 
 TEST_F(RteModelPrjTest, GenerateHeadersTestDefault)
 {

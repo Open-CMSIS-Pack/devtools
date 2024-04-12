@@ -206,27 +206,19 @@ bool CbuildProject::CheckPackRequirements(const CprjFile *cprj, const string& rt
     if (it->HasAttribute("path")) {
       continue;
     }
-
+    auto pdsc = CbuildKernel::Get()->GetEffectivePdscFile(*it);
+    if (!pdsc.second.empty()) {
+        continue;
+    }
+    // pack is neither in pack folder nor in local repo
+    // add the pack identifier to the missing packs' list
     const string& name = it->GetAttribute("name");
     const string& vendor = it->GetAttribute("vendor");
     const string& version = it->GetAttribute("version");
-    string path(rtePath);
-    path += '/' + vendor + '/' + name;
-    string installedVersion = RteFsUtils::GetInstalledPackVersion(path, version);
 
-    if (installedVersion.empty()) {
-      string localRepoId;
-      CbuildKernel::Get()->GetLocalPdscFile(*it, rtePath, localRepoId);
-      // Check if local repo version is accepted
-      if (!localRepoId.empty()) {
-        continue;
-      }
-      // pack is neither in pack folder nor in local repo
-      // add the pack identifier to the missing packs' list
-      string maxVersion = RteUtils::GetSuffix(version);
-      const CbuildPackItem& pack = { vendor, name, (maxVersion.empty() ? version : maxVersion) };
-      packList.push_back(pack);
-    }
+    string maxVersion = RteUtils::GetSuffix(version);
+    const CbuildPackItem& pack = {vendor, name, (maxVersion.empty() ? version : maxVersion)};
+    packList.push_back(pack);
   }
 
   return true;

@@ -211,13 +211,6 @@ public:
   virtual CprjFile* GetActiveCprjFile() const;
 
   /**
-   * @brief get installed packs
-   * @param pdscFiles list of installed packs
-   * @param bool latest get only latest versions (default true)
-  */
-  bool GetInstalledPacks(std::list<std::string>& pdscFiles, bool latest = true);
-
-  /**
    * @brief load and insert pack into global model
    * @param packs list of loaded packages
    * @param pdscFiles list of packs to be loaded
@@ -226,39 +219,57 @@ public:
   bool LoadAndInsertPacks(std::list<RtePackage*>& packs, std::list<std::string>& pdscFiles);
 
   /**
+   * @brief get installed and local pdsc files as list sorted by pack ID
+   * @param pdscFiles list of pdsc files to fill
+   * @param bool latest get only latest versions (default true)
+   * @return true if CMSIS_PACK_ROOT is set and accessible
+  */
+  bool GetEffectivePdscFiles(std::list<std::string>& pdscFiles, bool latest = true) const;
+
+    /**
+   * @brief get installed and local pdsc files as map sorted by ID
+   * @param pdscMap map of pID to pdsc file to fill
+   * @param bool latest get only latest versions (default true)
+   * @return true if CMSIS_PACK_ROOT is set and accessible
+  */
+  bool GetEffectivePdscFilesAsMap(std::map<std::string, std::string, RtePackageComparator>& pdscMap, bool latest = true) const;
+
+  /**
    * @brief get list of installed pdsc files
    * @param files collection to fill with absolute pdsc filenames;
-   * @param bool latest get only latest versions (default true)
    * @param rtePath pack path
   */
-  static void GetInstalledPdscFiles(std::list<std::string>& files, const std::string& rtePath, bool latest = true);
+  void GetInstalledPdscFiles(std::map<std::string, std::string, RtePackageComparator>& pdscMap) const;
 
   /**
    * @brief getter for pdsc file determined by pack ID, pack path and pack attributes
    * @param attributes pack attributes
-   * @param rtePath pack path
    * @param packId pack ID
-   * @return pdsc file
+   * @return pair of pack ID to pdsc file
   */
-  static std::string GetInstalledPdscFile(const XmlItem& attributes, const std::string& rtePath, std::string& packId);
+   std::pair<std::string, std::string> GetInstalledPdscFile(const XmlItem& attributes) const;
 
   /**
    * @brief getter for pdsc file pointed by the local repository index and determined by pack attributes, pack path and pack ID.
    * @param attributes pack attributes
-   * @param rtePath pack path
-   * @param packId pack ID
-   * @return pdsc file
+   * @return pair of pack ID to pdsc file
   */
-  std::string GetLocalPdscFile(const XmlItem& attributes, const std::string& rtePath, std::string& packId);
+  std::pair<std::string, std::string> GetLocalPdscFile(const XmlItem& attributes) const;
 
   /**
-   * @brief getter for pdsc file pointed by the pack 'path' attribute
+   * @brief get local or installed pdsc file corresponding to supplied pack ID, pack path and pack attributes
    * @param attributes pack attributes
-   * @param cprjPath cprj path
-   * @param packId pack ID
-   * @return pdsc file
+   * @return pair of pack ID to pdsc file
   */
-  std::string GetPdscFileFromPath(const XmlItem& attributes, const std::string& cprjPath, std::string& packId);
+  std::pair<std::string, std::string> GetEffectivePdscFile(const XmlItem& attributes) const;
+
+  /**
+   * @brief get pdsc file pointed by the pack 'path' attribute in a project
+   * @param attributes pack attributes
+   * @param prjPath path from project
+   * @return pair of pack ID to pdsc file
+  */
+  std::pair<std::string, std::string> GetPdscFileFromPath(const XmlItem& attributes, const std::string& cprjPath) const;
 
   /**
    * @brief create a smart pointer holding an XMLTree pointer to parse XML or YAML files
@@ -325,9 +336,18 @@ public:
   void SetToolInfo(const XmlItem& attr) { m_toolInfo = attr; }
 
 protected:
-  bool GetUrlFromIndex(const std::string& indexFile, const std::string& name, const std::string& vendor, const std::string& version, std::string& indexedUrl, std::string& indexedVersion) const;
-  bool GetLocalPacksUrls(const std::string& rtePath, std::list<std::string>& urls) const;
-  XMLTreeElement* ParseLocalRepositoryIdx(const std::string& rtePath) const;
+  /**
+   * @brief get local pdsc files, optionally filtered
+   * @param attr pack attributes to filter
+   * @param pdscMap map packId to pdsc path to fill
+   * @return true if an entry is found
+  */
+  bool GetLocalPdscFiles(const XmlItem& attr, std::map<std::string, std::string, RtePackageComparator>& pdscMap) const;
+  /**
+   * @brief parses $CMSIS_PACK_ROOT/.Local/loacl_repository.pidx file
+   * @return pointer to "index" element if successful, nullptr otherwise
+  */
+  XMLTreeElement* ParseLocalRepositoryIdx() const;
 
   /**
    * @brief create an XMLTree object to parse XML files

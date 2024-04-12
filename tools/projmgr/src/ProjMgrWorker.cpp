@@ -249,23 +249,14 @@ bool ProjMgrWorker::CollectRequiredPdscFiles(ContextItem& context, const std::st
       auto filteredPackItems = GetFilteredPacks(packItem, packRoot);
       for (const auto& filteredPackItem : filteredPackItems) {
         auto filteredPack = filteredPackItem.pack;
-        string packId, pdscFile, localPackId;
-
         XmlItem attributes({
           {"name",    filteredPack.name},
           {"vendor",  filteredPack.vendor},
           {"version", reqVersionRange},
           });
         // get installed and local pdsc that satisfy the version range requirements
-        pdscFile = m_kernel->GetInstalledPdscFile(attributes, packRoot, packId);
-        const string& localPdscFile = m_kernel->GetLocalPdscFile(attributes, packRoot, localPackId);
-        if (!localPdscFile.empty()) {
-          const size_t packIdLen = (filteredPack.vendor + '.' + filteredPack.name + '.').length();
-          if (pdscFile.empty() ? true : VersionCmp::Compare(localPackId.substr(packIdLen), packId.substr(packIdLen)) >= 0) {
-            // local pdsc takes precedence
-            pdscFile = localPdscFile;
-          }
-        }
+        auto pdsc = m_kernel->GetEffectivePdscFile(attributes);
+        const string& pdscFile = pdsc.second;
         if (pdscFile.empty()) {
           if (!bPackFilter) {
             std::string packageName =
@@ -386,7 +377,7 @@ bool ProjMgrWorker::LoadAllRelevantPacks() {
   // Get installed packs
   if (pdscFiles.empty() || (m_loadPacksPolicy == LoadPacksPolicy::ALL) || (m_loadPacksPolicy == LoadPacksPolicy::LATEST)) {
     const bool latest = (m_loadPacksPolicy == LoadPacksPolicy::LATEST) || (m_loadPacksPolicy == LoadPacksPolicy::DEFAULT);
-    if (!m_kernel->GetInstalledPacks(pdscFiles, latest)) {
+    if (!m_kernel->GetEffectivePdscFiles(pdscFiles, latest)) {
       ProjMgrLogger::Error("parsing installed packs failed");
       return false;
     }
@@ -3256,7 +3247,7 @@ bool ProjMgrWorker::ListPacks(vector<string>&packs, bool bListMissingPacksOnly, 
     if (pdscFiles.empty() || (m_loadPacksPolicy == LoadPacksPolicy::ALL) || (m_loadPacksPolicy == LoadPacksPolicy::LATEST)) {
       // Get installed packs
       const bool latest = (m_loadPacksPolicy == LoadPacksPolicy::LATEST) || (m_loadPacksPolicy == LoadPacksPolicy::DEFAULT);
-      m_kernel->GetInstalledPacks(pdscFiles, latest);
+      m_kernel->GetEffectivePdscFiles(pdscFiles, latest);
     }
     if (!pdscFiles.empty()) {
       // Load packs and get loaded packs identifiers
