@@ -14,12 +14,14 @@ using namespace std;
 
 const std::string RteModelTestConfig::CMSIS_PACK_ROOT = std::string(GLOBAL_TEST_DIR) + std::string("/packs");
 const std::string RteModelTestConfig::LOCAL_REPO_DIR = std::string(GLOBAL_TEST_DIR) + std::string("/local");
+const std::string RteModelTestConfig::LOCAL_PACK_DIR = std::string(GLOBAL_TEST_DIR) + std::string("/local_packs");
 const std::string RteModelTestConfig::PROJECTS_DIR = std::string(GLOBAL_TEST_DIR) + std::string("/projects");
 const std::string RteModelTestConfig::M3_CPRJ = PROJECTS_DIR + std::string("/RteTestM3/RteTestM3.cprj");
 
 // define project and header file names with relative paths
 const std::string RteModelTestConfig::prjsDir = "RteModelTestProjects";
-const std::string RteModelTestConfig::localRepoDir = "RteModelLocalRepo";
+const std::string RteModelTestConfig::packsDir = "RteModelTestPacks";
+const std::string RteModelTestConfig::localPacks = "local_packs";
 const std::string RteModelTestConfig::RteTestM3 = "/RteTestM3";
 const std::string RteModelTestConfig::RteTestM3_cprj = prjsDir + RteTestM3 + "/RteTestM3.cprj";
 const std::string RteModelTestConfig::RteTestM3PackReq_cprj = prjsDir + RteTestM3 + "/RteTestM3_PackReq.cprj";
@@ -46,12 +48,15 @@ void RteModelTestConfig::SetUp()
 {
   RteFsUtils::DeleteTree(prjsDir);
   RteFsUtils::CopyTree(RteModelTestConfig::PROJECTS_DIR, prjsDir);
-  RteFsUtils::CopyTree(RteModelTestConfig::LOCAL_REPO_DIR, localRepoDir);
+  RteFsUtils::CopyTree(RteModelTestConfig::CMSIS_PACK_ROOT, packsDir);
+  RteFsUtils::CopyTree(RteModelTestConfig::LOCAL_PACK_DIR, localPacks);
 }
 
 void RteModelTestConfig::TearDown()
 {
   RteFsUtils::DeleteTree(prjsDir);
+  RteFsUtils::DeleteTree(packsDir);
+  RteFsUtils::DeleteTree(localPacks);
 }
 
 void RteModelTestConfig::compareFile(const string& newFile, const string& refFile,

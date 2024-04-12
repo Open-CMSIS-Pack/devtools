@@ -33,11 +33,13 @@ protected:
 public:
   static const std::string CMSIS_PACK_ROOT;
   static const std::string LOCAL_REPO_DIR;
+  static const std::string LOCAL_PACK_DIR;
   static const std::string PROJECTS_DIR;
   static const std::string M3_CPRJ;
 
   static const std::string prjsDir;
-  static const std::string localRepoDir;
+  static const std::string packsDir;
+  static const std::string localPacks;
   static const std::string RteTestM3;
   static const std::string RteTestM3_cprj;
   static const std::string RteTestM3PackReq_cprj;

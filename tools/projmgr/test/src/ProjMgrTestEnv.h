@@ -9,6 +9,8 @@
 
 #include "gtest/gtest.h"
 
+#include "RtePackage.h"
+
 #include <list>
 
 extern std::string testoutput_folder;
@@ -48,8 +50,9 @@ public:
   void TearDown() override;
   static void CompareFile(const std::string& file1, const std::string& file2, LineReplaceFunc_t file2LineReplaceFunc = nullptr);
   static const std::string& GetCmsisPackRoot();
-  static std::list<std::string> GetInstalledPdscFiles(bool bLatestsOnly = false);
-  static std::string GetFilteredPacksString(const std::list<std::string>& pdscFiles, const std::string& includeIds);
+  static std::map<std::string, std::string, RtePackageComparator> GetEffectivePdscFiles(bool bLatestsOnly = false);
+  static std::string GetFilteredPacksString(const std::map<std::string, std::string, RtePackageComparator>& pdscMap,
+    const std::string& includeIds);
   static bool FilterId(const std::string& id, const std::string& includeIds);
 };
 

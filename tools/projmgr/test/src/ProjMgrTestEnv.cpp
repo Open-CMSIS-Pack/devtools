@@ -5,7 +5,7 @@
  */
 
 #include "ProjMgrTestEnv.h"
-#include "RteKernel.h"
+#include "RteKernelSlim.h"
 #include "RteFsUtils.h"
 
 #include "CrossPlatformUtils.h"
@@ -194,18 +194,20 @@ const std::string& ProjMgrTestEnv::GetCmsisPackRoot()
   return testcmsispack_folder;
 }
 
-std::list<std::string> ProjMgrTestEnv::GetInstalledPdscFiles( bool bLatestsOnly)
+std::map<std::string, std::string, RtePackageComparator> ProjMgrTestEnv::GetEffectivePdscFiles( bool bLatestsOnly)
 {
-  list<string> files;
-  RteKernel::GetInstalledPdscFiles(files, GetCmsisPackRoot(), bLatestsOnly);
-  return files;
+  std::map<std::string, std::string, RtePackageComparator> pdscMap;
+  RteKernelSlim rteKernel;
+  rteKernel.SetCmsisPackRoot(GetCmsisPackRoot());
+  rteKernel.GetEffectivePdscFilesAsMap(pdscMap,  bLatestsOnly);
+  return pdscMap;
 }
 
-std::string ProjMgrTestEnv::GetFilteredPacksString(const std::list<std::string>& pdscFiles, const std::string& includeIds)
+std::string ProjMgrTestEnv::GetFilteredPacksString(const std::map<std::string, std::string, RtePackageComparator>& pdscMap,
+  const std::string& includeIds)
 {
   stringstream ss;
-  for (auto& f : pdscFiles) {
-    string id = RtePackage::PackIdFromPath(f);
+  for (auto& [id, f] : pdscMap) {
     if(FilterId(id, includeIds)) {
       ss << id << " (" << f << ")\n";
     }

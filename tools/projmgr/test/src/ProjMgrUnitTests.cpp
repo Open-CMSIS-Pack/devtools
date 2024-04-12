@@ -157,7 +157,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks) {
       // packs are fully specified
     {{"TestSolution/test_pack_selection.csolution.yml", "test2.Debug+CM0"}, "ARM::RteTest_DFP@0.2.0"}
   };
-  auto pdscFiles = ProjMgrTestEnv::GetInstalledPdscFiles(true);
+  auto pdscFiles = ProjMgrTestEnv::GetEffectivePdscFiles(true);
 
   // positive tests
   char* argv[7];
@@ -203,7 +203,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks) {
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks_1) {
   char* argv[3];
   StdStreamRedirect streamRedirect;
-  auto pdscFiles = ProjMgrTestEnv::GetInstalledPdscFiles(true);
+  auto pdscFiles = ProjMgrTestEnv::GetEffectivePdscFiles(true);
   string expected = ProjMgrTestEnv::GetFilteredPacksString(pdscFiles, "*");
   // list packs
   argv[1] = (char*)"list";
@@ -252,7 +252,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks_MultiContext) {
   argv[6] = (char*)"test2.*";
   EXPECT_EQ(0, RunProjMgr(7, argv, 0));
 
-  auto pdscFiles = ProjMgrTestEnv::GetInstalledPdscFiles(true);
+  auto pdscFiles = ProjMgrTestEnv::GetEffectivePdscFiles(true);
   string expected = ProjMgrTestEnv::GetFilteredPacksString(pdscFiles, "ARM::RteTestGenerator@0.1.0;ARM::RteTest_DFP@0.2.0");
 
   auto outStr = streamRedirect.GetOutString();
@@ -273,7 +273,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks_MultiContext) {
   streamRedirect.ClearStringStreams();
   EXPECT_EQ(0, RunProjMgr(9, argv, 0));
 
-  pdscFiles = ProjMgrTestEnv::GetInstalledPdscFiles(false);
+  pdscFiles = ProjMgrTestEnv::GetEffectivePdscFiles(false);
   string expectedAll = ProjMgrTestEnv::GetFilteredPacksString(pdscFiles, "*");
 
   outStr = streamRedirect.GetOutString();
@@ -289,7 +289,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacksAll) {
   argv[4] = (char*)"all";
   EXPECT_EQ(0, RunProjMgr(5, argv, 0));
 
-  auto pdscFiles = ProjMgrTestEnv::GetInstalledPdscFiles(false);
+  auto pdscFiles = ProjMgrTestEnv::GetEffectivePdscFiles(false);
   string expectedAll = ProjMgrTestEnv::GetFilteredPacksString(pdscFiles, "*");
 
   auto outStr = streamRedirect.GetOutString();
@@ -342,7 +342,7 @@ TEST_F(ProjMgrUnitTests, ListPacks_ProjectAndLayer) {
   argv[4] = (char*)csolution.c_str();
   EXPECT_EQ(0, RunProjMgr(5, argv, 0));
 
-  auto pdscFiles = ProjMgrTestEnv::GetInstalledPdscFiles(false);
+  auto pdscFiles = ProjMgrTestEnv::GetEffectivePdscFiles(false);
   string expected = ProjMgrTestEnv::GetFilteredPacksString(pdscFiles, "ARM::RteTest@0.1.0;ARM::RteTestBoard@0.1.0;ARM::RteTest_DFP@0.2.0");
 
   auto outStr = streamRedirect.GetOutString();
@@ -2271,13 +2271,6 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_TargetOptions)
 }
 
 TEST_F(ProjMgrUnitTests, ListPacks) {
-  set<string> expectedPacks = {
-    "ARM::RteTest@0.1.0 \\(.*\\)",
-    "ARM::RteTestBoard@0.1.0 \\(.*\\)",
-    "ARM::RteTestGenerator@0.1.0 \\(.*\\)",
-    "ARM::RteTest_DFP@0.1.1 \\(.*\\)",
-    "ARM::RteTest_DFP@0.2.0 \\(.*\\)"
-  };
   vector<string> packs;
   EXPECT_TRUE(m_worker.ParseContextSelection({}));
   m_worker.SetLoadPacksPolicy(LoadPacksPolicy::ALL);
@@ -2287,18 +2280,12 @@ TEST_F(ProjMgrUnitTests, ListPacks) {
     allPacks += pack + "\n";
   }
 
-  auto pdscFiles = ProjMgrTestEnv::GetInstalledPdscFiles(false);
-  string expected = ProjMgrTestEnv::GetFilteredPacksString(pdscFiles, "*");
+  auto pdscFiles = ProjMgrTestEnv::GetEffectivePdscFiles(false);
+  string expected = ProjMgrTestEnv::GetFilteredPacksString(pdscFiles, "*RteTest*");
   EXPECT_EQ(allPacks, expected);
 }
 
 TEST_F(ProjMgrUnitTests, ListPacksLatest) {
-  set<string> expectedPacks = {
-    "ARM::RteTest@0.1.0 \\(.*\\)",
-    "ARM::RteTestBoard@0.1.0 \\(.*\\)",
-    "ARM::RteTestGenerator@0.1.0 \\(.*\\)",
-    "ARM::RteTest_DFP@0.2.0 \\(.*\\)"
-  };
   vector<string> packs;
   EXPECT_TRUE(m_worker.ParseContextSelection({}));
   m_worker.SetLoadPacksPolicy(LoadPacksPolicy::LATEST);
@@ -2307,8 +2294,8 @@ TEST_F(ProjMgrUnitTests, ListPacksLatest) {
   for (auto& pack : packs) {
     latestPacks += pack + "\n";
   }
-  auto pdscFiles = ProjMgrTestEnv::GetInstalledPdscFiles(true);
-  string expected = ProjMgrTestEnv::GetFilteredPacksString(pdscFiles, "*");
+  auto pdscFiles = ProjMgrTestEnv::GetEffectivePdscFiles(true);
+  string expected = ProjMgrTestEnv::GetFilteredPacksString(pdscFiles, "*RteTest*");
   EXPECT_EQ(latestPacks, expected);
 }
 
@@ -2477,12 +2464,12 @@ TEST_F(ProjMgrUnitTests, GetInstalledPacks) {
 
   // correct file, but no packs
   kernel->SetCmsisPackRoot(string(CMAKE_SOURCE_DIR) + "test/local");
-  EXPECT_TRUE(kernel->GetInstalledPacks(pdscFiles));
+  EXPECT_TRUE(kernel->GetEffectivePdscFiles(pdscFiles));
   EXPECT_TRUE(pdscFiles.empty());
 
   // incorrect file
   kernel->SetCmsisPackRoot(string(CMAKE_SOURCE_DIR) + "test/local-malformed");
-  EXPECT_TRUE(kernel->GetInstalledPacks(pdscFiles));
+  EXPECT_TRUE(kernel->GetEffectivePdscFiles(pdscFiles));
   EXPECT_TRUE(pdscFiles.empty());
 
   EXPECT_TRUE(m_worker.LoadAllRelevantPacks());
@@ -5406,7 +5393,7 @@ TEST_F(ProjMgrUnitTests, CheckPackMetadata) {
 }
 
 TEST_F(ProjMgrUnitTests, CbuildPackSelectBy) {
-  // Accept "selected-by" for backward compatibility 
+  // Accept "selected-by" for backward compatibility
   char* argv[6];
   StdStreamRedirect streamRedirect;
   const string& csolution = testinput_folder + "/TestSolution/PackLocking/selected-by.csolution.yml";
