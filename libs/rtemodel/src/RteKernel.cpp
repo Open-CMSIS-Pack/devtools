@@ -336,7 +336,7 @@ bool RteKernel::LoadPacks(const std::list<std::string>& pdscFiles, std::list<Rte
       packs.push_back(pack);
       continue;
     }
-    bool result = xmlTree->ParseFile(pdscFile);
+    bool result = xmlTree->AddFileName(pdscFile, true);
     pack = rteItemBuilder->GetPack();
     if(!result || !pack) {
       GetRteCallback()->Err("R802", R802, pdscFile);
