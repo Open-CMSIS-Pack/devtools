@@ -1,7 +1,6 @@
-
-
 name: test_libs
 on:
+  workflow_dispatch:
   workflow_call:
   push:
     branches:
