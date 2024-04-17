@@ -27,7 +27,6 @@ TEST(RteModelTest, PackRegistry) {
 
   // tests for pack registry
   RteKernelSlim rteKernel;  // here just to instantiate XMLTree parser
-  rteKernel.SetCmsisPackRoot(RteModelTestConfig::CMSIS_PACK_ROOT);
 
   RtePackRegistry* packRegistry = rteKernel.GetPackRegistry();
   ASSERT_TRUE(packRegistry != nullptr);
@@ -51,6 +50,18 @@ TEST(RteModelTest, PackRegistry) {
   EXPECT_FALSE(packRegistry->ErasePack("foo")); // already erased
   EXPECT_EQ(packRegistry->GetLoadedPacks().size(), 0);
 
+}
+
+TEST(RteModelTest, PackRegistryLoadPacks) {
+
+  // tests for pack registry
+  RteKernelSlim rteKernel;  // here just to instantiate XMLTree parser
+  rteKernel.SetCmsisPackRoot(RteModelTestConfig::CMSIS_PACK_ROOT);
+
+  RtePackRegistry* packRegistry = rteKernel.GetPackRegistry();
+  ASSERT_TRUE(packRegistry != nullptr);
+  RteModel testModel(PackageState::PS_INSTALLED);
+
   list<string> files;
   rteKernel.GetEffectivePdscFiles(files, false);
   EXPECT_FALSE(files.empty());
@@ -60,7 +71,9 @@ TEST(RteModelTest, PackRegistry) {
   EXPECT_EQ(packs.size(), files.size());
   EXPECT_EQ(packRegistry->GetLoadedPacks().size(), packs.size());
  // to check if packs are the same or reloaded, modify the first pack
-  pack = *(packs.begin());
+  ASSERT_NE(packs.begin(), packs.end());
+  RtePackage* pack = *(packs.begin());
+  ASSERT_TRUE(pack != nullptr);
   RteItem* dummyChild = new RteItem("dummy_child", pack);
   pack->AddItem(dummyChild);
   // no reload of the same files by default
@@ -68,7 +81,10 @@ TEST(RteModelTest, PackRegistry) {
   EXPECT_TRUE(rteKernel.LoadPacks(files, packs1, &testModel));
   EXPECT_EQ(packs1.size(), files.size());
   EXPECT_EQ(packs, packs1); // no new packs loaded
+  ASSERT_NE(packs1.begin(), packs1.end());
   auto pack1 = *packs1.begin();
+  ASSERT_TRUE(pack1 != nullptr);
+
   EXPECT_EQ(pack1->GetFirstChild("dummy_child"), dummyChild);
   // but replace if requested
   packs1.clear();
@@ -77,10 +93,11 @@ TEST(RteModelTest, PackRegistry) {
   EXPECT_EQ(pack1->GetFirstChild("dummy_child"), nullptr); // pack got loaded again => no added child
 
   EXPECT_EQ(packRegistry->GetLoadedPacks().size(), files.size());
+  ASSERT_NE(files.begin(), files.end());
   const string& firstFile = *files.begin();
   pack = packRegistry->GetPack(firstFile);
   ASSERT_TRUE(pack != nullptr);
-  EXPECT_EQ(pack->GetPackageState(), PackageState::PS_AVAILABLE);
+  EXPECT_EQ(pack->GetPackageState(), PackageState::PS_INSTALLED);
   EXPECT_TRUE(packRegistry->ErasePack(firstFile));
   EXPECT_FALSE(packRegistry->GetPack(firstFile) != nullptr);
   EXPECT_FALSE(packRegistry->ErasePack(firstFile)); // already not in collection
