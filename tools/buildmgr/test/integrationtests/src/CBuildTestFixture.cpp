@@ -92,7 +92,7 @@ void CBuildTestFixture::CheckCMakeLists(const TestParam& param) {
         continue;
       }
 
-      FAIL() << filename1 << " is different from " << filename2;
+      FAIL() << "error: " << filename1 << " is different from " << filename2 << "\nLine1: " << l1 << "\nLine2: " << l2;
     }
   }
 

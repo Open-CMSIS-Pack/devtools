@@ -10,3 +10,9 @@
 #ifdef GROUP3
 #error "GROUP3 is defined!"
 #endif
+#ifndef DEF1
+#error "DEF1 is not defined"
+#endif
+#if (DEF1 != 1)
+#error "DEF1 is not equal to 1!"
+#endif
