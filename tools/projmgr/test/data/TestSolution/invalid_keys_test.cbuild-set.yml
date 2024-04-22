@@ -2,7 +2,7 @@ cbuild-set:
   generated-by: csolution version 2.1.0
 
   # invalid data
-  output: test1
+  output-dirs: test1
   contexts:
     - context: test2.Debug+CM0
     - context: test2.Debug+CM3

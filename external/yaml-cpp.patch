@@ -1,3 +1,15 @@
+diff --git a/include/yaml-cpp/emittermanip.h b/include/yaml-cpp/emittermanip.h
+index 976d149..ba73a48 100644
+--- a/include/yaml-cpp/emittermanip.h
++++ b/include/yaml-cpp/emittermanip.h
+@@ -32,6 +32,7 @@ enum EMITTER_MANIP {
+   UpperNull,
+   CamelNull,
+   TildeNull,
++  EmptyNull,
+ 
+   // bool manipulators
+   YesNoBool,      // yes, no
 diff --git a/include/yaml-cpp/exceptions.h b/include/yaml-cpp/exceptions.h
 index f6b2602..a4c5537 100644
 --- a/include/yaml-cpp/exceptions.h
@@ -53,6 +65,31 @@ index 07cf81a..ed7d9cd 100644
    void convert_to_map(const shared_memory_holder& pMemory);
    void convert_sequence_to_map(const shared_memory_holder& pMemory);
  
+diff --git a/src/emitter.cpp b/src/emitter.cpp
+index 4d48307..d4485be 100644
+--- a/src/emitter.cpp
++++ b/src/emitter.cpp
+@@ -816,6 +816,8 @@ const char* Emitter::ComputeNullName() const {
+       return "NULL";
+     case CamelNull:
+       return "Null";
++    case EmptyNull:
++      return "";
+     case TildeNull:
+       // fallthrough
+     default:
+diff --git a/src/emitterstate.cpp b/src/emitterstate.cpp
+index 3dbe401..0dd0b17 100644
+--- a/src/emitterstate.cpp
++++ b/src/emitterstate.cpp
+@@ -305,6 +305,7 @@ bool EmitterState::SetNullFormat(EMITTER_MANIP value, FmtScope::value scope) {
+     case LowerNull:
+     case UpperNull:
+     case CamelNull:
++    case EmptyNull:
+     case TildeNull:
+       _Set(m_nullFmt, value, scope);
+       return true;
 diff --git a/src/exceptions.cpp b/src/exceptions.cpp
 index 43a7976..af99fd6 100644
 --- a/src/exceptions.cpp
