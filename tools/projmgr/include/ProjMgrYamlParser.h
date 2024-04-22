@@ -14,6 +14,7 @@
   * @brief YAML key definitions
 */
 static constexpr const char* YAML_ADDPATH = "add-path";
+static constexpr const char* YAML_ALWAYS = "always";
 static constexpr const char* YAML_ARGUMENT = "argument";
 static constexpr const char* YAML_ARGUMENTS = "arguments";
 static constexpr const char* YAML_ATTR = "attr";
@@ -71,6 +72,8 @@ static constexpr const char* YAML_DOWNLOAD_URL = "download-url";
 static constexpr const char* YAML_DSP = "dsp";
 static constexpr const char* YAML_ENDIAN = "endian";
 static constexpr const char* YAML_ERRORS = "errors";
+static constexpr const char* YAML_EXECUTE = "execute";
+static constexpr const char* YAML_EXECUTES = "executes";
 static constexpr const char* YAML_FILE = "file";
 static constexpr const char* YAML_FILES = "files";
 static constexpr const char* YAML_FROM_PACK = "from-pack";
@@ -90,6 +93,7 @@ static constexpr const char* YAML_GROUPS = "groups";
 static constexpr const char* YAML_HOST = "host";
 static constexpr const char* YAML_ID = "id";
 static constexpr const char* YAML_INFO = "info";
+static constexpr const char* YAML_INPUT = "input";
 static constexpr const char* YAML_INSTANCES = "instances";
 static constexpr const char* YAML_LANGUAGE = "language";
 static constexpr const char* YAML_LANGUAGE_C = "language-C";
@@ -238,6 +242,7 @@ protected:
   void ParseOutput(const YAML::Node& parent, const std::string& file, OutputItem& output);
   void ParseOutputDirs(const YAML::Node& parent, const std::string& file, struct DirectoriesItem& directories);
   void ParseGenerators(const YAML::Node& parent, const std::string& file, GeneratorsItem& generators);
+  void ParseExecutes(const YAML::Node& parent, const std::string& file, std::vector<ExecutesItem>& executes);
   void ParseConnections(const YAML::Node& parent, std::vector<ConnectItem>& connects);
   bool ParseTargetType(const YAML::Node& parent, const std::string& file, TargetType& targetType);
   bool ParseBuildTypes(const YAML::Node& parent, const std::string& file, std::map<std::string, BuildType>& buildTypes);

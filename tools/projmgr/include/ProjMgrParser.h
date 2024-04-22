@@ -205,6 +205,25 @@ struct GeneratorsItem {
 };
 
 /**
+ * @brief executes item containing
+ *        execute description,
+ *        command string,
+ *        boolean run always,
+ *        list of input files,
+ *        list of output files,
+ *        type inclusion
+*/
+struct ExecutesItem {
+  std::string execute;
+  std::string run;
+  bool always;
+  std::vector<std::string> input;
+  std::vector<std::string> output;
+  std::vector<std::string> dependsOn;
+  TypeFilter typeFilter;
+};
+
+/**
  * @brief layer item containing
  *        layer name,
  *        layer type,
@@ -355,7 +374,8 @@ struct CdefaultItem {
  *        list of contexts descriptors,
  *        list of packs,
  *        cdefault enable switch,
- *        generator options
+ *        generator options,
+ *        list of executes
 */
 struct CsolutionItem {
   std::string name;
@@ -372,6 +392,7 @@ struct CsolutionItem {
   bool enableCdefault;
   GeneratorsItem generators;
   CbuildPackItem cbuildPack;
+  std::vector<ExecutesItem> executes;
 };
 
 /**
@@ -389,7 +410,8 @@ struct CsolutionItem {
  *        list of connections,
  *        list of packs,
  *        list of linker entries,
- *        generator options
+ *        generator options,
+ *        list of executes
 */
 struct CprojectItem {
   std::string name;
@@ -406,6 +428,7 @@ struct CprojectItem {
   std::vector<PackItem> packs;
   std::vector<LinkerItem> linker;
   GeneratorsItem generators;
+  std::vector<ExecutesItem> executes;
 };
 
 /**

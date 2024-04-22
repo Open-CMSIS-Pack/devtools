@@ -5405,3 +5405,26 @@ TEST_F(ProjMgrUnitTests, CbuildPackSelectBy) {
   EXPECT_EQ(0, RunProjMgr(6, argv, 0));
   EXPECT_TRUE(streamRedirect.GetErrorString().empty());
 }
+
+TEST_F(ProjMgrUnitTests, Executes) {
+  char* argv[6];
+  const string& csolution = testinput_folder + "/TestSolution/Executes/solution.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+
+  // Check generated files
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/solution.cbuild-idx.yml",
+    testinput_folder + "/TestSolution/Executes/ref/solution.cbuild-idx.yml");
+
+  // Check error message
+  StdStreamRedirect streamRedirect;
+  const string& csolutionError = testinput_folder + "/TestSolution/Executes/error.csolution.yml";
+  argv[3] = (char*)csolutionError.c_str();
+  EXPECT_EQ(1, RunProjMgr(6, argv, 0));
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find("error csolution: context 'unknown.Debug+RteTest_ARMCM3' referenced by access sequence 'elf' is not compatible"));
+}

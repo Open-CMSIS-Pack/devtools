@@ -37,6 +37,7 @@ protected:
   bool CompareFile(const string& filename, const YAML::Node& rootNode);
   bool CompareNodes(const YAML::Node& lhs, const YAML::Node& rhs);
   bool WriteFile(YAML::Node& rootNode, const std::string& filename, bool allowUpdate = true);
+  void SetExecutesNode(YAML::Node node, const map<string, ExecutesItem>& executes, const string& base, const string& ref);
   const bool m_useAbsolutePaths;
   const bool m_checkSchema;
 };
@@ -72,8 +73,8 @@ private:
   friend class ProjMgrYamlEmitter;
   ProjMgrYamlCbuildIdx(
     YAML::Node node, const vector<ContextItem*>& processedContexts,
-    ProjMgrParser& parser, const string& directory,
-    const set<std::string>& failedContexts, bool checkSchema);
+    ProjMgrParser& parser, const string& directory, const set<string>& failedContexts,
+    const map<string, ExecutesItem>& executes, bool checkSchema);
 
   void SetVariablesNode(YAML::Node node, const string& csolutionDir, const map<string, map<string, set<const ConnectItem*>>>& layerTypes);
 };
@@ -208,8 +209,8 @@ ProjMgrYamlBase::ProjMgrYamlBase(bool useAbsolutePaths, bool checkSchema) : m_us
 }
 
 ProjMgrYamlCbuildIdx::ProjMgrYamlCbuildIdx(YAML::Node node,
-  const vector<ContextItem*>& processedContexts, ProjMgrParser& parser,
-  const string& directory, const set<std::string>& failedContexts, bool checkSchema) : ProjMgrYamlBase(false, checkSchema)
+  const vector<ContextItem*>& processedContexts, ProjMgrParser& parser, const string& directory, const set<string>& failedContexts, 
+  const map<string, ExecutesItem>& executes, bool checkSchema) : ProjMgrYamlBase(false, checkSchema)
 {
   error_code ec;
   SetNodeValue(node[YAML_GENERATED_BY], ORIGINAL_FILENAME + string(" version ") + VERSION_STRING);
@@ -318,6 +319,8 @@ ProjMgrYamlCbuildIdx::ProjMgrYamlCbuildIdx(YAML::Node node,
       node[YAML_CBUILDS].push_back(cbuildNode);
     }
   }
+
+  SetExecutesNode(node[YAML_EXECUTES], executes, directory, directory);
 }
 
 void ProjMgrYamlCbuildIdx::SetVariablesNode(YAML::Node node, const string& csolutionDir, const map<string, map<string, set<const ConnectItem*>>>& layerTypes) {
@@ -704,6 +707,29 @@ void ProjMgrYamlCbuild::SetLicenseInfoNode(YAML::Node node, const ContextItem* c
   }
 }
 
+void ProjMgrYamlBase::SetExecutesNode(YAML::Node node, const map<string, ExecutesItem>& executes, const string& base, const string& ref) {
+  for (const auto& [_, item] : executes) {
+    YAML::Node executeNode;
+    SetNodeValue(executeNode[YAML_EXECUTE], item.execute);
+    SetNodeValue(executeNode[YAML_RUN], item.run);
+    if (item.always) {
+      executeNode[YAML_ALWAYS] = YAML::Null;
+    }
+    vector<string> input;
+    for (const auto& file : item.input) {
+      input.push_back(FormatPath(base + "/" + file, ref));
+    }
+    SetNodeValue(executeNode[YAML_INPUT], input);
+    vector<string> output;
+    for (const auto& file : item.output) {
+      output.push_back(FormatPath(base + "/" + file, ref));
+    }
+    SetNodeValue(executeNode[YAML_OUTPUT], output);
+    SetNodeValue(executeNode[YAML_DEPENDS_ON], item.dependsOn);
+    node.push_back(executeNode);
+  }
+}
+
 void ProjMgrYamlCbuild::SetControlsNode(YAML::Node node, const ContextItem* context, const BuildType& controls) {
   SetNodeValue(node[YAML_OPTIMIZE], controls.optimize);
   SetNodeValue(node[YAML_DEBUG], controls.debug);
@@ -881,6 +907,7 @@ bool ProjMgrYamlBase::WriteFile(YAML::Node& rootNode, const std::string& filenam
       return false;
     }
     YAML::Emitter emitter;
+    emitter.SetNullFormat(YAML::EmptyNull);
     emitter << rootNode;
     fileStream << emitter.c_str();
     fileStream << endl;
@@ -900,15 +927,16 @@ bool ProjMgrYamlBase::WriteFile(YAML::Node& rootNode, const std::string& filenam
 }
 
 bool ProjMgrYamlEmitter::GenerateCbuildIndex(ProjMgrParser& parser,
-  const vector<ContextItem*>& contexts, const string& outputDir,
-  const set<std::string>& failedContexts, bool checkSchema) {
+  const vector<ContextItem*>& contexts, const string& outputDir, const set<string>& failedContexts,
+  const map<string, ExecutesItem>& executes, bool checkSchema) {
+
   // generate cbuild-idx.yml
   const string& directory = outputDir.empty() ? parser.GetCsolution().directory : RteFsUtils::AbsolutePath(outputDir).generic_string();
   const string& filename = directory + "/" + parser.GetCsolution().name + ".cbuild-idx.yml";
 
   YAML::Node rootNode;
   ProjMgrYamlCbuildIdx cbuild(
-    rootNode[YAML_BUILD_IDX], contexts, parser, directory, failedContexts, checkSchema);
+    rootNode[YAML_BUILD_IDX], contexts, parser, directory, failedContexts, executes, checkSchema);
 
   return cbuild.WriteFile(rootNode, filename);
 }
