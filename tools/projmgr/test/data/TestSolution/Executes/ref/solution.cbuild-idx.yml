@@ -1,0 +1,58 @@
+build-idx:
+  generated-by: csolution version 0.0.0+gdf212332
+  cdefault: ${CMSIS_COMPILER_ROOT}/cdefault.yml
+  csolution: ../data/TestSolution/Executes/solution.csolution.yml
+  cprojects:
+    - cproject: ../data/TestSolution/Executes/project/project.cproject.yml
+  cbuilds:
+    - cbuild: project.Debug+RteTest_ARMCM3.cbuild.yml
+      project: project
+      configuration: .Debug+RteTest_ARMCM3
+      depends-on:
+        - Generate_Project_Sources
+    - cbuild: project.Release+RteTest_ARMCM3.cbuild.yml
+      project: project
+      configuration: .Release+RteTest_ARMCM3
+      depends-on:
+        - Generate_Project_Sources
+  executes:
+    - execute: Archive_Artifacts
+      run: ${CMAKE_COMMAND} -DINPUT=${INPUT} -DOUTPUT=${OUTPUT} -P ${INPUT_0}
+      input:
+        - ../data/TestSolution/Executes/script/archive.cmake
+        - out/project/RteTest_ARMCM3/Debug/project.axf
+        - out/project/RteTest_ARMCM3/Debug/project.axf.signed
+      output:
+        - ../data/TestSolution/Executes/artifacts.zip
+      depends-on:
+        - project.Debug+RteTest_ARMCM3
+    - execute: Generate_Project_Sources
+      run: ${CMAKE_COMMAND} -DINPUT_1=${INPUT_1} -DOUTPUT_0=${OUTPUT_0} -DOUTPUT_1=${OUTPUT_1} -P ${INPUT_0}
+      input:
+        - ../data/TestSolution/Executes/script/generate-sources.cmake
+        - ../data/TestSolution/Executes/project/source.c.template
+      output:
+        - ../data/TestSolution/Executes/project/source0.c
+        - ../data/TestSolution/Executes/project/source1.c
+    - execute: Run_After_Archiving
+      run: ${CMAKE_COMMAND} -E echo "Archive has been updated"
+      input:
+        - ../data/TestSolution/Executes/artifacts.zip
+      depends-on:
+        - Archive_Artifacts
+    - execute: Run_Always
+      run: ${CMAKE_COMMAND} -E echo "Execute Run Always"
+      always: 
+      input:
+        - ../data/TestSolution/Executes/artifacts.zip
+      depends-on:
+        - Archive_Artifacts
+    - execute: project.Release+RteTest_ARMCM3-Sign_Artifact
+      run: ${CMAKE_COMMAND} -DINPUT=${INPUT} -DOUTPUT=${OUTPUT} -P ${INPUT_0}
+      input:
+        - ../data/TestSolution/Executes/script/sign.cmake
+        - out/project/RteTest_ARMCM3/Release/project.axf
+      output:
+        - out/project/RteTest_ARMCM3/Release/project.axf.signed
+      depends-on:
+        - project.Release+RteTest_ARMCM3

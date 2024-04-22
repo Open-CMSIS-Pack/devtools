@@ -800,7 +800,8 @@
           "description": "The tool required to build this csolution project"
         },
         "cdefault":    { "type": "null", "description": "Enable use of cdefault.yml file" },
-        "generators":  { "$ref": "#/definitions/GeneratorsOutputType" }
+        "generators":  { "$ref": "#/definitions/GeneratorsOutputType" },
+        "executes":    { "$ref": "#/definitions/ExecutesType" }
       },
       "additionalProperties": false,
       "required": [ "target-types", "projects" ]
@@ -833,7 +834,8 @@
         "connections":  { "$ref": "#/definitions/ConnectionsType" },
         "linker":       { "$ref": "#/definitions/LinkersType" },
         "generators":   { "$ref": "#/definitions/GeneratorsOutputType" },
-        "rte":          { "$ref": "#/definitions/RteType" }
+        "rte":          { "$ref": "#/definitions/RteType" },
+        "executes":     { "$ref": "#/definitions/ExecutesType" }
       },
       "additionalProperties": false
     },
@@ -846,7 +848,8 @@
         "csolution": { "type": "string", "description": "Path to csolution.yml file" },
         "cprojects": { "$ref": "#/definitions/BuildProjectsType" },
         "cbuilds": { "$ref": "#/definitions/BuildContextsType" },
-        "configurations": { "$ref": "#/definitions/BuildConfigurationsType" }
+        "configurations": { "$ref": "#/definitions/BuildConfigurationsType" },
+        "executes": { "$ref": "#/definitions/BuildExecutesType" }
       },
       "additionalProperties": false,
       "required": ["generated-by", "csolution", "cprojects"]
@@ -1018,6 +1021,7 @@
         "linker":            { "$ref": "#/definitions/LinkerType" },
         "groups":            { "$ref": "#/definitions/BuildGroupsType" },
         "generators":        { "$ref": "#/definitions/GeneratorsType" },
+        "executes":          { "$ref": "#/definitions/BuildExecutesType" },
         "constructed-files": {
           "type": "array",
           "items": { "$ref": "#/definitions/FileType" }
@@ -1430,6 +1434,48 @@
         "components":   { "$ref": "#/definitions/ComponentsType" }
       },
       "additionalProperties": false
-    }
+    },
+    "ExecutesType": {
+      "description": "Execute and external command for pre or post build steps",
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/ExecuteType" }
+    },
+    "ExecuteType": {
+      "type": "object",
+      "properties": {
+        "execute":         { "type": "string", "description": "Description of the build step" },
+        "run":             { "type": "string", "description": "Command string with name of the program or script (optionally with path) along with argument string" },
+        "always":          { "type": "null",   "description": "When present, the build step always runs and bypasses check for outdated files" },
+        "input":           { "type": "array",  "description": "A list of input files (may contain Access Sequences)",  "items": { "type": "string"} },
+        "output":          { "type": "array",  "description": "A list of output files (may contain Access Sequences)", "items": { "type": "string"} },
+        "for-context":     { "$ref": "#/definitions/ForContext" },
+        "not-for-context": { "$ref": "#/definitions/NotForContext" }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        { "$ref": "#/definitions/TypeListMutualExclusion"},
+        { "required": ["execute", "run"] }
+      ]
+    },
+    "BuildExecutesType": {
+      "description": "Execute and external command for pre or post build steps",
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/BuildExecuteType" }
+    },
+    "BuildExecuteType": {
+      "type": "object",
+      "properties": {
+        "execute":    { "type": "string", "description": "Description of the build step" },
+        "run":        { "type": "string", "description": "Command string with name of the program or script (optionally with path) along with argument string" },
+        "always":     { "type": "null",   "description": "When present, the build step always runs and bypasses check for outdated files" },
+        "input":      { "type": "array",  "description": "A list of input files (may contain Access Sequences)",  "items": { "type": "string"} },
+        "output":     { "type": "array",  "description": "A list of output files (may contain Access Sequences)", "items": { "type": "string"} },
+        "depends-on": { "$ref": "#/definitions/ArrayOfBuildContextWithProjectName" }
+      },
+      "additionalProperties": false,
+      "required": ["execute", "run"]
+    }    
   }
 }

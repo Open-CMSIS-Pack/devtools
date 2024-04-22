@@ -446,3 +446,11 @@ TEST_F(ProjMgrUtilsUnitTests, ConvertToVersionRange) {
   EXPECT_EQ("1.2.3:1.2.3", ProjMgrUtils::ConvertToVersionRange("1.2.3"));
   EXPECT_EQ("1.2.3", ProjMgrUtils::ConvertToVersionRange(">=1.2.3"));
 }
+
+TEST_F(ProjMgrUtilsUnitTests, ReplaceDelimiters) {
+  EXPECT_EQ("Cvendor_Cbundle_Cclass_Cgroup_Cvariant_Cversion", ProjMgrUtils::ReplaceDelimiters("Cvendor&Cbundle::Cclass:Cgroup&Cvariant@Cversion"));
+  EXPECT_EQ("ARM_CMSIS_CORE_A", ProjMgrUtils::ReplaceDelimiters("ARM::CMSIS.CORE A"));
+  EXPECT_EQ("AC6_6_16_0", ProjMgrUtils::ReplaceDelimiters("AC6@>=6.16.0"));
+  EXPECT_EQ("path_with_spaces", ProjMgrUtils::ReplaceDelimiters("path/with spaces"));
+}
+
