@@ -563,7 +563,7 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
         string lang = list.first;
         cmakelists << "foreach(SRC ${" << lang << "_SRC_FILES})" << EOL;
         cmakelists << "  string(REPLACE \" \" \"?\" S ${SRC})" << EOL;
-        if (ccflags) {
+        if (ccflags || cxxflags) {
           cmakelists << "  if(DEFINED " << lang << "_FLAGS_${S})" << EOL;
           cmakelists << "    set(" << lang << "_FLAGS_LOCAL \"${" << lang << "_FLAGS_${S}}\")" << EOL;
           cmakelists << "  else()" << EOL;
