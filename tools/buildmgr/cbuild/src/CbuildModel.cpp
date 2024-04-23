@@ -853,7 +853,10 @@ vector<string> CbuildModel::MergeArgs(const vector<string>& add, const vector<st
     list.insert(list.end(), add.begin(), add.end());
   }
   for (auto rem_item : remove) {
-    auto first_match = std::find(list.cbegin(), list.cend(), rem_item);
+    auto first_match = std::find_if(list.cbegin(), list.cend(), [&rem_item](string item) {
+      // remove if matches e.g. DEF or DEF=1
+      return (item == rem_item || item.substr(0, item.find("=")) == rem_item);
+      });
     if (first_match != list.cend()) {
       list.erase(first_match);
     }
