@@ -195,6 +195,20 @@ public:
   */
   static std::string ConvertToVersionRange(const std::string& version);
 
+  /**
+   * @brief create IO sequences table according to executes nodes input/output
+   * @param vector of executes nodes
+   * @return map with IO sequences
+  */
+  static StrMap CreateIOSequenceMap(const std::vector<ExecutesItem>& executes);
+
+  /**
+   * @brief replace delimiters "::|:|&|@>=|@|.|/| " by underscore character
+   * @param input string
+   * @return string with replaced characters
+  */
+  static std:: string ReplaceDelimiters(const std::string input);
+
 protected:
   static std::string ConstructID(const std::vector<std::pair<const char*, const std::string&>>& elements);
   /**

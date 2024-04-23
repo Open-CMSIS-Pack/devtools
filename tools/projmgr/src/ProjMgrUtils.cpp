@@ -292,3 +292,31 @@ string ProjMgrUtils::ConvertToVersionRange(const string& version) {
   }
   return versionRange;
 }
+
+StrMap ProjMgrUtils::CreateIOSequenceMap(const vector<ExecutesItem>& executes) {
+  StrMap IOSeqMap = {
+    {"input", "${INPUT}"},
+    {"output", "${OUTPUT}"}
+  };
+  vector<int> inputSizes, outputSizes;
+  for (auto& item : executes) {
+    inputSizes.push_back(item.input.size());
+    outputSizes.push_back(item.output.size());
+  }
+  if (inputSizes.size() > 0) {
+    for (int i = 0; i < *max_element(inputSizes.begin(), inputSizes.end()); i++) {
+      IOSeqMap["input(" + to_string(i) + ")"] = "${INPUT_" + to_string(i) + "}";
+    }
+  }
+  if (outputSizes.size() > 0) {
+    for (int i = 0; i < *max_element(outputSizes.begin(), outputSizes.end()); i++) {
+      IOSeqMap["output(" + to_string(i) + ")"] = "${OUTPUT_" + to_string(i) + "}";
+    }
+  }
+  return IOSeqMap;
+}
+
+string ProjMgrUtils::ReplaceDelimiters(const string input) {
+  regex regEx = regex("::|:|&|@>=|@|\\.|/| ");
+  return(regex_replace(input, regEx, "_"));
+}

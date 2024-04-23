@@ -104,6 +104,7 @@ bool ProjMgrYamlParser::ParseCsolution(const string& input,
     ParsePacks(solutionNode, csolution.path, csolution.packs);
     csolution.enableCdefault = solutionNode[YAML_CDEFAULT].IsDefined();
     ParseGenerators(solutionNode, csolution.path, csolution.generators);
+    ParseExecutes(solutionNode, csolution.path, csolution.executes);
 
   } catch (YAML::Exception& e) {
     ProjMgrLogger::Error(input, e.mark.line + 1, e.mark.column + 1, e.msg);
@@ -189,6 +190,8 @@ bool ProjMgrYamlParser::ParseCproject(const string& input,
     ParseGenerators(projectNode, cproject.path, cproject.generators);
 
     ParseRte(projectNode, cproject.rteBaseDir);
+
+    ParseExecutes(projectNode, cproject.path, cproject.executes);
 
   } catch (YAML::Exception& e) {
     ProjMgrLogger::Error(input, e.mark.line + 1, e.mark.column + 1, e.msg);
@@ -481,6 +484,22 @@ void ProjMgrYamlParser::ParseGenerators(const YAML::Node& parent, const string& 
         ParsePortablePath(optionsEntry, file, YAML_PATH, path);
         generators.options[generator] = path;
       }
+    }
+  }
+}
+
+void ProjMgrYamlParser::ParseExecutes(const YAML::Node& parent, const string& file, std::vector<ExecutesItem>& executes) {
+  if (parent[YAML_EXECUTES].IsDefined()) {
+    const YAML::Node& executesNode = parent[YAML_EXECUTES];
+    for (const auto& executesEntry : executesNode) {
+      ExecutesItem executesItem;
+      ParseString(executesEntry, YAML_EXECUTE, executesItem.execute);
+      ParseString(executesEntry, YAML_RUN, executesItem.run);
+      executesItem.always = executesEntry[YAML_ALWAYS].IsDefined();
+      ParsePortablePaths(executesEntry, file, YAML_INPUT, executesItem.input);
+      ParsePortablePaths(executesEntry, file, YAML_OUTPUT, executesItem.output);
+      ParseTypeFilter(executesEntry, executesItem.typeFilter);
+      executes.push_back(executesItem);
     }
   }
 }
@@ -880,6 +899,7 @@ const set<string> solutionKeys = {
   YAML_CREATED_FOR,
   YAML_CDEFAULT,
   YAML_GENERATORS,
+  YAML_EXECUTES,
 };
 
 const set<string> projectsKeys = {
@@ -914,6 +934,7 @@ const set<string> projectKeys = {
   YAML_LINKER,
   YAML_GENERATORS,
   YAML_RTE,
+  YAML_EXECUTES,
 };
 
 const set<string> setupKeys = {
@@ -1151,6 +1172,16 @@ const set<string> filesKeys = {
   YAML_MISC,
 };
 
+const set<string> executesKeys = {
+  YAML_EXECUTE,
+  YAML_RUN,
+  YAML_ALWAYS,
+  YAML_INPUT,
+  YAML_OUTPUT,
+  YAML_FORCONTEXT,
+  YAML_NOTFORCONTEXT,
+};
+
 const map<string, set<string>> sequences = {
   {YAML_PROJECTS, projectsKeys},
   {YAML_TARGETTYPES, targetTypeKeys},
@@ -1165,6 +1196,9 @@ const map<string, set<string>> sequences = {
   {YAML_FILES, filesKeys},
   {YAML_SETUPS, setupKeys},
   {YAML_LINKER, linkerKeys},
+  {YAML_EXECUTES, executesKeys},
+  {YAML_INPUT, {}},
+  {YAML_OUTPUT, {}},
 };
 
 const map<string, set<string>> mappings = {
@@ -1270,7 +1304,7 @@ bool ProjMgrYamlParser::ValidateKeys(const string& input, const YAML::Node& pare
       if (!ValidateSequence(input, item.second, key)) {
         valid = false;
       }
-    } else if (sequences.find(key) != sequences.end()) {
+    } else if ((sequences.find(key) != sequences.end()) && (mappings.find(key) == mappings.end())) {
       ProjMgrLogger::Error(input, item.first.Mark().line + 1, item.first.Mark().column + 1, "node '" + item.first.as<string>() + "' shall contain sequence elements");
       valid = false;
     }
@@ -1278,7 +1312,7 @@ bool ProjMgrYamlParser::ValidateKeys(const string& input, const YAML::Node& pare
       if (!ValidateMapping(input, item.second, key)) {
         valid = false;
       }
-    } else if (mappings.find(key) != mappings.end()) {
+    } else if ((mappings.find(key) != mappings.end()) && (sequences.find(key) == sequences.end())) {
       ProjMgrLogger::Error(input, item.first.Mark().line + 1, item.first.Mark().column + 1, "node '" + item.first.as<string>() + "' shall contain mapping elements");
       valid = false;
     }

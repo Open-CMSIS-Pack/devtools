@@ -493,7 +493,9 @@ bool ProjMgr::GenerateYMLConfigurationFiles() {
 
   // Generate cbuild index file
   if (!m_allContexts.empty()) {
-    if (!m_emitter.GenerateCbuildIndex(m_parser, m_allContexts, m_outputDir, m_failedContext, m_checkSchema)) {
+    map<string, ExecutesItem> executes;
+    m_worker.GetExecutes(executes);
+    if (!m_emitter.GenerateCbuildIndex(m_parser, m_allContexts, m_outputDir, m_failedContext, executes, m_checkSchema)) {
       return false;
     }
   }
@@ -562,6 +564,13 @@ bool ProjMgr::Configure() {
     m_processedContexts.push_back(&contextItem);
   }
   m_selectedToolchain = m_worker.GetSelectedToochain();
+
+  // Process solution level executes
+  if (!m_worker.ProcessSolutionExecutes()) {
+    error = true;
+  }
+  // Process executes dependencies
+  m_worker.ProcessExecutesDependencies();
 
   // Print warnings for missing filters
   m_worker.PrintMissingFilters();
@@ -830,7 +839,7 @@ bool ProjMgr::RunListLayers(void) {
     }
 
     if (!m_allContexts.empty()) {
-      if (!m_emitter.GenerateCbuildIndex(m_parser, m_allContexts, m_outputDir, m_failedContext, m_checkSchema)) {
+      if (!m_emitter.GenerateCbuildIndex(m_parser, m_allContexts, m_outputDir, m_failedContext, map<string, ExecutesItem>(), m_checkSchema)) {
         return false;
       }
     }
