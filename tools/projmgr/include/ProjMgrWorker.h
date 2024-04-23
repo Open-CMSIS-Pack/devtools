@@ -473,6 +473,12 @@ public:
   void GetYmlOrderedContexts(std::vector<std::string> &contexts);
 
   /**
+   * @brief get executes node at solution level
+   * @param reference to executes map
+  */
+  void GetExecutes(std::map<std::string, ExecutesItem>& executes);
+
+  /**
    * @brief set output directory
    * @param reference to output directory
   */
@@ -614,7 +620,23 @@ public:
   bool ProcessGlobalGenerators(ContextItem* context, const std::string& generatorId,
     std::string& projectType, StrVec& siblings);
 
+  /**
+   * @brief check whether variable definition error is set
+   * @return true if error is set
+  */
   bool HasVarDefineError();
+
+  /**
+   * @brief process solution level executes
+   * @return true if it is processed successfully
+  */
+  bool ProcessSolutionExecutes();
+
+  /**
+   * @brief process executes nodes dependencies
+  */
+  void ProcessExecutesDependencies();
+
 protected:
   ProjMgrParser* m_parser = nullptr;
   ProjMgrKernel* m_kernel = nullptr;
@@ -644,6 +666,7 @@ protected:
   bool m_relativePaths;
   bool m_varDefineError;
   StrMap m_packMetadata;
+  std::map<std::string, ExecutesItem> m_executes;
 
   bool LoadPacks(ContextItem& context);
   bool CheckMissingPackRequirements(const std::string& contextName);
@@ -670,11 +693,12 @@ protected:
   bool ProcessGpdsc(ContextItem& context);
   bool ProcessConfigFiles(ContextItem& context);
   bool ProcessComponentFiles(ContextItem& context);
+  bool ProcessExecutes(ContextItem& context, bool solutionLevel = false);
   bool ProcessGroups(ContextItem& context);
   bool ProcessSequencesRelatives(ContextItem& context, bool rerun);
-  bool ProcessSequencesRelatives(ContextItem& context, std::vector<std::string>& src, const std::string& ref = std::string(), bool withHeadingDot = false);
+  bool ProcessSequencesRelatives(ContextItem& context, std::vector<std::string>& src, const std::string& ref = std::string(), std::string outDir = std::string(), bool withHeadingDot = false, bool solutionLevel = false);
   bool ProcessSequencesRelatives(ContextItem& context, BuildType& build, const std::string& ref = std::string());
-  bool ProcessSequenceRelative(ContextItem& context, std::string& item, const std::string& ref = std::string(), bool withHeadingDot = false);
+  bool ProcessSequenceRelative(ContextItem& context, std::string& item, const std::string& ref = std::string(), std::string outDir = std::string(), bool withHeadingDot = false, bool solutionLevel = false);
   bool ProcessOutputFilenames(ContextItem& context);
   bool ProcessLinkerOptions(ContextItem& context);
   bool ProcessLinkerOptions(ContextItem& context, const LinkerItem& linker, const std::string& ref);
@@ -727,7 +751,7 @@ protected:
   void CheckAndGenerateRegionsHeader(ContextItem& context);
   bool GenerateRegionsHeader(ContextItem& context, std::string& generatedRegionsFile);
   void UpdatePartialReferencedContext(ContextItem& context, std::string& contextName);
-  void ExpandAccessSequence(const ContextItem& context, const ContextItem& refContext, const std::string& sequence, std::string& item, bool withHeadingDot);
+  void ExpandAccessSequence(const ContextItem& context, const ContextItem& refContext, const std::string& sequence, const std::string& outdir, std::string& item, bool withHeadingDot);
   bool GetGeneratorDir(const RteGenerator* generator, ContextItem& context, const std::string& layer, std::string& genDir);
   bool GetGeneratorDir(const std::string& generatorId, ContextItem& context, const std::string& layer, std::string& genDir);
   bool GetExtGeneratorDir(const std::string& generatorId, ContextItem& context, const std::string& layer, std::string& genDir);
@@ -741,6 +765,9 @@ protected:
   std::string GetContextRteFolder(ContextItem& context);
   std::vector<std::string> FindMatchingPackIdsInCbuildPack(const PackItem& needle, const std::vector<ResolvedPackItem>& resolvedPacks);
   void PrintContextErrors(const std::string& contextName);
+  void SetFilesDependencies(const GroupNode& group, const std::string& ouput, StrVec& dependsOn, const std::string& dep, const std::string& outDir);
+  void SetBuildOutputDependencies(const OutputTypes& outputTypes, const std::string& input, StrVec& dependsOn, const std::string& dep, const std::string& outDir);
+  void SetExecutesDependencies(const std::string& output, const std::string& dep, const std::string& outDir);
 };
 
 #endif  // PROJMGRWORKER_H

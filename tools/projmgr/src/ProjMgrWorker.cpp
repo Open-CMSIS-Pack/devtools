@@ -191,6 +191,10 @@ void ProjMgrWorker::GetYmlOrderedContexts(vector<string> &contexts) {
   contexts = m_ymlOrderedContexts;
 }
 
+void ProjMgrWorker::GetExecutes(map<string, ExecutesItem>& executes) {
+  executes = m_executes;
+}
+
 void ProjMgrWorker::SetOutputDir(const std::string& outputDir) {
   m_outputDir = outputDir;
 }
@@ -2084,6 +2088,106 @@ bool ProjMgrWorker::ProcessComponentFiles(ContextItem& context) {
   return true;
 }
 
+void ProjMgrWorker::SetFilesDependencies(const GroupNode& group, const string& ouput, StrVec& dependsOn, const string& dep, const string& outDir) {
+  for (auto fileNode : group.files) {
+    RteFsUtils::NormalizePath(fileNode.file, outDir);
+    if (fileNode.file == ouput) {
+      CollectionUtils::PushBackUniquely(dependsOn, dep);
+    }
+  }
+  for (const auto& groupNode : group.groups) {
+    SetFilesDependencies(groupNode, ouput, dependsOn, dep, outDir);
+  }
+}
+
+void ProjMgrWorker::SetExecutesDependencies(const string& output, const string& dep, const string& outDir) {
+  for (auto& [_, item] : m_executes) {
+    for (auto input : item.input) {
+      RteFsUtils::NormalizePath(input, outDir);
+      if (input == output) {
+        CollectionUtils::PushBackUniquely(item.dependsOn, dep);
+      }
+    }
+  }
+}
+
+void ProjMgrWorker::SetBuildOutputDependencies(const OutputTypes& types, const string& input, StrVec& dependsOn, const string& dep, const string& outDir) {
+  const vector<pair<bool, string>> outputTypes = {
+    { types.bin.on,  types.bin.filename  },
+    { types.elf.on,  types.elf.filename  },
+    { types.hex.on,  types.hex.filename  },
+    { types.lib.on,  types.lib.filename  },
+    { types.cmse.on, types.cmse.filename },
+  };
+  for (auto [on, file] : outputTypes) {
+    if (on) {
+      RteFsUtils::NormalizePath(file, outDir);
+      if (file == input) {
+        CollectionUtils::PushBackUniquely(dependsOn, dep);
+      }
+    }
+  }
+}
+
+void ProjMgrWorker::ProcessExecutesDependencies() {
+  // set dependencies by searching matching entries among:
+  // - executes outputs and user files
+  // - executes outputs and executes inputs (inter-dependencies)
+  // - executes inputs and build outputs
+  const string& outDir = m_outputDir.empty() ? m_parser->GetCsolution().directory : m_outputDir;
+  for (auto& [_, item] : m_executes) {
+    // iterate over output items
+    for (auto output : item.output) {
+      RteFsUtils::NormalizePath(output, outDir);
+      for (const auto& contextName : m_selectedContexts) {
+        auto& context = m_contexts.at(contextName);
+        // user files dependencies
+        for (const auto& groupNode : context.groups) {
+          SetFilesDependencies(groupNode, output, context.dependsOn, item.execute, context.directories.cprj);
+        }
+      }
+      // solution execute nodes inter-dependencies
+      SetExecutesDependencies(output, item.execute, m_outputDir.empty() ? m_parser->GetCsolution().directory : m_outputDir);
+    }
+    // iterate over input items
+    for (auto input : item.input) {
+      RteFsUtils::NormalizePath(input, outDir);
+      for (const auto& contextName : m_selectedContexts) {
+        auto& context = m_contexts.at(contextName);
+        // build output dependencies
+        SetBuildOutputDependencies(context.outputTypes, input, item.dependsOn, contextName,
+          fs::path(context.directories.cprj).append(context.directories.outdir).generic_string());
+      }
+    }
+  }
+}
+
+bool ProjMgrWorker::ProcessExecutes(ContextItem& context, bool solutionLevel) {
+  const vector<ExecutesItem>& executes = solutionLevel ? m_parser->GetCsolution().executes : context.cproject->executes;
+  const string& ref = solutionLevel ? m_parser->GetCsolution().directory : context.cproject->directory;
+  const string& outDir = m_outputDir.empty() ? m_parser->GetCsolution().directory : m_outputDir;
+  const auto& IOSeqMap = ProjMgrUtils::CreateIOSequenceMap(executes);
+  for (const auto& item : executes) {
+    if (solutionLevel || CheckContextFilters(item.typeFilter, context)) {
+      const string& execute = (solutionLevel ? "" : context.name + "-") + ProjMgrUtils::ReplaceDelimiters(item.execute);
+      m_executes[execute] = item;
+      m_executes[execute].execute = execute;
+      // expand access sequences
+      m_executes[execute].run = RteUtils::ExpandAccessSequences(m_executes[execute].run, IOSeqMap);
+      if (!ProcessSequencesRelatives(context, m_executes[execute].input, ref, outDir, true, solutionLevel) ||
+        !ProcessSequencesRelatives(context, m_executes[execute].output, ref, outDir, true, solutionLevel)) {
+        return false;
+      }
+    }
+  }  
+  return true;
+}
+
+bool ProjMgrWorker::ProcessSolutionExecutes() {
+  ContextItem context;
+  return ProcessExecutes(context, true);
+}
+
 bool ProjMgrWorker::IsPreIncludeByTarget(const RteTarget* activeTarget, const string& preInclude) {
   const auto& preIncludeFiles = activeTarget->GetPreIncludeFiles();
   for (const auto& [_, fileSet] : preIncludeFiles) {
@@ -2787,17 +2891,17 @@ void ProjMgrWorker::UpdatePartialReferencedContext(ContextItem& context, string&
   }
 }
 
-void ProjMgrWorker::ExpandAccessSequence(const ContextItem & context, const ContextItem & refContext, const string & sequence, string & item, bool withHeadingDot) {
+void ProjMgrWorker::ExpandAccessSequence(const ContextItem& context, const ContextItem& refContext, const string& sequence, const string& outdir, string& item, bool withHeadingDot) {
   const string refContextOutDir = refContext.directories.cprj + "/" + refContext.directories.outdir;
-  const string relOutDir = RteFsUtils::RelativePath(refContextOutDir, context.directories.cprj, withHeadingDot);
+  const string relOutDir = RteFsUtils::RelativePath(refContextOutDir, outdir, withHeadingDot);
   string regExStr = "\\$";
   string replacement;
   if (sequence == RteConstants::AS_SOLUTION_DIR) {
     regExStr += RteConstants::AS_SOLUTION_DIR;
-    replacement = RteFsUtils::RelativePath(refContext.csolution->directory, context.directories.cprj, withHeadingDot);
+    replacement = RteFsUtils::RelativePath(refContext.csolution->directory, outdir, withHeadingDot);
   } else if (sequence == RteConstants::AS_PROJECT_DIR) {
     regExStr += RteConstants::AS_PROJECT_DIR;
-    replacement = RteFsUtils::RelativePath(refContext.cproject->directory, context.directories.cprj, withHeadingDot);
+    replacement = RteFsUtils::RelativePath(refContext.cproject->directory, outdir, withHeadingDot);
   } else if (sequence == RteConstants::AS_OUT_DIR) {
     regExStr += RteConstants::AS_OUT_DIR;
     replacement = relOutDir;
@@ -2821,11 +2925,12 @@ void ProjMgrWorker::ExpandAccessSequence(const ContextItem & context, const Cont
   item = regex_replace(item, regEx, replacement);
 }
 
-bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, const string& ref, bool withHeadingDot) {
+bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, const string& ref, string outDir, bool withHeadingDot, bool solutionLevel) {
   size_t offset = 0;
   bool pathReplace = false;
+  outDir = outDir.empty() ? context.directories.cprj : outDir;
   // expand variables (static access sequences)
-  const string input = item = RteUtils::ExpandAccessSequences(item, context.variables);
+  const string input = item = solutionLevel ? item : RteUtils::ExpandAccessSequences(item, context.variables);
   // expand dynamic access sequences
   while (offset != string::npos) {
     string sequence;
@@ -2841,8 +2946,25 @@ bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, 
         string contextName = asMatches[2];
         // access sequences with 'context' argument lead to path replacement
         pathReplace = true;
-        // update referenced context name when it's partially specified
-        UpdatePartialReferencedContext(context, contextName);
+        // get referenced context name
+        if (solutionLevel) {
+          // solution level: referenced context name must lead to a compatible context
+          StrVec compatibleContexts;
+          for (const auto& [ctx, _] : m_contexts) {
+            if (ctx.find(contextName) != string::npos) {
+              compatibleContexts.push_back(ctx);
+            }
+          }
+          if (compatibleContexts.empty()) {
+            ProjMgrLogger::Error(m_parser->GetCsolution().path, "context '" + contextName + "' referenced by access sequence '" + sequenceName + "' is not compatible");
+            return false;
+          }
+          contextName = compatibleContexts.front();
+          context = m_contexts.at(contextName);
+        } else {
+          // context level: update referenced context name when it's partially specified
+          UpdatePartialReferencedContext(context, contextName);
+        }
         // find referenced context
         if (m_contexts.find(contextName) != m_contexts.end()) {
           error_code ec;
@@ -2857,7 +2979,7 @@ bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, 
             }
           }
           // expand access sequence
-          ExpandAccessSequence(context, refContext, sequenceName, item, withHeadingDot);
+          ExpandAccessSequence(context, refContext, sequenceName, outDir, item, withHeadingDot);
           // store dependency information
           if (refContext.name != context.name) {
             CollectionUtils::PushBackUniquely(context.dependsOn, refContext.name);
@@ -2877,9 +2999,9 @@ bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, 
   if (!pathReplace && !ref.empty()) {
      error_code ec;
     // adjust relative path according to the given reference
-    if (!fs::equivalent(context.directories.cprj, ref, ec)) {
+    if (!fs::equivalent(outDir, ref, ec)) {
       const string absPath = RteFsUtils::MakePathCanonical(fs::path(item).is_relative() ? ref + "/" + item : item);
-      item = RteFsUtils::RelativePath(absPath, context.directories.cprj, withHeadingDot);
+      item = RteFsUtils::RelativePath(absPath, outDir, withHeadingDot);
     }
   }
   return true;
@@ -3172,6 +3294,7 @@ bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGenFiles, bool
   }
   ret &= ProcessConfigFiles(context);
   ret &= ProcessComponentFiles(context);
+  ret &= ProcessExecutes(context);
   bool bUnresolvedDependencies = false;
   if (resolveDependencies) {
     // TODO: Add uniquely identified missing dependencies to RTE Model
@@ -3786,9 +3909,9 @@ std::string ProjMgrWorker::GetBoardInfoString(const std::string& vendor,
     name + (revision.empty() ? "" : ":" + revision);
 }
 
-bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem& context, vector<string>& src, const string& ref, bool withHeadingDot) {
+bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem& context, vector<string>& src, const string& ref, string outDir, bool withHeadingDot, bool solutionLevel) {
   for (auto& item : src) {
-    if (!ProcessSequenceRelative(context, item, ref, withHeadingDot)) {
+    if (!ProcessSequenceRelative(context, item, ref, outDir, withHeadingDot, solutionLevel)) {
       return false;
     }
   }
@@ -3803,15 +3926,15 @@ bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem& context, BuildType& b
     return false;
   }
   for (auto& misc : build.misc) {
-    if (!ProcessSequencesRelatives(context, misc.as,       "", true) ||
-        !ProcessSequencesRelatives(context, misc.c,        "", true) ||
-        !ProcessSequencesRelatives(context, misc.cpp,      "", true) ||
-        !ProcessSequencesRelatives(context, misc.c_cpp,    "", true) ||
-        !ProcessSequencesRelatives(context, misc.lib,      "", true) ||
-        !ProcessSequencesRelatives(context, misc.library,  "", true) ||
-        !ProcessSequencesRelatives(context, misc.link,     "", true) ||
-        !ProcessSequencesRelatives(context, misc.link_c,   "", true) ||
-        !ProcessSequencesRelatives(context, misc.link_cpp, "", true)) {
+    if (!ProcessSequencesRelatives(context, misc.as,       "", "", true) ||
+        !ProcessSequencesRelatives(context, misc.c,        "", "", true) ||
+        !ProcessSequencesRelatives(context, misc.cpp,      "", "", true) ||
+        !ProcessSequencesRelatives(context, misc.c_cpp,    "", "", true) ||
+        !ProcessSequencesRelatives(context, misc.lib,      "", "", true) ||
+        !ProcessSequencesRelatives(context, misc.library,  "", "", true) ||
+        !ProcessSequencesRelatives(context, misc.link,     "", "", true) ||
+        !ProcessSequencesRelatives(context, misc.link_c,   "", "", true) ||
+        !ProcessSequencesRelatives(context, misc.link_cpp, "", "", true)) {
       return false;
     }
   }
