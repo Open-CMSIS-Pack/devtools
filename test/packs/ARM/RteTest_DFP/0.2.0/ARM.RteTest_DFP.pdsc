@@ -8,14 +8,14 @@
   <url>http://www.keil.com/pack/</url>
 
   <releases>
-    <release version="0.1.0" date="2021-02-16">
-      Tag to check that the latest release item version is picked up even if it is below
+    <release version="0.2.0" date="2022-02-19">
+      Added a new device 'RteTest_ARMCM0_Dual'
     </release>
     <release version="0.1.1" date="2021-02-17">
       Initial copy from ARM.CMSIS pack
     </release>
-    <release version="0.2.0" date="2022-02-19">
-      Added a new device 'RteTest_ARMCM0_Dual'
+    <release version="0.1.0" date="2021-02-16">
+      Tag to check that the latest release item version is picked up even if it is below
     </release>
   </releases>
   <taxonomy>
