@@ -5,3 +5,4 @@ project:
     - layer: $VarBuildLayer$
     - layer: $VarTargetLayer$
     - layer: $VarSolution$
+    - layer: $VarSolutionDir$

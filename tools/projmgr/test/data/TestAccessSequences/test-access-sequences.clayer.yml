@@ -1,3 +1,13 @@
 layer:
   processor:
     trustzone: secure
+  misc:
+    - C-CPP: [LAYER-D($Dname$)]
+  define:
+    - $elf()$.LAYER
+  add-path:
+    - $elf()$.LAYER
+  groups:
+    - group: Sources
+      files: 
+        - file: $SolutionDir()$/path/to/layer.cpp

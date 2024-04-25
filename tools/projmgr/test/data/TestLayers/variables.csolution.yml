@@ -24,6 +24,7 @@ solution:
 
   variables:
     - VarSolution: ./variables/app.clayer.yml
+    - VarSolutionDir: $SolutionDir()$/variables/solutionDir.clayer.yml
 
   projects:
     - project: variables.cproject.yml
