@@ -32,13 +32,11 @@
     <file category="sourceC" name="File0.c"/>
     <group name="Level1">
       <cflags add="-DGROUP1" compiler="AC6"/>
-      <defines>DEF1=1</defines>
       <file category="sourceC" name="File1.c"/>
       <group name="Level2">
         <cflags add="-DGROUP2" remove="-DGROUP1" compiler="AC6"/>
         <file category="sourceC" name="File2.c"/>
         <group name="Level3">
-          <undefines>DEF1</undefines>
           <cflags add="-DGROUP3" remove="-DGROUP2" compiler="AC6"/>
           <file category="sourceC" name="File3.c"/>
           <group name="Level4">
