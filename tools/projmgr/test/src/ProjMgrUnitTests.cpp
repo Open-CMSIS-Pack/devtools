@@ -2074,7 +2074,7 @@ TEST_F(ProjMgrUnitTests, LayerVariablesNotDefined) {
   EXPECT_EQ(1, RunProjMgr(8, argv, 0));
 
   const string& expectedErrStr = ".*\
-\\$NotDefined\\$ - warning csolution: variable was not defined for context 'variables-notdefined.BuildType\\+TargetType'.*\
+warning csolution: variable 'NotDefined' was not defined for context 'variables-notdefined.BuildType\\+TargetType'.*\
   .*/ARM/RteTest_DFP/0.2.0/Layers/board1.clayer.yml \\(layer type: Board\\).*\
   .*/ARM/RteTest_DFP/0.2.0/Layers/board2.clayer.yml \\(layer type: Board\\).*\
   .*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml \\(layer type: Board\\).*\
@@ -3897,7 +3897,7 @@ TEST_F(ProjMgrUnitTests, RunCheckContextProcessing) {
   EXPECT_EQ(2, RunProjMgr(7, argv, 0));
 
   // Check warning for processed context
-  const string expected = "$LayerVar$ - warning csolution: variable was not defined for context 'contexts.B1+T1'";
+  const string expected = "warning csolution: variable 'LayerVar' was not defined for context 'contexts.B1+T1'";
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_TRUE(errStr.find(expected) != string::npos);
 

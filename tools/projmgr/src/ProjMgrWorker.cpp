@@ -141,7 +141,7 @@ void ProjMgrWorker::AddContext(ContextDesc& descriptor, const TypePair& type, Co
 
 bool ProjMgrWorker::ParseContextLayers(ContextItem& context) {
   // user defined variables
-  auto userVariablesList = {
+  const auto userVariablesList = {
     context.csolution->target.build.variables,
     context.csolution->buildTypes[context.type.build].variables,
     context.csolution->targetTypes[context.type.target].build.variables,
@@ -151,7 +151,7 @@ bool ProjMgrWorker::ParseContextLayers(ContextItem& context) {
       if ((context.variables.find(key) != context.variables.end()) && (context.variables.at(key) != value)) {
         ProjMgrLogger::Warn("variable '" + key + "' redefined from '" + context.variables.at(key) + "' to '" + value + "'");
       }
-      context.variables[key] = value;
+      context.variables[key] = RteUtils::ExpandAccessSequences(value, {{RteConstants::AS_SOLUTION_DIR_BR, context.csolution->directory}});
     }
   }
   // parse clayers
@@ -161,21 +161,28 @@ bool ProjMgrWorker::ParseContextLayers(ContextItem& context) {
     }
     if (CheckContextFilters(clayer.typeFilter, context)) {
       error_code ec;
-      string const& clayerRef = RteUtils::ExpandAccessSequences(clayer.layer, context.variables);
-      string const& clayerFile = fs::canonical(fs::path(context.cproject->directory).append(clayerRef), ec).generic_string();
-      if (clayerFile.empty()) {
-        if (regex_match(clayer.layer, regex(".*\\$.*\\$.*"))) {
-          ProjMgrLogger::Warn(clayer.layer, "variable was not defined for context '" + context.name +"'");
-          m_varDefineError = true;
-        } else {
-          ProjMgrLogger::Error(clayer.layer, "clayer file was not found");
-          return false;
+      string clayerFile = RteUtils::ExpandAccessSequences(clayer.layer, context.variables);
+      if (RteFsUtils::IsRelative(clayerFile)) {
+        RteFsUtils::NormalizePath(clayerFile, context.cproject->directory);
+      }
+      if (!RteFsUtils::Exists(clayerFile)) {
+        smatch sm;
+        try {
+          regex_match(clayer.layer, sm, regex(".*\\$(.*)\\$.*"));
         }
-      } else {
-        if (!m_parser->ParseClayer(clayerFile, m_checkSchema)) {
-          return false;
+        catch (exception&) {};
+        if (sm.size() >= 2) {
+          if (context.variables.find(sm[1]) == context.variables.end()) {
+            ProjMgrLogger::Warn("variable '" + string(sm[1]) + "' was not defined for context '" + context.name + "'");
+            m_varDefineError = true;
+            continue;
+          }
         }
+      }
+      if (m_parser->ParseClayer(clayerFile, m_checkSchema)) {
         context.clayers[clayerFile] = &m_parser->GetClayers().at(clayerFile);
+      } else {
+        return false;
       }
     }
   }
