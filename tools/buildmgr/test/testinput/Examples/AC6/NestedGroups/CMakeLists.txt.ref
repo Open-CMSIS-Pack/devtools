@@ -16,28 +16,6 @@ set(DEFINES
   _RTE_
 )
 
-set(DEFINES_C:/Sandbox/external/devtools-external/tools/buildmgr/test/testinput/Examples/AC6/NestedGroups/File1.c
-  ARMCM0
-  _RTE_
-  DEF1=1
-)
-
-set(DEFINES_C:/Sandbox/external/devtools-external/tools/buildmgr/test/testinput/Examples/AC6/NestedGroups/File2.c
-  ARMCM0
-  _RTE_
-  DEF1=1
-)
-
-set(DEFINES_C:/Sandbox/external/devtools-external/tools/buildmgr/test/testinput/Examples/AC6/NestedGroups/File3.c
-  ARMCM0
-  _RTE_
-)
-
-set(DEFINES_C:/Sandbox/external/devtools-external/tools/buildmgr/test/testinput/Examples/AC6/NestedGroups/File4.c
-  ARMCM0
-  _RTE_
-)
-
 set(INC_PATHS
   "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.7.0/CMSIS/Core/Include"
   "C:/Users/Test/AppData/Local/Arm/Packs/ARM/CMSIS/5.7.0/Device/ARM/ARMCM0/Include"
@@ -75,7 +53,7 @@ cbuild_get_running_toolchain(TOOLCHAIN_ROOT TOOLCHAIN_VERSION C)
 # Global Flags
 
 cbuild_get_system_includes(CC_SYS_INC_PATHS_LIST CC_SYS_INC_PATHS)
-set(CMAKE_C_FLAGS "${CC_CPU} ${CC_FLAGS} ${CC_SYS_INC_PATHS}")
+set(CMAKE_C_FLAGS "${CC_CPU} ${CC_DEFINES} ${CC_FLAGS} ${CC_SYS_INC_PATHS}")
 set(CMAKE_C_LINK_FLAGS "${LD_CPU} ${_LS}\"${LD_SCRIPT}\" ${LD_FLAGS}")
 
 # Local Flags
@@ -88,23 +66,6 @@ foreach(SRC ${CC_SRC_FILES})
     set(CC_FLAGS_LOCAL "${CC_FLAGS_GLOBAL}")
   endif()
   set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS "${CC_FLAGS_LOCAL}")
-endforeach()
-
-# File Includes, Defines and Options
-
-foreach(SRC ${CC_SRC_FILES})
-  string(REPLACE " " "?" S ${SRC})
-  get_source_file_property(FILE_FLAGS ${SRC} COMPILE_FLAGS)
-  if(FILE_FLAGS STREQUAL "NOTFOUND")
-    set(FILE_FLAGS)
-  endif()
-  if(DEFINED DEFINES_${S})
-    cbuild_set_defines(CC DEFINES_${S})
-    string(APPEND FILE_FLAGS " ${DEFINES_${S}}")
-  else()
-    string(APPEND FILE_FLAGS " ${CC_DEFINES}")
-  endif()
-  set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS "${FILE_FLAGS}")
 endforeach()
 
 # Compilation Database
