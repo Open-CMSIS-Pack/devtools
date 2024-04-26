@@ -112,7 +112,7 @@ TEST(CrossPlatformUnitTests, ExecCommand) {
   auto result = CrossPlatformUtils::ExecCommand("invalid command");
   EXPECT_EQ(false, (0 == result.second) ? true : false) << result.first;
 
-  string testdir = "mkdir_test_dir";
+  string testdir = "\"mkdir test dir\"";
   error_code ec;
   if (filesystem::exists(testdir)) {
     filesystem::remove(testdir);
