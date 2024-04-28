@@ -72,7 +72,7 @@ jobs:
           arch: ${{ matrix.arch }}
 
       - name: Archive projmgr
-        uses: actions/upload-artifact@1746f4ab65b179e0ea60a494b83293b640dd5bba # v4.3.2
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
         with:
           name: projmgr-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/tools/projmgr/${{ matrix.target }}-${{ matrix.arch }}/Release/${{ matrix.binary }}
@@ -116,7 +116,7 @@ jobs:
 
       - name: Archive projmgr swig python libs
         if: always() && matrix.pyswig
-        uses: actions/upload-artifact@1746f4ab65b179e0ea60a494b83293b640dd5bba # v4.3.2
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
         with:
           name: projmgr-swig-python-${{ matrix.target }}-${{ matrix.arch }}
           path: |
@@ -127,7 +127,7 @@ jobs:
 
       - name: Archive projmgr swig go libs
         if: always() && matrix.goswig
-        uses: actions/upload-artifact@1746f4ab65b179e0ea60a494b83293b640dd5bba # v4.3.2
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
         with:
           name: projmgr-swig-go-${{ matrix.target }}-${{ matrix.arch }}
           path: |
@@ -317,7 +317,7 @@ jobs:
 
       - name: Archive unit tests results
         if: always() && (matrix.arch != 'arm64')
-        uses: actions/upload-artifact@1746f4ab65b179e0ea60a494b83293b640dd5bba # v4.3.2
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
         with:
           name: unittest-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/Testing/Temporary/LastTest.log
@@ -326,7 +326,7 @@ jobs:
 
       - name: Archive gtest report
         if: always() && (matrix.arch != 'arm64')
-        uses: actions/upload-artifact@1746f4ab65b179e0ea60a494b83293b640dd5bba # v4.3.2
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
         with:
           name: unit_test_result_projmgr-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/projmgrunittests-*.xml
@@ -378,7 +378,7 @@ jobs:
 
       - name: Archive test report
         if: (github.event_name == 'push')
-        uses: actions/upload-artifact@1746f4ab65b179e0ea60a494b83293b640dd5bba # v4.3.2
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
         with:
           name: unit_test_result_projmgr-linux-amd64
           path: ./build/test_reports/projmgrunittests-*.xml
@@ -416,7 +416,7 @@ jobs:
           attempt_delay: 5000
 
       - name: Archive coverage report
-        uses: actions/upload-artifact@1746f4ab65b179e0ea60a494b83293b640dd5bba # v4.3.2
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
         with:
           name: coverage-report-projmgr
           path: |
@@ -431,7 +431,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Event File
-        uses: actions/upload-artifact@1746f4ab65b179e0ea60a494b83293b640dd5bba # v4.3.2
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
         with:
           name: Event File projmgr
           path: ${{ github.event_path }}
