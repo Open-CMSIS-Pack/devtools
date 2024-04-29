@@ -588,8 +588,14 @@ void RteTarget::ProcessAttributes() // called from SetAttributes(), AddAttribute
     }
   }
   // resolve board
-  // RteBoard* board = model->FindBoard();
-
+  string bname = GetAttribute("Bname");
+  if (!bname.empty()) {
+    const string &rev = HasAttribute("Bversion") ? GetAttribute("Bversion") : GetAttribute("Brevision");
+    if (!rev.empty()) {
+      bname += " (" + rev + ")";
+    }
+    SetBoard(model->FindBoard(bname));
+  }
 };
 
 void RteTarget::AddBoadProperties(RteDeviceItem* device, const string& processorName) {
@@ -1716,8 +1722,8 @@ std::string RteTarget::GetDeviceFolder() const
 
 std::string RteTarget::GetRegionsHeader() const
 {
-  string deviceName = WildCards::ToX(GetFullDeviceName(), false);
-  string boardName = WildCards::ToX(GetAttribute("Bname"), false);
+  string deviceName = WildCards::ToX(GetFullDeviceName());
+  string boardName = WildCards::ToX(GetAttribute("Bname"));
   string filename = boardName.empty() ? deviceName : boardName;
   return GetDeviceFolder() + "/regions_" + filename + ".h";
 }
@@ -1725,8 +1731,8 @@ std::string RteTarget::GetRegionsHeader() const
 std::string RteTarget::GenerateMemoryRegionContent(RteItem* memory, const std::string& id, bool bBoardMemory) const
 {
   bool bRam = memory->IsWriteAccess();
- string name = memory->GetName();
-  if (bBoardMemory) {
+  string name = memory->GetName();
+  if(bBoardMemory) {
     name += " (board memory)";
   }
   ostringstream oss;
