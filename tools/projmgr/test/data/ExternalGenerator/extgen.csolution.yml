@@ -28,3 +28,6 @@ solution:
       for-context: +MultiCore
     - project: multi_1/core1.cproject.yml
       for-context: +MultiCore
+
+  output-dirs:
+    intdir: ./tmp dir/$Project$/$TargetType$/$BuildType$/

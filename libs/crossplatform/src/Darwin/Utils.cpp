@@ -97,4 +97,9 @@ std::filesystem::perms CrossPlatformUtils::GetCurrentUmask() {
 
   return perm;
 }
+
+const std::string CrossPlatformUtils::PopenCmd(const std::string& cmd) {
+  return cmd;
+}
+
 // end of Utils.cpp
