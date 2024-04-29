@@ -40,10 +40,9 @@ void RteReleaseContainer::Construct()
 {
   string version;
   for (auto release : GetChildren()) {
-    const string& releaseVersion = release->GetVersionString();
-    if (version.empty() || VersionCmp::Compare(releaseVersion, version) > 0) {
-      version = releaseVersion;
-    }
+    // First release XML node is the version of the package
+    version = release->GetVersionString();
+    break;
   }
   AddAttribute("version", version);
 }
