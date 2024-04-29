@@ -18,6 +18,7 @@ class CrossPlatformUtils
 private:
   // private constructor to prevent instantiating an utility class
   CrossPlatformUtils() {};
+  static const std::string PopenCmd(const std::string& cmd);
 
 public:
 

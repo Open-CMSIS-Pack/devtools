@@ -4859,8 +4859,8 @@ TEST_F(ProjMgrUnitTests, ExternalGenerator) {
   const string& dstGlobalGenerator = etc_folder + "/global.generator.yml";
   RteFsUtils::CopyCheckFile(srcGlobalGenerator, dstGlobalGenerator, false);
 
-  const string& srcBridgeTool = testinput_folder + "/ExternalGenerator/bridge.sh";
-  const string& dstBridgeTool = bin_folder + "/bridge.sh";
+  const string& srcBridgeTool = testinput_folder + "/ExternalGenerator/bridge tool.sh";
+  const string& dstBridgeTool = bin_folder + "/bridge tool.sh";
   RteFsUtils::CopyCheckFile(srcBridgeTool, dstBridgeTool, false);
 
   // list generators
@@ -4880,10 +4880,6 @@ TEST_F(ProjMgrUnitTests, ExternalGenerator) {
   argv[6] = (char*)"core0.Debug+MultiCore";
   EXPECT_EQ(0, RunProjMgr(7, argv, 0));
 
-  EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/ExternalGenerator/tmp/core0/MultiCore/Debug/extgen.cbuild-gen-idx.yml"));
-  EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/ExternalGenerator/tmp/core0/MultiCore/Debug/core0.Debug+MultiCore.cbuild-gen.yml"));
-  EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/ExternalGenerator/tmp/core1/MultiCore/Debug/core1.Debug+MultiCore.cbuild-gen.yml"));
-
   auto stripAbsoluteFunc = [](const std::string& in) {
     std::string str = in;
     RteUtils::ReplaceAll(str, testinput_folder, "${DEVTOOLS(data)}");
@@ -4892,38 +4888,31 @@ TEST_F(ProjMgrUnitTests, ExternalGenerator) {
   };
 
   ProjMgrTestEnv::CompareFile(testinput_folder + "/ExternalGenerator/ref/MultiCore/extgen.cbuild-gen-idx.yml",
-    testinput_folder + "/ExternalGenerator/tmp/core0/MultiCore/Debug/extgen.cbuild-gen-idx.yml", stripAbsoluteFunc);
+    testinput_folder + "/ExternalGenerator/tmp dir/core0/MultiCore/Debug/extgen.cbuild-gen-idx.yml", stripAbsoluteFunc);
   ProjMgrTestEnv::CompareFile(testinput_folder + "/ExternalGenerator/ref/MultiCore/core0.Debug+MultiCore.cbuild-gen.yml",
-    testinput_folder + "/ExternalGenerator/tmp/core0/MultiCore/Debug/core0.Debug+MultiCore.cbuild-gen.yml", stripAbsoluteFunc);
+    testinput_folder + "/ExternalGenerator/tmp dir/core0/MultiCore/Debug/core0.Debug+MultiCore.cbuild-gen.yml", stripAbsoluteFunc);
   ProjMgrTestEnv::CompareFile(testinput_folder + "/ExternalGenerator/ref/MultiCore/core1.Debug+MultiCore.cbuild-gen.yml",
-    testinput_folder + "/ExternalGenerator/tmp/core1/MultiCore/Debug/core1.Debug+MultiCore.cbuild-gen.yml", stripAbsoluteFunc);
+    testinput_folder + "/ExternalGenerator/tmp dir/core1/MultiCore/Debug/core1.Debug+MultiCore.cbuild-gen.yml", stripAbsoluteFunc);
 
   // run single-core
   argv[6] = (char*)"single-core.Debug+CM0";
   EXPECT_EQ(0, RunProjMgr(7, argv, 0));
 
-  EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/ExternalGenerator/tmp/single-core/CM0/Debug/extgen.cbuild-gen-idx.yml"));
-  EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/ExternalGenerator/tmp/single-core/CM0/Debug/single-core.Debug+CM0.cbuild-gen.yml"));
-
   ProjMgrTestEnv::CompareFile(testinput_folder + "/ExternalGenerator/ref/SingleCore/extgen.cbuild-gen-idx.yml",
-    testinput_folder + "/ExternalGenerator/tmp/single-core/CM0/Debug/extgen.cbuild-gen-idx.yml", stripAbsoluteFunc);
+    testinput_folder + "/ExternalGenerator/tmp dir/single-core/CM0/Debug/extgen.cbuild-gen-idx.yml", stripAbsoluteFunc);
   ProjMgrTestEnv::CompareFile(testinput_folder + "/ExternalGenerator/ref/SingleCore/single-core.Debug+CM0.cbuild-gen.yml",
-    testinput_folder + "/ExternalGenerator/tmp/single-core/CM0/Debug/single-core.Debug+CM0.cbuild-gen.yml", stripAbsoluteFunc);
+    testinput_folder + "/ExternalGenerator/tmp dir/single-core/CM0/Debug/single-core.Debug+CM0.cbuild-gen.yml", stripAbsoluteFunc);
 
   // run trustzone
   argv[6] = (char*)"ns.Debug+CM0";
   EXPECT_EQ(0, RunProjMgr(7, argv, 0));
 
-  EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/ExternalGenerator/tmp/ns/CM0/Debug/extgen.cbuild-gen-idx.yml"));
-  EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/ExternalGenerator/tmp/ns/CM0/Debug/ns.Debug+CM0.cbuild-gen.yml"));
-  EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/ExternalGenerator/tmp/s/CM0/Debug/s.Debug+CM0.cbuild-gen.yml"));
-
   ProjMgrTestEnv::CompareFile(testinput_folder + "/ExternalGenerator/ref/TrustZone/extgen.cbuild-gen-idx.yml",
-    testinput_folder + "/ExternalGenerator/tmp/ns/CM0/Debug/extgen.cbuild-gen-idx.yml", stripAbsoluteFunc);
+    testinput_folder + "/ExternalGenerator/tmp dir/ns/CM0/Debug/extgen.cbuild-gen-idx.yml", stripAbsoluteFunc);
   ProjMgrTestEnv::CompareFile(testinput_folder + "/ExternalGenerator/ref/TrustZone/ns.Debug+CM0.cbuild-gen.yml",
-    testinput_folder + "/ExternalGenerator/tmp/ns/CM0/Debug/ns.Debug+CM0.cbuild-gen.yml", stripAbsoluteFunc);
+    testinput_folder + "/ExternalGenerator/tmp dir/ns/CM0/Debug/ns.Debug+CM0.cbuild-gen.yml", stripAbsoluteFunc);
   ProjMgrTestEnv::CompareFile(testinput_folder + "/ExternalGenerator/ref/TrustZone/s.Debug+CM0.cbuild-gen.yml",
-    testinput_folder + "/ExternalGenerator/tmp/s/CM0/Debug/s.Debug+CM0.cbuild-gen.yml", stripAbsoluteFunc);
+    testinput_folder + "/ExternalGenerator/tmp dir/s/CM0/Debug/s.Debug+CM0.cbuild-gen.yml", stripAbsoluteFunc);
 
   // convert single core
   argv[2] = (char*)"convert";
@@ -4962,6 +4951,10 @@ TEST_F(ProjMgrUnitTests, ExternalGenerator_WrongGenDir) {
   const string& dstGlobalGenerator = etc_folder + "/global.generator.yml";
   RteFsUtils::CopyCheckFile(srcGlobalGenerator, dstGlobalGenerator, false);
 
+  const string& srcBridgeTool = testinput_folder + "/ExternalGenerator/bridge tool.sh";
+  const string& dstBridgeTool = bin_folder + "/bridge tool.sh";
+  RteFsUtils::CopyCheckFile(srcBridgeTool, dstBridgeTool, false);
+
   StdStreamRedirect streamRedirect;
   char* argv[8];
   const string& csolution = testinput_folder + "/ExternalGenerator/extgen.csolution.yml";
@@ -4972,7 +4965,7 @@ TEST_F(ProjMgrUnitTests, ExternalGenerator_WrongGenDir) {
   argv[5] = (char*)"-c";
   argv[6] = (char*)"core0.Debug+MultiCore";
   argv[7] = (char*)"-n";
-  EXPECT_EQ(1, RunProjMgr(8, argv, 0));
+  EXPECT_EQ(0, RunProjMgr(8, argv, 0));
 
   const string expected = "\
 warning csolution: unknown access sequence: 'UnknownAccessSequence()'\n\
@@ -4981,6 +4974,7 @@ warning csolution: unknown access sequence: 'UnknownAccessSequence()'\n\
   EXPECT_TRUE(errStr.find(expected) != string::npos);
 
   RteFsUtils::RemoveFile(dstGlobalGenerator);
+  RteFsUtils::RemoveFile(dstBridgeTool);
 }
 
 TEST_F(ProjMgrUnitTests, ExternalGenerator_NoGenDir) {

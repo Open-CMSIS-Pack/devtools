@@ -6,11 +6,11 @@ build-gen-idx:
       device: RteTest_ARMCM0_Dual
       project-type: multi-core
       cbuild-gens:
-        - cbuild-gen: ${DEVTOOLS(data)}/ExternalGenerator/tmp/core0/MultiCore/Debug/core0.Debug+MultiCore.cbuild-gen.yml
+        - cbuild-gen: ${DEVTOOLS(data)}/ExternalGenerator/tmp dir/core0/MultiCore/Debug/core0.Debug+MultiCore.cbuild-gen.yml
           project: core0
           configuration: .Debug+MultiCore
           for-project-part: cm0_core0
-        - cbuild-gen: ${DEVTOOLS(data)}/ExternalGenerator/tmp/core1/MultiCore/Debug/core1.Debug+MultiCore.cbuild-gen.yml
+        - cbuild-gen: ${DEVTOOLS(data)}/ExternalGenerator/tmp dir/core1/MultiCore/Debug/core1.Debug+MultiCore.cbuild-gen.yml
           project: core1
           configuration: .Debug+MultiCore
           for-project-part: cm0_core1

@@ -23,7 +23,7 @@ build-gen:
     - ${DEVTOOLS(data)}/ExternalGenerator/multi_0/RTE/_Debug_MultiCore
     - ${DEVTOOLS(packs)}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
   output-dirs:
-    intdir: ${DEVTOOLS(data)}/ExternalGenerator/tmp/core0/MultiCore/Debug
+    intdir: ${DEVTOOLS(data)}/ExternalGenerator/tmp dir/core0/MultiCore/Debug
     outdir: ${DEVTOOLS(data)}/ExternalGenerator/out/core0/MultiCore/Debug
     rtedir: ${DEVTOOLS(data)}/ExternalGenerator/multi_0/RTE
   output:

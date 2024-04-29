@@ -78,7 +78,7 @@ const std::pair<std::string, int> CrossPlatformUtils::ExecCommand(const std::str
 
   auto deleter = [&close, &ret_code](FILE* cmd) { ret_code = close(cmd); };
   {
-    const std::unique_ptr<FILE, decltype(deleter)> pipe(open(cmd.c_str(), "r"), deleter);
+    const std::unique_ptr<FILE, decltype(deleter)> pipe(open(PopenCmd(cmd).c_str(), "r"), deleter);
     if (pipe) {
       while (fgets(buffer.data(), static_cast<int>(buffer.size()), pipe.get()) != nullptr) {
         result += buffer.data();

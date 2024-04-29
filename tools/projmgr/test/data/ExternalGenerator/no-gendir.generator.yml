@@ -1,4 +1,4 @@
 generator:
   - id: RteTestExternalGenerator
     download-url: https://raw.githubusercontent.com/Open-CMSIS-Pack
-    run: ./bridge.sh
+    run: ./bridge tool.sh

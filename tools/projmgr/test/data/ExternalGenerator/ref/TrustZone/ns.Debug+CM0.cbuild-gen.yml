@@ -19,7 +19,7 @@ build-gen:
   add-path:
     - ${DEVTOOLS(data)}/ExternalGenerator/tz_ns/RTE/_Debug_CM0
   output-dirs:
-    intdir: ${DEVTOOLS(data)}/ExternalGenerator/tmp/ns/CM0/Debug
+    intdir: ${DEVTOOLS(data)}/ExternalGenerator/tmp dir/ns/CM0/Debug
     outdir: ${DEVTOOLS(data)}/ExternalGenerator/out/ns/CM0/Debug
     rtedir: ${DEVTOOLS(data)}/ExternalGenerator/tz_ns/RTE
   output:

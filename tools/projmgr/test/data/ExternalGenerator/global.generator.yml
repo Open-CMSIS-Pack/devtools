@@ -2,5 +2,5 @@ generator:
   - id: RteTestExternalGenerator
     description: Global Registered Generator
     download-url: https://raw.githubusercontent.com/Open-CMSIS-Pack
-    run: ./bridge.sh
+    run: ./bridge tool.sh
     path: $SolutionDir()$/generated/$TargetType$
