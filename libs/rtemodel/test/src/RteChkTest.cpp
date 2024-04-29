@@ -36,7 +36,7 @@ From DFP: 22\n\
 From BSP: 0\n\
 \n\
 Devices: 10\n\
-Boards: 13\n\
+Boards: 14\n\
 \n\
 completed\n";
 
@@ -53,7 +53,7 @@ completed\n";
   EXPECT_EQ(rteChk.GetPackCount(), 8);
   EXPECT_EQ(rteChk.GetComponentCount(), 57);
   EXPECT_EQ(rteChk.GetDeviceCount(), 10);
-  EXPECT_EQ(rteChk.GetBoardCount(), 13);
+  EXPECT_EQ(rteChk.GetBoardCount(), 14);
 
   string s = RteUtils::EnsureLf(ss.str());
   EXPECT_EQ(s, summary);

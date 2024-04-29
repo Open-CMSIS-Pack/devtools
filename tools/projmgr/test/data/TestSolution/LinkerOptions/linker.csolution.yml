@@ -23,7 +23,9 @@ solution:
   target-types:
     - type: RteTest_ARMCM3
       device: RteTest_ARMCM3
-
+    - type: RteTest_Board
+      board: RteTest-Test-board With.Memory
+      
   projects:
     - project: linker.cproject.yml
 

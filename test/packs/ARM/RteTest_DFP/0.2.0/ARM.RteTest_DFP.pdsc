@@ -259,7 +259,7 @@
      <condition id="BoardTest1">
       <description>Test component filtering on selected board 1</description>
       <require Dvendor="ARM:82" Dname="*ARMCM*"/>
-      <require Bname="RteTest Test board*" Bvendor="Keil" Brevision="1.1.1"/>
+      <require Bname="RteTest*Test*board*" Bvendor="Keil" Brevision="1.1.1"/>
     </condition>
 
     <condition id="BoardTest2">
@@ -441,6 +441,13 @@
       <compatibleDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM3"/>
       <compatibleDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM4_NOFP"/>
       <compatibleDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM4_FP"/>
+    </board>
+    <board name="RteTest-Test-board With.Memory" vendor="Keil" revision="1.1.1">
+      <description>TestBoard with dots in the name and memory</description>
+      <mountedDevice    deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM3"/>
+      <compatibleDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM3"/>
+      <memory name="RAM-External"   access="rwx" start="0x90000000" size="0x00800000"/>
+      <memory name="Flash-External" access="rx"  start="0x70000000" size="0x04000000"/>
     </board>
     <board name="RteTest Test board no mounted device" vendor="Keil" revision="2.2.2">
       <description>uVision Simulator</description>

@@ -4078,6 +4078,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_LinkerOptions_Auto) {
   ProjMgrTestEnv::CompareFile(testoutput_folder + "/linker.FromComponent+RteTest_ARMCM3.cbuild.yml",
     testinput_folder + "/TestSolution/LinkerOptions/ref/linker.FromComponent+RteTest_ARMCM3.cbuild.yml");
 
+  RteFsUtils::RemoveDir(testinput_folder + "/TestSolution/LinkerOptions/RTE");
   // 'auto' enabled
   argv[4] = (char*)"linker.AutoGen+RteTest_ARMCM3";
   EXPECT_EQ(0, RunProjMgr(7, argv, 0));
@@ -4087,7 +4088,23 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_LinkerOptions_Auto) {
     testinput_folder + "/TestSolution/LinkerOptions/ref/linker.AutoGen+RteTest_ARMCM3.cprj");
   ProjMgrTestEnv::CompareFile(testoutput_folder + "/linker.AutoGen+RteTest_ARMCM3.cbuild.yml",
     testinput_folder + "/TestSolution/LinkerOptions/ref/linker.AutoGen+RteTest_ARMCM3.cbuild.yml");
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/TestSolution/LinkerOptions/RTE/Device/RteTest_ARMCM3/regions_RteTest_ARMCM3.h",
+    testinput_folder + "/TestSolution/LinkerOptions/ref/regions_RteTest_ARMCM3.h");
 
+  RteFsUtils::RemoveDir(testinput_folder + "/TestSolution/LinkerOptions/RTE");
+  // 'auto' enabled for board
+  argv[4] = (char*)"linker.AutoGen+RteTest_Board";
+  EXPECT_EQ(0, RunProjMgr(7, argv, 0));
+
+  // check generated files
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/linker.AutoGen+RteTest_Board.cprj",
+    testinput_folder + "/TestSolution/LinkerOptions/ref/linker.AutoGen+RteTest_Board.cprj");
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/linker.AutoGen+RteTest_Board.cbuild.yml",
+    testinput_folder + "/TestSolution/LinkerOptions/ref/linker.AutoGen+RteTest_Board.cbuild.yml");
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/TestSolution/LinkerOptions/RTE/Device/RteTest_ARMCM3/regions_RteTest-Test-board_With.Memory.h",
+    testinput_folder + "/TestSolution/LinkerOptions/ref/regions_RteTest-Test-board_With.Memory.h");
+
+  RteFsUtils::RemoveDir(testinput_folder + "/TestSolution/LinkerOptions/RTE");
   // 'auto' enabled warning
   StdStreamRedirect streamRedirect;
   argv[4] = (char*)"linker.AutoGenWarning+RteTest_ARMCM3";
