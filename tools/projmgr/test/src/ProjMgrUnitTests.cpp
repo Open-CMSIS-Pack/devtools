@@ -5428,3 +5428,17 @@ TEST_F(ProjMgrUnitTests, Executes) {
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_NE(string::npos, errStr.find("error csolution: context 'unknown.Debug+RteTest_ARMCM3' referenced by access sequence 'elf' is not compatible"));
 }
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_GeneratorError) {
+  char* argv[6];
+  StdStreamRedirect streamRedirect;
+  const string& csolution = testinput_folder + "/TestGenerator/test-gpdsc-error.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(1, RunProjMgr(6, argv, 0));
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find("error csolution: redefinition from 'balanced' into 'none' is not allowed"));
+}
