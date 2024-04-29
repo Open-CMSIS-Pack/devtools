@@ -1710,7 +1710,7 @@ bool RteTarget::IsPackMissing(const string& pack)
 
 std::string RteTarget::GetDeviceFolder() const
 {
-  string deviceName = WildCards::ToX(GetFullDeviceName(), false);
+  string deviceName = WildCards::ToX(GetFullDeviceName());
   return string("Device/") + deviceName;
 }
 
