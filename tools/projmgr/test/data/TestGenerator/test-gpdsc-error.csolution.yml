@@ -1,0 +1,17 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schemas/csolution.schema.json
+
+solution:  
+  target-types:
+    - type: CM0
+      device: RteTestGen_ARMCM0
+      compiler: AC6
+      optimize: balanced
+
+  build-types:
+    - type: Debug
+
+    - type: Release
+      optimize: none # optimize redefinition from target-type to build-type is not allowed
+
+  projects:
+    - project: ./test-gpdsc.cproject.yml
