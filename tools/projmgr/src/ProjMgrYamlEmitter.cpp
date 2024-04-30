@@ -331,8 +331,20 @@ void ProjMgrYamlCbuildIdx::SetVariablesNode(YAML::Node node, const string& csolu
     YAML::Node layerNode;
     string layerFile;
     for (const auto& [filename, options] : filenames) {
+      string packRoot = ProjMgrKernel::Get()->GetCmsisPackRoot();
       layerFile = filename;
       RteFsUtils::NormalizePath(layerFile);
+      layerFile = RteFsUtils::MakePathCanonical(layerFile);
+      // Replace with ${CMSIS_PACK_ROOT} or $SolutionDir()$ depending on the detected path
+      size_t index = layerFile.find(packRoot);
+      if (index != string::npos) {
+        layerFile.replace(index, packRoot.length(), "${CMSIS_PACK_ROOT}");
+      }
+      else {
+        layerFile = RteFsUtils::RelativePath(filename, csolutionDir);
+        RteFsUtils::NormalizePath(layerFile);
+        layerFile = "$" + string(RteConstants::AS_SOLUTION_DIR_BR) + "$/" + layerFile;
+      }
       SetNodeValue(layerNode[type + "-Layer"], layerFile);
       for (const auto& connect : options) {
         if (!connect->set.empty()) {

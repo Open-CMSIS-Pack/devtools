@@ -5,6 +5,7 @@ project:
 
   layers:
     - layer: select.clayer.yml
+      type: Select1
 
   connections:
     - connect: project X
@@ -12,15 +13,18 @@ project:
       info: set 1 select 1
       consumes:
         - connectA
+        - connectB
 
     - connect: project Y
       set: set1.select2
       info: set 1 select 2
       consumes:
         - connectB
+        - connectC
 
     - connect: project Z
       set: set1.select2
       info: set 1 select 2
       consumes:
         - connectC
+        - connectD
