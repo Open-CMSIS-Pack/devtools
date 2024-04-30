@@ -1544,7 +1544,7 @@ info csolution: valid configuration #3: \\(context 'genericlayers.CompatibleLaye
 }
 
 
-TEST_F(ProjMgrUnitTests, ListLayersConfigurations_update_idx) {
+TEST_F(ProjMgrUnitTests, ListLayersConfigurations_update_idx_pack_layer) {
   StdStreamRedirect streamRedirect;
   char* argv[6];
   const string& csolution = testinput_folder + "/TestLayers/config.csolution.yml";
@@ -1556,23 +1556,30 @@ TEST_F(ProjMgrUnitTests, ListLayersConfigurations_update_idx) {
   argv[4] = (char*)csolution.c_str();
   argv[5] = (char*)"--update-idx";
 
-  auto replacePackPathFunc = [](const std::string& in) {
-    std::string str = in, packPathEnd = "/test/packs", packPathStart = "-Layer: ";
-    auto endPos = str.find(packPathEnd);
-    if (endPos != string::npos) {
-      auto startPos = str.find(packPathStart);
-      startPos += packPathStart.length();
-      auto packPath = str.substr(startPos, endPos - startPos);
-      RteUtils::ReplaceAll(str, packPath, "<TEST_DIR>");
-    }
-    return str;
-  };
-
   EXPECT_EQ(0, RunProjMgr(6, argv, 0));
   EXPECT_TRUE(regex_match(streamRedirect.GetOutString(), regex(expectedOutStr)));
   ProjMgrTestEnv::CompareFile(testinput_folder + "/TestLayers/ref/config.cbuild-idx.yml",
-    testinput_folder + "/TestLayers/config.cbuild-idx.yml", replacePackPathFunc);
+    testinput_folder + "/TestLayers/config.cbuild-idx.yml");
   EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/TestLayers/config.cbuild-idx.yml"));
+}
+
+TEST_F(ProjMgrUnitTests, ListLayersConfigurations_update_idx_local_layer) {
+  StdStreamRedirect streamRedirect;
+  char* argv[6];
+  const string& csolution = testinput_folder + "/TestLayers/select.csolution.yml";
+  string expectedOutStr = ".*select.cbuild-idx.yml - info csolution: file generated successfully\\n";
+
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"layers";
+  argv[3] = (char*)"--solution";
+  argv[4] = (char*)csolution.c_str();
+  argv[5] = (char*)"--update-idx";
+
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+  EXPECT_TRUE(regex_match(streamRedirect.GetOutString(), regex(expectedOutStr)));
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/TestLayers/ref/select.cbuild-idx.yml",
+    testinput_folder + "/TestLayers/select.cbuild-idx.yml");
+  EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/TestLayers/select.cbuild-idx.yml"));
 }
 
 TEST_F(ProjMgrUnitTests, ListLayersConfigurations) {
@@ -1642,14 +1649,17 @@ info csolution: valid configuration #1: \\(context 'select\\+RteTest_ARMCM3'\\)\
   .*/TestLayers/select.cproject.yml\n\
     set: set1.select1 \\(project X - set 1 select 1\\)\n\
   .*/TestLayers/select.clayer.yml \\(layer type: Board\\)\n\
+    set: set1.select1 \\(provided connections A and B - set 1 select 1\\)\n\
 \n\
 info csolution: valid configuration #2: \\(context 'select\\+RteTest_ARMCM3'\\)\n\
   .*/TestLayers/select.cproject.yml\n\
     set: set1.select2 \\(project Y - set 1 select 2\\)\n\
-    set: set1.select2 \\(project Z - set 1 select 2\\)\n\
   .*/TestLayers/select.clayer.yml \\(layer type: Board\\)\n\
+    set: set1.select2 \\(provided connections B and C - set 1 select 2\\)\n\
 \n\
 .*/TestLayers/select.clayer.yml \\(layer type: Board\\)\n\
+  set: set1.select1 \\(provided connections A and B - set 1 select 1\\)\n\
+  set: set1.select2 \\(provided connections B and C - set 1 select 2\\)\n\
 ";
 
   const string& outStr = streamRedirect.GetOutString();

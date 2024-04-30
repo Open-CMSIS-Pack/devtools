@@ -1,0 +1,24 @@
+build-idx:
+  generated-by: csolution version 0.0.0+gfe406a38
+  csolution: select.csolution.yml
+  configurations:
+    - target-type: RteTest_ARMCM3
+      target-configurations:
+        - configuration:
+            - variables:
+                - Board-Layer: $SolutionDir()$/select.clayer.yml
+                  settings:
+                    - set: set1.select1 (provided connections A and B - set 1 select 1)
+        - configuration:
+            - variables:
+                - Board-Layer: $SolutionDir()$/select.clayer.yml
+                  settings:
+                    - set: set1.select2 (provided connections B and C - set 1 select 2)
+  cprojects:
+    - cproject: select.cproject.yml
+      clayers:
+        - clayer: select.clayer.yml
+  cbuilds:
+    - cbuild: select+RteTest_ARMCM3.cbuild.yml
+      project: select
+      configuration: +RteTest_ARMCM3
