@@ -151,7 +151,17 @@ bool ProjMgrWorker::ParseContextLayers(ContextItem& context) {
       if ((context.variables.find(key) != context.variables.end()) && (context.variables.at(key) != value)) {
         ProjMgrLogger::Warn("variable '" + key + "' redefined from '" + context.variables.at(key) + "' to '" + value + "'");
       }
-      context.variables[key] = RteUtils::ExpandAccessSequences(value, {{RteConstants::AS_SOLUTION_DIR_BR, context.csolution->directory}});
+      // Find ${CMSIS_PACK_ROOT} and replace with pack root path
+      const string packRootEnvVar = "${CMSIS_PACK_ROOT}";
+      size_t index = value.find(packRootEnvVar);
+      if (index != string::npos) {
+        string valStr = value;
+        valStr.replace(index, packRootEnvVar.length(), m_packRoot);
+        context.variables[key] = valStr;
+      }
+      else {
+        context.variables[key] = RteUtils::ExpandAccessSequences(value, { {RteConstants::AS_SOLUTION_DIR_BR, context.csolution->directory} });
+      }
     }
   }
   // parse clayers

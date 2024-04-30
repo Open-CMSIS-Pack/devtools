@@ -1556,22 +1556,10 @@ TEST_F(ProjMgrUnitTests, ListLayersConfigurations_update_idx) {
   argv[4] = (char*)csolution.c_str();
   argv[5] = (char*)"--update-idx";
 
-  auto replacePackPathFunc = [](const std::string& in) {
-    std::string str = in, packPathEnd = "/test/packs", packPathStart = "-Layer: ";
-    auto endPos = str.find(packPathEnd);
-    if (endPos != string::npos) {
-      auto startPos = str.find(packPathStart);
-      startPos += packPathStart.length();
-      auto packPath = str.substr(startPos, endPos - startPos);
-      RteUtils::ReplaceAll(str, packPath, "<TEST_DIR>");
-    }
-    return str;
-  };
-
   EXPECT_EQ(0, RunProjMgr(6, argv, 0));
   EXPECT_TRUE(regex_match(streamRedirect.GetOutString(), regex(expectedOutStr)));
   ProjMgrTestEnv::CompareFile(testinput_folder + "/TestLayers/ref/config.cbuild-idx.yml",
-    testinput_folder + "/TestLayers/config.cbuild-idx.yml", replacePackPathFunc);
+    testinput_folder + "/TestLayers/config.cbuild-idx.yml");
   EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/TestLayers/config.cbuild-idx.yml"));
 }
 
