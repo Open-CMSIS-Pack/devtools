@@ -313,7 +313,7 @@ struct ContextItem {
   std::vector<ConnectionsCollectionVec> validConnections;
   LinkerContextItem linker;
   std::map<std::string, std::string> variables;
-  StrMap extGenDir;
+  std::map<std::string, GeneratorOptionsItem> extGen;
   RtePackage* devicePack = nullptr;
   RtePackage* boardPack = nullptr;
   bool precedences;
@@ -753,8 +753,8 @@ protected:
   void UpdatePartialReferencedContext(ContextItem& context, std::string& contextName);
   void ExpandAccessSequence(const ContextItem& context, const ContextItem& refContext, const std::string& sequence, const std::string& outdir, std::string& item, bool withHeadingDot);
   bool GetGeneratorDir(const RteGenerator* generator, ContextItem& context, const std::string& layer, std::string& genDir);
-  bool GetGeneratorDir(const std::string& generatorId, ContextItem& context, const std::string& layer, std::string& genDir);
-  bool GetExtGeneratorDir(const std::string& generatorId, ContextItem& context, const std::string& layer, std::string& genDir);
+  bool GetGeneratorOptions(ContextItem& context, const std::string& layer, GeneratorOptionsItem& options);
+  bool GetExtGeneratorOptions(ContextItem& context, const std::string& layer, GeneratorOptionsItem& options);
   bool ParseContextLayers(ContextItem& context);
   bool AddPackRequirements(ContextItem& context, const std::vector<PackItem>& packRequirements);
   void InsertPackRequirements(const std::vector<PackItem>& src, std::vector<PackItem>& dst, std::string base);

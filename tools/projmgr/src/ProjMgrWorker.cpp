@@ -1709,13 +1709,13 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
         if (!m_extGenerator->CheckGeneratorId(generatorId, componentId)) {
           return false;
         }
-        string genDir;
-        if (!GetExtGeneratorDir(generatorId, context, layer, genDir)) {
+        GeneratorOptionsItem options = { generatorId };
+        if (!GetExtGeneratorOptions(context, layer, options)) {
           return false;
         }
         // keep track of used generators
-        m_extGenerator->AddUsedGenerator(generatorId, genDir, context.name);
-        context.extGenDir[generatorId] = genDir;
+        m_extGenerator->AddUsedGenerator(options, context.name);
+        context.extGen[options.id] = options;
       }
     }
 
@@ -3670,34 +3670,49 @@ bool ProjMgrWorker::ListContexts(vector<string>& contexts, const string& filter,
 
 bool ProjMgrWorker::ListGenerators(vector<string>& generators) {
   set<string> generatorsSet;
-  GeneratorContextVecMap generatorsMap;
+  map <string, map<string, map<string, StrVec>>> sortedGeneratorsMap;
   StrMap generatorsDescription;
+  // classic generators
   for (const auto& selectedContext : m_selectedContexts) {
     ContextItem& context = m_contexts[selectedContext];
     if (!ProcessContext(context, false, true, false)) {
       return false;
     }
     for (const auto& [id, generator] : context.generators) {
-      for (const auto& [_, item] : context.gpdscs) {
+      for (const auto& [gpdsc, item] : context.gpdscs) {
         if (item.generator == id) {
-          const string workingDir = fs::path(context.cproject->directory).append(item.workingDir).generic_string();
-          generatorsMap[id][workingDir].push_back(context.name);
+          sortedGeneratorsMap.insert({ id, {} });
+          if (m_verbose) {
+            sortedGeneratorsMap[id][item.workingDir]
+              [RteFsUtils::RelativePath(gpdsc, m_parser->GetCsolution().directory)].push_back(context.name);
+          }
           generatorsDescription[id] = generator->GetDescription();
           break;
         }
       }
     }
   }
-  GeneratorContextVecMap extGeneratorsMap(m_extGenerator->GetUsedGenerators());
-  generatorsMap.insert(extGeneratorsMap.begin(), extGeneratorsMap.end());
-  for (const auto& [id, dirs] : generatorsMap) {
+  // global generators
+  for (const auto& [options, contexts] : m_extGenerator->GetUsedGenerators()) {
+    sortedGeneratorsMap.insert({ options.id, {} });
+    if (m_verbose) {
+      for (const auto& context : contexts) {
+        sortedGeneratorsMap[options.id][RteFsUtils::RelativePath(options.path, m_parser->GetCsolution().directory)]
+          [RteFsUtils::RelativePath(options.name, m_parser->GetCsolution().directory)].push_back(context);
+      }
+    }
+  }
+  for (const auto& [id, paths] : sortedGeneratorsMap) {
     string generatorEntry = id + " (" + (m_extGenerator->IsGlobalGenerator(id) ?
       m_extGenerator->GetGlobalDescription(id) : generatorsDescription[id]) + ")";
     if (m_verbose) {
-      for (const auto& [dir, contexts] : dirs) {
-        generatorEntry += "\n  base-dir: " + RteFsUtils::RelativePath(dir, m_parser->GetCsolution().directory);
-        for (const auto& context : contexts) {
-          generatorEntry += "\n    context: " + context;
+      for (const auto& [baseDir, cgenFiles] : paths) {
+        generatorEntry += "\n  base-dir: " + baseDir;
+        for (const auto& [cgenFile, contexts] : cgenFiles) {
+          generatorEntry += "\n    cgen-file: " + cgenFile;
+          for (const auto& context : contexts) {
+            generatorEntry += "\n      context: " + context;
+          }
         }
       }
     }
@@ -4285,12 +4300,13 @@ bool ProjMgrWorker::ProcessOutputFilenames(ContextItem& context) {
 
 bool ProjMgrWorker::GetGeneratorDir(const RteGenerator* generator, ContextItem& context, const string& layer, string& genDir) {
   const string generatorId = generator->GetID();
-  genDir.clear();
 
   // from 'generators' node
-  if (!GetGeneratorDir(generatorId, context, layer, genDir)) {
+  GeneratorOptionsItem options = { generatorId };
+  if (!GetGeneratorOptions(context, layer, options)) {
     return false;
   }
+  genDir = options.path;
 
   if (!genDir.empty()) {
     genDir = RteFsUtils::RelativePath(genDir, context.cproject->directory);
@@ -4310,27 +4326,28 @@ bool ProjMgrWorker::GetGeneratorDir(const RteGenerator* generator, ContextItem& 
   return true;
 }
 
-bool ProjMgrWorker::GetExtGeneratorDir(const string& generatorId, ContextItem& context, const string& layer, string& genDir) {
+bool ProjMgrWorker::GetExtGeneratorOptions(ContextItem& context, const string& layer, GeneratorOptionsItem& options) {
   // from 'generators' node
-  if (!GetGeneratorDir(generatorId, context, layer, genDir)) {
+  if (!GetGeneratorOptions(context, layer, options)) {
     return false;
   }
-  if (genDir.empty()) {
+  if (options.path.empty()) {
     // from global register
-    genDir = m_extGenerator->GetGlobalGenDir(generatorId);
-    if (!ProcessSequenceRelative(context, genDir, layer.empty() ? context.cproject->directory : context.clayers.at(layer)->directory)) {
+    options.path = m_extGenerator->GetGlobalGenDir(options.id);
+    if (!ProcessSequenceRelative(context, options.path, layer.empty() ? context.cproject->directory : context.clayers.at(layer)->directory)) {
       return false;
     }
   }
-  if (genDir.empty()) {
+  if (options.path.empty()) {
     ProjMgrLogger::Error("generator output directory was not set");
     return false;
   }
-  RteFsUtils::NormalizePath(genDir, context.directories.cprj);
+  RteFsUtils::NormalizePath(options.path, context.directories.cprj);
+  options.name = fs::path(options.path).append(options.name.empty() ? context.cproject->name : options.name).concat(".cgen.yml").generic_string();
   return true;
 }
 
-bool ProjMgrWorker::GetGeneratorDir(const string& generatorId, ContextItem& context, const string& layer, string& genDir) {
+bool ProjMgrWorker::GetGeneratorOptions(ContextItem& context, const string& layer, GeneratorOptionsItem& options) {
   // map with GeneratorsItem and base reference (clayer, cproject or csolution directory)
   const vector<pair<GeneratorsItem, string>> generatorsList = {
     layer.empty() ? pair<GeneratorsItem, string>() : make_pair(context.clayers.at(layer)->generators, context.clayers.at(layer)->directory),
@@ -4340,27 +4357,27 @@ bool ProjMgrWorker::GetGeneratorDir(const string& generatorId, ContextItem& cont
 
   // find first custom directory associated to generatorId in the order: clayer > cproject > csolution
   for (const auto& [generators, ref] : generatorsList) {
-    if (generators.options.find(generatorId) != generators.options.end()) {
-      genDir = generators.options.at(generatorId);
-      if (!genDir.empty()) {
-        if (!ProcessSequenceRelative(context, genDir, ref)) {
+    if (generators.options.find(options.id) != generators.options.end()) {
+      options = generators.options.at(options.id);
+      if (!options.path.empty()) {
+        if (!ProcessSequenceRelative(context, options.path, ref)) {
           return false;
         }
-        RteFsUtils::NormalizePath(genDir, context.directories.cprj);
-        break;
+        RteFsUtils::NormalizePath(options.path, context.directories.cprj);
       }
+      break;
     }
   }
-  if (genDir.empty()) {
+  if (options.path.empty()) {
     // find custom base directory in the order: clayer > cproject > csolution
     for (const auto& [generators, ref] : generatorsList) {
       if (!generators.baseDir.empty()) {
-        genDir = generators.baseDir;
-        if (!ProcessSequenceRelative(context, genDir, ref)) {
+        options.path = generators.baseDir;
+        if (!ProcessSequenceRelative(context, options.path, ref)) {
           return false;
         }
-        genDir = fs::path(genDir).append(generatorId).generic_string();
-        RteFsUtils::NormalizePath(genDir, context.directories.cprj);
+        options.path = fs::path(options.path).append(options.id).generic_string();
+        RteFsUtils::NormalizePath(options.path, context.directories.cprj);
         break;
       }
     }
@@ -4414,8 +4431,15 @@ bool ProjMgrWorker::ProcessGlobalGenerators(ContextItem* selectedContext, const 
       return false;
     }
   }
-  const string& genDir = selectedContext->extGenDir[generatorId];
-  const auto& contextVec = m_extGenerator->GetUsedGenerators().at(generatorId).at(genDir);
+  StrVec contextVec;
+  const string& genDir = selectedContext->extGen[generatorId].path;
+  for (const auto& [options, contexts] : m_extGenerator->GetUsedGenerators()) {
+    if ((options.id == generatorId) && (options.path == genDir)) {
+      for (const auto& context : contexts) {
+        CollectionUtils::PushBackUniquely(contextVec, context);
+      }
+    }
+  }
 
   // classify generator contexts according to device, processor and project name
   map<string, map<string, StrMap>> classifiedMap;
@@ -4466,7 +4490,7 @@ bool ProjMgrWorker::ExecuteExtGenerator(std::string& generatorId) {
   if (!ProcessGlobalGenerators(selectedContext, generatorId, projectType, siblings)) {
     return false;
   }
-  const string& genDir = selectedContext->extGenDir[generatorId];
+  const string& genDir = selectedContext->extGen[generatorId].path;
   vector<ContextItem*> siblingContexts;
   for (const auto& sibling : siblings) {
     siblingContexts.push_back(&m_contexts[sibling]);
