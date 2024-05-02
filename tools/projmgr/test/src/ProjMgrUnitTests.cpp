@@ -5031,6 +5031,14 @@ error csolution: generator output directory was not set\n\
 }
 
 TEST_F(ProjMgrUnitTests, ExternalGenerator_MultipleContexts) {
+  const string& srcGlobalGenerator = testinput_folder + "/ExternalGenerator/global.generator.yml";
+  const string& dstGlobalGenerator = etc_folder + "/global.generator.yml";
+  RteFsUtils::CopyCheckFile(srcGlobalGenerator, dstGlobalGenerator, false);
+
+  const string& srcBridgeTool = testinput_folder + "/ExternalGenerator/bridge tool.sh";
+  const string& dstBridgeTool = bin_folder + "/bridge tool.sh";
+  RteFsUtils::CopyCheckFile(srcBridgeTool, dstBridgeTool, false);
+
   StdStreamRedirect streamRedirect;
   char* argv[7];
   const string& csolution = testinput_folder + "/ExternalGenerator/extgen.csolution.yml";
@@ -5039,14 +5047,22 @@ TEST_F(ProjMgrUnitTests, ExternalGenerator_MultipleContexts) {
   argv[3] = (char*)"-g";
   argv[4] = (char*)"RteTestExternalGenerator";
   argv[5] = (char*)"-c";
-  argv[6] = (char*)"+MultiCore";
-  EXPECT_EQ(1, RunProjMgr(7, argv, 0));
 
+  // multiple context selection is accepted when all selected contexts are siblings (same generator-id and gendir)
+  argv[6] = (char*)"+MultiCore";
+  EXPECT_EQ(0, RunProjMgr(7, argv, 0));
+
+  // multiple context selection is rejected when the selected contexts are unrelated (require distinct generator run calls)
+  argv[6] = (char*)"+CM0";
+  EXPECT_EQ(1, RunProjMgr(7, argv, 0));
   const string expected = "\
-error csolution: a single context must be specified\n\
+one or more selected contexts are unrelated, redefine the '--context arg [...]' option\n\
 ";
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_TRUE(errStr.find(expected) != string::npos);
+
+  RteFsUtils::RemoveFile(dstGlobalGenerator);
+  RteFsUtils::RemoveFile(dstBridgeTool);
 }
 
 TEST_F(ProjMgrUnitTests, ExternalGenerator_WrongGeneratedData) {

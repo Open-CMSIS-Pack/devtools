@@ -4479,10 +4479,6 @@ bool ProjMgrWorker::ProcessGlobalGenerators(ContextItem* selectedContext, const 
 }
 
 bool ProjMgrWorker::ExecuteExtGenerator(std::string& generatorId) {
-  if (m_selectedContexts.size() != 1) {
-    ProjMgrLogger::Error("a single context must be specified");
-    return false;
-  }
   const string& selectedContextId = m_selectedContexts.front();
   ContextItem* selectedContext = &m_contexts[selectedContextId];
   string projectType;
@@ -4490,13 +4486,24 @@ bool ProjMgrWorker::ExecuteExtGenerator(std::string& generatorId) {
   if (!ProcessGlobalGenerators(selectedContext, generatorId, projectType, siblings)) {
     return false;
   }
-  const string& genDir = selectedContext->extGen[generatorId].path;
+  StrVec siblingProjects;
   vector<ContextItem*> siblingContexts;
   for (const auto& sibling : siblings) {
-    siblingContexts.push_back(&m_contexts[sibling]);
+    ContextItem* siblingContextItem = &m_contexts[sibling];
+    siblingContexts.push_back(siblingContextItem);
+    siblingProjects.push_back(siblingContextItem->cproject->name);
+  }
+  // Check whether selected contexts belong to sibling projects
+  for (const auto& contextName : m_selectedContexts) {
+    ContextItem* selectedContextItem = &m_contexts[contextName];
+    if (find(siblingProjects.begin(), siblingProjects.end(), selectedContextItem->cproject->name) == siblingProjects.end()) {
+      ProjMgrLogger::Error("one or more selected contexts are unrelated, redefine the '--context arg [...]' option");
+      return false;
+    }
   }
 
   // Generate cbuild-gen files
+  const string& genDir = selectedContext->extGen[generatorId].path;
   string cbuildgenOutput = selectedContext->directories.intdir;
   RteFsUtils::NormalizePath(cbuildgenOutput, selectedContext->directories.cprj);
   if (!ProjMgrYamlEmitter::GenerateCbuildGenIndex(*m_parser, siblingContexts, projectType, cbuildgenOutput, genDir, m_checkSchema)) {
