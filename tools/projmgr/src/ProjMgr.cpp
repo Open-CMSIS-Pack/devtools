@@ -161,7 +161,7 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
     // command, optional args, options
     {"update-rte",        { false, {context, contextSet, debug, load, schemaCheck, toolchain, verbose, frozenPacks}}},
     {"convert",           { false, {context, contextSet, debug, exportSuffix, load, schemaCheck, noUpdateRte, output, toolchain, verbose, frozenPacks}}},
-    {"run",               { false, {context, debug, generator, load, schemaCheck, verbose, dryRun}}},
+    {"run",               { false, {context, contextSet, debug, generator, load, schemaCheck, verbose, dryRun}}},
     {"list packs",        { true,  {context, debug, filter, load, missing, schemaCheck, toolchain, verbose, relativePaths}}},
     {"list boards",       { true,  {context, debug, filter, load, schemaCheck, toolchain, verbose}}},
     {"list devices",      { true,  {context, debug, filter, load, schemaCheck, toolchain, verbose}}},
@@ -858,7 +858,7 @@ bool ProjMgr::RunCodeGenerator(void) {
     return false;
   }
   // Parse context selection
-  if (!m_worker.ParseContextSelection(m_context)) {
+  if (!m_worker.ParseContextSelection(m_context, (m_context.size() == 0) && m_contextSet)) {
     return false;
   }
   if (m_extGenerator.IsGlobalGenerator(m_codeGenerator)) {

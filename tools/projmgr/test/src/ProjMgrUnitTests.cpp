@@ -5061,6 +5061,10 @@ one or more selected contexts are unrelated, redefine the '--context arg [...]' 
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_TRUE(errStr.find(expected) != string::npos);
 
+  // use cbuild-set with siblings selection
+  argv[5] = (char*)"--context-set";
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+
   RteFsUtils::RemoveFile(dstGlobalGenerator);
   RteFsUtils::RemoveFile(dstBridgeTool);
 }
