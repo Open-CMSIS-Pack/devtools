@@ -195,13 +195,30 @@ struct OutputItem {
 };
 
 /**
+ * @brief generators option item containing
+ *        generator id,
+ *        path to generated files,
+ *        name of generator import file,
+ *        map to run-time context
+*/
+struct GeneratorOptionsItem {
+  std::string id;
+  std::string path;
+  std::string name;
+  std::string map;
+  bool operator<(const GeneratorOptionsItem& item) const {
+    return (this->id < item.id) || (this->path < item.path) || (this->name < item.name);
+  }
+};
+
+/**
  * @brief generators item containing
  *        base directory,
  *        options map
 */
 struct GeneratorsItem {
   std::string baseDir;
-  std::map<std::string, std::string> options;
+  std::map<std::string, GeneratorOptionsItem> options;
 };
 
 /**

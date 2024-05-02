@@ -721,6 +721,14 @@
         "path":  {
           "type": "string",
           "description": "Specifies the directory for generated files. Relative paths used the location of the yml file as base directory"
+        },
+        "name":  {
+          "type": "string",
+          "description": "Specifies the base name of the generator import file, typically used for a board layer"
+        },
+        "map":  {
+          "type": "string",
+          "description": "Mapping of the csolution project to a generator specific run-time context name"
         }
       },
       "additionalProperties": false,
@@ -1410,10 +1418,12 @@
     "BuildGeneratorContextType": {
       "type": "object",
       "properties": {
-        "cbuild-gen": { "type": "string", "description": "Path to <context>.cbuild-gen.yml file" },
-        "project": { "type": "string", "description": "Project name" },
-        "configuration": { "$ref": "#/definitions/BuildContext" },
-        "for-project-part": { "type": "string", "description": "For project part (secure, non-secure, <processor>)" }
+        "cbuild-gen":       { "type": "string", "description": "Path to <context>.cbuild-gen.yml file" },
+        "project":          { "type": "string", "description": "Project name" },
+        "configuration":    { "$ref": "#/definitions/BuildContext" },
+        "for-project-part": { "type": "string", "description": "For project part (secure, non-secure, <processor>)" },
+        "name":             { "type": "string", "description": "Explicit name for the *.cgen.yml generator import file" },
+        "map":              { "type": "string", "description": "Mapping of the csolution project to a generator specific run-time context name" }
       },
       "additionalProperties": false,
       "required": ["cbuild-gen", "project", "configuration"]

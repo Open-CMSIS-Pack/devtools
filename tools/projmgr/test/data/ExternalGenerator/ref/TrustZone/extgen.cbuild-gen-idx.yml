@@ -10,7 +10,9 @@ build-gen-idx:
           project: ns
           configuration: .Debug+CM0
           for-project-part: non-secure
+          name: ${DEVTOOLS(data)}/ExternalGenerator/generated/CM0/ns.cgen.yml
         - cbuild-gen: ${DEVTOOLS(data)}/ExternalGenerator/tmp dir/s/CM0/Debug/s.Debug+CM0.cbuild-gen.yml
           project: s
           configuration: .Debug+CM0
           for-project-part: secure
+          name: ${DEVTOOLS(data)}/ExternalGenerator/generated/CM0/s.cgen.yml

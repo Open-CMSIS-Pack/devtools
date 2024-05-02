@@ -54,8 +54,8 @@ const string& ProjMgrExtGenerator::GetGlobalDescription(const string& generatorI
   return g ? g->GetDescription() : RteUtils::EMPTY_STRING;
 }
 
-void ProjMgrExtGenerator::AddUsedGenerator(const string& generatorId, const string& genDir, const string& contextId) {
-  m_usedGenerators[generatorId][genDir].push_back(contextId);
+void ProjMgrExtGenerator::AddUsedGenerator(const GeneratorOptionsItem& options, const string& contextId) {
+  m_usedGenerators[options].push_back(contextId);
 }
 
 const GeneratorContextVecMap& ProjMgrExtGenerator::GetUsedGenerators(void) {
@@ -63,24 +63,19 @@ const GeneratorContextVecMap& ProjMgrExtGenerator::GetUsedGenerators(void) {
 }
 
 ClayerItem* ProjMgrExtGenerator::GetGeneratorImport(const string& contextId, bool& success) {
-  ContextName context;
-  ProjMgrUtils::ParseContextEntry(contextId, context);
   success = true;
-  for (const auto& [generator, genDirs] : GetUsedGenerators()) {
-    for (const auto& [genDir, contexts] : genDirs) {
-      if (find(contexts.begin(), contexts.end(), contextId) != contexts.end()) {
-        const string cgenFile = fs::path(genDir).append(context.project + ".cgen.yml").generic_string();
-        if (!RteFsUtils::Exists(cgenFile)) {
-          ProjMgrLogger::Error(cgenFile, "cgen file was not found, run generator '" + generator + "' for context '" + contextId + "'");
-          success = false;
-          return nullptr;
-        }
-        if (!m_parser->ParseClayer(cgenFile, m_checkSchema)) {
-          success = false;
-          return nullptr;
-        }
-        return &m_parser->GetClayers().at(cgenFile);
+  for (const auto& [options, contexts] : GetUsedGenerators()) {
+    if (find(contexts.begin(), contexts.end(), contextId) != contexts.end()) {
+      if (!RteFsUtils::Exists(options.name)) {
+        ProjMgrLogger::Error(options.name, "cgen file was not found, run generator '" + options.id + "' for context '" + contextId + "'");
+        success = false;
+        return nullptr;
       }
+      if (!m_parser->ParseClayer(options.name, m_checkSchema)) {
+        success = false;
+        return nullptr;
+      }
+      return &m_parser->GetClayers().at(options.name);
     }
   }
   return nullptr;

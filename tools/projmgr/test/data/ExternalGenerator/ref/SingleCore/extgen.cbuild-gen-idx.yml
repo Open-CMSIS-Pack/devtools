@@ -9,3 +9,4 @@ build-gen-idx:
         - cbuild-gen: ${DEVTOOLS(data)}/ExternalGenerator/tmp dir/single-core/CM0/Debug/single-core.Debug+CM0.cbuild-gen.yml
           project: single-core
           configuration: .Debug+CM0
+          name: ${DEVTOOLS(data)}/ExternalGenerator/single/generated/single-core.cgen.yml

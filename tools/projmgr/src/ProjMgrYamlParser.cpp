@@ -479,10 +479,12 @@ void ProjMgrYamlParser::ParseGenerators(const YAML::Node& parent, const string& 
     if (generatorsNode[YAML_OPTIONS].IsDefined()) {
       const YAML::Node& optionsNode = generatorsNode[YAML_OPTIONS];
       for (const auto& optionsEntry : optionsNode) {
-        string generator, path;
-        ParseString(optionsEntry, YAML_GENERATOR, generator);
-        ParsePortablePath(optionsEntry, file, YAML_PATH, path);
-        generators.options[generator] = path;
+        GeneratorOptionsItem options;
+        ParseString(optionsEntry, YAML_GENERATOR, options.id);
+        ParsePortablePath(optionsEntry, file, YAML_PATH, options.path);
+        ParseString(optionsEntry, YAML_NAME, options.name);
+        ParseString(optionsEntry, YAML_MAP, options.map);
+        generators.options[options.id] = options;
       }
     }
   }
@@ -1046,6 +1048,8 @@ const set<string> outputKeys = {
 const set<string> generatorsKeys = {
   YAML_BASE_DIR,
   YAML_OPTIONS,
+  YAML_NAME,
+  YAML_MAP,
 };
 
 const set<string> rteKeys = {

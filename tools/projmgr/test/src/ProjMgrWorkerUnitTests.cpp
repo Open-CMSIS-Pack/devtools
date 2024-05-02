@@ -1461,23 +1461,23 @@ TEST_F(ProjMgrWorkerUnitTests, GetGeneratorDir) {
   EXPECT_FALSE(GetGeneratorDir(generator, context, layerName, genDir));
 
   // custom options directory
-  csolution.generators.options[generatorId] = "CustomRelativeToSolution";
+  csolution.generators.options[generatorId].path = "CustomRelativeToSolution";
   EXPECT_TRUE(GetGeneratorDir(generator, context, layerName, genDir));
   EXPECT_EQ(genDir, "../CustomRelativeToSolution");
 
-  cproject.generators.options[generatorId] = "CustomRelativeToProject";
+  cproject.generators.options[generatorId].path = "CustomRelativeToProject";
   EXPECT_TRUE(GetGeneratorDir(generator, context, layerName, genDir));
   EXPECT_EQ(genDir, "CustomRelativeToProject");
 
-  clayer.generators.options[generatorId] = "CustomRelativeToLayer";
+  clayer.generators.options[generatorId].path = "CustomRelativeToLayer";
   EXPECT_TRUE(GetGeneratorDir(generator, context, layerName, genDir));
   EXPECT_EQ(genDir, "LayerDirectory/CustomRelativeToLayer");
 
-  clayer.generators.options[generatorId] = "$SolutionDir()$/$Compiler$";
+  clayer.generators.options[generatorId].path = "$SolutionDir()$/$Compiler$";
   EXPECT_TRUE(GetGeneratorDir(generator, context, layerName, genDir));
   EXPECT_EQ(genDir, "../AC6");
 
-  clayer.generators.options[generatorId] = "$ProjectDir(UnknownContext)$";
+  clayer.generators.options[generatorId].path = "$ProjectDir(UnknownContext)$";
   EXPECT_FALSE(GetGeneratorDir(generator, context, layerName, genDir));
 
   m_contexts.clear();

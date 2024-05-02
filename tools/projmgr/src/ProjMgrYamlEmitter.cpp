@@ -458,9 +458,9 @@ void ProjMgrYamlCbuild::SetComponentsNode(YAML::Node node, const ContextItem* co
       if(rteGenerator && !rteGenerator->IsExternal()) {
         SetNodeValue(componentNode[YAML_GENERATOR][YAML_FROM_PACK], rteGenerator->GetPackageID());
         SetGeneratorFiles(componentNode[YAML_GENERATOR], context, componentId);
-      } else if (contains_key(context->extGenDir, component.generator)) {
+      } else if (contains_key(context->extGen, component.generator)) {
           SetNodeValue(componentNode[YAML_GENERATOR][YAML_PATH],
-          FormatPath(fs::path(context->extGenDir.at(component.generator)).append(context->cproject->name + ".cgen.yml").generic_string(),
+          FormatPath(fs::path(context->extGen.at(component.generator).name).generic_string(),
           context->directories.cbuild));
       } else {
         ProjMgrLogger::Warn(string("Component ") + componentId + " uses unknown generator " + component.generator);
@@ -996,9 +996,9 @@ ProjMgrYamlCbuild::ProjMgrYamlCbuild(YAML::Node node, const vector<ContextItem*>
   // construct cbuild-gen-idx.yml content
   SetNodeValue(node[YAML_GENERATED_BY], ORIGINAL_FILENAME + string(" version ") + VERSION_STRING);
   const auto& context = siblings.front();
-  const auto& generator = context->extGenDir.begin();
+  const auto& generator = context->extGen.begin()->second;
   YAML::Node generatorNode;
-  SetNodeValue(generatorNode[YAML_ID], generator->first);
+  SetNodeValue(generatorNode[YAML_ID], generator.id);
   SetNodeValue(generatorNode[YAML_OUTPUT], FormatPath(gendir, output));
   SetNodeValue(generatorNode[YAML_DEVICE], context->deviceItem.name);
   SetNodeValue(generatorNode[YAML_BOARD], context->board);
@@ -1015,6 +1015,9 @@ ProjMgrYamlCbuild::ProjMgrYamlCbuild(YAML::Node node, const vector<ContextItem*>
     SetNodeValue(cbuildGenNode[YAML_FORPROJECTPART],
       (type == TYPE_MULTI_CORE ? sibling->deviceItem.pname :
       (type == TYPE_TRUSTZONE ? sibling->controls.processed.processor.trustzone : "")));
+    const auto& siblingGenerator = sibling->extGen.begin()->second;
+    SetNodeValue(cbuildGenNode[YAML_NAME], FormatPath(siblingGenerator.name, output));
+    SetNodeValue(cbuildGenNode[YAML_MAP], siblingGenerator.map);
     generatorNode[YAML_CBUILD_GENS].push_back(cbuildGenNode);
   }
   node[YAML_GENERATORS].push_back(generatorNode);

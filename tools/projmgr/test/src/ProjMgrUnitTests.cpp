@@ -5126,18 +5126,26 @@ TEST_F(ProjMgrUnitTests, ExternalGeneratorListVerbose) {
   const string expected = "\
 RteTestExternalGenerator (Global Registered Generator)\n\
   base-dir: generated/CM0\n\
-    context: ns.Debug+CM0\n\
-    context: ns.Release+CM0\n\
-    context: s.Debug+CM0\n\
-    context: s.Release+CM0\n\
+    cgen-file: generated/CM0/ns.cgen.yml\n\
+      context: ns.Debug+CM0\n\
+      context: ns.Release+CM0\n\
+    cgen-file: generated/CM0/s.cgen.yml\n\
+      context: s.Debug+CM0\n\
+      context: s.Release+CM0\n\
   base-dir: generated/MultiCore\n\
-    context: core0.Debug+MultiCore\n\
-    context: core0.Release+MultiCore\n\
-    context: core1.Debug+MultiCore\n\
-    context: core1.Release+MultiCore\n\
+    cgen-file: generated/MultiCore/MyConf.cgen.yml\n\
+      context: boot.Debug+MultiCore\n\
+      context: boot.Release+MultiCore\n\
+    cgen-file: generated/MultiCore/core0.cgen.yml\n\
+      context: core0.Debug+MultiCore\n\
+      context: core0.Release+MultiCore\n\
+    cgen-file: generated/MultiCore/core1.cgen.yml\n\
+      context: core1.Debug+MultiCore\n\
+      context: core1.Release+MultiCore\n\
   base-dir: single/generated\n\
-    context: single-core.Debug+CM0\n\
-    context: single-core.Release+CM0\n\
+    cgen-file: single/generated/single-core.cgen.yml\n\
+      context: single-core.Debug+CM0\n\
+      context: single-core.Release+CM0\n\
 ";
   auto outStr = streamRedirect.GetOutString();
   EXPECT_TRUE(outStr.find(expected) != string::npos);
@@ -5159,10 +5167,12 @@ TEST_F(ProjMgrUnitTests, ClassicGeneratorListVerbose) {
   const string expected = "\
 RteTestGeneratorIdentifier (RteTest Generator Description)\n\
   base-dir: GeneratedFiles/RteTestGeneratorIdentifier\n\
-    context: test-gpdsc-multiple-generators.Debug+CM0\n\
+    cgen-file: GeneratedFiles/RteTestGeneratorIdentifier/RteTestGen_ARMCM0/RteTest.gpdsc\n\
+      context: test-gpdsc-multiple-generators.Debug+CM0\n\
 RteTestGeneratorWithKey (RteTest Generator with Key Description)\n\
   base-dir: GeneratedFiles/RteTestGeneratorWithKey\n\
-    context: test-gpdsc-multiple-generators.Debug+CM0\n\
+    cgen-file: GeneratedFiles/RteTestGeneratorWithKey/RteTestGen_ARMCM0/RteTest.gpdsc\n\
+      context: test-gpdsc-multiple-generators.Debug+CM0\n\
 ";
   auto outStr = streamRedirect.GetOutString();
   EXPECT_TRUE(outStr.find(expected) != string::npos);
