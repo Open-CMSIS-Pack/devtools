@@ -4494,10 +4494,10 @@ bool ProjMgrWorker::ExecuteExtGenerator(std::string& generatorId) {
     siblingProjects.push_back(siblingContextItem->cproject->name);
   }
   // Check whether selected contexts belong to sibling projects
-  for (const auto& selectedContext : m_selectedContexts) {
-    ContextItem* selectedContextItem = &m_contexts[selectedContext];
+  for (const auto& contextName : m_selectedContexts) {
+    ContextItem* selectedContextItem = &m_contexts[contextName];
     if (find(siblingProjects.begin(), siblingProjects.end(), selectedContextItem->cproject->name) == siblingProjects.end()) {
-      ProjMgrLogger::Error("one or more selected contexts are unrelated, redefine the '--context arg [...]` option");
+      ProjMgrLogger::Error("one or more selected contexts are unrelated, redefine the '--context arg [...]' option");
       return false;
     }
   }

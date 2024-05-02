@@ -5056,7 +5056,7 @@ TEST_F(ProjMgrUnitTests, ExternalGenerator_MultipleContexts) {
   argv[6] = (char*)"+CM0";
   EXPECT_EQ(1, RunProjMgr(7, argv, 0));
   const string expected = "\
-one or more selected contexts are unrelated, redefine the '--context arg [...]` option\n\
+one or more selected contexts are unrelated, redefine the '--context arg [...]' option\n\
 ";
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_TRUE(errStr.find(expected) != string::npos);
