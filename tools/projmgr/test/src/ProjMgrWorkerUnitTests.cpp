@@ -86,7 +86,6 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDevice) {
     {"Dclock", "10000000"},
     {"Dcore", "Cortex-M0"},
     {"DcoreVersion", "r0p0"},
-    {"Dendian", "Configurable"},
     {"Dfpu", "NO_FPU"},
     {"Dmpu", "NO_MPU"},
     {"Dname", "RteTest_ARMCM0"},
@@ -107,6 +106,10 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDevice) {
   for (const auto& expectedAttribute : expected) {
     EXPECT_EQ(expectedAttribute.second, context.targetAttributes[expectedAttribute.first]);
   }
+  // Device 'configurable' endianess must not be set among target attributes
+  const auto& processor = context.rteFilteredModel->GetDevice(context.deviceItem.name, context.deviceItem.vendor)->GetProcessor(context.deviceItem.pname);
+  EXPECT_EQ(processor->GetAttribute("Dendian"), "Configurable");
+  EXPECT_TRUE(context.targetAttributes.find("Dendian") == context.targetAttributes.end());
 }
 
 TEST_F(ProjMgrWorkerUnitTests, ProcessComponents) {

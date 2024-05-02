@@ -1306,6 +1306,12 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
   // Check attributes support compatibility
   CheckDeviceAttributes(context.device, attr, context.targetAttributes);
 
+  // Remove 'configurable' endianness from target attributes for RteModel conditions compliance
+  if (context.targetAttributes.find(RteConstants::RTE_DENDIAN) != context.targetAttributes.end() &&
+    context.targetAttributes.at(RteConstants::RTE_DENDIAN) == RteConstants::RTE_ENDIAN_CONFIGURABLE) {
+    context.targetAttributes.erase(RteConstants::RTE_DENDIAN);
+  }
+
   // Set or update target attributes
   const StrMap attrMap = {
     { RteConstants::RTE_DFPU       , attr.fpu              },
