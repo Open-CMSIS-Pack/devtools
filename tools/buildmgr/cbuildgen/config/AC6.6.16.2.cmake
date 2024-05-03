@@ -1,11 +1,11 @@
 # This file maps the CMSIS project options to toolchain settings.
 #
-#   - Applies to toolchain: ARM Compiler 6.18 and greater
+#   - Applies to toolchain: ARM Compiler 6.16.2 and greater
 
 ############### EDIT BELOW ###############
 # Set base directory of toolchain
 set(TOOLCHAIN_ROOT)
-set(TOOLCHAIN_VERSION "6.18.0")
+set(TOOLCHAIN_VERSION "6.16.2")
 
 ############ DO NOT EDIT BELOW ###########
 
