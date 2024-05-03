@@ -1061,7 +1061,7 @@ TEST_F(ProjMgrWorkerUnitTests, CollectLayersFromPacks) {
   };
   RteModel* model = context.rteActiveTarget->GetModel();
   RtePackage* pack = new RtePackage(model, packAttributes);
-  RteItem* clayersItem = pack->CreateChild("clayers");
+  RteItem* clayersItem = pack->CreateChild("csolution");
   RteItem* clayerItem = clayersItem->CreateChild("clayer");
   clayerItem->SetAttributes(clayerAttributes);
   model->InsertPacks(list<RtePackage*>{pack});

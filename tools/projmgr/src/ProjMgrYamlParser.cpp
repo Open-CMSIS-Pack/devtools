@@ -234,6 +234,7 @@ bool ProjMgrYamlParser::ParseClayer(const string& input,
 
     const YAML::Node& layerNode = root[cgen ? YAML_GENERATOR_IMPORT : YAML_LAYER];
     map<const string, string&> projectChildren = {
+      {YAML_DESCRIPTION, clayer.description},
       {YAML_FORBOARD, clayer.forBoard},
       {YAML_FORDEVICE, clayer.forDevice},
       {YAML_TYPE, clayer.type},
