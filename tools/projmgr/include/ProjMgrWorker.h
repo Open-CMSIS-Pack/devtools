@@ -270,6 +270,7 @@ struct ContextTypesItem {
  *        map of user inputed pack ID to resolved pack ID
  *        set of absolute file paths of project local packs
  *        vector of dependent contexts
+ *        map of layers descriptors from packs
 */
 struct ContextItem {
   CdefaultItem* cdefault = nullptr;
@@ -320,6 +321,7 @@ struct ContextItem {
   std::map<std::string, std::set<std::string>> userInputToResolvedPackIdMap;
   StrSet localPackPaths;
   StrVec dependsOn;
+  std::map<std::string, RteItem*> packLayers;
 };
 
 /**

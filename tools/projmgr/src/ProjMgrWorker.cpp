@@ -635,11 +635,12 @@ void ProjMgrWorker::GetAllSelectCombinations(const ConnectPtrVec& src, const Con
 
 bool ProjMgrWorker::CollectLayersFromPacks(ContextItem& context, StrVecMap& clayers) {
   for (const auto& clayerItem : context.rteActiveTarget->GetFilteredModel()->GetLayerDescriptors()) {
-    const string& clayerFile = clayerItem->GetOriginalAbsolutePath(clayerItem->GetFileString());
+    const string& clayerFile = clayerItem->GetOriginalAbsolutePath(clayerItem->GetPathString() + "/" + clayerItem->GetFileString());
     if (!RteFsUtils::Exists(clayerFile)) {
       return false;
     }
     CollectionUtils::PushBackUniquely(clayers[clayerItem->GetTypeString()], clayerFile);
+    context.packLayers[clayerFile] = clayerItem;
   }
   return true;
 }

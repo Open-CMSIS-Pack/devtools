@@ -645,8 +645,18 @@ public:
   */
   virtual const std::string& GetFileString() const { return GetAttribute("file"); }
   /**
-   * @brief return value of attribute "file"
-   * @return value of attribute "file"
+  * @brief return value of attribute "path"
+  * @return value of attribute "path"
+  */
+  virtual const std::string& GetPathString() const { return GetAttribute("path"); }
+  /**
+  * @brief return value of attribute "copy-to"
+  * @return value of attribute "copy-to"
+  */
+  virtual const std::string& GetCopyToString() const { return GetAttribute("copy-to"); }
+  /**
+   * @brief return value of attribute "folder"
+   * @return value of attribute "folder"
    */
   virtual const std::string& GetFolderString() const { return GetAttribute("folder"); }
 

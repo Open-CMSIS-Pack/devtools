@@ -451,6 +451,7 @@ struct CprojectItem {
 /**
  * @brief clayer item containing
  *        layer name,
+ *        layer description,
  *        layer path,
  *        layer type,
  *        layer directory,
@@ -467,6 +468,7 @@ struct CprojectItem {
 */
 struct ClayerItem {
   std::string name;
+  std::string description;
   std::string path;
   std::string type;
   std::string directory;
