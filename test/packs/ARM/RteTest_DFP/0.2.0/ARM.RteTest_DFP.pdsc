@@ -499,7 +499,7 @@
     </board>
   </boards>
 
-  <clayers>
+  <csolution>
     <clayer name="Board1" type="Board" file="Layers/board1.clayer.yml" condition="BoardTest1">
       <description>"Test board layer one"</description>
     </clayer>
@@ -518,16 +518,15 @@
     <clayer name="PdscType" type="PdscType" file="Layers/pdsc-type-mismatch.clayer.yml">
       <description>"Test pdsc type mismatch"</description>
     </clayer>
-    <clayer name="Config1" type="Config1" file="Layers/config1.clayer.yml">
+    <clayer name="Config1" type="Config1" path="Layers" file="config1.clayer.yml" copy-to="path/to/config1">
       <description>"Test board layer with shield"</description>
     </clayer>
-    <clayer name="Config2" type="Config2" file="Layers/config2.clayer.yml">
+    <clayer name="Config2" type="Config2" path="." file="Layers/config2.clayer.yml" copy-to="path/to/config2">
       <description>"Test board layer with shield"</description>
     </clayer>
     <clayer name="BoardSpecific" type="BoardSpecific" file="Layers/board-specific.clayer.yml">
       <description>"Test board layer with board specific pack"</description>
     </clayer>
-    
-  </clayers>
+  </csolution>
 
 </package>

@@ -962,8 +962,12 @@
     "BuildLayerVariableType": {
       "type": "object",
       "patternProperties": {
-        "^.*-Layer$": { "type": "string", "description": "Unique variable name for the layer" },
-        "settings": { "$ref": "#/definitions/BuildConnectionSettingsType" }
+        "^.*-Layer$":  { "type": "string", "description": "Unique variable name for the layer" },
+        "description": { "type": "string", "description": "Brief description text (from *.clayer.yml)" },
+        "settings":    { "$ref": "#/definitions/BuildConnectionSettingsType" },
+        "path":        { "type": "string", "description": "Path to the directory that contains the layer (from *.PDSC file)" },
+        "file":        { "type": "string", "description": "Name of the *.clayer.yml file relative to the directory specified with path (from *.PDSC file)"},
+        "copy-to":     { "type": "string", "description": "Proposed directory for the layer in the csolution project (from *.PDSC file)" }
       },
       "additionalProperties": false
     },

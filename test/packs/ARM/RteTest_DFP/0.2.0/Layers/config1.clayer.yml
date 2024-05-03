@@ -3,6 +3,7 @@
 layer:
 
   type: Config1
+  description: Config1 Layer Description
   
   components:
     - component: Board:Test:Rev1

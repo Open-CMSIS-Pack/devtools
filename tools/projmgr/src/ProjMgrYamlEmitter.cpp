@@ -76,7 +76,7 @@ private:
     ProjMgrParser& parser, const string& directory, const set<string>& failedContexts,
     const map<string, ExecutesItem>& executes, bool checkSchema);
 
-  void SetVariablesNode(YAML::Node node, const string& csolutionDir, const map<string, map<string, set<const ConnectItem*>>>& layerTypes);
+  void SetVariablesNode(YAML::Node node, ProjMgrParser& parser, const ContextItem* context, const map<string, map<string, set<const ConnectItem*>>>& layerTypes);
 };
 
 class ProjMgrYamlCbuildPack : public ProjMgrYamlBase {
@@ -252,7 +252,7 @@ ProjMgrYamlCbuildIdx::ProjMgrYamlCbuildIdx(YAML::Node node,
         SetNodeValue(targetTypeNode[YAML_TARGETTYPE], context->type.target);
         for (const auto& [index, types] : configurations) {
           YAML::Node configurationsNode, variablesNode;
-          SetVariablesNode(variablesNode[YAML_VARIABLES], context->csolution->directory, types);
+          SetVariablesNode(variablesNode[YAML_VARIABLES], parser, context, types);
           configurationsNode[YAML_CONFIGURATION].push_back(variablesNode);
           targetTypeNode[YAML_TARGET_CONFIGURATIONS].push_back(configurationsNode);
         }
@@ -323,7 +323,8 @@ ProjMgrYamlCbuildIdx::ProjMgrYamlCbuildIdx(YAML::Node node,
   SetExecutesNode(node[YAML_EXECUTES], executes, directory, directory);
 }
 
-void ProjMgrYamlCbuildIdx::SetVariablesNode(YAML::Node node, const string& csolutionDir, const map<string, map<string, set<const ConnectItem*>>>& layerTypes) {
+void ProjMgrYamlCbuildIdx::SetVariablesNode(YAML::Node node, ProjMgrParser& parser, const ContextItem* context,
+  const map<string, map<string, set<const ConnectItem*>>>& layerTypes) {
   for (const auto& [type, filenames] : layerTypes) {
     if (type.empty()) {
       continue;
@@ -341,17 +342,27 @@ void ProjMgrYamlCbuildIdx::SetVariablesNode(YAML::Node node, const string& csolu
         layerFile.replace(index, packRoot.length(), "${CMSIS_PACK_ROOT}");
       }
       else {
-        layerFile = RteFsUtils::RelativePath(filename, csolutionDir);
+        layerFile = RteFsUtils::RelativePath(filename, context->csolution->directory);
         RteFsUtils::NormalizePath(layerFile);
         layerFile = "$" + string(RteConstants::AS_SOLUTION_DIR_BR) + "$/" + layerFile;
       }
       SetNodeValue(layerNode[type + "-Layer"], layerFile);
+      if (parser.GetGenericClayers().find(filename) != parser.GetGenericClayers().end()) {
+        const auto& clayer = parser.GetGenericClayers().at(filename);
+        SetNodeValue(layerNode[YAML_DESCRIPTION], clayer.description);
+      }
       for (const auto& connect : options) {
         if (!connect->set.empty()) {
           YAML::Node setNode;
           SetNodeValue(setNode[YAML_SET], connect->set + " (" + connect->connect + (connect->info.empty() ? "" : " - " + connect->info) + ")");
           layerNode[YAML_SETTINGS].push_back(setNode);
         }
+      }
+      if (context->packLayers.find(filename) != context->packLayers.end()) {
+        const auto& clayer = context->packLayers.at(filename);
+        SetNodeValue(layerNode[YAML_PATH], FormatPath(clayer->GetOriginalAbsolutePath(clayer->GetPathString()), context->csolution->directory));
+        SetNodeValue(layerNode[YAML_FILE], clayer->GetFileString());
+        SetNodeValue(layerNode[YAML_COPY_TO], clayer->GetCopyToString());
       }
     }
     node.push_back(layerNode);

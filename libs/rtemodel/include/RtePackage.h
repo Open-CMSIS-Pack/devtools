@@ -317,7 +317,7 @@ public:
   * @brief get collection of <clayer> elements
   * @return list of pointers RteItem representing clayer elements
   */
-  const Collection<RteItem*>& GetLayerDescriptors() const { return GetGrandChildren("clayers"); }
+  const Collection<RteItem*>& GetLayerDescriptors() const { return GetGrandChildren("csolution"); }
 
   /**
   * @brief get collection of <cproject> elements
