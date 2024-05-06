@@ -7,6 +7,7 @@
 #include "ProjMgr.h"
 #include "ProjMgrTestEnv.h"
 #include "ProjMgrYamlSchemaChecker.h"
+#include "ProjMgrLogger.h"
 
 #include "RteFsUtils.h"
 
@@ -69,6 +70,55 @@ protected:
     return csolutionFile;
   }
 };
+
+TEST_F(ProjMgrUnitTests, Validate_Logger) {
+  StdStreamRedirect streamRedirect;
+  auto printLogMsgs = []() {
+    ProjMgrLogger::Debug("debug-1 test message");
+    ProjMgrLogger::Warn("warning-1 test message");
+    ProjMgrLogger::Warn("test.warn", "warning-2 test message");
+    ProjMgrLogger::Warn("test.warn", 1, 1, "warning-3 test message");
+    ProjMgrLogger::Error("error-1 test message");
+    ProjMgrLogger::Error("test.err", "error-2 test message");
+    ProjMgrLogger::Error("test.err", 1, 1, "error-3 test message");
+    ProjMgrLogger::Info("info-1 test message");
+    ProjMgrLogger::Info("test.info", "info-2 test message");
+    ProjMgrLogger::Info("test.info", 1, 1, "info-3 test message");
+  };
+
+  // Test quite mode
+  ProjMgrLogger::m_quiet = true;
+  string expErrMsg = "error csolution: error-1 test message\n\
+test.err - error csolution: error-2 test message\n\
+test.err:1:1 - error csolution: error-3 test message\n";
+  string expOutMsg = "";
+
+  printLogMsgs();
+  auto outStr = streamRedirect.GetOutString();
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_STREQ(outStr.c_str(), expOutMsg.c_str());
+  EXPECT_STREQ(errStr.c_str(), expErrMsg.c_str());
+
+  // Test non-quite mode
+  ProjMgrLogger::m_quiet = false;
+  streamRedirect.ClearStringStreams();
+  expErrMsg = "debug csolution: debug-1 test message\n\
+warning csolution: warning-1 test message\n\
+test.warn - warning csolution: warning-2 test message\n\
+test.warn:1:1 - warning csolution: warning-3 test message\n\
+error csolution: error-1 test message\n\
+test.err - error csolution: error-2 test message\n\
+test.err:1:1 - error csolution: error-3 test message\n";
+  expOutMsg = "info csolution: info-1 test message\n\
+test.info - info csolution: info-2 test message\n\
+test.info:1:1 csolution: infoinfo-3 test message\n";
+
+  printLogMsgs();
+  outStr = streamRedirect.GetOutString();
+  errStr = streamRedirect.GetErrorString();
+  EXPECT_STREQ(outStr.c_str(), expOutMsg.c_str());
+  EXPECT_STREQ(errStr.c_str(), expErrMsg.c_str());
+}
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_EmptyOptions) {
   char* argv[1];
@@ -2083,8 +2133,9 @@ TEST_F(ProjMgrUnitTests, LayerVariablesNotDefined) {
   argv[7] = (char*)"-d";
   EXPECT_EQ(1, RunProjMgr(8, argv, 0));
 
-  const string& expectedErrStr = ".*\
-warning csolution: variable 'NotDefined' was not defined for context 'variables-notdefined.BuildType\\+TargetType'.*\
+  string expectedErrStr = ".*\
+error csolution: undefined variables in variables-notdefined.csolution.yml:.*\
+  - \\$NotDefined\\$.*\
   .*/ARM/RteTest_DFP/0.2.0/Layers/board1.clayer.yml \\(layer type: Board\\).*\
   .*/ARM/RteTest_DFP/0.2.0/Layers/board2.clayer.yml \\(layer type: Board\\).*\
   .*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml \\(layer type: Board\\).*\
@@ -2093,7 +2144,18 @@ no valid combination of clayers was found\
 
   string errStr = streamRedirect.GetErrorString();
   errStr.erase(std::remove(errStr.begin(), errStr.end(), '\n'), errStr.cend());
+  EXPECT_TRUE(regex_match(errStr, regex(expectedErrStr)));
 
+  // Validate --quiet mode output
+  streamRedirect.ClearStringStreams();
+  expectedErrStr = ".*\
+error csolution: undefined variables in variables-notdefined.csolution.yml:.*\
+  - \\$NotDefined\\$";
+
+  argv[7] = (char*)"-q";
+  EXPECT_EQ(1, RunProjMgr(8, argv, 0));
+  errStr = streamRedirect.GetErrorString();
+  errStr.erase(std::remove(errStr.begin(), errStr.end(), '\n'), errStr.cend());
   EXPECT_TRUE(regex_match(errStr, regex(expectedErrStr)));
 }
 
@@ -2112,6 +2174,9 @@ TEST_F(ProjMgrUnitTests, LayerVariablesNotDefined_SearchPath) {
   EXPECT_EQ(0, RunProjMgr(8, argv, 0));
 
   const string& expectedErrStr = ".*\
+error csolution: undefined variables in variables-notdefined.csolution.yml:.*\
+  - \\$NotDefined\\$.*\
+debug csolution: check for context \\'variables-notdefined\\.BuildType\\+TargetType\\'.*\
 clayer of type 'Board' was uniquely found:\
   .*/TestLayers/variables/target1.clayer.yml\
 ";
@@ -3665,6 +3730,27 @@ ARM::RteTestMissingCondition@0.1.0: component 'ARM::RteTest:Check:MissingConditi
   }
 }
 
+TEST_F(ProjMgrUnitTests, Convert_ValidationResults_Quiet_Mode) {
+  char* argv[7];
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[4] = (char*)"-c";
+
+  string expectedMsg = "error csolution: no component was found with identifier 'RteTest:Check:Recursive'\nerror csolution: processing context 'recursive+CM0' failed\n";
+
+  StdStreamRedirect streamRedirect;
+  const string& csolution = testinput_folder + "/Validation/recursive.csolution.yml";
+  const string& context = "recursive+CM0";
+  argv[3] = (char*)csolution.c_str();
+  argv[5] = (char*)context.c_str();
+  argv[6] = (char*)"-q";
+  EXPECT_EQ(1, RunProjMgr(7, argv, 0));
+  const string& errStr = streamRedirect.GetErrorString();
+  EXPECT_EQ(string::npos, errStr.find("warning csolution"));
+  EXPECT_EQ(string::npos, errStr.find("debug csolution"));
+  EXPECT_STREQ(errStr.c_str(), expectedMsg.c_str());
+}
+
 TEST_F(ProjMgrUnitTests, OutputDirs) {
   char* argv[4];
   // convert --solution solution.yml
@@ -3906,8 +3992,8 @@ TEST_F(ProjMgrUnitTests, RunCheckContextProcessing) {
   argv[6] = (char*)testoutput_folder.c_str();
   EXPECT_EQ(2, RunProjMgr(7, argv, 0));
 
-  // Check warning for processed context
-  const string expected = "warning csolution: variable 'LayerVar' was not defined for context 'contexts.B1+T1'";
+  // Check error for processed context
+  const string expected = "error csolution: undefined variables in contexts.csolution.yml:\n  - $LayerVar$\n\n";
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_TRUE(errStr.find(expected) != string::npos);
 

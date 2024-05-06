@@ -16,6 +16,8 @@ static constexpr const char* PROJMGR_WARN = "warning";
 static constexpr const char* PROJMGR_DEBUG = "debug";
 static constexpr const char* PROJMGR_INFO = "info";
 
+bool ProjMgrLogger::m_quiet = false;
+
 ProjMgrLogger::ProjMgrLogger(void) {
   // Reserved
 }
@@ -37,29 +39,43 @@ void ProjMgrLogger::Error(const string& msg) {
 }
 
 void ProjMgrLogger::Warn(const string& file, const int line, const int column, const string& msg) {
-  cerr << file << ":" << line << ":" << column << " - " << PROJMGR_WARN << PROJMGR_TOOL << msg << endl;
+  if (!m_quiet) {
+    cerr << file << ":" << line << ":" << column << " - " << PROJMGR_WARN << PROJMGR_TOOL << msg << endl;
+  }
 }
 
 void ProjMgrLogger::Warn(const string& file, const string& msg) {
-  cerr << file << " - " << PROJMGR_WARN << PROJMGR_TOOL << msg << endl;
+  if (!m_quiet) {
+    cerr << file << " - " << PROJMGR_WARN << PROJMGR_TOOL << msg << endl;
+  }
 }
 
 void ProjMgrLogger::Warn(const string& msg) {
-  cerr << PROJMGR_WARN << PROJMGR_TOOL << msg << endl;
+  if (!m_quiet) {
+    cerr << PROJMGR_WARN << PROJMGR_TOOL << msg << endl;
+  }
 }
 
 void ProjMgrLogger::Debug(const string& msg) {
-  cerr << PROJMGR_DEBUG << PROJMGR_TOOL << msg << endl;
+  if (!m_quiet) {
+    cerr << PROJMGR_DEBUG << PROJMGR_TOOL << msg << endl;
+  }
 }
 
 void ProjMgrLogger::Info(const string& file, const int line, const int column, const string& msg) {
-  cout << file << ":" << line << ":" << column << PROJMGR_TOOL << PROJMGR_INFO << msg << endl;
+  if (!m_quiet) {
+    cout << file << ":" << line << ":" << column << PROJMGR_TOOL << PROJMGR_INFO << msg << endl;
+  }
 }
 
 void ProjMgrLogger::Info(const string& file, const string& msg) {
+  if (!m_quiet) {
   cout << file << " - " << PROJMGR_INFO << PROJMGR_TOOL << msg << endl;
+  }
 }
 
 void ProjMgrLogger::Info(const string& msg) {
-  cout << PROJMGR_INFO << PROJMGR_TOOL << msg << endl;
+  if (!m_quiet) {
+    cout << PROJMGR_INFO << PROJMGR_TOOL << msg << endl;
+  }
 }

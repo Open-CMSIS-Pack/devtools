@@ -45,8 +45,7 @@ ProjMgrWorker::ProjMgrWorker(ProjMgrParser* parser, ProjMgrExtGenerator* extGene
   m_verbose(false),
   m_debug(false),
   m_dryRun(false),
-  m_relativePaths(false),
-  m_varDefineError(false)
+  m_relativePaths(false)
 {
   RteCondition::SetVerboseFlags(0);
 }
@@ -183,8 +182,7 @@ bool ProjMgrWorker::ParseContextLayers(ContextItem& context) {
         catch (exception&) {};
         if (sm.size() >= 2) {
           if (context.variables.find(sm[1]) == context.variables.end()) {
-            ProjMgrLogger::Warn("variable '" + string(sm[1]) + "' was not defined for context '" + context.name + "'");
-            m_varDefineError = true;
+            m_undefLayerVars.insert(string(sm[1]));
             continue;
           }
         }
@@ -4575,5 +4573,9 @@ void ProjMgrWorker::PrintContextErrors(const string& contextName) {
 }
 
 bool ProjMgrWorker::HasVarDefineError() {
-  return m_varDefineError;
+  return (m_undefLayerVars.size() > 0 ? true : false);
+}
+
+const set<string>& ProjMgrWorker::GetUndefLayerVars() {
+  return m_undefLayerVars;
 }

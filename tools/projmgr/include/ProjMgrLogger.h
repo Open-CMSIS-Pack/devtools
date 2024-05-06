@@ -52,6 +52,8 @@ public:
   static void Info(const std::string& file, const int line, const int column, const std::string& msg);
   static void Info(const std::string& file, const std::string& msg);
   static void Info(const std::string& msg);
+
+  static bool m_quiet;
 };
 
 #endif  // PROJMGRLOGGER_H

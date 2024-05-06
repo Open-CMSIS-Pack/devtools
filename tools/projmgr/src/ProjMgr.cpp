@@ -49,6 +49,7 @@ Options:\n\
   -n, --no-check-schema         Skip schema check\n\
   -N, --no-update-rte           Skip creation of RTE directory and files\n\
   -o, --output arg              Output directory\n\
+  -q, --quiet                   Run silently, printing only error messages\n\
   -R, --relative-paths          Print paths relative to project or ${CMSIS_PACK_ROOT}\n\
   -S, --context-set             Select the context names from cbuild-set.yml for generating the target application\n\
   -t, --toolchain arg           Selection of the toolchain used in the project optionally with version\n\
@@ -155,23 +156,24 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
   cxxopts::Option relativePaths("R,relative-paths", "Output paths relative to project or to CMSIS_PACK_ROOT", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option frozenPacks("frozen-packs", "The list of packs from cbuild-pack.yml is frozen and raises error if not up-to-date", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option updateIdx("update-idx", "Update cbuild-idx file with layer info", cxxopts::value<bool>()->default_value("false"));
+  cxxopts::Option quiet("q,quiet", "Run silently, printing only error messages", cxxopts::value<bool>()->default_value("false"));
 
   // command options dictionary
   map<string, std::pair<bool, vector<cxxopts::Option>>> optionsDict = {
     // command, optional args, options
-    {"update-rte",        { false, {context, contextSet, debug, load, schemaCheck, toolchain, verbose, frozenPacks}}},
-    {"convert",           { false, {context, contextSet, debug, exportSuffix, load, schemaCheck, noUpdateRte, output, toolchain, verbose, frozenPacks}}},
-    {"run",               { false, {context, contextSet, debug, generator, load, schemaCheck, verbose, dryRun}}},
-    {"list packs",        { true,  {context, debug, filter, load, missing, schemaCheck, toolchain, verbose, relativePaths}}},
-    {"list boards",       { true,  {context, debug, filter, load, schemaCheck, toolchain, verbose}}},
-    {"list devices",      { true,  {context, debug, filter, load, schemaCheck, toolchain, verbose}}},
-    {"list configs",      { true,  {context, debug, filter, load, schemaCheck, toolchain, verbose}}},
-    {"list components",   { true,  {context, debug, filter, load, schemaCheck, toolchain, verbose}}},
-    {"list dependencies", { false, {context, debug, filter, load, schemaCheck, toolchain, verbose}}},
-    {"list contexts",     { false, {debug, filter, schemaCheck, verbose, ymlOrder}}},
-    {"list generators",   { false, {context, debug, load, schemaCheck, toolchain, verbose}}},
-    {"list layers",       { false, {context, debug, load, clayerSearchPath, schemaCheck, toolchain, verbose, updateIdx}}},
-    {"list toolchains",   { false, {context, debug, toolchain, verbose}}},
+    {"update-rte",        { false, {context, contextSet, debug, load, quiet, schemaCheck, toolchain, verbose, frozenPacks}}},
+    {"convert",           { false, {context, contextSet, debug, exportSuffix, load, quiet, schemaCheck, noUpdateRte, output, toolchain, verbose, frozenPacks}}},
+    {"run",               { false, {context, contextSet, debug, generator, load, quiet, schemaCheck, verbose, dryRun}}},
+    {"list packs",        { true,  {context, debug, filter, load, missing, quiet, schemaCheck, toolchain, verbose, relativePaths}}},
+    {"list boards",       { true,  {context, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
+    {"list devices",      { true,  {context, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
+    {"list configs",      { true,  {context, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
+    {"list components",   { true,  {context, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
+    {"list dependencies", { false, {context, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
+    {"list contexts",     { false, {debug, filter, quiet, schemaCheck, verbose, ymlOrder}}},
+    {"list generators",   { false, {context, debug, load, quiet, schemaCheck, toolchain, verbose}}},
+    {"list layers",       { false, {context, debug, load, clayerSearchPath, quiet, schemaCheck, toolchain, verbose, updateIdx}}},
+    {"list toolchains",   { false, {context, debug, quiet, toolchain, verbose}}},
     {"list environment",  { true,  {}}},
   };
 
@@ -181,7 +183,7 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
       solution, context, contextSet, filter, generator,
       load, clayerSearchPath, missing, schemaCheck, noUpdateRte, output,
       help, version, verbose, debug, dryRun, exportSuffix, toolchain, ymlOrder,
-      relativePaths, frozenPacks, updateIdx
+      relativePaths, frozenPacks, updateIdx, quiet
     });
     options.parse_positional({ "positional" });
 
@@ -203,6 +205,7 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
     m_relativePaths = parseResult.count("relative-paths");
     m_worker.SetPrintRelativePaths(m_relativePaths);
     m_frozenPacks = parseResult.count("frozen-packs");
+    ProjMgrLogger::m_quiet = parseResult.count("quiet");
 
     vector<string> positionalArguments;
     if (parseResult.count("positional")) {
@@ -538,6 +541,15 @@ bool ProjMgr::Configure() {
   if (!m_worker.ParseContextSelection(m_context, checkCbuildSet)) {
     return false;
   }
+  if (m_worker.HasVarDefineError()) {
+    auto undefVars = m_worker.GetUndefLayerVars();
+    string errMsg = "undefined variables in "+ fs::path(m_csolutionFile).filename().generic_string() +":\n";
+    for (const string& var : undefVars) {
+      errMsg += "  - $" + var + "$\n";
+    }
+    ProjMgrLogger::Error(errMsg);
+    return false;
+  }
   // Get context pointers
   map<string, ContextItem>* contexts = nullptr;
   m_worker.GetContexts(contexts);
@@ -804,17 +816,29 @@ bool ProjMgr::RunListGenerators(void) {
 }
 
 bool ProjMgr::RunListLayers(void) {
+  // Step1 : Parse all input files and create contexts
   if (!m_csolutionFile.empty()) {
-    // Parse all input files and create contexts
     if (!PopulateContexts()) {
       return false;
     }
   }
-  // Parse context selection
+
+  // Step2 : Parse selected contexts
   if (!m_worker.ParseContextSelection(m_context)) {
     return false;
   }
-  // Get layers
+
+  bool error = m_worker.HasVarDefineError() && !m_updateIdx;
+  if (error) {
+    auto undefVars = m_worker.GetUndefLayerVars();
+    string errMsg = "undefined variables in " + fs::path(m_csolutionFile).filename().generic_string() + ":\n";
+    for (const string& var : undefVars) {
+      errMsg += "  - $" + var + "$\n";
+    }
+    ProjMgrLogger::Error(errMsg);
+  }
+
+  // Step3: Detect layers and list them
   vector<string> layers;
   if (!m_worker.ListLayers(layers, m_clayerSearchPath)) {
     return false;
@@ -825,8 +849,8 @@ bool ProjMgr::RunListLayers(void) {
     }
   }
 
+  // Step4: Run only when --update-idx flag is used
   // Update the cbuild-idx.yml file with layer information
-  // only when the update-idx flag is set to true.
   if (m_updateIdx) {
     vector<string> orderedContexts;
     map<string, ContextItem>* contexts = nullptr;
