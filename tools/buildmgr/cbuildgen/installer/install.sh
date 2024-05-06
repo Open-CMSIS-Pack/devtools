@@ -20,7 +20,7 @@ timestamp=
 githash=
 
 # header
-echo "("$(basename "$0")"): CMSIS Build Installer $version (C) 2021-2022 ARM"
+echo "("$(basename "$0")"): CMSIS Build Installer $version (C) 2021-2024 ARM"
 
 # usage
 usage() {
@@ -332,7 +332,7 @@ if [[ $OS == "Windows" ]]
 fi
 
 # update toolchain config files
-script="${cmsis_compiler_root}/AC6.6.18.0.cmake"
+script="${cmsis_compiler_root}/AC6.6.16.2.cmake"
 sed -e "s|set(TOOLCHAIN_ROOT.*|set(TOOLCHAIN_ROOT \"${compiler6_root}\")|" "${script}" > temp.$$ && mv temp.$$ "${script}"
 sed -e "s|set(EXT.*|set(EXT ${extension})|" "${script}" > temp.$$ && mv temp.$$ "${script}"
 
