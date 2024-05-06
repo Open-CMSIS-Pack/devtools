@@ -629,6 +629,12 @@ public:
   bool HasVarDefineError();
 
   /**
+   * @brief get list of detected undefined layer variables
+   * @return list of undefined layer variables
+  */
+  const std::set<std::string>& GetUndefLayerVars();
+
+  /**
    * @brief process solution level executes
    * @return true if it is processed successfully
   */
@@ -666,7 +672,7 @@ protected:
   bool m_debug;
   bool m_dryRun;
   bool m_relativePaths;
-  bool m_varDefineError;
+  std::set<std::string> m_undefLayerVars;
   StrMap m_packMetadata;
   std::map<std::string, ExecutesItem> m_executes;
 
