@@ -3135,9 +3135,9 @@ bool ProjMgrWorker::CheckBoardDeviceInLayer(const ContextItem& context, const Cl
     BoardItem forBoard, board;
     GetBoardItem(clayer.forBoard, forBoard);
     GetBoardItem(context.board, board);
-    if ((!forBoard.vendor.empty() && (forBoard.vendor != board.vendor)) ||
-        (!forBoard.name.empty() && (forBoard.name != board.name)) ||
-        (!forBoard.revision.empty() && (forBoard.revision != board.revision))) {
+    if ((!forBoard.name.empty() && (forBoard.name != board.name)) || 
+        (!forBoard.vendor.empty()   && !board.vendor.empty()   && (forBoard.vendor != board.vendor)) ||
+        (!forBoard.revision.empty() && !board.revision.empty() && (forBoard.revision != board.revision))) {
       return false;
     }
   }
@@ -3145,9 +3145,9 @@ bool ProjMgrWorker::CheckBoardDeviceInLayer(const ContextItem& context, const Cl
     DeviceItem forDevice, device;
     GetDeviceItem(clayer.forDevice, forDevice);
     GetDeviceItem(context.device, device);
-    if ((!forDevice.vendor.empty() && (forDevice.vendor != device.vendor)) ||
-        (!forDevice.name.empty() && (forDevice.name != device.name)) ||
-        (!forDevice.pname.empty() && (forDevice.pname != device.pname))) {
+    if ((!forDevice.name.empty() && (forDevice.name != device.name)) || 
+        (!forDevice.vendor.empty() && !device.vendor.empty() && (forDevice.vendor != device.vendor)) ||
+        (!forDevice.pname.empty()  && !device.pname.empty()  && (forDevice.pname != device.pname))) {
       return false;
     }
   }
