@@ -1621,3 +1621,46 @@ TEST_F(ProjMgrWorkerUnitTests, PrintContextErrors) {
   PrintContextErrors(context1);
   EXPECT_TRUE(streamRedirect.GetErrorString().empty());
 }
+
+TEST_F(ProjMgrWorkerUnitTests, CheckBoardDeviceInLayer) {
+
+  vector<tuple<string, string, bool>> testDataBoard = {
+    {"BoardVendor::BoardName:BoardRevision"  , "OtherVendor::BoardName:BoardRevision"  , false},
+    {"BoardVendor::BoardName:BoardRevision"  , "BoardVendor::OtherName:BoardRevision"  , false},
+    {"BoardVendor::BoardName:BoardRevision"  , "BoardVendor::BoardName:OtherRevision"  , false},
+    {""                                      ,              "BoardName"                , false},
+    {"BoardVendor::BoardName:BoardRevision"  , "BoardVendor::BoardName:BoardRevision"  ,  true},
+    {"BoardVendor::BoardName:BoardRevision"  , "BoardVendor::BoardName"                ,  true},
+    {"BoardVendor::BoardName:BoardRevision"  ,              "BoardName"                ,  true},
+    {             "BoardName"                , "BoardVendor::BoardName:BoardRevision"  ,  true},
+    {             "BoardName"                , "BoardVendor::BoardName"                ,  true},
+    {             "BoardName"                ,              "BoardName"                ,  true},
+  };
+  for (const auto& [board, forBoard, expect] : testDataBoard) {
+    ContextItem context;
+    ClayerItem clayer;
+    context.board = board;
+    clayer.forBoard = forBoard;
+    EXPECT_EQ(CheckBoardDeviceInLayer(context, clayer), expect);
+  }
+
+  vector<tuple<string, string, bool>> testDataDevice = {
+  {"DeviceVendor::DeviceName:ProcessorName", "OtherVendor::DeviceName:ProcessorName" , false},
+  {"DeviceVendor::DeviceName:ProcessorName", "DeviceVendor::OtherName:ProcessorName" , false},
+  {"DeviceVendor::DeviceName:ProcessorName", "DeviceVendor::DeviceName:OtherName"    , false},
+  {""                                      ,               "DeviceName"              , false},
+  {"DeviceVendor::DeviceName:ProcessorName", "DeviceVendor::DeviceName:ProcessorName",  true},
+  {"DeviceVendor::DeviceName:ProcessorName", "DeviceVendor::DeviceName"              ,  true},
+  {"DeviceVendor::DeviceName:ProcessorName",               "DeviceName"              ,  true},
+  {              "DeviceName"              , "DeviceVendor::DeviceName:ProcessorName",  true},
+  {              "DeviceName"              , "DeviceVendor::DeviceName"              ,  true},
+  {              "DeviceName"              ,               "DeviceName"              ,  true},
+  };
+  for (const auto& [device, forDevice, expect] : testDataDevice) {
+    ContextItem context;
+    ClayerItem clayer;
+    context.device = device;
+    clayer.forDevice = forDevice;
+    EXPECT_EQ(CheckBoardDeviceInLayer(context, clayer), expect);
+  }
+}
