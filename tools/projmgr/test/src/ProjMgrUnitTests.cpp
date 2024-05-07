@@ -5579,3 +5579,28 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_GeneratorError) {
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_NE(string::npos, errStr.find("error csolution: redefinition from 'balanced' into 'none' is not allowed"));
 }
+
+TEST_F(ProjMgrUnitTests, TestRelativeOutputOption) {
+  char* argv[5];
+  const string& csolution = testinput_folder + "/TestSolution/Executes/solution.csolution.yml";
+  const string& testFolder = RteFsUtils::ParentPath(testoutput_folder);
+  const string& outputFolder = testFolder + "/outputFolder";
+
+  // Ensure output folder does not exist
+  RteFsUtils::RemoveDir(outputFolder);
+  ASSERT_FALSE(RteFsUtils::Exists(outputFolder));
+
+  const string& currentFolder = RteFsUtils::GetCurrentFolder();
+  error_code ec;
+  fs::current_path(testFolder, ec);
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"--output";
+  argv[4] = (char*)"outputFolder";
+  EXPECT_EQ(0, RunProjMgr(5, argv, 0));
+  fs::current_path(currentFolder, ec);
+
+  // Check generated cbuild-idx
+  ProjMgrTestEnv::CompareFile(outputFolder + "/solution.cbuild-idx.yml",
+    testinput_folder + "/TestSolution/Executes/ref/solution.cbuild-idx.yml");
+}
