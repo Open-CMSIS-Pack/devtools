@@ -905,7 +905,8 @@
         "configuration": { "$ref": "#/definitions/BuildContext" },
         "depends-on": { "$ref": "#/definitions/ArrayOfBuildContextWithProjectName" },
         "errors": { "type": "boolean", "description": "Indicates error(s) during conversion" },
-        "packs-missing": { "$ref": "#/definitions/BuildPacksMissingType" }
+        "packs-missing": { "$ref": "#/definitions/BuildPacksMissingType" },
+        "clayers": { "$ref": "#/definitions/BuildLayersType" }
       },
       "additionalProperties": false,
       "required": ["cbuild", "project", "configuration"]

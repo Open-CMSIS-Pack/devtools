@@ -9,10 +9,14 @@ build-idx:
     - cbuild: test-access-sequences3.Debug+TEST_TARGET.cbuild.yml
       project: test-access-sequences3
       configuration: .Debug+TEST_TARGET
+      clayers:
+        - clayer: ../data/TestAccessSequences/test-access-sequences.clayer.yml
       depends-on:
         - test-access-sequences3.Release+TEST_TARGET
     - cbuild: test-access-sequences3.Release+TEST_TARGET.cbuild.yml
       project: test-access-sequences3
       configuration: .Release+TEST_TARGET
+      clayers:
+        - clayer: ../data/TestAccessSequences/test-access-sequences.clayer.yml
       depends-on:
         - test-access-sequences3.Debug+TEST_TARGET

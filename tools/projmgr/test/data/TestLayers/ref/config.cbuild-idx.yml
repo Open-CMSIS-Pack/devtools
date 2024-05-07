@@ -47,3 +47,5 @@ build-idx:
     - cbuild: config.CompatibleLayers+RteTest_ARMCM3.cbuild.yml
       project: config
       configuration: .CompatibleLayers+RteTest_ARMCM3
+      clayers:
+        - clayer: config.clayer.yml
