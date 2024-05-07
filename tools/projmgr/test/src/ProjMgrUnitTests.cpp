@@ -2101,6 +2101,10 @@ TEST_F(ProjMgrUnitTests, LayerVariables) {
     testinput_folder + "/TestLayers/ref/variables/variables.BuildType2+TargetType1.cprj");
  ProjMgrTestEnv:: CompareFile(testoutput_folder + "/variables.BuildType2+TargetType2.cprj",
     testinput_folder + "/TestLayers/ref/variables/variables.BuildType2+TargetType2.cprj");
+
+   // Check generated cbuild-idx
+   ProjMgrTestEnv::CompareFile(testoutput_folder + "/variables.cbuild-idx.yml",
+     testinput_folder + "/TestLayers/ref/variables/variables.cbuild-idx.yml");
 }
 
 TEST_F(ProjMgrUnitTests, LayerVariablesRedefinition) {

@@ -22,3 +22,5 @@ build-idx:
     - cbuild: select+RteTest_ARMCM3.cbuild.yml
       project: select
       configuration: +RteTest_ARMCM3
+      clayers:
+        - clayer: select.clayer.yml

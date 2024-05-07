@@ -297,6 +297,11 @@ ProjMgrYamlCbuildIdx::ProjMgrYamlCbuildIdx(YAML::Node node,
           (context->type.build.empty() ? "" : ("." + context->type.build)) +
           "+" + context->type.target);
       }
+      for (const auto& [clayerFilename, clayerItem] : context->clayers) {
+        YAML::Node clayerNode;
+        SetNodeValue(clayerNode[YAML_CLAYER], FormatPath(clayerFilename, directory));
+        cbuildNode[YAML_CLAYERS].push_back(clayerNode);
+      }
       SetNodeValue(cbuildNode[YAML_DEPENDS_ON], context->dependsOn);
       if (std::find(failedContexts.begin(), failedContexts.end(), context->name) != failedContexts.end()) {
         cbuildNode[YAML_ERRORS] = true;
