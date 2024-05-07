@@ -1,17 +1,12 @@
-# Copyright (c) 2023 Arm Limited and Contributors. All rights reserved.
+# Copyright (c) 2023-2024 Arm Limited and Contributors. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 # CMake Utility functions for CMSIS-Build
 
 # Get running toolchain root directory and version
-# Check whether the running toolchain matches the registered one and fits the required version range
+# Check whether the running toolchain fits the required version range
 function(cbuild_get_running_toolchain root version lang)
   set(CMAKE_COMPILER_VERSION ${CMAKE_${lang}_COMPILER_VERSION})
-  if(DEFINED TOOLCHAIN_VERSION)
-    if(NOT TOOLCHAIN_VERSION VERSION_EQUAL CMAKE_COMPILER_VERSION)
-      message(STATUS "Registered toolchain version ${TOOLCHAIN_VERSION} does not match running version ${CMAKE_COMPILER_VERSION}")
-    endif()
-  endif()
   if(CMAKE_COMPILER_VERSION VERSION_LESS TOOLCHAIN_VERSION_MIN)
     message(WARNING "Running toolchain version ${CMAKE_COMPILER_VERSION} is less than minimum required ${TOOLCHAIN_VERSION_MIN}")
   endif()
