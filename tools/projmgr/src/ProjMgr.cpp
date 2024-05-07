@@ -264,7 +264,7 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
     }
     if (parseResult.count("output")) {
       m_outputDir = parseResult["output"].as<string>();
-      m_outputDir = fs::path(m_outputDir).generic_string();
+      m_outputDir = RteFsUtils::AbsolutePath(m_outputDir).generic_string();
     }
   } catch (cxxopts::OptionException& e) {
     ProjMgrLogger::Error(e.what());

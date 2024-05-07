@@ -2845,7 +2845,7 @@ bool ProjMgrWorker::ProcessLinkerOptions(ContextItem& context, const LinkerItem&
 bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem & context, bool rerun) {
   if (!rerun) {
     // directories
-    const string ref = m_outputDir.empty() ? context.csolution->directory : RteFsUtils::AbsolutePath(m_outputDir).generic_string();
+    const string ref = m_outputDir.empty() ? context.csolution->directory : m_outputDir;
     if (!ProcessSequenceRelative(context, context.directories.cprj) ||
       !ProcessSequenceRelative(context, context.directories.rte, context.cproject->directory) ||
       !ProcessSequenceRelative(context, context.directories.outdir, ref) ||
