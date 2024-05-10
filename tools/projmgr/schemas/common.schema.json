@@ -945,24 +945,11 @@
     "BuildTargetConfigurationType": {
       "type": "object",
       "properties": {
-        "configuration": { "$ref": "#/definitions/BuildLayerConfigurationsType" }
-      },
-      "additionalProperties": false,
-      "required": ["configuration"]
-    },
-    "BuildLayerConfigurationsType": {
-      "type": "array",
-      "uniqueItems": true,
-      "minItems": 1,
-      "items": { "$ref": "#/definitions/BuildLayerConfigurationType" }
-    },
-    "BuildLayerConfigurationType": {
-      "type": "object",
-      "properties": {
+        "configuration": { "type": "null" },
         "variables": { "$ref": "#/definitions/BuildLayerVariablesType", "description": "List of layer variables" }
       },
       "additionalProperties": false,
-      "required": ["variables"]
+      "required": ["configuration", "variables"]
     },
     "BuildLayerVariablesType": {
       "type": "array",

@@ -251,9 +251,9 @@ ProjMgrYamlCbuildIdx::ProjMgrYamlCbuildIdx(YAML::Node node,
         YAML::Node targetTypeNode;
         SetNodeValue(targetTypeNode[YAML_TARGETTYPE], context->type.target);
         for (const auto& [index, types] : configurations) {
-          YAML::Node configurationsNode, variablesNode;
-          SetVariablesNode(variablesNode[YAML_VARIABLES], parser, context, types);
-          configurationsNode[YAML_CONFIGURATION].push_back(variablesNode);
+          YAML::Node configurationsNode;
+          configurationsNode[YAML_CONFIGURATION] = YAML::Null;
+          SetVariablesNode(configurationsNode[YAML_VARIABLES], parser, context, types);
           targetTypeNode[YAML_TARGET_CONFIGURATIONS].push_back(configurationsNode);
         }
         node[YAML_CONFIGURATIONS].push_back(targetTypeNode);

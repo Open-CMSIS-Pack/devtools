@@ -4,16 +4,16 @@ build-idx:
   configurations:
     - target-type: RteTest_ARMCM3
       target-configurations:
-        - configuration:
-            - variables:
-                - Board-Layer: $SolutionDir()$/select.clayer.yml
-                  settings:
-                    - set: set1.select1 (provided connections A and B - set 1 select 1)
-        - configuration:
-            - variables:
-                - Board-Layer: $SolutionDir()$/select.clayer.yml
-                  settings:
-                    - set: set1.select2 (provided connections B and C - set 1 select 2)
+        - configuration: 
+          variables:
+            - Board-Layer: $SolutionDir()$/select.clayer.yml
+              settings:
+                - set: set1.select1 (provided connections A and B - set 1 select 1)
+        - configuration: 
+          variables:
+            - Board-Layer: $SolutionDir()$/select.clayer.yml
+              settings:
+                - set: set1.select2 (provided connections B and C - set 1 select 2)
   cprojects:
     - cproject: select.cproject.yml
       clayers:
