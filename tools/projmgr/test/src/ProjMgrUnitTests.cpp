@@ -3801,10 +3801,10 @@ TEST_F(ProjMgrUnitTests, ProjectSetup) {
   EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   // Check generated CPRJs
- ProjMgrTestEnv:: CompareFile(testoutput_folder + "/setup-test.Build AC6+TEST_TARGET.cprj",
-    testinput_folder + "/TestProjectSetup/ref/setup-test.Build AC6+TEST_TARGET.cprj");
- ProjMgrTestEnv:: CompareFile(testoutput_folder + "/setup-test.Build GCC+TEST_TARGET.cprj",
-    testinput_folder + "/TestProjectSetup/ref/setup-test.Build GCC+TEST_TARGET.cprj");
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/setup-test.Build_AC6+TEST_TARGET.cprj",
+    testinput_folder + "/TestProjectSetup/ref/setup-test.Build_AC6+TEST_TARGET.cprj");
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/setup-test.Build_GCC+TEST_TARGET.cprj",
+    testinput_folder + "/TestProjectSetup/ref/setup-test.Build_GCC+TEST_TARGET.cprj");
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_help) {

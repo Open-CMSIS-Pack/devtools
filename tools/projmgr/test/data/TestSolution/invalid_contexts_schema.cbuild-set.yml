@@ -1,0 +1,20 @@
+cbuild-set:
+  generated-by: csolution version 2.1.0
+
+  contexts:
+    # valid contexts
+    - context: project.build+target
+    - context: project+target
+    - context: project.Build_Test-0123+Target_Test-0123
+    - context: project.build-_length_32_with_limited_ch+target-_len_32_with_limited_char
+    # Invalid contexts
+    - context: project.build
+    - context: project.build-+target-_length_greater_than_32_characters
+    - context: project.build-+target~!@#$%^&*()_+={}[];'\,.,/
+    - context: project.build-+target-_.build
+    - context: project.build-+target-_+target
+    - context: project.build-_lenth_greater_than_32_characters+target+target
+    - context: project.build~!@#$%^&*()_+={}[];'\,.,/+target
+    - context: project.build.build+target
+    - context: project.build+target+target
+  compiler: AC6

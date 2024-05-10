@@ -13,11 +13,21 @@
     },
     "BuildContext": {
       "type": "string",
-      "pattern": "^(((^[.][^.+]*)|(^[+][^.+]*))|((^[.][^.+]*)[+][^.+]*|(^[+][^.+]*)[.][^.+]*))$"
+      "pattern": "^(((^[.][\\w-]{1,32})|(^[+][\\w-]{1,32}))|((^[.][\\w-]{1,32})[+][\\w-]{1,32}|(^[+][\\w-]{1,32})[.][\\w-]{1,32}))$"
     },
     "BuildContextWithProjectName": {
       "type": "string",
-      "pattern": "^([^.+]+|[^.+]*\\.[^.+]+(\\+[^.+]+)?|[^.+]*\\+[^.+]+(\\.[^.+]+)?)$"
+      "pattern": "^([^.+]+|[^.+]*\\.[\\w-]{1,32}(\\+[\\w-]{1,32})|[^.+]*\\+[\\w-]{1,32}(\\.[\\w-]{1,32})?)$"
+    },
+    "ArrayOfContextMapAlternativeContext": {
+      "type": "array",
+      "uniqueItems": true,
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/ContextMapAlternativeContext" }
+    },
+    "ContextMapAlternativeContext": {
+      "type": "string",
+      "pattern": "^[^.+]*(\\.[\\w-]{1,32}|\\+[\\w-]{1,32}|\\.[\\w-]{1,32}\\+[\\w-]{1,32})$"
     },
     "ArrayOfBuildContext": {
       "type": "array",
@@ -131,8 +141,8 @@
     },
     "ContextMapType": {
       "oneOf": [
-        {"$ref": "#/definitions/ArrayOfBuildContextWithProjectName" },
-        {"$ref": "#/definitions/BuildContextWithProjectName" }
+        {"$ref": "#/definitions/ArrayOfContextMapAlternativeContext" },
+        {"$ref": "#/definitions/ContextMapAlternativeContext" }
       ],
       "description": "Remapping of build contexts"
     },

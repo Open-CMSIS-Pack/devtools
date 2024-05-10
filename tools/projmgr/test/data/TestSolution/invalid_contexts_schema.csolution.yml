@@ -1,0 +1,32 @@
+# yaml-language-server: $schema=D:\work\devtools-wip\tools\projmgr\schemas\csolution.schema.json
+#$schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schemas/csolution.schema.json
+
+solution:
+  target-types:
+    - type: target
+
+  build-types:
+    - type: build
+
+  projects:
+    - project: contexts.cproject.yml
+      for-context:
+        - .B1+T1
+        - .B1+T2
+        - .build+target
+        - .build
+        - +target
+        - +target.build
+        - .Build_Test-0123+Target_Test-0123
+        - .build-_length_32_with_limited_ch+target-_len_32_with_limited_char
+        - project
+        - .build+target-_lenth_greater_than_32_characters
+        - .build+target~!@#$%^&*()_+={}[]; '\\,.,/
+        - .build+target.build
+        - .build+target+target
+        - .build-_lenth_greater_than_32_characters + target
+        - .build~!@#$%^&*()_+={}[];'\\,.,/+target
+        - .build-_.build+target
+        - .build-_+target+target
+        - project.build
+        - project+target.build

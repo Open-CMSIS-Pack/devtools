@@ -204,6 +204,154 @@ solution:\n\
     - project: test+project.cproject.yml\n\
 ";
 
+  // valid contexts types
+  const char* valid_schema_Ex8 = "\
+solution:\n\
+  target-types:\n\
+    - type: target\n\
+  build-types:\n\
+    - type: build\n\
+  projects:\n\
+    - project: config.cproject.yml\n\
+      for-context:\n\
+        - .build+target\n\
+        - .build\n\
+        - +target\n\
+        - +target.build\n\
+        - .Build_Test-0123+Target_Test-0123\n\
+        - .build-_length_32_with_limited_ch+target-_len_32_with_limited_char\n\
+";
+
+  // invalid for contexts
+  const char* invalid_schema_Ex9 = "\
+solution:\n\
+  target-types:\n\
+    - type: target\n\
+  build-types:\n\
+    - type: build\n\
+  projects:\n\
+    - project: config.cproject.yml\n\
+      for-context:\n\
+        - .build+target-_lenth_greater_than_32_characters\n\
+";
+
+  // invalid for contexts
+  const char* invalid_schema_Ex10 = "\
+solution:\n\
+  target-types:\n\
+    - type: target\n\
+  build-types:\n\
+    - type: build\n\
+  projects:\n\
+    - project: config.cproject.yml\n\
+      for-context:\n\
+        - .build+target~!@#$%^&*()_+={}[]; '\\,.,/\n\
+";
+
+  // invalid for contexts
+  const char* invalid_schema_Ex11 = "\
+solution:\n\
+  target-types:\n\
+    - type: target\n\
+  build-types:\n\
+    - type: build\n\
+  projects:\n\
+    - project: config.cproject.yml\n\
+      for-context:\n\
+        - .build+target.build\n\
+";
+
+  // invalid for contexts
+  const char* invalid_schema_Ex12 = "\
+solution:\n\
+  target-types:\n\
+    - type: target\n\
+  build-types:\n\
+    - type: build\n\
+  projects:\n\
+    - project: config.cproject.yml\n\
+      for-context:\n\
+        - .build+target+target\n\
+";
+
+  // invalid for contexts
+  const char* invalid_schema_Ex13 = "\
+solution:\n\
+  target-types:\n\
+    - type: target\n\
+  build-types:\n\
+    - type: build\n\
+  projects:\n\
+    - project: config.cproject.yml\n\
+      for-context:\n\
+        - .build-_lenth_greater_than_32_characters+target\n\
+";
+
+  // invalid for contexts
+  const char* invalid_schema_Ex14 = "\
+solution:\n\
+  target-types:\n\
+    - type: target\n\
+  build-types:\n\
+    - type: build\n\
+  projects:\n\
+    - project: config.cproject.yml\n\
+      for-context:\n\
+        - .build.build+target\n\
+";
+
+  // invalid for contexts
+  const char* invalid_schema_Ex15 = "\
+solution:\n\
+  target-types:\n\
+    - type: target\n\
+  build-types:\n\
+    - type: build\n\
+  projects:\n\
+    - project: config.cproject.yml\n\
+      for-context:\n\
+        - project\n\
+";
+
+  // invalid for contexts
+  const char* invalid_schema_Ex16 = "\
+solution:\n\
+  target-types:\n\
+    - type: target\n\
+  build-types:\n\
+    - type: build\n\
+  projects:\n\
+    - project: config.cproject.yml\n\
+      for-context:\n\
+        - project.build\n\
+";
+
+  // invalid for contexts
+  const char* invalid_schema_Ex17 = "\
+solution:\n\
+  target-types:\n\
+    - type: target\n\
+  build-types:\n\
+    - type: build\n\
+  projects:\n\
+    - project: config.cproject.yml\n\
+      for-context:\n\
+        - project.build+target\n\
+";
+
+  // invalid for contexts
+  const char* invalid_schema_Ex18 = "\
+solution:\n\
+  target-types:\n\
+    - type: target\n\
+  build-types:\n\
+    - type: build\n\
+  projects:\n\
+    - project: config.cproject.yml\n\
+      for-context:\n\
+        - project+target.build\n\
+";
+
 vector<ErrInfo> expectedErrPos = {
     // line, col
     {  2  ,  3 },
@@ -218,7 +366,19 @@ vector<ErrInfo> expectedErrPos = {
     {valid_schema_Ex4,   true,  vector<ErrInfo>{} },
     {invalid_schema_Ex5, false, vector<ErrInfo>{ {1,1}, {1,1}} },
     {invalid_schema_Ex6, false, vector<ErrInfo>{ {4,7}, {7,7}, {10,7}} },
-    {invalid_schema_Ex7, false, vector<ErrInfo>{ {4,7}, {7,7}, {10,7}} }
+    {invalid_schema_Ex7, false, vector<ErrInfo>{ {4,7}, {7,7}, {10,7}} },
+    {valid_schema_Ex8, true, vector<ErrInfo>{} },
+    {invalid_schema_Ex9, false, vector<ErrInfo>{ {8,7}} },
+    {invalid_schema_Ex10, false, vector<ErrInfo>{ {8,7}} },
+    {invalid_schema_Ex11, false, vector<ErrInfo>{ {8,7}} },
+    {invalid_schema_Ex12, false, vector<ErrInfo>{ {8,7}} },
+    {invalid_schema_Ex13, false, vector<ErrInfo>{ {8,7}} },
+    {invalid_schema_Ex14, false, vector<ErrInfo>{ {8,7}} },
+    {invalid_schema_Ex15, false, vector<ErrInfo>{ {8,7}} },
+    {invalid_schema_Ex16, false, vector<ErrInfo>{ {8,7}} },
+    {invalid_schema_Ex17, false, vector<ErrInfo>{ {8,7}} },
+    {invalid_schema_Ex18, false, vector<ErrInfo>{ {8,7}} }
+
   };
 
   auto writeFile = [](const string& filePath, const char* data) {
@@ -298,4 +458,34 @@ TEST_F(ProjMgrSchemaCheckerUnitTests, SchemaCheck_ConfigFile_Base_Update) {
 
   EXPECT_TRUE(Validate(filename));
   EXPECT_TRUE(GetErrors().empty());
+}
+
+TEST_F(ProjMgrSchemaCheckerUnitTests, SchemaCheck_CbuildSet_Contexts) {
+  vector<std::pair<int, int>> expectedErrPos = {
+    // line, col
+    {  11  ,  7 },
+    {  12  ,  7 },
+    {  13  ,  7 },
+    {  14  ,  7 },
+    {  15  ,  7 },
+    {  16  ,  7 },
+    {  17  ,  7 },
+    {  18  ,  7 },
+    {  19  ,  7 }
+  };
+
+  const string& filename = testinput_folder +
+    "/TestSolution/invalid_contexts_schema.cbuild-set.yml";
+  EXPECT_FALSE(Validate(filename));
+
+  // Check errors
+  auto errList = GetErrors();
+  ASSERT_EQ(errList.size(), expectedErrPos.size());
+  for (auto& errPos : expectedErrPos) {
+    auto errItr = find_if(errList.begin(), errList.end(),
+      [&](const RteError& err) {
+        return err.m_line == errPos.first && err.m_col == errPos.second;
+      });
+    EXPECT_TRUE(errList.end() != errItr);
+  }
 }
