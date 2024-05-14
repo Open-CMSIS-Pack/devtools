@@ -4515,9 +4515,9 @@ bool ProjMgrWorker::ExecuteExtGenerator(std::string& generatorId) {
   }
 
   // Execute generator command
-  string binDir = ProjMgrKernel::Get()->GetCmsisToolboxDir() + "/bin";
+  string etcDir = ProjMgrKernel::Get()->GetCmsisToolboxDir() + "/etc";
   string runCmd = m_extGenerator->GetGlobalGenRunCmd(generatorId);
-  RteFsUtils::NormalizePath(runCmd, binDir);
+  RteFsUtils::NormalizePath(runCmd, etcDir);
   runCmd = "\"" + runCmd + "\" \"" + fs::path(cbuildgenOutput).append(m_parser->GetCsolution().name + ".cbuild-gen-idx.yml").generic_string() + "\"";
   error_code ec;
   const auto& workingDir = fs::current_path(ec);
