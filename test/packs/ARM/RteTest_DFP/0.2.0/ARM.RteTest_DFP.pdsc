@@ -509,6 +509,15 @@
     <clayer name="Board3" type="Board" file="Layers/board3.clayer.yml" condition="BoardTest3">
       <description>"Test board layer three"</description>
     </clayer>
+    <template name="Board1Template" file="Templates/board1.csolution.yml" condition="BoardTest1">
+      <description>"Test board Template one"</description>
+    </template>
+    <template name="Board2" type="Board" file="Templates/board2.csolution.yml" condition="BoardTest2">
+      <description>"Test board Template two"</description>
+    </template>
+    <template name="Board3" type="Board" file="Templates/board3.csolution.yml" condition="BoardTest3">
+      <description>"Test board Template three"</description>
+    </template>
     <clayer name="TestVariant" type="TestVariant" file="Layers/testvariant.clayer.yml">
       <description>"Test compatible layer"</description>
     </clayer>

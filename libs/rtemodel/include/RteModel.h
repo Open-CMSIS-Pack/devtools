@@ -531,25 +531,15 @@ public:
   void InsertPack(RtePackage* package);
 
   /**
-  * @brief get collection of filtered <cimage> elements collected from the packs
-  * @return list of pointers RteItem representing cimage elements
-  */
-  const Collection<RteItem*>& GetImageDescriptors() const { return m_imageDescriptors; }
-  /**
   * @brief get collection of filtered <clayer> elements collected from the packs
   * @return list of pointers RteItem representing clayer elements
   */
   const Collection<RteItem*>& GetLayerDescriptors() const { return  m_layerDescriptors; }
   /**
-  * @brief get collection of filtered <cproject> elements collected from the packs
-  * @return list of pointers RteItem representing cproject elements
+  * @brief get collection of filtered <template> elements collected from the packs
+  * @return list of pointers RteItem representing template elements
   */
-  const Collection<RteItem*>& GetProjectDescriptors() const { return  m_projectDescriptors; }
-  /**
-  * @brief get collection of filtered <csolution> elements collected from the packs
-  * @return list of pointers RteItem representing csolution elements
-  */
-  const Collection<RteItem*>& GetSolutionDescriptors() const { return  m_solutionDescriptors; }
+  const Collection<RteItem*>& GetProjectDescriptors() const { return  m_templateDescriptors; }
 
 protected:
 
@@ -561,7 +551,7 @@ protected:
   virtual void FillDeviceTree();
   virtual void FillDeviceTree(RtePackage* pack);
 
-  void AddPackItemsToList(const Collection<RteItem*>& srcCollection, Collection<RteItem*>& dstCollection);
+  void AddPackItemsToList(const Collection<RteItem*>& srcCollection, Collection<RteItem*>& dstCollection, const std::string& tag);
 
   bool IsApiDominatingOrNewer(RteApi* a);
 
@@ -592,10 +582,8 @@ protected:
   RtePackageFilter m_packageFilter;
 
   // csolution-related collections
-  Collection<RteItem*> m_imageDescriptors;
   Collection<RteItem*> m_layerDescriptors;
-  Collection<RteItem*> m_projectDescriptors;
-  Collection<RteItem*> m_solutionDescriptors;
+  Collection<RteItem*> m_templateDescriptors;
 
   RteConditionContext* m_filterContext; // constructed, updated and deleted by target
 
