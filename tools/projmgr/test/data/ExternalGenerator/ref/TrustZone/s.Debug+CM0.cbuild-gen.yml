@@ -16,6 +16,8 @@ build-gen:
       path: ${DEVTOOLS(packs)}/ARM/RteTestGenerator/0.1.0
   define:
     - _RTE_
+  define-asm:
+    - _RTE_
   add-path:
     - ${DEVTOOLS(data)}/ExternalGenerator/tz_s/RTE/_Debug_CM0
   output-dirs:

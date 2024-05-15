@@ -17,6 +17,9 @@ build:
   define:
     - ARMCM3
     - _RTE_
+  define-asm:
+    - ARMCM3
+    - _RTE_
   add-path:
     - ../data/TestSolution/Instances/RTE/RteTest
     - ../data/TestSolution/Instances/RTE/_Debug_RteTest_ARMCM3

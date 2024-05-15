@@ -14,6 +14,8 @@ build:
       path: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0
   define:
     - ARMCM3
+  define-asm:
+    - ARMCM3
   add-path:
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM3/Include
   output-dirs:
