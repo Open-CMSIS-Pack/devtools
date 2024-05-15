@@ -23,6 +23,9 @@ build:
   define:
     - ARMCM4_FP
     - _RTE_
+  define-asm:
+    - ARMCM4_FP
+    - _RTE_
   add-path:
     - RTE/_Debug_Board
     - generated/RTE/RteTest

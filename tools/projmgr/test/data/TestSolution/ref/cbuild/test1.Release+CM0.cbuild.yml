@@ -26,6 +26,8 @@ build:
     - DEF_ASM_SOLUTION
     - DEF_ASM_CM0
     - DEF_ASM_RELEASE
+    - ARMCM0
+    - _RTE_
   add-path:
     - ../data/TestSolution/path/solution
     - ../data/TestSolution/path/CM0

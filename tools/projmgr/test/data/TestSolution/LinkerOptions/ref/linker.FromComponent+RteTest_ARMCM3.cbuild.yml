@@ -15,6 +15,9 @@ build:
   define:
     - ARMCM3
     - _RTE_
+  define-asm:
+    - ARMCM3
+    - _RTE_
   add-path:
     - ../data/TestSolution/LinkerOptions/RTE/_FromComponent_RteTest_ARMCM3
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include

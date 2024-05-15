@@ -17,6 +17,9 @@ build:
   define:
     - ARMCM3
     - _RTE_
+  define-asm:
+    - ARMCM3
+    - _RTE_
   add-path:
     - ../data/TestSolution/TemplateAndApi/RTE/_Debug_RteTest_ARMCM3
     - ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/API

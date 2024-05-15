@@ -432,6 +432,7 @@ void ProjMgrYamlCbuild::SetContextNode(YAML::Node contextNode, const ContextItem
     }
   }
   SetDefineNode(contextNode[YAML_DEFINE], defines);
+  SetDefineNode(contextNode[YAML_DEFINE_ASM], defines);
   vector<string> includes;
   if (context->rteActiveTarget != nullptr) {
     for (auto include : context->rteActiveTarget->GetIncludePaths(RteFile::Language::LANGUAGE_NONE)) {
