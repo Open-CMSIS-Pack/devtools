@@ -5219,6 +5219,23 @@ TEST_F(ProjMgrUnitTests, ExternalGenerator_NoCgenFile) {
   RteFsUtils::RemoveFile(dstGlobalGenerator);
 }
 
+TEST_F(ProjMgrUnitTests, ExternalGeneratorBoard) {
+  const string& srcGlobalGenerator = testinput_folder + "/ExternalGenerator/global.generator.yml";
+  const string& dstGlobalGenerator = etc_folder + "/global.generator.yml";
+  RteFsUtils::CopyCheckFile(srcGlobalGenerator, dstGlobalGenerator, false);
+
+  char* argv[3];
+  const string& csolution = testinput_folder + "/ExternalGenerator/board.csolution.yml";
+  argv[1] = (char*)csolution.c_str();
+  argv[2] = (char*)"convert"; 
+  EXPECT_EQ(0, RunProjMgr(3, argv, 0));
+
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/ExternalGenerator/single/single-core.Debug+Board.cbuild.yml",
+    testinput_folder + "/ExternalGenerator/ref/SingleCore/single-core.Debug+Board.cbuild.yml");
+
+  RteFsUtils::RemoveFile(dstGlobalGenerator);
+}
+
 TEST_F(ProjMgrUnitTests, ExternalGeneratorListVerbose) {
   const string& srcGlobalGenerator = testinput_folder + "/ExternalGenerator/global.generator.yml";
   const string& dstGlobalGenerator = etc_folder + "/global.generator.yml";
