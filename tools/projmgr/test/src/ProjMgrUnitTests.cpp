@@ -5625,3 +5625,95 @@ TEST_F(ProjMgrUnitTests, TestRelativeOutputOption) {
   ProjMgrTestEnv::CompareFile(outputFolder + "/solution.cbuild-idx.yml",
     testinput_folder + "/TestSolution/Executes/ref/solution.cbuild-idx.yml");
 }
+
+TEST_F(ProjMgrUnitTests, TestRestrictedContextsWithContextSet_Failed_Read_From_CbuildSet) {
+  char* argv[6];
+  StdStreamRedirect streamRedirect;
+  const string& csolution = testinput_folder + "/TestSolution/test_restricted_contexts.csolution.yml";
+  const string& testFolder = RteFsUtils::ParentPath(testoutput_folder);
+  const string& expectedErrMsg = "\
+error csolution: invalid combination of contexts specified in test_restricted_contexts.cbuild-set.yml:\n\
+  target-type does not match for 'test1.Debug+CM3' and 'test1.Debug+CM0'";
+
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"--output";
+  argv[4] = (char*)testoutput_folder.c_str();
+  argv[5] = (char*)"-S";
+
+  EXPECT_EQ(1, RunProjMgr(6, argv, 0));
+  auto errMsg = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errMsg.find(expectedErrMsg));
+}
+
+TEST_F(ProjMgrUnitTests, TestRestrictedContextsWithContextSet_Failed1) {
+  char* argv[14];
+  StdStreamRedirect streamRedirect;
+  const string& csolution = testinput_folder + "/TestSolution/test.csolution.yml";
+  const string& testFolder = RteFsUtils::ParentPath(testoutput_folder);
+  const string& expectedErrMsg = "\
+error csolution: invalid combination of contexts specified in command line:\n\
+  target-type does not match for 'test2.Debug+CM3' and 'test1.Debug+CM0'";
+
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"-c";
+  argv[4] = (char*)"test1.Debug+CM0";
+  argv[5] = (char*)"-c";
+  argv[6] = (char*)"test1.Release+CM0";
+  argv[7] = (char*)"-c";
+  argv[8] = (char*)"test2.Debug+CM0";
+  argv[9] = (char*)"-c";
+  argv[10] = (char*)"test2.Debug+CM3";
+  argv[11] = (char*)"--output";
+  argv[12] = (char*)testoutput_folder.c_str();
+  argv[13] = (char*)"-S";
+
+  EXPECT_EQ(1, RunProjMgr(14, argv, 0));
+  auto errMsg = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errMsg.find(expectedErrMsg));
+}
+
+TEST_F(ProjMgrUnitTests, TestRestrictedContextsWithContextSet_Failed2) {
+  char* argv[12];
+  StdStreamRedirect streamRedirect;
+  const string& csolution = testinput_folder + "/TestSolution/test.csolution.yml";
+  const string& testFolder = RteFsUtils::ParentPath(testoutput_folder);
+  const string& expectedErrMsg = "\
+error csolution: invalid combination of contexts specified in command line:\n\
+  build-type is not unique for project 'test1' in 'test1.Release+CM0' and 'test1.Debug+CM0'";
+
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"-c";
+  argv[4] = (char*)"test1.Debug+CM0";
+  argv[5] = (char*)"-c";
+  argv[6] = (char*)"test1.Release+CM0";
+  argv[7] = (char*)"-c";
+  argv[8] = (char*)"test2.Debug+CM0";
+  argv[9] = (char*)"--output";
+  argv[10] = (char*)testoutput_folder.c_str();
+  argv[11] = (char*)"-S";
+
+  EXPECT_EQ(1, RunProjMgr(12, argv, 0));
+  auto errMsg = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errMsg.find(expectedErrMsg));
+}
+
+TEST_F(ProjMgrUnitTests, TestRestrictedContextsWithContextSet_Pass) {
+  char* argv[10];
+  const string& csolution = testinput_folder + "/TestSolution/test.csolution.yml";
+  const string& testFolder = RteFsUtils::ParentPath(testoutput_folder);
+
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"-c";
+  argv[4] = (char*)"test1.Debug+CM0";
+  argv[5] = (char*)"-c";
+  argv[6] = (char*)"test2.Debug+CM0";
+  argv[7] = (char*)"--output";
+  argv[8] = (char*)testoutput_folder.c_str();
+  argv[9] = (char*)"-S";
+
+  EXPECT_EQ(0, RunProjMgr(10, argv, 0));
+}

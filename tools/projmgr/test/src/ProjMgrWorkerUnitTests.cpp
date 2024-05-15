@@ -1664,3 +1664,33 @@ TEST_F(ProjMgrWorkerUnitTests, CheckBoardDeviceInLayer) {
     EXPECT_EQ(CheckBoardDeviceInLayer(context, clayer), expect);
   }
 }
+
+TEST_F(ProjMgrWorkerUnitTests, ValidateContexts) {
+  const string& errMsg1 = "\
+error csolution: invalid combination of contexts specified in command line:\n\
+  target-type does not match for 'project1.Debug+CM1' and 'project1.Debug+AVH'\n\
+  target-type does not match for 'project1.Debug+CM3' and 'project1.Debug+AVH'\n\n";
+
+  const string& errMsg2 = "\
+error csolution: invalid combination of contexts specified in command line:\n\
+  build-type is not unique for project 'project1' in 'project1.Release+AVH' and 'project1.Debug+AVH'\n\
+  build-type is not unique for project 'project2' in 'project2.Release+AVH' and 'project2.Debug+AVH'\n\n";
+
+  vector<std::tuple<vector<string>, bool, string>> vecTestData = {
+    // inputContexts, expectedRetval, expectedErrMsg
+    { {"project1.Debug+AVH", "project2.Release+AVH", "project1.Debug+CM1", "project1.Debug+CM3"},   false, errMsg1},
+    { {"project1.Debug+AVH", "project1.Release+AVH", "project2.Debug+AVH", "project2.Release+AVH"}, false, errMsg2},
+    { {"project1.Debug+AVH", "project1.Debug+AVH", "project2.Debug+AVH", "project3.Release+AVH"},   true, ""},
+    { {""}, true, ""},
+  };
+
+  for (const auto& [inputContexts, expectedRetval, expectedErrMsg] : vecTestData) {
+    string input;
+    StdStreamRedirect streamRedirect;
+    std::for_each(inputContexts.begin(), inputContexts.end(),
+      [&](const std::string& item) { input += item + " "; });
+    EXPECT_EQ(expectedRetval, ValidateContexts(inputContexts, false)) << "failed for input \"" << input << "\"";
+    auto errStr = streamRedirect.GetErrorString();
+    EXPECT_STREQ(errStr.c_str(), expectedErrMsg.c_str()) << "failed for input \"" << input << "\"";
+  }
+}

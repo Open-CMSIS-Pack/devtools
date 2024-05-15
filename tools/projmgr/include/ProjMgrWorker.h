@@ -645,6 +645,13 @@ public:
   */
   void ProcessExecutesDependencies();
 
+  /**
+    * @brief validates and restrict the input contexts
+    * @param contexts list to be validated
+    * @param fromCbuildSet true is the contexts are read from cbuild-set, otherwise false
+    * @return true if validation success
+  */
+  bool ValidateContexts(const std::vector<std::string>& contexts, bool fromCbuildSet);
 protected:
   ProjMgrParser* m_parser = nullptr;
   ProjMgrKernel* m_kernel = nullptr;
