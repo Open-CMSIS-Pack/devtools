@@ -541,6 +541,14 @@ bool ProjMgr::Configure() {
   if (!m_worker.ParseContextSelection(m_context, checkCbuildSet)) {
     return false;
   }
+
+  // validate and restrict the input contexts when used with -S option
+  if (!m_context.empty() && m_contextSet) {
+    if (!m_worker.ValidateContexts(m_context, false)){
+      return false;
+    }
+  }
+
   if (m_worker.HasVarDefineError()) {
     auto undefVars = m_worker.GetUndefLayerVars();
     string errMsg = "undefined variables in "+ fs::path(m_csolutionFile).filename().generic_string() +":\n";

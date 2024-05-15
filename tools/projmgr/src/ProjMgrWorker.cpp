@@ -4009,6 +4009,9 @@ bool ProjMgrWorker::ParseContextSelection(
     if (m_selectedToolchain.empty()) {
       m_selectedToolchain = cbuildSetItem.compiler;
     }
+    if (!ValidateContexts(m_selectedContexts, true)) {
+      return false;
+    }
   }
   else {
     const auto& filterError = ProjMgrUtils::GetSelectedContexts(
@@ -4595,4 +4598,67 @@ bool ProjMgrWorker::HasVarDefineError() {
 
 const set<string>& ProjMgrWorker::GetUndefLayerVars() {
   return m_undefLayerVars;
+}
+
+bool ProjMgrWorker::ValidateContexts(const std::vector<std::string>& contexts, bool fromCbuildSet) {
+  if (contexts.empty()) {
+    return true;
+  }
+
+  std::string selectedTarget = "";
+  std::map<std::string, std::string> projectBuildTypeMap;
+  std::vector<std::string> errorContexts;
+
+  // Check 1:  Confirm if all contexts have the same target type
+  for (const auto& context : contexts) {
+    ContextName contextItem;
+    ProjMgrUtils::ParseContextEntry(context, contextItem);
+
+    if (selectedTarget == "") {
+      selectedTarget = contextItem.target;
+    }
+    else if (contextItem.target != selectedTarget) {
+      errorContexts.push_back(
+        "  target-type does not match for '" + context + "' and '" + contexts[0] + "'\n");
+      continue;
+    }
+  }
+
+  string contextSource = "command line";
+  if (fromCbuildSet) {
+    auto csolutionItem = m_parser->GetCsolution();
+    contextSource = csolutionItem.name + ".cbuild-set.yml";
+  }
+  std::string errMsg = "invalid combination of contexts specified in " + contextSource + ":\n";
+
+  if (!errorContexts.empty()) {
+    for (const auto& msg : errorContexts) {
+      errMsg += msg;
+    }
+    ProjMgrLogger::Error(errMsg);
+    return false;
+  }
+
+  // Check 2: Verify whether the project and target-type combination have conflicting build types
+  for (const auto& context : contexts) {
+    ContextName contextItem;
+    ProjMgrUtils::ParseContextEntry(context, contextItem);
+
+    if (auto it = projectBuildTypeMap.find(contextItem.project); it != projectBuildTypeMap.end() && it->second != contextItem.build) {
+      errorContexts.push_back(
+        "  build-type is not unique for project '" + contextItem.project + "' in '" + context + "' and '" + it->first + "." + it->second + "+" + selectedTarget + "'\n");
+      continue;
+    }
+
+    projectBuildTypeMap[contextItem.project] = contextItem.build;
+  }
+
+  if (!errorContexts.empty()) {
+    for (const auto& msg : errorContexts) {
+      errMsg += msg;
+    }
+    ProjMgrLogger::Error(errMsg);
+    return false;
+  }
+  return true;
 }
