@@ -373,9 +373,9 @@ void ProjMgrYamlParser::ParseVector(const YAML::Node& parent, const string& key,
   }
 }
 
-void ProjMgrYamlParser::ParseDefine(const YAML::Node& parent, vector<string>& define) {
-  if (parent[YAML_DEFINE].IsDefined() && parent[YAML_DEFINE].IsSequence()) {
-    for (const auto& item : parent[YAML_DEFINE]) {
+void ProjMgrYamlParser::ParseDefine(const YAML::Node& defineNode, vector<string>& define) {
+  if (defineNode.IsDefined() && defineNode.IsSequence()) {
+    for (const auto& item : defineNode) {
       // accept map elements <string, string> or a string
       if (item.IsDefined()) {
         if (item.IsMap()) {
@@ -784,7 +784,7 @@ bool ProjMgrYamlParser::ParseLinker(const YAML::Node& parent, const string& file
         return false;
       }
       linkerItem.autoGen = linkerEntry[YAML_AUTO].IsDefined();
-      ParseDefine(linkerEntry, linkerItem.defines);
+      ParseDefine(linkerEntry[YAML_DEFINE], linkerItem.defines);
       ParseVectorOrString(linkerEntry, YAML_FORCOMPILER, linkerItem.forCompiler);
       ParsePortablePath(linkerEntry, file, YAML_REGIONS, linkerItem.regions);
       ParsePortablePath(linkerEntry, file, YAML_SCRIPT, linkerItem.script);
@@ -833,7 +833,8 @@ bool ProjMgrYamlParser::ParseBuildType(const YAML::Node& parent, const string& f
   }
   ParseProcessor(parent, buildType.processor);
   ParseMisc(parent, buildType.misc);
-  ParseDefine(parent, buildType.defines);
+  ParseDefine(parent[YAML_DEFINE], buildType.defines);
+  ParseDefine(parent[YAML_DEFINE_ASM], buildType.definesAsm);
   ParseVector(parent, YAML_UNDEFINE, buildType.undefines);
   ParsePortablePaths(parent, file, YAML_ADDPATH, buildType.addpaths);
   ParseVector(parent, YAML_DELPATH, buildType.delpaths);
@@ -893,6 +894,7 @@ const set<string> solutionKeys = {
   YAML_LANGUAGE_C,
   YAML_LANGUAGE_CPP,
   YAML_DEFINE,
+  YAML_DEFINE_ASM,
   YAML_UNDEFINE,
   YAML_ADDPATH,
   YAML_DELPATH,
@@ -925,6 +927,7 @@ const set<string> projectKeys = {
   YAML_LANGUAGE_C,
   YAML_LANGUAGE_CPP,
   YAML_DEFINE,
+  YAML_DEFINE_ASM,
   YAML_UNDEFINE,
   YAML_ADDPATH,
   YAML_DELPATH,
@@ -952,6 +955,7 @@ const set<string> setupKeys = {
   YAML_LANGUAGE_C,
   YAML_LANGUAGE_CPP,
   YAML_DEFINE,
+  YAML_DEFINE_ASM,
   YAML_UNDEFINE,
   YAML_ADDPATH,
   YAML_DELPATH,
@@ -976,6 +980,7 @@ const set<string> layerKeys = {
   YAML_LANGUAGE_C,
   YAML_LANGUAGE_CPP,
   YAML_DEFINE,
+  YAML_DEFINE_ASM,
   YAML_UNDEFINE,
   YAML_ADDPATH,
   YAML_DELPATH,
@@ -1009,6 +1014,7 @@ const set<string> targetTypeKeys = {
   YAML_LANGUAGE_C,
   YAML_LANGUAGE_CPP,
   YAML_DEFINE,
+  YAML_DEFINE_ASM,
   YAML_UNDEFINE,
   YAML_ADDPATH,
   YAML_DELPATH,
@@ -1027,6 +1033,7 @@ const set<string> buildTypeKeys = {
   YAML_LANGUAGE_C,
   YAML_LANGUAGE_CPP,
   YAML_DEFINE,
+  YAML_DEFINE_ASM,
   YAML_UNDEFINE,
   YAML_ADDPATH,
   YAML_DELPATH,
@@ -1105,6 +1112,7 @@ const set<string> componentsKeys = {
   YAML_LANGUAGE_C,
   YAML_LANGUAGE_CPP,
   YAML_DEFINE,
+  YAML_DEFINE_ASM,
   YAML_UNDEFINE,
   YAML_ADDPATH,
   YAML_DELPATH,
@@ -1152,6 +1160,7 @@ const set<string> groupsKeys = {
   YAML_LANGUAGE_C,
   YAML_LANGUAGE_CPP,
   YAML_DEFINE,
+  YAML_DEFINE_ASM,
   YAML_UNDEFINE,
   YAML_ADDPATH,
   YAML_DELPATH,
@@ -1171,6 +1180,7 @@ const set<string> filesKeys = {
   YAML_LANGUAGE_C,
   YAML_LANGUAGE_CPP,
   YAML_DEFINE,
+  YAML_DEFINE_ASM,
   YAML_UNDEFINE,
   YAML_ADDPATH,
   YAML_DELPATH,

@@ -42,6 +42,10 @@ build:
     - DEF-Debug
     - ARMCM3
     - _RTE_
+  define-asm:
+    - DEF_ASM_SOLUTION
+    - DEF_ASM_CM3
+    - DEF_ASM_DEBUG
   add-path:
     - ../data/TestSolution/TestProject2/path/project
     - ../data/TestSolution/path/solution
