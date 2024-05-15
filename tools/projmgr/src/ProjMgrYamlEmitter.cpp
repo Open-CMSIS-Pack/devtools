@@ -626,7 +626,9 @@ void ProjMgrYamlCbuild::SetGroupsNode(YAML::Node node, const ContextItem* contex
 void ProjMgrYamlCbuild::SetFilesNode(YAML::Node node, const ContextItem* context, const vector<FileNode>& files) {
   for (const auto& file : files) {
     YAML::Node fileNode;
-    SetNodeValue(fileNode[YAML_FILE], file.file);
+    string fileName = file.file;
+    RteFsUtils::NormalizePath(fileName, context->directories.cprj);
+    SetNodeValue(fileNode[YAML_FILE], FormatPath(fileName, context->directories.cbuild));
     SetNodeValue(fileNode[YAML_CATEGORY], file.category.empty() ? RteFsUtils::FileCategoryFromExtension(file.file) : file.category);
     SetControlsNode(fileNode, context, file.build);
     node.push_back(fileNode);

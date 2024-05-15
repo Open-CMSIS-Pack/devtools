@@ -37,7 +37,7 @@ build-gen:
   groups:
     - group: sources
       files:
-        - file: main.c
+        - file: ${DEVTOOLS(data)}/ExternalGenerator/single/main.c
           category: sourceC
   constructed-files:
     - file: ${DEVTOOLS(data)}/ExternalGenerator/single/RTE/_Debug_CM0/RTE_Components.h
