@@ -308,30 +308,6 @@ public:
   RteItem* GetBoards() const { return m_boards; }
 
   /**
-  * @brief get collection of <cimage> elements
-  * @return list of pointers RteItem representing cimage elements
-  */
-  const Collection<RteItem*>& GetImageDescriptors() const { return GetGrandChildren("cimage"); }
-
-  /**
-  * @brief get collection of <clayer> elements
-  * @return list of pointers RteItem representing clayer elements
-  */
-  const Collection<RteItem*>& GetLayerDescriptors() const { return GetGrandChildren("csolution"); }
-
-  /**
-  * @brief get collection of <cproject> elements
-  * @return list of pointers RteItem representing cproject elements
-  */
-  const Collection<RteItem*>& GetProjectDescriptors() const { return GetGrandChildren("cprojects"); }
-
-  /**
-   * @brief get collection of <csolution> elements
-   * @return list of pointers RteItem representing csolution elements
-  */
-  const Collection<RteItem*>& GetSolutionDescriptors() const { return GetGrandChildren("csolutions"); }
-
-  /**
   * @brief get <generators> element
   * @return pointer to RteGeneratorContainer representing container for generators
   */
