@@ -5630,7 +5630,6 @@ TEST_F(ProjMgrUnitTests, TestRestrictedContextsWithContextSet_Failed_Read_From_C
   char* argv[6];
   StdStreamRedirect streamRedirect;
   const string& csolution = testinput_folder + "/TestSolution/test_restricted_contexts.csolution.yml";
-  const string& testFolder = RteFsUtils::ParentPath(testoutput_folder);
   const string& expectedErrMsg = "\
 error csolution: invalid combination of contexts specified in test_restricted_contexts.cbuild-set.yml:\n\
   target-type does not match for 'test1.Debug+CM3' and 'test1.Debug+CM0'";
@@ -5650,7 +5649,6 @@ TEST_F(ProjMgrUnitTests, TestRestrictedContextsWithContextSet_Failed1) {
   char* argv[14];
   StdStreamRedirect streamRedirect;
   const string& csolution = testinput_folder + "/TestSolution/test.csolution.yml";
-  const string& testFolder = RteFsUtils::ParentPath(testoutput_folder);
   const string& expectedErrMsg = "\
 error csolution: invalid combination of contexts specified in command line:\n\
   target-type does not match for 'test2.Debug+CM3' and 'test1.Debug+CM0'";
@@ -5678,7 +5676,6 @@ TEST_F(ProjMgrUnitTests, TestRestrictedContextsWithContextSet_Failed2) {
   char* argv[12];
   StdStreamRedirect streamRedirect;
   const string& csolution = testinput_folder + "/TestSolution/test.csolution.yml";
-  const string& testFolder = RteFsUtils::ParentPath(testoutput_folder);
   const string& expectedErrMsg = "\
 error csolution: invalid combination of contexts specified in command line:\n\
   build-type is not unique for project 'test1' in 'test1.Release+CM0' and 'test1.Debug+CM0'";
@@ -5703,7 +5700,6 @@ error csolution: invalid combination of contexts specified in command line:\n\
 TEST_F(ProjMgrUnitTests, TestRestrictedContextsWithContextSet_Pass) {
   char* argv[10];
   const string& csolution = testinput_folder + "/TestSolution/test.csolution.yml";
-  const string& testFolder = RteFsUtils::ParentPath(testoutput_folder);
 
   argv[1] = (char*)"convert";
   argv[2] = (char*)csolution.c_str();
