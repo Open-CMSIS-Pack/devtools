@@ -768,6 +768,7 @@ void ProjMgrYamlCbuild::SetControlsNode(YAML::Node node, const ContextItem* cont
   SetNodeValue(node[YAML_LANGUAGE_CPP], controls.languageCpp);
   SetMiscNode(node[YAML_MISC], controls.misc);
   SetDefineNode(node[YAML_DEFINE], controls.defines);
+  SetDefineNode(node[YAML_DEFINE_ASM], controls.definesAsm);  
   SetNodeValue(node[YAML_UNDEFINE], controls.undefines);
   for (const auto& addpath : controls.addpaths) {
     node[YAML_ADDPATH].push_back(FormatPath(context->directories.cprj + "/" + addpath, context->directories.cbuild));

@@ -117,6 +117,7 @@ struct ProcessorItem {
  *        language standard C,
  *        language standard C++,
  *        preprocessor defines,
+ *        preprocessor defines for assembly files,
  *        preprocessor undefines,
  *        include paths,
  *        exclude paths,
@@ -132,6 +133,7 @@ struct BuildType {
   std::string languageC;
   std::string languageCpp;
   std::vector<std::string> defines;
+  std::vector<std::string> definesAsm;
   std::vector<std::string> undefines;
   std::vector<std::string> addpaths;
   std::vector<std::string> delpaths;

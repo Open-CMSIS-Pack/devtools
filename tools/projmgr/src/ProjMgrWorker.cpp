@@ -2614,6 +2614,19 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, bool rerun) {
   };
   CollectionUtils::MergeDefines(defines);
 
+  // Defines Asm
+  vector<string>& definesAsmRef = context.controls.processed.definesAsm;
+  CollectionUtils::AddStringItemsUniquely(definesAsmRef, context.controls.cproject.definesAsm);
+  CollectionUtils::AddStringItemsUniquely(definesAsmRef, context.controls.csolution.definesAsm);
+  CollectionUtils::AddStringItemsUniquely(definesAsmRef, context.controls.target.definesAsm);
+  CollectionUtils::AddStringItemsUniquely(definesAsmRef, context.controls.build.definesAsm);
+  for (auto& [_, clayer] : context.controls.clayers) {
+    CollectionUtils::AddStringItemsUniquely(definesAsmRef, clayer.definesAsm);
+  }
+  for (auto& setup : context.controls.setups) {
+    CollectionUtils::AddStringItemsUniquely(definesAsmRef, setup.definesAsm);
+  }
+
   // Includes
   vector<string> projectAddPaths, projectDelPaths;
   CollectionUtils::AddStringItemsUniquely(projectAddPaths, context.controls.cproject.addpaths);
@@ -3959,6 +3972,7 @@ bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem& context, BuildType& b
   if (!ProcessSequencesRelatives(context, build.addpaths, ref) ||
       !ProcessSequencesRelatives(context, build.delpaths, ref) ||
       !ProcessSequencesRelatives(context, build.defines)       ||
+      !ProcessSequencesRelatives(context, build.definesAsm)    ||
       !ProcessSequencesRelatives(context, build.undefines))    {
     return false;
   }

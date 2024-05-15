@@ -22,6 +22,10 @@ build:
     - DEF-Release
     - ARMCM0
     - _RTE_
+  define-asm:
+    - DEF_ASM_SOLUTION
+    - DEF_ASM_CM0
+    - DEF_ASM_RELEASE
   add-path:
     - ../data/TestSolution/path/solution
     - ../data/TestSolution/path/CM0
@@ -65,6 +69,8 @@ build:
       selected-by: CORE
       define:
         - DEF1-COMPONENT
+      define-asm:
+        - DEF_ASM_COMPONENT
       undefine:
         - DEF2-COMPONENT
       add-path:
@@ -95,6 +101,8 @@ build:
       define:
         - DEF1-GROUP-PROJECT
         - DEF2-GROUP-PROJECT
+      define-asm:
+        - DEF_ASM_GROUP
       undefine:
         - DEF3-GROUP-PROJECT
         - DEF4-GROUP-PROJECT
@@ -125,6 +133,8 @@ build:
           define:
             - DEF1-FILE-PROJECT
             - DEF2-FILE-PROJECT
+          define-asm:
+            - DEF_ASM_FILE
           undefine:
             - DEF3-FILE-PROJECT
             - DEF4-FILE-PROJECT
