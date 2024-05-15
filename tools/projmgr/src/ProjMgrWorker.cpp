@@ -4552,6 +4552,9 @@ bool ProjMgrWorker::ProcessGeneratedLayers(ContextItem& context) {
     if (!ProcessPrecedences(context, true)) {
       return false;
     }
+    if (!ProcessDevice(context)) {
+      return false;
+    }
     if (!ProcessGroups(context)) {
       return false;
     }
