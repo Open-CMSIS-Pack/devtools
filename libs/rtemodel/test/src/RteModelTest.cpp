@@ -90,6 +90,7 @@ TEST(RteModelTest, PackRegistryLoadPacks) {
   packs1.clear();
   EXPECT_TRUE(rteKernel.LoadPacks(files, packs1, &testModel, true));
   EXPECT_EQ(packs1.size(), files.size());
+  pack1 = *packs1.begin();
   EXPECT_EQ(pack1->GetFirstChild("dummy_child"), nullptr); // pack got loaded again => no added child
 
   EXPECT_EQ(packRegistry->GetLoadedPacks().size(), files.size());
