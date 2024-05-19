@@ -394,6 +394,13 @@ RteComponentInstance* RteProject::AddComponent(RteComponent* c, int instanceCoun
     }
   }
   info->SetInstanceCount(instanceCount);
+  // use the original pack of bootstrap component if available
+  if (c->IsGenerated() && c->HasAttribute("selectable") ) {
+    RteItem* packInfo = c->GetFirstChild("package");
+    if (packInfo) {
+      ci->SetPackageAttributes(packInfo->GetAttributes());
+    }
+  }
 
   if (instanceCount > 0) {
     // add gpdsc info if needed

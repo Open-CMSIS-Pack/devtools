@@ -770,8 +770,13 @@ RtePackage* RteComponentAggregate::GetPackage() const // returns package of the 
 string RteComponentAggregate::GetPackageID(bool withVersion) const
 {
   RteComponent* c = GetComponent();
-  if (c)
+  if(c) {
+    RteItem* packInfo = c->HasAttribute("selectable") ? c->GetFirstChild("package") : nullptr;
+    if(packInfo) {
+      return RtePackage::GetPackageIDfromAttributes(*packInfo, withVersion);
+    }
     return c->GetPackageID(withVersion);
+  }
   if (m_instance)
     return m_instance->GetPackageID(withVersion);
   return EMPTY_STRING;
