@@ -30,7 +30,7 @@ jobs:
         run: |
           echo "::remove-matcher owner=markdownlint::"
 
-      - uses: gaurav-nelson/github-action-markdown-link-check@25b2c436c653f0d4500d3c2df86e5c14e71e44e1 # master
+      - uses: gaurav-nelson/github-action-markdown-link-check@7d83e59a57f3c201c76eed3d33dff64ec4452d27 # master
         if: always()
         with:
           use-quiet-mode: 'yes'
