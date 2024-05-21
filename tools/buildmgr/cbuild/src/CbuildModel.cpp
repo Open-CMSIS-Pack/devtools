@@ -393,10 +393,16 @@ bool CbuildModel::EvaluateResult() {
   if (!EvalIncludesDefines()) {
     return false;
   }
+  if (!EvalExecutes()) {
+    return false;
+  }
   if (!EvalSourceFiles()) {
     return false;
   }
   if (!EvalAccessSequence()) {
+    return false;
+  }
+  if (!EvalExecuteInputOutput()) {
     return false;
   }
 
@@ -597,6 +603,70 @@ bool CbuildModel::EvalConfigFiles() {
   return true;
 }
 
+bool CbuildModel::EvalExecutes() {
+  RteItem* executes = m_cprj->GetItemByTag("executes");
+  if (executes) {
+    for (auto execute : executes->GetChildren()) {
+      if (execute->GetTag() == "execute") {
+        EvalExecute(execute, m_prjFolder);
+      }
+    }
+  }
+  return true;
+}
+
+bool CbuildModel::EvalExecute(RteItem* execute, const string& base) {
+  const string& name = execute->GetAttribute("name");
+  const string& run = execute->GetAttribute("run");
+  bool always = execute->GetAttributeAsBool("always", false);
+
+  m_executeRun[name] = run;
+  m_executeAlways[name] = always;
+
+  // ensure map entries exist
+  m_executeInputs[name];
+  m_executeOutputs[name];
+  m_executeDependencies[name];
+
+  for (auto child : execute->GetChildren()) {
+    // TODO: handle access sequences
+    string path = child->GetText();
+    RteFsUtils::NormalizePath(path, base);
+
+    if (child->GetTag() == "input") {
+      m_executeInputs[name].push_back(path);
+    } else if (child->GetTag() == "output") {
+      m_executeOutputs[name].push_back(path);
+      m_executeGeneratedFiles.insert(path);
+    } else if (child->GetTag() == "dependency") {
+      m_executeDependencies[name].push_back(path);
+    }
+  }
+
+  return true;
+}
+
+bool CbuildModel::EvalExecuteInputOutput() {
+  for (auto& [name, run] : m_executeRun) {
+    EvalExecuteReplaceMarker(run, "$input$", m_executeInputs[name]);
+    EvalExecuteReplaceMarker(run, "$output$", m_executeOutputs[name]);
+  }
+  return true;
+}
+
+void CbuildModel::EvalExecuteReplaceMarker(std::string& run, const std::string& marker, const std::vector<std::string>& values) {
+  size_t marker_index = run.find(marker);
+  if (marker_index == std::string::npos) return;
+
+  string replacement;
+  for (const auto& value : values) {
+    if (!replacement.empty()) replacement += " ";
+    replacement += value;
+  }
+
+  run.replace(marker_index, marker.size(), replacement);
+}
+
 bool CbuildModel::EvalSourceFiles() {
   /*
   EvalSourceFiles:
@@ -761,7 +831,8 @@ bool CbuildModel::EvalFile(RteItem* file, const string& group, const string& bas
     filepath = (path.empty() ? fs::path(filepath).remove_filename().generic_string() : path);
   }
   RteFsUtils::NormalizePath(filepath, base);
-  if (!RteFsUtils::Exists(filepath)) {
+  bool isExecuteGenerated = m_executeGeneratedFiles.find(filepath) != m_executeGeneratedFiles.end();
+  if (!RteFsUtils::Exists(filepath) && !isExecuteGenerated) {
     LogMsg("M204", PATH(filepath));
     return false;
   }

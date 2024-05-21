@@ -551,6 +551,26 @@ public:
   */
   const RteTarget* GetTarget() const;
 
+  const std::map<std::string, std::string>& GetExecuteRun() const {
+    return m_executeRun;
+  }
+
+  const std::map<std::string, bool>& GetExecuteAlways() const {
+    return m_executeAlways;
+  }
+
+  const std::map<std::string, std::vector<std::string>>& GetExecuteInputs() const {
+    return m_executeInputs;
+  }
+
+  const std::map<std::string, std::vector<std::string>>& GetExecuteOutputs() const {
+    return m_executeOutputs;
+  }
+
+  const std::map<std::string, std::vector<std::string>>& GetExecuteDependencies() const {
+    return m_executeDependencies;
+  }
+
 protected:
   /**
    * @brief Kind of Translation Controls
@@ -582,6 +602,12 @@ protected:
   std::map<std::string, std::list<std::string>>     m_cSourceFiles;
   std::map<std::string, std::list<std::string>>     m_cxxSourceFiles;
   std::map<std::string, std::list<std::string>>     m_asmSourceFiles;
+  std::map<std::string, std::string>                m_executeRun;
+  std::map<std::string, bool>                       m_executeAlways;
+  std::map<std::string, std::vector<std::string>>   m_executeInputs;
+  std::map<std::string, std::vector<std::string>>   m_executeOutputs;
+  std::map<std::string, std::vector<std::string>>   m_executeDependencies;
+  std::set<std::string>                             m_executeGeneratedFiles;
   std::set<std::string>                             m_packs;
   std::string                                       m_linkerScript;
   std::string                                       m_linkerRegionsFile;
@@ -634,6 +660,10 @@ protected:
   bool EvaluateResult();
   bool EvalConfigFiles();
   bool EvalPreIncludeFiles();
+  bool EvalExecutes();
+  bool EvalExecute(RteItem* execute, const std::string& base);
+  bool EvalExecuteInputOutput();
+  void EvalExecuteReplaceMarker(std::string& run, const std::string& marker, const std::vector<std::string>& values);
   bool EvalSourceFiles();
   bool EvalNonRteSourceFiles();
   bool EvalGeneratedSourceFiles();
