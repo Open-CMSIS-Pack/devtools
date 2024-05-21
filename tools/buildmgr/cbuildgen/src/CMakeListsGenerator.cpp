@@ -651,7 +651,7 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
   // Compilation Database
   cmakelists << "# Compilation Database" << EOL << EOL;
   cmakelists << "set(CMAKE_EXPORT_COMPILE_COMMANDS ON)" << EOL;
-  cmakelists << "add_custom_target(database COMMAND ${CMAKE_COMMAND} -E copy_if_different \"${INT_DIR}/compile_commands.json\" \"${OUT_DIR}\")" << EOL << EOL;
+  cmakelists << "add_custom_target(database ALL COMMAND ${CMAKE_COMMAND} -E copy_if_different \"${INT_DIR}/compile_commands.json\" \"${OUT_DIR}\")" << EOL << EOL;
 
   // Setup Target
   cmakelists << "# Setup Target" << EOL << EOL;
