@@ -143,6 +143,16 @@ bool BuildSystemGenerator::Collect(const string& inputFile, const CbuildModel *m
     m_cfgFilesList.insert({ StrNorm(cfg.first), StrNorm(cfg.second) });
   }
 
+  for (const auto& [name, run] : model->GetExecuteRun()) {
+    m_executes[name] = Execute {
+        .run = run,
+        .inputs = model->GetExecuteInputs().at(name),
+        .outputs = model->GetExecuteOutputs().at(name),
+        .dependencies = model->GetExecuteDependencies().at(name),
+        .always = model->GetExecuteAlways().at(name)
+    };
+  }
+
   // Audit data
   m_auditData = model->GetAuditData();
 

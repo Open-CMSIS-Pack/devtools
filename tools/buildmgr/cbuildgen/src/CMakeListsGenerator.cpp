@@ -707,6 +707,82 @@ bool CMakeListsGenerator::GenBuildCMakeLists(void) {
     cmakelists << ")" << EOL;
   }
 
+  // Pre- and Post-Build Steps
+  if (!m_executes.empty()) {
+    cmakelists << EOL << "# Pre- and Post-Build Steps" << EOL << EOL;
+
+    size_t generate_target_counter = 0;
+    for (const auto& [name, execute] : m_executes) {
+      size_t generate_target = ++generate_target_counter;
+
+      if (!execute.always && !execute.outputs.empty()) {
+        cmakelists << "add_custom_command(" << EOL;
+
+        // -- OUTPUTS --
+        cmakelists << "  OUTPUT";
+        for (const auto& output : execute.outputs) {
+          cmakelists << " " << output;
+        }
+        cmakelists << EOL;
+
+        // -- COMMAND --
+        cmakelists << "  COMMAND " << execute.run << EOL;
+
+        // -- DEPENDS --
+        if (!execute.inputs.empty()) {
+          cmakelists << "  DEPENDS";
+          for (const auto& input : execute.inputs) {
+            cmakelists << " " << input;
+          }
+          cmakelists << EOL;
+        }
+
+        // -- OTHER --
+        cmakelists
+          << "  COMMENT \"" << CbuildUtils::EscapeQuotes(name) << "\"" << EOL
+          << "  WORKING_DIRECTORY ${PRJ_DIR}" << EOL
+          << ")" << EOL;
+
+        // -- TARGET --
+        cmakelists << "add_custom_target(pre-post-step-" << generate_target << " DEPENDS \"" << execute.outputs[0] << "\")" << EOL;
+        cmakelists << "add_dependencies(${TARGET} pre-post-step-" << generate_target << ")" << EOL;
+      } else {
+        cmakelists << "add_custom_target(pre-post-step-" << generate_target << EOL;
+
+        // -- COMMAND --
+        cmakelists << "  COMMAND " << execute.run << EOL;
+
+        // -- DEPENDS --
+        if (!execute.inputs.empty()) {
+          cmakelists << "  DEPENDS";
+          for (const auto& input : execute.inputs) {
+            cmakelists << " " << input;
+          }
+          cmakelists << EOL;
+        }
+
+        // -- OUTPUTS --
+        if (!execute.outputs.empty()) {
+          cmakelists
+            << "  BYPRODUCTS";
+          for (const auto& output : execute.outputs) {
+            cmakelists << " " << output;
+          }
+          cmakelists << EOL;
+        }
+
+        // -- OTHER --
+        cmakelists
+          << "  COMMENT \"" << CbuildUtils::EscapeQuotes(name) << "\"" << EOL
+          << "  WORKING_DIRECTORY ${PRJ_DIR}" << EOL
+          << ")" << EOL;
+
+        // -- TARGET --
+        cmakelists << "add_dependencies(${TARGET} pre-post-step-" << generate_target << ")" << EOL;
+      }
+    }
+  }
+
   // Linker script pre-processing
   if (!m_linkerScript.empty() && !lib_output && ((linkerExt == SRCPPEXT) || !m_linkerRegionsFile.empty() || !m_linkerPreProcessorDefines.empty())) {
     cmakelists << EOL << "# Linker script pre-processing" << EOL << EOL;

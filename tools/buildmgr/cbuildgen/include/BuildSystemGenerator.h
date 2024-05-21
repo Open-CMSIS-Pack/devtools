@@ -71,6 +71,15 @@ struct module
   std::string excludes;
 };
 
+struct Execute
+{
+    std::string run;
+    std::vector<std::string> inputs;
+    std::vector<std::string> outputs;
+    std::vector<std::string> dependencies;
+    bool always;
+};
+
 /**
  * @brief cfg struct:
  *        prj: config file from project (user file)
@@ -121,6 +130,7 @@ protected:
   std::map<std::string, module> m_ccFilesList;
   std::map<std::string, module> m_cxxFilesList;
   std::map<std::string, TranslationControls> m_groupsList;
+  std::map<std::string, Execute> m_executes;
   std::vector<std::string> m_incPathsList;
   std::vector<std::string> m_libFilesList;
   std::vector<std::string> m_definesList;
