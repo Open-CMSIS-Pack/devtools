@@ -1885,6 +1885,9 @@ bool RteTarget::GenerateRteHeaders() {
 
 bool RteTarget::GenerateRTEComponentsH() {
 
+  if(GetSelectedComponentAggregates().empty()) {
+    return true;  // no components selected
+  }
   string content;
   const string& devheader = GetDeviceHeader();
   if (!devheader.empty()) {            // found device header file.

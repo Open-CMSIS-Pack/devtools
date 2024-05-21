@@ -658,10 +658,12 @@ void ProjMgrYamlCbuild::SetConstructedFilesNode(YAML::Node node, const ContextIt
     // constructed RTE_Components.h
     const auto& rteComponents = context->rteActiveProject->GetProjectPath() +
       context->rteActiveProject->GetRteComponentsH(context->rteActiveTarget->GetName(), "");
-    YAML::Node rteComponentsNode;
-    SetNodeValue(rteComponentsNode[YAML_FILE], FormatPath(rteComponents, context->directories.cbuild));
-    SetNodeValue(rteComponentsNode[YAML_CATEGORY], "header");
-    node.push_back(rteComponentsNode);
+    if (RteFsUtils::Exists(rteComponents)) {
+      YAML::Node rteComponentsNode;
+      SetNodeValue(rteComponentsNode[YAML_FILE], FormatPath(rteComponents, context->directories.cbuild));
+      SetNodeValue(rteComponentsNode[YAML_CATEGORY], "header");
+      node.push_back(rteComponentsNode);
+    }
   }
 }
 

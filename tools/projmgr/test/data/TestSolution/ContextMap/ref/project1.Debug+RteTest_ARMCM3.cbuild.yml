@@ -35,9 +35,6 @@ build:
           category: sourceC
         - file: ../data/TestSolution/ContextMap/MappedTarget1.c
           category: sourceC
-  constructed-files:
-    - file: ../data/TestSolution/ContextMap/RTE/_Debug_RteTest_ARMCM3/RTE_Components.h
-      category: header
   licenses:
     - license: <unknown>
       license-agreement: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Doc/license.txt

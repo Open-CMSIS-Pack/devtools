@@ -42,9 +42,6 @@ build-gen:
   linker:
     script: ${DEVTOOLS(data)}/ExternalGenerator/multi_0/RTE/Device/RteTest_ARMCM0_Dual_cm0_core0/ac6_linker_script.sct.src
     regions: ${DEVTOOLS(data)}/ExternalGenerator/multi_0/RTE/Device/RteTest_ARMCM0_Dual_cm0_core0/regions_RteTest_ARMCM0_Dual_cm0_core0.h
-  constructed-files:
-    - file: ${DEVTOOLS(data)}/ExternalGenerator/multi_0/RTE/_Debug_MultiCore/RTE_Components.h
-      category: header
   licenses:
     - license: <unknown>
       packs:
