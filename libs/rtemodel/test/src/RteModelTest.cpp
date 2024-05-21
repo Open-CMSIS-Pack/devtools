@@ -845,6 +845,22 @@ TEST_F(RteModelPrjTest, GenerateHeadersTest_Update_Header)
   GenerateHeadersTest(RteTestM3_UpdateHeader_cprj, "RTE_Update_Header", false, true);
 }
 
+TEST_F(RteModelPrjTest, RteNoComponents)
+{
+  RteKernelSlim rteKernel;
+  rteKernel.SetCmsisPackRoot(RteModelTestConfig::CMSIS_PACK_ROOT);
+  RteCprjProject* loadedCprjProject = rteKernel.LoadCprj(RteTestM3NoComponents_cprj);
+  ASSERT_NE(loadedCprjProject, nullptr);
+  // check if neither RTE directory is created, nor RTE_Ceomponents.h
+  const string& rteFolder = loadedCprjProject->GetRteFolder();
+  EXPECT_EQ("RTE_NO_DIR", rteFolder);
+  const string rteDir = RteUtils::ExtractFilePath(RteTestM3NoComponents_cprj, true) + rteFolder;
+  const string targetFolder = "/_Target_1/";
+  const string rteComp = rteDir + targetFolder + "RTE_Components.h";
+  EXPECT_FALSE(RteFsUtils::Exists(rteDir));
+  EXPECT_FALSE(RteFsUtils::Exists(rteComp));
+}
+
 TEST_F(RteModelPrjTest, LoadCprjCompDep) {
 
   RteKernelSlim rteKernel;

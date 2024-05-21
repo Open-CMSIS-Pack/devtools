@@ -24,6 +24,7 @@ const std::string RteModelTestConfig::packsDir = "RteModelTestPacks";
 const std::string RteModelTestConfig::localPacks = "local_packs";
 const std::string RteModelTestConfig::RteTestM3 = "/RteTestM3";
 const std::string RteModelTestConfig::RteTestM3_cprj = prjsDir + RteTestM3 + "/RteTestM3.cprj";
+const std::string RteModelTestConfig::RteTestM3NoComponents_cprj = prjsDir + RteTestM3 + "/RteTestM3NoComponents.cprj";
 const std::string RteModelTestConfig::RteTestM3PackReq_cprj = prjsDir + RteTestM3 + "/RteTestM3_PackReq.cprj";
 const std::string RteModelTestConfig::RteTestM3_ConfigFolder_cprj = prjsDir + RteTestM3 + "/RteTestM3_ConfigFolder.cprj";
 const std::string RteModelTestConfig::RteTestM3_PackPath_cprj = prjsDir + RteTestM3 + "/RteTestM3_PackPath.cprj";
