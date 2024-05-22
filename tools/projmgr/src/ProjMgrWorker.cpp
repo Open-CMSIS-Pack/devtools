@@ -1131,10 +1131,12 @@ ConnectionsValidationResult ProjMgrWorker::ValidateConnections(ConnectionsCollec
       incompatibles.push_back({ consumedKey, consumed->second });
     }
   }
-  // validate provided connections of each combination match at least one consumed
+  // validate layer provided connections of each combination match at least one consumed
   for (const auto& collection : combination) {
-    if (!ProvidedConnectionsMatch(collection, connections)) {
-      missedCollections.push_back(collection);
+    if (!regex_match(collection.filename, regex(".*\\.cproject\\.(yml|yaml)"))) {
+      if (!ProvidedConnectionsMatch(collection, connections)) {
+        missedCollections.push_back(collection);
+      }
     }
   }
 
