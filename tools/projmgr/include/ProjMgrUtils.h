@@ -19,8 +19,8 @@ typedef std::vector<const ConnectItem*> ConnectPtrVec;
 
 /**
  * @brief connections collection item containing
- *        filename pointer
- *        layer type pointer
+ *        filename reference
+ *        layer type
  *        vector of ConnectItem pointers
  *        copy assignment operator
  *        default copy constructor

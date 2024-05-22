@@ -1980,20 +1980,12 @@ TEST_F(ProjMgrUnitTests, ListLayersOptionalLayerType) {
 check combined connections:\n\
   .*/TestLayers/genericlayers.cproject.yml\n\
     \\(Project Connections\\)\n\
-provided combined connections not consumed:\n\
-  .*/TestLayers/genericlayers.cproject.yml\n\
-    ExactMatch\n\
-    EmptyConsumedValue\n\
-    EmptyValues\n\
-    AddedValueLessThanProvided\n\
-    AddedValueEqualToProvided\n\
-    MultipleProvided\n\
-    MultipleProvidedNonIdentical0\n\
-    MultipleProvidedNonIdentical1\n\
-    ProvidedDontMatch\n\
-    ProvidedEmpty\n\
-    AddedValueHigherThanProvided\n\
-connections are invalid\n\
+connections are valid\n\
+\n\
+multiple clayers match type 'Board':\n\
+  .*/ARM/RteTest_DFP/0.2.0/Layers/board1.clayer.yml\n\
+  .*/ARM/RteTest_DFP/0.2.0/Layers/board2.clayer.yml\n\
+  .*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml\n\
 ";
 
   const string& errStr = streamRedirect.GetErrorString();
