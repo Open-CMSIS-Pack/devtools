@@ -341,11 +341,10 @@ void ProjMgrYamlParser::ParsePortablePaths(const YAML::Node& parent, const strin
 }
 
 void ProjMgrYamlParser::ParseBoolean(const YAML::Node& parent, const string& key, bool& value, bool def) {
-  if (parent[key].IsDefined()) {
+  if (parent[key].IsDefined() && (parent[key].Type() != YAML::NodeType::Null)) {
     value = parent[key].as<bool>();
-    if (parent[key].Type() == YAML::NodeType::Null) {
-      value = def;
-    }
+  } else {
+    value = def;
   }
 }
 
