@@ -20,7 +20,7 @@ project:
       optional: false
       for-context: .IncompatibleLayers
     - type: Board
-      optional: true
+      # optional: true # default
       for-context: .OptionalLayerType
     - type: BoardSpecific
       for-context: +BoardSpecific
