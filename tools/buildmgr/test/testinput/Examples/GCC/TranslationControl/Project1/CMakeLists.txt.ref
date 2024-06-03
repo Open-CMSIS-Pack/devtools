@@ -124,7 +124,11 @@ set(CMAKE_CXX_LINK_FLAGS "${LD_CPU} ${_LS}\"${LD_SCRIPT}\" ${LD_SECURE} ${LD_FLA
 
 foreach(SRC ${CXX_SRC_FILES})
   string(REPLACE " " "?" S ${SRC})
-  set(CXX_FLAGS_LOCAL "${CXX_FLAGS_GLOBAL}")
+  if(DEFINED CXX_FLAGS_${S})
+    set(CXX_FLAGS_LOCAL "${CXX_FLAGS_${S}}")
+  else()
+    set(CXX_FLAGS_LOCAL "${CXX_FLAGS_GLOBAL}")
+  endif()
   set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS "${CXX_FLAGS_LOCAL}")
 endforeach()
 

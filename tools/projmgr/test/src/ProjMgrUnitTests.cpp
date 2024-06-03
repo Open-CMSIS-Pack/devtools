@@ -7,6 +7,7 @@
 #include "ProjMgr.h"
 #include "ProjMgrTestEnv.h"
 #include "ProjMgrYamlSchemaChecker.h"
+#include "ProjMgrLogger.h"
 
 #include "RteFsUtils.h"
 
@@ -69,6 +70,55 @@ protected:
     return csolutionFile;
   }
 };
+
+TEST_F(ProjMgrUnitTests, Validate_Logger) {
+  StdStreamRedirect streamRedirect;
+  auto printLogMsgs = []() {
+    ProjMgrLogger::Debug("debug-1 test message");
+    ProjMgrLogger::Warn("warning-1 test message");
+    ProjMgrLogger::Warn("test.warn", "warning-2 test message");
+    ProjMgrLogger::Warn("test.warn", 1, 1, "warning-3 test message");
+    ProjMgrLogger::Error("error-1 test message");
+    ProjMgrLogger::Error("test.err", "error-2 test message");
+    ProjMgrLogger::Error("test.err", 1, 1, "error-3 test message");
+    ProjMgrLogger::Info("info-1 test message");
+    ProjMgrLogger::Info("test.info", "info-2 test message");
+    ProjMgrLogger::Info("test.info", 1, 1, "info-3 test message");
+  };
+
+  // Test quite mode
+  ProjMgrLogger::m_quiet = true;
+  string expErrMsg = "error csolution: error-1 test message\n\
+test.err - error csolution: error-2 test message\n\
+test.err:1:1 - error csolution: error-3 test message\n";
+  string expOutMsg = "";
+
+  printLogMsgs();
+  auto outStr = streamRedirect.GetOutString();
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_STREQ(outStr.c_str(), expOutMsg.c_str());
+  EXPECT_STREQ(errStr.c_str(), expErrMsg.c_str());
+
+  // Test non-quite mode
+  ProjMgrLogger::m_quiet = false;
+  streamRedirect.ClearStringStreams();
+  expErrMsg = "debug csolution: debug-1 test message\n\
+warning csolution: warning-1 test message\n\
+test.warn - warning csolution: warning-2 test message\n\
+test.warn:1:1 - warning csolution: warning-3 test message\n\
+error csolution: error-1 test message\n\
+test.err - error csolution: error-2 test message\n\
+test.err:1:1 - error csolution: error-3 test message\n";
+  expOutMsg = "info csolution: info-1 test message\n\
+test.info - info csolution: info-2 test message\n\
+test.info:1:1 csolution: infoinfo-3 test message\n";
+
+  printLogMsgs();
+  outStr = streamRedirect.GetOutString();
+  errStr = streamRedirect.GetErrorString();
+  EXPECT_STREQ(outStr.c_str(), expOutMsg.c_str());
+  EXPECT_STREQ(errStr.c_str(), expErrMsg.c_str());
+}
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_EmptyOptions) {
   char* argv[1];
@@ -1544,7 +1594,7 @@ info csolution: valid configuration #3: \\(context 'genericlayers.CompatibleLaye
 }
 
 
-TEST_F(ProjMgrUnitTests, ListLayersConfigurations_update_idx) {
+TEST_F(ProjMgrUnitTests, ListLayersConfigurations_update_idx_pack_layer) {
   StdStreamRedirect streamRedirect;
   char* argv[6];
   const string& csolution = testinput_folder + "/TestLayers/config.csolution.yml";
@@ -1556,23 +1606,30 @@ TEST_F(ProjMgrUnitTests, ListLayersConfigurations_update_idx) {
   argv[4] = (char*)csolution.c_str();
   argv[5] = (char*)"--update-idx";
 
-  auto replacePackPathFunc = [](const std::string& in) {
-    std::string str = in, packPathEnd = "/test/packs", packPathStart = "-Layer: ";
-    auto endPos = str.find(packPathEnd);
-    if (endPos != string::npos) {
-      auto startPos = str.find(packPathStart);
-      startPos += packPathStart.length();
-      auto packPath = str.substr(startPos, endPos - startPos);
-      RteUtils::ReplaceAll(str, packPath, "<TEST_DIR>");
-    }
-    return str;
-  };
-
   EXPECT_EQ(0, RunProjMgr(6, argv, 0));
   EXPECT_TRUE(regex_match(streamRedirect.GetOutString(), regex(expectedOutStr)));
   ProjMgrTestEnv::CompareFile(testinput_folder + "/TestLayers/ref/config.cbuild-idx.yml",
-    testinput_folder + "/TestLayers/config.cbuild-idx.yml", replacePackPathFunc);
+    testinput_folder + "/TestLayers/config.cbuild-idx.yml");
   EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/TestLayers/config.cbuild-idx.yml"));
+}
+
+TEST_F(ProjMgrUnitTests, ListLayersConfigurations_update_idx_local_layer) {
+  StdStreamRedirect streamRedirect;
+  char* argv[6];
+  const string& csolution = testinput_folder + "/TestLayers/select.csolution.yml";
+  string expectedOutStr = ".*select.cbuild-idx.yml - info csolution: file generated successfully\\n";
+
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"layers";
+  argv[3] = (char*)"--solution";
+  argv[4] = (char*)csolution.c_str();
+  argv[5] = (char*)"--update-idx";
+
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+  EXPECT_TRUE(regex_match(streamRedirect.GetOutString(), regex(expectedOutStr)));
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/TestLayers/ref/select.cbuild-idx.yml",
+    testinput_folder + "/TestLayers/select.cbuild-idx.yml");
+  EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/TestLayers/select.cbuild-idx.yml"));
 }
 
 TEST_F(ProjMgrUnitTests, ListLayersConfigurations) {
@@ -1642,14 +1699,17 @@ info csolution: valid configuration #1: \\(context 'select\\+RteTest_ARMCM3'\\)\
   .*/TestLayers/select.cproject.yml\n\
     set: set1.select1 \\(project X - set 1 select 1\\)\n\
   .*/TestLayers/select.clayer.yml \\(layer type: Board\\)\n\
+    set: set1.select1 \\(provided connections A and B - set 1 select 1\\)\n\
 \n\
 info csolution: valid configuration #2: \\(context 'select\\+RteTest_ARMCM3'\\)\n\
   .*/TestLayers/select.cproject.yml\n\
     set: set1.select2 \\(project Y - set 1 select 2\\)\n\
-    set: set1.select2 \\(project Z - set 1 select 2\\)\n\
   .*/TestLayers/select.clayer.yml \\(layer type: Board\\)\n\
+    set: set1.select2 \\(provided connections B and C - set 1 select 2\\)\n\
 \n\
 .*/TestLayers/select.clayer.yml \\(layer type: Board\\)\n\
+  set: set1.select1 \\(provided connections A and B - set 1 select 1\\)\n\
+  set: set1.select2 \\(provided connections B and C - set 1 select 2\\)\n\
 ";
 
   const string& outStr = streamRedirect.GetOutString();
@@ -1920,20 +1980,12 @@ TEST_F(ProjMgrUnitTests, ListLayersOptionalLayerType) {
 check combined connections:\n\
   .*/TestLayers/genericlayers.cproject.yml\n\
     \\(Project Connections\\)\n\
-provided combined connections not consumed:\n\
-  .*/TestLayers/genericlayers.cproject.yml\n\
-    ExactMatch\n\
-    EmptyConsumedValue\n\
-    EmptyValues\n\
-    AddedValueLessThanProvided\n\
-    AddedValueEqualToProvided\n\
-    MultipleProvided\n\
-    MultipleProvidedNonIdentical0\n\
-    MultipleProvidedNonIdentical1\n\
-    ProvidedDontMatch\n\
-    ProvidedEmpty\n\
-    AddedValueHigherThanProvided\n\
-connections are invalid\n\
+connections are valid\n\
+\n\
+multiple clayers match type 'Board':\n\
+  .*/ARM/RteTest_DFP/0.2.0/Layers/board1.clayer.yml\n\
+  .*/ARM/RteTest_DFP/0.2.0/Layers/board2.clayer.yml\n\
+  .*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml\n\
 ";
 
   const string& errStr = streamRedirect.GetErrorString();
@@ -2041,6 +2093,10 @@ TEST_F(ProjMgrUnitTests, LayerVariables) {
     testinput_folder + "/TestLayers/ref/variables/variables.BuildType2+TargetType1.cprj");
  ProjMgrTestEnv:: CompareFile(testoutput_folder + "/variables.BuildType2+TargetType2.cprj",
     testinput_folder + "/TestLayers/ref/variables/variables.BuildType2+TargetType2.cprj");
+
+   // Check generated cbuild-idx
+   ProjMgrTestEnv::CompareFile(testoutput_folder + "/variables.cbuild-idx.yml",
+     testinput_folder + "/TestLayers/ref/variables/variables.cbuild-idx.yml");
 }
 
 TEST_F(ProjMgrUnitTests, LayerVariablesRedefinition) {
@@ -2073,8 +2129,9 @@ TEST_F(ProjMgrUnitTests, LayerVariablesNotDefined) {
   argv[7] = (char*)"-d";
   EXPECT_EQ(1, RunProjMgr(8, argv, 0));
 
-  const string& expectedErrStr = ".*\
-\\$NotDefined\\$ - warning csolution: variable was not defined for context 'variables-notdefined.BuildType\\+TargetType'.*\
+  string expectedErrStr = ".*\
+error csolution: undefined variables in variables-notdefined.csolution.yml:.*\
+  - \\$NotDefined\\$.*\
   .*/ARM/RteTest_DFP/0.2.0/Layers/board1.clayer.yml \\(layer type: Board\\).*\
   .*/ARM/RteTest_DFP/0.2.0/Layers/board2.clayer.yml \\(layer type: Board\\).*\
   .*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml \\(layer type: Board\\).*\
@@ -2083,7 +2140,18 @@ no valid combination of clayers was found\
 
   string errStr = streamRedirect.GetErrorString();
   errStr.erase(std::remove(errStr.begin(), errStr.end(), '\n'), errStr.cend());
+  EXPECT_TRUE(regex_match(errStr, regex(expectedErrStr)));
 
+  // Validate --quiet mode output
+  streamRedirect.ClearStringStreams();
+  expectedErrStr = ".*\
+error csolution: undefined variables in variables-notdefined.csolution.yml:.*\
+  - \\$NotDefined\\$";
+
+  argv[7] = (char*)"-q";
+  EXPECT_EQ(1, RunProjMgr(8, argv, 0));
+  errStr = streamRedirect.GetErrorString();
+  errStr.erase(std::remove(errStr.begin(), errStr.end(), '\n'), errStr.cend());
   EXPECT_TRUE(regex_match(errStr, regex(expectedErrStr)));
 }
 
@@ -2102,6 +2170,9 @@ TEST_F(ProjMgrUnitTests, LayerVariablesNotDefined_SearchPath) {
   EXPECT_EQ(0, RunProjMgr(8, argv, 0));
 
   const string& expectedErrStr = ".*\
+error csolution: undefined variables in variables-notdefined.csolution.yml:.*\
+  - \\$NotDefined\\$.*\
+debug csolution: check for context \\'variables-notdefined\\.BuildType\\+TargetType\\'.*\
 clayer of type 'Board' was uniquely found:\
   .*/TestLayers/variables/target1.clayer.yml\
 ";
@@ -3656,6 +3727,27 @@ ARM::RteTestMissingCondition@0.1.0: component 'ARM::RteTest:Check:MissingConditi
   }
 }
 
+TEST_F(ProjMgrUnitTests, Convert_ValidationResults_Quiet_Mode) {
+  char* argv[7];
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[4] = (char*)"-c";
+
+  string expectedMsg = "error csolution: no component was found with identifier 'RteTest:Check:Recursive'\nerror csolution: processing context 'recursive+CM0' failed\n";
+
+  StdStreamRedirect streamRedirect;
+  const string& csolution = testinput_folder + "/Validation/recursive.csolution.yml";
+  const string& context = "recursive+CM0";
+  argv[3] = (char*)csolution.c_str();
+  argv[5] = (char*)context.c_str();
+  argv[6] = (char*)"-q";
+  EXPECT_EQ(1, RunProjMgr(7, argv, 0));
+  const string& errStr = streamRedirect.GetErrorString();
+  EXPECT_EQ(string::npos, errStr.find("warning csolution"));
+  EXPECT_EQ(string::npos, errStr.find("debug csolution"));
+  EXPECT_STREQ(errStr.c_str(), expectedMsg.c_str());
+}
+
 TEST_F(ProjMgrUnitTests, OutputDirs) {
   char* argv[4];
   // convert --solution solution.yml
@@ -3702,10 +3794,10 @@ TEST_F(ProjMgrUnitTests, ProjectSetup) {
   EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   // Check generated CPRJs
- ProjMgrTestEnv:: CompareFile(testoutput_folder + "/setup-test.Build AC6+TEST_TARGET.cprj",
-    testinput_folder + "/TestProjectSetup/ref/setup-test.Build AC6+TEST_TARGET.cprj");
- ProjMgrTestEnv:: CompareFile(testoutput_folder + "/setup-test.Build GCC+TEST_TARGET.cprj",
-    testinput_folder + "/TestProjectSetup/ref/setup-test.Build GCC+TEST_TARGET.cprj");
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/setup-test.Build_AC6+TEST_TARGET.cprj",
+    testinput_folder + "/TestProjectSetup/ref/setup-test.Build_AC6+TEST_TARGET.cprj");
+ ProjMgrTestEnv:: CompareFile(testoutput_folder + "/setup-test.Build_GCC+TEST_TARGET.cprj",
+    testinput_folder + "/TestProjectSetup/ref/setup-test.Build_GCC+TEST_TARGET.cprj");
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_help) {
@@ -3897,8 +3989,8 @@ TEST_F(ProjMgrUnitTests, RunCheckContextProcessing) {
   argv[6] = (char*)testoutput_folder.c_str();
   EXPECT_EQ(2, RunProjMgr(7, argv, 0));
 
-  // Check warning for processed context
-  const string expected = "$LayerVar$ - warning csolution: variable was not defined for context 'contexts.B1+T1'";
+  // Check error for processed context
+  const string expected = "error csolution: undefined variables in contexts.csolution.yml:\n  - $LayerVar$\n\n";
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_TRUE(errStr.find(expected) != string::npos);
 
@@ -4079,6 +4171,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_LinkerOptions_Auto) {
   ProjMgrTestEnv::CompareFile(testoutput_folder + "/linker.FromComponent+RteTest_ARMCM3.cbuild.yml",
     testinput_folder + "/TestSolution/LinkerOptions/ref/linker.FromComponent+RteTest_ARMCM3.cbuild.yml");
 
+  RteFsUtils::RemoveDir(testinput_folder + "/TestSolution/LinkerOptions/RTE");
   // 'auto' enabled
   argv[4] = (char*)"linker.AutoGen+RteTest_ARMCM3";
   EXPECT_EQ(0, RunProjMgr(7, argv, 0));
@@ -4088,7 +4181,23 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_LinkerOptions_Auto) {
     testinput_folder + "/TestSolution/LinkerOptions/ref/linker.AutoGen+RteTest_ARMCM3.cprj");
   ProjMgrTestEnv::CompareFile(testoutput_folder + "/linker.AutoGen+RteTest_ARMCM3.cbuild.yml",
     testinput_folder + "/TestSolution/LinkerOptions/ref/linker.AutoGen+RteTest_ARMCM3.cbuild.yml");
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/TestSolution/LinkerOptions/RTE/Device/RteTest_ARMCM3/regions_RteTest_ARMCM3.h",
+    testinput_folder + "/TestSolution/LinkerOptions/ref/regions_RteTest_ARMCM3.h");
 
+  RteFsUtils::RemoveDir(testinput_folder + "/TestSolution/LinkerOptions/RTE");
+  // 'auto' enabled for board
+  argv[4] = (char*)"linker.AutoGen+RteTest_Board";
+  EXPECT_EQ(0, RunProjMgr(7, argv, 0));
+
+  // check generated files
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/linker.AutoGen+RteTest_Board.cprj",
+    testinput_folder + "/TestSolution/LinkerOptions/ref/linker.AutoGen+RteTest_Board.cprj");
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/linker.AutoGen+RteTest_Board.cbuild.yml",
+    testinput_folder + "/TestSolution/LinkerOptions/ref/linker.AutoGen+RteTest_Board.cbuild.yml");
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/TestSolution/LinkerOptions/RTE/Device/RteTest_ARMCM3/regions_RteTest-Test-board_With.Memory.h",
+    testinput_folder + "/TestSolution/LinkerOptions/ref/regions_RteTest-Test-board_With.Memory.h");
+
+  RteFsUtils::RemoveDir(testinput_folder + "/TestSolution/LinkerOptions/RTE");
   // 'auto' enabled warning
   StdStreamRedirect streamRedirect;
   argv[4] = (char*)"linker.AutoGenWarning+RteTest_ARMCM3";
@@ -4860,8 +4969,8 @@ TEST_F(ProjMgrUnitTests, ExternalGenerator) {
   const string& dstGlobalGenerator = etc_folder + "/global.generator.yml";
   RteFsUtils::CopyCheckFile(srcGlobalGenerator, dstGlobalGenerator, false);
 
-  const string& srcBridgeTool = testinput_folder + "/ExternalGenerator/bridge.sh";
-  const string& dstBridgeTool = bin_folder + "/bridge.sh";
+  const string& srcBridgeTool = testinput_folder + "/ExternalGenerator/bridge tool.sh";
+  const string& dstBridgeTool = bin_folder + "/bridge tool.sh";
   RteFsUtils::CopyCheckFile(srcBridgeTool, dstBridgeTool, false);
 
   // list generators
@@ -4881,10 +4990,6 @@ TEST_F(ProjMgrUnitTests, ExternalGenerator) {
   argv[6] = (char*)"core0.Debug+MultiCore";
   EXPECT_EQ(0, RunProjMgr(7, argv, 0));
 
-  EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/ExternalGenerator/tmp/core0/MultiCore/Debug/extgen.cbuild-gen-idx.yml"));
-  EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/ExternalGenerator/tmp/core0/MultiCore/Debug/core0.Debug+MultiCore.cbuild-gen.yml"));
-  EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/ExternalGenerator/tmp/core1/MultiCore/Debug/core1.Debug+MultiCore.cbuild-gen.yml"));
-
   auto stripAbsoluteFunc = [](const std::string& in) {
     std::string str = in;
     RteUtils::ReplaceAll(str, testinput_folder, "${DEVTOOLS(data)}");
@@ -4893,38 +4998,31 @@ TEST_F(ProjMgrUnitTests, ExternalGenerator) {
   };
 
   ProjMgrTestEnv::CompareFile(testinput_folder + "/ExternalGenerator/ref/MultiCore/extgen.cbuild-gen-idx.yml",
-    testinput_folder + "/ExternalGenerator/tmp/core0/MultiCore/Debug/extgen.cbuild-gen-idx.yml", stripAbsoluteFunc);
+    testinput_folder + "/ExternalGenerator/tmp dir/core0/MultiCore/Debug/extgen.cbuild-gen-idx.yml", stripAbsoluteFunc);
   ProjMgrTestEnv::CompareFile(testinput_folder + "/ExternalGenerator/ref/MultiCore/core0.Debug+MultiCore.cbuild-gen.yml",
-    testinput_folder + "/ExternalGenerator/tmp/core0/MultiCore/Debug/core0.Debug+MultiCore.cbuild-gen.yml", stripAbsoluteFunc);
+    testinput_folder + "/ExternalGenerator/tmp dir/core0/MultiCore/Debug/core0.Debug+MultiCore.cbuild-gen.yml", stripAbsoluteFunc);
   ProjMgrTestEnv::CompareFile(testinput_folder + "/ExternalGenerator/ref/MultiCore/core1.Debug+MultiCore.cbuild-gen.yml",
-    testinput_folder + "/ExternalGenerator/tmp/core1/MultiCore/Debug/core1.Debug+MultiCore.cbuild-gen.yml", stripAbsoluteFunc);
+    testinput_folder + "/ExternalGenerator/tmp dir/core1/MultiCore/Debug/core1.Debug+MultiCore.cbuild-gen.yml", stripAbsoluteFunc);
 
   // run single-core
   argv[6] = (char*)"single-core.Debug+CM0";
   EXPECT_EQ(0, RunProjMgr(7, argv, 0));
 
-  EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/ExternalGenerator/tmp/single-core/CM0/Debug/extgen.cbuild-gen-idx.yml"));
-  EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/ExternalGenerator/tmp/single-core/CM0/Debug/single-core.Debug+CM0.cbuild-gen.yml"));
-
   ProjMgrTestEnv::CompareFile(testinput_folder + "/ExternalGenerator/ref/SingleCore/extgen.cbuild-gen-idx.yml",
-    testinput_folder + "/ExternalGenerator/tmp/single-core/CM0/Debug/extgen.cbuild-gen-idx.yml", stripAbsoluteFunc);
+    testinput_folder + "/ExternalGenerator/tmp dir/single-core/CM0/Debug/extgen.cbuild-gen-idx.yml", stripAbsoluteFunc);
   ProjMgrTestEnv::CompareFile(testinput_folder + "/ExternalGenerator/ref/SingleCore/single-core.Debug+CM0.cbuild-gen.yml",
-    testinput_folder + "/ExternalGenerator/tmp/single-core/CM0/Debug/single-core.Debug+CM0.cbuild-gen.yml", stripAbsoluteFunc);
+    testinput_folder + "/ExternalGenerator/tmp dir/single-core/CM0/Debug/single-core.Debug+CM0.cbuild-gen.yml", stripAbsoluteFunc);
 
   // run trustzone
   argv[6] = (char*)"ns.Debug+CM0";
   EXPECT_EQ(0, RunProjMgr(7, argv, 0));
 
-  EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/ExternalGenerator/tmp/ns/CM0/Debug/extgen.cbuild-gen-idx.yml"));
-  EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/ExternalGenerator/tmp/ns/CM0/Debug/ns.Debug+CM0.cbuild-gen.yml"));
-  EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/ExternalGenerator/tmp/s/CM0/Debug/s.Debug+CM0.cbuild-gen.yml"));
-
   ProjMgrTestEnv::CompareFile(testinput_folder + "/ExternalGenerator/ref/TrustZone/extgen.cbuild-gen-idx.yml",
-    testinput_folder + "/ExternalGenerator/tmp/ns/CM0/Debug/extgen.cbuild-gen-idx.yml", stripAbsoluteFunc);
+    testinput_folder + "/ExternalGenerator/tmp dir/ns/CM0/Debug/extgen.cbuild-gen-idx.yml", stripAbsoluteFunc);
   ProjMgrTestEnv::CompareFile(testinput_folder + "/ExternalGenerator/ref/TrustZone/ns.Debug+CM0.cbuild-gen.yml",
-    testinput_folder + "/ExternalGenerator/tmp/ns/CM0/Debug/ns.Debug+CM0.cbuild-gen.yml", stripAbsoluteFunc);
+    testinput_folder + "/ExternalGenerator/tmp dir/ns/CM0/Debug/ns.Debug+CM0.cbuild-gen.yml", stripAbsoluteFunc);
   ProjMgrTestEnv::CompareFile(testinput_folder + "/ExternalGenerator/ref/TrustZone/s.Debug+CM0.cbuild-gen.yml",
-    testinput_folder + "/ExternalGenerator/tmp/s/CM0/Debug/s.Debug+CM0.cbuild-gen.yml", stripAbsoluteFunc);
+    testinput_folder + "/ExternalGenerator/tmp dir/s/CM0/Debug/s.Debug+CM0.cbuild-gen.yml", stripAbsoluteFunc);
 
   // convert single core
   argv[2] = (char*)"convert";
@@ -4963,6 +5061,10 @@ TEST_F(ProjMgrUnitTests, ExternalGenerator_WrongGenDir) {
   const string& dstGlobalGenerator = etc_folder + "/global.generator.yml";
   RteFsUtils::CopyCheckFile(srcGlobalGenerator, dstGlobalGenerator, false);
 
+  const string& srcBridgeTool = testinput_folder + "/ExternalGenerator/bridge tool.sh";
+  const string& dstBridgeTool = bin_folder + "/bridge tool.sh";
+  RteFsUtils::CopyCheckFile(srcBridgeTool, dstBridgeTool, false);
+
   StdStreamRedirect streamRedirect;
   char* argv[8];
   const string& csolution = testinput_folder + "/ExternalGenerator/extgen.csolution.yml";
@@ -4973,7 +5075,7 @@ TEST_F(ProjMgrUnitTests, ExternalGenerator_WrongGenDir) {
   argv[5] = (char*)"-c";
   argv[6] = (char*)"core0.Debug+MultiCore";
   argv[7] = (char*)"-n";
-  EXPECT_EQ(1, RunProjMgr(8, argv, 0));
+  EXPECT_EQ(0, RunProjMgr(8, argv, 0));
 
   const string expected = "\
 warning csolution: unknown access sequence: 'UnknownAccessSequence()'\n\
@@ -4982,6 +5084,7 @@ warning csolution: unknown access sequence: 'UnknownAccessSequence()'\n\
   EXPECT_TRUE(errStr.find(expected) != string::npos);
 
   RteFsUtils::RemoveFile(dstGlobalGenerator);
+  RteFsUtils::RemoveFile(dstBridgeTool);
 }
 
 TEST_F(ProjMgrUnitTests, ExternalGenerator_NoGenDir) {
@@ -5011,6 +5114,14 @@ error csolution: generator output directory was not set\n\
 }
 
 TEST_F(ProjMgrUnitTests, ExternalGenerator_MultipleContexts) {
+  const string& srcGlobalGenerator = testinput_folder + "/ExternalGenerator/global.generator.yml";
+  const string& dstGlobalGenerator = etc_folder + "/global.generator.yml";
+  RteFsUtils::CopyCheckFile(srcGlobalGenerator, dstGlobalGenerator, false);
+
+  const string& srcBridgeTool = testinput_folder + "/ExternalGenerator/bridge tool.sh";
+  const string& dstBridgeTool = bin_folder + "/bridge tool.sh";
+  RteFsUtils::CopyCheckFile(srcBridgeTool, dstBridgeTool, false);
+
   StdStreamRedirect streamRedirect;
   char* argv[7];
   const string& csolution = testinput_folder + "/ExternalGenerator/extgen.csolution.yml";
@@ -5019,14 +5130,26 @@ TEST_F(ProjMgrUnitTests, ExternalGenerator_MultipleContexts) {
   argv[3] = (char*)"-g";
   argv[4] = (char*)"RteTestExternalGenerator";
   argv[5] = (char*)"-c";
-  argv[6] = (char*)"+MultiCore";
-  EXPECT_EQ(1, RunProjMgr(7, argv, 0));
 
+  // multiple context selection is accepted when all selected contexts are siblings (same generator-id and gendir)
+  argv[6] = (char*)"+MultiCore";
+  EXPECT_EQ(0, RunProjMgr(7, argv, 0));
+
+  // multiple context selection is rejected when the selected contexts are unrelated (require distinct generator run calls)
+  argv[6] = (char*)"+CM0";
+  EXPECT_EQ(1, RunProjMgr(7, argv, 0));
   const string expected = "\
-error csolution: a single context must be specified\n\
+one or more selected contexts are unrelated, redefine the '--context arg [...]' option\n\
 ";
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_TRUE(errStr.find(expected) != string::npos);
+
+  // use cbuild-set with siblings selection
+  argv[5] = (char*)"--context-set";
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+
+  RteFsUtils::RemoveFile(dstGlobalGenerator);
+  RteFsUtils::RemoveFile(dstBridgeTool);
 }
 
 TEST_F(ProjMgrUnitTests, ExternalGenerator_WrongGeneratedData) {
@@ -5089,6 +5212,23 @@ TEST_F(ProjMgrUnitTests, ExternalGenerator_NoCgenFile) {
   RteFsUtils::RemoveFile(dstGlobalGenerator);
 }
 
+TEST_F(ProjMgrUnitTests, ExternalGeneratorBoard) {
+  const string& srcGlobalGenerator = testinput_folder + "/ExternalGenerator/global.generator.yml";
+  const string& dstGlobalGenerator = etc_folder + "/global.generator.yml";
+  RteFsUtils::CopyCheckFile(srcGlobalGenerator, dstGlobalGenerator, false);
+
+  char* argv[3];
+  const string& csolution = testinput_folder + "/ExternalGenerator/board.csolution.yml";
+  argv[1] = (char*)csolution.c_str();
+  argv[2] = (char*)"convert"; 
+  EXPECT_EQ(0, RunProjMgr(3, argv, 0));
+
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/ExternalGenerator/single/single-core.Debug+Board.cbuild.yml",
+    testinput_folder + "/ExternalGenerator/ref/SingleCore/single-core.Debug+Board.cbuild.yml");
+
+  RteFsUtils::RemoveFile(dstGlobalGenerator);
+}
+
 TEST_F(ProjMgrUnitTests, ExternalGeneratorListVerbose) {
   const string& srcGlobalGenerator = testinput_folder + "/ExternalGenerator/global.generator.yml";
   const string& dstGlobalGenerator = etc_folder + "/global.generator.yml";
@@ -5106,18 +5246,26 @@ TEST_F(ProjMgrUnitTests, ExternalGeneratorListVerbose) {
   const string expected = "\
 RteTestExternalGenerator (Global Registered Generator)\n\
   base-dir: generated/CM0\n\
-    context: ns.Debug+CM0\n\
-    context: ns.Release+CM0\n\
-    context: s.Debug+CM0\n\
-    context: s.Release+CM0\n\
+    cgen-file: generated/CM0/ns.cgen.yml\n\
+      context: ns.Debug+CM0\n\
+      context: ns.Release+CM0\n\
+    cgen-file: generated/CM0/s.cgen.yml\n\
+      context: s.Debug+CM0\n\
+      context: s.Release+CM0\n\
   base-dir: generated/MultiCore\n\
-    context: core0.Debug+MultiCore\n\
-    context: core0.Release+MultiCore\n\
-    context: core1.Debug+MultiCore\n\
-    context: core1.Release+MultiCore\n\
+    cgen-file: generated/MultiCore/MyConf.cgen.yml\n\
+      context: boot.Debug+MultiCore\n\
+      context: boot.Release+MultiCore\n\
+    cgen-file: generated/MultiCore/core0.cgen.yml\n\
+      context: core0.Debug+MultiCore\n\
+      context: core0.Release+MultiCore\n\
+    cgen-file: generated/MultiCore/core1.cgen.yml\n\
+      context: core1.Debug+MultiCore\n\
+      context: core1.Release+MultiCore\n\
   base-dir: single/generated\n\
-    context: single-core.Debug+CM0\n\
-    context: single-core.Release+CM0\n\
+    cgen-file: single/generated/single-core.cgen.yml\n\
+      context: single-core.Debug+CM0\n\
+      context: single-core.Release+CM0\n\
 ";
   auto outStr = streamRedirect.GetOutString();
   EXPECT_TRUE(outStr.find(expected) != string::npos);
@@ -5139,10 +5287,12 @@ TEST_F(ProjMgrUnitTests, ClassicGeneratorListVerbose) {
   const string expected = "\
 RteTestGeneratorIdentifier (RteTest Generator Description)\n\
   base-dir: GeneratedFiles/RteTestGeneratorIdentifier\n\
-    context: test-gpdsc-multiple-generators.Debug+CM0\n\
+    cgen-file: GeneratedFiles/RteTestGeneratorIdentifier/RteTestGen_ARMCM0/RteTest.gpdsc\n\
+      context: test-gpdsc-multiple-generators.Debug+CM0\n\
 RteTestGeneratorWithKey (RteTest Generator with Key Description)\n\
   base-dir: GeneratedFiles/RteTestGeneratorWithKey\n\
-    context: test-gpdsc-multiple-generators.Debug+CM0\n\
+    cgen-file: GeneratedFiles/RteTestGeneratorWithKey/RteTestGen_ARMCM0/RteTest.gpdsc\n\
+      context: test-gpdsc-multiple-generators.Debug+CM0\n\
 ";
   auto outStr = streamRedirect.GetOutString();
   EXPECT_TRUE(outStr.find(expected) != string::npos);
@@ -5428,4 +5578,131 @@ TEST_F(ProjMgrUnitTests, Executes) {
   EXPECT_EQ(1, RunProjMgr(6, argv, 0));
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_NE(string::npos, errStr.find("error csolution: context 'unknown.Debug+RteTest_ARMCM3' referenced by access sequence 'elf' is not compatible"));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_GeneratorError) {
+  char* argv[6];
+  StdStreamRedirect streamRedirect;
+  const string& csolution = testinput_folder + "/TestGenerator/test-gpdsc-error.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(1, RunProjMgr(6, argv, 0));
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find("error csolution: redefinition from 'balanced' into 'none' is not allowed"));
+}
+
+TEST_F(ProjMgrUnitTests, TestRelativeOutputOption) {
+  char* argv[5];
+  const string& csolution = testinput_folder + "/TestSolution/Executes/solution.csolution.yml";
+  const string& testFolder = RteFsUtils::ParentPath(testoutput_folder);
+  const string& outputFolder = testFolder + "/outputFolder";
+
+  // Ensure output folder does not exist
+  RteFsUtils::RemoveDir(outputFolder);
+  ASSERT_FALSE(RteFsUtils::Exists(outputFolder));
+
+  const string& currentFolder = RteFsUtils::GetCurrentFolder();
+  error_code ec;
+  fs::current_path(testFolder, ec);
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"--output";
+  argv[4] = (char*)"outputFolder";
+  EXPECT_EQ(0, RunProjMgr(5, argv, 0));
+  fs::current_path(currentFolder, ec);
+
+  // Check generated cbuild-idx
+  ProjMgrTestEnv::CompareFile(outputFolder + "/solution.cbuild-idx.yml",
+    testinput_folder + "/TestSolution/Executes/ref/solution.cbuild-idx.yml");
+}
+
+TEST_F(ProjMgrUnitTests, TestRestrictedContextsWithContextSet_Failed_Read_From_CbuildSet) {
+  char* argv[6];
+  StdStreamRedirect streamRedirect;
+  const string& csolution = testinput_folder + "/TestSolution/test_restricted_contexts.csolution.yml";
+  const string& expectedErrMsg = "\
+error csolution: invalid combination of contexts specified in test_restricted_contexts.cbuild-set.yml:\n\
+  target-type does not match for 'test1.Debug+CM3' and 'test1.Debug+CM0'";
+
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"--output";
+  argv[4] = (char*)testoutput_folder.c_str();
+  argv[5] = (char*)"-S";
+
+  EXPECT_EQ(1, RunProjMgr(6, argv, 0));
+  auto errMsg = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errMsg.find(expectedErrMsg));
+}
+
+TEST_F(ProjMgrUnitTests, TestRestrictedContextsWithContextSet_Failed1) {
+  char* argv[14];
+  StdStreamRedirect streamRedirect;
+  const string& csolution = testinput_folder + "/TestSolution/test.csolution.yml";
+  const string& expectedErrMsg = "\
+error csolution: invalid combination of contexts specified in command line:\n\
+  target-type does not match for 'test2.Debug+CM3' and 'test1.Debug+CM0'";
+
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"-c";
+  argv[4] = (char*)"test1.Debug+CM0";
+  argv[5] = (char*)"-c";
+  argv[6] = (char*)"test1.Release+CM0";
+  argv[7] = (char*)"-c";
+  argv[8] = (char*)"test2.Debug+CM0";
+  argv[9] = (char*)"-c";
+  argv[10] = (char*)"test2.Debug+CM3";
+  argv[11] = (char*)"--output";
+  argv[12] = (char*)testoutput_folder.c_str();
+  argv[13] = (char*)"-S";
+
+  EXPECT_EQ(1, RunProjMgr(14, argv, 0));
+  auto errMsg = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errMsg.find(expectedErrMsg));
+}
+
+TEST_F(ProjMgrUnitTests, TestRestrictedContextsWithContextSet_Failed2) {
+  char* argv[12];
+  StdStreamRedirect streamRedirect;
+  const string& csolution = testinput_folder + "/TestSolution/test.csolution.yml";
+  const string& expectedErrMsg = "\
+error csolution: invalid combination of contexts specified in command line:\n\
+  build-type is not unique for project 'test1' in 'test1.Release+CM0' and 'test1.Debug+CM0'";
+
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"-c";
+  argv[4] = (char*)"test1.Debug+CM0";
+  argv[5] = (char*)"-c";
+  argv[6] = (char*)"test1.Release+CM0";
+  argv[7] = (char*)"-c";
+  argv[8] = (char*)"test2.Debug+CM0";
+  argv[9] = (char*)"--output";
+  argv[10] = (char*)testoutput_folder.c_str();
+  argv[11] = (char*)"-S";
+
+  EXPECT_EQ(1, RunProjMgr(12, argv, 0));
+  auto errMsg = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errMsg.find(expectedErrMsg));
+}
+
+TEST_F(ProjMgrUnitTests, TestRestrictedContextsWithContextSet_Pass) {
+  char* argv[10];
+  const string& csolution = testinput_folder + "/TestSolution/test.csolution.yml";
+
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"-c";
+  argv[4] = (char*)"test1.Debug+CM0";
+  argv[5] = (char*)"-c";
+  argv[6] = (char*)"test2.Debug+CM0";
+  argv[7] = (char*)"--output";
+  argv[8] = (char*)testoutput_folder.c_str();
+  argv[9] = (char*)"-S";
+
+  EXPECT_EQ(0, RunProjMgr(10, argv, 0));
 }

@@ -18,7 +18,7 @@ project:
         - ./setup/AC6/2
       misc:
         - C:
-          - SETUP_AC6_MISC          
+          - SETUP_AC6_MISC
     - setup: Setup for GCC
       for-compiler: GCC
       define:

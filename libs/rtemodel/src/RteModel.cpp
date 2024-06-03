@@ -71,10 +71,8 @@ void RteModel::ClearModel()
   m_taxonomy.clear();
   m_bundles.clear();
 
-  m_imageDescriptors.clear();
   m_layerDescriptors.clear();
-  m_projectDescriptors.clear();
-  m_solutionDescriptors.clear();
+  m_templateDescriptors.clear();
 
   m_packageDuplicates.clear();
   m_packages.clear();
@@ -500,23 +498,19 @@ void RteModel::AddItemsFromPack(RtePackage* pack)
       }
     }
   }
-  // images
-  AddPackItemsToList(pack->GetImageDescriptors(), m_imageDescriptors);
-  // layers
-  AddPackItemsToList(pack->GetLayerDescriptors(), m_layerDescriptors);
-  // projects
-  AddPackItemsToList(pack->GetProjectDescriptors(), m_projectDescriptors);
-  // projects
-  AddPackItemsToList(pack->GetSolutionDescriptors(), m_solutionDescriptors);
+  // collect layers and templates
+  auto& csolutionChildren = pack->GetGrandChildren("csolution");
+  AddPackItemsToList(csolutionChildren, m_layerDescriptors, "clayer");
+  AddPackItemsToList(csolutionChildren, m_templateDescriptors, "template");
 
   // fill api and component list
   pack->InsertInModel(this);
 }
 
-void RteModel::AddPackItemsToList(const Collection<RteItem*>& srcCollection, Collection<RteItem*>& dstCollection)
+void RteModel::AddPackItemsToList(const Collection<RteItem*>& srcCollection, Collection<RteItem*>& dstCollection, const std::string& tag)
 {
   for (auto item : srcCollection) {
-    if (IsFiltered(item)) {
+    if ((tag.empty() || tag == item->GetTag()) && IsFiltered(item)) {
       dstCollection.push_back(item);
     }
   }

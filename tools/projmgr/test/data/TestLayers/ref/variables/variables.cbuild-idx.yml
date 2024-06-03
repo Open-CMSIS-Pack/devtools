@@ -1,0 +1,43 @@
+build-idx:
+  generated-by: csolution version 0.0.0+gdd691f0c
+  csolution: ../data/TestLayers/variables.csolution.yml
+  cprojects:
+    - cproject: ../data/TestLayers/variables.cproject.yml
+      clayers:
+        - clayer: ../data/TestLayers/$VarBuildLayer$
+        - clayer: ../data/TestLayers/$VarTargetLayer$
+        - clayer: ../data/TestLayers/$VarSolution$
+        - clayer: ../data/TestLayers/$VarSolutionDir$
+  cbuilds:
+    - cbuild: variables.BuildType1+TargetType1.cbuild.yml
+      project: variables
+      configuration: .BuildType1+TargetType1
+      clayers:
+        - clayer: ../data/TestLayers/variables/app.clayer.yml
+        - clayer: ../data/TestLayers/variables/build1.clayer.yml
+        - clayer: ../data/TestLayers/variables/solutionDir.clayer.yml
+        - clayer: ../data/TestLayers/variables/target1.clayer.yml
+    - cbuild: variables.BuildType1+TargetType2.cbuild.yml
+      project: variables
+      configuration: .BuildType1+TargetType2
+      clayers:
+        - clayer: ../data/TestLayers/variables/app.clayer.yml
+        - clayer: ../data/TestLayers/variables/build1.clayer.yml
+        - clayer: ../data/TestLayers/variables/solutionDir.clayer.yml
+        - clayer: ../data/TestLayers/variables/target2.clayer.yml
+    - cbuild: variables.BuildType2+TargetType1.cbuild.yml
+      project: variables
+      configuration: .BuildType2+TargetType1
+      clayers:
+        - clayer: ../data/TestLayers/variables/app.clayer.yml
+        - clayer: ../data/TestLayers/variables/build2.clayer.yml
+        - clayer: ../data/TestLayers/variables/solutionDir.clayer.yml
+        - clayer: ../data/TestLayers/variables/target1.clayer.yml
+    - cbuild: variables.BuildType2+TargetType2.cbuild.yml
+      project: variables
+      configuration: .BuildType2+TargetType2
+      clayers:
+        - clayer: ../data/TestLayers/variables/app.clayer.yml
+        - clayer: ../data/TestLayers/variables/build2.clayer.yml
+        - clayer: ../data/TestLayers/variables/solutionDir.clayer.yml
+        - clayer: ../data/TestLayers/variables/target2.clayer.yml

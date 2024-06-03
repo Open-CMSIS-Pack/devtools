@@ -8,14 +8,14 @@
   <url>http://www.keil.com/pack/</url>
 
   <releases>
-    <release version="0.1.0" date="2021-02-16">
-      Tag to check that the latest release item version is picked up even if it is below
+    <release version="0.2.0" date="2022-02-19">
+      Added a new device 'RteTest_ARMCM0_Dual'
     </release>
     <release version="0.1.1" date="2021-02-17">
       Initial copy from ARM.CMSIS pack
     </release>
-    <release version="0.2.0" date="2022-02-19">
-      Added a new device 'RteTest_ARMCM0_Dual'
+    <release version="0.1.0" date="2021-02-16">
+      Tag to check that the latest release item version is picked up even if it is below
     </release>
   </releases>
   <taxonomy>
@@ -259,7 +259,7 @@
      <condition id="BoardTest1">
       <description>Test component filtering on selected board 1</description>
       <require Dvendor="ARM:82" Dname="*ARMCM*"/>
-      <require Bname="RteTest Test board*" Bvendor="Keil" Brevision="1.1.1"/>
+      <require Bname="RteTest*Test*board*" Bvendor="Keil" Brevision="1.1.1"/>
     </condition>
 
     <condition id="BoardTest2">
@@ -442,6 +442,13 @@
       <compatibleDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM4_NOFP"/>
       <compatibleDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM4_FP"/>
     </board>
+    <board name="RteTest-Test-board With.Memory" vendor="Keil" revision="1.1.1">
+      <description>TestBoard with dots in the name and memory</description>
+      <mountedDevice    deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM3"/>
+      <compatibleDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM3"/>
+      <memory name="RAM-External"   access="rwx" start="0x90000000" size="0x00800000"/>
+      <memory name="Flash-External" access="rx"  start="0x70000000" size="0x04000000"/>
+    </board>
     <board name="RteTest Test board no mounted device" vendor="Keil" revision="2.2.2">
       <description>uVision Simulator</description>
       <compatibleDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM3"/>
@@ -492,7 +499,7 @@
     </board>
   </boards>
 
-  <clayers>
+  <csolution>
     <clayer name="Board1" type="Board" file="Layers/board1.clayer.yml" condition="BoardTest1">
       <description>"Test board layer one"</description>
     </clayer>
@@ -502,6 +509,15 @@
     <clayer name="Board3" type="Board" file="Layers/board3.clayer.yml" condition="BoardTest3">
       <description>"Test board layer three"</description>
     </clayer>
+    <template name="Board1Template" file="Templates/board1.csolution.yml" condition="BoardTest1">
+      <description>"Test board Template one"</description>
+    </template>
+    <template name="Board2" type="Board" file="Templates/board2.csolution.yml" condition="BoardTest2">
+      <description>"Test board Template two"</description>
+    </template>
+    <template name="Board3" type="Board" file="Templates/board3.csolution.yml" condition="BoardTest3">
+      <description>"Test board Template three"</description>
+    </template>
     <clayer name="TestVariant" type="TestVariant" file="Layers/testvariant.clayer.yml">
       <description>"Test compatible layer"</description>
     </clayer>
@@ -511,16 +527,15 @@
     <clayer name="PdscType" type="PdscType" file="Layers/pdsc-type-mismatch.clayer.yml">
       <description>"Test pdsc type mismatch"</description>
     </clayer>
-    <clayer name="Config1" type="Config1" file="Layers/config1.clayer.yml">
+    <clayer name="Config1" type="Config1" path="Layers" file="config1.clayer.yml" copy-to="path/to/config1">
       <description>"Test board layer with shield"</description>
     </clayer>
-    <clayer name="Config2" type="Config2" file="Layers/config2.clayer.yml">
+    <clayer name="Config2" type="Config2" path="." file="Layers/config2.clayer.yml" copy-to="path/to/config2">
       <description>"Test board layer with shield"</description>
     </clayer>
     <clayer name="BoardSpecific" type="BoardSpecific" file="Layers/board-specific.clayer.yml">
       <description>"Test board layer with board specific pack"</description>
     </clayer>
-    
-  </clayers>
+  </csolution>
 
 </package>

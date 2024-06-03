@@ -15,6 +15,9 @@ build:
   define:
     - ARMCM0
     - _RTE_
+  define-asm:
+    - ARMCM0
+    - _RTE_
   add-path:
     - ../data/TestSolution/DeviceAttributes/fpu/RTE/_Debug_no-fpu
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include

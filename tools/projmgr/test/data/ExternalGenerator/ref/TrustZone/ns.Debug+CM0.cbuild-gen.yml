@@ -16,10 +16,12 @@ build-gen:
       path: ${DEVTOOLS(packs)}/ARM/RteTestGenerator/0.1.0
   define:
     - _RTE_
+  define-asm:
+    - _RTE_
   add-path:
     - ${DEVTOOLS(data)}/ExternalGenerator/tz_ns/RTE/_Debug_CM0
   output-dirs:
-    intdir: ${DEVTOOLS(data)}/ExternalGenerator/tmp/ns/CM0/Debug
+    intdir: ${DEVTOOLS(data)}/ExternalGenerator/tmp dir/ns/CM0/Debug
     outdir: ${DEVTOOLS(data)}/ExternalGenerator/out/ns/CM0/Debug
     rtedir: ${DEVTOOLS(data)}/ExternalGenerator/tz_ns/RTE
   output:
@@ -35,9 +37,6 @@ build-gen:
   linker:
     script: ${DEVTOOLS(data)}/ExternalGenerator/tz_ns/RTE/Device/RteTestGen_ARMCM0/ac6_linker_script.sct.src
     regions: ${DEVTOOLS(data)}/ExternalGenerator/tz_ns/RTE/Device/RteTestGen_ARMCM0/regions_RteTestGen_ARMCM0.h
-  constructed-files:
-    - file: ${DEVTOOLS(data)}/ExternalGenerator/tz_ns/RTE/_Debug_CM0/RTE_Components.h
-      category: header
   licenses:
     - license: <unknown>
       packs:

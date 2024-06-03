@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout devtools
-        uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4.1.3
+        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
 
       - name: Register markdownlint warning matcher
         run: |
@@ -30,7 +30,7 @@ jobs:
         run: |
           echo "::remove-matcher owner=markdownlint::"
 
-      - uses: gaurav-nelson/github-action-markdown-link-check@25b2c436c653f0d4500d3c2df86e5c14e71e44e1 # master
+      - uses: gaurav-nelson/github-action-markdown-link-check@7d83e59a57f3c201c76eed3d33dff64ec4452d27 # master
         if: always()
         with:
           use-quiet-mode: 'yes'

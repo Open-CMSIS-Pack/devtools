@@ -90,6 +90,7 @@ TEST(RteModelTest, PackRegistryLoadPacks) {
   packs1.clear();
   EXPECT_TRUE(rteKernel.LoadPacks(files, packs1, &testModel, true));
   EXPECT_EQ(packs1.size(), files.size());
+  pack1 = *packs1.begin();
   EXPECT_EQ(pack1->GetFirstChild("dummy_child"), nullptr); // pack got loaded again => no added child
 
   EXPECT_EQ(packRegistry->GetLoadedPacks().size(), files.size());
@@ -842,6 +843,22 @@ TEST_F(RteModelPrjTest, GenerateHeadersTest_Update_Header)
 {
   m_toolInfo = ToolInfo{ "TestExe", "3.0.0" };
   GenerateHeadersTest(RteTestM3_UpdateHeader_cprj, "RTE_Update_Header", false, true);
+}
+
+TEST_F(RteModelPrjTest, RteNoComponents)
+{
+  RteKernelSlim rteKernel;
+  rteKernel.SetCmsisPackRoot(RteModelTestConfig::CMSIS_PACK_ROOT);
+  RteCprjProject* loadedCprjProject = rteKernel.LoadCprj(RteTestM3NoComponents_cprj);
+  ASSERT_NE(loadedCprjProject, nullptr);
+  // check if neither RTE directory is created, nor RTE_Ceomponents.h
+  const string& rteFolder = loadedCprjProject->GetRteFolder();
+  EXPECT_EQ("RTE_NO_DIR", rteFolder);
+  const string rteDir = RteUtils::ExtractFilePath(RteTestM3NoComponents_cprj, true) + rteFolder;
+  const string targetFolder = "/_Target_1/";
+  const string rteComp = rteDir + targetFolder + "RTE_Components.h";
+  EXPECT_FALSE(RteFsUtils::Exists(rteDir));
+  EXPECT_FALSE(RteFsUtils::Exists(rteComp));
 }
 
 TEST_F(RteModelPrjTest, LoadCprjCompDep) {

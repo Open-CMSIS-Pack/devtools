@@ -57,6 +57,19 @@ Software layers and Virtual I/O simplify these use cases:
     <th>Description</th>
   </tr>
   <tr>
+    <td>2.4.0</td>
+    <td>Release notes:
+      - added support for Cortex-M52 (CLANG)
+      - updated cbuild2cmake utility v0.9.1 (alpha support)
+      - updated cbuild utility v2.4.0
+      - updated cpackget utility v2.1.2
+      - updated csolution utility v2.4.0
+      - updated cbridge utility v0.9.5
+      - updated and renamed AC6.6.18.0.cmake to AC6.6.16.2.cmake
+      - removed CMake info message concerning registered toolchain
+      - fixed undefines list calculation to only match key
+      - fixed missing CXX file option
+    </td>
     <td>2.3.0</td>
     <td>Release notes:
       - added support for Cortex-M52 (only AC6)

@@ -8,7 +8,7 @@ solution:
     - project: ./setup-test.cproject.yml
   
   build-types:
-    - type: Build AC6
+    - type: Build_AC6
       compiler: AC6
-    - type: Build GCC
+    - type: Build_GCC
       compiler: GCC

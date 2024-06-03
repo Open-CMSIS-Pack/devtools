@@ -16,6 +16,8 @@ solution:
       define:
         - DEF-CM0
         - DEF-CM0-to-be-removed
+      define-asm:
+        - DEF_ASM_CM0
       undefine:
         - DEF-solution-to-be-removed
         - DEF-solution-value
@@ -39,6 +41,8 @@ solution:
       define:
         - DEF-CM3
         - DEF-CM3-to-be-removed
+      define-asm:
+        - DEF_ASM_CM3
       undefine:
         - DEF-solution-to-be-removed
       add-path:
@@ -59,6 +63,8 @@ solution:
       debug: on
       define:
         - DEF-Debug
+      define-asm:
+        - DEF_ASM_DEBUG
       undefine:
         - DEF-CM0-to-be-removed
         - DEF-CM3-to-be-removed
@@ -78,6 +84,8 @@ solution:
       debug: off
       define:
         - DEF-Release
+      define-asm:
+        - DEF_ASM_RELEASE
       undefine:
         - DEF-CM0-to-be-removed
         - DEF-CM3-to-be-removed
@@ -100,6 +108,8 @@ solution:
     - DEF-solution
     - DEF-solution-to-be-removed
     - DEF-solution-value: 25
+  define-asm:
+    - DEF_ASM_SOLUTION  
   undefine:
     - DEF-project-to-be-removed
   add-path:

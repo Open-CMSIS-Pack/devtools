@@ -86,7 +86,6 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDevice) {
     {"Dclock", "10000000"},
     {"Dcore", "Cortex-M0"},
     {"DcoreVersion", "r0p0"},
-    {"Dendian", "Configurable"},
     {"Dfpu", "NO_FPU"},
     {"Dmpu", "NO_MPU"},
     {"Dname", "RteTest_ARMCM0"},
@@ -107,6 +106,10 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDevice) {
   for (const auto& expectedAttribute : expected) {
     EXPECT_EQ(expectedAttribute.second, context.targetAttributes[expectedAttribute.first]);
   }
+  // Device 'configurable' endianess must not be set among target attributes
+  const auto& processor = context.rteFilteredModel->GetDevice(context.deviceItem.name, context.deviceItem.vendor)->GetProcessor(context.deviceItem.pname);
+  EXPECT_EQ(processor->GetAttribute("Dendian"), "Configurable");
+  EXPECT_TRUE(context.targetAttributes.find("Dendian") == context.targetAttributes.end());
 }
 
 TEST_F(ProjMgrWorkerUnitTests, ProcessComponents) {
@@ -1058,7 +1061,7 @@ TEST_F(ProjMgrWorkerUnitTests, CollectLayersFromPacks) {
   };
   RteModel* model = context.rteActiveTarget->GetModel();
   RtePackage* pack = new RtePackage(model, packAttributes);
-  RteItem* clayersItem = pack->CreateChild("clayers");
+  RteItem* clayersItem = pack->CreateChild("csolution");
   RteItem* clayerItem = clayersItem->CreateChild("clayer");
   clayerItem->SetAttributes(clayerAttributes);
   model->InsertPacks(list<RtePackage*>{pack});
@@ -1461,23 +1464,23 @@ TEST_F(ProjMgrWorkerUnitTests, GetGeneratorDir) {
   EXPECT_FALSE(GetGeneratorDir(generator, context, layerName, genDir));
 
   // custom options directory
-  csolution.generators.options[generatorId] = "CustomRelativeToSolution";
+  csolution.generators.options[generatorId].path = "CustomRelativeToSolution";
   EXPECT_TRUE(GetGeneratorDir(generator, context, layerName, genDir));
   EXPECT_EQ(genDir, "../CustomRelativeToSolution");
 
-  cproject.generators.options[generatorId] = "CustomRelativeToProject";
+  cproject.generators.options[generatorId].path = "CustomRelativeToProject";
   EXPECT_TRUE(GetGeneratorDir(generator, context, layerName, genDir));
   EXPECT_EQ(genDir, "CustomRelativeToProject");
 
-  clayer.generators.options[generatorId] = "CustomRelativeToLayer";
+  clayer.generators.options[generatorId].path = "CustomRelativeToLayer";
   EXPECT_TRUE(GetGeneratorDir(generator, context, layerName, genDir));
   EXPECT_EQ(genDir, "LayerDirectory/CustomRelativeToLayer");
 
-  clayer.generators.options[generatorId] = "$SolutionDir()$/$Compiler$";
+  clayer.generators.options[generatorId].path = "$SolutionDir()$/$Compiler$";
   EXPECT_TRUE(GetGeneratorDir(generator, context, layerName, genDir));
   EXPECT_EQ(genDir, "../AC6");
 
-  clayer.generators.options[generatorId] = "$ProjectDir(UnknownContext)$";
+  clayer.generators.options[generatorId].path = "$ProjectDir(UnknownContext)$";
   EXPECT_FALSE(GetGeneratorDir(generator, context, layerName, genDir));
 
   m_contexts.clear();
@@ -1617,4 +1620,77 @@ TEST_F(ProjMgrWorkerUnitTests, PrintContextErrors) {
   m_contextErrMap.clear();
   PrintContextErrors(context1);
   EXPECT_TRUE(streamRedirect.GetErrorString().empty());
+}
+
+TEST_F(ProjMgrWorkerUnitTests, CheckBoardDeviceInLayer) {
+
+  vector<tuple<string, string, bool>> testDataBoard = {
+    {"BoardVendor::BoardName:BoardRevision"  , "OtherVendor::BoardName:BoardRevision"  , false},
+    {"BoardVendor::BoardName:BoardRevision"  , "BoardVendor::OtherName:BoardRevision"  , false},
+    {"BoardVendor::BoardName:BoardRevision"  , "BoardVendor::BoardName:OtherRevision"  , false},
+    {""                                      ,              "BoardName"                , false},
+    {"BoardVendor::BoardName:BoardRevision"  , "BoardVendor::BoardName:BoardRevision"  ,  true},
+    {"BoardVendor::BoardName:BoardRevision"  , "BoardVendor::BoardName"                ,  true},
+    {"BoardVendor::BoardName:BoardRevision"  ,              "BoardName"                ,  true},
+    {             "BoardName"                , "BoardVendor::BoardName:BoardRevision"  ,  true},
+    {             "BoardName"                , "BoardVendor::BoardName"                ,  true},
+    {             "BoardName"                ,              "BoardName"                ,  true},
+  };
+  for (const auto& [board, forBoard, expect] : testDataBoard) {
+    ContextItem context;
+    ClayerItem clayer;
+    context.board = board;
+    clayer.forBoard = forBoard;
+    EXPECT_EQ(CheckBoardDeviceInLayer(context, clayer), expect);
+  }
+
+  vector<tuple<string, string, bool>> testDataDevice = {
+  {"DeviceVendor::DeviceName:ProcessorName", "OtherVendor::DeviceName:ProcessorName" , false},
+  {"DeviceVendor::DeviceName:ProcessorName", "DeviceVendor::OtherName:ProcessorName" , false},
+  {"DeviceVendor::DeviceName:ProcessorName", "DeviceVendor::DeviceName:OtherName"    , false},
+  {""                                      ,               "DeviceName"              , false},
+  {"DeviceVendor::DeviceName:ProcessorName", "DeviceVendor::DeviceName:ProcessorName",  true},
+  {"DeviceVendor::DeviceName:ProcessorName", "DeviceVendor::DeviceName"              ,  true},
+  {"DeviceVendor::DeviceName:ProcessorName",               "DeviceName"              ,  true},
+  {              "DeviceName"              , "DeviceVendor::DeviceName:ProcessorName",  true},
+  {              "DeviceName"              , "DeviceVendor::DeviceName"              ,  true},
+  {              "DeviceName"              ,               "DeviceName"              ,  true},
+  };
+  for (const auto& [device, forDevice, expect] : testDataDevice) {
+    ContextItem context;
+    ClayerItem clayer;
+    context.device = device;
+    clayer.forDevice = forDevice;
+    EXPECT_EQ(CheckBoardDeviceInLayer(context, clayer), expect);
+  }
+}
+
+TEST_F(ProjMgrWorkerUnitTests, ValidateContexts) {
+  const string& errMsg1 = "\
+error csolution: invalid combination of contexts specified in command line:\n\
+  target-type does not match for 'project1.Debug+CM1' and 'project1.Debug+AVH'\n\
+  target-type does not match for 'project1.Debug+CM3' and 'project1.Debug+AVH'\n\n";
+
+  const string& errMsg2 = "\
+error csolution: invalid combination of contexts specified in command line:\n\
+  build-type is not unique for project 'project1' in 'project1.Release+AVH' and 'project1.Debug+AVH'\n\
+  build-type is not unique for project 'project2' in 'project2.Release+AVH' and 'project2.Debug+AVH'\n\n";
+
+  vector<std::tuple<vector<string>, bool, string>> vecTestData = {
+    // inputContexts, expectedRetval, expectedErrMsg
+    { {"project1.Debug+AVH", "project2.Release+AVH", "project1.Debug+CM1", "project1.Debug+CM3"},   false, errMsg1},
+    { {"project1.Debug+AVH", "project1.Release+AVH", "project2.Debug+AVH", "project2.Release+AVH"}, false, errMsg2},
+    { {"project1.Debug+AVH", "project1.Debug+AVH", "project2.Debug+AVH", "project3.Release+AVH"},   true, ""},
+    { {""}, true, ""},
+  };
+
+  for (const auto& [inputContexts, expectedRetval, expectedErrMsg] : vecTestData) {
+    string input;
+    StdStreamRedirect streamRedirect;
+    std::for_each(inputContexts.begin(), inputContexts.end(),
+      [&](const std::string& item) { input += item + " "; });
+    EXPECT_EQ(expectedRetval, ValidateContexts(inputContexts, false)) << "failed for input \"" << input << "\"";
+    auto errStr = streamRedirect.GetErrorString();
+    EXPECT_STREQ(errStr.c_str(), expectedErrMsg.c_str()) << "failed for input \"" << input << "\"";
+  }
 }

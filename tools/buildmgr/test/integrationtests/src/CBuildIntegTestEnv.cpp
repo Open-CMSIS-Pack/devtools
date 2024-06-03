@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -61,7 +61,7 @@ void CBuildIntegTestEnv::SetUp() {
   ci_installer_path = CrossPlatformUtils::GetEnv("CI_CBUILD_INSTALLER");
 
   // Read AC6 toolchain path
-  string ac6ToolchainFilePath = testout_folder + "/cbuild/etc/AC6.6.18.0.cmake";
+  string ac6ToolchainFilePath = testout_folder + "/cbuild/etc/AC6.6.16.2.cmake";
   ASSERT_TRUE(fs::exists(ac6ToolchainFilePath));
 
   ifstream file(ac6ToolchainFilePath);

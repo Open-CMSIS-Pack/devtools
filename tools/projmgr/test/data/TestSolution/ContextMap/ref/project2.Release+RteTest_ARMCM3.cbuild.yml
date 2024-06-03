@@ -14,6 +14,8 @@ build:
       path: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0
   define:
     - ARMCM3
+  define-asm:
+    - ARMCM3
   add-path:
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM3/Include
   output-dirs:
@@ -33,9 +35,6 @@ build:
           category: sourceC
         - file: ../data/TestSolution/ContextMap/StandardRelease2.c
           category: sourceC
-  constructed-files:
-    - file: ../data/TestSolution/ContextMap/RTE/_Release_RteTest_ARMCM3/RTE_Components.h
-      category: header
   licenses:
     - license: <unknown>
       license-agreement: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Doc/license.txt

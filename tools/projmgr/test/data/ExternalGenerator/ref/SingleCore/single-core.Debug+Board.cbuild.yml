@@ -1,0 +1,112 @@
+build:
+  generated-by: csolution version 0.0.0+g1057b313
+  solution: ../board.csolution.yml
+  project: single-core.cproject.yml
+  context: single-core.Debug+Board
+  compiler: AC6
+  board: RteTest CM4 board
+  board-pack: ARM::RteTestBoard@0.1.0
+  device: RteTest_ARMCM4_FP
+  device-pack: ARM::RteTest_DFP@0.2.0
+  processor:
+    fpu: sp
+    core: Cortex-M4
+  packs:
+    - pack: ARM::RteTest@0.1.0
+      path: ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0
+    - pack: ARM::RteTestBoard@0.1.0
+      path: ${CMSIS_PACK_ROOT}/ARM/RteTestBoard/0.1.0
+    - pack: ARM::RteTestGenerator@0.1.0
+      path: ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0
+    - pack: ARM::RteTest_DFP@0.2.0
+      path: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0
+  define:
+    - ARMCM4_FP
+    - _RTE_
+  define-asm:
+    - ARMCM4_FP
+    - _RTE_
+  add-path:
+    - RTE/_Debug_Board
+    - generated/RTE/RteTest
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/GlobalLevel
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/Include
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM4/Include
+  output-dirs:
+    intdir: ../tmp/single-core/Board/Debug
+    outdir: ../out/single-core/Board/Debug
+    rtedir: RTE
+  output:
+    - type: elf
+      file: single-core.axf
+  components:
+    - component: ARM::RteTest:GlobalLevel@0.0.2
+      from-pack: ARM::RteTest@0.1.0
+      selected-by: RteTest:GlobalLevel
+      files:
+        - file: ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/GlobalLevel/GlobalLevel.c
+          category: sourceC
+          version: 0.0.2
+        - file: ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/GlobalLevel/GlobalLevel.h
+          category: preIncludeGlobal
+          version: 0.0.2
+        - file: ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/GlobalLevel/Include/RelativeInclude.h
+          category: header
+          version: 0.0.2
+        - file: ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/Include/Outside/OutsideInclude.h
+          category: header
+          version: 0.0.2
+        - file: generated/RTE/RteTest/Config/ConfigInclude.h
+          category: header
+          attr: config
+          version: 0.0.2
+        - file: generated/RTE/RteTest/GlobalLevelConfig.h
+          category: preIncludeGlobal
+          attr: config
+          version: 0.0.2
+    - component: ARM::RteTestGenerator:Check Global Generator@0.9.0
+      from-pack: ARM::RteTestGenerator@0.1.0
+      selected-by: RteTestGenerator:Check Global Generator
+      generator:
+        id: RteTestExternalGenerator
+        path: generated/single-core.cgen.yml
+  linker:
+    script: RTE/Device/RteTest_ARMCM4_FP/ac6_linker_script.sct.src
+    regions: RTE/Device/RteTest_ARMCM4_FP/regions_RteTest_CM4_board.h
+  groups:
+    - group: sources
+      files:
+        - file: main.c
+          category: sourceC
+    - group: generated sources
+      files:
+        - file: generated/generated.c
+          category: sourceC
+  constructed-files:
+    - file: RTE/_Debug_Board/Pre_Include_Global.h
+      category: preIncludeGlobal
+    - file: RTE/_Debug_Board/RTE_Components.h
+      category: header
+  licenses:
+    - license: <unknown>
+      packs:
+        - pack: ARM::RteTestBoard@0.1.0
+    - license: <unknown>
+      packs:
+        - pack: ARM::RteTestGenerator@0.1.0
+      components:
+        - component: ARM::RteTestGenerator:Check Global Generator@0.9.0
+    - license: <unknown>
+      license-agreement: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Doc/license.txt
+      packs:
+        - pack: ARM::RteTest_DFP@0.2.0
+    - license: BSD-3-Clause
+      packs:
+        - pack: ARM::RteTest@0.1.0
+      components:
+        - component: ARM::RteTest:GlobalLevel@0.0.2
+    - license: MIT
+      packs:
+        - pack: ARM::RteTest@0.1.0
+      components:
+        - component: ARM::RteTest:GlobalLevel@0.0.2

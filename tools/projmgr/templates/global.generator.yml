@@ -4,3 +4,8 @@ generator:
     download-url: https://www.st.com/en/development-tools/stm32cubemx.html#st-get-software
     run: ../bin/cbridge
     path: $SolutionDir()$/STM32CubeMX/$TargetType$
+  - id: MCUXpressoConfig
+    description: Global Registered Generator MCUXpresso Config tools
+    download-url: https://www.nxp.com/configtools
+    run: ../bin/launch-MCUXpressoConfigTools
+    path: $SolutionDir()$/MCUXpressoConfig/$TargetType$

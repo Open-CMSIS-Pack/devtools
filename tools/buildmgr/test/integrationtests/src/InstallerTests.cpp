@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -47,7 +47,7 @@ void InstallerTests::CheckInstallationDir(const string& path, bool expect) {
     { "bin", vector<string>{ "cbuild.sh", "cbuildgen", "cpackget", "csolution"} },
 #endif
     { "doc", vector<string>{ "index.html", "html"} },
-    { "etc", vector<string>{ "AC6.6.18.0.cmake", "CPRJ.xsd",
+    { "etc", vector<string>{ "AC6.6.16.2.cmake", "CPRJ.xsd",
       "GCC.10.3.1.cmake", "IAR.9.32.1.cmake", "setup"} }
   };
 
@@ -78,7 +78,7 @@ void InstallerTests::CheckExtractedDir(const string& path, bool expect) {
     "cbuildgen.lin-arm64",
     "csolution.lin-arm64"} },
     { "doc", vector<string>{ "index.html", "html"} },
-    { "etc", vector<string>{ "AC6.6.18.0.cmake", "CPRJ.xsd",
+    { "etc", vector<string>{ "AC6.6.16.2.cmake", "CPRJ.xsd",
       "GCC.10.3.1.cmake", "IAR.9.32.1.cmake", "setup"} }
   };
 

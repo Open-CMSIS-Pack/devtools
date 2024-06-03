@@ -1,9 +1,9 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/2.3.0/tools/projmgr/schemas/common.schema.json",
+  "$id": "https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/2.4.0/tools/projmgr/schemas/common.schema.json",
   "title": "CMSIS common",
   "description": "common and reusable properties from other schemas",
-  "version": "2.3.0",
+  "version": "2.4.0",
   "definitions": {
     "ArrayOfStrings": {
       "type": "array",
@@ -13,11 +13,21 @@
     },
     "BuildContext": {
       "type": "string",
-      "pattern": "^(((^[.][^.+]*)|(^[+][^.+]*))|((^[.][^.+]*)[+][^.+]*|(^[+][^.+]*)[.][^.+]*))$"
+      "pattern": "^(((^[.][\\w-]{1,32})|(^[+][\\w-]{1,32}))|((^[.][\\w-]{1,32})[+][\\w-]{1,32}|(^[+][\\w-]{1,32})[.][\\w-]{1,32}))$"
     },
     "BuildContextWithProjectName": {
       "type": "string",
-      "pattern": "^([^.+]+|[^.+]*\\.[^.+]+(\\+[^.+]+)?|[^.+]*\\+[^.+]+(\\.[^.+]+)?)$"
+      "pattern": "^([^.+]+|[^.+]*\\.[\\w-]{1,32}(\\+[\\w-]{1,32})|[^.+]*\\+[\\w-]{1,32}(\\.[\\w-]{1,32})?)$"
+    },
+    "ArrayOfContextMapAlternativeContext": {
+      "type": "array",
+      "uniqueItems": true,
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/ContextMapAlternativeContext" }
+    },
+    "ContextMapAlternativeContext": {
+      "type": "string",
+      "pattern": "^[^.+]*(\\.[\\w-]{1,32}|\\+[\\w-]{1,32}|\\.[\\w-]{1,32}\\+[\\w-]{1,32})$"
     },
     "ArrayOfBuildContext": {
       "type": "array",
@@ -131,8 +141,8 @@
     },
     "ContextMapType": {
       "oneOf": [
-        {"$ref": "#/definitions/ArrayOfBuildContextWithProjectName" },
-        {"$ref": "#/definitions/BuildContextWithProjectName" }
+        {"$ref": "#/definitions/ArrayOfContextMapAlternativeContext" },
+        {"$ref": "#/definitions/ContextMapAlternativeContext" }
       ],
       "description": "Remapping of build contexts"
     },
@@ -345,6 +355,7 @@
         "language-C":   { "$ref": "#/definitions/LanguageCType" },
         "language-CPP": { "$ref": "#/definitions/LanguageCppType" },
         "define":       { "$ref": "#/definitions/DefinesType" },
+        "define-asm":   { "$ref": "#/definitions/DefinesType" },
         "undefine":     { "$ref": "#/definitions/UndefinesType" },
         "add-path":     { "$ref": "#/definitions/AddpathsType" },
         "del-path":     { "$ref": "#/definitions/DelpathsType" },
@@ -378,6 +389,7 @@
         "language-C":   { "$ref": "#/definitions/LanguageCType" },
         "language-CPP": { "$ref": "#/definitions/LanguageCppType" },
         "define":       { "$ref": "#/definitions/DefinesType" },
+        "define-asm":   { "$ref": "#/definitions/DefinesType" },
         "undefine":     { "$ref": "#/definitions/UndefinesType" },
         "add-path":     { "$ref": "#/definitions/AddpathsType" },
         "del-path":     { "$ref": "#/definitions/DelpathsType" },
@@ -487,6 +499,7 @@
         "language-C":      { "$ref": "#/definitions/LanguageCType" },
         "language-CPP":    { "$ref": "#/definitions/LanguageCppType" },
         "define":          { "$ref": "#/definitions/DefinesType" },
+        "define-asm":      { "$ref": "#/definitions/DefinesType" },
         "undefine":        { "$ref": "#/definitions/UndefinesType" },
         "add-path":        { "$ref": "#/definitions/AddpathsType" },
         "del-path":        { "$ref": "#/definitions/DelpathsType" },
@@ -524,6 +537,7 @@
         "language-C":      { "$ref": "#/definitions/LanguageCType" },
         "language-CPP":    { "$ref": "#/definitions/LanguageCppType" },
         "define":          { "$ref": "#/definitions/DefinesType" },
+        "define-asm":      { "$ref": "#/definitions/DefinesType" },
         "undefine":        { "$ref": "#/definitions/UndefinesType" },
         "add-path":        { "$ref": "#/definitions/AddpathsType" },
         "del-path":        { "$ref": "#/definitions/DelpathsType" },
@@ -574,6 +588,7 @@
         "language-C":      { "$ref": "#/definitions/LanguageCType" },
         "language-CPP":    { "$ref": "#/definitions/LanguageCppType" },
         "define":          { "$ref": "#/definitions/DefinesType" },
+        "define-asm":      { "$ref": "#/definitions/DefinesType" },
         "undefine":        { "$ref": "#/definitions/UndefinesType" },
         "add-path":        { "$ref": "#/definitions/AddpathsType" },
         "del-path":        { "$ref": "#/definitions/DelpathsType" },
@@ -669,6 +684,7 @@
         "language-C":      { "$ref": "#/definitions/LanguageCType" },
         "language-CPP":    { "$ref": "#/definitions/LanguageCppType" },
         "define":          { "$ref": "#/definitions/DefinesType" },
+        "define-asm":      { "$ref": "#/definitions/DefinesType" },
         "undefine":        { "$ref": "#/definitions/UndefinesType" },
         "add-path":        { "$ref": "#/definitions/AddpathsType" },
         "del-path":        { "$ref": "#/definitions/DelpathsType" },
@@ -721,6 +737,14 @@
         "path":  {
           "type": "string",
           "description": "Specifies the directory for generated files. Relative paths used the location of the yml file as base directory"
+        },
+        "name":  {
+          "type": "string",
+          "description": "Specifies the base name of the generator import file, typically used for a board layer"
+        },
+        "map":  {
+          "type": "string",
+          "description": "Mapping of the csolution project to a generator specific run-time context name"
         }
       },
       "additionalProperties": false,
@@ -786,6 +810,7 @@
         "language-C":   { "$ref": "#/definitions/LanguageCType" },
         "language-CPP": { "$ref": "#/definitions/LanguageCppType" },
         "define":       { "$ref": "#/definitions/DefinesType" },
+        "define-asm":   { "$ref": "#/definitions/DefinesType" },
         "undefine":     { "$ref": "#/definitions/UndefinesType" },
         "add-path":     { "$ref": "#/definitions/AddpathsType" },
         "del-path":     { "$ref": "#/definitions/DelpathsType" },
@@ -823,6 +848,7 @@
         "language-CPP": { "$ref": "#/definitions/LanguageCppType" },
         "processor":    { "$ref": "#/definitions/ProcessorType" },
         "define":       { "$ref": "#/definitions/DefinesType" },
+        "define-asm":   { "$ref": "#/definitions/DefinesType" },
         "undefine":     { "$ref": "#/definitions/UndefinesType" },
         "add-path":     { "$ref": "#/definitions/AddpathsType" },
         "del-path":     { "$ref": "#/definitions/DelpathsType" },
@@ -897,7 +923,8 @@
         "configuration": { "$ref": "#/definitions/BuildContext" },
         "depends-on": { "$ref": "#/definitions/ArrayOfBuildContextWithProjectName" },
         "errors": { "type": "boolean", "description": "Indicates error(s) during conversion" },
-        "packs-missing": { "$ref": "#/definitions/BuildPacksMissingType" }
+        "packs-missing": { "$ref": "#/definitions/BuildPacksMissingType" },
+        "clayers": { "$ref": "#/definitions/BuildLayersType" }
       },
       "additionalProperties": false,
       "required": ["cbuild", "project", "configuration"]
@@ -926,24 +953,11 @@
     "BuildTargetConfigurationType": {
       "type": "object",
       "properties": {
-        "configuration": { "$ref": "#/definitions/BuildLayerConfigurationsType" }
-      },
-      "additionalProperties": false,
-      "required": ["configuration"]
-    },
-    "BuildLayerConfigurationsType": {
-      "type": "array",
-      "uniqueItems": true,
-      "minItems": 1,
-      "items": { "$ref": "#/definitions/BuildLayerConfigurationType" }
-    },
-    "BuildLayerConfigurationType": {
-      "type": "object",
-      "properties": {
+        "configuration": { "type": "null" },
         "variables": { "$ref": "#/definitions/BuildLayerVariablesType", "description": "List of layer variables" }
       },
       "additionalProperties": false,
-      "required": ["variables"]
+      "required": ["configuration", "variables"]
     },
     "BuildLayerVariablesType": {
       "type": "array",
@@ -954,8 +968,12 @@
     "BuildLayerVariableType": {
       "type": "object",
       "patternProperties": {
-        "^.*-Layer$": { "type": "string", "description": "Unique variable name for the layer" },
-        "settings": { "$ref": "#/definitions/BuildConnectionSettingsType" }
+        "^.*-Layer$":  { "type": "string", "description": "Unique variable name for the layer" },
+        "description": { "type": "string", "description": "Brief description text (from *.clayer.yml)" },
+        "settings":    { "$ref": "#/definitions/BuildConnectionSettingsType" },
+        "path":        { "type": "string", "description": "Path to the directory that contains the layer (from *.PDSC file)" },
+        "file":        { "type": "string", "description": "Name of the *.clayer.yml file relative to the directory specified with path (from *.PDSC file)"},
+        "copy-to":     { "type": "string", "description": "Proposed directory for the layer in the csolution project (from *.PDSC file)" }
       },
       "additionalProperties": false
     },
@@ -1014,6 +1032,7 @@
         "language-CPP":      { "$ref": "#/definitions/LanguageCppType" },
         "misc":              { "$ref": "#/definitions/MiscType" },
         "define":            { "$ref": "#/definitions/BuildDefinesType" },
+        "define-asm":        { "$ref": "#/definitions/BuildDefinesType" },
         "add-path":          { "$ref": "#/definitions/AddpathsType" },
         "output-dirs":       { "$ref": "#/definitions/BuildOutputDirectoriesType" },
         "output":            { "$ref": "#/definitions/OutputFilesType" },
@@ -1069,6 +1088,7 @@
         "language-CPP": { "$ref": "#/definitions/LanguageCppType" },
         "processor":    { "$ref": "#/definitions/ProcessorType" },
         "define":       { "$ref": "#/definitions/DefinesType" },
+        "define-asm":   { "$ref": "#/definitions/DefinesType" },
         "undefine":     { "$ref": "#/definitions/UndefinesType" },
         "add-path":     { "$ref": "#/definitions/AddpathsType" },
         "del-path":     { "$ref": "#/definitions/DelpathsType" },
@@ -1228,6 +1248,7 @@
         "language-C":   { "$ref": "#/definitions/LanguageCType" },
         "language-CPP": { "$ref": "#/definitions/LanguageCppType" },
         "define":       { "$ref": "#/definitions/DefinesType" },
+        "define-asm":   { "$ref": "#/definitions/DefinesType" },
         "undefine":     { "$ref": "#/definitions/UndefinesType" },
         "add-path":     { "$ref": "#/definitions/AddpathsType" },
         "del-path":     { "$ref": "#/definitions/DelpathsType" },
@@ -1258,6 +1279,7 @@
         "language-C":      { "$ref": "#/definitions/LanguageCType" },
         "language-CPP":    { "$ref": "#/definitions/LanguageCppType" },
         "define":          { "$ref": "#/definitions/DefinesType" },
+        "define-asm":      { "$ref": "#/definitions/DefinesType" },
         "undefine":        { "$ref": "#/definitions/UndefinesType" },
         "add-path":        { "$ref": "#/definitions/AddpathsType" },
         "del-path":        { "$ref": "#/definitions/DelpathsType" },
@@ -1410,10 +1432,12 @@
     "BuildGeneratorContextType": {
       "type": "object",
       "properties": {
-        "cbuild-gen": { "type": "string", "description": "Path to <context>.cbuild-gen.yml file" },
-        "project": { "type": "string", "description": "Project name" },
-        "configuration": { "$ref": "#/definitions/BuildContext" },
-        "for-project-part": { "type": "string", "description": "For project part (secure, non-secure, <processor>)" }
+        "cbuild-gen":       { "type": "string", "description": "Path to <context>.cbuild-gen.yml file" },
+        "project":          { "type": "string", "description": "Project name" },
+        "configuration":    { "$ref": "#/definitions/BuildContext" },
+        "for-project-part": { "type": "string", "description": "For project part (secure, non-secure, <processor>)" },
+        "name":             { "type": "string", "description": "Explicit name for the *.cgen.yml generator import file" },
+        "map":              { "type": "string", "description": "Mapping of the csolution project to a generator specific run-time context name" }
       },
       "additionalProperties": false,
       "required": ["cbuild-gen", "project", "configuration"]
@@ -1427,6 +1451,7 @@
         "for-device":   { "$ref": "#/definitions/DeviceType" },
         "packs":        { "$ref": "#/definitions/PacksType" },
         "define":       { "$ref": "#/definitions/DefinesType" },
+        "define-asm":   { "$ref": "#/definitions/DefinesType" },
         "undefine":     { "$ref": "#/definitions/UndefinesType" },
         "add-path":     { "$ref": "#/definitions/AddpathsType" },
         "del-path":     { "$ref": "#/definitions/DelpathsType" },

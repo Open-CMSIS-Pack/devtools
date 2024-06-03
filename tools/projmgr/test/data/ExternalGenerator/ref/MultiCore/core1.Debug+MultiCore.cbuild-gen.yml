@@ -19,11 +19,14 @@ build-gen:
   define:
     - ARMCM0
     - _RTE_
+  define-asm:
+    - ARMCM0
+    - _RTE_
   add-path:
     - ${DEVTOOLS(data)}/ExternalGenerator/multi_1/RTE/_Debug_MultiCore
     - ${DEVTOOLS(packs)}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
   output-dirs:
-    intdir: ${DEVTOOLS(data)}/ExternalGenerator/tmp/core1/MultiCore/Debug
+    intdir: ${DEVTOOLS(data)}/ExternalGenerator/tmp dir/core1/MultiCore/Debug
     outdir: ${DEVTOOLS(data)}/ExternalGenerator/out/core1/MultiCore/Debug
     rtedir: ${DEVTOOLS(data)}/ExternalGenerator/multi_1/RTE
   output:
@@ -39,9 +42,6 @@ build-gen:
   linker:
     script: ${DEVTOOLS(data)}/ExternalGenerator/multi_1/RTE/Device/RteTest_ARMCM0_Dual_cm0_core1/ac6_linker_script.sct.src
     regions: ${DEVTOOLS(data)}/ExternalGenerator/multi_1/RTE/Device/RteTest_ARMCM0_Dual_cm0_core1/regions_RteTest_ARMCM0_Dual_cm0_core1.h
-  constructed-files:
-    - file: ${DEVTOOLS(data)}/ExternalGenerator/multi_1/RTE/_Debug_MultiCore/RTE_Components.h
-      category: header
   licenses:
     - license: <unknown>
       packs:

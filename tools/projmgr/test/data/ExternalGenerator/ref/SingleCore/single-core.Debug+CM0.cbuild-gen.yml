@@ -15,10 +15,12 @@ build-gen:
       path: ${DEVTOOLS(packs)}/ARM/RteTestGenerator/0.1.0
   define:
     - _RTE_
+  define-asm:
+    - _RTE_
   add-path:
     - ${DEVTOOLS(data)}/ExternalGenerator/single/RTE/_Debug_CM0
   output-dirs:
-    intdir: ${DEVTOOLS(data)}/ExternalGenerator/tmp/single-core/CM0/Debug
+    intdir: ${DEVTOOLS(data)}/ExternalGenerator/tmp dir/single-core/CM0/Debug
     outdir: ${DEVTOOLS(data)}/ExternalGenerator/out/single-core/CM0/Debug
     rtedir: ${DEVTOOLS(data)}/ExternalGenerator/single/RTE
   output:
@@ -37,11 +39,8 @@ build-gen:
   groups:
     - group: sources
       files:
-        - file: main.c
+        - file: ${DEVTOOLS(data)}/ExternalGenerator/single/main.c
           category: sourceC
-  constructed-files:
-    - file: ${DEVTOOLS(data)}/ExternalGenerator/single/RTE/_Debug_CM0/RTE_Components.h
-      category: header
   licenses:
     - license: <unknown>
       packs:

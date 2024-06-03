@@ -15,13 +15,15 @@ build:
       path: ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0
   define:
     - _RTE_
+  define-asm:
+    - _RTE_
   add-path:
     - RTE/_Debug_CM0
     - generated/RTE/RteTest
     - ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/GlobalLevel
     - ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/Include
   output-dirs:
-    intdir: ../tmp/single-core/CM0/Debug
+    intdir: ../tmp dir/single-core/CM0/Debug
     outdir: ../out/single-core/CM0/Debug
     rtedir: RTE
   output:

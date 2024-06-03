@@ -394,6 +394,13 @@ RteComponentInstance* RteProject::AddComponent(RteComponent* c, int instanceCoun
     }
   }
   info->SetInstanceCount(instanceCount);
+  // use the original pack of bootstrap component if available
+  if (c->IsGenerated() && c->HasAttribute("selectable") ) {
+    RteItem* packInfo = c->GetFirstChild("package");
+    if (packInfo) {
+      ci->SetPackageAttributes(packInfo->GetAttributes());
+    }
+  }
 
   if (instanceCount > 0) {
     // add gpdsc info if needed
@@ -435,6 +442,9 @@ void RteProject::AddCprjComponents(const Collection<RteItem*>& selItems, RteTarg
 
   // update file versions
   for (auto [instanceName, fi] : m_files) {
+    if(fi->IsRemoved()) {
+      continue;
+    }
     string version;
     auto rteFile = fi->GetFile(target->GetName());
     auto itver = configFileVersions.find(instanceName); // file in cprj can be specified by its instance name
@@ -442,7 +452,7 @@ void RteProject::AddCprjComponents(const Collection<RteItem*>& selItems, RteTarg
       itver = configFileVersions.find(fi->GetName()); // or by original name
     if (itver != configFileVersions.end()) {
       version = itver->second;
-    } else {
+    } else if(rteFile) {
       // Fall back to the version noted in the pack
       version = rteFile->GetVersionString();
     }

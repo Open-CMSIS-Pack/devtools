@@ -14,6 +14,8 @@ build:
       path: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0
   define:
     - _RTE_
+  define-asm:
+    - _RTE_
   add-path:
     - RTE/_Debug_TypeA
     - ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0/Include

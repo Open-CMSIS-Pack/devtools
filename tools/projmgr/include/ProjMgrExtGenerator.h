@@ -10,22 +10,10 @@
 #include "ProjMgrParser.h"
 #include "ProjMgrUtils.h"
 
- /**
-  * @brief external generator item containing
-  *        component identifier
-  *        directory for generated files
-  *        project type
- */
-struct ExtGeneratorItem {
-  std::string componentId;
-  std::string genDir;
-  std::string projectType;
-};
-
 /**
- * @brief map of used generators, directories and contexts
+ * @brief map of used generators options
 */
-typedef std::map<std::string, StrVecMap> GeneratorContextVecMap;
+typedef std::map<GeneratorOptionsItem, StrVec> GeneratorContextVecMap;
 
 /**
  * @brief solution/project types
@@ -94,11 +82,10 @@ public:
 
   /**
    * @brief add generator to the list of used generators of a given context
-   * @param generatorId generator identifier
-   * @param genDir directory for generated files
+   * @param generator options
    * @param contextId context identifier
   */
-  void AddUsedGenerator(const std::string& generatorId, const std::string& genDir, const std::string& contextId);
+  void AddUsedGenerator(const GeneratorOptionsItem& options, const std::string& contextId);
 
   /**
    * @brief get map of used generators

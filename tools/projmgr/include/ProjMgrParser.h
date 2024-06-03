@@ -117,6 +117,7 @@ struct ProcessorItem {
  *        language standard C,
  *        language standard C++,
  *        preprocessor defines,
+ *        preprocessor defines for assembly files,
  *        preprocessor undefines,
  *        include paths,
  *        exclude paths,
@@ -132,6 +133,7 @@ struct BuildType {
   std::string languageC;
   std::string languageCpp;
   std::vector<std::string> defines;
+  std::vector<std::string> definesAsm;
   std::vector<std::string> undefines;
   std::vector<std::string> addpaths;
   std::vector<std::string> delpaths;
@@ -195,13 +197,30 @@ struct OutputItem {
 };
 
 /**
+ * @brief generators option item containing
+ *        generator id,
+ *        path to generated files,
+ *        name of generator import file,
+ *        map to run-time context
+*/
+struct GeneratorOptionsItem {
+  std::string id;
+  std::string path;
+  std::string name;
+  std::string map;
+  bool operator<(const GeneratorOptionsItem& item) const {
+    return (this->id < item.id) || (this->path < item.path) || (this->name < item.name);
+  }
+};
+
+/**
  * @brief generators item containing
  *        base directory,
  *        options map
 */
 struct GeneratorsItem {
   std::string baseDir;
-  std::map<std::string, std::string> options;
+  std::map<std::string, GeneratorOptionsItem> options;
 };
 
 /**
@@ -434,6 +453,7 @@ struct CprojectItem {
 /**
  * @brief clayer item containing
  *        layer name,
+ *        layer description,
  *        layer path,
  *        layer type,
  *        layer directory,
@@ -450,6 +470,7 @@ struct CprojectItem {
 */
 struct ClayerItem {
   std::string name;
+  std::string description;
   std::string path;
   std::string type;
   std::string directory;

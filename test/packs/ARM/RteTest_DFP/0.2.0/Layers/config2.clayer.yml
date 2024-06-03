@@ -3,6 +3,7 @@
 layer:
 
   type: Config2
+  description: Config2 Layer Description
   
   components:
     - component: Board:Test:Rev2

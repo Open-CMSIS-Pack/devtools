@@ -87,10 +87,14 @@ string RteCallback::ExpandString(const string& str) {
   if (!activeTarget) {
     return RteUtils::EMPTY_STRING;
   }
+  const auto devicePackage = activeTarget->GetDevicePackage();
+  if (!devicePackage) {
+    return RteUtils::EMPTY_STRING;
+  }
 
   const string& prjPath(activeProject->GetProjectPath());
   const string& prjPathFile(prjPath + activeProject->GetName() + ".cprj");
-  const string& packPath(activeTarget->GetDevicePackage()->GetAbsolutePackagePath());
+  const string& packPath(devicePackage->GetAbsolutePackagePath());
   const string& deviceName(activeTarget->GetDeviceName());
   const string& generatorInputFile(activeTarget->GetGeneratorInputFile());
 

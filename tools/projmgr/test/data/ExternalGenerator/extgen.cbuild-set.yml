@@ -1,0 +1,6 @@
+cbuild-set:
+  generated-by: csolution version 2.3.0
+  contexts:
+    - context: core0.Debug+MultiCore
+    - context: core1.Debug+MultiCore
+    - context: boot.Release+MultiCore

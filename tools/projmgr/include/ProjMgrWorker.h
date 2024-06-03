@@ -270,6 +270,7 @@ struct ContextTypesItem {
  *        map of user inputed pack ID to resolved pack ID
  *        set of absolute file paths of project local packs
  *        vector of dependent contexts
+ *        map of layers descriptors from packs
 */
 struct ContextItem {
   CdefaultItem* cdefault = nullptr;
@@ -313,13 +314,14 @@ struct ContextItem {
   std::vector<ConnectionsCollectionVec> validConnections;
   LinkerContextItem linker;
   std::map<std::string, std::string> variables;
-  StrMap extGenDir;
+  std::map<std::string, GeneratorOptionsItem> extGen;
   RtePackage* devicePack = nullptr;
   RtePackage* boardPack = nullptr;
   bool precedences;
   std::map<std::string, std::set<std::string>> userInputToResolvedPackIdMap;
   StrSet localPackPaths;
   StrVec dependsOn;
+  std::map<std::string, RteItem*> packLayers;
 };
 
 /**
@@ -627,6 +629,12 @@ public:
   bool HasVarDefineError();
 
   /**
+   * @brief get list of detected undefined layer variables
+   * @return list of undefined layer variables
+  */
+  const std::set<std::string>& GetUndefLayerVars();
+
+  /**
    * @brief process solution level executes
    * @return true if it is processed successfully
   */
@@ -637,6 +645,13 @@ public:
   */
   void ProcessExecutesDependencies();
 
+  /**
+    * @brief validates and restrict the input contexts
+    * @param contexts list to be validated
+    * @param fromCbuildSet true is the contexts are read from cbuild-set, otherwise false
+    * @return true if validation success
+  */
+  bool ValidateContexts(const std::vector<std::string>& contexts, bool fromCbuildSet);
 protected:
   ProjMgrParser* m_parser = nullptr;
   ProjMgrKernel* m_kernel = nullptr;
@@ -664,7 +679,7 @@ protected:
   bool m_debug;
   bool m_dryRun;
   bool m_relativePaths;
-  bool m_varDefineError;
+  std::set<std::string> m_undefLayerVars;
   StrMap m_packMetadata;
   std::map<std::string, ExecutesItem> m_executes;
 
@@ -753,8 +768,8 @@ protected:
   void UpdatePartialReferencedContext(ContextItem& context, std::string& contextName);
   void ExpandAccessSequence(const ContextItem& context, const ContextItem& refContext, const std::string& sequence, const std::string& outdir, std::string& item, bool withHeadingDot);
   bool GetGeneratorDir(const RteGenerator* generator, ContextItem& context, const std::string& layer, std::string& genDir);
-  bool GetGeneratorDir(const std::string& generatorId, ContextItem& context, const std::string& layer, std::string& genDir);
-  bool GetExtGeneratorDir(const std::string& generatorId, ContextItem& context, const std::string& layer, std::string& genDir);
+  bool GetGeneratorOptions(ContextItem& context, const std::string& layer, GeneratorOptionsItem& options);
+  bool GetExtGeneratorOptions(ContextItem& context, const std::string& layer, GeneratorOptionsItem& options);
   bool ParseContextLayers(ContextItem& context);
   bool AddPackRequirements(ContextItem& context, const std::vector<PackItem>& packRequirements);
   void InsertPackRequirements(const std::vector<PackItem>& src, std::vector<PackItem>& dst, std::string base);

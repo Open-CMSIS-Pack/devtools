@@ -161,4 +161,11 @@ std::filesystem::perms CrossPlatformUtils::GetCurrentUmask() {
 
   return perm;
 }
+
+// surround the whole 'cmd' with quotes since they get stripped in _popen,
+// avoiding breaking the command when there are multiple quotes pairs inside it
+const std::string CrossPlatformUtils::PopenCmd(const std::string& cmd) {
+  return "\"" + cmd + "\"";
+}
+
 // end of Utils.cpp

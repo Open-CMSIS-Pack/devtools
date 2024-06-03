@@ -152,6 +152,19 @@ string RteGenerator::GetExecutable(RteTarget* target, const std::string& hostTyp
   if (RteFsUtils::IsRelative(cmd)) {
      cmd = RteFsUtils::MakePathCanonical(GetAbsolutePackagePath() + cmd);
   }
+
+  bool bWindows = "win" == (hostType.empty() ? CrossPlatformUtils::GetHostType() : hostType);
+
+  // check if generator executable has an extension
+  if(bWindows && RteUtils::ExtractFileExtension(RteUtils::ExtractFileName(cmd)).empty()) {
+    // try to find file with correct extension
+    for(auto ext : {".com", ".exe", ".bat"}) {
+      string file = cmd + ext;
+      if(RteFsUtils::Exists(file)) {
+        return file;
+      }
+    }
+  }
   return cmd;
 }
 
