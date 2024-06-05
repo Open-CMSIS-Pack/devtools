@@ -1608,8 +1608,14 @@ TEST_F(ProjMgrUnitTests, ListLayersConfigurations_update_idx_pack_layer) {
 
   EXPECT_EQ(0, RunProjMgr(6, argv, 0));
   EXPECT_TRUE(regex_match(streamRedirect.GetOutString(), regex(expectedOutStr)));
+
+  auto stripAbsoluteFunc = [](const std::string& in) {
+    std::string str = in;
+    RteUtils::ReplaceAll(str, testcmsispack_folder, "${DEVTOOLS(packs)}");
+    return str;
+  };
   ProjMgrTestEnv::CompareFile(testinput_folder + "/TestLayers/ref/config.cbuild-idx.yml",
-    testinput_folder + "/TestLayers/config.cbuild-idx.yml");
+    testinput_folder + "/TestLayers/config.cbuild-idx.yml", stripAbsoluteFunc);
   EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/TestLayers/config.cbuild-idx.yml"));
 }
 
