@@ -190,7 +190,7 @@
     <component generator="RteTestGeneratorIdentifier" Cvendor="ARM" Cclass="Device" Cgroup="RteTest Generated Component" Csub="RteTestOverlap" Cversion="1.1.0">
       <description>Component with overlaping file lists</description>
       <files>
-        <file category="sourceC" name="Src/RteTestConfig.c" version="1.1.0"/>
+        <file category="sourceC" name="Src/RteTestConfig.c" attr="config" version="1.1.0"/>
       </files>
     </component>
 
