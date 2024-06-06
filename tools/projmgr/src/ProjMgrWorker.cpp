@@ -3736,19 +3736,24 @@ bool ProjMgrWorker::ListGenerators(vector<string>& generators) {
   return true;
 }
 
-bool ProjMgrWorker::ListLayers(vector<string>& layers, const string& clayerSearchPath) {
+bool ProjMgrWorker::ListLayers(vector<string>& layers, const string& clayerSearchPath, StrSet& failedContexts) {
   map<StrPair, StrSet> layersMap;
+  bool error = false;
   for (const auto& selectedContext : m_selectedContexts) {
     ContextItem& context = m_contexts[selectedContext];
     if (!LoadPacks(context)) {
-      return false;
+      failedContexts.insert(selectedContext);
+      error |= true;
+      continue;
     }
     if (selectedContext.empty()) {
       // get all layers from packs and from search path
       StrVecMap genericClayers;
       if (!CollectLayersFromPacks(context, genericClayers) ||
           !CollectLayersFromSearchPath(clayerSearchPath, genericClayers)) {
-        return false;
+        failedContexts.insert(selectedContext);
+        error |= true;
+        continue;
       }
       for (const auto& [clayerType, clayerVec] : genericClayers) {
         for (const auto& clayer : clayerVec) {
@@ -3758,11 +3763,15 @@ bool ProjMgrWorker::ListLayers(vector<string>& layers, const string& clayerSearc
     } else {
       // process precedences
       if (!ProcessPrecedences(context)) {
-        return false;
+        failedContexts.insert(selectedContext);
+        error |= true;
+        continue;
       }
       // get matching layers for selected context
       if (!DiscoverMatchingLayers(context, clayerSearchPath)) {
-        return false;
+        failedContexts.insert(selectedContext);
+        error |= true;
+        continue;
       }
       for (const auto& [clayer, clayerItem] : context.clayers) {
         const auto& validSets = GetValidSets(context, clayer);
@@ -3786,7 +3795,7 @@ bool ProjMgrWorker::ListLayers(vector<string>& layers, const string& clayerSearc
     }
     CollectionUtils::PushBackUniquely(layers, layerEntry);
   }
-  return true;
+  return !error;
 }
 
 ToolchainItem ProjMgrWorker::GetToolchain(const string& compiler) {
