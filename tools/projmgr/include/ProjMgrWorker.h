@@ -428,9 +428,10 @@ public:
   * @brief list available, referenced or compatible layers
   * @param reference to list of layers
   * @param reference clayer search path
+  * @param reference to failed contexts set
   * @return true if executed successfully
   */
-  bool ListLayers(std::vector<std::string>& layers, const std::string& clayerSearchPath);
+  bool ListLayers(std::vector<std::string>& layers, const std::string& clayerSearchPath, StrSet& failedContexts);
 
   /**
   * @brief list installed toolchains
