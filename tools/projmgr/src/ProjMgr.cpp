@@ -848,9 +848,7 @@ bool ProjMgr::RunListLayers(void) {
 
   // Step3: Detect layers and list them
   vector<string> layers;
-  if (!m_worker.ListLayers(layers, m_clayerSearchPath)) {
-    return false;
-  }
+  error = !m_worker.ListLayers(layers, m_clayerSearchPath, m_failedContext);
   if (!m_updateIdx) {
     for (const auto& layer : layers) {
       cout << layer << endl;
@@ -876,7 +874,7 @@ bool ProjMgr::RunListLayers(void) {
       }
     }
   }
-  return true;
+  return !error;
 }
 
 bool ProjMgr::RunCodeGenerator(void) {

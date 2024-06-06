@@ -1608,8 +1608,14 @@ TEST_F(ProjMgrUnitTests, ListLayersConfigurations_update_idx_pack_layer) {
 
   EXPECT_EQ(0, RunProjMgr(6, argv, 0));
   EXPECT_TRUE(regex_match(streamRedirect.GetOutString(), regex(expectedOutStr)));
+
+  auto stripAbsoluteFunc = [](const std::string& in) {
+    std::string str = in;
+    RteUtils::ReplaceAll(str, testcmsispack_folder, "${DEVTOOLS(packs)}");
+    return str;
+  };
   ProjMgrTestEnv::CompareFile(testinput_folder + "/TestLayers/ref/config.cbuild-idx.yml",
-    testinput_folder + "/TestLayers/config.cbuild-idx.yml");
+    testinput_folder + "/TestLayers/config.cbuild-idx.yml", stripAbsoluteFunc);
   EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/TestLayers/config.cbuild-idx.yml"));
 }
 
@@ -1630,6 +1636,22 @@ TEST_F(ProjMgrUnitTests, ListLayersConfigurations_update_idx_local_layer) {
   ProjMgrTestEnv::CompareFile(testinput_folder + "/TestLayers/ref/select.cbuild-idx.yml",
     testinput_folder + "/TestLayers/select.cbuild-idx.yml");
   EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/TestLayers/select.cbuild-idx.yml"));
+}
+
+TEST_F(ProjMgrUnitTests, ListLayersConfigurations_Error) {
+  char* argv[8];
+  const string& csolution = testinput_folder + "/TestLayers/variables-notdefined.csolution.yml";
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"layers";
+  argv[3] = (char*)"--solution";
+  argv[4] = (char*)csolution.c_str();
+  argv[5] = (char*)"-o";
+  argv[6] = (char*)testoutput_folder.c_str();
+  argv[7] = (char*)"--update-idx";
+  EXPECT_EQ(1, RunProjMgr(8, argv, 0));
+
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/TestLayers/ref/variables-notdefined.cbuild-idx.yml",
+    testoutput_folder + "/variables-notdefined.cbuild-idx.yml");
 }
 
 TEST_F(ProjMgrUnitTests, ListLayersConfigurations) {

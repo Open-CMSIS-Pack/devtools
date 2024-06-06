@@ -347,9 +347,10 @@ void ProjMgrYamlCbuildIdx::SetVariablesNode(YAML::Node node, ProjMgrParser& pars
         layerFile.replace(index, packRoot.length(), "${CMSIS_PACK_ROOT}");
       }
       else {
-        layerFile = RteFsUtils::RelativePath(filename, context->csolution->directory);
-        RteFsUtils::NormalizePath(layerFile);
-        layerFile = "$" + string(RteConstants::AS_SOLUTION_DIR_BR) + "$/" + layerFile;
+        string relPath = RteFsUtils::RelativePath(filename, context->csolution->directory);
+        if (!relPath.empty()) {
+          layerFile = "$" + string(RteConstants::AS_SOLUTION_DIR_BR) + "$/" + RteFsUtils::LexicallyNormal(relPath);
+        }
       }
       SetNodeValue(layerNode[type + "-Layer"], layerFile);
       if (parser.GetGenericClayers().find(filename) != parser.GetGenericClayers().end()) {
@@ -365,7 +366,7 @@ void ProjMgrYamlCbuildIdx::SetVariablesNode(YAML::Node node, ProjMgrParser& pars
       }
       if (context->packLayers.find(filename) != context->packLayers.end()) {
         const auto& clayer = context->packLayers.at(filename);
-        SetNodeValue(layerNode[YAML_PATH], FormatPath(clayer->GetOriginalAbsolutePath(clayer->GetPathString()), context->csolution->directory));
+        SetNodeValue(layerNode[YAML_PATH], clayer->GetOriginalAbsolutePath(clayer->GetPathString()));
         SetNodeValue(layerNode[YAML_FILE], clayer->GetFileString());
         SetNodeValue(layerNode[YAML_COPY_TO], clayer->GetCopyToString());
       }
