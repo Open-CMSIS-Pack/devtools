@@ -19,6 +19,8 @@ build:
     - _RTE_
   add-path:
     - ../data/TestGenerator/RTE/_Debug_CM0
+  add-path-asm:
+    - ../data/TestGenerator/RTE/_Debug_CM0
   output-dirs:
     intdir: tmp/test-gpdsc-layer/CM0/Debug
     outdir: out/test-gpdsc-layer/CM0/Debug

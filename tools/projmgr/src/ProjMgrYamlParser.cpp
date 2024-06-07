@@ -836,6 +836,7 @@ bool ProjMgrYamlParser::ParseBuildType(const YAML::Node& parent, const string& f
   ParseDefine(parent[YAML_DEFINE_ASM], buildType.definesAsm);
   ParseVector(parent, YAML_UNDEFINE, buildType.undefines);
   ParsePortablePaths(parent, file, YAML_ADDPATH, buildType.addpaths);
+  ParsePortablePaths(parent, file, YAML_ADDPATH_ASM, buildType.addpathsAsm);
   ParseVector(parent, YAML_DELPATH, buildType.delpaths);
   ParseVectorOfStringPairs(parent, YAML_VARIABLES, buildType.variables);
 
@@ -896,6 +897,7 @@ const set<string> solutionKeys = {
   YAML_DEFINE_ASM,
   YAML_UNDEFINE,
   YAML_ADDPATH,
+  YAML_ADDPATH_ASM,
   YAML_DELPATH,
   YAML_MISC,
   YAML_VARIABLES,
@@ -929,6 +931,7 @@ const set<string> projectKeys = {
   YAML_DEFINE_ASM,
   YAML_UNDEFINE,
   YAML_ADDPATH,
+  YAML_ADDPATH_ASM,
   YAML_DELPATH,
   YAML_MISC,
   YAML_COMPONENTS,
@@ -957,6 +960,7 @@ const set<string> setupKeys = {
   YAML_DEFINE_ASM,
   YAML_UNDEFINE,
   YAML_ADDPATH,
+  YAML_ADDPATH_ASM,
   YAML_DELPATH,
   YAML_MISC,
   YAML_LINKER,
@@ -982,6 +986,7 @@ const set<string> layerKeys = {
   YAML_DEFINE_ASM,
   YAML_UNDEFINE,
   YAML_ADDPATH,
+  YAML_ADDPATH_ASM,
   YAML_DELPATH,
   YAML_MISC,
   YAML_COMPONENTS,
@@ -1016,6 +1021,7 @@ const set<string> targetTypeKeys = {
   YAML_DEFINE_ASM,
   YAML_UNDEFINE,
   YAML_ADDPATH,
+  YAML_ADDPATH_ASM,
   YAML_DELPATH,
   YAML_MISC,
   YAML_VARIABLES,
@@ -1035,6 +1041,7 @@ const set<string> buildTypeKeys = {
   YAML_DEFINE_ASM,
   YAML_UNDEFINE,
   YAML_ADDPATH,
+  YAML_ADDPATH_ASM,
   YAML_DELPATH,
   YAML_MISC,
   YAML_VARIABLES,
@@ -1114,6 +1121,7 @@ const set<string> componentsKeys = {
   YAML_DEFINE_ASM,
   YAML_UNDEFINE,
   YAML_ADDPATH,
+  YAML_ADDPATH_ASM,
   YAML_DELPATH,
   YAML_MISC,
   YAML_INSTANCES,
@@ -1162,6 +1170,7 @@ const set<string> groupsKeys = {
   YAML_DEFINE_ASM,
   YAML_UNDEFINE,
   YAML_ADDPATH,
+  YAML_ADDPATH_ASM,
   YAML_DELPATH,
   YAML_MISC,
 };
@@ -1182,6 +1191,7 @@ const set<string> filesKeys = {
   YAML_DEFINE_ASM,
   YAML_UNDEFINE,
   YAML_ADDPATH,
+  YAML_ADDPATH_ASM,
   YAML_DELPATH,
   YAML_MISC,
 };

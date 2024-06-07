@@ -27,6 +27,13 @@ build:
     - ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/GlobalLevel
     - ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/Include
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
+  add-path-asm:
+    - ../data/TestSolution/RTE/RteTest
+    - ../data/TestSolution/RTE/_CM0
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/ComponentLevel/Include
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/GlobalLevel
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/Include
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
   output-dirs:
     intdir: tmp/pre-include/CM0
     outdir: out/pre-include/CM0

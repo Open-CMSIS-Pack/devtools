@@ -2656,6 +2656,18 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, bool rerun) {
   };
   CollectionUtils::MergeStringVector(includes);
 
+  // Includes Asm
+  vector<string>& includesAsmRef = context.controls.processed.addpathsAsm;
+  CollectionUtils::AddStringItemsUniquely(includesAsmRef, context.controls.cproject.addpathsAsm);
+  CollectionUtils::AddStringItemsUniquely(includesAsmRef, context.controls.csolution.addpathsAsm);
+  CollectionUtils::AddStringItemsUniquely(includesAsmRef, context.controls.target.addpathsAsm);
+  CollectionUtils::AddStringItemsUniquely(includesAsmRef, context.controls.build.addpathsAsm);
+  for (auto& [_, clayer] : context.controls.clayers) {
+    CollectionUtils::AddStringItemsUniquely(includesAsmRef, clayer.addpathsAsm);
+  }
+  for (auto& setup : context.controls.setups) {
+    CollectionUtils::AddStringItemsUniquely(includesAsmRef, setup.addpathsAsm);
+  }
   return true;
 }
 
@@ -3980,11 +3992,12 @@ bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem& context, vector<strin
 }
 
 bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem& context, BuildType& build, const string& ref) {
-  if (!ProcessSequencesRelatives(context, build.addpaths, ref) ||
-      !ProcessSequencesRelatives(context, build.delpaths, ref) ||
-      !ProcessSequencesRelatives(context, build.defines)       ||
-      !ProcessSequencesRelatives(context, build.definesAsm)    ||
-      !ProcessSequencesRelatives(context, build.undefines))    {
+  if (!ProcessSequencesRelatives(context, build.addpaths,    ref) ||
+      !ProcessSequencesRelatives(context, build.addpathsAsm, ref) ||
+      !ProcessSequencesRelatives(context, build.delpaths,    ref) ||
+      !ProcessSequencesRelatives(context, build.defines)          ||
+      !ProcessSequencesRelatives(context, build.definesAsm)       ||
+      !ProcessSequencesRelatives(context, build.undefines))       {
     return false;
   }
   for (auto& misc : build.misc) {

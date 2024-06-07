@@ -23,6 +23,9 @@ build:
   add-path:
     - ../data/TestSolution/LanguageAndScope/RTE/_Debug_AC6_RteTest_ARMCM3
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM3/Include
+  add-path-asm:
+    - ../data/TestSolution/LanguageAndScope/RTE/_Debug_AC6_RteTest_ARMCM3
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM3/Include
   output-dirs:
     intdir: tmp/lang-scope/RteTest_ARMCM3/Debug_AC6
     outdir: out/lang-scope/RteTest_ARMCM3/Debug_AC6

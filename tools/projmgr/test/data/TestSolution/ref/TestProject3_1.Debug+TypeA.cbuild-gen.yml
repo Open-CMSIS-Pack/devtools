@@ -24,6 +24,10 @@ build-gen:
     - ${DEVTOOLS(data)}/TestSolution/TestProject3_1/RTE/_Debug_TypeA
     - ${DEVTOOLS(packs)}/ARM/RteTestGenerator/0.1.0/Include
     - ${DEVTOOLS(packs)}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
+  add-path-asm:
+    - ${DEVTOOLS(data)}/TestSolution/TestProject3_1/RTE/_Debug_TypeA
+    - ${DEVTOOLS(packs)}/ARM/RteTestGenerator/0.1.0/Include
+    - ${DEVTOOLS(packs)}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
   output-dirs:
     intdir: ${DEVTOOLS(data)}/TestSolution/tmp/TestProject3_1/TypeA/Debug
     outdir: ${DEVTOOLS(data)}/TestSolution/TestProject3_1/outdir

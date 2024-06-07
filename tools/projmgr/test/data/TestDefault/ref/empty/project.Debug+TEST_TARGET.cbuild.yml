@@ -24,6 +24,9 @@ build:
   add-path:
     - ../../data/TestDefault/RTE/_Debug_TEST_TARGET
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.1.1/Device/ARM/ARMCM0/Include
+  add-path-asm:
+    - ../../data/TestDefault/RTE/_Debug_TEST_TARGET
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.1.1/Device/ARM/ARMCM0/Include
   output-dirs:
     intdir: tmp/project/TEST_TARGET/Debug
     outdir: out/project/TEST_TARGET/Debug

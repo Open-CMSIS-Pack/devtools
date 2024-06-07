@@ -25,6 +25,11 @@ build:
     - ../data/TestSolution/Instances/RTE/_Debug_RteTest_ARMCM3
     - ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/ComponentLevel/Include
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM3/Include
+  add-path-asm:
+    - ../data/TestSolution/Instances/RTE/RteTest
+    - ../data/TestSolution/Instances/RTE/_Debug_RteTest_ARMCM3
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/ComponentLevel/Include
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM3/Include
   output-dirs:
     intdir: tmp/instances/RteTest_ARMCM3/Debug
     outdir: out/instances/RteTest_ARMCM3/Debug

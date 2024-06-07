@@ -22,6 +22,9 @@ build:
   add-path:
     - ../data/TestSolution/DeviceAttributes/mve/RTE/_Debug_mve-int
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
+  add-path-asm:
+    - ../data/TestSolution/DeviceAttributes/mve/RTE/_Debug_mve-int
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
   output-dirs:
     intdir: tmp/mve/mve-int/Debug
     outdir: out/mve/mve-int/Debug

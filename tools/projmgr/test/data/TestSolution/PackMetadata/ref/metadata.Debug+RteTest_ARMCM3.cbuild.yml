@@ -21,6 +21,9 @@ build:
   add-path:
     - ../data/TestSolution/PackMetadata/RTE/_Debug_RteTest_ARMCM3
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.1.1/Device/ARM/ARMCM3/Include
+  add-path-asm:
+    - ../data/TestSolution/PackMetadata/RTE/_Debug_RteTest_ARMCM3
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.1.1/Device/ARM/ARMCM3/Include
   output-dirs:
     intdir: tmp/metadata/RteTest_ARMCM3/Debug
     outdir: out/metadata/RteTest_ARMCM3/Debug

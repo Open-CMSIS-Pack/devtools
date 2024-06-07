@@ -22,6 +22,9 @@ build:
   add-path:
     - ../data/TestSolution/DeviceAttributes/endian/RTE/_Debug_little
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
+  add-path-asm:
+    - ../data/TestSolution/DeviceAttributes/endian/RTE/_Debug_little
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
   output-dirs:
     intdir: tmp/endian/little/Debug
     outdir: out/endian/little/Debug

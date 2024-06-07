@@ -25,6 +25,9 @@ build-gen:
   add-path:
     - ${DEVTOOLS(data)}/ExternalGenerator/multi_1/RTE/_Debug_MultiCore
     - ${DEVTOOLS(packs)}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
+  add-path-asm:
+    - ${DEVTOOLS(data)}/ExternalGenerator/multi_1/RTE/_Debug_MultiCore
+    - ${DEVTOOLS(packs)}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
   output-dirs:
     intdir: ${DEVTOOLS(data)}/ExternalGenerator/tmp dir/core1/MultiCore/Debug
     outdir: ${DEVTOOLS(data)}/ExternalGenerator/out/core1/MultiCore/Debug

@@ -20,6 +20,10 @@ build:
     - RTE/_Debug_TypeA
     - ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0/Include
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
+  add-path-asm:
+    - RTE/_Debug_TypeA
+    - ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0/Include
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
   output-dirs:
     intdir: ../tmp/TestProject3_1/TypeA/Debug
     outdir: outdir

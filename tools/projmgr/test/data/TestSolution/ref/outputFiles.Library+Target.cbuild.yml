@@ -21,6 +21,9 @@ build:
   add-path:
     - ../data/TestSolution/RTE/_Library_Target
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM3/Include
+  add-path-asm:
+    - ../data/TestSolution/RTE/_Library_Target
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM3/Include
   output-dirs:
     intdir: tmp/outputFiles/Target/Library
     outdir: out/outputFiles/Target/Library

@@ -51,6 +51,12 @@ build:
     - ../data/TestSolution/path/Debug
     - ../data/TestSolution/TestProject1/RTE/_Debug_CM0
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
+  add-path-asm:
+    - ../data/TestSolution/path/solution/asm
+    - ../data/TestSolution/path/CM0/asm
+    - ../data/TestSolution/path/Debug/asm
+    - ../data/TestSolution/TestProject1/RTE/_Debug_CM0
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
   output-dirs:
     intdir: tmp/test1/CM0/Debug
     outdir: out/test1/CM0/Debug
@@ -94,6 +100,8 @@ build:
         - DEF2-COMPONENT
       add-path:
         - ../data/TestSolution/TestProject1/path/1/component
+      add-path-asm:
+        - ../data/TestSolution/TestProject1/path/1/component/asm
       del-path:
         - ../data/TestSolution/TestProject1/path/2/component
       files:
@@ -130,6 +138,8 @@ build:
       add-path:
         - ../data/TestSolution/TestProject1/path/sources/1/group
         - ../data/TestSolution/TestProject1/path/sources/2/group
+      add-path-asm:
+        - ../data/TestSolution/TestProject1/path/sources/1/group/asm
       del-path:
         - ../data/TestSolution/TestProject1/path/sources/3/group
         - ../data/TestSolution/TestProject1/path/sources/4/group
@@ -160,6 +170,8 @@ build:
           add-path:
             - ../data/TestSolution/TestProject1/path/main/1/file
             - ../data/TestSolution/TestProject1/path/main/2/file
+          add-path-asm:
+            - ../data/TestSolution/TestProject1/path/main/1/file/asm
           del-path:
             - ../data/TestSolution/TestProject1/path/main/3/file
             - ../data/TestSolution/TestProject1/path/main/4/file

@@ -22,6 +22,11 @@ build:
     - generated/RTE/RteTest
     - ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/GlobalLevel
     - ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/Include
+  add-path-asm:
+    - RTE/_Debug_CM0
+    - generated/RTE/RteTest
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/GlobalLevel
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/Include
   output-dirs:
     intdir: ../tmp dir/single-core/CM0/Debug
     outdir: ../out/single-core/CM0/Debug

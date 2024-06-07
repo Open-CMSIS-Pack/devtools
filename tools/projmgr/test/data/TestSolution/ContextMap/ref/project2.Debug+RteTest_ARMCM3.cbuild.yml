@@ -18,6 +18,8 @@ build:
     - ARMCM3
   add-path:
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM3/Include
+  add-path-asm:
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM3/Include
   output-dirs:
     intdir: tmp/project2/RteTest_ARMCM3/Debug
     outdir: out/project2/RteTest_ARMCM3/Debug
