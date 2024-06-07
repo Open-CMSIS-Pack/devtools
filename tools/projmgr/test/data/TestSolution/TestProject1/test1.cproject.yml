@@ -14,6 +14,8 @@ project:
         - DEF2-COMPONENT
       add-path:
         - ./path/1/component
+      add-path-asm:
+        - ./path/1/component/asm
       del-path:
         - ./path/2/component
     - component: RteTest.Check.Missing
@@ -33,6 +35,8 @@ project:
       add-path:
         - ./path/sources/1/group
         - ./path/sources/2/group
+      add-path-asm:
+        - ./path/sources/1/group/asm
       del-path:
         - ./path/sources/3/group
         - ./path/sources/4/group
@@ -58,6 +62,8 @@ project:
           add-path:
             - ./path/main/1/file
             - ./path/main/2/file
+          add-path-asm:
+            - ./path/main/1/file/asm
           del-path:
             - ./path/main/3/file
             - ./path/main/4/file
@@ -90,6 +96,8 @@ project:
             - DEF2-REL-FILE
           add-path:
             - ./path/1/release/file
+          add-path-asm:
+            - ./path/1/release/file/asm
           del-path:
             - ./path/2/release/file
         - file: excluded.c

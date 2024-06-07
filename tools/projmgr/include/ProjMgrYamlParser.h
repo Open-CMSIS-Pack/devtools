@@ -14,6 +14,7 @@
   * @brief YAML key definitions
 */
 static constexpr const char* YAML_ADDPATH = "add-path";
+static constexpr const char* YAML_ADDPATH_ASM = "add-path-asm";
 static constexpr const char* YAML_ALWAYS = "always";
 static constexpr const char* YAML_ARGUMENT = "argument";
 static constexpr const char* YAML_ARGUMENTS = "arguments";

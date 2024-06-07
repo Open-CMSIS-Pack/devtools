@@ -21,6 +21,9 @@ build:
   add-path:
     - ../data/TestSolution/AC6/_Debug_CM0
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
+  add-path-asm:
+    - ../data/TestSolution/AC6/_Debug_CM0
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
   output-dirs:
     intdir: tmp/rtedir/CM0/Debug
     outdir: out/rtedir/CM0/Debug

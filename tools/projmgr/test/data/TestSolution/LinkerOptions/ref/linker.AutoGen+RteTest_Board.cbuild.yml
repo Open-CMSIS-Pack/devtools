@@ -24,6 +24,10 @@ build:
     - ../data/TestSolution/LinkerOptions/RTE/_AutoGen_RteTest_Board
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM3/Include
+  add-path-asm:
+    - ../data/TestSolution/LinkerOptions/RTE/_AutoGen_RteTest_Board
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM3/Include
   output-dirs:
     intdir: tmp/linker/RteTest_Board/AutoGen
     outdir: out/linker/RteTest_Board/AutoGen

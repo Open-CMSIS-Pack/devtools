@@ -24,6 +24,9 @@ build:
   add-path:
     - ../data/TestSolution/TestProject4/RTE/_TEST_TARGET
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
+  add-path-asm:
+    - ../data/TestSolution/TestProject4/RTE/_TEST_TARGET
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
   output-dirs:
     intdir: tmp/test_board_and_device/TEST_TARGET
     outdir: out/test_board_and_device/TEST_TARGET

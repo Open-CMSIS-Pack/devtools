@@ -21,6 +21,9 @@ build:
   add-path:
     - ../data/TestSolution/DeviceAttributes/fpu/RTE/_Debug_no-fpu
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
+  add-path-asm:
+    - ../data/TestSolution/DeviceAttributes/fpu/RTE/_Debug_no-fpu
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
   output-dirs:
     intdir: tmp/fpu/no-fpu/Debug
     outdir: out/fpu/no-fpu/Debug

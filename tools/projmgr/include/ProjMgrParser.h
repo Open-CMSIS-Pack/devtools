@@ -120,6 +120,7 @@ struct ProcessorItem {
  *        preprocessor defines for assembly files,
  *        preprocessor undefines,
  *        include paths,
+ *        include paths for assembly files,
  *        exclude paths,
  *        misc compiler controls,
  *        platform processor
@@ -136,6 +137,7 @@ struct BuildType {
   std::vector<std::string> definesAsm;
   std::vector<std::string> undefines;
   std::vector<std::string> addpaths;
+  std::vector<std::string> addpathsAsm;
   std::vector<std::string> delpaths;
   std::vector<MiscItem> misc;
   ProcessorItem processor;

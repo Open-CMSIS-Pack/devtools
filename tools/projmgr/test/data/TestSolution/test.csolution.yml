@@ -24,6 +24,8 @@ solution:
       add-path:
         - ./path/CM0
         - ./path/CM0/to-be-removed
+      add-path-asm:
+        - ./path/CM0/asm
       del-path:
         - ./path/solution/to-be-removed
       processor:
@@ -48,6 +50,8 @@ solution:
       add-path:
         - ./path/CM3
         - ./path/CM3/to-be-removed
+      add-path-asm:
+        - ./path/CM3/asm
       del-path:
         - ./path/solution/to-be-removed
 
@@ -70,6 +74,8 @@ solution:
         - DEF-CM3-to-be-removed
       add-path:
         - ./path/Debug
+      add-path-asm:
+        - ./path/Debug/asm
       del-path:
         - ./path/CM0/to-be-removed
         - ./path/CM3/to-be-removed
@@ -91,6 +97,8 @@ solution:
         - DEF-CM3-to-be-removed
       add-path:
         - ./path/Release
+      add-path-asm:
+        - ./path/Release/asm
       del-path:
         - ./path/CM0/to-be-removed
         - ./path/CM3/to-be-removed
@@ -115,5 +123,7 @@ solution:
   add-path:
     - ./path/solution/
     - ./path/solution/to-be-removed
+  add-path-asm:
+    - ./path/solution/asm
   del-path:
     - ./path/project/to-be-removed

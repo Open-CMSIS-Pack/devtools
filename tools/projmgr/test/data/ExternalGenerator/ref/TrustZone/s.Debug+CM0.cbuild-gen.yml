@@ -20,6 +20,8 @@ build-gen:
     - _RTE_
   add-path:
     - ${DEVTOOLS(data)}/ExternalGenerator/tz_s/RTE/_Debug_CM0
+  add-path-asm:
+    - ${DEVTOOLS(data)}/ExternalGenerator/tz_s/RTE/_Debug_CM0
   output-dirs:
     intdir: ${DEVTOOLS(data)}/ExternalGenerator/tmp dir/s/CM0/Debug
     outdir: ${DEVTOOLS(data)}/ExternalGenerator/out/s/CM0/Debug

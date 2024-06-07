@@ -32,6 +32,12 @@ build:
     - ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/GlobalLevel
     - ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/Include
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM4/Include
+  add-path-asm:
+    - RTE/_Debug_Board
+    - generated/RTE/RteTest
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/GlobalLevel
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/Include
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM4/Include
   output-dirs:
     intdir: ../tmp/single-core/Board/Debug
     outdir: ../out/single-core/Board/Debug

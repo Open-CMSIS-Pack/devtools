@@ -58,6 +58,12 @@ build:
     - ../data/TestSolution/path/Debug
     - ../data/TestSolution/TestProject2/RTE/_Debug_CM0
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
+  add-path-asm:
+    - ../data/TestSolution/path/solution/asm
+    - ../data/TestSolution/path/CM0/asm
+    - ../data/TestSolution/path/Debug/asm
+    - ../data/TestSolution/TestProject2/RTE/_Debug_CM0
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
   output-dirs:
     intdir: tmp/test2/CM0/Debug
     outdir: out/test2/CM0/Debug

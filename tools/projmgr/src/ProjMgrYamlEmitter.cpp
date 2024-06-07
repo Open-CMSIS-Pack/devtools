@@ -442,6 +442,7 @@ void ProjMgrYamlCbuild::SetContextNode(YAML::Node contextNode, const ContextItem
     }
   }
   SetNodeValue(contextNode[YAML_ADDPATH], includes);
+  SetNodeValue(contextNode[YAML_ADDPATH_ASM], includes);
   SetOutputDirsNode(contextNode[YAML_OUTPUTDIRS], context);
   SetOutputNode(contextNode[YAML_OUTPUT], context);
   SetComponentsNode(contextNode[YAML_COMPONENTS], context);
@@ -772,10 +773,13 @@ void ProjMgrYamlCbuild::SetControlsNode(YAML::Node node, const ContextItem* cont
   SetNodeValue(node[YAML_LANGUAGE_CPP], controls.languageCpp);
   SetMiscNode(node[YAML_MISC], controls.misc);
   SetDefineNode(node[YAML_DEFINE], controls.defines);
-  SetDefineNode(node[YAML_DEFINE_ASM], controls.definesAsm);  
+  SetDefineNode(node[YAML_DEFINE_ASM], controls.definesAsm);
   SetNodeValue(node[YAML_UNDEFINE], controls.undefines);
   for (const auto& addpath : controls.addpaths) {
     node[YAML_ADDPATH].push_back(FormatPath(context->directories.cprj + "/" + addpath, context->directories.cbuild));
+  }
+  for (const auto& addpath : controls.addpathsAsm) {
+    node[YAML_ADDPATH_ASM].push_back(FormatPath(context->directories.cprj + "/" + addpath, context->directories.cbuild));
   }
   for (const auto& addpath : controls.delpaths) {
     node[YAML_DELPATH].push_back(FormatPath(context->directories.cprj + "/" + addpath, context->directories.cbuild));
