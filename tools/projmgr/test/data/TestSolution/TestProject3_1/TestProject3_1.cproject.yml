@@ -6,3 +6,4 @@ project:
     - component: Startup
     - component: CORE
     - component: Device:RteTest Generated Component:RteTestGenFiles
+    - component: Device:RteTest Generated Component:RteTestOverlap

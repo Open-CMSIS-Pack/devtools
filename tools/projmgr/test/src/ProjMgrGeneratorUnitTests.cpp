@@ -209,3 +209,26 @@ TEST_F(ProjMgrGeneratorUnitTests, DryRun) {
   EXPECT_EQ(0, gpdscContent.find("<?xml"));
   EXPECT_NE(string::npos, gpdscContent.find("<component generator=\"RteTestGeneratorIdentifier\""));
 }
+
+TEST_F(ProjMgrGeneratorUnitTests, PdscAndGpdscWithSameComponentName) {
+  char* argv[6];
+
+  const string& csolution = testinput_folder + "/TestSolution/genfiles.csolution.yml";
+  argv[1] = (char*)"run";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-g";
+  argv[5] = (char*)"RteTestGeneratorIdentifier";
+
+  const string targetGPDSC = testinput_folder + "/TestSolution/TestProject3_1/gendir/RteTestGen_ARMCM0/RteTest.gpdsc";
+
+  RteFsUtils::RemoveFile(targetGPDSC);
+
+  EXPECT_EQ(0, ProjMgr::RunProjMgr(6, argv, 0));
+
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+
+  EXPECT_EQ(0, ProjMgr::RunProjMgr(4, argv, 0));
+}

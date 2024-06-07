@@ -52,6 +52,17 @@ build-gen:
             category: genParams
             attr: config
             version: 0.9.0
+    - component: ARM::Device:RteTest Generated Component:RteTestOverlap@1.1.0
+      from-pack: ARM::RteTestGenerator@0.1.0
+      selected-by: Device:RteTest Generated Component:RteTestOverlap
+      files:
+        - file: ${DEVTOOLS(data)}/TestSolution/TestProject3_1/RTE/Device/RteTestGen_ARMCM0/RteTestConfig.c
+          category: sourceC
+          attr: config
+          version: 1.1.0
+      generator:
+        id: RteTestGeneratorIdentifier
+        from-pack: ARM::RteTestGenerator@0.1.0
     - component: ARM::Device:Startup&RteTest Startup@2.0.3
       condition: ARMCM0 RteTest
       from-pack: ARM::RteTest_DFP@0.2.0
@@ -124,6 +135,7 @@ build-gen:
         - pack: ARM::RteTestGenerator@0.1.0
       components:
         - component: ARM::Device:RteTest Generated Component:RteTestGenFiles@1.1.0
+        - component: ARM::Device:RteTest Generated Component:RteTestOverlap@1.1.0
     - license: <unknown>
       license-agreement: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Doc/license.txt
       packs:

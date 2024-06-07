@@ -31,5 +31,11 @@
         #define RTE_TEST_GENERATOR_FROM_GPDSC_TEMPLATE
       </RTE_Components_h>
     </component>
+    <component generator="RteTestGeneratorIdentifier" Cvendor="ARM" Cclass="Device" Cgroup="RteTest Generated Component" Csub="RteTestOverlap" Cversion="1.1.0">
+      <description>Configuration via STM32CubeMX, gpdsc component</description>
+      <RTE_Components_h>
+        #define RTE_TEST_GENERATOR_FROM_GPDSC_TEMPLATE
+      </RTE_Components_h>
+    </component>
   </components>
 </package>

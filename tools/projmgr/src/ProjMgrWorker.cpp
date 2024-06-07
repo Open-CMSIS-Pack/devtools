@@ -2060,7 +2060,7 @@ bool ProjMgrWorker::ProcessComponentFiles(ContextItem& context) {
           default:
             break;
           };
-          const auto& version = originalFile->GetVersionString();
+          const auto& version = originalFile ? originalFile->GetVersionString() : "";
           context.componentFiles[componentId].push_back({ filename, "config", category, language, scope, version });
         }
       }

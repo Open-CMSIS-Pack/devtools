@@ -257,7 +257,9 @@ void ProjMgrGenerator::GenerateCprjComponents(XMLTreeElement* element, const Con
                     SetAttribute(fileElement, "name", configFile->GetOriginalFileName());
                     SetAttribute(fileElement, "category", configFile->GetAttribute("category"));
                     const auto originalFile = configFile->GetFile(context.rteActiveTarget->GetName());
-                    SetAttribute(fileElement, "version", originalFile->GetVersionString());
+                    if (originalFile) {
+                      SetAttribute(fileElement, "version", originalFile->GetVersionString());
+                    }
                   }
                 }
               }
