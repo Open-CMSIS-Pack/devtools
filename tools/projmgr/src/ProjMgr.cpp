@@ -583,6 +583,11 @@ bool ProjMgr::Configure() {
     }
     m_processedContexts.push_back(&contextItem);
   }
+
+  if (m_worker.HasToolchainErrors()) {
+    error = true;
+  }
+
   m_selectedToolchain = m_worker.GetSelectedToochain();
 
   // Process solution level executes
@@ -739,10 +744,17 @@ bool ProjMgr::RunListComponents(void) {
     ProjMgrLogger::Error("processing components list failed");
     return false;
   }
+
+  bool success = true;
+  // If the worker has toolchain errors, set the success flag to false
+  if (m_worker.HasToolchainErrors()) {
+    success = false;
+  }
+
   for (const auto& component : components) {
     cout << component << endl;
   }
-  return true;
+  return success;
 }
 
 bool ProjMgr::RunListConfigs() {
@@ -761,10 +773,17 @@ bool ProjMgr::RunListConfigs() {
     ProjMgrLogger::Error("processing config list failed");
     return false;
   }
+
+  bool success = true;
+  // If the worker has toolchain errors, set the success flag to false
+  if (m_worker.HasToolchainErrors()) {
+    success = false;
+  }
+
   for (const auto& configFile : configFiles) {
     cout << configFile << endl;
   }
-  return true;
+  return success;
 }
 
 bool ProjMgr::RunListDependencies(void) {
@@ -781,10 +800,15 @@ bool ProjMgr::RunListDependencies(void) {
     ProjMgrLogger::Error("processing dependencies list failed");
     return false;
   }
+  bool success = true;
+  // If the worker has toolchain errors, set the success flag to false
+  if (m_worker.HasToolchainErrors()) {
+    success = false;
+  }
   for (const auto& dependency : dependencies) {
     cout << dependency << endl;
   }
-  return true;
+  return success;
 }
 
 bool ProjMgr::RunListContexts(void) {
@@ -817,10 +841,15 @@ bool ProjMgr::RunListGenerators(void) {
   if (!m_worker.ListGenerators(generators)) {
     return false;
   }
+  bool success = true;
+  // If the worker has toolchain errors, set the success flag to false
+  if (m_worker.HasToolchainErrors()) {
+    success = false;
+  }
   for (const auto& generator : generators) {
     cout << generator << endl;
   }
-  return true;
+  return success;
 }
 
 bool ProjMgr::RunListLayers(void) {
@@ -849,6 +878,10 @@ bool ProjMgr::RunListLayers(void) {
   // Step3: Detect layers and list them
   vector<string> layers;
   error = !m_worker.ListLayers(layers, m_clayerSearchPath, m_failedContext);
+  // If the worker has toolchain errors, set the error flag
+  if (m_worker.HasToolchainErrors()) {
+    error = true;
+  }
   if (!m_updateIdx) {
     for (const auto& layer : layers) {
       cout << layer << endl;
@@ -902,6 +935,10 @@ bool ProjMgr::RunCodeGenerator(void) {
       return false;
     }
   }
+  
+  if (m_worker.HasToolchainErrors()) {
+    return false;
+  }
   return true;
 }
 
@@ -917,7 +954,13 @@ bool ProjMgr::RunListToolchains(void) {
     return false;
   }
   vector<ToolchainItem> toolchains;
-  bool ret = m_worker.ListToolchains(toolchains);
+  bool success = m_worker.ListToolchains(toolchains);
+
+  // If the worker has toolchain errors, set the success flag to false
+  if (m_worker.HasToolchainErrors()) {
+    success = false;
+  }
+
   StrSet toolchainsSet;
   for (const auto& toolchain : toolchains) {
     string toolchainEntry = toolchain.name + "@" +
@@ -938,7 +981,7 @@ bool ProjMgr::RunListToolchains(void) {
   for (const auto& toolchainEntry : toolchainsSet) {
     cout << toolchainEntry;
   }
-  return ret;
+  return success;
 }
 
 bool ProjMgr::RunListEnvironment(void) {

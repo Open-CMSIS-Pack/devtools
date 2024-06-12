@@ -7,7 +7,7 @@ solution:
 
   build-types:
     - type: Debug
-      compiler: GCC@0.0.0
+      compiler: GCC
 
   projects:
     - project: ./TestProject3_1/TestProject3_1.cproject.yml

@@ -1694,3 +1694,24 @@ error csolution: invalid combination of contexts specified in command line:\n\
     EXPECT_STREQ(errStr.c_str(), expectedErrMsg.c_str()) << "failed for input \"" << input << "\"";
   }
 }
+
+TEST_F(ProjMgrWorkerUnitTests, GetToolchainConfig) {
+  vector<tuple<string, string, bool>> testData = {
+    {"AC6", "6.25.0", true},
+    {"AC6", "6.18.0", true},
+    {"AC6", "6.17.0", true},
+    {"AC6", "6.17.0:6.17.0", true},
+    {"AC6", "6.25.0:6.25.0", true},
+    {"AC6", "6.15.0:6.15.0", false},
+    {"GCC", "11.2.1", false}
+  };
+
+  string configPath(RteUtils::EMPTY_STRING);
+  string selectedConfigVersion(RteUtils::EMPTY_STRING);
+  m_toolchainConfigFiles.push_back("/test/etc/AC6.6.16.2.cmake");
+  for (auto& [name, version, expect] : testData) {
+    bool retVal = GetToolchainConfig(name, version, configPath, selectedConfigVersion);
+    EXPECT_EQ(retVal, expect) <<
+      "Failed to validate for name: " + name + ", version: " + version;
+  }
+}
