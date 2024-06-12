@@ -16,4 +16,4 @@ project:
         - file: ./Unknown.c
           for-context: .UnknownBuild+UnknownTarget
         - file: ./AC6.c
-          for-compiler: Ac6@>=6.18.0
+          for-compiler: Ac6@>=6.18.1

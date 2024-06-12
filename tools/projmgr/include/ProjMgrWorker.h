@@ -653,6 +653,12 @@ public:
     * @return true if validation success
   */
   bool ValidateContexts(const std::vector<std::string>& contexts, bool fromCbuildSet);
+
+  /**
+   * @brief check and print if project has toolchain errors
+   * @return true if errors
+  */
+  bool HasToolchainErrors();
 protected:
   ProjMgrParser* m_parser = nullptr;
   ProjMgrKernel* m_kernel = nullptr;
@@ -683,6 +689,7 @@ protected:
   std::set<std::string> m_undefLayerVars;
   StrMap m_packMetadata;
   std::map<std::string, ExecutesItem> m_executes;
+  StrSet m_toolchainErrors;
 
   bool LoadPacks(ContextItem& context);
   bool CheckMissingPackRequirements(const std::string& contextName);

@@ -6,7 +6,7 @@ build-gen:
   solution: ${DEVTOOLS(data)}/TestSolution/genfiles.csolution.yml
   project: ${DEVTOOLS(data)}/TestSolution/TestProject3_1/TestProject3_1.cproject.yml
   context: TestProject3_1.Debug+TypeA
-  compiler: GCC@0.0.0
+  compiler: GCC
   device: RteTestGen_ARMCM0
   device-pack: ARM::RteTestGenerator@0.1.0
   processor:

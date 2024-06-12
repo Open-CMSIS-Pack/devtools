@@ -1627,12 +1627,16 @@ bool ProjMgrWorker::ProcessToolchain(ContextItem& context) {
 
   // get compatible registered toolchain
   if (!GetLatestToolchain(context.toolchain)) {
+    string errMsg(RteUtils::EMPTY_STRING);
     // get compatible supported toolchain
     if (!GetToolchainConfig(context.toolchain.name, context.toolchain.range, context.toolchain.config, context.toolchain.version)) {
-      ProjMgrLogger::Warn("cmake configuration file for toolchain '" + context.compiler + "' was not found");
+      errMsg = "cmake configuration file and ";
       context.toolchain.version = RteUtils::GetPrefix(context.toolchain.range);
     }
+    errMsg += "toolchain environment variable for '" + context.compiler + "' was not found";
+    m_toolchainErrors.insert(errMsg);
   }
+
   if (context.toolchain.name == "AC6") {
     context.targetAttributes["Tcompiler"] = "ARMCC";
     context.targetAttributes["Toptions"] = context.toolchain.name;
@@ -4167,9 +4171,13 @@ bool ProjMgrWorker::GetToolchainConfig(const string& toolchainName, const string
     if (sm.size() == 3) {
       const string& configName = sm[1];
       const string& configVersion = sm[2];
-      if ((configName.compare(toolchainName) == 0) &&
-        (toolchainVersion.empty() || (VersionCmp::RangeCompare(configVersion, toolchainVersion) == 0)) &&
-        (VersionCmp::Compare(selectedConfigVersion, configVersion) <= 0)) {
+
+      bool isNameMatch = (configName.compare(toolchainName) == 0);
+      bool isVersionCompatible = (toolchainVersion.empty() ||
+        VersionCmp::RangeCompare(configVersion, toolchainVersion) <= 0);
+      bool isVersionHigherOrEqual = (VersionCmp::Compare(selectedConfigVersion, configVersion) <= 0);
+
+      if (isNameMatch && isVersionCompatible && isVersionHigherOrEqual) {
         selectedConfigVersion = configVersion;
         configPath = file;
         found = true;
@@ -4685,4 +4693,12 @@ bool ProjMgrWorker::ValidateContexts(const std::vector<std::string>& contexts, b
     return false;
   }
   return true;
+}
+
+bool ProjMgrWorker::HasToolchainErrors() {
+  std::for_each(m_toolchainErrors.begin(), m_toolchainErrors.end(),
+    [](const auto& errMsg) {
+      ProjMgrLogger::Error(errMsg);
+    });
+  return m_toolchainErrors.size() > 0 ? true : false;
 }
