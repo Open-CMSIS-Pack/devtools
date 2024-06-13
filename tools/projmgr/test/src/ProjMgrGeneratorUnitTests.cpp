@@ -51,7 +51,10 @@ TEST_F(ProjMgrGeneratorUnitTests, EmptyCprjElements) {
 }
 
 TEST_F(ProjMgrGeneratorUnitTests, GenDir) {
-  char* argv[6];
+  char *argv[6], *envp[2];
+  string gcc = "GCC_TOOLCHAIN_11_2_1=" + testinput_folder;
+  envp[0] = (char*)gcc.c_str();
+  envp[1] = (char*)'\0';
 
   const string& csolution = testinput_folder + "/TestSolution/gendir.csolution.yml";
   argv[1] = (char*)"run";
@@ -60,7 +63,7 @@ TEST_F(ProjMgrGeneratorUnitTests, GenDir) {
   argv[4] = (char*)"-g";
   argv[5] = (char*)"RteTestGeneratorIdentifier";
 
-  EXPECT_EQ(0, ProjMgr::RunProjMgr(6, argv, 0));
+  EXPECT_EQ(0, ProjMgr::RunProjMgr(6, argv, envp));
 
   const string generatorInputFile = testinput_folder + "/TestSolution/tmp/TestProject3/TypeA/Debug/TestProject3.Debug+TypeA.cbuild-gen.yml";
   const string generatedGPDSC = testinput_folder + "/TestSolution/TestProject3/gendir/RteTestGen_ARMCM0/RteTest.gpdsc";
@@ -70,7 +73,10 @@ TEST_F(ProjMgrGeneratorUnitTests, GenDir) {
 }
 
 TEST_F(ProjMgrGeneratorUnitTests, GenFiles) {
-  char* argv[6];
+  char *argv[6], *envp[2];
+  string gcc = "GCC_TOOLCHAIN_11_2_1=" + testinput_folder;
+  envp[0] = (char*)gcc.c_str();
+  envp[1] = (char*)'\0';
 
   const string& csolution = testinput_folder + "/TestSolution/genfiles.csolution.yml";
   argv[1] = (char*)"run";
@@ -79,7 +85,7 @@ TEST_F(ProjMgrGeneratorUnitTests, GenFiles) {
   argv[4] = (char*)"-g";
   argv[5] = (char*)"RteTestGeneratorIdentifier";
 
-  EXPECT_EQ(0, ProjMgr::RunProjMgr(6, argv, 0));
+  EXPECT_EQ(0, ProjMgr::RunProjMgr(6, argv, envp));
 
   const string generatorInputFile = testinput_folder + "/TestSolution/tmp/TestProject3_1/TypeA/Debug/TestProject3_1.Debug+TypeA.cbuild-gen.yml";
   const string generatedGPDSC = testinput_folder + "/TestSolution/TestProject3_1/gendir/RteTestGen_ARMCM0/RteTest.gpdsc";
@@ -163,7 +169,10 @@ TEST_F(ProjMgrGeneratorUnitTests, DryRunIncapableGenerator) {
 }
 
 TEST_F(ProjMgrGeneratorUnitTests, DryRun) {
-  char* argv[7];
+  char* argv[7], *envp[2];
+  string gcc = "GCC_TOOLCHAIN_11_2_1=" + testinput_folder;
+  envp[0] = (char*)gcc.c_str();
+  envp[1] = (char*)'\0';
 
   StdStreamRedirect streamRedirect;
   const string& csolution = testinput_folder + "/TestSolution/genfiles.csolution.yml";
@@ -179,7 +188,7 @@ TEST_F(ProjMgrGeneratorUnitTests, DryRun) {
 
   RteFsUtils::RemoveFile(targetGPDSC);
 
-  EXPECT_EQ(0, ProjMgr::RunProjMgr(7, argv, 0));
+  EXPECT_EQ(0, ProjMgr::RunProjMgr(7, argv, envp));
 
   auto stripAbsoluteFunc = [](const std::string& in) {
     std::string str = in;
@@ -211,7 +220,10 @@ TEST_F(ProjMgrGeneratorUnitTests, DryRun) {
 }
 
 TEST_F(ProjMgrGeneratorUnitTests, PdscAndGpdscWithSameComponentName) {
-  char* argv[6];
+  char* argv[6], * envp[2];
+  string gcc = "GCC_TOOLCHAIN_11_2_1=" + testinput_folder;
+  envp[0] = (char*)gcc.c_str();
+  envp[1] = (char*)'\0';
 
   const string& csolution = testinput_folder + "/TestSolution/genfiles.csolution.yml";
   argv[1] = (char*)"run";
@@ -224,11 +236,11 @@ TEST_F(ProjMgrGeneratorUnitTests, PdscAndGpdscWithSameComponentName) {
 
   RteFsUtils::RemoveFile(targetGPDSC);
 
-  EXPECT_EQ(0, ProjMgr::RunProjMgr(6, argv, 0));
+  EXPECT_EQ(0, ProjMgr::RunProjMgr(6, argv, envp));
 
   argv[1] = (char*)"convert";
   argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
 
-  EXPECT_EQ(0, ProjMgr::RunProjMgr(4, argv, 0));
+  EXPECT_EQ(0, ProjMgr::RunProjMgr(4, argv, envp));
 }
