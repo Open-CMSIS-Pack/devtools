@@ -5763,3 +5763,38 @@ TEST_F(ProjMgrUnitTests, TestRestrictedContextsWithContextSet_Pass) {
 
   EXPECT_EQ(0, RunProjMgr(10, argv, m_envp));
 }
+
+TEST_F(ProjMgrUnitTests, ValidateCreatedFor) {
+  const vector<tuple<string, string, bool>> testData = {
+    { "CMSIS-Toolbox@9.9.9", "error"  , false },
+    { "CMSIS-Tooling@9.9.9", "warning", true  },
+    { "CMSIS-Toolbox@0.0.0", ""       , true  },
+    { ""                   , ""       , true  },
+    { "Unknown"            , "warning", true  },
+  };
+  StdStreamRedirect streamRedirect;
+  for (const auto& [createdFor, expectedMsg, expectedReturn] : testData) {
+    streamRedirect.ClearStringStreams();
+    EXPECT_EQ(expectedReturn, ValidateCreatedFor(createdFor));
+    auto errMsg = streamRedirect.GetErrorString();
+    if (expectedMsg.empty()) {
+      EXPECT_EQ(RteUtils::EMPTY_STRING, errMsg);
+    } else {
+      EXPECT_NE(string::npos, errMsg.find(expectedMsg));
+    }
+  }
+}
+
+TEST_F(ProjMgrUnitTests, FailCreatedFor) {
+  char* argv[5];
+  StdStreamRedirect streamRedirect;
+  const string& csolution = testinput_folder + "/TestSolution/created-for.csolution.yml";
+  const string& expectedErrMsg = "error csolution: solution requires newer CMSIS-Toolbox version 9.9.9";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"--output";
+  argv[4] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(1, RunProjMgr(5, argv, 0));
+  auto errMsg = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errMsg.find(expectedErrMsg));
+}

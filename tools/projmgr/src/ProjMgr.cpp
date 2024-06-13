@@ -419,6 +419,10 @@ bool ProjMgr::PopulateContexts(void) {
     if (!m_parser.ParseCsolution(m_csolutionFile, m_checkSchema, m_frozenPacks)) {
       return false;
     }
+    // Check created-for requirement
+    if (!ValidateCreatedFor(m_parser.GetCsolution().createdFor)) {
+      return false;
+    }
     // Parse cdefault
     if (m_parser.GetCsolution().enableCdefault && GetCdefaultFile()) {
       if (!m_parser.ParseCdefault(m_cdefaultFile, m_checkSchema)) {
@@ -1013,5 +1017,31 @@ bool ProjMgr::GetCdefaultFile(void) {
     return false;
   }
   m_cdefaultFile = cdefaultFile;
+  return true;
+}
+
+bool ProjMgr::ValidateCreatedFor(const string& createdFor) {
+  if (!createdFor.empty()) {
+    map<string, map<string, string>> registeredToolchains;
+    static const regex regEx = regex("(.*)@(\\d+)\\.(\\d+)\\.(\\d+)");
+    smatch sm;
+    if (regex_match(createdFor, sm, regEx)) {
+      string toolName = string(sm[1]);
+      transform(toolName.begin(), toolName.end(), toolName.begin(), [](unsigned char c) {
+        return std::tolower(c);
+      });
+      if (toolName == "cmsis-toolbox") {
+        const string version = string(sm[2]) + '.' + string(sm[3]) + '.' + string(sm[4]);
+        const string currentVersion = string(VERSION_STRING) + ':' + string(VERSION_STRING);
+        if (VersionCmp::RangeCompare(version, currentVersion) <= 0) {
+          return true;
+        } else {
+          ProjMgrLogger::Error(m_csolutionFile, "solution requires newer CMSIS-Toolbox version " + version);
+          return false;
+        }
+      }
+    }
+    ProjMgrLogger::Warn(m_csolutionFile, "solution created for unknown tool: " + createdFor);
+  }
   return true;
 }

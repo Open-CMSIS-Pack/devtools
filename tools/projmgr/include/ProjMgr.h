@@ -163,6 +163,7 @@ protected:
   bool RunListEnvironment();
   bool PopulateContexts();
   bool SetLoadPacksPolicy();
+  bool ValidateCreatedFor(const std::string& createdFor);
 
   bool Configure();
   bool GenerateYMLConfigurationFiles();
