@@ -81,6 +81,7 @@ bool ProjMgrYamlParser::ParseCsolution(const string& input,
 
     const YAML::Node& solutionNode = root[YAML_SOLUTION];
     ParseString(solutionNode, YAML_DESCRIPTION, csolution.description);
+    ParseString(solutionNode, YAML_CREATED_FOR, csolution.createdFor);
     if (!ParseContexts(solutionNode, csolution)) {
       return false;
     }
