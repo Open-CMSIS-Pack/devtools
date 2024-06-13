@@ -14,7 +14,7 @@ static constexpr const char* MINOR_VERSION = "${PROJECT_VERSION_MINOR}";
 static constexpr const char* PATCH_VERSION = "${PROJECT_VERSION_PATCH}";
 
 static constexpr const char* COMPANY_NAME      = "Arm Ltd.";
-static constexpr const char* PRODUCT_NAME      = "CMSIS SVD Check / Coverter";
+static constexpr const char* PRODUCT_NAME      = "CMSIS SVD Check / Converter";
 static constexpr const char* ORIGINAL_FILENAME = "${PROJECT_TARGET_FILE_NAME}";
 static constexpr const char* COPYRIGHT_NOTICE  = "${PROJECT_COPYRIGHT_NOTICE}";
 
