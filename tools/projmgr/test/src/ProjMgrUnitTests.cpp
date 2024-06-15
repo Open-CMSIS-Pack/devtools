@@ -5798,3 +5798,37 @@ TEST_F(ProjMgrUnitTests, FailCreatedFor) {
   auto errMsg = streamRedirect.GetErrorString();
   EXPECT_NE(string::npos, errMsg.find(expectedErrMsg));
 }
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_FailedConvertShouldCreateRteDirInProjectFolder) {
+  char* argv[4];
+  const string& app = testoutput_folder + "/app";
+  const string& csolution = app + "/app.csolution.yml";
+  const string& work = testoutput_folder + "/work";
+
+  ASSERT_TRUE(RteFsUtils::CreateDirectories(work));
+
+  ASSERT_TRUE(RteFsUtils::CreateTextFile(csolution, "# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/2.4.0/tools/projmgr/schemas/csolution.schema.json\n"
+    "solution:\n"
+    "  build-types:\n"
+    "    - type: debug\n"
+    "  target-types:\n"
+    "    - type: main\n"
+    "  projects:\n"
+    "    - project: test.cproject.yml\n"));
+
+  ASSERT_TRUE(RteFsUtils::CreateTextFile(app + "/test.cproject.yml", "# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/2.4.0/tools/projmgr/schemas/cproject.schema.json\n"
+    "project:\n"));
+
+  TempSwitchCwd cwdSwitcher(work);
+
+  ASSERT_FALSE(RteFsUtils::IsDirectory(work + "/RTE"));
+  ASSERT_FALSE(RteFsUtils::IsDirectory(app + "/RTE"));
+
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  EXPECT_EQ(1, RunProjMgr(4, argv, 0));
+
+  ASSERT_FALSE(RteFsUtils::IsDirectory(work + "/RTE"));
+  ASSERT_FALSE(RteFsUtils::IsDirectory(app + "/RTE"));
+}

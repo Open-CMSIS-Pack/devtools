@@ -39,6 +39,14 @@ private:
   std::streambuf*   m_stdcerrStreamBuf;
 };
 
+class TempSwitchCwd {
+public:
+  TempSwitchCwd(const std::string &path);
+  ~TempSwitchCwd();
+private:
+  std::string m_oldPath;
+};
+
 typedef std::string (*LineReplaceFunc_t)(const std::string&);
 
 /**
