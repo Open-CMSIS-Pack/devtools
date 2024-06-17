@@ -594,6 +594,11 @@ string RteFsUtils::GetCurrentFolder(bool withTrailingSlash) {
   return f;
 }
 
+void RteFsUtils::SetCurrentFolder(const string& path) {
+  error_code ec;
+  fs::current_path(path, ec);
+}
+
 bool RteFsUtils::MakeSureFilePath(const string &filePath) {
   fs::path path(filePath);
   path.remove_filename();

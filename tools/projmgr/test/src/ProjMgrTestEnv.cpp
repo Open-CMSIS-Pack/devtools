@@ -50,6 +50,15 @@ StdStreamRedirect::~StdStreamRedirect() {
   std::cerr.rdbuf(m_stdcerrStreamBuf);
 }
 
+TempSwitchCwd::TempSwitchCwd(const string& path) {
+  m_oldPath = RteFsUtils::GetCurrentFolder();
+  RteFsUtils::SetCurrentFolder(path);
+}
+
+TempSwitchCwd::~TempSwitchCwd() {
+  RteFsUtils::SetCurrentFolder(m_oldPath);
+}
+
 void ProjMgrTestEnv::SetUp() {
   error_code ec;
   schema_folder        = string(TEST_FOLDER) + "../schemas";

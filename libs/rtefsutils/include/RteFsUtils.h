@@ -245,6 +245,13 @@ public:
    * @return absolute path of the current working directory
   */
   static std::string GetCurrentFolder(bool withTrailingSlash = true);
+
+  /**
+   * @brief change current working directory to path
+   * @param path path to use as current working directory
+  */
+  static void SetCurrentFolder(const std::string &path);
+
   /**
    * @brief determine first file owning the given extension in given folder
    * @param folder name of path where first file with given extension is to be found
