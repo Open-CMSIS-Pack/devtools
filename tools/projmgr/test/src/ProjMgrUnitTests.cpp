@@ -5832,3 +5832,83 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_FailedConvertShouldCreateRteDirInProjectFold
   ASSERT_FALSE(RteFsUtils::IsDirectory(work + "/RTE"));
   ASSERT_FALSE(RteFsUtils::IsDirectory(app + "/RTE"));
 }
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_CprjFilesShouldBePlacedInProjectTree) {
+  char* argv[4];
+  const string& app = testoutput_folder + "/app";
+  const string& csolution = app + "/app.csolution.yml";
+  const string& work = testoutput_folder + "/work";
+  const string& cprjdir = app + "/foo/baz";
+
+  ASSERT_TRUE(RteFsUtils::CreateDirectories(work));
+
+  ASSERT_TRUE(RteFsUtils::CreateTextFile(csolution, "# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/2.4.0/tools/projmgr/schemas/csolution.schema.json\n"
+    "solution:\n"
+    "  output-dirs:\n"
+    "    intdir: $ProjectDir()$/build/$BuildType$\n"
+    "    outdir: $ProjectDir()$/build/$BuildType$\n"
+    "    cprjdir: $ProjectDir()$/baz\n"
+    "  generators:\n"
+    "    base-dir: $ProjectDir()$/generated\n"
+    "  build-types:\n"
+    "    - type: debug\n"
+    "      compiler: GCC\n"
+    "  target-types:\n"
+    "    - type: main\n"
+    "  projects:\n"
+    "    - project: foo/test.cproject.yml\n"));
+
+  ASSERT_TRUE(RteFsUtils::CreateTextFile(app + "/foo/test.cproject.yml", "# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/2.4.0/tools/projmgr/schemas/cproject.schema.json\n"
+    "project:\n"));
+
+  ASSERT_FALSE(RteFsUtils::IsDirectory(cprjdir));
+
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  ASSERT_EQ(1, RunProjMgr(4, argv, 0));
+
+  ASSERT_TRUE(RteFsUtils::IsDirectory(cprjdir));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_ProjectDirShouldBeExpanded) {
+  char* argv[4];
+  StdStreamRedirect streamRedirect;
+  const string& app = testoutput_folder + "/app";
+  const string& csolution = app + "/app.csolution.yml";
+  const string& work = testoutput_folder + "/work";
+  const string& cprjdir = app + "/foo/baz";
+
+  ASSERT_TRUE(RteFsUtils::CreateDirectories(work));
+
+  ASSERT_TRUE(RteFsUtils::CreateTextFile(csolution, "# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/2.4.0/tools/projmgr/schemas/csolution.schema.json\n"
+    "solution:\n"
+    "  output-dirs:\n"
+    "    intdir: $ProjectDir()$/build/$BuildType$\n"
+    "    outdir: $ProjectDir()$/build/$BuildType$\n"
+    "    cprjdir: $ProjectDir()$/baz\n"
+    "  generators:\n"
+    "    base-dir: $ProjectDir()$/generated\n"
+    "  build-types:\n"
+    "    - type: debug\n"
+    "  target-types:\n"
+    "    - type: main\n"
+    "  projects:\n"
+    "    - project: foo/test.cproject.yml\n"));
+
+  ASSERT_TRUE(RteFsUtils::CreateTextFile(app + "/foo/test.cproject.yml", "# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/2.4.0/tools/projmgr/schemas/cproject.schema.json\n"
+    "project:\n"));
+
+  ASSERT_FALSE(RteFsUtils::IsDirectory(cprjdir));
+
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  ASSERT_EQ(1, RunProjMgr(4, argv, 0));
+
+  ASSERT_EQ(string::npos, streamRedirect.GetOutString().find("$ProjectDir()$"))
+    << "stdout:\n" << streamRedirect.GetOutString()
+    << "stderr:\n" << streamRedirect.GetErrorString();
+
+  ASSERT_TRUE(RteFsUtils::IsDirectory(cprjdir));
+}
