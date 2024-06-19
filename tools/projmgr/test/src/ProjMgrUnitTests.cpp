@@ -2643,6 +2643,8 @@ TEST_F(ProjMgrUnitTests, RunProjMgrLayers_missing_project_file) {
 
 TEST_F(ProjMgrUnitTests, RunProjMgrLayers_pname) {
   char* argv[6];
+  StdStreamRedirect streamRedirect;
+  const string expected = "testlayers.cproject.yml - warning csolution: 'device' name will be deprecated at this level, please move it to *.csolution.yml";
   const string& csolutionFile = testinput_folder + "/TestLayers/testlayers.csolution.yml";
   argv[1] = (char*)"convert";
   argv[2] = (char*)"--solution";
@@ -2650,6 +2652,9 @@ TEST_F(ProjMgrUnitTests, RunProjMgrLayers_pname) {
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
   EXPECT_EQ(0, RunProjMgr(6, argv, m_envp));
+
+  const string& errStr = streamRedirect.GetErrorString();
+  EXPECT_TRUE(errStr.find(expected) != string::npos);
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgrLayers_no_device_found) {
