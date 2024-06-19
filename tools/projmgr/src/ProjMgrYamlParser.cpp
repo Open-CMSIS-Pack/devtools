@@ -871,6 +871,19 @@ bool ProjMgrYamlParser::ParseTargetType(const YAML::Node& parent, const string& 
   for (const auto& item : targetChildren) {
     ParseString(parent, item.first, item.second);
   }
+
+  // Throw warning in case board or device name are set in *.cproject.yml or *.clayer.yml 
+  if (regex_match(file, regex(".*\\.(cproject|clayer)\\.(yml|yaml)"))) {
+    for (const auto& [key, value] : targetChildren) {
+      if (!value.empty()) {
+        if ((key == YAML_DEVICE) && regex_match(value, regex("^:[ -9;-~]+$"))) {
+          // processor name in the format :<pname> is accepted
+          continue;
+        }
+        ProjMgrLogger::Warn(file, "'" + key + "' name will be deprecated at this level, please move it to *.csolution.yml");
+      }
+    }
+  }
   return ParseBuildType(parent, file, targetType.build);
 }
 
