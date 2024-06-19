@@ -6,7 +6,7 @@
 */
 /******************************************************************************/
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -1376,7 +1376,7 @@ void RteProject::CollectSettings(const string& targetName)
         switch (cat) {
         case RteFile::Category::HEADER:
           t->AddFile(f->GetIncludeFileName(), cat, comment);
-          if (f->GetScope() != RteFile::Scope::SCOPE_HIDDEN) {
+          if (f->GetScope() != RteFile::Scope::SCOPE_PRIVATE) {
             t->AddIncludePath(f->GetIncludePath(), f->GetLanguage());
           }
           break;

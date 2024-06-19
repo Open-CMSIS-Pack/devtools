@@ -6,7 +6,7 @@
 */
 /******************************************************************************/
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -827,7 +827,7 @@ void RteTarget::AddFileInstance(RteFileInstance* fi)
     if (cat == RteFile::Category::HEADER) {
       effectivePathName = fi->GetIncludeFileName();
       string incPath = "./" + fi->GetIncludePath();
-      if (fi->GetScope() != RteFile::Scope::SCOPE_HIDDEN) {
+      if (fi->GetScope() != RteFile::Scope::SCOPE_PRIVATE) {
         AddIncludePath(incPath, fi->GetLanguage());
       }
     }
@@ -871,9 +871,6 @@ void RteTarget::AddFile(RteFile* f, RteComponentInstance* ci)
     RteFile::Category cat = f->GetCategory();
     string pathName;
     if (cat == RteFile::Category::HEADER) {
-      if (f->GetScope() == RteFile::Scope::SCOPE_HIDDEN) {
-        return; // do not add hidden headers
-      }
       if (f->GetScope() == RteFile::Scope::SCOPE_PRIVATE) {
         AddPrivateIncludePath(f->GetIncludePath(), c, f->GetLanguage());
       } else {
@@ -898,7 +895,7 @@ void RteTarget::AddFile(const string& pathName, RteFile::Category cat, const str
   switch (cat) {
   case RteFile::Category::HEADER:
   {
-    if (!f || f->GetScope() != RteFile::Scope::SCOPE_HIDDEN) {
+    if (!f || f->GetScope() != RteFile::Scope::SCOPE_PRIVATE) {
       m_headers[pathName] = comment;
     }
     break;

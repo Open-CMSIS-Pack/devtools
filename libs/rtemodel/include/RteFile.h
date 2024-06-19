@@ -8,7 +8,7 @@
 */
 /******************************************************************************/
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -68,10 +68,10 @@ public:
   */
   enum class Scope {
     SCOPE_NONE,     // scope is not specified
-    SCOPE_VISIBLE,  // header suggested for inclusion by other modules and is considered the contract of the component.
-    SCOPE_HIDDEN,   // header is an internal header file which must not be explicitly included by modules outside of the scope of the component
-    SCOPE_PUBLIC,   // include path is added to the command line for building any modules of the specified language.
-    SCOPE_PRIVATE   // include path is added to the command line for building any module of the component for the specified language.
+    SCOPE_PUBLIC,   // include path is added to the command line for building any modules of the specified language
+                    // header suggested for inclusion by other modules and is considered the contract of the component
+    SCOPE_PRIVATE   // include path is added to the command line for building any module of the component for the specified language
+                    // header is an internal header file which must not be explicitly included by modules outside of the scope of the component
   };
 
   /**

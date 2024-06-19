@@ -6,7 +6,7 @@
 */
 /******************************************************************************/
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -292,10 +292,6 @@ RteFile::Role RteFile::RoleFromString(const string& role)
 RteFile::Scope  RteFile::ScopeFromString(const std::string& scope)
 {
   if (scope == "visible") {
-    return Scope::SCOPE_VISIBLE;
-  } else if (scope == "hidden") {
-    return Scope::SCOPE_HIDDEN;
-  } else if (scope == "public") {
     return Scope::SCOPE_PUBLIC;
   } else if (scope == "private") {
     return Scope::SCOPE_PRIVATE;

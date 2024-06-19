@@ -49,7 +49,7 @@ build:
         - file: ../data/TestSolution/LanguageAndScope/pack/LanguageAndScope/Hidden/Hidden.h
           category: header
           language: c-cpp
-          scope: hidden
+          scope: private
           version: 0.9.9
         - file: ../data/TestSolution/LanguageAndScope/pack/LanguageAndScope/Private
           category: include
@@ -64,7 +64,7 @@ build:
         - file: ../data/TestSolution/LanguageAndScope/pack/LanguageAndScope/Visible/Visible.h
           category: header
           language: c-cpp
-          scope: visible
+          scope: public
           version: 0.9.9
   linker:
     script: ../data/TestSolution/LanguageAndScope/RTE/Device/RteTest_ARMCM3/ac6_linker_script.sct.src

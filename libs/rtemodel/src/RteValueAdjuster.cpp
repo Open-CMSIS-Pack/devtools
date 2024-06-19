@@ -6,7 +6,7 @@
 */
 /******************************************************************************/
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -104,6 +104,13 @@ string RteValueAdjuster::AdjustAttributeValue(const string& tag, const string& n
       return "FP_MVE";
     else if ((value == "3") || (value == "MVE_DP_FP"))
       return "FP_MVE";
+    else
+      return value;
+  } else if (name == "scope") {
+    if (value == "hidden")
+      return "private";
+    else if (value == "visible")
+      return "public";
     else
       return value;
   }
