@@ -113,7 +113,7 @@ void ProjMgrWorker::AddContext(ContextDesc& descriptor, const TypePair& type, Co
 
     // customized directories
     if (m_outputDir.empty() && !context.csolution->directories.cprj.empty()) {
-      context.directories.cprj = context.csolution->directory + "/" + context.csolution->directories.cprj;
+      context.directories.cprj = context.csolution->directories.cprj;
     }
     if (!context.csolution->directories.intdir.empty()) {
       context.directories.intdir = context.csolution->directories.intdir;
@@ -124,8 +124,6 @@ void ProjMgrWorker::AddContext(ContextDesc& descriptor, const TypePair& type, Co
     if (!context.cproject->rteBaseDir.empty()) {
       context.directories.rte = context.cproject->rteBaseDir;
     }
-
-    context.directories.cprj = RteFsUtils::MakePathCanonical(RteFsUtils::AbsolutePath(context.directories.cprj).generic_string());
 
     // context variables
     context.variables[RteConstants::AS_SOLUTION] = context.csolution->name;
@@ -2380,8 +2378,9 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, bool rerun) {
   context.groups.clear();
 
   // Get content of build and target types
+  bool error = false;
   if (!GetTypeContent(context)) {
-    return false;
+    error |= true;
   }
 
   StringCollection board = {
@@ -2396,7 +2395,7 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, bool rerun) {
     board.elements.push_back(&clayer.second->target.board);
   }
   if (!ProcessBoardPrecedence(board)) {
-    return false;
+    error |= true;
   }
 
   StringCollection device = {
@@ -2411,7 +2410,7 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, bool rerun) {
     device.elements.push_back(&clayer.second->target.device);
   }
   if (!ProcessDevicePrecedence(device)) {
-    return false;
+    error |= true;
   }
 
   StringCollection compiler = {
@@ -2427,15 +2426,15 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, bool rerun) {
     compiler.elements.push_back(&clayer->target.build.compiler);
   }
   if (!ProcessCompilerPrecedence(compiler)) {
-    return false;
+    error |= true;
   }
   // accept compiler redefinition in the command line
   compiler = { &context.compiler, { &m_selectedToolchain } };
   if (!ProcessCompilerPrecedence(compiler, true)) {
-    return false;
+    error |= true;
   }
   if (!ProcessToolchain(context)) {
-    return false;
+    error |= true;
   }
 
   // set context variables (static access sequences)
@@ -2454,18 +2453,18 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, bool rerun) {
 
   // Get build options content of project setup
   if (!GetProjectSetup(context)) {
-    return false;
+    error |= true;
   }
 
   // Processor options
   if (!ProcessProcessorOptions(context)) {
-    return false;
+    error |= true;
   }
 
   // Output filenames must be processed after board, device and compiler precedences
   // but before processing other access sequences
   if (!ProcessOutputFilenames(context)) {
-    return false;
+    error |= true;
   }
 
   // Access sequences and relative path references must be processed
@@ -2473,7 +2472,7 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, bool rerun) {
   // after output filenames (due to $Output$)
   // but before processing misc, defines and includes precedences
   if (!ProcessSequencesRelatives(context, rerun)) {
-    return false;
+    error |= true;
   }
 
   // Optimize
@@ -2493,7 +2492,7 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, bool rerun) {
     optimize.elements.push_back(&clayer.optimize);
   }
   if (!ProcessPrecedence(optimize)) {
-    return false;
+    error |= true;
   }
 
   // Debug
@@ -2513,7 +2512,7 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, bool rerun) {
     debug.elements.push_back(&clayer.debug);
   }
   if (!ProcessPrecedence(debug)) {
-    return false;
+    error |= true;
   }
 
   // Warnings
@@ -2533,7 +2532,7 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, bool rerun) {
     warnings.elements.push_back(&clayer.warnings);
   }
   if (!ProcessPrecedence(warnings)) {
-    return false;
+    error |= true;
   }
 
   // Language C
@@ -2553,7 +2552,7 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, bool rerun) {
     languageC.elements.push_back(&clayer.languageC);
   }
   if (!ProcessPrecedence(languageC)) {
-    return false;
+    error |= true;
   }
 
   // Language C++
@@ -2573,7 +2572,7 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, bool rerun) {
     languageCpp.elements.push_back(&clayer.languageCpp);
   }
   if (!ProcessPrecedence(languageCpp)) {
-    return false;
+    error |= true;
   }
 
   // Misc
@@ -2672,7 +2671,7 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, bool rerun) {
   for (auto& setup : context.controls.setups) {
     CollectionUtils::AddStringItemsUniquely(includesAsmRef, setup.addpathsAsm);
   }
-  return true;
+  return !error;
 }
 
 bool ProjMgrWorker::ProcessProcessorOptions(ContextItem& context) {
@@ -2877,8 +2876,13 @@ bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem & context, bool rerun)
   if (!rerun) {
     // directories
     const string ref = m_outputDir.empty() ? context.csolution->directory : m_outputDir;
-    if (!ProcessSequenceRelative(context, context.directories.cprj) ||
-      !ProcessSequenceRelative(context, context.directories.rte, context.cproject->directory) ||
+    if (!ProcessSequenceRelative(context, context.directories.cprj)) {
+      return false;
+    }
+    if (RteFsUtils::IsRelative(context.directories.cprj)) {
+      RteFsUtils::NormalizePath(context.directories.cprj, ref);
+    }
+    if (!ProcessSequenceRelative(context, context.directories.rte, context.cproject->directory) ||
       !ProcessSequenceRelative(context, context.directories.outdir, ref) ||
       !ProcessSequenceRelative(context, context.directories.intdir, ref)) {
       return false;
@@ -2946,15 +2950,15 @@ void ProjMgrWorker::UpdatePartialReferencedContext(ContextItem& context, string&
 
 void ProjMgrWorker::ExpandAccessSequence(const ContextItem& context, const ContextItem& refContext, const string& sequence, const string& outdir, string& item, bool withHeadingDot) {
   const string refContextOutDir = refContext.directories.cprj + "/" + refContext.directories.outdir;
-  const string relOutDir = RteFsUtils::RelativePath(refContextOutDir, outdir, withHeadingDot);
+  const string relOutDir = outdir.empty() ? refContextOutDir : RteFsUtils::RelativePath(refContextOutDir, outdir, withHeadingDot);
   string regExStr = "\\$";
   string replacement;
   if (sequence == RteConstants::AS_SOLUTION_DIR) {
     regExStr += RteConstants::AS_SOLUTION_DIR;
-    replacement = RteFsUtils::RelativePath(refContext.csolution->directory, outdir, withHeadingDot);
+    replacement = outdir.empty() ? refContext.csolution->directory : RteFsUtils::RelativePath(refContext.csolution->directory, outdir, withHeadingDot);
   } else if (sequence == RteConstants::AS_PROJECT_DIR) {
     regExStr += RteConstants::AS_PROJECT_DIR;
-    replacement = RteFsUtils::RelativePath(refContext.cproject->directory, outdir, withHeadingDot);
+    replacement = outdir.empty() ? refContext.cproject->directory : RteFsUtils::RelativePath(refContext.cproject->directory, outdir, withHeadingDot);
   } else if (sequence == RteConstants::AS_OUT_DIR) {
     regExStr += RteConstants::AS_OUT_DIR;
     replacement = relOutDir;
@@ -2981,7 +2985,7 @@ void ProjMgrWorker::ExpandAccessSequence(const ContextItem& context, const Conte
 bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, const string& ref, string outDir, bool withHeadingDot, bool solutionLevel) {
   size_t offset = 0;
   bool pathReplace = false;
-  outDir = outDir.empty() ? context.directories.cprj : outDir;
+  outDir = outDir.empty() && item != context.directories.cprj ? context.directories.cprj : outDir;
   // expand variables (static access sequences)
   const string input = item = solutionLevel ? item : RteUtils::ExpandAccessSequences(item, context.variables);
   // expand dynamic access sequences
