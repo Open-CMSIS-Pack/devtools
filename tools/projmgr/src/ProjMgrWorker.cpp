@@ -113,7 +113,7 @@ void ProjMgrWorker::AddContext(ContextDesc& descriptor, const TypePair& type, Co
 
     // customized directories
     if (m_outputDir.empty() && !context.csolution->directories.cprj.empty()) {
-      context.directories.cprj = context.csolution->directory + "/" + context.csolution->directories.cprj;
+      context.directories.cprj = context.csolution->directories.cprj;
     }
     if (!context.csolution->directories.intdir.empty()) {
       context.directories.intdir = context.csolution->directories.intdir;
@@ -124,8 +124,6 @@ void ProjMgrWorker::AddContext(ContextDesc& descriptor, const TypePair& type, Co
     if (!context.cproject->rteBaseDir.empty()) {
       context.directories.rte = context.cproject->rteBaseDir;
     }
-
-    context.directories.cprj = RteFsUtils::MakePathCanonical(RteFsUtils::AbsolutePath(context.directories.cprj).generic_string());
 
     // context variables
     context.variables[RteConstants::AS_SOLUTION] = context.csolution->name;
@@ -2877,8 +2875,13 @@ bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem & context, bool rerun)
   if (!rerun) {
     // directories
     const string ref = m_outputDir.empty() ? context.csolution->directory : m_outputDir;
-    if (!ProcessSequenceRelative(context, context.directories.cprj) ||
-      !ProcessSequenceRelative(context, context.directories.rte, context.cproject->directory) ||
+    if (!ProcessSequenceRelative(context, context.directories.cprj)) {
+      return false;
+    }
+    if (RteFsUtils::IsRelative(context.directories.cprj)) {
+      RteFsUtils::NormalizePath(context.directories.cprj, ref);
+    }
+    if (!ProcessSequenceRelative(context, context.directories.rte, context.cproject->directory) ||
       !ProcessSequenceRelative(context, context.directories.outdir, ref) ||
       !ProcessSequenceRelative(context, context.directories.intdir, ref)) {
       return false;
@@ -2946,15 +2949,15 @@ void ProjMgrWorker::UpdatePartialReferencedContext(ContextItem& context, string&
 
 void ProjMgrWorker::ExpandAccessSequence(const ContextItem& context, const ContextItem& refContext, const string& sequence, const string& outdir, string& item, bool withHeadingDot) {
   const string refContextOutDir = refContext.directories.cprj + "/" + refContext.directories.outdir;
-  const string relOutDir = RteFsUtils::RelativePath(refContextOutDir, outdir, withHeadingDot);
+  const string relOutDir = outdir.empty() ? refContextOutDir : RteFsUtils::RelativePath(refContextOutDir, outdir, withHeadingDot);
   string regExStr = "\\$";
   string replacement;
   if (sequence == RteConstants::AS_SOLUTION_DIR) {
     regExStr += RteConstants::AS_SOLUTION_DIR;
-    replacement = RteFsUtils::RelativePath(refContext.csolution->directory, outdir, withHeadingDot);
+    replacement = outdir.empty() ? refContext.csolution->directory : RteFsUtils::RelativePath(refContext.csolution->directory, outdir, withHeadingDot);
   } else if (sequence == RteConstants::AS_PROJECT_DIR) {
     regExStr += RteConstants::AS_PROJECT_DIR;
-    replacement = RteFsUtils::RelativePath(refContext.cproject->directory, outdir, withHeadingDot);
+    replacement = outdir.empty() ? refContext.cproject->directory : RteFsUtils::RelativePath(refContext.cproject->directory, outdir, withHeadingDot);
   } else if (sequence == RteConstants::AS_OUT_DIR) {
     regExStr += RteConstants::AS_OUT_DIR;
     replacement = relOutDir;
@@ -2981,7 +2984,7 @@ void ProjMgrWorker::ExpandAccessSequence(const ContextItem& context, const Conte
 bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, const string& ref, string outDir, bool withHeadingDot, bool solutionLevel) {
   size_t offset = 0;
   bool pathReplace = false;
-  outDir = outDir.empty() ? context.directories.cprj : outDir;
+  outDir = outDir.empty() && item != context.directories.cprj ? context.directories.cprj : outDir;
   // expand variables (static access sequences)
   const string input = item = solutionLevel ? item : RteUtils::ExpandAccessSequences(item, context.variables);
   // expand dynamic access sequences
