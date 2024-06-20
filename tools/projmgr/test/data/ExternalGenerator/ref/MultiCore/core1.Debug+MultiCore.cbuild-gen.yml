@@ -5,7 +5,7 @@ build-gen:
   solution: ${DEVTOOLS(data)}/ExternalGenerator/extgen.csolution.yml
   project: ${DEVTOOLS(data)}/ExternalGenerator/multi_1/core1.cproject.yml
   context: core1.Debug+MultiCore
-  compiler: AC6
+  compiler: AC6@6.18.0
   device: RteTest_ARMCM0_Dual:cm0_core1
   device-pack: ARM::RteTest_DFP@0.2.0
   processor:

@@ -4184,7 +4184,7 @@ TEST_F(ProjMgrUnitTests, ToolchainRedefinition) {
   EXPECT_EQ(warn, expectedWarn);
 
   const YAML::Node& cbuild = YAML::LoadFile(testoutput_folder + "/toolchain.Warning+RteTest_ARMCM3.cbuild.yml");
-  EXPECT_EQ(cbuild["build"]["compiler"].as<string>(), "GCC");
+  EXPECT_EQ(cbuild["build"]["compiler"].as<string>(), "GCC@11.2.1");
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_LinkerOptions) {
