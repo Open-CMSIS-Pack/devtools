@@ -3,7 +3,7 @@ build:
   solution: ../data/TestSolution/PackMetadata/metadata.csolution.yml
   project: ../data/TestSolution/PackMetadata/metadata.cproject.yml
   context: metadata.Debug+RteTest_ARMCM3
-  compiler: AC6
+  compiler: AC6@6.18.0
   device: RteTest_ARMCM3
   device-pack: ARM::RteTest_DFP@0.1.1
   processor:

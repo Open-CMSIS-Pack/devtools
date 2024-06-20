@@ -3,7 +3,7 @@ build:
   solution: ../data/TestSolution/StandardLibrary/library.csolution.yml
   project: ../data/TestSolution/StandardLibrary/library.cproject.yml
   context: library.Debug+RteTest_ARMCM3
-  compiler: GCC
+  compiler: GCC@11.2.1
   device: RteTest_ARMCM3
   device-pack: ARM::RteTest_DFP@0.2.0
   processor:

@@ -3,7 +3,7 @@ build:
   solution: ../data/TestSolution/TemplateAndApi/template_api.csolution.yml
   project: ../data/TestSolution/TemplateAndApi/template_api.cproject.yml
   context: template_api.Debug+RteTest_ARMCM3
-  compiler: AC6
+  compiler: AC6@6.18.0
   device: RteTest_ARMCM3
   device-pack: ARM::RteTest_DFP@0.2.0
   processor:

@@ -412,7 +412,7 @@ void ProjMgrYamlCbuild::SetContextNode(YAML::Node contextNode, const ContextItem
   SetNodeValue(contextNode[YAML_SOLUTION], FormatPath(context->csolution->path, context->directories.cbuild));
   SetNodeValue(contextNode[YAML_PROJECT], FormatPath(context->cproject->path, context->directories.cbuild));
   SetNodeValue(contextNode[YAML_CONTEXT], context->name);
-  SetNodeValue(contextNode[YAML_COMPILER], context->compiler);
+  SetNodeValue(contextNode[YAML_COMPILER], context->toolchain.name + (context->toolchain.version.empty() ? "" : '@' + context->toolchain.version));
   if (!context->board.empty()) {
     SetNodeValue(contextNode[YAML_BOARD], context->board);
     if (context->boardPack != nullptr) {
