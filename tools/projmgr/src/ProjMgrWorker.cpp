@@ -2378,8 +2378,9 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, bool rerun) {
   context.groups.clear();
 
   // Get content of build and target types
+  bool error = false;
   if (!GetTypeContent(context)) {
-    return false;
+    error |= true;
   }
 
   StringCollection board = {
@@ -2394,7 +2395,7 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, bool rerun) {
     board.elements.push_back(&clayer.second->target.board);
   }
   if (!ProcessBoardPrecedence(board)) {
-    return false;
+    error |= true;
   }
 
   StringCollection device = {
@@ -2409,7 +2410,7 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, bool rerun) {
     device.elements.push_back(&clayer.second->target.device);
   }
   if (!ProcessDevicePrecedence(device)) {
-    return false;
+    error |= true;
   }
 
   StringCollection compiler = {
@@ -2425,15 +2426,15 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, bool rerun) {
     compiler.elements.push_back(&clayer->target.build.compiler);
   }
   if (!ProcessCompilerPrecedence(compiler)) {
-    return false;
+    error |= true;
   }
   // accept compiler redefinition in the command line
   compiler = { &context.compiler, { &m_selectedToolchain } };
   if (!ProcessCompilerPrecedence(compiler, true)) {
-    return false;
+    error |= true;
   }
   if (!ProcessToolchain(context)) {
-    return false;
+    error |= true;
   }
 
   // set context variables (static access sequences)
@@ -2452,18 +2453,18 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, bool rerun) {
 
   // Get build options content of project setup
   if (!GetProjectSetup(context)) {
-    return false;
+    error |= true;
   }
 
   // Processor options
   if (!ProcessProcessorOptions(context)) {
-    return false;
+    error |= true;
   }
 
   // Output filenames must be processed after board, device and compiler precedences
   // but before processing other access sequences
   if (!ProcessOutputFilenames(context)) {
-    return false;
+    error |= true;
   }
 
   // Access sequences and relative path references must be processed
@@ -2471,7 +2472,7 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, bool rerun) {
   // after output filenames (due to $Output$)
   // but before processing misc, defines and includes precedences
   if (!ProcessSequencesRelatives(context, rerun)) {
-    return false;
+    error |= true;
   }
 
   // Optimize
@@ -2491,7 +2492,7 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, bool rerun) {
     optimize.elements.push_back(&clayer.optimize);
   }
   if (!ProcessPrecedence(optimize)) {
-    return false;
+    error |= true;
   }
 
   // Debug
@@ -2511,7 +2512,7 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, bool rerun) {
     debug.elements.push_back(&clayer.debug);
   }
   if (!ProcessPrecedence(debug)) {
-    return false;
+    error |= true;
   }
 
   // Warnings
@@ -2531,7 +2532,7 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, bool rerun) {
     warnings.elements.push_back(&clayer.warnings);
   }
   if (!ProcessPrecedence(warnings)) {
-    return false;
+    error |= true;
   }
 
   // Language C
@@ -2551,7 +2552,7 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, bool rerun) {
     languageC.elements.push_back(&clayer.languageC);
   }
   if (!ProcessPrecedence(languageC)) {
-    return false;
+    error |= true;
   }
 
   // Language C++
@@ -2571,7 +2572,7 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, bool rerun) {
     languageCpp.elements.push_back(&clayer.languageCpp);
   }
   if (!ProcessPrecedence(languageCpp)) {
-    return false;
+    error |= true;
   }
 
   // Misc
@@ -2670,7 +2671,7 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, bool rerun) {
   for (auto& setup : context.controls.setups) {
     CollectionUtils::AddStringItemsUniquely(includesAsmRef, setup.addpathsAsm);
   }
-  return true;
+  return !error;
 }
 
 bool ProjMgrWorker::ProcessProcessorOptions(ContextItem& context) {
