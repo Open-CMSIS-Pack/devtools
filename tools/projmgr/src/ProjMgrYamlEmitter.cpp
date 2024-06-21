@@ -9,6 +9,7 @@
 #include "ProjMgrYamlEmitter.h"
 #include "ProjMgrYamlParser.h"
 #include "ProjMgrYamlSchemaChecker.h"
+#include "ProjMgrWorker.h"
 #include "ProjMgrUtils.h"
 #include "RteFsUtils.h"
 #include "RteItem.h"
@@ -73,7 +74,7 @@ private:
   friend class ProjMgrYamlEmitter;
   ProjMgrYamlCbuildIdx(
     YAML::Node node, const vector<ContextItem*>& processedContexts,
-    ProjMgrParser& parser, const string& directory, const set<string>& failedContexts,
+    ProjMgrParser& parser, ProjMgrWorker& worker, const string& directory, const set<string>& failedContexts,
     const map<string, ExecutesItem>& executes, bool checkSchema);
 
   void SetVariablesNode(YAML::Node node, ProjMgrParser& parser, const ContextItem* context, const map<string, map<string, set<const ConnectItem*>>>& layerTypes);
@@ -209,7 +210,7 @@ ProjMgrYamlBase::ProjMgrYamlBase(bool useAbsolutePaths, bool checkSchema) : m_us
 }
 
 ProjMgrYamlCbuildIdx::ProjMgrYamlCbuildIdx(YAML::Node node,
-  const vector<ContextItem*>& processedContexts, ProjMgrParser& parser, const string& directory, const set<string>& failedContexts, 
+  const vector<ContextItem*>& processedContexts, ProjMgrParser& parser, ProjMgrWorker& worker, const string& directory, const set<string>& failedContexts, 
   const map<string, ExecutesItem>& executes, bool checkSchema) : ProjMgrYamlBase(false, checkSchema)
 {
   error_code ec;
@@ -258,6 +259,15 @@ ProjMgrYamlCbuildIdx::ProjMgrYamlCbuildIdx(YAML::Node node,
         }
         node[YAML_CONFIGURATIONS].push_back(targetTypeNode);
       }
+    }
+  }
+
+  // Generate select-compiler info
+  if (worker.GetSelectableCompilers().size() > 0) {
+    for (const auto& selectableCompiler : worker.GetSelectableCompilers()) {
+      YAML::Node selectCompilerNode;
+      SetNodeValue(selectCompilerNode[YAML_COMPILER], selectableCompiler);
+      node[YAML_SELECT_COMPILER].push_back(selectCompilerNode);
     }
   }
 
@@ -965,7 +975,7 @@ bool ProjMgrYamlBase::WriteFile(YAML::Node& rootNode, const std::string& filenam
   return true;
 }
 
-bool ProjMgrYamlEmitter::GenerateCbuildIndex(ProjMgrParser& parser,
+bool ProjMgrYamlEmitter::GenerateCbuildIndex(ProjMgrParser& parser, ProjMgrWorker& worker,
   const vector<ContextItem*>& contexts, const string& outputDir, const set<string>& failedContexts,
   const map<string, ExecutesItem>& executes, bool checkSchema) {
 
@@ -975,7 +985,7 @@ bool ProjMgrYamlEmitter::GenerateCbuildIndex(ProjMgrParser& parser,
 
   YAML::Node rootNode;
   ProjMgrYamlCbuildIdx cbuild(
-    rootNode[YAML_BUILD_IDX], contexts, parser, directory, failedContexts, executes, checkSchema);
+    rootNode[YAML_BUILD_IDX], contexts, parser, worker, directory, failedContexts, executes, checkSchema);
 
   return cbuild.WriteFile(rootNode, filename);
 }

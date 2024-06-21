@@ -41,6 +41,7 @@ bool ProjMgrYamlParser::ParseCdefault(const string& input,
 
     const YAML::Node& defaultNode = root[YAML_DEFAULT];
     ParseString(defaultNode, YAML_COMPILER, cdefault.compiler);
+    ParseSelectableCompilers(defaultNode, cdefault.selectableCompilers);
     ParseMisc(defaultNode, cdefault.misc);
   }
   catch (YAML::Exception& e) {
@@ -102,6 +103,7 @@ bool ProjMgrYamlParser::ParseCsolution(const string& input,
     if (!ParseTargetType(solutionNode, csolution.path, csolution.target)) {
       return false;
     }
+    ParseSelectableCompilers(solutionNode, csolution.selectableCompilers);
     ParsePacks(solutionNode, csolution.path, csolution.packs);
     csolution.enableCdefault = solutionNode[YAML_CDEFAULT].IsDefined();
     ParseGenerators(solutionNode, csolution.path, csolution.generators);
@@ -460,6 +462,18 @@ bool ProjMgrYamlParser::ParseComponents(const YAML::Node& parent, const string& 
       }
       ParseInt(componentEntry, YAML_INSTANCES, componentItem.instances);
       components.push_back(componentItem);
+    }
+  }
+  return true;
+}
+
+bool ProjMgrYamlParser::ParseSelectableCompilers(const YAML::Node& parent, vector<string>& selectableCompilers) {
+  if (parent[YAML_SELECT_COMPILER].IsDefined()) {
+    const YAML::Node& selectCompilerNode = parent[YAML_SELECT_COMPILER];
+    for (const auto& compilerEntry : selectCompilerNode) {
+      string compiler;
+      ParseString(compilerEntry, YAML_COMPILER, compiler);
+      CollectionUtils::PushBackUniquely(selectableCompilers, compiler);
     }
   }
   return true;
@@ -890,6 +904,7 @@ bool ProjMgrYamlParser::ParseTargetType(const YAML::Node& parent, const string& 
 // Validation Maps
 const set<string> defaultKeys = {
   YAML_COMPILER,
+  YAML_SELECT_COMPILER,
   YAML_MISC,
 };
 
@@ -902,6 +917,7 @@ const set<string> solutionKeys = {
   YAML_PACKS,
   YAML_PROCESSOR,
   YAML_COMPILER,
+  YAML_SELECT_COMPILER,
   YAML_OPTIMIZE,
   YAML_DEBUG,
   YAML_WARNINGS,

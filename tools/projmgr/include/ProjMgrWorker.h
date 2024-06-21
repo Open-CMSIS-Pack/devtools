@@ -613,6 +613,12 @@ public:
   std::string GetSelectedToochain(void);
 
   /**
+   * @brief get selectable compilers
+   * @return string vector reference to selectable compilers
+  */
+  const StrVec& GetSelectableCompilers(void);
+
+  /**
    * @brief process global generators for a given context
    * @param context selected context item
    * @param generator identifier
@@ -690,6 +696,8 @@ protected:
   StrMap m_packMetadata;
   std::map<std::string, ExecutesItem> m_executes;
   StrSet m_toolchainErrors;
+  StrVec m_selectableCompilers;
+  bool m_undefCompiler = false;
 
   bool LoadPacks(ContextItem& context);
   bool CheckMissingPackRequirements(const std::string& contextName);
@@ -791,6 +799,7 @@ protected:
   void SetFilesDependencies(const GroupNode& group, const std::string& ouput, StrVec& dependsOn, const std::string& dep, const std::string& outDir);
   void SetBuildOutputDependencies(const OutputTypes& outputTypes, const std::string& input, StrVec& dependsOn, const std::string& dep, const std::string& outDir);
   void SetExecutesDependencies(const std::string& output, const std::string& dep, const std::string& outDir);
+  void ProcessSelectableCompilers();
 };
 
 #endif  // PROJMGRWORKER_H

@@ -249,6 +249,10 @@ void ProjMgrWorker::SetEnvironmentVariables(const StrVec& envVars) {
   m_envVars = envVars;
 }
 
+const StrVec& ProjMgrWorker::GetSelectableCompilers(void) {
+  return m_selectableCompilers;
+}
+
 bool ProjMgrWorker::CollectRequiredPdscFiles(ContextItem& context, const std::string& packRoot)
 {
   if (!ProcessPackages(context, packRoot)) {
@@ -1614,7 +1618,8 @@ bool ProjMgrWorker::ProcessToolchain(ContextItem& context) {
 
   if (context.compiler.empty()) {
     if (!context.cdefault || context.cdefault->compiler.empty()) {
-      ProjMgrLogger::Error("compiler: value not set");
+      // compiler was not specified
+      m_undefCompiler = true;
       return false;
     } else {
       context.compiler = context.cdefault->compiler;
@@ -4700,9 +4705,30 @@ bool ProjMgrWorker::ValidateContexts(const std::vector<std::string>& contexts, b
 }
 
 bool ProjMgrWorker::HasToolchainErrors() {
+  ProcessSelectableCompilers();
   std::for_each(m_toolchainErrors.begin(), m_toolchainErrors.end(),
     [](const auto& errMsg) {
       ProjMgrLogger::Error(errMsg);
     });
   return m_toolchainErrors.size() > 0 ? true : false;
+}
+
+void ProjMgrWorker::ProcessSelectableCompilers() {
+  if (m_undefCompiler) {
+    // compiler was not specified
+    // get selectable compilers specified in cdefault and csolution
+    StrVec selectableCompilers = m_parser->GetCdefault().selectableCompilers;
+    for (const auto& selectableCompiler : m_parser->GetCsolution().selectableCompilers) {
+      CollectionUtils::PushBackUniquely(selectableCompilers, selectableCompiler);
+    }
+    // store only registered best match
+    for (const auto& selectableCompiler : selectableCompilers) {
+      ToolchainItem item = GetToolchain(selectableCompiler);
+      if (GetLatestToolchain(item)) {
+        CollectionUtils::PushBackUniquely(m_selectableCompilers, item.name + '@' + item.version);
+      }
+    }
+    m_toolchainErrors.insert("compiler undefined, use '--toolchain' option or add 'compiler: <value>' to yml input" +
+      string(m_selectableCompilers.size() > 0 ? ", selectable values can be found in cbuild-idx.yml" : ""));
+  }
 }
