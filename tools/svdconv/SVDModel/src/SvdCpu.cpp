@@ -336,10 +336,14 @@ bool SvdCpu::CheckItem()
       LogMsg("M363", lineNo);
       m_sauRegionsConfig->Invalidate();
     }
+    else if(m_sauNumRegions == 0) {
+      LogMsg("M387", lineNo);
+      m_sauRegionsConfig->Invalidate();
+    }
   }
 
   if(m_sauNumRegions != SvdItem::VALUE32_NOT_INIT) {
-    if(m_sauNumRegions == 0 || m_sauNumRegions > MAXNUM_SAU_REGIONS) {
+    if(m_sauNumRegions > MAXNUM_SAU_REGIONS) {
       LogMsg("M364", NUM(m_sauNumRegions), NUM2(MAXNUM_SAU_REGIONS), lineNo);
       m_sauNumRegions = SvdItem::VALUE32_NOT_INIT;
       if(m_sauRegionsConfig) {
