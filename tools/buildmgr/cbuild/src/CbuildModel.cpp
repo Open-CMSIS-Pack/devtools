@@ -693,7 +693,7 @@ bool CbuildModel::EvalGeneratedSourceFiles() {
       const RteComponentInstance* ci = c ? m_cprjProject->GetComponentInstance(c->GetID()) : nullptr;
       const string& layer = ci ? ci->GetAttribute("layer") : RteUtils::EMPTY_STRING;
 
-      m_layerFiles[layer].insert(gpdscName.substr(m_prjFolder.length(), string::npos));
+      m_layerFiles[layer].insert(RteFsUtils::RelativePath(gpdscName, m_prjFolder));
 
       // gpdsc <components> section
       if (components) {
@@ -717,7 +717,7 @@ bool CbuildModel::EvalGeneratedSourceFiles() {
               LogMsg("M204", PATH(filepath));
               return false;
             }
-            m_layerFiles[layer].insert(filepath.substr(m_prjFolder.length(), string::npos));
+            m_layerFiles[layer].insert(RteFsUtils::RelativePath(filepath, m_prjFolder));
           }
         }
       }
@@ -1129,7 +1129,7 @@ bool CbuildModel::EvalFlags() {
         const RteItem* layers = m_cprj->GetItemByTag("layers");
         if (layers) for (auto layer : layers->GetChildren()) {
           if (layer->GetAttributeAsBool("hasTarget")) {
-            m_layerFiles[layer->GetAttribute("name")].insert(m_linkerScript.substr(m_prjFolder.length(), string::npos));
+            m_layerFiles[layer->GetAttribute("name")].insert(RteFsUtils::RelativePath(m_linkerScript, m_prjFolder));
           }
         }
       }
