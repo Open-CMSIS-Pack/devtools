@@ -799,6 +799,7 @@ protected:
   void SetFilesDependencies(const GroupNode& group, const std::string& ouput, StrVec& dependsOn, const std::string& dep, const std::string& outDir);
   void SetBuildOutputDependencies(const OutputTypes& outputTypes, const std::string& input, StrVec& dependsOn, const std::string& dep, const std::string& outDir);
   void SetExecutesDependencies(const std::string& output, const std::string& dep, const std::string& outDir);
+  void ValidateComponentSources(ContextItem& context);
   void ProcessSelectableCompilers();
 };
 
