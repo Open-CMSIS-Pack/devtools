@@ -5930,7 +5930,7 @@ TEST_F(ProjMgrUnitTests, SelectableToolchains) {
 
 TEST_F(ProjMgrUnitTests, SourcesAddedByMultipleComponents) {
   StdStreamRedirect streamRedirect;
-  char* argv[5];
+  char* argv[6];
   const string& csolution = testinput_folder + "/TestSolution/ComponentSources/components.csolution.yml";
   argv[1] = (char*)"convert";
   argv[2] = (char*)csolution.c_str();
@@ -5938,8 +5938,8 @@ TEST_F(ProjMgrUnitTests, SourcesAddedByMultipleComponents) {
   argv[4] = (char*)testoutput_folder.c_str();;
   EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
 
-  const string expected = "\
-warning csolution: source modules added by multiple components:\n\
+  const string& expected = "\
+(warning|error) csolution: source modules added by multiple components:\n\
   filename: .*/ARM/RteTest/0.1.0/Dummy/dummy.c\n\
     - component: ARM::RteTest:DupFilename@0.9.9\n\
       from-pack: ARM::RteTest@0.1.0\n\
@@ -5947,6 +5947,12 @@ warning csolution: source modules added by multiple components:\n\
       from-pack: ARM::RteTest@0.1.0\n\
 ";
 
-  const string& errStr = streamRedirect.GetErrorString();
+  string errStr = streamRedirect.GetErrorString();
+  EXPECT_TRUE(regex_search(errStr, regex(expected)));
+
+  argv[5] = (char*)"--cbuild2cmake";
+  streamRedirect.ClearStringStreams();
+  EXPECT_EQ(1, RunProjMgr(6, argv, m_envp));
+  errStr = streamRedirect.GetErrorString();
   EXPECT_TRUE(regex_search(errStr, regex(expected)));
 }
