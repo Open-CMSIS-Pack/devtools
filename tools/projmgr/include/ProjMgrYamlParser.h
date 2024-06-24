@@ -154,6 +154,7 @@ static constexpr const char* YAML_SETUPS = "setups";
 static constexpr const char* YAML_SETUP = "setup";
 static constexpr const char* YAML_SET = "set";
 static constexpr const char* YAML_SETTINGS = "settings";
+static constexpr const char* YAML_SELECT_COMPILER = "select-compiler";
 static constexpr const char* YAML_SWITCH = "switch";
 static constexpr const char* YAML_TARGET_CONFIGURATIONS = "target-configurations";
 static constexpr const char* YAML_TARGETTYPE = "target-type";
@@ -254,6 +255,7 @@ protected:
   bool ParseTargetTypes(const YAML::Node& parent, const std::string& file, std::map<std::string, TargetType>& targetTypes);
   bool ParseContexts(const YAML::Node& parent, CsolutionItem& contexts);
   bool ParseComponents(const YAML::Node& parent, const std::string& file, std::vector<ComponentItem>& components);
+  bool ParseSelectableCompilers(const YAML::Node& parent, std::vector<std::string>& selectableCompilers);
   bool ParseFiles(const YAML::Node& parent, const std::string& file, std::vector<FileNode>& files);
   bool ParseGroups(const YAML::Node& parent, const std::string& file, std::vector<GroupNode>& groups);
   bool ParseLayers(const YAML::Node& parent, const std::string& file, std::vector<LayerItem>& layers);

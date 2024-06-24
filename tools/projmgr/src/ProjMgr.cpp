@@ -502,7 +502,7 @@ bool ProjMgr::GenerateYMLConfigurationFiles() {
   if (!m_allContexts.empty()) {
     map<string, ExecutesItem> executes;
     m_worker.GetExecutes(executes);
-    if (!m_emitter.GenerateCbuildIndex(m_parser, m_allContexts, m_outputDir, m_failedContext, executes, m_checkSchema)) {
+    if (!m_emitter.GenerateCbuildIndex(m_parser, m_worker, m_allContexts, m_outputDir, m_failedContext, executes, m_checkSchema)) {
       return false;
     }
   }
@@ -906,7 +906,7 @@ bool ProjMgr::RunListLayers(void) {
     }
 
     if (!m_allContexts.empty()) {
-      if (!m_emitter.GenerateCbuildIndex(m_parser, m_allContexts, m_outputDir, m_failedContext, map<string, ExecutesItem>(), m_checkSchema)) {
+      if (!m_emitter.GenerateCbuildIndex(m_parser, m_worker, m_allContexts, m_outputDir, m_failedContext, map<string, ExecutesItem>(), m_checkSchema)) {
         return false;
       }
     }

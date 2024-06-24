@@ -5909,3 +5909,21 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ProjectDirShouldBeExpanded) {
   EXPECT_TRUE(RteFsUtils::Exists(cprjdir + "/test.debug+main.cprj"));
   EXPECT_TRUE(RteFsUtils::Exists(cprjdir + "/test.debug+main.cbuild.yml"));
 }
+
+TEST_F(ProjMgrUnitTests, SelectableToolchains) {
+  StdStreamRedirect streamRedirect;
+  char* argv[5];
+  const string& csolution = testinput_folder + "/TestSolution/SelectableToolchains/select-compiler.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"-o";
+  argv[4] = (char*)testoutput_folder.c_str();;
+  EXPECT_EQ(1, RunProjMgr(5, argv, m_envp));
+  const string err = streamRedirect.GetErrorString();
+  const string expectedErr = \
+    "error csolution: compiler undefined, use '--toolchain' option or add 'compiler: <value>' to yml input, selectable values can be found in cbuild-idx.yml";
+  EXPECT_NE(string::npos, err.find(expectedErr));
+
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/select-compiler.cbuild-idx.yml",
+    testinput_folder + "/TestSolution/SelectableToolchains/ref/select-compiler.cbuild-idx.yml");
+}

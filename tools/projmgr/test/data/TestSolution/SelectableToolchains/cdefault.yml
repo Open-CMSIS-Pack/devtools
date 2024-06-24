@@ -1,0 +1,5 @@
+default:
+
+  select-compiler:
+    - compiler: GCC@>=8.0.0
+    - compiler: IAR@1.1.1
