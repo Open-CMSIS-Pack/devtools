@@ -2116,7 +2116,38 @@ bool ProjMgrWorker::ProcessComponentFiles(ContextItem& context) {
       }
     }
   }
+  ValidateComponentSources(context);
   return true;
+}
+
+void ProjMgrWorker::ValidateComponentSources(ContextItem& context) {
+  // find multiple defined sources
+  StrSet sources, multipleDefinedSources;
+  for (const auto& [componentID, files] : context.componentFiles) {
+    for (const auto& file : files) {
+      if (file.category.compare(0, 6, "source") == 0) {
+        if (!sources.insert(file.name).second) {
+          multipleDefinedSources.insert(file.name);
+        }
+      }
+    }
+  }
+  if (multipleDefinedSources.size() > 0) {
+    // print filename, component and from-pack information
+    string errMsg = "source modules added by multiple components:";
+    for (const auto& filename : multipleDefinedSources) {
+      errMsg += "\n  filename: " + filename;
+      for (const auto& [componentID, files] : context.componentFiles) {
+        for (const auto& file : files) {
+          if (file.category.compare(0, 6, "source") == 0 && file.name == filename) {
+            errMsg += "\n    - component: " + componentID;
+            errMsg += "\n      from-pack: " + context.components[componentID].instance->GetParent()->GetComponent()->GetPackageID();
+          }
+        }
+      }
+      ProjMgrLogger::Warn(errMsg);
+    }
+  }
 }
 
 void ProjMgrWorker::SetFilesDependencies(const GroupNode& group, const string& ouput, StrVec& dependsOn, const string& dep, const string& outDir) {
