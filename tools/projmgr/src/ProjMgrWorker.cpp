@@ -1946,24 +1946,27 @@ bool ProjMgrWorker::ProcessConfigFiles(ContextItem& context) {
     }
   }
   // Linker script
-  if (context.linker.autoGen) {
-    if (!context.linker.script.empty()) {
-      ProjMgrLogger::Warn("conflict: automatic linker script generation overrules specified script '" + context.linker.script + "'");
-      context.linker.script.clear();
+  if (!context.outputTypes.lib.on) {
+    if (context.linker.autoGen) {
+      if (!context.linker.script.empty()) {
+        ProjMgrLogger::Warn("conflict: automatic linker script generation overrules specified script '" + context.linker.script + "'");
+        context.linker.script.clear();
+      }
     }
-  } else if (context.linker.script.empty() && context.linker.regions.empty() && context.linker.defines.empty()) {
-    const auto& groups = context.rteActiveTarget->GetProjectGroups();
-    for (auto group : groups) {
-      for (auto file : group.second) {
-        if (file.second.m_cat == RteFile::Category::LINKER_SCRIPT) {
-          error_code ec;
-          context.linker.script = fs::relative(context.cproject->directory + "/" + file.first, context.directories.cprj, ec).generic_string();
-          break;
+    else if (context.linker.script.empty() && context.linker.regions.empty() && context.linker.defines.empty()) {
+      const auto& groups = context.rteActiveTarget->GetProjectGroups();
+      for (auto group : groups) {
+        for (auto file : group.second) {
+          if (file.second.m_cat == RteFile::Category::LINKER_SCRIPT) {
+            error_code ec;
+            context.linker.script = fs::relative(context.cproject->directory + "/" + file.first, context.directories.cprj, ec).generic_string();
+            break;
+          }
         }
       }
     }
+    SetDefaultLinkerScript(context);
   }
-  SetDefaultLinkerScript(context);
 
   return true;
 }
