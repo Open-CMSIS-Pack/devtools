@@ -264,7 +264,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks) {
     {{"TestSolution/test.csolution_unknown_file.yml", "test1.Debug+CM0"},
       "error csolution: csolution file was not found"},
     {{"TestSolution/test.csolution.yml", "invalid.context"},
-      "Following context name(s) was not found:\n  invalid.context"}
+      "no matching context found for option:\n  --context invalid.context"}
   };
   // negative tests
   for (const auto& [input, expected] : testFalseInputs) {
@@ -4628,7 +4628,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgrInvalidContext) {
 
   EXPECT_EQ(1, RunProjMgr(10, argv, 0));
   auto errStr = streamRedirect.GetErrorString();
-  EXPECT_NE(string::npos, errStr.find("Following context name(s) was not found:\n  test3*"));
+  EXPECT_NE(string::npos, errStr.find("no matching context found for option:\n  --context test3*"));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgrCovertMultipleContext) {
