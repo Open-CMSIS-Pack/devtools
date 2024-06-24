@@ -518,6 +518,12 @@ public:
   void SetDryRun(bool dryRun);
 
   /**
+   * @brief set cbuild2cmake mode
+   * @param boolean cbuild2cmake
+  */
+  void SetCbuild2Cmake(bool cbuild2cmake);
+
+  /**
    * @brief set printing paths relative to project or ${CMSSIS_PACK_ROOT}
    * @param boolean bRelativePaths
   */
@@ -692,6 +698,7 @@ protected:
   bool m_debug;
   bool m_dryRun;
   bool m_relativePaths;
+  bool m_cbuild2cmake;
   std::set<std::string> m_undefLayerVars;
   StrMap m_packMetadata;
   std::map<std::string, ExecutesItem> m_executes;
@@ -799,7 +806,7 @@ protected:
   void SetFilesDependencies(const GroupNode& group, const std::string& ouput, StrVec& dependsOn, const std::string& dep, const std::string& outDir);
   void SetBuildOutputDependencies(const OutputTypes& outputTypes, const std::string& input, StrVec& dependsOn, const std::string& dep, const std::string& outDir);
   void SetExecutesDependencies(const std::string& output, const std::string& dep, const std::string& outDir);
-  void ValidateComponentSources(ContextItem& context);
+  bool ValidateComponentSources(ContextItem& context);
   void ProcessSelectableCompilers();
 };
 

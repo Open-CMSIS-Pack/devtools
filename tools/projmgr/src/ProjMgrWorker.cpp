@@ -236,6 +236,10 @@ void ProjMgrWorker::SetDryRun(bool dryRun) {
   m_dryRun = dryRun;
 }
 
+void ProjMgrWorker::SetCbuild2Cmake(bool cbuild2cmake) {
+  m_cbuild2cmake = cbuild2cmake;
+}
+
 void ProjMgrWorker::SetPrintRelativePaths(bool bRelativePaths) {
   m_relativePaths = bRelativePaths;
 }
@@ -2119,12 +2123,15 @@ bool ProjMgrWorker::ProcessComponentFiles(ContextItem& context) {
       }
     }
   }
-  ValidateComponentSources(context);
+  if (!ValidateComponentSources(context)) {
+    return false;
+  }
   return true;
 }
 
-void ProjMgrWorker::ValidateComponentSources(ContextItem& context) {
+bool ProjMgrWorker::ValidateComponentSources(ContextItem& context) {
   // find multiple defined sources
+  bool error = false;
   StrSet sources, multipleDefinedSources;
   for (const auto& [componentID, files] : context.componentFiles) {
     for (const auto& file : files) {
@@ -2148,9 +2155,15 @@ void ProjMgrWorker::ValidateComponentSources(ContextItem& context) {
           }
         }
       }
-      ProjMgrLogger::Warn(errMsg);
+      if (m_cbuild2cmake) {
+        ProjMgrLogger::Error(errMsg);
+        error = true;
+      } else {
+        ProjMgrLogger::Warn(errMsg);
+      }
     }
   }
+  return !error;
 }
 
 void ProjMgrWorker::SetFilesDependencies(const GroupNode& group, const string& ouput, StrVec& dependsOn, const string& dep, const string& outDir) {
