@@ -71,8 +71,6 @@ build:
         - file: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Doc/html/index.html
           category: doc
           version: 0.1.1
-  linker:
-    script: ../data/TestSolution/StandardLibrary/RTE/Device/RteTest_ARMCM3/gcc_arm.ld
   constructed-files:
     - file: ../data/TestSolution/StandardLibrary/RTE/_Debug_RteTest_ARMCM3/RTE_Components.h
       category: header

@@ -16,7 +16,6 @@
 
   <target Dfpu="NO_FPU" Dname="RteTest_ARMCM3" Dvendor="ARM:82">
     <output intdir="tmp/outputFiles/Target/Library" lib="library-AC6.lib" name="outputFiles" outdir="out/outputFiles/Target/Library" rtedir="../data/TestSolution/RTE" type="lib"/>
-    <ldflags compiler="AC6" file="../data/TestSolution/RTE/Device/RteTest_ARMCM3/ARMCM3_ac6.sct"/>
   </target>
 
   <components>
