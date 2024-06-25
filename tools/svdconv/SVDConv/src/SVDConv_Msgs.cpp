@@ -208,7 +208,7 @@ const MsgTable SvdConv::msgTable = {
   { "M388", { MsgLevel::LEVEL_ERROR,    CRLF_B,   "MVE Floating-Point support is set but MVE is not set"                       } },
   { "M389", { MsgLevel::LEVEL_ERROR,    CRLF_B,   "Specified <deviceNumInterrupts>: '%NUM%' greater or equal '%NAME%': '%NUM2%'."} },   // 05.05.2020
   { "M390", { MsgLevel::LEVEL_WARNING3, CRLF_B,   "Checking IRQ '%NAME%': CPU unknown (see <cpu>). Assuming a maximum of %NUM% external Interrupts."} },    // 13.05.2020
-  { "M391", { MsgLevel::LEVEL_WARNING,  CRLF_B,   "CPU: configured num of SAU regions '%NUM%' greater than <sauNumRegions> value: %NUM2%"        } },
+  { "M391", { MsgLevel::LEVEL_WARNING,  CRLF_B,   "CPU: configured number of SAU regions '%NUM%' greater than <sauNumRegions> value: '%NUM2%'"        } },
 
   // 500... SfrCC2 related Data modification Errors
   { "M500", { MsgLevel::LEVEL_ERROR,    CRLF_B,   ""                                                                            } },
