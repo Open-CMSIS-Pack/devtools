@@ -189,17 +189,17 @@ TEST_F(ProjMgrUtilsUnitTests, GetSelectedContexts) {
     { {"Project*.Release+*"},       noError, {"Project1.Release+Target", "Project1.Release+Target2","Project2.Release+Target", "Project2.Release+Target2"}},
 
     // negative tests
-    { {"Unknown"},                       Error("Following context name(s) was not found:\n  Unknown"), {}},
-    { {".UnknownBuild"},                 Error("Following context name(s) was not found:\n  .UnknownBuild"), {}},
-    { {"+UnknownTarget"},                Error("Following context name(s) was not found:\n  +UnknownTarget"), {}},
-    { {"Project.UnknownBuild"},          Error("Following context name(s) was not found:\n  Project.UnknownBuild"), {}},
-    { {"Project+UnknownTarget"},         Error("Following context name(s) was not found:\n  Project+UnknownTarget"), {}},
-    { {".UnknownBuild+Target"},          Error("Following context name(s) was not found:\n  .UnknownBuild+Target"), {}},
-    { {"TestProject*"},                  Error("Following context name(s) was not found:\n  TestProject*"), {}},
-    { {"Project.*Build"},                Error("Following context name(s) was not found:\n  Project.*Build"), {}},
-    { {"Project.Debug+*H"},              Error("Following context name(s) was not found:\n  Project.Debug+*H"), {}},
-    { {"Project1.Release.Debug+Target"}, Error("Following context name(s) was not found:\n  Project1.Release.Debug+Target"), {}},
-    { {"Project1.Debug+Target+Target2"}, Error("Following context name(s) was not found:\n  Project1.Debug+Target+Target2"), {}},
+    { {"Unknown"},                       Error("no matching context found for option:\n  --context Unknown"), {}},
+    { {".UnknownBuild"},                 Error("no matching context found for option:\n  --context .UnknownBuild"), {}},
+    { {"+UnknownTarget"},                Error("no matching context found for option:\n  --context +UnknownTarget"), {}},
+    { {"Project.UnknownBuild"},          Error("no matching context found for option:\n  --context Project.UnknownBuild"), {}},
+    { {"Project+UnknownTarget"},         Error("no matching context found for option:\n  --context Project+UnknownTarget"), {}},
+    { {".UnknownBuild+Target"},          Error("no matching context found for option:\n  --context .UnknownBuild+Target"), {}},
+    { {"TestProject*"},                  Error("no matching context found for option:\n  --context TestProject*"), {}},
+    { {"Project.*Build"},                Error("no matching context found for option:\n  --context Project.*Build"), {}},
+    { {"Project.Debug+*H"},              Error("no matching context found for option:\n  --context Project.Debug+*H"), {}},
+    { {"Project1.Release.Debug+Target"}, Error("no matching context found for option:\n  --context Project1.Release.Debug+Target"), {}},
+    { {"Project1.Debug+Target+Target2"}, Error("no matching context found for option:\n  --context Project1.Debug+Target+Target2"), {}},
   };
 
   vector<string> selectedContexts;

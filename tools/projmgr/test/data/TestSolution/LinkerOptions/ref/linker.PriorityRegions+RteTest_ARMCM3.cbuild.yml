@@ -3,7 +3,7 @@ build:
   solution: ../data/TestSolution/LinkerOptions/linker.csolution.yml
   project: ../data/TestSolution/LinkerOptions/linker.cproject.yml
   context: linker.PriorityRegions+RteTest_ARMCM3
-  compiler: AC6
+  compiler: AC6@6.18.0
   device: RteTest_ARMCM3
   device-pack: ARM::RteTest_DFP@0.2.0
   processor:

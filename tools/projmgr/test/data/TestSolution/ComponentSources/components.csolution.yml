@@ -1,0 +1,19 @@
+# yaml-language-server: $schema=D:\work\devtools-wip\tools\projmgr\schemas\csolution.schema.json
+
+solution:
+
+  compiler: AC6
+
+  build-types:
+    - type: Debug
+
+  target-types:
+    - type: RteTest_ARMCM3
+      device: RteTest_ARMCM3
+
+  projects:
+    - project: components.cproject.yml
+
+  packs:
+    - pack: ARM::RteTest
+    - pack: ARM::RteTest_DFP

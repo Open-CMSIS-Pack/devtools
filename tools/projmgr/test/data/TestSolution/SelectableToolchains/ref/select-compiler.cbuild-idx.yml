@@ -1,0 +1,14 @@
+build-idx:
+  generated-by: csolution version 0.0.0+gaa1cfcb6
+  cdefault: ../data/TestSolution/SelectableToolchains/cdefault.yml
+  csolution: ../data/TestSolution/SelectableToolchains/select-compiler.csolution.yml
+  select-compiler:
+    - compiler: GCC@11.2.1
+    - compiler: AC6@6.18.0
+  cprojects:
+    - cproject: ../data/TestSolution/SelectableToolchains/select-compiler.cproject.yml
+  cbuilds:
+    - cbuild: select-compiler.Debug+RteTest_ARMCM3.cbuild.yml
+      project: select-compiler
+      configuration: .Debug+RteTest_ARMCM3
+      errors: true

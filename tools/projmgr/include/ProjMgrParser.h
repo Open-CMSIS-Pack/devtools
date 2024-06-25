@@ -373,11 +373,13 @@ struct CbuildPackItem {
  * @brief default item containing
  *        cdefault path,
  *        compiler,
+ *        list of selectable compilers,
  *        misc
 */
 struct CdefaultItem {
   std::string path;
   std::string compiler;
+  std::vector<std::string> selectableCompilers;
   std::vector<MiscItem> misc;
 };
 
@@ -389,6 +391,7 @@ struct CdefaultItem {
  *        csolution directory,
  *        created-for string,
  *        output directories,
+ *        list of selectable compilers,
  *        build types,
  *        target types,
  *        target properties,
@@ -406,6 +409,7 @@ struct CsolutionItem {
   std::string directory;
   std::string createdFor;
   DirectoriesItem directories;
+  std::vector<std::string> selectableCompilers;
   std::map<std::string, BuildType> buildTypes;
   std::map<std::string, TargetType> targetTypes;
   TargetType target;

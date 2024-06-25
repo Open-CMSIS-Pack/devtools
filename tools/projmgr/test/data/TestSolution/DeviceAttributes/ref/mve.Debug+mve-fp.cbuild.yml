@@ -3,7 +3,7 @@ build:
   solution: ../data/TestSolution/DeviceAttributes/solution.csolution.yml
   project: ../data/TestSolution/DeviceAttributes/mve/mve.cproject.yml
   context: mve.Debug+mve-fp
-  compiler: AC6
+  compiler: AC6@6.18.0
   device: RteTest_ARMCM0
   device-pack: ARM::RteTest_DFP@0.2.0
   processor:

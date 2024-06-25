@@ -197,9 +197,9 @@ ProjMgrUtils::Error ProjMgrUtils::GetSelectedContexts(vector<string>& selectedCo
   }
 
   if (unmatchedFilters.size() > 0) {
-    error.m_errMsg = "invalid context name(s). Following context name(s) was not found:\n";
+    error.m_errMsg = "no matching context found for option:\n";
     for (const auto& filter : unmatchedFilters) {
-      error.m_errMsg += "  " + filter + "\n";
+      error.m_errMsg += "  --context " + filter + "\n";
     }
   }
   return error;

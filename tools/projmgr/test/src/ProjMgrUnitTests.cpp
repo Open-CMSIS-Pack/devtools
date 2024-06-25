@@ -264,7 +264,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks) {
     {{"TestSolution/test.csolution_unknown_file.yml", "test1.Debug+CM0"},
       "error csolution: csolution file was not found"},
     {{"TestSolution/test.csolution.yml", "invalid.context"},
-      "Following context name(s) was not found:\n  invalid.context"}
+      "no matching context found for option:\n  --context invalid.context"}
   };
   // negative tests
   for (const auto& [input, expected] : testFalseInputs) {
@@ -4184,7 +4184,7 @@ TEST_F(ProjMgrUnitTests, ToolchainRedefinition) {
   EXPECT_EQ(warn, expectedWarn);
 
   const YAML::Node& cbuild = YAML::LoadFile(testoutput_folder + "/toolchain.Warning+RteTest_ARMCM3.cbuild.yml");
-  EXPECT_EQ(cbuild["build"]["compiler"].as<string>(), "GCC");
+  EXPECT_EQ(cbuild["build"]["compiler"].as<string>(), "GCC@11.2.1");
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_LinkerOptions) {
@@ -4628,7 +4628,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgrInvalidContext) {
 
   EXPECT_EQ(1, RunProjMgr(10, argv, 0));
   auto errStr = streamRedirect.GetErrorString();
-  EXPECT_NE(string::npos, errStr.find("Following context name(s) was not found:\n  test3*"));
+  EXPECT_NE(string::npos, errStr.find("no matching context found for option:\n  --context test3*"));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgrCovertMultipleContext) {
@@ -5836,4 +5836,123 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_FailedConvertShouldCreateRteDirInProjectFold
 
   ASSERT_FALSE(RteFsUtils::IsDirectory(work + "/RTE"));
   ASSERT_FALSE(RteFsUtils::IsDirectory(app + "/RTE"));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_CprjFilesShouldBePlacedInProjectTree) {
+  char* argv[4];
+  const string& app = testoutput_folder + "/app";
+  const string& csolution = app + "/app.csolution.yml";
+  const string& cprjdir = app + "/foo/baz";
+
+  ASSERT_TRUE(RteFsUtils::CreateTextFile(csolution, "# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/2.4.0/tools/projmgr/schemas/csolution.schema.json\n"
+    "solution:\n"
+    "  output-dirs:\n"
+    "    intdir: $ProjectDir()$/build/$BuildType$\n"
+    "    outdir: $ProjectDir()$/build/$BuildType$\n"
+    "    cprjdir: $ProjectDir()$/baz\n"
+    "  generators:\n"
+    "    base-dir: $ProjectDir()$/generated\n"
+    "  build-types:\n"
+    "    - type: debug\n"
+    "      compiler: GCC\n"
+    "  target-types:\n"
+    "    - type: main\n"
+    "  projects:\n"
+    "    - project: foo/test.cproject.yml\n"));
+
+  ASSERT_TRUE(RteFsUtils::CreateTextFile(app + "/foo/test.cproject.yml", "# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/2.4.0/tools/projmgr/schemas/cproject.schema.json\n"
+    "project:\n"));
+
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  EXPECT_EQ(1, RunProjMgr(4, argv, 0));
+
+  EXPECT_TRUE(RteFsUtils::Exists(cprjdir + "/test.debug+main.cprj"));
+  EXPECT_TRUE(RteFsUtils::Exists(cprjdir + "/test.debug+main.cbuild.yml"));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_ProjectDirShouldBeExpanded) {
+  char* argv[4];
+  StdStreamRedirect streamRedirect;
+  const string& app = testoutput_folder + "/app";
+  const string& csolution = app + "/app.csolution.yml";
+  const string& cprjdir = app + "/foo/baz";
+
+  ASSERT_TRUE(RteFsUtils::CreateTextFile(csolution, "# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/2.4.0/tools/projmgr/schemas/csolution.schema.json\n"
+    "solution:\n"
+    "  output-dirs:\n"
+    "    intdir: $ProjectDir()$/build/$BuildType$\n"
+    "    outdir: $ProjectDir()$/build/$BuildType$\n"
+    "    cprjdir: $ProjectDir()$/baz\n"
+    "  generators:\n"
+    "    base-dir: $ProjectDir()$/generated\n"
+    "  build-types:\n"
+    "    - type: debug\n"
+    "  target-types:\n"
+    "    - type: main\n"
+    "  projects:\n"
+    "    - project: foo/test.cproject.yml\n"));
+
+  ASSERT_TRUE(RteFsUtils::CreateTextFile(app + "/foo/test.cproject.yml", "# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/2.4.0/tools/projmgr/schemas/cproject.schema.json\n"
+    "project:\n"));
+
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  EXPECT_EQ(1, RunProjMgr(4, argv, 0));
+
+  EXPECT_EQ(string::npos, streamRedirect.GetOutString().find("$ProjectDir()$"))
+    << "stdout:\n" << streamRedirect.GetOutString()
+    << "stderr:\n" << streamRedirect.GetErrorString();
+
+  EXPECT_TRUE(RteFsUtils::Exists(cprjdir + "/test.debug+main.cprj"));
+  EXPECT_TRUE(RteFsUtils::Exists(cprjdir + "/test.debug+main.cbuild.yml"));
+}
+
+TEST_F(ProjMgrUnitTests, SelectableToolchains) {
+  StdStreamRedirect streamRedirect;
+  char* argv[5];
+  const string& csolution = testinput_folder + "/TestSolution/SelectableToolchains/select-compiler.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"-o";
+  argv[4] = (char*)testoutput_folder.c_str();;
+  EXPECT_EQ(1, RunProjMgr(5, argv, m_envp));
+  const string err = streamRedirect.GetErrorString();
+  const string expectedErr = \
+    "error csolution: compiler undefined, use '--toolchain' option or add 'compiler: <value>' to yml input, selectable values can be found in cbuild-idx.yml";
+  EXPECT_NE(string::npos, err.find(expectedErr));
+
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/select-compiler.cbuild-idx.yml",
+    testinput_folder + "/TestSolution/SelectableToolchains/ref/select-compiler.cbuild-idx.yml");
+}
+
+TEST_F(ProjMgrUnitTests, SourcesAddedByMultipleComponents) {
+  StdStreamRedirect streamRedirect;
+  char* argv[6];
+  const string& csolution = testinput_folder + "/TestSolution/ComponentSources/components.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"-o";
+  argv[4] = (char*)testoutput_folder.c_str();;
+  EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
+
+  const string& expected = "\
+(warning|error) csolution: source modules added by multiple components:\n\
+  filename: .*/ARM/RteTest/0.1.0/Dummy/dummy.c\n\
+    - component: ARM::RteTest:DupFilename@0.9.9\n\
+      from-pack: ARM::RteTest@0.1.0\n\
+    - component: ARM::RteTest:TemplateFile@0.9.9\n\
+      from-pack: ARM::RteTest@0.1.0\n\
+";
+
+  string errStr = streamRedirect.GetErrorString();
+  EXPECT_TRUE(regex_search(errStr, regex(expected)));
+
+  argv[5] = (char*)"--cbuild2cmake";
+  streamRedirect.ClearStringStreams();
+  EXPECT_EQ(1, RunProjMgr(6, argv, m_envp));
+  errStr = streamRedirect.GetErrorString();
+  EXPECT_TRUE(regex_search(errStr, regex(expected)));
 }

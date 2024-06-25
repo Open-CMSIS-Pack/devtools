@@ -98,6 +98,18 @@
       ],
       "description": "Exclude node for a list of [.<build-type>][+<target-type>]"
     },
+    "SelectCompilersType": {
+      "type": "array",
+      "minItems": 1,
+      "description": "List tested compilers that can be selected",
+      "items": { "$ref": "#/definitions/SelectCompilerType" }
+    },
+    "SelectCompilerType": {
+      "type": "object",
+      "properties": {
+        "compiler": { "$ref": "#/definitions/CompilerType" }
+      }
+    },
     "CompilerType": {
       "type": "string",
       "pattern": "^(GCC|CLANG|AC6|IAR)(@(>=)?(\\d+\\.\\d+\\.\\d+((\\+|\\-)[\\w.+-]+)?))?$",
@@ -792,37 +804,37 @@
     "DefaultDescType": {
       "type": "object",
       "properties": {
-        "compiler": {
-          "$ref": "#/definitions/CompilerType"
-        },
-        "misc": { "$ref": "#/definitions/MiscTypes" }
+        "compiler":        { "$ref": "#/definitions/CompilerType" },
+        "select-compiler": { "$ref": "#/definitions/SelectCompilersType" },
+        "misc":            { "$ref": "#/definitions/MiscTypes" }
       },
       "additionalProperties": false
     },
     "SolutionDescType": {
       "type": "object",
       "properties": {
-        "description":  { "type": "string" },
-        "target-types": { "$ref": "#/definitions/TargetTypes" },
-        "build-types":  { "$ref": "#/definitions/BuildTypes" },
-        "output-dirs":  { "$ref": "#/definitions/OutputDirectoriesType" },
-        "packs":        { "$ref": "#/definitions/PacksType" },
-        "projects":     { "$ref": "#/definitions/ProjectsType" },
-        "processor":    { "$ref": "#/definitions/ProcessorType" },
-        "compiler":     { "$ref": "#/definitions/CompilerType" },
-        "optimize":     { "$ref": "#/definitions/OptimizeType" },
-        "debug":        { "$ref": "#/definitions/DebugType" },
-        "warnings":     { "$ref": "#/definitions/WarningsType" },
-        "language-C":   { "$ref": "#/definitions/LanguageCType" },
-        "language-CPP": { "$ref": "#/definitions/LanguageCppType" },
-        "define":       { "$ref": "#/definitions/DefinesType" },
-        "define-asm":   { "$ref": "#/definitions/DefinesType" },
-        "undefine":     { "$ref": "#/definitions/UndefinesType" },
-        "add-path":     { "$ref": "#/definitions/AddpathsType" },
-        "add-path-asm": { "$ref": "#/definitions/AddpathsType" },
-        "del-path":     { "$ref": "#/definitions/DelpathsType" },
-        "misc":         { "$ref": "#/definitions/MiscTypes" },
-        "variables":    { "$ref": "#/definitions/VariablesType" },
+        "description":     { "type": "string" },
+        "target-types":    { "$ref": "#/definitions/TargetTypes" },
+        "build-types":     { "$ref": "#/definitions/BuildTypes" },
+        "output-dirs":     { "$ref": "#/definitions/OutputDirectoriesType" },
+        "packs":           { "$ref": "#/definitions/PacksType" },
+        "projects":        { "$ref": "#/definitions/ProjectsType" },
+        "processor":       { "$ref": "#/definitions/ProcessorType" },
+        "compiler":        { "$ref": "#/definitions/CompilerType" },
+        "select-compiler": { "$ref": "#/definitions/SelectCompilersType" },
+        "optimize":        { "$ref": "#/definitions/OptimizeType" },
+        "debug":           { "$ref": "#/definitions/DebugType" },
+        "warnings":        { "$ref": "#/definitions/WarningsType" },
+        "language-C":      { "$ref": "#/definitions/LanguageCType" },
+        "language-CPP":    { "$ref": "#/definitions/LanguageCppType" },
+        "define":          { "$ref": "#/definitions/DefinesType" },
+        "define-asm":      { "$ref": "#/definitions/DefinesType" },
+        "undefine":        { "$ref": "#/definitions/UndefinesType" },
+        "add-path":        { "$ref": "#/definitions/AddpathsType" },
+        "add-path-asm":    { "$ref": "#/definitions/AddpathsType" },
+        "del-path":        { "$ref": "#/definitions/DelpathsType" },
+        "misc":            { "$ref": "#/definitions/MiscTypes" },
+        "variables":       { "$ref": "#/definitions/VariablesType" },
         "created-by": {
           "$ref": "#/definitions/CreatedInfoType",
           "description": " The tool that creates this csolution project"
@@ -883,6 +895,7 @@
         "cprojects": { "$ref": "#/definitions/BuildProjectsType" },
         "cbuilds": { "$ref": "#/definitions/BuildContextsType" },
         "configurations": { "$ref": "#/definitions/BuildConfigurationsType" },
+        "select-compiler": { "$ref": "#/definitions/SelectCompilersType" },
         "executes": { "$ref": "#/definitions/BuildExecutesType" }
       },
       "additionalProperties": false,
