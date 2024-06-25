@@ -350,6 +350,9 @@ bool SvdCpu::CheckItem()
         m_sauRegionsConfig->Invalidate();
       }
     }
+    else if(m_sauNumRegions < m_sauRegionsConfig->GetChildCount()) {
+      LogMsg("M391", NUM(m_sauRegionsConfig->GetChildCount()), NUM2(m_sauNumRegions),lineNo);
+    }
   }
 
   if(m_pmuPresent) {
