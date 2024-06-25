@@ -3,7 +3,7 @@ build:
   solution: ../data/TestSolution/LinkerOptions/linker.csolution.yml
   project: ../data/TestSolution/LinkerOptions/linker.cproject.yml
   context: linker.Debug_GCC+RteTest_ARMCM3
-  compiler: GCC
+  compiler: GCC@11.2.1
   device: RteTest_ARMCM3
   device-pack: ARM::RteTest_DFP@0.2.0
   processor:

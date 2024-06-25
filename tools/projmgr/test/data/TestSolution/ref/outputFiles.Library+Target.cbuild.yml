@@ -3,7 +3,7 @@ build:
   solution: ../data/TestSolution/outputFiles.csolution.yml
   project: ../data/TestSolution/outputFiles.cproject.yml
   context: outputFiles.Library+Target
-  compiler: AC6
+  compiler: AC6@6.18.0
   device: RteTest_ARMCM3
   device-pack: ARM::RteTest_DFP@0.2.0
   processor:
@@ -63,8 +63,6 @@ build:
         - file: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Doc/html/index.html
           category: doc
           version: 0.1.1
-  linker:
-    script: ../data/TestSolution/RTE/Device/RteTest_ARMCM3/ARMCM3_ac6.sct
   constructed-files:
     - file: ../data/TestSolution/RTE/_Library_Target/RTE_Components.h
       category: header

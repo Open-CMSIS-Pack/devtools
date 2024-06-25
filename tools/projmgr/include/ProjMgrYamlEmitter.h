@@ -27,6 +27,7 @@ public:
   /**
    * @brief generate cbuild-idx.yml file
    * @param parser reference
+   * @param worker reference
    * @param contexts vector with pointers to contexts
    * @param outputDir directory
    * @param failed contexts
@@ -34,7 +35,7 @@ public:
    * @param boolean check schema of generated file
    * @return true if executed successfully
   */
-  static bool GenerateCbuildIndex(ProjMgrParser& parser,
+  static bool GenerateCbuildIndex(ProjMgrParser& parser, ProjMgrWorker& worker,
     const std::vector<ContextItem*>& contexts, const std::string& outputDir,
     const std::set<std::string>& failedContexts,
     const std::map<std::string, ExecutesItem>& executes, bool checkSchema);

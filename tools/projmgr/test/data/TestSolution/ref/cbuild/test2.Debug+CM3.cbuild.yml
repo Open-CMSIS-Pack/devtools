@@ -3,7 +3,7 @@ build:
   solution: ../data/TestSolution/test.csolution.yml
   project: ../data/TestSolution/TestProject2/test2.cproject.yml
   context: test2.Debug+CM3
-  compiler: AC6
+  compiler: AC6@6.18.0
   device: RteTest_ARMCM3
   device-pack: ARM::RteTest_DFP@0.2.0
   processor:
