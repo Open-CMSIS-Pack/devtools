@@ -900,18 +900,53 @@ bool ProjMgr::RunListLayers(void) {
   // Step4: Run only when --update-idx flag is used
   // Update the cbuild-idx.yml file with layer information
   if (m_updateIdx) {
-    vector<string> orderedContexts;
     map<string, ContextItem>* contexts = nullptr;
-    m_worker.GetYmlOrderedContexts(orderedContexts);
     m_worker.GetContexts(contexts);
 
-    for (auto& contextName : orderedContexts) {
-      auto& contextItem = (*contexts)[contextName];
-      m_allContexts.push_back(&contextItem);
+    // Check if contexts were properly retrieved
+    if (contexts == nullptr) {
+      return false;
     }
 
+    auto csolution = m_parser.GetCsolution();
+    string cbuildSetFile = csolution.directory + "/" + csolution.name + ".cbuild-set.yml";
+
+    // Check if the cbuildSetFile exists
+    if (!RteFsUtils::Exists(cbuildSetFile)) {
+      vector<string> orderedContexts;
+      m_worker.GetYmlOrderedContexts(orderedContexts);
+      if (orderedContexts.empty()) {
+        return false;
+      }
+
+      //first context in yaml ordered context should be processed
+      string selectedContext = orderedContexts.front();
+
+      // process only selectedContext
+      auto& contextItem = (*contexts)[selectedContext];
+      m_allContexts.push_back(&contextItem);
+    }
+    else {
+      // If cbuildSetFile exists, parse the file and select contexts from it
+      if (!m_parser.ParseCbuildSet(cbuildSetFile, true)) {
+        return false;
+      }
+
+      // Retrieve the parsed contexts
+      const auto& cbuildSetItem = m_parser.GetCbuildSetItem();
+      const auto& selectedContexts = cbuildSetItem.contexts;
+
+      for (auto& contextName : selectedContexts) {
+        auto& contextItem = (*contexts)[contextName];
+        m_allContexts.push_back(&contextItem);
+      }
+    }
+
+    // Generate Cbuild index
     if (!m_allContexts.empty()) {
-      if (!m_emitter.GenerateCbuildIndex(m_parser, m_worker, m_allContexts, m_outputDir, m_failedContext, map<string, ExecutesItem>(), m_checkSchema)) {
+      if (!m_emitter.GenerateCbuildIndex(
+        m_parser, m_worker, m_allContexts, m_outputDir,
+        m_failedContext, map<string, ExecutesItem>(), m_checkSchema)) {
         return false;
       }
     }

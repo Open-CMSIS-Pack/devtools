@@ -251,8 +251,8 @@ protected:
   void ParseExecutes(const YAML::Node& parent, const std::string& file, std::vector<ExecutesItem>& executes);
   void ParseConnections(const YAML::Node& parent, std::vector<ConnectItem>& connects);
   bool ParseTargetType(const YAML::Node& parent, const std::string& file, TargetType& targetType);
-  bool ParseBuildTypes(const YAML::Node& parent, const std::string& file, std::map<std::string, BuildType>& buildTypes);
-  bool ParseTargetTypes(const YAML::Node& parent, const std::string& file, std::map<std::string, TargetType>& targetTypes);
+  bool ParseBuildTypes(const YAML::Node& parent, const std::string& file, BuildTypes& buildTypes);
+  bool ParseTargetTypes(const YAML::Node& parent, const std::string& file, TargetTypes& targetTypes);
   bool ParseContexts(const YAML::Node& parent, CsolutionItem& contexts);
   bool ParseComponents(const YAML::Node& parent, const std::string& file, std::vector<ComponentItem>& components);
   bool ParseSelectableCompilers(const YAML::Node& parent, std::vector<std::string>& selectableCompilers);

@@ -383,6 +383,8 @@ struct CdefaultItem {
   std::vector<MiscItem> misc;
 };
 
+typedef std::vector<std::pair<std::string, BuildType>> BuildTypes;
+typedef std::vector<std::pair<std::string, TargetType>> TargetTypes;
 /**
  * @brief solution item containing
  *        csolution name,
@@ -410,8 +412,8 @@ struct CsolutionItem {
   std::string createdFor;
   DirectoriesItem directories;
   std::vector<std::string> selectableCompilers;
-  std::map<std::string, BuildType> buildTypes;
-  std::map<std::string, TargetType> targetTypes;
+  BuildTypes buildTypes;
+  TargetTypes targetTypes;
   TargetType target;
   std::vector<std::string> cprojects;
   std::vector<ContextDesc> contexts;
@@ -420,6 +422,8 @@ struct CsolutionItem {
   GeneratorsItem generators;
   CbuildPackItem cbuildPack;
   std::vector<ExecutesItem> executes;
+  std::vector<std::string> ymlOrderedBuildTypes;
+  std::vector<std::string> ymlOrderedTargetTypes;
 };
 
 /**

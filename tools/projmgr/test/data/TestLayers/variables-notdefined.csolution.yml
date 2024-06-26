@@ -12,3 +12,4 @@ solution:
 
   projects:
     - project: variables-notdefined.cproject.yml
+    - project: testlayers.cproject.yml

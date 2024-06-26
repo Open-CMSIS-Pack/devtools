@@ -1,10 +1,15 @@
 build-idx:
-  generated-by: csolution version 0.0.0+g65589ca9
+  generated-by: csolution version 0.0.0+gc0cd00f9
   csolution: ../data/TestLayers/variables-notdefined.csolution.yml
   cprojects:
     - cproject: ../data/TestLayers/variables-notdefined.cproject.yml
       clayers:
         - clayer: ../data/TestLayers/$NotDefined$
+    - cproject: ../data/TestLayers/testlayers.cproject.yml
+      clayers:
+        - clayer: ../data/TestLayers/Layer1/layer1.clayer.yml
+        - clayer: ../data/TestLayers/Layer2/layer2.clayer.yml
+        - clayer: ../data/TestLayers/Layer3/layer3.clayer.yml
   cbuilds:
     - cbuild: variables-notdefined.BuildType+TargetType.cbuild.yml
       project: variables-notdefined
