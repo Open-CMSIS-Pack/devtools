@@ -726,7 +726,7 @@ bool ProjMgrYamlParser::ParseContexts(const YAML::Node& parent, CsolutionItem& c
   return true;
 }
 
-bool ProjMgrYamlParser::ParseBuildTypes(const YAML::Node& parent, const string& file, map<string, BuildType>& buildTypes) {
+bool ProjMgrYamlParser::ParseBuildTypes(const YAML::Node& parent, const string& file, BuildTypes& buildTypes) {
   std::vector<std::string> invalidBuildTypes;
   if (parent[YAML_BUILDTYPES].IsDefined()) {
     const YAML::Node& buildTypesNode = parent[YAML_BUILDTYPES];
@@ -741,7 +741,7 @@ bool ProjMgrYamlParser::ParseBuildTypes(const YAML::Node& parent, const string& 
       if (!ParseBuildType(typeEntry, file, build)) {
         return false;
       }
-      buildTypes[typeItem] = build;
+      buildTypes.push_back({ typeItem, build });
     }
   }
   if (invalidBuildTypes.size() > 0) {
@@ -808,7 +808,7 @@ bool ProjMgrYamlParser::ParseLinker(const YAML::Node& parent, const string& file
   return true;
 }
 
-bool ProjMgrYamlParser::ParseTargetTypes(const YAML::Node& parent, const string& file, map<string, TargetType>& targetTypes) {
+bool ProjMgrYamlParser::ParseTargetTypes(const YAML::Node& parent, const string& file, TargetTypes& targetTypes) {
   std::vector<std::string> invalidTargetTypes;
   const YAML::Node& targetTypesNode = parent[YAML_TARGETTYPES];
   for (const auto& typeEntry : targetTypesNode) {
@@ -820,7 +820,7 @@ bool ProjMgrYamlParser::ParseTargetTypes(const YAML::Node& parent, const string&
       continue;
     }
     ParseTargetType(typeEntry, file, target);
-    targetTypes[typeItem] = target;
+    targetTypes.push_back({ typeItem, target });
   }
   if (invalidTargetTypes.size() > 0) {
     string errMsg = "invalid target type(s):\n";

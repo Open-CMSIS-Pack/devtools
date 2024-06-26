@@ -1670,6 +1670,7 @@ TEST_F(ProjMgrUnitTests, ListLayersConfigurations_update_idx_local_layer) {
 }
 
 TEST_F(ProjMgrUnitTests, ListLayersConfigurations_Error) {
+  StdStreamRedirect streamRedirect;
   char* argv[8];
   const string& csolution = testinput_folder + "/TestLayers/variables-notdefined.csolution.yml";
   argv[1] = (char*)"list";
@@ -1681,6 +1682,8 @@ TEST_F(ProjMgrUnitTests, ListLayersConfigurations_Error) {
   argv[7] = (char*)"--update-idx";
   EXPECT_EQ(1, RunProjMgr(8, argv, 0));
 
+  const string& outStr = streamRedirect.GetOutString();
+  const string& errStr = streamRedirect.GetErrorString();
   ProjMgrTestEnv::CompareFile(testinput_folder + "/TestLayers/ref/variables-notdefined.cbuild-idx.yml",
     testoutput_folder + "/variables-notdefined.cbuild-idx.yml");
 }

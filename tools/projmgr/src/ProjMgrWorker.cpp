@@ -138,10 +138,25 @@ void ProjMgrWorker::AddContext(ContextDesc& descriptor, const TypePair& type, Co
 
 bool ProjMgrWorker::ParseContextLayers(ContextItem& context) {
   // user defined variables
+  typedef std::vector<std::pair<std::string, std::string>> Variables;
+  auto itBuildType = std::find_if(context.csolution->buildTypes.begin(), context.csolution->buildTypes.end(),
+    [&context](const std::pair<std::string, BuildType>& element) {
+      return element.first == context.type.build;
+    });
+  Variables buildVars{}, targetVars{};
+  if (itBuildType != context.csolution->buildTypes.end()) {
+    buildVars = itBuildType->second.variables;
+  }
+  auto itTargetType = std::find_if(context.csolution->targetTypes.begin(), context.csolution->targetTypes.end(),
+    [&context](const std::pair<std::string, TargetType>& element) {
+      return element.first == context.type.target;
+    });
+  if (itTargetType != context.csolution->targetTypes.end()) {
+    targetVars = itTargetType->second.build.variables;
+  }
+
   const auto userVariablesList = {
-    context.csolution->target.build.variables,
-    context.csolution->buildTypes[context.type.build].variables,
-    context.csolution->targetTypes[context.type.target].build.variables,
+    context.csolution->target.build.variables, buildVars, targetVars,
   };
   for (const auto& var : userVariablesList) {
     for (const auto& [key, value] : var) {
@@ -3303,8 +3318,24 @@ bool ProjMgrWorker::CheckContextFilters(const TypeFilter& typeFilter, const Cont
   vector<TypePair> typeVec = { context.type };
   if (context.csolution) {
     // get mapped contexts types
-    vector<ContextName>& buildContextMap = context.csolution->buildTypes[context.type.build].contextMap;
-    vector<ContextName>& targetContextMap = context.csolution->targetTypes[context.type.target].build.contextMap;
+    auto itBuildType = std::find_if(context.csolution->buildTypes.begin(), context.csolution->buildTypes.end(),
+      [&context](const std::pair<std::string, BuildType>& element) {
+        return element.first == context.type.build;
+      });
+    vector<ContextName> buildCntxtMap{}, targetCntxtMap{};
+    if (itBuildType != context.csolution->buildTypes.end()) {
+      buildCntxtMap = itBuildType->second.contextMap;
+    }
+    auto itTargetType = std::find_if(context.csolution->targetTypes.begin(), context.csolution->targetTypes.end(),
+      [&context](const std::pair<std::string, TargetType>& element) {
+        return element.first == context.type.target;
+      });
+    if (itTargetType != context.csolution->targetTypes.end()) {
+      targetCntxtMap = itTargetType->second.build.contextMap;
+    }
+
+    vector<ContextName>& buildContextMap = buildCntxtMap;
+    vector<ContextName>& targetContextMap = targetCntxtMap;
     for (const auto& contextMap : { buildContextMap, targetContextMap }) {
       for (const auto& mappedContext : contextMap) {
         if ((!mappedContext.project.empty()) && (mappedContext.project != context.cproject->name)) {
@@ -3892,8 +3923,23 @@ ToolchainItem ProjMgrWorker::GetToolchain(const string& compiler) {
 
 bool ProjMgrWorker::GetTypeContent(ContextItem& context) {
   if (!context.type.build.empty() || !context.type.target.empty()) {
-    context.controls.build = context.csolution->buildTypes[context.type.build];
-    TargetType targetType = context.csolution->targetTypes[context.type.target];
+    auto itBuildType = std::find_if(context.csolution->buildTypes.begin(), context.csolution->buildTypes.end(),
+      [&context](const std::pair<std::string, BuildType>& element) {
+        return element.first == context.type.build;
+      });
+    BuildType buildType{};
+    if (itBuildType != context.csolution->buildTypes.end()) {
+      buildType = itBuildType->second;
+    }
+    TargetType targetType{};
+    auto itTargetType = std::find_if(context.csolution->targetTypes.begin(), context.csolution->targetTypes.end(),
+      [&context](const std::pair<std::string, TargetType>& element) {
+        return element.first == context.type.target;
+      });
+    if (itTargetType != context.csolution->targetTypes.end()) {
+      targetType = itTargetType->second;
+    }
+    context.controls.build = buildType;
     context.controls.target = targetType.build;
     context.targetItem.board = targetType.board;
     context.targetItem.device = targetType.device;
