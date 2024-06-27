@@ -3,8 +3,8 @@ build-idx:
   cdefault: ../data/TestSolution/SelectableToolchains/cdefault.yml
   csolution: ../data/TestSolution/SelectableToolchains/select-compiler.csolution.yml
   select-compiler:
-    - compiler: GCC@11.2.1
-    - compiler: AC6@6.18.0
+    - compiler: AC6@>=6.0.0
+    - compiler: GCC@>=8.0.0
   cprojects:
     - cproject: ../data/TestSolution/SelectableToolchains/select-compiler.cproject.yml
   cbuilds:

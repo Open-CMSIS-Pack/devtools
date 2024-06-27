@@ -5,7 +5,8 @@ solution:
   cdefault:
 
   select-compiler:
-    - compiler: "AC6@>=6.0.0"
+    - compiler: AC6@>=6.0.0
+    - compiler: CLANG@1.1.1
 
   build-types:
     - type: Debug
