@@ -4810,15 +4810,24 @@ void ProjMgrWorker::ProcessSelectableCompilers() {
   if (m_undefCompiler) {
     // compiler was not specified
     // get selectable compilers specified in cdefault and csolution
-    StrVec selectableCompilers = m_parser->GetCdefault().selectableCompilers;
-    for (const auto& selectableCompiler : m_parser->GetCsolution().selectableCompilers) {
-      CollectionUtils::PushBackUniquely(selectableCompilers, selectableCompiler);
+    StrVecMap compilersMap;
+    for (const auto& selectableCompilers : { m_parser->GetCdefault().selectableCompilers, m_parser->GetCsolution().selectableCompilers }) {
+      for (const auto& selectableCompiler : selectableCompilers) {
+        ToolchainItem item = GetToolchain(selectableCompiler);
+        CollectionUtils::PushBackUniquely(compilersMap[item.name], selectableCompiler);
+      }
     }
-    // store only registered best match
-    for (const auto& selectableCompiler : selectableCompilers) {
-      ToolchainItem item = GetToolchain(selectableCompiler);
-      if (GetLatestToolchain(item)) {
-        CollectionUtils::PushBackUniquely(m_selectableCompilers, item.name + '@' + item.version);
+    // store intersection of required versions if compatible with registered one
+    for (const auto& [name, compilers] : compilersMap) {
+      string intersection;
+      for (const auto& compiler : compilers) {
+        ProjMgrUtils::CompilersIntersect(intersection, compiler, intersection);
+      }
+      if (!intersection.empty()) {
+        ToolchainItem item = GetToolchain(intersection);
+        if (GetLatestToolchain(item)) {
+          CollectionUtils::PushBackUniquely(m_selectableCompilers, intersection);
+        }
       }
     }
     m_toolchainErrors.insert("compiler undefined, use '--toolchain' option or add 'compiler: <value>' to yml input" +
