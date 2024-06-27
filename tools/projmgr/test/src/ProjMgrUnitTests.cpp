@@ -1798,9 +1798,23 @@ IAR@9.32.5\n\
   // Test with no registered toolchains (empty environment variables)
   streamRedirect.ClearStringStreams();
   EXPECT_EQ(1, RunProjMgr(3, argv, 0));
-  const string& expectedErr = "error csolution: compiler registration environment variable missing, format: <GCC|CLANG|AC6|IAR>_TOOLCHAIN_<major>_<minor>_<patch>\n";
+  const string& expectedErr = "error csolution: compiler registration environment variable missing, format: <GCC|CLANG|AC6|IAR>_TOOLCHAIN_<major>_<minor>_<patch>, or CMSIS_COMPILER_ROOT may need to be set\n";
   const string& errStr = streamRedirect.GetErrorString();
   EXPECT_EQ(errStr, expectedErr);
+}
+
+TEST_F(ProjMgrUnitTests, ListToolchainsNoToolchainRegistered) {
+  StdStreamRedirect streamRedirect;
+  char* argv[3];
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"toolchains";
+  EXPECT_EQ(1, RunProjMgr(3, argv, 0));
+
+  const string& outStr = streamRedirect.GetOutString();
+  const string& errStr = streamRedirect.GetErrorString();
+  EXPECT_TRUE(outStr.empty());
+  EXPECT_NE(std::string::npos, errStr.find("CMSIS_COMPILER_ROOT"));
+  EXPECT_NE(std::string::npos, errStr.find("_TOOLCHAIN_<major>_<minor>_<patch>"));
 }
 
 TEST_F(ProjMgrUnitTests, ListToolchainsVerbose) {

@@ -1715,7 +1715,7 @@ bool ProjMgrWorker::ProcessToolchain(ContextItem& context) {
 
   // get compatible supported toolchain
   if (!GetToolchainConfig(context.toolchain.name, context.toolchain.range, context.toolchain.config, context.toolchain.version)) {
-    m_toolchainErrors.insert("cmake configuration file missing for compiler '" + context.compiler + "'");
+    m_toolchainErrors.insert("cmake configuration file missing in CMSIS_COMPILER_ROOT for compiler '" + context.compiler + "'");
     context.toolchain.version = RteUtils::GetPrefix(context.toolchain.range);
   }
 
@@ -4387,7 +4387,7 @@ bool ProjMgrWorker::ListToolchains(vector<ToolchainItem>& toolchains) {
       // list registered toolchains
       GetRegisteredToolchains();
       if (m_toolchains.empty()) {
-        ProjMgrLogger::Error("compiler registration environment variable missing, format: <GCC|CLANG|AC6|IAR>_TOOLCHAIN_<major>_<minor>_<patch>");
+        ProjMgrLogger::Error("compiler registration environment variable missing, format: <GCC|CLANG|AC6|IAR>_TOOLCHAIN_<major>_<minor>_<patch>, or CMSIS_COMPILER_ROOT may need to be set");
         return false;
       }
       toolchains = m_toolchains;

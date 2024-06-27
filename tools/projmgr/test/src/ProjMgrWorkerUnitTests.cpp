@@ -55,6 +55,26 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessToolchain) {
   EXPECT_EQ(expected.version, context.toolchain.version);
 }
 
+TEST_F(ProjMgrWorkerUnitTests, ProcessToolchainNoToolchainRegistered) {
+  // Required to not pick up the in-tree cmake files
+  m_compilerRoot = "/path/that/does/not/exist";
+  EXPECT_FALSE(RteFsUtils::Exists(m_compilerRoot));
+
+  ProjMgrParser parser;
+  ContextDesc descriptor;
+  const string& filename = testinput_folder + "/TestProject/test.cproject.yml";
+  EXPECT_TRUE(parser.ParseCproject(filename, true));
+  EXPECT_TRUE(AddContexts(parser, descriptor, filename));
+  map<string, ContextItem>* contexts;
+  GetContexts(contexts);
+  ContextItem context = contexts->begin()->second;
+  EXPECT_TRUE(ProcessPrecedences(context));
+  EXPECT_TRUE(ProcessToolchain(context));
+  EXPECT_TRUE(std::any_of(m_toolchainErrors.begin(), m_toolchainErrors.end(), [](const std::string& str) {
+        return str.find("CMSIS_COMPILER_ROOT") != std::string::npos;
+    }));
+}
+
 TEST_F(ProjMgrWorkerUnitTests, ProcessToolchainOptions) {
   struct expectedOutput {
     bool result;
