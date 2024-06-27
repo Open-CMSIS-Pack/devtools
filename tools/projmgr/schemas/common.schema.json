@@ -856,7 +856,6 @@
         "description":  { "type": "string" },
         "packs":        { "$ref": "#/definitions/PacksType" },
         "output":       { "$ref": "#/definitions/OutputType" },
-        "output-dirs":  { "$ref": "#/definitions/OutputDirectoriesType" },
         "board":        { "$ref": "#/definitions/BoardType" },
         "device":       { "$ref": "#/definitions/DeviceType" },
         "compiler":     { "$ref": "#/definitions/CompilerType" },
