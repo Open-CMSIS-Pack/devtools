@@ -528,7 +528,7 @@ void ProjMgrYamlCbuild::SetComponentFilesNode(YAML::Node node, const ContextItem
           //This is a safeguard. however, this condition should never be triggered
           if (backupFiles.size() > 1){
             ProjMgrLogger::Warn(
-              "Multiple \'"+ fileFilter + "\' files detected within the \'" + directory + "\' directory.");
+              "'" + directory + "' contains more than one '" + fileFilter + " file, PLM may fail");
           }
 
           return FormatPath(backupFiles.front().c_str(), context->directories.cbuild);
