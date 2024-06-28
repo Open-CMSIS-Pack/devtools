@@ -1,0 +1,19 @@
+### CMSIS Project Description ###
+solution:
+
+  compiler: AC6
+
+  target-types:
+    - type: CM0
+      device: RteTest_ARMCM0
+    - type: CM3
+      device: RteTest_ARMCM3
+
+  build-types:
+    - type: Debug
+    - type: Release
+    - type: Test
+  
+  projects:
+    - project: s.cproject.yml
+    - project: ns.cproject.yml

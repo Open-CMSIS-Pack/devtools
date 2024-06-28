@@ -209,6 +209,15 @@ public:
   */
   static std:: string ReplaceDelimiters(const std::string input);
 
+  /**
+   * @brief find referenced context
+   * @param currentContext current context string
+   * @param refContext referenced context string
+   * @param selectedContexts selected contexts string vector
+   * @return string with replaced characters
+  */
+  static const std::string FindReferencedContext(const std::string& currentContext, const std::string& refContext, const StrVec& selectedContexts);
+
 protected:
   static std::string ConstructID(const std::vector<std::pair<const char*, const std::string&>>& elements);
   /**
