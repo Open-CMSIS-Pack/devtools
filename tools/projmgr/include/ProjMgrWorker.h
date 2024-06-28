@@ -271,6 +271,7 @@ struct ContextTypesItem {
  *        set of absolute file paths of project local packs
  *        vector of dependent contexts
  *        map of layers descriptors from packs
+ *        flag indicating the context needs a rebuild
 */
 struct ContextItem {
   CdefaultItem* cdefault = nullptr;
@@ -322,6 +323,7 @@ struct ContextItem {
   StrSet localPackPaths;
   StrVec dependsOn;
   std::map<std::string, RteItem*> packLayers;
+  bool needRebuild = false;
 };
 
 /**

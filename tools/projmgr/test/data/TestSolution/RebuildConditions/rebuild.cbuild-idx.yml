@@ -1,0 +1,12 @@
+build-idx:
+  generated-by: csolution version 0.0.0+g0f5a5646
+  csolution: rebuild.csolution.yml
+  cprojects:
+    - cproject: rebuild.cproject.yml
+  cbuilds:
+    - cbuild: rebuild.Debug+CM0.cbuild.yml
+      project: rebuild
+      configuration: .Debug+CM0
+    - cbuild: rebuild.Debug+CM3.cbuild.yml
+      project: rebuild
+      configuration: .Debug+CM3

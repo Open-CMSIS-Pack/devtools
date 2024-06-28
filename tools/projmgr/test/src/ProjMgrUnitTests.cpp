@@ -5496,18 +5496,19 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_cbuild_files_with_packs_missing_specific_con
   string expectedErr1 = "error csolution: required pack: ARM::Missing_DFP@0.0.9 not installed";
   string expectedErr2 = "error csolution: required pack: ARM::Missing_PACK@0.0.1 not installed";
   const string& csolution = testinput_folder + "/TestSolution/PackMissing/missing_pack.csolution.yml";
+  const string& cbuildidx = testoutput_folder + "/missing_pack.cbuild-idx.yml";
   argv[1] = (char*)"convert";
   argv[2] = (char*)csolution.c_str();
   argv[3] = (char*)"-o";
   argv[4] = (char*)testoutput_folder.c_str();
   argv[5] = (char*)"-c";
   argv[6] = (char*)"project+CM0";
-
+  RteFsUtils::RemoveFile(cbuildidx);
   EXPECT_EQ(1, RunProjMgr(7, argv, 0));
   auto err = streamRedirect.GetErrorString();
   EXPECT_NE(string::npos, streamRedirect.GetErrorString().find(expectedErr1));
   EXPECT_EQ(string::npos, streamRedirect.GetErrorString().find(expectedErr2));
-  ProjMgrTestEnv::CompareFile(testoutput_folder + "/missing_pack.cbuild-idx.yml",
+  ProjMgrTestEnv::CompareFile(cbuildidx,
     testinput_folder + "/TestSolution/PackMissing/ref/missing_pack_specific_context.cbuild-idx.yml");
 }
 
@@ -5622,21 +5623,24 @@ TEST_F(ProjMgrUnitTests, CbuildPackSelectBy) {
 TEST_F(ProjMgrUnitTests, Executes) {
   char* argv[6];
   const string& csolution = testinput_folder + "/TestSolution/Executes/solution.csolution.yml";
+  const string& cbuildidx = testoutput_folder + "/solution.cbuild-idx.yml";
   argv[1] = (char*)"convert";
   argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
+  RteFsUtils::RemoveFile(cbuildidx);
   EXPECT_EQ(0, RunProjMgr(6, argv, m_envp));
 
   // Check generated files
-  ProjMgrTestEnv::CompareFile(testoutput_folder + "/solution.cbuild-idx.yml",
+  ProjMgrTestEnv::CompareFile(cbuildidx,
     testinput_folder + "/TestSolution/Executes/ref/solution.cbuild-idx.yml");
 
   // Check error message
   StdStreamRedirect streamRedirect;
   const string& csolutionError = testinput_folder + "/TestSolution/Executes/error.csolution.yml";
   argv[3] = (char*)csolutionError.c_str();
+  RteFsUtils::RemoveFile(cbuildidx);
   EXPECT_EQ(1, RunProjMgr(6, argv, m_envp));
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_NE(string::npos, errStr.find("error csolution: context 'unknown.Debug+RteTest_ARMCM3' referenced by access sequence 'elf' is not compatible"));
@@ -6013,4 +6017,22 @@ TEST_F(ProjMgrUnitTests, ForContextRegexFail) {
 
   auto errMsg = streamRedirect.GetErrorString();
   EXPECT_NE(string::npos, errMsg.find("error csolution: invalid pattern '^.Debug+(CM0'"));
+}
+
+TEST_F(ProjMgrUnitTests, RebuildConditions) {
+  char* argv[5];
+  const string& csolution = testinput_folder + "/TestSolution/RebuildConditions/rebuild.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  EXPECT_EQ(0, RunProjMgr(3, argv, m_envp));
+  const YAML::Node& cbuild1 = YAML::LoadFile(testinput_folder + "/TestSolution/RebuildConditions/rebuild.cbuild-idx.yml");
+  // rebuild at solution level due to change in context selection
+  EXPECT_TRUE(cbuild1["build-idx"]["rebuild"].as<bool>());
+
+  argv[3] = (char*)"--toolchain";
+  argv[4] = (char*)"GCC";
+  EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
+  const YAML::Node& cbuild2 = YAML::LoadFile(testinput_folder + "/TestSolution/RebuildConditions/rebuild.cbuild-idx.yml");
+  // rebuild at context level due to change in compiler selection
+  EXPECT_TRUE(cbuild2["build-idx"]["cbuilds"][0]["rebuild"].as<bool>());
 }

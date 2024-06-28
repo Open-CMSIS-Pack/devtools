@@ -501,14 +501,7 @@ bool ProjMgr::GenerateYMLConfigurationFiles() {
   // Update the RTE files
   updateRte();
 
-  // Generate cbuild index file
-  if (!m_allContexts.empty()) {
-    map<string, ExecutesItem> executes;
-    m_worker.GetExecutes(executes);
-    if (!m_emitter.GenerateCbuildIndex(m_parser, m_worker, m_allContexts, m_outputDir, m_failedContext, executes, m_checkSchema)) {
-      return false;
-    }
-  }
+  bool result = true;
 
   // Generate cbuild set file
   if (m_contextSet) {
@@ -521,16 +514,24 @@ bool ProjMgr::GenerateYMLConfigurationFiles() {
     else if (!m_processedContexts.empty()) {
       // Generate cbuild-set file
       if (!m_emitter.GenerateCbuildSet(m_processedContexts, m_selectedToolchain, cbuildSetFile, m_checkSchema)) {
-        return false;
+        result = false;
       }
     }
   }
 
   // Generate cbuild files
-  bool result = true;
   for (auto& contextItem : m_processedContexts) {
     if (!m_emitter.GenerateCbuild(contextItem, m_checkSchema)) {
       result = false;
+    }
+  }
+
+  // Generate cbuild index file
+  if (!m_allContexts.empty()) {
+    map<string, ExecutesItem> executes;
+    m_worker.GetExecutes(executes);
+    if (!m_emitter.GenerateCbuildIndex(m_parser, m_worker, m_allContexts, m_outputDir, m_failedContext, executes, m_checkSchema)) {
+      return false;
     }
   }
 

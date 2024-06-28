@@ -39,6 +39,7 @@ protected:
   bool CompareNodes(const YAML::Node& lhs, const YAML::Node& rhs);
   bool WriteFile(YAML::Node& rootNode, const std::string& filename, bool allowUpdate = true);
   void SetExecutesNode(YAML::Node node, const map<string, ExecutesItem>& executes, const string& base, const string& ref);
+  bool NeedRebuild(const string& filename, const YAML::Node& rootNode);
   const bool m_useAbsolutePaths;
   const bool m_checkSchema;
 };
@@ -926,6 +927,27 @@ bool ProjMgrYamlBase::CompareNodes(const YAML::Node& lhs, const YAML::Node& rhs)
   return (lhsData == rhsData) ? true : false;
 }
 
+bool ProjMgrYamlBase::NeedRebuild(const string& filename, const YAML::Node& newFile) {
+  if (!RteFsUtils::Exists(filename) || !RteFsUtils::IsRegularFile(filename)) {
+    return false;
+  }
+  const YAML::Node& oldFile = YAML::LoadFile(filename);
+  if (newFile[YAML_BUILD].IsDefined()) {
+    // cbuild.yml
+    if (newFile[YAML_BUILD][YAML_COMPILER].IsDefined() && oldFile[YAML_BUILD][YAML_COMPILER].IsDefined()) {
+      // compare compiler
+      return !CompareNodes(newFile[YAML_BUILD][YAML_COMPILER], oldFile[YAML_BUILD][YAML_COMPILER]);
+    }
+  } else if (newFile[YAML_BUILD_IDX].IsDefined()) {
+    // cbuild-idx.yml
+    if (newFile[YAML_BUILD_IDX][YAML_CBUILDS].IsDefined() && oldFile[YAML_BUILD_IDX][YAML_CBUILDS].IsDefined()) {
+      // compare cbuilds
+      return !CompareNodes(newFile[YAML_BUILD_IDX][YAML_CBUILDS], oldFile[YAML_BUILD_IDX][YAML_CBUILDS]);
+    }
+  }
+  return false;
+}
+
 bool ProjMgrYamlBase::WriteFile(YAML::Node& rootNode, const std::string& filename, bool allowUpdate) {
   // Compare yaml contents
   if (RteFsUtils::IsDirectory(filename)) {
@@ -987,6 +1009,18 @@ bool ProjMgrYamlEmitter::GenerateCbuildIndex(ProjMgrParser& parser, ProjMgrWorke
   ProjMgrYamlCbuildIdx cbuild(
     rootNode[YAML_BUILD_IDX], contexts, parser, worker, directory, failedContexts, executes, checkSchema);
 
+  // set rebuild flags
+  if (cbuild.NeedRebuild(filename, rootNode)) {
+    rootNode[YAML_BUILD_IDX][YAML_REBUILD] = true;
+  } else {
+    int index = 0;
+    for (const auto& context : contexts) {
+      if (context->needRebuild) {
+        rootNode[YAML_BUILD_IDX][YAML_CBUILDS][index][YAML_REBUILD] = true;
+      }
+      index++;
+    }
+  }
   return cbuild.WriteFile(rootNode, filename);
 }
 
@@ -1015,6 +1049,8 @@ bool ProjMgrYamlEmitter::GenerateCbuild(ContextItem* context, bool checkSchema,
   YAML::Node rootNode;
   ProjMgrYamlCbuild cbuild(rootNode[rootKey], context, generatorId, generatorPack, checkSchema);
   RteFsUtils::CreateDirectories(RteFsUtils::ParentPath(filename));
+  // get context rebuild flag
+  context->needRebuild = cbuild.NeedRebuild(filename, rootNode);
   return cbuild.WriteFile(rootNode, filename);
 }
 
