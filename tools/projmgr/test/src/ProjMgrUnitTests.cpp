@@ -2644,7 +2644,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgrLayers_missing_project_file) {
 TEST_F(ProjMgrUnitTests, RunProjMgrLayers_pname) {
   char* argv[6];
   StdStreamRedirect streamRedirect;
-  const string expected = "testlayers.cproject.yml - warning csolution: 'device' name will be deprecated at this level, please move it to *.csolution.yml";
+  const string expected = "testlayers.cproject.yml - warning csolution: 'device: Dname' is deprecated at this level and accepted in *.csolution.yml only";
   const string& csolutionFile = testinput_folder + "/TestLayers/testlayers.csolution.yml";
   argv[1] = (char*)"convert";
   argv[2] = (char*)"--solution";
