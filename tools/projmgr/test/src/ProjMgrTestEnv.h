@@ -62,6 +62,7 @@ public:
   static std::string GetFilteredPacksString(const std::map<std::string, std::string, RtePackageComparator>& pdscMap,
     const std::string& includeIds);
   static bool FilterId(const std::string& id, const std::string& includeIds);
+  static bool IsFileInCbuildFilesList(const std::vector<std::map<std::string, std::string>> files, const std::string file);
 };
 
 #endif  // PROJMGRTESTENV_H

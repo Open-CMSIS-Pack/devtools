@@ -14,11 +14,13 @@
 /**
 * @brief type pair containing
 *        build-type,
-*        target-type
+*        target-type,
+*        regex pattern
 */
 struct TypePair {
   std::string build;
   std::string target;
+  std::string pattern;
 };
 
 /**
