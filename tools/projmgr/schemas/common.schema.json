@@ -895,7 +895,8 @@
         "cbuilds": { "$ref": "#/definitions/BuildContextsType" },
         "configurations": { "$ref": "#/definitions/BuildConfigurationsType" },
         "select-compiler": { "$ref": "#/definitions/SelectCompilersType" },
-        "executes": { "$ref": "#/definitions/BuildExecutesType" }
+        "executes": { "$ref": "#/definitions/BuildExecutesType" },
+        "rebuild":  { "type": "boolean", "description": "Flag indicating intermediate files need to be cleaned before the next build" }
       },
       "additionalProperties": false,
       "required": ["generated-by", "csolution", "cprojects"]
@@ -944,7 +945,8 @@
         "depends-on": { "$ref": "#/definitions/ArrayOfBuildContextWithProjectName" },
         "errors": { "type": "boolean", "description": "Indicates error(s) during conversion" },
         "packs-missing": { "$ref": "#/definitions/BuildPacksMissingType" },
-        "clayers": { "$ref": "#/definitions/BuildLayersType" }
+        "clayers": { "$ref": "#/definitions/BuildLayersType" },
+        "rebuild": { "type": "boolean", "description": "Flag indicating intermediate files need to be cleaned before the next build" }
       },
       "additionalProperties": false,
       "required": ["cbuild", "project", "configuration"]

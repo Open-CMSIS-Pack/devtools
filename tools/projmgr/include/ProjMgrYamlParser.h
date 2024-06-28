@@ -139,6 +139,7 @@ static constexpr const char* YAML_PROJECT = "project";
 static constexpr const char* YAML_PROJECTS = "projects";
 static constexpr const char* YAML_PROJECT_TYPE = "project-type";
 static constexpr const char* YAML_PROVIDES = "provides";
+static constexpr const char* YAML_REBUILD = "rebuild";
 static constexpr const char* YAML_REGIONS = "regions";
 static constexpr const char* YAML_RESOLVED_PACK = "resolved-pack";
 static constexpr const char* YAML_RESOLVED_PACKS = "resolved-packs";
