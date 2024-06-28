@@ -894,7 +894,7 @@ bool ProjMgrYamlParser::ParseTargetType(const YAML::Node& parent, const string& 
           // processor name in the format :<pname> is accepted
           continue;
         }
-        ProjMgrLogger::Warn(file, "'" + key + "' name will be deprecated at this level, please move it to *.csolution.yml");
+        ProjMgrLogger::Warn(file, string(key == YAML_DEVICE ? "'device: Dname'" : "'board:' node") + " is deprecated at this level and accepted in *.csolution.yml only");
       }
     }
   }
