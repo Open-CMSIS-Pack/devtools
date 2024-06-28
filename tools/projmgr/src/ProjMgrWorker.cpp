@@ -2998,23 +2998,6 @@ bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem & context, bool rerun)
   return true;
 }
 
-void ProjMgrWorker::UpdatePartialReferencedContext(ContextItem& context, string& contextName) {
-  if (contextName.find('+') == string::npos) {
-    if (!context.type.target.empty()) {
-      contextName.append('+' + context.type.target);
-    }
-  }
-  if (contextName.find('.') == string::npos) {
-    if (!context.type.build.empty()) {
-      const size_t targetDelim = contextName.find('+');
-      contextName.insert(targetDelim == string::npos ? contextName.length() : targetDelim, '.' + context.type.build);
-    }
-  }
-  if (contextName.empty() || (contextName.front() == '.') || (contextName.front() == '+')) {
-    contextName.insert(0, context.cproject->name);
-  }
-}
-
 void ProjMgrWorker::ExpandAccessSequence(const ContextItem& context, const ContextItem& refContext, const string& sequence, const string& outdir, string& item, bool withHeadingDot) {
   const string refContextOutDir = refContext.directories.cprj + "/" + refContext.directories.outdir;
   const string relOutDir = outdir.empty() ? refContextOutDir : RteFsUtils::RelativePath(refContextOutDir, outdir, withHeadingDot);
@@ -3060,6 +3043,7 @@ bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, 
     string sequence;
     // get next access sequence
     if (!RteUtils::GetAccessSequence(offset, input, sequence, '$', '$')) {
+      ProjMgrLogger::Error("malformed access sequence: '" + input);
       return false;
     }
     if (offset != string::npos) {
@@ -3085,14 +3069,11 @@ bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, 
           }
           contextName = compatibleContexts.front();
           context = m_contexts.at(contextName);
-        } else {
-          // context level: update referenced context name when it's partially specified
-          UpdatePartialReferencedContext(context, contextName);
         }
         // find referenced context
-        if (m_contexts.find(contextName) != m_contexts.end()) {
-          error_code ec;
-          auto& refContext = m_contexts.at(contextName);
+        const auto& refContextName = ProjMgrUtils::FindReferencedContext(context.name, contextName, m_selectedContexts);
+        if (!refContextName.empty()) {
+          auto& refContext = m_contexts.at(refContextName);
           // process referenced context precedences if needed
           if (!refContext.precedences) {
             if (!ParseContextLayers(refContext)) {
@@ -3110,7 +3091,7 @@ bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, 
           }
         } else {
           // full or partial context name cannot be resolved to a valid context
-          ProjMgrLogger::Error("context '" + contextName + "' referenced by access sequence '" + sequenceName + "' does not exist");
+          ProjMgrLogger::Error("context '" + contextName + "' referenced by access sequence '" + sequenceName + "' does not exist or is not selected");
           return false;
         }
       } else {

@@ -454,3 +454,33 @@ TEST_F(ProjMgrUtilsUnitTests, ReplaceDelimiters) {
   EXPECT_EQ("path_with_spaces", ProjMgrUtils::ReplaceDelimiters("path/with spaces"));
 }
 
+TEST_F(ProjMgrUtilsUnitTests, FindReferencedContext) {
+  const vector<string> selectedContexts = {
+    "Project1.Debug+Target",
+    "Project1.Debug+OtherTarget",
+    "Project2.Release+Target",
+    "Project2.Release+OtherTarget",
+  };
+  const string currentContext = "Project1.Debug+Target";
+  const vector<pair<string, string>> testData = {
+    {"Project1.Debug+Target"  , ""                             },
+    {"Project1.Debug+Target"  , "Project1"                     },
+    {"Project1.Debug+Target"  , "Project1+Target"              },
+    {"Project1.Debug+Target"  , "Project1.Debug+Target"        },
+    {"Project1.Debug+Target"  , ".Debug"                       },
+    {"Project2.Release+Target", "Project2"                     },
+    {"Project2.Release+Target", "Project2+Target"              },
+    {"Project2.Release+Target", "Project2.Release+Target"      },
+    {""                       , "Project2+UnknowTarget"        },
+    {""                       , "Project2.UnknowBuild+Target"  },
+    {""                       , "Project1+UnknowTarget"        },
+    {""                       , "Project2.Debug"               },
+    {""                       , "Project1.Release"             },
+    {""                       , ".Release"                     },
+  };
+
+  for (auto [expected, refContext] : testData) {
+    EXPECT_EQ(expected, ProjMgrUtils::FindReferencedContext(currentContext, refContext, selectedContexts))
+      << "failed for refContext \"" << refContext << "\"";
+  }
+}

@@ -5957,6 +5957,25 @@ TEST_F(ProjMgrUnitTests, SourcesAddedByMultipleComponents) {
   EXPECT_TRUE(regex_search(errStr, regex(expected)));
 }
 
+TEST_F(ProjMgrUnitTests, AccessSequencesMixedBuildTypes) {
+  char* argv[9];
+  const string& csolution = testinput_folder + "/TestAccessSequences/mixed-build-type.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"-o";
+  argv[4] = (char*)testoutput_folder.c_str();
+  argv[5] = (char*)"-c";
+  argv[6] = (char*)"ns.Release";
+  argv[7] = (char*)"-c";
+  argv[8] = (char*)"s.Debug";
+  EXPECT_EQ(0, RunProjMgr(9, argv, m_envp));
+
+  const YAML::Node& cbuild1 = YAML::LoadFile(testoutput_folder + "/ns.Release+CM0.cbuild.yml");
+  EXPECT_EQ(cbuild1["build"]["groups"][0]["files"][0]["file"].as<string>(), "out/s/CM0/Debug/s_CMSE_Lib.o");
+  const YAML::Node& cbuild2 = YAML::LoadFile(testoutput_folder + "/ns.Release+CM3.cbuild.yml");
+  EXPECT_EQ(cbuild2["build"]["groups"][0]["files"][0]["file"].as<string>(), "out/s/CM3/Debug/s_CMSE_Lib.o");
+}
+
 TEST_F(ProjMgrUnitTests, ForContextRegex) {
   char* argv[3];
   const string& csolution = testinput_folder + "/TestSolution/ForContextRegex/regex.csolution.yml";

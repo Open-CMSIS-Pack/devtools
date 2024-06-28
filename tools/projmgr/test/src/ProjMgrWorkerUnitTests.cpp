@@ -1427,7 +1427,7 @@ TEST_F(ProjMgrWorkerUnitTests, GetGeneratorDir) {
   const RteGenerator* generator = ProjMgrUtils::ReadGpdscFile(gpdscFile, validGpdsc)->GetFirstGenerator();
 
   m_contexts[""] = ContextItem();
-  ContextItem& context = m_contexts[""];
+  ContextItem& context = m_contexts["project.Build+Target"];
   CsolutionItem csolution;
   CprojectItem cproject;
   ClayerItem clayer;
@@ -1441,6 +1441,7 @@ TEST_F(ProjMgrWorkerUnitTests, GetGeneratorDir) {
   clayer.directory = cproject.directory + "/LayerDirectory";
   context.directories.cprj = testoutput_folder;
   context.variables["Compiler"] = context.compiler = "AC6";
+  context.name = "project.Build+Target";
   string genDir;
 
   // base directory

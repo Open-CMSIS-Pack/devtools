@@ -1,0 +1,11 @@
+### CMSIS Project Description ###
+
+project:
+  processor:
+    trustzone: non-secure
+  components:
+    - component: CORE
+  groups:
+    - group: CMSE
+      files: 
+        - file: $cmse-lib(s)$

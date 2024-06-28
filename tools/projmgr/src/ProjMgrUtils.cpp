@@ -320,3 +320,36 @@ string ProjMgrUtils::ReplaceDelimiters(const string input) {
   regex regEx = regex("::|:|&|@>=|@|\\.|/| ");
   return(regex_replace(input, regEx, "_"));
 }
+
+const string ProjMgrUtils::FindReferencedContext(const string& currentContext, const string& refContext, const StrVec& selectedContexts) {
+  if (refContext.empty()) {
+    return currentContext;
+  }
+  ContextName currentContextName, refContextName;
+  ProjMgrUtils::ParseContextEntry(currentContext, currentContextName);
+  ProjMgrUtils::ParseContextEntry(refContext, refContextName);
+  string refContextFound;
+  if (refContextName.project.empty()) {
+    refContextName.project = currentContextName.project;
+  }
+  if (refContextName.target.empty()) {
+    refContextName.target = currentContextName.target;
+  }
+  for (const auto& selectedContext : selectedContexts) {
+    ContextName selectedContextName;
+    ProjMgrUtils::ParseContextEntry(selectedContext, selectedContextName);
+    if ((refContextName.project != selectedContextName.project) ||
+      (refContextName.target != selectedContextName.target) ||
+      (!refContextName.build.empty() && refContextName.build != selectedContextName.build)) {
+      // skip incompatible contexts
+      continue;
+    }
+    refContextFound = selectedContext;
+    if ((!refContextName.build.empty() && refContextName.build == selectedContextName.build) ||
+      (refContextName.build.empty() && currentContextName.build == selectedContextName.build)) {
+      // best match is found, don't search further
+      break;
+    }
+  }
+  return refContextFound;
+}

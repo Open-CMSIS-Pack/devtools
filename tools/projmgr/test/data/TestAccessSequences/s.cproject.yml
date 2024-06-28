@@ -1,0 +1,11 @@
+### CMSIS Project Description ###
+
+project:
+  processor:
+    trustzone: secure
+  components:
+    - component: CORE
+  groups:
+    - group: Main
+      files: 
+        - file: main.c
