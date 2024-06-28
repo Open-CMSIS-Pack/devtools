@@ -264,7 +264,7 @@ protected:
   bool ParseTypePair(std::vector<std::string>& vec, std::vector<TypePair>& typeVec);
   bool ParseLinker(const YAML::Node& parent, const std::string& file, std::vector<LinkerItem>& linker);
   void ParseRte(const YAML::Node& parent, std::string& rteBaseDir);
-  bool GetTypes(const std::string& type, std::string& buildType, std::string& targetType);
+  bool GetTypes(const std::string& type, std::string& buildType, std::string& targetType, std::string& pattern);
   bool ValidateCdefault(const std::string& input, const YAML::Node& root);
   bool ValidateCsolution(const std::string& input, const YAML::Node& root);
   bool ValidateCproject(const std::string& input, const YAML::Node& root);

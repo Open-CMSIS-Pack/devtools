@@ -3270,7 +3270,11 @@ bool ProjMgrWorker::CheckType(const TypeFilter& typeFilter, const vector<TypePai
       // check not-for types
       for (const auto& excType : typeFilter.exclude) {
         for (const auto& type : typeVec) {
-          if (((excType.build == type.build) && excType.target.empty()) ||
+          if (!excType.pattern.empty()) {
+            if (regex_search('.' + type.build + '+' + type.target, regex(excType.pattern))) {
+              return false;
+            }
+          } else if (((excType.build == type.build) && excType.target.empty()) ||
             ((excType.target == type.target) && excType.build.empty()) ||
             ((excType.build == type.build) && (excType.target == type.target))) {
             return false;
@@ -3284,7 +3288,11 @@ bool ProjMgrWorker::CheckType(const TypeFilter& typeFilter, const vector<TypePai
     // check for-types
     for (const auto& incType : typeFilter.include) {
       for (const auto& type : typeVec) {
-        if (((incType.build == type.build) && incType.target.empty()) ||
+        if (!incType.pattern.empty()) {
+          if (regex_search('.' + type.build + '+' + type.target, regex(incType.pattern))) {
+            return true;
+          }
+        } else if (((incType.build == type.build) && incType.target.empty()) ||
           ((incType.target == type.target) && incType.build.empty()) ||
           ((incType.build == type.build) && (incType.target == type.target))) {
           return true;

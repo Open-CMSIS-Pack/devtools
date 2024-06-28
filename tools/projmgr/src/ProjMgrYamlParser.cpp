@@ -543,7 +543,7 @@ bool ProjMgrYamlParser::ParseTypePair(vector<string>& vec, vector<TypePair>& typ
   bool valid = true;
   for (const auto& item : vec) {
     TypePair typePair;
-    if (!GetTypes(item, typePair.build, typePair.target)) {
+    if (!GetTypes(item, typePair.build, typePair.target, typePair.pattern)) {
       valid = false;
     }
     typeVec.push_back(typePair);
@@ -551,12 +551,23 @@ bool ProjMgrYamlParser::ParseTypePair(vector<string>& vec, vector<TypePair>& typ
   return valid;
 }
 
-bool ProjMgrYamlParser::GetTypes(const string& type, string& buildType, string& targetType) {
+bool ProjMgrYamlParser::GetTypes(const string& type, string& buildType, string& targetType, string& pattern) {
   size_t buildDelimiter = type.find(".");
   size_t targetDelimiter = type.find("+");
-  if (((buildDelimiter > 0) && (targetDelimiter > 0)) || (buildDelimiter == targetDelimiter)) {
-    ProjMgrLogger::Error("type '" + type + "': delimiters '.' or '+' not set)");
+  size_t regexDelimiter = type.find_first_of("^\\");
+  if (((buildDelimiter > 0) && (targetDelimiter > 0) && (regexDelimiter > 0))) {
+    ProjMgrLogger::Error("type '" + type + "': it must start with '.' or '+' for normal strings and with '^' or '\\' for regex patterns");
     return false;
+  }
+  if (regexDelimiter == 0) {
+    try {
+      regex r = regex(type);
+    } catch (const std::regex_error& e) {
+      ProjMgrLogger::Error("invalid pattern '" + type + "': " + e.what());
+      return false;
+    };
+    pattern = type;
+    return true;
   }
   if (targetDelimiter > buildDelimiter) {
     if (targetDelimiter < string::npos) {

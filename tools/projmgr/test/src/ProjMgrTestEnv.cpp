@@ -239,6 +239,18 @@ bool ProjMgrTestEnv::FilterId(const std::string& id, const std::string& includeI
   return true;
 }
 
+bool ProjMgrTestEnv::IsFileInCbuildFilesList(const std::vector<std::map<std::string, std::string>> files, const std::string file)
+{
+  for (const auto& entry : files) {
+    for (const auto& [key, value] : entry) {
+      if (key == "file" && value == file) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 int main(int argc, char **argv) {
   try {
     testing::InitGoogleTest(&argc, argv);

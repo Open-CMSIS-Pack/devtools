@@ -5975,3 +5975,42 @@ TEST_F(ProjMgrUnitTests, AccessSequencesMixedBuildTypes) {
   const YAML::Node& cbuild2 = YAML::LoadFile(testoutput_folder + "/ns.Release+CM3.cbuild.yml");
   EXPECT_EQ(cbuild2["build"]["groups"][0]["files"][0]["file"].as<string>(), "out/s/CM3/Debug/s_CMSE_Lib.o");
 }
+
+TEST_F(ProjMgrUnitTests, ForContextRegex) {
+  char* argv[3];
+  const string& csolution = testinput_folder + "/TestSolution/ForContextRegex/regex.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  EXPECT_EQ(0, RunProjMgr(3, argv, m_envp));
+  
+  const vector<string> expectedfiles = { "CM0.c", "CM3.c", "Debug_CM0_CM3.c", "Release.c", "Debug.c", "Debug_Release_CM0.c" };
+  const map<string, vector<bool>> testData = {
+    // expected files: CM0.c | CM3.c | Debug_CM0_CM3.c | Release.c | Debug.c | Debug_Release_CM0.c
+    {".Debug+CM0",   { true  , false , true            , false     , true    , true             }},
+    {".Debug+CM3",   { false , true  , true            , false     , true    , false            }},
+    {".Release+CM0", { true  , false , false           , true      , false   , true             }},
+    {".Release+CM3", { false , true  , false           , true      , false   , false            }},
+  };
+
+  for (const auto& [context, expected] : testData) {
+    const YAML::Node& node = YAML::LoadFile(testinput_folder + "/TestSolution/ForContextRegex/regex" + context + ".cbuild.yml");
+    const auto& files = node["build"]["groups"][0]["files"].as<vector<map<string, string>>>();
+    int index = 0;
+    for (const auto& expectedfile : expectedfiles) {
+      EXPECT_EQ(expected[index++], ProjMgrTestEnv::IsFileInCbuildFilesList(files, expectedfile))
+        << "failed for context \"" << context << "\" and expected file \"" << expectedfile << "\"";
+    }
+  }
+}
+
+TEST_F(ProjMgrUnitTests, ForContextRegexFail) {
+  StdStreamRedirect streamRedirect;
+  char* argv[3];
+  const string& csolution = testinput_folder + "/TestSolution/ForContextRegex/regex-fail.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  EXPECT_EQ(1, RunProjMgr(3, argv, m_envp));
+
+  auto errMsg = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errMsg.find("error csolution: invalid pattern '^.Debug+(CM0'"));
+}
