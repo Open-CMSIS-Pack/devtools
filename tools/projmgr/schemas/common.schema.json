@@ -637,7 +637,7 @@
         "gpdsc":     { "type": "string", "description": "File name of the *.GDPSC file that stores the information in path" },
         "command":   { "$ref": "#/definitions/CommandType" }
       },
-      "required": [ "generator", "from-pack", "path", "gpdsc", "command" ]
+      "required": [ "generator", "path", "gpdsc", "command" ]
     },
     "CommandType": {
       "type": "object",
