@@ -1794,6 +1794,20 @@ IAR@9.32.5\n\
   EXPECT_TRUE(regex_match(outStr, regex(expectedOutStr)));
 }
 
+TEST_F(ProjMgrUnitTests, ListToolchainsNoToolchainRegistered) {
+  StdStreamRedirect streamRedirect;
+  char* argv[3];
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"toolchains";
+  EXPECT_EQ(1, RunProjMgr(3, argv, 0));
+
+  const string& outStr = streamRedirect.GetOutString();
+  const string& errStr = streamRedirect.GetErrorString();
+  EXPECT_TRUE(outStr.empty());
+  EXPECT_NE(std::string::npos, errStr.find("CMSIS_COMPILER_ROOT"));
+  EXPECT_NE(std::string::npos, errStr.find("_TOOLCHAIN_<major>_<minor>_<patch>"));
+}
+
 TEST_F(ProjMgrUnitTests, ListToolchainsVerbose) {
   StdStreamRedirect streamRedirect;
   char* envp[4];

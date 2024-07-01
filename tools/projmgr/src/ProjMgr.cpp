@@ -1006,25 +1006,30 @@ bool ProjMgr::RunListToolchains(void) {
     success = false;
   }
 
-  StrSet toolchainsSet;
-  for (const auto& toolchain : toolchains) {
-    string toolchainEntry = toolchain.name + "@" +
-      (toolchain.required.empty() ? toolchain.version : toolchain.required) + "\n";
-    if (m_verbose) {
-      string env = toolchain.version;
-      replace(env.begin(), env.end(), '.', '_');
-      if (!toolchain.root.empty()) {
-        toolchainEntry += "  Environment: " + toolchain.name + "_TOOLCHAIN_" + env + "\n";
-        toolchainEntry += "  Toolchain: " + toolchain.root + "\n";
+  if (toolchains.empty()) {
+    cerr << "No valid compiler registered. Consider to define the CMSIS_COMPILER_ROOT environment variable and compiler registration environment variables, format: <GCC|CLANG|AC6|IAR>_TOOLCHAIN_<major>_<minor>_<patch>\n";
+    success = false;
+  } else {
+    StrSet toolchainsSet;
+    for (const auto& toolchain : toolchains) {
+      string toolchainEntry = toolchain.name + "@" +
+        (toolchain.required.empty() ? toolchain.version : toolchain.required) + "\n";
+      if (m_verbose) {
+        string env = toolchain.version;
+        replace(env.begin(), env.end(), '.', '_');
+        if (!toolchain.root.empty()) {
+          toolchainEntry += "  Environment: " + toolchain.name + "_TOOLCHAIN_" + env + "\n";
+          toolchainEntry += "  Toolchain: " + toolchain.root + "\n";
+        }
+        if (!toolchain.config.empty()) {
+          toolchainEntry += "  Configuration: " + toolchain.config + "\n";
+        }
       }
-      if (!toolchain.config.empty()) {
-        toolchainEntry += "  Configuration: " + toolchain.config + "\n";
-      }
+      toolchainsSet.insert(toolchainEntry);
     }
-    toolchainsSet.insert(toolchainEntry);
-  }
-  for (const auto& toolchainEntry : toolchainsSet) {
-    cout << toolchainEntry;
+    for (const auto& toolchainEntry : toolchainsSet) {
+      cout << toolchainEntry;
+    }
   }
   return success;
 }

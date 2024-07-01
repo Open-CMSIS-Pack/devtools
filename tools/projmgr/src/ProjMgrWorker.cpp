@@ -1654,14 +1654,12 @@ bool ProjMgrWorker::ProcessToolchain(ContextItem& context) {
 
   // get compatible registered toolchain
   if (!GetLatestToolchain(context.toolchain)) {
-    string errMsg(RteUtils::EMPTY_STRING);
     // get compatible supported toolchain
     if (!GetToolchainConfig(context.toolchain.name, context.toolchain.range, context.toolchain.config, context.toolchain.version)) {
-      errMsg = "cmake configuration file and ";
+      m_toolchainErrors.insert("cmake configuration file missing. Consider to define the CMSIS_COMPILER_ROOT environment variable.");
       context.toolchain.version = RteUtils::GetPrefix(context.toolchain.range);
     }
-    errMsg += "compiler registration environment variable missing, format: " + context.compiler + "_TOOLCHAIN_<major>_<minor>_<patch>";
-    m_toolchainErrors.insert(errMsg);
+    m_toolchainErrors.insert("compiler registration environment variables missing, format: " + context.toolchain.name + "_TOOLCHAIN_<major>_<minor>_<patch>");
   }
 
   if (context.toolchain.name == "AC6") {
