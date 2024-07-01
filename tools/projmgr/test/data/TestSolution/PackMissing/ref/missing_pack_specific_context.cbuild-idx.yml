@@ -10,6 +10,3 @@ build-idx:
       errors: true
       packs-missing:
         - pack: ARM::Missing_DFP@0.0.9
-    - cbuild: project+Gen.cbuild.yml
-      project: project
-      configuration: +Gen

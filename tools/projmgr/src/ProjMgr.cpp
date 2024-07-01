@@ -530,7 +530,7 @@ bool ProjMgr::GenerateYMLConfigurationFiles() {
   if (!m_allContexts.empty()) {
     map<string, ExecutesItem> executes;
     m_worker.GetExecutes(executes);
-    if (!m_emitter.GenerateCbuildIndex(m_parser, m_worker, m_allContexts, m_outputDir, m_failedContext, executes, m_checkSchema)) {
+    if (!m_emitter.GenerateCbuildIndex(m_parser, m_worker, m_processedContexts, m_outputDir, m_failedContext, executes, m_checkSchema)) {
       return false;
     }
   }
