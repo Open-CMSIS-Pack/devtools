@@ -1,0 +1,6 @@
+project:
+  components:
+    - component: Startup
+    - component: CORE
+    - component: Device:Test variant
+    - component: Device:Test variant&Variant name

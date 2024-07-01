@@ -1,0 +1,19 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schemas/csolution.schema.json
+
+solution:
+  compiler: AC6
+
+  build-types:
+    - type: Debug
+    - type: Release
+  
+  target-types:
+    - type: RteTest_ARMCM0
+      device: RteTest_ARMCM0
+
+  packs:
+    - pack: ARM::RteTest
+    - pack: ARM::RteTest_DFP@0.2.0
+
+  projects:
+    - project: ./test_use_multiple_variant_component.cproject.yml
