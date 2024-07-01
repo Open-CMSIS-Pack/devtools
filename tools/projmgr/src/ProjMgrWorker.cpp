@@ -107,7 +107,8 @@ void ProjMgrWorker::AddContext(ContextDesc& descriptor, const TypePair& type, Co
 
     // default directories
     context.directories.cprj = m_outputDir.empty() ? context.cproject->directory : m_outputDir;
-    context.directories.intdir = "tmp/" + context.cproject->name + (type.target.empty() ? "" : "/" + type.target) + (type.build.empty() ? "" : "/" + type.build);
+    context.directories.intdir = m_cbuild2cmake ? "tmp" :
+                                 "tmp/" + context.cproject->name + (type.target.empty() ? "" : "/" + type.target) + (type.build.empty() ? "" : "/" + type.build);
     context.directories.outdir = "out/" + context.cproject->name + (type.target.empty() ? "" : "/" + type.target) + (type.build.empty() ? "" : "/" + type.build);
     context.directories.rte = "RTE";
 
@@ -116,7 +117,11 @@ void ProjMgrWorker::AddContext(ContextDesc& descriptor, const TypePair& type, Co
       context.directories.cprj = context.csolution->directories.cprj;
     }
     if (!context.csolution->directories.intdir.empty()) {
-      context.directories.intdir = context.csolution->directories.intdir;
+      if (m_cbuild2cmake) {
+        ProjMgrLogger::Warn("customization of intermediate directory 'intdir' is ignored by the cbuild2cmake backend");
+      } else {
+        context.directories.intdir = context.csolution->directories.intdir;
+      }
     }
     if (!context.csolution->directories.outdir.empty()) {
       context.directories.outdir = context.csolution->directories.outdir;
