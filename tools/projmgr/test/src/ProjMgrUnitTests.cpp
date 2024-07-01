@@ -6036,3 +6036,20 @@ TEST_F(ProjMgrUnitTests, RebuildConditions) {
   // rebuild at context level due to change in compiler selection
   EXPECT_TRUE(cbuild2["build-idx"]["cbuilds"][0]["rebuild"].as<bool>());
 }
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_MultiVariantComponent) {
+  StdStreamRedirect streamRedirect;
+  char* argv[6];
+  string csolutionFile = testinput_folder + "/TestSolution/test_use_multiple_variant_component.csolution.yml";
+
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolutionFile.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(1, RunProjMgr(6, argv, m_envp));
+
+  auto errMsg = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos,
+    errMsg.find("multiple variants of the same component are specified:\n  - Device:Test variant\n  - Device:Test variant&Variant name"));
+}

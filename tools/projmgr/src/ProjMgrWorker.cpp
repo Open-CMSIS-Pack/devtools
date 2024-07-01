@@ -1689,6 +1689,7 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
     componentMap[componentId] = component.second;
   }
 
+  map<string, vector<string>> processedComponents;
   for (auto& [item, layer] : context.componentRequirements) {
     if (item.component.empty()) {
       continue;
@@ -1704,6 +1705,16 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
     UpdateMisc(item.build.misc, context.toolchain.name);
 
     const auto& componentId = matchedComponent->GetComponentID(true);
+    auto aggCompId = matchedComponent->GetComponentAggregateID();
+
+    auto itr = std::find_if(processedComponents.begin(), processedComponents.end(), [aggCompId](const auto& pair) {
+      return pair.first.find(aggCompId) != std::string::npos;
+      });
+    if (itr != processedComponents.end()) {
+      // multiple variant of the same component found
+      error = true;
+    }
+
     // Init matched component instance
     RteComponentInstance* matchedComponentInstance = new RteComponentInstance(matchedComponent);
     matchedComponentInstance->InitInstance(matchedComponent);
@@ -1761,6 +1772,16 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
 
     // Insert matched component into context list
     context.components.insert({ componentId, { matchedComponentInstance, &item, generatorId } });
+
+    // register component processed and with their aggregate component ids
+    auto it = processedComponents.find(aggCompId);
+    if (it == processedComponents.end()) {
+      // If not found, insert with an empty vector
+      processedComponents.emplace(aggCompId, vector<string>{});
+      it = processedComponents.find(aggCompId);
+    }
+    it->second.push_back(item.component);
+
     const auto& componentPackage = matchedComponent->GetPackage();
     if (componentPackage) {
       context.packages.insert({ componentPackage->GetID(), componentPackage });
@@ -1772,6 +1793,19 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
         if (apiPackage) {
           context.packages.insert({ apiPackage->GetID(), apiPackage });
         }
+      }
+    }
+  }
+
+  if (error) {
+    // check if same component variants are specified multiple times
+    for (const auto& pair : processedComponents) {
+      if (pair.second.size() > 1) {
+        string errMsg = "multiple variants of the same component are specified:";
+        for (const auto& comp : pair.second) {
+          errMsg += ("\n  - " + comp);
+        }
+        ProjMgrLogger::Error(errMsg);
       }
     }
   }
