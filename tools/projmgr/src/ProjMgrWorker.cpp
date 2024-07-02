@@ -1660,7 +1660,7 @@ bool ProjMgrWorker::ProcessToolchain(ContextItem& context) {
       errMsg = "cmake configuration file and ";
       context.toolchain.version = RteUtils::GetPrefix(context.toolchain.range);
     }
-    errMsg += "compiler registration environment variable missing, format: " + context.compiler + "_TOOLCHAIN_<major>_<minor>_<patch>";
+    errMsg += "compiler registration environment variable missing, format: " + context.toolchain.name + "_TOOLCHAIN_<major>_<minor>_<patch>";
     m_toolchainErrors.insert(errMsg);
   }
 
