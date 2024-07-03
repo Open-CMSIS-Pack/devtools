@@ -1211,8 +1211,10 @@ RteGpdscInfo* RteProject::AddGpdscInfo(RteComponent* c, RteTarget* target)
     }
   }
   if (gi) {
-    gi->AddAttribute("generator", gen->GetID());
-    gi->SetGenerator(gen);
+    if(!gi->GetGenerator()) { // gpdsc file can already contain generator
+      gi->AddAttribute("generator", gen->GetID());
+      gi->SetGenerator(gen);
+    }
     gi->AddTargetInfo(target->GetName());
   }
   return gi;
