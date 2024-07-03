@@ -986,6 +986,7 @@ void RteProject::Update()
 
   if (gpdscRemoved) {
     t_bGpdscListModified = true;
+    RemoveGeneratedComponents();
     FilterComponents();
   }
 
