@@ -1,5 +1,5 @@
 build:
-  generated-by: csolution version 0.0.0+g32c58528
+  generated-by: csolution version 0.0.0+gef71e44b
   solution: ../data/TestGenerator/test-gpdsc-project-files.csolution.yml
   project: ../data/TestGenerator/test-gpdsc-project-files.cproject.yml
   context: test-gpdsc-project-files.Debug+CM0
@@ -18,8 +18,10 @@ build:
   define-asm:
     - _RTE_
   add-path:
+    - ../data/TestGenerator/GpdscWithProjectFiles/RteTestGeneratorIdentifier/RteTestGen_ARMCM0/Inc
     - ../data/TestGenerator/RTE/_Debug_CM0
   add-path-asm:
+    - ../data/TestGenerator/GpdscWithProjectFiles/RteTestGeneratorIdentifier/RteTestGen_ARMCM0/Inc
     - ../data/TestGenerator/RTE/_Debug_CM0
   output-dirs:
     intdir: tmp/test-gpdsc-project-files/CM0/Debug
