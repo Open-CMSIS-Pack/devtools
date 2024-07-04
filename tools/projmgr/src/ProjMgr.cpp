@@ -48,7 +48,7 @@ Options:\n\
   -m, --missing                 List only required packs that are missing in the pack repository\n\
   -n, --no-check-schema         Skip schema check\n\
   -N, --no-update-rte           Skip creation of RTE directory and files\n\
-  -o,-O --output arg            Add top-level output directory\n\
+  -o,-O --output arg            Add prefix to 'outdir' and 'tmpdir'\n\
   -q, --quiet                   Run silently, printing only error messages\n\
   -R, --relative-paths          Print paths relative to project or ${CMSIS_PACK_ROOT}\n\
   -S, --context-set             Select the context names from cbuild-set.yml for generating the target application\n\
@@ -144,14 +144,14 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
   cxxopts::Option missing("m,missing", "List only required packs that are missing in the pack repository", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option schemaCheck("n,no-check-schema", "Skip schema check", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option noUpdateRte("N,no-update-rte", "Skip creation of RTE directory and files", cxxopts::value<bool>()->default_value("false"));
-  cxxopts::Option output("o,output", "Add top-level output directory", cxxopts::value<string>());
-  cxxopts::Option outputAlt("O", "Add top-level output directory", cxxopts::value<string>());
+  cxxopts::Option output("o,output", "Add prefix to 'outdir' and 'tmpdir'", cxxopts::value<string>());
+  cxxopts::Option outputAlt("O", "Add prefix to 'outdir' and 'tmpdir'", cxxopts::value<string>());
   cxxopts::Option version("V,version", "Print version");
   cxxopts::Option verbose("v,verbose", "Enable verbose messages", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option debug("d,debug", "Enable debug messages", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option dryRun("D,dry-run", "Enable dry-run", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option exportSuffix("e,export", "Set suffix for exporting <context><suffix>.cprj retaining only specified versions", cxxopts::value<string>());
-  cxxopts::Option toolchain("t,toolchain","Selection of the toolchain used in the project optionally with version", cxxopts::value<string>());
+  cxxopts::Option toolchain("t,toolchain", "Selection of the toolchain used in the project optionally with version", cxxopts::value<string>());
   cxxopts::Option ymlOrder("yml-order", "Preserve order as specified in input yml", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option contextSet("S,context-set", "Select the context names from cbuild-set.yml for generating the target application", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option relativePaths("R,relative-paths", "Output paths relative to project or to CMSIS_PACK_ROOT", cxxopts::value<bool>()->default_value("false"));
