@@ -4,19 +4,12 @@ solution:
   target-types:
     - type: TypeA
 
-    - type: TypeB
-
   build-types:
     - type: Debug
       compiler: AC6
-
-    - type: Release
-      compiler: GCC
 
   projects:
     - project: ./TestProject1/test1.cproject.yml
 
   output-dirs:
-    cprjdir: C:/$Compiler$
-    intdir: /$Compiler$
-    tmpdir: /root
+    tmpdir: $BuildType$

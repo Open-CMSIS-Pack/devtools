@@ -223,6 +223,7 @@ ProjMgrYamlCbuildIdx::ProjMgrYamlCbuildIdx(YAML::Node node,
     SetNodeValue(node[YAML_CDEFAULT], FormatPath(parser.GetCdefault().path, directory));
   }
   SetNodeValue(node[YAML_CSOLUTION], FormatPath(parser.GetCsolution().path, directory));
+  SetNodeValue(node[YAML_OUTPUT_TMPDIR], FormatPath(parser.GetCsolution().directories.tmpdir, directory));
 
   // Generate layer info for each target
   vector<string> configTargets;

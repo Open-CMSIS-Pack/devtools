@@ -353,3 +353,7 @@ const string ProjMgrUtils::FindReferencedContext(const string& currentContext, c
   }
   return refContextFound;
 }
+
+bool ProjMgrUtils::HasAccessSequence(const string value) {
+  return regex_match(value, regex(".*\\$.*\\$.*"));
+}

@@ -1,6 +1,7 @@
 build-idx:
   generated-by: csolution version 0.0.0+ga3f9f5af
   csolution: config.csolution.yml
+  tmpdir: tmp
   configurations:
     - target-type: RteTest_ARMCM3
       target-configurations:

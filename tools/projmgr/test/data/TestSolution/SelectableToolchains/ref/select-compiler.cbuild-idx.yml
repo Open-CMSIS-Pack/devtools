@@ -2,6 +2,7 @@ build-idx:
   generated-by: csolution version 0.0.0+gaa1cfcb6
   cdefault: ../data/TestSolution/SelectableToolchains/cdefault.yml
   csolution: ../data/TestSolution/SelectableToolchains/select-compiler.csolution.yml
+  tmpdir: tmp
   select-compiler:
     - compiler: AC6@>=6.0.0
     - compiler: GCC@>=8.0.0

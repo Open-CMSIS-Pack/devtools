@@ -321,7 +321,7 @@ void ProjMgrYamlParser::EnsurePortability(const string& file, const YAML::Mark& 
         if (!canonical.empty() && (original != canonical)) {
           ProjMgrLogger::Warn(file, mark.line + 1, mark.column + 1, "'" + value + "' has case inconsistency, use '" + RteFsUtils::RelativePath(canonical, parentDir) + "' instead");
         }
-      } else if (checkExist && !regex_match(value, regex(".*\\$.*\\$.*"))) {
+      } else if (checkExist && !ProjMgrUtils::HasAccessSequence(value)) {
         ProjMgrLogger::Warn(file, mark.line + 1, mark.column + 1, "path '" + value + "' was not found");
       }
     }
@@ -773,6 +773,7 @@ void ProjMgrYamlParser::ParseOutputDirs(const YAML::Node& parent, const std::str
       {YAML_OUTPUT_CPRJDIR, directories.cprj},
       {YAML_OUTPUT_INTDIR, directories.intdir},
       {YAML_OUTPUT_OUTDIR, directories.outdir},
+      {YAML_OUTPUT_TMPDIR, directories.tmpdir},
     };
     for (const auto& item : outputDirsChildren) {
       ParsePortablePath(outputDirsNode, file, item.first, item.second, false);
@@ -1093,6 +1094,7 @@ const set<string> outputDirsKeys = {
   YAML_OUTPUT_CPRJDIR,
   YAML_OUTPUT_INTDIR,
   YAML_OUTPUT_OUTDIR,
+  YAML_OUTPUT_TMPDIR,
 };
 
 const set<string> outputKeys = {

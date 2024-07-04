@@ -473,6 +473,10 @@ bool ProjMgr::PopulateContexts(void) {
   // Set output directory
   m_worker.SetOutputDir(m_outputDir);
 
+  // Update tmp directory
+  m_worker.UpdateTmpDir();
+
+  // Set root directory
   m_worker.SetRootDir(m_rootDir);
 
   // Add contexts

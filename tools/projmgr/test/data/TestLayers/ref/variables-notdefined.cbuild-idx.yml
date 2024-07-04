@@ -1,6 +1,7 @@
 build-idx:
   generated-by: csolution version 0.0.0+gc0cd00f9
   csolution: ../data/TestLayers/variables-notdefined.csolution.yml
+  tmpdir: tmp
   cprojects:
     - cproject: ../data/TestLayers/variables-notdefined.cproject.yml
       clayers:
