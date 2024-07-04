@@ -564,8 +564,8 @@ bool ProjMgr::Configure() {
       errMsg += "  - $" + var + "$\n";
     }
     ProjMgrLogger::Error(errMsg);
-    return false;
   }
+
   // Get context pointers
   map<string, ContextItem>* contexts = nullptr;
   m_worker.GetContexts(contexts);
