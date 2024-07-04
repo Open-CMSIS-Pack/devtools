@@ -95,6 +95,18 @@ bool ProjMgrWorker::AddContexts(ProjMgrParser& parser, ContextDesc& descriptor, 
   return true;
 }
 
+void ProjMgrWorker::UpdateTmpDir() {
+  auto& tmpdir = m_parser->GetCsolution().directories.tmpdir;
+  auto& base = m_outputDir.empty() ? m_parser->GetCsolution().directory : m_outputDir;
+  if (!tmpdir.empty()) {
+    if (ProjMgrUtils::HasAccessSequence(tmpdir) || !RteFsUtils::IsRelative(tmpdir)) {
+      ProjMgrLogger::Warn("'tmpdir' does not support access sequences and must be relative to csolution.yml");
+      tmpdir.clear();
+    }
+  }
+  tmpdir = base + "/" + (tmpdir.empty() ? "tmp" : tmpdir);
+}
+
 void ProjMgrWorker::AddContext(ContextDesc& descriptor, const TypePair& type, ContextItem& parentContext) {
   if (CheckType(descriptor.type, {type})) {
     ContextItem context = parentContext;

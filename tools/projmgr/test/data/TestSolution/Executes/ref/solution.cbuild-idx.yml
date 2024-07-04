@@ -2,6 +2,7 @@ build-idx:
   generated-by: csolution version 0.0.0+gdf212332
   cdefault: ${CMSIS_COMPILER_ROOT}/cdefault.yml
   csolution: ../data/TestSolution/Executes/solution.csolution.yml
+  tmpdir: tmp
   cprojects:
     - cproject: ../data/TestSolution/Executes/project/project.cproject.yml
   cbuilds:

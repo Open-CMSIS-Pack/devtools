@@ -1,6 +1,7 @@
 build-idx:
   generated-by: csolution version 1.6.0
   csolution: ../data/TestSolution/pre-include.csolution.yml
+  tmpdir: tmp
   cprojects:
     - cproject: ../data/TestSolution/pre-include.cproject.yml
   cbuilds:

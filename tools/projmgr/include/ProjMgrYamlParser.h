@@ -130,6 +130,7 @@ static constexpr const char* YAML_OUTPUT_CPRJDIR = "cprjdir";
 static constexpr const char* YAML_OUTPUT_INTDIR = "intdir";
 static constexpr const char* YAML_OUTPUT_OUTDIR = "outdir";
 static constexpr const char* YAML_OUTPUT_RTEDIR = "rtedir";
+static constexpr const char* YAML_OUTPUT_TMPDIR = "tmpdir";
 static constexpr const char* YAML_PACK = "pack";
 static constexpr const char* YAML_PACKS = "packs";
 static constexpr const char* YAML_PACKS_MISSING = "packs-missing";

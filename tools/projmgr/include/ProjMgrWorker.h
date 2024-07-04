@@ -490,6 +490,11 @@ public:
   void SetOutputDir(const std::string& outputDir);
 
   /**
+   * @brief update csolution tmp directory
+  */
+  void UpdateTmpDir();
+
+  /**
    * @brief set root directory (csolution directory)
    * @param reference to root directory
   */
@@ -809,6 +814,7 @@ protected:
   void SetExecutesDependencies(const std::string& output, const std::string& dep, const std::string& outDir);
   bool ValidateComponentSources(ContextItem& context);
   void ProcessSelectableCompilers();
+  void ProcessTmpDir(std::string& tmpdir, const std::string& base);
 };
 
 #endif  // PROJMGRWORKER_H

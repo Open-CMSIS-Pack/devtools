@@ -20,3 +20,4 @@ solution:
     cprjdir: $Compiler$
     intdir: $OutDir(test1)$/$TargetType$
     outdir: $Project$/$BuildType$
+    tmpdir: custom/tmp/path

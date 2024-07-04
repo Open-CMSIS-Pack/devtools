@@ -162,6 +162,7 @@ struct TargetType {
  * @brief directories item containing
  *        intdir directory,
  *        outdir directory,
+ *        tmpdir directory,
  *        cbuild directory,
  *        cprj directory,
  *        rte directory,
@@ -169,6 +170,7 @@ struct TargetType {
 struct DirectoriesItem {
   std::string intdir;
   std::string outdir;
+  std::string tmpdir;
   std::string cbuild;
   std::string cprj;
   std::string rte;

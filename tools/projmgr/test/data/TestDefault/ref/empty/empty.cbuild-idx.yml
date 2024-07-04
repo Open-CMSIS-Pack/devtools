@@ -2,6 +2,7 @@ build-idx:
   generated-by: csolution version 0.0.0+g11955b66
   cdefault: ${CMSIS_COMPILER_ROOT}/cdefault.yml
   csolution: ../../data/TestDefault/empty.csolution.yml
+  tmpdir: tmp
   cprojects:
     - cproject: ../../data/TestDefault/project.cproject.yml
   cbuilds:

@@ -218,6 +218,13 @@ public:
   */
   static const std::string FindReferencedContext(const std::string& currentContext, const std::string& refContext, const StrVec& selectedContexts);
 
+  /**
+   * @brief check whether a string contains access sequence
+   * @param string value
+   * @return true on success
+  */
+  static bool HasAccessSequence(const std::string value);
+
 protected:
   static std::string ConstructID(const std::vector<std::pair<const char*, const std::string&>>& elements);
   /**

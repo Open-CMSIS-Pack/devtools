@@ -1,6 +1,7 @@
 build-idx:
   generated-by: csolution version 0.0.0+g74cb4601
   csolution: ../data/TestSolution/test_no_device_name.csolution.yml
+  tmpdir: tmp
   cprojects:
     - cproject: ../data/TestSolution/TestProject1/test1.cproject.yml
     - cproject: ../data/TestSolution/TestProject2/test2.cproject.yml

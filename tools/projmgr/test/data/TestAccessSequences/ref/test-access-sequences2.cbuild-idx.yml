@@ -1,6 +1,7 @@
 build-idx:
   generated-by: csolution version 0.0.0+gcc58b54e
   csolution: ../data/TestAccessSequences/test-access-sequences2.csolution.yml
+  tmpdir: tmp
   cprojects:
     - cproject: ../data/TestAccessSequences/test-access-sequences3.cproject.yml
       clayers:

@@ -1,6 +1,7 @@
 build-idx:
   generated-by: csolution version 0.0.0+g0f5a5646
   csolution: rebuild.csolution.yml
+  tmpdir: tmp
   cprojects:
     - cproject: rebuild.cproject.yml
   cbuilds:
