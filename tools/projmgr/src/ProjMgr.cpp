@@ -48,7 +48,7 @@ Options:\n\
   -m, --missing                 List only required packs that are missing in the pack repository\n\
   -n, --no-check-schema         Skip schema check\n\
   -N, --no-update-rte           Skip creation of RTE directory and files\n\
-  -o, --output arg              Output directory\n\
+  -o,-O --output arg            Add top-level output directory\n\
   -q, --quiet                   Run silently, printing only error messages\n\
   -R, --relative-paths          Print paths relative to project or ${CMSIS_PACK_ROOT}\n\
   -S, --context-set             Select the context names from cbuild-set.yml for generating the target application\n\
@@ -144,7 +144,8 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
   cxxopts::Option missing("m,missing", "List only required packs that are missing in the pack repository", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option schemaCheck("n,no-check-schema", "Skip schema check", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option noUpdateRte("N,no-update-rte", "Skip creation of RTE directory and files", cxxopts::value<bool>()->default_value("false"));
-  cxxopts::Option output("o,output", "Output directory", cxxopts::value<string>());
+  cxxopts::Option output("o,output", "Add top-level output directory", cxxopts::value<string>());
+  cxxopts::Option outputAlt("O", "Add top-level output directory", cxxopts::value<string>());
   cxxopts::Option version("V,version", "Print version");
   cxxopts::Option verbose("v,verbose", "Enable verbose messages", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option debug("d,debug", "Enable debug messages", cxxopts::value<bool>()->default_value("false"));
@@ -163,7 +164,7 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
   map<string, std::pair<bool, vector<cxxopts::Option>>> optionsDict = {
     // command, optional args, options
     {"update-rte",        { false, {context, contextSet, debug, load, quiet, schemaCheck, toolchain, verbose, frozenPacks}}},
-    {"convert",           { false, {context, contextSet, debug, exportSuffix, load, quiet, schemaCheck, noUpdateRte, output, toolchain, verbose, frozenPacks, cbuild2cmake}}},
+    {"convert",           { false, {context, contextSet, debug, exportSuffix, load, quiet, schemaCheck, noUpdateRte, output, outputAlt, toolchain, verbose, frozenPacks, cbuild2cmake}}},
     {"run",               { false, {context, contextSet, debug, generator, load, quiet, schemaCheck, verbose, dryRun}}},
     {"list packs",        { true,  {context, debug, filter, load, missing, quiet, schemaCheck, toolchain, verbose, relativePaths}}},
     {"list boards",       { true,  {context, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
@@ -182,7 +183,7 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
     options.add_options("", {
       {"positional", "", cxxopts::value<vector<string>>()},
       solution, context, contextSet, filter, generator,
-      load, clayerSearchPath, missing, schemaCheck, noUpdateRte, output,
+      load, clayerSearchPath, missing, schemaCheck, noUpdateRte, output, outputAlt,
       help, version, verbose, debug, dryRun, exportSuffix, toolchain, ymlOrder,
       relativePaths, frozenPacks, updateIdx, quiet, cbuild2cmake
     });
@@ -265,8 +266,9 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
     if (parseResult.count("toolchain")) {
       m_selectedToolchain = parseResult["toolchain"].as<string>();
     }
-    if (parseResult.count("output")) {
-      m_outputDir = parseResult["output"].as<string>();
+    if (parseResult.count("output") || parseResult.count("O")) {
+      const std::string& key = parseResult.count("output") ? "output" : "O";
+      m_outputDir = parseResult[key].as<std::string>();
       m_outputDir = RteFsUtils::AbsolutePath(m_outputDir).generic_string();
     }
   } catch (cxxopts::OptionException& e) {
