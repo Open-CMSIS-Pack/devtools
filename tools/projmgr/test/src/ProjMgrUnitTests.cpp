@@ -548,7 +548,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListDependencies) {
   EXPECT_NE(errStr.find(expectedErr), string::npos);
 }
 
-TEST_F(ProjMgrUnitTests, RunProjMgr_ConvertProject) {
+TEST_F(ProjMgrUnitTests, RunProjMgr_ConvertProject_1) {
   char* argv[6];
   string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject.yml");
 
@@ -563,6 +563,23 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ConvertProject) {
  ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test+TEST_TARGET.cprj",
     testinput_folder + "/TestSolution/TestProject4/test+TEST_TARGET.cprj");
 }
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_ConvertProject_2) {
+  char* argv[6];
+  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject.yml");
+
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolutionFile.c_str();
+  argv[4] = (char*)"-O";
+  argv[5] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv, m_envp));
+
+  // Check generated CPRJ
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/test+TEST_TARGET.cprj",
+    testinput_folder + "/TestSolution/TestProject4/test+TEST_TARGET.cprj");
+}
+
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_EnforcedComponent) {
   char* argv[6];
