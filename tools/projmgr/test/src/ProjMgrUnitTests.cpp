@@ -2017,6 +2017,18 @@ no valid combination of clayers was found\n\
   EXPECT_TRUE(regex_match(outStr, regex(expectedOutStr)));
 }
 
+TEST_F(ProjMgrUnitTests, ListLayersIncompatibleNoLayerProvides) {
+  StdStreamRedirect streamRedirect;
+  char* argv[5];
+  const string& csolution = testinput_folder + "/TestLayers/no-layer-provides.csolution.yml";
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"layers";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-d";
+  EXPECT_EQ(1, RunProjMgr(5, argv, m_envp));
+  EXPECT_NE(string::npos, streamRedirect.GetErrorString().find("no provided connections from this layer are consumed"));
+}
+
 TEST_F(ProjMgrUnitTests, ListLayersOptionalLayerType) {
   StdStreamRedirect streamRedirect;
   char* argv[8];
