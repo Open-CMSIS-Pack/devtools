@@ -591,6 +591,12 @@ public:
     const bool checkCbuildSet = false);
 
   /**
+   * @brief get the list of selected contexts
+   * @return list of selected contexts
+  */
+  std::vector<std::string> GetSelectedContexts() const;
+
+  /**
    * @brief check if context is selected
    * @param context name
    * @return true if it is selected

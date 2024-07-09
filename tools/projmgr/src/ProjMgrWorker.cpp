@@ -4165,33 +4165,62 @@ bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem& context, BuildType& b
 bool ProjMgrWorker::ParseContextSelection(
   const vector<string>& contextSelection, const bool checkCbuildSet)
 {
-  vector<string> contexts;
-  ListContexts(contexts);
+  vector<string> ymlOrderedContexts;
+  ListContexts(ymlOrderedContexts, RteUtils::EMPTY_STRING, true);
 
-  auto csolutionItem = m_parser->GetCsolution();
-  string cbuildSetFile = csolutionItem.directory + "/" + csolutionItem.name + ".cbuild-set.yml";
-  if (checkCbuildSet && RteFsUtils::Exists(cbuildSetFile)) {
-    if (!m_parser->ParseCbuildSet(cbuildSetFile, m_checkSchema)) {
-      return false;
-    }
-    const auto& cbuildSetItem = m_parser->GetCbuildSetItem();
-    m_selectedContexts = cbuildSetItem.contexts;
-    if (m_selectedToolchain.empty()) {
-      m_selectedToolchain = cbuildSetItem.compiler;
-    }
-    if (!ValidateContexts(m_selectedContexts, true)) {
-      return false;
-    }
-  }
-  else {
+  if (!checkCbuildSet) {
+    // selected all contexts to process, when contextSelection is empty
+    // otherwise process contexts from contextSelection
     const auto& filterError = ProjMgrUtils::GetSelectedContexts(
-      m_selectedContexts, contexts, contextSelection);
+      m_selectedContexts, ymlOrderedContexts, contextSelection);
     if (filterError) {
       ProjMgrLogger::Error(filterError.m_errMsg);
       return false;
     }
   }
+  else
+  {
+    auto csolutionItem = m_parser->GetCsolution();
+    string cbuildSetFile = csolutionItem.directory + "/" + csolutionItem.name + ".cbuild-set.yml";
 
+    if (contextSelection.empty()) {
+      if (RteFsUtils::Exists(cbuildSetFile)) {
+        // Parse the existing cbuild-set file
+        if (!m_parser->ParseCbuildSet(cbuildSetFile, m_checkSchema)) {
+          return false;
+        }
+
+        // Read contexts info from the file
+        const auto& cbuildSetItem = m_parser->GetCbuildSetItem();
+        m_selectedContexts = cbuildSetItem.contexts;
+
+        // Select toolchain if not already selected
+        if (m_selectedToolchain.empty()) {
+          m_selectedToolchain = cbuildSetItem.compiler;
+        }
+
+        if (!ValidateContexts(m_selectedContexts, true)) {
+          return false;
+        }
+      }
+      else {
+        m_selectedContexts.clear();
+        //first context in yml ordered context should be processed
+        m_selectedContexts.push_back(ymlOrderedContexts.front());
+      }
+    }
+    else {
+      // Contexts are specified in contextSelection
+      const auto& filterError = ProjMgrUtils::GetSelectedContexts(
+      m_selectedContexts, ymlOrderedContexts, contextSelection);
+      if (filterError) {
+        ProjMgrLogger::Error(filterError.m_errMsg);
+        return false;
+      }
+    }
+  }
+
+  // Process the selected contexts
   if (!((m_selectedContexts.size() == 1) && (m_selectedContexts.front() == RteUtils::EMPTY_STRING))) {
     for (const auto& context : m_selectedContexts) {
       if (!ParseContextLayers(m_contexts[context])) {
@@ -4199,7 +4228,12 @@ bool ProjMgrWorker::ParseContextSelection(
       }
     }
   }
+
   return true;
+}
+
+vector<string> ProjMgrWorker::GetSelectedContexts() const {
+  return m_selectedContexts;
 }
 
 bool ProjMgrWorker::IsContextSelected(const string& context) {

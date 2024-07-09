@@ -47,7 +47,7 @@ protected:
 class ProjMgrYamlCbuild : public ProjMgrYamlBase {
 private:
   friend class ProjMgrYamlEmitter;
-  ProjMgrYamlCbuild(YAML::Node node, const vector<ContextItem*>& processedContexts, const string& selectedCompiler, bool checkSchema);
+  ProjMgrYamlCbuild(YAML::Node node, const vector<string>& selectedContexts, const string& selectedCompiler, bool checkSchema);
   ProjMgrYamlCbuild(YAML::Node node, const ContextItem* context, const string& generatorId, const string& generatorPack, bool checkSchema);
   ProjMgrYamlCbuild(YAML::Node node, const vector<ContextItem*>& siblings, const string& type, const string& output, const string& gendir, bool checkSchema);
   void SetContextNode(YAML::Node node, const ContextItem* context, const string& generatorId, const string& generatorPack);
@@ -396,16 +396,14 @@ ProjMgrYamlCbuild::ProjMgrYamlCbuild(YAML::Node node, const ContextItem* context
 }
 
 ProjMgrYamlCbuild::ProjMgrYamlCbuild(YAML::Node node,
-  const vector<ContextItem*>& processedContexts, const string& selectedCompiler, bool checkSchema)
+  const vector<string>& selectedContexts, const string& selectedCompiler, bool checkSchema)
 {
   SetNodeValue(node[YAML_GENERATED_BY], ORIGINAL_FILENAME + string(" version ") + VERSION_STRING);
   YAML::Node contextsNode = node[YAML_CONTEXTS];
-  for (const auto& context : processedContexts) {
-    if (context) {
-      YAML::Node contextNode;
-      SetNodeValue(contextNode[YAML_CONTEXT], context->name);
-      contextsNode.push_back(contextNode);
-    }
+  for (const auto& context : selectedContexts) {
+    YAML::Node contextNode;
+    SetNodeValue(contextNode[YAML_CONTEXT], context);
+    contextsNode.push_back(contextNode);
   }
   if (!selectedCompiler.empty()) {
     SetNodeValue(node[YAML_COMPILER], selectedCompiler);
@@ -1055,11 +1053,11 @@ bool ProjMgrYamlEmitter::GenerateCbuild(ContextItem* context, bool checkSchema,
   return cbuild.WriteFile(rootNode, filename);
 }
 
-bool ProjMgrYamlEmitter::GenerateCbuildSet(const std::vector<ContextItem*> contexts,
+bool ProjMgrYamlEmitter::GenerateCbuildSet(const std::vector<string> selectedContexts,
   const string& selectedCompiler, const string& cbuildSetFile, bool checkSchema)
 {
   YAML::Node rootNode;
-  ProjMgrYamlCbuild cbuild(rootNode[YAML_CBUILD_SET], contexts, selectedCompiler, checkSchema);
+  ProjMgrYamlCbuild cbuild(rootNode[YAML_CBUILD_SET], selectedContexts, selectedCompiler, checkSchema);
 
   return cbuild.WriteFile(rootNode, cbuildSetFile);
 }

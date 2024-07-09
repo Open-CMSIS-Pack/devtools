@@ -169,6 +169,7 @@ protected:
   bool Configure();
   bool GenerateYMLConfigurationFiles();
   void updateRte();
+  bool ParseAndValidateContexts();
 };
 
 #endif  // PROJMGR_H

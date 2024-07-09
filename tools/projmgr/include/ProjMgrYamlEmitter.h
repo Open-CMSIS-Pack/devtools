@@ -67,13 +67,13 @@ public:
 
   /**
    * @brief generate cbuild set file
-   * @param contexts vector with pointers to contexts
+   * @param contexts list of selected contexts
    * @param selectedCompiler name of the selected compiler
    * @param cbuildSetFile path to *.cbuild-set file to be generated
    * @param boolean check schema of generated file
    * @return true if executed successfully
   */
-  static bool GenerateCbuildSet(const std::vector<ContextItem*> contexts,
+  static bool GenerateCbuildSet(const std::vector<std::string> selectedContexts,
     const std::string& selectedCompiler, const std::string& cbuildSetFile, bool checkSchema);
 
   /**
