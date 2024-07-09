@@ -651,21 +651,22 @@ void ProjMgrWorker::GetAllCombinations(const ConnectionsCollectionMap& src, cons
   }
 }
 
-void ProjMgrWorker::GetAllSelectCombinations(const ConnectPtrVec& src, const ConnectPtrVec::iterator& it,
-  std::vector<ConnectPtrVec>& combinations) {
-  // combine items from a vector of 'select' nodes
+void ProjMgrWorker::GetAllSelectCombinations(const ConnectPtrMap& src, const ConnectPtrMap::iterator& it,
+  std::vector<ConnectPtrVec>& combinations, const ConnectPtrVec& previous) {
+  // combine items from a table of 'set select'
   // see an example in the test case ProjMgrWorkerUnitTests.GetAllSelectCombinations
-  // for every past combination add a new combination containing additionally the current item
-  for (auto combination : vector<ConnectPtrVec>(combinations)) {
-    combination.push_back(*it);
-    combinations.push_back(combination);
-  }
-  // add a new combination with the current item
-  combinations.push_back(ConnectPtrVec({*it}));
   const auto nextIt = next(it, 1);
-  if (nextIt != src.end()) {
-    // run recursively over the next item
-    GetAllSelectCombinations(src, nextIt, combinations);
+  // iterate over the input columns
+  for (const auto& item : it->second) {
+    ConnectPtrVec combination = previous;
+    combination.push_back(item);
+    if (nextIt != src.end()) {
+      // run recursively over the next item
+      GetAllSelectCombinations(src, nextIt, combinations, combination);
+    } else {
+      // add a new combination containing an item from each column
+      combinations.push_back(combination);
+    }
   }
 }
 
@@ -1035,49 +1036,23 @@ ConnectionsCollectionMap ProjMgrWorker::ClassifyConnections(const ConnectionsCol
   for (const auto& collectionEntry : connections) {
     // get type classification
     const string& classifiedType = collectionEntry.type.empty() ? to_string(hash<string>{}(collectionEntry.filename)) : collectionEntry.type;
-    // group connections by config-id
-    map<string, ConnectPtrVec> connectionsMap;
+    // group connections by config-id or by connect's literal address (for connects without sets)
+    ConnectPtrMap connectionsMap;
     for (const auto& connect : collectionEntry.connections) {
       const string& configId = connect->set.substr(0, connect->set.find('.'));
-      connectionsMap[configId].push_back(connect);
+      connectionsMap[(configId.empty() ? to_string((uintptr_t)&connect->connect) : configId)].push_back(connect);
     }
-    // get common connections
-    ConnectPtrVec commonConnections;
-    bool hasMultipleSelect = false;
-    for (const auto& [configId, connectionsEntry] : connectionsMap) {
-      if (!configId.empty()) {
-        // 'config-id' has multiple 'select' choices
-        hasMultipleSelect = true;
-      } else {
-        // 'config-id' has only one 'select'
-        commonConnections.insert(commonConnections.end(), connectionsEntry.begin(), connectionsEntry.end());
-      }
-    }
-    // iterate over 'select' choices
-    if (hasMultipleSelect) {
-      for (const auto& [configId, selectConnections] : connectionsMap) {
-        if (!configId.empty()) {
-          // combine nodes with identical 'config-id'.'select'
-          map<string, ConnectPtrVec> selectMap;
-          for (const auto& connect : selectConnections) {
-            selectMap[connect->set].push_back(connect);
-          }
-          for (auto& [_, multipleSelectConnections] : selectMap) {
-            vector<ConnectPtrVec> selectCombinations;
-            GetAllSelectCombinations(multipleSelectConnections, multipleSelectConnections.begin(), selectCombinations);
-            for (const auto& selectCombination : selectCombinations) {
-              // insert a classified connections entry
-              ConnectionsCollection collection = { collectionEntry.filename, collectionEntry.type, commonConnections };
-              collection.connections.insert(collection.connections.end(), selectCombination.begin(), selectCombination.end());
-              classifiedConnections[classifiedType + configId].push_back(collection);
-            }
-          }
-        }
-      }
+    if (connectionsMap.size() == 0) {
+      // insert layer without connections
+      classifiedConnections[classifiedType].push_back({ collectionEntry.filename, collectionEntry.type, ConnectPtrVec() });
     } else {
-      // insert a classified connections entry
-      ConnectionsCollection collection = { collectionEntry.filename, collectionEntry.type, commonConnections };
-      classifiedConnections[classifiedType].push_back(collection);
+      // combine 'set select' and common entries
+      vector<ConnectPtrVec> selectCombinations;
+      GetAllSelectCombinations(connectionsMap, connectionsMap.begin(), selectCombinations);
+      for (const auto& selectCombination : selectCombinations) {
+        // insert each classified connections entry
+        classifiedConnections[classifiedType].push_back({ collectionEntry.filename, collectionEntry.type, selectCombination });
+      }
     }
   }
   // add empty connection for optional handling in combinatory flow, unless differently specified

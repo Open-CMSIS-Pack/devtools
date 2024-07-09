@@ -1549,6 +1549,7 @@ TEST_F(ProjMgrUnitTests, ListLayersAll) {
 .*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml \\(layer type: Board\\)\n\
 .*/ARM/RteTest_DFP/0.2.0/Layers/config1.clayer.yml \\(layer type: Config1\\)\n\
 .*/ARM/RteTest_DFP/0.2.0/Layers/config2.clayer.yml \\(layer type: Config2\\)\n\
+.*/ARM/RteTest_DFP/0.2.0/Layers/config3.clayer.yml \\(layer type: Config2\\)\n\
 .*/ARM/RteTest_DFP/0.2.0/Layers/incompatible.clayer.yml \\(layer type: Incompatible\\)\n\
 .*/ARM/RteTest_DFP/0.2.0/Layers/pdsc-type-mismatch.clayer.yml \\(layer type: PdscType\\)\n\
 .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml \\(layer type: TestVariant\\)\n\
@@ -1710,32 +1711,15 @@ TEST_F(ProjMgrUnitTests, ListLayersConfigurations) {
   argv[2] = (char*)"layers";
   argv[3] = (char*)"--solution";
   argv[4] = (char*)csolution.c_str();
-  argv[5] = (char*)"-v";
+  argv[5] = (char*)"-d";
   EXPECT_EQ(0, RunProjMgr(6, argv, m_envp));
 
+  const string& outStr = streamRedirect.GetOutString();
+  const string& errStr = streamRedirect.GetErrorString();
+  EXPECT_EQ(100, ProjMgrTestEnv::CountOccurrences(errStr, "check combined connections"));
+  EXPECT_EQ(4, ProjMgrTestEnv::CountOccurrences(outStr, "valid configuration #"));
+
   const string& expectedOutStr = "\
-info csolution: valid configuration #1: \\(context 'config.CompatibleLayers\\+RteTest_ARMCM3'\\)\n\
-  .*/TestLayers/config.clayer.yml\n\
-    set: set1.select1 \\(connect R - set 1 select 1\\)\n\
-  .*/TestLayers/config.cproject.yml\n\
-    set: set1.select1 \\(project X - set 1 select 1\\)\n\
-  .*/ARM/RteTest_DFP/0.2.0/Layers/config1.clayer.yml \\(layer type: Config1\\)\n\
-    set: set1.select1 \\(connect A - set 1 select 1\\)\n\
-    set: set2.select1 \\(connect C - set 2 select 1\\)\n\
-  .*/ARM/RteTest_DFP/0.2.0/Layers/config2.clayer.yml \\(layer type: Config2\\)\n\
-    set: set1.select1 \\(connect F - set 1 select 1\\)\n\
-\n\
-info csolution: valid configuration #2: \\(context 'config.CompatibleLayers\\+RteTest_ARMCM3'\\)\n\
-  .*/TestLayers/config.clayer.yml\n\
-    set: set1.select2 \\(connect S - set 1 select 2\\)\n\
-  .*/TestLayers/config.cproject.yml\n\
-    set: set1.select2 \\(project Y - set 1 select 2\\)\n\
-  .*/ARM/RteTest_DFP/0.2.0/Layers/config1.clayer.yml \\(layer type: Config1\\)\n\
-    set: set1.select2 \\(connect B - set 1 select 2\\)\n\
-    set: set2.select2 \\(connect D - set 2 select 2\\)\n\
-  .*/ARM/RteTest_DFP/0.2.0/Layers/config2.clayer.yml \\(layer type: Config2\\)\n\
-    set: set1.select2 \\(connect G - set 1 select 2\\)\n\
-\n\
 .*/TestLayers/config.clayer.yml\n\
   set: set1.select1 \\(connect R - set 1 select 1\\)\n\
   set: set1.select2 \\(connect S - set 1 select 2\\)\n\
@@ -1747,10 +1731,11 @@ info csolution: valid configuration #2: \\(context 'config.CompatibleLayers\\+Rt
 .*/ARM/RteTest_DFP/0.2.0/Layers/config2.clayer.yml \\(layer type: Config2\\)\n\
   set: set1.select1 \\(connect F - set 1 select 1\\)\n\
   set: set1.select2 \\(connect G - set 1 select 2\\)\n\
+.*/ARM/RteTest_DFP/0.2.0/Layers/config3.clayer.yml \\(layer type: Config2\\)\n\
+  set: set3.select1 \\(connect F - set 3 select 1\\)\n\
+  set: set3.select2 \\(connect G - set 3 select 2\\)\n\
 ";
-
-  const string& outStr = streamRedirect.GetOutString();
-  EXPECT_TRUE(regex_match(outStr, regex(expectedOutStr)));
+  EXPECT_TRUE(regex_search(outStr, regex(expectedOutStr)));
 }
 
 TEST_F(ProjMgrUnitTests, ListLayersMultipleSelect) {

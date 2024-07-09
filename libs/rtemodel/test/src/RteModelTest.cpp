@@ -427,9 +427,9 @@ TEST_F(RteModelPrjTest, LoadCprj) {
   EXPECT_EQ(boardName, "RteTest Test board");
   // get layers
   auto& allLayerDescriptors = rteKernel.GetGlobalModel()->GetLayerDescriptors();
-  EXPECT_EQ(allLayerDescriptors.size(), 9);
+  EXPECT_EQ(allLayerDescriptors.size(), 10);
   auto& filteredLayerDescriptors = activeTarget->GetFilteredModel()->GetLayerDescriptors();
-  EXPECT_EQ(filteredLayerDescriptors.size(), 7);
+  EXPECT_EQ(filteredLayerDescriptors.size(), 8);
 
   const string rteDir = RteUtils::ExtractFilePath(RteTestM3_cprj, true) + "RTE/";
   const string CompConfig_0_Base_Version = rteDir + "RteTest/" + "ComponentLevelConfig_0.h.base@0.0.1";
@@ -1112,9 +1112,9 @@ TEST_F(RteModelPrjTest, LoadCprjM4) {
   EXPECT_TRUE(boardName.empty());
   // get layers
   auto& allLayerDescriptors = rteKernel.GetGlobalModel()->GetLayerDescriptors();
-  EXPECT_EQ(allLayerDescriptors.size(), 9);
+  EXPECT_EQ(allLayerDescriptors.size(), 10);
   auto& filteredLayerDescriptors = activeTarget->GetFilteredModel()->GetLayerDescriptors();
-  EXPECT_EQ(filteredLayerDescriptors.size(), 9);
+  EXPECT_EQ(filteredLayerDescriptors.size(), 10);
 
   const string projDir = RteUtils::ExtractFilePath(RteTestM4_cprj, true);
   const string rteDir = projDir + "RTE/";
@@ -1180,9 +1180,9 @@ TEST_F(RteModelPrjTest, LoadCprjM4_Board) {
   EXPECT_EQ(boardName, "RteTest CM4 board");
   // get layers
   auto& allLayerDescriptors = rteKernel.GetGlobalModel()->GetLayerDescriptors();
-  EXPECT_EQ(allLayerDescriptors.size(), 9);
+  EXPECT_EQ(allLayerDescriptors.size(), 10);
   auto& filteredLayerDescriptors = activeTarget->GetFilteredModel()->GetLayerDescriptors();
-  EXPECT_EQ(filteredLayerDescriptors.size(), 6);
+  EXPECT_EQ(filteredLayerDescriptors.size(), 7);
 
   const string projDir = RteUtils::ExtractFilePath(RteTestM4_Board_cprj, true);
   const string rteDir = projDir + "RTE_BOARD/";

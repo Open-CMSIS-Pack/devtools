@@ -251,6 +251,20 @@ bool ProjMgrTestEnv::IsFileInCbuildFilesList(const std::vector<std::map<std::str
   return false;
 }
 
+int ProjMgrTestEnv::CountOccurrences(const std::string input, const std::string substring)
+{
+  if (substring.empty()) {
+    return 0; // Avoid infinite loop if substring is empty
+  }
+  int occurrences = 0;
+  size_t pos = 0;
+  while ((pos = input.find(substring, pos)) != std::string::npos) {
+    occurrences++;
+    pos += substring.length();
+  }
+  return occurrences;
+}
+
 int main(int argc, char **argv) {
   try {
     testing::InitGoogleTest(&argc, argv);

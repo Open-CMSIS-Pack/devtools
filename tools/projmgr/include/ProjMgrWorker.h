@@ -787,8 +787,8 @@ protected:
   ConnectionsValidationResult ValidateConnections(ConnectionsCollectionVec combination);
   void GetAllCombinations(const ConnectionsCollectionMap& src, const ConnectionsCollectionMap::iterator& it,
     std::vector<ConnectionsCollectionVec>& combinations, const ConnectionsCollectionVec& previous = ConnectionsCollectionVec());
-  void GetAllSelectCombinations(const ConnectPtrVec& src, const ConnectPtrVec::iterator& it,
-    std::vector<ConnectPtrVec>& combinations);
+  void GetAllSelectCombinations(const ConnectPtrMap& src, const ConnectPtrMap::iterator& it,
+    std::vector<ConnectPtrVec>& combinations, const ConnectPtrVec& previous = ConnectPtrVec());
   void PushBackUniquely(ConnectionsCollectionVec& vec, const ConnectionsCollection& value);
   void PushBackUniquely(std::vector<ToolchainItem>& vec, const ToolchainItem& value);
   void GetRegisteredToolchains(void);
