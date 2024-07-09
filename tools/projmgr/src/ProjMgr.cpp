@@ -166,16 +166,16 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
     {"update-rte",        { false, {context, contextSet, debug, load, quiet, schemaCheck, toolchain, verbose, frozenPacks}}},
     {"convert",           { false, {context, contextSet, debug, exportSuffix, load, quiet, schemaCheck, noUpdateRte, output, outputAlt, toolchain, verbose, frozenPacks, cbuild2cmake}}},
     {"run",               { false, {context, contextSet, debug, generator, load, quiet, schemaCheck, verbose, dryRun}}},
-    {"list packs",        { true,  {context, debug, filter, load, missing, quiet, schemaCheck, toolchain, verbose, relativePaths}}},
-    {"list boards",       { true,  {context, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
-    {"list devices",      { true,  {context, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
-    {"list configs",      { true,  {context, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
-    {"list components",   { true,  {context, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
-    {"list dependencies", { false, {context, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
+    {"list packs",        { true,  {context, contextSet, debug, filter, load, missing, quiet, schemaCheck, toolchain, verbose, relativePaths}}},
+    {"list boards",       { true,  {context, contextSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
+    {"list devices",      { true,  {context, contextSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
+    {"list configs",      { true,  {context, contextSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
+    {"list components",   { true,  {context, contextSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
+    {"list dependencies", { false, {context, contextSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
     {"list contexts",     { false, {debug, filter, quiet, schemaCheck, verbose, ymlOrder}}},
-    {"list generators",   { false, {context, debug, load, quiet, schemaCheck, toolchain, verbose}}},
-    {"list layers",       { false, {context, debug, load, clayerSearchPath, quiet, schemaCheck, toolchain, verbose, updateIdx}}},
-    {"list toolchains",   { false, {context, debug, quiet, toolchain, verbose}}},
+    {"list generators",   { false, {context, contextSet, debug, load, quiet, schemaCheck, toolchain, verbose}}},
+    {"list layers",       { false, {context, contextSet, debug, load, clayerSearchPath, quiet, schemaCheck, toolchain, verbose, updateIdx}}},
+    {"list toolchains",   { false, {context, contextSet, debug, quiet, toolchain, verbose}}},
     {"list environment",  { true,  {}}},
   };
 
@@ -509,22 +509,6 @@ bool ProjMgr::GenerateYMLConfigurationFiles() {
 
   bool result = true;
 
-  // Generate cbuild set file
-  if (m_contextSet) {
-    const string& cbuildSetFile = m_parser.GetCsolution().directory + "/" +
-      m_parser.GetCsolution().name + ".cbuild-set.yml";
-
-    if ((m_context.size() == 0) && (RteFsUtils::Exists(cbuildSetFile) == false)) {
-      ProjMgrLogger::Warn("unable to locate " + cbuildSetFile + " file.");
-    }
-    else if (!m_processedContexts.empty()) {
-      // Generate cbuild-set file
-      if (!m_emitter.GenerateCbuildSet(m_processedContexts, m_selectedToolchain, cbuildSetFile, m_checkSchema)) {
-        result = false;
-      }
-    }
-  }
-
   // Generate cbuild files
   for (auto& contextItem : m_processedContexts) {
     if (!m_emitter.GenerateCbuild(contextItem, m_checkSchema)) {
@@ -544,23 +528,45 @@ bool ProjMgr::GenerateYMLConfigurationFiles() {
   return result;
 }
 
+bool ProjMgr::ParseAndValidateContexts() {
+  const string& cbuildSetFile = m_parser.GetCsolution().directory + "/" +
+    m_parser.GetCsolution().name + ".cbuild-set.yml";
+  bool fileExist = RteFsUtils::Exists(cbuildSetFile);
+  bool writeCbuildSetFile = m_contextSet && (!fileExist || !m_selectedToolchain.empty());
+  
+  // Parse context selection
+  if (!m_worker.ParseContextSelection(m_context, m_contextSet)) {
+    return false;
+  }
+
+  // validate and restrict the input contexts when used with -S option
+  if (!m_context.empty() && m_contextSet) {
+    if (!m_worker.ValidateContexts(m_context, false)) {
+      return false;
+    }
+  }
+
+  if (writeCbuildSetFile) {
+    const auto& selectedContexts = m_worker.GetSelectedContexts();
+    if (!selectedContexts.empty()) {
+      // Generate cbuild-set file
+      if (!m_emitter.GenerateCbuildSet(selectedContexts, m_selectedToolchain, cbuildSetFile, m_checkSchema)) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
 bool ProjMgr::Configure() {
   // Parse all input files and populate contexts inputs
   if (!PopulateContexts()) {
     return false;
   }
 
-  bool checkCbuildSet = (m_context.size() == 0) && m_contextSet;
-  // Parse context selection
-  if (!m_worker.ParseContextSelection(m_context, checkCbuildSet)) {
+  if (!ParseAndValidateContexts()) {
     return false;
-  }
-
-  // validate and restrict the input contexts when used with -S option
-  if (!m_context.empty() && m_contextSet) {
-    if (!m_worker.ValidateContexts(m_context, false)){
-      return false;
-    }
   }
 
   if (m_worker.HasVarDefineError()) {
@@ -688,10 +694,12 @@ bool ProjMgr::RunListPacks(void) {
       return false;
     }
   }
+
   // Parse context selection
-  if (!m_worker.ParseContextSelection(m_context)) {
+  if (!ParseAndValidateContexts()) {
     return false;
   }
+
   vector<string> packs;
   bool ret = m_worker.ListPacks(packs, m_missingPacks, m_filter);
   for (const auto& pack : packs) {
@@ -707,10 +715,12 @@ bool ProjMgr::RunListBoards(void) {
       return false;
     }
   }
+
   // Parse context selection
-  if (!m_worker.ParseContextSelection(m_context)) {
+  if (!ParseAndValidateContexts()) {
     return false;
   }
+
   vector<string> boards;
   if (!m_worker.ListBoards(boards, m_filter)) {
     ProjMgrLogger::Error("processing boards list failed");
@@ -729,10 +739,12 @@ bool ProjMgr::RunListDevices(void) {
       return false;
     }
   }
+
   // Parse context selection
-  if (!m_worker.ParseContextSelection(m_context)) {
+  if (!ParseAndValidateContexts()) {
     return false;
   }
+
   vector<string> devices;
   if (!m_worker.ListDevices(devices, m_filter)) {
     ProjMgrLogger::Error("processing devices list failed");
@@ -751,10 +763,12 @@ bool ProjMgr::RunListComponents(void) {
       return false;
     }
   }
+
   // Parse context selection
-  if (!m_worker.ParseContextSelection(m_context)) {
+  if (!ParseAndValidateContexts()) {
     return false;
   }
+
   vector<string> components;
   if (!m_worker.ListComponents(components, m_filter)) {
     ProjMgrLogger::Error("processing components list failed");
@@ -780,10 +794,12 @@ bool ProjMgr::RunListConfigs() {
       return false;
     }
   }
+
   // Parse context selection
-  if (!m_worker.ParseContextSelection(m_context)) {
+  if (!ParseAndValidateContexts()) {
     return false;
   }
+
   vector<string> configFiles;
   if (!m_worker.ListConfigs(configFiles, m_filter)) {
     ProjMgrLogger::Error("processing config list failed");
@@ -807,10 +823,12 @@ bool ProjMgr::RunListDependencies(void) {
   if (!PopulateContexts()) {
     return false;
   }
+
   // Parse context selection
-  if (!m_worker.ParseContextSelection(m_context)) {
+  if (!ParseAndValidateContexts()) {
     return false;
   }
+
   vector<string> dependencies;
   if (!m_worker.ListDependencies(dependencies, m_filter)) {
     ProjMgrLogger::Error("processing dependencies list failed");
@@ -848,10 +866,12 @@ bool ProjMgr::RunListGenerators(void) {
   if (!PopulateContexts()) {
     return false;
   }
+
   // Parse context selection
-  if (!m_worker.ParseContextSelection(m_context)) {
+  if (!ParseAndValidateContexts()) {
     return false;
   }
+
   // Get generators
   vector<string> generators;
   if (!m_worker.ListGenerators(generators)) {
@@ -877,7 +897,7 @@ bool ProjMgr::RunListLayers(void) {
   }
 
   // Step2 : Parse selected contexts
-  if (!m_worker.ParseContextSelection(m_context)) {
+  if (!ParseAndValidateContexts()) {
     return false;
   }
 
@@ -1000,10 +1020,12 @@ bool ProjMgr::RunListToolchains(void) {
       return false;
     }
   }
+
   // Parse context selection
-  if (!m_worker.ParseContextSelection(m_context)) {
+  if (!ParseAndValidateContexts()) {
     return false;
   }
+
   vector<ToolchainItem> toolchains;
   bool success = m_worker.ListToolchains(toolchains);
 

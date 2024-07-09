@@ -2205,7 +2205,7 @@ error csolution: undefined variables in variables-notdefined.csolution.yml:.*\
   .*/ARM/RteTest_DFP/0.2.0/Layers/board1.clayer.yml \\(layer type: Board\\).*\
   .*/ARM/RteTest_DFP/0.2.0/Layers/board2.clayer.yml \\(layer type: Board\\).*\
   .*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml \\(layer type: Board\\).*\
-no valid combination of clayers was found\
+no valid combination of clayers was found.*\
 ";
 
   string errStr = streamRedirect.GetErrorString();
@@ -2244,7 +2244,7 @@ error csolution: undefined variables in variables-notdefined.csolution.yml:.*\
   - \\$NotDefined\\$.*\
 debug csolution: check for context \\'variables-notdefined\\.BuildType\\+TargetType\\'.*\
 clayer of type 'Board' was uniquely found:\
-  .*/TestLayers/variables/target1.clayer.yml\
+  .*/TestLayers/variables/target1.clayer.yml.*\
 ";
 
   string errStr = streamRedirect.GetErrorString();
@@ -4933,8 +4933,8 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_cbuildset_file) {
     CleanUp();
     StdStreamRedirect streamRedirect;
     // Test 2: Run without contexts specified (no existing cbuild-set file with -S)
-    // Expectation: *.cbuild-set.yml file should not be generated and all available
-    //              contexts should be processed
+    // Expectation: *.cbuild-set.yml file should be generated and only first build and
+    //              target types should be selected with first project
     argv[1] = (char*)"convert";
     argv[2] = (char*)"--solution";
     argv[3] = (char*)csolution.c_str();
@@ -4943,13 +4943,11 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_cbuildset_file) {
     argv[6] = (char*)"-S";
 
     EXPECT_EQ(0, RunProjMgr(7, argv, m_envp));
-    EXPECT_FALSE(RteFsUtils::Exists(cbuildSetFile));
+    EXPECT_TRUE(RteFsUtils::Exists(cbuildSetFile));
     EXPECT_TRUE(RteFsUtils::Exists(outputDir + "/test2.Debug+CM0.cbuild.yml"));
-    EXPECT_TRUE(RteFsUtils::Exists(outputDir + "/test1.Debug+CM0.cbuild.yml"));
-    EXPECT_TRUE(RteFsUtils::Exists(outputDir + "/test2.Debug+CM3.cbuild.yml"));
-    EXPECT_TRUE(RteFsUtils::Exists(outputDir + "/test1.Release+CM0.cbuild.yml"));
-    const auto& errStr = streamRedirect.GetErrorString();
-    EXPECT_NE(string::npos, errStr.find("warning csolution: unable to locate " + cbuildSetFile + " file."));
+    EXPECT_FALSE(RteFsUtils::Exists(outputDir + "/test1.Debug+CM0.cbuild.yml"));
+    EXPECT_FALSE(RteFsUtils::Exists(outputDir + "/test2.Debug+CM3.cbuild.yml"));
+    EXPECT_FALSE(RteFsUtils::Exists(outputDir + "/test1.Release+CM0.cbuild.yml"));
   }
 
   {
@@ -6085,4 +6083,53 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_MultiVariantComponent) {
   auto errMsg = streamRedirect.GetErrorString();
   EXPECT_NE(string::npos,
     errMsg.find("multiple variants of the same component are specified:\n  - Device:Test variant\n  - Device:Test variant&Variant name"));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks_ContextSet) {
+  char* argv[6];
+  StdStreamRedirect streamRedirect;
+  const string& csolution = testinput_folder + "/TestSolution/contexts.csolution.yml";
+
+  // list packs
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"packs";
+  argv[3] = (char*)"--solution";
+  argv[4] = (char*)csolution.c_str();
+  argv[5] = (char*)"-S";
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+
+  auto outStr = streamRedirect.GetOutString();
+  EXPECT_NE(outStr.find("ARM::RteTest_DFP@0.2.0"), string::npos);
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_ListBoards_ContextSet) {
+  char* argv[6];
+  StdStreamRedirect streamRedirect;
+  const string& csolution = testinput_folder + "/TestSolution/contexts.csolution.yml";
+
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"boards";
+  argv[3] = (char*)"--solution";
+  argv[4] = (char*)csolution.c_str();
+  argv[5] = (char*)"-S";
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+
+  auto outStr = streamRedirect.GetOutString();
+  EXPECT_NE(outStr.find("Keil::RteTest Dummy board:1.2.3 (ARM::RteTest_DFP@0.2.0)"), string::npos);
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_ListDevices_ContextSet) {
+  char* argv[6];
+  StdStreamRedirect streamRedirect;
+  const string& csolution = testinput_folder + "/TestSolution/contexts.csolution.yml";
+
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"devices";
+  argv[3] = (char*)"--solution";
+  argv[4] = (char*)csolution.c_str();
+  argv[5] = (char*)"-S";
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+
+  auto outStr = streamRedirect.GetOutString();
+  EXPECT_NE(outStr.find("ARM::RteTest_ARMCM0 (ARM::RteTest_DFP@0.2.0)"), string::npos);
 }

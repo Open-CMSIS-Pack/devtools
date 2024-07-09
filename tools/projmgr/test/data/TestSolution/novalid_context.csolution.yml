@@ -8,10 +8,6 @@ solution:
     - type: Error
       compiler: GCC
 
-  target-types:
-    - type: RteTest_ARMCM3
-      device: RteTest_ARMCM3
-
   projects:
     - project: toolchain.cproject.yml
 
