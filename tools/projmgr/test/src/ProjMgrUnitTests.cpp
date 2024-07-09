@@ -1964,11 +1964,6 @@ required connections not provided:\n\
   ProvidedEmpty: 123\n\
 sum of required values exceed provided:\n\
   AddedValueHigherThanProvided: 100 > 99\n\
-provided combined connections not consumed:\n\
-  .*/ARM/RteTest_DFP/0.2.0/Layers/incompatible.clayer.yml \\(layer type: Incompatible\\)\n\
-    MultipleProvided\n\
-    MultipleProvidedNonIdentical0\n\
-    MultipleProvidedNonIdentical1\n\
 connections are invalid\n\
 \n\
 check combined connections:\n\
@@ -1988,11 +1983,6 @@ required connections not provided:\n\
   ProvidedEmpty: 123\n\
 sum of required values exceed provided:\n\
   AddedValueHigherThanProvided: 100 > 99\n\
-provided combined connections not consumed:\n\
-  .*/ARM/RteTest_DFP/0.2.0/Layers/incompatible.clayer.yml \\(layer type: Incompatible\\)\n\
-    MultipleProvided\n\
-    MultipleProvidedNonIdentical0\n\
-    MultipleProvidedNonIdentical1\n\
 connections are invalid\n\
 \n\
 check combined connections:\n\
@@ -2012,11 +2002,6 @@ required connections not provided:\n\
   ProvidedEmpty: 123\n\
 sum of required values exceed provided:\n\
   AddedValueHigherThanProvided: 100 > 99\n\
-provided combined connections not consumed:\n\
-  .*/ARM/RteTest_DFP/0.2.0/Layers/incompatible.clayer.yml \\(layer type: Incompatible\\)\n\
-    MultipleProvided\n\
-    MultipleProvidedNonIdentical0\n\
-    MultipleProvidedNonIdentical1\n\
 connections are invalid\n\
 \n\
 no valid combination of clayers was found\n\

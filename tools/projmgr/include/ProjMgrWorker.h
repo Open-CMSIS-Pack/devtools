@@ -19,7 +19,7 @@
  *        overflowed connections,
  *        incompatible connections,
  *        missed provided combined connections,
- *        provided connections
+ *        active connect map,
 */
 struct ConnectionsValidationResult {
   bool valid;
@@ -27,7 +27,7 @@ struct ConnectionsValidationResult {
   StrPairVec overflows;
   StrPairVec incompatibles;
   std::vector<ConnectionsCollection> missedCollections;
-  StrPairPtrVec provides;
+  ActiveConnectMap activeConnectMap;
 };
 
 /**
@@ -781,7 +781,8 @@ protected:
   bool ProcessLayerCombinations(ContextItem& context, LayersDiscovering& discover);
   bool DiscoverMatchingLayers(ContextItem& context, std::string clayerSearchPath);
   void CollectConnections(ContextItem& context, ConnectionsCollectionVec& connections);
-  void GetConsumesProvides(const ConnectionsCollectionVec& collection, ConnectionsList& connections);
+  void GetActiveConnectMap(const ConnectionsCollectionVec& collection, ActiveConnectMap& activeConnectMap);
+  void SetActiveConnect(const ConnectItem* activeConnect, const ConnectionsCollectionVec& collection, ActiveConnectMap& activeConnectMap);
   ConnectionsCollectionMap ClassifyConnections(const ConnectionsCollectionVec& connections, BoolMap optionalTypeFlags);
   ConnectionsValidationResult ValidateConnections(ConnectionsCollectionVec combination);
   void GetAllCombinations(const ConnectionsCollectionMap& src, const ConnectionsCollectionMap::iterator& it,

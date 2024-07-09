@@ -12,10 +12,15 @@
 
 #include "RteConstants.h"
 
- /**
+/**
  * @brief vector of ConnectItem pointers
- */
+*/
 typedef std::vector<const ConnectItem*> ConnectPtrVec;
+
+/**
+ * @brief map of ConnectItem active flags
+*/
+typedef std::map<const ConnectItem*, bool> ActiveConnectMap;
 
 /**
  * @brief connections collection item containing

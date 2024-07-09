@@ -1012,7 +1012,7 @@ TEST_F(ProjMgrWorkerUnitTests, ValidateConnections) {
   };
 
   ConnectItem validConnectItem = { RteUtils::EMPTY_STRING, RteUtils::EMPTY_STRING, RteUtils::EMPTY_STRING, providedList, consumedList };
-  ConnectionsCollection validCollection = { RteUtils::EMPTY_STRING, RteUtils::EMPTY_STRING, {&validConnectItem} };
+  ConnectionsCollection validCollection = { ".cproject.yml", RteUtils::EMPTY_STRING, {&validConnectItem} };
   result = ValidateConnections({ validCollection });
   EXPECT_TRUE(result.valid);
 
@@ -1036,12 +1036,75 @@ TEST_F(ProjMgrWorkerUnitTests, ValidateConnections) {
   StrPairVec expectedOverflow = {{"Lemon", "170 > 160"}};
   StrPairVec expectedIncompatibles = {{"Ananas", "98"}, {"Grape Fruit", "1"}};
   ConnectItem invalidConnectItem = { RteUtils::EMPTY_STRING, RteUtils::EMPTY_STRING, RteUtils::EMPTY_STRING, providedList, consumedList };
-  ConnectionsCollection invalidCollection = { RteUtils::EMPTY_STRING, RteUtils::EMPTY_STRING, {&invalidConnectItem} };
+  ConnectionsCollection invalidCollection = { ".cproject.yml", RteUtils::EMPTY_STRING, {&invalidConnectItem} };
   result = ValidateConnections({ invalidCollection });
   EXPECT_FALSE(result.valid);
   EXPECT_EQ(result.conflicts, expectedConflicts);
   EXPECT_EQ(result.overflows, expectedOverflow);
   EXPECT_EQ(result.incompatibles, expectedIncompatibles);
+}
+
+TEST_F(ProjMgrWorkerUnitTests, ValidateActiveConnects) {
+  StrPairVec consumedList1 = {{ "Ananas", "" }};
+  StrPairVec consumedList2 = {{ "Banana", "" }};
+  StrPairVec consumedList3 = {{ "Cherry", "" }};
+  StrPairVec providedList1 = consumedList1;
+  StrPairVec providedList2 = consumedList2;
+  StrPairVec providedList3 = consumedList3;
+  ConnectItem empty               = { RteUtils::EMPTY_STRING, RteUtils::EMPTY_STRING, RteUtils::EMPTY_STRING, StrPairVec() , StrPairVec()  };
+  ConnectItem consumed1           = { RteUtils::EMPTY_STRING, RteUtils::EMPTY_STRING, RteUtils::EMPTY_STRING, StrPairVec() , consumedList1 };
+  ConnectItem provided1           = { RteUtils::EMPTY_STRING, RteUtils::EMPTY_STRING, RteUtils::EMPTY_STRING, providedList1, StrPairVec()  };
+  ConnectItem consumed2           = { RteUtils::EMPTY_STRING, RteUtils::EMPTY_STRING, RteUtils::EMPTY_STRING, StrPairVec() , consumedList2 };
+  ConnectItem provided2           = { RteUtils::EMPTY_STRING, RteUtils::EMPTY_STRING, RteUtils::EMPTY_STRING, providedList2, StrPairVec()  };
+  ConnectItem consumed2_provided1 = { RteUtils::EMPTY_STRING, RteUtils::EMPTY_STRING, RteUtils::EMPTY_STRING, providedList1, consumedList2 };
+  ConnectItem consumed2_provided3 = { RteUtils::EMPTY_STRING, RteUtils::EMPTY_STRING, RteUtils::EMPTY_STRING, providedList3, consumedList2 };
+
+  // test with active cproject connect
+  ConnectionsCollectionVec collectionVec1 = {
+    { "0.cproject.yml", RteUtils::EMPTY_STRING, { &consumed1           }},
+    { "1.clayer.yml"  , RteUtils::EMPTY_STRING, { &consumed2_provided1 }},
+    { "2.clayer.yml"  , RteUtils::EMPTY_STRING, { &provided2           }},
+  };
+  ConnectionsValidationResult result1 = ValidateConnections(collectionVec1);
+  EXPECT_TRUE(result1.valid);
+  EXPECT_TRUE(result1.activeConnectMap[&consumed1]);
+  EXPECT_TRUE(result1.activeConnectMap[&consumed2_provided1]);
+  EXPECT_TRUE(result1.activeConnectMap[&provided2]);
+
+  // test with active cproject connect and inactive layer connect
+  ConnectionsCollectionVec collectionVec2 = {
+    { "0.cproject.yml", RteUtils::EMPTY_STRING, { &consumed1                       }},
+    { "1.clayer.yml"  , RteUtils::EMPTY_STRING, { &consumed2_provided3, &provided1 }},
+  };
+  ConnectionsValidationResult result2 = ValidateConnections(collectionVec2);
+  EXPECT_TRUE(result2.valid);
+  EXPECT_TRUE(result2.activeConnectMap[&consumed1]);
+  EXPECT_TRUE(result2.activeConnectMap[&provided1]);
+
+  // test with empty cproject connect and active layer and matching connects
+  ConnectionsCollectionVec collectionVec3 = {
+    { "0.cproject.yml", RteUtils::EMPTY_STRING, { &empty               }},
+    { "1.clayer.yml"  , RteUtils::EMPTY_STRING, { &consumed1           }},
+    { "2.clayer.yml"  , RteUtils::EMPTY_STRING, { &consumed2_provided1 }},
+    { "3.clayer.yml"  , RteUtils::EMPTY_STRING, { &provided2           }},
+  };
+  ConnectionsValidationResult result3 = ValidateConnections(collectionVec3);
+  EXPECT_TRUE(result3.valid);
+  EXPECT_TRUE(result3.activeConnectMap[&empty]);
+  EXPECT_TRUE(result3.activeConnectMap[&consumed1]);
+  EXPECT_TRUE(result3.activeConnectMap[&consumed2_provided1]);
+  EXPECT_TRUE(result3.activeConnectMap[&provided2]);
+
+  // test with empty cproject connect and mismatching provided vs consumed
+  ConnectionsCollectionVec collectionVec4 = {
+    { "0.cproject.yml", RteUtils::EMPTY_STRING, { &empty     }},
+    { "1.clayer.yml"  , RteUtils::EMPTY_STRING, { &consumed1 }},
+    { "2.clayer.yml"  , RteUtils::EMPTY_STRING, { &provided2 }},
+  };
+  ConnectionsValidationResult result4 = ValidateConnections(collectionVec4);
+  EXPECT_FALSE(result4.valid);
+  EXPECT_EQ(consumedList1.front(), result4.incompatibles.front());
+  EXPECT_EQ(providedList2.front(), result4.missedCollections.front().connections.front()->provides.front());
 }
 
 TEST_F(ProjMgrWorkerUnitTests, CollectLayersFromPacks) {
