@@ -27,6 +27,23 @@ build-idx:
             - Config1-Layer: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Layers/config1.clayer.yml
               description: Config1 Layer Description
               settings:
+                - set: set1.select1 (connect A - set 1 select 1)
+                - set: set2.select1 (connect C - set 2 select 1)
+              path: ${DEVTOOLS(packs)}/ARM/RteTest_DFP/0.2.0/Layers
+              file: config1.clayer.yml
+              copy-to: path/to/config1
+            - Config2-Layer: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Layers/config3.clayer.yml
+              description: Config3 Layer Description
+              settings:
+                - set: set3.select1 (connect F - set 3 select 1)
+              path: ${DEVTOOLS(packs)}/ARM/RteTest_DFP/0.2.0
+              file: Layers/config3.clayer.yml
+              copy-to: path/to/config3
+        - configuration: 
+          variables:
+            - Config1-Layer: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Layers/config1.clayer.yml
+              description: Config1 Layer Description
+              settings:
                 - set: set1.select2 (connect B - set 1 select 2)
                 - set: set2.select2 (connect D - set 2 select 2)
               path: ${DEVTOOLS(packs)}/ARM/RteTest_DFP/0.2.0/Layers
@@ -39,6 +56,23 @@ build-idx:
               path: ${DEVTOOLS(packs)}/ARM/RteTest_DFP/0.2.0
               file: Layers/config2.clayer.yml
               copy-to: path/to/config2
+        - configuration: 
+          variables:
+            - Config1-Layer: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Layers/config1.clayer.yml
+              description: Config1 Layer Description
+              settings:
+                - set: set1.select2 (connect B - set 1 select 2)
+                - set: set2.select2 (connect D - set 2 select 2)
+              path: ${DEVTOOLS(packs)}/ARM/RteTest_DFP/0.2.0/Layers
+              file: config1.clayer.yml
+              copy-to: path/to/config1
+            - Config2-Layer: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Layers/config3.clayer.yml
+              description: Config3 Layer Description
+              settings:
+                - set: set3.select2 (connect G - set 3 select 2)
+              path: ${DEVTOOLS(packs)}/ARM/RteTest_DFP/0.2.0
+              file: Layers/config3.clayer.yml
+              copy-to: path/to/config3
   cprojects:
     - cproject: config.cproject.yml
       clayers:

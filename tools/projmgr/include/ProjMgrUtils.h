@@ -90,6 +90,11 @@ typedef std::vector<ConnectionsCollection> ConnectionsCollectionVec;
 typedef std::map<std::string, ConnectionsCollectionVec> ConnectionsCollectionMap;
 
 /**
+ * @brief map of ConnectPtrVec
+*/
+typedef std::map<std::string, ConnectPtrVec> ConnectPtrMap;
+
+/**
  * @brief project manager utility class
 */
 class ProjMgrUtils {

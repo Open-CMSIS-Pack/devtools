@@ -63,6 +63,7 @@ public:
     const std::string& includeIds);
   static bool FilterId(const std::string& id, const std::string& includeIds);
   static bool IsFileInCbuildFilesList(const std::vector<std::map<std::string, std::string>> files, const std::string file);
+  static int CountOccurrences(const std::string input, const std::string substring);
 };
 
 #endif  // PROJMGRTESTENV_H

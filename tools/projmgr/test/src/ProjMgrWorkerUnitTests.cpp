@@ -959,27 +959,25 @@ TEST_F(ProjMgrWorkerUnitTests, GetAllSelectCombinations) {
   ConnectItem connectB = { "B" };
   ConnectItem connectC = { "C" };
   ConnectItem connectD = { "D" };
+  ConnectItem connectX = { "X" };
+  ConnectItem connectY = { "Y" };
   const ConnectItem* A = { &connectA };
   const ConnectItem* B = { &connectB };
   const ConnectItem* C = { &connectC };
   const ConnectItem* D = { &connectD };
-  ConnectPtrVec connections = { A, B, C, D };
+  const ConnectItem* X = { &connectX };
+  const ConnectItem* Y = { &connectY };
+  ConnectPtrMap connections = {
+    {"0001", { X    } },
+    {"0002", { Y    } },
+    {"set1", { A, B } },
+    {"set2", { C, D } },
+  };
   const vector<ConnectPtrVec> expected = {
-    {A},
-    {A, B},
-    {B},
-    {A, C},
-    {A, B, C},
-    {B, C},
-    {C},
-    {A, D},
-    {A, B, D},
-    {B, D},
-    {A, C, D},
-    {A, B, C, D},
-    {B, C, D},
-    {C, D},
-    {D},
+    {X, Y, A, C},
+    {X, Y, A, D},
+    {X, Y, B, C},
+    {X, Y, B, D},
   };
   vector<ConnectPtrVec> combinations;
   GetAllSelectCombinations(connections, connections.begin(), combinations);
