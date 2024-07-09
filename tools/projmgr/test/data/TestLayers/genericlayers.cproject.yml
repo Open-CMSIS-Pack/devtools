@@ -28,6 +28,8 @@ project:
 
   connections:
     - connect: Project Connections
+      consumes:
+        - MultipleProvided
       provides:
         # compatible connections
         - ExactMatch: 42                      # both key and value exact match

@@ -828,7 +828,7 @@ bool ProjMgrWorker::ProcessLayerCombinations(ContextItem& context, LayersDiscove
         if (!CheckBoardDeviceInLayer(context, clayerItem)) {
           continue;
         }
-        ConnectionsCollection collection = {clayerItem.path, type};
+        ConnectionsCollection collection = { clayerItem.path, type };
         for (const auto& connect : clayerItem.connections) {
           collection.connections.push_back(&connect);
         }
@@ -850,7 +850,11 @@ bool ProjMgrWorker::ProcessLayerCombinations(ContextItem& context, LayersDiscove
   }
 
   // validate connections combinations
-  for (const auto& combination : combinations) {
+  for (auto& combination : combinations) {
+
+    // validate connections
+    ConnectionsValidationResult result = ValidateConnections(combination);
+
     // debug message
     if (m_debug) {
       debugMsg += "\ncheck combined connections:";
@@ -859,16 +863,25 @@ bool ProjMgrWorker::ProcessLayerCombinations(ContextItem& context, LayersDiscove
         debugMsg += "\n  " + item.filename + (type.empty() ? "" : " (layer type: " + type + ")");
         for (const auto& connect : item.connections) {
           debugMsg += "\n    " + (connect->set.empty() ? "" : "set: " + connect->set + " ") + "(" +
-            connect->connect + (connect->info.empty() ? "" : " - " + connect->info) + ")";
+            connect->connect + (connect->info.empty() ? "" : " - " + connect->info) + ")" + (result.activeConnectMap[connect] ? "" : " ignored");
         }
       }
       debugMsg += "\n";
     }
-    // validate connections
-    ConnectionsValidationResult result = ValidateConnections(combination);
 
-    // update list of compatible layers
     if (result.valid) {
+      // remove inactive connects
+      for (auto& item : combination) {
+        for (auto it = item.connections.begin(); it != item.connections.end();) {
+          if (result.activeConnectMap[*it]) {
+            it++;
+          } else {
+            it = item.connections.erase(it);
+          }
+        }
+      }
+
+      // update list of compatible layers
       context.validConnections.push_back(combination);
       for (const auto& [type, _] : discover.candidateClayers) {
         for (const auto& collection : combination) {
@@ -985,7 +998,7 @@ void ProjMgrWorker::PrintConnectionsValidation(ConnectionsValidationResult resul
     }
 
     if (!result.missedCollections.empty()) {
-      msg += "provided combined connections not consumed:";
+      msg += "no provided connections from this layer are consumed:";
       for (const auto& missedCollection : result.missedCollections) {
         msg += "\n  " + missedCollection.filename + (missedCollection.type.empty() ? "" : " (layer type: " + missedCollection.type + ")");
         for (const auto& connect : missedCollection.connections) {
@@ -1077,20 +1090,42 @@ ConnectionsCollectionMap ProjMgrWorker::ClassifyConnections(const ConnectionsCol
   return classifiedConnections;
 }
 
-void ProjMgrWorker::GetConsumesProvides(const ConnectionsCollectionVec& collection, ConnectionsList& connections) {
-  // collect consumed and provided connections
-  ConnectPtrVec visitedConnect;
+void ProjMgrWorker::GetActiveConnectMap(const ConnectionsCollectionVec& collection, ActiveConnectMap& activeConnectMap) {
+  // collect default active connects
   for (const auto& item : collection) {
-    for (const auto& connect : item.connections) {
-      if (find(visitedConnect.begin(), visitedConnect.end(), connect) != visitedConnect.end()) {
-        continue;
+    if (regex_match(item.filename, regex(".*\\.cproject\\.(yml|yaml)"))) {
+      // the 'connect' is always active in cproject.yml
+      for (const auto& connect : item.connections) {
+        activeConnectMap[connect] = true;
       }
-      visitedConnect.push_back(connect);
-      for (const auto& consumed : connect->consumes) {
-        connections.consumes.push_back(&consumed);
+    } else {
+      // the 'connect' is always active if it has no 'provides'
+      for (const auto& connect : item.connections) {
+        activeConnectMap[connect] = connect->provides.empty();
       }
-      for (const auto& provided : connect->provides) {
-        connections.provides.push_back(&provided);
+    }
+  }
+  // the 'connect' is only active if one or more key listed under 'provides' is listed under 'consumes' in other active 'connect'
+  for (auto& [activeConnect, activeFlag] : activeConnectMap) {
+    if (activeFlag) {
+      // set active connect recursively
+      SetActiveConnect(activeConnect, collection, activeConnectMap);
+    }
+  }
+}
+
+void ProjMgrWorker::SetActiveConnect(const ConnectItem* activeConnect, const ConnectionsCollectionVec& collection, ActiveConnectMap& activeConnectMap) {
+  // the 'connect' is only active if one or more key listed under 'provides' is listed under 'consumes' in other active 'connect'
+  for (const auto& consumed : activeConnect->consumes) {
+    for (const auto& item : collection) {
+      for (const auto& connect : item.connections) {
+        for (const auto& provided : connect->provides) {
+          if (provided.first == consumed.first && !activeConnectMap[connect]) {
+            activeConnectMap[connect] = true;
+            SetActiveConnect(connect, collection, activeConnectMap);
+            break;
+          }
+        }
       }
     }
   }
@@ -1117,9 +1152,22 @@ bool ProjMgrWorker::ProvidedConnectionsMatch(ConnectionsCollection collection, C
 }
 
 ConnectionsValidationResult ProjMgrWorker::ValidateConnections(ConnectionsCollectionVec combination) {
-  // get connections
+  // get active connects
+  ActiveConnectMap activeConnectMap;
+  GetActiveConnectMap(combination, activeConnectMap);
+
+  // collect active consumed and provided connections
   ConnectionsList connections;
-  GetConsumesProvides(combination, connections);
+  for (const auto& [connect, active] : activeConnectMap) {
+    if (active) {
+      for (const auto& consumed : connect->consumes) {
+        connections.consumes.push_back(&consumed);
+      }
+      for (const auto& provided : connect->provides) {
+        connections.provides.push_back(&provided);
+      }
+    }
+  }
 
   // elaborate provided list
   StrMap providedValues;
@@ -1180,7 +1228,7 @@ ConnectionsValidationResult ProjMgrWorker::ValidateConnections(ConnectionsCollec
 
   // set results
   bool result = !conflicts.empty() || !overflows.empty() || !incompatibles.empty() || !missedCollections.empty() ? false : true;
-  return { result, conflicts, overflows, incompatibles, missedCollections, connections.provides };
+  return { result, conflicts, overflows, incompatibles, missedCollections, activeConnectMap };
 }
 
 bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
