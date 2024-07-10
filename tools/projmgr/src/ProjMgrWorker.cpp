@@ -1743,7 +1743,7 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
     auto aggCompId = matchedComponent->GetComponentAggregateID();
 
     auto itr = std::find_if(processedComponents.begin(), processedComponents.end(), [aggCompId](const auto& pair) {
-      return pair.first.find(aggCompId) != std::string::npos;
+      return pair.first.compare(aggCompId) == 0;
       });
     if (itr != processedComponents.end()) {
       // multiple variant of the same component found
