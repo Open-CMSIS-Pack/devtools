@@ -6115,3 +6115,16 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListDevices_ContextSet) {
   auto outStr = streamRedirect.GetOutString();
   EXPECT_NE(outStr.find("ARM::RteTest_ARMCM0 (ARM::RteTest_DFP@0.2.0)"), string::npos);
 }
+
+TEST_F(ProjMgrUnitTests, ConvertEmptyLayer) {
+  char* argv[5];
+  const string& csolution = testinput_folder + "/TestLayers/empty-layer.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"-o";
+  argv[4] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
+
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/empty-layer.cbuild-idx.yml",
+    testinput_folder + "/TestLayers/ref/empty-layer.cbuild-idx.yml");
+}
