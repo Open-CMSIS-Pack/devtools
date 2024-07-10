@@ -1,0 +1,11 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schemas/cproject.schema.json
+
+project:
+  compiler: AC6
+
+  layers:
+    - type: Incompatible
+      optional: false
+      layer: ""
+
+    - layer: $Board-Layer$

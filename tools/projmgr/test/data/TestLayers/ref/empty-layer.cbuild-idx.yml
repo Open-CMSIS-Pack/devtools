@@ -1,0 +1,13 @@
+build-idx:
+  generated-by: csolution version 0.0.0+gd39b4a24
+  csolution: ../data/TestLayers/empty-layer.csolution.yml
+  tmpdir: tmp
+  cprojects:
+    - cproject: ../data/TestLayers/empty-layer.cproject.yml
+      clayers:
+        - clayer: ../data/TestLayers
+        - clayer: ../data/TestLayers/$Board-Layer$
+  cbuilds:
+    - cbuild: empty-layer+RteTest_ARMCM3.cbuild.yml
+      project: empty-layer
+      configuration: +RteTest_ARMCM3

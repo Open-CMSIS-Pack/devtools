@@ -201,6 +201,9 @@ bool ProjMgrWorker::ParseContextLayers(ContextItem& context) {
     if (CheckContextFilters(clayer.typeFilter, context)) {
       error_code ec;
       string clayerFile = RteUtils::ExpandAccessSequences(clayer.layer, context.variables);
+      if (clayerFile.empty()) {
+        continue;
+      }
       if (RteFsUtils::IsRelative(clayerFile)) {
         RteFsUtils::NormalizePath(clayerFile, context.cproject->directory);
       }
