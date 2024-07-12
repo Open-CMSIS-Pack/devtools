@@ -1735,8 +1735,8 @@ error csolution: invalid combination of contexts specified in command line:\n\
 
   const string& errMsg2 = "\
 error csolution: invalid combination of contexts specified in command line:\n\
-  build-type is not unique for project 'project1' in 'project1.Release+AVH' and 'project1.Debug+AVH'\n\
-  build-type is not unique for project 'project2' in 'project2.Release+AVH' and 'project2.Debug+AVH'\n\n";
+  build-type is not unique in 'project1.Release+AVH' and 'project1.Debug+AVH'\n\
+  build-type is not unique in 'project2.Release+AVH' and 'project2.Debug+AVH'\n\n";
 
   vector<std::tuple<vector<string>, bool, string>> vecTestData = {
     // inputContexts, expectedRetval, expectedErrMsg

@@ -5769,7 +5769,7 @@ TEST_F(ProjMgrUnitTests, TestRestrictedContextsWithContextSet_Failed2) {
   const string& csolution = testinput_folder + "/TestSolution/test.csolution.yml";
   const string& expectedErrMsg = "\
 error csolution: invalid combination of contexts specified in command line:\n\
-  build-type is not unique for project 'test1' in 'test1.Release+CM0' and 'test1.Debug+CM0'";
+  build-type is not unique in 'test1.Release+CM0' and 'test1.Debug+CM0'";
 
   argv[1] = (char*)"convert";
   argv[2] = (char*)csolution.c_str();
@@ -6146,4 +6146,24 @@ TEST_F(ProjMgrUnitTests, ConvertEmptyLayer) {
 
   ProjMgrTestEnv::CompareFile(testoutput_folder + "/empty-layer.cbuild-idx.yml",
     testinput_folder + "/TestLayers/ref/empty-layer.cbuild-idx.yml");
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_conflict_cbuild_set) {
+  char* argv[9];
+  StdStreamRedirect streamRedirect;
+
+  // convert --solution solution.yml
+  const string& csolution = testinput_folder + "/TestSolution/test.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-c";
+  argv[5] = (char*)".Debug";
+  argv[6] = (char*)"-c";
+  argv[7] = (char*)".Release";
+  argv[8] = (char*)"-S";
+  EXPECT_EQ(1, RunProjMgr(9, argv, 0));
+
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(errStr.find("build-type is not unique in '.Release' and '.Debug'"), string::npos);
 }
