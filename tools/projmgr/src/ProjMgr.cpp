@@ -529,11 +529,6 @@ bool ProjMgr::GenerateYMLConfigurationFiles() {
 }
 
 bool ProjMgr::ParseAndValidateContexts() {
-  const string& cbuildSetFile = m_parser.GetCsolution().directory + "/" +
-    m_parser.GetCsolution().name + ".cbuild-set.yml";
-  bool fileExist = RteFsUtils::Exists(cbuildSetFile);
-  bool writeCbuildSetFile = m_contextSet && (!fileExist || !m_selectedToolchain.empty());
-  
   // Parse context selection
   if (!m_worker.ParseContextSelection(m_context, m_contextSet)) {
     return false;
@@ -546,9 +541,12 @@ bool ProjMgr::ParseAndValidateContexts() {
     }
   }
 
-  if (writeCbuildSetFile) {
+  if (m_contextSet) {
     const auto& selectedContexts = m_worker.GetSelectedContexts();
+    m_selectedToolchain = m_worker.GetSelectedToochain();
     if (!selectedContexts.empty()) {
+      const string& cbuildSetFile = m_parser.GetCsolution().directory + "/" +
+        m_parser.GetCsolution().name + ".cbuild-set.yml";
       // Generate cbuild-set file
       if (!m_emitter.GenerateCbuildSet(selectedContexts, m_selectedToolchain, cbuildSetFile, m_checkSchema)) {
         return false;
