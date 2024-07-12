@@ -4880,7 +4880,8 @@ bool ProjMgrWorker::ValidateContexts(const std::vector<std::string>& contexts, b
 
     if (auto it = projectBuildTypeMap.find(contextItem.project); it != projectBuildTypeMap.end() && it->second != contextItem.build) {
       errorContexts.push_back(
-        "  build-type is not unique for project '" + contextItem.project + "' in '" + context + "' and '" + it->first + "." + it->second + "+" + selectedTarget + "'\n");
+        "  build-type is not unique in '" + context + "' and '" +
+        it->first + (it->second.empty() ? "" : ("." + it->second)) + (selectedTarget.empty() ? "" : ("+" + selectedTarget)) + "'\n");
       continue;
     }
 
