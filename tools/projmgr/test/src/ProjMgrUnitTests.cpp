@@ -4913,7 +4913,6 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_cbuildset_file) {
 
   {
     CleanUp();
-    StdStreamRedirect streamRedirect;
     // Test 2: Run without contexts specified (no existing cbuild-set file with -S)
     // Expectation: *.cbuild-set.yml file should be generated and only first build and
     //              target types should be selected with first project
@@ -4926,6 +4925,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_cbuildset_file) {
 
     EXPECT_EQ(0, RunProjMgr(7, argv, m_envp));
     EXPECT_TRUE(RteFsUtils::Exists(cbuildSetFile));
+    ProjMgrTestEnv::CompareFile(cbuildSetFile, testinput_folder + "/TestSolution/ref/cbuild/first_build_target.cbuild.set.yml");
     EXPECT_TRUE(RteFsUtils::Exists(outputDir + "/test2.Debug+CM0.cbuild.yml"));
     EXPECT_FALSE(RteFsUtils::Exists(outputDir + "/test1.Debug+CM0.cbuild.yml"));
     EXPECT_FALSE(RteFsUtils::Exists(outputDir + "/test2.Debug+CM3.cbuild.yml"));
@@ -4961,6 +4961,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_cbuildset_file) {
     // Test 4: Run with contexts specified (with existing cbuild-set file)
     // Expectations: All specified contexts should be processed and cbuild-set
     //               file remains unchanged.
+    StdStreamRedirect streamRedirect;
     argv[1] = (char*)"convert";
     argv[2] = (char*)"--solution";
     argv[3] = (char*)csolution.c_str();
@@ -4970,6 +4971,9 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_cbuildset_file) {
     argv[7] = (char*)"test1.Release+CM0";
 
     EXPECT_EQ(0, RunProjMgr(8, argv, m_envp));
+    auto outStr = streamRedirect.GetOutString();
+    EXPECT_NE(outStr.find("test1.Release+CM0.cprj - info csolution: file generated successfully"), string::npos);
+    EXPECT_NE(outStr.find("test1.Release+CM0.cbuild.yml - info csolution: file generated successfully"), string::npos);
     EXPECT_TRUE(RteFsUtils::Exists(cbuildSetFile));
     ProjMgrTestEnv::CompareFile(cbuildSetFile, testinput_folder + "/TestSolution/ref/cbuild/specific_contexts_test.cbuild-set.yml");
   }
@@ -5024,7 +5028,22 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_cbuildset_file) {
   }
 
   {
-    // Test 8: Run with invalid conversion with -S
+    // Test 8: Run with no contexts no toolchain specified (with existing cbuild-set file with -S)
+    // Expectations: Contexts from cbuild-set should be processed with toolchain specified in cbuild-set
+    argv[1] = (char*)"convert";
+    argv[2] = (char*)"--solution";
+    argv[3] = (char*)csolution.c_str();
+    argv[4] = (char*)"-o";
+    argv[5] = (char*)outputDir.c_str();
+    argv[6] = (char*)"-S";
+
+    EXPECT_EQ(0, RunProjMgr(7, argv, m_envp));
+    EXPECT_TRUE(RteFsUtils::Exists(cbuildSetFile));
+    ProjMgrTestEnv::CompareFile(cbuildSetFile, testinput_folder + "/TestSolution/ref/cbuild/specific_contexts_test.cbuild-set.yml");
+  }
+
+  {
+    // Test 9: Run with invalid conversion with -S
     // Expectations: Conversion should fail and cbuild-set file should not be generated
     const string& csolutionFile = testinput_folder + "/TestSolution/novalid_context.csolution.yml";
     argv[1] = (char*)"convert";
