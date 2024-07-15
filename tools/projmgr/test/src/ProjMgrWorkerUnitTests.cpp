@@ -1256,18 +1256,19 @@ TEST_F(ProjMgrWorkerUnitTests, CheckDeviceLayer) {
 };
 
 TEST_F(ProjMgrWorkerUnitTests, RemoveRedundantSubsets) {
-  const string strA = "A";
-  const string strB = "B";
-  const string strC = "C";
-  ConnectionsCollection A = { strA, RteUtils::EMPTY_STRING };
-  ConnectionsCollection B = { strB, RteUtils::EMPTY_STRING };
-  ConnectionsCollection C = { strC, RteUtils::EMPTY_STRING };
-  ConnectionsCollectionVec vecAB = { A, B };
-  ConnectionsCollectionVec vecA = { A };
-  ConnectionsCollectionVec vecB = { B };
-  ConnectionsCollectionVec vecC = { C };
-  vector<ConnectionsCollectionVec> validConnections = { vecAB, vecA, vecB, vecC };
-  vector<ConnectionsCollectionVec> expected = { vecAB, vecC };
+  ConnectItem connect1 = { "connect1" };
+  ConnectItem connect2 = { "connect2" };
+  ConnectItem connect3 = { "connect3" };
+  const ConnectItem* c1 = { &connect1 };
+  const ConnectItem* c2 = { &connect2 };
+  const ConnectItem* c3 = { &connect3 };
+  ConnectionsCollection A = { "filenameA", RteUtils::EMPTY_STRING, {c1, c2, c3} };
+  ConnectionsCollection As = { "filenameA", RteUtils::EMPTY_STRING, {c3, c1} };
+  ConnectionsCollection B = { "filenameB", RteUtils::EMPTY_STRING, {c1, c2, c3} };
+  ConnectionsCollection Bs = { "filenameB", RteUtils::EMPTY_STRING, {c2} };
+  ConnectionsCollection C = { "filenameC", RteUtils::EMPTY_STRING };
+  vector<ConnectionsCollectionVec> validConnections = { { Bs }, { A, B }, { A }, { B, A }, { B }, { A, B }, { As }, { C }, { Bs } };
+  vector<ConnectionsCollectionVec> expected = { { A }, { B }, { A, B }, { C } };
   RemoveRedundantSubsets(validConnections);
   auto it = validConnections.begin();
   for (const auto& expectedItem : expected) {
