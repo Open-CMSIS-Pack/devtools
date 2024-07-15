@@ -4427,6 +4427,9 @@ bool ProjMgrWorker::IsConnectionSubset(const ConnectionsCollection& connectionSu
 }
 
 bool ProjMgrWorker::IsCollectionSubset(const ConnectionsCollectionVec& collectionSubset, const ConnectionsCollectionVec& collectionSuperset) {
+  if (collectionSubset.size() != collectionSuperset.size()) {
+    return false;
+  }
   for (const auto& subset : collectionSubset) {
     bool isSubset = false;
     for (const auto& superset : collectionSuperset) {
@@ -4443,15 +4446,14 @@ bool ProjMgrWorker::IsCollectionSubset(const ConnectionsCollectionVec& collectio
 }
 
 void ProjMgrWorker::RemoveRedundantSubsets(std::vector<ConnectionsCollectionVec>& validConnections) {
-  const auto connections = validConnections;
   auto it = validConnections.begin();
-  for (const auto& collection : connections) {
+  while (it < validConnections.end()) {
     bool isSubset = false;
-    for (const auto& otherCollection : connections) {
-      if (&collection == &otherCollection) {
+    for (auto it2 = validConnections.begin(); it2 < validConnections.end(); it2++) {
+      if (it == it2) {
         continue;
       }
-      if (IsCollectionSubset(collection, otherCollection)) {
+      if (IsCollectionSubset(*it, *it2)) {
         isSubset = true;
         break;
       }
