@@ -40,8 +40,7 @@ default:
       C:
         - -std=gnu11
       Link:
-        - -lcrt0-semihost
-        - -lsemihost
+        - -lcrt0
         - -Wl,-Map=$elf()$.map
         - -Wl,--gc-sections
 
@@ -49,5 +48,4 @@ default:
       C-CPP: 
         - --dlib_config DLib_Config_Full.h
       Link:
-        - --semihosting
         - --map=$elf()$.map
