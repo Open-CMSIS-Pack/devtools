@@ -1,7 +1,5 @@
 default:
 
-  compiler: GCC
-
   misc:
     - for-compiler: AC6
       C-CPP:
@@ -30,7 +28,6 @@ default:
         - -std=gnu11
       Link:
         - --specs=nano.specs
-        - --specs=rdimon.specs
         - -Wl,-Map=$elf()$.map
         - -Wl,--gc-sections
 
