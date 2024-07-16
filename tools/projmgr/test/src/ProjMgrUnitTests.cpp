@@ -1991,6 +1991,8 @@ connections are invalid\n\
 \n\
 no valid combination of clayers was found\n\
 \n\
+error csolution: error occurred during layer detection. Please review the project and its dependencies\
+\n\
 ";
 
   const string& errStr = streamRedirect.GetErrorString();
@@ -2121,7 +2123,8 @@ check combined connections:\
   EXPECT_EQ(1, RunProjMgr(8, argv, m_envp));
 
   errStr = streamRedirect.GetErrorString();
-  EXPECT_TRUE(regex_match(errStr, regex(".*invalid/clayer/path - error csolution: clayer search path does not exist\n")));
+  string expectedStr = ".*invalid/clayer/path - error csolution: clayer search path does not exist\nerror csolution: error occurred during layer detection. Please review the project and its dependencies\n";
+  EXPECT_TRUE(regex_match(errStr, regex(expectedStr)));
 }
 
 TEST_F(ProjMgrUnitTests, LayerVariables) {
@@ -2198,7 +2201,8 @@ no valid combination of clayers was found.*\
   streamRedirect.ClearStringStreams();
   expectedErrStr = ".*\
 error csolution: undefined variables in variables-notdefined.csolution.yml:.*\
-  - \\$NotDefined\\$";
+  - \\$NotDefined\\$\
+error csolution: error occurred during layer detection. Please review the project and its dependencies";
 
   argv[7] = (char*)"-q";
   EXPECT_EQ(1, RunProjMgr(8, argv, m_envp));
