@@ -30,6 +30,7 @@ default:
         - --specs=nano.specs
         - -Wl,-Map=$elf()$.map
         - -Wl,--gc-sections
+        - -Wl,--no-warn-rwx-segments
 
     - for-compiler: CLANG
       C-CPP:
