@@ -28,9 +28,10 @@ default:
         - -std=gnu11
       Link:
         - --specs=nano.specs
+        - --specs=nosys.specs
         - -Wl,-Map=$elf()$.map
         - -Wl,--gc-sections
-        - -Wl,--no-warn-rwx-segments
+        - -Wl,--no-warn-rwx-segments   # suppress incorrect linker warning
 
     - for-compiler: CLANG
       C-CPP:
