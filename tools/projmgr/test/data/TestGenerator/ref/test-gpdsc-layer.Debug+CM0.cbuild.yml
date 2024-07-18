@@ -3,7 +3,7 @@ build:
   solution: ../data/TestGenerator/test-gpdsc-layer.csolution.yml
   project: ../data/TestGenerator/test-gpdsc-layer.cproject.yml
   context: test-gpdsc-layer.Debug+CM0
-  compiler: AC6@6.18.0
+  compiler: AC6
   device: RteTestGen_ARMCM0
   device-pack: ARM::RteTestGenerator@0.1.0
   processor:

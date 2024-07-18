@@ -11,7 +11,7 @@
   </packages>
 
   <compilers>
-    <compiler name="IAR" version="9.32.1"/>
+    <compiler name="IAR" version="8.50.6"/>
   </compilers>
 
   <target Dfpu="NO_FPU" Dname="RteTest_ARMCM3" Dvendor="ARM:82">

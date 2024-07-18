@@ -3,7 +3,7 @@ build:
   solution: ../data/TestSolution/test_validate_project.csolution.yml
   project: ../data/TestSolution/TestProject4/test_board_and_device.cproject.yml
   context: test_board_and_device+TEST_TARGET
-  compiler: AC6@6.18.0
+  compiler: AC6@>=6.18.0
   board: Keil::RteTest Dummy board
   board-pack: ARM::RteTest_DFP@0.2.0
   device: ARM::RteTest_ARMCM0_Dual:cm0_core1

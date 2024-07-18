@@ -82,6 +82,7 @@ void InitMessageTable()
   table["M613"] = MessageEntry(MsgLevel::LEVEL_ERROR,    CRLF_B,   "File '%PATH%' has unexpected format!"                                        );
   table["M614"] = MessageEntry(MsgLevel::LEVEL_ERROR,    CRLF_B,   "Missing access sequence delimiter: '%ACCSEQDELIM%'!"                         );
   table["M615"] = MessageEntry(MsgLevel::LEVEL_ERROR,    CRLF_B,   "%PROP% '%VAL%' was not found in the loaded packs!"                           );
+  table["M616"] = MessageEntry(MsgLevel::LEVEL_ERROR,    CRLF_B,   "compiler registration environment variable missing, format: %NAME%_TOOLCHAIN_<major>_<minor>_<patch>");
 
   table["M630"] = MessageEntry(MsgLevel::LEVEL_WARNING,  CRLF_B,   "Device '%DEV%' is substituted with variant '%VAR%'."                         );
   table["M631"] = MessageEntry(MsgLevel::LEVEL_WARNING,  CRLF_B,   "Project must have exactly one target element!"                               );

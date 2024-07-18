@@ -3,7 +3,7 @@ build:
   solution: ../data/TestSolution/LanguageAndScope/lang-scope.csolution.yml
   project: ../data/TestSolution/LanguageAndScope/lang-scope.cproject.yml
   context: lang-scope.Debug_AC6+RteTest_ARMCM3
-  compiler: AC6@6.18.0
+  compiler: AC6
   device: RteTest_ARMCM3
   device-pack: ARM::RteTest_DFP@0.2.0
   processor:

@@ -3,7 +3,7 @@ build:
   solution: ../board.csolution.yml
   project: single-core.cproject.yml
   context: single-core.Debug+Board
-  compiler: AC6@6.18.0
+  compiler: AC6
   board: RteTest CM4 board
   board-pack: ARM::RteTestBoard@0.1.0
   device: RteTest_ARMCM4_FP

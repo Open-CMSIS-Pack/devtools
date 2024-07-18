@@ -1794,6 +1794,13 @@ IAR@9.32.5\n\
 
   const string& outStr = streamRedirect.GetOutString();
   EXPECT_TRUE(regex_match(outStr, regex(expectedOutStr)));
+
+  // Test with no registered toolchains (empty environment variables)
+  streamRedirect.ClearStringStreams();
+  EXPECT_EQ(1, RunProjMgr(3, argv, 0));
+  const string& expectedErr = "error csolution: compiler registration environment variable missing, format: <GCC|CLANG|AC6|IAR>_TOOLCHAIN_<major>_<minor>_<patch>\n";
+  const string& errStr = streamRedirect.GetErrorString();
+  EXPECT_EQ(errStr, expectedErr);
 }
 
 TEST_F(ProjMgrUnitTests, ListToolchainsVerbose) {
@@ -1856,7 +1863,7 @@ TEST_F(ProjMgrUnitTests, ListToolchainsSolution) {
 
   // Test with no registered toolchains (empty environment variables)
   streamRedirect.ClearStringStreams();
-  EXPECT_EQ(1, RunProjMgr(5, argv, 0));
+  EXPECT_EQ(0, RunProjMgr(5, argv, 0));
   const string& expected2 = "AC6@>=0.0.0\nAC6@>=6.18.0\nGCC@11.3.1\n";
   const string& outStr2 = streamRedirect.GetOutString();
   EXPECT_EQ(outStr2, expected2);
@@ -4203,7 +4210,7 @@ TEST_F(ProjMgrUnitTests, ToolchainRedefinition) {
   EXPECT_EQ(warn, expectedWarn);
 
   const YAML::Node& cbuild = YAML::LoadFile(testoutput_folder + "/toolchain.Warning+RteTest_ARMCM3.cbuild.yml");
-  EXPECT_EQ(cbuild["build"]["compiler"].as<string>(), "GCC@11.2.1");
+  EXPECT_EQ(cbuild["build"]["compiler"].as<string>(), "GCC");
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_LinkerOptions) {

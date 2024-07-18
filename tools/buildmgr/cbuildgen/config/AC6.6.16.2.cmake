@@ -2,13 +2,6 @@
 #
 #   - Applies to toolchain: ARM Compiler 6.16.2 and greater
 
-############### EDIT BELOW ###############
-# Set base directory of toolchain
-set(TOOLCHAIN_ROOT)
-set(TOOLCHAIN_VERSION "6.16.2")
-
-############ DO NOT EDIT BELOW ###########
-
 set(AS "armasm")
 set(CC "armclang")
 set(CXX "armclang")
@@ -17,12 +10,8 @@ set(LD "armlink")
 set(AR "armar")
 set(OC "fromelf")
 
-if(DEFINED REGISTERED_TOOLCHAIN_ROOT)
-  set(TOOLCHAIN_ROOT "${REGISTERED_TOOLCHAIN_ROOT}")
-endif()
-if(DEFINED REGISTERED_TOOLCHAIN_VERSION)
-  set(TOOLCHAIN_VERSION "${REGISTERED_TOOLCHAIN_VERSION}")
-endif()
+set(TOOLCHAIN_ROOT "${REGISTERED_TOOLCHAIN_ROOT}")
+set(TOOLCHAIN_VERSION "${REGISTERED_TOOLCHAIN_VERSION}")
 
 if(DEFINED TOOLCHAIN_ROOT AND NOT TOOLCHAIN_ROOT STREQUAL "")
   set(EXT)

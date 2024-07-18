@@ -3,7 +3,7 @@ build:
   solution: ../genfiles.csolution.yml
   project: TestProject3_1.cproject.yml
   context: TestProject3_1.Debug+TypeA
-  compiler: GCC@11.2.1
+  compiler: GCC
   device: RteTestGen_ARMCM0
   processor:
     core: Cortex-M0

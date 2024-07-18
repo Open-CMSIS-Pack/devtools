@@ -128,6 +128,8 @@ set(CXX_FLAGS_C:/Temp/devtools/tools/buildmgr/test/testinput/Examples/GCC/Access
 
 # Toolchain config map
 
+set(REGISTERED_TOOLCHAIN_ROOT "C:/Compilers/GCC/10.3.1/bin")
+set(REGISTERED_TOOLCHAIN_VERSION "10.3.1")
 set(TOOLCHAIN_VERSION_MIN "9.2.1")
 include ("C:/sandbox/cbuild/etc/GCC.10.3.1.cmake")
 include ("C:/sandbox/cbuild/etc/CMSIS-Build-Utils.cmake")

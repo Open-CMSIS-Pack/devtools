@@ -2,25 +2,14 @@
 #
 #   - Applies to toolchain: GNU Toolchain for the Arm Architecture 10.3.1 and greater
 
-############### EDIT BELOW ###############
-# Set base directory of toolchain
-set(TOOLCHAIN_ROOT)
-set(TOOLCHAIN_VERSION "10.3.1")
-
-############ DO NOT EDIT BELOW ###########
-
 set(AS "as")
 set(CC "gcc")
 set(CXX "g++")
 set(CPP "gcc")
 set(OC "objcopy")
 
-if(DEFINED REGISTERED_TOOLCHAIN_ROOT)
-  set(TOOLCHAIN_ROOT "${REGISTERED_TOOLCHAIN_ROOT}")
-endif()
-if(DEFINED REGISTERED_TOOLCHAIN_VERSION)
-  set(TOOLCHAIN_VERSION "${REGISTERED_TOOLCHAIN_VERSION}")
-endif()
+set(TOOLCHAIN_ROOT "${REGISTERED_TOOLCHAIN_ROOT}")
+set(TOOLCHAIN_VERSION "${REGISTERED_TOOLCHAIN_VERSION}")
 
 if(DEFINED TOOLCHAIN_ROOT)
   set(PREFIX arm-none-eabi-)

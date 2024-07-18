@@ -11,7 +11,7 @@
   </packages>
 
   <compilers>
-    <compiler name="AC6" version="6.16.1:6.16.1"/>
+    <compiler name="AC6" version="6.6.5:6.16.1"/>
   </compilers>
 
   <target Dfpu="NO_FPU" Dname="RteTest_ARMCM3" Dvendor="ARM:82">
