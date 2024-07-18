@@ -308,6 +308,8 @@ jobs:
       CI_CBUILD_INSTALLER: ${{ github.workspace }}/cbuild_install.sh
       CMSIS_PACK_ROOT: ${{ github.workspace }}/packs
       GCC_TOOLCHAIN_ROOT: ${{ github.workspace }}/${{ matrix.toolchain_root }}
+      GCC_TOOLCHAIN_10_3_1: ${{ github.workspace }}/${{ matrix.toolchain_root }}
+      AC6_TOOLCHAIN_6_18_0: ${{ github.workspace }}/${{ matrix.toolchain_root }}
       CI_ARCH: ${{ matrix.arch }}
     strategy:
       #fail-fast: true
@@ -460,6 +462,8 @@ jobs:
         lcov_installer: lcov-1.15.tar.gz
         CMSIS_PACK_ROOT: ${{ github.workspace }}/packs
         GCC_TOOLCHAIN_ROOT: ${{ github.workspace }}/gcc-arm-11.2-2022.02-x86_64-arm-none-eabi/bin
+        GCC_TOOLCHAIN_10_3_1: ${{ github.workspace }}/${{ matrix.toolchain_root }}
+        AC6_TOOLCHAIN_6_18_0: ${{ github.workspace }}/${{ matrix.toolchain_root }}
     runs-on: ubuntu-22.04
     timeout-minutes: 15
     strategy:

@@ -1690,16 +1690,10 @@ bool ProjMgrWorker::ProcessToolchain(ContextItem& context) {
 
   context.toolchain = GetToolchain(context.compiler);
 
-  // get compatible registered toolchain
-  if (!GetLatestToolchain(context.toolchain)) {
-    string errMsg(RteUtils::EMPTY_STRING);
-    // get compatible supported toolchain
-    if (!GetToolchainConfig(context.toolchain.name, context.toolchain.range, context.toolchain.config, context.toolchain.version)) {
-      errMsg = "cmake configuration file and ";
-      context.toolchain.version = RteUtils::GetPrefix(context.toolchain.range);
-    }
-    errMsg += "compiler registration environment variable missing, format: " + context.toolchain.name + "_TOOLCHAIN_<major>_<minor>_<patch>";
-    m_toolchainErrors.insert(errMsg);
+  // get compatible supported toolchain
+  if (!GetToolchainConfig(context.toolchain.name, context.toolchain.range, context.toolchain.config, context.toolchain.version)) {
+    m_toolchainErrors.insert("cmake configuration file missing for compiler '" + context.compiler + "'");
+    context.toolchain.version = RteUtils::GetPrefix(context.toolchain.range);
   }
 
   if (context.toolchain.name == "AC6") {
@@ -4276,6 +4270,10 @@ bool ProjMgrWorker::ListToolchains(vector<ToolchainItem>& toolchains) {
     if (selectedContext.empty()) {
       // list registered toolchains
       GetRegisteredToolchains();
+      if (m_toolchains.empty()) {
+        ProjMgrLogger::Error("compiler registration environment variable missing, format: <GCC|CLANG|AC6|IAR>_TOOLCHAIN_<major>_<minor>_<patch>");
+        return false;
+      }
       toolchains = m_toolchains;
       return true;
     }
@@ -4289,7 +4287,7 @@ bool ProjMgrWorker::ListToolchains(vector<ToolchainItem>& toolchains) {
     if (!context.toolchain.name.empty()) {
       PushBackUniquely(toolchains, context.toolchain);
     }
-    if (context.toolchain.config.empty() || context.toolchain.root.empty()) {
+    if (context.toolchain.config.empty()) {
       allSupported = false;
     }
   }

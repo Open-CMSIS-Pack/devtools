@@ -5,7 +5,7 @@ build-gen:
   solution: ${DEVTOOLS(data)}/ExternalGenerator/extgen.csolution.yml
   project: ${DEVTOOLS(data)}/ExternalGenerator/tz_s/s.cproject.yml
   context: s.Debug+CM0
-  compiler: AC6@6.18.0
+  compiler: AC6
   device: RteTestGen_ARMCM0
   device-pack: ARM::RteTestGenerator@0.1.0
   processor:

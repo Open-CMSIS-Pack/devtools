@@ -150,7 +150,7 @@ void ProjMgrGenerator::GenerateCprjCompilers(XMLTreeElement* element, const Cont
   XMLTreeElement* compilerElement = element->CreateElement("compiler");
   if (compilerElement) {
     compilerElement->AddAttribute("name", context.toolchain.name);
-    // set minimum version according to registered/supported toolchain
+    // set minimum version according to supported toolchain
     string versionRange = context.toolchain.version;
     // set maximum version according to solution requirements
     string name, minVer, maxVer;

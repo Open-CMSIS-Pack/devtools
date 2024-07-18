@@ -2,25 +2,14 @@
 #
 #   - Applies to toolchain: LLVM/Clang Bare Metal Toolchain for the Arm Architecture 16.0.0 and greater
 
-############### EDIT BELOW ###############
-# Set base directory of toolchain
-set(TOOLCHAIN_ROOT)
-set(TOOLCHAIN_VERSION "17.0.1")
-
-############ DO NOT EDIT BELOW ###########
-
 set(AS "clang")
 set(CC "clang")
 set(CXX "clang++")
 set(CPP "clang")
 set(OC "llvm-objcopy")
 
-if(DEFINED REGISTERED_TOOLCHAIN_ROOT)
-  set(TOOLCHAIN_ROOT "${REGISTERED_TOOLCHAIN_ROOT}")
-endif()
-if(DEFINED REGISTERED_TOOLCHAIN_VERSION)
-  set(TOOLCHAIN_VERSION "${REGISTERED_TOOLCHAIN_VERSION}")
-endif()
+set(TOOLCHAIN_ROOT "${REGISTERED_TOOLCHAIN_ROOT}")
+set(TOOLCHAIN_VERSION "${REGISTERED_TOOLCHAIN_VERSION}")
 
 if(DEFINED TOOLCHAIN_ROOT)
   set(PREFIX)

@@ -62,6 +62,8 @@ set(CC_FLAGS_C:/sandbox/devtools/build/TestOutput/TestData/Examples/AC6/NestedGr
 
 # Toolchain config map
 
+set(REGISTERED_TOOLCHAIN_ROOT "C:/Compilers/AC6/6.18.0/bin")
+set(REGISTERED_TOOLCHAIN_VERSION "6.18.0")
 set(TOOLCHAIN_VERSION_MIN "6.0.0")
 include ("C:/sandbox/cbuild/etc/AC6.6.18.0.cmake")
 include ("C:/sandbox/cbuild/etc/CMSIS-Build-Utils.cmake")

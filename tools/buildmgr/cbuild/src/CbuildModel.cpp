@@ -473,10 +473,9 @@ bool CbuildModel::GetCompatibleToolchain(const string& name, const string& versi
   }
 
   if (selectedVersion.empty()) {
-    // no compatible registered toolchain was found, search for a suitable config file
-    if (GetToolchainConfig(toolchainConfigFiles, name, versionRange)) {
-      return true;
-    }
+    // no compatible registered toolchain was found
+    LogMsg("M616", VAL("NAME", name));
+    return false;
   } else {
     // registered toolchain was found
     m_toolchainRegisteredVersion = selectedVersion;
