@@ -95,17 +95,17 @@ mkdir -p etc/${PACKAGE_NAME}
 mkdir -p etc/profile.d
 
 # Get cpackget
-cpackget_version="2.1.2"
+cpackget_version="2.1.3"
 cpackget_base=https://github.com/Open-CMSIS-Pack/cpackget/releases/download/v${cpackget_version}/cpackget_${cpackget_version}
 curl --retry 3 -L ${cpackget_base}_linux_amd64.tar.gz -o - | tar xzfO - --wildcards '*cpackget' > ${input}/bin/cpackget.lin-amd64
 
 # Get cbuild2cmake
-cbuild2cmake_version="0.9.1"
+cbuild2cmake_version="0.9.2"
 cbuild2cmake_base=https://github.com/Open-CMSIS-Pack/cbuild2cmake/releases/download/v${cbuild2cmake_version}/cbuild2cmake_${cbuild2cmake_version}
 curl --retry 3 -L ${cbuild2cmake_base}_linux_amd64.tar.gz  -o - | tar xzfO - --wildcards '*cbuild2cmake' > ${distdir}/bin/cbuild2cmake.lin-amd64
 
 # Get generator-bridge
-cbridge_version="0.9.5"
+cbridge_version="0.9.9"
 cbridge_base=https://github.com/Open-CMSIS-Pack/generator-bridge/releases/download/v${cbridge_version}/cbridge_${cbridge_version}
 curl --retry 3 -L ${cbridge_base}_linux_amd64.tar.gz -o - | tar xzf - &&\
   cp cbridge_${cbridge_version}_linux_amd64/cbridge ${distdir}/bin/cbridge.lin-amd64 &&\
@@ -113,7 +113,7 @@ curl --retry 3 -L ${cbridge_base}_linux_amd64.tar.gz -o - | tar xzf - &&\
   rm -r cbridge_${cbridge_version}_linux_amd64
 
 # Get csolution
-csolution_version="2.4.0"
+csolution_version="2.5.0"
 csolution_base=https://github.com/Open-CMSIS-Pack/devtools/releases/download/tools%2Fprojmgr%2F${csolution_version}/projmgr.zip
 curl --retry 3 -L ${csolution_base} -o temp.zip && unzip -q -d temp temp.zip
 cp 'temp/bin/linux-amd64/csolution' ${input}/bin/csolution.lin-amd64
@@ -121,7 +121,7 @@ cp -r temp/etc/* etc/${PACKAGE_NAME}
 cp -r temp/etc/* usr/lib/${PACKAGE_NAME} && rm temp.zip && rm -rf temp
 
 # Get cbuild
-cbuild_version="2.4.0"
+cbuild_version="2.5.0"
 cbuild_base=https://github.com/Open-CMSIS-Pack/cbuild/releases/download/v${cbuild_version}/cbuild_${cbuild_version}
 curl --retry 3 -L ${cbuild_base}_linux_amd64.tar.gz  -o - | tar xzfO - --wildcards '*cbuild' > ${input}/bin/cbuild.lin-amd64
 
@@ -139,7 +139,6 @@ find . -type f -name "*.exe*" -exec rm {} ';'
 find . -type f -name "*.mac*" -exec rm {} ';'
 find . -type f -name "*.lin-arm64" -exec rm {} ';'
 find . -type f -name "*.lin-amd64" | sed -e 's/.lin-amd64//g' | xargs -I file mv file".lin-amd64" file
-find . -type f -name "*.cmake" -exec sed -i "s|set(TOOLCHAIN_ROOT.*|set(TOOLCHAIN_ROOT /usr/bin)|" {} ';'
 find usr/lib/${PACKAGE_NAME}/bin -type f -not -name "*.sh" | xargs -I file basename file | xargs -I util ln -s /usr/lib/${PACKAGE_NAME}/bin/util usr/bin/util
 # For the bash scripts, create wrappers as suggested in documentation:
 # https://www.debian.org/doc/debian-policy/ch-opersys.html#environment-variables
