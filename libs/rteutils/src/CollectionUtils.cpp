@@ -72,7 +72,9 @@ void CollectionUtils::RemoveDefines(vector<string>& dst, vector<string>& src) {
 
 StrVecMap CollectionUtils::MergeStrVecMap(const StrVecMap& map1, const StrVecMap& map2) {
   StrVecMap mergedMap(map1);
-  mergedMap.insert(map2.begin(), map2.end());
+  for (const auto& [key, vec] : map2) {
+    mergedMap[key].insert(mergedMap[key].end(), vec.begin(), vec.end());
+  }
   return mergedMap;
 }
 
