@@ -16,3 +16,8 @@ build-idx:
       project: variables-notdefined
       configuration: .BuildType+TargetType
       errors: true
+    - cbuild: testlayers.BuildType+TargetType.cbuild.yml
+      project: testlayers
+      configuration: .BuildType+TargetType
+      clayers:
+        - clayer: ../data/TestLayers/Layer1/layer1.clayer.yml

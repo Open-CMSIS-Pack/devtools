@@ -6160,7 +6160,7 @@ TEST_F(ProjMgrUnitTests, ConvertEmptyLayer) {
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_conflict_cbuild_set) {
-  char* argv[9];
+  char* argv[7];
   StdStreamRedirect streamRedirect;
 
   // convert --solution solution.yml
@@ -6169,12 +6169,10 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_conflict_cbuild_set) {
   argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-c";
-  argv[5] = (char*)".Debug";
-  argv[6] = (char*)"-c";
-  argv[7] = (char*)".Release";
-  argv[8] = (char*)"-S";
-  EXPECT_EQ(1, RunProjMgr(9, argv, 0));
+  argv[5] = (char*)"test1+CM0";
+  argv[6] = (char*)"-S";
+  EXPECT_EQ(1, RunProjMgr(7, argv, 0));
 
   auto errStr = streamRedirect.GetErrorString();
-  EXPECT_NE(errStr.find("build-type is not unique in '.Release' and '.Debug'"), string::npos);
+  EXPECT_NE(errStr.find("build-type is not unique in 'test1.Release+CM0' and 'test1.Debug+CM0'"), string::npos);
 }
