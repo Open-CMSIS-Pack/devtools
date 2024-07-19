@@ -4218,10 +4218,6 @@ bool ProjMgrWorker::ParseContextSelection(
         if (m_selectedToolchain.empty()) {
           m_selectedToolchain = cbuildSetItem.compiler;
         }
-
-        if (!ValidateContexts(m_selectedContexts, true)) {
-          return false;
-        }
       }
       else {
         m_selectedContexts.clear();
@@ -4237,6 +4233,10 @@ bool ProjMgrWorker::ParseContextSelection(
         ProjMgrLogger::Error(filterError.m_errMsg);
         return false;
       }
+    }
+    // validate context selection
+    if (!ValidateContexts(m_selectedContexts, contextSelection.empty())) {
+      return false;
     }
   }
 

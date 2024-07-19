@@ -534,13 +534,6 @@ bool ProjMgr::ParseAndValidateContexts() {
     return false;
   }
 
-  // validate and restrict the input contexts when used with -S option
-  if (!m_context.empty() && m_contextSet) {
-    if (!m_worker.ValidateContexts(m_context, false)) {
-      return false;
-    }
-  }
-
   if (m_contextSet) {
     const auto& selectedContexts = m_worker.GetSelectedContexts();
     m_selectedToolchain = m_worker.GetSelectedToochain();
@@ -937,44 +930,15 @@ bool ProjMgr::RunListLayers(void) {
       return false;
     }
 
-    auto csolution = m_parser.GetCsolution();
-    string cbuildSetFile = csolution.directory + "/" + csolution.name + ".cbuild-set.yml";
-
-    // Check if the cbuildSetFile exists
-    if (!RteFsUtils::Exists(cbuildSetFile)) {
-      vector<string> orderedContexts;
-      m_worker.GetYmlOrderedContexts(orderedContexts);
-      if (orderedContexts.empty()) {
-        return false;
-      }
-
-      //first context in yaml ordered context should be processed
-      string selectedContext = orderedContexts.front();
-
-      // process only selectedContext
-      auto& contextItem = (*contexts)[selectedContext];
-      m_allContexts.push_back(&contextItem);
-    }
-    else {
-      // If cbuildSetFile exists, parse the file and select contexts from it
-      if (!m_parser.ParseCbuildSet(cbuildSetFile, true)) {
-        return false;
-      }
-
-      // Retrieve the parsed contexts
-      const auto& cbuildSetItem = m_parser.GetCbuildSetItem();
-      const auto& selectedContexts = cbuildSetItem.contexts;
-
-      for (auto& contextName : selectedContexts) {
-        auto& contextItem = (*contexts)[contextName];
-        m_allContexts.push_back(&contextItem);
-      }
-    }
-
     // Generate Cbuild index
-    if (!m_allContexts.empty()) {
+    m_processedContexts.clear();
+    for (auto& contextName : m_worker.GetSelectedContexts()) {
+      auto& contextItem = (*contexts)[contextName];
+      m_processedContexts.push_back(&contextItem);
+    }
+    if (!m_processedContexts.empty()) {
       if (!m_emitter.GenerateCbuildIndex(
-        m_parser, m_worker, m_allContexts, m_outputDir,
+        m_parser, m_worker, m_processedContexts, m_outputDir,
         m_failedContext, map<string, ExecutesItem>(), m_checkSchema)) {
         return false;
       }
