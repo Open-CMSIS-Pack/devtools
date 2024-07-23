@@ -1998,7 +1998,7 @@ connections are invalid\n\
 \n\
 no valid combination of clayers was found\n\
 \n\
-error csolution: error occurred during layer detection. Please review the project and its dependencies\
+error csolution: no compatible software layer found. Review required connections of the project\
 \n\
 ";
 
@@ -2130,7 +2130,7 @@ check combined connections:\
   EXPECT_EQ(1, RunProjMgr(8, argv, m_envp));
 
   errStr = streamRedirect.GetErrorString();
-  string expectedStr = ".*invalid/clayer/path - error csolution: clayer search path does not exist\nerror csolution: error occurred during layer detection. Please review the project and its dependencies\n";
+  string expectedStr = ".*invalid/clayer/path - error csolution: clayer search path does not exist\nerror csolution: no compatible software layer found. Review required connections of the project\n";
   EXPECT_TRUE(regex_match(errStr, regex(expectedStr)));
 }
 
@@ -2209,7 +2209,7 @@ no valid combination of clayers was found.*\
   expectedErrStr = ".*\
 error csolution: undefined variables in variables-notdefined.csolution.yml:.*\
   - \\$NotDefined\\$\
-error csolution: error occurred during layer detection. Please review the project and its dependencies";
+error csolution: no compatible software layer found. Review required connections of the project";
 
   argv[7] = (char*)"-q";
   EXPECT_EQ(1, RunProjMgr(8, argv, m_envp));

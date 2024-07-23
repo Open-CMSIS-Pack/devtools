@@ -906,7 +906,7 @@ bool ProjMgr::RunListLayers(void) {
   vector<string> layers;
   error = !m_worker.ListLayers(layers, m_clayerSearchPath, m_failedContext);
   if (error) {
-    ProjMgrLogger::Error("error occurred during layer detection. Please review the project and its dependencies");
+    ProjMgrLogger::Error("no compatible software layer found. Review required connections of the project");
   }
 
   // If the worker has toolchain errors, set the error flag
