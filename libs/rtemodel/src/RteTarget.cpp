@@ -1805,14 +1805,11 @@ std::string RteTarget::GenerateRegionsHeaderContent() const
   oss << "//-------- <<< Use Configuration Wizard in Context Menu >>> --------------------" << RteUtils::LF_STRING;
   oss <<  RteUtils::LF_STRING;
 
+  oss << "// <n>Auto generated file: DO NOT EDIT!" << RteUtils::LF_STRING; 
+  oss << "// <n>Device Family Pack (DFP):   " << device->GetPackageID(true) << RteUtils::LF_STRING;
   if (board) {
-    oss << "// <n>Board pack:    " << board->GetPackageID(true) << RteUtils::LF_STRING;
-    oss << "// <i>Board pack used to generate this file" << RteUtils::LF_STRING;
-    oss << RteUtils::LF_STRING;
+    oss << "// <n>Board Support Pack (BSP):   " << board->GetPackageID(true) << RteUtils::LF_STRING;
   }
-
-  oss << "// <n>Device pack:   " << device->GetPackageID(true) << RteUtils::LF_STRING;
-  oss << "// <i>Device pack used to generate this file" << RteUtils::LF_STRING;
   oss << RteUtils::LF_STRING;
 
   oss << "// <h>ROM Configuration"   << RteUtils::LF_STRING;
