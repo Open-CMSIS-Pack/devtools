@@ -1729,12 +1729,13 @@ std::string RteTarget::GenerateMemoryRegionContent(RteItem* memory, const std::s
 {
   bool bRam = memory->IsWriteAccess();
   string name = memory->GetName();
-  if(bBoardMemory) {
-    name += " (board memory)";
-  }
   ostringstream oss;
-  oss << "// <h> " << id << "(is " << name << "from DFP)" << RteUtils::LF_STRING;
-
+  if(bBoardMemory) {
+    oss << "// <h> " << id << "(is " << name << " from BSP)" << RteUtils::LF_STRING;
+  } else {
+    oss << "// <h> " << id << "(is " << name << " from DFP)" << RteUtils::LF_STRING;
+  }
+  
   string start = memory->GetAttribute("start");
   oss << "//   <o> Base address <0x0-0xFFFFFFFF:8>" << RteUtils::LF_STRING;
   oss << "//   <i> Defines base address of memory region." << RteUtils::LF_STRING;
