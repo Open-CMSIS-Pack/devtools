@@ -1731,9 +1731,9 @@ std::string RteTarget::GenerateMemoryRegionContent(RteItem* memory, const std::s
   string name = memory->GetName();
   ostringstream oss;
   if(bBoardMemory) {
-    oss << "// <h> " << id << "(is " << name << " from BSP)" << RteUtils::LF_STRING;
+    oss << "// <h> " << id << " (is region: " << name << " from BSP)" << RteUtils::LF_STRING;
   } else {
-    oss << "// <h> " << id << "(is " << name << " from DFP)" << RteUtils::LF_STRING;
+    oss << "// <h> " << id << " (is region: " << name << " from DFP)" << RteUtils::LF_STRING;
   }
   
   string start = memory->GetAttribute("start");
@@ -1805,7 +1805,7 @@ std::string RteTarget::GenerateRegionsHeaderContent() const
   oss << "//-------- <<< Use Configuration Wizard in Context Menu >>> --------------------" << RteUtils::LF_STRING;
   oss <<  RteUtils::LF_STRING;
 
-  oss << "// <n>Auto generated file: DO NOT EDIT!" << RteUtils::LF_STRING; 
+  oss << "// <n>Auto-generated file: DO NOT EDIT!" << RteUtils::LF_STRING; 
   oss << "// <n>Device Family Pack (DFP):   " << device->GetPackageID(true) << RteUtils::LF_STRING;
   if (board) {
     oss << "// <n>Board Support Pack (BSP):   " << board->GetPackageID(true) << RteUtils::LF_STRING;
