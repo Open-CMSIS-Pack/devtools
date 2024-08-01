@@ -2555,6 +2555,9 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, bool processDevice,
     error |= true;
   }
 
+  // clean previous compiler selection
+  context.compiler.clear();
+
   StringCollection compiler = {
    &context.compiler,
    {
