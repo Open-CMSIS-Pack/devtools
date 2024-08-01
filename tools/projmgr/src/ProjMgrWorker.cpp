@@ -1227,7 +1227,7 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
     list<RteBoard*> partialMatchedBoards;
     for (const auto& [_, board] : availableBoards) {
       if (board->GetName() == boardItem.name) {
-        if (boardItem.vendor.empty() || (boardItem.vendor == DeviceVendor::GetCanonicalVendorName(board->GetVendorName()))) {
+        if (boardItem.vendor.empty() || (boardItem.vendor == board->GetVendorString())) {
           partialMatchedBoards.push_back(board);
         }
       }
@@ -3633,7 +3633,7 @@ bool ProjMgrWorker::ListBoards(vector<string>& boards, const string& filter) {
     }
     const RteBoardMap& availableBoards = context.rteFilteredModel->GetBoards();
     for (const auto& [_, board] : availableBoards) {
-      const string& boardVendor = board->GetVendorName();
+      const string& boardVendor = board->GetVendorString();
       const string& boardName = board->GetName();
       const string& boardRevision = board->GetRevision();
       const string& boardPack = board->GetPackageID(true);
