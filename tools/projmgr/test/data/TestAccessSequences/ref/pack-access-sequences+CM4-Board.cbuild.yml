@@ -1,0 +1,67 @@
+build:
+  generated-by: csolution version 2.5.0
+  solution: ../data/TestAccessSequences/pack-access-sequences.csolution.yml
+  project: ../data/TestAccessSequences/pack-access-sequences.cproject.yml
+  context: pack-access-sequences+CM4-Board
+  compiler: AC6
+  board: RteTest CM4 board
+  board-pack: ARM::RteTestBoard@0.1.0
+  device: RteTest_ARMCM4_FP
+  device-pack: ARM::RteTest_DFP@0.1.1
+  processor:
+    fpu: sp
+    core: Cortex-M4
+  packs:
+    - pack: ARM::RteTestBoard@0.1.0
+      path: ${CMSIS_PACK_ROOT}/ARM/RteTestBoard/0.1.0
+    - pack: ARM::RteTest_DFP@0.1.1
+      path: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.1.1
+  define:
+    - ARMCM4_FP
+    - _RTE_
+  define-asm:
+    - ARMCM4_FP
+    - _RTE_
+  add-path:
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.1.1
+    - ${CMSIS_PACK_ROOT}/ARM/RteTestBoard/0.1.0
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0
+    - ../data/TestAccessSequences/RTE/_CM4-Board
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.1.1/Device/ARM/ARMCM4/Include
+  add-path-asm:
+    - ../data/TestAccessSequences/$Pack(ARM::NotLoaded)$
+    - ../data/TestAccessSequences/$Pack(Wrong.Format)$
+    - ../data/TestAccessSequences/RTE/_CM4-Board
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.1.1/Device/ARM/ARMCM4/Include
+  output-dirs:
+    intdir: tmp/pack-access-sequences/CM4-Board
+    outdir: out/pack-access-sequences/CM4-Board
+    rtedir: ../data/TestAccessSequences/RTE
+  output:
+    - type: elf
+      file: pack-access-sequences.axf
+  components:
+    - component: ARM::RteTest:CORE@0.1.1
+      condition: Cortex-M Device
+      from-pack: ARM::RteTest_DFP@0.1.1
+      selected-by: CORE
+      files:
+        - file: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.1.1/Doc/html/index.html
+          category: doc
+          version: 0.1.1
+  linker:
+    script: ../data/TestAccessSequences/RTE/Device/RteTest_ARMCM4_FP/ac6_linker_script.sct.src
+    regions: ../data/TestAccessSequences/RTE/Device/RteTest_ARMCM4_FP/regions_RteTest_CM4_board.h
+  constructed-files:
+    - file: ../data/TestAccessSequences/RTE/_CM4-Board/RTE_Components.h
+      category: header
+  licenses:
+    - license: <unknown>
+      packs:
+        - pack: ARM::RteTestBoard@0.1.0
+    - license: <unknown>
+      packs:
+        - pack: ARM::RteTest_DFP@0.1.1
+      components:
+        - component: ::RteTest:CORE(API)
+        - component: ARM::RteTest:CORE@0.1.1

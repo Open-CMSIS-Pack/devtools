@@ -1,0 +1,17 @@
+build-idx:
+  generated-by: csolution version 2.5.0
+  csolution: ../data/TestAccessSequences/pack-access-sequences.csolution.yml
+  tmpdir: tmp
+  cprojects:
+    - cproject: ../data/TestAccessSequences/pack-access-sequences.cproject.yml
+  cbuilds:
+    - cbuild: pack-access-sequences+CM4-Board.cbuild.yml
+      project: pack-access-sequences
+      configuration: +CM4-Board
+  executes:
+    - execute: fcarm
+      run: ${INPUT_0}
+      input:
+        - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.1.1/fcarm
+      output:
+        - ../data/TestAccessSequences/source.c
