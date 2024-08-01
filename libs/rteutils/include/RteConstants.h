@@ -104,12 +104,16 @@ public:
   static constexpr const char* AS_DNAME = "Dname";
   static constexpr const char* AS_PNAME = "Pname";
   static constexpr const char* AS_BNAME = "Bname";
+  static constexpr const char* AS_DPACK = "Dpack";
+  static constexpr const char* AS_BPACK = "Bpack";
+  
 
   static constexpr const char* AS_SOLUTION_DIR = "SolutionDir";
   static constexpr const char* AS_PROJECT_DIR = "ProjectDir";
   static constexpr const char* AS_SOLUTION_DIR_BR = "SolutionDir()";
   static constexpr const char* AS_PROJECT_DIR_BR = "ProjectDir()";
   static constexpr const char* AS_OUT_DIR = "OutDir";
+  static constexpr const char* AS_PACK_DIR = "Pack";
   static constexpr const char* AS_BIN = OUTPUT_TYPE_BIN;
   static constexpr const char* AS_ELF = OUTPUT_TYPE_ELF;
   static constexpr const char* AS_HEX = OUTPUT_TYPE_HEX;

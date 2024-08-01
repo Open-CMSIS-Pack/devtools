@@ -1,0 +1,29 @@
+solution:
+  compiler: AC6
+  
+  target-types:
+    - type: CM4-Board
+      board: RteTest CM4 board
+      add-path:
+        - $Dpack$
+        - $Bpack$
+        - $Pack(ARM::RteTest)$
+      add-path-asm:
+        - $Pack(ARM::NotLoaded)$
+        - $Pack(Wrong.Format)$ 
+
+  projects:
+    - project: ./pack-access-sequences.cproject.yml
+
+  packs:
+    - pack: ARM::RteTest_DFP@0.1.1
+    - pack: ARM::RteTestBoard
+    - pack: ARM::RteTest
+
+  executes:
+    - execute: fcarm
+      run: $input(0)$
+      input:
+        - $Pack(ARM::RteTest_DFP)$/fcarm
+      output:
+        - $ProjectDir()$/source.c
