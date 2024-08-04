@@ -66,7 +66,7 @@ jobs:
 
       - name: Archive svdconv binary
         if: ${{ github.event_name != 'release' || (needs.setup.outputs.nightly == 'true')}}
-        uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4.3.4
+        uses: actions/upload-artifact@89ef406dd8d7e03cfd12d9e0a4a378f454709029 # v4.3.5
         with:
           name: svdconv-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/tools/svdconv/SVDConv/svdconv-*-${{ matrix.target }}-${{ matrix.arch }}.*
@@ -126,7 +126,7 @@ jobs:
 
       - name: Archive unit test results
         if: always() && (matrix.arch != 'arm64')
-        uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4.3.4
+        uses: actions/upload-artifact@89ef406dd8d7e03cfd12d9e0a4a378f454709029 # v4.3.5
         with:
           name: unit_test_result_svdconv-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/svdconvunittests-*.xml
@@ -135,7 +135,7 @@ jobs:
 
       - name: Archive integration test results
         if: always() && (matrix.arch != 'arm64')
-        uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4.3.4
+        uses: actions/upload-artifact@89ef406dd8d7e03cfd12d9e0a4a378f454709029 # v4.3.5
         with:
           name: integ_test_result_svdconv-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/svdconvintegtests-*.xml
@@ -197,7 +197,7 @@ jobs:
 
       - name: Archive unit test results
         if: (github.event_name == 'push')
-        uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4.3.4
+        uses: actions/upload-artifact@89ef406dd8d7e03cfd12d9e0a4a378f454709029 # v4.3.5
         with:
           name: unit_test_report_svdconv-linux-amd64
           path: ./build/test_reports/svdconvunittests-*.xml
@@ -206,7 +206,7 @@ jobs:
 
       - name: Archive integration test results
         if: (github.event_name == 'push')
-        uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4.3.4
+        uses: actions/upload-artifact@89ef406dd8d7e03cfd12d9e0a4a378f454709029 # v4.3.5
         with:
           name: integ_test_report_svdconv-linux-amd64
           path: ./build/test_reports/svdconvintegtests-*.xml
@@ -251,7 +251,7 @@ jobs:
           attempt_delay: 5000
 
       - name: Archive coverage report
-        uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4.3.4
+        uses: actions/upload-artifact@89ef406dd8d7e03cfd12d9e0a4a378f454709029 # v4.3.5
         with:
           name: coverage-report-svdconv
           path: |
@@ -301,7 +301,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Event File
-        uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4.3.4
+        uses: actions/upload-artifact@89ef406dd8d7e03cfd12d9e0a4a378f454709029 # v4.3.5
         with:
           name: Event File svdconv
           path: ${{ github.event_path }}
