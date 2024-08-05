@@ -1749,18 +1749,18 @@ std::string RteTarget::GenerateMemoryRegionContent(RteItem* memory, const std::s
   oss << "#define " << id << "_SIZE " << size << RteUtils::LF_STRING;
 
   int defaultRegion = memory->IsDefault() ? 1 : 0;
-  oss << "//   <q>Default region" << RteUtils::LF_STRING;
+  oss << "//   <q> Default region" << RteUtils::LF_STRING;
   oss << "//   <i> Enables memory region globally for the application." << RteUtils::LF_STRING;
   oss << "#define " << id << "_DEFAULT " << defaultRegion << RteUtils::LF_STRING;
 
   if (bRam) {
     int noInit = memory->IsNoInit() ? 1 : 0;
-    oss << "//   <q>No zero initialize" << RteUtils::LF_STRING;
+    oss << "//   <q> No zero initialize" << RteUtils::LF_STRING;
     oss << "//   <i> Excludes region from zero initialization." << RteUtils::LF_STRING;
     oss << "#define " << id << "_NOINIT " << noInit << RteUtils::LF_STRING;
   } else {
     int startup = memory->IsStartup() ? 1 : 0;
-    oss << "//   <q>Startup" << RteUtils::LF_STRING;
+    oss << "//   <q> Startup" << RteUtils::LF_STRING;
     oss << "//   <i> Selects region to be used for startup code." << RteUtils::LF_STRING;
     oss << "#define " << id << "_STARTUP " << startup << RteUtils::LF_STRING;
   }
@@ -1805,7 +1805,8 @@ std::string RteTarget::GenerateRegionsHeaderContent() const
   oss << "//-------- <<< Use Configuration Wizard in Context Menu >>> --------------------" << RteUtils::LF_STRING;
   oss <<  RteUtils::LF_STRING;
 
-  oss << "// <n> Auto-generated file: DO NOT EDIT!" << RteUtils::LF_STRING; 
+  oss << "// Auto-generated file: USE CONFIGURATION WIZARD TO CHANGE VALUES!" << RteUtils::LF_STRING;
+  oss << "// <i> Generated using information from packs" << RteUtils::LF_STRING;
   oss << "// <n> Device Family Pack (DFP):   " << device->GetPackageID(true) << RteUtils::LF_STRING;
   if (board) {
     oss << "// <n> Board Support Pack (BSP):   " << board->GetPackageID(true) << RteUtils::LF_STRING;
