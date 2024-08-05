@@ -59,4 +59,3 @@
 
 
 #endif /* REGIONS_RTETEST_ARMCM4_FP_H */
-
