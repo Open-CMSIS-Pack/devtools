@@ -1806,10 +1806,10 @@ std::string RteTarget::GenerateRegionsHeaderContent() const
   oss <<  RteUtils::LF_STRING;
 
   oss << "// Auto-generated file: USE CONFIGURATION WIZARD TO CHANGE VALUES!" << RteUtils::LF_STRING;
-  oss << "// <i> Generated using information from packs" << RteUtils::LF_STRING;
-  oss << "// <n> Device Family Pack (DFP):   " << device->GetPackageID(true) << RteUtils::LF_STRING;
+  oss << "// <n> Generated using information from packs" << RteUtils::LF_STRING;
+  oss << "// <i> Device Family Pack (DFP):   " << device->GetPackageID(true) << RteUtils::LF_STRING;
   if (board) {
-    oss << "// <n> Board Support Pack (BSP):   " << board->GetPackageID(true) << RteUtils::LF_STRING;
+    oss << "// <i> Board Support Pack (BSP):   " << board->GetPackageID(true) << RteUtils::LF_STRING;
   }
   oss << RteUtils::LF_STRING;
 
