@@ -29,6 +29,8 @@ static const regex accessSequencesRegEx = regex(string("^(") +
   "\\((.*)\\)$"
 );
 
+static const regex packDirRegEx = regex(string("^(") + RteConstants::AS_PACK_DIR + ")\\((.*)\\)$");
+
 static const map<const string, tuple<const string, const string, const string>> affixesMap = {
   { ""   ,   {RteConstants::DEFAULT_ELF_SUFFIX, RteConstants::DEFAULT_LIB_PREFIX, RteConstants::DEFAULT_LIB_SUFFIX }},
   { "AC6",   {RteConstants::AC6_ELF_SUFFIX    , RteConstants::AC6_LIB_PREFIX    , RteConstants::AC6_LIB_SUFFIX     }},
@@ -1227,7 +1229,7 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
     list<RteBoard*> partialMatchedBoards;
     for (const auto& [_, board] : availableBoards) {
       if (board->GetName() == boardItem.name) {
-        if (boardItem.vendor.empty() || (boardItem.vendor == DeviceVendor::GetCanonicalVendorName(board->GetVendorName()))) {
+        if (boardItem.vendor.empty() || (boardItem.vendor == board->GetVendorString())) {
           partialMatchedBoards.push_back(board);
         }
       }
@@ -1264,6 +1266,7 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
     context.boardPack = matchedBoard->GetPackage();
     if (context.boardPack) {
       context.packages.insert({ context.boardPack->GetID(), context.boardPack });
+      context.variables[RteConstants::AS_BPACK] = context.boardPack->GetAbsolutePackagePath();
     }
     context.targetAttributes["Bname"]    = matchedBoard->GetName();
     context.targetAttributes["Bvendor"]  = matchedBoard->GetVendorName();
@@ -1398,6 +1401,7 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
   context.devicePack = matchedDevice->GetPackage();
   if (context.devicePack) {
     context.packages.insert({ context.devicePack->GetID(), context.devicePack });
+    context.variables[RteConstants::AS_DPACK] = context.devicePack->GetAbsolutePackagePath();
   }
   GetDeviceItem(context.device, context.deviceItem);
   context.variables[RteConstants::AS_DNAME] = context.deviceItem.name;
@@ -2500,7 +2504,7 @@ bool ProjMgrWorker::ProcessCompilerPrecedence(StringCollection& item, bool accep
 }
 
 
-bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, bool rerun) {
+bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, bool processDevice, bool rerun) {
   // Notes: defines, includes and misc are additive. All other keywords overwrite previous settings.
   // The target-type and build-type definitions are additive, but an attempt to
   // redefine an already existing type results in an error.
@@ -2550,6 +2554,9 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, bool rerun) {
   if (!ProcessDevicePrecedence(device)) {
     error |= true;
   }
+
+  // clean previous compiler selection
+  context.compiler.clear();
 
   StringCollection compiler = {
    &context.compiler,
@@ -2605,8 +2612,15 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, bool rerun) {
     error |= true;
   }
 
+  // Process device and board
+  if (processDevice && !ProcessDevice(context)) {
+    CheckMissingPackRequirements(context.name);
+    error |= true;
+  }
+
   // Access sequences and relative path references must be processed
   // after board, device and compiler precedences (due to $Bname$, $Dname$ and $Compiler$)
+  // after board and device processing (due to $Bpack$ and $Dpack$)
   // after output filenames (due to $Output$)
   // but before processing misc, defines and includes precedences
   if (!ProcessSequencesRelatives(context, rerun)) {
@@ -3103,6 +3117,31 @@ void ProjMgrWorker::ExpandAccessSequence(const ContextItem& context, const Conte
   item = regex_replace(item, regEx, replacement);
 }
 
+void ProjMgrWorker::ExpandPackDir(ContextItem& context, const string& pack, string& item) {
+  PackInfo packInfo;
+  ProjMgrUtils::ConvertToPackInfo(pack, packInfo);
+  if (packInfo.vendor.empty() || packInfo.name.empty()) {
+    ProjMgrLogger::Warn("access sequence '$Pack(" + pack + ")' must have the format '$Pack(vendor::name)$'");
+    return;
+  }
+  string replacement = RteUtils::EMPTY_STRING;
+  for (const auto& rtePackage : m_loadedPacks) {
+    // find first match in loaded packs
+    PackInfo loadedPackInfo;
+    ProjMgrUtils::ConvertToPackInfo(rtePackage->GetPackageID(), loadedPackInfo);
+    if (ProjMgrUtils::IsMatchingPackInfo(loadedPackInfo, packInfo)) {
+      replacement = rtePackage->GetAbsolutePackagePath();
+      break;
+    }
+  }
+  if (replacement.empty()) {
+    ProjMgrLogger::Warn("access sequence pack was not loaded: '$Pack(" + pack + ")$'");
+    return;
+  }
+  regex regEx = regex(string("\\$") + RteConstants::AS_PACK_DIR + "\\(.*\\)\\$");
+  item = regex_replace(item, regEx, replacement);
+}
+
 bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, const string& ref, string outDir, bool withHeadingDot, bool solutionLevel) {
   size_t offset = 0;
   bool pathReplace = false;
@@ -3119,7 +3158,10 @@ bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, 
     }
     if (offset != string::npos) {
       smatch asMatches;
-      if (regex_match(sequence, asMatches, accessSequencesRegEx) && asMatches.size() == 3) {
+      if (regex_match(sequence, asMatches, packDirRegEx) && asMatches.size() == 3) {
+        // pack dir access sequence
+        ExpandPackDir(context, asMatches[2], item);
+      } else if (regex_match(sequence, asMatches, accessSequencesRegEx) && asMatches.size() == 3) {
         // get capture groups, see regex accessSequencesRegEx
         const string sequenceName = asMatches[1];
         string contextName = asMatches[2];
@@ -3150,7 +3192,10 @@ bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, 
             if (!ParseContextLayers(refContext)) {
               return false;
             }
-            if (!ProcessPrecedences(refContext)) {
+            if (!refContext.rteActiveTarget && !LoadPacks(refContext)) {
+              return false;
+            }
+            if (!ProcessPrecedences(refContext, true)) {
               return false;
             }
           }
@@ -3475,11 +3520,7 @@ bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGenFiles, bool
     return false;
   }
   context.rteActiveProject->SetAttribute("update-rte-files", updateRteFiles ? "1" : "0");
-  if (!ProcessPrecedences(context)) {
-    return false;
-  }
-  if (!ProcessDevice(context)) {
-    CheckMissingPackRequirements(context.name);
+  if (!ProcessPrecedences(context, true)) {
     return false;
   }
   if (!SetTargetAttributes(context, context.targetAttributes)) {
@@ -3633,7 +3674,7 @@ bool ProjMgrWorker::ListBoards(vector<string>& boards, const string& filter) {
     }
     const RteBoardMap& availableBoards = context.rteFilteredModel->GetBoards();
     for (const auto& [_, board] : availableBoards) {
-      const string& boardVendor = board->GetVendorName();
+      const string& boardVendor = board->GetVendorString();
       const string& boardName = board->GetName();
       const string& boardRevision = board->GetRevision();
       const string& boardPack = board->GetPackageID(true);
@@ -3709,10 +3750,7 @@ bool ProjMgrWorker::ListComponents(vector<string>& components, const string& fil
       return false;
     }
     if (!selectedContext.empty()) {
-      if (!ProcessPrecedences(context)) {
-        return false;
-      }
-      if (!ProcessDevice(context)) {
+      if (!ProcessPrecedences(context, true)) {
         return false;
       }
     }
@@ -4800,10 +4838,7 @@ bool ProjMgrWorker::ProcessGeneratedLayers(ContextItem& context) {
         return false;
       }
     }
-    if (!ProcessPrecedences(context, true)) {
-      return false;
-    }
-    if (!ProcessDevice(context)) {
+    if (!ProcessPrecedences(context, true, true)) {
       return false;
     }
     if (!ProcessGroups(context)) {

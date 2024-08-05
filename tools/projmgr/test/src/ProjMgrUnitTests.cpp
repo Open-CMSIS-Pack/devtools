@@ -2300,6 +2300,33 @@ TEST_F(ProjMgrUnitTests, AccessSequences2) {
    testinput_folder + "/TestAccessSequences/ref/test-access-sequences2.cbuild-idx.yml");
 }
 
+TEST_F(ProjMgrUnitTests, PackAccessSequences) {
+  char* argv[5];
+  StdStreamRedirect streamRedirect;
+  const string& csolution = testinput_folder + "/TestAccessSequences/pack-access-sequences.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"-o";
+  argv[4] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
+
+  // Check generated cbuild files
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/pack-access-sequences.cbuild-idx.yml",
+    testinput_folder + "/TestAccessSequences/ref/pack-access-sequences.cbuild-idx.yml");
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/pack-access-sequences+CM4-Board.cbuild.yml",
+    testinput_folder + "/TestAccessSequences/ref/pack-access-sequences+CM4-Board.cbuild.yml");
+
+  // Check warnings
+  const vector<string> expectedVec = {
+    {"warning csolution: access sequence pack was not loaded: '$Pack(ARM::NotLoaded)$'"},
+    {"warning csolution: access sequence '$Pack(Wrong.Format)' must have the format '$Pack(vendor::name)$'"}
+  };
+  const string& errStr = streamRedirect.GetErrorString();
+  for (const auto& expected : expectedVec) {
+    EXPECT_TRUE(errStr.find(expected) != string::npos) << "Missing Expected: " + expected;
+  }
+}
+
 TEST_F(ProjMgrUnitTests, RunProjMgr_MalformedAccessSequences1) {
   char* argv[6];
   const string& csolution = testinput_folder + "/TestAccessSequences/test-malformed-access-sequences1.csolution.yml";

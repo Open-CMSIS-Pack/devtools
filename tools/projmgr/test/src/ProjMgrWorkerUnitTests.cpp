@@ -1502,8 +1502,9 @@ TEST_F(ProjMgrWorkerUnitTests, GetGeneratorDir) {
   cproject.directory = csolution.directory + "/ProjectDirectory";
   clayer.directory = cproject.directory + "/LayerDirectory";
   context.directories.cprj = testoutput_folder;
-  context.variables["Compiler"] = context.compiler = "AC6";
+  context.variables["Compiler"] = csolution.target.build.compiler = "AC6";
   context.name = "project.Build+Target";
+  cproject.target.device = "RteTest_ARMCM0";
   string genDir;
 
   // base directory

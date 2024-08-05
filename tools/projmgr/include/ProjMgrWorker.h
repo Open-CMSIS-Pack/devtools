@@ -731,7 +731,7 @@ protected:
   bool GetProjectSetup(ContextItem& context);
   bool InitializeTarget(ContextItem& context);
   bool SetTargetAttributes(ContextItem& context, std::map<std::string, std::string>& attributes);
-  bool ProcessPrecedences(ContextItem& context, bool rerun = false);
+  bool ProcessPrecedences(ContextItem& context, bool processDevice = false, bool rerun = false);
   bool ProcessPrecedence(StringCollection& item);
   bool ProcessCompilerPrecedence(StringCollection& item, bool acceptRedefinition = false);
   bool ProcessDevice(ContextItem& context);
@@ -803,6 +803,7 @@ protected:
   void CheckAndGenerateRegionsHeader(ContextItem& context);
   bool GenerateRegionsHeader(ContextItem& context, std::string& generatedRegionsFile);
   void ExpandAccessSequence(const ContextItem& context, const ContextItem& refContext, const std::string& sequence, const std::string& outdir, std::string& item, bool withHeadingDot);
+  void ExpandPackDir(ContextItem& context, const std::string& pack, std::string& item);
   bool GetGeneratorDir(const RteGenerator* generator, ContextItem& context, const std::string& layer, std::string& genDir);
   bool GetGeneratorOptions(ContextItem& context, const std::string& layer, GeneratorOptionsItem& options);
   bool GetExtGeneratorOptions(ContextItem& context, const std::string& layer, GeneratorOptionsItem& options);
