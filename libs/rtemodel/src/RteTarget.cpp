@@ -1729,12 +1729,13 @@ std::string RteTarget::GenerateMemoryRegionContent(RteItem* memory, const std::s
 {
   bool bRam = memory->IsWriteAccess();
   string name = memory->GetName();
-  if(bBoardMemory) {
-    name += " (board memory)";
-  }
   ostringstream oss;
-  oss << "// <h> " << name << "=<" << id << ">" << RteUtils::LF_STRING;
-
+  if(bBoardMemory) {
+    oss << "// <h> " << id << " (is region: " << name << " from BSP)" << RteUtils::LF_STRING;
+  } else {
+    oss << "// <h> " << id << " (is region: " << name << " from DFP)" << RteUtils::LF_STRING;
+  }
+  
   string start = memory->GetAttribute("start");
   oss << "//   <o> Base address <0x0-0xFFFFFFFF:8>" << RteUtils::LF_STRING;
   oss << "//   <i> Defines base address of memory region." << RteUtils::LF_STRING;
@@ -1748,18 +1749,18 @@ std::string RteTarget::GenerateMemoryRegionContent(RteItem* memory, const std::s
   oss << "#define " << id << "_SIZE " << size << RteUtils::LF_STRING;
 
   int defaultRegion = memory->IsDefault() ? 1 : 0;
-  oss << "//   <q>Default region" << RteUtils::LF_STRING;
+  oss << "//   <q> Default region" << RteUtils::LF_STRING;
   oss << "//   <i> Enables memory region globally for the application." << RteUtils::LF_STRING;
   oss << "#define " << id << "_DEFAULT " << defaultRegion << RteUtils::LF_STRING;
 
   if (bRam) {
     int noInit = memory->IsNoInit() ? 1 : 0;
-    oss << "//   <q>No zero initialize" << RteUtils::LF_STRING;
+    oss << "//   <q> No zero initialize" << RteUtils::LF_STRING;
     oss << "//   <i> Excludes region from zero initialization." << RteUtils::LF_STRING;
     oss << "#define " << id << "_NOINIT " << noInit << RteUtils::LF_STRING;
   } else {
     int startup = memory->IsStartup() ? 1 : 0;
-    oss << "//   <q>Startup" << RteUtils::LF_STRING;
+    oss << "//   <q> Startup" << RteUtils::LF_STRING;
     oss << "//   <i> Selects region to be used for startup code." << RteUtils::LF_STRING;
     oss << "#define " << id << "_STARTUP " << startup << RteUtils::LF_STRING;
   }
@@ -1804,17 +1805,15 @@ std::string RteTarget::GenerateRegionsHeaderContent() const
   oss << "//-------- <<< Use Configuration Wizard in Context Menu >>> --------------------" << RteUtils::LF_STRING;
   oss <<  RteUtils::LF_STRING;
 
+  oss << "// Auto-generated file: USE CONFIGURATION WIZARD TO CHANGE VALUES!" << RteUtils::LF_STRING;
+  oss << "// <n> Generated using information from packs" << RteUtils::LF_STRING;
+  oss << "// <i> Device Family Pack (DFP):   " << device->GetPackageID(true) << RteUtils::LF_STRING;
   if (board) {
-    oss << "// <n>Board pack:    " << board->GetPackageID(true) << RteUtils::LF_STRING;
-    oss << "// <i>Board pack used to generate this file" << RteUtils::LF_STRING;
-    oss << RteUtils::LF_STRING;
+    oss << "// <i> Board Support Pack (BSP):   " << board->GetPackageID(true) << RteUtils::LF_STRING;
   }
-
-  oss << "// <n>Device pack:   " << device->GetPackageID(true) << RteUtils::LF_STRING;
-  oss << "// <i>Device pack used to generate this file" << RteUtils::LF_STRING;
   oss << RteUtils::LF_STRING;
 
-  oss << "// <h>ROM Configuration"   << RteUtils::LF_STRING;
+  oss << "// <h> ROM Configuration"   << RteUtils::LF_STRING;
   oss << "// =======================" << RteUtils::LF_STRING;
   for (size_t i = 0; i < memRO.size(); i++) {
     RteItem* mem = memRO[i];
@@ -1824,7 +1823,7 @@ std::string RteTarget::GenerateRegionsHeaderContent() const
   oss << "// </h>" << RteUtils::LF_STRING;
   oss << RteUtils::LF_STRING;
 
-  oss << "// <h>RAM Configuration" << RteUtils::LF_STRING;
+  oss << "// <h> RAM Configuration" << RteUtils::LF_STRING;
   oss << "// =======================" << RteUtils::LF_STRING;
   for (size_t i = 0; i < memRW.size(); i++) {
     RteItem* mem = memRW[i];
@@ -1834,11 +1833,11 @@ std::string RteTarget::GenerateRegionsHeaderContent() const
   oss << "// </h>" << RteUtils::LF_STRING;
   oss << RteUtils::LF_STRING;
 
-  oss << "// <h>Stack / Heap Configuration" << RteUtils::LF_STRING;
+  oss << "// <h> Stack / Heap Configuration" << RteUtils::LF_STRING;
   oss << "//   <o0> Stack Size (in Bytes) <0x0-0xFFFFFFFF:8>" << RteUtils::LF_STRING;
   oss << "//   <o1> Heap Size (in Bytes) <0x0-0xFFFFFFFF:8>" << RteUtils::LF_STRING;
   oss << "#define __STACK_SIZE 0x00000200" << RteUtils::LF_STRING;
-  oss << "#define __HEAP_SIZE 0x00000C00" << RteUtils::LF_STRING;
+  oss << "#define __HEAP_SIZE 0x00000000" << RteUtils::LF_STRING;
   oss << "// </h>" << RteUtils::LF_STRING;
 
   return oss.str();
