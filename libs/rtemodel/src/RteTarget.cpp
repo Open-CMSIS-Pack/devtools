@@ -1894,6 +1894,7 @@ bool RteTarget::GenerateRTEComponentsH() {
   //---------------------------------------------------
   const set<string>& strings = GetRteComponentHstrings();
   for (auto s : strings) {
+    s = RteUtils::RemoveLeadingSpaces(s);
     content += s + RteUtils::LF_STRING;
   }
   return GenerateRteHeaderFile("RTE_Components.h", content);

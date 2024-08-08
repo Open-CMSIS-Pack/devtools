@@ -544,6 +544,7 @@ TEST(RteUtils, ApplyFilter) {
   RteUtils::ApplyFilter(input, filter, result);
   EXPECT_EQ(expected, result);
 }
+
 TEST(RteUtils, GetDeviceAttribute) {
 
   EXPECT_TRUE(RteConstants::GetDeviceAttribute("unknown", "unknown").empty());
@@ -559,4 +560,12 @@ TEST(RteUtils, GetDeviceAttribute) {
   }
 }
 
+TEST(RteUtilsTest, RemoveLeadingSpaces) {
+  EXPECT_EQ(RteUtils::RemoveLeadingSpaces("").empty(), true);
+  EXPECT_EQ(RteUtils::RemoveLeadingSpaces("Start\n  End"), "Start\nEnd");
+  EXPECT_EQ(RteUtils::RemoveLeadingSpaces("\nStart\n  Middle\n  End\n"), "\nStart\nMiddle\nEnd\n");
+  EXPECT_EQ(RteUtils::RemoveLeadingSpaces("Start\r\n Mid with\t space \r\n nextline"), "Start\r\nMid with\t space \r\nnextline");
+  EXPECT_EQ(RteUtils::RemoveLeadingSpaces("Start\n"), "Start\n");
+  EXPECT_EQ(RteUtils::RemoveLeadingSpaces("Full"), "Full");
+}
 // end of RteUtilsTest.cpp

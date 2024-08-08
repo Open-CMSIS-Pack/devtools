@@ -604,4 +604,14 @@ void RteUtils::ApplyFilter(const vector<string>& origin, const set<string>& filt
   }
 }
 
+string RteUtils::RemoveLeadingSpaces(const string& input) {
+  // the regex pattern to match leading spaces after a newline character
+  static std::regex pattern(R"((\n)\s+)");
+
+  // Replace leading spaces after newline characters
+  // with a single newline character
+  std::string result = std::regex_replace(input, pattern, "$1");
+  return result;
+}
+
 // End of RteUtils.cpp

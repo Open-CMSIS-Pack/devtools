@@ -375,6 +375,12 @@ public:
   */
   static void ApplyFilter(const std::vector<std::string>& origin, const std::set<std::string>& filter, std::vector<std::string>& result);
 
+  /**
+   * @brief Remove leading whitespace characters after newline
+   * @param s string to be trimmed
+   * @return trimmed string without whitespace characters after newline character
+  */
+  static std::string RemoveLeadingSpaces(const std::string& input);
 // static constants
 public:
   static const std::string EMPTY_STRING;
