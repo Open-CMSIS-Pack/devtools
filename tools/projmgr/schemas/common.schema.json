@@ -13,11 +13,11 @@
     },
     "BuildContext": {
       "type": "string",
-      "pattern": "^(((^[.][\\w-]{1,32})|(^[+][\\w-]{1,32}))|((^[.][\\w-]{1,32})[+][\\w-]{1,32}|(^[+][\\w-]{1,32})[.][\\w-]{1,32})|((\\^|\\\\(\\.|\\+)).*))$"
+      "pattern": "^(((^[.][a-zA-Z0-9_-]{1,32})|(^[+][a-zA-Z0-9_-]{1,32}))|((^[.][a-zA-Z0-9_-]{1,32})[+][a-zA-Z0-9_-]{1,32}|(^[+][a-zA-Z0-9_-]{1,32})[.][a-zA-Z0-9_-]{1,32})|((\\^|\\\\(\\.|\\+)).*))$"
     },
     "BuildContextWithProjectName": {
       "type": "string",
-      "pattern": "^([^.+]+|[^.+]*\\.[\\w-]{1,32}(\\+[\\w-]{1,32})|[^.+]*\\+[\\w-]{1,32}(\\.[\\w-]{1,32})?)$"
+      "pattern": "^([^\\.\\+]+|[^\\.\\+]*\\.[a-zA-Z0-9_-]{1,32}(\\+[a-zA-Z0-9_-]{1,32})|[^\\.\\+]*\\+[a-zA-Z0-9_-]{1,32}(\\.[a-zA-Z0-9_-]{1,32})?)$"
     },
     "ArrayOfContextMapAlternativeContext": {
       "type": "array",
@@ -27,7 +27,7 @@
     },
     "ContextMapAlternativeContext": {
       "type": "string",
-      "pattern": "^[^.+]*(\\.[\\w-]{1,32}|\\+[\\w-]{1,32}|\\.[\\w-]{1,32}\\+[\\w-]{1,32})$"
+      "pattern": "^[^\\.\\+]*(\\.[a-zA-Z0-9_-]{1,32}|\\+[a-zA-Z0-9_-]{1,32}|\\.[a-zA-Z0-9_-]{1,32}\\+[a-zA-Z0-9_-]{1,32})$"
     },
     "ArrayOfBuildContext": {
       "type": "array",
@@ -112,7 +112,7 @@
     },
     "CompilerType": {
       "type": "string",
-      "pattern": "^(GCC|CLANG|AC6|IAR)(@(>=)?(\\d+\\.\\d+\\.\\d+((\\+|\\-)[\\w.+-]+)?))?$",
+      "pattern": "^(GCC|CLANG|AC6|IAR)(@(>=)?([0-9]+\\.[0-9]+\\.[0-9]+((\\+|\\-)[a-zA-Z0-9_\\.\\+-]+)?))?$",
       "description": "Selection of the toolchain used in the project (GCC, CLANG, AC6, IAR), optionally with version, for example AC6@6.16.0"
     },
     "ConsumesProvidesType": {
@@ -129,7 +129,7 @@
     },
     "VersionType": {
       "type": "string",
-      "pattern": "^\\d+\\.\\d+\\.\\d+(-[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?(\\+[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?$",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?(\\+[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?$",
       "description": "A version consists of 3 mandatory and 2 optional sections: MAJOR.MINOR.PATCH[-Pre Release][+Build Metadata]"
     },
     "ArrayOfCompilerType": {
@@ -678,7 +678,7 @@
     },
     "ComponentID": {
       "type": "string",
-      "pattern": "(^[A-Za-z\\d][\\w+()'\\/\\- \\.]+$)|(^([A-Za-z\\d][A-Za-z\\d \\-]+::)?([A-Za-z\\d][\\w+()'\\/\\- \\.]+)(&[A-Za-z\\d][\\w+()'\\/\\- \\.]+)?(:[A-Za-z\\d][\\w+()'\\/\\- \\.]+)(:[A-Za-z\\d][\\w+():\\/\\- \\.]*)?(&[A-Za-z\\d][\\w+()'\\/\\- \\.]+)?(@(>=)?((0|[1-9]\\d*)\\.([\\d]+)(\\.([\\d]+))?(\\-((0|[1-9]\\d*|\\d*[a-zA-Z-][\\da-zA-Z-]*)(\\.(0|[1-9]\\d*|\\d*[a-zA-Z-][\\da-zA-Z-]*))*))?))?$)",
+      "pattern": "(^[A-Za-z0-9][a-zA-Z0-9_\\+()'\\/\\- \\.]+$)|(^([A-Za-z0-9][A-Za-z0-9 \\-]+::)?([A-Za-z0-9][a-zA-Z0-9_\\+()'\\/\\- \\.]+)(&[A-Za-z0-9][a-zA-Z0-9_\\+()'\\/\\- \\.]+)?(:[A-Za-z0-9][a-zA-Z0-9_\\+()'\\/\\- \\.]+)(:[A-Za-z0-9][a-zA-Z0-9_\\+():\\/\\- \\.]*)?(&[A-Za-z0-9][a-zA-Z0-9_\\+()'\\/\\- \\.]+)?(@(>=)?((0|[1-9][0-9]*)\\.([0-9]+)(\\.([0-9]+))?(\\-((0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(\\.(0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?))?$)",
       "description": "Name of the software component. It can be a free text or a component identifier in the format [Cvendor::] Cclass [&Cbundle] :Cgroup [:Csub] [&Cvariant] [@[>=]Cversion]"
     },
     "ComponentsType": {
@@ -1219,12 +1219,12 @@
     },
     "PackID": {
       "type": "string",
-      "pattern": "^([\\w .-]+)((::[\\w .*-]+)(@(>=)?(\\d+\\.\\d+\\.\\d+((\\+|\\-)[\\w.+-]+)?))?)?$",
+      "pattern": "^([a-zA-Z0-9_ \\.-]+)((::[a-zA-Z0-9_ \\.\\*-]+)(@(>=)?([0-9]+\\.[0-9]+\\.[0-9]+((\\+|\\-)[a-zA-Z0-9_\\.\\+-]+)?))?)?$",
       "description": "Name of a required Software Pack in the format Vendor [:: Pack [@[>=] version]]"
     },
     "VersionlessPackID": {
       "type": "string",
-      "pattern": "^([\\w .-]+)(::[\\w .*-]+)?$",
+      "pattern": "^([a-zA-Z0-9_ \\.\\-]+)(::[a-zA-Z0-9_ \\.\\*-]+)?$",
       "description": "Name of a required Software Pack in the format Vendor [:: Pack]"
     },
     "PackType": {
@@ -1388,7 +1388,7 @@
     },
     "CreatedInfoType": {
       "type": "string",
-      "pattern": "^.*@\\d+\\.\\d+\\.\\d+(-[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?(\\+[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?$"
+      "pattern": "^.*@[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?(\\+[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?$"
     },
     "BuildSetDescType": {
       "type": "object",
