@@ -3,11 +3,10 @@
 
 
 //-------- <<< Use Configuration Wizard in Context Menu >>> --------------------
+//------ With VS Code: Open Preview for Configuration Wizard -------------------
 
-// Auto-generated file: USE CONFIGURATION WIZARD TO CHANGE VALUES!
-// <n> Generated using information from packs
+// <n> Auto-generated using information from packs
 // <i> Device Family Pack (DFP):   ARM::RteTest_DFP@0.2.0
-
 // <h> ROM Configuration
 // =======================
 // <h> __ROM0 (is region: FLASH from DFP)

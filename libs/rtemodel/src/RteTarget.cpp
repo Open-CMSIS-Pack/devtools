@@ -1803,10 +1803,10 @@ std::string RteTarget::GenerateRegionsHeaderContent() const
   ostringstream  oss;
   oss <<  RteUtils::LF_STRING;
   oss << "//-------- <<< Use Configuration Wizard in Context Menu >>> --------------------" << RteUtils::LF_STRING;
+  oss << "//------ With VS Code: Open Preview for Configuration Wizard -------------------" << RteUtils::LF_STRING;
   oss <<  RteUtils::LF_STRING;
 
-  oss << "// Auto-generated file: USE CONFIGURATION WIZARD TO CHANGE VALUES!" << RteUtils::LF_STRING;
-  oss << "// <n> Generated using information from packs" << RteUtils::LF_STRING;
+  oss << "// <n> Auto-generated using information from packs" << RteUtils::LF_STRING;
   oss << "// <i> Device Family Pack (DFP):   " << device->GetPackageID(true) << RteUtils::LF_STRING;
   if (board) {
     oss << "// <i> Board Support Pack (BSP):   " << board->GetPackageID(true) << RteUtils::LF_STRING;
