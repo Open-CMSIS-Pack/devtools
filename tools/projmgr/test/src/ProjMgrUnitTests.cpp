@@ -6203,3 +6203,23 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_conflict_cbuild_set) {
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_NE(errStr.find("build-type is not unique in 'test1.Release+CM0' and 'test1.Debug+CM0'"), string::npos);
 }
+
+TEST_F(ProjMgrUnitTests, ListLayers_update_idx_with_no_compiler_selected) {
+  StdStreamRedirect streamRedirect;
+  char* argv[6];
+  const string& csolution = testinput_folder + "/TestLayers/no_compiler.csolution.yml";
+  string expectedOutStr = ".*no_compiler.cbuild-idx.yml - info csolution: file generated successfully\\n";
+
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"layers";
+  argv[3] = (char*)"--solution";
+  argv[4] = (char*)csolution.c_str();
+  argv[5] = (char*)"--update-idx";
+
+  EXPECT_EQ(0, RunProjMgr(6, argv, m_envp));
+  EXPECT_TRUE(regex_match(streamRedirect.GetOutString(), regex(expectedOutStr)));
+
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/TestLayers/ref/no_compiler.cbuild-idx.yml",
+    testinput_folder + "/TestLayers/no_compiler.cbuild-idx.yml");
+  EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/TestLayers/no_compiler.cbuild-idx.yml"));
+}

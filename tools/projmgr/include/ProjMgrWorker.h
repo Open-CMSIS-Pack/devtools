@@ -555,6 +555,12 @@ public:
   void SetSelectedToolchain(const std::string& selectedToolchain);
 
   /**
+   * @brief set flag when setup command is triggered
+   * @param boolean isSetup
+  */
+  void SetUpCommand(bool isSetup);
+
+  /**
    * @brief execute generator of a given context
    * @param generator identifier
    * @return true if executed successfully
@@ -712,6 +718,7 @@ protected:
   bool m_dryRun;
   bool m_relativePaths;
   bool m_cbuild2cmake;
+  bool m_isSetupCommand;
   std::set<std::string> m_undefLayerVars;
   StrMap m_packMetadata;
   std::map<std::string, ExecutesItem> m_executes;
@@ -822,6 +829,7 @@ protected:
   void SetExecutesDependencies(const std::string& output, const std::string& dep, const std::string& outDir);
   bool ValidateComponentSources(ContextItem& context);
   void ProcessSelectableCompilers();
+  StrVec CollectSelectableCompilers();
   void ProcessTmpDir(std::string& tmpdir, const std::string& base);
 };
 

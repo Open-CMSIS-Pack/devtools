@@ -1,0 +1,16 @@
+solution:
+  select-compiler:
+    - compiler: AC6
+    - compiler: GCC
+    - compiler: CLANG
+
+  target-types:
+    - type: RteTest_ARMCM3
+      device: RteTest_ARMCM3
+
+  projects:
+    - project: no_compiler.cproject.yml
+
+  packs:
+    - pack: ARM::RteTest
+    - pack: ARM::RteTest_DFP
