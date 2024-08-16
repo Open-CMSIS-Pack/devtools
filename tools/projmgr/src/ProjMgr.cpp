@@ -203,6 +203,7 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
     m_worker.SetDryRun(m_dryRun);
     m_ymlOrder = parseResult.count("yml-order");
     m_updateIdx = parseResult.count("update-idx");
+    m_worker.SetUpCommand(m_updateIdx);
     m_contextSet = parseResult.count("context-set");
     m_relativePaths = parseResult.count("relative-paths");
     m_worker.SetPrintRelativePaths(m_relativePaths);

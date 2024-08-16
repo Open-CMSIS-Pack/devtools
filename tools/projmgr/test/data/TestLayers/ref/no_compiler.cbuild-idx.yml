@@ -1,0 +1,30 @@
+build-idx:
+  generated-by: csolution version 0.0.0+g113301ee
+  csolution: no_compiler.csolution.yml
+  tmpdir: tmp
+  configurations:
+    - target-type: RteTest_ARMCM3
+      target-configurations:
+        - configuration: 
+          variables:
+            - Board-Layer: $SolutionDir()$/select.clayer.yml
+              settings:
+                - set: set1.select1 (provided connections A and B - set 1 select 1)
+        - configuration: 
+          variables:
+            - Board-Layer: $SolutionDir()$/select.clayer.yml
+              settings:
+                - set: set1.select2 (provided connections B and C - set 1 select 2)
+  select-compiler:
+    - compiler: AC6
+    - compiler: GCC
+  cprojects:
+    - cproject: no_compiler.cproject.yml
+      clayers:
+        - clayer: select.clayer.yml
+  cbuilds:
+    - cbuild: no_compiler+RteTest_ARMCM3.cbuild.yml
+      project: no_compiler
+      configuration: +RteTest_ARMCM3
+      clayers:
+        - clayer: select.clayer.yml

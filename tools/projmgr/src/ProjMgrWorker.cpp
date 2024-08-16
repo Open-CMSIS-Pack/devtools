@@ -294,6 +294,10 @@ const StrVec& ProjMgrWorker::GetSelectableCompilers(void) {
   return m_selectableCompilers;
 }
 
+void ProjMgrWorker::SetUpCommand(bool isSetup) {
+  m_isSetupCommand = isSetup;
+}
+
 bool ProjMgrWorker::CollectRequiredPdscFiles(ContextItem& context, const std::string& packRoot)
 {
   if (!ProcessPackages(context, packRoot)) {
@@ -1681,14 +1685,26 @@ bool ProjMgrWorker::AddPackRequirements(ContextItem& context, const vector<PackI
 }
 
 bool ProjMgrWorker::ProcessToolchain(ContextItem& context) {
-
   if (context.compiler.empty()) {
-    if (!context.cdefault || context.cdefault->compiler.empty()) {
-      // compiler was not specified
+    // Use the default compiler if available
+    if (context.cdefault && !context.cdefault->compiler.empty()) {
+      context.compiler = context.cdefault->compiler;
+    }
+    // Otherwise, select the first available compiler from selectableCompilers
+    else if (m_isSetupCommand && !context.csolution->selectableCompilers.empty()) {
+      m_selectableCompilers = CollectSelectableCompilers();
+      if (m_selectableCompilers.size() > 0) {
+        context.compiler = m_selectableCompilers[0];
+      }
+      else {
+        m_undefCompiler = true;
+        return false;
+      }
+    }
+    // No compiler was specified, mark as undefined and return failure
+    else {
       m_undefCompiler = true;
       return false;
-    } else {
-      context.compiler = context.cdefault->compiler;
     }
   }
 
@@ -4946,27 +4962,38 @@ void ProjMgrWorker::ProcessSelectableCompilers() {
   if (m_undefCompiler) {
     // compiler was not specified
     // get selectable compilers specified in cdefault and csolution
-    StrVecMap compilersMap;
-    for (const auto& selectableCompilers : { m_parser->GetCdefault().selectableCompilers, m_parser->GetCsolution().selectableCompilers }) {
-      for (const auto& selectableCompiler : selectableCompilers) {
-        ToolchainItem item = GetToolchain(selectableCompiler);
-        CollectionUtils::PushBackUniquely(compilersMap[item.name], selectableCompiler);
-      }
-    }
-    // store intersection of required versions if compatible with registered one
-    for (const auto& [name, compilers] : compilersMap) {
-      string intersection;
-      for (const auto& compiler : compilers) {
-        ProjMgrUtils::CompilersIntersect(intersection, compiler, intersection);
-      }
-      if (!intersection.empty()) {
-        ToolchainItem item = GetToolchain(intersection);
-        if (GetLatestToolchain(item)) {
-          CollectionUtils::PushBackUniquely(m_selectableCompilers, intersection);
-        }
-      }
-    }
+    m_selectableCompilers = CollectSelectableCompilers();
+
     m_toolchainErrors.insert("compiler undefined, use '--toolchain' option or add 'compiler: <value>' to yml input" +
       string(m_selectableCompilers.size() > 0 ? ", selectable values can be found in cbuild-idx.yml" : ""));
   }
+}
+
+StrVec ProjMgrWorker::CollectSelectableCompilers() {
+  StrVec resCompilers;
+  StrVecMap compilersMap;
+
+  const auto selectableCompilerLists = { m_parser->GetCdefault().selectableCompilers, m_parser->GetCsolution().selectableCompilers };
+  for (const auto& selectableCompilers : selectableCompilerLists) {
+    for (const auto& selectableCompiler : selectableCompilers) {
+      ToolchainItem toolchain = GetToolchain(selectableCompiler);
+      CollectionUtils::PushBackUniquely(compilersMap[toolchain.name], selectableCompiler);
+    }
+  }
+  // store intersection of required versions if compatible with registered one
+  for (const auto& [name, compilers] : compilersMap) {
+    string intersection;
+    for (const auto& compiler : compilers) {
+      ProjMgrUtils::CompilersIntersect(intersection, compiler, intersection);
+    }
+
+    // If a compatible version is found, add it to selectable compilers
+    if (!intersection.empty()) {
+      ToolchainItem toolchain = GetToolchain(intersection);
+      if (GetLatestToolchain(toolchain)) {
+        CollectionUtils::PushBackUniquely(resCompilers, intersection);
+      }
+    }
+  }
+  return resCompilers;
 }
