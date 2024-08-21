@@ -5965,6 +5965,8 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ProjectDirShouldBeExpanded) {
     "    - type: debug\n"
     "  target-types:\n"
     "    - type: main\n"
+    "  packs:\n"
+    "    - pack: does-not-exist\n"
     "  projects:\n"
     "    - project: foo/test.cproject.yml\n"));
 
