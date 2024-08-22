@@ -63,7 +63,8 @@ public:
   */
   static bool GenerateCbuild(ContextItem* context, bool checkSchema,
     const std::string& generatorId = std::string(),
-    const std::string& generatorPack = std::string());
+    const std::string& generatorPack = std::string(),
+    bool ignoreRteFileMissing = false);
 
   /**
    * @brief generate cbuild set file
@@ -74,7 +75,7 @@ public:
    * @return true if executed successfully
   */
   static bool GenerateCbuildSet(const std::vector<std::string> selectedContexts,
-    const std::string& selectedCompiler, const std::string& cbuildSetFile, bool checkSchema);
+    const std::string& selectedCompiler, const std::string& cbuildSetFile, bool checkSchema, bool ignoreRteFileMissing = false);
 
   /**
    * @brief generate cbuild pack file

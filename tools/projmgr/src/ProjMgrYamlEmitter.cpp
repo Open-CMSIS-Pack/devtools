@@ -47,8 +47,8 @@ protected:
 class ProjMgrYamlCbuild : public ProjMgrYamlBase {
 private:
   friend class ProjMgrYamlEmitter;
-  ProjMgrYamlCbuild(YAML::Node node, const vector<string>& selectedContexts, const string& selectedCompiler, bool checkSchema);
-  ProjMgrYamlCbuild(YAML::Node node, const ContextItem* context, const string& generatorId, const string& generatorPack, bool checkSchema);
+  ProjMgrYamlCbuild(YAML::Node node, const vector<string>& selectedContexts, const string& selectedCompiler, bool checkSchema, bool ignoreRteFileMissing);
+  ProjMgrYamlCbuild(YAML::Node node, const ContextItem* context, const string& generatorId, const string& generatorPack, bool checkSchema, bool ignoreRteFileMissing);
   ProjMgrYamlCbuild(YAML::Node node, const vector<ContextItem*>& siblings, const string& type, const string& output, const string& gendir, bool checkSchema);
   void SetContextNode(YAML::Node node, const ContextItem* context, const string& generatorId, const string& generatorPack);
   void SetComponentsNode(YAML::Node node, const ContextItem* context);
@@ -68,6 +68,7 @@ private:
   void SetMiscNode(YAML::Node miscNode, const MiscItem& misc);
   void SetMiscNode(YAML::Node miscNode, const vector<MiscItem>& misc);
   void SetDefineNode(YAML::Node node, const vector<string>& vec);
+  const bool m_ignoreRteFileMissing;
 };
 
 class ProjMgrYamlCbuildIdx : public ProjMgrYamlBase {
@@ -388,7 +389,7 @@ void ProjMgrYamlCbuildIdx::SetVariablesNode(YAML::Node node, ProjMgrParser& pars
 }
 
 ProjMgrYamlCbuild::ProjMgrYamlCbuild(YAML::Node node, const ContextItem* context,
-  const string& generatorId, const string& generatorPack, bool checkSchema) : ProjMgrYamlBase(!generatorId.empty(), checkSchema)
+  const string& generatorId, const string& generatorPack, bool checkSchema, bool ignoreRteFileMissing) : ProjMgrYamlBase(!generatorId.empty(), checkSchema), m_ignoreRteFileMissing(ignoreRteFileMissing)
 {
   if (context) {
     SetContextNode(node, context, generatorId, generatorPack);
@@ -396,7 +397,7 @@ ProjMgrYamlCbuild::ProjMgrYamlCbuild(YAML::Node node, const ContextItem* context
 }
 
 ProjMgrYamlCbuild::ProjMgrYamlCbuild(YAML::Node node,
-  const vector<string>& selectedContexts, const string& selectedCompiler, bool checkSchema)
+  const vector<string>& selectedContexts, const string& selectedCompiler, bool checkSchema, bool ignoreRteFileMissing) : m_ignoreRteFileMissing(ignoreRteFileMissing)
 {
   SetNodeValue(node[YAML_GENERATED_BY], ORIGINAL_FILENAME + string(" version ") + VERSION_STRING);
   YAML::Node contextsNode = node[YAML_CONTEXTS];
@@ -671,9 +672,10 @@ void ProjMgrYamlCbuild::SetConstructedFilesNode(YAML::Node node, const ContextIt
     // constructed RTE_Components.h
     const auto& rteComponents = context->rteActiveProject->GetProjectPath() +
       context->rteActiveProject->GetRteComponentsH(context->rteActiveTarget->GetName(), "");
-    if (RteFsUtils::Exists(rteComponents)) {
+    if (m_ignoreRteFileMissing || RteFsUtils::Exists(rteComponents)) {
       YAML::Node rteComponentsNode;
-      SetNodeValue(rteComponentsNode[YAML_FILE], FormatPath(rteComponents, context->directories.cbuild));
+      const string path = FormatPath(rteComponents, context->directories.cbuild);
+      SetNodeValue(rteComponentsNode[YAML_FILE], path);
       SetNodeValue(rteComponentsNode[YAML_CATEGORY], "header");
       node.push_back(rteComponentsNode);
     }
@@ -1025,7 +1027,7 @@ bool ProjMgrYamlEmitter::GenerateCbuildIndex(ProjMgrParser& parser, ProjMgrWorke
 }
 
 bool ProjMgrYamlEmitter::GenerateCbuild(ContextItem* context, bool checkSchema,
-  const string& generatorId, const string& generatorPack)
+  const string& generatorId, const string& generatorPack, bool ignoreRteFileMissing)
 {
   // generate cbuild.yml or cbuild-gen.yml for each context
   context->directories.cbuild = context->directories.cprj;
@@ -1047,7 +1049,7 @@ bool ProjMgrYamlEmitter::GenerateCbuild(ContextItem* context, bool checkSchema,
     filename = cbuildGenFilename;
   }
   YAML::Node rootNode;
-  ProjMgrYamlCbuild cbuild(rootNode[rootKey], context, generatorId, generatorPack, checkSchema);
+  ProjMgrYamlCbuild cbuild(rootNode[rootKey], context, generatorId, generatorPack, checkSchema, ignoreRteFileMissing);
   RteFsUtils::CreateDirectories(RteFsUtils::ParentPath(filename));
   // get context rebuild flag
   context->needRebuild = cbuild.NeedRebuild(filename, rootNode);
@@ -1055,16 +1057,16 @@ bool ProjMgrYamlEmitter::GenerateCbuild(ContextItem* context, bool checkSchema,
 }
 
 bool ProjMgrYamlEmitter::GenerateCbuildSet(const std::vector<string> selectedContexts,
-  const string& selectedCompiler, const string& cbuildSetFile, bool checkSchema)
+  const string& selectedCompiler, const string& cbuildSetFile, bool checkSchema, bool ignoreRteFileMissing)
 {
   YAML::Node rootNode;
-  ProjMgrYamlCbuild cbuild(rootNode[YAML_CBUILD_SET], selectedContexts, selectedCompiler, checkSchema);
+  ProjMgrYamlCbuild cbuild(rootNode[YAML_CBUILD_SET], selectedContexts, selectedCompiler, checkSchema, ignoreRteFileMissing);
 
   return cbuild.WriteFile(rootNode, cbuildSetFile);
 }
 
 ProjMgrYamlCbuild::ProjMgrYamlCbuild(YAML::Node node, const vector<ContextItem*>& siblings,
-  const string& type, const string& output, const string& gendir, bool checkSchema) : ProjMgrYamlBase(true, checkSchema)
+  const string& type, const string& output, const string& gendir, bool checkSchema) : ProjMgrYamlBase(true, checkSchema), m_ignoreRteFileMissing(false)
 {
   // construct cbuild-gen-idx.yml content
   SetNodeValue(node[YAML_GENERATED_BY], ORIGINAL_FILENAME + string(" version ") + VERSION_STRING);
