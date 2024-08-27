@@ -5505,17 +5505,16 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ValidateContextSpecificPacksMissing) {
   char* argv[4];
   StdStreamRedirect streamRedirect;
   const string& csolution = testinput_folder + "/TestSolution/pack_missing.csolution.yml";
-  string expectedErr = "\
-error csolution: required pack: ARM::Missing_DFP@0.0.9 not installed\n\
-error csolution: processing context 'test1+CM0' failed\n\
-error csolution: required pack: ARM::Missing_PACK@0.0.1 not installed\n\
-error csolution: processing context 'test1+Gen' failed\n";
+  string expectedErr1 = "error csolution: required pack: ARM::Missing_DFP@0.0.9 not installed";
+  string expectedErr2 = "error csolution: required pack: ARM::Missing_PACK@0.0.1 not installed";
 
   argv[1] = (char*)"convert";
   argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
   EXPECT_EQ(1, RunProjMgr(4, argv, 0));
-  EXPECT_NE(string::npos, streamRedirect.GetErrorString().find(expectedErr));
+  string errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find(expectedErr1));
+  EXPECT_NE(string::npos, errStr.find(expectedErr2));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_cbuild_files_with_errors_node) {
