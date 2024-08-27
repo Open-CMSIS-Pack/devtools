@@ -3,7 +3,25 @@ build:
   solution: ../data/TestSolution/PackMissing/missing_pack.csolution.yml
   project: ../data/TestSolution/PackMissing/project.cproject.yml
   context: project+Gen
+  compiler: AC6
+  device: RteTest_ARMCM3
+  misc:
+    ASM:
+      - -ASM-project
+    C:
+      - -C-project
+    CPP:
+      - -CPP-project
+    Lib:
+      - -Lib-project
+    Link:
+      - -Link-project
+  define:
+    - DEF-project
   output-dirs:
     intdir: tmp/project/Gen
     outdir: out/project/Gen
-    rtedir: RTE
+    rtedir: ../data/TestSolution/PackMissing/RTE
+  output:
+    - type: elf
+      file: project.axf

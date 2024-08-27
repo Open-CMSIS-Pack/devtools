@@ -473,11 +473,11 @@ bool ProjMgrWorker::LoadPacks(ContextItem& context) {
   if (!InitializeModel()) {
     return false;
   }
-  if (m_loadedPacks.empty() && !LoadAllRelevantPacks()) {
-    PrintContextErrors(context.name);
+  if (!InitializeTarget(context)) {
     return false;
   }
-  if (!InitializeTarget(context)) {
+  if (m_loadedPacks.empty() && !LoadAllRelevantPacks()) {
+    PrintContextErrors(context.name);
     return false;
   }
   // Filter context specific packs
@@ -3532,9 +3532,7 @@ void ProjMgrWorker::PrintMissingFilters(void) {
 
 bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGenFiles, bool resolveDependencies, bool updateRteFiles) {
   bool ret = true;
-  if (!LoadPacks(context)) {
-    return false;
-  }
+  ret &= LoadPacks(context);
   context.rteActiveProject->SetAttribute("update-rte-files", updateRteFiles ? "1" : "0");
   if (!ProcessPrecedences(context, true)) {
     return false;
