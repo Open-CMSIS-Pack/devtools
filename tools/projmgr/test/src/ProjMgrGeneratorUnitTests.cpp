@@ -184,9 +184,12 @@ TEST_F(ProjMgrGeneratorUnitTests, DryRun) {
   argv[6] = (char*)"--dry-run";
 
   const string generatorInputFile = testinput_folder + "/TestSolution/tmp/TestProject3_1/TypeA/Debug/TestProject3_1.Debug+TypeA.cbuild-gen.yml";
-  const string targetGPDSC = testinput_folder + "/TestSolution/TestProject3_1/gendir/RteTestGen_ARMCM0/RteTest.gpdsc";
+  const string generatorDestination = testinput_folder + "/TestSolution/TestProject3_1/gendir";
+  const string targetGPDSC = generatorDestination + "/RteTestGen_ARMCM0/RteTest.gpdsc";
+  const string rteDir = testinput_folder + "/TestSolution/TestProject3_1/RTE";
 
-  RteFsUtils::RemoveFile(targetGPDSC);
+  RteFsUtils::RemoveDir(generatorDestination);
+  RteFsUtils::RemoveDir(rteDir);
 
   EXPECT_EQ(0, ProjMgr::RunProjMgr(7, argv, envp));
 
@@ -200,7 +203,9 @@ TEST_F(ProjMgrGeneratorUnitTests, DryRun) {
   ProjMgrTestEnv::CompareFile(testinput_folder + "/TestSolution/ref/TestProject3_1.Debug+TypeA.cbuild-gen.yml",  generatorInputFile, stripAbsoluteFunc);
 
   EXPECT_EQ(true, std::filesystem::exists(generatorInputFile));
+  EXPECT_EQ(false, std::filesystem::exists(rteDir));
   EXPECT_EQ(false, std::filesystem::exists(targetGPDSC));
+  EXPECT_EQ(false, std::filesystem::exists(generatorDestination));
 
   // Expect that the GPDSC content was printed to stdout, enclosed within the begin and end marks
   auto outStr = streamRedirect.GetOutString();

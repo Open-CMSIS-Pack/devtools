@@ -4115,7 +4115,7 @@ bool ProjMgrWorker::ExecuteGenerator(std::string& generatorId) {
   }
   const string& selectedContext = m_selectedContexts.front();
   ContextItem& context = m_contexts[selectedContext];
-  if (!ProcessContext(context, false)) {
+  if (!ProcessContext(context, false, true, !m_dryRun)) {
     return false;
   }
   const auto& generators = context.generators;
@@ -4144,7 +4144,7 @@ bool ProjMgrWorker::ExecuteGenerator(std::string& generatorId) {
   }
 
   if (!ProjMgrYamlEmitter::GenerateCbuild(&context, m_checkSchema, generator->GetGeneratorName(),
-    RtePackage::GetPackageIDfromAttributes(*generator->GetPackage()))) {
+    RtePackage::GetPackageIDfromAttributes(*generator->GetPackage()), m_dryRun)) {
     return false;
   }
 
@@ -4174,7 +4174,9 @@ bool ProjMgrWorker::ExecuteGenerator(std::string& generatorId) {
 
   error_code ec;
   const auto& workingDir = fs::current_path(ec);
-  RteFsUtils::CreateDirectories(generatorDestination);
+  if (!m_dryRun) {
+    RteFsUtils::CreateDirectories(generatorDestination);
+  }
   fs::current_path(generatorDestination, ec);
   StrIntPair result = CrossPlatformUtils::ExecCommand(generatorCommand);
   fs::current_path(workingDir, ec);
