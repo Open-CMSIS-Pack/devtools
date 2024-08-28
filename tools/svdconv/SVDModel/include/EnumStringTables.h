@@ -41,6 +41,8 @@
   CPUTYPE(CA53             , "CA53"     )
   CPUTYPE(CA57             , "CA57"     )
   CPUTYPE(CA72             , "CA72"     )
+  CPUTYPE(PINAKA           , "PINAKA"   )
+  CPUTYPE(VAJRA            , "VAJRA"    )
   CPUTYPE(OTHER            , "OTHER"    )
 
   // last entry

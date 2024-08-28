@@ -11,7 +11,7 @@
 
 using namespace std;
 
-static constexpr uint32_t MAX_VALUE = 0x1000000;        // detect miscalculated numbers
+static constexpr uint32_t MAX_VALUE = 0x10000000;        // detect miscalculated numbers
 
 
 SvdAddressBlock::SvdAddressBlock(SvdItem* parent):

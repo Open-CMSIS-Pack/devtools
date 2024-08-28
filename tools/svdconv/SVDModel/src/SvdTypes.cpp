@@ -142,6 +142,8 @@ const map <SvdTypes::CpuType, CpuTypeFeature> SvdTypes::cpuTypeName = {
   { SvdTypes::CpuType::CA53     , {"CA53"               , "ARM Cortex-A53"    ,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 240 } },
   { SvdTypes::CpuType::CA57     , {"CA57"               , "ARM Cortex-A57"    ,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 240 } },
   { SvdTypes::CpuType::CA72     , {"CA72"               , "ARM Cortex-A72"    ,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 240 } },
+  { SvdTypes::CpuType::PINAKA   , {"PINAKA"             , "Shakti E-Class"    ,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 240 } },
+  { SvdTypes::CpuType::VAJRA    , {"VAJRA"              , "Shakti C-Class"    ,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 240 } },
   { SvdTypes::CpuType::OTHER    , {"other"              , "other"             ,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 240 } },
 };
 
