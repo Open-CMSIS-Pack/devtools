@@ -3675,7 +3675,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_NoUpdateRTEFiles) {
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
   argv[6] = (char*)"--no-update-rte";
-  EXPECT_EQ(0, RunProjMgr(7, argv, m_envp));
+  EXPECT_EQ(1, RunProjMgr(7, argv, m_envp));
 
   // The RTE folder should be left untouched
   GetFilesInTree(rteFolder, rteFilesAfter);
@@ -4497,7 +4497,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ContextMap) {
 TEST_F(ProjMgrUnitTests, RunProjMgr_UpdateRte) {
   const string rteDir = testinput_folder + "/TestSolution/TestProject1/RTE/";
   const string configFile = rteDir + "Device/RteTest_ARMCM0/startup_ARMCM0.c";
-  const string baseFile = configFile + ".base@1.1.1";
+  const string baseFile = configFile + ".base@2.0.1";
   const string& testdir = testoutput_folder + "/OutputDir";
   RteFsUtils::RemoveDir(rteDir);
   RteFsUtils::RemoveDir(testdir);
@@ -4525,7 +4525,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_UpdateRte) {
 info csolution: config files for each component:\n\
   ARM::Device:Startup&RteTest Startup@2.0.3:\n\
     - .*/TestSolution/TestProject1/RTE/Device/RteTest_ARMCM0/ARMCM0_ac6.sct \\(base@1.0.0\\)\n\
-    - .*/TestSolution/TestProject1/RTE/Device/RteTest_ARMCM0/startup_ARMCM0.c \\(base@1.1.1\\) \\(update@2.0.3\\)\n\
+    - .*/TestSolution/TestProject1/RTE/Device/RteTest_ARMCM0/startup_ARMCM0.c \\(base@2.0.1\\) \\(update@2.0.3\\)\n\
     - .*/TestSolution/TestProject1/RTE/Device/RteTest_ARMCM0/system_ARMCM0.c \\(base@1.0.0\\)\n\
 ";
 
@@ -4547,7 +4547,7 @@ info csolution: config files for each component:\n\
   outStr = streamRedirect.GetOutString();
   const string expected1 =
  "../TestProject1/RTE/Device/RteTest_ARMCM0/ARMCM0_ac6.sct@1.0.0 (up to date) from ARM::Device:Startup&RteTest Startup@2.0.3\n"\
- "../TestProject1/RTE/Device/RteTest_ARMCM0/startup_ARMCM0.c@1.1.1 (update@2.0.3) from ARM::Device:Startup&RteTest Startup@2.0.3\n"\
+ "../TestProject1/RTE/Device/RteTest_ARMCM0/startup_ARMCM0.c@2.0.1 (update@2.0.3) from ARM::Device:Startup&RteTest Startup@2.0.3\n"\
  "../TestProject1/RTE/Device/RteTest_ARMCM0/system_ARMCM0.c@1.0.0 (up to date) from ARM::Device:Startup&RteTest Startup@2.0.3\n";
   EXPECT_EQ(outStr, expected1);
 }
@@ -6223,4 +6223,49 @@ TEST_F(ProjMgrUnitTests, ListLayers_update_idx_with_no_compiler_selected) {
   ProjMgrTestEnv::CompareFile(testinput_folder + "/TestLayers/ref/no_compiler.cbuild-idx.yml",
     testinput_folder + "/TestLayers/no_compiler.cbuild-idx.yml");
   EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/TestLayers/no_compiler.cbuild-idx.yml"));
+}
+
+TEST_F(ProjMgrUnitTests, ConfigFilesUpdate) {
+  StdStreamRedirect streamRedirect;
+  char* argv[6];
+  const string& csolution = testinput_folder + "/TestSolution/ConfigFilesUpdate/config.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+
+  // --no-update-rte
+  std::vector<std::tuple<std::string, int, std::string>> testDataVector1 = {
+    { ".BaseUnknown", 0, "warning csolution: file '.*/startup_ARMCM3.c.base' not found; base version unknown" },
+    { ".Patch",       0, "warning csolution: file '.*/startup_ARMCM3.c' update suggested; use --update-rte" },
+    { ".Minor",       0, "warning csolution: file '.*/startup_ARMCM3.c' update recommended; use --update-rte" },
+    { ".Major",       1, "error csolution: file '.*/startup_ARMCM3.c' update required; use --update-rte" },
+    { ".Missing",     1, "error csolution: file '.*/startup_ARMCM3.c' not found; use --update-rte" },
+  };
+
+  for (const auto& testData : testDataVector1) {
+    streamRedirect.ClearStringStreams();
+    argv[3] = (char*)"--no-update-rte";
+    argv[4] = (char*)"-c";
+    argv[5] = (char*)get<0>(testData).c_str();
+    EXPECT_EQ(get<1>(testData), RunProjMgr(6, argv, m_envp));
+    auto errStr = streamRedirect.GetErrorString();
+    EXPECT_TRUE(regex_search(errStr, regex(get<2>(testData))));
+  }
+
+  // --update-rte
+  std::vector<std::tuple<std::string, int, std::string>> testDataVector2 = {
+    { ".BaseUnknown", 0, "" },
+    { ".Patch",       0, "warning csolution: file '.*/startup_ARMCM3.c' update suggested; merge content from update file, rename update file to base file and remove previous base file" },
+    { ".Minor",       0, "warning csolution: file '.*/startup_ARMCM3.c' update recommended; merge content from update file, rename update file to base file and remove previous base file" },
+    { ".Major",       1, "error csolution: file '.*/startup_ARMCM3.c' update required; merge content from update file, rename update file to base file and remove previous base file" },
+    { ".Missing",     0, "" },
+  };
+
+  for (const auto& testData : testDataVector2) {
+    streamRedirect.ClearStringStreams();
+    argv[3] = (char*)"-c";
+    argv[4] = (char*)get<0>(testData).c_str();
+    EXPECT_EQ(get<1>(testData), RunProjMgr(5, argv, m_envp));
+    auto errStr = streamRedirect.GetErrorString();
+    EXPECT_TRUE(regex_search(errStr, regex(get<2>(testData))));
+  }
 }

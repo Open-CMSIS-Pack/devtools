@@ -168,7 +168,7 @@ protected:
 
   bool Configure();
   bool GenerateYMLConfigurationFiles();
-  void updateRte();
+  bool UpdateRte();
   bool ParseAndValidateContexts();
 };
 

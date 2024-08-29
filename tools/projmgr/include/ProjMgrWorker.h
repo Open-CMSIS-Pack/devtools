@@ -690,6 +690,14 @@ public:
    * @return true if errors
   */
   bool HasToolchainErrors();
+
+  /**
+   * @brief check config PLM files
+   * @param reference to context
+   * @return true if check success
+  */
+  bool CheckConfigPLMFiles(ContextItem& context);
+
 protected:
   ProjMgrParser* m_parser = nullptr;
   ProjMgrKernel* m_kernel = nullptr;
