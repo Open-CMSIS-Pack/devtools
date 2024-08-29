@@ -506,9 +506,7 @@ bool ProjMgr::GenerateYMLConfigurationFiles() {
   }
 
   // Update the RTE files
-  updateRte();
-
-  bool result = true;
+  bool result = UpdateRte();
 
   // Generate cbuild files
   for (auto& contextItem : m_processedContexts) {
@@ -627,7 +625,7 @@ bool ProjMgr::Configure() {
   return !error;
 }
 
-void ProjMgr::updateRte() {
+bool ProjMgr::UpdateRte() {
   // Update the RTE files
   if (m_updateRteFiles) {
     for (auto& contextItem : m_processedContexts) {
@@ -637,11 +635,19 @@ void ProjMgr::updateRte() {
       }
     }
   }
+  bool result = true;
+  for (auto& contextItem : m_processedContexts) {
+    // Check PLM files
+    if (!m_worker.CheckConfigPLMFiles(*contextItem)) {
+      m_failedContext.insert(contextItem->name);
+      result = false;
+    }
+  }
+  return result;
 }
 
 bool ProjMgr::RunConfigure() {
-  bool success = Configure();
-  updateRte();
+  bool success = Configure() && UpdateRte();
   return success;
 }
 

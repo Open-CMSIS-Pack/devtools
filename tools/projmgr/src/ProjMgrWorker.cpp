@@ -2081,6 +2081,55 @@ bool ProjMgrWorker::ProcessConfigFiles(ContextItem& context) {
   return true;
 }
 
+bool ProjMgrWorker::CheckConfigPLMFiles(ContextItem& context) {
+  bool error = false;
+  for (const auto& fi : context.rteActiveProject->GetFileInstances()) {
+    // get absolute path to file instance
+    const string file = fs::path(context.cproject->directory).append(fi.second->GetInstanceName()).generic_string();
+    if (!RteFsUtils::Exists(file)) {
+      error = true;
+      ProjMgrLogger::Error("file '" + file + "' not found; use --update-rte");
+      continue;
+    }
+    // get base version
+    const string baseVersion = fi.second->GetVersionString();
+    if (!RteFsUtils::Exists(file + '.' + RteUtils::BASE_STRING + '@' + baseVersion)) {
+      ProjMgrLogger::Warn("file '" + file + ".base' not found; base version unknown");
+    } else {
+      // get update version
+      const RteFile* f = fi.second->GetFile(context.rteActiveTarget->GetName());
+      const string updateVersion = f ? f->GetVersionString() : "";
+      if (baseVersion != updateVersion) {
+        // parse and check each semantic version segment
+        static const regex regEx = regex("(\\d+).(\\d+).(\\d+)");
+        smatch base, update;
+        regex_match(baseVersion, base, regEx);
+        regex_match(updateVersion, update, regEx);
+        if (base.size() == 4 && update.size() == 4) {
+          auto GetUpdateMsg = [&](const string& severity) {
+            return "file '" + file + "' update " + severity +
+              (!RteFsUtils::Exists(file + '.' + RteUtils::UPDATE_STRING + '@' + updateVersion) ? "; use --update-rte" :
+              "; merge content from update file, rename update file to base file and remove previous base file");
+          };
+          if (base[1] != update[1]) {
+            // major
+            error = true;
+            ProjMgrLogger::Error(GetUpdateMsg("required"));
+            continue;
+          } else if (base[2] != update[2]) {
+            // minor
+            ProjMgrLogger::Warn(GetUpdateMsg("recommended"));
+          } else if (base[3] != update[3]) {
+            // patch
+            ProjMgrLogger::Warn(GetUpdateMsg("suggested"));
+          }
+        }
+      }
+    }
+  }
+  return !error;
+}
+
 void ProjMgrWorker::SetDefaultLinkerScript(ContextItem& context) {
   if (context.linker.script.empty()) {
     const string& compilerRoot = GetCompilerRoot();
