@@ -53,6 +53,7 @@ build:
           version: 2.0.3
           base: ../data/TestSolution/TestBaseUpdate/RTE/Device/RteTest_ARMCM0/startup_ARMCM0.c.base@2.0.2
           update: ../data/TestSolution/TestBaseUpdate/RTE/Device/RteTest_ARMCM0/startup_ARMCM0.c.update@2.0.3
+          status: update suggested
         - file: ../data/TestSolution/TestBaseUpdate/RTE/Device/RteTest_ARMCM0/system_ARMCM0.c
           category: sourceC
           attr: config

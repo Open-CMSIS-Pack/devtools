@@ -6233,12 +6233,12 @@ TEST_F(ProjMgrUnitTests, ConfigFilesUpdate) {
   argv[2] = (char*)csolution.c_str();
 
   // --no-update-rte
-  std::vector<std::tuple<std::string, int, std::string>> testDataVector1 = {
-    { ".BaseUnknown", 0, "warning csolution: file '.*/startup_ARMCM3.c.base' not found; base version unknown" },
-    { ".Patch",       0, "warning csolution: file '.*/startup_ARMCM3.c' update suggested; use --update-rte" },
-    { ".Minor",       0, "warning csolution: file '.*/startup_ARMCM3.c' update recommended; use --update-rte" },
-    { ".Major",       1, "error csolution: file '.*/startup_ARMCM3.c' update required; use --update-rte" },
-    { ".Missing",     1, "error csolution: file '.*/startup_ARMCM3.c' not found; use --update-rte" },
+  std::vector<std::tuple<std::string, int, std::string, std::string>> testDataVector1 = {
+    { ".BaseUnknown", 0, "warning csolution: file '.*/startup_ARMCM3.c.base' not found; base version unknown", "missing base"       },
+    { ".Patch",       0, "warning csolution: file '.*/startup_ARMCM3.c' update suggested; use --update-rte",   "update suggested"   },
+    { ".Minor",       0, "warning csolution: file '.*/startup_ARMCM3.c' update recommended; use --update-rte", "update recommended" },
+    { ".Major",       1, "error csolution: file '.*/startup_ARMCM3.c' update required; use --update-rte",      "update required"    },
+    { ".Missing",     1, "error csolution: file '.*/startup_ARMCM3.c' not found; use --update-rte",            "missing file"       },
   };
 
   for (const auto& testData : testDataVector1) {
@@ -6249,6 +6249,8 @@ TEST_F(ProjMgrUnitTests, ConfigFilesUpdate) {
     EXPECT_EQ(get<1>(testData), RunProjMgr(6, argv, m_envp));
     auto errStr = streamRedirect.GetErrorString();
     EXPECT_TRUE(regex_search(errStr, regex(get<2>(testData))));
+    const YAML::Node& cbuild = YAML::LoadFile(testinput_folder + "/TestSolution/ConfigFilesUpdate/config" + get<0>(testData) + "+RteTest_ARMCM3.cbuild.yml");
+    EXPECT_EQ(get<3>(testData), cbuild["build"]["components"][0]["files"][3]["status"].as<string>());
   }
 
   // --update-rte

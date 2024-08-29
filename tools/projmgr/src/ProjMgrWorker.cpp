@@ -2089,12 +2089,14 @@ bool ProjMgrWorker::CheckConfigPLMFiles(ContextItem& context) {
     if (!RteFsUtils::Exists(file)) {
       error = true;
       ProjMgrLogger::Error("file '" + file + "' not found; use --update-rte");
+      context.plmStatus[file] = PLM_STATUS_MISSING_FILE;
       continue;
     }
     // get base version
     const string baseVersion = fi.second->GetVersionString();
     if (!RteFsUtils::Exists(file + '.' + RteUtils::BASE_STRING + '@' + baseVersion)) {
       ProjMgrLogger::Warn("file '" + file + ".base' not found; base version unknown");
+      context.plmStatus[file] = PLM_STATUS_MISSING_BASE;
     } else {
       // get update version
       const RteFile* f = fi.second->GetFile(context.rteActiveTarget->GetName());
@@ -2107,21 +2109,24 @@ bool ProjMgrWorker::CheckConfigPLMFiles(ContextItem& context) {
         regex_match(updateVersion, update, regEx);
         if (base.size() == 4 && update.size() == 4) {
           auto GetUpdateMsg = [&](const string& severity) {
-            return "file '" + file + "' update " + severity +
+            return "file '" + file + "' " + severity +
               (!RteFsUtils::Exists(file + '.' + RteUtils::UPDATE_STRING + '@' + updateVersion) ? "; use --update-rte" :
               "; merge content from update file, rename update file to base file and remove previous base file");
           };
           if (base[1] != update[1]) {
             // major
             error = true;
-            ProjMgrLogger::Error(GetUpdateMsg("required"));
+            ProjMgrLogger::Error(GetUpdateMsg(PLM_STATUS_UPDATE_REQUIRED));
+            context.plmStatus[file] = PLM_STATUS_UPDATE_REQUIRED;
             continue;
           } else if (base[2] != update[2]) {
             // minor
-            ProjMgrLogger::Warn(GetUpdateMsg("recommended"));
+            ProjMgrLogger::Warn(GetUpdateMsg(PLM_STATUS_UPDATE_RECOMMENDED));
+            context.plmStatus[file] = PLM_STATUS_UPDATE_RECOMMENDED;
           } else if (base[3] != update[3]) {
             // patch
-            ProjMgrLogger::Warn(GetUpdateMsg("suggested"));
+            ProjMgrLogger::Warn(GetUpdateMsg(PLM_STATUS_UPDATE_SUGGESTED));
+            context.plmStatus[file] = PLM_STATUS_UPDATE_SUGGESTED;
           }
         }
       }
