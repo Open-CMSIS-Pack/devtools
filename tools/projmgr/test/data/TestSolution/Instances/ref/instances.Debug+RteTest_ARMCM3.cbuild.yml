@@ -56,18 +56,22 @@ build:
           category: preIncludeLocal
           attr: config
           version: 0.0.1
+          status: missing base
         - file: ../data/TestSolution/Instances/RTE/RteTest/ComponentLevelConfig_1.h
           category: preIncludeLocal
           attr: config
           version: 0.0.1
+          status: missing base
         - file: ../data/TestSolution/Instances/RTE/RteTest/MyDir/RelativeComponentLevelConfig_0.h
           category: header
           attr: config
           version: 0.0.1
+          status: missing base
         - file: ../data/TestSolution/Instances/RTE/RteTest/MyDir/RelativeComponentLevelConfig_1.h
           category: header
           attr: config
           version: 0.0.1
+          status: missing base
         - file: ../data/TestSolution/Instances/RTE/_Debug_RteTest_ARMCM3/Pre_Include_RteTest_ComponentLevel.h
           category: preIncludeLocal
   linker:

@@ -157,6 +157,7 @@ static constexpr const char* YAML_SETUP = "setup";
 static constexpr const char* YAML_SET = "set";
 static constexpr const char* YAML_SETTINGS = "settings";
 static constexpr const char* YAML_SELECT_COMPILER = "select-compiler";
+static constexpr const char* YAML_STATUS = "status";
 static constexpr const char* YAML_SWITCH = "switch";
 static constexpr const char* YAML_TARGET_CONFIGURATIONS = "target-configurations";
 static constexpr const char* YAML_TARGETTYPE = "target-type";

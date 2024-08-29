@@ -256,6 +256,7 @@ struct ContextTypesItem {
  *        map of used components,
  *        map of unresolved dependencies,
  *        map of config files,
+ *        map of PLM status,
  *        list of user groups,
  *        map of absolute file paths,
  *        map of generators,
@@ -305,6 +306,7 @@ struct ContextItem {
   StrMap bootstrapMap;
   std::vector<std::tuple<RteItem::ConditionResult, std::string, std::set<std::string>, std::set<std::string>>> validationResults;
   std::map<std::string, std::map<std::string, RteFileInstance*>> configFiles;
+  std::map<std::string, std::string> plmStatus;
   std::map<std::string, std::vector<ComponentFileItem>> componentFiles;
   std::map<std::string, std::vector<ComponentFileItem>> generatorInputFiles;
   std::vector<GroupNode> groups;
@@ -325,6 +327,15 @@ struct ContextItem {
   std::map<std::string, RteItem*> packLayers;
   bool needRebuild = false;
 };
+
+/**
+  * @brief plm status
+*/
+static constexpr const char* PLM_STATUS_MISSING_FILE = "missing file";
+static constexpr const char* PLM_STATUS_MISSING_BASE = "missing base";
+static constexpr const char* PLM_STATUS_UPDATE_REQUIRED = "update required";
+static constexpr const char* PLM_STATUS_UPDATE_RECOMMENDED = "update recommended";
+static constexpr const char* PLM_STATUS_UPDATE_SUGGESTED = "update suggested";
 
 /**
   * @brief set policy for packs loading [latest|all|required]

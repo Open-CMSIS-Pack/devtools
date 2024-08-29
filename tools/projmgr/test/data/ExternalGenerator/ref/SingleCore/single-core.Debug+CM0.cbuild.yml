@@ -55,6 +55,7 @@ build:
           category: header
           attr: config
           version: 0.0.2
+          status: missing base
         - file: generated/RTE/RteTest/GlobalLevelConfig.h
           category: preIncludeGlobal
           attr: config

@@ -545,6 +545,11 @@ void ProjMgrYamlCbuild::SetComponentFilesNode(YAML::Node node, const ContextItem
           SetNodeValue(fileNode[YAML_BASE], baseFile);
           SetNodeValue(fileNode[YAML_UPDATE], updateFile);
         }
+
+        // Add PLM Status
+        if (context->plmStatus.find(file) != context->plmStatus.end()) {
+          SetNodeValue(fileNode[YAML_STATUS], context->plmStatus.at(file));
+        }
       }
       node.push_back(fileNode);
     }
