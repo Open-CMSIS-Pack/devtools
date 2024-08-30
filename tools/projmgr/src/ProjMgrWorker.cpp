@@ -1358,18 +1358,21 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
   if (!processor) {
     if (!deviceItem.pname.empty()) {
       ProjMgrLogger::Error("processor name '" + deviceItem.pname + "' was not found");
+      return false;
+    } else if (!HasVarDefineError()) {
+      string msg = "one of the following processors must be specified:";
+      const auto& processors = matchedDevice->GetProcessors();
+      for (const auto& p : processors) {
+        msg += "\n" + matchedDevice->GetDeviceName() + ":" + p.first;
+      }
+      ProjMgrLogger::Error(msg);
+      return false;
     }
-    string msg = "one of the following processors must be specified:";
-    const auto& processors = matchedDevice->GetProcessors();
-    for (const auto& p : processors) {
-      msg += "\n" + matchedDevice->GetDeviceName() + ":" + p.first;
-    }
-    ProjMgrLogger::Error(msg);
-    return false;
+  } else {
+    const auto& processorAttributes = processor->GetAttributes();
+    context.targetAttributes.insert(processorAttributes.begin(), processorAttributes.end());
   }
 
-  const auto& processorAttributes = processor->GetAttributes();
-  context.targetAttributes.insert(processorAttributes.begin(), processorAttributes.end());
   context.targetAttributes["Dvendor"] = matchedDevice->GetEffectiveAttribute("Dvendor");
   context.targetAttributes["Dname"] = matchedDevice->GetFullDeviceName();
 
