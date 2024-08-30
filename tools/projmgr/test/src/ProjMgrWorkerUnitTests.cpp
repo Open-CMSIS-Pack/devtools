@@ -112,6 +112,26 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDevice) {
   EXPECT_TRUE(context.targetAttributes.find("Dendian") == context.targetAttributes.end());
 }
 
+TEST_F(ProjMgrWorkerUnitTests, ProcessDeviceUndefLayerVar) {
+  ContextItem context;
+  EXPECT_TRUE(LoadPacks(context));
+  // undefined layer variables
+  this->m_undefLayerVars.insert("Board-Layer");
+  // multi-core device with pname
+  context.device = "RteTest_ARMCM0_Dual:cm0_core0";
+  context.targetAttributes.clear();
+  EXPECT_TRUE(ProcessDevice(context));
+  EXPECT_EQ("cm0_core0", context.targetAttributes["Pname"]);
+  // multi-core device without pname
+  context.device = "RteTest_ARMCM0_Dual";
+  context.targetAttributes.clear();
+  EXPECT_TRUE(ProcessDevice(context));
+  EXPECT_TRUE(context.targetAttributes["Pname"].empty());
+  // no undefined layer variables
+  this->m_undefLayerVars.clear();
+  EXPECT_FALSE(ProcessDevice(context));
+}
+
 TEST_F(ProjMgrWorkerUnitTests, ProcessComponents) {
   set<string> expected = {
     "ARM::Device:Startup&RteTest Startup@2.0.3",
