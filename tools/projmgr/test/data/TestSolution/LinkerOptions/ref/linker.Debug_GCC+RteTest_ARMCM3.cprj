@@ -24,5 +24,11 @@
   <components>
     <component Cclass="Board" Cgroup="Test" Csub="Rev1" Cvendor="ARM" Cversion="1.1.1"/>
   </components>
+
+  <files>
+    <group name="User Linker">
+      <file category="linkerScript" name="../data/TestSolution/LinkerOptions/userLinkerScript.ld"/>
+    </group>
+  </files>
 </cprj>
 

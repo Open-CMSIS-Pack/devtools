@@ -634,6 +634,9 @@ void ProjMgrYamlCbuild::SetPacksNode(YAML::Node node, const ContextItem* context
 
 void ProjMgrYamlCbuild::SetGroupsNode(YAML::Node node, const ContextItem* context, const vector<GroupNode>& groups) {
   for (const auto& group : groups) {
+    if (group.files.empty() && group.groups.empty()) {
+      continue;
+    }
     YAML::Node groupNode;
     SetNodeValue(groupNode[YAML_GROUP], group.group);
     SetControlsNode(groupNode, context, group.build);

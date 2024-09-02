@@ -31,3 +31,9 @@ project:
   components:
     - component: Device:Startup
       for-context: [.FromComponent, .AutoGen]
+
+  groups:
+    - group: User Linker
+      files:
+        - file: ./userLinkerScript.ld
+          for-compiler: GCC

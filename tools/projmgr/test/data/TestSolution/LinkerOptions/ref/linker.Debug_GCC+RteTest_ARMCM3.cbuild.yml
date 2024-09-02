@@ -51,6 +51,11 @@ build:
       - LD_PP_GCC_CLAYER_DEF0
       - LD_PP_GCC_CLAYER_DEF1
       - LD_PP_GCC_SETUP_DEF0
+  groups:
+    - group: User Linker
+      files:
+        - file: ../data/TestSolution/LinkerOptions/userLinkerScript.ld
+          category: linkerScript
   constructed-files:
     - file: ../data/TestSolution/LinkerOptions/RTE/_Debug_GCC_RteTest_ARMCM3/RTE_Components.h
       category: header

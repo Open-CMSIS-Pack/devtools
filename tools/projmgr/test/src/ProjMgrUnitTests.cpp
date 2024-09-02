@@ -4359,7 +4359,8 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_LinkerOptions_Redefinition) {
   // Check error messages
   const vector<string> expectedVec = {
 {"error csolution: redefinition from '.*/linkerScript.ld' into '.*/linkerScript2.ld' is not allowed"},
-{"error csolution: processing context 'linker.Redefinition\\+RteTest_ARMCM3' failed"}
+{"error csolution: processing context 'linker.Redefinition\\+RteTest_ARMCM3' failed"},
+{"warning csolution: '.*/userLinkerScript.ld' this linker script is ignored; multiple linker scripts defined"}
   };
 
   auto errStr = streamRedirect.GetErrorString();
