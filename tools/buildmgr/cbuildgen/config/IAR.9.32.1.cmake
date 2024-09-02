@@ -272,7 +272,7 @@ cbuild_set_options_flags(ASM "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" "" ASM_OPTIO
 
 # C Pre-Processor
 
-if(SECURE STREQUAL "Secure")
+if(SECURE STREQUAL "Secure" OR SECURE STREQUAL "Secure-only")
   set(CC_SECURE "--cmse")
 endif()
 

@@ -38,6 +38,7 @@ const StrPairVecMap RteConstants::DeviceAttributesValues = {
   { RTE_DENDIAN    , {{ RTE_ENDIAN_BIG   , YAML_ENDIAN_BIG     },
                       { RTE_ENDIAN_LITTLE, YAML_ENDIAN_LITTLE  }}},
   { RTE_DSECURE    , {{ RTE_SECURE       , YAML_TZ_SECURE      },
+                      { RTE_SECURE_ONLY  , YAML_TZ_SECURE_ONLY },
                       { RTE_NON_SECURE   , YAML_TZ_NON_SECURE  },
                       { RTE_TZ_DISABLED  , YAML_OFF            }}},
   { RTE_DBRANCHPROT, {{ RTE_BTI          , YAML_BP_BTI         },

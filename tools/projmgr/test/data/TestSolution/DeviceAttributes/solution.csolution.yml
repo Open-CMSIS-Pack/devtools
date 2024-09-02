@@ -40,6 +40,9 @@ solution:
     - type: secure
       processor:
         trustzone: secure
+    - type: secure-only
+      processor:
+        trustzone: secure-only
     - type: non-secure
       processor:
         trustzone: non-secure
@@ -74,6 +77,6 @@ solution:
     - project: ./endian/endian.cproject.yml
       for-context: [+big, +little]
     - project: ./trustzone/trustzone.cproject.yml
-      for-context: [+secure, +non-secure, +tz-disabled]
+      for-context: [+secure, +secure-only, +non-secure, +tz-disabled]
     - project: ./branch-protection/branch-protection.cproject.yml
       for-context: [+bti, +bti-signret, +no-bp]

@@ -10,6 +10,8 @@ project:
   layers:
     - layer: ./secure.clayer.yml
       for-context: +secure
+    - layer: ./secure-only.clayer.yml
+      for-context: +secure-only
     - layer: ./non-secure.clayer.yml
       for-context: +non-secure
     - layer: ./tz-disabled.clayer.yml
@@ -20,6 +22,10 @@ project:
       for-context: +secure
       processor:
         trustzone: secure
+    - setup: secure-only
+      for-context: +secure-only
+      processor:
+        trustzone: secure-only
     - setup: non-secure
       for-context: +non-secure
       processor:

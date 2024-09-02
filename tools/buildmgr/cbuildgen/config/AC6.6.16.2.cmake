@@ -660,7 +660,7 @@ set(AS_GNU_BYTE_ORDER "${AS_BYTE_ORDER}")
 
 # C Pre-Processor
 
-if(SECURE STREQUAL "Secure")
+if(SECURE STREQUAL "Secure" OR SECURE STREQUAL "Secure-only")
   set(CC_SECURE "-mcmse")
 endif()
 

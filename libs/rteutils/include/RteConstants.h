@@ -158,6 +158,7 @@ public:
   static constexpr const char* YAML_BP_BTI = "bti";
   static constexpr const char* YAML_BP_BTI_SIGNRET = "bti-signret";
   static constexpr const char* YAML_TZ_SECURE = "secure";
+  static constexpr const char* YAML_TZ_SECURE_ONLY = "secure-only";
   static constexpr const char* YAML_TZ_NON_SECURE = "non-secure";
 
   static constexpr const char* RTE_DFPU = "Dfpu";
@@ -181,6 +182,7 @@ public:
   static constexpr const char* RTE_ENDIAN_LITTLE = "Little-endian";
   static constexpr const char* RTE_ENDIAN_CONFIGURABLE = "Configurable";
   static constexpr const char* RTE_SECURE = "Secure";
+  static constexpr const char* RTE_SECURE_ONLY = "Secure-only";
   static constexpr const char* RTE_NON_SECURE = "Non-secure";
   static constexpr const char* RTE_TZ_DISABLED = "TZ-disabled";
   static constexpr const char* RTE_NO_TZ = "NO_TZ";
