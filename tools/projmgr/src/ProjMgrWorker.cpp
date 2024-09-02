@@ -3375,9 +3375,14 @@ bool ProjMgrWorker::AddFile(const FileNode& src, vector<FileNode>& dst, ContextI
     dst.push_back(srcNode);
 
     // Set linker script
-    if ((srcNode.category == "linkerScript") && (!context.linker.autoGen &&
-      context.linker.script.empty() && context.linker.regions.empty() && context.linker.defines.empty())) {
-      context.linker.script = srcNode.file;
+    if (srcNode.category == "linkerScript") {
+      if (!context.linker.autoGen && context.linker.script.empty() &&
+        context.linker.regions.empty() && context.linker.defines.empty()) {
+        context.linker.script = srcNode.file;
+      } else {
+        ProjMgrLogger::Warn("'" + src.file + "' this linker script is ignored" +
+          (context.linker.script.empty() ? "" : "; multiple linker scripts defined"));
+      }
     }
 
     // Store absolute file path
