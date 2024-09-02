@@ -1778,10 +1778,12 @@ std::string RteTarget::GenerateRegionsHeaderContent() const
   }
   vector<RteItem*> memRO;
   vector<RteItem*> memRW;
+  unsigned int totalRW = 0;
   auto& deviceMems = device->GetEffectiveProperties("memory", GetProcessorName());
   for (auto mem : deviceMems) {
     if (mem->IsWriteAccess()) {
       memRW.push_back(mem);
+      totalRW += stoul(mem->GetAttribute("size"), nullptr, 16);
     } else {
       memRO.push_back(mem);
     }
@@ -1794,6 +1796,7 @@ std::string RteTarget::GenerateRegionsHeaderContent() const
     for( auto mem : board->GetMemories(boardMemCollection)) {
       if (mem->IsWriteAccess()) {
         memRW.push_back(mem);
+        totalRW += stoul(mem->GetAttribute("size"), nullptr, 16);
       } else {
         memRO.push_back(mem);
       }
@@ -1837,7 +1840,7 @@ std::string RteTarget::GenerateRegionsHeaderContent() const
   oss << "//   <o0> Stack Size (in Bytes) <0x0-0xFFFFFFFF:8>" << RteUtils::LF_STRING;
   oss << "//   <o1> Heap Size (in Bytes) <0x0-0xFFFFFFFF:8>" << RteUtils::LF_STRING;
   oss << "#define __STACK_SIZE 0x00000200" << RteUtils::LF_STRING;
-  oss << "#define __HEAP_SIZE 0x00000000" << RteUtils::LF_STRING;
+  oss << "#define __HEAP_SIZE " << (totalRW >= 6144 ? "0x00000C00" : "0x00000000") << RteUtils::LF_STRING;
   oss << "// </h>" << RteUtils::LF_STRING;
 
   return oss.str();
