@@ -5436,7 +5436,7 @@ TEST_F(ProjMgrUnitTests, DeviceAttributes) {
     {"dsp", {"+dsp", "+no-dsp"}},
     {"mve", {"+mve-fp", "+mve-int", "+no-mve"}},
     {"endian", {"+big", "+little"}},
-    {"trustzone", {"+secure", "+non-secure", "+tz-disabled"}},
+    {"trustzone", {"+secure", "+secure-only", "+non-secure", "+tz-disabled"}},
     {"branch-protection", {"+bti","+bti-signret", "+no-bp"}}
   };
   char* argv[7];

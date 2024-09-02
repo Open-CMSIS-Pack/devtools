@@ -444,8 +444,8 @@
       ]
     },
     "ProcessorTrustzone": {
-      "enum": [ "secure", "non-secure", "off" ],
-      "description": "Select TrustZone mode: secure | non-secure | off"
+      "enum": [ "secure", "secure-only", "non-secure", "off" ],
+      "description": "Select TrustZone mode: secure | secure-only | non-secure | off"
     },
     "ProcessorFpu": {
       "enum": [ "dp", "sp", "off" ],
