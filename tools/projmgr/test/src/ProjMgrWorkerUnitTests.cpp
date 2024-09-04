@@ -71,7 +71,7 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessToolchainNoToolchainRegistered) {
   EXPECT_TRUE(ProcessPrecedences(context));
   EXPECT_TRUE(ProcessToolchain(context));
   EXPECT_TRUE(std::any_of(m_toolchainErrors.begin(), m_toolchainErrors.end(), [](const std::string& str) {
-        return str.find("CMSIS_COMPILER_ROOT") != std::string::npos;
+        return str.find("no toolchain cmake files found") != std::string::npos;
     }));
 }
 
