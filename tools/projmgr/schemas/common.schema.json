@@ -949,7 +949,7 @@
         "cbuild": { "type": "string", "description": "Path to <context>.cbuild.yml file" },
         "project": { "type": "string", "description": "Project name" },
         "configuration": { "$ref": "#/definitions/BuildContext" },
-        "depends-on": { "$ref": "#/definitions/ArrayOfBuildContextWithProjectName" },
+        "depends-on": { "type": "array",  "items": { "type": "string"} },
         "errors": { "type": "boolean", "description": "Indicates error(s) during conversion" },
         "packs-missing": { "$ref": "#/definitions/BuildPacksMissingType" },
         "clayers": { "$ref": "#/definitions/BuildLayersType" },
@@ -1531,7 +1531,7 @@
         "always":     { "type": "null",   "description": "When present, the build step always runs and bypasses check for outdated files" },
         "input":      { "type": "array",  "description": "A list of input files (may contain Access Sequences)",  "items": { "type": "string"} },
         "output":     { "type": "array",  "description": "A list of output files (may contain Access Sequences)", "items": { "type": "string"} },
-        "depends-on": { "$ref": "#/definitions/ArrayOfBuildContextWithProjectName" }
+        "depends-on": { "type": "array",  "items": { "type": "string"} }
       },
       "additionalProperties": false,
       "required": ["execute", "run"]
