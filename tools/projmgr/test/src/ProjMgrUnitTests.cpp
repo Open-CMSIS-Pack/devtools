@@ -6272,3 +6272,18 @@ TEST_F(ProjMgrUnitTests, ConfigFilesUpdate) {
     EXPECT_TRUE(regex_search(errStr, regex(get<2>(testData))));
   }
 }
+
+TEST_F(ProjMgrUnitTests, RegionsFileGeneration) {
+  char* argv[3];
+  const string& csolution = testinput_folder + "/TestMemoryRegions/regions.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  EXPECT_EQ(0, RunProjMgr(3, argv, m_envp));
+
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/TestMemoryRegions/ref/RteTestDevice0/regions_RteTestBoard0.h",
+    testinput_folder + "/TestMemoryRegions/RTE/Device/RteTestDevice0/regions_RteTestBoard0.h");
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/TestMemoryRegions/ref/RteTestDevice1/regions_RteTestBoard1.h",
+    testinput_folder + "/TestMemoryRegions/RTE/Device/RteTestDevice1/regions_RteTestBoard1.h");
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/TestMemoryRegions/ref/RteTestDevice_Dual_cm0_core1/regions_RteTestDevice_Dual_cm0_core1.h",
+    testinput_folder + "/TestMemoryRegions/RTE/Device/RteTestDevice_Dual_cm0_core1/regions_RteTestDevice_Dual_cm0_core1.h");
+}

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<package schemaVersion="1.3" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="PACK.xsd">
+  <name>RteTest_DFP</name>
+  <description>RTE test of regions file generation</description>
+  <vendor>ARM</vendor>
+  <url>http://www.keil.com/pack/</url>
+
+  <releases>
+    <release version="0.8.0" date="2024-09-02">
+      Initial version
+    </release>
+  </releases>
+
+  <devices>
+    <family Dfamily="RteTest ARM Cortex M" Dvendor="ARM:82">
+      <subFamily DsubFamily="RteTest ARM Cortex M0">
+
+        <device Dname="RteTestDevice0">
+          <processor Dcore="Cortex-M0" DcoreVersion="r0p0" Dfpu="NO_FPU" Dmpu="NO_MPU" Dendian="Configurable" Dclock="10000000"/>
+          <memory name="Default0_Region" start="0x10000000" size="0x00040000" access="rx" default="0"/>
+          <memory id="IROM1" start="0x01000000" size="0x00040000" default="1"/>
+          <memory id="IRAM1" start="0x81000000" size="0x00020000" default="1"/>
+          <memory id="IROM2" start="0x02000000" size="0x00040000" default="1" startup="1"/>
+          <memory id="IRAM2" start="0x82000000" size="0x00020000" default="1" uninit="1"/>
+          <memory id="IROM3" start="0x03000000" size="0x00040000" default="1"/>
+          <memory id="IRAM3" start="0x83000000" size="0x00020000" default="1"/>
+          <memory id="IROM4" start="0x04000000" size="0x01000000" default="1"/>
+          <memory id="IRAM4" start="0x84000000" size="0x01000000" default="1"/>
+          <memory id="IROM5" start="0x05000000" size="0x00000000" default="1"/>
+          <memory id="IRAM5" start="0x85000000" size="0x00020000" default="1"/>
+        </device>
+
+        <device Dname="RteTestDevice1">
+          <processor Dcore="Cortex-M0" DcoreVersion="r0p0" Dfpu="NO_FPU" Dmpu="NO_MPU" Dendian="Configurable" Dclock="10000000"/>
+          <memory name="Device_Rom1" start="0x01000000" size="0x01000000" access="rx" default="1"/>
+          <memory name="Device_Rom2" start="0x02000000" size="0x00040000" access="rx" default="1"/>
+          <memory name="Device_Ram1" start="0x91000000" size="0x01000000" access="rwx" default="1"/>
+          <memory name="Device_Ram2" start="0x92000000" size="0x00040000" access="rwx" default="1"/>
+        </device>
+
+        <device Dname="RteTestDevice_Dual">
+          <processor Pname="cm0_core0" Dcore="Cortex-M0" DcoreVersion="r0p0" Dfpu="NO_FPU" Dmpu="NO_MPU" Dendian="Configurable" Dclock="10000000" />
+          <processor Pname="cm0_core1" Dcore="Cortex-M0" DcoreVersion="r0p0" Dfpu="NO_FPU" Dmpu="NO_MPU" Dendian="Configurable" Dclock="10000000"/>
+          <memory id="IROM1" start="0x01000000" size="0x00040000" startup="1" default="1" Pname="cm0_core0"/>
+          <memory id="IRAM1" start="0x81000000" size="0x00020000" startup="0" default="1" uninit="1" Pname="cm0_core0"/>
+          <memory id="IROM2" start="0x02000000" size="0x00040000" startup="1" default="1" Pname="cm0_core1"/>
+          <memory id="IRAM2" start="0x82000000" size="0x00020000" startup="0" default="1" uninit="1"Pname="cm0_core1"/>
+        </device>
+
+      </subFamily>
+    </family>
+  </devices>
+
+</package>
