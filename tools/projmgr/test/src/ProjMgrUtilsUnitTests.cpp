@@ -445,6 +445,9 @@ TEST_F(ProjMgrUtilsUnitTests, ConvertToVersionRange) {
   EXPECT_EQ("", ProjMgrUtils::ConvertToVersionRange(""));
   EXPECT_EQ("1.2.3:1.2.3", ProjMgrUtils::ConvertToVersionRange("1.2.3"));
   EXPECT_EQ("1.2.3", ProjMgrUtils::ConvertToVersionRange(">=1.2.3"));
+  EXPECT_EQ("1.2.3-build4", ProjMgrUtils::ConvertToVersionRange(">=1.2.3-build4"));
+  EXPECT_EQ("1.2.3:1.3.0-0", ProjMgrUtils::ConvertToVersionRange("~1.2.3"));
+  EXPECT_EQ("1.2.3:2.0.0-0", ProjMgrUtils::ConvertToVersionRange("^1.2.3"));
 }
 
 TEST_F(ProjMgrUtilsUnitTests, ReplaceDelimiters) {
