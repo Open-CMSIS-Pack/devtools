@@ -1,42 +1,42 @@
-#ifndef REGIONS_RTETEST_CM4_BOARD_H
-#define REGIONS_RTETEST_CM4_BOARD_H
+#ifndef REGIONS_RTETESTBOARD1_H
+#define REGIONS_RTETESTBOARD1_H
 
 
 //-------- <<< Use Configuration Wizard in Context Menu >>> --------------------
 //------ With VS Code: Open Preview for Configuration Wizard -------------------
 
 // <n> Auto-generated using information from packs
-// <i> Device Family Pack (DFP):   ARM::RteTest_DFP@0.2.0
-// <i> Board Support Pack (BSP):   ARM::RteTestBoard@0.1.0
+// <i> Device Family Pack (DFP):   ARM::RteTest_DFP@0.8.0
+// <i> Board Support Pack (BSP):   ARM::RteTest_BSP@0.9.0
 
 // <h> ROM Configuration
 // =======================
-// <h> __ROM0 (is rx memory: FLASH from DFP)
+// <h> __ROM0 (is rx memory: Device_Rom1+Device_Rom2 from DFP)
 //   <o> Base address <0x0-0xFFFFFFFF:8>
-//   <i> Defines base address of memory region. Default: 0x00000000
+//   <i> Defines base address of memory region. Default: 0x01000000
 //   <i> Contains Startup and Vector Table
-#define __ROM0_BASE 0x00000000
+#define __ROM0_BASE 0x01000000
 //   <o> Region size [bytes] <0x0-0xFFFFFFFF:8>
-//   <i> Defines size of memory region. Default: 0x00040000
-#define __ROM0_SIZE 0x00040000
+//   <i> Defines size of memory region. Default: 0x01040000
+#define __ROM0_SIZE 0x01040000
 // </h>
 
-// <h> __ROM1 (is rx memory: BoardFLASH from BSP)
+// <h> __ROM1 (is rx memory: Flash-External0 from BSP)
 //   <o> Base address <0x0-0xFFFFFFFF:8>
-//   <i> Defines base address of memory region. Default: 0x30000000
-#define __ROM1_BASE 0x30000000
+//   <i> Defines base address of memory region. Default: 0x10040000
+#define __ROM1_BASE 0x10040000
 //   <o> Region size [bytes] <0x0-0xFFFFFFFF:8>
-//   <i> Defines size of memory region. Default: 0x00040000
-#define __ROM1_SIZE 0x00040000
+//   <i> Defines size of memory region. Default: 0x04000000
+#define __ROM1_SIZE 0x04000000
 // </h>
 
-// <h> __ROM2 (unused)
+// <h> __ROM2 (is rx memory: Flash-External1 from BSP)
 //   <o> Base address <0x0-0xFFFFFFFF:8>
-//   <i> Defines base address of memory region.
-#define __ROM2_BASE 0
+//   <i> Defines base address of memory region. Default: 0x90000000
+#define __ROM2_BASE 0x90000000
 //   <o> Region size [bytes] <0x0-0xFFFFFFFF:8>
-//   <i> Defines size of memory region.
-#define __ROM2_SIZE 0
+//   <i> Defines size of memory region. Default: 0x04000000
+#define __ROM2_SIZE 0x04000000
 // </h>
 
 // <h> __ROM3 (unused)
@@ -52,32 +52,32 @@
 
 // <h> RAM Configuration
 // =======================
-// <h> __RAM0 (is rwx memory: SRAM from DFP)
+// <h> __RAM0 (is rwx memory: Device_Ram1+Device_Ram2 from DFP)
 //   <o> Base address <0x0-0xFFFFFFFF:8>
-//   <i> Defines base address of memory region. Default: 0x20000000
+//   <i> Defines base address of memory region. Default: 0x91000000
 //   <i> Contains uninitialized RAM, Stack, and Heap
-#define __RAM0_BASE 0x20000000
+#define __RAM0_BASE 0x91000000
 //   <o> Region size [bytes] <0x0-0xFFFFFFFF:8>
-//   <i> Defines size of memory region. Default: 0x00020000
-#define __RAM0_SIZE 0x00020000
+//   <i> Defines size of memory region. Default: 0x01040000
+#define __RAM0_SIZE 0x01040000
 // </h>
 
-// <h> __RAM1 (is rwx memory: BoardRAM from BSP)
+// <h> __RAM1 (is rwx memory: RAM-External0 from BSP)
 //   <o> Base address <0x0-0xFFFFFFFF:8>
-//   <i> Defines base address of memory region. Default: 0x40000000
-#define __RAM1_BASE 0x40000000
+//   <i> Defines base address of memory region. Default: 0x10020000
+#define __RAM1_BASE 0x10020000
 //   <o> Region size [bytes] <0x0-0xFFFFFFFF:8>
-//   <i> Defines size of memory region. Default: 0x00020000
-#define __RAM1_SIZE 0x00020000
+//   <i> Defines size of memory region. Default: 0x00800000
+#define __RAM1_SIZE 0x00800000
 // </h>
 
-// <h> __RAM2 (unused)
+// <h> __RAM2 (is rwx memory: RAM-External1 from BSP)
 //   <o> Base address <0x0-0xFFFFFFFF:8>
-//   <i> Defines base address of memory region.
-#define __RAM2_BASE 0
+//   <i> Defines base address of memory region. Default: 0x90000000
+#define __RAM2_BASE 0x90000000
 //   <o> Region size [bytes] <0x0-0xFFFFFFFF:8>
-//   <i> Defines size of memory region.
-#define __RAM2_SIZE 0
+//   <i> Defines size of memory region. Default: 0x00800000
+#define __RAM2_SIZE 0x00800000
 // </h>
 
 // <h> __RAM3 (unused)
@@ -99,4 +99,4 @@
 // </h>
 
 
-#endif /* REGIONS_RTETEST_CM4_BOARD_H */
+#endif /* REGIONS_RTETESTBOARD1_H */

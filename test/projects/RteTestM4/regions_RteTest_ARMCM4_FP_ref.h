@@ -10,42 +10,82 @@
 
 // <h> ROM Configuration
 // =======================
-// <h> __ROM0 (is region: FLASH from DFP)
+// <h> __ROM0 (is rx memory: FLASH from DFP)
 //   <o> Base address <0x0-0xFFFFFFFF:8>
-//   <i> Defines base address of memory region.
-//   <i> Default: 0x00000000
+//   <i> Defines base address of memory region. Default: 0x00000000
+//   <i> Contains Startup and Vector Table
 #define __ROM0_BASE 0x00000000
 //   <o> Region size [bytes] <0x0-0xFFFFFFFF:8>
-//   <i> Defines size of memory region.
-//   <i> Default: 0x00040000
+//   <i> Defines size of memory region. Default: 0x00040000
 #define __ROM0_SIZE 0x00040000
-//   <q> Default region
-//   <i> Enables memory region globally for the application.
-#define __ROM0_DEFAULT 1
-//   <q> Startup
-//   <i> Selects region to be used for startup code.
-#define __ROM0_STARTUP 1
+// </h>
+
+// <h> __ROM1 (unused)
+//   <o> Base address <0x0-0xFFFFFFFF:8>
+//   <i> Defines base address of memory region.
+#define __ROM1_BASE 0
+//   <o> Region size [bytes] <0x0-0xFFFFFFFF:8>
+//   <i> Defines size of memory region.
+#define __ROM1_SIZE 0
+// </h>
+
+// <h> __ROM2 (unused)
+//   <o> Base address <0x0-0xFFFFFFFF:8>
+//   <i> Defines base address of memory region.
+#define __ROM2_BASE 0
+//   <o> Region size [bytes] <0x0-0xFFFFFFFF:8>
+//   <i> Defines size of memory region.
+#define __ROM2_SIZE 0
+// </h>
+
+// <h> __ROM3 (unused)
+//   <o> Base address <0x0-0xFFFFFFFF:8>
+//   <i> Defines base address of memory region.
+#define __ROM3_BASE 0
+//   <o> Region size [bytes] <0x0-0xFFFFFFFF:8>
+//   <i> Defines size of memory region.
+#define __ROM3_SIZE 0
 // </h>
 
 // </h>
 
 // <h> RAM Configuration
 // =======================
-// <h> __RAM0 (is region: SRAM from DFP)
+// <h> __RAM0 (is rwx memory: SRAM from DFP)
 //   <o> Base address <0x0-0xFFFFFFFF:8>
-//   <i> Defines base address of memory region.
-//   <i> Default: 0x20000000
+//   <i> Defines base address of memory region. Default: 0x20000000
+//   <i> Contains uninitialized RAM, Stack, and Heap
 #define __RAM0_BASE 0x20000000
 //   <o> Region size [bytes] <0x0-0xFFFFFFFF:8>
-//   <i> Defines size of memory region.
-//   <i> Default: 0x00020000
+//   <i> Defines size of memory region. Default: 0x00020000
 #define __RAM0_SIZE 0x00020000
-//   <q> Default region
-//   <i> Enables memory region globally for the application.
-#define __RAM0_DEFAULT 1
-//   <q> No zero initialize
-//   <i> Excludes region from zero initialization.
-#define __RAM0_NOINIT 1
+// </h>
+
+// <h> __RAM1 (unused)
+//   <o> Base address <0x0-0xFFFFFFFF:8>
+//   <i> Defines base address of memory region.
+#define __RAM1_BASE 0
+//   <o> Region size [bytes] <0x0-0xFFFFFFFF:8>
+//   <i> Defines size of memory region.
+#define __RAM1_SIZE 0
+// </h>
+
+// <h> __RAM2 (unused)
+//   <o> Base address <0x0-0xFFFFFFFF:8>
+//   <i> Defines base address of memory region.
+#define __RAM2_BASE 0
+//   <o> Region size [bytes] <0x0-0xFFFFFFFF:8>
+//   <i> Defines size of memory region.
+#define __RAM2_SIZE 0
+// </h>
+
+// <h> __RAM3 (unused)
+//   <o> Base address <0x0-0xFFFFFFFF:8>
+//   <i> Defines base address of memory region.
+#define __RAM3_BASE 0
+//   <o> Region size [bytes] <0x0-0xFFFFFFFF:8>
+//   <i> Defines size of memory region.
+#define __RAM3_SIZE 0
 // </h>
 
 // </h>
