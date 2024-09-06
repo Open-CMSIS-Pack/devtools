@@ -23,8 +23,8 @@
 
 // <h> __ROM1 (is rx memory: Flash-External0 from BSP)
 //   <o> Base address <0x0-0xFFFFFFFF:8>
-//   <i> Defines base address of memory region. Default: 0x10040000
-#define __ROM1_BASE 0x10040000
+//   <i> Defines base address of memory region. Default: 0x70000000
+#define __ROM1_BASE 0x70000000
 //   <o> Region size [bytes] <0x0-0xFFFFFFFF:8>
 //   <i> Defines size of memory region. Default: 0x04000000
 #define __ROM1_SIZE 0x04000000
@@ -32,8 +32,8 @@
 
 // <h> __ROM2 (is rx memory: Flash-External1 from BSP)
 //   <o> Base address <0x0-0xFFFFFFFF:8>
-//   <i> Defines base address of memory region. Default: 0x90000000
-#define __ROM2_BASE 0x90000000
+//   <i> Defines base address of memory region. Default: 0x71000000
+#define __ROM2_BASE 0x71000000
 //   <o> Region size [bytes] <0x0-0xFFFFFFFF:8>
 //   <i> Defines size of memory region. Default: 0x04000000
 #define __ROM2_SIZE 0x04000000
@@ -64,8 +64,8 @@
 
 // <h> __RAM1 (is rwx memory: RAM-External0 from BSP)
 //   <o> Base address <0x0-0xFFFFFFFF:8>
-//   <i> Defines base address of memory region. Default: 0x10020000
-#define __RAM1_BASE 0x10020000
+//   <i> Defines base address of memory region. Default: 0x60000000
+#define __RAM1_BASE 0x60000000
 //   <o> Region size [bytes] <0x0-0xFFFFFFFF:8>
 //   <i> Defines size of memory region. Default: 0x00800000
 #define __RAM1_SIZE 0x00800000
@@ -73,8 +73,8 @@
 
 // <h> __RAM2 (is rwx memory: RAM-External1 from BSP)
 //   <o> Base address <0x0-0xFFFFFFFF:8>
-//   <i> Defines base address of memory region. Default: 0x90000000
-#define __RAM2_BASE 0x90000000
+//   <i> Defines base address of memory region. Default: 0x61000000
+#define __RAM2_BASE 0x61000000
 //   <o> Region size [bytes] <0x0-0xFFFFFFFF:8>
 //   <i> Defines size of memory region. Default: 0x00800000
 #define __RAM2_SIZE 0x00800000

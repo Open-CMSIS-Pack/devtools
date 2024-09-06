@@ -6274,7 +6274,6 @@ TEST_F(ProjMgrUnitTests, ConfigFilesUpdate) {
 }
 
 TEST_F(ProjMgrUnitTests, RegionsFileGeneration) {
-  //StdStreamRedirect streamRedirect;
   char* argv[3];
   const string& csolution = testinput_folder + "/TestMemoryRegions/regions.csolution.yml";
   argv[1] = (char*)"convert";

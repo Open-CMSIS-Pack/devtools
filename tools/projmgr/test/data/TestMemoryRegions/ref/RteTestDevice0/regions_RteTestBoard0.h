@@ -100,10 +100,10 @@
 
 // <n> Resources that are not allocated to linker regions
 // <i> rx ROM:   Default0_Region from DFP:  BASE: 0x10000000  SIZE: 0x00040000
-// <i> rx ROM:   Flash-External0 from BSP:  BASE: 0x10040000  SIZE: 0x04000000
-// <i> rwx RAM:  RAM-External0 from BSP:    BASE: 0x10020000  SIZE: 0x00800000
-// <i> rx ROM:   Flash-External1 from BSP:  BASE: 0x90000000  SIZE: 0x04000000
-// <i> rwx RAM:  RAM-External1 from BSP:    BASE: 0x90000000  SIZE: 0x00800000
+// <i> rx ROM:   Flash-External0 from BSP:  BASE: 0x70000000  SIZE: 0x04000000
+// <i> rwx RAM:  RAM-External0 from BSP:    BASE: 0x60000000  SIZE: 0x00800000
+// <i> rx ROM:   Flash-External1 from BSP:  BASE: 0x71000000  SIZE: 0x04000000
+// <i> rwx RAM:  RAM-External1 from BSP:    BASE: 0x61000000  SIZE: 0x00800000
 
 
 #endif /* REGIONS_RTETESTBOARD0_H */

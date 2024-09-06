@@ -22,18 +22,18 @@
     <board name="RteTestBoard0" vendor="Keil" revision="1.1.1">
       <description>TestBoard with dots in the name and memory</description>
       <mountedDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTestDevice0"/>
-      <memory name="Flash-External0" access="rx"  start="0x10040000" size="0x04000000" default="1"/>
-      <memory name="RAM-External0"   access="rwx" start="0x10020000" size="0x00800000" default="1"/>
-      <memory name="Flash-External1" access="rx"  start="0x90000000" size="0x04000000" default="1"/>
-      <memory name="RAM-External1"   access="rwx" start="0x90000000" size="0x00800000" default="1"/>
+      <memory name="Flash-External0" access="rx"  start="0x70000000" size="0x04000000" default="1"/>
+      <memory name="RAM-External0"   access="rwx" start="0x60000000" size="0x00800000" default="1"/>
+      <memory name="Flash-External1" access="rx"  start="0x71000000" size="0x04000000" default="1"/>
+      <memory name="RAM-External1"   access="rwx" start="0x61000000" size="0x00800000" default="1"/>
     </board>
     <board name="RteTestBoard1" vendor="Keil" revision="2.2.2">
       <description>TestBoard with dots in the name and memory</description>
       <mountedDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTestDevice1"/>
-      <memory name="Flash-External0" access="rx"  start="0x10040000" size="0x04000000" default="1"/>
-      <memory name="RAM-External0"   access="rwx" start="0x10020000" size="0x00800000" default="1"/>
-      <memory name="Flash-External1" access="rx"  start="0x90000000" size="0x04000000" default="1"/>
-      <memory name="RAM-External1"   access="rwx" start="0x90000000" size="0x00800000" default="1"/>
+      <memory name="Flash-External0" access="rx"  start="0x70000000" size="0x04000000" default="1"/>
+      <memory name="RAM-External0"   access="rwx" start="0x60000000" size="0x00800000" default="1"/>
+      <memory name="Flash-External1" access="rx"  start="0x71000000" size="0x04000000" default="1"/>
+      <memory name="RAM-External1"   access="rwx" start="0x61000000" size="0x00800000" default="1"/>
     </board>  
   </boards>
 
