@@ -40,6 +40,12 @@ solution:
       del-path:
         - ./path/solution/to-be-removed
 
+    - type: Compatible
+      device: RteTest_ARMCM0
+
+    - type: Equivalent
+      device: RteTest_ARMCM0
+
   build-types:
     - type: Debug
       compiler: AC6
@@ -77,7 +83,11 @@ solution:
     - pack: ARM::RteTest_DFP@>=0.2.0
       for-context: [+CM0, +TestGen]
     - pack: ARM::RteTest_INVALID@1.2.3
-      not-for-context: [.Debug+CM0,.Debug+TestGen,.Release+CM0, .Release+TestGen]
+      not-for-context: [.Debug+CM0,.Debug+TestGen,.Release+CM0, .Release+TestGen, +Compatible, +Equivalent]
+    - pack: ARM::RteTest_DFP@^0.1.0
+      for-context: +Compatible
+    - pack: ARM::RteTest_DFP@~0.2.0
+      for-context: +Equivalent
 
   projects:
     - project: ./TestProject2/test2.cproject.yml

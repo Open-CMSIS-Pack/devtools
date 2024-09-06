@@ -6,3 +6,5 @@ cbuild-pack:
     - resolved-pack: ARM::RteTest_DFP@0.2.0
       selected-by-pack:
         - ARM::RteTest_DFP@>=0.2.0
+        - ARM::RteTest_DFP@^0.1.0
+        - ARM::RteTest_DFP@~0.2.0
