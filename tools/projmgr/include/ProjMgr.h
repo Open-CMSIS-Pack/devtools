@@ -141,7 +141,7 @@ protected:
   bool m_contextSet;
   bool m_relativePaths;
   bool m_frozenPacks;
-  bool m_cbuild2cmake;
+  bool m_cbuildgen;
   bool m_updateIdx;
   GroupNode m_files;
   std::vector<ContextItem*> m_processedContexts;

@@ -158,13 +158,13 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
   cxxopts::Option frozenPacks("frozen-packs", "The list of packs from cbuild-pack.yml is frozen and raises error if not up-to-date", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option updateIdx("update-idx", "Update cbuild-idx file with layer info", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option quiet("q,quiet", "Run silently, printing only error messages", cxxopts::value<bool>()->default_value("false"));
-  cxxopts::Option cbuild2cmake("cbuild2cmake", "Generate build information files only for cbuild2cmake backend", cxxopts::value<bool>()->default_value("false"));
+  cxxopts::Option cbuildgen("cbuildgen", "Generate legacy *.cprj files", cxxopts::value<bool>()->default_value("false"));
 
   // command options dictionary
   map<string, std::pair<bool, vector<cxxopts::Option>>> optionsDict = {
     // command, optional args, options
     {"update-rte",        { false, {context, contextSet, debug, load, quiet, schemaCheck, toolchain, verbose, frozenPacks}}},
-    {"convert",           { false, {context, contextSet, debug, exportSuffix, load, quiet, schemaCheck, noUpdateRte, output, outputAlt, toolchain, verbose, frozenPacks, cbuild2cmake}}},
+    {"convert",           { false, {context, contextSet, debug, exportSuffix, load, quiet, schemaCheck, noUpdateRte, output, outputAlt, toolchain, verbose, frozenPacks, cbuildgen}}},
     {"run",               { false, {context, contextSet, debug, generator, load, quiet, schemaCheck, verbose, dryRun}}},
     {"list packs",        { true,  {context, contextSet, debug, filter, load, missing, quiet, schemaCheck, toolchain, verbose, relativePaths}}},
     {"list boards",       { true,  {context, contextSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
@@ -185,7 +185,7 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
       solution, context, contextSet, filter, generator,
       load, clayerSearchPath, missing, schemaCheck, noUpdateRte, output, outputAlt,
       help, version, verbose, debug, dryRun, exportSuffix, toolchain, ymlOrder,
-      relativePaths, frozenPacks, updateIdx, quiet, cbuild2cmake
+      relativePaths, frozenPacks, updateIdx, quiet, cbuildgen
     });
     options.parse_positional({ "positional" });
 
@@ -208,8 +208,8 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
     m_relativePaths = parseResult.count("relative-paths");
     m_worker.SetPrintRelativePaths(m_relativePaths);
     m_frozenPacks = parseResult.count("frozen-packs");
-    m_cbuild2cmake = parseResult.count("cbuild2cmake");
-    m_worker.SetCbuild2Cmake(m_cbuild2cmake);
+    m_cbuildgen = parseResult.count("cbuildgen");
+    m_worker.SetCbuild2Cmake(!m_cbuildgen);
     ProjMgrLogger::m_quiet = parseResult.count("quiet");
 
     vector<string> positionalArguments;
@@ -659,7 +659,7 @@ bool ProjMgr::RunConvert(void) {
   Success &= GenerateYMLConfigurationFiles();
 
   // Generate Cprjs
-  if (!m_cbuild2cmake) {
+  if (m_cbuildgen) {
     for (auto& contextItem : m_processedContexts) {
       const string filename = RteFsUtils::MakePathCanonical(contextItem->directories.cprj + "/" + contextItem->name + ".cprj");
       RteFsUtils::CreateDirectories(contextItem->directories.cprj);

@@ -39,7 +39,7 @@ build:
     - ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/Include
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM4/Include
   output-dirs:
-    intdir: ../tmp/single-core/Board/Debug
+    intdir: ../tmp
     outdir: ../out/single-core/Board/Debug
     rtedir: RTE
   output:
