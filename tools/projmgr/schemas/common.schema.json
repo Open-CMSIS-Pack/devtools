@@ -359,7 +359,7 @@
       "properties": {
         "type": {
           "type": "string",
-          "pattern": "^([^.+]+)$",
+          "pattern": "^([a-zA-Z0-9_-]{1,32})$",
           "description": "Name of the target type."
         },
         "board":        { "$ref": "#/definitions/BoardType" },
@@ -396,7 +396,7 @@
       "properties": {
         "type": {
           "type": "string",
-          "pattern": "^([^.+]+)$",
+          "pattern": "^([a-zA-Z0-9_-]{1,32})$",
           "description": "Name of build configuration type. (Debug | Test | Release)"
         },
         "processor":    { "$ref": "#/definitions/ProcessorType" },
