@@ -244,6 +244,10 @@ ProjMgrYamlCbuildIdx::ProjMgrYamlCbuildIdx(YAML::Node node,
         for (const auto& item : combination) {
           if (item.type.empty())
             continue;
+          for (const auto& [type, _] : context->compatibleLayers) {
+            // add all required layer types, including discarded optionals
+            configurations[index][type].insert({});
+          }
           for (const auto& connect : item.connections) {
             configurations[index][item.type][item.filename].insert(connect);
           }
@@ -286,10 +290,14 @@ ProjMgrYamlCbuildIdx::ProjMgrYamlCbuildIdx(YAML::Node node,
     YAML::Node cprojectNode;
     const string& cprojectFilename = fs::relative(cproject.path, directory, ec).generic_string();
     SetNodeValue(cprojectNode[YAML_CPROJECT], cprojectFilename);
+    vector<string> clayerFilenames;
     for (const auto& item : cproject.clayers) {
       string clayerPath = item.layer;
       RteFsUtils::NormalizePath(clayerPath, cproject.directory);
       const string& clayerFilename = fs::relative(clayerPath, directory, ec).generic_string();
+      CollectionUtils::PushBackUniquely(clayerFilenames, clayerFilename);
+    }
+    for (const auto& clayerFilename : clayerFilenames) {
       YAML::Node clayerNode;
       SetNodeValue(clayerNode[YAML_CLAYER], clayerFilename);
       cprojectNode[YAML_CLAYERS].push_back(clayerNode);
@@ -349,6 +357,9 @@ void ProjMgrYamlCbuildIdx::SetVariablesNode(YAML::Node node, ProjMgrParser& pars
     }
     YAML::Node layerNode;
     string layerFile;
+    if (filenames.empty()) {
+      layerNode[type + "-Layer"] = "";
+    }
     for (const auto& [filename, options] : filenames) {
       string packRoot = ProjMgrKernel::Get()->GetCmsisPackRoot();
       layerFile = filename;

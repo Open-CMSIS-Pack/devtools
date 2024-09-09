@@ -1716,7 +1716,7 @@ TEST_F(ProjMgrUnitTests, ListLayersConfigurations) {
 
   const string& outStr = streamRedirect.GetOutString();
   const string& errStr = streamRedirect.GetErrorString();
-  EXPECT_EQ(100, ProjMgrTestEnv::CountOccurrences(errStr, "check combined connections"));
+  EXPECT_EQ(200, ProjMgrTestEnv::CountOccurrences(errStr, "check combined connections"));
   EXPECT_EQ(4, ProjMgrTestEnv::CountOccurrences(outStr, "valid configuration #"));
 
   const string& expectedOutStr = "\
