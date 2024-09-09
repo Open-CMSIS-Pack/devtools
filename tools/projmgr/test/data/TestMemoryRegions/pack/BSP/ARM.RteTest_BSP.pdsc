@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<package schemaVersion="1.3" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="PACK.xsd">
+  <name>RteTest_BSP</name>
+  <description>RTE test of regions file generation</description>
+  <vendor>ARM</vendor>
+  <url>http://www.keil.com/pack/</url>
+
+  <releases>
+    <release version="0.9.0" date="2024-09-02">
+      Initial version
+    </release>
+  </releases>
+
+  <requirements>
+    <packages>
+      <package vendor="ARM" name="RteTestRegions_DFP" version="0.9.0:0.9.0"/>
+    </packages>
+  </requirements>
+
+  <boards>
+    <board name="RteTestBoard0" vendor="Keil" revision="1.1.1">
+      <description>TestBoard with dots in the name and memory</description>
+      <mountedDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTestDevice0"/>
+      <memory name="Flash-External0" access="rx"  start="0x70000000" size="0x04000000" default="1"/>
+      <memory name="RAM-External0"   access="rwx" start="0x60000000" size="0x00800000" default="1"/>
+      <memory name="Flash-External1" access="rx"  start="0x71000000" size="0x04000000" default="1"/>
+      <memory name="RAM-External1"   access="rwx" start="0x61000000" size="0x00800000" default="1"/>
+    </board>
+    <board name="RteTestBoard1" vendor="Keil" revision="2.2.2">
+      <description>TestBoard with dots in the name and memory</description>
+      <mountedDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTestDevice1"/>
+      <memory name="Flash-External0" access="rx"  start="0x70000000" size="0x04000000" default="1"/>
+      <memory name="RAM-External0"   access="rwx" start="0x60000000" size="0x00800000" default="1"/>
+      <memory name="Flash-External1" access="rx"  start="0x71000000" size="0x04000000" default="1"/>
+      <memory name="RAM-External1"   access="rwx" start="0x61000000" size="0x00800000" default="1"/>
+    </board>  
+  </boards>
+
+</package>

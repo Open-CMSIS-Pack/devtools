@@ -80,6 +80,18 @@ struct PackInfo {
 };
 
 /**
+ * @brief semantic version with unsigned integer elements
+ *        major,
+ *        minor,
+ *        patch,
+*/
+struct SemVer {
+  unsigned int major;
+  unsigned int minor;
+  unsigned int patch;
+};
+
+/**
  * @brief vector of ConnectionsCollection
 */
 typedef std::vector<ConnectionsCollection> ConnectionsCollectionVec;
@@ -234,6 +246,13 @@ public:
    * @return true on success
   */
   static bool HasAccessSequence(const std::string value);
+
+  /**
+   * @brief get semantic version elements
+   * @param string version
+   * @return structured semantic version
+  */
+  static SemVer GetSemVer(const std::string version);
 
 protected:
   static std::string ConstructID(const std::vector<std::pair<const char*, const std::string&>>& elements);

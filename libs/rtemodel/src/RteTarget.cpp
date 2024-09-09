@@ -1725,45 +1725,53 @@ std::string RteTarget::GetRegionsHeader() const
   return GetDeviceFolder() + "/regions_" + filename + ".h";
 }
 
-std::string RteTarget::GenerateMemoryRegionContent(RteItem* memory, const std::string& id, bool bBoardMemory) const
+std::pair<std::string, std::string> RteTarget::GetAccessAttributes(RteItem* mem) const
 {
-  bool bRam = memory->IsWriteAccess();
-  string name = memory->GetName();
+  return {
+    string(mem->IsReadAccess() ? "r" : "") +
+          (mem->IsWriteAccess() ? "w" : "") +
+          (mem->IsExecuteAccess() ? "x" : ""),
+    string(mem->IsPeripheralAccess() ? "p" : "") +
+          (mem->IsSecureAccess() ? "s" : "") +
+          (mem->IsNonSecureAccess() ? "n" : "") +
+          (mem->IsCallableAccess() ? "c" : "")
+  };
+}
+
+std::string RteTarget::GenerateMemoryRegionContent(const std::vector<RteItem*> memVec, const std::string& id, const std::string& dfp) const
+{
+  string pack, access, name, start, size;
+  bool unused = memVec.empty();
+  if (!unused) {
+    pack = memVec.front()->GetPackageID() == dfp ? "DFP" : "BSP";
+    access = GetAccessAttributes(memVec.front()).first;
+    for (const auto& mem : memVec) {
+      name += (mem == memVec.front() ? "" : "+") + mem->GetName();
+    }
+    start = memVec.front()->GetAttribute("start");
+    unsigned int decSize = 0;
+    ostringstream hexSize;
+    for (const auto& mem : memVec) {
+      decSize += stoul(mem->GetAttribute("size"), nullptr, 16);
+    }
+    hexSize << "0x" << uppercase << setfill('0') << setw(8) << hex << decSize;
+    size = hexSize.str();
+  }
   ostringstream oss;
-  if(bBoardMemory) {
-    oss << "// <h> " << id << " (is region: " << name << " from BSP)" << RteUtils::LF_STRING;
-  } else {
-    oss << "// <h> " << id << " (is region: " << name << " from DFP)" << RteUtils::LF_STRING;
-  }
-  
-  string start = memory->GetAttribute("start");
+  oss << "// <h> " << id << " (" << (unused ? "unused" :
+    "is " + access + " memory: " + name + " from " + pack) << ")" << RteUtils::LF_STRING;
   oss << "//   <o> Base address <0x0-0xFFFFFFFF:8>" << RteUtils::LF_STRING;
-  oss << "//   <i> Defines base address of memory region." << RteUtils::LF_STRING;
-  oss << "//   <i> Default: " << start << RteUtils::LF_STRING;
-  oss << "#define " << id << "_BASE " << start << RteUtils::LF_STRING;
-
-  string size = memory->GetAttribute("size");
-  oss << "//   <o> Region size [bytes] <0x0-0xFFFFFFFF:8>" << RteUtils::LF_STRING;
-  oss << "//   <i> Defines size of memory region." << RteUtils::LF_STRING;
-  oss << "//   <i> Default: " << size << RteUtils::LF_STRING;
-  oss << "#define " << id << "_SIZE " << size << RteUtils::LF_STRING;
-
-  int defaultRegion = memory->IsDefault() ? 1 : 0;
-  oss << "//   <q> Default region" << RteUtils::LF_STRING;
-  oss << "//   <i> Enables memory region globally for the application." << RteUtils::LF_STRING;
-  oss << "#define " << id << "_DEFAULT " << defaultRegion << RteUtils::LF_STRING;
-
-  if (bRam) {
-    int noInit = memory->IsNoInit() ? 1 : 0;
-    oss << "//   <q> No zero initialize" << RteUtils::LF_STRING;
-    oss << "//   <i> Excludes region from zero initialization." << RteUtils::LF_STRING;
-    oss << "#define " << id << "_NOINIT " << noInit << RteUtils::LF_STRING;
-  } else {
-    int startup = memory->IsStartup() ? 1 : 0;
-    oss << "//   <q> Startup" << RteUtils::LF_STRING;
-    oss << "//   <i> Selects region to be used for startup code." << RteUtils::LF_STRING;
-    oss << "#define " << id << "_STARTUP " << startup << RteUtils::LF_STRING;
+  oss << "//   <i> Defines base address of memory region." << (unused ? "" : " Default: " + start) << RteUtils::LF_STRING;
+  if (id == "__ROM0") {
+    oss << "//   <i> Contains Startup and Vector Table" << RteUtils::LF_STRING;
   }
+  if (id == "__RAM0") {
+    oss << "//   <i> Contains uninitialized RAM, Stack, and Heap" << RteUtils::LF_STRING;
+  }
+  oss << "#define " << id << "_BASE " << (unused ? "0" : start) << RteUtils::LF_STRING;
+  oss << "//   <o> Region size [bytes] <0x0-0xFFFFFFFF:8>" << RteUtils::LF_STRING;
+  oss << "//   <i> Defines size of memory region." << (unused ? "" : " Default: " + size) << RteUtils::LF_STRING;
+  oss << "#define " << id << "_SIZE " << (unused ? "0" : size) << RteUtils::LF_STRING;
   oss << "// </h>" << RteUtils::LF_STRING;
   oss << RteUtils::LF_STRING;
   return oss.str();
@@ -1776,30 +1784,71 @@ std::string RteTarget::GenerateRegionsHeaderContent() const
   if (!device) {
     return EMPTY_STRING;
   }
-  vector<RteItem*> memRO;
-  vector<RteItem*> memRW;
-  unsigned int totalRW = 0;
-  auto& deviceMems = device->GetEffectiveProperties("memory", GetProcessorName());
-  for (auto mem : deviceMems) {
-    if (mem->IsWriteAccess()) {
-      memRW.push_back(mem);
-      totalRW += stoul(mem->GetAttribute("size"), nullptr, 16);
-    } else {
-      memRO.push_back(mem);
-    }
-  }
-  size_t nDeviceRO = memRO.size();
-  size_t nDeviceRW = memRW.size();
+
+  // get memory collections from device and board
+  Collection<RteDeviceProperty*> deviceMemCollection;
+  Collection<RteItem*> boardMemCollection;
+  deviceMemCollection = device->GetEffectiveProperties("memory", GetProcessorName());
   RteBoard* board = GetBoard();
   if (board) {
-    Collection<RteItem*> boardMemCollection;
-    for( auto mem : board->GetMemories(boardMemCollection)) {
-      if (mem->IsWriteAccess()) {
-        memRW.push_back(mem);
-        totalRW += stoul(mem->GetAttribute("size"), nullptr, 16);
-      } else {
-        memRO.push_back(mem);
+    board->GetMemories(boardMemCollection);
+  }
+
+  // init memory regions
+  unsigned int totalRW = 0;
+  map<string, vector<RteItem*>> memRO = { {"__ROM0",{}}, {"__ROM1",{}}, {"__ROM2",{}}, {"__ROM3",{}} };
+  map<string, vector<RteItem*>> memRW = { {"__RAM0",{}}, {"__RAM1",{}}, {"__RAM2",{}}, {"__RAM3",{}} };
+  vector<RteItem*> notAllocated;
+  auto init = [&](auto collection) {
+    for (auto mem : collection) {
+      if (mem->GetAttributeAsBool("default")) {
+        if (mem->IsWriteAccess()) {
+          totalRW += stoul(mem->GetAttribute("size"), nullptr, 16);
+        }
+        if (memRW.at("__RAM0").empty() && mem->IsWriteAccess() && mem->GetAttributeAsBool("uninit")) {
+          memRW.at("__RAM0").push_back(mem);
+          continue;
+        }
+        if (memRO.at("__ROM0").empty() && mem->IsExecuteAccess() && mem->GetAttributeAsBool("startup")) {
+          memRO.at("__ROM0").push_back(mem);
+          continue;
+        }
       }
+      notAllocated.push_back(mem);
+    }
+  };
+  init(deviceMemCollection);
+  init(boardMemCollection);
+
+  // allocate remaining memory regions
+  for (auto it = notAllocated.begin(); it < notAllocated.end();) {
+    auto mem = *it;
+    bool allocated = false;
+    auto* dst = mem->IsWriteAccess() ? &memRW : mem->IsExecuteAccess() ? &memRO : nullptr;
+    if (dst && mem->GetAttributeAsBool("default")) {
+      for (auto& [_, alloc] : *dst) {
+        if (alloc.empty()) {
+          // free slot found
+          alloc.push_back(mem);
+          allocated = true;
+          break;
+        } else {
+          // search contiguous memory region (same pack, same access)
+          if ((mem->GetPackageID() == alloc.back()->GetPackageID()) &&
+            GetAccessAttributes(mem) == GetAccessAttributes(alloc.back()) &&
+            stoul(mem->GetAttribute("start"), nullptr, 16) == stoul(alloc.back()->GetAttribute("start"), nullptr, 16) +
+            stoul(alloc.back()->GetAttribute("size"), nullptr, 16)) {
+            alloc.push_back(mem);
+            allocated = true;
+            break;
+          }
+        }
+      }
+    }
+    if (allocated) {
+      it = notAllocated.erase(it);
+    } else {
+      it++;
     }
   }
 
@@ -1818,20 +1867,16 @@ std::string RteTarget::GenerateRegionsHeaderContent() const
 
   oss << "// <h> ROM Configuration"   << RteUtils::LF_STRING;
   oss << "// =======================" << RteUtils::LF_STRING;
-  for (size_t i = 0; i < memRO.size(); i++) {
-    RteItem* mem = memRO[i];
-    string id = string("__ROM") +RteUtils::LongToString(i);
-    oss << GenerateMemoryRegionContent(mem, id, i >= nDeviceRO);
+  for (const auto& [id, mem] : memRO) {
+    oss << GenerateMemoryRegionContent(mem, id, device->GetPackageID());
   }
   oss << "// </h>" << RteUtils::LF_STRING;
   oss << RteUtils::LF_STRING;
 
   oss << "// <h> RAM Configuration" << RteUtils::LF_STRING;
   oss << "// =======================" << RteUtils::LF_STRING;
-  for (size_t i = 0; i < memRW.size(); i++) {
-    RteItem* mem = memRW[i];
-    string id = string("__RAM") + RteUtils::LongToString(i);
-    oss << GenerateMemoryRegionContent(mem, id, i >= nDeviceRW);
+  for (const auto& [id, mem] : memRW) {
+    oss << GenerateMemoryRegionContent(mem, id, device->GetPackageID());
   }
   oss << "// </h>" << RteUtils::LF_STRING;
   oss << RteUtils::LF_STRING;
@@ -1842,6 +1887,24 @@ std::string RteTarget::GenerateRegionsHeaderContent() const
   oss << "#define __STACK_SIZE 0x00000200" << RteUtils::LF_STRING;
   oss << "#define __HEAP_SIZE " << (totalRW >= 6144 ? "0x00000C00" : "0x00000000") << RteUtils::LF_STRING;
   oss << "// </h>" << RteUtils::LF_STRING;
+
+  if (!notAllocated.empty()) {
+    oss << RteUtils::LF_STRING << "// <n> Resources that are not allocated to linker regions" << RteUtils::LF_STRING;
+    size_t maxNameLength = 0;
+    for (const auto& mem : notAllocated) {
+      size_t nameLength = mem->GetName().length();
+      if (nameLength > maxNameLength) {
+        maxNameLength = nameLength;
+      }
+    }
+    for (const auto& mem : notAllocated) {
+      oss << "// <i> ";
+      oss << left << setw(10) << GetAccessAttributes(mem).first + (mem->IsWriteAccess() ? " RAM:" : " ROM:");
+      oss << left << setw(maxNameLength + 12) << mem->GetName() + " from" + (mem->GetPackageID() == device->GetPackageID() ? " DFP:" : " BSP:");
+      oss << "BASE: " << mem->GetAttribute("start") << "  SIZE: " << mem->GetAttribute("size");
+      oss << (mem->GetProcessorName().empty() ? "" : "  Pname: " + mem->GetProcessorName()) << RteUtils::LF_STRING;
+    }
+  }
 
   return oss.str();
 }

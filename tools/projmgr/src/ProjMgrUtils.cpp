@@ -17,6 +17,9 @@
 
 using namespace std;
 
+static constexpr const char* HIGHER_OR_EQUAL_OPERATOR = ">=";
+static constexpr const char* TILDE_OPERATOR = "~";
+static constexpr const char* CARET_OPERATOR = "^";
 
 RtePackage* ProjMgrUtils::ReadGpdscFile(const string& gpdsc, bool& valid) {
   fs::path path(gpdsc);
@@ -281,12 +284,37 @@ bool ProjMgrUtils::IsMatchingPackInfo(const PackInfo& exactPackInfo, const PackI
   return true;
 }
 
+SemVer ProjMgrUtils::GetSemVer(const std::string version) {
+  static const regex regEx = regex("(\\d+).(\\d+).(\\d+).*");
+  smatch sm;
+  regex_match(version, sm, regEx);
+  SemVer semVer = {};
+  if (sm.size() == 4) {
+    semVer.major = stoi(sm[1]);
+    semVer.minor = stoi(sm[2]);
+    semVer.patch = stoi(sm[3]);
+  }
+  return semVer;
+}
+
 string ProjMgrUtils::ConvertToVersionRange(const string& version) {
   string versionRange = version;
   if (!versionRange.empty()) {
-    if (versionRange.find(">=") != string::npos) {
-      versionRange = versionRange.substr(2);
+    if (versionRange.find(HIGHER_OR_EQUAL_OPERATOR) != string::npos) {
+      // Minimum version
+      versionRange = RteUtils::RemovePrefixByString(versionRange, HIGHER_OR_EQUAL_OPERATOR);
+    } else if (versionRange.find(TILDE_OPERATOR) != string::npos) {
+      // Equivalent version
+      versionRange = RteUtils::RemovePrefixByString(versionRange, TILDE_OPERATOR);
+      SemVer semVer = GetSemVer(versionRange);
+      versionRange = versionRange + ":" + to_string(semVer.major) + "." + to_string(semVer.minor + 1) + ".0-0";
+    } else if (versionRange.find(CARET_OPERATOR) != string::npos) {
+      // Compatible version
+      versionRange = RteUtils::RemovePrefixByString(versionRange, CARET_OPERATOR);
+      SemVer semVer = GetSemVer(versionRange);
+      versionRange = versionRange + ":" + to_string(semVer.major + 1) + ".0.0-0";
     } else {
+      // Fixed version
       versionRange = versionRange + ":" + versionRange;
     }
   }
