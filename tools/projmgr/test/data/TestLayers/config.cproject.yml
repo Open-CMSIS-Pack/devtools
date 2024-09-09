@@ -7,6 +7,8 @@ project:
     - type: Config2
     - layer: config.clayer.yml
       type: Config1
+    - type: Incompatible
+      optional: true
 
   connections:
     - connect: project X
