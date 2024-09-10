@@ -277,9 +277,9 @@ protected:
   bool ValidateKeys(const std::string& input, const YAML::Node& parent, const std::set<std::string>& keys);
   bool ValidateSequence(const std::string& input, const YAML::Node& parent, const std::string& seqKey);
   bool ValidateMapping(const std::string& input, const YAML::Node& parent, const std::string& seqKey);
-  void ParsePortablePath(const YAML::Node& parent, const std::string& file, const std::string& key, std::string& value, bool checkExist = true);
+  void ParsePortablePath(const YAML::Node& parent, const std::string& file, const std::string& key, std::string& value);
   void ParsePortablePaths(const YAML::Node& parent, const std::string& file, const std::string& key, std::vector<std::string>& value);
-  void EnsurePortability(const std::string& file, const YAML::Mark& mark, const std::string& key, std::string& value, bool checkExist);
+  void EnsurePortability(const std::string& file, const YAML::Mark& mark, const std::string& key, std::string& value);
 
 };
 

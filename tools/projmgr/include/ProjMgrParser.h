@@ -315,12 +315,25 @@ struct SetupItem {
 };
 
 /**
+ * @brief yaml mark
+ *        parent file
+ *        line
+ *        column
+*/
+struct YamlMark {
+  std::string parent;
+  int line;
+  int column;
+};
+
+/**
  * @brief file node containing
  *        file path,
  *        for compiler control,
  *        file category,
  *        file build settings,
- *        type filter
+ *        type filter,
+ *        yaml mark
 */
 struct FileNode {
   std::string file;
@@ -328,6 +341,7 @@ struct FileNode {
   std::string category;
   BuildType build;
   TypeFilter type;
+  YamlMark mark;
 };
 
 /**
