@@ -6126,17 +6126,16 @@ TEST_F(ProjMgrUnitTests, SelectableToolchains) {
 
 TEST_F(ProjMgrUnitTests, SourcesAddedByMultipleComponents) {
   StdStreamRedirect streamRedirect;
-  char* argv[6];
+  char* argv[5];
   const string& csolution = testinput_folder + "/TestSolution/ComponentSources/components.csolution.yml";
   argv[1] = (char*)"convert";
   argv[2] = (char*)csolution.c_str();
   argv[3] = (char*)"-o";
-  argv[4] = (char*)testoutput_folder.c_str();
-  argv[5] = (char*)"--cbuildgen";
-  EXPECT_EQ(0, RunProjMgr(6, argv, m_envp));
+  argv[4] = (char*)testoutput_folder.c_str();;
+  EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
 
   const string& expected = "\
-(warning|error) csolution: source modules added by multiple components:\n\
+warning csolution: source modules added by multiple components, duplicate ignored:\n\
   filename: .*/ARM/RteTest/0.1.0/Dummy/dummy.c\n\
     - component: ARM::RteTest:DupFilename@0.9.9\n\
       from-pack: ARM::RteTest@0.1.0\n\
@@ -6147,10 +6146,8 @@ TEST_F(ProjMgrUnitTests, SourcesAddedByMultipleComponents) {
   string errStr = streamRedirect.GetErrorString();
   EXPECT_TRUE(regex_search(errStr, regex(expected)));
 
-  streamRedirect.ClearStringStreams();
-  EXPECT_EQ(1, RunProjMgr(5, argv, m_envp));
-  errStr = streamRedirect.GetErrorString();
-  EXPECT_TRUE(regex_search(errStr, regex(expected)));
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/components.Debug+RteTest_ARMCM3.cbuild.yml",
+    testinput_folder + "/TestSolution/ComponentSources/ref/components.Debug+RteTest_ARMCM3.cbuild.yml");
 }
 
 TEST_F(ProjMgrUnitTests, AccessSequencesMixedBuildTypes) {

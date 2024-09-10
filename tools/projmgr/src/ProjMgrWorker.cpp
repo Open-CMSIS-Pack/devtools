@@ -2286,15 +2286,12 @@ bool ProjMgrWorker::ProcessComponentFiles(ContextItem& context) {
       }
     }
   }
-  if (!ValidateComponentSources(context)) {
-    return false;
-  }
+  ValidateComponentSources(context);
   return true;
 }
 
-bool ProjMgrWorker::ValidateComponentSources(ContextItem& context) {
+void ProjMgrWorker::ValidateComponentSources(ContextItem& context) {
   // find multiple defined sources
-  bool error = false;
   StrSet sources, multipleDefinedSources;
   for (const auto& [componentID, files] : context.componentFiles) {
     for (const auto& file : files) {
@@ -2307,26 +2304,29 @@ bool ProjMgrWorker::ValidateComponentSources(ContextItem& context) {
   }
   if (multipleDefinedSources.size() > 0) {
     // print filename, component and from-pack information
-    string errMsg = "source modules added by multiple components:";
+    string msg = "source modules added by multiple components, duplicate ignored:";
     for (const auto& filename : multipleDefinedSources) {
-      errMsg += "\n  filename: " + filename;
-      for (const auto& [componentID, files] : context.componentFiles) {
-        for (const auto& file : files) {
+      msg += "\n  filename: " + filename;
+      bool erase = false;
+      for (auto& [componentID, files] : context.componentFiles) {
+        auto it = files.begin();
+        for (auto& file : files) {
           if (file.category.compare(0, 6, "source") == 0 && file.name == filename) {
-            errMsg += "\n    - component: " + componentID;
-            errMsg += "\n      from-pack: " + context.components[componentID].instance->GetParent()->GetComponent()->GetPackageID();
+            msg += "\n    - component: " + componentID;
+            msg += "\n      from-pack: " + context.components[componentID].instance->GetParent()->GetComponent()->GetPackageID();
+            if (erase) {
+              files.erase(it);
+            } else {
+              erase = true;
+            }
+            break;
           }
+          it++;
         }
       }
-      if (m_cbuild2cmake) {
-        ProjMgrLogger::Error(errMsg);
-        error = true;
-      } else {
-        ProjMgrLogger::Warn(errMsg);
-      }
     }
+    ProjMgrLogger::Warn(msg);
   }
-  return !error;
 }
 
 void ProjMgrWorker::SetFilesDependencies(const GroupNode& group, const string& ouput, StrVec& dependsOn, const string& dep, const string& outDir) {
