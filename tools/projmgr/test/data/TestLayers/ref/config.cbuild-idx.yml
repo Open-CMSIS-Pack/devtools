@@ -22,6 +22,7 @@ build-idx:
               path: ${DEVTOOLS(packs)}/ARM/RteTest_DFP/0.2.0
               file: Layers/config2.clayer.yml
               copy-to: path/to/config2
+            - Incompatible-Layer: ""
         - configuration: 
           variables:
             - Config1-Layer: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Layers/config1.clayer.yml
@@ -39,6 +40,7 @@ build-idx:
               path: ${DEVTOOLS(packs)}/ARM/RteTest_DFP/0.2.0
               file: Layers/config3.clayer.yml
               copy-to: path/to/config3
+            - Incompatible-Layer: ""
         - configuration: 
           variables:
             - Config1-Layer: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Layers/config1.clayer.yml
@@ -56,6 +58,7 @@ build-idx:
               path: ${DEVTOOLS(packs)}/ARM/RteTest_DFP/0.2.0
               file: Layers/config2.clayer.yml
               copy-to: path/to/config2
+            - Incompatible-Layer: ""
         - configuration: 
           variables:
             - Config1-Layer: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Layers/config1.clayer.yml
@@ -73,6 +76,7 @@ build-idx:
               path: ${DEVTOOLS(packs)}/ARM/RteTest_DFP/0.2.0
               file: Layers/config3.clayer.yml
               copy-to: path/to/config3
+            - Incompatible-Layer: ""
   cprojects:
     - cproject: config.cproject.yml
       clayers:

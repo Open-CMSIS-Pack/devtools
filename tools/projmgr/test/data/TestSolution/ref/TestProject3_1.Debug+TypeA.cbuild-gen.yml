@@ -29,7 +29,7 @@ build-gen:
     - ${DEVTOOLS(packs)}/ARM/RteTestGenerator/0.1.0/Include
     - ${DEVTOOLS(packs)}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
   output-dirs:
-    intdir: ${DEVTOOLS(data)}/TestSolution/tmp/TestProject3_1/TypeA/Debug
+    intdir: ${DEVTOOLS(data)}/TestSolution/tmp
     outdir: ${DEVTOOLS(data)}/TestSolution/TestProject3_1/outdir
     rtedir: ${DEVTOOLS(data)}/TestSolution/TestProject3_1/RTE
   output:
@@ -110,7 +110,7 @@ build-gen:
             - RteTestGen_ARMCM0
             - ${DEVTOOLS(data)}/TestSolution/TestProject3_1/TestProject3_1.Debug+TypeA.cprj
             - ${DEVTOOLS(packs)}/ARM/RteTestGenerator/0.1.0
-            - ${DEVTOOLS(data)}/TestSolution/tmp/TestProject3_1/TypeA/Debug/TestProject3_1.Debug+TypeA.cbuild-gen.yml
+            - ${DEVTOOLS(data)}/TestSolution/tmp/TestProject3_1.Debug+TypeA.cbuild-gen.yml
             - /foo=bar
         linux:
           file: ${DEVTOOLS(packs)}/ARM/RteTestGenerator/0.1.0/Generator with spaces/script.sh
@@ -118,7 +118,7 @@ build-gen:
             - RteTestGen_ARMCM0
             - ${DEVTOOLS(data)}/TestSolution/TestProject3_1/TestProject3_1.Debug+TypeA.cprj
             - ${DEVTOOLS(packs)}/ARM/RteTestGenerator/0.1.0
-            - ${DEVTOOLS(data)}/TestSolution/tmp/TestProject3_1/TypeA/Debug/TestProject3_1.Debug+TypeA.cbuild-gen.yml
+            - ${DEVTOOLS(data)}/TestSolution/tmp/TestProject3_1.Debug+TypeA.cbuild-gen.yml
             - --foo=bar
         mac:
           file: ${DEVTOOLS(packs)}/ARM/RteTestGenerator/0.1.0/Generator with spaces/script.sh
@@ -126,7 +126,7 @@ build-gen:
             - RteTestGen_ARMCM0
             - ${DEVTOOLS(data)}/TestSolution/TestProject3_1/TestProject3_1.Debug+TypeA.cprj
             - ${DEVTOOLS(packs)}/ARM/RteTestGenerator/0.1.0
-            - ${DEVTOOLS(data)}/TestSolution/tmp/TestProject3_1/TypeA/Debug/TestProject3_1.Debug+TypeA.cbuild-gen.yml
+            - ${DEVTOOLS(data)}/TestSolution/tmp/TestProject3_1.Debug+TypeA.cbuild-gen.yml
             - --foo=bar
   linker:
     script: ${DEVTOOLS(data)}/TestSolution/TestProject3_1/RTE/Device/RteTestGen_ARMCM0/gcc_arm.ld

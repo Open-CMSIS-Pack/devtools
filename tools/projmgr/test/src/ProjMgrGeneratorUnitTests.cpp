@@ -65,7 +65,7 @@ TEST_F(ProjMgrGeneratorUnitTests, GenDir) {
 
   EXPECT_EQ(0, ProjMgr::RunProjMgr(6, argv, envp));
 
-  const string generatorInputFile = testinput_folder + "/TestSolution/tmp/TestProject3/TypeA/Debug/TestProject3.Debug+TypeA.cbuild-gen.yml";
+  const string generatorInputFile = testinput_folder + "/TestSolution/tmp/TestProject3.Debug+TypeA.cbuild-gen.yml";
   const string generatedGPDSC = testinput_folder + "/TestSolution/TestProject3/gendir/RteTestGen_ARMCM0/RteTest.gpdsc";
 
   EXPECT_EQ(true, std::filesystem::exists(generatorInputFile));
@@ -87,7 +87,7 @@ TEST_F(ProjMgrGeneratorUnitTests, GenFiles) {
 
   EXPECT_EQ(0, ProjMgr::RunProjMgr(6, argv, envp));
 
-  const string generatorInputFile = testinput_folder + "/TestSolution/tmp/TestProject3_1/TypeA/Debug/TestProject3_1.Debug+TypeA.cbuild-gen.yml";
+  const string generatorInputFile = testinput_folder + "/TestSolution/tmp/TestProject3_1.Debug+TypeA.cbuild-gen.yml";
   const string generatedGPDSC = testinput_folder + "/TestSolution/TestProject3_1/gendir/RteTestGen_ARMCM0/RteTest.gpdsc";
 
   auto stripAbsoluteFunc = [](const std::string& in) {
@@ -115,16 +115,13 @@ TEST_F(ProjMgrGeneratorUnitTests, FailCreatingDirectories) {
   argv[4] = (char*)"-g";
   argv[5] = (char*)"RteTestGeneratorIdentifier";
 
-  const string folder = root + "/tmp/TestProject3_4";
-
+  RteFsUtils::RemoveDir(root + "/tmp");
   // Create a file with same name as parent directory where cbuild-gen.yml will be attempted to be created
-  EXPECT_TRUE(RteFsUtils::CreateDirectories(folder));
-  EXPECT_TRUE(RteFsUtils::CreateTextFile(folder + "/TypeA", ""));
-
+  EXPECT_TRUE(RteFsUtils::CreateTextFile(root + "/tmp", ""));
   EXPECT_EQ(1, ProjMgr::RunProjMgr(6, argv, 0));
-
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_NE(string::npos, errStr.find("destination directory can not be created"));
+  RteFsUtils::RemoveFile(root + "/tmp");
 }
 
 TEST_F(ProjMgrGeneratorUnitTests, NoExeFiles) {
@@ -144,7 +141,7 @@ TEST_F(ProjMgrGeneratorUnitTests, NoExeFiles) {
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_NE(string::npos, errStr.find("permissions"));
   // still cbuild.yaml file got created
-  const string generatorInputFile = testinput_folder + "/TestSolution/tmp/TestProject3_2/TypeA/Debug/TestProject3_2.Debug+TypeA.cbuild-gen.yml";
+  const string generatorInputFile = testinput_folder + "/TestSolution/tmp/TestProject3_2.Debug+TypeA.cbuild-gen.yml";
   EXPECT_TRUE(std::filesystem::exists(generatorInputFile));
   const string generatedGPDSC = testinput_folder + "/TestSolution/TestProject3_2/gendir/RteTestGen_ARMCM0/RteTest.gpdsc";
   // but not gpdsc
@@ -183,7 +180,7 @@ TEST_F(ProjMgrGeneratorUnitTests, DryRun) {
   argv[5] = (char*)"RteTestGeneratorIdentifier";
   argv[6] = (char*)"--dry-run";
 
-  const string generatorInputFile = testinput_folder + "/TestSolution/tmp/TestProject3_1/TypeA/Debug/TestProject3_1.Debug+TypeA.cbuild-gen.yml";
+  const string generatorInputFile = testinput_folder + "/TestSolution/tmp/TestProject3_1.Debug+TypeA.cbuild-gen.yml";
   const string generatorDestination = testinput_folder + "/TestSolution/TestProject3_1/gendir";
   const string targetGPDSC = generatorDestination + "/RteTestGen_ARMCM0/RteTest.gpdsc";
   const string rteDir = testinput_folder + "/TestSolution/TestProject3_1/RTE";

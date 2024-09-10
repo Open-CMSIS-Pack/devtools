@@ -6,12 +6,12 @@ build-gen-idx:
       device: RteTestGen_ARMCM0
       project-type: trustzone
       cbuild-gens:
-        - cbuild-gen: ${DEVTOOLS(data)}/ExternalGenerator/tmp dir/ns/CM0/Debug/ns.Debug+CM0.cbuild-gen.yml
+        - cbuild-gen: ${DEVTOOLS(data)}/ExternalGenerator/tmp/ns.Debug+CM0.cbuild-gen.yml
           project: ns
           configuration: .Debug+CM0
           for-project-part: non-secure
           name: ${DEVTOOLS(data)}/ExternalGenerator/generated/CM0/ns.cgen.yml
-        - cbuild-gen: ${DEVTOOLS(data)}/ExternalGenerator/tmp dir/s/CM0/Debug/s.Debug+CM0.cbuild-gen.yml
+        - cbuild-gen: ${DEVTOOLS(data)}/ExternalGenerator/tmp/s.Debug+CM0.cbuild-gen.yml
           project: s
           configuration: .Debug+CM0
           for-project-part: secure

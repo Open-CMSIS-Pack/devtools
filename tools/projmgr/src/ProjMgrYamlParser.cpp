@@ -304,7 +304,7 @@ bool ProjMgrYamlParser::ParseCbuildSet(const string& input, CbuildSetItem& cbuil
 
 // EnsurePortability checks the presence of backslash, case inconsistency and absolute path
 // It clears the string 'value' when it is an absolute path
-void ProjMgrYamlParser::EnsurePortability(const string& file, const YAML::Mark& mark, const string& key, string& value, bool checkExist) {
+void ProjMgrYamlParser::EnsurePortability(const string& file, const YAML::Mark& mark, const string& key, string& value) {
   if (value.find('\\') != string::npos) {
     ProjMgrLogger::Warn(file, mark.line + 1, mark.column + 1, "'" + value + "' contains non-portable backslash, use forward slash instead");
   }
@@ -321,17 +321,15 @@ void ProjMgrYamlParser::EnsurePortability(const string& file, const YAML::Mark& 
         if (!canonical.empty() && (original != canonical)) {
           ProjMgrLogger::Warn(file, mark.line + 1, mark.column + 1, "'" + value + "' has case inconsistency, use '" + RteFsUtils::RelativePath(canonical, parentDir) + "' instead");
         }
-      } else if (checkExist && !ProjMgrUtils::HasAccessSequence(value)) {
-        ProjMgrLogger::Warn(file, mark.line + 1, mark.column + 1, "path '" + value + "' was not found");
       }
     }
   }
 }
 
-void ProjMgrYamlParser::ParsePortablePath(const YAML::Node& parent, const string& file, const string& key, string& value, bool checkExist) {
+void ProjMgrYamlParser::ParsePortablePath(const YAML::Node& parent, const string& file, const string& key, string& value) {
   ParseString(parent, key, value);
   YAML::Mark mark = parent[key].IsDefined() ? parent[key].Mark() : YAML::Mark();
-  EnsurePortability(file, mark, key, value, checkExist);
+  EnsurePortability(file, mark, key, value);
 }
 
 void ProjMgrYamlParser::ParsePortablePaths(const YAML::Node& parent, const string& file, const string& key, vector<string>& value) {
@@ -339,7 +337,7 @@ void ProjMgrYamlParser::ParsePortablePaths(const YAML::Node& parent, const strin
   auto node = parent[key].begin();
   for (auto& item : value) {
     YAML::Mark mark = (*node++).Mark();
-    EnsurePortability(file, mark, key, item, true);
+    EnsurePortability(file, mark, key, item);
   }
 }
 
@@ -482,7 +480,7 @@ bool ProjMgrYamlParser::ParseSelectableCompilers(const YAML::Node& parent, vecto
 void ProjMgrYamlParser::ParseOutput(const YAML::Node& parent, const string& file, OutputItem& output) {
   if (parent[YAML_OUTPUT].IsDefined()) {
     const YAML::Node& outputNode = parent[YAML_OUTPUT];
-    ParsePortablePath(outputNode, file, YAML_BASE_NAME, output.baseName, false);
+    ParsePortablePath(outputNode, file, YAML_BASE_NAME, output.baseName);
     ParseVectorOrString(outputNode, YAML_TYPE, output.type);
   }
 }
@@ -649,6 +647,7 @@ bool ProjMgrYamlParser::ParseFiles(const YAML::Node& parent, const string& file,
       if (!ParseBuildType(fileEntry, file, fileItem.build)) {
         return false;
       }
+      fileItem.mark = YamlMark{ file, fileEntry.Mark().line + 1, fileEntry.Mark().column + 1 };
       files.push_back(fileItem);
     }
   }
@@ -726,8 +725,7 @@ bool ProjMgrYamlParser::ParseContexts(const YAML::Node& parent, CsolutionItem& c
         return false;
       }
       ParsePortablePath(projectsEntry, csolution.path, YAML_PROJECT, descriptor.cproject);
-      error_code ec;
-      descriptor.cproject = RteFsUtils::RelativePath(fs::canonical(fs::path(csolution.directory).append(descriptor.cproject), ec).generic_string(), csolution.directory);
+      descriptor.cproject = RteFsUtils::RelativePath(fs::path(csolution.directory).append(descriptor.cproject).generic_string(), csolution.directory);
       if (!descriptor.cproject.empty()) {
         csolution.contexts.push_back(descriptor);
         CollectionUtils::PushBackUniquely(csolution.cprojects, descriptor.cproject);
@@ -776,7 +774,7 @@ void ProjMgrYamlParser::ParseOutputDirs(const YAML::Node& parent, const std::str
       {YAML_OUTPUT_TMPDIR, directories.tmpdir},
     };
     for (const auto& item : outputDirsChildren) {
-      ParsePortablePath(outputDirsNode, file, item.first, item.second, false);
+      ParsePortablePath(outputDirsNode, file, item.first, item.second);
     }
   }
 }

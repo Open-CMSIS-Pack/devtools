@@ -2286,15 +2286,12 @@ bool ProjMgrWorker::ProcessComponentFiles(ContextItem& context) {
       }
     }
   }
-  if (!ValidateComponentSources(context)) {
-    return false;
-  }
+  ValidateComponentSources(context);
   return true;
 }
 
-bool ProjMgrWorker::ValidateComponentSources(ContextItem& context) {
+void ProjMgrWorker::ValidateComponentSources(ContextItem& context) {
   // find multiple defined sources
-  bool error = false;
   StrSet sources, multipleDefinedSources;
   for (const auto& [componentID, files] : context.componentFiles) {
     for (const auto& file : files) {
@@ -2307,26 +2304,29 @@ bool ProjMgrWorker::ValidateComponentSources(ContextItem& context) {
   }
   if (multipleDefinedSources.size() > 0) {
     // print filename, component and from-pack information
-    string errMsg = "source modules added by multiple components:";
+    string msg = "source modules added by multiple components, duplicate ignored:";
     for (const auto& filename : multipleDefinedSources) {
-      errMsg += "\n  filename: " + filename;
-      for (const auto& [componentID, files] : context.componentFiles) {
-        for (const auto& file : files) {
+      msg += "\n  filename: " + filename;
+      bool erase = false;
+      for (auto& [componentID, files] : context.componentFiles) {
+        auto it = files.begin();
+        for (auto& file : files) {
           if (file.category.compare(0, 6, "source") == 0 && file.name == filename) {
-            errMsg += "\n    - component: " + componentID;
-            errMsg += "\n      from-pack: " + context.components[componentID].instance->GetParent()->GetComponent()->GetPackageID();
+            msg += "\n    - component: " + componentID;
+            msg += "\n      from-pack: " + context.components[componentID].instance->GetParent()->GetComponent()->GetPackageID();
+            if (erase) {
+              files.erase(it);
+            } else {
+              erase = true;
+            }
+            break;
           }
+          it++;
         }
       }
-      if (m_cbuild2cmake) {
-        ProjMgrLogger::Error(errMsg);
-        error = true;
-      } else {
-        ProjMgrLogger::Warn(errMsg);
-      }
     }
+    ProjMgrLogger::Warn(msg);
   }
-  return !error;
 }
 
 void ProjMgrWorker::SetFilesDependencies(const GroupNode& group, const string& ouput, StrVec& dependsOn, const string& dep, const string& outDir) {
@@ -3385,9 +3385,13 @@ bool ProjMgrWorker::AddFile(const FileNode& src, vector<FileNode>& dst, ContextI
       }
     }
 
-    // Store absolute file path
-    const string filePath = RteFsUtils::MakePathCanonical(root + "/" + srcNode.file);
-    context.filePaths.insert({ srcNode.file, filePath });
+    // Check file existence
+    if (!ProjMgrUtils::HasAccessSequence(src.file)) {
+      const string file = RteFsUtils::LexicallyNormal(fs::path(context.directories.cprj).append(srcNode.file).generic_string());
+      if (!RteFsUtils::Exists(file)) {
+        m_missingFiles[file] = srcNode;
+      }
+    }
   }
   return true;
 }
@@ -4317,7 +4321,8 @@ bool ProjMgrWorker::ParseContextSelection(
   else
   {
     auto csolutionItem = m_parser->GetCsolution();
-    string cbuildSetFile = csolutionItem.directory + "/" + csolutionItem.name + ".cbuild-set.yml";
+    string cbuildSetFile = (m_outputDir.empty() ? csolutionItem.directory : m_outputDir) +
+      "/" + csolutionItem.name + ".cbuild-set.yml";
 
     if (contextSelection.empty()) {
       if (RteFsUtils::Exists(cbuildSetFile)) {
@@ -5058,4 +5063,33 @@ StrVec ProjMgrWorker::CollectSelectableCompilers() {
     }
   }
   return resCompilers;
+}
+
+bool ProjMgrWorker::IsCreatedByExecute(const string file, const string dir) {
+  for (const auto& execute : m_executes) {
+    for (auto output : execute.second.output) {
+      if (file == RteFsUtils::LexicallyNormal(fs::path(dir).append(output).generic_string())) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+bool ProjMgrWorker::CheckMissingFiles() {
+  bool error = false;
+  for (const auto& [filename, node] : m_missingFiles) {
+    const string& outDir = m_outputDir.empty() ? m_parser->GetCsolution().directory : m_outputDir;
+    if (IsCreatedByExecute(filename, outDir)) {
+      continue;
+    }
+    error = true;
+    const string msg = "file '" + filename + "' was not found";
+    if (node.mark.parent.empty()) {
+      ProjMgrLogger::Error(msg);
+    } else {
+      ProjMgrLogger::Error(node.mark.parent, node.mark.line, node.mark.column, msg);
+    }
+  }
+  return !error;
 }
