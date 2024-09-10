@@ -4955,7 +4955,7 @@ TEST_F(ProjMgrUnitTests, EnsurePortability) {
   argv[2] = (char*)csolution.c_str();
   EXPECT_EQ(host != "win" ? 1 : 0, RunProjMgr(7, argv, m_envp));
   argv[2] = (char*)csolution2.c_str();
-  EXPECT_EQ(host == "linux" ? 1 : 0, RunProjMgr(7, argv, m_envp));
+  EXPECT_EQ(host != "win" ? 1 : 0, RunProjMgr(7, argv, m_envp));
 
   string errStr = streamRedirect.GetErrorString();
   for (const auto& expected : expectedVec) {
@@ -6406,4 +6406,15 @@ TEST_F(ProjMgrUnitTests, RegionsFileGeneration) {
     testinput_folder + "/TestMemoryRegions/RTE/Device/RteTestDevice1/regions_RteTestBoard1.h");
   ProjMgrTestEnv::CompareFile(testinput_folder + "/TestMemoryRegions/ref/RteTestDevice_Dual_cm0_core1/regions_RteTestDevice_Dual_cm0_core1.h",
     testinput_folder + "/TestMemoryRegions/RTE/Device/RteTestDevice_Dual_cm0_core1/regions_RteTestDevice_Dual_cm0_core1.h");
+}
+
+TEST_F(ProjMgrUnitTests, MissingFile) {
+  StdStreamRedirect streamRedirect;
+  char* argv[3];
+  const string& csolution = testinput_folder + "/TestSolution/missing.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  EXPECT_EQ(1, RunProjMgr(3, argv, m_envp));
+  const string expectedOutStr = ".*/missing.cproject.yml:7:11 - error csolution: file '.*/TestSolution/missing.c' was not found";
+  EXPECT_TRUE(regex_search(streamRedirect.GetErrorString(), regex(expectedOutStr)));
 }
