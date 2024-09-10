@@ -537,8 +537,8 @@ bool ProjMgr::ParseAndValidateContexts() {
     const auto& selectedContexts = m_worker.GetSelectedContexts();
     m_selectedToolchain = m_worker.GetSelectedToochain();
     if (!selectedContexts.empty()) {
-      const string& cbuildSetFile = m_parser.GetCsolution().directory + "/" +
-        m_parser.GetCsolution().name + ".cbuild-set.yml";
+      const string& cbuildSetFile = (m_outputDir.empty() ? m_parser.GetCsolution().directory : m_outputDir) + "/" +
+      m_parser.GetCsolution().name + ".cbuild-set.yml";
       // Generate cbuild-set file
       if (!m_emitter.GenerateCbuildSet(selectedContexts, m_selectedToolchain, cbuildSetFile, m_checkSchema)) {
         return false;
