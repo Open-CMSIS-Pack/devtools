@@ -3385,9 +3385,13 @@ bool ProjMgrWorker::AddFile(const FileNode& src, vector<FileNode>& dst, ContextI
       }
     }
 
-    // Store absolute file path
-    const string filePath = RteFsUtils::MakePathCanonical(root + "/" + srcNode.file);
-    context.filePaths.insert({ srcNode.file, filePath });
+    // Check file existence
+    if (!ProjMgrUtils::HasAccessSequence(src.file)) {
+      const string file = RteFsUtils::LexicallyNormal(fs::path(context.directories.cprj).append(srcNode.file).generic_string());
+      if (!RteFsUtils::Exists(file)) {
+        m_missingFiles[file] = srcNode;
+      }
+    }
   }
   return true;
 }
@@ -5058,4 +5062,33 @@ StrVec ProjMgrWorker::CollectSelectableCompilers() {
     }
   }
   return resCompilers;
+}
+
+bool ProjMgrWorker::IsCreatedByExecute(const string file, const string dir) {
+  for (const auto& execute : m_executes) {
+    for (auto output : execute.second.output) {
+      if (file == RteFsUtils::LexicallyNormal(fs::path(dir).append(output).generic_string())) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+bool ProjMgrWorker::CheckMissingFiles() {
+  bool error = false;
+  for (const auto& [filename, node] : m_missingFiles) {
+    const string& outDir = m_outputDir.empty() ? m_parser->GetCsolution().directory : m_outputDir;
+    if (IsCreatedByExecute(filename, outDir)) {
+      continue;
+    }
+    error = true;
+    const string msg = "file '" + filename + "' was not found";
+    if (node.mark.parent.empty()) {
+      ProjMgrLogger::Error(msg);
+    } else {
+      ProjMgrLogger::Error(node.mark.parent, node.mark.line, node.mark.column, msg);
+    }
+  }
+  return !error;
 }

@@ -310,7 +310,6 @@ struct ContextItem {
   std::map<std::string, std::vector<ComponentFileItem>> componentFiles;
   std::map<std::string, std::vector<ComponentFileItem>> generatorInputFiles;
   std::vector<GroupNode> groups;
-  std::map<std::string, std::string> filePaths;
   std::map<std::string, RteGenerator*> generators;
   std::map<std::string, GpdscItem> gpdscs;
   StrVecMap compatibleLayers;
@@ -709,6 +708,12 @@ public:
   */
   bool CheckConfigPLMFiles(ContextItem& context);
 
+  /**
+   * @brief check user missing files
+   * @return true if check success
+  */
+  bool CheckMissingFiles();
+
 protected:
   ProjMgrParser* m_parser = nullptr;
   ProjMgrKernel* m_kernel = nullptr;
@@ -744,6 +749,7 @@ protected:
   StrSet m_toolchainErrors;
   StrVec m_selectableCompilers;
   bool m_undefCompiler = false;
+  std::map<std::string, FileNode> m_missingFiles;
 
   bool LoadPacks(ContextItem& context);
   bool CheckMissingPackRequirements(const std::string& contextName);
@@ -850,6 +856,7 @@ protected:
   void ProcessSelectableCompilers();
   StrVec CollectSelectableCompilers();
   void ProcessTmpDir(std::string& tmpdir, const std::string& base);
+  bool IsCreatedByExecute(const std::string file, const std::string dir);
 };
 
 #endif  // PROJMGRWORKER_H

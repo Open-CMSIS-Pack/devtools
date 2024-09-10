@@ -2654,7 +2654,7 @@ TEST_F(ProjMgrUnitTests, RunListContexts_Without_BuildTypes) {
 TEST_F(ProjMgrUnitTests, AddContextFailed) {
   ContextDesc descriptor;
   const string& filenameInput = testinput_folder + "/TestSolution/test_missing_project.csolution.yml";
-  EXPECT_FALSE(m_parser.ParseCsolution(filenameInput, false, false));
+  EXPECT_TRUE(m_parser.ParseCsolution(filenameInput, false, false));
   EXPECT_FALSE(m_worker.AddContexts(m_parser, descriptor, filenameInput));
 }
 
@@ -2703,8 +2703,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgrLayers_missing_project_file) {
   char* argv[7];
   StdStreamRedirect streamRedirect;
   const vector<string> expectedVec = {
-{"test_missing_project.csolution.yml:73:16 - warning csolution: path './unknown.cproject.yml' was not found"},
-{"test_missing_project.csolution.yml - error csolution: projects not found"}
+{"unknown.cproject.yml - error csolution: cproject file was not found"}
   };
   const string& csolutionFile = testinput_folder + "/TestSolution/test_missing_project.csolution.yml";
   argv[1] = (char*)"convert";
@@ -4835,7 +4834,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_YamlEmitterFileCaseIssue) {
   bool cprojectsExist = fs::exists(fs::path(cproject1)) && fs::exists(fs::path(cproject2));
   const string expectedErrMsg = cprojectsExist ?
     "warning csolution: 'filename.cproject.yml' has case inconsistency, use 'Filename.cproject.yml' instead" :
-    "error csolution: projects not found";
+    "error csolution: cproject file was not found";
 
   char* argv[6];
   argv[1] = (char*)"convert";
@@ -4935,35 +4934,16 @@ TEST_F(ProjMgrUnitTests, EnsurePortability) {
 {"portability2.csolution.yml:9:16 - warning csolution: './Case/caSe.cproject.yml' has case inconsistency, use 'case/case.cproject.yml' instead"},
   };
 
-  const vector<string> expectedNotFound = {
-{"portability.csolution.yml:13:7 - warning csolution: path '../PortAbility' was not found"},
-{"portability.csolution.yml:14:7 - warning csolution: path '..\\Portability' was not found"},
-{"portability.csolution.yml:26:13 - warning csolution: path '..\\..\\SolutionSpecificPack' was not found"},
-{"bs/bs.cproject.yml:7:14 - warning csolution: path '..\\layer.clayer.yml' was not found"},
-{"bs/bs.cproject.yml:4:15 - warning csolution: path '..\\linker_script.ld' was not found"},
-{"bs/bs.cproject.yml:13:15 - warning csolution: path '..\\..\\Portability' was not found"},
-{"bs/bs.cproject.yml:16:15 - warning csolution: path '..\\..\\Portability' was not found"},
-{"case/case.cproject.yml:7:14 - warning csolution: path '../laYer.clayer.yml' was not found"},
-{"case/case.cproject.yml:4:15 - warning csolution: path '../linker_Script.ld' was not found"},
-{"case/case.cproject.yml:13:15 - warning csolution: path '../../PortAbility' was not found"},
-{"case/case.cproject.yml:16:15 - warning csolution: path '../../PortAbility' was not found"},
-{"portability2.csolution.yml:9:16 - warning csolution: path './Case/caSe.cproject.yml' was not found"},
-{"portability2.csolution.yml:10:16 - warning csolution: path '.\\bs\\bs.cproject.yml' was not found"},
-  };
-
   const vector<string> expectedAbsPathWin = {
-{"portability.csolution.yml:15:7 - warning csolution: path '/absolute/path/unix' was not found"},
 {"portability.csolution.yml:16:7 - warning csolution: absolute path 'C:/absolute/path/win' is not portable, use relative path instead"},
   };
 
   const vector<string> expectedAbsPathUnix = {
 {"portability.csolution.yml:15:7 - warning csolution: absolute path '/absolute/path/unix' is not portable, use relative path instead"},
-{"portability.csolution.yml:16:7 - warning csolution: path 'C:/absolute/path/win' was not found"},
   };
 
   vector<string> expectedVec = expectedSeparator;
   if (host == "linux") {
-    expectedVec.insert(expectedVec.end(), expectedNotFound.begin(), expectedNotFound.end());
     expectedVec.insert(expectedVec.end(), expectedAbsPathUnix.begin(), expectedAbsPathUnix.end());
   } else if (host == "win") {
     expectedVec.insert(expectedVec.end(), expectedCase.begin(), expectedCase.end());
@@ -4975,7 +4955,7 @@ TEST_F(ProjMgrUnitTests, EnsurePortability) {
   argv[2] = (char*)csolution.c_str();
   EXPECT_EQ(host != "win" ? 1 : 0, RunProjMgr(7, argv, m_envp));
   argv[2] = (char*)csolution2.c_str();
-  EXPECT_EQ(host == "linux" ? 1 : 0, RunProjMgr(7, argv, m_envp));
+  EXPECT_EQ(host != "win" ? 1 : 0, RunProjMgr(7, argv, m_envp));
 
   string errStr = streamRedirect.GetErrorString();
   for (const auto& expected : expectedVec) {
@@ -6426,4 +6406,15 @@ TEST_F(ProjMgrUnitTests, RegionsFileGeneration) {
     testinput_folder + "/TestMemoryRegions/RTE/Device/RteTestDevice1/regions_RteTestBoard1.h");
   ProjMgrTestEnv::CompareFile(testinput_folder + "/TestMemoryRegions/ref/RteTestDevice_Dual_cm0_core1/regions_RteTestDevice_Dual_cm0_core1.h",
     testinput_folder + "/TestMemoryRegions/RTE/Device/RteTestDevice_Dual_cm0_core1/regions_RteTestDevice_Dual_cm0_core1.h");
+}
+
+TEST_F(ProjMgrUnitTests, MissingFile) {
+  StdStreamRedirect streamRedirect;
+  char* argv[3];
+  const string& csolution = testinput_folder + "/TestSolution/missing.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  EXPECT_EQ(1, RunProjMgr(3, argv, m_envp));
+  const string expectedOutStr = ".*/missing.cproject.yml:7:11 - error csolution: file '.*/TestSolution/missing.c' was not found";
+  EXPECT_TRUE(regex_search(streamRedirect.GetErrorString(), regex(expectedOutStr)));
 }

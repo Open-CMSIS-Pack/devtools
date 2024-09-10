@@ -607,6 +607,11 @@ bool ProjMgr::Configure() {
   // Process executes dependencies
   m_worker.ProcessExecutesDependencies();
 
+  // Check missing files
+  if (!m_worker.CheckMissingFiles()) {
+    error = true;
+  }
+
   // Print warnings for missing filters
   m_worker.PrintMissingFilters();
   if (m_verbose) {

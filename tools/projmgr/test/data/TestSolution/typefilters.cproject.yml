@@ -9,9 +9,9 @@ project:
           for-context: +MappedDebug
         - file: ./MappedTarget.c
           for-context: .MappedTarget
-        - file: ./Release.c
+        - file: ./file1.c
           not-for-context: .Target
-        - file: ./Target.c
+        - file: ./file2.c
           not-for-context: +Debug
         - file: ./Unknown.c
           for-context: .UnknownBuild+UnknownTarget
