@@ -5016,8 +5016,8 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_cbuildset_file) {
 
   const string& csolutionDir  = testinput_folder + "/TestSolution";
   const string& csolution     = csolutionDir + "/test.csolution.yml";
-  const string& cbuildSetFile = csolutionDir + "/test.cbuild-set.yml";
   const string& outputDir     = testoutput_folder + "/cbuildset";
+  const string& cbuildSetFile = outputDir + "/test.cbuild-set.yml";
 
   auto CleanUp = [&]() {
     // Clean residual (if any)
@@ -5199,7 +5199,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_cbuildset_file) {
     argv[6] = (char*)"--cbuildgen";
 
     EXPECT_EQ(1, RunProjMgr(7, argv, m_envp));
-    EXPECT_FALSE(RteFsUtils::Exists(csolutionDir + "/novalid_context.cbuild-set.yml"));
+    EXPECT_FALSE(RteFsUtils::Exists(outputDir + "/novalid_context.cbuild-set.yml"));
   }
 }
 
@@ -5873,7 +5873,7 @@ TEST_F(ProjMgrUnitTests, TestRelativeOutputOption) {
 }
 
 TEST_F(ProjMgrUnitTests, TestRestrictedContextsWithContextSet_Failed_Read_From_CbuildSet) {
-  char* argv[6];
+  char* argv[4];
   StdStreamRedirect streamRedirect;
   const string& csolution = testinput_folder + "/TestSolution/test_restricted_contexts.csolution.yml";
   const string& expectedErrMsg = "\
@@ -5882,11 +5882,9 @@ error csolution: invalid combination of contexts specified in test_restricted_co
 
   argv[1] = (char*)"convert";
   argv[2] = (char*)csolution.c_str();
-  argv[3] = (char*)"--output";
-  argv[4] = (char*)testoutput_folder.c_str();
-  argv[5] = (char*)"-S";
+  argv[3] = (char*)"-S";
 
-  EXPECT_EQ(1, RunProjMgr(6, argv, 0));
+  EXPECT_EQ(1, RunProjMgr(4, argv, 0));
   auto errMsg = streamRedirect.GetErrorString();
   EXPECT_NE(string::npos, errMsg.find(expectedErrMsg));
 }

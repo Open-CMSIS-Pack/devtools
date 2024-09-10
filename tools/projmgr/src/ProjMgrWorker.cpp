@@ -4321,7 +4321,8 @@ bool ProjMgrWorker::ParseContextSelection(
   else
   {
     auto csolutionItem = m_parser->GetCsolution();
-    string cbuildSetFile = csolutionItem.directory + "/" + csolutionItem.name + ".cbuild-set.yml";
+    string cbuildSetFile = (m_outputDir.empty() ? csolutionItem.directory : m_outputDir) +
+      "/" + csolutionItem.name + ".cbuild-set.yml";
 
     if (contextSelection.empty()) {
       if (RteFsUtils::Exists(cbuildSetFile)) {
