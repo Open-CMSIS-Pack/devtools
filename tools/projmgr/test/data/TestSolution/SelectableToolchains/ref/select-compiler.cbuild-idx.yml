@@ -13,3 +13,10 @@ build-idx:
       project: select-compiler
       configuration: .Debug+RteTest_ARMCM3
       errors: true
+      messages:
+        errors:
+          - "compiler undefined, use '--toolchain' option or add 'compiler: <value>' to yml input, selectable values can be found in cbuild-idx.yml"
+          - processing context 'select-compiler.Debug+RteTest_ARMCM3' failed
+        info:
+          - select-compiler.cbuild-pack.yml - file generated successfully
+          - select-compiler.Debug+RteTest_ARMCM3.cbuild.yml - file generated successfully

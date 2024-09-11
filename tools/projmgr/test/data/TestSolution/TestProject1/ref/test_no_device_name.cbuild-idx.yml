@@ -10,3 +10,12 @@ build-idx:
       project: test1
       configuration: .Debug+CM0
       errors: true
+      messages:
+        errors:
+          - processor name 'cm0_core0' was not found
+          - processing context 'test1.Debug+CM0' failed
+        warnings:
+          - "test1.cproject.yml - 'device: Dname' is deprecated at this level and accepted in *.csolution.yml only"
+        info:
+          - test_no_device_name.cbuild-pack.yml - file skipped
+          - test1.Debug+CM0.cbuild.yml - file generated successfully

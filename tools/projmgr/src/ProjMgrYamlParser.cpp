@@ -45,7 +45,7 @@ bool ProjMgrYamlParser::ParseCdefault(const string& input,
     ParseMisc(defaultNode, cdefault.misc);
   }
   catch (YAML::Exception& e) {
-    ProjMgrLogger::Error(input, e.mark.line + 1, e.mark.column + 1, e.msg);
+    ProjMgrLogger::Get().Error(e.msg, "", input, e.mark.line + 1, e.mark.column + 1);
     return false;
   }
   return true;
@@ -60,7 +60,7 @@ bool ProjMgrYamlParser::ParseCsolution(const string& input,
       return false;
     }
   } else if (frozenPacks) {
-    ProjMgrLogger::Error(cbuildPackFile, "file is missing and required due to use of --frozen-packs option");
+    ProjMgrLogger::Get().Error("file is missing and required due to use of --frozen-packs option", "", cbuildPackFile);
     return false;
   }
 
@@ -88,12 +88,12 @@ bool ProjMgrYamlParser::ParseCsolution(const string& input,
     }
 
     if (csolution.cprojects.size() == 0) {
-      ProjMgrLogger::Error(input, "projects not found");
+      ProjMgrLogger::Get().Error("projects not found", "", input);
       return false;
     }
 
     if (!ParseTargetTypes(solutionNode, csolution.path, csolution.targetTypes)) {
-      ProjMgrLogger::Error(input, "target-types not found");
+      ProjMgrLogger::Get().Error("target-types not found", "", input);
       return false;
     }
     if (!ParseBuildTypes(solutionNode, csolution.path, csolution.buildTypes)) {
@@ -110,7 +110,7 @@ bool ProjMgrYamlParser::ParseCsolution(const string& input,
     ParseExecutes(solutionNode, csolution.path, csolution.executes);
 
   } catch (YAML::Exception& e) {
-    ProjMgrLogger::Error(input, e.mark.line + 1, e.mark.column + 1, e.msg);
+   ProjMgrLogger::Get().Error(e.msg, "", input, e.mark.line + 1, e.mark.column + 1);
     return false;
   }
   return true;
@@ -139,7 +139,7 @@ bool ProjMgrYamlParser::ParseCbuildPack(const string& input,
     ParseResolvedPacks(cbuildPackNode, cbuildPack.packs);
 
   } catch (YAML::Exception& e) {
-    ProjMgrLogger::Error(input, e.mark.line + 1, e.mark.column + 1, e.msg);
+    ProjMgrLogger::Get().Error(e.msg, "", input, e.mark.line + 1, e.mark.column + 1);
     return false;
   }
   return true;
@@ -197,7 +197,7 @@ bool ProjMgrYamlParser::ParseCproject(const string& input,
     ParseExecutes(projectNode, cproject.path, cproject.executes);
 
   } catch (YAML::Exception& e) {
-    ProjMgrLogger::Error(input, e.mark.line + 1, e.mark.column + 1, e.msg);
+    ProjMgrLogger::Get().Error(e.msg, "", input, e.mark.line + 1, e.mark.column + 1);
     return false;
   }
 
@@ -264,7 +264,7 @@ bool ProjMgrYamlParser::ParseClayer(const string& input,
     ParseGenerators(layerNode, clayer.path, clayer.generators);
   }
   catch (YAML::Exception& e) {
-    ProjMgrLogger::Error(input, e.mark.line + 1, e.mark.column + 1, e.msg);
+    ProjMgrLogger::Get().Error(e.msg, "", input, e.mark.line + 1, e.mark.column + 1);
     return false;
   }
   clayers[input] = clayer;
@@ -296,7 +296,7 @@ bool ProjMgrYamlParser::ParseCbuildSet(const string& input, CbuildSetItem& cbuil
     ParseString(cbuildSetNode, YAML_COMPILER, cbuildSet.compiler);
   }
   catch (YAML::Exception& e) {
-    ProjMgrLogger::Error(input, e.mark.line + 1, e.mark.column + 1, e.msg);
+    ProjMgrLogger::Get().Error(e.msg, "", input, e.mark.line + 1, e.mark.column + 1);
     return false;
   }
   return true;
@@ -306,11 +306,11 @@ bool ProjMgrYamlParser::ParseCbuildSet(const string& input, CbuildSetItem& cbuil
 // It clears the string 'value' when it is an absolute path
 void ProjMgrYamlParser::EnsurePortability(const string& file, const YAML::Mark& mark, const string& key, string& value) {
   if (value.find('\\') != string::npos) {
-    ProjMgrLogger::Warn(file, mark.line + 1, mark.column + 1, "'" + value + "' contains non-portable backslash, use forward slash instead");
+    ProjMgrLogger::Get().Warn("'" + value + "' contains non-portable backslash, use forward slash instead", "", file, mark.line + 1, mark.column + 1);
   }
   if (!value.empty()) {
     if (fs::path(value).is_absolute()) {
-      ProjMgrLogger::Warn(file, mark.line + 1, mark.column + 1, "absolute path '" + value + "' is not portable, use relative path instead");
+      ProjMgrLogger::Get().Warn("absolute path '" + value + "' is not portable, use relative path instead", "", file, mark.line + 1, mark.column + 1);
       value.clear();
     } else {
       const string parentDir = RteFsUtils::ParentPath(file);
@@ -319,7 +319,8 @@ void ProjMgrYamlParser::EnsurePortability(const string& file, const YAML::Mark& 
         error_code ec;
         string canonical = fs::canonical(original, ec).generic_string();
         if (!canonical.empty() && (original != canonical)) {
-          ProjMgrLogger::Warn(file, mark.line + 1, mark.column + 1, "'" + value + "' has case inconsistency, use '" + RteFsUtils::RelativePath(canonical, parentDir) + "' instead");
+          ProjMgrLogger::Get().Warn("'" + value + "' has case inconsistency, use '" +
+            RteFsUtils::RelativePath(canonical, parentDir) + "' instead", "", file, mark.line + 1, mark.column + 1);
         }
       }
     }
@@ -554,14 +555,14 @@ bool ProjMgrYamlParser::GetTypes(const string& type, string& buildType, string& 
   size_t targetDelimiter = type.find("+");
   size_t regexDelimiter = type.find_first_of("^\\");
   if (((buildDelimiter > 0) && (targetDelimiter > 0) && (regexDelimiter > 0))) {
-    ProjMgrLogger::Error("type '" + type + "': it must start with '.' or '+' for normal strings and with '^' or '\\' for regex patterns");
+    ProjMgrLogger::Get().Error("type '" + type + "': it must start with '.' or '+' for normal strings and with '^' or '\\' for regex patterns");
     return false;
   }
   if (regexDelimiter == 0) {
     try {
       regex r = regex(type);
     } catch (const std::regex_error& e) {
-      ProjMgrLogger::Error("invalid pattern '" + type + "': " + e.what());
+      ProjMgrLogger::Get().Error("invalid pattern '" + type + "': " + e.what());
       return false;
     };
     pattern = type;
@@ -758,7 +759,7 @@ bool ProjMgrYamlParser::ParseBuildTypes(const YAML::Node& parent, const string& 
     for (const auto& buildType : invalidBuildTypes) {
       errMsg += "  " + buildType + "\n";
     }
-    ProjMgrLogger::Error(errMsg);
+    ProjMgrLogger::Get().Error(errMsg);
     return false;
   }
   return true;
@@ -837,7 +838,7 @@ bool ProjMgrYamlParser::ParseTargetTypes(const YAML::Node& parent, const string&
     for (const auto& targetType : invalidTargetTypes) {
       errMsg += "  " + targetType + "\n";
     }
-    ProjMgrLogger::Error(errMsg);
+    ProjMgrLogger::Get().Error(errMsg);
     return false;
   }
   return (targetTypes.size() == 0 ? false : true);
@@ -880,7 +881,7 @@ bool ProjMgrYamlParser::ParseBuildType(const YAML::Node& parent, const string& f
     for (const auto& context : invalidContexts) {
       errMsg += "  " + context + "\n";
     }
-    ProjMgrLogger::Error(errMsg);
+    ProjMgrLogger::Get().Error(errMsg);
     return false;
   }
 
@@ -904,7 +905,8 @@ bool ProjMgrYamlParser::ParseTargetType(const YAML::Node& parent, const string& 
           // processor name in the format :<pname> is accepted
           continue;
         }
-        ProjMgrLogger::Warn(file, string(key == YAML_DEVICE ? "'device: Dname'" : "'board:' node") + " is deprecated at this level and accepted in *.csolution.yml only");
+        ProjMgrLogger::Get().Warn(string(key == YAML_DEVICE ? "'device: Dname'" : "'board:' node") +
+          " is deprecated at this level and accepted in *.csolution.yml only", "", file);
       }
     }
   }
@@ -1363,14 +1365,14 @@ bool ProjMgrYamlParser::ValidateKeys(const string& input, const YAML::Node& pare
   for (const auto& item : parent) {
     const string& key = item.first.as<string>();
     if (keys.find(item.first.as<string>()) == keys.end()) {
-      ProjMgrLogger::Warn(input, item.first.Mark().line + 1, item.first.Mark().column + 1, "key '" + item.first.as<string>() + "' was not recognized");
+      ProjMgrLogger::Get().Warn("key '" + item.first.as<string>() + "' was not recognized", "", input, item.first.Mark().line + 1, item.first.Mark().column + 1);
     }
     if (item.second.IsSequence()) {
       if (!ValidateSequence(input, item.second, key)) {
         valid = false;
       }
     } else if ((sequences.find(key) != sequences.end()) && (mappings.find(key) == mappings.end())) {
-      ProjMgrLogger::Error(input, item.first.Mark().line + 1, item.first.Mark().column + 1, "node '" + item.first.as<string>() + "' shall contain sequence elements");
+      ProjMgrLogger::Get().Error("node '" + item.first.as<string>() + "' shall contain sequence elements", "", input, item.first.Mark().line + 1, item.first.Mark().column + 1);
       valid = false;
     }
     if (item.second.IsMap()) {
@@ -1378,7 +1380,7 @@ bool ProjMgrYamlParser::ValidateKeys(const string& input, const YAML::Node& pare
         valid = false;
       }
     } else if ((mappings.find(key) != mappings.end()) && (sequences.find(key) == sequences.end())) {
-      ProjMgrLogger::Error(input, item.first.Mark().line + 1, item.first.Mark().column + 1, "node '" + item.first.as<string>() + "' shall contain mapping elements");
+      ProjMgrLogger::Get().Error("node '" + item.first.as<string>() + "' shall contain mapping elements", "", input, item.first.Mark().line + 1, item.first.Mark().column + 1);
       valid = false;
     }
   }

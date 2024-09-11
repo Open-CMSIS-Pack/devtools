@@ -120,7 +120,7 @@ TEST_F(ProjMgrGeneratorUnitTests, FailCreatingDirectories) {
   EXPECT_TRUE(RteFsUtils::CreateTextFile(root + "/tmp", ""));
   EXPECT_EQ(1, ProjMgr::RunProjMgr(6, argv, 0));
   auto errStr = streamRedirect.GetErrorString();
-  EXPECT_NE(string::npos, errStr.find("destination directory can not be created"));
+  EXPECT_NE(string::npos, errStr.find("destination directory cannot be created"));
   RteFsUtils::RemoveFile(root + "/tmp");
 }
 

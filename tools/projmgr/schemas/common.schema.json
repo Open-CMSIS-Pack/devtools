@@ -953,7 +953,8 @@
         "errors": { "type": "boolean", "description": "Indicates error(s) during conversion" },
         "packs-missing": { "$ref": "#/definitions/BuildPacksMissingType" },
         "clayers": { "$ref": "#/definitions/BuildLayersType" },
-        "rebuild": { "type": "boolean", "description": "Flag indicating intermediate files need to be cleaned before the next build" }
+        "rebuild": { "type": "boolean", "description": "Flag indicating intermediate files need to be cleaned before the next build" },
+        "messages": { "$ref": "#/definitions/MessagesType" }
       },
       "additionalProperties": false,
       "required": ["cbuild", "project", "configuration"]
@@ -1535,6 +1536,16 @@
       },
       "additionalProperties": false,
       "required": ["execute", "run"]
+    },
+    "MessagesType": {
+      "type": ["object", "null"],
+      "description": "Errors, warnings and info messages",
+      "properties": {
+        "errors":   { "type": "array",  "items": { "type": "string"} },
+        "warnings": { "type": "array",  "items": { "type": "string"} },
+        "info":     { "type": "array",  "items": { "type": "string"} }
+      },      
+      "additionalProperties": false
     }    
   }
 }

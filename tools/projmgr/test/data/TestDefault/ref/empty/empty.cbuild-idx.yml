@@ -9,6 +9,18 @@ build-idx:
     - cbuild: project.Debug+TEST_TARGET.cbuild.yml
       project: project
       configuration: .Debug+TEST_TARGET
+      messages:
+        warnings:
+          - "project.cproject.yml - 'device: Dname' is deprecated at this level and accepted in *.csolution.yml only"
+        info:
+          - empty.cbuild-pack.yml - file generated successfully
+          - project.Debug+TEST_TARGET.cbuild.yml - file generated successfully
     - cbuild: project.Release+TEST_TARGET.cbuild.yml
       project: project
       configuration: .Release+TEST_TARGET
+      messages:
+        warnings:
+          - "project.cproject.yml - 'device: Dname' is deprecated at this level and accepted in *.csolution.yml only"
+        info:
+          - empty.cbuild-pack.yml - file generated successfully
+          - project.Release+TEST_TARGET.cbuild.yml - file generated successfully

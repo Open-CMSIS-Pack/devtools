@@ -32,7 +32,7 @@ bool ProjMgrExtGenerator::IsGlobalGenerator(const string& generatorId) {
 
 bool ProjMgrExtGenerator::CheckGeneratorId(const string& generatorId, const string& componentId) {
   if (!IsGlobalGenerator(generatorId)) {
-    ProjMgrLogger::Error("generator '" + generatorId + "' required by component '" +
+    ProjMgrLogger::Get().Error("generator '" + generatorId + "' required by component '" +
       componentId + "' was not found in global register");
     return false;
   }
@@ -67,7 +67,7 @@ ClayerItem* ProjMgrExtGenerator::GetGeneratorImport(const string& contextId, boo
   for (const auto& [options, contexts] : GetUsedGenerators()) {
     if (find(contexts.begin(), contexts.end(), contextId) != contexts.end()) {
       if (!RteFsUtils::Exists(options.name)) {
-        ProjMgrLogger::Error(options.name, "cgen file was not found, run generator '" + options.id + "' for context '" + contextId + "'");
+        ProjMgrLogger::Get().Error("cgen file was not found, run generator '" + options.id + "' for context '" + contextId + "'", contextId, options.name);
         success = false;
         return nullptr;
       }
