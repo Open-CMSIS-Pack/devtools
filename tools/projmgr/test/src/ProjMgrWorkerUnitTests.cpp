@@ -1595,7 +1595,8 @@ TEST_F(ProjMgrWorkerUnitTests, GetGeneratorDirDefault) {
 };
 
 TEST_F(ProjMgrWorkerUnitTests, CheckDeviceAttributes) {
-  const string device = "TestDevice";
+  ContextItem context;
+  context.device = "TestDevice";
   ProcessorItem userSelection;
   StrMap targetAttributes;
   StdStreamRedirect streamRedirect;
@@ -1613,7 +1614,7 @@ TEST_F(ProjMgrWorkerUnitTests, CheckDeviceAttributes) {
   targetAttributes[RteConstants::RTE_DMVE] = RteConstants::RTE_NO_MVE;
   targetAttributes[RteConstants::RTE_DTZ] = RteConstants::RTE_NO_TZ;
 
-  CheckDeviceAttributes(device, userSelection, targetAttributes);
+  CheckDeviceAttributes(context, userSelection, targetAttributes);
   auto errStr = streamRedirect.GetErrorString();
 
   EXPECT_TRUE(errStr.find("warning csolution: device 'TestDevice' does not support 'endian: big'") != string::npos);

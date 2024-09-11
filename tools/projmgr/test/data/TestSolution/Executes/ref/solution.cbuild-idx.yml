@@ -11,11 +11,19 @@ build-idx:
       configuration: .Debug+RteTest_ARMCM3
       depends-on:
         - Generate_Project_Sources
+      messages:
+        info:
+          - solution.cbuild-pack.yml - file generated successfully
+          - project.Debug+RteTest_ARMCM3.cbuild.yml - file generated successfully
     - cbuild: project.Release+RteTest_ARMCM3.cbuild.yml
       project: project
       configuration: .Release+RteTest_ARMCM3
       depends-on:
         - Generate_Project_Sources
+      messages:
+        info:
+          - solution.cbuild-pack.yml - file generated successfully
+          - project.Release+RteTest_ARMCM3.cbuild.yml - file generated successfully
   executes:
     - execute: Archive_Artifacts
       run: ${CMAKE_COMMAND} -DINPUT=${INPUT} -DOUTPUT=${OUTPUT} -P ${INPUT_0}

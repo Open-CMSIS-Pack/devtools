@@ -8,6 +8,13 @@ build-idx:
     - cbuild: pack-access-sequences+CM4-Board.cbuild.yml
       project: pack-access-sequences
       configuration: +CM4-Board
+      messages:
+        warnings:
+          - "access sequence pack was not loaded: '$Pack(ARM::NotLoaded)$'"
+          - access sequence '$Pack(Wrong.Format)' must have the format '$Pack(vendor::name)$'
+        info:
+          - pack-access-sequences.cbuild-pack.yml - file generated successfully
+          - pack-access-sequences+CM4-Board.cbuild.yml - file generated successfully
   executes:
     - execute: fcarm
       run: ${INPUT_0}

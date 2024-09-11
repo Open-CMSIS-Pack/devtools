@@ -37,7 +37,7 @@ protected:
   const string FormatPath(const string& original, const string& directory);
   bool CompareFile(const string& filename, const YAML::Node& rootNode);
   bool CompareNodes(const YAML::Node& lhs, const YAML::Node& rhs);
-  bool WriteFile(YAML::Node& rootNode, const std::string& filename, bool allowUpdate = true);
+  bool WriteFile(YAML::Node& rootNode, const std::string& filename, const std::string& context = string(), bool allowUpdate = true);
   void SetExecutesNode(YAML::Node node, const map<string, ExecutesItem>& executes, const string& base, const string& ref);
   bool NeedRebuild(const string& filename, const YAML::Node& rootNode);
   const bool m_useAbsolutePaths;
@@ -328,6 +328,22 @@ ProjMgrYamlCbuildIdx::ProjMgrYamlCbuildIdx(YAML::Node node,
         cbuildNode[YAML_ERRORS] = true;
       }
 
+      // errors, warnings and info messages
+      const vector<pair<StrVecMap&, const char*>> messages = {
+        { ProjMgrLogger::Get().GetErrors(), YAML_ERRORS },
+        { ProjMgrLogger::Get().GetWarns(), YAML_WARNINGS },
+        { ProjMgrLogger::Get().GetInfos(), YAML_INFO },
+      };
+      for (const auto& [msgMap, node] : messages) {
+        for (const auto& [contextName, msgVec] : msgMap) {
+          if (contextName.empty() || contextName == context->name) {
+            for (const auto& msg : msgVec) {
+              cbuildNode[YAML_MESSAGES][node].push_back(msg);
+            }
+          }
+        }
+      }
+
       vector<string> missingPacks;
       for (const auto& packInfo : context->missingPacks) {
         std::string missingPackName =
@@ -505,7 +521,7 @@ void ProjMgrYamlCbuild::SetComponentsNode(YAML::Node node, const ContextItem* co
           FormatPath(fs::path(context->extGen.at(component.generator).name).generic_string(),
           context->directories.cbuild));
       } else {
-        ProjMgrLogger::Warn(string("Component ") + componentId + " uses unknown generator " + component.generator);
+        ProjMgrLogger::Get().Warn(string("Component ") + componentId + " uses unknown generator " + component.generator, context->name);
       }
     }
     node.push_back(componentNode);
@@ -540,7 +556,7 @@ void ProjMgrYamlCbuild::SetComponentFilesNode(YAML::Node node, const ContextItem
           // Warn if multiple backup files are found
           //This is a safeguard. however, this condition should never be triggered
           if (backupFiles.size() > 1){
-            ProjMgrLogger::Warn(
+            ProjMgrLogger::Get().Warn(
               "'" + directory + "' contains more than one '" + fileFilter + " file, PLM may fail");
           }
 
@@ -963,39 +979,48 @@ bool ProjMgrYamlBase::NeedRebuild(const string& filename, const YAML::Node& newF
     // cbuild-idx.yml
     if (newFile[YAML_BUILD_IDX][YAML_CBUILDS].IsDefined() && oldFile[YAML_BUILD_IDX][YAML_CBUILDS].IsDefined()) {
       // compare cbuilds
-      return !CompareNodes(newFile[YAML_BUILD_IDX][YAML_CBUILDS], oldFile[YAML_BUILD_IDX][YAML_CBUILDS]);
+      size_t size = newFile[YAML_BUILD_IDX][YAML_CBUILDS].size();
+      if (size != oldFile[YAML_BUILD_IDX][YAML_CBUILDS].size()) {
+        return true;
+      }
+      for (size_t i = 0; i < size; i++) {
+        if (!CompareNodes(newFile[YAML_BUILD_IDX][YAML_CBUILDS][i][YAML_CBUILD],
+          oldFile[YAML_BUILD_IDX][YAML_CBUILDS][i][YAML_CBUILD])) {
+          return true;
+        }
+      }
     }
   }
   return false;
 }
 
-bool ProjMgrYamlBase::WriteFile(YAML::Node& rootNode, const std::string& filename, bool allowUpdate) {
+bool ProjMgrYamlBase::WriteFile(YAML::Node& rootNode, const std::string& filename, const std::string& context, bool allowUpdate) {
   // Compare yaml contents
   if (RteFsUtils::IsDirectory(filename)) {
-    ProjMgrLogger::Error(filename, "file cannot be written");
+    ProjMgrLogger::Get().Error("file cannot be written", context, filename);
     return false;
   }
   else if (rootNode.size() == 0) {
     // Remove file as nothing to write.
     if (RteFsUtils::Exists(filename)) {
       RteFsUtils::RemoveFile(filename);
-      ProjMgrLogger::Info(filename, "file has been removed");
+      ProjMgrLogger::Get().Info("file has been removed", context, filename);
     } else {
-      ProjMgrLogger::Info(filename, "file skipped");
+      ProjMgrLogger::Get().Info("file skipped", context, filename);
     }
   }
   else if (!CompareFile(filename, rootNode)) {
     if (!allowUpdate) {
-      ProjMgrLogger::Error(filename, "file not allowed to be updated");
+      ProjMgrLogger::Get().Error("file not allowed to be updated", context, filename);
       return false;
     }
     if (!RteFsUtils::MakeSureFilePath(filename)) {
-      ProjMgrLogger::Error(filename, "destination directory can not be created");
+      ProjMgrLogger::Get().Error("destination directory cannot be created", context, filename);
       return false;
     }
     ofstream fileStream(filename);
     if (!fileStream) {
-      ProjMgrLogger::Error(filename, "file cannot be written");
+      ProjMgrLogger::Get().Error("file cannot be written", context, filename);
       return false;
     }
     YAML::Emitter emitter;
@@ -1005,7 +1030,7 @@ bool ProjMgrYamlBase::WriteFile(YAML::Node& rootNode, const std::string& filenam
     fileStream << endl;
     fileStream << flush;
     fileStream.close();
-    ProjMgrLogger::Info(filename, "file generated successfully");
+    ProjMgrLogger::Get().Info("file generated successfully", context, filename);
 
     // Check generated file schema
     if (m_checkSchema && !ProjMgrYamlSchemaChecker().Validate(filename)) {
@@ -1013,7 +1038,7 @@ bool ProjMgrYamlBase::WriteFile(YAML::Node& rootNode, const std::string& filenam
     }
   }
   else {
-    ProjMgrLogger::Info(filename, "file is already up-to-date");
+    ProjMgrLogger::Get().Info("file is already up-to-date", context, filename);
   }
   return true;
 }
@@ -1072,7 +1097,7 @@ bool ProjMgrYamlEmitter::GenerateCbuild(ContextItem* context, bool checkSchema,
   RteFsUtils::CreateDirectories(RteFsUtils::ParentPath(filename));
   // get context rebuild flag
   context->needRebuild = cbuild.NeedRebuild(filename, rootNode);
-  return cbuild.WriteFile(rootNode, filename);
+  return cbuild.WriteFile(rootNode, filename, context->name);
 }
 
 bool ProjMgrYamlEmitter::GenerateCbuildSet(const std::vector<string> selectedContexts,
@@ -1135,5 +1160,5 @@ bool ProjMgrYamlEmitter::GenerateCbuildPack(ProjMgrParser& parser, const vector<
   YAML::Node rootNode;
   ProjMgrYamlCbuildPack cbuildPack(rootNode[YAML_CBUILD_PACK], contexts, parser, keepExistingPackContent, checkSchema);
 
-  return cbuildPack.WriteFile(rootNode, filename, !cbuildPackFrozen);
+  return cbuildPack.WriteFile(rootNode, filename, "", !cbuildPackFrozen);
 }

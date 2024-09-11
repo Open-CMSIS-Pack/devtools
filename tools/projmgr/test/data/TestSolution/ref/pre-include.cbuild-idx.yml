@@ -8,3 +8,7 @@ build-idx:
     - cbuild: pre-include+CM0.cbuild.yml
       project: pre-include
       configuration: +CM0
+      messages:
+        info:
+          - pre-include.cbuild-pack.yml - file generated successfully
+          - pre-include+CM0.cbuild.yml - file generated successfully

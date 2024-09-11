@@ -19,13 +19,13 @@ bool ProjMgrYamlSchemaChecker::Validate(const std::string& file)
 {
   // Check if the input file exist
   if (!RteFsUtils::Exists(file)) {
-    ProjMgrLogger::Error(file, " file doesn't exist");
+    ProjMgrLogger::Get().Error("file doesn't exist", "", file);
     return false;
   }
 
   string schemaFile = FindSchema(file);
   if(schemaFile.empty()) {
-    ProjMgrLogger::Warn(file, "yaml schemas were not found, file cannot be validated");
+    ProjMgrLogger::Get().Warn("yaml schemas were not found, file cannot be validated", "", file);
     return true;
   }
 
@@ -33,7 +33,7 @@ bool ProjMgrYamlSchemaChecker::Validate(const std::string& file)
   // Validate schema
   bool result = ValidateFile(file, schemaFile);
   for (auto& err : GetErrors()) {
-    ProjMgrLogger::Error(err.m_file, err.m_line, err.m_col, err.m_msg);
+    ProjMgrLogger::Get().Error(err.m_msg, "", err.m_file, err.m_line, err.m_col);
   }
     return result;
 }
@@ -44,7 +44,7 @@ std::string ProjMgrYamlSchemaChecker::FindSchema(const std::string& file) const
   std::error_code ec;
   string exePath = RteUtils::ExtractFilePath( CrossPlatformUtils::GetExecutablePath(ec), true);
   if (ec) {
-    ProjMgrLogger::Error(ec.message());
+    ProjMgrLogger::Get().Error(ec.message());
     return RteUtils::EMPTY_STRING;
   }
   string baseFileName = RteUtils::ExtractFileBaseName(file); // remove .yml

@@ -5,6 +5,8 @@
  */
 
 #include "ProjMgrLogger.h"
+#include "ProjMgrUtils.h"
+#include "RteFsUtils.h"
 
 #include <iostream>
 
@@ -18,6 +20,9 @@ static constexpr const char* PROJMGR_INFO = "info";
 
 bool ProjMgrLogger::m_quiet = false;
 
+// singleton instance
+static unique_ptr<ProjMgrLogger> theProjMgrLogger = 0;
+
 ProjMgrLogger::ProjMgrLogger(void) {
   // Reserved
 }
@@ -26,56 +31,49 @@ ProjMgrLogger::~ProjMgrLogger(void) {
   // Reserved
 }
 
-void ProjMgrLogger::Error(const string& file, const int line, const int column, const string& msg) {
-  cerr << file << ":" << line << ":" << column << " - " << PROJMGR_ERROR << PROJMGR_TOOL << msg << endl;
+ProjMgrLogger& ProjMgrLogger::Get() {
+  if (!theProjMgrLogger) {
+    theProjMgrLogger = make_unique<ProjMgrLogger>();
+  }
+  return *theProjMgrLogger.get();
 }
 
-void ProjMgrLogger::Error(const string& file, const string& msg) {
-  cerr << file << " - " << PROJMGR_ERROR << PROJMGR_TOOL << msg << endl;
+void ProjMgrLogger::ProjMgrLogger::Clear() {
+  m_errors.clear();
+  m_warns.clear();
+  m_infos.clear();
 }
 
-void ProjMgrLogger::Error(const string& msg) {
-  cerr << PROJMGR_ERROR << PROJMGR_TOOL << msg << endl;
+void ProjMgrLogger::Error(const string& msg, const string& context,
+  const string& file, const int line, const int column) {  
+  const string mark = (line > 0 ? ":" + to_string(line) : "") + (column > 0 ? ":" + to_string(column) : "");
+  CollectionUtils::PushBackUniquely(m_errors[context],
+    (file.empty() ? "" : RteUtils::ExtractFileName(file) + mark + " - ") + msg);
+  cerr << (file.empty() ? "" : file + mark + " - ") << PROJMGR_ERROR << PROJMGR_TOOL << msg << endl;
 }
 
-void ProjMgrLogger::Warn(const string& file, const int line, const int column, const string& msg) {
+void ProjMgrLogger::Warn(const string& msg, const string& context,
+  const string& file, const int line, const int column) {
+  const string mark = (line > 0 ? ":" + to_string(line) : "") + (column > 0 ? ":" + to_string(column) : "");
+  CollectionUtils::PushBackUniquely(m_warns[context],
+    (file.empty() ? "" : RteUtils::ExtractFileName(file) + mark + " - ") + msg);
   if (!m_quiet) {
-    cerr << file << ":" << line << ":" << column << " - " << PROJMGR_WARN << PROJMGR_TOOL << msg << endl;
+    cerr << (file.empty() ? "" : file + mark + " - ") << PROJMGR_WARN << PROJMGR_TOOL << msg << endl;
   }
 }
 
-void ProjMgrLogger::Warn(const string& file, const string& msg) {
+void ProjMgrLogger::Info(const string& msg, const string& context,
+  const string& file, const int line, const int column) {
+  const string mark = (line > 0 ? ":" + to_string(line) : "") + (column > 0 ? ":" + to_string(column) : "");
+  CollectionUtils::PushBackUniquely(m_infos[context],
+    (file.empty() ? "" : RteUtils::ExtractFileName(file) + mark + " - ") + msg);
   if (!m_quiet) {
-    cerr << file << " - " << PROJMGR_WARN << PROJMGR_TOOL << msg << endl;
-  }
-}
-
-void ProjMgrLogger::Warn(const string& msg) {
-  if (!m_quiet) {
-    cerr << PROJMGR_WARN << PROJMGR_TOOL << msg << endl;
+    cout << (file.empty() ? "" : file + mark + " - ") << PROJMGR_INFO << PROJMGR_TOOL << msg << endl;
   }
 }
 
 void ProjMgrLogger::Debug(const string& msg) {
   if (!m_quiet) {
     cerr << PROJMGR_DEBUG << PROJMGR_TOOL << msg << endl;
-  }
-}
-
-void ProjMgrLogger::Info(const string& file, const int line, const int column, const string& msg) {
-  if (!m_quiet) {
-    cout << file << ":" << line << ":" << column << PROJMGR_TOOL << PROJMGR_INFO << msg << endl;
-  }
-}
-
-void ProjMgrLogger::Info(const string& file, const string& msg) {
-  if (!m_quiet) {
-  cout << file << " - " << PROJMGR_INFO << PROJMGR_TOOL << msg << endl;
-  }
-}
-
-void ProjMgrLogger::Info(const string& msg) {
-  if (!m_quiet) {
-    cout << PROJMGR_INFO << PROJMGR_TOOL << msg << endl;
   }
 }

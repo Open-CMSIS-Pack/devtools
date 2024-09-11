@@ -14,6 +14,13 @@ build-idx:
         - clayer: ../data/TestAccessSequences/test-access-sequences.clayer.yml
       depends-on:
         - test-access-sequences3.Release+TEST_TARGET
+      messages:
+        warnings:
+          - "test-access-sequences3.cproject.yml - 'device: Dname' is deprecated at this level and accepted in *.csolution.yml only"
+          - "device 'RteTest_ARMCM0_Dual:cm0_core0' does not support 'trustzone: secure'"
+        info:
+          - test-access-sequences2.cbuild-pack.yml - file generated successfully
+          - test-access-sequences3.Debug+TEST_TARGET.cbuild.yml - file generated successfully
     - cbuild: test-access-sequences3.Release+TEST_TARGET.cbuild.yml
       project: test-access-sequences3
       configuration: .Release+TEST_TARGET
@@ -21,3 +28,10 @@ build-idx:
         - clayer: ../data/TestAccessSequences/test-access-sequences.clayer.yml
       depends-on:
         - test-access-sequences3.Debug+TEST_TARGET
+      messages:
+        warnings:
+          - "test-access-sequences3.cproject.yml - 'device: Dname' is deprecated at this level and accepted in *.csolution.yml only"
+          - "device 'RteTest_ARMCM0_Dual:cm0_core0' does not support 'trustzone: secure'"
+        info:
+          - test-access-sequences2.cbuild-pack.yml - file generated successfully
+          - test-access-sequences3.Release+TEST_TARGET.cbuild.yml - file generated successfully
