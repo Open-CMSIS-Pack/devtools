@@ -10,12 +10,40 @@ build-idx:
     - cbuild: test2.Debug+CM0.cbuild.yml
       project: test2
       configuration: .Debug+CM0
+      messages:
+        warnings:
+          - "test1.cproject.yml - 'device: Dname' is deprecated at this level and accepted in *.csolution.yml only"
+          - "device 'RteTest_ARMCM0' does not support 'trustzone: non-secure'"
+        info:
+          - test.cbuild-pack.yml - file generated successfully
+          - test2.Debug+CM0.cbuild.yml - file generated successfully
     - cbuild: test2.Debug+CM3.cbuild.yml
       project: test2
       configuration: .Debug+CM3
+      messages:
+        warnings:
+          - "test1.cproject.yml - 'device: Dname' is deprecated at this level and accepted in *.csolution.yml only"
+          - "device 'RteTest_ARMCM3' does not support 'trustzone: non-secure'"
+        info:
+          - test.cbuild-pack.yml - file generated successfully
+          - test2.Debug+CM3.cbuild.yml - file generated successfully
     - cbuild: test1.Debug+CM0.cbuild.yml
       project: test1
       configuration: .Debug+CM0
+      messages:
+        warnings:
+          - "test1.cproject.yml - 'device: Dname' is deprecated at this level and accepted in *.csolution.yml only"
+          - "device 'RteTest_ARMCM0' does not support 'trustzone: non-secure'"
+        info:
+          - test.cbuild-pack.yml - file generated successfully
+          - test1.Debug+CM0.cbuild.yml - file generated successfully
     - cbuild: test1.Release+CM0.cbuild.yml
       project: test1
       configuration: .Release+CM0
+      messages:
+        warnings:
+          - "test1.cproject.yml - 'device: Dname' is deprecated at this level and accepted in *.csolution.yml only"
+          - "device 'RteTest_ARMCM0' does not support 'trustzone: non-secure'"
+        info:
+          - test.cbuild-pack.yml - file generated successfully
+          - test1.Release+CM0.cbuild.yml - file generated successfully

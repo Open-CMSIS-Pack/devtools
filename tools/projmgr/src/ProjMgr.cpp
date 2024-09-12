@@ -94,7 +94,7 @@ bool ProjMgr::PrintUsage(
 
   string filter = cmd + (subCmd.empty() ? "" : (string(" ") + subCmd));
   if (cmdOptionsDict.find(filter) == cmdOptionsDict.end()) {
-    ProjMgrLogger::Error("'" + filter + "' is not a valid command. See 'csolution --help'.");
+    ProjMgrLogger::Get().Error("'" + filter + "' is not a valid command. See 'csolution --help'.");
     return false;
   }
 
@@ -239,7 +239,7 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
     }
     if (!m_csolutionFile.empty()) {
       if (!RteFsUtils::Exists(m_csolutionFile)) {
-        ProjMgrLogger::Error(m_csolutionFile, "csolution file was not found");
+        ProjMgrLogger::Get().Error("csolution file was not found", "", m_csolutionFile);
         return ErrorCode::ERROR;
       }
       m_csolutionFile = RteFsUtils::MakePathCanonical(m_csolutionFile);
@@ -273,13 +273,13 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
       m_outputDir = RteFsUtils::AbsolutePath(m_outputDir).generic_string();
     }
   } catch (cxxopts::OptionException& e) {
-    ProjMgrLogger::Error(e.what());
+    ProjMgrLogger::Get().Error(e.what());
     return ErrorCode::ERROR;
   }
 
   // Unmatched items in the parse result
   if (!parseResult.unmatched().empty()) {
-    ProjMgrLogger::Error("too many command line arguments");
+    ProjMgrLogger::Get().Error("too many command line arguments");
     return ErrorCode::ERROR;
   }
 
@@ -324,7 +324,7 @@ int ProjMgr::ProcessCommands() {
   if (m_command == "list") {
     // Process 'list' command
     if (m_args.empty()) {
-      ProjMgrLogger::Error("list <args> was not specified");
+      ProjMgrLogger::Get().Error("list <args> was not specified");
       return ErrorCode::ERROR;
     }
     // Process argument
@@ -372,7 +372,7 @@ int ProjMgr::ProcessCommands() {
       RunListEnvironment();
     }
     else {
-      ProjMgrLogger::Error("list <args> was not found");
+      ProjMgrLogger::Get().Error("list <args> was not found");
       return ErrorCode::ERROR;
     }
   } else if (m_command == "update-rte") {
@@ -396,7 +396,7 @@ int ProjMgr::ProcessCommands() {
       return ErrorCode::ERROR;
     }
   } else {
-    ProjMgrLogger::Error("<command> was not found");
+    ProjMgrLogger::Get().Error("<command> was not found");
     return ErrorCode::ERROR;
   }
   return ErrorCode::SUCCESS;
@@ -413,7 +413,7 @@ bool ProjMgr::SetLoadPacksPolicy(void) {
   } else if (m_loadPacksPolicy == "required") {
     m_worker.SetLoadPacksPolicy(LoadPacksPolicy::REQUIRED);
   } else {
-    ProjMgrLogger::Error("unknown load option: '" + m_loadPacksPolicy + "', it must be 'latest', 'all' or 'required'");
+    ProjMgrLogger::Get().Error("unknown load option: '" + m_loadPacksPolicy + "', it must be 'latest', 'all' or 'required'");
     return false;
   }
   return true;
@@ -446,11 +446,11 @@ bool ProjMgr::PopulateContexts(void) {
         names.insert(fs::path(cproject).filename().generic_string());
       }
       if (adjacent_find(names.begin(), names.end()) != names.end()) {
-        ProjMgrLogger::Error(m_csolutionFile, "cproject.yml filenames must be unique");
+        ProjMgrLogger::Get().Error("cproject.yml filenames must be unique", "", m_csolutionFile);
         return false;
       }
       if (adjacent_find(dirs.begin(), dirs.end()) != dirs.end()) {
-        ProjMgrLogger::Warn(m_csolutionFile, "cproject.yml files should be placed in separate sub-directories");
+        ProjMgrLogger::Get().Warn("cproject.yml files should be placed in separate sub-directories", "", m_csolutionFile);
       }
     }
     // Parse cprojects
@@ -458,7 +458,7 @@ bool ProjMgr::PopulateContexts(void) {
       error_code ec;
       string const& cprojectFile = fs::canonical(m_rootDir + "/" + cproject, ec).generic_string();
       if (cprojectFile.empty()) {
-        ProjMgrLogger::Error(cproject, "cproject file was not found");
+        ProjMgrLogger::Get().Error("cproject file was not found", "", cproject);
         return false;
       }
       if (!m_parser.ParseCproject(cprojectFile, m_checkSchema)) {
@@ -466,7 +466,7 @@ bool ProjMgr::PopulateContexts(void) {
       }
     }
   } else {
-    ProjMgrLogger::Error("input yml files were not specified");
+    ProjMgrLogger::Get().Error("input yml files were not specified");
     return false;
   }
 
@@ -565,7 +565,7 @@ bool ProjMgr::Configure() {
     for (const string& var : undefVars) {
       errMsg += "  - $" + var + "$\n";
     }
-    ProjMgrLogger::Error(errMsg);
+    ProjMgrLogger::Get().Error(errMsg);
   }
 
   // Get context pointers
@@ -587,7 +587,7 @@ bool ProjMgr::Configure() {
       continue;
     }
     if (!m_worker.ProcessContext(contextItem, true, true, false)) {
-      ProjMgrLogger::Error("processing context '" + contextName + "' failed");
+      ProjMgrLogger::Get().Error("processing context '" + contextName + "' failed", contextName);
       m_failedContext.insert(contextItem.name);
       error = true;
     }
@@ -623,7 +623,7 @@ bool ProjMgr::Configure() {
       for (const auto& configFile : configFiles) {
         infoMsg += "\n  " + configFile;
       }
-      ProjMgrLogger::Info(infoMsg);
+      ProjMgrLogger::Get().Info(infoMsg);
     }
   }
 
@@ -669,18 +669,18 @@ bool ProjMgr::RunConvert(void) {
       const string filename = RteFsUtils::MakePathCanonical(contextItem->directories.cprj + "/" + contextItem->name + ".cprj");
       RteFsUtils::CreateDirectories(contextItem->directories.cprj);
       if (m_generator.GenerateCprj(*contextItem, filename)) {
-        ProjMgrLogger::Info(filename, "file generated successfully");
+        ProjMgrLogger::Get().Info("file generated successfully", contextItem->name, filename);
       } else {
-        ProjMgrLogger::Error(filename, "file cannot be written");
+        ProjMgrLogger::Get().Error("file cannot be written", contextItem->name, filename);
         return false;
       }
       if (!m_export.empty()) {
         // Generate non-locked Cprj
         const string exportfilename = RteFsUtils::MakePathCanonical(contextItem->directories.cprj + "/" + contextItem->name + m_export + ".cprj");
         if (m_generator.GenerateCprj(*contextItem, exportfilename, true)) {
-          ProjMgrLogger::Info(exportfilename, "export file generated successfully");
+          ProjMgrLogger::Get().Info("export file generated successfully", contextItem->name, exportfilename);
         } else {
-          ProjMgrLogger::Error(exportfilename, "export file cannot be written");
+          ProjMgrLogger::Get().Error("export file cannot be written", contextItem->name, exportfilename);
           return false;
         }
       }
@@ -726,7 +726,7 @@ bool ProjMgr::RunListBoards(void) {
 
   vector<string> boards;
   if (!m_worker.ListBoards(boards, m_filter)) {
-    ProjMgrLogger::Error("processing boards list failed");
+    ProjMgrLogger::Get().Error("processing boards list failed");
     return false;
   }
   for (const auto& device : boards) {
@@ -750,7 +750,7 @@ bool ProjMgr::RunListDevices(void) {
 
   vector<string> devices;
   if (!m_worker.ListDevices(devices, m_filter)) {
-    ProjMgrLogger::Error("processing devices list failed");
+    ProjMgrLogger::Get().Error("processing devices list failed");
     return false;
   }
   for (const auto& device : devices) {
@@ -774,7 +774,7 @@ bool ProjMgr::RunListComponents(void) {
 
   vector<string> components;
   if (!m_worker.ListComponents(components, m_filter)) {
-    ProjMgrLogger::Error("processing components list failed");
+    ProjMgrLogger::Get().Error("processing components list failed");
     return false;
   }
 
@@ -805,7 +805,7 @@ bool ProjMgr::RunListConfigs() {
 
   vector<string> configFiles;
   if (!m_worker.ListConfigs(configFiles, m_filter)) {
-    ProjMgrLogger::Error("processing config list failed");
+    ProjMgrLogger::Get().Error("processing config list failed");
     return false;
   }
 
@@ -834,7 +834,7 @@ bool ProjMgr::RunListDependencies(void) {
 
   vector<string> dependencies;
   if (!m_worker.ListDependencies(dependencies, m_filter)) {
-    ProjMgrLogger::Error("processing dependencies list failed");
+    ProjMgrLogger::Get().Error("processing dependencies list failed");
     return false;
   }
   bool success = true;
@@ -855,7 +855,7 @@ bool ProjMgr::RunListContexts(void) {
   }
   vector<string> contexts;
   if (!m_worker.ListContexts(contexts, m_filter, m_ymlOrder)) {
-    ProjMgrLogger::Error("processing contexts list failed");
+    ProjMgrLogger::Get().Error("processing contexts list failed");
     return false;
   }
   for (const auto& context : contexts) {
@@ -911,14 +911,14 @@ bool ProjMgr::RunListLayers(void) {
     for (const string& var : undefVars) {
       errMsg += "  - $" + var + "$\n";
     }
-    ProjMgrLogger::Error(errMsg);
+    ProjMgrLogger::Get().Error(errMsg);
   }
 
   // Step3: Detect layers and list them
   vector<string> layers;
   error = !m_worker.ListLayers(layers, m_clayerSearchPath, m_failedContext);
   if (error) {
-    ProjMgrLogger::Error("no compatible software layer found. Review required connections of the project");
+    ProjMgrLogger::Get().Error("no compatible software layer found. Review required connections of the project");
   }
 
   // If the worker has toolchain errors, set the error flag
@@ -962,7 +962,7 @@ bool ProjMgr::RunListLayers(void) {
 bool ProjMgr::RunCodeGenerator(void) {
   // Check input options
   if (m_codeGenerator.empty()) {
-    ProjMgrLogger::Error("generator identifier was not specified");
+    ProjMgrLogger::Get().Error("generator identifier was not specified");
     return false;
   }
   // Parse all input files and create contexts
@@ -1059,7 +1059,7 @@ bool ProjMgr::GetCdefaultFile(void) {
   string cdefaultFile;
   if (!RteFsUtils::FindFileRegEx(searchPaths, ".*/cdefault\\.(yml|yaml)", cdefaultFile)) {
     if (!cdefaultFile.empty()) {
-      ProjMgrLogger::Error(cdefaultFile, "multiple cdefault files were found");
+      ProjMgrLogger::Get().Error("multiple cdefault files were found", "", cdefaultFile);
     }
     return false;
   }
@@ -1083,12 +1083,12 @@ bool ProjMgr::ValidateCreatedFor(const string& createdFor) {
         if (VersionCmp::RangeCompare(version, currentVersion) <= 0) {
           return true;
         } else {
-          ProjMgrLogger::Error(m_csolutionFile, "solution requires newer CMSIS-Toolbox version " + version);
+          ProjMgrLogger::Get().Error("solution requires newer CMSIS-Toolbox version " + version, "", m_csolutionFile);
           return false;
         }
       }
     }
-    ProjMgrLogger::Warn(m_csolutionFile, "solution created for unknown tool: " + createdFor);
+    ProjMgrLogger::Get().Warn("solution created for unknown tool: " + createdFor, "", m_csolutionFile);
   }
   return true;
 }

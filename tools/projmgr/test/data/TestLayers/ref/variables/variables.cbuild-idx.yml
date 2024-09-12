@@ -18,6 +18,10 @@ build-idx:
         - clayer: ../data/TestLayers/variables/build1.clayer.yml
         - clayer: ../data/TestLayers/variables/solutionDir.clayer.yml
         - clayer: ../data/TestLayers/variables/target1.clayer.yml
+      messages:
+        info:
+          - variables.cbuild-pack.yml - file generated successfully
+          - variables.BuildType1+TargetType1.cbuild.yml - file generated successfully
     - cbuild: variables.BuildType1+TargetType2.cbuild.yml
       project: variables
       configuration: .BuildType1+TargetType2
@@ -26,6 +30,10 @@ build-idx:
         - clayer: ../data/TestLayers/variables/build1.clayer.yml
         - clayer: ../data/TestLayers/variables/solutionDir.clayer.yml
         - clayer: ../data/TestLayers/variables/target2.clayer.yml
+      messages:
+        info:
+          - variables.cbuild-pack.yml - file generated successfully
+          - variables.BuildType1+TargetType2.cbuild.yml - file generated successfully
     - cbuild: variables.BuildType2+TargetType1.cbuild.yml
       project: variables
       configuration: .BuildType2+TargetType1
@@ -34,6 +42,10 @@ build-idx:
         - clayer: ../data/TestLayers/variables/build2.clayer.yml
         - clayer: ../data/TestLayers/variables/solutionDir.clayer.yml
         - clayer: ../data/TestLayers/variables/target1.clayer.yml
+      messages:
+        info:
+          - variables.cbuild-pack.yml - file generated successfully
+          - variables.BuildType2+TargetType1.cbuild.yml - file generated successfully
     - cbuild: variables.BuildType2+TargetType2.cbuild.yml
       project: variables
       configuration: .BuildType2+TargetType2
@@ -42,3 +54,7 @@ build-idx:
         - clayer: ../data/TestLayers/variables/build2.clayer.yml
         - clayer: ../data/TestLayers/variables/solutionDir.clayer.yml
         - clayer: ../data/TestLayers/variables/target2.clayer.yml
+      messages:
+        info:
+          - variables.cbuild-pack.yml - file generated successfully
+          - variables.BuildType2+TargetType2.cbuild.yml - file generated successfully

@@ -845,7 +845,7 @@ protected:
   void CheckTypeFilterSpelling(const TypeFilter& typeFilter);
   void CheckCompilerFilterSpelling(const std::string& compiler);
   bool ProcessGeneratedLayers(ContextItem& context);
-  void CheckDeviceAttributes(const std::string& device, const ProcessorItem& userSelection, const StrMap& targetAttributes);
+  void CheckDeviceAttributes(const ContextItem& context, const ProcessorItem& userSelection, const StrMap& targetAttributes);
   std::string GetContextRteFolder(ContextItem& context);
   std::vector<std::string> FindMatchingPackIdsInCbuildPack(const PackItem& needle, const std::vector<ResolvedPackItem>& resolvedPacks);
   void PrintContextErrors(const std::string& contextName);

@@ -8,3 +8,7 @@ build-idx:
     - cbuild: test-gpdsc.Debug+CM0.cbuild.yml
       project: test-gpdsc
       configuration: .Debug+CM0
+      messages:
+        info:
+          - test-gpdsc.cbuild-pack.yml - file generated successfully
+          - test-gpdsc.Debug+CM0.cbuild.yml - file generated successfully

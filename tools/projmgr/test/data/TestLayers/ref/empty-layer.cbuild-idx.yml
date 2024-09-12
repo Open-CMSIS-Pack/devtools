@@ -11,3 +11,7 @@ build-idx:
     - cbuild: empty-layer+RteTest_ARMCM3.cbuild.yml
       project: empty-layer
       configuration: +RteTest_ARMCM3
+      messages:
+        info:
+          - empty-layer.cbuild-pack.yml - file generated successfully
+          - empty-layer+RteTest_ARMCM3.cbuild.yml - file generated successfully

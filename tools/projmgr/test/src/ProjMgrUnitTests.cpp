@@ -106,15 +106,15 @@ TEST_F(ProjMgrUnitTests, Validate_Logger) {
   StdStreamRedirect streamRedirect;
   auto printLogMsgs = []() {
     ProjMgrLogger::Debug("debug-1 test message");
-    ProjMgrLogger::Warn("warning-1 test message");
-    ProjMgrLogger::Warn("test.warn", "warning-2 test message");
-    ProjMgrLogger::Warn("test.warn", 1, 1, "warning-3 test message");
-    ProjMgrLogger::Error("error-1 test message");
-    ProjMgrLogger::Error("test.err", "error-2 test message");
-    ProjMgrLogger::Error("test.err", 1, 1, "error-3 test message");
-    ProjMgrLogger::Info("info-1 test message");
-    ProjMgrLogger::Info("test.info", "info-2 test message");
-    ProjMgrLogger::Info("test.info", 1, 1, "info-3 test message");
+    ProjMgrLogger::Get().Warn("warning-1 test message");
+    ProjMgrLogger::Get().Warn("warning-2 test message", "", "test.warn");
+    ProjMgrLogger::Get().Warn("warning-3 test message", "", "test.warn", 1, 1);
+    ProjMgrLogger::Get().Error("error-1 test message");
+    ProjMgrLogger::Get().Error("error-2 test message", "", "test.err");
+    ProjMgrLogger::Get().Error("error-3 test message", "", "test.err", 1, 1);
+    ProjMgrLogger::Get().Info("info-1 test message");
+    ProjMgrLogger::Get().Info("info-2 test message", "", "test.info");
+    ProjMgrLogger::Get().Info("info-3 test message", "", "test.info", 1, 1);
   };
 
   // Test quite mode
@@ -142,7 +142,7 @@ test.err - error csolution: error-2 test message\n\
 test.err:1:1 - error csolution: error-3 test message\n";
   expOutMsg = "info csolution: info-1 test message\n\
 test.info - info csolution: info-2 test message\n\
-test.info:1:1 csolution: infoinfo-3 test message\n";
+test.info:1:1 - info csolution: info-3 test message\n";
 
   printLogMsgs();
   outStr = streamRedirect.GetOutString();
@@ -3734,6 +3734,8 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_DefaultFileInCompilerRoot) {
   RteFsUtils::MoveExistingFile(cdefaultInCompilerRoot, cdefaultInCompilerRoot + ".bak");
   RteFsUtils::MoveExistingFile(cdefault, cdefaultInCompilerRoot);
   const string& csolution = testinput_folder + "/TestDefault/empty.csolution.yml";
+  RteFsUtils::RemoveFile(testinput_folder + "/TestDefault/empty.cbuild-pack.yml");
+  RteFsUtils::RemoveDir(testoutput_folder);
   const string& output = testoutput_folder + "/empty";
   argv[1] = (char*)"convert";
   argv[2] = (char*)"--solution";
@@ -4145,17 +4147,18 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_WriteCprjFail) {
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_PreInclude) {
-  char* argv[7];
-
-  // convert --solution solution.yml
+  char* argv[6];
+  // update-rte pre-include.solution.yml
   const string& csolution = testinput_folder + "/TestSolution/pre-include.csolution.yml";
-  argv[1] = (char*)"convert";
-  argv[2] = (char*)"--solution";
-  argv[3] = (char*)csolution.c_str();
-  argv[4] = (char*)"-o";
-  argv[5] = (char*)testoutput_folder.c_str();
-  argv[6] = (char*)"--cbuildgen";
-  EXPECT_EQ(0, RunProjMgr(7, argv, m_envp));
+  argv[1] = (char*)csolution.c_str();
+  argv[2] = (char*)"update-rte";
+  EXPECT_EQ(0, RunProjMgr(3, argv, m_envp));
+  // convert pre-include.solution.yml
+  argv[2] = (char*)"convert";
+  argv[3] = (char*)"-o";
+  argv[4] = (char*)testoutput_folder.c_str();
+  argv[5] = (char*)"--cbuildgen";
+  EXPECT_EQ(0, RunProjMgr(6, argv, m_envp));
 
   // Check generated CPRJs
  ProjMgrTestEnv:: CompareFile(testoutput_folder + "/pre-include+CM0.cprj",
@@ -5647,6 +5650,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_cbuild_files_with_errors_node) {
   StdStreamRedirect streamRedirect;
   string expectedErr = "error csolution: processor name 'cm0_core0' was not found";
   const string& csolution = testinput_folder + "/TestSolution/test_no_device_name.csolution.yml";
+  RteFsUtils::RemoveFile(testinput_folder + "/TestSolution/test_no_device_name.cbuild-pack.yml");
   argv[1] = (char*)"convert";
   argv[2] = (char*)csolution.c_str();
   argv[3] = (char*)"-o";
@@ -5863,6 +5867,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_GeneratorError) {
 TEST_F(ProjMgrUnitTests, TestRelativeOutputOption) {
   char* argv[5];
   const string& csolution = testinput_folder + "/TestSolution/Executes/solution.csolution.yml";
+  RteFsUtils::RemoveFile(testinput_folder + "/TestSolution/Executes/solution.cbuild-pack.yml");
   const string& testFolder = RteFsUtils::ParentPath(testoutput_folder);
   const string& outputFolder = testFolder + "/outputFolder";
 
