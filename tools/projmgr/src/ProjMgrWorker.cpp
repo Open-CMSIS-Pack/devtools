@@ -2198,13 +2198,13 @@ bool ProjMgrWorker::ProcessComponentFiles(ContextItem& context) {
         for (const auto& apiFile : apiFiles) {
           const auto& attr = apiFile->GetAttribute("attr");
           const auto& category = apiFile->GetAttribute("category");
-          const auto& file = category == "doc" ? apiFile->GetDocFile() :
+          const auto& name = category == "doc" ? apiFile->GetDocFile() :
             api->GetPackage()->GetAbsolutePackagePath() + apiFile->GetAttribute("name");
           const auto& scope = apiFile->GetAttribute("scope");
           const auto& language = apiFile->GetAttribute("language");
           const auto& select = apiFile->GetAttribute("select");
           const auto& version = apiFile->GetVersionString();
-          context.apiFiles[apiId].push_back({ file, attr, category, language, scope, version, select });
+          context.apiFiles[apiId].push_back({ name, attr, category, language, scope, version, select });
         }
       }
     }
@@ -2220,8 +2220,9 @@ bool ProjMgrWorker::ProcessComponentFiles(ContextItem& context) {
         if (attr == "config") {
           continue;
         }
-        const auto& name = rteComponent->GetPackage()->GetAbsolutePackagePath() + componentFile->GetAttribute("name");
         const auto& category = componentFile->GetAttribute("category");
+        const auto& name = category == "doc" ? componentFile->GetDocFile() :
+          rteComponent->GetPackage()->GetAbsolutePackagePath() + componentFile->GetAttribute("name");
         const auto& scope = componentFile->GetAttribute("scope");
         const auto& language = componentFile->GetAttribute("language");
         const auto& select = componentFile->GetAttribute("select");

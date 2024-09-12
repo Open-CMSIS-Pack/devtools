@@ -54,7 +54,7 @@ build:
       from-pack: ARM::RteTest_DFP@0.2.0
       implemented-by: ARM::RteTest:CORE@0.1.1
       files:
-        - file: https:/arm-software.github.io/CMSIS_5/Pack/html/pdsc_apis_pg.html
+        - file: https://arm-software.github.io/CMSIS_5/Pack/html/pdsc_apis_pg.html
           category: doc
           version: 1.1.2
   generators:

@@ -496,12 +496,11 @@ TEST_F(ProjMgrUtilsUnitTests, FormatPath) {
     { "OriginalPath"                      , testoutput_folder + "/OriginalPath"     },
     { "${CMSIS_PACK_ROOT}/Pack"           , testcmsispack_folder + "/Pack"          },
     { "${CMSIS_COMPILER_ROOT}/Toolchain"  , testcmsiscompiler_folder + "/Toolchain" },
+    { "C:/Temp/Absolute"                  , "C:/Temp/Absolute"                      },
+    { "https://www.url.com"               , "https://www.url.com"                   },
   };
   for (const auto& [expected, original] : testData) {
     EXPECT_EQ(expected, ProjMgrUtils::FormatPath(original, testoutput_folder))
       << "failed for original path \"" << original << "\"";
-  }
-  if (CrossPlatformUtils::GetHostType() != "mac") {
-    EXPECT_EQ("C:/tmp", ProjMgrUtils::FormatPath("C:/tmp", testoutput_folder));
   }
 }
