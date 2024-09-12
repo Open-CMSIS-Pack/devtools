@@ -118,6 +118,7 @@
       <description>RteTest Test API 2.0.0</description>
       <files>
         <file category="header" name="API/IConfig.h"/>
+        <file category="doc" name="API/index.html"/>
       </files>
     </api>
   </apis>
