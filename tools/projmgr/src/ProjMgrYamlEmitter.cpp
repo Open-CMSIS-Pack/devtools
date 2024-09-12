@@ -907,27 +907,7 @@ void ProjMgrYamlCbuild::SetDefineNode(YAML::Node define, const vector<string>& v
 }
 
 const string ProjMgrYamlBase::FormatPath(const string& original, const string& directory) {
-  string packRoot = ProjMgrKernel::Get()->GetCmsisPackRoot();
-  string path = original;
-  RteFsUtils::NormalizePath(path);
-  path = RteFsUtils::MakePathCanonical(path);
-  if (!m_useAbsolutePaths) {
-    size_t index = path.find(packRoot);
-    if (index != string::npos) {
-      path.replace(index, packRoot.length(), "${CMSIS_PACK_ROOT}");
-    } else {
-      string compilerRoot;
-      ProjMgrUtils::GetCompilerRoot(compilerRoot);
-      index = path.find(compilerRoot);
-      if (!compilerRoot.empty() && index != string::npos) {
-        path.replace(index, compilerRoot.length(), "${CMSIS_COMPILER_ROOT}");
-      } else {
-        error_code ec;
-        path = fs::relative(path, directory, ec).generic_string();
-      }
-    }
-  }
-  return path;
+  return ProjMgrUtils::FormatPath(original, directory, m_useAbsolutePaths);
 }
 
 bool ProjMgrYamlBase::CompareFile(const string& filename, const YAML::Node& rootNode) {
