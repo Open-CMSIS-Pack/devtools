@@ -2420,6 +2420,7 @@ bool ProjMgrWorker::ProcessExecutes(ContextItem& context, bool solutionLevel) {
       m_executes[execute].execute = execute;
       // expand access sequences
       m_executes[execute].run = RteUtils::ExpandAccessSequences(m_executes[execute].run, IOSeqMap);
+      m_executes[execute].run = RteUtils::ExpandAccessSequences(m_executes[execute].run, context.variables);
       if (!ProcessSequencesRelatives(context, m_executes[execute].input, ref, outDir, true, solutionLevel) ||
         !ProcessSequencesRelatives(context, m_executes[execute].output, ref, outDir, true, solutionLevel)) {
         return false;

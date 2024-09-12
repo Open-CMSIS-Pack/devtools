@@ -57,7 +57,7 @@ build-idx:
       depends-on:
         - Archive_Artifacts
     - execute: project.Release+RteTest_ARMCM3-Sign_Artifact
-      run: ${CMAKE_COMMAND} -DINPUT=${INPUT} -DOUTPUT=${OUTPUT} -P ${INPUT_0}
+      run: ${CMAKE_COMMAND} -DINPUT=${INPUT} -DOUTPUT=${OUTPUT} -DCONTEXT=project.Release+RteTest_ARMCM3 -P ${INPUT_0}
       input:
         - ../data/TestSolution/Executes/script/sign.cmake
         - out/project/RteTest_ARMCM3/Release/project.axf
