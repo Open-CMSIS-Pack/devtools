@@ -14,7 +14,7 @@ project:
   
   executes:
     - execute: Sign Artifact
-      run: ${CMAKE_COMMAND} -DINPUT=$input$ -DOUTPUT=$output$ -P $input(0)$
+      run: ${CMAKE_COMMAND} -DINPUT=$input$ -DOUTPUT=$output$ -DCONTEXT=$Project$.$BuildType$+$TargetType$ -P $input(0)$
       input:
         - $SolutionDir()$/script/sign.cmake
         - $elf()$
