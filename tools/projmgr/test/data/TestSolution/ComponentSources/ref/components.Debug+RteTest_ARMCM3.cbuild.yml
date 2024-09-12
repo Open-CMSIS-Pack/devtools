@@ -51,9 +51,8 @@ build:
     - component: ARM::RteTest:TemplateFile@0.9.9
       from-pack: ARM::RteTest@0.1.0
       selected-by: RteTest:TemplateFile
+      implements: RteTest:TemplateFile@1.0.0
       files:
-        - file: ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/API/IConfig.h
-          category: api
         - file: ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/Include/Config/ConfigInclude.h
           category: header
           version: 0.9.9
@@ -63,6 +62,17 @@ build:
           attr: template
           version: 0.9.9
           select: dummy template file
+  apis:
+    - api: RteTest:TemplateFile@1.0.0
+      from-pack: ARM::RteTest@0.1.0
+      implemented-by: ARM::RteTest:TemplateFile@0.9.9
+      files:
+        - file: ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/API/IConfig.h
+          category: header
+          version: 1.0.0
+        - file: ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/API/index.html
+          category: doc
+          version: 1.0.0
   linker:
     script: ../data/TestSolution/ComponentSources/RTE/Device/RteTest_ARMCM3/ac6_linker_script.sct.src
     regions: ../data/TestSolution/ComponentSources/RTE/Device/RteTest_ARMCM3/regions_RteTest_ARMCM3.h

@@ -13,6 +13,8 @@
 /**
   * @brief YAML key definitions
 */
+static constexpr const char* YAML_APIS = "apis";
+static constexpr const char* YAML_API = "api";
 static constexpr const char* YAML_ADDPATH = "add-path";
 static constexpr const char* YAML_ADDPATH_ASM = "add-path-asm";
 static constexpr const char* YAML_ALWAYS = "always";
@@ -95,6 +97,8 @@ static constexpr const char* YAML_GROUP = "group";
 static constexpr const char* YAML_GROUPS = "groups";
 static constexpr const char* YAML_HOST = "host";
 static constexpr const char* YAML_ID = "id";
+static constexpr const char* YAML_IMPLEMENTED_BY = "implemented-by";
+static constexpr const char* YAML_IMPLEMENTS = "implements";
 static constexpr const char* YAML_INFO = "info";
 static constexpr const char* YAML_INPUT = "input";
 static constexpr const char* YAML_INSTANCES = "instances";
