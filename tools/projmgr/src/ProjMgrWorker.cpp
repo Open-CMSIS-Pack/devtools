@@ -180,20 +180,16 @@ bool ProjMgrWorker::ParseContextLayers(ContextItem& context) {
   };
   for (const auto& var : userVariablesList) {
     for (const auto& [key, value] : var) {
-      if ((context.variables.find(key) != context.variables.end()) && (context.variables.at(key) != value)) {
-        ProjMgrLogger::Get().Warn("variable '" + key + "' redefined from '" + context.variables.at(key) + "' to '" + value + "'", context.name);
-      }
       // Find ${CMSIS_PACK_ROOT} and replace with pack root path
       const string packRootEnvVar = "${CMSIS_PACK_ROOT}";
       size_t index = value.find(packRootEnvVar);
-      if (index != string::npos) {
-        string valStr = value;
-        valStr.replace(index, packRootEnvVar.length(), m_packRoot);
-        context.variables[key] = valStr;
+      string expandedValue = value;
+      expandedValue = index != string::npos ? expandedValue.replace(index, packRootEnvVar.length(), m_packRoot) :
+        RteUtils::ExpandAccessSequences(value, { {RteConstants::AS_SOLUTION_DIR_BR, context.csolution->directory} });
+      if ((context.variables.find(key) != context.variables.end()) && (context.variables.at(key) != expandedValue)) {
+        ProjMgrLogger::Get().Warn("variable '" + key + "' redefined from '" + context.variables.at(key) + "' to '" + expandedValue + "'", context.name);
       }
-      else {
-        context.variables[key] = RteUtils::ExpandAccessSequences(value, { {RteConstants::AS_SOLUTION_DIR_BR, context.csolution->directory} });
-      }
+      context.variables[key] = expandedValue;
     }
   }
   // parse clayers
