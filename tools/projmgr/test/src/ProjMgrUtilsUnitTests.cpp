@@ -496,7 +496,6 @@ TEST_F(ProjMgrUtilsUnitTests, FormatPath) {
     { "OriginalPath"                      , testoutput_folder + "/OriginalPath"     },
     { "${CMSIS_PACK_ROOT}/Pack"           , testcmsispack_folder + "/Pack"          },
     { "${CMSIS_COMPILER_ROOT}/Toolchain"  , testcmsiscompiler_folder + "/Toolchain" },
-    { "X:/Non_Existent/Absolute"          , "X:/Non_Existent/Absolute"              },
     { "https://www.url.com"               , "https://www.url.com"                   },
   };
   for (const auto& [expected, original] : testData) {
@@ -506,8 +505,8 @@ TEST_F(ProjMgrUtilsUnitTests, FormatPath) {
   if (CrossPlatformUtils::GetHostType() == "win") {
     // in windows it must be case insensitive
     RteFsUtils::CreateDirectories(testoutput_folder + "/foobar");
-    EXPECT_EQ("Folder", ProjMgrUtils::FormatPath(
-      testoutput_folder + "/FooBar/Folder",
-      testoutput_folder + "/FOOBAR"));
+    EXPECT_EQ("Folder", ProjMgrUtils::FormatPath(testoutput_folder + "/FooBar/Folder", testoutput_folder + "/FOOBAR"));
+    // an absolute path relative to a different drive returns itself
+    EXPECT_EQ("X:/Non_Existent/Absolute", ProjMgrUtils::FormatPath("X:/Non_Existent/Absolute", testoutput_folder));
   }
 }

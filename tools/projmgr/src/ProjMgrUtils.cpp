@@ -406,7 +406,7 @@ const string ProjMgrUtils::FormatPath(const string& original, const string& dire
       } else {
         error_code ec;
         const string relative = fs::relative(path, directory, ec).generic_string();
-        if (!relative.empty() && path == fs::weakly_canonical(directory, ec).append(relative).lexically_normal().generic_string()) {
+        if (!ec && !relative.empty()) {
           path = relative;
         }
       }
