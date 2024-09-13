@@ -233,9 +233,9 @@ set(WARNINGS_LD_FLAGS  ""   "--no_warnings" "--remarks")
 
 # IAR default "Standard C" supports C18/C11
 # The option --c89 enables support for ISO 9899:1990 also known as C94, C90, C89, and ANSI C instead of "Standard C" 
-set(LANGUAGE_VALUES       "c90"   "gnu90" "c99"   "gnu99" "c11" "gnu11" "c++98" "gnu++98" "c++03" "gnu++03" "c++11" "gnu++11" "c++14" "gnu++14" "c++17" "gnu++17" "c++20" "gnu++20")
-set(LANGUAGE_CC_FLAGS     "--c89" "--c89" "--c89" "--c89" ""    ""      ""      ""        ""      ""        ""      ""        ""      ""        ""      ""        ""      ""       )
-set(LANGUAGE_CXX_FLAGS    ""      ""      ""      ""      ""    ""      "--c89" "--c89"   "--c89" "--c89"   ""      ""        ""      ""        ""      ""        ""      ""       )
+set(LANGUAGE_VALUES       "c90"   "gnu90" "c99"   "gnu99" "c11" "gnu11" "c17" "c23" "c++98" "gnu++98" "c++03" "gnu++03" "c++11" "gnu++11" "c++14" "gnu++14" "c++17" "gnu++17" "c++20" "gnu++20")
+set(LANGUAGE_CC_FLAGS     "--c89" "--c89" "--c89" "--c89" ""    ""      ""    ""    ""      ""        ""      ""        ""      ""        ""      ""        ""      ""        ""      ""       )
+set(LANGUAGE_CXX_FLAGS    ""      ""      ""      ""      ""    ""      ""    ""    "--c89" "--c89"   "--c89" "--c89"   ""      ""        ""      ""        ""      ""        ""      ""       )
 
 function(cbuild_set_option_flags lang option value flags)
   if(NOT DEFINED ${option}_${lang}_FLAGS)
