@@ -3024,21 +3024,27 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Correct_Device_Wrong_Board_Info) {
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_Board_Multi_Mounted_Devices) {
-  // Test Project with only board info and multiple mounted devices
-  char* argv[7];
-  string csolutionFile = UpdateTestSolutionFile("./TestProject4/test_board_multi_mounted_device.cproject.yml");
-  const string& expected = "found multiple mounted devices";
+  // Test Project with board with multiple mounted devices
+  char* argv[8];
+  const string& csolution = testinput_folder + "/TestSolution/board-devices.csolution.yml";
   StdStreamRedirect streamRedirect;
 
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"--solution";
-  argv[3] = (char*)csolutionFile.c_str();
-  argv[4] = (char*)"-o";
-  argv[5] = (char*)testoutput_folder.c_str();
-  argv[6] = (char*)"--cbuildgen";
-  EXPECT_EQ(1, RunProjMgr(7, argv, 0));
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"-o";
+  argv[4] = (char*)testoutput_folder.c_str();
+  argv[5] = (char*)"--cbuildgen";
+  argv[6] = (char*)"-c";
+
+  // test with only 'board' specified
+  argv[7] = (char*)"+Only_Board";
+  EXPECT_EQ(1, RunProjMgr(8, argv, 0));
   auto errStr = streamRedirect.GetErrorString();
-  EXPECT_NE(string::npos, errStr.find(expected));
+  EXPECT_NE(string::npos, errStr.find("error csolution: found multiple mounted devices, one of the following must be specified:\nRteTest_ARMCM3\nRteTest_ARMCM0_Dual"));
+
+  // test with 'board' and 'device' specified
+  argv[7] = (char*)"+Board_And_Device";
+  EXPECT_EQ(0, RunProjMgr(8, argv, 0));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_Board_Device_Variant) {
@@ -3109,7 +3115,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Board_Device_Info) {
   // Test Project with board mounted device different than selected devices
   char* argv[7];
   string csolutionFile = UpdateTestSolutionFile("./TestProject4/test_mounted_device_differs_selected_device.cproject.yml");
-  const string& expected = "warning csolution: specified device 'RteTest_ARMCM0' and board mounted device 'RteTest_ARMCM0_Dual' are different";
+  const string& expected = "warning csolution: specified device 'RteTest_ARMCM0' is not among board mounted devices";
   StdStreamRedirect streamRedirect;
 
   argv[1] = (char*)"convert";
