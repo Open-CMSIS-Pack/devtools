@@ -385,3 +385,32 @@ const string ProjMgrUtils::FindReferencedContext(const string& currentContext, c
 bool ProjMgrUtils::HasAccessSequence(const string value) {
   return regex_match(value, regex(".*\\$.*\\$.*"));
 }
+
+const string ProjMgrUtils::FormatPath(const string& original, const string& directory, bool useAbsolutePaths) {
+  if (original.find("http") == 0) {
+    return original;
+  }
+  string path = original;
+  RteFsUtils::NormalizePath(path);
+  if (!useAbsolutePaths) {
+    string packRoot = ProjMgrKernel::Get()->GetCmsisPackRoot();
+    size_t index = path.find(packRoot);
+    if (index != string::npos) {
+      path.replace(index, packRoot.length(), "${CMSIS_PACK_ROOT}");
+    } else {
+      string compilerRoot;
+      ProjMgrUtils::GetCompilerRoot(compilerRoot);
+      index = path.find(compilerRoot);
+      if (!compilerRoot.empty() && index != string::npos) {
+        path.replace(index, compilerRoot.length(), "${CMSIS_COMPILER_ROOT}");
+      } else {
+        error_code ec;
+        const string relative = fs::relative(path, directory, ec).generic_string();
+        if (!relative.empty() && path == fs::path(directory).append(relative).lexically_normal().generic_string()) {
+          path = relative;
+        }
+      }
+    }
+  }
+  return path;
+}

@@ -254,6 +254,15 @@ public:
   */
   static SemVer GetSemVer(const std::string version);
 
+  /**
+   * @brief format path
+   * @param string original path
+   * @param string base destination directory
+   * @param bool use absolute paths
+   * @return string formatted path
+  */
+  static const std::string FormatPath(const std::string& original, const std::string& directory, bool useAbsolutePaths = false);
+
 protected:
   static std::string ConstructID(const std::vector<std::pair<const char*, const std::string&>>& elements);
   /**

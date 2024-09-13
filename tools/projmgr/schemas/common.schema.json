@@ -1068,6 +1068,7 @@
         "output-dirs":       { "$ref": "#/definitions/BuildOutputDirectoriesType" },
         "output":            { "$ref": "#/definitions/OutputFilesType" },
         "components":        { "$ref": "#/definitions/ResolvedComponentsType" },
+        "apis":              { "$ref": "#/definitions/ResolvedApisType" },
         "linker":            { "$ref": "#/definitions/LinkerType" },
         "groups":            { "$ref": "#/definitions/BuildGroupsType" },
         "generators":        { "$ref": "#/definitions/GeneratorsType" },
@@ -1273,6 +1274,7 @@
         "component":    { "$ref": "#/definitions/ComponentID" },
         "condition":    { "$ref": "#/definitions/ConditionIDType" },
         "selected-by":  { "$ref": "#/definitions/ComponentID" },
+        "implements":   { "$ref": "#/definitions/ComponentID" },
         "rtedir":       { "type": "string" },
         "optimize":     { "$ref": "#/definitions/OptimizeType" },
         "debug":        { "$ref": "#/definitions/DebugType" },
@@ -1292,6 +1294,30 @@
         "instances":    { "$ref": "#/definitions/InstancesType" }
       },
       "additionalProperties": false
+    },
+    "ResolvedApisType": {
+      "type": "array",
+      "description": "List of API in their resolved state",
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/ResolvedApiType" }
+    },
+    "ResolvedApiType": {
+      "type": "object",
+      "description": "API in its resolved state",
+      "properties": {
+        "api":            { "$ref": "#/definitions/ComponentID" },
+        "condition":      { "$ref": "#/definitions/ConditionIDType" },
+        "implemented-by": { "$ref": "#/definitions/ImplementedByType" },
+        "files":          { "$ref": "#/definitions/FilesType" },
+        "from-pack":      { "$ref": "#/definitions/PackID" }
+      },
+      "additionalProperties": false
+    },
+    "ImplementedByType": {
+      "oneOf": [
+        { "type": "array", "items": { "$ref": "#/definitions/ComponentID" } },
+        { "$ref": "#/definitions/ComponentID" }
+      ]
     },
     "SetupsType": {
       "type": "array",
