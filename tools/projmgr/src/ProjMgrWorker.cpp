@@ -1221,6 +1221,7 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
   }
 
   RteDeviceItem* matchedBoardDevice = nullptr;
+  Collection<RteItem*> mountedDevices;
   if(!context.board.empty()) {
     BoardItem boardItem;
     GetBoardItem(context.board, boardItem);
@@ -1275,38 +1276,31 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
     context.targetAttributes["Bversion"] = matchedBoard->GetRevision(); // deprecated
 
     // find device from the matched board
-    Collection<RteItem*> mountedDevices;
     matchedBoard->GetMountedDevices(mountedDevices);
-    if (mountedDevices.size() > 1) {
-      ProjMgrLogger::Get().Error("found multiple mounted devices", context.name);
-      string msg = "one of the following devices must be specified:";
+    if (mountedDevices.size() > 1 && deviceItem.name.empty()) {
+      string msg = "found multiple mounted devices, one of the following must be specified:";
       for (const auto& device : mountedDevices) {
         msg += "\n" + device->GetDeviceName();
       }
       ProjMgrLogger::Get().Error(msg, context.name);
       return false;
-    }
-    else if (mountedDevices.size() == 0) {
+    } else if (mountedDevices.size() == 0) {
       ProjMgrLogger::Get().Error("found no mounted device", context.name);
       return false;
+    } else if (mountedDevices.size() == 1) {
+      auto mountedDevice = mountedDevices.front();
+      auto device = context.rteFilteredModel->GetDevice(mountedDevice->GetDeviceName(), mountedDevice->GetDeviceVendor());
+      if (!device) {
+        ProjMgrLogger::Get().Error("board mounted device " + mountedDevice->GetFullDeviceName() + " not found", context.name);
+        return false;
+      }
+      matchedBoardDevice = device;
     }
-
-    auto mountedDevice = *(mountedDevices.begin());
-    auto device = context.rteFilteredModel->GetDevice(mountedDevice->GetDeviceName(), mountedDevice->GetDeviceVendor());
-    if (!device) {
-      ProjMgrLogger::Get().Error("board mounted device " + mountedDevice->GetFullDeviceName() + " not found", context.name);
-      return false;
-    }
-    matchedBoardDevice = device;
   }
 
+  // find specified device
   RteDeviceItem* matchedDevice = nullptr;
-  if (deviceItem.name.empty()) {
-    matchedDevice = matchedBoardDevice;
-    const string& variantName = matchedBoardDevice->GetDeviceVariantName();
-    const string& selectableDevice = variantName.empty() ? matchedBoardDevice->GetDeviceName() : variantName;
-    context.device = GetDeviceInfoString("", selectableDevice, deviceItem.pname);
-  } else {
+  if (!deviceItem.name.empty()) {
     list<RteDevice*> devices;
     context.rteFilteredModel->GetDevices(devices, "", "", RteDeviceItem::VARIANT);
     list<RteDeviceItem*> matchedDevices;
@@ -1330,6 +1324,28 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
     }
   }
 
+  // check board mounted devices
+  if (matchedDevice && mountedDevices.size() > 0) {
+    bool match = false;
+    for (const auto& mountedDevice : mountedDevices) {
+      if (mountedDevice->GetFullDeviceName() == matchedDevice->GetFullDeviceName()) {
+        match = true;
+        break;
+      }
+    }
+    if (!match) {
+      ProjMgrLogger::Get().Warn("specified device '" + matchedDevice->GetFullDeviceName() + "' is not among board mounted devices", context.name);
+    }
+  }
+
+  // set device = board mounted device
+  if (!matchedDevice && matchedBoardDevice) {
+    matchedDevice = matchedBoardDevice;
+    const string& variantName = matchedBoardDevice->GetDeviceVariantName();
+    const string& selectableDevice = variantName.empty() ? matchedBoardDevice->GetDeviceName() : variantName;
+    context.device = GetDeviceInfoString("", selectableDevice, deviceItem.pname);
+  }
+
   // check device variants
   if (matchedDevice->GetDeviceItemCount() > 0) {
     ProjMgrLogger::Get().Error("found multiple device variants", context.name);
@@ -1339,15 +1355,6 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
     }
     ProjMgrLogger::Get().Error(msg, context.name);
     return false;
-  }
-
-  if (matchedBoardDevice && (matchedBoardDevice != matchedDevice)) {
-    const string DeviceInfoString = matchedDevice->GetFullDeviceName();
-    const string BoardDeviceInfoString = matchedBoardDevice->GetFullDeviceName();
-    if (DeviceInfoString.find(BoardDeviceInfoString) == string::npos) {
-      ProjMgrLogger::Get().Warn("specified device '" + DeviceInfoString + "' and board mounted device '" +
-        BoardDeviceInfoString + "' are different", context.name);
-    }
   }
 
   // check device processors

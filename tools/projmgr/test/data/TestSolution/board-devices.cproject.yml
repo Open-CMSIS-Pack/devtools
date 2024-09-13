@@ -1,15 +1,7 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schemas/cproject.schema.json
 
 project:
-  description: Project 1
-  board: Keil::RteTest Test board
-  compiler: AC6@>=6.18.0
-  processor:
-    trustzone: non-secure
+
   components:
     - component: Startup
     - component: CORE
-  groups:
-    - group: Sources
-      files: 
-        - file: main.c
