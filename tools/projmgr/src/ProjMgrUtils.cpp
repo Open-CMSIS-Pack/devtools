@@ -390,7 +390,7 @@ const string ProjMgrUtils::FormatPath(const string& original, const string& dire
   if (original.find("http") == 0) {
     return original;
   }
-  string path = original;
+  string path = RteFsUtils::MakePathCanonical(original);
   RteFsUtils::NormalizePath(path);
   if (!useAbsolutePaths) {
     string packRoot = ProjMgrKernel::Get()->GetCmsisPackRoot();
@@ -406,7 +406,7 @@ const string ProjMgrUtils::FormatPath(const string& original, const string& dire
       } else {
         error_code ec;
         const string relative = fs::relative(path, directory, ec).generic_string();
-        if (!relative.empty() && path == fs::path(directory).append(relative).lexically_normal().generic_string()) {
+        if (!ec && !relative.empty()) {
           path = relative;
         }
       }
