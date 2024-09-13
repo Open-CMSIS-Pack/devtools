@@ -1719,7 +1719,7 @@ bool ProjMgrWorker::ProcessToolchain(ContextItem& context) {
 
   // get compatible supported toolchain
   if (!GetToolchainConfig(context.toolchain.name, context.toolchain.range, context.toolchain.config, context.toolchain.version)) {
-    m_toolchainErrors.insert("cmake configuration file missing for compiler '" + context.compiler + "'");
+    m_toolchainErrors.insert("no toolchain cmake files found. Check ./etc directory and verify CMSIS-Toolbox installation");
     context.toolchain.version = RteUtils::GetPrefix(context.toolchain.range);
   }
 
@@ -4409,7 +4409,7 @@ bool ProjMgrWorker::ListToolchains(vector<ToolchainItem>& toolchains) {
       // list registered toolchains
       GetRegisteredToolchains();
       if (m_toolchains.empty()) {
-        ProjMgrLogger::Get().Error("compiler registration environment variable missing, format: <GCC|CLANG|AC6|IAR>_TOOLCHAIN_<major>_<minor>_<patch>");
+        ProjMgrLogger::Get().Error("no compiler registered. Add path to compiler ./bin directory with environment variable <name>_TOOLCHAIN_<major>_<minor>_<patch>. <name> is one of AC6, GCC, IAR, CLANG");
         return false;
       }
       toolchains = m_toolchains;
