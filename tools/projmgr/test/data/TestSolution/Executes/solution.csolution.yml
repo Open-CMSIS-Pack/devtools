@@ -21,7 +21,7 @@ solution:
     - project: project/project.cproject.yml
 
   executes:
-    - execute: Generate Project Sources
+    - execute: Generate_Project_Sources
       run: ${CMAKE_COMMAND} -DINPUT_1=$input(1)$ -DOUTPUT_0=$output(0)$ -DOUTPUT_1=$output(1)$ -P $input(0)$
       input:
         - script/generate-sources.cmake
@@ -29,7 +29,7 @@ solution:
       output:
         - $ProjectDir(project)$/source0.c
         - $ProjectDir(project)$/source1.c
-    - execute: Archive Artifacts
+    - execute: Archive_Artifacts
       run: ${CMAKE_COMMAND} -DINPUT=$input$ -DOUTPUT=$output$ -P $input(0)$
       input:
         - script/archive.cmake
@@ -37,12 +37,12 @@ solution:
         - $elf(project.Debug+RteTest_ARMCM3)$.signed
       output:
         - $SolutionDir()$/artifacts.zip
-    - execute: Run Always
+    - execute: Run_Always
       run: ${CMAKE_COMMAND} -E echo "Execute Run Always"
       always:
       input:
         - $SolutionDir()$/artifacts.zip
-    - execute: Run After Archiving 
+    - execute: Run_After_Archiving
       run: ${CMAKE_COMMAND} -E echo "Archive has been updated"
       input:
         - $SolutionDir()$/artifacts.zip

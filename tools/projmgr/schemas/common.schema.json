@@ -949,7 +949,13 @@
         "cbuild": { "type": "string", "description": "Path to <context>.cbuild.yml file" },
         "project": { "type": "string", "description": "Project name" },
         "configuration": { "$ref": "#/definitions/BuildContext" },
-        "depends-on": { "type": "array",  "items": { "type": "string"} },
+        "depends-on": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^([^\\.\\+]+(\\.[a-zA-Z0-9_-]{1,32})?\\+[a-zA-Z0-9_-]{1,32})(-[a-zA-Z0-9_-]{1,32})?|([a-zA-Z0-9_-]{1,32})$"
+          }
+        },
         "errors": { "type": "boolean", "description": "Indicates error(s) during conversion" },
         "packs-missing": { "$ref": "#/definitions/BuildPacksMissingType" },
         "clayers": { "$ref": "#/definitions/BuildLayersType" },
@@ -1530,7 +1536,7 @@
     "ExecuteType": {
       "type": "object",
       "properties": {
-        "execute":         { "type": "string", "description": "Description of the build step" },
+        "execute":         { "type": "string", "pattern": "^([a-zA-Z0-9_-]{1,32})$", "description": "Description of the build step" },
         "run":             { "type": "string", "description": "Command string with name of the program or script (optionally with path) along with argument string" },
         "always":          { "type": "null",   "description": "When present, the build step always runs and bypasses check for outdated files" },
         "input":           { "type": "array",  "description": "A list of input files (may contain Access Sequences)",  "items": { "type": "string"} },
@@ -1558,7 +1564,13 @@
         "always":     { "type": "null",   "description": "When present, the build step always runs and bypasses check for outdated files" },
         "input":      { "type": "array",  "description": "A list of input files (may contain Access Sequences)",  "items": { "type": "string"} },
         "output":     { "type": "array",  "description": "A list of output files (may contain Access Sequences)", "items": { "type": "string"} },
-        "depends-on": { "type": "array",  "items": { "type": "string"} }
+        "depends-on": { 
+          "type": "array",
+          "items": {
+              "type": "string",
+              "pattern": "^([^\\.\\+]+(\\.[a-zA-Z0-9_-]{1,32})?\\+[a-zA-Z0-9_-]{1,32})(-[a-zA-Z0-9_-]{1,32})?|([a-zA-Z0-9_-]{1,32})$"
+            }
+          }
       },
       "additionalProperties": false,
       "required": ["execute", "run"]
