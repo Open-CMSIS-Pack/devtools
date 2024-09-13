@@ -41,6 +41,9 @@ bool ProjMgrYamlParser::ParseCdefault(const string& input,
 
     const YAML::Node& defaultNode = root[YAML_DEFAULT];
     ParseString(defaultNode, YAML_COMPILER, cdefault.compiler);
+    if (!cdefault.compiler.empty()) {
+      ProjMgrLogger::Get().Warn("'compiler' setting in cdefault.yml will be deprecated in CMSIS-Toolbox 3.0.0");
+    }
     ParseSelectableCompilers(defaultNode, cdefault.selectableCompilers);
     ParseMisc(defaultNode, cdefault.misc);
   }

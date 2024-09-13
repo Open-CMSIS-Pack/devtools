@@ -810,8 +810,8 @@
     "DefaultDescType": {
       "type": "object",
       "properties": {
-        "compiler":        { "$ref": "#/definitions/CompilerType" },
-        "select-compiler": { "$ref": "#/definitions/SelectCompilersType" },
+        "compiler":        { "$ref": "#/definitions/CompilerType", "description": "'compiler' setting in cdefault.yml will be deprecated in CMSIS-Toolbox 3.0.0" },
+        "select-compiler": { "$ref": "#/definitions/SelectCompilersType", "description": "'select-compiler' setting in cdefault.yml will be deprecated in CMSIS-Toolbox 3.0.0" },
         "misc":            { "$ref": "#/definitions/MiscTypes" }
       },
       "additionalProperties": false

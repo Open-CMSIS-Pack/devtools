@@ -11,6 +11,7 @@ build-idx:
       configuration: .Debug+TEST_TARGET
       messages:
         warnings:
+          - "'compiler' setting in cdefault.yml will be deprecated in CMSIS-Toolbox 3.0.0"
           - "project.cproject.yml - 'device: Dname' is deprecated at this level and accepted in *.csolution.yml only"
         info:
           - empty.cbuild-pack.yml - file generated successfully
@@ -20,6 +21,7 @@ build-idx:
       configuration: .Release+TEST_TARGET
       messages:
         warnings:
+          - "'compiler' setting in cdefault.yml will be deprecated in CMSIS-Toolbox 3.0.0"
           - "project.cproject.yml - 'device: Dname' is deprecated at this level and accepted in *.csolution.yml only"
         info:
           - empty.cbuild-pack.yml - file generated successfully
