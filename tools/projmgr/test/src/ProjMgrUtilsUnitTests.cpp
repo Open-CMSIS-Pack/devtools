@@ -496,11 +496,18 @@ TEST_F(ProjMgrUtilsUnitTests, FormatPath) {
     { "OriginalPath"                      , testoutput_folder + "/OriginalPath"     },
     { "${CMSIS_PACK_ROOT}/Pack"           , testcmsispack_folder + "/Pack"          },
     { "${CMSIS_COMPILER_ROOT}/Toolchain"  , testcmsiscompiler_folder + "/Toolchain" },
-    { "C:/Temp/Absolute"                  , "C:/Temp/Absolute"                      },
+    { "X:/Non_Existent/Absolute"          , "X:/Non_Existent/Absolute"              },
     { "https://www.url.com"               , "https://www.url.com"                   },
   };
   for (const auto& [expected, original] : testData) {
     EXPECT_EQ(expected, ProjMgrUtils::FormatPath(original, testoutput_folder))
       << "failed for original path \"" << original << "\"";
+  }
+  if (CrossPlatformUtils::GetHostType() == "win") {
+    // in windows it must be case insensitive
+    RteFsUtils::CreateDirectories(testoutput_folder + "/foobar");
+    EXPECT_EQ("Folder", ProjMgrUtils::FormatPath(
+      testoutput_folder + "/FooBar/Folder",
+      testoutput_folder + "/FOOBAR"));
   }
 }
