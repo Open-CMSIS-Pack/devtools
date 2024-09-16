@@ -57,6 +57,16 @@ Software layers and Virtual I/O simplify these use cases:
     <th>Description</th>
   </tr>
   <tr>
+    <td>2.6.0</td>
+    <td>Release notes:
+      - added support for trustzone mode 'secure-only'
+      - extended 'language-C' accepted values: c17 and c23
+      - updated cbuild2cmake utility v0.9.3
+      - updated cbuild utility v2.6.0
+      - updated cpackget utility v2.1.4
+      - updated csolution utility v2.6.0
+      - updated cbridge utility v0.9.11
+    </td>
     <td>2.5.0</td>
     <td>Release notes:
       - added alpha quality support for ARMv7R and ARMv8A for CLANG and AC6
