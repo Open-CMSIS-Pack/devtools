@@ -4491,14 +4491,12 @@ bool ProjMgrWorker::GetToolchainConfig(const string& toolchainName, const string
   // get toolchain configuration files
   if (m_toolchainConfigFiles.empty()) {
     const string& compilerRoot = GetCompilerRoot();
-    error_code ec;
-    for (auto const& entry : fs::recursive_directory_iterator(compilerRoot, ec)) {
-      string extn = entry.path().extension().string();
-      if (entry.path().extension().string() != ".cmake") {
-        continue;
-      }
-      m_toolchainConfigFiles.push_back(entry.path().generic_string());
-    }
+    // get *.cmake files from compiler root (not recursively)
+    auto cmakeFiles = RteFsUtils::GrepFiles(compilerRoot, "*.cmake");
+    std::transform(cmakeFiles.begin(), cmakeFiles.end(), std::back_inserter(m_toolchainConfigFiles),
+      [](const std::filesystem::path& item) {
+        return item.generic_string();
+    });
   }
   // find greatest compatible file
   bool found = false;
