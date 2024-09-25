@@ -350,6 +350,14 @@ enum class LoadPacksPolicy
 };
 
 /**
+  * @brief Message Type
+*/
+enum class MessageType {
+  Warning,
+  Error
+};
+
+/**
  * @brief projmgr worker class responsible for processing requests and orchestrating parser and generator calls
 */
 class ProjMgrWorker {
@@ -726,6 +734,7 @@ protected:
   StrVec m_toolchainConfigFiles;
   StrVec m_missingToolchains;
   StrVec m_envVars;
+  std::map<std::string, StrMap> m_regToolchainsEnvVars;
   std::vector<std::string> m_ymlOrderedContexts;
   std::map<std::string, ContextItem> m_contexts;
   std::map<std::string, ContextItem>* m_contextsPtr;
@@ -748,7 +757,7 @@ protected:
   std::set<std::string> m_undefLayerVars;
   StrMap m_packMetadata;
   std::map<std::string, ExecutesItem> m_executes;
-  StrSet m_toolchainErrors;
+  std::map<MessageType, StrSet> m_toolchainErrors;
   StrVec m_selectableCompilers;
   bool m_undefCompiler = false;
   std::map<std::string, FileNode> m_missingFiles;
