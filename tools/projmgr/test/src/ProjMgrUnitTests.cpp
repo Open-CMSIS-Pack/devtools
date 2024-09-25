@@ -1727,7 +1727,7 @@ TEST_F(ProjMgrUnitTests, ListLayersConfigurations_Error) {
   argv[5] = (char*)"-o";
   argv[6] = (char*)testoutput_folder.c_str();
   argv[7] = (char*)"--update-idx";
-  EXPECT_EQ(1, RunProjMgr(8, argv, 0));
+  EXPECT_EQ(1, RunProjMgr(8, argv, m_envp));
 
   ProjMgrTestEnv::CompareFile(testinput_folder + "/TestLayers/ref/variables-notdefined.cbuild-idx.yml",
     testoutput_folder + "/variables-notdefined.cbuild-idx.yml");
@@ -1828,9 +1828,9 @@ IAR@9.32.5\n\
   // Test with no registered toolchains (empty environment variables)
   streamRedirect.ClearStringStreams();
   EXPECT_EQ(1, RunProjMgr(3, argv, 0));
-  const string& expectedErr = "error csolution: no compiler registered. Add path to compiler ./bin directory with environment variable <name>_TOOLCHAIN_<major>_<minor>_<patch>. <name> is one of AC6, GCC, IAR, CLANG\n";
-  const string& errStr = streamRedirect.GetErrorString();
-  EXPECT_EQ(errStr, expectedErr);
+  const string& expectedWarn = "warning csolution: no compiler registered. Add path to compiler 'bin' directory with environment variable <name>_TOOLCHAIN_<major>_<minor>_<patch>. <name> is one of AC6, GCC, IAR, CLANG\n";
+  const string& warnStr = streamRedirect.GetErrorString();
+  EXPECT_EQ(warnStr, expectedWarn);
 }
 
 TEST_F(ProjMgrUnitTests, ListToolchainsNoToolchainRegistered) {
@@ -5665,7 +5665,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_cbuild_files_with_errors_node) {
   argv[6] = (char*)"test1.Debug+CM0";
   argv[7] = (char*)"--cbuildgen";
 
-  EXPECT_EQ(1, RunProjMgr(8, argv, 0));
+  EXPECT_EQ(1, RunProjMgr(8, argv, m_envp));
   EXPECT_NE(string::npos, streamRedirect.GetErrorString().find(expectedErr));
   ProjMgrTestEnv::CompareFile(testoutput_folder + "/test_no_device_name.cbuild-idx.yml",
     testinput_folder + "/TestSolution/TestProject1/ref/test_no_device_name.cbuild-idx.yml");
@@ -5683,7 +5683,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_cbuild_files_with_packs_missing) {
   argv[4] = (char*)testoutput_folder.c_str();
   argv[5] = (char*)"--cbuildgen";
 
-  EXPECT_EQ(1, RunProjMgr(6, argv, 0));
+  EXPECT_EQ(1, RunProjMgr(6, argv, m_envp));
   auto err = streamRedirect.GetErrorString();
   EXPECT_NE(string::npos, streamRedirect.GetErrorString().find(expectedErr1));
   EXPECT_NE(string::npos, streamRedirect.GetErrorString().find(expectedErr2));
@@ -5710,7 +5710,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_cbuild_files_with_packs_missing_specific_con
   argv[5] = (char*)"-c";
   argv[6] = (char*)"project+CM0";
   RteFsUtils::RemoveFile(cbuildidx);
-  EXPECT_EQ(1, RunProjMgr(7, argv, 0));
+  EXPECT_EQ(1, RunProjMgr(7, argv, m_envp));
   auto err = streamRedirect.GetErrorString();
   EXPECT_NE(string::npos, streamRedirect.GetErrorString().find(expectedErr1));
   EXPECT_EQ(string::npos, streamRedirect.GetErrorString().find(expectedErr2));

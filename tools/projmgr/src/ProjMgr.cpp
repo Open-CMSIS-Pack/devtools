@@ -778,16 +778,10 @@ bool ProjMgr::RunListComponents(void) {
     return false;
   }
 
-  bool success = true;
-  // If the worker has toolchain errors, set the success flag to false
-  if (m_worker.HasToolchainErrors()) {
-    success = false;
-  }
-
   for (const auto& component : components) {
     cout << component << endl;
   }
-  return success;
+  return true;
 }
 
 bool ProjMgr::RunListConfigs() {
@@ -809,16 +803,10 @@ bool ProjMgr::RunListConfigs() {
     return false;
   }
 
-  bool success = true;
-  // If the worker has toolchain errors, set the success flag to false
-  if (m_worker.HasToolchainErrors()) {
-    success = false;
-  }
-
   for (const auto& configFile : configFiles) {
     cout << configFile << endl;
   }
-  return success;
+  return true;
 }
 
 bool ProjMgr::RunListDependencies(void) {
@@ -837,15 +825,11 @@ bool ProjMgr::RunListDependencies(void) {
     ProjMgrLogger::Get().Error("processing dependencies list failed");
     return false;
   }
-  bool success = true;
-  // If the worker has toolchain errors, set the success flag to false
-  if (m_worker.HasToolchainErrors()) {
-    success = false;
-  }
+
   for (const auto& dependency : dependencies) {
     cout << dependency << endl;
   }
-  return success;
+  return true;
 }
 
 bool ProjMgr::RunListContexts(void) {
@@ -880,15 +864,11 @@ bool ProjMgr::RunListGenerators(void) {
   if (!m_worker.ListGenerators(generators)) {
     return false;
   }
-  bool success = true;
-  // If the worker has toolchain errors, set the success flag to false
-  if (m_worker.HasToolchainErrors()) {
-    success = false;
-  }
+
   for (const auto& generator : generators) {
     cout << generator << endl;
   }
-  return success;
+  return true;
 }
 
 bool ProjMgr::RunListLayers(void) {
@@ -921,10 +901,6 @@ bool ProjMgr::RunListLayers(void) {
     ProjMgrLogger::Get().Error("no compatible software layer found. Review required connections of the project");
   }
 
-  // If the worker has toolchain errors, set the error flag
-  if (m_worker.HasToolchainErrors()) {
-    error = true;
-  }
   if (!m_updateIdx) {
     for (const auto& layer : layers) {
       cout << layer << endl;
@@ -1007,11 +983,6 @@ bool ProjMgr::RunListToolchains(void) {
   vector<ToolchainItem> toolchains;
   bool success = m_worker.ListToolchains(toolchains);
 
-  // If the worker has toolchain errors, set the success flag to false
-  if (m_worker.HasToolchainErrors()) {
-    success = false;
-  }
-
   StrSet toolchainsSet;
   for (const auto& toolchain : toolchains) {
     string toolchainEntry = toolchain.name + "@" +
@@ -1031,6 +1002,10 @@ bool ProjMgr::RunListToolchains(void) {
   }
   for (const auto& toolchainEntry : toolchainsSet) {
     cout << toolchainEntry;
+  }
+  // If the worker has toolchain errors, set the success flag to false
+  if (m_worker.HasToolchainErrors()) {
+    success = false;
   }
   return success;
 }

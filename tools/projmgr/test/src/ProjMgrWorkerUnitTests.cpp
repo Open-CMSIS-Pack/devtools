@@ -70,8 +70,15 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessToolchainNoToolchainRegistered) {
   ContextItem context = contexts->begin()->second;
   EXPECT_TRUE(ProcessPrecedences(context));
   EXPECT_TRUE(ProcessToolchain(context));
-  EXPECT_TRUE(std::any_of(m_toolchainErrors.begin(), m_toolchainErrors.end(), [](const std::string& str) {
-        return str.find("no toolchain cmake files found") != std::string::npos;
+  EXPECT_TRUE(std::any_of(m_toolchainErrors.begin(), m_toolchainErrors.end(),
+    [](const std::pair<MessageType, StrSet>& log) {
+      if (log.first == MessageType::Error) {
+        return std::any_of(log.second.begin(), log.second.end(),
+          [](const std::string& msg) {
+            return msg.find("no toolchain cmake files found") != std::string::npos;
+          });
+      }
+      return false;
     }));
 }
 

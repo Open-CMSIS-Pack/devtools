@@ -1720,9 +1720,21 @@ bool ProjMgrWorker::ProcessToolchain(ContextItem& context) {
 
   context.toolchain = GetToolchain(context.compiler);
 
+  GetRegisteredToolchains();
+  if (!m_regToolchainsEnvVars.empty()) {
+    // check if the required environment variable is set
+    auto itr = std::find_if(m_regToolchainsEnvVars.begin(), m_regToolchainsEnvVars.end(), [&context](const auto& item) {
+      return (item.first == context.toolchain.name);
+    });
+    if (itr == m_regToolchainsEnvVars.end()) {
+      m_toolchainErrors[MessageType::Warning].insert("no compiler registered for '" +
+        context.toolchain.name +"'. Add path to compiler 'bin' directory with environment variable " +
+        context.toolchain.name + "_TOOLCHAIN_<major>_<minor>_<patch>");
+    }
+  }
+
   // get compatible supported toolchain
   if (!GetToolchainConfig(context.toolchain.name, context.toolchain.range, context.toolchain.config, context.toolchain.version)) {
-    m_toolchainErrors.insert("no toolchain cmake files found. Check ./etc directory and verify CMSIS-Toolbox installation");
     context.toolchain.version = RteUtils::GetPrefix(context.toolchain.range);
   }
 
@@ -4412,7 +4424,6 @@ bool ProjMgrWorker::ListToolchains(vector<ToolchainItem>& toolchains) {
       // list registered toolchains
       GetRegisteredToolchains();
       if (m_toolchains.empty()) {
-        ProjMgrLogger::Get().Error("no compiler registered. Add path to compiler ./bin directory with environment variable <name>_TOOLCHAIN_<major>_<minor>_<patch>. <name> is one of AC6, GCC, IAR, CLANG");
         return false;
       }
       toolchains = m_toolchains;
@@ -4446,7 +4457,6 @@ void ProjMgrWorker::GetRegisteredToolchains(void) {
     return;
   }
   // extract toolchain info from environment variables
-  map<string, map<string, string>> registeredToolchains;
   static const regex regEx = regex("(\\w+)_TOOLCHAIN_(\\d+)_(\\d+)_(\\d+)=(.*)");
   for (const auto& envVar : m_envVars) {
     smatch sm;
@@ -4454,11 +4464,11 @@ void ProjMgrWorker::GetRegisteredToolchains(void) {
       regex_match(envVar, sm, regEx);
     } catch (exception&) {};
     if (sm.size() == 6) {
-      registeredToolchains[sm[1]][string(sm[2]) + '.' + string(sm[3]) + '.' + string(sm[4])] = sm[5];
+      m_regToolchainsEnvVars[sm[1]][string(sm[2]) + '.' + string(sm[3]) + '.' + string(sm[4])] = sm[5];
     }
   }
   // iterate over registered toolchains
-  for (const auto& [toolchainName, toolchainVersions] : registeredToolchains) {
+  for (const auto& [toolchainName, toolchainVersions] : m_regToolchainsEnvVars) {
     for (const auto& [toolchainVersion, toolchainRoot] : toolchainVersions) {
       if (RteFsUtils::Exists(toolchainRoot)) {
         // check whether a config file is available for the registered version
@@ -4468,6 +4478,10 @@ void ProjMgrWorker::GetRegisteredToolchains(void) {
         }
       }
     }
+  }
+
+  if (m_regToolchainsEnvVars.empty()) {
+    m_toolchainErrors[MessageType::Warning].insert("no compiler registered. Add path to compiler 'bin' directory with environment variable <name>_TOOLCHAIN_<major>_<minor>_<patch>. <name> is one of AC6, GCC, IAR, CLANG");
   }
 }
 
@@ -4488,9 +4502,9 @@ bool ProjMgrWorker::GetLatestToolchain(ToolchainItem& toolchain) {
 }
 
 bool ProjMgrWorker::GetToolchainConfig(const string& toolchainName, const string& toolchainVersion, string& configPath, string& selectedConfigVersion) {
+  const string& compilerRoot = GetCompilerRoot();
   // get toolchain configuration files
   if (m_toolchainConfigFiles.empty()) {
-    const string& compilerRoot = GetCompilerRoot();
     // get *.cmake files from compiler root (not recursively)
     auto cmakeFiles = RteFsUtils::GrepFiles(compilerRoot, "*.cmake");
     std::transform(cmakeFiles.begin(), cmakeFiles.end(), std::back_inserter(m_toolchainConfigFiles),
@@ -4522,6 +4536,9 @@ bool ProjMgrWorker::GetToolchainConfig(const string& toolchainName, const string
         found = true;
       }
     }
+  }
+  if (!found) {
+    m_toolchainErrors[MessageType::Error].insert("no toolchain cmake files found for '" + toolchainName + "' in '" + compilerRoot + "' directory");
   }
   return found;
 }
@@ -5035,12 +5052,21 @@ bool ProjMgrWorker::ValidateContexts(const std::vector<std::string>& contexts, b
 }
 
 bool ProjMgrWorker::HasToolchainErrors() {
+  bool hasErrors = false;
   ProcessSelectableCompilers();
   std::for_each(m_toolchainErrors.begin(), m_toolchainErrors.end(),
-    [&](const auto& errMsg) {
-      ProjMgrLogger::Get().Error(errMsg);
+    [&](const pair<MessageType, StrSet>& msgLog) {
+      if (msgLog.first == MessageType::Warning) {
+        std::for_each(msgLog.second.begin(), msgLog.second.end(), [&](const auto& msg) {
+          ProjMgrLogger::Get().Warn(msg); });
+      } else {
+        hasErrors = true;
+        std::for_each(msgLog.second.begin(), msgLog.second.end(), [&](const auto& msg) {
+          ProjMgrLogger::Get().Error(msg); });
+      }
     });
-  return m_toolchainErrors.size() > 0 ? true : false;
+
+  return hasErrors;
 }
 
 void ProjMgrWorker::ProcessSelectableCompilers() {
@@ -5049,7 +5075,7 @@ void ProjMgrWorker::ProcessSelectableCompilers() {
     // get selectable compilers specified in cdefault and csolution
     m_selectableCompilers = CollectSelectableCompilers();
 
-    m_toolchainErrors.insert("compiler undefined, use '--toolchain' option or add 'compiler: <value>' to yml input" +
+    m_toolchainErrors[MessageType::Error].insert("compiler undefined, use '--toolchain' option or add 'compiler: <value>' to yml input" +
       string(m_selectableCompilers.size() > 0 ? ", selectable values can be found in cbuild-idx.yml" : ""));
   }
 }
