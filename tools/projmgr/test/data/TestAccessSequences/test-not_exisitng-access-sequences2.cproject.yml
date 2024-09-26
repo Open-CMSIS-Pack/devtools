@@ -1,0 +1,11 @@
+### CMSIS Project Description ###
+
+project:
+  components:
+    - component: CORE
+  groups:
+    - group: CMSE
+      files: 
+        - file: main.c
+          define:
+            - DEF2-PROJ1-$elf(test-access-sequences5+CM3)$

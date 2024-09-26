@@ -1,0 +1,25 @@
+### CMSIS Project Description ###
+solution:
+
+  target-types:
+    - type: CM0
+      device: RteTest_ARMCM0
+      misc:
+        - for-compiler: AC6
+          C-CPP: [-C-CPP-$Dname$]
+      define: 
+        - DEF-CM0-$Dname$-$Bname$
+      add-path:
+        - ./path/CM0/$Dname$
+
+  build-types:
+    - type: Debug
+      compiler: AC6
+      misc:
+        - C-CPP:
+            - -O1
+            - -g
+
+  projects:
+    - project: ./test-not_exisitng-access-sequences2.cproject.yml
+
