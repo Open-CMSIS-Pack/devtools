@@ -3395,8 +3395,12 @@ bool ProjMgrWorker::AddFile(const FileNode& src, vector<FileNode>& dst, ContextI
     FileNode srcNode = src;
 
     // Replace sequences and/or adjust file relative paths
-    ProcessSequenceRelative(context, srcNode.file, root);
-    ProcessSequencesRelatives(context, srcNode.build, root);
+    if (!ProcessSequenceRelative(context, srcNode.file, root)) {
+      return false;
+    }
+    if (!ProcessSequencesRelatives(context, srcNode.build, root)) {
+      return false;
+    }
     UpdateMisc(srcNode.build.misc, context.toolchain.name);
 
     // Set file category

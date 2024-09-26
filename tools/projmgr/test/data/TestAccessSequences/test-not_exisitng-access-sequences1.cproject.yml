@@ -1,0 +1,9 @@
+### CMSIS Project Description ###
+
+project:
+  components:
+    - component: CORE
+  groups:
+    - group: CMSE
+      files: 
+        - file: $cmse-lib(test-access-sequences-invalid)$

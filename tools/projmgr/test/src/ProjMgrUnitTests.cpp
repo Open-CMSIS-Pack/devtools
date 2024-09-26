@@ -2347,6 +2347,38 @@ TEST_F(ProjMgrUnitTests, AccessSequences2) {
    testinput_folder + "/TestAccessSequences/ref/test-access-sequences2.cbuild-idx.yml");
 }
 
+TEST_F(ProjMgrUnitTests, InvalidRefAccessSequences1) {
+  char* argv[7];
+  StdStreamRedirect streamRedirect;
+  // convert --solution solution.yml
+  const string& csolution = testinput_folder + "/TestAccessSequences/test-not_exisitng-access-sequences1.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  argv[6] = (char*)"--cbuildgen";
+  EXPECT_EQ(1, RunProjMgr(7, argv, m_envp));
+  const string& errStr = streamRedirect.GetErrorString();
+  EXPECT_TRUE(errStr.find("context 'test-access-sequences-invalid' referenced by access sequence 'cmse-lib' does not exist or is not selected") != string::npos);
+}
+
+TEST_F(ProjMgrUnitTests, InvalidRefAccessSequences2) {
+  char* argv[7];
+  StdStreamRedirect streamRedirect;
+  // convert --solution solution.yml
+  const string& csolution = testinput_folder + "/TestAccessSequences/test-not_exisitng-access-sequences2.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  argv[6] = (char*)"--cbuildgen";
+  EXPECT_EQ(1, RunProjMgr(7, argv, m_envp));
+  const string& errStr = streamRedirect.GetErrorString();
+  EXPECT_TRUE(errStr.find("context 'test-access-sequences5+CM3' referenced by access sequence 'elf' does not exist or is not selected") != string::npos);
+}
+
 TEST_F(ProjMgrUnitTests, PackAccessSequences) {
   char* argv[6];
   StdStreamRedirect streamRedirect;
