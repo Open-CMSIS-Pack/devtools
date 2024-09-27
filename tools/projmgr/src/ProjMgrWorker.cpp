@@ -327,7 +327,16 @@ bool ProjMgrWorker::CollectRequiredPdscFiles(ContextItem& context, const std::st
               filteredPack.name +
               (reqVersion.empty() ? "" : "@" + reqVersion);
             errFound = true;
-            m_contextErrMap[context.name].insert("required pack: " + packageName + " not installed");
+            string errMsg = "required pack: " + packageName + " not installed";
+            const auto& packs = context.csolution->cbuildPack.packs;
+            auto itr = find_if(packs.begin(), packs.end(), [&](const ResolvedPackItem& item) {
+              return (item.pack == packageName);
+              });
+            // If the pack is from cbuild-pack.yml file, append additional information to the error message
+            if (itr != packs.end()) {
+              errMsg += ", version fixed in *.cbuild-pack.yml file";
+            }
+            m_contextErrMap[context.name].insert(errMsg);
             context.missingPacks.push_back(filteredPack);
           }
           continue;

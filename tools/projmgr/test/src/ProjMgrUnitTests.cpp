@@ -6469,3 +6469,21 @@ TEST_F(ProjMgrUnitTests, MissingFile) {
   const string expectedOutStr = ".*/missing.cproject.yml:7:11 - error csolution: file '.*/TestSolution/missing.c' was not found";
   EXPECT_TRUE(regex_search(streamRedirect.GetErrorString(), regex(expectedOutStr)));
 }
+
+TEST_F(ProjMgrUnitTests, RunProjMgrSolution_pack_version_not_available) {
+  char* argv[7];
+  StdStreamRedirect streamRedirect;
+  std::string errExpected = "required pack: ARM::RteTest_DFP@0.1.0 not installed, version fixed in *.cbuild-pack.yml file";
+
+  const string& csolution = testinput_folder + "/TestSolution/PackLocking/pack_version_not_available.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  argv[6] = (char*)"--cbuildgen";
+  EXPECT_EQ(1, RunProjMgr(7, argv, 0));
+
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find(errExpected));
+}
