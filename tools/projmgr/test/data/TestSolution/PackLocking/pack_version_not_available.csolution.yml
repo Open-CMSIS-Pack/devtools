@@ -3,7 +3,7 @@
 solution:
   target-types:
     - type: CM0
-      device: RteTest_ARMCM0@>=0.1.1
+      device: RteTest_ARMCM0
   packs:
     - pack: ARM::RteTest_DFP
   projects:
