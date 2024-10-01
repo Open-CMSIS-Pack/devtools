@@ -6469,4 +6469,5 @@ TEST_F(ProjMgrUnitTests, MissingFile) {
   EXPECT_EQ(1, RunProjMgr(3, argv, m_envp));
   const string expectedOutStr = ".*/missing.cproject.yml:7:11 - error csolution: file '.*/TestSolution/missing.c' was not found";
   EXPECT_TRUE(regex_search(streamRedirect.GetErrorString(), regex(expectedOutStr)));
+  EXPECT_TRUE(regex_search(streamRedirect.GetErrorString(), regex(expectedOutStr)));
 }
