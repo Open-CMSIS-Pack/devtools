@@ -181,12 +181,12 @@
       "description": "Control warnings (on, off, all)."
     },
     "LanguageCType": {
-      "enum": [ "c90", "gnu90", "c99", "gnu99", "c11", "gnu11", "c17", "c23" ],
-      "description": "Language standard for C (c90, gnu90, c99, gnu99, c11, gnu11, c17, c23)."
+      "enum": [ "c90", "gnu90", "c99", "gnu99", "c11", "gnu11", "c17", "gnu17", "c23", "gnu23" ],
+      "description": "Language standard for C (c90, gnu90, c99, gnu99, c11, gnu11, c17, gnu17, c23, gnu23)."
     },
     "LanguageCppType": {
-      "enum": [ "c++98", "gnu++98", "c++03", "gnu++03", "c++11", "gnu++11", "c++14", "gnu++14", "c++17", "gnu++17", "c++20", "gnu++20" ],
-      "description": "Language standard for C++ (c++98, gnu++98, c++03, gnu++03, c++11, gnu++11, c++14, gnu++14, c++17, gnu++17, c++20, gnu++20)."
+      "enum": [ "c++98", "gnu++98", "c++03", "gnu++03", "c++11", "gnu++11", "c++14", "gnu++14", "c++17", "gnu++17", "c++20", "gnu++20", "c++23", "gnu++23" ],
+      "description": "Language standard for C++ (c++98, gnu++98, c++03, gnu++03, c++11, gnu++11, c++14, gnu++14, c++17, gnu++17, c++20, gnu++20, c++23, gnu++23)."
     },
     "PLMStatusType": {
       "enum": [ "missing file", "missing base", "update suggested", "update recommended", "update required" ],
