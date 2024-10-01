@@ -6459,6 +6459,7 @@ TEST_F(ProjMgrUnitTests, RegionsFileGeneration) {
     testinput_folder + "/TestMemoryRegions/RTE/Device/RteTestDevice_Dual_cm0_core1/regions_RteTestDevice_Dual_cm0_core1.h");
 }
 
+
 TEST_F(ProjMgrUnitTests, MissingFile) {
   StdStreamRedirect streamRedirect;
   char* argv[3];
@@ -6469,15 +6470,3 @@ TEST_F(ProjMgrUnitTests, MissingFile) {
   const string expectedOutStr = ".*/missing.cproject.yml:7:11 - error csolution: file '.*/TestSolution/missing.c' was not found";
   EXPECT_TRUE(regex_search(streamRedirect.GetErrorString(), regex(expectedOutStr)));
 }
-
-TEST_F(ProjMgrUnitTests, MissingFile_test) {
-  StdStreamRedirect streamRedirect;
-  char* argv[3];
-  const string& csolution = testinput_folder + "/TestSolution/missing.csolution.yml";
-  argv[1] = (char*)"convert";
-  argv[2] = (char*)csolution.c_str();
-  EXPECT_EQ(1, RunProjMgr(3, argv, m_envp));
-  const string expectedOutStr = ".*/missing.cproject.yml:7:11 - error csolution: file '.*/TestSolution/missing.c' was not found";
-  EXPECT_TRUE(regex_search(streamRedirect.GetErrorString(), regex(expectedOutStr)));
-}
-
