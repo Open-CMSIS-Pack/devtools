@@ -1141,7 +1141,7 @@ SvdTypes::ReadAction SvdItem::GetEffectiveReadAction()
 SvdTypes::ProtectionType SvdItem::GetEffectiveProtection()
 {
   for(auto parent=this; parent; parent=parent->GetParent()) {
-    const auto val = parent->GetEffectiveProtection();
+    const auto val = parent->GetProtection();
     if(val != SvdTypes::ProtectionType::UNDEF) {
       return val;
     }
