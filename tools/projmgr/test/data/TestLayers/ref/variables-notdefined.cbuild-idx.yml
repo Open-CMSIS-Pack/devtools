@@ -29,8 +29,6 @@ build-idx:
       clayers:
         - clayer: ../data/TestLayers/Layer1/layer1.clayer.yml
       messages:
-        errors:
-          - no compatible software layer found. Review required connections of the project
         warnings:
           - variables-notdefined.csolution.yml - cproject.yml files should be placed in separate sub-directories
           - "testlayers.cproject.yml - 'device: Dname' is deprecated at this level and accepted in *.csolution.yml only"
