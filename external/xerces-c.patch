@@ -1,17 +1,17 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index bee6cd581..dbd9a9b37 100644
+index 33bc40f41..3eda4500e 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -106,7 +106,7 @@ include(XercesIncludes)
- include(XercesFunctions)
+@@ -107,7 +107,7 @@ include(XercesFunctions)
  include(XercesDLL)
+ include(XercesIntTypes)
  include(XercesPathDelimiters)
 -include(XercesICU)
 +# include(XercesICU)
  include(XercesMutexMgrSelection)
  include(XercesNetAccessorSelection)
  include(XercesMsgLoaderSelection)
-@@ -171,7 +171,7 @@ message(STATUS "  Installation directory:    ${prefix}")
+@@ -181,7 +181,7 @@ message(STATUS "  Installation directory:    ${prefix}")
  message(STATUS "  C compiler:                ${CMAKE_C_COMPILER}")
  message(STATUS "  C++ compiler:              ${CMAKE_CXX_COMPILER}")
  message(STATUS "")
@@ -27,12 +27,12 @@ index 8ebb8aa09..a69078e64 100644
 @@ -20,7 +20,7 @@
  # Option for selection of shared or static libraries, exported as
  # cache variable
-
+ 
 -set(BUILD_SHARED_LIBS ON CACHE BOOL "Build shared libraries")
 +# set(BUILD_SHARED_LIBS ON CACHE BOOL "Build shared libraries")
-
+ 
  # Add a d postfix to Debug libraries on Windows
-
+ 
 @@ -35,7 +35,7 @@ set(XERCES_PLATFORM_IMPORT)
  set(XERCES_TEMPLATE_EXTERN extern)
  set(XERCES_DLL_EXPORT)
@@ -43,13 +43,13 @@ index 8ebb8aa09..a69078e64 100644
  else()
    if(WIN32)
 diff --git a/cmake/XercesTranscoderSelection.cmake b/cmake/XercesTranscoderSelection.cmake
-index 5dd7c6257..6c63df72f 100644
+index 4ff5b1621..f239b13a5 100644
 --- a/cmake/XercesTranscoderSelection.cmake
 +++ b/cmake/XercesTranscoderSelection.cmake
 @@ -23,8 +23,11 @@
-
+ 
  # ICU
-
+ 
 -if(ICU_FOUND)
 -  list(APPEND transcoders icu)
 +# if(ICU_FOUND)
@@ -58,15 +58,15 @@ index 5dd7c6257..6c63df72f 100644
 +if(UNIX AND NOT APPLE)
 +  set(transcoder iconv)
  endif()
-
+ 
  # MacOS
 diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
-index a168db125..9197034da 100644
+index aef3a76f9..9b193dba1 100644
 --- a/src/CMakeLists.txt
 +++ b/src/CMakeLists.txt
 @@ -1075,12 +1075,12 @@ endif()
  list(APPEND libxerces_c_SOURCES ${xerces_replacement_funcs})
-
+ 
  # NetAccessors, conditionally built based on selection
 -if(SOCKET_LIBRARY)
 -  list(APPEND libxerces_c_DEPS ${SOCKET_LIBRARY})
@@ -80,7 +80,7 @@ index a168db125..9197034da 100644
 +# if(NSL_LIBRARY)
 +#   list(APPEND libxerces_c_DEPS ${NSL_LIBRARY})
 +# endif()
-
+ 
  if(XERCES_USE_NETACCESSOR_CURL)
    list(APPEND libxerces_c_SOURCES ${curl_sources})
 @@ -1289,7 +1289,7 @@ elseif(UNIX)
@@ -93,38 +93,37 @@ index a168db125..9197034da 100644
      file(GENERATE
        OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/InstallLibrarySymlink.cmake"
 diff --git a/cmake/XercesNetAccessorSelection.cmake b/cmake/XercesNetAccessorSelection.cmake
-index 7a63f1f6b..ecbcd1014 100644
+index 7a63f1f6b..886ea4233 100644
 --- a/cmake/XercesNetAccessorSelection.cmake
 +++ b/cmake/XercesNetAccessorSelection.cmake
 @@ -19,9 +19,9 @@
-
+ 
  # netaccessor selection
-
+ 
 -option(network "Network support" ON)
 +option(XERCESC_NETWORK "Network support" OFF)
-
+ 
 -if(network)
 +if(XERCESC_NETWORK)
    find_library(SOCKET_LIBRARY socket)
    find_library(NSL_LIBRARY nsl)
-
+ 
 @@ -93,4 +93,4 @@ if(network)
    endif()
  else()
    set(netaccessor OFF)
 -endif(network)
 +endif(XERCESC_NETWORK)
-
 diff --git a/cmake/XercesWarnings.cmake b/cmake/XercesWarnings.cmake
-index f91be0faf..7ce567c9d 100644
+index f91be0faf..dd1e5a79f 100644
 --- a/cmake/XercesWarnings.cmake
 +++ b/cmake/XercesWarnings.cmake
 @@ -18,6 +18,7 @@
  # limitations under the License.
-
+ 
  # compiler warnings
 +option(warnings "Enable compiler warnings" OFF)
-
+ 
  # These are annoyingly verbose, produce false positives or don't work
  # nicely with all supported compiler versions, so are disabled unless
 @@ -33,25 +34,28 @@ option(fatal-warnings "Compiler warnings are errors" OFF)
