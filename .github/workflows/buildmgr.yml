@@ -342,7 +342,7 @@ jobs:
           submodules: true
 
       - name: Cache ARM GCC
-        uses: actions/cache@3624ceb22c1c5a301c8db4169662070a689d9ea8 # v4.1.1
+        uses: actions/cache@6849a6489940f00c2f30c0fb92c6274307ccb58a # v4.1.2
         with:
           key: "${{ matrix.arm_gcc_install_base }}/${{ matrix.installer_name }}"
           path: ${{ matrix.installer_name }}
@@ -366,7 +366,7 @@ jobs:
           unzip -o $Env:installer_name
 
       - name: Cache CMSIS Pack
-        uses: actions/cache@3624ceb22c1c5a301c8db4169662070a689d9ea8 # v4.1.1
+        uses: actions/cache@6849a6489940f00c2f30c0fb92c6274307ccb58a # v4.1.2
         env:
           CACHE_NAME: cmsis_pack
         with:
@@ -487,7 +487,7 @@ jobs:
         run: mkdir build
 
       - name: Cache ARM GCC
-        uses: actions/cache@3624ceb22c1c5a301c8db4169662070a689d9ea8 # v4.1.1
+        uses: actions/cache@6849a6489940f00c2f30c0fb92c6274307ccb58a # v4.1.2
         with:
           key: "${{ env.arm_gcc_install_base }}/${{ env.installer_name }}"
           path: ${{ env.installer_name }}
@@ -498,7 +498,7 @@ jobs:
           tar -xvf ${{ env.installer_name }}
 
       - name: Cache CMSIS Pack
-        uses: actions/cache@3624ceb22c1c5a301c8db4169662070a689d9ea8 # v4.1.1
+        uses: actions/cache@6849a6489940f00c2f30c0fb92c6274307ccb58a # v4.1.2
         env:
           CACHE_NAME: cmsis_pack
         with:
