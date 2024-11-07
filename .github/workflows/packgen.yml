@@ -69,7 +69,7 @@ jobs:
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build
-        uses: Open-CMSIS-Pack/devtools-build-action@79c0fc7d7bc834eb12aa1e319756deab0dda773f # arm64
+        uses: Open-CMSIS-Pack/devtools-build-action@f447c00e0c2a58681faacce9312ead5813f93888 # arm64
         id: devtools-build
         with:
           target: packgen
@@ -173,7 +173,7 @@ jobs:
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build PackGenUnitTests
-        uses: Open-CMSIS-Pack/devtools-build-action@79c0fc7d7bc834eb12aa1e319756deab0dda773f # arm64
+        uses: Open-CMSIS-Pack/devtools-build-action@f447c00e0c2a58681faacce9312ead5813f93888 # arm64
         with:
           target: PackGenUnitTests
           build_type: Debug
@@ -226,7 +226,7 @@ jobs:
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build PackGenUnitTests
-        uses: Open-CMSIS-Pack/devtools-build-action@79c0fc7d7bc834eb12aa1e319756deab0dda773f # arm64
+        uses: Open-CMSIS-Pack/devtools-build-action@f447c00e0c2a58681faacce9312ead5813f93888 # arm64
         with:
           add_cmake_variables: -DCOVERAGE=ON
           arch: amd64
