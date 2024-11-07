@@ -1,7 +1,7 @@
 find_package(SWIG REQUIRED)
 include(${SWIG_USE_FILE})
 
-set(CMAKE_SWIG_FLAGS -c++ -go -cgo -intgosize 64 -D${CMAKE_SYSTEM_NAME})
+set(CMAKE_SWIG_FLAGS -c++ -cgo -intgosize 64 -D${CMAKE_SYSTEM_NAME})
 include_directories(projmgr-go PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../../include ${PROJECT_BINARY_DIR})
 set_source_files_properties(projmgr.i PROPERTIES CPLUSPLUS ON)
 
