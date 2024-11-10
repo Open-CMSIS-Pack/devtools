@@ -256,7 +256,7 @@ jobs:
 
       - name: Upload Report to Codecov
         if: ${{ !github.event.repository.private }}
-        uses: Wandalen/wretry.action@f8754f79743ba113fedbba4499593f7d73b458eb # v3.7.0
+        uses: Wandalen/wretry.action@8ceaefd717b7cdae4f2637f9a433242ade421a0a # v3.7.2
         with:
           action: codecov/codecov-action@v4
           with: |
