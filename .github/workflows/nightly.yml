@@ -1,3 +1,4 @@
+
 name: nightly
 
 on:
@@ -33,6 +34,12 @@ jobs:
     runs-on: ubuntu-22.04
     needs: [ buildmgr, packchk, packgen, projmgr, svdconv, test_libs ]
     steps:
+      - name: Harden Runner
+        if: ${{ !github.event.repository.private }}
+        uses: step-security/harden-runner@91182cccc01eb5e619899d80e4e971d6181294a7 # v2.10.1
+        with:
+          egress-policy: audit
+
       - name: Install dependencies
         run: |
           sudo apt-get update
@@ -52,7 +59,7 @@ jobs:
         working-directory: coverage/
 
       - name: Archive merged coverage report
-        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         with:
           name: merged-coverage-report
           path: ./coverage/merged_coverage.info

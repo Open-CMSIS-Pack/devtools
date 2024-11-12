@@ -898,7 +898,9 @@ bool ProjMgr::RunListLayers(void) {
   vector<string> layers;
   error = !m_worker.ListLayers(layers, m_clayerSearchPath, m_failedContext);
   if (error) {
-    ProjMgrLogger::Get().Error("no compatible software layer found. Review required connections of the project");
+    for (const string& context : m_failedContext) {
+      ProjMgrLogger::Get().Error("no compatible software layer found. Review required connections of the project", context);
+    }
   }
 
   if (!m_updateIdx) {

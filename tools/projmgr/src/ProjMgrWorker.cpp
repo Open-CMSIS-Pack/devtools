@@ -4838,6 +4838,7 @@ bool ProjMgrWorker::ProcessGlobalGenerators(ContextItem* selectedContext, const 
   string& projectType, StrVec& siblings) {
 
   // iterate over contexts with same build and target types
+  m_selectedContexts.clear();
   for (auto& [_, context] : m_contexts) {
     if ((context.type.build != selectedContext->type.build) ||
       (context.type.target != selectedContext->type.target)) {
@@ -4846,7 +4847,10 @@ bool ProjMgrWorker::ProcessGlobalGenerators(ContextItem* selectedContext, const 
     if (!ParseContextLayers(context)) {
       return false;
     }
-    if (!ProcessContext(context, false, true, false)) {
+    m_selectedContexts.push_back(context.name);
+  }
+  for (auto& context : m_selectedContexts) {
+    if (!ProcessContext(m_contexts.at(context), false, true, false)) {
       return false;
     }
   }
@@ -4891,6 +4895,7 @@ bool ProjMgrWorker::ProcessGlobalGenerators(ContextItem* selectedContext, const 
     if (find(contexts.begin(), contexts.end(), selectedContext->name) != contexts.end()) {
       projectType = type;
       siblings = contexts;
+      m_selectedContexts = siblings;
       return true;
     }
   }
@@ -4898,7 +4903,8 @@ bool ProjMgrWorker::ProcessGlobalGenerators(ContextItem* selectedContext, const 
 }
 
 bool ProjMgrWorker::ExecuteExtGenerator(std::string& generatorId) {
-  const string& selectedContextId = m_selectedContexts.front();
+  const StrVec selectedContexts = m_selectedContexts;
+  const string selectedContextId = selectedContexts.front();
   ContextItem* selectedContext = &m_contexts[selectedContextId];
   string projectType;
   StrVec siblings;
@@ -4913,7 +4919,7 @@ bool ProjMgrWorker::ExecuteExtGenerator(std::string& generatorId) {
     siblingProjects.push_back(siblingContextItem->cproject->name);
   }
   // Check whether selected contexts belong to sibling projects
-  for (const auto& contextName : m_selectedContexts) {
+  for (const auto& contextName : selectedContexts) {
     ContextItem* selectedContextItem = &m_contexts[contextName];
     if (find(siblingProjects.begin(), siblingProjects.end(), selectedContextItem->cproject->name) == siblingProjects.end()) {
       ProjMgrLogger::Get().Error("one or more selected contexts are unrelated, redefine the '--context arg [...]' option", contextName);

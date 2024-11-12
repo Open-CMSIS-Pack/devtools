@@ -61,21 +61,27 @@ jobs:
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
 
     steps:
+      - name: Harden Runner
+        if: ${{ !github.event.repository.private }}
+        uses: step-security/harden-runner@91182cccc01eb5e619899d80e4e971d6181294a7 # v2.10.1
+        with:
+          egress-policy: audit
+
       - name: Checkout devtools
-        uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           submodules: true
           fetch-depth: 0
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build
-        uses: Open-CMSIS-Pack/devtools-build-action@79c0fc7d7bc834eb12aa1e319756deab0dda773f # arm64
+        uses: Open-CMSIS-Pack/devtools-build-action@f447c00e0c2a58681faacce9312ead5813f93888 # arm64
         with:
           target: projmgr
           arch: ${{ matrix.arch }}
 
       - name: Archive projmgr
-        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         with:
           name: projmgr-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/tools/projmgr/${{ matrix.target }}-${{ matrix.arch }}/Release/${{ matrix.binary }}
@@ -91,15 +97,21 @@ jobs:
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
 
     steps:
+      - name: Harden Runner
+        if: ${{ !github.event.repository.private }}
+        uses: step-security/harden-runner@91182cccc01eb5e619899d80e4e971d6181294a7 # v2.10.1
+        with:
+          egress-policy: audit
+
       - name: Checkout devtools
         if: matrix.pyswig || matrix.goswig
-        uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           submodules: true
 
       - name: Build swig python libs
         if: matrix.pyswig
-        uses: Open-CMSIS-Pack/devtools-build-action@79c0fc7d7bc834eb12aa1e319756deab0dda773f # arm64
+        uses: Open-CMSIS-Pack/devtools-build-action@f447c00e0c2a58681faacce9312ead5813f93888 # arm64
         with:
           add_cmake_variables: -DSWIG_LIBS=ON
           add_cmake_build_args: --config Release
@@ -109,7 +121,7 @@ jobs:
 
       - name: Build swig go libs
         if: matrix.goswig
-        uses: Open-CMSIS-Pack/devtools-build-action@79c0fc7d7bc834eb12aa1e319756deab0dda773f # arm64
+        uses: Open-CMSIS-Pack/devtools-build-action@f447c00e0c2a58681faacce9312ead5813f93888 # arm64
         with:
           add_cmake_variables: -DSWIG_LIBS=ON
           add_cmake_build_args: --config Release
@@ -119,7 +131,7 @@ jobs:
 
       - name: Archive projmgr swig python libs
         if: always() && matrix.pyswig
-        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         with:
           name: projmgr-swig-python-${{ matrix.target }}-${{ matrix.arch }}
           path: |
@@ -130,7 +142,7 @@ jobs:
 
       - name: Archive projmgr swig go libs
         if: always() && matrix.goswig
-        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         with:
           name: projmgr-swig-go-${{ matrix.target }}-${{ matrix.arch }}
           path: |
@@ -148,7 +160,7 @@ jobs:
 
     steps:
       - name: Checkout devtools
-        uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Create distribution folders
         run: |
@@ -299,14 +311,20 @@ jobs:
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
 
     steps:
+      - name: Harden Runner
+        if: ${{ !github.event.repository.private }}
+        uses: step-security/harden-runner@91182cccc01eb5e619899d80e4e971d6181294a7 # v2.10.1
+        with:
+          egress-policy: audit
+
       - name: Checkout devtools
-        uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           submodules: true
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build ProjMgrUnitTests
-        uses: Open-CMSIS-Pack/devtools-build-action@79c0fc7d7bc834eb12aa1e319756deab0dda773f # arm64
+        uses: Open-CMSIS-Pack/devtools-build-action@f447c00e0c2a58681faacce9312ead5813f93888 # arm64
         with:
           arch: ${{ matrix.arch }}
           build_type: Debug
@@ -320,7 +338,7 @@ jobs:
 
       - name: Archive unit tests results
         if: always() && (matrix.arch != 'arm64')
-        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         with:
           name: unittest-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/Testing/Temporary/LastTest.log
@@ -329,7 +347,7 @@ jobs:
 
       - name: Archive gtest report
         if: always() && (matrix.arch != 'arm64')
-        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         with:
           name: unit_test_result_projmgr-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/projmgrunittests-*.xml
@@ -349,6 +367,12 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 15
     steps:
+      - name: Harden Runner
+        if: ${{ !github.event.repository.private }}
+        uses: step-security/harden-runner@91182cccc01eb5e619899d80e4e971d6181294a7 # v2.10.1
+        with:
+          egress-policy: audit
+
       - name: Install linux deps
         run: |
           sudo apt-get update
@@ -356,13 +380,13 @@ jobs:
             lcov
 
       - name: Checkout devtools
-        uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           submodules: true
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build ProjMgrUnitTests
-        uses: Open-CMSIS-Pack/devtools-build-action@79c0fc7d7bc834eb12aa1e319756deab0dda773f # arm64
+        uses: Open-CMSIS-Pack/devtools-build-action@f447c00e0c2a58681faacce9312ead5813f93888 # arm64
         with:
           add_cmake_variables: -DCOVERAGE=ON
           arch: amd64
@@ -381,7 +405,7 @@ jobs:
 
       - name: Archive test report
         if: (github.event_name == 'push')
-        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         with:
           name: unit_test_result_projmgr-linux-amd64
           path: ./build/test_reports/projmgrunittests-*.xml
@@ -406,7 +430,7 @@ jobs:
 
       - name: Upload Report to Codecov
         if: ${{ !github.event.repository.private }}
-        uses: Wandalen/wretry.action@6feedb7dedadeb826de0f45ff482b53b379a7844 # v3.5.0
+        uses: Wandalen/wretry.action@8ceaefd717b7cdae4f2637f9a433242ade421a0a # v3.7.2
         with:
           action: codecov/codecov-action@v4
           with: |
@@ -419,7 +443,7 @@ jobs:
           attempt_delay: 5000
 
       - name: Archive coverage report
-        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         with:
           name: coverage-report-projmgr
           path: |
@@ -433,8 +457,14 @@ jobs:
     needs: [ unittest ]
     runs-on: ubuntu-22.04
     steps:
+      - name: Harden Runner
+        if: ${{ !github.event.repository.private }}
+        uses: step-security/harden-runner@91182cccc01eb5e619899d80e4e971d6181294a7 # v2.10.1
+        with:
+          egress-policy: audit
+
       - name: Event File
-        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         with:
           name: Event File projmgr
           path: ${{ github.event_path }}
