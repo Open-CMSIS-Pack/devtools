@@ -92,8 +92,9 @@ bool YmlTreeParserInterface::ParseMapNode(const YAML::Node& node)
     auto& key = it.first;
     auto& val = it.second;
     const string tag = key.as<string>();
-    if (val.IsScalar() && builder->HasRoot()) {
-      builder->AddAttribute(tag, val.as<string>());
+    if ((val.IsScalar() || val.IsNull()) && builder->HasRoot()) {
+      const string value = val.IsScalar() ? val.as<string>() : "";
+      builder->AddAttribute(tag, value);
     } else {
       if(!ParseNode(val, tag)) {
         return false;
@@ -134,7 +135,6 @@ bool YmlTreeParserInterface::DoParseNode(const YAML::Node& node, const string& t
     return ParseMapNode(node);
 
   case NodeType::Null:
-    return false;
   case NodeType::Undefined:
   default:
     break;
