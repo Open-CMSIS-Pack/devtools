@@ -25,8 +25,12 @@ static void EmitElement(YAML::Emitter& emitter, XMLTreeElement* element)
   auto& attributes = element->GetAttributes();
   const string& text = element->GetText();
   auto& children = element->GetChildren();
-  if (!text.empty() && attributes.empty() && children.empty()) {
-    emitter << text;
+  if (attributes.empty() && children.empty()) {
+    if(!text.empty()) {
+      emitter << text;
+    } else {
+      emitter << YAML::Null;
+    }
     return;
   }
 
@@ -40,9 +44,14 @@ static void EmitElement(YAML::Emitter& emitter, XMLTreeElement* element)
   }
    // treat everything else as a map
   emitter << YAML::BeginMap;
-  if (!attributes.empty()) {
-    for (auto [k, v] : attributes) {
-      emitter << YAML::Key << k << YAML::Value << v;
+  if(!attributes.empty()) {
+    for(auto [k, v] : attributes) {
+      emitter << YAML::Key << k;
+      if(!v.empty()) {
+        emitter << YAML::Value << v;
+      } else {
+        emitter << YAML::Null;
+      }
     }
   }
 
@@ -70,6 +79,7 @@ std::string YmlFormatter::FormatElement(XMLTreeElement* rootElement,
     return RteUtils::EMPTY_STRING;
   }
   YAML::Emitter emitter;
+  emitter.SetNullFormat(YAML::EmptyNull);
   emitter << YAML::BeginMap;
   if (rootElement->GetChildCount() > 1 && rootElement->GetTag().empty()) {
     for (auto child : rootElement->GetChildren()) {

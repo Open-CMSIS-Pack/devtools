@@ -130,20 +130,42 @@ TEST(YmlTreeTest, KeyVal) {
   EXPECT_TRUE(tree.GetRoot());
   root = tree.GetRoot() ? tree.GetRoot()->GetFirstChild() : nullptr;
   EXPECT_TRUE(root);
+  EXPECT_EQ(root->GetTag(), "key1");
+  EXPECT_EQ(root->GetText(), "val1");
 
   xmlContent = xmlFormatter.FormatElement(root);
   EXPECT_EQ(xmlContent, expected_output1);
+  string ymlContent1 = ymlFormatter.FormatElement(root);
+  EXPECT_EQ(ymlContent1, yaml_input1);
+
+  const string yaml_input2 = "key2: "; // null node type  (trailing space is intentional because added by emitter)
+  const string expected_output2 = XML_HEADER + "<key2/>\n";
+
+   tree.Clear();
+  EXPECT_TRUE(tree.ParseString(yaml_input2));
+  EXPECT_TRUE(tree.GetRoot());
+  root = tree.GetRoot() ? tree.GetRoot()->GetFirstChild() : nullptr;
+  EXPECT_TRUE(root);
+  EXPECT_EQ(root->GetTag(), "key2");
+  EXPECT_EQ(root->GetText(), "");
+
+  xmlContent = xmlFormatter.FormatElement(root);
+  EXPECT_EQ(xmlContent, expected_output2);
+  string ymlContent2 = ymlFormatter.FormatElement(root);
+  EXPECT_EQ(ymlContent2, yaml_input2);
+
 }
 
 TEST(YmlTreeTest, Map) {
   const string yaml_input =
  "map:\n\
+  nul: \n\
   one: 1\n\
   two: 2";
 
-  const string json_input = "map: {one: 1, two: 2}\n";
+  const string json_input = "map: {nul:, one: 1, two: 2}\n";
 
-  const string expected_output = XML_HEADER + "<map one=\"1\" two=\"2\"/>\n";
+  const string expected_output = XML_HEADER + "<map nul=\"\" one=\"1\" two=\"2\"/>\n";
 
   YmlTree tree;
   EXPECT_TRUE(tree.ParseString(yaml_input));
@@ -175,6 +197,7 @@ TEST(YmlTreeTest, Nested) {
   one: 1\n\
   two: 2\n\
   three:\n\
+    s_null: \n\
     s_one: 3.1\n\
     s_two: 3.2\n\
   four:\n\
@@ -183,7 +206,7 @@ TEST(YmlTreeTest, Nested) {
       4.2.b: b";
   const string expected_output = XML_HEADER +
     "<nested one=\"1\" two=\"2\">\n\
-  <three s_one=\"3.1\" s_two=\"3.2\"/>\n\
+  <three s_null=\"\" s_one=\"3.1\" s_two=\"3.2\"/>\n\
   <four>\n\
     <->4.1</->\n\
     <- 4.2.a=\"a\" 4.2.b=\"b\"/>\n\
