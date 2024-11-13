@@ -183,6 +183,7 @@ public:
   std::string                           GetHierarchicalNameResulting        ();
   std::string                           TryGetHeaderStructName              (SvdItem *item);
   const std::string&                    GetPeripheralName                   ();
+  bool                                  SetProtection                       (SvdTypes::ProtectionType protection) { m_protection = protection; return true; }
   SvdTypes::ProtectionType              GetProtection                       ()                    { return m_protection; }
   std::string                           GetDeriveName                       ();
   SvdItem*                              GetParent                           ()                    { return m_parent; }

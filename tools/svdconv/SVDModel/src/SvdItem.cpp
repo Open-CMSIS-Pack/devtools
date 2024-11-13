@@ -895,6 +895,7 @@ bool SvdItem::CopyItem(SvdItem *from)
   const auto  lineNo          = GetLineNumber  ();
   const auto  bitWidth        = GetBitWidth    ();
   const auto  dimElementIndex = GetDimElementIndex();
+  const auto  protection      = GetProtection  ();
 
   if(name     == "")                                { SetName        (from->GetName              ()); }
   if(dispName == "")                                { SetDisplayName (from->GetDisplayName       ()); }
@@ -902,6 +903,7 @@ bool SvdItem::CopyItem(SvdItem *from)
   if(lineNo   == -1)                                { SetLineNumber  (from->GetLineNumber        ()); }
   if(bitWidth == (int32_t)SvdItem::VALUE32_NOT_INIT){ SetBitWidth    (from->GetBitWidth          ()); }
   if(dimElementIndex == SvdItem::VALUE32_NOT_INIT)  { SetDimElementIndex(from->GetDimElementIndex()); }
+  if(protection == SvdTypes::ProtectionType::UNDEF) { SetProtection  (from->GetProtection        ()); }
 
   string tag = "Copied ";
   const string &oldTag = GetTag();
