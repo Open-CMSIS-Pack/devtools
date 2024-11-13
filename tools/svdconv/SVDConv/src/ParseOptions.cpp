@@ -423,7 +423,7 @@ ParseOptions::Result ParseOptions::ParseOpts(int argc, const char* argv[])
       ( "quiet"                 , "No output on console"                                      , cxxopts::value<bool>()->default_value("false") )
       ( "debug"                 , "Add information to generated files: struct/header/sfd/break" , cxxopts::value<std::vector<std::string>>() )
       ( "n"                     , "SFD Output file name"                                      , cxxopts::value<string>() )
-      ( "version"               , "Show program version")
+      ( "V,version"               , "Show program version")
       ( "h,help"                , "Print usage")
       ;
 
@@ -431,7 +431,7 @@ ParseOptions::Result ParseOptions::ParseOpts(int argc, const char* argv[])
     parseResult = options.parse(argc, argv);
 
     if (parseResult.count("version")) {
-      cout << m_options.GetVersion() << endl;
+      cout << m_options.GetHeader() << endl;
       return Result::ExitNoError;
     }
     if ((argc < 2) || (parseResult.count("help"))) {
