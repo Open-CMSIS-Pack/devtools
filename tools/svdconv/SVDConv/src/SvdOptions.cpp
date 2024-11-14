@@ -170,11 +170,7 @@ string SvdOptions::GetHeader()
   string header = string(PRODUCT_NAME);
   header += " ";
   header += GetVersion();
-  header += " (";
-  header += string(__DATE__);
-  header += string(" ");
-  header += string(__TIME__);
-  header += ")\n";
+  header += " ";
   header += string(COPYRIGHT_NOTICE);
   header += "\n";
 
