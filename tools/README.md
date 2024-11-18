@@ -10,6 +10,7 @@ These command-line tools provide the foundation for Open-CMSIS-Pack-based softwa
 
 - [**packgen**](./packgen/README.md) creates a software pack from a `CMake` based software repository.
 - [**packchk**](./packchk/README.md) validates a software pack description and the archive content.
+- [**gen-pack**](https://github.com/Open-CMSIS-Pack/gen-pack) is a library with helper function to assemble a gen_pack.sh script that creates a Open-CMSIS-Pack.
 
 ## Project management
 
