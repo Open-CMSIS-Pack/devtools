@@ -1,4 +1,4 @@
-@ -1,251 +0,0 @@
+
 # csolution: Proposals (on hold)
 
 <!-- markdownlint-disable MD013 -->
