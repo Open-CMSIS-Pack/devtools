@@ -123,7 +123,6 @@ int SvdConv::Check(int argc, const char* argv[], const char* envp[])
 
     ParseOptions parseOptions(m_svdOptions);
     const string header = m_svdOptions.GetHeader();
-    LogMsg("M001", TXT(header));
 
     ParseOptions::Result result = parseOptions.Parse(argc, argv);
 

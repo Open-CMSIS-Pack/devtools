@@ -49,7 +49,7 @@ BEGIN
             VALUE "FileDescription", "CMSIS-SVD Converter"
             VALUE "FileVersion", "@PROJECT_VERSION_FULL@"
             VALUE "InternalName", "SVDConv.exe"
-            VALUE "LegalCopyright", "Copyright (C) 2010-@PROJECT_VERSION_YEAR@ ARM Ltd and ARM Germany GmbH. All rights reserved."
+            VALUE "LegalCopyright", "(C) 2010-@PROJECT_VERSION_YEAR@ Arm Ltd. and Contributors"
             VALUE "OriginalFilename", "SVDConv.exe"
             VALUE "ProductName", "CMSIS-SVD Converter"
             VALUE "ProductVersion", "@PROJECT_VERSION_FULL@"
