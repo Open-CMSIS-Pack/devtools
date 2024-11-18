@@ -6487,3 +6487,23 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_pack_version_not_available) {
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_NE(string::npos, errStr.find(errExpected));
 }
+
+TEST_F(ProjMgrUnitTests, ReportPacksUnused) {
+  char* argv[5];
+  const string& csolution = testinput_folder + "/TestSolution/PacksUnused/packs.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"-c";
+  argv[4] = (char*)"+CM0";
+  EXPECT_EQ(0, RunProjMgr(5, argv, 0));
+  const YAML::Node& cbuild1 = YAML::LoadFile(testinput_folder + "/TestSolution/PacksUnused/packs.cbuild-idx.yml");
+  EXPECT_EQ(2, cbuild1["build-idx"]["cbuilds"][0]["packs-unused"].size());
+  EXPECT_EQ("ARM::RteTestBoard@0.1.0", cbuild1["build-idx"]["cbuilds"][0]["packs-unused"][0]["pack"].as<string>());
+  EXPECT_EQ("ARM::RteTestGenerator@0.1.0", cbuild1["build-idx"]["cbuilds"][0]["packs-unused"][1]["pack"].as<string>());
+  
+  argv[4] = (char*)"+Board";
+  EXPECT_EQ(0, RunProjMgr(5, argv, 0));
+  const YAML::Node& cbuild2 = YAML::LoadFile(testinput_folder + "/TestSolution/PacksUnused/packs.cbuild-idx.yml");
+  EXPECT_EQ(1, cbuild2["build-idx"]["cbuilds"][0]["packs-unused"].size());
+  EXPECT_EQ("ARM::RteTestGenerator@0.1.0", cbuild2["build-idx"]["cbuilds"][0]["packs-unused"][0]["pack"].as<string>());
+}

@@ -25,7 +25,6 @@ build:
   add-path:
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.1.1
     - ${CMSIS_PACK_ROOT}/ARM/RteTestBoard/0.1.0
-    - ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0
     - ../data/TestAccessSequences/RTE/_CM4-Board
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.1.1/Device/ARM/ARMCM4/Include
   add-path-asm:

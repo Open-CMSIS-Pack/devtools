@@ -139,6 +139,7 @@ static constexpr const char* YAML_OUTPUT_TMPDIR = "tmpdir";
 static constexpr const char* YAML_PACK = "pack";
 static constexpr const char* YAML_PACKS = "packs";
 static constexpr const char* YAML_PACKS_MISSING = "packs-missing";
+static constexpr const char* YAML_PACKS_UNUSED = "packs-unused";
 static constexpr const char* YAML_PATH = "path";
 static constexpr const char* YAML_PROCESSOR = "processor";
 static constexpr const char* YAML_PROJECT = "project";

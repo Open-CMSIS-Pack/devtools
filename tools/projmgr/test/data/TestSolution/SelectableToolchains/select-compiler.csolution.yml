@@ -19,5 +19,4 @@ solution:
     - project: select-compiler.cproject.yml
 
   packs:
-    - pack: ARM::RteTest
     - pack: ARM::RteTest_DFP

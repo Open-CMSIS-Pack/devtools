@@ -957,7 +957,8 @@
           }
         },
         "errors": { "type": "boolean", "description": "Indicates error(s) during conversion" },
-        "packs-missing": { "$ref": "#/definitions/BuildPacksMissingType" },
+        "packs-missing": { "$ref": "#/definitions/BuildPacksInfoType", "description": "Names of the missing packs" },
+        "packs-unused": { "$ref": "#/definitions/BuildPacksInfoType", "description": "Names of the unused packs" },
         "clayers": { "$ref": "#/definitions/BuildLayersType" },
         "rebuild": { "type": "boolean", "description": "Flag indicating intermediate files need to be cleaned before the next build" },
         "messages": { "$ref": "#/definitions/MessagesType" }
@@ -1090,13 +1091,13 @@
       },
       "additionalProperties": false
     },
-    "BuildPacksMissingType": {
+    "BuildPacksInfoType": {
       "type": "array",
       "uniqueItems": true,
       "minItems": 1,
-      "items": { "$ref": "#/definitions/BuildPackMissingType", "description": "Names of the missing packs" }
+      "items": { "$ref": "#/definitions/BuildPackInfoType" }
     },
-    "BuildPackMissingType": {
+    "BuildPackInfoType": {
       "type": "object",
       "properties": {
         "pack": { "type": "string", "description": "Name of the missing pack" }
