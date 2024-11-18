@@ -6,11 +6,12 @@ the [CMSIS-Toolbox](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/d
 
 `packchk` performs the following operations:
 
+- Checks the `*.pdsc` file against the PACK.xsd schema file in the installation path.
 - Reads the content of the specified `*.pdsc` file. The path to this `*.pdsc`  file is considered as root directory of
   the Software Pack.
 - Verifies the existence of all files in the Software Pack that are referenced  in the `*.pdsc` file.
 - Checks for presence and correctness of mandatory elements such as `<vendor>`,  `<version>`, etc. - Optionally, reads
-  other PDSC files to resolve dependencies on `<apis>`,  `<boards>`, and `<conditions>`.
+  other `*.pdsc` files to resolve dependencies on `<apis>`,  `<boards>`, and `<conditions>`.
 - Optionally, verifies the element `<url>`.
 - Optionally, composes the versioned pack ID from the information contained in the PDSC:
   `package:vendor.package:name.release.latest:version`
@@ -21,25 +22,26 @@ the [CMSIS-Toolbox](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/d
 ## Usage
 
 ```bash
- packchk [-V] [--version] [-h] [--help]
-          [OPTIONS...] <PDSC file>
+packchk [-V] [--version] [-h] [--help]
+         [OPTIONS...] <PDSC file>
 
- packchk options:
-  -i, --include arg           PDSC file(s) as dependency reference
-  -b, --log arg               Log file
-  -x, --diag-suppress arg     Suppress Messages
-  -s, --xsd arg               Specify PACK.xsd path.
-  -v, --verbose               Verbose mode. Prints extra process information
-  -w, --warning arg           Warning level [0|1|2|3|all] (default: all)
-  -u, --url arg               Verifies that the specified URL matches with the <url>
-                              element in the *.PDSC file (default: "")
-  -n, --name arg              Text file for pack file name (default: "")
-  -V, --version               Print version
-  -h, --help                  Print usage
-      --disable-validation    Disable the pdsc validation against the PACK.xsd
-      --allow-suppress-error  Allow to suppress error messages
-      --break                 Debug halt after start
-      --ignore-other-pdsc     Ignores other PDSC files in working folder
+packchk options:
+ -i, --include arg           PDSC file(s) as dependency reference
+ -b, --log arg               Log file
+ -x, --diag-suppress arg     Suppress Messages
+ -s, --xsd arg               Specify PACK.xsd path.
+ -v, --verbose               Verbose mode. Prints extra process information
+ -w, --warning arg           Warning level [0|1|2|3|all] (default: all)
+ -u, --url arg               Verifies that the specified URL matches with the 
+                             <url> element in the *.PDSC file (default: "")
+ -n, --name arg              Text file for pack file name (default: "")
+ -V, --version               Print version
+ -h, --help                  Print usage
+     --disable-validation    Disable the pdsc validation against the PACK.xsd.
+     --allow-suppress-error  Allow to suppress error messages
+     --break                 Debug halt after start
+     --ignore-other-pdsc     Ignores other PDSC files in working folder
+     --pedantic              Return with error value on warning
 ```
 
 ## Quick Start
@@ -55,8 +57,8 @@ pack required for integration tests.
 
 ### Usage Examples
 
-Run `packchk` on the package description file called MyVendor.MyPack.pdsc.
-It verifies the file against the Software Pack that is located in the same directory.
+Run `packchk` on the package description file called `MyVendor.MyPack.pdsc`.
+It runs a schema check and verifies the file against the Software Pack that is located in the same directory.
 
 ```bash
 packchk MyVendor.MyPack.pdsc

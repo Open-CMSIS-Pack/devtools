@@ -1,0 +1,9 @@
+build:
+  generated-by: csolution version 2.4.0-devint1
+  solution: components.csolution.yml
+  project: components.cproject.yml
+  context: components.Debug+RteTest_ARMCM3
+  output-dirs:
+    intdir: tmp/components/RteTest_ARMCM3/Debug
+    outdir: out/components/RteTest_ARMCM3/Debug
+    rtedir: RTE
