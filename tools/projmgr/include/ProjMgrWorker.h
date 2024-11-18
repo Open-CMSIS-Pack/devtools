@@ -296,6 +296,7 @@ struct ContextItem {
   std::vector<PackageItem> packRequirements;
   std::map<std::string, std::pair<std::string, std::string>> pdscFiles;
   std::vector<PackInfo> missingPacks;
+  StrVec unusedPacks;
   std::vector<std::pair<ComponentItem, std::string>> componentRequirements;
   std::string compiler;
   ToolchainItem toolchain;
@@ -723,6 +724,11 @@ public:
    * @return true if check success
   */
   bool CheckMissingFiles();
+
+  /**
+   * @brief collect unused packs for each selected context
+  */
+  void CollectUnusedPacks();
 
 protected:
   ProjMgrParser* m_parser = nullptr;

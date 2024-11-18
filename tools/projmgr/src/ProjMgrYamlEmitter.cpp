@@ -359,6 +359,12 @@ ProjMgrYamlCbuildIdx::ProjMgrYamlCbuildIdx(YAML::Node node,
         SetNodeValue(packNode[YAML_PACK], pack);
         cbuildNode[YAML_PACKS_MISSING].push_back(packNode);
       }
+
+      for (const auto& pack : context->unusedPacks) {
+        YAML::Node packNode;
+        SetNodeValue(packNode[YAML_PACK], pack);
+        cbuildNode[YAML_PACKS_UNUSED].push_back(packNode);
+      }
       node[YAML_CBUILDS].push_back(cbuildNode);
     }
   }

@@ -612,6 +612,9 @@ bool ProjMgr::Configure() {
     error = true;
   }
 
+  // Collect unused packs
+  m_worker.CollectUnusedPacks();
+
   // Print warnings for missing filters
   m_worker.PrintMissingFilters();
   if (m_verbose) {

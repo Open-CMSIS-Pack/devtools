@@ -5156,3 +5156,18 @@ bool ProjMgrWorker::CheckMissingFiles() {
   }
   return !error;
 }
+
+void ProjMgrWorker::CollectUnusedPacks() {
+  for (const auto& contextName : m_selectedContexts) {
+    auto& context = m_contexts[contextName];
+    if (context.packRequirements.empty()) {
+      continue;
+    }
+    context.unusedPacks.clear();
+    for (const auto& [packId, _] : context.rteFilteredModel->GetPackages()) {
+      if (context.packages.find(packId) == context.packages.end()) {
+        CollectionUtils::PushBackUniquely(context.unusedPacks, packId);
+      }
+    }
+  }
+}
