@@ -675,8 +675,7 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDevice_Invalid_Device_Name) {
   ContextDesc descriptor;
   const string& filename = testinput_folder + "/TestSolution/TestProject4/test_device_unknown.cproject.yml";
   const string& expectedErrStr = R"(error csolution: specified device 'RteTest_ARM_UNKNOWN' was not found among the installed packs.
-use 'cpackget' utility to install software packs.
-  cpackget add Vendor.PackName --pack-root ./Path/Packs)";
+use 'cpackget' utility to install software packs.)";
   StdStreamRedirect streamRedirect;
 
   EXPECT_TRUE(parser.ParseCproject(filename, true));
@@ -696,9 +695,8 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDevice_Invalid_Device_Vendor) {
   ContextDesc descriptor;
   const string& filename = testinput_folder +
     "/TestSolution/TestProject4/test_device_unknown_vendor.cproject.yml";
-  const string& expectedErrStr = R"(error csolution: specified device 'RteTest_ARMCM0' was not found among the installed packs.
-use 'cpackget' utility to install software packs.
-  cpackget add Vendor.PackName --pack-root ./Path/Packs)";
+  const string& expectedErrStr = R"(error csolution: specified device 'TEST::RteTest_ARMCM0' was not found among the installed packs.
+use 'cpackget' utility to install software packs.)";
   StdStreamRedirect streamRedirect;
 
   EXPECT_TRUE(parser.ParseCproject(filename, true));

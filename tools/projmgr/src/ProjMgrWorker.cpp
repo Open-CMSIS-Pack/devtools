@@ -1326,8 +1326,10 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
       }
     }
     if (!matchedDevice) {
-      string msg = "specified device '" + deviceItem.name + "' was not found among the installed packs.";
-      msg += "\nuse \'cpackget\' utility to install software packs.\n  cpackget add Vendor.PackName --pack-root ./Path/Packs";
+      string msg = "specified device '" +
+        (deviceItem.vendor.empty() ? "" : deviceItem.vendor + "::") + deviceItem.name +
+        "' was not found among the installed packs.";
+      msg += "\nuse \'cpackget\' utility to install software packs.";
       ProjMgrLogger::Get().Error(msg, context.name);
       return false;
     }

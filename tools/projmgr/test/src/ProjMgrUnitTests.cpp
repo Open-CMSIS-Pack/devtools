@@ -2896,8 +2896,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Device_Unknown) {
   char* argv[7];
   string csolutionFile = UpdateTestSolutionFile("./TestProject4/test_device_unknown.cproject.yml");
   const string& expectedErrStr = R"(error csolution: specified device 'RteTest_ARM_UNKNOWN' was not found among the installed packs.
-use 'cpackget' utility to install software packs.
-  cpackget add Vendor.PackName --pack-root ./Path/Packs)";
+use 'cpackget' utility to install software packs.)";
   StdStreamRedirect streamRedirect;
 
   argv[1] = (char*)"convert";
@@ -2915,9 +2914,8 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Device_Unknown_Vendor) {
   // Test project with unknown device vendor
   char* argv[7];
   string csolutionFile = UpdateTestSolutionFile("./TestProject4/test_device_unknown_vendor.cproject.yml");
-  const string& expectedErrStr = R"(error csolution: specified device 'RteTest_ARMCM0' was not found among the installed packs.
-use 'cpackget' utility to install software packs.
-  cpackget add Vendor.PackName --pack-root ./Path/Packs)";
+  const string& expectedErrStr = R"(error csolution: specified device 'TEST::RteTest_ARMCM0' was not found among the installed packs.
+use 'cpackget' utility to install software packs.)";
   StdStreamRedirect streamRedirect;
 
   argv[1] = (char*)"convert";
@@ -2954,8 +2952,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Device_Unavailable_In_Board) {
   char* argv[7];
   string csolutionFile = UpdateTestSolutionFile("./TestProject4/test_device_unavailable_in_board.cproject.yml");
   const string& expectedErrStr = R"(error csolution: specified device 'RteTest_ARMCM7' was not found among the installed packs.
-use 'cpackget' utility to install software packs.
-  cpackget add Vendor.PackName --pack-root ./Path/Packs)";
+use 'cpackget' utility to install software packs.)";
   StdStreamRedirect streamRedirect;
 
   argv[1] = (char*)"convert";
@@ -3021,9 +3018,8 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Correct_Board_Wrong_Device_Info) {
   // Test project with correct board info but wrong device info
   char* argv[7];
   string csolutionFile = UpdateTestSolutionFile("./TestProject4/test_correct_board_wrong_device.cproject.yml");
-  const string& expectedErrStr = R"(error csolution: specified device 'RteTest_ARMCM_Unknown' was not found among the installed packs.
-use 'cpackget' utility to install software packs.
-  cpackget add Vendor.PackName --pack-root ./Path/Packs)";
+  const string& expectedErrStr = R"(error csolution: specified device 'ARM::RteTest_ARMCM_Unknown' was not found among the installed packs.
+use 'cpackget' utility to install software packs.)";
   StdStreamRedirect streamRedirect;
 
   argv[1] = (char*)"convert";
