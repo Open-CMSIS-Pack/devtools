@@ -16,7 +16,7 @@ index e6aff61..fa90bc0 100644
  include(CMakePackageConfigHelpers)
  write_basic_package_version_file(
 diff --git a/src/json-validator.cpp b/src/json-validator.cpp
-index 0beb613..7a344a3 100644
+index 0beb613..0a9122b 100644
 --- a/src/json-validator.cpp
 +++ b/src/json-validator.cpp
 @@ -218,12 +218,16 @@ public:
@@ -51,6 +51,15 @@ index 0beb613..7a344a3 100644
  	}
  
  	// specialized for each of the logical_combination_types
+@@ -423,7 +427,7 @@ template <>
+ bool logical_combination<allOf>::is_validate_complete(const json &, const json::json_pointer &, error_handler &e, const first_error_handler &esub, size_t)
+ {
+ 	if (esub)
+-		e.error(esub.ptr_, esub.instance_, "at least one subschema has failed, but all of them are required to validate - " + esub.message_);
++		e.error(esub.ptr_, esub.instance_, "schema check failed, verify syntax");
+ 	return esub;
+ }
+ 
 @@ -576,6 +580,32 @@ public:
  		attr = sch.find("enum");
  		if (attr != sch.end()) {
