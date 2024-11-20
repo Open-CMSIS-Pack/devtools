@@ -13,3 +13,7 @@ project:
     - group: CMSE
       files: 
         - file: $cmse-lib(test-access-sequences2)$
+        - file: $map(test-access-sequences1)$
+          category: doc
+  output:
+    type: map

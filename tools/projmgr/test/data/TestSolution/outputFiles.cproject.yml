@@ -6,6 +6,7 @@ project:
           - elf
           - hex
           - bin
+          - map
       not-for-context:
         - .Library
         - .BaseNameConflict
@@ -19,7 +20,7 @@ project:
     - output:
         base-name: conflict
         type: lib
-      for-context: .BaseNameConflict          
+      for-context: .BaseNameConflict
     - output:
         base-name: renaming_conflict
         type: lib

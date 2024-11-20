@@ -13,9 +13,6 @@ default:
         - -masm=auto
       Link:
         - --entry=Reset_Handler
-        - --map
-        - --info summarysizes
-        - --summary_stderr
         - --diag_suppress=L6314W
 
     - for-compiler: GCC
@@ -29,7 +26,6 @@ default:
       Link:
         - --specs=nano.specs
         - --specs=nosys.specs
-        - -Wl,-Map=$elf()$.map
         - -Wl,--gc-sections
         - -Wl,--no-warn-rwx-segments   # suppress incorrect linker warning
 
@@ -42,11 +38,8 @@ default:
         - -std=gnu11
       Link:
         - -lcrt0
-        - -Wl,-Map=$elf()$.map
         - -Wl,--gc-sections
 
     - for-compiler: IAR
       C-CPP: 
         - --dlib_config DLib_Config_Full.h
-      Link:
-        - --map=$elf()$.map
