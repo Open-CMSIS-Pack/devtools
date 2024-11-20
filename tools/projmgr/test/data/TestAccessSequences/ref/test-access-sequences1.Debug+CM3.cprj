@@ -30,6 +30,7 @@
   <files>
     <group name="CMSE">
       <file category="object" name="out/test-access-sequences2/CM3/Debug/test-access-sequences2_CMSE_Lib.o"/>
+      <file category="doc" name="out/test-access-sequences1/CM3/Debug/test-access-sequences1.axf.map"/>
     </group>
   </files>
 </cprj>

@@ -35,6 +35,8 @@ build:
       file: executable.axf
     - type: hex
       file: executable.hex
+    - type: map
+      file: executable.axf.map
   components:
     - component: ARM::Device:Startup&RteTest Startup@2.0.3
       condition: ARMCM3 RteTest

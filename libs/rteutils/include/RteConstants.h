@@ -92,6 +92,7 @@ public:
   static constexpr const char* OUTPUT_TYPE_HEX = "hex";
   static constexpr const char* OUTPUT_TYPE_LIB = "lib";
   static constexpr const char* OUTPUT_TYPE_CMSE = "cmse-lib";
+  static constexpr const char* OUTPUT_TYPE_MAP = "map";
 
   /**
    * @brief access sequences
@@ -119,6 +120,7 @@ public:
   static constexpr const char* AS_HEX = OUTPUT_TYPE_HEX;
   static constexpr const char* AS_LIB = OUTPUT_TYPE_LIB;
   static constexpr const char* AS_CMSE = OUTPUT_TYPE_CMSE;
+  static constexpr const char* AS_MAP = OUTPUT_TYPE_MAP;
 
   /**
    * @brief default and toolchain specific output affixes

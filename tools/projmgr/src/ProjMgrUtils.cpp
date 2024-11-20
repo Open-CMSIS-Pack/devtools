@@ -162,6 +162,8 @@ void ProjMgrUtils::SetOutputType(const string typeString, OutputTypes& type) {
     type.lib.on = true;
   } else if (typeString == RteConstants::OUTPUT_TYPE_CMSE) {
     type.cmse.on = true;
+  } else if (typeString == RteConstants::OUTPUT_TYPE_MAP) {
+    type.map.on = true;
   }
 }
 

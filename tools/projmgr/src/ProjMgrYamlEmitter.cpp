@@ -769,6 +769,7 @@ void ProjMgrYamlCbuild::SetOutputNode(YAML::Node node, const ContextItem* contex
     { types.hex.on, types.hex.filename, RteConstants::OUTPUT_TYPE_HEX },
     { types.lib.on, types.lib.filename, RteConstants::OUTPUT_TYPE_LIB },
     { types.cmse.on, types.cmse.filename, RteConstants::OUTPUT_TYPE_CMSE },
+    { types.map.on, types.map.filename, RteConstants::OUTPUT_TYPE_MAP },
   };
   for (const auto& [on, file, type] : outputTypes) {
     if (on) {

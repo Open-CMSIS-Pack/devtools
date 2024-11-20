@@ -25,6 +25,7 @@ static const regex accessSequencesRegEx = regex(string("^(") +
   RteConstants::AS_ELF          + "|" +
   RteConstants::AS_HEX          + "|" +
   RteConstants::AS_LIB          + "|" +
+  RteConstants::AS_MAP          + "|" +
   RteConstants::AS_CMSE         + ")" +
   "\\((.*)\\)$"
 );
@@ -2397,6 +2398,7 @@ void ProjMgrWorker::SetBuildOutputDependencies(const OutputTypes& types, const s
     { types.hex.on,  types.hex.filename  },
     { types.lib.on,  types.lib.filename  },
     { types.cmse.on, types.cmse.filename },
+    { types.map.on,  types.map.filename  },
   };
   for (auto [on, file] : outputTypes) {
     if (on) {
@@ -3224,6 +3226,9 @@ void ProjMgrWorker::ExpandAccessSequence(const ContextItem& context, const Conte
   } else if (sequence == RteConstants::AS_CMSE) {
     regExStr += RteConstants::AS_CMSE;
     replacement = refContext.outputTypes.cmse.on ? relOutDir + "/" + refContext.outputTypes.cmse.filename : "";
+  } else if (sequence == RteConstants::AS_MAP) {
+    regExStr += RteConstants::AS_MAP;
+    replacement = refContext.outputTypes.map.on ? relOutDir + "/" + refContext.outputTypes.map.filename : "";
   }
   regex regEx = regex(regExStr + "\\(.*\\)\\$");
   item = regex_replace(item, regEx, replacement);
@@ -4710,6 +4715,9 @@ bool ProjMgrWorker::ProcessOutputFilenames(ContextItem& context) {
   }
   if (context.outputTypes.bin.on) {
     context.outputTypes.bin.filename = baseName + ".bin";
+  }
+  if (context.outputTypes.map.on) {
+    context.outputTypes.map.filename = baseName + get<0>(affixesMap.at(toolchain)) + ".map";
   }
   if (context.outputTypes.cmse.on) {
     context.outputTypes.cmse.filename = baseName + "_CMSE_Lib.o";

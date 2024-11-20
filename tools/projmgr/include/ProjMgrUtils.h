@@ -58,6 +58,7 @@ struct OutputType {
  *        hex output type
  *        lib output type
  *        cmse output type
+ *        map output type
 */
 struct OutputTypes {
   OutputType bin;
@@ -65,6 +66,7 @@ struct OutputTypes {
   OutputType hex;
   OutputType lib;
   OutputType cmse;
+  OutputType map;
 };
 
 /**
