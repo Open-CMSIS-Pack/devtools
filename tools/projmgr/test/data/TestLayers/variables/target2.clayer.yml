@@ -7,7 +7,7 @@ layer:
   for-device: RteTest_ARMCM3
 
   components:
-    - component: Device:Startup
+    - component: Device:Startup&RteTest Startup
 
   define:
     - Target2-Layer

@@ -43,7 +43,7 @@ build:
     - component: ARM::Device:Startup&RteTest Startup@2.0.3
       condition: ARMCM3 RteTest
       from-pack: ARM::RteTest_DFP@0.2.0
-      selected-by: Device:Startup
+      selected-by: Device:Startup&RteTest Startup
       files:
         - file: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM3/Include/ARMCM3.h
           category: header

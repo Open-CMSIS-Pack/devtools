@@ -5,6 +5,7 @@
  */
 
 #include "ProjMgr.h"
+#include "ProjMgrLogger.h"
 #include "ProjMgrTestEnv.h"
 
 #include "RteFsUtils.h"
@@ -450,6 +451,24 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessComponents_Higher_Version_NotFound) {
   EXPECT_TRUE(ProcessDevice(context));
   EXPECT_TRUE(SetTargetAttributes(context, context.targetAttributes));
   EXPECT_FALSE(ProcessComponents(context));
+}
+
+TEST_F(ProjMgrWorkerUnitTests, ProcessComponents_Csub) {
+  ProjMgrParser parser;
+  ContextDesc descriptor;
+  const string& filename = testinput_folder + "/TestProject/test_component_csub.cproject.yml";
+  EXPECT_TRUE(parser.ParseCproject(filename, true));
+  EXPECT_TRUE(AddContexts(parser, descriptor, filename));
+  map<string, ContextItem>* contexts;
+  GetContexts(contexts);
+  ContextItem context = contexts->begin()->second;
+  EXPECT_TRUE(LoadPacks(context));
+  EXPECT_TRUE(ProcessPrecedences(context));
+  EXPECT_TRUE(ProcessDevice(context));
+  EXPECT_TRUE(SetTargetAttributes(context, context.targetAttributes));
+  EXPECT_FALSE(ProcessComponents(context));
+  EXPECT_TRUE(context.components.find("ARM::Board:Test:Rev1@1.1.1") != context.components.end());
+  EXPECT_EQ("no component was found with identifier 'Board:Test'", ProjMgrLogger::Get().GetErrors()["test_component_csub"][0]);
 }
 
 TEST_F(ProjMgrWorkerUnitTests, ProcessComponentsApi) {

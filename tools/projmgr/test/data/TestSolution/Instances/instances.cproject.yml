@@ -7,6 +7,6 @@ project:
       instances: 2
       for-context: .Debug
 
-    - component: Device:Startup
+    - component: Device:Startup&RteTest Startup
       instances: 2
       for-context: .Error

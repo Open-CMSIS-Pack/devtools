@@ -2,5 +2,5 @@
 
 project:
   components:
-    - component: Device:Startup
+    - component: Device:Startup&RteTest Startup
     - component: CORE

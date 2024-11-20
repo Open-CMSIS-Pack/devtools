@@ -5771,7 +5771,7 @@ TEST_F(ProjMgrUnitTests, ComponentInstances) {
   argv[7] = (char*)".Error";
   EXPECT_EQ(1, RunProjMgr(9, argv, m_envp));
   auto errStr = streamRedirect.GetErrorString();
-  EXPECT_NE(string::npos, errStr.find("error csolution: component 'Device:Startup' does not accept more than 1 instance(s)"));
+  EXPECT_NE(string::npos, errStr.find("error csolution: component 'Device:Startup&RteTest Startup' does not accept more than 1 instance(s)"));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_Cbuild_Template_API_Node) {

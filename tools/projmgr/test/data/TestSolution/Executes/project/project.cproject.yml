@@ -4,7 +4,7 @@ project:
 
   components:
     - component: ARM::RteTest:CORE
-    - component: ARM::Device:Startup
+    - component: ARM::Device:Startup&RteTest Startup
 
   groups:
     - group: Source

@@ -4,7 +4,7 @@ project:
 
   components:
     - component: RteTest:CORE
-    - component: Device:Startup
+    - component: Device:Startup&RteTest Startup
 
   rte:
     base-dir: $BuildType$

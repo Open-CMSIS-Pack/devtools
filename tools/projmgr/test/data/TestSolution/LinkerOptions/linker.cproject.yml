@@ -29,7 +29,7 @@ project:
     - layer: layer/linker.clayer.yml
 
   components:
-    - component: Device:Startup
+    - component: Device:Startup&RteTest Startup
       for-context: [.FromComponent, .AutoGen]
 
   groups:
