@@ -867,7 +867,7 @@ const string& RteFsUtils::FileCategoryFromExtension(const string& file) {
   return OTHER;
 }
 
-const bool RteFsUtils::FindFileWithPattern(const std::string& searchDir,
+bool RteFsUtils::FindFileWithPattern(const std::string& searchDir,
   const std::string& pattern, std::string& file)
 {
   try {
