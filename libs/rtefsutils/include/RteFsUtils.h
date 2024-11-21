@@ -399,7 +399,7 @@ public:
    * @param path to the file found
    * @return true if file is found successfully, false otherwise
   */
-  static const bool FindFileWithPattern(const std::string& searchPath, const std::string& pattern, std::string& file);
+  static bool FindFileWithPattern(const std::string& searchPath, const std::string& pattern, std::string& file);
 };
 
 #endif // RteFsUtils_H
