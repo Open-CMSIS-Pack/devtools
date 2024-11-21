@@ -867,4 +867,28 @@ const string& RteFsUtils::FileCategoryFromExtension(const string& file) {
   return OTHER;
 }
 
+const bool RteFsUtils::FindFileWithPattern(const std::string& searchDir,
+  const std::string& pattern, std::string& file)
+{
+  try {
+    std::regex fileRegex(pattern);
+
+    // Iterate through the directory (not recursively)
+    for (const auto& entry : fs::directory_iterator(searchDir)) {
+      // Check only regular files
+      if (entry.is_regular_file()) {
+        const std::string fileName = entry.path().filename().string();
+        if (std::regex_match(fileName, fileRegex)) {
+          file = fileName;
+          return true; // Return on match found
+        }
+      }
+    }
+  }
+  catch (const std::exception& e) {
+    std::cout << "error: " << e.what() << std::endl;
+  }
+  return false; // No matching file found
+}
+
 // End of RteFsUtils.cpp

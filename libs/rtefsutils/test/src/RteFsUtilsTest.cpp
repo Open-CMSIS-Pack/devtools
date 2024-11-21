@@ -1202,4 +1202,35 @@ TEST_F(RteFsUtilsTest, GetAbsPathFromLocalUrl) {
   EXPECT_EQ(absoluteFilename, RteFsUtils::GetAbsPathFromLocalUrl(testUrlOmittedHost));
 }
 
+TEST_F(RteFsUtilsTest, FindFileWithPattern) {
+  const string& testdir = dirnameBase + "/FindFileWithPattern";
+  const string& fileName = "manifest_1.2.3.yml";
+  const string& filePath = testdir + "/" + fileName;
+  RteFsUtils::CreateDirectories(testdir);
+  RteFsUtils::CreateTextFile(filePath, "");
+  string discoveredFile;
+  EXPECT_EQ(true, RteFsUtils::FindFileWithPattern(
+    testdir, "manifest_(\\d+\\.\\d+\\.\\d+)(.*).yml", discoveredFile));
+  EXPECT_EQ(fileName, discoveredFile);
+  RteFsUtils::RemoveDir(testdir);
+}
+
+TEST_F(RteFsUtilsTest, FindFileWithPattern_NoMatch) {
+  const string& testdir = dirnameBase + "/FindFileWithPattern";
+  RteFsUtils::CreateDirectories(testdir);
+  string discoveredFile;
+
+  EXPECT_EQ(false, RteFsUtils::FindFileWithPattern(testdir, "manifest_(\\d+\\.\\d+\\.\\d+)(.*).yml", discoveredFile));
+  RteFsUtils::RemoveDir(testdir);
+  EXPECT_TRUE(discoveredFile.empty());
+}
+
+TEST_F(RteFsUtilsTest, FindFileWithPattern_InvalidSearchPath) {
+  const string& testdir = dirnameBase + "/FindFileWithPattern";
+  string discoveredFile;
+
+  EXPECT_EQ(false, RteFsUtils::FindFileWithPattern(testdir, "manifest_(\\d+\\.\\d+\\.\\d+)(.*).yml", discoveredFile));
+  RteFsUtils::RemoveDir(testdir);
+  EXPECT_TRUE(discoveredFile.empty());
+}
 // end of RteFsUtilsTest.cpp

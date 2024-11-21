@@ -392,6 +392,14 @@ public:
   */
   static const std::string& FileCategoryFromExtension(const std::string& file);
 
+  /**
+   * @brief find file using regular expression (non recursively)
+   * @param search path
+   * @param regular expression
+   * @param path to the file found
+   * @return true if file is found successfully, false otherwise
+  */
+  static const bool FindFileWithPattern(const std::string& searchPath, const std::string& pattern, std::string& file);
 };
 
 #endif // RteFsUtils_H

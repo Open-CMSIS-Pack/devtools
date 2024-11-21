@@ -6503,3 +6503,25 @@ TEST_F(ProjMgrUnitTests, ReportPacksUnused) {
   EXPECT_EQ(1, cbuild2["build-idx"]["cbuilds"][0]["packs-unused"].size());
   EXPECT_EQ("ARM::RteTestGenerator@0.1.0", cbuild2["build-idx"]["cbuilds"][0]["packs-unused"][0]["pack"].as<string>());
 }
+
+TEST_F(ProjMgrUnitTests, GetToolboxVersion) {
+  const string& testdir = testoutput_folder + "/toolbox_version";
+  string fileName = "manifest_1.test2.3.yml";
+  string filePath = testdir + "/" + fileName;
+  RteFsUtils::CreateDirectories(testdir);
+  RteFsUtils::CreateTextFile(filePath, "");
+
+  StdStreamRedirect streamRedirect;
+  EXPECT_EQ("", GetToolboxVersion(testdir));
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_TRUE(errStr.find("manifest file does not exist") != string::npos);
+
+  streamRedirect.ClearStringStreams();
+  fileName = "manifest_1.2.3.yml";
+  filePath = testdir + "/" + fileName;
+  RteFsUtils::CreateDirectories(testdir);
+  RteFsUtils::CreateTextFile(filePath, "");
+  EXPECT_EQ("1.2.3", GetToolboxVersion(testdir));
+
+  RteFsUtils::RemoveDir(testdir);
+}
