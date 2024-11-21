@@ -110,6 +110,11 @@ protected:
   */
   bool GetCdefaultFile();
 
+  /**
+   * @brief get cmsis-toolbox version from manifest file
+   * @return version as string
+  */
+  std::string GetToolboxVersion(const std::string& manifestFilePath);
 protected:
   ProjMgrParser m_parser;
   ProjMgrExtGenerator m_extGenerator;

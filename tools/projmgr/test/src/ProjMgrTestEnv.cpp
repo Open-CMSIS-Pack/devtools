@@ -102,6 +102,12 @@ void ProjMgrTestEnv::SetUp() {
     RteFsUtils::RemoveDir(bin_folder);
   }
   RteFsUtils::CreateDirectories(bin_folder);
+  // add dummy manifest file
+  string manifestFile = string(PROJMGRUNITTESTS_BIN_PATH) + "/../manifest_0.0.0.yml";
+  if (RteFsUtils::Exists(manifestFile)) {
+    RteFsUtils::RemoveFile(manifestFile);
+  }
+  RteFsUtils::CreateTextFile(manifestFile, RteUtils::EMPTY_STRING);
 
   // copy local pack
   string srcPackPath, destPackPath;

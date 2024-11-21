@@ -1059,7 +1059,12 @@ bool ProjMgr::ValidateCreatedFor(const string& createdFor) {
       });
       if (toolName == "cmsis-toolbox") {
         const string version = string(sm[2]) + '.' + string(sm[3]) + '.' + string(sm[4]);
-        const string currentVersion = string(VERSION_STRING) + ':' + string(VERSION_STRING);
+        string cmsisToolboxDir = ProjMgrKernel::Get()->GetCmsisToolboxDir();
+        string currentVersion = GetToolboxVersion(cmsisToolboxDir);
+        if (currentVersion.empty()) {
+          return true;
+        }
+        currentVersion += (":" + currentVersion);
         if (VersionCmp::RangeCompare(version, currentVersion) <= 0) {
           return true;
         } else {
@@ -1071,4 +1076,21 @@ bool ProjMgr::ValidateCreatedFor(const string& createdFor) {
     ProjMgrLogger::Get().Warn("solution created for unknown tool: " + createdFor, "", m_csolutionFile);
   }
   return true;
+}
+
+string ProjMgr::GetToolboxVersion(const string& toolboxDir) {
+  // Find file non recursively under given search directory
+  string manifestFilePattern = "manifest_(\\d+\\.\\d+\\.\\d+)(.*).yml";
+  string manifestFile;
+
+  if (!RteFsUtils::FindFileWithPattern(toolboxDir, manifestFilePattern, manifestFile)) {
+    ProjMgrLogger::Get().Warn("manifest file does not exist", "", toolboxDir);
+    return "";
+  }
+
+  // Extract the version from filename and match it against the expected pattern
+  static const regex regEx = regex(manifestFilePattern);
+  smatch matchResult;
+  regex_match(manifestFile, matchResult, regEx);
+  return matchResult[1].str();
 }
