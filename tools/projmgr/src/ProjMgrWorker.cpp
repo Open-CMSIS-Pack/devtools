@@ -1934,12 +1934,14 @@ RteComponent* ProjMgrWorker::ProcessComponent(ContextItem& context, ComponentIte
   string componentDescriptor = item.component;
 
   set<string> filterSet;
+  bool freeText = false;
   if (componentDescriptor.find_first_of(RteConstants::COMPONENT_DELIMITERS) != string::npos) {
     // Consider a full or partial component identifier was given
     filterSet.insert(RteUtils::GetPrefix(componentDescriptor, RteConstants::PREFIX_CVERSION_CHAR));
   } else {
     // Consider free text was given
     filterSet = RteUtils::SplitStringToSet(componentDescriptor);
+    freeText = true;
   }
 
   vector<string> componentIdVec;
@@ -1967,10 +1969,12 @@ RteComponent* ProjMgrWorker::ProcessComponent(ContextItem& context, ComponentIte
     }
   }
 
-  // Multiple matches, check exact partial identifier
-  string requiredComponentId = RteUtils::RemovePrefixByString(item.component, RteConstants::SUFFIX_CVENDOR);
-  if (filteredComponents.size() > 1) {
-    RteComponentMap matchedComponents;
+  RteComponentMap matchedComponents;
+  if (!freeText) {
+    // Check required identifier mandatory fields
+    string requiredComponentId = RteUtils::GetPrefix(
+      RteUtils::RemovePrefixByString(item.component, RteConstants::SUFFIX_CVENDOR),
+      RteConstants::PREFIX_CVERSION_CHAR);
     for (const auto& [id, component] : filteredComponents) {
       // Get component id without vendor and version
       const string& componentId = component->GetPartialComponentID(true);
@@ -1978,22 +1982,23 @@ RteComponent* ProjMgrWorker::ProcessComponent(ContextItem& context, ComponentIte
         matchedComponents[id] = component;
       }
     }
-    // Select unique exact match
-    if (matchedComponents.size() == 1) {
-      filteredComponents = matchedComponents;
-    }
+  } else {
+    // Free text
+    matchedComponents = filteredComponents;
   }
-  // Evaluate filtered components
-  if (filteredComponents.empty()) {
+ 
+  if (matchedComponents.empty()) {
+    // Check for default variant if requested variant is empty
+    for (const auto& [id, component] : filteredComponents) {
+      if (component->IsDefaultVariant() && !component->GetCvariantName().empty()) {
+        return component;
+      }
+    }
     // No match
     return nullptr;
-  }
-  // One or multiple matches found
-  // check for default variant if requested variant is empty
-  for (const auto& [id, component] : filteredComponents) {
-    if (component->IsDefaultVariant() && !component->GetCvariantName().empty()) {
-      return component;
-    }
+  } else {
+    // One or multiple matches
+    filteredComponents = matchedComponents;
   }
 
   set<string> availableComponentVersions;

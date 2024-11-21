@@ -5,7 +5,7 @@ layer:
     - for-compiler: AC6
       C: [-fshort-enums, -fshort-wchar]
   components:
-    - component: Device:Startup
+    - component: Device:Startup&RteTest Startup
     - component: CMSIS CORE
     - component: Keil RTX5 Library_NS
   groups:

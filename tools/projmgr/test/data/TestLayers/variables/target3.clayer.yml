@@ -7,7 +7,7 @@ layer:
   for-board: RteTest Dummy board
 
   components:
-    - component: Device:Startup
+    - component: Device:Startup&RteTest Startup
 
   define:
     - Target3-Layer
