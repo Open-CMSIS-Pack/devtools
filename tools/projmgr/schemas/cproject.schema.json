@@ -1,8 +1,8 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/2.6.0/tools/projmgr/schemas/cproject.schema.json",
-  "title": "CMSIS cproject",
-  "description": "source files and pre-configured components of a sub-project that builds independently",
+  "title": "CMSIS-Toolbox Project\nDocumentation: https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/docs/YML-Input-Format.md#project",
+  "description": "Defines a project as a set of source files, components, and layers that can be independently translated to a binary image or library.",
   "version": "2.6.0",
   "type": "object",
   "properties": {
