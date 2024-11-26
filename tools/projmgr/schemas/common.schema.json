@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/2.6.0/tools/projmgr/schemas/common.schema.json",
   "title": "CMSIS common",
-  "description": "common and reusable properties from other schemas",
+  "description": "Common and reusable properties for other schemas.",
   "version": "2.6.0",
   "definitions": {
     "ArrayOfStrings": {
@@ -57,14 +57,14 @@
         {"$ref": "#/definitions/ArrayOfBuildContext" },
         {"$ref": "#/definitions/BuildContext" }
       ],
-      "description": "Include node for a list of [.<build-type>][+<target-type>]"
+      "description": "Include node for a list of [.<build-type>][+<target-type>]."
     },
     "NotForType": {
       "oneOf": [
         {"$ref": "#/definitions/ArrayOfBuildContext" },
         {"$ref": "#/definitions/BuildContext" }
       ],
-      "description": "Exclude node for a list of [.<build-type>][+<target-type>]"
+      "description": "Exclude node for a list of [.<build-type>][+<target-type>]."
     },
     "TypeListMutualExclusion": {
       "oneOf": [
@@ -89,20 +89,20 @@
         {"$ref": "#/definitions/ArrayOfBuildContext" },
         {"$ref": "#/definitions/BuildContext" }
       ],
-      "description": "Apply to a specific context or a context list\nFormat: [.<build-type>][+<target-type>]"
+      "description": "Apply to a specific context or a context list\nFormat: [.<build-type>][+<target-type>]."
     },
     "NotForContext": {
       "oneOf": [
         {"$ref": "#/definitions/ArrayOfBuildContext" },
         {"$ref": "#/definitions/BuildContext" }
       ],
-      "description": "Exclude for a specific context or a context list\nFormat: [.<build-type>][+<target-type>]"
+      "description": "Exclude for a specific context or a context list\nFormat: [.<build-type>][+<target-type>]."
 
     },
     "SelectCompilersType": {
       "type": "array",
       "minItems": 1,
-      "description": "List of compilers supported in the solution",
+      "description": "List of compilers supported in the solution.",
       "items": { "$ref": "#/definitions/SelectCompilerType" }
     },
     "SelectCompilerType": {
@@ -115,7 +115,7 @@
     "CompilerType": {
       "type": "string",
       "pattern": "^(GCC|CLANG|AC6|IAR)(@(>=)?([0-9]+\\.[0-9]+\\.[0-9]+((\\+|\\-)[a-zA-Z0-9_\\.\\+-]+)?))?$",
-      "description": "Compiler toolchain to be used, optionally with version, for example AC6@6.23.0"
+      "description": "Compiler toolchain to be used, optionally with version, for example AC6@6.23.0."
     },
     "ConsumesProvidesType": {
       "oneOf": [
@@ -193,7 +193,7 @@
     },
     "PLMStatusType": {
       "enum": [ "missing file", "missing base", "update suggested", "update recommended", "update required" ],
-      "description": "PLM Status of component configuration file"
+      "description": "PLM Status of component configuration file."
     },
     "ArrayOfArtifactType": {
       "type": "array",
@@ -363,15 +363,15 @@
       "type": ["object", "null"],
       "properties": {
         "for-compiler": { "$ref": "#/definitions/CompilerType" },
-        "C":            { "$ref": "#/definitions/ArrayOfStrings", "description": "Flags for *.c files" },
-        "CPP":          { "$ref": "#/definitions/ArrayOfStrings", "description": "Flags for *.cpp files" },
-        "C-CPP":        { "$ref": "#/definitions/ArrayOfStrings", "description": "Flags for *.c  and *.cpp files" },
-        "ASM":          { "$ref": "#/definitions/ArrayOfStrings", "description": "Flags for assember source files"  },
-        "Link":         { "$ref": "#/definitions/ArrayOfStrings", "description": "Linker flags" },
-        "Link-C":       { "$ref": "#/definitions/ArrayOfStrings", "description": "Linker flags for a pure C project" },
-        "Link-CPP":     { "$ref": "#/definitions/ArrayOfStrings", "description": "Linker flags for a project with C++ files" },
+        "C":            { "$ref": "#/definitions/ArrayOfStrings", "description": "Flags for *.c files." },
+        "CPP":          { "$ref": "#/definitions/ArrayOfStrings", "description": "Flags for *.cpp files." },
+        "C-CPP":        { "$ref": "#/definitions/ArrayOfStrings", "description": "Flags for *.c  and *.cpp files." },
+        "ASM":          { "$ref": "#/definitions/ArrayOfStrings", "description": "Flags for assembler source files."  },
+        "Link":         { "$ref": "#/definitions/ArrayOfStrings", "description": "Linker flags." },
+        "Link-C":       { "$ref": "#/definitions/ArrayOfStrings", "description": "Linker flags for a pure C project." },
+        "Link-CPP":     { "$ref": "#/definitions/ArrayOfStrings", "description": "Linker flags for a project with C++ files." },
         "Library":      { "$ref": "#/definitions/ArrayOfStrings", "description": "Set libraries to the correct position in the linker command line (for GCC)." },
-        "Lib":          { "$ref": "#/definitions/ArrayOfStrings", "description": "List of Library Manager or Archiver flags" }
+        "Lib":          { "$ref": "#/definitions/ArrayOfStrings", "description": "List of Library Manager or Archiver flags." }
       },
       "additionalProperties": false
     },
@@ -464,7 +464,7 @@
         "project": {
           "type": "string",
           "pattern": "^.*[/]([^.+]*\\.cproject\\.(yml|yaml))$|^([^.+]+)\\.cproject\\.(yml|yaml)$",
-          "description": "Path to the valid project file"
+          "description": "Path to the valid project file."
         },
         "for-context":     { "$ref": "#/definitions/ForContext" },
         "not-for-context": { "$ref": "#/definitions/NotForContext" }
@@ -493,15 +493,15 @@
     },
     "ProcessorMve": {
       "enum": [ "fp", "int", "off" ],
-      "description": "Controls usage of M-Profile Vector Extension Instructions:\n fp (floating point and integer instructions)\n int (integer instructions)\n off (disabled)"
+      "description": "Controls usage of M-Profile Vector Extension Instructions:\n fp (floating point and integer instructions)\n int (integer instructions)\n off (disabled) ."
     },
     "ProcessorEndian": {
       "enum": [ "little", "big" ],
-      "description": "Controls endianess: little | big"
+      "description": "Controls endianess: little | big ."
     },
     "ProcessorBranchProtection": {
       "enum": [ "bti", "bti-signret", "off" ],
-      "description": "Select Branch Protection mode:\n bti (branch target identification)\n bit-signret (bti and pointer authentication)\n off (disabled)"
+      "description": "Select Branch Protection mode:\n bti (branch target identification)\n bit-signret (bti and pointer authentication)\n off (disabled) ."
     },
     "ProcessorType": {
       "type": ["object", "null"],
@@ -518,7 +518,7 @@
     },
     "BuildProcessorType": {
       "type": ["object", "null"],
-      "description": "Processor specific settings",
+      "description": "Processor specific settings.",
       "properties": {
         "trustzone": { "$ref": "#/definitions/ProcessorTrustzone" },
         "fpu": { "$ref": "#/definitions/BuildProcessorFpu" },
@@ -526,7 +526,7 @@
         "mve": { "$ref": "#/definitions/ProcessorMve" },
         "endian": { "$ref": "#/definitions/ProcessorEndian" },
         "branch-protection": { "$ref": "#/definitions/ProcessorBranchProtection" },
-        "core": {"type": "string", "description": "Processor core"}
+        "core": {"type": "string", "description": "Processor core."}
       },      
       "additionalProperties": false
     },
@@ -647,9 +647,9 @@
         "add-path-asm":    { "$ref": "#/definitions/AddAsmPathsType" },
         "del-path":        { "$ref": "#/definitions/DelpathsType" },
         "misc":            { "$ref": "#/definitions/MiscTypes" },
-        "select":          { "type": "string", "description": "Description and purpose of the file" },
-        "base":            { "type": "string", "description": "Current configuration file with version" },
-        "update":          { "type": "string", "description": "New configuration file used for merge utility" },
+        "select":          { "type": "string", "description": "Description and purpose of the file." },
+        "base":            { "type": "string", "description": "Current configuration file with version." },
+        "update":          { "type": "string", "description": "New configuration file used for merge utility." },
         "status":          { "$ref": "#/definitions/PLMStatusType" }
       },
       "allOf": [
@@ -660,26 +660,26 @@
     },
     "GeneratorsType": {
       "type": "array",
-      "description": "Information for calling generators",
+      "description": "Information for calling generators.",
       "uniqueItems": true,
       "minItems": 1,
       "items": { "$ref": "#/definitions/GeneratorType" }
     },
     "GeneratorType": {
-      "description": "General generator info",
+      "description": "General generator info.",
       "type": "object",
       "properties": {
         "from-pack": { "$ref": "#/definitions/PackID" },
-        "generator": { "type": "string", "description": "Section for a specific generator" },
-        "path":      { "type": "string", "description": "Path name for storing the files generated" },
-        "gpdsc":     { "type": "string", "description": "File name of the *.GDPSC file that stores the information in path" },
+        "generator": { "type": "string", "description": "Section for a specific generator." },
+        "path":      { "type": "string", "description": "Path name for storing the files generated." },
+        "gpdsc":     { "type": "string", "description": "File name of the *.GDPSC file that stores the information in path." },
         "command":   { "$ref": "#/definitions/CommandType" }
       },
       "required": [ "generator", "path", "gpdsc", "command" ]
     },
     "CommandType": {
       "type": "object",
-      "description": "Section for invoking the generator on different Host operating systems",
+      "description": "Section for invoking the generator on different Host operating systems.",
       "properties": {
         "win":   { "$ref": "#/definitions/HostSpecificCommand" },
         "linux": { "$ref": "#/definitions/HostSpecificCommand" },
@@ -689,25 +689,25 @@
     },
     "HostSpecificCommand": {
       "type": "object",
-      "description": "Command for one of the supported host types (Windows, Linux, Mac or other)",
+      "description": "Command for one of the supported host types (Windows, Linux, Mac or other).",
       "properties": {
         "file": {
           "type": "string",
-          "description": "Path to the executable"
+          "description": "Path to the executable."
         },
         "arguments": {
           "type": "array",
           "items": { "type": "string" },
-          "description": "Arguments passed when executing the command"
+          "description": "Arguments passed when executing the command."
         }
       }
     },
     "ComponentGeneratorType": {
-      "description": "Component specific generator info. Any field in this object overrides the corresponding value from the general GeneratorType",
+      "description": "Component specific generator info. Any field in this object overrides the corresponding value from the general GeneratorType.",
       "type": "object",
       "properties": {
-        "id": { "type": "string", "description": "Generator identifier" },
-        "path": { "type": "string", "description": "Path name for storing the files generated" },
+        "id": { "type": "string", "description": "Generator identifier." },
+        "path": { "type": "string", "description": "Path name for storing the files generated." },
         "from-pack": { "$ref": "#/definitions/PackID"},
         "files": { "$ref": "#/definitions/FilesType" }
       },
@@ -716,7 +716,7 @@
     "ComponentID": {
       "type": "string",
       "pattern": "(^[A-Za-z0-9][a-zA-Z0-9_\\+()'\\/\\- \\.]+$)|(^([A-Za-z0-9][A-Za-z0-9 \\-]+::)?([A-Za-z0-9][a-zA-Z0-9_\\+()'\\/\\- \\.]+)(&[A-Za-z0-9][a-zA-Z0-9_\\+()'\\/\\- \\.]+)?(:[A-Za-z0-9][a-zA-Z0-9_\\+()'\\/\\- \\.]+)(:[A-Za-z0-9][a-zA-Z0-9_\\+():\\/\\- \\.]*)?(&[A-Za-z0-9][a-zA-Z0-9_\\+()'\\/\\- \\.]+)?(@(>=)?((0|[1-9][0-9]*)\\.([0-9]+)(\\.([0-9]+))?(\\-((0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(\\.(0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?))?$)",
-      "description": "Name of the software component\nFormat:  [Cvendor::] Cclass [&Cbundle] :Cgroup [:Csub] [&Cvariant] [@[>=]Cversion]"
+      "description": "Name of the software component\nFormat:  [Cvendor::] Cclass [&Cbundle] :Cgroup [:Csub] [&Cvariant] [@[>=]Cversion]."
     },
     "ComponentsType": {
       "type": "array",
@@ -756,22 +756,22 @@
     },
     "RteType": {
       "type": ["object", "null"],
-      "description": "Allows to control the directory structure for RTE (run-time environment) files",
+      "description": "Allows to control the directory structure for RTE (run-time environment) files.",
       "properties": {
         "base-dir": {
           "type": "string",
-          "description": "Base directory for RTE files; default: $ProjectDir()$/RTE"
+          "description": "Base directory for RTE files; default: $ProjectDir()$/RTE ."
         }
       },
       "additionalProperties": false
     },
     "GeneratorsOutputType": {
       "type": ["object", "null"],
-      "description": "Directory structure for generator output files",
+      "description": "Directory structure for generator output files.",
       "properties": {
         "base-dir": {
           "type": "string",
-          "description": "Base directory for unspecified generators; default: $ProjectDir()$/generated"
+          "description": "Base directory for unspecified generators; default: $ProjectDir()$/generated."
         },
         "options": { "$ref": "#/definitions/GeneratorOptionsType" }
       },
@@ -779,7 +779,7 @@
     },
     "GeneratorOptionsType": {
       "type": "array",
-      "description": "Specific generator options; allows explicit directory configuration for a generator",
+      "description": "Specific generator options; allows explicit directory configuration for a generator.",
       "uniqueItems": true,
       "minItems": 1,
       "items": { "$ref": "#/definitions/GeneratorOptionType" }
@@ -789,19 +789,19 @@
       "properties": {
         "generator": {
           "type": "string",
-          "description": "Identifier of the generator tool, specified with id in the generators element of the PDSC file"
+          "description": "Identifier of the generator tool, specified with id in the generators element of the PDSC file."
         },
         "path":  {
           "type": "string",
-          "description": "Directory path for generated files. Relative paths use the location of the yml file as base directory"
+          "description": "Directory path for generated files. Relative paths use the location of the yml file as base directory."
         },
         "name":  {
           "type": "string",
-          "description": "Base name of the generator import file, typically used for a board layer"
+          "description": "Base name of the generator import file, typically used for a board layer."
         },
         "map":  {
           "type": "string",
-          "description": "Mapping of the csolution project to a generator specific run-time context name"
+          "description": "Mapping of the csolution project to a generator specific run-time context name."
         }
       },
       "additionalProperties": false,
@@ -817,15 +817,15 @@
       "properties": {
         "layer": {
           "type": "string",
-          "description": "Path to the '*.clayer.yml' file that defines the layer"
+          "description": "Path to the '*.clayer.yml' file that defines the layer."
         },
         "type": {
           "type": "string",
-          "description": "Layer type for compatible layers matching"
+          "description": "Layer type for compatible layers matching."
         },
         "optional": {
           "type": "boolean",
-          "description": "Set optional to 'false' to require the layer type when searching compatible layers; default: 'true'"
+          "description": "Set optional to 'false' to require the layer type when searching compatible layers; default: 'true'."
         },
         "for-context":     { "$ref": "#/definitions/ForContext" },
         "not-for-context": { "$ref": "#/definitions/NotForContext" }
@@ -843,34 +843,34 @@
     "DefaultDescType": {
       "type": "object",
       "properties": {
-        "compiler":        { "$ref": "#/definitions/CompilerType", "description": "'compiler' setting in cdefault.yml will be deprecated in CMSIS-Toolbox 3.0.0" },
-        "select-compiler": { "$ref": "#/definitions/SelectCompilersType", "description": "'select-compiler' setting in cdefault.yml will be deprecated in CMSIS-Toolbox 3.0.0" },
+        "compiler":        { "$ref": "#/definitions/CompilerType", "description": "'compiler' setting in cdefault.yml will be deprecated in CMSIS-Toolbox 3.0.0." },
+        "select-compiler": { "$ref": "#/definitions/SelectCompilersType", "description": "'select-compiler' setting in cdefault.yml will be deprecated in CMSIS-Toolbox 3.0.0." },
         "misc":            { "$ref": "#/definitions/MiscTypes" }
       },
       "additionalProperties": false
     },
     "SolutionDescType": {
       "type": "object",
-      "description": "Defines projects, targets and build types implemented within this solution",
+      "description": "Defines projects, targets and build types implemented within this solution.",
       "properties": {
         "add-path":        { "$ref": "#/definitions/AddpathsType" },
         "add-path-asm":    { "$ref": "#/definitions/AddAsmPathsType"},
         "build-types":     { "$ref": "#/definitions/BuildTypes" },
-        "cdefault":        { "type": "null", "description": "Enables use of cdefault.yml file for compiler controls" },
+        "cdefault":        { "type": "null", "description": "Enables use of cdefault.yml file for compiler controls." },
         "compiler":        { "$ref": "#/definitions/CompilerType" },        
         "created-by": {
           "$ref": "#/definitions/CreatedInfoType",
-          "description": "The tool that creates this csolution project"
+          "description": "The tool that creates this csolution project."
         },
         "created-for": {
           "$ref": "#/definitions/CreatedInfoType",
-          "description": "The tool required to build this csolution project"
+          "description": "The tool required to build this csolution project."
         },
         "debug":           { "$ref": "#/definitions/DebugType" },
         "define":          { "$ref": "#/definitions/DefinesType" },
         "define-asm":      { "$ref": "#/definitions/DefinesAsmType" },
         "del-path":        { "$ref": "#/definitions/DelpathsType" },
-        "description":     { "type": "string", "description":"Brief description of this solution" },
+        "description":     { "type": "string", "description":"Brief description of this solution." },
         "executes":        { "$ref": "#/definitions/ExecutesType" },
         "generators":      { "$ref": "#/definitions/GeneratorsOutputType" },
         "language-C":      { "$ref": "#/definitions/LanguageCType" },
@@ -892,7 +892,7 @@
     },
     "ProjectDescType": {
       "type": ["object", "null"],
-      "description": "Defines files, components, and layers which can be independently translated to a binary image or library",
+      "description": "Defines files, components, and layers which can be independently translated to a binary image or library.",
       "properties": {
         "description":  { "type": "string" },
         "packs":        { "$ref": "#/definitions/PacksType" },
@@ -929,16 +929,16 @@
       "type": "object",
       "properties": {
         "description":  { "type": "string" },
-        "generated-by": { "type": "string", "description": "Tool name along with version information used to generate this file" },
-        "cdefault": { "type": "string", "description": "Path to cdefault.yml file" },
-        "csolution": { "type": "string", "description": "Path to csolution.yml file" },
-        "tmpdir": { "type": "string", "description": "Specifies the directory for the interim temporary files" },
+        "generated-by": { "type": "string", "description": "Tool name along with version information used to generate this file." },
+        "cdefault": { "type": "string", "description": "Path to cdefault.yml file." },
+        "csolution": { "type": "string", "description": "Path to csolution.yml file." },
+        "tmpdir": { "type": "string", "description": "Specifies the directory for the interim temporary files." },
         "cprojects": { "$ref": "#/definitions/BuildProjectsType" },
         "cbuilds": { "$ref": "#/definitions/BuildContextsType" },
         "configurations": { "$ref": "#/definitions/BuildConfigurationsType" },
         "select-compiler": { "$ref": "#/definitions/SelectCompilersType" },
         "executes": { "$ref": "#/definitions/BuildExecutesType" },
-        "rebuild":  { "type": "boolean", "description": "Flag indicating intermediate files need to be cleaned before the next build" }
+        "rebuild":  { "type": "boolean", "description": "Flag indicating intermediate files need to be cleaned before the next build." }
       },
       "additionalProperties": false,
       "required": ["generated-by", "csolution", "cprojects"]
@@ -947,12 +947,12 @@
       "type": "array",
       "uniqueItems": true,
       "minItems": 1,
-      "items": { "$ref": "#/definitions/BuildProjectType", "description": "Paths to cproject.yml files" }
+      "items": { "$ref": "#/definitions/BuildProjectType", "description": "Paths to cproject.yml files." }
     },
     "BuildProjectType": {
       "type": "object",
       "properties": {
-        "cproject": { "type": "string", "description": "Path to cproject.yml file" },
+        "cproject": { "type": "string", "description": "Path to cproject.yml file." },
         "clayers": { "$ref": "#/definitions/BuildLayersType" }
       },
       "additionalProperties": false,
@@ -962,12 +962,12 @@
       "type": "array",
       "uniqueItems": true,
       "minItems": 1,
-      "items": { "$ref": "#/definitions/BuildLayerType", "description": "List of clayers" }
+      "items": { "$ref": "#/definitions/BuildLayerType", "description": "List of clayers." }
     },
     "BuildLayerType": {
       "type": "object",
       "properties": {
-        "clayer": { "type": "string", "description": "Path to clayer.yml file" }
+        "clayer": { "type": "string", "description": "Path to clayer.yml file." }
       },
       "additionalProperties": false,
       "required": ["clayer"]
@@ -981,8 +981,8 @@
     "BuildContextType": {
       "type": "object",
       "properties": {
-        "cbuild": { "type": "string", "description": "Path to <context>.cbuild.yml file" },
-        "project": { "type": "string", "description": "Project name" },
+        "cbuild": { "type": "string", "description": "Path to <context>.cbuild.yml file." },
+        "project": { "type": "string", "description": "Project name." },
         "configuration": { "$ref": "#/definitions/BuildContext" },
         "depends-on": {
           "type": "array",
@@ -992,10 +992,10 @@
           }
         },
         "errors": { "type": "boolean", "description": "Indicates error(s) during conversion" },
-        "packs-missing": { "$ref": "#/definitions/BuildPacksInfoType", "description": "Names of the missing packs" },
-        "packs-unused": { "$ref": "#/definitions/BuildPacksInfoType", "description": "Names of the unused packs" },
+        "packs-missing": { "$ref": "#/definitions/BuildPacksInfoType", "description": "Names of the missing packs." },
+        "packs-unused": { "$ref": "#/definitions/BuildPacksInfoType", "description": "Names of the unused packs." },
         "clayers": { "$ref": "#/definitions/BuildLayersType" },
-        "rebuild": { "type": "boolean", "description": "Flag indicating intermediate files need to be cleaned before the next build" },
+        "rebuild": { "type": "boolean", "description": "Flag indicating intermediate files need to be cleaned before the next build." },
         "messages": { "$ref": "#/definitions/MessagesType" }
       },
       "additionalProperties": false,
@@ -1005,12 +1005,12 @@
       "type": "array",
       "uniqueItems": true,
       "minItems": 1,
-      "items": { "$ref": "#/definitions/BuildConfigurationType", "description": "Target specific layer configurations" }
+      "items": { "$ref": "#/definitions/BuildConfigurationType", "description": "Target specific layer configurations." }
     },
     "BuildConfigurationType": {
       "type": "object",
       "properties": {
-        "target-type": { "type": "string", "description": "Name of the target" },
+        "target-type": { "type": "string", "description": "Name of the target." },
         "target-configurations" : { "$ref": "#/definitions/BuildTargetConfigurationsType" }
       },
       "additionalProperties": false,
@@ -1020,13 +1020,13 @@
       "type": "array",
       "uniqueItems": true,
       "minItems": 1,
-      "items": { "$ref": "#/definitions/BuildTargetConfigurationType", "description": "Target compatible configurations" }
+      "items": { "$ref": "#/definitions/BuildTargetConfigurationType", "description": "Target compatible configurations." }
     },
     "BuildTargetConfigurationType": {
       "type": "object",
       "properties": {
         "configuration": { "type": "null" },
-        "variables": { "$ref": "#/definitions/BuildLayerVariablesType", "description": "List of layer variables" }
+        "variables": { "$ref": "#/definitions/BuildLayerVariablesType", "description": "List of layer variables." }
       },
       "additionalProperties": false,
       "required": ["configuration", "variables"]
@@ -1040,12 +1040,12 @@
     "BuildLayerVariableType": {
       "type": "object",
       "patternProperties": {
-        "^.*-Layer$":  { "type": "string", "description": "Unique variable name for the layer" },
-        "description": { "type": "string", "description": "Brief description text (from *.clayer.yml)" },
+        "^.*-Layer$":  { "type": "string", "description": "Unique variable name for the layer." },
+        "description": { "type": "string", "description": "Brief description text (from *.clayer.yml)." },
         "settings":    { "$ref": "#/definitions/BuildConnectionSettingsType" },
-        "path":        { "type": "string", "description": "Path to the directory that contains the layer (from *.PDSC file)" },
-        "file":        { "type": "string", "description": "Name of the *.clayer.yml file relative to the directory specified with path (from *.PDSC file)"},
-        "copy-to":     { "type": "string", "description": "Proposed directory for the layer in the csolution project (from *.PDSC file)" }
+        "path":        { "type": "string", "description": "Path to the directory that contains the layer (from *.PDSC file)." },
+        "file":        { "type": "string", "description": "Name of the *.clayer.yml file relative to the directory specified with path (from *.PDSC file)."},
+        "copy-to":     { "type": "string", "description": "Proposed directory for the layer in the csolution project (from *.PDSC file)." }
       },
       "additionalProperties": false
     },
@@ -1058,22 +1058,22 @@
     "BuildConnectionSetType": {
       "type": "object",
       "properties": {
-        "set": { "type": "string", "description": "Connection set configurations" }
+        "set": { "type": "string", "description": "Connection set configurations." }
       },
       "additionalProperties": false,
       "required": ["set"]
     },
     "BuildDescType": {
-      "description": "The lock info that describes the resolved state of contexts and also can be used as input for generators",
+      "description": "The lock info that describes the resolved state of contexts and also can be used as input for generators.",
       "type": "object",
       "properties": {
         "generated-by": {
           "type": "string",
-          "description": "Tool name along with version information used to generate this application"
+          "description": "Tool name along with version information used to generate this application."
         },
         "current-generator": {
           "type": "object",
-          "description": "What generator configuration to use",
+          "description": "What generator configuration to use.",
           "properties": {
             "from-pack": { "$ref": "#/definitions/PackID" },
             "id":        { "type": "string" }
@@ -1083,11 +1083,11 @@
         },
         "solution": {
           "type": "string",
-          "description": "Relative path to the csolution file for this context"
+          "description": "Relative path to the csolution file for this context."
         },
         "project": {
           "type": "string",
-          "description": "Relative path to the cproject file for this context"
+          "description": "Relative path to the cproject file for this context."
         },
         "context":           { "$ref": "#/definitions/BuildContextWithProjectName" },
         "compiler":          { "$ref": "#/definitions/CompilerType" },
@@ -1135,7 +1135,7 @@
     "BuildPackInfoType": {
       "type": "object",
       "properties": {
-        "pack": { "type": "string", "description": "Name of the missing pack" }
+        "pack": { "type": "string", "description": "Name of the missing pack." }
       },
       "additionalProperties": false,
       "required": ["pack"]
@@ -1147,7 +1147,7 @@
         "description": { "type": "string" },
         "type": {
           "type": "string",
-          "description": "Layer type for compatible layers matching"
+          "description": "Layer type for compatible layers matching."
         },
         "for-board":    { "$ref": "#/definitions/BoardType" },
         "for-device":   { "$ref": "#/definitions/DeviceType" },
@@ -1190,15 +1190,15 @@
     },
     "LicenseInfoType": {
       "type": "object",
-      "description": "License information about packs and components",
+      "description": "License information about packs and components.",
       "properties": {
         "license": {
           "type": "string",
-          "description": "License SPDX name or title"
+          "description": "License SPDX name or title."
         },
         "license-agreement": {
           "type": "string",
-          "description": "Path to license agreement file"
+          "description": "Path to license agreement file."
         },
         "packs": {
           "type": "array",
@@ -1206,7 +1206,7 @@
         },
         "components": {
           "type": "array",
-          "description": "List of components or APIs component to license agreement file",
+          "description": "List of components or APIs component to license agreement file.",
           "items": { "$ref": "#/definitions/LicenseInfoComponentType" }
         }
       }
@@ -1252,14 +1252,14 @@
       "type": "object",
       "properties": {
         "pack": { "$ref": "#/definitions/PackID" },
-        "path": { "type": "string", "description": "Local path to the software pack" }
+        "path": { "type": "string", "description": "Local path to the software pack." }
       },
       "required": [ "pack", "path" ],
       "additionalProperties": false
     },
     "PacksType": {
       "type": "array",
-      "description": "List of required CMSIS software packs",
+      "description": "List of required CMSIS software packs.",
       "uniqueItems": true,
       "items": { 
         "oneOf": [
@@ -1271,12 +1271,12 @@
     "PackID": {
       "type": "string",
       "pattern": "^([a-zA-Z0-9_ \\.-]+)((::[a-zA-Z0-9_ \\.\\*-]+)(@(>=|\\~|\\^)?([0-9]+\\.[0-9]+\\.[0-9]+((\\+|\\-)[a-zA-Z0-9_\\.\\+-]+)?))?)?$",
-      "description": "Name of a software pack.\nFormat: Vendor [:: Pack [@[>=|~|^] version]].\nExample: ARM::CMSIS@6.1.0"
+      "description": "Name of a software pack.\nFormat: Vendor [:: Pack [@[>=|~|^] version]].\nExample: ARM::CMSIS@6.1.0."
     },
     "VersionlessPackID": {
       "type": "string",
       "pattern": "^([a-zA-Z0-9_ \\.\\-]+)(::[a-zA-Z0-9_ \\.\\*-]+)?$",
-      "description": "Name of a software pack.\nFormat: Vendor [:: Pack].\nExample: ARM::CMSIS"
+      "description": "Name of a software pack.\nFormat: Vendor [:: Pack].\nExample: ARM::CMSIS."
     },
     "PackType": {
       "type": "object",
@@ -1295,7 +1295,7 @@
       "type": "object",
       "properties": {
         "pack": { "$ref": "#/definitions/VersionlessPackID" },
-        "path": { "type": "string", "description": "Local path to the software pack" },
+        "path": { "type": "string", "description": "Local path to the software pack." },
         "for-context":     { "$ref": "#/definitions/ForContext" },
         "not-for-context": { "$ref": "#/definitions/NotForContext" }
       },
@@ -1313,7 +1313,7 @@
     },
     "ResolvedComponentType": {
       "type": "object",
-      "description": "Software component in its resolved state",
+      "description": "Software component in its resolved state.",
       "properties": {
         "component":    { "$ref": "#/definitions/ComponentID" },
         "condition":    { "$ref": "#/definitions/ConditionIDType" },
@@ -1341,13 +1341,13 @@
     },
     "ResolvedApisType": {
       "type": "array",
-      "description": "List of API in their resolved state",
+      "description": "List of API in their resolved state.",
       "uniqueItems": true,
       "items": { "$ref": "#/definitions/ResolvedApiType" }
     },
     "ResolvedApiType": {
       "type": "object",
-      "description": "API in its resolved state",
+      "description": "API in its resolved state.",
       "properties": {
         "api":            { "$ref": "#/definitions/ComponentID" },
         "condition":      { "$ref": "#/definitions/ConditionIDType" },
@@ -1365,7 +1365,7 @@
     },
     "SetupsType": {
       "type": "array",
-      "description": "List of setup nodes that collects various toolchain options",
+      "description": "List of setup nodes that collects various toolchain options.",
       "uniqueItems": true,
       "items": { "$ref": "#/definitions/SetupType" }
     },
@@ -1398,36 +1398,36 @@
       "additionalProperties": false
     },
     "ConnectionsType": {
-      "description": "List of consumed and provided connections compatibility",
+      "description": "List of consumed and provided connections compatibility.",
       "type": "array",
       "uniqueItems": true,
       "items": { "$ref": "#/definitions/ConnectType" }
     },
     "ConnectType": {
       "type": "object",
-      "description": "Group of specific functionality",
+      "description": "Group of specific functionality.",
       "properties": {
         "connect": {
           "type": "string",
-          "description": "Description of specific functionality"
+          "description": "Description of specific functionality."
         },
         "set": {
           "type": "string",
           "pattern": "^.+\\..+$",
-          "description": "Set configuration option in the format 'config-id.select'"
+          "description": "Set configuration option in the format 'config-id.select'."
         },
         "info": {
           "type": "string",
-          "description": "Display description when connect is selected"
+          "description": "Display description when connect is selected."
         },
         "consumes": {
           "type": "array",
-          "description": "Consumed connections",
+          "description": "Consumed connections.",
           "items": { "$ref": "#/definitions/ConsumesProvidesType" }
         },
         "provides": {
           "type": "array",
-          "description": "Provided connections",
+          "description": "Provided connections.",
           "items": { "$ref": "#/definitions/ConsumesProvidesType" }
         }
       },
@@ -1444,14 +1444,14 @@
     "LinkerType": {
       "type": "object",
       "properties": {
-        "auto": { "type": "null", "description": "Use automatic linker script generation" },
+        "auto": { "type": "null", "description": "Use automatic linker script generation." },
         "regions": {
           "type": "string",
-          "description": "Path and file name of regions_<device_or_board>.h, used to generate a Linker Script"
+          "description": "Path and file name of regions_<device_or_board>.h, used to generate a Linker Script."
         },
         "script": {
           "type": "string",
-          "description": "Explicit file name of the Linker Script, overrules files provided with file: or components"
+          "description": "Explicit file name of the Linker Script, overrules files provided with file: or components."
         },
         "define":          { "$ref": "#/definitions/DefinesType" },
         "for-context":     { "$ref": "#/definitions/ForContext" },
@@ -1470,9 +1470,9 @@
     "BuildSetDescType": {
       "type": "object",
       "properties": {
-        "generated-by": { "type": "string", "description": "Tool name along with version information used to generate this application" },
-        "contexts": { "$ref": "#/definitions/BuildSetContextsType", "description": "List of fully specified contexts" },
-        "compiler": { "type": "string", "description": "Selection of compiler used" }
+        "generated-by": { "type": "string", "description": "Tool name along with version information used to generate this application." },
+        "contexts": { "$ref": "#/definitions/BuildSetContextsType", "description": "List of fully specified contexts." },
+        "compiler": { "type": "string", "description": "Selection of compiler used." }
       },
       "additionalProperties": false,
       "required": ["generated-by", "contexts"]
@@ -1481,16 +1481,16 @@
       "type": "array",
       "uniqueItems": true,
       "minItems": 1,
-      "items": { "$ref": "#/definitions/GeneratorRegistryType", "description": "List of global generator description" }
+      "items": { "$ref": "#/definitions/GeneratorRegistryType", "description": "List of global generator description." }
     },
     "GeneratorRegistryType": {
       "type": "object",
       "properties": {
-        "id": { "type": "string", "description": "Generator identifier" },
+        "id": { "type": "string", "description": "Generator identifier." },
         "description": { "type": "string", "description": "Generator description" },
-        "download-url": { "type": "string", "description": "URL for downloading generator tool" },
-        "run": { "type": "string", "description": "Related bridge program" },
-        "path": { "type": "string", "description": "Specifies the directory for generated files" }
+        "download-url": { "type": "string", "description": "URL for downloading generator tool." },
+        "run": { "type": "string", "description": "Related bridge program." },
+        "path": { "type": "string", "description": "Specifies the directory for generated files." }
       },
       "additionalProperties": false,
       "required": ["id", "run", "path"]
@@ -1498,9 +1498,9 @@
     "BuildGenIdxDescType": {
       "type": "object",
       "properties": {
-        "generated-by": { "type": "string", "description": "Tool name along with version information used to generate this file" },
-        "generators": { "$ref": "#/definitions/BuildGeneratorsType", "description": "List of generators to be run" },
-        "compiler": { "type": "string", "description": "Selection of compiler used" }
+        "generated-by": { "type": "string", "description": "Tool name along with version information used to generate this file." },
+        "generators": { "$ref": "#/definitions/BuildGeneratorsType", "description": "List of generators to be run." },
+        "compiler": { "type": "string", "description": "Selection of compiler used." }
       },
       "additionalProperties": false,
       "required": ["generated-by", "generators"]
@@ -1509,13 +1509,13 @@
       "type": "array",
       "uniqueItems": true,
       "minItems": 1,
-      "items": { "$ref": "#/definitions/BuildGeneratorType", "description": "Build Generator solution related information" }
+      "items": { "$ref": "#/definitions/BuildGeneratorType", "description": "Build Generator solution related information." }
     },
     "BuildGeneratorType": {
       "type": "object",
       "properties": {
-        "id": { "type": "string", "description": "Generator identifier" },
-        "output": { "type": "string", "description": "Specifies the directory for generated files" },
+        "id": { "type": "string", "description": "Generator identifier." },
+        "output": { "type": "string", "description": "Specifies the directory for generated files." },
         "board": { "$ref": "#/definitions/BoardType" },
         "device": { "$ref": "#/definitions/DeviceType" },
         "project-type": { "$ref": "#/definitions/BuildGeneratorProjectType" },
@@ -1537,12 +1537,12 @@
     "BuildGeneratorContextType": {
       "type": "object",
       "properties": {
-        "cbuild-gen":       { "type": "string", "description": "Path to <context>.cbuild-gen.yml file" },
-        "project":          { "type": "string", "description": "Project name" },
+        "cbuild-gen":       { "type": "string", "description": "Path to <context>.cbuild-gen.yml file." },
+        "project":          { "type": "string", "description": "Project name." },
         "configuration":    { "$ref": "#/definitions/BuildContext" },
-        "for-project-part": { "type": "string", "description": "For project part (secure, non-secure, <processor>)" },
-        "name":             { "type": "string", "description": "Explicit name for the *.cgen.yml generator import file" },
-        "map":              { "type": "string", "description": "Mapping of the csolution project to a generator specific run-time context name" }
+        "for-project-part": { "type": "string", "description": "For project part (secure, non-secure, <processor>)." },
+        "name":             { "type": "string", "description": "Explicit name for the *.cgen.yml generator import file." },
+        "map":              { "type": "string", "description": "Mapping of the csolution project to a generator specific run-time context name." }
       },
       "additionalProperties": false,
       "required": ["cbuild-gen", "project", "configuration"]
@@ -1551,7 +1551,7 @@
       "type": "object",
       "description": "This section describes generated contents",
       "properties": {
-        "generated-by": { "type": "string", "description": "Tool name along with version information used to generate this file" },
+        "generated-by": { "type": "string", "description": "Tool name along with version information used to generate this file." },
         "for-board":    { "$ref": "#/definitions/BoardType" },
         "for-device":   { "$ref": "#/definitions/DeviceType" },
         "packs":        { "$ref": "#/definitions/PacksType" },
@@ -1579,14 +1579,14 @@
         "execute": {
           "type": "string",
           "pattern": "^([a-zA-Z0-9_-]{1,32})$",
-          "description": "Unique name of the execution step"
+          "description": "Unique name of the execution step."
         },
-        "always":          { "type": "null",   "description": "When present, the build step always runs and bypasses check for outdated files" },
+        "always":          { "type": "null",   "description": "When present, the build step always runs and bypasses check for outdated files." },
         "for-context":     { "$ref": "#/definitions/ForContext" },
-        "input":           { "type": "array",  "description": "A list of input files (may contain Access Sequences)",  "items": { "type": "string"} },
+        "input":           { "type": "array",  "description": "A list of input files (may contain Access Sequences).",  "items": { "type": "string"} },
         "not-for-context": { "$ref": "#/definitions/NotForContext" },
-        "output":          { "type": "array",  "description": "A list of output files (may contain Access Sequences)", "items": { "type": "string"} },
-        "run":             { "type": "string", "description": "Command string with name of the program or script (optionally with path) along with argument string" }
+        "output":          { "type": "array",  "description": "A list of output files (may contain Access Sequences).", "items": { "type": "string"} },
+        "run":             { "type": "string", "description": "Command string with name of the program or script (optionally with path) along with argument string." }
       },
       "additionalProperties": false,
       "allOf": [
@@ -1595,7 +1595,7 @@
       ]
     },
     "BuildExecutesType": {
-      "description": "Additional pre or post build steps using external tools",
+      "description": "Additional pre or post build steps using external tools.",
       "type": "array",
       "uniqueItems": true,
       "items": { "$ref": "#/definitions/BuildExecuteType" }
@@ -1603,11 +1603,11 @@
     "BuildExecuteType": {
       "type": "object",
       "properties": {
-        "execute":    { "type": "string", "description": "Description of the build step" },
-        "run":        { "type": "string", "description": "Command string with name of the program or script (optionally with path) along with argument string" },
-        "always":     { "type": "null",   "description": "When present, the build step always runs and bypasses check for outdated files" },
-        "input":      { "type": "array",  "description": "A list of input files (may contain Access Sequences)",  "items": { "type": "string"} },
-        "output":     { "type": "array",  "description": "A list of output files (may contain Access Sequences)", "items": { "type": "string"} },
+        "execute":    { "type": "string", "description": "Description of the build step." },
+        "run":        { "type": "string", "description": "Command string with name of the program or script (optionally with path) along with argument string." },
+        "always":     { "type": "null",   "description": "When present, the build step always runs and bypasses check for outdated files." },
+        "input":      { "type": "array",  "description": "A list of input files (may contain Access Sequences).",  "items": { "type": "string"} },
+        "output":     { "type": "array",  "description": "A list of output files (may contain Access Sequences).", "items": { "type": "string"} },
         "depends-on": { 
           "type": "array",
           "items": {
@@ -1621,7 +1621,7 @@
     },
     "MessagesType": {
       "type": ["object", "null"],
-      "description": "Errors, warnings and info messages",
+      "description": "Errors, warnings and info messages.",
       "properties": {
         "errors":   { "type": "array",  "items": { "type": "string"} },
         "warnings": { "type": "array",  "items": { "type": "string"} },
