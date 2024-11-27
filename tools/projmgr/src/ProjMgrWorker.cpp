@@ -2237,27 +2237,33 @@ bool ProjMgrWorker::ProcessComponentFiles(ContextItem& context) {
         }
       }
     }
-    // all filtered files from packs except bootstrap and config files
-    const bool bootstrap = rteComponent->GetGenerator() && !rteComponent->IsGenerated();
-    if (!bootstrap) {
-      const set<RteFile*>& filteredfilesSet = context.rteActiveTarget->GetFilteredFiles(rteComponent);
-      auto cmp = [](RteFile* a, RteFile* b) { return a->GetName() < b->GetName(); };
-      set<RteFile*, decltype(cmp)> filteredfiles(cmp);
-      filteredfiles.insert(filteredfilesSet.begin(), filteredfilesSet.end());
-      for (const auto& componentFile : filteredfiles) {
-        const auto& attr = componentFile->GetAttribute("attr");
-        if (attr == "config") {
-          continue;
-        }
-        const auto& category = componentFile->GetAttribute("category");
-        const auto& name = category == "doc" ? componentFile->GetDocFile() :
-          rteComponent->GetPackage()->GetAbsolutePackagePath() + componentFile->GetAttribute("name");
-        const auto& scope = componentFile->GetAttribute("scope");
-        const auto& language = componentFile->GetAttribute("language");
-        const auto& select = componentFile->GetAttribute("select");
-        const auto& version = componentFile->GetVersionString();
-        context.componentFiles[componentId].push_back({ name, attr, category, language, scope, version, select });
+    // all filtered files from packs except gen and config files
+    const set<RteFile*>& filteredfilesSet = context.rteActiveTarget->GetFilteredFiles(rteComponent);
+    auto cmp = [](RteFile* a, RteFile* b) { return a->GetName() < b->GetName(); };
+    set<RteFile*, decltype(cmp)> filteredfiles(cmp);
+    filteredfiles.insert(filteredfilesSet.begin(), filteredfilesSet.end());
+    for (const auto& componentFile : filteredfiles) {
+      const auto& attr = componentFile->GetAttribute("attr");
+      if (attr == "config") {
+        continue;
       }
+      const auto& category = componentFile->GetAttribute("category");
+      const auto& name = category == "doc" ? componentFile->GetDocFile() :
+        rteComponent->GetPackage()->GetAbsolutePackagePath() + componentFile->GetAttribute("name");
+      const auto& scope = componentFile->GetAttribute("scope");
+      const auto& language = componentFile->GetAttribute("language");
+      const auto& select = componentFile->GetAttribute("select");
+      const auto& version = componentFile->GetVersionString();
+      switch (RteFile::CategoryFromString(category)) {
+      case RteFile::Category::GEN_SOURCE:
+      case RteFile::Category::GEN_HEADER:
+      case RteFile::Category::GEN_PARAMS:
+      case RteFile::Category::GEN_ASSET:
+        continue; // ignore gen files
+      default:
+        break;
+      };
+      context.componentFiles[componentId].push_back({ name, attr, category, language, scope, version, select });
     }
     // config files
     map<const RteItem*, string> configFilePaths;
@@ -2552,6 +2558,14 @@ bool ProjMgrWorker::ProcessGpdsc(ContextItem& context) {
           components = gpdscComponent->GetChildren();
         }
         for (const auto component : components) {
+          if (bootstrap.instance->GetComponentID(false) == component->GetComponentID(false)) {
+            if (VersionCmp::Compare(bootstrap.instance->GetVersionString(), component->GetVersionString()) > 0) {
+              // bootstrap has greater version, do not replace it
+              continue;
+            } else {
+              context.components.erase(bootstrap.instance->GetComponentID(true));
+            }
+          }
           const auto& componentId = component->GetComponentID(true);
           RteComponentInstance* componentInstance = new RteComponentInstance(component);
           componentInstance->InitInstance(component);
