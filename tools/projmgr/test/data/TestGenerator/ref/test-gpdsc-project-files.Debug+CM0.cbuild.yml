@@ -35,6 +35,10 @@ build:
       condition: RteDevice
       from-pack: ARM::RteTestGenerator@0.1.0
       selected-by: Device:RteTest Generated Component:RteTest
+      files:
+        - file: ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0/Templates/RteTest.gpdsc.template
+          category: other
+          version: 1.0.0
       generator:
         id: RteTestGeneratorIdentifier
         from-pack: ARM::RteTestGenerator@0.1.0

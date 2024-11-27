@@ -39,6 +39,10 @@ build-gen:
     - component: ARM::Device:RteTest Generated Component:RteTestGenFiles@1.1.0
       from-pack: ARM::RteTestGenerator@0.1.0
       selected-by: Device:RteTest Generated Component:RteTestGenFiles
+      files:
+        - file: ${DEVTOOLS(packs)}/ARM/RteTestGenerator/0.1.0/Include/RteTestInc.h
+          category: header
+          version: 1.0.0
       generator:
         id: RteTestGeneratorIdentifier
         from-pack: ARM::RteTestGenerator@0.1.0
