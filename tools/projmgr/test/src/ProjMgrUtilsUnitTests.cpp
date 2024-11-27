@@ -510,3 +510,17 @@ TEST_F(ProjMgrUtilsUnitTests, FormatPath) {
     EXPECT_EQ("X:/Non_Existent/Absolute", ProjMgrUtils::FormatPath("X:/Non_Existent/Absolute", testoutput_folder));
   }
 }
+
+TEST_F(ProjMgrUtilsUnitTests, ContainsIncompatiblePack) {
+  ProjMgrKernel::Get()->SetCmsisPackRoot(testcmsispack_folder);
+  std::list<std::string> pdscFiles;
+  std::list<RtePackage*> loadedPacks;
+  auto kernel = ProjMgrKernel::Get();
+  kernel->GetEffectivePdscFiles(pdscFiles);
+  kernel->LoadAndInsertPacks(loadedPacks, pdscFiles);
+
+  EXPECT_FALSE(ProjMgrUtils::ContainsIncompatiblePack(loadedPacks, "ARM::RteTest@0.0.1:0.2.0"));
+  EXPECT_FALSE(ProjMgrUtils::ContainsIncompatiblePack(loadedPacks, "ARM::RteTestBoard@0.1.0"));
+  EXPECT_TRUE(ProjMgrUtils::ContainsIncompatiblePack(loadedPacks, "ARM::RteTest@9.9.9"));
+  EXPECT_FALSE(ProjMgrUtils::ContainsIncompatiblePack(loadedPacks, "Unknown::Pack@0.0.1"));
+}

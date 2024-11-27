@@ -265,8 +265,15 @@ public:
   */
   static const std::string FormatPath(const std::string& original, const std::string& directory, bool useAbsolutePaths = false);
 
+  /**
+   * @brief check if list contains incompatible version of pack requirement
+   * @param list of packs
+   * @param string pack requirement
+   * @return true if incompatible pack is found
+  */
+  static bool ContainsIncompatiblePack(const std::list<RtePackage*>& packs, const std::string& requirement);
+
 protected:
-  static std::string ConstructID(const std::vector<std::pair<const char*, const std::string&>>& elements);
   /**
    * @brief get filtered list of contexts
    * @param allContexts list of all available contexts

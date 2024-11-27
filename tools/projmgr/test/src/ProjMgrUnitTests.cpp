@@ -219,11 +219,25 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Packs_Required_Warning) {
   }
   streamRedirect.ClearStringStreams();
   argv[7] = (char*)"test1.Release+CM0";
-  EXPECT_EQ(0, RunProjMgr(9, argv, m_envp)); // succeeds regardless missing pack requirement  => no pack warnings
+  EXPECT_EQ(0, RunProjMgr(8, argv, m_envp)); // succeeds regardless missing pack requirement  => no pack warnings
   errStr = streamRedirect.GetErrorString();
   for(auto& w : warnings) {
     EXPECT_FALSE(errStr.find(w) != string::npos);
   }
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_Incompatible_Packs_Required_Warning) {
+  StdStreamRedirect streamRedirect;
+  const string warning = {
+    "pack 'ARM::RteTest_DFP@3.0.0' required by pack 'ARM::RteTestRequired@1.0.0' is not specified"
+  };
+  const string csolution = testinput_folder + "/TestSolution/PackRequirements/incompatible.csolution.yml";
+  char* argv[3];
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  EXPECT_EQ(0, RunProjMgr(3, argv, m_envp));
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_TRUE(errStr.find(warning) != string::npos);
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks) {
