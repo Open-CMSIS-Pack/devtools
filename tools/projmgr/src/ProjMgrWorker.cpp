@@ -504,17 +504,14 @@ bool ProjMgrWorker::LoadPacks(ContextItem& context) {
 
 bool ProjMgrWorker::CheckMissingPackRequirements(const std::string& contextName)
 {
-  if(!m_debug) {
-    // perform check only in debug mode
-    return true;
-  }
   bool bRequiredPacksLoaded = true;
   // check if all pack requirements are fulfilled
   for(auto pack : m_loadedPacks) {
     RtePackageMap allRequiredPacks;
     pack->GetRequiredPacks(allRequiredPacks, m_model);
     for(auto [id, p] : allRequiredPacks) {
-      if(!p) {
+      bool incompatible = ProjMgrUtils::ContainsIncompatiblePack(m_loadedPacks, id);
+      if((!p && m_debug) || incompatible) {
         bRequiredPacksLoaded = false;
         string msg;
         if(!contextName.empty()) {
@@ -3673,13 +3670,11 @@ bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGenFiles, bool
   ret &= ProcessConfigFiles(context);
   ret &= ProcessComponentFiles(context);
   ret &= ProcessExecutes(context);
-  bool bUnresolvedDependencies = false;
   if (resolveDependencies) {
     // TODO: Add uniquely identified missing dependencies to RTE Model
 
     // Get dependency validation results
     if (!ValidateContext(context)) {
-      bUnresolvedDependencies = true;
       string msg = "dependency validation for context '" + context.name + "' failed:";
       set<string> results;
       FormatValidationResults(results, context);
@@ -3693,9 +3688,7 @@ bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGenFiles, bool
       }
     }
   }
-  if(!ret || bUnresolvedDependencies) {
-    CheckMissingPackRequirements(context.name);
-  }
+  CheckMissingPackRequirements(context.name);
   return ret;
 }
 
