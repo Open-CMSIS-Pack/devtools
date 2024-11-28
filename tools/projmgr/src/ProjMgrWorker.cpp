@@ -730,47 +730,6 @@ void ProjMgrWorker::GetRequiredLayerTypes(ContextItem& context, LayersDiscoverin
   }
 }
 
-bool ProjMgrWorker::ProcessCandidateLayers(ContextItem& context, LayersDiscovering& discover) {
-  // get all candidate layers
-  if (!GetCandidateLayers(discover)) {
-    return false;
-  }
-  // load device/board specific packs specified in candidate layers
-  vector<PackItem> packRequirements;
-  for (const auto& [type, clayers] : discover.candidateClayers) {
-    for (const auto& clayer : clayers) {
-      const ClayerItem& clayerItem = m_parser->GetGenericClayers()[clayer];
-      if (!clayerItem.forBoard.empty() || !clayerItem.forDevice.empty()) {
-        InsertPackRequirements(clayerItem.packs, packRequirements, clayerItem.directory);
-      }
-    }
-  }
-  if (packRequirements.size() > 0) {
-    AddPackRequirements(context, packRequirements);
-    if (!LoadAllRelevantPacks() || !LoadPacks(context)) {
-      PrintContextErrors(context.name);
-      return false;
-    }
-  }
-  // process board/device filtering
-  if (!ProcessDevice(context)) {
-    return false;
-  }
-  if (!SetTargetAttributes(context, context.targetAttributes)) {
-    return false;
-  }
-  // recollect layers from packs after filtering
-  discover.genericClayersFromPacks.clear();
-  if (!CollectLayersFromPacks(context, discover.genericClayersFromPacks)) {
-    return false;
-  }
-  discover.candidateClayers.clear();
-  if (!GetCandidateLayers(discover)) {
-    return false;
-  }
-  return true;
-}
-
 bool ProjMgrWorker::GetCandidateLayers(LayersDiscovering& discover) {
   // clayers matching required types
   StrVecMap genericClayers = CollectionUtils::MergeStrVecMap(discover.genericClayersFromSearchPath, discover.genericClayersFromPacks);
@@ -805,8 +764,8 @@ bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context, string clayerSe
   }
   // get required layer types
   GetRequiredLayerTypes(context, discover);
-  // process candidate layers
-  if (!ProcessCandidateLayers(context, discover)) {
+  // get candidate layers
+  if (!GetCandidateLayers(discover)) {
     return false;
   }
   // process layer combinations
@@ -4106,9 +4065,13 @@ bool ProjMgrWorker::ListLayers(vector<string>& layers, const string& clayerSearc
         }
       }
     } else {
-      // process precedences
-      if (!ProcessPrecedences(context)) {
+      // process precedences and device/board
+      if (!ProcessPrecedences(context, true)) {
         failedContexts.insert(selectedContext);
+        error |= true;
+        continue;
+      }
+      if (!SetTargetAttributes(context, context.targetAttributes)) {
         error |= true;
         continue;
       }
