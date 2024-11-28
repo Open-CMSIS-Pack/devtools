@@ -22,3 +22,5 @@ solution:
   packs:
     - pack: ARM::RteTest
     - pack: ARM::RteTest_DFP
+    - pack: ARM::RteTestBoard@0.1.0
+      for-context: +BoardSpecific

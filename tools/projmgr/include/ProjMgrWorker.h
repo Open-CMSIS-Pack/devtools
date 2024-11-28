@@ -826,7 +826,6 @@ protected:
   bool CollectLayersFromSearchPath(const std::string& clayerSearchPath, StrVecMap& clayers);
   void GetRequiredLayerTypes(ContextItem& context, LayersDiscovering& discover);
   bool GetCandidateLayers(LayersDiscovering& discover);
-  bool ProcessCandidateLayers(ContextItem& context, LayersDiscovering& discover);
   bool ProcessLayerCombinations(ContextItem& context, LayersDiscovering& discover);
   bool DiscoverMatchingLayers(ContextItem& context, std::string clayerSearchPath);
   void CollectConnections(ContextItem& context, ConnectionsCollectionVec& connections);
