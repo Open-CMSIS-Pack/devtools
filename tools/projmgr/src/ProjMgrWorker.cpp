@@ -895,6 +895,10 @@ bool ProjMgrWorker::ProcessLayerCombinations(ContextItem& context, LayersDiscove
         }
       }
 
+      // init list of compatible layers with all required layer types
+      for (const auto& type : discover.requiredLayerTypes) {
+        context.compatibleLayers.insert({ type, StrVec() });
+      }
       // update list of compatible layers
       context.validConnections.push_back(combination);
       for (const auto& [type, _] : discover.candidateClayers) {

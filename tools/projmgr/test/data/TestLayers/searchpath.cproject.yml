@@ -3,3 +3,4 @@
 project:
   layers:
     - type: TestVariant
+      optional: false
