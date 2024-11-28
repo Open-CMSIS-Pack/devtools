@@ -4,3 +4,4 @@ project:
   layers:
     - layer: $NotDefined$
       type: Board
+      optional: false

@@ -10,11 +10,13 @@ build-idx:
             - Board-Layer: $SolutionDir()$/select.clayer.yml
               settings:
                 - set: set1.select1 (provided connections A and B - set 1 select 1)
+            - Select1-Layer: ""
         - configuration: 
           variables:
             - Board-Layer: $SolutionDir()$/select.clayer.yml
               settings:
                 - set: set1.select2 (provided connections B and C - set 1 select 2)
+            - Select1-Layer: ""
   select-compiler:
     - compiler: AC6
     - compiler: GCC
