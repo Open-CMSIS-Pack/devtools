@@ -6549,3 +6549,14 @@ TEST_F(ProjMgrUnitTests, GetToolboxVersion) {
 
   RteFsUtils::RemoveDir(testdir);
 }
+
+TEST_F(ProjMgrUnitTests, PackCaseSensitive) {
+  char* argv[3];
+  const string& csolution = testinput_folder + "/TestSolution/pack_case_sensitive.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  EXPECT_EQ(1, RunProjMgr(3, argv, 0));
+  const YAML::Node& cbuild = YAML::LoadFile(testinput_folder + "/TestSolution/pack_case_sensitive.cbuild-idx.yml");
+  EXPECT_EQ("required pack: Arm::RteTest_DFP not installed",
+    cbuild["build-idx"]["cbuilds"][0]["messages"]["errors"][0].as<string>());
+}
