@@ -4724,6 +4724,16 @@ info csolution: config files for each component:\n\
   EXPECT_EQ(outStr, expected1);
 }
 
+TEST_F(ProjMgrUnitTests, RunProjMgr_ListConfigsWithoutInput) {
+  StdStreamRedirect streamRedirect;
+  char* argv[3];
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"configs";
+  EXPECT_EQ(1, RunProjMgr(3, argv, m_envp));
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find("input yml files were not specified"));
+}
+
 TEST_F(ProjMgrUnitTests, RunProjMgr_No_target_Types) {
   StdStreamRedirect streamRedirect;
   char* argv[8];
