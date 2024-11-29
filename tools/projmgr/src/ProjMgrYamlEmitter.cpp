@@ -855,14 +855,17 @@ void ProjMgrYamlCbuild::SetControlsNode(YAML::Node node, const ContextItem* cont
   SetDefineNode(node[YAML_DEFINE], controls.defines);
   SetDefineNode(node[YAML_DEFINE_ASM], controls.definesAsm);
   SetNodeValue(node[YAML_UNDEFINE], controls.undefines);
-  for (const auto& addpath : controls.addpaths) {
-    node[YAML_ADDPATH].push_back(FormatPath(context->directories.cprj + "/" + addpath, context->directories.cbuild));
+  for (auto addpath : controls.addpaths) {
+    RteFsUtils::NormalizePath(addpath, context->directories.cprj);
+    node[YAML_ADDPATH].push_back(FormatPath(addpath, context->directories.cbuild));
   }
-  for (const auto& addpath : controls.addpathsAsm) {
-    node[YAML_ADDPATH_ASM].push_back(FormatPath(context->directories.cprj + "/" + addpath, context->directories.cbuild));
+  for (auto addpath : controls.addpathsAsm) {
+    RteFsUtils::NormalizePath(addpath, context->directories.cprj);
+    node[YAML_ADDPATH_ASM].push_back(FormatPath(addpath, context->directories.cbuild));
   }
-  for (const auto& addpath : controls.delpaths) {
-    node[YAML_DELPATH].push_back(FormatPath(context->directories.cprj + "/" + addpath, context->directories.cbuild));
+  for (auto delpath : controls.delpaths) {
+    RteFsUtils::NormalizePath(delpath, context->directories.cprj);
+    node[YAML_DELPATH].push_back(FormatPath(delpath, context->directories.cbuild));
   }
 }
 

@@ -3229,6 +3229,7 @@ void ProjMgrWorker::ExpandPackDir(ContextItem& context, const string& pack, stri
     ProjMgrUtils::ConvertToPackInfo(rtePackage->GetPackageID(), loadedPackInfo);
     if (ProjMgrUtils::IsMatchingPackInfo(loadedPackInfo, packInfo)) {
       replacement = rtePackage->GetAbsolutePackagePath();
+      context.packages.insert({ rtePackage->GetID(), rtePackage });
       break;
     }
   }
