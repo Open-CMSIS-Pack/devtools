@@ -3925,7 +3925,7 @@ TEST_F(ProjMgrUnitTests, Convert_ValidationResults_Dependencies) {
   argv[5] = (char*)"-c";
 
   map<string, string> testData = {
-    {"conflict+CM0",             "warning csolution: dependency validation for context 'conflict+CM0' failed:\nCONFLICT ::RteTest:ApiExclusive(API)\n  ARM::RteTest:ApiExclusive:S1\n  ARM::RteTest:ApiExclusive:S2" },
+    {"conflict+CM0",             "warning csolution: dependency validation for context 'conflict+CM0' failed:\nCONFLICT RteTest:ApiExclusive(API)\n  ARM::RteTest:ApiExclusive:S1\n  ARM::RteTest:ApiExclusive:S2" },
     {"incompatible+CM0",         "warning csolution: dependency validation for context 'incompatible+CM0' failed:\nINCOMPATIBLE ARM::RteTest:Check:Incompatible@0.9.9\n  deny RteTest:Dependency:Incompatible_component" },
     {"incompatible-variant+CM0", "warning csolution: dependency validation for context 'incompatible-variant+CM0' failed:\nINCOMPATIBLE_VARIANT ARM::RteTest:Check:IncompatibleVariant@0.9.9\n  require RteTest:Dependency:Variant&Compatible" },
     {"missing+CM0",              "warning csolution: dependency validation for context 'missing+CM0' failed:\nMISSING ARM::RteTest:Check:Missing@0.9.9\n  require RteTest:Dependency:Missing" },
