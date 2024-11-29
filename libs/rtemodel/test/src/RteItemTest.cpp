@@ -28,8 +28,8 @@ TEST(RteItemTest, GetComponentID_all_attributes) {
   RteItem item(attributes);
   item.SetTag("require");
 
-  EXPECT_EQ("::Class:Group(API)@1.1.1", item.GetApiID(true));
-  EXPECT_EQ("::Class:Group(API)", item.GetApiID(false));
+  EXPECT_EQ("Class:Group(API)@1.1.1", item.GetApiID(true));
+  EXPECT_EQ("Class:Group(API)", item.GetApiID(false));
 
   EXPECT_EQ("Vendor::Class&Bundle:Group:Sub&Variant@9.9.9", item.GetComponentID(true));
   EXPECT_EQ("Vendor::Class&Bundle:Group:Sub&Variant", item.GetComponentID(false));

@@ -78,7 +78,7 @@ build:
       packs:
         - pack: ARM::RteTest@0.1.0
       components:
-        - component: ::RteTest:TemplateFile(API)
+        - component: RteTest:TemplateFile(API)
     - license: <unknown>
       license-agreement: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Doc/license.txt
       packs:

@@ -243,10 +243,10 @@ TEST(RteModelTest, LoadPacks) {
   EXPECT_FALSE(c != nullptr);
 
   // get API
-  const string& apiId = "::RteTest:CORE(API)";
+  const string& apiId = "RteTest:CORE(API)";
   RteApi* api = rteModel->GetLatestApi(apiId);
   ASSERT_TRUE(api);
-  EXPECT_EQ(api->GetID(),  "::RteTest:CORE(API)@1.1.2");
+  EXPECT_EQ(api->GetID(),  "RteTest:CORE(API)@1.1.2");
   EXPECT_EQ(api->GetPackageID(), "ARM::RteTest_DFP@0.2.0");
 
   // make pack "dominant"
@@ -257,7 +257,7 @@ TEST(RteModelTest, LoadPacks) {
   pack->Construct(); // refresh internal state
   api = rteModel->GetLatestApi(apiId);
   ASSERT_TRUE(api);
-  EXPECT_EQ(api->GetID(),  "::RteTest:CORE(API)@1.1.1");
+  EXPECT_EQ(api->GetID(),  "RteTest:CORE(API)@1.1.1");
   EXPECT_EQ(api->GetPackageID(), "ARM::RteTest_DFP@0.1.1");
 }
 

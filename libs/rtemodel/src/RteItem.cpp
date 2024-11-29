@@ -209,7 +209,7 @@ string RteItem::GetPartialComponentID(bool bWithBundle) const {
 
 string RteItem::GetApiID(bool withVersion) const
 {
-  string id = RteConstants::SUFFIX_CVENDOR;
+  string id;
   id += GetCclassName();
   id += RteConstants::PREFIX_CGROUP;
   id += GetCgroupName();

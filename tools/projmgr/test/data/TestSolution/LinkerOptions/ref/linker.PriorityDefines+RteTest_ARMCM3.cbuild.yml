@@ -101,7 +101,7 @@ build:
       packs:
         - pack: ARM::RteTest_DFP@0.2.0
       components:
-        - component: ::RteTest:CORE(API)
         - component: ARM::Board:Test:Rev1@1.1.1
         - component: ARM::Device:Startup&RteTest Startup@2.0.3
         - component: ARM::RteTest:CORE@0.1.1
+        - component: RteTest:CORE(API)

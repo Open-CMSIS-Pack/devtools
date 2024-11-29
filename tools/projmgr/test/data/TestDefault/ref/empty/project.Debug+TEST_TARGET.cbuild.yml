@@ -68,5 +68,5 @@ build:
       packs:
         - pack: ARM::RteTest_DFP@0.1.1
       components:
-        - component: ::RteTest:CORE(API)
         - component: ARM::RteTest:CORE@0.1.1
+        - component: RteTest:CORE(API)
