@@ -6,8 +6,18 @@ build:
   compiler: AC6
   board: RteTest CM4 board
   board-pack: ARM::RteTestBoard@0.1.0
+  board-books:
+    - name: https://www.keil.arm.com/boards/
+      title: Development boards for application prototyping
+      category: overview
+    - name: ${CMSIS_PACK_ROOT}/ARM/RteTestBoard/0.1.0/Documents/README.md
+      title: Guide
+      category: other
   device: RteTest_ARMCM4_FP
   device-pack: ARM::RteTest_DFP@0.2.0
+  device-books:
+    - name: http://infocenter.arm.com/help/topic/com.arm.doc.dui0553a/index.html
+      title: Cortex-M4 Device Generic Users Guide
   processor:
     fpu: sp
     core: Cortex-M4

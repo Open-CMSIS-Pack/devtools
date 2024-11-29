@@ -212,6 +212,18 @@ struct LinkerContextItem {
 };
 
 /**
+ * @brief book item containing
+ *        string name
+ *        string title
+ *        string category
+*/
+struct BookItem {
+  std::string name;
+  std::string title;
+  std::string category;
+};
+
+/**
  * @brief context type item containing
  *        list of all build types including mapped ones
  *        list of all target types including mapped ones
@@ -273,6 +285,8 @@ struct ContextTypesItem {
  *        vector of dependent contexts
  *        map of layers descriptors from packs
  *        flag indicating the context needs a rebuild
+ *        vector of device books
+ *        vector of board books
 */
 struct ContextItem {
   CdefaultItem* cdefault = nullptr;
@@ -328,6 +342,8 @@ struct ContextItem {
   StrVec dependsOn;
   std::map<std::string, RteItem*> packLayers;
   bool needRebuild = false;
+  std::vector<BookItem> deviceBooks;
+  std::vector<BookItem> boardBooks;
 };
 
 /**
