@@ -5,7 +5,7 @@ layer:
   components:
     - component: Board:Test:Rev1
     - component: Device:Startup&RteTest Startup
-      for-context: [.PriorityRegions, .PriorityDefines]
+      for-context: [.PriorityRegions, .PriorityDefines, .Debug_GCC]
     - component: RteTest:CORE
       for-context: [.PriorityRegions, .PriorityDefines]
 

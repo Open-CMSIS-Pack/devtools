@@ -5389,10 +5389,10 @@ TEST_F(ProjMgrUnitTests, ExternalGenerator_WrongGenDir) {
   argv[5] = (char*)"-c";
   argv[6] = (char*)"core0.Debug+MultiCore";
   argv[7] = (char*)"-n";
-  EXPECT_EQ(0, RunProjMgr(8, argv, m_envp));
+  EXPECT_EQ(1, RunProjMgr(8, argv, m_envp));
 
   const string expected = "\
-warning csolution: unknown access sequence: 'UnknownAccessSequence()'\n\
+error csolution: unknown access sequence: 'UnknownAccessSequence()'\n\
 ";
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_TRUE(errStr.find(expected) != string::npos);

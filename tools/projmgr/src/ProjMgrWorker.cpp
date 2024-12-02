@@ -2013,15 +2013,10 @@ bool ProjMgrWorker::AddRequiredComponents(ContextItem& context) {
     ProjMgrLogger::Get().Error(msg, context.name);
     return false;
   }
-  // Check regions header, generate it if needed
-  if (!context.linker.regions.empty()) {
-    CheckAndGenerateRegionsHeader(context);
-  }
-
   return true;
 }
 
-void ProjMgrWorker::CheckAndGenerateRegionsHeader(ContextItem& context) {
+bool ProjMgrWorker::CheckAndGenerateRegionsHeader(ContextItem& context) {
   const string regionsHeader = RteFsUtils::MakePathCanonical(fs::path(context.directories.cprj).append(context.linker.regions).generic_string());
   if (!RteFsUtils::Exists(regionsHeader)) {
     string generatedRegionsFile;
@@ -2030,8 +2025,10 @@ void ProjMgrWorker::CheckAndGenerateRegionsHeader(ContextItem& context) {
     }
   }
   if (!RteFsUtils::Exists(regionsHeader)) {
-    ProjMgrLogger::Get().Warn("specified regions header was not found", context.name, regionsHeader);
+    ProjMgrLogger::Get().Error("specified regions header was not found", context.name, regionsHeader);
+    return false;
   }
+  return true;
 }
 
 string ProjMgrWorker::GetContextRteFolder(ContextItem& context) {
@@ -2577,7 +2574,7 @@ bool ProjMgrWorker::ProcessGpdsc(ContextItem& context) {
       }
     }
   }
-  if (!gpdscInfos.empty()) {
+  if (!gpdscInfos.empty() && !context.gpdscs.empty()) {
     // Update target with gpdsc model
     if (!SetTargetAttributes(context, context.targetAttributes)) {
       return false;
@@ -3332,8 +3329,8 @@ bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, 
         }
       } else {
         // access sequence is unknown
-        ProjMgrLogger::Get().Warn("unknown access sequence: '" + sequence + "'", context.name);
-        continue;
+        ProjMgrLogger::Get().Error("unknown access sequence: '" + sequence + "'", context.name);
+        return false;
       }
     }
   }
@@ -3663,6 +3660,10 @@ bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGenFiles, bool
   if (loadGenFiles) {
     ret &= ProcessGpdsc(context);
     ret &= ProcessGeneratedLayers(context);
+  }
+  // Check regions header, generate it if needed
+  if (!context.linker.regions.empty()) {
+    ret &= CheckAndGenerateRegionsHeader(context);
   }
   ret &= ProcessConfigFiles(context);
   ret &= ProcessComponentFiles(context);
