@@ -19,6 +19,21 @@
       "type": "string",
       "pattern": "^([^\\.\\+]+|[^\\.\\+]*\\.[a-zA-Z0-9_-]{1,32}(\\+[a-zA-Z0-9_-]{1,32})|[^\\.\\+]*\\+[a-zA-Z0-9_-]{1,32}(\\.[a-zA-Z0-9_-]{1,32})?)$"
     },
+    "BooksType": {
+      "type": "array",
+      "uniqueItems": true,
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/BookType" }
+    },
+    "BookType": {
+      "type": "object",
+      "properties": {
+        "name":     { "type": "string" },
+        "title":    { "type": "string" },
+        "category": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
     "ArrayOfContextMapAlternativeContext": {
       "type": "array",
       "uniqueItems": true,
@@ -1058,8 +1073,10 @@
         "compiler":          { "$ref": "#/definitions/CompilerType" },
         "board":             { "$ref": "#/definitions/BoardType" },
         "board-pack":        { "$ref": "#/definitions/PackID" },
+        "board-books":       { "$ref": "#/definitions/BooksType" },
         "device":            { "$ref": "#/definitions/DeviceType" },
         "device-pack":       { "$ref": "#/definitions/PackID" },
+        "device-books":      { "$ref": "#/definitions/BooksType" },
         "processor":         { "$ref": "#/definitions/BuildProcessorType" },
         "packs":             { "$ref": "#/definitions/BuildPacksType" },
         "optimize":          { "$ref": "#/definitions/OptimizeType" },

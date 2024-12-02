@@ -1239,6 +1239,17 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
     if (context.boardPack) {
       context.packages.insert({ context.boardPack->GetID(), context.boardPack });
       context.variables[RteConstants::AS_BPACK] = context.boardPack->GetAbsolutePackagePath();
+
+      Collection<RteItem*> books;
+      books = matchedBoard->GetChildrenByTag("book", books);
+      context.boardBooks.clear();
+      for (const auto& book : books) {
+        BookItem bookItem;
+        bookItem.name = book->GetDocFile();
+        bookItem.title = book->GetAttribute("title");
+        bookItem.category = book->GetAttribute("category");
+        context.boardBooks.push_back(bookItem);
+      }
     }
     context.targetAttributes["Bname"]    = matchedBoard->GetName();
     context.targetAttributes["Bvendor"]  = matchedBoard->GetVendorName();
@@ -1385,6 +1396,14 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
   if (context.devicePack) {
     context.packages.insert({ context.devicePack->GetID(), context.devicePack });
     context.variables[RteConstants::AS_DPACK] = context.devicePack->GetAbsolutePackagePath();
+    const auto& books = matchedDevice->GetEffectiveProperties("book", deviceItem.pname);
+    context.deviceBooks.clear();
+    for (const auto& book : books) {
+      BookItem bookItem;
+      bookItem.name = book->GetDocFile();
+      bookItem.title = book->GetAttribute("title");
+      context.deviceBooks.push_back(bookItem);
+    }
   }
   GetDeviceItem(context.device, context.deviceItem);
   context.variables[RteConstants::AS_DNAME] = context.deviceItem.name;
