@@ -4393,8 +4393,24 @@ bool ProjMgrWorker::ParseContextSelection(
     }
   }
 
-  // Process the selected contexts
   if (!((m_selectedContexts.size() == 1) && (m_selectedContexts.front() == RteUtils::EMPTY_STRING))) {
+    // Check selected contexts
+    StrVec unknownContexts;
+    for (const auto& context : m_selectedContexts) {
+      if (m_contexts.find(context) == m_contexts.end()) {
+        unknownContexts.push_back(context);
+      }
+    }
+    if (!unknownContexts.empty()) {
+      string errMsg = "unknown selected context(s):";
+      for (const auto& context : unknownContexts) {
+        errMsg += "\n  " + context;
+      }
+      ProjMgrLogger::Get().Error(errMsg);
+      return false;
+    }
+
+    // Parse context layers
     for (const auto& context : m_selectedContexts) {
       if (!ParseContextLayers(m_contexts[context])) {
         return false;

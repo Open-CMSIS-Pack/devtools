@@ -6560,3 +6560,15 @@ TEST_F(ProjMgrUnitTests, PackCaseSensitive) {
   EXPECT_EQ("required pack: Arm::RteTest_DFP not installed",
     cbuild["build-idx"]["cbuilds"][0]["messages"]["errors"][0].as<string>());
 }
+
+TEST_F(ProjMgrUnitTests, InvalidContextSet) {
+  StdStreamRedirect streamRedirect;
+  char* argv[4];
+  const string& csolution = testinput_folder + "/TestSolution/invalid-context-set.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"--context-set";
+  EXPECT_EQ(1, RunProjMgr(4, argv, m_envp));
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find("unknown selected context(s):\n  unknown1.debug+target\n  unknown2.release+target"));
+}
