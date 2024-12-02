@@ -416,3 +416,19 @@ const string ProjMgrUtils::FormatPath(const string& original, const string& dire
   }
   return path;
 }
+
+bool ProjMgrUtils::ContainsIncompatiblePack(const std::list<RtePackage*>& packs, const std::string& requirement) {
+  bool incompatible = false;
+  for (const auto& p : packs) {
+    const auto& id = p->GetPackageID();
+    if (RtePackage::VendorFromId(id) == RtePackage::VendorFromId(requirement) &&
+        RtePackage::NameFromId(id) == RtePackage::NameFromId(requirement)) {
+      if (VersionCmp::RangeCompare(RtePackage::VersionFromId(id), RtePackage::VersionFromId(requirement)) != 0) {
+        incompatible = true;
+      } else {
+        return false;
+      }
+    }
+  }
+  return incompatible;
+}

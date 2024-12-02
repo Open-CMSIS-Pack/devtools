@@ -37,6 +37,8 @@
     </board>
     <board name="RteTest CM4 board" vendor="Keil" revision="Rev.C">
       <description>uVision Simulator</description>
+      <book category="overview" name="https://www.keil.arm.com/boards/" title="Development boards for application prototyping"/>
+      <book category="other" name="Documents/README.md" title="Guide" public="true"/>
       <mountedDevice    deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM4_FP"/>
       <compatibleDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM4_NOFP"/>
       <algorithm name="Board/Flash/BoargAlgo1.FLM" start="0x00000000" size="0x00040000" default="1"/>

@@ -1,0 +1,6 @@
+cbuild-set:
+  generated-by: csolution version 2.6.0
+  contexts:
+    - context: unknown1.debug+target
+    - context: unknown2.release+target
+  compiler: AC6

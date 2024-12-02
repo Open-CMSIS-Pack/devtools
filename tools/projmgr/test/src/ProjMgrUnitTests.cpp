@@ -219,11 +219,25 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Packs_Required_Warning) {
   }
   streamRedirect.ClearStringStreams();
   argv[7] = (char*)"test1.Release+CM0";
-  EXPECT_EQ(0, RunProjMgr(9, argv, m_envp)); // succeeds regardless missing pack requirement  => no pack warnings
+  EXPECT_EQ(0, RunProjMgr(8, argv, m_envp)); // succeeds regardless missing pack requirement  => no pack warnings
   errStr = streamRedirect.GetErrorString();
   for(auto& w : warnings) {
     EXPECT_FALSE(errStr.find(w) != string::npos);
   }
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_Incompatible_Packs_Required_Warning) {
+  StdStreamRedirect streamRedirect;
+  const string warning = {
+    "pack 'ARM::RteTest_DFP@3.0.0' required by pack 'ARM::RteTestRequired@1.0.0' is not specified"
+  };
+  const string csolution = testinput_folder + "/TestSolution/PackRequirements/incompatible.csolution.yml";
+  char* argv[3];
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  EXPECT_EQ(0, RunProjMgr(3, argv, m_envp));
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_TRUE(errStr.find(warning) != string::npos);
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks) {
@@ -3911,7 +3925,7 @@ TEST_F(ProjMgrUnitTests, Convert_ValidationResults_Dependencies) {
   argv[5] = (char*)"-c";
 
   map<string, string> testData = {
-    {"conflict+CM0",             "warning csolution: dependency validation for context 'conflict+CM0' failed:\nCONFLICT ::RteTest:ApiExclusive(API)\n  ARM::RteTest:ApiExclusive:S1\n  ARM::RteTest:ApiExclusive:S2" },
+    {"conflict+CM0",             "warning csolution: dependency validation for context 'conflict+CM0' failed:\nCONFLICT RteTest:ApiExclusive(API)\n  ARM::RteTest:ApiExclusive:S1\n  ARM::RteTest:ApiExclusive:S2" },
     {"incompatible+CM0",         "warning csolution: dependency validation for context 'incompatible+CM0' failed:\nINCOMPATIBLE ARM::RteTest:Check:Incompatible@0.9.9\n  deny RteTest:Dependency:Incompatible_component" },
     {"incompatible-variant+CM0", "warning csolution: dependency validation for context 'incompatible-variant+CM0' failed:\nINCOMPATIBLE_VARIANT ARM::RteTest:Check:IncompatibleVariant@0.9.9\n  require RteTest:Dependency:Variant&Compatible" },
     {"missing+CM0",              "warning csolution: dependency validation for context 'missing+CM0' failed:\nMISSING ARM::RteTest:Check:Missing@0.9.9\n  require RteTest:Dependency:Missing" },
@@ -4708,6 +4722,16 @@ info csolution: config files for each component:\n\
  "../TestProject1/RTE/Device/RteTest_ARMCM0/startup_ARMCM0.c@2.0.1 (update@2.0.3) from ARM::Device:Startup&RteTest Startup@2.0.3\n"\
  "../TestProject1/RTE/Device/RteTest_ARMCM0/system_ARMCM0.c@1.0.0 (up to date) from ARM::Device:Startup&RteTest Startup@2.0.3\n";
   EXPECT_EQ(outStr, expected1);
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_ListConfigsWithoutInput) {
+  StdStreamRedirect streamRedirect;
+  char* argv[3];
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"configs";
+  EXPECT_EQ(1, RunProjMgr(3, argv, m_envp));
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find("input yml files were not specified"));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_No_target_Types) {
@@ -6524,4 +6548,27 @@ TEST_F(ProjMgrUnitTests, GetToolboxVersion) {
   EXPECT_EQ("1.2.3", GetToolboxVersion(testdir));
 
   RteFsUtils::RemoveDir(testdir);
+}
+
+TEST_F(ProjMgrUnitTests, PackCaseSensitive) {
+  char* argv[3];
+  const string& csolution = testinput_folder + "/TestSolution/pack_case_sensitive.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  EXPECT_EQ(1, RunProjMgr(3, argv, 0));
+  const YAML::Node& cbuild = YAML::LoadFile(testinput_folder + "/TestSolution/pack_case_sensitive.cbuild-idx.yml");
+  EXPECT_EQ("required pack: Arm::RteTest_DFP not installed",
+    cbuild["build-idx"]["cbuilds"][0]["messages"]["errors"][0].as<string>());
+}
+
+TEST_F(ProjMgrUnitTests, InvalidContextSet) {
+  StdStreamRedirect streamRedirect;
+  char* argv[4];
+  const string& csolution = testinput_folder + "/TestSolution/invalid-context-set.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"--context-set";
+  EXPECT_EQ(1, RunProjMgr(4, argv, m_envp));
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find("unknown selected context(s):\n  unknown1.debug+target\n  unknown2.release+target"));
 }

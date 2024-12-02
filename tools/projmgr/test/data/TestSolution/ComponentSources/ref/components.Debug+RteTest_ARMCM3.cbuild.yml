@@ -6,6 +6,9 @@ build:
   compiler: AC6
   device: RteTest_ARMCM3
   device-pack: ARM::RteTest_DFP@0.2.0
+  device-books:
+    - name: http://infocenter.arm.com/help/topic/com.arm.doc.dui0552a/index.html
+      title: Cortex-M3 Device Generic Users Guide
   processor:
     fpu: off
     core: Cortex-M3
@@ -85,7 +88,7 @@ build:
       packs:
         - pack: ARM::RteTest@0.1.0
       components:
-        - component: ::RteTest:TemplateFile(API)
+        - component: RteTest:TemplateFile(API)
     - license: <unknown>
       license-agreement: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Doc/license.txt
       packs:

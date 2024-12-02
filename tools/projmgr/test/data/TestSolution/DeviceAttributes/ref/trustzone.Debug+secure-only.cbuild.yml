@@ -6,6 +6,9 @@ build:
   compiler: AC6
   device: RteTest_ARMCM0
   device-pack: ARM::RteTest_DFP@0.2.0
+  device-books:
+    - name: http://infocenter.arm.com/help/topic/com.arm.doc.dui0497a/index.html
+      title: Cortex-M0 Device Generic Users Guide
   processor:
     fpu: off
     trustzone: secure-only
@@ -84,6 +87,6 @@ build:
       packs:
         - pack: ARM::RteTest_DFP@0.2.0
       components:
-        - component: ::RteTest:CORE(API)
         - component: ARM::Device:Startup&RteTest Startup@2.0.3
         - component: ARM::RteTest:CORE@0.1.1
+        - component: RteTest:CORE(API)

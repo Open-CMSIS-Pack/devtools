@@ -69,6 +69,7 @@ private:
   void SetMiscNode(YAML::Node miscNode, const MiscItem& misc);
   void SetMiscNode(YAML::Node miscNode, const vector<MiscItem>& misc);
   void SetDefineNode(YAML::Node node, const vector<string>& vec);
+  void SetBooksNode(YAML::Node node, const std::vector<BookItem>& books, const std::string& dir);
   const bool m_ignoreRteFileMissing;
 };
 
@@ -464,11 +465,13 @@ void ProjMgrYamlCbuild::SetContextNode(YAML::Node contextNode, const ContextItem
     if (context->boardPack != nullptr) {
       SetNodeValue(contextNode[YAML_BOARD_PACK], context->boardPack->GetID());
     }
+    SetBooksNode(contextNode[YAML_BOARD_BOOKS], context->boardBooks, context->directories.cbuild);
   }
   SetNodeValue(contextNode[YAML_DEVICE], context->device);
   if (context->devicePack != nullptr) {
     SetNodeValue(contextNode[YAML_DEVICE_PACK], context->devicePack->GetID());
   }
+  SetBooksNode(contextNode[YAML_DEVICE_BOOKS], context->deviceBooks, context->directories.cbuild);
   SetProcessorNode(contextNode[YAML_PROCESSOR], context->targetAttributes);
   SetPacksNode(contextNode[YAML_PACKS], context);
   SetControlsNode(contextNode, context, context->controls.processed);
@@ -855,14 +858,27 @@ void ProjMgrYamlCbuild::SetControlsNode(YAML::Node node, const ContextItem* cont
   SetDefineNode(node[YAML_DEFINE], controls.defines);
   SetDefineNode(node[YAML_DEFINE_ASM], controls.definesAsm);
   SetNodeValue(node[YAML_UNDEFINE], controls.undefines);
-  for (const auto& addpath : controls.addpaths) {
-    node[YAML_ADDPATH].push_back(FormatPath(context->directories.cprj + "/" + addpath, context->directories.cbuild));
+  for (auto addpath : controls.addpaths) {
+    RteFsUtils::NormalizePath(addpath, context->directories.cprj);
+    node[YAML_ADDPATH].push_back(FormatPath(addpath, context->directories.cbuild));
   }
-  for (const auto& addpath : controls.addpathsAsm) {
-    node[YAML_ADDPATH_ASM].push_back(FormatPath(context->directories.cprj + "/" + addpath, context->directories.cbuild));
+  for (auto addpath : controls.addpathsAsm) {
+    RteFsUtils::NormalizePath(addpath, context->directories.cprj);
+    node[YAML_ADDPATH_ASM].push_back(FormatPath(addpath, context->directories.cbuild));
   }
-  for (const auto& addpath : controls.delpaths) {
-    node[YAML_DELPATH].push_back(FormatPath(context->directories.cprj + "/" + addpath, context->directories.cbuild));
+  for (auto delpath : controls.delpaths) {
+    RteFsUtils::NormalizePath(delpath, context->directories.cprj);
+    node[YAML_DELPATH].push_back(FormatPath(delpath, context->directories.cbuild));
+  }
+}
+
+void ProjMgrYamlCbuild::SetBooksNode(YAML::Node node, const std::vector<BookItem>& books, const std::string& dir) {
+  for (const auto& book : books) {
+    YAML::Node bookNode;
+    SetNodeValue(bookNode[YAML_NAME], FormatPath(book.name, dir));
+    SetNodeValue(bookNode[YAML_TITLE], book.title);
+    SetNodeValue(bookNode[YAML_CATEGORY], book.category);
+    node.push_back(bookNode);
   }
 }
 

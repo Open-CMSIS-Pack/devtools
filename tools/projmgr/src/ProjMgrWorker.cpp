@@ -504,17 +504,14 @@ bool ProjMgrWorker::LoadPacks(ContextItem& context) {
 
 bool ProjMgrWorker::CheckMissingPackRequirements(const std::string& contextName)
 {
-  if(!m_debug) {
-    // perform check only in debug mode
-    return true;
-  }
   bool bRequiredPacksLoaded = true;
   // check if all pack requirements are fulfilled
   for(auto pack : m_loadedPacks) {
     RtePackageMap allRequiredPacks;
     pack->GetRequiredPacks(allRequiredPacks, m_model);
     for(auto [id, p] : allRequiredPacks) {
-      if(!p) {
+      bool incompatible = ProjMgrUtils::ContainsIncompatiblePack(m_loadedPacks, id);
+      if((!p && m_debug) || incompatible) {
         bRequiredPacksLoaded = false;
         string msg;
         if(!contextName.empty()) {
@@ -733,47 +730,6 @@ void ProjMgrWorker::GetRequiredLayerTypes(ContextItem& context, LayersDiscoverin
   }
 }
 
-bool ProjMgrWorker::ProcessCandidateLayers(ContextItem& context, LayersDiscovering& discover) {
-  // get all candidate layers
-  if (!GetCandidateLayers(discover)) {
-    return false;
-  }
-  // load device/board specific packs specified in candidate layers
-  vector<PackItem> packRequirements;
-  for (const auto& [type, clayers] : discover.candidateClayers) {
-    for (const auto& clayer : clayers) {
-      const ClayerItem& clayerItem = m_parser->GetGenericClayers()[clayer];
-      if (!clayerItem.forBoard.empty() || !clayerItem.forDevice.empty()) {
-        InsertPackRequirements(clayerItem.packs, packRequirements, clayerItem.directory);
-      }
-    }
-  }
-  if (packRequirements.size() > 0) {
-    AddPackRequirements(context, packRequirements);
-    if (!LoadAllRelevantPacks() || !LoadPacks(context)) {
-      PrintContextErrors(context.name);
-      return false;
-    }
-  }
-  // process board/device filtering
-  if (!ProcessDevice(context)) {
-    return false;
-  }
-  if (!SetTargetAttributes(context, context.targetAttributes)) {
-    return false;
-  }
-  // recollect layers from packs after filtering
-  discover.genericClayersFromPacks.clear();
-  if (!CollectLayersFromPacks(context, discover.genericClayersFromPacks)) {
-    return false;
-  }
-  discover.candidateClayers.clear();
-  if (!GetCandidateLayers(discover)) {
-    return false;
-  }
-  return true;
-}
-
 bool ProjMgrWorker::GetCandidateLayers(LayersDiscovering& discover) {
   // clayers matching required types
   StrVecMap genericClayers = CollectionUtils::MergeStrVecMap(discover.genericClayersFromSearchPath, discover.genericClayersFromPacks);
@@ -808,8 +764,8 @@ bool ProjMgrWorker::DiscoverMatchingLayers(ContextItem& context, string clayerSe
   }
   // get required layer types
   GetRequiredLayerTypes(context, discover);
-  // process candidate layers
-  if (!ProcessCandidateLayers(context, discover)) {
+  // get candidate layers
+  if (!GetCandidateLayers(discover)) {
     return false;
   }
   // process layer combinations
@@ -898,6 +854,10 @@ bool ProjMgrWorker::ProcessLayerCombinations(ContextItem& context, LayersDiscove
         }
       }
 
+      // init list of compatible layers with all required layer types
+      for (const auto& type : discover.requiredLayerTypes) {
+        context.compatibleLayers.insert({ type, StrVec() });
+      }
       // update list of compatible layers
       context.validConnections.push_back(combination);
       for (const auto& [type, _] : discover.candidateClayers) {
@@ -1279,6 +1239,17 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
     if (context.boardPack) {
       context.packages.insert({ context.boardPack->GetID(), context.boardPack });
       context.variables[RteConstants::AS_BPACK] = context.boardPack->GetAbsolutePackagePath();
+
+      Collection<RteItem*> books;
+      books = matchedBoard->GetChildrenByTag("book", books);
+      context.boardBooks.clear();
+      for (const auto& book : books) {
+        BookItem bookItem;
+        bookItem.name = book->GetDocFile();
+        bookItem.title = book->GetAttribute("title");
+        bookItem.category = book->GetAttribute("category");
+        context.boardBooks.push_back(bookItem);
+      }
     }
     context.targetAttributes["Bname"]    = matchedBoard->GetName();
     context.targetAttributes["Bvendor"]  = matchedBoard->GetVendorName();
@@ -1425,6 +1396,14 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
   if (context.devicePack) {
     context.packages.insert({ context.devicePack->GetID(), context.devicePack });
     context.variables[RteConstants::AS_DPACK] = context.devicePack->GetAbsolutePackagePath();
+    const auto& books = matchedDevice->GetEffectiveProperties("book", deviceItem.pname);
+    context.deviceBooks.clear();
+    for (const auto& book : books) {
+      BookItem bookItem;
+      bookItem.name = book->GetDocFile();
+      bookItem.title = book->GetAttribute("title");
+      context.deviceBooks.push_back(bookItem);
+    }
   }
   GetDeviceItem(context.device, context.deviceItem);
   context.variables[RteConstants::AS_DNAME] = context.deviceItem.name;
@@ -2240,27 +2219,33 @@ bool ProjMgrWorker::ProcessComponentFiles(ContextItem& context) {
         }
       }
     }
-    // all filtered files from packs except bootstrap and config files
-    const bool bootstrap = rteComponent->GetGenerator() && !rteComponent->IsGenerated();
-    if (!bootstrap) {
-      const set<RteFile*>& filteredfilesSet = context.rteActiveTarget->GetFilteredFiles(rteComponent);
-      auto cmp = [](RteFile* a, RteFile* b) { return a->GetName() < b->GetName(); };
-      set<RteFile*, decltype(cmp)> filteredfiles(cmp);
-      filteredfiles.insert(filteredfilesSet.begin(), filteredfilesSet.end());
-      for (const auto& componentFile : filteredfiles) {
-        const auto& attr = componentFile->GetAttribute("attr");
-        if (attr == "config") {
-          continue;
-        }
-        const auto& category = componentFile->GetAttribute("category");
-        const auto& name = category == "doc" ? componentFile->GetDocFile() :
-          rteComponent->GetPackage()->GetAbsolutePackagePath() + componentFile->GetAttribute("name");
-        const auto& scope = componentFile->GetAttribute("scope");
-        const auto& language = componentFile->GetAttribute("language");
-        const auto& select = componentFile->GetAttribute("select");
-        const auto& version = componentFile->GetVersionString();
-        context.componentFiles[componentId].push_back({ name, attr, category, language, scope, version, select });
+    // all filtered files from packs except gen and config files
+    const set<RteFile*>& filteredfilesSet = context.rteActiveTarget->GetFilteredFiles(rteComponent);
+    auto cmp = [](RteFile* a, RteFile* b) { return a->GetName() < b->GetName(); };
+    set<RteFile*, decltype(cmp)> filteredfiles(cmp);
+    filteredfiles.insert(filteredfilesSet.begin(), filteredfilesSet.end());
+    for (const auto& componentFile : filteredfiles) {
+      const auto& attr = componentFile->GetAttribute("attr");
+      if (attr == "config") {
+        continue;
       }
+      const auto& category = componentFile->GetAttribute("category");
+      const auto& name = category == "doc" ? componentFile->GetDocFile() :
+        rteComponent->GetPackage()->GetAbsolutePackagePath() + componentFile->GetAttribute("name");
+      const auto& scope = componentFile->GetAttribute("scope");
+      const auto& language = componentFile->GetAttribute("language");
+      const auto& select = componentFile->GetAttribute("select");
+      const auto& version = componentFile->GetVersionString();
+      switch (RteFile::CategoryFromString(category)) {
+      case RteFile::Category::GEN_SOURCE:
+      case RteFile::Category::GEN_HEADER:
+      case RteFile::Category::GEN_PARAMS:
+      case RteFile::Category::GEN_ASSET:
+        continue; // ignore gen files
+      default:
+        break;
+      };
+      context.componentFiles[componentId].push_back({ name, attr, category, language, scope, version, select });
     }
     // config files
     map<const RteItem*, string> configFilePaths;
@@ -2555,6 +2540,14 @@ bool ProjMgrWorker::ProcessGpdsc(ContextItem& context) {
           components = gpdscComponent->GetChildren();
         }
         for (const auto component : components) {
+          if (bootstrap.instance->GetComponentID(false) == component->GetComponentID(false)) {
+            if (VersionCmp::Compare(bootstrap.instance->GetVersionString(), component->GetVersionString()) > 0) {
+              // bootstrap has greater version, do not replace it
+              continue;
+            } else {
+              context.components.erase(bootstrap.instance->GetComponentID(true));
+            }
+          }
           const auto& componentId = component->GetComponentID(true);
           RteComponentInstance* componentInstance = new RteComponentInstance(component);
           componentInstance->InitInstance(component);
@@ -3255,6 +3248,7 @@ void ProjMgrWorker::ExpandPackDir(ContextItem& context, const string& pack, stri
     ProjMgrUtils::ConvertToPackInfo(rtePackage->GetPackageID(), loadedPackInfo);
     if (ProjMgrUtils::IsMatchingPackInfo(loadedPackInfo, packInfo)) {
       replacement = rtePackage->GetAbsolutePackagePath();
+      context.packages.insert({ rtePackage->GetID(), rtePackage });
       break;
     }
   }
@@ -3673,13 +3667,11 @@ bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGenFiles, bool
   ret &= ProcessConfigFiles(context);
   ret &= ProcessComponentFiles(context);
   ret &= ProcessExecutes(context);
-  bool bUnresolvedDependencies = false;
   if (resolveDependencies) {
     // TODO: Add uniquely identified missing dependencies to RTE Model
 
     // Get dependency validation results
     if (!ValidateContext(context)) {
-      bUnresolvedDependencies = true;
       string msg = "dependency validation for context '" + context.name + "' failed:";
       set<string> results;
       FormatValidationResults(results, context);
@@ -3693,9 +3685,7 @@ bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGenFiles, bool
       }
     }
   }
-  if(!ret || bUnresolvedDependencies) {
-    CheckMissingPackRequirements(context.name);
-  }
+  CheckMissingPackRequirements(context.name);
   return ret;
 }
 
@@ -4099,9 +4089,13 @@ bool ProjMgrWorker::ListLayers(vector<string>& layers, const string& clayerSearc
         }
       }
     } else {
-      // process precedences
-      if (!ProcessPrecedences(context)) {
+      // process precedences and device/board
+      if (!ProcessPrecedences(context, true)) {
         failedContexts.insert(selectedContext);
+        error |= true;
+        continue;
+      }
+      if (!SetTargetAttributes(context, context.targetAttributes)) {
         error |= true;
         continue;
       }
@@ -4418,8 +4412,24 @@ bool ProjMgrWorker::ParseContextSelection(
     }
   }
 
-  // Process the selected contexts
   if (!((m_selectedContexts.size() == 1) && (m_selectedContexts.front() == RteUtils::EMPTY_STRING))) {
+    // Check selected contexts
+    StrVec unknownContexts;
+    for (const auto& context : m_selectedContexts) {
+      if (m_contexts.find(context) == m_contexts.end()) {
+        unknownContexts.push_back(context);
+      }
+    }
+    if (!unknownContexts.empty()) {
+      string errMsg = "unknown selected context(s):";
+      for (const auto& context : unknownContexts) {
+        errMsg += "\n  " + context;
+      }
+      ProjMgrLogger::Get().Error(errMsg);
+      return false;
+    }
+
+    // Parse context layers
     for (const auto& context : m_selectedContexts) {
       if (!ParseContextLayers(m_contexts[context])) {
         return false;

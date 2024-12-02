@@ -169,7 +169,7 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
     {"list packs",        { true,  {context, contextSet, debug, filter, load, missing, quiet, schemaCheck, toolchain, verbose, relativePaths}}},
     {"list boards",       { true,  {context, contextSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
     {"list devices",      { true,  {context, contextSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
-    {"list configs",      { true,  {context, contextSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
+    {"list configs",      { false, {context, contextSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
     {"list components",   { true,  {context, contextSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
     {"list dependencies", { false, {context, contextSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
     {"list contexts",     { false, {debug, filter, quiet, schemaCheck, verbose, ymlOrder}}},
@@ -788,11 +788,9 @@ bool ProjMgr::RunListComponents(void) {
 }
 
 bool ProjMgr::RunListConfigs() {
-  if (!m_csolutionFile.empty()) {
-    // Parse all input files and create contexts
-    if (!PopulateContexts()) {
-      return false;
-    }
+  // Parse all input files and create contexts
+  if (!PopulateContexts()) {
+    return false;
   }
 
   // Parse context selection
