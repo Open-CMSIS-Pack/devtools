@@ -13,6 +13,8 @@ default:
         - -masm=auto
       Link:
         - --entry=Reset_Handler
+        - --info summarysizes
+        - --summary_stderr
         - --diag_suppress=L6314W
 
     - for-compiler: GCC
@@ -26,6 +28,7 @@ default:
       Link:
         - --specs=nano.specs
         - --specs=nosys.specs
+        - -Wl,-print-memory-usage
         - -Wl,--gc-sections
         - -Wl,--no-warn-rwx-segments   # suppress incorrect linker warning
 
@@ -38,6 +41,7 @@ default:
         - -std=gnu11
       Link:
         - -lcrt0
+        - -Wl,-print-memory-usage
         - -Wl,--gc-sections
 
     - for-compiler: IAR
