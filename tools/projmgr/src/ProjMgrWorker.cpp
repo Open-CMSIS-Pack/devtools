@@ -2695,10 +2695,12 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, bool processDevice,
 
   // set context variables (static access sequences)
   DeviceItem deviceItem;
+  BoardItem boardItem;
   GetDeviceItem(context.device, deviceItem);
+  GetBoardItem(context.board, boardItem);
   context.variables[RteConstants::AS_DNAME] = deviceItem.name;
   context.variables[RteConstants::AS_PNAME] = deviceItem.pname;
-  context.variables[RteConstants::AS_BNAME] = context.board;
+  context.variables[RteConstants::AS_BNAME] = boardItem.name;
   context.variables[RteConstants::AS_COMPILER] = context.toolchain.name;
 
   // Add cdefault misc into csolution
