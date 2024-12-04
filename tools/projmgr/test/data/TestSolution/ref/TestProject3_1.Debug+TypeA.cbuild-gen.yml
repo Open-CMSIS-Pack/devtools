@@ -154,7 +154,7 @@ build-gen:
         - component: ARM::Device:RteTest Generated Component:RteTestGenFiles@1.1.0
         - component: ARM::Device:RteTest Generated Component:RteTestOverlap@1.1.0
     - license: <unknown>
-      license-agreement: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Doc/license.txt
+      license-agreement: ${DEVTOOLS(packs)}/ARM/RteTest_DFP/0.2.0/Doc/license.txt
       packs:
         - pack: ARM::RteTest_DFP@0.2.0
       components:

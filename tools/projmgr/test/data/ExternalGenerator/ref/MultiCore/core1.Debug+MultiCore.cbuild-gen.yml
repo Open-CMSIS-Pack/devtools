@@ -55,6 +55,6 @@ build-gen:
       components:
         - component: ARM::RteTestGenerator:Check Global Generator@0.9.0
     - license: <unknown>
-      license-agreement: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Doc/license.txt
+      license-agreement: ${DEVTOOLS(packs)}/ARM/RteTest_DFP/0.2.0/Doc/license.txt
       packs:
         - pack: ARM::RteTest_DFP@0.2.0
