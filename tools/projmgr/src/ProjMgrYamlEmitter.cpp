@@ -806,7 +806,7 @@ void ProjMgrYamlCbuild::SetLicenseInfoNode(YAML::Node node, const ContextItem* c
       SetNodeValue(licNode[YAML_LICENSE], RteLicenseInfo::ConstructLicenseTitle(licInfo));
       const string& license_agreement = licInfo->GetAttribute("agreement");
       if (!license_agreement.empty()) {
-        SetNodeValue(licNode[YAML_LICENSE_AGREEMENT], license_agreement);
+        SetNodeValue(licNode[YAML_LICENSE_AGREEMENT], FormatPath(license_agreement, context->directories.cbuild));
       }
       YAML::Node packsNode = licNode[YAML_PACKS];
       for (auto pack : licInfo->GetPackIDs()) {
