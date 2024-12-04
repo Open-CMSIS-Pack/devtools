@@ -4,6 +4,7 @@ solution:
   target-types:
     - type: CM0
       device: RteTest_ARMCM0
+      board: Keil::RteTest Test board-3
       misc:
         - for-compiler: AC6
           C-CPP: [-C-CPP-$Dname$]
