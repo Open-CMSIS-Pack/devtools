@@ -145,7 +145,7 @@ RteLicenseInfo* RteLicenseInfoCollection::EnsureLicenseInfo(RteItem* item, RteIt
       licFile = pack->GetChildText("license");
     }
       if (!licFile.empty()) {
-        info->AddAttribute("agreement", "${CMSIS_PACK_ROOT}/" + pack->GetPackagePath(true) + licFile);
+        info->AddAttribute("agreement", pack->GetAbsolutePackagePath() + licFile);
     }
   } else {
     info = it->second;

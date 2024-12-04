@@ -386,6 +386,12 @@ TEST_F(RteModelPrjTest, LoadCprj) {
   loadedCprjProject->CollectLicenseInfos(licences);
   string licenseText = licences.ToString();
 
+  string packRoot = rteKernel.GetCmsisPackRoot();
+  size_t index;
+  while ((index = licenseText.find(packRoot)) != std::string::npos) {
+    licenseText.replace(index, packRoot.length(), "${CMSIS_PACK_ROOT}");
+  }
+
   string licRefFile = prjsDir + RteTestM3 + "/license_info_ref.txt";
   EXPECT_TRUE(RteFsUtils::CmpFileMem(licRefFile, licenseText));
 

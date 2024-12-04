@@ -495,6 +495,7 @@ TEST_F(ProjMgrUtilsUnitTests, FormatPath) {
   vector<pair<string, string>> testData = {
     { "OriginalPath"                      , testoutput_folder + "/OriginalPath"     },
     { "${CMSIS_PACK_ROOT}/Pack"           , testcmsispack_folder + "/Pack"          },
+    { "${CMSIS_PACK_ROOT}/Backslash"      , testcmsispack_folder + "\\Backslash"    },
     { "${CMSIS_COMPILER_ROOT}/Toolchain"  , testcmsiscompiler_folder + "/Toolchain" },
     { "https://www.url.com"               , "https://www.url.com"                   },
   };

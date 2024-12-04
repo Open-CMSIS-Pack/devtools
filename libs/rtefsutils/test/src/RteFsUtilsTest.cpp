@@ -47,6 +47,12 @@ const string filenameBackup0 = RteUtils::SlashesToOsSlashes(filenameRegular + ".
 const string filenameBackup1 = RteUtils::SlashesToOsSlashes(filenameRegular + ".0001");
 const string pathInvalid = dirnameSubdir + "/Invalid";
 
+// For Canonical Tests
+const string filenameBackslashForCanonical = dirnameSubdirBackslash + "\\file.txt";
+const string dirnameSubdirBackslashForCanonical = dirnameBase + "\\dir\\subdir";
+const string dirnameMixedWithTrailingForCanonical = dirnameBase + "/dir\\subdir/";
+const string dirnameBackslashWithTrailingForCanonical = dirnameBase + "\\dir\\subdir\\";
+
 static set<string, VersionCmp::Greater> sortedFileSet = {
   "foo.h",
   "bar.h",
@@ -849,11 +855,11 @@ TEST_F(RteFsUtilsTest, MakePathCanonical) {
   EXPECT_EQ(ret, nonExistingFileAbs);
 
   // Test filename with backslashes separators
-  ret = RteFsUtils::MakePathCanonical(filenameBackslash);
+  ret = RteFsUtils::MakePathCanonical(filenameBackslashForCanonical);
   EXPECT_EQ(ret, filenameCanonical);
 
   // Test filename with mixed separators
-  ret = RteFsUtils::MakePathCanonical(filenameBackslash);
+  ret = RteFsUtils::MakePathCanonical(filenameBackslashForCanonical);
   EXPECT_EQ(ret, filenameCanonical);
 
   // Test dirname with regular separators and trailing
@@ -861,11 +867,11 @@ TEST_F(RteFsUtilsTest, MakePathCanonical) {
   EXPECT_EQ(ret, dirnameCanonical);
 
   // Test dirname with backslashes separators and trailing
-  ret = RteFsUtils::MakePathCanonical(dirnameBackslashWithTrailing);
+  ret = RteFsUtils::MakePathCanonical(dirnameBackslashWithTrailingForCanonical);
   EXPECT_EQ(ret, dirnameCanonical);
 
   // Test dirname with mixed separators and trailing
-  ret = RteFsUtils::MakePathCanonical(dirnameMixedWithTrailing);
+  ret = RteFsUtils::MakePathCanonical(dirnameMixedWithTrailingForCanonical);
   EXPECT_EQ(ret, dirnameCanonical);
 
   // Test path with dot inside
