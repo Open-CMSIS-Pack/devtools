@@ -6188,7 +6188,7 @@ TEST_F(ProjMgrUnitTests, SelectableToolchains) {
   argv[3] = (char*)"-o";
   argv[4] = (char*)testoutput_folder.c_str();
   argv[5] = (char*)"--cbuildgen";
-  EXPECT_EQ(1, RunProjMgr(6, argv, m_envp));
+  EXPECT_EQ(ErrorCode::COMPILER_NOT_DEFINED, RunProjMgr(6, argv, m_envp));
   const string err = streamRedirect.GetErrorString();
   const string expectedErr = \
     "error csolution: compiler undefined, use '--toolchain' option or add 'compiler: <value>' to yml input, selectable values can be found in cbuild-idx.yml";
