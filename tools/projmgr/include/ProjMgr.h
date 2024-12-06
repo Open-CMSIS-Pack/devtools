@@ -21,7 +21,8 @@ enum ErrorCode
 {
   SUCCESS = 0,
   ERROR = 1,
-  VARIABLE_NOT_DEFINED
+  VARIABLE_NOT_DEFINED = 2,
+  COMPILER_NOT_DEFINED = 3,
 };
 
  /**
