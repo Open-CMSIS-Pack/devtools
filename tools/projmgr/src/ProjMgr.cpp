@@ -387,6 +387,10 @@ int ProjMgr::ProcessCommands() {
     if (m_worker.HasVarDefineError()) {
       return ErrorCode::VARIABLE_NOT_DEFINED;
     }
+    // Check if compiler not defined and there are selectable ones
+    if (m_worker.HasCompilerDefineError()) {
+      return ErrorCode::COMPILER_NOT_DEFINED;
+    }
     if (!convSuccess) {
       return ErrorCode::ERROR;
     }

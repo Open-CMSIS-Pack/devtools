@@ -5030,6 +5030,10 @@ bool ProjMgrWorker::HasVarDefineError() {
   return (m_undefLayerVars.size() > 0 ? true : false);
 }
 
+bool ProjMgrWorker::HasCompilerDefineError() {
+  return (m_undefCompiler && !m_selectableCompilers.empty());
+}
+
 const set<string>& ProjMgrWorker::GetUndefLayerVars() {
   return m_undefLayerVars;
 }

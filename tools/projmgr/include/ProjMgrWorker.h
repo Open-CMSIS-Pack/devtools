@@ -698,6 +698,12 @@ public:
   bool HasVarDefineError();
 
   /**
+   * @brief check whether compiler is not defined and there are selectable ones
+   * @return true if error is set
+  */
+  bool HasCompilerDefineError();
+
+  /**
    * @brief get list of detected undefined layer variables
    * @return list of undefined layer variables
   */
