@@ -1182,7 +1182,7 @@ ConnectionsValidationResult ProjMgrWorker::ValidateConnections(ConnectionsCollec
   return { result, conflicts, overflows, incompatibles, missedCollections, activeConnectMap };
 }
 
-bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
+bool ProjMgrWorker::ProcessDevice(ContextItem& context, BoardOrDevice process) {
   DeviceItem deviceItem;
   GetDeviceItem(context.device, deviceItem);
   if (context.board.empty() && deviceItem.name.empty()) {
@@ -1255,6 +1255,11 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context) {
     context.targetAttributes["Bvendor"]  = matchedBoard->GetVendorName();
     context.targetAttributes["Brevision"] = matchedBoard->GetRevision();
     context.targetAttributes["Bversion"] = matchedBoard->GetRevision(); // deprecated
+
+    if (matchedBoard && process == BoardOrDevice::SkipDevice) {
+      // skip device processing
+      return true;
+    }
 
     // find device from the matched board
     matchedBoard->GetMountedDevices(mountedDevices);
@@ -2615,7 +2620,7 @@ bool ProjMgrWorker::ProcessCompilerPrecedence(StringCollection& item, bool accep
 }
 
 
-bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, bool processDevice, bool rerun) {
+bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, BoardOrDevice process, bool rerun) {
   // Notes: defines, includes and misc are additive. All other keywords overwrite previous settings.
   // The target-type and build-type definitions are additive, but an attempt to
   // redefine an already existing type results in an error.
@@ -2726,7 +2731,7 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, bool processDevice,
   }
 
   // Process device and board
-  if (processDevice && !ProcessDevice(context)) {
+  if (process != BoardOrDevice::None && !ProcessDevice(context, process)) {
     CheckMissingPackRequirements(context.name);
     error |= true;
   }
@@ -3313,7 +3318,7 @@ bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, 
             if (!refContext.rteActiveTarget && !LoadPacks(refContext)) {
               return false;
             }
-            if (!ProcessPrecedences(refContext, true)) {
+            if (!ProcessPrecedences(refContext, BoardOrDevice::Both)) {
               return false;
             }
           }
@@ -3650,7 +3655,7 @@ bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGenFiles, bool
   bool ret = true;
   ret &= LoadPacks(context);
   context.rteActiveProject->SetAttribute("update-rte-files", updateRteFiles ? "1" : "0");
-  if (!ProcessPrecedences(context, true)) {
+  if (!ProcessPrecedences(context, BoardOrDevice::Both)) {
     return false;
   }
   if (!SetTargetAttributes(context, context.targetAttributes)) {
@@ -3880,7 +3885,7 @@ bool ProjMgrWorker::ListComponents(vector<string>& components, const string& fil
       return false;
     }
     if (!selectedContext.empty()) {
-      if (!ProcessPrecedences(context, true)) {
+      if (!ProcessPrecedences(context, BoardOrDevice::Both)) {
         return false;
       }
     }
@@ -4093,7 +4098,7 @@ bool ProjMgrWorker::ListLayers(vector<string>& layers, const string& clayerSearc
       }
     } else {
       // process precedences and device/board
-      if (!ProcessPrecedences(context, true)) {
+      if (!ProcessPrecedences(context, BoardOrDevice::SkipDevice)) {
         failedContexts.insert(selectedContext);
         error |= true;
         continue;
@@ -5003,7 +5008,7 @@ bool ProjMgrWorker::ProcessGeneratedLayers(ContextItem& context) {
         return false;
       }
     }
-    if (!ProcessPrecedences(context, true, true)) {
+    if (!ProcessPrecedences(context, BoardOrDevice::Both, true)) {
       return false;
     }
     if (!ProcessGroups(context)) {

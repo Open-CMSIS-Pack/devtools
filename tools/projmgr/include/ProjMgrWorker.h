@@ -375,6 +375,15 @@ enum class MessageType {
 };
 
 /**
+  * @brief Process Board/Device
+*/
+enum class BoardOrDevice {
+  Both,
+  None,
+  SkipDevice,
+};
+
+/**
  * @brief projmgr worker class responsible for processing requests and orchestrating parser and generator calls
 */
 class ProjMgrWorker {
@@ -802,10 +811,10 @@ protected:
   bool GetProjectSetup(ContextItem& context);
   bool InitializeTarget(ContextItem& context);
   bool SetTargetAttributes(ContextItem& context, std::map<std::string, std::string>& attributes);
-  bool ProcessPrecedences(ContextItem& context, bool processDevice = false, bool rerun = false);
+  bool ProcessPrecedences(ContextItem& context, BoardOrDevice process = BoardOrDevice::None, bool rerun = false);
   bool ProcessPrecedence(StringCollection& item);
   bool ProcessCompilerPrecedence(StringCollection& item, bool acceptRedefinition = false);
-  bool ProcessDevice(ContextItem& context);
+  bool ProcessDevice(ContextItem& context, BoardOrDevice process = BoardOrDevice::Both);
   bool ProcessDevicePrecedence(StringCollection& item);
   bool ProcessBoardPrecedence(StringCollection& item);
   bool ProcessToolchain(ContextItem& context);
