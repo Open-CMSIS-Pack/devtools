@@ -57,9 +57,9 @@ set(WARNINGS_ASM_FLAGS    ""   "-w"  "-Wall")
 set(WARNINGS_CXX_FLAGS    ""   "-w"  "-Wall")
 set(WARNINGS_LD_FLAGS     ""   "-w"  "-Wall")
 
-set(LANGUAGE_VALUES       "c90"      "gnu90"      "c99"      "gnu99"      "c11"      "gnu11"      "c17"      "gnu17"      "c++98"      "gnu++98"      "c++03"      "gnu++03"      "c++11"      "gnu++11"      "c++14"      "gnu++14"      "c++17"      "gnu++17")
-set(LANGUAGE_CC_FLAGS     "-std=c90" "-std=gnu90" "-std=c99" "-std=gnu99" "-std=c11" "-std=gnu11" "-std=c17" "-std=gnu17" ""           ""             ""           ""             ""           ""             ""           ""             ""           "")
-set(LANGUAGE_CXX_FLAGS    ""         ""           ""         ""           ""         ""           ""         ""           "-std=c++98" "-std=gnu++98" "-std=c++03" "-std=gnu++03" "-std=c++11" "-std=gnu++11" "-std=c++14" "-std=gnu++14" "-std=c++17" "-std=gnu++17")
+set(LANGUAGE_VALUES       "c90"      "gnu90"      "c99"      "gnu99"      "c11"      "gnu11"      "c17"      "gnu17"      "" "" "c++98"      "gnu++98"      "c++03"      "gnu++03"      "c++11"      "gnu++11"      "c++14"      "gnu++14"      "c++17"      "gnu++17"      "" "" "" "")
+set(LANGUAGE_CC_FLAGS     "-std=c90" "-std=gnu90" "-std=c99" "-std=gnu99" "-std=c11" "-std=gnu11" "-std=c17" "-std=gnu17" "" "" ""           ""             ""           ""             ""           ""             ""           ""             ""           ""             "" "" "" "")
+set(LANGUAGE_CXX_FLAGS    ""         ""           ""         ""           ""         ""           ""         ""           "" "" "-std=c++98" "-std=gnu++98" "-std=c++03" "-std=gnu++03" "-std=c++11" "-std=gnu++11" "-std=c++14" "-std=gnu++14" "-std=c++17" "-std=gnu++17" "" "" "" "")
 
 function(cbuild_set_option_flags lang option value flags)
   if(NOT DEFINED ${option}_${lang}_FLAGS)
@@ -185,7 +185,7 @@ set(LD_CPU ${TIARMCLANG_CPU})
 set(_LS)
 
 if(SECURE STREQUAL "Secure")
-  set(LD_SECURE)
+  set(LD_SECURE "-Wl,--import_cmse_lib_out=\"${OUT_DIR}/${CMSE_LIB}\"")
 endif()
 
 set(LD_FLAGS)
