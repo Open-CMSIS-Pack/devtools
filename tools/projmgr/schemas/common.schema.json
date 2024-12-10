@@ -504,7 +504,7 @@
     },
     "ProcessorDsp": {
       "enum": [ "on", "off" ],
-      "description": "Controls usage of SIMD instructions:\n on (enabled) | off (disabled) ."
+      "description": "Controls usage of DSP instruction set extensions as supported by the processor:\n on (enabled) | off (disabled) ."
     },
     "ProcessorMve": {
       "enum": [ "fp", "int", "off" ],
