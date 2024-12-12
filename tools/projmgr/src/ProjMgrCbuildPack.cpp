@@ -138,6 +138,9 @@ ProjMgrCbuildPack::ProjMgrCbuildPack(YAML::Node node, const vector<ContextItem*>
 //-- ProjMgrYamlEmitter::GenerateCbuildPack -------------------------------------------------------
 bool ProjMgrYamlEmitter::GenerateCbuildPack(const vector<ContextItem*> contexts,
   bool keepExistingPackContent, bool cbuildPackFrozen) {
+  if (m_parser->GetCsolution().name.empty()) {
+    return false;
+  }
   // generate cbuild-pack.yml
   const string& filename = m_parser->GetCsolution().directory + "/" + m_parser->GetCsolution().name + ".cbuild-pack.yml";
   YAML::Node rootNode;
