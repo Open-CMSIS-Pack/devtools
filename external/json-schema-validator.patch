@@ -60,6 +60,15 @@ index 0beb613..0a9122b 100644
  	return esub;
  }
  
+@@ -468,7 +472,7 @@ class type_schema : public schema
+ 
+ 		if (type)
+ 			type->validate(ptr, instance, patch, e);
+-		else
++		else if (!instance.is_number())
+ 			e.error(ptr, instance, "unexpected instance type");
+ 
+ 		if (enum_.first) {
 @@ -576,6 +580,32 @@ public:
  		attr = sch.find("enum");
  		if (attr != sch.end()) {

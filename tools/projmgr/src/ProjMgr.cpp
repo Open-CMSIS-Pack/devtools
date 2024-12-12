@@ -62,6 +62,7 @@ ProjMgr::ProjMgr() :
   m_parser(),
   m_extGenerator(&m_parser),
   m_worker(&m_parser, &m_extGenerator),
+  m_emitter(&m_parser, &m_worker),
   m_checkSchema(false),
   m_missingPacks(false),
   m_updateRteFiles(true),
@@ -72,8 +73,10 @@ ProjMgr::ProjMgr() :
   m_contextSet(false),
   m_relativePaths(false),
   m_frozenPacks(false),
+  m_cbuildgen(false),
   m_updateIdx(false)
 {
+  m_worker.SetEmitter(&m_emitter);
 }
 
 ProjMgr::~ProjMgr() {
@@ -193,6 +196,7 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
     m_checkSchema = !parseResult.count("n");
     m_worker.SetCheckSchema(m_checkSchema);
     m_extGenerator.SetCheckSchema(m_checkSchema);
+    m_emitter.SetCheckSchema(m_checkSchema);
     m_missingPacks = parseResult.count("m");
     m_updateRteFiles = !parseResult.count("no-update-rte");
     m_verbose = parseResult.count("v");
@@ -479,6 +483,7 @@ bool ProjMgr::PopulateContexts(void) {
 
   // Set output directory
   m_worker.SetOutputDir(m_outputDir);
+  m_emitter.SetOutputDir(m_outputDir.empty() ? m_rootDir : RteFsUtils::AbsolutePath(m_outputDir).generic_string());
 
   // Update tmp directory
   m_worker.UpdateTmpDir();
@@ -505,7 +510,7 @@ bool ProjMgr::PopulateContexts(void) {
 bool ProjMgr::GenerateYMLConfigurationFiles() {
   // Generate cbuild pack file
   const bool isUsingContexts = m_contextSet || m_context.size() != 0;
-  if (!m_emitter.GenerateCbuildPack(m_parser, m_processedContexts, isUsingContexts, m_frozenPacks, m_checkSchema)) {
+  if (!m_emitter.GenerateCbuildPack(m_processedContexts, isUsingContexts, m_frozenPacks)) {
     return false;
   }
 
@@ -514,7 +519,7 @@ bool ProjMgr::GenerateYMLConfigurationFiles() {
 
   // Generate cbuild files
   for (auto& contextItem : m_processedContexts) {
-    if (!m_emitter.GenerateCbuild(contextItem, m_checkSchema)) {
+    if (!m_emitter.GenerateCbuild(contextItem)) {
       result = false;
     }
   }
@@ -523,7 +528,17 @@ bool ProjMgr::GenerateYMLConfigurationFiles() {
   if (!m_allContexts.empty()) {
     map<string, ExecutesItem> executes;
     m_worker.GetExecutes(executes);
-    if (!m_emitter.GenerateCbuildIndex(m_parser, m_worker, m_processedContexts, m_outputDir, m_failedContext, executes, m_checkSchema)) {
+    if (!m_emitter.GenerateCbuildIndex(m_processedContexts, m_failedContext, executes)) {
+      return false;
+    }
+  }
+
+  // Generate cbuild-run file
+  if (m_contextSet && !m_processedContexts.empty()) {
+    if (!m_runDebug.CollectSettings(m_processedContexts)) {
+      return false;
+    }
+    if (!m_emitter.GenerateCbuildRun(m_runDebug.Get())) {
       return false;
     }
   }
@@ -932,9 +947,8 @@ bool ProjMgr::RunListLayers(void) {
       m_processedContexts.push_back(&contextItem);
     }
     if (!m_processedContexts.empty()) {
-      if (!m_emitter.GenerateCbuildIndex(
-        m_parser, m_worker, m_processedContexts, m_outputDir,
-        m_failedContext, map<string, ExecutesItem>(), m_checkSchema)) {
+      if (!m_emitter.GenerateCbuildIndex(m_processedContexts,
+        m_failedContext, map<string, ExecutesItem>())) {
         return false;
       }
     }

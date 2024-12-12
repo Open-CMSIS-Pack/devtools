@@ -111,6 +111,22 @@ struct ProcessorItem {
 };
 
 /**
+ * @brief memory item containing
+ *        name
+ *        access
+ *        start
+ *        size
+ *        algorithm
+*/
+struct MemoryItem {
+  std::string name;
+  std::string access;
+  std::string start;
+  std::string size;
+  std::string algorithm;
+};
+
+/**
  * @brief build types containing
  *        toolchain,
  *        optimization level,
@@ -151,10 +167,13 @@ struct BuildType {
  * @brief target types containing
  *        platform board,
  *        platform device,
+ *        additional memory,
+ *        build options
 */
 struct TargetType {
   std::string board;
   std::string device;
+  std::vector<MemoryItem> memory;
   BuildType build;
 };
 
