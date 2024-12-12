@@ -11,6 +11,7 @@
 #include "ProjMgrWorker.h"
 #include "ProjMgrGenerator.h"
 #include "ProjMgrYamlEmitter.h"
+#include "ProjMgrRunDebug.h"
 
 #include <cxxopts.hpp>
 
@@ -106,6 +107,12 @@ protected:
   ProjMgrYamlEmitter& GetEmitter() { return m_emitter; };
 
   /**
+   * @brief get run debug manager object
+   * @return reference to m_runDebug
+  */
+  ProjMgrRunDebug& GetRunDebug() { return m_runDebug; };
+
+  /**
    * @brief get cdefault file in solution/project or in installation directory
    * @return true if file is found successfully, false otherwise
   */
@@ -122,6 +129,7 @@ protected:
   ProjMgrWorker m_worker;
   ProjMgrGenerator m_generator;
   ProjMgrYamlEmitter m_emitter;
+  ProjMgrRunDebug m_runDebug;
 
   std::string m_csolutionFile;
   std::string m_cdefaultFile;

@@ -486,6 +486,7 @@
       <description>uVision Simulator</description>
       <mountedDevice    deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM4_NOFP"/>
       <compatibleDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM4_FP"/>
+      <algorithm name="Device/ARM/Flash/BOARD.FLM" start="0x80000000" size="0x00020000" default="1"/>
     </board>
     <board name="RteTest board test revision" vendor="Keil" revision="Rev1">
       <description>uVision Simulator</description>

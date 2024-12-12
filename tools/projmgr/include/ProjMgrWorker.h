@@ -13,6 +13,11 @@
 #include "ProjMgrUtils.h"
 
 /**
+ * Forward declarations
+*/
+class ProjMgrYamlEmitter;
+
+/**
  * @brief connections validation result containing
  *        boolean valid,
  *        conflicted connections,
@@ -245,7 +250,9 @@ struct ContextTypesItem {
  *        pointer to rte project,
  *        pointer to rte target,
  *        pointer to rte filtered model,
- *        map of project dependencies,
+ *        pointer to rte components,
+ *        pointer to rte device,
+ *        pointer to rte board,
  *        translation controls,
  *        target-type item,
  *        parent csolution target properties,
@@ -258,6 +265,7 @@ struct ContextTypesItem {
  *        device selection,
  *        board selection,
  *        device item struct,
+ *        board item struct,
  *        list of package requirements,
  *        map of required pdsc files and optionally its local path
  *        list of component requirements,
@@ -287,6 +295,7 @@ struct ContextTypesItem {
  *        flag indicating the context needs a rebuild
  *        vector of device books
  *        vector of board books
+ *        additional memory
 */
 struct ContextItem {
   CdefaultItem* cdefault = nullptr;
@@ -297,6 +306,8 @@ struct ContextItem {
   RteTarget* rteActiveTarget = nullptr;
   RteModel* rteFilteredModel = nullptr;
   RteItem* rteComponents;
+  RteDeviceItem* rteDevice;
+  RteBoard* rteBoard;
   TranslationControl controls;
   TargetItem targetItem;
   DirectoriesItem directories;
@@ -307,6 +318,7 @@ struct ContextItem {
   std::string device;
   std::string board;
   DeviceItem deviceItem;
+  BoardItem boardItem;
   std::vector<PackageItem> packRequirements;
   std::map<std::string, std::pair<std::string, std::string>> pdscFiles;
   std::vector<PackInfo> missingPacks;
@@ -344,6 +356,7 @@ struct ContextItem {
   bool needRebuild = false;
   std::vector<BookItem> deviceBooks;
   std::vector<BookItem> boardBooks;
+  std::vector<MemoryItem> memory;
 };
 
 /**
@@ -607,6 +620,12 @@ public:
   void SetUpCommand(bool isSetup);
 
   /**
+   * @brief set yaml emitter
+   * @param pointer to yaml emitter
+  */
+  void SetEmitter(ProjMgrYamlEmitter* emitter);
+
+  /**
    * @brief execute generator of a given context
    * @param generator identifier
    * @return true if executed successfully
@@ -766,6 +785,7 @@ protected:
   ProjMgrKernel* m_kernel = nullptr;
   RteGlobalModel* m_model = nullptr;
   ProjMgrExtGenerator* m_extGenerator = nullptr;
+  ProjMgrYamlEmitter* m_emitter = nullptr;
   std::list<RtePackage*> m_loadedPacks;
   std::vector<ToolchainItem> m_toolchains;
   StrVec m_toolchainConfigFiles;

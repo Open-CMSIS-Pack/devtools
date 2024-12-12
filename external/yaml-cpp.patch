@@ -90,6 +90,22 @@ index 3dbe401..0dd0b17 100644
      case TildeNull:
        _Set(m_nullFmt, value, scope);
        return true;
+diff --git a/src/emitterutils.cpp b/src/emitterutils.cpp
+index 6cdf6de..f80d722 100644
+--- a/src/emitterutils.cpp
++++ b/src/emitterutils.cpp
+@@ -159,6 +159,11 @@ bool IsValidPlainScalar(const std::string& str, FlowType::value flowType,
+     return false;
+   }
+ 
++  // check hexadecimal prefix
++  if (str.find("0x") == 0) {
++    return false;
++  }
++
+   // check the start
+   const RegEx& start = (flowType == FlowType::Flow ? Exp::PlainScalarInFlow()
+                                                    : Exp::PlainScalar());
 diff --git a/src/exceptions.cpp b/src/exceptions.cpp
 index 43a7976..af99fd6 100644
 --- a/src/exceptions.cpp

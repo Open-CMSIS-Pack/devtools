@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -130,7 +130,7 @@ public:
   */
   static RtePackage* ReadGpdscFile(const std::string& gpdsc, bool& valid);
 
- /**
+  /**
    * @brief expand compiler id the format <name>@[>=]<version> into name, minimum and maximum versions
    * @param compiler id
    * @param name reference to compiler name
@@ -231,7 +231,7 @@ public:
    * @param input string
    * @return string with replaced characters
   */
-  static std:: string ReplaceDelimiters(const std::string input);
+  static std::string ReplaceDelimiters(const std::string input);
 
   /**
    * @brief find referenced context
@@ -272,6 +272,13 @@ public:
    * @return true if incompatible pack is found
   */
   static bool ContainsIncompatiblePack(const std::list<RtePackage*>& packs, const std::string& requirement);
+
+  /**
+   * @brief convert ULL to hex string
+   * @param unsigned long long number
+   * @return hexadecimal string
+  */
+  static const std::string ULLToHex(unsigned long long number);
 
 protected:
   /**

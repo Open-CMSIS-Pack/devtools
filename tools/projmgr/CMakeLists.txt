@@ -14,11 +14,15 @@ SET(PROJMGR_SOURCE_FILES ProjMgr.cpp ProjMgrKernel.cpp ProjMgrCallback.cpp
   ProjMgrParser.cpp ProjMgrWorker.cpp ProjMgrGenerator.cpp ProjMgrXmlParser.cpp
   ProjMgrYamlParser.cpp ProjMgrLogger.cpp ProjMgrYamlSchemaChecker.cpp
   ProjMgrYamlEmitter.cpp ProjMgrUtils.cpp ProjMgrExtGenerator.cpp
+  ProjMgrCbuildBase.cpp ProjMgrCbuild.cpp ProjMgrCbuildIdx.cpp
+  ProjMgrCbuildGenIdx.cpp ProjMgrCbuildPack.cpp ProjMgrCbuildSet.cpp
+  ProjMgrCbuildRun.cpp ProjMgrRunDebug.cpp
 )
 SET(PROJMGR_HEADER_FILES ProjMgr.h ProjMgrKernel.h ProjMgrCallback.h
   ProjMgrParser.h ProjMgrWorker.h ProjMgrGenerator.h ProjMgrXmlParser.h
   ProjMgrYamlParser.h ProjMgrLogger.h ProjMgrYamlSchemaChecker.h
   ProjMgrYamlEmitter.h ProjMgrUtils.h ProjMgrExtGenerator.h
+  ProjMgrCbuildBase.h ProjMgrRunDebug.h
 )
 
 list(TRANSFORM PROJMGR_SOURCE_FILES PREPEND src/)

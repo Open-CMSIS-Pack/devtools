@@ -1,5 +1,5 @@
 layer:
-  name: 2
+  name: false
   defines:
     - DEF_LAYER2
     - DEF: oxff

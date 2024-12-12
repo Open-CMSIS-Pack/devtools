@@ -296,6 +296,10 @@ void ProjMgrWorker::SetUpCommand(bool isSetup) {
   m_isSetupCommand = isSetup;
 }
 
+void ProjMgrWorker::SetEmitter(ProjMgrYamlEmitter* emitter) {
+  m_emitter = emitter;
+}
+
 bool ProjMgrWorker::CollectRequiredPdscFiles(ContextItem& context, const std::string& packRoot)
 {
   if (!ProcessPackages(context, packRoot)) {
@@ -1251,6 +1255,10 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context, BoardOrDevice process) {
         context.boardBooks.push_back(bookItem);
       }
     }
+    context.boardItem.vendor = matchedBoard->GetVendorName();
+    context.boardItem.name = matchedBoard->GetName();
+    context.boardItem.revision = matchedBoard->GetRevision();
+    context.rteBoard = matchedBoard;
     context.targetAttributes["Bname"]    = matchedBoard->GetName();
     context.targetAttributes["Bvendor"]  = matchedBoard->GetVendorName();
     context.targetAttributes["Brevision"] = matchedBoard->GetRevision();
@@ -1364,7 +1372,7 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context, BoardOrDevice process) {
     const auto& processorAttributes = processor->GetAttributes();
     context.targetAttributes.insert(processorAttributes.begin(), processorAttributes.end());
   }
-
+  context.rteDevice = matchedDevice;
   context.targetAttributes["Dvendor"] = matchedDevice->GetEffectiveAttribute("Dvendor");
   context.targetAttributes["Dname"] = matchedDevice->GetFullDeviceName();
 
@@ -1411,6 +1419,7 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context, BoardOrDevice process) {
     }
   }
   GetDeviceItem(context.device, context.deviceItem);
+  context.deviceItem.vendor = matchedDevice->GetVendorName();
   context.variables[RteConstants::AS_DNAME] = context.deviceItem.name;
   context.variables[RteConstants::AS_PNAME] = context.deviceItem.pname;
   return true;
@@ -2743,6 +2752,11 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, BoardOrDevice proce
   // but before processing misc, defines and includes precedences
   if (!ProcessSequencesRelatives(context, rerun)) {
     error |= true;
+  }
+
+  // Additional memory
+  for (auto& item : context.memory) {
+    RteFsUtils::NormalizePath(item.algorithm, context.csolution->directory);
   }
 
   // Optimize
@@ -4180,6 +4194,7 @@ bool ProjMgrWorker::GetTypeContent(ContextItem& context) {
     context.controls.target = targetType.build;
     context.targetItem.board = targetType.board;
     context.targetItem.device = targetType.device;
+    context.memory = targetType.memory;
   }
   context.controls.cproject = context.cproject->target.build;
   context.controls.csolution = context.csolution->target.build;
@@ -4268,7 +4283,7 @@ bool ProjMgrWorker::ExecuteGenerator(std::string& generatorId) {
     generatorDestination += '/';
   }
 
-  if (!ProjMgrYamlEmitter::GenerateCbuild(&context, m_checkSchema, generator->GetGeneratorName(),
+  if (!m_emitter->GenerateCbuild(&context, generator->GetGeneratorName(),
     RtePackage::GetPackageIDfromAttributes(*generator->GetPackage()), m_dryRun)) {
     return false;
   }
@@ -4964,11 +4979,11 @@ bool ProjMgrWorker::ExecuteExtGenerator(std::string& generatorId) {
   const string& genDir = selectedContext->extGen[generatorId].path;
   string cbuildgenOutput = selectedContext->directories.intdir;
   RteFsUtils::NormalizePath(cbuildgenOutput, selectedContext->directories.cprj);
-  if (!ProjMgrYamlEmitter::GenerateCbuildGenIndex(*m_parser, siblingContexts, projectType, cbuildgenOutput, genDir, m_checkSchema)) {
+  if (!m_emitter->GenerateCbuildGenIndex(siblingContexts, projectType, cbuildgenOutput, genDir)) {
     return false;
   }
   for (const auto& siblingContext : siblingContexts) {
-    if (!ProjMgrYamlEmitter::GenerateCbuild(siblingContext, m_checkSchema, generatorId)) {
+    if (!m_emitter->GenerateCbuild(siblingContext, generatorId)) {
       return false;
     }
   }

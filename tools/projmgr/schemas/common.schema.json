@@ -422,6 +422,7 @@
         "language-C":   { "$ref": "#/definitions/LanguageCType" },
         "language-CPP": { "$ref": "#/definitions/LanguageCppType" },
         "misc":         { "$ref": "#/definitions/MiscTypes" },
+        "memory":       { "$ref": "#/definitions/MemoryType" },
         "optimize":     { "$ref": "#/definitions/OptimizeType" },
         "processor":    { "$ref": "#/definitions/ProcessorType" },
         "undefine":     { "$ref": "#/definitions/UndefinesType" },
@@ -1645,6 +1646,72 @@
         "info":     { "type": "array",  "items": { "type": "string"} }
       },      
       "additionalProperties": false
-    }    
+    },
+    "MemoryType": {
+      "description": "Additional memory available",
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/MemoryItem" }
+    },
+    "MemoryItem": {
+      "type": "object",
+      "properties": {
+        "name":     { "type": "string", "description": "Memory identifier." },
+        "access":   { "type": "string", "description": "Memory access permission." },
+        "algorithm":{ "type": "string", "description": "Programming algorithm." },
+        "start":    { "type": "string", "description": "Memory start address." },
+        "size":     { "type": "string", "description": "Memory size." }
+      },
+      "additionalProperties": false
+    },
+    "ProgrammingType": {
+      "description": "Flash programming algorithms",
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/AlgorithmType" }
+    },
+    "AlgorithmType": {
+      "type": "object",
+      "properties": {
+        "algorithm":{ "type": "string", "description": "Programming algorithm." },
+        "start":    { "type": "string", "description": "Memory start address." },
+        "size":     { "type": "string", "description": "Memory size." },
+        "ram-start":{ "type": "string", "description": "RAM Memory start address." },
+        "ram-size": { "type": "string", "description": "RAM Memory size." },
+        "default":  { "type": "boolean", "description": "Default memory." }
+      },
+      "additionalProperties": false
+    },
+    "RunFilesType": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/RunFileType" }
+    },
+    "RunFileType": {
+      "type": "object",
+      "properties": {
+        "file": { "type": "string", "description": "File path." },
+        "type": { "type": "string", "description": "File type." }
+      },
+      "additionalProperties": false
+    },
+    "RunDebugDescType": {
+      "description": "This section describes generated contents",
+      "type": "object",
+      "properties": {
+        "generated-by":         { "type": "string", "description": "Tool name along with version information used to generate this file." },
+        "solution":             { "type": "string", "description": "Solution path." },
+        "target-type":          { "type": "string", "description": "Target type." },
+        "compiler":             { "type": "string", "description": "Selection of compiler used." },
+        "board":                { "$ref": "#/definitions/BoardType" },
+        "device":               { "$ref": "#/definitions/DeviceType" },
+        "board-pack":           { "$ref": "#/definitions/PackID" },
+        "device-pack":          { "$ref": "#/definitions/PackID" },
+        "programming":          { "$ref": "#/definitions/ProgrammingType" },
+        "system-descriptions":  { "$ref": "#/definitions/RunFilesType", "description": "System description files." },
+        "output":               { "$ref": "#/definitions/RunFilesType", "description": "Application image files." }
+      },
+      "additionalProperties": false
+    }
   }
 }
