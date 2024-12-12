@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -358,6 +358,16 @@ void ProjMgrYamlParser::ParseString(const YAML::Node& parent, const string& key,
     value = parent[key].as<string>();
     if (parent[key].Type() == YAML::NodeType::Null) {
       value = "";
+    }
+  }
+}
+
+void ProjMgrYamlParser::ParseNumber(const YAML::Node& parent, const string& file, const string& key, string& value) {
+  if (parent[key].IsDefined()) {
+    value = parent[key].as<string>();
+    if (!regex_match(value, regex("^(0x[0-9a-fA-F]+)$|^([0-9]*)$"))) {
+      YAML::Mark mark = parent[key].Mark();
+      ProjMgrLogger::Get().Warn("number must be integer or hexadecimal prefixed by 0x", "", file, mark.line + 1, mark.column + 1);
     }
   }
 }
@@ -913,6 +923,20 @@ bool ProjMgrYamlParser::ParseTargetType(const YAML::Node& parent, const string& 
       }
     }
   }
+
+  if (parent[YAML_MEMORY].IsDefined()) {
+    const YAML::Node& memoryNode = parent[YAML_MEMORY];
+    for (const auto& memoryEntry : memoryNode) {
+      MemoryItem memoryItem;
+      ParseString(memoryEntry, YAML_NAME, memoryItem.name);
+      ParseString(memoryEntry, YAML_ACCESS, memoryItem.access);
+      ParseString(memoryEntry, YAML_ALGORITHM, memoryItem.algorithm);
+      ParseNumber(memoryEntry, file, YAML_START, memoryItem.start);
+      ParseNumber(memoryEntry, file, YAML_SIZE, memoryItem.size);
+      targetType.memory.push_back(memoryItem);
+    }
+  }
+
   return ParseBuildType(parent, file, targetType.build);
 }
 
@@ -1055,6 +1079,7 @@ const set<string> targetTypeKeys = {
   YAML_TYPE,
   YAML_DEVICE,
   YAML_BOARD,
+  YAML_MEMORY,
   YAML_PROCESSOR,
   YAML_COMPILER,
   YAML_OPTIMIZE,

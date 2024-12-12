@@ -1,0 +1,22 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schemas/csolution.schema.json
+
+solution:
+
+  compiler: AC6
+
+  target-types:
+    - type: TestHW
+      board: RteTest Test device variant
+      device: RteTest_ARMCM4_NOFP
+      memory:
+        - start: 0x80000000
+          size: 0x00010000
+          name: CustomMemory
+          access: rwx
+          algorithm: CustomAlgo.flm
+
+  projects:
+    - project: run-debug.cproject.yml
+
+  packs:
+    - pack: ARM::RteTest_DFP

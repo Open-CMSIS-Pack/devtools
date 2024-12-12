@@ -14,6 +14,7 @@
 #include "CrossPlatformUtils.h"
 
 #include <regex>
+#include <sstream>
 
 using namespace std;
 
@@ -431,4 +432,10 @@ bool ProjMgrUtils::ContainsIncompatiblePack(const std::list<RtePackage*>& packs,
     }
   }
   return incompatible;
+}
+
+const string ProjMgrUtils::ULLToHex(const unsigned long long number) {
+  stringstream ss;
+  ss << "0x" << hex << setfill('0') << uppercase << setw(8) << number;
+  return ss.str();
 }

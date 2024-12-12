@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -524,4 +524,10 @@ TEST_F(ProjMgrUtilsUnitTests, ContainsIncompatiblePack) {
   EXPECT_FALSE(ProjMgrUtils::ContainsIncompatiblePack(loadedPacks, "ARM::RteTestBoard@0.1.0"));
   EXPECT_TRUE(ProjMgrUtils::ContainsIncompatiblePack(loadedPacks, "ARM::RteTest@9.9.9"));
   EXPECT_FALSE(ProjMgrUtils::ContainsIncompatiblePack(loadedPacks, "Unknown::Pack@0.0.1"));
+}
+
+TEST_F(ProjMgrUtilsUnitTests, ULLToHex) {
+  EXPECT_EQ("0x00000000", ProjMgrUtils::ULLToHex(0));
+  EXPECT_EQ("0xDEADBEEF", ProjMgrUtils::ULLToHex(3735928559));
+  EXPECT_EQ("0xFFFFFFFF", ProjMgrUtils::ULLToHex(4294967295));
 }
