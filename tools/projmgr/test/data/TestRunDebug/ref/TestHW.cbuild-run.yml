@@ -9,23 +9,23 @@ cbuild-run:
   board-pack: ARM::RteTest_DFP@0.2.0
   programming:
     - algorithm: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/Flash/CortexM4Device.FLM
-      start: "0x00000000"
-      size: "0x00020000"
+      start: 0x00000000
+      size: 0x00020000
     - algorithm: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/Flash/CortexM4SubFamily.FLM
-      start: "0x00000000"
-      size: "0x00040000"
+      start: 0x00000000
+      size: 0x00040000
       default: true
     - algorithm: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/Flash/FAMILY.FLM
-      start: "0x00000000"
-      size: "0x00040000"
+      start: 0x00000000
+      size: 0x00040000
       default: true
     - algorithm: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/Flash/BOARD.FLM
-      start: "0x80000000"
-      size: "0x00020000"
+      start: 0x80000000
+      size: 0x00020000
       default: true
     - algorithm: ../data/TestRunDebug/CustomAlgo.flm
-      start: "0x80000000"
-      size: "0x00010000"
+      start: 0x80000000
+      size: 0x00010000
   system-descriptions:
     - file: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/SVD/ARMCM4.svd
       type: svd

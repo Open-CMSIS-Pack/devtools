@@ -65,7 +65,7 @@ index 0beb613..0a9122b 100644
  		if (type)
  			type->validate(ptr, instance, patch, e);
 -		else
-+		else if (!instance.is_number())
++		else if (!instance.is_string() || instance.get_ref<const json::string_t&>().find("0x") != 0)
  			e.error(ptr, instance, "unexpected instance type");
  
  		if (enum_.first) {

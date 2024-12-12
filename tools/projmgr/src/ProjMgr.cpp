@@ -524,21 +524,21 @@ bool ProjMgr::GenerateYMLConfigurationFiles() {
     }
   }
 
+  // Generate cbuild-run file
+  if (m_contextSet && !m_processedContexts.empty()) {
+    if (!m_runDebug.CollectSettings(m_processedContexts)) {
+      result = false;
+    }
+    if (!m_emitter.GenerateCbuildRun(m_runDebug.Get())) {
+      result = false;
+    }
+  }
+
   // Generate cbuild index file
   if (!m_allContexts.empty()) {
     map<string, ExecutesItem> executes;
     m_worker.GetExecutes(executes);
     if (!m_emitter.GenerateCbuildIndex(m_processedContexts, m_failedContext, executes)) {
-      return false;
-    }
-  }
-
-  // Generate cbuild-run file
-  if (m_contextSet && !m_processedContexts.empty()) {
-    if (!m_runDebug.CollectSettings(m_processedContexts)) {
-      return false;
-    }
-    if (!m_emitter.GenerateCbuildRun(m_runDebug.Get())) {
       return false;
     }
   }

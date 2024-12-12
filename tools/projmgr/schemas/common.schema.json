@@ -1659,8 +1659,8 @@
         "name":     { "type": "string", "description": "Memory identifier." },
         "access":   { "type": "string", "description": "Memory access permission." },
         "algorithm":{ "type": "string", "description": "Programming algorithm." },
-        "start":    { "type": "string", "description": "Memory start address." },
-        "size":     { "type": "string", "description": "Memory size." }
+        "start":    { "type": "number", "description": "Memory start address." },
+        "size":     { "type": "number", "description": "Memory size." }
       },
       "additionalProperties": false
     },
@@ -1674,10 +1674,10 @@
       "type": "object",
       "properties": {
         "algorithm":{ "type": "string", "description": "Programming algorithm." },
-        "start":    { "type": "string", "description": "Memory start address." },
-        "size":     { "type": "string", "description": "Memory size." },
-        "ram-start":{ "type": "string", "description": "RAM Memory start address." },
-        "ram-size": { "type": "string", "description": "RAM Memory size." },
+        "start":    { "type": "number", "description": "Memory start address." },
+        "size":     { "type": "number", "description": "Memory size." },
+        "ram-start":{ "type": "number", "description": "RAM Memory start address." },
+        "ram-size": { "type": "number", "description": "RAM Memory size." },
         "default":  { "type": "boolean", "description": "Default memory." }
       },
       "additionalProperties": false

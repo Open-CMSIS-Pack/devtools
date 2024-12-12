@@ -9,8 +9,8 @@ solution:
       board: RteTest Test device variant
       device: RteTest_ARMCM4_NOFP
       memory:
-        - start: "0x80000000"
-          size: "0x00010000"
+        - start: 0x80000000
+          size: 0x00010000
           name: CustomMemory
           access: rwx
           algorithm: CustomAlgo.flm

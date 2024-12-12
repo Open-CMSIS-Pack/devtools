@@ -262,6 +262,7 @@ protected:
   void ParseProcessor(const YAML::Node& parent, ProcessorItem& processor);
   void ParseBoolean(const YAML::Node& parent, const std::string& key, bool& value, bool def);
   void ParseString(const YAML::Node& parent, const std::string& key, std::string& value);
+  void ParseNumber(const YAML::Node& parent, const std::string& file, const std::string& key, std::string& value);
   void ParseInt(const YAML::Node& parent, const std::string& key, int& value);
   void ParseVector(const YAML::Node& parent, const std::string& key, std::vector<std::string>& value);
   void ParseVectorOfStringPairs(const YAML::Node& parent, const std::string& key, std::vector<std::pair<std::string, std::string>>& value);

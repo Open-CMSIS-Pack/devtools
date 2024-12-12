@@ -362,6 +362,16 @@ void ProjMgrYamlParser::ParseString(const YAML::Node& parent, const string& key,
   }
 }
 
+void ProjMgrYamlParser::ParseNumber(const YAML::Node& parent, const string& file, const string& key, string& value) {
+  if (parent[key].IsDefined()) {
+    value = parent[key].as<string>();
+    if (!regex_match(value, regex("^(0x[0-9a-fA-F]+)$|^([0-9]*)$"))) {
+      YAML::Mark mark = parent[key].Mark();
+      ProjMgrLogger::Get().Warn("number must be integer or hexadecimal prefixed by 0x", "", file, mark.line + 1, mark.column + 1);
+    }
+  }
+}
+
 void ProjMgrYamlParser::ParseInt(const YAML::Node& parent, const string& key, int& value) {
   if (parent[key].IsDefined()) {
     value = parent[key].as<int>();
@@ -920,9 +930,9 @@ bool ProjMgrYamlParser::ParseTargetType(const YAML::Node& parent, const string& 
       MemoryItem memoryItem;
       ParseString(memoryEntry, YAML_NAME, memoryItem.name);
       ParseString(memoryEntry, YAML_ACCESS, memoryItem.access);
-      ParseString(memoryEntry, YAML_START, memoryItem.start);
-      ParseString(memoryEntry, YAML_SIZE, memoryItem.size);
       ParseString(memoryEntry, YAML_ALGORITHM, memoryItem.algorithm);
+      ParseNumber(memoryEntry, file, YAML_START, memoryItem.start);
+      ParseNumber(memoryEntry, file, YAML_SIZE, memoryItem.size);
       targetType.memory.push_back(memoryItem);
     }
   }
