@@ -439,3 +439,12 @@ const string ProjMgrUtils::ULLToHex(const unsigned long long number) {
   ss << "0x" << hex << setfill('0') << uppercase << setw(8) << number;
   return ss.str();
 }
+
+const string ProjMgrUtils::GetVariableName(const string item) {
+  smatch sm;
+  regex_match(item, sm, regex(".*\\$(.*)\\$.*"));
+  if (sm.size() >= 2) {
+    return sm[1];
+  }
+  return RteUtils::EMPTY_STRING;
+}

@@ -199,7 +199,10 @@ bool ProjMgrWorker::ParseContextLayers(ContextItem& context) {
       continue;
     }
     if (CheckContextFilters(clayer.typeFilter, context)) {
-      error_code ec;
+      const auto variable = ProjMgrUtils::GetVariableName(clayer.layer);
+      if (!variable.empty()) {
+        context.layerVariables[clayer.type] = variable;
+      }
       string clayerFile = RteUtils::ExpandAccessSequences(clayer.layer, context.variables);
       if (clayerFile.empty()) {
         continue;
@@ -208,16 +211,9 @@ bool ProjMgrWorker::ParseContextLayers(ContextItem& context) {
         RteFsUtils::NormalizePath(clayerFile, context.cproject->directory);
       }
       if (!RteFsUtils::Exists(clayerFile)) {
-        smatch sm;
-        try {
-          regex_match(clayer.layer, sm, regex(".*\\$(.*)\\$.*"));
-        }
-        catch (exception&) {};
-        if (sm.size() >= 2) {
-          if (context.variables.find(sm[1]) == context.variables.end()) {
-            m_undefLayerVars.insert(string(sm[1]));
-            continue;
-          }
+        if (!variable.empty() && context.variables.find(variable) == context.variables.end()) {
+          m_undefLayerVars.insert(string(variable));
+          continue;
         }
       }
       if (m_parser->ParseClayer(clayerFile, m_checkSchema)) {
@@ -860,7 +856,10 @@ bool ProjMgrWorker::ProcessLayerCombinations(ContextItem& context, LayersDiscove
 
       // init list of compatible layers with all required layer types
       for (const auto& type : discover.requiredLayerTypes) {
-        context.compatibleLayers.insert({ type, StrVec() });
+        context.compatibleLayers.emplace(type, StrVec());
+      }
+      for (const auto& [type, _] : context.layerVariables) {
+        context.compatibleLayers.emplace(type, StrVec());
       }
       // update list of compatible layers
       context.validConnections.push_back(combination);
