@@ -1069,6 +1069,7 @@ const set<string> cbuildSetKeys = {
   YAML_GENERATED_BY,
   YAML_CONTEXTS,
   YAML_COMPILER,
+  YAML_ENVIRONMENT,
 };
 
 const set<string> cbuildPackKeys = {
