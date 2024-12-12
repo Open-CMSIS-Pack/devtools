@@ -95,11 +95,11 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts) {
   for (const auto& c : contexts) {
     auto output = c->outputTypes;
     if (output.elf.on) {
-      RteFsUtils::NormalizePath(output.elf.filename, c->directories.outdir);
+      RteFsUtils::NormalizePath(output.elf.filename, c->directories.cprj + '/' + c->directories.outdir);
       m_runDebug.outputs.push_back({ output.elf.filename, RteConstants::OUTPUT_TYPE_ELF });
     }
     if (output.hex.on) {
-      RteFsUtils::NormalizePath(output.hex.filename, c->directories.outdir);
+      RteFsUtils::NormalizePath(output.hex.filename, c->directories.cprj + '/' + c->directories.outdir);
       m_runDebug.outputs.push_back({ output.hex.filename, RteConstants::OUTPUT_TYPE_HEX });
     }
   }
