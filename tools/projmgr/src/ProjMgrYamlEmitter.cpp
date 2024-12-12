@@ -69,7 +69,6 @@ bool ProjMgrYamlEmitter::WriteFile(YAML::Node& rootNode, const std::string& file
     YAML::Emitter emitter;
     emitter.SetNullFormat(YAML::EmptyNull);
     emitter.SetIntBase(YAML::Hex);
-    //emitter.SetStringFormat(YAML::DoubleQuoted);
     emitter << rootNode;
     fileStream << emitter.c_str();
     fileStream << endl;

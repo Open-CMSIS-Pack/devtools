@@ -6581,7 +6581,6 @@ TEST_F(ProjMgrUnitTests, TestRunDebug) {
   argv[3] = (char*)"--context-set";
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
-  //argv[6] = (char*)"-n";
   EXPECT_EQ(0, RunProjMgr(6, argv, m_envp));
 
   ProjMgrTestEnv::CompareFile(testoutput_folder + "/TestHW.cbuild-run.yml",
