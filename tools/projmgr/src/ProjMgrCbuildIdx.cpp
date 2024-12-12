@@ -192,8 +192,10 @@ void ProjMgrCbuildIdx::SetVariablesNode(YAML::Node node, ProjMgrParser* parser, 
     }
     YAML::Node layerNode;
     string layerFile;
+    const string layerId = context->layerVariables.find(type) != context->layerVariables.end() ?
+      context->layerVariables.at(type) : type + "-Layer";
     if (filenames.empty()) {
-      layerNode[type + "-Layer"] = "";
+      layerNode[layerId] = "";
     }
     for (const auto& [filename, options] : filenames) {
       string packRoot = ProjMgrKernel::Get()->GetCmsisPackRoot();
@@ -211,7 +213,7 @@ void ProjMgrCbuildIdx::SetVariablesNode(YAML::Node node, ProjMgrParser* parser, 
           layerFile = "$" + string(RteConstants::AS_SOLUTION_DIR_BR) + "$/" + RteFsUtils::LexicallyNormal(relPath);
         }
       }
-      SetNodeValue(layerNode[type + "-Layer"], layerFile);
+      SetNodeValue(layerNode[layerId], layerFile);
       if (parser->GetGenericClayers().find(filename) != parser->GetGenericClayers().end()) {
         const auto& clayer = parser->GetGenericClayers().at(filename);
         SetNodeValue(layerNode[YAML_DESCRIPTION], clayer.description);

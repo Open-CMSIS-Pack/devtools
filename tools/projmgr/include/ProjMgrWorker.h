@@ -281,6 +281,7 @@ struct ContextTypesItem {
  *        map of absolute file paths,
  *        map of generators,
  *        map of compatible layers,
+ *        map of layer variables,
  *        valid connections,
  *        linker options,
  *        map of variables,
@@ -342,6 +343,7 @@ struct ContextItem {
   std::map<std::string, RteGenerator*> generators;
   std::map<std::string, GpdscItem> gpdscs;
   StrVecMap compatibleLayers;
+  StrMap layerVariables;
   std::vector<ConnectionsCollectionVec> validConnections;
   LinkerContextItem linker;
   std::map<std::string, std::string> variables;

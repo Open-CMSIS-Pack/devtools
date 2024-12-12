@@ -280,6 +280,13 @@ public:
   */
   static const std::string ULLToHex(unsigned long long number);
 
+  /**
+   * @brief get variable name
+   * @param input string
+   * @return variable name or empty string
+  */
+  static const std::string GetVariableName(const std::string item);
+
 protected:
   /**
    * @brief get filtered list of contexts
