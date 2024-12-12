@@ -81,6 +81,7 @@ static constexpr const char* YAML_DEVICE_PACK = "device-pack";
 static constexpr const char* YAML_DOWNLOAD_URL = "download-url";
 static constexpr const char* YAML_DSP = "dsp";
 static constexpr const char* YAML_ENDIAN = "endian";
+static constexpr const char* YAML_ENVIRONMENT = "environment";
 static constexpr const char* YAML_ERRORS = "errors";
 static constexpr const char* YAML_EXECUTE = "execute";
 static constexpr const char* YAML_EXECUTES = "executes";

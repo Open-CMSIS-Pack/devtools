@@ -1490,7 +1490,11 @@
       "properties": {
         "generated-by": { "type": "string", "description": "Tool name along with version information used to generate this application." },
         "contexts": { "$ref": "#/definitions/BuildSetContextsType", "description": "List of fully specified contexts." },
-        "compiler": { "type": "string", "description": "Selection of compiler used." }
+        "compiler": { "type": "string", "description": "Selection of compiler used." },
+        "environment": {
+          "description": "Environment specific settings.",
+          "additionalProperties": true
+        }
       },
       "additionalProperties": false,
       "required": ["generated-by", "contexts"]
