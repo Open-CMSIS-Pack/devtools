@@ -736,7 +736,7 @@
     },
     "ComponentsType": {
       "type": "array",
-      "title": "Software components from packs\nDocumentation: https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/docs/YML-Input-Format.md#components",
+      "title": "Software components from packs\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#components",
       "description": "List of software components that are added from packs. Can be applied in *.cproject.yml and *.clayer.yml files.",
       "uniqueItems": true,
       "minItems": 1,
@@ -1453,7 +1453,7 @@
       "required": [ "connect" ]
     },
     "LinkersType": {
-      "title": "Control Linker Script Generation\nDocumentation: https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/docs/YML-Input-Format.md#linker",
+      "title": "Control Linker Script Generation\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#linker",
       "description": "Specifies an explicit linker script and/or memory regions header file. Can be applied in *.cproject.yml and *.clayer.yml files.",
       "type": "array",
       "uniqueItems": true,
