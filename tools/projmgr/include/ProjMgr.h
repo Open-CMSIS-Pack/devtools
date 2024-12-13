@@ -181,7 +181,7 @@ protected:
   bool ValidateCreatedFor(const std::string& createdFor);
 
   bool Configure();
-  bool GenerateYMLConfigurationFiles();
+  bool GenerateYMLConfigurationFiles(bool previousResult);
   bool UpdateRte();
   bool ParseAndValidateContexts();
 };
