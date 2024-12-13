@@ -507,7 +507,7 @@ bool ProjMgr::PopulateContexts(void) {
   return true;
 }
 
-bool ProjMgr::GenerateYMLConfigurationFiles() {
+bool ProjMgr::GenerateYMLConfigurationFiles(bool previousResult) {
   // Generate cbuild pack file
   const bool isUsingContexts = m_contextSet || m_context.size() != 0;
   if (!m_emitter.GenerateCbuildPack(m_processedContexts, isUsingContexts, m_frozenPacks)) {
@@ -525,7 +525,7 @@ bool ProjMgr::GenerateYMLConfigurationFiles() {
   }
 
   // Generate cbuild-run file
-  if (m_contextSet && !m_processedContexts.empty()) {
+  if (previousResult && m_contextSet && !m_processedContexts.empty()) {
     if (!m_runDebug.CollectSettings(m_processedContexts)) {
       result = false;
     }
@@ -684,7 +684,7 @@ bool ProjMgr::RunConvert(void) {
   bool Success = Configure();
 
   // Generate YML build configuration files
-  Success &= GenerateYMLConfigurationFiles();
+  Success &= GenerateYMLConfigurationFiles(Success);
 
   // Generate Cprjs
   if (m_cbuildgen) {
