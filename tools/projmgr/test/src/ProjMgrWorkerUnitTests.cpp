@@ -469,7 +469,9 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessComponents_Csub) {
   EXPECT_FALSE(ProcessComponents(context));
   EXPECT_TRUE(context.components.find("ARM::Board:Test:Rev1@1.1.1") != context.components.end());
   EXPECT_EQ("no component was found with identifier 'Board:Test'", ProjMgrLogger::Get().GetErrors()["test_component_csub"][0]);
-}
+  EXPECT_EQ("no component was found with identifier 'Device:Startup'\n  did you mean 'Device:Startup&RteTest Startup'?",
+    ProjMgrLogger::Get().GetErrors()["test_component_csub"][1]);
+ }
 
 TEST_F(ProjMgrWorkerUnitTests, ProcessComponentsApi) {
   set<string> expectedComponents = {

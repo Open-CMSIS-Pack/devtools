@@ -1772,10 +1772,12 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
     if (item.component.empty()) {
       continue;
     }
-    RteComponent* matchedComponent = ProcessComponent(context, item, componentMap);
+    string hint;
+    RteComponent* matchedComponent = ProcessComponent(context, item, componentMap, hint);
     if (!matchedComponent) {
       // No match
-      ProjMgrLogger::Get().Error("no component was found with identifier '" + item.component + "'", context.name);
+      ProjMgrLogger::Get().Error("no component was found with identifier '" + item.component + "'" +
+        (!hint.empty() ? "\n  did you mean '" + hint + "'?" : ""), context.name);
       error = true;
       continue;
     }
@@ -1901,7 +1903,7 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
   return !error;
 }
 
-RteComponent* ProjMgrWorker::ProcessComponent(ContextItem& context, ComponentItem& item, RteComponentMap& componentMap)
+RteComponent* ProjMgrWorker::ProcessComponent(ContextItem& context, ComponentItem& item, RteComponentMap& componentMap, string& hint)
 {
   if (!item.condition.empty()) {
     RteComponentInstance ci(nullptr);
@@ -1987,6 +1989,9 @@ RteComponent* ProjMgrWorker::ProcessComponent(ContextItem& context, ComponentIte
       }
     }
     // No match
+    if (filteredComponents.size() == 1) {
+      hint = filteredComponents.cbegin()->second->GetPartialComponentID(true);
+    }
     return nullptr;
   } else {
     // One or multiple matches

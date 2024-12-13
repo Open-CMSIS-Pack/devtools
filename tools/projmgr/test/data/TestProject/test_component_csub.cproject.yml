@@ -6,3 +6,4 @@ project:
   components:
     - component: Board:Test:Rev1
     - component: Board:Test
+    - component: Device:Startup
