@@ -203,9 +203,10 @@ void ProjMgrCbuild::SetComponentFilesNode(YAML::Node node, const ContextItem* co
 }
 
 void ProjMgrCbuild::SetApisNode(YAML::Node node, const ContextItem* context) {
-  for (const auto& [api, componentIds] : context->apis) {
+  for (const auto& [apiId, item] : context->apis) {
     YAML::Node apiNode;
-    const auto& apiId = api->ConstructComponentID(true);
+    const auto& api = item.first;
+    const auto& componentIds = item.second;
     SetNodeValue(apiNode[YAML_API], apiId);
     SetNodeValue(apiNode[YAML_CONDITION], api->GetConditionID());
     SetNodeValue(apiNode[YAML_FROM_PACK], api->GetPackageID());

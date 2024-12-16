@@ -2217,9 +2217,10 @@ bool ProjMgrWorker::ProcessComponentFiles(ContextItem& context) {
     // component based API files
     const auto& api = rteComponent->GetApi(context.rteActiveTarget, true);
     if (api) {
-      context.apis[api].push_back(componentId);
-      if (context.apis[api].size() == 1) {
-        const auto& apiId = api->ConstructComponentID(true);
+      const auto& apiId = api->ConstructComponentID(true);
+      context.apis[apiId].first = api;
+      context.apis[apiId].second.push_back(componentId);
+      if (context.apis[apiId].second.size() == 1) {
         const auto& apiFiles = api->GetFileContainer() ? api->GetFileContainer()->GetChildren() : Collection<RteItem*>();
         for (const auto& apiFile : apiFiles) {
           const auto& attr = apiFile->GetAttribute("attr");
