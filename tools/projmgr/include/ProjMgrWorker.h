@@ -330,7 +330,7 @@ struct ContextItem {
   std::map<std::string, std::string> targetAttributes;
   std::map<std::string, RtePackage*> packages;
   std::map<std::string, SelectedComponentItem> components;
-  std::map<RteApi*, std::vector<std::string>> apis;
+  std::map<std::string, std::pair<RteApi*, std::vector<std::string>>> apis;
   std::map<std::string, SelectedComponentItem> bootstrapComponents;
   StrMap bootstrapMap;
   std::vector<std::tuple<RteItem::ConditionResult, std::string, std::set<std::string>, std::set<std::string>>> validationResults;
