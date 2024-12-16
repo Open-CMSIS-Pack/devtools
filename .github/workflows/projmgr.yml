@@ -166,7 +166,6 @@ jobs:
         run: |
           mkdir -p tools/projmgr/distribution/bin tools/projmgr/distribution/lib tools/projmgr/distribution/doc tools/projmgr/distribution/etc
           cp tools/projmgr/docs/LICENSE.txt tools/projmgr/distribution/
-          cp -r tools/projmgr/docs/Manual/* tools/projmgr/distribution/doc/
           cp -r tools/projmgr/schemas/* tools/projmgr/distribution/etc/
           cp -r tools/projmgr/templates/* tools/projmgr/distribution/etc/
 
