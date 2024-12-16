@@ -2221,7 +2221,6 @@ bool ProjMgrWorker::ProcessComponentFiles(ContextItem& context) {
       context.apis[apiId].first = api;
       context.apis[apiId].second.push_back(componentId);
       if (context.apis[apiId].second.size() == 1) {
-        const auto& apiId = api->ConstructComponentID(true);
         const auto& apiFiles = api->GetFileContainer() ? api->GetFileContainer()->GetChildren() : Collection<RteItem*>();
         for (const auto& apiFile : apiFiles) {
           const auto& attr = apiFile->GetAttribute("attr");
