@@ -57,6 +57,16 @@ Software layers and Virtual I/O simplify these use cases:
     <th>Description</th>
   </tr>
   <tr>
+    <td>2.7.0</td>
+    <td>Release notes:
+      - extended 'language-C' and 'language-CPP' supported values
+      - updated CLANG support for LLVM 19 compatibility
+      - updated cbuild2cmake utility v0.9.5
+      - updated cbuild utility v2.7.0
+      - updated cpackget utility v2.1.5
+      - updated csolution utility v2.7.0
+      - updated cbridge utility v0.9.14
+    </td>
     <td>2.6.0</td>
     <td>Release notes:
       - added support for trustzone mode 'secure-only'
