@@ -1,9 +1,9 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/2.6.0/tools/projmgr/schemas/cdefault.schema.json",
+  "$id": "https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/2.7.0/tools/projmgr/schemas/cdefault.schema.json",
   "title": "CMSIS cdefault",
   "description": "setup of a build environment with toolchain specific controls; defines a default compiler",
-  "version": "2.6.0",
+  "version": "2.7.0",
   "type": "object",
   "properties": {
     "default": {
