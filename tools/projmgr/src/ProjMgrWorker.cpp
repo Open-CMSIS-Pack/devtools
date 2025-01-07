@@ -2034,7 +2034,7 @@ bool ProjMgrWorker::AddRequiredComponents(ContextItem& context) {
   return true;
 }
 
-bool ProjMgrWorker::CheckAndGenerateRegionsHeader(ContextItem& context) {
+void ProjMgrWorker::CheckAndGenerateRegionsHeader(ContextItem& context) {
   const string regionsHeader = RteFsUtils::MakePathCanonical(fs::path(context.directories.cprj).append(context.linker.regions).generic_string());
   if (!RteFsUtils::Exists(regionsHeader)) {
     string generatedRegionsFile;
@@ -2043,10 +2043,8 @@ bool ProjMgrWorker::CheckAndGenerateRegionsHeader(ContextItem& context) {
     }
   }
   if (!RteFsUtils::Exists(regionsHeader)) {
-    ProjMgrLogger::Get().Error("specified regions header was not found", context.name, regionsHeader);
-    return false;
+    m_missingFiles.insert({ regionsHeader, FileNode() });
   }
-  return true;
 }
 
 string ProjMgrWorker::GetContextRteFolder(ContextItem& context) {
@@ -3689,7 +3687,7 @@ bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGenFiles, bool
   }
   // Check regions header, generate it if needed
   if (!context.linker.regions.empty()) {
-    ret &= CheckAndGenerateRegionsHeader(context);
+    CheckAndGenerateRegionsHeader(context);
   }
   ret &= ProcessConfigFiles(context);
   ret &= ProcessComponentFiles(context);

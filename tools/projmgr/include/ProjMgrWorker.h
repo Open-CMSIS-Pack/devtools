@@ -901,7 +901,7 @@ protected:
   bool ProvidedConnectionsMatch(ConnectionsCollection collection, ConnectionsList connections);
   StrSet GetValidSets(ContextItem& context, const std::string& clayer);
   void SetDefaultLinkerScript(ContextItem& context);
-  bool CheckAndGenerateRegionsHeader(ContextItem& context);
+  void CheckAndGenerateRegionsHeader(ContextItem& context);
   bool GenerateRegionsHeader(ContextItem& context, std::string& generatedRegionsFile);
   void ExpandAccessSequence(const ContextItem& context, const ContextItem& refContext, const std::string& sequence, const std::string& outdir, std::string& item, bool withHeadingDot);
   void ExpandPackDir(ContextItem& context, const std::string& pack, std::string& item);

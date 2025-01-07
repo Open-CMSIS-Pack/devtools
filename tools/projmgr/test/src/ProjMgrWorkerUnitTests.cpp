@@ -1520,10 +1520,9 @@ TEST_F(ProjMgrWorkerUnitTests, CheckAndGenerateRegionsHeader) {
   // Generation fails
   context.directories.cprj = testoutput_folder;
   context.linker.regions = "regions_RteTest_ARMCM0.h";
-  EXPECT_FALSE(CheckAndGenerateRegionsHeader(context));
+  CheckAndGenerateRegionsHeader(context);
   expectedErrStr = "\
 warning csolution: regions header file generation failed\n\
-.*/regions_RteTest_ARMCM0.h - error csolution: specified regions header was not found\n\
 ";
   errStr = streamRedirect.GetErrorString();
   EXPECT_TRUE(regex_match(errStr, regex(expectedErrStr)));
@@ -1533,20 +1532,17 @@ warning csolution: regions header file generation failed\n\
   context.targetAttributes["Dname"] = "RteTest_ARMCM0";
   EXPECT_TRUE(SetTargetAttributes(context, context.targetAttributes));
   streamRedirect.ClearStringStreams();
-  EXPECT_FALSE(CheckAndGenerateRegionsHeader(context));
+  CheckAndGenerateRegionsHeader(context);
   expectedOutStr = ".*/Device/RteTest_ARMCM0/regions_RteTest_ARMCM0.h - info csolution: regions header generated successfully\n";
-  expectedErrStr = ".*/regions_RteTest_ARMCM0.h - error csolution: specified regions header was not found\n";
   outStr = streamRedirect.GetOutString();
-  errStr = streamRedirect.GetErrorString();
   EXPECT_TRUE(regex_match(outStr, regex(expectedOutStr)));
-  EXPECT_TRUE(regex_match(errStr, regex(expectedErrStr)));
+  EXPECT_NE(string::npos, m_missingFiles.begin()->first.find(context.linker.regions));
 
   // Region header already exists, does nothing
   streamRedirect.ClearStringStreams();
   context.linker.regions = "./Device/RteTest_ARMCM0/regions_RteTest_ARMCM0.h";
   CheckAndGenerateRegionsHeader(context);
   EXPECT_TRUE(streamRedirect.GetOutString().empty());
-  EXPECT_TRUE(streamRedirect.GetErrorString().empty());
 };
 
 TEST_F(ProjMgrWorkerUnitTests, GetGeneratorDir) {
