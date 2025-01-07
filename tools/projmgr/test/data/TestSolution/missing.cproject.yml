@@ -5,3 +5,15 @@ project:
     - group: Sources
       files:
         - file: missing.c
+        - file: generated.c
+
+  linker:
+    - regions: regions.h
+    - regions: generated.h
+
+  executes:
+    - execute: dummy
+      run: dummy
+      output:
+        - $ProjectDir()$/generated.c
+        - $ProjectDir()$/generated.h

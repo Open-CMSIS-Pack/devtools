@@ -6486,8 +6486,11 @@ TEST_F(ProjMgrUnitTests, MissingFile) {
   argv[1] = (char*)"convert";
   argv[2] = (char*)csolution.c_str();
   EXPECT_EQ(1, RunProjMgr(3, argv, m_envp));
-  const string expectedOutStr = ".*/missing.cproject.yml:7:11 - error csolution: file '.*/TestSolution/missing.c' was not found";
-  EXPECT_TRUE(regex_search(streamRedirect.GetErrorString(), regex(expectedOutStr)));
+  const auto& errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find("missing.c' was not found"));
+  EXPECT_NE(string::npos, errStr.find("regions.h' was not found"));
+  EXPECT_EQ(string::npos, errStr.find("generated.h' was not found"));
+  EXPECT_EQ(string::npos, errStr.find("generated.c' was not found"));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution_pack_version_not_available) {
