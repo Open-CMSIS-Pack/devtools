@@ -100,6 +100,7 @@
       ]
     },
     "ForContext": {
+      "title": "for-context:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#for-context",
       "oneOf": [
         {"$ref": "#/definitions/ArrayOfBuildContext" },
         {"$ref": "#/definitions/BuildContext" }
@@ -107,6 +108,7 @@
       "description": "Apply to a specific context or a context list\nFormat: [.<build-type>][+<target-type>]."
     },
     "NotForContext": {
+      "title": "not-for-context:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#not-for-context",
       "oneOf": [
         {"$ref": "#/definitions/ArrayOfBuildContext" },
         {"$ref": "#/definitions/BuildContext" }
@@ -115,6 +117,7 @@
 
     },
     "SelectCompilersType": {
+      "title": "select-compiler:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#select-compiler",
       "type": "array",
       "minItems": 1,
       "description": "List of compilers supported in the solution.",
@@ -128,6 +131,7 @@
       "required" : [ "compiler"]
     },
     "CompilerType": {
+      "title":"compiler:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#compiler",
       "type": "string",
       "pattern": "^(GCC|CLANG|AC6|IAR|CLANG_TI)(@(>=)?([0-9]+\\.[0-9]+\\.[0-9]+((\\+|\\-)[a-zA-Z0-9_\\.\\+-]+)?))?$",
       "description": "Compiler toolchain to be used, optionally with version, for example AC6@6.23.0."
@@ -139,6 +143,7 @@
       ]
     },
     "VariablesType": {
+      "title": "variables:\nDocumenation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#variables",
       "type": "array",
       "uniqueItems": true,
       "minItems": 1,
@@ -170,6 +175,7 @@
       "items": { "$ref": "#/definitions/BuildContextWithProjectName" }
     },
     "ContextMapType": {
+      "title": "context-map:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#context-map",
       "oneOf": [
         {"$ref": "#/definitions/ArrayOfContextMapAlternativeContext" },
         {"$ref": "#/definitions/ContextMapAlternativeContext" }
@@ -177,32 +183,39 @@
       "description": "Remapping of build contexts."
     },
     "DeviceType": {
+      "title": "device:\nDocumenation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#device",
       "type": "string",
       "pattern": "^(([ -9;-~]+::)?[ -9;-~]+)?(:[ -9;-~]+)?$",
       "description": "Unique device name. Overrules default board device setting.\nA unique processor ID is reqiured for devices with multiple processors.\nExample: STMicroelectronics::STM32H735IGK"
     },
     "BoardType": {
+      "title": "board:\nDocumenation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#board",
       "type": "string",
       "pattern": "^([ -9;-~]+::)?[ -9;-~]+(:[ -9;-~]+)?$",
       "description": "Unique board name optionally preceded by board vendor and followed by revision.\nFormat [vendor::]board[:revision].\nExample: NXP::LPCXpresso55S28:Rev.A"
     },
     "OptimizeType": {
+      "title": "optimize:\nDocumenation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#optimize",
       "enum": [ "size", "speed", "balanced", "none", "debug" ],
       "description": "Generic optimization levels for code generation (size, speed, balanced, none, debug)."
     },
     "DebugType": {
+      "title": "debug:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#debug",
       "enum": [ "on", "off" ],
       "description": "Enable/disable generation of debug information (on, off)."
     },
     "WarningsType": {
+      "title": "warnings:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#warnings",
       "enum": [ "on", "off", "all" ],
       "description": "Control warnings (on, off, all)."
     },
     "LanguageCType": {
+      "title": "language-C:\nDocumenation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#language-c",
       "enum": [ "c90", "gnu90", "c99", "gnu99", "c11", "gnu11", "c17", "gnu17", "c23", "gnu23" ],
       "description": "Language standard to apply for compiling C source files.\nFor example c17, or gnu11."
     },
     "LanguageCppType": {
+      "title": "language-CPP:\nDocumenation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#language-cpp",
       "enum": [ "c++98", "gnu++98", "c++03", "gnu++03", "c++11", "gnu++11", "c++14", "gnu++14", "c++17", "gnu++17", "c++20", "gnu++20", "c++23", "gnu++23" ],
       "description": "Language standard to apply for compiling C++ source files.\nFor example c++17 or gnu++17."
     },
@@ -227,22 +240,46 @@
       ]
     },
     "OutputType": {
+      "title": "output:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#output",
       "type": "object",
+      "description": "Output file settings.",
       "minProperties": 1,
       "properties": {
-        "base-name": { "type": "string", "description": "Base name for all output files" },
-        "type": { "$ref": "#/definitions/ArtifactsType" }
+        "base-name": {
+          "title": "base-name:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#output",
+          "type": "string",
+          "description": "Base name for all output files"
+        },
+        "type": {
+          "title": "type:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#output",
+          "$ref": "#/definitions/ArtifactsType"
+        }
       },
       "additionalProperties": false
     },
     "OutputDirectoriesType": {
+      "title": "output-dirs:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#output-dirs",
       "type": "object",
       "description": "Directories for saving the build output and temporary files.",
       "properties": {
-        "intdir":   { "type": "string", "description": "Legacy option applied instead of tmpdir when using cbuild with --cbuildgen." },
-        "outdir":   { "type": "string", "description": "Directory for saving the build output files \n (.elf, .bin, .map, and others)." },
-        "tmpdir":   { "type": "string", "description": "Directory for saving the interim temporary files." },
-        "cprjdir":  { "type": "string" }
+        "intdir": {
+          "title": "intdir:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#output-dirs",
+          "type": "string",
+          "description": "Legacy option applied instead of tmpdir when using cbuild with --cbuildgen."
+        },
+        "outdir": {
+          "title": "outdir:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#output-dirs",
+          "type": "string",
+          "description": "Directory for saving the build output files \n (.elf, .bin, .map, and others)."
+        },
+        "tmpdir": {
+          "title": "tmpdir:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#output-dirs",
+          "type": "string",
+          "description": "Directory for saving the interim temporary files."
+        },
+        "cprjdir": {
+          "type": "string"
+        }
       },
       "additionalProperties": false
     },
@@ -271,48 +308,6 @@
       "minItems": 1,
       "items": { "$ref": "#/definitions/OutputFileType" }
     },
-    "DefinesType": {
-      "type": "array",
-      "description": "List of #define symbols for C/C++ files and linker script preprocessor.",
-      "uniqueItems": true,
-      "minItems": 1,
-      "items": {
-        "oneOf": [
-          {
-            "type": "object",
-            "properties": {
-              "key": { "type": "string" },
-              "value": { "type": ["number", "string"], "minLength": 1 }
-            }
-          },
-          {
-            "type": "string",
-            "pattern": "^([^=:]+)$"
-          }
-        ]
-      }
-    },
-    "DefinesAsmType": {
-      "type": "array",
-      "description": "List of #define symbols for assembler source files.",
-      "uniqueItems": true,
-      "minItems": 1,
-      "items": {
-        "oneOf": [
-          {
-            "type": "object",
-            "properties": {
-              "key": { "type": "string" },
-              "value": { "type": ["number", "string"], "minLength": 1 }
-            }
-          },
-          {
-            "type": "string",
-            "pattern": "^([^=:]+)$"
-          }
-        ]
-      }
-    },
     "BuildDefinesType": {
       "type": "array",
       "description": "List of #define symbol settings for the code generation.",
@@ -334,7 +329,52 @@
         ]
       }
     },
+    "DefinesType": {
+      "title": "define:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#define",
+      "type": "array",
+      "description": "List of #define symbols for C/C++ files and linker script preprocessor.",
+      "uniqueItems": true,
+      "minItems": 1,
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "key": { "type": "string" },
+              "value": { "type": ["number", "string"], "minLength": 1 }
+            }
+          },
+          {
+            "type": "string",
+            "pattern": "^([^=:]+)$"
+          }
+        ]
+      }
+    },
+    "DefinesAsmType": {
+      "title": "define-asm:\nDocumenation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#define-asm",
+      "type": "array",
+      "description": "List of #define symbols for assembler source files.",
+      "uniqueItems": true,
+      "minItems": 1,
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "key": { "type": "string" },
+              "value": { "type": ["number", "string"], "minLength": 1 }
+            }
+          },
+          {
+            "type": "string",
+            "pattern": "^([^=:]+)$"
+          }
+        ]
+      }
+    },
     "UndefinesType": {
+      "title": "undefine:\nDocumenation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#undefine",
       "type": "array",
       "description": "List of #define symbol settings to be removed for the code generation.",
       "uniqueItems": true,
@@ -342,6 +382,7 @@
       "items": { "type": "string" }
     },
     "AddpathsType": {
+      "title": "add-path:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#add-path",
       "type": "array",
       "description": "List of additional include paths for C/C++ source files.",
       "uniqueItems": true,
@@ -349,6 +390,7 @@
       "items": { "type": "string" }
     },
     "AddAsmPathsType": {
+      "title": "add-path-asm\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#add-path-asm",
       "type": "array",
       "description": "List of additional include paths for assembly source files.",
       "uniqueItems": true,
@@ -356,6 +398,7 @@
       "items": { "type": "string" }
     },
     "DelpathsType": {
+      "title": "del-path:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#del-path",
       "type": "array",
       "description": "List of include paths to be removed for code generation.",
       "uniqueItems": true,
@@ -363,6 +406,7 @@
       "items": { "type": "string" }
     },
     "MiscTypes": {
+      "title": "misc:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#misc",
       "description": "List of miscellaneous literal tool-specific controls that are passed directly to the tools depending on the file type.",
       "oneOf": [
         {
@@ -377,24 +421,66 @@
     "MiscType": {
       "type": ["object", "null"],
       "properties": {
-        "for-compiler": { "$ref": "#/definitions/CompilerType" },
-        "C":            { "$ref": "#/definitions/ArrayOfStrings", "description": "Flags for *.c files." },
-        "CPP":          { "$ref": "#/definitions/ArrayOfStrings", "description": "Flags for *.cpp files." },
-        "C-CPP":        { "$ref": "#/definitions/ArrayOfStrings", "description": "Flags for *.c  and *.cpp files." },
-        "ASM":          { "$ref": "#/definitions/ArrayOfStrings", "description": "Flags for assembler source files."  },
-        "Link":         { "$ref": "#/definitions/ArrayOfStrings", "description": "Linker flags." },
-        "Link-C":       { "$ref": "#/definitions/ArrayOfStrings", "description": "Linker flags for a pure C project." },
-        "Link-CPP":     { "$ref": "#/definitions/ArrayOfStrings", "description": "Linker flags for a project with C++ files." },
-        "Library":      { "$ref": "#/definitions/ArrayOfStrings", "description": "Set libraries to the correct position in the linker command line (for GCC)." },
-        "Lib":          { "$ref": "#/definitions/ArrayOfStrings", "description": "List of Library Manager or Archiver flags." }
+        "for-compiler": {
+          "title": "for-compiler:\nDocumenation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#for-compiler",
+          "$ref": "#/definitions/CompilerType",
+          "description": "Name of the toolchain that the literal control string applies to."
+        },
+        "C": {
+          "title": "C:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#misc",
+          "$ref": "#/definitions/ArrayOfStrings",
+          "description": "Flags for *.c files."
+        },
+        "CPP": {
+          "title": "CPP:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#misc",
+          "$ref": "#/definitions/ArrayOfStrings",
+          "description": "Flags for *.cpp files."
+        },
+        "C-CPP": {
+          "title": "C-CPP:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#misc",
+          "$ref": "#/definitions/ArrayOfStrings",
+          "description": "Flags for *.c and *.cpp files."
+        },
+        "ASM": {
+          "title": "ASM:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#misc",
+          "$ref": "#/definitions/ArrayOfStrings",
+          "description": "Flags for assembler source files."
+        },
+        "Link": {
+          "title": "Link:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#misc",
+          "$ref": "#/definitions/ArrayOfStrings",
+          "description": "Linker flags."
+        },
+        "Link-C": {
+          "title": "Link-C:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#misc",
+          "$ref": "#/definitions/ArrayOfStrings",
+          "description": "Linker flags for a pure C project."
+        },
+        "Link-CPP": {
+          "title": "Link-CPP:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#misc",
+          "$ref": "#/definitions/ArrayOfStrings",
+          "description": "Linker flags for a project with C++ files."
+        },
+        "Library": {
+          "title": "Library:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#misc",
+          "$ref": "#/definitions/ArrayOfStrings",
+          "description": "Set libraries to the correct position in the linker command line (for GCC)."
+        },
+        "Lib": {
+          "title": "Lib:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#misc",
+          "$ref": "#/definitions/ArrayOfStrings",
+          "description": "List of Library Manager or Archiver flags."
+        }
       },
       "additionalProperties": false
     },
     "InstancesType": {
+      "title": "instances:\nDocumenation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#instances",
       "type": "integer",
-      "description": "Allows to add multiple instances of a component."
+      "description": "Allows to use multiple instances of component configuration files instead of default 1."
     },
     "TargetTypes": {
+      "title": "target-types:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#target-types",
       "type": "array",
       "description": "Target type declaration list that allow to switch among different targets.",
       "uniqueItems": true,
@@ -405,6 +491,7 @@
       "type": "object",
       "properties": {
         "type": {
+          "title": "type:\nDocumenation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#target-types",
           "type": "string",
           "pattern": "^([a-zA-Z0-9_-]{1,32})$",
           "description": "Name of the target type."
@@ -412,7 +499,10 @@
         "add-path":     { "$ref": "#/definitions/AddpathsType" },
         "add-path-asm": { "$ref": "#/definitions/AddAsmPathsType" },
         "board":        { "$ref": "#/definitions/BoardType" },
-        "compiler":     { "$ref": "#/definitions/CompilerType" },
+        "compiler": {
+          "title": "compiler:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#compiler",
+          "$ref": "#/definitions/CompilerType"
+        },
         "context-map":  { "$ref": "#/definitions/ContextMapType" },
         "debug":        { "$ref": "#/definitions/DebugType" },
         "define":       { "$ref": "#/definitions/DefinesType" },
@@ -468,6 +558,7 @@
       "required" : [ "type"]
     },
     "ProjectsType": {
+      "title": "projects:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#projects",
       "type": "array",
       "description": "List of projects defined as part of this solution.",
       "uniqueItems": true,
@@ -478,6 +569,7 @@
       "type": "object",
       "properties": {
         "project": {
+          "title": "project:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#projects",
           "type": "string",
           "pattern": "^.*[/]([^.+]*\\.cproject\\.(yml|yaml))$|^([^.+]+)\\.cproject\\.(yml|yaml)$",
           "description": "Path to the valid project file."
@@ -492,34 +584,42 @@
       ]
     },
     "ProcessorTrustzone": {
+      "title": "trustzone:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#processor",
       "enum": [ "secure", "secure-only", "non-secure", "off" ],
       "description": "Select TrustZone mode:\n secure | secure-only | non-secure | off ."
     },
     "ProcessorFpu": {
+      "title": "fpu:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#processor",
       "enum": [ "dp", "sp", "off" ],
       "description": "Controls usage of FPU instructions:\ndp (double precision)\n sp (single precision)\n off (disabled) ."
     },
     "BuildProcessorFpu": {
+      "title": "fpu:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#processor",
       "enum": [ "on", "dp", "sp", "off" ],
       "description": "Controls usage of FPU instructions:\non (enabled)\n dp (double precision)\n sp (single precision)\n off (disabled) ."
     },
     "ProcessorDsp": {
+      "title": "dsp:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#processor",
       "enum": [ "on", "off" ],
       "description": "Controls usage of DSP instruction set extensions as supported by the processor:\n on (enabled) | off (disabled) ."
     },
     "ProcessorMve": {
+      "title": "mve:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#processor",
       "enum": [ "fp", "int", "off" ],
       "description": "Controls usage of M-Profile Vector Extension Instructions:\n fp (floating point and integer instructions)\n int (integer instructions)\n off (disabled) ."
     },
     "ProcessorEndian": {
+      "title": "endian:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#processor",
       "enum": [ "little", "big" ],
       "description": "Controls endianess: little | big ."
     },
     "ProcessorBranchProtection": {
+      "title": "branch-protection:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#processor",
       "enum": [ "bti", "bti-signret", "off" ],
       "description": "Select Branch Protection mode:\n bti (branch target identification)\n bit-signret (bti and pointer authentication)\n off (disabled) ."
     },
     "ProcessorType": {
+      "title": "processor:\nDocumenation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#processor",
       "type": ["object", "null"],
       "description": "Configures usage of processor features.",
       "properties": {
@@ -547,6 +647,7 @@
       "additionalProperties": false
     },
     "GroupsType": {
+      "title": "groups:\nDocumenation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#groups",
       "type": "array",
       "description": "List of file groups to be added to a project or layer.",
       "uniqueItems": true,
@@ -556,24 +657,31 @@
     "GroupType": {
       "type": "object",
       "properties": {
-        "group":           { "type": "string", "description": "Name of the source file group." },
-        "for-context":     { "$ref": "#/definitions/ForContext" },
+        "group": {
+          "title": "group:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#groups",
+          "type": "string",
+          "description": "Name of the source file group."
+        },
+        "add-path": { "$ref": "#/definitions/AddpathsType" },
+        "add-path-asm": { "$ref": "#/definitions/AddAsmPathsType" },
+        "debug": { "$ref": "#/definitions/DebugType" },
+        "define": { "$ref": "#/definitions/DefinesType" },
+        "define-asm": { "$ref": "#/definitions/DefinesAsmType" },
+        "del-path": { "$ref": "#/definitions/DelpathsType" },
+        "files": { "$ref": "#/definitions/FilesType" },
+        "for-context": { "$ref": "#/definitions/ForContext" },
+        "for-compiler": {
+          "title": "for-compiler:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#for-compiler",
+          "$ref": "#/definitions/CompilersType"
+        },
+        "groups": { "$ref": "#/definitions/GroupsType" },
+        "language-C": { "$ref": "#/definitions/LanguageCType" },
+        "language-CPP": { "$ref": "#/definitions/LanguageCppType" },
+        "misc": { "$ref": "#/definitions/MiscTypes" },
         "not-for-context": { "$ref": "#/definitions/NotForContext" },
-        "for-compiler":    { "$ref": "#/definitions/CompilersType" },
-        "optimize":        { "$ref": "#/definitions/OptimizeType" },
-        "debug":           { "$ref": "#/definitions/DebugType" },
-        "warnings":        { "$ref": "#/definitions/WarningsType" },
-        "language-C":      { "$ref": "#/definitions/LanguageCType" },
-        "language-CPP":    { "$ref": "#/definitions/LanguageCppType" },
-        "define":          { "$ref": "#/definitions/DefinesType" },
-        "define-asm":      { "$ref": "#/definitions/DefinesAsmType" },
-        "undefine":        { "$ref": "#/definitions/UndefinesType" },
-        "add-path":        { "$ref": "#/definitions/AddpathsType" },
-        "add-path-asm":    { "$ref": "#/definitions/AddAsmPathsType" },
-        "del-path":        { "$ref": "#/definitions/DelpathsType" },
-        "misc":            { "$ref": "#/definitions/MiscTypes" },
-        "groups":          { "$ref": "#/definitions/GroupsType" },
-        "files":           { "$ref": "#/definitions/FilesType" }
+        "optimize": { "$ref": "#/definitions/OptimizeType" },
+        "undefine": { "$ref": "#/definitions/UndefinesType" },
+        "warnings": { "$ref": "#/definitions/WarningsType" }
       },
       "allOf": [
         { "$ref": "#/definitions/TypeListMutualExclusion" },
@@ -617,6 +725,7 @@
       "additionalProperties": false
     },
     "FilesType": {
+      "title": "files:\nDocumenation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#files",
       "type": "array",
       "description": "List of source files to be added to a project or layer.",
       "uniqueItems": true,
@@ -631,6 +740,7 @@
       "description": "The file attribute defines the special handling in the project when being used as configuration or template file."
     },
     "FileLanguageType": {
+      "title": "languange:",
       "enum": [ "asm", "c", "cpp", "c-cpp", "link" ],
       "description": "File language attribute type defines the language for source, header and include file categories. Based on the language the information is used by language specific build tools."
     },
@@ -638,35 +748,62 @@
       "enum": [ "visible", "hidden", "public", "private" ],
       "description": "File scope attribute type defines the visibility of header file and include path file categories. Based on the specified scope header files are visible or hidden and include paths are public or private."
     },
-
     "FileType": {
       "type": "object",
       "properties": {
-        "file":            { "type": "string", "description": "File name along with the path." },
-        "category":        { "$ref": "#/definitions/FileCategoryType" },
-        "attr":            { "$ref": "#/definitions/FileAttributeType" },
-        "language":        { "$ref": "#/definitions/FileLanguageType" },
-        "scope":           { "$ref": "#/definitions/FileScopeType" },
-        "version":         { "$ref": "#/definitions/VersionType" },
-        "for-context":     { "$ref": "#/definitions/ForContext" },
-        "not-for-context": { "$ref": "#/definitions/NotForContext" },
-        "for-compiler":    { "$ref": "#/definitions/CompilersType" },
-        "optimize":        { "$ref": "#/definitions/OptimizeType" },
-        "debug":           { "$ref": "#/definitions/DebugType" },
-        "warnings":        { "$ref": "#/definitions/WarningsType" },
-        "language-C":      { "$ref": "#/definitions/LanguageCType" },
-        "language-CPP":    { "$ref": "#/definitions/LanguageCppType" },
-        "define":          { "$ref": "#/definitions/DefinesType" },
-        "define-asm":      { "$ref": "#/definitions/DefinesAsmType" },
-        "undefine":        { "$ref": "#/definitions/UndefinesType" },
+        "file": {
+          "title": "file:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#files",
+          "type": "string",
+          "description": "File name along with the path."
+        },
         "add-path":        { "$ref": "#/definitions/AddpathsType" },
         "add-path-asm":    { "$ref": "#/definitions/AddAsmPathsType" },
+        "attr":            { "title": "attr:", "$ref": "#/definitions/FileAttributeType" },
+        "base": {
+          "title": "base:",
+          "type": "string",
+          "description": "Current configuration file with version."
+        },
+        "category":        {
+          "title": "category:\nDocumenation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#filename-extensions",
+          "$ref": "#/definitions/FileCategoryType"
+        },
+        "debug":           { "$ref": "#/definitions/DebugType" },
+        "define":          { "$ref": "#/definitions/DefinesType" },
+        "define-asm":      { "$ref": "#/definitions/DefinesAsmType" },
         "del-path":        { "$ref": "#/definitions/DelpathsType" },
+        "for-compiler":    {
+          "title": "for-compiler:\nDocumenation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#for-compiler",
+          "$ref": "#/definitions/CompilersType"
+        },
+        "for-context":     { "$ref": "#/definitions/ForContext" },
+        "language":        { "$ref": "#/definitions/FileLanguageType" },
+        "language-C":      { "$ref": "#/definitions/LanguageCType" },
+        "language-CPP":    { "$ref": "#/definitions/LanguageCppType" },
         "misc":            { "$ref": "#/definitions/MiscTypes" },
-        "select":          { "type": "string", "description": "Description and purpose of the file." },
-        "base":            { "type": "string", "description": "Current configuration file with version." },
-        "update":          { "type": "string", "description": "New configuration file used for merge utility." },
-        "status":          { "$ref": "#/definitions/PLMStatusType" }
+        "not-for-context": { "$ref": "#/definitions/NotForContext" },
+        "optimize":        { "$ref": "#/definitions/OptimizeType" },
+        "scope":           { "$ref": "#/definitions/FileScopeType" },
+        "select":          {
+          "title": "select:",
+          "type": "string",
+          "description": "Description and purpose of the file."
+        },
+        "status":          {
+          "title": "status:",
+          "$ref": "#/definitions/PLMStatusType"
+        },
+        "version":         {
+          "title": "version:",
+          "$ref": "#/definitions/VersionType"
+        },
+        "undefine":        { "$ref": "#/definitions/UndefinesType" },
+        "update":          {
+          "title": "update:",
+          "type": "string",
+          "description": "New configuration file used for merge utility."
+        },
+        "warnings":        { "$ref": "#/definitions/WarningsType" }
       },
       "allOf": [
         { "$ref": "#/definitions/TypeListMutualExclusion" },
@@ -735,8 +872,8 @@
       "description": "Name of the software component\nFormat:  [Cvendor::] Cclass [&Cbundle] :Cgroup [:Csub] [&Cvariant] [@[>=]Cversion]."
     },
     "ComponentsType": {
+      "title": "components:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#components",
       "type": "array",
-      "title": "Software components from packs\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#components",
       "description": "List of software components that are added from packs. Can be applied in *.cproject.yml and *.clayer.yml files.",
       "uniqueItems": true,
       "minItems": 1,
@@ -745,24 +882,27 @@
     "ComponentType": {
       "type": "object",
       "properties": {
-        "component":       { "$ref": "#/definitions/ComponentID" },
-        "condition":       { "$ref": "#/definitions/ConditionIDType" },
-        "from-pack":       { "$ref": "#/definitions/PackID"},
-        "for-context":     { "$ref": "#/definitions/ForContext" },
+        "component": {
+          "title:": "component:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#components",
+          "$ref": "#/definitions/ComponentID"
+        },
+        "add-path":     { "$ref": "#/definitions/AddpathsType" },
+        "add-path-asm": { "$ref": "#/definitions/AddAsmPathsType" },
+        "condition":    { "$ref": "#/definitions/ConditionIDType" },
+        "debug":        { "$ref": "#/definitions/DebugType" },
+        "define":       { "$ref": "#/definitions/DefinesType" },
+        "define-asm":   { "$ref": "#/definitions/DefinesAsmType" },
+        "del-path":     { "$ref": "#/definitions/DelpathsType" },
+        "for-context":  { "$ref": "#/definitions/ForContext" },
+        "from-pack":    { "$ref": "#/definitions/PackID" },
+        "instances":    { "$ref": "#/definitions/InstancesType" },
+        "language-C":   { "$ref": "#/definitions/LanguageCType" },
+        "language-CPP": { "$ref": "#/definitions/LanguageCppType" },
+        "misc":         { "$ref": "#/definitions/MiscTypes" },
         "not-for-context": { "$ref": "#/definitions/NotForContext" },
-        "optimize":        { "$ref": "#/definitions/OptimizeType" },
-        "debug":           { "$ref": "#/definitions/DebugType" },
-        "warnings":        { "$ref": "#/definitions/WarningsType" },
-        "language-C":      { "$ref": "#/definitions/LanguageCType" },
-        "language-CPP":    { "$ref": "#/definitions/LanguageCppType" },
-        "define":          { "$ref": "#/definitions/DefinesType" },
-        "define-asm":      { "$ref": "#/definitions/DefinesAsmType" },
-        "undefine":        { "$ref": "#/definitions/UndefinesType" },
-        "add-path":        { "$ref": "#/definitions/AddpathsType" },
-        "add-path-asm":    { "$ref": "#/definitions/AddAsmPathsType" },
-        "del-path":        { "$ref": "#/definitions/DelpathsType" },
-        "misc":            { "$ref": "#/definitions/MiscTypes" },
-        "instances":       { "$ref": "#/definitions/InstancesType" }
+        "optimize":     { "$ref": "#/definitions/OptimizeType" },
+        "undefine":     { "$ref": "#/definitions/UndefinesType" },
+        "warnings":     { "$ref": "#/definitions/WarningsType" }
       },
       "allOf": [
         { "$ref": "#/definitions/TypeListMutualExclusion" },
@@ -771,10 +911,12 @@
       "additionalProperties": false
     },
     "RteType": {
+      "title": "rte:\nDocumenation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#rte",
       "type": ["object", "null"],
       "description": "Allows to control the directory structure for RTE (run-time environment) files.",
       "properties": {
         "base-dir": {
+          "title": "base-dir:\nDocumenation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#rte",
           "type": "string",
           "description": "Base directory for RTE files; default: $ProjectDir()$/RTE ."
         }
@@ -782,10 +924,12 @@
       "additionalProperties": false
     },
     "GeneratorsOutputType": {
+      "title": "generators:\nDocumenation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#generators",
       "type": ["object", "null"],
       "description": "Directory structure for generator output files.",
       "properties": {
         "base-dir": {
+          "title": "base-dir:\nDocumenation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#generators",
           "type": "string",
           "description": "Base directory for unspecified generators; default: $ProjectDir()$/generated."
         },
@@ -794,6 +938,7 @@
       "additionalProperties": false
     },
     "GeneratorOptionsType": {
+      "title": "options:\nDocumenation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#generators-options",
       "type": "array",
       "description": "Specific generator options; allows explicit directory configuration for a generator.",
       "uniqueItems": true,
@@ -804,27 +949,33 @@
       "type": ["object", "null"],
       "properties": {
         "generator": {
+          "title": "generator:\nDocumenation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#generators-options",
           "type": "string",
           "description": "Identifier of the generator tool, specified with id in the generators element of the PDSC file."
         },
-        "path":  {
+        "map": {
+          "title": "map:\nDocumenation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#generators-options",
           "type": "string",
-          "description": "Directory path for generated files. Relative paths use the location of the yml file as base directory."
+          "description": "Mapping of the csolution project to a generator specific run-time context name."
         },
-        "name":  {
+        "name": {
+          "title": "name:\nDocumenation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#generators-options",
           "type": "string",
           "description": "Base name of the generator import file, typically used for a board layer."
         },
-        "map":  {
+        "path": {
+          "title": "path:\nDocumenation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#generators-options",
           "type": "string",
-          "description": "Mapping of the csolution project to a generator specific run-time context name."
+          "description": "Directory path for generated files. Relative paths use the location of the yml file as base directory."
         }
       },
       "additionalProperties": false,
       "required": [ "generator" ]
     },
     "LayersType": {
+      "title": "layers:\nDocumenation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#layers",
       "type": "array",
+      "description": "List of software layers that belong to the project.",
       "uniqueItems": true,
       "items": { "$ref": "#/definitions/LayerType" }
     },
@@ -832,14 +983,17 @@
       "type": "object",
       "properties": {
         "layer": {
+          "title": "layer:\nDocumenation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#layers",
           "type": "string",
           "description": "Path to the '*.clayer.yml' file that defines the layer."
         },
         "type": {
+          "title": "type:\nDocumenation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#layer-type",
           "type": "string",
           "description": "Layer type for compatible layers matching."
         },
         "optional": {
+          "title": "optional:",
           "type": "boolean",
           "description": "Set optional to 'false' to require the layer type when searching compatible layers; default: 'true'."
         },
@@ -857,6 +1011,7 @@
       "additionalProperties": false
     },
     "DefaultDescType": {
+      "title": "default:\nDocumenation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#cdefault",
       "type": "object",
       "properties": {
         "compiler":        { "$ref": "#/definitions/CompilerType", "description": "'compiler' setting in cdefault.yml will be deprecated in CMSIS-Toolbox 3.0.0." },
@@ -866,19 +1021,26 @@
       "additionalProperties": false
     },
     "SolutionDescType": {
+      "title": "solution:\nDocumenation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#solution",
       "type": "object",
       "description": "Defines projects, targets and build types implemented within this solution.",
       "properties": {
         "add-path":        { "$ref": "#/definitions/AddpathsType" },
         "add-path-asm":    { "$ref": "#/definitions/AddAsmPathsType"},
         "build-types":     { "$ref": "#/definitions/BuildTypes" },
-        "cdefault":        { "type": "null", "description": "Enables use of cdefault.yml file for compiler controls." },
+        "cdefault": {
+          "title": "cdefault:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#cdefault",
+          "type": "null",
+          "description": "Enables use of cdefault.yml file for compiler controls."
+        },
         "compiler":        { "$ref": "#/definitions/CompilerType" },        
         "created-by": {
+          "title": "created-by:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#solution",
           "$ref": "#/definitions/CreatedInfoType",
           "description": "The tool that creates this csolution project."
         },
         "created-for": {
+          "title": "created-for:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#solution",
           "$ref": "#/definitions/CreatedInfoType",
           "description": "The tool required to build this csolution project."
         },
@@ -886,7 +1048,11 @@
         "define":          { "$ref": "#/definitions/DefinesType" },
         "define-asm":      { "$ref": "#/definitions/DefinesAsmType" },
         "del-path":        { "$ref": "#/definitions/DelpathsType" },
-        "description":     { "type": "string", "description":"Brief description of this solution." },
+        "description": {
+          "title": "description:\nDocumenation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#solution",
+          "type": "string",
+          "description": "Brief description of this solution."
+        },
         "executes":        { "$ref": "#/definitions/ExecutesType" },
         "generators":      { "$ref": "#/definitions/GeneratorsOutputType" },
         "language-C":      { "$ref": "#/definitions/LanguageCType" },
@@ -907,37 +1073,45 @@
       "required": [ "target-types", "projects" ]
     },
     "ProjectDescType": {
+      "title": "project:\nDocumenation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#project",
       "type": ["object", "null"],
       "description": "Defines files, components, and layers which can be independently translated to a binary image or library.",
       "properties": {
-        "description":  { "type": "string" },
-        "packs":        { "$ref": "#/definitions/PacksType" },
-        "output":       { "$ref": "#/definitions/OutputType" },
-        "board":        { "$ref": "#/definitions/BoardType" },
-        "device":       { "$ref": "#/definitions/DeviceType" },
-        "compiler":     { "$ref": "#/definitions/CompilerType" },
-        "optimize":     { "$ref": "#/definitions/OptimizeType" },
-        "debug":        { "$ref": "#/definitions/DebugType" },
-        "warnings":     { "$ref": "#/definitions/WarningsType" },
-        "language-C":   { "$ref": "#/definitions/LanguageCType" },
-        "language-CPP": { "$ref": "#/definitions/LanguageCppType" },
-        "processor":    { "$ref": "#/definitions/ProcessorType" },
-        "define":       { "$ref": "#/definitions/DefinesType" },
-        "define-asm":   { "$ref": "#/definitions/DefinesAsmType" },
-        "undefine":     { "$ref": "#/definitions/UndefinesType" },
         "add-path":     { "$ref": "#/definitions/AddpathsType" },
         "add-path-asm": { "$ref": "#/definitions/AddAsmPathsType" },
-        "del-path":     { "$ref": "#/definitions/DelpathsType" },
-        "misc":         { "$ref": "#/definitions/MiscTypes" },
-        "groups":       { "$ref": "#/definitions/GroupsType" },
+        "board":        { "$ref": "#/definitions/BoardType" },
+        "compiler":     {
+          "title": "compiler:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#compiler",
+          "$ref": "#/definitions/CompilerType"
+        },
         "components":   { "$ref": "#/definitions/ComponentsType" },
-        "layers":       { "$ref": "#/definitions/LayersType" },
-        "setups":       { "$ref": "#/definitions/SetupsType" },
         "connections":  { "$ref": "#/definitions/ConnectionsType" },
-        "linker":       { "$ref": "#/definitions/LinkersType" },
+        "debug":        { "$ref": "#/definitions/DebugType" },
+        "define":       { "$ref": "#/definitions/DefinesType" },
+        "define-asm":   { "$ref": "#/definitions/DefinesAsmType" },
+        "del-path":     { "$ref": "#/definitions/DelpathsType" },
+        "description":  {
+          "title": "description:",
+          "type": "string",
+          "description": "Brief description of this project."
+        },
+        "device":       { "$ref": "#/definitions/DeviceType" },
+        "executes":     { "$ref": "#/definitions/ExecutesType" },
         "generators":   { "$ref": "#/definitions/GeneratorsOutputType" },
+        "groups":       { "$ref": "#/definitions/GroupsType" },
+        "language-C":   { "$ref": "#/definitions/LanguageCType" },
+        "language-CPP": { "$ref": "#/definitions/LanguageCppType" },
+        "layers":       { "$ref": "#/definitions/LayersType" },
+        "linker":       { "$ref": "#/definitions/LinkersType" },
+        "misc":         { "$ref": "#/definitions/MiscTypes" },
+        "optimize":     { "$ref": "#/definitions/OptimizeType" },
+        "output":       { "$ref": "#/definitions/OutputType" },
+        "packs":        { "$ref": "#/definitions/PacksType" },
+        "processor":    { "$ref": "#/definitions/ProcessorType" },
         "rte":          { "$ref": "#/definitions/RteType" },
-        "executes":     { "$ref": "#/definitions/ExecutesType" }
+        "setups":       { "$ref": "#/definitions/SetupsType" },
+        "undefine":     { "$ref": "#/definitions/UndefinesType" },
+        "warnings":     { "$ref": "#/definitions/WarningsType" }
       },
       "additionalProperties": false
     },
@@ -1159,38 +1333,53 @@
       "required": ["pack"]
     },
     "LayerDescType": {
+      "title": "layer:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#layer",
       "type": "object",
       "description": "This section describes layer contents.",
       "properties": {
-        "description": { "type": "string" },
-        "type": {
+
+        "add-path":     { "$ref": "#/definitions/AddpathsType" },
+        "add-path-asm": { "$ref": "#/definitions/AddAsmPathsType" },
+        "board":        { "$ref": "#/definitions/BoardType" },
+        "compiler":     { "$ref": "#/definitions/CompilerType" },
+        "components":   { "$ref": "#/definitions/ComponentsType" },
+        "connections":  { "$ref": "#/definitions/ConnectionsType" },
+        "debug":        { "$ref": "#/definitions/DebugType" },
+        "define":       { "$ref": "#/definitions/DefinesType" },
+        "define-asm":   { "$ref": "#/definitions/DefinesType" },
+        "del-path":     { "$ref": "#/definitions/DelpathsType" },
+        "description": {
+          "title": "description:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#layer",
+          "type": "string",
+          "description": "Brief description of the layer."
+        },
+        "device":       { "$ref": "#/definitions/DeviceType" },
+        "for-board": {
+          "title": "for-board:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#layer",
+          "$ref": "#/definitions/BoardType",
+          "description": "Board information, used for consistency check."
+        },
+        "for-device": {
+          "title": "for-device:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#layer",
+          "$ref": "#/definitions/DeviceType",
+          "description": "Device information, used for consistency check."
+        },
+        "generators":   { "$ref": "#/definitions/GeneratorsOutputType" },
+        "groups":       { "$ref": "#/definitions/GroupsType" },
+        "language-C":   { "$ref": "#/definitions/LanguageCType" },
+        "language-CPP": { "$ref": "#/definitions/LanguageCppType" },
+        "linker":       { "$ref": "#/definitions/LinkersType" },
+        "misc":         { "$ref": "#/definitions/MiscTypes" },
+        "packs":        { "$ref": "#/definitions/PacksType" },
+        "processor":    { "$ref": "#/definitions/ProcessorType" },
+        "type":         {
+          "title": "type:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#layer-type",
           "type": "string",
           "description": "Layer type for compatible layers matching."
         },
-        "for-board":    { "$ref": "#/definitions/BoardType" },
-        "for-device":   { "$ref": "#/definitions/DeviceType" },
-        "packs":        { "$ref": "#/definitions/PacksType" },
-        "board":        { "$ref": "#/definitions/BoardType" },
-        "device":       { "$ref": "#/definitions/DeviceType" },
-        "compiler":     { "$ref": "#/definitions/CompilerType" },
         "optimize":     { "$ref": "#/definitions/OptimizeType" },
-        "debug":        { "$ref": "#/definitions/DebugType" },
-        "warnings":     { "$ref": "#/definitions/WarningsType" },
-        "language-C":   { "$ref": "#/definitions/LanguageCType" },
-        "language-CPP": { "$ref": "#/definitions/LanguageCppType" },
-        "processor":    { "$ref": "#/definitions/ProcessorType" },
-        "define":       { "$ref": "#/definitions/DefinesType" },
-        "define-asm":   { "$ref": "#/definitions/DefinesType" },
         "undefine":     { "$ref": "#/definitions/UndefinesType" },
-        "add-path":     { "$ref": "#/definitions/AddpathsType" },
-        "add-path-asm": { "$ref": "#/definitions/AddAsmPathsType" },
-        "del-path":     { "$ref": "#/definitions/DelpathsType" },
-        "misc":         { "$ref": "#/definitions/MiscTypes" },
-        "groups":       { "$ref": "#/definitions/GroupsType" },
-        "components":   { "$ref": "#/definitions/ComponentsType" },
-        "connections":  { "$ref": "#/definitions/ConnectionsType" },
-        "linker":       { "$ref": "#/definitions/LinkersType" },
-        "generators":   { "$ref": "#/definitions/GeneratorsOutputType" }
+        "warnings":     { "$ref": "#/definitions/WarningsType" }
       },
       "additionalProperties": false
     },
@@ -1276,6 +1465,7 @@
       "additionalProperties": false
     },
     "PacksType": {
+      "title": "packs:\nDocumenation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#packs",
       "type": "array",
       "description": "List of required CMSIS software packs.",
       "uniqueItems": true,
@@ -1287,11 +1477,13 @@
       }
     },
     "PackID": {
+      "title": "pack:\nDocumenation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#pack",
       "type": "string",
       "pattern": "^([a-zA-Z0-9_ \\.-]+)((::[a-zA-Z0-9_ \\.\\*-]+)(@(>=|\\~|\\^)?([0-9]+\\.[0-9]+\\.[0-9]+((\\+|\\-)[a-zA-Z0-9_\\.\\+-]+)?))?)?$",
       "description": "Name of a software pack.\nFormat: Vendor [:: Pack [@[>=|~|^] version]].\nExample: ARM::CMSIS@6.1.0."
     },
     "VersionlessPackID": {
+      "title": "pack:\nDocumenation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#pack",
       "type": "string",
       "pattern": "^([a-zA-Z0-9_ \\.\\-]+)(::[a-zA-Z0-9_ \\.\\*-]+)?$",
       "description": "Name of a software pack.\nFormat: Vendor [:: Pack].\nExample: ARM::CMSIS."
@@ -1313,7 +1505,11 @@
       "type": "object",
       "properties": {
         "pack": { "$ref": "#/definitions/VersionlessPackID" },
-        "path": { "type": "string", "description": "Local path to the software pack." },
+        "path": {
+          "title": "path:\nDocumenation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#packs",
+          "type": "string",
+          "description": "Local path to the software pack."
+        },
         "for-context":     { "$ref": "#/definitions/ForContext" },
         "not-for-context": { "$ref": "#/definitions/NotForContext" }
       },
@@ -1324,6 +1520,7 @@
       "additionalProperties": false
     },
     "ResolvedComponentsType": {
+      "title": "components:\nDocumenation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#components",
       "type": "array",
       "description": "List of software components in their resolved state.",
       "uniqueItems": true,
@@ -1382,6 +1579,7 @@
       ]
     },
     "SetupsType": {
+      "title": "setups:\nDocumenation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#setups",
       "type": "array",
       "description": "List of setup nodes that collects various toolchain options.",
       "uniqueItems": true,
@@ -1390,25 +1588,32 @@
     "SetupType": {
       "type": "object",
       "properties": {
-        "setup":           { "type": "string" },
-        "for-context":     { "$ref": "#/definitions/ForContext" },
-        "not-for-context": { "$ref": "#/definitions/NotForContext" },
-        "for-compiler":    { "$ref": "#/definitions/CompilersType" },
-        "optimize":        { "$ref": "#/definitions/OptimizeType" },
-        "debug":           { "$ref": "#/definitions/DebugType" },
-        "warnings":        { "$ref": "#/definitions/WarningsType" },
-        "language-C":      { "$ref": "#/definitions/LanguageCType" },
-        "language-CPP":    { "$ref": "#/definitions/LanguageCppType" },
-        "define":          { "$ref": "#/definitions/DefinesType" },
-        "define-asm":      { "$ref": "#/definitions/DefinesType" },
-        "undefine":        { "$ref": "#/definitions/UndefinesType" },
+        "setup":           {
+          "title": "setup:\nDocumenation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#setups",
+          "type": "string",
+          "description": "Description of the setup."
+        },
         "add-path":        { "$ref": "#/definitions/AddpathsType" },
         "add-path-asm":    { "$ref": "#/definitions/AddAsmPathsType" },
+        "debug":           { "$ref": "#/definitions/DebugType" },
+        "define":          { "$ref": "#/definitions/DefinesType" },
+        "define-asm":      { "$ref": "#/definitions/DefinesType" },
         "del-path":        { "$ref": "#/definitions/DelpathsType" },
-        "misc":            { "$ref": "#/definitions/MiscTypes" },
-        "output":          { "$ref": "#/definitions/OutputType" },
+        "for-compiler":    {
+          "title": "for-compiler:\nDocumenation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#for-compiler",
+          "$ref": "#/definitions/CompilersType"
+        },
+        "for-context":     { "$ref": "#/definitions/ForContext" },
+        "language-C":      { "$ref": "#/definitions/LanguageCType" },
+        "language-CPP":    { "$ref": "#/definitions/LanguageCppType" },
         "linker":          { "$ref": "#/definitions/LinkersType" },
-        "processor":       { "$ref": "#/definitions/ProcessorType" }
+        "misc":            { "$ref": "#/definitions/MiscTypes" },
+        "not-for-context": { "$ref": "#/definitions/NotForContext" },
+        "optimize":        { "$ref": "#/definitions/OptimizeType" },
+        "output":          { "$ref": "#/definitions/OutputType" },
+        "processor":       { "$ref": "#/definitions/ProcessorType" },
+        "undefine":        { "$ref": "#/definitions/UndefinesType" },
+        "warnings":        { "$ref": "#/definitions/WarningsType" }
       },
       "allOf": [
         { "$ref": "#/definitions/TypeListMutualExclusion" }
@@ -1416,7 +1621,8 @@
       "additionalProperties": false
     },
     "ConnectionsType": {
-      "description": "List of consumed and provided connections compatibility.",
+      "title": "connections:\nDocumenation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#connections",
+      "description": "List of consumed and provided connections.",
       "type": "array",
       "uniqueItems": true,
       "items": { "$ref": "#/definitions/ConnectType" }
@@ -1426,24 +1632,29 @@
       "description": "Group of specific functionality.",
       "properties": {
         "connect": {
+          "title": "connect:\nDocumenation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#connect",
           "type": "string",
           "description": "Description of specific functionality."
         },
         "set": {
+          "title": "set:\nDocumenation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#set",
           "type": "string",
           "pattern": "^.+\\..+$",
           "description": "Set configuration option in the format 'config-id.select'."
         },
         "info": {
+          "title": "info:\nDocumenation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#connect",
           "type": "string",
           "description": "Display description when connect is selected."
         },
         "consumes": {
+          "title": "consumes:\nDocumenation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#consumes",
           "type": "array",
           "description": "Consumed connections.",
           "items": { "$ref": "#/definitions/ConsumesProvidesType" }
         },
         "provides": {
+          "title": "provides:\nDocumenation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#provides",
           "type": "array",
           "description": "Provided connections.",
           "items": { "$ref": "#/definitions/ConsumesProvidesType" }
@@ -1453,7 +1664,7 @@
       "required": [ "connect" ]
     },
     "LinkersType": {
-      "title": "Control Linker Script Generation\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#linker",
+      "title": "linker:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#linker",
       "description": "Specifies an explicit linker script and/or memory regions header file. Can be applied in *.cproject.yml and *.clayer.yml files.",
       "type": "array",
       "uniqueItems": true,
@@ -1462,12 +1673,18 @@
     "LinkerType": {
       "type": "object",
       "properties": {
-        "auto": { "type": "null", "description": "Use automatic linker script generation." },
+        "auto": {
+          "title": "auto:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#linker",
+          "type": "null",
+          "description": "Use automatic linker script generation."
+        },
         "regions": {
+          "title": "regions:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#linker",
           "type": "string",
           "description": "Path and file name of regions_<device_or_board>.h, used to generate a Linker Script."
         },
         "script": {
+          "title": "script:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#linker",
           "type": "string",
           "description": "Explicit file name of the Linker Script, overrules files provided with file: or components."
         },
@@ -1574,8 +1791,8 @@
       "description": "This section describes generated contents",
       "properties": {
         "generated-by": { "type": "string", "description": "Tool name along with version information used to generate this file." },
-        "for-board":    { "$ref": "#/definitions/BoardType" },
-        "for-device":   { "$ref": "#/definitions/DeviceType" },
+        "for-board":    { "title:": "for-board:", "$ref": "#/definitions/BoardType" },
+        "for-device":   { "title:": "for-device:","$ref": "#/definitions/DeviceType" },
         "packs":        { "$ref": "#/definitions/PacksType" },
         "define":       { "$ref": "#/definitions/DefinesType" },
         "define-asm":   { "$ref": "#/definitions/DefinesType" },
@@ -1589,6 +1806,7 @@
       "additionalProperties": false
     },
     "ExecutesType": {
+      "title": "executes:\nDocumenation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#executes",
       "description": "Additional pre or post build steps using external tools.",
       "type": "array",
       "uniqueItems": true,
@@ -1599,16 +1817,43 @@
       "type": "object",
       "properties": {
         "execute": {
+          "title": "execute:\nDocumenation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#executes",
           "type": "string",
           "pattern": "^([a-zA-Z0-9_-]{1,32})$",
           "description": "Unique name of the execution step."
         },
-        "always":          { "type": "null",   "description": "When present, the build step always runs and bypasses check for outdated files." },
-        "for-context":     { "$ref": "#/definitions/ForContext" },
-        "input":           { "type": "array",  "description": "A list of input files (may contain Access Sequences).",  "items": { "type": "string"} },
-        "not-for-context": { "$ref": "#/definitions/NotForContext" },
-        "output":          { "type": "array",  "description": "A list of output files (may contain Access Sequences).", "items": { "type": "string"} },
-        "run":             { "type": "string", "description": "Command string with name of the program or script (optionally with path) along with argument string." }
+        "always": {
+          "title": "always:\nDocumenation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#executes",
+          "type": "null",
+          "description": "When present, the build step always runs and bypasses check for outdated files."
+        },
+        "for-context": {
+          "$ref": "#/definitions/ForContext"
+        },
+        "input": {
+          "title": "input:\nDocumenation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#executes",
+          "type": "array",
+          "description": "A list of input files (may contain Access Sequences).",
+          "items": {
+            "type": "string"
+          }
+        },
+        "not-for-context": {
+          "$ref": "#/definitions/NotForContext"
+        },
+        "output": {
+          "title": "output:\nDocumenation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#executes",
+          "type": "array",
+          "description": "A list of output files (may contain Access Sequences).",
+          "items": {
+            "type": "string"
+          }
+        },
+        "run": {
+          "title": "run:\nDocumenation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#executes",
+          "type": "string",
+          "description": "Command string with name of the program or script (optionally with path) along with argument string."
+        }
       },
       "additionalProperties": false,
       "allOf": [
@@ -1652,6 +1897,7 @@
       "additionalProperties": false
     },
     "MemoryType": {
+      "title": "memory:",
       "description": "Additional memory available",
       "type": "array",
       "uniqueItems": true,
@@ -1660,11 +1906,11 @@
     "MemoryItem": {
       "type": "object",
       "properties": {
-        "name":     { "type": "string", "description": "Memory identifier." },
-        "access":   { "type": "string", "description": "Memory access permission." },
-        "algorithm":{ "type": "string", "description": "Programming algorithm." },
-        "start":    { "type": "number", "description": "Memory start address." },
-        "size":     { "type": "number", "description": "Memory size." }
+        "name":     { "title": "name:", "type": "string", "description": "Memory identifier." },
+        "access":   { "title": "access:", "type": "string", "description": "Memory access permission." },
+        "algorithm":{ "title": "algorithm:", "type": "string", "description": "Programming algorithm." },
+        "start":    { "title": "start:", "type": "number", "description": "Memory start address." },
+        "size":     { "title": "size:", "type": "number", "description": "Memory size." }
       },
       "additionalProperties": false
     },
