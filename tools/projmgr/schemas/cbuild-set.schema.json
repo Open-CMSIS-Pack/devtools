@@ -1,4 +1,5 @@
 {
+  "$comment": "For documentation refer to https://open-cmsis-pack.github.io/cmsis-toolbox/YML-CBuild-Format/#cbuild-setyml",
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/2.7.0/tools/projmgr/schemas/cbuild-set.schema.json",
   "title": "CMSIS cbuild-set",
