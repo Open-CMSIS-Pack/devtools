@@ -6558,10 +6558,19 @@ TEST_F(ProjMgrUnitTests, PackCaseSensitive) {
   const string& csolution = testinput_folder + "/TestSolution/pack_case_sensitive.csolution.yml";
   argv[1] = (char*)"convert";
   argv[2] = (char*)csolution.c_str();
-  EXPECT_EQ(1, RunProjMgr(3, argv, 0));
-  const YAML::Node& cbuild = YAML::LoadFile(testinput_folder + "/TestSolution/pack_case_sensitive.cbuild-idx.yml");
-  EXPECT_EQ("required pack: Arm::RteTest_DFP not installed",
-    cbuild["build-idx"]["cbuilds"][0]["messages"]["errors"][0].as<string>());
+  if (CrossPlatformUtils::GetHostType() == "linux") {
+    EXPECT_EQ(1, RunProjMgr(3, argv, 0));
+  } else {
+    EXPECT_EQ(0, RunProjMgr(3, argv, 0));
+    const YAML::Node& cbuild = YAML::LoadFile(testinput_folder + "/TestSolution/pack_case_sensitive.cbuild-idx.yml");
+    const string& expected = "\
+RTE Model reports:\n\
+warning #500: pack 'ARM::RteTest_DFP@0.2.0' is duplicated, letter case is inconsistent:\n\
+  .*/ARM/RteTest_DFP/0.2.0/ARM.RteTest_DFP.pdsc\n\
+  .*/Arm/RteTest_DFP/0.2.0/Arm.RteTest_DFP.pdsc - ignored\
+";
+    EXPECT_TRUE(regex_search(cbuild["build-idx"]["cbuilds"][0]["messages"]["warnings"][0].as<string>(), regex(expected)));
+  }
 }
 
 TEST_F(ProjMgrUnitTests, InvalidContextSet) {
