@@ -641,9 +641,7 @@ string RteFsUtils::FindFirstFileWithExt(const std::string &folder, const char *e
 void RteFsUtils::GetFilesSorted(const string &folder, set<string, VersionCmp::Greater> &files) {
   error_code ec;
   // Path does not exist, nothing to do
-  if ((folder.empty() || !fs::exists(folder, ec) || !fs::is_directory(folder, ec)) ||
-    // Check case consistency
-    (fs::canonical(folder, ec).generic_string().find(fs::path(folder).lexically_normal().generic_string()) == string::npos)) {
+  if (folder.empty() || !fs::exists(folder, ec) || !fs::is_directory(folder, ec)) {
     return;
   }
   for (auto entry : fs::directory_iterator(folder, ec)) {

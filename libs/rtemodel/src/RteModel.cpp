@@ -430,9 +430,12 @@ bool RteModel::Validate()
     for (auto duplicate : m_packageDuplicates) {
       RtePackage* orig = GetPackage(duplicate->GetID());
 
-      string msg = duplicate->GetPackageFileName();
-      msg += ": warning #500: pack '" + duplicate->GetID() + "' is already defined in file " + orig->GetPackageFileName();
-      msg += " - duplicate is ignored";
+      string msg = "warning #500: pack '" + duplicate->GetID() + "' is duplicated";
+      if (RteUtils::EqualNoCase(duplicate->GetPackageFileName(), orig->GetPackageFileName())) {
+        msg += ", letter case is inconsistent";
+      }
+      msg += ":\n  " + orig->GetPackageFileName() +
+        "\n  " + duplicate->GetPackageFileName() + " - ignored";
       m_errors.push_back(msg);
     }
 
