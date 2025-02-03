@@ -62,14 +62,20 @@ void ProjMgrCbuild::SetContextNode(YAML::Node contextNode, const ContextItem* co
   SetNodeValue(contextNode[YAML_CONTEXT], context->name);
   SetNodeValue(contextNode[YAML_COMPILER], context->toolchain.name +
     (context->toolchain.required.empty() || context->toolchain.required == ">=0.0.0" ? "" : '@' + context->toolchain.required));
-  if (!context->board.empty()) {
-    SetNodeValue(contextNode[YAML_BOARD], context->board);
+  if (!context->boardItem.name.empty()) {
+    const auto& board = context->boardItem.vendor + "::" + context->boardItem.name +
+      (context->boardItem.revision.empty() ? "" : ":" + context->boardItem.revision);
+    SetNodeValue(contextNode[YAML_BOARD], board);
     if (context->boardPack != nullptr) {
       SetNodeValue(contextNode[YAML_BOARD_PACK], context->boardPack->GetID());
     }
     SetBooksNode(contextNode[YAML_BOARD_BOOKS], context->boardBooks, context->directories.cbuild);
   }
-  SetNodeValue(contextNode[YAML_DEVICE], context->device);
+  if (!context->deviceItem.name.empty()) {
+    const auto& device = context->deviceItem.vendor + "::" + context->deviceItem.name +
+      (context->deviceItem.pname.empty() ? "" : ":" + context->deviceItem.pname);
+    SetNodeValue(contextNode[YAML_DEVICE], device);
+  }
   if (context->devicePack != nullptr) {
     SetNodeValue(contextNode[YAML_DEVICE_PACK], context->devicePack->GetID());
   }

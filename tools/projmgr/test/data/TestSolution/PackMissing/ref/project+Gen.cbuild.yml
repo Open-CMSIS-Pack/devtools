@@ -4,7 +4,6 @@ build:
   project: ../data/TestSolution/PackMissing/project.cproject.yml
   context: project+Gen
   compiler: AC6
-  device: RteTest_ARMCM3
   misc:
     ASM:
       - -ASM-project

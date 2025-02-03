@@ -4,7 +4,7 @@ build:
   project: ../data/TestSolution/TestProject1/test1.cproject.yml
   context: test1.Debug+CM0
   compiler: AC6
-  device: RteTest_ARMCM0
+  device: ARM::RteTest_ARMCM0
   device-pack: ARM::RteTest_DFP@0.2.0
   device-books:
     - name: http://infocenter.arm.com/help/topic/com.arm.doc.dui0497a/index.html

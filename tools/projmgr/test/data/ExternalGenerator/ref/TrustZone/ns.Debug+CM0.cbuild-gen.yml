@@ -6,7 +6,7 @@ build-gen:
   project: ${DEVTOOLS(data)}/ExternalGenerator/tz_ns/ns.cproject.yml
   context: ns.Debug+CM0
   compiler: AC6
-  device: RteTestGen_ARMCM0
+  device: ARM::RteTestGen_ARMCM0
   device-pack: ARM::RteTestGenerator@0.1.0
   processor:
     trustzone: non-secure

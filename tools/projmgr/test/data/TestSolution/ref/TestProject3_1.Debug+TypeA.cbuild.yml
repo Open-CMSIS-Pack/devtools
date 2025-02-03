@@ -4,7 +4,7 @@ build:
   project: TestProject3_1.cproject.yml
   context: TestProject3_1.Debug+TypeA
   compiler: GCC
-  device: RteTestGen_ARMCM0
+  device: ARM::RteTestGen_ARMCM0
   processor:
     core: Cortex-M0
   packs:
