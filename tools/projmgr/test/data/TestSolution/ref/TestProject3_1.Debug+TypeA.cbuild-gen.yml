@@ -7,7 +7,7 @@ build-gen:
   project: ${DEVTOOLS(data)}/TestSolution/TestProject3_1/TestProject3_1.cproject.yml
   context: TestProject3_1.Debug+TypeA
   compiler: GCC
-  device: RteTestGen_ARMCM0
+  device: ARM::RteTestGen_ARMCM0
   device-pack: ARM::RteTestGenerator@0.1.0
   processor:
     core: Cortex-M0

@@ -4,7 +4,7 @@ build:
   project: ../data/TestSolution/DeviceAttributes/mve/mve.cproject.yml
   context: mve.Debug+mve-fp
   compiler: AC6
-  device: RteTest_ARMCM0
+  device: ARM::RteTest_ARMCM0
   device-pack: ARM::RteTest_DFP@0.2.0
   device-books:
     - name: http://infocenter.arm.com/help/topic/com.arm.doc.dui0497a/index.html

@@ -4,9 +4,9 @@ build:
   project: ../data/TestSolution/LinkerOptions/linker.cproject.yml
   context: linker.AutoGen+RteTest_Board
   compiler: AC6
-  board: RteTest-Test-board With.Memory
+  board: Keil::RteTest-Test-board With.Memory:1.1.1
   board-pack: ARM::RteTest_DFP@0.2.0
-  device: RteTest_ARMCM3
+  device: ARM::RteTest_ARMCM3
   device-pack: ARM::RteTest_DFP@0.2.0
   device-books:
     - name: http://infocenter.arm.com/help/topic/com.arm.doc.dui0552a/index.html
