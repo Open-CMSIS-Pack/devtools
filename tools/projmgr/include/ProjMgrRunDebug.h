@@ -29,6 +29,28 @@ struct FilesType {
   std::string type;
 };
 
+/**
+ * @brief debug sequences block type
+*/
+struct DebugSequencesBlockType {
+  std::string info;
+  std::string execute;
+  std::string control_if;
+  std::string control_while;
+  std::string timeout;
+  bool atomic;
+  std::vector<DebugSequencesBlockType> blocks;
+};
+
+/**
+ * @brief debug sequences type
+*/
+struct DebugSequencesType {
+  std::string name;
+  std::string info;
+  std::vector<DebugSequencesBlockType> blocks;
+};
+
  /**
   * @brief debug run manager types
  */
@@ -43,6 +65,7 @@ struct RunDebugType {
   std::vector<AlgorithmType> algorithms;
   std::vector<FilesType> outputs;
   std::vector<FilesType> systemDescriptions;
+  std::vector<DebugSequencesType> debugSequences;
 };
 
 /**
@@ -75,6 +98,7 @@ public:
 
 protected:
   RunDebugType m_runDebug;
+  void GetDebugSequenceBlock(const RteItem* item, DebugSequencesBlockType& block);
 };
 
 #endif  // PROJMGRRUNDEBUG_H

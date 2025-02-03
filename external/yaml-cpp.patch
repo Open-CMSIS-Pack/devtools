@@ -69,6 +69,15 @@ diff --git a/src/emitter.cpp b/src/emitter.cpp
 index 4d48307..d4485be 100644
 --- a/src/emitter.cpp
 +++ b/src/emitter.cpp
+@@ -721,7 +721,7 @@ Emitter& Emitter::Write(const std::string& str) {
+ 
+   StringEscaping::value stringEscaping = GetStringEscapingStyle(m_pState->GetOutputCharset());
+ 
+-  const StringFormat::value strFormat =
++  const StringFormat::value strFormat = str.compare(0, 2, "|\n") == 0 ? StringFormat::Literal :
+       Utils::ComputeStringFormat(str, m_pState->GetStringFormat(),
+                                  m_pState->CurGroupFlowType(), stringEscaping == StringEscaping::NonAscii);
+ 
 @@ -816,6 +816,8 @@ const char* Emitter::ComputeNullName() const {
        return "NULL";
      case CamelNull:
@@ -90,6 +99,19 @@ index 3dbe401..0dd0b17 100644
      case TildeNull:
        _Set(m_nullFmt, value, scope);
        return true;
+diff --git a/src/emitterutils.cpp b/src/emitterutils.cpp
+index 6cdf6de..b48b7c0 100644
+--- a/src/emitterutils.cpp
++++ b/src/emitterutils.cpp
+@@ -365,7 +365,7 @@ bool WriteDoubleQuotedString(ostream_wrapper& out, const std::string& str,
+ 
+ bool WriteLiteralString(ostream_wrapper& out, const std::string& str,
+                         std::size_t indent) {
+-  out << "|\n";
++  out << (str.compare(0, 2, "|\n") == 0 ? "" : "|\n");
+   int codePoint;
+   for (std::string::const_iterator i = str.begin();
+        GetNextCodePointAndAdvance(codePoint, i, str.end());) {
 diff --git a/src/exceptions.cpp b/src/exceptions.cpp
 index 43a7976..af99fd6 100644
 --- a/src/exceptions.cpp
