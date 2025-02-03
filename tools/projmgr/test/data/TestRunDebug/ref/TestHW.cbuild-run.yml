@@ -32,3 +32,61 @@ cbuild-run:
   output:
     - file: out/run-debug/TestHW/run-debug.axf
       type: elf
+  sequences:
+    - name: DebugDeviceUnlock
+      blocks:
+        - execute: |
+            Sequence("CheckID");
+    - name: DebugCoreStart
+      blocks:
+        - execute: |
+            // Replication of Standard Functionality
+            Write32(0xE000EDF0, 0xA05F0001);                                        // Enable Core Debug via DHCSR
+        - info: DbgMCU registers
+          execute: |
+            // Device Specific Debug Setup
+            Write32(0x40021018, Read32(0x40021018) | 0x00400000);                   // Set RCC_APB2ENR.DBGMCUEN
+    - name: CheckID
+      blocks:
+        - execute: |
+            __var pidr1 = 0;
+            __var pidr2 = 0;
+            __var jep106id = 0;
+            __var ROMTableBase = 0;
+
+            __ap = 0;      // AHB-AP
+
+            ROMTableBase = ReadAP(0xF8) & ~0x3;
+
+            pidr1 = Read32(ROMTableBase + 0x0FE4);
+            pidr2 = Read32(ROMTableBase + 0x0FE8);
+            jep106id = ((pidr2 & 0x7) << 4 ) | ((pidr1 >> 4) & 0xF);
+        - if: jep106id != 0x20
+          execute: |
+            Query(0, "Incorrect ID! Abort connection", 1);
+            Message(2, "Incorrect ID! Abort connection.");
+    - name: DebugPortStop
+      blocks:
+        - execute: |
+            __var connectionFlash = ( __connection & 0xF ) == 2 ;
+            __var FLASH_BASE = 0x40022000 ;
+            __var FLASH_CR = FLASH_BASE + 0x10 ;
+            __var OBL_LAUNCH_BIT = ( 1 << 13 ) ;
+            __var FLASH_CR_Value = 0 ;
+            __var DoDebugPortStop = 1 ;
+            __var DP_CTRL_STAT = 0x4 ;
+            __var DP_SELECT = 0x8 ;
+        - if: connectionFlash && DoDebugPortStop
+          execute: |
+            DoDebugPortStop = 0 ;
+            FLASH_CR_Value = Read32( FLASH_CR ) ;
+            __errorcontrol = 1 ;
+            // write OBL_LAUNCH bit (causes a reset)
+            Write32( FLASH_CR, FLASH_CR_Value | ( OBL_LAUNCH_BIT ) ) ;
+            __errorcontrol = 0 ;
+        - if: DoDebugPortStop
+          execute: |
+            // Switch to DP Register Bank 0
+            WriteDP(DP_SELECT, 0x00000000);
+            // Power Down Debug port
+            WriteDP(DP_CTRL_STAT, 0x00000000);

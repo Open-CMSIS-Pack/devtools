@@ -1970,6 +1970,41 @@
       },
       "additionalProperties": false
     },
+    "DebugSequencesType": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/DebugSequenceType" }
+    },
+    "DebugSequenceType": {
+      "description": "A list of command blocks in order of execution.",
+      "type": "object",
+      "properties": {
+        "name":    { "type": "string", "description": "Name of the sequence." },
+        "info":    { "type": "string", "description": "Descriptive text to display for example for error diagnostics." },
+        "blocks":  { "$ref": "#/definitions/DebugBlocksType" }
+      },
+      "additionalProperties": false,
+      "required": ["name"]
+    },
+    "DebugBlocksType": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/DebugBlockType" }
+    },
+    "DebugBlockType": {
+      "description": "A list of command blocks in order of execution.",
+      "type": "object",
+      "properties": {
+        "info":    { "type": "string", "description": "Descriptive text to display for example for error diagnostics." },
+        "blocks":  { "$ref": "#/definitions/DebugBlocksType" },
+        "execute": { "type": "string", "description": "Commands for execution." },
+        "atomic":  { "type": "null", "description": "Atomic execution of commands; cannot be used with 'blocks'" },
+        "if":      { "anyOf": [{"type": "string"}, {"type": "number"}], "description": "Only executed when expression is true." },
+        "while":   { "anyOf": [{"type": "string"}, {"type": "number"}], "description": "Executed in loop until while expression is true." },
+        "timeout": { "type": "number", "description": "Timeout in milliseconds for while loop." }
+      },
+      "additionalProperties": false
+    },
     "RunDebugDescType": {
       "description": "This section describes generated contents",
       "type": "object",
@@ -1984,7 +2019,8 @@
         "device-pack":          { "$ref": "#/definitions/PackID" },
         "programming":          { "$ref": "#/definitions/ProgrammingType" },
         "system-descriptions":  { "$ref": "#/definitions/RunFilesType", "description": "System description files." },
-        "output":               { "$ref": "#/definitions/RunFilesType", "description": "Application image files." }
+        "output":               { "$ref": "#/definitions/RunFilesType", "description": "Application image files." },
+        "sequences":            { "$ref": "#/definitions/DebugSequencesType", "description": "Debug sequences for the target." }
       },
       "additionalProperties": false
     }

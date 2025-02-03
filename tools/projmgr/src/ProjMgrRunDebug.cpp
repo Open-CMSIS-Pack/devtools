@@ -9,6 +9,8 @@
 #include "ProjMgrYamlEmitter.h"
 #include "RteFsUtils.h"
 
+#include <regex>
+
 using namespace std;
 
 ProjMgrRunDebug::ProjMgrRunDebug(void) {
@@ -39,6 +41,8 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts) {
   Collection<RteItem*> algorithms;
   // debug infos
   Collection<RteItem*> debugs;
+  // debug sequences
+  Collection<RteItem*> debugSequences;
 
   // device collections
   if (context->devicePack) {
@@ -50,6 +54,10 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts) {
     const auto& deviceDebugs = context->rteDevice->GetEffectiveProperties("debug", context->deviceItem.pname);
     for (const auto& deviceDebug : deviceDebugs) {
       debugs.push_back(deviceDebug);
+    }
+    const auto& deviceDebugSequences = context->rteDevice->GetEffectiveProperties("sequence", context->deviceItem.pname);
+    for (const auto& deviceDebugSequence : deviceDebugSequences) {
+      debugSequences.push_back(deviceDebugSequence);
     }
   }
 
@@ -103,5 +111,53 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts) {
       m_runDebug.outputs.push_back({ output.hex.filename, RteConstants::OUTPUT_TYPE_HEX });
     }
   }
+
+  // debug sequences
+  for (const auto& debugSequence : debugSequences) {
+    DebugSequencesType sequence;
+    sequence.name = debugSequence->GetName();
+    sequence.info = debugSequence->GetAttribute("info");
+    for (const auto& debugSequenceBlock : debugSequence->GetChildren()) {
+      DebugSequencesBlockType block;
+      GetDebugSequenceBlock(debugSequenceBlock, block);
+      sequence.blocks.push_back(block);
+    }
+    m_runDebug.debugSequences.push_back(sequence);
+  }
+
   return true;
+}
+
+void ProjMgrRunDebug::GetDebugSequenceBlock(const RteItem* item, DebugSequencesBlockType& block) {
+  // get 'block' attributes
+  if (item->GetTag() == "block") {
+    block.info = block.info.empty() ? item->GetAttribute("info") : block.info;
+    block.atomic = item->GetAttributeAsBool("atomic");
+    const string execute = RteUtils::EnsureLf(item->GetText());
+    block.execute = regex_replace(execute, regex("\n +"), "\n");
+    // 'block' doesn't have children, stop here
+    return;
+  }
+
+  // get 'control' attributes
+  if (item->GetTag() == "control") {
+    block.info = item->GetAttribute("info");
+    block.control_if = item->GetAttribute("if");
+    block.control_while = item->GetAttribute("while");
+    block.timeout = item->GetAttribute("timeout");
+  }
+
+  const auto& children = item->GetChildren();
+  if ((children.size() == 1) && (children.front()->GetTag() == "block")) {
+    // last child block
+    GetDebugSequenceBlock(children.front(), block);
+    return;
+  }
+
+  for (const auto& child : children) {
+    // get children blocks recursively
+    DebugSequencesBlockType childBlock;
+    GetDebugSequenceBlock(child, childBlock);
+    block.blocks.push_back(childBlock);
+  }
 }

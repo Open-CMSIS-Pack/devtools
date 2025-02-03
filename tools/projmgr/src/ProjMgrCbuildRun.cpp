@@ -21,6 +21,8 @@ protected:
   std::string m_directory;
   void SetProgrammingNode(YAML::Node node, const std::vector<AlgorithmType>& algorithms);
   void SetFilesNode(YAML::Node node, const std::vector<FilesType>& outputs);
+  void SetDebugSequencesNode(YAML::Node node, const std::vector<DebugSequencesType>& algorithms);
+  void SetDebugSequencesBlockNode(YAML::Node node, const std::vector<DebugSequencesBlockType>& blocks);
 };
 
 ProjMgrCbuildRun::ProjMgrCbuildRun(YAML::Node node,
@@ -36,6 +38,7 @@ ProjMgrCbuildRun::ProjMgrCbuildRun(YAML::Node node,
   SetProgrammingNode(node[YAML_PROGRAMMING], debugRun.algorithms);
   SetFilesNode(node[YAML_SYSTEM_DESCRIPTIONS], debugRun.systemDescriptions);
   SetFilesNode(node[YAML_OUTPUT], debugRun.outputs);
+  SetDebugSequencesNode(node[YAML_SEQUENCES], debugRun.debugSequences);
 };
 
 void ProjMgrCbuildRun::SetProgrammingNode(YAML::Node node, const std::vector<AlgorithmType>& algorithms) {
@@ -63,6 +66,36 @@ void ProjMgrCbuildRun::SetFilesNode(YAML::Node node, const std::vector<FilesType
     SetNodeValue(fileNode[YAML_FILE], FormatPath(item.file, m_directory));
     SetNodeValue(fileNode[YAML_TYPE], item.type);
     node.push_back(fileNode);
+  }
+}
+
+void ProjMgrCbuildRun::SetDebugSequencesNode(YAML::Node node, const std::vector<DebugSequencesType>& sequences) {
+  for (const auto& sequence : sequences) {
+    YAML::Node sequenceNode;
+    SetNodeValue(sequenceNode[YAML_NAME], sequence.name);
+    SetNodeValue(sequenceNode[YAML_INFO], sequence.info);
+    SetDebugSequencesBlockNode(sequenceNode[YAML_BLOCKS], sequence.blocks);
+    node.push_back(sequenceNode);
+  }
+}
+
+void ProjMgrCbuildRun::SetDebugSequencesBlockNode(YAML::Node node, const std::vector<DebugSequencesBlockType>& blocks) {
+  for (const auto& block : blocks) {
+    YAML::Node blockNode;
+    SetNodeValue(blockNode[YAML_INFO], block.info);
+    SetNodeValue(blockNode[YAML_IF], block.control_if);
+    SetNodeValue(blockNode[YAML_WHILE], block.control_while);
+    if (!block.timeout.empty()) {
+      blockNode[YAML_TIMEOUT] = RteUtils::StringToULL(block.timeout);
+    }
+    if (block.atomic) {
+      blockNode[YAML_ATOMIC] = YAML::Null;
+    }
+    if (!block.execute.empty()) {
+      SetNodeValue(blockNode[YAML_EXECUTE], "|\n" + block.execute);
+    }
+    SetDebugSequencesBlockNode(blockNode[YAML_BLOCKS], block.blocks);
+    node.push_back(blockNode);
   }
 }
 
