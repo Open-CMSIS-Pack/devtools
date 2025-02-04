@@ -7,9 +7,9 @@ on:
       - '.github/markdownlint.jsonc'
       - '**/*.md'
 jobs:
-  markdown-lint:
+  linter:
     name: Lint markdown files
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       - name: Harden Runner
         if: ${{ !github.event.repository.private }}
@@ -36,11 +36,19 @@ jobs:
         run: |
           echo "::remove-matcher owner=markdownlint::"
 
-      - uses: gaurav-nelson/github-action-markdown-link-check@1b916f2cf6c36510a6059943104e3c42ce6c16bc # master
-        if: always()
+  check-links:
+    name: Check markdown links
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout devtools
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Check links
+        uses: gaurav-nelson/github-action-markdown-link-check@1b916f2cf6c36510a6059943104e3c42ce6c16bc # master
+        # Checks all Markdown files, including those in subfolders,
+        # as the PR may involve removing referenced Markdown files.
         with:
           use-quiet-mode: 'yes'
           use-verbose-mode: 'yes'
-          check-modified-files-only: 'yes'
           base-branch: ${{ github.base_ref }}
           config-file: '.github/markdown-link-check.jsonc'

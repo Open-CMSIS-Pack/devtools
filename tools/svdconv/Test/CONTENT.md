@@ -19,10 +19,10 @@ test input extensions should be placed under this directory.
 
 [integtests](./integtests) directory contains all the sources containing
 integration tests and compiles into an executable. The tests make use of test
-input SVD files from [test](./test/data/) directory containing the
+input SVD files from [test](./data/) directory containing the
 example SVD.
 
 ## Unit Tests
 
-[unittests](./unittests) holds the sources accommodating all the unit tests and
+[unittests](./UnitTests) holds the sources accommodating all the unit tests and
 compiles into an executable. These unit tests uses **gtest** as a test framework.
