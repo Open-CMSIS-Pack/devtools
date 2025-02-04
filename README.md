@@ -302,7 +302,7 @@ One can directly run the tests from command line.
 
 ### Note
 
-- On running the tests, all [required packs](https://github.com/Open-CMSIS-Pack/devtools/blob/main/tools/buildmgr/test/scripts/download_packs.sh#L48-L51) shall get downloaded automatically by [test scripts](https://github.com/Arm-Debug/devtools-external/blob/main/tools/buildmgr/test/scripts/download_packs.sh)\
+- On running the tests, all [required packs](https://github.com/Open-CMSIS-Pack/devtools/blob/main/tools/buildmgr/test/scripts/download_packs.sh#L48-L51) shall get downloaded automatically by [test scripts](https://github.com/Open-CMSIS-Pack/devtools/blob/main/tools/buildmgr/test/scripts/download_packs.sh)\
  under configured pack repository.
 - By default, few special tests are skipped from execution as they are dependent on specific\
  environment configuration
@@ -325,7 +325,7 @@ One can directly run the tests from command line.
 
 ## Code coverage
 
-Users can generate coverage reports locally using a GNU tool [**lcov**](http://ltp.sourceforge.net/coverage/lcov.php).
+Users can generate coverage reports locally using a GNU tool [**lcov**](https://wiki.documentfoundation.org/Development/Lcov).
 
 ### Prerequisite
 
