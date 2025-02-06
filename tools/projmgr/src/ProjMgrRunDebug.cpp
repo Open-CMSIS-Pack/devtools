@@ -25,6 +25,7 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts) {
 
   // get target settings
   const auto& context0 = contexts.front();
+  m_runDebug.solutionName = context0->csolution->name;
   m_runDebug.solution = context0->csolution->path;
   m_runDebug.targetType = context0->type.target;
   m_runDebug.compiler = context0->compiler;
