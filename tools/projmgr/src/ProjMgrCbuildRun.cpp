@@ -102,7 +102,8 @@ void ProjMgrCbuildRun::SetDebugSequencesBlockNode(YAML::Node node, const std::ve
 //-- ProjMgrYamlEmitter::GenerateCbuildRun --------------------------------------------------------
 bool ProjMgrYamlEmitter::GenerateCbuildRun(const RunDebugType& debugRun) {
   // generate cbuild-run.yml
-  const string& filename = m_outputDir + "/" + debugRun.targetType + ".cbuild-run.yml";
+  const string& filename = m_outputDir + "/" + debugRun.solutionName + "+" +
+    debugRun.targetType + ".cbuild-run.yml";
   YAML::Node rootNode;
   ProjMgrCbuildRun cbuildRun(rootNode[YAML_CBUILD_RUN], debugRun, m_outputDir);
   return WriteFile(rootNode, filename);

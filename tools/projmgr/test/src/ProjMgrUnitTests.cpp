@@ -6595,6 +6595,6 @@ TEST_F(ProjMgrUnitTests, TestRunDebug) {
   argv[5] = (char*)testoutput_folder.c_str();
   EXPECT_EQ(0, RunProjMgr(6, argv, m_envp));
 
-  ProjMgrTestEnv::CompareFile(testoutput_folder + "/TestHW.cbuild-run.yml",
-    testinput_folder + "/TestRunDebug/ref/TestHW.cbuild-run.yml");
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/run-debug+TestHW.cbuild-run.yml",
+    testinput_folder + "/TestRunDebug/ref/run-debug+TestHW.cbuild-run.yml");
 }
