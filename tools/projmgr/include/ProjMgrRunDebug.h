@@ -56,6 +56,7 @@ struct DebugSequencesType {
  */
 struct RunDebugType {
   std::string solution;
+  std::string solutionName;
   std::string targetType;
   std::string compiler;
   std::string board;
