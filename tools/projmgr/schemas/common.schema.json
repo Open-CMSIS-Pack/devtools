@@ -1953,7 +1953,8 @@
         "size":     { "type": "number", "description": "Memory size." },
         "ram-start":{ "type": "number", "description": "RAM Memory start address." },
         "ram-size": { "type": "number", "description": "RAM Memory size." },
-        "default":  { "type": "boolean", "description": "Default memory." }
+        "default":  { "type": "boolean", "description": "Default memory." },
+        "pname":    { "type": "string", "description": "Processor name." }
       },
       "additionalProperties": false
     },
@@ -1965,8 +1966,9 @@
     "RunFileType": {
       "type": "object",
       "properties": {
-        "file": { "type": "string", "description": "File path." },
-        "type": { "type": "string", "description": "File type." }
+        "file":  { "type": "string", "description": "File path." },
+        "type":  { "type": "string", "description": "File type." },
+        "pname": { "type": "string", "description": "Processor name." }
       },
       "additionalProperties": false
     },
@@ -1981,7 +1983,8 @@
       "properties": {
         "name":    { "type": "string", "description": "Name of the sequence." },
         "info":    { "type": "string", "description": "Descriptive text to display for example for error diagnostics." },
-        "blocks":  { "$ref": "#/definitions/DebugBlocksType" }
+        "blocks":  { "$ref": "#/definitions/DebugBlocksType" },
+        "pname":   { "type": "string", "description": "Executes sequence only for connection to processor; Default is executed for all connections." }
       },
       "additionalProperties": false,
       "required": ["name"]

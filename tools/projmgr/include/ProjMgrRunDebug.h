@@ -19,6 +19,7 @@ struct AlgorithmType {
   unsigned long long ramStart = 0;
   unsigned long long ramSize = 0;
   bool bDefault = false;
+  std::string pname;
 };
 
 /**
@@ -27,6 +28,7 @@ struct AlgorithmType {
 struct FilesType {
   std::string file;
   std::string type;
+  std::string pname;
 };
 
 /**
@@ -38,7 +40,7 @@ struct DebugSequencesBlockType {
   std::string control_if;
   std::string control_while;
   std::string timeout;
-  bool atomic;
+  bool atomic = false;
   std::vector<DebugSequencesBlockType> blocks;
 };
 
@@ -49,6 +51,7 @@ struct DebugSequencesType {
   std::string name;
   std::string info;
   std::vector<DebugSequencesBlockType> blocks;
+  std::string pname;
 };
 
  /**
@@ -100,6 +103,8 @@ public:
 protected:
   RunDebugType m_runDebug;
   void GetDebugSequenceBlock(const RteItem* item, DebugSequencesBlockType& block);
+  void PushBackUniquely(std::vector<std::pair<const RteItem*, std::vector<std::string>>>& vec,
+    const RteItem* item, const std::string pname);
 };
 
 #endif  // PROJMGRRUNDEBUG_H

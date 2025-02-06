@@ -24,52 +24,70 @@ ProjMgrRunDebug::~ProjMgrRunDebug(void) {
 bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts) {
 
   // get target settings
-  const auto& context = contexts.front();
-  m_runDebug.solutionName = context->csolution->name;
-  m_runDebug.solution = context->csolution->path;
-  m_runDebug.targetType = context->type.target;
-  m_runDebug.compiler = context->compiler;
-  if (!context->device.empty()) {
-    m_runDebug.device = context->deviceItem.vendor + "::" + context->deviceItem.name +
-      (context->deviceItem.pname.empty() ? "" : ":" + context->deviceItem.pname);
+  const auto& context0 = contexts.front();
+  m_runDebug.solutionName = context0->csolution->name;
+  m_runDebug.solution = context0->csolution->path;
+  m_runDebug.targetType = context0->type.target;
+  m_runDebug.compiler = context0->compiler;
+  if (!context0->device.empty()) {
+    m_runDebug.device = context0->deviceItem.vendor + "::" + context0->deviceItem.name;
   }
-  if (!context->board.empty()) {
-    m_runDebug.board = context->boardItem.vendor + "::" + context->boardItem.name +
-      (context->boardItem.revision.empty() ? "" : ":" + context->boardItem.revision);
+  if (!context0->board.empty()) {
+    m_runDebug.board = context0->boardItem.vendor + "::" + context0->boardItem.name +
+      (context0->boardItem.revision.empty() ? "" : ":" + context0->boardItem.revision);
   }
 
   // programming algorithms
-  Collection<RteItem*> algorithms;
+  vector<pair<const RteItem*, vector<string>>> algorithms;
   // debug infos
-  Collection<RteItem*> debugs;
+  vector<pair<const RteItem*, vector<string>>> debugs;
   // debug sequences
-  Collection<RteItem*> debugSequences;
+  vector<pair<const RteItem*, vector<string>>> debugSequences;
+
+  // processor names
+  map<string, ContextItem*> pnames;
+  for (const auto& context : contexts) {
+    pnames.emplace(context->deviceItem.pname, context);
+  }
 
   // device collections
-  if (context->devicePack) {
-    m_runDebug.devicePack = context->devicePack->GetPackageID(true);
-    const auto& deviceAlgorithms = context->rteDevice->GetEffectiveProperties("algorithm", context->deviceItem.pname);
-    for (const auto& deviceAlgorithm : deviceAlgorithms) {
-      algorithms.push_back(deviceAlgorithm);
-    }
-    const auto& deviceDebugs = context->rteDevice->GetEffectiveProperties("debug", context->deviceItem.pname);
-    for (const auto& deviceDebug : deviceDebugs) {
-      debugs.push_back(deviceDebug);
-    }
-    const auto& deviceDebugSequences = context->rteDevice->GetEffectiveProperties("sequence", context->deviceItem.pname);
-    for (const auto& deviceDebugSequence : deviceDebugSequences) {
-      debugSequences.push_back(deviceDebugSequence);
+  for (const auto& [pname, context] : pnames) {
+    if (context->devicePack) {
+      m_runDebug.devicePack = context->devicePack->GetPackageID(true);
+      const auto& deviceAlgorithms = context->rteDevice->GetEffectiveProperties("algorithm", pname);
+      for (const auto& deviceAlgorithm : deviceAlgorithms) {
+        PushBackUniquely(algorithms, deviceAlgorithm, pname);
+      }
+      const auto& deviceDebugs = context->rteDevice->GetEffectiveProperties("debug", pname);
+      for (const auto& deviceDebug : deviceDebugs) {
+        PushBackUniquely(debugs, deviceDebug, pname);
+      }
+      const auto& deviceDebugSequences = context->rteDevice->GetEffectiveProperties("sequence", pname);
+      for (const auto& deviceDebugSequence : deviceDebugSequences) {
+        PushBackUniquely(debugSequences, deviceDebugSequence, pname);
+      }
     }
   }
 
   // board collections
-  if (context->boardPack) {
-    m_runDebug.boardPack = context->boardPack->GetPackageID(true);
-    context->rteBoard->GetChildrenByTag("algorithm", algorithms);
+  if (context0->boardPack) {
+    m_runDebug.boardPack = context0->boardPack->GetPackageID(true);
+    Collection<RteItem*> boardAlgorithms;
+    context0->rteBoard->GetChildrenByTag("algorithm", boardAlgorithms);
+    for (const auto& boardAlgorithm : boardAlgorithms) {
+      PushBackUniquely(algorithms, boardAlgorithm, boardAlgorithm->GetAttribute("Pname"));
+    }
+  }
+
+  // sort collections starting with specific pnames
+  for (auto vec : { &algorithms, &debugs, &debugSequences }) {
+    sort(vec->begin(), vec->end(), [](auto& left, auto& right) {
+      return left.second.size() < right.second.size();
+    });
   }
 
   // set device/board programming algorithms
-  for (const auto& algorithm : algorithms) {
+  for (const auto& [algorithm, pname] : algorithms) {
     AlgorithmType item;
     item.algorithm = algorithm->GetOriginalAbsolutePath();
     item.start = algorithm->GetAttributeAsULL("start");
@@ -77,11 +95,12 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts) {
     item.ramStart = algorithm->GetAttributeAsULL("RAMstart");
     item.ramSize = algorithm->GetAttributeAsULL("RAMsize");
     item.bDefault = algorithm->GetAttributeAsBool("default");
+    item.pname = pname.size() == 1 ? pname.front() : "";
     m_runDebug.algorithms.push_back(item);
   }
 
   // additional programming algorithms
-  for (const auto& memory : context->memory) {
+  for (const auto& memory : context0->memory) {
     AlgorithmType item;
     item.algorithm = memory.algorithm;
     item.start = RteUtils::StringToULL(memory.start);
@@ -90,31 +109,32 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts) {
   }
 
   // system descriptions
-  for (const auto& debug : debugs) {
+  for (const auto& [debug, pname] : debugs) {
     const auto& svd = debug->GetAttribute("svd");
     if (!svd.empty()) {
       FilesType item;
       item.file = debug->GetAbsolutePackagePath() + svd;
       item.type = "svd";
+      item.pname = pname.size() == 1 ? pname.front() : "";
       m_runDebug.systemDescriptions.push_back(item);
     }
   }
 
   // outputs
-  for (const auto& c : contexts) {
-    auto output = c->outputTypes;
+  for (const auto& context : contexts) {
+    auto output = context->outputTypes;
     if (output.elf.on) {
-      RteFsUtils::NormalizePath(output.elf.filename, c->directories.cprj + '/' + c->directories.outdir);
+      RteFsUtils::NormalizePath(output.elf.filename, context->directories.cprj + '/' + context->directories.outdir);
       m_runDebug.outputs.push_back({ output.elf.filename, RteConstants::OUTPUT_TYPE_ELF });
     }
     if (output.hex.on) {
-      RteFsUtils::NormalizePath(output.hex.filename, c->directories.cprj + '/' + c->directories.outdir);
+      RteFsUtils::NormalizePath(output.hex.filename, context->directories.cprj + '/' + context->directories.outdir);
       m_runDebug.outputs.push_back({ output.hex.filename, RteConstants::OUTPUT_TYPE_HEX });
     }
   }
 
   // debug sequences
-  for (const auto& debugSequence : debugSequences) {
+  for (const auto& [debugSequence, pname] : debugSequences) {
     DebugSequencesType sequence;
     sequence.name = debugSequence->GetName();
     sequence.info = debugSequence->GetAttribute("info");
@@ -123,6 +143,7 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts) {
       GetDebugSequenceBlock(debugSequenceBlock, block);
       sequence.blocks.push_back(block);
     }
+    sequence.pname = pname.size() == 1 ? pname.front() : "";
     m_runDebug.debugSequences.push_back(sequence);
   }
 
@@ -161,4 +182,14 @@ void ProjMgrRunDebug::GetDebugSequenceBlock(const RteItem* item, DebugSequencesB
     GetDebugSequenceBlock(child, childBlock);
     block.blocks.push_back(childBlock);
   }
+}
+
+void ProjMgrRunDebug::PushBackUniquely(vector<pair<const RteItem*, vector<string>>>& vec, const RteItem* item, const string pname) {
+  for (auto& [rteItem, pnames] : vec) {
+    if (rteItem == item) {
+      CollectionUtils::PushBackUniquely(pnames, pname);
+      return;
+    }
+  }
+  vec.push_back({ item, { pname } });
 }
