@@ -151,6 +151,7 @@ static constexpr const char* YAML_PACKS = "packs";
 static constexpr const char* YAML_PACKS_MISSING = "packs-missing";
 static constexpr const char* YAML_PACKS_UNUSED = "packs-unused";
 static constexpr const char* YAML_PATH = "path";
+static constexpr const char* YAML_PNAME = "pname";
 static constexpr const char* YAML_PROCESSOR = "processor";
 static constexpr const char* YAML_PROGRAMMING = "programming";
 static constexpr const char* YAML_PROJECT = "project";

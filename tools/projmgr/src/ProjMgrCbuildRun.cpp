@@ -56,6 +56,7 @@ void ProjMgrCbuildRun::SetProgrammingNode(YAML::Node node, const std::vector<Alg
     if (item.bDefault) {
       algorithmNode[YAML_DEFAULT] = true;
     }
+    SetNodeValue(algorithmNode[YAML_PNAME], item.pname);
     node.push_back(algorithmNode);
   }
 }
@@ -65,6 +66,7 @@ void ProjMgrCbuildRun::SetFilesNode(YAML::Node node, const std::vector<FilesType
     YAML::Node fileNode;
     SetNodeValue(fileNode[YAML_FILE], FormatPath(item.file, m_directory));
     SetNodeValue(fileNode[YAML_TYPE], item.type);
+    SetNodeValue(fileNode[YAML_PNAME], item.pname);
     node.push_back(fileNode);
   }
 }
@@ -75,6 +77,7 @@ void ProjMgrCbuildRun::SetDebugSequencesNode(YAML::Node node, const std::vector<
     SetNodeValue(sequenceNode[YAML_NAME], sequence.name);
     SetNodeValue(sequenceNode[YAML_INFO], sequence.info);
     SetDebugSequencesBlockNode(sequenceNode[YAML_BLOCKS], sequence.blocks);
+    SetNodeValue(sequenceNode[YAML_PNAME], sequence.pname);
     node.push_back(sequenceNode);
   }
 }
