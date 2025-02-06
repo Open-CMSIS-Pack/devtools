@@ -24,16 +24,16 @@ ProjMgrRunDebug::~ProjMgrRunDebug(void) {
 bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts) {
 
   // get target settings
-  const auto& context = contexts.front();
-  m_runDebug.solution = context->csolution->path;
-  m_runDebug.targetType = context->type.target;
-  m_runDebug.compiler = context->compiler;
-  if (!context->device.empty()) {
-    m_runDebug.device = context->deviceItem.vendor + "::" + context->deviceItem.name;
+  const auto& context0 = contexts.front();
+  m_runDebug.solution = context0->csolution->path;
+  m_runDebug.targetType = context0->type.target;
+  m_runDebug.compiler = context0->compiler;
+  if (!context0->device.empty()) {
+    m_runDebug.device = context0->deviceItem.vendor + "::" + context0->deviceItem.name;
   }
-  if (!context->board.empty()) {
-    m_runDebug.board = context->boardItem.vendor + "::" + context->boardItem.name +
-      (context->boardItem.revision.empty() ? "" : ":" + context->boardItem.revision);
+  if (!context0->board.empty()) {
+    m_runDebug.board = context0->boardItem.vendor + "::" + context0->boardItem.name +
+      (context0->boardItem.revision.empty() ? "" : ":" + context0->boardItem.revision);
   }
 
   // programming algorithms
@@ -69,10 +69,10 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts) {
   }
 
   // board collections
-  if (context->boardPack) {
-    m_runDebug.boardPack = context->boardPack->GetPackageID(true);
+  if (context0->boardPack) {
+    m_runDebug.boardPack = context0->boardPack->GetPackageID(true);
     Collection<RteItem*> boardAlgorithms;
-    context->rteBoard->GetChildrenByTag("algorithm", boardAlgorithms);
+    context0->rteBoard->GetChildrenByTag("algorithm", boardAlgorithms);
     for (const auto& boardAlgorithm : boardAlgorithms) {
       PushBackUniquely(algorithms, boardAlgorithm, boardAlgorithm->GetAttribute("Pname"));
     }
@@ -99,7 +99,7 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts) {
   }
 
   // additional programming algorithms
-  for (const auto& memory : context->memory) {
+  for (const auto& memory : context0->memory) {
     AlgorithmType item;
     item.algorithm = memory.algorithm;
     item.start = RteUtils::StringToULL(memory.start);
@@ -120,14 +120,14 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts) {
   }
 
   // outputs
-  for (const auto& c : contexts) {
-    auto output = c->outputTypes;
+  for (const auto& context : contexts) {
+    auto output = context->outputTypes;
     if (output.elf.on) {
-      RteFsUtils::NormalizePath(output.elf.filename, c->directories.cprj + '/' + c->directories.outdir);
+      RteFsUtils::NormalizePath(output.elf.filename, context->directories.cprj + '/' + context->directories.outdir);
       m_runDebug.outputs.push_back({ output.elf.filename, RteConstants::OUTPUT_TYPE_ELF });
     }
     if (output.hex.on) {
-      RteFsUtils::NormalizePath(output.hex.filename, c->directories.cprj + '/' + c->directories.outdir);
+      RteFsUtils::NormalizePath(output.hex.filename, context->directories.cprj + '/' + context->directories.outdir);
       m_runDebug.outputs.push_back({ output.hex.filename, RteConstants::OUTPUT_TYPE_HEX });
     }
   }
