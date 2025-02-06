@@ -787,7 +787,7 @@ bool CheckFiles::CheckFileExtension(RteItem* item)
       }
     }
     else if(category == "sourceCpp") {
-      if(_stricmp(extension.c_str(), "cpp")) {
+      if(_stricmp(extension.c_str(), "cpp") && _stricmp(extension.c_str(), "cc") && _stricmp(extension.c_str(), "cxx")) {
         LogMsg("M337", VAL("CAT", category), PATH(name), EXT(extension), lineNo);
         ok = false;
       }

@@ -21,3 +21,8 @@
 .vscode
 /build*/
 **/cmake-*
+/.cache
+/tools/projmgr/test
+/tools/projmgr/test
+tools/svdconv/CMakeCache.txt
+tools/svdconv/CMakeFiles/cmake.check_cache

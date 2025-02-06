@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<package schemaVersion="1.4" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="PACK.xsd">
+  <vendor>TestVendor</vendor>
+  <url>http://www.testurl.com/pack/</url>
+  <name>SupportCcFiles_DFP</name>
+  <description>Filename is directory</description>
+
+  <releases>
+    <release version="0.0.1" date="2025-02-03">>
+      Initial release of SupportCcFiles.
+    </release>
+  </releases>
+
+  <keywords>
+    <keyword>SupportCcFiles</keyword>
+  </keywords>
+
+  <conditions>
+    <condition id="Test_Condition">
+      <description>Test Device</description>
+      <require Dvendor="ARM:82"/>
+    </condition>
+  </conditions>
+
+  <components>
+    <component Cclass="TestClass" Cgroup="TestFiles" Cversion="1.0.0" condition="Test_Condition">
+      <description>Test files</description>
+      <files>
+        <file category="TestGlobal" name="Files/header1.h"/>
+        <file category="source" name="Files/test1.c"/>
+        <file category="sourceC" name="Files/test1.c"/>
+        <file category="sourceCpp" name="Files/test1.cpp"/>
+        <file category="sourceCpp" name="Files/test1.cc"/>
+        <file category="sourceCpp" name="Files/fileWillFail.ccc"/>
+      </files>
+    </component>
+  </components>
+</package>

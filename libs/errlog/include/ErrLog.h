@@ -197,6 +197,16 @@ public:
     return theErrLog;
   }
 
+  /**
+   * @brief singleton operation: destroys global application object
+  */
+  static void Destroy() {
+    if (theErrLog) {
+      delete theErrLog;
+      theErrLog = nullptr;
+    }
+  }
+
 public:
   /**
    * @brief empty messages buffer
@@ -517,7 +527,6 @@ private:
     ~ErrLogDestroyer() { ErrLog::Destroy(); }
   };
 
-  static void  Destroy() { delete theErrLog; theErrLog = nullptr; }
   static ErrLogDestroyer theErrLogDestroyer;
   static ErrLog* theErrLog;  // the application-wide ErrLog Object
 
