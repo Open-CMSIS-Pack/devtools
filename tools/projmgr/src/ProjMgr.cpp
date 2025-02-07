@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -48,7 +48,7 @@ Options:\n\
   -m, --missing                 List only required packs that are missing in the pack repository\n\
   -n, --no-check-schema         Skip schema check\n\
   -N, --no-update-rte           Skip creation of RTE directory and files\n\
-  -o,-O --output arg            Add prefix to 'outdir' and 'tmpdir'\n\
+  -o,-O --output arg            Base folder for output files, 'outdir' and 'tmpdir' (default \"./\")\n\
   -q, --quiet                   Run silently, printing only error messages\n\
   -R, --relative-paths          Print paths relative to project or ${CMSIS_PACK_ROOT}\n\
   -S, --context-set             Select the context names from cbuild-set.yml for generating the target application\n\
