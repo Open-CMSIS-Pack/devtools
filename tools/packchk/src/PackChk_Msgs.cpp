@@ -172,7 +172,7 @@ const MsgTable PackChk::msgTable = {
   { "M354", { MsgLevel::LEVEL_WARNING3, CRLF_B, "Multiple '%FILECAT%' Files found for Component '%COMP%' for '[%VENDOR%] %MCU%' (Compiler: %COMPILER% [%OPTION%])" } },
   { "M355", { MsgLevel::LEVEL_WARNING3, CRLF_B, "No '%FILECAT%' Directory found for Component '%COMP%' (%COMPID%) for '[%VENDOR%] %MCU%' (Compiler: %COMPILER% [%OPTION%])" } },
   { "M356", { MsgLevel::LEVEL_ERROR,    CRLF_B, "Path '%PATH%' does not specify a file!" } },
-  { "M357", { MsgLevel::LEVEL_WARNING,  CRLF_B, "" } },
+  { "M357", { MsgLevel::LEVEL_WARNING,  CRLF_B, "Config File '%NAME%' is found in the include path to the original pack folder" } },
   { "M358", { MsgLevel::LEVEL_WARNING3, CRLF_B, "Header File '%HFILE%' for '%CFILE%', used by Component '%COMP%' (%COMPID%)\n"\
                                                 "  for Device '[%VENDOR%] %MCU%' (Compiler: %COMPILER% [%OPTION%]) not found on file system in any include paths: %PATH%" } },
   { "M359", { MsgLevel::LEVEL_WARNING,  CRLF_B, "Family has no Device(s) or Subfamilies: '%FAMILY%" } },
