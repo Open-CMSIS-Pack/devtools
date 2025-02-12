@@ -30,6 +30,7 @@ public:
   void SetPackagePath(const std::string& packagePath);
   const std::string& GetPackagePath() const;
   bool CheckFile(RteItem* item);
+  bool CheckUrls(RteItem* item);
   bool CheckFileExists(const std::string& fileName, int lineNo, bool associated = false);
   bool CheckCaseSense(const std::string& fileName, int lineNo);
   bool CheckFileIsInPack(const std::string& fileName, int lineNo);

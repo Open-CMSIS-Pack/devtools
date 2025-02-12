@@ -184,7 +184,7 @@ const MsgTable PackChk::msgTable = {
   { "M365", { MsgLevel::LEVEL_ERROR,    CRLF_B, "Redefined %DEVTYPE% '%MCU%' found, see Line %LINE%" } },
   { "M366", { MsgLevel::LEVEL_ERROR,    CRLF_B, "Redefined %DEVTYPEEXIST% as %DEVTYPE% '%MCU%' found, see Line %LINE%" } },
   { "M367", { MsgLevel::LEVEL_ERROR,    CRLF_B, "Redefined %TYPE% '%NAME%' found, see Line %LINE%" } },
-  { "M368", { MsgLevel::LEVEL_ERROR,    CRLF_B, "" } },
+  { "M368", { MsgLevel::LEVEL_WARNING,  CRLF_B, "%TAG% must use '%URL%'" } },
   { "M369", { MsgLevel::LEVEL_WARNING3, CRLF_B, "Feature is already defined for '%MCU%' and will be added, see Line %LINE%: '%PROP%'" } },
   { "M370", { MsgLevel::LEVEL_WARNING,  CRLF_B, "URL is not conformant: '%URL%':\n  Backslashes are not allowed in URL, use forward slashes." } },
   { "M371", { MsgLevel::LEVEL_ERROR,    CRLF_B, "%SECTION% Feature for '%MCU%': '%FEATURE%' unknown." } },
