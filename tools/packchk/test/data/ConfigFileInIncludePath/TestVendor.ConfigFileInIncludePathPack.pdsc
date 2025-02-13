@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<package schemaVersion="1.4" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="PACK.xsd">
+  <vendor>TestVendor</vendor>
+  <url>http://www.testurl.com/pack/</url>
+  <name>ConfigFileInIncludePathPack</name>
+  <description>Include Path vs Config File. Files that have attr=config in the *.pdsc are copied to the project. An include path is automatically generated.
+It is a potential risk to add an additional include path to original location in the *.pdsc file. This file does not contain configuration settings. 
+It depends on the search order of the compiler to pickup the right header file (as effectively the same header file name is twice in the search path).</description>
+
+  <releases>
+    <release version="0.0.1" date="2021-09-06">>
+      Initial release of ConfigFileInIncludePath.
+    </release>
+  </releases>
+
+  <keywords>
+    <keyword>ConfigFileInIncludePath</keyword>
+  </keywords>
+
+  <conditions>
+    <condition id="TestDevices">
+      <description>Test devices</description>
+      <require Dvendor="ARM:82" Dname="Test*"/>
+    </condition>
+    <condition id="Test ARMCC">
+      <description>filter for STM32F1xx Value Line Low Density Device and the ARM compiler</description>
+      <require condition="TestDevices"/>
+      <require Tcompiler="ARMCC"/>
+    </condition>
+  </conditions>
+
+  <devices>
+    <family Dfamily="TestFamily" Dvendor="ARM:82">
+      <algorithm name="Flash/ARMCMx_512.FLM"  start="0x00000000" size="0x00040000" default="1"/>
+
+      <!-- ******************************  TestSubFamily  ****************************** -->
+      <subFamily DsubFamily="TestSubFamily">
+        <compile header="Files/TestDevicesFoo.h"  define="TESTDEVICES"/>
+
+        <description>
+The TestSubFamily is ...
+        </description>
+
+        <!-- ******************************  TestDevice1  ***************************** -->
+        <device Dname="TestDevice1">
+          <processor Dcore="Cortex-M4"  DcoreVersion="r0p1" Dfpu="SP_FPU" Dmpu="MPU" Dendian="Little-endian" Dclock="204000000"/>
+          <memory  id="IROM1"                  start="0x00000000" size="0x00040000" default="1" startup="1"/>
+          <memory  id="IRAM1"                  start="0x10000000" size="0x00010000" default="1" init   ="0"/>
+          <memory  id="IRAM2"                  start="0x20000000" size="0x00010000" default="0" init   ="0"/>
+        </device>
+      </subFamily>
+    </family>
+  </devices>
+
+  <components>
+    <component Cclass="Device" Cgroup="Startup" Cversion="1.0.0" condition="TestDevices">
+      <description>System Startup for STMicroelectronics STM32F1xx device series</description>
+      <files>
+        <file category="include" name="Files/"/>
+        <file category="source"  name="Files/header1.h" attr="config" version="1.0.0" condition="Test ARMCC"/>
+      </files>
+    </component>
+  </components>
+
+</package>
