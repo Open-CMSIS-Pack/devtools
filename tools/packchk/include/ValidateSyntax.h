@@ -88,7 +88,7 @@ private:
   std::map<std::string, std::list<RteDeviceItem*> > m_allItems;
   std::map<std::string, std::list<RteDeviceItem*> > m_allDevices;
   std::string m_pdscFullpath;
-  std::map<std::string, RteBoard*> boardsFound;
+  std::map<std::string, RteBoard*> m_boardsFound;
 
   FEATURE_TABLE m_featureTableDevice;
   FEATURE_TABLE m_featureTableBoard;
