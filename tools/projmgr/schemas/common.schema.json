@@ -482,7 +482,7 @@
     "TargetTypes": {
       "title": "target-types:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#target-types",
       "type": "array",
-      "description": "Target type declaration list that allow to switch among different targets.",
+      "description": "List of target type names that allow to switch between different target systems.",
       "uniqueItems": true,
       "minItems": 1,
       "items": { "$ref": "#/definitions/TargetType" }
@@ -523,8 +523,9 @@
       "required" : [ "type"]
     },
     "BuildTypes": {
+      "title": "build-types:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#build-types",
       "type": "array",
-      "description": "List of build type declarations that allow to switch among different build settings such as: Release, Debug, Test.",
+      "description": "List of build type names that allow to switch between different build settings such as: Release, Debug, Test.",
       "uniqueItems": true,
       "minItems": 1,
       "items": { "$ref": "#/definitions/BuildType" }
@@ -1500,7 +1501,7 @@
       "title": "pack:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#pack",
       "type": "string",
       "pattern": "^([a-zA-Z0-9_ \\.-]+)((::[a-zA-Z0-9_ \\.\\*-]+)(@(>=|\\~|\\^)?([0-9]+\\.[0-9]+\\.[0-9]+((\\+|\\-)[a-zA-Z0-9_\\.\\+-]+)?))?)?$",
-      "description": "Name of a software pack.\nFormat: Vendor [:: Pack [@[>=|~|^] version]].\nExample: ARM::CMSIS@6.1.0."
+      "description": "Name of a software pack with the following format:\n  [vendor ::] pack-name # Use the latest version of the pack\n  [vendor ::] pack-name@version # With exact version\n  [vendor ::] pack-name@>=version # With version equal or higher\n  [vendor ::] pack-name@^version # With version equal or higher but the same major version\n  [vendor ::] pack-name@~version # With version equal or higher but the same major and minor version"
     },
     "VersionlessPackID": {
       "title": "pack:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#pack",

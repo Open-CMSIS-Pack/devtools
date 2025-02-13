@@ -131,8 +131,8 @@ const MsgTable PackChk::msgTable = {
   { "M315", { MsgLevel::LEVEL_ERROR,    CRLF_B, "Invalid URL / Paths to Drives are not allowed in Package URL: '%URL%'" } },
   { "M316", { MsgLevel::LEVEL_WARNING,  CRLF_B, "URL must end with slash '/': '%URL%'" } },
   { "M317", { MsgLevel::LEVEL_WARNING,  CRLF_B, "Condition '%NAME%': No component found for '%NAME2%'" } },
-  { "M318", { MsgLevel::LEVEL_ERROR,    CRLF_B, "" } },
-  { "M319", { MsgLevel::LEVEL_ERROR,    CRLF_B, "" } },
+  { "M318", { MsgLevel::LEVEL_WARNING,  CRLF_B, "Attribute '%TAG%' must not have '%TAG2%'" } },
+  { "M319", { MsgLevel::LEVEL_ERROR,    CRLF_B, "'%TAG%' already defined for '%TAG2%'" } },
   { "M320", { MsgLevel::LEVEL_ERROR,    CRLF_B, "" } },
   { "M321", { MsgLevel::LEVEL_ERROR,    CRLF_B, "DS5 project requires '.project' file." } },
   { "M322", { MsgLevel::LEVEL_ERROR,    CRLF_B, "Associated File/Path not found: '%PATH%'" } },
@@ -152,7 +152,7 @@ const MsgTable PackChk::msgTable = {
                                                 "  No condition id set to specify a rule filtering for a device or set of devices." } },
   { "M336", { MsgLevel::LEVEL_WARNING,  CRLF_B, "Component 'Cclass=%CCLASS%, Cgroup=%CGROUP%, Cversion=%CVER%, condition=%COND%' is member of the Cclass='%CCLASS%' which shall contain device specific components.\n"\
                                                 "  The referenced condition id does not contain a rule filtering for a device or set of devices." } },  // No reference to a device or device not found
-  { "M337", { MsgLevel::LEVEL_WARNING,  CRLF_B, "File with category '%CAT%' has wrong extension '%EXT%': '%PATH%'" } },
+  { "M337", { MsgLevel::LEVEL_WARNING,  CRLF_B, "File with category '%CAT%' has wrong extension '%EXT%': '%PATH%'%MSG%" } },
   { "M338", { MsgLevel::LEVEL_WARNING,  CRLF_B, "No releases found!" } },
   { "M339", { MsgLevel::LEVEL_WARNING,  CRLF_B, "Include Path '%PATH%' must not be a file!" } },
   { "M340", { MsgLevel::LEVEL_WARNING,  CRLF_B, "Include Path '%PATH%' must end with '/'" } },
@@ -172,7 +172,7 @@ const MsgTable PackChk::msgTable = {
   { "M354", { MsgLevel::LEVEL_WARNING3, CRLF_B, "Multiple '%FILECAT%' Files found for Component '%COMP%' for '[%VENDOR%] %MCU%' (Compiler: %COMPILER% [%OPTION%])" } },
   { "M355", { MsgLevel::LEVEL_WARNING3, CRLF_B, "No '%FILECAT%' Directory found for Component '%COMP%' (%COMPID%) for '[%VENDOR%] %MCU%' (Compiler: %COMPILER% [%OPTION%])" } },
   { "M356", { MsgLevel::LEVEL_ERROR,    CRLF_B, "Path '%PATH%' does not specify a file!" } },
-  { "M357", { MsgLevel::LEVEL_WARNING,  CRLF_B, "" } },
+  { "M357", { MsgLevel::LEVEL_WARNING,  CRLF_B, "Config File '%NAME%', which gets copied to project, is also found in the include path to the original pack folder. Do not place config header files in the same directory as regular header files." } },
   { "M358", { MsgLevel::LEVEL_WARNING3, CRLF_B, "Header File '%HFILE%' for '%CFILE%', used by Component '%COMP%' (%COMPID%)\n"\
                                                 "  for Device '[%VENDOR%] %MCU%' (Compiler: %COMPILER% [%OPTION%]) not found on file system in any include paths: %PATH%" } },
   { "M359", { MsgLevel::LEVEL_WARNING,  CRLF_B, "Family has no Device(s) or Subfamilies: '%FAMILY%" } },
@@ -184,7 +184,7 @@ const MsgTable PackChk::msgTable = {
   { "M365", { MsgLevel::LEVEL_ERROR,    CRLF_B, "Redefined %DEVTYPE% '%MCU%' found, see Line %LINE%" } },
   { "M366", { MsgLevel::LEVEL_ERROR,    CRLF_B, "Redefined %DEVTYPEEXIST% as %DEVTYPE% '%MCU%' found, see Line %LINE%" } },
   { "M367", { MsgLevel::LEVEL_ERROR,    CRLF_B, "Redefined %TYPE% '%NAME%' found, see Line %LINE%" } },
-  { "M368", { MsgLevel::LEVEL_ERROR,    CRLF_B, "" } },
+  { "M368", { MsgLevel::LEVEL_ERROR,    CRLF_B, "Cannot check '%NAME%'%MSG%" } },
   { "M369", { MsgLevel::LEVEL_WARNING3, CRLF_B, "Feature is already defined for '%MCU%' and will be added, see Line %LINE%: '%PROP%'" } },
   { "M370", { MsgLevel::LEVEL_WARNING,  CRLF_B, "URL is not conformant: '%URL%':\n  Backslashes are not allowed in URL, use forward slashes." } },
   { "M371", { MsgLevel::LEVEL_ERROR,    CRLF_B, "%SECTION% Feature for '%MCU%': '%FEATURE%' unknown." } },

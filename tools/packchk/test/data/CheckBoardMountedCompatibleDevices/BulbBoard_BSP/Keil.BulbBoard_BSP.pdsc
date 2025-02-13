@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<package schemaVersion="1.2" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="PACK.xsd">
+  <vendor>Keil</vendor>
+  <name>BulbBoard_BSP</name>
+  <description>Glyn Bulb Board Development Board Support Package</description>
+  <url>http://www.keil.com/pack</url>
+
+  <releases>
+    <release version="1.1.0" date="2019-05-28">
+      Updated Device Vendor: changed from Spansion to Cypress.
+      Updated PDSC file: backward slashes changed to forward slashes in file references.
+    </release>
+    <release version="1.0.0" date="2014-09-04">
+      First Release version of Bulb Board Board Support Pack.
+    </release>
+  </releases>
+
+  <keywords>
+    <!-- keywords for indexing -->
+    <keyword>Glyn</keyword>
+    <keyword>Cypress</keyword>
+    <keyword>Board Support</keyword>
+    <keyword>S6E1A12B0AGP2</keyword>
+    <keyword>FM0+</keyword>
+  </keywords>
+
+  <boards>
+    <board vendor="Glyn" name="Bulb Board" revision="v1.1" salesContact="mcu@glyn.de" orderForm="http://www.glyn.de/ideen-board">
+      <description>Glyn Bulb Board Support</description>
+      <image small="Images/BulbBoard_rot_small.jpg" large="Images/BulbBoard_rot_165px.jpg"/>
+      <book category="overview"  name="http://www.glyn.de/ideen-board" title="Bulb Board Web Page"/>
+      <book category="schematic" name="Documents/schematic_BULB-BOARD-MINI_V11.pdf"  title="Schematics"/>
+      <book category="setup"     name="Documents/readme_cmsisdap.pdf"                title="How to use CMSIS-DAP debugger"/>
+      <book category="setup"     name="Documents/readme_keil.pdf"                    title="How to use Keil uVision with Cypress templates"/>
+      <book category="other"     name="Resources/driverinstaller.exe"                title="Driver for CMSIS-DAP and programming"/>
+      <book category="other"     name="Resources/PCWFM3-V01L14.zip"                  title="Serial Flash programming Tool"/>
+      <book category="other"     name="Resources/serialportviewerandterminalv56.exe" title="Serial Port Viewer and Terminal installer"/>
+      <mountedDevice    deviceIndex="0" Dvendor="Cypress:19" Dname="S6E1A12B0A"/>
+      <mountedDevice    deviceIndex="2" Dname="S6E1A12B0A"/>
+      <mountedDevice    deviceIndex="3" Dvendor="Cypress:19"/>
+      <mountedDevice    deviceIndex="0" Dvendor="Cypress:19" Dname="S6E1A12B0B"/>
+      <mountedDevice    deviceIndex="2" Dvendor="Cypress:19" Dname="S6E1A12B0C"/>
+      <compatibleDevice deviceIndex="0" Dvendor="Cypress:19" Dname="S6E1A12C0A" Dfamily="Foo" DsubFamily="Bar"/>
+      <compatibleDevice deviceIndex="0" Dvendor="Cypress:19" Dname="S6E1A11B0A"/>
+      <compatibleDevice deviceIndex="0" Dvendor="Cypress:19" Dname="S6E1A11C0A"/>
+      <feature type="XTAL"      n="4000000"/>
+      <feature type="PWR"       n="5"              name="USB Powered: 5V of 3.3V Jumper selectable"/>
+      <feature type="LED"       n="2"              name="LEDs: 2x User: green, red"/>
+      <feature type="USB"       n="1"              name="USB Type A Plug for CMSIS-DAP and Virtual COM Port"/>
+      <feature type="DIO"       n="25"             name="2 x 14-Pin Header"/>
+      <feature type="ConnOther" n="1"              name="Multicon: stackable solution for adding concept boards connected via SPI, I2C or UART"/>
+      <feature type="CustomFF"  n="35" m="65"/>
+      <feature type="Curr"      n="15"  m="20"/>
+      <debugInterface adapter="CMSIS-DAP" connector="USB Type A Plug"/>
+    </board>
+  </boards>  
+
+  <conditions>
+    <condition id="Cypress FM0+ CMSIS Device">
+      <!-- conditions selecting Devices -->
+      <description>Cypress FM0+ Series devices and CMSIS-CORE</description>
+      <require Cclass="CMSIS" Cgroup="CORE"/>
+      <require Dvendor="Cypress:19" Dname="S6E1A1*"/>
+    </condition>
+  </conditions>
+  
+  <components>
+    <bundle Cbundle="Bulb Board" Cclass="Board Support" Cversion="1.0.0">
+      <description>Glyn Bulb Development Board</description>
+      <doc>http://www.glyn.de/ideen-board</doc>
+      <component Cgroup="LED" Capiversion="1.00" condition="Cypress FM0+ CMSIS Device">
+      <description>LED driver for Glyn Bulb Development Board</description>
+        <files>
+        <file category="sourceC" name="Common/LED_BulbBoard.c"/>
+        </files>
+      </component>
+    </bundle>
+  </components>
+
+  <examples>
+    <example name="Blinky" doc="Abstract.txt" folder="Examples/Blinky">
+      <description>Blinky example</description>
+      <board name="Bulb Board" vendor="Glyn"/>
+      <project>
+        <environment name="uv" load="Blinky.uvprojx"/>
+      </project>
+      <attributes>
+        <component Cclass="CMSIS" Cgroup="CORE"/>
+        <component Cclass="Device" Cgroup="Startup"/>
+        <category>Getting Started</category>
+      </attributes>
+    </example>
+    <example name="CMSIS-RTOS Blinky" doc="Abstract.txt" folder="Examples/RTX_Blinky">
+      <description>CMSIS-RTOS based Blinky example</description>
+      <board name="Bulb Board" vendor="Glyn"/>
+      <project>
+        <environment name="uv" load="RTX_Blinky.uvprojx"/>
+      </project>
+      <attributes>
+        <component Cclass="CMSIS" Cgroup="CORE"/>
+        <component Cclass="Device" Cgroup="Startup"/>
+        <component Cclass="CMSIS" Cgroup="RTOS"/>
+        <category>Getting Started</category>
+        <category>CMSIS-RTX</category>
+      </attributes>
+    </example>
+    <example name="Demo" doc="Readme.txt" folder="Examples/s6e1a1_bulb-board-mini-demo_v10">
+      <description>Cypress Demo project</description>
+      <board name="Bulb Board" vendor="Glyn"/>
+      <project>
+        <environment name="uv" load="Demo.uvprojx"/>
+      </project>
+      <attributes>
+        <component Cclass="CMSIS" Cgroup="CORE"/>
+        <component Cclass="Device" Cgroup="Startup"/>
+        <category>Getting Started</category>
+      </attributes>
+    </example>
+  </examples>
+  
+</package>

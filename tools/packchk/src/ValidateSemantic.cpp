@@ -450,6 +450,12 @@ bool ValidateSemantic::FindFileFromList(const string& systemHeader, const set<Rt
   return false;
 }
 
+bool ValidateSemantic::FileIsHeader(const std::string& name)
+{
+  return RteFsUtils::FileCategoryFromExtension(name) == "header";
+}
+
+
 /**
  * @brief Check device dependencies. Tests if all dependencies are solved and a minimum
  *        on support files and configuration has been defined
@@ -526,6 +532,7 @@ bool ValidateSemantic::CheckDeviceDependencies(RteDeviceItem *device, RteProject
 
         for(auto aggregate : startupComponents) {
           ErrLog::Get()->SetFileName(aggregate->GetPackage()->GetPackageFileName());
+          string targetPath = RteUtils::ExtractFilePath(aggregate->GetPackage()->GetPackageFileName(), false);
 
           for(auto &[componentKey, componentMap] : aggregate->GetAllComponents()) {
             int foundSystemC = 0, foundStartup = 0;
@@ -568,6 +575,15 @@ bool ValidateSemantic::CheckDeviceDependencies(RteDeviceItem *device, RteProject
                     continue;
                   }
                   const string& attribute = file->GetAttribute("attr");
+
+                  if(attribute == "config" && FileIsHeader(fileName)) {
+                    const string& fullFileName = targetPath + "/" + file->GetName();
+                    const string hPath = RteUtils::ExtractFilePath(fullFileName, false);
+                    const auto incPathFound = incPaths.find(hPath);
+                    if(incPathFound != incPaths.end()) {
+                      LogMsg("M357", NAME(file->GetName()), file->GetLineNumber());
+                    }
+                  }
 
                   if(FindName(fileName, "system_", ".c")) {
                     foundSystemC++;

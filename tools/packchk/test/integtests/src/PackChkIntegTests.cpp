@@ -764,6 +764,65 @@ TEST_F(PackChkIntegTests, CheckDuplicateFlashAlgo) {
   }
 }
 
+
+// Validate file is .md
+TEST_F(PackChkIntegTests, CheckDescriptionOverviewMd) {
+  const char* argv[3];
+
+  const string& pdscFile = PackChkIntegTestEnv::localtestdata_dir +
+    "/DescriptionOverview/TestVendor.DescriptionOverviewPack.pdsc";
+  ASSERT_TRUE(RteFsUtils::Exists(pdscFile));
+
+  argv[0] = (char*)"";
+  argv[1] = (char*)pdscFile.c_str();
+  argv[2] = (char*)"--disable-validation";
+
+  PackChk packChk;
+  EXPECT_EQ(0, packChk.Check(3, argv, nullptr));
+
+  auto errMsgs = ErrLog::Get()->GetLogMessages();
+  int M337_foundCnt = 0;
+  for (const string& msg : errMsgs) {
+    size_t s;
+    if ((s = msg.find("M337")) != string::npos) {
+      M337_foundCnt++;
+    }
+  }
+
+  if (M337_foundCnt) {
+    FAIL() << "error: message M337 found";
+  }
+}
+
+// Validate config file vs. include path
+TEST_F(PackChkIntegTests, CheckConfigFileInIncludePath) {
+  const char* argv[3];
+
+  const string& pdscFile = PackChkIntegTestEnv::localtestdata_dir +
+    "/ConfigFileInIncludePath/TestVendor.ConfigFileInIncludePathPack.pdsc";
+  ASSERT_TRUE(RteFsUtils::Exists(pdscFile));
+
+  argv[0] = (char*)"";
+  argv[1] = (char*)pdscFile.c_str();
+  argv[2] = (char *)"--disable-validation";
+
+  PackChk packChk;
+  EXPECT_EQ(0, packChk.Check(3, argv, nullptr));
+
+  auto errMsgs = ErrLog::Get()->GetLogMessages();
+  int M357_foundCnt = 0;
+  for (const string& msg : errMsgs) {
+    size_t s;
+    if ((s = msg.find("M357")) != string::npos) {
+      M357_foundCnt++;
+    }
+  }
+
+  if (!M357_foundCnt) {
+    FAIL() << "error: missing message M357";
+  }
+}
+
 // Test schema validation
 TEST_F(PackChkIntegTests, CheckSchemaValidation) {
   const char* argv[3];
@@ -798,6 +857,48 @@ TEST_F(PackChkIntegTests, CheckSchemaValidation) {
 
   if (M510_foundCnt != 0 || M511_foundCnt != 6 || M306_foundCnt != 1) {
     FAIL() << "error: missing message M510, M511 or M306";
+  }
+}
+
+// Validate invalid file path (file is directory)
+TEST_F(PackChkIntegTests, CheckBoardMountedCompatibleDevices) {
+  const char* argv[5];
+
+  const string& pdscFile = PackChkIntegTestEnv::localtestdata_dir +
+    "/CheckBoardMountedCompatibleDevices/BulbBoard_BSP/Keil.BulbBoard_BSP.pdsc";
+  const string& pdscFileAdd = PackChkIntegTestEnv::localtestdata_dir +
+    "/CheckBoardMountedCompatibleDevices/FM0plus_DFP/Keil.FM0plus_DFP.pdsc";
+  ASSERT_TRUE(RteFsUtils::Exists(pdscFile));
+  ASSERT_TRUE(RteFsUtils::Exists(pdscFileAdd));
+
+  argv[0] = (char*)"";
+  argv[1] = (char*)pdscFile.c_str();
+  argv[2] = (char*)"-i";
+  argv[3] = (char*)pdscFileAdd.c_str();
+  argv[4] = (char*)"--disable-validation";
+
+  PackChk packChk;
+  EXPECT_EQ(1, packChk.Check(2, argv, nullptr));
+
+  auto errMsgs = ErrLog::Get()->GetLogMessages();
+  int M308_foundCnt = 0;
+  int M318_foundCnt = 0;
+  int M319_foundCnt = 0;
+  for (const string& msg : errMsgs) {
+    size_t s;
+    if ((s = msg.find("M308")) != string::npos) {
+      M308_foundCnt++;
+    }
+    if ((s = msg.find("M318")) != string::npos) {
+      M318_foundCnt++;
+    }
+    if ((s = msg.find("M319")) != string::npos) {
+      M319_foundCnt++;
+    }
+  }
+
+  if (M308_foundCnt != 2 || M318_foundCnt != 2 || M319_foundCnt != 2) {
+    FAIL() << "error: missing message M348 or M369";
   }
 }
 
@@ -895,3 +996,4 @@ TEST_F(PackChkIntegTests, CheckConditionComponentDependency_Neg) {
     FAIL() << "error: warning M317 count != 4";
   }
 }
+
