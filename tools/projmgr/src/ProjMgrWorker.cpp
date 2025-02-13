@@ -1312,8 +1312,7 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context, BoardOrDevice process) {
     if (!matchedDevice) {
       string msg = "specified device '" +
         (deviceItem.vendor.empty() ? "" : deviceItem.vendor + "::") + deviceItem.name +
-        "' was not found among the installed packs.";
-      msg += "\nuse \'cpackget\' utility to install software packs.";
+        "' not found in the installed packs. Use:\n  cpackget add Vendor::PackName";
       ProjMgrLogger::Get().Error(msg, context.name);
       return false;
     }
