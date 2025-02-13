@@ -152,7 +152,7 @@ const MsgTable PackChk::msgTable = {
                                                 "  No condition id set to specify a rule filtering for a device or set of devices." } },
   { "M336", { MsgLevel::LEVEL_WARNING,  CRLF_B, "Component 'Cclass=%CCLASS%, Cgroup=%CGROUP%, Cversion=%CVER%, condition=%COND%' is member of the Cclass='%CCLASS%' which shall contain device specific components.\n"\
                                                 "  The referenced condition id does not contain a rule filtering for a device or set of devices." } },  // No reference to a device or device not found
-  { "M337", { MsgLevel::LEVEL_WARNING,  CRLF_B, "File with category '%CAT%' has wrong extension '%EXT%': '%PATH%'" } },
+  { "M337", { MsgLevel::LEVEL_WARNING,  CRLF_B, "File with category '%CAT%' has wrong extension '%EXT%': '%PATH%'%MSG%" } },
   { "M338", { MsgLevel::LEVEL_WARNING,  CRLF_B, "No releases found!" } },
   { "M339", { MsgLevel::LEVEL_WARNING,  CRLF_B, "Include Path '%PATH%' must not be a file!" } },
   { "M340", { MsgLevel::LEVEL_WARNING,  CRLF_B, "Include Path '%PATH%' must end with '/'" } },

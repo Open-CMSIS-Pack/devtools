@@ -239,6 +239,19 @@ bool ValidateSyntax::CheckInfo(RtePackage* pKg)
     bInfoComplete = false;
   }
 
+  // Check for <description overview="MyPack.md" ...
+  const auto packDescription = pKg->GetFirstChild("description");
+  if(packDescription) {
+    const auto overview = packDescription->GetAttribute("overview"); 
+    if(!overview.empty()) {
+      const auto ext = RteUtils::ExtractFileExtension(overview);
+      if(ext != "md") {
+        LogMsg("M337", VAL("CAT", "overview"), EXT(ext), PATH(overview), MSG(", should be .md"));
+      }
+    }
+  }
+
+
   string pdscRef = pKg->GetAttribute("vendor") + "." + pKg->GetName();
   const string& pdscPkg = RteUtils::ExtractFileBaseName(fileName);
 
