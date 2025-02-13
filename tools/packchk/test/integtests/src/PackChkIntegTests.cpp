@@ -27,7 +27,7 @@ void PackChkIntegTests::SetUp() {
 }
 
 void PackChkIntegTests::TearDown() {
-  ErrLog::Get()->ClearLogMessages();
+  ErrLog::Get()->Destroy();
 }
 
 string PackChkIntegTests::GetPackXsd() {
@@ -79,6 +79,17 @@ TEST_F(PackChkIntegTests, FileNotAVailable) {
   PackChk packChk;
   EXPECT_EQ(1, packChk.Check(2, argv, nullptr));
 }
+
+TEST_F(PackChkIntegTests, FileNotAVailable2) {
+  const char* argv[2];
+
+  argv[0] = (char*)"";
+  argv[1] = (char*)"UNKNOWN.FILE.pdsc";
+
+  PackChk packChk;
+  EXPECT_EQ(1, packChk.Check(2, argv, nullptr));
+}
+
 
 TEST_F(PackChkIntegTests, VersionOption) {
   const char* argv[2];
@@ -796,7 +807,7 @@ TEST_F(PackChkIntegTests, CheckConfigFileInIncludePath) {
   argv[2] = (char *)"--disable-validation";
 
   PackChk packChk;
-  EXPECT_EQ(0, packChk.Check(3, argv, nullptr));
+  EXPECT_EQ(1, packChk.Check(3, argv, nullptr));
 
   auto errMsgs = ErrLog::Get()->GetLogMessages();
   int M357_foundCnt = 0;
@@ -863,7 +874,7 @@ TEST_F(PackChkIntegTests, CheckBoardMountedCompatibleDevices) {
   argv[0] = (char*)"";
   argv[1] = (char*)pdscFile.c_str();
   argv[2] = (char*)"-i";
-  argv[3] = (char*)pdscFile.c_str();
+  argv[3] = (char*)pdscFileAdd.c_str();
   argv[4] = (char*)"--disable-validation";
 
   PackChk packChk;
@@ -891,36 +902,30 @@ TEST_F(PackChkIntegTests, CheckBoardMountedCompatibleDevices) {
   }
 }
 
-TEST_F(PackChkIntegTests, CheckConditionComponentDependency_Neg) {
-  const char* argv[5];
+TEST_F(PackChkIntegTests, CheckSupportCcFiles) {
+  const char* argv[3];
 
-  const string& pdscFile = PackChkIntegTestEnv::globaltestdata_dir +
-    "/packs/ARM/RteTest_DFP/0.2.0/ARM.RteTest_DFP.pdsc";
-  const string& refFile = PackChkIntegTestEnv::globaltestdata_dir +
-    "/packs/ARM/RteTest/0.1.0/ARM.RteTest.pdsc";
+  string pdscFile = PackChkIntegTestEnv::localtestdata_dir +
+    "/SupportCcFiles/TestVendor.SupportCcFiles_DFP.pdsc";
   ASSERT_TRUE(RteFsUtils::Exists(pdscFile));
-  ASSERT_TRUE(RteFsUtils::Exists(refFile));
 
   argv[0] = (char*)"";
   argv[1] = (char*)pdscFile.c_str();
-  argv[2] = (char*)"-x";
-  argv[3] = (char*)"!M317";
-  argv[4] = (char*)"--disable-validation";
+  argv[2] = (char*)"--disable-validation";
 
   PackChk packChk;
-  EXPECT_EQ(0, packChk.Check(5, argv, nullptr));
+  EXPECT_EQ(0, packChk.Check(3, argv, nullptr));
 
   auto errMsgs = ErrLog::Get()->GetLogMessages();
-  int M317_foundCnt = 0;
+  int M337_foundCnt = 0;
   for (const string& msg : errMsgs) {
-    size_t s;
-    if ((s = msg.find("M317", 0)) != string::npos) {
-      M317_foundCnt++;
+    if (msg.find("M337", 0) != string::npos) {
+      M337_foundCnt++;
     }
   }
 
-  if(M317_foundCnt != 4) {
-    FAIL() << "error: warning M317 count != 4";
+  if(!M337_foundCnt) {
+    FAIL() << "error: Missing message M337: File with category 'sourceCpp' has wrong extension 'ccc': 'Files/fileWillFail.ccc'";
   }
 }
 
@@ -958,3 +963,37 @@ TEST_F(PackChkIntegTests, CheckConditionComponentDependency_Pos) {
     FAIL() << "error: warning M317 found";
   }
 }
+
+TEST_F(PackChkIntegTests, CheckConditionComponentDependency_Neg) {
+  const char* argv[5];
+
+  const string& pdscFile = PackChkIntegTestEnv::globaltestdata_dir +
+    "/packs/ARM/RteTest_DFP/0.2.0/ARM.RteTest_DFP.pdsc";
+  const string& refFile = PackChkIntegTestEnv::globaltestdata_dir +
+    "/packs/ARM/RteTest/0.1.0/ARM.RteTest.pdsc";
+  ASSERT_TRUE(RteFsUtils::Exists(pdscFile));
+  ASSERT_TRUE(RteFsUtils::Exists(refFile));
+
+  argv[0] = (char*)"";
+  argv[1] = (char*)pdscFile.c_str();
+  argv[2] = (char*)"-x";
+  argv[3] = (char*)"!M317";
+  argv[4] = (char*)"--disable-validation";
+
+  PackChk packChk;
+  EXPECT_EQ(0, packChk.Check(5, argv, nullptr));
+
+  auto errMsgs = ErrLog::Get()->GetLogMessages();
+  int M317_foundCnt = 0;
+  for (const string& msg : errMsgs) {
+    size_t s;
+    if ((s = msg.find("M317", 0)) != string::npos) {
+      M317_foundCnt++;
+    }
+  }
+
+  if(M317_foundCnt != 4) {
+    FAIL() << "error: warning M317 count != 4";
+  }
+}
+
