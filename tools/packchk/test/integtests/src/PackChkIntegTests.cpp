@@ -782,16 +782,16 @@ TEST_F(PackChkIntegTests, CheckUrlForHttp) {
   EXPECT_EQ(1, packChk.Check(2, argv, nullptr));
 
   auto errMsgs = ErrLog::Get()->GetLogMessages();
-  int M368_foundCnt = 0;
+  int M300_foundCnt = 0;
   for (const string& msg : errMsgs) {
     size_t s;
-    if ((s = msg.find("M368")) != string::npos) {
-      M368_foundCnt++;
+    if ((s = msg.find("M300")) != string::npos) {
+      M300_foundCnt++;
     }
   }
 
-  if (M368_foundCnt != 8) {
-    FAIL() << "error: missing message M368";
+  if (M300_foundCnt != 8) {
+    FAIL() << "error: missing message M300";
   }
 }
 
