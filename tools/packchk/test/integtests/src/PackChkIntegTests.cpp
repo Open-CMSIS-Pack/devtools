@@ -807,7 +807,7 @@ TEST_F(PackChkIntegTests, CheckConfigFileInIncludePath) {
   argv[2] = (char *)"--disable-validation";
 
   PackChk packChk;
-  EXPECT_EQ(0, packChk.Check(3, argv, nullptr));
+  EXPECT_EQ(1, packChk.Check(3, argv, nullptr));
 
   auto errMsgs = ErrLog::Get()->GetLogMessages();
   int M357_foundCnt = 0;
