@@ -149,6 +149,12 @@ bool CheckFiles::GetFileName(RteItem* item, std::string& filename, FileType& fil
     filename = item->GetText();
     return true;
   }
+  else if(tag == "description") {
+    filename = item->GetAttribute("overview");
+    if(filename.length()) {
+      return true;
+    }
+  }
 
   return false;
 }
