@@ -180,14 +180,14 @@ bool CheckFiles::CheckUrls(RteItem* item)
   const auto lineNo = item->GetLineNumber();
   
   if(item->GetText().find("http://", 0) != string::npos) {
-    LogMsg("M368", TAG(item->GetTag()), URL("https://"), lineNo);
+    LogMsg("M300", TAG(item->GetTag()), URL("https://"), lineNo);
     bOk = false;
   }
     
   const auto& attributes = item->GetAttributes();
   for(const auto& [attr, text] : attributes) {
     if(text.find("http://", 0) != string::npos) {
-      LogMsg("M368", TAG(attr), URL("https://"), lineNo);
+      LogMsg("M300", TAG(attr), URL("https://"), lineNo);
     bOk = false;
     }
   }
