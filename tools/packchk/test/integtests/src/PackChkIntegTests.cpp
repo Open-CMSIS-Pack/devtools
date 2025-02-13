@@ -753,6 +753,36 @@ TEST_F(PackChkIntegTests, CheckDuplicateFlashAlgo) {
   }
 }
 
+// Validate invalid file path (file is directory)
+TEST_F(PackChkIntegTests, CheckConfigFileInIncludePath) {
+  const char* argv[3];
+
+  const string& pdscFile = PackChkIntegTestEnv::localtestdata_dir +
+    "/ConfigFileInIncludePath/TestVendor.ConfigFileInIncludePathPack.pdsc";
+  ASSERT_TRUE(RteFsUtils::Exists(pdscFile));
+
+  argv[0] = (char*)"";
+  argv[1] = (char*)pdscFile.c_str();
+  argv[2] = (char *)"--disable-validation";
+
+  PackChk packChk;
+  EXPECT_EQ(0, packChk.Check(3, argv, nullptr));
+
+  auto errMsgs = ErrLog::Get()->GetLogMessages();
+  int M357_foundCnt = 0;
+  for (const string& msg : errMsgs) {
+    size_t s;
+    if ((s = msg.find("M357")) != string::npos) {
+      M357_foundCnt++;
+    }
+  }
+
+  if (!M357_foundCnt) {
+    FAIL() << "error: missing message M357";
+  }
+}
+
+
 // Test schema validation
 TEST_F(PackChkIntegTests, CheckSchemaValidation) {
   const char* argv[3];

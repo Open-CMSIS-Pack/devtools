@@ -44,7 +44,8 @@ public:
   bool FindFileFromList(const std::string& systemHeader, const std::set<RteFile*>& targFiles);
   bool CheckDeviceDependencies(RteDeviceItem* device, RteProject* rteProject);
   bool HasExternalGenerator(RteComponentAggregate* aggregate);
-
+  bool FileIsHeader(const std::string& name);
+  
   const std::map<std::string, compiler_s>& GetCompilers() {
     return m_compilers;
   }
