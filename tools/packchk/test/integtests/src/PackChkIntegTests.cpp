@@ -764,6 +764,36 @@ TEST_F(PackChkIntegTests, CheckDuplicateFlashAlgo) {
   }
 }
 
+// Validate URLs to start with 'https://'
+TEST_F(PackChkIntegTests, CheckUrlForHttp) {
+  const char* argv[5];
+
+  const string& pdscFile = PackChkIntegTestEnv::localtestdata_dir +
+    "/TestUrlHttps/TestVendor.TestUrlHttps.pdsc";
+  ASSERT_TRUE(RteFsUtils::Exists(pdscFile));
+
+  argv[0] = (char*)"";
+  argv[1] = (char*)pdscFile.c_str();
+  argv[2] = (char*)"--disable-validation";
+  argv[3] = (char*)"-x";
+  argv[4] = (char*)"!M368";
+
+  PackChk packChk;
+  EXPECT_EQ(1, packChk.Check(2, argv, nullptr));
+
+  auto errMsgs = ErrLog::Get()->GetLogMessages();
+  int M300_foundCnt = 0;
+  for (const string& msg : errMsgs) {
+    size_t s;
+    if ((s = msg.find("M300")) != string::npos) {
+      M300_foundCnt++;
+    }
+  }
+
+  if (M300_foundCnt != 8) {
+    FAIL() << "error: missing message M300";
+  }
+}
 
 // Validate file is .md
 TEST_F(PackChkIntegTests, CheckDescriptionOverviewMd) {
@@ -793,7 +823,6 @@ TEST_F(PackChkIntegTests, CheckDescriptionOverviewMd) {
     FAIL() << "error: message M337 found";
   }
 }
-
 // Validate config file vs. include path
 TEST_F(PackChkIntegTests, CheckConfigFileInIncludePath) {
   const char* argv[3];

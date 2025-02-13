@@ -105,7 +105,7 @@ const MsgTable PackChk::msgTable = {
   { "M219", { MsgLevel::LEVEL_ERROR,    CRLF_B, "Unable to find specified schema file '%PATH%'"} },
 
 // 300... Validation Errors
-  { "M300", { MsgLevel::LEVEL_ERROR,    CRLF_B, "" } },
+  { "M300", { MsgLevel::LEVEL_WARNING,  CRLF_B, "%TAG% must use '%URL%'" } },
   { "M301", { MsgLevel::LEVEL_ERROR,    CRLF_B, "Checking Pack URL of PDSC file failed:\n"\
                                                 "  Expected URL : '%URL1%'\n"\
                                                 "  Package  URL : '%URL2%'" } },

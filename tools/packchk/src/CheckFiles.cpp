@@ -40,6 +40,7 @@ CheckFilesVisitor::~CheckFilesVisitor()
 VISIT_RESULT CheckFilesVisitor::Visit(RteItem* item)
 {
   m_checkFiles.CheckFile(item);
+  m_checkFiles.CheckUrls(item);
 
   return VISIT_RESULT::CONTINUE_VISIT;
 }
@@ -168,6 +169,36 @@ bool CheckFiles::ToUpper(string& text)
   std::transform(text.begin(), text.end(), text.begin(), ::toupper);
 
   return true;
+}
+
+/**
+ * @brief check aspects of an RTE url item
+ * @param item RteItem item to check
+ * @return passed / failed
+*/
+bool CheckFiles::CheckUrls(RteItem* item)
+{
+  if(!item || item->GetTag() == "package") {
+    return true;
+  }
+
+  bool bOk = true;
+  const auto lineNo = item->GetLineNumber();
+  
+  if(item->GetText().find("http://", 0) != string::npos) {
+    LogMsg("M300", TAG(item->GetTag()), URL("https://"), lineNo);
+    bOk = false;
+  }
+    
+  const auto& attributes = item->GetAttributes();
+  for(const auto& [attr, text] : attributes) {
+    if(text.find("http://", 0) != string::npos) {
+      LogMsg("M300", TAG(attr), URL("https://"), lineNo);
+    bOk = false;
+    }
+  }
+
+  return bOk;
 }
 
 /**
