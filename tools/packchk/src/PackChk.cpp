@@ -101,7 +101,7 @@ bool PackChk::CheckPackage()
 
   // Add PDSC files to check (currently limited to one)
   const string& pdscFile = m_packOptions.GetPdscFullpath();
-  if(!createModel.AddPdsc(pdscFile, m_packOptions.GetIgnoreOtherPdscFiles())) {
+  if(!createModel.AddPdsc(pdscFile, m_packOptions.GetIgnoreOtherPdscFiles(), true)) {
     return false;
   }
 
