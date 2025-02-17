@@ -203,6 +203,8 @@ const MsgTable PackChk::msgTable = {
   { "M384", { MsgLevel::LEVEL_ERROR,    CRLF_B, "Condition '%NAME%': Direct or indirect recursion detected. Skipping condition while searching for '%NAME2%'." } },
   { "M385", { MsgLevel::LEVEL_INFO,     CRLF_B, "Release date is empty." } },
   { "M386", { MsgLevel::LEVEL_WARNING,  CRLF_B, "Release date is in future: '%RELEASEDATE%' (today: %TODAYDATE%)" } },
+  { "M387", { MsgLevel::LEVEL_WARNING,  CRLF_B, "Description in '%TAG%' is exceeding the recommended 128 (US ASCII) characters." } },
+  { "M388", { MsgLevel::LEVEL_WARNING,  CRLF_B, "Unsupported character(s) found in '%NAME%'" } },
   { "M389", { MsgLevel::LEVEL_WARNING,  CRLF_B, "The component '%NAME%' (Line %LINE%) has dependency '%EXPR%' : '%NAME2%' that is resolved by the component itself." } },
   { "M390", { MsgLevel::LEVEL_ERROR,    CRLF_B, "Condition '%NAME%': Direct or indirect recursion detected. %MSG%" } },
   { "M391", { MsgLevel::LEVEL_WARNING3, CRLF_B, "Redefined Item '%NAME%': %MSG%" } },

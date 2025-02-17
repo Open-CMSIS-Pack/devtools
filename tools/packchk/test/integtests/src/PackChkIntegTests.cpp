@@ -823,6 +823,7 @@ TEST_F(PackChkIntegTests, CheckDescriptionOverviewMd) {
     FAIL() << "error: message M337 found";
   }
 }
+
 // Validate config file vs. include path
 TEST_F(PackChkIntegTests, CheckConfigFileInIncludePath) {
   const char* argv[3];
@@ -849,6 +850,43 @@ TEST_F(PackChkIntegTests, CheckConfigFileInIncludePath) {
 
   if (!M357_foundCnt) {
     FAIL() << "error: missing message M357";
+  }
+}
+
+// Validate config file vs. include path
+TEST_F(PackChkIntegTests, CheckTestTextExceedsLength) {
+  const char* argv[7];
+
+  const string& pdscFile = PackChkIntegTestEnv::localtestdata_dir +
+    "/TestTextExceedsLength/TestVendor.TestTextExceedsLength.pdsc";
+  ASSERT_TRUE(RteFsUtils::Exists(pdscFile));
+
+  argv[0] = (char*)"";
+  argv[1] = (char*)pdscFile.c_str();
+  argv[2] = (char *)"--disable-validation";
+  argv[3] = (char*)"-x";
+  argv[4] = (char*)"!M387";
+  argv[5] = (char*)"-x";
+  argv[6] = (char*)"!M388";
+
+  PackChk packChk;
+  EXPECT_EQ(0, packChk.Check(7, argv, nullptr));
+
+  auto errMsgs = ErrLog::Get()->GetLogMessages();
+  int M387_foundCnt = 0;
+  int M388_foundCnt = 0;
+  for (const string& msg : errMsgs) {
+    size_t s;
+    if ((s = msg.find("M387")) != string::npos) {
+      M387_foundCnt++;
+    }
+    if ((s = msg.find("M388")) != string::npos) {
+      M388_foundCnt++;
+    }
+  }
+
+  if (!M387_foundCnt || !M388_foundCnt) {
+    FAIL() << "error: missing message M387 or M388";
   }
 }
 

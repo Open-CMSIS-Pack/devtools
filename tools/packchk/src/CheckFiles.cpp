@@ -41,6 +41,7 @@ VISIT_RESULT CheckFilesVisitor::Visit(RteItem* item)
 {
   m_checkFiles.CheckFile(item);
   m_checkFiles.CheckUrls(item);
+  m_checkFiles.CheckDescription(item);
 
   return VISIT_RESULT::CONTINUE_VISIT;
 }
@@ -167,6 +168,38 @@ bool CheckFiles::GetFileName(RteItem* item, std::string& filename, FileType& fil
 bool CheckFiles::ToUpper(string& text)
 {
   std::transform(text.begin(), text.end(), text.begin(), ::toupper);
+
+  return true;
+}
+
+/**
+ * @brief check aspects of an RTE url item
+ * @param item RteItem item to check
+ * @return passed / failed
+*/
+bool CheckFiles::CheckDescription(RteItem* item)
+{
+  if(!item) {
+    return true;
+  }
+
+  const auto& tag = item->GetTag();
+  const auto lineNo = item->GetLineNumber();
+  if(tag == "description") {
+    const auto& text = item->GetText();
+
+    for(auto c : text) {
+      if(c < 0x20 || c > 0x7e) {
+        LogMsg("M388", NAME(text), lineNo);
+        break;
+      }
+    }
+
+    if(text.length() > 128) {
+      LogMsg("M387", TAG(tag), lineNo);
+      return false;
+    }
+  }
 
   return true;
 }
