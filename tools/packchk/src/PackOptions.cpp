@@ -340,7 +340,7 @@ bool CPackOptions::SetDisableValidation(bool bDisable)
 */
 const string CPackOptions::GetVersionInfo()
 {
-  return ORIGINAL_FILENAME + string(" ") + VERSION_STRING + " " + COPYRIGHT_NOTICE;
+  return VERSION_STRING;
 }
 
 /**
@@ -360,14 +360,7 @@ const string CPackOptions::GetVersion()
 */
 const string CPackOptions::GetHeader()
 {
-  string header = string(PRODUCT_NAME);
-  header += " ";
-  header += GetVersion();
-  header += " ";
-  header += string(COPYRIGHT_NOTICE);
-  header += "\n";
-
-  return header;
+  return ORIGINAL_FILENAME + string(" ") + VERSION_STRING + " " + COPYRIGHT_NOTICE;
 }
 
 /**

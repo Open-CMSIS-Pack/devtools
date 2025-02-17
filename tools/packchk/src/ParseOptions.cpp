@@ -193,13 +193,12 @@ bool ParseOptions::SetDisableValidation(bool bDisable)
  */
 ParseOptions::Result ParseOptions::Parse(int argc, const char* argv[])
 {
-  const string header = m_packOptions.GetHeader();
   const string fileName = m_packOptions.GetProgramName();
   bool bOk = true;
   cxxopts::ParseResult parseResult;
 
   try {
-    cxxopts::Options options(fileName, header);
+    cxxopts::Options options(fileName);
 
     options
       .set_width(80)
