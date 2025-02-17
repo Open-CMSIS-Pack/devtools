@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -41,6 +41,7 @@ VISIT_RESULT CheckFilesVisitor::Visit(RteItem* item)
 {
   m_checkFiles.CheckFile(item);
   m_checkFiles.CheckUrls(item);
+  m_checkFiles.CheckDeprecated(item);
   m_checkFiles.CheckDescription(item);
 
   return VISIT_RESULT::CONTINUE_VISIT;
@@ -170,6 +171,31 @@ bool CheckFiles::ToUpper(string& text)
   std::transform(text.begin(), text.end(), text.begin(), ::toupper);
 
   return true;
+}
+
+/**
+ * @brief check deprecated aspects of an RTE item
+ * @param item RteItem item to check
+ * @return passed / failed
+*/
+bool CheckFiles::CheckDeprecated(RteItem* item)
+{
+  if(!item || item->GetTag() == "package") {
+    return true;
+  }
+
+  bool bOk = true;
+  const auto lineNo = item->GetLineNumber();
+
+  const auto& tag = item->GetTag();
+  if(tag == "file") {
+    if(item->GetAttribute("attr") == "copy") {
+      LogMsg("M600", VAL("ATTR", "copy"), TAG(tag), lineNo);
+      bOk = false;
+    }
+  }
+
+  return bOk;
 }
 
 /**
