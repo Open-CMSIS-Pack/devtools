@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<package schemaVersion="1.4" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="PACK.xsd">
+  <vendor>TestVendor</vendor>
+  <url>https://www.testurl.com/pack/</url>
+  <name>FileAttributeDeprecated</name>
+  <description>Test for deprecated file attributes</description>
+
+  <releases>
+    <release version="0.0.1" date="2025-02-17">>
+      Initial release of FileAttributeDeprecated.
+    </release>
+  </releases>
+
+  <keywords>
+    <keyword>FileAttributeDeprecated</keyword>
+  </keywords>
+
+  <conditions>
+    <condition id="TestDevices">
+      <description>Test devices</description>
+      <require Dvendor="ARM:82" Dname="Test*"/>
+    </condition>
+    <condition id="Test ARMCC">
+      <description>filter for the Device and the ARM compiler</description>
+      <require condition="TestDevices"/>
+      <require Tcompiler="ARMCC"/>
+    </condition>
+  </conditions>
+
+  <components>
+    <component Cclass="Device" Cgroup="Startup" Cversion="1.0.0" condition="TestDevices">
+      <description>Test device series</description>
+      <files>
+        <file category="source"  name="Files/header1.h" attr="copy" version="1.0.0" condition="Test ARMCC"/>
+      </files>
+    </component>
+  </components>
+
+</package>
