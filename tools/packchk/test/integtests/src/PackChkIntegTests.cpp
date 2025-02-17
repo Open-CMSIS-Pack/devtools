@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -993,6 +993,33 @@ TEST_F(PackChkIntegTests, CheckSupportCcFiles) {
 
   if(!M337_foundCnt) {
     FAIL() << "error: Missing message M337: File with category 'sourceCpp' has wrong extension 'ccc': 'Files/fileWillFail.ccc'";
+  }
+}
+
+TEST_F(PackChkIntegTests, CheckFileAttributeDeprecated) {
+  const char* argv[3];
+
+  string pdscFile = PackChkIntegTestEnv::localtestdata_dir +
+    "/FileAttributeDeprecated/TestVendor.FileAttributeDeprecated.pdsc";
+  ASSERT_TRUE(RteFsUtils::Exists(pdscFile));
+
+  argv[0] = (char*)"";
+  argv[1] = (char*)pdscFile.c_str();
+  argv[2] = (char*)"--disable-validation";
+
+  PackChk packChk;
+  EXPECT_EQ(0, packChk.Check(3, argv, nullptr));
+
+  auto errMsgs = ErrLog::Get()->GetLogMessages();
+  int M600_foundCnt = 0;
+  for (const string& msg : errMsgs) {
+    if (msg.find("M600", 0) != string::npos) {
+      M600_foundCnt++;
+    }
+  }
+
+  if(!M600_foundCnt) {
+    FAIL() << "error: Missing message M600: deprecated attributes";
   }
 }
 

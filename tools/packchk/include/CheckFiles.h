@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -31,6 +31,7 @@ public:
   const std::string& GetPackagePath() const;
   bool CheckFile(RteItem* item);
   bool CheckUrls(RteItem* item);
+  bool CheckDeprecated(RteItem* item);
   bool CheckDescription(RteItem* item);
   bool CheckFileExists(const std::string& fileName, int lineNo, bool associated = false);
   bool CheckCaseSense(const std::string& fileName, int lineNo);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -230,6 +230,20 @@ const MsgTable PackChk::msgTable = {
 
   { "M510", { MsgLevel::LEVEL_WARNING,  CRLF_B, "Xerxes reports: %MSG%" } },
   { "M511", { MsgLevel::LEVEL_ERROR,    CRLF_B, "Xerxes reports: %MSG%" } },
+
+  // 600... further PackCHk Errors
+  { "M600", { MsgLevel::LEVEL_WARNING,  CRLF_B, "Attribute '%ATTR%' on '%TAG%' is deprecated." } },
+  { "M601", { MsgLevel::LEVEL_WARNING,  CRLF_B, "" } },
+  { "M602", { MsgLevel::LEVEL_WARNING,  CRLF_B, "" } },
+  { "M603", { MsgLevel::LEVEL_WARNING,  CRLF_B, "" } },
+  { "M604", { MsgLevel::LEVEL_WARNING,  CRLF_B, "" } },
+  { "M605", { MsgLevel::LEVEL_WARNING,  CRLF_B, "" } },
+  { "M606", { MsgLevel::LEVEL_WARNING,  CRLF_B, "" } },
+  { "M607", { MsgLevel::LEVEL_WARNING,  CRLF_B, "" } },
+  { "M608", { MsgLevel::LEVEL_WARNING,  CRLF_B, "" } },
+  { "M609", { MsgLevel::LEVEL_WARNING,  CRLF_B, "" } },
+  { "M610", { MsgLevel::LEVEL_WARNING,  CRLF_B, "" } },
+
 };
 
 const MsgTableStrict PackChk::msgStrictTable = {
