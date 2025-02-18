@@ -1,0 +1,93 @@
+build:
+  generated-by: csolution version 2.8.0
+  solution: ../data/TestProjectSetup/setup-test.csolution.yml
+  project: ../data/TestProjectSetup/setup-test.cproject.yml
+  context: setup-test.AbsolutePath+TEST_TARGET
+  compiler: GCC
+  device: ARM::RteTest_ARMCM0
+  device-pack: ARM::RteTest_DFP@0.2.0
+  device-books:
+    - name: http://infocenter.arm.com/help/topic/com.arm.doc.dui0497a/index.html
+      title: Cortex-M0 Device Generic Users Guide
+  processor:
+    fpu: off
+    trustzone: off
+    core: Cortex-M0
+  packs:
+    - pack: ARM::RteTest_DFP@0.2.0
+      path: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0
+  optimize: size
+  debug: on
+  warnings: on
+  language-C: c11
+  language-CPP: c++11
+  misc:
+    C:
+      - SETUP_GCC_MISC
+      - SETUP_COMMON_MISC
+  define:
+    - SETUP_GCC
+    - SETUP_COMMON
+    - ARMCM0
+    - _RTE_
+  define-asm:
+    - ARMCM0
+    - _RTE_
+  add-path:
+    - ../data/TestProjectSetup/setup/GCC
+    - ../data/TestProjectSetup/setup/common
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
+    - C:/Absolute/Path
+    - ../data/TestProjectSetup/RTE/_AbsolutePath_TEST_TARGET
+  add-path-asm:
+    - ../data/TestProjectSetup/RTE/_AbsolutePath_TEST_TARGET
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
+  output-dirs:
+    intdir: tmp
+    outdir: out/setup-test/TEST_TARGET/AbsolutePath
+    rtedir: ../data/TestProjectSetup/RTE
+  output:
+    - type: elf
+      file: setup-test.elf
+  components:
+    - component: ARM::RteTest:CORE@0.1.1
+      condition: Cortex-M Device
+      from-pack: ARM::RteTest_DFP@0.2.0
+      selected-by: CORE
+      implements: RteTest:CORE@1.1.2
+      files:
+        - file: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Doc/html/index.html
+          category: doc
+          version: 0.1.1
+  apis:
+    - api: RteTest:CORE@1.1.2
+      from-pack: ARM::RteTest_DFP@0.2.0
+      implemented-by: ARM::RteTest:CORE@0.1.1
+      files:
+        - file: https://arm-software.github.io/CMSIS_5/Pack/html/pdsc_apis_pg.html
+          category: doc
+          version: 1.1.2
+  linker:
+    script: ../data/TestProjectSetup/RTE/Device/RteTest_ARMCM0/gcc_linker_script.ld.src
+    regions: ../data/TestProjectSetup/RTE/Device/RteTest_ARMCM0/regions_RteTest_ARMCM0.h
+  groups:
+    - group: Generic Group
+      files:
+        - file: ../data/TestProjectSetup/gcc.c
+          category: sourceC
+        - file: ../data/TestProjectSetup/generic.c
+          category: sourceC
+          misc:
+            C:
+              - -DMISC-FILE-GCC
+  constructed-files:
+    - file: ../data/TestProjectSetup/RTE/_AbsolutePath_TEST_TARGET/RTE_Components.h
+      category: header
+  licenses:
+    - license: <unknown>
+      license-agreement: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Doc/license.txt
+      packs:
+        - pack: ARM::RteTest_DFP@0.2.0
+      components:
+        - component: ARM::RteTest:CORE@0.1.1
+        - component: RteTest:CORE(API)

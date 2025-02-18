@@ -25,6 +25,7 @@ protected:
   ProjMgrCbuildBase(bool useAbsolutePaths = false) : m_useAbsolutePaths(useAbsolutePaths) {};
   void SetNodeValue(YAML::Node node, const std::string& value);
   void SetNodeValue(YAML::Node node, const std::vector<std::string>& vec);
+  void SetNodeValueUniquely(YAML::Node node, const std::string& value);
   const std::string FormatPath(const std::string& original, const std::string& directory);
 
   bool m_useAbsolutePaths;

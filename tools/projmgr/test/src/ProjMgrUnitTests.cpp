@@ -4043,30 +4043,34 @@ TEST_F(ProjMgrUnitTests, OutputDirsAbsolutePath) {
   argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"--cbuildgen";
-  EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
+  EXPECT_EQ(CrossPlatformUtils::GetHostType() == "win" ? 1 : 0, RunProjMgr(5, argv, m_envp));
 
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_TRUE(regex_search(errStr, regex("warning csolution: absolute path .* is not portable, use relative path instead")));
 }
 
 TEST_F(ProjMgrUnitTests, ProjectSetup) {
-  char* argv[7];
-  // convert --solution solution.yml
+  char* argv[5];
+  // convert setup-test.solution.yml
   const string& csolution = testinput_folder + "/TestProjectSetup/setup-test.csolution.yml";
   const string& output = testoutput_folder;
   argv[1] = (char*)"convert";
-  argv[2] = (char*)"--solution";
-  argv[3] = (char*)csolution.c_str();
-  argv[4] = (char*)"-o";
-  argv[5] = (char*)output.c_str();
-  argv[6] = (char*)"--cbuildgen";
-  EXPECT_EQ(0, RunProjMgr(7, argv, m_envp));
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"-o";
+  argv[4] = (char*)output.c_str();
+  EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
 
-  // Check generated CPRJs
- ProjMgrTestEnv:: CompareFile(testoutput_folder + "/setup-test.Build_AC6+TEST_TARGET.cprj",
-    testinput_folder + "/TestProjectSetup/ref/setup-test.Build_AC6+TEST_TARGET.cprj");
- ProjMgrTestEnv:: CompareFile(testoutput_folder + "/setup-test.Build_GCC+TEST_TARGET.cprj",
-    testinput_folder + "/TestProjectSetup/ref/setup-test.Build_GCC+TEST_TARGET.cprj");
+  // check generated cbuild.yml files
+  ProjMgrTestEnv:: CompareFile(testoutput_folder + "/setup-test.Build_AC6+TEST_TARGET.cbuild.yml",
+    testinput_folder + "/TestProjectSetup/ref/setup-test.Build_AC6+TEST_TARGET.cbuild.yml");
+  ProjMgrTestEnv:: CompareFile(testoutput_folder + "/setup-test.Build_GCC+TEST_TARGET.cbuild.yml",
+    testinput_folder + "/TestProjectSetup/ref/setup-test.Build_GCC+TEST_TARGET.cbuild.yml");
+
+  if (CrossPlatformUtils::GetHostType() == "win") {
+    // check if windows absolute add-path is tolerated and persists correctly
+    const YAML::Node& cbuild = YAML::LoadFile(testinput_folder + "/TestProjectSetup/ref/setup-test.AbsolutePath+TEST_TARGET.cbuild.yml");
+    EXPECT_EQ("C:/Absolute/Path", cbuild["build"]["add-path"][3].as<string>());
+  }
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_help) {

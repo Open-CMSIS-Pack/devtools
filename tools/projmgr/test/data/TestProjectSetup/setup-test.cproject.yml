@@ -2,8 +2,6 @@
 
 project:
 
-  device: RteTest_ARMCM0
-
   components:
     - component: CORE
 
@@ -42,6 +40,7 @@ project:
         - SETUP_COMMON
       add-path:
         - ./setup/common
+        - $Pack(ARM::RteTest_DFP)$/Device/ARM/ARMCM0/Include
       undefine:
         - SETUP_AC6_2
         - SETUP_GCC_2
@@ -51,6 +50,10 @@ project:
       misc:
         - C:
           - SETUP_COMMON_MISC
+    - setup: AbsolutePath
+      add-path:
+        - C:/Absolute/Path
+      for-context: .AbsolutePath
 
   groups:
     - group: Group for AC6
