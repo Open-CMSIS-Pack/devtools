@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -1057,21 +1057,21 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_LockPackFrozen) {
   EXPECT_NE(0, RunProjMgr(8, argv, m_envp));
   EXPECT_NE(streamRedirect.GetErrorString().find(cbuildPack + " - error csolution: file not allowed to be updated"), string::npos);
   ProjMgrTestEnv::CompareFile(expectedCbuildPack, cbuildPack);
-  EXPECT_FALSE(RteFsUtils::Exists(rtePath));
+  EXPECT_FALSE(RteFsUtils::Exists(rtePath + "/Device"));
 
   // 2nd run to verify that the cbuild-pack.yml content is stable
   streamRedirect.ClearStringStreams();
   EXPECT_NE(0, RunProjMgr(8, argv, m_envp));
   EXPECT_NE(streamRedirect.GetErrorString().find(cbuildPack + " - error csolution: file not allowed to be updated"), string::npos);
   ProjMgrTestEnv::CompareFile(expectedCbuildPack, cbuildPack);
-  EXPECT_FALSE(RteFsUtils::Exists(rtePath));
+  EXPECT_FALSE(RteFsUtils::Exists(rtePath + "/Device"));
 
   // 3rd run without --frozen-packs to verify that the list can be updated
   streamRedirect.ClearStringStreams();
   EXPECT_EQ(0, RunProjMgr(7, argv, m_envp));
   EXPECT_NE(streamRedirect.GetOutString().find(cbuildPack + " - info csolution: file generated successfully"), string::npos);
   ProjMgrTestEnv::CompareFile(expectedCbuildPackRef, cbuildPack);
-  EXPECT_TRUE(RteFsUtils::Exists(rtePath));
+  EXPECT_TRUE(RteFsUtils::Exists(rtePath + "/Device"));
 
   EXPECT_TRUE(RteFsUtils::Exists(testinput_folder + "/TestSolution/PackLocking/RTE/_CM3/RTE_Components.h"));
   EXPECT_TRUE(RteFsUtils::Exists(testinput_folder + "/TestSolution/PackLocking/RTE/Device/RteTest_ARMCM3/gcc_arm.ld"));
@@ -3812,9 +3812,9 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_NoUpdateRTEFiles) {
   char* argv[8];
   const string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject.yml");
   const string rteFolder = RteFsUtils::ParentPath(csolutionFile) + "/TestProject4/RTE";
-  set<string> rteFilesBefore, rteFilesAfter;
+  set<string> rteFiles;
   RteFsUtils::RemoveDir(rteFolder);
-  GetFilesInTree(rteFolder, rteFilesBefore);
+  StdStreamRedirect streamRedirect;
 
   argv[1] = (char*)"convert";
   argv[2] = (char*)"--solution";
@@ -3825,9 +3825,12 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_NoUpdateRTEFiles) {
   argv[7] = (char*)"--cbuildgen";
   EXPECT_EQ(1, RunProjMgr(8, argv, m_envp));
 
-  // The RTE folder should be left untouched
-  GetFilesInTree(rteFolder, rteFilesAfter);
-  EXPECT_EQ(rteFilesBefore, rteFilesAfter);
+  EXPECT_NE(streamRedirect.GetErrorString().find("RTE/_TEST_TARGET/RTE_Components.h was recreated"), string::npos);
+
+  // Only constructed files are created in the RTE folder
+  GetFilesInTree(rteFolder, rteFiles);
+  const set<string> expected = { "RTE_Components.h", "_TEST_TARGET" };
+  EXPECT_EQ(expected, rteFiles);
 
   // CPRJ should still be generated
  ProjMgrTestEnv:: CompareFile(testoutput_folder + "/test+TEST_TARGET.cprj",

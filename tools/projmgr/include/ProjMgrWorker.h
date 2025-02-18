@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -782,6 +782,12 @@ public:
   */
   void CollectUnusedPacks();
 
+  /**
+   * @brief check rte errors
+   * @return true if there is no error
+  */
+  bool CheckRteErrors(void);
+
 protected:
   ProjMgrParser* m_parser = nullptr;
   ProjMgrKernel* m_kernel = nullptr;
@@ -824,7 +830,6 @@ protected:
   bool LoadPacks(ContextItem& context);
   bool CheckMissingPackRequirements(const std::string& contextName);
   bool CollectRequiredPdscFiles(ContextItem& context, const std::string& packRoot);
-  bool CheckRteErrors(void);
   bool CheckBoardDeviceInLayer(const ContextItem& context, const ClayerItem& clayer);
   bool CheckCompiler(const std::vector<std::string>& forCompiler, const std::string& selectedCompiler);
   bool CheckType(const TypeFilter& typeFilter, const std::vector<TypePair>& typeVec);

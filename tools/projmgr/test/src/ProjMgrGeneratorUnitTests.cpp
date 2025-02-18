@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -200,7 +200,7 @@ TEST_F(ProjMgrGeneratorUnitTests, DryRun) {
   ProjMgrTestEnv::CompareFile(testinput_folder + "/TestSolution/ref/TestProject3_1.Debug+TypeA.cbuild-gen.yml",  generatorInputFile, stripAbsoluteFunc);
 
   EXPECT_EQ(true, std::filesystem::exists(generatorInputFile));
-  EXPECT_EQ(false, std::filesystem::exists(rteDir));
+  EXPECT_EQ(false, std::filesystem::exists(rteDir + "/Device"));
   EXPECT_EQ(false, std::filesystem::exists(targetGPDSC));
   EXPECT_EQ(false, std::filesystem::exists(generatorDestination));
 

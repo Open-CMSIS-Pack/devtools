@@ -655,15 +655,19 @@ bool ProjMgr::Configure() {
 
 bool ProjMgr::UpdateRte() {
   // Update the RTE files
-  if (m_updateRteFiles) {
-    for (auto& contextItem : m_processedContexts) {
-      if (contextItem->rteActiveProject != nullptr) {
+  for (auto& contextItem : m_processedContexts) {
+    if (contextItem->rteActiveProject != nullptr) {
+      if (m_updateRteFiles) {
         contextItem->rteActiveProject->SetAttribute("update-rte-files", "1");
         contextItem->rteActiveProject->UpdateRte();
+      } else {
+        contextItem->rteActiveProject->GenerateRteHeaders();
       }
     }
   }
-  bool result = true;
+
+  bool result = m_worker.CheckRteErrors();
+
   for (auto& contextItem : m_processedContexts) {
     // Check PLM files
     if (!m_worker.CheckConfigPLMFiles(*contextItem)) {
