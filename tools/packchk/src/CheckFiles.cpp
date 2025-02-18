@@ -129,7 +129,7 @@ bool CheckFiles::GetFileName(RteItem* item, std::string& filename, FileType& fil
     return true;
   }
   else if(tag == "debugvars") {
-    filename = item->GetAttribute("configfile");
+    filename = item->GetName();
     return true;
   }
   else if(tag == "environment") {

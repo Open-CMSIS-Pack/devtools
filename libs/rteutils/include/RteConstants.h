@@ -84,6 +84,8 @@ public:
   static constexpr const char* PREFIX_PACK_VERSION = "@";
   static constexpr const char  PREFIX_PACK_VERSION_CHAR = '@';
 
+  static constexpr const char*  NULL_VERSION = "0.0.0";
+
   /**
    * @brief output types
   */
@@ -107,7 +109,7 @@ public:
   static constexpr const char* AS_BNAME = "Bname";
   static constexpr const char* AS_DPACK = "Dpack";
   static constexpr const char* AS_BPACK = "Bpack";
-  
+
 
   static constexpr const char* AS_SOLUTION_DIR = "SolutionDir";
   static constexpr const char* AS_PROJECT_DIR = "ProjectDir";

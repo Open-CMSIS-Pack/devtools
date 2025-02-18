@@ -1979,7 +1979,7 @@ RteComponent* ProjMgrWorker::ProcessComponent(ContextItem& context, ComponentIte
     // Free text
     matchedComponents = filteredComponents;
   }
- 
+
   if (matchedComponents.empty()) {
     // Check for default variant if requested variant is empty
     for (const auto& [id, component] : filteredComponents) {
@@ -2130,7 +2130,7 @@ bool ProjMgrWorker::CheckConfigPLMFiles(ContextItem& context) {
       context.plmStatus[file] = PLM_STATUS_MISSING_BASE;
     } else {
       // get update version
-      const RteFile* f = fi.second->GetFile(context.rteActiveTarget->GetName());
+      const RteItem* f = fi.second->GetFile(context.rteActiveTarget->GetName());
       const string updateVersion = f ? f->GetVersionString() : "";
       if (baseVersion != updateVersion) {
         // parse and check each semantic version segment
@@ -2466,7 +2466,7 @@ bool ProjMgrWorker::ProcessExecutes(ContextItem& context, bool solutionLevel) {
         return false;
       }
     }
-  }  
+  }
   return true;
 }
 
@@ -3488,7 +3488,7 @@ bool ProjMgrWorker::CheckBoardDeviceInLayer(const ContextItem& context, const Cl
     BoardItem forBoard, board;
     GetBoardItem(clayer.forBoard, forBoard);
     GetBoardItem(context.board, board);
-    if ((!forBoard.name.empty() && (forBoard.name != board.name)) || 
+    if ((!forBoard.name.empty() && (forBoard.name != board.name)) ||
         (!forBoard.vendor.empty()   && !board.vendor.empty()   && (forBoard.vendor != board.vendor)) ||
         (!forBoard.revision.empty() && !board.revision.empty() && (forBoard.revision != board.revision))) {
       return false;
@@ -3498,7 +3498,7 @@ bool ProjMgrWorker::CheckBoardDeviceInLayer(const ContextItem& context, const Cl
     DeviceItem forDevice, device;
     GetDeviceItem(clayer.forDevice, forDevice);
     GetDeviceItem(context.device, device);
-    if ((!forDevice.name.empty() && (forDevice.name != device.name)) || 
+    if ((!forDevice.name.empty() && (forDevice.name != device.name)) ||
         (!forDevice.vendor.empty() && !device.vendor.empty() && (forDevice.vendor != device.vendor)) ||
         (!forDevice.pname.empty()  && !device.pname.empty()  && (forDevice.pname != device.pname))) {
       return false;

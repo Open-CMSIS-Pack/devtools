@@ -14,7 +14,6 @@
  */
 /******************************************************************************/
 #include "RteItem.h"
-#include "RteFile.h"
 
 /**
  * @brief class presenting an example project with related files and properties

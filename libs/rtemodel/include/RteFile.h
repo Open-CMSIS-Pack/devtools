@@ -103,11 +103,19 @@ public:
    * @return true if GetRole() == RteFile::COPY
   */
   bool IsForcedCopy() const;
+
   /**
    * @brief check if file has config role
    * @return true if GetRole() == RteFile::CONFIG
   */
-  bool IsConfig() const;
+  bool IsConfig() const override;
+
+  /**
+     * @brief check if file is associated with a condition that depends on selected device or parent component is device dependent
+     * @return true if item's condition depends on selected device
+    */
+  bool IsDeviceDependent() const override;
+
   /**
    * @brief check if file is a template
    * @return true if GetRole() == RteFile::TEMPLATE
@@ -117,7 +125,7 @@ public:
    * @brief check if file must be added to project
    * @return true if to add to project
   */
-  bool IsAddToProject() const;
+  bool IsAddToProject() const override;
 
   /**
    * @brief get file category
@@ -155,12 +163,11 @@ public:
   */
    std::string ConstructID() override;
 
-  /**
+   /**
    * @brief get file name
    * @return file name
    */
   const std::string& GetName() const override;
-
 
   /**
    * @brief get file version string
@@ -182,6 +189,7 @@ public:
    * @param paths set of path strings
   */
   void GetAbsoluteSourcePaths(std::set<std::string>& paths) const;
+
   /**
    * @brief construct full path including filename for a file that should be used when adding file to a project
    * @param deviceName name of device used in the project
@@ -191,7 +199,7 @@ public:
    * @param rteFolder the "RTE" folder path used for placing files
    * @return full project-relative path including filename and extension
   */
-  std::string GetInstancePathName(const std::string& deviceName, int instanceIndex, const std::string& rteFolder) const;
+  std::string GetInstancePathName(const std::string& deviceName, int instanceIndex, const std::string& rteFolder) const override;
 
   /**
    * @brief construct absolute include path string that can be used in'-I' compiler option.

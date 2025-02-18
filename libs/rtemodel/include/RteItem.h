@@ -524,6 +524,17 @@ public:
   virtual std::string GetOriginalAbsolutePath(const std::string& name) const;
 
   /**
+   * @brief construct full path including filename for a file that should be used when adding file to a project
+   * @param deviceName name of device used in the project
+   * @param instanceIndex file index for components with multiple instantiation
+   * Gets appended as a string to the base filename before extension if its value >= 0
+   * Value of < 0 indicates that parent component can have only one instance
+   * @param rteFolder the "RTE" folder path used for placing files
+   * @return full project-relative path including filename and extension
+  */
+  virtual std::string GetInstancePathName(const std::string& deviceName, int instanceIndex, const std::string& rteFolder) const;
+
+  /**
    * @brief check if item provides data matching OS this code is built for: Linux, Windows or Mac OS
    * @return true if item data matches host platform
   */
@@ -786,6 +797,18 @@ public:
    * @return pointer to RteItem if found, nullptr otherwise
   */
   virtual RteItem* GetLicenseSet() const;
+
+  /**
+   * @brief check if this item represents or is associated with a that is a config one
+   * @return true if "attr" attribute value is "config" in default implementation
+  */
+  virtual bool IsConfig() const;
+
+  /**
+   * @brief check if an associated file must be added to project
+   * @return true if to add to project
+  */
+  virtual bool IsAddToProject() const { return IsConfig();}
 
   /**
    * @brief check if item is associated with a condition that depends on selected device

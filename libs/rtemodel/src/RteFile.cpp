@@ -54,6 +54,16 @@ bool RteFile::IsConfig() const
   return GetRole() == Role::ROLE_CONFIG;
 }
 
+bool RteFile::IsDeviceDependent() const
+{
+  RteComponent* c = GetComponent();
+  if(c && c->IsDeviceDependent()) {
+    return true;
+  }
+  return RteItem::IsDeviceDependent();
+}
+
+
 bool RteFile::IsTemplate() const
 {
   return GetRole() == Role::ROLE_TEMPLATE;

@@ -27,6 +27,12 @@
 	 RteTest ARM M Device Family
       </description>
       <algorithm name="Device/ARM/Flash/FAMILY.FLM" start="0x00000000" size="0x00040000"  default="1"/>
+      <debugvars configfile="Device/ARM/Debug/ARMCM.dbgconf">
+        __var DbgMCU_CR      = 0x00000007;   // DBGMCU_CR: DBG_SLEEP, DBG_STOP, DBG_STANDBY
+        __var TraceClk_Pin   = 0x00040002;   // PE2
+        __var TraceD0_Pin    = 0x00040003;   // PE3
+        __var TraceD1_Pin    = 0x00040004;   // PE4
+      </debugvars>
 
       <sequences>
         <!-- Override for Pre-Defined Sequences -->
@@ -145,6 +151,11 @@
       <description>
     RteTest ARM Cortex M4 is a clone description from ARM.CMSIS pack.
       </description>
+      <debugvars configfile="Device/ARM/Debug/ARMCM4.dbgconf" version="0.1.0" >
+        __var DbgMCU_CR      = 0x00000007;   // DBGMCU_CR: DBG_SLEEP, DBG_STOP, DBG_STANDBY
+        __var TraceClk_Pin   = 0x00040003;   // PE2
+        __var TraceD0_Pin    = 0x00040003;   // PE4
+      </debugvars>
       <debug svd="Device/ARM/SVD/ARMCM4.svd"/>  <!-- SVD files do not contain any peripheral -->
       <memory name="FLASH" access="rx"                   start="0x00000000" size="0x00040000" startup="1" default="1"/>
       <memory name="SRAM"  access="rwx"                  start="0x20000000" size="0x00020000" init   ="0" default="1"/>

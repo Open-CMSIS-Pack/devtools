@@ -229,7 +229,7 @@ public:
    * @param c given associated component
    * @return pointer of type RteFile
   */
-  RteFile* GetFile(const std::string& name, RteComponent* c) const;
+  RteItem* GetFile(const std::string& name, RteComponent* c) const;
 
   /**
    * @brief determine file given by an file name and an associated component
@@ -259,7 +259,7 @@ public:
    * @param c given pointer of type RteComponent
    * @return pointer of type RteFile
   */
-  RteFile* GetFile(const RteFileInstance* fi, RteComponent* c) const;
+  RteItem* GetFile(const RteFileInstance* fi, RteComponent* c) const;
 
   /**
    * @brief determine file given by instances of type RteFileInstance and RteComponent
@@ -268,7 +268,7 @@ public:
    * @param rteFolder the "RTE" folder path used for placing files
    * @return pointer of type RteFile
   */
-  RteFile* GetFile(const RteFileInstance* fi, RteComponent* c, const std::string& rteFolder) const;
+  RteItem* GetFile(const RteFileInstance* fi, RteComponent* c, const std::string& rteFolder) const;
 
   /**
    * @brief evaluate dependencies of selected components of the target
@@ -946,6 +946,12 @@ public:
   RteDeviceProperty* GetDeviceEnvironment() const { return m_deviceEnvironment; }
 
   /**
+   * @brief get <debugvars> property of device
+   * @return RteDeviceProperty pointer
+  */
+  RteDeviceProperty* GetDeviceDebugVars() const { return m_deviceDebugVars; }
+
+  /**
    * @brief get the absolute path to the generator input file
    * @return absolute path to the generator input file
   */
@@ -1091,9 +1097,9 @@ protected:
 
   RteComponent* m_deviceStartupComponent; // device startup component being used
   RteDeviceItem* m_device; // device used by target
+  RteDeviceProperty* m_deviceDebugVars; // to access original dbgconfig file
   // environment
   RteDeviceProperty* m_deviceEnvironment; // device environment property for "uv"
-
   // template support
   std::map<RteComponent*, RteFileTemplateCollection*> m_availableTemplates;
   // device values:

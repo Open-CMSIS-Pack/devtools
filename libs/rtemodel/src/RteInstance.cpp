@@ -659,7 +659,7 @@ RteFileInstance::RteFileInstance(RteItem* parent) :
   m_tag = "file";
 }
 
-void RteFileInstance::Init(RteFile* f, const string& deviceName, int instanceIndex, const string& rteFolder)
+void RteFileInstance::Init(RteItem* f, const string& deviceName, int instanceIndex, const string& rteFolder)
 {
   m_instanceName = f->GetInstancePathName(deviceName, instanceIndex, rteFolder);
   m_instanceIndex = instanceIndex;
@@ -667,26 +667,34 @@ void RteFileInstance::Init(RteFile* f, const string& deviceName, int instanceInd
   m_bRemoved = false;
 }
 
-void RteFileInstance::Update(RteFile* f, bool bUpdateComponent)
+void RteFileInstance::Update(RteItem* f, bool bUpdateComponent)
 {
   SetAttributes(f->GetAttributes());
+  if(!HasAttribute("name")) {
+    AddAttribute("name", f->GetName());
+  }
+  if(f->IsConfig()) {
+    AddAttribute("attr", "config");
+  }
+
+  // get package attributes
+  RtePackage* package = f->GetPackage();
+  if(package) {
+    m_packageAttributes.SetAttributes(package->GetAttributes());
+  }
 
   // get component properties
   RteComponent* c = f->GetComponent();
-  if (!c) {
+  if(!c) {
     return;
   }
   m_componentAttributes.SetAttributes(c->GetAttributes());
 
-  if (c->IsApi())
+  if(c->IsApi()) {
     m_componentAttributes.SetTag("api");
+  }
   m_componentAttributes.RemoveAttribute("RTE_Components_h");
 
-  // get package attributes
-  RtePackage* package = c->GetPackage();
-  if (package) {
-    m_packageAttributes.SetAttributes(package->GetAttributes());
-  }
 
   if (bUpdateComponent) {
     for (auto [targetName, ti] : m_targetInfos) {
@@ -755,7 +763,7 @@ RteFile::Language RteFileInstance::GetLanguage() const
 
 int RteFileInstance::HasNewVersion(const string& targetName) const
 {
-  RteFile* f = GetFile(targetName);
+  RteItem* f = GetFile(targetName);
   if (!f)
     return 0;
   int res = VersionCmp::Compare(f->GetVersionString(), GetVersionString());
@@ -791,9 +799,8 @@ std::string RteFileInstance::GetInfoString(const std::string& targetName, const 
     info += RteConstants::PREFIX_CVERSION;
     info += baseVersion;
   }
-  RteFile* f = GetFile(targetName);
+  RteItem* f = GetFile(targetName);
   const string& updateVersion = f ? f->GetVersionString() : RteUtils::EMPTY_STRING;
-
   string state;
   if (!RteFsUtils::Exists(absPath)) {
     state = "not exist";
@@ -812,8 +819,11 @@ std::string RteFileInstance::GetInfoString(const std::string& targetName, const 
     info += state;
     info += RteConstants::CBRACE_STR;
   }
-  info += " from ";
-  info += GetComponentID(true);
+  const string compID = GetComponentID(true);
+  if(!compID.empty()) {
+    info += " from ";
+    info += compID;
+  }
   return info;
 }
 
@@ -902,7 +912,7 @@ string RteFileInstance::GetAbsolutePath() const
   return s;
 }
 
-RteFile* RteFileInstance::GetFile(const string& targetName) const
+RteItem* RteFileInstance::GetFile(const string& targetName) const
 {
   RteTarget* t = GetTarget(targetName);
   if (t) {
@@ -938,7 +948,7 @@ string RteFileInstance::Backup(bool bDeleteExisting)
   return backupFile;
 }
 
-bool RteFileInstance::Copy(RteFile* f, bool bMerge)
+bool RteFileInstance::Copy(RteItem* f, bool bMerge)
 {
   if (!IsConfig())
     return true; // nothing to do
@@ -1002,9 +1012,11 @@ void RteFileInstance::CreateXmlTreeElementContent(XMLTreeElement* parentElement)
     e->AddAttribute("removed", "1");
   }
 
-  e = new XMLTreeElement(parentElement);
-  e->SetTag("component");
-  e->SetAttributes(m_componentAttributes.GetAttributes());
+  if(!m_componentAttributes.IsEmpty()) {
+    e = new XMLTreeElement(parentElement);
+    e->SetTag("component");
+    e->SetAttributes(m_componentAttributes.GetAttributes());
+  }
 
   RteItemInstance::CreateXmlTreeElementContent(parentElement);
 }
