@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -306,7 +306,6 @@ bool ProjMgrYamlParser::ParseCbuildSet(const string& input, CbuildSetItem& cbuil
 }
 
 // EnsurePortability checks the presence of backslash, case inconsistency and absolute path
-// It clears the string 'value' when it is an absolute path
 void ProjMgrYamlParser::EnsurePortability(const string& file, const YAML::Mark& mark, const string& key, string& value) {
   if (value.find('\\') != string::npos) {
     ProjMgrLogger::Get().Warn("'" + value + "' contains non-portable backslash, use forward slash instead", "", file, mark.line + 1, mark.column + 1);
@@ -314,7 +313,6 @@ void ProjMgrYamlParser::EnsurePortability(const string& file, const YAML::Mark& 
   if (!value.empty()) {
     if (fs::path(value).is_absolute()) {
       ProjMgrLogger::Get().Warn("absolute path '" + value + "' is not portable, use relative path instead", "", file, mark.line + 1, mark.column + 1);
-      value.clear();
     } else {
       const string parentDir = RteFsUtils::ParentPath(file);
       const string original = RteFsUtils::LexicallyNormal(fs::path(parentDir).append(value).generic_string());

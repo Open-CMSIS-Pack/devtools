@@ -1,0 +1,88 @@
+build:
+  generated-by: csolution version 2.8.0
+  solution: ../data/TestProjectSetup/setup-test.csolution.yml
+  project: ../data/TestProjectSetup/setup-test.cproject.yml
+  context: setup-test.Build_AC6+TEST_TARGET
+  compiler: AC6
+  device: ARM::RteTest_ARMCM0
+  device-pack: ARM::RteTest_DFP@0.2.0
+  device-books:
+    - name: http://infocenter.arm.com/help/topic/com.arm.doc.dui0497a/index.html
+      title: Cortex-M0 Device Generic Users Guide
+  processor:
+    fpu: off
+    core: Cortex-M0
+  packs:
+    - pack: ARM::RteTest_DFP@0.2.0
+      path: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0
+  misc:
+    C:
+      - SETUP_AC6_MISC
+      - SETUP_COMMON_MISC
+  define:
+    - SETUP_AC6
+    - SETUP_COMMON
+    - ARMCM0
+    - _RTE_
+  define-asm:
+    - ARMCM0
+    - _RTE_
+  add-path:
+    - ../data/TestProjectSetup/setup/AC6
+    - ../data/TestProjectSetup/setup/common
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
+    - ../data/TestProjectSetup/RTE/_Build_AC6_TEST_TARGET
+  add-path-asm:
+    - ../data/TestProjectSetup/RTE/_Build_AC6_TEST_TARGET
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
+  output-dirs:
+    intdir: tmp
+    outdir: out/setup-test/TEST_TARGET/Build_AC6
+    rtedir: ../data/TestProjectSetup/RTE
+  output:
+    - type: elf
+      file: setup-test.axf
+  components:
+    - component: ARM::RteTest:CORE@0.1.1
+      condition: Cortex-M Device
+      from-pack: ARM::RteTest_DFP@0.2.0
+      selected-by: CORE
+      implements: RteTest:CORE@1.1.2
+      files:
+        - file: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Doc/html/index.html
+          category: doc
+          version: 0.1.1
+  apis:
+    - api: RteTest:CORE@1.1.2
+      from-pack: ARM::RteTest_DFP@0.2.0
+      implemented-by: ARM::RteTest:CORE@0.1.1
+      files:
+        - file: https://arm-software.github.io/CMSIS_5/Pack/html/pdsc_apis_pg.html
+          category: doc
+          version: 1.1.2
+  linker:
+    script: ../data/TestProjectSetup/RTE/Device/RteTest_ARMCM0/ac6_linker_script.sct.src
+    regions: ../data/TestProjectSetup/RTE/Device/RteTest_ARMCM0/regions_RteTest_ARMCM0.h
+  groups:
+    - group: Group for AC6
+      files:
+        - file: ../data/TestProjectSetup/ac6.c
+          category: sourceC
+    - group: Generic Group
+      files:
+        - file: ../data/TestProjectSetup/generic.c
+          category: sourceC
+          misc:
+            C:
+              - -DMISC-FILE-AC6
+  constructed-files:
+    - file: ../data/TestProjectSetup/RTE/_Build_AC6_TEST_TARGET/RTE_Components.h
+      category: header
+  licenses:
+    - license: <unknown>
+      license-agreement: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Doc/license.txt
+      packs:
+        - pack: ARM::RteTest_DFP@0.2.0
+      components:
+        - component: ARM::RteTest:CORE@0.1.1
+        - component: RteTest:CORE(API)

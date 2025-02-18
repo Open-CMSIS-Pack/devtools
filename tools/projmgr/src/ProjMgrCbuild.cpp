@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -91,15 +91,14 @@ void ProjMgrCbuild::SetContextNode(YAML::Node contextNode, const ContextItem* co
   }
   SetDefineNode(contextNode[YAML_DEFINE], defines);
   SetDefineNode(contextNode[YAML_DEFINE_ASM], defines);
-  vector<string> includes;
   if (context->rteActiveTarget != nullptr) {
     for (auto include : context->rteActiveTarget->GetIncludePaths(RteFile::Language::LANGUAGE_NONE)) {
       RteFsUtils::NormalizePath(include, context->cproject->directory);
-      CollectionUtils::PushBackUniquely(includes, FormatPath(include, context->directories.cbuild));
+      include = FormatPath(include, context->directories.cbuild);
+      SetNodeValueUniquely(contextNode[YAML_ADDPATH], include);
+      SetNodeValueUniquely(contextNode[YAML_ADDPATH_ASM], include);
     }
   }
-  SetNodeValue(contextNode[YAML_ADDPATH], includes);
-  SetNodeValue(contextNode[YAML_ADDPATH_ASM], includes);
   SetOutputDirsNode(contextNode[YAML_OUTPUTDIRS], context);
   SetOutputNode(contextNode[YAML_OUTPUT], context);
   SetComponentsNode(contextNode[YAML_COMPONENTS], context);
@@ -447,15 +446,15 @@ void ProjMgrCbuild::SetControlsNode(YAML::Node node, const ContextItem* context,
   SetNodeValue(node[YAML_UNDEFINE], controls.undefines);
   for (auto addpath : controls.addpaths) {
     RteFsUtils::NormalizePath(addpath, context->directories.cprj);
-    node[YAML_ADDPATH].push_back(FormatPath(addpath, context->directories.cbuild));
+    SetNodeValueUniquely(node[YAML_ADDPATH], FormatPath(addpath, context->directories.cbuild));
   }
   for (auto addpath : controls.addpathsAsm) {
     RteFsUtils::NormalizePath(addpath, context->directories.cprj);
-    node[YAML_ADDPATH_ASM].push_back(FormatPath(addpath, context->directories.cbuild));
+    SetNodeValueUniquely(node[YAML_ADDPATH_ASM], FormatPath(addpath, context->directories.cbuild));
   }
   for (auto delpath : controls.delpaths) {
     RteFsUtils::NormalizePath(delpath, context->directories.cprj);
-    node[YAML_DELPATH].push_back(FormatPath(delpath, context->directories.cbuild));
+    SetNodeValueUniquely(node[YAML_DELPATH], FormatPath(delpath, context->directories.cbuild));
   }
 }
 

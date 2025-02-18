@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -3362,7 +3362,10 @@ bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, 
     // adjust relative path according to the given reference
     if (!fs::equivalent(outDir, ref, ec)) {
       const string absPath = RteFsUtils::MakePathCanonical(fs::path(item).is_relative() ? ref + "/" + item : item);
-      item = RteFsUtils::RelativePath(absPath, outDir, withHeadingDot);
+      const string relPath = RteFsUtils::RelativePath(absPath, outDir, withHeadingDot);
+      if (!relPath.empty()) {
+        item = relPath;
+      }
     }
   }
   return true;
