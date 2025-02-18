@@ -184,13 +184,13 @@ TEST(RteItemTest, GetInstancePathName) {
   string packFileName = "TestCmsisPackRoot/" + pack.GetPackagePath() + RtePackage::GetPackageFileNameFromAttributes(pack, false, ".pdsc");
   pack.SetRootFileName(packFileName);
   EXPECT_EQ(pack.GetPackageFileName(), packFileName);
-
+  string cmsisPackRoot = RteUtils::ExtractFilePath(pack.GetAbsolutePackagePath(), true);
 
   RteItem* rteItem = new RteItem("test", &pack);
   rteItem->SetAttribute("name", "MyDir/MyFile.ext");
 
   auto instanceFile = rteItem->GetInstancePathName("MyDevice", 0, "RTEdir");
-  EXPECT_EQ(instanceFile, "TestCmsisPackRoot/Vendor/Name/1.2.3/MyDir/MyFile.ext");
+  EXPECT_EQ(instanceFile, cmsisPackRoot + "MyDir/MyFile.ext");
   rteItem->SetAttribute("attr", "config");
   instanceFile = rteItem->GetInstancePathName("MyDevice", 1, "RTEdir");
   EXPECT_EQ(instanceFile, "RTEdir/MyFile.ext");
@@ -201,7 +201,7 @@ TEST(RteItemTest, GetInstancePathName) {
   c->SetAttribute("Cgroup", "Startup");
   RteItem* fileItem = c->CreateChild("files")->CreateChild("file", "./MyDir/MyFile.c");
   instanceFile = fileItem->GetInstancePathName("MyDevice", 0, "RTEdir");
-  EXPECT_EQ(instanceFile, "TestCmsisPackRoot/Vendor/Name/1.2.3/MyDir/MyFile.c");
+  EXPECT_EQ(instanceFile, cmsisPackRoot + "MyDir/MyFile.c");
 
   // test config file
   fileItem->SetAttribute("attr", "config");
