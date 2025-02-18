@@ -838,7 +838,7 @@ public:
    * @param bMerge true to merge source with destination
    * @return true if source can be copied to destination
   */
-  bool UpdateFileToNewVersion(RteFileInstance* fi, RteFile* f, bool bMerge);
+  bool UpdateFileToNewVersion(RteFileInstance* fi, RteItem* f, bool bMerge);
 
   /**
    * @brief get file name and path of "RTE_Components.h" determined by the specified target and prefix
@@ -904,14 +904,14 @@ protected:
   bool RemoveComponent(const std::string& id);
 
   void AddComponentFiles(RteComponentInstance* ci, RteTarget* target);
-  RteFileInstance* AddFileInstance(RteComponentInstance* ci, RteFile* f, int index, RteTarget* target);
+  RteFileInstance* AddFileInstance(RteComponentInstance* ci, RteItem* f, int index, RteTarget* target);
   bool RemoveFileInstance(const std::string& id);
   void DeleteFileInstance(RteFileInstance* fi);
   // initializes or updates (newer version is used) existing file instance
-  void InitFileInstance(RteFileInstance* fi, RteFile* f, int index, RteTarget* target, const std::string& savedVersion, const std::string& rteFolder);
-  bool UpdateFileInstance(RteFileInstance* fi, RteFile* f, bool bMerge, bool bUpdateComponent);
+  void InitFileInstance(RteFileInstance* fi, RteItem* f, int index, RteTarget* target, const std::string& savedVersion, const std::string& rteFolder);
+  bool UpdateFileInstance(RteFileInstance* fi, RteItem* f, bool bMerge, bool bUpdateComponent);
   void UpdateFileInstanceVersion(RteFileInstance* fi, const std::string& savedVersion);
-  void UpdateConfigFileBackups(RteFileInstance* fi, RteFile* f);
+  void UpdateConfigFileBackups(RteFileInstance* fi, RteItem* f);
 
   void CollectSettings(const std::string& targetName);
 

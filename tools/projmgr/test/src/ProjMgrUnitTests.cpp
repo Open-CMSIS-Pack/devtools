@@ -4702,6 +4702,8 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_UpdateRte) {
   // Check info message
   const string expected = "\
 info csolution: config files for each component:\n\
+  :\n\
+    - .*/TestSolution/TestProject1/RTE/Device/RteTest_ARMCM0/ARMCM.dbgconf \\(base@0.0.2\\)\n\
   ARM::Device:Startup&RteTest Startup@2.0.3:\n\
     - .*/TestSolution/TestProject1/RTE/Device/RteTest_ARMCM0/ARMCM0_ac6.sct \\(base@1.0.0\\)\n\
     - .*/TestSolution/TestProject1/RTE/Device/RteTest_ARMCM0/startup_ARMCM0.c \\(base@2.0.1\\) \\(update@2.0.3\\)\n\
@@ -4725,6 +4727,7 @@ info csolution: config files for each component:\n\
 
   outStr = streamRedirect.GetOutString();
   const string expected1 =
+ "../TestProject1/RTE/Device/RteTest_ARMCM0/ARMCM.dbgconf@0.0.2 (up to date)\n"
  "../TestProject1/RTE/Device/RteTest_ARMCM0/ARMCM0_ac6.sct@1.0.0 (up to date) from ARM::Device:Startup&RteTest Startup@2.0.3\n"\
  "../TestProject1/RTE/Device/RteTest_ARMCM0/startup_ARMCM0.c@2.0.1 (update@2.0.3) from ARM::Device:Startup&RteTest Startup@2.0.3\n"\
  "../TestProject1/RTE/Device/RteTest_ARMCM0/system_ARMCM0.c@1.0.0 (up to date) from ARM::Device:Startup&RteTest Startup@2.0.3\n";
@@ -6256,7 +6259,7 @@ TEST_F(ProjMgrUnitTests, ForContextRegex) {
   argv[1] = (char*)"convert";
   argv[2] = (char*)csolution.c_str();
   EXPECT_EQ(0, RunProjMgr(3, argv, m_envp));
-  
+
   const vector<string> expectedfiles = { "CM0.c", "CM3.c", "Debug_CM0_CM3.c", "Release.c", "Debug.c", "Debug_Release_CM0.c" };
   const map<string, vector<bool>> testData = {
     // expected files: CM0.c | CM3.c | Debug_CM0_CM3.c | Release.c | Debug.c | Debug_Release_CM0.c
@@ -6530,7 +6533,7 @@ TEST_F(ProjMgrUnitTests, ReportPacksUnused) {
   EXPECT_EQ(2, cbuild1["build-idx"]["cbuilds"][0]["packs-unused"].size());
   EXPECT_EQ("ARM::RteTestBoard@0.1.0", cbuild1["build-idx"]["cbuilds"][0]["packs-unused"][0]["pack"].as<string>());
   EXPECT_EQ("ARM::RteTestGenerator@0.1.0", cbuild1["build-idx"]["cbuilds"][0]["packs-unused"][1]["pack"].as<string>());
-  
+
   argv[4] = (char*)"+Board";
   EXPECT_EQ(0, RunProjMgr(5, argv, 0));
   const YAML::Node& cbuild2 = YAML::LoadFile(testinput_folder + "/TestSolution/PacksUnused/packs.cbuild-idx.yml");

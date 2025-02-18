@@ -496,7 +496,11 @@ const std::string& RteItem::GetYamlDeviceAttribute(const string& rteName, const 
 
 string RteItem::GetProjectGroupName() const
 {
-  return string(RteConstants::SUFFIX_CVENDOR) + GetCclassName();
+  const string& cclass = GetCclassName();
+  if(!cclass.empty()) {
+    return string(RteConstants::SUFFIX_CVENDOR) + GetCclassName();
+  }
+  return RteUtils::EMPTY_STRING;
 }
 
 string RteItem::GetBundleShortID() const
@@ -831,6 +835,27 @@ string RteItem::GetOriginalAbsolutePath(const string& name) const
   return RteFsUtils::MakePathCanonical(absPath);
 }
 
+string RteItem::GetInstancePathName(const string& deviceName, int instanceIndex, const string& rteFolder) const
+{
+  if(IsConfig()) {
+    // construct RTE/Device/Dname/fileName.ext
+    string pathName = rteFolder + "/";
+    if(!deviceName.empty() && IsDeviceDependent()) {
+      pathName += "Device/";
+      string device = WildCards::ToX(deviceName);
+      if(!device.empty()) {
+        pathName += device;
+        pathName += "/";
+      }
+    }
+    return pathName + RteUtils::ExtractFileName(GetName());
+  }
+  // return absolute path in pack repo
+    return GetOriginalAbsolutePath();
+}
+
+
+
 string RteItem::ExpandString(const string& str, bool bUseAccessSequences, RteItem* context) const
 {
   if (str.empty())
@@ -883,6 +908,11 @@ RteItem* RteItem::GetDefaultChild() const
     }
   }
   return nullptr;
+}
+
+bool RteItem::IsConfig() const
+{
+  return GetAttribute("attr") == "config";
 }
 
 bool RteItem::IsDeviceDependent() const
@@ -970,7 +1000,7 @@ void RteItem::CreateXmlTreeElementContent(XMLTreeElement* parentElement) const
 
 RteItem* RteItem::CreateChild(const string& tag, const string& name)
 {
-  RteItem* item = new RteItem(this);
+  RteItem* item = CreateItem(tag);
   AddItem(item);
   item->SetTag(tag);
   if (!name.empty()) {

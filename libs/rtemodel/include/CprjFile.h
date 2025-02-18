@@ -19,7 +19,6 @@
 #include "RtePackage.h"
 #include "RteDevice.h"
 
-class RteFile;
 class RteFileContainer;
 class RteComponentContainer;
 class RteTarget;

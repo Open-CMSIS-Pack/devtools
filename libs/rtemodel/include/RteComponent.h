@@ -14,9 +14,7 @@
  */
 /******************************************************************************/
 #include "RteItem.h"
-#include "RteFile.h"
 
-class RteFile;
 class RteTarget;
 class RteFileContainer;
 class RtePackage;
