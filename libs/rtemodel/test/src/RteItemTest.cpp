@@ -12,6 +12,7 @@
 #include "RteDevice.h"
 #include "RteFile.h"
 #include "RtePackage.h"
+#include "RteFsUtils.h"
 #include <map>
 using namespace std;
 
@@ -184,7 +185,7 @@ TEST(RteItemTest, GetInstancePathName) {
   string packFileName = "TestCmsisPackRoot/" + pack.GetPackagePath() + RtePackage::GetPackageFileNameFromAttributes(pack, false, ".pdsc");
   pack.SetRootFileName(packFileName);
   EXPECT_EQ(pack.GetPackageFileName(), packFileName);
-  string cmsisPackRoot = RteUtils::ExtractFilePath(pack.GetAbsolutePackagePath(), true);
+  string cmsisPackRoot = RteFsUtils::MakePathCanonical(pack.GetAbsolutePackagePath());
 
   RteItem* rteItem = new RteItem("test", &pack);
   rteItem->SetAttribute("name", "MyDir/MyFile.ext");
