@@ -945,12 +945,13 @@ TEST_F(PackChkIntegTests, CheckBoardMountedCompatibleDevices) {
   argv[4] = (char*)"--disable-validation";
 
   PackChk packChk;
-  EXPECT_EQ(1, packChk.Check(2, argv, nullptr));
+  EXPECT_EQ(1, packChk.Check(5, argv, nullptr));
 
   auto errMsgs = ErrLog::Get()->GetLogMessages();
   int M308_foundCnt = 0;
   int M318_foundCnt = 0;
   int M319_foundCnt = 0;
+  int M346_foundCnt = 0;
   for (const string& msg : errMsgs) {
     size_t s;
     if ((s = msg.find("M308")) != string::npos) {
@@ -962,10 +963,13 @@ TEST_F(PackChkIntegTests, CheckBoardMountedCompatibleDevices) {
     if ((s = msg.find("M319")) != string::npos) {
       M319_foundCnt++;
     }
+    if ((s = msg.find("M346")) != string::npos) {
+      M346_foundCnt++;
+    }
   }
 
-  if (M308_foundCnt != 2 || M318_foundCnt != 2 || M319_foundCnt != 2) {
-    FAIL() << "error: missing message M348 or M369";
+  if (M308_foundCnt != 2 || M318_foundCnt != 2 || M319_foundCnt != 2 || M346_foundCnt != 3) {
+    FAIL() << "error: missing message M308, M318, M319, M346";
   }
 }
 

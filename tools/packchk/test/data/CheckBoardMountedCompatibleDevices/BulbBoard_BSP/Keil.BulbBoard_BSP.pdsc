@@ -36,7 +36,7 @@
       <book category="other"     name="Resources/driverinstaller.exe"                title="Driver for CMSIS-DAP and programming"/>
       <book category="other"     name="Resources/PCWFM3-V01L14.zip"                  title="Serial Flash programming Tool"/>
       <book category="other"     name="Resources/serialportviewerandterminalv56.exe" title="Serial Port Viewer and Terminal installer"/>
-      <mountedDevice    deviceIndex="0" Dvendor="Cypress:19" Dname="S6E1A12B0A"/>
+      <mountedDevice    deviceIndex="0" Dvendor="Cypress:19" Dname="S6E1A12B0A_notExist"/>
       <mountedDevice    deviceIndex="2" Dname="S6E1A12B0A"/>
       <mountedDevice    deviceIndex="3" Dvendor="Cypress:19"/>
       <mountedDevice    deviceIndex="0" Dvendor="Cypress:19" Dname="S6E1A12B0B"/>
