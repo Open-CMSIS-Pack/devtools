@@ -6,7 +6,7 @@
 */
 /******************************************************************************/
 /*
- * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -1991,12 +1991,11 @@ bool RteTarget::GenerateRteHeaderFile(const string& headerName, const string& co
   }
   // construct head comment
   ostringstream  oss;
+  RteCallback* callback = GetCallback();
+  if (!callback) {
+    return false;
+  }
   if (!bRegionsHeader) {
-    RteCallback* callback = GetCallback();
-    if (!callback) {
-      return false;
-    }
-
     bool foundToolInfo = false;
     auto kernel = callback->GetRteKernel();
     if (kernel) {
@@ -2050,8 +2049,10 @@ bool RteTarget::GenerateRteHeaderFile(const string& headerName, const string& co
   }
 
   // file does not exist or its content is different
-  RteFsUtils::CopyBufferToFile(headerFile, oss.str(), false); // write file
-
+  if (RteFsUtils::CopyBufferToFile(headerFile, oss.str(), false) // write file
+    && !GetProject()->ShouldUpdateRte() && !bRegionsHeader) {
+    callback->OutputMessage("Constructed file " + headerFile + " was recreated");
+  }
   return true;
 }
 // End of RteTarget.cpp
