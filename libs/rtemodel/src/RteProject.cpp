@@ -6,7 +6,7 @@
 */
 /******************************************************************************/
 /*
- * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -1090,9 +1090,6 @@ void RteProject::UpdateRte() {
 }
 
 void RteProject::GenerateRteHeaders() {
-  if (!ShouldUpdateRte())
-    return;
-
   // generate header files for all targets
   for (auto itt : m_targets) {
     RteTarget* target = itt.second;
