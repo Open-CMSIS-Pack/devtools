@@ -1424,7 +1424,7 @@ public:
    * @brief check if this file is a config one
    * @return true if "attr" attribute value is "config"
   */
-  bool IsConfig() const;
+  bool IsConfig() const override;
 
   /**
    * @brief check if a new version of a config file is available (for specified target)
