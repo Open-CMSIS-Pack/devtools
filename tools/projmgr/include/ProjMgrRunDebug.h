@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Arm Limited. All rights reserved.
+ * Copyright (c) 2024-2025 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -9,7 +9,7 @@
 
 #include "ProjMgrWorker.h"
 
- /**
+/**
   * @brief programming algorithm types
  */
 struct AlgorithmType {
@@ -20,6 +20,29 @@ struct AlgorithmType {
   unsigned long long ramSize = 0;
   bool bDefault = false;
   std::string pname;
+};
+
+/**
+ * @brief memory type
+*/
+struct MemoryType {
+  std::string name;
+  std::string access;
+  std::string alias;
+  std::string fromPack;
+  unsigned long long start = 0;
+  unsigned long long size = 0;
+  bool bDefault = false;
+  bool bStartup = false;
+  bool bUninit = false;
+  std::string pname;
+};
+
+/**
+ * @brief system resources type
+*/
+struct SystemResourcesType {
+  std::vector<MemoryType> memories;
 };
 
 /**
@@ -40,7 +63,7 @@ struct DebugSequencesBlockType {
   std::string control_if;
   std::string control_while;
   std::string timeout;
-  bool atomic = false;
+  bool bAtomic = false;
   std::vector<DebugSequencesBlockType> blocks;
 };
 
@@ -52,6 +75,24 @@ struct DebugSequencesType {
   std::string info;
   std::vector<DebugSequencesBlockType> blocks;
   std::string pname;
+};
+
+/**
+ * @brief debug vars type
+*/
+struct DebugVarsType {
+  std::string vars;
+};
+
+/**
+ * @brief debugger type
+*/
+struct DebuggerType {
+  std::string name;
+  std::string info;
+  std::string port;
+  unsigned long long clock = 0;
+  std::string dbgconf;
 };
 
  /**
@@ -69,6 +110,9 @@ struct RunDebugType {
   std::vector<AlgorithmType> algorithms;
   std::vector<FilesType> outputs;
   std::vector<FilesType> systemDescriptions;
+  SystemResourcesType systemResources;
+  std::vector<DebuggerType> debuggers;
+  DebugVarsType debugVars;
   std::vector<DebugSequencesType> debugSequences;
 };
 

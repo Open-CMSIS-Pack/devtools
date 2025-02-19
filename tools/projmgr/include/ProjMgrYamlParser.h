@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -15,6 +15,7 @@
 */
 static constexpr const char* YAML_ACCESS = "access";
 static constexpr const char* YAML_ALGORITHM = "algorithm";
+static constexpr const char* YAML_ALIAS = "alias";
 static constexpr const char* YAML_APIS = "apis";
 static constexpr const char* YAML_API = "api";
 static constexpr const char* YAML_ADDPATH = "add-path";
@@ -49,6 +50,7 @@ static constexpr const char* YAML_CBUILD_SET = "cbuild-set";
 static constexpr const char* YAML_CDEFAULT = "cdefault";
 static constexpr const char* YAML_CLAYERS = "clayers";
 static constexpr const char* YAML_CLAYER = "clayer";
+static constexpr const char* YAML_CLOCK = "clock";
 static constexpr const char* YAML_CPROJECTS = "cprojects";
 static constexpr const char* YAML_CPROJECT = "cproject";
 static constexpr const char* YAML_CSOLUTION = "csolution";
@@ -71,6 +73,10 @@ static constexpr const char* YAML_COPY_TO = "copy-to";
 static constexpr const char* YAML_CREATED_BY = "created-by";
 static constexpr const char* YAML_CREATED_FOR = "created-for";
 static constexpr const char* YAML_DEBUG = "debug";
+static constexpr const char* YAML_DEBUG_SEQUENCES = "debug-sequences";
+static constexpr const char* YAML_DEBUG_VARS = "debug-vars";
+static constexpr const char* YAML_DEBUGGER = "debugger";
+static constexpr const char* YAML_DBGCONF = "dbgconf";
 static constexpr const char* YAML_DEFAULT = "default";
 static constexpr const char* YAML_DEFINE = "define";
 static constexpr const char* YAML_DEFINE_ASM = "define-asm";
@@ -152,6 +158,7 @@ static constexpr const char* YAML_PACKS_MISSING = "packs-missing";
 static constexpr const char* YAML_PACKS_UNUSED = "packs-unused";
 static constexpr const char* YAML_PATH = "path";
 static constexpr const char* YAML_PNAME = "pname";
+static constexpr const char* YAML_PORT = "port";
 static constexpr const char* YAML_PROCESSOR = "processor";
 static constexpr const char* YAML_PROGRAMMING = "programming";
 static constexpr const char* YAML_PROJECT = "project";
@@ -172,7 +179,6 @@ static constexpr const char* YAML_SOLUTION = "solution";
 static constexpr const char* YAML_SELECT = "select";
 static constexpr const char* YAML_SELECTED_BY = "selected-by";
 static constexpr const char* YAML_SELECTED_BY_PACK = "selected-by-pack";
-static constexpr const char* YAML_SEQUENCES = "sequences";
 static constexpr const char* YAML_SETUPS = "setups";
 static constexpr const char* YAML_SETUP = "setup";
 static constexpr const char* YAML_SET = "set";
@@ -180,9 +186,11 @@ static constexpr const char* YAML_SETTINGS = "settings";
 static constexpr const char* YAML_SELECT_COMPILER = "select-compiler";
 static constexpr const char* YAML_SIZE = "size";
 static constexpr const char* YAML_START = "start";
+static constexpr const char* YAML_STARTUP = "startup";
 static constexpr const char* YAML_STATUS = "status";
 static constexpr const char* YAML_SWITCH = "switch";
 static constexpr const char* YAML_SYSTEM_DESCRIPTIONS = "system-descriptions";
+static constexpr const char* YAML_SYSTEM_RESOURCES = "system-resources";
 static constexpr const char* YAML_TARGET_CONFIGURATIONS = "target-configurations";
 static constexpr const char* YAML_TARGETTYPE = "target-type";
 static constexpr const char* YAML_TARGETTYPES = "target-types";
@@ -192,8 +200,10 @@ static constexpr const char* YAML_CORE = "core";
 static constexpr const char* YAML_TITLE = "title";
 static constexpr const char* YAML_TYPE = "type";
 static constexpr const char* YAML_UNDEFINE = "undefine";
+static constexpr const char* YAML_UNINIT = "uninit";
 static constexpr const char* YAML_UPDATE = "update";
 static constexpr const char* YAML_VARIABLES = "variables";
+static constexpr const char* YAML_VARS = "vars";
 static constexpr const char* YAML_VERSION = "version";
 static constexpr const char* YAML_WARNINGS = "warnings";
 static constexpr const char* YAML_WHILE = "while";
@@ -280,6 +290,7 @@ protected:
   void ParseOutputDirs(const YAML::Node& parent, const std::string& file, struct DirectoriesItem& directories);
   void ParseGenerators(const YAML::Node& parent, const std::string& file, GeneratorsItem& generators);
   void ParseExecutes(const YAML::Node& parent, const std::string& file, std::vector<ExecutesItem>& executes);
+  bool ParseDebugger(const YAML::Node& parent, const std::string& file, std::vector<DebuggerItem>& debbugers);
   void ParseConnections(const YAML::Node& parent, std::vector<ConnectItem>& connects);
   bool ParseTargetType(const YAML::Node& parent, const std::string& file, TargetType& targetType);
   bool ParseBuildTypes(const YAML::Node& parent, const std::string& file, BuildTypes& buildTypes);

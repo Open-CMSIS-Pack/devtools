@@ -166,6 +166,7 @@
       <description>
         RteTest ARM Cortex M4 is a clone description from ARM.CMSIS pack.
       </description>
+      <debugconfig default="jtag" clock="40000000"/>
       <debugvars configfile="Device/ARM/Debug/ARMCM4.dbgconf" version="0.2.1" >
         __var DbgMCU_CR      = 0x00000007;   // DBGMCU_CR: DBG_SLEEP, DBG_STOP, DBG_STANDBY
         __var TraceClk_Pin   = 0x00040003;   // PE2
@@ -458,6 +459,7 @@
       <compatibleDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM3"/>
       <memory name="RAM-External"   access="rwx" start="0x90000000" size="0x00800000"/>
       <memory name="Flash-External" access="rx"  start="0x70000000" size="0x04000000"/>
+      <debugProbe debugClock="30000000" debugLink="swd" name="CMSIS-DAP"/>
     </board>
     <board name="RteTest Test board no mounted device" vendor="Keil" revision="2.2.2">
       <description>uVision Simulator</description>

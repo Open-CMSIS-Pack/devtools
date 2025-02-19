@@ -2470,6 +2470,15 @@ bool ProjMgrWorker::ProcessExecutes(ContextItem& context, bool solutionLevel) {
   return true;
 }
 
+void ProjMgrWorker::ProcessDebuggers(ContextItem& context) {
+  const vector<DebuggerItem>& debuggers = m_parser->GetCsolution().debuggers;
+  for (const auto& item : debuggers) {
+    if (CheckContextFilters(item.type, context)) {
+      context.debuggers.push_back(item);
+    }
+  }  
+}
+
 bool ProjMgrWorker::ProcessSolutionExecutes() {
   ContextItem context;
   return ProcessExecutes(context, true);
@@ -3712,6 +3721,7 @@ bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGenFiles, bool
       }
     }
   }
+  ProcessDebuggers(context);
   CheckMissingPackRequirements(context.name);
   return ret;
 }

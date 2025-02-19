@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -420,6 +420,24 @@ struct CdefaultItem {
   std::vector<MiscItem> misc;
 };
 
+/**
+ * @brief debugger item containing
+ *        name of debug configuration
+ *        brief description
+ *        debug port (jtag or swd)
+ *        debug clock speed
+ *        debug configuration file
+ *        type filter
+*/
+struct DebuggerItem {
+  std::string name;
+  std::string info;
+  std::string port;
+  std::string clock;
+  std::string dbgconf;
+  TypeFilter type;
+};
+
 typedef std::vector<std::pair<std::string, BuildType>> BuildTypes;
 typedef std::vector<std::pair<std::string, TargetType>> TargetTypes;
 /**
@@ -439,7 +457,8 @@ typedef std::vector<std::pair<std::string, TargetType>> TargetTypes;
  *        list of packs,
  *        cdefault enable switch,
  *        generator options,
- *        list of executes
+ *        list of executes,
+ *        list of debuggers
 */
 struct CsolutionItem {
   std::string name;
@@ -459,6 +478,7 @@ struct CsolutionItem {
   GeneratorsItem generators;
   CbuildPackItem cbuildPack;
   std::vector<ExecutesItem> executes;
+  std::vector<DebuggerItem> debuggers;
   std::vector<std::string> ymlOrderedBuildTypes;
   std::vector<std::string> ymlOrderedTargetTypes;
 };

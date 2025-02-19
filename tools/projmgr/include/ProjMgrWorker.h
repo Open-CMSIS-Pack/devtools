@@ -297,6 +297,7 @@ struct ContextTypesItem {
  *        vector of device books
  *        vector of board books
  *        additional memory
+ *        debuggers
 */
 struct ContextItem {
   CdefaultItem* cdefault = nullptr;
@@ -359,6 +360,7 @@ struct ContextItem {
   std::vector<BookItem> deviceBooks;
   std::vector<BookItem> boardBooks;
   std::vector<MemoryItem> memory;
+  std::vector<DebuggerItem> debuggers;
 };
 
 /**
@@ -851,6 +853,7 @@ protected:
   bool ProcessGpdsc(ContextItem& context);
   bool ProcessConfigFiles(ContextItem& context);
   bool ProcessComponentFiles(ContextItem& context);
+  void ProcessDebuggers(ContextItem& context);
   bool ProcessExecutes(ContextItem& context, bool solutionLevel = false);
   bool ProcessGroups(ContextItem& context);
   bool ProcessSequencesRelatives(ContextItem& context, bool rerun);
