@@ -1723,7 +1723,7 @@ bool ProjMgrWorker::ProcessToolchain(ContextItem& context) {
 
   context.toolchain = GetToolchain(context.compiler);
 
-  GetRegisteredToolchains();
+  GetRegisteredToolchainEnvVars();
   if (!m_regToolchainsEnvVars.empty()) {
     // check if the required environment variable is set
     auto itr = std::find_if(m_regToolchainsEnvVars.begin(), m_regToolchainsEnvVars.end(), [&context](const auto& item) {
@@ -4480,18 +4480,21 @@ bool ProjMgrWorker::IsContextSelected(const string& context) {
 }
 
 bool ProjMgrWorker::ListToolchains(vector<ToolchainItem>& toolchains) {
+  // If list toolchains command is fired
+  if (m_selectedContexts[0].empty()) {
+    // list registered toolchains
+    GetRegisteredToolchains();
+    if (m_toolchains.empty()) {
+      return false;
+    }
+    toolchains = m_toolchains;
+    return true;
+  }
+
   bool allSupported = true;
   for (const auto& selectedContext : m_selectedContexts) {
     ContextItem& context = m_contexts[selectedContext];
-    if (selectedContext.empty()) {
-      // list registered toolchains
-      GetRegisteredToolchains();
-      if (m_toolchains.empty()) {
-        return false;
-      }
-      toolchains = m_toolchains;
-      return true;
-    }
+
     // list required toolchains for selected contexts
     if (!LoadPacks(context)) {
       return false;
@@ -4515,10 +4518,7 @@ bool ProjMgrWorker::ListEnvironment(EnvironmentList& env) {
   return true;
 }
 
-void ProjMgrWorker::GetRegisteredToolchains(void) {
-  if (!m_toolchains.empty()) {
-    return;
-  }
+void ProjMgrWorker::GetRegisteredToolchainEnvVars(void) {
   // extract toolchain info from environment variables
   static const regex regEx = regex("(\\w+)_TOOLCHAIN_(\\d+)_(\\d+)_(\\d+)=(.*)");
   for (const auto& envVar : m_envVars) {
@@ -4530,6 +4530,17 @@ void ProjMgrWorker::GetRegisteredToolchains(void) {
       m_regToolchainsEnvVars[sm[1]][string(sm[2]) + '.' + string(sm[3]) + '.' + string(sm[4])] = sm[5];
     }
   }
+
+  if (m_regToolchainsEnvVars.empty()) {
+    m_toolchainErrors[MessageType::Warning].insert("no compiler registered. Add path to compiler 'bin' directory with environment variable <name>_TOOLCHAIN_<major>_<minor>_<patch>. <name> is one of AC6, GCC, IAR, CLANG");
+  }
+}
+
+void ProjMgrWorker::GetRegisteredToolchains(void) {
+  if (!m_toolchains.empty()) {
+    return;
+  }
+  GetRegisteredToolchainEnvVars();
   // iterate over registered toolchains
   for (const auto& [toolchainName, toolchainVersions] : m_regToolchainsEnvVars) {
     for (const auto& [toolchainVersion, toolchainRoot] : toolchainVersions) {
@@ -4541,10 +4552,6 @@ void ProjMgrWorker::GetRegisteredToolchains(void) {
         }
       }
     }
-  }
-
-  if (m_regToolchainsEnvVars.empty()) {
-    m_toolchainErrors[MessageType::Warning].insert("no compiler registered. Add path to compiler 'bin' directory with environment variable <name>_TOOLCHAIN_<major>_<minor>_<patch>. <name> is one of AC6, GCC, IAR, CLANG");
   }
 }
 

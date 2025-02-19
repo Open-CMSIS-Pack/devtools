@@ -1926,6 +1926,52 @@ TEST_F(ProjMgrUnitTests, ListToolchainsSolution) {
   EXPECT_EQ(outStr2, expected2);
 }
 
+TEST_F(ProjMgrUnitTests, ListToolchains_with_unknown_toolchain) {
+  StdStreamRedirect streamRedirect;
+  char* envp[4];
+  string ac6 = "AC6_TOOLCHAIN_6_18_0=" + testinput_folder;
+  string gcc = "GCC_TOOLCHAIN_11_3_1=" + testinput_folder;
+  string unknown = "UNKNOWN_TOOLCHAIN_1_2_3=" + testinput_folder;
+  envp[0] = (char*)ac6.c_str();
+  envp[1] = (char*)gcc.c_str();
+  envp[2] = (char*)unknown.c_str();
+  envp[3] = (char*)'\0';
+  char* argv[5];
+  const string& csolution = testinput_folder + "/TestSolution/toolchain.csolution.yml";
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"toolchains";
+  argv[3] = (char*)"--solution";
+  argv[4] = (char*)csolution.c_str();
+
+  // Test listing required toolchains
+  EXPECT_EQ(0, RunProjMgr(5, argv, envp));
+  const string& expected = "AC6@>=0.0.0\nAC6@>=6.18.0\nGCC@11.3.1\n";
+  const string& outStr = streamRedirect.GetOutString();
+  const string& errStr = streamRedirect.GetErrorString();
+  EXPECT_EQ(outStr, expected);
+  EXPECT_TRUE(errStr.empty());
+
+  // Test with no input solution
+  streamRedirect.ClearStringStreams();
+  EXPECT_EQ(1, RunProjMgr(3, argv, envp));
+  const string& expected2 = "AC6@6.18.0\nGCC@11.3.1\n";
+  const string& outStr2 = streamRedirect.GetOutString();
+  const string& errStr2 = streamRedirect.GetErrorString();
+  EXPECT_EQ(outStr2, expected2);
+  EXPECT_TRUE(errStr2.find("error csolution: no toolchain cmake files found for 'UNKNOWN' in") != std::string::npos);
+
+  // Test with converting the solution
+  streamRedirect.ClearStringStreams();
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+
+  // Test listing required toolchains
+  EXPECT_EQ(0, RunProjMgr(4, argv, envp));
+  const string& errStr3 = streamRedirect.GetErrorString();
+  EXPECT_TRUE(errStr3.empty());
+}
+
 TEST_F(ProjMgrUnitTests, ListLayersUniquelyCompatibleBoard) {
   StdStreamRedirect streamRedirect;
   char* argv[8];
