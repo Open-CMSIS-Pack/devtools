@@ -59,6 +59,8 @@ The TestSubFamily is ...
       <files>
         <file category="include" name="Files/"/>
         <file category="source"  name="Files/header1.h" attr="config" version="1.0.0" condition="Test ARMCC"/>
+        <file category="header"  name="Header/header1.h" version="1.0.0" condition="Test ARMCC"/>
+        <file category="header"  name="Header/header2.h" attr="config" version="1.0.0" condition="Test ARMCC"/>
       </files>
     </component>
   </components>

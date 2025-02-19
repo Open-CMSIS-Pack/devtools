@@ -364,7 +364,7 @@ bool ValidateSemantic::UpdateRte(RteTarget* target, RteProject* rteProject, RteC
   RteComponentAggregate* cmsisComp = target->GetComponentAggregate("ARM::CMSIS.CORE");
   target->SelectComponent(cmsisComp, 1, true);
   target->SelectComponent(component, 1, true, true);
-  rteProject->CollectSettings();
+  rteProject->Apply();
   target->CollectFilteredFiles();
   target->EvaluateComponentDependencies();
 
@@ -737,6 +737,23 @@ bool ValidateSemantic::CheckDeviceDependencies(RteDeviceItem *device, RteProject
 
                     if(attribute != "config") {
                       LogMsg("M377", NAME(fileName), TYP(category), lineNo);
+                    }
+                  }
+                }
+
+                if(category == "header") {
+                  string fileName = RteUtils::BackSlashesToSlashes(RteUtils::ExtractFileName(file->GetName()));
+                  if(fileName.empty()) {
+                    continue;
+                  }
+                  const string& attribute = file->GetAttribute("attr");
+
+                  if(attribute == "config") {
+                    const string& fullFileName = targetPath + "/" + file->GetName();
+                    const string hPath = RteUtils::ExtractFilePath(fullFileName, false);
+                    const auto incPathFound = incPaths.find(hPath);
+                    if(incPathFound != incPaths.end()) {
+                      LogMsg("M357", NAME(file->GetName()), file->GetLineNumber());
                     }
                   }
                 }
