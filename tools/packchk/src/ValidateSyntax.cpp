@@ -1706,7 +1706,7 @@ bool ValidateSyntax::CheckBoards(RtePackage* pKg)
       auto foundDevIdxIt = mountedDeviceIndex.find(devIdx);
       if(foundDevIdxIt != mountedDeviceIndex.end()) {
         const RteItem* foundDev = foundDevIdxIt->second;
-        LogMsg("M319", TAG("deviceIndex"), TAG2(foundDev->GetDeviceName()));
+        LogMsg("M319", TAG("deviceIndex"), NAME(devIdx), TAG2("Dname"), NAME2(foundDev->GetDeviceName()), LINE(foundDev->GetLineNumber()), lineNo);
       }
       else {
         mountedDeviceIndex[devIdx] = mountedDevice;
@@ -1725,6 +1725,11 @@ bool ValidateSyntax::CheckBoards(RtePackage* pKg)
       LogMsg("M060", VAL("BOARD", boardName), VAL("DEVICE", dname));
 
       if(dname.empty() || dname.empty()) {
+        continue;
+      }
+
+      if(dname.find_first_of("*?[]") != string::npos) {
+        LogMsg("M607", TAG("Dname"), NAME(dname), lineNo);
         continue;
       }
 

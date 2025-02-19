@@ -41,6 +41,7 @@
       <mountedDevice    deviceIndex="3" Dvendor="Cypress:19"/>
       <mountedDevice    deviceIndex="0" Dvendor="Cypress:19" Dname="S6E1A12B0B"/>
       <mountedDevice    deviceIndex="2" Dvendor="Cypress:19" Dname="S6E1A12B0C"/>
+      <mountedDevice    deviceIndex="4" Dvendor="ARM:82" Dname="ARMCM*"/>
       <compatibleDevice deviceIndex="0" Dvendor="Cypress:19" Dname="S6E1A12C0A" Dfamily="Foo" DsubFamily="Bar"/>
       <compatibleDevice deviceIndex="0" Dvendor="Cypress:19" Dname="S6E1A11B0A"/>
       <compatibleDevice deviceIndex="0" Dvendor="Cypress:19" Dname="S6E1A11C0A"/>
