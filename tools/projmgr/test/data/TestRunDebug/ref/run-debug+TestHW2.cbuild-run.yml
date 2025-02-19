@@ -1,72 +1,58 @@
 cbuild-run:
   generated-by: csolution version 2.8.0
   solution: ../data/TestRunDebug/run-debug.csolution.yml
-  target-type: TestHW
+  target-type: TestHW2
   compiler: AC6
-  device: ARM::RteTest_ARMCM4_NOFP
+  device: ARM::RteTest_ARMCM3
   device-pack: ARM::RteTest_DFP@0.2.0
-  board: Keil::RteTest Test device variant:1.1.1
+  board: Keil::RteTest-Test-board With.Memory:1.1.1
   board-pack: ARM::RteTest_DFP@0.2.0
   programming:
-    - algorithm: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/Flash/CortexM4Device.FLM
-      start: 0x00000000
-      size: 0x00020000
-    - algorithm: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/Flash/CortexM4SubFamily.FLM
-      start: 0x00000000
-      size: 0x00040000
-      default: true
     - algorithm: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/Flash/FAMILY.FLM
       start: 0x00000000
       size: 0x00040000
       default: true
-    - algorithm: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/Flash/BOARD.FLM
-      start: 0x80000000
-      size: 0x00020000
-      default: true
-    - algorithm: ../data/TestRunDebug/CustomAlgo.flm
-      start: 0x80000000
-      size: 0x00010000
   system-descriptions:
-    - file: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/SVD/ARMCM4.svd
+    - file: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/SVD/ARMCM3.svd
       type: svd
   output:
-    - file: out/run-debug/TestHW/run-debug.axf
+    - file: out/run-debug/TestHW2/run-debug.axf
       type: elf
   system-resources:
     memory:
-      - name: FLASH
-        access: rx
+      - name: IROM1
         start: 0x00000000
         size: 0x00040000
         default: true
         startup: true
         from-pack: ARM::RteTest_DFP@0.2.0
-      - name: SRAM
-        access: rwx
+      - name: IRAM1
         start: 0x20000000
         size: 0x00020000
         default: true
         uninit: true
         from-pack: ARM::RteTest_DFP@0.2.0
-      - name: CustomMemory
+      - name: RAM-External
         access: rwx
-        start: 0x80000000
-        size: 0x00010000
+        start: 0x90000000
+        size: 0x00800000
+        from-pack: ARM::RteTest_DFP@0.2.0
+      - name: Flash-External
+        access: rx
+        start: 0x70000000
+        size: 0x04000000
+        from-pack: ARM::RteTest_DFP@0.2.0
   debugger:
-    - name: TestDebugger1
-      info: Info for TestDebugger1
-      port: jtag
-      clock: 20000000
-      dbgconf: ../data/TestRunDebug/RTE/Device/RteTest1/RteTest1.dbgconf
-    - name: TestDebugger2
-      port: jtag
-      clock: 40000000
-      dbgconf: ../data/TestRunDebug/RTE/Device/RteTest_ARMCM4_NOFP/ARMCM4.dbgconf
+    - name: CMSIS-DAP
+      port: swd
+      clock: 30000000
+      dbgconf: ../data/TestRunDebug/RTE/Device/RteTest_ARMCM3/ARMCM.dbgconf
   debug-vars:
     vars: |
       __var DbgMCU_CR      = 0x00000007;   // DBGMCU_CR: DBG_SLEEP, DBG_STOP, DBG_STANDBY
-      __var TraceClk_Pin   = 0x00040003;   // PE2
-      __var TraceD0_Pin    = 0x00040003;   // PE4
+      __var TraceClk_Pin   = 0x00040002;   // PE2
+      __var TraceD0_Pin    = 0x00040003;   // PE3
+      __var TraceD1_Pin    = 0x00040004;   // PE4
   debug-sequences:
     - name: DebugDeviceUnlock
       blocks:

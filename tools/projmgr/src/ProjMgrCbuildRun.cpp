@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -21,6 +21,9 @@ protected:
   std::string m_directory;
   void SetProgrammingNode(YAML::Node node, const std::vector<AlgorithmType>& algorithms);
   void SetFilesNode(YAML::Node node, const std::vector<FilesType>& outputs);
+  void SetResourcesNode(YAML::Node node, const SystemResourcesType& systemResources);
+  void SetDebuggersNode(YAML::Node node, const std::vector<DebuggerType>& debuggers);
+  void SetDebugVarsNode(YAML::Node node, const DebugVarsType& debugVars);
   void SetDebugSequencesNode(YAML::Node node, const std::vector<DebugSequencesType>& algorithms);
   void SetDebugSequencesBlockNode(YAML::Node node, const std::vector<DebugSequencesBlockType>& blocks);
 };
@@ -38,7 +41,10 @@ ProjMgrCbuildRun::ProjMgrCbuildRun(YAML::Node node,
   SetProgrammingNode(node[YAML_PROGRAMMING], debugRun.algorithms);
   SetFilesNode(node[YAML_SYSTEM_DESCRIPTIONS], debugRun.systemDescriptions);
   SetFilesNode(node[YAML_OUTPUT], debugRun.outputs);
-  SetDebugSequencesNode(node[YAML_SEQUENCES], debugRun.debugSequences);
+  SetResourcesNode(node[YAML_SYSTEM_RESOURCES], debugRun.systemResources);
+  SetDebuggersNode(node[YAML_DEBUGGER], debugRun.debuggers);
+  SetDebugVarsNode(node[YAML_DEBUG_VARS], debugRun.debugVars);
+  SetDebugSequencesNode(node[YAML_DEBUG_SEQUENCES], debugRun.debugSequences);
 };
 
 void ProjMgrCbuildRun::SetProgrammingNode(YAML::Node node, const std::vector<AlgorithmType>& algorithms) {
@@ -71,6 +77,49 @@ void ProjMgrCbuildRun::SetFilesNode(YAML::Node node, const std::vector<FilesType
   }
 }
 
+void ProjMgrCbuildRun::SetResourcesNode(YAML::Node node, const SystemResourcesType& systemResources) {
+  for (const auto& item : systemResources.memories) {
+    YAML::Node memoryNode;
+    SetNodeValue(memoryNode[YAML_NAME], item.name);
+    SetNodeValue(memoryNode[YAML_ACCESS], item.access);
+    if (item.size > 0) {
+      SetNodeValue(memoryNode[YAML_START], ProjMgrUtils::ULLToHex(item.start));
+      SetNodeValue(memoryNode[YAML_SIZE], ProjMgrUtils::ULLToHex(item.size));
+    }
+    if (item.bDefault) {
+      memoryNode[YAML_DEFAULT] = true;
+    }
+    if (item.bStartup) {
+      memoryNode[YAML_STARTUP] = true;
+    }
+    SetNodeValue(memoryNode[YAML_PNAME], item.pname);
+    if (item.bUninit) {
+      memoryNode[YAML_UNINIT] = true;
+    }
+    SetNodeValue(memoryNode[YAML_ALIAS], item.alias);
+    SetNodeValue(memoryNode[YAML_FROM_PACK], item.fromPack);
+    node[YAML_MEMORY].push_back(memoryNode);
+  }
+}
+
+void ProjMgrCbuildRun::SetDebuggersNode(YAML::Node node, const std::vector<DebuggerType>& debuggers) {
+  for (const auto& item : debuggers) {
+    YAML::Node debuggerNode;
+    SetNodeValue(debuggerNode[YAML_NAME], item.name);
+    SetNodeValue(debuggerNode[YAML_INFO], item.info);
+    SetNodeValue(debuggerNode[YAML_PORT], item.port);
+    debuggerNode[YAML_CLOCK] = item.clock;
+    SetNodeValue(debuggerNode[YAML_DBGCONF], FormatPath(item.dbgconf, m_directory));
+    node.push_back(debuggerNode);
+  }
+}
+
+void ProjMgrCbuildRun::SetDebugVarsNode(YAML::Node node, const DebugVarsType& debugVars) {
+  if (!debugVars.vars.empty()) {
+    SetNodeValue(node[YAML_VARS], "|\n" + debugVars.vars);
+  }
+}
+
 void ProjMgrCbuildRun::SetDebugSequencesNode(YAML::Node node, const std::vector<DebugSequencesType>& sequences) {
   for (const auto& sequence : sequences) {
     YAML::Node sequenceNode;
@@ -91,7 +140,7 @@ void ProjMgrCbuildRun::SetDebugSequencesBlockNode(YAML::Node node, const std::ve
     if (!block.timeout.empty()) {
       blockNode[YAML_TIMEOUT] = RteUtils::StringToULL(block.timeout);
     }
-    if (block.atomic) {
+    if (block.bAtomic) {
       blockNode[YAML_ATOMIC] = YAML::Null;
     }
     if (!block.execute.empty()) {

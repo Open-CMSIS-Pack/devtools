@@ -1048,6 +1048,7 @@
           "description": "The tool required to build this csolution project."
         },
         "debug":           { "$ref": "#/definitions/DebugType" },
+        "debugger":        { "$ref": "#/definitions/DebuggersType" },
         "define":          { "$ref": "#/definitions/DefinesType" },
         "define-asm":      { "$ref": "#/definitions/DefinesAsmType" },
         "del-path":        { "$ref": "#/definitions/DelpathsType" },
@@ -1922,6 +1923,11 @@
       },      
       "additionalProperties": false
     },
+    "MemoryAccessType": {
+      "description": "Memory access permission.",
+      "pattern": "^[rwxpsnc]+$",
+      "type": "string"
+    },
     "MemoryType": {
       "title": "memory:",
       "description": "Additional memory available",
@@ -1933,7 +1939,7 @@
       "type": "object",
       "properties": {
         "name":     { "title": "name:", "type": "string", "description": "Memory identifier." },
-        "access":   { "title": "access:", "type": "string", "description": "Memory access permission." },
+        "access":   { "title": "access:", "$ref": "#/definitions/MemoryAccessType" },
         "algorithm":{ "title": "algorithm:", "type": "string", "description": "Programming algorithm." },
         "start":    { "title": "start:", "type": "number", "description": "Memory start address." },
         "size":     { "title": "size:", "type": "number", "description": "Memory size." }
@@ -1974,6 +1980,7 @@
       "additionalProperties": false
     },
     "DebugSequencesType": {
+      "description": "Debug sequences for the target.",
       "type": "array",
       "uniqueItems": true,
       "items": { "$ref": "#/definitions/DebugSequenceType" }
@@ -2009,22 +2016,84 @@
       },
       "additionalProperties": false
     },
+    "SystemResourcesType": {
+      "description": "Resources of a target system.",
+      "type": "object",
+      "properties": {
+        "memory": { "$ref": "#/definitions/SystemMemoriesType" }
+      },
+      "additionalProperties": false
+    },
+    "SystemMemoriesType": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/SystemMemoryType" }
+    },
+    "SystemMemoryType": {
+      "type": "object",
+      "properties": {
+        "name":      { "type": "string", "description": "Name of the memory region." },
+        "access":    { "$ref": "#/definitions/MemoryAccessType" },
+        "start":     { "type": "number", "description": "Base address of the memory." },
+        "size":      { "type": "number", "description": "Size of the memory." },
+        "default":   { "type": "boolean", "description": "Memory is always accessible (used for algorithm when no ram-start is specified)." },
+        "startup":   { "type": "boolean", "description": "Default startup code location (vector table)." },
+        "pname":     { "type": "string", "description": "Only accessible by a specific processor." },
+        "uninit":    { "type": "boolean", "description": "Memory content must not be altered." },
+        "alias":     { "type": "string", "description": "Name of identical memory exposed at different address." },
+        "from-pack": { "$ref": "#/definitions/PackID" }
+      },
+      "additionalProperties": false,
+      "required": ["name"]
+    },
+    "DebuggersType": {
+      "description": "Connection information to debuggers.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/DebuggerType" }
+    },
+    "DebuggerType": {
+      "type": "object",
+      "properties": {
+        "name":            { "type": "string", "description": "Identifies the debug configuration." },
+        "info":            { "type": "string", "description": "Brief description of the connection." },
+        "port":            { "enum": [ "jtag", "swd" ], "description": "Selected debug port (jtag or swd)." },
+        "clock":           { "type": "number", "description": "Selected debug clock speed." },
+        "dbgconf":         { "type": "string", "description": "Debugger configuration file (pinout, trace)." },
+        "for-context":     { "$ref": "#/definitions/ForContext" },
+        "not-for-context": { "$ref": "#/definitions/NotForContext" }
+      },
+      "additionalProperties": false,
+      "required": ["name"]
+    },
+    "DebugVarsType": {
+      "description": "Debug variables for debug sequences.",
+      "type": "object",
+      "properties": {
+        "vars":  { "type": "string", "description": "Initial values for debug variables used in debug sequences." }
+      },
+      "additionalProperties": false,
+      "required": ["vars"]
+    },
     "RunDebugDescType": {
       "description": "This section describes generated contents",
       "type": "object",
       "properties": {
-        "generated-by":         { "type": "string", "description": "Tool name along with version information used to generate this file." },
-        "solution":             { "type": "string", "description": "Solution path." },
-        "target-type":          { "type": "string", "description": "Target type." },
-        "compiler":             { "type": "string", "description": "Selection of compiler used." },
-        "board":                { "$ref": "#/definitions/BoardType" },
-        "device":               { "$ref": "#/definitions/DeviceType" },
-        "board-pack":           { "$ref": "#/definitions/PackID" },
-        "device-pack":          { "$ref": "#/definitions/PackID" },
-        "programming":          { "$ref": "#/definitions/ProgrammingType" },
-        "system-descriptions":  { "$ref": "#/definitions/RunFilesType", "description": "System description files." },
-        "output":               { "$ref": "#/definitions/RunFilesType", "description": "Application image files." },
-        "sequences":            { "$ref": "#/definitions/DebugSequencesType", "description": "Debug sequences for the target." }
+        "generated-by":        { "type": "string", "description": "Tool name along with version information used to generate this file." },
+        "solution":            { "type": "string", "description": "Solution path." },
+        "target-type":         { "type": "string", "description": "Target type." },
+        "compiler":            { "type": "string", "description": "Selection of compiler used." },
+        "board":               { "$ref": "#/definitions/BoardType" },
+        "device":              { "$ref": "#/definitions/DeviceType" },
+        "board-pack":          { "$ref": "#/definitions/PackID" },
+        "device-pack":         { "$ref": "#/definitions/PackID" },
+        "programming":         { "$ref": "#/definitions/ProgrammingType" },
+        "system-descriptions": { "$ref": "#/definitions/RunFilesType", "description": "System description files." },
+        "output":              { "$ref": "#/definitions/RunFilesType", "description": "Application image files." },
+        "system-resources":    { "$ref": "#/definitions/SystemResourcesType" },
+        "debugger":            { "$ref": "#/definitions/DebuggersType" },
+        "debug-vars":          { "$ref": "#/definitions/DebugVarsType" },
+        "debug-sequences":     { "$ref": "#/definitions/DebugSequencesType" }
       },
       "additionalProperties": false
     }

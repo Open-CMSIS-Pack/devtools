@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Arm Limited. All rights reserved.
+ * Copyright (c) 2024-2025 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -12,6 +12,13 @@
 #include <regex>
 
 using namespace std;
+
+/**
+  * @brief default debugger parameters
+ */
+static constexpr const char* DEBUGGER_NAME_DEFAULT = "<default>";
+static constexpr const char* DEBUGGER_PORT_DEFAULT = "swd";
+static unsigned long long DEBUGGER_CLOCK_DEFAULT = 10000000;
 
 ProjMgrRunDebug::ProjMgrRunDebug(void) {
   // Reserved
@@ -39,8 +46,12 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts) {
 
   // programming algorithms
   vector<pair<const RteItem*, vector<string>>> algorithms;
+  // programming memories
+  vector<pair<const RteItem*, vector<string>>> memories;
   // debug infos
   vector<pair<const RteItem*, vector<string>>> debugs;
+  // debug vars
+  vector<pair<const RteItem*, vector<string>>> debugvars;
   // debug sequences
   vector<pair<const RteItem*, vector<string>>> debugSequences;
 
@@ -58,9 +69,17 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts) {
       for (const auto& deviceAlgorithm : deviceAlgorithms) {
         PushBackUniquely(algorithms, deviceAlgorithm, pname);
       }
+      const auto& deviceMemories = context->rteDevice->GetEffectiveProperties("memory", pname);
+      for (const auto& deviceMemory : deviceMemories) {
+        PushBackUniquely(memories, deviceMemory, pname);
+      }
       const auto& deviceDebugs = context->rteDevice->GetEffectiveProperties("debug", pname);
       for (const auto& deviceDebug : deviceDebugs) {
         PushBackUniquely(debugs, deviceDebug, pname);
+      }
+      const auto& deviceDebugVars = context->rteDevice->GetEffectiveProperties("debugvars", pname);
+      for (const auto& deviceDebugVar : deviceDebugVars) {
+        PushBackUniquely(debugvars, deviceDebugVar, pname);
       }
       const auto& deviceDebugSequences = context->rteDevice->GetEffectiveProperties("sequence", pname);
       for (const auto& deviceDebugSequence : deviceDebugSequences) {
@@ -77,10 +96,15 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts) {
     for (const auto& boardAlgorithm : boardAlgorithms) {
       PushBackUniquely(algorithms, boardAlgorithm, boardAlgorithm->GetAttribute("Pname"));
     }
+    Collection<RteItem*> boardMemories;
+    context0->rteBoard->GetChildrenByTag("memory", boardMemories);
+    for (const auto& boardMemory : boardMemories) {
+      PushBackUniquely(memories, boardMemory, boardMemory->GetAttribute("Pname"));
+    }
   }
 
   // sort collections starting with specific pnames
-  for (auto vec : { &algorithms, &debugs, &debugSequences }) {
+  for (auto vec : { &algorithms, &memories, &debugs, &debugSequences }) {
     sort(vec->begin(), vec->end(), [](auto& left, auto& right) {
       return left.second.size() < right.second.size();
     });
@@ -99,13 +123,37 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts) {
     m_runDebug.algorithms.push_back(item);
   }
 
-  // additional programming algorithms
+  // set device/board memories
+  for (const auto& [memory, pname] : memories) {
+    MemoryType item;
+    item.name = memory->GetName();
+    item.access = memory->GetAccess();
+    item.alias = memory->GetAlias();
+    item.start = memory->GetAttributeAsULL("start");
+    item.size = memory->GetAttributeAsULL("size");
+    item.bDefault = memory->GetAttributeAsBool("default");
+    item.bStartup = memory->GetAttributeAsBool("startup");
+    item.bUninit = memory->GetAttributeAsBool("uninit");
+    item.fromPack = memory->GetPackageID(true);
+    item.pname = pname.size() == 1 ? pname.front() : "";
+    m_runDebug.systemResources.memories.push_back(item);
+  }
+
+  // additional user memory items (system resources and programming algorithms)
   for (const auto& memory : context0->memory) {
-    AlgorithmType item;
-    item.algorithm = memory.algorithm;
-    item.start = RteUtils::StringToULL(memory.start);
-    item.size = RteUtils::StringToULL(memory.size);
-    m_runDebug.algorithms.push_back(item);
+    MemoryType memItem;
+    memItem.name = memory.name;
+    memItem.access = memory.access;
+    memItem.start = RteUtils::StringToULL(memory.start);
+    memItem.size = RteUtils::StringToULL(memory.size);
+    m_runDebug.systemResources.memories.push_back(memItem);
+    if (!memory.algorithm.empty()) {
+      AlgorithmType algoItem;
+      algoItem.algorithm = memory.algorithm;
+      algoItem.start = memItem.start;
+      algoItem.size = memItem.size;
+      m_runDebug.algorithms.push_back(algoItem);
+    }
   }
 
   // system descriptions
@@ -133,6 +181,17 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts) {
     }
   }
 
+  // debug vars
+  for (const auto& [debugvar, _] : debugvars) {
+    DebugVarsType item;
+    const string vars = RteUtils::EnsureLf(debugvar->GetText());
+    if (!vars.empty()) {
+      item.vars = regex_replace(vars, regex("\n +"), "\n");
+      m_runDebug.debugVars = item;
+      break;
+    }
+  }
+
   // debug sequences
   for (const auto& [debugSequence, pname] : debugSequences) {
     DebugSequencesType sequence;
@@ -147,6 +206,42 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts) {
     m_runDebug.debugSequences.push_back(sequence);
   }
 
+  // default debugger parameters from DFP and BSP
+  DebuggerType defaultDebugger;
+  for (auto& [filename, fi] : context0->rteActiveProject->GetFileInstances()) {
+    if (fi->HasAttribute("configfile")) {
+      defaultDebugger.dbgconf = context0->cproject->directory + '/' + filename;
+      break;
+    }
+  }
+  const auto& debugConfig = context0->devicePack ?
+    context0->rteDevice->GetSingleEffectiveProperty("debugconfig", context0->deviceItem.pname) : nullptr;
+  const auto& debugProbe = context0->boardPack ?
+    context0->rteBoard->GetItemByTag("debugProbe") : nullptr;
+  defaultDebugger.name = debugProbe ? debugProbe->GetName() : DEBUGGER_NAME_DEFAULT;
+  const auto& boardPort = debugProbe ? debugProbe->GetAttribute("debugLink") : "";
+  const auto& devicePort = debugConfig ? debugConfig->GetAttribute("default") : "";
+  defaultDebugger.port = !boardPort.empty() ? boardPort : !devicePort.empty() ? devicePort : DEBUGGER_PORT_DEFAULT;
+  const auto& boardClock = debugProbe ? debugProbe->GetAttributeAsULL("debugClock") : 0;
+  const auto& deviceClock = debugConfig ? debugConfig->GetAttributeAsULL("clock") : 0;
+  defaultDebugger.clock = boardClock > 0 ? boardClock : deviceClock > 0 ? deviceClock : DEBUGGER_CLOCK_DEFAULT;
+
+  // user defined debugger parameters
+  if (context0->debuggers.size() > 0) {
+    for (const auto& debugger : context0->debuggers) {
+      DebuggerType item;
+      item.name = debugger.name.empty() ? defaultDebugger.name : debugger.name;
+      item.info = debugger.info;
+      item.port = debugger.port.empty() ? defaultDebugger.port : debugger.port;
+      item.clock = debugger.clock.empty() ? defaultDebugger.clock : RteUtils::StringToULL(debugger.clock);
+      item.dbgconf = debugger.dbgconf.empty() ? defaultDebugger.dbgconf : RteFsUtils::IsRelative(item.dbgconf) ?
+        context0->cproject->directory + '/' + debugger.dbgconf : debugger.dbgconf;
+      m_runDebug.debuggers.push_back(item);
+    }
+  } else {
+    m_runDebug.debuggers.push_back(defaultDebugger);
+  }
+
   return true;
 }
 
@@ -154,7 +249,7 @@ void ProjMgrRunDebug::GetDebugSequenceBlock(const RteItem* item, DebugSequencesB
   // get 'block' attributes
   if (item->GetTag() == "block") {
     block.info = block.info.empty() ? item->GetAttribute("info") : block.info;
-    block.atomic = item->GetAttributeAsBool("atomic");
+    block.bAtomic = item->GetAttributeAsBool("atomic");
     const string execute = RteUtils::EnsureLf(item->GetText());
     block.execute = regex_replace(execute, regex("\n +"), "\n");
     // 'block' doesn't have children, stop here

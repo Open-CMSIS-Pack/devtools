@@ -6596,15 +6596,21 @@ TEST_F(ProjMgrUnitTests, InvalidContextSet) {
 }
 
 TEST_F(ProjMgrUnitTests, TestRunDebug) {
-  char* argv[6];
+  char* argv[8];
   const string& csolution = testinput_folder + "/TestRunDebug/run-debug.csolution.yml";
   argv[1] = (char*)"convert";
   argv[2] = (char*)csolution.c_str();
   argv[3] = (char*)"--context-set";
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
-  EXPECT_EQ(0, RunProjMgr(6, argv, m_envp));
-
+  argv[6] = (char*)"--context";
+  argv[7] = (char*)"+TestHW";
+  EXPECT_EQ(0, RunProjMgr(8, argv, m_envp));
   ProjMgrTestEnv::CompareFile(testoutput_folder + "/run-debug+TestHW.cbuild-run.yml",
     testinput_folder + "/TestRunDebug/ref/run-debug+TestHW.cbuild-run.yml");
+
+  argv[7] = (char*)"+TestHW2";
+  EXPECT_EQ(0, RunProjMgr(8, argv, m_envp));
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/run-debug+TestHW2.cbuild-run.yml",
+    testinput_folder + "/TestRunDebug/ref/run-debug+TestHW2.cbuild-run.yml");
 }

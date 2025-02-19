@@ -111,6 +111,9 @@ bool ProjMgrYamlParser::ParseCsolution(const string& input,
     csolution.enableCdefault = solutionNode[YAML_CDEFAULT].IsDefined();
     ParseGenerators(solutionNode, csolution.path, csolution.generators);
     ParseExecutes(solutionNode, csolution.path, csolution.executes);
+    if (!ParseDebugger(solutionNode, csolution.path, csolution.debuggers)) {
+      return false;
+    }
 
   } catch (YAML::Exception& e) {
    ProjMgrLogger::Get().Error(e.msg, "", input, e.mark.line + 1, e.mark.column + 1);
@@ -529,6 +532,25 @@ void ProjMgrYamlParser::ParseExecutes(const YAML::Node& parent, const string& fi
       executes.push_back(executesItem);
     }
   }
+}
+
+bool ProjMgrYamlParser::ParseDebugger(const YAML::Node& parent, const string& file, std::vector<DebuggerItem>& debbugers) {
+  if (parent[YAML_DEBUGGER].IsDefined()) {
+    const YAML::Node& debuggerNode = parent[YAML_DEBUGGER];
+    for (const auto& debuggerEntry : debuggerNode) {
+      DebuggerItem debuggerItem;
+      ParseString(debuggerEntry, YAML_NAME, debuggerItem.name);
+      ParseString(debuggerEntry, YAML_INFO, debuggerItem.info);
+      ParseString(debuggerEntry, YAML_PORT, debuggerItem.port);
+      ParseNumber(debuggerEntry, file, YAML_CLOCK, debuggerItem.clock);
+      ParsePortablePath(debuggerEntry, file, YAML_DBGCONF, debuggerItem.dbgconf);
+      if (!ParseTypeFilter(debuggerEntry, debuggerItem.type)) {
+        return false;
+      }
+      debbugers.push_back(debuggerItem);
+    }
+  }
+  return true;
 }
 
 void ProjMgrYamlParser::ParseRte(const YAML::Node& parent, string& rteBaseDir) {
@@ -973,6 +995,7 @@ const set<string> solutionKeys = {
   YAML_CDEFAULT,
   YAML_GENERATORS,
   YAML_EXECUTES,
+  YAML_DEBUGGER,
 };
 
 const set<string> projectsKeys = {

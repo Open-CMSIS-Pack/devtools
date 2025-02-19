@@ -14,9 +14,21 @@ solution:
           name: CustomMemory
           access: rwx
           algorithm: CustomAlgo.flm
+    - type: TestHW2
+      board: RteTest-Test-board With.Memory
 
   projects:
     - project: run-debug.cproject.yml
 
   packs:
     - pack: ARM::RteTest_DFP
+
+  debugger:
+    - name: TestDebugger1
+      info: Info for TestDebugger1
+      port: jtag
+      clock: 20000000
+      dbgconf: RTE/Device/RteTest1/RteTest1.dbgconf
+      for-context: +TestHW
+    - name: TestDebugger2
+      for-context: +TestHW
