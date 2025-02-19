@@ -45,7 +45,8 @@ public:
   bool CheckDeviceDependencies(RteDeviceItem* device, RteProject* rteProject);
   bool HasExternalGenerator(RteComponentAggregate* aggregate);
   bool FileIsHeader(const std::string& name);
-  
+  bool CheckDeviceAttributes(RteDeviceItem *device);
+
   const std::map<std::string, compiler_s>& GetCompilers() {
     return m_compilers;
   }

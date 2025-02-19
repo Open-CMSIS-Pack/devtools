@@ -455,6 +455,94 @@ bool ValidateSemantic::FileIsHeader(const std::string& name)
   return RteFsUtils::FileCategoryFromExtension(name) == "header";
 }
 
+/**
+ * @brief Check device attributes. Tests if all attributes like Dtz, Ddsp, ... are set
+ * @param device RteDeviceItem to run on
+ * @return passed / failed
+ */
+
+const map<string, list<string>> processorFeaturesMap = {
+//{ "ARMV81MML"   , { "Dfpu", "Dmpu", "Dtz", "Ddsp", "Dmve", "Dcdecp", "Dpacbti", "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-M0"   , { "Dfpu", "Dmpu",        "Ddsp",                              "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-M0+"  , { "Dfpu", "Dmpu",        "Ddsp",                              "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-M1"   , { "Dfpu", "Dmpu",        "Ddsp",                              "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-M3"   , { "Dfpu", "Dmpu",        "Ddsp",                              "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-M4"   , { "Dfpu", "Dmpu",        "Ddsp",                              "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-M7"   , { "Dfpu", "Dmpu",        "Ddsp",                              "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-M23"  , { "Dfpu", "Dmpu", "Dtz", "Ddsp",                              "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-M33"  , { "Dfpu", "Dmpu", "Dtz", "Ddsp",                              "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-M35P" , { "Dfpu", "Dmpu", "Dtz", "Ddsp", "Dmve",                      "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-M52"  , { "Dfpu", "Dmpu", "Dtz", "Ddsp", "Dmve",                      "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-M55"  , { "Dfpu", "Dmpu", "Dtz", "Ddsp", "Dmve",                      "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-M85"  , { "Dfpu", "Dmpu", "Dtz", "Ddsp", "Dmve",                      "Dendian", "Dclock","DcoreVersion" } },
+  { "Star-MC1"    , { "Dfpu", "Dmpu", "Dtz", "Ddsp", "Dmve",                      "Dendian", "Dclock","DcoreVersion" } },
+  { "SC000"       , { "Dfpu", "Dmpu", "Dtz", "Ddsp",                              "Dendian", "Dclock","DcoreVersion" } },
+  { "SC300"       , { "Dfpu", "Dmpu", "Dtz", "Ddsp",                              "Dendian", "Dclock","DcoreVersion" } },
+  { "ARMV8MBL"    , { "Dfpu", "Dmpu", "Dtz", "Ddsp",                              "Dendian", "Dclock","DcoreVersion" } },
+  { "ARMV8MML"    , { "Dfpu", "Dmpu", "Dtz", "Ddsp",                              "Dendian", "Dclock","DcoreVersion" } },
+  { "ARMV81MML"   , { "Dfpu", "Dmpu", "Dtz", "Ddsp", "Dmve",                      "Dendian", "Dclock","DcoreVersion" } },
+  /* Currently unchecked
+  { "Cortex-R4"   , { "Dfpu", "Dmpu", "Dtz", "Ddsp", "Dmve", "Dcdecp", "Dpacbti", "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-R5"   , { "Dfpu", "Dmpu", "Dtz", "Ddsp", "Dmve", "Dcdecp", "Dpacbti", "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-R7"   , { "Dfpu", "Dmpu", "Dtz", "Ddsp", "Dmve", "Dcdecp", "Dpacbti", "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-R8"   , { "Dfpu", "Dmpu", "Dtz", "Ddsp", "Dmve", "Dcdecp", "Dpacbti", "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-A5"   , { "Dfpu", "Dmpu", "Dtz", "Ddsp", "Dmve", "Dcdecp", "Dpacbti", "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-A7"   , { "Dfpu", "Dmpu", "Dtz", "Ddsp", "Dmve", "Dcdecp", "Dpacbti", "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-A8"   , { "Dfpu", "Dmpu", "Dtz", "Ddsp", "Dmve", "Dcdecp", "Dpacbti", "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-A9"   , { "Dfpu", "Dmpu", "Dtz", "Ddsp", "Dmve", "Dcdecp", "Dpacbti", "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-A15"  , { "Dfpu", "Dmpu", "Dtz", "Ddsp", "Dmve", "Dcdecp", "Dpacbti", "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-A17"  , { "Dfpu", "Dmpu", "Dtz", "Ddsp", "Dmve", "Dcdecp", "Dpacbti", "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-A32"  , { "Dfpu", "Dmpu", "Dtz", "Ddsp", "Dmve", "Dcdecp", "Dpacbti", "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-A35"  , { "Dfpu", "Dmpu", "Dtz", "Ddsp", "Dmve", "Dcdecp", "Dpacbti", "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-A53"  , { "Dfpu", "Dmpu", "Dtz", "Ddsp", "Dmve", "Dcdecp", "Dpacbti", "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-A57"  , { "Dfpu", "Dmpu", "Dtz", "Ddsp", "Dmve", "Dcdecp", "Dpacbti", "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-A72"  , { "Dfpu", "Dmpu", "Dtz", "Ddsp", "Dmve", "Dcdecp", "Dpacbti", "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-A73"  , { "Dfpu", "Dmpu", "Dtz", "Ddsp", "Dmve", "Dcdecp", "Dpacbti", "Dendian", "Dclock","DcoreVersion" } },
+  */
+};
+
+const list<string> processorMulticoreFeaturesList = {
+  "Pname",
+};
+
+bool ValidateSemantic::CheckDeviceAttributes(RteDeviceItem *device)
+{
+  if(!device) {
+    return true;
+  }
+
+  bool bOk = false;
+  int lineNo = device->GetLineNumber();
+  const auto processors = device->GetProcessors();
+  for(const auto& [core, processor] : processors) {
+    const auto& Dcore = processor->GetAttribute("Dcore");
+    const auto& processorFeatures = processorFeaturesMap.find(Dcore);
+    if(processorFeatures == processorFeaturesMap.end()) {
+      LogMsg("M604", NAME(Dcore), lineNo); // Dcore not found in list for feature check
+      return true;
+    }
+
+    const auto& features = processorFeatures->second;
+    for(const auto& feature : features) {
+      if(processor->GetEffectiveAttribute(feature) == "") {
+        LogMsg("M605", NAME(Dcore), NAME2(feature), lineNo); // Required processor feature '%NAME%' not found.
+        bOk = false;
+      }
+    }
+
+    // Test dependant features (if one is found, all the others must be present as well)
+    if(processors.size() > 1) {
+      for(const auto& requiredMulticoreFeature : processorMulticoreFeaturesList) {
+        if(processor->GetEffectiveAttribute(requiredMulticoreFeature) == "") {
+          LogMsg("M605", NAME(Dcore), NAME2(requiredMulticoreFeature), lineNo); // Required processor feature '%NAME%' not found.
+          bOk = false;
+        }
+      }
+    }
+  }
+
+  return bOk;
+}
 
 /**
  * @brief Check device dependencies. Tests if all dependencies are solved and a minimum
@@ -737,6 +825,7 @@ bool ValidateSemantic::TestMcuDependencies(RtePackage* pKg)
   pKg->GetEffectiveDeviceItems(devices);
   for(auto device : devices) {
     CheckDeviceDependencies(device, rteProject);
+    CheckDeviceAttributes(device);
   }
 
   model.DeleteProject(1);

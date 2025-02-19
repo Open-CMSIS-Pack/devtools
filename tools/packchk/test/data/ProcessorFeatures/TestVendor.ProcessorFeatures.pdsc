@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<package schemaVersion="1.1" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="PACK.xsd">
+  <vendor>TestVendor</vendor>
+  <url>http://www.keil.com/pack/</url>
+  <name>ProcessorFeatures</name>
+  <description>Test Processor Features</description>
+
+  <releases>
+    <release version="1.0.0" date="2025-02-18">
+      First Release version of ProcessorFeatures.
+    </release>
+  </releases>
+
+  <keywords>
+  <!-- keywords for indexing -->
+    <keyword>ARM</keyword>
+  </keywords>
+  
+  <conditions>
+    <condition id="TestDevices">
+      <description>Test devices</description>
+      <require Dvendor="ARM:82" Dname="Test*"/>
+    </condition>
+    <condition id="Test ARMCC">
+      <description>Filter for Test Device and the ARM compiler</description>
+      <require condition="TestDevices"/>
+      <require Tcompiler="ARMCC"/>
+    </condition>
+  </conditions>
+
+
+  <devices>
+    <family Dfamily="TestFamily" Dvendor="ARM:82">
+      <algorithm name="Flash/ARMCMx_512.FLM"  start="0x00000000" size="0x00040000" default="1"/>
+
+      <!-- ******************************  TestSubFamily  ****************************** -->
+      <subFamily DsubFamily="TestSubFamily">
+        <compile header="Files/TestDevices.h"  define="TESTDEVICES"/>
+
+        <description>The TestSubFamily</description>
+
+        <!-- ******************************  TestDevice1  ***************************** -->
+        <device Dname="TestDevice1">
+          <processor Dcore="Cortex-M4"    Pname="Cortex-M4" DcoreVersion="r0p1" Dfpu="SP_FPU" Dmpu="MPU" Ddsp="NO_DSP" Dendian="Little-endian" Dclock="1000000" />
+
+          <processor Dcore="Cortex-M0"   Pname="Cortex-M0"   />
+          <processor Dcore="Cortex-M0+"  Pname="Cortex-M0+"  />
+          <processor Dcore="Cortex-M1"   Pname="Cortex-M1"   />
+          <processor Dcore="Cortex-M3"   Pname="Cortex-M3"   />
+          <processor Dcore="Cortex-M4"   Pname="Cortex-M4"   />
+          <processor Dcore="Cortex-M7"   Pname="Cortex-M7"   />
+          <processor Dcore="Cortex-M23"  Pname="Cortex-M23"  />
+          <processor Dcore="Cortex-M33"  Pname="Cortex-M33"  />
+          <processor Dcore="Cortex-M35P" Pname="Cortex-M35P" />
+          <processor Dcore="Cortex-M52"  Pname="Cortex-M52"  />
+          <processor Dcore="Cortex-M55"  Pname="Cortex-M55"  />
+          <processor Dcore="Cortex-M85"  Pname="Cortex-M85"  />
+          <processor Dcore="Star-MC1"    Pname="Star-MC1"    />
+          <processor Dcore="SC000"       Pname="SC000"       />
+          <processor Dcore="SC300"       Pname="SC300"       />
+          <processor Dcore="ARMV8MBL"    Pname="ARMV8MBL"    />
+          <processor Dcore="ARMV8MML"    Pname="ARMV8MML"    />
+          <processor Dcore="ARMV81MML"   Pname="ARMV81MML"   />
+          <processor Dcore="Cortex-R4"   Pname="Cortex-R4"   />
+
+          <memory  id="IROM1"                  start="0x00000000" size="0x00040000" default="1" startup="1"/>
+          <memory  id="IRAM1"                  start="0x10000000" size="0x00010000" default="1" init   ="0"/>
+          <memory  id="IRAM2"                  start="0x20000000" size="0x00010000" default="0" init   ="0"/>
+        </device>
+
+      </subFamily>
+    </family>
+  </devices>
+
+  <components>
+    <component Cclass="Device" Cgroup="Startup" Cversion="1.0.0" condition="TestDevices">
+      <description>System Startup for Test device series</description>
+      <files>
+        <file category="include" name="Files/"/>
+        <file category="source"  name="Files/startup_Test.s"     attr="config" version="1.0.0" condition="Test ARMCC"/>
+        <file category="source"  name="Files/system_Test.c"      attr="config" version="1.0.0" />
+      </files>
+    </component>
+  </components>
+
+</package>

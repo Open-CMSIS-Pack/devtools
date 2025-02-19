@@ -189,7 +189,10 @@ int PackChk::Check(int argc, const char* argv[], const char* envp[])
       return 1;
   }
 
-  LogMsg("M001", TXT(header));
+  if(m_packOptions.GetLogPath() != "") {
+    LogMsg("M001", TXT(header));
+  }
+  
   bool bOk = CheckPackage();
 
   if(ErrLog::Get()->GetErrCnt() || !bOk) {
