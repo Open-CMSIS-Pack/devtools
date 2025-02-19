@@ -900,6 +900,7 @@ protected:
     std::vector<ConnectPtrVec>& combinations, const ConnectPtrVec& previous = ConnectPtrVec());
   void PushBackUniquely(ConnectionsCollectionVec& vec, const ConnectionsCollection& value);
   void PushBackUniquely(std::vector<ToolchainItem>& vec, const ToolchainItem& value);
+  void GetRegisteredToolchainEnvVars(void);
   void GetRegisteredToolchains(void);
   bool GetLatestToolchain(ToolchainItem& toolchain);
   bool GetToolchainConfig(const std::string& name, const std::string& version, std::string& configPath, std::string& selectedConfigVersion);
