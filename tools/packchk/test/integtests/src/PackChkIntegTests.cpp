@@ -1077,6 +1077,37 @@ TEST_F(PackChkIntegTests, CheckConditionComponentDependency_Pos) {
   }
 }
 
+TEST_F(PackChkIntegTests, CheckProcessorFeatures) {
+  const char* argv[3];
+
+  string pdscFile = PackChkIntegTestEnv::localtestdata_dir +
+    "/ProcessorFeatures/TestVendor.ProcessorFeatures.pdsc";
+  ASSERT_TRUE(RteFsUtils::Exists(pdscFile));
+
+  argv[0] = (char*)"";
+  argv[1] = (char*)pdscFile.c_str();
+  argv[2] = (char*)"--disable-validation";
+
+  PackChk packChk;
+  EXPECT_EQ(1, packChk.Check(3, argv, nullptr));
+
+  auto errMsgs = ErrLog::Get()->GetLogMessages();
+  int M604_foundCnt = 0;
+  int M605_foundCnt = 0;
+  for (const string& msg : errMsgs) {
+    if (msg.find("M604", 0) != string::npos) {
+      M604_foundCnt++;
+    }
+    if (msg.find("M605", 0) != string::npos) {
+      M605_foundCnt++;
+    }
+  }
+
+  if(M604_foundCnt != 1 || M605_foundCnt != 98) {
+    FAIL() << "error: Missing message M604, M605: processor features";
+  }
+}
+
 TEST_F(PackChkIntegTests, CheckConditionComponentDependency_Neg) {
   const char* argv[5];
 
